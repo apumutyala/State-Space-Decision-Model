@@ -1,0 +1,28 @@
+{
+  "task_id": "synthetic-development_validation-271828-2",
+  "task_input": "For October 2026, compare Kestrel's and Lumen's warranty months.",
+  "development_validation_only": true,
+  "record_values": {
+    "Kestrel": {"warranty_months": 40, "price_usd": "228.53"},
+    "Lumen": {"warranty_months": 55, "price_usd": "228.53"}
+  },
+  "reference_program": {
+    "left": ["development-record-1", "warranty_months"],
+    "right": ["development-record-2", "warranty_months"],
+    "relation": "less_than"
+  },
+  "direct": {"selected_relation": "less_than", "correct": true, "provider_calls": 1, "forward_calls": 2},
+  "planner": {
+    "operation": "Compare",
+    "left": ["development-record-1", "price"],
+    "right": ["development-record-1", "price"],
+    "relation": "greater_than",
+    "status": "kernel_rejected",
+    "reason": "unsupported_assertion",
+    "task_correct": false,
+    "provider_calls": 4,
+    "forward_calls": 8
+  },
+  "initial_state_sha256": "346fd2f2f9dd18d0de6085aee6b7715e96aafe643454b0f3a4e37e47dd038d44",
+  "claim_limit": "single synthetic diagnostic only; no confidence interval or generalization claim"
+}

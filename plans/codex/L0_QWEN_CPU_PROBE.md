@@ -1,6 +1,6 @@
 # Frozen Qwen3.5-0.8B CPU development diagnostic
 
-This is a preparation phase under L0d2/L0e/L0h. It does not qualify an
+This is a bounded L0d2/L0e diagnostic under L0h. It does not qualify an
 attention-free parent or satisfy the L0 learned capability gate.
 
 - **Hypothesis:** The existing stock Qwen3.5-0.8B readout can make a direct
@@ -14,14 +14,23 @@ attention-free parent or satisfy the L0 learned capability gate.
   soon as each stage finishes. The launcher checks memory before loading,
   hides CUDA, limits Torch threads and batch rows, and enforces a 300-second
   subprocess cap. The child rechecks free RAM before Torch loads.
-- **Exit proof for preparation:** Static and synthetic tests verify the task
-  selection, runtime gates, no reference answer in provider inputs, stage
-  flushing, and timeout/failure accounting without loading model weights.
-  The exact run command and required environment are documented. A real-model
-  result requires separate resource clearance and a raw receipt.
-- **Decision unlocked:** If resource clearance and runtime preconditions pass,
-  run this single CPU diagnostic and inspect direct versus planner failure
-  modes before considering a larger or paid experiment.
+- **Preparation proof:** Static and synthetic tests verify task selection,
+  runtime gates, no reference answer in provider inputs, stage flushing, and
+  timeout/failure accounting. A failed package-file startup was traced to
+  `language_growth/types.py` shadowing stdlib `types`; the root-level isolated
+  launcher fixes it.
+- **Completed diagnostic:** One offline CPU run loaded the pinned inherited
+  hybrid Qwen checkpoint. On the single comparison, the direct relation choice
+  was correct, but the planner selected price for both warranty operands and
+  `greater_than`; the kernel rejected the false assertion as
+  `unsupported_assertion`. Both arms shared the same initial-state hash. The
+  receipt and complete raw trace are in
+  `receipts/2026-10-06-L-qwen-cpu-development-diagnostic/`.
+- **Decision unlocked:** For this one case, the target is expressible and the
+  realizer was not reached; the observed failure is program discovery/task
+  grounding. A separate development cohort is needed to learn whether this is
+  systematic, including per-slot accuracy and free-running task correctness.
+  Do not infer a general capability rate or L0 pass from N=1.
 
 Dependency: PR #37 merged into `agent-main` at `57804e2`; this branch now
 integrates the tracked paired caller. The script still fails with a clear
@@ -29,8 +38,7 @@ dependency error if that module is absent. No source overlay is needed.
 
 The diagnostic is inherited **HYBRID** pretrained Qwen with attention layers,
 not the attention-free Track D target, a strong unrestricted comparator, a
-parent-retention test, or Decision Index/held-out evidence. No model load or
-run belongs to this preparation phase.
+parent-retention test, or Decision Index/held-out evidence.
 
 The original package-file invocation failed during interpreter startup because
 `language_growth/types.py` shadowed stdlib `types`. The repository-root entry
@@ -41,13 +49,13 @@ from the package directory with a conflicting `PYTHONPATH`, and assert the
 recorded child command and offline environment. These checks do not import
 Torch, load weights, or execute the diagnostic.
 
-After the resource owner clears a run, use the existing
+For the completed run, the exact command and output path were:
 `C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe` runtime (known
 `transformers` 5.17.0, `accelerate` 1.15.0, `torch` 2.8.0, `psutil` 7.2.2).
 Run from the repository root:
 
 ```powershell
-& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -I l0_qwen_cpu_probe.py --raw 'C:/Users/apumu/research/CHLabs/ssdm-data/l0-qwen-cpu-probe-271828/raw.jsonl'
+& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -I l0_qwen_cpu_probe.py --raw 'C:/Users/apumu/research/CHLabs/ssdm-data/l0-qwen-cpu-probe-271828-run2/raw.jsonl'
 ```
 
 The output directory must be fresh. The launcher exits before loading if
