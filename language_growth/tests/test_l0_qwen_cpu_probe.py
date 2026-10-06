@@ -10,7 +10,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from scripts import l0_qwen_cpu_probe as probe
+from language_growth import l0_qwen_cpu_probe as probe
 
 
 class ProbePreparationTests(unittest.TestCase):
@@ -28,6 +28,7 @@ class ProbePreparationTests(unittest.TestCase):
         self.assertEqual(env["CUDA_VISIBLE_DEVICES"], "-1")
         self.assertEqual(env["HF_HUB_OFFLINE"], "1")
         self.assertEqual(env["TRANSFORMERS_OFFLINE"], "1")
+        self.assertEqual(env["HF_HUB_DISABLE_TELEMETRY"], "1")
         self.assertEqual(env["OMP_NUM_THREADS"], "2")
 
     def test_each_provider_request_and_failure_flushes_raw_jsonl(self):
@@ -74,6 +75,31 @@ class ProbePreparationTests(unittest.TestCase):
                 rows = [json.loads(line) for line in raw.read_text(encoding="utf-8").splitlines()]
                 self.assertEqual(rows[-1]["event"], "launcher_stopped")
                 self.assertEqual(rows[-1]["reason"], reason)
+
+    def test_launcher_kills_owned_child_if_memory_monitor_raises(self):
+        with tempfile.TemporaryDirectory() as directory:
+            raw = Path(directory) / "new-run" / "raw.jsonl"
+            child = MagicMock()
+            child.poll.return_value = None
+            with (patch.object(probe, "_check_dependencies", return_value={}),
+                  patch("psutil.virtual_memory", side_effect=[
+                      SimpleNamespace(available=9 * 1024**3), RuntimeError("monitor failed")]),
+                  patch.object(probe.subprocess, "Popen", return_value=child),
+                  patch.object(probe.time, "monotonic", side_effect=[0, 1])):
+                with self.assertRaisesRegex(RuntimeError, "monitor failed"):
+                    probe._parent(raw)
+            child.kill.assert_called_once_with()
+            child.wait.assert_called_once_with()
+
+    def test_child_rechecks_ram_before_torch_or_model_import(self):
+        with tempfile.TemporaryDirectory() as directory:
+            raw = Path(directory) / "raw.jsonl"
+            with (patch.dict(os.environ, probe._offline_env()),
+                  patch("psutil.virtual_memory", return_value=SimpleNamespace(available=7 * 1024**3)),
+                  patch.object(probe, "_check_dependencies") as dependencies):
+                with self.assertRaisesRegex(RuntimeError, "before Torch"):
+                    probe._child(raw)
+            dependencies.assert_not_called()
 
 
 if __name__ == "__main__":

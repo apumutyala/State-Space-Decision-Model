@@ -82,6 +82,7 @@ def _offline_env() -> dict[str, str]:
     env = os.environ.copy()
     env.update({"CUDA_VISIBLE_DEVICES": "-1", "HF_HUB_OFFLINE": "1",
                 "TRANSFORMERS_OFFLINE": "1", "HF_DATASETS_OFFLINE": "1",
+                "HF_HUB_DISABLE_TELEMETRY": "1",
                 "TOKENIZERS_PARALLELISM": "false", "OMP_NUM_THREADS": "2",
                 "MKL_NUM_THREADS": "2", "OPENBLAS_NUM_THREADS": "2"})
     return env
@@ -113,11 +114,16 @@ def _child(raw: Path) -> int:
             or os.environ.get("HF_HUB_OFFLINE") != "1"
             or os.environ.get("TRANSFORMERS_OFFLINE") != "1"):
         raise RuntimeError("offline CPU environment is not pinned")
+    import psutil
+    available = psutil.virtual_memory().available
+    if available < MIN_START_AVAILABLE:
+        raise RuntimeError(f"CPU probe child requires >=8 GiB available RAM before Torch; found {available / 1024**3:.2f} GiB")
     versions = _check_dependencies()
     task = _task()
     _write_event(raw, "task_pinned", task_id=task["task_id"], task_sha256=_sha_task(task),
                  seed=SEED, split="development_validation", choice_format="production",
-                 software=versions, model_snapshot=str(SNAPSHOT), scope="hybrid_diagnostic")
+                 software=versions, model_snapshot=str(SNAPSHOT), available_bytes=available,
+                 scope="hybrid_diagnostic")
 
     import torch
     torch.set_num_threads(2)
@@ -131,7 +137,7 @@ def _child(raw: Path) -> int:
 
     _write_event(raw, "load_start")
     plugin = load_qwen35(SNAPSHOT, device="cpu", dtype="float32", model_id=MODEL_ID)
-    backend = HFReadoutBackend(plugin, "jrt-chatml-v1")
+    backend = HFReadoutBackend(plugin, "jrt-chatml-v1", max_batch_rows=2)
     calibration = OptionCountTemperature()
     parent = Decider(backend, calibration=calibration,
                      backend_max_input_tokens=plugin.max_context)
@@ -167,22 +173,37 @@ def _parent(raw: Path) -> int:
     child = subprocess.Popen([sys.executable, str(Path(__file__).resolve()),
                               "--child", "--raw", str(raw)], env=_offline_env())
     started = time.monotonic()
-    while True:
-        result = child.poll()
-        if result is not None:
-            _write_event(raw, "launcher_exit", exit_code=result,
-                         elapsed_seconds=round(time.monotonic() - started, 3))
-            return result
-        elapsed = time.monotonic() - started
-        available = psutil.virtual_memory().available
-        if elapsed >= TIMEOUT_SECONDS or available < MIN_RUNNING_AVAILABLE:
-            reason = "timeout" if elapsed >= TIMEOUT_SECONDS else "memory_guard"
-            child.kill()  # only this launcher's child; never another process
-            child.wait()
-            _write_event(raw, "launcher_stopped", reason=reason,
-                         elapsed_seconds=round(elapsed, 3), available_bytes=available)
-            return 124 if reason == "timeout" else 125
-        time.sleep(0.5)
+    stopped = False
+    try:
+        while True:
+            result = child.poll()
+            if result is not None:
+                _write_event(raw, "launcher_exit", exit_code=result,
+                             elapsed_seconds=round(time.monotonic() - started, 3))
+                return result
+            elapsed = time.monotonic() - started
+            available = psutil.virtual_memory().available
+            if elapsed >= TIMEOUT_SECONDS or available < MIN_RUNNING_AVAILABLE:
+                reason = "timeout" if elapsed >= TIMEOUT_SECONDS else "memory_guard"
+                child.kill()  # only this launcher's child; never another process
+                child.wait()
+                stopped = True
+                _write_event(raw, "launcher_stopped", reason=reason,
+                             elapsed_seconds=round(elapsed, 3), available_bytes=available)
+                return 124 if reason == "timeout" else 125
+            time.sleep(0.5)
+    finally:
+        if not stopped:
+            try:
+                running = child.poll() is None
+            except Exception:
+                running = True  # a failed monitor must not leave this child running
+            if running:
+                try:
+                    child.kill()
+                except ProcessLookupError:
+                    pass
+                child.wait()
 
 
 def main() -> int:

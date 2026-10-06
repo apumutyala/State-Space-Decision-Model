@@ -12,7 +12,8 @@ attention-free parent or satisfy the L0 learned capability gate.
   the Track D `load_qwen35(device="cpu", dtype="float32")` readout, one
   `Decider`, and the PR #37 paired-comparison caller. It writes raw JSONL as
   soon as each stage finishes. The launcher checks memory before loading,
-  hides CUDA, limits Torch threads, and enforces a 300-second subprocess cap.
+  hides CUDA, limits Torch threads and batch rows, and enforces a 300-second
+  subprocess cap. The child rechecks free RAM before Torch loads.
 - **Exit proof for preparation:** Static and synthetic tests verify the task
   selection, runtime gates, no reference answer in provider inputs, stage
   flushing, and timeout/failure accounting without loading model weights.
@@ -37,11 +38,12 @@ After PR #37 lands and the resource owner clears a run, use the existing
 `transformers` 5.17.0, `accelerate` 1.15.0, `torch` 2.8.0, `psutil` 7.2.2):
 
 ```powershell
-& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -I scripts/l0_qwen_cpu_probe.py --raw 'C:/Users/apumu/research/CHLabs/ssdm-data/l0-qwen-cpu-probe-271828/raw.jsonl'
+& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -I language_growth/l0_qwen_cpu_probe.py --raw 'C:/Users/apumu/research/CHLabs/ssdm-data/l0-qwen-cpu-probe-271828/raw.jsonl'
 ```
 
 The output directory must be fresh. The launcher exits before loading if
 available RAM is below 8 GiB or the paired dependency is absent. During the
 run it stops only its own child if available RAM falls below 3 GiB or elapsed
-time reaches 300 seconds. Each request and response is flushed to `raw.jsonl`
+time reaches 300 seconds, including if launcher monitoring is interrupted.
+Each request and response is flushed to `raw.jsonl`
 before the next provider call; a stopped run keeps partial evidence.
