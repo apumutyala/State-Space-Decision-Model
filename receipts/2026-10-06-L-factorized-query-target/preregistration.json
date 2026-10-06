@@ -1,0 +1,231 @@
+{
+  "base_commit": "4733f785e5284ea959d4d640fff884136487bd05",
+  "ci": "95% percentile bootstrap over task IDs, keeping all seeds and both pooled wording renderings together; conditional on fixed seeds/families.",
+  "config": {
+    "batch_size": 32,
+    "bootstrap_replicates": 2000,
+    "bootstrap_seed": 3197,
+    "clip_norm": 1.0,
+    "cpu_threads": 2,
+    "inference": "argmax operation, then argmax structured score within operation",
+    "loss": "operation CE plus conditional structured-target CE, equal weight",
+    "lr": 0.003,
+    "max_runtime_seconds": 180,
+    "model_seeds": [
+      20261006,
+      20261016,
+      20261026
+    ],
+    "steps": 300,
+    "width": 32
+  },
+  "decision": "One architecture, three fixed seeds, final step only; no validation tuning. Report both raw baseline and matched all_task_diversity reference pairs.",
+  "parameters": 28004,
+  "reference_data_sha256": "cad509047e4b1b52f26d8ab43428935bfb8c8adf4c0bb6237256e55022377d8b",
+  "reference_observations_sha256": "aa6f78c81dd057a7d2545cf56492ccb026c6eb1bcbbb88b8514dd217bcb79cf6",
+  "reference_parameters": 27937,
+  "reference_registration": {
+    "base_commit": "4733f785e5284ea959d4d640fff884136487bd05",
+    "ci": "Percentile 95% paired bootstrap over validation task IDs, keeping both wording families and all three training seeds together in each cluster. Conditional on these three fixed training seeds; not a seed-population CI.",
+    "config": {
+      "batch_size": 32,
+      "bootstrap_replicates": 2000,
+      "bootstrap_seed": 3197,
+      "cpu_threads": 2,
+      "device": "cpu",
+      "lr": 0.003,
+      "max_runtime_seconds": 180,
+      "model_seeds": [
+        20261006,
+        20261016,
+        20261026
+      ],
+      "steps": 300,
+      "train_count": 600,
+      "train_seed": 20261006,
+      "validation_count": 180,
+      "validation_seed": 20261009,
+      "width": 32
+    },
+    "copied_model_source_commit": "fcf620177d8e9b1575e5e0ed590d4aae1a9cb3b3",
+    "decision": "One fixed final-step checkpoint per arm/seed. No validation selection, no post-hoc variants. A negative result only folds this exact six-template/all-kind 600-world/300-step recipe if supported across seeds; weak mixed evidence remains inconclusive.",
+    "manifests": {
+      "train": {
+        "allow_one_repair": false,
+        "choice_formats": {
+          "augmented": 300,
+          "production": 300
+        },
+        "comparison_fields": {
+          "price": 95,
+          "warranty_months": 105
+        },
+        "comparison_left_records": {
+          "development-record-1": 99,
+          "development-record-2": 101
+        },
+        "comparison_relations": {
+          "equal": 33,
+          "greater_than": 74,
+          "less_than": 93
+        },
+        "count": 600,
+        "name_pool": [
+          "Aster",
+          "Bracken",
+          "Cinder",
+          "Dovetail",
+          "Ember",
+          "Fallow"
+        ],
+        "price_cents_range": [
+          5000,
+          20000
+        ],
+        "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+        "sample_sha256": "de27b10530f6a45e4f50d89b9b0e120b3914c65a035375b206aeb1ef68aa93e2",
+        "schema": "ssdm.synthetic_development_manifest.v2",
+        "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+        "seed": 20261006,
+        "split": "development_train",
+        "template_ids": {
+          "compare": [
+            "development_train:compare:0",
+            "development_train:compare:1"
+          ],
+          "explain": [
+            "development_train:explain:0",
+            "development_train:explain:1"
+          ],
+          "read": [
+            "development_train:read:0",
+            "development_train:read:1"
+          ]
+        },
+        "warranty_range": [
+          1,
+          36
+        ]
+      },
+      "validation": {
+        "allow_one_repair": false,
+        "choice_formats": {
+          "augmented": 90,
+          "production": 90
+        },
+        "comparison_fields": {
+          "price": 31,
+          "warranty_months": 29
+        },
+        "comparison_left_records": {
+          "development-record-1": 34,
+          "development-record-2": 26
+        },
+        "comparison_relations": {
+          "equal": 11,
+          "greater_than": 25,
+          "less_than": 24
+        },
+        "count": 180,
+        "name_pool": [
+          "Grove",
+          "Hearth",
+          "Indigo",
+          "Juniper",
+          "Kestrel",
+          "Lumen"
+        ],
+        "price_cents_range": [
+          20001,
+          30000
+        ],
+        "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+        "sample_sha256": "e8f9773abcf7f4584882a3fa03fb7d24ea355652b2ee35543495160fcf10c273",
+        "schema": "ssdm.synthetic_development_manifest.v2",
+        "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+        "seed": 20261009,
+        "split": "development_validation",
+        "template_ids": {
+          "compare": [
+            "development_validation:compare:0"
+          ],
+          "explain": [
+            "development_validation:explain:0"
+          ],
+          "read": [
+            "development_validation:read:0"
+          ]
+        },
+        "warranty_range": [
+          37,
+          60
+        ]
+      }
+    },
+    "primary_measure": "Paired exact-target change on old_failing comparison wording, with new_disjoint comparison transfer and read/explain side effects reported.",
+    "row_hashes": {
+      "train": {
+        "all_task_diversity": "f3cb933ec2a22a8bf45ae37c2bd2788c3de4c8fab0be3e17867e26671dfb8e31",
+        "baseline": "ad7d71fb7a5542e1395bd73db07d83e4ef03701e2467dab8d023be8c039714ad"
+      },
+      "validation": {
+        "new_disjoint": "a48575e2976892e2b074b13ef1409df7d61d13ef7908fb83aeb7041b5a340fe2",
+        "old_failing": "ad9339355d23c371c446cbf62a29ca4c356c2a0fc2d232ca72446d7a38301ca2"
+      }
+    },
+    "schema": "ssdm.query_template_transfer_preregistration.v1",
+    "scope": "CPU only, 2 intraop threads/1 interop thread; no GPU/network/spend/Index/test data/teacher API. Synthetic iterative development only. Targets select kind/field/entity/order, not answer values; no production planner or interface changes.",
+    "source_sha256": "85b0dac611665dc463f15a39a2a31981fbe908e72676f31dcebd12d0310ca23c",
+    "train_templates": {
+      "compare": [
+        "Compare the October {field} of {left} and {right}.",
+        "How do {left}'s and {right}'s October {field} compare?",
+        "In October 2026, compare {left} and {right} on {field}.",
+        "Assess how {left}'s October {field} compares to {right}'s.",
+        "Considering October 2026 {field}, compare {left} against {right}.",
+        "Please compare {left} with {right} using their October 2026 {field}."
+      ],
+      "explain": [
+        "Explain the checked {field} fact for {entity}.",
+        "Show the checked derivation for {entity}'s {field}.",
+        "For {entity}, explain how the {field} fact is established.",
+        "Give a checked explanation for the {field} of {entity}.",
+        "Please justify {entity}'s {field} using the checked derivation.",
+        "Walk through the derivation that supports {entity}'s {field}."
+      ],
+      "read": [
+        "What is {entity}'s {field} in October 2026?",
+        "Give the October 2026 {field} for {entity}.",
+        "For {entity}, report the {field} recorded in October 2026.",
+        "In October 2026, what {field} does {entity} have?",
+        "Please retrieve {entity}'s October 2026 {field}.",
+        "Find the October 2026 fact about {field} for {entity}."
+      ]
+    },
+    "validation_templates": {
+      "new_disjoint": {
+        "compare": "With {left} first and {right} second, compare their October 2026 {field}.",
+        "explain": "Describe the checked reasoning behind the {field} belonging to {entity}.",
+        "read": "Tell me the {field} belonging to {entity} as of October 2026."
+      },
+      "old_failing": {
+        "compare": "For October 2026, compare {left}'s and {right}'s {field}.",
+        "explain": "Provide a checked derivation of {entity}'s {field}.",
+        "read": "State {entity}'s {field} for October 2026."
+      }
+    }
+  },
+  "row_hashes": {
+    "train": {
+      "all_task_diversity": "f3cb933ec2a22a8bf45ae37c2bd2788c3de4c8fab0be3e17867e26671dfb8e31",
+      "baseline": "ad7d71fb7a5542e1395bd73db07d83e4ef03701e2467dab8d023be8c039714ad"
+    },
+    "validation": {
+      "new_disjoint": "a48575e2976892e2b074b13ef1409df7d61d13ef7908fb83aeb7041b5a340fe2",
+      "old_failing": "ad9339355d23c371c446cbf62a29ca4c356c2a0fc2d232ca72446d7a38301ca2"
+    }
+  },
+  "schema": "ssdm.factorized_query_target_preregistration.v1",
+  "scope": "Synthetic iterative development, CPU <=2 threads, <=180 seconds, $0; no GPU/network/Index/held-out/teacher API or production changes.",
+  "source_sha256": "93855953277ab69681fc0890529cd5aad5f8fa04738abe6499ed1fbc1ea8cd9c"
+}
