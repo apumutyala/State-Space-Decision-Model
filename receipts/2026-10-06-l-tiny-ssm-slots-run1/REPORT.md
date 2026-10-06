@@ -104,6 +104,14 @@ call. Minimum observed available RAM was 6,845,247,488 bytes (6.37 GiB).
 | Compare | 0/100 | 0/100 |
 | All | 56/300 | 119/300 |
 
+These are answer-meaning scores from `score_development_task`, which credits a
+checked explanation of the requested fact for a read task. The independent
+audit separately found exact-reference program scores of **34/300 initial**
+and **119/300 trained**. The initial arm's additional 22 correct meanings are
+read answers expressed as checked explanations; they differ from the minimal
+reference program. The trained arm's answer-meaning and exact-reference scores
+coincide. Neither score credits the 0/100 comparison tasks.
+
 Both arms have 300/300 kernel acceptance. This means the proposed answer is
 valid under the kernel; wrong-task meanings remain failures. Trained validation
 read and explain operation choices are each 100/100, while all 100 comparison
@@ -117,9 +125,12 @@ history, manifest, and checkpoint files. `initial.pt` and `trained.pt` preserve
 the weights as well as tensor-content hashes. Summaries can be recomputed by
 counting `correct` in slot rows and `task_correct` in planner observations;
 task kind is the generated task index modulo three (read, explain, compare).
-The original receipt's `failure_reasons: {"None": 0}` is a harmless summary
-formatting bug: all kernel results are accepted with reason null. The code now
-excludes null reasons; the measured receipt and raw files remain unchanged.
+The original receipt's `failure_reasons: {"None": 0}` was a harmless summary
+formatting bug: all kernel results are accepted with reason null. Source after
+the measured commit fixes reporting only. The receipt summary now excludes
+null reasons and records 300 accepted statuses per arm, derived from the raw
+planner outcomes; raw predictions, calls, weights, and hashes are unchanged.
+The original receipt is recoverable at commit `19d6a846`. No experiment was rerun.
 The receipt directory's `.gitattributes` disables newline translation for JSON
 and weights to preserve exact measured bytes. Every listed artifact hash was
 also checked against its committed Git blob, with zero mismatches.
@@ -133,5 +144,6 @@ comparison planning. A further SSM test needs a concrete change addressing
 binding and contextual memory, plus the same fresh development controls.
 The transparent feature baseline can be compared by the coordinator on the
 identical pinned cohort; this receipt makes no unmeasured baseline claim.
-Independent review/recomputation is pending. No L0 capability, safety,
-retention, audit generalization, or multi-seed statistical claim is made.
+Independent review/recomputation passed on frozen commit `19d6a846`; see
+`INDEPENDENT_REVIEW.md`. No L0 gate, safety, retention, held-out/generalization,
+or multi-seed statistical claim is made. Claude cross-review remains requested.
