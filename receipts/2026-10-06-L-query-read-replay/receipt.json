@@ -1,0 +1,1659 @@
+{
+  "cost_usd": 0,
+  "id_permutation_checks": "Exact semantic observations matched for both families in all 3 restored replay checkpoints. Controls preserve the prior six-checkpoint checks.",
+  "paired": {
+    "all_task_diversity": {
+      "new_disjoint": {
+        "all": {
+          "count": 540,
+          "delta_accuracy": -0.01111111111111111,
+          "improved": 20,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 141,
+          "regressed": 26,
+          "replay_correct": 135,
+          "task_cluster_ci95": [
+            -0.03703703703703704,
+            0.013009259259259009
+          ],
+          "task_clusters": 180
+        },
+        "compare": {
+          "count": 180,
+          "delta_accuracy": -0.10555555555555554,
+          "improved": 2,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 46,
+          "regressed": 21,
+          "replay_correct": 27,
+          "task_cluster_ci95": [
+            -0.15,
+            -0.06111111111111111
+          ],
+          "task_clusters": 60
+        },
+        "explain": {
+          "count": 180,
+          "delta_accuracy": -0.016666666666666666,
+          "improved": 0,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 14,
+          "regressed": 3,
+          "replay_correct": 11,
+          "task_cluster_ci95": [
+            -0.03888888888888888,
+            0.0
+          ],
+          "task_clusters": 60
+        },
+        "read": {
+          "count": 180,
+          "delta_accuracy": 0.08888888888888888,
+          "improved": 18,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 81,
+          "regressed": 2,
+          "replay_correct": 97,
+          "task_cluster_ci95": [
+            0.03888888888888889,
+            0.1388888888888889
+          ],
+          "task_clusters": 60
+        }
+      },
+      "old_failing": {
+        "all": {
+          "count": 540,
+          "delta_accuracy": 0.04074074074074074,
+          "improved": 38,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 317,
+          "regressed": 16,
+          "replay_correct": 339,
+          "task_cluster_ci95": [
+            0.012962962962962964,
+            0.0685185185185185
+          ],
+          "task_clusters": 180
+        },
+        "compare": {
+          "count": 180,
+          "delta_accuracy": 0.03888888888888888,
+          "improved": 13,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 71,
+          "regressed": 6,
+          "replay_correct": 78,
+          "task_cluster_ci95": [
+            -0.01111111111111111,
+            0.08888888888888889
+          ],
+          "task_clusters": 60
+        },
+        "explain": {
+          "count": 180,
+          "delta_accuracy": 0.061111111111111116,
+          "improved": 18,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 126,
+          "regressed": 7,
+          "replay_correct": 137,
+          "task_cluster_ci95": [
+            0.0055555555555555575,
+            0.11111111111111112
+          ],
+          "task_clusters": 60
+        },
+        "read": {
+          "count": 180,
+          "delta_accuracy": 0.02222222222222222,
+          "improved": 7,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 120,
+          "regressed": 3,
+          "replay_correct": 124,
+          "task_cluster_ci95": [
+            -0.016666666666666666,
+            0.06111111111111111
+          ],
+          "task_clusters": 60
+        }
+      },
+      "pooled": {
+        "all": {
+          "count": 1080,
+          "delta_accuracy": 0.014814814814814817,
+          "improved": 58,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 458,
+          "regressed": 42,
+          "replay_correct": 474,
+          "task_cluster_ci95": [
+            -0.0018518518518518515,
+            0.031481481481481485
+          ],
+          "task_clusters": 180
+        },
+        "compare": {
+          "count": 360,
+          "delta_accuracy": -0.03333333333333333,
+          "improved": 15,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 117,
+          "regressed": 27,
+          "replay_correct": 105,
+          "task_cluster_ci95": [
+            -0.06388888888888888,
+            -4.625929269271486e-19
+          ],
+          "task_clusters": 60
+        },
+        "explain": {
+          "count": 360,
+          "delta_accuracy": 0.022222222222222223,
+          "improved": 18,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 140,
+          "regressed": 10,
+          "replay_correct": 148,
+          "task_cluster_ci95": [
+            -0.0027777777777777775,
+            0.04722222222222223
+          ],
+          "task_clusters": 60
+        },
+        "read": {
+          "count": 360,
+          "delta_accuracy": 0.05555555555555555,
+          "improved": 25,
+          "reference_arm": "all_task_diversity",
+          "reference_correct": 201,
+          "regressed": 5,
+          "replay_correct": 221,
+          "task_cluster_ci95": [
+            0.027777777777777776,
+            0.0861111111111111
+          ],
+          "task_clusters": 60
+        }
+      }
+    },
+    "baseline": {
+      "new_disjoint": {
+        "all": {
+          "count": 540,
+          "delta_accuracy": 0.06296296296296296,
+          "improved": 77,
+          "reference_arm": "baseline",
+          "reference_correct": 101,
+          "regressed": 43,
+          "replay_correct": 135,
+          "task_cluster_ci95": [
+            0.022222222222222216,
+            0.10555555555555556
+          ],
+          "task_clusters": 180
+        },
+        "compare": {
+          "count": 180,
+          "delta_accuracy": 0.15,
+          "improved": 27,
+          "reference_arm": "baseline",
+          "reference_correct": 0,
+          "regressed": 0,
+          "replay_correct": 27,
+          "task_cluster_ci95": [
+            0.09999999999999999,
+            0.20555555555555555
+          ],
+          "task_clusters": 60
+        },
+        "explain": {
+          "count": 180,
+          "delta_accuracy": -0.022222222222222223,
+          "improved": 11,
+          "reference_arm": "baseline",
+          "reference_correct": 15,
+          "regressed": 15,
+          "replay_correct": 11,
+          "task_cluster_ci95": [
+            -0.07222222222222222,
+            0.016666666666666666
+          ],
+          "task_clusters": 60
+        },
+        "read": {
+          "count": 180,
+          "delta_accuracy": 0.061111111111111116,
+          "improved": 39,
+          "reference_arm": "baseline",
+          "reference_correct": 86,
+          "regressed": 28,
+          "replay_correct": 97,
+          "task_cluster_ci95": [
+            -0.03333333333333333,
+            0.16666666666666663
+          ],
+          "task_clusters": 60
+        }
+      },
+      "old_failing": {
+        "all": {
+          "count": 540,
+          "delta_accuracy": 0.1925925925925926,
+          "improved": 148,
+          "reference_arm": "baseline",
+          "reference_correct": 235,
+          "regressed": 44,
+          "replay_correct": 339,
+          "task_cluster_ci95": [
+            0.13518518518518519,
+            0.24444444444444444
+          ],
+          "task_clusters": 180
+        },
+        "compare": {
+          "count": 180,
+          "delta_accuracy": 0.28888888888888886,
+          "improved": 58,
+          "reference_arm": "baseline",
+          "reference_correct": 26,
+          "regressed": 6,
+          "replay_correct": 78,
+          "task_cluster_ci95": [
+            0.20555555555555552,
+            0.3722222222222223
+          ],
+          "task_clusters": 60
+        },
+        "explain": {
+          "count": 180,
+          "delta_accuracy": 0.3722222222222221,
+          "improved": 74,
+          "reference_arm": "baseline",
+          "reference_correct": 70,
+          "regressed": 7,
+          "replay_correct": 137,
+          "task_cluster_ci95": [
+            0.32222222222222213,
+            0.4277777777777777
+          ],
+          "task_clusters": 60
+        },
+        "read": {
+          "count": 180,
+          "delta_accuracy": -0.08333333333333333,
+          "improved": 16,
+          "reference_arm": "baseline",
+          "reference_correct": 139,
+          "regressed": 31,
+          "replay_correct": 124,
+          "task_cluster_ci95": [
+            -0.17777777777777776,
+            0.005555555555555555
+          ],
+          "task_clusters": 60
+        }
+      },
+      "pooled": {
+        "all": {
+          "count": 1080,
+          "delta_accuracy": 0.12777777777777777,
+          "improved": 225,
+          "reference_arm": "baseline",
+          "reference_correct": 336,
+          "regressed": 87,
+          "replay_correct": 474,
+          "task_cluster_ci95": [
+            0.08611111111111111,
+            0.16666666666666663
+          ],
+          "task_clusters": 180
+        },
+        "compare": {
+          "count": 360,
+          "delta_accuracy": 0.21944444444444444,
+          "improved": 85,
+          "reference_arm": "baseline",
+          "reference_correct": 26,
+          "regressed": 6,
+          "replay_correct": 105,
+          "task_cluster_ci95": [
+            0.1583333333333333,
+            0.28333333333333327
+          ],
+          "task_clusters": 60
+        },
+        "explain": {
+          "count": 360,
+          "delta_accuracy": 0.17499999999999996,
+          "improved": 85,
+          "reference_arm": "baseline",
+          "reference_correct": 85,
+          "regressed": 22,
+          "replay_correct": 148,
+          "task_cluster_ci95": [
+            0.13888888888888887,
+            0.2111805555555552
+          ],
+          "task_clusters": 60
+        },
+        "read": {
+          "count": 360,
+          "delta_accuracy": -0.011111111111111112,
+          "improved": 55,
+          "reference_arm": "baseline",
+          "reference_correct": 225,
+          "regressed": 59,
+          "replay_correct": 221,
+          "task_cluster_ci95": [
+            -0.09722222222222222,
+            0.075
+          ],
+          "task_clusters": 60
+        }
+      }
+    }
+  },
+  "parameters": 27937,
+  "preregistration": {
+    "base_commit": "4733f785e5284ea959d4d640fff884136487bd05",
+    "ci": "Percentile 95% paired bootstrap over validation task IDs, keeping both wording families and all three training seeds together in each cluster. Conditional on these three fixed training seeds; not a seed-population CI. Report replay versus baseline and replay versus all_task_diversity; no multiplicity adjustment.",
+    "config": {
+      "batch_size": 32,
+      "bootstrap_replicates": 2000,
+      "bootstrap_seed": 3197,
+      "cpu_threads": 2,
+      "device": "cpu",
+      "lr": 0.003,
+      "max_runtime_seconds": 180,
+      "model_seeds": [
+        20261006,
+        20261016,
+        20261026
+      ],
+      "steps": 300,
+      "train_count": 600,
+      "train_seed": 20261006,
+      "validation_count": 180,
+      "validation_seed": 20261009,
+      "width": 32
+    },
+    "control_import": {
+      "files_sha256": {
+        "frozen_rows.json": "cad509047e4b1b52f26d8ab43428935bfb8c8adf4c0bb6237256e55022377d8b",
+        "observations.json": "aa6f78c81dd057a7d2545cf56492ccb026c6eb1bcbbb88b8514dd217bcb79cf6",
+        "preregistration.json": "387409632dde06ed8db9bf25f57f66bc2096c3983fea8a9ae42f0f32ef358d6e",
+        "receipt.json": "49b7905c14c0aedcb57e4e81cae5548f66231ab898d91b5a3610f70a0349ecff",
+        "seed-20261006-all_task_diversity.pt": "9d7b0f503899539f41dfa46c54c6de78eb1302a9b6c1024353f857cedb6db4c2",
+        "seed-20261006-baseline.pt": "0563b13b90519fb03b100886f7c5d215ecc83f22541e1477f4c5000a56b02d58",
+        "seed-20261016-all_task_diversity.pt": "a69fab459141710463be97b9655c8ccb9614d2f66daa4ddd9752b9caf6c97f67",
+        "seed-20261016-baseline.pt": "49ec1438be7465dee12a390551209dcdfe435ff388e8533581ac1c4288c9edbf",
+        "seed-20261026-all_task_diversity.pt": "e3682067537080833247ff5fd33d665e77e5b4ddb63ed726eb62dbc429184814",
+        "seed-20261026-baseline.pt": "54294d487728ffeca37f55c56ab0b751fd224d4ee8ee959a3e865a7772b23fdf"
+      },
+      "source": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-template-transfer-20261006-run1",
+      "validation_match": "Full frozen row equality including IDs, requests, candidate sets and labels; all raw control predictions aligned by ID and target."
+    },
+    "copied_model_source_commit": "64df83efeafa08f43bebf6e2e5e59a1ff5baf77e",
+    "decision": "Exactly one 50/50 read-replay treatment and three fixed final-step checkpoints. Controls imported verbatim, not retrained. No validation selection or further variants. Mixed or uncertain read recovery/comparison retention is inconclusive; a CI crossing zero does not prove noninferiority.",
+    "manifests": {
+      "train": {
+        "allow_one_repair": false,
+        "choice_formats": {
+          "augmented": 300,
+          "production": 300
+        },
+        "comparison_fields": {
+          "price": 95,
+          "warranty_months": 105
+        },
+        "comparison_left_records": {
+          "development-record-1": 99,
+          "development-record-2": 101
+        },
+        "comparison_relations": {
+          "equal": 33,
+          "greater_than": 74,
+          "less_than": 93
+        },
+        "count": 600,
+        "name_pool": [
+          "Aster",
+          "Bracken",
+          "Cinder",
+          "Dovetail",
+          "Ember",
+          "Fallow"
+        ],
+        "price_cents_range": [
+          5000,
+          20000
+        ],
+        "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+        "sample_sha256": "de27b10530f6a45e4f50d89b9b0e120b3914c65a035375b206aeb1ef68aa93e2",
+        "schema": "ssdm.synthetic_development_manifest.v2",
+        "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+        "seed": 20261006,
+        "split": "development_train",
+        "template_ids": {
+          "compare": [
+            "development_train:compare:0",
+            "development_train:compare:1"
+          ],
+          "explain": [
+            "development_train:explain:0",
+            "development_train:explain:1"
+          ],
+          "read": [
+            "development_train:read:0",
+            "development_train:read:1"
+          ]
+        },
+        "warranty_range": [
+          1,
+          36
+        ]
+      },
+      "validation": {
+        "allow_one_repair": false,
+        "choice_formats": {
+          "augmented": 90,
+          "production": 90
+        },
+        "comparison_fields": {
+          "price": 31,
+          "warranty_months": 29
+        },
+        "comparison_left_records": {
+          "development-record-1": 34,
+          "development-record-2": 26
+        },
+        "comparison_relations": {
+          "equal": 11,
+          "greater_than": 25,
+          "less_than": 24
+        },
+        "count": 180,
+        "name_pool": [
+          "Grove",
+          "Hearth",
+          "Indigo",
+          "Juniper",
+          "Kestrel",
+          "Lumen"
+        ],
+        "price_cents_range": [
+          20001,
+          30000
+        ],
+        "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+        "sample_sha256": "e8f9773abcf7f4584882a3fa03fb7d24ea355652b2ee35543495160fcf10c273",
+        "schema": "ssdm.synthetic_development_manifest.v2",
+        "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+        "seed": 20261009,
+        "split": "development_validation",
+        "template_ids": {
+          "compare": [
+            "development_validation:compare:0"
+          ],
+          "explain": [
+            "development_validation:explain:0"
+          ],
+          "read": [
+            "development_validation:read:0"
+          ]
+        },
+        "warranty_range": [
+          37,
+          60
+        ]
+      }
+    },
+    "primary_measure": "Old-family read exact-target recovery versus all_task_diversity, with baseline comparison to quantify residual read regression. Comparison retention assessed against both controls in both wording families.",
+    "read_replay": {
+      "allocation": "First 100 read worlds in generator order retain original wording; last 100 use the existing cyclic six-template assignments. Same fixed dataset in all seeds.",
+      "diverse_count": 100,
+      "diverse_ids": [
+        "synthetic-development_train-20261006-300",
+        "synthetic-development_train-20261006-303",
+        "synthetic-development_train-20261006-306",
+        "synthetic-development_train-20261006-309",
+        "synthetic-development_train-20261006-312",
+        "synthetic-development_train-20261006-315",
+        "synthetic-development_train-20261006-318",
+        "synthetic-development_train-20261006-321",
+        "synthetic-development_train-20261006-324",
+        "synthetic-development_train-20261006-327",
+        "synthetic-development_train-20261006-330",
+        "synthetic-development_train-20261006-333",
+        "synthetic-development_train-20261006-336",
+        "synthetic-development_train-20261006-339",
+        "synthetic-development_train-20261006-342",
+        "synthetic-development_train-20261006-345",
+        "synthetic-development_train-20261006-348",
+        "synthetic-development_train-20261006-351",
+        "synthetic-development_train-20261006-354",
+        "synthetic-development_train-20261006-357",
+        "synthetic-development_train-20261006-360",
+        "synthetic-development_train-20261006-363",
+        "synthetic-development_train-20261006-366",
+        "synthetic-development_train-20261006-369",
+        "synthetic-development_train-20261006-372",
+        "synthetic-development_train-20261006-375",
+        "synthetic-development_train-20261006-378",
+        "synthetic-development_train-20261006-381",
+        "synthetic-development_train-20261006-384",
+        "synthetic-development_train-20261006-387",
+        "synthetic-development_train-20261006-390",
+        "synthetic-development_train-20261006-393",
+        "synthetic-development_train-20261006-396",
+        "synthetic-development_train-20261006-399",
+        "synthetic-development_train-20261006-402",
+        "synthetic-development_train-20261006-405",
+        "synthetic-development_train-20261006-408",
+        "synthetic-development_train-20261006-411",
+        "synthetic-development_train-20261006-414",
+        "synthetic-development_train-20261006-417",
+        "synthetic-development_train-20261006-420",
+        "synthetic-development_train-20261006-423",
+        "synthetic-development_train-20261006-426",
+        "synthetic-development_train-20261006-429",
+        "synthetic-development_train-20261006-432",
+        "synthetic-development_train-20261006-435",
+        "synthetic-development_train-20261006-438",
+        "synthetic-development_train-20261006-441",
+        "synthetic-development_train-20261006-444",
+        "synthetic-development_train-20261006-447",
+        "synthetic-development_train-20261006-450",
+        "synthetic-development_train-20261006-453",
+        "synthetic-development_train-20261006-456",
+        "synthetic-development_train-20261006-459",
+        "synthetic-development_train-20261006-462",
+        "synthetic-development_train-20261006-465",
+        "synthetic-development_train-20261006-468",
+        "synthetic-development_train-20261006-471",
+        "synthetic-development_train-20261006-474",
+        "synthetic-development_train-20261006-477",
+        "synthetic-development_train-20261006-480",
+        "synthetic-development_train-20261006-483",
+        "synthetic-development_train-20261006-486",
+        "synthetic-development_train-20261006-489",
+        "synthetic-development_train-20261006-492",
+        "synthetic-development_train-20261006-495",
+        "synthetic-development_train-20261006-498",
+        "synthetic-development_train-20261006-501",
+        "synthetic-development_train-20261006-504",
+        "synthetic-development_train-20261006-507",
+        "synthetic-development_train-20261006-510",
+        "synthetic-development_train-20261006-513",
+        "synthetic-development_train-20261006-516",
+        "synthetic-development_train-20261006-519",
+        "synthetic-development_train-20261006-522",
+        "synthetic-development_train-20261006-525",
+        "synthetic-development_train-20261006-528",
+        "synthetic-development_train-20261006-531",
+        "synthetic-development_train-20261006-534",
+        "synthetic-development_train-20261006-537",
+        "synthetic-development_train-20261006-540",
+        "synthetic-development_train-20261006-543",
+        "synthetic-development_train-20261006-546",
+        "synthetic-development_train-20261006-549",
+        "synthetic-development_train-20261006-552",
+        "synthetic-development_train-20261006-555",
+        "synthetic-development_train-20261006-558",
+        "synthetic-development_train-20261006-561",
+        "synthetic-development_train-20261006-564",
+        "synthetic-development_train-20261006-567",
+        "synthetic-development_train-20261006-570",
+        "synthetic-development_train-20261006-573",
+        "synthetic-development_train-20261006-576",
+        "synthetic-development_train-20261006-579",
+        "synthetic-development_train-20261006-582",
+        "synthetic-development_train-20261006-585",
+        "synthetic-development_train-20261006-588",
+        "synthetic-development_train-20261006-591",
+        "synthetic-development_train-20261006-594",
+        "synthetic-development_train-20261006-597"
+      ],
+      "explain_compare": "Identical to all_task_diversity control; 200 worlds each.",
+      "original_count": 100,
+      "original_ids": [
+        "synthetic-development_train-20261006-0",
+        "synthetic-development_train-20261006-3",
+        "synthetic-development_train-20261006-6",
+        "synthetic-development_train-20261006-9",
+        "synthetic-development_train-20261006-12",
+        "synthetic-development_train-20261006-15",
+        "synthetic-development_train-20261006-18",
+        "synthetic-development_train-20261006-21",
+        "synthetic-development_train-20261006-24",
+        "synthetic-development_train-20261006-27",
+        "synthetic-development_train-20261006-30",
+        "synthetic-development_train-20261006-33",
+        "synthetic-development_train-20261006-36",
+        "synthetic-development_train-20261006-39",
+        "synthetic-development_train-20261006-42",
+        "synthetic-development_train-20261006-45",
+        "synthetic-development_train-20261006-48",
+        "synthetic-development_train-20261006-51",
+        "synthetic-development_train-20261006-54",
+        "synthetic-development_train-20261006-57",
+        "synthetic-development_train-20261006-60",
+        "synthetic-development_train-20261006-63",
+        "synthetic-development_train-20261006-66",
+        "synthetic-development_train-20261006-69",
+        "synthetic-development_train-20261006-72",
+        "synthetic-development_train-20261006-75",
+        "synthetic-development_train-20261006-78",
+        "synthetic-development_train-20261006-81",
+        "synthetic-development_train-20261006-84",
+        "synthetic-development_train-20261006-87",
+        "synthetic-development_train-20261006-90",
+        "synthetic-development_train-20261006-93",
+        "synthetic-development_train-20261006-96",
+        "synthetic-development_train-20261006-99",
+        "synthetic-development_train-20261006-102",
+        "synthetic-development_train-20261006-105",
+        "synthetic-development_train-20261006-108",
+        "synthetic-development_train-20261006-111",
+        "synthetic-development_train-20261006-114",
+        "synthetic-development_train-20261006-117",
+        "synthetic-development_train-20261006-120",
+        "synthetic-development_train-20261006-123",
+        "synthetic-development_train-20261006-126",
+        "synthetic-development_train-20261006-129",
+        "synthetic-development_train-20261006-132",
+        "synthetic-development_train-20261006-135",
+        "synthetic-development_train-20261006-138",
+        "synthetic-development_train-20261006-141",
+        "synthetic-development_train-20261006-144",
+        "synthetic-development_train-20261006-147",
+        "synthetic-development_train-20261006-150",
+        "synthetic-development_train-20261006-153",
+        "synthetic-development_train-20261006-156",
+        "synthetic-development_train-20261006-159",
+        "synthetic-development_train-20261006-162",
+        "synthetic-development_train-20261006-165",
+        "synthetic-development_train-20261006-168",
+        "synthetic-development_train-20261006-171",
+        "synthetic-development_train-20261006-174",
+        "synthetic-development_train-20261006-177",
+        "synthetic-development_train-20261006-180",
+        "synthetic-development_train-20261006-183",
+        "synthetic-development_train-20261006-186",
+        "synthetic-development_train-20261006-189",
+        "synthetic-development_train-20261006-192",
+        "synthetic-development_train-20261006-195",
+        "synthetic-development_train-20261006-198",
+        "synthetic-development_train-20261006-201",
+        "synthetic-development_train-20261006-204",
+        "synthetic-development_train-20261006-207",
+        "synthetic-development_train-20261006-210",
+        "synthetic-development_train-20261006-213",
+        "synthetic-development_train-20261006-216",
+        "synthetic-development_train-20261006-219",
+        "synthetic-development_train-20261006-222",
+        "synthetic-development_train-20261006-225",
+        "synthetic-development_train-20261006-228",
+        "synthetic-development_train-20261006-231",
+        "synthetic-development_train-20261006-234",
+        "synthetic-development_train-20261006-237",
+        "synthetic-development_train-20261006-240",
+        "synthetic-development_train-20261006-243",
+        "synthetic-development_train-20261006-246",
+        "synthetic-development_train-20261006-249",
+        "synthetic-development_train-20261006-252",
+        "synthetic-development_train-20261006-255",
+        "synthetic-development_train-20261006-258",
+        "synthetic-development_train-20261006-261",
+        "synthetic-development_train-20261006-264",
+        "synthetic-development_train-20261006-267",
+        "synthetic-development_train-20261006-270",
+        "synthetic-development_train-20261006-273",
+        "synthetic-development_train-20261006-276",
+        "synthetic-development_train-20261006-279",
+        "synthetic-development_train-20261006-282",
+        "synthetic-development_train-20261006-285",
+        "synthetic-development_train-20261006-288",
+        "synthetic-development_train-20261006-291",
+        "synthetic-development_train-20261006-294",
+        "synthetic-development_train-20261006-297"
+      ],
+      "overlap_note": "The six diverse templates include wording that can equal original wording. Allocation counts refer to recipe assignment, not necessarily distinct text.",
+      "text_matching_baseline_read_count": 113
+    },
+    "row_hashes": {
+      "train": {
+        "read_replay_50": "1c831b99c437e575fe54b610eab6b32c3a967203fe2da204e259ad736716c812"
+      },
+      "validation": {
+        "new_disjoint": "a48575e2976892e2b074b13ef1409df7d61d13ef7908fb83aeb7041b5a340fe2",
+        "old_failing": "ad9339355d23c371c446cbf62a29ca4c356c2a0fc2d232ca72446d7a38301ca2"
+      }
+    },
+    "schema": "ssdm.query_read_replay_preregistration.v1",
+    "scope": "CPU only, 2 intraop threads/1 interop thread; no GPU/network/spend/Index/test data/teacher API. Synthetic iterative development only. Targets select kind/field/entity/order, not answer values; no production planner or interface changes.",
+    "source_sha256": "b1b367dbce1aaf2c94097fdcd38941867e2233e032f83eed5a863e7915bb9efc",
+    "train_templates": {
+      "compare": [
+        "Compare the October {field} of {left} and {right}.",
+        "How do {left}'s and {right}'s October {field} compare?",
+        "In October 2026, compare {left} and {right} on {field}.",
+        "Assess how {left}'s October {field} compares to {right}'s.",
+        "Considering October 2026 {field}, compare {left} against {right}.",
+        "Please compare {left} with {right} using their October 2026 {field}."
+      ],
+      "explain": [
+        "Explain the checked {field} fact for {entity}.",
+        "Show the checked derivation for {entity}'s {field}.",
+        "For {entity}, explain how the {field} fact is established.",
+        "Give a checked explanation for the {field} of {entity}.",
+        "Please justify {entity}'s {field} using the checked derivation.",
+        "Walk through the derivation that supports {entity}'s {field}."
+      ],
+      "read": [
+        "What is {entity}'s {field} in October 2026?",
+        "Give the October 2026 {field} for {entity}.",
+        "For {entity}, report the {field} recorded in October 2026.",
+        "In October 2026, what {field} does {entity} have?",
+        "Please retrieve {entity}'s October 2026 {field}.",
+        "Find the October 2026 fact about {field} for {entity}."
+      ]
+    },
+    "validation_templates": {
+      "new_disjoint": {
+        "compare": "With {left} first and {right} second, compare their October 2026 {field}.",
+        "explain": "Describe the checked reasoning behind the {field} belonging to {entity}.",
+        "read": "Tell me the {field} belonging to {entity} as of October 2026."
+      },
+      "old_failing": {
+        "compare": "For October 2026, compare {left}'s and {right}'s {field}.",
+        "explain": "Provide a checked derivation of {entity}'s {field}.",
+        "read": "State {entity}'s {field} for October 2026."
+      }
+    }
+  },
+  "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]",
+  "results": {
+    "20261006": {
+      "all_task_diversity": {
+        "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-read-replay-20261006-run1\\imported_controls\\seed-20261006-all_task_diversity.pt",
+        "checkpoint_sha256": "9d7b0f503899539f41dfa46c54c6de78eb1302a9b6c1024353f857cedb6db4c2",
+        "history": [
+          {
+            "loss": 1.2305684089660645,
+            "step": 100
+          },
+          {
+            "loss": 0.5284066200256348,
+            "step": 200
+          },
+          {
+            "loss": 0.18868379294872284,
+            "step": 300
+          }
+        ],
+        "imported_control": true,
+        "train": {
+          "attribute_correct": {
+            "field": 600,
+            "kind": 600,
+            "left": 557,
+            "right": 567,
+            "temporal_scope": 600
+          },
+          "by_kind": {
+            "compare": {
+              "correct": 167,
+              "count": 200
+            },
+            "explain": {
+              "correct": 193,
+              "count": 200
+            },
+            "read": {
+              "correct": 197,
+              "count": 200
+            }
+          },
+          "count": 600,
+          "exact_correct": 557
+        },
+        "training_seconds": 10.06300000000192,
+        "validation": {
+          "new_disjoint": {
+            "attribute_correct": {
+              "field": 164,
+              "kind": 116,
+              "left": 101,
+              "right": 85,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 23,
+                "count": 60
+              },
+              "explain": {
+                "correct": 14,
+                "count": 60
+              },
+              "read": {
+                "correct": 32,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 69
+          },
+          "old_failing": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 149,
+              "left": 98,
+              "right": 134,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 15,
+                "count": 60
+              },
+              "explain": {
+                "correct": 37,
+                "count": 60
+              },
+              "read": {
+                "correct": 36,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 88
+          }
+        }
+      },
+      "baseline": {
+        "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-read-replay-20261006-run1\\imported_controls\\seed-20261006-baseline.pt",
+        "checkpoint_sha256": "0563b13b90519fb03b100886f7c5d215ecc83f22541e1477f4c5000a56b02d58",
+        "history": [
+          {
+            "loss": 0.970691442489624,
+            "step": 100
+          },
+          {
+            "loss": 0.17651695013046265,
+            "step": 200
+          },
+          {
+            "loss": 0.1518254578113556,
+            "step": 300
+          }
+        ],
+        "imported_control": true,
+        "train": {
+          "attribute_correct": {
+            "field": 600,
+            "kind": 600,
+            "left": 563,
+            "right": 564,
+            "temporal_scope": 600
+          },
+          "by_kind": {
+            "compare": {
+              "correct": 164,
+              "count": 200
+            },
+            "explain": {
+              "correct": 199,
+              "count": 200
+            },
+            "read": {
+              "correct": 200,
+              "count": 200
+            }
+          },
+          "count": 600,
+          "exact_correct": 563
+        },
+        "training_seconds": 10.10899999999674,
+        "validation": {
+          "new_disjoint": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 28,
+              "left": 83,
+              "right": 28,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 0,
+                "count": 60
+              },
+              "explain": {
+                "correct": 0,
+                "count": 60
+              },
+              "read": {
+                "correct": 22,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 22
+          },
+          "old_failing": {
+            "attribute_correct": {
+              "field": 179,
+              "kind": 119,
+              "left": 104,
+              "right": 119,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 0,
+                "count": 60
+              },
+              "explain": {
+                "correct": 40,
+                "count": 60
+              },
+              "read": {
+                "correct": 38,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 78
+          }
+        }
+      },
+      "read_replay_50": {
+        "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-read-replay-20261006-run1\\seed-20261006-read_replay_50.pt",
+        "checkpoint_sha256": "b7fed68db0e42b1317c091f56fbe90f837bc65dc5cf5b5a4a179427084cddac1",
+        "history": [
+          {
+            "loss": 1.3275859355926514,
+            "step": 100
+          },
+          {
+            "loss": 0.5044153928756714,
+            "step": 200
+          },
+          {
+            "loss": 0.14967483282089233,
+            "step": 300
+          }
+        ],
+        "train": {
+          "attribute_correct": {
+            "field": 600,
+            "kind": 600,
+            "left": 562,
+            "right": 570,
+            "temporal_scope": 600
+          },
+          "by_kind": {
+            "compare": {
+              "correct": 170,
+              "count": 200
+            },
+            "explain": {
+              "correct": 194,
+              "count": 200
+            },
+            "read": {
+              "correct": 198,
+              "count": 200
+            }
+          },
+          "count": 600,
+          "exact_correct": 562
+        },
+        "training_seconds": 12.781000000002678,
+        "validation": {
+          "new_disjoint": {
+            "attribute_correct": {
+              "field": 167,
+              "kind": 133,
+              "left": 91,
+              "right": 99,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 21,
+                "count": 60
+              },
+              "explain": {
+                "correct": 11,
+                "count": 60
+              },
+              "read": {
+                "correct": 38,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 70
+          },
+          "old_failing": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 160,
+              "left": 107,
+              "right": 141,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 21,
+                "count": 60
+              },
+              "explain": {
+                "correct": 40,
+                "count": 60
+              },
+              "read": {
+                "correct": 37,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 98
+          }
+        }
+      }
+    },
+    "20261016": {
+      "all_task_diversity": {
+        "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-read-replay-20261006-run1\\imported_controls\\seed-20261016-all_task_diversity.pt",
+        "checkpoint_sha256": "a69fab459141710463be97b9655c8ccb9614d2f66daa4ddd9752b9caf6c97f67",
+        "history": [
+          {
+            "loss": 0.9955803751945496,
+            "step": 100
+          },
+          {
+            "loss": 0.39718738198280334,
+            "step": 200
+          },
+          {
+            "loss": 0.18366342782974243,
+            "step": 300
+          }
+        ],
+        "imported_control": true,
+        "train": {
+          "attribute_correct": {
+            "field": 600,
+            "kind": 600,
+            "left": 543,
+            "right": 559,
+            "temporal_scope": 600
+          },
+          "by_kind": {
+            "compare": {
+              "correct": 159,
+              "count": 200
+            },
+            "explain": {
+              "correct": 190,
+              "count": 200
+            },
+            "read": {
+              "correct": 194,
+              "count": 200
+            }
+          },
+          "count": 600,
+          "exact_correct": 543
+        },
+        "training_seconds": 11.06300000000192,
+        "validation": {
+          "new_disjoint": {
+            "attribute_correct": {
+              "field": 179,
+              "kind": 30,
+              "left": 78,
+              "right": 28,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 7,
+                "count": 60
+              },
+              "explain": {
+                "correct": 0,
+                "count": 60
+              },
+              "read": {
+                "correct": 19,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 26
+          },
+          "old_failing": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 175,
+              "left": 111,
+              "right": 146,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 31,
+                "count": 60
+              },
+              "explain": {
+                "correct": 40,
+                "count": 60
+              },
+              "read": {
+                "correct": 40,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 111
+          }
+        }
+      },
+      "baseline": {
+        "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-read-replay-20261006-run1\\imported_controls\\seed-20261016-baseline.pt",
+        "checkpoint_sha256": "49ec1438be7465dee12a390551209dcdfe435ff388e8533581ac1c4288c9edbf",
+        "history": [
+          {
+            "loss": 0.7807225584983826,
+            "step": 100
+          },
+          {
+            "loss": 0.3315905034542084,
+            "step": 200
+          },
+          {
+            "loss": 0.1359545737504959,
+            "step": 300
+          }
+        ],
+        "imported_control": true,
+        "train": {
+          "attribute_correct": {
+            "field": 600,
+            "kind": 600,
+            "left": 567,
+            "right": 570,
+            "temporal_scope": 600
+          },
+          "by_kind": {
+            "compare": {
+              "correct": 170,
+              "count": 200
+            },
+            "explain": {
+              "correct": 199,
+              "count": 200
+            },
+            "read": {
+              "correct": 198,
+              "count": 200
+            }
+          },
+          "count": 600,
+          "exact_correct": 567
+        },
+        "training_seconds": 10.718000000000757,
+        "validation": {
+          "new_disjoint": {
+            "attribute_correct": {
+              "field": 151,
+              "kind": 71,
+              "left": 103,
+              "right": 71,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 0,
+                "count": 60
+              },
+              "explain": {
+                "correct": 13,
+                "count": 60
+              },
+              "read": {
+                "correct": 37,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 50
+          },
+          "old_failing": {
+            "attribute_correct": {
+              "field": 171,
+              "kind": 159,
+              "left": 115,
+              "right": 137,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 25,
+                "count": 60
+              },
+              "explain": {
+                "correct": 30,
+                "count": 60
+              },
+              "read": {
+                "correct": 51,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 106
+          }
+        }
+      },
+      "read_replay_50": {
+        "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-read-replay-20261006-run1\\seed-20261016-read_replay_50.pt",
+        "checkpoint_sha256": "25713dd45688c2b0160a03b55dc7a85fe16bdc71524d03ae4094794b76351b3a",
+        "history": [
+          {
+            "loss": 1.0396898984909058,
+            "step": 100
+          },
+          {
+            "loss": 0.43938469886779785,
+            "step": 200
+          },
+          {
+            "loss": 0.1803881973028183,
+            "step": 300
+          }
+        ],
+        "train": {
+          "attribute_correct": {
+            "field": 600,
+            "kind": 600,
+            "left": 546,
+            "right": 558,
+            "temporal_scope": 600
+          },
+          "by_kind": {
+            "compare": {
+              "correct": 158,
+              "count": 200
+            },
+            "explain": {
+              "correct": 193,
+              "count": 200
+            },
+            "read": {
+              "correct": 195,
+              "count": 200
+            }
+          },
+          "count": 600,
+          "exact_correct": 546
+        },
+        "training_seconds": 12.389999999999418,
+        "validation": {
+          "new_disjoint": {
+            "attribute_correct": {
+              "field": 179,
+              "kind": 33,
+              "left": 83,
+              "right": 32,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 4,
+                "count": 60
+              },
+              "explain": {
+                "correct": 0,
+                "count": 60
+              },
+              "read": {
+                "correct": 25,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 29
+          },
+          "old_failing": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 178,
+              "left": 120,
+              "right": 149,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 29,
+                "count": 60
+              },
+              "explain": {
+                "correct": 46,
+                "count": 60
+              },
+              "read": {
+                "correct": 45,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 120
+          }
+        }
+      }
+    },
+    "20261026": {
+      "all_task_diversity": {
+        "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-read-replay-20261006-run1\\imported_controls\\seed-20261026-all_task_diversity.pt",
+        "checkpoint_sha256": "e3682067537080833247ff5fd33d665e77e5b4ddb63ed726eb62dbc429184814",
+        "history": [
+          {
+            "loss": 1.1232527494430542,
+            "step": 100
+          },
+          {
+            "loss": 0.6201204657554626,
+            "step": 200
+          },
+          {
+            "loss": 0.23723068833351135,
+            "step": 300
+          }
+        ],
+        "imported_control": true,
+        "train": {
+          "attribute_correct": {
+            "field": 600,
+            "kind": 600,
+            "left": 552,
+            "right": 568,
+            "temporal_scope": 600
+          },
+          "by_kind": {
+            "compare": {
+              "correct": 168,
+              "count": 200
+            },
+            "explain": {
+              "correct": 194,
+              "count": 200
+            },
+            "read": {
+              "correct": 190,
+              "count": 200
+            }
+          },
+          "count": 600,
+          "exact_correct": 552
+        },
+        "training_seconds": 11.155999999995402,
+        "validation": {
+          "new_disjoint": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 76,
+              "left": 74,
+              "right": 60,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 16,
+                "count": 60
+              },
+              "explain": {
+                "correct": 0,
+                "count": 60
+              },
+              "read": {
+                "correct": 30,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 46
+          },
+          "old_failing": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 166,
+              "left": 123,
+              "right": 145,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 25,
+                "count": 60
+              },
+              "explain": {
+                "correct": 49,
+                "count": 60
+              },
+              "read": {
+                "correct": 44,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 118
+          }
+        }
+      },
+      "baseline": {
+        "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-read-replay-20261006-run1\\imported_controls\\seed-20261026-baseline.pt",
+        "checkpoint_sha256": "54294d487728ffeca37f55c56ab0b751fd224d4ee8ee959a3e865a7772b23fdf",
+        "history": [
+          {
+            "loss": 0.6592400074005127,
+            "step": 100
+          },
+          {
+            "loss": 0.3410799503326416,
+            "step": 200
+          },
+          {
+            "loss": 0.1207948848605156,
+            "step": 300
+          }
+        ],
+        "imported_control": true,
+        "train": {
+          "attribute_correct": {
+            "field": 600,
+            "kind": 600,
+            "left": 552,
+            "right": 559,
+            "temporal_scope": 600
+          },
+          "by_kind": {
+            "compare": {
+              "correct": 159,
+              "count": 200
+            },
+            "explain": {
+              "correct": 197,
+              "count": 200
+            },
+            "read": {
+              "correct": 196,
+              "count": 200
+            }
+          },
+          "count": 600,
+          "exact_correct": 552
+        },
+        "training_seconds": 10.18800000000192,
+        "validation": {
+          "new_disjoint": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 53,
+              "left": 81,
+              "right": 89,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 0,
+                "count": 60
+              },
+              "explain": {
+                "correct": 2,
+                "count": 60
+              },
+              "read": {
+                "correct": 27,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 29
+          },
+          "old_failing": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 70,
+              "left": 118,
+              "right": 121,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 1,
+                "count": 60
+              },
+              "explain": {
+                "correct": 0,
+                "count": 60
+              },
+              "read": {
+                "correct": 50,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 51
+          }
+        }
+      },
+      "read_replay_50": {
+        "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-query-read-replay-20261006-run1\\seed-20261026-read_replay_50.pt",
+        "checkpoint_sha256": "44f08fd450513a4e09b168a4f6f4962a251c82ef5572f4dea5ed32772dc7cca2",
+        "history": [
+          {
+            "loss": 1.1216294765472412,
+            "step": 100
+          },
+          {
+            "loss": 0.5655631422996521,
+            "step": 200
+          },
+          {
+            "loss": 0.15323129296302795,
+            "step": 300
+          }
+        ],
+        "train": {
+          "attribute_correct": {
+            "field": 600,
+            "kind": 600,
+            "left": 557,
+            "right": 566,
+            "temporal_scope": 600
+          },
+          "by_kind": {
+            "compare": {
+              "correct": 166,
+              "count": 200
+            },
+            "explain": {
+              "correct": 195,
+              "count": 200
+            },
+            "read": {
+              "correct": 196,
+              "count": 200
+            }
+          },
+          "count": 600,
+          "exact_correct": 557
+        },
+        "training_seconds": 13.562000000005355,
+        "validation": {
+          "new_disjoint": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 57,
+              "left": 71,
+              "right": 56,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 2,
+                "count": 60
+              },
+              "explain": {
+                "correct": 0,
+                "count": 60
+              },
+              "read": {
+                "correct": 34,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 36
+          },
+          "old_failing": {
+            "attribute_correct": {
+              "field": 180,
+              "kind": 175,
+              "left": 122,
+              "right": 148,
+              "temporal_scope": 180
+            },
+            "by_kind": {
+              "compare": {
+                "correct": 28,
+                "count": 60
+              },
+              "explain": {
+                "correct": 51,
+                "count": 60
+              },
+              "read": {
+                "correct": 42,
+                "count": 60
+              }
+            },
+            "count": 180,
+            "exact_correct": 121
+          }
+        }
+      }
+    }
+  },
+  "schema": "ssdm.query_read_replay_cpu.v1",
+  "torch": "2.8.0+cu128",
+  "wall_seconds": 43.9690000000046
+}
