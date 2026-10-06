@@ -123,7 +123,8 @@ def _main():
     seed_all(cfg["seed"])
     if cfg.get("vram_fraction"):  # fail fast with OOM (driver retries) instead of spilling into shared memory
         torch.cuda.set_per_process_memory_fraction(cfg["vram_fraction"])
-    model, tok, mdir = load(cfg.get("model_dir"), kernel=cfg.get("kernel", "fla"))
+    model, tok, mdir = load(os.path.expandvars(cfg["model_dir"]) if cfg.get("model_dir") else None,
+                            kernel=cfg.get("kernel", "fla"))
     if "env" not in R:
         R.set("env", {**env_info(), "model_dir": mdir})
     splits = {}

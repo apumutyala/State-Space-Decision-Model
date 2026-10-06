@@ -65,7 +65,7 @@ def test_meta_check_catches_a_cpu_tensor():
 
 
 # ------------------------------------------------------------------------- cache-copy fork
-@pytest.mark.parametrize("family", ["tiny", "q9af", "qwen3.5", "mamba"])
+@pytest.mark.parametrize("family", ["tiny", "q9af", "qwen3.5", "mamba", "rwkv7"])
 def test_cache_fork_equals_recompute_fork(family):
     def bb(mode):
         return tiny_backbone(0, 16, fork_mode=mode) if family == "tiny" else tiny_hf_backbone(family, fork_mode=mode)
@@ -77,7 +77,7 @@ def test_cache_fork_equals_recompute_fork(family):
     assert torch.allclose(a.h * a.token_mask.unsqueeze(-1), b.h * b.token_mask.unsqueeze(-1), atol=1e-5)
 
 
-@pytest.mark.parametrize("family", ["q9af", "mamba"])
+@pytest.mark.parametrize("family", ["q9af", "mamba", "rwkv7"])
 def test_cache_fork_gradients_equal_recompute(family):
     grads = []
     for mode in ("cache", "recompute"):
@@ -169,7 +169,7 @@ def test_spec_lora_shapes_agree_with_group_counts(name):
     assert lora_param_count(spec.lora_shapes, 1) > 0
 
 
-@pytest.mark.parametrize("family", ["qwen3.5", "q9af", "mamba"])
+@pytest.mark.parametrize("family", ["qwen3.5", "q9af", "mamba", "rwkv7"])
 def test_tiny_hf_specs_match_real_module_names(family):
     b = tiny_hf_backbone(family)
     found = apply_lora(b.model, b.spec.lora_groups, rank=2)  # raises on zero or wrong counts
