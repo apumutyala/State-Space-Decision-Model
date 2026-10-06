@@ -903,6 +903,8 @@ def test_train_v2_phase_cpu_dry_run(fake_fla, monkeypatch, tmp_path):
         assert all(s["tok_s"] > 0 and s["finite"] and s["tokens"] > 0 and len(s["K"]) == 2 for s in d["steps"])
         assert not d["fallbacks"] and (d["fla_calls"].get("fla", 0) > 0) == (impl == "fla")
         assert E.train_summary_v2(d)["median_tok_s_completed"] > 0
+        assert d["wkv_input_dtypes"] and all("r=torch.float32" in k for k in d["wkv_input_dtypes"])  # CPU: no autocast
+        assert M.RWKV7_WKV_FUNCTIONS[impl].__name__ != "recording_wkv"  # registry restored
     # the steps really trained: LoRA + head parameters moved under the cell's Trainer (not a forward-only timing)
     d = json.loads((tmp_path / "train_v2_fla.json").read_text(encoding="utf-8"))
     assert d["mix_sha256"] == json.loads(mix.read_text(encoding="utf-8"))["sha256"] and d["cell"]["lora_rank"] == 2

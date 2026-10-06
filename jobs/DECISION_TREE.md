@@ -14,6 +14,8 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | probe9b (one-layer 9B conversion probe) | `jobs/probe9b/` | $28.21 | $40 | ~$11.04 |
 | rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $16.34 | $20 | ~$4.70 |
 | rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $19.30 | $20 | ~$7.72 |
+| fla_rwkv7 (fla chunk_rwkv7 gate, v1 rule; ran as job-jn47u) | `jobs/fla_rwkv7/` | $3.96 | $4.50 | ~$1.09 |
+| fla_rwkv7 truth_v2 (RULE v2 + A1: fp64-truth numerics, m2 cell train speed; `fla_job.sh truth_v2`) | `jobs/fla_rwkv7/job_params_truth_v2.json` | $5.74 | $6 | ~$1.19 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
 need one cap covering all of them: MTD + `costs.concurrent_cap_usd([...])` = the ceiling of the sum of their worst

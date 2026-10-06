@@ -332,10 +332,11 @@ The job's real time sinks are the unchanged fla warmup (5.7 min measured) and th
 | train_fla_safe_gate | as fla; its kernels share fla's compile (jn47u warmup: 2.6 s vs 72.7 s) | ≈ **3 min** (cap 5) | jn47u warmup |
 
 Pre-mortem from these numbers (not part of the rule): on rows that fit, the per-row fork call is launch-bound and fla
-does not speed it, so the projected chunked/fla step ratio is only **~1.8×** — below 2. What can move it is memory:
-chunked OOMed on the T=2,048 fwd+bwd in jn47u (80 GB) and 7 of the 20 timed steps hold a row ≥ 1,883 tokens; each
-chunked OOM step counts 0 tok/s, and with ≥ 10 OOM steps the chunked median is 0 (ratio +inf). Independent of the
-verdict, that OOM would also mean the m2 cell's own ladder could not keep T_max = 2,048 on chunked.
+does not speed it, so the projected chunked/fla step ratio is only **~1.8×**, below 2. Under Amendment A1 the binding
+ratio uses only steps BOTH impls completed, so chunked OOMs cannot raise it. chunked OOMed on the T=2,048 fwd+bwd in
+jn47u (80 GB), and 7 of the 20 timed steps hold a row ≥ 1,883 tokens. If chunked OOMs on them, those steps leave the
+matched set (13 remain, ≥ 10 needed). They are reported as the non-binding `chunked_oom` finding: the m2 cell's own
+ladder could not keep T_max = 2,048 on chunked. With > 10 chunked OOM steps the verdict is INCONCLUSIVE.
 No compile is expected in the train phases: jn47u showed T is not a specialisation (warmup T=1000 recompiled nothing)
 and safe_gate reuses fla's kernels; the 3 untimed warmup steps absorb any that does occur.
 

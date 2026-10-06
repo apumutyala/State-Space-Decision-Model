@@ -1038,6 +1038,19 @@ def phase_train_v2(out: Path, model_dir: str, impl: str, deadline_s: float):
     from heads.rwkv7_wkv import select_wkv
 
     select_wkv(bb.model, impl, allow_unverified=True)
+    # Amendment A1 / B2: record the dtypes of r / kk / w_log / state that reach the WKV during training (autocast may
+    # hand fla something other than bf16); the model looks the function up in the registry on every call
+    from collections import Counter
+
+    from third_party.rwkv7_hf import modeling_rwkv7 as M
+
+    wkv_dtypes, inner = Counter(), M.RWKV7_WKV_FUNCTIONS[impl]
+
+    def recording_wkv(r, w_log, k, v, kk, a, state, *args, **kw):
+        wkv_dtypes[f"r={r.dtype} kk={kk.dtype} w_log={w_log.dtype} state={state.dtype}"] += 1
+        return inner(r, w_log, k, v, kk, a, state, *args, **kw)
+
+    M.RWKV7_WKV_FUNCTIONS[impl] = recording_wkv
     rep.d["load_s"] = round(time.perf_counter() - t_start, 1)
     rep.d["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
     items = train_mix.rows_from_shapes(mix["rows"][: n_steps * per_step], vocab=bb.model.config.vocab_size, seed=0)
@@ -1084,10 +1097,12 @@ def phase_train_v2(out: Path, model_dir: str, impl: str, deadline_s: float):
         rep.d["steps"].append(rec)
         rep.d["peak_gb"] = torch.cuda.max_memory_allocated() / 1e9 if cuda else 0.0
         rep.d["fallbacks"], rep.d["fla_calls"] = dict(W.FALLBACKS), dict(W.CALLS)
+        rep.d["wkv_input_dtypes"] = dict(wkv_dtypes)
         rep.flush()
     timed = [s for s in rep.d["steps"] if s["timed"] and "tok_s" in s]
     rep.d["median_tok_s_completed"] = statistics.median([s["tok_s"] for s in timed]) if timed else None
     rep.d["wall_s"] = round(time.perf_counter() - t_start, 1)
+    M.RWKV7_WKV_FUNCTIONS[impl] = inner
     rep.d["complete"] = True
     rep.flush()
 
