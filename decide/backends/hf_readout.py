@@ -33,6 +33,7 @@ from typing import Any, Callable
 from .. import versions
 from ..prompt import TEMPLATES, Segment, Template, build_prompt_segments, continuation_segments
 from ..schema import canonical_json, canonical_options, sha256_text
+from ..untrusted import UNTRUSTED_ENCODER_ID, ControlTokenError, UntrustedEncoder
 from .base import BackendUnsupported, Plan, ScoreResult
 
 
@@ -64,6 +65,8 @@ class ModelPlugin:
     kernel_stack: dict[str, Any] = field(default_factory=dict)  # part of the revision hash
     #: ids that must never come from untrusted text (special + added tokens); checked per segment
     special_ids: frozenset[int] = frozenset()
+    #: identity of the untrusted-text encoder (decide.untrusted); part of the revision hash
+    untrusted_encoder_id: str = UNTRUSTED_ENCODER_ID
 
 
 def _pkg_versions(*names: str) -> dict[str, Any]:
@@ -99,7 +102,7 @@ class HFReadoutBackend:
             tf_version = None
         inference_config = {
             "scoring": "sum_logprob(' ' + option_id + terminator)",
-            "untrusted_encoding": "special tokens split; control ids in untrusted segments -> unsupported",
+            "untrusted_encoding": self.plugin.untrusted_encoder_id,
             "rows": "one per question; grouped by length; unpadded",
             "max_batch_rows": self.max_batch_rows,
             "dtype": self.plugin.dtype,
@@ -139,7 +142,10 @@ class HFReadoutBackend:
     def _encode(self, segments: list[Segment]) -> list[int]:
         ids: list[int] = []
         for text, trusted in segments:
-            seg_ids = self.plugin.encode(text, trusted)
+            try:
+                seg_ids = self.plugin.encode(text, trusted)
+            except ControlTokenError as exc:
+                raise BackendUnsupported(exc.code, str(exc)) from exc
             if not trusted and self.plugin.special_ids and any(i in self.plugin.special_ids for i in seg_ids):
                 raise BackendUnsupported(
                     "control_tokens_in_input", "request text encoded to control/special token ids; refused"
@@ -253,12 +259,6 @@ def _hash_files(model_dir: Path, patterns: list[str]) -> str:
     return sha256_text("".join(f"{f.name}:{sha256_file(f.resolve())}\n" for f in files))
 
 
-def _special_ids(tok) -> frozenset[int]:
-    ids = set(getattr(tok, "all_special_ids", []) or [])
-    ids |= set((getattr(tok, "added_tokens_decoder", None) or {}).keys())
-    return frozenset(int(i) for i in ids)
-
-
 #: Trained context of the small recurrent checkpoints (RWKV7 config max_position_embeddings;
 #: Mamba-3 SISO model card "Context length 2,048"). Recurrent models do not truncate, they
 #: degrade silently past it, so it is enforced as the backend input cap.
@@ -279,8 +279,12 @@ def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloa
     text_cfg = cfg.get("text_config", cfg)
     layer_types = text_cfg.get("layer_types") or []
 
+    untrusted = UntrustedEncoder(tok)
+
     def encode(text: str, trusted: bool = True) -> list[int]:
-        return tok(text, add_special_tokens=False, split_special_tokens=not trusted).input_ids
+        if trusted:
+            return tok(text, add_special_tokens=False).input_ids
+        return untrusted.encode(text)
 
     def forward(ids, n_last: int):
         return model(input_ids=ids, logits_to_keep=n_last, use_cache=False).logits
@@ -291,7 +295,7 @@ def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloa
         snapshot=_snapshot_of(model_dir),
         encode=encode,
         forward=forward,
-        special_ids=_special_ids(tok),
+        special_ids=untrusted.control_ids,
         files={
             "weights": _hash_files(model_dir, ["*.safetensors"]),
             "tokenizer": _hash_files(model_dir, ["tokenizer.json"]),
@@ -336,6 +340,7 @@ def load_rwkv7(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat
         model_id=model_id or model_dir.name,
         snapshot=_snapshot_of(model_dir),
         encode=lambda text, trusted=True: tok.encode(text),  # World tokenizer has no control tokens
+        untrusted_encoder_id="rwkv-world-greedy (no control tokens)",
         forward=forward,
         files={
             "weights": _hash_files(model_dir, ["*.safetensors"]),
@@ -364,8 +369,12 @@ def load_mamba3(model_dir: str | Path, tokenizer_dir: str | Path, device: str = 
     tok = AutoTokenizer.from_pretrained(tokenizer_dir)
     model = MambaLMHeadModel.from_pretrained(str(model_dir), device=device, dtype=getattr(torch, dtype)).eval()
 
+    untrusted = UntrustedEncoder(tok)
+
     def encode(text: str, trusted: bool = True) -> list[int]:
-        return tok(text, add_special_tokens=False, split_special_tokens=not trusted).input_ids
+        if trusted:
+            return tok(text, add_special_tokens=False).input_ids
+        return untrusted.encode(text)
 
     def forward(ids, n_last: int):
         return model(ids, num_last_tokens=n_last).logits
@@ -376,7 +385,7 @@ def load_mamba3(model_dir: str | Path, tokenizer_dir: str | Path, device: str = 
         snapshot=_snapshot_of(model_dir),
         encode=encode,
         forward=forward,
-        special_ids=_special_ids(tok),
+        special_ids=untrusted.control_ids,
         files={
             "weights": _hash_files(model_dir, ["*.bin", "*.safetensors"]),
             "tokenizer": _hash_files(Path(tokenizer_dir), ["tokenizer.json"]),
