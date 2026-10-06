@@ -98,6 +98,7 @@ SAFE_MESSAGES = {
     "deadline_exceeded": "deadline exceeded; no partial answers",
     "inference_calls_exceeded": "the backend needed more inference calls than max_inference_calls; no partial answers",
     "calibration_features_missing": "the backend did not report the features the served calibration needs; refused",
+    "calibration_temperature_invalid": "the served calibration produced an invalid temperature; refused",
 }
 _CODE_RE = re.compile(r"[a-z][a-z0-9_]{0,63}")
 MAX_MESSAGE_CHARS = 300
@@ -157,14 +158,26 @@ class Decider:
 
     def _temperature(self, qid: str, k: int, result: Any) -> float:
         needs = getattr(self.calibration, "needs", ())
-        if not needs:
-            return self.calibration.temperature(k)
-        feats = (getattr(result, "features", None) or {}).get(qid)
         try:
-            return self.calibration.temperature_for(k, feats)
-        except (KeyError, TypeError, ValueError) as exc:
-            raise RequestRejected("error", "calibration_features_missing",
-                                  SAFE_MESSAGES["calibration_features_missing"]) from exc
+            if not needs:
+                temp = self.calibration.temperature(k)
+            else:
+                feats = (getattr(result, "features", None) or {}).get(qid)
+                try:
+                    temp = self.calibration.temperature_for(k, feats)
+                except (KeyError, TypeError, ValueError) as exc:
+                    raise RequestRejected("error", "calibration_features_missing",
+                                          SAFE_MESSAGES["calibration_features_missing"]) from exc
+            value = float(temp)
+        except RequestRejected:
+            raise
+        except (FloatingPointError, OverflowError, TypeError, ValueError) as exc:
+            raise RequestRejected("error", "calibration_temperature_invalid",
+                                  SAFE_MESSAGES["calibration_temperature_invalid"]) from exc
+        if not math.isfinite(value) or value <= 0:
+            raise RequestRejected("error", "calibration_temperature_invalid",
+                                  SAFE_MESSAGES["calibration_temperature_invalid"])
+        return value
 
     # ------------------------------------------------------------------ helpers
     def _envelope(self, request: dict[str, Any]) -> dict[str, Any]:

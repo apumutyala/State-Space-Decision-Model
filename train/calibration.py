@@ -94,6 +94,8 @@ def _tempered(log_probs: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     Only -inf means "padded option"; NaN or +inf log-probabilities are a model fault and raise."""
     if torch.isnan(log_probs).any() or torch.isposinf(log_probs).any():
         raise FloatingPointError("NaN/+inf log-probabilities reached the temperature (model fault, not padding)")
+    if not torch.isfinite(t).all() or not (t > 0).all():
+        raise FloatingPointError("derived feature temperature must be finite and positive")
     pad = torch.isneginf(log_probs)
     z = log_probs.masked_fill(pad, 0.0) / t
     return torch.log_softmax(z.masked_fill(pad, float("-inf")), -1)
@@ -106,7 +108,7 @@ def _inv_softplus(y: float) -> float:
 @dataclass
 class FeatureTemperature:
     t_min: float = 0.05
-    w: list[float] = field(default_factory=lambda: [_inv_softplus(1 - 0.05), 0.0, 0.0])
+    w: list[float] | None = None
     fitted_on: str | None = None
     fit_report: dict = field(default_factory=dict)
     disjointness: dict = field(default_factory=dict)  # split name -> content-set sha256
@@ -114,9 +116,24 @@ class FeatureTemperature:
     calib_content: frozenset = field(default_factory=frozenset, repr=False)
     proof_sha256: str | None = None
 
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.t_min) or self.t_min <= 0:
+            raise ValueError("t_min must be a positive finite number")
+        if self.w is None:
+            if self.t_min >= 1:
+                raise ValueError("default identity weights need 0 < t_min < 1")
+            self.w = [_inv_softplus(1 - self.t_min), 0.0, 0.0]
+        elif len(self.w) != len(FEATURES) or not all(math.isfinite(float(x)) for x in self.w):
+            raise ValueError(f"w must be {len(FEATURES)} finite numbers")
+        else:
+            self.w = [float(x) for x in self.w]
+
     def temperature(self, phi: torch.Tensor) -> torch.Tensor:
         w = torch.as_tensor(self.w, dtype=phi.dtype)
-        return self.t_min + F.softplus(phi @ w)
+        t = self.t_min + F.softplus(phi @ w)
+        if not torch.isfinite(t).all() or not (t > 0).all():
+            raise FloatingPointError("derived feature temperature must be finite and positive")
+        return t
 
     def apply(self, log_probs: torch.Tensor, phi: torch.Tensor) -> torch.Tensor:
         t = self.temperature(phi.to(log_probs.dtype)).unsqueeze(-1)
@@ -150,6 +167,8 @@ class FeatureTemperature:
         hashes of the eval/retention/train splits) is checked against ``calib_content`` (one hash per calibration
         item) BEFORE fitting; the proof is bound into ``fitted_on`` / ``proof_sha256`` / the id. Without both the result
         is a legacy fit that ``decide.Decider`` refuses to serve."""
+        if not math.isfinite(t_min) or not 0 < t_min < 1:
+            raise ValueError("fit initialization needs 0 < t_min < 1")
         if disjoint_from and calib_content is None:
             raise ValueError("disjoint_from needs calib_content (content hashes of the calibration items)")
         if calib_content is not None and len(calib_content) != len(split_ids):
