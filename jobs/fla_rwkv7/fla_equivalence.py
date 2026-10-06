@@ -69,6 +69,8 @@ VERDICTS = ("ADOPT", "ADOPT_READOUT_ONLY", "ADOPT_TRAINING_ONLY", "REJECT_SPEED"
 # 13.3B (jobs/rwkv7/JOB_SPEC.md): 61 layers, hidden 4096, 64 heads x 64
 H, N = 64, 64
 CAPTURE_LAYERS = (0, 30, 60)
+#: warmup lengths, first = the one autotune is frozen at (the keys exclude T): a real length, not a toy one
+WARMUP_T = (2048, 1000)
 DEVICE = "cuda"  # the weight-free phases also run on CPU (tests/test_fla_rwkv7.py smoke, with a stand-in kernel)
 
 
@@ -152,8 +154,13 @@ def _variant_numerics(rep: dict, v: str) -> tuple[bool | None, list[str]]:
 
 
 def _fp32_ok(rep: dict, v: str) -> bool:
-    cases = [c for phase in ("kernel", "fork", "fp32") for c in (rep.get(phase) or {}).get("cases", [])
-             if c.get("impl") == v and c.get("dtype") == "float32"]
+    """allow_fp32 needs the WHOLE optional fp32 phase (forward, gradients, fork, packed, padding): fp32.json is written
+    after every case, so a timed-out run leaves a partial file whose forward-only cases could all pass. Only the
+    ``complete`` flag that phase_fp32 writes after its last case makes the evidence count."""
+    ph = rep.get("fp32") or {}
+    if ph.get("complete") is not True:
+        return False
+    cases = [c for c in ph.get("cases", []) if c.get("impl") == v and c.get("dtype") == "float32"]
     return bool(cases) and all(not c.get("error") and case_passes(c.get("worst", {}), "float32") for c in cases)
 
 
@@ -345,15 +352,16 @@ def _cmp_case(rep: Report, name: str, dtype_name: str, x: dict, grad: bool, cu=N
 
 def phase_warmup(out: Path, dtypes=("bfloat16",)):
     """Pay fla's JIT compile + autotune once per specialisation the later phases hit: each variant x {initial state +
-    final state, packed varlen without initial state} x {forward, forward+backward} x T in {64, 40}. Autotune keys are block sizes,
-    not T, so a short sequence warms the long ones too. Each first call and a second call are timed (compile cost =
+    final state, packed varlen without initial state} x {forward, forward+backward} x T in {2048, 1000}. fla's autotune keys are block
+    sizes, not T, so the FIRST call's T fixes the cached config for every length: it is a real length (2048), not a
+    toy one, and 1000 covers the non-multiple-of-16 specialisation. Each first call and a second call are timed (compile cost =
     first - second)."""
     torch = _torch()
     rep = Report(out / "warmup.json", env=_env(), triton_cache_dir=os.environ.get("TRITON_CACHE_DIR"))
     import itertools
 
     # Triton specialises integer args on divisibility by 16, so warm both kinds of T (the cases use 1000, 1537, ...)
-    for dt, T in itertools.product(dtypes, (64, 40)):
+    for dt, T in itertools.product(dtypes, WARMUP_T):
         x = make_inputs(1, T, getattr(torch, dt), 1)
         cu = torch.tensor([0, 30, T], device=DEVICE)
         for impl, grad, packed in itertools.product(VARIANTS, (False, True), (False, True)):
@@ -394,9 +402,11 @@ def phase_kernel(out: Path):
 def phase_fp32(out: Path):
     """Optional and last: the kernel + fork cases at fp32. They only decide ``allow_fp32`` (never the verdict); a
     missing or partial fp32.json leaves ALLOW_FP32 = False."""
-    rep = Report(out / "fp32.json", env=_env())
+    rep = Report(out / "fp32.json", env=_env(), complete=False)
     _kernel_cases(rep, "float32")
     _fork_cases(rep, "float32")
+    rep.d["complete"] = True  # written only after the last case: _fp32_ok refuses a partial (timed-out) file
+    rep.flush()
 
 
 def _p640(rep: Report):

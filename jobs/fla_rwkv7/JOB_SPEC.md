@@ -50,14 +50,14 @@ Setup asserts all of these versions, then runs `fla_guard.py` (exit 5).
 | Phase | Cap | Content |
 |---|---|---|
 | setup | 2 | pins, fla-core install, vendored-code self-check, fla #640 guard; the snapshot download starts in the background. job-4idg4: 2 min 05 s (not timeout-wrapped) |
-| warmup | 3 | fla JIT compile + autotune, paid once and timed: both variants × {initial state, packed varlen} × {fwd, fwd+bwd}, bf16, T=64. Autotune keys are block sizes, not T, and `TRITON_CACHE_DIR` + fla's `cache_results` carry the results to every later phase process |
+| warmup | 3 | fla JIT compile + autotune, paid once and timed: both variants × {initial state, packed varlen} × {fwd, fwd+bwd}, bf16, T=2048 then T=1000. fla's autotune keys are block sizes, not T, so the first call's length fixes the config for every length: it is a real one (PR #59 N1), and 1000 covers the non-multiple-of-16 specialisation. `TRITON_CACHE_DIR` + fla's `cache_results` carry the results to every later phase process |
 | kernel | 3 | synthetic inputs drawn from the model's distributions (decay law `-e^-0.5·σ`, unit `kk`, `a∈(0,1)`, fp32 state) at the real head shape 64×64. Forward at B=2, T=2048 and T=1000 (not a chunk multiple). Gradients of all 7 inputs at T=512, and at T=24, where d/d(initial state) is still non-zero (fla's `dh0`). bf16. Implementations: chunked, fla, fla_safe_gate vs eager. fp64 token-serial run as a diagnostic. #640 source check |
 | fork | 2 | (1) state split, P=1500 + L=37, vs one-shot eager; (2) one prefix state `repeat_interleave`d to K=4 tails, with gradients into prefix and tails; (3) packed row `[0,100,101,1100,2048]`, including a 1-token segment, with gradients; (4) right padding with the model's keep transform leaves the state untouched |
 | download_wait | 2 | wait for the snapshot, `sha256sum -c jobs/rwkv7/snapshot.sha256`, snapshot code == vendored (exit 10) |
 | model | 4 | real weights, bf16. (1) Logits vs eager at T=256 (real text) for chunked, fla and fla_safe_gate. (2) Continuation: the state of a 1900-token prefix + 148 tokens vs one shot, and 2 deep-copied forks. (3) Real WKV inputs captured at layers 0/30/60 (T=2048 text, non-zero carried state), then forward and gradients there |
 | throughput | 4 | real model, median of 3 after a warm-up. Prefill tok/s at **2k / 8k / 16k**. Training-shaped fwd+bwd at T=2048 (frozen weights, grad into the embeddings). WKV-only fwd and fwd+bwd times at each length (attribution). Any fla fallback voids the measurement |
 | reserve | 1 | |
-| fp32 (optional) | time left | the kernel + fork cases at fp32. Runs last, only if ≥ 90 s remain before `max_duration − reserve`, with a timeout of exactly the time left. It only sets `allow_fp32` (missing → false) and never changes the verdict or the exit code |
+| fp32 (optional) | time left | the kernel + fork cases at fp32. Runs last, only if ≥ 90 s remain before `max_duration − reserve`, with a timeout of exactly the time left. It only sets `allow_fp32`. It is true only if `fp32.json` carries `complete: true`, which is written after the last case (PR #59 B1); a missing or partial file gives false and never changes the verdict or the exit code |
 
 **job-4idg4 (exit 7, kernel timeout at 4 min, $0.30).**
 - Setup and the guard passed; the snapshot download finished in about 1 s (warm `hf_cache`).
