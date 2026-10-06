@@ -58,7 +58,10 @@ def export_training_records(examples: Iterable[dict[str, Any]], *,
             if identity in seen:
                 raise ValueError("duplicate training record identity")
             seen.add(identity)
-            records.append({"id": identity, "request": deepcopy(request), "labels": {qid: gold}})
+            # D adds /qid to produce an Item.id. Keep the shared task as its
+            # record identity so record-level calibration guards group all
+            # teacher-forced slots of one world instead of splitting them.
+            records.append({"id": task_id, "request": deepcopy(request), "labels": {qid: gold}})
             prior.append({"slot": slot, "option_id": gold, "description": question["criteria"][gold]})
     if not records:
         raise ValueError("no training records")

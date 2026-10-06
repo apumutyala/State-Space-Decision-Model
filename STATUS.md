@@ -13,6 +13,7 @@
 
 ## Track L — SSM-Language (owner: codex)
 - CPU training-record integration now exports the planner's existing slot requests to the shared decision trainer with labels separate from requests and explicit development split selection. This enables supervised adaptation after qualification; it does not claim learning or authorize spend.
+- Exported record identities now group every slot of one task together for D's record-level calibration guard; individual Item identities remain unique after D appends the question ID.
 - A bounded tiny random recurrent CPU test connects one optimizer step to the actual head backend and semantic planner. It is an execution check, not a learned L0 gate; a checked but wrong-task answer is retained as a failure of usefulness.
 - Repair-arm evaluation now rejects insufficient host budgets before any provider call and records effective per-task budgets. A scripted false comparison followed by a valid retry exercises actual repair; an explanation of the requested fact is explicitly credited for read tasks. These remain CPU development checks, not learned results.
 - Free-running development runner now invokes the planner from initial task/evidence only, then checks task relevance separately from kernel validity. It retains failures and distinguishes repair conditions. CPU scripted tests cover wrong-but-valid output, equivalent comparisons, equality, and surface tampering. No learned or held-out result is claimed.

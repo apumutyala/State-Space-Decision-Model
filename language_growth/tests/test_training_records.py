@@ -80,6 +80,23 @@ class TrainingRecordsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             export_training_records([])
 
+    def test_slots_share_record_identity_but_have_unique_item_identities(self):
+        task = example()
+        first = task["model_inputs"][0]
+        second = deepcopy(first)
+        second["questions"] = {"slot-002-fact": {"type": "choice", "instructions": "Pick fact",
+                                                "criteria": {"x": "Fact"}}}
+        state = json.loads(second["state"])
+        state["proposed_slot_choices"] = [{"slot": "operation", "option_id": "b", "description": "Compare"}]
+        second["state"] = json.dumps(state, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        task["model_inputs"].append(second)
+        task["training_only"]["targets"].append({"slot": "fact", "option_id": "x"})
+        records = export_training_records([task])
+        self.assertEqual([row["id"] for row in records], [task["task_id"], task["task_id"]])
+        item_ids = [row["id"] + "/" + next(iter(row["labels"])) for row in records]
+        self.assertEqual(len(set(item_ids)), 2)
+        self.assertEqual({identity.rsplit("/", 1)[0] for identity in item_ids}, {task["task_id"]})
+
 
 if __name__ == "__main__":
     unittest.main()
