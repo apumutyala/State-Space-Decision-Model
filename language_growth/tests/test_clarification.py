@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from language_growth.development_data import development_manifest, generate_development_tasks
 from language_growth.free_running_dev import run_development_tasks
-from language_growth.parent_bridge import legacy_request_fingerprint
+from language_growth.parent_bridge import decision_request, legacy_request_fingerprint
 
 REVISION = "scripted-clarification:v1"
 CONFIG = {
@@ -118,6 +118,47 @@ def run(tasks, provider):
 
 
 class ClarificationTests(unittest.TestCase):
+    def test_missing_layouts_overlap_and_question_controls_same_catalog(self):
+        layouts = {"ask_missing": set(), "read_with_unrelated_obligation": set()}
+        for seed in range(8):
+            for task in generate_development_tasks(seed, 25, clarification_mode=True):
+                kind = task["training_only"]["kind"]
+                if kind in layouts:
+                    records = task["training_only"]["catalog"]["records"]
+                    layouts[kind].add(tuple(tuple(sorted(record["fields"])) for record in records))
+        self.assertEqual(layouts["ask_missing"], layouts["read_with_unrelated_obligation"])
+        # All six two-missing-field layouts occur in both arms, including an empty record.
+        self.assertEqual(len(layouts["ask_missing"]), 6)
+        self.assertTrue(any(not fields for layout in layouts["ask_missing"] for fields in layout))
+
+        task = generate_development_tasks(17, 4, clarification_mode=True)[3]
+        host, catalog = task["training_only"]["host"], task["training_only"]["catalog"]
+        question = next(iter(task["model_inputs"][0]["questions"].values()))
+        records = catalog["records"]
+        missing = next((record, field) for record in records
+                       for field in ("price", "warranty_months") if field not in record["fields"])
+        present = next((record, field) for record in records for field in record["fields"])
+        requests = []
+        for number, (record, field) in enumerate((missing, present), 1):
+            request, _ = decision_request(
+                task_input=f"What is {record['entity_ref']}'s {field.replace('_', ' ')} in October 2026?"
+                           " Ask for the needed input if it is absent.",
+                host=host, catalog=catalog, model="development-only", parent_revision=REVISION,
+                request_id=f"paired-question-{number}", question_id="slot-001-operation",
+                question="Select the semantic operation for the user's task.", options=question["criteria"])
+            requests.append(request)
+        states = [json.loads(request["state"]) for request in requests]
+        self.assertEqual(states[0]["records"], states[1]["records"])
+        self.assertEqual(states[0]["unmet_obligations"], states[1]["unmet_obligations"])
+        self.assertEqual(states[0]["query_constants"], states[1]["query_constants"])
+        provider = SemanticProvider()
+        selected = []
+        for request in requests:
+            qid, item = next(iter(request["questions"].items()))
+            choice = provider.decide(request)["answers"][qid]["choice"]
+            selected.append(item["criteria"][choice])
+        self.assertEqual(selected, ["Ask for a registered missing input", "Assert one selected fact"])
+
     def test_opt_in_generation_is_balanced_and_split_explicit(self):
         tasks = generate_development_tasks(17, 25, choice_format="production", clarification_mode=True)
         self.assertEqual(Counter(t["training_only"]["kind"] for t in tasks),

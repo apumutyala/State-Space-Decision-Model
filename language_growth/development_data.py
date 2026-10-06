@@ -164,6 +164,15 @@ def _build(seed: int, index: int, names: tuple[str, str], warranties: tuple[int,
     wording = _rng(split, seed, index, "wording")
     field = wording.choice(("price", "warranty_months"))
     fact_index = wording.randrange(2)
+    missing_pairs = None
+    if kind in ("ask_missing", "read_with_unrelated_obligation"):
+        pairs = [(record_index, field_name) for record_index in range(2)
+                 for field_name in ("price", "warranty_months")]
+        # The visible catalog layout is independent of which operation is correct.
+        missing_pairs = _rng(split, seed, index, "missing-pairs").sample(pairs, 2)
+        available = (missing_pairs if kind == "ask_missing"
+                     else [pair for pair in pairs if pair not in missing_pairs])
+        fact_index, field = _rng(split, seed, index, "requested-pair").choice(available)
     left_index = _rng(split, seed, index, "named-order").randrange(2)
     templates = spec["templates"].get(kind) or _CLARIFICATION_TEMPLATES[split][kind]
     template_index = wording.randrange(len(templates))
@@ -179,24 +188,18 @@ def _build(seed: int, index: int, names: tuple[str, str], warranties: tuple[int,
         registry = catalog["registries"][_REGISTRY]
         registry["allowed_ops"].append("Ask")
         registry["ask_categories"] = ["missing_catalog_field"]
-        if kind in ("ask_missing", "read_with_unrelated_obligation"):
-            other_field = "price" if field == "warranty_months" else "warranty_months"
-            missing = [("unrelated_other", 1 - fact_index, other_field)]
-            if kind == "ask_missing":
-                missing.append(("requested", fact_index, field))
-            else:
-                # Keep the same number of obligations in the answerable arm: their presence
-                # or count cannot identify Ask without reading which fact the task requests.
-                missing.append(("unrelated_same", fact_index, other_field))
-            _rng(split, seed, index, "obligation-order").shuffle(missing)
-            for number, (role, record_index, missing_field) in enumerate(missing, 1):
+        if missing_pairs is not None:
+            # Both arms expose two real obligations. Ask depends on the requested pair,
+            # not on the count or arrangement of missing fields alone.
+            _rng(split, seed, index, "obligation-order").shuffle(missing_pairs)
+            for number, (record_index, missing_field) in enumerate(missing_pairs, 1):
                 del catalog["records"][record_index]["fields"][missing_field]
                 reference, obligation_id = f"qref{number:03d}", f"ob{number:03d}"
                 host["query_constants"][reference] = {"entity_ref": names[record_index], "field": missing_field}
                 host["unmet_obligations"].append({"obligation_id": obligation_id,
                                                    "category": "missing_catalog_field",
                                                    "allowed_refs": [reference]})
-                if role == "requested":
+                if (record_index, missing_field) == (fact_index, field):
                     ask_target = (obligation_id, reference)
     if allow_one_repair:
         host["limits"].update(max_proposal_calls=8, max_repair_calls=4, max_repair_attempts=1)
