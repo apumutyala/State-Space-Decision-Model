@@ -1,0 +1,6 @@
+..........................................                               [100%]
+============================= slowest 3 durations =============================
+99.58s call     tests/test_m2_e2e_dryrun.py::test_m2_dry_run_end_to_end
+10.18s call     tests/test_m2_e2e_dryrun.py::test_census_all_20k_pr16_records_span_correctly
+4.62s call     tests/test_m2_e2e_dryrun.py::test_pr16_sample_passes_the_strengthened_guard
+42 passed in 117.65s (0:01:57)

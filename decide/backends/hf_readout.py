@@ -372,6 +372,61 @@ def load_rwkv7(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat
     )
 
 
+#: README of RWKV/RWKV7-G1k-13.3B-20260930: "Training context: 25600 tokens" (config.json carries no context field)
+RWKV7_G1K_TRAINED_CTX = 25600
+
+
+def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None) -> ModelPlugin:
+    """RWKV7-G1k (``RWKV/RWKV7-G1k-*-20260930``): the repo's bundled HF code, vendored and sha-pinned in
+    ``third_party/rwkv7_hf`` (no ``trust_remote_code``). ``load_rwkv7`` above cannot read these repos: they ship
+    ``tokenizer.json`` (no ``rwkv_vocab_v20230424.txt``) and are not the ``fla`` class.
+
+    Untrusted text: the World tokenizer's only special token is ``<|endoftext|>`` (id 0) and ordinary bytes never
+    map to it, so untrusted text that yields any special id is refused (fail closed, ``ControlTokenError``)."""
+    import torch
+
+    import third_party.rwkv7_hf as V
+    from third_party.rwkv7_hf.modeling_rwkv7 import Rwkv7ForCausalLM
+    from third_party.rwkv7_hf.tokenization_rwkv7 import Rwkv7Tokenizer
+
+    model_dir = Path(model_dir)
+    code = V.verify_snapshot_code(model_dir)
+    tok = Rwkv7Tokenizer.from_pretrained(str(model_dir))
+    special = frozenset(int(i) for i in tok.all_special_ids) | {0}
+    model = Rwkv7ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), device_map={"": device}).eval()
+
+    def encode(text: str, trusted: bool = True) -> list[int]:
+        ids = tok(text, add_special_tokens=False).input_ids
+        if not trusted and special.intersection(ids):
+            raise ControlTokenError("untrusted text encodes to an RWKV special token (<|endoftext|>)")
+        return ids
+
+    def forward(ids, n_last: int):
+        return model(input_ids=ids, logits_to_keep=n_last, use_cache=False).logits
+
+    return ModelPlugin(
+        family="rwkv7",
+        model_id=model_id or V.REPO,
+        snapshot=_snapshot_of(model_dir),
+        encode=encode,
+        untrusted_encoder_id="rwkv7-hf-trie (fail closed on <|endoftext|>)",
+        forward=forward,
+        special_ids=special,
+        files={
+            "weights": _hash_files(model_dir, ["*.safetensors"]),
+            "tokenizer": _hash_files(model_dir, ["tokenizer.json"]),
+            "config": _hash_files(model_dir, ["config.json"]),
+            "code": hashlib.sha256(json.dumps(code, sort_keys=True).encode()).hexdigest(),
+        },
+        max_context=RWKV7_G1K_TRAINED_CTX,
+        dtype=dtype,
+        device=device,
+        kernel_stack={**_pkg_versions("transformers", "torch"), "wkv_implementation": model.config.wkv_implementation},
+        notes={"model_class": type(model).__name__, "trained_ctx": RWKV7_G1K_TRAINED_CTX, "attention_free": True,
+               "vendored_code": V.REVISION},
+    )
+
+
 def load_mamba3(model_dir: str | Path, tokenizer_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None) -> ModelPlugin:
     """Mamba-3 SISO via ``mamba_ssm`` (CUDA kernels) and the Llama-3.1 tokenizer."""
     import torch

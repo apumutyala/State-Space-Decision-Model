@@ -33,6 +33,9 @@ class ScoreResult:
     total_input_tokens: int
     extras: dict[str, Any] = field(default_factory=dict)  # backend diagnostics
     attribution: dict[str, list[dict[str, Any]]] | None = None
+    #: per-question inputs a served calibration may need (e.g. ``{"evidence_tokens": n}`` for
+    #: ``decide.calibration.FeatureTemperature``); never labels
+    features: dict[str, dict[str, Any]] | None = None
 
 
 class DeadlineExceeded(Exception):

@@ -54,7 +54,7 @@ from typing import Any
 
 from . import versions
 from .backends.base import Backend, BackendUnsupported, CallBudgetExceeded, DeadlineExceeded
-from .calibration import OptionCountTemperature, softmax
+from .calibration import FeatureTemperature, OptionCountTemperature, softmax
 from .provenance import validate_provenance
 from .schema import (
     canonical_json,
@@ -97,6 +97,7 @@ SAFE_MESSAGES = {
     "tokenization_failed": "tokenization failed; details withheld",
     "deadline_exceeded": "deadline exceeded; no partial answers",
     "inference_calls_exceeded": "the backend needed more inference calls than max_inference_calls; no partial answers",
+    "calibration_features_missing": "the backend did not report the features the served calibration needs; refused",
 }
 _CODE_RE = re.compile(r"[a-z][a-z0-9_]{0,63}")
 MAX_MESSAGE_CHARS = 300
@@ -128,7 +129,7 @@ class Decider:
     def __init__(
         self,
         backend: Backend,
-        calibration: OptionCountTemperature | None = None,
+        calibration: OptionCountTemperature | FeatureTemperature | None = None,
         enable_v0_1_deltas: bool = False,
         backend_max_input_tokens: int | None = None,
         enable_experimental_provenance: bool = False,
@@ -136,8 +137,34 @@ class Decider:
         self.enable_experimental_provenance = enable_experimental_provenance
         self.backend = backend
         self.calibration = calibration or OptionCountTemperature()
+        assert_servable = getattr(self.calibration, "assert_servable", None)
+        if callable(assert_servable):  # a fitted temperature without a calibration/eval disjointness proof is refused
+            assert_servable()
         self.enable_v0_1_deltas = enable_v0_1_deltas
         self.backend_max_input_tokens = backend_max_input_tokens
+
+    def revision(self) -> dict[str, Any]:
+        """The served revision: the backend's, plus the calibration when it is versioned into the revision
+        (``FeatureTemperature``: ``revision_id = <backend revision_id>+T:<temperature id>``). ``parent_revision``
+        is checked against this id, so a client pinned to one fitted temperature never silently gets another.
+        The legacy ``OptionCountTemperature`` keeps the backend id (its identity is in ``served_config``)."""
+        rev = self.backend.revision()
+        if not getattr(self.calibration, "versioned_in_revision", False):
+            return rev
+        cal = self.calibration.identity()
+        return {**rev, "revision_id": f"{rev['revision_id']}+T:{cal['id']}",
+                "backend_revision_id": rev["revision_id"], "calibration": cal}
+
+    def _temperature(self, qid: str, k: int, result: Any) -> float:
+        needs = getattr(self.calibration, "needs", ())
+        if not needs:
+            return self.calibration.temperature(k)
+        feats = (getattr(result, "features", None) or {}).get(qid)
+        try:
+            return self.calibration.temperature_for(k, feats)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RequestRejected("error", "calibration_features_missing",
+                                  SAFE_MESSAGES["calibration_features_missing"]) from exc
 
     # ------------------------------------------------------------------ helpers
     def _envelope(self, request: dict[str, Any]) -> dict[str, Any]:
@@ -241,7 +268,7 @@ class Decider:
                         "ssdm.provenance is a planned 0.2 extension; this adapter has it disabled",
                     )
                 provenance = validate_provenance(request, env["provenance"])
-            revision = self.backend.revision()
+            revision = self.revision()
             wanted = env.get("parent_revision")
             if wanted is not None and wanted != revision["revision_id"]:
                 raise RequestRejected(
@@ -391,7 +418,7 @@ class Decider:
         # Legacy-visible failure signal (SystemOne clients ignore ``ssdm``).
         resp["error"] = {"status": status, "code": code, "message": message}
         try:
-            revision = self.backend.revision()
+            revision = self.revision()
         except Exception:  # pragma: no cover - revision itself failed
             revision = {"revision_id": "unknown"}
         resp["ssdm"] = {
@@ -445,7 +472,11 @@ class Decider:
                 return self._failure(request, request_id, "error", "non_finite_logits",
                                      SAFE_MESSAGES["non_finite_logits"], t_start, state_handle, work)
             k = len(option_ids)
-            temp = self.calibration.temperature(k)
+            try:
+                temp = self._temperature(qid, k, result)
+            except RequestRejected as rej:
+                return self._failure(request, request_id, rej.status, rej.code, rej.message, t_start,
+                                     state_handle, work)
             raw[qid] = dict(zip(option_ids, softmax(vec, 1.0)))
             served[qid] = dict(zip(option_ids, softmax(vec, temp)))
             temps[qid] = temp

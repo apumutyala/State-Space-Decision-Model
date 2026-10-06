@@ -1,0 +1,30 @@
+{
+ "_comment": "Pinned identity of the training guard's content-hash index (train.guard) and of everything it is built from. jobs/m2_pilot/guard_ready.py rebuilds the index on the training box and refuses to start training unless every field below matches. The content-index sha256 was produced locally on 2026-10-06 (receipts/2026-10-06-D-m2-e2e-dryrun/receipt.json) and reproduced by this PR from both ssdm-data/suite-0.2 (with exclusions) and ssdm-data/m2/suite-snapshot (without): identical.",
+ "content_index": {
+  "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+  "n_hashes": 24150,
+  "n_rows": 24265,
+  "builder": "train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)"
+ },
+ "harness_manifests_sha256": {
+  "harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+  "harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+ },
+ "kit": {
+  "repo": "https://github.com/apolinario/decision-index",
+  "commit": "87d4650b42b377c0291a89c1f1a879f9b31082bf",
+  "version": "0.2.1",
+  "edition": "0.2.1"
+ },
+ "suite_files_sha256_uncompressed": {
+  "selected-rows.jsonl.gz": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5",
+  "added-rows.jsonl.gz": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89"
+ },
+ "suite_exclusions_sha256": "331df32d4b719c7db43214d0e5d85859d39c3b2eb7d0b3812214cce150155e81",
+ "hf_suite": {
+  "repo": "multimodalart/decision-index-suite-0.2",
+  "repo_type": "dataset",
+  "revision": null,
+  "status": "PENDING: the Hub copy is private and returned 404 to this account on 2026-10-06, so no revision can be pinned. guard_ready.py refuses --hf while revision is null; the suite reaches the box through the private build context (jobs/m2_pilot/build_context.sh), and the row-file hashes above are the pin either way."
+ }
+}

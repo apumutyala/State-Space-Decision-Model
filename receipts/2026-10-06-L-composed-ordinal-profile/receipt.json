@@ -1,0 +1,158 @@
+{
+  "executed_source_overlay": [
+    [
+      "4066677",
+      []
+    ],
+    [
+      "c5729e1",
+      [
+        "fixtures"
+      ]
+    ],
+    [
+      "d52c8e0",
+      [
+        "language_growth",
+        "interfaces/DECISION_LANGUAGE_V0.md"
+      ]
+    ],
+    [
+      "0375b7b",
+      [
+        "language_growth/realize.py",
+        "language_growth/tests/test_realize.py"
+      ]
+    ],
+    [
+      "dc1a3fe",
+      [
+        "language_growth/parent_bridge.py",
+        "language_growth/planner.py",
+        "language_growth/integration_smoke.py",
+        "language_growth/tests/test_planner.py"
+      ]
+    ],
+    [
+      "cf4e791",
+      [
+        "language_growth/evaluate.py",
+        "language_growth/tests/test_evaluate.py",
+        "language_growth/tests/test_fixtures.py"
+      ]
+    ],
+    [
+      "d94d45f",
+      [
+        "language_growth/development_data.py",
+        "language_growth/tests/test_development_data.py"
+      ]
+    ],
+    [
+      "15f780e",
+      [
+        "language_growth/free_running_dev.py",
+        "language_growth/tests/test_free_running_dev.py"
+      ]
+    ],
+    [
+      "ec5f467",
+      [
+        "language_growth/decision_view.py",
+        "language_growth/tests/test_decision_view.py"
+      ]
+    ]
+  ],
+  "published_equivalent_source_overlay": [
+    [
+      "4066677",
+      []
+    ],
+    [
+      "c5729e1",
+      [
+        "fixtures"
+      ]
+    ],
+    [
+      "d52c8e0",
+      [
+        "language_growth",
+        "interfaces/DECISION_LANGUAGE_V0.md"
+      ]
+    ],
+    [
+      "0375b7b",
+      [
+        "language_growth/realize.py",
+        "language_growth/tests/test_realize.py"
+      ]
+    ],
+    [
+      "dc1a3fe",
+      [
+        "language_growth/parent_bridge.py",
+        "language_growth/planner.py",
+        "language_growth/integration_smoke.py",
+        "language_growth/tests/test_planner.py"
+      ]
+    ],
+    [
+      "cf4e791",
+      [
+        "language_growth/evaluate.py",
+        "language_growth/tests/test_evaluate.py",
+        "language_growth/tests/test_fixtures.py"
+      ]
+    ],
+    [
+      "d94d45f",
+      [
+        "language_growth/development_data.py",
+        "language_growth/tests/test_development_data.py"
+      ]
+    ],
+    [
+      "f73a580",
+      [
+        "language_growth/free_running_dev.py",
+        "language_growth/tests/test_free_running_dev.py",
+        "language_growth/decision_view.py",
+        "language_growth/tests/test_decision_view.py"
+      ]
+    ]
+  ],
+  "source_alias_code_lf_sha256": {
+    "language_growth/free_running_dev.py": "cb77ce05428834aee3489ef65f3b6df55ad54a8b037a9d19d24ed39472f39d22",
+    "language_growth/tests/test_free_running_dev.py": "a3358d0db2495207f01c236170364266331626dd7174cb6b8eb9f4ee9d42a837",
+    "language_growth/decision_view.py": "617bce275be76b7d93e85414e1539de6613e5338799082e69c7195ea1a3a325f",
+    "language_growth/tests/test_decision_view.py": "ed2c64d30220c18c1b7ffd4cfbe7a4de61b9975c8c59c8cc47b21b8d0338d7b1"
+  },
+  "assembly": "git archive each SHA and paths in listed order into a fresh directory; later entries overlay earlier ones",
+  "command": [
+    "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+    "-I",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "language_growth/tests",
+    "-t",
+    ".",
+    "-p",
+    "test_*.py",
+    "-v"
+  ],
+  "exit_code": 0,
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "billed_cost_usd": 0,
+  "runs": 1,
+  "raw_output": "tests.txt",
+  "raw_predictions": null,
+  "scope": "composed synthetic CPU tests; no learned capability or timing claim",
+  "initial_failure": "Earlier composed run exposed obsolete scripted-provider response schema in free-running tests; fixed in15f780e. Original failed output preserved in local composed-ordinal-profile/composed-tests.txt."
+}

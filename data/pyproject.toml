@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ssdm-data"
+version = "0.1.0"
+description = "m2-data: training records, schema/injection augmentation, Decision Index contamination guard (Track D)"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.26", "pyarrow>=15"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools]
+package-dir = {"ssdm_data" = "."}
+packages = ["ssdm_data", "ssdm_data.tests"]
+
+[tool.setuptools.package-data]
+ssdm_data = ["manifests/*"]
