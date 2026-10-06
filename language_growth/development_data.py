@@ -326,3 +326,42 @@ def comparison_swap_counterfactual(example: dict[str, Any]) -> dict[str, Any]:
 def price_swap_counterfactual(example: dict[str, Any]) -> dict[str, Any]:
     """Compatibility alias; also swaps warranty values for warranty comparisons."""
     return comparison_swap_counterfactual(example)
+
+
+def comparison_nuisance_counterfactual(example: dict[str, Any]) -> dict[str, Any]:
+    """Change unasked values in a generated development comparison world.
+
+    Advance both nuisance values by one month or one cent, wrapping within
+    the original split's range. This always changes evidence, even for equal
+    nuisance values, while preserving the task, selected values and targets.
+    Rebuilding rechecks the reference and binds identities to the new evidence.
+    This input intervention supplies an invariance control, not neural mediation.
+    """
+    training = example.get("training_only", {})
+    split = example.get("development_split")
+    if (example.get("development_only") is not True or split not in _SPLITS
+            or training.get("kind") != "compare"):
+        raise ValueError("generated development comparison required")
+    original = training["catalog"]["records"]
+    names = tuple(record["entity_ref"] for record in original)
+    warranties = tuple(record["fields"]["warranty_months"]["value"] for record in original)
+    prices = tuple(int(Decimal(record["fields"]["price"]["value"]) * 100) for record in original)
+    field = training["program"]["nodes"][0]["field"]
+    if field == "price":
+        values, bounds = warranties, _SPLITS[split]["warranty_range"]
+    elif field == "warranty_months":
+        values, bounds = prices, _SPLITS[split]["price_cents_range"]
+    else:
+        raise ValueError("unsupported comparison field")
+    low, high = bounds
+    if any(not low <= value <= high for value in values):
+        raise ValueError("nuisance values outside development split")
+    changed = tuple(low if value == high else value + 1 for value in values)
+    if field == "price":
+        warranties = changed
+    else:
+        prices = changed
+    counterfactual = _build(training["seed"], training["index"], names, warranties, prices,
+                            training["choice_format"], split, training["allow_one_repair"])
+    counterfactual["task_id"] = f"{example['task_id']}-comparison-nuisance"
+    return counterfactual
