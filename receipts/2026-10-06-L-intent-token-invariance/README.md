@@ -70,5 +70,5 @@ Freeze these apparent-winner checkpoints before any later untouched synthetic
 audit cohort is generated for a separate gate. This reused validation domain
 is an iterative intervention set, not final held-out evidence. The result is
 engineered-feature option ranking, not learned raw arithmetic, shared-parent
-retention, calibrated confidence, causal mediation or L0 promotion. No PR is
-opened before the coordinator's lean review. PR #63 remains unchanged.
+retention, calibrated confidence, causal mediation or L0 promotion. Independent recomputation is preserved in `INDEPENDENT_REVIEW.md`. This is stacked on PR #63 because it depends on that unmerged baseline; it will be retargeted to agent-main after PR #63 lands. PR #63 remains unchanged.
+
