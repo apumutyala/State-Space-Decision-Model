@@ -12,6 +12,8 @@ import math
 
 import numpy as np
 
+from decision_index.engines.base import validate as kit_validate
+
 from harness import config
 
 # Board ECE: "32 benchmarks with a per-field right or wrong answer (ToolRet, BRIGHT, RouterBench
@@ -21,6 +23,36 @@ BOARD_EXCLUDED = {2, 36, 6, 48}
 
 ADDED_02 = {56, 57, 58, 59, 61, 62, 64}  # 0.2 additions; most likely outside the board's 32
 HEADLINE_TRACK = {40: "iSarcasmEval-A-En"}  # only this track enters the index
+
+
+class CalibrationInputError(ValueError):
+    """Malformed calibration input. Raised instead of reporting a (misleading) ECE of 0."""
+
+
+def validate(conf, correct, weights=None, min_n=1):
+    """Return float arrays after checking shapes, finite confidence in [0, 1], binary correctness
+    and non-negative finite weights with positive total. Empty input is rejected (callers that
+    want "unavailable" check emptiness first)."""
+    conf = np.asarray(conf, dtype=float)
+    correct = np.asarray(correct, dtype=float)
+    if conf.ndim != 1 or correct.ndim != 1:
+        raise CalibrationInputError(f"conf/correct must be 1-D, got shapes {conf.shape} and {correct.shape}")
+    if conf.shape != correct.shape:
+        raise CalibrationInputError(f"conf and correct differ in length: {conf.size} vs {correct.size}")
+    if conf.size < min_n:
+        raise CalibrationInputError(f"need at least {min_n} fields, got {conf.size}")
+    if not np.all(np.isfinite(conf)) or np.any((conf < 0) | (conf > 1)):
+        raise CalibrationInputError("confidence must be finite and inside [0, 1]")
+    if not np.all((correct == 0) | (correct == 1)):
+        raise CalibrationInputError("correct must be binary (0/1)")
+    if weights is None:
+        return conf, correct, None
+    w = np.asarray(weights, dtype=float)
+    if w.shape != conf.shape:
+        raise CalibrationInputError(f"weights length {w.size} differs from {conf.size}")
+    if not np.all(np.isfinite(w)) or np.any(w < 0) or not w.sum() > 0:
+        raise CalibrationInputError("weights must be finite, non-negative, with positive total")
+    return conf, correct, w
 
 
 def fields(rows, results, trained_on=(), exclude=BOARD_EXCLUDED, headline_only=True):
@@ -36,6 +68,10 @@ def fields(rows, results, trained_on=(), exclude=BOARD_EXCLUDED, headline_only=T
         res = results.get(e["run_id"])
         if not res or res["status"] != "ok":
             continue
+        try:
+            kit_validate(r["questions"], res["response"])
+        except Exception as exc:
+            raise CalibrationInputError(f"{e['run_id']}: response fails the kit contract: {exc}") from exc
         answers = res["response"]["answers"]
         unscored = set((r.get("scoring") or {}).get("unscored_fields", []))
         only = {"verdict"} if n == 56 else None
@@ -55,6 +91,8 @@ def fields(rows, results, trained_on=(), exclude=BOARD_EXCLUDED, headline_only=T
             if e["run_id"] in trained_on:
                 correct = False
             out.append((n, config.length_bin(e["proxy_tokens"]), e["run_id"], float(conf), float(correct)))
+    if out:
+        validate([f[3] for f in out], [f[4] for f in out])
     return out
 
 
@@ -65,8 +103,10 @@ def one_in_six(run_id, seed=20260919):
 
 def binned_ece(conf, correct, weights=None, bins=10):
     """L1 ECE with equal-width bins on [0, 1] (board: 10 bins, benchmark-equal weights)."""
-    conf, correct = np.asarray(conf, float), np.asarray(correct, float)
-    w = np.ones_like(conf) if weights is None else np.asarray(weights, float)
+    conf, correct, w = validate(conf, correct, weights)
+    if not (isinstance(bins, int) and bins >= 1):
+        raise CalibrationInputError("bins must be a positive integer")
+    w = np.ones_like(conf) if w is None else w
     w = w / w.sum()
     b = np.minimum((conf * bins).astype(int), bins - 1)
     ece = 0.0
@@ -89,7 +129,7 @@ def board_ece(field_list, sample=True, base_only=True):
     benchmarks; MMLU/ARC/SGD are not index benchmarks and so are not in our slices)."""
     fl = [f for f in field_list if (not sample or one_in_six(f[2])) and (not base_only or f[0] not in ADDED_02)]
     if not fl:
-        return None
+        return {"n": 0, "available": False}
     per = collections.Counter(f[0] for f in fl)
     w = [1.0 / per[f[0]] for f in fl]
     ece, rel = binned_ece([f[3] for f in fl], [f[4] for f in fl], w)
@@ -102,8 +142,9 @@ def debiased_ece(conf, correct, bins=15):
     """Debiased L2 calibration error (Kumar, Liang & Ma 2019), equal-mass bins.
 
     Returns sqrt(max(0, sum_b p_b[(acc_b - conf_b)^2 - acc_b(1 - acc_b)/(n_b - 1)])) and the
-    signed squared estimate (which can be negative when calibration error is below noise)."""
-    conf, correct = np.asarray(conf, float), np.asarray(correct, float)
+    signed squared estimate (which can be negative when calibration error is below noise).
+    Needs at least 2 fields (the debiasing term divides by n_b - 1)."""
+    conf, correct, _ = validate(conf, correct, min_n=2)
     n = len(conf)
     if n < 2 * bins:
         bins = max(1, n // 2)
@@ -145,6 +186,10 @@ def smece_sigma(conf, correct, sigma, _h=None):
 
     The integration grid is refined with sigma (>= 8 points per sigma) so mass at the
     boundary (e.g. one-hot confidences of 1.0) is not missed."""
+    if not (math.isfinite(sigma) and sigma > 0):
+        raise CalibrationInputError("sigma must be positive and finite")
+    if _h is None:
+        conf, correct, _ = validate(conf, correct)
     centers, resid = _h or _hist(conf, correct)
     keep = resid != 0
     centers, resid = centers[keep], resid[keep]
@@ -160,6 +205,7 @@ def smece_sigma(conf, correct, sigma, _h=None):
 def smooth_ece(conf, correct, tol=1e-4):
     """SmoothECE (Blasiok & Nakkiran 2023): kernel-smoothed residual with a reflected Gaussian
     kernel at the fixed-point bandwidth sigma* where smECE_sigma = sigma."""
+    conf, correct, _ = validate(conf, correct)
     h = _hist(conf, correct)
     lo, hi = 1e-3, 1.0
     if smece_sigma(conf, correct, lo, h) <= lo:
@@ -178,7 +224,7 @@ def report(field_list):
     """Overall and per-length-bin calibration summary."""
     def block(fl):
         if not fl:
-            return {"n": 0}
+            return {"n": 0, "available": False}
         conf = [f[3] for f in fl]
         cor = [f[4] for f in fl]
         ece, _ = binned_ece(conf, cor)
