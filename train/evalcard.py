@@ -38,13 +38,17 @@ def _try_import(name: str):
 
 
 @torch.no_grad()
-def predict(model, items, batch_size: int = 8) -> tuple[torch.Tensor, list[int], list[int], list[int]]:
+def predict(model, items, batch_size: int = 8, certs: list | None = None
+            ) -> tuple[torch.Tensor, list[int], list[int], list[int]]:
+    """``certs`` (a list): for a G16 head, each item's certificate fields are appended (no recompute)."""
     model.eval()
     lps, labels, ev, ks = [], [], [], []
     kmax = max(i.row.n_options for i in items)
     for s in range(0, len(items), batch_size):
         chunk = items[s : s + batch_size]
-        lp = model([i.row for i in chunk]).log_probs.detach().float().cpu()
+        lp = model([i.row for i in chunk], shared_prefix=True).log_probs.detach().float().cpu()
+        if certs is not None and hasattr(model.head, "certificate"):
+            certs += [model.head.certificate(j) for j in range(len(chunk))]
         pad = torch.full((lp.shape[0], kmax), float("-inf"))
         pad[:, : lp.shape[1]] = lp
         lps.append(pad)
@@ -58,15 +62,29 @@ def run_card(model, items, step: int, out_dir: str | Path | None = None,
              temperature: FeatureTemperature | None = None,
              index_rows: list | None = None, index_predict: Callable | None = None,
              steer_variants: list | None = None, steer_decide: Callable | None = None,
-             cohort: dict | None = None, keep_units: bool = False, n_boot: int | None = None) -> dict[str, Any]:
+             cohort: dict | None = None, keep_units: bool = False, n_boot: int | None = None,
+             g16: Callable | None = None) -> dict[str, Any]:
+    """``g16``: optional ``hook(model) -> dict`` (``train.g16_card.make_hook``: certify on safety_eval dev requests)
+    for a G16 head; the served certificate stats on ``items`` are added for every G16 head."""
     t0 = time.time()
     if temperature is not None and temperature.fitted_on is not None:
         eval_hash = hashlib.sha256("\n".join(sorted(i.id for i in items)).encode()).hexdigest()
         if temperature.fitted_on == eval_hash:
             raise ValueError("temperature was fitted on the eval items themselves; use a separate calibration split")
-    lp, labels, ev, ks = predict(model, items)
+        content = [i.row.meta.get("content_sha256") for i in items]
+        temperature.assert_disjoint([i.id for i in items], "eval items",
+                                    content=[c for c in content if c])  # shared record OR shared content raises
+    from .g16_card import is_g16, served_summary
+
+    certs: list | None = [] if is_g16(model) else None
+    lp, labels, ev, ks = predict(model, items, certs=certs)
     card: dict[str, Any] = {"step": step, "n_items": len(items), "cohort": cohort}
-    units: dict[str, Any] = {}
+    units: dict[str, Any] = {"item_ids": [i.id for i in items], "labels": list(labels)}
+    if certs is not None:
+        card["g16"] = {"served": served_summary(certs)}
+        if g16 is not None:
+            card["g16"]["safety_eval"] = g16(model)
+        units["g16_certificates"] = [{k: v for k, v in c.items() if k != "E"} for c in certs]
     probs = lp.exp().tolist()
     card["raw"] = decision_metrics([p[:k] for p, k in zip(probs, ks)], labels, ev)
     units["decision_probs"] = [p[:k] for p, k in zip(probs, ks)]

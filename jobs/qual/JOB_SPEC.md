@@ -92,8 +92,15 @@ The in-code stop conditions are in `align.Guard`:
 - It builds a reproducible tar and prints its sha256.
 - **Code identity:** the launch SHA is the agent-main merge of the pinned-snapshot fix. It is recorded with the context, config and Dockerfile hashes in the issue #3 launch receipt. Both model dirs in `configs/qual_h100.json` name the exact pinned snapshot revisions (0.8B `2fc06364…`, 9B `c2022362…`), and `resolve_model_dir` refuses an ambiguous multi-snapshot parent.
 
-**Image.** `pytorch/pytorch:2.8.0-cuda12.8-cudnn9-devel@sha256:a7103283ea7113e10ae5d014bd2342acebda0bc53164b2f7b1dd6eb7a766bdb6`. Pins:
+**Image.** `pytorch/pytorch:2.13.0-cuda12.6-cudnn9-devel@sha256:09c0260351b12b617408ff5711e08d88ccdbb9a21f7f6d7de67e39039b022ae1` (Ubuntu 24.04, system Python 3.12, `PIP_BREAK_SYSTEM_PACKAGES=1`, `FLA_TILELANG=0`). Pins:
+- torch 2.13.0 (+cu126), triton 3.7.1 (asserted at build time by a `RUN python -c ...` line)
 - transformers 5.17.0, flash-linear-attention 0.5.2, fla-core 0.5.2
+
+Why not the original torch 2.8.0 / triton 3.4.0 image: SF job-jbw22 (first H100 run) stopped at the numerics gate
+because fla 0.5.2 refuses the gated `chunk_bwd_dqkwg` backward on Hopper with 3.4.0 <= Triton < 3.7.1 (fla #640:
+those Triton releases miscompile it). torch 2.13.0 is the first torch line whose wheel pins triton 3.7.1. Setup runs
+`jobs/common/fla_guard.py`, which re-derives fla's #640 rule from fla's own flags, requires Triton >= 3.7.1 and
+the Triton (not TileLang) backward, and runs one tiny gated fwd+bwd; any failure is exit 5 before phase A.
 - einops 0.8.2, pyarrow 25.0.1, huggingface_hub 1.32.0, safetensors 0.8.0, accelerate 1.15.0, numpy 2.2.6
 
 **Weights and data.** Pinned by revision in `scripts/sf_fetch.py`. Data file sha256s are recorded by `convert/data.py`.
@@ -106,6 +113,57 @@ The in-code stop conditions are in `align.Guard`:
 | cais/mmlu | `c30699e8356da336a370243923dbaf21066bb9fe` |
 
 The two models' `tokenizer.json` files are byte-identical.
+
+## Phase-C re-run after the job-c4zkm 9B OOM (`QUAL_MODE=c_only`)
+
+job-c4zkm ($0.74) PASSED phase A (all GPU tests, including test_gdn on torch 2.13 / triton 3.7.1) and phase B (0.8B). Phase C, the 9B, ran out of GPU memory at stage-1 step 1: 8×4096 tokens, peak 68.9 GB, against a 75.2 GB process cap.
+
+**Root cause.** All 8 student GDN graphs were alive at once at the full 32,768-token batch: 1.29 MB per token of activations. That came on top of 17.9 GB of weights and 8.6 GB of fp32 GDN parameters plus Adam state. `convert/memmodel.py` reproduces the observed peaks:
+
+| Run | Model | Observed |
+|---|---|---|
+| 9B stage 1 | 68.9 GB | 68.9 GB |
+| 0.8B stage 1 | 11.7 GB | 11.8 GB |
+| 0.8B stage 2 | 6.5 GB (upper bound) | 5.7 GB |
+
+**Fix** (`convert/align.py`, `convert/model.py`, `convert/qual.py`; the CPU tests `tests/test_microbatch.py` and `tests/test_memmodel.py` cover each item):
+
+- **Gradient accumulation.** Micro-batch 4×4096 accumulated to the same 8×4096 tokens per step. The losses decompose exactly, so the gradient equals the full-batch one.
+  - Stage 1 uses per-sequence relative MSE.
+  - Stage 2 uses the KL summed over tokens, divided by the full-batch token count.
+- **Stage 1.** Each layer's student graph is back-propagated inside its hook, so one graph is alive instead of 8. The teacher runs under `no_grad` and stops after the last aligned layer.
+- **Stage 2.**
+  - The prefix before the first student layer is identical for teacher and student, so it runs once under `no_grad` and is shared.
+  - The teacher suffix runs under `no_grad`.
+  - Only the student suffix builds a graph, with activation checkpointing.
+  - Only the converted layer's GDN requires grad; the other GDNs are frozen.
+  - It converts the *first* attention layer (L3), the near-worst-case suffix.
+- **Allocator and teacher copy.** `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` is set (2.8 GB was reserved but unallocated at the OOM). The teacher and student already share one frozen copy of the model (`MixerSwap`).
+
+**Expected** (`memmodel.plan`, FRAG 1.10 included):
+
+| Stage | Peak | FLOP/token | tok/s at 25% MFU | Exit-3 floor (12.5% MFU) |
+|---|---|---|---|---|
+| Stage 1 | **31.4 GB** | 17.1 GF | 14.5k | 7.2k |
+| Stage 2 | **33.0 GB** | 61.8 GF | 4.0k | 2.0k |
+
+- Guards use `min_mfu: 0.125`, re-derived from each stage's FLOP/token.
+- Decision MFU uses the FLOP/token recorded in the result, not the old 10N = 85 GF.
+- Risk: the 0.8B ran at about 10% MFU in stage 1. If the 9B does not do better, the pre-registered exit 3 (fold) fires.
+
+**Job:** the same `submit_job` with these differences:
+- `env={"QUAL_MODE": "c_only"}`;
+- `max_duration_minutes=140`, from `jobs/qual/job_params_c_only.json`: setup 15, CPU gates 5×2, weight wait 25, C 80, reserve 8.
+
+The run skips `test_gdn` and phase B. It re-runs only the CPU gates that cover the changed code (`test_progressive_resume`, `test_guard`, `test_qual_job`, `test_microbatch`, `test_memmodel`), then phases C and D.
+
+**Cost:**
+- One attempt: **$6.93**.
+- With the 20-min build counted: **$7.92**.
+- Worst case with one platform restart: **$14.85**.
+- Expected: about $3.5 (about 70 min).
+
+The workspace-cap precondition and the `validate_job` re-run apply unchanged.
 
 ## Preconditions (all required)
 

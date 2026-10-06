@@ -66,7 +66,7 @@ def t_decide_exit_codes():
     with tempfile.TemporaryDirectory() as d:
         ok = os.path.join(d, "ok.json")
         bad = os.path.join(d, "bad.json")
-        json.dump({"stage1": {"peak_gb": 40.0}, "progressive": {"steps": [{"steady_tok_s": 3500.0, "peak_gb": 45.0}]}},
+        json.dump({"stage1": {"peak_gb": 40.0}, "progressive": {"steps": [{"steady_tok_s": 3500.0, "peak_gb": 45.0, "flop_per_token": 6.18e10}]}},
                   open(ok, "w"))
         json.dump({"stage1": {}}, open(bad, "w"))
         r_ok = decide_9b.main(ok, "configs/qual_h100.json", os.path.join(d, "d1.json"))

@@ -20,7 +20,10 @@ def decide(R, cfg):
     peaks = [x for x in [R.get("stage1", {}).get("peak_gb"), (s2 or {}).get("peak_gb"),
                          (stopped or {}).get("peak_gb")] if x]
     peak = max(peaks) if peaks else None
-    mfu = tok_s * rule["flop_per_token_stage2"] / rule["h100_peak_flops"] if tok_s else None
+    fpt = (s2 or {}).get("flop_per_token")
+    if not isinstance(fpt, (int, float)):
+        fpt = rule["flop_per_token_stage2"] if isinstance(rule["flop_per_token_stage2"], (int, float)) else None
+    mfu = tok_s * fpt / rule["h100_peak_flops"] if (tok_s and fpt) else None
     out = {"stage2_steady_tok_s": tok_s, "stage2_mfu": mfu, "peak_gb": peak, "stopped": stopped,
            "stage1_steady_tok_s": R.get("stage1", {}).get("steady_tok_s"), "rules": rule["rules"]}
     if stopped and stopped.get("exit_code") in (3, 4):

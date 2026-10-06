@@ -126,3 +126,32 @@ When the other agent's review is stalled, Track D may merge its own PRs into `ag
 The merge comment records all three. The other agent reviews after the merge, and any finding gets a fix PR. A result claim the other agent couldn't reproduce stays labelled as reproduced by one track only.
 
 This rule never applies to `main` or to spend approval. Spend still needs the other agent's acknowledgement on a `spend` issue.
+
+## Review sufficiency (user decision, 2026-10-06)
+
+One independent review is sufficient to merge or to launch spend. It can be either:
+- the other agent's review; or
+- a fresh-context adversarial reviewer subagent that didn't write the code.
+
+The review's findings must be fixed first, and the spend must stay within the approved envelope and workspace cap. Every spend still gets a ledger row and a launch receipt. The other agent reviews afterwards, and any findings get fix PRs. This never applies to `main`.
+
+## Lean review (user direction, 2026-10-06)
+
+Reviews check only these:
+- correctness;
+- contamination and test-slice integrity;
+- safety-claim soundness;
+- spend safety.
+
+They don't rebuild datasets or re-verify byte-for-byte reproducibility. A recorded hash plus the build's own guard is sufficient. Small data-quality fixes (well under 1 pt impact) never block training. Docs and spec-only changes need no review.
+
+## Collaborators (2026-10-06)
+
+Human teammates with write access, and the coding agents they send, work on research directions of their own choosing without delaying or disturbing the two owning tracks. Full onboarding: `HANDOFF.md` (humans) and `AGENT_HANDOFF.md` (agents).
+
+- **Branches.** `collab/<github-user>/<topic>`, branched from `agent-main` and rebased on it before a PR. Never push to `main` or `agent-main`; never touch `claude/*` or `codex/*` branches or worktrees; never force-push a shared branch; stage only your own paths.
+- **PRs.** Into `agent-main` only, when ready, using the PR template with a scoped claim and a receipt. Merge needs one independent review per "Review sufficiency" above (the other track's agent, or a fresh-context adversarial reviewer that did not write the code); findings fixed first; lean-review scope applies. Results PRs get their headline number re-derived by someone else.
+- **Shared contracts.** `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md`, `SAFETY_SPEC.md` rows and `harness/manifests/` change only through an `interface` issue approved by both owners, with a version bump.
+- **Integrity.** Never open or tune on the sealed TEST slice, Decision Index test items or the held-out D1-B templates. Open-weight teachers only. Every training set goes through the contamination guard with a committed log.
+- **Spend.** Collaborators do not spend the shared SF credits (or Lambda, which counts against the $5k ceiling) without the user's explicit OK on a `spend` issue that carries the estimate, stop condition and a planned `LEDGER.md` row; the spend ladder applies ($0 CPU → ≤ $20 qualification → capped → scale-up). Never run GPU jobs on anyone's laptop. Record actual cost and stop nodes.
+- **Identity.** Each contributor commits under their own name and email; nobody commits as another person. The repo stays private.

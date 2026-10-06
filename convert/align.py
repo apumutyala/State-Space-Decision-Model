@@ -2,7 +2,8 @@
 
 stage1_align  MOHAWK-style hidden-state alignment: each new GDN is trained to reproduce its attention layer's mixer
               output given the *teacher's* input to that layer (rest of the network frozen and teacher-driven).
-              All requested layers are aligned simultaneously from one teacher forward. Diagnostic only
+              All requested layers are aligned from one teacher forward (each layer back-propagated inside its hook,
+              so one student graph is alive at a time; micro-batched with gradient accumulation). Diagnostic only
               (CODEX_CRITICAL_COMPARISON: layerwise matching is not evidence of end-to-end recovery).
 stage2_kl     end-to-end distillation: KL(teacher || student) on next-token distributions, student = model with the
               converted set in GDN mode; only GDN parameters train.
@@ -40,15 +41,21 @@ class StopCondition(Exception):
 class Guard:
     """Wall-clock cap + pre-registered stop conditions for an unattended (paid) run.
 
-    cfg keys: max_minutes (graceful: the stage ends early), min_tok_s + check_after_steps (exit 3),
+    cfg keys: max_minutes (graceful: the stage ends early), min_tok_s or min_mfu + check_after_steps (exit 3),
     max_peak_gb (exit 4). Throughput is measured from step 10 (after kernel autotune) to check_after_steps.
     """
 
-    def __init__(self, cfg=None, name=""):
+    def __init__(self, cfg=None, name="", flop_per_token=None, peak_flops=989e12):
         cfg = cfg or {}
         self.name = name
         self.max_sec = 60 * cfg["max_minutes"] if cfg.get("max_minutes") else None
         self.min_tok_s = cfg.get("min_tok_s")
+        # min_mfu (preferred): the floor is re-derived from the stage's real FLOP/token, so changing the micro-batch,
+        # the converted layer or the prefix sharing cannot silently loosen or tighten it
+        if cfg.get("min_mfu") is not None:
+            if not flop_per_token:
+                raise ValueError(f"{name}: min_mfu needs flop_per_token")
+            self.min_tok_s = cfg["min_mfu"] * peak_flops / flop_per_token
         self.check_after = cfg.get("check_after_steps", 50)
         self.max_peak_gb = cfg.get("max_peak_gb")
         self.t0 = time.time()
@@ -76,50 +83,73 @@ class Guard:
         return bool(self.max_sec and time.time() - self.t0 > self.max_sec)
 
 
-def stage1_align(model, layers, batcher, steps, lr, warmup=20, log_every=25, log=print, guard=None):
+def _micro(x, micro_batch):
+    mb = micro_batch or x.shape[0]
+    if x.shape[0] % mb:
+        raise ValueError(f"batch {x.shape[0]} not divisible by micro_batch {mb}")
+    return [x[s:s + mb] for s in range(0, x.shape[0], mb)]
+
+
+def stage1_accumulate(model, layers, x, micro_batch=None):
+    """Accumulate stage-1 gradients for batch x into the GDN .grad buffers (caller zeroes/steps).
+
+    Loss per aligned layer = mean over sequences of ||GDN(x_t) - attn(x_t)||^2 / ||attn(x_t)||^2 (per-sequence relative
+    MSE), so micro-batch accumulation equals the full-batch gradient exactly. Memory: the teacher runs under no_grad, each
+    layer's student graph is back-propagated INSIDE its hook (one GDN graph alive at a time, not all of them), and the
+    teacher stops after the last aligned layer.
+    """
+    B = x.shape[0]
     swaps = [model.swaps[i] for i in layers]
-    params = [p for sw in swaps for p in sw.gdn.parameters()]
-    opt = torch.optim.AdamW(params, lr=lr, betas=(0.9, 0.95), weight_decay=0.0)
-    losses = {}
+    losses = {i: 0.0 for i in layers}
 
     def hook(mod, args, kwargs, out):
-        x = kwargs.get("hidden_states", args[0] if args else None).detach()
+        xi = kwargs.get("hidden_states", args[0] if args else None).detach()
         y = out[0].detach().float()
         with torch.enable_grad():
-            ys = mod.gdn(x).float()
-            losses[mod.layer_idx] = ((ys - y) ** 2).sum() / (y ** 2).sum()
+            ys = mod.gdn(xi).float()
+            per_seq = ((ys - y) ** 2).sum((1, 2)) / (y ** 2).sum((1, 2))
+            loss = per_seq.sum() / B
+            loss.backward()
+        losses[mod.layer_idx] += loss.item()
 
     hs = [sw.register_forward_hook(hook, with_kwargs=True) for sw in swaps]
-    hist, ntok, t0 = [], 0, time.time()
     try:
-        with model.modes({}):  # all teacher
-            for step in range(steps):
-                for gpar in opt.param_groups:
-                    gpar["lr"] = _cosine_lr(step, steps, warmup, lr, guard)
-                x = next(batcher)
-                losses.clear()
-                with torch.no_grad(), torch.autocast(**AC):
-                    # run only up to the last aligned layer would be cheaper; full pass keeps the code simple
-                    model.hidden(x)
-                loss = sum(losses.values())
-                opt.zero_grad(set_to_none=True)
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(params, 1.0)
-                opt.step()
-                ntok += x.numel()
-                stop = guard.step(step, ntok) if guard else False
-                if step % log_every == 0 or step == steps - 1 or stop:
-                    rec = {"step": step, "tokens": ntok, "tok_s": ntok / (time.time() - t0),
-                           "peak_gb": round(torch.cuda.max_memory_allocated() / 1e9, 2),
-                           **{f"rel_mse_L{k}": round(v.item(), 5) for k, v in losses.items()}}
-                    hist.append(rec)
-                    log(rec)
-                if stop:
-                    break
+        with model.modes({}), torch.no_grad(), torch.autocast(**AC):
+            for xb in _micro(x, micro_batch):
+                h, ctx = model.embed(xb)
+                model.run_layers(h, ctx, 0, max(layers) + 1)
     finally:
         for h in hs:
             h.remove()
+    return losses
+
+
+def stage1_align(model, layers, batcher, steps, lr, warmup=20, log_every=25, log=print, guard=None, micro_batch=None):
+    params = [p for i in layers for p in model.swaps[i].gdn.parameters()]
+    opt = torch.optim.AdamW(params, lr=lr, betas=(0.9, 0.95), weight_decay=0.0)
+    hist, ntok, t0 = [], 0, time.time()
+    for step in range(steps):
+        for gpar in opt.param_groups:
+            gpar["lr"] = _cosine_lr(step, steps, warmup, lr, guard)
+        x = next(batcher)
+        opt.zero_grad(set_to_none=True)
+        losses = stage1_accumulate(model, layers, x, micro_batch)
+        torch.nn.utils.clip_grad_norm_(params, 1.0)
+        opt.step()
+        ntok += x.numel()
+        stop = guard.step(step, ntok) if guard else False
+        if step % log_every == 0 or step == steps - 1 or stop:
+            rec = {"step": step, "tokens": ntok, "tok_s": ntok / (time.time() - t0), "peak_gb": _peak_gb(),
+                   **{f"rel_mse_L{k}": round(v, 5) for k, v in losses.items()}}
+            hist.append(rec)
+            log(rec)
+        if stop:
+            break
     return hist, ntok, time.time() - t0
+
+
+def _peak_gb():
+    return round(torch.cuda.max_memory_allocated() / 1e9, 2) if torch.cuda.is_available() else 0.0
 
 
 @torch.no_grad()
@@ -161,8 +191,35 @@ def kl_from_hidden(hs, ht, lm_head, chunk=512):
     return tot / hs.shape[0]
 
 
+def stage2_accumulate(model, student_modes, x, micro_batch=None, chunk=512):
+    """Accumulate stage-2 (end-to-end KL) gradients for batch x; returns the batch-mean per-token KL.
+
+    The prefix before the first student layer is identical for teacher and student, so it runs ONCE under no_grad and
+    is shared; the teacher suffix runs under no_grad; only the student suffix builds a graph (activation-checkpointed
+    when the model is in gradient-checkpointing mode). Loss = sum of per-token KL / tokens in the FULL batch, so
+    micro-batch accumulation equals the full-batch gradient.
+    """
+    first = min(i for i, m in student_modes.items() if m == "student")
+    n = len(model.lm.layers)
+    total = x.shape[0] * x.shape[1]
+    kl_total = 0.0
+    for xb in _micro(x, micro_batch):
+        with torch.no_grad(), torch.autocast(**AC), model.modes({}):
+            h0, ctx = model.embed(xb)
+            h0 = model.run_layers(h0, ctx, 0, first)
+            ht = model.run_layers(h0, ctx, first, n, final_norm=True)
+        # backward must run inside the modes context: checkpointed layers re-run their forward during backward
+        with model.modes(student_modes):
+            with torch.autocast(**AC):
+                hs = model.run_layers(h0, ctx, first, n, final_norm=True)
+                loss = kl_from_hidden(hs, ht, model.lm_head, chunk) * (xb.numel() / total)
+            loss.backward()
+        kl_total += loss.item()
+    return kl_total
+
+
 def stage2_kl(model, layers_train, student_modes, batcher, steps, lr, warmup=20, log_every=25, log=print,
-              grad_ckpt=True, guard=None):
+              grad_ckpt=True, guard=None, micro_batch=None):
     params = list(model.gdn_parameters(layers_train))
     opt = torch.optim.AdamW(params, lr=lr, betas=(0.9, 0.95), weight_decay=0.0)
     if grad_ckpt:
@@ -174,22 +231,15 @@ def stage2_kl(model, layers_train, student_modes, batcher, steps, lr, warmup=20,
             for gpar in opt.param_groups:
                 gpar["lr"] = _cosine_lr(step, steps, warmup, lr, guard)
             x = next(batcher)
-            with torch.no_grad(), torch.autocast(**AC), model.modes({}):
-                ht = model.hidden(x)
             opt.zero_grad(set_to_none=True)
-            # backward must run inside the modes context: checkpointed layers re-run their forward during backward
-            with model.modes(student_modes):
-                with torch.autocast(**AC):
-                    hs = model.hidden(x)
-                    loss = kl_from_hidden(hs, ht, model.lm_head)
-                loss.backward()
+            kl = stage2_accumulate(model, student_modes, x, micro_batch)
             gn = torch.nn.utils.clip_grad_norm_(params, 1.0)
             opt.step()
             ntok += x.numel()
             stop = guard.step(step, ntok) if guard else False
             if step % log_every == 0 or step == steps - 1 or stop:
-                rec = {"step": step, "tokens": ntok, "tok_s": ntok / (time.time() - t0), "kl": round(loss.item(), 5),
-                       "grad_norm": round(float(gn), 4), "peak_gb": round(torch.cuda.max_memory_allocated() / 1e9, 2)}
+                rec = {"step": step, "tokens": ntok, "tok_s": ntok / (time.time() - t0), "kl": round(kl, 5),
+                       "grad_norm": round(float(gn), 4), "peak_gb": _peak_gb()}
                 hist.append(rec)
                 log(rec)
             if stop:

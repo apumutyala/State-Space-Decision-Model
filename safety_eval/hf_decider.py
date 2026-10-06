@@ -217,6 +217,40 @@ class HFLetterDecider:
                 res[i] = (l.tolist(), float(mass[r]))
         return res
 
+    @torch.no_grad()
+    def score_prefixed(self, pre: list[int], tails: list[list[int]], ns: list[int]) -> list[tuple[list[float], float]]:
+        """``score_ids([pre + t for t in tails], ns)`` with the shared prefix read ONCE: its KV/recurrent cache is
+        copied per pack (decide.backends.state_fork.expand). Tails are right-padded within a pack and read at their
+        own last position (causal, exact). GCG's candidate evaluation is all one prefix + C x 2 tails per step."""
+        from decide.backends.state_fork import _deepcopy_cache, expand
+
+        dev = next(self.model.parameters()).device
+        base = self.model.model
+        cache = base(input_ids=torch.tensor([pre], device=dev), use_cache=True).past_key_values
+        order = sorted(range(len(tails)), key=lambda i: -len(tails[i]))
+        res: list = [None] * len(tails)
+        k = 0
+        while k < len(order):
+            L = len(tails[order[k]])
+            bs = max(1, min(self.max_batch, self.max_tokens // max(L + len(pre), 1)))
+            idx = order[k:k + bs]
+            k += bs
+            ids = torch.full((len(idx), L), self.tok.pad_token_id, dtype=torch.long)
+            for r, i in enumerate(idx):
+                ids[r, :len(tails[i])] = torch.tensor(tails[i])
+            c = _deepcopy_cache(cache, [getattr(cache, "config", None)])
+            if len(idx) > 1:
+                expand(c, len(idx))
+            out = base(input_ids=ids.to(dev), past_key_values=c, use_cache=True).last_hidden_state
+            h = out[torch.arange(len(idx), device=dev), torch.tensor([len(tails[i]) for i in idx], device=dev) - 1]
+            nmax = max(ns[i] for i in idx)
+            lp, mass = self.letter_logits_from_hidden(h, nmax)
+            for r, i in enumerate(idx):
+                l = lp[r, :ns[i]]
+                l = l - torch.logsumexp(l, -1)
+                res[i] = (l.tolist(), float(mass[r]))
+        return res
+
     def decide_many(self, requests: list[dict]) -> list:
         t0 = time.time()
         jobs, prepared, out = [], [], []

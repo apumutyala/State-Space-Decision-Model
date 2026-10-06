@@ -95,6 +95,12 @@ def report(a) -> int:
     result = {
         "ok": True, "release": a.release, "job": a.job,
         "parity_ok": (probes.get("parity") or {}).get("ok"),
+        # fast GDN kernels vs torch reference, non-vacuous (PR #43 B1); job B is gated on s1_ok
+        "kernel_path_ok": (probes.get("kernel_path") or {}).get("ok"),
+        "kernel_path": {k: (probes.get("kernel_path") or {}).get(k) for k in
+                        ("n", "gdn_layers_found", "gdn_layers_already_reference", "gdn_layers_switched",
+                         "max_abs_dp", "argmax_flips", "fail_reasons")},
+        "s1_ok": (probes.get("parity") or {}).get("ok") is True and (probes.get("kernel_path") or {}).get("ok") is True,
         "index_dev_decide": idx_dec, "index_dev_native_composite": idx_nat, "ece_decide": ece,
         "latency_decide": latency(res_dec) if res_dec else None,
         "g1_audit": g1_audit(res_dec) if res_dec else None,

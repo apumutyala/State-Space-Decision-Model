@@ -2,7 +2,8 @@
 # Clef baseline job entry point (see JOB_SPEC.md). Env: RELEASE=clef-flash|clef, JOB=A|B.
 #   A: probes + Index DEV (decide + native arm) + score/ECE/latency + safety_eval (no GCG)
 #   B: safety_eval GCG-lite (HP_GATE; 30 steer + 15 hijack), resumable from $GMN_CHECKPOINT_DIR
-# Exit codes: 0 ok | 2 bad env | 10 download/verify | 11 parity | 12 Index run | 13 scoring |
+# Exit codes: 0 ok | 2 bad env | 5 setup: fla #640 guard refused the image (before any download or GPU phase) |
+#             10 download/verify | 11 parity or fast-vs-reference GDN kernel check | 12 Index run | 13 scoring |
 #             14 safety (A; includes the PREREG D1-B k=8 gate, runner exit 32) | 15 GCG (B) | 16 report
 #
 # Heartbeat semantics (platform health check: heartbeat on $OUT/heartbeat, interval 600 s, fail_threshold 2,
@@ -48,6 +49,10 @@ fail() { echo "{\"ok\": false, \"exit\": $1, \"stage\": \"$2\", \"release\": \"$
 stage "S0 env + download $REPO@$REV"
 ( nvidia-smi; nvcc --version; python -VV; pip freeze; python -c "import json; from baselines.clef_backend import kernel_stack; print(json.dumps(kernel_stack()))"; git -C /app rev-parse HEAD 2>/dev/null; cat /app/CONTEXT_MANIFEST.json ) > "$OUT/env/environment.txt" 2>&1
 sha256sum -c /app/jobs/clef_baseline/data.sha256 > "$OUT/env/data-verify.txt" 2>&1 || fail 10 data_verify
+# fla #640 (jobs/common/fla_guard.py): S1 --grad-probe and job B (GCG) run backward() through fla's gated GDN kernels.
+# Refuse the image (exit 5) unless it is on torch 2.13 / triton >= 3.7.1 with fla's Triton backward pinned, and a tiny
+# gated fwd+bwd runs on this GPU. Runs before the weights download and before every GPU phase of jobs A and B.
+python -I /app/jobs/common/fla_guard.py --out "$OUT/env/fla_guard.json" > "$OUT/env/fla_guard.log" 2>&1 || fail 5 fla_guard
 SNAP=$(python - <<EOF
 from huggingface_hub import snapshot_download
 print(snapshot_download("$REPO", revision="$REV"))

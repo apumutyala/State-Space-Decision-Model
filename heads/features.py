@@ -74,21 +74,57 @@ def _scatter_rows(base: torch.Tensor, where: list[tuple[int, int]], values: torc
     return base.index_put((ii, kk), values)
 
 
+def _row_trust(backbone, row: LayoutRow) -> list[bool]:
+    from controlsafe.trust_gate import row_trust
+
+    return row_trust(row, backbone.trust_policy)
+
+
+def _cont_trust(backbone, row: LayoutRow, k: int) -> list[bool]:
+    from controlsafe.trust_gate import continuation_trust
+
+    return continuation_trust(row, k, backbone.trust_policy)
+
+
+def _opt_trust(backbone, row: LayoutRow, k: int) -> list[bool]:
+    from controlsafe.trust_gate import option_seq_trust
+
+    return option_seq_trust(row, k, backbone.trust_policy)
+
+
 def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], need_fork: bool = False,
-                     pad_id: int = 0, fork_chunk: int = 64) -> HeadInput:
+                     pad_id: int = 0, fork_chunk: int = 64, shared_prefix: bool = False) -> HeadInput:
+    """``shared_prefix=True`` (evaluation only, no grad): rows of the same request read their common schema + state
+    prefix once (``heads.prefix_features``); equal to the plain path up to float rounding (tests/test_perf_paths.py)."""
+    from . import prefix_features as PF
+
     dev = backbone.device
     cache_fork = need_fork and backbone.fork_mode == "cache"
     ids, mask = pad_batch([r.ids for r in rows], pad_id, device=dev)
+    # controlsafe trust gate (G15): a backbone with ``wants_trust`` gets per-token trust labels from the rows
+    gated = getattr(backbone, "wants_trust", False)
+    trusts = [_row_trust(backbone, r) for r in rows] if gated else None
+    tkw = {"trust": pad_batch([[int(x) for x in t] for t in trusts], 0, device=dev)[0].bool()} if gated else {}
     fork_rows: list[torch.Tensor] = []
-    if cache_fork:  # per-row prefix pass that also yields the K forked features
-        per = [backbone.fork_features(r.ids, r.continuations) for r in rows]
+    pre_fork = None
+    # The shared-prefix path runs the wrapped model directly on cached state; a trust-gated backbone computes a
+    # protected stream + bridges per call and needs per-token trust labels, so it NEVER takes this path: gated rows
+    # go through the labelled path below exactly as before (PF.supported also refuses ``wants_trust``).
+    use_prefix = (shared_prefix and not gated and not torch.is_grad_enabled() and PF.supported(backbone))
+    if use_prefix:
+        h, pre_fork = PF.shared_prefix_features(backbone, rows, need_fork, pad_id)
+    elif cache_fork:  # per-row prefix pass that also yields the K forked features
+        per = [backbone.fork_features(r.ids, r.continuations,
+                                      **({"trust": t, "cont_trust": [_cont_trust(backbone, r, k) for k in
+                                                                     range(len(r.continuations))]} if gated else {}))
+               for r, t in zip(rows, trusts or [None] * len(rows))]
         hs = []
         for hp, fk in per:
             hs.append(torch.nn.functional.pad(hp, (0, 0, 0, ids.shape[1] - hp.shape[0])))
             fork_rows.append(fk)
         h = torch.stack(hs).float()
     else:
-        h = backbone.features(ids, mask).float()
+        h = backbone.features(ids, mask, **tkw).float()
     bsz, t, d = h.shape
     ks = [r.n_options for r in rows]
     kmax = max(ks)
@@ -114,24 +150,33 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
     q_pre, q_end, e = torch.stack(q_pre_l), torch.stack(q_end_l), torch.stack(e_rows)
     if sym_seqs:
         oid, om = pad_batch(sym_seqs, pad_id, device=dev)
-        he = backbone.features(oid, om).float()
+        okw = {}
+        if gated:
+            ot = [_opt_trust(backbone, rows[i], k) for i, k in sym_index]
+            okw = {"trust": pad_batch([[int(x) for x in t] for t in ot], 0, device=dev)[0].bool()}
+        he = backbone.features(oid, om, **okw).float()
         denom = om.sum(-1, keepdim=True).clamp_min(1)
         pooled = (he * om.unsqueeze(-1)).sum(1) / denom
         e = _scatter_rows(e, sym_index, pooled)
     fork = None
-    if cache_fork:
+    if use_prefix:
+        fork = pre_fork
+    elif cache_fork:
         fork = torch.stack([torch.nn.functional.pad(f.float(), (0, 0, 0, kmax - f.shape[0])) for f in fork_rows])
     elif need_fork:
-        seqs, where = [], []
+        seqs, where, strust = [], [], []
         for i, r in enumerate(rows):
             for k, cont in enumerate(r.continuations):
                 seqs.append(r.ids + cont)
                 where.append((i, k))
+                if gated:  # continuations labelled by the same policy as the prefix (option ids are data)
+                    strust.append([int(x) for x in trusts[i]] + [int(x) for x in _cont_trust(backbone, r, k)])
         outs = []
         for s in range(0, len(seqs), fork_chunk):
             chunk = seqs[s : s + fork_chunk]
             fid, fm = pad_batch(chunk, pad_id, device=dev)
-            hf = backbone.features(fid, fm).float()
+            ckw = {"trust": pad_batch(strust[s : s + fork_chunk], 0, device=dev)[0].bool()} if gated else {}
+            hf = backbone.features(fid, fm, **ckw).float()
             last = fm.sum(-1) - 1
             outs.append(hf[torch.arange(len(chunk), device=dev), last])
         fork = _scatter_rows(h.new_zeros((bsz, kmax, d)), where, torch.cat(outs))

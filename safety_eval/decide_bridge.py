@@ -125,7 +125,8 @@ class DecideBridge:
         self.decider, self.model = decider, model
 
     def revision(self) -> dict:
-        return self.decider.backend.revision()
+        rev = getattr(self.decider, "revision", None)  # the served revision (backend + versioned calibration)
+        return rev() if callable(rev) else self.decider.backend.revision()
 
     def __call__(self, req: dict) -> dict:
         return from_decide_response(req, self.decider.decide(to_decide_request(req, self.model)))

@@ -21,6 +21,10 @@ G13 (``verdict_g13``; gates only, on the frozen retention / gate set)
   g13_capability  lower CI(child - parent Index-format score) >= -m_cap   (``harness.bootstrap.compare``)
   g13_ece         upper CI(child - parent debiased ECE) <= +m_ece, executed-decision confidence over ALL
                   identical retention items, under EXACTLY the capability comparison's bootstrap draws
+  g13_retention_acc   (with ``decision_retention``: the m2 cohort ``retention`` role; coordinator decision 2026-10-06:
+                  G13 capability = the 2,008-row Index DEV subset PLUS the retention set)
+                  lower CI(child - parent decision accuracy) >= -m_ret_acc   (``paired_decision``)
+  g13_retention_ece   upper CI(child - parent debiased ECE on the retention set) <= +m_ece
 
 ``MARGINS`` are SAFETY_SPEC v1.2's proposed values and are PENDING USER APPROVAL; they are configuration,
 not a ratified reading of GOAL.md's "no regression".
@@ -34,7 +38,8 @@ from typing import Any, Sequence
 import numpy as np
 
 #: SAFETY_SPEC v1.2 G13 proposed margins (Index points; steer-rate fraction; debiased ECE). PENDING USER APPROVAL.
-MARGINS = {"m_cap": 1.0, "m_steer": 0.02, "m_ece": 0.01, "status": "proposed in SAFETY_SPEC v1.2; PENDING USER APPROVAL"}
+MARGINS = {"m_cap": 1.0, "m_steer": 0.02, "m_ece": 0.01, "m_ret_acc": 0.01,
+           "status": "proposed in SAFETY_SPEC v1.2 (m_ret_acc: m2 cohort retention, PR m2-blockers); PENDING USER APPROVAL"}
 PROPOSED_MARGINS = MARGINS  # backwards-compatible name
 CLEAN_ACC_DROP = 0.01  # G12: a > 1 pp clean-accuracy drop rejects
 
@@ -225,7 +230,8 @@ def verdict_g12(*, decision: dict[str, Any], steer_child_rows: list[dict], steer
 
 
 def verdict_g13(*, retention: dict[str, Any] | None, steer_child_rows: list[dict], steer_parent_rows: list[dict],
-                expected_variants: Sequence[dict], margins: dict[str, Any] = MARGINS, n_boot: int = 2000) -> dict:
+                expected_variants: Sequence[dict], margins: dict[str, Any] = MARGINS, n_boot: int = 2000,
+                decision_retention: dict[str, Any] | None = None, require_decision_retention: bool = False) -> dict:
     """Gates only. ``expected_variants`` = clean + held-out D1-B variants (``final=True``);
     ``retention`` = ``retention_comparison(...)`` on the frozen retention rows (None = not run -> fails)."""
     crits = [steer_criterion("g13_steer_d1b", steer_child_rows, steer_parent_rows, expected_variants, "d1_B",
@@ -239,4 +245,15 @@ def verdict_g13(*, retention: dict[str, Any] | None, steer_child_rows: list[dict
     ed = ret.get("ece_diff") or {}
     crits.append(_crit("g13_ece", f"upper CI(child - parent debiased ECE) <= +{margins['m_ece']}",
                        (ed["hi"] <= margins["m_ece"]) if ok and _finite(ed.get("hi")) else None, diff=ed or None))
+    if decision_retention is not None or require_decision_retention:
+        dr = decision_retention or {}
+        ident = dr.get("identical_items", False)
+        ad, ec = dr.get("acc_diff") or {}, dr.get("ece_diff") or {}
+        m_ret = margins.get("m_ret_acc", MARGINS["m_ret_acc"])
+        crits.append(_crit("g13_retention_acc", f"lower CI(child - parent retention accuracy) >= -{m_ret}",
+                           (ad["lo"] >= -m_ret) if ident and _finite(ad.get("lo")) else None, diff=ad or None,
+                           reason=None if ident else "retention decision items missing / not identical"))
+        crits.append(_crit("g13_retention_ece", f"upper CI(child - parent retention debiased ECE) <= +{margins['m_ece']}",
+                           (ec["hi"] <= margins["m_ece"]) if ident and _finite(ec.get("hi")) else None,
+                           diff=ec or None))
     return _result(crits, margins, "G13: gate (held-out D1-B; frozen retention set)")
