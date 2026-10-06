@@ -19,7 +19,7 @@ from .typed import TypedOutput, to_wire
 class Forward:
     log_probs: torch.Tensor  # [B, K]
     head: HeadOutput
-    inputs: HeadInput
+    inputs: HeadInput | None  # None for row heads (G16: two streams per row, no shared HeadInput)
 
 
 class DecisionModel(nn.Module):
@@ -36,15 +36,37 @@ class DecisionModel(nn.Module):
         cuda = list(range(torch.cuda.device_count())) if torch.cuda.is_available() else []
         with torch.random.fork_rng(devices=cuda):
             torch.manual_seed(seed)
-            self.head = make_head(head, d, **(head_kwargs or {})) if isinstance(head, str) else head
+            if head == "g16":  # controlsafe G16 (protected judge + bounded evidence) over the trust-gated backbone
+                if not getattr(backbone, "wants_trust", False):
+                    raise ValueError("head 'g16' needs a controlsafe TrustGatedBackbone (cfg.controlsafe.trust_gate)")
+                from controlsafe.g16 import G16DecisionHead
+
+                self.head = G16DecisionHead(backbone, seed=seed, **(head_kwargs or {}))
+            else:
+                self.head = make_head(head, d, **(head_kwargs or {})) if isinstance(head, str) else head
             self.typed = TypedOutput(d)
+        if self.row_head:
+            for p in self.typed.parameters():  # unused: G16 decides by softmax over its logits for every qtype
+                p.requires_grad_(False)
         self.pad_id = pad_id
 
+    @property
+    def row_head(self) -> bool:
+        return bool(getattr(self.head, "wants_rows", False))
+
     def head_parameters(self):
+        if self.row_head:  # the head shares the backbone module: its parameters train in the LoRA group
+            return self.head.own_parameters()
         return list(self.head.parameters()) + list(self.typed.parameters())
 
     def forward(self, rows: Sequence[LayoutRow], return_attribution: bool = False,
                 shared_prefix: bool = False) -> Forward:
+        if self.row_head:
+            for r in rows:
+                if r.qtype == "noul" and r.n_options != 2:
+                    raise ValueError("noul questions have exactly two options (true, false)")
+            out = self.head.forward_rows(rows)
+            return Forward(torch.log_softmax(out.logits, -1), out, None)
         x = build_head_input(self.backbone, rows, need_fork=self.head.needs_fork, pad_id=self.pad_id,
                              shared_prefix=shared_prefix)
         out = self.head(x, return_attribution=return_attribution)

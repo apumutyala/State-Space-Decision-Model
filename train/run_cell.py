@@ -28,7 +28,7 @@ import urllib.request
 from pathlib import Path
 
 EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26,
-        "guard": 27, "cohort": 28, "lineage": 29}
+        "guard": 27, "cohort": 28, "lineage": 29, "config": 35}
 PARENTS = ("rwkv7", "q9af")
 
 
@@ -204,6 +204,20 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
                        eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {})
 
 
+def validate_head(cfg: dict) -> None:
+    """Head-specific config checks (exit 35). G16 needs the controlsafe trust gate with the D stream readout."""
+    if cfg.get("head") != "g16":
+        return
+    cs = cfg.get("controlsafe") or {}
+    if not cs.get("trust_gate"):
+        raise ValueError("head 'g16' needs controlsafe.trust_gate (G16 reads the G15 protected stream)")
+    if cs.get("readout", "decision") != "decision":
+        raise ValueError("head 'g16' needs controlsafe.readout 'decision' (the evidence channel reads the D stream)")
+    c = (cfg.get("head_kwargs") or {}).get("c", 1.0)
+    if not (isinstance(c, (int, float)) and c > 0):
+        raise ValueError(f"head_kwargs.c (evidence bound) must be > 0, got {c!r}")
+
+
 def keep_item(row, max_k: int, max_t: int) -> bool:
     return row.n_options <= max_k and len(row.ids) <= max_t and max(len(c) for c in row.continuations) <= 16
 
@@ -331,6 +345,11 @@ def main(argv=None):
             torch.cuda.empty_cache()
 
     torch.manual_seed(cfg["seed"])
+    try:
+        validate_head(cfg)
+    except ValueError as e:
+        print(f"config: {e}", flush=True)
+        return EXIT["config"]
     parent = cfg.get("parent", "rwkv7")
     if parent == "q9af":  # pins are checked before tokenizer or weights are touched
         try:
@@ -343,6 +362,11 @@ def main(argv=None):
             print(f"q9af lineage: {e}", flush=True)
             return EXIT["lineage"]
     enc = parent_encoder(parent, a.model_dir)
+    from train.g16_card import make_hook as g16_hook
+
+    # G16 cells: certify on the safety_eval DEV requests ONCE, after the training loop and the final card (outside
+    # max_minutes), so the G16 arm and its non-G16 pair train under the same budget (step parity); wall-clock logged
+    g16 = g16_hook(cfg, enc)
     root = Path(__file__).resolve().parents[1] / "harness" / "manifests"
     if a.guard_readiness:
         from jobs.m2_pilot.guard_ready import GuardNotReady, load_ready_guard
@@ -394,6 +418,12 @@ def main(argv=None):
             if n.endswith("lora_B"):
                 with torch.no_grad():
                     p.normal_(0.0, 0.02)
+        # trust-gated backbone: the P -> D bridges live outside bb.model; randomise them too so the smoke exercises
+        # the bridge injection on the cache fork (prefix / continuation alignment), and re-zero them afterwards
+        bridges_b = [p for n, p in getattr(bb, "bridges", torch.nn.Module()).named_parameters() if n.endswith("lora_B")]
+        with torch.no_grad():
+            for p in bridges_b:
+                p.normal_(0.0, 0.02)
         res = {}
         for mode in ("cache", "recompute"):
             bb.fork_mode = mode
@@ -413,6 +443,11 @@ def main(argv=None):
         del res
         bb.model.zero_grad(set_to_none=True)
         remove_lora(bb.model)  # training starts from the pre-registered LoRA init, not the smoke one
+        with torch.no_grad():
+            for p in bridges_b:  # bridges back to their zero init (remove_lora does not touch them)
+                p.zero_()
+            for p in getattr(bb, "bridges", torch.nn.Module()).parameters():
+                p.grad = None
         bb.fork_mode = "cache"
         reset_peak()
         if not ok:
@@ -466,9 +501,12 @@ def main(argv=None):
         eval_items[:] = [x for x in eval_items if len(x.row.ids) <= t_max]
         reset_peak()
         tr = make_trainer(cfg["max_steps"], a.ckpt_dir)
+        keep = bool(cfg.get("pair"))  # paired cells write units-step*.json for train.g16_card.capability_cost
         resumed = tr.resume()
         if not resumed:
-            tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items, 0, a.out))
+            tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items, 0, a.out,
+                                                                                       keep_units=keep))
+            tr.cards[-1].pop("units", None)
         t_start = time.time()
         t_end = t_start + 60 * cfg["max_minutes"]
         step0 = tr.step
@@ -501,15 +539,23 @@ def main(argv=None):
                 _checkpoint_post()
             if tr.step % cfg["eval_every"] == 0:
                 tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items,
-                                                                                           tr.step, a.out))
+                                                                                           tr.step, a.out,
+                                                                                           keep_units=keep))
+                tr.cards[-1].pop("units", None)
         if not tr.cards or tr.cards[-1]["step"] != tr.step:
-            tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items,
-                                                                                       tr.step, a.out))
+            # paired cells (cfg["pair"]) keep per-item units for train.g16_card.capability_cost
+            tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(
+                tr.model, eval_items, tr.step, a.out, keep_units=keep))
+            tr.cards[-1].pop("units", None)
         tr.save()
         _checkpoint_post()
         cell["train"] = {"steps": tr.step, "resumed": resumed, "T_max": t_max, "cards": tr.cards,
                          "lineage": tr.lineage, "verdict": pass_rule(tr.history, tr.cards, peak(), cfg["pass_rule"])}
         save()
+        if g16 is not None:  # after the checkpoint and verdict are saved: a timeout here loses only this record
+            t_g = time.time()
+            cell["train"]["g16_safety_eval"] = {"step": tr.step, **g16(tr.model), "seconds": round(time.time() - t_g, 1)}
+            save()
     return 0
 
 
