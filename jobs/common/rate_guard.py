@@ -45,6 +45,18 @@ def preflight(tok_s: float, proxy_tokens: int, cap_min: float, read_factor: floa
             "cap_min": cap_min, "ok": proj <= MARGIN * cap_min}
 
 
+def preflight_volume(volume: dict, tok_s: float, call_s: float, cap_min: float, path: str = "fork") -> dict:
+    """Realistic preflight (PERF_AUDIT): the subset's EXACT positions and calls under the scoring path that will run
+    (jobs/common/readout_cost.py volume, real prompt builder + tokenizer) at the MEASURED prefill rate and per-call
+    latency. The proxy preflight above under-counted job-mhc3h 40x: it priced 2.37M proxy tokens x 2 against a
+    recompute path that forwards 236.7M (every question x option re-reads the prompt)."""
+    from jobs.common.readout_cost import project as _proj
+
+    p = _proj(volume["totals"], tok_s, call_s, path)
+    return {**p, "family": volume.get("family"), "rows": volume.get("rows"), "cap_min": cap_min,
+            "ok": p["projected_min"] <= MARGIN * cap_min, "method": "volume"}
+
+
 def project(rows_done: int, elapsed_s: float, total: int) -> float:
     """Projected total minutes from the measured row rate."""
     return elapsed_s / max(rows_done, 1) * total / 60
@@ -113,7 +125,10 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("preflight")
     p.add_argument("--tok-s", type=float, required=True)
-    p.add_argument("--subset", required=True)
+    p.add_argument("--subset", default=None, help="proxy-token lower bound (legacy); prefer --volume")
+    p.add_argument("--volume", default=None, help="jobs/common/readout_volume_<family>.json")
+    p.add_argument("--call-s", type=float, default=None, help="MEASURED per-call latency (probe small_call_s)")
+    p.add_argument("--path", default="fork", choices=["fork", "recompute", "per_question"])
     p.add_argument("--cap-min", type=float, required=True)
     p.add_argument("--out", default=None)
     r = sub.add_parser("run")
@@ -125,7 +140,14 @@ def main(argv=None):
     r.add_argument("--report", default=None)
     a = ap.parse_args(argv)
     if a.cmd == "preflight":
-        res = preflight(a.tok_s, subset_proxy_tokens(a.subset), a.cap_min)
+        if a.volume:
+            if a.call_s is None:
+                ap.error("--volume needs --call-s")
+            res = preflight_volume(json.loads(Path(a.volume).read_text()), a.tok_s, a.call_s, a.cap_min, a.path)
+        elif a.subset:
+            res = preflight(a.tok_s, subset_proxy_tokens(a.subset), a.cap_min)
+        else:
+            ap.error("preflight needs --volume (or the legacy --subset)")
         if a.out:
             Path(a.out).write_text(json.dumps(res, indent=1))
         print(json.dumps(res))

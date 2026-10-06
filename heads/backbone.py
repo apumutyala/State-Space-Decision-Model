@@ -304,8 +304,15 @@ class HiddenStateBackbone(nn.Module):
         k = cids.shape[0]
         cache.reorder_cache(torch.zeros(k, dtype=torch.long, device=dev))  # K state copies
         _assign_not_copy(cache)  # HF linear-attention caches write in place, which breaks autograd
+        if not uses_cache_params:
+            # past_key_values models (Qwen3.5 hybrid, Q9-AF) continue a cache over several tokens in ONE call; right
+            # padding of the continuations is exact (causal; only positions <= last are read; the state is dropped).
+            # Replaces cids.shape[1] full-model calls per row (PERF_AUDIT: training / eval-card fork head).
+            self._captured = None
+            out = m(input_ids=cids, past_key_values=cache, **base)
+            return h, self._pick(out)[torch.arange(k, device=dev), last]
         feats = torch.zeros((k, h.shape[-1]), dtype=h.dtype, device=dev)
-        for t in range(cids.shape[1]):  # token by token: the cached-decode path every HF SSM supports
+        for t in range(cids.shape[1]):  # token by token: the cached-decode path HF Mamba (cache_params) supports
             self._captured = None
             kw = dict(base)
             kw["cache_params" if uses_cache_params else "past_key_values"] = cache
@@ -331,14 +338,11 @@ class HiddenStateBackbone(nn.Module):
         h = self._pick(out)[0]
         k = cids.shape[0]
         cache.batch_repeat_interleave(k)  # K state copies
-        feats = torch.zeros((k, h.shape[-1]), dtype=h.dtype, device=ids.device)
-        for t in range(cids.shape[1]):
-            self._captured = None
-            out = m(input_ids=cids[:, t : t + 1], state=cache, **base)
-            cache = out.state
-            step = self._pick(out)[:, -1]
-            feats = torch.where((last == t).unsqueeze(-1), step, feats)
-        return h, feats
+        # all continuation tokens in one call (was one full-model call per token); right padding is exact: causal,
+        # only positions <= last are read, and the state after the call is dropped
+        self._captured = None
+        out = m(input_ids=cids, state=cache, **base)
+        return h, self._pick(out)[torch.arange(k, device=ids.device), last]
 
 
 def _linear_safe_cache(config):
@@ -599,15 +603,20 @@ RWKV7_TRAINED_CTX = 25600
 
 
 def load_rwkv7_hf_backbone(model_dir: str, device: str = "cuda", dtype: str = "bfloat16",
-                           fork_mode: str = "cache") -> HiddenStateBackbone:
+                           fork_mode: str = "cache", wkv: str | None = None) -> HiddenStateBackbone:
     """RWKV7-G1k-13.3B for m2 training: the vendored bundled classes (no trust_remote_code), after checking that
     the snapshot's own modeling/config/tokenizer code is byte-identical to the vendored copy. The backbone is the
-    base ``Rwkv7Model`` (no 65,536-wide LM head over every position)."""
+    base ``Rwkv7Model`` (no 65,536-wide LM head over every position). ``wkv`` selects the WKV implementation by
+    name (``heads.rwkv7_wkv.select_wkv``; fla refuses until GPU-verified)."""
     from third_party.rwkv7_hf import verify_snapshot_code
     from third_party.rwkv7_hf.modeling_rwkv7 import Rwkv7ForCausalLM
 
     verify_snapshot_code(model_dir)
     lm = Rwkv7ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), device_map={"": device})
+    if wkv is not None:  # e.g. "fla" (heads/rwkv7_wkv.py); None keeps the checkpoint's "chunked"
+        from heads.rwkv7_wkv import select_wkv
+
+        select_wkv(lm, wkv)
     return HiddenStateBackbone(lm.rwkv7, spec=BACKBONES["rwkv7-13.3b"], pad_id=0, fork_mode=fork_mode)
 
 

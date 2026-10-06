@@ -380,9 +380,9 @@ def test_child_evals_preflight_counts_fit_and_card_not_only_the_arm():
     assert S.VOLUME_COHORT_SHA256 == Cohort().sha256  # volumes were measured on the committed cohort
     arm = S.estimate(1.0, fixed_min=0, mode="parent")["total_tokens"]
     child = S.estimate(1.0, fixed_min=0, mode="child")["total_tokens"]
-    assert child == arm + sum(S.CHILD_EXTRA_TOKENS.values()) and 32e6 < child < 34e6
+    assert child == arm + sum(S.CHILD_EXTRA_TOKENS.values()) and 34e6 < child < 35e6
     need = S.min_tok_s(50)
-    assert 11_000 < need < 12_000 and S.min_tok_s(50, mode="parent") < 9_000
+    assert 11_500 < need < 12_500 and S.min_tok_s(50, mode="parent") < 9_500
     assert S.main(["estimate", "--tok-s", "10000", "--mode", "child", "--cap-min", "50", "--fixed-min", "0"]) == 15
     assert S.main(["estimate", "--tok-s", "10000", "--mode", "parent", "--cap-min", "50", "--fixed-min", "0"]) == 0
     assert S.main(["estimate", "--tok-s", str(round(need) + 1), "--mode", "child", "--cap-min", "50",
@@ -393,7 +393,7 @@ def test_child_evals_preflight_counts_fit_and_card_not_only_the_arm():
     assert "--mode child" in pre and '--cap-min "$CAP_E"' in pre
     assert job.index("evals-preflight.json") < job.index("python -m train.run_cell")  # before the paid cell phase
     spec = (root / "jobs/m2_pilot/JOB_SPEC.md").read_text(encoding="utf-8")
-    assert "~9,000 tok/s" not in spec and "11,4" in spec
+    assert "~9,000 tok/s" not in spec and "12,000" in spec  # PERF_AUDIT: Index DEV re-measured (fork positions)
 
 
 @pytest.mark.parametrize("runner", ["jobs/m2_pilot/m2_job.sh", "jobs/m2_parent_arm/parent_arm_job.sh"])

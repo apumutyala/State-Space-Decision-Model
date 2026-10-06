@@ -26,9 +26,10 @@ OLD_DIGEST = "a7103283ea7113e10ae5d014bd2342acebda0bc53164b2f7b1dd6eb7a766bdb6"
 # (GCG-lite) call backward() through fla's gated GDN kernels (PR #41 review). It is now on the same base, with
 # transformers kept at the model card's 5.10.2 (declared deviation: torch 2.11 -> 2.13; see its Dockerfile/JOB_SPEC).
 EXEMPT: set[str] = set()
-# job -> runner; m2_pilot / m2_parent_arm build from the rwkv7 Dockerfile (their build_context.sh copies it).
+# job -> runner; m2_pilot / m2_parent_arm / fla_rwkv7 build from the rwkv7 Dockerfile (their build_context.sh copies it).
 RUNNERS = {"qual": "jobs/qual/qual_job.sh", "probe9b": "jobs/probe9b/probe_job.sh", "rwkv7": "jobs/rwkv7/rwkv7_job.sh",
-           "m2_pilot": "jobs/m2_pilot/m2_job.sh", "m2_parent_arm": "jobs/m2_parent_arm/parent_arm_job.sh"}
+           "m2_pilot": "jobs/m2_pilot/m2_job.sh", "m2_parent_arm": "jobs/m2_parent_arm/parent_arm_job.sh",
+           "fla_rwkv7": "jobs/fla_rwkv7/fla_job.sh"}
 GUARD_CALL = re.compile(r'^python -I /opt/ssdm/m1/jobs/common/fla_guard\.py --out "\$WORK/out/fla_guard\.json".*'
                         r'\|\| fail 5 ', re.M)
 DOCKERFILES = sorted(p for p in (ROOT / "jobs").glob("*/Dockerfile"))
