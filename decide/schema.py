@@ -195,4 +195,7 @@ def request_fingerprint(request: dict[str, Any]) -> str:
             "options": canonical_options(q),
         }
     payload = {"state": request["state"], "questions": questions}
+    env = request.get("ssdm")
+    if isinstance(env, dict) and env.get("provenance") is not None:
+        payload["provenance"] = env["provenance"]
     return sha256_text(canonical_json(payload))

@@ -19,6 +19,11 @@ class Plan:
     max_call_input_tokens: int  # longest single model input (row) in tokens
     total_input_tokens: int  # tokens across all rows that would be forwarded
     per_question: dict[str, dict[str, Any]] = field(default_factory=dict)
+    #: prompt tokens per label (template / instruction / data), summed over question rows;
+    #: None when the backend does not tokenize (oracle, replay)
+    prompt_token_labels: dict[str, int] | None = None
+    #: True only for backends that consume a per-token trust mask (ISE/ASIDE)
+    provenance_applied: bool = False
 
 
 @dataclass
@@ -32,6 +37,11 @@ class ScoreResult:
 
 class DeadlineExceeded(Exception):
     pass
+
+
+class CallBudgetExceeded(Exception):
+    """Raised by the adapter callback when a backend starts more inference calls than
+    ``max_inference_calls`` allows (e.g. its plan under-reported the calls it needs)."""
 
 
 class BackendUnsupported(Exception):

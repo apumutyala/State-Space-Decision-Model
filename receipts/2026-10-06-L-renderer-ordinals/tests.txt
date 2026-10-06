@@ -1,0 +1,13 @@
+test_ask_does_not_assert_missing_fact (language_growth.tests.test_realize.RenderTests.test_ask_does_not_assert_missing_fact) ... ok
+test_bound_fact_and_exact_comparison (language_growth.tests.test_realize.RenderTests.test_bound_fact_and_exact_comparison) ... ok
+test_conjoined_explanation_preserves_assertions_without_causal_claim (language_growth.tests.test_realize.RenderTests.test_conjoined_explanation_preserves_assertions_without_causal_claim) ... ok
+test_derivation_renderer_requires_positive_integer_ordinals (language_growth.tests.test_realize.RenderTests.test_derivation_renderer_requires_positive_integer_ordinals) ... ok
+test_explanation_uses_ordinals_independent_of_valid_node_names (language_growth.tests.test_realize.RenderTests.test_explanation_uses_ordinals_independent_of_valid_node_names) ... ok
+test_hostile_string_is_quoted_data (language_growth.tests.test_realize.RenderTests.test_hostile_string_is_quoted_data) ... ok
+test_prose_node_id_is_rejected_and_never_rendered (language_growth.tests.test_realize.RenderTests.test_prose_node_id_is_rejected_and_never_rendered) ... ok
+test_rejected_forged_and_revoked_never_render (language_growth.tests.test_realize.RenderTests.test_rejected_forged_and_revoked_never_render) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.007s
+
+OK

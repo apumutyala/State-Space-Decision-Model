@@ -31,6 +31,7 @@ def decider_for(manifest, case, backend):
         calibration=calibration,
         enable_v0_1_deltas=case["decider"]["enable_v0_1_deltas"],
         backend_max_input_tokens=manifest["revision"].get("max_context"),
+        enable_experimental_provenance=case["decider"].get("enable_experimental_provenance", False),
     )
 
 
