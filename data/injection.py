@@ -5,7 +5,8 @@ Attack templates
 * D1 family A is vendored VERBATIM from ``safety_eval/attacks.py`` on branch ``claude/m0-steer-eval`` at commit
   944fa02a4e90fda32e893de266c585587db3c3e7 (git blob 1c9c106794badc631065293fc0c5577343887531). PREREG section 2.2
   lets split A be used for tuning; split B is held out for frozen-checkpoint gates and must never be trained on.
-* D1 family B is NOT in this file. Only hashes of its word 6-grams are stored (``FORBIDDEN_6GRAMS``), and every
+* D1 family B (all k=8 templates: the four v0.2 ones at 944fa02 and the four blind v0.4 ones of the PREREG v0.4
+  amendment, PR #22) is NOT in this file. Only hashes of its word 6-grams are stored (``FORBIDDEN_6GRAMS``), and every
   built record is checked against them (``assert_no_heldout``). The same hashes cover the five eval-time hijack
   templates: they have no held-out split, so training on them verbatim would make the hijack metric
   in-distribution. Training uses its own hijack-style templates (``TRAIN_HIJACK``) with no 6-gram in common.
@@ -28,6 +29,15 @@ ATTACKS_PROVENANCE = {
     "commit": "944fa02a4e90fda32e893de266c585587db3c3e7",
     "path": "safety_eval/attacks.py",
     "git_blob": "1c9c106794badc631065293fc0c5577343887531",
+}
+# Held-out D1-B v0.4 (k=8) source; only its 6-gram hashes are used here.
+HELDOUT_B_V04_PROVENANCE = {
+    "branch": "claude/d1b-amendment",
+    "pr": 22,
+    "commit": "a44a35e6c4f9c4a22cf7a7f389ce2b5076cd4bf8",
+    "path": "safety_eval/attacks.py",
+    "git_blob": "b5e0c4a4aee24cec1719d0826e8e1008a4ec7a1f",
+    "b_template_set_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
 }
 
 # Verbatim copy of D1_TEMPLATES_A ({act}: imperative phrase for the steer target; {gold}: noun phrase for the
@@ -79,7 +89,37 @@ ee11e5f3554b1d1c683fb54fbb2cde91eedf788a f16807b1c45982584c9fa63fbe29eafece9253f
 f4b41eb9c756a1d779a3d080ecb8264be057df69 f72883caa9dfa9ce8302d7f9c5c11f523d7dfdde
 fdab5d79980a793c2414d86b6654b2ad5bee70e0
 """.split()
-FORBIDDEN_6GRAMS: frozenset[str] = frozenset(_FORBIDDEN)
+# PREREG v0.4 amendment (PR #22, branch claude/d1b-amendment @ a44a35e6c4f9c4a22cf7a7f389ce2b5076cd4bf8, attacks.py
+# blob b5e0c4a4aee24cec1719d0826e8e1008a4ec7a1f): 47 6-grams of the four blind D1-B v0.4 templates
+# (ledger_settled, cutoff_window, peer_practice, soft_framing). Recomputed from the source with template_6grams()
+# and equal to the list in PR #22's body.
+_FORBIDDEN_B_V04 = """
+01a0deeea239a6ea92dfdc62d4ff929ebeffb112 061dab12db8230c420362f18d5e5547071cfcb8b
+0adb4fa8e34df8a4b3d6bb70b095d5da54cac41f 0b604eb077859fd8f43b49e27d0306bee9f123fc
+1017dd7c6224ce0e60b13d43e4f47f6b59f61fde 205ac57d450e0dc09a3630bb72b7d1f35bcf234f
+218acf73939612e70c0557f17617db21df1eb5c7 25b8e7c19b0a9152e684f646021a628bcf8dc821
+299da0a23d15f43353fc19233908bc82ce4766e1 29b0c06c8872ca03e22ae0cc69b6ac4df9e17642
+2dea8609c98390466264e385e4822f88a9564581 3439efa02b7d3695f52b2e780008cacfa6b93737
+39773e8c2daf00db336b5e8471df6ba34abbbc01 3f780595809f9125c845c5a5fcf073246aa739e3
+42f2cb8d7d21f28ab0a925918b7e4175e30a33db 4778c25068f575016233cd5e31e257ba7eadc328
+518c86aa3a1f8c2d1cf885fb4d9b013217cba85c 521939674a834fee11208968d5a34921c05fa47d
+5c38b4f9046760c4f4545d5a1d78747b56333abb 5f598d789c6b5b2904844a912330ef7209ab2bdf
+62eda8fca8fba6844e1472f7e2432d6b37268cf8 67cc64429215680194f4c76a7f83fcab60f334ed
+6a807c031a227caeeaaa784fcb4c1d0bfa449786 6cb74ce6909b9dc84b77485bb1f8cb5b5e8aca42
+6f92cd861b973b119883db20700cb6f9a71ea762 780c8e2a2f076908cf7ebe99df068cf75a3307df
+82bc3dd1c8f3f1e6e5093d90d725f2078e50551c 8340b930ea0884f87683c9aefa4647873fb6f5ba
+8bdabdf694a22f69b063f6278467787e2053d81a 8bf47ac407ea3f64c372681b13b5323f4436abc7
+8fe391ded65f3940e1a99bfe459646b795ac36fd 9038ecd76191eebf6e0cef58173aab399e8864a7
+95eb12e7b822006f57b660fddf6b3d28e9eaeec1 985955ca5bd26919b5b211c3b1460210339744a9
+a013c1d22764c5623be1fb87ae72ca2acdd84673 ad6414e1a97969b24003500a237240a30a4590d1
+b460feed69d1396c178f738791e21135e3d0b038 bfa59de0b3aeb7df8ad38af055b9d78f279b7f3a
+c1e04b0ca9e245c8bbba581d8dcfdf13ef58302e cbc64057972d4c8ee85ff6adf802ccb7c830d5e7
+d18d2f69db45b4450d22508b27957fb454a8a764 d34ca8bb5a9a96b7cf4e0692d9dadd02c05c8027
+d4f7bcd4bcce25f92ddd916fd46c4ee924d5fa71 de53562808064af99d8843873091bf32940b75f3
+e7fb86104e119f77e1229f2fddaf8a3b64afff30 ea84fc7a5933329d304ba39a2f5bb3e21b62c062
+f36c2bbf71eb7ea17f92857040a72d48d02e3c67
+""".split()
+FORBIDDEN_6GRAMS: frozenset[str] = frozenset(_FORBIDDEN) | frozenset(_FORBIDDEN_B_V04)
 
 SENDERS = ["Jordan", "Priya", "Mateo", "Aiko", "Sam", "Leila", "Tomasz", "Grace", "Kofi", "Ines"]
 

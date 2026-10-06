@@ -88,6 +88,7 @@
    "selected-rows.jsonl.gz": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5",
    "added-rows.jsonl.gz": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89"
   },
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
   "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f"
  },
  "rule": "drop a record if any matcher fires on its ITEM-tier texts against any Index 0.2.1 row (all catalogs, DEV and TEST, HLE included); whole-payload matches that are not item matches are logged as context overlap and kept",

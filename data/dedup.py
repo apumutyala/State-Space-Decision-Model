@@ -157,6 +157,10 @@ EXPECTED_SUITE_SHA256 = {
 
 
 EXPECTED_ROWS = 124971 + 30419
+ARRAY_NAMES = ("seg_hash", "seg_cat", "ng_hash", "ng_cat", "mh_sig", "mh_cat", "sh_tok", "sh_off", "sh_cat")
+# Content hash of the production v3 fingerprint arrays (index-fp-v3.npz built from the official snapshot,
+# receipts/2026-10-06-D-m2-data). A rebuild must reproduce it; change it only together with FP_VERSION.
+PRODUCTION_ARRAYS_SHA256 = "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28"
 
 
 # ----------------------------------------------------------------------------------------------- fingerprint
@@ -297,9 +301,22 @@ class Fingerprint:
             self.mh_band_sorted.append((keys[order, b], order))
 
     # -- persistence ------------------------------------------------------------------------------------
+    def arrays_sha256(self) -> str:
+        """Content hash of the fingerprint arrays themselves (name, dtype, shape, little-endian bytes, fixed order).
+
+        Independent of the npz container (zip timestamps), so a rebuild with identical content hashes equal."""
+        h = hashlib.sha256()
+        for name in ARRAY_NAMES:
+            a = np.ascontiguousarray(getattr(self, name))
+            a = a.astype(a.dtype.newbyteorder("<"), copy=False)
+            h.update(f"{name}|{a.dtype.str}|{a.shape}|".encode())
+            h.update(a.tobytes())
+        return h.hexdigest()
+
     def save(self, path: Path) -> str:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
+        self.meta["arrays_sha256"] = self.arrays_sha256()
         np.savez(path, seg_hash=self.seg_hash, seg_cat=self.seg_cat, ng_hash=self.ng_hash, ng_cat=self.ng_cat,
                  mh_sig=self.mh_sig, mh_cat=self.mh_cat, sh_tok=self.sh_tok, sh_off=self.sh_off, sh_cat=self.sh_cat)
         path.with_suffix(".json").write_text(json.dumps(self.meta, indent=1), encoding="utf-8")
@@ -330,6 +347,13 @@ class Fingerprint:
             problems.append(f"rows {m.get('rows')} != {EXPECTED_ROWS}")
         if "45" not in m.get("rows_by_catalog", {}):
             problems.append("HLE (catalog 45) missing")
+        # metadata can be copied; the arrays are what the guard actually queries, so hash them (PR #16 Track L)
+        actual = self.arrays_sha256()
+        if m.get("arrays_sha256") != actual:
+            problems.append(f"arrays sha256 {actual[:12]}... does not match the claimed {str(m.get('arrays_sha256'))[:12]}...")
+        if actual != PRODUCTION_ARRAYS_SHA256:
+            problems.append(f"arrays sha256 {actual[:12]}... is not the pinned production fingerprint "
+                            f"{PRODUCTION_ARRAYS_SHA256[:12]}...")
         if problems:
             raise RuntimeError("fingerprint is not a production fingerprint: " + "; ".join(problems))
 

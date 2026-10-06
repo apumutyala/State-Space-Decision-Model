@@ -109,27 +109,70 @@ def test_training_templates_disjoint_from_forbidden():
         assert "<|" not in t and "|>" not in t
 
 
-def _steer_eval_source():
+def _git_show(commit, path="safety_eval/attacks.py"):
     repo = Path(__file__).resolve().parents[2]
     try:
-        return subprocess.run(["git", "-C", str(repo), "show", f"{I.ATTACKS_PROVENANCE['commit']}:safety_eval/attacks.py"],
+        return subprocess.run(["git", "-C", str(repo), "show", f"{commit}:{path}"],
                               capture_output=True, text=True, encoding="utf-8", check=True).stdout
     except Exception:
         return None
 
 
-def test_vendored_templates_match_source():
-    src = _steer_eval_source()
-    if src is None:
-        pytest.skip("claude/m0-steer-eval commit not available in this clone")
+def _git_blob(commit, path="safety_eval/attacks.py"):
+    repo = Path(__file__).resolve().parents[2]
+    return subprocess.run(["git", "-C", str(repo), "rev-parse", f"{commit}:{path}"],
+                          capture_output=True, text=True, check=True).stdout.strip()
+
+
+def _literal_dicts(src, names):
+    """First literal assignment of each name (later non-literal re-bindings, e.g. B = {**V02, **V04}, skipped)."""
     d = {}
     for node in ast.parse(src).body:
-        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name) and \
-                node.targets[0].id in ("D1_TEMPLATES_A", "D1_TEMPLATES_B", "HIJACK_TEMPLATES"):
-            d[node.targets[0].id] = ast.literal_eval(node.value)
+        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name) and node.targets[0].id in names                 and node.targets[0].id not in d:
+            try:
+                d[node.targets[0].id] = ast.literal_eval(node.value)
+            except ValueError:
+                pass
+    return d
+
+
+def test_vendored_templates_match_source():
+    src = _git_show(I.ATTACKS_PROVENANCE["commit"])
+    if src is None:
+        pytest.skip("claude/m0-steer-eval commit not available in this clone")
+    assert _git_blob(I.ATTACKS_PROVENANCE["commit"]) == I.ATTACKS_PROVENANCE["git_blob"]
+    d = _literal_dicts(src, ("D1_TEMPLATES_A", "D1_TEMPLATES_B", "HIJACK_TEMPLATES"))
     assert d["D1_TEMPLATES_A"] == I.D1_TEMPLATES_A
-    assert I.template_6grams(d["D1_TEMPLATES_B"]) | I.template_6grams(d["HIJACK_TEMPLATES"]) == set(I.FORBIDDEN_6GRAMS)
+    assert I.template_6grams(d["D1_TEMPLATES_B"]) | I.template_6grams(d["HIJACK_TEMPLATES"]) <= set(I.FORBIDDEN_6GRAMS)
     assert not set(d["D1_TEMPLATES_B"]) & set(I.D1_TEMPLATES_A)
+
+
+def test_forbidden_hashes_match_source():
+    """FORBIDDEN_6GRAMS == 6-grams of D1-B v0.2 + eval hijack (944fa02) + blind D1-B v0.4 (PR #22, a44a35e)."""
+    old = _git_show(I.ATTACKS_PROVENANCE["commit"])
+    new = _git_show(I.HELDOUT_B_V04_PROVENANCE["commit"])
+    if old is None or new is None:
+        pytest.skip("steer-eval / d1b-amendment commits not available in this clone")
+    assert _git_blob(I.HELDOUT_B_V04_PROVENANCE["commit"]) == I.HELDOUT_B_V04_PROVENANCE["git_blob"]
+    o = _literal_dicts(old, ("D1_TEMPLATES_B", "HIJACK_TEMPLATES"))
+    n = _literal_dicts(new, ("D1_TEMPLATES_A", "D1_TEMPLATES_B", "D1_TEMPLATES_B_V04", "HIJACK_TEMPLATES"))
+    assert n["D1_TEMPLATES_B"] == o["D1_TEMPLATES_B"]          # v0.2 B unchanged by the amendment
+    assert n["HIJACK_TEMPLATES"] == o["HIJACK_TEMPLATES"]
+    assert n["D1_TEMPLATES_A"] == I.D1_TEMPLATES_A
+    assert len(n["D1_TEMPLATES_B_V04"]) == 4 and len(n["D1_TEMPLATES_B"]) + len(n["D1_TEMPLATES_B_V04"]) == 8
+    expected = (I.template_6grams(o["D1_TEMPLATES_B"]) | I.template_6grams(o["HIJACK_TEMPLATES"])
+                | I.template_6grams(n["D1_TEMPLATES_B_V04"]))
+    assert expected == set(I.FORBIDDEN_6GRAMS)
+    # every held-out B template (v0.2 and v0.4) is caught when rendered into an untrusted field
+    for t in list(n["D1_TEMPLATES_B"].values()) + list(n["D1_TEMPLATES_B_V04"].values()):
+        rendered = t.format(act="go with option two", gold="the first invoice", sender="Sam")
+        with pytest.raises(I.HeldOutLeak):
+            I.assert_no_heldout({"forwarded_message": "Hello. " + rendered}, {})
+    # training templates stay disjoint from the k=8 set
+    own = I.template_6grams(I.TRAIN_HIJACK) | I.template_6grams(I.D1_TEMPLATES_A)
+    for c in I.BENIGN_CARRIERS:
+        own |= I.ngram_sha1s(c)
+    assert not own & set(I.FORBIDDEN_6GRAMS)
 
 
 @pytest.mark.parametrize("fam", sorted(I.FACT_FAMILIES))
