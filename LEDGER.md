@@ -16,7 +16,7 @@ Credits: SF Compute $525. Batch rate is $2.97/H100-h and interactive is $3.96/h;
 | 2026-10-06 | D | job-jn47u fla gate v3 | ≤3.96 | rule v1 | 0.84 | REJECT_NUMERICS (v1 reference = bf16 serial eager; production chunked also fails it); fla prefill ~3x | PR #77 |
 | 2026-10-06 | D | job-mden7 fla truth_v2 (fp64 truth + cell train step) | ≤5.74 | rule v2+A1 | 1.06 | REJECT_NUMERICS (fla 2–3x chunked's grad error vs fp64, ~100x on state). Cell train step OOMs from T≈1k on chunked (17/20 steps), launch-bound ~2 s/row → first cell blocked on PR #86 | PR #77, #86 |
 | 2026-10-06 | D | job-5cmat probe9b one-layer GDN (Qwen3.5-9B) | ≤29.70 (one attempt 13.37) | 511e8dd rule | 5.01 | **proceed-all-8**: layer 23 ΔNLL 0.0068, ppl 1.007, MMLU −1.75, Index +1.66 [+0.19, +3.18] (stock 38.3 → 39.9), MQAR −0.006, NIAH 0 | #68, #87 |
-| | | **October MTD (SF receipts)** | | | **14.54** | | get_usage |
+| | | **October MTD (SF receipts)** | | | **14.49** | | get_usage |
 
 ## Negative results and false positives
 
