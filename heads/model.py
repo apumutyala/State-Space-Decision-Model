@@ -43,8 +43,10 @@ class DecisionModel(nn.Module):
     def head_parameters(self):
         return list(self.head.parameters()) + list(self.typed.parameters())
 
-    def forward(self, rows: Sequence[LayoutRow], return_attribution: bool = False) -> Forward:
-        x = build_head_input(self.backbone, rows, need_fork=self.head.needs_fork, pad_id=self.pad_id)
+    def forward(self, rows: Sequence[LayoutRow], return_attribution: bool = False,
+                shared_prefix: bool = False) -> Forward:
+        x = build_head_input(self.backbone, rows, need_fork=self.head.needs_fork, pad_id=self.pad_id,
+                             shared_prefix=shared_prefix)
         out = self.head(x, return_attribution=return_attribution)
         lp = self.typed(out.logits, [r.qtype for r in rows], x.ks, x.e)
         return Forward(lp, out, x)
