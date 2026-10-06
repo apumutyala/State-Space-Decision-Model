@@ -1,0 +1,174 @@
+{
+  "case_id": "LG18",
+  "title": "one bounded repair",
+  "tags": [
+    "repair",
+    "positive_final",
+    "planning_error"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Does Atlas have a longer warranty than Boreal?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_inference_calls": 4,
+      "max_repair_calls": 1
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "boreal-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n2",
+        "op": "ReadFact",
+        "record_ref": "atlas-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n3",
+        "op": "Compare",
+        "left": {
+          "node": "n1",
+          "project": "object"
+        },
+        "right": {
+          "node": "n2",
+          "project": "object"
+        },
+        "relation": "greater_than"
+      },
+      {
+        "id": "n4",
+        "op": "Assert",
+        "proposition": "n3"
+      }
+    ],
+    "outputs": [
+      "n4"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "accepted",
+    "kernel_reason_category": null,
+    "task_outcome": "repaired_complete_answer",
+    "useful_complete_answer": true,
+    "why": "The first false proposal is rejected. One permitted repair selects the true comparison. Preserve the initial planning error and charge the extra call.",
+    "initial_planning_errors": 1,
+    "inference_calls_charged": 2,
+    "repair_calls_charged": 1,
+    "latency_result": "unmeasured",
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 1,
+      "useful_complete_count": 1,
+      "ask_count": 0
+    }
+  },
+  "repair": {
+    "requested": true,
+    "permitted": true,
+    "feedback_to_planner": {
+      "reason_code": "unsupported assertion"
+    },
+    "repaired_proposal": {
+      "schema": "ssdm.semantic_program.v0.1",
+      "context_ref": "catalog-public-r7",
+      "policy_ref": "public-read-r3",
+      "registry_ref": "fixture-catalog-grammar-v0",
+      "nodes": [
+        {
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "atlas-v1",
+          "field": "warranty_months"
+        },
+        {
+          "id": "n2",
+          "op": "ReadFact",
+          "record_ref": "boreal-v1",
+          "field": "warranty_months"
+        },
+        {
+          "id": "n3",
+          "op": "Compare",
+          "left": {
+            "node": "n1",
+            "project": "object"
+          },
+          "right": {
+            "node": "n2",
+            "project": "object"
+          },
+          "relation": "greater_than"
+        },
+        {
+          "id": "n4",
+          "op": "Assert",
+          "proposition": "n3"
+        }
+      ],
+      "outputs": [
+        "n4"
+      ],
+      "style": "plain"
+    },
+    "initial_expected": {
+      "kernel_status": "rejected",
+      "kernel_reason_category": "unsupported assertion"
+    },
+    "accounting_unit": "illustrative_complete_proposal_calls_not_measured_model_or_slot_calls"
+  },
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG18-D0",
+    "type": "choice",
+    "question": "Does Atlas have a longer warranty than Boreal?",
+    "options": [
+      {
+        "id": "LG18-atlas_longer",
+        "description": "Yes; Atlas has 24 months versus Boreal's 12 months."
+      },
+      {
+        "id": "LG18-boreal_longer",
+        "description": "No; Boreal has the longer warranty."
+      },
+      {
+        "id": "LG18-unknown",
+        "description": "The comparison is unavailable."
+      }
+    ],
+    "target_option_id": "LG18-atlas_longer",
+    "target_description": "The same direct task has the same answer; separately evaluate one-shot and equally budgeted one-repair conditions.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": true,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+  }
+}

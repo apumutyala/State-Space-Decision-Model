@@ -1,0 +1,97 @@
+{
+  "case_id": "LG21",
+  "title": "arbitrary text assertion bypass",
+  "tags": [
+    "negative",
+    "arbitrary_text"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Is Atlas repairable?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_inference_calls": 4,
+      "max_repair_calls": 1
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "atlas-v1",
+        "field": "repairable"
+      },
+      {
+        "id": "n2",
+        "op": "Assert",
+        "proposition": "Atlas is repairable because all Atlas products are perfect."
+      }
+    ],
+    "outputs": [
+      "n2"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "rejected",
+    "kernel_reason_category": "invalid graph",
+    "task_outcome": "rejected_plan",
+    "useful_complete_answer": false,
+    "why": "Assert must refer to a prior checked proposition node. An arbitrary string cannot bypass the bound Fact, even when a valid ReadFact appears earlier.",
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 1,
+      "useful_complete_count": 0,
+      "ask_count": 0
+    }
+  },
+  "unresolved": [],
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG21-D0",
+    "type": "choice",
+    "question": "Is Atlas repairable?",
+    "options": [
+      {
+        "id": "LG21-because_perfect",
+        "description": "Atlas is repairable because all Atlas products are perfect."
+      },
+      {
+        "id": "LG21-yes",
+        "description": "Yes, Atlas is repairable."
+      },
+      {
+        "id": "LG21-no",
+        "description": "No, Atlas is not repairable."
+      }
+    ],
+    "target_option_id": "LG21-yes",
+    "target_description": "The repairable fact is supported; the arbitrary explanatory claim is not.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": true,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+  }
+}

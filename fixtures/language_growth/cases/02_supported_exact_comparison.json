@@ -1,0 +1,128 @@
+{
+  "case_id": "LG02",
+  "title": "supported exact comparison",
+  "tags": [
+    "positive",
+    "comparison",
+    "exact_decimal"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Does Atlas cost more than Boreal in October 2026?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_inference_calls": 4,
+      "max_repair_calls": 1
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "atlas-v1",
+        "field": "price"
+      },
+      {
+        "id": "n2",
+        "op": "ReadFact",
+        "record_ref": "boreal-v1",
+        "field": "price"
+      },
+      {
+        "id": "n3",
+        "op": "Compare",
+        "left": {
+          "node": "n1",
+          "project": "object"
+        },
+        "right": {
+          "node": "n2",
+          "project": "object"
+        },
+        "relation": "greater_than"
+      },
+      {
+        "id": "n4",
+        "op": "Assert",
+        "proposition": "n3"
+      }
+    ],
+    "outputs": [
+      "n4"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "accepted",
+    "kernel_reason_category": null,
+    "task_outcome": "complete_correct_answer",
+    "useful_complete_answer": true,
+    "why": "199.90 USD > 149.90 USD exactly, with the same October scope.",
+    "exact_check": {
+      "left": "199.90",
+      "relation": "greater_than",
+      "right": "149.90",
+      "unit": "USD",
+      "temporal_scope": "2026-10",
+      "truth": true
+    },
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 1,
+      "useful_complete_count": 1,
+      "ask_count": 0
+    }
+  },
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG02-D0",
+    "type": "choice",
+    "question": "Does Atlas cost more than Boreal in October 2026?",
+    "options": [
+      {
+        "id": "LG02-equal",
+        "description": "The October prices are equal."
+      },
+      {
+        "id": "LG02-unknown",
+        "description": "A permitted price comparison cannot be made."
+      },
+      {
+        "id": "LG02-yes",
+        "description": "Yes, the October Atlas price is higher."
+      },
+      {
+        "id": "LG02-no",
+        "description": "No, the October Boreal price is higher."
+      }
+    ],
+    "target_option_id": "LG02-yes",
+    "target_description": "199.90 USD exceeds 149.90 USD in the same October scope.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": true,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+  }
+}

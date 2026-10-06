@@ -1,0 +1,119 @@
+{
+  "case_id": "LG07",
+  "title": "stale context",
+  "tags": [
+    "negative",
+    "stale_context"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "What comparison follows from the current warranty records?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_inference_calls": 4,
+      "max_repair_calls": 1
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r6",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "atlas-old-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n2",
+        "op": "ReadFact",
+        "record_ref": "atlas-old-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n3",
+        "op": "Compare",
+        "left": {
+          "node": "n1",
+          "project": "object"
+        },
+        "right": {
+          "node": "n2",
+          "project": "object"
+        },
+        "relation": "equal"
+      },
+      {
+        "id": "n4",
+        "op": "Assert",
+        "proposition": "n3"
+      }
+    ],
+    "outputs": [
+      "n4"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "rejected",
+    "kernel_reason_category": "stale context",
+    "task_outcome": "rejected_plan",
+    "useful_complete_answer": false,
+    "why": "The host requires r7; a self-consistent program bound to r6 is stale and cannot reuse its old proof.",
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 1,
+      "useful_complete_count": 0,
+      "ask_count": 0
+    }
+  },
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG07-D0",
+    "type": "choice",
+    "question": "What comparison follows from the current warranty records?",
+    "options": [
+      {
+        "id": "LG07-unknown",
+        "description": "The current records do not permit a comparison."
+      },
+      {
+        "id": "LG07-atlas_longer",
+        "description": "Atlas has the longer current warranty: 24 versus 12 months."
+      },
+      {
+        "id": "LG07-boreal_longer",
+        "description": "Boreal has the longer current warranty."
+      },
+      {
+        "id": "LG07-equal",
+        "description": "The current warranties are equal."
+      }
+    ],
+    "target_option_id": "LG07-atlas_longer",
+    "target_description": "Resolve current host snapshot r7, not the proposal's stale r6.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": true,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+  }
+}
