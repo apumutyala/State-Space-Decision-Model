@@ -1,0 +1,13 @@
+# L0d2 typed planner handoff
+
+The planner calls the same D provider for operation and argument choices. Static candidates are not prefiltered by truth or evaluator labels. Later slots see earlier selected slots labelled as proposals, never checked facts. One-shot is the default; an explicitly enabled repair receives one bounded reason and at most one further whole-program attempt. Every provider request during repair counts against the repair-call budget as well as the overall proposal-call budget. Model forwards reported by D are accounted separately, including unknown work after failures.
+
+The bridge serializes an audience-permitted view and exact typed host inputs. It rejects reusable state and nonempty accepted prefixes. Incoming successful responses must match request/model identity and a caller-pinned served configuration; probability supports, normalization and legacy answer rounding are checked. A checked program alone does not establish task relevance. Only a successful release through the renderer supplies `text`.
+
+`PlannerResult` is internal: program, reason and trace are permissioned diagnostic data. A public endpoint must expose accepted text or a fixed failure response, never serialize the full object. This PR does not provide a public endpoint or neural-state intervention port.
+
+Independent Track L adversarial review reproduced two defects in draft d10ba39: missing calibration identity was accepted, and callers could request more than one repair attempt. Both are fixed in d2a0f73 and passed the reviewer's focused recheck. Earlier internal review repaired arbitrary metadata serialization and separated repair provider requests from AST attempts. Root added selected-slot conditioning and a CPU smoke using D's actual Decider with a scripted OracleBackend. The smoke exercises read, comparison and false-comparison rejection; it never loads weights or supports a learned success claim.
+
+Dependencies: contract #4, fixture source 2fe814a in #5, D adapter #6 (smoke source pinned by receipt), kernel e1dd16b in #10, renderer a361de9 in #11. D's unresolved error handling remains a separate cross-review blocker. Merge dependencies before this PR. For pre-merge reproduction copy their files without overwriting this PR's planner/bridge/test files. Actual dependency file hashes are in the receipt. The development worktree is preserved; this isolated publication branch starts at agent-main.
+
+This initial planner expresses reads, explanations of reads, comparisons and registered Ask requests. It does not yet search arbitrary compositional graphs, provide rich language, or meet the L0 learned gates. Those gaps need model experiments after CPU proofs merge and the spend gate is acknowledged.
