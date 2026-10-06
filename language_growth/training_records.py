@@ -5,7 +5,10 @@ current-slot labels are separate and never inserted into the model request.
 """
 
 from copy import deepcopy
+import json
 from typing import Any, Iterable
+
+from .parent_bridge import audience_state
 
 
 def export_training_records(examples: Iterable[dict[str, Any]], *,
@@ -30,7 +33,16 @@ def export_training_records(examples: Iterable[dict[str, Any]], *,
         if (not isinstance(requests, list) or not requests or not isinstance(targets, list)
                 or len(requests) != len(targets)):
             raise ValueError("requests and targets must match exactly")
+        training = example["training_only"]
+        first_state = json.loads(requests[0]["state"])
+        expected_state = json.loads(audience_state(first_state["task_input"], training["host"], training["catalog"]))
+        prior = []
         for index, (request, target) in enumerate(zip(requests, targets), 1):
+            expected_state["proposed_slot_choices"] = prior
+            canonical_state = json.dumps(expected_state, sort_keys=True, separators=(",", ":"),
+                                         ensure_ascii=True, allow_nan=False)
+            if request.get("state") != canonical_state:
+                raise ValueError("state must match permitted evidence and earlier target prefix exactly")
             questions = request.get("questions")
             if not isinstance(questions, dict) or len(questions) != 1:
                 raise ValueError("one question per planner slot is required")
@@ -47,6 +59,7 @@ def export_training_records(examples: Iterable[dict[str, Any]], *,
                 raise ValueError("duplicate training record identity")
             seen.add(identity)
             records.append({"id": identity, "request": deepcopy(request), "labels": {qid: gold}})
+            prior.append({"slot": slot, "option_id": gold, "description": question["criteria"][gold]})
     if not records:
         raise ValueError("no training records")
     return records
