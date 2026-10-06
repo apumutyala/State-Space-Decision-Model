@@ -21,6 +21,7 @@ from __future__ import annotations
 import csv
 import json
 import random
+import re
 from typing import Iterator
 
 from . import sources as S
@@ -269,6 +270,96 @@ def nq(seed: int) -> Iterator[dict]:
                     opaque_ids=True, item_fields=["query"], item_options="gold")
 
 
+GLAIVE_FN_HEAD = "Use them if required -"
+GLAIVE_NAME = re.compile(r'"name"\s*:\s*"([^"]+)"')
+
+
+def glaive_fc(seed: int) -> Iterator[dict]:
+    """Glaive FC v2: tool catalog + the first user turn -> which listed function to call now, or none (answer,
+    clarify or decline without a call). Gold = the source's first assistant turn. Rows whose system message
+    publishes no function are skipped (a single option is not a decision)."""
+    import pyarrow.parquet as pq
+    t = pq.read_table(S.verified_path("glaive_fc", "default/train/0000.parquet"), columns=["system", "chat"])
+    sysc, chatc = t.column("system"), t.column("chat")
+    dec = json.JSONDecoder()
+    for i in _order(t.num_rows, "glaive_fc", seed):
+        sysmsg, chat = sysc[i].as_py() or "", chatc[i].as_py() or ""
+        at = sysmsg.find(GLAIVE_FN_HEAD)
+        if at < 0:
+            continue
+        s, pos, tools = sysmsg[at + len(GLAIVE_FN_HEAD):], 0, []
+        try:
+            while True:
+                while pos < len(s) and s[pos].isspace():
+                    pos += 1
+                if pos >= len(s):
+                    break
+                obj, pos = dec.raw_decode(s, pos)
+                tools.append(obj)
+        except json.JSONDecodeError:
+            continue
+        names = [x.get("name") for x in tools if isinstance(x, dict) and isinstance(x.get("name"), str) and x["name"]]
+        if not names or len(names) != len(tools) or len(set(names)) != len(names) or "no_tool" in names:
+            continue
+        if not chat.startswith("USER:") or "\nASSISTANT:" not in chat:
+            continue
+        user, rest = chat[len("USER:"):].split("\nASSISTANT:", 1)
+        user, first = user.strip(), rest.split("<|endoftext|>", 1)[0].strip()
+        if not user or not first:
+            continue
+        if first.startswith("<functioncall>"):
+            m = GLAIVE_NAME.search(first)
+            if not m or m.group(1) not in names:
+                continue
+            gold = m.group(1)
+        else:
+            gold = "no_tool"
+        opts = {n: n for n in names}
+        opts["no_tool"] = "do not call a tool now (answer, ask for missing details, or decline)"
+        yield _base("glaive_fc", i, "tool_select", {"tools": tools, "dialogue": [{"role": "user", "content": user}]},
+                    "choice", opts, gold, item_fields=["dialogue"], item_options="none")
+
+
+HUMOR = ["not funny", "slightly funny", "moderately funny", "funny"]
+_EDIT_SLOT = re.compile(r"<([^<>]*)/>")
+
+
+def _humi_edit(original: str, edit: str) -> tuple[str, str] | None:
+    """(clean headline, edited headline) from a Humicroedit ``original`` with one ``<word/>`` slot."""
+    if len(_EDIT_SLOT.findall(original)) != 1 or not edit.strip():
+        return None
+    return _EDIT_SLOT.sub(lambda m: m.group(1), original), _EDIT_SLOT.sub(lambda m: edit.strip(), original)
+
+
+def humicroedit_s1(seed: int) -> Iterator[dict]:
+    """Subtask-1 train: an edited headline -> funniness on a 4-level scale (mean of five 0-3 grades, rounded)."""
+    rows = _parquet_rows("humicroedit_s1", "subtask-1/train-00000-of-00001.parquet")
+    for i in _order(len(rows), "humicroedit_s1", seed):
+        r = rows[i]
+        he = _humi_edit(r["original"], r["edit"])
+        if he is None:
+            continue
+        g = min(3, max(0, int(float(r["meanGrade"]) + 0.5)))
+        yield _base("humicroedit_s1", i, "humor_score", {"original_headline": he[0], "edited_headline": he[1]},
+                    "score", list(HUMOR), g, item_fields=["original_headline", "edited_headline"], item_options="none",
+                    source_ind=str(r["id"]))
+
+
+def humicroedit_s2(seed: int) -> Iterator[dict]:
+    """Subtask-2 train: two one-word edits of the same headline -> which is funnier (ties, label 0, skipped)."""
+    rows = _parquet_rows("humicroedit_s2", "subtask-2/train.parquet")
+    for i in _order(len(rows), "humicroedit_s2", seed):
+        r = rows[i]
+        a, b = _humi_edit(r["original1"], r["edit1"]), _humi_edit(r["original2"], r["edit2"])
+        if a is None or b is None or a[0] != b[0] or a[1] == b[1] or int(r["label"]) not in (1, 2):
+            continue
+        yield _base("humicroedit_s2", i, "humor_pair", {"headline": a[0]}, "choice",
+                    {"edit_1": a[1], "edit_2": b[1]}, f"edit_{int(r['label'])}", item_fields=["headline"],
+                    item_options="all", source_ind=str(r["id"]))
+
+
 LOADERS = {"banking77": banking77, "clinc150": clinc150, "anli": anli, "hellaswag": hellaswag,
            "winogrande": winogrande, "gsm8k": gsm8k, "mmlu_aux": mmlu_aux, "sst5": sst5, "boolq": boolq,
-           "when2call": when2call, "toolace": toolace, "nq": nq}
+           "when2call": when2call, "toolace": toolace, "nq": nq,
+           # added for the 150k build
+           "glaive_fc": glaive_fc, "humicroedit_s1": humicroedit_s1, "humicroedit_s2": humicroedit_s2}
