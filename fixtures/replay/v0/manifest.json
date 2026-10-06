@@ -1,0 +1,90 @@
+{
+ "fixture_id": "replay-v0-qwen3.5-0.8b",
+ "created_utc": "2026-10-06T08:20:01+00:00",
+ "purpose": "Track D -> Track L handoff (m0): replay fixture for decide(); synthetic requests only",
+ "revision": {
+  "revision_id": "qwen3.5:Qwen/Qwen3.5-0.8B@2fc06364715b;w=04b1c301231d;tok=5f9e4d4901a9;prompt=jrt-chatml-v1.3b45ac33;cfg=d2735c84;adapter=0.1.0",
+  "backend": "hf_readout",
+  "family": "qwen3.5",
+  "model_id": "Qwen/Qwen3.5-0.8B",
+  "snapshot": "2fc06364715b967f1860aea9cf38778875588b17",
+  "files_sha256": {
+   "weights": "04b1c301231dd422b8860db31311ab2721511346a32cb1e079c4c4e5f1fe4696",
+   "tokenizer": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+   "config": "b90b86f35c8e6925ef74ee04d0e758f0a845c83a42089ad82bbaa948de9b4204"
+  },
+  "prompt_template": {
+   "id": "jrt-chatml-v1",
+   "sha256": "3b45ac339cd477359e0a1742196992e01afe5e11de36fc9c8096d06e3e4c4416"
+  },
+  "inference_config": {
+   "scoring": "sum_logprob(' ' + option_id + terminator)",
+   "rows": "one per question; grouped by length; unpadded",
+   "max_batch_rows": 16,
+   "dtype": "bfloat16",
+   "device": "cuda",
+   "torch": "2.8.0+cu128",
+   "transformers": "5.17.0",
+   "kernel_stack": {
+    "flash-linear-attention": null,
+    "fla-core": null,
+    "causal-conv1d": null,
+    "triton": null,
+    "triton-windows": null
+   }
+  },
+  "inference_config_sha256": "d2735c84f13331210003ba80aefb948e0d227cfd60346d9ac34229fc78eb7fa6",
+  "adapter_version": "0.1.0",
+  "max_context": 262144,
+  "notes": {
+   "model_class": "Qwen3_5ForCausalLM",
+   "layer_types": {
+    "full_attention": 6,
+    "linear_attention": 18
+   },
+   "attention_free": false
+  }
+ },
+ "calibration": {
+  "t0": 1.0,
+  "t1": 0.0,
+  "t_min": 0.05,
+  "fitted_on": null,
+  "kind": "option_count_temperature",
+  "status": "uncalibrated_identity",
+  "id": "0dbeae8e779644d2"
+ },
+ "generator": {
+  "command": "python -I scripts/gen_replay_fixture.py --qwen-dir C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\hf\\models--Qwen--Qwen3.5-0.8B\\snapshots\\2fc06364715b967f1860aea9cf38778875588b17 --out fixtures/replay/v0 --runs 3",
+  "git_sha_at_generation": "45a399aa5f636e1461db2cc31fd52b067ef4cbdd",
+  "worktree_dirty_at_generation": true,
+  "runs": 3
+ },
+ "hardware": {
+  "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.13",
+  "billed_usd": 0
+ },
+ "n_cases": 37,
+ "status_counts": {
+  "ok": 26,
+  "error/unknown_question_type": 1,
+  "error/empty_criteria": 1,
+  "unsupported/too_many_options": 1,
+  "unsupported/media_unsupported": 1,
+  "unsupported/parent_revision_mismatch": 1,
+  "exhausted/input_tokens_exceeded": 1,
+  "exhausted/choices_exceeded": 1,
+  "exhausted/inference_calls_exceeded": 1,
+  "exhausted/deadline_exceeded": 1,
+  "error/invalid_request": 1,
+  "unsupported/policy_restriction_requires_v0_1_deltas": 1
+ },
+ "files_sha256": {
+  "requests.jsonl": "f7759fbed759760ed7f7ed377982486ceb9c5fbc910c9535791275fc5ac8da23",
+  "responses.jsonl": "8f6c9f1298fc8cecf35a35c51ad698e6d7646bcbd6da35c122d2501504e8305d",
+  "recordings.jsonl": "04a1d1ad6b01f2e2c3180aa81ea50094f9a4fb0d9534ebc97d8269613c94f592"
+ },
+ "replay_contract": "ReplayBackend(fixture_dir) + Decider(enable_v0_1_deltas=case.decider.enable_v0_1_deltas) reproduces responses.jsonl exactly after decide.backends.replay.normalize_response, except cases with timing_dependent=true"
+}
