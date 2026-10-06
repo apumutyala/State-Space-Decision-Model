@@ -37,6 +37,28 @@ development_train tasks. Its external builder receipt and manifest are preserved
 with the cohort; the probe applies the synthetic-only SplitGuard to every record.
 No Index or held-out content is opened or used.
 
+All 13,332 records enter the optimizer's sampling pool; zero records are
+excluded. The 9,078/13,332 outcome below counts correct training-set diagnostic
+predictions, not admitted records. The bounded run makes 12,800 draws with
+replacement (400 batches of 32). A deterministic replay of its sampling RNG
+in `sampling.json` shows 8,254 unique sampled rows from 4,485 tasks. Thus the
+run covers approximately 0.96 epochs in draws and does not visit every row.
+
+| Slot | Pool records | Optimizer draws | Unique sampled records |
+| --- | ---: | ---: | ---: |
+| Operation | 5,000 | 4,805 | 3,082 |
+| Fact | 3,334 | 3,223 | 2,082 |
+| Left | 1,666 | 1,652 | 1,055 |
+| Right | 1,666 | 1,526 | 1,010 |
+| Relation | 1,666 | 1,594 | 1,025 |
+| All | 13,332 | 12,800 | 8,254 |
+
+The unique sampled records hash is
+`ba796ace8523d8b9fd482b3381fe42319ba56d2778ca325a42b333c479e803b3`:
+original source JSON lines ordered by source index with one LF per record.
+`sampling.json` retains every draw index. This sampling audit replays RNG only;
+it does not rerun training or change any measured prediction or receipt.
+
 Validation tasks SHA256:
 `d34df20c1448998791071833cc9154589b526e2ce0a68e7f98e307028d0a827f`.
 Generator seed 314159, 300 mixed-format development_validation tasks, disjoint
@@ -98,6 +120,9 @@ task kind is the generated task index modulo three (read, explain, compare).
 The original receipt's `failure_reasons: {"None": 0}` is a harmless summary
 formatting bug: all kernel results are accepted with reason null. The code now
 excludes null reasons; the measured receipt and raw files remain unchanged.
+The receipt directory's `.gitattributes` disables newline translation for JSON
+and weights to preserve exact measured bytes. Every listed artifact hash was
+also checked against its committed Git blob, with zero mismatches.
 
 ## Decision
 
