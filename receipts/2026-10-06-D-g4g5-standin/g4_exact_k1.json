@@ -1,9 +1,9 @@
 {
  "meta": {
-  "commit": "89458f9594a38724c56a81ff47e7a66281a78073",
+  "commit": "919b06ed28a3ecf98d13b9e44ea4aaa19d303518+dirty",
   "command": "python.exe -m safety_eval.run_guarantees_smoke --out receipts/2026-10-06-D-g4g5-standin",
   "python": "3.12.13",
-  "numpy": "2.5.2",
+  "numpy": "2.5.3",
   "platform": "Windows-11-10.0.26200-SP0",
   "hardware": "CPU (laptop), $0",
   "decider": "standin-keyword-v1 (NOT a model)",
@@ -78,7 +78,7 @@
   "config": {
    "max_decide_calls": 256
   },
-  "wall_s": 0.352,
+  "wall_s": 0.39,
   "metrics": {
    "n_units": 500,
    "guarantee_checked_units": 32,

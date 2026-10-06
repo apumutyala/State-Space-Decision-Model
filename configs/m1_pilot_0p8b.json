@@ -1,0 +1,83 @@
+{
+ "_comment": "m1-prep pipeline qualification on Qwen3.5-0.8B (6 attention layers at 3,7,11,15,19,23). Not a 9B claim. Batch 2 + VRAM cap 0.40 after a machine crash under shared-GPU pressure (2026-10-06).",
+ "seed": 0,
+ "kernel": "fla",
+ "seq_len": 1024,
+ "batch": 2,
+ "data": {
+  "train_max_tokens": 40000000
+ },
+ "controls": {
+  "swa_windows": [
+   256
+  ],
+  "swa_sinks": 4,
+  "zero": true
+ },
+ "probes": {
+  "ppl": [
+   [
+    1024,
+    64
+   ],
+   [
+    4096,
+    16
+   ]
+  ],
+  "niah_lengths": [
+   512,
+   1024,
+   2048,
+   4096,
+   8192
+  ],
+  "niah_n_per": 8,
+  "mqar_pairs": [
+   8,
+   32,
+   64,
+   128
+  ],
+  "mqar_n_seq": 20,
+  "mmlu_k": 5
+ },
+ "calibrate_out_scale": true,
+ "init": "reuse_attn",
+ "init_cmp": {
+  "inits": [
+   "random",
+   "clone_neighbor",
+   "reuse_attn"
+  ],
+  "steps": 100,
+  "lr": 0.001
+ },
+ "stage1": {
+  "steps": 800,
+  "lr": 0.001,
+  "eval_init": true
+ },
+ "order": "kl",
+ "stage2": {
+  "steps": 500,
+  "lr": 0.0005,
+  "train_all_converted": true
+ },
+ "gate": {
+  "n_windows": 32,
+  "max_step_delta_nll": 0.05,
+  "min_hidden_cos": 0.95,
+  "policy": "force"
+ },
+ "throughput": {
+  "lengths": [
+   1024,
+   2048,
+   4096,
+   8192
+  ],
+  "reps": 3
+ },
+ "vram_fraction": 0.4
+}

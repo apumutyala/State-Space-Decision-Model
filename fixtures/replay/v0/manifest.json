@@ -67,7 +67,7 @@
   "python": "3.12.13",
   "billed_usd": 0
  },
- "n_cases": 40,
+ "n_cases": 43,
  "status_counts": {
   "ok": 28,
   "error/unknown_question_type": 1,
@@ -76,17 +76,32 @@
   "unsupported/media_unsupported": 1,
   "unsupported/parent_revision_mismatch": 1,
   "exhausted/input_tokens_exceeded": 1,
-  "exhausted/choices_exceeded": 1,
+  "exhausted/questions_exceeded": 1,
   "exhausted/inference_calls_exceeded": 1,
   "exhausted/deadline_exceeded": 1,
-  "error/invalid_request": 1,
-  "unsupported/policy_restriction_requires_v0_1_deltas": 1,
+  "error/invalid_request": 3,
+  "exhausted/options_exceeded": 1,
+  "unsupported/provenance_not_enabled": 1,
   "error/invalid_option_id": 1
  },
  "files_sha256": {
-  "requests.jsonl": "d49c456293bda6ac25e8ad811832cd2cc800e098cea12f8e95875ea16c6d7af3",
-  "responses.jsonl": "c09ad4e4e0db9b96c3325f8aad357b0eba7971890bdeb3bc330de4080ff54d33",
+  "requests.jsonl": "14dac5715ad4e370d2182380d14b265148b2432708398f952520cdc1b290f3aa",
+  "responses.jsonl": "fc15dadafba651b11f20a49d089cd0a75eb1c9e88cbcf22fb96f5b05410417c7",
   "recordings.jsonl": "d3cfad02df535e4d372dc80cffd409ac12b4eed8e76c255e7679de07cafc6315"
  },
- "replay_contract": "ReplayBackend(fixture_dir) + Decider(enable_v0_1_deltas=case.decider.enable_v0_1_deltas) reproduces responses.jsonl exactly after decide.backends.replay.normalize_response, except cases with timing_dependent=true"
+ "replay_contract": "ReplayBackend(fixture_dir) + Decider(enable_v0_1_deltas=case.decider.enable_v0_1_deltas) reproduces responses.jsonl exactly after decide.backends.replay.normalize_response, except timing_dependent cases",
+ "responses_rebuilt": {
+  "utc": "2026-10-06T10:13:37+00:00",
+  "by": "python -I scripts/rebuild_fixture_from_recordings.py",
+  "git_sha_before_commit": "ff2042ea2fe7040fbd5b73922cc10e9585e025c2",
+  "adapter_version": "0.2.0",
+  "envelope_schema": "ssdm.decide.v0.1",
+  "interface": "interfaces/DECISION_LANGUAGE_V0.md@v0.1 (PR #4 787d64f)",
+  "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
+  "recordings_sha256_unchanged": "d3cfad02df535e4d372dc80cffd409ac12b4eed8e76c255e7679de07cafc6315",
+  "note": "no model run; logits unchanged; revision above is the recorded parent of the logits",
+  "pending_live_recording": [
+   "injection-03-added-tokens"
+  ]
+ }
 }

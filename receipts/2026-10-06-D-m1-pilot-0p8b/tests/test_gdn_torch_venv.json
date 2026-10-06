@@ -1,0 +1,23 @@
+{
+ "recurrent_vs_hf": {
+  "o_rel": 1.3747276739195513e-07,
+  "S_rel": 4.5037289453375706e-08
+ },
+ "chunk_vs_recurrent_cpu": {
+  "o_rel": 3.0466847533716646e-07,
+  "S_rel": 1.3903509454848972e-07,
+  "grad_rel_max": 3.7042136113996094e-07
+ },
+ "chunk_vs_recurrent_cuda": {
+  "o_rel": 3.295851627171942e-07,
+  "S_rel": 1.5039333334243565e-07,
+  "grad_rel_max": 3.960143430958851e-07
+ },
+ "fla_vs_recurrent_cuda_bf16in": "fla unavailable",
+ "module_vs_hf_layer0_real_weights": {
+  "recurrent": 6.82789618622337e-07,
+  "chunk": 3.069750675877003e-07
+ },
+ "hf_reference_backend": "torch",
+ "PASS": true
+}

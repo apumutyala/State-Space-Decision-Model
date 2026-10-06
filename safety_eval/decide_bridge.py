@@ -8,17 +8,27 @@ neutralise non-special added tokens such as ``<think>``), safety_eval inherits i
 
 Translation (safety_eval request -> decide wire request):
   state, questions                -> unchanged (SystemOne-compatible top level)
-  policy.allowed                  -> ssdm.policy_restriction (v0.1 delta; Decider must enable_v0_1_deltas)
+  envelope schema                 -> ssdm.schema = decide.versions.ENVELOPE_SCHEMA (read from the installed decide/,
+                                     currently "ssdm.decide.v0.1"; never hard-coded here)
+  policy.allowed                  -> ssdm.policy_restriction (core in contract 0.1; no flag needed)
   request_id, parent_revision     -> ssdm.request_id, ssdm.parent_revision
-  provenance.untrusted_fields     -> NOT transmitted: decide v0 treats ALL request text as untrusted, which is the
-                                     safe superset. (An INTERFACE delta is needed before ISE/ASIDE can see provenance.)
+  provenance.untrusted_fields     -> NOT transmitted. decide 0.2.0 carries ssdm.provenance only behind
+                                     enable_experimental_provenance and only for a STRING state; without it every
+                                     request field is untrusted data (the safe superset). ISE/ASIDE arms need the 0.2
+                                     provenance extension ratified before m2.
 decide response -> safety_eval response:
   raw_probabilities               <- ssdm.raw_probabilities (pre-calibration, unmasked)
   answers[q].probabilities        <- policy-conditioned probabilities over all options (0 outside the allowed set);
-  answers[q].choice                  choice = their argmax (= what the host executes)
+  answers[q].choice                  choice = their argmax (= what the host executes). A question with a restriction
+                                     whose conditioning stage is not "ok" (e.g. unavailable_zero_served_mass) executes
+                                     NOTHING: status "unsupported", error "policy_conditioned_unavailable" (never a
+                                     fallback to the unrestricted served argmax). A restriction sent but no
+                                     conditioning returned is a contract violation (ValueError -> error row).
   served (calibrated, unmasked)   -> diagnostics.served_probabilities
-  non-ok status                   -> {"status": status, "error": code}; a refusal on an attacked request is a
-                                     blocked attack, on a clean request a utility cost (metrics.refusal_*).
+  non-ok status                   -> {"status": status, "error": ssdm.error.code, "error_message": ...}; a refusal
+                                     on an attacked request is a blocked attack, on a clean request a utility cost
+                                     (metrics.refusal_*). The legacy top-level error shape is used only if ssdm is
+                                     absent.
 """
 from __future__ import annotations
 
@@ -46,8 +56,14 @@ def import_decide():
         return importlib.import_module("decide")
 
 
+def envelope_schema() -> str:
+    import_decide()
+    from decide import versions
+    return versions.ENVELOPE_SCHEMA
+
+
 def to_decide_request(req: dict, model: str = "ssdm-eval") -> dict:
-    env: dict[str, Any] = {"schema": "ssdm.decide.v0"}
+    env: dict[str, Any] = {"schema": envelope_schema()}
     if req.get("request_id") is not None:
         env["request_id"] = req["request_id"]
     if req.get("parent_revision") is not None:
@@ -59,7 +75,11 @@ def to_decide_request(req: dict, model: str = "ssdm-eval") -> dict:
 
 
 def from_decide_response(req: dict, resp: dict) -> dict:
-    ss = resp.get("ssdm") or {}
+    ss = resp.get("ssdm")
+    if not isinstance(ss, dict):  # legacy-only response shape (no envelope)
+        err = resp.get("error") or {}
+        code = err.get("code") if isinstance(err, dict) else str(err)
+        return {"status": "error", "error": code or "no_ssdm_envelope", "error_message": None, "diagnostics": {}}
     status = ss.get("status", "ok")
     if status != "ok":
         err = ss.get("error") or {}
@@ -67,15 +87,26 @@ def from_decide_response(req: dict, resp: dict) -> dict:
                 "diagnostics": ss.get("diagnostics", {})}
     raw = ss["raw_probabilities"]
     served = ss["served_probabilities"]
-    pcp = ss.get("policy_conditioned_probabilities") or {}
+    pcp = ss.get("policy_conditioned_probabilities")
+    restricted = set(((req.get("policy") or {}).get("allowed") or {}))
+    if restricted and not isinstance(pcp, dict):
+        raise ValueError("policy_restriction sent but no policy_conditioned_probabilities returned (contract 0.1)")
+    pcp = pcp or {}
     answers = {}
     for q, spec in req["questions"].items():
         keys = list(spec["criteria"])
-        cond = (pcp.get(q) or {}).get("probabilities")
-        if cond is None:  # no restriction for this question (or zero allowed mass): host executes served argmax
-            probs = {k: float(served[q][k]) for k in keys}
-        else:
+        if q in restricted:
+            stage = pcp.get(q)
+            if not isinstance(stage, dict):
+                raise ValueError(f"{q}: restriction sent but no conditioning stage returned (contract 0.1)")
+            if stage.get("status", "ok") != "ok" or stage.get("probabilities") is None:
+                return {"status": "unsupported", "error": "policy_conditioned_unavailable",
+                        "error_message": f"{q}: conditioning stage {stage.get('status')}",
+                        "diagnostics": ss.get("diagnostics", {})}
+            cond = stage["probabilities"]
             probs = {k: float(cond.get(k, 0.0)) for k in keys}
+        else:  # no restriction for this question: the host executes the served argmax
+            probs = {k: float(served[q][k]) for k in keys}
         best = max(sorted(keys), key=lambda k: probs[k])  # tie -> smallest id, as decide.wire_answer
         answers[q] = {"type": "choice", "choice": best, "probabilities": probs}
     diag = dict(ss.get("diagnostics", {}))
@@ -90,8 +121,7 @@ class DecideBridge:
     """safety_eval ``decide(request) -> response`` over a ``decide.Decider``."""
 
     def __init__(self, decider, model: str = "ssdm-eval"):
-        if not getattr(decider, "enable_v0_1_deltas", False):
-            raise ValueError("Decider must be built with enable_v0_1_deltas=True (policy_restriction is a v0.1 delta)")
+        # contract 0.1: policy_restriction is core, so any Decider works; the response is still checked per call
         self.decider, self.model = decider, model
 
     def revision(self) -> dict:
@@ -120,7 +150,7 @@ def build_hf_bridge(model_dir: str | None = None, family: str = "qwen3.5", devic
     else:
         raise ValueError(family)
     backend = H.HFReadoutBackend(plug, templates[family])
-    return DecideBridge(Decider(backend, enable_v0_1_deltas=True, backend_max_input_tokens=plug.max_context))
+    return DecideBridge(Decider(backend, backend_max_input_tokens=plug.max_context))
 
 
 def sha256_file(path: Path, chunk: int = 1 << 24) -> str:

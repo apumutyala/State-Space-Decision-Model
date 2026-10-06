@@ -126,6 +126,7 @@ def main(argv=None):
         r["arm"] = arm
     t_main = time.time() - t0
     arms = {arm: rows}
+    expected = {arm: list(variants)}  # the expected unit set per arm (completeness, PREREG section 3)
 
     if a.controls:
         ctrl = [v for v in variants if v["_meta"]["attack_family"] == "clean" or v["_meta"].get("role_spoof")]
@@ -136,6 +137,7 @@ def main(argv=None):
             for r in rc:
                 r["arm"] = f"letter_{mode}"
             arms[f"letter_{mode}"] = rc
+            expected[f"letter_{mode}"] = list(ctrl)
         dec.untrusted_mode = base_mode
 
     gcg_records, rows_gcg, eng = [], [], None
@@ -151,6 +153,7 @@ def main(argv=None):
                            final=gcg.order_outcome(prob, eng.eval_advs(prob, torch.tensor([res["adv_ids"]]))[0]))
                 gcg_records.append(res)
                 gcg_variants.append(attacks.suffix_variant(r, res["suffix"], f"gcg_{objective}", "gcg"))
+        expected[arm] += gcg_variants
         rows_gcg = metrics.run(dec, gcg_variants, log=log)  # re-check through the unmodified decide path
         for r in rows_gcg:
             r["arm"] = arm
@@ -162,7 +165,8 @@ def main(argv=None):
         "note": "PIPELINE QUALIFICATION ONLY unless this is a frozen-checkpoint --final run named in a gate PR.",
         "model": model, "backend": a.backend, "revision": revision, "model_files_sha256": files_sha,
         "final": a.final,
-        "arms": {name: metrics.summarise(rs + (rows_gcg if name == arm else []), a.boot) for name, rs in arms.items()},
+        "arms": {name: metrics.summarise(rs + (rows_gcg if name == arm else []), a.boot,
+                                                expected=expected[name]) for name, rs in arms.items()},
         # control arms run on a predeclared subset (clean + role-spoof hijacks): that subset is the expected unit
         # set (declared, not an inner join); eligibility = clean-correct under the canonical (reference) arm
         "arm_vs_arm": {f"{name} - {arm} | hijack | eligibility=reference_y": metrics.compare_arms(
