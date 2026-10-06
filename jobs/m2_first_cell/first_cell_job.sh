@@ -17,22 +17,38 @@
 #   24 memory, 25 data, 26 too slow for min_steps, 27 guard not ready, 28 cohort / train-set leak or mismatch,
 #   35 head config)
 #   1 finalize failed
+# Path overrides (TEST-ONLY; a paid run sets none of them, and every default below IS the paid-run path). They exist
+# so tests/test_m2_first_cell_shell.py can EXECUTE this script end to end on CPU with a tiny stand-in model; they only
+# relocate inputs/outputs, no check is skipped or relaxed (every sha256 / identity / rate / cap guard still runs on
+# whatever the paths hold). Any M2FC_* variable that is set is logged at the top of run.log.
+#   M2FC_CODE              code root                       (default /opt/ssdm/m1, the image's COPY code/m1)
+#   M2FC_CONTEXT_MANIFEST  build-context manifest          (default /opt/ssdm/CONTEXT_MANIFEST.json)
+#   M2FC_KIT_DIR           Decision Index kit clone        (default /opt/decision-index)
+#   M2FC_DATA              data root (records, 150k set, suite, DEV rows, references; also SSDM_DATA)  (default /data)
+#   M2FC_WORK              scratch dir                     (default /tmp/m2-first-cell)
+#   M2FC_CELL              cell config (absolute, or relative to CODE, the working dir)  (default jobs/m2_first_cell/m2_first_cell_rwkv7.json)
+# Already overridable by the platform contract: GMN_OUTPUT_DIR, GMN_RESULT_PATH, GMN_CHECKPOINT_DIR, GMN_METADATA_URL;
+# the snapshot download honours the standard HF_HUB_CACHE / HF_HOME / HF_HUB_OFFLINE. nvidia-smi, the CUDA asserts,
+# the snapshot sha256 pins and the TOK_S / CALL_S rates have NO override here (the test stubs them from outside).
 set -Euo pipefail
 MAIN_PID=$$
-CODE=/opt/ssdm/m1
-CELL=jobs/m2_first_cell/m2_first_cell_rwkv7.json
+CODE=${M2FC_CODE:-/opt/ssdm/m1}
+CONTEXT_MANIFEST=${M2FC_CONTEXT_MANIFEST:-/opt/ssdm/CONTEXT_MANIFEST.json}
+KIT_DIR=${M2FC_KIT_DIR:-/opt/decision-index}
+DATA=${M2FC_DATA:-/data}
+CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
 PARAMS=$CODE/jobs/m2_first_cell/job_params.json
-TRAIN_DIR=/data/m2-150k
-RECORDS=/data/m2/records.jsonl.gz
+TRAIN_DIR=$DATA/m2-150k
+RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
-WORK=/tmp/m2-first-cell
+WORK=${M2FC_WORK:-/tmp/m2-first-cell}
 CK=${GMN_CHECKPOINT_DIR:-$WORK/ck}
 META=${GMN_METADATA_URL:-http://169.254.42.1}
 HB_EVERY_S=60 STALL_S=1200  # fixed in paid runs (not env-overridable)
 WATCH_EXTRA=$WORK
 mkdir -p "$OUT/phases" "$WORK/out" "$WORK/logs" "$CK"
-export SSDM_DATA=/data PYTHONUNBUFFERED=1 PYTHONUTF8=1 SSDM_PROGRESS_BEAT=$WORK/logs/beat
+export SSDM_DATA=$DATA PYTHONUNBUFFERED=1 PYTHONUTF8=1 SSDM_PROGRESS_BEAT=$WORK/logs/beat
 HF_DIR=${HF_HUB_CACHE:-${HF_HOME:-$HOME/.cache/huggingface}}
 mkdir -p "$HF_DIR"
 T0=$(date +%s)
@@ -47,6 +63,8 @@ cd "$CODE"
 . "$CODE/jobs/clef_baseline/watchdog.sh"
 MARKER=M2_FIRST_CELL_DONE
 VALIDATOR=jobs.m2_first_cell.summarize:valid_result
+OVERRIDES=$(env | grep -o '^M2FC_[A-Z0-9_]*' | sort | tr '\n' ' ' || true)
+[ -z "$OVERRIDES" ] || say "TEST OVERRIDES SET (never in a paid run): $OVERRIDES"
 finish() {
   local rc=${RC:-$?}
   kill "${WD_PID:-}" 2> /dev/null || true
@@ -69,9 +87,9 @@ num "$CALL_S" || fail 4 "CALL_S=$CALL_S is not a number"
 
 # ------------------------------------------------------------------ setup: identities + eval preflights (exit 5 / 10 / 15)
 say "setup"
-cp /opt/ssdm/CONTEXT_MANIFEST.json "$WORK/out/" || fail 5 "no context manifest"
+cp "$CONTEXT_MANIFEST" "$WORK/out/" || fail 5 "no context manifest"
 nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
-CELL_PATH=$CODE/$CELL python - > "$WORK/out/env.json" <<'EOF' || fail 5 "env pins / WKV selection"
+CELL_PATH=$CELL python - > "$WORK/out/env.json" <<'EOF' || fail 5 "env pins / WKV selection"
 import json, torch, transformers
 assert transformers.__version__ == "5.17.0", transformers.__version__
 assert torch.cuda.is_available()
@@ -87,8 +105,8 @@ print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu":
                   "transformers": transformers.__version__, "vendored_rwkv7": V.REVISION,
                   "wkv": wkv, "fla_gpu_verified": GPU_VERIFIED}))
 EOF
-python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
-( cd /data && sha256sum -c "$CODE/jobs/rwkv7/records.sha256" ) > "$WORK/out/records-verify.txt" 2>&1 || fail 10 "PR #16 records sha256"
+python -I "$CODE/jobs/common/fla_guard.py" --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
+( cd "$DATA" && sha256sum -c "$CODE/jobs/rwkv7/records.sha256" ) > "$WORK/out/records-verify.txt" 2>&1 || fail 10 "PR #16 records sha256"
 python -X utf8 -m train.train_set verify --config "$CELL" --train-dir "$TRAIN_DIR" --out "$WORK/out/train-set-verify.json" \
   > "$WORK/logs/train-set.log" 2>&1 || fail 10 "150k train set != pointer"
 python -X utf8 -m train.cohort verify > "$WORK/out/cohort-verify.json" 2>&1 || fail 10 "cohort does not rebuild to its committed sha256"
@@ -96,13 +114,13 @@ CAP_SETUP=$(cap setup) || fail 5 "job_params"
 SNAP=$(timeout ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))') || fail 10 "download"
 ( cd "$SNAP" && sha256sum -c "$CODE/jobs/rwkv7/snapshot.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "snapshot sha256"
 python -c "import sys, third_party.rwkv7_hf as V; V.verify_snapshot_code(sys.argv[1])" "$SNAP" || fail 10 "vendored code != snapshot code"
-( cd /data && sha256sum -c "$CODE/jobs/clef_baseline/data.sha256" ) > "$WORK/out/data-verify.txt" 2>&1 || fail 10 "DEV rows sha256"
-python -X utf8 -m jobs.common.dev_subset rows --rows /data/slices/dev-rows.jsonl.gz --out "$WORK/index-rows.jsonl.gz" \
+( cd "$DATA" && sha256sum -c "$CODE/jobs/clef_baseline/data.sha256" ) > "$WORK/out/data-verify.txt" 2>&1 || fail 10 "DEV rows sha256"
+python -X utf8 -m jobs.common.dev_subset rows --rows "$DATA/slices/dev-rows.jsonl.gz" --out "$WORK/index-rows.jsonl.gz" \
   --subset jobs/common/dev_subset_m1.json > "$WORK/out/index-subset.json" || fail 10 "DEV subset rows"
 REFS=()
 for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used only if pinned AND present
   PIN=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['reference_results_sha256'].get(sys.argv[2]) or '')" "$PARAMS" "$NAME")
-  F=/data/reference/$NAME.results.jsonl
+  F=$DATA/reference/$NAME.results.jsonl
   if [ -n "$PIN" ]; then
     [ -f "$F" ] && [ "$(sha256sum "$F" | cut -d' ' -f1)" = "$PIN" ] || fail 10 "reference $NAME missing or sha256 != pin"
     REFS+=(--reference "$NAME=$F")
@@ -122,7 +140,7 @@ export_phase setup
 
 # ------------------------------------------------------------------ guard readiness (exit 30 / 31 / 32): before ANY training
 say "phase guard"
-timeout $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_ready --suite-dir /data/suite-0.2 --kit-dir /opt/decision-index \
+timeout $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_ready --suite-dir "$DATA/suite-0.2" --kit-dir "$KIT_DIR" \
   --out-dir "$WORK/out/guard" > "$WORK/logs/guard.log" 2>&1; r=$?
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac

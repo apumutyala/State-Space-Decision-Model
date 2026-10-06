@@ -71,6 +71,29 @@ def tiny_snapshot(d: Path) -> Path:
     return d
 
 
+def index_subset(src: Path, dst: Path, n: int) -> int:
+    """Keep about ``n`` of the Index DEV subset rows in ``src`` (gzip JSONL) -> ``dst``: whole kit groups (track
+    benchmarks score a group's parts together) at an even stride over the file, so benchmarks stay spread. CPU time
+    only; also used by tests/shell_stubs/sitecustomize.py for the shell-runner test. Returns the rows kept."""
+    with gzip.open(src, "rt", encoding="utf-8") as fi:
+        full = fi.readlines()
+    groups: dict = {}
+    for line in full:
+        e = json.loads(line)["_evaluation"]
+        groups.setdefault((e["catalog_id"], str(e["group_id"])), []).append(line)
+    keys = list(groups)
+    stride = max(1, len(full) // max(1, n))
+    keep = []
+    for k in keys[::stride] + keys:
+        if len(keep) >= n:
+            break
+        if groups[k][0] not in keep:
+            keep += groups[k]
+    with gzip.open(dst, "wt", encoding="utf-8") as fo:
+        fo.writelines(keep)
+    return len(keep)
+
+
 def run(name: str, cmd: list[str], log: Path, env=None, ok=(0,)) -> dict:
     t = time.time()
     with open(log, "w", encoding="utf-8") as f:
@@ -130,22 +153,7 @@ def main(argv=None) -> int:
     for name, cmd in steps:
         if not go(name, cmd):
             return finish(out, phases, t0, None)
-    with gzip.open(rows_full, "rt", encoding="utf-8") as fi:
-        full = fi.readlines()
-    groups: dict = {}  # whole kit groups (track benchmarks score a group's parts together), spread over benchmarks
-    for line in full:
-        e = json.loads(line)["_evaluation"]
-        groups.setdefault((e["catalog_id"], str(e["group_id"])), []).append(line)
-    keys = list(groups)
-    stride = max(1, len(full) // max(1, a.index_n))
-    keep = []
-    for k in keys[::stride] + keys:
-        if len(keep) >= a.index_n:
-            break
-        if groups[k][0] not in keep:
-            keep += groups[k]
-    with gzip.open(rows, "wt", encoding="utf-8") as fo:
-        fo.writelines(keep)
+    index_subset(rows_full, rows, a.index_n)
     p = json.loads(PARAMS.read_text(encoding="utf-8"))
     fix = p["evals_fixed_minutes"]
     for stages, mode, capk, fx in (("g12", "parent", "parent_g12", fix["parent"]),

@@ -6,3 +6,6 @@ fixtures/replay/** -text
 
 third_party/** -text
 *.sh text eol=lf
+# sha256sum -c manifests: a CRLF line makes sha256sum look for "<file>\r" (exit 10 at job setup); git archive of a
+# Windows checkout (core.autocrlf=true) would ship them CRLF via jobs/*/build_context.sh
+*.sha256 text eol=lf

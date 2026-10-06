@@ -87,6 +87,8 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 
 1. Independent fresh-context review; merge to `agent-main`.
 2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 60)`; credit expiry 2026-10-27.
-3. Env: `TOK_S=3757 CALL_S=0.117` (job-tkfaj probe).
+3. Env: `TOK_S=3757 CALL_S=0.117` (job-tkfaj probe). No `M2FC_*` variable: those are the runner's test-only path
+   overrides (`tests/test_m2_first_cell_shell.py` executes the runner end to end under bash on CPU); run.log names any
+   that are set.
 4. `build_context.sh <sha> <out> [<tkfaj results.jsonl> [<clef-flash results.jsonl>]]`; pin the optional files' sha256
    in `job_params.json` `reference_results_sha256` to include those comparisons.
