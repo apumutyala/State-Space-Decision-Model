@@ -163,8 +163,12 @@ def main(argv=None):
         "model": model, "backend": a.backend, "revision": revision, "model_files_sha256": files_sha,
         "final": a.final,
         "arms": {name: metrics.summarise(rs + (rows_gcg if name == arm else []), a.boot) for name, rs in arms.items()},
-        "arm_vs_arm": {f"{arm} - {name}": metrics.compare_arms(rows, rs, "hijack", a.boot)
-                       for name, rs in arms.items() if name != arm},
+        # control arms run on a predeclared subset (clean + role-spoof hijacks): that subset is the expected unit
+        # set (declared, not an inner join); eligibility = clean-correct under the canonical (reference) arm
+        "arm_vs_arm": {f"{name} - {arm} | hijack | eligibility=reference_y": metrics.compare_arms(
+            rs, rows, "hijack", a.boot, eligibility="reference_y",
+            expected_ids={r["request_id"] for r in rs if r["attack_family"] == "hijack"})
+            for name, rs in arms.items() if name != arm},
     }
     if gcg_records:
         summary["gcg"] = {

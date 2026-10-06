@@ -275,3 +275,106 @@ def test_run_smoke_honours_ssdm_qwen_dir(monkeypatch, tmp_path):
     sha = snapshot_files_sha(tmp_path)
     assert sha["weights"] == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
     assert sha["tokenizer"] == "missing"
+
+
+# ------------------------------------------------------------------ Codex review regressions (PR #8)
+class Erroring(Scripted):
+    """Scripted, but raises on the given request ids (decider error)."""
+
+    def __init__(self, metas, fail):
+        super().__init__(metas)
+        self.fail = set(fail)
+
+    def __call__(self, req):
+        if req["request_id"] in self.fail:
+            raise RuntimeError("backend crashed")
+        return super().__call__(req)
+
+
+def _d1(reqs, n=6):
+    return attacks.build_variants(reqs[:n], hijack=[], d1=["urgency", "authority"])
+
+
+def test_errors_stay_in_denominator_and_fail_gate(reqs):
+    vs = _d1(reqs)
+    metas = {v["request_id"]: v["_meta"] for v in vs}
+    att = [v["request_id"] for v in vs if v["_meta"]["attack_family"] == "d1"]
+    rows = metrics.run(Erroring(metas, att[:3]), vs)
+    f = metrics.summarise(rows, n_boot=50)["families"]["d1"]
+    assert f["n_units"] == len(att)                        # nothing dropped
+    assert f["outcomes"]["error"] == 3 and f["complete"] is False and "FAILS" in f["incomplete_reason"]
+    assert f["steer_rate"]["point"] == 1.0                  # complete-case (labelled)
+    assert f["steer_rate_worst"]["point"] == 1.0
+    assert f["error_rate"]["point"] == pytest.approx(3 / len(att))
+    # a clean error makes that base's attacked units incomplete too
+    clean_id = next(v["request_id"] for v in vs if v["_meta"]["attack_family"] == "clean")
+    rows2 = metrics.run(Erroring(metas, [clean_id]), vs)
+    f2 = metrics.summarise(rows2, n_boot=50)["families"]["d1"]
+    assert f2["outcomes"]["clean_error_or_missing"] == 2 and not f2["complete"]
+
+
+def test_compare_arms_errors_and_missing_units_are_explicit(reqs):
+    vs = _d1(reqs)
+    metas = {v["request_id"]: v["_meta"] for v in vs}
+    att = [v["request_id"] for v in vs if v["_meta"]["attack_family"] == "d1"]
+    rx = metrics.run(Erroring(metas, att[:2]), vs)
+    ry = metrics.run(Scripted(metas), vs)
+    c = metrics.compare_arms(rx, ry, "d1", n_boot=50)
+    assert c["n_units"] == len(att) and c["n_error"]["x"] == 2 and c["complete"] is False
+    # conservative bound counts X's errors as steered
+    assert c["steer_rate_conservative_diff"]["point"] == pytest.approx(0.0)
+    # a unit missing from one arm is an explicit error outcome, not an inner join
+    ry_missing = [r for r in ry if r["request_id"] != att[-1]]
+    c2 = metrics.compare_arms(ry, ry_missing, "d1", n_boot=50)
+    assert c2["n_units"] == len(att) and c2["n_missing"]["y"] == 1 and not c2["complete"]
+
+
+class DefenceLike(Scripted):
+    """Clean-WRONG on even bases (and steered there); clean-correct and NOT steered on odd bases."""
+
+    def __call__(self, req):
+        m = self.metas[req["request_id"]]
+        keys = list(req["questions"][data.QKEY]["criteria"])
+        k = int(req["request_id"].split("::")[0].split("-")[-1])
+        odd = k % 2 == 1
+        if m["attack_family"] == "clean":
+            pick = m["gold"] if odd else m["steer_target"]
+        else:
+            pick = m["gold"] if odd else m["steer_target"]
+        p = {x: (0.9 if x == pick else 0.1 / (len(keys) - 1)) for x in keys}
+        return _resp(p, raw=p)
+
+
+def test_changed_clean_correct_mask_uses_common_population(reqs):
+    vs = _d1(reqs, 8)
+    metas = {v["request_id"]: v["_meta"] for v in vs}
+    rx = metrics.run(DefenceLike(metas), vs)   # "defence": own-mask steer looks like 0
+    ry = metrics.run(Scripted(metas), vs)      # parent: clean-correct everywhere, steered everywhere
+    c = metrics.compare_arms(rx, ry, "d1", n_boot=50, eligibility="reference_y")
+    assert c["secondary_own_mask_steer_x"] == 0.0           # the misleading different-population number
+    odd = sum(int(v["request_id"].split("::")[0].split("-")[-1]) % 2 for v in vs if v["_meta"]["attack_family"] == "d1")
+    n = sum(v["_meta"]["attack_family"] == "d1" for v in vs)
+    assert c["steer_rate"]["x"] == pytest.approx((n - odd) / n)  # common population: X still steers its clean-wrong bases
+    assert c["steer_rate"]["y"] == 1.0
+    assert c["clean_acc_x"] == pytest.approx(odd / n) and c["clean_acc_y"] == 1.0
+    cb = metrics.compare_arms(rx, ry, "d1", n_boot=50, eligibility="both")
+    assert cb["n_eligible"] == odd and cb["steer_rate"]["x"] == 0.0
+
+
+def test_reused_ids_with_changed_attack_content_are_rejected(reqs):
+    vs = _d1(reqs)
+    metas = {v["request_id"]: v["_meta"] for v in vs}
+    rx = metrics.run(Scripted(metas), vs)
+    tampered = copy.deepcopy(vs)
+    for v in tampered:
+        if v["_meta"]["attack_family"] == "d1":
+            f = v["_meta"]["untrusted_field"]
+            v["state"][f] = v["state"][f].replace("URGENT", "Urgent")  # same request_id, different attack text
+    ry = metrics.run(Scripted({v["request_id"]: v["_meta"] for v in tampered}), tampered)
+    assert any(a["unit_sha"] != b["unit_sha"] for a, b in zip(rx, ry))
+    with pytest.raises(metrics.UnitMismatchError):
+        metrics.compare_arms(rx, ry, "d1", n_boot=20)
+    with pytest.raises(metrics.UnitMismatchError):            # duplicate unit ids
+        metrics.compare_arms(rx + [r for r in rx if r["attack_family"] == "d1"][:1], rx, "d1", n_boot=20)
+    with pytest.raises(metrics.UnitMismatchError):            # no fingerprint = no proof of same data
+        metrics.compare_arms([{k: v for k, v in r.items() if k != "unit_sha"} for r in rx], rx, "d1", n_boot=20)

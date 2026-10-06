@@ -75,3 +75,14 @@ At this scale the 0.6B model is at ceiling in both arms.
 This run used the v0.1 ZWSP sanitiser, which is now a control arm only. The gated path is
 `decide/untrusted.py` through `safety_eval/decide_bridge.py`. A canonical-path re-run on Qwen3.5-0.8B
 (`SSDM_QWEN_DIR`) is pending rented or idle hardware; no local GPU jobs.
+
+## v0.3 recompute (Codex review; CPU, no model)
+
+`python -m safety_eval.recompute receipts/2026-10-06-D-m0-steer/predictions.jsonl --out receipts/2026-10-06-D-m0-steer/recompute_v0.3.json`
+
+- Unit fingerprints were rebuilt deterministically from the generator and `gcg_attacks.jsonl`. All 3,414
+  rows are hashed.
+- Every family is complete: 0 errors and 0 missing units. D1 / D1-A / D1-B steer is unchanged
+  (0.868 / 0.887 / 0.849).
+- The control comparison (`no_sanitize − sanitize`, role-spoof hijacks) is complete, with eligibility
+  `reference_y` (clean-correct under the canonical arm). The hijack difference is 0.000.
