@@ -1,0 +1,136 @@
+{
+  "case_id": "LG09",
+  "title": "currency mismatch",
+  "tags": [
+    "negative",
+    "unit_mismatch"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Does Atlas cost more than the EUR price of Boreal?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": false
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "atlas-v1",
+        "field": "price"
+      },
+      {
+        "id": "n2",
+        "op": "ReadFact",
+        "record_ref": "boreal-eur-v1",
+        "field": "price"
+      },
+      {
+        "id": "n3",
+        "op": "Compare",
+        "left": {
+          "node": "n1",
+          "project": "object"
+        },
+        "right": {
+          "node": "n2",
+          "project": "object"
+        },
+        "relation": "greater_than"
+      },
+      {
+        "id": "n4",
+        "op": "Assert",
+        "proposition": "n3"
+      }
+    ],
+    "outputs": [
+      "n4"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "rejected",
+    "kernel_reason_category": "type_unit_mismatch",
+    "task_outcome": "rejected_plan",
+    "useful_complete_answer": false,
+    "why": "USD and EUR are incompatible units; no exchange-rate rule or conversion premise is registered.",
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 0,
+      "useful_complete_count": 0,
+      "ask_count": 0
+    }
+  },
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG09-D0",
+    "type": "choice",
+    "question": "Does Atlas cost more than the EUR price of Boreal?",
+    "options": [
+      {
+        "id": "LG09-o01",
+        "description": "Boreal costs more."
+      },
+      {
+        "id": "LG09-o02",
+        "description": "Request an authorized currency conversion premise before comparing."
+      },
+      {
+        "id": "LG09-o03",
+        "description": "The prices are equal."
+      },
+      {
+        "id": "LG09-o04",
+        "description": "Atlas costs more."
+      }
+    ],
+    "target_option_id": "LG09-o02",
+    "target_description": "USD and EUR values lack an authorized conversion rule.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": false,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG09-boreal_higher": "LG09-o01",
+      "LG09-need_conversion": "LG09-o02",
+      "LG09-equal": "LG09-o03",
+      "LG09-atlas_higher": "LG09-o04"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG09-o01": "LG09-o02",
+        "LG09-o02": "LG09-o03",
+        "LG09-o03": "LG09-o04",
+        "LG09-o04": "LG09-o01"
+      },
+      "target_option_id": "LG09-o03",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
+  }
+}
