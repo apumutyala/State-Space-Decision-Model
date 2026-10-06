@@ -132,7 +132,54 @@ def kernel_stack() -> dict[str, Any]:
             out[f"import:{mod}"] = True
         except Exception:  # noqa: BLE001
             out[f"import:{mod}"] = False
+    # fla #640: which backward kernel fla dispatches depends on FLA_TILELANG and on tilelang being installed
+    import os
+
+    out["env:FLA_TILELANG"] = os.environ.get("FLA_TILELANG")
+    out["tilelang_installed"] = importlib.util.find_spec("tilelang") is not None
     return out
+
+
+class reference_gdn_path:
+    """Context manager: run every Qwen3.5 Gated-DeltaNet layer on transformers' own torch reference
+    (``torch_chunk_gated_delta_rule`` + the conv1d fallback) instead of the fla / causal-conv1d kernels.
+
+    Used by ``clef_probes`` to show, inside the job image, that the fast kernel path scores the same as
+    the reference path (the check that matters after moving off the model card's torch 2.11; see
+    JOB_SPEC "Image"). ``FusedRMSNormGated`` (an fla Triton norm) is left in place: its parameters are
+    not interchangeable with the torch norm without re-wiring, and it has no #640 exposure (forward only
+    in this probe).
+
+    ``__enter__`` returns the number of GDN layers whose kernel was ACTUALLY replaced, i.e. whose
+    ``chunk_gated_delta_rule`` was not already the torch reference. transformers sets
+    ``self.chunk_gated_delta_rule = chunk_gated_delta_rule or torch_chunk_gated_delta_rule`` and falls back
+    silently when fla is unavailable (no CUDA, import failure, fla < 0.2.2); such layers are counted in
+    ``n_found`` and ``n_already_reference`` but not as switched, so the probe cannot pass vacuously (PR #43 B1).
+    """
+
+    def __init__(self, model: Any) -> None:
+        self.model, self.saved = model, []
+        self.n_found = self.n_already_reference = self.n_switched = 0
+
+    def __enter__(self) -> int:
+        for m in self.model.modules():
+            if hasattr(m, "chunk_gated_delta_rule") and hasattr(m, "causal_conv1d_fn"):
+                ref = getattr(sys.modules[type(m).__module__], "torch_chunk_gated_delta_rule", None)
+                if ref is None:
+                    raise RuntimeError(f"{type(m).__name__}: no torch_chunk_gated_delta_rule reference in its module")
+                self.n_found += 1
+                if m.chunk_gated_delta_rule is ref or m.chunk_gated_delta_rule is None:
+                    self.n_already_reference += 1
+                else:
+                    self.n_switched += 1
+                self.saved.append((m, m.chunk_gated_delta_rule, m.causal_conv1d_fn))
+                m.chunk_gated_delta_rule, m.causal_conv1d_fn = ref, None
+        return self.n_switched
+
+    def __exit__(self, *exc) -> None:
+        for m, chunk, conv in self.saved:
+            m.chunk_gated_delta_rule, m.causal_conv1d_fn = chunk, conv
+        self.saved = []
 
 
 def load_jsm(path: Path = JSM_PATH, expected_sha256: str = JSM_SHA256):
