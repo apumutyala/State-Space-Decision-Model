@@ -94,6 +94,8 @@ def main():
 
     json.dump(cfg, open(os.path.join(a.out, "config.json"), "w"), indent=1)
     seed_all(cfg["seed"])
+    if cfg.get("vram_fraction"):  # fail fast with OOM (driver retries) instead of spilling into shared memory
+        torch.cuda.set_per_process_memory_fraction(cfg["vram_fraction"])
     model, tok, mdir = load(cfg.get("model_dir"), kernel=cfg.get("kernel", "fla"))
     if "env" not in R:
         R.set("env", {**env_info(), "model_dir": mdir})
@@ -117,6 +119,7 @@ def main():
         res["modes"] = {str(k): v for k, v in modes.items()}
         res["seconds"] = time.time() - t0
         R.set(key, res)
+        torch.cuda.empty_cache()
         log({"tag": tag, "ppl1k": res["ppl"]["ctx1024"]["ppl"], "niah": res["niah"]["mean_acc"],
              "mqar": res["mqar"]["mean_acc"], "mmlu": res["mmlu"]["acc"]}, "probe")
         return res

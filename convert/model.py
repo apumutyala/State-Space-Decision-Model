@@ -127,6 +127,7 @@ def replace_native_gdn(model: ConvertibleQwen, kernel="fla"):
         new = GDN.from_config(model.cfg, kernel=kernel).to(device=old.out_proj.weight.device,
                                                           dtype=old.out_proj.weight.dtype)
         new.load_state_dict(old.state_dict(), strict=True)
+        new.requires_grad_(False)  # native layers stay frozen (fresh modules default to requires_grad=True)
         layer.linear_attn = _NativeGDNShim(new)
         n += 1
     return n
@@ -145,10 +146,19 @@ class _NativeGDNShim(nn.Module):
         return self.gdn(hidden_states)
 
 
+def _force_memory_efficient_sdpa():
+    """HF passes enable_gqa=True to SDPA, which rules out the memory-efficient kernel on this torch build and falls
+    back to the O(T^2)-memory math kernel (+5.5 GB at 8k). Repeat KV heads in HF instead -> mem-efficient kernel."""
+    from transformers.integrations import sdpa_attention
+
+    sdpa_attention.use_gqa_in_sdpa = lambda *a, **k: False
+
+
 def load(model_dir=None, device="cuda", dtype=torch.bfloat16, kernel="fla", native_kernel=True):
     from transformers import AutoTokenizer, Qwen3_5ForConditionalGeneration
 
     d = resolve_model_dir(model_dir)
+    _force_memory_efficient_sdpa()
     full = Qwen3_5ForConditionalGeneration.from_pretrained(d, dtype=dtype, device_map=device,
                                                            attn_implementation="sdpa")
     full.model.visual = None  # text path only

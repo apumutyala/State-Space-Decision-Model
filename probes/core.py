@@ -22,13 +22,13 @@ from convert.data import DATA_ROOT, fixed_windows
 AC = dict(device_type="cuda", dtype=torch.bfloat16)
 
 
-@torch.no_grad()
 def _pad(ids, mult):
     # right-padding is invisible to earlier positions (causal model); bucketing avoids Triton re-autotuning per length
     n = (-len(ids)) % mult
     return ids + [0] * n
 
 
+@torch.no_grad()
 def _argmax_hits(model, ids: list[int], targets: list[tuple[int, int]], mult=256):
     x = torch.tensor([_pad(ids, mult)], device="cuda")
     with torch.autocast(**AC):
@@ -141,8 +141,10 @@ def nll_windows(model, windows, bs=4):
         with torch.autocast(**AC):
             h = model.hidden(x)
         for b in range(x.shape[0]):
-            lg = model.lm_head(h[b, :-1]).float()
-            tot += F.cross_entropy(lg, x[b, 1:], reduction="sum").item()
+            for c in range(0, x.shape[1] - 1, 512):  # chunked: full-vocab fp32 logits at 4k ctx would be ~4 GB
+                e = min(c + 512, x.shape[1] - 1)
+                lg = model.lm_head(h[b, c:e]).float()
+                tot += F.cross_entropy(lg, x[b, c + 1:e + 1], reduction="sum").item()
             n += x.shape[1] - 1
     return tot / n
 
