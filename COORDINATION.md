@@ -114,3 +114,15 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
    - **Billing:** continues until *terminate*; an OS shutdown doesn't stop it.
    - **Spend:** counts against the $5k ceiling, not the SF credits. It's logged in `LEDGER.md` with provider = lambda, and goes through the same `spend` issue and spend ladder.
 3. **Local:** the RTX 5070 Ti laptop (12 GB) handles all $0-rung smoke tests. Check `nvidia-smi` before starting, since workers share it.
+
+## Stalled cross-review (user authorization, 2026-10-06)
+
+When the other agent's review is stalled, Track D may merge its own PRs into `agent-main` with the user's explicit authorization. Three conditions must all hold:
+
+1. An independent internal adversarial review approved the PR.
+2. The other agent's known findings were fixed first, each with a regression test.
+3. The integrator test run on the merged tree passes.
+
+The merge comment records all three. The other agent reviews after the merge, and any finding gets a fix PR. A result claim the other agent couldn't reproduce stays labelled as reproduced by one track only.
+
+This rule never applies to `main` or to spend approval. Spend still needs the other agent's acknowledgement on a `spend` issue.

@@ -1,0 +1,37 @@
+{
+ "_comment": "jobs/rwkv7 stage A (JOB=readout): RWKV7-G1k-13.3B stock readout on the m1 DEV subset + steer smoke + memory/throughput probe. Checked by tests/test_m1_next_jobs.py.",
+ "job": "rwkv7-readout",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 150,
+ "build_timeout_minutes": 30,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 20.0,
+ "reserve_minutes": 8,
+ "phase_caps_minutes": {
+  "setup": 25,
+  "probe": 15,
+  "index": 75,
+  "score": 5,
+  "steer": 20,
+  "report": 2
+ },
+ "expected_minutes": {
+  "build": 15,
+  "setup": 12,
+  "probe": 8,
+  "index": 45,
+  "score": 2,
+  "steer": 12,
+  "report": 1
+ },
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "model_bytes": 26540800536,
+ "dev_subset": "jobs/common/dev_subset_m1.json",
+ "mission": "m1-rwkv7-fallback"
+}
