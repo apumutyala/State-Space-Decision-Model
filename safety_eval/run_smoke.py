@@ -74,7 +74,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--backend", choices=["decide", "letter"], default="decide")
     ap.add_argument("--model", default=None, help="model dir or HF id (default $SSDM_QWEN_DIR, else Qwen/Qwen3-0.6B)")
-    ap.add_argument("--family", default="qwen3.5", help="decide backend family: qwen3.5 | rwkv7 | mamba3")
+    ap.add_argument("--family", default="qwen3.5", help="decide backend family: qwen3.5 | rwkv7 | rwkv7-hf | mamba3")
     ap.add_argument("--tokenizer-dir", default=None)
     ap.add_argument("--out", required=True)
     ap.add_argument("--device", default="cpu")

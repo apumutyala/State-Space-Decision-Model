@@ -140,11 +140,14 @@ def build_hf_bridge(model_dir: str | None = None, family: str = "qwen3.5", devic
     model_dir = model_dir or os.environ.get(ENV_QWEN_DIR)
     if not model_dir:
         raise ValueError(f"pass model_dir or set {ENV_QWEN_DIR}")
-    templates = {"qwen3.5": "jrt-chatml-v1", "rwkv7": "jrt-rwkv-g1-v1", "mamba3": "jrt-plain-v1"}
+    templates = {"qwen3.5": "jrt-chatml-v1", "rwkv7": "jrt-rwkv-g1-v1", "rwkv7-hf": "jrt-rwkv-g1-v1",
+                 "mamba3": "jrt-plain-v1"}
     if family == "qwen3.5":
         plug = H.load_qwen35(model_dir, device=device, dtype=dtype)
     elif family == "rwkv7":
         plug = H.load_rwkv7(model_dir, device=device, dtype=dtype)
+    elif family == "rwkv7-hf":  # RWKV/RWKV7-G1k-*-20260930 (bundled HF code, vendored in third_party/rwkv7_hf)
+        plug = H.load_rwkv7_hf(model_dir, device=device, dtype=dtype)
     elif family == "mamba3":
         plug = H.load_mamba3(model_dir, tokenizer_dir, device=device, dtype=dtype)
     else:
