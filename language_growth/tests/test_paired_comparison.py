@@ -165,6 +165,42 @@ class PairedComparisonTests(unittest.TestCase):
                           report["pairs"][0]["direct"]["provider_calls"]), ("runner_error", 0))
         self.assertIsNone(report["pairs"][0]["same_initial_state"])
 
+    def test_direct_rejects_extra_response_envelope_key(self):
+        class ExtraEnvelopeProvider(EvidenceProvider):
+            def decide(self, request):
+                response = super().decide(request)
+                if DIRECT_QID in request["questions"]:
+                    response["ssdm"]["unexpected_key"] = "must fail closed"
+                return response
+
+        report = run([comparisons()[0]], ExtraEnvelopeProvider())
+        pair = report["pairs"][0]
+        self.assertEqual((report["total"], report["direct_correct"], report["planner_correct"],
+                          report["paired_correct"]), (1, 0, 1, 0))
+        self.assertEqual((pair["direct"]["status"], pair["direct"]["reason"],
+                          pair["direct"]["provider_calls"], pair["direct"]["forward_calls"]),
+                         ("provider_error", "invalid_response", 1, 1))
+        self.assertEqual(pair["planner"]["provider_calls"], 4)
+        self.assertTrue(pair["same_initial_state"])
+
+    def test_invalid_parent_pin_fails_both_arms_before_calls(self):
+        provider = EvidenceProvider()
+        bad_pin = deepcopy(CONFIG)
+        del bad_pin["calibration"]["id"]
+        report = run_paired_comparisons([comparisons()[0]], provider, model="scripted",
+                                        parent_revision=REVISION, expected_served_config=bad_pin)
+        pair = report["pairs"][0]
+        self.assertEqual(provider.requests, [])
+        self.assertEqual((report["total"], report["direct_correct"], report["planner_correct"],
+                          report["paired_correct"]), (1, 0, 0, 0))
+        self.assertEqual((pair["direct"]["status"], pair["direct"]["reason"],
+                          pair["direct"]["provider_calls"], pair["direct"]["forward_calls"]),
+                         ("precondition_failed", "invalid_served_config_pin", 0, 0))
+        self.assertEqual((pair["planner"]["status"], pair["planner"]["reason"],
+                          pair["planner"]["provider_calls"], pair["planner"]["forward_calls"]),
+                         ("precondition_failed", "invalid_served_config_pin", 0, 0))
+        self.assertIsNone(pair["same_initial_state"])
+
     def test_noncomparison_tasks_are_rejected_as_a_separate_cohort(self):
         read = generate_development_tasks(17, 1)[0]
         provider = EvidenceProvider()

@@ -15,9 +15,9 @@ import uuid
 from decide.schema import wire_answer
 
 from .free_running_dev import _initial_task, run_development_tasks
-from .parent_bridge import (DECISION_SCHEMA, FINGERPRINT_ALGORITHM, decision_request,
+from .parent_bridge import (BridgeError, DECISION_SCHEMA, FINGERPRINT_ALGORITHM, decision_request,
                             legacy_request_fingerprint)
-from .planner import PlannerFailure, _check_stages
+from .planner import PlannerFailure, _RESPONSE_ENVELOPE_KEYS, _Session, _check_stages
 
 
 RELATIONS = ("greater_than", "less_than", "equal")
@@ -74,6 +74,8 @@ def _score_direct(request: dict[str, Any], response: Any, parent_revision: str,
     if not isinstance(response, dict) or not isinstance(response.get("ssdm"), dict):
         return row
     env = response["ssdm"]
+    if set(env) - _RESPONSE_ENVELOPE_KEYS:
+        return row
     if env.get("schema") != DECISION_SCHEMA:
         row["reason"] = "schema_mismatch"
         return row
@@ -150,8 +152,17 @@ def run_paired_comparisons(examples: Iterable[dict[str, Any]], provider: Any, *,
                   "target_id": None, "correct": False, "provider_calls": 0,
                   "forward_calls": 0, "response": None}
         try:
+            training = example["training_only"]
+            # Use the planner's own no-call parent/config preflight before either arm.
+            # Future parent pin checks in _Session therefore govern the direct arm too.
+            _Session(_initial_task(example), training["host"], training["catalog"],
+                     capture, model, parent_revision, expected_served_config)
             direct_request = direct_comparison_request(example, model=model,
                                                        parent_revision=parent_revision, option_ids=option_ids)
+        except PlannerFailure as exc:
+            direct.update(status=exc.status, reason=exc.reason)
+        except BridgeError as exc:
+            direct.update(status="precondition_failed", reason=exc.code)
         except Exception:
             pass  # malformed development input still occupies the paired denominator
         else:
