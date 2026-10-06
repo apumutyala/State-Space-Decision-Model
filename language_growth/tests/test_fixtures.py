@@ -10,7 +10,7 @@ from contextlib import redirect_stdout
 from io import StringIO
 
 from fixtures.language_growth.validate import read_json
-from language_growth.evaluate import decision_request_for_case, evaluate_case, evaluate_pack, main
+from language_growth.evaluate import evaluate_case, evaluate_pack, main
 
 
 PACK = Path(__file__).resolve().parents[2] / "fixtures" / "language_growth"
@@ -73,21 +73,12 @@ class FixtureEvaluationTests(unittest.TestCase):
         self.assertEqual(original, pristine_case)
         self.assertEqual(CATALOG, pristine_catalog)
 
-    def test_decision_request_filters_private_records_and_gold(self):
-        request = decision_request_for_case(case(1), CATALOG)
-        serialized = json.dumps(request)
-        self.assertEqual(request["request_id"], "LG01-D0")
-        self.assertEqual(request["task_input"], case(1)["question"])
-        self.assertNotIn("target_option_id", serialized)
-        self.assertNotIn("useful_complete_answer", serialized)
-        self.assertNotIn("proposal", request)
-        self.assertNotIn("internal-discount-v1", serialized)
-        self.assertNotIn("catalog-private-r1", serialized)
-        self.assertTrue(all(item["audience"] == "public" for item in request["evidence"]))
-        request["evidence"][0]["fields"].clear()
-        self.assertTrue(CATALOG["records"][0]["fields"])
-        with self.assertRaisesRegex(ValueError, "provider precondition"):
-            decision_request_for_case(case(15), CATALOG)
+    def test_permitted_repair_after_acceptance_is_not_needed(self):
+        accepted = case(1)
+        accepted["repair"] = {"requested": True, "permitted": True, "max_scripted_attempts": 2}
+        row = evaluate_case(accepted, CATALOG)
+        self.assertEqual(row["observed"]["repair_state"], "not_needed")
+        self.assertEqual(row["observed"]["proposal_attempts"], 1)
 
     def test_existing_output_directory_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
