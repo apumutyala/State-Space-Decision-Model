@@ -39,6 +39,11 @@ class DeadlineExceeded(Exception):
     pass
 
 
+class CallBudgetExceeded(Exception):
+    """Raised by the adapter callback when a backend starts more inference calls than
+    ``max_inference_calls`` allows (e.g. its plan under-reported the calls it needs)."""
+
+
 class BackendUnsupported(Exception):
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
