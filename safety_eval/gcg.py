@@ -20,6 +20,7 @@ Differences from the prior lab's attacker, all deliberate for a <=1B local smoke
 """
 from __future__ import annotations
 
+import copy
 import math
 import time
 
@@ -51,8 +52,17 @@ class Problem:
             post.append(b)
         assert pre[0] == pre[1], "text before the slot must not depend on the option order"
         self.pre_text, self.post_text = pre[0], post
-        self.pre_ids = dec.encode(pre[0])
-        self.post_ids = [dec.encode(t) for t in post]
+        self.req, self.field, self.clean_value = req, field, req["state"][field]
+        if dec.untrusted_mode == "canonical":
+            # mirror decide/: the whole untrusted value (clean text + adversarial tokens + guard) is encoded with the
+            # untrusted encoder, separately from the surrounding trusted scaffolding
+            v = self.clean_value
+            assert pre[0].endswith(v), "untrusted value must end right before the slot"
+            self.pre_ids = dec.encode(pre[0][:-len(v)] if v else pre[0]) + (dec.untrusted_ids(v) if v else [])
+            self.post_ids = [dec.untrusted_ids(GUARD) + dec.encode(t[len(GUARD):]) for t in post]
+        else:
+            self.pre_ids = dec.encode(pre[0])
+            self.post_ids = [dec.encode(t) for t in post]
         self.keys = list(req["questions"][QKEY]["criteria"])
         self.n = len(self.keys)
         self.orders = [perm_order(self.n, p) for p in (0, 1)]
@@ -152,10 +162,14 @@ def sample_candidates(adv, grad, allowed, batch, topk, gen):
     return cand
 
 
-def roundtrip_ok(tok, prob: Problem, advs: torch.Tensor) -> torch.Tensor:
+def roundtrip_ok(dec: HFLetterDecider, prob: Problem, advs: torch.Tensor) -> torch.Tensor:
+    """True where the decider's own encoding of the decoded attack string (as it would be served: rendered
+    request with the suffix in the untrusted field) reproduces exactly pre + adv + post (order 0)."""
     out = []
     for a in advs:
-        e = tok(prob.pre_text + tok.decode(a.tolist()) + prob.post_text[0], add_special_tokens=False)["input_ids"]
+        r = copy.deepcopy(prob.req)
+        r["state"][prob.field] = prob.clean_value + dec.tok.decode(a.tolist()) + GUARD
+        e = dec.encode_rendered(dec.render(r, QKEY, 0), r)
         out.append(e == prob.pre_ids + a.tolist() + prob.post_ids[0])
     return torch.tensor(out)
 
@@ -189,7 +203,7 @@ def attack(eng: Engine, probs: list[Problem], hp: dict, seed: int, search: str =
     for step in range(hp["steps"]):
         grad = eng.loss_grad(probs, adv)[1] if search == "gcg" else None
         cand = sample_candidates(adv, grad, allowed, hp["batch"], hp["topk"], gen)
-        ok = roundtrip_ok(tok, probs[0], cand)
+        ok = roundtrip_ok(eng.dec, probs[0], cand)
         cand = cand[ok] if ok.any() else cand
         losses = torch.zeros(cand.shape[0])
         lpks = []

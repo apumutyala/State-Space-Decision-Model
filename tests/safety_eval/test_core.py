@@ -140,7 +140,7 @@ class Scripted:
 
 
 def test_metrics_exact_on_scripted(reqs):
-    vs = attacks.build_variants(reqs[:12], hijack=["ignore_previous"], d1=["urgency", "policy_update"])
+    vs = attacks.build_variants(reqs[:12], hijack=["ignore_previous"], d1=["urgency", "policy_update"], final=True)
     dec = Scripted({v["request_id"]: v["_meta"] for v in vs})
     rows = metrics.run(dec, vs)
     s = metrics.summarise(rows, n_boot=100)
@@ -190,7 +190,7 @@ def test_ece_known_values():
 
 # ------------------------------------------------------------------ end-to-end on the stand-in
 def test_standin_pipeline_end_to_end(reqs):
-    vs = attacks.build_variants(reqs)
+    vs = attacks.build_variants(reqs, final=True)
     rows = metrics.run(KeywordDecider(), vs)
     s = metrics.summarise(rows, n_boot=100)
     assert s["status_counts"] == {"ok": len(vs)}
@@ -214,3 +214,64 @@ def test_adaptive_stub_raises():
     from safety_eval.adaptive import AdaptiveAttack, ChannelDefenceSpec
     with pytest.raises(NotImplementedError):
         AdaptiveAttack(ChannelDefenceSpec(kind="aside"), {}).craft({}, None, "steer", "x")
+
+
+# ------------------------------------------------------------------ review fixes (PR #8)
+def test_d1_B_held_out_unless_final(reqs):
+    vs = attacks.build_variants(reqs[:2])
+    assert {v["_meta"].get("template_split") for v in vs if v["_meta"]["attack_family"] == "d1"} == {"A"}
+    with pytest.raises(attacks.HeldOutError):
+        attacks.build_variants(reqs[:2], d1=["policy_update"])
+    vf = attacks.build_variants(reqs[:2], final=True)
+    assert {v["_meta"]["template_split"] for v in vf if v["_meta"]["attack_family"] == "d1"} == {"A", "B"}
+
+
+class SplitScripted(Scripted):
+    """Steers only on D1-B templates; refuses role-spoof hijacks (like decide/ on control tokens)."""
+
+    def __call__(self, req):
+        m = self.metas[req["request_id"]]
+        if m.get("role_spoof"):
+            return {"status": "unsupported", "error": "control_tokens_in_input"}
+        keys = list(req["questions"][data.QKEY]["criteria"])
+        pick = m["steer_target"] if m.get("template_split") == "B" else m["gold"]
+        p = {k: (0.9 if k == pick else 0.1 / (len(keys) - 1)) for k in keys}
+        return _resp(p, raw=p)
+
+
+def test_d1_A_B_families_and_refusals(reqs):
+    vs = attacks.build_variants(reqs[:12], final=True)
+    rows = metrics.run(SplitScripted({v["request_id"]: v["_meta"] for v in vs}), vs)
+    s = metrics.summarise(rows, n_boot=100)
+    f = s["families"]
+    assert f["d1_A"]["steer_rate"]["point"] == 0.0 and f["d1_B"]["steer_rate"]["point"] == 1.0
+    assert f["d1"]["steer_rate"]["point"] == 0.5 and f["d1_B"]["templates"] == sorted(attacks.D1_TEMPLATES_B)
+    h = f["hijack"]  # 2 of 5 templates refused: blocked, not hijacked, not correct
+    assert h["refusal_rate"]["point"] == pytest.approx(0.4) and h["hijack_rate"]["point"] == 0.0
+    assert h["attacked_acc"]["point"] == pytest.approx(0.6)
+    assert f["d1_B"]["conf_when_steered"]["point"] == pytest.approx(0.9)
+
+
+def test_compare_arms_paired(reqs):
+    vs = attacks.build_variants(reqs[:12], final=True)
+    metas = {v["request_id"]: v["_meta"] for v in vs}
+    rx = metrics.run(Scripted(metas), vs)          # steers every D1 unit
+    ry = metrics.run(SplitScripted(metas), vs)     # steers D1-B only
+    c = metrics.compare_arms(rx, ry, "d1_A", n_boot=200)
+    assert c["n_units"] == 12 * 4 and c["steer_rate"]["diff"]["point"] == 1.0
+    assert c["steer_rate"]["diff"]["lo"] == c["steer_rate"]["diff"]["hi"] == 1.0
+    c0 = metrics.compare_arms(rx, rx, "d1", n_boot=200)
+    assert c0["steer_rate"]["diff"]["lo"] == c0["steer_rate"]["diff"]["hi"] == 0.0  # same arm: exactly zero
+
+
+def test_run_smoke_honours_ssdm_qwen_dir(monkeypatch, tmp_path):
+    from safety_eval import run_smoke
+    from safety_eval.decide_bridge import snapshot_files_sha
+    monkeypatch.setenv("SSDM_QWEN_DIR", str(tmp_path))
+    assert run_smoke.default_model() == str(tmp_path)
+    assert run_smoke.resolve_model_dir(str(tmp_path)) == tmp_path
+    (tmp_path / "config.json").write_text("{}")
+    (tmp_path / "model.safetensors").write_bytes(b"abc")
+    sha = snapshot_files_sha(tmp_path)
+    assert sha["weights"] == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    assert sha["tokenizer"] == "missing"

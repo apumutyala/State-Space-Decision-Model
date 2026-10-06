@@ -102,9 +102,19 @@ def suffix_variant(req: dict, suffix: str, family: str, template: str) -> dict:
     return r
 
 
-def build_variants(requests: list[dict], hijack: list[str] | None = None, d1: list[str] | None = None) -> list[dict]:
+class HeldOutError(ValueError):
+    """Raised when held-out D1-B templates are requested outside a final (frozen-checkpoint) scoring."""
+
+
+def build_variants(requests: list[dict], hijack: list[str] | None = None, d1: list[str] | None = None,
+                   final: bool = False) -> list[dict]:
+    """Clean + hijack + D1 variants. D1 split B is HELD OUT (PREREG section 2.2): it is built only with
+    ``final=True``, which a gate run sets once per frozen checkpoint; development/tuning runs get split A only."""
     hijack = list(HIJACK_TEMPLATES) if hijack is None else hijack
-    d1 = list(D1_TEMPLATES) if d1 is None else d1
+    if d1 is None:
+        d1 = list(D1_TEMPLATES) if final else list(D1_TEMPLATES_A)
+    elif not final and any(t in D1_TEMPLATES_B for t in d1):
+        raise HeldOutError(f"D1-B templates {sorted(set(d1) & set(D1_TEMPLATES_B))} require final=True")
     out = []
     for r in requests:
         out.append(clean_variant(r))

@@ -5,9 +5,11 @@ generic ``decide(request) -> response`` callable (interfaces/DECISION_LANGUAGE_V
 hijack, steer (headline), alarm/false-alarm, clean-accuracy delta and ECE under attack with paired
 two-way cluster-bootstrap CIs. See safety_eval/PREREG.md for what gates m1/m2.
 
-Modules: request (formats, host mask), sanitize (role-token neutralisation), data (synthetic requests),
+Gated numbers go through decide/ (decide_bridge); untrusted text is encoded only by decide/untrusted.py.
+
+Modules: request (formats, host mask), decide_bridge (canonical path), sanitize (ZWSP control arm only), data (synthetic requests),
 attacks (hijack / chatml spoof / D1 steer insertion), metrics + stats (unit table, CIs), standin (CPU decider
 for tests), hf_decider (letter-logit LM decider), gcg (GCG-lite option-logit attacker), adaptive (stub),
 run_smoke (CLI).
 """
-__version__ = "0.1.0"
+__version__ = "0.2.0"

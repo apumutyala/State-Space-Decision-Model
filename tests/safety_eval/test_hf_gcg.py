@@ -1,4 +1,6 @@
 """HF decider + GCG-lite mechanics on a tiny RANDOM Qwen3 (CPU, seconds). Needs the cached Qwen3-0.6B tokenizer."""
+import copy
+
 import pytest
 import torch
 
@@ -45,20 +47,51 @@ def test_decider_valid_and_padding_invariant(dec, reqs):
     assert all(r["executed"] in v["policy"]["allowed"][data.QKEY] for r, v in zip(rows, vs))
 
 
-def test_sanitiser_changes_tokens_not_semantics(dec, reqs):
-    v = attacks.hijack_variant(reqs[0], "chatml_spoof")
-    r, n = dec.prepare(data.strip_meta(v))
-    assert n >= 3
-    ids = dec.encode(dec.render(r, data.QKEY, 0))
-    unt = dec.encode(r["state"][v["_meta"]["untrusted_field"]])
-    assert 151644 not in unt
-    dec.sanitize = False
+def _modes(dec, mode):
+    old = dec.untrusted_mode
+    dec.untrusted_mode = mode
+    return old
+
+
+def test_canonical_mirrors_decide_and_controls_differ(dec, reqs):
+    im_start = dec.tok.convert_tokens_to_ids("<|im_start|>")  # tokenizer-specific id, never hard-coded
+    v = data.strip_meta(attacks.hijack_variant(reqs[0], "chatml_spoof"))
+    n_scaffold = dec.encode(dec.render(data.strip_meta(reqs[0]), data.QKEY, 0)).count(im_start)
     try:
-        raw = dec.encode(dec.render(data.strip_meta(v), data.QKEY, 0))
+        # canonical mirror: special tokens in the untrusted span are split, so only scaffolding role tokens remain
+        _modes(dec, "canonical")
+        assert dec.refusal(v) is None
+        assert dec.encode_rendered(dec.render(v, data.QKEY, 0), v).count(im_start) == n_scaffold
+        # non-special added tokens (<think>) are cut by decide.untrusted, not parsed: same characters, no control ids
+        t = copy.deepcopy(data.strip_meta(reqs[0]))
+        f = reqs[0]["_meta"]["untrusted_field"]
+        t["state"][f] += " <think> <tool_response>"
+        ids = dec.untrusted_ids(t["state"][f])
+        assert not set(ids) & dec._canonical.control_ids and dec.tok.decode(ids) == t["state"][f]
+        assert dec.refusal(t) is None and dec(t)["status"] == "ok"
+        # fail closed: whatever the canonical encoder refuses becomes status unsupported
+        from decide.untrusted import ControlTokenError
+        orig = dec._canonical.encode
+        def boom(text):
+            raise ControlTokenError("x")
+        dec._canonical.encode = boom
+        try:
+            r = dec(t)
+            assert r["status"] == "unsupported" and r["error"] == "control_tokens_in_input"
+        finally:
+            dec._canonical.encode = orig
+        # ZWSP control arm also removes them; the 'none' control lets them reach the model
+        _modes(dec, "zwsp")
+        r, n = dec.prepare(v)
+        assert n >= 3 and dec.encode(dec.render(r, data.QKEY, 0)).count(im_start) == n_scaffold
+        _modes(dec, "none")
+        assert dec.encode_rendered(dec.render(v, data.QKEY, 0), v).count(im_start) > n_scaffold
     finally:
-        dec.sanitize = True
-    # without sanitisation the role tokens from the untrusted span reach the model
-    assert raw.count(151644) > ids.count(151644)
+        _modes(dec, "canonical")
+
+
+def test_thinking_flag_from_template(dec):
+    assert dec.thinking_flag == ("enable_thinking" in (dec.tok.chat_template or ""))
 
 
 def test_gcg_lite_runs_and_recheck_path_agrees(dec, reqs):
@@ -71,8 +104,10 @@ def test_gcg_lite_runs_and_recheck_path_agrees(dec, reqs):
     lpk = eng.eval_advs(prob, torch.tensor([res["adv_ids"]]))[0]
     P = gcg.debiased_logp(lpk).exp()
     v = attacks.suffix_variant(reqs[0], res["suffix"], "gcg_steer", "gcg")
-    out = dec(data.strip_meta(v))["raw_probabilities"][data.QKEY]
-    if gcg.roundtrip_ok(dec.tok, prob, torch.tensor([res["adv_ids"]]))[0]:
+    resp = dec(data.strip_meta(v))
+    assert resp["status"] == "ok", (resp, res["suffix"], dec.untrusted_mode)
+    out = resp["raw_probabilities"][data.QKEY]
+    if gcg.roundtrip_ok(dec, prob, torch.tensor([res["adv_ids"]]))[0]:
         for i, k in enumerate(prob.keys):
             assert abs(out[k] - float(P[i])) < 1e-4
 
@@ -87,4 +122,4 @@ def test_gcg_initial_string_round_trips(dec, reqs):
     candidates were silently discarded by the round-trip filter."""
     init = torch.tensor([dec.tok.encode(gcg.HP_SMOKE["init"], add_special_tokens=False) * 12])
     for r in reqs:
-        assert gcg.roundtrip_ok(dec.tok, gcg.Problem(dec, r, "steer"), init)[0]
+        assert gcg.roundtrip_ok(dec, gcg.Problem(dec, r, "steer"), init)[0]

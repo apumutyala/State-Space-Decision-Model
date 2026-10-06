@@ -1,10 +1,14 @@
-"""Neutralise role/special-token strings inside untrusted spans.
+"""ZWSP CONTROL ARM ONLY. The defence is decide/untrusted.py (UntrustedEncoder), imported, never re-implemented.
+
+This module inserts U+200B into role/special-token strings. That changes the characters the model reads, so it is
+kept only as a labelled control arm (``HFLetterDecider(untrusted_mode="zwsp")``) to compare against the canonical
+encoder. Original notes:
 
 Prior-lab finding (chl-typed-control item 2): literal ``<|im_start|>``/``<|im_end|>`` inside a tool output are
 parsed by Qwen-family tokenizers as real role tokens (ids 151644/151645), producing most of the measured hijack
 on Qwen models; inserting U+200B after the first character (or split-tokenising the span) removed 96-100% of it.
 
-Two layers, both applied by any adapter that renders untrusted text into a prompt:
+Two layers (control arm):
   1. ``sanitize_text``: string level, tokenizer-independent; breaks every known role/special marker and every
      added-token string of the tokenizer at hand by inserting a zero-width space after its first character.
   2. ``assert_no_special_ids``: tokenizer level; encodes the sanitised span and fails closed if any special or
