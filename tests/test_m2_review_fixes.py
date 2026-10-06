@@ -211,7 +211,7 @@ def test_guard_refuses_manifest_rows_and_index_metadata(tmp_path):
     g = SplitGuard.from_manifests([p])
     assert len(g.manifests[str(p)]) == 64
     g.check(rec[0])  # unrelated synthetic record passes
-    with pytest.raises(ForbiddenRow, match="request hash"):
+    with pytest.raises(ForbiddenRow, match="payload hash"):
         g.check(rec[1])
     with pytest.raises(ForbiddenRow, match="run_id"):
         g.check({**rec[0], "run_id": "11:X:test:1"})

@@ -38,8 +38,11 @@ def features(evidence_tokens: Sequence[int], n_options: Sequence[int]) -> torch.
 def _tempered(log_probs: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
     """``log_softmax(log_probs / t)`` with padded options (-inf) kept at -inf WITHOUT dividing them:
     d(-inf / t)/dt = +inf, and inf * 0 (their softmax weight) is NaN in the backward pass, which
-    turned every weight NaN when a calibration batch mixes option counts (the m2 data does)."""
-    pad = ~torch.isfinite(log_probs)
+    turned every weight NaN when a calibration batch mixes option counts (the m2 data does).
+    Only -inf means "padded option"; NaN or +inf log-probabilities are a model fault and raise."""
+    if torch.isnan(log_probs).any() or torch.isposinf(log_probs).any():
+        raise FloatingPointError("NaN/+inf log-probabilities reached the temperature (model fault, not padding)")
+    pad = torch.isneginf(log_probs)
     z = log_probs.masked_fill(pad, 0.0) / t
     return torch.log_softmax(z.masked_fill(pad, float("-inf")), -1)
 

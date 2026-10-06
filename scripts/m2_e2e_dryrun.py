@@ -52,6 +52,8 @@ if str(ROOT) not in sys.path:
 DEFAULT_RECORDS = Path(os.environ.get("SSDM_DATA", r"C:\Users\apumu\research\CHLabs\ssdm-data")) / \
     "m2" / "build" / "sample-20000-seed20261006" / "records.jsonl.gz"
 DEFAULT_MANIFEST = ROOT / "data" / "manifests" / "sample-20000-seed20261006.manifest.jsonl.gz"
+#: content index of every dev+test Index row (hashes only; ``python -X utf8 -m train.guard build-content-index``)
+DEFAULT_CONTENT_INDEX = DEFAULT_RECORDS.parents[2] / "index-content-hashes-v1.txt.gz"
 INDEX_MANIFESTS = [ROOT / "harness" / "manifests" / "dev-manifest.jsonl.gz",
                    ROOT / "harness" / "manifests" / "test-manifest.jsonl.gz"]
 
@@ -186,6 +188,40 @@ def guard_probes(guard) -> dict:
     return out
 
 
+def launder(row: dict, reorder: bool) -> dict:
+    """A kit row with every Index trace removed: no ``_evaluation``/expected/metadata, a fresh id, the
+    PR #16 record shape, and optionally reordered state keys, question keys and options."""
+    def rev(d):
+        return {k: (rev(v) if isinstance(v, dict) else v) for k, v in reversed(list(d.items()))}
+
+    st, qs = row["state"], row["questions"]
+    if reorder:
+        st = rev(st) if isinstance(st, dict) else st
+        qs = rev(qs)
+    return {"id": "m2:laundered:0", "schema": "ssdm-train-v0", "source": "anli", "state": st, "questions": qs,
+            "labels": {}, "untrusted_fields": []}
+
+
+def laundering_probes(guard) -> dict:
+    """Laundered copies of a kit-format row (synthetic content standing in for an Index row; no DEV/TEST
+    content is read): protected only by its payload_sha256 (as the manifests protect real rows), and by
+    its content hash (as the content index does)."""
+    from train.guard import ForbiddenRow, SplitGuard
+
+    row = synthetic_dev_rows(1)[0]
+    by_payload = SplitGuard(hashes={row["_evaluation"]["payload_sha256"]})
+    by_content = SplitGuard().add_index_rows([row])
+    out = {}
+    for name, g, rec in (("laundered_exact_by_kit_payload_hash", by_payload, launder(row, False)),
+                         ("laundered_reordered_by_content_hash", by_content, launder(row, True))):
+        try:
+            g.check(rec)
+            out[name] = "ADMITTED"
+        except ForbiddenRow as exc:
+            out[name] = f"refused: {str(exc)[:80]}"
+    return out
+
+
 # ---------------------------------------------------------------------------------------------- eval inputs
 def synthetic_dev_rows(n_groups: int) -> list[dict]:
     """Harness/kit-format rows shaped like Index DEV rows (MuSR field-accuracy, catalog 32; ACOS per-review
@@ -211,7 +247,9 @@ def synthetic_dev_rows(n_groups: int) -> list[dict]:
 
 
 def _kit_row(n, gid, rid, state, questions, expected, dumps):
-    payload = {"state": state, "questions": questions}
+    from train.guard import KIT_REFERENCE_MODEL
+
+    payload = {"model": KIT_REFERENCE_MODEL, "state": state, "questions": questions}  # exactly the kit's freeze
     psha = hashlib.sha256(dumps(payload).encode()).hexdigest()
     return {"_evaluation": {"run_id": rid, "catalog_id": n, "dataset": "SYNTH", "track": "synthetic", "group_id": gid,
                             "payload_sha256": psha, "proxy_tokens": len(dumps(payload)) // 4},
@@ -289,7 +327,7 @@ def max_abs_diff(a: dict, b: dict) -> float:
 
 # ---------------------------------------------------------------------------------------------- main
 def run(out: Path, profile: str = "smoke", records: Path = DEFAULT_RECORDS, manifest: Path = DEFAULT_MANIFEST,
-        backbones=BACKBONES, heads=HEADS, arms=ARMS) -> dict:
+        backbones=BACKBONES, heads=HEADS, arms=ARMS, content_index: Path = DEFAULT_CONTENT_INDEX) -> dict:
     t_start = time.perf_counter()
     import numpy as np
     import torch
@@ -330,7 +368,7 @@ def run(out: Path, profile: str = "smoke", records: Path = DEFAULT_RECORDS, mani
 
     # ---------------------------------------------------------------- 1. data + guard
     t = time.perf_counter()
-    guard = SplitGuard.from_manifests(INDEX_MANIFESTS)
+    guard = SplitGuard.from_manifests(INDEX_MANIFESTS, content_index=content_index if content_index.exists() else None)
     recs, data_ident = load_slice(records, manifest, P["n_records"])
     enc = ByteEncoder()
     splits = {"train": [], "calib": [], "eval": []}
@@ -341,6 +379,7 @@ def run(out: Path, profile: str = "smoke", records: Path = DEFAULT_RECORDS, mani
         if not items[k]:
             raise RuntimeError(f"empty {k} split; raise n_records")
     probes = guard_probes(guard)
+    probes.update(laundering_probes(guard))
     st["data"] = {"records": data_ident, "guard": guard.identity(), "guard_probes": probes,
                   "guard_refuses_all_probes": all(v.startswith("refused") for v in probes.values()),
                   "splits": {k: {"n_records": len(splits[k]), "n_items": len(items[k]),
@@ -358,9 +397,12 @@ def run(out: Path, profile: str = "smoke", records: Path = DEFAULT_RECORDS, mani
         raise AssertionError(f"synthetic DEV-shaped ids collide with Index manifests: {clash}")
     steer_reqs = sdata.build(P["n_route"], P["n_pay"], split="dev")
     steer_variants = attacks.build_variants(steer_reqs, hijack=[], d1=None)  # clean + D1-A (D1-B held out)
+    # G13 gate set: clean + held-out D1-B, built only with final=True (a gate run on a frozen checkpoint)
+    gate_variants = attacks.build_variants(steer_reqs, hijack=[], d1=sorted(attacks.D1_TEMPLATES_B), final=True)
     cohort = {"index_format_rows": {"kind": "synthetic DEV-shaped (catalogs 32, 38)", "n": len(dev_rows),
                                     "sha256": _sha(dev_rows)},
               "steer": {"split": "dev", **sdata.manifest(steer_reqs), "n_variants": len(steer_variants)},
+              "gate_d1b": {"n_variants": len(gate_variants), "note": "held-out D1-B, final=True; G13 gate stage only"},
               "decision_eval_items": {"n": len(items["eval"]), "sha256": split_hash(items["eval"])}}
     st["cohort"] = cohort
 
@@ -370,9 +412,10 @@ def run(out: Path, profile: str = "smoke", records: Path = DEFAULT_RECORDS, mani
         for head in heads:
             for arm in arms:
                 runs.append(_one(kind, head, arm, out, P, items, guard, enc, cohort, dev_rows, steer_variants,
-                                 full=P["full_card"] is None or (kind, head, arm) in P["full_card"],
+                                 gate_variants, full=P["full_card"] is None or (kind, head, arm) in P["full_card"],
                                  negative_checks=(head == heads[0] and arm == arms[0])))
-                print(json.dumps({k: runs[-1].get(k) for k in ("backbone", "head", "arm", "seconds", "verdict_accept")}),
+                print(json.dumps({k: runs[-1].get(k) for k in ("backbone", "head", "arm", "seconds", "g12_accept",
+                                                                "g13_accept")}),
                       flush=True)
     st["runs"] = runs
 
@@ -382,15 +425,16 @@ def run(out: Path, profile: str = "smoke", records: Path = DEFAULT_RECORDS, mani
         "n_runs": len(runs), "n_full_cards": 2 * len(full),
         "all_losses_finite": all(r["losses_finite"] for r in runs),
         "all_resumes_ok": all(r["resume"]["ok"] for r in runs),
-        "resume_equals_uninterrupted": [r["resume"].get("uninterrupted_max_abs_diff") for r in runs
-                                        if "uninterrupted_max_abs_diff" in r["resume"]],
+        "resume_equals_uninterrupted": {f"{r['backbone']}/{r['head']}/{r['arm']}":
+                                        r["resume"]["uninterrupted_max_abs_diff"] for r in runs},
         "lineage_negative_checks": [r["resume"].get("negative") for r in runs if r["resume"].get("negative")],
         "guard_refuses_all_probes": st["data"]["guard_refuses_all_probes"],
         "steer_complete": all(r["cards"]["child"]["steer_complete"] for r in full),
         "index_scored": all(r["cards"]["child"]["index_status"] == "ok" for r in full),
-        "promotion_verdicts": {f"{r['backbone']}/{r['head']}/{r['arm']}": {"accept": r["verdict"]["accept"],
-                                                                         "failed": r["verdict"]["failed"]}
-                               for r in full},
+        "promotion_verdicts": {f"{r['backbone']}/{r['head']}/{r['arm']}": {
+            "g12": {"accept": r["verdict_g12"]["accept"], "failed": r["verdict_g12"]["failed"]},
+            "g13_gate": {"accept": r["verdict_g13"]["accept"], "failed": r["verdict_g13"]["failed"]},
+            "g12_self": r["verdict_g12_self"]} for r in full},
         "seconds_total": round(time.perf_counter() - t_start, 1),
     }
     receipt["summary"] = summary
@@ -398,7 +442,8 @@ def run(out: Path, profile: str = "smoke", records: Path = DEFAULT_RECORDS, mani
     return receipt
 
 
-def _one(kind, head, arm, out, P, items, guard, enc, cohort, dev_rows, steer_variants, full, negative_checks) -> dict:
+def _one(kind, head, arm, out, P, items, guard, enc, cohort, dev_rows, steer_variants, gate_variants, full,
+         negative_checks) -> dict:
     import numpy as np
     import torch
 
@@ -407,6 +452,7 @@ def _one(kind, head, arm, out, P, items, guard, enc, cohort, dev_rows, steer_var
     from harness import score as HS
     from heads.decide_backend import DecisionModelBackend
     from safety_eval import certify, selective
+    from safety_eval import metrics as smetrics
     from safety_eval.decide_bridge import DecideBridge
     from safety_eval.request import host_decision
     from safety_eval.data import QKEY, strip_meta
@@ -441,12 +487,13 @@ def _one(kind, head, arm, out, P, items, guard, enc, cohort, dev_rows, steer_var
     rec["history"] = tr2.history
     rec["losses_finite"] = all(np.isfinite(h["loss"]) for h in tr2.history)
     rec["lineage"] = tr2.lineage
+    # every run: an uninterrupted 2k-step run must equal train(k); save; fresh resume; train(k) exactly
+    ref = Trainer(make_model(kind, head, cfg.seed), make_cfg(head, arm, rdir / "ckpt-ref", k, P["batch"],
+                                                             ckpt_every=0), train_items, guard=guard)
+    ref.train()
+    rs["uninterrupted_max_abs_diff"] = max_abs_diff(ref.trainable_state(), tr2.trainable_state())
+    rs["ok"] = rs["ok"] and rs["uninterrupted_max_abs_diff"] == 0.0
     if negative_checks:
-        # an uninterrupted 2k-step run must equal train(k); save; fresh resume; train(k)
-        ref = Trainer(make_model(kind, head, cfg.seed), make_cfg(head, arm, rdir / "ckpt-ref", k, P["batch"],
-                                                                 ckpt_every=0), train_items, guard=guard)
-        ref.train()
-        rs["uninterrupted_max_abs_diff"] = max_abs_diff(ref.trainable_state(), tr2.trainable_state())
         neg = {}
         try:  # different training data -> lineage refusal
             trainer_at(kind, head, cfg, list(reversed(train_items)), guard, parent_ckpt)
@@ -460,7 +507,7 @@ def _one(kind, head, arm, out, P, items, guard, enc, cohort, dev_rows, steer_var
         except ValueError as exc:
             neg["different_config"] = "refused" if "config" in str(exc) else f"refused (other): {exc}"
         rs["negative"] = neg
-        rs["ok"] = rs["ok"] and rs["uninterrupted_max_abs_diff"] == 0.0 and all(v == "refused" for v in neg.values())
+        rs["ok"] = rs["ok"] and all(v == "refused" for v in neg.values())
     rec["resume"] = rs
     child = tr2.model
     parent = trainer_at(kind, head, cfg, train_items, guard, parent_ckpt).model
@@ -520,31 +567,43 @@ def _one(kind, head, arm, out, P, items, guard, enc, cohort, dev_rows, steer_var
             g5 = selective.ltt_selective(sc, wr, alpha=0.2, delta=0.1, clusters=cl)
             c["g5_ltt"] = {kk: g5.get(kk) for kk in ("n_s", "mu_s", "feasibility", "lam_hat", "chosen")}
             fields[name] = promotion.decision_fields(items["eval"], card["units"]["decision_probs_tempered"])
+            # G13 gate stage (held-out D1-B, final=True): scored once per frozen checkpoint
+            units[name]["gate_rows"] = smetrics.run(DecideBridge(decider), gate_variants)
         cards[name] = c
     rec["cards"] = cards
 
-    # ---- 5. G12/G13 promotion rule (child vs parent)
+    # ---- 5. promotion: G12 at this checkpoint (D1-A dev), G13 at a gate (D1-B + retention), child vs parent
     if full:
-        cap = HB.compare(HS.decompose(dev_rows, units["child"]["index_results"]),
-                         HS.decompose(dev_rows, units["parent"]["index_results"]), B=P["n_boot"], seed=0)
-        dec = promotion.paired_decision(fields["child"], fields["parent"], n_boot=P["n_boot"])
-        v = promotion.verdict(decision=dec, steer_child_rows=units["child"]["steer_rows"],
-                              steer_parent_rows=units["parent"]["steer_rows"], capability=cap, n_boot=P["n_boot"])
-        # self-comparison sanity: a checkpoint vs itself must not be rejected for regression
-        self_v = promotion.verdict(decision=promotion.paired_decision(fields["parent"], fields["parent"],
-                                                                      n_boot=P["n_boot"]),
-                                   steer_child_rows=units["parent"]["steer_rows"],
-                                   steer_parent_rows=units["parent"]["steer_rows"],
-                                   capability=HB.compare(HS.decompose(dev_rows, units["parent"]["index_results"]),
-                                                         HS.decompose(dev_rows, units["parent"]["index_results"]),
-                                                         B=P["n_boot"], seed=0), n_boot=P["n_boot"])
-        rec["verdict"] = {"accept": v["accept"], "failed": v["failed"],
-                          "criteria": [{kk: c.get(kk) for kk in ("criterion", "pass", "evaluable", "reason")}
-                                       for c in v["criteria"]],
-                          "capability_diff_index": cap["diff"]["index"], "margins": v["margins"]}
-        rec["verdict_self"] = {"accept": self_v["accept"], "failed": self_v["failed"]}
-        rec["verdict_accept"] = v["accept"]
-        (rdir / "verdict.json").write_text(json.dumps(v, indent=1, default=float), encoding="utf-8")
+        nb = P["n_boot"]
+        dec = promotion.paired_decision(fields["child"], fields["parent"], n_boot=nb)
+        v12 = promotion.verdict_g12(decision=dec, steer_child_rows=units["child"]["steer_rows"],
+                                    steer_parent_rows=units["parent"]["steer_rows"],
+                                    expected_variants=steer_variants, n_boot=nb)
+        ret = promotion.retention_comparison(dev_rows, units["child"]["index_results"],
+                                             units["parent"]["index_results"], B=nb, seed=0)
+        v13 = promotion.verdict_g13(retention=ret, steer_child_rows=units["child"]["gate_rows"],
+                                    steer_parent_rows=units["parent"]["gate_rows"], expected_variants=gate_variants,
+                                    n_boot=nb)
+        # self-comparison: a checkpoint vs itself has zero difference everywhere; it may only fail on
+        # criteria that are not evaluable (e.g. no clean-correct units on a random model), never on a CI
+        self12 = promotion.verdict_g12(decision=promotion.paired_decision(fields["parent"], fields["parent"],
+                                                                          n_boot=nb),
+                                       steer_child_rows=units["parent"]["steer_rows"],
+                                       steer_parent_rows=units["parent"]["steer_rows"],
+                                       expected_variants=steer_variants, n_boot=nb)
+
+        def brief(v):
+            return {"accept": v["accept"], "failed": v["failed"], "margins": v["margins"],
+                    "criteria": [{kk: c.get(kk) for kk in ("criterion", "pass", "evaluable", "reason", "diff",
+                                                           "regression_point_estimate")} for c in v["criteria"]]}
+
+        rec["verdict_g12"], rec["verdict_g13"] = brief(v12), brief(v13)
+        rec["verdict_g12_self"] = {"accept": self12["accept"], "failed": self12["failed"],
+                                   "failed_evaluable": [c["criterion"] for c in self12["criteria"]
+                                                        if not c["pass"] and c["evaluable"]]}
+        rec["g12_accept"], rec["g13_accept"] = v12["accept"], v13["accept"]
+        (rdir / "verdict.json").write_text(json.dumps({"g12": v12, "g13": v13, "retention": ret}, indent=1,
+                                                      default=float), encoding="utf-8")
     rec["seconds"] = round(time.perf_counter() - t0, 1)
     return rec
 
@@ -578,9 +637,11 @@ def main(argv=None):
     ap.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     ap.add_argument("--backbones", default=",".join(BACKBONES))
     ap.add_argument("--heads", default=",".join(HEADS))
+    ap.add_argument("--content-index", default=str(DEFAULT_CONTENT_INDEX),
+                    help="guard content index (python -X utf8 -m train.guard build-content-index); used if present")
     a = ap.parse_args(argv)
     rec = run(Path(a.out), a.profile, Path(a.records), Path(a.manifest), backbones=tuple(a.backbones.split(",")),
-              heads=tuple(a.heads.split(",")))
+              heads=tuple(a.heads.split(",")), content_index=Path(a.content_index))
     print(json.dumps(rec["summary"], indent=1, default=float))
 
 
