@@ -69,7 +69,16 @@ Order insensitivity is also an adapter property. The adapter canonicalises quest
 
 ## Injection
 
-Request text (state, ids, instructions, descriptions) is encoded with special tokens split. As a result, `<|im_end|>`/`<|im_start|>` inside a request never becomes a control token. A control-token audit over all 28 ok cases found no prompt with more special ids than the template's own 7.
+Request text (state, ids, instructions, descriptions) is encoded by the canonical `decide.untrusted.UntrustedEncoder`, the one encoder `safety_eval` must import. It works in two steps:
+
+- Special tokens are split by `split_special_tokens=True`.
+- Added tokens that the flag does not split are cut. On Qwen3.5 these are 12 non-special tokens, including `<think>`, `<tool_call>`, `<tool_response>` and `<|fim_*|>`.
+
+The model therefore sees the same characters, and the encoder fails closed with `unsupported/control_tokens_in_input`. As a result, `<|im_end|>`/`<|im_start|>`/`<think>` inside a request never becomes a control token.
+
+Fixture revision note: the fixture was recorded at `29b858c`, which used split-only encoding, and pins that `parent_revision`. A tokenizer-only CPU check shows that every encoded sequence in this fixture is identical under the canonical encoder. The result is 173/173, in `receipts/.../fixture-tokenization-check.json`. The recorded logits are therefore unchanged; only the live backend's `revision_id` (cfg hash) differs.
+
+Case `injection-03-added-tokens` is in `scripts/fixture_cases.py` but is not recorded yet. It is added at the next regeneration, which is pending because no model runs are allowed on this laptop. A control-token audit over all 28 ok cases found no prompt with more special ids than the template's own 7.
 
 Option ids or question ids containing control characters or `<|`/`|>` are rejected (`error/invalid_option_id`).
 
