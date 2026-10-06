@@ -9,9 +9,12 @@ tokenizers.
 
 Method (``UNTRUSTED_ENCODER_ID``):
 
-1. Cut the text into pieces so that no piece contains the content string of any
-   added token. Each occurrence is cut at its midpoint, repeatedly, until no
-   piece contains one.
+1. Find the added tokens that still parse as single ids under
+   ``split_special_tokens=True`` (on Qwen3.5: 12 of 33). Cut the text into
+   pieces so that no piece contains one of those strings, cutting each
+   occurrence at its midpoint, repeatedly. Special tokens are not cut, because
+   the flag already splits them, so text without leaking tokens encodes exactly
+   as with the flag alone.
 2. Encode each piece separately with ``add_special_tokens=False,
    split_special_tokens=True`` and concatenate the ids.
 3. Fail closed. If any control id still appears (for example a 1-character added
@@ -32,7 +35,7 @@ from __future__ import annotations
 
 from typing import Any
 
-UNTRUSTED_ENCODER_ID = "untrusted-split-special+cut-added-v1"
+UNTRUSTED_ENCODER_ID = "untrusted-split-special+cut-leaking-added-v1"
 CONTROL_TOKENS_CODE = "control_tokens_in_input"
 
 
@@ -57,7 +60,13 @@ class UntrustedEncoder:
 
     def __init__(self, tokenizer: Any) -> None:
         self.tokenizer = tokenizer
-        self.control_ids, self._contents = control_ids_and_contents(tokenizer)
+        self.control_ids, contents = control_ids_and_contents(tokenizer)
+        # Cut only tokens that survive split_special_tokens (non-special added tokens such as
+        # <think>); special tokens are already split by the flag, so their encoding is unchanged.
+        self._contents = tuple(
+            c for c in contents
+            if set(tokenizer(c, add_special_tokens=False, split_special_tokens=True).input_ids) & self.control_ids
+        )
 
     def identity(self) -> dict[str, Any]:
         return {"id": UNTRUSTED_ENCODER_ID, "n_control_ids": len(self.control_ids)}

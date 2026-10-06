@@ -105,7 +105,30 @@ How to read this:
 
 RWKV7 and Mamba-3 controls need the GPU and are **not run yet**; they are required before any stock-readout m0 number is used for design.
 
-## 5. Other review items addressed
+## 5. Canonical untrusted-text encoder (`decide/untrusted.py`, commits `ce7ae36`+)
+
+The PR #8 review found that `split_special_tokens` alone leaves 12 *non-special* added Qwen tokens as single ids (`<think>`, `</think>`, `<tool_call>`, `<tool_response>`, `<|fim_*|>`, `<|repo_name|>`, `<|file_sep|>`). As a result, PR #6 refused input that PR #8 scored.
+
+There is now one encoder, `UntrustedEncoder(tokenizer).encode(text)`, and `safety_eval` must import it. It works in three steps:
+
+1. Split special tokens with the flag.
+2. Cut, at the midpoint, every added token that still parses as one id under the flag.
+3. Fail closed with `ControlTokenError` (`status = unsupported`, `code = control_tokens_in_input`) if any special or added id survives.
+
+Unlike ZWSP, the model reads the same characters (`decode(ids) == text`).
+
+Tests (`tests/test_untrusted.py`, tokenizers only, CPU):
+
+- Every added token of Qwen3.5 (33) and the Llama-3.1/Mamba-3 tokenizer (256) is neutralised and round-trips.
+- A realistic `<|im_end|>`/`<think>`/`<tool_response>` spoof is neutralised.
+- An uncuttable 1-character added token fails closed.
+- The Qwen leak is confirmed: `<think>` survives the flag alone.
+
+Fixture compatibility (`fixture-tokenization-check.json`, `scripts/check_fixture_tokenization.py`, tokenizer only): all 173 encoded sequences of fixture v0 are identical under split-only (the fixture recording) and the canonical encoder. The recorded logits stay valid. The fixture keeps its recorded `parent_revision` (`cfg=9c55f30e`); the live backend's cfg hash now differs because the encoder id is part of it. Regeneration, which adds `injection-03-added-tokens`, is deferred: no model loads are allowed on this laptop.
+
+Tests: `pytest.txt` is now **115 passed, 10 skipped** (CPU).
+
+## 6. Other review items addressed
 
 - **Legacy wire failure signal:** top-level `error {status, code, message}` on non-ok. This is documented in `decide/schema.py`, and transports must map it to HTTP errors.
 - **Documented deliberate differences from Clef:**
