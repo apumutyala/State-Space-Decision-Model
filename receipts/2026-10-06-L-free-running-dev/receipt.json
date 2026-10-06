@@ -29,5 +29,11 @@
   "runs": 1,
   "raw_output": "tests.txt",
   "raw_predictions": "scripted-raw.json; scripted provider, no learned model",
-  "scope": "synthetic development runner conformance only; no learned or held-out result"
+  "scope": "synthetic development runner conformance only; no learned or held-out result",
+  "dependency_commits": {
+    "kernel_types": "e1dd16b",
+    "renderer": "a361de9",
+    "planner_bridge": "821b139",
+    "development_generator": "d94d45f"
+  }
 }
