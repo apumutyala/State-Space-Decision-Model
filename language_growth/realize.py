@@ -8,9 +8,65 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
+from typing import NamedTuple
 
 from .kernel import validate_release
 from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, SpeechAct
+
+
+class EvidenceUse(NamedTuple):
+    """One checked fact used by an emitted speech act.
+
+    ``speech_path`` starts with the output index and then records child indexes
+    through conjunctions/explanations. It is deliberately structural: callers
+    can attach citations or inspect lineage without parsing rendered prose.
+    """
+
+    speech_path: tuple[int, ...]
+    role: str
+    source_ref: str
+    record_ref: str
+    record_version: int
+    field: str
+    interval: str
+
+
+def checked_evidence_trace(result: CheckResult, host: dict, catalog: dict) -> tuple[EvidenceUse, ...]:
+    """Return the evidence lineage for current, authorized checked output.
+
+    The trace is derived only from kernel-minted speech acts after revalidating
+    release authority. It contains references and versions, never evidence
+    values or model-proposed strings. This is an audit hook for consumers that
+    need citations; it does not itself release text or grant authority.
+    """
+    checked = validate_release(result, host, catalog)
+    if not isinstance(checked, CheckResult) or checked.status != "accepted":
+        raise ValueError("release denied")
+
+    uses: list[EvidenceUse] = []
+
+    def add(item: Fact | ConstantValue, path: tuple[int, ...], role: str) -> None:
+        if isinstance(item, Fact):
+            uses.append(EvidenceUse(path, role, item.source_ref, item.record_ref,
+                                    item.record_version, item.field, item.interval))
+
+    def visit(act: SpeechAct, path: tuple[int, ...]) -> None:
+        if not isinstance(act, SpeechAct):
+            raise ValueError("invalid checked speech act")
+        if act.kind == "assert" and isinstance(act.content, Fact):
+            add(act.content, path, "asserted")
+        elif act.kind == "assert" and isinstance(act.content, Comparison):
+            add(act.content.left, path, "comparison_left")
+            add(act.content.right, path, "comparison_right")
+        elif act.kind == "conjoin" and isinstance(act.content, tuple):
+            for index, child in enumerate(act.content):
+                visit(child, path + (index,))
+        elif act.kind == "explain" and isinstance(act.content, SpeechAct):
+            visit(act.content, path + (0,))
+
+    for output_index, act in enumerate(checked.outputs):
+        visit(act, (output_index,))
+    return tuple(uses)
 
 
 def _quoted(value: str) -> str:

@@ -9,7 +9,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from language_growth.kernel import check_program
-from language_growth.realize import _speech, render_checked
+from language_growth.realize import _speech, checked_evidence_trace, render_checked
 from language_growth.types import CheckResult
 
 
@@ -26,6 +26,33 @@ def _catalog() -> dict:
 
 
 class RenderTests(unittest.TestCase):
+    def test_trace_reports_fact_and_comparison_lineage_without_values(self) -> None:
+        catalog = _catalog()
+        case = _case(2)
+        result = check_program(case["proposal"], case["host"], catalog)
+        trace = checked_evidence_trace(result, case["host"], catalog)
+        self.assertEqual(
+            [(item.speech_path, item.role, item.record_ref, item.field, item.record_version)
+             for item in trace],
+            [((0,), "comparison_left", "atlas-v1", "price", 1),
+             ((0,), "comparison_right", "boreal-v1", "price", 1)],
+        )
+        self.assertTrue(all(not hasattr(item, "value") for item in trace))
+
+    def test_trace_denies_forged_or_revoked_output(self) -> None:
+        catalog = _catalog()
+        case = _case(1)
+        result = check_program(case["proposal"], case["host"], catalog)
+        forged = CheckResult(**{key: getattr(result, key) for key in (
+            "status", "reason", "outputs", "dependencies", "context_ref",
+            "policy_ref", "registry_ref", "audience", "style")})
+        with self.assertRaises(ValueError):
+            checked_evidence_trace(forged, case["host"], catalog)
+        revoked = deepcopy(catalog)
+        revoked["policies"]["public-read-r3"]["status"] = "revoked"
+        with self.assertRaises(ValueError):
+            checked_evidence_trace(result, case["host"], revoked)
+
     def test_bound_fact_and_exact_comparison(self) -> None:
         catalog = _catalog()
         for number, parts in (
