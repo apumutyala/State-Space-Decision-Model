@@ -335,9 +335,11 @@ def _report(fla_ok=True, safe_ok=True, pre=(2.5, 3.0, 4.0), train=2.4, safe_scal
         out = []
         for v, ok in (("chunked", True), ("fla", fla_ok), ("fla_safe_gate", safe_ok)):
             out.append({"name": f"{phase}1", "impl": v, "dtype": "bfloat16", "worst": good if ok else bad})
-            if phase != "captured":
-                out.append({"name": f"{phase}1", "impl": v, "dtype": "float32", "worst": good if fp32_ok else bad})
         return {"cases": out}
+
+    fp32 = {"complete": True, "cases": [{"name": f"fp32_{i}", "impl": v, "dtype": "float32",
+                                         "worst": good if fp32_ok else bad}
+                                        for i in range(2) for v in ("chunked", "fla", "fla_safe_gate")]}
 
     tp = {"fla_calls": {"fla": 9, "fla_safe_gate": 9}, "prefill": {}, "train": {"chunked": {"tok_s": 1000.0}, "fla": {"tok_s": 1000.0 * train},
                                    "fla_safe_gate": {"tok_s": 1000.0 * train * safe_scale}}}
@@ -345,7 +347,7 @@ def _report(fla_ok=True, safe_ok=True, pre=(2.5, 3.0, 4.0), train=2.4, safe_scal
         tp["prefill"][str(L)] = {"chunked": {"tok_s": 4000.0}, "fla": {"tok_s": 4000.0 * rr},
                                  "fla_safe_gate": {"tok_s": 4000.0 * rr * safe_scale}}
     logit = {"rel": 1e-2, "cos_min": 0.9995, "top1": 0.99}
-    rep = {"kernel": cases("kernel"), "fork": cases("fork"), "captured": cases("captured"),
+    rep = {"fp32": fp32, "kernel": cases("kernel"), "fork": cases("fork"), "captured": cases("captured"),
            "model": {"fla_calls": {"fla": 9, "fla_safe_gate": 9}, "logits": {"chunked": {"rel": 1e-2}, "fla": logit, "fla_safe_gate": logit},
                      "continuation": {"fla": {"rel": 1e-3, "fork_rel": 0.0}, "fla_safe_gate": {"rel": 1e-3, "fork_rel": 0.0}}},
            "throughput": tp}
@@ -361,6 +363,48 @@ def test_decide_rule():
     assert d["chosen_prefill_2048_tok_s"] == 10000.0 and not d["meets_child_eval_rate"]
     assert E.decide(_report(fp32_ok=False))["variants"]["fla"]["allow_fp32"] is False  # fp32 never blocks
     assert E.decide(_report(fp32_ok=False))["verdict"] == "ADOPT"
+
+
+def test_partial_fp32_never_allows_fp32():
+    """PR #59 B1: a timed-out fp32 phase leaves fp32.json with only its first (forward) cases, all passing. Without
+    the ``complete`` flag that must not enable fp32."""
+    r = _report()
+    assert E.decide(r)["variants"]["fla"]["allow_fp32"] is True
+    r["fp32"]["complete"] = False
+    assert E.decide(r)["variants"]["fla"]["allow_fp32"] is False
+    del r["fp32"]["complete"]
+    assert E.decide(r)["variants"]["fla"]["allow_fp32"] is False
+    r = _report()
+    r["fp32"] = None  # skipped
+    assert E.decide(r)["variants"]["fla"]["allow_fp32"] is False and E.decide(r)["verdict"] == "ADOPT"
+
+
+def test_phase_fp32_marks_complete_only_after_its_last_case(fake_fla, monkeypatch, tmp_path):
+    monkeypatch.setattr(E, "DEVICE", "cpu")
+    monkeypatch.setattr(E, "H", 2)
+    monkeypatch.setattr(E, "N", 4)
+    seen = []
+    real = E._fork_cases
+
+    def interrupted(rep, dt):  # a timeout during the fork half: the file on disk at that moment
+        seen.append(json.loads((tmp_path / "fp32.json").read_text(encoding="utf-8")))
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(E, "_fork_cases", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        E.phase_fp32(tmp_path)
+    partial = seen[0]
+    assert partial["complete"] is False and partial["cases"]  # forward/grad kernel cases present, all passing
+    assert E._fp32_ok({"fp32": partial}, "fla") is False
+    monkeypatch.setattr(E, "_fork_cases", real)
+    E.phase_fp32(tmp_path)
+    full = json.loads((tmp_path / "fp32.json").read_text(encoding="utf-8"))
+    assert full["complete"] is True and E._fp32_ok({"fp32": full}, "fla") is True
+
+
+def test_warmup_autotunes_at_a_real_length_first():
+    """PR #59 N1: fla's autotune keys exclude T, so the first warmup call fixes the config for the throughput phase."""
+    assert E.WARMUP_T[0] == 2048 and E.WARMUP_T[0] in E.LENGTHS and any(t % 16 for t in E.WARMUP_T)
     assert E.decide(_report(pre=(1.9, 3.0, 4.0)))["verdict"] == "ADOPT_TRAINING_ONLY"  # every length must clear 2x
     assert E.decide(_report(train=1.5))["verdict"] == "ADOPT_READOUT_ONLY"
     assert E.decide(_report(pre=(1.2, 1.5, 1.9), train=1.5))["verdict"] == "REJECT_SPEED"
@@ -422,9 +466,15 @@ def test_job_params_cost_and_schedule():
 
 def test_runner_and_context():
     s = (ROOT / "jobs/fla_rwkv7/fla_job.sh").read_text(encoding="utf-8")
-    for ph in ("kernel", "fork", "model", "throughput", "decide"):
+    for ph in ("warmup", "kernel", "fork", "model", "throughput", "fp32", "decide"):
         assert f"jobs.fla_rwkv7.fla_equivalence {ph}" in s
-    assert s.index("fla_guard.py") < s.index("snapshot_download") < s.index("fla_equivalence kernel")
+    assert s.index("fla_guard.py") < s.index("snapshot_download") < s.index("fla_equivalence warmup") \
+        < s.index("fla_equivalence kernel")
+    # job-4idg4: one Triton cache for every phase process; fp32 is last, optional, bounded by the time left
+    assert "export TRITON_CACHE_DIR=$WORK/triton-cache" in s
+    assert s.index("fla_equivalence throughput") < s.index("fla_equivalence fp32") < s.index("fla_equivalence decide")
+    fp32 = s[s.index("fla_equivalence fp32"):s.index("fla_equivalence decide")]
+    assert "fail " not in fp32 and "timeout ${LEFT_S}s" in s
     assert "--require-hashes" in s and "VALIDATOR=jobs.fla_rwkv7.fla_equivalence:valid_decision" in s
     bc = (ROOT / "jobs/fla_rwkv7/build_context.sh").read_text(encoding="utf-8")
     assert 'cp "$OUTD/code/m1/jobs/rwkv7/Dockerfile" "$OUTD/Dockerfile"' in bc  # the rwkv7 image, unchanged
@@ -441,9 +491,16 @@ def test_weight_free_gate_phases_run_end_to_end_on_cpu(fake_fla, monkeypatch, tm
     monkeypatch.setattr(E, "H", 4)
     monkeypatch.setattr(E, "N", 16)
     monkeypatch.setattr(E, "_p640", lambda rep: None)
+    monkeypatch.setattr(E, "WARMUP_T", (64, 40))  # CPU stand-in: the real lengths only cost time here
+    E.phase_warmup(tmp_path)
     E.phase_kernel(tmp_path)
     E.phase_fork(tmp_path)
-    for phase in ("kernel", "fork"):
+    E.phase_fp32(tmp_path)
+    warm = json.loads((tmp_path / "warmup.json").read_text(encoding="utf-8"))["cases"]
+    assert len(warm) == 16 and all("compile_s" in c and "t_s" in c for c in warm)  # 2 variants x 2 T x state/packed x fwd/bwd
+    for phase, dt in (("kernel", "bfloat16"), ("fork", "bfloat16"), ("fp32", "float32")):
+        assert {c["dtype"] for c in json.loads((tmp_path / f"{phase}.json").read_text(encoding="utf-8"))["cases"]} == {dt}
+    for phase in ("kernel", "fork", "fp32"):
         cases = json.loads((tmp_path / f"{phase}.json").read_text(encoding="utf-8"))["cases"]
         assert cases and not [c for c in cases if c.get("error")], [c for c in cases if c.get("error")][:2]
         gated = [c for c in cases if not c.get("diag")]
@@ -452,4 +509,9 @@ def test_weight_free_gate_phases_run_end_to_end_on_cpu(fake_fla, monkeypatch, tm
         assert not bad, bad
     assert W.CALLS == {} and not W.FALLBACKS  # the harness calls the kernel directly, never through a fallback
     assert E.main(["decide", "--out", str(tmp_path)]) == 0
-    assert json.loads((tmp_path / "decision.json").read_text(encoding="utf-8"))["verdict"] == "INCONCLUSIVE"
+    d = json.loads((tmp_path / "decision.json").read_text(encoding="utf-8"))
+    assert d["verdict"] == "INCONCLUSIVE" and d["variants"]["fla"]["allow_fp32"] is True  # from fp32.json
+    (tmp_path / "fp32.json").unlink()  # optional phase skipped -> allow_fp32 false, verdict unaffected
+    E.main(["decide", "--out", str(tmp_path)])
+    d2 = json.loads((tmp_path / "decision.json").read_text(encoding="utf-8"))
+    assert d2["variants"]["fla"]["allow_fp32"] is False and d2["verdict"] == d["verdict"]
