@@ -23,6 +23,11 @@ RWKV-7 parent. It uses the merged `HiddenStateBackbone`, `DecisionModel`, and
 `Rwkv7ForCausalLM`), an encoder with `identity()`, and `source_identity` containing
 `model_id` and the checkpoint/loader pins. Caller-supplied identity records
 provenance; checkpoint verification remains the loader's responsibility.
+Parent and encoder identities must agree on `model_id` and snapshot revision
+(`snapshot` or `snapshot_revision` in the parent, `snapshot` in the encoder).
+The constructor also compares every shared role in their `files_sha256` maps;
+any mismatch fails before the caller's parent is frozen. These checks establish
+consistency between supplied identities, not authenticity of checkpoint bytes.
 
 The constructor takes ownership of the base module and freezes it in place;
 the LM vocabulary head is excluded. The default snapshot head and the
@@ -44,6 +49,11 @@ callable or identity. Pass `encode` into `rwkv_decision_backend`. This adds no
 loading or fallback path. Serving a trained artifact still requires PR #79's
 strict artifact, complete revision, calibration and runtime pins; a newly
 initialized head is not a reconstructed trained artifact.
+
+For the CPU loader, construct parent provenance from `plugin.model_id`,
+`plugin.snapshot` and `plugin.files` as `model_id`, `snapshot`, and
+`files_sha256`. The loader evidence's filesystem `snapshot` path is not the
+snapshot revision used by these identities.
 
 The native bridge tests run with `python -m pytest
 language_growth/tests/test_rwkv_decision_head.py -q`. They cover actual tiny

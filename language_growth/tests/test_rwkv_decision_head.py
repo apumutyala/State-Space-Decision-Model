@@ -7,7 +7,7 @@ import torch
 
 from heads import ByteEncoder
 from heads.backbone import tiny_backbone, tiny_hf_backbone
-from language_growth.rwkv_decision_head import rwkv_decision_backend
+from language_growth.rwkv_decision_head import rwkv_cpu_parent_encoder, rwkv_decision_backend
 from train.data import items_from_records
 from train.guard import SplitGuard
 from train.trainer import TrainConfig, Trainer
@@ -15,6 +15,17 @@ from train.trainer import TrainConfig, Trainer
 
 SOURCE = {"model_id": "tiny-rwkv7-test", "snapshot_revision": "random-seed-31",
           "scope": "random CPU test only"}
+
+
+class FixtureEncoder(ByteEncoder):
+    """Byte test encoder explicitly associated with this random parent fixture."""
+
+    def __init__(self, identity=None):
+        self.info = identity if identity is not None else {
+            "model_id": SOURCE["model_id"], "snapshot": SOURCE["snapshot_revision"]}
+
+    def identity(self):
+        return {**super().identity(), **deepcopy(self.info)}
 
 
 @pytest.fixture(autouse=True)
@@ -27,7 +38,7 @@ def cpu_threads():
 
 def make_backend(seed=31, **kwargs):
     parent = tiny_hf_backbone("rwkv7", seed=seed, hidden=16).model
-    return rwkv_decision_backend(parent, ByteEncoder(), source_identity=SOURCE,
+    return rwkv_decision_backend(parent, FixtureEncoder(), source_identity=SOURCE,
                                   seed=seed, head_kwargs={"channels": 4, "max_snapshots": 2}, **kwargs)
 
 
@@ -124,7 +135,7 @@ def test_l_planner_calls_actual_native_head():
 ])
 def test_attention_free_heads_receive_trainable_gradients(head, kwargs):
     base = tiny_hf_backbone("rwkv7", seed=31, hidden=16).model
-    backend = rwkv_decision_backend(base, ByteEncoder(), source_identity=SOURCE,
+    backend = rwkv_decision_backend(base, FixtureEncoder(), source_identity=SOURCE,
                                      head=head, head_kwargs=kwargs)
     rows = backend._rows(request())
     output = backend.model(rows)
@@ -145,7 +156,7 @@ def test_causal_lm_vocabulary_head_is_excluded():
         raise AssertionError("vocabulary head must never execute")
 
     lm.head.forward = forbidden
-    backend = rwkv_decision_backend(lm, ByteEncoder(), source_identity=SOURCE)
+    backend = rwkv_decision_backend(lm, FixtureEncoder(), source_identity=SOURCE)
     assert backend.model.backbone.model is base
     assert not any(n.startswith("head.") for n in backend.model.backbone.model.state_dict())
     assert backend.score(request(), lambda: None).logits
@@ -154,18 +165,65 @@ def test_causal_lm_vocabulary_head_is_excluded():
 def test_source_identity_is_bound_and_invalid_inputs_fail_before_freezing():
     source = deepcopy(SOURCE)
     base = tiny_hf_backbone("rwkv7", seed=31, hidden=16).model
-    backend = rwkv_decision_backend(base, ByteEncoder(), source_identity=source)
+    backend = rwkv_decision_backend(base, FixtureEncoder(), source_identity=source)
     source["snapshot_revision"] = "edited"
     assert backend.revision()["backbone"]["provenance"]["track_l_parent"] == SOURCE
     with pytest.raises(TypeError, match="vendored"):
-        rwkv_decision_backend(tiny_backbone().model, ByteEncoder(), source_identity=SOURCE)
+        rwkv_decision_backend(tiny_backbone().model, FixtureEncoder(), source_identity=SOURCE)
     base.requires_grad_(True)
     with pytest.raises(ValueError, match="attention-free"):
-        rwkv_decision_backend(base, ByteEncoder(), source_identity=SOURCE, head="clef")
+        rwkv_decision_backend(base, FixtureEncoder(), source_identity=SOURCE, head="clef")
     with pytest.raises(ValueError, match="identity"):
         rwkv_decision_backend(base, lambda text, trusted: [1], source_identity=SOURCE)
     with pytest.raises(ValueError, match="model_id"):
-        rwkv_decision_backend(base, ByteEncoder(), source_identity={})
+        rwkv_decision_backend(base, FixtureEncoder(), source_identity={})
     with pytest.raises(ValueError, match="CPU FP32"):
-        rwkv_decision_backend(base.double(), ByteEncoder(), source_identity=SOURCE)
+        rwkv_decision_backend(base.double(), FixtureEncoder(), source_identity=SOURCE)
     assert all(p.requires_grad for p in base.parameters())
+
+
+@pytest.mark.parametrize("field,value,match", [
+    ("model_id", "different-model", "model_id"),
+    ("snapshot", "different-snapshot", "snapshot"),
+    ("files_sha256", {"weights": "b" * 64}, "weights pin"),
+    ("files_sha256", {"tokenizer": "b" * 64}, "tokenizer pin"),
+])
+def test_parent_encoder_identity_mismatches_fail_before_freezing(field, value, match):
+    from decide.backends.hf_readout import ModelPlugin
+
+    base = tiny_hf_backbone("rwkv7", seed=31, hidden=16).model
+    source = {**SOURCE, "files_sha256": {"weights": "a" * 64, "tokenizer": "a" * 64}}
+    plugin = ModelPlugin(family="rwkv7", model_id=SOURCE["model_id"], snapshot=SOURCE["snapshot_revision"],
+        encode=ByteEncoder(), forward=lambda *a: None, dtype="float32", device="cpu",
+        files={"weights": "a" * 64, "tokenizer": "a" * 64, "config": "c" * 64, "code": "d" * 64},
+        untrusted_encoder_id="rwkv-world-greedy (no control tokens)")
+    if field == "files_sha256":
+        plugin.files.update(value)
+    else:
+        setattr(plugin, field, value)
+    with pytest.raises(ValueError, match=match):
+        rwkv_decision_backend(base, rwkv_cpu_parent_encoder(plugin), source_identity=source)
+    assert all(p.requires_grad for p in base.parameters())
+
+
+@pytest.mark.parametrize("source,info,match", [
+    ({"model_id": SOURCE["model_id"]}, None, "snapshot"),
+    ({**SOURCE, "snapshot": "conflicting"}, None, "aliases"),
+    (SOURCE, {"snapshot": SOURCE["snapshot_revision"]}, "model_id"),
+    (SOURCE, {"model_id": SOURCE["model_id"]}, "snapshot"),
+    ({**SOURCE, "files_sha256": []}, None, "objects"),
+])
+def test_parent_encoder_identity_requires_unambiguous_model_snapshot(source, info, match):
+    base = tiny_hf_backbone("rwkv7", seed=31, hidden=16).model
+    with pytest.raises(ValueError, match=match):
+        rwkv_decision_backend(base, FixtureEncoder(info), source_identity=source)
+    assert all(p.requires_grad for p in base.parameters())
+
+
+def test_matching_snapshot_aliases_and_shared_file_pins_are_accepted():
+    base = tiny_hf_backbone("rwkv7", seed=31, hidden=16).model
+    source = {**SOURCE, "snapshot": SOURCE["snapshot_revision"], "files_sha256": {"weights": "a" * 64}}
+    encoder = FixtureEncoder({"model_id": SOURCE["model_id"], "snapshot": source["snapshot"],
+                              "files_sha256": {"weights": "a" * 64, "tokenizer": "b" * 64}})
+    backend = rwkv_decision_backend(base, encoder, source_identity=source)
+    assert backend.model.backbone.provenance["track_l_parent"] == source

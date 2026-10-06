@@ -66,8 +66,10 @@ def rwkv_decision_backend(parent, encode: EncodeFn, *, source_identity: dict[str
     """Attach an attention-free decision head to an already loaded CPU FP32 parent.
 
     ``source_identity`` is caller-supplied provenance, not authentication. It
-    must identify the model and should pin snapshot, weight and loader hashes.
-    The encoder must expose ``identity()`` for checkpoint/tokenizer lineage.
+    must identify model_id and snapshot (or snapshot_revision). The encoder's
+    identity must name the same model and snapshot. Shared files_sha256 roles
+    must agree when supplied. These are provenance consistency checks; the
+    caller still owns verification of actual checkpoint/tokenizer bytes.
     A returned backend serves the ordinary D adapter and L planner interfaces.
     """
     from third_party.rwkv7_hf.modeling_rwkv7 import Rwkv7ForCausalLM, Rwkv7Model
@@ -85,6 +87,22 @@ def rwkv_decision_backend(parent, encode: EncodeFn, *, source_identity: dict[str
     encoder_info = encoder_identity() if callable(encoder_identity) else None
     if not isinstance(encoder_info, dict) or not encoder_info:
         raise ValueError("encoder must expose a nonempty identity()")
+    snapshot = identity.get("snapshot", identity.get("snapshot_revision"))
+    if not isinstance(snapshot, str) or not snapshot:
+        raise ValueError("source_identity must identify snapshot or snapshot_revision")
+    if "snapshot" in identity and "snapshot_revision" in identity and identity["snapshot_revision"] != snapshot:
+        raise ValueError("source_identity snapshot aliases disagree")
+    if encoder_info.get("model_id") != identity["model_id"]:
+        raise ValueError("encoder model_id does not match source parent identity")
+    if encoder_info.get("snapshot") != snapshot:
+        raise ValueError("encoder snapshot does not match source parent identity")
+    source_files = identity.get("files_sha256", {})
+    encoder_files = encoder_info.get("files_sha256", {})
+    if not isinstance(source_files, dict) or not isinstance(encoder_files, dict):
+        raise ValueError("files_sha256 identity pins must be objects")
+    for role in source_files.keys() & encoder_files.keys():
+        if source_files[role] != encoder_files[role]:
+            raise ValueError(f"encoder {role} pin does not match source parent identity")
     for value in list(parent.parameters()) + list(parent.buffers()):
         if value.device.type != "cpu" or (value.is_floating_point() and value.dtype != torch.float32):
             raise ValueError("prototype requires an already loaded CPU FP32 parent")
