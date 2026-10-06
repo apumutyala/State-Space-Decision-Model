@@ -1,11 +1,13 @@
 """CPU checks for synthetic development examples; no audit data is imported."""
 
 import json
+import copy
 import unittest
 from decimal import Decimal
 
 from language_growth.development_data import (
-    comparison_swap_counterfactual, development_manifest, development_split_spec,
+    comparison_nuisance_counterfactual, comparison_swap_counterfactual,
+    development_manifest, development_split_spec,
     generate_development_tasks,
     price_swap_counterfactual,
 )
@@ -188,6 +190,100 @@ class DevelopmentDataTests(unittest.TestCase):
         self.assertEqual(repair[2]["training_only"]["host"]["limits"]["max_proposal_calls"], 8)
         with self.assertRaises(ValueError):
             development_manifest(tasks + generate_development_tasks(17, 1, split="development_validation"))
+
+    def test_nuisance_counterfactual_preserves_checked_meaning_and_choices(self):
+        fields, relations = set(), set()
+        equal_nuisance_seen = False
+        wrap_seen = False
+        for split in ("development_train", "development_validation"):
+            spec = development_split_spec(split)
+            for fmt in ("production", "augmented"):
+                for repair in (False, True):
+                    tasks = generate_development_tasks(17, 90, split=split,
+                                                       choice_format=fmt, allow_one_repair=repair)
+                    for task in tasks:
+                        if task["training_only"]["kind"] != "compare":
+                            continue
+                        with self.subTest(split=split, fmt=fmt, repair=repair,
+                                          task_id=task["task_id"]):
+                            untouched = copy.deepcopy(task)
+                            paired = comparison_nuisance_counterfactual(task)
+                            self.assertEqual(task, untouched)
+                            self.assertEqual(paired, comparison_nuisance_counterfactual(task))
+                            original, changed = task["training_only"], paired["training_only"]
+                            field = original["program"]["nodes"][0]["field"]
+                            fields.add(field)
+                            relations.add(original["program"]["nodes"][2]["relation"])
+                            nuisance = "warranty_months" if field == "price" else "price"
+                            low, high = spec["warranty_range" if field == "price" else "price_cents_range"]
+                            records = original["catalog"]["records"]
+                            equal_nuisance_seen |= (records[0]["fields"][nuisance]["value"] ==
+                                                    records[1]["fields"][nuisance]["value"])
+                            for before, after in zip(records, changed["catalog"]["records"]):
+                                self.assertEqual(before["fields"][field], after["fields"][field])
+                                value = before["fields"][nuisance]["value"]
+                                new_value = after["fields"][nuisance]["value"]
+                                if nuisance == "price":
+                                    value, new_value = int(Decimal(value) * 100), int(Decimal(new_value) * 100)
+                                self.assertNotEqual(value, new_value)
+                                self.assertEqual(new_value, low if value == high else value + 1)
+                                self.assertTrue(low <= new_value <= high)
+                                wrap_seen |= value == high
+                                restored = copy.deepcopy(after)
+                                restored["fields"][nuisance] = before["fields"][nuisance]
+                                self.assertEqual(before, restored)
+                            self.assertEqual(original["targets"], changed["targets"])
+                            restored_program = copy.deepcopy(changed["program"])
+                            restored_program["context_ref"] = original["program"]["context_ref"]
+                            self.assertEqual(original["program"], restored_program)
+                            checked = check_program(original["program"], original["host"], original["catalog"])
+                            checked_pair = check_program(changed["program"], changed["host"], changed["catalog"])
+                            self.assertEqual(checked_pair.status, "accepted")
+                            self.assertEqual(checked.outputs, checked_pair.outputs)
+                            self.assertNotEqual(original["host"]["context_ref"], changed["host"]["context_ref"])
+                            self.assertEqual(set(changed["catalog"]["snapshots"]), {changed["host"]["context_ref"]})
+                            self.assertEqual(changed["program"]["context_ref"], changed["host"]["context_ref"])
+                            self.assertEqual(changed["host"]["provider"]["input_context_ref"], changed["host"]["context_ref"])
+                            self.assertEqual(original["host"]["limits"], changed["host"]["limits"])
+                            self.assertEqual(paired["task_id"], task["task_id"] + "-comparison-nuisance")
+                            for position, (before, after) in enumerate(zip(task["model_inputs"], paired["model_inputs"])):
+                                self.assertEqual(before["questions"], after["questions"])
+                                self.assertNotEqual(before["ssdm"]["request_id"], after["ssdm"]["request_id"])
+                                before_state, after_state = json.loads(before["state"]), json.loads(after["state"])
+                                self.assertEqual(after_state["context_ref"], changed["host"]["context_ref"])
+                                self.assertEqual(len(after_state["proposed_slot_choices"]), position)
+                                self.assertEqual(after_state["accepted_partial_program"], [])
+                                # Only evidence/context changes reach the model; paired identities,
+                                # reference programs and current-slot labels remain out of state.
+                                restored_state = copy.deepcopy(after_state)
+                                restored_state["context_ref"] = before_state["context_ref"]
+                                for old_record, new_record in zip(before_state["records"], restored_state["records"]):
+                                    new_record["fields"][nuisance] = old_record["fields"][nuisance]
+                                self.assertEqual(before_state, restored_state)
+                                serialized = json.dumps(after)
+                                for forbidden in ("training_only", "targets", "target_option_id", "expected",
+                                                  "comparison-nuisance", "template_id", "development_split"):
+                                    self.assertNotIn(forbidden, serialized)
+                                self.assertNotIn("program", after["ssdm"])
+        self.assertEqual(fields, {"price", "warranty_months"})
+        self.assertEqual(relations, {"greater_than", "less_than", "equal"})
+        self.assertTrue(equal_nuisance_seen)
+        self.assertTrue(wrap_seen)
+
+    def test_nuisance_counterfactual_rejects_other_task_domains(self):
+        tasks = generate_development_tasks(17, 3)
+        for task in tasks[:2]:
+            with self.assertRaisesRegex(ValueError, "generated development comparison required"):
+                comparison_nuisance_counterfactual(task)
+        for key, value in (("development_only", False), ("development_split", "audit")):
+            task = copy.deepcopy(tasks[2])
+            task[key] = value
+            with self.assertRaisesRegex(ValueError, "generated development comparison required"):
+                comparison_nuisance_counterfactual(task)
+        task = copy.deepcopy(tasks[2])
+        task["training_only"]["program"]["nodes"][0]["field"] = "unsupported"
+        with self.assertRaisesRegex(ValueError, "unsupported comparison field"):
+            comparison_nuisance_counterfactual(task)
 
     def test_rejects_invalid_generation_requests(self):
         for seed, count in ((True, 1), (-1, 1), (0, 0), (0, 10001)):
