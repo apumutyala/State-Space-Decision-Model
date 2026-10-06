@@ -1,6 +1,6 @@
 # Receipt: m0-a Decision Index 0.2.1 harness (Track D)
 
-- **Code commit:** `a3739f4d75bf8b6c9c2f9321f8aeb0ab7dc8a802` (branch `claude/m0-harness`; HLE added over 81c4ec9; `pip-freeze.txt` was taken at this commit)
+- **Code commit:** `1eb50538b2e0d83660745bfe4769a64f7d4920ff` (branch `claude/m0-harness`; input validation over a3739f4; `pip-freeze.txt` was taken at this commit)
 - **Official kit:** `apolinario/decision-index` @ `87d4650b42b377c0291a89c1f1a879f9b31082bf`, installed `--no-deps` from a clone with `core.autocrlf=false`
 - **Board data:** HF Space `multimodalart/jev-decision-index` @ `cdbd1cab3b6eb1811ebd82d2686ad563a4d0fc0d` (methodology sha256 `3724d15e6698d9a5c39fd2fc9ab70c5cc94a03aeea8fdefe2b8b30ec72420ce8`)
 - **Hardware / cost:** local CPU only (Windows 11 + WSL2 `bi-ubuntu` for the suite build). Billed $0.
@@ -30,7 +30,7 @@ python -X utf8 -I -m harness verify        # -> verify.json
 python -X utf8 -I -m harness slice         # seed 20261006, area_target 2400, cap 0.45 -> harness/manifests/
 python -X utf8 -I -m harness selfcheck     # -> selfcheck.json
 python -X utf8 -I receipts/2026-10-06-D-m0-harness/demo.py > demo-bootstrap-ece.json   # B=2000, seed 0
-python -X utf8 -I -m pytest -v harness/tests   # -> pytest.txt (40 passed)
+python -X utf8 -I -m pytest -v harness/tests   # -> pytest.txt (93 passed)
 ```
 
 ## Slices (seed 20261006; disjoint by row, kit group and source case)
@@ -48,6 +48,28 @@ DEV by request-length bin (proxy tokens): <128: 1,304 · 128–511: 5,082 · 512
 - Manifests are ordered by run_id.
 - Manifest sha256 (gz files): DEV `1362c23ebe810cccf8f2ec87533d454cc3aacd6ba6dc6086e14ad36211c8073a`, TEST `76a6b135cfcc11ab3448dd80409567ad86e6edbc4593da2c33d1f67f6f0abe12`. Uncompressed: DEV `26cd6bc0…964a`, TEST `8de5aaed…155a`.
 - TEST loads require `SSDM_UNSEAL_TEST=1` plus `SSDM_PREREG=<pre-registration>`, and each load is appended to `receipts/test-unseal-log.jsonl`. No TEST row was loaded for this receipt.
+
+## Reproduce the headline claims (one command)
+
+```sh
+python -X utf8 -I receipts/2026-10-06-D-m0-harness/reproduce.py > my-reproduce.json
+python -c "import json,sys; a,b=(json.load(open(p)) for p in sys.argv[1:]); print('MATCH' if a==b else 'DIFF')" my-reproduce.json receipts/2026-10-06-D-m0-harness/expected-reproduce.json
+```
+
+The expected output is `expected-reproduce.json`, and two runs here were identical. It checks:
+1. **Suite:** the official hashes match, base scoreable = 119,898, HLE = 501, and no index benchmark is missing.
+2. **DEV:** 12,104 rows with manifest gz `1362c23e…073a`. Every row is re-hashed against the manifest on load.
+3. **Parity:** the harness index equals the unmodified kit's `balanced_skill`, with per-benchmark skill gap 0.0, for the perfect (98.141), uniform (1.0657) and noisy-0.7 (41.0698) fixtures.
+4. **MDE range:** the paired source-case bootstrap (B=2000, seed 0) gives [0.6455, 2.3786] index points, with each pair's Δ, 95% CI and SE.
+
+Values are rounded to 4 decimals. The run takes a few minutes on CPU, uses the materialised DEV rows only, and never loads TEST.
+
+## Input validation (Codex review)
+
+- **Calibration:** the estimators reject empty input, NaN/inf or out-of-range confidence, non-binary correctness, mismatched shapes and bad weights with `CalibrationInputError`, never an ECE of 0. Empty report blocks are `{"n": 0, "available": false}`. `fields()` runs the kit's own response validator on every `ok` result before reading it.
+- **Bootstrap:** `bootstrap.replicate_skills` refuses to pair systems whose benchmark sets or cluster orders differ.
+- **MDE helpers:** they require positive finite SE, sample sizes and effects, and α and power strictly inside (0, 1). numpy scalars are accepted.
+- **Tests:** `harness/tests/test_validation.py` covers all of this (93 tests total).
 
 ## Checks (DEV, with HLE)
 
