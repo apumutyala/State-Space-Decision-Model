@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ssdm-harness"
+version = "0.1.0"
+description = "Decision Index 0.2.1 dev/test slicing, paired cluster-bootstrap CIs, calibration and MDE (Track D, m0-a)"
+requires-python = ">=3.10"
+# The official kit is installed separately, pinned:
+#   pip install --no-deps <clone of apolinario/decision-index @ 87d4650b>
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools]
+package-dir = {"harness" = "."}
+packages = ["harness", "harness.tests"]
+
+[tool.setuptools.package-data]
+harness = ["manifests/*"]
+
+[tool.pytest.ini_options]
+markers = ["suite: needs the locally built 0.2.1 suite (skipped when absent)"]
