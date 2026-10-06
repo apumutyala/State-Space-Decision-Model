@@ -95,8 +95,10 @@
       "ok": 1600,
       "refused": 0,
       "error": 0,
+      "missing": 0,
       "clean_error_or_missing": 0
      },
+     "expected_set_supplied": true,
      "complete": true,
      "incomplete_reason": null,
      "error_rate": {
@@ -360,8 +362,10 @@
       "ok": 4,
       "refused": 0,
       "error": 0,
+      "missing": 0,
       "clean_error_or_missing": 0
      },
+     "expected_set_supplied": true,
      "complete": true,
      "incomplete_reason": null,
      "error_rate": {
@@ -625,8 +629,10 @@
       "ok": 10,
       "refused": 0,
       "error": 0,
+      "missing": 0,
       "clean_error_or_missing": 0
      },
+     "expected_set_supplied": true,
      "complete": true,
      "incomplete_reason": null,
      "error_rate": {
@@ -894,8 +900,10 @@
       "ok": 1000,
       "refused": 0,
       "error": 0,
+      "missing": 0,
       "clean_error_or_missing": 0
      },
+     "expected_set_supplied": true,
      "complete": true,
      "incomplete_reason": null,
      "error_rate": {
@@ -1162,8 +1170,10 @@
       "ok": 800,
       "refused": 0,
       "error": 0,
+      "missing": 0,
       "clean_error_or_missing": 0
      },
+     "expected_set_supplied": true,
      "complete": true,
      "incomplete_reason": null,
      "error_rate": {
@@ -1430,8 +1440,10 @@
       "ok": 800,
       "refused": 0,
       "error": 0,
+      "missing": 0,
       "clean_error_or_missing": 0
      },
+     "expected_set_supplied": true,
      "complete": true,
      "incomplete_reason": null,
      "error_rate": {
@@ -1965,8 +1977,10 @@
       "ok": 400,
       "refused": 0,
       "error": 0,
+      "missing": 0,
       "clean_error_or_missing": 0
      },
+     "expected_set_supplied": true,
      "complete": true,
      "incomplete_reason": null,
      "error_rate": {

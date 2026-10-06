@@ -21,7 +21,7 @@ from pathlib import Path
 from . import attacks, data, metrics
 
 
-def rebuild_fingerprints(manifest_n: tuple[int, int], gcg_path: Path | None) -> dict[str, str]:
+def rebuild_variants(manifest_n: tuple[int, int], gcg_path: Path | None) -> list[dict]:
     reqs = data.build(*manifest_n, split="dev")
     vs = attacks.build_variants(reqs, final=True)
     if gcg_path and gcg_path.exists():
@@ -29,11 +29,20 @@ def rebuild_fingerprints(manifest_n: tuple[int, int], gcg_path: Path | None) -> 
         for line in open(gcg_path, encoding="utf-8"):
             g = json.loads(line)
             vs.append(attacks.suffix_variant(by_id[g["request_id"]], g["suffix"], f"gcg_{g['objective']}", "gcg"))
-    return {v["request_id"]: metrics.unit_fingerprint(v) for v in vs}
+    return vs
 
 
-def load(path: Path, n_route: int = 120, n_pay: int = 80) -> dict[str, list[dict]]:
-    fp = rebuild_fingerprints((n_route, n_pay), path.parent / "gcg_attacks.jsonl")
+def expected_for(arm_rows: list[dict], variants: list[dict], canonical: bool) -> list[dict]:
+    """Predeclared expected unit set: the canonical arm was run on every variant (incl. GCG suffixes); control
+    arms on clean + role-spoof hijack variants only (run_smoke --controls)."""
+    if canonical:
+        return variants
+    return [v for v in variants if v["_meta"]["attack_family"] == "clean" or v["_meta"].get("role_spoof")]
+
+
+def load(path: Path, n_route: int = 120, n_pay: int = 80, return_variants: bool = False):
+    variants = rebuild_variants((n_route, n_pay), path.parent / "gcg_attacks.jsonl")
+    fp = {v["request_id"]: metrics.unit_fingerprint(v) for v in variants}
     arms = defaultdict(list)
     for line in open(path, encoding="utf-8"):
         r = json.loads(line)
@@ -42,7 +51,7 @@ def load(path: Path, n_route: int = 120, n_pay: int = 80) -> dict[str, list[dict
         if not r.get("unit_sha") and r["request_id"] in fp:
             r["unit_sha"] = fp[r["request_id"]]
         arms[r.get("arm", "default")].append(r)
-    return dict(arms)
+    return (dict(arms), variants) if return_variants else dict(arms)
 
 
 def main(argv=None):
@@ -53,11 +62,13 @@ def main(argv=None):
     ap.add_argument("--n-route", type=int, default=120)
     ap.add_argument("--n-pay", type=int, default=80)
     a = ap.parse_args(argv)
-    arms = load(Path(a.predictions), a.n_route, a.n_pay)
-    out = {"source": a.predictions, "arms": {k: metrics.summarise(v, a.boot) for k, v in arms.items()},
-           "arm_vs_arm": {}}
+    arms, variants = load(Path(a.predictions), a.n_route, a.n_pay, return_variants=True)
     names = sorted(arms, key=lambda k: -len(arms[k]))  # largest arm = canonical/reference
     ref = names[0]
+    out = {"source": a.predictions,
+           "arms": {k: metrics.summarise(v, a.boot, expected=expected_for(v, variants, k == ref))
+                    for k, v in arms.items()},
+           "arm_vs_arm": {}}
     for other in names[1:]:
         fams = sorted({r["attack_family"] for r in arms[other]} - {"clean"})
         for f in fams:

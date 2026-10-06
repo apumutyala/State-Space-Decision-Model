@@ -6,7 +6,7 @@ This plan supersedes `plans/claude/PLAN.md` for Track D. Track L detail lives in
 
 The family is a set of attention-free models: in the text path there is no softmax over positions and no KV cache that grows with length. Capability, calibration, steering/hijack resistance, interpretability evidence, latency and cost are always reported together. Clef's vision path and its routing head use attention, so our claims are text-only until a vision gate passes.
 
-| Tier | Target (Decision Index 0.2.1 unless noted) | Est. probability at ≤$5k |
+| Tier | Target (Decision Index 0.2.1 unless noted) | Judgement estimate at ≤$5k (not a measured probability) |
 |---|---|---|
 | T1 | First attention-free entrant. Beats the best non-Clef 9B open entrant (Nimble-9B-v3, 56.88), with ECE in the board's top 3 (debiased, ≥4k-row sample) and a reported steer rate | ~35–50% (estimate) |
 | T2 | Beats Jev (57.91) and Clef-flash (≈57.07, secondary source) | ~15–25% (B-review) |
@@ -56,13 +56,13 @@ Fully attention-free conversions lose retrieval (2408.15237, 2504.18574, 2510.19
 | Milestone | Owner | Content | Gate |
 |---|---|---|---|
 | **m0** | D | Index 0.2.1 runner pinned; ≥10k-row stratified dev slice (≥2k/area, length bins); separate untouched test slice; Clef-flash adapter parity on shared fixtures; stock readouts for Qwen3.5-9B, RWKV7-13.3B, Mamba-3-1.5B; replay fixture + `decide` adapter handed to Track L | Adapter parity within fixture tolerance; paired cluster-bootstrap CIs computable |
-| **L0** | L | Types, interpreter, renderer, 10 joint fixtures, oracle/replay backends (CPU) | Fixtures pass; reviewed by D |
+| **L0a–L0f** | L | Engineering prerequisites only: types, interpreter, renderer, joint fixtures, oracle/replay backends (CPU) | Fixtures pass; reviewed by D. Not a learned-L0 result; learned L0 is L0h in `plans/codex/L0_PHASES.md`, held to all four GOAL.md gates |
 | **m1** | D | One-layer conversion probe (memory, throughput, decision, retrieval: MQAR, S-NIAH), then the full 8 with accept/rollback; LM-quality gate (held-out ppl, MMLU-subset); steer baseline on all parents | Parent selected and frozen; revision handed to L |
 | **m2** | D | Head × parent factorial with injection augmentation and both calibration arms | T1 dev-slice criteria met or attributed (knowledge → backbone; retrieval → head; length-dependent → recall levers) |
-| **L1–L2** | L | Frozen parent as semantic planner through typed choices; retention of decision competence on identical items | Per Codex plan |
+| **L0h → L1–L2** | L | Frozen parent as semantic planner through typed choices; retention of decision competence on identical items | Per Codex plan |
 | **m3** | D+L | Full Index run on RTX PRO 6000; independent re-run by the other agent; PR to the Index | Score, ECE, latency, steer, risk-coverage reported together |
 
-## Spend (shared $525 SF envelope; $5k ceiling)
+## Spend (shared $525 SF envelope; $5k is a planning ceiling, not an approved allowance)
 
 | Line | $ | Contents |
 |---|---|---|
@@ -71,7 +71,7 @@ Fully attention-free conversions lose retrieval (2408.15237, 2504.18574, 2510.19
 | Language | 100 | Codex L1 learned probe (≤$20 first) and retention checks |
 | Reserve | 100 | Re-runs, independent reproduction |
 
-Rates are $2.97/h batch and $3.96/h interactive. The $5k ceiling then funds: a data plan ($400–600; held-out generators, open teachers), the full m2 factorial, the m3 submission, and T3 only if T2 passes.
+Rates are $2.97/h batch and $3.96/h interactive. If the user approves funds beyond the $525 credits, the $5k planning ceiling would fund: a data plan ($400–600; held-out generators, open teachers), the full m2 factorial, the m3 submission, and T3 only if T2 passes.
 
 ## Kill and fold rules
 
