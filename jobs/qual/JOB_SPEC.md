@@ -92,8 +92,15 @@ The in-code stop conditions are in `align.Guard`:
 - It builds a reproducible tar and prints its sha256.
 - **Code identity:** the launch SHA is the agent-main merge of the pinned-snapshot fix. It is recorded with the context, config and Dockerfile hashes in the issue #3 launch receipt. Both model dirs in `configs/qual_h100.json` name the exact pinned snapshot revisions (0.8B `2fc06364…`, 9B `c2022362…`), and `resolve_model_dir` refuses an ambiguous multi-snapshot parent.
 
-**Image.** `pytorch/pytorch:2.8.0-cuda12.8-cudnn9-devel@sha256:a7103283ea7113e10ae5d014bd2342acebda0bc53164b2f7b1dd6eb7a766bdb6`. Pins:
+**Image.** `pytorch/pytorch:2.13.0-cuda12.6-cudnn9-devel@sha256:09c0260351b12b617408ff5711e08d88ccdbb9a21f7f6d7de67e39039b022ae1` (Ubuntu 24.04, system Python 3.12, `PIP_BREAK_SYSTEM_PACKAGES=1`, `FLA_TILELANG=0`). Pins:
+- torch 2.13.0 (+cu126), triton 3.7.1 (asserted at build time by a `RUN python -c ...` line)
 - transformers 5.17.0, flash-linear-attention 0.5.2, fla-core 0.5.2
+
+Why not the original torch 2.8.0 / triton 3.4.0 image: SF job-jbw22 (first H100 run) stopped at the numerics gate
+because fla 0.5.2 refuses the gated `chunk_bwd_dqkwg` backward on Hopper with 3.4.0 <= Triton < 3.7.1 (fla #640:
+those Triton releases miscompile it). torch 2.13.0 is the first torch line whose wheel pins triton 3.7.1. Setup runs
+`jobs/common/fla_guard.py`, which re-derives fla's #640 rule from fla's own flags, requires Triton >= 3.7.1 and
+the Triton (not TileLang) backward, and runs one tiny gated fwd+bwd; any failure is exit 5 before phase A.
 - einops 0.8.2, pyarrow 25.0.1, huggingface_hub 1.32.0, safetensors 0.8.0, accelerate 1.15.0, numpy 2.2.6
 
 **Weights and data.** Pinned by revision in `scripts/sf_fetch.py`. Data file sha256s are recorded by `convert/data.py`.
