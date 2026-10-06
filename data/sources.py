@@ -61,6 +61,21 @@ REGISTRY: dict[str, dict] = {
                  "files": ["auxiliary_train/train-00000-of-00001.parquet"], "license": "MIT (constituents: ARC, "
                  "OBQA, RACE, MCTest; see SOURCES.md)", "index": "MMLU (24, display-only)/ARC (26/27, display-only): "
                  "auxiliary_train draws from ARC/OBQA/RACE train splits"},
+    # ---- added for the 150k build (Track D m2-data-150k); same rules: train splits only, sha256-locked
+    # Glaive FC v2 ships one 271 MB JSON (over MAX_BYTES); the Hub's parquet conversion of the same main-branch
+    # commit (e7f4b64) is pinned instead: refs/convert/parquet @ 8862406 (columns: system, chat).
+    "glaive_fc": {"repo": "glaiveai/glaive-function-calling-v2", "rev": "8862406ff857565709af3dca7fed589b84edf235",
+                  "files": ["default/train/0000.parquet"], "license": "Apache-2.0",
+                  "index": "BFCL (1): no train split; Glaive FC v2 is a proxy tool-selection source (single train file)"},
+    # SemEval-2020 Task 7 (Humicroedit) train splits via the tasksource parquet mirror; Index uses subtask-2 TEST
+    "humicroedit_s1": {"repo": "tasksource/humicroedit", "rev": "f5a16e65b0854032ab9b4c82ca182a6381b83bd5",
+                       "files": ["subtask-1/train-00000-of-00001.parquet"],
+                       "license": "unspecified on HF; SemEval-2020 T7 research release (verify)",
+                       "index": "Humicroedit (21): Index uses subtask-2 test; headlines recur across subtasks"},
+    "humicroedit_s2": {"repo": "tasksource/humicroedit", "rev": "f5a16e65b0854032ab9b4c82ca182a6381b83bd5",
+                       "files": ["subtask-2/train.parquet"],
+                       "license": "unspecified on HF; SemEval-2020 T7 research release (verify)",
+                       "index": "Humicroedit (21): Index uses subtask-2 test; headlines recur across subtasks"},
 }
 
 LOCK = config.MANIFEST_DIR / "sources.lock.json"

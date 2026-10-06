@@ -1,0 +1,111 @@
+{
+ "build_dir": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\sample-150000-seed20261006",
+ "n_records": 150000,
+ "n_manifest": 150000,
+ "n_content_map": 150000,
+ "unique_ids": true,
+ "failures": {},
+ "failures_total": 0,
+ "cohort_assert_training_ids": "passed",
+ "cohort_assert_training_content": "passed",
+ "cohort": {
+  "cohort": "m2-dev-cohort-v2",
+  "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+  "n": {
+   "dev": 835,
+   "calibration": 1000,
+   "retention": 1670,
+   "steer_dev": 1800,
+   "steer_gate": 1000
+  },
+  "n_held_out_ids": 3505,
+  "n_held_out_content": 3410,
+  "n_held_out_items": 3864
+ },
+ "content_guard": {
+  "manifests": {
+   "harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+  },
+  "n_ids": 47249,
+  "n_hashes": 48415,
+  "note": "",
+  "content_index": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\index-content-hashes-v1.txt.gz",
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n": 24150
+  },
+  "pin": {
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n_hashes": 24150,
+   "n_rows": 24265,
+   "builder": "train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)"
+  }
+ },
+ "records_uncompressed_sha256": "82fb395d889c473d9fbc4877b51c792438e94b53cddd54e4cf825d4603baa166",
+ "manifest_uncompressed_sha256": "0be33669fa077d2a2abe29ecd159aea1a27c7cc9daaf910b584755410da4d961",
+ "content_map_uncompressed_sha256": "d4ffd9073e0490e409a757508b2821f8108a3a9e36b2531ec3c97a94b2bc0898",
+ "by_source": {
+  "anli": 10084,
+  "banking77": 7047,
+  "boolq": 8028,
+  "clinc150": 9124,
+  "glaive_fc": 15000,
+  "gsm8k": 5514,
+  "hellaswag": 9144,
+  "humicroedit_s1": 5000,
+  "humicroedit_s2": 4500,
+  "mixed": 7596,
+  "mmlu_aux": 33146,
+  "nq": 10000,
+  "sst5": 4154,
+  "synthetic_factchange": 3000,
+  "toolace": 6000,
+  "when2call": 5500,
+  "winogrande": 7163
+ },
+ "by_bucket": {
+  "anli": 10000,
+  "banking77": 7000,
+  "boolq": 8000,
+  "clinc150": 9000,
+  "glaive_fc": 15000,
+  "gsm8k": 5500,
+  "hellaswag": 9000,
+  "humicroedit_s1": 5000,
+  "humicroedit_s2": 4500,
+  "mmlu_aux": 33000,
+  "multi": 8500,
+  "nq": 10000,
+  "sst5": 4000,
+  "synthetic_factchange": 3000,
+  "toolace": 6000,
+  "when2call": 5500,
+  "winogrande": 7000
+ },
+ "area_items": {
+  "arts": 9500,
+  "knowledge": 42107,
+  "language": 42361,
+  "retrieval": 39230,
+  "tools": 29500
+ },
+ "area_share_pct": {
+  "arts": 5.84,
+  "knowledge": 25.88,
+  "language": 26.04,
+  "retrieval": 24.11,
+  "tools": 18.13
+ },
+ "index_area_weight_pct": {
+  "knowledge": 25.8,
+  "language": 25.8,
+  "retrieval": 20.0,
+  "tools": 18.3,
+  "arts": 10.0
+ },
+ "within_set_content_twins": {
+  "groups": 1,
+  "records": 2
+ }
+}

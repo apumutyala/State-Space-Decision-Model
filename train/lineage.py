@@ -86,6 +86,7 @@ def backbone_identity(backbone, full: bool = False) -> dict[str, Any]:
         "weights_digest": weights_digest(m, full=full),
         "weights_digest_mode": "full" if full else "sampled",
         **({"provenance": backbone.provenance} if getattr(backbone, "provenance", None) else {}),
+        **({"controlsafe": backbone.controlsafe} if getattr(backbone, "controlsafe", None) else {}),
     }
 
 

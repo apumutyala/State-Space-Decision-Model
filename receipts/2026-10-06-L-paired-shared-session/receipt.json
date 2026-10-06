@@ -1,0 +1,47 @@
+{
+  "title": "Paired direct choice through shared planner session",
+  "source_commit": "3088a0377106ec7c09fc349e541a8145a1b61718",
+  "prior_receipts": [
+    "receipts/2026-10-06-L-paired-comparison/receipt.json (historical paired math proof)",
+    "receipts/2026-10-06-L-paired-protocol/receipt.json (historical protocol proof with separate direct scorer)"
+  ],
+  "checks": [
+    {
+      "command": "PYTHONUTF8=1 python -I -m unittest discover -s language_growth/tests -t . -p test_paired_comparison.py -v",
+      "exit_code": 0,
+      "result": "10 paired comparison tests passed",
+      "output": "focused-tests.txt"
+    },
+    {
+      "command": "PYTHONUTF8=1 python -I -m unittest discover -s language_growth/tests -t . -q",
+      "exit_code": 0,
+      "result": "85 language-growth tests passed",
+      "output": "language-tests.txt"
+    }
+  ],
+  "regressions": {
+    "boolean_legacy_answer": "Boolean confidence or probability entries fail direct choice with provider_error/invalid_probabilities while the planner arm remains correct; one direct call and one forward are counted.",
+    "extra_ssdm_key": "Direct choice fails provider_error/invalid_response; the malformed response and one call remain recorded.",
+    "invalid_parent_pin": "Both arms fail precondition_failed/invalid_served_config_pin before any provider call.",
+    "request_identity": "The standalone direct request verifies initial state and options; report.direct_request is the actual request captured before the provider call."
+  },
+  "sha256": {
+    "language_growth/paired_comparison.py": "5c7709ad27b5ffa548bff1add2a71b26275cacef7653c536b4b96c1985d74c72",
+    "language_growth/tests/test_paired_comparison.py": "308a77156042a08ab73bd1e5339e40ff616a84a04ce9cdaf4481310e46d54849",
+    "language_growth/planner.py": "a4061d28f2a87fbf726eedf9c04affe83373ac0f75cb39c37d829872d3a701f3",
+    "language_growth/parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "language_growth/free_running_dev.py": "ce81dbdb6d0415c7c1fb3721b42159cd54983d0f2100e63c5b35532a2f238772",
+    "language_growth/development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+    "focused-tests.txt": "192ce05273bff175f03ed2f9a04a25078b5332811573e8bfd6939c8cf5e9661b",
+    "language-tests.txt": "1c70f8bd32b79ece882cbc98beaf2a0e5f2da6201df3ce37b4d441b62e625b43"
+  },
+  "environment": {
+    "platform": "Windows CPU",
+    "python": "3.12.13",
+    "model_calls": 0,
+    "gpu_used": false,
+    "index_or_heldout_data_used": false,
+    "billed_cost_usd": 0
+  },
+  "scope": "Synthetic scripted protocol validation only; no learned or retention-gate result."
+}

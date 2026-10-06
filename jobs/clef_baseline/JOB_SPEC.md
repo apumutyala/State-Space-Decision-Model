@@ -26,7 +26,8 @@ families (hijack best-of-5, D1-A/D1-B, GCG-lite pooled and both-orders), plus th
 | `decide()` backend | `baselines/clef_backend.py::ClefBackend` | Clef's exact token layout; request text through `decide/untrusted.py` (`ssdm` encoding); no truncation |
 | Clef's own path | `baselines/clef_backend.py::native_systemone` | `systemone` unchanged; reports silently truncated state tokens and control ids from request text |
 | Index engine | `baselines/clef_index_engine.py::ClefIndexEngine` | kit engine; `path=decide` (primary) or `path=native` |
-| Pre-flight / probes | `baselines/clef_probes.py` | parity gate, per-row encoding diff, G8, G2(b), memory |
+| Pre-flight / probes | `baselines/clef_probes.py` | parity gate, fast-vs-reference GDN kernel check (`kernel_path`), per-row encoding diff, G8, G2(b), memory |
+| Image guard | `jobs/common/fla_guard.py` (shared with qual/probe9b/rwkv7) | fla #640 check + tiny gated fwd+bwd on the job GPU, before any download or GPU phase; exit 5 |
 | Safety battery | `baselines/run_clef_safety.py`, `baselines/clef_gcg.py` | `safety_eval` data/attacks/metrics unchanged; GCG through Clef's joint head |
 | Entry point | `jobs/clef_baseline/run_job.sh` (stages S0-S5), `summarize.py`, `Dockerfile`, `build_context.sh` | |
 | CPU tests (no weights) | `tests/clef/` (24 tests: mapping, parity with the vendored `encode_record`/`systemone`, truncation, fail-closed encoding, GCG grad/eval agreement, runner and probes dry runs, PREREG gate, heartbeat watchdog, and encoding parity on **Clef's own tokenizer** (`tokenizer.json` sha `06b95093...` at the pinned revision; 81 benign requests plus 14 control strings, including the vision and audio tokens)) | `python -X utf8 -m pytest tests/clef` |
@@ -43,8 +44,37 @@ families (hijack best-of-5, D1-A/D1-B, GCG-lite pooled and both-orders), plus th
 | Harness | `claude/m0-harness` @ `f3c7791bcbe6455effc7cfce019f3f3f99435843`; DEV manifest sha256 (uncompressed) `26cd6bc0...964a` |
 | DEV rows (private) | `slices/dev-rows.jsonl.gz` sha256 `d1202ab84de3ddf74e53aff6b1fc6bba4f33352dfe03e9814a68bcbf2f235c84` (12,104 rows). The suite is not redistributable, so the rows never go to a public place. They exist in **two private copies** on the platform: the uploaded build context (`create_context`) and the built image, because `COPY data/ /data/` bakes them into the image pushed to our org's private registry. Both stay inside the workspace. Delete the context after the jobs end |
 | Kit | `apolinario/decision-index` @ `87d4650b42b377c0291a89c1f1a879f9b31082bf` (0.2.1) |
-| Runtime | `nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04` (ships nvcc, so `causal-conv1d` can build); torch 2.11.0 and transformers 5.10.2 (the versions on Cloudflare's model card). The fla / causal-conv1d / triton versions and their importability are recorded in `ClefBackend.revision()["inference_config"]["kernel_stack"]`, which is part of the revision hash. `env/environment.txt` additionally holds `nvcc --version`, `pip freeze` and `kernel_stack()`. If a kernel package fails to build, the job runs on transformers' torch fallback and the receipt shows `import:fla=false`. Treat its latency as fallback latency |
+| Runtime | `pytorch/pytorch:2.13.0-cuda12.6-cudnn9-devel@sha256:09c0260351b12b617408ff5711e08d88ccdbb9a21f7f6d7de67e39039b022ae1`, the same base as qual/probe9b/rwkv7. It carries torch 2.13.0, triton 3.7.1, CUDA 12.6 and nvcc. Pins: `transformers==5.10.2` (the model card's version), `flash-linear-attention==0.5.2`, `fla-core==0.5.2`, `causal-conv1d==1.7.0` (best effort; built from source), `FLA_TILELANG=0`, and tilelang not installed. A build-time assert checks the torch/CUDA/triton versions. `kernel_stack` (in the revision hash) records torch, triton, fla, causal-conv1d, `FLA_TILELANG` and whether tilelang is installed. `env/environment.txt` holds `nvcc --version`, `pip freeze` and `kernel_stack()`. Why the image changed: see section 2a |
 | safety_eval data | `safety_eval.data` SEED 20261006, `SPLIT_SALT=ssdm-m0c-split-v1`, **test split**, 120 route + 80 pay, `--final` (D1-B scored once: Clef is a frozen external checkpoint); bootstrap B = 2000 |
+
+## 2a. Image: fla #640 and the deviation from the model card
+
+**Why.** The PR #41 review found that Clef was wrongly exempt from the fla #640 fix as "inference-only". In fact the S1 `--grad-probe` and the whole of job B (GCG-lite, `clef_gcg.py` `loss.backward()`) run backward through Qwen3.5's Gated-DeltaNet layers. transformers 5.10.2 routes those layers to fla's `chunk_gated_delta_rule` whenever fla imports, and that does not depend on causal-conv1d (`modeling_qwen3_5.py`: `self.chunk_gated_delta_rule = chunk_gated_delta_rule or torch_chunk_gated_delta_rule`). fla 0.5.2 refuses the gated `chunk_bwd_dqkwg` on Hopper with 3.4.0 <= Triton < 3.7.1. The old image (torch 2.11.0, so triton 3.6.0, with unpinned fla) would therefore have stopped at S1 on an H100, after the weights download.
+
+**Fix chosen: move to the shared torch 2.13.0 / triton 3.7.1 base with `FLA_TILELANG=0`.** The alternative was to pin fla and send the gradient phases through a non-gated path, i.e. the torch reference GDN. It was rejected because it would measure GCG against a different kernel than the forward that serves the Index and the safety battery, and GCG at ~131 forwards per step would run several times slower on the reference path. The runner calls `jobs/common/fla_guard.py` right after S0's data check, before the weights download and before every GPU phase of jobs A and B. Exit 5 means the guard refused the image.
+
+**Declared deviation from Cloudflare's card** ("Tested with torch 2.11 and transformers 5.10.2"): torch is 2.13.0, not 2.11. Everything else that defines the model stays as on the card:
+- transformers is kept at **5.10.2**. The Qwen3.5 model code, `Qwen3_5ForConditionalGeneration` and `AutoProcessor` are therefore the card's. Its requirements (`torch>=2.4`, `huggingface-hub>=1.5,<2`, `safetensors>=0.4.3`) are met by the pins.
+- `joint_schema_model.py` (vendored, unmodified) uses only stable `torch.nn` pieces: `LayerNorm`, `Linear`, `Embedding`, `MultiheadAttention(batch_first)`, `TransformerDecoderLayer(norm_first, batch_first, gelu)`, `functional.normalize`, `cosine_similarity` and `softmax`. It also uses `safetensors.load_file(strict=True)`. None of these is among the known torch 2.12/2.13 removals (e.g. `torch.cholesky`/`qr`). The CPU tests run Cloudflare's head and `ClefModel` on torch 2.14.1, newer than 2.13, and match Clef's own `systemone` (tolerance 1e-6 in fp32; about 5e-8 measured in the #19 review).
+- The fla API that transformers 5.10.2 calls was read from both wheels. `chunk_gated_delta_rule(q, k, v, g=, beta=, initial_state=, output_final_state=, use_qk_l2norm_in_kernel=, cu_seqlens=)`, `fused_recurrent_gated_delta_rule` and `FusedRMSNormGated(hidden, eps, activation, device, dtype)` all exist with those parameters in fla-core 0.5.2. transformers requires fla >= 0.2.2.
+
+**Not claimed: bitwise identity with Cloudflare's runs.** cuBLAS, SDPA and fla Triton numerics can differ at bf16 rounding level between torch versions. Cloudflare does not say whether it used fla at all. Two checks inside the image decide whether our stack scores Clef the same way:
+1. The S1 **parity** gate compares the decide path with Clef's own `systemone`: max |dp| <= 2e-4.
+2. The new S1 **`kernel_path`** check compares the fast fla/causal-conv1d GDN path with transformers' own torch reference (`clef_backend.reference_gdn_path`, which swaps `torch_chunk_gated_delta_rule` and the conv fallback into every GDN layer). It runs on up to 16 parity rows of at most 2,048 tokens. The bar is max |dp| <= 2e-2, with no argmax flip where the top-2 margin exceeds 2e-2. **Non-vacuous (PR #43 B1).** transformers sets `chunk_gated_delta_rule = fla_kernel or torch_chunk_gated_delta_rule` and falls back silently when fla is unavailable. On a stack where that happens, the old check "switched" 3 layers from the reference to the reference, measured max |dp| = 0 and reported `ok=True`. The check now passes only if three things hold:
+   - (a) at least one GDN layer's kernel object is **not** already the torch reference (`gdn_layers_switched` > 0; `gdn_layers_found` and `gdn_layers_already_reference` are reported);
+   - (b) a real difference was measured (`max_abs_dp > 0`; two different kernels never agree on every bf16 probability);
+   - (c) the tolerance and argmax rules above hold.
+
+   `fail_reasons` names every failed condition. A failure exits 11, and job B is gated on `result.s1_ok` (parity **and** `kernel_path`).
+
+`FusedRMSNormGated` (an fla Triton norm; not the gated `chunk_bwd_dqkwg` kernel of #640) stays on in both arms of that check. Clef numbers are reported as "Clef weights under our pinned stack (`kernel_stack`)", next to the card's own numbers, never merged with them.
+
+**Image build pins (review non-blocking items).**
+- `ninja` is installed before the `causal-conv1d==1.7.0` source build (its build requirement; without it the build falls back to a serial setuptools compile).
+- `build_timeout_minutes` is raised to 90 for that compile.
+- The build-time assert now also checks `transformers==5.10.2`, imports `torchvision` (needed by the Qwen3.5 image/video processor classes that `AutoProcessor` resolves), and imports `transformers.AutoProcessor` / `Qwen3_5ForConditionalGeneration`. A missing processor dependency therefore fails the free build, not the paid S1 load.
+
+**Latency deviation (H200 -> H100).** Cloudflare's card reports Index latency on **one H200** (median/p95: Clef-flash 38.8/122.4 ms, Clef 209.3/238.6 ms). The board's own admission measurement is on one RTX PRO 6000. Our latency row is on **one H100 80 GB SXM**, which has less HBM bandwidth than the H200 (3.35 vs 4.8 TB/s), with `clock_lock: true`, batch 1, our pinned `kernel_stack` and DEV rows. It is therefore comparable to neither number. It is reported as "H100, our stack", next to the card's H200 figures, and is never used for a latency "better than" claim against the card or the board.
 
 ## 3. Fit check: does Clef-27B fit one H100 80 GB?
 
@@ -61,7 +91,7 @@ Three jobs share one build context. A fourth (GCG on Clef-27B) is scoped out bel
 | Job | Release | Stages | Gate | max_duration | Expected | Ceiling at $2.97/h |
 |---|---|---|---|---|---|---|
 | **A-flash** | clef-flash | S0-S1-S2-S3-S4-S5 | (none) | 120 min | ~55 min, **~$2.7** | $5.94 |
-| **B-flash** | clef-flash | S0-S4b-S5 (GCG, resumable) | `depends_on: {job: A-flash, require: "result.parity_ok == true"}` | 600 min | ~3.3 h, **~$10** | $29.70 |
+| **B-flash** | clef-flash | S0-S4b-S5 (GCG, resumable) | `depends_on: {job: A-flash, require: "result.s1_ok == true"}` (parity **and** non-vacuous `kernel_path`) | 600 min | ~3.3 h, **~$10** | $29.70 |
 | **C-27b** | clef | S0-S5 as A | `depends_on: {job: A-flash, require: "result.ok == true"}` | 240 min | ~1.8 h, **~$5.4** | $11.88 |
 | *D-27b-gcg* | clef | GCG | not planned | - | ~9 h, ~$27 | worst case exceeds the 720-min cap |
 
@@ -91,7 +121,7 @@ Build the context first: `bash jobs/clef_baseline/build_context.sh` produces `cl
   "hf_cache": true,
   "max_duration_minutes": 120,
   "max_restarts": 1,
-  "build_timeout_minutes": 60,
+  "build_timeout_minutes": 90,
   "queue_ttl_minutes": 4320,
   "resume": "none",
   "clock_lock": true,
@@ -108,7 +138,7 @@ Build the context first: `bash jobs/clef_baseline/build_context.sh` produces `cl
 ```
 
 The other jobs differ only in these fields:
-- **B-flash.** `env {"RELEASE":"clef-flash","JOB":"B"}`, `idempotency_key "clef-baseline-B-flash-<sha12>"`, `max_duration_minutes 600`, `resume "checkpoint"`, `depends_on {"job":"<A-flash id>","require":"result.parity_ok == true"}`. Its checks are `file_exists /output/clef-flash-jobB/safety/gcg_attacks.jsonl` plus `result.json`. It uses the same heartbeat health check as A (`interval_s 600`, `fail_threshold 2`, `kill`); the watchdog keeps the heartbeat fresh through long attacks because GCG logs every 10 steps.
+- **B-flash.** `env {"RELEASE":"clef-flash","JOB":"B"}`, `idempotency_key "clef-baseline-B-flash-<sha12>"`, `max_duration_minutes 600`, `resume "checkpoint"`, `depends_on {"job":"<A-flash id>","require":"result.s1_ok == true"}`. `s1_ok` is true only if the S1 parity gate **and** `kernel_path` passed. GCG backward through the GDN kernels never starts unless the fast path was shown to be in use and to match the reference. Its checks are `file_exists /output/clef-flash-jobB/safety/gcg_attacks.jsonl` plus `result.json`. It uses the same heartbeat health check as A (`interval_s 600`, `fail_threshold 2`, `kill`); the watchdog keeps the heartbeat fresh through long attacks because GCG logs every 10 steps.
 - **C-27b.** `env {"RELEASE":"clef","JOB":"A"}`, `model "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c"`, `max_duration_minutes 240`, `depends_on {"job":"<A-flash id>","require":"result.ok == true"}`, the check paths under `/output/clef-jobA/`, and **`hf_cache: false`** (review N4). The manual guarantees only at least 32 GiB of free cache room and warns that a larger single download "can still fill the cache mid-pull (submit unusually large models without the flag)". The 55 GB of weights therefore download into the job's own scratch: 55 GB of weights plus a ~15 GB image and outputs fit the 100 GiB `job_scratch_bytes`. Preflight's disk warning should report ~55 GB.
 - **Heartbeat semantics (review B1).** `run_job.sh` sources `watchdog.sh`, a background loop that touches `$OUT/heartbeat` every 60 s, but **only while** two things hold:
   1. The main script is alive (`kill -0 $MAIN_PID`). The loop is also killed by the EXIT trap.
@@ -125,8 +155,9 @@ The other jobs differ only in these fields:
 |---|---|---|---|
 | 0 | S5 | all stages done, `result.json` written | export + verify (section 7) |
 | 2 | - | bad `RELEASE`/`JOB` env | fix spec |
+| 5 | S0 | `jobs/common/fla_guard.py` refused the image (fla #640: triton < 3.7.1, TileLang selected, guard/fla rule disagreement, no CUDA, or the gated fwd+bwd smoke failed); runs before the weights download | fix the image; do not resubmit unchanged |
 | 10 | S0/S1 | DEV-row sha256, download, snapshot sha256 (any shard, head, tokenizer, jsm) mismatch, or model load / OOM in the probe | do not retry blindly; for 27B OOM switch to the 2-GPU plan |
-| 11 | S1 | parity gate failed: decide-path raw probabilities differ from Cloudflare's `systemone` by > 2e-4 or argmax disagrees off-tie on the 64-row sample | the backend mapping is wrong; nothing downstream is valid |
+| 11 | S1 | parity gate failed (decide-path raw probabilities differ from Cloudflare's `systemone` by > 2e-4, or argmax disagrees off-tie, on the 64-row sample) **or** `kernel_path` failed (fast GDN kernels vs torch reference: max abs dp > 2e-2, an argmax flip at margin > 2e-2, or no GDN layer switched) | mapping or kernel numerics are wrong; nothing downstream is valid |
 | 12 | S2 | kit run failed (5 consecutive errors, device assert) or the composite native file could not be built | inspect `index/*.log` |
 | 13 | S3 | harness score / compare / ECE failed | rerun locally from `results.jsonl` (CPU) |
 | 14 | S4 | safety_eval (non-GCG) failed, **or the PREREG gate refused** (runner exit 32: fewer than 8 D1-B templates) | inspect `safety.log`; land the blind-template amendment |

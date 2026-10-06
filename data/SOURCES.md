@@ -44,13 +44,13 @@ Legend:
 | 37 | Amazon ESCI (R) | 5,000 test pairs | `shopping_queries_dataset` split=train | ~1.4M pairs | Apache-2.0 | Queries recur across splits with different products. Dedup on (query, product). |
 | 56 | PhishNChips (R) | 2,000 rows | **None** known | — | see card | Proxy: public phishing corpora (licences vary). Not used yet. |
 | 61 | HoVer (R) | 4,000 rows | official train | ~18k claims | CC-BY-SA-4.0 | Built from HotpotQA/Wikipedia. Wikipedia passages (e.g. NQ) hit HoVer evidence as context overlap (logged). |
-| 1 | BFCL (T) | 1,694 cases | **None** | — | Apache-2.0 | Proxies: ToolACE (**fetched**), Glaive FC v2 (Apache-2.0), xLAM-60k (CC-BY-4.0, gated). |
+| 1 | BFCL (T) | 1,694 cases | **None** | — | Apache-2.0 | Proxies: ToolACE (**fetched**), Glaive FC v2 (Apache-2.0, **fetched** for the 150k build), xLAM-60k (CC-BY-4.0, gated). |
 | 2 | ToolRet (T) | 685 answerable queries | ToolRet training release (verify ID/licence) | — | verify | ToolRet's tool corpus overlaps RapidAPI tool docs in When2Call/ToolACE. Logged as context overlap (tool schemas carry no ToolRet label). |
 | 3 | API-Bank (T) | 508 decision points | API-Bank training dialogues (DAMO-ConvAI) | ~6k | MIT | Same 53-tool catalog: catalog text is context, dialogues are items. |
 | 9 | Home appliances (T) | 88 test rows | published dev file (80 cases) | 80 | see kit | The Index already dropped 48 test rows identical to dev. Dev is allowed. |
 | 62 | When2Call (T) | test MCQ 3,652 | `nvidia/When2Call` train_sft, **fetched**; train_pref (9,000) exists but is **not fetched or used** | 15,000 | CC-BY-4.0 | **57% of train items drawn shared item text with the test MCQ** (mostly 13-grams of responses and questions) and were dropped. The SFT split has no tool-call targets (refuse/ask only). |
 | 20 | BPoMP (A) | 5,000 rows over 811 cases | **None** known | — | see Zenodo | |
-| 21 | Humicroedit (A) | subtask-2 test 2,628 | SemEval-2020 T7 train/dev (subtask 1 and 2) | ~9.4k pairs | research (verify) | Headlines recur across subtasks. Dedup on the edited headline. |
+| 21 | Humicroedit (A) | subtask-2 test 2,628 | SemEval-2020 T7 **train** splits via `tasksource/humicroedit` @ `f5a16e6` (subtask-1 train, subtask-2 train), **fetched** for the 150k build | 9,652 (s1) / 6,178 usable of 9,381 (s2; ties and malformed rows skipped) | HF card: unknown; SemEval research release (verify) | Headlines recur across subtasks. The clean original headline is item-tier (as well as the edited text), so a train record sharing a headline with a test row is dropped, not only exact edit matches. |
 | 22 | POP909-CL (A) | 2,000 beats over 907 songs | **None** disjoint (909 songs total) | — | MIT (verify) | Symbolic chord data from other corpora is the only option. |
 | 23 | cfcolor (A) | 5,000 held-out pairs | original train-rating history | — | see release | The Index state already carries user history. Training on other users' ratings is allowed. Dedup on palettes. |
 | 48 | ForecastBench (A) | 10,139 forecasts resolving 2026-07-01..09-18 | question sets resolved **before 2026-07-01** | — | CC-BY-SA-4.0 (verify) | **Leakage:** any text or teacher with knowledge after the forecast date leaks outcomes (see TEACHERS.md cutoffs). |
@@ -71,7 +71,8 @@ Display-only rows (MMLU, ARC-E/C, SimpleBench, RouterBench, SGD) are in the guar
 | CommonsenseQA, OpenBookQA, PIQA, SciQ | MCQ | 9.7k / 5k / 16k / 11.7k | MIT / Apache-2.0 / AFL-3.0 / CC-BY-NC-3.0 | not fetched |
 | AG News, DBpedia-14, TweetEval, GoEmotions | classification (4–28 labels) | 120k / 560k / ~50k / 43k | research / CC-BY-SA / mixed / Apache-2.0 | not fetched |
 | MS MARCO passage | retrieval up to 255 candidates | 500k queries | **non-commercial** | not fetched (licence) |
-| Glaive FC v2, xLAM-60k | tool selection | 113k / 60k | Apache-2.0 / CC-BY-4.0 (gated) | not fetched |
+| Glaive FC v2 (`glaiveai/glaive-function-calling-v2`, Hub parquet conversion `refs/convert/parquet` @ `8862406` of main `e7f4b64`; the 271 MB JSON exceeds the fetch cap) | catalog + first user turn → which function to call now, or `no_tool` (answer / clarify / decline) | 112,960 rows; 78,011 usable (rows with no published function skipped) | Apache-2.0 | **fetched** (150k build) |
+| xLAM-60k | tool selection | 60k | CC-BY-4.0 (gated) | not fetched |
 | HotpotQA, FEVER | evidence → verdict | 90k / 145k | CC-BY-SA-4.0 / CC-BY-SA-3.0 | not fetched. **Overlaps HoVer (built from HotpotQA)**; the guard must run. |
 | SGD train (`dstc8-schema-guided-dialogue` train) | dialogue intent `choice` | ~16k dialogues | CC-BY-SA-4.0 | not fetched. SGD is display-only (test in guard). |
 

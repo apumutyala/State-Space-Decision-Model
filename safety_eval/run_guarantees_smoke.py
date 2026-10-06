@@ -120,6 +120,8 @@ def main(argv=None):
     ap.add_argument("--alpha", type=float, default=0.05)
     ap.add_argument("--delta", type=float, default=0.05)
     ap.add_argument("--n-span", type=int, default=3, help="route and pay requests each for the span-unit arm")
+    ap.add_argument("--controlsafe", default="", help="comma list of controlsafe arms (g15,persistence,gramian,"
+                    "g4snap,g14) or 'all'; tiny random RWKV-7/Q9-AF backbones, CPU (safety_eval/controlsafe_arms.py)")
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -137,6 +139,11 @@ def main(argv=None):
     results["g4_uncovered"] = g4_uncovered(reqs, a.n_span)
     results["g5_standin"] = g5_standin(vs, a.alpha, a.delta)
     results["g5_synthetic"] = g5_synthetic(a.alpha, a.delta)
+    if a.controlsafe:
+        from .controlsafe_arms import ARMS, run_arms
+
+        arms = ARMS if a.controlsafe == "all" else tuple(x for x in a.controlsafe.split(",") if x)
+        results["controlsafe"] = run_arms(arms)
     for name, obj in results.items():
         (out / f"{name}.json").write_text(json.dumps({"meta": meta, name: obj}, indent=1, default=float),
                                           encoding="utf-8", newline="\n")
@@ -161,6 +168,16 @@ def main(argv=None):
         "g4_sentence_same_subset_clean_cost": results["g4_uncovered"]["sentence_same_subset_clean_cost"],
         "g5_standin_lam_hat": {k: v["lam_hat"] for k, v in results["g5_standin"]["strata"].items()},
     }
+    if "controlsafe" in results:
+        cs = results["controlsafe"]
+        summary["controlsafe"] = {
+            "g15_pass": {f: r["pass"] for f, r in cs.get("g15", {}).items()},
+            "g4snap": {f: {k: {m: v[m] for m in ("token_savings", "decisions_identical_all", "n_origins")}
+                           for k, v in r.items() if k.startswith("k")} for f, r in cs.get("g4snap", {}).items()},
+            "g14": {f: {m: r[m] for m in ("auroc", "auroc_min_score", "collapse_ratio",
+                                          "seeds_auroc_at_or_below_chance", "n_seeds")}
+                    for f, r in cs.get("g14", {}).items()},
+        }
     (out / "summary.json").write_text(json.dumps(summary, indent=1, default=float), encoding="utf-8", newline="\n")
     print(json.dumps(summary, indent=1, default=float))
 
