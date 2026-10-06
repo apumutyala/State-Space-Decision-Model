@@ -86,17 +86,17 @@ def diagnostics(R, gate, num, diag):
             "gate_kl": gate.get("kl"), "gate_hidden_cos": gate.get("hidden_cos")}
     bands = {k: band(vals.get(k), diag["bands"][row]) for k, row in BAND_OF.items()}
     gain = (k0 - gate["kl"]) / k0 if _num(k0) and k0 > 0 and _num(gate.get("kl")) else None
-    a = diag["adjust_hint"]
-    hint = None if gain is None else a["if_stage2_learning"] if gain >= a["stage2_gain_frac_min"] else a["if_stage2_not_learning"]
     return {"note": diag["note"], "values": vals, "bands": bands, "stage1_kl": k0, "stage2_kl_gain_frac": gain,
-            "suggested_adjustment_if_not_proceeding": hint,
             "binding": False}
 
 
 def decide(R, cmp, cfg):
     out = _decide(R, cmp, cfg)  # the binding verdict: pre-registered success_rule (511e8dd) only
     if cfg.get("diagnostic_bands_posthoc"):
-        out["diagnostic_bands_posthoc"] = diagnostics(R, out["gate"], out["numbers"], cfg["diagnostic_bands_posthoc"])
+        try:  # non-binding: a failure here is recorded and never changes the verdict or the exit code
+            out["diagnostic_bands_posthoc"] = diagnostics(R, out["gate"], out["numbers"], cfg["diagnostic_bands_posthoc"])
+        except Exception as e:  # noqa: BLE001
+            out["diagnostic_bands_posthoc"] = {"binding": False, "error": repr(e)[:300]}
     return out
 
 

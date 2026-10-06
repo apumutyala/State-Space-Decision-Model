@@ -147,13 +147,6 @@
     "green_min": -2.5,
     "amber_min": -5.0
    }
-  },
-  "adjust_hint": {
-   "_comment": "POST-HOC DIAGNOSTIC SUGGESTION ONLY: never changes the verdict and never authorises spend. Uses the measured stage-2 KL gain = (importance KL of the layer after stage 1 - gate KL after stage 2) / the former.",
-   "stage2_gain_frac_min": 0.1,
-   "if_stage2_not_learning": "stage-2 gained < 10% of its starting KL: stage 2 is not the lever (job-4j3vu layer 3 moved 0.051 -> 0.054 in 35 min): re-probe with stage-1 1,200 steps and stage-2 lr 1e-4",
-   "if_stage2_learning": "stage-2 gained >= 10%: the cap stopped a still-improving run: re-probe with stage-2 max_minutes 120 (same lr)",
-   "max_reprobes": 1
   }
  }
 }

@@ -47,7 +47,7 @@ Parent choice at m1 (PLAN gate "parent selected and frozen") compares the Q9-AF 
 readout on the **same 2,008-row DEV subset** (`jobs/common/dev_subset_m1.json`), plus steer and memory. It is a
 recorded decision, not an automatic one.
 
-## The $525 envelope (ledger: $0 spent as of 2026-10-06; $500 promo expires 2026-10-27T06:53Z)
+## The $525 envelope (October MTD actual spend $8.43 as of 2026-10-06, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)
 
 | Line (PLAN.md) | Budget | Worst case committed by this tree |
 |---|---|---|
@@ -57,6 +57,6 @@ recorded decision, not an automatic one.
 | System 1, branch C: qual folds | $250 | rwkv7 A + B = $35.64 -> $214.36 left for m2 |
 | Language / Reserve | $100 / $100 | untouched; re-runs come from the reserve |
 
-Worst-case envelope total is at most $260.88 (branch A), so every branch fits $525 with the Language and Reserve
+Worst-case envelope total, including the $8.43 MTD spend, is at most $269.31 (branch A), so every branch fits $525 with the Language and Reserve
 lines intact. Branch A leaves System 1 only ~$4 above the cache-fork m2 plan: if the full-8 job runs over its
 estimate, m2 takes option (b)/(c) from M2_RUN_SPEC or draws on the reserve via a spend issue.

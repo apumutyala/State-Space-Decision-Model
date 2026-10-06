@@ -119,13 +119,14 @@ say "converted layers: [${LAYERS}]"
 if [ -n "$LAYERS" ]; then
   Q9B=$(python -c "from convert.model import resolve_model_dir as r; import os; print(r(os.environ['Q9B_DIR']))")
   NROWS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['rows'])" "$WORK/out/index/subset-rows.json")
-  # measured stop condition: the pipeline's MEASURED stock prefill rate must let the readout fit its cap (else 15)
-  TOKS=$(python -c "import json,sys;t=json.load(open(sys.argv[1]))['throughput']['stock'];print(max(v['tok_s'] for v in t.values() if isinstance(v, dict) and 'tok_s' in v))" \
-    "$WORK/out/pipeline/results.json") || fail 2 "no measured prefill rate"
+  # measured stop condition: the pipeline's MEASURED stock prefill rate (the MIN over lengths, conservative) must let
+  # the readout fit its cap (else 15)
+  TOKS=$(python -c "import json,sys;t=json.load(open(sys.argv[1]))['throughput']['stock'];print(min(v['tok_s'] for v in t.values() if isinstance(v, dict) and 'tok_s' in v))"     "$WORK/out/pipeline/results.json") || fail 2 "no measured prefill rate"
   # exact subset volume of the prefix-fork readout at the MEASURED prefill rate and the 9B's own MEASURED per-call
-  # cost (probes.throughput.call_latency in the pipeline's throughput phase, stock arm, small_call_s); the RWKV7 fitted
+  # cost (probes.throughput.call_latency in the pipeline's throughput phase, stock arm, max(small_call_s, pack_call_s),
+  # conservative: pack_call_s also contains its own 4,096 positions); the RWKV7 fitted
   # value only if that measurement failed. The live row-rate guard stays authoritative.
-  CALLS=$(python -c "import json,sys;from jobs.common.readout_cost import CALL_S_FITTED_RWKV7 as F;t=json.load(open(sys.argv[1]))['throughput']['stock'];print(t.get('call_latency',{}).get('small_call_s',F))"     "$WORK/out/pipeline/results.json") || fail 2 "reading the measured call latency"
+  CALLS=$(python -c "import json,sys;from jobs.common.readout_cost import CALL_S_FITTED_RWKV7 as F;c=json.load(open(sys.argv[1]))['throughput']['stock'].get('call_latency',{});v=[c[k] for k in ('small_call_s','pack_call_s') if k in c];print(max(v) if v else F)"     "$WORK/out/pipeline/results.json") || fail 2 "reading the measured call latency"
   python -m jobs.common.rate_guard preflight --tok-s "$TOKS" --call-s "$CALLS" --volume jobs/common/readout_volume_qwen3.5.json \
     --path fork --cap-min "$CAP_IS" --out "$WORK/out/index/preflight.json" > "$WORK/logs/preflight.log" 2>&1; r=$?
   gate "I:preflight" $r

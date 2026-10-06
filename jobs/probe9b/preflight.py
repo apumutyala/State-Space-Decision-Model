@@ -65,7 +65,8 @@ def project(params: dict, cfg: dict) -> dict:
     from jobs.common.readout_cost import project as readout
 
     vol = json.loads((ROOT / "jobs/common/readout_volume_qwen3.5.json").read_text(encoding="utf-8"))
-    arm = readout(vol["totals"], pre, call, "fork")["projected_min"] + m["model_load_s"] / 60
+    # the Index arms are projected as the runner's own preflight does: the MIN measured prefill rate over lengths
+    arm = readout(vol["totals"], m["stock_prefill_tok_s_min"], call, "fork")["projected_min"] + m["model_load_s"] / 60
     out = {
         "setup": m["qual_setup_min"] + m["subset_rows_min_est"],
         "weights": m["weights_fetch_s"] / 60,

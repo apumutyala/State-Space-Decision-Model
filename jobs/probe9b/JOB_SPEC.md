@@ -44,7 +44,13 @@ Index per-call cost. The pipeline now measures the per-call cost (below).
    teacher passes become 1.
 4. **The 9B's own readout per-call cost is measured.** `probes.throughput.call_latency` runs in the pipeline's
    throughput phase on the `ConvertedStateOps` path that both Index arms use. The Index preflight now uses that
-   number instead of the RWKV7-fitted 0.098 s/call.
+   number instead of the RWKV7-fitted 0.098 s/call. The preflight is conservative on both inputs:
+   - prefill rate = the **minimum** measured over the throughput lengths (22,576 tok/s at 32k on job-4j3vu, against
+     25,803 at 4k);
+   - per-call cost = **max(small_call_s, pack_call_s)**, where `pack_call_s` also contains its own 4,096 positions.
+
+   With the fitted 0.098 s the projection is 11.95 min against the 38-min line (95% of the 40-min cap): margin
+   2.18x. At a plausible 9B `pack_call_s` of ~0.26 s it is 24.1 min (margin 58%). It breaks even at 0.445 s/call.
 5. **Gate windows 16 -> 32** (131k tokens of wikitext-103 validation). The per-32k-token batch KL in job-4j3vu's
    stage 2 ranged from 0.045 to 0.085, so 65k tokens gives a noisy gate KL. The cost is about
    1 min.
@@ -61,8 +67,8 @@ Margin is cap / projection - 1. The rule is >= 30% everywhere (`margin_min_frac`
 | setup | 10 | 2.7 | 270% | context manifest, `nvidia-smi`, pins + kit import, fla #640 guard, **measured-rate preflight**, DEV rows sha256, the pinned 2,008-row DEV subset materialised | 5 / 10 |
 | weights | 20 | 0.5 | >40x | `sf_fetch --stage probe9b` (wikitext, MMLU, 9B @ pinned revisions; hf_cache hit measured at 28 s; a miss is 19.3 GB) | 8 |
 | P | 140 (deadline 128) | 82.8 (80.5 before the converted probes) | 69% (deadline 59%) | `convert.pipeline`: load 0.3, tokenise 40M wikitext-103 train tokens 2.8 (upper bound scaled from 20M), stock probes 1.6, **stage 1** 13.1 (400 x 32,768 tokens at 18,952 tok/s + 92 s), KL importance + gate on the cached teacher 2.8, **stage 2** 60.0 (wall-clock cap = 19.7M tokens at the measured 5,461 tok/s, more on a later layer), enforced gate, converted probes 1.6, prefill throughput + call latency 0.8 | 2 / 3 / 4 / 7 |
-| I_stock | 40 | 11.7 | 225% (vs the 95% guard line) | Decision Index DEV subset, stock arm, prefix-fork readout: 6.23M positions / 25,803 tok/s + 4,501 calls x call_s (0.098 until the pipeline's measurement replaces it) + model load. Preflight exit 15, live row-rate guard exit 15 | 12 / 7 / 15 |
-| I_conv | 40 | 11.7 | 225% | same, converted arm (`converted=<layer>`, `gdn_ckpt=gdn_converted.pt`) | 12 / 7 / 15 |
+| I_stock | 40 | 12.3 | 209% (vs the 95% guard line) | Decision Index DEV subset, stock arm, prefix-fork readout: 6.23M positions / 22,576 tok/s (min measured) + 4,501 calls x call_s (0.098 until the pipeline's measurement replaces it) + model load. Preflight exit 15, live row-rate guard exit 15 | 12 / 7 / 15 |
+| I_conv | 40 | 12.3 | 209% | same, converted arm (`converted=<layer>`, `gdn_ckpt=gdn_converted.pt`) | 12 / 7 / 15 |
 | S | 10 | 1 | 900% | `jobs.common.dev_subset compare` (paired source-case cluster bootstrap, B=2000), `score`, `ece` per arm | 13 |
 | D | - | - | - | `scripts/decide_probe9b.py`; `finalize.py` re-validates; `PROBE_DONE` only on exit 0 | 9 |
 | reserve | 10 | | | | |
@@ -93,7 +99,7 @@ Measured on converted vs stock (`results.json`, `index/`):
 |---|---|---|---|---|
 | **Stage 2** | **60 min, ~45%** | Per step: shared no-grad prefix, no-grad teacher suffix (~1/4 of step FLOPs), then the student suffix forward, its checkpoint re-forward and the activation backward. 61.8 GFLOP/token on layer 3, 34% MFU measured | (a) **Cache teacher outputs.** Rejected: one pass over fresh random windows uses each teacher output exactly once, so caching moves the FLOPs rather than removing them. Reusing stage 1's teacher pass would need ~107 GB of bf16 final hidden states for 13M tokens, or a top-k KL that changes the objective. (b) **Drop the checkpoint re-forward** (~25% of FLOPs). Not applied: unmeasured memory on the 9B, and an OOM wastes the whole spend. (c) **Batching.** Already 4 x 4,096 micro-batches x 2 accumulation = 32,768 tokens/step, measured | The stage is **wall-clock capped**, so a faster step buys distillation tokens, not dollars. job-4j3vu's trace shows the per-batch KL flat over 11.5M tokens (0.051 at step 0 -> 0.045 at step 349, range 0.045-0.085; gate 0.054), so more tokens are unlikely to change the verdict. The cap stays at the pre-registered 60 min |
 | Stage 1 | 13 min, ~10% | Teacher forward to layer 31 + 8 GDN graphs (17.1 GFLOP/token, 33% MFU measured) + a 92 s first-step autotune | Fewer steps would degrade the KL-importance ranking, which needs all 8 layers aligned | Kept: 400 steps |
-| Index arms | 2 x 11.7 min, ~18% | Per-call overhead (~7 of the ~12 min, borrowed from RWKV7) + 6.23M positions of prefill | The prefix-fork readout is already applied (239M -> 6.2M positions per arm, PERF_AUDIT). The 9B per-call cost is **now measured** before the arms run | Applied (measurement) |
+| Index arms | 2 x 12.3 min, ~18% | Per-call overhead (~7 of the ~12 min, borrowed from RWKV7) + 6.23M positions of prefill | The prefix-fork readout is already applied (239M -> 6.2M positions per arm, PERF_AUDIT). The 9B per-call cost is **now measured** before the arms run | Applied (measurement) |
 | Importance + gate evals | 2.8 min | 8 + 2 `evaluate` calls over 131k tokens (forward + fp32 log-softmax over the 248k vocab) | **Teacher hidden cached once** (10 teacher passes -> 1) | Applied |
 | Data / load / probes / throughput | ~7 min | CPU tokenisation of 40M tokens; B=1 probe loops (~500 calls) | Minor. Note: job-4j3vu's 9-min gap before stage 1 was the background fetch of an unrelated model (mamba3, 351 s), **not** tokenisation. The probe's fetch stage has no such model | Not applied (low leverage) |
 | Build / setup / weights | 15 + 3 + 1 min | Image build (measured ~14 min to first runner line) | Same base digest as qual | - |
@@ -115,6 +121,15 @@ before any 9B data existed, and this spec does not change it (`tests/test_probe9
 | MQAR mean accuracy drop | <= 0.10 |
 | S-NIAH | mean drop <= 0.10 and every length's drop <= 0.25 |
 
+**The enforced gate is 511e8dd's except `n_windows`.** `n_windows` went from 16 to 32. This change was made after
+the job-4j3vu data. It is non-directional: it tightens the estimate and neither loosens nor tightens any threshold
+(`tests/test_probe9b.py` checks every other gate field against 511e8dd).
+
+**MMLU is noise-limited near its bound.** The subset has 285 items. At ~70% accuracy, one arm's SE is ~2.7 points,
+and the paired difference's SE is roughly 1.5-2.7 points, depending on how correlated the two arms are. So an MMLU
+fail within ~2 SE of the 3.0-point threshold (a drop of up to ~6-8 points) is reported in the decision write-up as
+**noise-limited**. This does not change the binding verdict: the rule is applied as pre-registered.
+
 | Verdict | When | Next |
 |---|---|---|
 | `proceed-all-8` (= convert-all-8) | every row passes | the ~$150 full-8 spend issue |
@@ -128,8 +143,9 @@ Missing numbers give `no-measurement`, which is exit 9 and never a verdict. The 
 These bands were **written after seeing job-4j3vu's qualification gate numbers** for 9B layer 3 (8 windows, after
 35 min of stage 2): dNLL -0.0005, **KL 0.054**, cos 0.980. They are therefore **not used for the verdict**. The note
 `"written after seeing job-4j3vu qual gate numbers; not used for the verdict"` is written into every `decision.json`.
-They never change the verdict and never authorise spend. Any re-probe they suggest needs its own spend issue and its
-own pre-registration.
+They never change the verdict and never authorise spend. `decide_probe9b.py` computes the verdict first and wraps
+the diagnostics in try/except: if they fail, the error is recorded under `diagnostic_bands_posthoc.error`, and the
+verdict and exit code are unchanged (tested).
 
 | Diagnostic number | GREEN | AMBER | RED |
 |---|---|---|---|
@@ -153,11 +169,8 @@ The diagnostic also reports the measured stage-2 KL gain:
 
 > gain = (importance KL of the layer after stage 1 - gate KL after stage 2) / (importance KL after stage 1)
 
-From that gain it gives a *suggested* recipe change for a possible later probe:
-- gain < 10%: stage-1 1,200 steps and stage-2 lr 1e-4;
-- otherwise: stage 2 for 120 min.
-
-That later probe, if anyone wanted it, would need a new spend issue and a rule pre-registered before its data.
+This is a reported number only. There is no re-probe path: `quality-fail` goes to rwkv7 stage B
+(`jobs/DECISION_TREE.md`).
 
 ## `submit_job` fields (do not submit until the spend issue is approved)
 

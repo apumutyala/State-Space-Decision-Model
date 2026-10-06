@@ -43,6 +43,7 @@
   "stage2_mfu": 0.341,
   "peak_gb": 31.9,
   "stock_prefill_tok_s_4096": 25803,
+  "stock_prefill_tok_s_min": 22576,
   "model_load_s": 19.6,
   "weights_fetch_s": 28,
   "qual_setup_min": 2.2,

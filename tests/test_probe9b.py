@@ -116,6 +116,7 @@ def test_config_carries_the_measured_memory_fix_and_floors():
 RULE_511E8DD = {"gate_must_pass": True, "ppl_ratio_max": {"ctx1024": 1.02, "ctx4096": 1.02}, "mmlu_drop_max_pts": 3.0,
                 "mqar_drop_max": 0.1, "niah_mean_drop_max": 0.1, "niah_length_drop_max": 0.25,
                 "index_diff_point_min": -1.0, "index_diff_lo_min": -2.5}
+GATE_511E8DD = {"max_step_delta_nll": 0.05, "max_cum_delta_nll": 0.15, "min_hidden_cos": 0.95, "policy": "enforce"}
 DIAG = FULL["diagnostic_bands_posthoc"]
 
 
@@ -123,6 +124,9 @@ def test_binding_rule_is_the_511e8dd_rule_unchanged():
     for c in (FULL, LEAN):
         assert {k: v for k, v in c["success_rule"].items() if k not in ("_comment", "verdicts")} == RULE_511E8DD
         assert set(c["success_rule"]["verdicts"]) == {"proceed-all-8", "retrieval-fail", "quality-fail"}
+        # the enforced gate is the 511e8dd one except n_windows (16 -> 32: a post-data, non-directional precision change,
+        # disclosed in JOB_SPEC.md)
+        assert {k: v for k, v in c["gate"].items() if k != "n_windows"} == GATE_511E8DD and c["gate"]["n_windows"] == 32
     assert D.VERDICTS == ("proceed-all-8", "retrieval-fail", "quality-fail")
     assert set(costs.PROBE_TO_NEXT) == set(D.VERDICTS)
     import subprocess
@@ -133,6 +137,7 @@ def test_binding_rule_is_the_511e8dd_rule_unchanged():
     except Exception:  # noqa: BLE001  (no git history in a build context)
         pytest.skip("git history not available")
     assert FULL["success_rule"] == old["success_rule"]
+    assert {k: v for k, v in old["gate"].items() if k != "n_windows"} == GATE_511E8DD and old["gate"]["n_windows"] == 16
 
 
 def _R(kl=0.02, cos=0.98, dnll=0.01, k0=0.03, gate_pass=True):
@@ -197,11 +202,32 @@ def test_posthoc_diagnostics_are_reported_and_labelled():
     g = d["diagnostic_bands_posthoc"]
     assert g["note"] == "written after seeing job-4j3vu qual gate numbers; not used for the verdict"
     assert g["bands"]["gate_kl"] == "amber" and g["bands"]["gate_hidden_cos"] == "green"
-    assert g["suggested_adjustment_if_not_proceeding"] == DIAG["adjust_hint"]["if_stage2_not_learning"]
-    assert d["verdict"] == "proceed-all-8"  # the suggestion never changes the verdict or authorises spend
+    assert d["verdict"] == "proceed-all-8" and g["binding"] is False
+    assert "adjust_hint" not in DIAG and "suggested_adjustment_if_not_proceeding" not in g  # no re-probe path
+    assert "max_reprobes" not in json.dumps(FULL) + json.dumps(LEAN)
     learning = D.decide(_R(kl=0.06, k0=0.10), CMP, FULL)["diagnostic_bands_posthoc"]
     assert abs(learning["stage2_kl_gain_frac"] - 0.4) < 1e-9
-    assert learning["suggested_adjustment_if_not_proceeding"] == DIAG["adjust_hint"]["if_stage2_learning"]
+
+
+@pytest.mark.parametrize("name,R,cmp,verdict", _cases(), ids=[c[0] for c in _cases()])
+def test_a_failing_diagnostic_never_changes_verdict_or_exit(name, R, cmp, verdict, tmp_path, monkeypatch):
+    def boom(*a, **k):
+        raise RuntimeError("diagnostic exploded")
+
+    monkeypatch.setattr(D, "diagnostics", boom)
+    d = D.decide(R, cmp, FULL)
+    assert d["verdict"] == verdict and D.valid_decision(d)
+    assert d["diagnostic_bands_posthoc"]["binding"] is False and "diagnostic exploded" in d["diagnostic_bands_posthoc"]["error"]
+    broken = copy.deepcopy(FULL)
+    broken["diagnostic_bands_posthoc"]["bands"].pop("gate_kl")  # a malformed block: KeyError inside diagnostics
+    monkeypatch.undo()
+    assert D.decide(R, cmp, broken)["verdict"] == verdict
+    if cmp is not None:
+        (tmp_path / "r.json").write_text(json.dumps(R))
+        (tmp_path / "c.json").write_text(json.dumps(cmp))
+        (tmp_path / "cfg.json").write_text(json.dumps(broken))
+        rc = D.main(str(tmp_path / "r.json"), str(tmp_path / "c.json"), str(tmp_path / "cfg.json"), str(tmp_path / "d.json"))
+        assert rc == 0 and json.loads((tmp_path / "d.json").read_text())["verdict"] == verdict
 
 
 def test_posthoc_bands_derivation_is_recorded():
@@ -231,6 +257,7 @@ def test_spec_states_the_binding_rule_and_the_posthoc_status():
     for v in D.VERDICTS:
         assert v in SPEC
     assert "adjust-recipe" not in (ROOT / "jobs/common/costs.py").read_text(encoding="utf-8")
+    assert "noise-limited" in SPEC and "n_windows" in SPEC
 
 
 # ----------------------------------------------------------------------------- contamination boundary
