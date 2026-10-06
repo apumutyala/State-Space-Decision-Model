@@ -90,7 +90,7 @@ The in-code stop conditions are in `align.Guard`:
 - It refuses any SHA that is not an ancestor of `origin/agent-main`.
 - It writes `CONTEXT_MANIFEST.json`: the SHA plus the sha256 of the config, Dockerfile, runner and `job_params.json`.
 - It builds a reproducible tar and prints its sha256.
-- **The m1 SHA is TBD until #2/#6/#7/#8/#9 merge.** agent-main is currently `4b72a5d`, so the job is not launchable yet.
+- **Code identity:** the launch SHA is the agent-main merge of the pinned-snapshot fix. It is recorded with the context, config and Dockerfile hashes in the issue #3 launch receipt. Both model dirs in `configs/qual_h100.json` name the exact pinned snapshot revisions (0.8B `2fc06364…`, 9B `c2022362…`), and `resolve_model_dir` refuses an ambiguous multi-snapshot parent.
 
 **Image.** `pytorch/pytorch:2.8.0-cuda12.8-cudnn9-devel@sha256:a7103283ea7113e10ae5d014bd2342acebda0bc53164b2f7b1dd6eb7a766bdb6`. Pins:
 - transformers 5.17.0, flash-linear-attention 0.5.2, fla-core 0.5.2
