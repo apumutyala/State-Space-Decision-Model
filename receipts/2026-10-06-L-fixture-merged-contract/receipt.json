@@ -1,0 +1,74 @@
+{
+  "source_sha": "c5729e14f04e5c09d25823ac5df405dea5422e1a",
+  "source_materialization": "git archive of source_sha into fresh directory; no untracked files copied",
+  "contract_merge_sha": "4066677",
+  "contract_source_pr_head": "787d64f33ecf974a8f14252956829bf6b9866b2f",
+  "contract_lf_sha256": "6d0965497ff421d120cb2e64e93e752e19dcb6a88547e194850836de902d317f",
+  "checks": [
+    {
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+        "-I",
+        "fixtures/language_growth/validate.py"
+      ],
+      "exit_code": 0,
+      "raw_output": "check-0.txt"
+    },
+    {
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+        "-I",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "fixtures/language_growth",
+        "-p",
+        "test_fixture_pack.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "raw_output": "check-1.txt"
+    }
+  ],
+  "canonical_json_rule": "json.dumps(obj, sort_keys=True, separators=(\",\", \":\"), ensure_ascii=True, allow_nan=False), ASCII bytes, no trailing newline",
+  "canonical_json_sha256": {
+    "fixtures/language_growth/cases/01_supported_read.json": "351eda43eb2f9ece952069f2d75795f017cccdbc271944bf7651937a31f82038",
+    "fixtures/language_growth/cases/02_supported_exact_comparison.json": "d624e643bf14cf7a85fcd430144dd7af482d4c639ece4b9f1b2ae83dcb5275b0",
+    "fixtures/language_growth/cases/03_false_comparison.json": "47b375a89e809eb17f0be1e2f481a3fcd357975fc3006fbd10944a980e03527a",
+    "fixtures/language_growth/cases/04_record_splicing.json": "9ff161004366dbf1a475ed253be465fafca51cb1910c25e53fdfd5212facf41e",
+    "fixtures/language_growth/cases/05_unsupported_negation.json": "bc868f8d6ec263d9e4b3fa1487d6f4f3b057c6c4d0d673207939352efaca0602",
+    "fixtures/language_growth/cases/06_unsupported_because.json": "560a0c4029a0ed22bc3516c406afdfd9a1afce7751b6883ef52aa35f90407bd4",
+    "fixtures/language_growth/cases/07_stale_context.json": "79d47a635acb4218d2c6149476162d0e26468d3a8f0861855f2604658172d763",
+    "fixtures/language_growth/cases/08_revoked_cached_policy.json": "fde5c5f37f678b3174a400b2e07a1d10e412ee9da3517a97e21f0fa6c260a80b",
+    "fixtures/language_growth/cases/09_currency_mismatch.json": "6c75fb834a29b433ccbc864eb136815826262b8d8c27e8daf667cf6d1c5a9d72",
+    "fixtures/language_growth/cases/10_time_scope_mismatch.json": "4c0802884da581ad92f4956ba7984c2cf5c5f7c07b5ac7a2534964aec50ce03d",
+    "fixtures/language_growth/cases/11_conflicting_premises.json": "683f4833fab1c41702bf6525f472de43a93c1345683cd21f581685ab2a6532df",
+    "fixtures/language_growth/cases/12_belief_authority_escalation.json": "697cf34ca675cca90287cd37eb732376cdb49c424fa5046f2d3e49528c7a370b",
+    "fixtures/language_growth/cases/13_source_role_injection.json": "3ad05148989fa63086c2df6c9d1f5aa7baeb6763613b5a956e35301bb12bae02",
+    "fixtures/language_growth/cases/14_supported_but_wrong_question.json": "93796ee8f69e7b61b0dfe1f556b38b4c92ba7fe4e1b9c5a904b4d72489c4763a",
+    "fixtures/language_growth/cases/15_private_conditioned_selection.json": "59621ad80806aa56c5f6150f545016aabb6ac1e3624e664caaff11c2afd7541f",
+    "fixtures/language_growth/cases/16_necessary_ask.json": "2c1a043a090be8c9847cba17fb2d7d7a77069887708fad8d02a8369ce55b4076",
+    "fixtures/language_growth/cases/17_avoidable_ask.json": "91d200b11a3857174933378a5327c759c2332228547cb41074a3b442bf88fa2f",
+    "fixtures/language_growth/cases/18_one_bounded_repair.json": "ee7c377614bad66ee32ad67bc983c20cdaee18bcfd1b0fe6eeed500b41f1ac1f",
+    "fixtures/language_growth/cases/19_repair_budget_exhausted.json": "58bd03618712af303f8b1c3cdf4ce9a57c2609bcb366e4a2d6ba5ebb8fa89576",
+    "fixtures/language_growth/cases/20_unknown_operation_and_text.json": "e0b26915e66c503272ff3f934f938e12187ea727ea9db333f4c1b3ddc784fd4f",
+    "fixtures/language_growth/cases/21_arbitrary_text_assertion.json": "b0a175c629a35cd51b27386d9b799ca46bb02ce089122135a68c2946a0a04f3f",
+    "fixtures/language_growth/cases/22_unknown_reference.json": "88e2153f2921fe68804ce2d27b6501156178a0a1736d85b8c411ea3a7c061770",
+    "fixtures/language_growth/cases/23_forbidden_dependency.json": "ca6d9246c4c5d94f2252d9ca3f8df94932680b293cd9459ea0dae01e6fac83e4",
+    "fixtures/language_growth/cases/24_exceeded_limit.json": "86c7f2a955f7ddbd732e094b0d2ab521468e179c9f1c2c98d7bc2143125628e0",
+    "fixtures/language_growth/catalog.json": "13e68c042e8d1b13e8ecbd1e150bddb812ea1a57bc1296b2ea128e48a759d8ce",
+    "fixtures/language_growth/manifest.json": "cad3cc52a8a317bb61de11798302f053c018d77d8d700c4b6cc3be7411f0dae8"
+  },
+  "seed": "none; deterministic authored fixtures",
+  "runs_per_command": 1,
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "billed_cost_usd": 0,
+  "raw_predictions": null,
+  "supersedes": "2026-10-06-L-fixture-review-revision (missing committed contract dependency)",
+  "scope": "standalone packaging reproduction only; no kernel/model result"
+}

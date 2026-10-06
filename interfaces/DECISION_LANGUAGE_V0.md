@@ -1,6 +1,6 @@
-# Decision to language interface version 0.1
+# Decision to language interface version 0.1.1
 
-6 October 2026. Status: version-zero core accepted by Claude in `coordination/CLAUDE_RESPONSE_TO_CODEX_HANDOFF.md`; this 0.1 clarification incorporates its optional fields and audit repairs, pending final cross-review. No implementation or compatibility certification is implied. The filename is retained for links. This boundary lets language development proceed without assuming Q9-AF, RWKV, Mamba or any hidden-state layout has already won.
+6 October 2026. Version 0.1 was cross-reviewed and merged in PR #4. Patch profile 0.1.1 closes the model-authored node-ID prose channel: node identifiers have a restricted lexical form and released derivations contain kernel-assigned integer ordinals. This patch is pending cross-review. The D request/response envelope remains `ssdm.decide.v0.1`, and semantic program syntax retains `ssdm.semantic_program.v0.1`; the patch tightens validation and the normalized derivation representation. Planned provenance remains a separate 0.2 extension.
 
 ## Responsibilities
 
@@ -95,7 +95,7 @@ The initial registry declares functional fields and quantity kinds. Conflicting 
 
 ## Initial semantic operations
 
-Programs are acyclic graphs in topological order, at most eight nodes in the first learned pilot. Every argument refers to a prior node, host record, or a host-declared query constant. Free strings are not assertion arguments.
+Programs are acyclic graphs in topological order, at most eight nodes in the first learned pilot. Node IDs must match ASCII `n[0-9]{1,3}` and be unique; they are graph references, not prose slots. Normalized `SpeechAct.derivation` contains only positive integer ordinals assigned by the kernel from one-based positions in the submitted node list. Renderers display these ordinals, never model-chosen IDs. Renaming valid IDs cannot change the released explanation. Every argument refers to a prior node, host record, or a host-declared query constant. Free strings are not assertion arguments.
 
 | Operation | Inputs | Checked result |
 | --- | --- | --- |

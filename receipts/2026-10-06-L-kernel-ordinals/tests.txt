@@ -1,0 +1,25 @@
+test_all_nodes_checked_even_if_not_output (language_growth.tests.test_kernel.KernelTests.test_all_nodes_checked_even_if_not_output) ... ok
+test_ask_and_conjunction_explanation (language_growth.tests.test_kernel.KernelTests.test_ask_and_conjunction_explanation) ... ok
+test_bool_not_numeric_and_quantity_kind (language_growth.tests.test_kernel.KernelTests.test_bool_not_numeric_and_quantity_kind) ... ok
+test_bound_fact_and_exact_comparison (language_growth.tests.test_kernel.KernelTests.test_bound_fact_and_exact_comparison) ... ok
+test_fixture_boundaries (language_growth.tests.test_kernel.KernelTests.test_fixture_boundaries) ... ok
+test_host_constant_exact_comparison (language_growth.tests.test_kernel.KernelTests.test_host_constant_exact_comparison) ... ok
+test_nested_conjunction_checks_all_scopes (language_growth.tests.test_kernel.KernelTests.test_nested_conjunction_checks_all_scopes) ... ok
+test_nonfinite_decimal_and_conflicting_active_values (language_growth.tests.test_kernel.KernelTests.test_nonfinite_decimal_and_conflicting_active_values) ... ok
+test_private_record_cannot_enter_public_snapshot_or_affect_conflict (language_growth.tests.test_kernel.KernelTests.test_private_record_cannot_enter_public_snapshot_or_affect_conflict) ... ok
+test_release_rechecks_authority_and_meaning (language_growth.tests.test_kernel.KernelTests.test_release_rechecks_authority_and_meaning) ... ok
+test_source_admission_and_registry_predicate_are_host_owned (language_growth.tests.test_kernel.KernelTests.test_source_admission_and_registry_predicate_are_host_owned) ... ok
+test_strict_graph_validation (language_growth.tests.test_kernel.KernelTests.test_strict_graph_validation) ... ok
+test_checked_meaning_is_not_aliased_to_mutable_inputs (language_growth.tests.test_kernel_adversarial.KernelAdversarialTests.test_checked_meaning_is_not_aliased_to_mutable_inputs) ... ok
+test_derivation_contains_kernel_ordinals_not_model_ids (language_growth.tests.test_kernel_adversarial.KernelAdversarialTests.test_derivation_contains_kernel_ordinals_not_model_ids) ... ok
+test_empty_graph_unknown_style_and_non_ascii_decimal_are_explicit (language_growth.tests.test_kernel_adversarial.KernelAdversarialTests.test_empty_graph_unknown_style_and_non_ascii_decimal_are_explicit) ... ok
+test_kernel_does_not_credit_irrelevant_supported_answers (language_growth.tests.test_kernel_adversarial.KernelAdversarialTests.test_kernel_does_not_credit_irrelevant_supported_answers) ... ok
+test_malformed_reference_types_fail_without_values_in_reason (language_growth.tests.test_kernel_adversarial.KernelAdversarialTests.test_malformed_reference_types_fail_without_values_in_reason) ... ok
+test_missing_record_and_unregistered_field_are_distinct_diagnostics (language_growth.tests.test_kernel_adversarial.KernelAdversarialTests.test_missing_record_and_unregistered_field_are_distinct_diagnostics) ... ok
+test_node_ids_cannot_carry_prose_into_checked_derivations (language_growth.tests.test_kernel_adversarial.KernelAdversarialTests.test_node_ids_cannot_carry_prose_into_checked_derivations) ... ok
+test_repair_feedback_cannot_probe_hidden_record_existence (language_growth.tests.test_kernel_adversarial.KernelAdversarialTests.test_repair_feedback_cannot_probe_hidden_record_existence) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.016s
+
+OK
