@@ -76,6 +76,22 @@ class ScriptedProvider:
 
 
 class PlannerTests(unittest.TestCase):
+    def test_unsupported_calibration_kinds_fail_before_provider_call(self):
+        item = case(1)
+        for kind in ("feature_temperature", "future_temperature"):
+            with self.subTest(kind=kind):
+                config = copy.deepcopy(EXPECTED_CONFIG)
+                config["calibration"]["kind"] = kind
+                fake = ScriptedProvider([])
+                result = plan_checked_answer(
+                    item["question"], item["host"], catalog(), fake,
+                    model="scripted", parent_revision=REVISION,
+                    expected_served_config=config,
+                )
+                self.assertEqual((result.status, result.reason, result.provider_calls),
+                                 ("precondition_failed", "unsupported_calibration", 0))
+                self.assertEqual(fake.requests, [])
+
     def test_parent_chosen_read_and_no_label_input(self):
         item = case(1)
         host = copy.deepcopy(item["host"])

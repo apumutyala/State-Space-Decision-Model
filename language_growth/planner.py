@@ -211,6 +211,9 @@ class _Session:
                 or not isinstance(expected_served_config["policy_masking"], str)
                 or not expected_served_config["policy_masking"]):
             raise PlannerFailure("precondition_failed", "invalid_served_config_pin")
+        # L can recompute only this declared formula from its own option set.
+        if expected_served_config["calibration"].get("kind") != "option_count_temperature":
+            raise PlannerFailure("precondition_failed", "unsupported_calibration")
         try:
             self.expected_served_config = json.loads(json.dumps(expected_served_config, allow_nan=False))
         except (TypeError, ValueError, OverflowError):

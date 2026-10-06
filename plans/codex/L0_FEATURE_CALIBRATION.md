@@ -76,3 +76,12 @@ otherwise a pinned ID can name two behaviors or an `Infinity` temperature.
 The cheap path for the first probe is to keep identity or option-count
 calibration and pin D's reported config/revision as today. Feature temperature
 can be evaluated within Track D while the joint feature diagnostic is reviewed.
+
+## Interim CPU guard
+
+L now rejects caller-pinned `feature_temperature` and unknown calibration kinds
+at `_Session` preflight with `precondition_failed/unsupported_calibration` and
+zero provider calls. The existing option-count path is unchanged. On this
+branch, `python -m unittest language_growth.tests.test_planner
+language_growth.tests.test_integration_replay -q` passed 24 CPU tests. This
+guard is a boundary clarification, not feature-temperature support.
