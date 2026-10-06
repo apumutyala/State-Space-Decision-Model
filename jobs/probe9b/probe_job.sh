@@ -71,6 +71,8 @@ assert torch.cuda.is_available()
 import decision_index  # noqa: F401  (kit pinned in the image)
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0), **got}))
 EOF
+# fla #640 guard: Hopper + Triton < 3.7.1 (or a non-Triton fla backward) -> exit 5 here, before any GPU phase.
+python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
 CAP_SETUP=$(cap setup) && CAP_W=$(cap weights) && CAP_P=$(cap P) && CAP_IS=$(cap I_stock) && CAP_IC=$(cap I_conv) \
   && CAP_S=$(cap S) || fail 5 "job_params"
 DEADLINE=$(python -c "import json;print(json.load(open('$PARAMS'))['pipeline_deadline_minutes'])") || fail 5 "job_params"

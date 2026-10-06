@@ -6,7 +6,7 @@ training happens in this job. The parent is served the way m0/m1 serve it: the s
 (`decide.backends.hf_readout`) through `decide.Decider`, with the identity calibration.
 
 **Why it is a separate job.** The parent is frozen, so its units are the same for every cell. Without the cache,
-every cell would score them again. Each arm costs about 25.7 M tokens, so the cache halves each cell's eval volume.
+every cell would score them again. Each arm costs about 25.2 M tokens, so the cache halves each cell's eval volume.
 
 ## Units (identical to the child's: `train.m2_gates.score_stage` scores both arms)
 
@@ -45,22 +45,24 @@ Token volume (RWKV7-G1k tokenizer; every question row of every role record; Inde
 
 | Stage | Tokens |
 |---|---|
-| g12 | dev 3.49 M + steer 5.38 M = **8.87 M** |
-| g13 | retention 6.69 M + steer 5.43 M + Index DEV 4.74 M = **16.86 M** |
+| g12 | dev 3.89 M + steer 5.38 M = **9.27 M** |
+| g13 | retention 5.72 M + steer 5.43 M + Index DEV 4.74 M = **15.89 M** |
+
+Measured on cohort v2 (`VOLUME_COHORT_SHA256`; a test fails if the cohort changes without re-measuring).
 
 Projected cost by prefill rate (+ 35 min fixed: build, setup, finalize):
 
 | Prefill tok/s (measured in stage A / probe9b) | g12 min | g13 min | total min | $ |
 |---|---|---|---|---|
-| 2,500 | 59 | 112 | 206 | 10.22 (over the 150-min scoring cap → exit 15, re-price) |
-| 5,000 | 30 | 56 | 121 | 5.98 |
-| 10,000 | 15 | 28 | 78 | 3.85 |
-| 20,000 | 7 | 14 | 56 | 2.79 |
+| 2,500 | 62 | 106 | 203 | 10.04 (over the 150-min scoring cap → exit 15, re-price) |
+| 5,000 | 31 | 53 | 119 | 5.88 |
+| 10,000 | 15 | 26 | 77 | 3.81 |
+| 20,000 | 8 | 13 | 56 | 2.77 |
 
 The volumes are upper bounds: records whose questions are all filtered out by K/T still count.
 
-The child arm in `jobs/m2_pilot` has the same volume. At its 50-minute evals cap it needs ≥ ~9,000 tok/s. Below
-that rate, run G12 inside the cell and G13 as its own gate job (`train.m2_gates --stage g13`, same caching rules),
+The child's evals phase in `jobs/m2_pilot` is larger than the arm alone: arm + temperature fit + dev card =
+32.5 M tokens. At its 50-minute cap it needs ≥ ~11,420 tok/s (`--mode child`). Below that rate, run G12 inside the cell and G13 as its own gate job (`train.m2_gates --stage g13`, same caching rules),
 and price it with the same `estimate`.
 
 ## Before submit

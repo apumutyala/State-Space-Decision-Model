@@ -25,25 +25,46 @@ import sys
 from pathlib import Path
 from typing import Any, Sequence
 
-#: Token volumes per stage, measured 2026-10-06 on the committed cohort with the RWKV7-G1k tokenizer (every question
-#: row of every role record; steer units clean + D1 variants; Index DEV = the subset's kit proxy tokens x READ_FACTOR 2).
+#: Token volumes per stage, measured 2026-10-06 on cohort v2 (``VOLUME_COHORT_SHA256``) with the RWKV7-G1k tokenizer.
+#: Upper bounds: every question row of every role record (records whose rows the K/T filter drops still count), steer
+#: units = clean + D1 variants, Index DEV = the subset's kit proxy tokens x READ_FACTOR 2.
+VOLUME_COHORT_SHA256 = "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2"
 VOLUME_TOKENS = {
-    "g12": {"dev_records": 3_487_676, "steer_dev_units": 5_378_738},
-    "g13": {"retention_records": 6_688_286, "steer_gate_units": 5_430_015, "index_dev_subset": 2 * 2_370_062},
+    "g12": {"dev_records": 3_887_640, "steer_dev_units": 5_378_738},
+    "g13": {"retention_records": 5_724_231, "steer_gate_units": 5_430_015, "index_dev_subset": 2 * 2_370_062},
 }
+#: What the CHILD evals phase scores on top of its arm (PR #29 round-2 review B4): the temperature fit forwards every
+#: calibration item and the eval card forwards every dev item (prefix + every option continuation, all labelled
+#: items, no K/T filter: upper bounds), same cohort / tokenizer.
+CHILD_EXTRA_TOKENS = {"calibration_fit": 3_393_271, "dev_card": 3_993_020}
 USD_PER_MIN = 0.0495  # SF H100 batch rate (jobs/DECISION_TREE.md)
 FIXED_MIN = 35  # build 15 + setup/download/verify 15 + finalize 5 (expected, rwkv7 stage-A measured shape)
 
 
-def estimate(tok_s: float, stages: Sequence[str] = ("g12", "g13"), fixed_min: float = FIXED_MIN) -> dict[str, Any]:
-    """Projected minutes / $ at a MEASURED prefill rate (no number here is a measurement of the parent)."""
+def estimate(tok_s: float, stages: Sequence[str] = ("g12", "g13"), fixed_min: float = FIXED_MIN,
+             mode: str = "parent") -> dict[str, Any]:
+    """Projected minutes / $ at a MEASURED prefill rate (no number here is a measurement of the model).
+    ``mode="parent"``: the cached parent arm only. ``mode="child"``: the m2_pilot evals phase = the child's arm PLUS
+    the temperature fit over the calibration items and the dev eval card (``CHILD_EXTRA_TOKENS``)."""
     if not tok_s > 0:
         raise ValueError("tok_s must be a positive measured rate")
+    if mode not in ("parent", "child"):
+        raise ValueError(mode)
     per = {s: sum(VOLUME_TOKENS[s].values()) for s in stages}
+    if mode == "child":
+        per.update(CHILD_EXTRA_TOKENS)
     minutes = {s: n / tok_s / 60 for s, n in per.items()}
     total = sum(minutes.values()) + fixed_min
-    return {"tok_s": tok_s, "tokens": per, "score_minutes": minutes, "total_minutes": total,
-            "usd": round(total * USD_PER_MIN, 2), "fixed_minutes": fixed_min, "usd_per_min": USD_PER_MIN}
+    return {"tok_s": tok_s, "mode": mode, "tokens": per, "total_tokens": sum(per.values()),
+            "score_minutes": minutes, "total_minutes": total, "usd": round(total * USD_PER_MIN, 2),
+            "fixed_minutes": fixed_min, "usd_per_min": USD_PER_MIN, "volume_cohort_sha256": VOLUME_COHORT_SHA256}
+
+
+def min_tok_s(cap_min: float, mode: str = "child", stages: Sequence[str] = ("g12", "g13"),
+              fixed_min: float = 0.0, headroom: float = 0.95) -> float:
+    """The smallest measured rate the preflight accepts for ``cap_min`` (same 95% headroom rule)."""
+    tokens = estimate(1.0, stages, 0.0, mode)["total_tokens"]
+    return tokens / ((headroom * cap_min - fixed_min) * 60)
 
 
 def score_parent_arm(*, stages: Sequence[str], cohort, spec: dict, decide, steer, items_by_role: dict,
@@ -99,8 +120,10 @@ def main(argv=None) -> int:
         ap.add_argument("--cap-min", type=float, default=None)
         ap.add_argument("--fixed-min", type=float, default=FIXED_MIN,
                         help="non-scoring minutes to add (0 for a scoring phase inside a running job)")
+        ap.add_argument("--mode", choices=["parent", "child"], default="parent",
+                        help="child = the m2_pilot evals phase (arm + temperature fit + dev card)")
         a = ap.parse_args(argv[1:])
-        est = estimate(a.tok_s, fixed_min=a.fixed_min)
+        est = estimate(a.tok_s, fixed_min=a.fixed_min, mode=a.mode)
         print(json.dumps(est, indent=1))
         return 15 if a.cap_min is not None and est["total_minutes"] > 0.95 * a.cap_min else 0
     ap = argparse.ArgumentParser(prog="python -X utf8 -m jobs.m2_parent_arm.score_parent")
