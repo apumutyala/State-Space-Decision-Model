@@ -71,11 +71,14 @@ def test_probes_dry_run(tmp_path, mock_load):
     assert res["g2b_chatml_spoof"]["ssdm_control_ids_from_request"] == 0
 
 
-def test_runner_refuses_test_split_before_d1b_amendment(tmp_path, mock_load):
+def test_runner_refuses_test_split_before_d1b_amendment(tmp_path, mock_load, monkeypatch):
     from safety_eval import attacks
 
-    if len(attacks.D1_TEMPLATES_B) >= R.PREREG_D1B_MIN_TEMPLATES:
-        pytest.skip("amendment landed; gate open")
+    # the k=8 amendment is on agent-main; the gate must be open for it ...
+    assert len(attacks.D1_TEMPLATES_B) >= R.PREREG_D1B_MIN_TEMPLATES
+    assert R.d1b_identity()["n_templates"] == len(attacks.D1_TEMPLATES_B)
+    # ... and must still close whenever fewer B templates exist than the PREREG requires
+    monkeypatch.setattr(R, "PREREG_D1B_MIN_TEMPLATES", len(attacks.D1_TEMPLATES_B) + 1)
     for extra in (["--split", "test"], ["--final"]):
         assert R.main(["--model-dir", "unused", "--out", str(tmp_path), "--device", "cpu", *extra]) == 32
     assert not (tmp_path / "summary.json").exists()

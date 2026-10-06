@@ -136,11 +136,26 @@ def test_option_order_invariant_question_order_recorded(jsm, model):
 
 def test_policy_restriction_is_separate_from_served(jsm, model):
     req = base_request()
-    req["ssdm"] = {"schema": "ssdm.decide.v0", "policy_restriction": {"status": ["paid", "draft"]}}
+    from decide import versions
+
+    req["ssdm"] = {"schema": versions.ENVELOPE_SCHEMA, "policy_restriction": {"status": ["paid", "draft"]}}
     ss = _decider(jsm, model).decide(req)["ssdm"]
-    pcp = ss["policy_conditioned_probabilities"]["status"]["probabilities"]
-    assert set(pcp) == {"paid", "draft"} and abs(sum(pcp.values()) - 1) < 1e-9
-    assert set(ss["served_probabilities"]["status"]) == {"paid", "overdue", "draft"}
+    assert ss["status"] == "ok"
+    stage = ss["policy_conditioned_probabilities"]["status"]
+    pcp = stage["probabilities"]
+    served = ss["served_probabilities"]["status"]
+    # contract 0.1: stage over all supplied options, zero outside the allowed set, renormalised inside it
+    assert stage["status"] == "ok" and sorted(stage["allowed"]) == ["draft", "paid"]
+    assert set(pcp) == {"paid", "overdue", "draft"} and pcp["overdue"] == 0.0
+    assert abs(pcp["paid"] + pcp["draft"] - 1) < 1e-9
+    mass = served["paid"] + served["draft"]
+    assert abs(pcp["paid"] - served["paid"] / mass) < 1e-12
+    assert abs(stage["excluded_served_mass"] - served["overdue"]) < 1e-12
+    # served and raw are never replaced by the conditioned stage
+    assert set(served) == {"paid", "overdue", "draft"} and served["overdue"] > 0
+    assert ss["raw_probabilities"]["status"] == served  # identity calibration
+    # questions without a restriction get no conditioned stage
+    assert set(ss["policy_conditioned_probabilities"]) == {"status"}
 
 
 # ------------------------------------------------------------------------------- G8 / G2(b) differences

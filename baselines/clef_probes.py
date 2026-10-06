@@ -59,9 +59,9 @@ def main(argv=None) -> int:
     # 2. encodings over every DEV row (tokenizer only). The native arm must cover EVERY row where the decide
     #    path does not run the same forward Clef would: ids differ, Clef truncates, our encoder refuses, or the
     #    adapter rejects before scoring (validate_legacy: >255 options, 1-level score, noul criteria keys, ids
-    #    with control chars / '<|' '|>'; or more than DEFAULT_LIMITS max_choices questions).
+    #    with control chars / '<|' '|>'; or DEFAULT_LIMITS max_questions / max_options_per_question).
     from decide.adapter import DEFAULT_LIMITS
-    from decide.schema import RequestRejected, validate_legacy
+    from decide.schema import RequestRejected, canonical_options, validate_legacy
 
     rows = list(read_rows(a.dev_rows))
     differ, trunc, refused, over255, same, rejected = [], [], [], [], [], []
@@ -70,10 +70,12 @@ def main(argv=None) -> int:
             print(f"[probes] encodings {n_done}/{len(rows)}", flush=True)
         rid = r["_evaluation"]["run_id"]
         req = {"model": a.release, "state": r["state"], "questions": r["questions"]}
-        try:
+        try:  # same order and codes as Decider.decide (contract 0.1)
             validate_legacy(req)
-            if len(req["questions"]) > DEFAULT_LIMITS["max_choices"]:
-                raise RequestRejected("exhausted", "choices_exceeded", "too many questions")
+            if len(req["questions"]) > DEFAULT_LIMITS["max_questions"]:
+                raise RequestRejected("exhausted", "questions_exceeded", "too many questions")
+            if max(len(canonical_options(q)) for q in req["questions"].values()) > DEFAULT_LIMITS["max_options_per_question"]:
+                raise RequestRejected("exhausted", "options_exceeded", "too many options")
         except RequestRejected as exc:
             rejected.append({"run_id": rid, "status": exc.status, "code": exc.code})
         try:
@@ -103,7 +105,7 @@ def main(argv=None) -> int:
                         "over_255_options": over255, "decide_rejected_before_scoring": rejected}
     native_rows = sorted(set(differ) | trunc_ids | set(refused) | set(over255) | rej_ids)
     out["native_arm_rule"] = ("union of: ids differ, Clef truncates, ssdm encoder refuses, >255 options, adapter "
-                              "rejects before scoring (validate_legacy / max_choices); every other row runs identical "
+                              "rejects before scoring (validate_legacy / max_questions / max_options_per_question); every other row runs identical "
                               "ids through the identical forward, so its native output equals the decide output")
     rng = random.Random(a.seed)
     parity_ids = sorted(rng.sample(same, min(a.n_parity, len(same))))

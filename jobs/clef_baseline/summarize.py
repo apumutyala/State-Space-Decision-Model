@@ -37,7 +37,7 @@ def composite(a) -> int:
     side = {"decide": a.decide, "decide_sha256": sha(Path(a.decide)), "native": a.native,
             "native_sha256": sha(Path(a.native)), "replaced_run_ids": sorted(set(nat) & {r["run_id"] for r in dec}),
             "rule": "rows in probes.native_arm_run_ids use Clef's own systemone: ids differ, Clef truncates, ssdm encoder "
-                    "refuses, >255 options, or the adapter rejects before scoring (validate_legacy / max_choices)"}
+                    "refuses, >255 options, or the adapter rejects before scoring (validate_legacy / max_questions / max_options_per_question)"}
     if a.probes and Path(a.probes).exists():
         enc = json.loads(Path(a.probes).read_text(encoding="utf-8")).get("encodings", {})
         side["categories"] = {k: (len(v) if isinstance(v, list) else v) for k, v in enc.items()}
