@@ -1,0 +1,7 @@
+test_oracle_recordings_replay_same_checked_meaning_and_miss_on_change (language_growth.tests.test_integration_replay.ReplayIntegrationTests.test_oracle_recordings_replay_same_checked_meaning_and_miss_on_change) ... ok
+test_scaled_replay_logits_preserve_program_but_fail_probability_equivalence (language_growth.tests.test_integration_replay.ReplayIntegrationTests.test_scaled_replay_logits_preserve_program_but_fail_probability_equivalence) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.174s
+
+OK

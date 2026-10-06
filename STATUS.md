@@ -13,8 +13,8 @@
 
 ## Track L — SSM-Language (owner: codex)
 - Interface, corrected fixture pack and repaired semantic kernel/profile0.1.1 are merged (#4, #5, #10). These are CPU prerequisites, not learned-level gates.
-- Track D approved the ordinal-only renderer in #11. This branch integrates the merged dependencies and rechecks unchanged renderer code before integration.
-- Planner and development evaluation remain in cross-review/integration; no paid run or learned L0-L4 gate has passed.
+- Track D approved the ordinal-only renderer in #11; it is now merged. L0d2 planner is updated to D's v0.1 envelope and pinned configuration/identity checks. Unsupported host policy restrictions fail before any provider call.
+- The planner's CPU receipts use scripted providers and the actual D adapter with an oracle/replay backend. They demonstrate transport and boundary behavior, not learned capability. Development evaluation remains in cross-review/integration; no GPU, paid run, or learned L0–L4 gate has passed.
 
 ## Open decisions for the user
 - SF Compute credit expiry date.
