@@ -147,6 +147,14 @@ are in `language_growth/typed_emission_ssm_analysis.py`. Machine receipts,
 registration, and paired analysis are tracked under
 `language_growth/receipts/typed_emission_ssm_20261006/`.
 
+All 1080 raw predictions/programs/kernel results/renderings are also committed
+as [predictions.json.gz](receipts/typed_emission_ssm_20261006/predictions.json.gz).
+Decompressing this file reproduces the original prediction bytes and the raw
+prediction SHA-256 below. The archive checksum and byte counts are recorded in
+`raw_artifact_manifest.json` beside it; the directory's README gives a
+standard-library verification command. This archive was added for independent
+Git review without rerunning training or changing any metrics.
+
 Full local artifacts are preserved under
 `C:/Users/apumu/research/CHLabs/review-artifacts/l0-typed-emission-ssm-20261006/`:
 frozen rows (including reference programs and permitted states), all 1080 raw
@@ -165,4 +173,5 @@ The third checkpoint hash and all dependency source hashes are in the machine
 receipt. To reproduce, set `CUDA_VISIBLE_DEVICES=-1`, `OMP_NUM_THREADS=2`,
 `MKL_NUM_THREADS=2`; run the module's `prepare` followed by `run` against a new
 output directory. Use the preserved directory for analysis replay only, since
-training replay would overwrite checkpoint artifacts. No PR was opened.
+training replay would overwrite checkpoint artifacts. The diagnostic preceded
+PR #80; its subsequent raw-artifact addition preserves the original run.

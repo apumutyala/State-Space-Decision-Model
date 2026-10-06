@@ -1,0 +1,11 @@
+{
+  "artifact": "predictions.json.gz",
+  "compressed_bytes": 60001,
+  "compressed_sha256": "ef823f038bd48524fdb69896b1fc34331b373147d2d67c18d773bba941e602ae",
+  "compression": "gzip; mtime=0; original bytes preserved",
+  "decompressed_bytes": 1971627,
+  "decompressed_sha256": "69392556a2f2f786e5126f5a8d0e02488882815b56966f5f3f191d52ed183e30",
+  "observation_count": 1080,
+  "receipt_hash_field": "receipt.json:raw_predictions_sha256",
+  "seed_count": 3
+}
