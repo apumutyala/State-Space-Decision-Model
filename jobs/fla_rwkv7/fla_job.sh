@@ -6,7 +6,8 @@
 #   throughput -> decide (pre-registered rule, jobs/fla_rwkv7/fla_equivalence.py:decide)
 # Exit codes: 0 measured + decided + exports verified   5 setup (pins, fla install, fla #640 guard)   6 export failed
 #   7 phase timeout   9 decision missing/invalid   10 snapshot / vendored code mismatch or download failed
-#   31 kernel phase crashed   32 fork phase crashed   33 model phase crashed   34 throughput phase crashed
+#   30 warmup (fla compile) crashed   31 kernel phase crashed   32 fork phase crashed   33 model phase crashed
+#   34 throughput phase crashed. The optional fp32 phase (last, only with time left) never changes the exit code.
 #   1 finalize failed. Every verdict (ADOPT ... REJECT_NUMERICS, INCONCLUSIVE) is a successful run (exit 0).
 # The marker /output/FLA_RWKV7_DONE is written ONLY by jobs/common/finalize.py, and only when its final code is 0.
 set -Euo pipefail
@@ -22,6 +23,9 @@ HB_EVERY_S=60 STALL_S=600
 WATCH_EXTRA=$WORK
 mkdir -p "$OUT/phases" "$WORK/out" "$WORK/logs" "$CK"
 export PYTHONUNBUFFERED=1 PYTHONUTF8=1 FLA_TILELANG=0
+# one Triton cache for every phase process: kernels compiled + autotuned (fla cache_results=True) once in warmup are
+# reused by kernel/fork/model/throughput (job-4idg4 lost its kernel phase to first-call compiles)
+export TRITON_CACHE_DIR=$WORK/triton-cache
 HF_DIR=${HF_HUB_CACHE:-${HF_HOME:-$HOME/.cache/huggingface}}
 mkdir -p "$HF_DIR"
 T0=$(date +%s)
@@ -75,18 +79,23 @@ EOF
 # fla #640 guard: Hopper + Triton < 3.7.1 (or a non-Triton fla backward) -> exit 5 here, before any GPU phase.
 python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
 gate "setup" 0
-CAP_K=$(cap kernel) && CAP_F=$(cap fork) && CAP_DL=$(cap download_wait) && CAP_M=$(cap model) && CAP_T=$(cap throughput) \
+CAP_W=$(cap warmup) && CAP_K=$(cap kernel) && CAP_F=$(cap fork) && CAP_DL=$(cap download_wait) && CAP_M=$(cap model) && CAP_T=$(cap throughput) \
   || fail 5 "job_params"
 
 # weights download overlaps the two weight-free phases (network vs GPU)
-( timeout $(( CAP_K + CAP_F + CAP_DL ))m python - > "$WORK/snap_path" 2> "$WORK/logs/download.log" <<'EOF'
+( timeout $(( CAP_W + CAP_K + CAP_F + CAP_DL ))m python - > "$WORK/snap_path" 2> "$WORK/logs/download.log" <<'EOF'
 from huggingface_hub import snapshot_download
 print(snapshot_download("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))
 EOF
 ) & DL_PID=$!
 export_phase setup
 
-say "phase kernel (synthetic, real head shapes; fwd T=2048/1000, grads T=512; bf16 + fp32)"
+say "phase warmup (fla JIT compile + autotune, bf16, both variants, state/packed x fwd/bwd)"
+timeout ${CAP_W}m python -m jobs.fla_rwkv7.fla_equivalence warmup --out "$WORK/out" > "$WORK/logs/warmup.log" 2>&1; r=$?
+gate "warmup" $r; export_phase warmup
+case $r in 0) ;; 124) fail 7 "warmup timeout" ;; *) fail 30 "warmup rc=$r" ;; esac
+
+say "phase kernel (synthetic, real head shapes; fwd T=2048/1000, grads T=512/24; bf16)"
 timeout ${CAP_K}m python -m jobs.fla_rwkv7.fla_equivalence kernel --out "$WORK/out" > "$WORK/logs/kernel.log" 2>&1; r=$?
 gate "kernel" $r; export_phase kernel
 case $r in 0) ;; 124) fail 7 "kernel timeout" ;; *) fail 31 "kernel rc=$r" ;; esac
@@ -115,6 +124,18 @@ timeout ${CAP_T}m python -m jobs.fla_rwkv7.fla_equivalence throughput --out "$WO
   > "$WORK/logs/throughput.log" 2>&1; r=$?
 gate "throughput" $r; export_phase throughput
 case $r in 0) ;; 124) fail 7 "throughput timeout" ;; *) fail 34 "throughput rc=$r" ;; esac
+
+# optional fp32 (only sets allow_fp32): runs only if it can finish before max_duration minus the reserve; a timeout or
+# crash here is recorded and does not change the exit code (missing fp32 -> allow_fp32 false)
+MAXD=$(python -c "import json,sys;p=json.load(open(sys.argv[1]));print(p['max_duration_minutes']-p['reserve_minutes'])" "$PARAMS")
+LEFT_S=$(( MAXD * 60 - ($(date +%s) - T0) - 30 ))
+if [ "$LEFT_S" -ge 90 ]; then
+  say "phase fp32 (optional; ${LEFT_S}s left)"
+  timeout ${LEFT_S}s python -m jobs.fla_rwkv7.fla_equivalence fp32 --out "$WORK/out" > "$WORK/logs/fp32.log" 2>&1; r=$?
+  gate "fp32" $r; export_phase fp32
+else
+  say "phase fp32 skipped (${LEFT_S}s left)"
+fi
 
 python -m jobs.fla_rwkv7.fla_equivalence decide --out "$WORK/out" > "$WORK/logs/decision.log" 2>&1 || fail 9 "decision"
 say "decision: $(cat "$WORK/logs/decision.log")"

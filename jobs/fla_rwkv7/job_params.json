@@ -1,5 +1,5 @@
 {
- "_comment": "jobs/fla_rwkv7: fla chunk_rwkv7 vs eager WKV equivalence + throughput gate on RWKV7-G1k-13.3B. Spec only, NOT submitted. Checked by tests/test_fla_rwkv7.py.",
+ "_comment": "jobs/fla_rwkv7: fla chunk_rwkv7 vs eager WKV equivalence + throughput gate on RWKV7-G1k-13.3B. Spec only, NOT submitted. Checked by tests/test_fla_rwkv7.py. job-4idg4 (exit 7, kernel timeout): first-call fla compiles moved into a capped warmup phase; fp32 moved to an optional last phase.",
  "job": "fla-rwkv7-gate",
  "chip": "h100",
  "chip_count": 1,
@@ -15,19 +15,21 @@
  "reserve_minutes": 1,
  "phase_caps_minutes": {
   "setup": 2,
-  "kernel": 4,
+  "warmup": 3,
+  "kernel": 3,
   "fork": 2,
-  "download_wait": 3,
+  "download_wait": 2,
   "model": 4,
-  "throughput": 5
+  "throughput": 4
  },
  "expected_minutes": {
-  "setup": 1,
-  "kernel": 2,
+  "setup": 2,
+  "warmup": 2,
+  "kernel": 1,
   "fork": 1,
   "download_wait": 2,
   "model": 3,
-  "throughput": 4
+  "throughput": 3
  },
  "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
  "model_bytes": 26540800536,

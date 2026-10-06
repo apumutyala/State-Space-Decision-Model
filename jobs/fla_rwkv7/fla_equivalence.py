@@ -1,11 +1,21 @@
 """fla ``chunk_rwkv7`` vs the vendored eager WKV: numeric equivalence + throughput gate (jobs/fla_rwkv7). GPU phases.
 
+    python -m jobs.fla_rwkv7.fla_equivalence warmup     --out DIR             # compile + autotune every fla variant once
     python -m jobs.fla_rwkv7.fla_equivalence kernel     --out DIR             # synthetic inputs, real 13.3B head shapes
     python -m jobs.fla_rwkv7.fla_equivalence fork       --out DIR             # decision path: state split / fork / pack / pad
     python -m jobs.fla_rwkv7.fla_equivalence model      --out DIR --model-dir SNAP   # real weights: logits, continuation,
                                                                                # captured real WKV inputs (layers 0/30/60)
     python -m jobs.fla_rwkv7.fla_equivalence throughput --out DIR --model-dir SNAP   # prefill 2k/8k/16k, train fwd+bwd 2k
+    python -m jobs.fla_rwkv7.fla_equivalence fp32       --out DIR             # optional, last: kernel + fork at fp32
     python -m jobs.fla_rwkv7.fla_equivalence decide     --out DIR             # pre-registered rule -> DIR/decision.json
+
+Compile cost (job-4idg4): every new Triton specialisation of fla's DPLR kernels (activation dtype, safe_gate,
+initial state on/off, varlen, backward) is JIT-compiled and autotuned on its first call. In job-4idg4 the bf16 kernel
+cases, including those first calls, took about 3 of the 4 minutes. The first fp32 fla call then compiled a whole new
+set and was still running 62 s later, when the cap hit. ``warmup`` now pays every bf16 compile once, under its own cap
+and timed. Triton's on-disk cache (TRITON_CACHE_DIR, and fla's ``cache_results=True`` autotune cache) carries them to
+the later phases, which are separate processes. fp32 only ever set ``allow_fp32`` and never the verdict, so it runs
+last and only when time is left.
 
 Every phase writes DIR/<phase>.json after each case, so a phase timeout still leaves what it measured. The rule and the
 tolerances below are PRE-REGISTERED (jobs/fla_rwkv7/JOB_SPEC.md quotes them; tests/test_fla_rwkv7.py pins them): do not
@@ -20,6 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import statistics
 import time
 from pathlib import Path
@@ -141,7 +152,7 @@ def _variant_numerics(rep: dict, v: str) -> tuple[bool | None, list[str]]:
 
 
 def _fp32_ok(rep: dict, v: str) -> bool:
-    cases = [c for phase in ("kernel", "fork") for c in (rep.get(phase) or {}).get("cases", [])
+    cases = [c for phase in ("kernel", "fork", "fp32") for c in (rep.get(phase) or {}).get("cases", [])
              if c.get("impl") == v and c.get("dtype") == "float32"]
     return bool(cases) and all(not c.get("error") and case_passes(c.get("worst", {}), "float32") for c in cases)
 
@@ -296,10 +307,11 @@ def truth(x: dict, cu_seq_lens=None) -> dict:
 
 class Report:
     def __init__(self, path: Path, **meta):
-        self.path, self.d = path, {"cases": [], **meta}
+        self.path, self.d, self.t0 = path, {"cases": [], **meta}, time.perf_counter()
         self.flush()
 
     def add(self, case: dict):
+        case.setdefault("t_s", round(time.perf_counter() - self.t0, 2))  # elapsed in the phase when the case ended
         self.d["cases"].append(case)
         self.flush()
 
@@ -331,17 +343,60 @@ def _cmp_case(rep: Report, name: str, dtype_name: str, x: dict, grad: bool, cu=N
     torch.cuda.empty_cache()
 
 
-def phase_kernel(out: Path):
+def phase_warmup(out: Path, dtypes=("bfloat16",)):
+    """Pay fla's JIT compile + autotune once per specialisation the later phases hit: each variant x {initial state +
+    final state, packed varlen without initial state} x {forward, forward+backward} x T in {64, 40}. Autotune keys are block sizes,
+    not T, so a short sequence warms the long ones too. Each first call and a second call are timed (compile cost =
+    first - second)."""
     torch = _torch()
+    rep = Report(out / "warmup.json", env=_env(), triton_cache_dir=os.environ.get("TRITON_CACHE_DIR"))
+    import itertools
+
+    # Triton specialises integer args on divisibility by 16, so warm both kinds of T (the cases use 1000, 1537, ...)
+    for dt, T in itertools.product(dtypes, (64, 40)):
+        x = make_inputs(1, T, getattr(torch, dt), 1)
+        cu = torch.tensor([0, 30, T], device=DEVICE)
+        for impl, grad, packed in itertools.product(VARIANTS, (False, True), (False, True)):
+            case = {"name": f"warm_T{T}_{'packed' if packed else 'state'}_{'bwd' if grad else 'fwd'}",
+                    "impl": impl, "dtype": dt, "diag": True}
+            try:
+                ts = []
+                for _ in range(2):
+                    if DEVICE == "cuda":
+                        torch.cuda.synchronize()
+                    t = time.perf_counter()
+                    run_impl(impl, x, grad, cu if packed else None)
+                    if DEVICE == "cuda":
+                        torch.cuda.synchronize()
+                    ts.append(time.perf_counter() - t)
+                case.update(first_s=ts[0], second_s=ts[1], compile_s=ts[0] - ts[1])
+            except Exception as e:  # noqa: BLE001  recorded; the kernel phase will fail the same call
+                case["error"] = f"{type(e).__name__}: {e}"[:500]
+            rep.add(case)
+
+
+def _kernel_cases(rep: Report, dt: str):
+    torch = _torch()
+    dtype = getattr(torch, dt)
+    for B, T, seed in ((2, 2048, 11), (2, 1000, 12)):  # 1000: not a multiple of any chunk size (padding path)
+        _cmp_case(rep, f"fwd_B{B}_T{T}", dt, make_inputs(B, T, dtype, seed), grad=False, with_truth=True)
+    _cmp_case(rep, "grad_B2_T512", dt, make_inputs(2, 512, dtype, 13), grad=True)
+    # short: d/d(initial state) is still far from zero here (fla's dh0 path, used by every fork)
+    _cmp_case(rep, "grad_B2_T24", dt, make_inputs(2, 24, dtype, 14), grad=True)
+
+
+def phase_kernel(out: Path):
     rep = Report(out / "kernel.json", env=_env())
-    for dt in ("bfloat16", "float32"):
-        dtype = getattr(torch, dt)
-        for B, T, seed in ((2, 2048, 11), (2, 1000, 12)):  # 1000: not a multiple of any chunk size (padding path)
-            _cmp_case(rep, f"fwd_B{B}_T{T}", dt, make_inputs(B, T, dtype, seed), grad=False, with_truth=True)
-        _cmp_case(rep, "grad_B2_T512", dt, make_inputs(2, 512, dtype, 13), grad=True)
-        # short: d/d(initial state) is still far from zero here (fla's dh0 path, used by every fork)
-        _cmp_case(rep, "grad_B2_T24", dt, make_inputs(2, 24, dtype, 14), grad=True)
+    _kernel_cases(rep, "bfloat16")
     _p640(rep)
+
+
+def phase_fp32(out: Path):
+    """Optional and last: the kernel + fork cases at fp32. They only decide ``allow_fp32`` (never the verdict); a
+    missing or partial fp32.json leaves ALLOW_FP32 = False."""
+    rep = Report(out / "fp32.json", env=_env())
+    _kernel_cases(rep, "float32")
+    _fork_cases(rep, "float32")
 
 
 def _p640(rep: Report):
@@ -361,9 +416,12 @@ def _p640(rep: Report):
 def phase_fork(out: Path):
     """The decision path: prefix state -> continuation, K-way fork from one state (grads into the prefix), packed
     rows (cu_seq_lens, incl. a 1-token segment), right padding that must leave the state untouched."""
+    _fork_cases(Report(out / "fork.json", env=_env()), "bfloat16")
+
+
+def _fork_cases(rep: Report, dt: str):
     torch = _torch()
-    rep = Report(out / "fork.json", env=_env())
-    for dt in ("bfloat16", "float32"):
+    for dt in (dt,):
         dtype = getattr(torch, dt)
         # 1) split: impl(x[:P]) -> s ; impl(x[P:], s) == eager(x) on the tail and the final state
         x = make_inputs(1, 1537, dtype, 21)
@@ -658,13 +716,13 @@ def _read(out: Path, name: str):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("phase", choices=("kernel", "fork", "model", "throughput", "decide"))
+    ap.add_argument("phase", choices=("warmup", "kernel", "fork", "model", "throughput", "fp32", "decide"))
     ap.add_argument("--out", required=True)
     ap.add_argument("--model-dir")
     a = ap.parse_args(argv)
     out = Path(a.out)
     if a.phase == "decide":
-        rep = {k: _read(out, k) for k in ("kernel", "fork", "captured", "model", "throughput")}
+        rep = {k: _read(out, k) for k in ("kernel", "fork", "captured", "model", "throughput", "fp32")}
         for k in ("model", "throughput"):
             if rep[k] and not _fla_really_ran(rep[k]):
                 rep[k] = None  # -> INCONCLUSIVE
@@ -674,7 +732,8 @@ def main(argv=None) -> int:
         return 0 if valid_decision(d) else 9
     if a.phase in ("model", "throughput") and not a.model_dir:
         ap.error("--model-dir is required")
-    {"kernel": lambda: phase_kernel(out), "fork": lambda: phase_fork(out),
+    {"warmup": lambda: phase_warmup(out), "fp32": lambda: phase_fp32(out),
+     "kernel": lambda: phase_kernel(out), "fork": lambda: phase_fork(out),
      "model": lambda: phase_model(out, a.model_dir), "throughput": lambda: phase_throughput(out, a.model_dir)}[a.phase]()
     return 0
 
