@@ -1,0 +1,40 @@
+{
+  "source_sha": "97a3e76b7cc1b6ce8bb4b6024ba599310688d985",
+  "dependency_commits": {
+    "renderer": "0375b7b",
+    "planner_bridge": "dc1a3fe"
+  },
+  "dependency_text_lf_sha256": {
+    "language_growth/parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "language_growth/planner.py": "378fec95e97729b39d54d3d1d5009f253b727f965622af650b1e82939ab2e027",
+    "language_growth/realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62"
+  },
+  "command": [
+    "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+    "-I",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "language_growth/tests",
+    "-t",
+    ".",
+    "-p",
+    "test_public_output.py",
+    "-v"
+  ],
+  "exit_code": 0,
+  "data": "world() authored in committed test_public_output.py",
+  "world_canonical_json_sha256": "b78290c9d838fda9bfad3c5815503f19e61302d44b17dace91e9b44a23938189",
+  "seed": "none; scripted provider",
+  "runs": 1,
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "billed_cost_usd": 0,
+  "raw_output": "tests.txt",
+  "raw_predictions": null,
+  "scope": "CPU callable public-output boundary; no network/authentication/timing/learned guarantee"
+}
