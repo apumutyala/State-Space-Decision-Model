@@ -1,0 +1,69 @@
+{
+  "artifact_file_bytes_sha256": {
+    "README.md": "b623b155727ca1211c3d60c4e3d8123523b51da43d2ab2bf851aab6584e1dec5",
+    "ablation.json": "cccb36896b24b3f1e38331ebcad8eef05f55ee0f5efadcc6c536ad9697f67f4e",
+    "ablation_observations.json.gz": "4f36c2bbaf44709a5c024375ec713accb37d18a0d4e665577f2ccb7780c0e2ce",
+    "fixture_tests.txt": "a01c7fb365c91182e4416e86476f2dead6763d6faf690adea7f026871ec1071b",
+    "legacy_compatibility.json": "7bbcb92fe02b1906b6c3d8d8abe13111e742690fbe185b2418bcf77ac28b6c75",
+    "tests.txt": "d525c66fb53ae39e44ba1a70b6f6052ed41336759b30735d365f5802b32ea78f",
+    "verify_ablation.py": "a30519c6e87094282de068e4df635ea37c853ac48225d049360f7f548abab134",
+    "verify_legacy.py": "99122e7d69b3bbfd03afb5516fe88acc70d58d6b4603a665f7e9e0203724866c"
+  },
+  "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
+  "checks": {
+    "fixture_tests": 8,
+    "git_diff_check": "pass",
+    "legacy_attempts": 25,
+    "legacy_cases": 24,
+    "legacy_checked_and_rendered_mismatches": 0,
+    "module_kernel_renderer_tests": 47,
+    "stdlib_ablation_verifier": "pass: exact input/output hashes and all 1080 preserved derived outputs replayed"
+  },
+  "cost_usd": 0,
+  "gpu_used": false,
+  "interface_status": "draft shared v0.2 optional module; joint approval/reconciliation with PR #38 required before integration",
+  "limitations": [
+    "No learned evaluation or new model capability claim",
+    "Derives order only after model-selected operands; task relevance remains unchecked",
+    "All three fixed model seeds remain within unique task clusters for bootstrap",
+    "ExactSum is unsupported in this branch; no unmerged branch imported",
+    "No PR, merge or interface communication performed"
+  ],
+  "model_calls": 0,
+  "network_used": false,
+  "pr38_reference_commit": "6d8fa4b655c2a7242473ad4681b73a61527f86be",
+  "pr82_fixed_reference_commit": "1a09d189635711bd79319ef8eb334ed587e34c2e",
+  "reproducibility_prep": {
+    "change": "vendor exact PR #82 inputs and read/verify local paths; no training or numerical-result changes",
+    "input_manifest": "pr82_reference/source_files.json",
+    "original_results_preserved": true,
+    "requires_unmerged_git_objects": false
+  },
+  "runtime": {
+    "numpy": "2.5.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "schema": "ssdm.derived_compare_module_receipt.v0",
+  "scope": "CPU semantic module and inference-free ablation of frozen iterative synthetic development predictions; not a new model result",
+  "source_file_bytes_sha256": {
+    "fixtures/language_growth/modules/derived_compare.json": "16cfb653f08acdd47d5eed16cd8912a048fda6375e1ecb050f37b290370ff051",
+    "interfaces/DECISION_LANGUAGE_V0_2_MODULES_DRAFT.md": "f2cdeb63db16108328fe01be7dc7e569c4de061514d642f4d2c311dd34d445ca",
+    "language_growth/derived_compare_ablation.py": "13991b7e0eb0dc17a39c67a2d7673e590be3060310411bb1a346121ce875ed57",
+    "language_growth/kernel.py": "82e17b292809cff12edfec4b00d109c6d47909efc27cc213ad00fb78ea4a7ad0",
+    "language_growth/tests/test_derived_compare.py": "998b7d7b0d188ef4274229e65e2bef0b149383d523c3e01f25260b6152fd67dd",
+    "language_growth/tests/test_derived_compare_ablation.py": "f73212e4cd4f5501223f403a7d96624ccb7be85ac8e64e27daa378cb73a6f0c9",
+    "receipts/2026-10-06-L-derived-compare/verify_ablation.py": "a30519c6e87094282de068e4df635ea37c853ac48225d049360f7f548abab134",
+    "receipts/2026-10-06-L-derived-compare/verify_legacy.py": "99122e7d69b3bbfd03afb5516fe88acc70d58d6b4603a665f7e9e0203724866c"
+  },
+  "training_steps": 0,
+  "types_realizer_changes": false,
+  "vendored_pr82_file_bytes_sha256": {
+    "pr82_reference/frozen_rows.json.gz": "a215b4047706fd81426cf08c04f023e36d11669ec6d2be8cbdef3aa2ee12e78d",
+    "pr82_reference/predictions.json.gz": "85eb39c6d55aff2917a363652bc747a83e147f7b90116a2362a9ab3d3343cd20",
+    "pr82_reference/raw_artifact_manifest.json": "83d2a5aa24eb61f5fb16b9fb1afd58ab82f026df379ca972d2ecfd00b9db0975",
+    "pr82_reference/receipt.json": "3db715d313fa95640472e65046ba277f215e68a6524a03a5909b85db75c41194",
+    "pr82_reference/registration.json": "69d6a10727a113a5d9901c8f36b03bb82ff437afb650fe15459e19fdd77946bd",
+    "pr82_reference/source_files.json": "7e485820d9457a050f04559a76554bba5110187d4868eacde5fc7b4af8f05cce"
+  }
+}

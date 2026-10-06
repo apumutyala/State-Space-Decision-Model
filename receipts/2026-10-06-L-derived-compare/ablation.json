@@ -1,0 +1,608 @@
+{
+  "bootstrap": {
+    "interval": "95% paired percentile, conditional on fixed model seeds and synthetic development families",
+    "replicates": 2000,
+    "seed": 3197,
+    "unit": "unique task cluster, preserving both arms, all three fixed model seeds and both members"
+  },
+  "cost_usd": 0,
+  "model_calls": 0,
+  "observations": 1080,
+  "raw_output": {
+    "compressed_sha256": "4f36c2bbaf44709a5c024375ec713accb37d18a0d4e665577f2ccb7780c0e2ce",
+    "decompressed_sha256": "17cd5d35b43bc9229525a1c7b5d0d568c2ab39d242e171b6d41826f2bc0c5fb2"
+  },
+  "schema": "ssdm.derived_compare_ablation.v0",
+  "scope": "inference-free deterministic module ablation of fixed PR #82 synthetic development outputs; not a new model result",
+  "source_artifacts": {
+    "frozen_rows.json.gz": {
+      "compressed_bytes": 176252,
+      "compressed_sha256": "a215b4047706fd81426cf08c04f023e36d11669ec6d2be8cbdef3aa2ee12e78d",
+      "decompressed_bytes": 8196316,
+      "decompressed_sha256": "e3cec785d4abcbf796196a1dfc36fc3be2b99ad89b732a56724cc8b495e94505"
+    },
+    "predictions.json.gz": {
+      "compressed_bytes": 60503,
+      "compressed_sha256": "85eb39c6d55aff2917a363652bc747a83e147f7b90116a2362a9ab3d3343cd20",
+      "decompressed_bytes": 1977014,
+      "decompressed_sha256": "edbcb8393949cbefbf0d25e49cb1b11f2de2b2d40917ba39df7598decb1489e4"
+    }
+  },
+  "source_commit": "1a09d189635711bd79319ef8eb334ed587e34c2e",
+  "source_hashes": {
+    "language_growth\\derived_compare_ablation.py": "014e8db349b6d3a752703581a398c05ab5e04e7a0293341811b68f475bf17849",
+    "language_growth\\kernel.py": "82e17b292809cff12edfec4b00d109c6d47909efc27cc213ad00fb78ea4a7ad0",
+    "language_growth\\realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
+    "language_growth\\types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1"
+  },
+  "source_prefix": "language_growth/receipts/typed_emission_diversity_20261006/",
+  "statistics": {
+    "all": {
+      "accepted_wrong_target": {
+        "derived": {
+          "ci95": [
+            0.3712962962962963,
+            0.4861111111111111
+          ],
+          "estimate": 0.4268518518518518
+        },
+        "derived_count": 461,
+        "explicit": {
+          "ci95": [
+            0.30277777777777776,
+            0.40835648148148135
+          ],
+          "estimate": 0.35462962962962963
+        },
+        "explicit_count": 383,
+        "paired_delta": {
+          "ci95": [
+            0.044444444444444446,
+            0.10372685185185174
+          ],
+          "estimate": 0.07222222222222222
+        }
+      },
+      "both_members_correct": {
+        "derived": {
+          "ci95": [
+            0.4332870370370371,
+            0.5592592592592592
+          ],
+          "estimate": 0.49629629629629635
+        },
+        "derived_count": 268,
+        "explicit": {
+          "ci95": [
+            0.3703703703703703,
+            0.4981481481481481
+          ],
+          "estimate": 0.43518518518518523
+        },
+        "explicit_count": 235,
+        "paired_delta": {
+          "ci95": [
+            0.03148148148148148,
+            0.09449074074074049
+          ],
+          "estimate": 0.06111111111111111
+        },
+        "seed_task_pairs": 540
+      },
+      "derived_reject_reasons": {},
+      "explicit_reject_reasons": {
+        "unsupported_assertion": 134
+      },
+      "false_relation_reject": {
+        "derived": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        },
+        "derived_count": 0,
+        "explicit": {
+          "ci95": [
+            0.0824074074074074,
+            0.16944444444444445
+          ],
+          "estimate": 0.12407407407407409
+        },
+        "explicit_count": 134,
+        "paired_delta": {
+          "ci95": [
+            -0.16944444444444445,
+            -0.0824074074074074
+          ],
+          "estimate": -0.12407407407407409
+        }
+      },
+      "improved": 56,
+      "kernel_accepted": {
+        "derived": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "derived_count": 1080,
+        "explicit": {
+          "ci95": [
+            0.8305555555555556,
+            0.9175925925925927
+          ],
+          "estimate": 0.875925925925926
+        },
+        "explicit_count": 946,
+        "paired_delta": {
+          "ci95": [
+            0.08240740740740742,
+            0.16944444444444445
+          ],
+          "estimate": 0.12407407407407409
+        }
+      },
+      "observations": 1080,
+      "regressed": 0,
+      "unique_clusters": 180,
+      "whole_answer_correct": {
+        "derived": {
+          "ci95": [
+            0.5138888888888888,
+            0.6287037037037038
+          ],
+          "estimate": 0.5731481481481481
+        },
+        "derived_count": 619,
+        "explicit": {
+          "ci95": [
+            0.46111111111111114,
+            0.5796527777777777
+          ],
+          "estimate": 0.5212962962962963
+        },
+        "explicit_count": 563,
+        "paired_delta": {
+          "ci95": [
+            0.02685185185185185,
+            0.08057870370370358
+          ],
+          "estimate": 0.05185185185185184
+        }
+      }
+    },
+    "compare": {
+      "accepted_wrong_target": {
+        "derived": {
+          "ci95": [
+            0.5,
+            0.7056944444444438
+          ],
+          "estimate": 0.6055555555555555
+        },
+        "derived_count": 218,
+        "explicit": {
+          "ci95": [
+            0.3,
+            0.48888888888888893
+          ],
+          "estimate": 0.39166666666666666
+        },
+        "explicit_count": 141,
+        "paired_delta": {
+          "ci95": [
+            0.13881944444444444,
+            0.3
+          ],
+          "estimate": 0.2138888888888889
+        }
+      },
+      "both_members_correct": {
+        "derived": {
+          "ci95": [
+            0.29430555555555554,
+            0.5
+          ],
+          "estimate": 0.39444444444444443
+        },
+        "derived_count": 71,
+        "explicit": {
+          "ci95": [
+            0.12777777777777777,
+            0.3
+          ],
+          "estimate": 0.2111111111111111
+        },
+        "explicit_count": 38,
+        "paired_delta": {
+          "ci95": [
+            0.10555555555555556,
+            0.27777777777777773
+          ],
+          "estimate": 0.18333333333333338
+        },
+        "seed_task_pairs": 180
+      },
+      "derived_reject_reasons": {},
+      "explicit_reject_reasons": {
+        "unsupported_assertion": 133
+      },
+      "false_relation_reject": {
+        "derived": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        },
+        "derived_count": 0,
+        "explicit": {
+          "ci95": [
+            0.2722222222222222,
+            0.4749999999999999
+          ],
+          "estimate": 0.3694444444444444
+        },
+        "explicit_count": 133,
+        "paired_delta": {
+          "ci95": [
+            -0.4749999999999999,
+            -0.2722222222222222
+          ],
+          "estimate": -0.3694444444444444
+        }
+      },
+      "improved": 56,
+      "kernel_accepted": {
+        "derived": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "derived_count": 360,
+        "explicit": {
+          "ci95": [
+            0.525,
+            0.7277777777777779
+          ],
+          "estimate": 0.6305555555555554
+        },
+        "explicit_count": 227,
+        "paired_delta": {
+          "ci95": [
+            0.2722222222222222,
+            0.475
+          ],
+          "estimate": 0.36944444444444446
+        }
+      },
+      "observations": 360,
+      "regressed": 0,
+      "unique_clusters": 60,
+      "whole_answer_correct": {
+        "derived": {
+          "ci95": [
+            0.29430555555555554,
+            0.5
+          ],
+          "estimate": 0.39444444444444443
+        },
+        "derived_count": 142,
+        "explicit": {
+          "ci95": [
+            0.15277777777777776,
+            0.3277777777777778
+          ],
+          "estimate": 0.2388888888888889
+        },
+        "explicit_count": 86,
+        "paired_delta": {
+          "ci95": [
+            0.0861111111111111,
+            0.2388888888888889
+          ],
+          "estimate": 0.15555555555555556
+        }
+      }
+    },
+    "explain": {
+      "accepted_wrong_target": {
+        "derived": {
+          "ci95": [
+            0.244375,
+            0.4083333333333333
+          ],
+          "estimate": 0.32222222222222224
+        },
+        "derived_count": 116,
+        "explicit": {
+          "ci95": [
+            0.244375,
+            0.4083333333333333
+          ],
+          "estimate": 0.32222222222222224
+        },
+        "explicit_count": 116,
+        "paired_delta": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        }
+      },
+      "both_members_correct": {
+        "derived": {
+          "ci95": [
+            0.5055555555555555,
+            0.7055555555555555
+          ],
+          "estimate": 0.6055555555555555
+        },
+        "derived_count": 109,
+        "explicit": {
+          "ci95": [
+            0.5055555555555555,
+            0.7055555555555555
+          ],
+          "estimate": 0.6055555555555555
+        },
+        "explicit_count": 109,
+        "paired_delta": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        },
+        "seed_task_pairs": 180
+      },
+      "derived_reject_reasons": {},
+      "explicit_reject_reasons": {},
+      "false_relation_reject": {
+        "derived": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        },
+        "derived_count": 0,
+        "explicit": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        },
+        "explicit_count": 0,
+        "paired_delta": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        }
+      },
+      "improved": 0,
+      "kernel_accepted": {
+        "derived": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "derived_count": 360,
+        "explicit": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "explicit_count": 360,
+        "paired_delta": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        }
+      },
+      "observations": 360,
+      "regressed": 0,
+      "unique_clusters": 60,
+      "whole_answer_correct": {
+        "derived": {
+          "ci95": [
+            0.5916666666666667,
+            0.7556249999999997
+          ],
+          "estimate": 0.6777777777777778
+        },
+        "derived_count": 244,
+        "explicit": {
+          "ci95": [
+            0.5916666666666667,
+            0.7556249999999997
+          ],
+          "estimate": 0.6777777777777778
+        },
+        "explicit_count": 244,
+        "paired_delta": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        }
+      }
+    },
+    "read": {
+      "accepted_wrong_target": {
+        "derived": {
+          "ci95": [
+            0.2750000000000001,
+            0.43611111111111106
+          ],
+          "estimate": 0.35277777777777775
+        },
+        "derived_count": 127,
+        "explicit": {
+          "ci95": [
+            0.27222222222222225,
+            0.43333333333333335
+          ],
+          "estimate": 0.35
+        },
+        "explicit_count": 126,
+        "paired_delta": {
+          "ci95": [
+            0.0,
+            0.008333333333333333
+          ],
+          "estimate": 0.0027777777777777775
+        }
+      },
+      "both_members_correct": {
+        "derived": {
+          "ci95": [
+            0.38333333333333336,
+            0.5888888888888888
+          ],
+          "estimate": 0.4888888888888889
+        },
+        "derived_count": 88,
+        "explicit": {
+          "ci95": [
+            0.38333333333333336,
+            0.5888888888888888
+          ],
+          "estimate": 0.4888888888888889
+        },
+        "explicit_count": 88,
+        "paired_delta": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        },
+        "seed_task_pairs": 180
+      },
+      "derived_reject_reasons": {},
+      "explicit_reject_reasons": {
+        "unsupported_assertion": 1
+      },
+      "false_relation_reject": {
+        "derived": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        },
+        "derived_count": 0,
+        "explicit": {
+          "ci95": [
+            0.0,
+            0.008333333333333333
+          ],
+          "estimate": 0.0027777777777777775
+        },
+        "explicit_count": 1,
+        "paired_delta": {
+          "ci95": [
+            -0.008333333333333333,
+            0.0
+          ],
+          "estimate": -0.0027777777777777775
+        }
+      },
+      "improved": 0,
+      "kernel_accepted": {
+        "derived": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "derived_count": 360,
+        "explicit": {
+          "ci95": [
+            0.9916666666666667,
+            1.0
+          ],
+          "estimate": 0.9972222222222222
+        },
+        "explicit_count": 359,
+        "paired_delta": {
+          "ci95": [
+            0.0,
+            0.008333333333333331
+          ],
+          "estimate": 0.002777777777777777
+        }
+      },
+      "observations": 360,
+      "regressed": 0,
+      "unique_clusters": 60,
+      "whole_answer_correct": {
+        "derived": {
+          "ci95": [
+            0.5638888888888889,
+            0.725
+          ],
+          "estimate": 0.6472222222222221
+        },
+        "derived_count": 233,
+        "explicit": {
+          "ci95": [
+            0.5638888888888889,
+            0.725
+          ],
+          "estimate": 0.6472222222222221
+        },
+        "explicit_count": 233,
+        "paired_delta": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        }
+      }
+    }
+  },
+  "transformed_compare_nodes": 369,
+  "value_swap": {
+    "derived": {
+      "both_answers_correct": 71,
+      "both_equality_answers_correct": 9,
+      "both_inequality_answers_correct": 62,
+      "both_relation_labels_correct": 83,
+      "both_structures_exact": 71,
+      "predicted_relation_changes": 159,
+      "required_changes_met": 159,
+      "required_relation_changes": 159
+    },
+    "explicit": {
+      "both_answers_correct": 38,
+      "both_equality_answers_correct": 9,
+      "both_inequality_answers_correct": 29,
+      "both_relation_labels_correct": 50,
+      "both_structures_exact": 71,
+      "predicted_relation_changes": 111,
+      "required_changes_met": 111,
+      "required_relation_changes": 159
+    },
+    "seed_task_pairs": 180,
+    "unique_task_pairs": 60
+  }
+}

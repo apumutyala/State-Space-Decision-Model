@@ -4,6 +4,7 @@ Credits: SF Compute $525. Batch rate is $2.97/H100-h and interactive is $3.96/h;
 
 | Date | Track | Experiment / hypothesis | Planned $ | Stop condition | Actual $ | Verdict | Receipt |
 |---|---|---|---|---|---|---|---|
+| 2026-10-06 | L | Inference-free DerivedCompare ablation of fixed PR #82 synthetic development outputs; preserve selected structure, derive only relation | 0 | One frozen 1080-observation replay, no model calls or tuning | 0 | 56 recovered comparison answers; accepted-wrong targets +78; no task-relevance guarantee, draft interface pending review | receipts/2026-10-06-L-derived-compare/ |
 | 2026-10-06 (planned, not launched) | D | Rung-2 H100 hardware qualification: numerics, throughput, memory, artifact recovery (jobs/qual/JOB_SPEC.md) | 9.90 (build 20 min + run 180 min at $0.0495/min; validate_job run worst case $8.91; hard cap = workspace cap MTD+$20, required) | exit 1/2/3/4/5/6/7/8/9; max_duration 180 min; queue TTL 24 h | — | — | jobs/qual/ |
 | 2026-10-06 | D | job-jbw22 qual v1 (SF batch H100) | ≤9.90 | gates | 0.07 | stopped at numerics gate: fla #640 Triton bug (fixed PR #41) | issue #3 |
 | 2026-10-06 | D | job-c4zkm qual v2 (torch 2.13/triton 3.7.1) | ≤8.91 | gates | 0.74 | A+B PASS (0.8B one-layer ΔNLL −0.0036, KL 0.017); C 9B OOM at 68.9 GB (fixed PR #48) | issue #3 |

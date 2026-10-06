@@ -1,0 +1,209 @@
+{
+  "baseline_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
+  "baseline_kernel_git_bytes_sha256": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+  "cases": 24,
+  "attempts": 25,
+  "mismatches": [],
+  "results": [
+    {
+      "case_id": "LG01",
+      "attempt": 0,
+      "status": "accepted",
+      "reason": null,
+      "checked_result_sha256": "811f0b34cb224ab72703a703e0ceebe6692c1a4480d442f781719af157da530d",
+      "rendered_sha256": "bde755a4a46bc937e55af17a02df7a0cc00fe9034cb870e5a4269665b6edadcf"
+    },
+    {
+      "case_id": "LG02",
+      "attempt": 0,
+      "status": "accepted",
+      "reason": null,
+      "checked_result_sha256": "9b72da754291fffeae82a048ca3aafbe50404e0f5d92b384e0e228e5b33b5d82",
+      "rendered_sha256": "4b99140c9c9c97a3aa7ec7a959660325a75cbc632358c198aea9ef8076a1808e"
+    },
+    {
+      "case_id": "LG03",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "unsupported_assertion",
+      "checked_result_sha256": "e8121efa92ef4af28e25db67d26a956de59c2d89592ce42aa706798926606886",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG04",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "invalid_graph",
+      "checked_result_sha256": "4d374ebbf7c4c4ddd767b20ad6c86358d8783a729a9a70b7b56e06556acaa8ef",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG05",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "unsupported_operation",
+      "checked_result_sha256": "000d1b3d2db33a53e52e10410192779ed0153bcb6dad10c41df351902676e408",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG06",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "unsupported_field",
+      "checked_result_sha256": "1f1bfd05452f8c5d6ef7accdad8f303e4bd6bf3984eff7de01ebf70cf8eb5f1d",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG07",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "stale_context",
+      "checked_result_sha256": "6b0ef5bcb5ec60f5e717321da5f748cff46a31826ab0886bc284bacac9e85f33",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG08",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "stale_policy",
+      "checked_result_sha256": "d8ed8265d3d7cef1e3f24e88a0b6fdd925a5da3105da22effe499fdedff3f454",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG09",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "type_unit_mismatch",
+      "checked_result_sha256": "23cbefd8a2b3042254a07828da335dca14a278003e97fb21e165d046faf036ed",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG10",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "scope_mismatch",
+      "checked_result_sha256": "db24a40dfad2ad651e16dfaa88d335f6e1ba0565e95cf30a092c359deef054ba",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG11",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "conflict",
+      "checked_result_sha256": "ed9969f4e3d7068d2d6fb80cd57d42d7e54d0d9023ffaec3f831d5373769b465",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG12",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "unsupported_assertion",
+      "checked_result_sha256": "e8121efa92ef4af28e25db67d26a956de59c2d89592ce42aa706798926606886",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG13",
+      "attempt": 0,
+      "status": "accepted",
+      "reason": null,
+      "checked_result_sha256": "c10d76e72e9d32acb442de5b4ad693ba0ccfec3c0ca6ec0342eaec94f2c57199",
+      "rendered_sha256": "8c223c917310b8ccb4cc9aa5e688b49940009b0ad92ab569d619afa6bf14c563"
+    },
+    {
+      "case_id": "LG14",
+      "attempt": 0,
+      "status": "accepted",
+      "reason": null,
+      "checked_result_sha256": "c10d76e72e9d32acb442de5b4ad693ba0ccfec3c0ca6ec0342eaec94f2c57199",
+      "rendered_sha256": "8c223c917310b8ccb4cc9aa5e688b49940009b0ad92ab569d619afa6bf14c563"
+    },
+    {
+      "case_id": "LG15",
+      "attempt": 0,
+      "status": "provider_rejected",
+      "reason": "forbidden_dependency",
+      "checked_result_sha256": "f11c762b18fd0b8b89ca9c884d7af04134f148c0d49e01420ae95a481a5a95e7",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG16",
+      "attempt": 0,
+      "status": "accepted",
+      "reason": null,
+      "checked_result_sha256": "4bc8475cb40dd8daf56b708861a0dca92510ac738a354253a75191c7883eb0ba",
+      "rendered_sha256": "280b8f8ef213089e88b337aa71c157077796ee51f1b55602fbd159edbee44bff"
+    },
+    {
+      "case_id": "LG17",
+      "attempt": 0,
+      "status": "accepted",
+      "reason": null,
+      "checked_result_sha256": "1bfba50ce3db1222fd200bb9625cd122acb23d4a26c556840469ac713db8c2c0",
+      "rendered_sha256": "c313c4f936397b19a242eb0bb81820e5f34ffb0213ac401141406044e5fbcb78"
+    },
+    {
+      "case_id": "LG18",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "unsupported_assertion",
+      "checked_result_sha256": "e8121efa92ef4af28e25db67d26a956de59c2d89592ce42aa706798926606886",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG18",
+      "attempt": 1,
+      "status": "accepted",
+      "reason": null,
+      "checked_result_sha256": "c10d76e72e9d32acb442de5b4ad693ba0ccfec3c0ca6ec0342eaec94f2c57199",
+      "rendered_sha256": "8c223c917310b8ccb4cc9aa5e688b49940009b0ad92ab569d619afa6bf14c563"
+    },
+    {
+      "case_id": "LG19",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "unsupported_assertion",
+      "checked_result_sha256": "e8121efa92ef4af28e25db67d26a956de59c2d89592ce42aa706798926606886",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG20",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "unsupported_operation",
+      "checked_result_sha256": "000d1b3d2db33a53e52e10410192779ed0153bcb6dad10c41df351902676e408",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG21",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "invalid_graph",
+      "checked_result_sha256": "4d374ebbf7c4c4ddd767b20ad6c86358d8783a729a9a70b7b56e06556acaa8ef",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG22",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "unknown_reference",
+      "checked_result_sha256": "fa50121d6acf0a3ec97ed5092ecc3b94d1db708d4d9183838c88b382dec69692",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG23",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "unknown_reference",
+      "checked_result_sha256": "fa50121d6acf0a3ec97ed5092ecc3b94d1db708d4d9183838c88b382dec69692",
+      "rendered_sha256": null
+    },
+    {
+      "case_id": "LG24",
+      "attempt": 0,
+      "status": "rejected",
+      "reason": "exceeded_limit",
+      "checked_result_sha256": "38ad58d7b2bda875de276cda73c2c1934a75b8f826acf75174be325846567bcf",
+      "rendered_sha256": null
+    }
+  ]
+}
