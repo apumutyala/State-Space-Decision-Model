@@ -123,6 +123,27 @@ class ConvertibleQwen(nn.Module):
     def hidden(self, ids):
         return self.lm(input_ids=ids, use_cache=False).last_hidden_state
 
+    # ---------------- split forward (shared prefix / partial teacher passes) ----------------
+    def embed(self, ids):
+        """Embeddings + the per-call context every decoder layer needs (same construction as the HF text model)."""
+        from transformers.masking_utils import create_causal_mask, create_recurrent_attention_mask
+
+        h = self.lm.embed_tokens(ids)
+        pos = torch.arange(h.shape[1], device=h.device).view(1, 1, -1).expand(4, h.shape[0], -1)
+        text_pos, rope_pos = pos[0], pos[1:]
+        kw = {"config": self.cfg, "inputs_embeds": h, "attention_mask": None, "past_key_values": None,
+              "position_ids": text_pos}
+        masks = {"full_attention": create_causal_mask(**kw), "linear_attention": create_recurrent_attention_mask(**kw)}
+        ctx = {"pe": self.lm.rotary_emb(h, rope_pos), "masks": masks, "text_pos": text_pos}
+        return h, ctx
+
+    def run_layers(self, h, ctx, start, end, final_norm=False):
+        """Decoder layers [start, end) on hidden state h; equals the corresponding slice of ``hidden``."""
+        for i in range(start, end):
+            h = self.lm.layers[i](h, position_embeddings=ctx["pe"], attention_mask=ctx["masks"][self.cfg.layer_types[i]],
+                                  position_ids=ctx["text_pos"], past_key_values=None, use_cache=False)
+        return self.lm.norm(h) if final_norm else h
+
     def logits(self, ids):
         return self.lm_head(self.hidden(ids))
 

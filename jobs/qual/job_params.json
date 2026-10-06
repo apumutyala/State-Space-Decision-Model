@@ -9,6 +9,13 @@
  "batch_usd_per_min": 0.0495,
  "hard_cap_usd": 20.0,
  "reserve_minutes": 8,
- "phase_caps_minutes": {"setup": 15, "A_per_test": 5, "A_tests": 5, "B": 20, "C_weight_wait": 25, "C": 80},
+ "phase_caps_minutes": {
+  "setup": 15,
+  "A_per_test": 3,
+  "A_tests": 7,
+  "B": 20,
+  "C_weight_wait": 25,
+  "C": 80
+ },
  "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a"
 }
