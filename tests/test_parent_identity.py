@@ -74,3 +74,11 @@ def test_lora_scaling_changes_revision_even_with_identical_tensors():
     a, b = with_lora(), with_lora()
     first_lora(b).scaling *= 0.5
     assert revision(a)["revision_id"] != revision(b)["revision_id"]
+
+
+def test_tensor_dtype_changes_digest_without_changing_frozen_base():
+    a, b = model(), model()
+    b.head.to(dtype=torch.bfloat16)
+    ra, rb = revision(a), revision(b)
+    assert ra["backbone"] == rb["backbone"]
+    assert ra["trained_state"]["sha256"] != rb["trained_state"]["sha256"]
