@@ -1,3 +1,4 @@
 fixtures/replay/** -text
 
 third_party/** -text
+*.sh text eol=lf
