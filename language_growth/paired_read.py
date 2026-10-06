@@ -8,6 +8,7 @@ from typing import Any, Iterable
 import uuid
 
 from .free_running_dev import _initial_task, run_development_tasks
+from .kernel import check_program
 from .paired_comparison import _Capture
 from .parent_bridge import BridgeError, decision_request
 from .planner import PlannerFailure, _Session, _as_options, _candidate_sets
@@ -86,9 +87,13 @@ def run_paired_reads(examples: Iterable[dict[str, Any]], provider: Any, *,
             sent = capture.calls[direct_start]["request"]
             if sent["state"] != preview["state"] or sent["questions"] != preview["questions"]:
                 raise ValueError("direct request drifted from standalone builder")
-            desired = _target_fact(example)
-            target = next(oid for oid, fact in binding.items() if fact == desired)
-            direct.update(status="ok", reason=None, target_id=target, correct=selected == target)
+            reference = check_program(training["program"], training["host"], training["catalog"])
+            if reference.status != "accepted":
+                direct.update(status="reference_rejected", reason=reference.reason)
+            else:
+                desired = _target_fact(example)
+                target = next(oid for oid, fact in binding.items() if fact == desired)
+                direct.update(status="ok", reason=None, target_id=target, correct=selected == target)
         except PlannerFailure as exc:
             direct.update(status=exc.status, reason=exc.reason)
         except BridgeError as exc:

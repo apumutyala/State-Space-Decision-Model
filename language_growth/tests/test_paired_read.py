@@ -106,6 +106,25 @@ class PairedReadTests(unittest.TestCase):
         self.assertEqual(pair["direct"]["status"], "ok")
         self.assertNotEqual(pair["direct"]["selected_id"], pair["direct"]["target_id"])
 
+    def test_invalid_reference_program_cannot_award_direct_or_planner_credit(self):
+        for mutate, expected_reason in (
+            (lambda program: program.update(schema="not-a-program"), "invalid_graph"),
+            (lambda program: program["nodes"][0].update(unreviewed=True), "unsupported_field"),
+        ):
+            with self.subTest(expected_reason=expected_reason):
+                task = deepcopy(reads()[0])
+                mutate(task["training_only"]["program"])
+                provider = ReadProvider()
+                report = run([task], provider)
+                pair = report["pairs"][0]
+                self.assertEqual((report["total"], report["direct_correct"],
+                                  report["planner_correct"], report["paired_correct"]), (1, 0, 0, 0))
+                self.assertEqual((pair["direct"]["status"], pair["direct"]["reason"]),
+                                 ("reference_rejected", expected_reason))
+                self.assertEqual(pair["direct"]["provider_calls"], 1)
+                self.assertEqual(len(pair["direct_calls"]), 1)
+                self.assertTrue(pair["same_initial_state"])
+
     def test_failures_rejections_and_config_mismatch_keep_denominators_and_calls(self):
         for mode, reason, forward in (("error_direct", "provider_exception", None),
                                      ("invalid_direct", "invalid_response", 1),
