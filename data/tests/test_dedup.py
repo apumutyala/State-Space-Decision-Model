@@ -85,9 +85,49 @@ def test_minhash_signature_deterministic():
     assert np.array_equal(a, b) and a.shape == (2, D.MINHASH_PERMS)
 
 
+SHORT = "how do i change the pin on my card"                 # 9 tokens -> 1 edit allowed
+SHORT10 = "why was my top up payment declined by the bank today"  # 11 tokens -> 2 edits allowed
+
+
+@pytest.fixture(scope="module")
+def fp_short():
+    rows = [_row(4, {}, "Classify the banking intent:\n" + SHORT), _row(4, {}, "Classify:\n" + SHORT10),
+            _row(5, {}, "Classify:\nplay music")]
+    return D.Fingerprint.build(rows, log=lambda *a: None)
+
+
+def test_edit_one_word_substitution(fp_short):
+    h = fp_short.check("how do i change the code on my card", {})
+    assert h["edit"] == [4] and h["exact"] == [] and h["ngram13"] == []
+
+
+def test_edit_bound_is_the_stricter_rule(fp_short):
+    assert fp_short.check("how can i change the code on my card", {})["edit"] == []   # 2 edits / 9 tokens
+    assert fp_short.check("why was my top up transfer declined by the bank yesterday", {})["edit"] == [4]  # 2/11
+    assert fp_short.check("why was my top up transfer refused by the bank yesterday", {})["edit"] == []  # 3 edits
+
+
+def test_edit_insertion_and_deletion(fp_short):
+    assert fp_short.check("how do i quickly change the pin on my card", {})["edit"] == [4]
+    assert fp_short.check("how do i change pin on my card", {})["edit"] == [4]
+
+
+def test_contain_appended_sentence(fp_short):
+    h = fp_short.check("How do I change the PIN on my card? I am travelling next week.", {})
+    assert h["contain"] == [4]
+
+
+def test_short_index_roundtrip(fp_short, tmp_path):
+    p = tmp_path / "fp.npz"
+    fp_short.save(p)
+    fp2 = D.Fingerprint.load(p)
+    assert fp2.check("how do i change the code on my card", {})["edit"] == [4]
+
+
 @pytest.mark.skipif(not config.FINGERPRINT.exists(), reason="full Index fingerprint not built locally")
 def test_full_fingerprint_meta():
     meta = json.loads(config.FINGERPRINT.with_suffix(".json").read_text(encoding="utf-8"))
     assert meta["rows"] == 124971 + 30419  # official 0.2.1 rows incl. HLE, both files, nothing filtered
     assert meta["suite_files_uncompressed_sha256"] == D.EXPECTED_SUITE_SHA256
     assert "45" in meta["rows_by_catalog"]  # HLE covered
+    assert meta["version"] == D.FP_VERSION

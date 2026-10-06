@@ -1,6 +1,6 @@
 {
  "fingerprint": {
-  "version": "ssdm-dedup-v2",
+  "version": "ssdm-dedup-v3",
   "rows": 155390,
   "rows_by_catalog": {
    "1": 1694,
@@ -55,6 +55,7 @@
   "ngram13_boilerplate_removed": 22289,
   "ngram13_indexed": 10942455,
   "minhash_segments": 811688,
+  "short_items": 536344,
   "params": {
    "boilerplate_rows": 100,
    "ngram_n": 13,
@@ -63,162 +64,220 @@
    "minhash_max_chars": 1000,
    "minhash_threshold": 0.75,
    "shingle": "byte 5-gram",
-   "min_segment_chars": 12
+   "min_segment_chars": 12,
+   "edit": {
+    "tokens": [
+     4,
+     30
+    ],
+    "max_edits": 2,
+    "max_ratio": 0.2,
+    "rule": "d <= 2 and d/max(len) <= 0.2"
+   },
+   "contain": {
+    "index_tokens": [
+     6,
+     30
+    ],
+    "query_max_tokens": 80
+   }
   },
-  "build_seconds": 207.7,
+  "build_seconds": 169.1,
   "suite_dir": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\suite-snapshot",
   "suite_files_uncompressed_sha256": {
    "selected-rows.jsonl.gz": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5",
    "added-rows.jsonl.gz": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89"
   },
-  "npz_sha256": "e44882d871162ef82babda0eee1d67a508b18fcd124ffffb9e02b88356272e19"
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f"
  },
  "rule": "drop a record if any matcher fires on its ITEM-tier texts against any Index 0.2.1 row (all catalogs, DEV and TEST, HLE included); whole-payload matches that are not item matches are logged as context overlap and kept",
  "totals": {
-  "checked": 22815,
+  "checked": 23399,
   "kept": 20000,
-  "item_minhash": 1659,
-  "dropped": 2815,
-  "item_ngram13": 2514,
-  "item_exact": 1184,
-  "kept_with_context_overlap": 4755,
-  "context_ngram13": 2521,
-  "context_minhash": 3570,
-  "context_exact": 768
+  "item_minhash": 1704,
+  "item_edit": 957,
+  "dropped": 3399,
+  "item_ngram13": 2604,
+  "item_contain": 371,
+  "item_exact": 1202,
+  "kept_with_context_overlap": 4942,
+  "context_ngram13": 2525,
+  "context_minhash": 3517,
+  "context_edit": 2677,
+  "context_contain": 618,
+  "context_exact": 760
  },
  "by_source": {
   "anli": {
-   "checked": 2383,
+   "checked": 2389,
    "kept": 1800,
    "item_exact": 566,
    "item_ngram13": 576,
    "item_minhash": 574,
-   "dropped": 583,
-   "kept_with_context_overlap": 16,
+   "dropped": 589,
+   "kept_with_context_overlap": 17,
+   "context_contain": 3,
+   "item_edit": 36,
    "context_ngram13": 16,
+   "item_contain": 27,
    "context_minhash": 6
   },
   "banking77": {
-   "checked": 1453,
+   "checked": 1616,
    "kept": 1400,
-   "item_minhash": 52,
-   "dropped": 53,
-   "item_ngram13": 8,
-   "item_exact": 3,
-   "kept_with_context_overlap": 7,
-   "context_ngram13": 7,
-   "context_minhash": 6
+   "item_minhash": 59,
+   "item_edit": 174,
+   "dropped": 216,
+   "item_ngram13": 9,
+   "item_contain": 42,
+   "item_exact": 4,
+   "kept_with_context_overlap": 9,
+   "context_ngram13": 9,
+   "context_minhash": 7
   },
   "boolq": {
-   "checked": 1205,
+   "checked": 1208,
    "kept": 1200,
    "kept_with_context_overlap": 4,
    "context_ngram13": 4,
+   "item_edit": 2,
+   "dropped": 8,
    "item_ngram13": 5,
    "item_minhash": 3,
-   "dropped": 5,
+   "context_contain": 1,
+   "item_contain": 1,
    "context_minhash": 1
   },
   "clinc150": {
-   "checked": 1423,
+   "checked": 1525,
    "kept": 1400,
    "kept_with_context_overlap": 1400,
    "context_minhash": 1400,
+   "context_edit": 1400,
+   "item_edit": 116,
+   "dropped": 125,
    "item_minhash": 23,
-   "dropped": 23,
+   "item_contain": 8,
    "item_exact": 7,
-   "context_ngram13": 6,
+   "context_ngram13": 7,
    "item_ngram13": 1
   },
   "gsm8k": {
-   "checked": 1658,
+   "checked": 1660,
    "kept": 1400,
-   "item_exact": 253,
-   "item_ngram13": 258,
-   "item_minhash": 255,
-   "dropped": 258,
+   "item_exact": 254,
+   "item_ngram13": 259,
+   "item_minhash": 256,
+   "dropped": 260,
+   "item_edit": 46,
+   "item_contain": 47,
    "kept_with_context_overlap": 6,
    "context_ngram13": 6,
-   "context_minhash": 4
+   "context_minhash": 4,
+   "context_contain": 1
   },
   "hellaswag": {
-   "checked": 1629,
+   "checked": 1665,
    "kept": 1600,
    "kept_with_context_overlap": 110,
-   "context_exact": 91,
-   "context_minhash": 106,
+   "context_exact": 90,
+   "context_minhash": 105,
    "context_ngram13": 12,
-   "item_ngram13": 13,
-   "item_minhash": 27,
-   "dropped": 29,
-   "item_exact": 9
+   "item_ngram13": 14,
+   "item_minhash": 28,
+   "dropped": 65,
+   "item_edit": 38,
+   "item_contain": 19,
+   "item_exact": 9,
+   "context_contain": 1
   },
   "mmlu_aux": {
-   "checked": 1904,
+   "checked": 1915,
    "kept": 1800,
    "item_exact": 69,
    "item_minhash": 103,
-   "dropped": 104,
-   "kept_with_context_overlap": 9,
+   "dropped": 115,
+   "item_edit": 33,
+   "kept_with_context_overlap": 11,
    "context_ngram13": 9,
    "context_minhash": 6,
+   "item_contain": 7,
+   "context_contain": 2,
    "item_ngram13": 3
   },
   "multi": {
-   "checked": 1396,
+   "checked": 1497,
+   "item_exact": 172,
+   "item_ngram13": 166,
+   "item_minhash": 201,
+   "dropped": 297,
    "kept": 1200,
-   "kept_with_context_overlap": 369,
-   "context_minhash": 369,
-   "item_exact": 158,
-   "item_ngram13": 153,
-   "item_minhash": 187,
-   "dropped": 196,
-   "context_exact": 11
+   "kept_with_context_overlap": 328,
+   "context_minhash": 328,
+   "context_edit": 316,
+   "item_edit": 122,
+   "context_exact": 12,
+   "item_contain": 35
   },
   "nq": {
-   "checked": 1831,
+   "checked": 1839,
    "kept": 1800,
-   "kept_with_context_overlap": 888,
-   "context_ngram13": 888,
-   "context_minhash": 523,
+   "kept_with_context_overlap": 964,
+   "context_ngram13": 885,
+   "context_minhash": 520,
+   "context_contain": 376,
+   "item_edit": 3,
+   "dropped": 39,
+   "context_edit": 12,
    "item_ngram13": 30,
-   "dropped": 31,
+   "item_contain": 6,
    "item_minhash": 13
   },
   "sst5": {
-   "checked": 1000,
+   "checked": 1001,
    "kept": 1000,
-   "kept_with_context_overlap": 3,
+   "kept_with_context_overlap": 4,
    "context_ngram13": 3,
-   "context_minhash": 3
+   "context_minhash": 3,
+   "item_contain": 1,
+   "dropped": 1,
+   "context_contain": 1
   },
   "synthetic_factchange": {
    "checked": 1200,
    "kept": 1200
   },
   "toolace": {
-   "checked": 1637,
+   "checked": 1653,
    "kept": 1600,
-   "kept_with_context_overlap": 1124,
-   "context_ngram13": 960,
-   "context_minhash": 469,
-   "context_exact": 220,
+   "kept_with_context_overlap": 1247,
+   "context_ngram13": 964,
+   "context_minhash": 466,
+   "context_edit": 665,
+   "context_exact": 219,
    "item_ngram13": 33,
    "item_minhash": 35,
-   "dropped": 37,
-   "item_exact": 27
+   "dropped": 53,
+   "context_contain": 98,
+   "item_exact": 27,
+   "item_contain": 26,
+   "item_edit": 18
   },
   "when2call": {
-   "checked": 2683,
-   "item_ngram13": 1434,
-   "dropped": 1483,
+   "checked": 2818,
+   "item_ngram13": 1508,
+   "dropped": 1618,
    "kept": 1200,
-   "kept_with_context_overlap": 813,
-   "context_exact": 446,
+   "kept_with_context_overlap": 836,
+   "context_exact": 439,
    "context_ngram13": 604,
-   "context_minhash": 673,
-   "item_minhash": 374,
-   "item_exact": 83
+   "context_minhash": 667,
+   "context_edit": 284,
+   "item_minhash": 396,
+   "item_edit": 369,
+   "item_exact": 85,
+   "item_contain": 152,
+   "context_contain": 135
   },
   "winogrande": {
    "checked": 1413,
@@ -233,12 +292,20 @@
  },
  "hits_by_source_and_index_catalog": {
   "anli": {
+   "context_contain:24": 1,
+   "context_contain:36": 2,
    "context_minhash:12": 1,
    "context_minhash:61": 5,
    "context_ngram13:12": 3,
    "context_ngram13:36": 2,
    "context_ngram13:37": 1,
    "context_ngram13:61": 11,
+   "item_contain:12": 23,
+   "item_contain:24": 1,
+   "item_contain:61": 3,
+   "item_edit:12": 34,
+   "item_edit:36": 1,
+   "item_edit:57": 1,
    "item_exact:12": 550,
    "item_exact:61": 16,
    "item_minhash:12": 558,
@@ -248,32 +315,60 @@
    "item_ngram13:61": 18
   },
   "banking77": {
-   "context_minhash:61": 6,
-   "context_ngram13:61": 7,
-   "item_exact:4": 3,
-   "item_minhash:4": 50,
+   "context_minhash:61": 7,
+   "context_ngram13:61": 9,
+   "item_contain:4": 41,
+   "item_contain:5": 1,
+   "item_edit:3": 1,
+   "item_edit:4": 169,
+   "item_edit:5": 10,
+   "item_exact:4": 4,
+   "item_minhash:4": 57,
    "item_minhash:5": 2,
-   "item_ngram13:4": 8
+   "item_ngram13:4": 9
   },
   "boolq": {
+   "context_contain:24": 1,
    "context_minhash:61": 1,
    "context_ngram13:36": 1,
    "context_ngram13:37": 1,
    "context_ngram13:61": 2,
+   "item_contain:24": 1,
+   "item_edit:12": 1,
+   "item_edit:5": 1,
    "item_minhash:36": 2,
    "item_minhash:61": 1,
    "item_ngram13:36": 2,
    "item_ngram13:61": 3
   },
   "clinc150": {
+   "context_edit:10": 1400,
+   "context_edit:3": 1400,
+   "context_edit:5": 1400,
    "context_minhash:1": 1400,
    "context_minhash:3": 1400,
    "context_minhash:36": 1400,
    "context_minhash:5": 1400,
    "context_minhash:57": 1400,
-   "context_minhash:61": 4,
+   "context_minhash:61": 5,
    "context_ngram13:36": 1,
-   "context_ngram13:61": 5,
+   "context_ngram13:61": 6,
+   "item_contain:10": 1,
+   "item_contain:4": 1,
+   "item_contain:5": 5,
+   "item_contain:62": 1,
+   "item_edit:1": 1,
+   "item_edit:10": 10,
+   "item_edit:24": 1,
+   "item_edit:32": 1,
+   "item_edit:36": 1,
+   "item_edit:4": 3,
+   "item_edit:5": 100,
+   "item_edit:50": 1,
+   "item_edit:56": 1,
+   "item_edit:57": 3,
+   "item_edit:6": 2,
+   "item_edit:62": 3,
    "item_exact:10": 4,
    "item_exact:5": 1,
    "item_exact:62": 2,
@@ -286,22 +381,28 @@
    "item_ngram13:5": 1
   },
   "gsm8k": {
+   "context_contain:24": 1,
+   "context_contain:36": 1,
    "context_minhash:12": 1,
    "context_minhash:61": 3,
    "context_ngram13:12": 2,
    "context_ngram13:36": 1,
    "context_ngram13:61": 3,
+   "item_contain:6": 46,
+   "item_contain:61": 1,
+   "item_edit:6": 46,
    "item_exact:36": 25,
-   "item_exact:6": 228,
+   "item_exact:6": 229,
    "item_minhash:36": 27,
-   "item_minhash:6": 230,
+   "item_minhash:6": 231,
    "item_ngram13:30": 1,
    "item_ngram13:36": 25,
-   "item_ngram13:6": 232
+   "item_ngram13:6": 233
   },
   "hellaswag": {
+   "context_contain:24": 1,
    "context_exact:24": 54,
-   "context_exact:36": 12,
+   "context_exact:36": 11,
    "context_exact:41": 22,
    "context_exact:43": 3,
    "context_minhash:12": 1,
@@ -309,26 +410,48 @@
    "context_minhash:24": 54,
    "context_minhash:27": 6,
    "context_minhash:33": 47,
-   "context_minhash:36": 12,
+   "context_minhash:36": 11,
    "context_minhash:41": 22,
    "context_minhash:43": 3,
    "context_minhash:61": 7,
    "context_ngram13:12": 1,
    "context_ngram13:36": 2,
    "context_ngram13:61": 9,
+   "item_contain:29": 14,
+   "item_contain:36": 1,
+   "item_contain:42": 2,
+   "item_contain:61": 2,
+   "item_edit:29": 38,
+   "item_edit:6": 1,
    "item_exact:29": 9,
-   "item_minhash:12": 11,
+   "item_minhash:12": 12,
    "item_minhash:29": 16,
    "item_minhash:6": 1,
-   "item_ngram13:12": 11,
+   "item_ngram13:12": 12,
    "item_ngram13:29": 2
   },
   "mmlu_aux": {
+   "context_contain:24": 2,
    "context_minhash:12": 2,
    "context_minhash:61": 5,
    "context_ngram13:12": 2,
    "context_ngram13:36": 1,
    "context_ngram13:61": 7,
+   "item_contain:24": 1,
+   "item_contain:26": 1,
+   "item_contain:27": 4,
+   "item_contain:57": 1,
+   "item_edit:1": 1,
+   "item_edit:11": 1,
+   "item_edit:24": 11,
+   "item_edit:26": 9,
+   "item_edit:27": 5,
+   "item_edit:36": 1,
+   "item_edit:45": 3,
+   "item_edit:50": 2,
+   "item_edit:57": 6,
+   "item_edit:58": 1,
+   "item_edit:6": 8,
    "item_exact:1": 1,
    "item_exact:2": 4,
    "item_exact:24": 32,
@@ -366,61 +489,104 @@
    "item_ngram13:24": 3
   },
   "multi": {
-   "context_exact:24": 6,
-   "context_exact:36": 4,
+   "context_edit:10": 316,
+   "context_edit:3": 316,
+   "context_edit:5": 316,
+   "context_exact:24": 9,
+   "context_exact:36": 2,
    "context_exact:43": 1,
-   "context_minhash:1": 357,
-   "context_minhash:20": 2,
-   "context_minhash:24": 6,
+   "context_minhash:1": 316,
+   "context_minhash:20": 1,
+   "context_minhash:24": 9,
    "context_minhash:27": 1,
-   "context_minhash:3": 357,
-   "context_minhash:33": 6,
-   "context_minhash:36": 361,
+   "context_minhash:3": 316,
+   "context_minhash:33": 8,
+   "context_minhash:36": 317,
    "context_minhash:43": 1,
-   "context_minhash:5": 357,
-   "context_minhash:57": 357,
-   "item_exact:12": 82,
+   "context_minhash:5": 316,
+   "context_minhash:57": 316,
+   "item_contain:10": 1,
+   "item_contain:12": 2,
+   "item_contain:24": 1,
+   "item_contain:26": 2,
+   "item_contain:29": 3,
+   "item_contain:4": 7,
+   "item_contain:42": 1,
+   "item_contain:5": 4,
+   "item_contain:6": 12,
+   "item_contain:61": 2,
+   "item_edit:1": 1,
+   "item_edit:10": 5,
+   "item_edit:12": 4,
+   "item_edit:20": 1,
+   "item_edit:24": 1,
+   "item_edit:26": 4,
+   "item_edit:29": 8,
+   "item_edit:3": 1,
+   "item_edit:36": 1,
+   "item_edit:4": 49,
+   "item_edit:5": 41,
+   "item_edit:50": 2,
+   "item_edit:57": 2,
+   "item_edit:6": 14,
+   "item_exact:10": 1,
+   "item_exact:12": 86,
    "item_exact:24": 3,
    "item_exact:26": 6,
    "item_exact:27": 3,
-   "item_exact:29": 4,
+   "item_exact:29": 5,
    "item_exact:33": 1,
    "item_exact:36": 7,
    "item_exact:4": 1,
    "item_exact:5": 1,
    "item_exact:50": 2,
-   "item_exact:6": 51,
-   "item_exact:61": 6,
-   "item_minhash:10": 1,
-   "item_minhash:12": 86,
+   "item_exact:6": 53,
+   "item_exact:61": 7,
+   "item_minhash:10": 2,
+   "item_minhash:12": 90,
    "item_minhash:24": 5,
-   "item_minhash:26": 9,
+   "item_minhash:26": 10,
    "item_minhash:27": 3,
-   "item_minhash:29": 6,
+   "item_minhash:29": 7,
    "item_minhash:33": 2,
-   "item_minhash:36": 7,
+   "item_minhash:36": 8,
    "item_minhash:37": 1,
-   "item_minhash:4": 18,
+   "item_minhash:4": 15,
    "item_minhash:45": 2,
-   "item_minhash:5": 7,
+   "item_minhash:5": 9,
    "item_minhash:50": 2,
-   "item_minhash:6": 56,
-   "item_minhash:61": 5,
-   "item_ngram13:12": 85,
+   "item_minhash:6": 59,
+   "item_minhash:61": 6,
+   "item_ngram13:12": 89,
    "item_ngram13:24": 1,
    "item_ngram13:26": 1,
    "item_ngram13:29": 3,
    "item_ngram13:36": 7,
    "item_ngram13:4": 1,
-   "item_ngram13:6": 51,
-   "item_ngram13:61": 11
+   "item_ngram13:6": 53,
+   "item_ngram13:61": 13
   },
   "nq": {
-   "context_minhash:12": 73,
+   "context_contain:10": 4,
+   "context_contain:11": 5,
+   "context_contain:24": 198,
+   "context_contain:26": 7,
+   "context_contain:27": 2,
+   "context_contain:33": 3,
+   "context_contain:36": 27,
+   "context_contain:42": 7,
+   "context_contain:43": 1,
+   "context_contain:45": 6,
+   "context_contain:57": 13,
+   "context_contain:58": 92,
+   "context_contain:61": 94,
+   "context_edit:57": 5,
+   "context_edit:61": 7,
+   "context_minhash:12": 74,
    "context_minhash:36": 12,
-   "context_minhash:61": 476,
-   "context_ngram13:12": 177,
-   "context_ngram13:2": 39,
+   "context_minhash:61": 472,
+   "context_ngram13:12": 178,
+   "context_ngram13:2": 38,
    "context_ngram13:24": 7,
    "context_ngram13:26": 3,
    "context_ngram13:36": 160,
@@ -428,7 +594,10 @@
    "context_ngram13:42": 1,
    "context_ngram13:59": 13,
    "context_ngram13:6": 7,
-   "context_ngram13:61": 771,
+   "context_ngram13:61": 767,
+   "item_contain:24": 6,
+   "item_edit:24": 2,
+   "item_edit:59": 1,
    "item_minhash:12": 3,
    "item_minhash:24": 1,
    "item_minhash:61": 9,
@@ -437,11 +606,26 @@
    "item_ngram13:61": 23
   },
   "sst5": {
+   "context_contain:42": 1,
    "context_minhash:61": 3,
-   "context_ngram13:61": 3
+   "context_ngram13:61": 3,
+   "item_contain:61": 1
   },
   "toolace": {
-   "context_exact:1": 166,
+   "context_contain:1": 95,
+   "context_contain:10": 2,
+   "context_contain:42": 1,
+   "context_contain:62": 1,
+   "context_edit:1": 631,
+   "context_edit:10": 10,
+   "context_edit:20": 5,
+   "context_edit:24": 8,
+   "context_edit:26": 16,
+   "context_edit:27": 4,
+   "context_edit:36": 234,
+   "context_edit:5": 2,
+   "context_edit:57": 14,
+   "context_exact:1": 165,
    "context_exact:10": 2,
    "context_exact:11": 9,
    "context_exact:24": 25,
@@ -452,16 +636,16 @@
    "context_exact:43": 1,
    "context_exact:5": 1,
    "context_exact:57": 4,
-   "context_minhash:1": 368,
+   "context_minhash:1": 365,
    "context_minhash:10": 4,
    "context_minhash:11": 14,
    "context_minhash:2": 2,
    "context_minhash:20": 6,
-   "context_minhash:24": 32,
+   "context_minhash:24": 33,
    "context_minhash:26": 7,
    "context_minhash:28": 1,
    "context_minhash:33": 9,
-   "context_minhash:36": 95,
+   "context_minhash:36": 94,
    "context_minhash:37": 1,
    "context_minhash:41": 1,
    "context_minhash:42": 5,
@@ -472,8 +656,16 @@
    "context_minhash:6": 9,
    "context_minhash:61": 5,
    "context_ngram13:1": 1,
-   "context_ngram13:2": 959,
+   "context_ngram13:2": 963,
    "context_ngram13:61": 7,
+   "item_contain:10": 4,
+   "item_contain:2": 13,
+   "item_contain:3": 7,
+   "item_contain:62": 2,
+   "item_edit:1": 1,
+   "item_edit:2": 13,
+   "item_edit:3": 4,
+   "item_edit:62": 1,
    "item_exact:2": 27,
    "item_minhash:2": 33,
    "item_minhash:24": 1,
@@ -483,44 +675,72 @@
    "item_ngram13:62": 1
   },
   "when2call": {
-   "context_exact:1": 157,
-   "context_exact:24": 12,
+   "context_contain:1": 133,
+   "context_contain:36": 2,
+   "context_edit:1": 253,
+   "context_edit:10": 17,
+   "context_edit:24": 13,
+   "context_edit:26": 6,
+   "context_edit:27": 16,
+   "context_edit:3": 1,
+   "context_edit:36": 73,
+   "context_edit:5": 4,
+   "context_edit:57": 10,
+   "context_edit:58": 2,
+   "context_edit:64": 2,
+   "context_exact:1": 146,
+   "context_exact:24": 11,
    "context_exact:26": 2,
    "context_exact:3": 1,
    "context_exact:33": 3,
-   "context_exact:36": 349,
+   "context_exact:36": 353,
    "context_exact:57": 5,
-   "context_minhash:1": 194,
+   "context_minhash:1": 185,
    "context_minhash:10": 3,
    "context_minhash:12": 1,
    "context_minhash:2": 7,
    "context_minhash:20": 1,
-   "context_minhash:24": 14,
+   "context_minhash:24": 13,
    "context_minhash:26": 2,
-   "context_minhash:27": 5,
+   "context_minhash:27": 4,
    "context_minhash:3": 1,
    "context_minhash:33": 3,
-   "context_minhash:36": 609,
-   "context_minhash:37": 4,
+   "context_minhash:36": 613,
+   "context_minhash:37": 3,
    "context_minhash:57": 20,
-   "context_minhash:6": 10,
-   "context_minhash:61": 12,
+   "context_minhash:6": 9,
+   "context_minhash:61": 11,
    "context_minhash:64": 2,
-   "context_ngram13:1": 26,
+   "context_ngram13:1": 21,
    "context_ngram13:12": 1,
-   "context_ngram13:2": 592,
+   "context_ngram13:2": 596,
    "context_ngram13:37": 1,
    "context_ngram13:61": 3,
-   "item_exact:2": 5,
-   "item_exact:62": 78,
-   "item_minhash:2": 15,
+   "item_contain:1": 27,
+   "item_contain:2": 7,
+   "item_contain:24": 1,
+   "item_contain:3": 8,
+   "item_contain:36": 17,
+   "item_contain:43": 10,
+   "item_contain:57": 1,
+   "item_contain:58": 1,
+   "item_contain:62": 93,
+   "item_edit:10": 2,
+   "item_edit:2": 12,
+   "item_edit:36": 2,
+   "item_edit:4": 2,
+   "item_edit:5": 5,
+   "item_edit:62": 351,
+   "item_exact:2": 6,
+   "item_exact:62": 79,
+   "item_minhash:2": 17,
    "item_minhash:36": 2,
    "item_minhash:4": 1,
    "item_minhash:5": 1,
-   "item_minhash:62": 356,
-   "item_ngram13:2": 22,
+   "item_minhash:62": 376,
+   "item_ngram13:2": 25,
    "item_ngram13:36": 1,
-   "item_ngram13:62": 1420
+   "item_ngram13:62": 1492
   },
   "winogrande": {
    "context_minhash:61": 4,
@@ -549,7 +769,11 @@
      "ngram13": [],
      "minhash": [
       4
-     ]
+     ],
+     "edit": [
+      4
+     ],
+     "contain": []
     }
    },
    {
@@ -559,7 +783,21 @@
      "ngram13": [
       4
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:banking77:9057",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      4
+     ],
+     "contain": []
     }
    },
    {
@@ -569,85 +807,83 @@
      "ngram13": [],
      "minhash": [
       4
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
-    "id": "m2:banking77:9921~inj:d1a:fake_correction",
-    "item_hits": {
-     "exact": [
-      4
-     ],
-     "ngram13": [
-      4
-     ],
-     "minhash": [
-      4
-     ]
-    }
-   },
-   {
-    "id": "m2:banking77:3355",
+    "id": "m2:banking77:6036",
     "item_hits": {
      "exact": [],
      "ngram13": [],
-     "minhash": [
+     "minhash": [],
+     "edit": [
       4
-     ]
+     ],
+     "contain": []
     }
    }
   ],
   "clinc150": [
    {
-    "id": "m2:clinc150:7080",
+    "id": "m2:clinc150:7381",
     "item_hits": {
      "exact": [],
      "ngram13": [],
-     "minhash": [
-      4
-     ]
-    }
-   },
-   {
-    "id": "m2:clinc150:11836",
-    "item_hits": {
-     "exact": [],
-     "ngram13": [],
-     "minhash": [
+     "minhash": [],
+     "edit": [
       5
-     ]
-    }
-   },
-   {
-    "id": "m2:clinc150:7795",
-    "item_hits": {
-     "exact": [],
-     "ngram13": [],
-     "minhash": [
-      5
-     ]
-    }
-   },
-   {
-    "id": "m2:clinc150:4659",
-    "item_hits": {
-     "exact": [
-      10
      ],
-     "ngram13": [],
-     "minhash": [
-      10
-     ]
+     "contain": []
     }
    },
    {
-    "id": "m2:clinc150:13844",
+    "id": "m2:clinc150:1444",
     "item_hits": {
      "exact": [],
      "ngram13": [],
-     "minhash": [
+     "minhash": [],
+     "edit": [
+      1
+     ],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:clinc150:5649",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
       5
-     ]
+     ],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:clinc150:3078",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      5
+     ],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:clinc150:3239",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      5
+     ],
+     "contain": []
     }
    }
   ],
@@ -663,7 +899,9 @@
      ],
      "minhash": [
       12
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -677,7 +915,9 @@
      ],
      "minhash": [
       12
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -691,7 +931,9 @@
      ],
      "minhash": [
       12
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -705,7 +947,9 @@
      ],
      "minhash": [
       12
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -719,7 +963,9 @@
      ],
      "minhash": [
       12
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -733,7 +979,21 @@
      ],
      "minhash": [
       12
-     ]
+     ],
+     "edit": [],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:hellaswag:1278",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      29
+     ],
+     "contain": []
     }
    },
    {
@@ -743,41 +1003,35 @@
      "ngram13": [],
      "minhash": [
       29
+     ],
+     "edit": [],
+     "contain": [
+      29
      ]
     }
    },
    {
-    "id": "m2:hellaswag:14171",
+    "id": "m2:hellaswag:26733",
     "item_hits": {
-     "exact": [
-      29
-     ],
+     "exact": [],
      "ngram13": [],
-     "minhash": [
-      29
+     "minhash": [],
+     "edit": [],
+     "contain": [
+      61
      ]
     }
    },
    {
-    "id": "m2:hellaswag:15491~inj:d1a:system_note",
+    "id": "m2:hellaswag:2922",
     "item_hits": {
      "exact": [],
-     "ngram13": [
-      12
-     ],
-     "minhash": [
-      12
-     ]
-    }
-   },
-   {
-    "id": "m2:hellaswag:36508",
-    "item_hits": {
-     "exact": [],
-     "ngram13": [
+     "ngram13": [],
+     "minhash": [],
+     "edit": [],
+     "contain": [
       29
-     ],
-     "minhash": []
+     ]
     }
    }
   ],
@@ -791,7 +1045,9 @@
      "ngram13": [],
      "minhash": [
       37
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -804,7 +1060,9 @@
      "minhash": [
       6,
       24
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -817,7 +1075,9 @@
      "minhash": [
       24,
       33
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -830,7 +1090,9 @@
      "minhash": [
       24,
       64
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -842,7 +1104,9 @@
      "ngram13": [],
      "minhash": [
       33
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -858,7 +1122,9 @@
      ],
      "minhash": [
       6
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -872,7 +1138,9 @@
      ],
      "minhash": [
       6
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -886,7 +1154,9 @@
      ],
      "minhash": [
       6
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -900,7 +1170,9 @@
      ],
      "minhash": [
       6
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -914,7 +1186,9 @@
      ],
      "minhash": [
       6
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -930,7 +1204,21 @@
      "minhash": [
       24,
       26
-     ]
+     ],
+     "edit": [],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:mmlu_aux:93596",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      24
+     ],
+     "contain": []
     }
    },
    {
@@ -942,7 +1230,9 @@
      "ngram13": [],
      "minhash": [
       26
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -955,7 +1245,9 @@
      "minhash": [
       24,
       33
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -965,22 +1257,39 @@
      "ngram13": [],
      "minhash": [
       32
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
-   },
+   }
+  ],
+  "sst5": [
    {
-    "id": "m2:mmlu_aux:88566",
+    "id": "m2:sst5:2550",
     "item_hits": {
      "exact": [],
      "ngram13": [],
-     "minhash": [
-      10,
-      20
+     "minhash": [],
+     "edit": [],
+     "contain": [
+      61
      ]
     }
    }
   ],
   "boolq": [
+   {
+    "id": "m2:boolq:7653",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      5
+     ],
+     "contain": []
+    }
+   },
    {
     "id": "m2:boolq:8225",
     "item_hits": {
@@ -990,7 +1299,9 @@
      ],
      "minhash": [
       36
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1002,7 +1313,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1012,7 +1325,9 @@
      "ngram13": [
       61
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1024,17 +1339,9 @@
      ],
      "minhash": [
       36
-     ]
-    }
-   },
-   {
-    "id": "m2:boolq:6168",
-    "item_hits": {
-     "exact": [],
-     "ngram13": [
-      61
      ],
-     "minhash": []
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1046,7 +1353,9 @@
      "ngram13": [
       62
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1056,7 +1365,9 @@
      "ngram13": [
       62
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1068,7 +1379,9 @@
      ],
      "minhash": [
       62
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1080,7 +1393,9 @@
      ],
      "minhash": [
       62
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1090,7 +1405,9 @@
      "ngram13": [
       62
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1104,7 +1421,9 @@
      ],
      "minhash": [
       2
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1118,7 +1437,9 @@
      ],
      "minhash": [
       2
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1132,7 +1453,9 @@
      ],
      "minhash": [
       2
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1146,25 +1469,49 @@
      ],
      "minhash": [
       2
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
-    "id": "m2:toolace:4008",
+    "id": "m2:toolace:1382",
     "item_hits": {
-     "exact": [
-      2
-     ],
-     "ngram13": [
-      2
-     ],
-     "minhash": [
-      2
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [],
+     "contain": [
+      10
      ]
     }
    }
   ],
   "nq": [
+   {
+    "id": "m2:nq:66177",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      59
+     ],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:nq:10733",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      24
+     ],
+     "contain": []
+    }
+   },
    {
     "id": "m2:nq:63506",
     "item_hits": {
@@ -1172,7 +1519,21 @@
      "ngram13": [
       61
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:nq:90918",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [],
+     "contain": [
+      24
+     ]
     }
    },
    {
@@ -1184,45 +1545,32 @@
      ],
      "minhash": [
       61
-     ]
-    }
-   },
-   {
-    "id": "m2:nq:47618",
-    "item_hits": {
-     "exact": [],
-     "ngram13": [
-      12
      ],
-     "minhash": []
-    }
-   },
-   {
-    "id": "m2:nq:15292",
-    "item_hits": {
-     "exact": [],
-     "ngram13": [
-      61
-     ],
-     "minhash": [
-      61
-     ]
-    }
-   },
-   {
-    "id": "m2:nq:88874",
-    "item_hits": {
-     "exact": [],
-     "ngram13": [
-      12
-     ],
-     "minhash": []
+     "edit": [],
+     "contain": []
     }
    }
   ],
   "multi": [
    {
-    "id": "m2:multi:m2:gsm8k:424+m2:boolq:5124+m2:gsm8k:57+m2:boolq:8035",
+    "id": "m2:multi:m2:hellaswag:33123+m2:mmlu_aux:35660+m2:anli:bcac01bf-4b5c-4c1d-a306-8cbd395cfe77",
+    "item_hits": {
+     "exact": [
+      12
+     ],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12,
+      24
+     ],
+     "edit": [],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:multi:m2:anli:ac99962c-b868-46b7-88d7-e54fdbba21e9+m2:sst5:6999+m2:boolq:2295+m2:gsm8k:57",
     "item_hits": {
      "exact": [
       6
@@ -1232,57 +1580,45 @@
      ],
      "minhash": [
       6
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
-    "id": "m2:multi:m2:anli:bcac01bf-4b5c-4c1d-a306-8cbd395cfe77+m2:clinc150:2474",
-    "item_hits": {
-     "exact": [
-      12
-     ],
-     "ngram13": [
-      12
-     ],
-     "minhash": [
-      12
-     ]
-    }
-   },
-   {
-    "id": "m2:multi:m2:winogrande:25863+m2:banking77:6764",
-    "item_hits": {
-     "exact": [
-      4
-     ],
-     "ngram13": [],
-     "minhash": [
-      4
-     ]
-    }
-   },
-   {
-    "id": "m2:multi:m2:boolq:8599+m2:clinc150:9002+m2:gsm8k:6826",
-    "item_hits": {
-     "exact": [
-      6
-     ],
-     "ngram13": [
-      6
-     ],
-     "minhash": [
-      6
-     ]
-    }
-   },
-   {
-    "id": "m2:multi:m2:clinc150:3106+m2:mmlu_aux:35660",
+    "id": "m2:multi:m2:clinc150:8172+m2:clinc150:2867+m2:sst5:5778+m2:mmlu_aux:37676",
     "item_hits": {
      "exact": [],
      "ngram13": [],
-     "minhash": [
-      24
-     ]
+     "minhash": [],
+     "edit": [
+      5
+     ],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:multi:m2:anli:78bab8e9-81fc-412a-a47d-1443aa363c8f+m2:clinc150:4674+m2:mmlu_aux:89495+m2:mmlu_aux:2423",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      10
+     ],
+     "contain": []
+    }
+   },
+   {
+    "id": "m2:multi:m2:banking77:7747+m2:banking77:3914+m2:boolq:7439",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [
+      4
+     ],
+     "contain": []
     }
    }
   ]
@@ -1298,7 +1634,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1310,7 +1648,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1320,7 +1660,9 @@
      "ngram13": [
       61
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1336,7 +1678,13 @@
       5,
       36,
       57
-     ]
+     ],
+     "edit": [
+      3,
+      5,
+      10
+     ],
+     "contain": []
     }
    },
    {
@@ -1350,7 +1698,13 @@
       5,
       36,
       57
-     ]
+     ],
+     "edit": [
+      3,
+      5,
+      10
+     ],
+     "contain": []
     }
    },
    {
@@ -1364,11 +1718,29 @@
       5,
       36,
       57
-     ]
+     ],
+     "edit": [
+      3,
+      5,
+      10
+     ],
+     "contain": []
     }
    }
   ],
   "anli": [
+   {
+    "id": "m2:anli:af7b6507-8fb9-4e2c-b491-46cc5eb5033b",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [],
+     "edit": [],
+     "contain": [
+      24
+     ]
+    }
+   },
    {
     "id": "m2:anli:a0e932d8-2397-4af2-8cd1-4e8ca67dc244",
     "context_hits": {
@@ -1376,7 +1748,9 @@
      "ngram13": [
       12
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1386,18 +1760,10 @@
      "ngram13": [
       36
      ],
-     "minhash": []
-    }
-   },
-   {
-    "id": "m2:anli:11b3520e-3ea3-445e-bed1-2741431933f4",
-    "context_hits": {
-     "exact": [],
-     "ngram13": [
-      61
-     ],
-     "minhash": [
-      61
+     "minhash": [],
+     "edit": [],
+     "contain": [
+      36
      ]
     }
    }
@@ -1412,7 +1778,9 @@
      "ngram13": [],
      "minhash": [
       41
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1425,7 +1793,9 @@
      "minhash": [
       24,
       33
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1437,7 +1807,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1449,7 +1821,9 @@
      "ngram13": [
       61
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1461,7 +1835,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1471,7 +1847,9 @@
      "ngram13": [
       37
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1485,7 +1863,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1497,7 +1877,9 @@
      ],
      "minhash": [
       12
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1507,7 +1889,9 @@
      "ngram13": [
       12
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1519,7 +1903,9 @@
      "ngram13": [
       36
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1533,7 +1919,9 @@
      "minhash": [
       12,
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1545,7 +1933,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1559,7 +1949,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1571,7 +1963,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1583,7 +1977,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1595,7 +1991,9 @@
      "ngram13": [
       37
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1605,7 +2003,9 @@
      "ngram13": [
       36
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1615,7 +2015,11 @@
      "ngram13": [
       61
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": [
+      24
+     ]
     }
    }
   ],
@@ -1631,7 +2035,11 @@
      ],
      "minhash": [
       36
-     ]
+     ],
+     "edit": [
+      1
+     ],
+     "contain": []
     }
    },
    {
@@ -1641,7 +2049,9 @@
      "ngram13": [
       2
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1655,7 +2065,9 @@
      ],
      "minhash": [
       1
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1667,7 +2079,9 @@
      "ngram13": [
       2
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1679,7 +2093,12 @@
      ],
      "minhash": [
       1
-     ]
+     ],
+     "edit": [
+      1,
+      36
+     ],
+     "contain": []
     }
    },
    {
@@ -1689,7 +2108,9 @@
      "ngram13": [
       2
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    }
   ],
@@ -1701,7 +2122,9 @@
      "ngram13": [
       2
      ],
-     "minhash": []
+     "minhash": [],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1713,7 +2136,9 @@
      ],
      "minhash": [
       61
-     ]
+     ],
+     "edit": [],
+     "contain": []
     }
    },
    {
@@ -1726,13 +2151,17 @@
      ],
      "minhash": [
       61
+     ],
+     "edit": [],
+     "contain": [
+      24
      ]
     }
    }
   ],
   "multi": [
    {
-    "id": "m2:multi:m2:clinc150:14902+m2:hellaswag:25603+m2:hellaswag:16413",
+    "id": "m2:multi:m2:clinc150:4771+m2:hellaswag:5085+m2:hellaswag:6480",
     "context_hits": {
      "exact": [],
      "ngram13": [],
@@ -1742,11 +2171,17 @@
       5,
       36,
       57
-     ]
+     ],
+     "edit": [
+      3,
+      5,
+      10
+     ],
+     "contain": []
     }
    },
    {
-    "id": "m2:multi:m2:clinc150:4172+m2:clinc150:6531+m2:sst5:6999+m2:mmlu_aux:20842",
+    "id": "m2:multi:m2:anli:ba3d64a2-bbdc-4930-a9b4-164937fe0f15+m2:clinc150:7386",
     "context_hits": {
      "exact": [],
      "ngram13": [],
@@ -1756,11 +2191,17 @@
       5,
       36,
       57
-     ]
+     ],
+     "edit": [
+      3,
+      5,
+      10
+     ],
+     "contain": []
     }
    },
    {
-    "id": "m2:multi:m2:anli:e9cc0259-0022-442d-bbc3-39d269a35387+m2:clinc150:2852+m2:mmlu_aux:47510+m2:mmlu_aux:87814",
+    "id": "m2:multi:m2:clinc150:4121+m2:gsm8k:4434",
     "context_hits": {
      "exact": [],
      "ngram13": [],
@@ -1770,7 +2211,13 @@
       5,
       36,
       57
-     ]
+     ],
+     "edit": [
+      3,
+      5,
+      10
+     ],
+     "contain": []
     }
    }
   ]

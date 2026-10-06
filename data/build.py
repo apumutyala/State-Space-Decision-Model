@@ -39,9 +39,14 @@ def _len_words(rec: dict) -> int:
 
 def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | None = None,
                  seed: int = config.SEED, fingerprint: Fingerprint | None = None, sources: dict | None = None,
-                 log=print) -> dict:
+                 log=print, allow_test_fingerprint: bool = False) -> dict:
+    """``allow_test_fingerprint`` is for unit tests with synthetic fingerprints only; a receipt build refuses it."""
     t0 = time.time()
     fp = fingerprint or Fingerprint.load(config.FINGERPRINT)
+    if not allow_test_fingerprint:
+        fp.assert_production()
+    elif receipt:
+        raise ValueError("a receipt build needs the production fingerprint")
     dlog = DedupLog(fp.meta)
     shares = sources or SHARES
     if abs(sum(shares.values()) - 1.0) > 1e-9:
@@ -59,14 +64,19 @@ def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | N
     stats = collections.defaultdict(collections.Counter)
     held_out_checked = 0
 
-    def accept(rec: dict) -> bool:
+    def hits_of(rec: dict) -> tuple[dict, dict]:
         nonlocal held_out_checked
         A.validate(rec)
         I.assert_no_heldout(rec["state"], rec["questions"], rec["id"])
         held_out_checked += 1
-        item = fp.check(rec["_probe"], {})
-        full = fp.check(rec["state"], rec["questions"])
-        return dlog.add(rec["source"] if rec["family"] != "multi" else "multi", rec["id"], item, full)
+        return fp.check(rec["_probe"], {}), fp.check(rec["state"], rec["questions"])
+
+    def bucket_of(rec: dict) -> str:
+        return rec["source"] if rec["family"] != "multi" else "multi"
+
+    def accept(rec: dict) -> bool:
+        item, full = hits_of(rec)
+        return dlog.add(bucket_of(rec), rec["id"], item, full)
 
     def note(rec: dict, bucket: str):
         s = stats[bucket]
@@ -133,15 +143,24 @@ def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | N
     while got < quotas.get("factchange", 0):
         fam = fams[k % len(fams)]
         pair = I.fact_change_pair(fam, k, seed)
-        rng = random.Random(f"{seed}|fcaug|{k}"); k += 1
-        pair = [A.reshuffle_options(p, rng) for p in pair]
+        # the SAME option permutation/relabelling for both variants (fresh RNG with one seed per pair), so the
+        # pair differs only in the untrusted fact and the label (PR #16 review: a shared advancing RNG gave the
+        # two variants different option orders/ids)
+        pair = [A.reshuffle_options(p, random.Random(f"{seed}|fcaug|{k}")) for p in pair]
+        if pair[0]["questions"] != pair[1]["questions"]:
+            raise AssertionError(f"fact-change pair {k}: questions differ after augmentation")
+        rng = random.Random(f"{seed}|fcinj|{k}"); k += 1
         if rng.random() < P_INJECT_FACT:
             v = rng.randrange(2)
             inj = I.inject(pair[v], rng, family="d1a")
             if inj is not None:
                 pair[v] = inj
-        oks = [accept(p) for p in pair]
-        if all(oks):
+        # decide on the pair first, then log: a clean partner of a dropped variant is logged as dropped
+        hs = [hits_of(p) for p in pair]
+        pair_ok = all(not any(h[0].values()) for h in hs)
+        for p, (item, full) in zip(pair, hs):
+            dlog.add(bucket_of(p), p["id"], item, full, partner_dropped=not pair_ok)
+        if pair_ok:
             for p in pair:
                 kept.append(p); note(p, "factchange"); got += 1
     log(f"  factchange: kept {got}")

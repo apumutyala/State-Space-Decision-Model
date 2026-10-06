@@ -67,7 +67,7 @@
   "bytes": 43995757,
   "url": "https://huggingface.co/datasets/sentence-transformers/natural-questions/resolve/f9e894e1081e206e577b4eaa9ee6de2b06ae6f17/pair/train-00000-of-00001.parquet",
   "revision": "f9e894e1081e206e577b4eaa9ee6de2b06ae6f17",
-  "license": "CC-BY-SA-3.0 (Natural Questions)"
+  "license": "HF card: none stated; upstream Natural Questions CC-BY-SA-3.0"
  },
  "sst5/train.jsonl": {
   "sha256": "46bde4fb5abc93ffbadfa9a9f67de17c08a2f535cfb5756c59188d070434f433",
@@ -95,6 +95,6 @@
   "bytes": 2058506,
   "url": "https://huggingface.co/datasets/allenai/winogrande/resolve/01e74176c63542e6b0bcb004dcdea22d94fb67b5/winogrande_xl/train-00000-of-00001.parquet",
   "revision": "01e74176c63542e6b0bcb004dcdea22d94fb67b5",
-  "license": "CC-BY-4.0 (per AI2 release)"
+  "license": "Apache-2.0 (allenai/winogrande GitHub LICENSE); HF card: none stated"
  }
 }
