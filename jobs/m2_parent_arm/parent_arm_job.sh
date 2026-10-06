@@ -3,7 +3,7 @@
 # (train.m2_gates arm cache) for every m2 cell on that parent. SF Compute batch job (chip h100). DRAFT, NOT SUBMITTED.
 # Spec: jobs/m2_parent_arm/JOB_SPEC.md. Caps: jobs/m2_parent_arm/job_params.json. No training happens in this job.
 # Env: PARENT=rwkv7|q9af   TOK_S=<measured prefill tok/s of this parent> (rwkv7 stage A probe / probe9b throughput)
-# Exit codes: 0 cached + exports verified   2 bad PARENT / no TOK_S   5 setup   6 export verification   7 phase timeout
+# Exit codes: 0 cached + exports verified   2 bad PARENT   4 TOK_S missing / not a number   5 setup   6 export verification   7 phase timeout
 #   9 cache manifest missing/invalid   10 snapshot / records / cohort / pins mismatch, or download failed
 #   15 projected past the cap from the MEASURED rate (nothing scored)   30/31/32 guard not ready   1 finalize failed
 set -Euo pipefail
@@ -12,13 +12,12 @@ CODE=/opt/ssdm/m1
 PARENT=${PARENT:-rwkv7}
 case "$PARENT" in rwkv7) CELL=jobs/m2_pilot/m2_pilot_cell.json ;; q9af) CELL=jobs/m2_pilot/m2_pilot_cell_q9af.json ;;
   *) echo "PARENT must be rwkv7 or q9af"; exit 2 ;; esac
-[ -n "${TOK_S:-}" ] || { echo "TOK_S (a MEASURED prefill rate) is required"; exit 2; }
 PARAMS=$CODE/jobs/m2_parent_arm/job_params.json
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
 WORK=/tmp/m2-parent-arm
 META=${GMN_METADATA_URL:-http://169.254.42.1}
-HB_EVERY_S=${HB_EVERY_S:-60} STALL_S=${STALL_S:-1200}
+HB_EVERY_S=60 STALL_S=1200  # fixed in paid runs (not env-overridable)
 WATCH_EXTRA=$WORK
 CK=${GMN_CHECKPOINT_DIR:-$WORK/ck}  # watchdog.sh needs CK and HF_DIR as well
 HF_DIR=${HF_HUB_CACHE:-${HF_HOME:-$HOME/.cache/huggingface}}
@@ -50,6 +49,8 @@ fail() { RC=$1; say "FAIL($1): $2"; exit "$1"; }
 hb
 watchdog & WD_PID=$!
 trap finish EXIT
+[ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s of this parent) is not set"
+case "$TOK_S" in *[!0-9.]*|"") fail 4 "TOK_S=$TOK_S is not a number" ;; esac
 
 say "setup (PARENT=$PARENT)"
 cp /opt/ssdm/CONTEXT_MANIFEST.json "$WORK/out/" || fail 5 "no context manifest"
@@ -63,6 +64,7 @@ if [ "$PARENT" = rwkv7 ]; then
   GDN_ARGS=()
 else
   SNAP=$(timeout ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("Qwen/Qwen3.5-9B", revision="c202236235762e1c871ad0ccb60c8ee5ba337b9a"))') || fail 10 "download"
+  ( cd "$SNAP" && sha256sum -c "$CODE/jobs/m2_pilot/q9af_snapshot.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "q9af snapshot sha256"
   GDN_ARGS=(--gdn-ckpt /data/q9af/gdn_converted.pt)  # pinned by sha256 in the q9af cell config (checked in Python)
 fi
 python -X utf8 -m jobs.common.dev_subset rows --rows /data/slices/dev-rows.jsonl.gz --out "$WORK/index-rows.jsonl.gz" \
