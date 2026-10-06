@@ -268,9 +268,16 @@ V2_GRAD_TENSORS = ("out", "state") + tuple(f"grad_{n}" for n in ("r", "w_log", "
 V2_CURRENT = "chunked"
 V2_TRAIN_WARMUP = 3  # untimed optimiser steps first (fla compile / autotune, allocator warm-up)
 V2_TRAIN_STEPS = 20  # timed optimiser steps; median per-step tok/s
-#: the current impl may be too slow for the phase cap: its median is over the timed steps it reached (OOM = 0 tok/s),
-#: at least this many; below that its speed is missing (INCONCLUSIVE). fla variants must reach all V2_TRAIN_STEPS.
-V2_CURRENT_MIN_STEPS = 5
+#: Amendment A1 (2026-10-06, after independent review, before any v2 run): the binding train ratio is
+#: median(fla tok/s) / median(chunked tok/s) over the timed steps BOTH impls completed (matched rows), with at least
+#: this many matched steps, else INCONCLUSIVE. OOM steps are not zeros: chunked OOMs are a separate, non-binding
+#: finding (``chunked_oom``); an fla OOM still fails the peak clause. Replaces the withdrawn OOM-as-0 tok/s convention
+#: and V2_CURRENT_MIN_STEPS.
+V2_MIN_MATCHED_STEPS = 10
+#: A1: an fla variant's train measurement is void (INCONCLUSIVE) if any of its warmup or timed losses is non-finite, or
+#: if its step-0 loss differs from chunked's (same rows / seed / init) by more than this, relative, when chunked's
+#: step 0 completed
+V2_STEP0_LOSS_REL_MAX = 0.02
 V2_TRAIN_RATIO_MIN = 2.0
 V2_PREFILL_RATIO_MIN = 2.0  # at every length in LENGTHS (the unchanged throughput phase)
 V2_PEAK_GB_MAX = 76.0  # = the m2 cell's pass_rule max_peak_gb
@@ -391,61 +398,94 @@ def numerics_ok_v2(rep: dict, v: str) -> dict:
     return {"ok": ok, "truth": t_ok, "synthetic": s_ok, "why": t_why + s_why, "truth_detail": t_detail}
 
 
-def train_speed_v2(tr: dict | None, current: bool) -> dict:
-    """One impl's training-speed record -> {'tok_s' (median per-step tok/s or None), 'peak_gb', 'oom_steps', ...}.
-    A timed step that ran out of memory counts 0 tok/s (it cannot be trained at that shape on this path). The current
-    impl's median is over the timed steps it reached (>= V2_CURRENT_MIN_STEPS); an fla variant needs every one of
-    V2_TRAIN_STEPS. A fallback or no fla call voids an fla measurement (None)."""
+def _done(st: dict) -> bool:
+    """A step that completed (not OOM, not skipped by the deadline) and has a measured rate."""
+    return st.get("tok_s") is not None and not st.get("oom") and not st.get("skipped")
+
+
+def _loss_finite(st: dict) -> bool:
+    x = st.get("loss")
+    return st.get("finite") is not False and isinstance(x, (int, float)) and math.isfinite(x)
+
+
+def train_summary_v2(tr: dict | None) -> dict:
+    """Per-impl facts from a train_v2_<impl>.json: peak, OOM steps (and their longest rows), completed timed steps."""
     if not tr:
-        return {"tok_s": None, "peak_gb": None, "reason": "missing"}
-    steps = [s for s in tr.get("steps", []) if s.get("timed")]
-    vals = [0.0 if s.get("oom") else s.get("tok_s") for s in steps if s.get("oom") or s.get("tok_s") is not None]
-    oom = sum(1 for s in steps if s.get("oom"))
-    out = {"tok_s": None, "peak_gb": tr.get("peak_gb"), "oom_steps": oom, "timed_steps": len(vals)}
-    if not current:
-        if tr.get("fallbacks") or not (tr.get("fla_calls") or {}).get(tr.get("impl"), 0) > 0:
-            out["reason"] = "fla fallback or no fla call"
-            return out
-        need = V2_TRAIN_STEPS
-    else:
-        need = V2_CURRENT_MIN_STEPS
-    if len(vals) < need:
-        out["reason"] = f"{len(vals)} timed steps < {need}"
+        return {"present": False}
+    steps = tr.get("steps", [])
+    ooms = [s for s in steps if s.get("oom")]
+    timed = [s for s in steps if s.get("timed") and _done(s)]
+    return {"present": True, "peak_gb": tr.get("peak_gb"), "oom_steps": len(ooms),
+            "oom_rows_max_T": [s.get("max_T") for s in ooms], "completed_timed_steps": len(timed),
+            "median_tok_s_completed": statistics.median([s["tok_s"] for s in timed]) if timed else None,
+            "nonfinite_loss_steps": [s.get("i") for s in steps if _done(s) and not _loss_finite(s)]}
+
+
+def train_ratio_v2(cur: dict | None, var: dict | None) -> dict:
+    """RULE v2 + Amendment A1: the binding train ratio of an fla variant against the current impl.
+    None (INCONCLUSIVE) when: a record is missing; the variant fell back or never called fla; any of the variant's
+    warmup or timed losses is non-finite; the current impl's step 0 completed and the variant's step-0 loss is missing
+    or differs by more than V2_STEP0_LOSS_REL_MAX (relative to the current impl's); fewer than V2_MIN_MATCHED_STEPS
+    timed steps were completed by BOTH. Else median(variant tok/s) / median(current tok/s) over exactly those steps."""
+    out = {"ratio": None, "matched_steps": 0, "step0_loss_rel_diff": None}
+    if not cur or not var:
+        out["reason"] = "missing train record"
         return out
-    out["tok_s"] = statistics.median(vals[:V2_TRAIN_STEPS])
+    if var.get("fallbacks") or not (var.get("fla_calls") or {}).get(var.get("impl"), 0) > 0:
+        out["reason"] = "fla fallback or no fla call"
+        return out
+    bad = [s.get("i") for s in var.get("steps", []) if _done(s) and not _loss_finite(s)]
+    if bad:
+        out["reason"] = f"non-finite fla loss at steps {bad}"
+        return out
+    c_by = {s.get("i"): s for s in cur.get("steps", [])}
+    v_by = {s.get("i"): s for s in var.get("steps", [])}
+    c0, v0 = c_by.get(0) or {}, v_by.get(0) or {}
+    if _done(c0) and _loss_finite(c0):
+        if not (_done(v0) and _loss_finite(v0)):
+            out["reason"] = "current step 0 completed, fla step 0 did not"
+            return out
+        rel = abs(v0["loss"] - c0["loss"]) / max(abs(c0["loss"]), 1e-12)
+        out["step0_loss_rel_diff"] = rel
+        if rel > V2_STEP0_LOSS_REL_MAX:
+            out["reason"] = f"step-0 loss rel diff {rel:.4g} > {V2_STEP0_LOSS_REL_MAX}"
+            return out
+    matched = sorted(i for i, s in v_by.items() if s.get("timed") and _done(s) and _done(c_by.get(i) or {}))
+    out["matched_steps"] = len(matched)
+    if len(matched) < V2_MIN_MATCHED_STEPS:
+        out["reason"] = f"{len(matched)} matched timed steps < {V2_MIN_MATCHED_STEPS}"
+        return out
+    mv = statistics.median([v_by[i]["tok_s"] for i in matched])
+    mc = statistics.median([c_by[i]["tok_s"] for i in matched])
+    out.update(ratio=mv / mc, fla_tok_s=mv, current_tok_s=mc, matched=matched)
     return out
 
 
 def decide_v2(rep: dict) -> dict:
-    """RULE v2 (verbatim in JOB_SPEC.md). rep = {'kernel','fork','model','throughput','truth_v2',
+    """RULE v2 (verbatim in JOB_SPEC.md) with Amendment A1. rep = {'kernel','fork','model','throughput','truth_v2',
     'train_v2': {impl: record}} phase JSONs. Per fla variant:
       REJECT_NUMERICS    iff NUMERICS_OK is false;
-      INCONCLUSIVE       iff anything required is missing (numerics undefined, a prefill ratio, the train ratio,
-                         the fla peak);
-      ADOPT_FOR_TRAINING iff NUMERICS_OK and train ratio >= V2_TRAIN_RATIO_MIN and fla peak <= V2_PEAK_GB_MAX;
+      INCONCLUSIVE       iff anything required is missing (numerics undefined, a prefill ratio, the train ratio
+                         (``train_ratio_v2`` None), the fla peak);
+      ADOPT_FOR_TRAINING iff NUMERICS_OK and train ratio >= V2_TRAIN_RATIO_MIN and fla peak <= V2_PEAK_GB_MAX (and
+                         no fla OOM step);
       ADOPT_READOUT_ONLY iff NUMERICS_OK and prefill ratio >= V2_PREFILL_RATIO_MIN at every length but train ratio
                          < V2_TRAIN_RATIO_MIN;
       NOT_ADOPTED        every other measured combination (the rule names no verdict for it; reported, not adopted).
-    Train ratio = median tok/s (fla variant) / median tok/s (current); +inf when the current impl's median is 0 (OOM)
-    and the variant's is not; 0 when the variant's median is 0.
-    The top-level verdict is plain fla's; fla_safe_gate gets its own under the same rule."""
+    ``chunked_oom`` is reported and never binding. The top-level verdict is plain fla's; fla_safe_gate gets its own."""
     trains = rep.get("train_v2") or {}
-    cur = train_speed_v2(trains.get(V2_CURRENT), current=True)
+    cur_rec = trains.get(V2_CURRENT)
+    cur = train_summary_v2(cur_rec)
+    chunked_oom = {"binding": False, "oom_steps": cur.get("oom_steps"), "rows_max_T": cur.get("oom_rows_max_T"),
+                   "finding": ("chunked cannot keep T_max=2048 at the cell config" if cur.get("oom_steps") else None)}
     per = {}
     for v in VARIANTS:
         num = numerics_ok_v2(rep, v)
         pre = _ratios(rep, v)["prefill"]
-        sp = train_speed_v2(trains.get(v), current=False)
-        if sp["tok_s"] is None or cur["tok_s"] is None:
-            ratio = None
-        elif sp["tok_s"] == 0:
-            ratio = 0.0  # fla could not train the median step either
-        elif cur["tok_s"] == 0:
-            ratio = math.inf
-        else:
-            ratio = sp["tok_s"] / cur["tok_s"]
-        fla_oom = bool(sp.get("oom_steps"))
-        peak_ok = None if sp.get("peak_gb") is None else (sp["peak_gb"] <= V2_PEAK_GB_MAX and not fla_oom)
+        sp = train_summary_v2(trains.get(v))
+        tr = train_ratio_v2(cur_rec, trains.get(v))
+        ratio = tr["ratio"]
+        peak_ok = None if sp.get("peak_gb") is None else (sp["peak_gb"] <= V2_PEAK_GB_MAX and not sp.get("oom_steps"))
         readout = None if any(x is None for x in pre.values()) else all(x >= V2_PREFILL_RATIO_MIN for x in pre.values())
         if num["ok"] is False:
             verdict = "REJECT_NUMERICS"
@@ -458,11 +498,13 @@ def decide_v2(rep: dict) -> dict:
         else:
             verdict = "NOT_ADOPTED"
         per[v] = {"verdict": verdict, "numerics": num, "prefill_ratios": pre, "readout_speed_ok": readout,
-                  "train": sp, "train_ratio": ratio, "peak_ok": peak_ok}
-    return {"rule": "v2", "verdict": per["fla"]["verdict"], "variant": "fla", "variants": per, "current_train": cur,
+                  "train": sp, "train_ratio": ratio, "train_ratio_detail": tr, "peak_ok": peak_ok}
+    return {"rule": "v2", "amendments": ["A1"], "verdict": per["fla"]["verdict"], "variant": "fla", "variants": per,
+            "current_train": cur, "chunked_oom": chunked_oom,
             "constants": {"layers": list(TRUTH_V2_LAYERS), "fwd_t": V2_FWD_T, "grad_t": V2_GRAD_T, "slack": V2_SLACK,
                           "frac_min": V2_FRAC_MIN, "abs_floor": ABS_FLOOR, "train_warmup": V2_TRAIN_WARMUP,
-                          "train_steps": V2_TRAIN_STEPS, "current_min_steps": V2_CURRENT_MIN_STEPS,
+                          "train_steps": V2_TRAIN_STEPS, "min_matched_steps": V2_MIN_MATCHED_STEPS,
+                          "step0_loss_rel_max": V2_STEP0_LOSS_REL_MAX,
                           "train_ratio_min": V2_TRAIN_RATIO_MIN, "prefill_ratio_min": V2_PREFILL_RATIO_MIN,
                           "lengths": list(LENGTHS), "peak_gb_max": V2_PEAK_GB_MAX, "current": V2_CURRENT}}
 

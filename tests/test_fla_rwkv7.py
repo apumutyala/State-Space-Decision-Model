@@ -527,7 +527,9 @@ def test_rule_v2_constants_are_pinned():
     assert E.V2_FWD_TENSORS == ("out", "state")
     assert E.V2_GRAD_TENSORS == ("out", "state", "grad_r", "grad_w_log", "grad_k", "grad_v", "grad_kk", "grad_a",
                                  "grad_state")
-    assert (E.V2_CURRENT, E.V2_TRAIN_WARMUP, E.V2_TRAIN_STEPS, E.V2_CURRENT_MIN_STEPS) == ("chunked", 3, 20, 5)
+    assert (E.V2_CURRENT, E.V2_TRAIN_WARMUP, E.V2_TRAIN_STEPS) == ("chunked", 3, 20)
+    assert (E.V2_MIN_MATCHED_STEPS, E.V2_STEP0_LOSS_REL_MAX) == (10, 0.02)  # Amendment A1
+    assert not hasattr(E, "V2_CURRENT_MIN_STEPS") and not hasattr(E, "train_speed_v2")  # withdrawn by A1
     assert (E.V2_TRAIN_RATIO_MIN, E.V2_PREFILL_RATIO_MIN, E.V2_PEAK_GB_MAX) == (2.0, 2.0, 76.0)
     assert E.LENGTHS == (2048, 8192, 16384)
     assert E.VERDICTS_V2 == ("ADOPT_FOR_TRAINING", "ADOPT_READOUT_ONLY", "REJECT_NUMERICS", "INCONCLUSIVE",
@@ -542,7 +544,9 @@ def test_rule_v2_constants_are_pinned():
               "ADOPT_FOR_TRAINING iff NUMERICS_OK and train ratio >= 2.0 and fla peak <= 76 GB",
               "ADOPT_READOUT_ONLY iff NUMERICS_OK and prefill ratio >= 2 at all lengths but train ratio < 2",
               "REJECT_NUMERICS iff NUMERICS_OK false", "INCONCLUSIVE if anything missing", "decide_v2", "job-jn47u",
-              "NOT_ADOPTED"):
+              "NOT_ADOPTED", "Amendment A1 (2026-10-06, after independent review, before any v2 run)",
+              "completed (matched rows)", "Require ≥ 10 matched steps",
+              "chunked cannot keep T_max=2048 at the cell config", "|step-0 loss rel-diff| ≤ 0.02"):
         assert s in rule, s
 
 
@@ -563,20 +567,31 @@ def _truth_v2(e_fla=0.03, e_ch=0.03, e_eg=0.05, e_safe=None, override=None, drop
 
 
 def _train_v2(cur=1000.0, fla=3000.0, safe=None, peak=60.0, cur_oom=0, fla_oom=0, n_fla=20, n_cur=20,
-              fallbacks=None):
-    def rec(impl, tok, n, oom, pk):
-        steps = [{"i": i, "timed": False, "tok_s": tok} for i in range(E.V2_TRAIN_WARMUP)]
-        steps += [{"i": E.V2_TRAIN_WARMUP + i, "timed": True, **({"oom": True} if i < oom else {"tok_s": tok})}
-                  for i in range(n)]
+              fallbacks=None, loss=1.0, fla_loss=None, cur_tok=None, fla_tok=None):
+    """Hand-built train_v2 records. ``*_oom``: the first n timed steps OOM; ``n_*``: timed steps reached (the rest are
+    skipped by the deadline); ``*_tok``: per-timed-step tok/s lists overriding the constants."""
+    def rec(impl, tok, n, oom, pk, lo, toks):
+        steps = [{"i": i, "timed": False, "tok_s": tok, "loss": lo[i] if isinstance(lo, list) else lo, "finite": True,
+                  "max_T": 500} for i in range(E.V2_TRAIN_WARMUP)]
+        for j in range(E.V2_TRAIN_STEPS):
+            st = {"i": E.V2_TRAIN_WARMUP + j, "timed": True, "max_T": 1000 + j}
+            if j >= n:
+                st["skipped"] = "deadline"
+            elif j < oom:
+                st["oom"] = True
+            else:
+                st.update(tok_s=toks[j] if toks else tok, loss=0.9, finite=True)
+            steps.append(st)
         r = {"impl": impl, "steps": steps, "peak_gb": pk, "fallbacks": {}, "fla_calls": {}}
         if impl != "chunked":
             r["fla_calls"] = {impl: 999}
             r["fallbacks"] = dict(fallbacks or {})
         return r
 
-    return {"chunked": rec("chunked", cur, n_cur, cur_oom, 70.0),
-            "fla": rec("fla", fla, n_fla, fla_oom, peak),
-            "fla_safe_gate": rec("fla_safe_gate", fla if safe is None else safe, n_fla, fla_oom, peak)}
+    fl = loss if fla_loss is None else fla_loss
+    return {"chunked": rec("chunked", cur, n_cur, cur_oom, 70.0, loss, cur_tok),
+            "fla": rec("fla", fla, n_fla, fla_oom, peak, fl, fla_tok),
+            "fla_safe_gate": rec("fla_safe_gate", fla if safe is None else safe, n_fla, fla_oom, peak, fl, fla_tok)}
 
 
 def _report_v2(truth=None, train=None, pre=(2.5, 3.0, 4.0), **kw):
@@ -610,7 +625,7 @@ def test_decide_v2_every_verdict():
     assert "truth_v2:real_L30_grad_T512:grad_k" in d["variants"]["fla"]["numerics"]["why"]
     # missing pieces -> inconclusive
     assert dv(_report_v2(truth=_truth_v2(drop="real_L45_fwd_T1024")))["verdict"] == "INCONCLUSIVE"
-    assert dv(_report_v2(train=_train_v2(n_fla=19)))["verdict"] == "INCONCLUSIVE"
+    assert dv(_report_v2(train=_train_v2(n_fla=9)))["verdict"] == "INCONCLUSIVE"  # < 10 matched (A1)
     r = _report_v2()
     r["train_v2"].pop("chunked")
     assert dv(r)["verdict"] == "INCONCLUSIVE"
@@ -680,38 +695,90 @@ def test_decide_v2_numerics_clauses():
 
 
 def test_decide_v2_train_speed_clauses():
-    # the current impl OOMs on every timed step -> median 0 -> ratio inf (fla trains the step, chunked cannot)
+    """RULE v2 + Amendment A1: ratio over matched completed steps only; OOM is never a zero."""
+    # chunked OOMs everywhere: no matched steps -> INCONCLUSIVE (A1 withdrew OOM-as-0); reported as chunked_oom
     d = E.decide_v2(_report_v2(train=_train_v2(cur_oom=20)))
-    assert d["verdict"] == "ADOPT_FOR_TRAINING" and d["variants"]["fla"]["train_ratio"] == math.inf
-    # OOM on a minority of steps: zeros enter the median
-    d = E.decide_v2(_report_v2(train=_train_v2(cur_oom=5)))
-    assert d["current_train"]["tok_s"] == 1000.0 and d["current_train"]["oom_steps"] == 5
-    d = E.decide_v2(_report_v2(train=_train_v2(cur_oom=11)))
-    assert d["current_train"]["tok_s"] == 0.0 and d["variants"]["fla"]["train_ratio"] == math.inf
-    # the current impl too slow for its cap: median over the >= 5 timed steps it reached; fewer -> inconclusive
-    assert E.decide_v2(_report_v2(train=_train_v2(n_cur=5)))["verdict"] == "ADOPT_FOR_TRAINING"
-    assert E.decide_v2(_report_v2(train=_train_v2(n_cur=4)))["verdict"] == "INCONCLUSIVE"
-    # fla OOM on any step fails the memory clause; fla OOM on most -> ratio 0
+    assert d["verdict"] == "INCONCLUSIVE" and d["variants"]["fla"]["train_ratio"] is None
+    assert d["chunked_oom"]["oom_steps"] == 20 and d["chunked_oom"]["binding"] is False
+    assert d["chunked_oom"]["finding"] == "chunked cannot keep T_max=2048 at the cell config"
+    assert d["chunked_oom"]["rows_max_T"][:2] == [1000, 1001]
+    # chunked OOMs on 10 timed steps: 10 matched -> the ratio is over those 10 only, and still binding
+    tok_c = [100.0] * 10 + [1000.0] * 10  # the OOM'd steps' slots are ignored anyway
+    d = E.decide_v2(_report_v2(train=_train_v2(cur_oom=10, cur_tok=tok_c)))
+    det = d["variants"]["fla"]["train_ratio_detail"]
+    assert det["matched_steps"] == 10 and det["matched"] == list(range(13, 23))
+    assert d["variants"]["fla"]["train_ratio"] == pytest.approx(3.0) and d["verdict"] == "ADOPT_FOR_TRAINING"
+    assert d["chunked_oom"]["oom_steps"] == 10
+    # 11 OOM -> 9 matched < 10 -> INCONCLUSIVE
+    assert E.decide_v2(_report_v2(train=_train_v2(cur_oom=11)))["verdict"] == "INCONCLUSIVE"
+    # deadline subsets: medians over the SAME rows for both impls (non-blocking #2)
+    tok_f = [3000.0] * 12 + [30000.0] * 8  # fla much faster on the late (short) rows chunked never reached
+    d = E.decide_v2(_report_v2(train=_train_v2(n_cur=12, fla_tok=tok_f)))
+    assert d["variants"]["fla"]["train_ratio_detail"]["matched_steps"] == 12
+    assert d["variants"]["fla"]["train_ratio"] == pytest.approx(3.0)
+    assert E.decide_v2(_report_v2(train=_train_v2(n_cur=9)))["verdict"] == "INCONCLUSIVE"
+    assert E.decide_v2(_report_v2(train=_train_v2(n_fla=9)))["verdict"] == "INCONCLUSIVE"
+    assert E.decide_v2(_report_v2(train=_train_v2(n_fla=10)))["verdict"] == "ADOPT_FOR_TRAINING"
+    # fla OOM on any step fails the memory clause (the remaining matched steps still give a ratio)
     d = E.decide_v2(_report_v2(train=_train_v2(fla_oom=1)))
     assert d["variants"]["fla"]["peak_ok"] is False and d["verdict"] == "NOT_ADOPTED"
-    d = E.decide_v2(_report_v2(train=_train_v2(fla_oom=20)))
-    assert d["variants"]["fla"]["train_ratio"] == 0.0 and d["verdict"] == "ADOPT_READOUT_ONLY"
-    # a fallback (chunked timed under the fla name) or no fla call voids the fla measurement
+    d = E.decide_v2(_report_v2(train=_train_v2(fla_oom=1, fla=1500.0)))
+    assert d["verdict"] == "ADOPT_READOUT_ONLY"
+    assert E.decide_v2(_report_v2(train=_train_v2(fla_oom=20)))["verdict"] == "INCONCLUSIVE"
+    # a fallback or no fla call voids the fla measurement
     assert E.decide_v2(_report_v2(train=_train_v2(fallbacks={"fp32": 3})))["verdict"] == "INCONCLUSIVE"
     tr = _train_v2()
     tr["fla"]["fla_calls"] = {}
     assert E.decide_v2(_report_v2(train=tr))["verdict"] == "INCONCLUSIVE"
     # boundaries: ratio exactly 2.0 and peak exactly 76 GB adopt
     assert E.decide_v2(_report_v2(train=_train_v2(fla=2000.0, peak=76.0)))["verdict"] == "ADOPT_FOR_TRAINING"
-    # median over the timed steps only (warmup excluded)
+    # median over the matched timed steps only (warmup excluded)
     tr = _train_v2()
     for s in tr["fla"]["steps"][:E.V2_TRAIN_WARMUP]:
         s["tok_s"] = 1.0
-    assert E.decide_v2(_report_v2(train=tr))["variants"]["fla"]["train"]["tok_s"] == 3000.0
+    assert E.decide_v2(_report_v2(train=tr))["variants"]["fla"]["train_ratio"] == pytest.approx(3.0)
     # fla_safe_gate is judged on its own measurement; the top-level verdict is plain fla's
     d = E.decide_v2(_report_v2(train=_train_v2(safe=1500.0)))
     assert d["verdict"] == d["variants"]["fla"]["verdict"] == "ADOPT_FOR_TRAINING"
     assert d["variants"]["fla_safe_gate"]["verdict"] == "ADOPT_READOUT_ONLY"
+
+
+def test_decide_v2_amendment_a1_loss_guards():
+    """A1/B2: a non-finite fla loss (warmup or timed) voids the measurement; step-0 loss must match chunked's to 2%."""
+    good = E.decide_v2(_report_v2())
+    assert good["variants"]["fla"]["train_ratio_detail"]["step0_loss_rel_diff"] == 0.0
+    assert good["amendments"] == ["A1"]
+    for i in (0, 2):  # warmup losses
+        tr = _train_v2()
+        tr["fla"]["steps"][i]["loss"] = float("nan")
+        d = E.decide_v2(_report_v2(train=tr))
+        assert d["verdict"] == "INCONCLUSIVE" and "non-finite" in d["variants"]["fla"]["train_ratio_detail"]["reason"]
+    tr = _train_v2()
+    tr["fla"]["steps"][10]["finite"] = False  # a timed step
+    assert E.decide_v2(_report_v2(train=tr))["verdict"] == "INCONCLUSIVE"
+    tr = _train_v2()
+    tr["fla"]["steps"][10]["loss"] = float("inf")
+    assert E.decide_v2(_report_v2(train=tr))["verdict"] == "INCONCLUSIVE"
+    tr = _train_v2()
+    tr["chunked"]["steps"][10]["loss"] = float("nan")  # chunked's own non-finite loss does not void fla's
+    assert E.decide_v2(_report_v2(train=tr))["verdict"] == "ADOPT_FOR_TRAINING"
+    # step-0 loss: within 2% passes, beyond is INCONCLUSIVE
+    assert E.decide_v2(_report_v2(train=_train_v2(loss=1.0, fla_loss=1.015625)))["verdict"] == "ADOPT_FOR_TRAINING"
+    d = E.decide_v2(_report_v2(train=_train_v2(loss=1.0, fla_loss=1.0201)))
+    assert d["verdict"] == "INCONCLUSIVE" and d["variants"]["fla"]["train_ratio_detail"]["step0_loss_rel_diff"] > 0.02
+    assert E.decide_v2(_report_v2(train=_train_v2(loss=1.0, fla_loss=0.97)))["verdict"] == "INCONCLUSIVE"
+    # only binding when chunked's step 0 completed: chunked step 0 OOM -> no step-0 check
+    tr = _train_v2(loss=1.0, fla_loss=1.5)
+    tr["chunked"]["steps"][0] = {"i": 0, "timed": False, "oom": True, "max_T": 2000}
+    d = E.decide_v2(_report_v2(train=tr))
+    assert d["verdict"] == "ADOPT_FOR_TRAINING" and d["variants"]["fla"]["train_ratio_detail"]["step0_loss_rel_diff"] is None
+    # chunked step 0 completed but fla step 0 did not -> INCONCLUSIVE
+    tr = _train_v2()
+    tr["fla"]["steps"][0] = {"i": 0, "timed": False, "oom": True, "max_T": 2000}
+    assert E.decide_v2(_report_v2(train=tr))["verdict"] == "INCONCLUSIVE"
+    # the loss guards only ever move toward INCONCLUSIVE: a REJECT_NUMERICS stays a reject
+    tr = _train_v2(loss=1.0, fla_loss=2.0)
+    assert E.decide_v2(_report_v2(train=tr, fla_ok=False, safe_ok=False))["verdict"] == "REJECT_NUMERICS"
 
 
 def test_valid_decision_v2():
@@ -719,8 +786,8 @@ def test_valid_decision_v2():
     assert E.valid_decision_v2(d) and not E.valid_decision(d)
     assert not E.valid_decision_v2({**d, "verdict": "ADOPT"}) and not E.valid_decision_v2({**d, "rule": None})
     assert not E.valid_decision_v2(E.decide(_report()))
-    d2 = json.loads(json.dumps(E.decide_v2(_report_v2(train=_train_v2(cur_oom=20)))))  # inf survives the JSON trip
-    assert E.valid_decision_v2(d2) and d2["variants"]["fla"]["train_ratio"] == math.inf
+    d2 = json.loads(json.dumps(E.decide_v2(_report_v2(train=_train_v2(cur_oom=20)))))
+    assert E.valid_decision_v2(d2) and d2["variants"]["fla"]["train_ratio"] is None
 
 
 # ----------------------------------------------------------------------------- RULE v2 phases: CPU dry runs
@@ -824,7 +891,6 @@ def test_train_v2_phase_cpu_dry_run(fake_fla, monkeypatch, tmp_path):
     monkeypatch.setattr(E, "DEVICE", "cpu")
     monkeypatch.setattr(E, "V2_TRAIN_WARMUP", 1)
     monkeypatch.setattr(E, "V2_TRAIN_STEPS", 2)
-    monkeypatch.setattr(E, "V2_CURRENT_MIN_STEPS", 1)
     monkeypatch.setattr(E, "_load_backbone", lambda d: tiny_hf_backbone("rwkv7", fork_mode="cache"))
     mix = tmp_path / "mix.json"
     _tiny_mix(mix, 6)
@@ -836,7 +902,7 @@ def test_train_v2_phase_cpu_dry_run(fake_fla, monkeypatch, tmp_path):
         assert d["complete"] and [s["timed"] for s in d["steps"]] == [False, True, True]
         assert all(s["tok_s"] > 0 and s["finite"] and s["tokens"] > 0 and len(s["K"]) == 2 for s in d["steps"])
         assert not d["fallbacks"] and (d["fla_calls"].get("fla", 0) > 0) == (impl == "fla")
-        assert E.train_speed_v2(d, current=impl == "chunked")["tok_s"] > 0
+        assert E.train_summary_v2(d)["median_tok_s_completed"] > 0
     # the steps really trained: LoRA + head parameters moved under the cell's Trainer (not a forward-only timing)
     d = json.loads((tmp_path / "train_v2_fla.json").read_text(encoding="utf-8"))
     assert d["mix_sha256"] == json.loads(mix.read_text(encoding="utf-8"))["sha256"] and d["cell"]["lora_rank"] == 2
@@ -855,13 +921,13 @@ def test_train_v2_phase_cpu_dry_run(fake_fla, monkeypatch, tmp_path):
     E.phase_train_v2(tmp_path, "unused", "chunked", math.inf)
     d = json.loads((tmp_path / "train_v2_chunked.json").read_text(encoding="utf-8"))
     assert d["steps"][1].get("oom") and "tok_s" in d["steps"][2] and d["complete"]
-    sp = E.train_speed_v2(d, current=True)
-    assert sp["oom_steps"] == 1 and sp["timed_steps"] == 2
+    sp = E.train_summary_v2(d)
+    assert sp["oom_steps"] == 1 and sp["completed_timed_steps"] == 1
     monkeypatch.setattr(Trainer, "train_step", real)
     # deadline already passed: nothing runs, every step recorded as skipped -> no speed (INCONCLUSIVE in decide_v2)
     E.phase_train_v2(tmp_path, "unused", "fla", 0.0)
     d = json.loads((tmp_path / "train_v2_fla.json").read_text(encoding="utf-8"))
-    assert all(s.get("skipped") == "deadline" for s in d["steps"]) and E.train_speed_v2(d, False)["tok_s"] is None
+    assert all(s.get("skipped") == "deadline" for s in d["steps"]) and E.train_summary_v2(d)["completed_timed_steps"] == 0
 
 
 def test_train_v2_mix_must_cover_the_steps(monkeypatch, tmp_path):

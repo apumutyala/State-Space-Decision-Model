@@ -220,11 +220,11 @@ ground truth on real activations (state magnitudes up to 76 at L60). v2 measures
   3 untimed warmup steps (`V2_TRAIN_WARMUP`), then 20 timed steps. Per step: tok/s = prefix tokens of its 8 rows /
   synchronised wall-clock; median over the 20. Peak = `torch.cuda.max_memory_allocated()` / 1e9 over the process,
   as the cell's `peak()`. Each impl runs in its own process.
-- **OOM / too slow.** A timed step that runs out of memory counts 0 tok/s. The current impl's median is over the timed
+- ~~**OOM / too slow.** A timed step that runs out of memory counts 0 tok/s. The current impl's median is over the timed
   steps it reached before its phase deadline (≥ 5, `V2_CURRENT_MIN_STEPS`; fewer is INCONCLUSIVE). An fla variant
   must reach all 20; an fla OOM on any step fails the peak clause. Train ratio = median(fla) / median(chunked); +inf
   when chunked's median is 0 and fla's is not; 0 when fla's is 0. A fallback or zero fla calls voids the fla
-  measurement (INCONCLUSIVE).
+  measurement (INCONCLUSIVE).~~ **Withdrawn by Amendment A1 below.**
 - **Prefill ratio** = the unchanged throughput phase (fla / chunked at 2k, 8k, 16k).
 - **Verdict order.** REJECT_NUMERICS if NUMERICS_OK is false; else INCONCLUSIVE if NUMERICS_OK, a prefill ratio, the
   train ratio or the fla peak is missing; else ADOPT_FOR_TRAINING / ADOPT_READOUT_ONLY as stated. The rule names no
@@ -232,6 +232,45 @@ ground truth on real activations (state magnitudes up to 76 at L60). v2 measures
   and prefill < 2 at some length): those are `NOT_ADOPTED`, reported and not adopted.
 - **Variants.** Each of fla and fla_safe_gate gets its own verdict under the same rule; the top-level `verdict` is plain
   fla's. `decision_v2.json` carries both; `valid_decision_v2` is the finalize validator.
+
+### Amendment A1 (2026-10-06, after independent review, before any v2 run)
+
+Amendment A1 (2026-10-06, after independent review, before any v2 run): coordinator decisions, quoted verbatim:
+
+> B1 — I withdraw the OOM-as-0-tok/s convention (it was written after jn47u showed chunked OOM and it alone could
+> produce ADOPT). Binding train ratio = median fla tok/s / median chunked tok/s over the timed steps BOTH impls
+> completed (matched rows). Require ≥ 10 matched steps, else INCONCLUSIVE. Chunked OOM counts (and which row lengths)
+> are reported as a separate, non-binding capability finding `chunked_oom` ("chunked cannot keep T_max=2048 at the
+> cell config"); likewise fla OOM still fails the peak clause. This also fixes the deadline-subset mismatch
+> (non-blocking #2).
+>
+> B2 — Void the fla (and fla_safe_gate) train measurement → INCONCLUSIVE if any warmup or timed loss is nonfinite.
+> Report step-0 loss rel-diff vs chunked (same rows/seed/init) as a diagnostic; additionally make it binding that
+> |step-0 loss rel-diff| ≤ 0.02 when chunked's step 0 completed, else INCONCLUSIVE (this only ever moves toward
+> INCONCLUSIVE). Also record the dtypes of r/kk/w reaching the kernel during training.
+>
+> Acknowledged as part of the rule: V2_CURRENT_MIN_STEPS (now superseded by the ≥10 matched-steps requirement),
+> V2_TRAIN_WARMUP=3, NOT_ADOPTED, ratio≥2 & peak>76GB → NOT_ADOPTED.
+
+As implemented (`train_ratio_v2`, `train_summary_v2`, `decide_v2`; constants `V2_MIN_MATCHED_STEPS = 10`,
+`V2_STEP0_LOSS_REL_MAX = 0.02`, pinned by `test_rule_v2_constants_are_pinned`):
+- **Matched steps.** A step is completed when it has a measured tok/s and neither ran out of memory nor was skipped by
+  the deadline. The matched set is the timed steps (by index, hence the same rows) completed by both chunked and the
+  fla variant. Train ratio = median(variant tok/s) / median(chunked tok/s) over exactly that set; fewer than 10 is
+  INCONCLUSIVE. OOM steps never enter a median. `V2_CURRENT_MIN_STEPS` and `train_speed_v2` are removed.
+- **chunked_oom.** `decision_v2.json["chunked_oom"]`: chunked's OOM step count and each OOM step's longest row (max T),
+  with `binding: false` and the finding "chunked cannot keep T_max=2048 at the cell config" when the count is non-zero.
+  It never changes a verdict.
+- **fla OOM.** Any OOM step of the variant (warmup or timed) fails the peak clause, as before.
+- **Non-finite loss.** Any completed warmup or timed step of the variant with a non-finite loss (or `finite: false`)
+  voids its train measurement (ratio None → INCONCLUSIVE). Chunked's own non-finite losses do not void the variant.
+- **Step-0 loss.** `step0_loss_rel_diff = |loss_v(0) − loss_chunked(0)| / |loss_chunked(0)|` (step 0 = the first warmup
+  step: same rows, seed, head and LoRA init). It is binding only when chunked's step 0 completed with a finite loss:
+  then a missing or non-finite variant step-0 loss, or a rel diff > 0.02, is INCONCLUSIVE. Otherwise it is reported
+  as None.
+- **Dtypes.** `train_v2_<impl>.json` records the dtypes of r / kk / w_log (and state) reaching the WKV during training
+  (code change, separate commit). This is a diagnostic only.
+- **Order unchanged.** REJECT_NUMERICS beats everything; the loss guards only ever produce INCONCLUSIVE.
 
 ## Mode `truth_v2` (`fla_job.sh truth_v2`, `job_params_truth_v2.json`). Spec only, NOT submitted
 
