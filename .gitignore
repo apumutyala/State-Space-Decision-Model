@@ -7,4 +7,6 @@ __pycache__/
 checkpoints/
 wandb/
 .env
+harness/ssdm_harness.egg-info/
+.pytest_cache/
 .claude/

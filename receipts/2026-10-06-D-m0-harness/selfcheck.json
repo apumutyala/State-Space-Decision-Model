@@ -1,0 +1,20 @@
+{
+ "perfect": {
+  "official_index": 98.14102740324297,
+  "decomposed_index": 98.14102740324294,
+  "slice_index_renormalized": 98.14102740324294,
+  "max_abs_benchmark_skill_gap": 0.0
+ },
+ "uniform": {
+  "official_index": 1.065748424978474,
+  "decomposed_index": 1.0657484249784743,
+  "slice_index_renormalized": 1.0657484249784743,
+  "max_abs_benchmark_skill_gap": 0.0
+ },
+ "noisy-0.7": {
+  "official_index": 41.06978568182224,
+  "decomposed_index": 41.069785681822246,
+  "slice_index_renormalized": 41.069785681822246,
+  "max_abs_benchmark_skill_gap": 0.0
+ }
+}
