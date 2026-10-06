@@ -58,7 +58,7 @@
                   "f004": 0.0
                 }
               },
-              "request_id": "4b32be466d3d43fab45848e0594f138f-001",
+              "request_id": "f117e319f1f546ad94b04fd08fb2ab94-001",
               "schema": "ssdm.decide.v0.1",
               "served_config": {
                 "calibration": {
@@ -133,7 +133,7 @@
               "repair": false,
               "request_fingerprint": "615da8e0b988878d41d7caf9adc72389ac1113774272748293c0de19e13e0536",
               "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
-              "request_id": "4b32be466d3d43fab45848e0594f138f-001",
+              "request_id": "f117e319f1f546ad94b04fd08fb2ab94-001",
               "selected_id": "f002",
               "serialization_ref": "ssdm.track_l_state.v0.1",
               "served_config": {
@@ -183,7 +183,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "4b32be466d3d43fab45848e0594f138f-001",
+                "request_id": "f117e319f1f546ad94b04fd08fb2ab94-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -226,7 +226,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "4b32be466d3d43fab45848e0594f138f-001",
+                "request_id": "f117e319f1f546ad94b04fd08fb2ab94-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -281,7 +281,7 @@
             "parent_revision": "scripted-test:v1",
             "policy_ref": "synthetic-development-public-v1",
             "registry_ref": "synthetic-development-registry-v1",
-            "request_id": "4b32be466d3d43fab45848e0594f138f-001",
+            "request_id": "f117e319f1f546ad94b04fd08fb2ab94-001",
             "schema": "ssdm.decide.v0.1"
           },
           "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -353,7 +353,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "c0803fc3579848dcb954b33362cda2e7-001",
+                "request_id": "c552960e7d724f7184cddf96399aa131-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -394,7 +394,7 @@
                     "op003": 0.0
                   }
                 },
-                "request_id": "c0803fc3579848dcb954b33362cda2e7-001",
+                "request_id": "c552960e7d724f7184cddf96399aa131-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -448,7 +448,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "c0803fc3579848dcb954b33362cda2e7-002",
+                "request_id": "c552960e7d724f7184cddf96399aa131-002",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Assert one selected fact\",\"option_id\":\"op001\",\"slot\":\"operation\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -491,7 +491,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "c0803fc3579848dcb954b33362cda2e7-002",
+                "request_id": "c552960e7d724f7184cddf96399aa131-002",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -568,7 +568,7 @@
                   "f004": 0.0
                 }
               },
-              "request_id": "595523c5363e4dfeb0bfe77868b45a19-001",
+              "request_id": "88ac5fdb84fd4f358b5ee9b2fffa362a-001",
               "schema": "ssdm.decide.v0.1",
               "served_config": {
                 "calibration": {
@@ -643,7 +643,7 @@
               "repair": false,
               "request_fingerprint": "8b6fdd1bca7f0c53499a6cf796bcc03777db518119743a9bbfb6529e039e444f",
               "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
-              "request_id": "595523c5363e4dfeb0bfe77868b45a19-001",
+              "request_id": "88ac5fdb84fd4f358b5ee9b2fffa362a-001",
               "selected_id": "f002",
               "serialization_ref": "ssdm.track_l_state.v0.1",
               "served_config": {
@@ -693,7 +693,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "595523c5363e4dfeb0bfe77868b45a19-001",
+                "request_id": "88ac5fdb84fd4f358b5ee9b2fffa362a-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:3cd589c09626c794f215430874aae19b070b642cc250e6507248ef0328707d15\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"63.54\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":24,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"117.05\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":28,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 warranty months for Ember.\",\"unmet_obligations\":[]}"
@@ -736,7 +736,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "595523c5363e4dfeb0bfe77868b45a19-001",
+                "request_id": "88ac5fdb84fd4f358b5ee9b2fffa362a-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -791,7 +791,7 @@
             "parent_revision": "scripted-test:v1",
             "policy_ref": "synthetic-development-public-v1",
             "registry_ref": "synthetic-development-registry-v1",
-            "request_id": "595523c5363e4dfeb0bfe77868b45a19-001",
+            "request_id": "88ac5fdb84fd4f358b5ee9b2fffa362a-001",
             "schema": "ssdm.decide.v0.1"
           },
           "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:3cd589c09626c794f215430874aae19b070b642cc250e6507248ef0328707d15\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"63.54\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":24,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"117.05\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":28,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 warranty months for Ember.\",\"unmet_obligations\":[]}"
@@ -863,7 +863,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "7d65aa24717743eeb0a920d0a5cbd316-001",
+                "request_id": "534f79b396ba4874b14ad07395a4fa3a-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:3cd589c09626c794f215430874aae19b070b642cc250e6507248ef0328707d15\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"63.54\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":24,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"117.05\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":28,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 warranty months for Ember.\",\"unmet_obligations\":[]}"
@@ -904,7 +904,7 @@
                     "op003": 0.0
                   }
                 },
-                "request_id": "7d65aa24717743eeb0a920d0a5cbd316-001",
+                "request_id": "534f79b396ba4874b14ad07395a4fa3a-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -958,7 +958,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "7d65aa24717743eeb0a920d0a5cbd316-002",
+                "request_id": "534f79b396ba4874b14ad07395a4fa3a-002",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:3cd589c09626c794f215430874aae19b070b642cc250e6507248ef0328707d15\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Assert one selected fact\",\"option_id\":\"op001\",\"slot\":\"operation\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"63.54\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":24,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"117.05\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":28,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 warranty months for Ember.\",\"unmet_obligations\":[]}"
@@ -1001,7 +1001,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "7d65aa24717743eeb0a920d0a5cbd316-002",
+                "request_id": "534f79b396ba4874b14ad07395a4fa3a-002",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -1078,7 +1078,7 @@
                   "f004": 0.0
                 }
               },
-              "request_id": "3b0296cf40be41b2bdfd791a52620612-001",
+              "request_id": "c70ce0152a6a46b382c9d5de7e3376b2-001",
               "schema": "ssdm.decide.v0.1",
               "served_config": {
                 "calibration": {
@@ -1153,7 +1153,7 @@
               "repair": false,
               "request_fingerprint": "0ec03897f2555b7772f36d642f7ae495e84272ef70481ddb493ff29cf96e5ced",
               "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
-              "request_id": "3b0296cf40be41b2bdfd791a52620612-001",
+              "request_id": "c70ce0152a6a46b382c9d5de7e3376b2-001",
               "selected_id": "f001",
               "serialization_ref": "ssdm.track_l_state.v0.1",
               "served_config": {
@@ -1203,7 +1203,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "3b0296cf40be41b2bdfd791a52620612-001",
+                "request_id": "c70ce0152a6a46b382c9d5de7e3376b2-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:b049bc5e03590dba04410000ebdce23b176e8704355408b8024afdc883c83692\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"159.03\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":1,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"57.83\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":2,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 price for Cinder.\",\"unmet_obligations\":[]}"
@@ -1246,7 +1246,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "3b0296cf40be41b2bdfd791a52620612-001",
+                "request_id": "c70ce0152a6a46b382c9d5de7e3376b2-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -1301,7 +1301,7 @@
             "parent_revision": "scripted-test:v1",
             "policy_ref": "synthetic-development-public-v1",
             "registry_ref": "synthetic-development-registry-v1",
-            "request_id": "3b0296cf40be41b2bdfd791a52620612-001",
+            "request_id": "c70ce0152a6a46b382c9d5de7e3376b2-001",
             "schema": "ssdm.decide.v0.1"
           },
           "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:b049bc5e03590dba04410000ebdce23b176e8704355408b8024afdc883c83692\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"159.03\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":1,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"57.83\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":2,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 price for Cinder.\",\"unmet_obligations\":[]}"
@@ -1373,7 +1373,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "a84e3e1ed22c49a0ba31566691a9a099-001",
+                "request_id": "4cd0e8ab648b4eb4ac01632a682e5fbd-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:b049bc5e03590dba04410000ebdce23b176e8704355408b8024afdc883c83692\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"159.03\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":1,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"57.83\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":2,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 price for Cinder.\",\"unmet_obligations\":[]}"
@@ -1414,7 +1414,7 @@
                     "op003": 0.0
                   }
                 },
-                "request_id": "a84e3e1ed22c49a0ba31566691a9a099-001",
+                "request_id": "4cd0e8ab648b4eb4ac01632a682e5fbd-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -1468,7 +1468,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "a84e3e1ed22c49a0ba31566691a9a099-002",
+                "request_id": "4cd0e8ab648b4eb4ac01632a682e5fbd-002",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:b049bc5e03590dba04410000ebdce23b176e8704355408b8024afdc883c83692\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Assert one selected fact\",\"option_id\":\"op001\",\"slot\":\"operation\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"159.03\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":1,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"57.83\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":2,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 price for Cinder.\",\"unmet_obligations\":[]}"
@@ -1511,7 +1511,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "a84e3e1ed22c49a0ba31566691a9a099-002",
+                "request_id": "4cd0e8ab648b4eb4ac01632a682e5fbd-002",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -1588,7 +1588,7 @@
                   "f004": 1.0
                 }
               },
-              "request_id": "49e4212a0cf04ff18651a9332b9ef46f-001",
+              "request_id": "e6a2e24d6e814afb9c7e170f01f4370e-001",
               "schema": "ssdm.decide.v0.1",
               "served_config": {
                 "calibration": {
@@ -1663,7 +1663,7 @@
               "repair": false,
               "request_fingerprint": "e2e767bb012d3770877595389a033d16eab8cc43a2721b66ee7d232e6dcee6cc",
               "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
-              "request_id": "49e4212a0cf04ff18651a9332b9ef46f-001",
+              "request_id": "e6a2e24d6e814afb9c7e170f01f4370e-001",
               "selected_id": "f004",
               "serialization_ref": "ssdm.track_l_state.v0.1",
               "served_config": {
@@ -1713,7 +1713,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "49e4212a0cf04ff18651a9332b9ef46f-001",
+                "request_id": "e6a2e24d6e814afb9c7e170f01f4370e-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:93bc0da4dfd914b4756e70b03676df54054ee8179f5731989c5ea5cddb24c6c6\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"189.27\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":36,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"189.27\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":10,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Dovetail's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -1756,7 +1756,7 @@
                     "f004": 1.0
                   }
                 },
-                "request_id": "49e4212a0cf04ff18651a9332b9ef46f-001",
+                "request_id": "e6a2e24d6e814afb9c7e170f01f4370e-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -1811,7 +1811,7 @@
             "parent_revision": "scripted-test:v1",
             "policy_ref": "synthetic-development-public-v1",
             "registry_ref": "synthetic-development-registry-v1",
-            "request_id": "49e4212a0cf04ff18651a9332b9ef46f-001",
+            "request_id": "e6a2e24d6e814afb9c7e170f01f4370e-001",
             "schema": "ssdm.decide.v0.1"
           },
           "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:93bc0da4dfd914b4756e70b03676df54054ee8179f5731989c5ea5cddb24c6c6\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"189.27\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":36,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"189.27\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":10,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Dovetail's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -1883,7 +1883,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "4e4f5dfe62ce4823b619c721ea21fb18-001",
+                "request_id": "b3bd3d46498a41849f822c970d3b4dad-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:93bc0da4dfd914b4756e70b03676df54054ee8179f5731989c5ea5cddb24c6c6\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"189.27\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":36,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"189.27\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":10,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Dovetail's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -1924,7 +1924,7 @@
                     "op003": 0.0
                   }
                 },
-                "request_id": "4e4f5dfe62ce4823b619c721ea21fb18-001",
+                "request_id": "b3bd3d46498a41849f822c970d3b4dad-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -1978,7 +1978,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "4e4f5dfe62ce4823b619c721ea21fb18-002",
+                "request_id": "b3bd3d46498a41849f822c970d3b4dad-002",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:93bc0da4dfd914b4756e70b03676df54054ee8179f5731989c5ea5cddb24c6c6\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Assert one selected fact\",\"option_id\":\"op001\",\"slot\":\"operation\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"189.27\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":36,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"189.27\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":10,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Dovetail's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -2021,7 +2021,7 @@
                     "f004": 1.0
                   }
                 },
-                "request_id": "4e4f5dfe62ce4823b619c721ea21fb18-002",
+                "request_id": "b3bd3d46498a41849f822c970d3b4dad-002",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -2103,7 +2103,7 @@
               "repair": false,
               "request_fingerprint": "615da8e0b988878d41d7caf9adc72389ac1113774272748293c0de19e13e0536",
               "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
-              "request_id": "90ff61e8465b454b991ce4194c2dd278-001",
+              "request_id": "a3502c1b0b184de4b6f10f8974fd77e4-001",
               "selected_id": null,
               "serialization_ref": "ssdm.track_l_state.v0.1",
               "slot": "direct-read-fact",
@@ -2140,7 +2140,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "90ff61e8465b454b991ce4194c2dd278-001",
+                "request_id": "a3502c1b0b184de4b6f10f8974fd77e4-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -2174,7 +2174,7 @@
             "parent_revision": "scripted-test:v1",
             "policy_ref": "synthetic-development-public-v1",
             "registry_ref": "synthetic-development-registry-v1",
-            "request_id": "90ff61e8465b454b991ce4194c2dd278-001",
+            "request_id": "a3502c1b0b184de4b6f10f8974fd77e4-001",
             "schema": "ssdm.decide.v0.1"
           },
           "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -2246,7 +2246,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "7628e079b27e4684be529567e68dcc30-001",
+                "request_id": "db0ba86d31a041bca6c3bd21e0bd7ba1-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -2287,7 +2287,7 @@
                     "op003": 0.0
                   }
                 },
-                "request_id": "7628e079b27e4684be529567e68dcc30-001",
+                "request_id": "db0ba86d31a041bca6c3bd21e0bd7ba1-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -2341,7 +2341,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "7628e079b27e4684be529567e68dcc30-002",
+                "request_id": "db0ba86d31a041bca6c3bd21e0bd7ba1-002",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Assert one selected fact\",\"option_id\":\"op001\",\"slot\":\"operation\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -2384,7 +2384,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "7628e079b27e4684be529567e68dcc30-002",
+                "request_id": "db0ba86d31a041bca6c3bd21e0bd7ba1-002",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -2487,7 +2487,7 @@
                   "f004": 0.0
                 }
               },
-              "request_id": "e18a32ae276542c79bf1c1aae098f151-001",
+              "request_id": "eb3de4f4a0214dc5b41e76d6867beb28-001",
               "schema": "ssdm.decide.v0.1",
               "served_config": {
                 "calibration": {
@@ -2562,7 +2562,7 @@
               "repair": false,
               "request_fingerprint": "615da8e0b988878d41d7caf9adc72389ac1113774272748293c0de19e13e0536",
               "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
-              "request_id": "e18a32ae276542c79bf1c1aae098f151-001",
+              "request_id": "eb3de4f4a0214dc5b41e76d6867beb28-001",
               "selected_id": "f002",
               "serialization_ref": "ssdm.track_l_state.v0.1",
               "served_config": {
@@ -2612,7 +2612,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "e18a32ae276542c79bf1c1aae098f151-001",
+                "request_id": "eb3de4f4a0214dc5b41e76d6867beb28-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -2655,7 +2655,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "e18a32ae276542c79bf1c1aae098f151-001",
+                "request_id": "eb3de4f4a0214dc5b41e76d6867beb28-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -2710,7 +2710,7 @@
             "parent_revision": "scripted-test:v1",
             "policy_ref": "synthetic-development-public-v1",
             "registry_ref": "synthetic-development-registry-v1",
-            "request_id": "e18a32ae276542c79bf1c1aae098f151-001",
+            "request_id": "eb3de4f4a0214dc5b41e76d6867beb28-001",
             "schema": "ssdm.decide.v0.1"
           },
           "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -2760,7 +2760,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "af05c6ebf0f84f189e80b2e1d1b41ccd-001",
+                "request_id": "db65ac4b232e45b69cf4841a03981d9e-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -2842,7 +2842,7 @@
                   "f004": 0.0
                 }
               },
-              "request_id": "dafc4fa206d342d583dcad9c4a427cc2-001",
+              "request_id": "f0a774df78804fa5afc2aa2b6dee0809-001",
               "schema": "ssdm.decide.v0.1",
               "served_config": {
                 "calibration": {
@@ -2886,7 +2886,7 @@
               "repair": false,
               "request_fingerprint": "615da8e0b988878d41d7caf9adc72389ac1113774272748293c0de19e13e0536",
               "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
-              "request_id": "dafc4fa206d342d583dcad9c4a427cc2-001",
+              "request_id": "f0a774df78804fa5afc2aa2b6dee0809-001",
               "selected_id": null,
               "serialization_ref": "ssdm.track_l_state.v0.1",
               "slot": "direct-read-fact",
@@ -2923,7 +2923,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "dafc4fa206d342d583dcad9c4a427cc2-001",
+                "request_id": "f0a774df78804fa5afc2aa2b6dee0809-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -2966,7 +2966,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "dafc4fa206d342d583dcad9c4a427cc2-001",
+                "request_id": "f0a774df78804fa5afc2aa2b6dee0809-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -3022,7 +3022,7 @@
             "parent_revision": "scripted-test:v1",
             "policy_ref": "synthetic-development-public-v1",
             "registry_ref": "synthetic-development-registry-v1",
-            "request_id": "dafc4fa206d342d583dcad9c4a427cc2-001",
+            "request_id": "f0a774df78804fa5afc2aa2b6dee0809-001",
             "schema": "ssdm.decide.v0.1"
           },
           "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -3094,7 +3094,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "063578ddb5ee41d29a2b91dcdd7705d1-001",
+                "request_id": "e9f03a8611c44f6c8d87e2f1b05cc9a4-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -3135,7 +3135,7 @@
                     "op003": 0.0
                   }
                 },
-                "request_id": "063578ddb5ee41d29a2b91dcdd7705d1-001",
+                "request_id": "e9f03a8611c44f6c8d87e2f1b05cc9a4-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -3189,7 +3189,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "063578ddb5ee41d29a2b91dcdd7705d1-002",
+                "request_id": "e9f03a8611c44f6c8d87e2f1b05cc9a4-002",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Assert one selected fact\",\"option_id\":\"op001\",\"slot\":\"operation\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -3232,7 +3232,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "063578ddb5ee41d29a2b91dcdd7705d1-002",
+                "request_id": "e9f03a8611c44f6c8d87e2f1b05cc9a4-002",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -3335,7 +3335,7 @@
                   "f004": 0.0
                 }
               },
-              "request_id": "f377a35c910e434d8eb346fbb5d6858b-001",
+              "request_id": "2afd19b710104d6d90e62a9f3d096dd2-001",
               "schema": "ssdm.decide.v0.1",
               "served_config": {
                 "calibration": {
@@ -3378,7 +3378,7 @@
               "repair": false,
               "request_fingerprint": "615da8e0b988878d41d7caf9adc72389ac1113774272748293c0de19e13e0536",
               "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
-              "request_id": "f377a35c910e434d8eb346fbb5d6858b-001",
+              "request_id": "2afd19b710104d6d90e62a9f3d096dd2-001",
               "selected_id": null,
               "serialization_ref": "ssdm.track_l_state.v0.1",
               "slot": "direct-read-fact",
@@ -3415,7 +3415,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "f377a35c910e434d8eb346fbb5d6858b-001",
+                "request_id": "2afd19b710104d6d90e62a9f3d096dd2-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -3458,7 +3458,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "f377a35c910e434d8eb346fbb5d6858b-001",
+                "request_id": "2afd19b710104d6d90e62a9f3d096dd2-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -3513,7 +3513,7 @@
             "parent_revision": "scripted-test:v1",
             "policy_ref": "synthetic-development-public-v1",
             "registry_ref": "synthetic-development-registry-v1",
-            "request_id": "f377a35c910e434d8eb346fbb5d6858b-001",
+            "request_id": "2afd19b710104d6d90e62a9f3d096dd2-001",
             "schema": "ssdm.decide.v0.1"
           },
           "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -3585,7 +3585,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "b8c314231f6a4a8c83a776df5cdf5a8a-001",
+                "request_id": "95dfb6ffc52045ebbf73acc713448451-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -3626,7 +3626,7 @@
                     "op003": 0.0
                   }
                 },
-                "request_id": "b8c314231f6a4a8c83a776df5cdf5a8a-001",
+                "request_id": "95dfb6ffc52045ebbf73acc713448451-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -3680,7 +3680,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "b8c314231f6a4a8c83a776df5cdf5a8a-002",
+                "request_id": "95dfb6ffc52045ebbf73acc713448451-002",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Assert one selected fact\",\"option_id\":\"op001\",\"slot\":\"operation\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -3723,7 +3723,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "b8c314231f6a4a8c83a776df5cdf5a8a-002",
+                "request_id": "95dfb6ffc52045ebbf73acc713448451-002",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -3826,7 +3826,7 @@
                   "f004": 1.0
                 }
               },
-              "request_id": "c71b3eb0b37c4edeb6ccb5d513f7fce4-001",
+              "request_id": "ece18a5277cd46279a489b5060a1c85e-001",
               "schema": "ssdm.decide.v0.1",
               "served_config": {
                 "calibration": {
@@ -3901,7 +3901,7 @@
               "repair": false,
               "request_fingerprint": "615da8e0b988878d41d7caf9adc72389ac1113774272748293c0de19e13e0536",
               "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
-              "request_id": "c71b3eb0b37c4edeb6ccb5d513f7fce4-001",
+              "request_id": "ece18a5277cd46279a489b5060a1c85e-001",
               "selected_id": "f004",
               "serialization_ref": "ssdm.track_l_state.v0.1",
               "served_config": {
@@ -3951,7 +3951,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "c71b3eb0b37c4edeb6ccb5d513f7fce4-001",
+                "request_id": "ece18a5277cd46279a489b5060a1c85e-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -3994,7 +3994,7 @@
                     "f004": 1.0
                   }
                 },
-                "request_id": "c71b3eb0b37c4edeb6ccb5d513f7fce4-001",
+                "request_id": "ece18a5277cd46279a489b5060a1c85e-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -4049,7 +4049,7 @@
             "parent_revision": "scripted-test:v1",
             "policy_ref": "synthetic-development-public-v1",
             "registry_ref": "synthetic-development-registry-v1",
-            "request_id": "c71b3eb0b37c4edeb6ccb5d513f7fce4-001",
+            "request_id": "ece18a5277cd46279a489b5060a1c85e-001",
             "schema": "ssdm.decide.v0.1"
           },
           "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -4121,7 +4121,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "65d4880e18d24d698f982fddb26fe7c4-001",
+                "request_id": "15bb0d4cb5b44a68a82491cb3a4e0cd4-001",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -4162,7 +4162,7 @@
                     "op003": 0.0
                   }
                 },
-                "request_id": "65d4880e18d24d698f982fddb26fe7c4-001",
+                "request_id": "15bb0d4cb5b44a68a82491cb3a4e0cd4-001",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {
@@ -4216,7 +4216,7 @@
                 "parent_revision": "scripted-test:v1",
                 "policy_ref": "synthetic-development-public-v1",
                 "registry_ref": "synthetic-development-registry-v1",
-                "request_id": "65d4880e18d24d698f982fddb26fe7c4-002",
+                "request_id": "15bb0d4cb5b44a68a82491cb3a4e0cd4-002",
                 "schema": "ssdm.decide.v0.1"
               },
               "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:1b1b98e5dec4db39a0c22af09e963898c422bc85537e40a465ebe211cd4a136e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Assert one selected fact\",\"option_id\":\"op001\",\"slot\":\"operation\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.68\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"104.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Ember's warranty months in October 2026?\",\"unmet_obligations\":[]}"
@@ -4259,7 +4259,7 @@
                     "f004": 0.0
                   }
                 },
-                "request_id": "65d4880e18d24d698f982fddb26fe7c4-002",
+                "request_id": "15bb0d4cb5b44a68a82491cb3a4e0cd4-002",
                 "schema": "ssdm.decide.v0.1",
                 "served_config": {
                   "calibration": {

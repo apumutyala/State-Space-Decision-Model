@@ -58,6 +58,6 @@ test_rejects_invalid_generation_requests (language_growth.tests.test_development
 test_seeded_tasks_are_reproducible_and_supported (language_growth.tests.test_development_data.DevelopmentDataTests.test_seeded_tasks_are_reproducible_and_supported) ... ok
 
 ----------------------------------------------------------------------
-Ran 58 tests in 0.429s
+Ran 58 tests in 0.350s
 
 OK
