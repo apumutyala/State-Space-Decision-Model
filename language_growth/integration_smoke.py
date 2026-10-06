@@ -191,7 +191,8 @@ def run(adapter_root: Path, fixtures: Path) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--adapter-root", type=Path, required=True)
+    parser.add_argument("--adapter-root", type=Path, default=Path(__file__).resolve().parents[1],
+                        help="repository root containing merged decide/ (default: this checkout)")
     parser.add_argument("--fixtures", type=Path, required=True)
     args = parser.parse_args()
     result = run(args.adapter_root, args.fixtures)

@@ -9,13 +9,13 @@ from language_growth.integration_smoke import run
 
 
 ROOT = Path(__file__).resolve().parents[2]
-ADAPTER = Path(os.environ.get("SSDM_D_ADAPTER_ROOT", ROOT.parent / "ssdm-codex-l0-adapter-review"))
+ADAPTER = Path(os.environ.get("SSDM_D_ADAPTER_ROOT", ROOT))
 FIXTURES = ROOT / "fixtures" / "language_growth"
 
 
 @unittest.skipUnless((ADAPTER / "decide/backends/replay.py").is_file()
                      and (FIXTURES / "catalog.json").is_file(),
-                     "requires the separate D checkout and synthetic development fixture pack")
+                     "requires the merged D adapter and synthetic development fixture pack")
 class ReplayIntegrationTests(unittest.TestCase):
     def test_oracle_recordings_replay_same_checked_meaning_and_miss_on_change(self):
         report = run(ADAPTER, FIXTURES)

@@ -302,6 +302,8 @@ class _Session:
                 or not isinstance(diagnostics.get("provenance"), dict)
                 or diagnostics["provenance"].get("supplied") is not False
                 or diagnostics["provenance"].get("applied") is not False
+                or diagnostics.get("state_handle_in") is not None
+                or diagnostics.get("state_reuse") is not False
                 or env.get("state_handle") is not None):
             step["status"] = "identity_mismatch"
             raise PlannerFailure("provider_error", "identity_mismatch")

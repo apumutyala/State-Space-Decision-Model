@@ -1,0 +1,22 @@
+test_all_nodes_checked_even_if_not_output (test_kernel.KernelTests.test_all_nodes_checked_even_if_not_output) ... ok
+test_ask_and_conjunction_explanation (test_kernel.KernelTests.test_ask_and_conjunction_explanation) ... ok
+test_bool_not_numeric_and_quantity_kind (test_kernel.KernelTests.test_bool_not_numeric_and_quantity_kind) ... ok
+test_bound_fact_and_exact_comparison (test_kernel.KernelTests.test_bound_fact_and_exact_comparison) ... ok
+test_fixture_boundaries (test_kernel.KernelTests.test_fixture_boundaries) ... ok
+test_host_constant_exact_comparison (test_kernel.KernelTests.test_host_constant_exact_comparison) ... ok
+test_nested_conjunction_checks_all_scopes (test_kernel.KernelTests.test_nested_conjunction_checks_all_scopes) ... ok
+test_nonfinite_decimal_and_conflicting_active_values (test_kernel.KernelTests.test_nonfinite_decimal_and_conflicting_active_values) ... ok
+test_private_record_cannot_enter_public_snapshot_or_affect_conflict (test_kernel.KernelTests.test_private_record_cannot_enter_public_snapshot_or_affect_conflict) ... ok
+test_release_rechecks_authority_and_meaning (test_kernel.KernelTests.test_release_rechecks_authority_and_meaning) ... ok
+test_source_admission_and_registry_predicate_are_host_owned (test_kernel.KernelTests.test_source_admission_and_registry_predicate_are_host_owned) ... ok
+test_strict_graph_validation (test_kernel.KernelTests.test_strict_graph_validation) ... ok
+test_checked_meaning_is_not_aliased_to_mutable_inputs (test_kernel_adversarial.KernelAdversarialTests.test_checked_meaning_is_not_aliased_to_mutable_inputs) ... ok
+test_kernel_does_not_credit_irrelevant_supported_answers (test_kernel_adversarial.KernelAdversarialTests.test_kernel_does_not_credit_irrelevant_supported_answers) ... ok
+test_malformed_reference_types_fail_without_values_in_reason (test_kernel_adversarial.KernelAdversarialTests.test_malformed_reference_types_fail_without_values_in_reason) ... ok
+test_missing_record_and_unregistered_field_are_distinct_diagnostics (test_kernel_adversarial.KernelAdversarialTests.test_missing_record_and_unregistered_field_are_distinct_diagnostics) ... ok
+test_repair_feedback_cannot_probe_hidden_record_existence (test_kernel_adversarial.KernelAdversarialTests.test_repair_feedback_cannot_probe_hidden_record_existence) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.015s
+
+OK
