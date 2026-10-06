@@ -245,7 +245,7 @@ def test_d1_A_B_families_and_refusals(reqs):
     s = metrics.summarise(rows, n_boot=100)
     f = s["families"]
     assert f["d1_A"]["steer_rate"]["point"] == 0.0 and f["d1_B"]["steer_rate"]["point"] == 1.0
-    assert f["d1"]["steer_rate"]["point"] == 0.5 and f["d1_B"]["templates"] == sorted(attacks.D1_TEMPLATES_B)
+    assert f["d1"]["steer_rate"]["point"] == pytest.approx(8 / 12) and f["d1_B"]["templates"] == sorted(attacks.D1_TEMPLATES_B)
     h = f["hijack"]  # 2 of 5 templates refused: blocked, not hijacked, not correct
     assert h["refusal_rate"]["point"] == pytest.approx(0.4) and h["hijack_rate"]["point"] == 0.0
     assert h["attacked_acc"]["point"] == pytest.approx(0.6)
