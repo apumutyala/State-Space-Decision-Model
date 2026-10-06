@@ -14,6 +14,20 @@ from language_growth import l0_qwen_cpu_probe as probe
 
 
 class ProbePreparationTests(unittest.TestCase):
+    def test_clock_failure_after_spawn_stops_owned_child(self):
+        with tempfile.TemporaryDirectory() as directory:
+            raw = Path(directory) / "new-run" / "raw.jsonl"
+            child = MagicMock()
+            child.poll.return_value = None
+            with (patch.object(probe, "_check_dependencies", return_value={}),
+                  patch("psutil.virtual_memory", return_value=SimpleNamespace(available=9 * 1024**3)),
+                  patch.object(probe.subprocess, "Popen", return_value=child),
+                  patch.object(probe.time, "monotonic", side_effect=RuntimeError("clock failed"))):
+                with self.assertRaisesRegex(RuntimeError, "clock failed"):
+                    probe._parent(raw)
+            child.kill.assert_called_once_with()
+            child.wait.assert_called_once_with()
+
     def test_one_pinned_validation_comparison(self):
         task = probe._task()
         self.assertEqual(task["task_id"], "synthetic-development_validation-271828-2")

@@ -172,9 +172,9 @@ def _parent(raw: Path) -> int:
                  task_sha256=_sha_task(task), software=versions)
     child = subprocess.Popen([sys.executable, str(Path(__file__).resolve()),
                               "--child", "--raw", str(raw)], env=_offline_env())
-    started = time.monotonic()
     stopped = False
     try:
+        started = time.monotonic()
         while True:
             result = child.poll()
             if result is not None:
