@@ -69,6 +69,8 @@ assert all(V.vendored_ok().values()), V.vendored_ok()
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
                   "transformers": transformers.__version__, "vendored_rwkv7": V.REVISION}))
 EOF
+# fla #640 guard: Hopper + Triton < 3.7.1 (or a non-Triton fla backward) -> exit 5 here, before any GPU phase.
+python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
 ( cd /data && sha256sum -c "$CODE/jobs/clef_baseline/data.sha256" ) > "$WORK/out/data-verify.txt" 2>&1 || fail 10 "DEV rows sha256"
 CAP_SETUP=$(cap setup) || fail 5 "job_params"
 SNAP=$(timeout ${CAP_SETUP}m python - <<'EOF'
