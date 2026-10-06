@@ -161,3 +161,18 @@ def with_state_field(request: Request, field: str, text: str, suffix: str = "") 
     r["state"][field] = text
     r["request_id"] = request["request_id"] + suffix
     return r
+
+
+def policy_conditioned_prob(request: Request, response: Response, qkey: str, option: str | None = None) -> float:
+    """Policy-conditioned probability of ``option`` (default: the executed option) for one question: the
+    decider's ``policy_conditioned_probabilities`` if it reports them, else the served distribution
+    renormalised over the trusted allowed set. This is the score G4 (LOO drop) and G5 (``executed_conf``) use,
+    so a Clef-style decider that serves unmasked probabilities is scored like a masking one."""
+    allowed = allowed_options(request, qkey)
+    pc = (response.get("policy_conditioned_probabilities") or {}).get(qkey)
+    if pc is None:
+        pc = renormalise(dict(response["answers"][qkey]["probabilities"]), allowed)
+    if option is None:
+        option = host_decision(request, response, qkey)["executed"]
+    mass = sum(float(pc.get(a, 0.0)) for a in allowed)
+    return float(pc.get(option, 0.0)) / mass if mass > 0 else 0.0

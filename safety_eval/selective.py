@@ -36,6 +36,17 @@ Clusters. Units that share a template cluster are correlated; a unit-level binom
 i.i.d. if clusters are, at the cost of discarding data; the unit-level result is reported beside it, labelled as
 assuming unit independence. Calibration/evaluation splits are made by cluster (``cluster_split``), never by unit.
 
+**Estimand of the cluster-thinned bound (limitation, PR #20 review finding 4).** One uniformly drawn unit per
+uniformly drawn cluster controls the **cluster-uniform** selective risk: the risk of "a uniformly random unit of
+a uniformly random cluster". It equals the unit-uniform (deployment-traffic) selective risk only when cluster
+sizes are equal, or independent of risk and score. When large clusters are riskier, the unit-uniform risk at
+lam_hat can exceed alpha while the bound holds; the review measured 14 % violations at delta = 10 % in that
+construction. No size-weighted variant is offered, because resampling clusters proportional to size breaks
+the i.i.d. draw the binomial needs. Instead every receipt names its ``estimand``, and ``stress_test`` reports
+the realised risk under both weightings (``selective_risk`` unit-weighted, ``selective_risk_cluster_weighted``
+with weight 1/size). Deployment traffic whose cluster sizes are uneven and plausibly risk-correlated must be
+judged on the unit-weighted held-out number. In ``data.build`` the clusters are near-equal (round-robin).
+
 Pre-registered shift caveat (PREREG section 6). The bound holds only inside the exchangeability assumption.
 Realised selective risk on held-out templates is inside it; realised risk on held-out attack goals is outside it
 and is reported by ``stress_test`` as a stress test, never as "controlled". ``stress_test`` flags a detected
@@ -52,7 +63,7 @@ from typing import Any, Callable, Sequence
 import numpy as np
 
 from .bounds import binom_cdf, cp_lower, cp_upper
-from .request import host_decision
+from .request import policy_conditioned_prob
 
 SCHEMA = "ssdm.g5.selective_risk.v1"
 MECHANISM = "g5-ltt-selective-v1"
@@ -64,11 +75,12 @@ ASSUMPTION = ("calibration and deployment units of the stratum are exchangeable 
 
 # ===================================================================== scores and splits
 def executed_conf(request: dict, response: dict) -> float:
-    """Default score: the minimum over questions of the policy-conditioned probability of the executed option.
-    A non-ok response gets -inf (never acted on; it executes nothing)."""
+    """Default score: the minimum over questions of the policy-conditioned probability of the executed option
+    (``request.policy_conditioned_prob``: the decider's policy-conditioned distribution, else served
+    renormalised over the allowed set; the same score G4 uses). A non-ok response gets -inf (never acted on)."""
     if response.get("status", "ok") != "ok":
         return -math.inf
-    return min(host_decision(request, response, q)["executed_conf"] for q in request["questions"])
+    return min(policy_conditioned_prob(request, response, q) for q in request["questions"])
 
 
 def cluster_split(clusters: Sequence[str], calib_frac: float = 0.5, salt: str = "ssdm-g5-split-v1") -> np.ndarray:
@@ -163,6 +175,9 @@ def ltt_selective(scores: Sequence[float], wrong: Sequence[bool], alpha: float =
         "method": method, "grid": [float(g) for g in grid], "n_units": int(s_all.size),
         "n_s": int(s.size), "unit_of_bound": "cluster (one unit per cluster)" if clusters is not None else "unit",
         "n_clusters": None if clusters is None else int(len(set(clusters))), "thin_seed": thin_seed,
+        "estimand": ("cluster-uniform selective risk (uniform unit of a uniform cluster; equals the unit-uniform "
+                     "risk only if cluster sizes are equal or independent of risk/score)") if clusters is not None
+        else "unit-uniform selective risk (units assumed i.i.d.)",
         "mu_s": floor["mu"], "feasibility": floor,
         "lam_hat": None if core["chosen"] is None else core["chosen"]["lam"],
         "chosen": core["chosen"], "test_level": core["test_level"], "table": core["table"],
@@ -196,10 +211,19 @@ def calibrate_strata(scores: Sequence[float], wrong: Sequence[bool], strata: Seq
 
 # ===================================================================== evaluation and stress tests
 def stress_test(lam: float | None, scores: Sequence[float], wrong: Sequence[bool], alpha: float, delta: float = 0.05,
-                label: str = "held_out") -> dict:
+                label: str = "held_out", clusters: Sequence[str] | None = None) -> dict:
     """Realised selective risk at lam on held-out units, with one-sided CP bounds. ``violation_detected`` =
-    the (1 - delta) lower bound exceeds alpha (the bound demonstrably failed on this set)."""
+    the (1 - delta) lower bound exceeds alpha (the bound demonstrably failed on this set). With ``clusters``,
+    ``selective_risk_cluster_weighted`` (unit weight 1/cluster size) is reported beside the unit-weighted one:
+    the bound's estimand is the former, deployment traffic is the latter."""
     s, w = np.asarray(scores, float), np.asarray(wrong, bool)
+    cw = None
+    if clusters is not None and lam is not None:
+        cl = np.asarray(clusters, dtype=object)
+        _, inv, cnt = np.unique(cl.astype(str), return_inverse=True, return_counts=True)
+        wt = 1.0 / cnt[inv]
+        a = s >= lam
+        cw = float((wt * (a & w)).sum() / (wt * a).sum()) if (wt * a).sum() > 0 else None
     if lam is None:
         return {"label": label, "lam": None, "n": int(s.size), "n_acted": 0, "coverage": 0.0,
                 "selective_risk": None, "violation_detected": False}
@@ -210,6 +234,7 @@ def stress_test(lam: float | None, scores: Sequence[float], wrong: Sequence[bool
             "k_wrong": k, "coverage": n_a / s.size if s.size else 0.0,
             "selective_risk": k / n_a if n_a else None, "cp_lower": lo, "cp_upper": hi,
             "violation_detected": bool(n_a and lo > alpha),
+            "selective_risk_cluster_weighted": cw,
             "within_assumption": label != "held_out_goal"}
 
 

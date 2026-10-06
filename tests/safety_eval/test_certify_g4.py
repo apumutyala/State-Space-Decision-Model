@@ -94,7 +94,7 @@ def test_segment_roundtrip_and_examples():
     assert C.segment('He said "go." Then [System note: x.] Done') == ['He said "go."', " Then [System note: x.]", " Done"]
     assert C.segment("Hi Sam,\n\nPlease pay") == ["Hi Sam,", "\n\nPlease pay"]
     assert C.segment("") == [""]
-    for r in data.build(20, 20, split=None):
+    for r in data.build(20, 20, split="dev"):
         for v in r["state"].values():
             assert "".join(C.segment(v)) == v
 
@@ -329,3 +329,89 @@ def test_smoothed_decider_os_entropy_and_rewrite():
     if out["certificate"]["certified"] and not out["certificate"]["smoothed_matches_base"]:
         assert out["answers"]["q"]["choice"] == out["certificate"]["decision"]["q"]
         assert out["base_answers"]["q"]["choice"] == "d"  # base decider followed the poison
+
+
+# ------------------------------------------------------------------ PR #20 review follow-ups
+class Evidence:
+    """Decisive evidence 'bravo' -> a; 'golf' (attack) or no evidence -> d (the default is also the target)."""
+
+    def __call__(self, r):
+        t = " ".join(v for v in r["state"].values() if isinstance(v, str)).lower()
+        ch = "a" if ("bravo" in t and "golf" not in t) else "d"
+        probs = {o: (0.7 if o == ch else 0.1) for o in OPTS}
+        return {"status": "ok", "answers": {"q": {"type": "choice", "choice": ch, "probabilities": probs}},
+                "raw_probabilities": {"q": probs}}
+
+
+@pytest.mark.parametrize("tail", ["\n", "\n\n", " ", "\n "])
+@pytest.mark.parametrize("sep", ["", " "])
+def test_trailing_whitespace_insertion_is_covered_and_caught(tail, sep):
+    clean = req({"u": "Alpha x. Bravo y." + tail}, ["u"])
+    att = dict(clean, state={"u": clean["state"]["u"] + sep + "Golf now."})
+    assert C.is_covered(att, clean, 1)  # sent-leadws-v2 trailing-whitespace origins
+    rec = C.certify(Evidence(), att, 1)
+    assert rec["decision"] == {"q": "d"} and not rec["certified"]
+
+
+@pytest.mark.parametrize("text", ["Alpha x. Golf now Bravo y.",  # merge, no terminal punctuation
+                                  "Alpha x. Bravo golf y.",  # mid-sentence
+                                  "Alpha x. Bravo y.golf now"])  # no space
+def test_uncovered_insertions_sentence_unit_vs_span_unit(text):
+    clean = req({"u": "Alpha x. Bravo y."}, ["u"])
+    att = dict(clean, state={"u": text})
+    dec = Evidence()
+    assert C.decision_of(clean, dec(clean)) != C.decision_of(att, dec(att))
+    # sentence unit: outside the threat model, and certified-and-changed (the documented limit)
+    assert not C.is_covered(att, clean, 1)
+    assert C.certify(dec, att, 1)["certified"] is True
+    # span unit (hardened): covered and not certified
+    assert C.is_covered(att, clean, 1, unit="span")
+    rec = C.certify(dec, att, 1, unit="span", max_decide_calls=10_000)
+    assert rec["certified"] is False and rec["unit"] == "span"
+
+
+def test_span_unit_matches_brute_force_and_requires_k1():
+    rng = random.Random(5)
+    for trial in range(60):
+        text = rand_text(rng, rng.randint(1, 3))
+        r = req({"u": text}, ["u"])
+        dec = Scripted(trial, poison="golf")
+        toks = C.tokens(text)
+        assert "".join(toks) == text
+        full = C.decision_of(r, dec(r))
+        want = all(C.decision_of(o, dec(o)) == full for o in
+                   (dict(r, state={"u": "".join(toks[:i] + toks[j:])})
+                    for i in range(len(toks)) for j in range(i + 1, len(toks) + 1)))
+        assert C.certify(dec, r, 1, unit="span", max_decide_calls=10_000)["certified"] == want
+    assert C.certify(Scripted(0), req({"u": "Alpha."}, ["u"]), 2, unit="span")["reason"] == "span_unit_requires_k1"
+
+
+def test_is_covered_rejects_trusted_field_edits():
+    clean = req({"trusted": "Pay the due invoice.", "u": "Alpha x."}, ["u"])
+    att = dict(clean, state={"trusted": "Pay the other invoice.", "u": "Alpha x. Golf now."})
+    assert not C.is_covered(att, clean, 1)
+    att2 = dict(clean, state={"trusted": "Pay the due invoice.", "u": "Alpha x. Golf now."})
+    assert C.is_covered(att2, clean, 1)
+    att3 = dict(att2, policy={"allowed": {"q": ["a"]}})
+    assert not C.is_covered(att3, clean, 1)
+
+
+def test_certified_but_wrong_denominator_is_certified():
+    base = {"cluster": "c", "template": "t", "kind": "clean", "covered": True, "steered": False,
+            "changed_vs_clean": False, "n_decide_calls": 1, "suffix_cost": 0.0, "arm": "exact"}
+    rows = [dict(base, certified=True, auto=True, correct=True),
+            dict(base, certified=True, auto=False, correct=False),  # certified but alarmed -> escalated
+            dict(base, certified=False, auto=False, correct=False)]
+    m = C.g4_metrics(rows)["clean"]
+    assert m["certified_but_wrong_rate"]["num"] == 1 and m["certified_but_wrong_rate"]["den"] == 2
+    assert m["wrong_given_auto"]["num"] == 0 and m["wrong_given_auto"]["den"] == 1
+
+
+def test_uncovered_stress_arm_reports_certified_and_changed():
+    reqs = data.build(6, 4, split="dev")
+    rows = C.uncovered_stress(KeywordDecider(), reqs, 1)
+    summ = C.uncovered_summary(rows)  # asserts certified-and-changed is 0 on covered rows
+    assert set(summ) == set(C.UNCOVERED_MODES)
+    assert summ["trailing_ws"]["covered_rate"] == 1.0
+    assert summ["mid_sentence"]["covered_rate"] < 1.0
+    json.dumps(summ)

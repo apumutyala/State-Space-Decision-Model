@@ -199,3 +199,30 @@ def test_selective_decider_wrapper():
     rec = S.ltt_selective(*gen(np.random.default_rng(0), 3000), ALPHA, DELTA)
     out = S.SelectiveDecider(dec, {"route": rec, "pay": rec}, stratum)(reqs[0])
     assert out["selective"]["alpha"] == ALPHA and out["selective"]["n_s"] == 3000
+
+
+# ------------------------------------------------------------------ PR #20 review follow-ups
+def test_executed_conf_is_policy_conditioned_for_unmasked_deciders():
+    from safety_eval.request import policy_conditioned_prob
+    r = {"request_id": "x", "state": {"u": "t"}, "policy": {"allowed": {"q": ["a", "b"]}},
+         "questions": {"q": {"type": "choice", "criteria": {"a": "", "b": "", "c": ""}}}}
+    served = {"a": 0.3, "b": 0.1, "c": 0.6}  # Clef-style: unmasked served distribution, c disallowed
+    resp = {"status": "ok", "answers": {"q": {"type": "choice", "choice": "c", "probabilities": served}}}
+    assert S.executed_conf(r, resp) == pytest.approx(0.75)  # 0.3 / (0.3 + 0.1), the executed option a
+    assert policy_conditioned_prob(r, resp, "q", "b") == pytest.approx(0.25)
+    resp["policy_conditioned_probabilities"] = {"q": {"a": 0.5, "b": 0.5, "c": 0.0}}
+    assert S.executed_conf(r, resp) == pytest.approx(0.5)
+
+
+def test_receipt_names_estimand_and_stress_reports_both_weightings():
+    s, w, cl = gen_clustered(np.random.default_rng(0), 50, 10)
+    r = S.ltt_selective(s, w, ALPHA, DELTA, clusters=cl)
+    assert r["estimand"].startswith("cluster-uniform")
+    assert S.ltt_selective(s, w, ALPHA, DELTA)["estimand"].startswith("unit-uniform")
+    # one big risky cluster, many small safe ones: the weightings differ
+    s2 = np.full(110, 0.9)
+    w2 = np.r_[np.ones(100, bool), np.zeros(10, bool)]
+    cl2 = ["big"] * 100 + [f"s{i}" for i in range(10)]
+    st = S.stress_test(0.5, s2, w2, ALPHA, DELTA, clusters=cl2)
+    assert st["selective_risk"] == pytest.approx(100 / 110)
+    assert st["selective_risk_cluster_weighted"] == pytest.approx(1 / 11)
