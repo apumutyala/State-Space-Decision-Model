@@ -6,6 +6,15 @@ kernel acceptance was **1036/1080 (95.93%; CI 93.43–98.15%)**. Comparison
 correctness was 29/360 (8.06%). This is iterative synthetic development,
 **not an official holdout, parent-retention result, or learned L0 qualification**.
 
+The original 88.9% `development_train` whole-answer estimate does not transfer
+to `development_validation` (48.1% overall, 8.1% compare). Value-swap response
+is also poor: predicted relations flipped on only 24/159 pairs requiring a
+flip, and only 13/180 comparison seed/task pairs had both full answers correct.
+**Fold this exact random-initialized width-32, fixed-scale, 300-step recipe as
+an L0 candidate; retain it only as an in-domain control.** This verdict applies
+to this recipe and synthetic development evidence, not to the broader SSM
+architecture family.
+
 One frozen condition used the exact previous architecture, source, numeric
 scales, training examples/order, three model seeds, optimizer, and 300 steps.
 The diagnostic completed in **11.84 seconds**, with two CPU threads, one
