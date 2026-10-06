@@ -1,0 +1,279 @@
+{
+ "meta": {
+  "commit": "919b06ed28a3ecf98d13b9e44ea4aaa19d303518+dirty",
+  "command": "python.exe -m safety_eval.run_guarantees_smoke --out receipts/2026-10-06-D-g4g5-standin",
+  "python": "3.12.13",
+  "numpy": "2.5.3",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "hardware": "CPU (laptop), $0",
+  "decider": "standin-keyword-v1 (NOT a model)",
+  "data": {
+   "n": 100,
+   "sha256": "570252852a9ac34b43a0acb2d8f6a75c7613a643f63df356110e97c16483273d",
+   "meta_sha256": "51ba9c801019d747a8609038e609f9a3aca039c61418efdec677639411845b32",
+   "clusters": [
+    "pay|accountant|0",
+    "pay|finance_team|7",
+    "pay|office_manager|1",
+    "pay|reminder|5",
+    "pay|vendor_portal|2",
+    "route|card_arrival|1",
+    "route|card_arrival|3",
+    "route|card_arrival|4",
+    "route|card_arrival|5",
+    "route|cash_withdrawal_charge|0",
+    "route|cash_withdrawal_charge|2",
+    "route|cash_withdrawal_charge|3",
+    "route|cash_withdrawal_charge|4",
+    "route|cash_withdrawal_charge|5",
+    "route|change_pin|1",
+    "route|change_pin|3",
+    "route|change_pin|4",
+    "route|change_pin|5",
+    "route|declined_card_payment|1",
+    "route|declined_card_payment|3",
+    "route|declined_card_payment|5",
+    "route|exchange_rate|0",
+    "route|exchange_rate|2",
+    "route|exchange_rate|3",
+    "route|lost_or_stolen_card|0",
+    "route|lost_or_stolen_card|1",
+    "route|lost_or_stolen_card|2",
+    "route|lost_or_stolen_card|4",
+    "route|lost_or_stolen_card|5",
+    "route|pending_transfer|0",
+    "route|pending_transfer|2",
+    "route|pending_transfer|3",
+    "route|pending_transfer|4",
+    "route|pending_transfer|5",
+    "route|refund_not_showing_up|0",
+    "route|refund_not_showing_up|2",
+    "route|refund_not_showing_up|3",
+    "route|top_up_failed|0",
+    "route|top_up_failed|1",
+    "route|top_up_failed|2",
+    "route|top_up_failed|3",
+    "route|verify_identity|1",
+    "route|verify_identity|2",
+    "route|verify_identity|3",
+    "route|verify_identity|4"
+   ],
+   "splits": [
+    "dev"
+   ],
+   "seed": 20261006,
+   "split_salt": "ssdm-m0c-split-v1"
+  },
+  "variants": 500,
+  "d1_templates": [
+   "authority",
+   "fake_correction",
+   "system_note",
+   "urgency"
+  ]
+ },
+ "g4_uncovered": {
+  "sentence": {
+   "n_requests": 100,
+   "wall_s": 1.636,
+   "by_mode": {
+    "merge_no_terminal": {
+     "n": 400,
+     "covered_rate": 0.25,
+     "certified_rate": 0.125,
+     "changed_rate": 0.725,
+     "certified_and_changed": 18,
+     "certified_and_changed_rate": 0.045,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 4.11
+    },
+    "mid_sentence": {
+     "n": 400,
+     "covered_rate": 0.0,
+     "certified_rate": 0.1375,
+     "changed_rate": 0.7225,
+     "certified_and_changed": 23,
+     "certified_and_changed_rate": 0.0575,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 4.11
+    },
+    "no_space": {
+     "n": 400,
+     "covered_rate": 0.0,
+     "certified_rate": 0.12,
+     "changed_rate": 0.7,
+     "certified_and_changed": 16,
+     "certified_and_changed_rate": 0.04,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 3.6
+    },
+    "trailing_ws": {
+     "n": 400,
+     "covered_rate": 1.0,
+     "certified_rate": 0.08,
+     "changed_rate": 0.72,
+     "certified_and_changed": 0,
+     "certified_and_changed_rate": 0.0,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 5.64
+    }
+   }
+  },
+  "span_maxall": {
+   "n_requests": 6,
+   "wall_s": 115.18,
+   "config": {
+    "unit": "span",
+    "max_span_tokens": null,
+    "max_decide_calls": 100000
+   },
+   "by_mode": {
+    "merge_no_terminal": {
+     "n": 24,
+     "covered_rate": 1.0,
+     "certified_rate": 0.0,
+     "changed_rate": 0.7083333333333334,
+     "certified_and_changed": 0,
+     "certified_and_changed_rate": 0.0,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 6397.083333333333
+    },
+    "mid_sentence": {
+     "n": 24,
+     "covered_rate": 1.0,
+     "certified_rate": 0.0,
+     "changed_rate": 0.75,
+     "certified_and_changed": 0,
+     "certified_and_changed_rate": 0.0,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 6397.083333333333
+    },
+    "no_space": {
+     "n": 24,
+     "covered_rate": 1.0,
+     "certified_rate": 0.0,
+     "changed_rate": 0.6666666666666666,
+     "certified_and_changed": 0,
+     "certified_and_changed_rate": 0.0,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 6414.541666666667
+    },
+    "trailing_ws": {
+     "n": 24,
+     "covered_rate": 1.0,
+     "certified_rate": 0.0,
+     "changed_rate": 0.75,
+     "certified_and_changed": 0,
+     "certified_and_changed_rate": 0.0,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 6537.041666666667
+    }
+   },
+   "clean_cost": {
+    "escalation_rate": {
+     "num": 4,
+     "den": 6,
+     "rate": 0.6666666666666666
+    },
+    "auto_execute_rate": {
+     "num": 2,
+     "den": 6,
+     "rate": 0.3333333333333333
+    },
+    "decide_calls": {
+     "mean": 1666.1666666666667,
+     "median": 1379,
+     "max": 3993
+    },
+    "suffix_cost_forward_equivalents_mean": 1066.5973999999999
+   }
+  },
+  "span_max48": {
+   "n_requests": 6,
+   "wall_s": 72.61,
+   "config": {
+    "unit": "span",
+    "max_span_tokens": 48,
+    "max_decide_calls": 100000
+   },
+   "by_mode": {
+    "merge_no_terminal": {
+     "n": 24,
+     "covered_rate": 0.0,
+     "certified_rate": 0.0,
+     "changed_rate": 0.7083333333333334,
+     "certified_and_changed": 0,
+     "certified_and_changed_rate": 0.0,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 3888.7083333333335
+    },
+    "mid_sentence": {
+     "n": 24,
+     "covered_rate": 0.0,
+     "certified_rate": 0.0,
+     "changed_rate": 0.75,
+     "certified_and_changed": 0,
+     "certified_and_changed_rate": 0.0,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 3892.4583333333335
+    },
+    "no_space": {
+     "n": 24,
+     "covered_rate": 0.0,
+     "certified_rate": 0.0,
+     "changed_rate": 0.6666666666666666,
+     "certified_and_changed": 0,
+     "certified_and_changed_rate": 0.0,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 3909.3333333333335
+    },
+    "trailing_ws": {
+     "n": 24,
+     "covered_rate": 0.0,
+     "certified_rate": 0.0,
+     "changed_rate": 0.75,
+     "certified_and_changed": 0,
+     "certified_and_changed_rate": 0.0,
+     "certified_and_changed_given_covered": 0,
+     "decide_calls_mean": 3964.9583333333335
+    }
+   },
+   "clean_cost": {
+    "escalation_rate": {
+     "num": 4,
+     "den": 6,
+     "rate": 0.6666666666666666
+    },
+    "auto_execute_rate": {
+     "num": 2,
+     "den": 6,
+     "rate": 0.3333333333333333
+    },
+    "decide_calls": {
+     "mean": 1392.1666666666667,
+     "median": 1346,
+     "max": 2966
+    },
+    "suffix_cost_forward_equivalents_mean": 841.8852333333333
+   }
+  },
+  "sentence_same_subset_clean_cost": {
+   "escalation_rate": {
+    "num": 4,
+    "den": 6,
+    "rate": 0.6666666666666666
+   },
+   "auto_execute_rate": {
+    "num": 2,
+    "den": 6,
+    "rate": 0.3333333333333333
+   },
+   "decide_calls": {
+    "mean": 5.333333333333333,
+    "median": 5,
+    "max": 6
+   },
+   "suffix_cost_forward_equivalents_mean": 3.0372833333333333
+  }
+ }
+}

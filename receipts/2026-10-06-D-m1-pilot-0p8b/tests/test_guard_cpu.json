@@ -1,0 +1,7 @@
+{
+ "test_throughput_stop": true,
+ "test_no_stop_when_fast": true,
+ "test_wall_clock": true,
+ "test_rules": true,
+ "PASS": true
+}

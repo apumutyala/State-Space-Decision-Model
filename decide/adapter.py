@@ -53,7 +53,7 @@ import time
 from typing import Any
 
 from . import versions
-from .backends.base import Backend, BackendUnsupported, DeadlineExceeded
+from .backends.base import Backend, BackendUnsupported, CallBudgetExceeded, DeadlineExceeded
 from .calibration import OptionCountTemperature, softmax
 from .provenance import validate_provenance
 from .schema import (
@@ -96,6 +96,7 @@ SAFE_MESSAGES = {
     "replay_miss": "no recording for this request; no model fallback",
     "tokenization_failed": "tokenization failed; details withheld",
     "deadline_exceeded": "deadline exceeded; no partial answers",
+    "inference_calls_exceeded": "the backend needed more inference calls than max_inference_calls; no partial answers",
 }
 _CODE_RE = re.compile(r"[a-z][a-z0-9_]{0,63}")
 MAX_MESSAGE_CHARS = 300
@@ -284,10 +285,17 @@ class Decider:
             def expired() -> bool:
                 return deadline_ms is not None and (time.perf_counter() - t_start) * 1000.0 > deadline_ms
 
+            max_calls = limits["max_inference_calls"]
+
             def check_deadline() -> None:  # called by backends before each inference call
                 if expired():
                     work["stopped_by_deadline"] = True  # exact: this callback counted every started call
                     raise DeadlineExceeded()
+                # Enforce the call budget at run time, not only against the plan: a backend whose
+                # plan under-reports its calls is stopped before the first call over the cap.
+                if max_calls is not None and work["calls_started"] >= max_calls:
+                    work["stopped_by_call_budget"] = True
+                    raise CallBudgetExceeded()
                 work["calls_started"] += 1
 
             work["score_entered"] = True
@@ -296,8 +304,20 @@ class Decider:
                 work["result_calls"] = getattr(result, "inference_calls", None)
                 if expired():
                     raise DeadlineExceeded()
+                reported = work["result_calls"]
+                if (
+                    max_calls is not None
+                    and isinstance(reported, int)
+                    and not isinstance(reported, bool)
+                    and reported > max_calls
+                ):  # backend did more calls than the cap without using the callback for each
+                    raise CallBudgetExceeded()
             except DeadlineExceeded as exc:
                 raise RequestRejected("exhausted", "deadline_exceeded", SAFE_MESSAGES["deadline_exceeded"]) from exc
+            except CallBudgetExceeded as exc:
+                raise RequestRejected(
+                    "exhausted", "inference_calls_exceeded", SAFE_MESSAGES["inference_calls_exceeded"]
+                ) from exc
             except BackendUnsupported as exc:
                 code = _backend_code(exc.code)
                 raise RequestRejected("unsupported", code, _backend_message(code)) from exc
@@ -326,8 +346,8 @@ class Decider:
         started, reported = work["calls_started"], work["result_calls"]
         if isinstance(reported, int) and not isinstance(reported, bool) and reported >= 0:
             return max(started, reported), "max(calls started, calls reported by the backend)"
-        if started > 0 or work.get("stopped_by_deadline"):
-            return started, "calls started before failure/deadline (counted by the adapter callback)"
+        if started > 0 or work.get("stopped_by_deadline") or work.get("stopped_by_call_budget"):
+            return started, "calls started before failure/deadline/call budget (counted by the adapter callback)"
         return None, "score() was attempted but the backend failed before reporting work; count unknown"
 
     @staticmethod

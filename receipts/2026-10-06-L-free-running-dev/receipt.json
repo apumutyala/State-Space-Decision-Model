@@ -1,0 +1,39 @@
+{
+  "source_sha": "aa2cdd38667e8d18dba43ab46f082e1b8af296e7",
+  "test_command": [
+    "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+    "-m",
+    "unittest",
+    "language_growth.tests.test_free_running_dev",
+    "-v"
+  ],
+  "exit_code": 0,
+  "sample_generation": "generate_development_tasks(seed=7,count=3,choice_format=\"production\")",
+  "sample_canonical_json_sha256": "12ac66098a3392dd332fb0386f2c17d5a6f32bdcd3bec0a638fe4fa193abb8e8",
+  "observation_command": "from language_growth.tests.test_free_running_dev import ScriptedProvider, run; report=run(examples,ScriptedProvider())",
+  "dependency_text_lf_sha256": {
+    "language_growth/kernel.py": "b2a8274c641bf872157d53019fcdaf75ec5ac688628f9a24a5735a2c812e994e",
+    "language_growth/types.py": "16c5e32cc373e3ba348f2a718bb2c2dfed519d54819f180bdec4ac379ad31fa9",
+    "language_growth/realize.py": "ecadc0669dbd61d5aa019e349c1b70118c67dfad7338a9cf7ea9ce6534aba599",
+    "language_growth/parent_bridge.py": "215f829e79135202dcca6830ebaf09029d5a48a13eef08135a9ef604bd0eca07",
+    "language_growth/planner.py": "643c110b6dfd6e9ce35dff242a9ebb09a8f5c503c08be17d81fb8299cb7a5808",
+    "language_growth/development_data.py": "78726a83535b9386d43fa2e4f50ea65472a27f6c2a1c70b4d03b34dd2bb9371b",
+    "language_growth/__init__.py": "d34d92c60696ec6b2969a937bdd0cb29876f151122bd7b58cea4226708df179f"
+  },
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "billed_cost_usd": 0,
+  "runs": 1,
+  "raw_output": "tests.txt",
+  "raw_predictions": "scripted-raw.json; scripted provider, no learned model",
+  "scope": "synthetic development runner conformance only; no learned or held-out result",
+  "dependency_commits": {
+    "kernel_types": "e1dd16b",
+    "renderer": "a361de9",
+    "planner_bridge": "821b139",
+    "development_generator": "d94d45f"
+  }
+}
