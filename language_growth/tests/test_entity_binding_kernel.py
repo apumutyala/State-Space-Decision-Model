@@ -52,7 +52,7 @@ class EntityBindingKernelTests(unittest.TestCase):
         task="State Atlas's price for October 2026."
         with patch.object(adapter.realize,'render_checked',wraps=realize.render_checked) as render:
             result=release_bound_answer(task,prediction(field='invented_field'),host,catalog)
-            self.assertEqual(result.status,'kernel_rejected')
+            self.assertEqual(result.status,'unreleased')
             self.assertIsNone(result.text)
             # A broken/forged resolver result cannot bypass the kernel boundary.
             forged={'disposition':'resolved','predicted':dict(prediction(),left='missing-record')}
@@ -60,6 +60,36 @@ class EntityBindingKernelTests(unittest.TestCase):
                 result=release_bound_answer(task,prediction(),host,catalog)
             self.assertEqual(result.status,'kernel_rejected')
             self.assertIsNone(result.text)
+            render.assert_not_called()
+
+    def test_wrong_operation_or_field_never_invokes_kernel_or_renderer(self):
+        host,catalog=fixture()
+        cases=(("Provide a checked derivation of Atlas's price.",prediction('read')),
+               ("Provide a checked derivation of Atlas's price.",prediction('explain','warranty_months')),
+               ("State Atlas's price for October 2026.",prediction('explain')),
+               ("State Atlas's price for October 2026.",prediction('read','warranty_months')))
+        with (patch.object(adapter.kernel,'check_program') as check,
+              patch.object(adapter.realize,'render_checked') as render):
+            for task,predicted in cases:
+                result=release_bound_answer(task,predicted,host,catalog)
+                self.assertEqual(result.status,'unreleased')
+                self.assertIsNone(result.program)
+                self.assertIsNone(result.text)
+            check.assert_not_called()
+            render.assert_not_called()
+
+    def test_ambiguous_field_surface_never_invokes_kernel_or_renderer(self):
+        host,catalog=fixture()
+        atlas=next(record for record in catalog['records'] if record['record_ref']=='atlas-v1')
+        atlas['fields']['Price']=copy.deepcopy(atlas['fields']['price'])
+        catalog['registries'][host['registry_ref']]['registered_fields'].append('Price')
+        with (patch.object(adapter.kernel,'check_program') as check,
+              patch.object(adapter.realize,'render_checked') as render):
+            result=release_bound_answer("State Atlas's price for October 2026.",prediction(),host,catalog)
+            self.assertEqual(result.status,'unreleased')
+            self.assertIsNone(result.program)
+            self.assertIsNone(result.text)
+            check.assert_not_called()
             render.assert_not_called()
 
     def test_ambiguous_negated_injected_and_compare_stay_unreleased(self):

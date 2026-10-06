@@ -20,6 +20,7 @@ class EntityBindingTests(unittest.TestCase):
         text="STATE gRoVe's price for October 2026."
         result=resolve_mentions(text,RECORDS)
         self.assertEqual(result.status,'resolved')
+        self.assertEqual((result.requested_kind,result.requested_field),('read','price'))
         self.assertEqual([(m.record_ref,text[m.start:m.end]) for m in result.mentions],[('a','gRoVe')])
         for text in ("State Groveland's price for October 2026.","State xGrove's price for October 2026."):
             self.assertNotEqual(resolve_mentions(text,RECORDS).status,'resolved')
@@ -54,10 +55,29 @@ class EntityBindingTests(unittest.TestCase):
         self.assertEqual(predicted['left'],'a')
         for kind in ('read','explain'):
             target={'kind':kind,'field':'warranty_months','left':'b','temporal_scope':'2026-10'}
-            result=overlay_request(request("State Grove's price for October 2026."),target)
+            task=("State Grove's warranty months for October 2026." if kind=='read'
+                  else "Provide a checked derivation of Grove's warranty months.")
+            result=overlay_request(request(task),target)
             self.assertEqual(result['predicted'],dict(target,left='a'))
             self.assertEqual(overlay_request(request("For October 2026, compare Grove's and Hearth's price."),target)['disposition'],'unresolved')
         self.assertEqual(overlay_request(request("State Grove's price for October 2026."),predicted)['disposition'],'unresolved')
+
+    def test_all_six_forms_retain_requested_operation_and_registered_field(self):
+        forms=(('read',"State Grove's warranty months for October 2026."),
+               ('explain',"Provide a checked derivation of Grove's warranty months."),
+               ('compare',"For October 2026, compare Grove's and Hearth's warranty months."),
+               ('read',"Tell me the warranty months belonging to Grove as of October 2026."),
+               ('explain',"Describe the checked reasoning behind the warranty months belonging to Grove."),
+               ('compare',"With Grove first and Hearth second, compare their October 2026 warranty months."))
+        for kind,task in forms:
+            result=resolve_mentions(task,RECORDS)
+            self.assertEqual(result.status,'resolved')
+            self.assertEqual((result.requested_kind,result.requested_field),(kind,'warranty_months'))
+
+    def test_duplicate_casefolded_field_surface_is_ambiguous(self):
+        records=(AllowedRecord('a','Grove',('price','Price')),)
+        result=resolve_mentions("State Grove's price for October 2026.",records)
+        self.assertEqual((result.status,result.reason),('ambiguous','duplicate_field_surface'))
 
     def test_no_label_or_evaluation_metadata_leakage(self):
         original=request("Provide a checked derivation of Grove's price.")

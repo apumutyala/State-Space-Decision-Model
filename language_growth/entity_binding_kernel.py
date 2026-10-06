@@ -2,7 +2,8 @@
 
 The canonical host audience view supplies binding records. Only the existing
 kernel and release-validating renderer may produce text. Compare is unsupported.
-This binds subjects, not the meaning of model-selected operation or field.
+Binding checks the requested operation/field within its supported grammar.
+Query date versus evidence temporal scope is not validated by this adapter.
 """
 from dataclasses import dataclass
 

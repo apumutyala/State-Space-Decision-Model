@@ -11,17 +11,19 @@
   "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
   "branch": "codex/l0-entity-binding-module",
   "diff_check": "git diff --cached --check",
+  "remaining_scope_limit": "Query date is admitted syntactically but not checked against evidence temporal scope; this change does not establish full task-meaning correctness.",
   "schema": "ssdm.entity_binding_module_code_tests.v1",
   "scope": "Code-only boundary tests. Controlled positive grammar and trusted allowed records; adapter rebuilds canonical host audience view. Only resolved read/explain compiles v0.1 programs and runs existing kernel then release-validating realizer. Unresolved has no text; no Ask argument/path and no Compare. No experiment runner/data/model dependency, training, GPU, spend, network or capability claim. No shared schema/kernel/realizer changes.",
+  "semantic_guard": "Each admitted form returns requested_kind/requested_field. Model disagreement and duplicate case-folded field surfaces fail closed before kernel/renderer. No model choice is silently corrected.",
   "source_sha256": {
-    "language_growth/entity_binding.py": "c5bc1d7804155ef03deb5637ce8f15d1ccc1d4b2814aa3aa49c67b91dcf39c6e",
-    "language_growth/entity_binding_kernel.py": "55b3fe0d57262ed1ca8954b41b6047a302303e26c184e75966516bd2dec166a0",
-    "language_growth/tests/test_entity_binding.py": "6ae95f7d6444a698e3d5e93a98f3a8f5ecd8e523b3b372c293b506e0dd43afdc",
-    "language_growth/tests/test_entity_binding_kernel.py": "082490a71d8b9bad16c781bb4829fc1f9ef4a49b96a177d4d8e98832b87a4970"
+    "language_growth/entity_binding.py": "f839fd92277f4c4ee7b50143d2e7c72dcfd4de721b389747610aaad8b7bba9c7",
+    "language_growth/entity_binding_kernel.py": "45437dda9362f5604d341244bc06381dae131407cd0867da2ef7ff8eabe6d581",
+    "language_growth/tests/test_entity_binding.py": "e1c1a8e585a4c7a75807e7823de36ba86d21e80eb79edd8ef4cdb0eefd83db54",
+    "language_growth/tests/test_entity_binding_kernel.py": "8055293df8520a1442f7e3a23d6e7f5d1c75c336e9db166b97a8f54459c1fbf8"
   },
   "tests": {
     "command": "python -m unittest language_growth.tests.test_entity_binding language_growth.tests.test_entity_binding_kernel -v",
-    "passed": 10,
+    "passed": 14,
     "result": "OK",
     "skipped": 0
   }

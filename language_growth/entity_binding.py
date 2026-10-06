@@ -1,6 +1,7 @@
 """Conservative exact-mention resolution for explicit positive request forms.
 
 Literal references bind only within the caller-supplied trusted allowed records.
+The matched form retains requested operation/field; model disagreement rejects.
 Unsupported or ambiguous text is unresolved. This is a small controlled grammar,
 not general natural-language interpretation or an authority checker.
 """
@@ -32,10 +33,12 @@ class Resolution:
     status: Literal["resolved", "ambiguous", "unsupported"]
     mentions: tuple[Mention, ...] = ()
     reason: str | None = None
+    requested_kind: Literal["read", "explain", "compare"] | None = None
+    requested_field: str | None = None
 
 
 def resolve_mentions(task_input: str, records: tuple[AllowedRecord, ...]) -> Resolution:
-    """Resolve literal ASCII names with original half-open character spans.
+    """Resolve ASCII mentions and requested operation/field from supported forms.
 
     Positive-form admission is a full match, not a negation/injection blacklist.
     Any overlapping name, repeated mention or duplicate name/ref is ambiguous.
@@ -49,13 +52,19 @@ def resolve_mentions(task_input: str, records: tuple[AllowedRecord, ...]) -> Res
     for record in records:
         if (not record.name.isascii() or not re.fullmatch(r"[A-Za-z][A-Za-z0-9]*(?:[ -][A-Za-z][A-Za-z0-9]*)*", record.name)
                 or not record.record_ref or not record.fields
-                or any(not re.fullmatch(r"[a-z][a-z0-9_]*", field) for field in record.fields)):
+                or any(not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", field) for field in record.fields)):
             return Resolution("unsupported", reason="unsupported_record_shape")
         if record.name.casefold() in names or record.record_ref in refs:
             return Resolution("ambiguous", reason="duplicate_name_or_ref")
         names.add(record.name.casefold())
         refs.add(record.record_ref)
         fields.update(record.fields)
+    field_surfaces = {}
+    for field_name in sorted(fields):
+        surface = field_name.replace("_", " ").casefold()
+        if surface in field_surfaces and field_surfaces[surface] != field_name:
+            return Resolution("ambiguous", reason="duplicate_field_surface")
+        field_surfaces[surface] = field_name
     mentions = sorted((Mention(record.record_ref, match.start(), match.end())
         for record in records
         for match in re.finditer(r"(?<![A-Za-z0-9_])" + re.escape(record.name) + r"(?![A-Za-z0-9_])",
@@ -71,19 +80,25 @@ def resolve_mentions(task_input: str, records: tuple[AllowedRecord, ...]) -> Res
     for item in reversed(mentions):
         scaffold = scaffold[:item.start] + "\x00" + scaffold[item.end:]
     entity = re.escape("\x00")
-    field = "(?:" + "|".join(re.escape(value.replace("_", " ")) for value in sorted(fields)) + ")"
+    field = "(?P<field>" + "|".join(re.escape(value) for value in sorted(field_surfaces)) + ")"
     date = r"(?:January|February|March|April|May|June|July|August|September|October|November|December) [0-9]{4}"
     patterns = (
-        rf"State {entity}'s {field} for {date}\.",
-        rf"Provide a checked derivation of {entity}'s {field}\.",
-        rf"For {date}, compare {entity}'s and {entity}'s {field}\.",
-        rf"Tell me the {field} belonging to {entity} as of {date}\.",
-        rf"Describe the checked reasoning behind the {field} belonging to {entity}\.",
-        rf"With {entity} first and {entity} second, compare their {date} {field}\.",
+        ("read", rf"State {entity}'s {field} for {date}\."),
+        ("explain", rf"Provide a checked derivation of {entity}'s {field}\."),
+        ("compare", rf"For {date}, compare {entity}'s and {entity}'s {field}\."),
+        ("read", rf"Tell me the {field} belonging to {entity} as of {date}\."),
+        ("explain", rf"Describe the checked reasoning behind the {field} belonging to {entity}\."),
+        ("compare", rf"With {entity} first and {entity} second, compare their {date} {field}\."),
     )
-    if not any(re.fullmatch(pattern, scaffold, flags=re.IGNORECASE | re.ASCII) for pattern in patterns):
+    matches = [(kind, match) for kind, pattern in patterns
+               if (match := re.fullmatch(pattern, scaffold, flags=re.IGNORECASE | re.ASCII)) is not None]
+    if not matches:
         return Resolution("unsupported", reason="unsupported_positive_form")
-    return Resolution("resolved", tuple(mentions))
+    if len(matches) != 1:
+        return Resolution("ambiguous", reason="ambiguous_positive_form")
+    kind, match = matches[0]
+    return Resolution("resolved", tuple(mentions), requested_kind=kind,
+                      requested_field=field_surfaces[match.group("field").casefold()])
 
 
 def overlay_request(request: dict, predicted: dict) -> dict:
@@ -96,6 +111,10 @@ def overlay_request(request: dict, predicted: dict) -> dict:
     output = {"disposition": "unresolved", "operation_field": anchor,
               "resolution": asdict(resolution), "predicted": None}
     if resolution.status != "resolved":
+        return output
+    if predicted["kind"] != resolution.requested_kind or predicted["field"] != resolution.requested_field:
+        output["resolution"] = asdict(Resolution("unsupported", reason="requested_selection_mismatch",
+            requested_kind=resolution.requested_kind, requested_field=resolution.requested_field))
         return output
     kind = predicted["kind"]
     expected = 2 if kind == "compare" else 1 if kind in ("read", "explain") else 0
