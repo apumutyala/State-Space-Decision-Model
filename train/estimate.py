@@ -11,7 +11,10 @@ Model of a training step (frozen bf16 backbone, LoRA, head, no LM head):
                    working set (``WORK_FACTOR`` x [B, T, D] bf16) + delta-rule chunk states for that
                    layer's backward ((T / 64) states of ``state_scalars_per_layer`` fp32);
                    without checkpointing: every layer's working set
-* head acts        autograd keeps per-chunk tensors for the whole sequence (per-head formulas)
+* head acts        the fp32 feature copy h[B,T,D] every head consumes, plus what autograd keeps
+                   for the whole sequence (per-head formulas; snapshot adds its [B,T,S] one-hot
+                   and [B,S,D] boundary features). Heads are non-streaming: the O(S*K) / O(K*d)
+                   figures in ``cost()`` are accumulator sizes, not peak memory.
 * FLOPs/token      2 * non-embedding params forward + 2x for input-gradient backward
                    (+ 2x recompute with checkpointing); LoRA adds 6 * lora_params; head 3x its FLOPs
 * throughput       mfu_assumed (per backbone spec) * 989 TFLOP/s dense bf16
@@ -73,10 +76,16 @@ def head_cost(name: str, d_model: int, T: int, K: int) -> dict:
 
 
 def head_activation_bytes(name: str, B: int, T: int, K: int, d_model: int) -> float:
+    return B * T * d_model * 4 + _head_specific_bytes(name, B, T, K, d_model)  # + fp32 copy of h
+
+
+def _head_specific_bytes(name: str, B: int, T: int, K: int, d_model: int) -> float:
     if name == "integrator":
         return B * T * K * HEAD_DEFAULTS[name]["channels"] * 4 * 3  # u*v product, silu, gate
     if name == "snapshot":
-        return B * T * K * HEAD_DEFAULTS[name]["channels"] * 4 * 3 + B * T * 8 * 4
+        S = HEAD_DEFAULTS[name]["max_snapshots"]
+        inc = B * T * K * HEAD_DEFAULTS[name]["channels"] * 4 * 3  # integrator increments, all chunks
+        return inc + B * T * S * 4 + B * S * d_model * 4 * 3  # one-hot [B,T,S]; boundary feats + products
     if name == "head_b":
         return B * T * K * HEAD_DEFAULTS[name]["d_state"] * 4 * 6  # log_a, cumsum, decay, b, product, pre-acts
     if name == "fork":

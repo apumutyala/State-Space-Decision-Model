@@ -23,16 +23,27 @@ Heads
 (a) ``integrator``  z_k = b(e_k, q) + sum_t m_t * delta(h_t, e_k, q). lambda = 1 (no decay,
     no normalisation). Returns per-token attribution that sums to the logit exactly.
 (b) ``fork``        z_k = g(f_k), f_k = backbone feature after prefix + continuation_k.
-(c) ``snapshot``    evidence split into at most S chunks (S fixed, so head memory is
-    O(S*K) scalars regardless of length); per-chunk partial sums of the integrator
-    increments plus a chunk-boundary readout, aggregated by sum / max / gated unnormalised
-    sum (an independent sigmoid per slot, no normalisation across slots). No softmax over
-    positions or chunks; no backbone state is snapshotted. Caveats: equal-count chunking needs
-    the evidence length before the scan (fine with options-first rows, whose length is known;
-    not a streaming construct), and a streaming implementation must reduce each boundary
-    readout (S x D) to its S x K scores at the boundary to keep the O(S*K) claim.
+(c) ``snapshot``    evidence split into at most S chunks (S fixed); per-chunk partial sums
+    of the integrator increments plus a chunk-boundary readout, aggregated by sum / max /
+    gated unnormalised sum (an independent sigmoid per slot, no normalisation across slots).
+    No softmax over positions or chunks; no backbone state is snapshotted. Only the
+    ACCUMULATOR (the per-chunk partial scores) is O(S*K) and independent of length.
+
+Memory: what is and is not bounded
+----------------------------------
+``cost()['accumulator_scalars']`` is the persistent per-option accumulator a streaming
+implementation would carry (integrator K, snapshot S*K, Head B K*d). It is NOT the memory of
+this implementation. Every head here is non-streaming: it consumes the full feature tensor
+``h[B, T, D]`` (an fp32 copy) produced by one backbone pass, and the snapshot head also builds
+a ``[B, T, S]`` chunk one-hot and gathers boundary features ``[B, S, D]``; in training autograd
+keeps the per-chunk ``[B, t, K, C]`` tensors for the whole sequence. These terms, not the
+accumulator, dominate peak memory (``train/estimate.py`` prices them). Streaming inference
+(consume features chunk by chunk and drop them) is NOT implemented; for the snapshot head it
+also needs the evidence length up front (equal-count chunking; known for options-first rows)
+and must reduce each boundary readout to its S x K scores at the boundary.
 (d) ``head_b``      r[t,k] = a[t,k] * r[t-1,k] + b[t,k] * v[t]; (a, b) = f(v_t, e_k, q, s);
-    z_k = g(r[T,k], e_k, s), s = symmetric mean summary of options. O(KTd) work, O(Kd) state.
+    z_k = g(r[T,k], e_k, s), s = symmetric mean summary of options. O(KTd) work; O(Kd)
+    accumulator (``reference_scan`` is the streaming recurrence, but still reads a full ``h``).
 (e) ``clef_control`` Clef-SHAPED control: options cross-attend over the whole sequence
     (2 routing layers) then self-attend among options (4 layers), with the released head
     config sizes. Shape-matched, not recipe-matched: Clef's scorer is a prior + gated joint
@@ -76,7 +87,9 @@ class DecisionHead(nn.Module):
     needs_fork = False
 
     def cost(self, T: int, K: int) -> dict:
-        """Per-request head cost beyond the backbone (FLOPs ~ 2 * MACs), and persistent state."""
+        """Per-request head cost beyond the backbone: ``flops`` (~ 2 * MACs) and
+        ``accumulator_scalars`` (persistent per-option state of a streaming implementation, NOT
+        this implementation's peak memory; see the module docstring)."""
         raise NotImplementedError
 
     def n_params(self) -> int:
@@ -124,7 +137,8 @@ class IntegratorBank(DecisionHead):
 
     def cost(self, T: int, K: int) -> dict:
         return {"flops": 2 * T * (self.u.in_features * self.C) + 2 * T * K * 2 * self.C,
-                "state_scalars": K, "attention_free": True}
+                "accumulator_scalars": K, "attention_free": True,
+                "streaming_implemented": False}
 
 
 # ---------------------------------------------------------------- (b) final-state fork
@@ -147,7 +161,7 @@ class FinalStateFork(DecisionHead):
 
     def cost(self, T: int, K: int) -> dict:
         # backbone cost of the fork (K continuations) is priced in train/estimate.py
-        return {"flops": 2 * K * self.n_params(), "state_scalars": 0, "attention_free": True,
+        return {"flops": 2 * K * self.n_params(), "accumulator_scalars": 0, "attention_free": True, "streaming_implemented": False,
                 "backbone_fork_rows": K}
 
 
@@ -216,7 +230,9 @@ class SnapshotFork(DecisionHead):
 
     def cost(self, T: int, K: int) -> dict:
         base = self.inc.cost(T, K)
-        return {"flops": base["flops"] + 2 * self.S * K * 4 * len(self.rw), "state_scalars": self.S * K,
+        return {"flops": base["flops"] + 2 * self.S * K * 4 * len(self.rw), "accumulator_scalars": self.S * K,
+                "streaming_implemented": False,
+                "impl_extra_scalars": f"onehot B*T*{self.S} + boundary features B*{self.S}*D + full h B*T*D",
                 "attention_free": True}
 
 
@@ -285,7 +301,8 @@ class HeadB(DecisionHead):
         d = self.d
         per_t = 2 * self.vproj.in_features * d + 2 * 2 * d * d  # v_t and its gate terms
         per_tk = 10 * d  # gate adds, sigmoids, multiply-accumulate per option and channel
-        return {"flops": T * per_t + T * K * per_tk, "state_scalars": K * d, "attention_free": True}
+        return {"flops": T * per_t + T * K * per_tk, "accumulator_scalars": K * d, "attention_free": True,
+                "streaming_implemented": False}
 
 
 # ---------------------------------------------------------------- (e) Clef-style control
@@ -335,7 +352,7 @@ class ClefCrossAttentionControl(DecisionHead):
         kv = n * 2 * 2 * T * w * w  # K and V projections per routing layer
         attn = n * 2 * 2 * K * T * w  # scores + weighted sum
         rest = 2 * K * (self.n_params() - self.mem.weight.numel())
-        return {"flops": mem + kv + attn + rest, "state_scalars": n * 2 * T * w,
+        return {"flops": mem + kv + attn + rest, "accumulator_scalars": n * 2 * T * w, "streaming_implemented": False,
                 "attention_free": False, "note": "keys/values grow with T: softmax over positions"}
 
 

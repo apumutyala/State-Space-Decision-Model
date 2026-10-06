@@ -34,6 +34,8 @@ from heads.model import DecisionModel
 from .data import Item
 from .evalcard import run_card
 from .guard import SplitGuard
+from .lineage import diff as lineage_diff
+from .lineage import lineage
 from .lora import apply_lora, lora_parameters
 from .losses import LossConfig, decision_loss
 
@@ -85,7 +87,9 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     if cfg.lora_rank > 0:
         if targets is None:
             raise ValueError("no LoRA targets: set cfg.lora_targets or give the backbone a spec")
-        found = apply_lora(model.backbone.model, targets, cfg.lora_rank, cfg.lora_alpha, cfg.lora_dropout)
+        with torch.random.fork_rng(devices=[]):  # LoRA init depends only on cfg.seed, never the ambient RNG
+            torch.manual_seed(cfg.seed * 1_000_003 + 17)
+            found = apply_lora(model.backbone.model, targets, cfg.lora_rank, cfg.lora_alpha, cfg.lora_dropout)
         replaced = sorted({n for names in found.values() for n in names})
     else:
         for p in model.backbone.parameters():
@@ -120,6 +124,7 @@ class Trainer:
         self.cursor = 0
         self.history: list[dict[str, Any]] = []
         self.cards: list[dict[str, Any]] = []
+        self.lineage = lineage(model.backbone, train_items)
         self._seed_all(cfg.seed)
 
     # ------------------------------------------------------------------ data order
@@ -192,7 +197,10 @@ class Trainer:
             "config": self.cfg.to_json(), "config_hash": self.cfg.hash(),
             "trainable": self.trainable_state(),
             "optimizer": self.opt.state_dict(), "scheduler": self.sched.state_dict(),
-            "rng": {"torch": torch.get_rng_state(), "python": random.getstate(), "numpy": np.random.get_state()},
+            "rng": {"torch": torch.get_rng_state(), "python": random.getstate(), "numpy": np.random.get_state(),
+                    "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None},
+            "lineage": self.lineage,
+            "init_seed": getattr(self.model, "init_seed", None),
             "history": self.history,
             "backbone": getattr(self.model.backbone.spec, "name", None),
             "lora_modules": self.lora_modules,
@@ -217,10 +225,15 @@ class Trainer:
             return None
         return Path(ckpt_dir) / json.loads(f.read_text(encoding="utf-8"))["path"]
 
-    def load(self, path: str | Path, strict_config: bool = True) -> None:
+    def load(self, path: str | Path, strict_config: bool = True, strict_lineage: bool = True) -> None:
         st = torch.load(path, map_location="cpu", weights_only=False)
         if strict_config and st["config_hash"] != self.cfg.hash():
             raise ValueError(f"checkpoint config {st['config_hash']} != current {self.cfg.hash()}")
+        if strict_lineage:
+            bad = lineage_diff(st.get("lineage") or {}, self.lineage)
+            if bad:
+                raise ValueError(f"checkpoint lineage differs from this run: {bad} "
+                                 "(frozen backbone / tokenizer / layout / training data must match to resume)")
         params = dict(self.model.named_parameters())
         missing = [n for n in st["trainable"] if n not in params]
         if missing:
@@ -235,6 +248,8 @@ class Trainer:
         torch.set_rng_state(st["rng"]["torch"])
         random.setstate(st["rng"]["python"])
         np.random.set_state(st["rng"]["numpy"])
+        if st["rng"].get("cuda") is not None and torch.cuda.is_available():
+            torch.cuda.set_rng_state_all(st["rng"]["cuda"])
 
     def resume(self) -> bool:
         if not self.cfg.ckpt_dir:

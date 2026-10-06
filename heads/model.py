@@ -24,12 +24,18 @@ class Forward:
 
 class DecisionModel(nn.Module):
     def __init__(self, backbone: HiddenStateBackbone, head: DecisionHead | str, head_kwargs: dict | None = None,
-                 pad_id: int = 0) -> None:
+                 pad_id: int = 0, seed: int = 0) -> None:
+        """Head and typed-output parameters are initialised from ``seed`` inside a forked RNG, so
+        the result never depends on (or disturbs) the ambient torch RNG. A pre-built head module
+        is used as given (``init_seed`` is then None)."""
         super().__init__()
         self.backbone = backbone
         d = backbone.d_model
-        self.head = make_head(head, d, **(head_kwargs or {})) if isinstance(head, str) else head
-        self.typed = TypedOutput(d)
+        self.init_seed = seed if isinstance(head, str) else None
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed(seed)
+            self.head = make_head(head, d, **(head_kwargs or {})) if isinstance(head, str) else head
+            self.typed = TypedOutput(d)
         self.pad_id = pad_id
 
     def head_parameters(self):

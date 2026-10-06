@@ -42,11 +42,19 @@ def items_from_records(records: Iterable[dict[str, Any]], encode: EncodeFn, layo
         validate_legacy(req)
         for qid, gold in sorted(rec["labels"].items()):
             row = build_row(req, qid, encode, template=template, layout=layout)
+            row.meta["encoder"] = encoder_identity(encode)
             gold = str(gold).lower() if row.qtype == "noul" else str(gold)
             if gold not in row.option_ids:
                 raise ValueError(f"{rec['id']}/{qid}: gold {gold!r} not among options {row.option_ids}")
             out.append(Item(f"{rec['id']}/{qid}", row, row.option_ids.index(gold)))
     return out
+
+
+def encoder_identity(encode) -> dict:
+    ident = getattr(encode, "identity", None)
+    if callable(ident):
+        return ident()
+    return {"kind": "unidentified", "type": type(encode).__name__}
 
 
 def split_hash(items: list[Item]) -> str:
