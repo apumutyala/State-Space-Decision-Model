@@ -1,0 +1,73 @@
+"""CPU prototype: a native RWKV-7 parent feeding Track D's learned head.
+
+The caller owns checkpoint verification and strict loading. This module never
+loads weights, imports snapshot code, or accesses a service. It consumes the
+merged vendored RWKV classes, takes ownership of their base module, and freezes
+it in place. The LM vocabulary head is excluded from the decision model.
+
+Use the existing Trainer with lora_rank=0 for head-only growth. A newly created
+head is random; construction or a finite forward does not qualify capability.
+"""
+from __future__ import annotations
+
+from copy import deepcopy
+import json
+from typing import Any
+
+import torch
+
+from heads.backbone import BackboneSpec, HiddenStateBackbone
+from heads.decide_backend import DecisionModelBackend
+from heads.layout import EncodeFn
+from heads.model import DecisionModel
+
+
+def rwkv_decision_backend(parent, encode: EncodeFn, *, source_identity: dict[str, Any],
+                          head: str = "snapshot", head_kwargs: dict | None = None,
+                          seed: int = 0, template: str = "jrt-rwkv-g1-v1",
+                          layout: str = "ordered", fork_mode: str = "cache") -> DecisionModelBackend:
+    """Attach an attention-free decision head to an already loaded CPU FP32 parent.
+
+    ``source_identity`` is caller-supplied provenance, not authentication. It
+    must identify the model and should pin snapshot, weight and loader hashes.
+    The encoder must expose ``identity()`` for checkpoint/tokenizer lineage.
+    A returned backend serves the ordinary D adapter and L planner interfaces.
+    """
+    from third_party.rwkv7_hf.modeling_rwkv7 import Rwkv7ForCausalLM, Rwkv7Model
+
+    if not isinstance(parent, (Rwkv7Model, Rwkv7ForCausalLM)):
+        raise TypeError("requires the merged vendored native RWKV-7 model")
+    if head not in ("integrator", "snapshot", "head_b", "fork"):
+        raise ValueError("prototype requires an attention-free decision head")
+    if (not isinstance(source_identity, dict) or not isinstance(source_identity.get("model_id"), str)
+            or not source_identity["model_id"]):
+        raise ValueError("source_identity must identify model_id")
+    # Freeze an independent JSON value so later caller edits cannot rewrite lineage.
+    identity = json.loads(json.dumps(source_identity, sort_keys=True, allow_nan=False))
+    encoder_identity = getattr(encode, "identity", None)
+    encoder_info = encoder_identity() if callable(encoder_identity) else None
+    if not isinstance(encoder_info, dict) or not encoder_info:
+        raise ValueError("encoder must expose a nonempty identity()")
+    for value in list(parent.parameters()) + list(parent.buffers()):
+        if value.device.type != "cpu" or (value.is_floating_point() and value.dtype != torch.float32):
+            raise ValueError("prototype requires an already loaded CPU FP32 parent")
+    base = parent.rwkv7 if isinstance(parent, Rwkv7ForCausalLM) else parent
+    c = base.config
+    d, n = c.hidden_size, c.num_hidden_layers
+    resident = sum(p.numel() for p in base.parameters())
+    nonembedding = resident - base.emb.weight.numel()
+    spec = BackboneSpec(
+        name=f"track-l-native-rwkv7-{d}x{n}", family="rwkv7", hf_id=identity["model_id"],
+        params=nonembedding, params_memory=resident, n_layers=n, d_model=d,
+        lora_groups=(("att", r"att\.(receptance|key|value|output)$", n * 4),
+                     ("ffn", r"ffn\.(key|value)$", n * 2)),
+        capture="hidden_states", attention_free=True,
+        notes="Native CPU parent bridge prototype; capability unqualified.",
+    )
+    backbone = HiddenStateBackbone(base, spec=spec, pad_id=0, fork_mode=fork_mode)
+    backbone.provenance = {"track_l_parent": identity, "scope": "unqualified native parent bridge"}
+    # Validate construction before changing the caller's trainability flags.
+    model = DecisionModel(backbone, head, deepcopy(head_kwargs), pad_id=0, seed=seed)
+    backend = DecisionModelBackend(model, encode, template=template, layout=layout)
+    parent.eval().requires_grad_(False)
+    return backend
