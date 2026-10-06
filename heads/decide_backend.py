@@ -55,6 +55,7 @@ def _trained_state_identity(model: DecisionModel) -> dict[str, Any]:
     Read state rather than ``requires_grad``: inference commonly freezes every parameter. Hashing LoRA's
     scaling and dropout configuration also distinguishes equal tensors with different adapter behavior.
     """
+    from controlsafe.g16 import G16DecisionHead
     from train.lora import LoRALinear  # local import: train depends on heads
 
     digest = hashlib.sha256()
@@ -70,8 +71,14 @@ def _trained_state_identity(model: DecisionModel) -> dict[str, Any]:
         digest.update(len(raw).to_bytes(8, "big"))
         digest.update(raw)
 
-    for component in ("head", "typed"):
-        for name, tensor in sorted(getattr(model, component).state_dict().items()):
+    head_state = model.head.state_dict()
+    if type(model.head) is G16DecisionHead and model.head.gated is model.backbone:
+        # G16 shares the backbone with DecisionModel. Its bridges remain exact here; the frozen
+        # model is identified separately, and its LoRA adapters are hashed below.
+        head_state = {name: tensor for name, tensor in head_state.items()
+                      if not name.startswith("gated.model.")}
+    for component, state in (("head", head_state), ("typed", model.typed.state_dict())):
+        for name, tensor in sorted(state.items()):
             add_tensor(f"{component}.{name}", tensor)
 
     lora_modules = [(name, module) for name, module in model.backbone.named_modules()
@@ -84,15 +91,22 @@ def _trained_state_identity(model: DecisionModel) -> dict[str, Any]:
         add_tensor(f"backbone.{name}.lora_B", module.lora_B)
 
     return {"algorithm": "ssdm.trained_state_sha256.exact.v1", "sha256": digest.hexdigest(),
-            "head_tensors": len(model.head.state_dict()), "typed_tensors": len(model.typed.state_dict()),
+            "head_tensors": len(head_state), "typed_tensors": len(model.typed.state_dict()),
             "lora_modules": len(lora_modules)}
 
 
 def _head_configuration(head: torch.nn.Module) -> dict[str, Any]:
     """Explicit inference settings for the supported factory heads; unknown heads fail closed."""
+    from controlsafe.g16 import G16DecisionHead
     from .heads import (ClefCrossAttentionControl, FinalStateFork, HeadB, IntegratorBank,
                         SnapshotFork)
 
+    if type(head) is G16DecisionHead:
+        # Use live inference attributes, not head.config or the constructor-time controlsafe stamp.
+        return {"kind": head.name, "r": head.A.out_features, "c": head.evidence.c,
+                "max_options": head.max_options, "p_gate": head.gate is not None,
+                "stream_mode": head.stream_mode,
+                "trust_gate": {**head.gated.identity(), "pad_id": head.gated.pad_id}}
     if type(head) is IntegratorBank:
         return {"kind": head.name, "channels": head.C, "t_chunk": head.t_chunk}
     if type(head) is FinalStateFork:
@@ -148,6 +162,7 @@ class DecisionModelBackend:
             "layout": self.layout,
             "checkpoint": self.checkpoint,
             "adapter_version": versions.ADAPTER_VERSION,
+            **({"g16_certify_k": self.g16_certify_k} if self._g16() else {}),
         }
         h = hashlib.sha256(json.dumps(ident, sort_keys=True, default=str).encode()).hexdigest()
         self._revision = {"revision_id": f"{self.name}:{ident['head']}@{h[:12]}",
