@@ -1,7 +1,13 @@
 """``chunked_lean``: the vendored RWKV-7 chunk-parallel WKV (``modeling_rwkv7.rwkv7_chunked``) with fewer kernel launches
-and autograd nodes per call, for TRAINING (jobs/cell_step_profile). Same algebra, same compute dtype (fp32), same chunk
-size (64), same packed-sequence contract; registered from OUR code through the model's ``RWKV7_WKV_FUNCTIONS`` hook
-(the vendored files stay sha-pinned and unmodified).
+and autograd nodes per call, for TRAINING (jobs/cell_step_profile). Same algebra, same chunk size (64), same
+packed-sequence contract; registered from OUR code through the model's ``RWKV7_WKV_FUNCTIONS`` hook (the vendored files
+stay sha-pinned and unmodified).
+
+Compute dtype: like the vendored function, the six inputs and the state are cast to ``compute_dtype`` (fp32) and the
+elementwise algebra (decays, cumulative products, divisions, masks, the state update) runs in fp32. Under CUDA bf16
+autocast, however, the matrix products (``matmul`` / ``bmm`` here, ``einsum`` -> ``bmm`` in the vendored code) are
+autocast to bf16 inputs, exactly as they are in the vendored function; so "fp32 compute" holds outside autocast only,
+and the two paths make the same dtype choices either way.
 
     from heads.rwkv7_wkv import select_wkv
     select_wkv(model, "chunked_lean")      # default off; the checkpoint's own value is "chunked"
@@ -41,10 +47,14 @@ def _masks(span: int, device, dtype):
     key = (span, str(device), dtype)
     m = _MASKS.get(key)
     if m is None:
-        tri = torch.ones(span, span, device=device, dtype=dtype).tril(-1)
-        causal = torch.ones(span, span, device=device, dtype=dtype).tril(0)
-        stacked = torch.cat([torch.cat([tri, tri], 1), torch.cat([causal, causal], 1)], 0)
-        m = (stacked, torch.eye(span, device=device, dtype=dtype))
+        # built outside inference mode: a first call under torch.inference_mode() (an eval readout) would otherwise
+        # cache INFERENCE tensors, and every later training call would fail with "Inference tensors cannot be saved
+        # for backward" (tests/test_cell_perf.py reproduces it)
+        with torch.inference_mode(False):
+            tri = torch.ones(span, span, device=device, dtype=dtype).tril(-1)
+            causal = torch.ones(span, span, device=device, dtype=dtype).tril(0)
+            stacked = torch.cat([torch.cat([tri, tri], 1), torch.cat([causal, causal], 1)], 0)
+            m = (stacked, torch.eye(span, device=device, dtype=dtype))
         _MASKS[key] = m
     return m
 

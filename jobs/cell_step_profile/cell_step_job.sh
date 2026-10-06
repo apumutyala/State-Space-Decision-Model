@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# jobs/cell_step_profile: the m2 first cell's train step under four pre-registered execution variants (baseline, ckpt,
-# ckpt_rows, ckpt_rows_lean), one H100 SF batch job on the jobs/rwkv7 image (no extra packages). Spec + rule:
-# jobs/cell_step_profile/JOB_SPEC.md, rule.py. NOT submitted by this branch.
+# jobs/cell_step_profile: the m2 first cell's train step under four pre-registered execution variants, run in the order
+# baseline, ckpt_rows_lean, ckpt_rows, ckpt (rule v1-A2), one H100 SF batch job on the jobs/rwkv7 image (no extra
+# packages). Spec + rule: jobs/cell_step_profile/JOB_SPEC.md, rule.py. NOT submitted by this branch.
 #   setup (pins, CPU equivalence tests, snapshot) -> variant x4 (own process each, PYTORCH_CUDA_ALLOC_CONF set) -> decide
 # Exit codes: 0 measured + decided + exports verified   5 setup (pins, equivalence tests)   6 export failed
 #   9 decision missing/invalid   10 snapshot / vendored code mismatch or download failed   1 finalize failed.
@@ -102,9 +102,9 @@ fi
 gate "snapshot" 0
 
 # ------------------------------------------------------------------ variants (own process each; crash/timeout recorded)
-for V in baseline ckpt ckpt_rows ckpt_rows_lean; do
+for V in baseline ckpt_rows_lean ckpt_rows ckpt; do  # A2 order: the memory-only fallback last
   CAP_V=$(cap "$V") || fail 5 "job_params"
-  say "variant $V (23 steps of train_mix_v2 + K=10 ladder; cap ${CAP_V}m)"
+  say "variant $V (probe loss on step 22, 23 steps of train_mix_v2, K=10 ladder; cap ${CAP_V}m)"
   timeout ${CAP_V}m python -m jobs.cell_step_profile.cell_step variant --name "$V" --out "$WORK/out" --model-dir "$SNAP" \
     --deadline-s $(( CAP_V * 60 - 40 )) > "$WORK/logs/variant_$V.log" 2>&1; r=$?
   gate "variant_$V" $r; export_phase "variant_$V"

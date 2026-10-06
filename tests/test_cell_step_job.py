@@ -50,11 +50,13 @@ def test_runner_dry_run_end_to_end(tmp_path):
 
     d = res["decision"]
     assert R.valid_decision(d) and d["verdict"] == "ADOPT"  # CPU: no OOM, peak 0, fp32 losses match the baseline
-    assert d["variants"]["ckpt_rows_lean"]["loss"]["basis"] == "baseline_step0"
+    assert d["variants"]["ckpt_rows_lean"]["loss"]["basis"] == "probe"  # A2 GPU loss clause ran (on CPU here)
+    assert all(d["variants"][v]["loss"]["rel"] <= 1e-6 for v in R.VARIANTS)  # fp32 CPU: the paths agree
     assert all(d["variants"][v]["qualifies"] for v in R.VARIANTS)
     for v in R.VARIANTS:
         rec = json.loads((work / "out" / f"variant_{v}.json").read_text(encoding="utf-8"))
         assert rec["complete"] and rec["alloc_conf"] == R.ALLOC_CONF and rec["flags"] == R.FLAGS[v]
+        assert rec["probe"]["finite"] and rec["probe"]["step"] == R.PROBE_STEP and rec["probe"]["rows"] == 8
         assert len(rec["steps"]) == 23 and all("tok_s" in s for s in rec["steps"])
         assert [int(t) for t in rec["ladder"]] == list(R.LADDER)
     prof = json.loads((work / "out" / "profile.json").read_text(encoding="utf-8"))

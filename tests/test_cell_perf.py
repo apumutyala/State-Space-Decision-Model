@@ -104,6 +104,19 @@ def test_lean_wkv_chunk_guard_and_fewer_ops():
     assert counts["lean"] * 3 <= counts["vendored"], counts  # fwd + bwd aten ops at T=2048: 4805 -> 1454 measured
 
 
+def test_lean_masks_built_under_inference_mode_do_not_break_training():
+    """Regression (PR #86 review): the first lean call under torch.inference_mode() used to cache inference-tensor
+    masks; the next training call then raised 'Inference tensors cannot be saved for backward'."""
+    L._MASKS.clear()
+    x = wkv_inputs(1, 100, 2, 8, seed=9)
+    with torch.inference_mode():
+        L.rwkv7_parallel_lean(*[x[n].detach() for n in ARGS])
+    assert L._MASKS and not any(t.is_inference() for m in L._MASKS.values() for t in m)
+    ct = (torch.randn(1, 100, 2, 8), torch.randn(1, 2, 8, 8))
+    got, ref = run_wkv(L.rwkv7_parallel_lean, x, ct), run_wkv(M.rwkv7_parallel, x, ct)
+    assert all(rel(a, b) <= REL for a, b in zip(got[2], ref[2]))
+
+
 def test_select_wkv_lean_keeps_batched_linears_and_matches_chunked_model():
     bb = tiny_hf_backbone("rwkv7", seed=0)
     m = bb.model

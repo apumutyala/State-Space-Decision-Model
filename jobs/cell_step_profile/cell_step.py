@@ -6,7 +6,8 @@
 
 ``variant`` (one process per variant, so every peak is clean): the cell's own step (``train.trainer.Trainer.train_step``
 with ``train.run_cell.train_config`` + ``train.trainer.with_execution``: fork head, cache fork, LoRA r64, Clef loss,
-batch 1 x accumulation 8, bf16 autocast) on the 23 steps of ``jobs/fla_rwkv7/train_mix_v2.json`` (rows rebuilt from
+batch 1 x accumulation 8, bf16 autocast). First the A2 probe (``probe_loss``: forward loss, no grad, eval mode, on the
+rows of mix step ``rule.PROBE_STEP``, before any training), then the 23 steps of ``jobs/fla_rwkv7/train_mix_v2.json`` (rows rebuilt from
 their shapes, exactly as the fla_rwkv7 ``train_v2`` phase does). Per step: CUDA-synchronised seconds, tok/s (prefix
 tokens / s), peak GB (reset before every step), OOM (recorded; the run goes on), loss. Then the K = 10 ladder.
 ``DIR/variant_<V>.json`` is rewritten after every step, so a timeout keeps what was measured. No step or ladder rung
@@ -116,6 +117,44 @@ def _top(prof) -> dict:
             "self_device_us_total": sum(r["self_device_us"] for r in rows)}
 
 
+def probe_loss(tr, rows, cuda: bool) -> dict:
+    """A2: the step loss of ``rows`` without training: eval mode, no grad, bf16 autocast as in training, through the
+    variant's own execution path (row groups when ``row_batch`` > 1, else one row per call), weighted exactly as
+    ``Trainer.train_step`` weights it (the mean over the step's rows)."""
+    torch = _torch()
+    from train.losses import decision_loss
+    from train.trainer import row_groups
+
+    n = len(rows)
+    groups = (row_groups([len(it.row.ids) for it in rows], tr.cfg.row_batch, tr.cfg.row_tokens)
+              if tr.cfg.row_batch > 1 else [[j] for j in range(n)])
+    tr.model.eval()
+    if cuda:
+        torch.cuda.synchronize()
+        torch.cuda.reset_peak_memory_stats()
+    t = time.perf_counter()
+    try:
+        total = 0.0
+        with torch.no_grad():
+            for g in groups:
+                batch = [rows[j] for j in g]
+                with tr._autocast():
+                    lp = tr.model([it.row for it in batch]).log_probs.float()
+                y = torch.tensor([it.label for it in batch], device=lp.device)
+                total += float(decision_loss(lp, y, [it.row.qtype for it in batch], tr.cfg.loss)) * len(g) / n
+        out = {"loss": total, "finite": math.isfinite(total), "calls": len(groups)}
+    except Exception as e:  # noqa: BLE001  (OOM included): the clause then fails (variant) / is inconclusive (baseline)
+        out = {"error": f"{type(e).__name__}: {e}"[:300]}
+        gc.collect()
+        if cuda:
+            torch.cuda.empty_cache()
+    finally:
+        tr.model.train()
+    out.update(step=R.PROBE_STEP, rows=n, tokens=sum(len(it.row.ids) for it in rows), s=time.perf_counter() - t,
+               peak_gb=torch.cuda.max_memory_allocated() / 1e9 if cuda else 0.0)
+    return out
+
+
 def phase_variant(out: Path, name: str, model_dir: str, deadline_s: float) -> None:
     t_start = time.perf_counter()
     torch = _torch()
@@ -158,6 +197,9 @@ def phase_variant(out: Path, name: str, model_dir: str, deadline_s: float) -> No
             flags["rwkv7_wkv"], flags["act_ckpt"], flags["row_batch"], flags["row_tokens"]):
         raise SystemExit(f"flags did not take effect: {rec.d['active']} vs {flags}")
     rec.d["setup_s"] = round(time.perf_counter() - t_start, 1)
+    rec.flush()
+    # A2 GPU loss clause: forward loss on the probe step's rows BEFORE any training (same seeds in every process)
+    rec.d["probe"] = probe_loss(tr, items[R.PROBE_STEP * per:(R.PROBE_STEP + 1) * per], cuda)
     rec.flush()
 
     def left() -> float:

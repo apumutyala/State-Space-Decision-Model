@@ -151,20 +151,26 @@ All counts below are aten ops (forward + backward + optimiser) of one real optim
 For the cell: `train.trainer.with_execution(train_config(cell, ...), cell)` reads `act_ckpt`, `row_batch`, `row_tokens`
 from the cell config (one line in `train.run_cell`; not edited here because PR #74 changes those lines).
 
-## Projection (CPU-measured op counts x the job-mden7 calibration; NOT GPU measurements)
+## Projection (A2: GPU basis; NOT GPU measurements)
 
-aten ops per optimiser step on the mix (steps 0 / 3 / 10 / 13 where counted), and seconds at 11.3 µs per op:
+GPU basis (reviewer, from job-mden7's forward-only chunked prefill at 227–265 µs/token): forward + recompute + backward
+~0.7–0.9 ms per PADDED token; projections use the top, 0.9 ms. Padded tokens on the 23 mix steps (computed from
+`train_mix_v2.json` with `train.trainer.row_groups`): per-row variants 124,586 (+2,374 continuation tokens); row variants
+200,731 under the 8,192 budget (40 calls; whole-step padding would be 269,432). CPU-launch basis (11.3 µs x aten ops
+counted on CPU, calibrated on job-mden7's completed baseline steps): ckpt 2.1–2.8 M ops per step, ckpt_rows 0.36–0.95 M,
+ckpt_rows_lean 0.20–0.46 M. Each variant's projection takes the larger of the two.
 
-| variant | ops per step | projected s / step | projected tok/s (~4.7k tokens/step) | 190-min rows |
-|---|---|---|---|---|
-| baseline | 1.37–1.83 M | 15–21 (mden7: 15.5–17.4 measured) | ~260 (measured) | (OOMs) |
-| ckpt | 2.14–2.81 M (+53%: the recompute) | 24–32 | ~170 | ~3.3k |
-| ckpt_rows | 0.36–0.95 M | 4–11 | ~650 | ~12k |
-| ckpt_rows_lean | 0.20–0.46 M | 2.3–5.2 | ~1,200 | ~22k |
+| variant | GPU basis, 23 steps | CPU-launch basis, 23 steps | + ladder | + load / probe | expected (min) | cap (min) |
+|---|---|---|---|---|---|---|
+| baseline | 1.4 min (0.675 ms/token, no recompute) | 3.7 min (job-mden7 measured, most steps OOM early) | 0.3 | 0.6 | 4.6 | 8 |
+| ckpt_rows_lean | 3.0 min (200,731 x 0.9 ms) | ~1.5 min | 1.4 (94,208 padded tokens) | 0.6 | 5.0 | 8 |
+| ckpt_rows | 3.0 min | ~2.8 min | 1.4 | 0.6 | 5.0 | 8 |
+| ckpt | 1.9 min | 10.4 min (its recompute adds 53% launches) | 0.7 | 0.6 | 11.7 | 18 |
 
-GPU floor for the row variants (~6–9k padded tokens x fwd + recompute + bwd, from job-mden7's throughput phase:
-~290 µs per padded token) is ~2–2.6 s per step, so `ckpt_rows_lean` sits near the point where the GPU, not the CPU,
-becomes the limit. These projections size the caps; the decision uses only the job's own measurements.
+Projected rates at the GPU basis: the row variants ~124,586 / 181 s ≈ 690 tok/s, about 2.6x the baseline's measured
+~260, i.e. ~1,500 steps (~12k rows) in 190 min. The lean variant's lower launch count only matters if the true GPU cost
+per padded token is below the reviewer's range. These projections size the caps; the decision uses only the job's own
+measurements.
 
 ## Phases, caps, cost
 
@@ -172,29 +178,29 @@ becomes the limit. These projections size the caps; the decision uses only the j
 |---|---|---|---|
 | setup | 3 | 2.0 | pins (torch 2.13.0, transformers 5.17.0, vendored code), CPU equivalence tests (`tests/test_cell_perf.py`, `tests/test_cell_step_rule.py`; exit 5 on failure); snapshot download starts in the background (warm `hf_cache`) |
 | download_wait | 1 | 0.4 | wait, `sha256sum -c jobs/rwkv7/snapshot.sha256`, snapshot code == vendored (exit 10) |
-| baseline | 7 | 5.0 | 23 steps (job-mden7: 221 s, most steps OOM early) + ladder |
-| ckpt | 16 | 11.6 | 23 x ~27 s + ladder (1 row per rung) |
-| ckpt_rows | 6 | 4.3 | 23 x ~7 s + ladder (8 rows per rung) |
-| ckpt_rows_lean | 4 | 2.6 | 23 x ~4 s + ladder |
-| profile | 5 | 3.5 | `torch.profiler` of the decided variant and the baseline on one mid-length step (informational) |
+| baseline | 8 | 4.6 | probe (mix step 22), 23 steps, ladder |
+| ckpt_rows_lean | 8 | 5.0 | probe, 23 steps, ladder (8 rows per rung) |
+| ckpt_rows | 8 | 5.0 | probe, 23 steps, ladder (8 rows per rung) |
+| ckpt | 18 | 11.7 | probe, 23 steps, ladder (1 row per rung) |
+| profile | 6 | 3.5 | `torch.profiler` of the decided variant and the baseline on one mid-length step (informational) |
 | reserve | 1 | | decide (pure, seconds), finalize, exports |
+
+Every cap is >= 1.5x its projection (A2).
 
 Inside every phase no step / rung starts that cannot finish before the cap (minus 40 s); a variant that runs out of
 time records the skipped steps and cannot qualify. A variant crash or timeout is a gate value, not an exit code.
 
-`max_duration_minutes` 43, `build_timeout_minutes` 60, `max_restarts` 0, H100 at $0.0495/min. Worst case
-(`jobs/common/costs.py`: build + 2 attempts) = (60 + 2 x 43) x 0.0495 = **$7.23** (hard cap $7.50); one attempt
-$2.13; expected **$1.46**. This is above the $6 target: the `ckpt` variant alone needs ~11.6 min (its recompute adds
-53% launches to an already launch-bound step) and every cap is >= 1.3x its projection with a 60-minute build
-allowance. Getting to <= $6 needs either fewer `ckpt` steps (it is the memory-only fallback) or a shorter build
-timeout; neither is taken here without the coordinator's say-so.
+`max_duration_minutes` 53, `build_timeout_minutes` 60, `max_restarts` 0, H100 at $0.0495/min. Worst case
+(`jobs/common/costs.py`: build + 2 attempts) = (60 + 2 x 53) x 0.0495 = **$8.22** (hard cap $8.50; A2: no strict cap,
+the figure is stated); one attempt $2.62; expected **$1.59**.
 
-Outputs (exported per phase): `variant_<V>.json` (per-step seconds, tok/s, peak / reserved GB, OOM, loss; ladder),
+Outputs (exported per phase): `variant_<V>.json` (probe loss; per-step seconds, tok/s, peak / reserved GB, OOM,
+loss; ladder),
 `decision.json` (verdict, chosen variant, recommended cell config, projection), `profile.json` (+ traces),
 `equivalence_tests.txt`, `env.json`, logs. Marker `CELL_STEP_PROFILE_DONE` (finalize, validator
 `jobs.cell_step_profile.rule:valid_decision`).
 
-Exit codes: 0 measured + decided + exports verified; 5 setup (pins, equivalence tests); 6 export failed; 9 decision
+Exit codes (every verdict, INCONCLUSIVE included, exits 0): 0 measured + decided + exports verified; 5 setup (pins, equivalence tests); 6 export failed; 9 decision
 missing / invalid; 10 snapshot / vendored-code mismatch or download failed; 1 finalize failed.
 
 Dry run: `CELL_STEP_DRYRUN=1 bash jobs/cell_step_profile/cell_step_job.sh` runs this exact script on CPU (tiny vendored
