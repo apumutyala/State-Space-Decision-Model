@@ -137,9 +137,12 @@ class LinearOptionBackend:
     def score(self, request, check_deadline):
         check_deadline()
         qid, _, rows = feature_rows(request, numerical=self.numerical)
-        logits = {oid: float(sum(self.weights[self.index[key]] * value
-                                 for key, value in f.items() if key in self.index)) for oid, f in rows}
-        return ScoreResult({qid: logits}, inference_calls=1, total_input_tokens=0)
+        contributions = {oid: {key: float(self.weights[self.index[key]] * value)
+                               for key, value in f.items() if key in self.index} for oid, f in rows}
+        logits = {oid: float(sum(values.values())) for oid, values in contributions.items()}
+        return ScoreResult({qid: logits}, inference_calls=1, total_input_tokens=0,
+                           extras={"feature_contributions": contributions,
+                                   "attribution_scope": "linear accounting, not causal mediation"})
 
 
 def fit(records, seed, epochs, learning_rate):
@@ -187,11 +190,12 @@ def slot_predictions(records, backend):
     rows = []
     for record in records:
         qid, slot, _ = feature_rows(record["request"])
-        logits = backend.score(record["request"], lambda: None).logits[qid]
+        scores = backend.score(record["request"], lambda: None)
+        logits = scores.logits[qid]
         selected = max(sorted(logits), key=logits.get)
         rows.append({"task_id": record["id"], "slot": slot, "qid": qid, "selected": selected,
                      "gold": record["labels"][qid], "correct": selected == record["labels"][qid],
-                     "logits": logits})
+                     "logits": logits, "feature_contributions": scores.extras["feature_contributions"]})
     return rows
 
 
@@ -226,6 +230,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--eval-seed", type=int, default=314159)
     parser.add_argument("--eval-count", type=int, default=300)
+    parser.add_argument("--eval-split", choices=("development_train", "development_validation"),
+                        default="development_train")
     parser.add_argument("--seeds", type=int, nargs="+", default=[17, 29, 43])
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--learning-rate", type=float, default=2.0)
@@ -246,8 +252,8 @@ def main():
         raise ValueError("fresh development seed required")
     if args.epochs < 1 or not 0 < args.learning_rate <= 10 or len(set(args.seeds)) != len(args.seeds):
         raise ValueError("invalid training config")
-    tasks = generate_development_tasks(args.eval_seed, args.eval_count, split="development_train", choice_format="mixed")
-    evaluation = export_training_records(tasks)
+    tasks = generate_development_tasks(args.eval_seed, args.eval_count, split=args.eval_split, choice_format="mixed")
+    evaluation = export_training_records(tasks, split=args.eval_split)
     args.output.mkdir(parents=True)
     (args.output / "evaluation_tasks.jsonl").write_text("".join(canonical(t) + "\n" for t in tasks), encoding="ascii", newline="\n")
     runs = []
@@ -273,6 +279,7 @@ def main():
                      "model_sha256": sha(model_path), "raw_predictions_sha256": sha(raw_path),
                      "slots": counts(predictions), "initial_slots": counts(pre),
                      "without_numeric_sign_slots": counts(no_sign),
+                     "free_running_statuses": dict(Counter(row["status"] for row in report["observations"])),
                      "free_running": {k: report[k] for k in ("total", "kernel_accepted", "task_correct")},
                      "initial_free_running": {k: initial_report[k] for k in ("total", "kernel_accepted", "task_correct")}})
     summary = {"schema": "ssdm.transparent_cpu_receipt.v1", "command": [sys.executable, "-m", "language_growth.transparent_cpu", *sys.argv[1:]],
@@ -284,12 +291,14 @@ def main():
                "train_records_sha256": sha(records_path), "cohort_receipt_sha256": sha(args.cohort / "receipt.json"),
                "evaluation_manifest": development_manifest(tasks), "evaluation_tasks_sha256": sha(args.output / "evaluation_tasks.jsonl"),
                "config": {"epochs": args.epochs, "learning_rate": args.learning_rate, "l2": 1e-4, "seeds": args.seeds,
-                          "feature_version": FEATURE_VERSION}, "runs": runs,
+                          "feature_version": FEATURE_VERSION, "evaluation_split": args.eval_split}, "runs": runs,
                "aggregate": {"task_correct_median": statistics.median(r["free_running"]["task_correct"] for r in runs),
                              "task_correct_min": min(r["free_running"]["task_correct"] for r in runs),
                              "task_correct_max": max(r["free_running"]["task_correct"] for r in runs),
-                             "fit_seconds_median": statistics.median(r["fit_seconds"] for r in runs)},
-               "scope": "learned ranking over engineered lexical grounding and exact decimal-sign features; fresh same-domain iterative development_train worlds; no untouched generalization, shared-parent retention, causal mediation or L0 promotion claim"}
+                             "fit_seconds_median": statistics.median(r["fit_seconds"] for r in runs),
+                             "fit_seconds_min": min(r["fit_seconds"] for r in runs),
+                             "fit_seconds_max": max(r["fit_seconds"] for r in runs)},
+               "scope": f"learned ranking over engineered lexical grounding and exact decimal-sign features; fresh iterative {args.eval_split} worlds; no untouched held-out claim, shared-parent retention, causal mediation or L0 promotion claim"}
     (args.output / "receipt.json").write_text(canonical(summary) + "\n", encoding="ascii", newline="\n")
     print(canonical(summary))
 

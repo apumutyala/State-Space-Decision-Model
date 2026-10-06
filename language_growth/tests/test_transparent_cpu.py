@@ -53,6 +53,22 @@ class TransparentCPUTests(unittest.TestCase):
         with self.assertRaises(BackendUnsupported):
             LinearOptionBackend(model).plan(request)
 
+    def test_development_validation_is_separate_and_attribution_sums(self):
+        validation = generate_development_tasks(19, 9, split="development_validation")
+        records = export_training_records(validation, split="development_validation")
+        with self.assertRaises(ValueError):
+            export_training_records(validation)
+        train_names = {r["entity_ref"] for t in self.tasks for r in t["training_only"]["catalog"]["records"]}
+        validation_names = {r["entity_ref"] for t in validation for r in t["training_only"]["catalog"]["records"]}
+        self.assertFalse(train_names & validation_names)
+        model, _, _ = fit(self.records, 17, 1, 2.0)
+        backend = LinearOptionBackend(model)
+        for record in records:
+            scored = backend.score(record["request"], lambda: None)
+            logits = next(iter(scored.logits.values()))
+            for oid, contributions in scored.extras["feature_contributions"].items():
+                self.assertEqual(sum(contributions.values()), logits[oid])
+
 
 if __name__ == "__main__":
     unittest.main()
