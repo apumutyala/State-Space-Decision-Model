@@ -1,0 +1,4 @@
+command: C:\Users\apumu\AppData\Roaming\uv\tools\awscli\Scripts\python.exe -m language_growth.evaluate --fixtures fixtures/language_growth --out C:\Users\apumu\AppData\Local\Temp\l0e-merged-hsnbe_wb\raw
+exit_code: 0
+summary.json LF_sha256_saved=e9f23ce305de21e7d1b1f2657bc7e67fba1e4378bd951793f143f06bde0da76c LF_sha256_fresh=e9f23ce305de21e7d1b1f2657bc7e67fba1e4378bd951793f143f06bde0da76c identical=True
+case_results.jsonl LF_sha256_saved=9b579c45e97799661c563ed287a6aa18cea3023ae0e21266a220d1054be9ec0a LF_sha256_fresh=9b579c45e97799661c563ed287a6aa18cea3023ae0e21266a220d1054be9ec0a identical=True

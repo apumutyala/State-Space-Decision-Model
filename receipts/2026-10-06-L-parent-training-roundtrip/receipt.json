@@ -1,0 +1,32 @@
+{
+  "source_sha": "683b87dc97f77d84e92c6f3132b52166e3b0d3f5",
+  "dependencies": "all tracked; fresh git archive, no overlays",
+  "command": [
+    "C:/Users/apumu/research/CHLabs/ssdm-wt/m2-heads/.venv/Scripts/python.exe",
+    "-m",
+    "unittest",
+    "language_growth.tests.test_training_records",
+    "language_growth.tests.test_parent_training_integration",
+    "-v"
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2"
+  },
+  "exit_code": 0,
+  "hardware": "Windows-11-10.0.26200-SP0 AMD64 CPU only, two Torch threads",
+  "cost_usd": 0,
+  "runs": 1,
+  "seeds": {
+    "model_and_training": 17,
+    "development_validation": 19
+  },
+  "model": "Track D tiny_backbone hidden=8 layers=1 random initialization, snapshot head, LoRA rank2, FP32",
+  "scope": "One-step integration test, not a trained language capability claim. No pretrained checkpoint/download/GPU/Index/heldout data.",
+  "observed_usefulness": "The one validation task was kernel-accepted but task-incorrect. Boundary validity does not establish task success.",
+  "files_sha256_lf": {
+    "raw.jsonl": "2013ad6b568fac1bcfd482d85a95d1b85cd83069d4423e6868372598ef989e59",
+    "tests.txt": "617af99b4e98d727390b30476d3397e2a990fd8bb859168e5840605eb9ec8593"
+  }
+}

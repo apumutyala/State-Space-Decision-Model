@@ -1,0 +1,1045 @@
+{
+  "direct_correct": 0,
+  "expected_served_config": {
+    "calibration": {
+      "fitted_on": null,
+      "id": "0dbeae8e779644d2",
+      "kind": "option_count_temperature",
+      "status": "uncalibrated_identity",
+      "t0": 1.0,
+      "t1": 0.0,
+      "t_min": 0.05
+    },
+    "policy_masking": "none (served covers every supplied option)"
+  },
+  "model": "tiny-paired-cpu-test",
+  "paired_correct": 0,
+  "pairs": [
+    {
+      "direct": {
+        "correct": false,
+        "forward_calls": 1,
+        "provider_calls": 1,
+        "reason": null,
+        "response": {
+          "answers": {
+            "slot-001-direct-comparison-relation": {
+              "choice": "r001",
+              "confidence": 0.3529,
+              "probabilities": {
+                "r001": 0.3529,
+                "r002": 0.3286,
+                "r003": 0.3186
+              },
+              "type": "choice"
+            }
+          },
+          "model": "tiny-paired-cpu-test",
+          "ssdm": {
+            "abstention": {
+              "abstained": false,
+              "mechanism": "not_implemented_v0",
+              "reason": null
+            },
+            "diagnostics": {
+              "audience": "public",
+              "backend": {
+                "head": "SnapshotFork"
+              },
+              "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+              "entropy_nats": {
+                "slot-001-direct-comparison-relation": 1.0976857040928452
+              },
+              "inference_calls": 1,
+              "input_counts": {
+                "max_call_input_tokens": 2370,
+                "options": {
+                  "slot-001-direct-comparison-relation": 3
+                },
+                "questions": 1,
+                "total_input_tokens": 2370
+              },
+              "latency_ms": 63.883,
+              "limits_applied": {
+                "_source": {
+                  "deadline_ms": "adapter_default",
+                  "max_inference_calls": "adapter_default",
+                  "max_input_tokens": "adapter_default",
+                  "max_options_per_question": "request",
+                  "max_program_nodes": "request",
+                  "max_questions": "request"
+                },
+                "deadline_ms": null,
+                "max_inference_calls": 4096,
+                "max_input_tokens": 16384,
+                "max_options_per_question": 16,
+                "max_program_nodes": 8,
+                "max_questions": 1
+              },
+              "model_revision": {
+                "adapter_version": "0.2.0",
+                "backbone": {
+                  "capture": "hidden_states",
+                  "class": "TinyRecurrentLM",
+                  "commit_hash": null,
+                  "config_sha256": "fb892fb56afd3928d18b72a08bc7580028effdc226f2fa9ad8df610b19517fa8",
+                  "layer": -1,
+                  "name_or_path": null,
+                  "spec": "tiny",
+                  "weights_digest": "524879b3af1ddbd0153d1abfd53be17e2a34e4e05c4a3c8c90339fa97596e647",
+                  "weights_digest_mode": "sampled"
+                },
+                "backend": "decision_head",
+                "checkpoint": {
+                  "state_sha256": "e735cd447d1fdc6adc009e567764b3f37baf400043cedd396dea0a2cbaa61014"
+                },
+                "encoder": {
+                  "kind": "byte+4",
+                  "vocab_size": 260
+                },
+                "head": "SnapshotFork",
+                "layout": "ordered",
+                "model_id": "tiny",
+                "prompt_template": {
+                  "id": "jrt-plain-v1",
+                  "sha256": "05fc898b2e8e4fbe24421351293ef36b966783b2ea6bb49ca03b8fab2998aa67"
+                },
+                "revision_id": "decision_head:SnapshotFork@037b8b589233"
+              },
+              "policy_ref": "synthetic-development-public-v1",
+              "probability_stages": {
+                "policy_conditioned": "absent (no restriction supplied)",
+                "raw": {
+                  "domain": "all_supplied_options",
+                  "transform": "softmax(logits, T=1)"
+                },
+                "served": {
+                  "domain": "all_supplied_options",
+                  "transform": "0dbeae8e779644d2"
+                }
+              },
+              "provenance": {
+                "applied": false,
+                "supplied": false
+              },
+              "registry_ref": "synthetic-development-registry-v1",
+              "request_fingerprint": "e190b61a5e853c0f3ff8f20d17d373ee506382b94b523e78e41dd87fa5572e3d",
+              "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
+              "revision_id": "decision_head:SnapshotFork@037b8b589233",
+              "state_handle_in": null,
+              "state_reuse": false,
+              "versions": {
+                "adapter": "0.2.0",
+                "deltas": "disabled",
+                "experimental_provenance": "disabled",
+                "interface": "interfaces/DECISION_LANGUAGE_V0.md@v0.1 (PR #4 787d64f)",
+                "wire": "systemone/v1 (Jev/SystemOne POST /v1/systemone body; Clef joint_schema_model.systemone semantics)"
+              }
+            },
+            "error": null,
+            "proposed_evidence_refs": [],
+            "raw_probabilities": {
+              "slot-001-direct-comparison-relation": {
+                "r001": 0.3528586044254573,
+                "r002": 0.3285562403177865,
+                "r003": 0.31858515525675624
+              }
+            },
+            "request_id": "f51debf4fbea4dc28f69c7e479ee4ca4-001",
+            "schema": "ssdm.decide.v0.1",
+            "served_config": {
+              "calibration": {
+                "fitted_on": null,
+                "id": "0dbeae8e779644d2",
+                "kind": "option_count_temperature",
+                "status": "uncalibrated_identity",
+                "t0": 1.0,
+                "t1": 0.0,
+                "t_min": 0.05
+              },
+              "policy_masking": "none (served covers every supplied option)",
+              "temperature_per_question": {
+                "slot-001-direct-comparison-relation": 1.0
+              }
+            },
+            "served_probabilities": {
+              "slot-001-direct-comparison-relation": {
+                "r001": 0.3528586044254573,
+                "r002": 0.3285562403177865,
+                "r003": 0.31858515525675624
+              }
+            },
+            "state_handle": null,
+            "status": "ok"
+          },
+          "usage": {
+            "input_tokens": 2370,
+            "output_tokens": 0
+          }
+        },
+        "selected_id": "r001",
+        "status": "ok",
+        "target_id": "r002"
+      },
+      "direct_initial_state_sha256": "3a85195a065f68027fe96def4ff6881951f6ee3ec584f3016b8246af6fc42c1f",
+      "direct_request": {
+        "model": "tiny-paired-cpu-test",
+        "questions": {
+          "slot-001-direct-comparison-relation": {
+            "criteria": {
+              "r001": "Relation greater_than",
+              "r002": "Relation less_than",
+              "r003": "Relation equal"
+            },
+            "instructions": "Select the relation between the requested quantities.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "decision_head:SnapshotFork@037b8b589233",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "f51debf4fbea4dc28f69c7e479ee4ca4-001",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Kestrel\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"235.47\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":48,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Juniper\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"246.66\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":57,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"For October 2026, compare Kestrel's and Juniper's warranty months.\",\"unmet_obligations\":[]}"
+      },
+      "paired_correct": false,
+      "planner": {
+        "effective_budget": {
+          "max_proposal_calls": 4,
+          "max_repair_attempts": 0,
+          "max_repair_calls": 0
+        },
+        "forward_calls": 4,
+        "kernel_accepted": false,
+        "program": {
+          "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+          "nodes": [
+            {
+              "field": "price",
+              "id": "n1",
+              "op": "ReadFact",
+              "record_ref": "development-record-2"
+            },
+            {
+              "field": "price",
+              "id": "n2",
+              "op": "ReadFact",
+              "record_ref": "development-record-2"
+            },
+            {
+              "id": "n3",
+              "left": {
+                "node": "n1",
+                "project": "object"
+              },
+              "op": "Compare",
+              "relation": "greater_than",
+              "right": {
+                "node": "n2",
+                "project": "object"
+              }
+            },
+            {
+              "id": "n4",
+              "op": "Assert",
+              "proposition": "n3"
+            }
+          ],
+          "outputs": [
+            "n4"
+          ],
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "schema": "ssdm.semantic_program.v0.1",
+          "style": "plain"
+        },
+        "provider_calls": 4,
+        "reason": "unsupported_assertion",
+        "repair_requests": 0,
+        "status": "kernel_rejected",
+        "task_correct": false,
+        "task_id": "synthetic-development_validation-19-2",
+        "text": null
+      },
+      "planner_calls": [
+        {
+          "exception": false,
+          "request": {
+            "model": "tiny-paired-cpu-test",
+            "questions": {
+              "slot-001-operation": {
+                "criteria": {
+                  "op001": "Assert one selected fact",
+                  "op002": "Explain a checked assertion of one selected fact",
+                  "op003": "Compare two selected typed values and assert the selected relation"
+                },
+                "instructions": "Select the semantic operation for the user's task.",
+                "type": "choice"
+              }
+            },
+            "ssdm": {
+              "audience": "public",
+              "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+              "limits": {
+                "max_options_per_question": 16,
+                "max_program_nodes": 8,
+                "max_questions": 1
+              },
+              "parent_revision": "decision_head:SnapshotFork@037b8b589233",
+              "policy_ref": "synthetic-development-public-v1",
+              "registry_ref": "synthetic-development-registry-v1",
+              "request_id": "4f15e059682f4f419a93fe5566665007-001",
+              "schema": "ssdm.decide.v0.1"
+            },
+            "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Kestrel\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"235.47\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":48,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Juniper\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"246.66\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":57,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"For October 2026, compare Kestrel's and Juniper's warranty months.\",\"unmet_obligations\":[]}"
+          },
+          "response": {
+            "answers": {
+              "slot-001-operation": {
+                "choice": "op003",
+                "confidence": 0.3404,
+                "probabilities": {
+                  "op001": 0.3242,
+                  "op002": 0.3354,
+                  "op003": 0.3404
+                },
+                "type": "choice"
+              }
+            },
+            "model": "tiny-paired-cpu-test",
+            "ssdm": {
+              "abstention": {
+                "abstained": false,
+                "mechanism": "not_implemented_v0",
+                "reason": null
+              },
+              "diagnostics": {
+                "audience": "public",
+                "backend": {
+                  "head": "SnapshotFork"
+                },
+                "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+                "entropy_nats": {
+                  "slot-001-operation": 1.098405045871995
+                },
+                "inference_calls": 1,
+                "input_counts": {
+                  "max_call_input_tokens": 2421,
+                  "options": {
+                    "slot-001-operation": 3
+                  },
+                  "questions": 1,
+                  "total_input_tokens": 2421
+                },
+                "latency_ms": 71.043,
+                "limits_applied": {
+                  "_source": {
+                    "deadline_ms": "adapter_default",
+                    "max_inference_calls": "adapter_default",
+                    "max_input_tokens": "adapter_default",
+                    "max_options_per_question": "request",
+                    "max_program_nodes": "request",
+                    "max_questions": "request"
+                  },
+                  "deadline_ms": null,
+                  "max_inference_calls": 4096,
+                  "max_input_tokens": 16384,
+                  "max_options_per_question": 16,
+                  "max_program_nodes": 8,
+                  "max_questions": 1
+                },
+                "model_revision": {
+                  "adapter_version": "0.2.0",
+                  "backbone": {
+                    "capture": "hidden_states",
+                    "class": "TinyRecurrentLM",
+                    "commit_hash": null,
+                    "config_sha256": "fb892fb56afd3928d18b72a08bc7580028effdc226f2fa9ad8df610b19517fa8",
+                    "layer": -1,
+                    "name_or_path": null,
+                    "spec": "tiny",
+                    "weights_digest": "524879b3af1ddbd0153d1abfd53be17e2a34e4e05c4a3c8c90339fa97596e647",
+                    "weights_digest_mode": "sampled"
+                  },
+                  "backend": "decision_head",
+                  "checkpoint": {
+                    "state_sha256": "e735cd447d1fdc6adc009e567764b3f37baf400043cedd396dea0a2cbaa61014"
+                  },
+                  "encoder": {
+                    "kind": "byte+4",
+                    "vocab_size": 260
+                  },
+                  "head": "SnapshotFork",
+                  "layout": "ordered",
+                  "model_id": "tiny",
+                  "prompt_template": {
+                    "id": "jrt-plain-v1",
+                    "sha256": "05fc898b2e8e4fbe24421351293ef36b966783b2ea6bb49ca03b8fab2998aa67"
+                  },
+                  "revision_id": "decision_head:SnapshotFork@037b8b589233"
+                },
+                "policy_ref": "synthetic-development-public-v1",
+                "probability_stages": {
+                  "policy_conditioned": "absent (no restriction supplied)",
+                  "raw": {
+                    "domain": "all_supplied_options",
+                    "transform": "softmax(logits, T=1)"
+                  },
+                  "served": {
+                    "domain": "all_supplied_options",
+                    "transform": "0dbeae8e779644d2"
+                  }
+                },
+                "provenance": {
+                  "applied": false,
+                  "supplied": false
+                },
+                "registry_ref": "synthetic-development-registry-v1",
+                "request_fingerprint": "712bca47d0db433bf09abc1ae0d446b69631a7d31075f7731fa7075637d327f4",
+                "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
+                "revision_id": "decision_head:SnapshotFork@037b8b589233",
+                "state_handle_in": null,
+                "state_reuse": false,
+                "versions": {
+                  "adapter": "0.2.0",
+                  "deltas": "disabled",
+                  "experimental_provenance": "disabled",
+                  "interface": "interfaces/DECISION_LANGUAGE_V0.md@v0.1 (PR #4 787d64f)",
+                  "wire": "systemone/v1 (Jev/SystemOne POST /v1/systemone body; Clef joint_schema_model.systemone semantics)"
+                }
+              },
+              "error": null,
+              "proposed_evidence_refs": [],
+              "raw_probabilities": {
+                "slot-001-operation": {
+                  "op001": 0.32420850415094393,
+                  "op002": 0.3353600089035435,
+                  "op003": 0.34043148694551256
+                }
+              },
+              "request_id": "4f15e059682f4f419a93fe5566665007-001",
+              "schema": "ssdm.decide.v0.1",
+              "served_config": {
+                "calibration": {
+                  "fitted_on": null,
+                  "id": "0dbeae8e779644d2",
+                  "kind": "option_count_temperature",
+                  "status": "uncalibrated_identity",
+                  "t0": 1.0,
+                  "t1": 0.0,
+                  "t_min": 0.05
+                },
+                "policy_masking": "none (served covers every supplied option)",
+                "temperature_per_question": {
+                  "slot-001-operation": 1.0
+                }
+              },
+              "served_probabilities": {
+                "slot-001-operation": {
+                  "op001": 0.32420850415094393,
+                  "op002": 0.3353600089035435,
+                  "op003": 0.34043148694551256
+                }
+              },
+              "state_handle": null,
+              "status": "ok"
+            },
+            "usage": {
+              "input_tokens": 2421,
+              "output_tokens": 0
+            }
+          }
+        },
+        {
+          "exception": false,
+          "request": {
+            "model": "tiny-paired-cpu-test",
+            "questions": {
+              "slot-002-left": {
+                "criteria": {
+                  "v001": "Fact development-record-1 field price",
+                  "v002": "Fact development-record-1 field warranty_months",
+                  "v003": "Fact development-record-2 field price",
+                  "v004": "Fact development-record-2 field warranty_months"
+                },
+                "instructions": "Select the left typed operand.",
+                "type": "choice"
+              }
+            },
+            "ssdm": {
+              "audience": "public",
+              "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+              "limits": {
+                "max_options_per_question": 16,
+                "max_program_nodes": 8,
+                "max_questions": 1
+              },
+              "parent_revision": "decision_head:SnapshotFork@037b8b589233",
+              "policy_ref": "synthetic-development-public-v1",
+              "registry_ref": "synthetic-development-registry-v1",
+              "request_id": "4f15e059682f4f419a93fe5566665007-002",
+              "schema": "ssdm.decide.v0.1"
+            },
+            "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Compare two selected typed values and assert the selected relation\",\"option_id\":\"op003\",\"slot\":\"operation\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Kestrel\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"235.47\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":48,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Juniper\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"246.66\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":57,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"For October 2026, compare Kestrel's and Juniper's warranty months.\",\"unmet_obligations\":[]}"
+          },
+          "response": {
+            "answers": {
+              "slot-002-left": {
+                "choice": "v003",
+                "confidence": 0.2645,
+                "probabilities": {
+                  "v001": 0.2587,
+                  "v002": 0.2382,
+                  "v003": 0.2645,
+                  "v004": 0.2386
+                },
+                "type": "choice"
+              }
+            },
+            "model": "tiny-paired-cpu-test",
+            "ssdm": {
+              "abstention": {
+                "abstained": false,
+                "mechanism": "not_implemented_v0",
+                "reason": null
+              },
+              "diagnostics": {
+                "audience": "public",
+                "backend": {
+                  "head": "SnapshotFork"
+                },
+                "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+                "entropy_nats": {
+                  "slot-002-left": 1.3851832704482898
+                },
+                "inference_calls": 1,
+                "input_counts": {
+                  "max_call_input_tokens": 2572,
+                  "options": {
+                    "slot-002-left": 4
+                  },
+                  "questions": 1,
+                  "total_input_tokens": 2572
+                },
+                "latency_ms": 46.096,
+                "limits_applied": {
+                  "_source": {
+                    "deadline_ms": "adapter_default",
+                    "max_inference_calls": "adapter_default",
+                    "max_input_tokens": "adapter_default",
+                    "max_options_per_question": "request",
+                    "max_program_nodes": "request",
+                    "max_questions": "request"
+                  },
+                  "deadline_ms": null,
+                  "max_inference_calls": 4096,
+                  "max_input_tokens": 16384,
+                  "max_options_per_question": 16,
+                  "max_program_nodes": 8,
+                  "max_questions": 1
+                },
+                "model_revision": {
+                  "adapter_version": "0.2.0",
+                  "backbone": {
+                    "capture": "hidden_states",
+                    "class": "TinyRecurrentLM",
+                    "commit_hash": null,
+                    "config_sha256": "fb892fb56afd3928d18b72a08bc7580028effdc226f2fa9ad8df610b19517fa8",
+                    "layer": -1,
+                    "name_or_path": null,
+                    "spec": "tiny",
+                    "weights_digest": "524879b3af1ddbd0153d1abfd53be17e2a34e4e05c4a3c8c90339fa97596e647",
+                    "weights_digest_mode": "sampled"
+                  },
+                  "backend": "decision_head",
+                  "checkpoint": {
+                    "state_sha256": "e735cd447d1fdc6adc009e567764b3f37baf400043cedd396dea0a2cbaa61014"
+                  },
+                  "encoder": {
+                    "kind": "byte+4",
+                    "vocab_size": 260
+                  },
+                  "head": "SnapshotFork",
+                  "layout": "ordered",
+                  "model_id": "tiny",
+                  "prompt_template": {
+                    "id": "jrt-plain-v1",
+                    "sha256": "05fc898b2e8e4fbe24421351293ef36b966783b2ea6bb49ca03b8fab2998aa67"
+                  },
+                  "revision_id": "decision_head:SnapshotFork@037b8b589233"
+                },
+                "policy_ref": "synthetic-development-public-v1",
+                "probability_stages": {
+                  "policy_conditioned": "absent (no restriction supplied)",
+                  "raw": {
+                    "domain": "all_supplied_options",
+                    "transform": "softmax(logits, T=1)"
+                  },
+                  "served": {
+                    "domain": "all_supplied_options",
+                    "transform": "0dbeae8e779644d2"
+                  }
+                },
+                "provenance": {
+                  "applied": false,
+                  "supplied": false
+                },
+                "registry_ref": "synthetic-development-registry-v1",
+                "request_fingerprint": "764c3ce1d644f94a31bea6da99006482bbfa6641e32d6666ff608665ff2769ce",
+                "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
+                "revision_id": "decision_head:SnapshotFork@037b8b589233",
+                "state_handle_in": null,
+                "state_reuse": false,
+                "versions": {
+                  "adapter": "0.2.0",
+                  "deltas": "disabled",
+                  "experimental_provenance": "disabled",
+                  "interface": "interfaces/DECISION_LANGUAGE_V0.md@v0.1 (PR #4 787d64f)",
+                  "wire": "systemone/v1 (Jev/SystemOne POST /v1/systemone body; Clef joint_schema_model.systemone semantics)"
+                }
+              },
+              "error": null,
+              "proposed_evidence_refs": [],
+              "raw_probabilities": {
+                "slot-002-left": {
+                  "v001": 0.258667236142477,
+                  "v002": 0.2382337607645754,
+                  "v003": 0.2645446500500549,
+                  "v004": 0.2385543530428927
+                }
+              },
+              "request_id": "4f15e059682f4f419a93fe5566665007-002",
+              "schema": "ssdm.decide.v0.1",
+              "served_config": {
+                "calibration": {
+                  "fitted_on": null,
+                  "id": "0dbeae8e779644d2",
+                  "kind": "option_count_temperature",
+                  "status": "uncalibrated_identity",
+                  "t0": 1.0,
+                  "t1": 0.0,
+                  "t_min": 0.05
+                },
+                "policy_masking": "none (served covers every supplied option)",
+                "temperature_per_question": {
+                  "slot-002-left": 1.0
+                }
+              },
+              "served_probabilities": {
+                "slot-002-left": {
+                  "v001": 0.258667236142477,
+                  "v002": 0.2382337607645754,
+                  "v003": 0.2645446500500549,
+                  "v004": 0.2385543530428927
+                }
+              },
+              "state_handle": null,
+              "status": "ok"
+            },
+            "usage": {
+              "input_tokens": 2572,
+              "output_tokens": 0
+            }
+          }
+        },
+        {
+          "exception": false,
+          "request": {
+            "model": "tiny-paired-cpu-test",
+            "questions": {
+              "slot-003-right": {
+                "criteria": {
+                  "v001": "Fact development-record-1 field price",
+                  "v002": "Fact development-record-1 field warranty_months",
+                  "v003": "Fact development-record-2 field price",
+                  "v004": "Fact development-record-2 field warranty_months"
+                },
+                "instructions": "Select the right typed operand.",
+                "type": "choice"
+              }
+            },
+            "ssdm": {
+              "audience": "public",
+              "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+              "limits": {
+                "max_options_per_question": 16,
+                "max_program_nodes": 8,
+                "max_questions": 1
+              },
+              "parent_revision": "decision_head:SnapshotFork@037b8b589233",
+              "policy_ref": "synthetic-development-public-v1",
+              "registry_ref": "synthetic-development-registry-v1",
+              "request_id": "4f15e059682f4f419a93fe5566665007-003",
+              "schema": "ssdm.decide.v0.1"
+            },
+            "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Compare two selected typed values and assert the selected relation\",\"option_id\":\"op003\",\"slot\":\"operation\"},{\"description\":\"Fact development-record-2 field price\",\"option_id\":\"v003\",\"slot\":\"left\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Kestrel\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"235.47\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":48,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Juniper\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"246.66\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":57,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"For October 2026, compare Kestrel's and Juniper's warranty months.\",\"unmet_obligations\":[]}"
+          },
+          "response": {
+            "answers": {
+              "slot-003-right": {
+                "choice": "v003",
+                "confidence": 0.2668,
+                "probabilities": {
+                  "v001": 0.2598,
+                  "v002": 0.2365,
+                  "v003": 0.2668,
+                  "v004": 0.2369
+                },
+                "type": "choice"
+              }
+            },
+            "model": "tiny-paired-cpu-test",
+            "ssdm": {
+              "abstention": {
+                "abstained": false,
+                "mechanism": "not_implemented_v0",
+                "reason": null
+              },
+              "diagnostics": {
+                "audience": "public",
+                "backend": {
+                  "head": "SnapshotFork"
+                },
+                "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+                "entropy_nats": {
+                  "slot-003-right": 1.3848327511102272
+                },
+                "inference_calls": 1,
+                "input_counts": {
+                  "max_call_input_tokens": 2665,
+                  "options": {
+                    "slot-003-right": 4
+                  },
+                  "questions": 1,
+                  "total_input_tokens": 2665
+                },
+                "latency_ms": 68.728,
+                "limits_applied": {
+                  "_source": {
+                    "deadline_ms": "adapter_default",
+                    "max_inference_calls": "adapter_default",
+                    "max_input_tokens": "adapter_default",
+                    "max_options_per_question": "request",
+                    "max_program_nodes": "request",
+                    "max_questions": "request"
+                  },
+                  "deadline_ms": null,
+                  "max_inference_calls": 4096,
+                  "max_input_tokens": 16384,
+                  "max_options_per_question": 16,
+                  "max_program_nodes": 8,
+                  "max_questions": 1
+                },
+                "model_revision": {
+                  "adapter_version": "0.2.0",
+                  "backbone": {
+                    "capture": "hidden_states",
+                    "class": "TinyRecurrentLM",
+                    "commit_hash": null,
+                    "config_sha256": "fb892fb56afd3928d18b72a08bc7580028effdc226f2fa9ad8df610b19517fa8",
+                    "layer": -1,
+                    "name_or_path": null,
+                    "spec": "tiny",
+                    "weights_digest": "524879b3af1ddbd0153d1abfd53be17e2a34e4e05c4a3c8c90339fa97596e647",
+                    "weights_digest_mode": "sampled"
+                  },
+                  "backend": "decision_head",
+                  "checkpoint": {
+                    "state_sha256": "e735cd447d1fdc6adc009e567764b3f37baf400043cedd396dea0a2cbaa61014"
+                  },
+                  "encoder": {
+                    "kind": "byte+4",
+                    "vocab_size": 260
+                  },
+                  "head": "SnapshotFork",
+                  "layout": "ordered",
+                  "model_id": "tiny",
+                  "prompt_template": {
+                    "id": "jrt-plain-v1",
+                    "sha256": "05fc898b2e8e4fbe24421351293ef36b966783b2ea6bb49ca03b8fab2998aa67"
+                  },
+                  "revision_id": "decision_head:SnapshotFork@037b8b589233"
+                },
+                "policy_ref": "synthetic-development-public-v1",
+                "probability_stages": {
+                  "policy_conditioned": "absent (no restriction supplied)",
+                  "raw": {
+                    "domain": "all_supplied_options",
+                    "transform": "softmax(logits, T=1)"
+                  },
+                  "served": {
+                    "domain": "all_supplied_options",
+                    "transform": "0dbeae8e779644d2"
+                  }
+                },
+                "provenance": {
+                  "applied": false,
+                  "supplied": false
+                },
+                "registry_ref": "synthetic-development-registry-v1",
+                "request_fingerprint": "6f8e142a6c6144ac4a9aa1b6e5fee3ea419066c13342a70343afd5cb2c263543",
+                "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
+                "revision_id": "decision_head:SnapshotFork@037b8b589233",
+                "state_handle_in": null,
+                "state_reuse": false,
+                "versions": {
+                  "adapter": "0.2.0",
+                  "deltas": "disabled",
+                  "experimental_provenance": "disabled",
+                  "interface": "interfaces/DECISION_LANGUAGE_V0.md@v0.1 (PR #4 787d64f)",
+                  "wire": "systemone/v1 (Jev/SystemOne POST /v1/systemone body; Clef joint_schema_model.systemone semantics)"
+                }
+              },
+              "error": null,
+              "proposed_evidence_refs": [],
+              "raw_probabilities": {
+                "slot-003-right": {
+                  "v001": 0.2598387995561838,
+                  "v002": 0.23654759418669158,
+                  "v003": 0.26676307733108157,
+                  "v004": 0.2368505289260431
+                }
+              },
+              "request_id": "4f15e059682f4f419a93fe5566665007-003",
+              "schema": "ssdm.decide.v0.1",
+              "served_config": {
+                "calibration": {
+                  "fitted_on": null,
+                  "id": "0dbeae8e779644d2",
+                  "kind": "option_count_temperature",
+                  "status": "uncalibrated_identity",
+                  "t0": 1.0,
+                  "t1": 0.0,
+                  "t_min": 0.05
+                },
+                "policy_masking": "none (served covers every supplied option)",
+                "temperature_per_question": {
+                  "slot-003-right": 1.0
+                }
+              },
+              "served_probabilities": {
+                "slot-003-right": {
+                  "v001": 0.2598387995561838,
+                  "v002": 0.23654759418669158,
+                  "v003": 0.26676307733108157,
+                  "v004": 0.2368505289260431
+                }
+              },
+              "state_handle": null,
+              "status": "ok"
+            },
+            "usage": {
+              "input_tokens": 2665,
+              "output_tokens": 0
+            }
+          }
+        },
+        {
+          "exception": false,
+          "request": {
+            "model": "tiny-paired-cpu-test",
+            "questions": {
+              "slot-004-relation": {
+                "criteria": {
+                  "r001": "Relation greater_than",
+                  "r002": "Relation less_than",
+                  "r003": "Relation equal"
+                },
+                "instructions": "Select the comparison relation.",
+                "type": "choice"
+              }
+            },
+            "ssdm": {
+              "audience": "public",
+              "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+              "limits": {
+                "max_options_per_question": 16,
+                "max_program_nodes": 8,
+                "max_questions": 1
+              },
+              "parent_revision": "decision_head:SnapshotFork@037b8b589233",
+              "policy_ref": "synthetic-development-public-v1",
+              "registry_ref": "synthetic-development-registry-v1",
+              "request_id": "4f15e059682f4f419a93fe5566665007-004",
+              "schema": "ssdm.decide.v0.1"
+            },
+            "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[{\"description\":\"Compare two selected typed values and assert the selected relation\",\"option_id\":\"op003\",\"slot\":\"operation\"},{\"description\":\"Fact development-record-2 field price\",\"option_id\":\"v003\",\"slot\":\"left\"},{\"description\":\"Fact development-record-2 field price\",\"option_id\":\"v003\",\"slot\":\"right\"}],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Kestrel\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"235.47\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":48,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Juniper\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"246.66\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":57,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"For October 2026, compare Kestrel's and Juniper's warranty months.\",\"unmet_obligations\":[]}"
+          },
+          "response": {
+            "answers": {
+              "slot-004-relation": {
+                "choice": "r001",
+                "confidence": 0.3559,
+                "probabilities": {
+                  "r001": 0.3559,
+                  "r002": 0.3267,
+                  "r003": 0.3174
+                },
+                "type": "choice"
+              }
+            },
+            "model": "tiny-paired-cpu-test",
+            "ssdm": {
+              "abstention": {
+                "abstained": false,
+                "mechanism": "not_implemented_v0",
+                "reason": null
+              },
+              "diagnostics": {
+                "audience": "public",
+                "backend": {
+                  "head": "SnapshotFork"
+                },
+                "context_ref": "synthetic-development-context-v1:d6a390a151ab9425ed92f805159ecf3f1f7676d94254830cf7373b51760458c7",
+                "entropy_nats": {
+                  "slot-004-relation": 1.0974123024747482
+                },
+                "inference_calls": 1,
+                "input_counts": {
+                  "max_call_input_tokens": 2592,
+                  "options": {
+                    "slot-004-relation": 3
+                  },
+                  "questions": 1,
+                  "total_input_tokens": 2592
+                },
+                "latency_ms": 52.818,
+                "limits_applied": {
+                  "_source": {
+                    "deadline_ms": "adapter_default",
+                    "max_inference_calls": "adapter_default",
+                    "max_input_tokens": "adapter_default",
+                    "max_options_per_question": "request",
+                    "max_program_nodes": "request",
+                    "max_questions": "request"
+                  },
+                  "deadline_ms": null,
+                  "max_inference_calls": 4096,
+                  "max_input_tokens": 16384,
+                  "max_options_per_question": 16,
+                  "max_program_nodes": 8,
+                  "max_questions": 1
+                },
+                "model_revision": {
+                  "adapter_version": "0.2.0",
+                  "backbone": {
+                    "capture": "hidden_states",
+                    "class": "TinyRecurrentLM",
+                    "commit_hash": null,
+                    "config_sha256": "fb892fb56afd3928d18b72a08bc7580028effdc226f2fa9ad8df610b19517fa8",
+                    "layer": -1,
+                    "name_or_path": null,
+                    "spec": "tiny",
+                    "weights_digest": "524879b3af1ddbd0153d1abfd53be17e2a34e4e05c4a3c8c90339fa97596e647",
+                    "weights_digest_mode": "sampled"
+                  },
+                  "backend": "decision_head",
+                  "checkpoint": {
+                    "state_sha256": "e735cd447d1fdc6adc009e567764b3f37baf400043cedd396dea0a2cbaa61014"
+                  },
+                  "encoder": {
+                    "kind": "byte+4",
+                    "vocab_size": 260
+                  },
+                  "head": "SnapshotFork",
+                  "layout": "ordered",
+                  "model_id": "tiny",
+                  "prompt_template": {
+                    "id": "jrt-plain-v1",
+                    "sha256": "05fc898b2e8e4fbe24421351293ef36b966783b2ea6bb49ca03b8fab2998aa67"
+                  },
+                  "revision_id": "decision_head:SnapshotFork@037b8b589233"
+                },
+                "policy_ref": "synthetic-development-public-v1",
+                "probability_stages": {
+                  "policy_conditioned": "absent (no restriction supplied)",
+                  "raw": {
+                    "domain": "all_supplied_options",
+                    "transform": "softmax(logits, T=1)"
+                  },
+                  "served": {
+                    "domain": "all_supplied_options",
+                    "transform": "0dbeae8e779644d2"
+                  }
+                },
+                "provenance": {
+                  "applied": false,
+                  "supplied": false
+                },
+                "registry_ref": "synthetic-development-registry-v1",
+                "request_fingerprint": "b7393b492e770a0d2d37017bc144935db29d110e1d6854a3ffab0538f0088cc7",
+                "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
+                "revision_id": "decision_head:SnapshotFork@037b8b589233",
+                "state_handle_in": null,
+                "state_reuse": false,
+                "versions": {
+                  "adapter": "0.2.0",
+                  "deltas": "disabled",
+                  "experimental_provenance": "disabled",
+                  "interface": "interfaces/DECISION_LANGUAGE_V0.md@v0.1 (PR #4 787d64f)",
+                  "wire": "systemone/v1 (Jev/SystemOne POST /v1/systemone body; Clef joint_schema_model.systemone semantics)"
+                }
+              },
+              "error": null,
+              "proposed_evidence_refs": [],
+              "raw_probabilities": {
+                "slot-004-relation": {
+                  "r001": 0.35589588994270405,
+                  "r002": 0.32669254842846446,
+                  "r003": 0.31741156162883144
+                }
+              },
+              "request_id": "4f15e059682f4f419a93fe5566665007-004",
+              "schema": "ssdm.decide.v0.1",
+              "served_config": {
+                "calibration": {
+                  "fitted_on": null,
+                  "id": "0dbeae8e779644d2",
+                  "kind": "option_count_temperature",
+                  "status": "uncalibrated_identity",
+                  "t0": 1.0,
+                  "t1": 0.0,
+                  "t_min": 0.05
+                },
+                "policy_masking": "none (served covers every supplied option)",
+                "temperature_per_question": {
+                  "slot-004-relation": 1.0
+                }
+              },
+              "served_probabilities": {
+                "slot-004-relation": {
+                  "r001": 0.35589588994270405,
+                  "r002": 0.32669254842846446,
+                  "r003": 0.31741156162883144
+                }
+              },
+              "state_handle": null,
+              "status": "ok"
+            },
+            "usage": {
+              "input_tokens": 2592,
+              "output_tokens": 0
+            }
+          }
+        }
+      ],
+      "planner_initial_state_sha256": "3a85195a065f68027fe96def4ff6881951f6ee3ec584f3016b8246af6fc42c1f",
+      "same_initial_state": true,
+      "task_id": "synthetic-development_validation-19-2"
+    }
+  ],
+  "parent_revision": "decision_head:SnapshotFork@037b8b589233",
+  "planner_correct": 0,
+  "scope": "synthetic_development_comparison_only_one_shot",
+  "source": "nonlearned_unless_provider_proven_otherwise",
+  "total": 1
+}
