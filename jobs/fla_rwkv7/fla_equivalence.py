@@ -241,6 +241,233 @@ def valid_decision(d) -> bool:
     return isinstance(d, dict) and d.get("verdict") in VERDICTS and d.get("chosen") in VARIANTS
 
 
+# ============================================================================= RULE v2 (PRE-REGISTERED 2026-10-06)
+# Pre-registered by the coordinator on 2026-10-06, BEFORE any truth_v2 job ran, after job-jn47u (REJECT_NUMERICS from
+# the captured-real-input cases alone, where the production "chunked" path failed the same bf16-eager reference).
+# v1 above (TOL / decide) is NOT edited; v2 is a separate rule. Text, verbatim: jobs/fla_rwkv7/JOB_SPEC.md "RULE v2".
+# Constants pinned by tests/test_fla_rwkv7.py::test_rule_v2_constants_are_pinned. Do not tune them on GPU data.
+#: captured real WKV inputs (same 2,048-token prompt and capture construction as job-jn47u: prefix 1024 tokens -> carried
+#: state, capture during the next 1024): fwd at T=1024, gradients at the first 512 tokens
+TRUTH_V2_LAYERS = (0, 15, 30, 45, 60)
+V2_PROMPT_T = 2048
+V2_FWD_T = 1024
+V2_GRAD_T = 512
+#: e(fla) <= V2_SLACK * max(e(chunked), e(eager_bf16)) + ABS_FLOOR on EVERY (case, tensor) pair, and
+#: e(fla) <= V2_SLACK * e(chunked) + ABS_FLOOR on at least V2_FRAC_MIN of them
+V2_SLACK = 1.10
+V2_FRAC_MIN = 0.90
+V2_REF_IMPLS = ("chunked", "eager_bf16")
+V2_FWD_TENSORS = ("out", "state")
+V2_GRAD_TENSORS = ("out", "state") + tuple(f"grad_{n}" for n in ("r", "w_log", "k", "v", "kk", "a", "state"))
+#: training speed: the m2 first cell's actual step (train.trainer.Trainer.train_step, cell config), current impl vs fla
+V2_CURRENT = "chunked"
+V2_TRAIN_WARMUP = 3  # untimed optimiser steps first (fla compile / autotune, allocator warm-up)
+V2_TRAIN_STEPS = 20  # timed optimiser steps; median per-step tok/s
+#: the current impl may be too slow for the phase cap: its median is over the timed steps it reached (OOM = 0 tok/s),
+#: at least this many; below that its speed is missing (INCONCLUSIVE). fla variants must reach all V2_TRAIN_STEPS.
+V2_CURRENT_MIN_STEPS = 5
+V2_TRAIN_RATIO_MIN = 2.0
+V2_PREFILL_RATIO_MIN = 2.0  # at every length in LENGTHS (the unchanged throughput phase)
+V2_PEAK_GB_MAX = 76.0  # = the m2 cell's pass_rule max_peak_gb
+VERDICTS_V2 = ("ADOPT_FOR_TRAINING", "ADOPT_READOUT_ONLY", "REJECT_NUMERICS", "INCONCLUSIVE", "NOT_ADOPTED")
+
+
+def v2_required_cases() -> dict:
+    """{case name: tensors} the truth_v2 phase must produce."""
+    req = {}
+    for layer in TRUTH_V2_LAYERS:
+        req[f"real_L{layer}_fwd_T{V2_FWD_T}"] = V2_FWD_TENSORS
+        req[f"real_L{layer}_grad_T{V2_GRAD_T}"] = V2_GRAD_TENSORS
+    return req
+
+
+def _v2_truth_check(tv: dict | None, v: str) -> tuple[bool | None, list[str], dict]:
+    """The truth-reference half of NUMERICS_OK for variant ``v``. True / False, or None when the comparison is
+    undefined (a case, tensor, reference error or non-finite reference / truth is missing): INCONCLUSIVE.
+    A crash or a non-finite value of ``v`` itself is a failure (as in v1)."""
+    why, missing = [], []
+    by_name = {c.get("name"): c for c in (tv or {}).get("cases", [])}
+    n_pairs = n_tight = 0
+    worst = {"pair_fail": [], "tight_fail": []}
+    for name, tensors in v2_required_cases().items():
+        c = by_name.get(name)
+        if c is None:
+            missing.append(f"truth_v2:{name}")
+            continue
+        if not c.get("truth_finite", False):
+            missing.append(f"truth_v2:{name}:truth_nonfinite")
+            continue
+        imps = c.get("impls") or {}
+        mine = imps.get(v) or {}
+        if mine.get("error"):
+            why.append(f"truth_v2:{name}:{v}_error")
+            continue
+        if mine.get("finite") is False:
+            why.append(f"truth_v2:{name}:{v}_nonfinite")
+            continue
+        if mine.get("finite") is not True:
+            missing.append(f"truth_v2:{name}:{v}_missing")
+            continue
+        bad_refs = [r for r in V2_REF_IMPLS if (imps.get(r) or {}).get("error") or (imps.get(r) or {}).get("finite") is not True]
+        if bad_refs:
+            missing += [f"truth_v2:{name}:{r}_unusable" for r in bad_refs]
+            continue
+        for t in tensors:
+            ev = (mine.get("e") or {}).get(t)
+            ec = (imps["chunked"].get("e") or {}).get(t)
+            ee = (imps["eager_bf16"].get("e") or {}).get(t)
+            if ev is None or ec is None or ee is None:
+                missing.append(f"truth_v2:{name}:{t}")
+                continue
+            if not all(math.isfinite(x) for x in (ev, ec, ee)):
+                if not math.isfinite(ev):
+                    why.append(f"truth_v2:{name}:{t}:{v}_nonfinite")
+                else:
+                    missing.append(f"truth_v2:{name}:{t}:ref_nonfinite")
+                continue
+            n_pairs += 1
+            if not ev <= V2_SLACK * max(ec, ee) + ABS_FLOOR:
+                why.append(f"truth_v2:{name}:{t}")
+                worst["pair_fail"].append([name, t, ev, ec, ee])
+            if ev <= V2_SLACK * ec + ABS_FLOOR:
+                n_tight += 1
+            else:
+                worst["tight_fail"].append([name, t, ev, ec])
+    frac = n_tight / n_pairs if n_pairs else None
+    detail = {"pairs": n_pairs, "within_slack_of_chunked": n_tight, "frac_within_slack_of_chunked": frac, **worst}
+    if why:
+        return False, why, detail
+    if missing:
+        return None, missing, detail
+    if frac is None or frac < V2_FRAC_MIN:
+        return False, [f"truth_v2:frac_within_slack_of_chunked={frac}"], detail
+    return True, [], detail
+
+
+def _v2_synthetic_check(rep: dict, v: str) -> tuple[bool | None, list[str]]:
+    """The unchanged v1 synthetic checks (kernel + fork bf16 cases vs eager under TOL, model logits, model
+    continuation/fork), re-run by the same phases. The v1 captured-input cases are NOT part of v2."""
+    why, missing = [], []
+    for phase in ("kernel", "fork"):
+        cases = [c for c in (rep.get(phase) or {}).get("cases", []) if c.get("impl") == v and c.get("dtype") == "bfloat16"]
+        if not cases:
+            missing.append(f"{phase}:bf16")
+        for c in cases:
+            if c.get("error") or not case_passes(c.get("worst", {}), "bfloat16"):
+                why.append(f"{phase}:{c.get('name')}")
+    model = rep.get("model") or {}
+    mdl, ref = model.get("logits", {}).get(v), model.get("logits", {}).get("chunked")
+    if not mdl or not ref:
+        missing.append("model:logits")
+    elif not model_passes({"fla": mdl, "chunked": ref}):
+        why.append("model:logits")
+    cont = model.get("continuation", {}).get(v)
+    if not cont:
+        missing.append("model:continuation")
+    elif not (cont.get("rel", math.inf) <= CONT_REL_MAX and cont.get("fork_rel", math.inf) <= FORK_REL_MAX):
+        why.append("model:continuation")
+    if why:
+        return False, why
+    if missing:
+        return None, missing
+    return True, []
+
+
+def numerics_ok_v2(rep: dict, v: str) -> dict:
+    """NUMERICS_OK(v) under RULE v2: the truth check AND the unchanged synthetic checks. False beats None."""
+    t_ok, t_why, t_detail = _v2_truth_check(rep.get("truth_v2"), v)
+    s_ok, s_why = _v2_synthetic_check(rep, v)
+    if t_ok is False or s_ok is False:
+        ok = False
+    elif t_ok is None or s_ok is None:
+        ok = None
+    else:
+        ok = True
+    return {"ok": ok, "truth": t_ok, "synthetic": s_ok, "why": t_why + s_why, "truth_detail": t_detail}
+
+
+def train_speed_v2(tr: dict | None, current: bool) -> dict:
+    """One impl's training-speed record -> {'tok_s' (median per-step tok/s or None), 'peak_gb', 'oom_steps', ...}.
+    A timed step that ran out of memory counts 0 tok/s (it cannot be trained at that shape on this path). The current
+    impl's median is over the timed steps it reached (>= V2_CURRENT_MIN_STEPS); an fla variant needs every one of
+    V2_TRAIN_STEPS. A fallback or no fla call voids an fla measurement (None)."""
+    if not tr:
+        return {"tok_s": None, "peak_gb": None, "reason": "missing"}
+    steps = [s for s in tr.get("steps", []) if s.get("timed")]
+    vals = [0.0 if s.get("oom") else s.get("tok_s") for s in steps if s.get("oom") or s.get("tok_s") is not None]
+    oom = sum(1 for s in steps if s.get("oom"))
+    out = {"tok_s": None, "peak_gb": tr.get("peak_gb"), "oom_steps": oom, "timed_steps": len(vals)}
+    if not current:
+        if tr.get("fallbacks") or not (tr.get("fla_calls") or {}).get(tr.get("impl"), 0) > 0:
+            out["reason"] = "fla fallback or no fla call"
+            return out
+        need = V2_TRAIN_STEPS
+    else:
+        need = V2_CURRENT_MIN_STEPS
+    if len(vals) < need:
+        out["reason"] = f"{len(vals)} timed steps < {need}"
+        return out
+    out["tok_s"] = statistics.median(vals[:V2_TRAIN_STEPS])
+    return out
+
+
+def decide_v2(rep: dict) -> dict:
+    """RULE v2 (verbatim in JOB_SPEC.md). rep = {'kernel','fork','model','throughput','truth_v2',
+    'train_v2': {impl: record}} phase JSONs. Per fla variant:
+      REJECT_NUMERICS    iff NUMERICS_OK is false;
+      INCONCLUSIVE       iff anything required is missing (numerics undefined, a prefill ratio, the train ratio,
+                         the fla peak);
+      ADOPT_FOR_TRAINING iff NUMERICS_OK and train ratio >= V2_TRAIN_RATIO_MIN and fla peak <= V2_PEAK_GB_MAX;
+      ADOPT_READOUT_ONLY iff NUMERICS_OK and prefill ratio >= V2_PREFILL_RATIO_MIN at every length but train ratio
+                         < V2_TRAIN_RATIO_MIN;
+      NOT_ADOPTED        every other measured combination (the rule names no verdict for it; reported, not adopted).
+    Train ratio = median tok/s (fla variant) / median tok/s (current); +inf when the current impl's median is 0 (OOM)
+    and the variant's is not; 0 when the variant's median is 0.
+    The top-level verdict is plain fla's; fla_safe_gate gets its own under the same rule."""
+    trains = rep.get("train_v2") or {}
+    cur = train_speed_v2(trains.get(V2_CURRENT), current=True)
+    per = {}
+    for v in VARIANTS:
+        num = numerics_ok_v2(rep, v)
+        pre = _ratios(rep, v)["prefill"]
+        sp = train_speed_v2(trains.get(v), current=False)
+        if sp["tok_s"] is None or cur["tok_s"] is None:
+            ratio = None
+        elif sp["tok_s"] == 0:
+            ratio = 0.0  # fla could not train the median step either
+        elif cur["tok_s"] == 0:
+            ratio = math.inf
+        else:
+            ratio = sp["tok_s"] / cur["tok_s"]
+        fla_oom = bool(sp.get("oom_steps"))
+        peak_ok = None if sp.get("peak_gb") is None else (sp["peak_gb"] <= V2_PEAK_GB_MAX and not fla_oom)
+        readout = None if any(x is None for x in pre.values()) else all(x >= V2_PREFILL_RATIO_MIN for x in pre.values())
+        if num["ok"] is False:
+            verdict = "REJECT_NUMERICS"
+        elif num["ok"] is None or readout is None or ratio is None or peak_ok is None:
+            verdict = "INCONCLUSIVE"
+        elif ratio >= V2_TRAIN_RATIO_MIN and peak_ok:
+            verdict = "ADOPT_FOR_TRAINING"
+        elif readout and ratio < V2_TRAIN_RATIO_MIN:
+            verdict = "ADOPT_READOUT_ONLY"
+        else:
+            verdict = "NOT_ADOPTED"
+        per[v] = {"verdict": verdict, "numerics": num, "prefill_ratios": pre, "readout_speed_ok": readout,
+                  "train": sp, "train_ratio": ratio, "peak_ok": peak_ok}
+    return {"rule": "v2", "verdict": per["fla"]["verdict"], "variant": "fla", "variants": per, "current_train": cur,
+            "constants": {"layers": list(TRUTH_V2_LAYERS), "fwd_t": V2_FWD_T, "grad_t": V2_GRAD_T, "slack": V2_SLACK,
+                          "frac_min": V2_FRAC_MIN, "abs_floor": ABS_FLOOR, "train_warmup": V2_TRAIN_WARMUP,
+                          "train_steps": V2_TRAIN_STEPS, "current_min_steps": V2_CURRENT_MIN_STEPS,
+                          "train_ratio_min": V2_TRAIN_RATIO_MIN, "prefill_ratio_min": V2_PREFILL_RATIO_MIN,
+                          "lengths": list(LENGTHS), "peak_gb_max": V2_PEAK_GB_MAX, "current": V2_CURRENT}}
+
+
+def valid_decision_v2(d) -> bool:
+    """finalize.py validator for the truth_v2 mode."""
+    return (isinstance(d, dict) and d.get("rule") == "v2" and d.get("verdict") in VERDICTS_V2
+            and all((d.get("variants") or {}).get(v, {}).get("verdict") in VERDICTS_V2 for v in VARIANTS))
+
+
 # ----------------------------------------------------------------------------- GPU side
 def _torch():
     import torch

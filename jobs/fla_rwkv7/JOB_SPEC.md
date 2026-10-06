@@ -159,3 +159,76 @@ submit_job(chip="h100", chip_count=1, mission="m2-fla-rwkv7-kernel", context_id=
 | 30 | warmup (fla compile) crashed |
 | 31–34 | the kernel / fork / model / throughput phase crashed |
 | 1 | finalize failed |
+
+## RULE v2 (`decide_v2`; mode `truth_v2`)
+
+### Rule text, verbatim (coordinator, committed before any truth_v2 run)
+
+RULE v2 (pre-registered 2026-10-06, before job execution):
+- Truth = fp64 token-serial WKV (existing `truth()` helper) on the SAME captured bf16-rounded real inputs. Capture layers {0, 15, 30, 45, 60} (fwd T=1024 and grad T=512, as now) from the same 2,048-token prompt as job-jn47u (same seed/ids construction).
+- For each case and each tensor (out, final state, every grad): e(impl) = rel error vs truth (same rel metric, same ABS_FLOOR).
+- NUMERICS_OK(fla) iff for every case & tensor: e(fla) <= 1.10 * max(e(chunked), e(eager_bf16)) + ABS_FLOOR, AND e(fla) <= 1.10 * e(chunked) + ABS_FLOOR on at least 90% of (case,tensor) pairs, AND all finite, AND the existing synthetic kernel/fork/model-level checks still pass (rerun them unchanged). Same for fla_safe_gate.
+- TRAIN_SPEED: measure the m2 first training cell's ACTUAL training step (whatever WKV impl and config jobs/m2_first_cell/m2_first_cell_rwkv7.json / train/ use) with the current impl vs fla: same LoRA rank, batch, grad-accum, seq-length mix, checkpointing, 20 timed steps after warmup, median tok/s and peak GB. If the current impl is token-serial eager and too slow/OOM, record that as the measurement.
+- VERDICT: ADOPT_FOR_TRAINING iff NUMERICS_OK and train ratio >= 2.0 and fla peak <= 76 GB; ADOPT_READOUT_ONLY iff NUMERICS_OK and prefill ratio >= 2 at all lengths but train ratio < 2; REJECT_NUMERICS iff NUMERICS_OK false; INCONCLUSIVE if anything missing. The old v1 rule is NOT edited; v2 is a new, separately named rule (`decide_v2`) and its constants are pinned by tests.
+
+### Why v2 (job-jn47u receipt)
+
+job-jn47u (SF batch, H100, code `4733f785`, 2026-10-06 20:13–20:30 UTC, exit 0, verdict `REJECT_NUMERICS`; artifact
+sha256 `692f8986…96fc`, `decision.json` `c35d38f6…3030`, `captured.json` `c7546203…86c1`):
+- Synthetic kernel (12 gated cases) and fork (12) all pass for chunked, fla and fla_safe_gate.
+- Model level vs eager logits (T=256): fla rel 0.021, cos_min 0.99995, top-1 1.0; chunked rel 0.023; fla_safe_gate
+  rel 0.018. Continuation rel: fla 0.0199 (pass), fla_safe_gate 0.0265 (> 0.02, fails).
+- The verdict comes only from the captured real inputs at L0/30/60, where **every** implementation, including the
+  production `chunked` path, is far from the bf16 token-serial eager reference, and fla and chunked agree with each
+  other to 3 decimals:
+
+| case | chunked out / state / grad | fla out / state / grad |
+|---|---|---|
+| L0 fwd T1024 | 0.110 / 0.370 / – | 0.112 / 0.370 / – |
+| L0 grad T512 | 0.102 / 0.250 / 0.271 | 0.102 / 0.250 / 0.271 |
+| L30 fwd T1024 | 0.033 / 0.101 / – | 0.033 / 0.101 / – |
+| L30 grad T512 | 0.022 / 0.074 / 0.046 | 0.022 / 0.074 / 0.046 |
+| L60 fwd T1024 | 0.060 / 0.225 / – | 0.063 / 0.225 / – |
+| L60 grad T512 | 0.038 / 0.135 / 0.102 | 0.038 / 0.135 / 0.102 |
+
+- Speed: prefill fla / chunked 3.09× (2k), 2.69× (8k), 2.96× (16k); fla 11.7–12.1k tok/s. Training-shaped fwd+bwd at
+  T=2048 (grad into the embeddings): fla 4,561 tok/s at 51.1 GB peak, chunked **OOM** (80 GB).
+
+So the v1 per-layer gate is inconsistent: it rejects the production path, because a bf16 token-serial run is not
+ground truth on real activations (state magnitudes up to 76 at L60). v2 measures every implementation against fp64.
+
+### How the rule is implemented (fixed in the rule commit, before any run; `fla_equivalence.py`)
+
+- **Cases.** 5 layers × {fwd T=1024: out, state; grad T=512: out, state, 7 input gradients} = 10 cases, 55
+  (case, tensor) pairs (`v2_required_cases`). The 90% clause needs ≥ 50 of 55. Capture is the jn47u construction
+  (`_text_ids(model_dir, 2048)`; the first 1024 tokens build the carried state; the WKV inputs are captured during the
+  next 1024 on the chunked path).
+- **Truth.** `truth()` (fp64 `rwkv7_recurrent` on the bf16-rounded inputs, `.double()`) for out/state. Gradients:
+  fp64 autograd through the same serial loop at T=512, with the same cotangents as `run_impl` (seeded `randn`, the
+  same values cast to fp64). `eager_bf16` = `run_impl("eager")`, the v1 reference.
+- **All finite.** A crash or a non-finite output/e of the fla variant fails NUMERICS_OK (v1 treats a crash the same
+  way). A missing case, a crashed or non-finite chunked / eager_bf16 reference, or a non-finite truth makes the
+  comparison undefined: INCONCLUSIVE.
+- **Synthetic checks.** The kernel, fork and model phases run unchanged; v2 requires every bf16 kernel and fork
+  case to pass `TOL`, the model logits to pass `model_passes` and the continuation/fork to pass, exactly as v1. The
+  v1 captured-input cases (still produced by the unchanged model phase) are not part of v2. A fallback or a missing fla
+  call in the model or throughput phase voids that phase (INCONCLUSIVE), as in v1.
+- **Train speed.** The cell's WKV is `rwkv7_wkv: "chunked"` (the checkpoint's pure-PyTorch chunked path, not the
+  token-serial eager loop), so the current impl is `chunked`. The step is `train.trainer.Trainer.train_step` with the
+  cell's TrainConfig (fork head, cache fork, LoRA r=64, Clef loss, batch 1 × grad_accum 8, bf16 autocast, no
+  gradient checkpointing) on rows with the shapes of the cell's first optimiser steps (`train_mix_v2.json`, below).
+  3 untimed warmup steps (`V2_TRAIN_WARMUP`), then 20 timed steps. Per step: tok/s = prefix tokens of its 8 rows /
+  synchronised wall-clock; median over the 20. Peak = `torch.cuda.max_memory_allocated()` / 1e9 over the process,
+  as the cell's `peak()`. Each impl runs in its own process.
+- **OOM / too slow.** A timed step that runs out of memory counts 0 tok/s. The current impl's median is over the timed
+  steps it reached before its phase deadline (≥ 5, `V2_CURRENT_MIN_STEPS`; fewer is INCONCLUSIVE). An fla variant
+  must reach all 20; an fla OOM on any step fails the peak clause. Train ratio = median(fla) / median(chunked); +inf
+  when chunked's median is 0 and fla's is not; 0 when fla's is 0. A fallback or zero fla calls voids the fla
+  measurement (INCONCLUSIVE).
+- **Prefill ratio** = the unchanged throughput phase (fla / chunked at 2k, 8k, 16k).
+- **Verdict order.** REJECT_NUMERICS if NUMERICS_OK is false; else INCONCLUSIVE if NUMERICS_OK, a prefill ratio, the
+  train ratio or the fla peak is missing; else ADOPT_FOR_TRAINING / ADOPT_READOUT_ONLY as stated. The rule names no
+  verdict for the remaining measured combinations (train ratio ≥ 2 but peak > 76 GB or an fla OOM; or train ratio < 2
+  and prefill < 2 at some length): those are `NOT_ADOPTED`, reported and not adopted.
+- **Variants.** Each of fla and fla_safe_gate gets its own verdict under the same rule; the top-level `verdict` is plain
+  fla's. `decision_v2.json` carries both; `valid_decision_v2` is the finalize validator.
