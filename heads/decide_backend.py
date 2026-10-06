@@ -16,6 +16,12 @@ adapter's job (``Decider(calibration=...)``); this backend never sees evaluation
 * Non-finite logits raise (a model fault is never served as a decision).
 * ``revision()`` is computed once per backend (it hashes the frozen weights); build a new backend per
   checkpoint.
+* G16 head (``controlsafe.g16.G16DecisionHead``): the host allowed set (``ssdm.policy_restriction`` and/or
+  ``policy.allowed``) is the structural veto INSIDE the decision function. Vetoed options get the finite logit
+  ``min(allowed) - G16_VETO_GAP`` (the adapter requires finite logits; their softmax mass is exactly 0 in float64),
+  and every question's certificate fields (margin, radii, independence, radius-covers-box, E, vetoed ids; and, with
+  ``g16_certify_k``, the full ``controlsafe.g16.certify`` G4-over-E record) are returned in
+  ``diagnostics.backend["g16"][qid]``.
 """
 
 from __future__ import annotations
@@ -35,12 +41,17 @@ from .layout import EncodeFn, LayoutRow, build_row
 from .model import DecisionModel
 
 
+G16_VETO_GAP = 1000.0
+
+
 class DecisionModelBackend:
     name = "decision_head"
 
     def __init__(self, model: DecisionModel, encode: EncodeFn, template: str | Template = "jrt-plain-v1",
-                 layout: str = "ordered", checkpoint: dict[str, Any] | None = None, shared_prefix: bool = True) -> None:
+                 layout: str = "ordered", checkpoint: dict[str, Any] | None = None, shared_prefix: bool = True,
+                 g16_certify_k: int | None = None) -> None:
         self.model = model
+        self.g16_certify_k = g16_certify_k
         self.shared_prefix = shared_prefix
         self.encode = encode
         self.template = TEMPLATES[template] if isinstance(template, str) else template
@@ -71,8 +82,14 @@ class DecisionModelBackend:
 
     def _rows(self, request: dict[str, Any]) -> list[LayoutRow]:
         try:
-            return [build_row(request, qid, self.encode, template=self.template, layout=self.layout)
+            rows = [build_row(request, qid, self.encode, template=self.template, layout=self.layout)
                     for qid in request["questions"]]
+            if self._g16():
+                from controlsafe.g16 import attach_host_allowed
+
+                for r in rows:
+                    attach_host_allowed(r, request)
+            return rows
         except ControlTokenError as exc:  # before ValueError: it subclasses ValueError
             raise BackendUnsupported(exc.code, str(exc)) from exc
         except ValueError as exc:
@@ -84,6 +101,9 @@ class DecisionModelBackend:
         return Plan(inference_calls=1 if self._one_pass() else len(rows), max_call_input_tokens=max(lens),
                     total_input_tokens=sum(lens))
 
+    def _g16(self) -> bool:
+        return getattr(self.model.head, "name", None) == "g16" and getattr(self.model, "row_head", False)
+
     def _one_pass(self) -> bool:
         return not getattr(self.model.backbone, "wants_trust", False)
 
@@ -93,6 +113,8 @@ class DecisionModelBackend:
         was_training = self.model.training
         self.model.eval()
         logits: dict[str, dict[str, float]] = {}
+        g16diag: dict[str, dict[str, Any]] = {}
+        extra_calls = 0  # G4-over-E origin recomputes (g16_certify_k): reported, so the adapter's call cap sees them
         features = {r.qid: {"evidence_tokens": r.evidence_len, "n_options": r.n_options,
                             "evidence_span": r.meta.get("evidence")} for r in rows}
         try:
@@ -108,12 +130,43 @@ class DecisionModelBackend:
                 for row in rows:
                     check_deadline()
                     lps.append(self.model([row]).log_probs[0].float().cpu())
+                    if self._g16():
+                        g16diag[row.qid] = self._g16_certificate(request, row, check_deadline)
+                        extra_calls += g16diag[row.qid].get("g4_over_E", {}).get("n_origins_evaluated") or 0
             for row, lp in zip(rows, lps):
-                if not torch.isfinite(lp[: row.n_options]).all():
+                lp = lp[: row.n_options]
+                if self._g16():
+                    veto = ~torch.tensor(g16diag[row.qid]["allowed_mask"], dtype=torch.bool)
+                    ok = lp[~veto]
+                    if not (torch.isfinite(ok).all() and bool((lp[veto] == float("-inf")).all())):
+                        raise FloatingPointError(f"{row.qid}: non-finite G16 log-probabilities {lp.tolist()}")
+                    lp = torch.where(veto, ok.min() - G16_VETO_GAP, lp)
+                if not torch.isfinite(lp).all():
                     raise FloatingPointError(f"{row.qid}: non-finite head log-probabilities {lp.tolist()}")
                 logits[row.qid] = {oid: float(lp[k]) for k, oid in enumerate(row.option_ids)}
         finally:
             self.model.train(was_training)
-        return ScoreResult(logits=logits, inference_calls=1 if self._one_pass() else len(rows),
-                           total_input_tokens=sum(len(r.ids) for r in rows),
-                           extras={"head": type(self.model.head).__name__}, features=features)
+        extras: dict[str, Any] = {"head": type(self.model.head).__name__}
+        if self._g16():
+            extras["g16"] = g16diag
+        return ScoreResult(logits=logits, inference_calls=(1 if self._one_pass() else len(rows)) + extra_calls,
+                           total_input_tokens=sum(len(r.ids) for r in rows), extras=extras, features=features)
+
+    def _g16_certificate(self, request: dict[str, Any], row: LayoutRow,
+                         check_deadline: Callable[[], None] | None = None) -> dict[str, Any]:
+        """Certificate fields of the decision just computed (no recompute), plus the full G4-over-E record with
+        ``g16_certify_k`` (each origin's E recomputed; P reused exactly)."""
+        from controlsafe import g16 as G
+
+        head = self.model.head
+        cert = head.certificate(0)
+        cert["decision"] = row.option_ids[cert["decision"]]
+        cert["vetoed"] = [o for o, m in zip(row.option_ids, cert["allowed_mask"]) if not m]
+        if self.g16_certify_k is not None:
+            if check_deadline is not None:
+                check_deadline()
+            rec = G.certify(head, request, row.qid, self.g16_certify_k,
+                            lambda r: build_row(r, row.qid, self.encode, template=self.template, layout=self.layout))
+            cert["g4_over_E"] = {k: rec.get(k) for k in ("certified", "reason", "k", "n_origins_evaluated",
+                                                         "p_cache_misses", "d_tokens", "changed", "decision")}
+        return cert

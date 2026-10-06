@@ -62,10 +62,16 @@ The review proposed a radius of `μ/L` with `L = max‖a_k‖`. It is **not soun
 
 **Scope.** Untrusted text can still steer the decision within E's box. That steering is bounded, logged (r·K numbers per decision), and either certified or escalated.
 
+**Training arm.** `head: "g16"` in `TrainConfig` / `run_cell` (needs `controlsafe.trust_gate`, readout `decision`). `DecisionModel` routes rows to `G16DecisionHead.forward_rows`. The judge, evidence channel, LoRA and P→D bridges train with the usual losses; the decision is `softmax(logit)` for every question type. `head_kwargs`: `r`, `c` (evidence bound, default 1.0), `stream_mode` (`cache` by default). `stream_mode: cache` uses `TrustGatedBackbone.fork_streams`: one D prefix pass plus K state copies, with P run once per distinct trusted subsequence. It equals recompute up to float rounding, and P is bitwise identical. Tests: `tests/controlsafe/test_g16_train.py`.
+
+- **c ablation:** `python -m train.g16_card sweep`.
+- **Eval card:** `card["g16"]` holds served certificate stats, plus `certify` on safety_eval DEV requests in run_cell.
+- **Decide backend:** the veto and certificate fields are in `diagnostics.backend["g16"]`, and the full G4-over-E record is added with `g16_certify_k`.
+- **Capability cost:** `train.g16_card compare` on the paired cells `jobs/m2_pilot/m2_pilot_cell_g16{,_base}.json`.
+
 **Not done yet:**
-- G16 as a `train/` head arm.
 - Snapshot reuse of the D stream inside G4-over-E.
-- The capability cost against the D-head arm, `trust_gate.capability_cost` plus `harness.bootstrap.compare` (needs a trained run).
+- A measured capability cost (the pair is configured but not run). `m2_job.sh` does not select the pair cells yet.
 
 **Arm result.** On 10 dev requests, with a random judge and every origin verified: k=1 evaluates 36 origins and k=2 evaluates 64. The P stream is computed once per request with 0 cache misses. The independence rate is 0 with random weights, so it says nothing about trained heads.
 

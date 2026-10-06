@@ -67,6 +67,7 @@ from . import adapters
 
 READOUTS = ("decision", "concat", "protected")
 TRUST_POLICIES = ("provenance", "state", "caller")
+STREAM_FORKS = ("recompute", "cache")
 DEFAULT_POLICY = "provenance"
 ID_PATH = "#ids"  # == heads.layout.ID_PATH
 GUARANTEE_ID = "ssdm.g15.trust_gated_reachability.v1"
@@ -177,7 +178,9 @@ class TrustGatedBackbone(HiddenStateBackbone):
     wants_trust = True
 
     def __init__(self, base: HiddenStateBackbone, bridge_rank: int = 8, readout: str = "decision",
-                 trust_policy: str = DEFAULT_POLICY, seed: int = 0) -> None:
+                 trust_policy: str = DEFAULT_POLICY, seed: int = 0, stream_fork: str = "recompute") -> None:
+        if stream_fork not in STREAM_FORKS:
+            raise ValueError(f"stream_fork must be one of {STREAM_FORKS}, got {stream_fork!r}")
         if base.capture != "hidden_states":
             raise ValueError("trust gate needs capture='hidden_states' (RWKV-7 HF / Qwen3.5 GDN)")
         if readout not in READOUTS or trust_policy not in TRUST_POLICIES:
@@ -199,13 +202,20 @@ class TrustGatedBackbone(HiddenStateBackbone):
         self.last_protected_final: torch.Tensor | None = None
         self.tokens_processed = 0
         self.p_cache_hits = 0
+        self.p_rows_deduplicated = 0
+        self.stream_fork = stream_fork
+        self._inject_seq: list[list[torch.Tensor]] | None = None
+        self._calls: list[int] = [0] * len(self._blocks)
         self.last_protected_compact: dict | None = None
         self.provenance = getattr(base, "provenance", None)  # lineage: Q9-AF provenance passes through
         self.controlsafe = self.identity()
 
     def identity(self) -> dict[str, Any]:
-        return {"guarantee": GUARANTEE_ID, "readout": self.readout, "trust_policy": self.trust_policy,
-                "bridge_rank": self.bridge_rank, "family": adapters.family_of(self.model)}
+        ident = {"guarantee": GUARANTEE_ID, "readout": self.readout, "trust_policy": self.trust_policy,
+                 "bridge_rank": self.bridge_rank, "family": adapters.family_of(self.model)}
+        if getattr(self, "stream_fork", "recompute") != "recompute":  # old identities unchanged
+            ident["stream_fork"] = self.stream_fork
+        return ident
 
     @property
     def d_model(self) -> int:
@@ -235,7 +245,17 @@ class TrustGatedBackbone(HiddenStateBackbone):
             if self._mode == "record":
                 self._rec[i] = h
                 return None
-            p = self._inject[i]
+            if self._mode == "inject_seq":  # cache fork: call c of this layer reads injection c (prefix, continuations)
+                c = self._calls[i]
+                self._calls[i] += 1
+                if self._inject_seq is None or c >= len(self._inject_seq):
+                    raise RuntimeError("trust-gate cache fork: unexpected extra model call (fail closed)")
+                p = self._inject_seq[c][i]
+                if p.shape[:2] != h.shape[:2]:
+                    raise RuntimeError(f"trust-gate cache fork: injection {tuple(p.shape[:2])} != block output "
+                                       f"{tuple(h.shape[:2])} (fail closed)")
+            else:
+                p = self._inject[i]
             if p is None:
                 return None
             h2 = h + self.bridges[i](p.to(h.dtype))
@@ -266,9 +286,16 @@ class TrustGatedBackbone(HiddenStateBackbone):
         if max((len(s) for s in trusted_ids), default=0) == 0:
             zero = torch.zeros(ids.shape + (super().d_model,), device=dev)
             return [zero] * n_layers, zero
-        nonempty = [s if s else [self.pad_id] for s in trusted_ids]
+        # Rows with IDENTICAL trusted id lists (e.g. the K option forks of one row under ``provenance``: the option
+        # ids are data, so every fork has the same trusted subsequence) run once and are broadcast. Which rows are
+        # merged is a function of the trusted lists only, so G15 invariance is unchanged; with no duplicates the
+        # batch is exactly the old one.
+        uniq: dict[tuple, int] = {}
+        index = [uniq.setdefault(tuple(s), len(uniq)) for s in trusted_ids]
+        ulists = [list(u) for u in uniq]
+        nonempty = [s if s else [self.pad_id] for s in ulists]
         cids, cmask = pad_batch(nonempty, self.pad_id, device=dev)
-        for b, s in enumerate(trusted_ids):
+        for b, s in enumerate(ulists):
             if not s:
                 cmask[b, 0] = False
         self.tokens_processed += int(cmask.sum())
@@ -277,8 +304,14 @@ class TrustGatedBackbone(HiddenStateBackbone):
             final = self._run(cids, cmask)
         finally:
             self._mode = None
-        self.last_protected_compact = {"trusted_ids": trusted_ids, "layers": list(self._rec), "final": final}
-        layers = [carry(self._rec[i], cnt) for i in range(n_layers)]
+        rec = list(self._rec)
+        if len(ulists) != len(trusted_ids):
+            sel = torch.tensor(index, dtype=torch.long, device=dev)
+            rec = [x.index_select(0, sel) for x in rec]
+            final = final.index_select(0, sel)
+        self.p_rows_deduplicated += len(trusted_ids) - len(ulists)
+        self.last_protected_compact = {"trusted_ids": trusted_ids, "layers": rec, "final": final}
+        layers = [carry(rec[i], cnt) for i in range(n_layers)]
         self._rec = [None] * n_layers
         return layers, carry(final, cnt)
 
@@ -310,13 +343,60 @@ class TrustGatedBackbone(HiddenStateBackbone):
     def forward(self, input_ids, attention_mask=None, trust=None):  # pragma: no cover - alias
         return self.features(input_ids, attention_mask, trust)
 
+    def fork_streams(self, prefix: Sequence[int], conts: Sequence[Sequence[int]], trust: Sequence[bool],
+                     cont_trust: Sequence[Sequence[bool]], p_cache: dict | None = None):
+        """Two-stream CACHE fork: ``(h_D prefix [T, d], h_P fork [K, d], h_D fork [K, d])``.
+
+        P runs on the K full sequences ``prefix + cont_k`` exactly as the recompute fork does (so the protected
+        features, and G15, are those of the recompute path; identical trusted lists run once). The D stream runs
+        the prefix ONCE, copies its recurrent state K times (the base backbone's cache fork) and extends each
+        copy by its continuation, with the P -> D bridges injecting the carried P features at every position of
+        both calls. Equal to the recompute fork up to float rounding (tested); D costs T + sum|cont_k| tokens
+        instead of K (T + |cont|)."""
+        if trust is None or cont_trust is None:
+            raise ValueError("fork_streams needs trust labels for the prefix and every continuation")
+        self._check_no_checkpointing()
+        dev = self.device
+        n, k = len(prefix), len(conts)
+        seqs = [list(prefix) + list(c) for c in conts]
+        trs = [list(trust) + list(ct) for ct in cont_trust]
+        ids, mask = pad_batch(seqs, self.pad_id, device=dev)
+        tmask, _ = pad_batch([[int(x) for x in t] for t in trs], 0, device=dev)
+        p_layers, p_final = self.protected_stream(ids, mask.bool(), tmask.bool(), p_cache)
+        self.last_protected, self.last_protected_final = p_layers, p_final
+        last = mask.sum(-1) - 1
+        hP = p_final[torch.arange(k, device=dev), last]
+        if self.readout == "protected":
+            return p_final[0, :n], hP, hP
+        self._inject_seq = [[pl[:1, :n] for pl in p_layers], [pl[:, n:] for pl in p_layers]]
+        self._calls = [0] * len(self._blocks)
+        self._mode = "inject_seq"
+        self.tokens_processed += n + sum(len(c) for c in conts)
+        try:
+            hpre, hD = HiddenStateBackbone.fork_features(self, prefix, conts)
+            if any(c != 2 for c in self._calls):
+                raise RuntimeError(f"trust-gate cache fork expects one prefix call and one continuation call per "
+                                   f"layer, got {self._calls} (this backbone's fork path is not supported)")
+        finally:
+            self._mode = None
+            self._inject_seq = None
+        return hpre, hP, hD
+
     def fork_features(self, prefix: Sequence[int], conts: Sequence[Sequence[int]], trust: Sequence[bool] | None = None,
                       cont_trust: Sequence[Sequence[bool]] | None = None):
-        """Fork by recompute. ``trust`` labels the prefix and ``cont_trust`` each continuation (both required:
-        option ids are data under the provenance/caller policies). ``fork_mode`` is ignored: the two-stream
-        cache fork is not implemented, and recompute is exact."""
+        """Fork. ``trust`` labels the prefix and ``cont_trust`` each continuation (both required: option ids are
+        data under the provenance/caller policies). ``stream_fork="recompute"`` (default): K full rows, exact.
+        ``stream_fork="cache"`` AND ``fork_mode="cache"``: ``fork_streams`` (one D prefix pass + K state copies), so
+        ``run_cell``'s smoke stage (which toggles ``fork_mode``) still compares the cache fork against recompute."""
         if trust is None or cont_trust is None:
             raise ValueError("fork_features needs trust labels for the prefix and every continuation")
+        if self.stream_fork == "cache" and self.fork_mode == "cache":
+            hpre, hP, hD = self.fork_streams(prefix, conts, trust, cont_trust)
+            if self.readout == "concat":
+                n = len(prefix)
+                return (torch.cat([hpre, self.last_protected_final[0, :n].to(hpre.dtype)], -1),
+                        torch.cat([hD, hP.to(hD.dtype)], -1))
+            return hpre, hD
         tr = list(trust)
         seqs = [list(prefix)] + [list(prefix) + list(c) for c in conts]
         trs = [tr] + [tr + list(ct) for ct in cont_trust]
@@ -329,12 +409,12 @@ class TrustGatedBackbone(HiddenStateBackbone):
 
 def wrap(backbone: HiddenStateBackbone, cfg: dict | None) -> HiddenStateBackbone:
     """Config-flag entry point (train/ and safety_eval): ``{"trust_gate": true, "bridge_rank": 8,
-    "readout": "decision", "trust_policy": "provenance"}``; anything falsy returns the backbone unchanged."""
+    "readout": "decision", "trust_policy": "provenance", "stream_fork": "recompute" | "cache"}``; anything falsy returns the backbone unchanged."""
     if not cfg or not cfg.get("trust_gate"):
         return backbone
     return TrustGatedBackbone(backbone, bridge_rank=int(cfg.get("bridge_rank", 8)),
                               readout=cfg.get("readout", "decision"), trust_policy=cfg.get("trust_policy", DEFAULT_POLICY),
-                              seed=int(cfg.get("seed", 0)))
+                              seed=int(cfg.get("seed", 0)), stream_fork=cfg.get("stream_fork", "recompute"))
 
 
 # ----------------------------------------------------------------------------------- checks and costs
