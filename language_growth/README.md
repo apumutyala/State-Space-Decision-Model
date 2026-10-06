@@ -34,6 +34,17 @@ Loading a saved head requires the identical parent and encoder again. This
 prototype does not load checkpoints or depend on the separate FLA-to-native
 CPU conversion workstream, and no pretrained capability is claimed.
 
+After PR #71's strict CPU loader returns `plugin, parent, evidence`, use
+`encode = rwkv_cpu_parent_encoder(plugin)` from the same module. This wrapper
+delegates to that exact loaded World encoder and supplies `identity()` with
+its model/snapshot, full weight/config/tokenizer/implementation hashes and
+no-control-token encoding policy. It refuses missing pins or a different
+encoder contract; changing the source plugin later cannot replace the captured
+callable or identity. Pass `encode` into `rwkv_decision_backend`. This adds no
+loading or fallback path. Serving a trained artifact still requires PR #79's
+strict artifact, complete revision, calibration and runtime pins; a newly
+initialized head is not a reconstructed trained artifact.
+
 The native bridge tests run with `python -m pytest
 language_growth/tests/test_rwkv_decision_head.py -q`. They cover actual tiny
 RWKV hidden states, all four attention-free head gradients, an unchanged

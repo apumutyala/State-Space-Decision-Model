@@ -1,0 +1,34 @@
+{
+  "scope": "Bounded encoder interface completion only; no model load or forward",
+  "base_commit": "c4369c70ab6933df529231d377ed143715baf21c",
+  "read_only_references": {
+    "pr71_loader_worktree_head": "14aa0daa486804ca82bf332dd0469717cc7a040b",
+    "pr71_files": ["language_growth/rwkv7_cpu_parent.py", "decide/rwkv_world_tokenizer.py"],
+    "pr79_contract_worktree_head": "ffba0b9ad600adaa06d5998dcfa6adc9655c9565",
+    "pr79_file": "language_growth/native_parent.py",
+    "access": "Local read-only source inspection authorized by coordinator; no fetch or unmerged runtime import"
+  },
+  "identity_source": {
+    "snapshot_and_model": "Strict CPU loader ModelPlugin.model_id and snapshot",
+    "hashes": "Strict CPU loader ModelPlugin.files: weights, config, tokenizer, code; all complete lowercase SHA256 values",
+    "implementation_digest": "Loader code pin combines vendored implementation and local loader/tokenizer source hashes",
+    "encoding_policy": "rwkv-world-greedy (no control tokens), empty special_ids",
+    "binding": "track-l-rwkv-cpu-plugin-encoder-v1",
+    "semantics": "Exact loader encoder callable captured without alteration; trusted argument preserved; identity deep-copied on access",
+    "trust_boundary": "Wrapper records the verified loader result; it does not verify or reconstruct checkpoint artifacts"
+  },
+  "validation": {
+    "command": "../.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_rwkv_cpu_encoder_identity.py -q",
+    "environment": {"CUDA_VISIBLE_DEVICES": "-1", "HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1", "HF_DATASETS_OFFLINE": "1"},
+    "result": "27 passed in 1.38s",
+    "model_construction_load_or_forward": false,
+    "checks": ["Exact callable/argument delegation", "Complete stable identity", "Source and returned-identity mutation isolation", "Missing/malformed hash refusal", "Wrong family/device/dtype/encoding/snapshot refusal"]
+  },
+  "contract_changes": {
+    "track_d": false,
+    "pr79_artifact_revision_calibration_runtime_pins": "Unchanged; still required for trained-artifact serving",
+    "new_loader_or_fallback": false
+  },
+  "restrictions": {"network": false, "gpu": false, "paid_compute": false, "push": false, "pull_request": false},
+  "next_step": "After branch review, pass the already strictly loaded PR71 plugin through rwkv_cpu_parent_encoder and use it with the native-head constructor. Trained checkpoint serving must still use strict reconstruction and PR79 independent pins."
+}

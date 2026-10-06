@@ -22,6 +22,43 @@ from heads.layout import EncodeFn
 from heads.model import DecisionModel
 
 
+def rwkv_cpu_parent_encoder(plugin) -> EncodeFn:
+    """Bind PR #71's verified CPU plugin encoder to D's encoder identity API.
+
+    Call only after the strict CPU loader succeeds. Its ``files`` pins come
+    from verified snapshot bytes and include the local implementation digest.
+    The wrapper captures that exact callable and copies the identity; edits to
+    the plugin or returned identity cannot silently select another encoder.
+    This records loader provenance, not a new artifact verification path.
+    """
+    from decide.backends.hf_readout import ModelPlugin
+
+    if not isinstance(plugin, ModelPlugin) or (plugin.family, plugin.device, plugin.dtype) != (
+            "rwkv7", "cpu", "float32"):
+        raise ValueError("requires the verified native RWKV CPU loader plugin")
+    if (plugin.untrusted_encoder_id != "rwkv-world-greedy (no control tokens)"
+            or plugin.special_ids or not callable(plugin.encode)):
+        raise ValueError("requires the loader's no-control-token World encoder")
+    if (not isinstance(plugin.model_id, str) or not plugin.model_id
+            or not isinstance(plugin.snapshot, str) or not plugin.snapshot):
+        raise ValueError("encoder source must identify model and snapshot")
+    pins = {role: plugin.files.get(role) for role in ("weights", "config", "tokenizer", "code")}
+    if any(not isinstance(pin, str) or len(pin) != 64
+           or any(c not in "0123456789abcdef" for c in pin) for pin in pins.values()):
+        raise ValueError("encoder source requires complete SHA256 loader pins")
+    identity = {"kind": "rwkv-world-greedy", "binding": "track-l-rwkv-cpu-plugin-encoder-v1",
+                "model_id": plugin.model_id, "snapshot": plugin.snapshot,
+                "files_sha256": pins, "untrusted_encoding": plugin.untrusted_encoder_id,
+                "special_ids": []}
+    parent_encode = plugin.encode
+
+    def encode(text: str, trusted: bool = True) -> list[int]:
+        return parent_encode(text, trusted)
+
+    encode.identity = lambda: deepcopy(identity)  # type: ignore[attr-defined]
+    return encode
+
+
 def rwkv_decision_backend(parent, encode: EncodeFn, *, source_identity: dict[str, Any],
                           head: str = "snapshot", head_kwargs: dict | None = None,
                           seed: int = 0, template: str = "jrt-rwkv-g1-v1",
