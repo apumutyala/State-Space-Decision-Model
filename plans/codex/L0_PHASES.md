@@ -10,6 +10,7 @@
 | L0b Semantic kernel | Exact typed operations can reject unsupported relations and unauthorized dependencies without changing the model's proposed answer | Immutable semantic types, interpreter, release validator | Unit and adversarial tests, actual fixture conformance, CPU receipt bound to source and data hashes; reviewed kernel PR | Supply checked meanings to a renderer |
 | L0c Deterministic language | Licensed productions preserve checked entities, relations, units, time and speech acts | Plain-text renderer and grammar fixtures | Positive/negative binding, hostile-string, stale-release and no-bypass tests; receipt and reviewed renderer PR | Render useful L0 answers; add a production only when its semantics is tested |
 | L0d Oracle and replay | A deterministic provider can exercise the adapter without masquerading as learned capability | Oracle/replay backends, strict complete-request identity and typed probability serialization | Noul/choice/score parity, option support, stage separation and changed-request rejection tests; reviewed backend PR | Integrate Track D's m0 replay fixture and decide adapter |
+| L0d2 Typed planner | The same parent can select operations and arguments through typed choices without a host oracle selecting the task answer | Bounded two-stage operation/argument planner and a Track L serialization bridge | CPU fake/oracle/replay traces show actual chosen slots, no gold-label inputs, complete call accounting, typed failures and no unchecked prose; later D fixture compatibility | Run actual parent semantic planning once qualification is permitted |
 | L0e Joint fixtures and measurement | Kernel, provider and task errors can be distinguished in per-case evidence | Versioned fixture pack, evaluator, decision-only mappings and raw reports | Independently recomputed observed/expected outcomes, stable hashes, explicit authored-label status; reviewed fixture/evaluator PR | Freeze the CPU conformance baseline and a separate future model-audit split |
 | L0f Adversarial integration | The composed implementation preserves its stated boundary under malformed programs and source/state changes | Independent Track L review and regression cases | Reviewer replays all CPU commands; no unresolved blocking finding; tests and receipts merged on agent-main | Propose hardware qualification; no learned claim yet |
 | L0g Hardware qualification | The actual parent adapter loads and produces the pinned protocol within a measured budget | One real-hardware smoke run, memory/latency and parent revision receipt | All prerequisite CPU proofs merged; Claude acknowledges a spend issue with estimate <= $20 and stop condition; planned ledger row; qualified run receipt later reviewed/merged | Price and define one capped learned-language experiment |
@@ -26,7 +27,7 @@ At every semantic level L0 through L4, the standing GOAL.md requires useful-answ
 
 The order is **$0 local CPU -> <= $20 real-hardware qualification -> capped experiment -> scale-up**. Climb a rung only after the preceding rung's proof is merged on agent-main and Claude has acknowledged a spend issue containing the estimate and stop condition. Record every planned paid job in LEDGER.md before launch. The joint $75 setup issue does not automatically authorize every later job or an external API bill.
 
-The shared envelope is $75 joint gate / $250 System 1 / $100 language / $100 reserve. Qualification counts within the agreed ledger allocation; it is not an extra $20. No paid compute, purchase, top-up or GPU model run occurs in L0.
+The shared envelope is $75 joint gate / $250 System 1 / $100 language / $100 reserve. Qualification counts within the agreed ledger allocation; it is not an extra $20. No paid compute, purchase, top-up or GPU model run occurs in the CPU prerequisites L0a–L0f. L0g and later paid work require the spend gates above.
 
 ## Parallel tasks and worktrees
 
@@ -35,7 +36,9 @@ All worktrees use the exact path prefix `C:/Users/apumu/research/CHLabs/`:
 - `ssdm-codex-l0`, branch `codex/l0-semantic-kernel`: types/interpreter and kernel tests.
 - `ssdm-codex-l0-renderer`, branch `codex/l0-renderer`: deterministic renderer/grammar and tests.
 - `ssdm-codex-l0-backends`, branch `codex/l0-backends`: oracle/replay adapter and tests.
+- `ssdm-codex-l0-planner`, branch `codex/l0-planner`: typed parent operation/argument selection and transport bridge.
 - `ssdm-codex-l0-fixtures`, branch `codex/l0-fixtures`: fixture pack, evaluator and independent recomputation.
+- `ssdm-codex-l0-evaluation`, branch `codex/l0-evaluation`: observed runtime evaluation after the fixture pack is frozen.
 - `ssdm-codex-l0-adversarial`, branch `codex/l0-adversarial`: independent review/regression tests only.
 
 Start each task branch from agent-main. If it needs an unmerged Track L dependency, record that dependency explicitly, keep its commits distinct, and rebase on agent-main before its PR is finalized. Never switch Claude's working checkout or broadly stage another worktree's drafts. Each task has its own branch; a single agent may service independent branches sequentially when concurrency slots are full.
