@@ -143,7 +143,8 @@ def main():
             dump(args.out / f"{arm}-calls.json", backend.predictions)
             result["free_running"] = {key: report[key] for key in ("total", "task_correct", "kernel_accepted")}
             result["failure_reasons"] = {reason: sum(row["reason"] == reason for row in report["observations"])
-                                        for reason in sorted({str(row["reason"]) for row in report["observations"]})}
+                                        for reason in sorted({row["reason"] for row in report["observations"]
+                                                              if row["reason"] is not None})}
         print(json.dumps({"arm": arm, **result}), flush=True)
         return result
 
