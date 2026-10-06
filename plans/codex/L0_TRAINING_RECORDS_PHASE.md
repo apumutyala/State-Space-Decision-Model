@@ -8,3 +8,7 @@ Phase L0d3, 2026-10-06; follows the typed planner and development generator. CPU
 - Decision unlocked: use the shared trainer for bounded supervised language adaptation after the frozen-parent probe, hardware qualification and separately acknowledged spend gate. Export success does not establish learning, retention, task capability or causal interpretation.
 
 No Index or held-out data, weights, GPU, paid execution or new training framework is needed. Full L0–L4 goal gates remain unchanged.
+
+## Bounded CPU optimizer-to-planner check
+
+Before a paid adaptation, test the same exported slots through Track D's existing Trainer and DecisionModelBackend using its tiny randomly initialized recurrent test backbone. One optimizer step, one synthetic development task and one separate synthetic validation task, two CPU threads, no downloaded checkpoint and no CUDA. Exit proof: finite loss, changed trainable parameters, and real head decisions reaching the semantic planner without a transport failure. This unlocks an executable adaptation path, not a learned L0 gate or a claim about a qualified Track D checkpoint. Keep all decisions and failures in the test output; do not tune this tiny model for a score.
