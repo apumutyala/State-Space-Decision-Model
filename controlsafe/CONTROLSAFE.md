@@ -62,10 +62,24 @@ The review proposed a radius of `μ/L` with `L = max‖a_k‖`. It is **not soun
 
 **Scope.** Untrusted text can still steer the decision within E's box. That steering is bounded, logged (r·K numbers per decision), and either certified or escalated.
 
+**Training arm.** `head: "g16"` in `TrainConfig` / `run_cell` (needs `controlsafe.trust_gate`, readout `decision`). `DecisionModel` routes rows to `G16DecisionHead.forward_rows`. The judge, evidence channel, LoRA and P→D bridges train with the usual losses; the decision is `softmax(logit)` for every question type. `head_kwargs`: `r`, `c` (evidence bound, default 1.0), `stream_mode` (`cache` by default). `stream_mode: cache` uses `TrustGatedBackbone.fork_streams`: one D prefix pass plus K state copies, with P run once per distinct trusted subsequence. It equals recompute up to float rounding, and P is bitwise identical. Tests: `tests/controlsafe/test_g16_train.py`.
+
+**Training-time scope.** (a)–(e) hold for the activations of any fixed weights, before and after training (tested). During training, the losses read untrusted training text through E. The gradients that reach the judge (A, w, u, β), the shared LoRA and the P→D bridges therefore depend on untrusted training tokens. The judge's and P's functions are shaped by untrusted training data; that is G6/G12 territory, as for G15.
+
+- **c ablation:** `python -m train.g16_card sweep`.
+- **Eval card:** `card["g16"]` holds served certificate stats. `run_cell` runs `certify` on the safety_eval DEV requests once, after training, into `cell["train"]["g16_safety_eval"]` with its wall-clock. It stays outside `max_minutes`, so the pair keeps step parity.
+- **Decide backend:**
+  - The veto source is only the validated envelope field `ssdm.policy_restriction`. A top-level `request["policy"]` is ignored; review B1 showed it was read before.
+  - The backend returns the unvetoed logits `b + a·E`. `raw` and `served` are therefore the model's distribution over every option, and `policy_masking: none` is true.
+  - The adapter emits the restriction as `policy_conditioned_probabilities` (stage `present`).
+  - For G16, that stage is the vetoed decision by construction. `softmax` of `b + a·E` restricted to the allowed set equals the served distribution conditioned on it: exactly at T = 1, and in argmax under a served temperature. G2(d) holds: served is never replaced.
+  - The certificate is computed with the veto. Its fields go to `diagnostics.backend["g16"]`: `vetoed`, `veto_source`, `decision_stage`, `unvetoed_logits`, radii and independence. The full G4-over-E record is added with `g16_certify_k`.
+- **Capability cost:** `train.g16_card compare` on the paired cells `jobs/m2_pilot/m2_pilot_cell_g16{,_base}.json`. Compare at matched steps only.
+- **Memory:** for rwkv7-13.3b gated arms, the estimate at rank 64 and T = 2048 is about 70–72 GB against 76 GB usable, which is tight. The ladder may give the two arms different `T_max`. That fails closed (`identical_items: False`); rerun both at the smaller T.
+
 **Not done yet:**
-- G16 as a `train/` head arm.
 - Snapshot reuse of the D stream inside G4-over-E.
-- The capability cost against the D-head arm, `trust_gate.capability_cost` plus `harness.bootstrap.compare` (needs a trained run).
+- A measured capability cost (the pair is configured but not run). `m2_job.sh` does not select the pair cells yet.
 
 **Arm result.** On 10 dev requests, with a random judge and every origin verified: k=1 evaluates 36 origins and k=2 evaluates 64. The P stream is computed once per request with 0 cache misses. The independence rate is 0 with random weights, so it says nothing about trained heads.
 
@@ -127,7 +141,7 @@ The previously quoted "AUROC 0.96 / 0.91" was seed 0, the best of the seeds trie
 
 | Row | What controlsafe adds | Tier |
 |---|---|---|
-| G2 | G15 and G16 carry host-declared provenance (G2(c)) into the model as non-learned gates. The G16 veto enforces G2(a)'s host allowed set inside the decision function. | STRUCTURAL |
+| G2 | G15 and G16 carry host-declared provenance (G2(c)) into the model as non-learned gates. The G16 veto enforces G2(a)'s host allowed set (on the decide path: the validated `ssdm.policy_restriction` only) inside the decision function. That decision is the adapter's policy-conditioned stage, and served stays unvetoed (G2(d)). | STRUCTURAL |
 | G4 | Snapshot reuse (cost), G16 independence (zero recompute) and G4-over-E | CERTIFIED (unchanged), cost EMPIRICAL |
 | G9 | Influence curves and Gramians: EMPIRICAL (b). Exact zero-dependence of P and of `a`, `b`: STRUCTURAL. | mixed |
 | G14 | Telemetry plus synthetic test (weak, unvalidated). P immune by construction. | EMPIRICAL / STRUCTURAL (P only) |
@@ -141,3 +155,5 @@ The previously quoted "AUROC 0.96 / 0.91" was seed 0, the best of the seeds trie
   - `python -m safety_eval.controlsafe_arms --out DIR [--arms g15,persistence,gramian,g4snap,g14,g16]`
   - `run_guarantees_smoke --controlsafe all`
 - **Receipt:** `receipts/2026-10-06-D-controlsafe-cpu/controlsafe.json`.
+
+**G16 execution contract (PR #61 review, N7/N8).** The G16 veto binds the **policy-conditioned stage** (`ssdm` envelope `policy_restriction` → conditioned probabilities and the certificate's decision). It does not bind the legacy top-level `answers` field, which reports the unvetoed served distribution. The `answers` choice can therefore be a vetoed option. Hosts must execute the conditioned stage (the G2(d) "host re-masks" contract, as `safety_eval`'s bridge already does) and fail closed when it is absent. If the allowed set has zero served mass, the adapter fails closed (`unavailable_zero_served_mass`). Any certificate decision reported alongside such a response is not executable.

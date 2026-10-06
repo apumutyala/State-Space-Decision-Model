@@ -39,8 +39,20 @@ canonical order and the allowed set, as host structure):
 Scope: E is computed from the D stream, so it can still be steered within its box by untrusted text. The
 guarantee is that steering is bounded, logged (``E`` is r*K numbers per decision) and certified-or-escalated,
 not that it is impossible. The capability cost against the D-head arm is ``trust_gate.capability_cost``.
-Training: ``log_probs`` gives a loss-ready output. A ``train/`` head arm is not wired yet. Snapshot reuse of
-the D stream inside G4-over-E is not implemented (each origin's D stream is recomputed; P is not).
+Training-time scope (as for G15): (a)-(e) are statements about the activations of a FIXED set of weights. During
+training the losses read untrusted training text through E, so the gradients reaching the judge (A, w, u, beta),
+the shared LoRA and the P -> D bridges depend on untrusted training tokens: the judge's and P's FUNCTIONS are
+shaped by untrusted training data (data poisoning is G6/G12 territory). What training cannot do is make a, b or m
+read untrusted tokens at inference: that holds for every weight setting, before and after training (tested).
+
+Training: ``G16DecisionHead`` is the ``train/`` head arm (``TrainConfig(head="g16")`` over a trust-gated backbone,
+``DecisionModel`` dispatches rows to ``forward_rows``). The decision is ``softmax(logit)`` for EVERY question type:
+the cumulative-link ordinal output of the other heads would be a second decision function outside the certificate,
+so it is not used (losses, incl. RPS on score questions, read these log-probabilities). ``stream_mode="cache"``
+computes the two streams with ``TrustGatedBackbone.fork_streams`` (one D prefix pass + K state copies; P once per
+distinct trusted subsequence) instead of K full recomputes; both modes give the same decision function up to float
+rounding, and ``certify`` uses whichever the head was built with. Snapshot reuse of the D stream inside G4-over-E is
+not implemented (each origin's D stream is recomputed; P is not).
 """
 from __future__ import annotations
 
@@ -55,6 +67,7 @@ from heads.backbone import pad_batch
 from .trust_gate import TrustGatedBackbone, continuation_trust, row_trust
 
 GUARANTEE_ID = "ssdm.g16.protected_judge_bounded_evidence.v1"
+STREAM_MODES = ("recompute", "cache")
 
 
 class EvidenceChannel(nn.Module):
@@ -84,8 +97,11 @@ class G16Output:
 
 class G16Head(nn.Module):
     def __init__(self, gated: TrustGatedBackbone, r: int = 8, c: float = 1.0, max_options: int = 256,
-                 p_gate: bool = False, seed: int = 0) -> None:
+                 p_gate: bool = False, seed: int = 0, stream_mode: str = "recompute") -> None:
         super().__init__()
+        if stream_mode not in STREAM_MODES:
+            raise ValueError(f"stream_mode must be one of {STREAM_MODES}, got {stream_mode!r}")
+        self.stream_mode = stream_mode
         if gated.readout != "decision":
             raise ValueError("G16 needs the gated backbone's D stream (readout='decision')")
         self.gated = gated
@@ -112,6 +128,11 @@ class G16Head(nn.Module):
 
     def streams(self, row, p_cache: dict | None = None) -> tuple[torch.Tensor, torch.Tensor]:
         """(h_P [K, d], h_D [K, d]) at the end of each option continuation."""
+        if self.stream_mode == "cache":
+            pol = self.gated.trust_policy
+            ctr = [continuation_trust(row, k, pol) for k in range(len(row.continuations))]
+            _, hP, hD = self.gated.fork_streams(row.ids, row.continuations, row_trust(row, pol), ctr, p_cache=p_cache)
+            return hP.float(), hD.float()
         ids, mask, trust = self._batch(row, self.gated.trust_policy)
         hD = self.gated.features(ids, mask, trust, p_cache=p_cache)
         hP = self.gated.last_protected_final
@@ -151,13 +172,155 @@ class G16Head(nn.Module):
         return torch.log_softmax(out.logits, dim=-1)
 
 
-def host_allowed_mask(request: dict, qid: str, option_ids: Sequence[str]) -> torch.Tensor:
-    """Host allowed set (``request["policy"]["allowed"][qid]``; absent -> all allowed), in row order."""
+def host_allowed_ids(request: dict, qid: str) -> set[str] | None:
+    """Host allowed set for ``qid``: ``request["policy"]["allowed"][qid]`` (safety_eval shape) and/or the decide
+    envelope's ``request["ssdm"]["policy_restriction"][qid]`` (host-only, validated by the adapter); both present
+    -> their intersection; neither -> None (all allowed)."""
+    sets = []
     pol = ((request.get("policy") or {}).get("allowed") or {})
-    if qid not in pol:
+    if qid in pol:
+        sets.append(set(pol[qid]))
+    env = request.get("ssdm") if isinstance(request.get("ssdm"), dict) else {}
+    res = env.get("policy_restriction") or {}
+    if isinstance(res, dict) and qid in res:
+        sets.append(set(res[qid]))
+    if not sets:
+        return None
+    return set.intersection(*sets)
+
+
+def envelope_allowed_ids(request: dict, qid: str) -> set[str] | None:
+    """The decide-wire veto source: ONLY the validated envelope field ``request["ssdm"]["policy_restriction"][qid]``
+    (``decide.adapter._restriction`` checks qids, non-empty subsets, no duplicates before the backend runs). A
+    top-level ``request["policy"]`` is not an envelope field and is never read on the decide path (G2(a))."""
+    env = request.get("ssdm") if isinstance(request.get("ssdm"), dict) else {}
+    res = env.get("policy_restriction") or {}
+    if isinstance(res, dict) and qid in res:
+        return set(res[qid])
+    return None
+
+
+def host_allowed_mask(request: dict, qid: str, option_ids: Sequence[str],
+                      allowed_ids: Callable[[dict, str], set[str] | None] | None = None) -> torch.Tensor:
+    """Host allowed set (``allowed_ids``, default ``host_allowed_ids``; absent -> all allowed), in row order."""
+    ok = (allowed_ids or host_allowed_ids)(request, qid)
+    if ok is None:
         return torch.ones(len(option_ids), dtype=torch.bool)
-    ok = set(pol[qid])
     return torch.tensor([o in ok for o in option_ids], dtype=torch.bool)
+
+
+def attach_host_allowed(row, request: dict) -> None:
+    """Stamp the host allowed set on a ``LayoutRow`` (``row.meta["host_allowed"]``), read by ``forward_rows``."""
+    ok = host_allowed_ids(request, row.qid)
+    row.meta["host_allowed"] = None if ok is None else sorted(ok)
+
+
+def row_allowed_mask(row) -> torch.Tensor:
+    ok = (getattr(row, "meta", {}) or {}).get("host_allowed")
+    if ok is None:
+        return torch.ones(row.n_options, dtype=torch.bool)
+    ok = set(ok)
+    return torch.tensor([o in ok for o in row.option_ids], dtype=torch.bool)
+
+
+class G16DecisionHead(G16Head):
+    """G16 as a ``train/`` head arm (``DecisionModel(gated_backbone, "g16", head_kwargs)``).
+
+    ``forward_rows(rows)`` returns per-option logits ``[B, Kmax]`` (``-inf`` on vetoed and padded options); the
+    per-row ``G16Output`` (a, b, E, allowed) of the last call is kept in ``last_outputs`` for the certificate fields.
+    The gated backbone is the DecisionModel's own backbone (shared, not copied): ``DecisionModel.head_parameters``
+    excludes its parameters, which train in the LoRA group (LoRA + P -> D bridges)."""
+
+    name = "g16"
+    attention_free = True
+    needs_fork = False
+    wants_rows = True
+
+    def __init__(self, gated: TrustGatedBackbone, r: int = 8, c: float = 1.0, max_options: int = 256,
+                 p_gate: bool = False, seed: int = 0, stream_mode: str = "cache") -> None:
+        super().__init__(gated, r=r, c=c, max_options=max_options, p_gate=p_gate, seed=seed, stream_mode=stream_mode)
+        self.config = {"r": r, "c": float(c), "max_options": max_options, "p_gate": p_gate, "stream_mode": stream_mode}
+        self.last_outputs: list[G16Output] = []
+
+    def own_parameters(self) -> list[nn.Parameter]:
+        bb = {id(p) for p in self.gated.parameters()}
+        return [p for p in self.parameters() if id(p) not in bb]
+
+    def n_params(self) -> int:
+        return sum(p.numel() for p in self.own_parameters())
+
+    def forward_rows(self, rows) -> Any:
+        from heads.heads import HeadOutput
+
+        outs = []
+        for row in rows:
+            hP, hD = self.streams(row)
+            a, b, allowed = self.judge(hP, row_allowed_mask(row))
+            E = self.evidence(hD)
+            logits = self.combine(a, b, E, allowed)
+            outs.append(G16Output(logits, E, a, b, allowed, int(torch.argmax(logits))))
+        self.last_outputs = outs
+        kmax = max(len(o.logits) for o in outs)
+        z = torch.stack([torch.cat([o.logits, o.logits.new_full((kmax - len(o.logits),), float("-inf"))])
+                         for o in outs])
+        return HeadOutput(z)
+
+    def certificate(self, i: int = 0, allowed: torch.Tensor | None = None) -> dict[str, Any]:
+        """Per-decision certificate fields of row ``i`` of the last ``forward_rows`` (no recompute). ``allowed``
+        (bool [K]) applies a host veto on top of the forward's own mask: the vetoed decision is the argmax of the
+        same ``b + a.E`` over the allowed options, i.e. the argmax of the softmax conditioned on the allowed set."""
+        o = self.last_outputs[i]
+        m = o.allowed if allowed is None else (o.allowed & allowed.bool().to(o.allowed.device))
+        if not bool(m.any()):
+            raise ValueError("no allowed option (host allowed set AND forward mask is empty)")
+        logits = self.combine(o.a, o.b, o.E, m)
+        rad = radii(o.a, logits, m)
+        return {"schema": GUARANTEE_ID, **rad, "independent_of_untrusted": independent_of_untrusted(
+                    o.a, o.b, m, self.evidence.c),
+                "radius_covers_box": radius_covers_box(rad["rho_joint_l2"], o.E, m, self.evidence.c),
+                "c": self.evidence.c, "E": o.E.tolist(), "allowed_mask": m.tolist(),
+                "unvetoed_logits": self.combine(o.a, o.b, o.E, o.allowed).tolist()}
+
+    def cost(self, T: int, K: int, trusted_frac: float = 0.5, cont_len: int = 8) -> dict:
+        d, r = self.A.in_features, self.A.out_features
+        return {"flops": 2 * K * (2 * d * r + d) + 2 * K * r, "accumulator_scalars": K * (2 * r + 1),
+                "attention_free": True, "streaming_implemented": False,
+                "backbone_tokens_per_row": (1 + trusted_frac) * T + K * cont_len if self.stream_mode == "cache"
+                else K * (1 + trusted_frac) * (T + cont_len),
+                "note": "two streams: D over all T tokens + P over the trusted ones (trusted_frac assumed)"}
+
+
+def radius_covers_box(rho_joint: float, E: torch.Tensor, allowed: torch.Tensor, c: float) -> bool:
+    """Sound radius certificate against ANY untrusted text: the joint radius exceeds the largest L2 distance from
+    E to any point of the box ``[-c, c]^{K x r}`` (restricted to allowed options; vetoed ones never matter)."""
+    Ed = E.double()[allowed.bool()]
+    far = torch.maximum((c - Ed).abs(), (c + Ed).abs())
+    return bool(rho_joint > float(far.pow(2).sum().sqrt()))
+
+
+def certificate_summary(records: Sequence[dict]) -> dict[str, Any]:
+    """Eval-card stats over ``certify`` records: certified vs escalated, by reason, radii, independence, cost."""
+    import collections
+    import statistics
+
+    n = len(records)
+    if n == 0:
+        return {"n": 0}
+    fin = [x["rho_joint_l2"] for x in records if x.get("rho_joint_l2") is not None and x["rho_joint_l2"] != float("inf")]
+    fo = [x["rho_per_option_l2"] for x in records if x.get("rho_per_option_l2") not in (None, float("inf"))]
+    cert = sum(bool(x.get("certified")) for x in records)
+    return {"n": n, "certified_rate": cert / n, "escalated_rate": 1 - cert / n,
+            "independence_rate": sum(bool(x.get("independent_of_untrusted")) for x in records) / n,
+            "radius_covers_box_rate": sum(bool(x.get("radius_covers_box")) for x in records) / n,
+            "reasons": dict(collections.Counter(str(x.get("reason") or "g4_over_E_certified") for x in records)),
+            "rho_joint_l2_mean": statistics.fmean(fin) if fin else None,
+            "rho_joint_l2_median": statistics.median(fin) if fin else None,
+            "rho_per_option_l2_mean": statistics.fmean(fo) if fo else None,
+            "margin_mean": statistics.fmean([x["margin"] for x in records if x.get("margin") not in (None, float("inf"))])
+            if any(x.get("margin") not in (None, float("inf")) for x in records) else None,
+            "origins_evaluated": sum(x.get("n_origins_evaluated", 0) for x in records),
+            "p_cache_misses": sum(x.get("p_cache_misses", 0) for x in records),
+            "d_tokens": sum(x.get("d_tokens", 0) for x in records)}
 
 
 # ----------------------------------------------------------------------------------- certificates
@@ -195,7 +358,7 @@ def independent_of_untrusted(a: torch.Tensor, b: torch.Tensor, allowed: torch.Te
 
 @torch.no_grad()
 def certify(head: G16Head, request: dict, qid: str, k: int, build_row: Callable[[dict], Any],
-            verify: bool = False) -> dict[str, Any]:
+            verify: bool = False, allowed_ids: Callable[[dict, str], set[str] | None] | None = None) -> dict[str, Any]:
     """G16 decision + certificate for one request. ``build_row(request) -> LayoutRow`` is the real layout
     (``heads.layout.build_row(req, qid, encode)``). Origins come from ``safety_eval.certify`` (covered
     insertions, same segmenter/dedup). With ``verify`` every origin is ALSO run through the full G16 model
@@ -206,12 +369,17 @@ def certify(head: G16Head, request: dict, qid: str, k: int, build_row: Callable[
     row = build_row(request)
     hP, hD = head.streams(row)
     cache = gated.last_protected_compact
-    allowed_in = host_allowed_mask(request, qid, row.option_ids)
+    allowed_in = host_allowed_mask(request, qid, row.option_ids, allowed_ids)  # decide path: envelope_allowed_ids
     a, b, allowed = head.judge(hP, allowed_in)
     E = head.evidence(hD)
     logits = head.combine(a, b, E, allowed)
     rad = radii(a, logits, allowed)
     indep = independent_of_untrusted(a, b, allowed, head.evidence.c)
+    try:  # fail closed: anything that cannot be evaluated is not a radius certificate
+        cov = bool(torch.isfinite(E).all()) and radius_covers_box(rad["rho_joint_l2"], E, allowed, head.evidence.c)
+    except (KeyError, IndexError, RuntimeError, TypeError):
+        cov = False
+    rad = {**rad, "radius_covers_box": cov}
     rec: dict[str, Any] = {"schema": GUARANTEE_ID, **rad, "decision_index": rad["decision"],
                            "decision": row.option_ids[rad["decision"]],
                            "independent_of_untrusted": indep, "E": E.tolist(), "k": k,
