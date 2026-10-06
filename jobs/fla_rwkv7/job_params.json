@@ -1,0 +1,35 @@
+{
+ "_comment": "jobs/fla_rwkv7: fla chunk_rwkv7 vs eager WKV equivalence + throughput gate on RWKV7-G1k-13.3B. Spec only, NOT submitted. Checked by tests/test_fla_rwkv7.py.",
+ "job": "fla-rwkv7-gate",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 21,
+ "build_timeout_minutes": 18,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 3.0,
+ "reserve_minutes": 1,
+ "phase_caps_minutes": {
+  "setup": 2,
+  "kernel": 4,
+  "fork": 2,
+  "download_wait": 3,
+  "model": 4,
+  "throughput": 5
+ },
+ "expected_minutes": {
+  "setup": 1,
+  "kernel": 2,
+  "fork": 1,
+  "download_wait": 2,
+  "model": 3,
+  "throughput": 4
+ },
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "model_bytes": 26540800536,
+ "mission": "m2-fla-rwkv7-kernel"
+}

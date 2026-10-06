@@ -428,7 +428,8 @@ def load_rwkv7(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat
 RWKV7_G1K_TRAINED_CTX = 25600
 
 
-def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None) -> ModelPlugin:
+def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None,
+                  wkv: str | None = None) -> ModelPlugin:
     """RWKV7-G1k (``RWKV/RWKV7-G1k-*-20260930``): the repo's bundled HF code, vendored and sha-pinned in
     ``third_party/rwkv7_hf`` (no ``trust_remote_code``). ``load_rwkv7`` above cannot read these repos: they ship
     ``tokenizer.json`` (no ``rwkv_vocab_v20230424.txt``) and are not the ``fla`` class.
@@ -446,6 +447,10 @@ def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfl
     tok = Rwkv7Tokenizer.from_pretrained(str(model_dir))
     special = frozenset(int(i) for i in tok.all_special_ids) | {0}
     model = Rwkv7ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), device_map={"": device}).eval()
+    if wkv is not None:  # heads/rwkv7_wkv.py ("fla" refuses until GPU-verified); None keeps the checkpoint's "chunked"
+        from heads.rwkv7_wkv import select_wkv
+
+        select_wkv(model, wkv)
 
     def encode(text: str, trusted: bool = True) -> list[int]:
         ids = tok(text, add_special_tokens=False).input_ids
