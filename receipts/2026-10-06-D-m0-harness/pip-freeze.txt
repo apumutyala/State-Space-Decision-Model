@@ -18,6 +18,6 @@ pluggy==1.6.0
 Pygments==2.21.0
 pytest==9.1.1
 PyYAML==6.0.3
--e git+https://github.com/apumutyala/State-Space-Decision-Model.git@1eb50538b2e0d83660745bfe4769a64f7d4920ff#egg=ssdm_harness&subdirectory=..\..\..\ssdm-wt\m0-harness\harness
+-e git+https://github.com/apumutyala/State-Space-Decision-Model.git@de1282d5254285ea83884818700deb790a53a594#egg=ssdm_harness&subdirectory=..\..\..\ssdm-wt\m0-harness\harness
 tqdm==4.70.1
 typing_extensions==4.16.0
