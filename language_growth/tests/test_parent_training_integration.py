@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import tempfile
 import unittest
 from copy import deepcopy
 
@@ -41,11 +42,27 @@ class ParentTrainingIntegrationTests(unittest.TestCase):
             cfg = TrainConfig(head="snapshot", lora_rank=2, batch_size=1, max_steps=1, seed=17)
             trainer = Trainer(model, cfg, items, guard=guard)
             before = {k: v.clone() for k, v in trainer.trainable_state().items()}
+            frozen_before = {k: v.detach().clone() for k, v in model.named_parameters() if not v.requires_grad}
             history = trainer.train()
             self.assertEqual(len(history), 1)
             self.assertTrue(math.isfinite(history[0]["loss"]))
             after = trainer.trainable_state()
-            self.assertTrue(any(not torch.equal(before[k], after[k]) for k in before))
+            changed = [k for k in before if not torch.equal(before[k], after[k])]
+            self.assertTrue(any(k.startswith("head.") for k in changed))
+            self.assertTrue(any(k.endswith("lora_B") for k in changed))
+            self.assertTrue(all(torch.equal(value, dict(model.named_parameters())[key])
+                                for key, value in frozen_before.items()))
+            with tempfile.TemporaryDirectory(prefix="ssdm-language-checkpoint-test-") as folder:
+                checkpoint = trainer.save(folder)
+                checkpoint_sha = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+                restored = DecisionModel(tiny_backbone(seed=17, hidden=8, layers=1), "snapshot", seed=17)
+                restored_trainer = Trainer(restored, cfg, items, guard=guard)
+                restored_trainer.load(checkpoint)
+                self.assertEqual(restored_trainer.step, trainer.step)
+                self.assertEqual(set(model.state_dict()), set(restored.state_dict()))
+                self.assertTrue(all(torch.equal(value, restored.state_dict()[key])
+                                    for key, value in model.state_dict().items()))
+                model = restored
             digest = hashlib.sha256()
             for name, tensor in sorted(model.state_dict().items()):
                 digest.update(name.encode())
@@ -68,10 +85,12 @@ class ParentTrainingIntegrationTests(unittest.TestCase):
                                                "policy_masking": "none (served covers every supplied option)"})
             row = report["observations"][0]
             self.assertGreater(row["provider_calls"], 0)
-            self.assertNotIn(row["status"], ("runner_error", "provider_error", "provider_rejected", "precondition_failed"))
+            self.assertIn(row["status"], ("accepted", "kernel_rejected"))
             self.assertEqual(row["provider_calls"], row["forward_calls"])
             print(json.dumps({"scope": "tiny random CPU integration, not capability",
                               "config": cfg.to_json(), "history": history, "state_sha256": digest.hexdigest(),
+                              "checkpoint_sha256": checkpoint_sha, "checkpoint_reload_exact": True,
+                              "checkpoint_scope": "temporary synthetic test artifact; not a released checkpoint",
                               "train_manifest": development_manifest(examples),
                               "validation_manifest": development_manifest(validation),
                               "calls": calls, "raw_report": report}, sort_keys=True))
