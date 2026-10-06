@@ -91,6 +91,7 @@ class ScriptedProvider:
                                          "request_fingerprint": "wrong" if self.wrong_fingerprint else legacy_request_fingerprint(request),
                                          "request_fingerprint_algorithm": FINGERPRINT_ALGORITHM,
                                          "provenance": {"supplied": False, "applied": False},
+                                         "state_handle_in": None, "state_reuse": False,
                                          "inference_calls": 1}}}
 
 

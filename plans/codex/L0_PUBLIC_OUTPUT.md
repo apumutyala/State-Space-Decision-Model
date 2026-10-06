@@ -6,3 +6,5 @@
 - Decision unlocked: satisfy the concrete public projection part of proposed G11 after independent review and merge. No learned capability, spend, or external action is authorized.
 
 Code/tests under `language_growth/`, branch `codex/l0-public-output`, worktree `C:/Users/apumu/research/CHLabs/ssdm-codex-l0-public-output`. Use the existing planner, kernel and renderer; no new service or generic framework.
+
+Integration dependency: the kernel and renderer are merged on `agent-main`. The typed planner and bridge are supplied by PR #13 (`codex/l0-typed-planner`, source `e19c308`); this branch does not vendor them. The CPU proof must use those exact PR #13 files until #13 merges, then rerun from a clean merged checkout before claiming the L0f gate.
