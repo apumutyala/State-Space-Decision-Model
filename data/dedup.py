@@ -6,15 +6,26 @@ guard must not need, and does not use, the DEV/TEST split. The fingerprint is bu
 OFFICIAL row files (HLE included; hashes checked against ``EXPECTED_SUITE_SHA256``) copied to
 ``m2/suite-snapshot``, so a concurrent re-stage of ``suite-0.2`` cannot change it mid-build.
 
-Three matchers, each logged separately (a record is dropped if ANY fires on its item-tier texts; see DedupLog):
+Five matchers, each logged separately (a record is dropped if ANY fires on its item-tier texts; see DedupLog):
 
   exact     normalised segment hash equality. Segments are every string in state, every instruction and every
             option description, plus each line and each line without a short "Label:" prefix, plus the whole
-            state; normalised = NFKC + casefold + non-alphanumerics collapsed; >= 12 chars.
-  ngram13   any shared word 13-gram (GPT-3 style contamination test) with an Index row.
-  minhash   estimated Jaccard >= MINHASH_THRESHOLD on character 5-gram shingles (64 permutations, LSH with
-            16 bands x 4 rows, verified on the full signature) for segments of 12..1000 chars. Catches short
-            items with small edits (BANKING77/CLINC utterances, WinoGrande twins), which 13-grams cannot.
+            state; normalised = NFKC + casefold + Unicode non-word runs collapsed; >= 12 chars.
+  ngram13   any shared word 13-gram (GPT-3 style contamination test) with an Index row. Carries edits and
+            truncations of items of >= ~13 words.
+  minhash   estimated Jaccard >= MINHASH_THRESHOLD on byte 5-gram shingles (64 permutations, LSH 16 x 4,
+            verified on the signature) for segments of 12..1000 chars. With 64 permutations the effective
+            threshold is ~0.8, so on short items it catches ~1-character edits, NOT one-word edits (PR #16
+            review: one-word-substitution recall 13-17% on BANKING77/CLINC DEV items with exact+13-gram+MinHash).
+  edit      (shortedit.py) token Levenshtein d <= 2 and d/max(len) <= 0.2 against every non-boilerplate Index
+            segment of 4..30 tokens; exact search via deletion variants. One edit allowed for 5..9 tokens, two
+            from 10.
+  contain   an Index segment of 6..30 tokens occurring as a contiguous token run inside a training segment of
+            <= 80 tokens (item + appended sentence).
+
+Scope of the claim: detected-overlap control for the declared item-tier text, under these five matchers. It is
+not a claim that no Index text reaches the training payload (context-tier overlap is kept and logged), and it
+does not cover paraphrase, translation, truncation of short items, or edits beyond the bounds above.
 
 Boilerplate: an Index segment or 13-gram that appears in more than BOILERPLATE_ROWS distinct rows is template
 text (instruction prefixes, label descriptions shared by every BANKING77 row, ACOS category questions), not an
@@ -33,9 +44,10 @@ from typing import Any, Iterable, Iterator
 
 import numpy as np
 
+from . import shortedit as SE
 from . import text as T
 
-FP_VERSION = "ssdm-dedup-v2"  # v2: Unicode-aware normalisation (v1 dropped non-Latin text)
+FP_VERSION = "ssdm-dedup-v3"  # v2: Unicode-aware normalisation; v3: + short-item edit/contain matchers
 BOILERPLATE_ROWS = 100
 NGRAM_N = 13
 MINHASH_PERMS = 64
@@ -144,6 +156,9 @@ EXPECTED_SUITE_SHA256 = {
 }
 
 
+EXPECTED_ROWS = 124971 + 30419
+
+
 # ----------------------------------------------------------------------------------------------- fingerprint
 @dataclass
 class Fingerprint:
@@ -153,6 +168,9 @@ class Fingerprint:
     ng_cat: np.ndarray              # int32
     mh_sig: np.ndarray              # (m, perms) uint32 signatures of short non-boilerplate segments
     mh_cat: np.ndarray              # int32
+    sh_tok: np.ndarray = field(default_factory=lambda: np.empty(0, np.uint64))  # short items, word ids
+    sh_off: np.ndarray = field(default_factory=lambda: np.zeros(1, np.int64))
+    sh_cat: np.ndarray = field(default_factory=lambda: np.empty(0, np.int32))
     mh_band_sorted: list = field(default_factory=list)   # per band: (sorted keys, row index)
     meta: dict = field(default_factory=dict)
 
@@ -217,7 +235,17 @@ class Fingerprint:
         mh_cat = np.array([seg_first_cat[x] for x in mh_hashes], dtype=np.int32)
         log(f"  fingerprint: minhash over {len(mh_texts)} segments")
         mh_sig = minhash_signatures(mh_texts)
-        fp = cls(seg_hash=seg_hash, seg_cat=seg_cat, ng_hash=ng_hash, ng_cat=ng_cat, mh_sig=mh_sig, mh_cat=mh_cat)
+        # short items (4..30 tokens) for the token edit-distance / containment matchers
+        sh_toks, sh_cats = [], []
+        for x, cat in zip(mh_hashes, mh_cat.tolist()):
+            ws = seg_text[x].split()
+            if SE.MIN_TOKENS <= len(ws) <= SE.MAX_TOKENS:
+                sh_toks.append(T.word_ids(ws)); sh_cats.append(cat)
+        lens = np.array([t.shape[0] for t in sh_toks], dtype=np.int64)
+        sh_off = np.concatenate([[0], np.cumsum(lens)]).astype(np.int64)
+        sh_tok = np.concatenate(sh_toks) if sh_toks else np.empty(0, np.uint64)
+        fp = cls(seg_hash=seg_hash, seg_cat=seg_cat, ng_hash=ng_hash, ng_cat=ng_cat, mh_sig=mh_sig, mh_cat=mh_cat,
+                 sh_tok=sh_tok, sh_off=sh_off, sh_cat=np.array(sh_cats, dtype=np.int32))
         fp.meta = {
             "version": FP_VERSION,
             "rows": n,
@@ -229,14 +257,20 @@ class Fingerprint:
             "ngram13_boilerplate_removed": ng_boiler,
             "ngram13_indexed": int(ng_hash.size),
             "minhash_segments": int(mh_sig.shape[0]),
+            "short_items": len(sh_cats),
             "params": {"boilerplate_rows": BOILERPLATE_ROWS, "ngram_n": NGRAM_N, "minhash_perms": MINHASH_PERMS,
                        "minhash_bands": MINHASH_BANDS, "minhash_max_chars": MINHASH_MAX_CHARS,
                        "minhash_threshold": MINHASH_THRESHOLD, "shingle": f"byte {SHINGLE_K}-gram",
-                       "min_segment_chars": T.MIN_SEGMENT_CHARS},
+                       "min_segment_chars": T.MIN_SEGMENT_CHARS,
+                       "edit": {"tokens": [SE.MIN_TOKENS, SE.MAX_TOKENS], "max_edits": SE.MAX_EDITS,
+                                "max_ratio": SE.MAX_RATIO, "rule": "d <= 2 and d/max(len) <= 0.2"},
+                       "contain": {"index_tokens": [SE.CONTAIN_MIN, SE.MAX_TOKENS],
+                                   "query_max_tokens": SE.CONTAIN_MAX_QUERY}},
             "build_seconds": round(time.time() - t0, 1),
             **(source_meta or {}),
         }
         fp._index_bands()
+        fp._index_short()
         return fp
 
     @classmethod
@@ -252,6 +286,9 @@ class Fingerprint:
             raise RuntimeError(f"suite files are not the official 0.2.1 rows: {before}")
         return fp
 
+    def _index_short(self):
+        self.short = SE.ShortIndex(self.sh_tok, self.sh_off, self.sh_cat)
+
     def _index_bands(self):
         keys = band_keys(self.mh_sig) if self.mh_sig.shape[0] else np.empty((0, MINHASH_BANDS), np.uint64)
         self.mh_band_sorted = []
@@ -264,7 +301,7 @@ class Fingerprint:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         np.savez(path, seg_hash=self.seg_hash, seg_cat=self.seg_cat, ng_hash=self.ng_hash, ng_cat=self.ng_cat,
-                 mh_sig=self.mh_sig, mh_cat=self.mh_cat)
+                 mh_sig=self.mh_sig, mh_cat=self.mh_cat, sh_tok=self.sh_tok, sh_off=self.sh_off, sh_cat=self.sh_cat)
         path.with_suffix(".json").write_text(json.dumps(self.meta, indent=1), encoding="utf-8")
         return _sha256_file(path)
 
@@ -273,11 +310,28 @@ class Fingerprint:
         path = Path(path)
         z = np.load(path, allow_pickle=False)
         fp = cls(seg_hash=z["seg_hash"], seg_cat=z["seg_cat"], ng_hash=z["ng_hash"], ng_cat=z["ng_cat"],
-                 mh_sig=z["mh_sig"], mh_cat=z["mh_cat"])
+                 mh_sig=z["mh_sig"], mh_cat=z["mh_cat"], sh_tok=z["sh_tok"], sh_off=z["sh_off"],
+                 sh_cat=z["sh_cat"])
         fp.meta = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
         fp.meta["npz_sha256"] = _sha256_file(path)
         fp._index_bands()
+        fp._index_short()
         return fp
+
+    def assert_production(self) -> None:
+        """Fail closed unless this is a full official-suite fingerprint of the current version."""
+        m = self.meta
+        problems = []
+        if m.get("version") != FP_VERSION:
+            problems.append(f"version {m.get('version')} != {FP_VERSION}")
+        if m.get("suite_files_uncompressed_sha256") != EXPECTED_SUITE_SHA256:
+            problems.append("suite hashes are not the official 0.2.1 row files")
+        if m.get("rows") != EXPECTED_ROWS:
+            problems.append(f"rows {m.get('rows')} != {EXPECTED_ROWS}")
+        if "45" not in m.get("rows_by_catalog", {}):
+            problems.append("HLE (catalog 45) missing")
+        if problems:
+            raise RuntimeError("fingerprint is not a production fingerprint: " + "; ".join(problems))
 
     # -- queries ----------------------------------------------------------------------------------------
     @staticmethod
@@ -294,7 +348,7 @@ class Fingerprint:
         Results are cached per normalised segment / text (retrieval records reuse the same passages)."""
         if not hasattr(self, "_seg_cache"):
             self._seg_cache, self._txt_cache = {}, {}
-        hits: dict[str, set] = {"exact": set(), "ngram13": set(), "minhash": set()}
+        hits: dict[str, set] = {"exact": set(), "ngram13": set(), "minhash": set(), "edit": set(), "contain": set()}
         segs = [s for s in T.segments(state, questions)]
         todo = [s for s in segs if s not in self._seg_cache]
         if todo:
@@ -306,13 +360,23 @@ class Fingerprint:
                 sig = minhash_signatures([todo[j] for j in short_i])
                 for jj, cat in self._minhash_hits(sig):
                     mh.setdefault(short_i[jj], set()).add(cat)
+            short = getattr(self, "short", None)
             for j, s in enumerate(todo):
                 ex = (int(self.seg_cat[idx[j]]),) if idx[j] >= 0 else ()
-                self._seg_cache[s] = (ex, tuple(sorted(mh.get(j, ()))))
+                ed: tuple = ()
+                co: tuple = ()
+                ws = s.split()
+                if short is not None and len(ws) <= SE.CONTAIN_MAX_QUERY:
+                    ids = T.word_ids(ws)
+                    ed = tuple(sorted(short.edit_hits(ids)))
+                    co = tuple(sorted(short.contain_hits(ids)))
+                self._seg_cache[s] = (ex, tuple(sorted(mh.get(j, ()))), ed, co)
         for s in segs:
-            ex, mh_c = self._seg_cache[s]
+            ex, mh_c, ed, co = self._seg_cache[s]
             hits["exact"].update(ex)
             hits["minhash"].update(mh_c)
+            hits["edit"].update(ed)
+            hits["contain"].update(co)
         for t in T.payload_texts(state, questions):
             if t not in self._txt_cache:
                 ws = t.split()
@@ -362,10 +426,15 @@ class DedupLog:
         self.examples: dict[str, list] = collections.defaultdict(list)
         self.ctx_examples: dict[str, list] = collections.defaultdict(list)
 
-    def add(self, source: str, rec_id: str, item_hits: dict, full_hits: dict | None = None) -> bool:
+    def add(self, source: str, rec_id: str, item_hits: dict, full_hits: dict | None = None,
+            partner_dropped: bool = False) -> bool:
         c = self.by_source[source]
         c["checked"] += 1
         fired = [k for k, v in item_hits.items() if v]
+        if partner_dropped and not fired:  # fact-change pairs are kept or dropped as a unit
+            c["dropped"] += 1
+            c["dropped_pair_partner"] += 1
+            return False
         for k in fired:
             c[f"item_{k}"] += 1
             for cat in item_hits[k]:

@@ -19,7 +19,7 @@ Legend:
 | # | Benchmark (area) | Index uses | Legitimate train source | Size | License | Notes / traps |
 |---|---|---|---|---|---|---|
 | 25 | GPQA Diamond (K) | all 198 Diamond | **None** | — | CC-BY-4.0 | GPQA main and extended are **supersets of Diamond**, so they are not train data. |
-| 30 | GSM8K (K) | test 1,319 (4- and 10-choice) | `openai/gsm8k` main/train, **fetched** | 7,473 | MIT | RouterBench prompts embed GSM8K problems. The guard dropped 15.6% of GSM8K train items drawn (228 RouterBench, 25 BRIGHT). That is conservative: §7 says label-free overlap is not counted. |
+| 30 | GSM8K (K) | test 1,319 (4- and 10-choice) | `openai/gsm8k` main/train, **fetched** | 7,473 | MIT | RouterBench prompts embed GSM8K problems. The guard dropped 15.7% of GSM8K train items drawn (mostly RouterBench, some BRIGHT). That is conservative: §7 says label-free overlap is not counted. |
 | 31 | ChessBench (K) | DeepMind action-value test | `searchless_chess` train action-value data | very large (GB scale) | Apache-2.0 | Dedup by FEN before use. Positions repeat across splits. |
 | 32 | MuSR (K) | all 756 | **None** | — | CC-BY-4.0 | The generator code is public. New instances need a teacher (open-weight only). |
 | 33 | SATA-Bench (K) | all 1,650 | **None** known | — | see repo | Synthetic multi-answer MCQ from our own sources covers the format. |
@@ -29,8 +29,8 @@ Legend:
 | 57 | MMLU-Pro (K) | test 12,032 | `validation` (70, few-shot) only. Proxy: `cais/mmlu` auxiliary_train, **fetched** | 99,842 | MIT | MMLU-Pro reuses MMLU *test* questions, so MMLU test is never train. aux_train comes from ARC/OBQA/RACE/MCTest train splits. |
 | 58 | BBH (K) | 5,507 | **None** | — | MIT | **Trap:** BIG-Bench "train" splits (e.g. `tasksource/bigbench`) of the 23 BBH tasks contain BBH test items. Excluded. |
 | 11 | ContractNLI (L) | test 123 contracts | official train (423 docs) and dev (61) | ~7k doc×hypothesis pairs | CC-BY-4.0 | The 17 hypotheses are shared across splits (label set). Contracts must not overlap; the guard checks. |
-| 12 | ANLI (L) | test r1–r3 | `facebook/anli` train r1–r3, **fetched** | 162,865 | **CC-BY-NC-4.0** | Premises recur across splits. The guard dropped 24.5% of ANLI train items drawn (premise shared with Index rows). Non-commercial licence; flag before any product use. |
-| 28 | WinoGrande (L) | xl validation 1,267 | `allenai/winogrande` winogrande_xl train, **fetched** | 40,398 | CC-BY (AI2; verify) | Twin sentences: MinHash catches near-twins. |
+| 12 | ANLI (L) | test r1–r3 | `facebook/anli` train r1–r3, **fetched** | 162,865 | **CC-BY-NC-4.0** | Premises recur across splits. The guard dropped 24.7% of ANLI train items drawn (premise shared with Index rows). Non-commercial licence; flag before any product use. |
+| 28 | WinoGrande (L) | xl validation 1,267 | `allenai/winogrande` winogrande_xl train, **fetched** | 40,398 | Apache-2.0 per the `allenai/winogrande` GitHub LICENSE; the HF card states none | Twin sentences: the `edit` matcher (≤1 token edit for 5–9 tokens, ≤2 from 10) catches one-word twins; MinHash alone did not. |
 | 29 | HellaSwag (L) | validation 10,042 | `Rowan/hellaswag` train, **fetched** | 39,905 | MIT | Same ActivityNet/WikiHow sources as validation. Endings are item-tier for the guard. |
 | 38 | ACOS (L) | test reviews (400-review subset scored) | Laptop-ACOS and Restaurant-ACOS train/dev | ~4.4k train sentences | see repo (verify) | Dedup against the full 1,399 test reviews, not only the subset. The guard does this. |
 | 39 | FinEntity (L) | all 979 docs | **None** | — | ODC-BY (verify) | |
@@ -38,7 +38,7 @@ Legend:
 | 41 | VAST (L) | test 3,006 | official train | ~13.5k | research (verify) | |
 | 42 | NLI4CT (L) | 2024 test 5,500 | 2023/2024 train and dev | ~1.9k | research (verify) | Trial evidence is shared across splits. The statement is the item. |
 | 59 | RAGTruth (L) | 2,700 rows | official train split | ~15k responses | MIT | Check that response IDs don't overlap the Index rows' source responses. |
-| 4 | BANKING77 (R) | test 3,080 | PolyAI train.csv, **fetched** | 10,003 | CC-BY-4.0 | Jet v6.2 / Lumma-Fev were penalised for exact test duplicates. The guard drops exact and near (MinHash) duplicates. |
+| 4 | BANKING77 (R) | test 3,080 | PolyAI train.csv, **fetched** | 10,003 | CC-BY-4.0 | Jet v6.2 / Lumma-Fev were penalised for exact test duplicates. The guard drops exact, one-word-edit (`edit`) and appended-text (`contain`) duplicates: 13.4% of the BANKING77 draw, some of them templated siblings (receipt). |
 | 5 | CLINC150+OOS (R) | test + oos_test 5,500 | `data_full.json` train + oos_train only, **fetched** | 15,100 | CC-BY-3.0 | The file contains all splits. The loader reads only `train`/`oos_train` (tested). |
 | 36 | BRIGHT (R) | 220 answerable queries | **None** (test-only benchmark) | — | CC-BY-4.0 | Its document corpus overlaps StackExchange/Wikipedia text. Logged as context overlap. |
 | 37 | Amazon ESCI (R) | 5,000 test pairs | `shopping_queries_dataset` split=train | ~1.4M pairs | Apache-2.0 | Queries recur across splits with different products. Dedup on (query, product). |
@@ -48,7 +48,7 @@ Legend:
 | 2 | ToolRet (T) | 685 answerable queries | ToolRet training release (verify ID/licence) | — | verify | ToolRet's tool corpus overlaps RapidAPI tool docs in When2Call/ToolACE. Logged as context overlap (tool schemas carry no ToolRet label). |
 | 3 | API-Bank (T) | 508 decision points | API-Bank training dialogues (DAMO-ConvAI) | ~6k | MIT | Same 53-tool catalog: catalog text is context, dialogues are items. |
 | 9 | Home appliances (T) | 88 test rows | published dev file (80 cases) | 80 | see kit | The Index already dropped 48 test rows identical to dev. Dev is allowed. |
-| 62 | When2Call (T) | test MCQ 3,652 | `nvidia/When2Call` train_sft, **fetched** (train_pref too) | 15,000 (+9,000) | CC-BY-4.0 | **55% of train items drawn shared item text with the test MCQ** (mostly 13-grams of responses and questions) and were dropped. The SFT split has no tool-call targets (refuse/ask only). |
+| 62 | When2Call (T) | test MCQ 3,652 | `nvidia/When2Call` train_sft, **fetched**; train_pref (9,000) exists but is **not fetched or used** | 15,000 | CC-BY-4.0 | **57% of train items drawn shared item text with the test MCQ** (mostly 13-grams of responses and questions) and were dropped. The SFT split has no tool-call targets (refuse/ask only). |
 | 20 | BPoMP (A) | 5,000 rows over 811 cases | **None** known | — | see Zenodo | |
 | 21 | Humicroedit (A) | subtask-2 test 2,628 | SemEval-2020 T7 train/dev (subtask 1 and 2) | ~9.4k pairs | research (verify) | Headlines recur across subtasks. Dedup on the edited headline. |
 | 22 | POP909-CL (A) | 2,000 beats over 907 songs | **None** disjoint (909 songs total) | — | MIT (verify) | Symbolic chord data from other corpora is the only option. |
@@ -65,7 +65,7 @@ Display-only rows (MMLU, ARC-E/C, SimpleBench, RouterBench, SGD) are in the guar
 |---|---|---|---|---|
 | SST-5 (`SetFit/sst5` train) | ordinal sentiment → `score` (5 levels, scale sometimes reversed) | 8,544 | unspecified on HF; SST research release | **fetched** |
 | BoolQ (`google/boolq` train) | passage + yes/no question → `noul` | 9,427 | CC-BY-SA-3.0 | **fetched** |
-| Natural Questions pairs (`sentence-transformers/natural-questions`) | query + 1 gold + up to 254 negatives → 8–255-option `choice`, or per-candidate yes/no | 100,231 | CC-BY-SA-3.0 | **fetched** |
+| Natural Questions pairs (`sentence-transformers/natural-questions`) | query + 1 gold + up to 254 negatives → 8–255-option `choice`, or per-candidate yes/no | 100,231 | HF card states none; upstream Natural Questions is CC-BY-SA-3.0 | **fetched** |
 | ToolACE (`Team-ACE/ToolACE`) | tool catalog + dialogue → single-tool `choice` (+ none) or per-tool yes/no | 11,300 dialogues | Apache-2.0 | **fetched** |
 | MNLI / SNLI | NLI `choice` | 393k / 550k | mixed (OANC, CC-BY-SA) / CC-BY-SA-4.0 | not fetched |
 | CommonsenseQA, OpenBookQA, PIQA, SciQ | MCQ | 9.7k / 5k / 16k / 11.7k | MIT / Apache-2.0 / AFL-3.0 / CC-BY-NC-3.0 | not fetched |
@@ -86,6 +86,8 @@ Display-only rows (MMLU, ARC-E/C, SimpleBench, RouterBench, SGD) are in the guar
 - Licences marked *verify* have to be checked at fetch time, before a source enters a paid run.
 - Two fetched sources are not permissive:
   - ANLI is CC-BY-NC-4.0;
-  - SST-5's licence is unspecified on HF.
+  - SST-5's licence is unspecified on HF;
+  - the NQ pairs card states no licence (upstream NQ is CC-BY-SA-3.0);
+  - WinoGrande's HF card states none (its GitHub LICENSE is Apache-2.0).
   - They are fine for research, but need a `decision-needed` call before any commercial release.
 - Benchmarks with no train split (GPQA, MuSR, SATA, CRUXEval, CLadder, HLE, BBH, BRIGHT, FinEntity, BFCL, BPoMP, POP909, PhishNChips) depend on proxy formats, synthetic generators or teachers. That is where m2 attribution should expect gaps.

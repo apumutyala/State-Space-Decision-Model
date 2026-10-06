@@ -232,11 +232,13 @@ def render(base: dict, rng: random.Random, pad_pool: list[str] | None = None, p_
         yn = rng.choice([("yes", "no"), ("call", "skip"), ("true", "false")])
         names = list(base["options"])
         rng.shuffle(names)
-        for n in names:
-            qid = f"tool_{n}"[:60]
+        for k, n in enumerate(names):
+            qid = f"tool_{k}"  # positional, collision-free (names can share long prefixes); the name is in the text
             questions[qid] = {"type": "choice", "instructions": f"{instr}\nTool: {n}",
                               "criteria": {yn[0]: "Invoke this tool.", yn[1]: "Do not invoke this tool."}}
             labels[qid] = yn[0] if n in base["gold"] else yn[1]
+        if len(questions) != len(names):
+            raise AssertionError(f"{base['id']}: {len(names)} tools but {len(questions)} questions")
         aug["shape"] = "per_tool_yesno"
     else:
         qid = rng.choice(QKEYS)

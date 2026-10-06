@@ -39,7 +39,7 @@ REGISTRY: dict[str, dict] = {
                   "files": ["data/train-00000-of-00001.parquet"], "license": "MIT",
                   "index": "HellaSwag (29): Index uses validation"},
     "winogrande": {"repo": "allenai/winogrande", "rev": "01e74176c63542e6b0bcb004dcdea22d94fb67b5",
-                   "files": ["winogrande_xl/train-00000-of-00001.parquet"], "license": "CC-BY-4.0 (per AI2 release)",
+                   "files": ["winogrande_xl/train-00000-of-00001.parquet"], "license": "Apache-2.0 (allenai/winogrande GitHub LICENSE); HF card: none stated",
                    "index": "WinoGrande (28): Index uses winogrande_xl validation"},
     "gsm8k": {"repo": "openai/gsm8k", "rev": "740312add88f781978c0658806c59bc2815b9866",
               "files": ["main/train-00000-of-00001.parquet"], "license": "MIT", "index": "GSM8K (30): Index uses test"},
@@ -55,7 +55,7 @@ REGISTRY: dict[str, dict] = {
               "files": ["data/train-00000-of-00001.parquet"], "license": "CC-BY-SA-3.0",
               "index": "none (noul source)"},
     "nq": {"repo": "sentence-transformers/natural-questions", "rev": "f9e894e1081e206e577b4eaa9ee6de2b06ae6f17",
-           "files": ["pair/train-00000-of-00001.parquet"], "license": "CC-BY-SA-3.0 (Natural Questions)",
+           "files": ["pair/train-00000-of-00001.parquet"], "license": "HF card: none stated; upstream Natural Questions CC-BY-SA-3.0",
            "index": "none (retrieval-style source, up to 255 candidates)"},
     "mmlu_aux": {"repo": "cais/mmlu", "rev": "c30699e8356da336a370243923dbaf21066bb9fe",
                  "files": ["auxiliary_train/train-00000-of-00001.parquet"], "license": "MIT (constituents: ARC, "
