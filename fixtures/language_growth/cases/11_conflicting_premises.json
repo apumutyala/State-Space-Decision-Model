@@ -17,8 +17,8 @@
     "formal_task_obligation": null,
     "limits": {
       "max_program_nodes": 8,
-      "max_inference_calls": 4,
-      "max_repair_calls": 1
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
     },
     "provider": {
       "input_context_ref": "catalog-public-conflict-r7",
@@ -91,25 +91,40 @@
     "question": "Does Atlas have a longer warranty than Boreal?",
     "options": [
       {
-        "id": "LG11-resolve_conflict",
+        "id": "LG11-o01",
         "description": "Request resolution of the contradictory Atlas warranty records."
       },
       {
-        "id": "LG11-atlas_longer",
-        "description": "Atlas has the longer warranty."
+        "id": "LG11-o02",
+        "description": "Boreal has the longer warranty."
       },
       {
-        "id": "LG11-boreal_longer",
-        "description": "Boreal has the longer warranty."
+        "id": "LG11-o03",
+        "description": "Atlas has the longer warranty."
       }
     ],
-    "target_option_id": "LG11-resolve_conflict",
+    "target_option_id": "LG11-o01",
     "target_description": "The pilot requires unresolved conflicts to be resolved before unconditional assertion.",
     "evidence_context_ref": "catalog-public-conflict-r7",
     "policy_ref": "public-read-r3",
     "expected_invocation": "one_stateless_call",
     "score_eligible_on_original_provider_input": true,
     "answerability_denominator": false,
-    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG11-resolve_conflict": "LG11-o01",
+      "LG11-boreal_longer": "LG11-o02",
+      "LG11-atlas_longer": "LG11-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG11-o01": "LG11-o02",
+        "LG11-o02": "LG11-o03",
+        "LG11-o03": "LG11-o01"
+      },
+      "target_option_id": "LG11-o02",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
   }
 }

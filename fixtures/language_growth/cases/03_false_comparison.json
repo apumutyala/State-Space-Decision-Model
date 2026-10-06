@@ -17,8 +17,8 @@
     "formal_task_obligation": null,
     "limits": {
       "max_program_nodes": 8,
-      "max_inference_calls": 4,
-      "max_repair_calls": 1
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
     },
     "provider": {
       "input_context_ref": "catalog-public-r7",
@@ -72,7 +72,7 @@
   "expected": {
     "provider_precondition": "pass",
     "kernel_status": "rejected",
-    "kernel_reason_category": "unsupported assertion",
+    "kernel_reason_category": "unsupported_assertion",
     "task_outcome": "rejected_plan",
     "useful_complete_answer": false,
     "why": "12 months > 24 months is false. Reject the assertion; do not silently reverse the relation.",
@@ -99,29 +99,46 @@
     "question": "Does Boreal have the longer warranty?",
     "options": [
       {
-        "id": "LG03-unknown",
-        "description": "The warranty comparison is unavailable."
+        "id": "LG03-o01",
+        "description": "The warranties have the same length."
       },
       {
-        "id": "LG03-yes",
+        "id": "LG03-o02",
         "description": "Yes, Boreal has the longer warranty."
       },
       {
-        "id": "LG03-no",
-        "description": "No; Atlas has 24 months and Boreal has 12 months."
+        "id": "LG03-o03",
+        "description": "The warranty comparison is unavailable."
       },
       {
-        "id": "LG03-equal",
-        "description": "The warranties have the same length."
+        "id": "LG03-o04",
+        "description": "Atlas has the longer warranty."
       }
     ],
-    "target_option_id": "LG03-no",
+    "target_option_id": "LG03-o04",
     "target_description": "The question asks about Boreal; the correct response is no, supported by 12 < 24.",
     "evidence_context_ref": "catalog-public-r7",
     "policy_ref": "public-read-r3",
     "expected_invocation": "one_stateless_call",
     "score_eligible_on_original_provider_input": true,
     "answerability_denominator": true,
-    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG03-equal": "LG03-o01",
+      "LG03-yes": "LG03-o02",
+      "LG03-unknown": "LG03-o03",
+      "LG03-no": "LG03-o04"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG03-o01": "LG03-o02",
+        "LG03-o02": "LG03-o03",
+        "LG03-o03": "LG03-o04",
+        "LG03-o04": "LG03-o01"
+      },
+      "target_option_id": "LG03-o01",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
   }
 }

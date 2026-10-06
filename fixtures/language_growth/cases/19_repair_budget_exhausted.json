@@ -18,8 +18,8 @@
     "formal_task_obligation": null,
     "limits": {
       "max_program_nodes": 8,
-      "max_inference_calls": 1,
-      "max_repair_calls": 1
+      "max_repair_calls": 4,
+      "max_proposal_calls": 4
     },
     "provider": {
       "input_context_ref": "catalog-public-r7",
@@ -73,12 +73,10 @@
   "expected": {
     "provider_precondition": "pass",
     "kernel_status": "rejected",
-    "kernel_reason_category": "unsupported assertion",
+    "kernel_reason_category": "unsupported_assertion",
     "task_outcome": "exhausted",
     "useful_complete_answer": false,
-    "why": "The initial false proposal consumes the only inference call. A second proposal must not run after budget exhaustion, and a rejected assertion is not rendered.",
-    "adapter_status_after_repair_request": "exhausted",
-    "inference_calls_charged": 1,
+    "why": "The first scripted false proposal is rejected. Under the declared four-slot Track L planner shape, the initial comparison can consume the proposal-call budget and L must refuse a repair request before another provider call; no D adapter exhaustion is claimed. Actual calls require a planner trace.",
     "repair_calls_charged": 0,
     "assertive_output_count": 0,
     "coverage": {
@@ -87,14 +85,18 @@
       "answerable_request_denominator": 1,
       "useful_complete_count": 0,
       "ask_count": 0
-    }
+    },
+    "planner_status_after_repair_request": "exhausted",
+    "planner_layer": "Track L cross-proposal budget; D has no cross-call memory",
+    "scripted_proposal_attempts": 1
   },
   "repair": {
     "requested": true,
     "permitted": false,
-    "reason": "max_inference_calls_reached",
+    "reason": "max_proposal_calls_reached",
     "repaired_proposal": null,
-    "accounting_unit": "illustrative_complete_proposal_calls_not_measured_model_or_slot_calls"
+    "accounting_unit": "One authored AST attempt in the scripted evaluator; actual typed-choice provider calls require a planner trace",
+    "max_scripted_attempts": 1
   },
   "world_id": "LGW001",
   "decision_only": {
@@ -103,25 +105,40 @@
     "question": "Does Atlas have a longer warranty than Boreal?",
     "options": [
       {
-        "id": "LG19-boreal_longer",
-        "description": "No; Boreal has the longer warranty."
-      },
-      {
-        "id": "LG19-unknown",
+        "id": "LG19-o01",
         "description": "The comparison is unavailable."
       },
       {
-        "id": "LG19-atlas_longer",
-        "description": "Yes; Atlas has 24 months versus Boreal's 12 months."
+        "id": "LG19-o02",
+        "description": "Atlas has the longer warranty."
+      },
+      {
+        "id": "LG19-o03",
+        "description": "No; Boreal has the longer warranty."
       }
     ],
-    "target_option_id": "LG19-atlas_longer",
+    "target_option_id": "LG19-o02",
     "target_description": "One correct first-call decision is possible; this fixture's failed program must not force an exhausted label on an independently correct direct decision.",
     "evidence_context_ref": "catalog-public-r7",
     "policy_ref": "public-read-r3",
     "expected_invocation": "one_stateless_call",
     "score_eligible_on_original_provider_input": true,
     "answerability_denominator": true,
-    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG19-unknown": "LG19-o01",
+      "LG19-atlas_longer": "LG19-o02",
+      "LG19-boreal_longer": "LG19-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG19-o01": "LG19-o02",
+        "LG19-o02": "LG19-o03",
+        "LG19-o03": "LG19-o01"
+      },
+      "target_option_id": "LG19-o03",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
   }
 }

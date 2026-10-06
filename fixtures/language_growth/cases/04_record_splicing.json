@@ -17,8 +17,8 @@
     "formal_task_obligation": null,
     "limits": {
       "max_program_nodes": 8,
-      "max_inference_calls": 4,
-      "max_repair_calls": 1
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
     },
     "provider": {
       "input_context_ref": "catalog-public-r7",
@@ -59,7 +59,7 @@
   "expected": {
     "provider_precondition": "pass",
     "kernel_status": "rejected",
-    "kernel_reason_category": "invalid graph",
+    "kernel_reason_category": "invalid_graph",
     "task_outcome": "rejected_plan",
     "useful_complete_answer": false,
     "why": "The assertion substitutes Boreal into an Atlas proposition. Assert requires a prior proposition node, never a model-authored literal.",
@@ -81,25 +81,40 @@
     "question": "Is Boreal repairable?",
     "options": [
       {
-        "id": "LG04-no",
-        "description": "No, Boreal is not repairable."
-      },
-      {
-        "id": "LG04-unknown",
+        "id": "LG04-o01",
         "description": "Boreal repairability is not established; request that record."
       },
       {
-        "id": "LG04-yes",
+        "id": "LG04-o02",
+        "description": "No, Boreal is not repairable."
+      },
+      {
+        "id": "LG04-o03",
         "description": "Yes, Boreal is repairable."
       }
     ],
-    "target_option_id": "LG04-unknown",
+    "target_option_id": "LG04-o01",
     "target_description": "Atlas repairability does not establish Boreal repairability.",
     "evidence_context_ref": "catalog-public-r7",
     "policy_ref": "public-read-r3",
     "expected_invocation": "one_stateless_call",
     "score_eligible_on_original_provider_input": true,
     "answerability_denominator": false,
-    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG04-unknown": "LG04-o01",
+      "LG04-no": "LG04-o02",
+      "LG04-yes": "LG04-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG04-o01": "LG04-o02",
+        "LG04-o02": "LG04-o03",
+        "LG04-o03": "LG04-o01"
+      },
+      "target_option_id": "LG04-o02",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
   }
 }

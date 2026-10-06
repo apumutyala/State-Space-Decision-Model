@@ -17,8 +17,8 @@
     "formal_task_obligation": null,
     "limits": {
       "max_program_nodes": 8,
-      "max_inference_calls": 4,
-      "max_repair_calls": 1
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
     },
     "provider": {
       "input_context_ref": "catalog-public-r7",
@@ -72,7 +72,7 @@
   "expected": {
     "provider_precondition": "pass",
     "kernel_status": "rejected",
-    "kernel_reason_category": "stale context",
+    "kernel_reason_category": "stale_context",
     "task_outcome": "rejected_plan",
     "useful_complete_answer": false,
     "why": "The host requires r7; a self-consistent program bound to r6 is stale and cannot reuse its old proof.",
@@ -91,29 +91,46 @@
     "question": "What comparison follows from the current warranty records?",
     "options": [
       {
-        "id": "LG07-unknown",
-        "description": "The current records do not permit a comparison."
-      },
-      {
-        "id": "LG07-atlas_longer",
-        "description": "Atlas has the longer current warranty: 24 versus 12 months."
-      },
-      {
-        "id": "LG07-boreal_longer",
+        "id": "LG07-o01",
         "description": "Boreal has the longer current warranty."
       },
       {
-        "id": "LG07-equal",
+        "id": "LG07-o02",
+        "description": "The current records do not permit a comparison."
+      },
+      {
+        "id": "LG07-o03",
+        "description": "Atlas has the longer current warranty."
+      },
+      {
+        "id": "LG07-o04",
         "description": "The current warranties are equal."
       }
     ],
-    "target_option_id": "LG07-atlas_longer",
+    "target_option_id": "LG07-o03",
     "target_description": "Resolve current host snapshot r7, not the proposal's stale r6.",
     "evidence_context_ref": "catalog-public-r7",
     "policy_ref": "public-read-r3",
     "expected_invocation": "one_stateless_call",
     "score_eligible_on_original_provider_input": true,
     "answerability_denominator": true,
-    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG07-boreal_longer": "LG07-o01",
+      "LG07-unknown": "LG07-o02",
+      "LG07-atlas_longer": "LG07-o03",
+      "LG07-equal": "LG07-o04"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG07-o01": "LG07-o02",
+        "LG07-o02": "LG07-o03",
+        "LG07-o03": "LG07-o04",
+        "LG07-o04": "LG07-o01"
+      },
+      "target_option_id": "LG07-o04",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
   }
 }

@@ -7,6 +7,8 @@
 - 2026-10-06: L0e fixture packaging is ready for cross-review: authored synthetic catalog/program counterexamples, stable paired decision-only IDs, and an independent packaging validator. This establishes data/reference integrity only, not kernel soundness or learned capability.
 - CPU kernel, renderer, oracle/replay and execution evaluation are pipelined on separate codex/l0-* worktrees; no paid compute.
 
+- Review revision: neutral decision option IDs with evaluator-only relabel maps; no target-only numerical hints. L provider gating and planner budgets are distinct from D transport behavior. Missing/hidden reference fixtures share one repair code. Pack remains authored development data, with no learned result or paid run.
+
 ## Open decisions for the user
 - SF Compute credit expiry date.
 - Approve creating the private GitHub repo + `agent-main` branch.

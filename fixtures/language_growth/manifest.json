@@ -3,7 +3,7 @@
   "fixture_pack": "catalog-boundary-design-2026-10-06",
   "status": "pilot_design_only",
   "catalog": "catalog.json",
-  "case_count": 21,
+  "case_count": 24,
   "cases": [
     {
       "case_id": "LG01",
@@ -131,8 +131,8 @@
       "case_id": "LG13",
       "path": "cases/13_source_role_injection.json",
       "tags": [
-        "positive",
-        "source_injection",
+        "renderer_attack",
+        "decision_probe",
         "exact_integer"
       ],
       "world_id": "LGW001",
@@ -224,6 +224,36 @@
       ],
       "world_id": "LGW001",
       "decision_question_id": "LG21-D0"
+    },
+    {
+      "case_id": "LG22",
+      "path": "cases/22_unknown_reference.json",
+      "tags": [
+        "negative",
+        "unknown_reference"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG22-D0"
+    },
+    {
+      "case_id": "LG23",
+      "path": "cases/23_forbidden_dependency.json",
+      "tags": [
+        "negative",
+        "forbidden_dependency"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG23-D0"
+    },
+    {
+      "case_id": "LG24",
+      "path": "cases/24_exceeded_limit.json",
+      "tags": [
+        "negative",
+        "exceeded_limit"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG24-D0"
     }
   ],
   "contract_reference": "../../interfaces/DECISION_LANGUAGE_V0.md",
@@ -246,18 +276,23 @@
     "The bounded repair case reports final kernel status; its initial_expected preserves the first failure.",
     "Unknown references and malformed semantic inputs may be intentional. The validator checks declared fixture references and integrity, not semantic acceptance.",
     "Do not aggregate these hand-picked cases into a learned accuracy, risk or coverage claim.",
-    "LG20 unknown-operation and LG21 arbitrary-text assertion are independent counterexamples."
+    "LG20 unknown-operation and LG21 arbitrary-text assertion are independent counterexamples.",
+    "Host max_proposal_calls and max_repair_calls are Track L planner budgets across requests; neither is forwarded as a Track D per-request limit.",
+    "Expected task labels and decision-only targets are evaluator annotations, never model input or proven kernel results.",
+    "LG05/LG20 reject unregistered operations and LG06 rejects an unsupported field; they do not prove natural-language negation or causal reasoning."
   ],
   "kernel_reason_categories": [
-    "unknown reference",
-    "stale context",
+    "unknown_reference",
+    "stale_context",
     "stale_policy",
-    "type/unit mismatch",
-    "unsupported assertion",
-    "forbidden dependency",
-    "invalid graph",
+    "type_unit_mismatch",
+    "scope_mismatch",
+    "unsupported_assertion",
+    "unsupported_operation",
+    "unsupported_field",
+    "invalid_graph",
     "conflict",
-    "exceeded limit"
+    "exceeded_limit"
   ],
   "semantic_program_schema": "ssdm.semantic_program.v0.1",
   "worlds": [
@@ -279,5 +314,10 @@
     }
   ],
   "model_input_rule": "Expose only question, options, host-authorized evidence/policy/registry and declared budgets. Never expose proposals, targets, expected outcomes or review notes as decision-only inputs.",
-  "decision_only_scope": "Same-task pilot retention targets; authored in the same design pass and not independent labels. ASK support belongs to this domain and does not modify any external benchmark."
+  "decision_only_scope": "Same-task pilot retention targets; authored in the same design pass and not independent labels. ASK support belongs to this domain and does not modify any external benchmark.",
+  "intentional_invalid_record_refs": {
+    "LG22": [
+      "cedar-absent-v1"
+    ]
+  }
 }

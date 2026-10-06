@@ -32,8 +32,8 @@
     "formal_task_obligation": null,
     "limits": {
       "max_program_nodes": 8,
-      "max_inference_calls": 4,
-      "max_repair_calls": 1
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
     },
     "provider": {
       "input_context_ref": "catalog-public-r7",
@@ -88,25 +88,40 @@
     "question": "What is Cedar's warranty length?",
     "options": [
       {
-        "id": "LG16-twenty_four",
-        "description": "Cedar has a 24-month warranty."
-      },
-      {
-        "id": "LG16-ask",
+        "id": "LG16-o01",
         "description": "Request the missing Cedar warranty record."
       },
       {
-        "id": "LG16-twelve",
+        "id": "LG16-o02",
         "description": "Cedar has a 12-month warranty."
+      },
+      {
+        "id": "LG16-o03",
+        "description": "Cedar has a 24-month warranty."
       }
     ],
-    "target_option_id": "LG16-ask",
+    "target_option_id": "LG16-o01",
     "target_description": "No Cedar warranty premise is available.",
     "evidence_context_ref": "catalog-public-r7",
     "policy_ref": "public-read-r3",
     "expected_invocation": "one_stateless_call",
     "score_eligible_on_original_provider_input": true,
     "answerability_denominator": false,
-    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model."
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG16-ask": "LG16-o01",
+      "LG16-twelve": "LG16-o02",
+      "LG16-twenty_four": "LG16-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG16-o01": "LG16-o02",
+        "LG16-o02": "LG16-o03",
+        "LG16-o03": "LG16-o01"
+      },
+      "target_option_id": "LG16-o02",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
   }
 }
