@@ -1,0 +1,26 @@
+test_ask_obligation_is_parent_selected (language_growth.tests.test_planner.PlannerTests.test_ask_obligation_is_parent_selected) ... ok
+test_bridge_rejects_supplied_noncanonical_state (language_growth.tests.test_planner.PlannerTests.test_bridge_rejects_supplied_noncanonical_state) ... ok
+test_explicit_missing_raw_stage_is_recorded_without_fabrication (language_growth.tests.test_planner.PlannerTests.test_explicit_missing_raw_stage_is_recorded_without_fabrication) ... ok
+test_false_comparator_is_offered_then_rejected_without_answer (language_growth.tests.test_planner.PlannerTests.test_false_comparator_is_offered_then_rejected_without_answer) ... ok
+test_host_metadata_and_partial_program_cannot_enter_public_state (language_growth.tests.test_planner.PlannerTests.test_host_metadata_and_partial_program_cannot_enter_public_state) ... ok
+test_host_policy_restriction_cannot_disappear_before_provider (language_growth.tests.test_planner.PlannerTests.test_host_policy_restriction_cannot_disappear_before_provider) ... ok
+test_identity_and_state_handles_fail_closed (language_growth.tests.test_planner.PlannerTests.test_identity_and_state_handles_fail_closed) ... ok
+test_legacy_choice_wire_rounds_full_precision_stage (language_growth.tests.test_planner.PlannerTests.test_legacy_choice_wire_rounds_full_precision_stage) ... ok
+test_literal_string_does_not_probe_private_catalog (language_growth.tests.test_planner.PlannerTests.test_literal_string_does_not_probe_private_catalog) ... ok
+test_one_repair_replays_all_slots_and_charges_every_call (language_growth.tests.test_planner.PlannerTests.test_one_repair_replays_all_slots_and_charges_every_call) ... ok
+test_parent_chosen_read_and_no_label_input (language_growth.tests.test_planner.PlannerTests.test_parent_chosen_read_and_no_label_input) ... ok
+test_policy_stage_support_and_normalization (language_growth.tests.test_planner.PlannerTests.test_policy_stage_support_and_normalization) ... ok
+test_proposal_budget_counts_all_slots_and_stops (language_growth.tests.test_planner.PlannerTests.test_proposal_budget_counts_all_slots_and_stops) ... ok
+test_provider_error_text_is_not_returned (language_growth.tests.test_planner.PlannerTests.test_provider_error_text_is_not_returned) ... ok
+test_public_record_field_extra_metadata_is_rejected (language_growth.tests.test_planner.PlannerTests.test_public_record_field_extra_metadata_is_rejected) ... ok
+test_repair_attempt_cap_is_one (language_growth.tests.test_planner.PlannerTests.test_repair_attempt_cap_is_one) ... ok
+test_repair_call_limit_counts_each_request (language_growth.tests.test_planner.PlannerTests.test_repair_call_limit_counts_each_request) ... ok
+test_served_config_and_probability_maps_fail_closed (language_growth.tests.test_planner.PlannerTests.test_served_config_and_probability_maps_fail_closed) ... ok
+test_supported_wrong_choice_is_not_host_corrected (language_growth.tests.test_planner.PlannerTests.test_supported_wrong_choice_is_not_host_corrected) ... ok
+test_v01_request_schema_limits_and_provenance_free_fingerprint (language_growth.tests.test_planner.PlannerTests.test_v01_request_schema_limits_and_provenance_free_fingerprint) ... ok
+test_v01_response_schema_algorithm_and_provenance_are_pinned (language_growth.tests.test_planner.PlannerTests.test_v01_response_schema_algorithm_and_provenance_are_pinned) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.020s
+
+OK
