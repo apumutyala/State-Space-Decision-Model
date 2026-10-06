@@ -149,7 +149,7 @@ def test_backend_unsupported_and_crash_are_explicit():
 
     resp = run(base_request(), backend=Boom())
     assert status(resp) == ("error", "backend_error")
-    assert "CUDA out of memory" in resp["ssdm"]["error"]["message"]
+    assert "CUDA out of memory" not in resp["ssdm"]["error"]["message"]  # raw exception text withheld
 
 
 def test_backend_missing_option_is_error_not_pruned():

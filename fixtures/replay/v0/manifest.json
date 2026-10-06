@@ -86,14 +86,14 @@
  },
  "files_sha256": {
   "requests.jsonl": "47362d257d867076af69bed9e335372b10654285a1b30eacffbbd968e16d7089",
-  "responses.jsonl": "0a4b9c1376fd0b9fde7e18cf853f7abe80589ce26e2b8c29d4a529eebb78ac1b",
+  "responses.jsonl": "32f80a1aef5a0ae8be0bbed2be20896e437e3030ba72d5cda14cea45b8e0c1be",
   "recordings.jsonl": "d3cfad02df535e4d372dc80cffd409ac12b4eed8e76c255e7679de07cafc6315"
  },
  "replay_contract": "ReplayBackend(fixture_dir) + Decider(enable_v0_1_deltas=case.decider.enable_v0_1_deltas) reproduces responses.jsonl exactly after decide.backends.replay.normalize_response, except timing_dependent cases",
  "responses_rebuilt": {
-  "utc": "2026-10-06T09:55:55+00:00",
+  "utc": "2026-10-06T10:01:04+00:00",
   "by": "python -I scripts/rebuild_fixture_from_recordings.py",
-  "git_sha_before_commit": "a5031f76eff3c2bad10f6dac8c7e1a33e7e42dec",
+  "git_sha_before_commit": "37fcee31bb4cb4df4c57ec96b0508ba8697fa0d0",
   "adapter_version": "0.2.0",
   "envelope_schema": "ssdm.decide.v0.1",
   "interface": "interfaces/DECISION_LANGUAGE_V0.md@v0.1 (PR #4 8109b13)",

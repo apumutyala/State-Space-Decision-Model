@@ -48,8 +48,8 @@ and no answers.
 from __future__ import annotations
 
 import math
+import re
 import time
-import uuid
 from typing import Any
 
 from . import versions
@@ -87,6 +87,28 @@ ENVELOPE_KEYS = {
     "policy_restriction",
     "provenance",
 }
+#: Failure messages are fixed text per code; raw exception/backend text never reaches a response.
+SAFE_MESSAGES = {
+    "backend_error": "the backend failed or returned a malformed result; details withheld",
+    "internal_error": "the adapter failed; details withheld",
+    "non_finite_logits": "the backend returned non-finite scores; details withheld",
+    "control_tokens_in_input": "request text would encode to control tokens; refused",
+    "replay_miss": "no recording for this request; no model fallback",
+    "tokenization_failed": "tokenization failed; details withheld",
+    "deadline_exceeded": "deadline exceeded; no partial answers",
+}
+_CODE_RE = re.compile(r"[a-z][a-z0-9_]{0,63}")
+MAX_MESSAGE_CHARS = 300
+
+
+def _backend_code(code: Any) -> str:
+    return code if isinstance(code, str) and _CODE_RE.fullmatch(code) else "backend_unsupported"
+
+
+def _backend_message(code: str) -> str:
+    return SAFE_MESSAGES.get(code, "the backend cannot serve this request; details withheld")
+
+
 #: No abstention mechanism exists in the v0 adapter; this is not a measured non-abstention.
 ABSTENTION_V0 = {"abstained": False, "reason": None, "mechanism": "not_implemented_v0"}
 DEFAULT_LIMITS = {
@@ -192,9 +214,14 @@ class Decider:
 
     # --------------------------------------------------------------------- main
     def decide(self, request: dict[str, Any], state_handle: Any = None) -> dict[str, Any]:
+        """Error boundary: every path, including building the success response, returns an
+        explicit status. Work is accounted for every attempted inference call."""
         t_start = time.perf_counter()
         env: dict[str, Any] = {}
         request_id = None
+        # calls_started: inference calls the backend began (it calls check_deadline before each);
+        # result_calls: what a returned ScoreResult reported; score_entered: score() was invoked.
+        work: dict[str, Any] = {"calls_started": 0, "result_calls": None, "score_entered": False}
         try:
             if isinstance(request, dict) and isinstance(request.get("ssdm"), dict):
                 request_id = request["ssdm"].get("request_id")
@@ -230,7 +257,8 @@ class Decider:
             try:
                 plan = self.backend.plan(request)
             except BackendUnsupported as exc:
-                raise RequestRejected("unsupported", exc.code, exc.message) from exc
+                code = _backend_code(exc.code)
+                raise RequestRejected("unsupported", code, _backend_message(code)) from exc
             if limits["max_input_tokens"] is not None and plan.max_call_input_tokens > limits["max_input_tokens"]:
                 raise RequestRejected(
                     "exhausted",
@@ -246,29 +274,54 @@ class Decider:
                 )
             deadline_ms = limits["deadline_ms"]
 
-            def check_deadline() -> None:
-                if deadline_ms is not None and (time.perf_counter() - t_start) * 1000.0 > deadline_ms:
-                    raise DeadlineExceeded()
+            def expired() -> bool:
+                return deadline_ms is not None and (time.perf_counter() - t_start) * 1000.0 > deadline_ms
 
+            def check_deadline() -> None:  # called by backends before each inference call
+                if expired():
+                    work["stopped_by_deadline"] = True  # exact: this callback counted every started call
+                    raise DeadlineExceeded()
+                work["calls_started"] += 1
+
+            work["score_entered"] = True
             try:
                 result = self.backend.score(request, check_deadline)
-                check_deadline()
+                work["result_calls"] = getattr(result, "inference_calls", None)
+                if expired():
+                    raise DeadlineExceeded()
             except DeadlineExceeded as exc:
-                raise RequestRejected(
-                    "exhausted", "deadline_exceeded", f"deadline_ms {deadline_ms} exceeded; no partial answers"
-                ) from exc
+                raise RequestRejected("exhausted", "deadline_exceeded", SAFE_MESSAGES["deadline_exceeded"]) from exc
             except BackendUnsupported as exc:
-                raise RequestRejected("unsupported", exc.code, exc.message) from exc
-        except RequestRejected as rej:
-            return self._failure(request, request_id, rej.status, rej.code, rej.message, t_start, state_handle)
-        except Exception as exc:  # backend crash: explicit error, never a fallback
-            return self._failure(
-                request, request_id, "error", "backend_error", f"{type(exc).__name__}: {exc}", t_start, state_handle
+                code = _backend_code(exc.code)
+                raise RequestRejected("unsupported", code, _backend_message(code)) from exc
+            return self._success(
+                request, env, request_id, limits, restriction, provenance, revision, plan, result, t_start,
+                state_handle, work,
             )
+        except RequestRejected as rej:
+            return self._failure(request, request_id, rej.status, rej.code, rej.message[:MAX_MESSAGE_CHARS],
+                                 t_start, state_handle, work)
+        except Exception:  # never a fallback, never the raw exception text
+            code = "backend_error" if work["score_entered"] else "internal_error"
+            try:
+                return self._failure(request, request_id, "error", code, SAFE_MESSAGES[code], t_start,
+                                     state_handle, work)
+            except Exception:  # pragma: no cover - last-resort fixed response
+                return {"model": None, "answers": {}, "usage": {"input_tokens": 0, "output_tokens": 0},
+                        "error": {"status": "error", "code": "internal_error",
+                                  "message": SAFE_MESSAGES["internal_error"]}}
 
-        return self._success(
-            request, env, request_id, limits, restriction, provenance, revision, plan, result, t_start, state_handle
-        )
+    @staticmethod
+    def _calls(work: dict[str, Any] | None) -> tuple[int | None, str]:
+        """Attempted inference calls. Unknown work is reported as null, never as zero."""
+        if not work or not work["score_entered"]:
+            return 0, "no inference call attempted"
+        started, reported = work["calls_started"], work["result_calls"]
+        if isinstance(reported, int) and not isinstance(reported, bool) and reported >= 0:
+            return max(started, reported), "max(calls started, calls reported by the backend)"
+        if started > 0 or work.get("stopped_by_deadline"):
+            return started, "calls started before failure/deadline (counted by the adapter callback)"
+        return None, "score() was attempted but the backend failed before reporting work; count unknown"
 
     @staticmethod
     def _provenance_diag(provenance, plan) -> dict[str, Any]:
@@ -303,7 +356,9 @@ class Decider:
             "wire": versions.WIRE_COMPAT,
         }
 
-    def _failure(self, request, request_id, status, code, message, t_start, state_handle) -> dict[str, Any]:
+    def _failure(self, request, request_id, status, code, message, t_start, state_handle,
+                 work: dict[str, Any] | None = None) -> dict[str, Any]:
+        calls, calls_note = self._calls(work)
         resp = self._base(request, request_id)
         # Legacy-visible failure signal (SystemOne clients ignore ``ssdm``).
         resp["error"] = {"status": status, "code": code, "message": message}
@@ -325,7 +380,8 @@ class Decider:
             "diagnostics": {
                 "revision_id": revision.get("revision_id"),
                 "latency_ms": round((time.perf_counter() - t_start) * 1000.0, 3),
-                "inference_calls": 0,
+                "inference_calls": calls,
+                "inference_calls_accounting": calls_note,
                 "state_handle_in": None if state_handle is None else "discarded:stateless",
                 "state_reuse": False,
                 "versions": self._versions(),
@@ -334,23 +390,32 @@ class Decider:
         return resp
 
     def _success(
-        self, request, env, request_id, limits, restriction, provenance, revision, plan, result, t_start, state_handle
+        self, request, env, request_id, limits, restriction, provenance, revision, plan, result, t_start,
+        state_handle, work,
     ):
         questions = request["questions"]
         raw, served, entropy, temps = {}, {}, {}, {}
+        logits = getattr(result, "logits", None)
+        calls, _ = self._calls(work)
+        total_tokens = getattr(result, "total_input_tokens", None)
+        if not isinstance(logits, dict) or set(logits) != set(questions) or not (
+            isinstance(total_tokens, int) and not isinstance(total_tokens, bool) and total_tokens >= 0
+        ):
+            return self._failure(request, request_id, "error", "backend_error", SAFE_MESSAGES["backend_error"],
+                                 t_start, state_handle, work)
         for qid, q in questions.items():
             option_ids = [o for o, _ in canonical_options(q)]
-            q_logits = result.logits[qid]
-            if set(q_logits) != set(option_ids):  # backend must score every supplied option
-                return self._failure(
-                    request, request_id, "error", "backend_error",
-                    f"{qid}: backend scored {sorted(q_logits)} but options are {option_ids}", t_start, state_handle,
-                )
-            vec = [float(q_logits[o]) for o in option_ids]
+            q_logits = logits[qid]
+            if not isinstance(q_logits, dict) or set(q_logits) != set(option_ids):  # every supplied option
+                return self._failure(request, request_id, "error", "backend_error", SAFE_MESSAGES["backend_error"],
+                                     t_start, state_handle, work)
+            try:
+                vec = [float(q_logits[o]) for o in option_ids]
+            except (TypeError, ValueError):
+                vec = [float("nan")]
             if not all(math.isfinite(x) for x in vec):
-                return self._failure(
-                    request, request_id, "error", "non_finite_logits", f"{qid}: non-finite logits", t_start, state_handle
-                )
+                return self._failure(request, request_id, "error", "non_finite_logits",
+                                     SAFE_MESSAGES["non_finite_logits"], t_start, state_handle, work)
             k = len(option_ids)
             temp = self.calibration.temperature(k)
             raw[qid] = dict(zip(option_ids, softmax(vec, 1.0)))
@@ -396,7 +461,7 @@ class Decider:
                     "max_call_input_tokens": plan.max_call_input_tokens,
                     "total_input_tokens": result.total_input_tokens,
                 },
-                "inference_calls": result.inference_calls,
+                "inference_calls": calls,
                 "latency_ms": round((time.perf_counter() - t_start) * 1000.0, 3),
                 "entropy_nats": entropy,
                 "limits_applied": limits,

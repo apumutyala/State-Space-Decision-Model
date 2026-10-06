@@ -165,3 +165,23 @@ Fixture: rebuilt from the unchanged recordings by `scripts/rebuild_fixture_from_
 - Tokenizer check: 173/173 sequences are unchanged.
 
 Tests: **141 passed, 7 skipped** (CPU), including `tests/test_provenance.py`.
+
+## 8. Codex review blockers: error boundary, sanitised errors, work accounting (CPU only)
+
+1. **Error boundary.** The success path now runs inside the `decide()` error boundary.
+   - Malformed backend results (missing questions or options, non-dict logits, a missing token count, a non-`ScoreResult` value) return `error/backend_error`.
+   - Non-numeric scores return `error/non_finite_logits`.
+   - A failure while building the response returns an explicit status. The reproducer `ScoreResult({}, 1, 1)` now gives `error/backend_error` instead of a `KeyError`.
+2. **Sanitised errors.**
+   - Responses carry only a bounded reason code plus fixed text (`SAFE_MESSAGES`, "details withheld").
+   - Raw exception text and backend-authored `BackendUnsupported` messages are never returned.
+   - A backend code outside `[a-z][a-z0-9_]{0,63}` becomes `backend_unsupported`.
+   - Adapter validation messages, which describe the caller's own request, are capped at 300 characters.
+3. **Work accounting.** Each backend calls `check_deadline` before every inference call, and the adapter counts those calls. Failure diagnostics report `inference_calls` with an `inference_calls_accounting` note:
+   - the maximum of calls started and calls reported;
+   - 0 only if `score()` was never entered;
+   - `null` (unknown) if `score()` failed before reporting any work.
+
+Regression tests: `tests/test_error_boundary.py`, including the private-sentinel check on every failure path.
+
+The fixture was rebuilt from the unchanged recordings, again with no model run. All 28 ok cases are unchanged. Tests: 158 passed, 7 skipped.
