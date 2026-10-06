@@ -198,7 +198,9 @@ def test_snapshot_head_memory_is_bounded_in_length():
         assert int(cid.max()) < 8 and int(cid[m].min()) == 0
         if n >= 8:
             assert len(set(cid[m].tolist())) == 8
-    assert head.cost(10_000, 16)["state_scalars"] == head.cost(100, 16)["state_scalars"] == 8 * 16
+    c = head.cost(10_000, 16)
+    assert c["accumulator_scalars"] == head.cost(100, 16)["accumulator_scalars"] == 8 * 16
+    assert c["streaming_implemented"] is False  # the bound is the accumulator's, not this implementation's
 
 
 def test_head_b_chunked_scan_matches_streaming_reference(bb):
@@ -229,7 +231,7 @@ def test_clef_control_is_flagged_and_priced():
     h = ClefCrossAttentionControl(16, **SMALL["clef_control"])
     c = h.cost(1000, 4)
     assert h.attention_free is False and c["attention_free"] is False
-    assert h.cost(2000, 4)["state_scalars"] == 2 * c["state_scalars"]  # grows with T
+    assert h.cost(2000, 4)["accumulator_scalars"] == 2 * c["accumulator_scalars"]  # grows with T
     for name in ("integrator", "snapshot", "head_b", "fork"):
         assert make_head(name, 16).attention_free
 

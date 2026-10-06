@@ -80,6 +80,10 @@ class TrainConfig:
         return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
 
 
+def lora_init_seed(seed: int) -> int:
+    return seed * 1_000_003 + 17
+
+
 def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     """Freeze the backbone, add LoRA (rank 0 = head-only), enable checkpointing."""
     targets = cfg.lora_targets or (model.backbone.spec.lora_groups if model.backbone.spec else None)
@@ -87,9 +91,11 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     if cfg.lora_rank > 0:
         if targets is None:
             raise ValueError("no LoRA targets: set cfg.lora_targets or give the backbone a spec")
-        with torch.random.fork_rng(devices=[]):  # LoRA init depends only on cfg.seed, never the ambient RNG
-            torch.manual_seed(cfg.seed * 1_000_003 + 17)
-            found = apply_lora(model.backbone.model, targets, cfg.lora_rank, cfg.lora_alpha, cfg.lora_dropout)
+        # LoRA init draws only from this generator: a function of cfg.seed, never the ambient
+        # (CPU or CUDA) RNG, and it does not advance the ambient RNG either.
+        gen = torch.Generator().manual_seed(lora_init_seed(cfg.seed))
+        found = apply_lora(model.backbone.model, targets, cfg.lora_rank, cfg.lora_alpha, cfg.lora_dropout,
+                           generator=gen)
         replaced = sorted({n for names in found.values() for n in names})
     else:
         for p in model.backbone.parameters():
@@ -107,6 +113,14 @@ class Trainer:
         if cfg.require_guard and guard is None:
             raise ValueError("TrainConfig.require_guard: pass a SplitGuard built from the Index dev/test "
                              "manifests (or SplitGuard.synthetic_only for synthetic toys)")
+        init_seed = getattr(model, "init_seed", None)
+        if init_seed is not None and init_seed != cfg.seed:
+            raise ValueError(f"model head was initialised with seed {init_seed} but cfg.seed = {cfg.seed}; "
+                             "build DecisionModel(..., seed=cfg.seed) so one seed fixes every random init")
+        # Seed the ambient RNGs FIRST, before any initialisation below. Head init (DecisionModel)
+        # and LoRA init (explicit generator) are already independent of the ambient state; this
+        # makes everything after construction (dropout, data order helpers) a function of cfg.seed.
+        self._seed_all(cfg.seed)
         self.guard = guard
         self.model, self.cfg = model, cfg
         self.train_items, self.eval_items = train_items, eval_items or []
@@ -125,14 +139,13 @@ class Trainer:
         self.history: list[dict[str, Any]] = []
         self.cards: list[dict[str, Any]] = []
         self.lineage = lineage(model.backbone, train_items)
-        self._seed_all(cfg.seed)
 
     # ------------------------------------------------------------------ data order
     @staticmethod
     def _seed_all(seed: int) -> None:
         random.seed(seed)
         np.random.seed(seed % (2**32))
-        torch.manual_seed(seed)
+        torch.manual_seed(seed)  # also seeds every CUDA device
 
     def _order(self, epoch: int) -> list[int]:
         g = torch.Generator().manual_seed(self.cfg.seed * 100_003 + epoch)

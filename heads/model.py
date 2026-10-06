@@ -32,7 +32,9 @@ class DecisionModel(nn.Module):
         self.backbone = backbone
         d = backbone.d_model
         self.init_seed = seed if isinstance(head, str) else None
-        with torch.random.fork_rng(devices=[]):
+        # torch.manual_seed also seeds CUDA, so fork (and restore) every CUDA device too.
+        cuda = list(range(torch.cuda.device_count())) if torch.cuda.is_available() else []
+        with torch.random.fork_rng(devices=cuda):
             torch.manual_seed(seed)
             self.head = make_head(head, d, **(head_kwargs or {})) if isinstance(head, str) else head
             self.typed = TypedOutput(d)
