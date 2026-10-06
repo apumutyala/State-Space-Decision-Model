@@ -2,8 +2,13 @@
 
 import json
 import unittest
+from decimal import Decimal
 
-from language_growth.development_data import generate_development_tasks, price_swap_counterfactual
+from language_growth.development_data import (
+    comparison_swap_counterfactual, development_manifest, development_split_spec,
+    generate_development_tasks,
+    price_swap_counterfactual,
+)
 from language_growth.kernel import check_program
 
 
@@ -109,10 +114,89 @@ class DevelopmentDataTests(unittest.TestCase):
         self.assertTrue(any(a["model_inputs"][0]["questions"] != p["model_inputs"][0]["questions"]
                             for a, p in zip(augmented, production)))
 
+    def test_development_splits_have_disjoint_names_templates_and_value_ranges(self):
+        train_spec = development_split_spec("development_train")
+        validation_spec = development_split_spec("development_validation")
+        self.assertFalse(set(train_spec["names"]) & set(validation_spec["names"]))
+        for kind in ("read", "explain", "compare"):
+            self.assertFalse(set(train_spec["templates"][kind]) & set(validation_spec["templates"][kind]))
+        self.assertLess(train_spec["price_cents_range"][1], validation_spec["price_cents_range"][0])
+        self.assertLess(train_spec["warranty_range"][1], validation_spec["warranty_range"][0])
+        for split, spec in (("development_train", train_spec),
+                            ("development_validation", validation_spec)):
+            tasks = generate_development_tasks(17, 60, split=split)
+            for task in tasks:
+                self.assertEqual(task["development_split"], split)
+                self.assertTrue(task["training_only"]["template_id"].startswith(split + ":"))
+                records = task["training_only"]["catalog"]["records"]
+                for record in records:
+                    self.assertIn(record["entity_ref"], spec["names"])
+                    warranty = record["fields"]["warranty_months"]["value"]
+                    price = int(Decimal(record["fields"]["price"]["value"]) * 100)
+                    self.assertTrue(spec["warranty_range"][0] <= warranty <= spec["warranty_range"][1])
+                    self.assertTrue(spec["price_cents_range"][0] <= price <= spec["price_cents_range"][1])
+
+    def test_comparison_operand_positions_and_fields_vary_in_production_format(self):
+        comparisons = [task for task in generate_development_tasks(17, 90, choice_format="production")
+                       if task["training_only"]["kind"] == "compare"]
+        self.assertEqual({task["training_only"]["program"]["nodes"][0]["field"] for task in comparisons},
+                         {"price", "warranty_months"})
+        self.assertEqual({task["training_only"]["program"]["nodes"][0]["record_ref"] for task in comparisons},
+                         {"development-record-1", "development-record-2"})
+        self.assertGreater(len({task["training_only"]["targets"][1]["option_id"] for task in comparisons}), 1)
+        for task in comparisons:
+            training = task["training_only"]
+            left, right = training["program"]["nodes"][:2]
+            self.assertNotEqual(left["record_ref"], right["record_ref"])
+            self.assertEqual(left["field"], right["field"])
+            state = json.loads(task["model_inputs"][0]["state"])
+            names = {r["record_ref"]: r["entity_ref"] for r in state["records"]}
+            self.assertLess(state["task_input"].index(names[left["record_ref"]]),
+                            state["task_input"].index(names[right["record_ref"]]))
+
+    def test_counterfactual_swaps_selected_comparison_field(self):
+        comparisons = [task for task in generate_development_tasks(37, 120)
+                       if task["training_only"]["kind"] == "compare"]
+        for field in ("price", "warranty_months"):
+            task = next(task for task in comparisons
+                        if task["training_only"]["program"]["nodes"][0]["field"] == field
+                        and task["training_only"]["program"]["nodes"][2]["relation"] != "equal")
+            swapped = price_swap_counterfactual(task)
+            self.assertEqual(swapped, comparison_swap_counterfactual(task))
+            self.assertNotEqual(task["training_only"]["targets"][-1]["option_id"],
+                                swapped["training_only"]["targets"][-1]["option_id"])
+            self.assertEqual([r["questions"] for r in task["model_inputs"]],
+                             [r["questions"] for r in swapped["model_inputs"]])
+            self.assertEqual(check_program(swapped["training_only"]["program"],
+                                           swapped["training_only"]["host"],
+                                           swapped["training_only"]["catalog"]).status, "accepted")
+
+    def test_manifest_hash_and_explicit_repair_budget(self):
+        tasks = generate_development_tasks(17, 30, split="development_train")
+        manifest = development_manifest(tasks)
+        self.assertEqual(manifest, development_manifest(generate_development_tasks(17, 30)))
+        self.assertEqual(len(manifest["sample_sha256"]), 64)
+        self.assertEqual(manifest["split"], "development_train")
+        self.assertEqual(sum(manifest["comparison_left_records"].values()),
+                         sum(task["training_only"]["kind"] == "compare" for task in tasks))
+        self.assertFalse(manifest["allow_one_repair"])
+        self.assertEqual(tasks[0]["training_only"]["host"]["limits"]["max_repair_calls"], 0)
+        repair = generate_development_tasks(17, 30, allow_one_repair=True)
+        self.assertTrue(development_manifest(repair)["allow_one_repair"])
+        self.assertEqual(repair[2]["training_only"]["host"]["limits"]["max_repair_attempts"], 1)
+        self.assertEqual(repair[2]["training_only"]["host"]["limits"]["max_repair_calls"], 4)
+        self.assertEqual(repair[2]["training_only"]["host"]["limits"]["max_proposal_calls"], 8)
+        with self.assertRaises(ValueError):
+            development_manifest(tasks + generate_development_tasks(17, 1, split="development_validation"))
+
     def test_rejects_invalid_generation_requests(self):
         for seed, count in ((True, 1), (-1, 1), (0, 0), (0, 10001)):
             with self.subTest(seed=seed, count=count), self.assertRaises(ValueError):
                 generate_development_tasks(seed, count)
+        with self.assertRaises(ValueError):
+            generate_development_tasks(0, 1, split="audit")
+        with self.assertRaises(ValueError):
+            generate_development_tasks(0, 1, allow_one_repair=1)
 
 
 if __name__ == "__main__":

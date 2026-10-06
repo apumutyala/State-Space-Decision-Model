@@ -17,8 +17,29 @@ from typing import Any
 from .kernel import check_program
 from .parent_bridge import decision_request
 
-_NAMES = ("Aster", "Bracken", "Cinder", "Dovetail", "Ember", "Fallow",
-          "Grove", "Hearth", "Indigo", "Juniper", "Kestrel", "Lumen")
+_SPLITS = {
+    "development_train": {
+        "names": ("Aster", "Bracken", "Cinder", "Dovetail", "Ember", "Fallow"),
+        "warranty_range": (1, 36), "price_cents_range": (5000, 20000),
+        "templates": {
+            "read": ("What is {entity}'s {field} in October 2026?",
+                     "Give the October 2026 {field} for {entity}."),
+            "explain": ("Explain the checked {field} fact for {entity}.",
+                        "Show the checked derivation for {entity}'s {field}."),
+            "compare": ("Compare the October {field} of {left} and {right}.",
+                        "How do {left}'s and {right}'s October {field} compare?"),
+        },
+    },
+    "development_validation": {
+        "names": ("Grove", "Hearth", "Indigo", "Juniper", "Kestrel", "Lumen"),
+        "warranty_range": (37, 60), "price_cents_range": (20001, 30000),
+        "templates": {
+            "read": ("State {entity}'s {field} for October 2026.",),
+            "explain": ("Provide a checked derivation of {entity}'s {field}.",),
+            "compare": ("For October 2026, compare {left}'s and {right}'s {field}.",),
+        },
+    },
+}
 _OPS = (("read", "Assert one selected fact"),
         ("explain", "Explain a checked assertion of one selected fact"),
         ("compare", "Compare two selected typed values and assert the selected relation"))
@@ -28,8 +49,8 @@ _POLICY = "synthetic-development-public-v1"
 _REGISTRY = "synthetic-development-registry-v1"
 
 
-def _rng(seed: int, index: int, domain: str) -> random.Random:
-    material = f"ssdm-development-v1:{seed}:{index}:{domain}".encode("ascii")
+def _rng(split: str, seed: int, index: int, domain: str) -> random.Random:
+    material = f"ssdm-development-v2:{split}:{seed}:{index}:{domain}".encode("ascii")
     return random.Random(int.from_bytes(hashlib.sha256(material).digest(), "big"))
 
 
@@ -87,11 +108,12 @@ def _options(items: list[tuple[str, str]], prefix: str, rng: random.Random,
     return options, target_ids
 
 
-def _program(kind: str, field: str, fact_index: int, relation: str | None) -> dict[str, Any]:
+def _program(kind: str, field: str, fact_index: int, relation: str | None,
+             left_index: int) -> dict[str, Any]:
     if kind == "compare":
         nodes = [
-            {"id": "n1", "op": "ReadFact", "record_ref": "development-record-1", "field": "price"},
-            {"id": "n2", "op": "ReadFact", "record_ref": "development-record-2", "field": "price"},
+            {"id": "n1", "op": "ReadFact", "record_ref": f"development-record-{left_index + 1}", "field": field},
+            {"id": "n2", "op": "ReadFact", "record_ref": f"development-record-{2 - left_index}", "field": field},
             {"id": "n3", "op": "Compare", "left": {"node": "n1", "project": "object"},
              "right": {"node": "n2", "project": "object"}, "relation": relation},
             {"id": "n4", "op": "Assert", "proposition": "n3"},
@@ -108,28 +130,35 @@ def _program(kind: str, field: str, fact_index: int, relation: str | None) -> di
             "nodes": nodes, "outputs": [nodes[-1]["id"]], "style": "plain"}
 
 
-def _relation(prices: tuple[int, int]) -> str:
-    return "equal" if prices[0] == prices[1] else ("greater_than" if prices[0] > prices[1] else "less_than")
+def _relation(values: tuple[int, int], left_index: int) -> str:
+    left, right = values[left_index], values[1 - left_index]
+    return "equal" if left == right else ("greater_than" if left > right else "less_than")
 
 
 def _build(seed: int, index: int, names: tuple[str, str], warranties: tuple[int, int],
-           prices: tuple[int, int], choice_format: str) -> dict[str, Any]:
+           prices: tuple[int, int], choice_format: str, split: str,
+           allow_one_repair: bool) -> dict[str, Any]:
     kind = _OPS[index % len(_OPS)][0]
-    rng = _rng(seed, index, "choice-order")
-    wording = _rng(seed, index, "wording")
+    spec = _SPLITS[split]
+    rng = _rng(split, seed, index, "choice-order")
+    wording = _rng(split, seed, index, "wording")
     field = wording.choice(("price", "warranty_months"))
     fact_index = wording.randrange(2)
+    left_index = _rng(split, seed, index, "named-order").randrange(2)
+    template_index = wording.randrange(len(spec["templates"][kind]))
+    template = spec["templates"][kind][template_index]
+    field_text = field.replace("_", " ")
     if kind == "compare":
-        task_input = wording.choice((
-            f"Compare the October prices of {names[0]} and {names[1]}.",
-            f"How do {names[0]}'s and {names[1]}'s October prices compare?",
-        ))
-    elif kind == "explain":
-        task_input = f"Explain the checked {field.replace('_', ' ')} fact for {names[fact_index]}."
+        task_input = template.format(left=names[left_index], right=names[1 - left_index], field=field_text)
     else:
-        task_input = f"What is {names[fact_index]}'s {field.replace('_', ' ')} in October 2026?"
+        task_input = template.format(entity=names[fact_index], field=field_text)
     catalog, host = _catalog(names, warranties, prices), _host()
-    program = _program(kind, field, fact_index, _relation(prices) if kind == "compare" else None)
+    if allow_one_repair:
+        host["limits"].update(max_proposal_calls=8, max_repair_calls=4, max_repair_attempts=1)
+    compare_values = prices if field == "price" else warranties
+    program = _program(kind, field, fact_index,
+                       _relation(compare_values, left_index) if kind == "compare" else None,
+                       left_index)
     # Context identity changes with evidence, including counterfactual worlds.
     digest = hashlib.sha256(json.dumps(catalog, sort_keys=True, separators=(",", ":"),
                                       ensure_ascii=True, allow_nan=False).encode("ascii")).hexdigest()
@@ -155,9 +184,10 @@ def _build(seed: int, index: int, names: tuple[str, str], warranties: tuple[int,
     ]
     if kind == "compare":
         choices.extend([
-            ("left", "Select the left typed operand.", operand_options, operand_ids["1-price"]),
-            ("right", "Select the right typed operand.", operand_options, operand_ids["2-price"]),
-            ("relation", "Select the comparison relation.", relation_options, relation_ids[_relation(prices)]),
+            ("left", "Select the left typed operand.", operand_options, operand_ids[f"{left_index + 1}-{field}"]),
+            ("right", "Select the right typed operand.", operand_options, operand_ids[f"{2 - left_index}-{field}"]),
+            ("relation", "Select the comparison relation.", relation_options,
+             relation_ids[_relation(compare_values, left_index)]),
         ])
     else:
         choices.append(("fact", "Select the fact to assert.", fact_options,
@@ -167,7 +197,7 @@ def _build(seed: int, index: int, names: tuple[str, str], warranties: tuple[int,
     prior = []
     for slot_index, (slot, question, options, target) in enumerate(choices, 1):
         request_id = hashlib.sha256(
-            f"ssdm-development-request:{seed}:{index}:{slot_index}:{digest}".encode("ascii")
+            f"ssdm-development-request:{split}:{seed}:{index}:{slot_index}:{digest}".encode("ascii")
         ).hexdigest()[:24]
         request, _ = decision_request(
             task_input=task_input, host=host, catalog=catalog,
@@ -180,48 +210,119 @@ def _build(seed: int, index: int, names: tuple[str, str], warranties: tuple[int,
         targets.append({"slot": slot, "option_id": target})
         prior.append({"slot": slot, "option_id": target, "description": options[target]})
     return {
-        "development_only": True, "task_id": f"synthetic-{seed}-{index}",
+        "development_only": True, "development_split": split,
+        "task_id": f"synthetic-{split}-{seed}-{index}",
         "model_inputs": model_inputs,
         "training_only": {"kind": kind, "choice_format": choice_format,
+                          "seed": seed, "index": index, "template_id": f"{split}:{kind}:{template_index}",
+                          "allow_one_repair": allow_one_repair,
                           "host": host, "catalog": catalog,
                           "program": program, "targets": targets},
     }
 
 
-def generate_development_tasks(seed: int, count: int, *, choice_format: str = "mixed") -> list[dict[str, Any]]:
-    """Generate only synthetic development tasks; no external data is read."""
+def generate_development_tasks(seed: int, count: int, *, choice_format: str = "mixed",
+                               split: str = "development_train",
+                               allow_one_repair: bool = False) -> list[dict[str, Any]]:
+    """Generate one iterative development split; no audit/test data is read."""
     if type(seed) is not int or seed < 0 or type(count) is not int or not 1 <= count <= 10000:
         raise ValueError("seed must be nonnegative and count must be 1..10000")
     if choice_format not in ("production", "augmented", "mixed"):
         raise ValueError("choice_format must be production, augmented, or mixed")
+    if split not in _SPLITS or type(allow_one_repair) is not bool:
+        raise ValueError("invalid development split or repair setting")
+    spec = _SPLITS[split]
     tasks = []
     for index in range(count):
-        names = tuple(_rng(seed, index, "names").sample(_NAMES, 2))
-        values = _rng(seed, index, "values")
-        warranties = (values.randint(1, 48), values.randint(1, 48))
-        price_a = values.randint(5000, 25000)
-        price_b = values.randint(5000, 25000)
+        names = tuple(_rng(split, seed, index, "names").sample(spec["names"], 2))
+        values = _rng(split, seed, index, "values")
+        warranty_lo, warranty_hi = spec["warranty_range"]
+        price_lo, price_hi = spec["price_cents_range"]
+        warranties = (values.randint(warranty_lo, warranty_hi), values.randint(warranty_lo, warranty_hi))
+        price_a = values.randint(price_lo, price_hi)
+        price_b = values.randint(price_lo, price_hi)
         while price_b == price_a:
-            price_b = values.randint(5000, 25000)
+            price_b = values.randint(price_lo, price_hi)
         # Equality is a real skill, not merely an always-wrong offered option.
-        if _rng(seed, index, "equality-case").randrange(3) == 0:
+        if _rng(split, seed, index, "equality-case").randrange(3) == 0:
             price_b = price_a
         fmt = ("production" if index % 2 == 0 else "augmented") if choice_format == "mixed" else choice_format
-        tasks.append(_build(seed, index, names, warranties, (price_a, price_b), fmt))
+        tasks.append(_build(seed, index, names, warranties, (price_a, price_b), fmt,
+                            split, allow_one_repair))
     return tasks
 
 
-def price_swap_counterfactual(example: dict[str, Any]) -> dict[str, Any]:
-    """Development-only comparison with the two prices exchanged."""
+def development_split_spec(split: str) -> dict[str, Any]:
+    """Declared, disjoint iterative development domains; no audit split exists here."""
+    if split not in _SPLITS:
+        raise ValueError("unknown development split")
+    return copy.deepcopy(_SPLITS[split])
+
+
+def development_manifest(tasks: list[dict[str, Any]]) -> dict[str, Any]:
+    """Hash exact generated rows and identify the split used to produce them."""
+    if not tasks or not isinstance(tasks, list):
+        raise ValueError("nonempty development task list required")
+    first = tasks[0]
+    split = first["development_split"]
+    spec = development_split_spec(split)
+    seed = first["training_only"]["seed"]
+    repair = first["training_only"]["allow_one_repair"]
+    if any(task["development_split"] != split or task["training_only"]["seed"] != seed
+           or task["training_only"]["allow_one_repair"] != repair for task in tasks):
+        raise ValueError("mixed development domains")
+    rows = "".join(json.dumps(task, sort_keys=True, separators=(",", ":"),
+                              ensure_ascii=True, allow_nan=False) + "\n" for task in tasks).encode("ascii")
+    comparisons = [task for task in tasks if task["training_only"]["kind"] == "compare"]
+    return {
+        "schema": "ssdm.synthetic_development_manifest.v2",
+        "split": split, "seed": seed, "count": len(tasks),
+        "allow_one_repair": repair,
+        "choice_formats": {fmt: sum(task["training_only"]["choice_format"] == fmt for task in tasks)
+                           for fmt in ("production", "augmented")},
+        "name_pool": list(spec["names"]),
+        "warranty_range": list(spec["warranty_range"]),
+        "price_cents_range": list(spec["price_cents_range"]),
+        "template_ids": {kind: [f"{split}:{kind}:{index}" for index in range(len(options))]
+                         for kind, options in spec["templates"].items()},
+        "comparison_fields": {field: sum(task["training_only"]["program"]["nodes"][0]["field"] == field
+                                        for task in comparisons) for field in ("price", "warranty_months")},
+        "comparison_left_records": {
+            ref: sum(task["training_only"]["program"]["nodes"][0]["record_ref"] == ref
+                     for task in comparisons)
+            for ref in ("development-record-1", "development-record-2")
+        },
+        "comparison_relations": {relation: sum(task["training_only"]["program"]["nodes"][2]["relation"] == relation
+                                              for task in comparisons) for relation in _RELATIONS},
+        "sample_sha256": hashlib.sha256(rows).hexdigest(),
+        "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+        "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+    }
+
+
+def comparison_swap_counterfactual(example: dict[str, Any]) -> dict[str, Any]:
+    """Swap the selected comparison field's values in a development world."""
     if example.get("training_only", {}).get("kind") != "compare":
         raise ValueError("comparison example required")
     original = example["training_only"]["catalog"]["records"]
     names = (original[0]["entity_ref"], original[1]["entity_ref"])
     warranties = tuple(r["fields"]["warranty_months"]["value"] for r in original)
     prices = tuple(int(Decimal(r["fields"]["price"]["value"]) * 100) for r in original)
-    ident = example["task_id"].split("-")
-    seed, index = int(ident[-2]), int(ident[-1])
-    swapped = _build(seed, index, names, warranties, (prices[1], prices[0]),
-                     example["training_only"]["choice_format"])
-    swapped["task_id"] = f"{example['task_id']}-price-swap"
+    field = example["training_only"]["program"]["nodes"][0]["field"]
+    if field == "price":
+        prices = (prices[1], prices[0])
+    elif field == "warranty_months":
+        warranties = (warranties[1], warranties[0])
+    else:
+        raise ValueError("unsupported comparison field")
+    seed, index = example["training_only"]["seed"], example["training_only"]["index"]
+    swapped = _build(seed, index, names, warranties, prices,
+                     example["training_only"]["choice_format"], example["development_split"],
+                     example["training_only"]["allow_one_repair"])
+    swapped["task_id"] = f"{example['task_id']}-comparison-swap"
     return swapped
+
+
+def price_swap_counterfactual(example: dict[str, Any]) -> dict[str, Any]:
+    """Compatibility alias; also swaps warranty values for warranty comparisons."""
+    return comparison_swap_counterfactual(example)
