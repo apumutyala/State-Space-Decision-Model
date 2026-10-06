@@ -39,6 +39,8 @@ from decide.prompt import SYSTEM_PROMPT, TEMPLATES, Template, _instr, continuati
 from decide.schema import canonical_options, canonical_question_ids, render
 
 LAYOUTS = ("ordered", "symmetric")
+#: bump on any change to tagged_segments / option_segments / build_row token accounting
+LAYOUT_VERSION = "m2-layout-v1"
 
 #: encode(text, trusted) -> token ids.
 EncodeFn = Callable[[str, bool], list[int]]
@@ -204,6 +206,9 @@ class ByteEncoder:
     vocab_size = 260
     pad_id = 0
 
+    def identity(self) -> dict:
+        return {"kind": "byte+4", "vocab_size": self.vocab_size}
+
     def __call__(self, text: str, trusted: bool = True) -> list[int]:
         return [b + 4 for b in text.encode("utf-8")]
 
@@ -220,4 +225,11 @@ def hf_segment_encoder(tokenizer: Any) -> EncodeFn:
             return tokenizer.encode(text, add_special_tokens=False)
         return untrusted.encode(text)
 
+    import hashlib
+    import json
+
+    vocab_sha = hashlib.sha256(json.dumps(sorted(tokenizer.get_vocab().items())).encode()).hexdigest()
+    ident = {"kind": "hf", "name_or_path": getattr(tokenizer, "name_or_path", None), "vocab_sha256": vocab_sha,
+             "untrusted": untrusted.identity()}
+    encode.identity = lambda: ident  # type: ignore[attr-defined]
     return encode

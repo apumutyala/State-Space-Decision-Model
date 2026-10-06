@@ -15,6 +15,8 @@ Revision 2 (PR #14 internal review):
 
 Every per-cell figure below changed as a result.
 
+Revision 3 (Codex review of PR #14): head memory claims are narrowed to the accumulator, with peak terms now priced. Seeded initialisation and resume-lineage validation are added (see "Known limitations"). Per-cell $ are unchanged; head peak memory rises by ≈ 0.1 GB at T = 8192.
+
 ## What m2 tests
 
 The head × parent factorial (PLAN.md, D-architecture):
@@ -122,4 +124,13 @@ What remains in the System 1 line after m1 is ≈ $60 (PLAN.md spend table). The
   - HF caches are not usable under gradient checkpointing. The code refuses that combination rather than mis-forking, so the cache fork trains without checkpointing.
   - Training the GDN cache fork needs one workaround: the in-place cache updates in transformers 5.14 are rebound to assignment (`heads.backbone._assign_not_copy`). Re-check this on any transformers upgrade.
 - **The Clef control uses softmax over positions.** It is a control and never the entrant.
+- **Head memory claims cover the accumulator only.** The O(S·K) figure for the snapshot head and O(K·d) for Head B are the persistent accumulator sizes, not peak memory. All heads are non-streaming: each consumes the full fp32 feature tensor h[B,T,D]. The snapshot head also builds a [B,T,S] one-hot, and training keeps per-chunk tensors for the whole sequence. Peak head memory therefore grows linearly in T, and the estimator prices those terms. Streaming inference is not implemented.
+- **Reproducibility.** Head and LoRA initialisation are seeded inside a forked RNG, from the model seed and `cfg.seed` respectively, so they are independent of the ambient RNG.
+- **Resume validation.** Before restoring weights, a resume checks the checkpoint's lineage:
+  - the frozen-backbone identity: config hash, name and commit, and a weights digest (sampled by default);
+  - the tokenizer identity stamped on every row;
+  - the layout and template versions;
+  - a hash of the training items in order.
+
+  CUDA RNG state is saved and restored when CUDA is present. Receipts record the lineage block.
 - **Mamba-3 was trained at a 2,048-token context.** T = 8192 points on it are extrapolation (techniques/02 §2.9 collapse check applies).
