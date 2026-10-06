@@ -44,6 +44,14 @@ At each level it must show, with receipts and paired CIs:
 
 ## Binding constraints for both tracks
 
+### Execution preference (user instruction, 2026-10-06)
+
+Proactively swarm specific useful tasks with subagents when appropriate. Parallelize independent work and pipeline implementation, adversarial review, measurement and integration. Each task has a clear owner, inputs, bounded deliverable and exit proof, with separate mutation ownership. Preserve context and artifacts at handoffs and promptly start the next ready task. The coordinator owns the critical path and also does direct work.
+
+Anticipate concrete failure modes, dependency and resource bottlenecks, efficiency gains and lower-hanging fruit. Prioritize the cheapest high-impact next step supported by evidence. Keep only a lightweight ready-task queue; do not duplicate work or manufacture tasks to fill slots. Preserve the standing approximate 80% direct model optimization/correct enablement and at most 20% process allocation. Existing privacy, model selection, resource ownership, spend, independent review and goal exit conditions remain binding.
+
+### Existing constraints
+
 - **Money:** never exceed approved funds. Currently that's the shared $525 SF envelope, within a $5k ceiling. Climb the spend ladder in `COORDINATION.md`. No credit purchases, no automatic top-ups.
 - **Integrity:**
   - No training on, or tuning against, Index test items or the untouched test slice.
