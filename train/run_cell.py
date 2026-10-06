@@ -7,8 +7,11 @@ Stages (pre-registered in the config; exit codes in jobs/rwkv7/JOB_SPEC.md):
   smoke   cache fork == recompute fork on real rows (features and LoRA gradients), GPU, bf16      -> exit 21 on mismatch
   ladder  one optimiser step per T in t_ladder (max K rows) and the peak memory of each; the largest T under
           max_peak_gb becomes the training cap T_max                                             -> exit 22 if none fits
+          measured rate: if even the fastest fitting rung's step time cannot reach 2 x pass-rule window steps
+          within max_minutes                                                                       -> exit 26
   train   LoRA + fork head, CE arm, wall-clock capped, checkpoint/resume ($GMN_CHECKPOINT_DIR), eval cards on held-out
-          pilot rows; non-finite loss -> exit 23; peak over max_peak_gb -> exit 24
+          pilot rows; non-finite loss -> exit 23; peak over max_peak_gb -> exit 24; after 10 steps, the measured mean
+          step time cannot reach 2 x window steps in the time left -> exit 26 (a throughput finding, not pilot-fail)
 Writes <out>/cell.json (merged per stage) and <out>/train_log.jsonl.
 """
 from __future__ import annotations
@@ -24,7 +27,8 @@ import time
 import urllib.request
 from pathlib import Path
 
-EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25}
+EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26}
+CHECK_AFTER_STEPS = 10  # the in-training rate check uses the mean of the first steps actually run
 
 
 # ----------------------------------------------------------------------------- data (CPU-testable)
@@ -61,6 +65,19 @@ class RwkvSegmentEncoder:
         if not trusted and self.special.intersection(ids):
             raise ControlTokenError("untrusted text encodes to a special token")
         return ids
+
+
+def steps_needed(rule: dict) -> int:
+    """The pass rule compares two disjoint windows of steps, so fewer than 2 x window steps can never pass."""
+    return 2 * rule.get("window", 50)
+
+
+def too_slow(step_s: float, minutes_left: float, need_steps: int) -> dict:
+    """Measured stop condition (exit 26): at the measured seconds per optimiser step, can the remaining wall-clock
+    budget still reach the steps the pass rule needs? A no is a throughput finding, not a pilot-fail."""
+    affordable = 60 * minutes_left / max(step_s, 1e-9)
+    return {"step_s": step_s, "minutes_left": minutes_left, "affordable_steps": affordable, "need_steps": need_steps,
+            "too_slow": affordable < need_steps}
 
 
 def pass_rule(history: list[dict], cards: list[dict], peak_gb: float, rule: dict) -> dict:
@@ -243,6 +260,13 @@ def main(argv=None):
         save()
         if not fits:
             return EXIT["no_T_fits"]
+        # measured stop condition 1: even the fastest fitting rung's MEASURED step time (worst rows of that rung)
+        # cannot reach the pass rule's step count inside max_minutes -> exit 26 before any training spend
+        fastest = min(lad[str(T)]["step_s"] for T in fits)
+        cell["ladder"]["rate_check"] = too_slow(fastest, cfg["max_minutes"], steps_needed(cfg["pass_rule"]))
+        save()
+        if cell["ladder"]["rate_check"]["too_slow"]:
+            return EXIT["too_slow"]
 
     if "train" in stages:
         t_max = cell["ladder"]["T_max"]
@@ -253,10 +277,23 @@ def main(argv=None):
         resumed = tr.resume()
         if not resumed:
             tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items, 0, a.out))
-        t_end = time.time() + 60 * cfg["max_minutes"]
+        t_start = time.time()
+        t_end = t_start + 60 * cfg["max_minutes"]
+        step0 = tr.step
         logf = open(out / "train_log.jsonl", "a")
         while tr.step < cfg["max_steps"] and time.time() < t_end:
             loss = tr.train_step()
+            if tr.step - step0 == CHECK_AFTER_STEPS:  # measured stop condition 2: the real data mix's step time
+                el = time.time() - t_start
+                chk = too_slow(el / CHECK_AFTER_STEPS, (t_end - time.time()) / 60,
+                               max(0, steps_needed(cfg["pass_rule"]) - tr.step))
+                cell["train_rate_check"] = chk
+                save()
+                if chk["too_slow"]:
+                    tr.save()
+                    cell["train"] = {"stopped": "too_slow", "step": tr.step, **chk}
+                    save()
+                    return EXIT["too_slow"]
             logf.write(json.dumps({"step": tr.step, "loss": loss, "peak_gb": peak(), "t": time.time()}) + "\n")
             logf.flush()
             if not math.isfinite(loss):

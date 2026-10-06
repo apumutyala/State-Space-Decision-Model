@@ -6,7 +6,10 @@
 # Exit codes: 0 measured + decided + exports verified   2 bad JOB   5 setup   6 export verification   7 phase timeout
 #   9 decision missing/invalid   10 snapshot / vendored code / DEV rows / records identity mismatch, or download failed
 #   11 memory probe failed   12 Index kit run failed   13 scoring failed   14 steer smoke failed
-#   21 fork mismatch   22 no T fits   23 non-finite loss   24 memory stop   25 too few pilot items   1 finalize failed
+#   15 readout too slow by MEASUREMENT (jobs/common/rate_guard.py: probe prefill preflight or the live row rate)
+#   21 fork mismatch   22 no T fits   23 non-finite loss   24 memory stop   25 too few pilot items
+#   26 training too slow by MEASUREMENT (ladder step_s, then the first 10 steps: cannot reach 2 x pass-rule window)
+#   1 finalize failed
 # The marker /output/RWKV7_<JOB>_DONE is written ONLY by jobs/common/finalize.py, and only when its final code is 0.
 set -Euo pipefail
 MAIN_PID=$$
@@ -20,6 +23,7 @@ WORK=/tmp/rwkv7-$JOB
 CK=${GMN_CHECKPOINT_DIR:-$WORK/ck}
 META=${GMN_METADATA_URL:-http://169.254.42.1}
 HB_EVERY_S=60 STALL_S=1200
+WATCH_EXTRA=$WORK  # every phase writes under $WORK (logs, index rows, cell.json, train_log): watch it
 mkdir -p "$OUT/phases" "$WORK/out/index" "$WORK/logs" "$CK"
 export SSDM_DATA=/data PYTHONUNBUFFERED=1 PYTHONUTF8=1
 HF_DIR=${HF_HUB_CACHE:-${HF_HOME:-$HOME/.cache/huggingface}}
@@ -90,11 +94,21 @@ if [ "$JOB" = readout ]; then
   case $r in 0) ;; 124) fail 7 "probe timeout" ;; *) fail 11 "probe rc=$r" ;; esac
 
   say "phase index (stock readout, DEV subset)"
-  timeout ${CAP_I}m python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
+  NROWS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['rows'])" "$WORK/out/index/subset-rows.json")
+  # measured stop condition: the probe's MEASURED prefill rate must let the readout fit its cap (else exit 15)
+  TOKS=$(python -c "import json,sys;p=json.load(open(sys.argv[1]))['prefill'];print(max(v['tok_s'] for v in p.values() if 'tok_s' in v))" \
+    "$WORK/out/probe.json") || fail 11 "no measured prefill rate"
+  python -m jobs.common.rate_guard preflight --tok-s "$TOKS" --subset "$SUBSET" --cap-min "$CAP_I" \
+    --out "$WORK/out/index/preflight.json" > "$WORK/logs/preflight.log" 2>&1; r=$?
+  gate "index:preflight" $r
+  [ $r -eq 0 ] || fail $r "readout projected past its cap from the measured prefill rate"
+  python -m jobs.common.rate_guard run --results "$WORK/out/index/stock/results.jsonl" --total "$NROWS" \
+    --cap-min "$CAP_I" --report "$WORK/out/index/rate.json" -- \
+    python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
     --option family=rwkv7-hf --option model_dir="$SNAP" \
     --rows "$WORK/subset-rows.jsonl.gz" --out "$WORK/out/index/stock" > "$WORK/logs/index.log" 2>&1; r=$?
   gate "index" $r; export_phase index
-  case $r in 0) ;; 124) fail 7 "index timeout" ;; *) fail 12 "index rc=$r" ;; esac
+  case $r in 0) ;; 124) fail 7 "index timeout" ;; 15) fail 15 "index: measured rate too slow" ;; *) fail 12 "index rc=$r" ;; esac
 
   say "phase score"
   timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset score --results "$WORK/out/index/stock/results.jsonl" \
@@ -122,7 +136,7 @@ else
     > "$WORK/logs/cell.log" 2>&1; r=$?
   cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
   gate "cell" $r; export_phase cell
-  case $r in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25) fail $r "cell stop" ;; *) fail 2 "cell rc=$r" ;; esac
+  case $r in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26) fail $r "cell stop" ;; *) fail 2 "cell rc=$r" ;; esac
   python scripts/decide_rwkv7.py lora "$WORK/out/cell.json" "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1 \
     || fail 9 "decision"
 fi

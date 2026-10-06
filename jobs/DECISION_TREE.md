@@ -14,6 +14,11 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $16.34 | $20 | ~$4.70 |
 | rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $19.30 | $20 | ~$7.72 |
 
+**Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
+need one cap covering all of them: MTD + `costs.concurrent_cap_usd([...])` = the ceiling of the sum of their worst
+cases. probe9b + rwkv7 A (qual pass branch): MTD + 45. rwkv7 A + B chained with `depends_on`: MTD + 36 (B is
+submitted while A can still bill). A job submitted alone: MTD + its hard cap.
+
 ## After the qualification (`scripts/decide_9b.py` verdict, `jobs/qual` exit code)
 
 | Qual outcome | Next | Why |

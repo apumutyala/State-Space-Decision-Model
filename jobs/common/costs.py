@@ -62,6 +62,15 @@ def cap_ok(p: dict) -> bool:
     return worst_case_usd(p) <= p["hard_cap_usd"]
 
 
+def concurrent_cap_usd(names: list[str]) -> int:
+    """Workspace-cap increment when several jobs can bill at once. A job chained with depends_on is submitted while
+    its parent is still queued or running, so the cap set at submit must cover the parent's remaining worst case PLUS
+    the child's: set_workspace_cap(MTD + this). (rwkv7 A + B chained: ceil(16.34 + 19.30) = 36, not 20.)"""
+    import math
+
+    return math.ceil(sum(worst_case_usd(load(n)) for n in names))
+
+
 # ----------------------------------------------------------------------------- re-pricing (lean branch)
 def stage_tokens(cfg: dict, stage: str, tok_s: float) -> float:
     """Tokens one capped stage trains at a measured rate (the cap is wall-clock, so $ is fixed and tokens move)."""

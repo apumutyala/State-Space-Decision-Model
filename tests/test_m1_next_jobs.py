@@ -358,3 +358,168 @@ def test_rwkv7_tokenizer_matches_world_and_fails_closed():
 
     with pytest.raises(ControlTokenError):
         enc("x <|endoftext|> y", trusted=False)
+
+
+# ----------------------------------------------------------------------------- PR #28 review: heartbeat coverage
+_ASSIGN = re.compile(r"(?:^|[\s;(])(\w+)=\"?(?:\$\(readlink -f \"?)?\$\{?(\w+)")
+_WRITE = re.compile(r"(?:>>?|--out|--ckpt-dir|--report|--results|--out-dir|mkdir -p)\s+\"?\$\{?(\w+)")
+WATCHED_BASE = {"OUT", "CK", "HF_DIR"}
+NOT_PHASE_OUTPUT = {"RESULT", "GMN_RESULT_PATH"}  # the platform result file: written once at the end, not a phase output
+
+
+def _watch_model(text):
+    alias = {}
+    for line in text.splitlines():
+        if line.lstrip().startswith("#"):
+            continue
+        for var, root in _ASSIGN.findall(line):
+            alias.setdefault(var, root)
+    extra = {alias.get(v, v) for v in re.findall(r"WATCH_EXTRA=\"?\$\{?(\w+)", text)}
+    extra |= set(re.findall(r"WATCH_EXTRA=\"?\$\{?(\w+)", text))
+
+    def resolve(v, watched):
+        seen = set()
+        while v not in watched and v in alias and v not in seen:
+            seen.add(v)
+            v = alias[v]
+        return v
+
+    writes = {v for v in _WRITE.findall(text) if v not in NOT_PHASE_OUTPUT}
+    return alias, extra, writes, resolve
+
+
+@pytest.mark.parametrize("runner", ["jobs/probe9b/probe_job.sh", "jobs/rwkv7/rwkv7_job.sh",
+                                    "jobs/clef_baseline/run_job.sh"])
+def test_every_phase_writes_under_a_watched_dir(runner):
+    text = (ROOT / runner).read_text(encoding="utf-8")
+    assert "watchdog.sh" in text
+    alias, extra, writes, resolve = _watch_model(text)
+    watched = WATCHED_BASE | extra
+    bad = sorted(v for v in writes if resolve(v, watched) not in watched)
+    assert writes and not bad, f"{runner}: writes under unwatched dirs {bad}"
+
+
+def test_watch_test_is_not_vacuous_for_rwkv7():
+    text = (ROOT / "jobs/rwkv7/rwkv7_job.sh").read_text(encoding="utf-8")
+    alias, extra, writes, resolve = _watch_model(text.replace("WATCH_EXTRA=$WORK", "true"))
+    assert extra == set()
+    assert "WORK" in {resolve(v, WATCHED_BASE) for v in writes}  # the original bug would be caught
+
+
+def test_qual_heartbeat_is_unconditional_so_it_cannot_false_kill():
+    s = (ROOT / "jobs/qual/qual_job.sh").read_text(encoding="utf-8")
+    assert re.search(r'while true; do date -u \+%FT%TZ > "\$OUT/heartbeat"; sleep 60; done', s)
+    assert "watchdog.sh" not in s
+
+
+WATCH_SCRIPT = r"""
+set -u
+OUT="$1/out"; CK="$1/ck"; HF_DIR="$1/hflink"; W="$1/work"; mkdir -p "$OUT" "$CK" "$W" "$1/hfreal"
+ln -sfn "$1/hfreal" "$HF_DIR" 2>/dev/null || mkdir -p "$HF_DIR"
+MAIN_PID=$$; HB_EVERY_S=1; STALL_S=3; WATCH_EXTRA=${3:-}
+. "$2"
+start_watchdog
+sleep 4
+rm -f "$OUT/heartbeat"
+for i in 1 2 3 4; do echo "$i" >> "$W/train_log.jsonl"; sleep 1; done
+if [ -f "$OUT/heartbeat" ]; then echo touched; else echo withheld; fi
+"""
+
+
+@pytest.mark.skipif(shutil.which("bash") is None, reason="bash not available")
+def test_watchdog_counts_progress_under_watch_extra(tmp_path):
+    import subprocess
+
+    p = tmp_path / "t.sh"
+    p.write_text(WATCH_SCRIPT, encoding="utf-8", newline="\n")
+    wd = (ROOT / "jobs/clef_baseline/watchdog.sh").as_posix()
+
+    def run(extra):
+        r = subprocess.run(["bash", str(p), tmp_path.as_posix(), wd, extra], capture_output=True, text=True,
+                           timeout=60)
+        return r.stdout.split()[-1]
+
+    assert run((tmp_path / "work").as_posix()) == "touched"
+    assert run("") == "withheld"  # without WATCH_EXTRA the same progress is invisible (the PR #28 finding)
+
+
+# ----------------------------------------------------------------------------- measured stop conditions
+def test_rate_guard_preflight_and_projection():
+    from jobs.common import rate_guard as rg
+
+    assert rg.preflight(1000.0, 600_000, 40)["ok"] is True  # 600k x 2 / 1000 / 60 = 20 min <= 38
+    assert rg.preflight(300.0, 600_000, 40)["ok"] is False  # 66.7 min
+    assert rg.project(100, 600.0, 2008) == pytest.approx(600 / 100 * 2008 / 60)
+    assert rg.subset_proxy_tokens(str(dev_subset.SUBSET)) > 0
+
+
+def _child(code_py):
+    import sys as _s
+
+    return [_s.executable, "-c", code_py]
+
+
+def test_rate_guard_run_stops_slow_passes_fast_and_propagates(tmp_path):
+    from jobs.common import rate_guard as rg
+
+    res = tmp_path / "results.jsonl"
+    head = "import time\nf = open(" + repr(str(res)) + ", 'a')\n"
+    fast = rg.run(_child(head + "for i in range(30):\n    f.write('x' + chr(10)); f.flush()\n"), res, 30,
+                  cap_min=1.0, check_after_min=0.0, poll_s=0.05)
+    assert fast == 0
+    res.unlink()
+    slow = rg.run(_child(head + "for i in range(1000):\n    f.write('x' + chr(10)); f.flush(); time.sleep(0.05)\n"),
+                  res, 1000, cap_min=0.2, check_after_min=0.02, poll_s=0.1, report=tmp_path / "rep.json")
+    assert slow == rg.EXIT_TOO_SLOW
+    assert "measured" in json.loads((tmp_path / "rep.json").read_text())["stopped"]
+    assert rg.run(_child("import sys; sys.exit(3)"), tmp_path / "none.jsonl", 10, cap_min=1.0, poll_s=0.05) == 3
+    assert rg.run(_child("import time; time.sleep(30)"), tmp_path / "none.jsonl", 10, cap_min=0.02,
+                  check_after_min=0.0, poll_s=0.05) == 124
+
+
+def test_training_rate_stop_condition():
+    from train import run_cell as rc
+
+    need = rc.steps_needed(CELL["pass_rule"])
+    assert need == 100
+    assert rc.too_slow(60.0, CELL["max_minutes"], need)["too_slow"] is False  # 110 steps affordable
+    assert rc.too_slow(70.0, CELL["max_minutes"], need)["too_slow"] is True  # 94 < 100
+    assert rc.EXIT["too_slow"] == 26
+    s = (ROOT / "jobs/rwkv7/rwkv7_job.sh").read_text(encoding="utf-8")
+    assert "21|22|23|24|25|26)" in s and "15) fail 15" in s
+
+
+@pytest.mark.parametrize("runner", ["jobs/probe9b/probe_job.sh", "jobs/rwkv7/rwkv7_job.sh"])
+def test_readout_phases_use_measured_rate_guards(runner):
+    s = (ROOT / runner).read_text(encoding="utf-8")
+    assert "rate_guard preflight --tok-s" in s and "rate_guard run --results" in s
+    assert "timeout ${CAP_I" not in s  # the guard owns the cap for the Index arms
+
+
+# ----------------------------------------------------------------------------- manifest hashes, chained caps
+def test_dev_subset_records_which_manifest_bytes_are_hashed():
+    import hashlib
+
+    sub = dev_subset.load_subset()
+    gz = (ROOT / "harness/manifests/dev-manifest.jsonl.gz").read_bytes()
+    assert sub["dev_manifest_sha256_gz"] == hashlib.sha256(gz).hexdigest()
+    assert sub["dev_manifest_sha256_uncompressed"] == hashlib.sha256(gzip.decompress(gz)).hexdigest()
+    slices = json.loads((ROOT / "harness/manifests/slices.json").read_text())
+    assert sub["dev_manifest_sha256_uncompressed"] == slices["dev"]["manifest_sha256"]
+    assert "dev_manifest_sha256" not in sub  # no ambiguous key
+
+
+def test_chained_and_concurrent_workspace_caps():
+    assert costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"]) == 36
+    assert costs.concurrent_cap_usd(["probe9b", "rwkv7_readout"]) == 45
+    assert costs.concurrent_cap_usd(["rwkv7_lora"]) == 20
+    spec = (ROOT / "jobs/rwkv7/JOB_SPEC.md").read_text(encoding="utf-8")
+    assert "MTD + 36" in spec and "depends_on" in spec
+    assert "MTD + 45" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("spec", ["jobs/probe9b/JOB_SPEC.md", "jobs/rwkv7/JOB_SPEC.md"])
+def test_health_fields_documented(spec):
+    s = (ROOT / spec).read_text(encoding="utf-8")
+    for k in ("grace_period_s: 1800", "fail_threshold: 2", "interval_s: 600", "STALL_S", "WATCH_EXTRA"):
+        assert k in s, k

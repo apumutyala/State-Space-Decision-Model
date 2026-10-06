@@ -96,10 +96,19 @@ def summary(entries, ids):
             "by_benchmark": {str(c): n for c, n in sorted(collections.Counter(e["catalog_id"] for e in sub).items())}}
 
 
-def load_subset(path=SUBSET):
+def manifest_hashes(path=DEV_MANIFEST):
+    """Both hashes, named by the bytes they cover (uncompressed text = what harness/manifests/slices.json records)."""
+    gz = Path(path).read_bytes()
+    return {"dev_manifest_sha256_uncompressed": hashlib.sha256(gzip.decompress(gz)).hexdigest(),
+            "dev_manifest_sha256_gz": hashlib.sha256(gz).hexdigest()}
+
+
+def load_subset(path=SUBSET, check_manifest=True):
     d = json.loads(Path(path).read_text(encoding="utf-8"))
     if ids_sha256(d["run_ids"]) != d["ids_sha256"]:
         raise SystemExit(f"{path}: run_ids do not match ids_sha256")
+    if check_manifest and manifest_hashes()["dev_manifest_sha256_uncompressed"] != d["dev_manifest_sha256_uncompressed"]:
+        raise SystemExit(f"{path}: built from a different DEV manifest than {DEV_MANIFEST}")
     return d
 
 
@@ -180,13 +189,16 @@ def main(argv=None):
     if a.cmd == "build":
         entries = read_manifest()
         ids = build_subset(entries, a.n, a.min_per_bench, a.seed)
-        raw = gzip.open(DEV_MANIFEST, "rb").read()
-        out = {"_comment": "Pre-registered m1 DEV subset (jobs/common/dev_subset.py). IDs only; rows stay private.",
-               "seed": a.seed, "n_target": a.n, "min_per_bench": a.min_per_bench,
-               "dev_manifest_sha256": hashlib.sha256(raw).hexdigest(), "ids_sha256": ids_sha256(ids),
+        out = {"_comment": "Pre-registered m1 DEV subset (jobs/common/dev_subset.py). IDs only; rows stay private. "
+                           "dev_manifest_sha256_uncompressed = sha256 of the gunzipped JSONL text (the value "
+                           "harness/manifests/slices.json records as dev.manifest_sha256); dev_manifest_sha256_gz = "
+                           "sha256 of the committed .gz file bytes. ids_sha256 = sha256 of the sorted run_ids joined "
+                           "by newlines.",
+               "seed": a.seed, "n_target": a.n, "min_per_bench": a.min_per_bench, **manifest_hashes(),
+               "ids_sha256": ids_sha256(ids),
                "summary": summary(entries, ids), "run_ids": ids}
         Path(a.out).write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8", newline="\n")
-        print(json.dumps({k: out[k] for k in ("ids_sha256", "dev_manifest_sha256")} | {"rows": len(ids)}))
+        print(json.dumps({k: out[k] for k in ("ids_sha256", "dev_manifest_sha256_uncompressed")} | {"rows": len(ids)}))
         return 0
     subset = load_subset(a.subset)
     res = {"rows": cmd_rows, "score": cmd_score, "compare": cmd_compare, "ece": cmd_ece}[a.cmd](a, subset)

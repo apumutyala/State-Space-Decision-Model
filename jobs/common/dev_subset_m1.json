@@ -1,9 +1,10 @@
 {
- "_comment": "Pre-registered m1 DEV subset (jobs/common/dev_subset.py). IDs only; rows stay private.",
+ "_comment": "Pre-registered m1 DEV subset (jobs/common/dev_subset.py). IDs only; rows stay private. dev_manifest_sha256_uncompressed = sha256 of the gunzipped JSONL text (the value harness/manifests/slices.json records as dev.manifest_sha256); dev_manifest_sha256_gz = sha256 of the committed .gz file bytes. ids_sha256 = sha256 of the sorted run_ids joined by newlines.",
  "seed": 20261007,
  "n_target": 2000,
  "min_per_bench": 12,
- "dev_manifest_sha256": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+ "dev_manifest_sha256_uncompressed": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+ "dev_manifest_sha256_gz": "1362c23ebe810cccf8f2ec87533d454cc3aacd6ba6dc6086e14ad36211c8073a",
  "ids_sha256": "6e4cb8dfac94a40a6e014e05744ff775aebcdf99d7a572190034e6bc026095c3",
  "summary": {
   "rows": 2008,

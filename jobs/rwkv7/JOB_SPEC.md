@@ -51,20 +51,24 @@ largest T that stays under 76 GB.
 |---|---|---|---|
 | setup | 25 | pins + kit + vendored-code self check; DEV rows sha256; pinned `snapshot_download`; `sha256sum -c snapshot.sha256`; snapshot code == vendored | 5 / 10 |
 | probe | 15 | load time, weights GB, prefill tok/s + peak GB at 2k/8k/16k, state bytes | 11 / 7 |
-| index | 75 | Decision Index stock readout on the 2,008-row DEV subset (`family=rwkv7-hf`, template `jrt-rwkv-g1-v1`) | 12 / 7 |
+| index | 75 | Decision Index stock readout on the 2,008-row DEV subset (`family=rwkv7-hf`, template `jrt-rwkv-g1-v1`). Measured stop conditions (`jobs/common/rate_guard.py`): preflight from the **probe phase's measured prefill tok/s**, then the live row rate after 8 min; a projection past 95% of the cap stops with exit 15 | 12 / 7 / 15 |
 | score | 5 | subset slice index + CI, ECE (debiased, SmoothECE per length bin) | 13 |
 | steer | 20 | `safety_eval.run_smoke --backend decide --family rwkv7-hf`, dev split, 40 route + 24 pay, **no `--final`** (D1-B stays held out) | 14 / 7 |
 | report | 2 | `scripts/decide_rwkv7.py readout` -> `readout-measured` | 9 |
 
 Schedule 142 + reserve 8 = 150. Worst case (30 + 2 x 150) x 0.0495 = **$16.34**; expected ~$4.70; hard cap
-`set_workspace_cap(MTD + 20)`.
+`set_workspace_cap(MTD + 20)` when A runs alone.
 
 ## Stage B: LoRA m2 pilot cell (`JOB=lora`, `jobs/rwkv7/job_params_lora.json`, `jobs/rwkv7/pilot_cell.json`)
 
 `train/run_cell.py` stages, all pre-registered in `pilot_cell.json`:
 - **smoke**: on 2 real rows (K <= 4, T <= 512) with a random rank-8 LoRA, cache fork vs recompute fork on GPU/bf16 must
   agree: max relative feature diff <= 0.03 and LoRA-gradient cosine >= 0.99, else exit 21.
-- **ladder**: T in {512, 1024, 2048}; peak per rung; T_max = largest rung <= 76 GB, else exit 22.
+- **ladder**: T in {512, 1024, 2048}; peak and step time per rung; T_max = largest rung <= 76 GB, else exit 22.
+  **Measured rate**: if even the fastest fitting rung's measured step time cannot reach the pass rule's 2 x 50 = 100
+  steps inside `max_minutes`, exit 26 before any training spend; after the first 10 training steps the same check
+  runs on their measured mean step time (exit 26, checkpoint kept). A slow model is reported as a throughput
+  finding (26), never as `pilot-fail`.
 - **train**: fork head (`fork_mode=cache`, no gradient checkpointing: the cache fork refuses it), CE arm, LoRA rank 64,
   batch 1 x accum 8, lr 1e-3 head / 1e-4 LoRA, <= 400 steps or 110 min; 2,000 train / 300 eval records from the m2
   sample (`records.jsonl.gz` sha256 `824671c9...ceb7`, PRIVATE, through `train.guard.SplitGuard` built from the DEV and
@@ -74,7 +78,12 @@ Schedule 142 + reserve 8 = 150. Worst case (30 + 2 x 150) x 0.0495 = **$16.34**;
   step-0 card to the last; peak <= 76 GB. `pilot-pass` / `pilot-fail` are both valid measured outcomes (exit 0).
   No Index number is claimed from the pilot; the factorial cells carry the Index eval (M2_RUN_SPEC).
 
-Schedule 172 + reserve 8 = 180. Worst case (30 + 2 x 180) x 0.0495 = **$19.30**; expected ~$7.72; hard cap MTD + 20.
+Schedule 172 + reserve 8 = 180. Worst case (30 + 2 x 180) x 0.0495 = **$19.30**; expected ~$7.72.
+
+**Workspace cap when B is chained.** The cap is workspace-wide and B is submitted (with `depends_on`) while A is still
+queued or running, so at submit time it must cover A's remaining worst case plus B's: `set_workspace_cap(MTD + 36)`
+(`costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"])` = ceil(16.34 + 19.30)). MTD + 20 is right only if B is
+submitted after A has ended. With the probe also live (qual pass branch), add its $28.21.
 
 ## `submit_job` fields (one build context for both stages, so `depends_on` needs no `allow_different_context`)
 
@@ -103,7 +112,27 @@ Stage B differs in: `idempotency_key "m1-rwkv7-lora-<sha12>"`, `env {"JOB": "lor
 
 0 ok | 2 bad JOB / cell crash | 5 setup | 6 export verification | 7 phase timeout | 9 decision invalid |
 10 snapshot, vendored code, DEV rows or records identity | 11 probe | 12 Index kit | 13 scoring | 14 steer smoke |
-21 fork mismatch | 22 no T fits | 23 non-finite loss | 24 memory stop | 25 too few pilot items | 1 finalize.
+15 readout too slow by measurement | 21 fork mismatch | 22 no T fits | 23 non-finite loss | 24 memory stop |
+25 too few pilot items | 26 training too slow by measurement | 1 finalize.
+
+## Health check (`checks.health`) and heartbeat, field by field
+
+- `type: heartbeat`, `path: /output/heartbeat`: the platform reads the file's freshness from outside the container.
+  The runner never vouches for liveness itself; `jobs/clef_baseline/watchdog.sh` rewrites the file every 60 s **only
+  while** the main process is alive **and** some file under the watched dirs (`$OUT`, `$CK`, `$HF_DIR`,
+  `WATCH_EXTRA=$WORK`; `find -H` follows a symlinked HF cache root) changed in the last `STALL_S` = 1,200 s.
+- `interval_s: 600`: the platform evaluates the heartbeat every 10 min.
+- `fail_threshold: 2`: two consecutive stale evaluations trigger `on_fail`; one late write is tolerated.
+- `grace_period_s: 1800`: no evaluation during the first 30 min of an attempt (image start, weight download and
+  sha256, model load write few files).
+- `on_fail: kill`: the attempt ends `self_terminated` (its own terminal state, billed to that point).
+- Worst-case detection of a hung worker: `STALL_S` + 2 x `interval_s` = 20 + 20 = 40 min after its last file write
+  (plus up to the 30-min grace if it hangs at start), instead of billing to `max_duration`. A dead main process stops
+  the heartbeat at once.
+- Every phase writes under a watched dir (kit: one results row per request; pipeline: `train_log.jsonl` every 25
+  steps; `run_cell`: `train_log.jsonl` every step; probes and scoring: per-phase JSON). `tests/test_m1_next_jobs.py`
+  checks statically that every path a runner writes resolves to a watched dir, and runs the watchdog with progress
+  only under `WATCH_EXTRA`.
 
 Exports, verification and the local CPU recompute follow `jobs/probe9b/JOB_SPEC.md` (`dev_subset score` / `ece`
 reproduce `index/score.json` / `ece.json`; `safety_eval` summary from `predictions.jsonl`).

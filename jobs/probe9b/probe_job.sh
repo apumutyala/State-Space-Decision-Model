@@ -7,6 +7,7 @@
 #   decision, not a failure)   2 numerics / pipeline crash   3 throughput stop   4 memory stop   5 setup failed
 #   6 an export failed verification   7 a phase timed out   8 9B weights unavailable   9 decision missing/invalid
 #   10 DEV-row / subset identity mismatch   12 Index kit run failed   13 subset scoring failed   1 finalize failed
+#   15 Index readout too slow by MEASUREMENT (jobs/common/rate_guard.py: prefill preflight or the live row rate)
 # /output/PROBE_DONE is written ONLY by jobs/common/finalize.py, and only when its final code is 0.
 set -Euo pipefail
 MAIN_PID=$$
@@ -22,7 +23,8 @@ mkdir -p "$OUT/phases" "$WORK/out/index" "$WORK/logs"
 export SSDM_DATA_ROOT=$WORK/data SSDM_DATA=/data PYTHONUNBUFFERED=1 PYTHONUTF8=1
 mkdir -p "$SSDM_DATA_ROOT"
 if [ -n "${HF_HUB_CACHE:-}" ] && [ -d "${HF_HUB_CACHE}" ]; then ln -sfn "$HF_HUB_CACHE" "$SSDM_DATA_ROOT/hf"; else mkdir -p "$SSDM_DATA_ROOT/hf"; fi
-HF_DIR=$SSDM_DATA_ROOT/hf
+HF_DIR=$(readlink -f "$SSDM_DATA_ROOT/hf")  # the real cache dir (downloads count as progress)
+WATCH_EXTRA=$WORK  # = CK; explicit so the static watch test sees it
 T0=$(date +%s)
 EXPORT_FAIL=0
 RC=""
@@ -108,21 +110,33 @@ say "converted layers: [${LAYERS}]"
 # ------------------------------------------------------------------ I: Index DEV subset, stock and converted arms
 if [ -n "$LAYERS" ]; then
   Q9B=$(python -c "from convert.model import resolve_model_dir as r; import os; print(r(os.environ['Q9B_DIR']))")
+  NROWS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['rows'])" "$WORK/out/index/subset-rows.json")
+  # measured stop condition: the pipeline's MEASURED stock prefill rate must let the readout fit its cap (else 15)
+  TOKS=$(python -c "import json,sys;t=json.load(open(sys.argv[1]))['throughput']['stock'];print(max(v['tok_s'] for v in t.values() if 'tok_s' in v))" \
+    "$WORK/out/pipeline/results.json") || fail 2 "no measured prefill rate"
+  python -m jobs.common.rate_guard preflight --tok-s "$TOKS" --subset "$SUBSET" --cap-min "$CAP_IS" \
+    --out "$WORK/out/index/preflight.json" > "$WORK/logs/preflight.log" 2>&1; r=$?
+  gate "I:preflight" $r
+  [ $r -eq 0 ] || fail $r "readout projected past its cap from the measured prefill rate"
   say "phase I (stock arm)"
-  timeout ${CAP_IS}m python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
+  python -m jobs.common.rate_guard run --results "$WORK/out/index/stock/results.jsonl" --total "$NROWS" \
+    --cap-min "$CAP_IS" --report "$WORK/out/index/rate_stock.json" -- \
+    python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
     --option family=q9af-probe --option model_dir="$Q9B" --option converted=none \
     --rows "$WORK/data/subset-rows.jsonl.gz" --out "$WORK/out/index/stock" > "$WORK/logs/index_stock.log" 2>&1; r=$?
   gate "I:stock" $r
   export_phase I_stock
-  case $r in 0) ;; 124) fail 7 "index stock timeout" ;; *) fail 12 "index stock rc=$r" ;; esac
+  case $r in 0) ;; 124) fail 7 "index stock timeout" ;; 15) fail 15 "index stock: measured rate too slow" ;; *) fail 12 "index stock rc=$r" ;; esac
   say "phase I (converted arm: layers $LAYERS)"
-  timeout ${CAP_IC}m python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
+  python -m jobs.common.rate_guard run --results "$WORK/out/index/conv/results.jsonl" --total "$NROWS" \
+    --cap-min "$CAP_IC" --report "$WORK/out/index/rate_conv.json" -- \
+    python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
     --option family=q9af-probe --option model_dir="$Q9B" --option converted="$LAYERS" \
     --option gdn_ckpt="$OUT/gdn_converted.pt" \
     --rows "$WORK/data/subset-rows.jsonl.gz" --out "$WORK/out/index/conv" > "$WORK/logs/index_conv.log" 2>&1; r=$?
   gate "I:conv" $r
   export_phase I_conv
-  case $r in 0) ;; 124) fail 7 "index conv timeout" ;; *) fail 12 "index conv rc=$r" ;; esac
+  case $r in 0) ;; 124) fail 7 "index conv timeout" ;; 15) fail 15 "index conv: measured rate too slow" ;; *) fail 12 "index conv rc=$r" ;; esac
 
   say "phase S (subset scoring, paired)"
   S() { timeout ${CAP_S}m python -X utf8 -m jobs.common.dev_subset "$@" --subset "$SUBSET"; }
