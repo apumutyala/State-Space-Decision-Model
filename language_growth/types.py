@@ -73,7 +73,7 @@ class SpeechAct:
     kind: str
     content: Fact | Comparison | AskContent | tuple[SpeechAct, ...] | SpeechAct
     dependencies: tuple[str, ...]
-    derivation: tuple[str, ...]
+    derivation: tuple[int, ...]
 
     def to_dict(self) -> dict[str, Any]:
         return {"kind": self.kind, "content": _json_value(self.content), "dependencies": list(self.dependencies), "derivation": list(self.derivation)}

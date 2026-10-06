@@ -129,7 +129,7 @@ def _numeric_or_typed(field: dict[str, Any]) -> str | int | bool | Decimal:
     value = field.get("value")
     if value_type == "integer" and type(value) is int:
         return value
-    if value_type == "decimal" and isinstance(value, str) and re.fullmatch(r"[+-]?(?:\d+)(?:\.\d+)?", value):
+    if value_type == "decimal" and isinstance(value, str) and re.fullmatch(r"[+-]?(?:[0-9]+)(?:\.[0-9]+)?", value):
         try:
             result = Decimal(value)
             if result.is_finite():
@@ -271,20 +271,24 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
     if p["registry_ref"] != h["registry_ref"]:
         _fail("unknown_reference")
     if p["style"] not in registry["style_ids"] or p["style"] != "plain":
-        _fail("unsupported_assertion")
+        _fail("unsupported_field")
     nodes = _sequence(p["nodes"])
-    if not nodes or len(nodes) > h["limits"]["max_program_nodes"]:
+    if not nodes:
+        _fail("invalid_graph")
+    if len(nodes) > h["limits"]["max_program_nodes"]:
         _fail("exceeded_limit")
     prior: dict[str, Any] = {}
-    for raw in nodes:
+    ordinals: dict[str, int] = {}
+    for ordinal, raw in enumerate(nodes, 1):
         n = _dict(raw)
         op = _name(n.get("op"), "unsupported_operation")
         if op not in _OPS or op not in registry["allowed_ops"]:
             _fail("unsupported_operation")
-        _keys(n, _NODE_KEYS[op], reason="unsupported_assertion" if n.keys() - _NODE_KEYS[op] else "invalid_graph")
+        _keys(n, _NODE_KEYS[op])
         node_id = _name(n["id"])
-        if node_id in prior:
+        if re.fullmatch(r"n[0-9]{1,3}", node_id) is None or node_id in prior:
             _fail("invalid_graph")
+        ordinals[node_id] = ordinal
         if op == "ReadFact":
             value = _read(_name(n["record_ref"]), _name(n["field"]), by_ref, snapshot, policy, registry, catalog)
         elif op == "Compare":
@@ -294,7 +298,7 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
             if not isinstance(target, str) or target not in prior or not isinstance(prior[target], (Fact, Comparison)):
                 _fail("invalid_graph")
             content = prior[target]
-            value = SpeechAct("assert", content, _deps(content), (target, node_id))
+            value = SpeechAct("assert", content, _deps(content), (ordinals[target], ordinal))
         elif op == "Conjoin":
             refs = _sequence(n["speech_acts"])
             if len(refs) < 2 or len(refs) != len(set(refs)) or any(ref not in prior or not isinstance(prior[ref], SpeechAct) or prior[ref].kind not in ("assert", "conjoin") for ref in refs):
@@ -303,13 +307,13 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
             intervals = set().union(*(_scopes(act) for act in acts))
             if len(intervals) > 1:
                 _fail("scope_mismatch")
-            value = SpeechAct("conjoin", acts, _deps(acts), tuple(refs) + (node_id,))
+            value = SpeechAct("conjoin", acts, _deps(acts), tuple(ordinals[ref] for ref in refs) + (ordinal,))
         elif op == "ExplainDerivation":
             ref = n["speech_act"]
             if not isinstance(ref, str) or ref not in prior or not isinstance(prior[ref], SpeechAct):
                 _fail("invalid_graph")
             act = prior[ref]
-            value = SpeechAct("explain", act, act.dependencies, act.derivation + (node_id,))
+            value = SpeechAct("explain", act, act.dependencies, act.derivation + (ordinal,))
         else:
             category = _name(n["category"]); obligation_ref = _name(n["obligation_ref"])
             references = _sequence(n["references"])
@@ -324,7 +328,7 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
             matches = [o for o in h["unmet_obligations"] if isinstance(o, dict) and o.get("obligation_id") == obligation_ref and o.get("category") == category]
             if len(matches) != 1 or any(ref not in matches[0].get("allowed_refs", []) for ref in references):
                 _fail("unknown_reference")
-            value = SpeechAct("ask", AskContent(category, obligation_ref, tuple(references)), tuple(references), (node_id,))
+            value = SpeechAct("ask", AskContent(category, obligation_ref, tuple(references)), tuple(references), (ordinal,))
         prior[node_id] = value
     outputs = _sequence(p["outputs"])
     if not outputs or len(outputs) != len(set(outputs)) or any(ref not in prior or not isinstance(prior[ref], SpeechAct) for ref in outputs):

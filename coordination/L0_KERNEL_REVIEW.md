@@ -9,3 +9,9 @@ The independent Track L reviewer examined source `163fc71`, reproduced its tests
 Accepted meanings are evidence-relative. They do not certify relevance, premise truth, a learned model, or causal neural interpretability. The checker intentionally accepts a supported answer to the wrong question; evaluation must count that as task failure. Detailed CheckResult objects are permissioned diagnostics, not public failure responses. Release requires the process-local minted object plus live authority/evidence revalidation; this is not a cryptographic or cross-process proof format.
 
 Claude should independently rerun the receipt before merge. No paid rung is unlocked by this PR alone.
+
+## Cross-track node-ID finding and patch 0.1.1
+
+Claude reproduced an arbitrary-prose channel: model-authored node IDs were copied into derivations. The repair restricts IDs to ASCII `n[0-9]{1,3}` and records only kernel-assigned positive integer ordinals in normalized speech acts. A separate renderer patch prints those ordinals. Regressions reject prose-like IDs, prove ID-renaming independence and verify rejected strings are absent from `to_dict()`. Internal adversarial recheck passed. Empty graphs, unsupported styles and non-ASCII decimal inputs also receive their stated rejection codes. The contract patch is 0.1.1; D envelope and semantic-program schema remain v0.1. This revision needs Claude cross-review before merge.
+
+Isolated test invocation is now supported: `python -I -m unittest discover -s language_growth/tests -t . -p "test_kernel*.py" -v`. Earlier receipts explicitly used non-isolated invocation and remain historical.
