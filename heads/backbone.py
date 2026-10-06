@@ -288,6 +288,8 @@ class HiddenStateBackbone(nn.Module):
         if self.capture == "hidden_states":
             base["output_hidden_states"] = True
         self._captured = None
+        if not uses_cache_params and _accepts(m.forward, "state"):
+            return self._state_fork(ids, cids, last, base)
         if uses_cache_params:
             out = m(input_ids=ids, **base)
             cache = out.cache_params
@@ -312,6 +314,28 @@ class HiddenStateBackbone(nn.Module):
             out = m(input_ids=cids[:, t : t + 1], **kw)
             cache = out.cache_params if uses_cache_params else out.past_key_values
             _set_seen(cache, n + t + 1)
+            step = self._pick(out)[:, -1]
+            feats = torch.where((last == t).unsqueeze(-1), step, feats)
+        return h, feats
+
+    def _state_fork(self, ids: torch.Tensor, cids: torch.Tensor, last: torch.Tensor, base: dict[str, Any]):
+        """Cache fork for models whose recurrent state travels as ``state=`` (RWKV-7, bundled HF code in
+        ``third_party/rwkv7_hf``). The K copies are made with ``batch_repeat_interleave`` (new tensors by
+        assignment); ``reorder_cache`` would ``copy_`` into the prefix's buffers in place, which breaks
+        autograd. ``Rwkv7Cache.write`` already rebinds instead of copying when a state requires grad."""
+        m = self.model
+        out = m(input_ids=ids, **base)
+        cache = out.state
+        if cache is None:
+            raise RuntimeError("backbone returned no state for the cache fork")
+        h = self._pick(out)[0]
+        k = cids.shape[0]
+        cache.batch_repeat_interleave(k)  # K state copies
+        feats = torch.zeros((k, h.shape[-1]), dtype=h.dtype, device=ids.device)
+        for t in range(cids.shape[1]):
+            self._captured = None
+            out = m(input_ids=cids[:, t : t + 1], state=cache, **base)
+            cache = out.state
             step = self._pick(out)[:, -1]
             feats = torch.where((last == t).unsqueeze(-1), step, feats)
         return h, feats
@@ -547,7 +571,44 @@ def tiny_hf_backbone(family: str, seed: int = 0, hidden: int = 32, fork_mode: st
                             d_model=hidden, lora_groups=(("mixer", r"mixer\.(in_proj|out_proj|x_proj)$", 2 * 3),),
                             capture="backbone.norm_f", attention_free=True)
         return HiddenStateBackbone(model, capture="backbone.norm_f", spec=spec, fork_mode=fork_mode)
+    if family == "rwkv7":
+        # the bundled HF RWKV-7 code of RWKV/RWKV7-G1k-13.3B-20260930 (vendored, pinned), pure-torch "chunked" WKV
+        from third_party.rwkv7_hf.configuration_rwkv7 import Rwkv7Config
+        from third_party.rwkv7_hf.modeling_rwkv7 import Rwkv7Model
+
+        cfg = Rwkv7Config(vocab_size=260, hidden_size=hidden, num_heads=hidden // 8, head_dim=8, num_hidden_layers=2,
+                          intermediate_size=2 * hidden, a_low_rank_dim=8, decay_low_rank_dim=8, gate_low_rank_dim=8,
+                          v_low_rank_dim=8)
+        model = Rwkv7Model(cfg)
+        with torch.no_grad():  # the release init zeroes most mixing parameters; randomise so the test is not vacuous
+            for p in model.parameters():
+                p.normal_(0.0, 0.1)
+        full = BACKBONES["rwkv7-13.3b"]
+        groups = tuple((g, rx, cnt * 2 // full.n_layers) for g, rx, cnt in full.lora_groups)  # the real regexes
+        spec = BackboneSpec(name="tiny-rwkv7", family="rwkv7", hf_id="random", params=0, n_layers=2, d_model=hidden,
+                            lora_groups=groups, capture="hidden_states", attention_free=True)
+        return HiddenStateBackbone(model, spec=spec, fork_mode=fork_mode)
     raise ValueError(family)
+
+
+#: RWKV/RWKV7-G1k-13.3B-20260930 at this revision; the bundled code is vendored in third_party/rwkv7_hf
+RWKV7_REPO = "RWKV/RWKV7-G1k-13.3B-20260930"
+RWKV7_REVISION = "ce3630b854cedbd673569f4600c6cf744bca9dba"
+#: README "Training context: 25600 tokens" (source checkpoint ...-ctx25600.pth); config.json has no max_position_embeddings
+RWKV7_TRAINED_CTX = 25600
+
+
+def load_rwkv7_hf_backbone(model_dir: str, device: str = "cuda", dtype: str = "bfloat16",
+                           fork_mode: str = "cache") -> HiddenStateBackbone:
+    """RWKV7-G1k-13.3B for m2 training: the vendored bundled classes (no trust_remote_code), after checking that
+    the snapshot's own modeling/config/tokenizer code is byte-identical to the vendored copy. The backbone is the
+    base ``Rwkv7Model`` (no 65,536-wide LM head over every position)."""
+    from third_party.rwkv7_hf import verify_snapshot_code
+    from third_party.rwkv7_hf.modeling_rwkv7 import Rwkv7ForCausalLM
+
+    verify_snapshot_code(model_dir)
+    lm = Rwkv7ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), device_map={"": device})
+    return HiddenStateBackbone(lm.rwkv7, spec=BACKBONES["rwkv7-13.3b"], pad_id=0, fork_mode=fork_mode)
 
 
 def count_params(module: nn.Module, trainable_only: bool = False) -> int:

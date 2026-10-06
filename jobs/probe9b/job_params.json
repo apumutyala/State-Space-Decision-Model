@@ -1,0 +1,41 @@
+{
+ "_comment": "Single source of truth for the probe9b submit_job fields and runner phase caps (jobs/probe9b/JOB_SPEC.md). tests/test_m1_next_jobs.py checks the cost arithmetic and the schedule against these values; jobs/probe9b/probe_job.sh reads the caps from here.",
+ "job": "probe9b",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 270,
+ "build_timeout_minutes": 30,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 40.0,
+ "reserve_minutes": 10,
+ "phase_caps_minutes": {
+  "setup": 10,
+  "weights": 20,
+  "P": 140,
+  "I_stock": 40,
+  "I_conv": 40,
+  "S": 10
+ },
+ "pipeline_deadline_minutes": 128,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 5,
+  "weights": 10,
+  "P": 120,
+  "I_stock": 35,
+  "I_conv": 35,
+  "S": 3
+ },
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "configs": {
+  "full": "configs/probe9b_h100.json",
+  "lean": "configs/probe9b_h100_lean.json"
+ },
+ "dev_subset": "jobs/common/dev_subset_m1.json",
+ "mission": "m1-probe9b-one-layer"
+}

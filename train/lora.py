@@ -97,3 +97,14 @@ def lora_state_dict(model: nn.Module) -> dict[str, torch.Tensor]:
 def lora_param_count(shapes, rank: int) -> int:
     """Analytic LoRA parameter count for (in, out, count) projection shapes."""
     return sum(rank * (i + o) * c for i, o, c in shapes)
+
+
+def remove_lora(model: nn.Module) -> int:
+    """Undo ``apply_lora``: put every wrapped base ``nn.Linear`` back (base weights untouched). Returns the count.
+    Lets one loaded backbone serve several short measurements (train.run_cell smoke/ladder) without a reload."""
+    wrapped = [n for n, m in model.named_modules() if isinstance(m, LoRALinear)]
+    for name in wrapped:
+        parent_name, _, attr = name.rpartition(".")
+        parent = model.get_submodule(parent_name) if parent_name else model
+        setattr(parent, attr, getattr(parent, attr).base)
+    return len(wrapped)
