@@ -1,0 +1,26 @@
+{
+  "source_sha": "fdb50d755b321acacc8ca8774018ab903efbf177",
+  "dependency_prs": [
+    33,
+    61
+  ],
+  "parent_identity_sha": "140eb87cc5a28995231c01bbf393ebfacdb4bb57",
+  "merged_agent_main_sha": "4733f785e5284ea959d4d640fff884136487bd05",
+  "merge_sha": "dfed27aa02ede55b4f345579ffc8c7f905c58db1",
+  "command": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\m2-heads\\.venv\\Scripts\\python.exe -m pytest -q tests/test_parent_identity.py tests/controlsafe/test_g16_train.py -k \"revision or shared_frozen or backend or tensor_dtype\" tests/test_m2_e2e_dryrun.py::test_decision_model_backend_through_decide_and_safety_bridge tests/test_m2_e2e_dryrun.py::test_backend_keeps_control_token_code_raises_on_nan_and_caches_revision",
+  "environment": {
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "exit_code": 0,
+  "raw_output": "tests.txt",
+  "raw_output_sha256": "9196e006175a9265df971bb3383d541f87ecbadf089be7d2a8eb670c00d6300b",
+  "hardware": "Windows AMD64 CPU; Python 3.12.13; torch 2.14.1+cpu",
+  "billed_cost_usd": 0,
+  "runs_per_command": 1,
+  "scope": "Parent-interface enablement on tiny random CPU G16 fixtures from PR #61. Binds live r/c/max_options/p_gate/stream_mode, live trust-gate configuration/padding, certificate mode, exact own head/bridge/LoRA/typed state; shared frozen backbone stays separately sampled. Backend revisions cache under the existing immutable-checkpoint assumption. No model download, weights snapshot, GPU, spend, held-out data, Index, or learned-capability qualification.",
+  "result": "28 passed, 15 deselected in 7.14s"
+}
