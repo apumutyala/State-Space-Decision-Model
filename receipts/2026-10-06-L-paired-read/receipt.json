@@ -13,14 +13,14 @@
   "hardware": "Windows-11-10.0.26200-SP0; CPU only",
   "median_spread": "not a timing/learned estimate; one deterministic scripted proof",
   "raw_path": "receipts/2026-10-06-L-paired-read/raw.json",
-  "raw_sha256": "a2d624d1f8998216407ee0a634e70aecea5c0006a90376e480a6ac1e7394e7c5",
+  "raw_sha256": "cdd549be6ea7d00357fa8bef7a84d0eba9cb82a18590c1787998483a8b81ceb7",
   "runs": 1,
   "scope": "development plain-read boundary proof; no learned-level, unrestricted-baseline or full-retention claim",
   "script_sha256": "8d99db17219f795b51ed6a8e6bfa01bf910d5a708b56de81b132302978698a71",
   "seed": 17,
-  "source_commit": "248b710051585d3535893082b52688d5cc97b395",
+  "source_commit": "4f7d81518667c7119461debeb8f414f1ab5c3c82",
   "split": "synthetic development_train",
   "tests_passed": true,
-  "tests_run": 58,
+  "tests_run": 59,
   "torch_imported": false
 }

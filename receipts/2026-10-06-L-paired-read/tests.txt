@@ -3,6 +3,7 @@ test_candidate_overflow_fails_without_pruning (language_growth.tests.test_paired
 test_explain_compare_ask_and_sum_are_not_plain_read_cohorts (language_growth.tests.test_paired_read.PairedReadTests.test_explain_compare_ask_and_sum_are_not_plain_read_cohorts) ... ok
 test_failures_rejections_and_config_mismatch_keep_denominators_and_calls (language_growth.tests.test_paired_read.PairedReadTests.test_failures_rejections_and_config_mismatch_keep_denominators_and_calls) ... ok
 test_invalid_parent_pin_and_malformed_initial_state_call_accounting (language_growth.tests.test_paired_read.PairedReadTests.test_invalid_parent_pin_and_malformed_initial_state_call_accounting) ... ok
+test_invalid_reference_program_cannot_award_direct_or_planner_credit (language_growth.tests.test_paired_read.PairedReadTests.test_invalid_reference_program_cannot_award_direct_or_planner_credit) ... ok
 test_same_initial_state_pins_and_all_raw_work (language_growth.tests.test_paired_read.PairedReadTests.test_same_initial_state_pins_and_all_raw_work) ... ok
 test_target_lookup_only_after_call_and_wrong_supported_fact_not_corrected (language_growth.tests.test_paired_read.PairedReadTests.test_target_lookup_only_after_call_and_wrong_supported_fact_not_corrected) ... ok
 test_correct_pair_has_same_initial_state_and_separate_work (language_growth.tests.test_paired_comparison.PairedComparisonTests.test_correct_pair_has_same_initial_state_and_separate_work) ... ok
@@ -58,6 +59,6 @@ test_rejects_invalid_generation_requests (language_growth.tests.test_development
 test_seeded_tasks_are_reproducible_and_supported (language_growth.tests.test_development_data.DevelopmentDataTests.test_seeded_tasks_are_reproducible_and_supported) ... ok
 
 ----------------------------------------------------------------------
-Ran 58 tests in 0.350s
+Ran 59 tests in 0.354s
 
 OK
