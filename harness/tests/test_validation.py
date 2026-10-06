@@ -131,3 +131,13 @@ def test_mde_rejects_bad_alpha_power(alpha, power):
 def test_mde_accepts_numpy_scalars():
     assert mde.mde(np.float64(1.0)) == pytest.approx(mde.mde(1.0))
     assert mde.table(np.float64(1.0), np.int64(100))[2]["clusters"] == 100
+
+
+def test_mde_report_defines_zero_se():
+    r = mde.report(0.0, 100)
+    assert r["available"] is False and r["se"] == 0.0 and "no MDE" in r["note"]
+    ok = mde.report(np.float64(0.5), 100)
+    assert ok["available"] is True and ok["table"][2]["mde"] == pytest.approx(mde.mde(0.5))
+    for bad in (-0.1, math.nan, math.inf):
+        with pytest.raises(ValueError):
+            mde.report(bad, 100)

@@ -60,3 +60,20 @@ def table(se, n_clusters, sizes=(0.25, 0.5, 1, 2, 4), alpha=0.05, power=0.8):
         s = rescale_se(se, n_clusters, n)
         rows.append({"scale": f, "clusters": int(round(n)), "se": s, "mde": mde(s, alpha, power)})
     return rows
+
+
+def report(se, n_clusters, alpha=0.05, power=0.8):
+    """MDE block for a paired comparison, defined for every bootstrap outcome.
+
+    SE == 0 happens when candidate and baseline have identical skill on every replicate (the
+    same predictions, or differences that never reach a scored benchmark). No MDE can be
+    derived from that, so the block says so instead of raising. A negative or non-finite SE
+    is still an error."""
+    if isinstance(se, numbers.Real) and not isinstance(se, bool) and math.isfinite(se) and se == 0:
+        return {
+            "available": False,
+            "se": 0.0,
+            "clusters": int(n_clusters),
+            "note": "paired SE is 0: candidate and baseline score identically on every bootstrap replicate, so the difference has no sampling spread and no MDE can be derived. Check that the two results files differ.",
+        }
+    return {"available": True, "alpha": alpha, "power": power, "table": table(se, n_clusters, alpha=alpha, power=power)}

@@ -96,14 +96,20 @@ def _safe_div(a, b):
 
 
 class Bench:
-    """Cluster statistics S (n_clusters x d) and a vectorised value function."""
+    """Cluster statistics S (n_clusters x d) and a vectorised value function.
 
-    def __init__(self, n, clusters, stats, fn, kind):
+    `spec` is plain data (JSON-serialisable): the value function is `value_fn(spec)`, so a
+    receipt can ship (spec, S) without any item text and be recomputed exactly. A bare
+    callable is still accepted for tests."""
+
+    def __init__(self, n, clusters, stats, spec, kind=None):
         self.n = n
         self.clusters = clusters
         self.S = np.asarray(stats, dtype=np.float64).reshape(len(clusters), -1)
-        self.fn = fn
-        self.kind = kind
+        if callable(spec):
+            self.spec, self.fn, self.kind = None, spec, kind
+        else:
+            self.spec, self.fn, self.kind = spec, value_fn(spec), spec["kind"]
 
     def collapse(self, cluster_of):
         """Sum group rows of S into coarser clusters; cluster order = first appearance."""
@@ -115,13 +121,85 @@ class Bench:
                 order.append(c)
         S = np.zeros((len(order), self.S.shape[1]))
         np.add.at(S, np.array([index[cluster_of(g)] for g in self.clusters], dtype=int), self.S)
-        return Bench(self.n, order, S, self.fn, self.kind)
+        return Bench(self.n, order, S, self.spec if self.spec is not None else self.fn, self.kind)
 
     def value(self, T=None):
         """T: (B, d) summed statistics; default = plain sum (the point estimate)."""
         if T is None:
             T = self.S.sum(axis=0, keepdims=True)
         return self.fn(T)
+
+
+# ----------------------------------------------------------------------------- value functions from specs
+
+
+def _part_value(ps, T):
+    """One track: (raw, base) from its column block."""
+    t = ps["type"]
+    if t == "pergroup":  # [value, baseline, 1, ok] per group (nDCG queries, BFCL cases)
+        return _safe_div(T[:, 0], T[:, 2]), _safe_div(T[:, 1], T[:, 2])
+    if t == "cf1":  # per class [tp, fp, fn] x K, then [missing, groups, ok groups]
+        K = ps["K"]
+        tp, fp, fn_, miss = T[:, 0 : 3 * K : 3], T[:, 1 : 3 * K : 3], T[:, 2 : 3 * K : 3], T[:, 3 * K : 3 * K + 1]
+        return _safe_div(2 * tp, 2 * tp + fp + fn_ + miss).mean(axis=1), np.full(T.shape[0], ps["base"])
+    if t == "macro":  # per macro key [sum value, sum chance, count] x K, then [groups, ok groups]
+        K = ps["K"]
+        sv, sc, cnt = T[:, 0 : 3 * K : 3], T[:, 1 : 3 * K : 3], T[:, 2 : 3 * K : 3]
+        present = cnt > 0
+        npres = np.maximum(present.sum(axis=1), 1)
+        return (_safe_div(sv, cnt) * present).sum(axis=1) / npres, (_safe_div(sc, cnt) * present).sum(axis=1) / npres
+    raise ValueError(f"unknown part type {t!r}")
+
+
+def value_fn(spec):
+    """T (B, d) -> (raw[B], skill[B]) exactly as the 0.2.1 index uses them."""
+    kind = spec["kind"]
+    if kind == "track":  # index.static_score + index02.track_value (4-decimal rounding)
+        parts = spec["parts"]
+        offsets = np.cumsum([0] + [p["width"] for p in parts])
+
+        def fn(T):
+            raws, skills = [], []
+            for ps, o in zip(parts, offsets):
+                raw, base = _part_value(ps, T[:, o : o + ps["width"]])
+                raws.append(raw)
+                skills.append(_clip(_safe_div(raw - base, 1 - base)))
+            return _round4(np.mean(raws, axis=0)), _round4(np.mean(skills, axis=0))
+
+        return fn
+    if kind == "display":  # report.score -> index02.display_value / loss_value
+        metric, L, chance = spec["metric"], spec["L"], spec["chance"]
+
+        def fn(T):
+            cov = _safe_div(T[:, -2], T[:, -1])
+            if metric == "macro_f1":
+                tp, fp, fn_ = T[:, 0 : 3 * L : 3], T[:, 1 : 3 * L : 3], T[:, 2 : 3 * L : 3]
+                present = (tp + fp + fn_) > 0
+                f1 = _safe_div(2 * tp, 2 * tp + fp + fn_)
+                npres = present.sum(axis=1)
+                score, has = _safe_div((f1 * present).sum(axis=1), npres), npres > 0
+            else:
+                score, has = _safe_div(T[:, 0], T[:, 1]), T[:, 1] > 0
+            if metric == "brier_vs_0.25":
+                raw = np.where(has, _clip((0.25 - _round4(score)) / 0.25) * cov, 0.0)
+                return raw, raw
+            raw = np.where(has, _round4(score), 0.0) * cov
+            return raw, _clip(_safe_div(raw - chance, 1 - chance))
+
+        return fn
+    if kind == "added":  # added.report -> index02.added_value
+        f1, chance = spec["f1"], spec["chance"]
+
+        def fn(T):
+            cov = _safe_div(T[:, -2], T[:, -1])
+            nf = T[:, -3]
+            score = _safe_div(2 * T[:, 0], 2 * T[:, 0] + T[:, 1] + T[:, 2]) if f1 else _safe_div(T[:, 0], nf)
+            score = np.where(nf > 0, score, 0.0)
+            raw = _round4(score * cov)
+            return raw, _round4(_clip(_safe_div(raw - chance, 1 - chance)))
+
+        return fn
+    raise ValueError(f"unknown spec kind {kind!r}")
 
 
 def _groups(rows):
@@ -177,10 +255,7 @@ def _track_part(n, track, rr, groups, good, results, baselines):
                 v, b = float(all(hits)), chance
             return np.array([v, b, 1.0, float(ok)])
 
-        def fn(T):
-            return _safe_div(T[:, 0], T[:, 2]), _safe_div(T[:, 1], T[:, 2]), _safe_div(T[:, 3], T[:, 2])
-
-        return col, fn, 4
+        return col, {"type": "pergroup"}, 4
 
     if n in CONSERVATIVE or n == 40:
         classes = set()
@@ -214,13 +289,7 @@ def _track_part(n, track, rr, groups, good, results, baselines):
                 v[3 * K + 2] += float(good[gid])
             return v
 
-        def fn(T):
-            tp, fp, fn_, miss = T[:, 0 : 3 * K : 3], T[:, 1 : 3 * K : 3], T[:, 2 : 3 * K : 3], T[:, 3 * K : 3 * K + 1]
-            d = 2 * tp + fp + fn_ + miss
-            raw = _safe_div(2 * tp, d).mean(axis=1)
-            return raw, np.full(T.shape[0], base), _safe_div(T[:, 3 * K + 2], T[:, 3 * K + 1])
-
-        return col, fn, 3 * K + 3
+        return col, {"type": "cf1", "K": K, "base": base}, 3 * K + 3
 
     # macro / plain accuracy with per-field chance (accepted ties for 31, 50)
     def key_of(r):
@@ -254,15 +323,7 @@ def _track_part(n, track, rr, groups, good, results, baselines):
             v[3 * K + 1] += float(ok)
         return v
 
-    def fn(T):
-        sv, sc, cnt = T[:, 0 : 3 * K : 3], T[:, 1 : 3 * K : 3], T[:, 2 : 3 * K : 3]
-        present = cnt > 0
-        npres = np.maximum(present.sum(axis=1), 1)
-        raw = (_safe_div(sv, cnt) * present).sum(axis=1) / npres
-        base = (_safe_div(sc, cnt) * present).sum(axis=1) / npres
-        return raw, base, _safe_div(T[:, 3 * K + 1], T[:, 3 * K])
-
-    return col, fn, 3 * K + 2
+    return col, {"type": "macro", "K": K}, 3 * K + 2
 
 
 def _track_bench(n, rows, results, baselines):
@@ -270,21 +331,9 @@ def _track_bench(n, rows, results, baselines):
     good = {g: all(_ok(results, r) for r in rs) for g, rs in groups.items()}
     parts = [_track_part(n, t, rr, groups, good, results, baselines) for t, rr in _track_rows(n, rows).items()]
     clusters = list(groups)
-    widths = [w for _, _, w in parts]
-    offsets = np.cumsum([0] + widths)
     S = np.array([np.concatenate([col(g) for col, _, _ in parts]) for g in clusters])
-
-    def fn(T):
-        raws, skills = [], []
-        for (col, f, w), o in zip(parts, offsets):
-            raw, base, _ = f(T[:, o : o + w])
-            raws.append(raw)
-            skills.append(_clip(_safe_div(raw - base, 1 - base)))
-        raw = np.mean(raws, axis=0)
-        skill = np.mean(skills, axis=0)
-        return _round4(raw), _round4(skill)
-
-    return Bench(n, clusters, S, fn, "track")
+    spec = {"kind": "track", "parts": [dict(ps, width=w) for _, ps, w in parts]}
+    return Bench(n, clusters, S, spec)
 
 
 # ----------------------------------------------------------------------------- native-metric benchmarks (report.score / added.report)
@@ -361,27 +410,8 @@ def _display_bench(n, rows, results, chance):
         raise KeyError(n)
 
     S = np.array([col(g) for g in clusters])
-
-    def fn(T):
-        ok, req = T[:, -2], T[:, -1]
-        cov = _safe_div(ok, req)
-        if n in MACRO_F1:
-            tp, fp, fn_ = T[:, 0 : 3 * L : 3], T[:, 1 : 3 * L : 3], T[:, 2 : 3 * L : 3]
-            present = (tp + fp + fn_) > 0
-            f1 = _safe_div(2 * tp, 2 * tp + fp + fn_)
-            npres = present.sum(axis=1)
-            score = _safe_div((f1 * present).sum(axis=1), npres)
-            has = npres > 0
-        else:
-            score = _safe_div(T[:, 0], T[:, 1])
-            has = T[:, 1] > 0
-        if n == 48:
-            raw = np.where(has, _clip((0.25 - _round4(score)) / 0.25) * cov, 0.0)
-            return raw, raw
-        raw = np.where(has, _round4(score), 0.0) * cov
-        return raw, _clip(_safe_div(raw - chance, 1 - chance))
-
-    return Bench(n, clusters, S, fn, "display")
+    metric = "macro_f1" if n in MACRO_F1 else "brier_vs_0.25" if n == 48 else "ratio"
+    return Bench(n, clusters, S, {"kind": "display", "metric": metric, "L": L, "chance": chance})
 
 
 def _added_bench(n, rows, results, chance):
@@ -412,20 +442,7 @@ def _added_bench(n, rows, results, chance):
         return v
 
     S = np.array([col(g) for g in clusters])
-
-    def fn(T):
-        cov = _safe_div(T[:, -2], T[:, -1])
-        nf = T[:, -3]
-        if f1:
-            tp, fp, fn_ = T[:, 0], T[:, 1], T[:, 2]
-            score = _safe_div(2 * tp, 2 * tp + fp + fn_)
-        else:
-            score = _safe_div(T[:, 0], nf)
-        score = np.where(nf > 0, score, 0.0)
-        raw = _round4(score * cov)
-        return raw, _round4(_clip(_safe_div(raw - chance, 1 - chance)))
-
-    return Bench(n, clusters, S, fn, "added")
+    return Bench(n, clusters, S, {"kind": "added", "f1": bool(f1), "chance": chance})
 
 
 def decompose(rows, results, clusters="case"):

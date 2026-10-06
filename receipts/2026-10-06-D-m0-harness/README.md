@@ -30,7 +30,7 @@ python -X utf8 -I -m harness verify        # -> verify.json
 python -X utf8 -I -m harness slice         # seed 20261006, area_target 2400, cap 0.45 -> harness/manifests/
 python -X utf8 -I -m harness selfcheck     # -> selfcheck.json
 python -X utf8 -I receipts/2026-10-06-D-m0-harness/demo.py > demo-bootstrap-ece.json   # B=2000, seed 0
-python -X utf8 -I -m pytest -v harness/tests   # -> pytest.txt (93 passed)
+python -X utf8 -I -m pytest -v harness/tests   # -> pytest.txt (98 passed)
 ```
 
 ## Slices (seed 20261006; disjoint by row, kit group and source case)
@@ -69,7 +69,14 @@ Values are rounded to 4 decimals. The run takes a few minutes on CPU, uses the m
 - **Calibration:** the estimators reject empty input, NaN/inf or out-of-range confidence, non-binary correctness, mismatched shapes and bad weights with `CalibrationInputError`, never an ECE of 0. Empty report blocks are `{"n": 0, "available": false}`. `fields()` runs the kit's own response validator on every `ok` result before reading it.
 - **Bootstrap:** `bootstrap.replicate_skills` refuses to pair systems whose benchmark sets or cluster orders differ.
 - **MDE helpers:** they require positive finite SE, sample sizes and effects, and α and power strictly inside (0, 1). numpy scalars are accepted.
-- **Tests:** `harness/tests/test_validation.py` covers all of this (93 tests total).
+- **Tests:** `harness/tests/test_validation.py` covers all of this.
+- **Zero SE (Track L finding):** `harness compare` on two identical results files used to crash in `mde.table`. Its MDE block is now `mde.report(...)`, which returns `{"available": false, "se": 0.0, "note": ...}` when the paired SE is 0. A regression test runs the CLI end to end on DEV.
+
+## Anonymous packet (Codex request)
+
+`anon-packet/` holds per-source-case sufficient statistics for 8 fixture systems plus the official kit's aggregates. With it, a reviewer can recompute every DEV aggregate, and the paired bootstrap, without seeing any item, label or id: shuffled, unrecorded permutation, and a leak audit finding 0 of 43,697 ids and 0 of 16,903 strings. See `anon-packet/README.md` and `anon-packet/verify_packet.py` with `expected-verify.json`.
+
+Value functions are now built from plain-data specs (`score.value_fn`), so the packet and the harness share one code path. Tests total 98.
 
 ## Checks (DEV, with HLE)
 
