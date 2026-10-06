@@ -93,7 +93,11 @@ def _opt_trust(backbone, row: LayoutRow, k: int) -> list[bool]:
 
 
 def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], need_fork: bool = False,
-                     pad_id: int = 0, fork_chunk: int = 64) -> HeadInput:
+                     pad_id: int = 0, fork_chunk: int = 64, shared_prefix: bool = False) -> HeadInput:
+    """``shared_prefix=True`` (evaluation only, no grad): rows of the same request read their common schema + state
+    prefix once (``heads.prefix_features``); equal to the plain path up to float rounding (tests/test_perf_paths.py)."""
+    from . import prefix_features as PF
+
     dev = backbone.device
     cache_fork = need_fork and backbone.fork_mode == "cache"
     ids, mask = pad_batch([r.ids for r in rows], pad_id, device=dev)
@@ -102,7 +106,14 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
     trusts = [_row_trust(backbone, r) for r in rows] if gated else None
     tkw = {"trust": pad_batch([[int(x) for x in t] for t in trusts], 0, device=dev)[0].bool()} if gated else {}
     fork_rows: list[torch.Tensor] = []
-    if cache_fork:  # per-row prefix pass that also yields the K forked features
+    pre_fork = None
+    # The shared-prefix path runs the wrapped model directly on cached state; a trust-gated backbone computes a
+    # protected stream + bridges per call and needs per-token trust labels, so it NEVER takes this path: gated rows
+    # go through the labelled path below exactly as before (PF.supported also refuses ``wants_trust``).
+    use_prefix = (shared_prefix and not gated and not torch.is_grad_enabled() and PF.supported(backbone))
+    if use_prefix:
+        h, pre_fork = PF.shared_prefix_features(backbone, rows, need_fork, pad_id)
+    elif cache_fork:  # per-row prefix pass that also yields the K forked features
         per = [backbone.fork_features(r.ids, r.continuations,
                                       **({"trust": t, "cont_trust": [_cont_trust(backbone, r, k) for k in
                                                                      range(len(r.continuations))]} if gated else {}))
@@ -148,7 +159,9 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
         pooled = (he * om.unsqueeze(-1)).sum(1) / denom
         e = _scatter_rows(e, sym_index, pooled)
     fork = None
-    if cache_fork:
+    if use_prefix:
+        fork = pre_fork
+    elif cache_fork:
         fork = torch.stack([torch.nn.functional.pad(f.float(), (0, 0, 0, kmax - f.shape[0])) for f in fork_rows])
     elif need_fork:
         seqs, where, strust = [], [], []

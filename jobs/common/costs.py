@@ -17,7 +17,7 @@ ENVELOPE_USD = 525.0
 SPENT_USD = 0.0  # LEDGER.md: nothing launched as of 2026-10-06
 #: PLAN.md spend lines
 LINES = {"joint_gate": 75.0, "system1": 250.0, "language": 100.0, "reserve": 100.0}
-PARAMS = {"qual": "jobs/qual/job_params.json", "probe9b": "jobs/probe9b/job_params.json",
+PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_params_c_only.json", "probe9b": "jobs/probe9b/job_params.json",
           "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_lora": "jobs/rwkv7/job_params_lora.json"}
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here
 OTHER = {"clef_baseline_ABC": 47.52}  # jobs/clef_baseline/JOB_SPEC.md: per-job ceilings at $2.97/h
@@ -51,9 +51,10 @@ def schedule_minutes(p: dict) -> int:
 
 
 def schedule_ok(p: dict) -> bool:
-    if "A_per_test" in p["phase_caps_minutes"]:  # jobs/qual layout
+    if "A_per_test" in p["phase_caps_minutes"]:  # jobs/qual layout (c_only has no B)
         c = p["phase_caps_minutes"]
-        total = c["setup"] + c["A_per_test"] * c["A_tests"] + c["B"] + c["C_weight_wait"] + c["C"] + p["reserve_minutes"]
+        total = (c["setup"] + c["A_per_test"] * c["A_tests"] + c.get("B", 0) + c["C_weight_wait"] + c["C"]
+                 + p["reserve_minutes"])
         return total <= p["max_duration_minutes"]
     return schedule_minutes(p) <= p["max_duration_minutes"]
 

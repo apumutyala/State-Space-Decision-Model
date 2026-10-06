@@ -44,7 +44,7 @@ def predict(model, items, batch_size: int = 8) -> tuple[torch.Tensor, list[int],
     kmax = max(i.row.n_options for i in items)
     for s in range(0, len(items), batch_size):
         chunk = items[s : s + batch_size]
-        lp = model([i.row for i in chunk]).log_probs.detach().float().cpu()
+        lp = model([i.row for i in chunk], shared_prefix=True).log_probs.detach().float().cpu()
         pad = torch.full((lp.shape[0], kmax), float("-inf"))
         pad[:, : lp.shape[1]] = lp
         lps.append(pad)

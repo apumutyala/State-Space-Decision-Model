@@ -1,0 +1,32 @@
+{
+ "_comment": "QUAL_MODE=c_only re-run of phase C (9B) after the job-c4zkm stage-1 OOM. Phases A (all GPU tests incl. test_gdn on torch 2.13 / triton 3.7.1) and B (0.8B) PASSED on job-c4zkm ($0.74); only the CPU gates of A re-run (they cover the changed code: micro-batch accumulation, memory model). Submit with env {QUAL_MODE: c_only} and these max_duration/build values.",
+ "mode": "c_only",
+ "prior_receipts": {
+  "job": "job-c4zkm",
+  "passed_phases": [
+   "A",
+   "B"
+  ],
+  "failed_phase": "C (OOM, stage 1 step 1, 8x4096, peak 68.9 GB)"
+ },
+ "chip": "h100",
+ "max_duration_minutes": 140,
+ "build_timeout_minutes": 20,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 20.0,
+ "reserve_minutes": 8,
+ "phase_caps_minutes": {
+  "setup": 15,
+  "A_per_test": 2,
+  "A_tests": 5,
+  "C_weight_wait": 25,
+  "C": 80
+ },
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "env": {
+  "QUAL_MODE": "c_only"
+ }
+}
