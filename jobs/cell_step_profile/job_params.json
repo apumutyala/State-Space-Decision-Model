@@ -1,0 +1,37 @@
+{
+ "_comment": "jobs/cell_step_profile (JOB_SPEC.md): command `bash /opt/ssdm/m1/jobs/cell_step_profile/cell_step_job.sh`, jobs/rwkv7 image. expected_minutes = projections: step seconds = 11.3 us x aten ops per step (ops counted on CPU for the 23 real step shapes; 11.2-11.5 us/op calibrated on job-mden7's completed baseline steps 3/5/8), + load 0.5 min + ladder; baseline = job-mden7's measured 221 s of steps (most steps OOM early). Every cap >= 1.3x expected (tests/test_cell_step_rule.py). build_timeout 60 (18 has publish-timed-out before). Spec only, NOT submitted.",
+ "job": "cell-step-profile",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 43,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 7.5,
+ "reserve_minutes": 1,
+ "phase_caps_minutes": {
+  "setup": 3,
+  "download_wait": 1,
+  "baseline": 7,
+  "ckpt": 16,
+  "ckpt_rows": 6,
+  "ckpt_rows_lean": 4,
+  "profile": 5
+ },
+ "expected_minutes": {
+  "setup": 2.0,
+  "download_wait": 0.4,
+  "baseline": 5.0,
+  "ckpt": 11.6,
+  "ckpt_rows": 4.3,
+  "ckpt_rows_lean": 2.6,
+  "profile": 3.5
+ },
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "model_bytes": 26540800536,
+ "mission": "m2-cell-step-profile"
+}

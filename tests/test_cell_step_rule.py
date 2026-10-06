@@ -126,3 +126,23 @@ def test_valid_decision_rejects_malformed():
     d = R.decide(_all())
     d["chosen"] = None
     assert not R.valid_decision(d)
+
+
+def test_job_params_cost_and_schedule():
+    from pathlib import Path
+
+    from jobs.common import costs
+
+    root = Path(__file__).resolve().parents[1]
+    p = costs.load("cell_step_profile")
+    caps, exp = p["phase_caps_minutes"], p["expected_minutes"]
+    assert set(caps) == {"setup", "download_wait", "profile", *R.VARIANTS} == set(exp)
+    assert sum(caps.values()) + p["reserve_minutes"] == p["max_duration_minutes"]
+    assert all(caps[k] >= 1.3 * exp[k] for k in caps), {k: caps[k] / exp[k] for k in caps}
+    assert p["build_timeout_minutes"] == 60 and p["max_restarts"] == 0 and p["assumed_restart_floor"] >= 1
+    assert p["chip"] == "h100" and costs.cap_ok(p) and costs.schedule_ok(p)
+    spec = (root / "jobs/cell_step_profile/JOB_SPEC.md").read_text(encoding="utf-8")
+    assert f"${costs.worst_case_usd(p):.2f}" in spec and f"${costs.expected_usd(p):.2f}" in spec
+    sh = (root / "jobs/cell_step_profile/cell_step_job.sh").read_text(encoding="utf-8")
+    assert "for V in " + " ".join(R.VARIANTS) + "; do" in sh
+    assert f"PYTORCH_CUDA_ALLOC_CONF={R.ALLOC_CONF}" in sh

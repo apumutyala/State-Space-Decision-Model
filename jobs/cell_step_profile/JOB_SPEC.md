@@ -64,3 +64,102 @@ steps, 1 on short ones). Nothing else in the rule changed.
 
 The verdict is a recommendation for the m2 cell (PR #74 / its follow-up), which keeps its own ladder stage and
 stop rules (exits 22 / 24 / 26) as the authority on the real rows.
+
+## Diagnosis by code reading (agent-main 0f4b8ad line numbers), with CPU measurements
+
+All counts below are aten ops (forward + backward + optimiser) of one real optimiser step of the mix, counted with a
+`TorchDispatchMode` on a 61-layer RWKV-7 of tiny width (op counts do not depend on width; chunk count follows T).
+
+1. **Per-row fixed cost = kernel launches, not FLOPs.** Every row is two full 61-layer calls (prefix, then its K
+   continuations; `heads/features.py:116-125` loops the rows, `heads/backbone.py:328-345`), forward and backward, and
+   a step is 8 such rows (`train/trainer.py:189-197`, batch 1 x accumulation 8). The baseline step issues 1.37–1.83 M
+   aten ops. Job-mden7's completed baseline steps 3 / 5 / 8 took 16.91 / 16.82 / 15.45 s for 1.477 / 1.501 / 1.365 M
+   ops: **11.2–11.5 µs per op**, the same on every step, so the step is CPU dispatch / launch bound (GPU FLOPs for
+   ~4.5k tokens x 3 x 2 x 13.3e9 = 0.36 PFLOP are < 1 s on an H100).
+2. **The K fork continuations are NOT sequential.** `_state_fork` (`heads/backbone.py:340-344`) already copies the
+   prefix state K times (`batch_repeat_interleave`) and runs all K continuations in one call. What is sequential is the
+   ROWS: one prefix call + one continuation call per row. Fix (b) therefore batches rows, not options.
+3. **The chunked WKV's Python loop dominates the launch count.** `third_party/rwkv7_hf/modeling_rwkv7.py:279-286` runs
+   ~11 kernels per 64-token chunk per layer forward, and indexes 8 tensors with `x[:, i]` per chunk
+   (`qr`, `qkv`, `lhs`, `rkv`, `rb`, `kv`, `b_t`, `c_last`): in backward each becomes a FULL-size zero-filled
+   `select_backward` plus an add, per chunk. One WKV call at T = 2048 (fwd + bwd): **4,805 aten ops vendored, 1,454
+   with `chunked_lean`** (no per-chunk selects; one batched score product; the output formed after the loop; plain
+   `bmm`s in the loop).
+4. **Activation memory: nothing is checkpointed, and the cache fork forbids HF checkpointing.** `run_cell.train_config`
+   sets `grad_checkpointing=False` (`train/run_cell.py:153`), and HF checkpointing would drop the fork's state
+   (`modeling_rwkv7.py:1017-1021` forces `use_cache=False`; `heads/backbone.py:282-285` refuses). Both the prefix and
+   the continuation call keep all activations: the chunked WKV casts its six inputs to fp32 (`modeling_rwkv7.py:213`)
+   and builds fp32 `c, c_prev, b~, k~, q~, r~` and `[B, C, H, 64, 64]` score tensors (`:245-277`), the FFN keeps
+   4x-wide `relu^2` activations (`:597`), LoRA keeps its inputs. Measured (saved-tensor hooks, one real-width layer:
+   hidden 4096, 64 x 64 heads, FFN 16384, LoRA r64, bf16 autocast, T = 1024): **~1.0 MB per token per layer** →
+   ~64 GB for one 1,024-token row over 61 layers, + 26 GB of weights: over 80 GB. This is why job-mden7 OOMed from
+   T ≈ 1,021 (and passed 858–960 and, once, 1,146). The cell spec's 59 GB at T = 2,048 was off by ~2x.
+5. **Syncs:** one `float(loss)` per micro-batch (`train/trainer.py:197`) and the host-to-device copies of
+   `pad_batch`; no `.item()` inside the model. In a CPU-bound step a sync costs ~nothing (the GPU is idle anyway);
+   not changed.
+6. **LoRA** (`train/lora.py:51-54`): per call two casts (fp32 → bf16 of A and B), two matmuls, a multiply by
+   `scaling` (= 1.0 for the cell) and an add, for 6 modules per layer. ~10% of the launches; not changed (the row
+   batching divides it by the number of rows per call anyway).
+7. **dtypes:** the WKV sees r / w_log bf16, kk fp32 (normalize under autocast), state fp32 (job-mden7
+   `wkv_input_dtypes`); the chunked path computes in fp32 by design. Not changed (numerics).
+
+## Changes (all behind flags; defaults = the original path, config hash unchanged)
+
+| fix | where | flag | equivalence (tests/test_cell_perf.py) |
+|---|---|---|---|
+| (a) per-block activation checkpointing that keeps the cache fork: the recurrent state is read before and written after a non-reentrant `checkpoint` of each block; the block runs on a private one-layer state holder | `heads/act_ckpt.py`, `train/trainer.py:prepare_model` | `TrainConfig.act_ckpt` | loss and every LoRA / head gradient **bitwise** equal (fp32 and bf16 autocast); saved activations at T = 1024: 771 → 22 MB per layer |
+| (b) batched rows: a step's rows sorted by length, grouped (<= `row_batch` rows, <= `row_tokens` padded tokens), each group = one prefix call with an attention mask + one call for all its rows' continuations (state rows gathered with repeated indices) | `heads/backbone.py:fork_features_rows`, `heads/features.py`, `train/trainer.py:row_groups / train_step` | `TrainConfig.row_batch`, `row_tokens` | fork features == per-row fork to 1e-5; step loss rel 8e-9, worst gradient rel 1.3e-6 (fp32) |
+| (c) `chunked_lean` WKV: same algebra, 3.3x fewer aten ops per call (T = 2048), no O(chunks^2) zero fills | `heads/rwkv7_lean.py`, `heads/rwkv7_wkv.select_wkv` | cell `rwkv7_wkv: "chunked_lean"` | outputs / state / all input gradients within 8e-7 rel of the vendored function (fp32); model output 1e-5 |
+| all three | | | fp32: loss rel 8e-9, worst gradient rel 8e-7. bf16 autocast: loss rel 3e-8 vs the bf16 baseline, worst gradient rel 1.2e-2, below the bf16 baseline's own distance to the fp32 step (2.6e-2) |
+
+For the cell: `train.trainer.with_execution(train_config(cell, ...), cell)` reads `act_ckpt`, `row_batch`, `row_tokens`
+from the cell config (one line in `train.run_cell`; not edited here because PR #74 changes those lines).
+
+## Projection (CPU-measured op counts x the job-mden7 calibration; NOT GPU measurements)
+
+aten ops per optimiser step on the mix (steps 0 / 3 / 10 / 13 where counted), and seconds at 11.3 µs per op:
+
+| variant | ops per step | projected s / step | projected tok/s (~4.7k tokens/step) | 190-min rows |
+|---|---|---|---|---|
+| baseline | 1.37–1.83 M | 15–21 (mden7: 15.5–17.4 measured) | ~260 (measured) | (OOMs) |
+| ckpt | 2.14–2.81 M (+53%: the recompute) | 24–32 | ~170 | ~3.3k |
+| ckpt_rows | 0.36–0.95 M | 4–11 | ~650 | ~12k |
+| ckpt_rows_lean | 0.20–0.46 M | 2.3–5.2 | ~1,200 | ~22k |
+
+GPU floor for the row variants (~6–9k padded tokens x fwd + recompute + bwd, from job-mden7's throughput phase:
+~290 µs per padded token) is ~2–2.6 s per step, so `ckpt_rows_lean` sits near the point where the GPU, not the CPU,
+becomes the limit. These projections size the caps; the decision uses only the job's own measurements.
+
+## Phases, caps, cost
+
+| phase | cap (min) | expected (min) | what |
+|---|---|---|---|
+| setup | 3 | 2.0 | pins (torch 2.13.0, transformers 5.17.0, vendored code), CPU equivalence tests (`tests/test_cell_perf.py`, `tests/test_cell_step_rule.py`; exit 5 on failure); snapshot download starts in the background (warm `hf_cache`) |
+| download_wait | 1 | 0.4 | wait, `sha256sum -c jobs/rwkv7/snapshot.sha256`, snapshot code == vendored (exit 10) |
+| baseline | 7 | 5.0 | 23 steps (job-mden7: 221 s, most steps OOM early) + ladder |
+| ckpt | 16 | 11.6 | 23 x ~27 s + ladder (1 row per rung) |
+| ckpt_rows | 6 | 4.3 | 23 x ~7 s + ladder (8 rows per rung) |
+| ckpt_rows_lean | 4 | 2.6 | 23 x ~4 s + ladder |
+| profile | 5 | 3.5 | `torch.profiler` of the decided variant and the baseline on one mid-length step (informational) |
+| reserve | 1 | | decide (pure, seconds), finalize, exports |
+
+Inside every phase no step / rung starts that cannot finish before the cap (minus 40 s); a variant that runs out of
+time records the skipped steps and cannot qualify. A variant crash or timeout is a gate value, not an exit code.
+
+`max_duration_minutes` 43, `build_timeout_minutes` 60, `max_restarts` 0, H100 at $0.0495/min. Worst case
+(`jobs/common/costs.py`: build + 2 attempts) = (60 + 2 x 43) x 0.0495 = **$7.23** (hard cap $7.50); one attempt
+$2.13; expected **$1.46**. This is above the $6 target: the `ckpt` variant alone needs ~11.6 min (its recompute adds
+53% launches to an already launch-bound step) and every cap is >= 1.3x its projection with a 60-minute build
+allowance. Getting to <= $6 needs either fewer `ckpt` steps (it is the memory-only fallback) or a shorter build
+timeout; neither is taken here without the coordinator's say-so.
+
+Outputs (exported per phase): `variant_<V>.json` (per-step seconds, tok/s, peak / reserved GB, OOM, loss; ladder),
+`decision.json` (verdict, chosen variant, recommended cell config, projection), `profile.json` (+ traces),
+`equivalence_tests.txt`, `env.json`, logs. Marker `CELL_STEP_PROFILE_DONE` (finalize, validator
+`jobs.cell_step_profile.rule:valid_decision`).
+
+Exit codes: 0 measured + decided + exports verified; 5 setup (pins, equivalence tests); 6 export failed; 9 decision
+missing / invalid; 10 snapshot / vendored-code mismatch or download failed; 1 finalize failed.
+
+Dry run: `CELL_STEP_DRYRUN=1 bash jobs/cell_step_profile/cell_step_job.sh` runs this exact script on CPU (tiny vendored
+RWKV-7, same rows, same phases, exports and finalize); `tests/test_cell_step_job.py` does it end to end.
