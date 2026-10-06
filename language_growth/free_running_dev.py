@@ -12,7 +12,7 @@ from typing import Any, Iterable
 from .kernel import check_program
 from .planner import PlannerResult, plan_checked_answer
 from .realize import render_checked
-from .types import Comparison, Fact, SpeechAct
+from .types import AskContent, Comparison, Fact, SpeechAct
 
 _INVERSE = {"greater_than": "less_than", "less_than": "greater_than", "equal": "equal"}
 
@@ -54,6 +54,12 @@ def score_development_task(example: dict[str, Any], result: PlannerResult) -> bo
         return False
     if len(intended.outputs) != 1 or len(actual.outputs) != 1:
         return False
+    if training["kind"] == "ask_missing":
+        desired_ask, offered_ask = intended.outputs[0], actual.outputs[0]
+        return (desired_ask.kind == offered_ask.kind == "ask"
+                and isinstance(desired_ask.content, AskContent)
+                and isinstance(offered_ask.content, AskContent)
+                and offered_ask.content == desired_ask.content)
     desired, offered = _asserted(intended.outputs[0]), _asserted(actual.outputs[0])
     if desired is None or offered is None:
         return False
@@ -61,7 +67,7 @@ def score_development_task(example: dict[str, Any], result: PlannerResult) -> bo
     actual_explained, actual_content = offered
     if training["kind"] == "explain" and not actual_explained:
         return False
-    if training["kind"] in ("read", "explain"):
+    if training["kind"] in ("read", "explain", "read_with_unrelated_obligation"):
         return isinstance(expected_content, Fact) and isinstance(actual_content, Fact) and actual_content == expected_content
     if training["kind"] == "compare":
         return (isinstance(expected_content, Comparison) and isinstance(actual_content, Comparison)

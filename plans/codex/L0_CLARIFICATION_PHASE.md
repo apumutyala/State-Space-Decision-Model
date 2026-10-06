@@ -1,0 +1,10 @@
+# L0 clarification development coverage
+
+Phase L0d4, 2026-10-06. CPU-only synthetic development work on the existing typed planner, Ask operation, and free-running scorer. This does not add an interface type or claim learned language capability.
+
+- **Hypothesis:** The current operation and obligation choices can distinguish a task that needs a specific missing input from an answerable task that happens to carry an unrelated unmet obligation. A checked Ask for the wrong obligation must fail task scoring even when the kernel accepts it.
+- **Deliverable:** An opt-in, seeded clarification mode in the existing development generator, using host-owned query constants and unmet obligations. Missing-information Ask tasks and answerable read tasks use the same wording pool and the same number of obligations, all unrelated to the answerable task. The free-running scorer compares the checked Ask category, obligation, and reference to the intended task, while preserving read, explain, and compare scoring.
+- **Exit proof:** CPU tests show deterministic generation and distinct train/validation domains; both task families offer Ask without exposing current-slot targets in model input; a scripted provider selects the correct Ask through actual planner calls; a different kernel-valid Ask is scored task-wrong; answerable tasks with an obligation still require a factual answer; errors stay in the denominator. Run the existing generator, planner, and scorer tests, then record source, commands, seeds, fixture hashes, and raw synthetic outcomes.
+- **Decision unlocked:** Add clarification examples to a bounded supervised pilot using the shared parent trainer, once the separate model qualification and spend gates pass. This phase alone does not establish useful learned clarification or a final audit result.
+
+The existing `generate_development_tasks` call without clarification mode retains its original read/explain/compare sequence and serialization. Training and iterative validation remain explicitly named `development_train` and `development_validation`; no Index, heldout, GPU, downloaded model, or paid work is involved.
