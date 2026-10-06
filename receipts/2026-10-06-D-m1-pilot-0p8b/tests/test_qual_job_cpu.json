@@ -1,0 +1,55 @@
+{"ok": true, "exit_code": 0, "runner_rc": 0, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "re-price-lean-plan", "stage2_mfu": 0.2, "peak_gb": 50.0, "stopped": null}}
+{"ok": false, "exit_code": 9, "runner_rc": 0, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": null}
+{"ok": false, "exit_code": 9, "runner_rc": 0, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": "unreadable"}
+{"ok": false, "exit_code": 9, "runner_rc": 0, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "launch-everything", "stage2_mfu": 0.2, "peak_gb": 50.0, "stopped": null}}
+{"ok": false, "exit_code": 9, "runner_rc": 0, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "no-measurement (stage 2 did not run)", "stage2_mfu": null, "peak_gb": null}}
+{"ok": false, "exit_code": 9, "runner_rc": 0, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "re-price-lean-plan", "stage2_mfu": null, "peak_gb": 50.0, "stopped": null}}
+{"ok": false, "exit_code": 6, "runner_rc": 0, "gates": {}, "exports_verified": false, "elapsed_min": 1, "decision": {"verdict": "re-price-lean-plan", "stage2_mfu": 0.2, "peak_gb": 50.0, "stopped": null}}
+{"ok": false, "exit_code": 2, "runner_rc": 2, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "re-price-lean-plan", "stage2_mfu": 0.2, "peak_gb": 50.0, "stopped": null}}
+{"ok": false, "exit_code": 3, "runner_rc": 3, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "re-price-lean-plan", "stage2_mfu": 0.2, "peak_gb": 50.0, "stopped": null}}
+{"ok": false, "exit_code": 4, "runner_rc": 4, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "re-price-lean-plan", "stage2_mfu": 0.2, "peak_gb": 50.0, "stopped": null}}
+{"ok": false, "exit_code": 5, "runner_rc": 5, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "re-price-lean-plan", "stage2_mfu": 0.2, "peak_gb": 50.0, "stopped": null}}
+{"ok": false, "exit_code": 7, "runner_rc": 7, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "re-price-lean-plan", "stage2_mfu": 0.2, "peak_gb": 50.0, "stopped": null}}
+{"ok": false, "exit_code": 8, "runner_rc": 8, "gates": {}, "exports_verified": true, "elapsed_min": 1, "decision": {"verdict": "re-price-lean-plan", "stage2_mfu": 0.2, "peak_gb": 50.0, "stopped": null}}
+{
+ "stage2_steady_tok_s": 3500.0,
+ "stage2_mfu": 0.30080889787664306,
+ "peak_gb": 45.0,
+ "stopped": null,
+ "stage1_steady_tok_s": null,
+ "rules": [
+  "stage2 MFU >= 0.25 and peak <= 60 GB -> open the $40 one-layer-probe spend issue at the measured rate",
+  "0.125 <= MFU < 0.25 (or 60 < peak <= 76 GB) -> re-price to the lean plan before any further spend",
+  "MFU < 0.125 or peak > 76 GB or stop exit 3/4 -> fold: cache teacher hidden states / fuse the KL head first"
+ ],
+ "verdict": "open-$40-one-layer-probe-spend-issue"
+}
+{
+ "stage2_steady_tok_s": null,
+ "stage2_mfu": null,
+ "peak_gb": null,
+ "stopped": null,
+ "stage1_steady_tok_s": null,
+ "rules": [
+  "stage2 MFU >= 0.25 and peak <= 60 GB -> open the $40 one-layer-probe spend issue at the measured rate",
+  "0.125 <= MFU < 0.25 (or 60 < peak <= 76 GB) -> re-price to the lean plan before any further spend",
+  "MFU < 0.125 or peak > 76 GB or stop exit 3/4 -> fold: cache teacher hidden states / fuse the KL head first"
+ ],
+ "verdict": "no-measurement (stage 2 did not run): do not spend further; diagnose from logs"
+}
+{
+ "t_finalize_pass": true,
+ "t_finalize_missing_decision": true,
+ "t_finalize_malformed_decision": true,
+ "t_finalize_unknown_or_unmeasured_verdict": true,
+ "t_finalize_export_fail": true,
+ "t_finalize_propagates_stop_codes": true,
+ "t_decide_exit_codes": true,
+ "t_cost_cap_includes_build": true,
+ "t_schedule_fits_duration": true,
+ "t_runner_gating_static": true,
+ "t_spec_requires_cap_and_revalidation": true,
+ "n_tests": 11,
+ "n_passed": 11,
+ "PASS": true
+}

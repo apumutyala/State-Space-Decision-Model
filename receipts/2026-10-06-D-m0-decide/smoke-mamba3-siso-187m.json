@@ -1,0 +1,171 @@
+{
+ "family": "mamba3",
+ "model_id": "state-spaces/mamba3-siso-187m",
+ "device": "cuda",
+ "dtype": "bfloat16",
+ "extras": [
+  ".venv-extras-mamba",
+  ".venv-extras-t35"
+ ],
+ "load_s": 10.6,
+ "loaded": true,
+ "revision_id": "mamba3:state-spaces/mamba3-siso-187m@6792c27c00f3;w=b462d55e9f8a;tok=6b9e4e7fb171;prompt=jrt-plain-v1.3b526121;cfg=56b66534;adapter=0.1.0",
+ "kernel_stack": {
+  "mamba_ssm": "2.3.2.post1",
+  "triton": null,
+  "triton-windows": "3.5.1.post24"
+ },
+ "notes": {
+  "attention_free": true,
+  "tokenizer": "Llama-3.1 tokenizer (ungated mirror)"
+ },
+ "requests": {
+  "routing": {
+   "status": "ok",
+   "error": null,
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "billing",
+     "confidence": 0.9576,
+     "probabilities": {
+      "billing": 0.9576,
+      "technical": 0.0424
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.0028,
+     "confidence": 0.855,
+     "legend": {
+      "0": "Can wait",
+      "1": "This week",
+      "2": "Today"
+     },
+     "probabilities": {
+      "0": 0.0711,
+      "1": 0.855,
+      "2": 0.0739
+     }
+    },
+    "outage": {
+     "type": "noul",
+     "noul": 0.1647
+    }
+   },
+   "latency_ms": {
+    "median": 553.12,
+    "min": 523.861,
+    "max": 14987.01,
+    "n": 3
+   },
+   "calls": 3,
+   "input_tokens": 2094,
+   "equivariance_max_abs_diff": 0.0
+  },
+  "invoice": {
+   "status": "ok",
+   "error": null,
+   "answers": {
+    "status": {
+     "type": "choice",
+     "choice": "draft",
+     "confidence": 0.9875,
+     "probabilities": {
+      "paid": 0.0123,
+      "overdue": 0.0002,
+      "draft": 0.9875
+     }
+    },
+    "large": {
+     "type": "noul",
+     "noul": 0.1668
+    }
+   },
+   "latency_ms": {
+    "median": 395.307,
+    "min": 385.56,
+    "max": 402.37,
+    "n": 3
+   },
+   "calls": 2,
+   "input_tokens": 1324,
+   "equivariance_max_abs_diff": 0.0
+  },
+  "capital": {
+   "status": "ok",
+   "error": null,
+   "answers": {
+    "capital": {
+     "type": "choice",
+     "choice": "paris",
+     "confidence": 0.739,
+     "probabilities": {
+      "berlin": 0.2582,
+      "madrid": 0.0028,
+      "paris": 0.739,
+      "rome": 0.0
+     }
+    }
+   },
+   "latency_ms": {
+    "median": 427.969,
+    "min": 414.76,
+    "max": 658.24,
+    "n": 3
+   },
+   "calls": 2,
+   "input_tokens": 749,
+   "equivariance_max_abs_diff": 0.0
+  },
+  "sentiment": {
+   "status": "ok",
+   "error": null,
+   "answers": {
+    "sentiment": {
+     "type": "score",
+     "score": 1.1872,
+     "confidence": 0.7405,
+     "legend": {
+      "0": "Very negative",
+      "1": "Negative",
+      "2": "Neutral",
+      "3": "Positive",
+      "4": "Very positive"
+     },
+     "probabilities": {
+      "0": 0.1041,
+      "1": 0.7405,
+      "2": 0.0663,
+      "3": 0.0425,
+      "4": 0.0467
+     }
+    }
+   },
+   "latency_ms": {
+    "median": 355.367,
+    "min": 184.117,
+    "max": 2387.095,
+    "n": 3
+   },
+   "calls": 1,
+   "input_tokens": 1045,
+   "equivariance_max_abs_diff": 0.0
+  }
+ },
+ "option_order_probe": {
+  "A_sorted_first=billing": {
+   "billing": 0.9555978333530397,
+   "technical": 0.044402166646960374
+  },
+  "B_sorted_first=a_technical": {
+   "a_technical": 0.9999975457407633,
+   "b_billing": 2.4542592367573253e-06
+  },
+  "p_technical_A": 0.044402166646960374,
+  "p_technical_B": 0.9999975457407633,
+  "first_listed_bias_signal": true
+ },
+ "peak_cuda_mem_mib": 653.2,
+ "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU"
+}

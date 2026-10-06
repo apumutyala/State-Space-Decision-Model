@@ -1,0 +1,144 @@
+{
+  "case_id": "LG19",
+  "title": "repair budget exhausted",
+  "tags": [
+    "repair",
+    "exhausted",
+    "coverage"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Does Atlas have a longer warranty than Boreal?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 4,
+      "max_proposal_calls": 4
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "boreal-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n2",
+        "op": "ReadFact",
+        "record_ref": "atlas-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n3",
+        "op": "Compare",
+        "left": {
+          "node": "n1",
+          "project": "object"
+        },
+        "right": {
+          "node": "n2",
+          "project": "object"
+        },
+        "relation": "greater_than"
+      },
+      {
+        "id": "n4",
+        "op": "Assert",
+        "proposition": "n3"
+      }
+    ],
+    "outputs": [
+      "n4"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "rejected",
+    "kernel_reason_category": "unsupported_assertion",
+    "task_outcome": "exhausted",
+    "useful_complete_answer": false,
+    "why": "The first scripted false proposal is rejected. Under the declared four-slot Track L planner shape, the initial comparison can consume the proposal-call budget and L must refuse a repair request before another provider call; no D adapter exhaustion is claimed. Actual calls require a planner trace.",
+    "repair_calls_charged": 0,
+    "assertive_output_count": 0,
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 1,
+      "useful_complete_count": 0,
+      "ask_count": 0
+    },
+    "planner_status_after_repair_request": "exhausted",
+    "planner_layer": "Track L cross-proposal budget; D has no cross-call memory",
+    "scripted_proposal_attempts": 1
+  },
+  "repair": {
+    "requested": true,
+    "permitted": false,
+    "reason": "max_proposal_calls_reached",
+    "repaired_proposal": null,
+    "accounting_unit": "One authored AST attempt in the scripted evaluator; actual typed-choice provider calls require a planner trace",
+    "max_scripted_attempts": 1
+  },
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG19-D0",
+    "type": "choice",
+    "question": "Does Atlas have a longer warranty than Boreal?",
+    "options": [
+      {
+        "id": "LG19-o01",
+        "description": "The comparison is unavailable."
+      },
+      {
+        "id": "LG19-o02",
+        "description": "Atlas has the longer warranty."
+      },
+      {
+        "id": "LG19-o03",
+        "description": "No; Boreal has the longer warranty."
+      }
+    ],
+    "target_option_id": "LG19-o02",
+    "target_description": "One correct first-call decision is possible; this fixture's failed program must not force an exhausted label on an independently correct direct decision.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": true,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG19-unknown": "LG19-o01",
+      "LG19-atlas_longer": "LG19-o02",
+      "LG19-boreal_longer": "LG19-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG19-o01": "LG19-o02",
+        "LG19-o02": "LG19-o03",
+        "LG19-o03": "LG19-o01"
+      },
+      "target_option_id": "LG19-o03",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
+  }
+}

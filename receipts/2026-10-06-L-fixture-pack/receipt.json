@@ -1,0 +1,204 @@
+{
+  "source_commit": "953566c32d24d8e6c6f810c82fb55866660f9c66",
+  "scope": "fixture packaging/reference integrity only; authored synthetic expectations; no semantic kernel/model run",
+  "commands": [
+    [
+      "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+      "fixtures/language_growth/validate.py"
+    ],
+    [
+      "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-p",
+      "test_fixture_pack.py",
+      "-v"
+    ]
+  ],
+  "config": {
+    "manifest": "fixtures/language_growth/manifest.json"
+  },
+  "data_hashes": {
+    "fixtures/language_growth/cases/01_supported_read.json": {
+      "canonical_json_sha256": "e6be4f142ceaeebd1576ba08334229a2130942c000c7ee36903d127f9175d1ef"
+    },
+    "fixtures/language_growth/cases/02_supported_exact_comparison.json": {
+      "canonical_json_sha256": "379b88d36b23473fc3718eda3f43c63d71116c6ebb4f085983f699508c1e5dc5"
+    },
+    "fixtures/language_growth/cases/03_false_comparison.json": {
+      "canonical_json_sha256": "79674c6bf3d5f6fba7cc99227c6fe350d9198d4a24170600773c30b4cb81918b"
+    },
+    "fixtures/language_growth/cases/04_record_splicing.json": {
+      "canonical_json_sha256": "466b47302b0eaf6990aebc145f543e5d3e71a27b37f1987b7826f79ea4acce97"
+    },
+    "fixtures/language_growth/cases/05_unsupported_negation.json": {
+      "canonical_json_sha256": "abee818e7dba2ac1bb485842b22f20866f7cd336a223d2153f5cf56f89de913a"
+    },
+    "fixtures/language_growth/cases/06_unsupported_because.json": {
+      "canonical_json_sha256": "887bcf5943bcf129acb4c02d722e085b8398d500bff404951566391ef742532b"
+    },
+    "fixtures/language_growth/cases/07_stale_context.json": {
+      "canonical_json_sha256": "a92279882029d1a4789ac929c925375361b1fa5a9f4e6f2b26321c1428c58e46"
+    },
+    "fixtures/language_growth/cases/08_revoked_cached_policy.json": {
+      "canonical_json_sha256": "bc4ee5338495f6787cb3347b5e36a17d116244b03e2b8b2faf3ebf4d99fcf7c8"
+    },
+    "fixtures/language_growth/cases/09_currency_mismatch.json": {
+      "canonical_json_sha256": "0729ffa0b17f6e971af0745379c382b598f371fd4c1d4fbc2c3331b39c58411b"
+    },
+    "fixtures/language_growth/cases/10_time_scope_mismatch.json": {
+      "canonical_json_sha256": "183c8804b51f8fc46a02759a91e74cef487795748234b4a70595d570ee069420"
+    },
+    "fixtures/language_growth/cases/11_conflicting_premises.json": {
+      "canonical_json_sha256": "37fd5034143b6d27f1de7bbd5259c9ca4532e345f474f49a2f7610e66507fed0"
+    },
+    "fixtures/language_growth/cases/12_belief_authority_escalation.json": {
+      "canonical_json_sha256": "53eac0ee553d6892c2ab6236c40e910494cdba7a966cff0bc5bdf916d8de7814"
+    },
+    "fixtures/language_growth/cases/13_source_role_injection.json": {
+      "canonical_json_sha256": "731d43254719ca332276cd6206c458506f390ab61195b6b41c161a4aac967171"
+    },
+    "fixtures/language_growth/cases/14_supported_but_wrong_question.json": {
+      "canonical_json_sha256": "9acc195cffd5d8c25dcbc9eaa3a3affc4cb4f2dc1c26d7789308b5df0ea589f0"
+    },
+    "fixtures/language_growth/cases/15_private_conditioned_selection.json": {
+      "canonical_json_sha256": "5f419c5ade71d83702a0339d248619228819331c5b134ccce6115d2359213ba7"
+    },
+    "fixtures/language_growth/cases/16_necessary_ask.json": {
+      "canonical_json_sha256": "bdad2a9b69086301d4c80ad360714edbd0db686603b449f243b097e15dde62da"
+    },
+    "fixtures/language_growth/cases/17_avoidable_ask.json": {
+      "canonical_json_sha256": "954921e175282117e452df2761fa2c649cfab7b8d75c89ce24c9d4891ecdc95d"
+    },
+    "fixtures/language_growth/cases/18_one_bounded_repair.json": {
+      "canonical_json_sha256": "2ba8fb0c75403dac7ab6f2c036311266aa99716e913adb372b5dc8c79d03dc09"
+    },
+    "fixtures/language_growth/cases/19_repair_budget_exhausted.json": {
+      "canonical_json_sha256": "a112db920ef29335764cb2a9d71fc41234aedca8bbccbe521a4bc8d0d4023165"
+    },
+    "fixtures/language_growth/cases/20_unknown_operation_and_text.json": {
+      "canonical_json_sha256": "63ed5e6224633e82a96cd190c4f13982216e7cd2a24d4d6b30313d57438aa722"
+    },
+    "fixtures/language_growth/cases/21_arbitrary_text_assertion.json": {
+      "canonical_json_sha256": "c2aaca6b22f64431155b11ed64313848f826d8cae804577cfd5e351109d8e4ea"
+    },
+    "fixtures/language_growth/catalog.json": {
+      "canonical_json_sha256": "13e68c042e8d1b13e8ecbd1e150bddb812ea1a57bc1296b2ea128e48a759d8ce"
+    },
+    "fixtures/language_growth/manifest.json": {
+      "canonical_json_sha256": "7e5870e73962e545d807dd1187d7ee04827e1d8e6c28cc97d74382f9c44eb206"
+    }
+  },
+  "seeds": "not applicable; deterministic checks",
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]",
+    "device": "CPU"
+  },
+  "billed_cost_usd": 0,
+  "runs": [
+    {
+      "repeat": 1,
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+        "fixtures/language_growth/validate.py"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 0.37236849998589605,
+      "log": "run-1-command-1.txt"
+    },
+    {
+      "repeat": 1,
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_fixture_pack.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 0.6308229001006112,
+      "log": "run-1-command-2.txt"
+    },
+    {
+      "repeat": 2,
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+        "fixtures/language_growth/validate.py"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 0.2696304999990389,
+      "log": "run-2-command-1.txt"
+    },
+    {
+      "repeat": 2,
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_fixture_pack.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 0.5528854000149295,
+      "log": "run-2-command-2.txt"
+    },
+    {
+      "repeat": 3,
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+        "fixtures/language_growth/validate.py"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 0.33612600003834814,
+      "log": "run-3-command-1.txt"
+    },
+    {
+      "repeat": 3,
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_fixture_pack.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 0.5125807999866083,
+      "log": "run-3-command-2.txt"
+    }
+  ],
+  "timing_scope": "local validation wall time, not model performance",
+  "median_wall_seconds_by_command": {
+    "0": 0.33612600003834814,
+    "1": 0.5528854000149295
+  },
+  "wall_seconds_range_by_command": {
+    "0": [
+      0.2696304999990389,
+      0.37236849998589605
+    ],
+    "1": [
+      0.5125807999866083,
+      0.6308229001006112
+    ]
+  },
+  "raw_predictions": "not applicable; raw validation outputs retained",
+  "independent_review": "coordinator inspected packaging code, manifest references and separation of authored labels from host input; Track D recomputation pending"
+}

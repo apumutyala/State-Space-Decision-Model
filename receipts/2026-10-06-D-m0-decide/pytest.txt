@@ -1,0 +1,6 @@
+
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_equivariance.py:136: set SSDM_QWEN_DIR to a Qwen3.5 snapshot
+SKIPPED [1] tests\test_replay_fixture.py:60: timing-dependent case (deadline); not exactly replayable
+SKIPPED [5] tests\test_replay_fixture.py:57: no such case
+======================= 164 passed, 7 skipped in 10.20s =======================
