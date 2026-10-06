@@ -9,12 +9,15 @@ distribution, not a rescaled eta; still order-preserving). Fitted by NLL on a de
 calibration split with logits frozen; the audit split stays untouched. ``fitted_on`` records
 the sha256 of the calibration split ids so a card can prove which split was used.
 
-Disjointness guard (m2 blocker 1): ``fit(..., disjoint_from={"eval": ids, "test": ids, ...})`` compares RECORD ids
-(an item id ``<record>/<qid>`` counts as its record, so two questions of one record can never sit on both sides)
-and raises ``CalibrationLeak`` on any overlap; the per-split sha256 of the sorted record ids goes into
-``disjointness`` and into the serving form (``to_serving()`` -> ``decide.calibration.FeatureTemperature``), which
-``decide.Decider`` refuses to serve without an ``eval`` attestation. ``assert_disjoint`` re-checks at eval time
-(``train.evalcard.run_card``) against the actual eval items.
+Disjointness guard (PR #29 review B1/B3: CONTENT-based and bound to the fit). ``fit(..., calib_content=[...],
+disjoint_from={"eval": content hashes, "retention": ..., "train": ...})`` compares NORMALIZED CONTENT hashes
+(``train.cohort.normalized_content_hash``, carried on every row as ``row.meta["content_sha256"]``), so an exact
+content twin under another id is caught, and raises ``CalibrationLeak`` on any shared content. ``fitted_on`` is then
+the sha256 of the calibration content SET, ``disjointness`` the per-split content-set sha256s, and
+``proof_sha256 = decide.calibration.disjointness_proof_sha256(fitted_on, disjointness)`` enters the temperature id;
+``to_serving()`` carries all three plus the calibration content hashes, and ``decide.Decider`` re-verifies them
+(``assert_servable``). Without ``calib_content`` / ``disjoint_from`` a fit is a legacy, unservable one (``fitted_on``
+= sha256 of the split ids). ``assert_disjoint`` re-checks at eval time (``train.evalcard.run_card``).
 
 At ``w = [softplus^-1(1 - t_min), 0, 0]`` this is the identity (T = 1), matching the
 ``uncalibrated_identity`` convention of ``decide.calibration.OptionCountTemperature``;
@@ -34,11 +37,11 @@ import torch.nn.functional as F
 
 from decide.calibration import FEATURE_TEMPERATURE_FEATURES as FEATURES
 from decide.calibration import FeatureTemperature as ServingTemperature
-from decide.calibration import feature_temperature_identity
+from decide.calibration import content_set_sha256, disjointness_proof_sha256, feature_temperature_identity
 
 
 class CalibrationLeak(ValueError):
-    """The calibration split shares a record with an eval/test split."""
+    """The calibration split shares content (or a record) with an eval/test/train split."""
 
 
 def record_ids(ids: Sequence[str]) -> set[str]:
@@ -50,18 +53,31 @@ def ids_sha256(ids) -> str:
     return hashlib.sha256("\n".join(sorted(ids)).encode()).hexdigest()
 
 
-def check_disjoint(calib_ids: Sequence[str], disjoint_from: dict[str, Sequence[str]]) -> dict[str, str]:
-    """Raise ``CalibrationLeak`` if a calibration record is in any named split; return {name: sha256 of its records}."""
-    cal = record_ids(calib_ids)
+def check_disjoint(calib_content: Sequence[str], disjoint_from: dict[str, Sequence[str]]) -> dict[str, str]:
+    """Content sets: raise ``CalibrationLeak`` on any shared content hash; return {name: content-set sha256}."""
+    cal = set(calib_content)
+    if not cal:
+        raise CalibrationLeak("calibration content set is empty")
     out = {}
-    for name, ids in sorted(disjoint_from.items()):
-        other = record_ids(ids)
+    for name, hashes in sorted(disjoint_from.items()):
+        other = set(hashes)
         if not other:
             raise CalibrationLeak(f"split {name!r} is empty: disjointness from nothing is not a guard")
         both = cal & other
         if both:
-            raise CalibrationLeak(f"calibration split shares {len(both)} record(s) with {name!r}, e.g. {sorted(both)[:3]}")
-        out[name] = ids_sha256(other)
+            raise CalibrationLeak(f"calibration content shares {len(both)} hash(es) with {name!r}, e.g. {sorted(both)[:2]}")
+        out[name] = content_set_sha256(other)
+    return out
+
+
+def item_content(items) -> list[str]:
+    """Normalized content hash of each item's record (``train.data.items_from_records`` stamps it)."""
+    out = []
+    for it in items:
+        h = it.row.meta.get("content_sha256")
+        if not h:
+            raise ValueError(f"{it.id}: row carries no content_sha256 (build items with train.data.items_from_records)")
+        out.append(h)
     return out
 
 
@@ -93,8 +109,10 @@ class FeatureTemperature:
     w: list[float] = field(default_factory=lambda: [_inv_softplus(1 - 0.05), 0.0, 0.0])
     fitted_on: str | None = None
     fit_report: dict = field(default_factory=dict)
-    disjointness: dict = field(default_factory=dict)  # split name -> sha256 of its sorted record ids
+    disjointness: dict = field(default_factory=dict)  # split name -> content-set sha256
     calib_records: frozenset = field(default_factory=frozenset, repr=False)  # kept for eval-time re-checks
+    calib_content: frozenset = field(default_factory=frozenset, repr=False)
+    proof_sha256: str | None = None
 
     def temperature(self, phi: torch.Tensor) -> torch.Tensor:
         w = torch.as_tensor(self.w, dtype=phi.dtype)
@@ -105,27 +123,38 @@ class FeatureTemperature:
         return _tempered(log_probs, t)
 
     def identity(self) -> dict:
-        return feature_temperature_identity(self.t_min, self.w, self.fitted_on)
+        return feature_temperature_identity(self.t_min, self.w, self.fitted_on, self.proof_sha256)
 
-    def assert_disjoint(self, ids: Sequence[str], name: str = "eval") -> None:
-        """Eval-time guard: raise ``CalibrationLeak`` if any of ``ids`` (items or records) is a calibration record."""
+    def assert_disjoint(self, ids: Sequence[str], name: str = "eval", content: Sequence[str] | None = None) -> None:
+        """Eval-time guard: raise ``CalibrationLeak`` if any of ``ids`` (items or records) is a calibration record
+        or any of ``content`` is calibration content."""
         both = record_ids(ids) & set(self.calib_records)
         if both:
             raise CalibrationLeak(f"{name} shares {len(both)} record(s) with the calibration split, e.g. {sorted(both)[:3]}")
+        shared = set(content or ()) & set(self.calib_content)
+        if shared:
+            raise CalibrationLeak(f"{name} shares {len(shared)} content hash(es) with the calibration split")
 
     def to_serving(self) -> ServingTemperature:
-        """The pure-Python form ``decide.Decider(calibration=...)`` serves (same identity id)."""
+        """The pure-Python form ``decide.Decider(calibration=...)`` serves (same identity id, same proof)."""
         return ServingTemperature(w=tuple(self.w), t_min=self.t_min, fitted_on=self.fitted_on,
-                                  disjointness=tuple(self.disjointness.items()))
+                                  disjointness=tuple(self.disjointness.items()),
+                                  calib_content=tuple(sorted(self.calib_content)), proof_sha256=self.proof_sha256)
 
     @classmethod
     def fit(cls, log_probs: torch.Tensor, labels: torch.Tensor, phi: torch.Tensor, split_ids: Sequence[str],
             t_min: float = 0.05, l2: float = 1e-4, steps: int = 200,
-            disjoint_from: dict[str, Sequence[str]] | None = None) -> "FeatureTemperature":
-        """Minimise NLL of the tempered distribution (frozen logits) with L-BFGS. ``disjoint_from`` (name -> ids of
-        the eval/test/train splits) is checked at record level BEFORE fitting; without it the result is not servable
-        (``decide.Decider`` refuses a fitted temperature lacking an ``eval`` attestation)."""
-        disjointness = check_disjoint(split_ids, disjoint_from) if disjoint_from else {}
+            disjoint_from: dict[str, Sequence[str]] | None = None,
+            calib_content: Sequence[str] | None = None) -> "FeatureTemperature":
+        """Minimise NLL of the tempered distribution (frozen logits) with L-BFGS. ``disjoint_from`` (name -> CONTENT
+        hashes of the eval/retention/train splits) is checked against ``calib_content`` (one hash per calibration
+        item) BEFORE fitting; the proof is bound into ``fitted_on`` / ``proof_sha256`` / the id. Without both the result
+        is a legacy fit that ``decide.Decider`` refuses to serve."""
+        if disjoint_from and calib_content is None:
+            raise ValueError("disjoint_from needs calib_content (content hashes of the calibration items)")
+        if calib_content is not None and len(calib_content) != len(split_ids):
+            raise ValueError("calib_content must have one content hash per calibration item")
+        disjointness = check_disjoint(calib_content, disjoint_from) if disjoint_from else {}
         lp = log_probs.detach().double()
         y = labels.long()
         ph = phi.double()
@@ -149,7 +178,12 @@ class FeatureTemperature:
         after = float(nll_of(w.detach()))
         if not (torch.isfinite(w.detach()).all() and math.isfinite(after)):
             raise FloatingPointError(f"temperature fit diverged (w={w.detach().tolist()}, nll_after={after})")
-        split_hash = hashlib.sha256("\n".join(sorted(split_ids)).encode()).hexdigest()
-        return cls(t_min=t_min, w=w.detach().tolist(), fitted_on=split_hash,
+        if disjointness:
+            fitted_on = content_set_sha256(calib_content)
+            proof = disjointness_proof_sha256(fitted_on, disjointness)
+        else:  # legacy: identifies the split, proves nothing, never served
+            fitted_on, proof = hashlib.sha256("\n".join(sorted(split_ids)).encode()).hexdigest(), None
+        return cls(t_min=t_min, w=w.detach().tolist(), fitted_on=fitted_on,
                    fit_report={"nll_before": before, "nll_after": after, "n": int(len(y))},
-                   disjointness=disjointness, calib_records=frozenset(record_ids(split_ids)))
+                   disjointness=disjointness, calib_records=frozenset(record_ids(split_ids)),
+                   calib_content=frozenset(calib_content or ()), proof_sha256=proof)

@@ -1,0 +1,24 @@
+{
+ "receipt": "m2 blockers (PR #29 + review fixes)",
+ "where": "locally reproduced (Windows CPU, coordinator laptop); NOT run on the training box",
+ "on_box": "nothing in this receipt ran on paid hardware; jobs/m2_pilot and jobs/m2_parent_arm re-run the guard readiness, the D1-B hash check and the cohort rebuild ON the box before any training (exit codes in their JOB_SPECs)",
+ "files": {
+  "guard_readiness.json": "jobs.m2_pilot.guard_ready on ssdm-data/suite-0.2 (with exclusions): content index 7cbe6c89..., exit 0",
+  "content_index_from_suite_snapshot.json": "train.guard build-content-index on ssdm-data/m2/suite-snapshot (no exclusions): same sha256",
+  "heldout_d1b.json": "train.heldout over all 20,000 PR #16 records: 0 D1-B hits",
+  "tokenizer_check.json": "train.tokenizer_check --per-source 30 (651 rows per tokenizer, pinned tokenizer files only)"
+ },
+ "cohort": {
+  "version": "m2-dev-cohort-v2",
+  "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+  "n": {
+   "calibration": 1000,
+   "dev": 835,
+   "retention": 1670,
+   "steer_dev": 1800,
+   "steer_gate": 1000
+  },
+  "content_map_sha256": "4fd3d9cae8b3a95e4b3c63da49156f1c060f4ce00c1490264af98a9a079af2e4",
+  "supersedes": "m2-dev-cohort-v1 cf339e4c989be3e1eaa9dc717e406f28a0089d80d8562418863a3bfd6f26ed6d (record-id assignment; 17 synthetic_factchange content groups straddled cohort/training)"
+ }
+}

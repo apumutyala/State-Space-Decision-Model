@@ -39,10 +39,13 @@ REQ = {"model": "t", "state": {"note": "colour red, size large, and a longer not
 
 
 def _fitted(disjoint=True, w=(0.3, 0.2, -0.4)):
-    from decide.calibration import FeatureTemperature
+    from decide.calibration import FeatureTemperature, content_set_sha256, disjointness_proof_sha256
 
-    dj = (("eval", "e" * 64), ("train", "t" * 64)) if disjoint else ()
-    return FeatureTemperature(w=w, fitted_on="f" * 64, disjointness=dj)
+    calib = ("c" * 64, "d" * 64)
+    fitted_on = content_set_sha256(calib)
+    dj = {"eval": content_set_sha256({"e" * 64}), "train": content_set_sha256({"t" * 64})} if disjoint else {}
+    return FeatureTemperature(w=w, fitted_on=fitted_on, disjointness=tuple(dj.items()), calib_content=calib,
+                              proof_sha256=disjointness_proof_sha256(fitted_on, dj) if dj else None)
 
 
 def test_serving_temperature_equals_training_temperature_and_identity():
@@ -85,7 +88,8 @@ def test_decider_serves_the_fitted_temperature_and_versions_it_in_the_revision()
     assert a["ssdm"]["served_probabilities"] != b["ssdm"]["served_probabilities"]
     sc = b["ssdm"]["served_config"]
     assert sc["calibration"]["id"] == cal.identity()["id"] and sc["calibration"]["status"] == "fitted"
-    assert sc["calibration"]["disjointness"] == {"eval": "e" * 64, "train": "t" * 64}
+    assert set(sc["calibration"]["disjointness"]) == {"eval", "train"}
+    assert sc["calibration"]["disjointness_proof"] == cal.proof_sha256
     from decide.calibration import softmax
 
     feats = tempered.backend.score(REQ, lambda: None).features
@@ -130,14 +134,40 @@ def test_missing_features_fail_closed():
     assert r["answers"] == {} and r["ssdm"]["served_probabilities"] == {}
 
 
-def test_fitted_temperature_without_disjointness_is_not_servable():
-    from decide.calibration import CalibrationNotServable, FeatureTemperature
+def test_serve_time_guard_is_bound_to_the_fit():
+    """PR #29 review B3: presence is not enough; the proof must verify against fitted_on and the content sets."""
+    import dataclasses
 
-    with pytest.raises(CalibrationNotServable):
-        _tiny_decider(_fitted(disjoint=False))
-    with pytest.raises(CalibrationNotServable):  # attested against something, but not the eval split
-        _tiny_decider(FeatureTemperature(w=(0.1, 0, 0), fitted_on="x", disjointness=(("train", "t"),)))
-    _tiny_decider(FeatureTemperature())  # the identity is servable (status uncalibrated_identity)
+    from decide.calibration import (IDENTITY_W, CalibrationNotServable, FeatureTemperature, content_set_sha256)
+
+    ok = _fitted()
+    _tiny_decider(ok)
+    bad = {
+        "no disjointness": _fitted(disjoint=False),
+        "attested, not eval": dataclasses.replace(ok, disjointness=(("train", "t" * 64),)),
+        "tampered eval set": dataclasses.replace(ok, disjointness=(("eval", "0" * 64), ("train", "t" * 64))),
+        "fitted_on not the calibration content": dataclasses.replace(ok, fitted_on="a" * 64),
+        "fitted_on not a sha256": dataclasses.replace(ok, fitted_on="x"),
+        "calibration content swapped": dataclasses.replace(ok, calib_content=("z" * 64,)),
+        "non-identity w, no fitted_on": FeatureTemperature(w=(0.2, 0.1, 0.0)),
+    }
+    for why, cal in bad.items():
+        with pytest.raises(CalibrationNotServable):
+            _tiny_decider(cal)
+    _tiny_decider(FeatureTemperature(w=IDENTITY_W))  # the identity is servable (status uncalibrated_identity)
+    ok.verify_disjoint("eval", {"e" * 64})
+    with pytest.raises(CalibrationNotServable, match="not the set"):
+        ok.verify_disjoint("eval", {"e" * 64, "f" * 64})
+    leaky = dataclasses.replace(ok, calib_content=("c" * 64, "e" * 64),
+                                fitted_on=content_set_sha256({"c" * 64, "e" * 64}))
+    from decide.calibration import disjointness_proof_sha256
+
+    leaky = dataclasses.replace(leaky, proof_sha256=disjointness_proof_sha256(leaky.fitted_on, dict(leaky.disjointness)))
+    with pytest.raises(CalibrationNotServable, match="shares"):
+        leaky.verify_disjoint("eval", {"e" * 64})
+    # the proof is part of the id: two fits that differ only in the attested eval set serve different revisions
+    other = dataclasses.replace(ok, disjointness=(("eval", content_set_sha256({"q" * 64})), ("train", "t" * 64)))
+    assert other.identity()["id"] != ok.identity()["id"] or other.proof_sha256 == ok.proof_sha256
 
 
 def test_serialisation_roundtrip_and_tamper():
@@ -151,8 +181,9 @@ def test_serialisation_roundtrip_and_tamper():
         FeatureTemperature.from_dict(bad)
 
 
-def test_fit_refuses_calibration_eval_overlap_at_record_level():
+def test_fit_disjointness_is_content_based_and_bound_into_the_id():
     torch = pytest.importorskip("torch")
+    from decide.calibration import CalibrationNotServable, content_set_sha256, disjointness_proof_sha256
     from train.calibration import CalibrationLeak, FeatureTemperature, features
 
     n = 12
@@ -160,20 +191,26 @@ def test_fit_refuses_calibration_eval_overlap_at_record_level():
     y = torch.zeros(n, dtype=torch.long)
     phi = features([10] * n, [3] * n)
     cal_ids = [f"rec{i}/q" for i in range(n)]
-    with pytest.raises(CalibrationLeak):  # same record, different question = leak
-        FeatureTemperature.fit(lp, y, phi, cal_ids, disjoint_from={"eval": ["rec3/other_q", "zzz/q"]})
+    cal_c = [f"{i:064x}" for i in range(n)]
+    with pytest.raises(CalibrationLeak):  # a content TWIN under another id is a leak (PR #29 review B1)
+        FeatureTemperature.fit(lp, y, phi, cal_ids, calib_content=cal_c, disjoint_from={"eval": [cal_c[3], "f" * 64]})
     with pytest.raises(CalibrationLeak, match="empty"):
-        FeatureTemperature.fit(lp, y, phi, cal_ids, disjoint_from={"eval": []})
-    ft = FeatureTemperature.fit(lp, y, phi, cal_ids, disjoint_from={"eval": ["e1/q", "e2/q"], "test": ["t1"]})
-    assert set(ft.disjointness) == {"eval", "test"}
-    assert ft.disjointness["eval"] == hashlib.sha256("e1\ne2".encode()).hexdigest()
+        FeatureTemperature.fit(lp, y, phi, cal_ids, calib_content=cal_c, disjoint_from={"eval": []})
+    with pytest.raises(ValueError, match="calib_content"):
+        FeatureTemperature.fit(lp, y, phi, cal_ids, disjoint_from={"eval": ["f" * 64]})
+    ft = FeatureTemperature.fit(lp, y, phi, cal_ids, calib_content=cal_c,
+                                disjoint_from={"eval": ["e" * 64, "e" * 64, "d" * 64], "test": ["9" * 64]})
+    assert ft.fitted_on == content_set_sha256(cal_c)
+    assert ft.disjointness["eval"] == content_set_sha256({"e" * 64, "d" * 64})
+    assert ft.proof_sha256 == disjointness_proof_sha256(ft.fitted_on, ft.disjointness)
+    assert ft.identity()["disjointness_proof"] == ft.proof_sha256
     srv = ft.to_serving()
     srv.assert_servable()
+    srv.verify_disjoint("eval", {"e" * 64, "d" * 64})
+    assert srv.identity()["id"] == ft.identity()["id"]
     with pytest.raises(CalibrationLeak):
-        ft.assert_disjoint(["rec0/q"])
+        ft.assert_disjoint(["other/q"], content=[cal_c[0]])
     unattested = FeatureTemperature.fit(lp, y, phi, cal_ids)
-    from decide.calibration import CalibrationNotServable
-
     with pytest.raises(CalibrationNotServable):
         unattested.to_serving().assert_servable()
 
@@ -192,8 +229,9 @@ def test_eval_card_refuses_eval_items_sharing_a_calibration_record():
                                guard=SplitGuard.synthetic_only("test"))
     model = DecisionModel(tiny_backbone(seed=0, hidden=16), "integrator", head_kwargs={"channels": 8}, seed=0)
     lp = torch.log_softmax(torch.randn(2, 3, dtype=torch.float64), -1)
-    ft = FeatureTemperature.fit(lp, torch.zeros(2, dtype=torch.long), features([5, 5], [3, 3]),
-                                [items[0].id], disjoint_from={"eval": ["other"]})
+    lp = lp[:1]
+    ft = FeatureTemperature.fit(lp, torch.zeros(1, dtype=torch.long), features([5], [3]), [items[0].id],
+                                calib_content=[items[0].row.meta["content_sha256"]], disjoint_from={"eval": ["0" * 64]})
     with pytest.raises(CalibrationLeak):  # items[1] is the other question of items[0]'s record
         run_card(model, items[1:2], 0, temperature=ft)
 
@@ -215,13 +253,45 @@ def test_cohort_file_matches_committed_hash_and_rebuilds_byte_identically(cohort
 
 
 def test_cohort_roles_disjoint_and_sized(cohort):
-    sizes = cohort.header["sizes"]
+    sizes, actual = cohort.header["sizes"], cohort.header["n_actual"]
     seen = set()
     for role, rows in cohort.roles.items():
         ids = [e["id"] for e in rows]
-        assert len(ids) == sizes[role] == len(set(ids)), role
+        assert len(ids) == actual[role] >= sizes[role] and len(ids) == len(set(ids)), role
         assert not (seen & set(ids)), role
         seen |= set(ids)
+
+
+def test_cohort_v2_assigns_whole_content_groups_and_the_pool_excludes_twins(cohort):
+    """PR #29 review B1: no normalized-content group straddles two roles or a role and the training pool."""
+    from train.cohort import read_content_map
+
+    cm = read_content_map()
+    owner = {}
+    for role in ("dev", "calibration", "retention"):
+        for e in cohort.roles[role]:
+            assert e["content_sha256"] == cm[e["id"]]
+            assert owner.setdefault(e["content_sha256"], role) == role, e["id"]
+    pool = cohort.training_pool()
+    assert not ({cm[i] for i in pool} & set(owner))
+    groups = {}
+    for i, h in cm.items():
+        groups.setdefault(h, []).append(i)
+    held = cohort.held_out()
+    for h, ids in groups.items():  # every group is wholly held out or wholly in the pool
+        assert len({i in held for i in ids}) == 1, h
+    assert sum(len(v) > 1 for v in groups.values()) == 51  # the synthetic_factchange twin groups
+
+
+def test_v1_assignment_would_have_leaked_twins():
+    """Regression: the v1 rule (record ids only) on the same manifest puts twins on both sides."""
+    from train.cohort import read_content_map
+
+    cm = read_content_map()
+    v1 = gzip.open(ROOT / "train/cohorts/m2-dev-cohort-v1.jsonl.gz", "rt", encoding="utf-8").read().splitlines()[1:]
+    held = {json.loads(x)["id"] for x in v1 if json.loads(x)["role"] in ("dev", "calibration", "retention")}
+    held_c = {cm[i] for i in held}
+    assert any(cm[i] in held_c for i in cm if i not in held)
 
 
 def test_cohort_draws_only_pr16_train_records_and_dev_steer_requests(cohort):
@@ -251,8 +321,8 @@ def test_cohort_is_source_stratified(cohort):
     for role in ("dev", "calibration", "retention"):
         got = Counter(e["source"] for e in cohort.roles[role])
         n = len(cohort.roles[role])
-        for s, c in pop.items():
-            assert abs(got[s] - n * c / sum(pop.values())) <= 2, (role, s)
+        for s, c in pop.items():  # whole content groups: a source can overshoot by at most one group
+            assert abs(got[s] - n * c / sum(pop.values())) <= (47 if s == "synthetic_factchange" else 2), (role, s)
 
 
 def test_training_ids_must_avoid_the_cohort(cohort):
@@ -263,6 +333,12 @@ def test_training_ids_must_avoid_the_cohort(cohort):
         cohort.assert_training_ids(["m2:x:1", held[0] + "/q0"])
     pool = cohort.training_pool()
     cohort.assert_training_ids(pool)
+    from train.cohort import read_content_map
+
+    cm = read_content_map()
+    cohort.assert_training_content(cm[i] for i in pool)
+    with pytest.raises(CohortLeak, match="content"):
+        cohort.assert_training_content([cm[held[0]]])
     assert len(pool) == 20000 - len(held)
 
 
@@ -279,6 +355,12 @@ def test_run_cell_cohort_split_excludes_the_cohort(cohort):
         cohort_split(ids, {**cfg, "cohort_sha256": "0" * 64})
     with pytest.raises(ValueError, match="missing"):
         cohort_split([i for i in ids if i != ev[0]], cfg)
+    with pytest.raises(ValueError, match="content map"):
+        cohort_split(ids + ["m2:not-in-map:1"], cfg)
+    # with records: a training record whose content drifted from the map (e.g. swapped for a held-out twin) refuses
+    fake = {i: {"id": i, "request": {"model": "m", "state": {"x": i}, "questions": {}}, "labels": {}} for i in tr}
+    with pytest.raises(ValueError, match="differ in content"):
+        cohort_split(ids, cfg, {**{i: None for i in ids}, **fake})
 
 
 def test_steer_sizes_meet_the_margin_power_and_smaller_sizes_do_not(cohort):
@@ -310,6 +392,7 @@ def test_clean_accuracy_size_follows_the_mcnemar_rule(cohort):
 
 @pytest.mark.skipif(not RECORDS.exists(), reason="PR #16 records (outside git) absent")
 def test_cohort_records_load_verified_from_the_records_file(cohort):
+    pytest.importorskip("torch")  # train.data imports the torch-based row builder
     recs, ident = cohort.load_role_records(RECORDS, "dev")
     assert [r["id"] for r in recs] == sorted(cohort.ids("dev")) and ident["manifest_verified"]
 
@@ -525,5 +608,58 @@ def test_job_spec_is_capped_unsubmitted_and_margins_pending():
     from train.cohort import Cohort
 
     assert cfg["cohort_sha256"] == Cohort().sha256 and cfg["head"] == "fork" and cfg["require_guard_readiness"]
+    caps = params["phase_caps_minutes"]
+    for c in (cfg, json.loads((ROOT / "jobs/m2_pilot/m2_pilot_cell_q9af.json").read_text())):
+        assert c["max_minutes"] <= caps["cell"] - 20  # training wall-clock fits the cell phase after smoke + ladder
     assert params["cohort_sha256"] == cfg["cohort_sha256"]
     assert params["guard_content_index_sha256"] == _pin()["content_index"]["sha256"]
+
+
+# ============================================================================== B2: watchdog under set -u
+def _bash():
+    import shutil
+
+    b = shutil.which("bash")
+    if not b:
+        pytest.skip("bash not available")
+    return b
+
+
+@pytest.mark.parametrize("runner", ["jobs/m2_pilot/m2_job.sh", "jobs/m2_parent_arm/parent_arm_job.sh"])
+def test_watchdog_heartbeat_continues_across_iterations(runner, tmp_path):
+    """PR #29 review B2: the runner's own variable block (MAIN_PID, OUT, CK, HF_DIR, WATCH_EXTRA, ...) is evaluated
+    under ``set -Euo pipefail`` with the real watchdog.sh; the heartbeat must keep firing for several iterations
+    while work progresses. The same block with MAIN_PID removed reproduces the bug (watchdog dies at once)."""
+    import re
+    import subprocess
+
+    text = (ROOT / runner).read_text(encoding="utf-8")
+    need = ("MAIN_PID", "OUT", "WORK", "CK", "HF_DIR", "HB_EVERY_S", "WATCH_EXTRA")
+    lines = [ln for ln in text.splitlines() if re.match(r"^(%s)=" % "|".join(need), ln)]
+    assert {re.match(r"^(\w+)=", ln).group(1) for ln in lines} >= set(need), "runner does not set every watchdog var"
+    assert text.index("MAIN_PID=") < text.index("watchdog &")
+    wd = (ROOT / "jobs/clef_baseline/watchdog.sh").as_posix()
+    t = tmp_path.as_posix()
+
+    def script(block):
+        return "\n".join([
+            "set -Euo pipefail",
+            f"export GMN_OUTPUT_DIR={t}/out GMN_CHECKPOINT_DIR={t}/ck HF_HOME={t}/hf HB_EVERY_S=1 STALL_S=600",
+            *block,
+            f"WORK={t}/work; WATCH_EXTRA=$WORK",  # keep the test inside tmp (the runners use /tmp/<job>)
+            'mkdir -p "$OUT" "$CK" "$HF_DIR" "$WORK"',
+            f"source {wd}",
+            'hb() { date +%s%N >> "$OUT/beats"; }',
+            "watchdog & WD=$!",
+            'for i in 1 2 3 4; do touch "$WORK/progress"; sleep 1; done',
+            'kill -0 "$WD" 2>/dev/null && echo ALIVE || echo DEAD',
+            'kill "$WD" 2>/dev/null || true',
+        ])
+
+    ok = subprocess.run([_bash(), "-c", script(lines)], capture_output=True, text=True, timeout=60)
+    beats = (tmp_path / "out" / "beats").read_text().split() if (tmp_path / "out" / "beats").exists() else []
+    assert "ALIVE" in ok.stdout and len(beats) >= 3, (ok.stdout, ok.stderr, beats)
+    (tmp_path / "out" / "beats").unlink()
+    bug = subprocess.run([_bash(), "-c", script([ln for ln in lines if not ln.startswith("MAIN_PID=")])],
+                         capture_output=True, text=True, timeout=60)
+    assert "DEAD" in bug.stdout and "MAIN_PID" in bug.stderr

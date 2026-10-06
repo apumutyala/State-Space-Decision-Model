@@ -54,5 +54,6 @@
  },
  "index_file": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\167d8677-872b-45ed-b144-905f7c6dd3bc\\scratchpad\\guard\\index-content-hashes.txt.gz",
  "ready": true,
- "exit_code": 0
+ "exit_code": 0,
+ "where": "locally reproduced (Windows CPU, coordinator laptop); NOT run on the training box"
 }

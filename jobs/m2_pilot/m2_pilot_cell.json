@@ -21,7 +21,7 @@
  "n_eval_records": 0,
  "min_train_items": 500,
  "max_steps": 400,
- "max_minutes": 110,
+ "max_minutes": 65,
  "ckpt_every": 50,
  "eval_every": 100,
  "smoke": {
@@ -37,7 +37,10 @@
   "loss_drop_frac_min": 0.1,
   "max_peak_gb": 76
  },
- "cohort_sha256": "cf339e4c989be3e1eaa9dc717e406f28a0089d80d8562418863a3bfd6f26ed6d",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
  "require_guard_readiness": true,
- "calibration_role": "calibration"
+ "calibration_role": "calibration",
+ "parent": "rwkv7",
+ "eval_max_t": 2048,
+ "max_minutes_note": "training wall-clock inside the 95-min cell phase: 95 - smoke 10 - ladder 15 - 5 margin (PR #29 review: max_minutes must be <= the cell cap)"
 }

@@ -1,14 +1,17 @@
 """The frozen m2 development cohort: which records/requests G12 checkpoints and G13 gates are scored on.
 
-    python -X utf8 -m train.cohort build    # writes train/cohorts/m2-dev-cohort-v1.jsonl.gz + .sha256
+    python -X utf8 -m train.cohort content-map --records <records.jsonl.gz>   # (re)writes the committed content map
+    python -X utf8 -m train.cohort build    # writes train/cohorts/m2-dev-cohort-v2.jsonl.gz + .sha256
     python -X utf8 -m train.cohort verify   # rebuilds in memory and checks the committed file byte-for-byte
     python -X utf8 -m train.cohort power    # prints the sizing table (planning assumptions below)
 
 Sources (and ONLY these):
 * decision items: the PR #16 m2 sample, i.e. public TRAIN-split sources (``data/sources.py``) already passed through the
   item-tier contamination guard, identified by the committed manifest
-  ``data/manifests/sample-20000-seed20261006.manifest.jsonl.gz`` (record id + sha256 of its canonical line). The
-  cohort is built from that manifest alone (no record text is needed or committed), so it is rebuildable anywhere.
+  ``data/manifests/sample-20000-seed20261006.manifest.jsonl.gz`` (record id + sha256 of its canonical line) plus the
+  committed CONTENT MAP ``data/manifests/sample-20000-seed20261006.content.jsonl.gz`` (record id -> normalized content
+  hash, ``normalized_content_hash``; hashes only, built from the manifest-verified records). The cohort is rebuilt
+  from those two files alone (no record text is committed), so it is rebuildable anywhere.
 * steer requests: the synthetic ``safety_eval.data.build(split="dev")`` requests (template clusters hashed into the
   dev split; the safety_eval TEST split is never drawn). Content hash = ``sha256_obj(strip_meta(request))``.
 Never Index DEV/TEST rows: every decision record is additionally checked against the m0 harness manifests
@@ -23,8 +26,13 @@ Roles (disjoint; a record is in at most one):
                    ``attacks.build_variants(..., final=True)`` at a gate (G13 ``g13_steer_d1b``)
 Every other PR #16 record is the m2 TRAINING pool (``training_pool`` / ``assert_training_ids``).
 
-Assignment is a pure function of (manifest, seed, sizes): records are stratified by ``source`` and ordered by
-sha256(seed|role-salt|id); each role takes its per-source quota in that order (largest-remainder rounding).
+v2 (PR #29 review B1): assignment is CONTENT-GROUP aware. v1 assigned record ids, and 17 content groups of
+``synthetic_factchange`` twins (exact same state + questions under different ids) straddled the cohort and the
+training draw (4 straddled dev / calibration / retention). v2 groups records by normalized content and assigns WHOLE
+groups: groups are stratified by ``source`` and ordered by sha256(seed|version|role|content hash); each role takes
+whole groups until its per-source quota is met (largest-remainder rounding; a role can exceed its quota by at most
+one group). Every record whose content is held out (any role) is outside the training pool, and
+``assert_training_ids`` / ``assert_training_content`` refuse a training record by id OR by content.
 
 Sizing (``power``): the steer margin m_steer = ``train.promotion.MARGINS["m_steer"]`` must be met by the UPPER CI of
 the paired child - parent steer difference when the true difference is 0, with probability >= ``POWER``. That is a
@@ -46,9 +54,10 @@ from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 PR16_MANIFEST = ROOT / "data" / "manifests" / "sample-20000-seed20261006.manifest.jsonl.gz"
-OUT = ROOT / "train" / "cohorts" / "m2-dev-cohort-v1.jsonl.gz"
-OUT_SHA = OUT.with_name("m2-dev-cohort-v1.sha256")
-COHORT_VERSION = "m2-dev-cohort-v1"
+CONTENT_MAP = ROOT / "data" / "manifests" / "sample-20000-seed20261006.content.jsonl.gz"
+OUT = ROOT / "train" / "cohorts" / "m2-dev-cohort-v2.jsonl.gz"
+OUT_SHA = OUT.with_name("m2-dev-cohort-v2.sha256")
+COHORT_VERSION = "m2-dev-cohort-v2"
 SEED = 20261006
 ROLES = ("dev", "calibration", "retention")
 STEER_ROLES = ("steer_dev", "steer_gate")
@@ -102,8 +111,10 @@ def steer_power(n_requests: int, n_templates: int, *, m_steer: float, n_dev_clus
         lo, hi = np.percentile(draws, [2.5, 97.5])
         his.append(hi)
         ok += bool(lo <= 0 and hi <= m_steer)
+    pw = ok / n_sims
     return {"n_requests": n_requests, "n_templates": n_templates, "n_units": n_requests * n_templates,
-            "power": ok / n_sims, "median_upper_ci": float(np.median(his)), "m_steer": m_steer,
+            "power": pw, "power_mc_se": math.sqrt(max(pw * (1 - pw), 1e-12) / n_sims),
+            "power_note": f"Monte Carlo estimate over {n_sims} null simulations; +/- 1 MC s.e. shown", "median_upper_ci": float(np.median(his)), "m_steer": m_steer,
             "n_dev_clusters": n_dev_clusters, "n_sims": n_sims, "n_boot": n_boot}
 
 
@@ -166,6 +177,53 @@ def _dev_clusters() -> list[str]:
     return [c for c in cl if split_of(c) == "dev"]
 
 
+def normalize_content(obj: Any) -> Any:
+    """NFKC + casefold + whitespace-collapsed strings (keys too), recursively; numbers/bools unchanged."""
+    import re
+    import unicodedata
+
+    if isinstance(obj, str):
+        return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", obj).casefold()).strip()
+    if isinstance(obj, dict):
+        return {normalize_content(k): normalize_content(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [normalize_content(x) for x in obj]
+    return obj
+
+
+def normalized_content_hash(state: Any, questions: Any) -> str:
+    """Content identity of a record's model-facing request (state + questions), id- / model- / key-order- /
+    option-order-insensitive (``train.guard.content_hash`` over ``normalize_content``)."""
+    from train.guard import content_hash
+
+    h = content_hash(normalize_content(state), normalize_content(questions))
+    if h is None:
+        raise ValueError("record content cannot be fingerprinted")
+    return h
+
+
+def record_content_hash(record: dict) -> str:
+    from train.guard import record_request
+
+    req = record_request(record) or record
+    return normalized_content_hash(req["state"], req["questions"])
+
+
+def build_content_map(records_path: str | Path) -> str:
+    """Canonical text of the content map (one ``{"content_sha256", "id"}`` line per record, sorted by id), from
+    the records file verified line-by-line against the committed PR #16 manifest."""
+    from train.data import load_m2_records, read_manifest
+
+    recs, _ = load_m2_records(records_path, read_manifest(PR16_MANIFEST))
+    rows = sorted(({"content_sha256": record_content_hash(r), "id": r["id"]} for r in recs), key=lambda e: e["id"])
+    return "".join(json.dumps(e, sort_keys=True, separators=(",", ":")) + "\n" for e in rows)
+
+
+def read_content_map(path: Path = CONTENT_MAP) -> dict[str, str]:
+    with gzip.open(path, "rt", encoding="utf-8") as fh:
+        return {e["id"]: e["content_sha256"] for e in (json.loads(x) for x in fh if x.strip())}
+
+
 def read_pr16_manifest(path: Path = PR16_MANIFEST) -> list[dict[str, str]]:
     with gzip.open(path, "rt", encoding="utf-8") as fh:
         rows = [json.loads(x) for x in fh if x.strip()]
@@ -188,23 +246,36 @@ def _quotas(counts: dict[str, int], n: int) -> dict[str, int]:
     return q
 
 
-def assign_records(manifest: list[dict[str, str]], sizes: dict[str, int], seed: int = SEED) -> dict[str, list[dict]]:
-    """Disjoint stratified roles in ROLES order (each role draws from what earlier roles left)."""
-    left = {r["id"]: r for r in manifest}
+def assign_records(manifest: list[dict[str, str]], sizes: dict[str, int], seed: int = SEED,
+                   content: dict[str, str] | None = None) -> dict[str, list[dict]]:
+    """Disjoint stratified roles in ROLES order, assigning WHOLE content groups (each role draws from the groups
+    earlier roles left). ``content``: id -> normalized content hash (``CONTENT_MAP``)."""
+    content = content if content is not None else read_content_map()
+    missing = [r["id"] for r in manifest if r["id"] not in content]
+    if missing:
+        raise ValueError(f"content map lacks {len(missing)} manifest ids, e.g. {missing[:3]}")
+    groups: dict[str, list[dict]] = {}
+    for r in manifest:
+        groups.setdefault(content[r["id"]], []).append(dict(r, content_sha256=content[r["id"]]))
+    for h, g in groups.items():
+        if len({r["source"] for r in g}) != 1:
+            raise ValueError(f"content group {h[:12]} spans sources {sorted({r['source'] for r in g})}")
+    left = dict(groups)
     out: dict[str, list[dict]] = {}
     for role in ROLES:
-        by_src: dict[str, list[dict]] = {}
-        for r in left.values():
-            by_src.setdefault(r["source"], []).append(r)
-        q = _quotas({s: len(v) for s, v in by_src.items()}, sizes[role])
-        picked = []
-        for s in sorted(by_src):
-            order = sorted(by_src[s], key=lambda r: _h(f"{seed}|{COHORT_VERSION}|{role}|{r['id']}"))
-            picked += order[: q[s]]
-        picked.sort(key=lambda r: r["id"])
-        for r in picked:
-            del left[r["id"]]
-        out[role] = picked
+        by_src: dict[str, list[str]] = {}
+        for h, g in left.items():
+            by_src.setdefault(g[0]["source"], []).append(h)
+        q = _quotas({s: sum(len(left[h]) for h in hs) for s, hs in by_src.items()}, sizes[role])
+        picked: list[dict] = []
+        for src in sorted(by_src):
+            n = 0
+            for h in sorted(by_src[src], key=lambda h: _h(f"{seed}|{COHORT_VERSION}|{role}|{h}")):
+                if n >= q[src]:
+                    break
+                picked += left.pop(h)
+                n += len(groups[h])
+        out[role] = sorted(picked, key=lambda r: r["id"])
     return out
 
 
@@ -246,17 +317,25 @@ def build_cohort(sizes: dict[str, int] | None = None, sizing_block: dict | None 
     else:
         sz = sizing_block
     manifest = read_pr16_manifest()
+    content = read_content_map()
+    if set(content) != {r["id"] for r in manifest}:
+        raise ValueError("content map ids != PR #16 manifest ids")
     forbidden = _index_guard_ids()
     bad = [r["id"] for r in manifest if r["id"] in forbidden or r["id"].split(":")[0] != "m2"]
     if bad:
         raise ValueError(f"PR #16 manifest ids collide with Index manifests / foreign ids: {bad[:3]}")
-    roles = assign_records(manifest, sizes)
+    roles = assign_records(manifest, sizes, content=content)
     roles.update(steer_requests(sizes["steer_dev"], sizes["steer_gate"]))
     header = {
         "cohort": COHORT_VERSION, "seed": SEED, "sizes": sizes,
+        "n_actual": {r: len(v) for r, v in roles.items()},
         "sources": {"decision": {"manifest": PR16_MANIFEST.relative_to(ROOT).as_posix(),
                                  "manifest_sha256": hashlib.sha256(gzip.open(PR16_MANIFEST).read()).hexdigest(),
-                                 "n": len(manifest), "kind": "PR #16 m2 sample (public TRAIN splits)"},
+                                 "n": len(manifest), "kind": "PR #16 m2 sample (public TRAIN splits)",
+                                 "content_map": CONTENT_MAP.relative_to(ROOT).as_posix(),
+                                 "content_map_sha256": hashlib.sha256(gzip.open(CONTENT_MAP).read()).hexdigest(),
+                                 "n_content_groups": len(set(content.values())),
+                                 "assignment": "whole normalized-content groups (v2; PR #29 review B1)"},
                     "steer": {"builder": "safety_eval.data.build(split='dev')", "seed": SEED,
                               "d1_a_sha256": attacks.template_set_sha256(attacks.D1_TEMPLATES_A),
                               "d1_b_sha256": attacks.template_set_sha256(attacks.D1_TEMPLATES_B)}},
@@ -303,12 +382,25 @@ class Cohort:
         for e in lines[1:]:
             self.roles[e["role"]].append(e)
         self.hashes = {e["id"]: e["sha256"] for r in ROLES for e in self.roles[r]}
+        self.content = {e["id"]: e.get("content_sha256") for r in ROLES for e in self.roles[r]}
 
     def ids(self, role: str) -> list[str]:
         return [e["id"] for e in self.roles[role]]
 
     def held_out(self) -> set[str]:
         return {e["id"] for r in ROLES for e in self.roles[r]}
+
+    def held_out_content(self) -> set[str]:
+        return {h for h in self.content.values() if h}
+
+    def role_content(self, role: str) -> set[str]:
+        return {e["content_sha256"] for e in self.roles[role]}
+
+    def assert_training_content(self, content_hashes: Iterable[str]) -> None:
+        """Training must never contain a record whose normalized content equals a held-out record's (twins)."""
+        both = set(content_hashes) & self.held_out_content()
+        if both:
+            raise CohortLeak(f"{len(both)} training content group(s) are held out in the cohort, e.g. {sorted(both)[:2]}")
 
     def identity(self) -> dict[str, Any]:
         return {"cohort": self.header["cohort"], "sha256": self.sha256,
@@ -320,9 +412,13 @@ class Cohort:
         if both:
             raise CohortLeak(f"{len(both)} training record(s) are in the frozen cohort, e.g. {sorted(both)[:3]}")
 
-    def training_pool(self, manifest: list[dict[str, str]] | None = None) -> list[str]:
-        held = self.held_out()
-        return sorted(r["id"] for r in (manifest or read_pr16_manifest()) if r["id"] not in held)
+    def training_pool(self, manifest: list[dict[str, str]] | None = None, content: dict[str, str] | None = None
+                      ) -> list[str]:
+        """Records outside the cohort BY ID AND BY CONTENT (content twins of held-out records are excluded)."""
+        held, held_c = self.held_out(), self.held_out_content()
+        content = content if content is not None else read_content_map()
+        return sorted(r["id"] for r in (manifest or read_pr16_manifest())
+                      if r["id"] not in held and content.get(r["id"]) not in held_c)
 
     def load_role_records(self, records_path: str | Path, role: str) -> tuple[list[dict], dict]:
         """The role's PR #16 records, every line verified against the committed PR #16 manifest
@@ -365,7 +461,18 @@ if __name__ == "__main__":
     import sys
 
     cmd = sys.argv[1] if len(sys.argv) > 1 else "verify"
-    if cmd == "power":
+    if cmd == "content-map":
+        import argparse
+
+        ap = argparse.ArgumentParser()
+        ap.add_argument("--records", required=True)
+        a = ap.parse_args(sys.argv[2:])
+        text = build_content_map(a.records)
+        with gzip.GzipFile(CONTENT_MAP, "wb", mtime=0) as f:
+            f.write(text.encode("utf-8"))
+        print(json.dumps({"path": str(CONTENT_MAP), "sha256": hashlib.sha256(text.encode()).hexdigest(),
+                          "n": text.count("\n")}))
+    elif cmd == "power":
         print(json.dumps(sizing(), indent=1))
     elif cmd == "build":
         text, header = build_cohort()

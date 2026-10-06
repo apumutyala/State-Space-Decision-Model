@@ -33,5 +33,6 @@
  },
  "records": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\sample-20000-seed20261006\\records.jsonl.gz",
  "records_sha256": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
- "pass": true
+ "pass": true,
+ "where": "locally reproduced (Windows CPU, coordinator laptop); NOT run on the training box"
 }

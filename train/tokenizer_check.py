@@ -252,6 +252,9 @@ def main(argv=None) -> int:
     rep = run(toks, sample_records(a.records, a.per_source), build(n_route=20, n_pay=10, split="dev"))
     rep["pins"] = PINS
     rep["records"] = str(a.records)
+    rep["per_source"] = a.per_source
+    rep["command"] = "python -X utf8 -m train.tokenizer_check " + " ".join(sys.argv[1:] if argv is None else argv)
+    rep["where"] = "locally reproduced (Windows CPU, tokenizer files only); not run on the training box"
     text = json.dumps(rep, indent=1, ensure_ascii=False)
     if a.out:
         a.out.parent.mkdir(parents=True, exist_ok=True)
