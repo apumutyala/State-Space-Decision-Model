@@ -35,6 +35,22 @@ class ForbiddenRow(ValueError):
     pass
 
 
+def record_request(record: dict[str, Any]) -> dict[str, Any] | None:
+    """The SystemOne request a training record carries.
+
+    Two record shapes exist: ``{"request": {...}}`` (``train.data`` toys) and the PR #16 builder's
+    ``ssdm-train-v0`` records, which keep ``state`` and ``questions`` at the top level (no ``request``
+    key). Both resolve to ``{"model", "state", "questions"}`` so the guard's hash checks and row
+    construction see the same request."""
+    req = record.get("request")
+    if req is not None:
+        return req
+    if "questions" in record and "state" in record:
+        return {"model": str(record.get("model", "ssdm-train")), "state": record["state"],
+                "questions": record["questions"]}
+    return None
+
+
 @dataclass
 class SplitGuard:
     ids: set[str] = field(default_factory=set)
@@ -81,7 +97,7 @@ class SplitGuard:
                 raise ForbiddenRow(f"{rid}: {k}={v} is in a protected manifest")
         if rid in self.ids:
             raise ForbiddenRow(f"{rid}: id is in a protected manifest")
-        req = record.get("request")
+        req = record_request(record)
         if req is not None:
             for h in (sha256_text(canonical_json(req)), _safe_fingerprint(req)):
                 if h and h in self.hashes:

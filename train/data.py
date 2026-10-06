@@ -1,6 +1,8 @@
 """Training items: one (request, question, gold option) per row, plus a toy task for tests.
 
-Record format (JSONL): ``{"id": str, "request": <SystemOne request>, "labels": {qid: option_id}}``.
+Record format (JSONL): ``{"id": str, "request": <SystemOne request>, "labels": {qid: option_id}}``,
+or the PR #16 builder's ``ssdm-train-v0`` shape (``state`` / ``questions`` at the top level; read with
+``load_m2_records``, which verifies every line against the committed manifest).
 Gold option ids are mapped to the canonical option index of the row. Score labels may be the
 level index as a string ("0".."k-1"); noul labels are "true"/"false".
 
@@ -10,17 +12,19 @@ field and a choice question asks for it. It is synthetic and has no relation to 
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import random
 from dataclasses import dataclass
-from typing import Any, Iterable
+from pathlib import Path
+from typing import Any, Callable, Iterable
 
 from decide.prompt import Template
 from decide.schema import validate_legacy
 from heads.layout import EncodeFn, LayoutRow, build_row
 
-from .guard import SplitGuard
+from .guard import SplitGuard, record_request
 
 
 @dataclass
@@ -38,7 +42,9 @@ def items_from_records(records: Iterable[dict[str, Any]], encode: EncodeFn, layo
     for rec in records:
         if guard is not None:
             guard.check(rec)
-        req = rec["request"]
+        req = record_request(rec)
+        if req is None:
+            raise ValueError(f"{rec.get('id', '?')}: record has neither 'request' nor top-level state/questions")
         validate_legacy(req)
         for qid, gold in sorted(rec["labels"].items()):
             row = build_row(req, qid, encode, template=template, layout=layout)
@@ -64,6 +70,52 @@ def split_hash(items: list[Item]) -> str:
 def load_jsonl(path: str) -> list[dict[str, Any]]:
     with open(path, encoding="utf-8") as fh:
         return [json.loads(line) for line in fh if line.strip()]
+
+
+class ManifestMismatch(ValueError):
+    pass
+
+
+def read_manifest(path: str | Path) -> dict[str, str]:
+    """``{record id: sha256 of its canonical line}`` from a PR #16 ``*.manifest.jsonl.gz``."""
+    p = Path(path)
+    opener = gzip.open if p.suffix == ".gz" else open
+    with opener(p, "rt", encoding="utf-8") as fh:
+        return {e["id"]: e["sha256"] for e in (json.loads(x) for x in fh if x.strip())}
+
+
+def load_m2_records(path: str | Path, manifest: str | Path | dict[str, str] | None = None,
+                    keep: Callable[[dict[str, Any]], bool] | None = None, limit: int | None = None,
+                    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Stream PR #16 ``records.jsonl.gz`` (outside git). Each line's sha256 must equal the committed
+    manifest entry for its id (the builder hashes the exact canonical line it writes), so a record
+    file that drifted from the reviewed build is refused, not silently trained on. ``keep`` filters
+    (e.g. by length for CPU smoke runs) before ``limit``. Returns (records, identity)."""
+    want = read_manifest(manifest) if isinstance(manifest, (str, Path)) else manifest
+    p = Path(path)
+    opener = gzip.open if p.suffix == ".gz" else open
+    out: list[dict[str, Any]] = []
+    seen = 0
+    with opener(p, "rt", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            if not line:
+                continue
+            seen += 1
+            rec = json.loads(line)
+            if want is not None:
+                h = hashlib.sha256(line.encode("utf-8")).hexdigest()
+                if want.get(rec.get("id")) != h:
+                    raise ManifestMismatch(f"{rec.get('id')}: line sha256 {h[:12]} does not match the manifest")
+            if keep is not None and not keep(rec):
+                continue
+            out.append(rec)
+            if limit is not None and len(out) >= limit:
+                break
+    ident = {"path": str(p), "lines_read": seen, "n_selected": len(out), "manifest_verified": want is not None,
+             "n_manifest": None if want is None else len(want),
+             "selected_ids_sha256": hashlib.sha256("\n".join(r["id"] for r in out).encode()).hexdigest()}
+    return out, ident
 
 
 COLORS = ["red", "green", "blue", "amber"]

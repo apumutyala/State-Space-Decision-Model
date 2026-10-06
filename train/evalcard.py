@@ -2,14 +2,21 @@
 
 * Decision metrics (accuracy, NLL, Brier, binned and debiased ECE, per length bin) are always
   computed here on the eval items.
-* Index score uses ``harness`` (branch claude/m0-harness) and steer rate uses ``safety_eval``
-  (branch claude/m0-steer-eval). Neither is merged into this branch, so both are reported as
-  ``{"status": "stub"}`` with the reason unless importable AND the caller passes the inputs
-  they need (Index dev-slice rows; steer variants). A stub is never reported as a number.
+* Index-format score uses ``harness.score`` (PR #7) and steer rate uses ``safety_eval.metrics``
+  (PR #8), both on agent-main. Each is reported as ``{"status": "stub"}`` with the reason unless
+  importable AND the caller passes the inputs it needs (harness-format rows + predictor; steer
+  variants + decider). A stub is never reported as a number.
+* The steer summary is reconciled against the expected unit set (the variants), so its
+  ``complete`` flag is meaningful; without it every family reports "completeness unverifiable".
+* ``cohort`` (e.g. the development-cohort manifest hashes) is stamped into the card (SAFETY_SPEC
+  G12). ``keep_units=True`` returns the per-unit steer rows and harness results under
+  ``card["units"]`` for paired comparisons (``train.promotion``); they are written to a separate
+  ``units-step*.json`` file, not into the card.
 """
 
 from __future__ import annotations
 
+import collections
 import hashlib
 import importlib
 import json
@@ -50,36 +57,59 @@ def predict(model, items, batch_size: int = 8) -> tuple[torch.Tensor, list[int],
 def run_card(model, items, step: int, out_dir: str | Path | None = None,
              temperature: FeatureTemperature | None = None,
              index_rows: list | None = None, index_predict: Callable | None = None,
-             steer_variants: list | None = None, steer_decide: Callable | None = None) -> dict[str, Any]:
+             steer_variants: list | None = None, steer_decide: Callable | None = None,
+             cohort: dict | None = None, keep_units: bool = False, n_boot: int | None = None) -> dict[str, Any]:
     t0 = time.time()
     if temperature is not None and temperature.fitted_on is not None:
         eval_hash = hashlib.sha256("\n".join(sorted(i.id for i in items)).encode()).hexdigest()
         if temperature.fitted_on == eval_hash:
             raise ValueError("temperature was fitted on the eval items themselves; use a separate calibration split")
     lp, labels, ev, ks = predict(model, items)
-    card: dict[str, Any] = {"step": step, "n_items": len(items)}
+    card: dict[str, Any] = {"step": step, "n_items": len(items), "cohort": cohort}
+    units: dict[str, Any] = {}
     probs = lp.exp().tolist()
     card["raw"] = decision_metrics([p[:k] for p, k in zip(probs, ks)], labels, ev)
+    units["decision_probs"] = [p[:k] for p, k in zip(probs, ks)]
     if temperature is not None:
         lpt = temperature.apply(lp, features(ev, ks))
         pt = lpt.exp().tolist()
         card["tempered"] = decision_metrics([p[:k] for p, k in zip(pt, ks)], labels, ev)
         card["temperature"] = temperature.identity()
+        units["decision_probs_tempered"] = [p[:k] for p, k in zip(pt, ks)]
     harness, why_h = _try_import("harness.score")
     if harness is None or index_rows is None or index_predict is None:
         card["index_score"] = {"status": "stub", "reason": why_h or "no Index dev-slice rows/predictor passed"}
-    else:  # pragma: no cover - requires claude/m0-harness
+    else:
         results = index_predict(index_rows)
-        card["index_score"] = {"status": "ok", "official": harness.official(index_rows, results)}
+        card["index_score"] = {"status": "ok", "n_rows": len(index_rows),
+                               "statuses": dict(collections.Counter(r["status"] for r in results.values()))}
+        present = {r["_evaluation"]["catalog_id"] for r in index_rows}
+        from harness.suite import index_ids
+
+        if set(index_ids()) <= present:  # the kit's official aggregate needs every index benchmark
+            off = harness.official(index_rows, results)
+            card["index_score"].update(method="official", scores=off["scores"], values=off["values"])
+        else:  # partial slice: the harness's renormalised dev-slice index over the benchmarks present
+            pt = harness.point(harness.decompose(index_rows, results), renormalize=True)
+            card["index_score"].update(method="decompose+point (renormalised over present benchmarks)",
+                                       scores={"index": pt["index"]}, values=pt["per_benchmark"],
+                                       benchmarks_present=sorted(present))
+        units["index_results"] = results
     metrics, why_s = _try_import("safety_eval.metrics")
     if metrics is None or steer_variants is None or steer_decide is None:
         card["steer"] = {"status": "stub", "reason": why_s or "no steer variants/decider passed"}
-    else:  # pragma: no cover - requires claude/m0-steer-eval
+    else:
         rows = metrics.run(steer_decide, steer_variants)
-        card["steer"] = {"status": "ok", "summary": metrics.summarise(rows)}
+        kw = {} if n_boot is None else {"n_boot": n_boot}
+        card["steer"] = {"status": "ok", "summary": metrics.summarise(rows, expected=steer_variants, **kw)}
+        units["steer_rows"] = rows
     card["seconds"] = round(time.time() - t0, 3)
     if out_dir is not None:
         p = Path(out_dir) / f"card-step{step:07d}.json"
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(card, indent=1, default=str), encoding="utf-8")
+        if keep_units:
+            (Path(out_dir) / f"units-step{step:07d}.json").write_text(json.dumps(units, default=str), encoding="utf-8")
+    if keep_units:
+        card["units"] = units
     return card

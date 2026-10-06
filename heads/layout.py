@@ -40,12 +40,12 @@ from decide.schema import canonical_options, canonical_question_ids, render
 
 LAYOUTS = ("ordered", "symmetric")
 #: bump on any change to tagged_segments / option_segments / build_row token accounting
-LAYOUT_VERSION = "m2-layout-v1"
+LAYOUT_VERSION = "m2-layout-v2"  # v2: empty-state rows use the re-read instruction as evidence
 
 #: encode(text, trusted) -> token ids.
 EncodeFn = Callable[[str, bool], list[int]]
 
-# (text, trusted, tag). Tags: "", "field", "option:<j>", "state", "reread".
+# (text, trusted, tag). Tags: "", "field", "option:<j>", "state", "reread", "reread_instr".
 TaggedSegment = tuple[str, bool, str]
 
 
@@ -91,7 +91,7 @@ def tagged_segments(template: Template, request: dict[str, Any], qid: str, layou
         (f"\nEND STATE\n\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", True, "reread"),
         (qid, False, "reread"),
         (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True, "reread"),
-        (render(_instr(qid, q)), False, "reread"),
+        (render(_instr(qid, q)), False, "reread_instr"),
         ("\nALLOWED OPTION IDS: ", True, "reread"),
         (ids_text, not with_options, "reread"),
         ("\nReply with exactly one allowed option id." + template.tail, True, "reread"),
@@ -152,8 +152,15 @@ def build_row(
     template: Template | str = "jrt-plain-v1",
     layout: str = "ordered",
     option_order: Sequence[int] | None = None,
+    empty_state: str = "reread_instructions",
 ) -> LayoutRow:
     """Tokenise one question row and record spans.
+
+    Evidence span: the state's tokens. A request whose state renders empty (the PR #16 builder's
+    ``placement: instructions`` augmentation puts the passage in the question instructions; about 10 %
+    of the m2 sample, and Index rows of the same shape exist) uses the target question's re-read
+    INSTRUCTION tokens as its evidence span instead (``meta["evidence"]`` says which), so heads
+    integrate over the text that carries the evidence. ``empty_state="error"`` restores the old refusal.
 
     ``option_order`` permutes the option axis (a test hook for equivariance): row k
     of every per-option field is canonical option ``option_order[k]``. The shared
@@ -173,8 +180,12 @@ def build_row(
                 spans[tag][1] = len(ids)
             else:
                 spans[tag] = [start, len(ids)]
+    evidence = "state"
     if "state" not in spans or spans["state"][1] <= spans["state"][0]:
-        raise ValueError("state encoded to zero tokens; heads need at least one evidence token")
+        alt = spans.get("reread_instr")
+        if empty_state != "reread_instructions" or alt is None or alt[1] <= alt[0]:
+            raise ValueError("state encoded to zero tokens; heads need at least one evidence token")
+        spans["state"], evidence = alt, "reread_instructions"
     perm = list(range(len(opts))) if option_order is None else list(option_order)
     if sorted(perm) != list(range(len(opts))):
         raise ValueError("option_order must be a permutation of range(n_options)")
@@ -196,7 +207,7 @@ def build_row(
         option_seqs=option_seqs,
         continuations=conts,
         layout=layout,
-        meta={"template": tpl.id, "perm": perm},
+        meta={"template": tpl.id, "perm": perm, "evidence": evidence},
     )
 
 
