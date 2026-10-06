@@ -1,0 +1,116 @@
+{
+  "20261006": {
+    "old_failing": {
+      "all": {
+        "improved": 27,
+        "regressed": 17
+      },
+      "read": {
+        "improved": 6,
+        "regressed": 8
+      },
+      "explain": {
+        "improved": 6,
+        "regressed": 9
+      },
+      "compare": {
+        "improved": 15,
+        "regressed": 0
+      }
+    },
+    "new_disjoint": {
+      "all": {
+        "improved": 52,
+        "regressed": 5
+      },
+      "read": {
+        "improved": 15,
+        "regressed": 5
+      },
+      "explain": {
+        "improved": 14,
+        "regressed": 0
+      },
+      "compare": {
+        "improved": 23,
+        "regressed": 0
+      }
+    }
+  },
+  "20261016": {
+    "old_failing": {
+      "all": {
+        "improved": 20,
+        "regressed": 15
+      },
+      "read": {
+        "improved": 1,
+        "regressed": 12
+      },
+      "explain": {
+        "improved": 10,
+        "regressed": 0
+      },
+      "compare": {
+        "improved": 9,
+        "regressed": 3
+      }
+    },
+    "new_disjoint": {
+      "all": {
+        "improved": 12,
+        "regressed": 36
+      },
+      "read": {
+        "improved": 5,
+        "regressed": 23
+      },
+      "explain": {
+        "improved": 0,
+        "regressed": 13
+      },
+      "compare": {
+        "improved": 7,
+        "regressed": 0
+      }
+    }
+  },
+  "20261026": {
+    "old_failing": {
+      "all": {
+        "improved": 77,
+        "regressed": 10
+      },
+      "read": {
+        "improved": 4,
+        "regressed": 10
+      },
+      "explain": {
+        "improved": 49,
+        "regressed": 0
+      },
+      "compare": {
+        "improved": 24,
+        "regressed": 0
+      }
+    },
+    "new_disjoint": {
+      "all": {
+        "improved": 26,
+        "regressed": 9
+      },
+      "read": {
+        "improved": 10,
+        "regressed": 7
+      },
+      "explain": {
+        "improved": 0,
+        "regressed": 2
+      },
+      "compare": {
+        "improved": 16,
+        "regressed": 0
+      }
+    }
+  }
+}
