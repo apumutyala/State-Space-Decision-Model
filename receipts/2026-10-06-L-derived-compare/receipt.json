@@ -1,0 +1,52 @@
+{
+  "artifact_file_bytes_sha256": {
+    "README.md": "09c2ffaa4d5660c4a603fda9a8c570586ace9c73f703c6155579fde73e4c753b",
+    "ablation.json": "cccb36896b24b3f1e38331ebcad8eef05f55ee0f5efadcc6c536ad9697f67f4e",
+    "ablation_observations.json.gz": "4f36c2bbaf44709a5c024375ec713accb37d18a0d4e665577f2ccb7780c0e2ce",
+    "fixture_tests.txt": "a01c7fb365c91182e4416e86476f2dead6763d6faf690adea7f026871ec1071b",
+    "legacy_compatibility.json": "7bbcb92fe02b1906b6c3d8d8abe13111e742690fbe185b2418bcf77ac28b6c75",
+    "tests.txt": "53335b8ffcaff884033c517d497246b8b84fa191c0884fc7d350d6272bdce480",
+    "verify_legacy.py": "99122e7d69b3bbfd03afb5516fe88acc70d58d6b4603a665f7e9e0203724866c"
+  },
+  "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
+  "checks": {
+    "fixture_tests": 8,
+    "git_diff_check": "pass",
+    "legacy_attempts": 25,
+    "legacy_cases": 24,
+    "legacy_checked_and_rendered_mismatches": 0,
+    "module_kernel_renderer_tests": 46
+  },
+  "cost_usd": 0,
+  "gpu_used": false,
+  "interface_status": "draft shared v0.2 optional module; joint approval/reconciliation with PR #38 required before integration",
+  "limitations": [
+    "No learned evaluation or new model capability claim",
+    "Derives order only after model-selected operands; task relevance remains unchecked",
+    "All three fixed model seeds remain within unique task clusters for bootstrap",
+    "ExactSum is unsupported in this branch; no unmerged branch imported",
+    "No PR, merge or interface communication performed"
+  ],
+  "model_calls": 0,
+  "network_used": false,
+  "pr38_reference_commit": "6d8fa4b655c2a7242473ad4681b73a61527f86be",
+  "pr82_fixed_reference_commit": "1a09d189635711bd79319ef8eb334ed587e34c2e",
+  "runtime": {
+    "numpy": "2.5.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "schema": "ssdm.derived_compare_module_receipt.v0",
+  "scope": "CPU semantic module and inference-free ablation of frozen iterative synthetic development predictions; not a new model result",
+  "source_file_bytes_sha256": {
+    "fixtures/language_growth/modules/derived_compare.json": "16cfb653f08acdd47d5eed16cd8912a048fda6375e1ecb050f37b290370ff051",
+    "interfaces/DECISION_LANGUAGE_V0_2_MODULES_DRAFT.md": "f2cdeb63db16108328fe01be7dc7e569c4de061514d642f4d2c311dd34d445ca",
+    "language_growth/derived_compare_ablation.py": "014e8db349b6d3a752703581a398c05ab5e04e7a0293341811b68f475bf17849",
+    "language_growth/kernel.py": "82e17b292809cff12edfec4b00d109c6d47909efc27cc213ad00fb78ea4a7ad0",
+    "language_growth/tests/test_derived_compare.py": "998b7d7b0d188ef4274229e65e2bef0b149383d523c3e01f25260b6152fd67dd",
+    "language_growth/tests/test_derived_compare_ablation.py": "2530eeb266f18cab402bd814d33e7ff9cef8c43ce6eb1af20ffbbcf8ba720e9e",
+    "receipts/2026-10-06-L-derived-compare/verify_legacy.py": "99122e7d69b3bbfd03afb5516fe88acc70d58d6b4603a665f7e9e0203724866c"
+  },
+  "training_steps": 0,
+  "types_realizer_changes": false
+}

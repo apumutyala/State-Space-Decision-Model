@@ -1,0 +1,13 @@
+test_authored_task_label_cannot_change_observation (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_authored_task_label_cannot_change_observation) ... ok
+test_cli_mismatch_and_release_failure_are_not_success (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_cli_mismatch_and_release_failure_are_not_success) ... ok
+test_existing_output_directory_is_rejected (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_existing_output_directory_is_rejected) ... ok
+test_observed_boundary_and_repair_are_distinct_from_task_labels (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_observed_boundary_and_repair_are_distinct_from_task_labels) ... ok
+test_permitted_repair_after_acceptance_is_not_needed (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_permitted_repair_after_acceptance_is_not_needed) ... ok
+test_packaging_and_stable_decision_ids (fixtures.language_growth.test_fixture_pack.FixturePackTests.test_packaging_and_stable_decision_ids) ... ok
+test_unknown_operation_and_arbitrary_text_are_independent (fixtures.language_growth.test_fixture_pack.FixturePackTests.test_unknown_operation_and_arbitrary_text_are_independent) ... ok
+test_unlisted_case_fails_validation (fixtures.language_growth.test_fixture_pack.FixturePackTests.test_unlisted_case_fails_validation) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.135s
+
+OK
