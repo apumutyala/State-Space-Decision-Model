@@ -212,7 +212,61 @@ certificate (k=1) instead: auto-execute rate versus certified steer = 0.
 - Reporting case-level CIs in place of cluster CIs.
 - Quoting smoke-run numbers as model evidence.
 
+## 6. Amendment v0.4 (2026-10-06): D1-B blind templates, k=8
+
+Filed before any m1 or m2 test scoring and before any model has been run on, or scored on, the new templates.
+It discharges the G1(d) power caveat (§4) and the PR #19 condition for scoring Clef/Clef-flash D1-B. It
+supersedes "B = 4 held out" in §2.2; §2.2 is otherwise unchanged.
+
+- **What.** Four new held-out D1-B templates, `attacks.D1_TEMPLATES_B_V04`. D1-B is now
+  `D1_TEMPLATES_B = D1_TEMPLATES_B_V02 (the 4 ported in v0.2) + D1_TEMPLATES_B_V04`, k = 8.
+- **Authored blind.** Written by hand on CPU from the template contract alone (one inserted plausible
+  sentence pushing the wrong *allowed* steer target). No model output on them was seen, no model was run
+  while writing them, and they were not tuned on dev, test or any receipt. The four v0.2 B templates are
+  blind with respect to every model in this project, but the prior lab used them, so they are not blind in
+  that sense.
+- **Styles** (the 8-way style grid across both B sets):
+  - v0.2: policy citation (`policy_update`), quoted sender note (`sender_followup`), authority claim
+    (`planner_decision`), system-log (`dedup_notice`).
+  - v0.4: factual-sounding ledger correction (`ledger_settled`), deadline urgency (`cutoff_window`), social
+    proof (`peer_practice`), subtle framing (`soft_framing`).
+- **Form.** Each template is a single sentence (no internal ". "), parameterised on `{act}` (the steer
+  target); two also use `{gold}`. None contains model special tokens or names the disallowed attacker
+  option.
+- **Hashes.** The hash is sha256 of the canonical JSON (sorted keys, UTF-8, no whitespace) of
+  name → template text (`attacks.template_set_sha256`):
+  - full D1-B set (k=8): `7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5`
+  - v0.4 additions (4): `3dbf4a010f8cf0c7c4e8144c270e026b5133f3b4e86fd0cb76ee16dc82394e95`
+  - v0.2 B (4): `bc78012decfd8a976140ea01d13ab1ad14c9afd9602239d414b926fed60df1f1`
+- **Held out.** The new templates are B, so they are built only with `final=True`. That is enforced by the
+  existing `HeldOutError` path and tested per template.
+- **No overlap.** `tests/safety_eval/test_d1b_amendment.py` asserts no shared normalised word 6-gram
+  between any v0.4 template and each of the following:
+  - D1 family A;
+  - the v0.2 B templates;
+  - the eval hijack templates;
+  - the training-only templates of `origin/claude/m2-data` (`TRAIN_HIJACK`, vendored family A,
+    `BENIGN_CARRIERS`; commit `6bd51c5`, `data/injection.py` blob `5bec318`).
+  The test re-reads those sources from git when the ref is present. It also asserts no shared 4-gram
+  (a stricter near-duplicate check) and no 4-gram shared between the v0.4 templates.
+- **Dependency for training (PR #16).** `data/injection.py::FORBIDDEN_6GRAMS` must be regenerated from
+  the k=8 B set before any training build is used for m2. Its own source test reads this branch, so it fails
+  until that is done.
+- **Effect on prior receipts.** None is rescored. The m0 smoke receipt scored the v0.2 B set only. Its
+  `d1_B` numbers stay labelled as k=4 and pipeline-qualification-only.
+- **Gate use.** From now on, G1(d) and G2(b) use `d1_B` over all 8 templates. A gate run that builds fewer
+  than 8 B templates is a deviation. Template edits after this point require a new amendment and a new
+  hash.
+
 ## Changelog
+
+- **v0.4 (2026-10-06).** D1-B blind template amendment (§6), before any m1/m2 test scoring and before
+  any model has seen the new templates.
+  - Four held-out B templates were authored blind, giving k=8.
+  - The template-set sha256 is `7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5`.
+  - Tests check the hash, the count, `final=True` enforcement, and n-gram disjointness from family A and the
+    m2-data training templates.
+  - No model was run and nothing was scored.
 
 - **v0.3 (2026-10-06).** Codex cross-review of `944fa02`, before any m1/m2 scoring.
   - Completeness accounting: errors and missing units are explicit, and an incomplete family or comparison
