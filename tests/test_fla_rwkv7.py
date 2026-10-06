@@ -11,6 +11,7 @@ WKV on CPU; the GPU job checks the real kernel against the same reference.
 from __future__ import annotations
 
 import json
+import math
 import pickle
 import re
 import types
@@ -515,3 +516,480 @@ def test_weight_free_gate_phases_run_end_to_end_on_cpu(fake_fla, monkeypatch, tm
     E.main(["decide", "--out", str(tmp_path)])
     d2 = json.loads((tmp_path / "decision.json").read_text(encoding="utf-8"))
     assert d2["variants"]["fla"]["allow_fp32"] is False and d2["verdict"] == d["verdict"]
+
+
+# ----------------------------------------------------------------------------- RULE v2 (pre-registered 2026-10-06)
+def test_rule_v2_constants_are_pinned():
+    assert E.TRUTH_V2_LAYERS == (0, 15, 30, 45, 60)
+    assert (E.V2_PROMPT_T, E.V2_FWD_T, E.V2_GRAD_T) == (2048, 1024, 512)
+    assert (E.V2_SLACK, E.V2_FRAC_MIN, E.ABS_FLOOR) == (1.10, 0.90, 1e-6)
+    assert E.V2_REF_IMPLS == ("chunked", "eager_bf16")
+    assert E.V2_FWD_TENSORS == ("out", "state")
+    assert E.V2_GRAD_TENSORS == ("out", "state", "grad_r", "grad_w_log", "grad_k", "grad_v", "grad_kk", "grad_a",
+                                 "grad_state")
+    assert (E.V2_CURRENT, E.V2_TRAIN_WARMUP, E.V2_TRAIN_STEPS) == ("chunked", 3, 20)
+    assert (E.V2_MIN_MATCHED_STEPS, E.V2_STEP0_LOSS_REL_MAX) == (10, 0.02)  # Amendment A1
+    assert not hasattr(E, "V2_CURRENT_MIN_STEPS") and not hasattr(E, "train_speed_v2")  # withdrawn by A1
+    assert (E.V2_TRAIN_RATIO_MIN, E.V2_PREFILL_RATIO_MIN, E.V2_PEAK_GB_MAX) == (2.0, 2.0, 76.0)
+    assert E.LENGTHS == (2048, 8192, 16384)
+    assert E.VERDICTS_V2 == ("ADOPT_FOR_TRAINING", "ADOPT_READOUT_ONLY", "REJECT_NUMERICS", "INCONCLUSIVE",
+                             "NOT_ADOPTED")
+    assert len(E.v2_required_cases()) == 10 and sum(map(len, E.v2_required_cases().values())) == 55
+    spec = (ROOT / "jobs/fla_rwkv7/JOB_SPEC.md").read_text(encoding="utf-8")
+    rule = spec[spec.index("## RULE v2"):]
+    for s in ("pre-registered 2026-10-06, before job execution", "fp64 token-serial WKV", "{0, 15, 30, 45, 60}",
+              "e(fla) <= 1.10 * max(e(chunked), e(eager_bf16)) + ABS_FLOOR",
+              "e(fla) <= 1.10 * e(chunked) + ABS_FLOOR on at least 90% of (case,tensor) pairs",
+              "20 timed steps after warmup",
+              "ADOPT_FOR_TRAINING iff NUMERICS_OK and train ratio >= 2.0 and fla peak <= 76 GB",
+              "ADOPT_READOUT_ONLY iff NUMERICS_OK and prefill ratio >= 2 at all lengths but train ratio < 2",
+              "REJECT_NUMERICS iff NUMERICS_OK false", "INCONCLUSIVE if anything missing", "decide_v2", "job-jn47u",
+              "NOT_ADOPTED", "Amendment A1 (2026-10-06, after independent review, before any v2 run)",
+              "completed (matched rows)", "Require ≥ 10 matched steps",
+              "chunked cannot keep T_max=2048 at the cell config", "|step-0 loss rel-diff| ≤ 0.02"):
+        assert s in rule, s
+
+
+def _truth_v2(e_fla=0.03, e_ch=0.03, e_eg=0.05, e_safe=None, override=None, drop=None):
+    """Hand-built truth_v2.json: every required case/tensor, e(impl) constant unless ``override`` names
+    (case, tensor, impl) -> value; ``drop`` removes a case."""
+    override = override or {}
+    cases = []
+    for name, tensors in E.v2_required_cases().items():
+        if name == drop:
+            continue
+        impls = {}
+        for impl, val in (("eager_bf16", e_eg), ("chunked", e_ch), ("fla", e_fla),
+                          ("fla_safe_gate", e_fla if e_safe is None else e_safe)):
+            impls[impl] = {"finite": True, "e": {t: override.get((name, t, impl), val) for t in tensors}}
+        cases.append({"name": name, "tensors": list(tensors), "truth_finite": True, "impls": impls})
+    return {"cases": cases, "layers": list(E.TRUTH_V2_LAYERS)}
+
+
+def _train_v2(cur=1000.0, fla=3000.0, safe=None, peak=60.0, cur_oom=0, fla_oom=0, n_fla=20, n_cur=20,
+              fallbacks=None, loss=1.0, fla_loss=None, cur_tok=None, fla_tok=None):
+    """Hand-built train_v2 records. ``*_oom``: the first n timed steps OOM; ``n_*``: timed steps reached (the rest are
+    skipped by the deadline); ``*_tok``: per-timed-step tok/s lists overriding the constants."""
+    def rec(impl, tok, n, oom, pk, lo, toks):
+        steps = [{"i": i, "timed": False, "tok_s": tok, "loss": lo[i] if isinstance(lo, list) else lo, "finite": True,
+                  "max_T": 500} for i in range(E.V2_TRAIN_WARMUP)]
+        for j in range(E.V2_TRAIN_STEPS):
+            st = {"i": E.V2_TRAIN_WARMUP + j, "timed": True, "max_T": 1000 + j}
+            if j >= n:
+                st["skipped"] = "deadline"
+            elif j < oom:
+                st["oom"] = True
+            else:
+                st.update(tok_s=toks[j] if toks else tok, loss=0.9, finite=True)
+            steps.append(st)
+        r = {"impl": impl, "steps": steps, "peak_gb": pk, "fallbacks": {}, "fla_calls": {}}
+        if impl != "chunked":
+            r["fla_calls"] = {impl: 999}
+            r["fallbacks"] = dict(fallbacks or {})
+        return r
+
+    fl = loss if fla_loss is None else fla_loss
+    return {"chunked": rec("chunked", cur, n_cur, cur_oom, 70.0, loss, cur_tok),
+            "fla": rec("fla", fla, n_fla, fla_oom, peak, fl, fla_tok),
+            "fla_safe_gate": rec("fla_safe_gate", fla if safe is None else safe, n_fla, fla_oom, peak, fl, fla_tok)}
+
+
+def _report_v2(truth=None, train=None, pre=(2.5, 3.0, 4.0), **kw):
+    rep = _report(pre=pre, **kw)  # v1 synthetic phases (kernel / fork / model / throughput), all passing by default
+    rep.pop("captured")
+    rep.pop("fp32")
+    rep["truth_v2"] = _truth_v2() if truth is None else truth
+    rep["train_v2"] = _train_v2() if train is None else train
+    return rep
+
+
+def test_decide_v2_every_verdict():
+    seen = set()
+
+    def dv(rep):
+        d = E.decide_v2(rep)
+        assert E.valid_decision_v2(d)
+        seen.add(d["verdict"])
+        return d
+
+    d = dv(_report_v2())
+    assert d["verdict"] == "ADOPT_FOR_TRAINING" and d["rule"] == "v2"
+    assert d["variants"]["fla"]["train_ratio"] == pytest.approx(3.0)
+    assert d["variants"]["fla"]["numerics"]["truth_detail"]["pairs"] == 55
+    # train ratio < 2 but prefill >= 2 at every length -> readout only
+    assert dv(_report_v2(train=_train_v2(fla=1500.0)))["verdict"] == "ADOPT_READOUT_ONLY"
+    # numerics: one pair beyond 1.10 x max(chunked, eager) + ABS_FLOOR -> reject
+    t = _truth_v2(override={("real_L30_grad_T512", "grad_k", "fla"): 0.0551})
+    d = dv(_report_v2(truth=t))
+    assert d["verdict"] == "REJECT_NUMERICS"
+    assert "truth_v2:real_L30_grad_T512:grad_k" in d["variants"]["fla"]["numerics"]["why"]
+    # missing pieces -> inconclusive
+    assert dv(_report_v2(truth=_truth_v2(drop="real_L45_fwd_T1024")))["verdict"] == "INCONCLUSIVE"
+    assert dv(_report_v2(train=_train_v2(n_fla=9)))["verdict"] == "INCONCLUSIVE"  # < 10 matched (A1)
+    r = _report_v2()
+    r["train_v2"].pop("chunked")
+    assert dv(r)["verdict"] == "INCONCLUSIVE"
+    r = _report_v2()
+    r["throughput"]["prefill"]["8192"].pop("fla")
+    assert dv(r)["verdict"] == "INCONCLUSIVE"
+    r = _report_v2()
+    r["truth_v2"] = None
+    assert dv(r)["verdict"] == "INCONCLUSIVE"
+    # measured, but outside every named verdict: fast training over the memory stop, or speed nowhere
+    d = dv(_report_v2(train=_train_v2(peak=77.0)))
+    assert d["verdict"] == "NOT_ADOPTED" and d["variants"]["fla"]["peak_ok"] is False
+    assert dv(_report_v2(pre=(1.9, 3.0, 4.0), train=_train_v2(fla=1500.0)))["verdict"] == "NOT_ADOPTED"
+    assert dv(_report_v2(pre=(1.9, 3.0, 4.0)))["verdict"] == "ADOPT_FOR_TRAINING"  # prefill is not part of it
+    assert seen == set(E.VERDICTS_V2)
+
+
+def test_decide_v2_numerics_clauses():
+    # the job-jn47u pattern: fla tracks chunked, both far from eager bf16 -> judged against fp64 truth instead
+    t = _truth_v2(e_fla=0.30, e_ch=0.30, e_eg=0.02)
+    assert E.decide_v2(_report_v2(truth=t))["verdict"] == "ADOPT_FOR_TRAINING"
+    # fla > 1.10 x chunked (but <= 1.10 x eager) on 5 of 55 pairs: 50/55 = 0.909 >= 0.90
+    over = {(n, "out", "fla"): 0.045 for n in list(E.v2_required_cases())[:5]}
+    d = E.decide_v2(_report_v2(truth=_truth_v2(override=over)))
+    assert d["verdict"] == "ADOPT_FOR_TRAINING"
+    assert d["variants"]["fla"]["numerics"]["truth_detail"]["within_slack_of_chunked"] == 50
+    # ... on 6 of 55: 49/55 = 0.891 < 0.90 -> reject
+    over = {(n, t, "fla"): 0.045 for n in list(E.v2_required_cases())[:3] for t in ("out", "state")}
+    d = E.decide_v2(_report_v2(truth=_truth_v2(override=over)))
+    assert d["verdict"] == "REJECT_NUMERICS" and d["variants"]["fla"]["numerics"]["truth"] is False
+    # boundary: exactly 1.10 x max + ABS_FLOOR is inside
+    t = _truth_v2(override={("real_L0_fwd_T1024", "out", "fla"): 1.10 * 0.05 + 1e-6})
+    assert E.decide_v2(_report_v2(truth=t))["variants"]["fla"]["numerics"]["why"] == []
+    # non-finite fla -> reject; fla crash -> reject; crashed reference or non-finite truth -> inconclusive
+    t = _truth_v2()
+    t["cases"][3]["impls"]["fla"]["finite"] = False
+    assert E.decide_v2(_report_v2(truth=t))["verdict"] == "REJECT_NUMERICS"
+    t = _truth_v2(override={("real_L60_grad_T512", "grad_state", "fla"): math.inf})
+    assert E.decide_v2(_report_v2(truth=t))["verdict"] == "REJECT_NUMERICS"
+    t = _truth_v2()
+    t["cases"][0]["impls"]["fla"] = {"error": "RuntimeError: boom"}
+    assert E.decide_v2(_report_v2(truth=t))["verdict"] == "REJECT_NUMERICS"
+    t = _truth_v2()
+    t["cases"][0]["impls"]["chunked"] = {"error": "OutOfMemoryError"}
+    assert E.decide_v2(_report_v2(truth=t))["verdict"] == "INCONCLUSIVE"
+    t = _truth_v2()
+    t["cases"][1]["truth_finite"] = False
+    assert E.decide_v2(_report_v2(truth=t))["verdict"] == "INCONCLUSIVE"
+    # the unchanged synthetic checks still gate
+    assert E.decide_v2(_report_v2(fla_ok=False, safe_ok=False))["verdict"] == "REJECT_NUMERICS"
+    r = _report_v2()
+    r["model"]["continuation"]["fla_safe_gate"]["rel"] = 0.0265  # job-jn47u's fla_safe_gate continuation
+    d = E.decide_v2(r)
+    assert d["verdict"] == "ADOPT_FOR_TRAINING" and d["variants"]["fla_safe_gate"]["verdict"] == "REJECT_NUMERICS"
+    r = _report_v2()
+    r["model"]["logits"]["fla"]["top1"] = 0.97
+    assert E.decide_v2(r)["verdict"] == "REJECT_NUMERICS"
+    r = _report_v2()
+    r["kernel"] = None
+    assert E.decide_v2(r)["verdict"] == "INCONCLUSIVE"
+    # v1's captured-input cases are not part of v2, even a failing one; v1 itself is unchanged
+    r = _report_v2()
+    r["captured"] = {"cases": [{"name": "real_L0_fwd_T1024", "impl": "fla", "dtype": "bfloat16",
+                                "worst": {"out": 0.5, "cos": 0.9, "finite": True}}]}
+    assert E.decide_v2(r)["verdict"] == "ADOPT_FOR_TRAINING"
+    assert E.decide(r)["verdict"] == "REJECT_NUMERICS"
+
+
+def test_decide_v2_train_speed_clauses():
+    """RULE v2 + Amendment A1: ratio over matched completed steps only; OOM is never a zero."""
+    # chunked OOMs everywhere: no matched steps -> INCONCLUSIVE (A1 withdrew OOM-as-0); reported as chunked_oom
+    d = E.decide_v2(_report_v2(train=_train_v2(cur_oom=20)))
+    assert d["verdict"] == "INCONCLUSIVE" and d["variants"]["fla"]["train_ratio"] is None
+    assert d["chunked_oom"]["oom_steps"] == 20 and d["chunked_oom"]["binding"] is False
+    assert d["chunked_oom"]["finding"] == "chunked cannot keep T_max=2048 at the cell config"
+    assert d["chunked_oom"]["rows_max_T"][:2] == [1000, 1001]
+    # chunked OOMs on 10 timed steps: 10 matched -> the ratio is over those 10 only, and still binding
+    tok_c = [100.0] * 10 + [1000.0] * 10  # the OOM'd steps' slots are ignored anyway
+    d = E.decide_v2(_report_v2(train=_train_v2(cur_oom=10, cur_tok=tok_c)))
+    det = d["variants"]["fla"]["train_ratio_detail"]
+    assert det["matched_steps"] == 10 and det["matched"] == list(range(13, 23))
+    assert d["variants"]["fla"]["train_ratio"] == pytest.approx(3.0) and d["verdict"] == "ADOPT_FOR_TRAINING"
+    assert d["chunked_oom"]["oom_steps"] == 10
+    # 11 OOM -> 9 matched < 10 -> INCONCLUSIVE
+    assert E.decide_v2(_report_v2(train=_train_v2(cur_oom=11)))["verdict"] == "INCONCLUSIVE"
+    # deadline subsets: medians over the SAME rows for both impls (non-blocking #2)
+    tok_f = [3000.0] * 12 + [30000.0] * 8  # fla much faster on the late (short) rows chunked never reached
+    d = E.decide_v2(_report_v2(train=_train_v2(n_cur=12, fla_tok=tok_f)))
+    assert d["variants"]["fla"]["train_ratio_detail"]["matched_steps"] == 12
+    assert d["variants"]["fla"]["train_ratio"] == pytest.approx(3.0)
+    assert E.decide_v2(_report_v2(train=_train_v2(n_cur=9)))["verdict"] == "INCONCLUSIVE"
+    assert E.decide_v2(_report_v2(train=_train_v2(n_fla=9)))["verdict"] == "INCONCLUSIVE"
+    assert E.decide_v2(_report_v2(train=_train_v2(n_fla=10)))["verdict"] == "ADOPT_FOR_TRAINING"
+    # fla OOM on any step fails the memory clause (the remaining matched steps still give a ratio)
+    d = E.decide_v2(_report_v2(train=_train_v2(fla_oom=1)))
+    assert d["variants"]["fla"]["peak_ok"] is False and d["verdict"] == "NOT_ADOPTED"
+    d = E.decide_v2(_report_v2(train=_train_v2(fla_oom=1, fla=1500.0)))
+    assert d["verdict"] == "ADOPT_READOUT_ONLY"
+    assert E.decide_v2(_report_v2(train=_train_v2(fla_oom=20)))["verdict"] == "INCONCLUSIVE"
+    # a fallback or no fla call voids the fla measurement
+    assert E.decide_v2(_report_v2(train=_train_v2(fallbacks={"fp32": 3})))["verdict"] == "INCONCLUSIVE"
+    tr = _train_v2()
+    tr["fla"]["fla_calls"] = {}
+    assert E.decide_v2(_report_v2(train=tr))["verdict"] == "INCONCLUSIVE"
+    # boundaries: ratio exactly 2.0 and peak exactly 76 GB adopt
+    assert E.decide_v2(_report_v2(train=_train_v2(fla=2000.0, peak=76.0)))["verdict"] == "ADOPT_FOR_TRAINING"
+    # median over the matched timed steps only (warmup excluded)
+    tr = _train_v2()
+    for s in tr["fla"]["steps"][:E.V2_TRAIN_WARMUP]:
+        s["tok_s"] = 1.0
+    assert E.decide_v2(_report_v2(train=tr))["variants"]["fla"]["train_ratio"] == pytest.approx(3.0)
+    # fla_safe_gate is judged on its own measurement; the top-level verdict is plain fla's
+    d = E.decide_v2(_report_v2(train=_train_v2(safe=1500.0)))
+    assert d["verdict"] == d["variants"]["fla"]["verdict"] == "ADOPT_FOR_TRAINING"
+    assert d["variants"]["fla_safe_gate"]["verdict"] == "ADOPT_READOUT_ONLY"
+
+
+def test_decide_v2_amendment_a1_loss_guards():
+    """A1/B2: a non-finite fla loss (warmup or timed) voids the measurement; step-0 loss must match chunked's to 2%."""
+    good = E.decide_v2(_report_v2())
+    assert good["variants"]["fla"]["train_ratio_detail"]["step0_loss_rel_diff"] == 0.0
+    assert good["amendments"] == ["A1"]
+    for i in (0, 2):  # warmup losses
+        tr = _train_v2()
+        tr["fla"]["steps"][i]["loss"] = float("nan")
+        d = E.decide_v2(_report_v2(train=tr))
+        assert d["verdict"] == "INCONCLUSIVE" and "non-finite" in d["variants"]["fla"]["train_ratio_detail"]["reason"]
+    tr = _train_v2()
+    tr["fla"]["steps"][10]["finite"] = False  # a timed step
+    assert E.decide_v2(_report_v2(train=tr))["verdict"] == "INCONCLUSIVE"
+    tr = _train_v2()
+    tr["fla"]["steps"][10]["loss"] = float("inf")
+    assert E.decide_v2(_report_v2(train=tr))["verdict"] == "INCONCLUSIVE"
+    tr = _train_v2()
+    tr["chunked"]["steps"][10]["loss"] = float("nan")  # chunked's own non-finite loss does not void fla's
+    assert E.decide_v2(_report_v2(train=tr))["verdict"] == "ADOPT_FOR_TRAINING"
+    # step-0 loss: within 2% passes, beyond is INCONCLUSIVE
+    assert E.decide_v2(_report_v2(train=_train_v2(loss=1.0, fla_loss=1.015625)))["verdict"] == "ADOPT_FOR_TRAINING"
+    d = E.decide_v2(_report_v2(train=_train_v2(loss=1.0, fla_loss=1.0201)))
+    assert d["verdict"] == "INCONCLUSIVE" and d["variants"]["fla"]["train_ratio_detail"]["step0_loss_rel_diff"] > 0.02
+    assert E.decide_v2(_report_v2(train=_train_v2(loss=1.0, fla_loss=0.97)))["verdict"] == "INCONCLUSIVE"
+    # only binding when chunked's step 0 completed: chunked step 0 OOM -> no step-0 check
+    tr = _train_v2(loss=1.0, fla_loss=1.5)
+    tr["chunked"]["steps"][0] = {"i": 0, "timed": False, "oom": True, "max_T": 2000}
+    d = E.decide_v2(_report_v2(train=tr))
+    assert d["verdict"] == "ADOPT_FOR_TRAINING" and d["variants"]["fla"]["train_ratio_detail"]["step0_loss_rel_diff"] is None
+    # chunked step 0 completed but fla step 0 did not -> INCONCLUSIVE
+    tr = _train_v2()
+    tr["fla"]["steps"][0] = {"i": 0, "timed": False, "oom": True, "max_T": 2000}
+    assert E.decide_v2(_report_v2(train=tr))["verdict"] == "INCONCLUSIVE"
+    # the loss guards only ever move toward INCONCLUSIVE: a REJECT_NUMERICS stays a reject
+    tr = _train_v2(loss=1.0, fla_loss=2.0)
+    assert E.decide_v2(_report_v2(train=tr, fla_ok=False, safe_ok=False))["verdict"] == "REJECT_NUMERICS"
+
+
+def test_valid_decision_v2():
+    d = E.decide_v2(_report_v2())
+    assert E.valid_decision_v2(d) and not E.valid_decision(d)
+    assert not E.valid_decision_v2({**d, "verdict": "ADOPT"}) and not E.valid_decision_v2({**d, "rule": None})
+    assert not E.valid_decision_v2(E.decide(_report()))
+    d2 = json.loads(json.dumps(E.decide_v2(_report_v2(train=_train_v2(cur_oom=20)))))
+    assert E.valid_decision_v2(d2) and d2["variants"]["fla"]["train_ratio"] is None
+
+
+# ----------------------------------------------------------------------------- RULE v2 phases: CPU dry runs
+def test_truth_grad_uses_run_impl_cotangents(fake_fla, monkeypatch):
+    """fp64 truth gradients = the fla branch (fake kernel, fp64 compute on fp64 inputs) with run_impl's cotangents."""
+    monkeypatch.setattr(E, "DEVICE", "cpu")
+    monkeypatch.setattr(E, "H", 2)
+    monkeypatch.setattr(E, "N", 4)
+    x = E.make_inputs(1, 17, F64, 5, device="cpu")  # fp64 activations, fp32 carried state (as in the model)
+    tr = E.truth_grad(x)
+    got = E.run_impl("fla", x, True)
+    assert set(tr) == set(E.V2_GRAD_TENSORS)
+    for t in E.V2_GRAD_TENSORS:
+        assert E.rel_err(got[t], tr[t]) < 1e-6, t  # the fla wrapper hands the state back in fp32
+    fwd = E.truth(x)
+    assert E.rel_err(fwd["out"], tr["out"]) == 0 and E.rel_err(fwd["state"], tr["state"]) == 0
+
+
+def test_truth_v2_phase_cpu_dry_run(fake_fla, monkeypatch, tmp_path):
+    """The truth_v2 phase end to end on CPU: tiny RWKV-7, its 2 layers captured (prefix -> carried state -> tail),
+    every implementation vs fp64 truth, then decide_v2's truth half on the file it wrote."""
+    monkeypatch.setattr(E, "DEVICE", "cpu")
+    m = tiny_lm()
+    monkeypatch.setattr(E, "_load", lambda d: m)
+    monkeypatch.setattr(E, "_text_ids", lambda d, T: torch.randint(1, 64, (1, T), generator=torch.Generator().manual_seed(T)))
+    monkeypatch.setattr(E, "TRUTH_V2_LAYERS", (0, 1))
+    monkeypatch.setattr(E, "V2_PROMPT_T", 48)
+    monkeypatch.setattr(E, "V2_FWD_T", 24)
+    monkeypatch.setattr(E, "V2_GRAD_T", 12)
+    E.phase_truth_v2(tmp_path, "unused")
+    d = json.loads((tmp_path / "truth_v2.json").read_text(encoding="utf-8"))
+    assert d["complete"] is True and d["captured"] == [0, 1]
+    assert [c["name"] for c in d["cases"]] == list(E.v2_required_cases())
+    for c in d["cases"]:
+        assert c["truth_finite"] and set(c["impls"]) == {"eager_bf16", "chunked", "fla", "fla_safe_gate"}
+        assert c["shape"][1] == (12 if c["grad"] else 24) and "t_s" in c
+        for impl, r in c["impls"].items():
+            assert "error" not in r, (c["name"], impl, r)
+            assert r["finite"] and set(r["e"]) == set(c["tensors"]) and max(r["e"].values()) < 1e-4, (c["name"], impl)
+    assert len(d["cases"][1]["tensors"]) == 9  # grad case: out, state and 7 input gradients
+    assert d["stats"]["1"]["state"] > 0  # the captured tail starts from a non-zero carried state
+    ok, why, detail = E._v2_truth_check(d, "fla")
+    assert ok is True and not why and detail["pairs"] == 22
+    assert E.main(["decide_v2", "--out", str(tmp_path)]) == 0
+    dv = json.loads((tmp_path / "decision_v2.json").read_text(encoding="utf-8"))
+    assert dv["verdict"] == "INCONCLUSIVE" and dv["variants"]["fla"]["numerics"]["truth"] is True  # no other phases
+
+
+def test_truth_v2_capture_matches_v1_construction():
+    """Same prompt split as job-jn47u's model phase: 2048 tokens, state from the first 1024, capture the next 1024."""
+    assert E.V2_PROMPT_T - E.V2_FWD_T == 1024 and E.V2_FWD_T == 1024
+    src = (ROOT / "jobs/fla_rwkv7/fla_equivalence.py").read_text(encoding="utf-8")
+    assert "ids = _text_ids(model_dir, 2048)" in src and "ids[:, :1024]" in src and "ids[:, 1024:]" in src  # v1
+    assert "_text_ids(model_dir, V2_PROMPT_T)" in src and "capture_wkv_inputs(m, ids, TRUTH_V2_LAYERS, V2_FWD_T)" in src
+
+
+def _toy_items():
+    from heads.layout import build_row
+    from tests.test_m2_review_fixes import ENC, req
+    from train.data import Item
+
+    r = req()
+    out = []
+    for i, q in enumerate(("dept", "down", "urg") * 3):
+        row = build_row(r, q, ENC, layout="ordered")
+        out.append(Item(f"toy/{i}", row, 0))
+    return out
+
+
+def _tiny_mix(path, n_rows, cell=None):
+    from jobs.fla_rwkv7 import train_mix as TM
+
+    shapes = [TM.row_shape(x) for x in _toy_items()]
+    shapes = (shapes * (n_rows // len(shapes) + 1))[:n_rows]
+    d = {"cell": {"head": "fork", "head_kwargs": {}, "layout": "ordered", "template": "jrt-plain-v1",
+                  "loss_arm": "clef", "lora_rank": 2, "lr_head": 1e-3, "lr_lora": 1e-4, "warmup_steps": 0,
+                  "batch_size": 1, "grad_accum": 2, "max_k": 16, "t_ladder": [512], "seed": 0,
+                  "n_train_records": 3, **(cell or {})}, "rows": shapes}
+    d["sha256"] = TM.mix_sha256(d)
+    path.write_text(json.dumps(d), encoding="utf-8")
+    return d
+
+
+def test_train_mix_shapes_roundtrip():
+    from jobs.fla_rwkv7 import train_mix as TM
+
+    items = _toy_items()
+    shapes = [TM.row_shape(x) for x in items]
+    rows = TM.rows_from_shapes(shapes, vocab=260, seed=0)
+    assert [TM.row_shape(x) for x in rows] == shapes  # same lengths, spans, K, qtype
+    assert all(0 < t < 260 for x in rows for t in x.row.ids + [c for cs in x.row.continuations for c in cs])
+    assert TM.rows_from_shapes(shapes, 260, 0)[0].row.ids == rows[0].row.ids  # deterministic ids
+    assert {s["qtype"] for s in shapes} >= {"choice", "score"}
+
+
+def test_train_v2_phase_cpu_dry_run(fake_fla, monkeypatch, tmp_path):
+    """The training-speed phase on CPU: tiny RWKV-7 backbone, the cell's own Trainer step (fork head, cache fork,
+    LoRA, Clef loss, grad accumulation) on mix-shaped rows, for chunked and fla; then the OOM and deadline paths."""
+    from heads.backbone import tiny_hf_backbone
+
+    monkeypatch.setattr(E, "DEVICE", "cpu")
+    monkeypatch.setattr(E, "V2_TRAIN_WARMUP", 1)
+    monkeypatch.setattr(E, "V2_TRAIN_STEPS", 2)
+    monkeypatch.setattr(E, "_load_backbone", lambda d: tiny_hf_backbone("rwkv7", fork_mode="cache"))
+    mix = tmp_path / "mix.json"
+    _tiny_mix(mix, 6)
+    monkeypatch.setattr(E, "MIX_PATH", mix)
+    for impl in ("chunked", "fla"):
+        W.CALLS.clear()
+        E.phase_train_v2(tmp_path, "unused", impl, math.inf)
+        d = json.loads((tmp_path / f"train_v2_{impl}.json").read_text(encoding="utf-8"))
+        assert d["complete"] and [s["timed"] for s in d["steps"]] == [False, True, True]
+        assert all(s["tok_s"] > 0 and s["finite"] and s["tokens"] > 0 and len(s["K"]) == 2 for s in d["steps"])
+        assert not d["fallbacks"] and (d["fla_calls"].get("fla", 0) > 0) == (impl == "fla")
+        assert E.train_summary_v2(d)["median_tok_s_completed"] > 0
+        assert d["wkv_input_dtypes"] and all("r=torch.float32" in k for k in d["wkv_input_dtypes"])  # CPU: no autocast
+        assert M.RWKV7_WKV_FUNCTIONS[impl].__name__ != "recording_wkv"  # registry restored
+    # the steps really trained: LoRA + head parameters moved under the cell's Trainer (not a forward-only timing)
+    d = json.loads((tmp_path / "train_v2_fla.json").read_text(encoding="utf-8"))
+    assert d["mix_sha256"] == json.loads(mix.read_text(encoding="utf-8"))["sha256"] and d["cell"]["lora_rank"] == 2
+    # OOM on one step: recorded, counted 0 tok/s by decide_v2, the run continues
+    from train.trainer import Trainer
+
+    real, calls = Trainer.train_step, [0]
+
+    def flaky(self):
+        calls[0] += 1
+        if calls[0] == 2:
+            raise torch.OutOfMemoryError("CUDA out of memory (simulated)")
+        return real(self)
+
+    monkeypatch.setattr(Trainer, "train_step", flaky)
+    E.phase_train_v2(tmp_path, "unused", "chunked", math.inf)
+    d = json.loads((tmp_path / "train_v2_chunked.json").read_text(encoding="utf-8"))
+    assert d["steps"][1].get("oom") and "tok_s" in d["steps"][2] and d["complete"]
+    sp = E.train_summary_v2(d)
+    assert sp["oom_steps"] == 1 and sp["completed_timed_steps"] == 1
+    monkeypatch.setattr(Trainer, "train_step", real)
+    # deadline already passed: nothing runs, every step recorded as skipped -> no speed (INCONCLUSIVE in decide_v2)
+    E.phase_train_v2(tmp_path, "unused", "fla", 0.0)
+    d = json.loads((tmp_path / "train_v2_fla.json").read_text(encoding="utf-8"))
+    assert all(s.get("skipped") == "deadline" for s in d["steps"]) and E.train_summary_v2(d)["completed_timed_steps"] == 0
+
+
+def test_train_v2_mix_must_cover_the_steps(monkeypatch, tmp_path):
+    monkeypatch.setattr(E, "DEVICE", "cpu")
+    mix = tmp_path / "mix.json"
+    _tiny_mix(mix, 5)  # (3 + 20) x 2 needed
+    monkeypatch.setattr(E, "MIX_PATH", mix)
+    with pytest.raises(SystemExit, match="rows"):
+        E.phase_train_v2(tmp_path, "unused", "chunked", math.inf)
+    d = json.loads(mix.read_text(encoding="utf-8"))
+    d["rows"][0]["T"] += 1  # tampered table
+    mix.write_text(json.dumps(d), encoding="utf-8")
+    from jobs.fla_rwkv7 import train_mix as TM
+
+    with pytest.raises(ValueError, match="sha256"):
+        TM.load(mix)
+
+
+def test_committed_train_mix_is_the_m2_cell():
+    """train_mix_v2.json: the m2 first cell's TrainConfig fields and the shapes of its first 23 optimiser steps."""
+    from jobs.fla_rwkv7 import train_mix as TM
+
+    d = TM.load()
+    c = d["cell"]
+    assert (c["head"], c["layout"], c["loss_arm"], c["lora_rank"], c["batch_size"], c["grad_accum"], c["seed"]) == \
+        ("fork", "ordered", "clef", 64, 1, 8, 0)
+    assert c["template"] == "jrt-rwkv-g1-v1" and max(c["t_ladder"]) == 2048 and c["max_k"] == 16
+    n = (E.V2_TRAIN_WARMUP + E.V2_TRAIN_STEPS) * c["batch_size"] * c["grad_accum"]
+    assert len(d["rows"]) == n == 184
+    for s in d["rows"]:
+        assert 0 < s["T"] <= 2048 and 2 <= len(s["conts"]) <= 16 and max(s["conts"]) <= 16 and min(s["conts"]) >= 1
+        assert s["qtype"] in ("noul", "choice", "score")
+        assert len(s["option_spans"]) == len(s["conts"]) and s["state_span"][1] <= s["T"]
+    assert set(d["rows"][0]) == {"T", "conts", "qtype", "state_span", "field_span", "option_spans"}  # no ids/labels
+
+
+def test_truth_v2_runner_and_params():
+    from jobs.common import costs
+
+    p = json.loads((ROOT / "jobs/fla_rwkv7/job_params_truth_v2.json").read_text(encoding="utf-8"))
+    assert costs.worst_case_usd(p) <= 6.0 and costs.worst_case_usd(p) <= p["hard_cap_usd"]
+    assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"]
+    for ph, exp in p["expected_minutes"].items():  # every cap >= 1.3x its projection
+        assert p["phase_caps_minutes"][ph] >= 1.3 * exp, ph
+    assert p["phase_caps_minutes"]["warmup"] == 13 and p["chip"] == "h100" and p["max_restarts"] == 0
+    assert p["assumed_restart_floor"] >= 1
+    spec = (ROOT / "jobs/fla_rwkv7/JOB_SPEC.md").read_text(encoding="utf-8")
+    assert f"${costs.worst_case_usd(p):.2f}" in spec
+    s = (ROOT / "jobs/fla_rwkv7/fla_job.sh").read_text(encoding="utf-8")
+    v2 = s[s.rindex('if [ "$MODE" = truth_v2 ]'):]  # the phase block (the first one sets marker / validator)
+    order = ["fla_equivalence model", "fla_equivalence throughput", "fla_equivalence truth_v2",
+             "fla_equivalence train_v2", "fla_equivalence decide_v2"]
+    assert all(o in s for o in order)
+    assert s.index("fla_equivalence warmup") < s.index("fla_equivalence model") < s.rindex('if [ "$MODE" = truth_v2 ]')
+    assert v2.index("fla_equivalence truth_v2") < v2.index("fla_equivalence train_v2") < v2.index("fla_equivalence decide_v2")
+    assert "fla_equivalence fp32" not in v2  # the optional fp32 tail never runs in truth_v2 mode
+    assert "job_params_truth_v2.json" in s and "valid_decision_v2" in s and "decision_v2.json" in s
+    assert "FLA_RWKV7_TRUTH_V2_DONE" in s and "export TRITON_CACHE_DIR=$WORK/triton-cache" in s
+    assert "for IMPL in chunked fla fla_safe_gate" in v2 and "--impl $IMPL" in v2 and "--deadline-s" in v2
+    bc = (ROOT / "jobs/fla_rwkv7/build_context.sh").read_text(encoding="utf-8")
+    for f in ("jobs/fla_rwkv7/job_params_truth_v2.json", "jobs/fla_rwkv7/train_mix_v2.json",
+              "jobs/fla_rwkv7/train_mix.py"):
+        assert f in bc, f

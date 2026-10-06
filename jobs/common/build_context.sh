@@ -29,7 +29,8 @@ d, m1, job = sys.argv[1:4]
 h = lambda p: hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
 c = f"{d}/code/m1"
 files = {"probe9b": ["jobs/probe9b/probe_job.sh", "jobs/probe9b/job_params.json", "configs/probe9b_h100.json",
-                     "configs/probe9b_h100_lean.json", "jobs/common/dev_subset_m1.json"],
+                     "configs/probe9b_h100_lean.json", "jobs/common/dev_subset_m1.json", "jobs/probe9b/preflight.py",
+                     "scripts/decide_probe9b.py", "convert/pipeline.py", "convert/align.py"],
          "rwkv7": ["jobs/rwkv7/rwkv7_job.sh", "jobs/rwkv7/job_params_readout.json", "jobs/rwkv7/job_params_lora.json",
                    "jobs/rwkv7/pilot_cell.json", "jobs/rwkv7/snapshot.sha256", "jobs/common/dev_subset_m1.json"]}[job]
 man = {"job": job, "m1_sha": m1, "dockerfile_sha256": h(f"{d}/Dockerfile"),

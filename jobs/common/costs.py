@@ -14,11 +14,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ENVELOPE_USD = 525.0
-SPENT_USD = 0.0  # LEDGER.md: nothing launched as of 2026-10-06
+#: October 2026 MTD actual SF spend (receipts): job-4j3vu 2.48, job-tkfaj 1.79, job-sgihj 1.40, job-c4zkm 0.74,
+#: job-mhc3h 0.56, job-4idg4 0.30, job-jucxx 0.25, job-jn47u 0.84, job-jbw22 0.07
+SPENT_USD = 8.43
 #: PLAN.md spend lines
 LINES = {"joint_gate": 75.0, "system1": 250.0, "language": 100.0, "reserve": 100.0}
 PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_params_c_only.json", "probe9b": "jobs/probe9b/job_params.json",
-          "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_lora": "jobs/rwkv7/job_params_lora.json"}
+          "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_lora": "jobs/rwkv7/job_params_lora.json",
+          "fla_rwkv7": "jobs/fla_rwkv7/job_params.json", "fla_rwkv7_truth_v2": "jobs/fla_rwkv7/job_params_truth_v2.json"}
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here
 OTHER = {"clef_baseline_ABC": 47.52}  # jobs/clef_baseline/JOB_SPEC.md: per-job ceilings at $2.97/h
 FULL8_ESTIMATE = 150.0  # PLAN.md m1 full conversion (~$150); its own spec + spend issue after proceed-all-8
