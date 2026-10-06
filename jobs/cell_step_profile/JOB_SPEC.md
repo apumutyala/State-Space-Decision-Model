@@ -10,46 +10,57 @@ step (same rows, same loss, same gradients) fits in 76 GB on every row, and how 
 
 ## Decision rule (PRE-REGISTERED; `jobs/cell_step_profile/rule.py`, pinned by `tests/test_cell_step_rule.py`)
 
-Committed alone, before the harness and before any run. Not to be edited after GPU numbers exist.
+Committed alone, before the harness and before any run (9817029); amended before any run only: A1 (f5b7518) and A2
+(below). Not to be edited after GPU numbers exist. Current rule id: `cell_step_profile v1-A2`.
 
-**Variants** (each in its own process, in this order; cumulative):
+**Variants** (each in its own process, in this order: A2 puts the fastest expected first and the memory-only fallback
+last):
 
 | variant | `act_ckpt` | `row_batch` | `row_tokens` | `rwkv7_wkv` |
 |---|---|---|---|---|
 | `baseline` | false | 1 | 0 | `chunked` (the vendored checkpoint path) |
-| `ckpt` | true | 1 | 0 | `chunked` |
-| `ckpt_rows` | true | 8 | 8192 | `chunked` |
 | `ckpt_rows_lean` | true | 8 | 8192 | `chunked_lean` |
+| `ckpt_rows` | true | 8 | 8192 | `chunked` |
+| `ckpt` | true | 1 | 0 | `chunked` |
 
 `act_ckpt` = per-block activation checkpointing that keeps the cache fork. `row_batch` 8 / `row_tokens` 8192 = the 8 rows
 of a step sorted by length (longest first) and grouped greedily into calls of at most 8 rows and at most 8,192 padded
 tokens (rows x the group's longest row; a longer row runs alone); each group is one prefix call + one continuation call,
-right-padded with an attention mask. `chunked_lean` = the same chunk-parallel WKV algebra with fewer launches. Every variant runs with `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`
-(recorded per variant).
+right-padded with an attention mask. `chunked_lean` = the same chunk-parallel WKV algebra with fewer launches. Every
+variant runs with `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` (recorded per variant).
 
-**Measurements per variant.** The 23 steps of `train_mix_v2.json` (3 warmup + 20 timed, 8 rows each, in the cell's
-epoch-0 order). Per step: wall seconds (CUDA-synchronised), tok/s = prefix tokens / seconds, peak GB
-(`torch.cuda.max_memory_allocated`, reset before every step), OOM, loss. An OOM step is recorded and the run continues.
-Then the K = 10 ladder: synthetic rows of T = 1024 / 1536 / 2048 / 3072 / 4096 tokens with 10 continuations of 16
-tokens, one optimiser step over `row_batch` copies of the row (1 for `baseline` / `ckpt`; 8 for the row variants,
-grouped exactly as a real step: the unit that sets the peak), ascending, stopping at the first OOM or peak > 76 GB.
+**Measurements per variant.** First (A2) the probe: the forward loss (no grad, eval mode, the same seeds, the variant's
+own execution path) on the 8 rows of mix step 22 (max_T 772, which the baseline fits). Then the 23 steps of
+`train_mix_v2.json` (3 warmup + 20 timed, 8 rows each, in the cell's epoch-0 order). Per step: wall seconds
+(CUDA-synchronised), tok/s = prefix tokens / seconds, peak GB (`torch.cuda.max_memory_allocated`, reset before every
+step), OOM, loss. An OOM step is recorded and the run continues; a step that cannot finish before the phase deadline is
+recorded as skipped. Then the K = 10 ladder: synthetic rows of T = 1024 / 1536 / 2048 / 3072 / 4096 tokens with 10
+continuations of 16 tokens, one optimiser step over `row_batch` copies of the row (1 for `baseline` / `ckpt`; 8 for the
+row variants, grouped exactly as a real step: the unit that sets the peak), ascending, stopping at the first OOM or
+peak > 76 GB.
 
-**A variant qualifies iff** all of:
-1. all 23 steps ran, with zero OOM and a finite loss on every one;
+**A variant qualifies iff** all of (A2):
+1. zero OOM on every step it attempted, and a finite loss on every step it completed;
 2. every step's peak <= 76.0 GB (the cell's `pass_rule.max_peak_gb`);
-3. its flags and allocator setting are the pre-registered ones;
-4. its step-0 loss is within relative 1e-3 of the baseline's step-0 loss. If the baseline's step 0 did not complete
-   (job-mden7: it OOMed), this clause rests on the variant's CPU equivalence tests (`tests/test_cell_perf.py`, run by
-   the runner's setup on the image before any GPU phase; setup fails with exit 5 if they fail).
+3. at least 15 of the 20 timed steps completed. Deadline-skipped steps (and steps a killed process never recorded) are
+   reported separately and never disqualify on their own beyond this floor;
+4. its flags and allocator setting are the pre-registered ones;
+5. GPU loss clause: |probe loss - baseline probe loss| / |baseline probe loss| <= 5e-3. If the baseline's probe is
+   missing or not finite, the clause is INCONCLUSIVE (not a pass) and so is the verdict.
+
+The CPU equivalence tests (`tests/test_cell_perf.py`, `tests/test_cell_step_rule.py`) stay an additional setup gate: the
+runner runs them on the image before any GPU phase and exits 5 if they fail.
 
 **Verdict.**
-- `ADOPT`: the qualifying variant with the highest median tok/s over the 20 timed steps (ties: lower peak, then
-  earlier variant). Recommended cell config = its flags + `t_ladder` = the cell's [512, 1024, 2048] cut at its ladder
-  T_fit (the full ladder if T_fit >= 2048), and the projection: steps in 190 min = floor(190 x 60 / median timed step
-  seconds), rows = 8 x steps.
+- `ADOPT`: the qualifying variant with the highest median tok/s over the timed steps completed by ALL qualifying
+  variants (matched rows; if no step is common to all, each variant's own completed timed steps); ties: lower peak,
+  then earlier variant. Recommended cell config = its flags + `t_ladder` = the cell's [512, 1024, 2048] cut at its
+  ladder T_fit (the full ladder if T_fit >= 2048), and the projection: steps in 190 min = floor(190 x 60 / matched
+  median step seconds), rows = 8 x steps.
 - `CAP_T`: no variant qualifies. The cell must cap T at the largest ladder T that fits among the variants whose loss
   clause holds (ties: higher median tok/s); recommended config = that variant's flags, `t_ladder` cut at it, `t_cap`.
 - `NO_FIT`: nothing fits even T = 1024.
+- `INCONCLUSIVE`: the baseline's probe loss is missing or not finite.
 
 ### Amendment A1 (2026-10-06, before any run; rule `cell_step_profile v1-A1`)
 
@@ -61,6 +72,31 @@ layer without checkpointing and ~22 kB per token per layer with it. One call of 
 + 26 GB weights + 4.6 GB LoRA / grads / Adam = ~74 GB, at the 76 GB line. The row variants are therefore renamed
 `ckpt_rows` / `ckpt_rows_lean` and carry `row_tokens` = 8192 (~53 GB by the same arithmetic; 2–3 calls on the long
 steps, 1 on short ones). Nothing else in the rule changed.
+
+### Amendment A2 (2026-10-06, after independent review, before any run; rule `cell_step_profile v1-A2`)
+
+Independent review of PR #86: FIX-THEN-LAUNCH (no correctness issues; lean WKV and row batching independently
+verified). Coordinator decisions, quoted:
+
+> F1 (deadline can disqualify the fastest variant): mden7's forward-only chunked prefill is 227–265 µs/token, so
+> fwd+recompute+bwd is plausibly 0.7–0.9 ms per PADDED token; the real mix pads 200,731 tokens for 124,586 real.
+> Re-project every variant from that GPU basis (not CPU op counts), and set caps at ≥1.5x that projection.
+> Qualification becomes: zero OOM on every step attempted, every step's peak ≤ 76 GB, ≥ 15 of 20 timed steps
+> completed, and the GPU loss clause below. Deadline-skipped steps are reported separately, never disqualifying on
+> their own beyond the ≥15 floor. Rank by median tok/s over the timed steps completed by ALL qualifying variants
+> (matched rows). Run order: baseline, ckpt_rows_lean, ckpt_rows, ckpt (memory-only fallback last). A worst case above
+> $7.23 is fine (no strict cap; state the new figure); build_timeout stays 60.
+>
+> F2 (GPU loss clause never runs): before training in EACH variant process, compute the forward loss (no grad, eval
+> mode, same seed) on a fixed probe the baseline fits: the rows of mix step 22 (max_T 772). Binding:
+> |loss_variant − loss_baseline| / |loss_baseline| ≤ 5e-3 (bf16 eps 7.8e-3; the tiny CPU bf16 probe already showed
+> 7.4e-4, and 61 layers compound, so 1e-3 would be a false-reject risk; 5e-3 is fixed now, not tuned). If the
+> baseline probe itself fails → INCONCLUSIVE for that clause (not a pass). Keep the CPU equivalence tests as an
+> additional setup gate.
+
+Implemented in this rule: the run order above; qualification clauses 1–5; matched-row ranking; the probe constants
+(`PROBE_STEP` 22, `LOSS_REL_MAX` 5e-3, `MIN_TIMED_COMPLETED` 15); the `INCONCLUSIVE` verdict. The step-0 loss clause of
+v1 / A1 (1e-3, CPU tests when the baseline's step 0 OOMs) is replaced. Caps and the cost are in "Phases, caps, cost".
 
 The verdict is a recommendation for the m2 cell (PR #74 / its follow-up), which keeps its own ladder stage and
 stop rules (exits 22 / 24 / 26) as the authority on the real rows.
