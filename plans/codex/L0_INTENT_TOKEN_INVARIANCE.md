@@ -6,9 +6,14 @@ worktree preserve that reviewed baseline unchanged. The fitting pool, generator,
 task/program logic, feature slots outside operation, optimizer, seeds and scoring
 remain fixed.
 
+This is exploratory: the filter was selected after inspecting the same
+development-validation failures and operation contributions. The reused cohort
+is retired from confirmatory use. The filter is fixed before this one fit,
+without claiming preregistration or untouched held-out evaluation.
+
 Hypothesis from the preserved operation contributions: numeric/date and common
 function words, including `2026` and `for`, introduce spurious operation-head
-correlations that outweigh the `compare` cue in changed wording. One predeclared
+correlations that outweigh the `compare` cue in changed wording. One fixed
 transform drops purely numeric tokens, twelve month-name tokens, and this fixed
 function-word set from operation features only:
 

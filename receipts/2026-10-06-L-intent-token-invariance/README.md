@@ -6,6 +6,11 @@ Variant source `c61b0930ca5e885b46fc46204ac9a892e6743607` was clean when measure
 The new experiment is on `codex/l0-intent-token-invariance` under the exact-cased
 `C:/Users/apumu/research/CHLabs/ssdm-codex-l0-intent-token-invariance/` worktree.
 
+This is exploratory: the filter was chosen after inspecting this same cohort's
+baseline failures and contributions. It was fixed before the sole variant fit,
+without preregistration or untouched evaluation. This reused cohort is retired
+from confirmatory use.
+
 Only operation features change: remove pure numeric tokens, twelve month names
 and a fixed 34-word function-word set, declared before measuring. The complete
 filter is in the receipt config and source. All other feature extraction, task
@@ -39,6 +44,21 @@ variant models solve 0/300; trained statuses are accepted 300 each, with no
 unsupported/provider-error/runner-error outcomes. All denominators, initial
 and numeric-sign controls are preserved. No negative-result fold is triggered
 by these raw counts, but the measured interpretation awaits lean internal review.
+
+Initial checkpoints are preserved by exactly reconstructing the recorded seeded
+initial arrays from each saved feature vocabulary and verifying their full model
+revision against every raw initial-model response. This is artifact recovery,
+not a training or inference rerun. `derive_artifacts.py` records its command/hash,
+and preserves per-task deltas plus paired bootstrap analysis versus the original
+unfiltered outputs. Resample task IDs, averaging across seeds within each task
+for the pooled estimate; do not treat the repeated 900 task/seed rows as IID.
+The observed paired improvement is 33.33 percentage points for each seed and
+the pooled task-cluster mean, with a percentile-bootstrap 95% interval
+[28.33, 38.67] points (10,000 resamples, seed 1729). Each seed has 100 improved
+tasks, zero regressed tasks and 200 unchanged tasks. `paired_analysis.json`
+preserves every task's baseline/variant result and delta. This descriptive
+interval does not account for selecting the filter from these same failures,
+or establish transfer to an untouched domain. Independent review is pending.
 
 Checkpoints and losslessly compressed evaluation tasks, all raw logits,
 per-feature contributions, requests/responses and complete free-running outcomes
