@@ -114,6 +114,57 @@ the Triton (not TileLang) backward, and runs one tiny gated fwd+bwd; any failure
 
 The two models' `tokenizer.json` files are byte-identical.
 
+## Phase-C re-run after the job-c4zkm 9B OOM (`QUAL_MODE=c_only`)
+
+job-c4zkm ($0.74) PASSED phase A (all GPU tests, including test_gdn on torch 2.13 / triton 3.7.1) and phase B (0.8B). Phase C, the 9B, ran out of GPU memory at stage-1 step 1: 8×4096 tokens, peak 68.9 GB, against a 75.2 GB process cap.
+
+**Root cause.** All 8 student GDN graphs were alive at once at the full 32,768-token batch: 1.29 MB per token of activations. That came on top of 17.9 GB of weights and 8.6 GB of fp32 GDN parameters plus Adam state. `convert/memmodel.py` reproduces the observed peaks:
+
+| Run | Model | Observed |
+|---|---|---|
+| 9B stage 1 | 68.9 GB | 68.9 GB |
+| 0.8B stage 1 | 11.7 GB | 11.8 GB |
+| 0.8B stage 2 | 6.5 GB (upper bound) | 5.7 GB |
+
+**Fix** (`convert/align.py`, `convert/model.py`, `convert/qual.py`; the CPU tests `tests/test_microbatch.py` and `tests/test_memmodel.py` cover each item):
+
+- **Gradient accumulation.** Micro-batch 4×4096 accumulated to the same 8×4096 tokens per step. The losses decompose exactly, so the gradient equals the full-batch one.
+  - Stage 1 uses per-sequence relative MSE.
+  - Stage 2 uses the KL summed over tokens, divided by the full-batch token count.
+- **Stage 1.** Each layer's student graph is back-propagated inside its hook, so one graph is alive instead of 8. The teacher runs under `no_grad` and stops after the last aligned layer.
+- **Stage 2.**
+  - The prefix before the first student layer is identical for teacher and student, so it runs once under `no_grad` and is shared.
+  - The teacher suffix runs under `no_grad`.
+  - Only the student suffix builds a graph, with activation checkpointing.
+  - Only the converted layer's GDN requires grad; the other GDNs are frozen.
+  - It converts the *first* attention layer (L3), the near-worst-case suffix.
+- **Allocator and teacher copy.** `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` is set (2.8 GB was reserved but unallocated at the OOM). The teacher and student already share one frozen copy of the model (`MixerSwap`).
+
+**Expected** (`memmodel.plan`, FRAG 1.10 included):
+
+| Stage | Peak | FLOP/token | tok/s at 25% MFU | Exit-3 floor (12.5% MFU) |
+|---|---|---|---|---|
+| Stage 1 | **31.4 GB** | 17.1 GF | 14.5k | 7.2k |
+| Stage 2 | **33.0 GB** | 61.8 GF | 4.0k | 2.0k |
+
+- Guards use `min_mfu: 0.125`, re-derived from each stage's FLOP/token.
+- Decision MFU uses the FLOP/token recorded in the result, not the old 10N = 85 GF.
+- Risk: the 0.8B ran at about 10% MFU in stage 1. If the 9B does not do better, the pre-registered exit 3 (fold) fires.
+
+**Job:** the same `submit_job` with these differences:
+- `env={"QUAL_MODE": "c_only"}`;
+- `max_duration_minutes=140`, from `jobs/qual/job_params_c_only.json`: setup 15, CPU gates 5×2, weight wait 25, C 80, reserve 8.
+
+The run skips `test_gdn` and phase B. It re-runs only the CPU gates that cover the changed code (`test_progressive_resume`, `test_guard`, `test_qual_job`, `test_microbatch`, `test_memmodel`), then phases C and D.
+
+**Cost:**
+- One attempt: **$6.93**.
+- With the 20-min build counted: **$7.92**.
+- Worst case with one platform restart: **$14.85**.
+- Expected: about $3.5 (about 70 min).
+
+The workspace-cap precondition and the `validate_job` re-run apply unchanged.
+
 ## Preconditions (all required)
 
 1. #2/#6/#7/#8/#9 merged, and the SHA filled in.
