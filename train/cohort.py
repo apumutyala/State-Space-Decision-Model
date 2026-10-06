@@ -1,0 +1,380 @@
+"""The frozen m2 development cohort: which records/requests G12 checkpoints and G13 gates are scored on.
+
+    python -X utf8 -m train.cohort build    # writes train/cohorts/m2-dev-cohort-v1.jsonl.gz + .sha256
+    python -X utf8 -m train.cohort verify   # rebuilds in memory and checks the committed file byte-for-byte
+    python -X utf8 -m train.cohort power    # prints the sizing table (planning assumptions below)
+
+Sources (and ONLY these):
+* decision items: the PR #16 m2 sample, i.e. public TRAIN-split sources (``data/sources.py``) already passed through the
+  item-tier contamination guard, identified by the committed manifest
+  ``data/manifests/sample-20000-seed20261006.manifest.jsonl.gz`` (record id + sha256 of its canonical line). The
+  cohort is built from that manifest alone (no record text is needed or committed), so it is rebuildable anywhere.
+* steer requests: the synthetic ``safety_eval.data.build(split="dev")`` requests (template clusters hashed into the
+  dev split; the safety_eval TEST split is never drawn). Content hash = ``sha256_obj(strip_meta(request))``.
+Never Index DEV/TEST rows: every decision record is additionally checked against the m0 harness manifests
+(``SplitGuard`` id check) at build time and must not carry Index metadata.
+
+Roles (disjoint; a record is in at most one):
+  ``dev``          G12 clean-accuracy items, scored at every checkpoint (``train.promotion.paired_decision``)
+  ``calibration``  the post-hoc temperature fit split (``train.calibration.FeatureTemperature.fit``)
+  ``retention``    the frozen decision-retention set read only at G13 gates (paired accuracy / ECE)
+  ``steer_dev``    safety_eval dev requests -> clean + D1-A variants (G12 ``g12_violation`` / ``g12_steer_d1a``)
+  ``steer_gate``   disjoint safety_eval dev requests -> clean + held-out D1-B variants, built only with
+                   ``attacks.build_variants(..., final=True)`` at a gate (G13 ``g13_steer_d1b``)
+Every other PR #16 record is the m2 TRAINING pool (``training_pool`` / ``assert_training_ids``).
+
+Assignment is a pure function of (manifest, seed, sizes): records are stratified by ``source`` and ordered by
+sha256(seed|role-salt|id); each role takes its per-source quota in that order (largest-remainder rounding).
+
+Sizing (``power``): the steer margin m_steer = ``train.promotion.MARGINS["m_steer"]`` must be met by the UPPER CI of
+the paired child - parent steer difference when the true difference is 0, with probability >= ``POWER``. That is a
+Monte Carlo of the exact criterion: the two-way product cluster bootstrap of ``safety_eval.stats`` over (request
+template cluster x attack template), percentile CI, ``n_boot`` draws, under the planning assumptions in
+``PLANNING`` (parent steer rate, child/parent discordance, parent clean-correct rate). Clean-accuracy size uses the
+McNemar SE (``harness.mde.paired_accuracy_se``) for the G12 point-estimate rule (drop > 1 pp rejects). The
+assumptions are NOT measurements; the first real G12 run replaces them (``PLANNING['status']``).
+"""
+
+from __future__ import annotations
+
+import gzip
+import hashlib
+import json
+import math
+from pathlib import Path
+from typing import Any, Iterable
+
+ROOT = Path(__file__).resolve().parents[1]
+PR16_MANIFEST = ROOT / "data" / "manifests" / "sample-20000-seed20261006.manifest.jsonl.gz"
+OUT = ROOT / "train" / "cohorts" / "m2-dev-cohort-v1.jsonl.gz"
+OUT_SHA = OUT.with_name("m2-dev-cohort-v1.sha256")
+COHORT_VERSION = "m2-dev-cohort-v1"
+SEED = 20261006
+ROLES = ("dev", "calibration", "retention")
+STEER_ROLES = ("steer_dev", "steer_gate")
+
+#: Planning assumptions for sizing (NOT measurements). Parent steer rate 0.5 maximises Bernoulli variance;
+#: Qwen3-0.6B measured D1 steer 0.87 (receipts/2026-10-06-D-m0-steer), so 0.5 is the conservative choice.
+PLANNING = {
+    "status": "planning assumptions, not measurements; replace with the first G12 run's measured discordance",
+    "power": 0.8,
+    "parent_steer_rate": 0.5,
+    "steer_discordance": 0.10,  # P(child steer != parent steer) per unit under a null child
+    "parent_clean_correct": 0.6,  # eligibility fraction (reference_y = clean-correct under the parent)
+    "acc_discordance": 0.10,  # P(child correct != parent correct) per decision item
+    "min_usable_items_per_record": 0.85,  # K <= 16 items per record, census 2026-10-06: 24,041 / 20,000 = 1.20,
+    # but banking77 / clinc150 (14 % of records) give 0; 0.85 is the floor so any max_k filter keeps the item count
+    "n_boot": 500,
+    "n_sims": 400,
+}
+
+
+# ------------------------------------------------------------------------------------------------- power
+def steer_power(n_requests: int, n_templates: int, *, m_steer: float, n_dev_clusters: int,
+                p_steer: float = PLANNING["parent_steer_rate"], discord: float = PLANNING["steer_discordance"],
+                p_elig: float = PLANNING["parent_clean_correct"], n_boot: int = PLANNING["n_boot"],
+                n_sims: int = PLANNING["n_sims"], seed: int = SEED) -> dict[str, Any]:
+    """P(the steer criterion accepts a NULL child) = P(lower CI <= 0 and upper CI <= m_steer) when child and parent
+    have the same steer rate. Units = requests x templates; requests are spread round-robin over ``n_dev_clusters``
+    template clusters (as ``safety_eval.data.build`` does); eligibility is per request (clean-correct)."""
+    import numpy as np
+
+    from safety_eval.stats import cluster_weights
+
+    rng = np.random.default_rng(seed)
+    cl_req = np.arange(n_requests) % n_dev_clusters
+    cluster = np.repeat(cl_req, n_templates)
+    template = np.tile(np.arange(n_templates), n_requests)
+    W = cluster_weights([cluster.tolist(), template.tolist()], n=n_boot, seed=seed)
+    # symmetric flips keep the child's marginal steer rate equal to the parent's
+    f10, f01 = discord / (2 * p_steer), discord / (2 * (1 - p_steer))
+    ok = 0
+    his = []
+    for _ in range(n_sims):
+        elig = np.repeat(rng.random(n_requests) < p_elig, n_templates).astype(float)
+        par = (rng.random(cluster.size) < p_steer).astype(float)
+        u = rng.random(cluster.size)
+        child = np.where(par == 1, (u >= f10).astype(float), (u < f01).astype(float))
+        d = (child - par) * elig
+        den = W @ elig  # the same weighted ratio safety_eval.stats.ratio_ci computes, all draws at once
+        draws = np.divide(W @ d, den, out=np.full(den.shape, np.nan), where=den > 0)
+        draws = draws[np.isfinite(draws)]
+        lo, hi = np.percentile(draws, [2.5, 97.5])
+        his.append(hi)
+        ok += bool(lo <= 0 and hi <= m_steer)
+    return {"n_requests": n_requests, "n_templates": n_templates, "n_units": n_requests * n_templates,
+            "power": ok / n_sims, "median_upper_ci": float(np.median(his)), "m_steer": m_steer,
+            "n_dev_clusters": n_dev_clusters, "n_sims": n_sims, "n_boot": n_boot}
+
+
+def required_steer_requests(n_templates: int, m_steer: float, n_dev_clusters: int,
+                            grid: Iterable[int] = (200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 2400, 3200)) -> dict:
+    """Smallest request count on ``grid`` whose simulated power >= PLANNING['power'] (None if none on the grid)."""
+    rows = []
+    for n in grid:
+        r = steer_power(n, n_templates, m_steer=m_steer, n_dev_clusters=n_dev_clusters)
+        rows.append(r)
+        if r["power"] >= PLANNING["power"]:
+            return {"n_requests": n, "table": rows}
+    return {"n_requests": None, "table": rows}
+
+
+def required_acc_items(drop: float, discord: float = PLANNING["acc_discordance"],
+                       power: float = PLANNING["power"]) -> int:
+    """G12 clean accuracy rejects on the POINT estimate (child - parent < -drop). For a null child the point is
+    ~N(0, se^2) with se = sqrt(discord / n) (McNemar), so P(accept) >= power needs drop / se >= z_power."""
+    from harness.mde import paired_accuracy_se, z
+
+    zp = z(power)
+    n = math.ceil(discord * (zp / drop) ** 2)
+    assert paired_accuracy_se(discord, 0.0, n) <= drop / zp + 1e-12
+    return n
+
+
+def sizing() -> dict[str, Any]:
+    from safety_eval import attacks
+    from train.promotion import CLEAN_ACC_DROP, MARGINS
+
+    n_dev_clusters = len(_dev_clusters())
+    g12 = required_steer_requests(len(attacks.D1_TEMPLATES_A), MARGINS["m_steer"], n_dev_clusters)
+    g13 = required_steer_requests(len(attacks.D1_TEMPLATES_B), MARGINS["m_steer"], n_dev_clusters)
+    n_items = required_acc_items(CLEAN_ACC_DROP)
+    dev_records = math.ceil(n_items / PLANNING["min_usable_items_per_record"])
+    return {
+        "planning": PLANNING, "margins": MARGINS, "clean_acc_drop": CLEAN_ACC_DROP,
+        "n_dev_clusters": n_dev_clusters,
+        "steer_dev": g12, "steer_gate": g13,
+        "dev": {"n_items_required": n_items, "n_records": dev_records},
+        # calibration: 3 parameters; 1,000 records (>= 850 usable items) keeps the fit SE far below the ECE margin.
+        "calibration": {"n_records": 1000, "basis": "3-parameter fit; budget choice, not a power calculation"},
+        # retention: G13 debiased-ECE margin 0.01 on a paired difference; MDE not derivable before a measured run,
+        # sized at 2x dev so the gate is at least as powered as G12 accuracy (MDE scales 1/sqrt(n)).
+        "retention": {"n_records": 2 * dev_records, "basis": "2 x dev records; ECE-diff MDE measured at first gate"},
+    }
+
+
+# ------------------------------------------------------------------------------------------------- build
+def _h(s: str) -> str:
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+
+def _dev_clusters() -> list[str]:
+    from safety_eval.data import INTENTS, MESSAGES, PAY_SCENARIOS, split_of
+
+    cl = [f"route|{i}|{t}" for i in INTENTS for t in range(len(MESSAGES[i]))]
+    cl += [f"pay|{PAY_SCENARIOS[s][0]}|{s}" for s in range(len(PAY_SCENARIOS))]
+    return [c for c in cl if split_of(c) == "dev"]
+
+
+def read_pr16_manifest(path: Path = PR16_MANIFEST) -> list[dict[str, str]]:
+    with gzip.open(path, "rt", encoding="utf-8") as fh:
+        rows = [json.loads(x) for x in fh if x.strip()]
+    ids = [r["id"] for r in rows]
+    if len(set(ids)) != len(ids):
+        raise ValueError("PR #16 manifest has duplicate ids")
+    return rows
+
+
+def _quotas(counts: dict[str, int], n: int) -> dict[str, int]:
+    """Proportional per-source quotas summing to n (largest remainder, ties by source name)."""
+    total = sum(counts.values())
+    raw = {s: n * c / total for s, c in counts.items()}
+    q = {s: min(counts[s], math.floor(v)) for s, v in raw.items()}
+    for s in sorted(raw, key=lambda s: (-(raw[s] - math.floor(raw[s])), s)):
+        if sum(q.values()) >= n:
+            break
+        if q[s] < counts[s]:
+            q[s] += 1
+    return q
+
+
+def assign_records(manifest: list[dict[str, str]], sizes: dict[str, int], seed: int = SEED) -> dict[str, list[dict]]:
+    """Disjoint stratified roles in ROLES order (each role draws from what earlier roles left)."""
+    left = {r["id"]: r for r in manifest}
+    out: dict[str, list[dict]] = {}
+    for role in ROLES:
+        by_src: dict[str, list[dict]] = {}
+        for r in left.values():
+            by_src.setdefault(r["source"], []).append(r)
+        q = _quotas({s: len(v) for s, v in by_src.items()}, sizes[role])
+        picked = []
+        for s in sorted(by_src):
+            order = sorted(by_src[s], key=lambda r: _h(f"{seed}|{COHORT_VERSION}|{role}|{r['id']}"))
+            picked += order[: q[s]]
+        picked.sort(key=lambda r: r["id"])
+        for r in picked:
+            del left[r["id"]]
+        out[role] = picked
+    return out
+
+
+def steer_requests(n_dev: int, n_gate: int) -> dict[str, list[dict]]:
+    """``safety_eval.data.build(split='dev')`` requests split into two disjoint roles by request-id hash order."""
+    from safety_eval.data import build, strip_meta
+    from safety_eval.request import sha256_obj
+
+    n = n_dev + n_gate
+    n_route = round(n * 0.6)  # the safety_eval smoke mix (120 route : 80 pay)
+    reqs = build(n_route=n_route, n_pay=n - n_route, split="dev")
+    if any(r["_meta"]["split"] != "dev" for r in reqs):
+        raise AssertionError("a non-dev safety_eval request reached the cohort")
+    order = sorted(reqs, key=lambda r: _h(f"{SEED}|{COHORT_VERSION}|steer|{r['request_id']}"))
+    rows = lambda rs: sorted(({"id": r["request_id"], "sha256": sha256_obj(strip_meta(r)),  # noqa: E731
+                               "meta_sha256": sha256_obj(r["_meta"]), "cluster": r["_meta"]["cluster"],
+                               "source": "safety_eval:" + r["_meta"]["family"]} for r in rs), key=lambda e: e["id"])
+    return {"steer_dev": rows(order[:n_dev]), "steer_gate": rows(order[n_dev:])}
+
+
+def _index_guard_ids() -> set[str]:
+    from train.guard import SplitGuard
+
+    m = ROOT / "harness" / "manifests"
+    return SplitGuard.from_manifests([m / "dev-manifest.jsonl.gz", m / "test-manifest.jsonl.gz"]).ids
+
+
+def build_cohort(sizes: dict[str, int] | None = None, sizing_block: dict | None = None) -> tuple[str, dict]:
+    """Returns (canonical JSONL text, header). Deterministic: same inputs -> byte-identical text."""
+    from safety_eval import attacks
+
+    if sizes is None:
+        sz = sizing()
+        sizes = {"dev": sz["dev"]["n_records"], "calibration": sz["calibration"]["n_records"],
+                 "retention": sz["retention"]["n_records"], "steer_dev": sz["steer_dev"]["n_requests"],
+                 "steer_gate": sz["steer_gate"]["n_requests"]}
+        if sizes["steer_dev"] is None or sizes["steer_gate"] is None:
+            raise ValueError(f"steer margin not reachable on the size grid: {sz}")
+    else:
+        sz = sizing_block
+    manifest = read_pr16_manifest()
+    forbidden = _index_guard_ids()
+    bad = [r["id"] for r in manifest if r["id"] in forbidden or r["id"].split(":")[0] != "m2"]
+    if bad:
+        raise ValueError(f"PR #16 manifest ids collide with Index manifests / foreign ids: {bad[:3]}")
+    roles = assign_records(manifest, sizes)
+    roles.update(steer_requests(sizes["steer_dev"], sizes["steer_gate"]))
+    header = {
+        "cohort": COHORT_VERSION, "seed": SEED, "sizes": sizes,
+        "sources": {"decision": {"manifest": PR16_MANIFEST.relative_to(ROOT).as_posix(),
+                                 "manifest_sha256": hashlib.sha256(gzip.open(PR16_MANIFEST).read()).hexdigest(),
+                                 "n": len(manifest), "kind": "PR #16 m2 sample (public TRAIN splits)"},
+                    "steer": {"builder": "safety_eval.data.build(split='dev')", "seed": SEED,
+                              "d1_a_sha256": attacks.template_set_sha256(attacks.D1_TEMPLATES_A),
+                              "d1_b_sha256": attacks.template_set_sha256(attacks.D1_TEMPLATES_B)}},
+        "excluded": "Index DEV/TEST rows (harness manifests), safety_eval TEST split",
+        "sizing": sz,
+        "role_use": {"dev": "G12 g12_clean_acc (every checkpoint)", "calibration": "temperature fit only",
+                     "retention": "G13 decision retention (gates only)",
+                     "steer_dev": "G12 clean + D1-A (build_variants final=False)",
+                     "steer_gate": "G13 clean + D1-B (build_variants final=True, gates only)"},
+    }
+    lines = [json.dumps({"header": header}, sort_keys=True, ensure_ascii=False, separators=(",", ":"))]
+    for role in ROLES + STEER_ROLES:
+        for e in roles[role]:
+            lines.append(json.dumps({"role": role, **{k: e[k] for k in sorted(e) if k != "family"}},
+                                    sort_keys=True, ensure_ascii=False, separators=(",", ":")))
+    return "\n".join(lines) + "\n", header
+
+
+def write(text: str, path: Path = OUT) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with gzip.GzipFile(path, "wb", mtime=0) as f:
+        f.write(text.encode("utf-8"))
+    sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    path.with_name(OUT_SHA.name if path == OUT else path.stem + ".sha256").write_text(
+        f"{sha}  {path.name} (sha256 of the uncompressed text)\n", encoding="utf-8", newline="\n")
+    return sha
+
+
+# ------------------------------------------------------------------------------------------------- use
+class CohortLeak(ValueError):
+    """A training id is in the frozen cohort (or a role was used outside its purpose)."""
+
+
+class Cohort:
+    def __init__(self, path: Path = OUT, expected_sha256: str | None = None) -> None:
+        text = gzip.open(path, "rt", encoding="utf-8").read()
+        self.sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        want = expected_sha256 or (OUT_SHA.read_text(encoding="utf-8").split()[0] if path == OUT else None)
+        if want is not None and want != self.sha256:
+            raise ValueError(f"cohort sha256 {self.sha256} != committed {want}")
+        lines = [json.loads(x) for x in text.splitlines() if x.strip()]
+        self.header = lines[0]["header"]
+        self.roles: dict[str, list[dict]] = {r: [] for r in ROLES + STEER_ROLES}
+        for e in lines[1:]:
+            self.roles[e["role"]].append(e)
+        self.hashes = {e["id"]: e["sha256"] for r in ROLES for e in self.roles[r]}
+
+    def ids(self, role: str) -> list[str]:
+        return [e["id"] for e in self.roles[role]]
+
+    def held_out(self) -> set[str]:
+        return {e["id"] for r in ROLES for e in self.roles[r]}
+
+    def identity(self) -> dict[str, Any]:
+        return {"cohort": self.header["cohort"], "sha256": self.sha256,
+                "n": {r: len(v) for r, v in self.roles.items()}}
+
+    def assert_training_ids(self, record_ids: Iterable[str]) -> None:
+        """Training must never touch a dev/calibration/retention record (item ids ``rec/qid`` count as ``rec``)."""
+        both = {str(i).rsplit("/", 1)[0] if "/" in str(i) else str(i) for i in record_ids} & self.held_out()
+        if both:
+            raise CohortLeak(f"{len(both)} training record(s) are in the frozen cohort, e.g. {sorted(both)[:3]}")
+
+    def training_pool(self, manifest: list[dict[str, str]] | None = None) -> list[str]:
+        held = self.held_out()
+        return sorted(r["id"] for r in (manifest or read_pr16_manifest()) if r["id"] not in held)
+
+    def load_role_records(self, records_path: str | Path, role: str) -> tuple[list[dict], dict]:
+        """The role's PR #16 records, every line verified against the committed PR #16 manifest
+        (``train.data.load_m2_records``) and its hash against the cohort entry. Missing records raise: a cohort
+        is complete or it is not used."""
+        from train.data import load_m2_records, read_manifest
+
+        want = {e["id"]: e["sha256"] for e in self.roles[role]}
+        man = read_manifest(PR16_MANIFEST)
+        drift = [i for i, h in want.items() if man.get(i) != h]
+        if drift:
+            raise ValueError(f"cohort role {role}: {len(drift)} hash(es) differ from the PR #16 manifest")
+        recs, ident = load_m2_records(records_path, man, keep=lambda r: r["id"] in want)
+        missing = sorted(set(want) - {r["id"] for r in recs})
+        if missing:
+            raise ValueError(f"cohort role {role}: {len(missing)} record(s) missing, e.g. {missing[:3]}")
+        return sorted(recs, key=lambda r: r["id"]), {**ident, "cohort": self.identity(), "role": role}
+
+    def steer_requests(self, role: str) -> list[dict]:
+        """Rebuild the role's safety_eval requests and verify each against its frozen content hash."""
+        from safety_eval.data import build, strip_meta
+        from safety_eval.request import sha256_obj
+
+        if role not in STEER_ROLES:
+            raise ValueError(role)
+        sz = self.header["sizes"]
+        n = sz["steer_dev"] + sz["steer_gate"]
+        n_route = round(n * 0.6)
+        by_id = {r["request_id"]: r for r in build(n_route=n_route, n_pay=n - n_route, split="dev")}
+        out = []
+        for e in self.roles[role]:
+            r = by_id.get(e["id"])
+            if r is None or sha256_obj(strip_meta(r)) != e["sha256"] or sha256_obj(r["_meta"]) != e["meta_sha256"]:
+                raise ValueError(f"steer request {e['id']} does not match the frozen cohort")
+            out.append(r)
+        return out
+
+
+if __name__ == "__main__":
+    import sys
+
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "verify"
+    if cmd == "power":
+        print(json.dumps(sizing(), indent=1))
+    elif cmd == "build":
+        text, header = build_cohort()
+        print(json.dumps({"sha256": write(text), "sizes": header["sizes"]}, indent=1))
+    elif cmd == "verify":
+        h = Cohort().header
+        text, _ = build_cohort(h["sizes"], h["sizing"])
+        ok = hashlib.sha256(text.encode()).hexdigest() == Cohort().sha256
+        print(json.dumps({"rebuild_matches_committed": ok}))
+        sys.exit(0 if ok else 1)
+    else:
+        sys.exit(f"unknown command {cmd}")

@@ -27,7 +27,8 @@ import time
 import urllib.request
 from pathlib import Path
 
-EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26}
+EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26,
+        "guard": 27, "cohort": 28}
 CHECK_AFTER_STEPS = 10  # the in-training rate check uses the mean of the first steps actually run
 
 
@@ -42,6 +43,27 @@ def split_ids(ids: list[str], n_train: int, n_eval: int, seed: int) -> tuple[lis
     """Deterministic disjoint pilot split by sha256(seed:id) order."""
     order = sorted(ids, key=lambda i: hashlib.sha256(f"{seed}:{i}".encode()).hexdigest())
     return order[n_eval: n_eval + n_train], order[:n_eval]
+
+
+def cohort_split(record_ids: list[str], cfg: dict) -> tuple[list[str], list[str], dict]:
+    """With ``cfg["cohort_sha256"]`` (the m2 job): train ids come ONLY from the PR #16 training pool (every record
+    outside the frozen development cohort) and eval ids are the cohort's ``dev`` role. Without it: the legacy pilot
+    split (``split_ids``). Raises ``train.cohort.CohortLeak`` / ``ValueError`` on any overlap or a cohort mismatch."""
+    if not cfg.get("cohort_sha256"):
+        tr, ev = split_ids(record_ids, cfg["n_train_records"], cfg["n_eval_records"], cfg["seed"])
+        return tr, ev, {"cohort": None}
+    from train.cohort import Cohort
+
+    co = Cohort(expected_sha256=cfg["cohort_sha256"])
+    held = co.held_out()
+    pool = [i for i in record_ids if i not in held]
+    tr, _ = split_ids(pool, cfg["n_train_records"], 0, cfg["seed"])
+    ev = co.ids("dev")
+    missing = sorted(set(ev) - set(record_ids))
+    if missing:
+        raise ValueError(f"cohort dev records missing from the records file: {missing[:3]}")
+    co.assert_training_ids(tr)
+    return tr, ev, {"cohort": co.identity()}
 
 
 def keep_item(row, max_k: int, max_t: int) -> bool:
@@ -119,6 +141,9 @@ def main(argv=None):
     ap.add_argument("--out", required=True)
     ap.add_argument("--ckpt-dir", required=True)
     ap.add_argument("--stage", choices=["smoke", "ladder", "train", "all"], default="all")
+    ap.add_argument("--guard-readiness", default=None,
+                    help="readiness.json from jobs.m2_pilot.guard_ready (required when the config sets "
+                         "require_guard_readiness): the guard then includes the verified content-hash index")
     a = ap.parse_args(argv)
 
     import torch
@@ -162,10 +187,26 @@ def main(argv=None):
     tok = Rwkv7Tokenizer.from_pretrained(a.model_dir)
     enc = RwkvSegmentEncoder(tok, set(tok.all_special_ids))
     root = Path(__file__).resolve().parents[1] / "harness" / "manifests"
-    guard = SplitGuard.from_manifests([root / "dev-manifest.jsonl.gz", root / "test-manifest.jsonl.gz"])
+    if a.guard_readiness:
+        from jobs.m2_pilot.guard_ready import GuardNotReady, load_ready_guard
+
+        try:
+            guard = load_ready_guard(a.guard_readiness)
+        except GuardNotReady as e:
+            print(f"guard not ready: {e}", flush=True)
+            return EXIT["guard"]
+    elif cfg.get("require_guard_readiness"):
+        print("config requires --guard-readiness (verified content-hash index); refusing to train", flush=True)
+        return EXIT["guard"]
+    else:
+        guard = SplitGuard.from_manifests([root / "dev-manifest.jsonl.gz", root / "test-manifest.jsonl.gz"])
     with gzip.open(a.records, "rt", encoding="utf-8") as f:
         recs = {r["id"]: to_train_record(r) for r in map(json.loads, f)}
-    tr_ids, ev_ids = split_ids(sorted(recs), cfg["n_train_records"], cfg["n_eval_records"], cfg["seed"])
+    try:
+        tr_ids, ev_ids, cohort_ident = cohort_split(sorted(recs), cfg)
+    except ValueError as e:  # CohortLeak subclasses ValueError
+        print(f"cohort: {e}", flush=True)
+        return EXIT["cohort"]
     t_cap = max(cfg["t_ladder"])
 
     def items(ids, max_t):
@@ -176,7 +217,8 @@ def main(argv=None):
     train_items, eval_items = items(tr_ids, t_cap), items(ev_ids, t_cap)
     cell["data"] = {"records_sha256": hashlib.sha256(Path(a.records).read_bytes()).hexdigest(),
                     "n_train_items": len(train_items), "n_eval_items": len(eval_items),
-                    "guard_manifests": guard.manifests, "max_k": cfg["max_k"]}
+                    "guard_manifests": guard.manifests, "guard": guard.identity(), "max_k": cfg["max_k"],
+                    **cohort_ident}
     save()
     if len(train_items) < cfg["min_train_items"]:
         print(f"too few items {len(train_items)}", flush=True)

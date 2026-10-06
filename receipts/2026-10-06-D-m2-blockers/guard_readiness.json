@@ -1,0 +1,58 @@
+{
+ "pin_file": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\m2-blockers\\jobs\\m2_pilot\\guard_pin.json",
+ "pin_sha256": "dec1809c397efc12ea9c4a4329ddf5d8bfe8a3ce0fc14baf77b51d038267f7f0",
+ "expected": {
+  "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+  "n_hashes": 24150,
+  "n_rows": 24265,
+  "builder": "train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)"
+ },
+ "kit": {
+  "version": "0.2.1",
+  "edition_hashes": {
+   "rows_sha256": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5",
+   "added_sha256": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89",
+   "exclusions_sha256": "331df32d4b719c7db43214d0e5d85859d39c3b2eb7d0b3812214cce150155e81"
+  },
+  "kit_commit": "87d4650b42b377c0291a89c1f1a879f9b31082bf",
+  "ok": true
+ },
+ "suite": {
+  "dir": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\suite-0.2",
+  "files": {
+   "selected-rows.jsonl.gz": {
+    "sha256_uncompressed": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5",
+    "match": true
+   },
+   "added-rows.jsonl.gz": {
+    "sha256_uncompressed": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89",
+    "match": true
+   }
+  },
+  "exclusions": {
+   "sha256": "331df32d4b719c7db43214d0e5d85859d39c3b2eb7d0b3812214cce150155e81",
+   "match": true
+  },
+  "ok": true
+ },
+ "manifests": {
+  "harness/manifests/dev-manifest.jsonl.gz": {
+   "sha256_uncompressed": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "match": true
+  },
+  "harness/manifests/test-manifest.jsonl.gz": {
+   "sha256_uncompressed": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a",
+   "match": true
+  },
+  "ok": true
+ },
+ "observed": {
+  "path": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\167d8677-872b-45ed-b144-905f7c6dd3bc\\scratchpad\\guard\\index-content-hashes.txt.gz",
+  "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+  "n": 24150,
+  "n_rows": 24265
+ },
+ "index_file": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\167d8677-872b-45ed-b144-905f7c6dd3bc\\scratchpad\\guard\\index-content-hashes.txt.gz",
+ "ready": true,
+ "exit_code": 0
+}
