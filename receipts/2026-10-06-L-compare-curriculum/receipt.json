@@ -1,0 +1,365 @@
+{
+  "base_commit": "4733f785e5284ea959d4d640fff884136487bd05",
+  "config": {
+    "batch_size": 32,
+    "cpu_threads": 2,
+    "device": "cpu",
+    "lr": 0.003,
+    "max_training_seconds_per_arm": 120,
+    "seed": 20261006,
+    "steps": 300,
+    "train_count": 600,
+    "train_seed": 20261006,
+    "validation_count": 180,
+    "validation_seed": 20261008,
+    "width": 32
+  },
+  "manifests": {
+    "train_worlds": {
+      "allow_one_repair": false,
+      "choice_formats": {
+        "augmented": 300,
+        "production": 300
+      },
+      "comparison_fields": {
+        "price": 95,
+        "warranty_months": 105
+      },
+      "comparison_left_records": {
+        "development-record-1": 99,
+        "development-record-2": 101
+      },
+      "comparison_relations": {
+        "equal": 33,
+        "greater_than": 74,
+        "less_than": 93
+      },
+      "count": 600,
+      "name_pool": [
+        "Aster",
+        "Bracken",
+        "Cinder",
+        "Dovetail",
+        "Ember",
+        "Fallow"
+      ],
+      "price_cents_range": [
+        5000,
+        20000
+      ],
+      "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+      "sample_sha256": "de27b10530f6a45e4f50d89b9b0e120b3914c65a035375b206aeb1ef68aa93e2",
+      "schema": "ssdm.synthetic_development_manifest.v2",
+      "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+      "seed": 20261006,
+      "split": "development_train",
+      "template_ids": {
+        "compare": [
+          "development_train:compare:0",
+          "development_train:compare:1"
+        ],
+        "explain": [
+          "development_train:explain:0",
+          "development_train:explain:1"
+        ],
+        "read": [
+          "development_train:read:0",
+          "development_train:read:1"
+        ]
+      },
+      "warranty_range": [
+        1,
+        36
+      ]
+    },
+    "validation_worlds": {
+      "allow_one_repair": false,
+      "choice_formats": {
+        "augmented": 90,
+        "production": 90
+      },
+      "comparison_fields": {
+        "price": 26,
+        "warranty_months": 34
+      },
+      "comparison_left_records": {
+        "development-record-1": 24,
+        "development-record-2": 36
+      },
+      "comparison_relations": {
+        "equal": 10,
+        "greater_than": 31,
+        "less_than": 19
+      },
+      "count": 180,
+      "name_pool": [
+        "Grove",
+        "Hearth",
+        "Indigo",
+        "Juniper",
+        "Kestrel",
+        "Lumen"
+      ],
+      "price_cents_range": [
+        20001,
+        30000
+      ],
+      "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+      "sample_sha256": "fc4ebf71e8f1d8d1c820094854f92f1e0da7dfaed13d17914d6043a3b6a7cb1f",
+      "schema": "ssdm.synthetic_development_manifest.v2",
+      "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+      "seed": 20261008,
+      "split": "development_validation",
+      "template_ids": {
+        "compare": [
+          "development_validation:compare:0"
+        ],
+        "explain": [
+          "development_validation:explain:0"
+        ],
+        "read": [
+          "development_validation:read:0"
+        ]
+      },
+      "warranty_range": [
+        37,
+        60
+      ]
+    }
+  },
+  "paired_changes": {
+    "all": {
+      "improved": 17,
+      "regressed": 29
+    },
+    "compare": {
+      "improved": 5,
+      "regressed": 13
+    },
+    "explain": {
+      "improved": 4,
+      "regressed": 9
+    },
+    "read": {
+      "improved": 8,
+      "regressed": 7
+    }
+  },
+  "parameters": 27937,
+  "random_initialization_validation": {
+    "attribute_correct": {
+      "field": 93,
+      "kind": 60,
+      "left": 87,
+      "right": 120,
+      "temporal_scope": 180
+    },
+    "by_kind": {
+      "compare": {
+        "correct": 0,
+        "count": 60
+      },
+      "explain": {
+        "correct": 16,
+        "count": 60
+      },
+      "read": {
+        "correct": 0,
+        "count": 60
+      }
+    },
+    "count": 180,
+    "exact_correct": 16
+  },
+  "results": {
+    "baseline": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-compare-curriculum-20261006-run1\\baseline.pt",
+      "checkpoint_sha256": "b5bd76ef5d1cbe4df9c827512b60305c7e070f41706347bd99b1c8b73091da4a",
+      "history": [
+        {
+          "loss": 2.4847412109375,
+          "step": 1
+        },
+        {
+          "loss": 2.06701922416687,
+          "step": 50
+        },
+        {
+          "loss": 0.970691442489624,
+          "step": 100
+        },
+        {
+          "loss": 0.42773300409317017,
+          "step": 150
+        },
+        {
+          "loss": 0.17651695013046265,
+          "step": 200
+        },
+        {
+          "loss": 0.14340826869010925,
+          "step": 250
+        },
+        {
+          "loss": 0.1518254578113556,
+          "step": 300
+        }
+      ],
+      "id_permutation_agreement": 180,
+      "train": {
+        "attribute_correct": {
+          "field": 600,
+          "kind": 600,
+          "left": 563,
+          "right": 564,
+          "temporal_scope": 600
+        },
+        "by_kind": {
+          "compare": {
+            "correct": 164,
+            "count": 200
+          },
+          "explain": {
+            "correct": 199,
+            "count": 200
+          },
+          "read": {
+            "correct": 200,
+            "count": 200
+          }
+        },
+        "count": 600,
+        "exact_correct": 563
+      },
+      "training_seconds": 12.375,
+      "validation": {
+        "attribute_correct": {
+          "field": 180,
+          "kind": 179,
+          "left": 126,
+          "right": 172,
+          "temporal_scope": 180
+        },
+        "by_kind": {
+          "compare": {
+            "correct": 52,
+            "count": 60
+          },
+          "explain": {
+            "correct": 37,
+            "count": 60
+          },
+          "read": {
+            "correct": 37,
+            "count": 60
+          }
+        },
+        "count": 180,
+        "exact_correct": 126
+      }
+    },
+    "comparison_paraphrases": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-compare-curriculum-20261006-run1\\comparison_paraphrases.pt",
+      "checkpoint_sha256": "3b173971e1c3b2d170b752f13d90e8bf3f9a30b834421c0a940f6ad771e95733",
+      "history": [
+        {
+          "loss": 2.484734296798706,
+          "step": 1
+        },
+        {
+          "loss": 2.1044654846191406,
+          "step": 50
+        },
+        {
+          "loss": 0.8283427357673645,
+          "step": 100
+        },
+        {
+          "loss": 0.3808664083480835,
+          "step": 150
+        },
+        {
+          "loss": 0.19457697868347168,
+          "step": 200
+        },
+        {
+          "loss": 0.11178910732269287,
+          "step": 250
+        },
+        {
+          "loss": 0.12243282049894333,
+          "step": 300
+        }
+      ],
+      "id_permutation_agreement": 180,
+      "train": {
+        "attribute_correct": {
+          "field": 600,
+          "kind": 600,
+          "left": 576,
+          "right": 579,
+          "temporal_scope": 600
+        },
+        "by_kind": {
+          "compare": {
+            "correct": 179,
+            "count": 200
+          },
+          "explain": {
+            "correct": 198,
+            "count": 200
+          },
+          "read": {
+            "correct": 199,
+            "count": 200
+          }
+        },
+        "count": 600,
+        "exact_correct": 576
+      },
+      "training_seconds": 13.235000000000582,
+      "validation": {
+        "attribute_correct": {
+          "field": 180,
+          "kind": 165,
+          "left": 124,
+          "right": 164,
+          "temporal_scope": 180
+        },
+        "by_kind": {
+          "compare": {
+            "correct": 44,
+            "count": 60
+          },
+          "explain": {
+            "correct": 32,
+            "count": 60
+          },
+          "read": {
+            "correct": 38,
+            "count": 60
+          }
+        },
+        "count": 180,
+        "exact_correct": 114
+      }
+    }
+  },
+  "row_hashes": {
+    "baseline_train": "ad7d71fb7a5542e1395bd73db07d83e4ef03701e2467dab8d023be8c039714ad",
+    "curriculum_train": "eac629356d920c23c628dcc21fd789ed3473a4a7d3bb941a742bac58855b552b",
+    "validation": "07a92914c2e433ce586e3c9f1051bedbad4b19cc59cc3a1a29487407f53980d7"
+  },
+  "schema": "ssdm.comparison_paraphrase_cpu.v1",
+  "scope": "One final-step comparison curriculum vs matched training baseline; iterative synthetic development, no Index/test/teacher/GPU/network/paid compute; no validation selection. Names/ranges disjoint across train/validation; fresh validation seed and comparison template relative to the source probe. Temporal scope is constant; values are not model inputs; no planner release integration.",
+  "source_provenance": "Model/target recipe copied from local committed fcf620177d8e9b1575e5e0ed590d4aae1a9cb3b3; no dependency on that branch.",
+  "source_sha256": "9bebb51092bba833980bcb5cc0d7a8dcc4a50a9d8fe1079c2f314416331454c0",
+  "torch": "2.8.0+cu128",
+  "train_comparison_templates": [
+    "Compare the October {field} of {left} and {right}.",
+    "In October 2026, compare {left} and {right} on {field}.",
+    "Assess how {left}'s October {field} compares to {right}'s.",
+    "Considering {field} for October 2026, compare {left} against {right}."
+  ],
+  "validation_comparison_template": "At October 2026, how does {left}'s {field} compare with {right}'s?"
+}
