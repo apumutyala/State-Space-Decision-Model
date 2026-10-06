@@ -1,0 +1,29 @@
+{
+  "authored_boundary_expectation_mismatches": [],
+  "case_count": 24,
+  "decision_only_model_calls": 0,
+  "learned_model_accuracy": null,
+  "learned_model_coverage": null,
+  "note": "Expected task outcomes and useful-answer labels are authored annotations, not observed kernel or model results.",
+  "observed_ask_emitted_count": 2,
+  "observed_kernel_status_counts": {
+    "accepted": 7,
+    "not_run": 1,
+    "rejected": 16
+  },
+  "observed_repair_state_counts": {
+    "budget_exhausted": 1,
+    "not_requested": 22,
+    "scripted_repair_executed": 1
+  },
+  "proposal_attempts": 25,
+  "provider_precondition_counts": {
+    "fail": 1,
+    "pass": 23
+  },
+  "release_failures": [],
+  "schema": "ssdm.l0_fixture_evaluation.v0",
+  "scope": "synthetic_authored_fixture_replay_no_model_run",
+  "scripted_repair_attempts": 1,
+  "task_correctness": "not_independently_scored"
+}
