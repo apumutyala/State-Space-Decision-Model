@@ -1,4 +1,4 @@
-# Frozen development-validation check: provisional observed counts
+# Frozen development-validation check
 
 Source `d5663891e26defaa2e450511cf1a55437b3cd1a5`, clean when measured.
 `receipt.json` records the exact command/config, hashes, hardware, timing and
@@ -13,7 +13,7 @@ Evaluation uses 300 freshly generated `development_validation` tasks, seed
 validation, not a sealed held-out/audit or Decision Index evaluation. GPU,
 downloads and paid services were unused; billed rate and incremental cost $0.
 
-| Provisional raw measurement | Seeds 17 / 29 / 43 |
+| Independently rederived measurement | Seeds 17 / 29 / 43 |
 | --- | --- |
 | Operation slot | 200/300 each |
 | Fact slot | 200/200 each |
@@ -32,9 +32,10 @@ the model's own prior selections, no repair feedback and no gold prefixes.
 All 100 read and 100 explanation tasks are correct; all 100 comparison tasks
 are wrong. The learned operation scorer proposes a factual assertion for
 each comparison request. The kernel accepts that supported fact, and the
-relevance scorer correctly retains a task failure. This is provisional error
-localization from preserved traces, not a generalization claim; independent
-remeasurement must precede reporting a measured conclusion.
+relevance scorer correctly retains a task failure. This is error
+localization from preserved traces, independently confirmed by the separate
+auditor. The kernel accepts a sound fact answer to the wrong requested task;
+relevance remains a learned choice and is not verified by kernel acceptance.
 
 Raw slot logits contain per-feature contributions. Every free-running raw
 request/response records the same feature-to-logit accounting in backend
