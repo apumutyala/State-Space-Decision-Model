@@ -6,4 +6,4 @@ packaging==26.3
 pluggy==1.6.0
 Pygments==2.21.0
 pytest==9.1.1
--e git+https://github.com/apumutyala/State-Space-Decision-Model.git@8654928484ded7906599b0123b60b72cf042b966#egg=ssdm_harness&subdirectory=..\..\..\ssdm-wt\m0-harness\harness
+-e git+https://github.com/apumutyala/State-Space-Decision-Model.git@81c4ec96b527d37b1b3b161cf1d887ce39d95a6f#egg=ssdm_harness&subdirectory=..\..\..\ssdm-wt\m0-harness\harness

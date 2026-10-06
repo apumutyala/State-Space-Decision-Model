@@ -1,20 +1,20 @@
 {
  "perfect": {
-  "official_index": 95.17988182921196,
-  "decomposed_index": 95.17988182921194,
-  "slice_index_renormalized": 98.05203913450184,
+  "official_index": 95.26887009795306,
+  "decomposed_index": 95.26887009795303,
+  "slice_index_renormalized": 98.14102740324294,
   "max_abs_benchmark_skill_gap": 0.0
  },
  "uniform": {
-  "official_index": 1.8945230832500666,
-  "decomposed_index": 1.8945230832500672,
-  "slice_index_renormalized": 1.977719799816292,
+  "official_index": 1.1423422128293166,
+  "decomposed_index": 1.1423422128293166,
+  "slice_index_renormalized": 1.2040397419435758,
   "max_abs_benchmark_skill_gap": 0.0
  },
  "noisy-0.7": {
-  "official_index": 38.84831313901024,
-  "decomposed_index": 38.84831313901024,
-  "slice_index_renormalized": 40.29201382907186,
+  "official_index": 39.123713687475444,
+  "decomposed_index": 39.123713687475444,
+  "slice_index_renormalized": 40.549855447883985,
   "max_abs_benchmark_skill_gap": 0.0
  }
 }
