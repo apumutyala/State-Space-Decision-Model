@@ -34,8 +34,12 @@ from .development_data import generate_development_tasks, development_manifest
 from .free_running_dev import run_development_tasks
 from .training_records import export_training_records
 
-FEATURE_VERSION = "lexical-entity-position-field-match-decimal-sign-v1"
+FEATURE_VERSION = "lexical-entity-position-field-match-decimal-sign-operation-filter-v2"
 FACT = re.compile(r"Fact (\S+) field (\S+)\Z")
+# Predeclared once, before the single intervention measurement. Applies only
+# to the operation head; facts, operands and Decimal-sign features are unchanged.
+OPERATION_FUNCTION_WORDS = frozenset("a an the and or of for to in on at by with from as is are was were be been being do does did has have had it its this that these those".split())
+OPERATION_CALENDAR_WORDS = frozenset("january february march april may june july august september october november december".split())
 
 
 def canonical(value):
@@ -48,6 +52,11 @@ def sha(path):
 
 def words(text):
     return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def operation_tokens(text):
+    return {token for token in words(text) if not token.isdigit()
+            and token not in OPERATION_FUNCTION_WORDS and token not in OPERATION_CALENDAR_WORDS}
 
 
 def feature_rows(request, *, numerical=True):
@@ -88,7 +97,7 @@ def feature_rows(request, *, numerical=True):
         f = {}
         if slot == "operation":
             head = description.split()[0].lower()
-            for token in tokens | {"BIAS"}:
+            for token in operation_tokens(task) | {"BIAS"}:
                 f[f"operation/{head}/{token}"] = 1.0
         elif slot in ("fact", "left", "right"):
             match = FACT.fullmatch(description)
@@ -291,7 +300,10 @@ def main():
                "train_records_sha256": sha(records_path), "cohort_receipt_sha256": sha(args.cohort / "receipt.json"),
                "evaluation_manifest": development_manifest(tasks), "evaluation_tasks_sha256": sha(args.output / "evaluation_tasks.jsonl"),
                "config": {"epochs": args.epochs, "learning_rate": args.learning_rate, "l2": 1e-4, "seeds": args.seeds,
-                          "feature_version": FEATURE_VERSION, "evaluation_split": args.eval_split}, "runs": runs,
+                          "feature_version": FEATURE_VERSION, "evaluation_split": args.eval_split,
+                          "operation_filter": {"pure_numeric": True,
+                              "function_words": sorted(OPERATION_FUNCTION_WORDS),
+                              "calendar_words": sorted(OPERATION_CALENDAR_WORDS)}}, "runs": runs,
                "aggregate": {"task_correct_median": statistics.median(r["free_running"]["task_correct"] for r in runs),
                              "task_correct_min": min(r["free_running"]["task_correct"] for r in runs),
                              "task_correct_max": max(r["free_running"]["task_correct"] for r in runs),
