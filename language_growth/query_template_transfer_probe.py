@@ -408,4 +408,3 @@ if __name__ == "__main__":
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     (prepare if args.mode == "prepare" else run)(args.out)
-
