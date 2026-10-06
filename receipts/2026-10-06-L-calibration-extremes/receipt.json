@@ -1,0 +1,32 @@
+{
+  "source_sha": "2dfd8a4ca91b933d916dae00708b382da00ebb8f",
+  "archive_paths": [
+    "decide",
+    "tests/test_calibration_extremes_cpu.py"
+  ],
+  "commands": [
+    [
+      "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+      "-m",
+      "unittest",
+      "tests.test_calibration_extremes_cpu",
+      "-v"
+    ],
+    "python -c <contents of reproduce.py>"
+  ],
+  "exit_codes": [
+    0,
+    0
+  ],
+  "seed": "none; explicit synthetic float inputs in raw.json",
+  "runs": 1,
+  "hardware": "Windows-11-10.0.26200-SP0 CPU; no Torch import",
+  "cost_usd": 0,
+  "scope": "Pure-Python serving numeric boundaries only. Earlier Torch training proof not rerun under RAM constraint. Adapter implementation version0.2.1; no learned or performance claim.",
+  "preparation_note": "First archive command named nonexistent tests/__init__.py and failed before execution; corrected path list shown here.",
+  "sha256_lf": {
+    "tests.txt": "ffc42451f13422affcae4f1555077ab96ba28cb49758cc00df711618fbd7012d",
+    "raw.json": "35da35b432e1f387079fb9f3e9724a67593562dc919cf7aec21685a424148c66",
+    "reproduce.py": "521e6dbab81247cbc930665b6a52c055611e57f20427a47840c8fe280b0631a7"
+  }
+}

@@ -1,0 +1,9 @@
+test_large_temperature_preserves_opposite_sign_extreme_gap (tests.test_calibration_extremes_cpu.CalibrationExtremesTests.test_large_temperature_preserves_opposite_sign_extreme_gap) ... ok
+test_manual_perturbation_cannot_use_identity_proof_exemption (tests.test_calibration_extremes_cpu.CalibrationExtremesTests.test_manual_perturbation_cannot_use_identity_proof_exemption) ... ok
+test_served_adapter_has_finite_distributions (tests.test_calibration_extremes_cpu.CalibrationExtremesTests.test_served_adapter_has_finite_distributions) ... ok
+test_small_temperature_and_huge_finite_logits_are_not_nan (tests.test_calibration_extremes_cpu.CalibrationExtremesTests.test_small_temperature_and_huge_finite_logits_are_not_nan) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+OK
