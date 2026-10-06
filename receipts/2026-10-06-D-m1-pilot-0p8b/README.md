@@ -31,7 +31,7 @@ installed in a gitignored overlay venv (`.venv-fla`, which adds `.venv-gpu` site
 - Uncontended laptop training throughput: stage 1 ≈ 3.5–5k tok/s, stage 2 (end-to-end KL with checkpointing) ≈ 0.85–1.0k tok/s.
   When the other worker held the GPU this fell to about 50 tok/s, which is why the 9B is priced from FLOPs and not from these numbers.
 
-## Why it crashed (root cause, fixed in commit 18cd9e2)
+## Why it crashed (root cause, fixed in commit 7df43d5)
 
 1. `replace_native_gdn` built fresh `GDN` modules, so the 18 native GDN layers had `requires_grad=True`, and a decorator
    edit had moved `@torch.no_grad()` off `_argmax_hits`. Probe forwards therefore kept full autograd graphs:
