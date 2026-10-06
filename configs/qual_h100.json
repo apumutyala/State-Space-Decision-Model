@@ -12,7 +12,7 @@
          "gate_windows": 8, "init": "clone_neighbor",
          "stage1": {"steps": 100, "lr": 1e-3, "guard": {"min_tok_s": 6150, "check_after_steps": 50, "max_peak_gb": 76}},
          "stage2": {"steps": 1000000, "lr": 3e-4,
-                    "guard": {"min_tok_s": 1450, "check_after_steps": 50, "max_peak_gb": 76, "max_minutes": 45}},
+                    "guard": {"min_tok_s": 1450, "check_after_steps": 50, "max_peak_gb": 76, "max_minutes": 35}},
          "throughput": {"lengths": [4096, 8192, 16384, 32768], "reps": 2}}
  },
  "decision_rule": {"flop_per_token_stage2": 8.5e10, "h100_peak_flops": 989e12,

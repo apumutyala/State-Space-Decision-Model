@@ -5,6 +5,9 @@
 # Exit codes (also in $GMN_RESULT_PATH): 0 all required gates passed and every export verified
 #   2 numerics gate failed (tests or qual numerics sanity)   3 throughput stop   4 memory stop
 #   5 setup failed   6 an export failed verification   7 a required phase timed out   8 9B weights unavailable
+#   9 decision.json missing/invalid   1 finalize itself failed
+# /output/QUAL_PASS is written ONLY by jobs/qual/finalize.py, and only when its final code is 0.
+# Phase caps come from jobs/qual/job_params.json (checked against max_duration_minutes by tests/test_qual_job.py).
 set -Euo pipefail
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -43,26 +46,18 @@ export_phase() {  # tar the phase output, verify by re-reading + hash, record su
 }
 finish() {
   local rc=${RC:-$?}
-  [ "$rc" -eq 0 ] && [ "$EXPORT_FAIL" -ne 0 ] && rc=6
   kill $HB_PID 2> /dev/null || true
   export_phase final
-  [ "$EXPORT_FAIL" -ne 0 ] && [ "$rc" -eq 0 ] && rc=6
-  python - "$RESULT" "$rc" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" <<'EOF'
-import json, os, sys
-res, rc, gates, ef, mins = sys.argv[1], int(sys.argv[2]), json.loads(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
-dec = "/tmp/qual/out/decision.json"
-out = {"ok": rc == 0, "exit_code": rc, "gates": gates, "exports_verified": ef == 0, "elapsed_min": mins,
-       "decision": json.load(open(dec)) if os.path.exists(dec) else None}
-json.dump(out, open(res, "w"), indent=1)
-print(json.dumps(out))
-EOF
-  [ "$rc" -eq 0 ] && touch "$OUT/QUAL_PASS"
-  say "EXIT $rc"
-  exit "$rc"
+  # the only writer of QUAL_PASS: non-zero on any failed gate, unverified export (6) or invalid decision (9)
+  python /opt/ssdm/m1/jobs/qual/finalize.py "$RESULT" "$rc" "$GATES" "$EXPORT_FAIL"     "$(( ($(date +%s) - T0) / 60 ))" "$WORK/out/decision.json" "$OUT"
+  local final=$?
+  say "EXIT $final (runner rc $rc)"
+  exit "$final"
 }
 trap finish EXIT
 fail() { RC=$1; say "FAIL($1): $2"; exit "$1"; }
 ( while true; do date -u +%FT%TZ > "$OUT/heartbeat"; sleep 60; done ) & HB_PID=$!
+cap() { python -c "import json,sys;print(json.load(open('/opt/ssdm/m1/jobs/qual/job_params.json'))['phase_caps_minutes'][sys.argv[1]])" "$1"; }
 
 # ------------------------------------------------------------------ setup (fail fast: exit 5)
 say "setup"
@@ -77,6 +72,7 @@ assert torch.cuda.is_available()
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0), **got}))
 EOF
 cd /opt/ssdm/m1
+CAP_A=$(cap A_per_test) && CAP_B=$(cap B) && CAP_CW=$(cap C_weight_wait) && CAP_C=$(cap C) || fail 5 "job_params"
 python -I scripts/sf_fetch.py --stage first > "$WORK/logs/fetch_first.log" 2>&1 || fail 5 "fetch first"
 ls "$SSDM_DATA_ROOT"/FAILED_* > /dev/null 2>&1 && fail 5 "fetch first: $(cat "$SSDM_DATA_ROOT"/FAILED_*)"
 ( python -I scripts/sf_fetch.py --stage rest > "$WORK/logs/fetch_rest.log" 2>&1 ) &   # 9B in the background
@@ -85,53 +81,29 @@ export_phase setup
 # ------------------------------------------------------------------ A: numerics gates (exit 2)
 say "phase A"
 mkdir -p "$WORK/out/tests"
-for t in test_gdn test_init_shapes test_progressive_resume test_guard; do
-  timeout 10m python -m tests.$t > "$WORK/out/tests/$t.json" 2> "$WORK/logs/$t.err"; r=$?
+for t in test_gdn test_init_shapes test_progressive_resume test_guard test_qual_job; do
+  timeout ${CAP_A}m python -m tests.$t > "$WORK/out/tests/$t.json" 2> "$WORK/logs/$t.err"; r=$?
   gate "A:$t" $r
   say "A $t rc=$r"
   [ $r -eq 0 ] || { export_phase A; fail 2 "numerics gate $t"; }
 done
 export_phase A
 
-# ------------------------------------------------------------------ B: 0.8B throughput/memory/numerics (20 min)
+# ------------------------------------------------------------------ B: 0.8B throughput/memory/numerics
 say "phase B"
-timeout 20m python -m convert.qual --config configs/qual_h100.json --model 0p8b --out "$WORK/out" \
+timeout ${CAP_B}m python -m convert.qual --config configs/qual_h100.json --model 0p8b --out "$WORK/out" \
   > "$WORK/logs/qual_0p8b.log" 2>&1; r=$?
 gate "B:qual_0p8b" $r
 export_phase B
 case $r in 0) ;; 2|3|4) fail $r "qual 0p8b stop" ;; 124) fail 7 "qual 0p8b timeout" ;; *) fail 2 "qual 0p8b crashed rc=$r" ;; esac
 
-# ------------------------------------------------------------------ 0: optional m0 GPU leftovers (<= 15 min, not gating)
-say "phase 0 (optional)"
-P0_END=$(( $(date +%s) + 15*60 ))
-mkdir -p "$WORK/out/m0"
-source "$SSDM_DATA_ROOT/paths.env" 2> /dev/null || true
-p0() { local name=$1 cap=$2; shift 2
-  local left=$(( (P0_END - $(date +%s)) / 60 )); [ $left -lt $cap ] && cap=$left
-  if [ $cap -le 0 ]; then echo skipped > "$WORK/out/m0/$name.status"; return; fi
-  ( timeout ${cap}m "$@" ) > "$WORK/out/m0/$name.json" 2> "$WORK/logs/m0-$name.err"; echo $? > "$WORK/out/m0/$name.status"
-  say "phase0 $name rc=$(cat "$WORK/out/m0/$name.status")"; }
-for i in $(seq 1 18); do [ -f "$SSDM_DATA_ROOT/DONE_MAMBA3_TOK_DIR" ] && break; sleep 10; done
-source "$SSDM_DATA_ROOT/paths.env" 2> /dev/null || true
-cd /opt/ssdm/decide
-p0 debias-rwkv7-0.1b-g1 4 python -I scripts/run_debias_controls.py --family rwkv7 --model-dir "${RWKV7_DIR:-missing}" \
-   --model-id fla-hub/rwkv7-0.1B-g1 --device cuda
-[ -f /opt/extras/MAMBA_INSTALL_FAILED ] && echo "mamba_ssm install failed at build" > "$WORK/out/m0/debias-mamba3.status" || \
-p0 debias-mamba3-siso-187m 4 python -I scripts/run_debias_controls.py --family mamba3 --model-dir "${MAMBA3_DIR:-missing}" \
-   --tokenizer-dir "${MAMBA3_TOK_DIR:-missing}" --model-id state-spaces/mamba3-siso-187m --device cuda --extras /opt/extras/mamba
-cd /opt/ssdm/steer
-p0 steer-canonical-qwen3.5-0.8b 7 env SSDM_QWEN_DIR="$Q08_DIR" SSDM_DECIDE_PATH=/opt/ssdm/decide \
-   python -m safety_eval.run_smoke --backend decide --device cuda --out "$WORK/out/m0/steer-canonical-qwen3.5-0.8b"
-cd /opt/ssdm/m1
-export_phase 0
-
-# ------------------------------------------------------------------ C: 9B throughput/memory probe (<= 90 min)
+# ------------------------------------------------------------------ C: 9B throughput/memory probe
 say "phase C"
-W_END=$(( $(date +%s) + 40*60 ))
+W_END=$(( $(date +%s) + CAP_CW*60 ))
 while [ ! -f "$SSDM_DATA_ROOT/DONE_Q9B_DIR" ] && [ $(date +%s) -lt $W_END ]; do
   [ -f "$SSDM_DATA_ROOT/FAILED_Q9B_DIR" ] && break; sleep 20; done
 [ -f "$SSDM_DATA_ROOT/DONE_Q9B_DIR" ] || { gate "C:weights" 8; export_phase C; fail 8 "9B weights unavailable"; }
-timeout 90m python -m convert.qual --config configs/qual_h100.json --model 9b --out "$WORK/out" \
+timeout ${CAP_C}m python -m convert.qual --config configs/qual_h100.json --model 9b --out "$WORK/out" \
   > "$WORK/logs/qual_9b.log" 2>&1; r=$?
 gate "C:qual_9b" $r
 export_phase C
@@ -139,6 +111,8 @@ case $r in 0) ;; 2|3|4) fail $r "qual 9b stop" ;; 124) fail 7 "qual 9b timeout" 
 
 # ------------------------------------------------------------------ D: pre-registered decision
 say "phase D"
-python scripts/decide_9b.py "$WORK/out/qual_9b.json" configs/qual_h100.json "$WORK/out/decision.json" > /dev/null
-RC=""
-exit 0
+python scripts/decide_9b.py "$WORK/out/qual_9b.json" configs/qual_h100.json "$WORK/out/decision.json"   > "$WORK/logs/decision.log" 2>&1; r=$?
+gate "D:decision" $r
+[ $r -eq 0 ] || fail 9 "decision generation failed rc=$r"
+RC=0
+exit 0   # finish() re-validates decision.json via finalize.py before QUAL_PASS

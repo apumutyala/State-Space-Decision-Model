@@ -1,6 +1,7 @@
-{"_note": "validate_job response (free, nothing submitted), 2026-10-06; command bash /opt/ssdm/m1/jobs/qual/qual_job.sh",
- "checks_summary":{"health":{"check":"heartbeat /output/heartbeat","fail_threshold":2,"grace_period_s":900,"interval_s":600,"on_fail":"kill"},"success":"all_of(file_exists /output/QUAL_PASS, file_exists /output/MANIFEST.jsonl)"},
- "chip":{"count":1,"model":"h100"},"max_cost_usd":9.9,"max_duration_minutes":200,"node_disk_bytes":107374182400,
- "preflight":[{"check":"cost-cap","inputs":{"remaining_usd_micros":525000000,"scope":"balance","worst_case_usd_micros":9900000},"message":"worst case $9.90 fits the credit your organization has available ($525.00)","verdict":"pass"},
-  {"check":"disk-model","inputs":{"disk_bytes":107374182400,"hf_cache":false,"model":"Qwen/Qwen3.5-9B","model_bytes":19306310880,"needed_bytes":21236941968,"revision":"c202236235762e1c871ad0ccb60c8ee5ba337b9a"},"verdict":"pass"}],
- "would_submit":true}
+{"_note": "validate_job responses (free, nothing submitted), 2026-10-06; command bash /opt/ssdm/m1/jobs/qual/qual_job.sh. Current spec = max_duration_minutes 180. Preflight scope is the org BALANCE, not a $20 cap: re-run after set_workspace_cap (JOB_SPEC.md precondition 3).",
+ "current": {"max_duration_minutes":180,"max_cost_usd":8.91,
+  "checks_summary":{"health":{"check":"heartbeat /output/heartbeat","fail_threshold":2,"grace_period_s":900,"interval_s":600,"on_fail":"kill"},"success":"all_of(file_exists /output/QUAL_PASS, file_exists /output/MANIFEST.jsonl)"},
+  "preflight":[{"check":"cost-cap","inputs":{"remaining_usd_micros":525000000,"scope":"balance","worst_case_usd_micros":8910000},"verdict":"pass"},
+   {"check":"disk-model","inputs":{"model":"Qwen/Qwen3.5-9B","revision":"c202236235762e1c871ad0ccb60c8ee5ba337b9a","model_bytes":19306310880,"needed_bytes":21236941968,"disk_bytes":107374182400},"verdict":"pass"}],
+  "would_submit":true},
+ "superseded": {"max_duration_minutes":200,"max_cost_usd":9.9,"would_submit":true}}

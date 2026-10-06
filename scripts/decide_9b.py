@@ -1,6 +1,6 @@
 """Apply the pre-registered decision rule (configs/qual_h100.json: decision_rule) to the 9B probe results.
 
-python scripts/decide_9b.py <qual_9b.json> <configs/qual_h100.json> <decision.json>   (exit 0; the verdict is data)
+python scripts/decide_9b.py <qual_9b.json> <configs/qual_h100.json> <decision.json>   (exit 9 if no valid decision could be made, else 0)
 """
 from __future__ import annotations
 
@@ -37,13 +37,26 @@ def decide(R, cfg):
     return out
 
 
+VERDICTS = ("open-$40-one-layer-probe-spend-issue", "re-price-lean-plan", "fold")
+
+
+def valid_decision(d):
+    """A decision the qualification job may PASS on: a known verdict computed from real measurements."""
+    if not isinstance(d, dict) or d.get("verdict") not in VERDICTS:
+        return False
+    if d["verdict"] == "fold" and d.get("stopped"):
+        return True
+    return all(isinstance(d.get(k), (int, float)) for k in ("stage2_mfu", "peak_gb"))
+
+
 def main(result_json, config_json, out_json):
     R = json.load(open(result_json))
     cfg = json.load(open(config_json))
     out = decide(R, cfg)
     json.dump(out, open(out_json, "w"), indent=1)
     print(json.dumps(out, indent=1))
+    return 0 if valid_decision(out) else 9
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:4])
+    sys.exit(main(*sys.argv[1:4]))
