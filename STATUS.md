@@ -10,4 +10,4 @@
 
 ## Open decisions for the user
 - SF Compute credit expiry date.
-- Approve creating the private GitHub repo + `agent-main` branch.
+- (done) private repo + agent-main created 2026-10-06.
