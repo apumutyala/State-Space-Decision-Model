@@ -8,7 +8,7 @@ import unittest
 from fixtures.language_growth.validate import read_json, validate_pack
 
 
-PACK = Path(__file__).resolve().parents[1] / "fixtures" / "language_growth"
+PACK = Path(__file__).resolve().parent
 
 
 class FixturePackTests(unittest.TestCase):

@@ -27,3 +27,5 @@ python fixtures/language_growth/validate.py
 ```
 
 The check verifies JSON shape, unique IDs, manifest coverage, exact numeric representation and declared reference integrity. It deliberately **does not evaluate programs, validate expected truth, enforce audience isolation or certify semantics**. Run `python -m language_growth.evaluate --fixtures fixtures/language_growth --out <new-directory>` for observed checker/provider/renderer results. That report keeps authored task expectations separate; it is not a learned accuracy or coverage measurement.
+
+Code and packaging tests live under fixtures/. Run packaging unit tests with `python -m unittest discover -s fixtures/language_growth -p test_fixture_pack.py -v`. Historical receipts retain their original command paths.
