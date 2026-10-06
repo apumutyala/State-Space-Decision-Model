@@ -36,9 +36,9 @@ class ScriptedProvider:
         task = state["task_input"]
         records = state["records"]
         if slot == "operation":
-            phrase = ("Explain a checked assertion" if task.startswith("Explain") else
-                      "Assert one selected fact" if task.startswith("What") else
-                      "Compare two selected typed values")
+            phrase = ("Compare two selected typed values" if "compare" in task.lower() else
+                      "Explain a checked assertion" if "checked" in task.lower() else
+                      "Assert one selected fact")
         elif slot == "fact":
             target = next(rec for rec in records if rec["entity_ref"] in task)
             field = "warranty_months" if "warranty months" in task else "price"
@@ -46,17 +46,20 @@ class ScriptedProvider:
                 field = "price" if field == "warranty_months" else "warranty_months"
             phrase = f"Fact {target['record_ref']} field {field}"
         elif slot in ("left", "right"):
+            named_records = sorted(records, key=lambda record: task.index(record["entity_ref"]))
             index = (0 if slot == "left" else 1)
             if self.mode == "reverse":
                 index = 1 - index
-            phrase = f"Fact {records[index]['record_ref']} field price"
+            field = "warranty_months" if "warranty months" in task else "price"
+            phrase = f"Fact {named_records[index]['record_ref']} field {field}"
         else:
             previous = {choice["slot"]: choice["description"] for choice in state["proposed_slot_choices"]}
             left_ref = previous["left"].split(" ")[1]
             right_ref = previous["right"].split(" ")[1]
             by_ref = {rec["record_ref"]: rec for rec in records}
-            left = Decimal(by_ref[left_ref]["fields"]["price"]["value"])
-            right = Decimal(by_ref[right_ref]["fields"]["price"]["value"])
+            field = previous["left"].split(" field ")[1]
+            left = Decimal(str(by_ref[left_ref]["fields"][field]["value"]))
+            right = Decimal(str(by_ref[right_ref]["fields"][field]["value"]))
             relation = "equal" if left == right else ("greater_than" if left > right else "less_than")
             if self.mode == "false_relation":
                 relation = "less_than" if relation == "greater_than" else "greater_than"
@@ -133,8 +136,9 @@ class FreeRunningDevelopmentTests(unittest.TestCase):
         self.assertEqual((report["kernel_accepted"], report["task_correct"]), (1, 0))
 
     def test_reversed_comparison_is_equivalent_for_equal_and_unequal_values(self):
-        equal = generate_development_tasks(9, 3, choice_format="production")[2]
-        self.assertEqual(equal["training_only"]["program"]["nodes"][2]["relation"], "equal")
+        equal = next(task for task in generate_development_tasks(9, 90, choice_format="production")
+                     if task["training_only"]["kind"] == "compare"
+                     and task["training_only"]["program"]["nodes"][2]["relation"] == "equal")
         unequal = next(task for task in generate_development_tasks(11, 30, choice_format="production")
                        if task["training_only"]["kind"] == "compare"
                        and task["training_only"]["program"]["nodes"][2]["relation"] != "equal")
