@@ -116,8 +116,11 @@ if [ -n "$LAYERS" ]; then
   # measured stop condition: the pipeline's MEASURED stock prefill rate must let the readout fit its cap (else 15)
   TOKS=$(python -c "import json,sys;t=json.load(open(sys.argv[1]))['throughput']['stock'];print(max(v['tok_s'] for v in t.values() if 'tok_s' in v))" \
     "$WORK/out/pipeline/results.json") || fail 2 "no measured prefill rate"
-  python -m jobs.common.rate_guard preflight --tok-s "$TOKS" --subset "$SUBSET" --cap-min "$CAP_IS" \
-    --out "$WORK/out/index/preflight.json" > "$WORK/logs/preflight.log" 2>&1; r=$?
+  # exact subset volume of the prefix-fork readout at the MEASURED prefill rate. The 9B's own small-call latency is not
+  # measured before this phase, so the RWKV7 fitted per-call cost is used; the live row-rate guard is authoritative.
+  CALLS=$(python -c "from jobs.common.readout_cost import CALL_S_FITTED_RWKV7 as F;print(F)")
+  python -m jobs.common.rate_guard preflight --tok-s "$TOKS" --call-s "$CALLS" --volume jobs/common/readout_volume_qwen3.5.json \
+    --path fork --cap-min "$CAP_IS" --out "$WORK/out/index/preflight.json" > "$WORK/logs/preflight.log" 2>&1; r=$?
   gate "I:preflight" $r
   [ $r -eq 0 ] || fail $r "readout projected past its cap from the measured prefill rate"
   say "phase I (stock arm)"

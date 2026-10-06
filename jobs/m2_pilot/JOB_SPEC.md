@@ -124,10 +124,10 @@ Schedule 173 + reserve 7 = 180 min. **Worst case** (20 build + 2 × 180) × $0.0
 **$20 hard cap**; `set_workspace_cap(MTD + 20)` applies when the job runs alone.
 
 **Eval volume** (RWKV7 tokenizer, measured on the cohort; `jobs/m2_parent_arm/score_parent.VOLUME_TOKENS`):
-- **Child arm:** 25.2 M tokens (G12 9.3 M, G13 15.9 M). The parent arm is cached once per parent.
+- **Child arm:** 26.8 M tokens (G12 9.3 M, G13 17.5 M; Index DEV re-measured as exact prefix-fork positions, `jobs/PERF_AUDIT.md`). The parent arm is cached once per parent.
 - **Evals phase total:** the arm plus the temperature fit over every calibration item (3.4 M) and the dev eval card
-  (4.0 M) gives **32.5 M tokens** (`estimate(..., mode="child")`; PR #29 round-2 review B4).
-- **Rate needed:** at the 50-minute evals cap, with the 95 % headroom rule, this needs **≥ ~11,420 tok/s**
+  (4.0 M) gives **34.2 M tokens** (`estimate(..., mode="child")`; PR #29 round-2 review B4).
+- **Rate needed:** at the 50-minute evals cap, with the 95 % headroom rule, this needs **≥ ~12,000 tok/s**
   (`score_parent.min_tok_s(50)`).
 - **Preflight:** it runs in setup, before the paid cell phase, as `score_parent estimate --mode child --cap-min
   $CAP_E` with `TOK_S`, a measured rate. It stops with exit 15 if the projection is over.
