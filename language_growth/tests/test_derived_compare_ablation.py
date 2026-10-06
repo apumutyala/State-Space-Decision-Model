@@ -2,14 +2,28 @@
 
 from copy import deepcopy
 import json
+from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
-from language_growth.derived_compare_ablation import derive_program
+from language_growth.derived_compare_ablation import derive_program, read_reference, REFERENCE, PREFIX
 from language_growth.kernel import check_program
 from language_growth.tests.test_kernel import ROOT, case
 
 
 class AblationTransformTests(unittest.TestCase):
+    def test_vendored_input_loader_verifies_bytes_without_git(self):
+        self.assertTrue(json.loads(read_reference("registration.json"))["validation_rows_exactly_reused"])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "source_files.json").write_text(json.dumps({"source_commit": REFERENCE,
+                "source_prefix": PREFIX, "files": {"data": {"sha256": "bad", "bytes": 8}}}))
+            (root / "data").write_bytes(b"tampered")
+            with patch("language_growth.derived_compare_ablation.INPUTS", root):
+                with self.assertRaises(AssertionError):
+                    read_reference("data")
+
     def test_fixed_wrong_field_order_and_relation_only_transformation(self):
         item = case(14)  # A supported warranty answer to a price question.
         catalog = json.loads((ROOT / "catalog.json").read_text())

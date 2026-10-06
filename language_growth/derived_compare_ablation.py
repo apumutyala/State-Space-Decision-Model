@@ -1,6 +1,6 @@
 """Inference-free module ablation of the fixed PR #82 development predictions.
 
-Reads only committed local Git objects. No model, optimizer, task parser or
+Reads hash-verified vendored inputs. No model, optimizer, task parser or
 candidate selection runs here. Frozen gold is used only after kernel execution.
 """
 
@@ -10,7 +10,6 @@ import gzip
 import hashlib
 import json
 from pathlib import Path
-import subprocess
 
 import numpy as np
 
@@ -22,6 +21,7 @@ from .types import Comparison
 REFERENCE = "1a09d189635711bd79319ef8eb334ed587e34c2e"
 PREFIX = "language_growth/receipts/typed_emission_diversity_20261006/"
 OUT = Path("receipts/2026-10-06-L-derived-compare")
+INPUTS = Path(__file__).resolve().parents[1] / OUT / "pr82_reference"
 BOOTSTRAP = {"seed": 3197, "replicates": 2000,
              "unit": "unique task cluster, preserving both arms, all three fixed model seeds and both members",
              "interval": "95% paired percentile, conditional on fixed model seeds and synthetic development families"}
@@ -36,7 +36,13 @@ def sha(value):
 
 
 def read_reference(name):
-    return subprocess.check_output(["git", "show", REFERENCE + ":" + PREFIX + name])
+    provenance = json.loads((INPUTS / "source_files.json").read_text())
+    assert provenance["source_commit"] == REFERENCE
+    assert provenance["source_prefix"] == PREFIX
+    expected = provenance["files"][name]
+    raw = (INPUTS / name).read_bytes()
+    assert sha(raw) == expected["sha256"] and len(raw) == expected["bytes"]
+    return raw
 
 
 def write(name, value):
@@ -74,6 +80,7 @@ def main():
     OUT.mkdir(exist_ok=True, parents=True)
     manifest = json.loads(read_reference("raw_artifact_manifest.json"))
     source_receipt = json.loads(read_reference("receipt.json"))
+    registration = json.loads(read_reference("registration.json"))
     artifacts, decoded = {}, {}
     for name in ("predictions.json.gz", "frozen_rows.json.gz"):
         archive = read_reference(name)
@@ -85,6 +92,8 @@ def main():
         artifacts[name] = expected
         decoded[name] = json.loads(raw)
     assert artifacts["predictions.json.gz"]["decompressed_sha256"] == source_receipt["raw_predictions_sha256"]
+    validation = decoded["frozen_rows.json.gz"]["development"]
+    assert sha(encoded(validation)) == registration["validation_rows_sha256"]
     inputs = {row["id"]: row for row in decoded["frozen_rows.json.gz"]["development"]}
     assert len(inputs) == 360
     assert all(row["source_split"] == "development_validation" for row in inputs.values())

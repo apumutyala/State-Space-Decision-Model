@@ -1,0 +1,26 @@
+{
+  "files": {
+    "frozen_rows.json.gz": {
+      "bytes": 176252,
+      "sha256": "a215b4047706fd81426cf08c04f023e36d11669ec6d2be8cbdef3aa2ee12e78d"
+    },
+    "predictions.json.gz": {
+      "bytes": 60503,
+      "sha256": "85eb39c6d55aff2917a363652bc747a83e147f7b90116a2362a9ab3d3343cd20"
+    },
+    "raw_artifact_manifest.json": {
+      "bytes": 868,
+      "sha256": "83d2a5aa24eb61f5fb16b9fb1afd58ab82f026df379ca972d2ecfd00b9db0975"
+    },
+    "receipt.json": {
+      "bytes": 23856,
+      "sha256": "3db715d313fa95640472e65046ba277f215e68a6524a03a5909b85db75c41194"
+    },
+    "registration.json": {
+      "bytes": 9086,
+      "sha256": "69d6a10727a113a5d9901c8f36b03bb82ff437afb650fe15459e19fdd77946bd"
+    }
+  },
+  "source_commit": "1a09d189635711bd79319ef8eb334ed587e34c2e",
+  "source_prefix": "language_growth/receipts/typed_emission_diversity_20261006/"
+}

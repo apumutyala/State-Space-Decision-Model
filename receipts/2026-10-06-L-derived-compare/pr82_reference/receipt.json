@@ -1,0 +1,716 @@
+{
+  "adversarial": {
+    "existing_fixture_09": {
+      "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-codex-l0-typed-emission-diversity\\fixtures\\language_growth\\cases\\09_currency_mismatch.json",
+      "reason": "type_unit_mismatch",
+      "sha256": "b354a3b9098bd3940eb006e46fef8c336cb674d7073f639bc61e319bdbe1f9db",
+      "status": "rejected"
+    },
+    "unit_mismatch": {
+      "audience": null,
+      "context_ref": null,
+      "dependencies": [],
+      "outputs": [],
+      "policy_ref": null,
+      "reason": "type_unit_mismatch",
+      "registry_ref": null,
+      "status": "rejected",
+      "style": null
+    },
+    "wrong_record": {
+      "interpretation": "Kernel checks evidence-relative validity, not question relevance; scorer rejects wrong requested record.",
+      "kernel_status": "accepted",
+      "whole_answer_correct": false
+    },
+    "wrong_relation": {
+      "audience": null,
+      "context_ref": null,
+      "dependencies": [],
+      "outputs": [],
+      "policy_ref": null,
+      "reason": "unsupported_assertion",
+      "registry_ref": null,
+      "status": "rejected",
+      "style": null
+    }
+  },
+  "cost_usd": 0,
+  "data_sha256": "e3cec785d4abcbf796196a1dfc36fc3be2b99ad89b732a56724cc8b495e94505",
+  "parameters": 28263,
+  "pooled": {
+    "all": {
+      "count": 1080,
+      "kernel_accepted": 946,
+      "operation_correct": 1071,
+      "relation_correct": 110,
+      "structure_exact": 619,
+      "target_exact": 563,
+      "whole_answer_correct": 563
+    },
+    "by_kind": {
+      "compare": {
+        "count": 360,
+        "kernel_accepted": 227,
+        "operation_correct": 360,
+        "relation_correct": 110,
+        "structure_exact": 142,
+        "target_exact": 86,
+        "whole_answer_correct": 86
+      },
+      "explain": {
+        "count": 360,
+        "kernel_accepted": 360,
+        "operation_correct": 360,
+        "relation_correct": 0,
+        "structure_exact": 244,
+        "target_exact": 244,
+        "whole_answer_correct": 244
+      },
+      "read": {
+        "count": 360,
+        "kernel_accepted": 359,
+        "operation_correct": 351,
+        "relation_correct": 0,
+        "structure_exact": 233,
+        "target_exact": 233,
+        "whole_answer_correct": 233
+      }
+    }
+  },
+  "raw_predictions_sha256": "edbcb8393949cbefbf0d25e49cb1b11f2de2b2d40917ba39df7598decb1489e4",
+  "registration": {
+    "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
+    "baseline_data_sha256": "4c63f494a42ec66da89236225d3d9aa6a6c22e4b9844df96c4a8188ee00b0faa",
+    "baseline_predictions_sha256": "8e164ee8bc163c8eee346cd394c84922d4825ec097c99d817b485dffd0a36678",
+    "baseline_registration": {
+      "alternate_validation_templates": {
+        "explain": "For {entity}, provide the checked derivation of the {field}.",
+        "read": "For October 2026, state the {field} of {entity}."
+      },
+      "architecture": "Byte-identical copied PR #80 core; no architecture, scales, seeds, optimizer or training changes",
+      "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
+      "candidate_contract": "12 structural candidates; all three relation choices; no truth filtering or target-dependent inference",
+      "config": {
+        "batch_size": 32,
+        "clip_norm": 1.0,
+        "cpu_threads": 2,
+        "development_clusters": 180,
+        "development_seed": 9102,
+        "inference": "argmax operation, conditional argmax target, relation argmax on predicted operands",
+        "loss": "operation CE + conditional target CE + comparison relation CE",
+        "lr": 0.003,
+        "max_seconds": 180,
+        "numeric_scales": {
+          "price": 200.0,
+          "warranty_months": 36.0
+        },
+        "relation_features": [
+          "left/scale",
+          "right/scale",
+          "delta",
+          "delta_squared"
+        ],
+        "scope": "One condition; final step only; iterative synthetic development; no validation tuning; random initialization; no parent retention claim",
+        "seeds": [
+          20261006,
+          20261016,
+          20261026
+        ],
+        "steps": 300,
+        "train_count": 600,
+        "train_seed": 9101,
+        "width": 32
+      },
+      "cost_usd": 0,
+      "evaluation_split": "development_validation",
+      "frozen_data_sha256": "4c63f494a42ec66da89236225d3d9aa6a6c22e4b9844df96c4a8188ee00b0faa",
+      "implementation_source_commit": "c0db91df4b28fbb3cbd9fe05b210b85ff2a396ee",
+      "initialization": "random; no teacher or parent checkpoint",
+      "paired_task_clusters": 180,
+      "pairing": "Original plus selected-field value swap for compare; original plus preauthored disjoint alternate wording for read/explain",
+      "scope": "Single train-to-disjoint-validation transfer condition; iterative synthetic development, not official holdout; no tuning or parent-retention claim",
+      "source": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-codex-l0-typed-emission-transfer\\language_growth\\typed_emission_ssm.py",
+      "source_hashes": {
+        "development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+        "kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+        "parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+        "realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
+        "typed_emission_ssm.py": "93ae22e267186f5453f520a2bf30747e4cd097662068c066b8535d956ee5f2d6",
+        "typed_emission_ssm_transfer.py": "44da0a6e92628191d195c557d55fe47e2ffee4d27b012fc8e4f7007e5a75fdc2",
+        "types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1"
+      },
+      "split_specs": {
+        "development_train": {
+          "names": [
+            "Aster",
+            "Bracken",
+            "Cinder",
+            "Dovetail",
+            "Ember",
+            "Fallow"
+          ],
+          "price_cents_range": [
+            5000,
+            20000
+          ],
+          "templates": {
+            "compare": [
+              "Compare the October {field} of {left} and {right}.",
+              "How do {left}'s and {right}'s October {field} compare?"
+            ],
+            "explain": [
+              "Explain the checked {field} fact for {entity}.",
+              "Show the checked derivation for {entity}'s {field}."
+            ],
+            "read": [
+              "What is {entity}'s {field} in October 2026?",
+              "Give the October 2026 {field} for {entity}."
+            ]
+          },
+          "warranty_range": [
+            1,
+            36
+          ]
+        },
+        "development_validation": {
+          "names": [
+            "Grove",
+            "Hearth",
+            "Indigo",
+            "Juniper",
+            "Kestrel",
+            "Lumen"
+          ],
+          "price_cents_range": [
+            20001,
+            30000
+          ],
+          "templates": {
+            "compare": [
+              "For October 2026, compare {left}'s and {right}'s {field}."
+            ],
+            "explain": [
+              "Provide a checked derivation of {entity}'s {field}."
+            ],
+            "read": [
+              "State {entity}'s {field} for October 2026."
+            ]
+          },
+          "warranty_range": [
+            37,
+            60
+          ]
+        }
+      },
+      "train_split": "development_train"
+    },
+    "baseline_source_commit": "8bca172092dce3eec005fe5bd6a34e6db0bbe4f7",
+    "config": {
+      "batch_size": 32,
+      "clip_norm": 1.0,
+      "cpu_threads": 2,
+      "development_clusters": 180,
+      "development_seed": 9102,
+      "inference": "argmax operation, conditional argmax target, relation argmax on predicted operands",
+      "loss": "operation CE + conditional target CE + comparison relation CE",
+      "lr": 0.003,
+      "max_seconds": 180,
+      "numeric_scales": {
+        "price": 200.0,
+        "warranty_months": 36.0
+      },
+      "relation_features": [
+        "left/scale",
+        "right/scale",
+        "delta",
+        "delta_squared"
+      ],
+      "scope": "One condition; final step only; iterative synthetic development; no validation tuning; random initialization; no parent retention claim",
+      "seeds": [
+        20261006,
+        20261016,
+        20261026
+      ],
+      "steps": 300,
+      "train_count": 600,
+      "train_seed": 9101,
+      "width": 32
+    },
+    "cost_usd": 0,
+    "frozen_data_sha256": "e3cec785d4abcbf796196a1dfc36fc3be2b99ad89b732a56724cc8b495e94505",
+    "initialization": "random; no parent checkpoint or teacher",
+    "only_change": "task_input in training rows; model, numeric features/scales, worlds, seed list, optimizer, 300 steps, validation rows and pairs unchanged",
+    "scope": "One frozen six-template training-wording condition; paired against saved PR #81 predictions; iterative synthetic development only, not official holdout; no tuning",
+    "source": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-codex-l0-typed-emission-diversity\\language_growth\\typed_emission_ssm.py",
+    "source_hashes": {
+      "development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+      "kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+      "parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+      "realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
+      "typed_emission_ssm.py": "93ae22e267186f5453f520a2bf30747e4cd097662068c066b8535d956ee5f2d6",
+      "typed_emission_ssm_diversity.py": "bacfe0b10002e55a80a46f9b63e54475d889270d49669353837f411aac62caf4",
+      "types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1"
+    },
+    "template_assignment": "(row_index // 3) % 6; unchanged PR #75 assignment",
+    "template_counts_by_kind": {
+      "compare": {
+        "0": 34,
+        "1": 34,
+        "2": 33,
+        "3": 33,
+        "4": 33,
+        "5": 33
+      },
+      "explain": {
+        "0": 34,
+        "1": 34,
+        "2": 33,
+        "3": 33,
+        "4": 33,
+        "5": 33
+      },
+      "read": {
+        "0": 34,
+        "1": 34,
+        "2": 33,
+        "3": 33,
+        "4": 33,
+        "5": 33
+      }
+    },
+    "template_source": {
+      "commit": "64df83efeafa08f43bebf6e2e5e59a1ff5baf77e",
+      "path": "language_growth/query_template_transfer_probe.py",
+      "sha256": "ba521a134a0cef41ade8e8bf5ff249c9cd3dc7355057ae3502481fcdfa8f61c1"
+    },
+    "train_templates": {
+      "compare": [
+        "Compare the October {field} of {left} and {right}.",
+        "How do {left}'s and {right}'s October {field} compare?",
+        "In October 2026, compare {left} and {right} on {field}.",
+        "Assess how {left}'s October {field} compares to {right}'s.",
+        "Considering October 2026 {field}, compare {left} against {right}.",
+        "Please compare {left} with {right} using their October 2026 {field}."
+      ],
+      "explain": [
+        "Explain the checked {field} fact for {entity}.",
+        "Show the checked derivation for {entity}'s {field}.",
+        "For {entity}, explain how the {field} fact is established.",
+        "Give a checked explanation for the {field} of {entity}.",
+        "Please justify {entity}'s {field} using the checked derivation.",
+        "Walk through the derivation that supports {entity}'s {field}."
+      ],
+      "read": [
+        "What is {entity}'s {field} in October 2026?",
+        "Give the October 2026 {field} for {entity}.",
+        "For {entity}, report the {field} recorded in October 2026.",
+        "In October 2026, what {field} does {entity} have?",
+        "Please retrieve {entity}'s October 2026 {field}.",
+        "Find the October 2026 fact about {field} for {entity}."
+      ]
+    },
+    "validation_rows_exactly_reused": true,
+    "validation_rows_sha256": "5e22f0e800ea48eb4ed0b1042a72e6ee713210fdaac85b4f64ea963d2ea4957c"
+  },
+  "results": {
+    "20261006": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\review-artifacts\\l0-typed-emission-diversity-20261006\\seed-20261006.pt",
+      "checkpoint_sha256": "be59e74f89f3a4a6c0558dfb31763442640b5bc4060d650bc477079aa24d0a72",
+      "history": [
+        {
+          "operation_loss": 0.5728527903556824,
+          "relation_loss": 0.4696127772331238,
+          "step": 100,
+          "target_loss": 0.595947802066803
+        },
+        {
+          "operation_loss": 0.24654598534107208,
+          "relation_loss": 0.23934154212474823,
+          "step": 200,
+          "target_loss": 0.39631810784339905
+        },
+        {
+          "operation_loss": 0.15599220991134644,
+          "relation_loss": 0.3609602153301239,
+          "step": 300,
+          "target_loss": 0.3327653110027313
+        }
+      ],
+      "metrics": {
+        "all": {
+          "count": 360,
+          "kernel_accepted": 317,
+          "operation_correct": 356,
+          "relation_correct": 37,
+          "structure_exact": 199,
+          "target_exact": 178,
+          "whole_answer_correct": 178
+        },
+        "by_kind": {
+          "compare": {
+            "count": 120,
+            "kernel_accepted": 77,
+            "operation_correct": 120,
+            "relation_correct": 37,
+            "structure_exact": 50,
+            "target_exact": 29,
+            "whole_answer_correct": 29
+          },
+          "explain": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 75,
+            "target_exact": 75,
+            "whole_answer_correct": 75
+          },
+          "read": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 116,
+            "relation_correct": 0,
+            "structure_exact": 74,
+            "target_exact": 74,
+            "whole_answer_correct": 74
+          }
+        }
+      },
+      "paired": {
+        "all": {
+          "both_kernel_accepted": 150,
+          "both_target_exact": 78,
+          "both_whole_answer_correct": 78,
+          "clusters": 180
+        },
+        "compare": {
+          "both_kernel_accepted": 30,
+          "both_target_exact": 12,
+          "both_whole_answer_correct": 12,
+          "clusters": 60
+        },
+        "explain": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 35,
+          "both_whole_answer_correct": 35,
+          "clusters": 60
+        },
+        "read": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 31,
+          "both_whole_answer_correct": 31,
+          "clusters": 60
+        }
+      },
+      "train": {
+        "all": {
+          "count": 600,
+          "kernel_accepted": 581,
+          "operation_correct": 600,
+          "relation_correct": 147,
+          "structure_exact": 541,
+          "target_exact": 526,
+          "whole_answer_correct": 526
+        },
+        "by_kind": {
+          "compare": {
+            "count": 200,
+            "kernel_accepted": 181,
+            "operation_correct": 200,
+            "relation_correct": 147,
+            "structure_exact": 155,
+            "target_exact": 140,
+            "whole_answer_correct": 140
+          },
+          "explain": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 190,
+            "target_exact": 190,
+            "whole_answer_correct": 190
+          },
+          "read": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 196,
+            "target_exact": 196,
+            "whole_answer_correct": 196
+          }
+        }
+      }
+    },
+    "20261016": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\review-artifacts\\l0-typed-emission-diversity-20261006\\seed-20261016.pt",
+      "checkpoint_sha256": "a41a633d85fb554c1e75625c250a2a5dafd83619c92da053e1670db4502a6539",
+      "history": [
+        {
+          "operation_loss": 0.5918852686882019,
+          "relation_loss": 0.48948943614959717,
+          "step": 100,
+          "target_loss": 0.5178542733192444
+        },
+        {
+          "operation_loss": 0.19978730380535126,
+          "relation_loss": 0.30785998702049255,
+          "step": 200,
+          "target_loss": 0.3363341987133026
+        },
+        {
+          "operation_loss": 0.14419251680374146,
+          "relation_loss": 0.4508886933326721,
+          "step": 300,
+          "target_loss": 0.17313046753406525
+        }
+      ],
+      "metrics": {
+        "all": {
+          "count": 360,
+          "kernel_accepted": 310,
+          "operation_correct": 360,
+          "relation_correct": 38,
+          "structure_exact": 211,
+          "target_exact": 193,
+          "whole_answer_correct": 193
+        },
+        "by_kind": {
+          "compare": {
+            "count": 120,
+            "kernel_accepted": 70,
+            "operation_correct": 120,
+            "relation_correct": 38,
+            "structure_exact": 48,
+            "target_exact": 30,
+            "whole_answer_correct": 30
+          },
+          "explain": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 80,
+            "target_exact": 80,
+            "whole_answer_correct": 80
+          },
+          "read": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 83,
+            "target_exact": 83,
+            "whole_answer_correct": 83
+          }
+        }
+      },
+      "paired": {
+        "all": {
+          "both_kernel_accepted": 151,
+          "both_target_exact": 81,
+          "both_whole_answer_correct": 81,
+          "clusters": 180
+        },
+        "compare": {
+          "both_kernel_accepted": 31,
+          "both_target_exact": 14,
+          "both_whole_answer_correct": 14,
+          "clusters": 60
+        },
+        "explain": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 35,
+          "both_whole_answer_correct": 35,
+          "clusters": 60
+        },
+        "read": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 32,
+          "both_whole_answer_correct": 32,
+          "clusters": 60
+        }
+      },
+      "train": {
+        "all": {
+          "count": 600,
+          "kernel_accepted": 586,
+          "operation_correct": 598,
+          "relation_correct": 155,
+          "structure_exact": 540,
+          "target_exact": 526,
+          "whole_answer_correct": 526
+        },
+        "by_kind": {
+          "compare": {
+            "count": 200,
+            "kernel_accepted": 186,
+            "operation_correct": 198,
+            "relation_correct": 155,
+            "structure_exact": 164,
+            "target_exact": 150,
+            "whole_answer_correct": 150
+          },
+          "explain": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 188,
+            "target_exact": 188,
+            "whole_answer_correct": 188
+          },
+          "read": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 188,
+            "target_exact": 188,
+            "whole_answer_correct": 188
+          }
+        }
+      }
+    },
+    "20261026": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\review-artifacts\\l0-typed-emission-diversity-20261006\\seed-20261026.pt",
+      "checkpoint_sha256": "9963a86a3a3d3ef551b992bdfcf2c09468d0df070024bd8d5647b58e14bf06af",
+      "history": [
+        {
+          "operation_loss": 0.4525435268878937,
+          "relation_loss": 0.578180730342865,
+          "step": 100,
+          "target_loss": 0.46880677342414856
+        },
+        {
+          "operation_loss": 0.23636065423488617,
+          "relation_loss": 0.4484254717826843,
+          "step": 200,
+          "target_loss": 0.43631303310394287
+        },
+        {
+          "operation_loss": 0.1310424506664276,
+          "relation_loss": 0.1459190845489502,
+          "step": 300,
+          "target_loss": 0.18077567219734192
+        }
+      ],
+      "metrics": {
+        "all": {
+          "count": 360,
+          "kernel_accepted": 319,
+          "operation_correct": 355,
+          "relation_correct": 35,
+          "structure_exact": 209,
+          "target_exact": 192,
+          "whole_answer_correct": 192
+        },
+        "by_kind": {
+          "compare": {
+            "count": 120,
+            "kernel_accepted": 80,
+            "operation_correct": 120,
+            "relation_correct": 35,
+            "structure_exact": 44,
+            "target_exact": 27,
+            "whole_answer_correct": 27
+          },
+          "explain": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 89,
+            "target_exact": 89,
+            "whole_answer_correct": 89
+          },
+          "read": {
+            "count": 120,
+            "kernel_accepted": 119,
+            "operation_correct": 115,
+            "relation_correct": 0,
+            "structure_exact": 76,
+            "target_exact": 76,
+            "whole_answer_correct": 76
+          }
+        }
+      },
+      "paired": {
+        "all": {
+          "both_kernel_accepted": 153,
+          "both_target_exact": 76,
+          "both_whole_answer_correct": 76,
+          "clusters": 180
+        },
+        "compare": {
+          "both_kernel_accepted": 34,
+          "both_target_exact": 12,
+          "both_whole_answer_correct": 12,
+          "clusters": 60
+        },
+        "explain": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 39,
+          "both_whole_answer_correct": 39,
+          "clusters": 60
+        },
+        "read": {
+          "both_kernel_accepted": 59,
+          "both_target_exact": 25,
+          "both_whole_answer_correct": 25,
+          "clusters": 60
+        }
+      },
+      "train": {
+        "all": {
+          "count": 600,
+          "kernel_accepted": 588,
+          "operation_correct": 600,
+          "relation_correct": 155,
+          "structure_exact": 554,
+          "target_exact": 543,
+          "whole_answer_correct": 543
+        },
+        "by_kind": {
+          "compare": {
+            "count": 200,
+            "kernel_accepted": 188,
+            "operation_correct": 200,
+            "relation_correct": 155,
+            "structure_exact": 161,
+            "target_exact": 150,
+            "whole_answer_correct": 150
+          },
+          "explain": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 196,
+            "target_exact": 196,
+            "whole_answer_correct": 196
+          },
+          "read": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 197,
+            "target_exact": 197,
+            "whole_answer_correct": 197
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "device": "cpu",
+    "interop_threads": 1,
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]",
+    "threads": 2,
+    "torch": "2.8.0+cu128"
+  },
+  "scope": "One condition; final step only; iterative synthetic development; no validation tuning; random initialization; no parent retention claim",
+  "wall_seconds": 9.421999999998661
+}

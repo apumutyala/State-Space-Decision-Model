@@ -13,8 +13,11 @@ ExactSum is rejected here. Joint review/reconciliation with PR #38's shared v0.2
 draft is required before interface integration; this receipt is no approval.
 
 PR #82 reference commit: `1a09d189635711bd79319ef8eb334ed587e34c2e`.
-Both compressed and decompressed artifact hashes are verified against its
-committed manifest. All 1,080 explicit-relation checker/renderer outputs are
+Exact copies of the required inputs are committed under `pr82_reference/`,
+including compressed predictions/frozen rows, registration, manifest and source
+receipt. `source_files.json` pins their original commit, paths and exact byte
+hashes. Both compressed and decompressed artifact hashes are verified against
+that manifest. All 1,080 explicit-relation checker/renderer outputs are
 reproduced before scoring the ablation. Every model-selected operation family,
 field and ordered record selection stays fixed. All 369 selected Compare nodes
 are replaced, including nine comparisons incorrectly selected on read tasks;
@@ -53,16 +56,21 @@ development families; no official held-out or parent-retention claim is made.
 `legacy_compatibility.json` records identical checked dictionaries and released
 UTF-8 text for all 25 original v0.1 attempts across 24 fixtures against base
 `0f4b8ad2ea717c79858ddfbc4deb55c9b71940af`. Types and realizer sources are unchanged.
-The focused suites pass 46 module/kernel/renderer tests and 8 fixture tests.
+The focused suites pass 47 module/kernel/renderer tests and 8 fixture tests.
 
 From the repository root, reproduce without inference or network:
 
 ```powershell
 python -m language_growth.derived_compare_ablation
+python receipts/2026-10-06-L-derived-compare/verify_ablation.py
 python receipts/2026-10-06-L-derived-compare/verify_legacy.py
 python -m unittest language_growth.tests.test_derived_compare language_growth.tests.test_derived_compare_ablation language_growth.tests.test_kernel language_growth.tests.test_kernel_adversarial language_growth.tests.test_realize -v
 python -m unittest language_growth.tests.test_fixtures fixtures.language_growth.test_fixture_pack -v
 ```
 
-The ablation requires NumPy and the pinned PR #82 local Git objects; it never
-fetches missing objects. Runtime and code-file hashes are in `receipt.json`.
+The ablation requires NumPy; its inputs are self-contained and require no
+PR #82 Git object or network access. The stdlib-only `verify_ablation.py` checks
+the input/output hashes and replays all 1,080 preserved derived outputs without
+NumPy. Runtime and current code-file hashes are in `receipt.json`.
+`ablation.json` retains the original execution's source hashes and numerical
+results; vendoring changed only input loading and verification.

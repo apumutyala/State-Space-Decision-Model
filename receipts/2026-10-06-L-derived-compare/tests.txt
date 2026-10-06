@@ -16,6 +16,7 @@ test_v01_compare_still_rejects_wrong_model_relation (language_growth.tests.test_
 test_v01_rejects_extension_even_with_registry_opt_in (language_growth.tests.test_derived_compare.DerivedCompareTests.test_v01_rejects_extension_even_with_registry_opt_in) ... ok
 test_fixed_wrong_field_order_and_relation_only_transformation (language_growth.tests.test_derived_compare_ablation.AblationTransformTests.test_fixed_wrong_field_order_and_relation_only_transformation) ... ok
 test_selected_noncomparison_operation_is_unchanged (language_growth.tests.test_derived_compare_ablation.AblationTransformTests.test_selected_noncomparison_operation_is_unchanged) ... ok
+test_vendored_input_loader_verifies_bytes_without_git (language_growth.tests.test_derived_compare_ablation.AblationTransformTests.test_vendored_input_loader_verifies_bytes_without_git) ... ok
 test_all_nodes_checked_even_if_not_output (language_growth.tests.test_kernel.KernelTests.test_all_nodes_checked_even_if_not_output) ... ok
 test_ask_and_conjunction_explanation (language_growth.tests.test_kernel.KernelTests.test_ask_and_conjunction_explanation) ... ok
 test_bool_not_numeric_and_quantity_kind (language_growth.tests.test_kernel.KernelTests.test_bool_not_numeric_and_quantity_kind) ... ok
@@ -46,6 +47,6 @@ test_prose_node_id_is_rejected_and_never_rendered (language_growth.tests.test_re
 test_rejected_forged_and_revoked_never_render (language_growth.tests.test_realize.RenderTests.test_rejected_forged_and_revoked_never_render) ... ok
 
 ----------------------------------------------------------------------
-Ran 46 tests in 0.035s
+Ran 47 tests in 0.056s
 
 OK
