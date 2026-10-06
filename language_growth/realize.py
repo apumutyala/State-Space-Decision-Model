@@ -88,8 +88,11 @@ def _speech(act: SpeechAct) -> str:
     if act.kind == "explain":
         if not isinstance(act.content, SpeechAct):
             raise ValueError("invalid checked explanation")
-        steps = ", ".join(_quoted(step) for step in act.derivation)
-        return f"Checked derivation through program nodes [{steps}]: {_speech(act.content)}"
+        if (not isinstance(act.derivation, tuple) or not act.derivation
+                or any(type(step) is not int or step <= 0 for step in act.derivation)):
+            raise ValueError("invalid checked derivation")
+        steps = ", ".join(str(step) for step in act.derivation)
+        return f"Checked derivation through program steps [{steps}]: {_speech(act.content)}"
     raise ValueError("invalid checked speech act")
 
 
