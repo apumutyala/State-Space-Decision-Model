@@ -721,3 +721,207 @@ def test_valid_decision_v2():
     assert not E.valid_decision_v2(E.decide(_report()))
     d2 = json.loads(json.dumps(E.decide_v2(_report_v2(train=_train_v2(cur_oom=20)))))  # inf survives the JSON trip
     assert E.valid_decision_v2(d2) and d2["variants"]["fla"]["train_ratio"] == math.inf
+
+
+# ----------------------------------------------------------------------------- RULE v2 phases: CPU dry runs
+def test_truth_grad_uses_run_impl_cotangents(fake_fla, monkeypatch):
+    """fp64 truth gradients = the fla branch (fake kernel, fp64 compute on fp64 inputs) with run_impl's cotangents."""
+    monkeypatch.setattr(E, "DEVICE", "cpu")
+    monkeypatch.setattr(E, "H", 2)
+    monkeypatch.setattr(E, "N", 4)
+    x = E.make_inputs(1, 17, F64, 5, device="cpu")  # fp64 activations, fp32 carried state (as in the model)
+    tr = E.truth_grad(x)
+    got = E.run_impl("fla", x, True)
+    assert set(tr) == set(E.V2_GRAD_TENSORS)
+    for t in E.V2_GRAD_TENSORS:
+        assert E.rel_err(got[t], tr[t]) < 1e-6, t  # the fla wrapper hands the state back in fp32
+    fwd = E.truth(x)
+    assert E.rel_err(fwd["out"], tr["out"]) == 0 and E.rel_err(fwd["state"], tr["state"]) == 0
+
+
+def test_truth_v2_phase_cpu_dry_run(fake_fla, monkeypatch, tmp_path):
+    """The truth_v2 phase end to end on CPU: tiny RWKV-7, its 2 layers captured (prefix -> carried state -> tail),
+    every implementation vs fp64 truth, then decide_v2's truth half on the file it wrote."""
+    monkeypatch.setattr(E, "DEVICE", "cpu")
+    m = tiny_lm()
+    monkeypatch.setattr(E, "_load", lambda d: m)
+    monkeypatch.setattr(E, "_text_ids", lambda d, T: torch.randint(1, 64, (1, T), generator=torch.Generator().manual_seed(T)))
+    monkeypatch.setattr(E, "TRUTH_V2_LAYERS", (0, 1))
+    monkeypatch.setattr(E, "V2_PROMPT_T", 48)
+    monkeypatch.setattr(E, "V2_FWD_T", 24)
+    monkeypatch.setattr(E, "V2_GRAD_T", 12)
+    E.phase_truth_v2(tmp_path, "unused")
+    d = json.loads((tmp_path / "truth_v2.json").read_text(encoding="utf-8"))
+    assert d["complete"] is True and d["captured"] == [0, 1]
+    assert [c["name"] for c in d["cases"]] == list(E.v2_required_cases())
+    for c in d["cases"]:
+        assert c["truth_finite"] and set(c["impls"]) == {"eager_bf16", "chunked", "fla", "fla_safe_gate"}
+        assert c["shape"][1] == (12 if c["grad"] else 24) and "t_s" in c
+        for impl, r in c["impls"].items():
+            assert "error" not in r, (c["name"], impl, r)
+            assert r["finite"] and set(r["e"]) == set(c["tensors"]) and max(r["e"].values()) < 1e-4, (c["name"], impl)
+    assert len(d["cases"][1]["tensors"]) == 9  # grad case: out, state and 7 input gradients
+    assert d["stats"]["1"]["state"] > 0  # the captured tail starts from a non-zero carried state
+    ok, why, detail = E._v2_truth_check(d, "fla")
+    assert ok is True and not why and detail["pairs"] == 22
+    assert E.main(["decide_v2", "--out", str(tmp_path)]) == 0
+    dv = json.loads((tmp_path / "decision_v2.json").read_text(encoding="utf-8"))
+    assert dv["verdict"] == "INCONCLUSIVE" and dv["variants"]["fla"]["numerics"]["truth"] is True  # no other phases
+
+
+def test_truth_v2_capture_matches_v1_construction():
+    """Same prompt split as job-jn47u's model phase: 2048 tokens, state from the first 1024, capture the next 1024."""
+    assert E.V2_PROMPT_T - E.V2_FWD_T == 1024 and E.V2_FWD_T == 1024
+    src = (ROOT / "jobs/fla_rwkv7/fla_equivalence.py").read_text(encoding="utf-8")
+    assert "ids = _text_ids(model_dir, 2048)" in src and "ids[:, :1024]" in src and "ids[:, 1024:]" in src  # v1
+    assert "_text_ids(model_dir, V2_PROMPT_T)" in src and "capture_wkv_inputs(m, ids, TRUTH_V2_LAYERS, V2_FWD_T)" in src
+
+
+def _toy_items():
+    from heads.layout import build_row
+    from tests.test_m2_review_fixes import ENC, req
+    from train.data import Item
+
+    r = req()
+    out = []
+    for i, q in enumerate(("dept", "down", "urg") * 3):
+        row = build_row(r, q, ENC, layout="ordered")
+        out.append(Item(f"toy/{i}", row, 0))
+    return out
+
+
+def _tiny_mix(path, n_rows, cell=None):
+    from jobs.fla_rwkv7 import train_mix as TM
+
+    shapes = [TM.row_shape(x) for x in _toy_items()]
+    shapes = (shapes * (n_rows // len(shapes) + 1))[:n_rows]
+    d = {"cell": {"head": "fork", "head_kwargs": {}, "layout": "ordered", "template": "jrt-plain-v1",
+                  "loss_arm": "clef", "lora_rank": 2, "lr_head": 1e-3, "lr_lora": 1e-4, "warmup_steps": 0,
+                  "batch_size": 1, "grad_accum": 2, "max_k": 16, "t_ladder": [512], "seed": 0,
+                  "n_train_records": 3, **(cell or {})}, "rows": shapes}
+    d["sha256"] = TM.mix_sha256(d)
+    path.write_text(json.dumps(d), encoding="utf-8")
+    return d
+
+
+def test_train_mix_shapes_roundtrip():
+    from jobs.fla_rwkv7 import train_mix as TM
+
+    items = _toy_items()
+    shapes = [TM.row_shape(x) for x in items]
+    rows = TM.rows_from_shapes(shapes, vocab=260, seed=0)
+    assert [TM.row_shape(x) for x in rows] == shapes  # same lengths, spans, K, qtype
+    assert all(0 < t < 260 for x in rows for t in x.row.ids + [c for cs in x.row.continuations for c in cs])
+    assert TM.rows_from_shapes(shapes, 260, 0)[0].row.ids == rows[0].row.ids  # deterministic ids
+    assert {s["qtype"] for s in shapes} >= {"choice", "score"}
+
+
+def test_train_v2_phase_cpu_dry_run(fake_fla, monkeypatch, tmp_path):
+    """The training-speed phase on CPU: tiny RWKV-7 backbone, the cell's own Trainer step (fork head, cache fork,
+    LoRA, Clef loss, grad accumulation) on mix-shaped rows, for chunked and fla; then the OOM and deadline paths."""
+    from heads.backbone import tiny_hf_backbone
+
+    monkeypatch.setattr(E, "DEVICE", "cpu")
+    monkeypatch.setattr(E, "V2_TRAIN_WARMUP", 1)
+    monkeypatch.setattr(E, "V2_TRAIN_STEPS", 2)
+    monkeypatch.setattr(E, "V2_CURRENT_MIN_STEPS", 1)
+    monkeypatch.setattr(E, "_load_backbone", lambda d: tiny_hf_backbone("rwkv7", fork_mode="cache"))
+    mix = tmp_path / "mix.json"
+    _tiny_mix(mix, 6)
+    monkeypatch.setattr(E, "MIX_PATH", mix)
+    for impl in ("chunked", "fla"):
+        W.CALLS.clear()
+        E.phase_train_v2(tmp_path, "unused", impl, math.inf)
+        d = json.loads((tmp_path / f"train_v2_{impl}.json").read_text(encoding="utf-8"))
+        assert d["complete"] and [s["timed"] for s in d["steps"]] == [False, True, True]
+        assert all(s["tok_s"] > 0 and s["finite"] and s["tokens"] > 0 and len(s["K"]) == 2 for s in d["steps"])
+        assert not d["fallbacks"] and (d["fla_calls"].get("fla", 0) > 0) == (impl == "fla")
+        assert E.train_speed_v2(d, current=impl == "chunked")["tok_s"] > 0
+    # the steps really trained: LoRA + head parameters moved under the cell's Trainer (not a forward-only timing)
+    d = json.loads((tmp_path / "train_v2_fla.json").read_text(encoding="utf-8"))
+    assert d["mix_sha256"] == json.loads(mix.read_text(encoding="utf-8"))["sha256"] and d["cell"]["lora_rank"] == 2
+    # OOM on one step: recorded, counted 0 tok/s by decide_v2, the run continues
+    from train.trainer import Trainer
+
+    real, calls = Trainer.train_step, [0]
+
+    def flaky(self):
+        calls[0] += 1
+        if calls[0] == 2:
+            raise torch.OutOfMemoryError("CUDA out of memory (simulated)")
+        return real(self)
+
+    monkeypatch.setattr(Trainer, "train_step", flaky)
+    E.phase_train_v2(tmp_path, "unused", "chunked", math.inf)
+    d = json.loads((tmp_path / "train_v2_chunked.json").read_text(encoding="utf-8"))
+    assert d["steps"][1].get("oom") and "tok_s" in d["steps"][2] and d["complete"]
+    sp = E.train_speed_v2(d, current=True)
+    assert sp["oom_steps"] == 1 and sp["timed_steps"] == 2
+    monkeypatch.setattr(Trainer, "train_step", real)
+    # deadline already passed: nothing runs, every step recorded as skipped -> no speed (INCONCLUSIVE in decide_v2)
+    E.phase_train_v2(tmp_path, "unused", "fla", 0.0)
+    d = json.loads((tmp_path / "train_v2_fla.json").read_text(encoding="utf-8"))
+    assert all(s.get("skipped") == "deadline" for s in d["steps"]) and E.train_speed_v2(d, False)["tok_s"] is None
+
+
+def test_train_v2_mix_must_cover_the_steps(monkeypatch, tmp_path):
+    monkeypatch.setattr(E, "DEVICE", "cpu")
+    mix = tmp_path / "mix.json"
+    _tiny_mix(mix, 5)  # (3 + 20) x 2 needed
+    monkeypatch.setattr(E, "MIX_PATH", mix)
+    with pytest.raises(SystemExit, match="rows"):
+        E.phase_train_v2(tmp_path, "unused", "chunked", math.inf)
+    d = json.loads(mix.read_text(encoding="utf-8"))
+    d["rows"][0]["T"] += 1  # tampered table
+    mix.write_text(json.dumps(d), encoding="utf-8")
+    from jobs.fla_rwkv7 import train_mix as TM
+
+    with pytest.raises(ValueError, match="sha256"):
+        TM.load(mix)
+
+
+def test_committed_train_mix_is_the_m2_cell():
+    """train_mix_v2.json: the m2 first cell's TrainConfig fields and the shapes of its first 23 optimiser steps."""
+    from jobs.fla_rwkv7 import train_mix as TM
+
+    d = TM.load()
+    c = d["cell"]
+    assert (c["head"], c["layout"], c["loss_arm"], c["lora_rank"], c["batch_size"], c["grad_accum"], c["seed"]) == \
+        ("fork", "ordered", "clef", 64, 1, 8, 0)
+    assert c["template"] == "jrt-rwkv-g1-v1" and max(c["t_ladder"]) == 2048 and c["max_k"] == 16
+    n = (E.V2_TRAIN_WARMUP + E.V2_TRAIN_STEPS) * c["batch_size"] * c["grad_accum"]
+    assert len(d["rows"]) == n == 184
+    for s in d["rows"]:
+        assert 0 < s["T"] <= 2048 and 2 <= len(s["conts"]) <= 16 and max(s["conts"]) <= 16 and min(s["conts"]) >= 1
+        assert s["qtype"] in ("noul", "choice", "score")
+        assert len(s["option_spans"]) == len(s["conts"]) and s["state_span"][1] <= s["T"]
+    assert set(d["rows"][0]) == {"T", "conts", "qtype", "state_span", "field_span", "option_spans"}  # no ids/labels
+
+
+def test_truth_v2_runner_and_params():
+    from jobs.common import costs
+
+    p = json.loads((ROOT / "jobs/fla_rwkv7/job_params_truth_v2.json").read_text(encoding="utf-8"))
+    assert costs.worst_case_usd(p) <= 6.0 and costs.worst_case_usd(p) <= p["hard_cap_usd"]
+    assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"]
+    for ph, exp in p["expected_minutes"].items():  # every cap >= 1.3x its projection
+        assert p["phase_caps_minutes"][ph] >= 1.3 * exp, ph
+    assert p["phase_caps_minutes"]["warmup"] == 13 and p["chip"] == "h100" and p["max_restarts"] == 0
+    assert p["assumed_restart_floor"] >= 1
+    spec = (ROOT / "jobs/fla_rwkv7/JOB_SPEC.md").read_text(encoding="utf-8")
+    assert f"${costs.worst_case_usd(p):.2f}" in spec
+    s = (ROOT / "jobs/fla_rwkv7/fla_job.sh").read_text(encoding="utf-8")
+    v2 = s[s.rindex('if [ "$MODE" = truth_v2 ]'):]  # the phase block (the first one sets marker / validator)
+    order = ["fla_equivalence model", "fla_equivalence throughput", "fla_equivalence truth_v2",
+             "fla_equivalence train_v2", "fla_equivalence decide_v2"]
+    assert all(o in s for o in order)
+    assert s.index("fla_equivalence warmup") < s.index("fla_equivalence model") < s.rindex('if [ "$MODE" = truth_v2 ]')
+    assert v2.index("fla_equivalence truth_v2") < v2.index("fla_equivalence train_v2") < v2.index("fla_equivalence decide_v2")
+    assert "fla_equivalence fp32" not in v2  # the optional fp32 tail never runs in truth_v2 mode
+    assert "job_params_truth_v2.json" in s and "valid_decision_v2" in s and "decision_v2.json" in s
+    assert "FLA_RWKV7_TRUTH_V2_DONE" in s and "export TRITON_CACHE_DIR=$WORK/triton-cache" in s
+    assert "for IMPL in chunked fla fla_safe_gate" in v2 and "--impl $IMPL" in v2 and "--deadline-s" in v2
+    bc = (ROOT / "jobs/fla_rwkv7/build_context.sh").read_text(encoding="utf-8")
+    for f in ("jobs/fla_rwkv7/job_params_truth_v2.json", "jobs/fla_rwkv7/train_mix_v2.json",
+              "jobs/fla_rwkv7/train_mix.py"):
+        assert f in bc, f

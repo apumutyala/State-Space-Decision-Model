@@ -232,3 +232,130 @@ ground truth on real activations (state magnitudes up to 76 at L60). v2 measures
   and prefill < 2 at some length): those are `NOT_ADOPTED`, reported and not adopted.
 - **Variants.** Each of fla and fla_safe_gate gets its own verdict under the same rule; the top-level `verdict` is plain
   fla's. `decision_v2.json` carries both; `valid_decision_v2` is the finalize validator.
+
+## Mode `truth_v2` (`fla_job.sh truth_v2`, `job_params_truth_v2.json`). Spec only, NOT submitted
+
+Same image, `build_context.sh` and setup as the v1 gate. The setup, warmup (13-min cap, reused unchanged:
+~70 s per specialisation, job-jucxx; 341 s in job-jn47u), kernel, fork, snapshot and model phases, the background
+snapshot download and the shared `TRITON_CACHE_DIR` all run exactly as in v1. No fp32 tail. Then:
+
+| Phase | Cap | Expected | Content |
+|---|---|---|---|
+| setup / warmup / kernel / fork / download_wait / model / throughput | 3 / 13 / 2 / 2 / 2 / 3 / 3 | 2.3 / 5.7 / 0.5 / 0.5 / 1 / 1 / 1.5 | unchanged v1 phases; expected = job-jn47u's measured phase times (20:13–20:23 UTC) |
+| truth_v2 | 3 | 1.5 | load, capture L0/15/30/45/60 (one 2,048-token pass, jn47u construction), then per layer: fp64 truth fwd T=1024, fp64 truth + autograd T=512, and eager_bf16 / chunked / fla / fla_safe_gate on the same inputs → `truth_v2.json` |
+| train_chunked / train_fla / train_fla_safe_gate | 6 / 6 / 5 | 4 / 3 / 3 | one process each: load the backbone (`load_rwkv7_hf_backbone`, cache fork), select the WKV, build `DecisionModel` + `Trainer` with `train.run_cell.train_config(cell)`, 3 + 20 optimiser steps on the mix rows → `train_v2_<impl>.json`. In-process deadline = cap − 45 s: no step starts if fewer than 1.5 × the slowest step's seconds remain (recorded `skipped`) |
+| decide_v2 | – | – | `decision_v2.json` (`valid_decision_v2`) |
+| reserve | 1 | | |
+
+Caps sum to 49 = `max_duration_minutes`; every cap is ≥ 1.3× its expected time (pinned by
+`test_truth_v2_runner_and_params`).
+
+**The m2 cell, as read.** `jobs/m2_first_cell/m2_first_cell_rwkv7.json` exists only on `claude/m2-first-cell`
+(`3e97182` + uncommitted edits in that worktree, read-only here): `rwkv7_wkv: "chunked"`, head `fork`, LoRA r=64,
+`loss_arm: clef`, batch 1 × grad_accum 8, `t_ladder` 512/1024/2048, `max_k` 16, seed 0, and `train_config` sets
+`grad_checkpointing=False`, `fork_mode="cache"`, `bf16` on CUDA. `train/trainer.py`, `heads/*` and `train/losses.py`
+are identical on `agent-main` and that branch, so the job's code runs the cell's step. (`warmup_steps` only shapes the
+learning rate, which does not change a step's cost; agent-main's `train_config` predates it.)
+
+**The row mix (`train_mix_v2.json`, `train_mix.py`).** The training rows are private and do not ship. The table holds
+per row only integers and the question type: prefix length, continuation lengths, spans and qtype. It was built once,
+locally and CPU-only, by the cell's own code path (`train.train_set.draw` → `cell_items` at cap 2,048 →
+`Trainer._order(0)` = `randperm(n, seed·100003)`). It keeps the first (3 + 20) × 8 = 184 rows, which are the rows of
+the cell's first 23 optimiser steps (assuming the ladder keeps T_max = 2,048). The job rebuilds rows of exactly those
+shapes with token ids from a fixed generator; an RWKV-7 step's cost does not depend on the ids. The table's sha256 is
+checked on load and recorded in every `train_v2_<impl>.json`.
+Built 2026-10-06 (local CPU, ~25 min serial tokenisation) from cell config sha256 `01d59a97…ecc6` against the pinned
+150k set: 21,348 kept rows (mean T 605, max 2,048, mean K 3.46). The 184 pinned rows: mean T 677, max 2,025, mean K
+3.61, max K 10, 124,586 prefix tokens (5,417 per step, 3,489–8,535), 34 rows > 1,024 and 11 > 1,536 tokens; 7 of the
+20 timed steps hold a row ≥ 1,883 tokens. Table sha256 `5e88fee3…433a`.
+
+## Bottleneck check (`jobs/PERF_AUDIT.md` convention)
+
+Where the time goes in mode truth_v2 (projections; measured phases from job-jn47u):
+
+| Piece | Work | Estimate | Memory |
+|---|---|---|---|
+| fp64 truth fwd, T=1024, per layer | 1,024 serial steps × ~12 launches; per step 64 heads × (64×64 @ 64×64) ≈ 34 MFLOP fp64, negligible on H100 → launch-bound | ~12k launches × ~15 µs ≈ **0.2 s** | out + state, < 0.1 GB |
+| fp64 truth + autograd, T=512, per layer | forward as above with the graph kept, backward ≈ 2× the launches | ≈ **0.5 s** | saved per step: previous state, `anti_value_key`, post-update state (each 1×64×64×64 fp64 = 2.1 MB) ≈ 6.3 MB × 512 ≈ **3.2 GB**, < 5 GB with transients |
+| 5 layers of truth | | **≈ 3.5 s** | peak < 5 GB of 80 (model freed first) |
+| eager_bf16 / chunked / fla × 10 cases | jn47u: 3 layers' captured cases (same impls incl. the token-serial bf16 eager) took 3.6 s | ≈ 6 s | as jn47u |
+| model load + 2,048-token capture pass | jn47u model phase ~31 s | ≈ 40 s | 27 GB |
+
+So the fp64 token-serial truth is NOT the bottleneck: ~4 s of a 3-min cap, launch-bound, ~3 GB.
+`truth_v2.json` records `truth_s` and `truth_peak_gb` per case to confirm it.
+
+The job's real time sinks are the unchanged fla warmup (5.7 min measured) and the three training-speed processes:
+
+| Process | Per step (8 rows) | 23 steps + load | Basis |
+|---|---|---|---|
+| train_chunked | prefix 5,417 tok × 3 (fwd+bwd) / 3,760 tok/s ≈ 4.3 s + 8 fork calls (B=K, ≤ 16 tokens; ~0.12 s fwd → ~0.35 s fwd+bwd, launch-bound) ≈ 2.8 s → **≈ 7 s** | ≈ 2.7 + 1 ≈ **4 min** (cap 6) | jn47u/tkfaj prefill rates; PERF_AUDIT single-call fork |
+| train_fla | 5,417 / 4,561 tok/s (jn47u fwd+bwd T=2048) ≈ 1.2 s + fork calls ≈ 2.8 s → **≈ 4 s** | ≈ 1.5 + 1 (+ compile headroom) ≈ **3 min** (cap 6) | jn47u train fla |
+| train_fla_safe_gate | as fla; its kernels share fla's compile (jn47u warmup: 2.6 s vs 72.7 s) | ≈ **3 min** (cap 5) | jn47u warmup |
+
+Pre-mortem from these numbers (not part of the rule): on rows that fit, the per-row fork call is launch-bound and fla
+does not speed it, so the projected chunked/fla step ratio is only **~1.8×** — below 2. What can move it is memory:
+chunked OOMed on the T=2,048 fwd+bwd in jn47u (80 GB) and 7 of the 20 timed steps hold a row ≥ 1,883 tokens; each
+chunked OOM step counts 0 tok/s, and with ≥ 10 OOM steps the chunked median is 0 (ratio +inf). Independent of the
+verdict, that OOM would also mean the m2 cell's own ladder could not keep T_max = 2,048 on chunked.
+No compile is expected in the train phases: jn47u showed T is not a specialisation (warmup T=1000 recompiled nothing)
+and safe_gate reuses fla's kernels; the 3 untimed warmup steps absorb any that does occur.
+
+## Cost (`python -m jobs.common.costs` convention)
+
+`job_params_truth_v2.json`: H100 batch $0.0495/min, build 18 min billed, `max_restarts` 0 with an assumed restart floor
+of 1 (2 attempts).
+
+| Item | Minutes | $ |
+|---|---|---|
+| **Worst case** = (build 18 + 2 × 49) | 116 | **$5.74** (≤ hard cap $6.00) |
+| One attempt at the cap (what `validate_job` reports) | 49 | $2.43 |
+| Expected run (sum of `expected_minutes`, build excluded as in v1) | 24.0 | $1.19 |
+| Expected incl. a ~5 min cached build | ~29 | ~$1.44 |
+
+| Phase | Cap | Expected | Cap / expected |
+|---|---|---|---|
+| setup | 3 | 2.3 (jn47u 2:17) | 1.30 |
+| warmup | 13 | 5.7 (jn47u 341 s) | 2.28 |
+| kernel | 2 | 0.5 (jn47u 12 s) | 4.0 |
+| fork | 2 | 0.5 (jn47u 17 s) | 4.0 |
+| download_wait | 2 | 1 (jn47u ~24 s sha256) | 2.0 |
+| model | 3 | 1 (jn47u ~31 s) | 3.0 |
+| throughput | 3 | 1.5 (jn47u 81 s) | 2.0 |
+| truth_v2 | 3 | 1.5 (projection, below) | 2.0 |
+| train_chunked | 6 | 4 (projection, below) | 1.5 |
+| train_fla | 6 | 3 (projection, below) | 2.0 |
+| train_fla_safe_gate | 5 | 3 (projection, below) | 1.67 |
+| reserve | 1 | | |
+
+Before submitting: `set_workspace_cap(MTD + 6)`; `validate_job` must pass the cost-cap preflight without `force`.
+
+## Exit codes (mode truth_v2)
+
+| Code | Meaning |
+|---|---|
+| 0 | `decision_v2.json` reached; any v2 verdict counts (ADOPT_FOR_TRAINING … NOT_ADOPTED, INCONCLUSIVE) |
+| 5 | setup (pins, fla install, #640 guard, job_params), or an unknown mode |
+| 6 | export failed |
+| 7 | phase timeout (setup … throughput, truth_v2) |
+| 9 | decision_v2 missing or invalid |
+| 10 | snapshot or vendored-code mismatch, or the download failed |
+| 30–34 | warmup / kernel / fork / model / throughput crashed (as v1) |
+| 35 | truth_v2 crashed |
+| – | a train_v2 crash or timeout is **not** an exit code: its rc is in the gates, its measurement is missing or partial, and decide_v2 says INCONCLUSIVE (or uses the timed steps the current impl reached, per the rule) |
+| 1 | finalize failed |
+
+Marker `/output/FLA_RWKV7_TRUTH_V2_DONE` (finalize.py, only on exit 0).
+
+## Platform call (truth_v2; coordinator, after merge; not done here)
+
+```
+jobs/fla_rwkv7/build_context.sh <sha> <dir>  -> create_context(<dir>.tar.zst) -> context_id
+submit_job(chip="h100", chip_count=1, mission="m2-fla-rwkv7-kernel", context_id=<id>, dockerfile_path="Dockerfile",
+  build_timeout_minutes=18, command="bash /opt/ssdm/m1/jobs/fla_rwkv7/fla_job.sh truth_v2", max_duration_minutes=49,
+  max_restarts=0, resume="none", queue_ttl_minutes=1440, hf_cache=true,
+  model="RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+  checks={"success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/FLA_RWKV7_TRUTH_V2_DONE"},
+                                           {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+          "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"},
+                     "interval_s": 300, "grace_period_s": 600, "fail_threshold": 2, "on_fail": "kill"}})
+```

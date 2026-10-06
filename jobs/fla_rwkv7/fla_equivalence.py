@@ -8,6 +8,11 @@
     python -m jobs.fla_rwkv7.fla_equivalence throughput --out DIR --model-dir SNAP   # prefill 2k/8k/16k, train fwd+bwd 2k
     python -m jobs.fla_rwkv7.fla_equivalence fp32       --out DIR             # optional, last: kernel + fork at fp32
     python -m jobs.fla_rwkv7.fla_equivalence decide     --out DIR             # pre-registered rule -> DIR/decision.json
+  mode truth_v2 (RULE v2; the kernel / fork / model / throughput phases above run unchanged first):
+    python -m jobs.fla_rwkv7.fla_equivalence truth_v2   --out DIR --model-dir SNAP   # L0/15/30/45/60 vs fp64 truth
+    python -m jobs.fla_rwkv7.fla_equivalence train_v2   --out DIR --model-dir SNAP --impl IMPL --deadline-s S
+                                                                               # the m2 cell's step, 3 + 20 steps
+    python -m jobs.fla_rwkv7.fla_equivalence decide_v2  --out DIR             # RULE v2 -> DIR/decision_v2.json
 
 Compile cost (job-4idg4): every new Triton specialisation of fla's DPLR kernels (activation dtype, safe_gate,
 initial state on/off, varlen, backward) is JIT-compiled and autotuned on its first call. In job-4idg4 the bf16 kernel
@@ -852,6 +857,199 @@ def phase_model(out: Path, model_dir: str):
         _cmp_case(cap, f"real_L{layer}_grad_T512", "bfloat16", _slice(x, 0, 512), grad=True)
 
 
+# ----------------------------------------------------------------------------- RULE v2 phases (mode truth_v2)
+def truth_grad(x: dict, seed: int = 1) -> dict:
+    """fp64 token-serial run WITH gradients: autograd through ``rwkv7_recurrent`` at fp64 on the same (bf16-rounded)
+    inputs, with the same cotangents as ``run_impl`` (same generator, same draws, cast to fp64)."""
+    torch = _torch()
+    from third_party.rwkv7_hf import modeling_rwkv7 as M
+
+    leaves = {n: x[n].detach().double().requires_grad_(True) for n in ARGS}
+    o, s = M.rwkv7_recurrent(*(leaves[n] for n in ARGS), compute_dtype=torch.float64)
+    g = torch.Generator(device="cpu").manual_seed(seed)
+    do = torch.randn(o.shape, generator=g).to(o.device)
+    ds = torch.randn(s.shape, generator=g).to(s.device)
+    ((o * do.double()).sum() + (s * ds.double()).sum()).backward()
+    res = {"out": o.detach(), "state": s.detach()}
+    for n in ARGS:
+        res[f"grad_{n}"] = _grad(leaves[n])
+    return res
+
+
+def capture_wkv_inputs(m, ids, layers, tail: int) -> dict:
+    """job-jn47u's construction: ids[:, :-tail] builds the carried state, the WKV inputs of ``layers`` are captured
+    during ids[:, -tail:] (chunked path, non-zero carried state)."""
+    torch = _torch()
+    from heads import rwkv7_wkv as W
+    from third_party.rwkv7_hf import modeling_rwkv7 as M
+
+    caught, calls = {}, [0]
+
+    def capture(r, w_log, k, v, kk, a, state, cu_seq_lens=None, **kw):
+        layer = calls[0] % m.config.num_hidden_layers
+        calls[0] += 1
+        if layer in layers:
+            caught[layer] = {n: t.detach().clone() for n, t in zip(ARGS, (r, w_log, k, v, kk, a, state))}
+        return M.rwkv7_parallel(r, w_log, k, v, kk, a, state, cu_seq_lens=cu_seq_lens)
+
+    _use(m, "chunked")
+    with torch.no_grad():
+        st = m(input_ids=ids[:, :-tail], use_cache=True, logits_to_keep=1).state
+    M.RWKV7_WKV_FUNCTIONS["ssdm_capture_v2"] = capture
+    for cfg in W._configs(m):
+        cfg.wkv_implementation = W.WkvName("ssdm_capture_v2")
+    try:
+        with torch.no_grad():
+            m(input_ids=ids[:, -tail:], state=st, use_cache=True, logits_to_keep=1)
+    finally:
+        M.RWKV7_WKV_FUNCTIONS.pop("ssdm_capture_v2", None)
+        _use(m, "chunked")
+    return caught
+
+
+#: the training-row shape table (jobs/fla_rwkv7/train_mix_v2.json); None = that committed file (tests point it elsewhere)
+MIX_PATH = None
+#: truth_v2 implementations: (name in truth_v2.json, run_impl name)
+V2_IMPLS = (("eager_bf16", "eager"), ("chunked", "chunked"), ("fla", "fla"), ("fla_safe_gate", "fla_safe_gate"))
+
+
+def _truth_v2_case(rep: Report, name: str, layer: int, x: dict, grad: bool):
+    torch = _torch()
+    tensors = V2_GRAD_TENSORS if grad else V2_FWD_TENSORS
+    t0 = time.perf_counter()
+    tr = truth_grad(x) if grad else truth(x)
+    case = {"name": name, "layer": layer, "grad": grad, "shape": list(x["r"].shape), "tensors": list(tensors),
+            "truth_s": round(time.perf_counter() - t0, 3),
+            "truth_finite": all(bool(tr[t].isfinite().all().item()) for t in tensors), "impls": {}}
+    if DEVICE == "cuda":
+        case["truth_peak_gb"] = torch.cuda.max_memory_allocated() / 1e9
+    for label, impl in V2_IMPLS:
+        try:
+            got = run_impl(impl, x, grad)
+            case["impls"][label] = {"e": {t: rel_err(got[t], tr[t]) for t in tensors},
+                                    "cos": {t: cosine(got[t], tr[t]) for t in tensors},
+                                    "finite": all(bool(got[t].isfinite().all().item()) for t in tensors)}
+        except Exception as e:  # noqa: BLE001  recorded; decide_v2: fla error -> reject, reference error -> inconclusive
+            case["impls"][label] = {"error": f"{type(e).__name__}: {e}"[:500]}
+        if DEVICE == "cuda":
+            torch.cuda.empty_cache()
+    rep.add(case)
+
+
+def phase_truth_v2(out: Path, model_dir: str):
+    """RULE v2 numerics: capture the real WKV inputs at TRUTH_V2_LAYERS (job-jn47u prompt and construction), then every
+    implementation vs the fp64 token-serial truth on those exact bf16-rounded inputs (fwd T=V2_FWD_T, grads on the
+    first V2_GRAD_T tokens)."""
+    torch = _torch()
+    m = _load(model_dir)
+    ids = _text_ids(model_dir, V2_PROMPT_T)
+    caught = capture_wkv_inputs(m, ids, TRUTH_V2_LAYERS, V2_FWD_T)
+    del m
+    if DEVICE == "cuda":
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+    rep = Report(out / "truth_v2.json", env=_env(), layers=list(TRUTH_V2_LAYERS), prompt_t=V2_PROMPT_T,
+                 fwd_t=V2_FWD_T, grad_t=V2_GRAD_T, captured=sorted(caught), complete=False)
+    for layer, x in sorted(caught.items()):
+        rep.d.setdefault("stats", {})[str(layer)] = {n: float(x[n].float().abs().max()) for n in ARGS}
+        _truth_v2_case(rep, f"real_L{layer}_fwd_T{V2_FWD_T}", layer, x, grad=False)
+        _truth_v2_case(rep, f"real_L{layer}_grad_T{V2_GRAD_T}", layer, _slice(x, 0, V2_GRAD_T), grad=True)
+    rep.d["complete"] = True
+    rep.flush()
+
+
+def _load_backbone(model_dir: str):
+    from heads.backbone import load_rwkv7_hf_backbone
+
+    return load_rwkv7_hf_backbone(model_dir, device=DEVICE, fork_mode="cache", wkv=None)
+
+
+def phase_train_v2(out: Path, model_dir: str, impl: str, deadline_s: float):
+    """RULE v2 training speed: the m2 first cell's own optimiser step (``train.trainer.Trainer.train_step`` with the
+    cell's TrainConfig via ``train.run_cell.train_config``: fork head, cache fork, LoRA, Clef loss, batch x grad_accum,
+    bf16 autocast, no checkpointing) on rows with the shapes of the cell's first steps (``train_mix_v2.json``).
+    V2_TRAIN_WARMUP untimed steps, then V2_TRAIN_STEPS timed ones. An OOM step is recorded (0 tok/s in decide_v2) and
+    the run goes on; a step that cannot start before ``deadline_s`` (from process start) is recorded as skipped."""
+    t_start = time.perf_counter()
+    torch = _torch()
+    import gc
+
+    from heads import rwkv7_wkv as W
+    from heads.model import DecisionModel
+    from jobs.fla_rwkv7 import train_mix
+    from train.guard import SplitGuard
+    from train.run_cell import train_config
+    from train.trainer import Trainer
+
+    mix = train_mix.load(MIX_PATH)
+    cell = mix["cell"]
+    n_steps = V2_TRAIN_WARMUP + V2_TRAIN_STEPS
+    per_step = cell["batch_size"] * cell["grad_accum"]
+    if len(mix["rows"]) < n_steps * per_step:
+        raise SystemExit(f"train_mix_v2.json has {len(mix['rows'])} rows < {n_steps} x {per_step}")
+    rep = Report(out / f"train_v2_{impl}.json", env=_env(), impl=impl, mix_sha256=mix["sha256"], cell=cell,
+                 deadline_s=deadline_s, steps=[], complete=False)
+    W.FALLBACKS.clear()
+    W.CALLS.clear()
+    cuda = DEVICE == "cuda"
+    bb = _load_backbone(model_dir)
+    from heads.rwkv7_wkv import select_wkv
+
+    select_wkv(bb.model, impl, allow_unverified=True)
+    rep.d["load_s"] = round(time.perf_counter() - t_start, 1)
+    rep.d["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
+    items = train_mix.rows_from_shapes(mix["rows"][: n_steps * per_step], vocab=bb.model.config.vocab_size, seed=0)
+    if cuda:
+        torch.cuda.reset_peak_memory_stats()
+    model = DecisionModel(bb, cell["head"], cell.get("head_kwargs") or {}, pad_id=0, seed=cell["seed"])
+    model.to(bb.device)
+    tcfg = train_config({**cell, "ckpt_every": 0, "eval_every": 0}, n_steps, None, cuda)
+    tr = Trainer(model, tcfg, items, [], guard=SplitGuard.synthetic_only("fla_rwkv7 truth_v2 train speed: "
+                                                                         "synthetic ids at the m2 cell's row shapes"))
+    tr._order = lambda epoch: list(range(len(items)))  # the mix is already in the cell's epoch-0 order
+    rep.d["setup_s"] = round(time.perf_counter() - t_start, 1)
+    rep.flush()
+    done = []
+    for i in range(n_steps):
+        rows = items[i * per_step:(i + 1) * per_step]
+        rec = {"i": i, "timed": i >= V2_TRAIN_WARMUP, "tokens": sum(len(x.row.ids) for x in rows),
+               "cont_tokens": sum(sum(map(len, x.row.continuations)) for x in rows),
+               "max_T": max(len(x.row.ids) for x in rows), "K": [x.row.n_options for x in rows]}
+        left = deadline_s - (time.perf_counter() - t_start)
+        if left <= 0 or (done and left < 1.5 * max(done)):
+            rec["skipped"] = "deadline"
+            rep.d["steps"].append(rec)
+            rep.flush()
+            continue
+        tr.epoch, tr.cursor = 0, i * per_step
+        if cuda:
+            torch.cuda.synchronize()
+        t = time.perf_counter()
+        try:
+            loss = tr.train_step()
+            if cuda:
+                torch.cuda.synchronize()
+            dt = time.perf_counter() - t
+            done.append(dt)
+            rec.update(s=dt, tok_s=rec["tokens"] / dt, loss=loss, finite=math.isfinite(loss))
+        except torch.OutOfMemoryError as e:
+            rec.update(oom=True, s=time.perf_counter() - t, error=str(e)[:200])
+        if "oom" in rec:
+            tr.opt.zero_grad(set_to_none=True)
+            gc.collect()
+            if cuda:
+                torch.cuda.empty_cache()
+        rep.d["steps"].append(rec)
+        rep.d["peak_gb"] = torch.cuda.max_memory_allocated() / 1e9 if cuda else 0.0
+        rep.d["fallbacks"], rep.d["fla_calls"] = dict(W.FALLBACKS), dict(W.CALLS)
+        rep.flush()
+    timed = [s for s in rep.d["steps"] if s["timed"] and "tok_s" in s]
+    rep.d["median_tok_s_completed"] = statistics.median([s["tok_s"] for s in timed]) if timed else None
+    rep.d["wall_s"] = round(time.perf_counter() - t_start, 1)
+    rep.d["complete"] = True
+    rep.flush()
+
+
 def _timed(fn, reps: int = REPS) -> list[float]:
     torch = _torch()
     ts = []
@@ -953,11 +1151,35 @@ def _read(out: Path, name: str):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("phase", choices=("warmup", "kernel", "fork", "model", "throughput", "fp32", "decide"))
+    ap.add_argument("phase", choices=("warmup", "kernel", "fork", "model", "throughput", "fp32", "decide",
+                                      "truth_v2", "train_v2", "decide_v2"))
     ap.add_argument("--out", required=True)
     ap.add_argument("--model-dir")
+    ap.add_argument("--impl", choices=(V2_CURRENT,) + VARIANTS, help="train_v2: the WKV implementation timed")
+    ap.add_argument("--deadline-s", type=float, default=math.inf, help="train_v2: no step starts after this")
     a = ap.parse_args(argv)
     out = Path(a.out)
+    if a.phase == "decide_v2":
+        rep = {k: _read(out, k) for k in ("kernel", "fork", "model", "throughput", "truth_v2")}
+        for k in ("model", "throughput"):
+            if rep[k] and not _fla_really_ran(rep[k]):
+                rep[k] = None  # -> INCONCLUSIVE
+        rep["train_v2"] = {i: _read(out, f"train_v2_{i}") for i in (V2_CURRENT,) + VARIANTS}
+        d = decide_v2(rep)
+        (out / "decision_v2.json").write_text(json.dumps(d, indent=1), encoding="utf-8")
+        print(json.dumps({"rule": "v2", "verdict": d["verdict"],
+                          "variants": {v: d["variants"][v]["verdict"] for v in VARIANTS}}))
+        return 0 if valid_decision_v2(d) else 9
+    if a.phase in ("truth_v2", "train_v2"):
+        if not a.model_dir:
+            ap.error("--model-dir is required")
+        if a.phase == "truth_v2":
+            phase_truth_v2(out, a.model_dir)
+        else:
+            if not a.impl:
+                ap.error("--impl is required")
+            phase_train_v2(out, a.model_dir, a.impl, a.deadline_s)
+        return 0
     if a.phase == "decide":
         rep = {k: _read(out, k) for k in ("kernel", "fork", "captured", "model", "throughput", "fp32")}
         for k in ("model", "throughput"):
