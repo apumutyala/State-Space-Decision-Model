@@ -84,6 +84,84 @@ def _initial_task(example: dict[str, Any]) -> str:
     return task
 
 
+def _slot_diagnostics(example: dict[str, Any], result: PlannerResult | None) -> dict[str, Any]:
+    """Score completed traces only; never construct requests or planner state.
+
+    Slot accuracy is literal selection accuracy, separate from task meaning
+    (a reversed comparison can be task-correct with wrong orientation slots).
+    Shuffled training IDs are resolved by their generated option descriptions,
+    since the free-running planner supplies its own canonical candidate IDs.
+    Final totals count each expected slot once, including unreached slots; all
+    earlier attempts are retained but cannot supply a missing final choice.
+    """
+    training = example.get("training_only", {}) if isinstance(example, dict) else {}
+    targets = training.get("targets") if isinstance(training, dict) else None
+    if (not isinstance(targets, list)
+            or any(not isinstance(target, dict) or not isinstance(target.get("slot"), str)
+                   or not isinstance(target.get("option_id"), str) for target in targets)):
+        return {"status": "unavailable", "total": 0, "correct": 0,
+                "missing_choice": 0, "attempt_total": 0, "slots": []}
+
+    attempts: list[dict[str, dict[str, Any]]] = [{}]
+    next_attempt = 1
+    for step in result.trace if result is not None else []:
+        if "slot" in step:
+            while len(attempts) < next_attempt:
+                attempts.append({})
+            attempts[next_attempt - 1][step["slot"]] = step
+        elif "attempt" in step:
+            next_attempt = step["attempt"] + 1
+    # A retry can fail before its first provider call, leaving no slot trace.
+    if (result is not None and result.trace
+            and result.trace[-1].get("kernel_status") not in (None, "accepted")
+            and result.status != "kernel_rejected"):
+        attempts.append({})
+
+    generated_options = {}
+    if training.get("choice_format") == "augmented":
+        for request in example.get("model_inputs", []):
+            if not isinstance(request, dict) or not isinstance(request.get("questions"), dict):
+                continue
+            for qid, question in request.get("questions", {}).items():
+                if (isinstance(qid, str) and isinstance(question, dict)
+                        and isinstance(question.get("criteria"), dict)):
+                    generated_options[qid.rsplit("-", 1)[-1]] = question["criteria"]
+    slots = []
+    for target in targets:
+        slot, target_id = target["slot"], target["option_id"]
+        target_description = generated_options.get(slot, {}).get(target_id)
+        history = []
+        for attempt_number, choices in enumerate(attempts, 1):
+            step = choices.get(slot, {})
+            selected = step.get("selected_id")
+            expected_id = target_id
+            if training.get("choice_format") == "augmented":
+                matches = [oid for oid, description in step.get("options", {}).items()
+                           if description == target_description]
+                expected_id = matches[0] if len(matches) == 1 else None
+            history.append({
+                "attempt": attempt_number, "repair": attempt_number > 1,
+                "selected_id": selected, "expected_id": expected_id,
+                "correct": selected is not None and selected == expected_id,
+                "status": step.get("status", "not_reached"),
+                "missing_choice": selected is None, "denominator": 1,
+            })
+        final = history[-1]
+        slots.append({
+            "slot": slot, "target_id": target_id,
+            "comparison_basis": ("option_description" if training.get("choice_format") == "augmented"
+                                 else "option_id"),
+            "selected_ids": [row["selected_id"] for row in history],
+            "attempts": history, "final_attempt": final["attempt"],
+            **{key: final[key] for key in
+               ("selected_id", "expected_id", "correct", "status", "missing_choice", "denominator")},
+        })
+    return {"status": "scored", "total": len(slots),
+            "correct": sum(row["correct"] for row in slots),
+            "missing_choice": sum(row["missing_choice"] for row in slots),
+            "attempt_total": len(slots) * len(attempts), "slots": slots}
+
+
 def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
                           model: str, parent_revision: str,
                           expected_served_config: dict[str, Any],
@@ -107,9 +185,11 @@ def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
                     or values[0] != 1 or values[1] < 4 or values[2] < 8):
                 raise ValueError("one_repair requires attempts=1, repair calls>=4, proposal calls>=8")
     observations = []
+    results = []
     for example in examples:
         task_id = example.get("task_id") if isinstance(example, dict) else None
         effective_budget = None
+        result = None
         try:
             task_input = _initial_task(example)
             training = example["training_only"]
@@ -143,11 +223,31 @@ def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
                 "repair_requests": None, "forward_calls": None,
                 "effective_budget": effective_budget,
             })
+        finally:
+            results.append(result)
+    # All provider calls in this batch have finished before targets are read.
+    slot_totals: dict[str, dict[str, int]] = {}
+    unavailable = 0
+    for example, result, observation in zip(examples, results, observations):
+        diagnostics = _slot_diagnostics(example, result)
+        observation["slot_diagnostics"] = diagnostics
+        unavailable += diagnostics["status"] == "unavailable"
+        for row in diagnostics["slots"]:
+            totals = slot_totals.setdefault(row["slot"], {"total": 0, "correct": 0, "missing_choice": 0})
+            totals["total"] += row["denominator"]
+            totals["correct"] += row["correct"]
+            totals["missing_choice"] += row["missing_choice"]
     return {
         "condition": "one_repair" if allow_repair else "one_shot",
         "source": "synthetic_development_nonlearned_unless_provider_proven_otherwise",
         "total": len(observations),
         "kernel_accepted": sum(row["kernel_accepted"] for row in observations),
         "task_correct": sum(row["task_correct"] for row in observations),
+        "slot_diagnostics": {
+            "total": sum(row["total"] for row in slot_totals.values()),
+            "correct": sum(row["correct"] for row in slot_totals.values()),
+            "missing_choice": sum(row["missing_choice"] for row in slot_totals.values()),
+            "unavailable_tasks": unavailable, "by_slot": slot_totals,
+        },
         "observations": observations,
     }
