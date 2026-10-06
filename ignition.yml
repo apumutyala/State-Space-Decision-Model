@@ -1,0 +1,25 @@
+ignition_version: 1
+report_id: rep_e2aafcdb-bf58-4456-b280-e01a2839aa1a
+target:
+  model: local/development_tiny_diagonal_ssm
+  revision: 115c4535ce9db716d3dde70ad000d206fdd2a4b0
+  chip_sku: AMD Ryzen AI 9 HX 375 w/ Radeon 890M
+  quantization: fp32
+status: in_progress
+reason: >-
+  Local synthetic CPU experiment; model and CPU use literal identities, not
+  catalog bindings. No accelerator, spend, push, or enablement-grid registration.
+  Default-branch SPEC.md fetched 2026-10-06 describes v1 as a proposal and says
+  its reference validator does not yet exist; this differs from the skill text.
+variants:
+  - name: paraphrase-curriculum
+    engine: pytorch-cpu
+    config:
+      width: 64
+      training_steps: 400
+      batch: 32
+      seeds: [17, 29, 43]
+    conditions: >-
+      Same frozen 300-task synthetic transfer for every arm. Matched old-cohort
+      initializations, two CPU threads, 300-second whole-run ceiling, 3 GiB
+      available-RAM floor. Evidence under receipts/2026-10-06-l-ssm-curriculum/.
