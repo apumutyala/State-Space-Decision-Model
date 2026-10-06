@@ -1,0 +1,18 @@
+{
+  "ask_missing": {
+    "[[\"price\",\"warranty_months\"],[]]": 9,
+    "[[\"price\"],[\"price\"]]": 7,
+    "[[\"price\"],[\"warranty_months\"]]": 3,
+    "[[\"warranty_months\"],[\"price\"]]": 7,
+    "[[\"warranty_months\"],[\"warranty_months\"]]": 7,
+    "[[],[\"price\",\"warranty_months\"]]": 7
+  },
+  "read_with_unrelated_obligation": {
+    "[[\"price\",\"warranty_months\"],[]]": 4,
+    "[[\"price\"],[\"price\"]]": 6,
+    "[[\"price\"],[\"warranty_months\"]]": 9,
+    "[[\"warranty_months\"],[\"price\"]]": 7,
+    "[[\"warranty_months\"],[\"warranty_months\"]]": 2,
+    "[[],[\"price\",\"warranty_months\"]]": 12
+  }
+}

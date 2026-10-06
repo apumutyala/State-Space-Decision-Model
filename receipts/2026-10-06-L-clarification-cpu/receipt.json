@@ -1,0 +1,51 @@
+{
+  "title": "Track L synthetic clarification development and Ask relevance",
+  "implementation_commit": "832863f92251d79f315d9783f136efbd43f468af",
+  "base_commit": "6e39d9bb540270ac999cff4929e41002568f85ca",
+  "environment": {
+    "platform": "Windows CPU",
+    "python": "3.12.13",
+    "model_or_tokenizer_downloads": false,
+    "gpu_used": false,
+    "paid_calls": 0,
+    "index_or_heldout_data_used": false
+  },
+  "commands": [
+    {
+      "command": "PYTHONUTF8=1 python -I -m unittest discover -s language_growth/tests -t . -v",
+      "exit_code": 0,
+      "result": "79 tests passed",
+      "output": "check-tests.txt"
+    },
+    {
+      "command": "PYTHONUTF8=1 python receipts/2026-10-06-L-clarification-cpu/reproduce.py receipts/2026-10-06-L-clarification-cpu/raw",
+      "exit_code": 0,
+      "result": "50/50 scripted planner choices kernel-accepted and task-correct; 2/2 negative controls kernel-accepted and task-wrong",
+      "output": "check-reproduce.txt"
+    }
+  ],
+  "design": {
+    "choice_format": "mixed",
+    "development_train": {"seed": 17, "tasks": 25},
+    "development_validation": {"seed": 19, "tasks": 25},
+    "negative_controls": {"seed": 31, "cases": ["wrong_question_ask", "ask_on_answerable_task"]},
+    "positive_kind_counts_per_split": {"ask_missing": 5, "compare": 5, "explain": 5, "read": 5, "read_with_unrelated_obligation": 5},
+    "provider_calls": {"2": 30, "3": 12, "4": 10}
+  },
+  "scope": "Deterministic, scripted, nonlearned development coverage. This checks planner/kernel/scorer behavior and does not establish a learned Ask policy or heldout generalization. One deterministic run; no performance estimate.",
+  "sha256": {
+    "language_growth/development_data.py": "43c54fbf1579f7ccd82b633ef9f05b8938d0c3ef76ed56e848cfa56bd18759fd",
+    "language_growth/free_running_dev.py": "1f92ffbb3456fb6186df350f89134c80e7e8df899de0ce79871e9cce9dee8fef",
+    "language_growth/planner.py": "a4061d28f2a87fbf726eedf9c04affe83373ac0f75cb39c37d829872d3a701f3",
+    "language_growth/kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+    "language_growth/parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "language_growth/types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1",
+    "language_growth/tests/test_clarification.py": "d386a72818193be973424caf3db1c6e16f7fc32a3028b42069087861e073f599",
+    "plans/codex/L0_CLARIFICATION_PHASE.md": "e3ab51685ee1f2c611fcfd6978b9fdedff144d43b140bcf06267ebd39f605f0d",
+    "reproduce.py": "e61be4c5d204f904a0775c1b67b4307714dc880f3dd37b4315be11f89e3265b4",
+    "check-reproduce.txt": "40c8d1e8bb95c9a73485c75551b6ac759072079649f176c558f4535e7017fa25",
+    "check-tests.txt": "fcb5c41265d53af4a69f70799e3bbb6158a80a8796d09c8c3fb67ff1de8590fd",
+    "raw/outcomes.jsonl": "464bf3864f6a78b8fb939778b65825d5192aa17747eb4617d0fb2e1890a05919",
+    "raw/summary.json": "517949eddbb17467cc66efbb13d1f19cbc5c589b82631fd7bf69bd4514204b2f"
+  }
+}

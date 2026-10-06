@@ -1,0 +1,150 @@
+{
+  "ask_on_answerable_task_wrong": true,
+  "manifests": {
+    "development_train": {
+      "allow_one_repair": false,
+      "choice_formats": {
+        "augmented": 12,
+        "production": 13
+      },
+      "clarification_mode": true,
+      "comparison_fields": {
+        "price": 3,
+        "warranty_months": 2
+      },
+      "comparison_left_records": {
+        "development-record-1": 4,
+        "development-record-2": 1
+      },
+      "comparison_relations": {
+        "equal": 1,
+        "greater_than": 1,
+        "less_than": 3
+      },
+      "count": 25,
+      "kind_counts": {
+        "ask_missing": 5,
+        "compare": 5,
+        "explain": 5,
+        "read": 5,
+        "read_with_unrelated_obligation": 5
+      },
+      "name_pool": [
+        "Aster",
+        "Bracken",
+        "Cinder",
+        "Dovetail",
+        "Ember",
+        "Fallow"
+      ],
+      "price_cents_range": [
+        5000,
+        20000
+      ],
+      "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+      "sample_sha256": "c5a7867e11e4818a42dcf9ead0286ef1c8545aec3b03088becb4845d6a6e9059",
+      "schema": "ssdm.synthetic_development_manifest.v2",
+      "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+      "seed": 17,
+      "split": "development_train",
+      "template_ids": {
+        "ask_missing": [
+          "development_train:ask_missing:0",
+          "development_train:ask_missing:1"
+        ],
+        "compare": [
+          "development_train:compare:0",
+          "development_train:compare:1"
+        ],
+        "explain": [
+          "development_train:explain:0",
+          "development_train:explain:1"
+        ],
+        "read": [
+          "development_train:read:0",
+          "development_train:read:1"
+        ],
+        "read_with_unrelated_obligation": [
+          "development_train:read_with_unrelated_obligation:0",
+          "development_train:read_with_unrelated_obligation:1"
+        ]
+      },
+      "warranty_range": [
+        1,
+        36
+      ]
+    },
+    "development_validation": {
+      "allow_one_repair": false,
+      "choice_formats": {
+        "augmented": 12,
+        "production": 13
+      },
+      "clarification_mode": true,
+      "comparison_fields": {
+        "price": 2,
+        "warranty_months": 3
+      },
+      "comparison_left_records": {
+        "development-record-1": 2,
+        "development-record-2": 3
+      },
+      "comparison_relations": {
+        "equal": 0,
+        "greater_than": 1,
+        "less_than": 4
+      },
+      "count": 25,
+      "kind_counts": {
+        "ask_missing": 5,
+        "compare": 5,
+        "explain": 5,
+        "read": 5,
+        "read_with_unrelated_obligation": 5
+      },
+      "name_pool": [
+        "Grove",
+        "Hearth",
+        "Indigo",
+        "Juniper",
+        "Kestrel",
+        "Lumen"
+      ],
+      "price_cents_range": [
+        20001,
+        30000
+      ],
+      "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+      "sample_sha256": "0d0b5926f05d1203b318035c4c29a9f6e60ca6435bc6a6ef5361ba5d4103bbfe",
+      "schema": "ssdm.synthetic_development_manifest.v2",
+      "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+      "seed": 19,
+      "split": "development_validation",
+      "template_ids": {
+        "ask_missing": [
+          "development_validation:ask_missing:0"
+        ],
+        "compare": [
+          "development_validation:compare:0"
+        ],
+        "explain": [
+          "development_validation:explain:0"
+        ],
+        "read": [
+          "development_validation:read:0"
+        ],
+        "read_with_unrelated_obligation": [
+          "development_validation:read_with_unrelated_obligation:0"
+        ]
+      },
+      "warranty_range": [
+        37,
+        60
+      ]
+    }
+  },
+  "scope": "scripted nonlearned CPU development only",
+  "scripted_correct": 50,
+  "total": 52,
+  "wrong_question_ask_task_wrong": true
+}

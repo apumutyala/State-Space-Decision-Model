@@ -1,0 +1,55 @@
+{
+  "title": "Clarification catalog-layout shortcut repair",
+  "implementation_commit": "4aacf8a9269d40752739c87d0f2f5b3ce5a4958e",
+  "pre_fix_commit": "49f852c78e15e1eff45489609b3b083ec1d57fce",
+  "supersedes_receipt": "receipts/2026-10-06-L-clarification-cpu/receipt.json",
+  "supersession_reason": "The earlier synthetic tasks allowed catalog field layout to identify the Ask arm without reading the question; its test results remain historical, not current evidence.",
+  "environment": {
+    "platform": "Windows CPU",
+    "python": "3.12.13",
+    "model_or_tokenizer_downloads": false,
+    "gpu_used": false,
+    "paid_calls": 0,
+    "index_or_heldout_data_used": false
+  },
+  "commands": [
+    {
+      "command": "PYTHONUTF8=1 python -I -m unittest discover -s language_growth/tests -t . -v",
+      "exit_code": 0,
+      "result": "80 tests passed, including identical-catalog question pair",
+      "output": "check-tests.txt"
+    },
+    {
+      "command": "PYTHONUTF8=1 python receipts/2026-10-06-L-clarification-cpu/reproduce.py receipts/2026-10-06-L-clarification-layout-cpu/raw",
+      "exit_code": 0,
+      "result": "50/50 scripted planner choices accepted and task-correct; 2/2 negative controls accepted and task-wrong",
+      "output": "check-reproduce.txt"
+    },
+    {
+      "command": "PYTHONUTF8=1 python receipts/2026-10-06-L-clarification-layout-cpu/probe_layouts.py receipts/2026-10-06-L-clarification-layout-cpu/layout_summary.json",
+      "exit_code": 0,
+      "result": "All six two-missing-field layouts occur in each arm across 40 Ask and 40 answerable tasks",
+      "output": "check-layouts.txt"
+    }
+  ],
+  "seeds": {
+    "development_train": 17,
+    "development_validation": 19,
+    "negative_controls": 31,
+    "layout_coverage": "0 through 7, 25 tasks per seed"
+  },
+  "scope": "Deterministic scripted nonlearned development coverage. The paired question test holds catalog, obligations, and options fixed and changes only the requested fact. This does not measure learned behavior, statistical generalization, or heldout performance.",
+  "sha256": {
+    "language_growth/development_data.py": "dbf4d2b11f4549117c25756960838b8801dac1ea15687431d4c10861200393da",
+    "language_growth/tests/test_clarification.py": "85242a71f430cb86ca56f3faaed7f881c04eb9988d8c2713f64deef544a1abf5",
+    "language_growth/free_running_dev.py": "1f92ffbb3456fb6186df350f89134c80e7e8df899de0ce79871e9cce9dee8fef",
+    "plans/codex/L0_CLARIFICATION_PHASE.md": "19139b7d098a13c570b0f633052b1b5183533aaa3ee3f82b539447a5911d18bc",
+    "check-tests.txt": "17bbe445f1755bf05fbb742040160b2d008ead3d8bd17bb81c8c2625ab23168d",
+    "check-reproduce.txt": "40c8d1e8bb95c9a73485c75551b6ac759072079649f176c558f4535e7017fa25",
+    "check-layouts.txt": "1e138d36518559c8944489308ad8978295a9c3a32e3cf53133bd0031e7049f89",
+    "layout_summary.json": "bfb0387c78aaeb07806e3dbc7032014ae67361841c1264f35ecb8e66f1bcce44",
+    "raw/outcomes.jsonl": "a120d6d1f3121be10aedc16edf5ca0f074dea68fca6419f1af2d417138b716a8",
+    "raw/summary.json": "b4c40fdcd45194ea71cf6848df1c6b6177992fc0d8bf16e97265175b41adb3c4",
+    "probe_layouts.py": "b8446895c90a34fe85143c1850a5d247e96e0a11fd01d7363e0ef31a8802fd55"
+  }
+}
