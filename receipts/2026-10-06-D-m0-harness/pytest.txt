@@ -1,0 +1,45 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\apumu\research\CHLabs\ssdm-wt\m0-harness\.venv\Scripts\python.exe
+rootdir: C:\Users\apumu\research\CHLabs\ssdm-wt\m0-harness\harness
+configfile: pyproject.toml
+collecting ... collected 37 items
+
+harness\tests\test_aggregate.py::test_panel_is_38_benchmarks_with_published_area_weights PASSED [  2%]
+harness\tests\test_aggregate.py::test_renormalised_weights_drop_missing_benchmark_inside_its_area PASSED [  5%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[autojev-27b] PASSED [  8%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[hopper] PASSED [ 10%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[jebadiah-27b] PASSED [ 13%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[jev] PASSED [ 16%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[jpt-0.8b] PASSED [ 18%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[jpt-9b] PASSED [ 21%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[lavoir] PASSED [ 24%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[lev] PASSED [ 27%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[lumma-fev-0.1b] PASSED [ 29%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[pngwn-space-uncapped-full] PASSED [ 32%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[reflex-27b-v2] PASSED [ 35%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[rune-26b-a4b-v3] PASSED [ 37%]
+harness\tests\test_aggregate.py::test_index_from_skills_reproduces_live_board[verdict-8af2496e] PASSED [ 40%]
+harness\tests\test_scorer.py::test_decomposition_matches_official_per_benchmark PASSED [ 43%]
+harness\tests\test_scorer.py::test_reproduces_official_aggregate_from_results_file PASSED [ 45%]
+harness\tests\test_scorer.py::test_perfect_predictor_scores_100 PASSED   [ 48%]
+harness\tests\test_scorer.py::test_uniform_predictor_scores_chance PASSED [ 51%]
+harness\tests\test_scorer.py::test_coverage_penalty PASSED               [ 54%]
+harness\tests\test_slicing.py::test_deterministic_given_seed PASSED      [ 56%]
+harness\tests\test_slicing.py::test_seed_changes_selection PASSED        [ 59%]
+harness\tests\test_slicing.py::test_disjoint_and_groups_whole PASSED     [ 62%]
+harness\tests\test_slicing.py::test_pool_left_and_cap_respected PASSED   [ 64%]
+harness\tests\test_slicing.py::test_adding_missing_benchmark_does_not_move_others PASSED [ 67%]
+harness\tests\test_slicing.py::test_committed_manifests_reproduce PASSED [ 70%]
+harness\tests\test_slicing.py::test_real_slices_disjoint_and_sized PASSED [ 72%]
+harness\tests\test_slicing.py::test_dev_rows_match_manifest_hashes PASSED [ 75%]
+harness\tests\test_stats.py::test_binned_ece_known_value PASSED          [ 78%]
+harness\tests\test_stats.py::test_debiased_and_smooth_ece_near_zero_when_calibrated PASSED [ 81%]
+harness\tests\test_stats.py::test_ece_detects_overconfidence PASSED      [ 83%]
+harness\tests\test_stats.py::test_debiased_beats_plain_on_small_bins PASSED [ 86%]
+harness\tests\test_stats.py::test_mde_formulas PASSED                    [ 89%]
+harness\tests\test_stats.py::test_identical_systems_have_zero_width_difference PASSED [ 91%]
+harness\tests\test_stats.py::test_paired_bootstrap_detects_known_shift_and_ci_brackets_point PASSED [ 94%]
+harness\tests\test_stats.py::test_point_column_equals_official PASSED    [ 97%]
+harness\tests\test_stats.py::test_smooth_ece_handles_boundary_mass PASSED [100%]
+
+============================= 37 passed in 43.55s =============================

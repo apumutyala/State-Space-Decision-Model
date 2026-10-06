@@ -1,0 +1,73 @@
+{
+ "edition": "0.2.1",
+ "rows_file": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\suite-0.2\\selected-rows.jsonl.gz",
+ "sha256": "a6a1593711e87fe5e4f5dbb00e83f7254e41292bb43ef7b531c28aa32855f356",
+ "expected_sha256": "25aac5e890a54a3172c7a0c184b4cc8b9a43f10b6ee89bbad8da923be423c656",
+ "match": false,
+ "uncompressed_sha256": "6787a1d5cfb693c0d6aaf320057368c10b3b56e23d9c4e4bb98057a8ce6c41c7",
+ "uncompressed_match": false,
+ "added_file": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\suite-0.2\\added-rows.jsonl.gz",
+ "added_sha256": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89",
+ "added_match": true,
+ "exclusions_sha256": "331df32d4b719c7db43214d0e5d85859d39c3b2eb7d0b3812214cce150155e81",
+ "exclusions_match": true,
+ "subsets_match": true,
+ "scoreable_by_catalog": {
+  "1": 1694,
+  "2": 685,
+  "3": 508,
+  "4": 3080,
+  "5": 5500,
+  "6": 10000,
+  "9": 88,
+  "10": 2500,
+  "11": 123,
+  "12": 3200,
+  "20": 5000,
+  "21": 2628,
+  "22": 2000,
+  "23": 5000,
+  "24": 14033,
+  "25": 196,
+  "26": 2376,
+  "27": 1172,
+  "28": 1267,
+  "29": 10042,
+  "30": 2638,
+  "31": 5000,
+  "32": 752,
+  "33": 1650,
+  "34": 10,
+  "36": 220,
+  "37": 5000,
+  "38": 1565,
+  "39": 979,
+  "40": 4600,
+  "41": 3006,
+  "42": 5500,
+  "43": 570,
+  "44": 5000,
+  "48": 10139,
+  "50": 1676,
+  "56": 2000,
+  "57": 12032,
+  "58": 5507,
+  "59": 2700,
+  "61": 4000,
+  "62": 3652,
+  "64": 528
+ },
+ "missing_index_benchmarks": [
+  45
+ ],
+ "files": {
+  "selected-rows.jsonl.gz": {
+   "sha256_gz": "a6a1593711e87fe5e4f5dbb00e83f7254e41292bb43ef7b531c28aa32855f356",
+   "sha256_uncompressed": "6787a1d5cfb693c0d6aaf320057368c10b3b56e23d9c4e4bb98057a8ce6c41c7"
+  },
+  "added-rows.jsonl.gz": {
+   "sha256_gz": "921e245c4ec2f1ea37f9f82d206fe4ac3ac4104e75b3f92521606e5973934b18",
+   "sha256_uncompressed": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89"
+  }
+ }
+}
