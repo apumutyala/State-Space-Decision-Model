@@ -46,6 +46,8 @@ At each level it must show, with receipts and paired CIs:
 
 ### Execution preference (user instruction, 2026-10-06)
 
+Use GPT-6.1 Sol for subagents, superseding the earlier GPT-6 Sol preference. Keep handoffs concise and task-specific, preserve committed work, and allocate reasoning to the critical path. Avoid duplicate reviews and unchanged-state polling.
+
 Proactively swarm specific useful tasks with subagents when appropriate. Parallelize independent work and pipeline implementation, adversarial review, measurement and integration. Each task has a clear owner, inputs, bounded deliverable and exit proof, with separate mutation ownership. Preserve context and artifacts at handoffs and promptly start the next ready task. The coordinator owns the critical path and also does direct work.
 
 Anticipate concrete failure modes, dependency and resource bottlenecks, efficiency gains and lower-hanging fruit. Prioritize the cheapest high-impact next step supported by evidence. Keep only a lightweight ready-task queue; do not duplicate work or manufacture tasks to fill slots. Preserve the standing approximate 80% direct model optimization/correct enablement and at most 20% process allocation. Existing privacy, model selection, resource ownership, spend, independent review and goal exit conditions remain binding.
