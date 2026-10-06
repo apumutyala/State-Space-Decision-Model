@@ -1,0 +1,24 @@
+{
+  "source_sha": "7c6c00139e983820b67fbbbd2326190ae470708e",
+  "dependencies": "tracked source only; fresh git archive",
+  "commands": [
+    "python -m unittest language_growth.tests.test_training_records -v",
+    "python -c <contents of receipts/2026-10-06-L-training-records/integration_check.py>"
+  ],
+  "python": "C:/Users/apumu/research/CHLabs/ssdm-wt/m2-heads/.venv/Scripts/python.exe",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": ""
+  },
+  "seed": 17,
+  "hardware": "Windows AMD64 CPU; byte encoding only",
+  "cost_usd": 0,
+  "runs": 1,
+  "checks": "Each development split has six distinct task record ids, sixteen unique D Item ids, six groups after stripping terminal question id; all label-index mappings match.",
+  "test_exit": 0,
+  "integration_exit": 0,
+  "files_sha256_lf": {
+    "tests.txt": "defd0f49a30c678458722f8886d7f2758d0f40c9a608aa142491d1f7c427ccfb",
+    "raw.jsonl": "02873d7e986ddee614eb5e9aacdc6cd15547d03e7667b6da6e28f95994bfacec"
+  },
+  "scope": "Exporter grouping and actual D encoding only. No model training or learned performance claim in this check."
+}
