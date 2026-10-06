@@ -50,9 +50,19 @@ def softmax(logits: list[float], temperature: float = 1.0) -> list[float]:
         raise ValueError("temperature must be finite and positive")
     if not logits:
         return []
-    scaled = [x / temperature for x in logits]
-    m = max(scaled)
-    exps = [math.exp(x - m) for x in scaled]
+    if not all(math.isfinite(x) for x in logits):
+        raise ValueError("logits must be finite")
+    maximum = max(logits)
+    shifted = []
+    for value in logits:
+        difference = value - maximum
+        # Shift first to avoid inf-inf when finite logits overflow on division.
+        # Opposite-sign extremes can instead overflow the subtraction; scaling
+        # those separately preserves their finite gap at large temperatures.
+        scaled_difference = (difference / temperature if math.isfinite(difference)
+                             else value / temperature - maximum / temperature)
+        shifted.append(scaled_difference)
+    exps = [math.exp(x) for x in shifted]
     z = sum(exps)
     return [e / z for e in exps]
 
@@ -67,6 +77,11 @@ def _identity_weights(t_min: float) -> tuple[float, float, float]:
     if not math.isfinite(t_min) or not 0 < t_min < 1:
         raise ValueError("identity feature temperature needs 0 < t_min < 1")
     return (math.log(math.expm1(1 - t_min)), 0.0, 0.0)
+
+
+def _canonical_identity(t_min: float, weights) -> bool:
+    return (math.isfinite(t_min) and 0 < t_min < 1
+            and tuple(weights) == _identity_weights(t_min))
 
 
 IDENTITY_W = _identity_weights(0.05)
@@ -105,9 +120,7 @@ def feature_temperature_identity(t_min: float, w, fitted_on: str | None, proof_s
          "w": weights, "fitted_on": fitted_on}
     if proof_sha256 is not None:
         d["disjointness_proof"] = proof_sha256
-    constant_one = (len(weights) == 3 and weights[1] == 0 and weights[2] == 0
-                    and math.isfinite(t_min + _softplus(weights[0]))
-                    and abs(t_min + _softplus(weights[0]) - 1.0) <= 1e-12)
+    constant_one = _canonical_identity(t_min, weights)
     d["status"] = "fitted" if fitted_on else ("uncalibrated_identity" if constant_one else "unfitted_manual")
     d["id"] = hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
     return d
@@ -162,8 +175,7 @@ class FeatureTemperature:
 
     @property
     def is_identity(self) -> bool:
-        return (self.fitted_on is None and self.w[1] == 0 and self.w[2] == 0
-                and abs(self.t_min + _softplus(self.w[0]) - 1.0) <= 1e-12)
+        return self.fitted_on is None and _canonical_identity(self.t_min, self.w)
 
     def temperature(self, k: int) -> float:  # pragma: no cover - guarded: the adapter calls temperature_for
         raise TypeError("FeatureTemperature needs evidence_tokens; use temperature_for(k, features)")
@@ -174,6 +186,8 @@ class FeatureTemperature:
         ev = features["evidence_tokens"]
         if isinstance(ev, bool) or not isinstance(ev, int) or ev < 0:
             raise ValueError(f"evidence_tokens must be a non-negative int, got {ev!r}")
+        if self.is_identity:
+            return 1.0  # exact neutral serving path for the canonical default
         try:
             z = self.w[0] + self.w[1] * math.log1p(ev) + self.w[2] * math.log(max(int(k), 1))
             temperature = self.t_min + _softplus(z)

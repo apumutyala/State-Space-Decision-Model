@@ -1,6 +1,6 @@
 """Version identifiers recorded in every response."""
 
-ADAPTER_VERSION = "0.2.0"
+ADAPTER_VERSION = "0.2.1"
 INTERFACE_VERSION = "interfaces/DECISION_LANGUAGE_V0.md@v0.1 (PR #4 787d64f)"
 #: Optional fields gated by ``enable_v0_1_deltas``: attribution only (policy restriction is
 #: core in 0.1). Request provenance (ssdm.provenance.v0) is a planned 0.2 extension, accepted only
