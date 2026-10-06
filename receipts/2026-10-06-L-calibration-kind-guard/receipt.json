@@ -1,0 +1,30 @@
+{
+  "scope": "L preflight calibration-kind guard only; no feature-temperature support or learned result",
+  "source_commit": "964ef55af2b413e61b05422ac7e20d3869eb8146",
+  "base_commit": "6e39d9bb540270ac999cff4929e41002568f85ca",
+  "decision_adapter_commit": "0a30e7be593999a5782dbe1e6daea6afbdb54083",
+  "command": ["python", "-m", "unittest", "language_growth.tests.test_planner", "language_growth.tests.test_integration_replay", "-v"],
+  "exit_code": 0,
+  "tests": 24,
+  "runs": 1,
+  "median_and_spread": "not applicable to deterministic pass/fail CPU tests (one run)",
+  "seed": "not applicable; scripted provider and synthetic fixture cases",
+  "text_lf_sha256": {
+    "language_growth/planner.py": "1100f76f97009692ea261bebe3ab7dddbd908126c532389793a8f40390fc4b16",
+    "language_growth/tests/test_planner.py": "898109f4909ded97e46e7d3cf386304b6691f9dc147882d2f96df3f5be4c1363",
+    "language_growth/tests/test_integration_replay.py": "ac6277f4acdd1ae306b66b55f28d18dd4a7c91c09f27be5ffcc9feefe4e6eb93",
+    "fixtures/language_growth/catalog.json": "c97f785c4a1ecc7b0b73dcb7c7ca8b1287640e468505628b3acd2ccec352ab35",
+    "fixtures/language_growth/cases/01_supported_read.json": "b7f03cc5c1f43f20fd9679d1cd46a2bf00bb444cfbdf6cd9589f8762a311bd5d",
+    "fixtures/language_growth/cases/02_supported_exact_comparison.json": "bbee9935ae7b009c513a7806e1f6bf67920e579a128d8570a62ee175b432f99d",
+    "fixtures/language_growth/cases/16_necessary_ask.json": "20c56b8a9299e29026734e3fc36dc313b18b8ba607da7de47bb3891f03c4864e",
+    "tests.txt": "6b6c0bdd073d0e9ba873cd166ed28cf3f0d1f1cbb9bc5ed0f33448262ed97411"
+  },
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38)"
+  },
+  "billed_cost_usd": 0,
+  "raw_output": "tests.txt",
+  "raw_predictions": null
+}
