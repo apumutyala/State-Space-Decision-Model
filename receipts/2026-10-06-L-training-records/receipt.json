@@ -1,0 +1,46 @@
+{
+  "source_overlays": [
+    {
+      "sha": "60ceef18981ac9e5c19cbbc6d367f482ced7beb2",
+      "paths": []
+    },
+    {
+      "sha": "a6b4d84153955953b64aaaa9e19902850f2aae96",
+      "paths": [
+        "language_growth/development_data.py"
+      ]
+    },
+    {
+      "sha": "310f734e5c021a0673e4fbf9b96151f0586ab4f3",
+      "paths": [
+        "language_growth/parent_bridge.py"
+      ]
+    },
+    {
+      "sha": "ebe47595e00b1a673ec5af576e64ff5730f80789",
+      "paths": [
+        "heads",
+        "train",
+        "decide"
+      ]
+    }
+  ],
+  "command": "python -m unittest language_growth.tests.test_training_records -v; python integration_check.py",
+  "integration_python": "C:/Users/apumu/research/CHLabs/ssdm-wt/m2-heads/.venv/Scripts/python.exe",
+  "integration_exit": 0,
+  "tests_exit": 0,
+  "seed": 17,
+  "task_count_per_split": 6,
+  "encoded_slot_count_per_split": 16,
+  "hardware": "Windows-11-10.0.26200-SP0 CPU; byte encoding only; no model loaded",
+  "cost_usd": 0,
+  "runs": 1,
+  "scope": "Structural canonical-state/prefix validation and actual parent-encoder compatibility only, no optimization step or learned result. Does not prove arbitrary supplied natural-language evidence lacks labels.",
+  "internal_review_fix": "Initial exporter accepted missing prior-prefix or extra current-label state keys. Canonical audience state plus independently reconstructed previous-target prefix now rejects both before export.",
+  "artifacts_sha256": {
+    "raw.jsonl": "1b1ee179a95b60acfa209638fa1839187a3daac3415756291c83327d4922edf2",
+    "integration_check.py": "eb63057580bb0d2b02b9bab73ceb5f8072b8bfb09ed2aee7c785bc3c2c46debb",
+    "tests.txt": "340a55c87c49f49184daeed1ad04e8570abf779c75d0515ab1e00c972ab2db25",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

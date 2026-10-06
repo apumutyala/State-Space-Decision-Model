@@ -1,0 +1,41 @@
+{
+  "title": "Track L public-output boundary on committed planner source",
+  "source_merge_sha": "a35a312e498bb953e48f96d209bfde4d40a96ca7",
+  "merged_agent_main_sha": "1196dfd0bb3a7bd00888f95134c46f5880903fc7",
+  "planner_commit_is_ancestor": "e19c3086163ca6d4df70ef294a85f1f1f6c024eb",
+  "prior_receipt": "receipts/2026-10-06-L-public-output-merged/receipt.json (historical borrowed-source proof)",
+  "provenance": "Planner and parent_bridge are committed merge ancestors; no borrowed files or overlays were used.",
+  "checks": [
+    {
+      "command": "PYTHONUTF8=1 python -I -m unittest discover -s language_growth/tests -t . -p test_public_output.py -v",
+      "exit_code": 0,
+      "result": "5 public-output tests passed",
+      "output": "focused-tests.txt"
+    },
+    {
+      "command": "PYTHONUTF8=1 python -I -m unittest discover -s language_growth/tests -t . -q",
+      "exit_code": 0,
+      "result": "80 language-growth tests passed",
+      "output": "language-tests.txt"
+    }
+  ],
+  "sha256": {
+    "language_growth/public_output.py": "011fe5ed8742a6684c2ee10e9c370914fa95f615d5927a8090b57679a2033329",
+    "language_growth/tests/test_public_output.py": "ffecbf342d5ce687bb37594d0bac6add98161b46c077468b8fd246b5d22c8d01",
+    "language_growth/planner.py": "a4061d28f2a87fbf726eedf9c04affe83373ac0f75cb39c37d829872d3a701f3",
+    "language_growth/parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "language_growth/kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+    "language_growth/realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
+    "focused-tests.txt": "3700a2f64c135ce9e4666ac40878cb738e227491fbf482b5fcfbc9acda0f9bab",
+    "language-tests.txt": "86e11744347b60bd66e1e8c1c4d7250c7e270d41f39b176a0edb282762b34902"
+  },
+  "environment": {
+    "platform": "Windows CPU",
+    "python": "3.12.13",
+    "billed_cost_usd": 0,
+    "model_calls": 0,
+    "gpu_used": false,
+    "index_or_heldout_data_used": false
+  },
+  "scope": "Callable public-output boundary with fixed ordinary-failure projection. No network-authentication, timing-side-channel, learned-capability, or heldout claim."
+}

@@ -1,0 +1,40 @@
+{
+  "source_sha": "b0ee3e8c7a75c5512c7241c16a2f65a4e93e923f",
+  "base_agent_main_sha": "6e39d9bb540270ac999cff4929e41002568f85ca",
+  "dependency_source_commits": {
+    "development_data": "a6b4d84153955953b64aaaa9e19902850f2aae96",
+    "free_running_dev": "2c69c62ad847c50e3b9bc5aee24b8818b83b5f8e",
+    "parent_bridge": "1fd78b3e6e3f9452073f6afba0a8f9beda789827"
+  },
+  "checks": [
+    {
+      "command": "python -m unittest language_growth.tests.test_paired_comparison -v",
+      "exit_code": 0,
+      "raw_output": "tests.txt",
+      "result": "7 scripted CPU tests passed"
+    },
+    {
+      "command": "python -m unittest discover -s language_growth/tests -p 'test_*.py' -q",
+      "exit_code": 0,
+      "raw_output": "all-tests.txt",
+      "result": "82 language-growth CPU tests passed"
+    },
+    {
+      "command": "python - (script: generate_development_tasks(17,12,production); first unequal comparison plus comparison_swap_counterfactual; EvidenceProvider; run_paired_comparisons)",
+      "exit_code": 0,
+      "raw_output": "paired-raw.json",
+      "result": "2 synthetic tasks, 2 direct and 2 planner answers correct, identical initial state hashes within each pair"
+    }
+  ],
+  "sha256_bytes": {
+    "tests.txt": "a63500816a1e2ee1d21e7e2acb3aac81ec3e32c02972f2253fa8b7f46f3f20f3",
+    "all-tests.txt": "435d3dd2a9ea25bfa4a3d0a7e06b07d669d98b5f4584234b917cb5d8ae6706e7",
+    "paired-raw.json": "9742a3ee20a8b7d45ce6d114f39c36f3fe2ad624ee38292be96206fef1fac832"
+  },
+  "seed": 17,
+  "data": "synthetic development_train comparison task and its value-swap counterfactual; no Index or held-out data",
+  "hardware": "Windows 11 AMD64 CPU, Python 3.12.13",
+  "billed_cost_usd": 0,
+  "runs_per_command": 1,
+  "scope": "Scripted comparison-only paired protocol and raw request/response accounting. No model weights, GPU, learned capability, read/explain comparison, strong unrestricted comparator or retention-gate claim."
+}
