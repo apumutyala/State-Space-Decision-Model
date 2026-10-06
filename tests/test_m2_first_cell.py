@@ -28,7 +28,8 @@ def test_cell_config_is_the_specified_cell():
     assert CELL["require_guard_readiness"] and CELL["cohort_sha256"] == PARAMS["cohort_sha256"]
     assert CELL["train_set"]["pointer"] == PARAMS["train_set_pointer"]
     assert (ROOT / CELL["train_set"]["pointer"]).exists()
-    assert "rwkv7_wkv" not in CELL  # eager "chunked" WKV: fla is not GPU-verified (job-4idg4 timed out)
+    assert CELL["rwkv7_wkv"] == "chunked"  # the measured path; "fla" only after the gate's ADOPT + GPU_VERIFIED
+    assert f"{PARAMS['phase_caps_minutes']['cell']}-min cell phase" in CELL["max_minutes_note"]
     from heads.rwkv7_wkv import GPU_VERIFIED
 
     assert GPU_VERIFIED is False
@@ -39,7 +40,8 @@ def test_cell_config_is_the_specified_cell():
 def test_cost_worst_case_and_expected():
     from jobs.common.costs import cap_ok, expected_usd, schedule_ok, worst_case_usd
 
-    assert worst_case_usd(PARAMS) == round((20 + 2 * 582) * 0.0495, 2) == 58.61
+    assert worst_case_usd(PARAMS) == round((20 + 2 * 592) * 0.0495, 2) == 59.6
+    assert PARAMS["phase_caps_minutes"]["parent_index"] == 65
     assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 60.0 and schedule_ok(PARAMS)
     assert expected_usd(PARAMS) == round(sum(PARAMS["expected_minutes"].values()) * 0.0495, 2)
     assert 20 <= expected_usd(PARAMS) <= 30
@@ -58,8 +60,9 @@ def test_eval_preflights_pass_at_the_measured_rates_and_stop_when_slower(stages,
     cap_min = PARAMS["phase_caps_minutes"][cap]
     est = estimate(TKFAJ["TOK_S"], stages=stages.split(","), fixed_min=fixed, mode=mode, call_s=TKFAJ["CALL_S"])
     assert est["total_minutes"] <= 0.95 * cap_min, est
-    slow = estimate(0.8 * TKFAJ["TOK_S"], stages=stages.split(","), fixed_min=fixed, mode=mode, call_s=TKFAJ["CALL_S"])
-    assert slow["total_minutes"] > 0.95 * cap_min  # a 20 % slower box stops at setup (exit 15), before training
+    k = 1.35  # a box 35 % slower than job-tkfaj's (rates and per-call latency) is over every cap: exit 15
+    slow = estimate(TKFAJ["TOK_S"] / k, stages=stages.split(","), fixed_min=fixed, mode=mode, call_s=TKFAJ["CALL_S"] * k)
+    assert slow["total_minutes"] > 0.95 * cap_min
     # the expected minutes in job_params are the projection (+ load), not a guess
     exp = PARAMS["expected_minutes"][cap]
     assert abs(exp - est["total_minutes"]) <= 6
@@ -92,7 +95,7 @@ def test_min_steps_feeds_the_measured_rate_stops():
 
     assert steps_needed(CELL["pass_rule"], CELL["min_steps"]) == 600
     assert steps_needed({"window": 50}) == 100  # unchanged for cells without min_steps
-    assert too_slow(20.0, CELL["max_minutes"], 600)["too_slow"]  # 20 s/step -> 555 steps < 600: exit 26
+    assert too_slow(20.0, CELL["max_minutes"], 600)["too_slow"]  # 20 s/step -> 540 steps < 600: exit 26
     assert not too_slow(8.0, CELL["max_minutes"], 600)["too_slow"]
 
 
@@ -346,7 +349,10 @@ def test_runner_orders_guards_before_training_and_prices_every_eval_first():
     for s in ("score_parent estimate", "jobs.m2_pilot.guard_ready", "train.train_set heldout", "train.train_set verify",
               "sha256sum -c \"$CODE/jobs/rwkv7/snapshot.sha256\"", "fla_guard.py"):
         assert i(s) < train, s
-    assert i("python -m train.run_cell") < i("jobs.m2_parent_arm.score_parent --parent") < i("-m train.m2_gates")
+    # review fix 1: the parent arm (live rate guard) and the measured re-price run BEFORE any training spend
+    assert i("jobs.m2_parent_arm.score_parent --parent") < i("-m jobs.m2_first_cell.reprice") < train < i("-m train.m2_gates")
+    assert "export_phase heldout" in JOB  # review fix 3
+    assert '--report "$ARM/rate-parent-$STAGE.json"' in JOB  # rate reports survive a restart (reprice reads them)
     assert JOB.count("rate_guard run-weighted") == 2  # parent stages (loop) + child evals
     assert "jobs/common/finalize.py" in JOB and not re.search(r"touch [^\n]*DONE", JOB)
     assert not re.search(r"timeout \d+m", JOB)  # every cap comes from job_params
@@ -398,3 +404,63 @@ def test_first_cell_dry_run_end_to_end(tmp_path):
     assert set(res["index_dev_subset"]["child_minus_parent"]["areas"]) == set(res["index_dev_subset"]["child"]["areas"])
     assert res["readout_diagnostics"]["order"]["paired"]["identical_questions"]
     assert "PENDING CODEX APPROVAL (#36)" in res["promotion"]["margins_status"]
+    assert [p["phase"] for p in rec["phases"]].index("reprice") < [p["phase"] for p in rec["phases"]].index("cell")
+    assert res["index_by_prompt_length"]["split_t"] == 2048
+
+
+# ----------------------------------------------------------------------------- review fixes (FIX-THEN-LAUNCH)
+def test_training_budget_is_cumulative_over_restarts():
+    from train.run_cell import train_seconds_used
+
+    assert train_seconds_used({"train_clock": {"step": 400, "used_s": 3000.0}}, resumed=True) == 3000.0
+    assert train_seconds_used({"train_clock": {"step": 400, "used_s": 3000.0}}, resumed=False) == 0.0
+    assert train_seconds_used({}, resumed=True) == 0.0
+    src = (ROOT / "train/run_cell.py").read_text(encoding="utf-8")
+    assert 't_end = t_start + 60 * cfg["max_minutes"] - used_before' in src
+    assert src.count('cell["train_clock"] = {"step": tr.step') == 2  # every checkpoint and the final save
+
+
+def _rate_report(d, st, scoring_min, exit_=0):
+    (d / f"rate-parent-{st}.json").write_text(json.dumps({"exit": exit_, "scoring_started_min": 2.0,
+                                                           "elapsed_min": 2.0 + scoring_min}))
+
+
+@pytest.mark.parametrize("slow,code", [(1.0, 0), (1.15, 15)])
+def test_reprice_stops_a_slow_box_before_training(tmp_path, slow, code):
+    from jobs.m2_first_cell.reprice import main
+    from jobs.m2_parent_arm.score_parent import estimate
+
+    for st in ("g12", "index"):
+        p = estimate(TKFAJ["TOK_S"], stages=[st], fixed_min=0, mode="parent", call_s=TKFAJ["CALL_S"])["total_minutes"]
+        _rate_report(tmp_path, st, slow * p)
+    args = ["--arm-dir", str(tmp_path), "--params", str(ROOT / "jobs/m2_first_cell/job_params.json"),
+            "--tok-s", str(TKFAJ["TOK_S"]), "--call-s", str(TKFAJ["CALL_S"]), "--out", str(tmp_path / "r.json")]
+    assert main(args) == code
+    assert math.isclose(json.loads((tmp_path / "r.json").read_text())["factor"], slow)
+
+
+def test_reprice_without_reports_keeps_the_setup_preflight(tmp_path):
+    from jobs.m2_first_cell.reprice import main
+
+    assert main(["--arm-dir", str(tmp_path), "--params", str(ROOT / "jobs/m2_first_cell/job_params.json"),
+                 "--tok-s", "3757", "--call-s", "0.117"]) == 0
+
+
+def test_index_lengths_file_matches_the_subset_and_cell():
+    from jobs.common.dev_subset import load_subset
+    from jobs.m2_first_cell import index_lengths as IL
+
+    d = IL.load()
+    sub = load_subset()
+    assert d["subset_ids_sha256"] == sub["ids_sha256"] and sorted(d["lengths"]) == sorted(sub["run_ids"])
+    assert d["split_t"] == max(CELL["t_ladder"]) == 2048 and d["n_over_split"] == 455 and d["n_unmeasurable"] == 0
+
+
+def test_group_bins_never_cut_a_group():
+    from jobs.m2_first_cell.index_lengths import group_bins
+
+    rows = [{"_evaluation": {"run_id": f"r{i}", "catalog_id": 1, "group_id": f"g{i // 2}"}} for i in range(6)]
+    lengths = {"r0": 100, "r1": 3000, "r2": 100, "r3": 200, "r4": None, "r5": 50}
+    b = group_bins(rows, lengths)
+    ids = {k: [r["_evaluation"]["run_id"] for r in v] for k, v in b.items()}
+    assert ids == {"<=2048": ["r2", "r3"], ">2048": ["r0", "r1"], "unmeasurable": ["r4", "r5"]}

@@ -120,7 +120,7 @@ def parent_decider(parent: str, model_dir: str, gdn_ckpt: str | None, cfg: dict,
         import third_party.rwkv7_hf as V
         from decide.backends.hf_readout import load_rwkv7_hf
 
-        plug = load_rwkv7_hf(model_dir, device=device)
+        plug = load_rwkv7_hf(model_dir, device=device, wkv=cfg.get("rwkv7_wkv"))  # same WKV as the child
         ident = {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION}
     elif parent == "q9af":
         from convert.readout import load_converted_plugin

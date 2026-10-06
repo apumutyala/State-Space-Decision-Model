@@ -1,10 +1,10 @@
 {
- "_comment": "DRAFT, NOT SUBMITTED. First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md). Worst case = (build_timeout + attempts x max_duration) x batch rate with attempts = 1 + max(max_restarts, assumed_restart_floor) (jobs/common/costs.py) = (20 + 2 x 582) x 0.0495 = $58.61. Expected minutes at the job-tkfaj probe rates (TOK_S 3,757 at 2,048 tokens, CALL_S 0.117).",
+ "_comment": "DRAFT, NOT SUBMITTED. First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md). Phase order: setup, guard, heldout, parent_g12, parent_index (live rate guard measures the box BEFORE training; jobs.m2_first_cell.reprice re-prices the child evals), cell, evals, report. Worst case = (build_timeout + attempts x max_duration) x batch rate with attempts = 1 + max(max_restarts, assumed_restart_floor) (jobs/common/costs.py) = (20 + 2 x 592) x 0.0495 = $59.6. Expected minutes at the job-tkfaj probe rates (TOK_S 3,757 at 2,048 tokens, CALL_S 0.117).",
  "job": "m2-first-cell",
  "status": "draft: not submitted; needs the independent review, a spend issue, a LEDGER row and the cap raise",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 582,
+ "max_duration_minutes": 592,
  "build_timeout_minutes": 20,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -17,10 +17,10 @@
   "setup": 25,
   "guard": 5,
   "heldout": 10,
-  "cell": 230,
   "parent_g12": 75,
-  "parent_index": 55,
-  "evals": 170,
+  "parent_index": 65,
+  "cell": 220,
+  "evals": 180,
   "report": 5
  },
  "reserve_minutes": 7,
@@ -29,14 +29,21 @@
   "setup": 15,
   "guard": 3,
   "heldout": 3,
-  "cell": 220,
   "parent_g12": 65,
   "parent_index": 48,
+  "cell": 210,
   "evals": 155,
   "report": 4
  },
- "evals_fixed_minutes": {"parent": 3, "child": 8},
- "measured_rates_reference": {"TOK_S": 3757, "CALL_S": 0.117, "source": "job-tkfaj probe.json (prefill tok/s at 2,048; small_call_s)"},
+ "evals_fixed_minutes": {
+  "parent": 3,
+  "child": 8
+ },
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (prefill tok/s at 2,048; small_call_s)"
+ },
  "parent": "rwkv7",
  "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
  "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7.json",

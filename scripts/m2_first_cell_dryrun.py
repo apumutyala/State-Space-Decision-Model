@@ -163,22 +163,26 @@ def main(argv=None) -> int:
                                "--out", str(work / "heldout.json")]):
         return finish(out, phases, t0, None)
     ready = str(guard / "readiness.json")
-    if not go("cell", shim + ["train.run_cell", "--config", str(cell), "--model-dir", str(snap), "--records", str(RECORDS),
-                              "--train-dir", str(TRAIN_DIR), "--out", str(work), "--ckpt-dir", str(ck / "cell"),
-                              "--stage", "all", "--guard-readiness", ready, "--device", "cpu"]):
-        return finish(out, phases, t0, None)
-    arm = ck / "parent_arm"
+    arm = ck / "parent_arm"  # the job order: parent arm (live rate guard) and reprice BEFORE training
+    arm.mkdir(parents=True, exist_ok=True)
     for stage in ("g12", "index"):
         prog = logs / f"parent-{stage}.progress.jsonl"
         if not go(f"parent_{stage}", py + ["-m", "jobs.common.rate_guard", "run-weighted", "--progress", str(prog),
                                            "--cap-min", str(p["phase_caps_minutes"][f"parent_{stage}"]), "--poll-s", "2",
-                                           "--report", str(work / f"rate-parent-{stage}.json"), "--"]
+                                           "--report", str(arm / f"rate-parent-{stage}.json"), "--"]
                   + shim + ["jobs.m2_parent_arm.score_parent", "--parent", "rwkv7", "--model-dir", str(snap),
                             "--cell-config", str(cell), "--records", str(RECORDS), "--guard-readiness", ready,
                             "--index-rows", str(rows), "--out-dir", str(arm), "--stage", stage, "--device", "cpu",
                             "--progress", str(prog)]):
             return finish(out, phases, t0, None)
     arm_sha = hashlib.sha256((arm / "arm.json").read_bytes()).hexdigest()
+    if not go("reprice", py + ["-m", "jobs.m2_first_cell.reprice", "--arm-dir", str(arm), "--params", str(PARAMS),
+                               "--tok-s", TOK_S, "--call-s", CALL_S, "--out", str(work / "reprice.json")]):
+        return finish(out, phases, t0, None)
+    if not go("cell", shim + ["train.run_cell", "--config", str(cell), "--model-dir", str(snap), "--records", str(RECORDS),
+                              "--train-dir", str(TRAIN_DIR), "--out", str(work), "--ckpt-dir", str(ck / "cell"),
+                              "--stage", "all", "--guard-readiness", ready, "--device", "cpu"]):
+        return finish(out, phases, t0, None)
     if not go("evals", py + ["-m", "jobs.common.rate_guard", "run-weighted", "--progress", str(logs / "progress.jsonl"),
                              "--cap-min", str(p["phase_caps_minutes"]["evals"]), "--poll-s", "2",
                              "--report", str(work / "rate-evals.json"), "--"]

@@ -246,6 +246,16 @@ class RwkvSegmentEncoder:
         return ids
 
 
+def train_seconds_used(cell: dict, resumed: bool) -> float:
+    """Training wall-clock already spent by the checkpointed steps (``cell["train_clock"]``, written with every
+    checkpoint and mirrored in the checkpoint dir). A fresh start uses 0; a resume subtracts it from ``max_minutes``, so
+    restarts can never train past the pre-registered budget. Time after the last checkpoint is not counted: those steps
+    are lost and re-run."""
+    if not resumed:
+        return 0.0
+    return float((cell.get("train_clock") or {}).get("used_s") or 0.0)
+
+
 def steps_needed(rule: dict, min_steps: int | None = None) -> int:
     """The pass rule compares two disjoint windows of steps, so fewer than 2 x window steps can never pass. A cell may
     pre-register a larger ``min_steps`` (the training it needs to be a meaningful measurement); the exit-26 checks then
@@ -508,7 +518,12 @@ def main(argv=None):
                                                                                        keep_units=keep))
             tr.cards[-1].pop("units", None)
         t_start = time.time()
-        t_end = t_start + 60 * cfg["max_minutes"]
+        # the max_minutes budget is cumulative over attempts: a restart resumes with what the checkpointed steps used
+        used_before = train_seconds_used(cell, resumed)
+        t_end = t_start + 60 * cfg["max_minutes"] - used_before
+        cell["train_clock_resume"] = {"resumed": resumed, "step": tr.step, "used_s_before": used_before,
+                                      "left_s": max(0.0, t_end - t_start)}
+        save()
         step0 = tr.step
         logf = open(out / "train_log.jsonl", "a")
         while tr.step < cfg["max_steps"] and time.time() < t_end:
@@ -536,6 +551,8 @@ def main(argv=None):
                 return EXIT["memory"]
             if tr.step % cfg["ckpt_every"] == 0:
                 tr.save()
+                cell["train_clock"] = {"step": tr.step, "used_s": used_before + time.time() - t_start}
+                save()
                 _checkpoint_post()
             if tr.step % cfg["eval_every"] == 0:
                 tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items,
@@ -548,6 +565,7 @@ def main(argv=None):
                 tr.model, eval_items, tr.step, a.out, keep_units=keep))
             tr.cards[-1].pop("units", None)
         tr.save()
+        cell["train_clock"] = {"step": tr.step, "used_s": used_before + time.time() - t_start}
         _checkpoint_post()
         cell["train"] = {"steps": tr.step, "resumed": resumed, "T_max": t_max, "cards": tr.cards,
                          "lineage": tr.lineage, "verdict": pass_rule(tr.history, tr.cards, peak(), cfg["pass_rule"])}

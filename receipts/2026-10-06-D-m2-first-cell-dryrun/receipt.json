@@ -18,7 +18,7 @@
   {
    "phase": "train_set_verify",
    "rc": 0,
-   "seconds": 3.1,
+   "seconds": 3.0,
    "log": "train_set_verify.log",
    "ok": true
   },
@@ -32,7 +32,7 @@
   {
    "phase": "dev_subset_rows",
    "rc": 0,
-   "seconds": 4.7,
+   "seconds": 4.5,
    "log": "dev_subset_rows.log",
    "ok": true
   },
@@ -60,56 +60,63 @@
   {
    "phase": "guard",
    "rc": 0,
-   "seconds": 9.3,
+   "seconds": 11.7,
    "log": "guard.log",
    "ok": true
   },
   {
    "phase": "heldout",
    "rc": 0,
-   "seconds": 78.7,
+   "seconds": 95.9,
    "log": "heldout.log",
-   "ok": true
-  },
-  {
-   "phase": "cell",
-   "rc": 0,
-   "seconds": 28.8,
-   "log": "cell.log",
    "ok": true
   },
   {
    "phase": "parent_g12",
    "rc": 0,
-   "seconds": 22.1,
+   "seconds": 26.2,
    "log": "parent_g12.log",
    "ok": true
   },
   {
    "phase": "parent_index",
    "rc": 0,
-   "seconds": 84.1,
+   "seconds": 106.1,
    "log": "parent_index.log",
+   "ok": true
+  },
+  {
+   "phase": "reprice",
+   "rc": 0,
+   "seconds": 0.2,
+   "log": "reprice.log",
+   "ok": true
+  },
+  {
+   "phase": "cell",
+   "rc": 0,
+   "seconds": 44.8,
+   "log": "cell.log",
    "ok": true
   },
   {
    "phase": "evals",
    "rc": 0,
-   "seconds": 310.2,
+   "seconds": 302.2,
    "log": "evals.log",
    "ok": true
   },
   {
    "phase": "report",
    "rc": 0,
-   "seconds": 6.5,
+   "seconds": 5.1,
    "log": "report.log",
    "ok": true
   }
  ],
  "all_ok": true,
  "result_valid": true,
- "minutes": 9.14,
+ "minutes": 10.01,
  "result": {
   "schema": "ssdm.m2.first_cell.v1",
   "cell": {
@@ -154,30 +161,30 @@
      "512": {
       "ok": true,
       "peak_gb": 0.0,
-      "step_s": 0.41070556640625,
+      "step_s": 0.5305328369140625,
       "row_len": 453,
       "k": 4
      },
      "1024": {
       "ok": true,
       "peak_gb": 0.0,
-      "step_s": 0.44330763816833496,
+      "step_s": 0.7950091361999512,
       "row_len": 915,
       "k": 6
      },
      "2048": {
       "ok": true,
       "peak_gb": 0.0,
-      "step_s": 0.5032179355621338,
+      "step_s": 0.8810956478118896,
       "row_len": 1672,
       "k": 8
      }
     },
     "T_max": 2048,
     "rate_check": {
-     "step_s": 0.41070556640625,
+     "step_s": 0.5305328369140625,
      "minutes_left": 4,
-     "affordable_steps": 584.3602318323674,
+     "affordable_steps": 452.37539187206994,
      "need_steps": 4,
      "too_slow": false
     }
@@ -190,7 +197,7 @@
    "data": {
     "records_sha256": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
     "n_train_records": 64,
-    "tokenize_s": 6.7,
+    "tokenize_s": 11.4,
     "n_train_items": 62,
     "n_eval_items": 72,
     "guard_manifests": {
@@ -206,7 +213,7 @@
      "n_hashes": 48415,
      "note": "",
      "content_index": {
-      "path": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\167d8677-872b-45ed-b144-905f7c6dd3bc\\scratchpad\\dry-receipt\\work\\guard\\index-content-hashes.txt.gz",
+      "path": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\167d8677-872b-45ed-b144-905f7c6dd3bc\\scratchpad\\dry-receipt2\\work\\guard\\index-content-hashes.txt.gz",
       "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
       "n": 24150
      }
@@ -1869,6 +1876,124 @@
    },
    "note": "x = child, y = parent; D1-A templates (development split). D1-A is in the training data verbatim (PR #44 injection augmentation), so this is IN-DISTRIBUTION robustness; held-out D1-B is G13, not run here"
   },
+  "index_by_prompt_length": {
+   "split_t": 2048,
+   "unit": "kit group (its longest training-layout row, RWKV7 tokens)",
+   "length_file_subset_sha256": "6e4cb8dfac94a40a6e014e05744ff775aebcdf99d7a572190034e6bc026095c3",
+   "<=2048": {
+    "n_rows": 298,
+    "child": {
+     "point": 11.894560368839022,
+     "lo": 8.555904741405575,
+     "hi": 20.10130461305919,
+     "se": 3.0388714432459336
+    },
+    "parent": {
+     "point": 4.958692307451522,
+     "lo": 2.9395462020772927,
+     "hi": 9.981746060798363,
+     "se": 1.8779913935340513
+    },
+    "child_minus_parent": {
+     "point": 6.9358680613875,
+     "lo": 1.5890027937977742,
+     "hi": 13.203013510302503,
+     "se": 3.1482907214606866,
+     "p_le_zero": 0.01,
+     "excludes_zero": true
+    },
+    "areas_child_minus_parent": {
+     "knowledge": {
+      "point": 4.3235185185185205,
+      "lo": -3.2149259259259253,
+      "hi": 11.047532407407417,
+      "se": 3.799117969652538
+     },
+     "language": {
+      "point": 8.636046511627908,
+      "lo": 0.0,
+      "hi": 23.25581395348837,
+      "se": 5.237291461454287
+     },
+     "retrieval": {
+      "point": 8.89333333333333,
+      "lo": -15.553333333333333,
+      "hi": 32.287500000000016,
+      "se": 11.460886060169988
+     },
+     "tools": {
+      "point": 7.909090909090907,
+      "lo": 0.0,
+      "hi": 21.612681818181816,
+      "se": 5.671741383914663
+     },
+     "arts": {
+      "point": 3.595483870967742,
+      "lo": -8.537701612903218,
+      "hi": 10.000766129032263,
+      "se": 4.563968357269071
+     }
+    }
+   },
+   ">2048": {
+    "n_rows": 102,
+    "child": {
+     "point": 7.94798711127716,
+     "lo": 3.7194691477505715,
+     "hi": 16.743954169820974,
+     "se": 3.4326945928620316
+    },
+    "parent": {
+     "point": 8.527698489733995,
+     "lo": 3.8049068066247003,
+     "hi": 16.7055687908937,
+     "se": 3.429248691611105
+    },
+    "child_minus_parent": {
+     "point": -0.5797113784568344,
+     "lo": -1.4350095582130766,
+     "hi": 0.5922157168182931,
+     "se": 0.6427795869056554,
+     "p_le_zero": 0.73,
+     "excludes_zero": false
+    },
+    "areas_child_minus_parent": {
+     "knowledge": {
+      "point": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "se": 0.0
+     },
+     "language": {
+      "point": 0.7051943584451323,
+      "lo": 0.0,
+      "hi": 2.2910216718266256,
+      "se": 0.8231917079532941
+     },
+     "retrieval": {
+      "point": 0.0,
+      "lo": -1.1512880245788182,
+      "hi": 0.0,
+      "se": 0.298475778943574
+     },
+     "tools": {
+      "point": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "se": 0.0
+     },
+     "arts": {
+      "point": -7.620000000000001,
+      "lo": -16.020000000000003,
+      "hi": 0.0,
+      "se": 5.915763280078882
+     }
+    }
+   },
+   "unmeasurable": {
+    "n_rows": 0
+   }
+  },
   "decision_dev_g12": {
    "dev": {
     "identical_items": true,
@@ -1895,18 +2020,18 @@
   "latency": {
    "child": {
     "n": 399,
-    "mean_ms": 287.51783483713643,
-    "median_ms": 38.209799997275695,
-    "p90_ms": 473.7496999950963,
-    "p99_ms": 5940.991700001177,
+    "mean_ms": 299.7466864662168,
+    "median_ms": 40.95689999667229,
+    "p90_ms": 449.47790000151144,
+    "p99_ms": 6052.986800001236,
     "scope": "decide() wall time per Index DEV row (all questions of the row), H100, batch 1"
    },
    "parent": {
     "n": 399,
-    "mean_ms": 96.79189674188409,
-    "median_ms": 25.86709999741288,
-    "p90_ms": 206.82099999976344,
-    "p99_ms": 1029.0134999959264,
+    "mean_ms": 107.33435964887994,
+    "median_ms": 30.76119999604998,
+    "p90_ms": 244.21240000083344,
+    "p99_ms": 1063.1689999936498,
     "scope": "decide() wall time per Index DEV row (all questions of the row), H100, batch 1"
    }
   },
@@ -1985,11 +2110,11 @@
    "gates_this_measurement": false
   },
   "cost": {
-   "elapsed_min": 9.03,
-   "runtime_usd": 0.45,
+   "elapsed_min": 9.92,
+   "runtime_usd": 0.49,
    "usd_per_min": 0.0495,
    "build_minutes_not_included": true,
-   "worst_case_usd": 58.61,
+   "worst_case_usd": 59.6,
    "hard_cap_usd": 60.0
   },
   "verdict": "measured",

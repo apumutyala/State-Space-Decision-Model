@@ -6,7 +6,8 @@ job's phases wrote. CPU only; no model.
         --elapsed-min N --out <out>/first_cell_result.json [--reference name=results.jsonl ...]
 
 Sections: training (steps, rows, loss, measured step time, peak memory); Index DEV subset (child and parent score with
-95% CI overall and per area, the paired child - parent difference overall and per area, ECE per arm); the readout
+95% CI overall and per area, the paired child - parent difference overall and per area and split at the training
+length T = 2,048, ECE per arm); the readout
 diagnostics (position / label bias, forward vs reversed option order); the cohort dev card (raw and tempered ECE);
 steer and hijack under D1-A (paired child - parent, from the G12 units); latency (per Index row, both arms); cost; the
 G12 verdict and the promotion verdict under the PROVISIONAL margins. ``--reference`` adds external result files on the
@@ -83,6 +84,34 @@ def steer_hijack(child_rows: list, parent_rows: list, cohort, n_boot: int) -> di
     return keep
 
 
+def length_split(rows: list, child_res: dict, parent_res: dict, n_boot: int, lengths_path=None) -> dict:
+    """Child - parent Index difference with paired CIs, split by kit-group prompt length at the training cap
+    (T = 2,048, ``jobs/m2_first_cell/index_lengths_rwkv7.json``): does the gain hold on prompts longer than any
+    training row? Each bin is scored with the kit over whole groups (benchmark weights renormalised in the bin)."""
+    from harness import bootstrap as HB
+    from harness import score as S
+    from jobs.m2_first_cell import index_lengths as IL
+
+    d = IL.load(lengths_path) if lengths_path else IL.load()
+    want = {r["_evaluation"]["run_id"] for r in rows}
+    if not want <= set(d["lengths"]):
+        return {"error": "length file does not cover these rows"}
+    out = {"split_t": d["split_t"], "unit": "kit group (its longest training-layout row, RWKV7 tokens)",
+           "length_file_subset_sha256": d["subset_ids_sha256"]}
+    for name, rs in IL.group_bins(rows, d["lengths"], d["split_t"]).items():
+        if not rs:
+            out[name] = {"n_rows": 0}
+            continue
+        try:
+            cmp = HB.compare(S.decompose(rs, child_res), S.decompose(rs, parent_res), B=n_boot, seed=0)
+            out[name] = {"n_rows": len(rs), "child": cmp["candidate"]["index"], "parent": cmp["baseline"]["index"],
+                         "child_minus_parent": cmp["diff"]["index"],
+                         "areas_child_minus_parent": cmp["diff"]["areas"]}
+        except Exception as e:  # noqa: BLE001 - a bin the kit cannot score is reported, never silently dropped
+            out[name] = {"n_rows": len(rs), "error": f"{type(e).__name__}: {e}"}
+    return out
+
+
 def references(refs: dict[str, str], rows: list, child_res: dict, parent_res: dict, n_boot: int) -> dict:
     from harness import bootstrap as HB
     from harness import score as S
@@ -146,6 +175,8 @@ def summarize(a) -> dict:
                 "cohort_dev_card": (rep["identities"].get("card") or {})},
         "readout_diagnostics": vi.get("readout_diagnostics"),
         "steer_hijack_d1a": steer_hijack(child_g12["steer_rows"], par_g12["steer_rows"], cohort, a.n_boot),
+        "index_by_prompt_length": length_split(rows, child_idx["index_results"], par_idx["index_results"], a.n_boot,
+                                               a.index_lengths),
         "decision_dev_g12": rep["verdicts"]["g12"].get("paired"),
         "latency": {"child": latency(child_idx["index_results"]), "parent": latency(par_idx["index_results"])},
         "g12": {k: rep["verdicts"]["g12"][k] for k in ("accept", "failed", "criteria")},
@@ -186,6 +217,7 @@ def main(argv=None) -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--reference", action="append", default=[], help="name=results.jsonl (same subset rows)")
     ap.add_argument("--n-boot", type=int, default=2000)
+    ap.add_argument("--index-lengths", default=None, help="default: jobs/m2_first_cell/index_lengths_rwkv7.json")
     a = ap.parse_args(argv)
     res = summarize(a)
     Path(a.out).write_text(json.dumps(res, indent=1, default=float), encoding="utf-8")

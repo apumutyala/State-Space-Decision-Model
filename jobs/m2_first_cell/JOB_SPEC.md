@@ -14,7 +14,7 @@ option-likelihood readout (24.9 [22.4, 27.8] on the 2,008-row Index DEV subset, 
 | Loss | Clef arm: LS-CE (0.1) + Brier, + RPS on score questions | as asked |
 | Data | PR #44 150k set (pointer `sample-150000-seed20261006`), 24,000 records drawn by `sha256(seed:id)`; injection augmentation is in the build (D1-A verbatim 8,049, training-only hijack 4,066, labels unchanged) | v2 is not merged |
 | Guards | content-index guard (`7cbe6c89…`, readiness file required), cohort v2 excluded by id + content + source item (build) and re-checked (`train.train_set`: 0 held-out records allowed, manifest-verified lines, content re-hash), D1-B held-out gate over all 150k | |
-| Steps | batch 1 x accumulation 8, warmup 50, `max_minutes` 190, `max_steps` 3,000, T ladder 512 / 1,024 / 2,048, K ≤ 16 | |
+| Steps | batch 1 x accumulation 8, warmup 50, `max_minutes` 180, `max_steps` 3,000, T ladder 512 / 1,024 / 2,048, K ≤ 16 | |
 
 **Held-out finding (new).** `train.heldout` finds a D1-B `soft_framing` fragment ("rather than relying on") in three
 MMLU aux_train records of the 150k set (natural text; the build's 6-gram guard does not flag them). They are excluded
@@ -25,35 +25,48 @@ and every drawn record is re-scanned.
 
 job-tkfaj probe: prefill 3,757 tok/s at 2,048 tokens (4,407 at 8,192), small call 0.117 s, pack call 0.60 s.
 Training rows (2,000-record sample of the 150k set, real tokenizer): 0.91 kept rows per record, mean 619 tokens, K 3.4.
-Expected step ≈ 8 rows x (3 x 619 / 3,757 + ~0.4 s of call overhead) ≈ 7 s, so 190 min ≈ 1,600 steps ≈ 13k rows ≈ 8 M
+Expected step ≈ 8 rows x (3 x 619 / 3,757 + ~0.4 s of call overhead) ≈ 7 s, so 180 min ≈ 1,500 steps ≈ 12k rows ≈ 7.5 M
 tokens. Not a measurement: the ladder and the 10-step check measure it.
 
 ## Phases (`job_params.json`; H100 batch $0.0495/min)
 
+The parent arm runs BEFORE training (review fix 1): its live rate guard measures this box's scoring speed, and
+`jobs.m2_first_cell.reprice` re-prices the child evals at that measured speed. A slow box stops (exit 15) after
+~2 h of parent scoring instead of after training.
+
 | Phase | Cap | Expected | Content | Exit |
 |---|---|---|---|---|
-| setup | 25 | 15 | env pins; fla guard; PR #16 records, 150k set (pointer), cohort rebuild, snapshot + vendored code, DEV rows; subset rows; **every eval phase priced from `TOK_S` / `CALL_S`** | 4 / 5 / 10 / 15 |
+| setup | 25 | 15 | env pins + WKV selection check; fla guard; PR #16 records, 150k set (pointer), cohort rebuild, snapshot + vendored code, DEV rows; subset rows; every eval phase priced from `TOK_S` / `CALL_S` | 4 / 5 / 10 / 15 |
 | guard | 5 | 3 | `guard_ready` (content index == pin) | 30 / 31 / 32 |
-| heldout | 10 | 3 | `train.train_set heldout` (hits == pinned exclusions) | 33 |
-| cell | 230 | 220 | smoke (cache == recompute fork), ladder, training (190 min), cards at step 0 and the end | 21–29 |
+| heldout | 10 | 3 | `train.train_set heldout` (hits == pinned exclusions); exported | 33 |
 | parent_g12 | 75 | 65 | stock readout: cohort dev + steer_dev (1,800 requests, clean + 4 D1-A = 9,000 units), live weighted rate guard | 15 / 10 / 9 / 7 |
-| parent_index | 55 | 48 | stock readout: Index DEV subset + order diagnostic | 15 / 10 / 9 / 7 |
-| evals | 170 | 155 | child: temperature fit (cohort calibration), dev card, G12 (full steer set), Index DEV subset + order diagnostic | 15 / 10 / 9 / 7 |
+| parent_index | 65 | 48 | stock readout: Index DEV subset + order diagnostic; then the child evals are re-priced at the measured speed | 15 / 10 / 9 / 7 |
+| cell | 220 | 210 | smoke (cache == recompute fork), ladder, training (180 min, cumulative over restarts), cards at step 0 and the end | 21–29 / 35 |
+| evals | 180 | 155 | child: temperature fit (cohort calibration), dev card, G12 (full steer set), Index DEV subset + order diagnostic | 15 / 10 / 9 / 7 |
 | report | 5 | 4 | `summarize` -> `first_cell_result.json` (finalize validator); final checkpoint copied to `/output/ckpt` | 9 |
 
-Schedule 575 + reserve 7 = 582 min. **Worst case** (20 build + 2 x 582) x $0.0495 = **$58.61** (cap $60).
-**Expected ≈ $26.1** (528 min incl. build). A G12 reject is a measured outcome (exit 0, reported).
+Schedule 585 + reserve 7 = 592 min. **Worst case** (20 build + 2 x 592) x $0.0495 = **$59.60** (cap $60).
+**Expected ≈ $25.6** (518 min incl. build). A G12 reject is a measured outcome (exit 0, reported).
 
-Measured-rate stops: setup preflights (exit 15 before any training; the caps leave less than 20 % rate margin); ladder and
-10-step checks (exit 26 if 600 optimiser steps are out of reach); live weighted rate guard on every scoring phase
-(`rate_guard run-weighted`, exit 15 at a projection past 95 % of the cap). Restart: training resumes from
-`$GMN_CHECKPOINT_DIR`; cached parent stages are skipped.
+Measured-rate stops: setup preflights at the env rates (exit 15); the parent arm's live weighted rate guard and the
+re-price at its measured speed, both before training (exit 15); ladder and 10-step checks (exit 26 if 600 optimiser
+steps are out of reach); live weighted rate guard on the child evals (exit 15 at a projection past 95 % of the cap).
+Rate margin at the caps (projection <= 95 % of the cap): parent_g12 tolerates a box 10 % slower than job-tkfaj
+(rates and per-call latency), parent_index 31 %, child evals 12 %; slower boxes stop before training.
+Restart: cached parent stages are skipped (their rate reports stay in the arm dir); training resumes from
+`$GMN_CHECKPOINT_DIR` with the 180-min budget reduced by what the checkpointed steps already used (`train_clock` in
+`cell.json`), so a restart cannot train past the pre-registered budget.
+
+WKV: `rwkv7_wkv: "chunked"` (the checkpoint's own path, the measured one). If the fla gate (job-jn47u) returns ADOPT
+and `GPU_VERIFIED` is set, flipping the config to `"fla"` switches both arms; re-measure `TOK_S` / `CALL_S` first.
 
 ## What the result shows
 
 `first_cell_result.json`: Index DEV subset score + 95% CI, overall and per area, for the trained child and the stock
 parent, and the paired child − parent difference overall and per area; ECE (debiased and board protocol) per arm on
-the subset, and raw / tempered on the cohort dev card; steer and hijack under D1-A (paired, full G12 set); per-row
+the subset, and raw / tempered on the cohort dev card; the child − parent Index difference split at the training length
+(kit groups whose longest training-layout row is ≤ 2,048 vs > 2,048 RWKV7 tokens: 455 of 2,008 rows are longer,
+`index_lengths_rwkv7.json`), with paired CIs; steer and hijack under D1-A (paired, full G12 set); per-row
 latency; training loss / steps / step time / peak memory; cost; G12 verdict and the promotion verdict under the
 provisional margins (m_cap 1.0, m_steer 0.02, m_ece 0.01, **PENDING CODEX APPROVAL #36**; reported, not gating).
 Readout diagnostics (both arms): position / label bias (chosen-first vs gold-first, by K and area), and accuracy and
