@@ -34,14 +34,21 @@ attention-free parent or satisfy the L0 learned capability gate.
   grounding. A separate development cohort is needed to learn whether this is
   systematic, including per-slot accuracy and free-running task correctness.
   Do not infer a general capability rate or L0 pass from N=1.
-- **Current follow-up state:** Preparation only; no follow-up model run.
-  Sixteen preparation tests cover exact task hashes, the N=2 denominator and
-  matched initial-state checks, both-arm provider failures, pre-provider failures,
-  per-task raw identities, and a second-task runner exception preserving the
-  completed first pair. An unattempted task remains in the pinned cohort
-  manifest if the global cap stops execution; it cannot count as a success or
-  silently shrink the intended N=2 denominator. No N=2 aggregate is emitted
-  unless both task reports complete.
+- **Completed follow-up:** Both pinned comparisons completed within the cohort
+  cap. Direct relation selection was correct on 1/2 tasks. The planner was
+  task-correct on 0/2: for both tasks it selected the first record's price for
+  both operands and `greater_than`, and the checker rejected each false
+  assertion. Both arms used identical starting state per task. The preselected
+  two-case result has no CI and does not establish a population rate. Full raw
+  trace and receipt are in
+  `receipts/2026-10-06-L-qwen-cpu-cohort2/`.
+- **Preparation tests:** Sixteen tests cover exact task hashes, the N=2
+  denominator and matched initial-state checks, both-arm provider failures,
+  pre-provider failures, per-task raw identities, and a second-task runner
+  exception preserving the completed first pair. An unattempted task remains
+  in the pinned cohort manifest if the global cap stops execution; it cannot
+  count as success or silently shrink the intended N=2 denominator. No N=2
+  aggregate is emitted unless both task reports complete.
 
 Dependency: PR #37 merged into `agent-main` at `57804e2`; this branch now
 integrates the tracked paired caller. The script still fails with a clear

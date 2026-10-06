@@ -1,0 +1,30 @@
+{
+  "source_commit": "4f4c3c0dfdd93c96a82a2c4bf2f992fca573dd55",
+  "cohort": [
+    {
+      "task_id": "synthetic-development_validation-271828-2",
+      "task": "For October 2026, compare Kestrel's and Lumen's warranty months.",
+      "target": {"left": ["development-record-1", "warranty_months"], "right": ["development-record-2", "warranty_months"], "relation": "less_than"},
+      "record_values": {"Kestrel": {"warranty_months": 40, "price_usd": "228.53"}, "Lumen": {"warranty_months": 55, "price_usd": "228.53"}},
+      "direct": {"choice": "less_than", "correct": true},
+      "planner": {"left": ["development-record-1", "price"], "right": ["development-record-1", "price"], "relation": "greater_than", "status": "kernel_rejected", "reason": "unsupported_assertion"},
+      "same_initial_state": true,
+      "initial_state_sha256": "346fd2f2f9dd18d0de6085aee6b7715e96aafe643454b0f3a4e37e47dd038d44"
+    },
+    {
+      "task_id": "synthetic-development_validation-271828-5",
+      "task": "For October 2026, compare Grove's and Lumen's price.",
+      "target": {"left": ["development-record-1", "price"], "right": ["development-record-2", "price"], "relation": "less_than"},
+      "record_values": {"Grove": {"price_usd": "288.20"}, "Lumen": {"price_usd": "288.62"}},
+      "direct": {"choice": "greater_than", "correct": false},
+      "planner": {"left": ["development-record-1", "price"], "right": ["development-record-1", "price"], "relation": "greater_than", "status": "kernel_rejected", "reason": "unsupported_assertion"},
+      "same_initial_state": true,
+      "initial_state_sha256": "7936c58e1dfa6518cbdb54d2107eae98d31e61c7082aaea63b32ec15e813e5be"
+    }
+  ],
+  "direct_correct": 1,
+  "planner_task_correct": 0,
+  "paired_correct": 0,
+  "confidence_interval": null,
+  "claim_limit": "two preselected synthetic comparisons only; no population, capability or qualification claim"
+}
