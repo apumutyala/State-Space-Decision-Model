@@ -6,9 +6,9 @@ Two agents build one model family. Git is the only shared memory: no claim, plan
 
 | Track | Owner | Scope |
 |---|---|---|
-| **D: SSM-Decision (System 1)** | `claude` (Claude Code) | Backbones (Q9-AF conversion, RWKV7, Mamba-3 reference), decision heads, typed outputs, calibration, injection/steer evaluation, Decision Index harness, the semantic-interface arms *inside* the core (records, KEEP/SET/RETRACT/UNKNOWN/CONFLICT) |
-| **L: SSM-Language (grown from D)** | `partner` | Semantic program language (Assert/Infer/Compare/Explain/Ask/Quote/Hypothesize/Plan), module contracts and checker, realizer/grammar, verified emission, L0–L4 growth, authority and information-flow specification |
-| **Shared** | both, cross-reviewed | `INTERFACE.md` (the D→L seam), evaluation harness, intervention protocol, spend ledger, `techniques/` |
+| **D: SSM-Decision (System 1)** | `claude` (Claude Code; branches `claude/*`) | Backbones (Q9-AF conversion, RWKV7, Mamba-3 reference), decision heads, typed outputs, calibration, injection/steer evaluation, Decision Index harness, the semantic-interface arms *inside* the core (records, KEEP/SET/RETRACT/UNKNOWN/CONFLICT) |
+| **L: SSM-Language (grown from D)** | `codex` (branches `codex/*`; paths `plans/codex/`, `language_growth/`) | Semantic program language (Assert/Infer/Compare/Explain/Ask/Quote/Hypothesize/Plan), module contracts and checker, realizer/grammar, verified emission, L0–L4 growth, authority and information-flow specification |
+| **Shared** | both, cross-reviewed | `interfaces/DECISION_LANGUAGE_V0.md` (canonical D→L seam; Claude deltas in `INTERFACE.md`), evaluation harness, intervention protocol, spend ledger, `techniques/` |
 
 Ownership means you write it and merge it after review. It does not mean the other agent can't open PRs against it; those just need the owner's approval.
 
@@ -18,11 +18,12 @@ Ownership means you write it and merge it after review. It does not mean the oth
 main          user-approved milestones only (tagged m0, m1, ...)
 agent-main    integration branch; both agents merge here after cross-review
 claude/<topic>    Track D work branches
-partner/<topic>   Track L work branches
+codex/<topic>     Track L work branches
 ```
 
 - Branch from `agent-main`. Rebase on it before opening a PR.
 - Never push directly to `agent-main` or `main`. Never force-push a shared branch.
+- Stage only your own paths (no `git add -A` over the other agent's uncommitted files).
 - Small PRs (one experiment, one module, or one doc), merged often. A PR open more than 2 working sessions gets split or closed.
 
 ## PR rules
@@ -41,6 +42,7 @@ Every PR uses the template in `.github/pull_request_template.md`.
 | Review, question about a specific change | PR review comments |
 | Blocker, cross-track request, design question | GitHub issue with a label: `blocker`, `interface`, `decision-needed`, `result`, `spend` |
 | Anything the user must decide | issue labelled `decision-needed`, assigned to the user, plus one line in the agent's chat |
+| Handoff notes | `coordination/` (one file per handoff/response) |
 | Running status | `STATUS.md` (one section per track, updated in each PR) |
 
 Chat with the user is not a channel between agents. If it matters to the other agent, it goes in an issue or PR.
@@ -72,7 +74,7 @@ Receipts live in `receipts/<date>-<track>-<slug>/`.
 
 ## Compute and spend
 
-- **Budget:** $525 in SF Compute credits and a $5k ceiling. Track D gets $300 of the credits, Track L $100 and the shared pool $125 (harness, reserve, independent re-runs). Both tracks need sign-off from the other agent to go over.
+- **Budget:** a single shared $525 SF Compute envelope (one allowance, not one per agent): $75 joint setup/baseline/throughput gate · $250 System 1 · $100 language · $100 shared reserve. $5k planning ceiling. The first commitment is the joint $75 gate. Exceeding a line needs the other agent's sign-off.
 - **Before launching a paid job:**
   - add a planned row to `LEDGER.md`, with the estimated $ and a stop condition;
   - set a runtime ceiling;

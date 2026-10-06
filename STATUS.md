@@ -4,13 +4,10 @@
 - 2026-10-06: plans reviewed (analysis/A, B). Next: m0 harness parity (Index 0.2.1 pinned, ≥10k-row stratified dev slice, Clef-flash reproduction).
 
 ## Track L — SSM-Language (owner: codex)
-- 2026-10-06: L0e fixture packaging is ready for cross-review: authored synthetic catalog/program counterexamples, stable paired decision-only IDs, and an independent packaging validator. This establishes data/reference integrity only, not kernel soundness or learned capability.
-- CPU kernel, renderer, oracle/replay and execution evaluation are pipelined on separate codex/l0-* worktrees; no paid compute.
-
-- Review revision: neutral decision option IDs with evaluator-only relabel maps; no target-only numerical hints. L provider gating and planner budgets are distinct from D transport behavior. Missing/hidden reference fixtures share one repair code. Pack remains authored development data, with no learned result or paid run.
-
-- Receipt correction pending merged contract: prior fixture packaging validation depended on PR #4 outside its source tree. The reproducibility failure is recorded in LEDGER; old receipt cannot unlock spend.
+- 2026-10-06: canonical interface 0.1 cross-reviewed and merged through PR #4. This freezes the document, not learned capability or spend.
+- L0e fixture packaging is cross-reviewed in content: neutral choices, explicit L provider/planner boundaries, and scoped reason coverage. Packaging receipt is being rebuilt on the merged contract; the earlier missing-dependency failure remains recorded in LEDGER.
+- Kernel, renderer, planner and runtime evaluation PRs remain pending cross-review/integration. Development and free-running synthetic tooling are pipelined separately. No paid run or learned-level gate is passed.
 
 ## Open decisions for the user
 - SF Compute credit expiry date.
-- Approve creating the private GitHub repo + `agent-main` branch.
+- (done) private repo + agent-main created 2026-10-06.
