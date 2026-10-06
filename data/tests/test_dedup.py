@@ -131,3 +131,53 @@ def test_full_fingerprint_meta():
     assert meta["suite_files_uncompressed_sha256"] == D.EXPECTED_SUITE_SHA256
     assert "45" in meta["rows_by_catalog"]  # HLE covered
     assert meta["version"] == D.FP_VERSION
+
+
+PRODUCTION_META_KEYS = ("version", "rows", "rows_by_catalog", "suite_files_uncompressed_sha256")
+
+
+def _forged(fp_toy):
+    """A toy fingerprint whose metadata claims the production identity (incl. the pinned arrays hash)."""
+    fp_toy.meta.update({"version": D.FP_VERSION, "rows": D.EXPECTED_ROWS, "rows_by_catalog": {"45": 513},
+                        "suite_files_uncompressed_sha256": dict(D.EXPECTED_SUITE_SHA256),
+                        "arrays_sha256": D.PRODUCTION_ARRAYS_SHA256})
+    return fp_toy
+
+
+def test_forged_metadata_refused(fp):
+    """Track L finding on PR #16: copying production metadata onto other arrays must not pass."""
+    forged = _forged(D.Fingerprint(seg_hash=fp.seg_hash, seg_cat=fp.seg_cat, ng_hash=fp.ng_hash, ng_cat=fp.ng_cat,
+                                   mh_sig=fp.mh_sig, mh_cat=fp.mh_cat, sh_tok=fp.sh_tok, sh_off=fp.sh_off,
+                                   sh_cat=fp.sh_cat, meta=dict(fp.meta)))
+    with pytest.raises(RuntimeError, match="arrays sha256"):
+        forged.assert_production()
+
+
+def test_forged_arrays_hash_claim_refused(fp):
+    """Claiming the toy arrays' own hash in meta still fails: it is not the pinned production hash."""
+    forged = _forged(D.Fingerprint(seg_hash=fp.seg_hash, seg_cat=fp.seg_cat, ng_hash=fp.ng_hash, ng_cat=fp.ng_cat,
+                                   mh_sig=fp.mh_sig, mh_cat=fp.mh_cat, sh_tok=fp.sh_tok, sh_off=fp.sh_off,
+                                   sh_cat=fp.sh_cat, meta=dict(fp.meta)))
+    forged.meta["arrays_sha256"] = forged.arrays_sha256()
+    with pytest.raises(RuntimeError, match="pinned production"):
+        forged.assert_production()
+
+
+def test_arrays_sha256_roundtrip_and_sensitivity(fp, tmp_path):
+    p = tmp_path / "fp.npz"
+    fp.save(p)
+    fp2 = D.Fingerprint.load(p)
+    assert fp2.meta["arrays_sha256"] == fp2.arrays_sha256() == fp.arrays_sha256()
+    fp2.seg_cat = fp2.seg_cat.copy()
+    fp2.seg_cat[0] += 1
+    assert fp2.arrays_sha256() != fp.arrays_sha256()
+
+
+@pytest.mark.skipif(not config.FINGERPRINT.exists(), reason="full Index fingerprint not built locally")
+def test_production_fingerprint_passes_and_tamper_fails():
+    prod = D.Fingerprint.load(config.FINGERPRINT)
+    prod.assert_production()
+    prod.sh_cat = prod.sh_cat.copy()
+    prod.sh_cat[0] += 1  # one flipped catalog id in the arrays, metadata untouched
+    with pytest.raises(RuntimeError, match="arrays sha256"):
+        prod.assert_production()

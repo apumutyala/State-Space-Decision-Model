@@ -79,6 +79,7 @@ Recall is shown as v2 matchers → v3 matchers, for the **short** probe:
   - 536,344 short items;
   - plus the v2 arrays: segments, 13-grams and MinHash, with >100-row boilerplate removed.
   - `build_sample` now fails closed unless the fingerprint's version, suite hashes, row count and HLE coverage match the production identity. Synthetic fingerprints are allowed only in unit tests, never with `--receipt`.
+  - **Array identity (rev 2.1, Track L finding).** The guard also hashes the arrays it actually queries: name, dtype, shape and bytes of all 9 arrays, independent of npz zip timestamps. It refuses unless that hash equals both the claimed `meta.arrays_sha256` and the pinned `PRODUCTION_ARRAYS_SHA256` = `b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28`. An independent fingerprint rebuild from the snapshot reproduces this hash. Regression tests cover forged metadata, a forged self-hash, and one flipped array element on the real fingerprint.
 - **Sources:** `data/manifests/sources.lock.json`, sha256 `5c2dcbee…bd0d`.
 - **Records** (outside git): `ssdm-data/m2/build/sample-20000-seed20261006/records.jsonl.gz`, uncompressed sha256 `76f568df57d25bf5626ef26390ed82f0bb078da26d836fc5146c25699aaefb23`.
 - **Manifest** (committed): `data/manifests/sample-20000-seed20261006.manifest.jsonl.gz`, sha256 `a355ad0f94da889d15ef0f8541194e0c136211dd37e9dd9ec2a6795fc2e5231c`.
@@ -137,7 +138,7 @@ python -X utf8 -I -m pytest -v data/tests                # -> pytest.txt
 - **Injection (labels unchanged): 1,558 records.**
   - D1-A verbatim: 1,066.
   - Training-only hijack: 492.
-  - The held-out 6-gram guard passed on all 23,399 checked records.
+  - The held-out 6-gram guard passed on all 23,399 checked records. It covers the **k=8** D1-B set (rev 2.1: plus the 4 blind v0.4 templates of PR #22, 47 hashes recomputed from `a44a35e` and equal to PR #22's list; 96 forbidden 6-grams in total), and the record file is unchanged (`76f568df…`).
 - **Fact-change:** 600 pairs over 6 families. Each pair now carries identical questions (same permutation and ids) and differs only in the untrusted fact and the label. This is asserted in the build and tested through the build path.
 
 ## Independent re-check (`recheck.json`)

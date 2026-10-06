@@ -1,15 +1,15 @@
-  banking77: kept 1400 (21s)
-  clinc150: kept 1400 (27s)
-  anli: kept 1800 (43s)
-  hellaswag: kept 1600 (61s)
-  winogrande: kept 1400 (66s)
-  gsm8k: kept 1400 (74s)
-  mmlu_aux: kept 1800 (79s)
-  sst5: kept 1000 (80s)
-  boolq: kept 1200 (83s)
-  when2call: kept 1200 (95s)
-  toolace: kept 1600 (105s)
-  nq: kept 1800 (184s)
+  banking77: kept 1400 (25s)
+  clinc150: kept 1400 (31s)
+  anli: kept 1800 (49s)
+  hellaswag: kept 1600 (68s)
+  winogrande: kept 1400 (74s)
+  gsm8k: kept 1400 (82s)
+  mmlu_aux: kept 1800 (90s)
+  sst5: kept 1000 (93s)
+  boolq: kept 1200 (98s)
+  when2call: kept 1200 (120s)
+  toolace: kept 1600 (137s)
+  nq: kept 1800 (228s)
   multi: kept 1200
   factchange: kept 1200
 {
@@ -489,5 +489,5 @@
   "words:<64": 3497,
   "words:>=4096": 941
  },
- "seconds": 208.0
+ "seconds": 246.2
 }
