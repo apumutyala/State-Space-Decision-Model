@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import json
 import time
@@ -36,7 +37,7 @@ def predict(model, items, batch_size: int = 8) -> tuple[torch.Tensor, list[int],
     kmax = max(i.row.n_options for i in items)
     for s in range(0, len(items), batch_size):
         chunk = items[s : s + batch_size]
-        lp = model([i.row for i in chunk]).log_probs
+        lp = model([i.row for i in chunk]).log_probs.detach().float().cpu()
         pad = torch.full((lp.shape[0], kmax), float("-inf"))
         pad[:, : lp.shape[1]] = lp
         lps.append(pad)
@@ -51,6 +52,10 @@ def run_card(model, items, step: int, out_dir: str | Path | None = None,
              index_rows: list | None = None, index_predict: Callable | None = None,
              steer_variants: list | None = None, steer_decide: Callable | None = None) -> dict[str, Any]:
     t0 = time.time()
+    if temperature is not None and temperature.fitted_on is not None:
+        eval_hash = hashlib.sha256("\n".join(sorted(i.id for i in items)).encode()).hexdigest()
+        if temperature.fitted_on == eval_hash:
+            raise ValueError("temperature was fitted on the eval items themselves; use a separate calibration split")
     lp, labels, ev, ks = predict(model, items)
     card: dict[str, Any] = {"step": step, "n_items": len(items)}
     probs = lp.exp().tolist()

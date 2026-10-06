@@ -33,6 +33,7 @@ from heads.model import DecisionModel
 
 from .data import Item
 from .evalcard import run_card
+from .guard import SplitGuard
 from .lora import apply_lora, lora_parameters
 from .losses import LossConfig, decision_loss
 
@@ -42,6 +43,7 @@ class TrainConfig:
     head: str = "integrator"
     head_kwargs: dict = field(default_factory=dict)
     layout: str = "ordered"
+    fork_mode: str = "cache"  # final-state fork: "cache" (state copies) or "recompute" (K full rows)
     lora_rank: int = 256
     lora_alpha: float | None = None
     lora_dropout: float = 0.0
@@ -61,6 +63,7 @@ class TrainConfig:
     ckpt_dir: str | None = None
     ckpt_every: int = 0
     eval_every: int = 0
+    require_guard: bool = True  # refuse to train without a SplitGuard (GOAL.md integrity rule)
 
     def to_json(self) -> dict:
         d = asdict(self)
@@ -68,7 +71,7 @@ class TrainConfig:
         return d
 
     #: operational fields that may differ between a run and its resumption
-    OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps")
+    OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
 
     def hash(self) -> str:
         d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL}
@@ -77,15 +80,17 @@ class TrainConfig:
 
 def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     """Freeze the backbone, add LoRA (rank 0 = head-only), enable checkpointing."""
-    targets = cfg.lora_targets or (model.backbone.spec.lora_targets if model.backbone.spec else None)
+    targets = cfg.lora_targets or (model.backbone.spec.lora_groups if model.backbone.spec else None)
     replaced: list[str] = []
     if cfg.lora_rank > 0:
         if targets is None:
             raise ValueError("no LoRA targets: set cfg.lora_targets or give the backbone a spec")
-        replaced = apply_lora(model.backbone.model, targets, cfg.lora_rank, cfg.lora_alpha, cfg.lora_dropout)
+        found = apply_lora(model.backbone.model, targets, cfg.lora_rank, cfg.lora_alpha, cfg.lora_dropout)
+        replaced = sorted({n for names in found.values() for n in names})
     else:
         for p in model.backbone.parameters():
             p.requires_grad_(False)
+    model.backbone.fork_mode = cfg.fork_mode
     if cfg.grad_checkpointing:
         model.backbone.enable_gradient_checkpointing()
     return replaced
@@ -93,7 +98,12 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
 
 class Trainer:
     def __init__(self, model: DecisionModel, cfg: TrainConfig, train_items: list[Item],
-                 eval_items: list[Item] | None = None, prepared: bool = False) -> None:
+                 eval_items: list[Item] | None = None, prepared: bool = False,
+                 guard: SplitGuard | None = None) -> None:
+        if cfg.require_guard and guard is None:
+            raise ValueError("TrainConfig.require_guard: pass a SplitGuard built from the Index dev/test "
+                             "manifests (or SplitGuard.synthetic_only for synthetic toys)")
+        self.guard = guard
         self.model, self.cfg = model, cfg
         self.train_items, self.eval_items = train_items, eval_items or []
         self.lora_modules = [] if prepared else prepare_model(model, cfg)
@@ -153,7 +163,7 @@ class Trainer:
             with self._autocast():
                 fw = self.model([i.row for i in batch])
             lp = fw.log_probs.float()
-            y = torch.tensor([i.label for i in batch])
+            y = torch.tensor([i.label for i in batch], device=lp.device)
             loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss) / self.cfg.grad_accum
             loss.backward()
             total += float(loss.detach())
@@ -186,6 +196,7 @@ class Trainer:
             "history": self.history,
             "backbone": getattr(self.model.backbone.spec, "name", None),
             "lora_modules": self.lora_modules,
+            "guard": None if self.guard is None else self.guard.identity(),
         }
 
     def save(self, path: str | Path | None = None) -> Path:

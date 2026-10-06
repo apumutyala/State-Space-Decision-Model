@@ -38,7 +38,7 @@ class DecisionModel(nn.Module):
     def forward(self, rows: Sequence[LayoutRow], return_attribution: bool = False) -> Forward:
         x = build_head_input(self.backbone, rows, need_fork=self.head.needs_fork, pad_id=self.pad_id)
         out = self.head(x, return_attribution=return_attribution)
-        lp = self.typed(out.logits, [r.qtype for r in rows], x.option_mask, x.e)
+        lp = self.typed(out.logits, [r.qtype for r in rows], x.ks, x.e)
         return Forward(lp, out, x)
 
     @torch.no_grad()

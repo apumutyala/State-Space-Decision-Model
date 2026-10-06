@@ -16,7 +16,7 @@ per-option selective recurrence (plans/partner/PLAN.md "Two heads to compare").
 Attribution is ACCOUNTING-exact, not causal (B-review §3.5, CODEX_CRITICAL_COMPARISON):
 the increment booked at token t is computed from a backbone feature that already
 mixes all earlier tokens, so it says where evidence was booked, not which token
-caused it. Causal claims need perturb-and-recompute (``erase_token_effect``).
+caused it. Causal claims need perturb-and-recompute (``substitute_token_effect``).
 
 Heads
 -----
@@ -25,13 +25,19 @@ Heads
 (b) ``fork``        z_k = g(f_k), f_k = backbone feature after prefix + continuation_k.
 (c) ``snapshot``    evidence split into at most S chunks (S fixed, so head memory is
     O(S*K) scalars regardless of length); per-chunk partial sums of the integrator
-    increments plus a chunk-boundary readout, aggregated by sum / max / sigmoid-gated
-    sum. No softmax over positions or chunks; no backbone state is snapshotted.
+    increments plus a chunk-boundary readout, aggregated by sum / max / gated unnormalised
+    sum (an independent sigmoid per slot, no normalisation across slots). No softmax over
+    positions or chunks; no backbone state is snapshotted. Caveats: equal-count chunking needs
+    the evidence length before the scan (fine with options-first rows, whose length is known;
+    not a streaming construct), and a streaming implementation must reduce each boundary
+    readout (S x D) to its S x K scores at the boundary to keep the O(S*K) claim.
 (d) ``head_b``      r[t,k] = a[t,k] * r[t-1,k] + b[t,k] * v[t]; (a, b) = f(v_t, e_k, q, s);
     z_k = g(r[T,k], e_k, s), s = symmetric mean summary of options. O(KTd) work, O(Kd) state.
-(e) ``clef_control`` Clef-style routing head: options cross-attend over the whole sequence
-    (2 routing layers) then self-attend among options (4 layers). Uses softmax over
-    positions: a priced CONTROL, never the entrant.
+(e) ``clef_control`` Clef-SHAPED control: options cross-attend over the whole sequence
+    (2 routing layers) then self-attend among options (4 layers), with the released head
+    config sizes. Shape-matched, not recipe-matched: Clef's scorer is a prior + gated joint
+    over lexical/contextual option spans with state-first ordering (reviews/01), ~128M params
+    vs ~89M here. Uses softmax over positions: a priced CONTROL, never the entrant.
 """
 
 from __future__ import annotations
@@ -106,7 +112,7 @@ class IntegratorBank(DecisionHead):
         k = x.e.shape[1]
         qe = x.q_pre.unsqueeze(1).expand(-1, k, -1)
         bias = self.prior(torch.cat([x.e, qe], -1)).squeeze(-1)
-        acc = torch.zeros((bsz, k), dtype=x.h.dtype)
+        acc = x.h.new_zeros((bsz, k))
         attr = [] if return_attribution else None
         for t0 in range(0, t, self.t_chunk):
             d = self.increments(x, t0, min(t, t0 + self.t_chunk))
@@ -176,20 +182,21 @@ class SnapshotFork(DecisionHead):
         qe = x.q_pre.unsqueeze(1).expand(-1, k, -1)
         bias = self.inc.prior(torch.cat([x.e, qe], -1)).squeeze(-1)
         cid = self.chunk_ids(x.evidence_mask)  # [B, T]
-        onehot = F.one_hot(cid.clamp_min(0), self.S).to(x.h.dtype) * (cid >= 0).unsqueeze(-1)  # [B,T,S]
-        part = torch.zeros((bsz, self.S, k), dtype=x.h.dtype)
+        slots = torch.arange(self.S, device=x.device)
+        onehot = (cid.unsqueeze(-1) == slots).to(x.h.dtype)  # [B,T,S]; cid = -1 matches no slot
+        part = x.h.new_zeros((bsz, self.S, k))
         for t0 in range(0, t, self.inc.t_chunk):
             t1 = min(t, t0 + self.inc.t_chunk)
             d = self.inc.increments(x, t0, t1)  # [B, t, K]
             part = part + torch.einsum("bts,btk->bsk", onehot[:, t0:t1], d)
         # chunk-boundary feature = feature at the last evidence token of each chunk
-        pos = torch.arange(t).expand(bsz, t)
-        last = torch.full((bsz, self.S), -1, dtype=torch.long)
+        pos = torch.arange(t, device=x.device).expand(bsz, t)
+        last = torch.full((bsz, self.S), -1, dtype=torch.long, device=x.device)
         for s in range(self.S):
             p = torch.where(cid == s, pos, torch.full_like(pos, -1)).max(-1).values
             last[:, s] = p
         present = last >= 0  # [B, S]
-        hb = x.h[torch.arange(bsz).unsqueeze(1), last.clamp_min(0)]  # [B, S, D]
+        hb = x.h[torch.arange(bsz, device=x.device).unsqueeze(1), last.clamp_min(0)]  # [B, S, D]
         ve = self.rv(x.e)
         read = F.silu(self.ru(hb).unsqueeze(2) * ve.unsqueeze(1)) @ self.rw / math.sqrt(len(self.rw))  # [B,S,K]
         chunk = (part + read) * present.unsqueeze(-1)
@@ -249,7 +256,7 @@ class HeadB(DecisionHead):
         bsz, t, _ = x.h.shape
         s, c = self._setup(x)
         k = c.shape[1]
-        r = torch.zeros((bsz, k, self.d), dtype=x.h.dtype)
+        r = x.h.new_zeros((bsz, k, self.d))
         for t0 in range(0, t, self.t_chunk):
             t1 = min(t, t0 + self.t_chunk)
             v = self.vproj(x.h[:, t0:t1])
@@ -267,7 +274,7 @@ class HeadB(DecisionHead):
         """Token-by-token recurrence (streaming form, O(Kd) state) for testing the chunked scan."""
         s, c = self._setup(x)
         bsz, t, _ = x.h.shape
-        r = torch.zeros((bsz, c.shape[1], self.d))
+        r = x.h.new_zeros((bsz, c.shape[1], self.d))
         v_all = self.vproj(x.h)
         for i in range(t):
             log_a, b = self._gates(v_all[:, i : i + 1], c, x.evidence_mask[:, i : i + 1])
@@ -296,7 +303,8 @@ class _RoutingLayer(nn.Module):
 
 
 class ClefCrossAttentionControl(DecisionHead):
-    """Clef joint head shape (reviews/01): width 1024, 2 routing + 4 decoder layers, 16 heads, ff 4096."""
+    """Clef-shaped control (released joint_head_config sizes: width 1024, 2 routing + 4 layers,
+    16 heads, ff 4096). Not Clef's scoring recipe; see the module docstring."""
 
     name = "clef_control"
     attention_free = False
@@ -345,10 +353,11 @@ def make_head(name: str, d_model: int, **kwargs) -> DecisionHead:
 
 
 @torch.no_grad()
-def erase_token_effect(model_fn, rows, positions) -> list:
-    """Perturb-and-recompute hook: logits with evidence tokens at ``positions`` replaced by pad,
-    recomputed through the whole backbone. Compare with booked increments to test whether
-    accounting attribution is causal (B-review §3.5). ``model_fn(rows) -> logits [B, K]``."""
+def substitute_token_effect(model_fn, rows, positions, replacement_id: int) -> list:
+    """Perturb-and-recompute hook (token SUBSTITUTION, not deletion: the replacement token is
+    still read by the backbone): logits with tokens at ``positions`` replaced by
+    ``replacement_id``, recomputed through the whole backbone. Compare with booked increments to
+    test whether accounting attribution is causal (B-review §3.5). ``model_fn(rows) -> logits``."""
     import copy
 
     out = []
@@ -358,7 +367,7 @@ def erase_token_effect(model_fn, rows, positions) -> list:
             r2 = copy.copy(r)
             r2.ids = list(r.ids)
             for p in pos:
-                r2.ids[p] = 0
+                r2.ids[p] = replacement_id
             mod.append(r2)
         out.append(model_fn(mod))
     return out

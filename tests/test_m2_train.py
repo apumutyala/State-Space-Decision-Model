@@ -12,11 +12,13 @@ from heads.backbone import BACKBONES, tiny_backbone  # noqa: E402
 from train.calibration import FeatureTemperature, features  # noqa: E402
 from train.data import TOY_TEMPLATE, items_from_records, toy_records  # noqa: E402
 from train.evalcard import run_card  # noqa: E402
+from train.guard import SplitGuard  # noqa: E402
 from train.lora import LoRALinear, apply_lora, lora_parameters  # noqa: E402
 from train.losses import LossConfig, brier, decision_loss, label_smoothed_ce, nll, rps  # noqa: E402
 from train.trainer import Trainer, TrainConfig  # noqa: E402
 
 ENC = ByteEncoder()
+G = SplitGuard.synthetic_only("unit tests: train.data.toy_records only")
 
 
 @pytest.fixture(scope="module")
@@ -34,7 +36,8 @@ def test_lora_is_identity_at_init_and_only_lora_trains():
     bb = tiny_backbone(seed=0, hidden=16)
     x = torch.randint(4, 200, (2, 11))
     before = bb.features(x).detach()
-    names = apply_lora(bb.model, bb.spec.lora_targets, rank=256)
+    found = apply_lora(bb.model, bb.spec.lora_groups, rank=256)
+    names = [n for ns in found.values() for n in ns]
     assert names and all(isinstance(bb.model.get_submodule(n), LoRALinear) for n in names)
     assert torch.allclose(bb.features(x), before, atol=1e-6)
     trainable = {n for n, p in bb.named_parameters() if p.requires_grad}
@@ -78,7 +81,7 @@ def test_loss_decreases_on_toy_task(toy, head, arm):
     m = fresh(head)
     cfg = TrainConfig(head=head, lora_rank=4, lr_head=1e-2, lr_lora=1e-3, batch_size=8, max_steps=60,
                       loss=LossConfig(arm=arm))
-    h = Trainer(m, cfg, toy).train()
+    h = Trainer(m, cfg, toy, guard=G).train()
     first = sum(x["loss"] for x in h[:8]) / 8
     last = sum(x["loss"] for x in h[-8:]) / 8
     assert last < 0.85 * first, (first, last)
@@ -89,12 +92,12 @@ def test_resume_reproduces_uninterrupted_run(toy, tmp_path):
         return TrainConfig(head="snapshot", lora_rank=4, batch_size=8, max_steps=12, ckpt_dir=str(d),
                            ckpt_every=5, lr_head=1e-2, lr_lora=1e-3)
 
-    a = Trainer(fresh("snapshot"), cfg(tmp_path / "a"), toy)
+    a = Trainer(fresh("snapshot"), cfg(tmp_path / "a"), toy, guard=G)
     a.train()  # 12 steps straight; 64 rows / bs 8 -> crosses an epoch boundary at step 8
-    b = Trainer(fresh("snapshot"), cfg(tmp_path / "b"), toy)
+    b = Trainer(fresh("snapshot"), cfg(tmp_path / "b"), toy, guard=G)
     b.train(5)  # checkpoint written at step 5, then the "process" dies
     assert Trainer.latest(tmp_path / "b").name == "ckpt-step0000005.pt"
-    c = Trainer(fresh("snapshot"), cfg(tmp_path / "b"), toy)  # new process, fresh model
+    c = Trainer(fresh("snapshot"), cfg(tmp_path / "b"), toy, guard=G)  # new process, fresh model
     assert c.resume() and c.step == 5
     c.train()
     sa, sc = a.trainable_state(), c.trainable_state()
@@ -106,19 +109,19 @@ def test_resume_reproduces_uninterrupted_run(toy, tmp_path):
 
 def test_resume_rejects_a_different_config(toy, tmp_path):
     cfg = TrainConfig(head="integrator", lora_rank=4, batch_size=8, max_steps=1, ckpt_dir=str(tmp_path))
-    t = Trainer(fresh(), cfg, toy)
+    t = Trainer(fresh(), cfg, toy, guard=G)
     t.train()
     p = t.save()
     other = TrainConfig(head="integrator", lora_rank=4, batch_size=8, max_steps=1, ckpt_dir=str(tmp_path),
                         loss=LossConfig(arm="clef"))
     with pytest.raises(ValueError):
-        Trainer(fresh(), other, toy).load(p)
+        Trainer(fresh(), other, toy, guard=G).load(p)
 
 
 def test_bf16_and_gradient_checkpointing_step(toy):
     m = fresh("head_b")
     cfg = TrainConfig(head="head_b", lora_rank=4, batch_size=4, max_steps=2, bf16=True, grad_checkpointing=True)
-    t = Trainer(m, cfg, toy)
+    t = Trainer(m, cfg, toy, guard=G)
     assert m.backbone.model.gradient_checkpointing
     t.train()
     assert all(math.isfinite(x["loss"]) for x in t.history)
@@ -160,10 +163,23 @@ def test_estimator_is_sane():
     q = BACKBONES["q9af"]
     short = train_point(q, "integrator", 2048, 4)
     long = train_point(q, "integrator", 8192, 255)
-    assert long["mem_gb"]["total"] > short["mem_gb"]["total"] > q.params * 2 / 1024**3
-    assert short["lora_params"] == 32 * 256 * sum(i + o for i, o in q.lora_shapes)
+    assert long["mem_gb"]["total"] > short["mem_gb"]["total"] > q.resident_params * 2 / 1024**3
+    assert short["lora_params"] == 256 * sum((i + o) * c for i, o, c in q.lora_shapes)
+    assert 630e6 < short["lora_params"] < 645e6  # 638M on Q9-AF at r=256 (PR #14 review)
     assert train_point(q, "integrator", 2048, 4, rank=16)["lora_params"] * 16 == short["lora_params"]
-    fork = train_point(q, "fork", 8192, 255)
-    assert fork["mem_gb"]["fork"] > 10  # 255 copies of a ~71 MB fp32 recurrent state
     assert not train_point(q, "integrator", 8192, 16, grad_ckpt=False, B=8)["fits_80gb"]
     assert cell_cost(BACKBONES["mamba3-1.5b"], "head_b", 1000, 2048, 6)["usd_batch"] < cell_cost(q, "head_b", 1000, 2048, 6)["usd_batch"]
+
+
+def test_estimator_prices_the_recompute_fork_honestly():
+    from train.estimate import cell_cost, train_point
+
+    q = BACKBONES["q9af"]
+    rec = train_point(q, "fork", 8192, 255, fork_mode="recompute")
+    assert not rec["feasible"] and rec["mem_gb"]["total"] > 500  # K=255 recompute is infeasible
+    rec_cell = cell_cost(q, "fork", 30_000, 2048, 6, fork_mode="recompute")
+    base_cell = cell_cost(q, "integrator", 30_000, 2048, 6)
+    assert rec_cell["usd_batch"] > 6 * base_cell["usd_batch"]  # ~ (1 + K) x the prefix tokens
+    cache = train_point(q, "fork", 2048, 6, fork_mode="cache")
+    assert cache["feasible"] and cache["grad_ckpt"] is False  # HF drops caches under checkpointing
+    assert train_point(q, "fork", 2048, 6)["fork_mode"] == "recompute"  # default = the conservative mode

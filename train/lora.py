@@ -49,21 +49,35 @@ class LoRALinear(nn.Module):
         return self.base(x) + (self.dropout(x) @ a.t() @ b.t()) * self.scaling
 
 
-def apply_lora(model: nn.Module, targets: str, rank: int = 256, alpha: float | None = None,
-               dropout: float = 0.0) -> list[str]:
-    pattern = re.compile(targets)
+def apply_lora(model: nn.Module, targets, rank: int = 256, alpha: float | None = None,
+               dropout: float = 0.0, check_counts: bool = True) -> dict[str, list[str]]:
+    """Wrap matching ``nn.Linear`` modules. ``targets`` is a regex or a sequence of
+    ``(group, regex, expected_count)``. Every group must match at least one module, and with
+    ``check_counts`` exactly ``expected_count`` (when > 0): a wrong module-name convention
+    (e.g. fla vs HF RWKV7 names) fails loudly instead of silently training a subset."""
+    groups = [("custom", targets, 0)] if isinstance(targets, str) else list(targets)
     for p in model.parameters():
         p.requires_grad_(False)
-    replaced = []
-    for name, module in list(model.named_modules()):
-        if isinstance(module, nn.Linear) and not isinstance(module, LoRALinear) and pattern.search(name):
+    linears = [(n, m) for n, m in model.named_modules() if isinstance(m, nn.Linear) and not isinstance(m, LoRALinear)]
+    found: dict[str, list[str]] = {}
+    for gname, rx, expected in groups:
+        pat = re.compile(rx)
+        names = [n for n, _ in linears if pat.search(n)]
+        if not names:
+            raise ValueError(f"LoRA group {gname!r} ({rx!r}) matched no nn.Linear: wrong module names for this backbone?")
+        if check_counts and expected and len(names) != expected:
+            raise ValueError(f"LoRA group {gname!r} matched {len(names)} modules, expected {expected}")
+        found[gname] = names
+    done: set[str] = set()
+    for names in found.values():
+        for name in names:
+            if name in done:
+                continue
             parent_name, _, attr = name.rpartition(".")
             parent = model.get_submodule(parent_name) if parent_name else model
-            setattr(parent, attr, LoRALinear(module, rank, alpha, dropout))
-            replaced.append(name)
-    if not replaced:
-        raise ValueError(f"LoRA target pattern {targets!r} matched no nn.Linear")
-    return replaced
+            setattr(parent, attr, LoRALinear(model.get_submodule(name), rank, alpha, dropout))
+            done.add(name)
+    return found
 
 
 def lora_parameters(model: nn.Module) -> list[nn.Parameter]:
@@ -74,6 +88,6 @@ def lora_state_dict(model: nn.Module) -> dict[str, torch.Tensor]:
     return {n: p.detach().clone() for n, p in model.named_parameters() if n.endswith(("lora_A", "lora_B"))}
 
 
-def lora_param_count(shapes, rank: int, n_layers: int) -> int:
-    """Analytic LoRA parameter count for per-layer (in, out) projection shapes."""
-    return n_layers * sum(rank * (i + o) for i, o in shapes)
+def lora_param_count(shapes, rank: int) -> int:
+    """Analytic LoRA parameter count for (in, out, count) projection shapes."""
+    return sum(rank * (i + o) * c for i, o, c in shapes)
