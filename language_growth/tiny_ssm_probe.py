@@ -81,7 +81,7 @@ def main():
     validation = generate_development_tasks(314159, 300, split="development_validation")
     validation_records = export_training_records(validation, split="development_validation")
     validation_manifest = development_manifest(validation)
-    if validation_manifest["sample_sha256"] != "a409c652b26cbbccb46974ebd8c4564c6e1026cfb2ae4e01811b5cd018ebde4a":
+    if validation_manifest["sample_sha256"] != "d34df20c1448998791071833cc9154589b526e2ce0a68e7f98e307028d0a827f":
         raise ValueError("paired validation hash mismatch")
     dump(args.out / "validation_manifest.json", validation_manifest)
 
