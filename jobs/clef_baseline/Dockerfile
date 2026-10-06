@@ -1,25 +1,41 @@
 # Clef baseline job image. Built by SF Compute from the uploaded context (build_context.sh).
-# Pins: torch 2.11.0 / transformers 5.10.2 = the versions Cloudflare's model card says it tested.
-FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
-ENV DEBIAN_FRONTEND=noninteractive PIP_NO_CACHE_DIR=1 PYTHONUTF8=1 MAX_JOBS=8
-RUN apt-get update && apt-get install -y --no-install-recommends python3.12 python3.12-venv git curl ca-certificates \
-    && rm -rf /var/lib/apt/lists/* && python3.12 -m venv /venv
-ENV PATH=/venv/bin:$PATH
-RUN pip install --upgrade pip && \
-    pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128 && \
-    pip install transformers==5.10.2 safetensors huggingface_hub numpy pytest
-# Fast Gated-DeltaNet kernels (the "fastest path the model's code supports"). The devel base image ships
-# nvcc, so causal-conv1d can build from source if no wheel matches. Versions and importability are
-# recorded in ClefBackend.revision()["inference_config"]["kernel_stack"] (part of the revision hash) and
-# in env/environment.txt (pip freeze + nvcc --version). If a build fails, the job still runs on
-# transformers' torch fallback and the receipt says so (import:fla / import:causal_conv1d = false).
-RUN pip install flash-linear-attention && (pip install --no-build-isolation causal-conv1d || echo "causal-conv1d unavailable")
+#
+# Base: the same pinned torch 2.13.0 image as qual/probe9b/rwkv7 (torch 2.13.0 pins triton==3.7.1, the first Triton
+# fla 0.5.2 trusts for the gated GDN backward on Hopper, fla #640). Clef needs this too: the S1 --grad-probe and the
+# whole of job B (GCG-lite) call backward() through Qwen3.5's Gated-DeltaNet layers, and transformers 5.10.2 routes
+# those layers to fla's chunk_gated_delta_rule whenever fla imports (modeling_qwen3_5.py), so on the old torch 2.11 /
+# triton 3.6 image fla would raise (#640) at S1. FLA_TILELANG=0 pins fla's Triton backward (the path fla_guard.py
+# checks and smoke-tests); tilelang is NOT installed.
+#
+# Declared deviation from Cloudflare's model card ("Tested with torch 2.11 and transformers 5.10.2"): torch 2.11 ->
+# 2.13.0 (+ triton 3.7.1, fla/fla-core 0.5.2 pinned). transformers stays at the card's 5.10.2, so the Qwen3.5 model
+# code and AutoProcessor are the card's. joint_schema_model.py uses only stable torch.nn modules. Equivalence is
+# checked in-image by baselines/clef_probes.py (S1): decide vs systemone parity, and fast fla kernels vs
+# transformers' torch reference GDN (kernel_path). The full stack is in revision()["inference_config"]["kernel_stack"].
+FROM pytorch/pytorch:2.13.0-cuda12.6-cudnn9-devel@sha256:09c0260351b12b617408ff5711e08d88ccdbb9a21f7f6d7de67e39039b022ae1
+ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 PYTHONUTF8=1 MAX_JOBS=8 PIP_BREAK_SYSTEM_PACKAGES=1 FLA_TILELANG=0
+RUN apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir "torch==2.13.0" "triton==3.7.1" "transformers==5.10.2" "flash-linear-attention==0.5.2" "fla-core==0.5.2" "einops==0.8.2" \
+      "huggingface_hub==1.32.0" "safetensors==0.8.0" "accelerate==1.15.0" "numpy==2.2.6" "ninja==1.13.2" pytest
+# torchvision for the Qwen3.5 image/video processor classes that AutoProcessor resolves. It comes from the cu126 index so
+# its compiled ops match torch 2.13.0+cu126 (a PyPI default-CUDA wheel would fail torchvision's CUDA-version check at
+# import). It is a no-op if the base image already ships it.
+RUN pip install --no-cache-dir "torchvision==0.28.0" --index-url https://download.pytorch.org/whl/cu126
+# causal-conv1d (pinned; built from source against torch 2.13 with the base image's nvcc 12.6 and ninja, MAX_JOBS=8;
+# submit with build_timeout_minutes 90 for this compile). Best effort: without
+# it transformers uses its torch conv fallback (fla's GDN kernels are used either way); kernel_stack records it.
+RUN pip install --no-cache-dir --no-build-isolation "causal-conv1d==1.7.0" || echo "causal-conv1d unavailable"
+# Build-time fail-fast (no GPU needed): nothing above may have swapped torch/triton for other builds.
+RUN python -c "import torch, triton; v = (torch.__version__, torch.version.cuda, triton.__version__); assert v[0].split('+')[0] == '2.13.0' and v[1] == '12.6' and v[2] == '3.7.1', v; print('torch/cuda/triton', v)"
+# ... and the model-card transformers plus everything Cloudflare's loader needs at import time (CPU-only checks; the
+# GPU-side fla routing is checked at run time by fla_guard.py and the S1 kernel_path probe).
+RUN python -c "import transformers, torchvision; from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration; from transformers.models.qwen3_5 import modeling_qwen3_5 as M; v = (transformers.__version__, torchvision.__version__); assert v[0] == '5.10.2' and v[1].split('+')[0] == '0.28.0', v; assert hasattr(M, 'torch_chunk_gated_delta_rule'), 'reference GDN missing'; print('transformers/torchvision', v)"
 # Official Decision Index kit, pinned (MIT); harness from claude/m0-harness (in the context, pinned).
 RUN git clone https://github.com/apolinario/decision-index /opt/decision-index && \
     git -C /opt/decision-index checkout 87d4650b42b377c0291a89c1f1a879f9b31082bf && \
-    pip install --no-deps /opt/decision-index
+    pip install --no-cache-dir --no-deps /opt/decision-index
 COPY app/ /app/
 COPY data/ /data/
-RUN pip install --no-deps /app/harness && chmod +x /app/jobs/clef_baseline/run_job.sh
+RUN pip install --no-cache-dir --no-deps /app/harness && chmod +x /app/jobs/clef_baseline/run_job.sh
 WORKDIR /app
 CMD ["/app/jobs/clef_baseline/run_job.sh"]

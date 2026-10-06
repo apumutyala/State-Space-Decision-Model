@@ -1,0 +1,16 @@
+test_arbitrary_query_and_obligation_metadata_is_rejected (language_growth.tests.test_evaluate.DecisionRequestIsolationTests.test_arbitrary_query_and_obligation_metadata_is_rejected) ... ok
+test_caller_literal_does_not_become_a_private_membership_oracle (language_growth.tests.test_evaluate.DecisionRequestIsolationTests.test_caller_literal_does_not_become_a_private_membership_oracle) ... ok
+test_forbidden_snapshot_entry_rejects_before_serialization (language_growth.tests.test_evaluate.DecisionRequestIsolationTests.test_forbidden_snapshot_entry_rejects_before_serialization) ... ok
+test_host_obligation_cannot_name_hidden_record (language_growth.tests.test_evaluate.DecisionRequestIsolationTests.test_host_obligation_cannot_name_hidden_record) ... ok
+test_private_catalog_changes_do_not_change_public_request (language_growth.tests.test_evaluate.DecisionRequestIsolationTests.test_private_catalog_changes_do_not_change_public_request) ... ok
+test_query_constant_cannot_name_hidden_record (language_growth.tests.test_evaluate.DecisionRequestIsolationTests.test_query_constant_cannot_name_hidden_record) ... ok
+test_authored_task_label_cannot_change_observation (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_authored_task_label_cannot_change_observation) ... ok
+test_cli_mismatch_and_release_failure_are_not_success (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_cli_mismatch_and_release_failure_are_not_success) ... ok
+test_decision_request_filters_private_records_and_gold (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_decision_request_filters_private_records_and_gold) ... ok
+test_existing_output_directory_is_rejected (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_existing_output_directory_is_rejected) ... ok
+test_observed_boundary_and_repair_are_distinct_from_task_labels (language_growth.tests.test_fixtures.FixtureEvaluationTests.test_observed_boundary_and_repair_are_distinct_from_task_labels) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.037s
+
+OK

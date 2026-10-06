@@ -23,17 +23,16 @@ attention-free parent or satisfy the L0 learned capability gate.
   run this single CPU diagnostic and inspect direct versus planner failure
   modes before considering a larger or paid experiment.
 
-Dependency: PR #37 (`codex/l0-paired-comparison`) is currently unmerged from
-`origin/agent-main`. Keep this phase's commit distinct and rebase when that PR
-lands. The script must fail with a clear dependency error until the paired
-module is present; no module copy or speculative fork is included.
+Dependency: PR #37 merged into `agent-main` at `57804e2`; this branch now
+integrates the tracked paired caller. The script still fails with a clear
+dependency error if that module is absent. No source overlay is needed.
 
 The diagnostic is inherited **HYBRID** pretrained Qwen with attention layers,
 not the attention-free Track D target, a strong unrestricted comparator, a
 parent-retention test, or Decision Index/held-out evidence. No model load or
 run belongs to this preparation phase.
 
-After PR #37 lands and the resource owner clears a run, use the existing
+After the resource owner clears a run, use the existing
 `C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe` runtime (known
 `transformers` 5.17.0, `accelerate` 1.15.0, `torch` 2.8.0, `psutil` 7.2.2):
 

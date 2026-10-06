@@ -81,6 +81,10 @@ def disjointness_proof_sha256(fitted_on: str, disjointness: dict) -> str:
     return hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
 
 
+def _is_identity_w(w, t_min: float) -> bool:
+    return all(abs(float(a) - b) < 1e-9 for a, b in zip(w, (math.log(math.expm1(1 - t_min)), 0.0, 0.0)))
+
+
 def feature_temperature_identity(t_min: float, w, fitted_on: str | None, proof_sha256: str | None = None) -> dict:
     """Identity block shared by the training-side fit (``train.calibration.FeatureTemperature``) and the
     serving-side ``FeatureTemperature`` below, so an eval card's ``temperature.id`` and a served
@@ -93,7 +97,8 @@ def feature_temperature_identity(t_min: float, w, fitted_on: str | None, proof_s
          "w": [round(float(x), 8) for x in w], "fitted_on": fitted_on}
     if proof_sha256 is not None:
         d["disjointness_proof"] = proof_sha256
-    d["status"] = "fitted" if fitted_on else "uncalibrated_identity"
+    # a hand-set (non-identity) w without a fit is "unfitted_manual", never "uncalibrated_identity" (it is refused)
+    d["status"] = "fitted" if fitted_on else ("uncalibrated_identity" if _is_identity_w(w, t_min) else "unfitted_manual")
     d["id"] = hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
     return d
 
@@ -146,7 +151,7 @@ class FeatureTemperature:
 
     @property
     def is_identity(self) -> bool:
-        return self.fitted_on is None and all(abs(a - b) < 1e-12 for a, b in zip(self.w, IDENTITY_W))
+        return self.fitted_on is None and _is_identity_w(self.w, self.t_min)
 
     def temperature(self, k: int) -> float:  # pragma: no cover - guarded: the adapter calls temperature_for
         raise TypeError("FeatureTemperature needs evidence_tokens; use temperature_for(k, features)")
@@ -206,6 +211,13 @@ class FeatureTemperature:
         ft = cls(w=tuple(d["w"]), t_min=float(d["t_min"]), fitted_on=d.get("fitted_on"),
                  disjointness=tuple((d.get("disjointness") or {}).items()),
                  calib_content=tuple(d.get("calib_content") or ()), proof_sha256=d.get("proof_sha256"))
-        if "id" in d and d["id"] != ft.identity()["id"]:
+        if not d.get("id"):
+            raise ValueError("temperature file carries no id: cannot be checked against its parameters")
+        if d["id"] != ft.identity()["id"]:
             raise ValueError(f"temperature id mismatch: file says {d['id']}, parameters give {ft.identity()['id']}")
+        if ft.fitted_on is not None:  # stale-id tamper: the id still matches, but the proof / content does not
+            try:
+                ft.assert_servable()
+            except CalibrationNotServable as e:
+                raise ValueError(f"temperature file fails its own proof: {e}") from e
         return ft
