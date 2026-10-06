@@ -18,7 +18,8 @@ def export_training_records(examples: Iterable[dict[str, Any]], *,
     Callers must explicitly select development_validation for evaluation rows.
     These rows are never an untouched audit set or a learned-result receipt.
     """
-    if split not in ("development_train", "development_validation"):
+    if split not in ("development_train", "development_validation", "development_curriculum",
+                     "development_transfer_v2"):
         raise ValueError("only named iterative development splits are supported")
     records = []
     seen = set()

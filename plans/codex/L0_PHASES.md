@@ -52,3 +52,16 @@ Before a cross-agent PR, perform an adversarial Track L review. A result PR incl
 For each experimental line, define its hypothesis and next two informative checks. Fold it if falsified, outranked under matched conditions, or unchanged across both checks. Add a LEDGER.md negative-result row with the receipts, reason and any replacement. A setup failure is not automatically a scientific falsification; fix it once in the smallest useful scope, then reassess. No line has been declared folded solely by writing this plan.
 
 Keep text/contract conformance, semantic program validity, task correctness and learned interpretation as separate conclusions. Passing L0 cannot be reported as a safe or aligned learned language model.
+
+## Bounded CPU wording diagnostic, 2026-10-06
+
+PR #64-dependent curriculum experiment is complete locally with no push or PR.
+Frozen train/transfer data preceded all fitting; three old/curriculum seed pairs
+share latent worlds, labels, choices and initializations. Operation-slot transfer
+improves 11.33 points [8.00,14.56], but answer meaning improves only 0.67
+[-3.22,4.45] and every arm stays 0/100 comparisons. The exact PR64 frozen
+seed20261006 model accepts 196/300 kernels, with 63/300 useful answers and
+37/300 exact programs. Receipt: `receipts/2026-10-06-l-ssm-curriculum/`.
+This is a negative useful-answer development finding; no L0 gate or spend rung
+is unlocked. No more runs or variants follow these outcomes. User review and one
+independent raw recomputation remain before any PR.

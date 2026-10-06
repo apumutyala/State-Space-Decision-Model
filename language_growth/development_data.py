@@ -16,6 +16,7 @@ from typing import Any
 
 from .kernel import check_program
 from .parent_bridge import decision_request
+from .curriculum_spec import CURRICULUM_SPLITS
 
 _SPLITS = {
     "development_train": {
@@ -47,9 +48,13 @@ _RELATIONS = ("greater_than", "less_than", "equal")
 _CONTEXT = "synthetic-development-context-v1"
 _POLICY = "synthetic-development-public-v1"
 _REGISTRY = "synthetic-development-registry-v1"
+_SPLITS.update(CURRICULUM_SPLITS)
 
 
 def _rng(split: str, seed: int, index: int, domain: str) -> random.Random:
+    # Match PR64's latent worlds and labels; only curriculum surface wording changes.
+    if split == "development_curriculum":
+        split = "development_train"
     material = f"ssdm-development-v2:{split}:{seed}:{index}:{domain}".encode("ascii")
     return random.Random(int.from_bytes(hashlib.sha256(material).digest(), "big"))
 
@@ -137,7 +142,7 @@ def _relation(values: tuple[int, int], left_index: int) -> str:
 
 def _build(seed: int, index: int, names: tuple[str, str], warranties: tuple[int, int],
            prices: tuple[int, int], choice_format: str, split: str,
-           allow_one_repair: bool) -> dict[str, Any]:
+           allow_one_repair: bool, *, template_index: int | None = None) -> dict[str, Any]:
     kind = _OPS[index % len(_OPS)][0]
     spec = _SPLITS[split]
     rng = _rng(split, seed, index, "choice-order")
@@ -145,7 +150,9 @@ def _build(seed: int, index: int, names: tuple[str, str], warranties: tuple[int,
     field = wording.choice(("price", "warranty_months"))
     fact_index = wording.randrange(2)
     left_index = _rng(split, seed, index, "named-order").randrange(2)
-    template_index = wording.randrange(len(spec["templates"][kind]))
+    # Consume the original draw even when balancing, preserving old split hashes.
+    sampled_template = wording.randrange(len(spec["templates"][kind]))
+    template_index = sampled_template if template_index is None else template_index
     template = spec["templates"][kind][template_index]
     field_text = field.replace("_", " ")
     if kind == "compare":
@@ -248,7 +255,9 @@ def generate_development_tasks(seed: int, count: int, *, choice_format: str = "m
             price_b = price_a
         fmt = ("production" if index % 2 == 0 else "augmented") if choice_format == "mixed" else choice_format
         tasks.append(_build(seed, index, names, warranties, (price_a, price_b), fmt,
-                            split, allow_one_repair))
+                            split, allow_one_repair,
+                            template_index=(index // 3) % len(spec["templates"][_OPS[index % 3][0]])
+                            if split in CURRICULUM_SPLITS else None))
     return tasks
 
 
