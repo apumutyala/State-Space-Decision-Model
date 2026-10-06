@@ -1,0 +1,127 @@
+{
+  "case_id": "LG16",
+  "title": "necessary ask",
+  "tags": [
+    "positive_kernel",
+    "ask",
+    "missing_record",
+    "coverage"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "What is Cedar's warranty length?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {
+      "requested-field": {
+        "entity_ref": "cedar",
+        "field": "warranty_months"
+      }
+    },
+    "unmet_obligations": [
+      {
+        "obligation_id": "need-cedar-warranty",
+        "category": "missing_required_record",
+        "allowed_refs": [
+          "requested-field"
+        ]
+      }
+    ],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": false
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "Ask",
+        "category": "missing_required_record",
+        "references": [
+          "requested-field"
+        ],
+        "obligation_ref": "need-cedar-warranty"
+      }
+    ],
+    "outputs": [
+      "n1"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "accepted",
+    "kernel_reason_category": null,
+    "task_outcome": "appropriate_ask",
+    "useful_complete_answer": false,
+    "why": "The permitted snapshot has no Cedar warranty. ASK requests the missing record without asserting that Cedar has no warranty.",
+    "ask": true,
+    "coverage_eligible": true,
+    "complete_answer_denominator": true,
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 0,
+      "useful_complete_count": 0,
+      "ask_count": 1
+    }
+  },
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG16-D0",
+    "type": "choice",
+    "question": "What is Cedar's warranty length?",
+    "options": [
+      {
+        "id": "LG16-o01",
+        "description": "Request the missing Cedar warranty record."
+      },
+      {
+        "id": "LG16-o02",
+        "description": "Cedar has a 12-month warranty."
+      },
+      {
+        "id": "LG16-o03",
+        "description": "Cedar has a 24-month warranty."
+      }
+    ],
+    "target_option_id": "LG16-o01",
+    "target_description": "No Cedar warranty premise is available.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": false,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG16-ask": "LG16-o01",
+      "LG16-twelve": "LG16-o02",
+      "LG16-twenty_four": "LG16-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG16-o01": "LG16-o02",
+        "LG16-o02": "LG16-o03",
+        "LG16-o03": "LG16-o01"
+      },
+      "target_option_id": "LG16-o02",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
+  }
+}

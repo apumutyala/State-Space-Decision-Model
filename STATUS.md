@@ -4,8 +4,9 @@
 - 2026-10-06: plans reviewed (analysis/A, B). Next: m0 harness parity (Index 0.2.1 pinned, ≥10k-row stratified dev slice, Clef-flash reproduction).
 
 ## Track L — SSM-Language (owner: codex)
-- Canonical interface 0.1 is merged through PR #4. Kernel cross-review found an arbitrary-prose path through node IDs; patch profile 0.1.1 restricts IDs and exposes only kernel-assigned ordinal derivations. The renderer patch follows separately.
-- The kernel remains CPU-only evidence-relative checking, not learned capability. New regression receipt and cross-review are required before merge; fixture #5 remains a dependency.
+- Interface 0.1 and the corrected development fixture pack are merged (#4, #5). The fixture receipt reproduces from committed source; earlier missing-dependency evidence remains in LEDGER.
+- Track D approved the kernel and patch profile 0.1.1 in #10. This branch now includes the merged fixture dependency and rechecks the unchanged kernel before integration. Derived proof steps are kernel ordinals, not model-authored labels.
+- Renderer, planner and development evaluation remain under integration. No learned L0-L4 or paid qualification gate has passed.
 
 ## Open decisions for the user
 - SF Compute credit expiry date.
