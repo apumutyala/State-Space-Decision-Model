@@ -33,12 +33,18 @@ def flops(stage, p):
 
 def main(d):
     R = json.load(open(os.path.join(d, "results.json")))
-    meas = {"stage1_tok_s": R["stage1"]["tok_s"]}
-    s2 = [s["train_tok_s"] for s in R["progressive"]["steps"]]
-    meas["stage2_tok_s_per_step"] = s2
-    meas["stage2_tok_s_max"] = max(s2)  # least contended step (GPU was shared with another worker)
-    ach = {"stage1_TFLOPs": meas["stage1_tok_s"] * flops("stage1", P08) / 1e12,
-           "stage2_TFLOPs": meas["stage2_tok_s_max"] * flops("stage2", P08) / 1e12}
+    meas, ach = {}, {}
+    if "stage1" in R and R.get("progressive", {}).get("steps"):
+        meas["stage1_tok_s"] = R["stage1"]["tok_s"]
+        s2 = [s["train_tok_s"] for s in R["progressive"]["steps"]]
+        meas["stage2_tok_s_per_step"] = s2
+        meas["stage2_tok_s_max"] = max(s2)  # least contended step (GPU shared with another worker)
+        ach = {"stage1_TFLOPs": meas["stage1_tok_s"] * flops("stage1", P08) / 1e12,
+               "stage2_TFLOPs": meas["stage2_tok_s_max"] * flops("stage2", P08) / 1e12}
+    else:
+        meas["note"] = ("full pilot did not complete locally; laptop smoke (2x512 tokens/step, shared GPU): stage1 "
+                        "~3.5-5.0k tok/s, stage2 ~0.85-0.99k tok/s uncontended -> not used to price the 9B; "
+                        "9B priced from FLOP model at assumed MFU")
     plan = {  # tokens for the 9B m1 run (PLAN.md m1: one-layer probe, then all 8 with accept/rollback)
         "one_layer_probe": {"stage1": 50e6, "stage2": 100e6},
         "full_8_layers": {"stage1": 100e6, "stage2": 8 * 100e6},

@@ -1,0 +1,54 @@
+{
+ "env": {
+  "commit": "2a742baddf9341e7a9c4a6ce73c41d1c0c8519ad",
+  "dirty": true,
+  "python": "3.12.13",
+  "torch": "2.8.0+cu128",
+  "transformers": "5.17.0",
+  "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "fla": "0.5.2",
+  "model_dir": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\hf\\models--Qwen--Qwen3.5-0.8B\\snapshots\\2fc06364715b967f1860aea9cf38778875588b17"
+ },
+ "data_train": {
+  "split": "train",
+  "source_files": [
+   "wikitext-103-raw-v1/train-00000-of-00002.parquet",
+   "wikitext-103-raw-v1/train-00001-of-00002.parquet"
+  ],
+  "source_sha256": {
+   "train-00000-of-00002.parquet": "74da360f23826045b3e6ac6375411fdb15f003030aa74f2596ed08b857cb9212",
+   "train-00001-of-00002.parquet": "ba090ac30dbf5461e8dcbdd1a1b8e6f3cf9c2c756d64f0c1220450acd514f720"
+  },
+  "n_tokens": 40056205,
+  "tokens_sha256": "467626c22d08d570b7fe787497d220cebe1dfc8bc06e2ea5067187751984831f",
+  "tokenizer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\hf\\models--Qwen--Qwen3.5-0.8B\\snapshots\\2fc06364715b967f1860aea9cf38778875588b17",
+  "max_tokens": 40000000
+ },
+ "data_gate": {
+  "split": "gate",
+  "source_files": [
+   "wikitext-103-raw-v1/validation-00000-of-00001.parquet"
+  ],
+  "source_sha256": {
+   "validation-00000-of-00001.parquet": "204929b7ff9d6184953f867dedb860e40aa69c078fc1e54b3baaa8fb28511c4c"
+  },
+  "n_tokens": 261284,
+  "tokens_sha256": "458941eca29bd3bdab93a8f7f0a4b24cf1b9103aa87c468d58debc103a87e3d2",
+  "tokenizer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\hf\\models--Qwen--Qwen3.5-0.8B\\snapshots\\2fc06364715b967f1860aea9cf38778875588b17",
+  "max_tokens": null
+ },
+ "data_eval": {
+  "split": "eval",
+  "source_files": [
+   "wikitext-2-raw-v1/test-00000-of-00001.parquet"
+  ],
+  "source_sha256": {
+   "test-00000-of-00001.parquet": "5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91"
+  },
+  "n_tokens": 297053,
+  "tokens_sha256": "1050186e1706e795792359839623e0fe9f43c7ddd3f0ea9d5e7949ffc396b2f6",
+  "tokenizer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\hf\\models--Qwen--Qwen3.5-0.8B\\snapshots\\2fc06364715b967f1860aea9cf38778875588b17",
+  "max_tokens": null
+ }
+}

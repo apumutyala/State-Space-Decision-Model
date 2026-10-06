@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# resumable driver: retries the pipeline (e.g. after a transient CUDA OOM caused by another GPU tenant)
+# Single-attempt driver (no retry loop: retries spawned duplicate GPU jobs on a shared laptop, 2026-10-06).
+# The pipeline is resumable: re-run this script by hand to continue from results.json.
 cd "$(dirname "$0")/.."
-OUT=receipts/2026-10-06-D-m1-pilot-0p8b
-for i in 1 2 3 4 5 6; do
-  .venv-fla/Scripts/python.exe -m convert.pipeline --config configs/m1_pilot_0p8b.json --out $OUT >> $OUT/stdout.log 2>&1 && exit 0
-  echo "attempt $i failed $(date)" >> $OUT/stdout.log; sleep 60
-done
-exit 1
+OUT=${OUT:-receipts/2026-10-06-D-m1-pilot-0p8b}
+PY=${PY:-.venv-fla/Scripts/python.exe}
+LOCK=$OUT/.running.pid
+if [ -f "$LOCK" ] && kill -0 "$(cat "$LOCK")" 2>/dev/null; then echo "already running (pid $(cat "$LOCK"))"; exit 1; fi
+echo $$ > "$LOCK"; trap 'rm -f "$LOCK"' EXIT
+$PY -m convert.pipeline --config ${CONFIG:-configs/m1_pilot_0p8b.json} --out $OUT >> $OUT/stdout.log 2>&1

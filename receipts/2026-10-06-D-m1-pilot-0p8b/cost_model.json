@@ -1,0 +1,88 @@
+{
+ "measured_0p8b_laptop": {
+  "note": "full pilot did not complete locally; laptop smoke (2x512 tokens/step, shared GPU): stage1 ~3.5-5.0k tok/s, stage2 ~0.85-0.99k tok/s uncontended -> not used to price the 9B; 9B priced from FLOP model at assumed MFU"
+ },
+ "achieved_laptop": {},
+ "assumptions": {
+  "N_9b_text": 8500000000.0,
+  "flop_per_token_stage1_9b": 20216000000.0,
+  "flop_per_token_stage2_9b": 85000000000.0,
+  "h100_peak": 989000000000000.0,
+  "rate_usd_per_h": 2.97,
+  "eval_overhead_fraction": 0.15
+ },
+ "plans": {
+  "one_layer_probe": {
+   "mfu25": {
+    "H100_h": 12.287855297157623,
+    "usd": 36.49493023255815
+   },
+   "mfu35": {
+    "H100_h": 8.777039497969731,
+    "usd": 26.067807308970103
+   },
+   "tokens": {
+    "stage1": 50000000.0,
+    "stage2": 100000000.0
+   }
+  },
+  "full_8_layers": {
+   "mfu25": {
+    "H100_h": 90.4671834625323,
+    "usd": 268.68753488372096
+   },
+   "mfu35": {
+    "H100_h": 64.61941675895164,
+    "usd": 191.9196677740864
+   },
+   "tokens": {
+    "stage1": 100000000.0,
+    "stage2": 800000000.0
+   }
+  },
+  "full_8_layers_lean": {
+   "mfu25": {
+    "H100_h": 45.23359173126615,
+    "usd": 134.34376744186048
+   },
+   "mfu35": {
+    "H100_h": 32.30970837947582,
+    "usd": 95.9598338870432
+   },
+   "tokens": {
+    "stage1": 50000000.0,
+    "stage2": 400000000.0
+   }
+  }
+ },
+ "memory_plan_80GB": {
+  "weights_bf16_GB": 18.0,
+  "trainable_gdn_params": 536000000.0,
+  "fp32_master+adam_GB": 8.576,
+  "ckpt_layer_inputs_GB(B8xT4096)": 8.589934592,
+  "one_layer_recompute_working_set_GB(est)": 6.0,
+  "kl_chunk_logits_GB(512 tok x 248k x fp32 x4 live)": 2.03423744,
+  "total_GB_est": 43.200172032
+ },
+ "qualification_spec_le_20usd": {
+  "hardware": "1x H100-80GB, SF Compute batch $2.97/h; hard runtime ceiling 6.0 h (= $17.8); stop node after",
+  "budget_H100_h": 6.7340067340067336,
+  "steps": [
+   "0.25 h setup: env (torch 2.8, transformers 5.17, fla 0.5.2), download Qwen3.5-9B, tokenise 60M tokens",
+   "0.25 h: tests/test_gdn.py on H100 (fla vs pure-torch fwd/grad, module vs HF layer) -> PASS required",
+   "0.5 h: stock probes (ppl, NIAH 512-16k, MQAR, MMLU-285) + SWA+sinks control",
+   "0.5 h: stage-1 alignment of all 8 layers, 200 steps @ 8x4096 -> measured tok/s, peak memory",
+   "0.5 h: importance (8 single-swap KLs) -> conversion order",
+   "2.5 h: ONE-layer conversion (lowest-KL layer): stage-2 KL ~30M tokens, gate eval, probes",
+   "0.5 h: throughput/memory (prefill 4k-32k stock vs converted), write receipt",
+   "1.0 h: slack"
+  ],
+  "stop_conditions": [
+   "any test_gdn FAIL",
+   "stage-2 tok/s < 50% of cost-model mfu25 prediction after 50 steps",
+   "peak memory > 76 GB",
+   "6.0 h wall clock"
+  ],
+  "exit_proof": "receipt with measured 9B tok/s (stage1, stage2) and peak memory -> re-price the full m1 run"
+ }
+}
