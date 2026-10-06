@@ -11,19 +11,19 @@
   "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
   "branch": "codex/l0-entity-binding-module",
   "diff_check": "git diff --cached --check",
-  "remaining_scope_limit": "Query date is admitted syntactically but not checked against evidence temporal scope; this change does not establish full task-meaning correctness.",
   "schema": "ssdm.entity_binding_module_code_tests.v1",
   "scope": "Code-only boundary tests. Controlled positive grammar and trusted allowed records; adapter rebuilds canonical host audience view. Only resolved read/explain compiles v0.1 programs and runs existing kernel then release-validating realizer. Unresolved has no text; no Ask argument/path and no Compare. No experiment runner/data/model dependency, training, GPU, spend, network or capability claim. No shared schema/kernel/realizer changes.",
   "semantic_guard": "Each admitted form returns requested_kind/requested_field. Model disagreement and duplicate case-folded field surfaces fail closed before kernel/renderer. No model choice is silently corrected.",
   "source_sha256": {
-    "language_growth/entity_binding.py": "f839fd92277f4c4ee7b50143d2e7c72dcfd4de721b389747610aaad8b7bba9c7",
-    "language_growth/entity_binding_kernel.py": "45437dda9362f5604d341244bc06381dae131407cd0867da2ef7ff8eabe6d581",
-    "language_growth/tests/test_entity_binding.py": "e1c1a8e585a4c7a75807e7823de36ba86d21e80eb79edd8ef4cdb0eefd83db54",
-    "language_growth/tests/test_entity_binding_kernel.py": "8055293df8520a1442f7e3a23d6e7f5d1c75c336e9db166b97a8f54459c1fbf8"
+    "language_growth/entity_binding.py": "d0f823c1d4eb11be486855ddb82884cc2a2ca43520db937edf2822cdf7a6b1c5",
+    "language_growth/entity_binding_kernel.py": "968272f179567f194654b4b9df3f8d878cd33f08d7821c9db12a148287dc9159",
+    "language_growth/tests/test_entity_binding.py": "6afaa6592e9f92e71735a96feada321968fefac21d92788db27654b2b265cb3f",
+    "language_growth/tests/test_entity_binding_kernel.py": "366fbe84af370afbdcfa97386694b86e8b9e83339b85a37d63dc2d90f0bd5276"
   },
+  "temporal_guard": "The same four dated forms return requested_scope YYYY-MM. Every bound selected field must exist and match that exact temporal_scope before program construction. Missing/stale scopes abstain without kernel/renderer. Undated forms use active host-context scope. No broader date grammar or Compare support.",
   "tests": {
     "command": "python -m unittest language_growth.tests.test_entity_binding language_growth.tests.test_entity_binding_kernel -v",
-    "passed": 14,
+    "passed": 17,
     "result": "OK",
     "skipped": 0
   }

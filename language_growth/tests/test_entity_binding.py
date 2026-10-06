@@ -12,7 +12,7 @@ RECORDS=(AllowedRecord('a','Grove',('price','warranty_months')),
 
 def request(task):
     return {'state':json.dumps({'task_input':task,'records':[{'record_ref':r.record_ref,
-        'entity_ref':r.name,'fields':{field:{} for field in r.fields}} for r in RECORDS]})}
+        'entity_ref':r.name,'fields':{field:{'temporal_scope':'2026-10'} for field in r.fields}} for r in RECORDS]})}
 
 
 class EntityBindingTests(unittest.TestCase):
@@ -21,6 +21,7 @@ class EntityBindingTests(unittest.TestCase):
         result=resolve_mentions(text,RECORDS)
         self.assertEqual(result.status,'resolved')
         self.assertEqual((result.requested_kind,result.requested_field),('read','price'))
+        self.assertEqual(result.requested_scope,'2026-10')
         self.assertEqual([(m.record_ref,text[m.start:m.end]) for m in result.mentions],[('a','gRoVe')])
         for text in ("State Groveland's price for October 2026.","State xGrove's price for October 2026."):
             self.assertNotEqual(resolve_mentions(text,RECORDS).status,'resolved')
@@ -73,6 +74,23 @@ class EntityBindingTests(unittest.TestCase):
             result=resolve_mentions(task,RECORDS)
             self.assertEqual(result.status,'resolved')
             self.assertEqual((result.requested_kind,result.requested_field),(kind,'warranty_months'))
+            self.assertEqual(result.requested_scope,None if kind=='explain' else '2026-10')
+
+    def test_each_bound_record_requires_selected_field_and_explicit_scope(self):
+        task="For October 2026, compare Grove's and Hearth's price."
+        target={'kind':'compare','field':'price','left':'b','right':'a','temporal_scope':'2026-10'}
+        for mutation in ('missing_field','missing_scope','stale_scope'):
+            value=request(task)
+            state=json.loads(value['state'])
+            right=state['records'][1]['fields']
+            if mutation=='missing_field':
+                del right['price']
+            elif mutation=='missing_scope':
+                del right['price']['temporal_scope']
+            else:
+                right['price']['temporal_scope']='2026-09'
+            value['state']=json.dumps(state)
+            self.assertEqual(overlay_request(value,target)['disposition'],'unresolved')
 
     def test_duplicate_casefolded_field_surface_is_ambiguous(self):
         records=(AllowedRecord('a','Grove',('price','Price')),)

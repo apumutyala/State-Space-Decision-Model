@@ -92,6 +92,34 @@ class EntityBindingKernelTests(unittest.TestCase):
             check.assert_not_called()
             render.assert_not_called()
 
+    def test_stale_date_missing_scope_or_field_never_invokes_kernel_or_renderer(self):
+        for mismatch in ('query_date','evidence_date','missing_scope','missing_field'):
+            host,catalog=fixture()
+            atlas=next(record for record in catalog['records'] if record['record_ref']=='atlas-v1')
+            task="State Atlas's price for November 2026." if mismatch=='query_date' else "State Atlas's price for October 2026."
+            if mismatch=='evidence_date':
+                atlas['fields']['price']['temporal_scope']='2026-09'
+            elif mismatch=='missing_scope':
+                del atlas['fields']['price']['temporal_scope']
+            elif mismatch=='missing_field':
+                del atlas['fields']['price']
+            with (patch.object(adapter.kernel,'check_program') as check,
+                  patch.object(adapter.realize,'render_checked') as render):
+                result=release_bound_answer(task,prediction(),host,catalog)
+                self.assertEqual(result.status,'unreleased')
+                self.assertIsNone(result.text)
+                self.assertIsNone(result.program)
+                check.assert_not_called()
+                render.assert_not_called()
+
+    def test_undated_explanation_uses_active_field_scope(self):
+        host,catalog=fixture()
+        atlas=next(record for record in catalog['records'] if record['record_ref']=='atlas-v1')
+        atlas['fields']['price']['temporal_scope']='2026-11'
+        result=release_bound_answer("Provide a checked derivation of Atlas's price.",prediction('explain'),host,catalog)
+        self.assertEqual(result.status,'accepted')
+        self.assertIn('2026-11',result.text)
+
     def test_ambiguous_negated_injected_and_compare_stay_unreleased(self):
         host,catalog=fixture()
         cases=("Do not state Atlas's price for October 2026.",

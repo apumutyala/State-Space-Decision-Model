@@ -1,7 +1,8 @@
 """Conservative exact-mention resolution for explicit positive request forms.
 
 Literal references bind only within the caller-supplied trusted allowed records.
-The matched form retains requested operation/field; model disagreement rejects.
+The matched form retains requested operation/field and explicit month/year scope;
+model disagreement or mismatched selected-field scope rejects.
 Unsupported or ambiguous text is unresolved. This is a small controlled grammar,
 not general natural-language interpretation or an authority checker.
 """
@@ -35,6 +36,7 @@ class Resolution:
     reason: str | None = None
     requested_kind: Literal["read", "explain", "compare"] | None = None
     requested_field: str | None = None
+    requested_scope: str | None = None
 
 
 def resolve_mentions(task_input: str, records: tuple[AllowedRecord, ...]) -> Resolution:
@@ -81,7 +83,8 @@ def resolve_mentions(task_input: str, records: tuple[AllowedRecord, ...]) -> Res
         scaffold = scaffold[:item.start] + "\x00" + scaffold[item.end:]
     entity = re.escape("\x00")
     field = "(?P<field>" + "|".join(re.escape(value) for value in sorted(field_surfaces)) + ")"
-    date = r"(?:January|February|March|April|May|June|July|August|September|October|November|December) [0-9]{4}"
+    months = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+    date = "(?P<month>" + "|".join(months) + r") (?P<year>[0-9]{4})"
     patterns = (
         ("read", rf"State {entity}'s {field} for {date}\."),
         ("explain", rf"Provide a checked derivation of {entity}'s {field}\."),
@@ -97,8 +100,10 @@ def resolve_mentions(task_input: str, records: tuple[AllowedRecord, ...]) -> Res
     if len(matches) != 1:
         return Resolution("ambiguous", reason="ambiguous_positive_form")
     kind, match = matches[0]
+    year = match.groupdict().get("year")
+    scope = None if year is None else f"{year}-{next(i for i, month in enumerate(months, 1) if month.casefold() == match.group('month').casefold()):02d}"
     return Resolution("resolved", tuple(mentions), requested_kind=kind,
-                      requested_field=field_surfaces[match.group("field").casefold()])
+                      requested_field=field_surfaces[match.group("field").casefold()], requested_scope=scope)
 
 
 def overlay_request(request: dict, predicted: dict) -> dict:
@@ -112,18 +117,26 @@ def overlay_request(request: dict, predicted: dict) -> dict:
               "resolution": asdict(resolution), "predicted": None}
     if resolution.status != "resolved":
         return output
-    if predicted["kind"] != resolution.requested_kind or predicted["field"] != resolution.requested_field:
-        output["resolution"] = asdict(Resolution("unsupported", reason="requested_selection_mismatch",
-            requested_kind=resolution.requested_kind, requested_field=resolution.requested_field))
+    def reject(reason):
+        output["resolution"] = asdict(Resolution("unsupported", reason=reason,
+            requested_kind=resolution.requested_kind, requested_field=resolution.requested_field,
+            requested_scope=resolution.requested_scope))
         return output
+    if predicted["kind"] != resolution.requested_kind or predicted["field"] != resolution.requested_field:
+        return reject("requested_selection_mismatch")
     kind = predicted["kind"]
     expected = 2 if kind == "compare" else 1 if kind in ("read", "explain") else 0
     if expected == 0 or len(resolution.mentions) != expected:
-        output["resolution"] = asdict(Resolution("unsupported", reason="operation_mention_count"))
-        return output
+        return reject("operation_mention_count")
     if kind != "compare" and "right" in predicted:
-        output["resolution"] = asdict(Resolution("unsupported", reason="malformed_prediction"))
-        return output
+        return reject("malformed_prediction")
+    by_ref = {record["record_ref"]: record for record in state["records"]}
+    for mention in resolution.mentions:
+        descriptor = by_ref[mention.record_ref]["fields"].get(resolution.requested_field)
+        if not isinstance(descriptor, dict):
+            return reject("selected_field_missing")
+        if resolution.requested_scope is not None and descriptor.get("temporal_scope") != resolution.requested_scope:
+            return reject("requested_scope_mismatch")
     target = copy.deepcopy(predicted)
     target["left"] = resolution.mentions[0].record_ref
     if kind == "compare":
