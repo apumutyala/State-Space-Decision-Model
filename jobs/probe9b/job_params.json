@@ -1,5 +1,5 @@
 {
- "_comment": "Single source of truth for the probe9b submit_job fields and runner phase caps (jobs/probe9b/JOB_SPEC.md). tests/test_m1_next_jobs.py checks the cost arithmetic and the schedule against these values; jobs/probe9b/probe_job.sh reads the caps from here.",
+ "_comment": "Single source of truth for the probe9b submit_job fields and runner phase caps (jobs/probe9b/JOB_SPEC.md). Re-priced 2026-10-06 from the MEASURED job-4j3vu rates (issue #68; `measured` below). tests/test_probe9b.py and tests/test_m1_next_jobs.py check the cost arithmetic, the schedule and the >= 30% margin of every cap over its measured-rate projection (jobs/probe9b/preflight.py); jobs/probe9b/probe_job.sh reads the caps from here.",
  "job": "probe9b",
  "chip": "h100",
  "chip_count": 1,
@@ -13,6 +13,7 @@
  "batch_usd_per_min": 0.0495,
  "hard_cap_usd": 40.0,
  "reserve_minutes": 10,
+ "margin_min_frac": 0.3,
  "phase_caps_minutes": {
   "setup": 10,
   "weights": 20,
@@ -24,12 +25,35 @@
  "pipeline_deadline_minutes": 128,
  "expected_minutes": {
   "build": 15,
-  "setup": 5,
-  "weights": 10,
-  "P": 120,
-  "I_stock": 35,
-  "I_conv": 35,
-  "S": 3
+  "setup": 3,
+  "weights": 1,
+  "P": 86,
+  "I_stock": 13,
+  "I_conv": 13,
+  "S": 2
+ },
+ "measured": {
+  "_comment": "job-4j3vu (m1 qual C-only, 9B, @3b4169a, exit 0, $2.48, 3004 billed s), artifact art-5ys6j sha256 6e758dbe3c47a507e25623d3794edbf6fe95c46908fd3c8112fe25612a9f4e59 (out/qual_9b.json, logs/run.log, logs/qual_9b.log, logs/fetch_rest.log). Same image stack, same 9B revision, micro_batch 4 x 4096 accumulated to 8 x 4096, stage 2 on the FIRST attention layer (layer 3: the longest student suffix, so the slowest stage-2 rate any probe layer can have). call_s_fitted_rwkv7 is NOT a 9B measurement (jobs/common/readout_cost.py); the pipeline now measures the 9B value and the Index preflight uses it.",
+  "source_job": "job-4j3vu",
+  "artifact": "art-5ys6j",
+  "stage1_steady_tok_s": 18952,
+  "stage1_mfu": 0.327,
+  "stage1_first_step_s": 92,
+  "stage2_steady_tok_s": 5461,
+  "stage2_mfu": 0.341,
+  "peak_gb": 31.9,
+  "stock_prefill_tok_s_4096": 25803,
+  "stock_prefill_tok_s_min": 22576,
+  "model_load_s": 19.6,
+  "weights_fetch_s": 28,
+  "qual_setup_min": 2.2,
+  "qual_pre_stage1_upper_min": 1.38,
+  "qual_train_tokens": 20004497,
+  "throughput_both_arms_s": 16,
+  "build_and_start_min": 14,
+  "call_s_fitted_rwkv7": 0.098,
+  "subset_rows_min_est": 0.5,
+  "subset_scoring_min_est": 1.0
  },
  "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
  "configs": {

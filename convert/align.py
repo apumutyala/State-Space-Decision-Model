@@ -251,16 +251,43 @@ def stage2_kl(model, layers_train, student_modes, batcher, steps, lr, warmup=20,
     return hist, ntok, time.time() - t0
 
 
+def _device(model):
+    return next(model.lm.parameters()).device
+
+
 @torch.no_grad()
-def evaluate(model, windows, student_modes, bs=4):
-    """NLL of teacher and student, KL(t||s), and mean cosine of final hidden states."""
+def teacher_hidden(model, windows, bs=4):
+    """Final hidden states of the TEACHER (all layers in teacher mode) on fixed windows, one tensor per evaluate()
+    batch, kept on the CPU (the GPU peak is unchanged). The teacher is frozen for the whole pipeline, so these are
+    identical for every evaluate() call on the same windows: the importance ranking (one call per attention layer),
+    the gate baseline and the gate itself re-ran the same teacher forward each time (PERF_AUDIT, probe9b)."""
+    dev = _device(model)
+    out = []
+    for s in range(0, len(windows), bs):
+        with torch.autocast(**AC), model.modes({}):
+            out.append(model.hidden(windows[s:s + bs].to(dev)).to("cpu"))
+    return out
+
+
+@torch.no_grad()
+def evaluate(model, windows, student_modes, bs=4, teacher=None):
+    """NLL of teacher and student, KL(t||s), and mean cosine of final hidden states.
+
+    teacher: optional ``teacher_hidden(model, windows, bs)`` for these exact windows and bs (a cache: the result is
+    identical to recomputing the teacher, checked by tests/test_probe9b.py)."""
+    if teacher is not None and len(teacher) != -(-len(windows) // bs):
+        raise ValueError("teacher cache does not match these windows / bs")
     nll_s = nll_t = kl = cos = 0.0
     n = 0
+    dev = _device(model)
     for s in range(0, len(windows), bs):
-        x = windows[s:s + bs].cuda()
+        x = windows[s:s + bs].to(dev)
         with torch.autocast(**AC):
-            with model.modes({}):
-                ht = model.hidden(x)
+            if teacher is None:
+                with model.modes({}):
+                    ht = model.hidden(x)
+            else:
+                ht = teacher[s // bs].to(dev)
             with model.modes(student_modes):
                 hs = model.hidden(x)
         cos += F.cosine_similarity(hs.float(), ht.float(), dim=-1).sum().item()

@@ -61,7 +61,46 @@ def checks(R, cmp, rule):
     return gate, q, r, num
 
 
+def band(x, row):
+    """'green' | 'amber' | 'red' for one number against one diagnostic band row; None if the number is missing."""
+    if not _num(x):
+        return None
+    if "green_max" in row:
+        return "green" if x <= row["green_max"] else "amber" if x <= row["amber_max"] else "red"
+    return "green" if x >= row["green_min"] else "amber" if x >= row["amber_min"] else "red"
+
+
+#: number -> its row in config diagnostic_bands_posthoc.bands
+BAND_OF = {"gate_delta_nll": "gate_delta_nll", "gate_kl": "gate_kl", "gate_hidden_cos": "gate_hidden_cos",
+           "ppl_ratio_ctx1024": "ppl_ratio", "ppl_ratio_ctx4096": "ppl_ratio", "mmlu_drop_pts": "mmlu_drop_pts",
+           "index_diff_point": "index_diff_point", "index_diff_lo": "index_diff_lo"}
+
+
+def diagnostics(R, gate, num, diag):
+    """POST-HOC diagnostic bands (config diagnostic_bands_posthoc), written after seeing the job-4j3vu qualification
+    gate numbers. Reported only: decide() computes the verdict BEFORE this runs and never reads its output."""
+    steps = (R.get("progressive") or {}).get("steps") or []
+    layer = steps[0].get("layer") if steps else None
+    k0 = ((((R.get("importance") or {}).get("per_layer") or {}).get(str(layer))) or {}).get("kl")
+    vals = {**{k: num.get(k) for k in BAND_OF if k in num}, "gate_delta_nll": gate.get("delta_nll"),
+            "gate_kl": gate.get("kl"), "gate_hidden_cos": gate.get("hidden_cos")}
+    bands = {k: band(vals.get(k), diag["bands"][row]) for k, row in BAND_OF.items()}
+    gain = (k0 - gate["kl"]) / k0 if _num(k0) and k0 > 0 and _num(gate.get("kl")) else None
+    return {"note": diag["note"], "values": vals, "bands": bands, "stage1_kl": k0, "stage2_kl_gain_frac": gain,
+            "binding": False}
+
+
 def decide(R, cmp, cfg):
+    out = _decide(R, cmp, cfg)  # the binding verdict: pre-registered success_rule (511e8dd) only
+    if cfg.get("diagnostic_bands_posthoc"):
+        try:  # non-binding: a failure here is recorded and never changes the verdict or the exit code
+            out["diagnostic_bands_posthoc"] = diagnostics(R, out["gate"], out["numbers"], cfg["diagnostic_bands_posthoc"])
+        except Exception as e:  # noqa: BLE001
+            out["diagnostic_bands_posthoc"] = {"binding": False, "error": repr(e)[:300]}
+    return out
+
+
+def _decide(R, cmp, cfg):
     rule = cfg["success_rule"]
     gate, q, r, num = checks(R, cmp, rule)
     out = {"gate": gate, "quality_checks": q, "retrieval_checks": r, "numbers": num, "rule": rule,
@@ -97,7 +136,7 @@ def valid_decision(d):
 def main(results_json, compare_json, config_json, out_json):
     R = json.load(open(results_json))
     cmp = json.load(open(compare_json)) if compare_json != "-" and os.path.exists(compare_json) else None
-    out = decide(R, cmp, json.load(open(config_json)))
+    out = decide(R, cmp, json.load(open(config_json, encoding="utf-8")))
     json.dump(out, open(out_json, "w"), indent=1)
     print(json.dumps({k: out[k] for k in ("verdict", "gate", "numbers")}, indent=1))
     return 0 if valid_decision(out) else 9
