@@ -1,6 +1,6 @@
 """``decide(request, state_handle=None) -> response``.
 
-Implements the decision adapter of ``interfaces/DECISION_LANGUAGE_V0.md``.
+Implements the decision adapter of ``interfaces/DECISION_LANGUAGE_V0.md`` (version 0.1).
 
 Transport: the SystemOne-compatible fields (``model``, ``state``, ``questions``)
 stay at the top level, untouched, and the canonical v0 fields travel in a
@@ -11,23 +11,32 @@ response; the envelope never changes the meaning of the legacy fields.
 Request envelope (all optional; legacy requests are accepted without it)::
 
     "ssdm": {
-      "schema": "ssdm.decide.v0",
+      "schema": "ssdm.decide.v0.1",
       "request_id": str,             # identity only, not a permission token
       "parent_revision": str | null,  # must equal the backend's revision_id if given
       "context_ref": str, "policy_ref": str, "registry_ref": str,
       "audience": "public" | "private",
-      "limits": {"max_input_tokens", "max_choices", "max_program_nodes",
-                 "max_inference_calls", "deadline_ms"},   # positive ints
-      "policy_restriction": {qid: [allowed option ids]}   # v0.1 delta, flag-gated
+      "limits": {"max_input_tokens", "max_questions", "max_options_per_question",
+                 "max_program_nodes", "max_inference_calls", "deadline_ms",
+                 "max_choices"},  # positive ints; max_choices = legacy alias of max_questions only
+      "policy_restriction": {qid: [allowed option ids]},  # nonempty subset, no duplicates
+      "provenance": {...}                                  # optional, see decide/provenance.py
     }
+
+Limit units (contract 0.1): ``max_questions`` caps questions per request;
+``max_options_per_question`` caps supplied options in each question (the wire
+maximum is 255 regardless); ``max_inference_calls`` caps model forward
+invocations in this request; input tokens are per model input (row); deadline is
+wall-clock ms checked between calls. L-only budgets (``max_proposal_calls``,
+``max_repair_calls``) are unknown keys here and rejected.
 
 Response: legacy ``model`` / ``answers`` / ``usage`` plus ``"ssdm"`` with
 ``status`` (ok | unsupported | exhausted | error), ``error`` {code, message},
 ``abstention`` (explicit, separate from status), ``raw_probabilities``,
 ``served_probabilities`` + ``served_config``, ``diagnostics``,
-``proposed_evidence_refs`` and ``state_handle``. With ``enable_v0_1_deltas``:
-``policy_conditioned_probabilities`` (when a restriction is supplied) and
-``attribution`` (only if the backend produces accounting attribution).
+``proposed_evidence_refs`` and ``state_handle``; ``policy_conditioned_probabilities``
+when a restriction is supplied. With ``enable_v0_1_deltas``: ``attribution`` (only
+if the backend produces accounting attribution).
 ``semantic_records`` is never emitted until Track D's semantic-interface gate.
 
 Guarantees: no silent truncation, option pruning or model fallback; stateless
@@ -46,7 +55,10 @@ from typing import Any
 from . import versions
 from .backends.base import Backend, BackendUnsupported, DeadlineExceeded
 from .calibration import OptionCountTemperature, softmax
+from .provenance import validate_provenance
 from .schema import (
+    canonical_json,
+    sha256_text,
     RequestRejected,
     canonical_options,
     request_fingerprint,
@@ -56,7 +68,9 @@ from .schema import (
 
 LIMIT_KEYS = (
     "max_input_tokens",
-    "max_choices",
+    "max_questions",
+    "max_options_per_question",
+    "max_choices",  # legacy alias of max_questions only
     "max_program_nodes",
     "max_inference_calls",
     "deadline_ms",
@@ -71,12 +85,14 @@ ENVELOPE_KEYS = {
     "audience",
     "limits",
     "policy_restriction",
+    "provenance",
 }
 #: No abstention mechanism exists in the v0 adapter; this is not a measured non-abstention.
 ABSTENTION_V0 = {"abstained": False, "reason": None, "mechanism": "not_implemented_v0"}
 DEFAULT_LIMITS = {
     "max_input_tokens": 16384,  # Clef encode_record default
-    "max_choices": 64,  # Workers AI: 1-64 questions per request
+    "max_questions": 64,  # Workers AI: 1-64 questions per request
+    "max_options_per_question": 255,  # SystemOne wire cardinality
     "max_program_nodes": 8,  # recorded only; decide() emits no program nodes
     "max_inference_calls": 4096,
     "deadline_ms": None,  # no deadline unless the host sets one
@@ -129,8 +145,24 @@ class Decider:
         for k, v in given.items():
             if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v <= 0):
                 raise RequestRejected("error", "invalid_request", f"limits.{k} must be a positive integer")
+        given = dict(given)
+        if "max_choices" in given:  # legacy alias: questions per request, never options
+            alias = given.pop("max_choices")
+            if "max_questions" in given and given["max_questions"] != alias:
+                raise RequestRejected(
+                    "error", "invalid_request", "limits.max_choices (alias of max_questions) conflicts with max_questions"
+                )
+            given["max_questions"] = alias
+            alias_used = True
+        else:
+            alias_used = False
+        for k, v in given.items():
             limits[k] = v
-        limits["_source"] = {k: ("request" if k in given else "adapter_default") for k in LIMIT_KEYS}
+        limits["_source"] = {
+            k: ("request" if k in given else "adapter_default") for k in LIMIT_KEYS if k != "max_choices"
+        }
+        if alias_used:
+            limits["_source"]["max_questions"] = "request:max_choices_alias"
         if self.backend_max_input_tokens is not None and (
             limits["max_input_tokens"] is None or limits["max_input_tokens"] > self.backend_max_input_tokens
         ):
@@ -142,12 +174,6 @@ class Decider:
         restriction = env.get("policy_restriction")
         if restriction is None:
             return None
-        if not self.enable_v0_1_deltas:
-            raise RequestRejected(
-                "unsupported",
-                "policy_restriction_requires_v0_1_deltas",
-                "policy_restriction is a v0.1 delta; enable_v0_1_deltas is off",
-            )
         if not isinstance(restriction, dict):
             raise RequestRejected("error", "invalid_request", "policy_restriction must be an object")
         out = {}
@@ -159,7 +185,9 @@ class Decider:
                 raise RequestRejected(
                     "error", "invalid_request", f"policy_restriction.{qid}: non-empty subset of option ids required"
                 )
-            out[qid] = sorted(set(allowed))
+            if len(set(allowed)) != len(allowed):
+                raise RequestRejected("error", "invalid_request", f"policy_restriction.{qid}: duplicate option ids")
+            out[qid] = sorted(allowed)
         return out
 
     # --------------------------------------------------------------------- main
@@ -175,6 +203,9 @@ class Decider:
             request_id = env.get("request_id")
             limits = self._limits(env)
             restriction = self._restriction(env, request)
+            provenance = None
+            if env.get("provenance") is not None:
+                provenance = validate_provenance(request, env["provenance"])
             revision = self.backend.revision()
             wanted = env.get("parent_revision")
             if wanted is not None and wanted != revision["revision_id"]:
@@ -184,9 +215,17 @@ class Decider:
                     f"requested {wanted}, backend is {revision['revision_id']}; no fallback",
                 )
             n_questions = len(request["questions"])
-            if limits["max_choices"] is not None and n_questions > limits["max_choices"]:
+            if limits["max_questions"] is not None and n_questions > limits["max_questions"]:
                 raise RequestRejected(
-                    "exhausted", "choices_exceeded", f"{n_questions} questions > max_choices {limits['max_choices']}"
+                    "exhausted", "questions_exceeded",
+                    f"{n_questions} questions > max_questions {limits['max_questions']}",
+                )
+            n_opts = max(len(canonical_options(q)) for q in request["questions"].values())
+            if limits["max_options_per_question"] is not None and n_opts > limits["max_options_per_question"]:
+                raise RequestRejected(
+                    "exhausted", "options_exceeded",
+                    f"a question has {n_opts} options > max_options_per_question "
+                    f"{limits['max_options_per_question']} (no pruning)",
                 )
             try:
                 plan = self.backend.plan(request)
@@ -227,7 +266,29 @@ class Decider:
                 request, request_id, "error", "backend_error", f"{type(exc).__name__}: {exc}", t_start, state_handle
             )
 
-        return self._success(request, env, request_id, limits, restriction, revision, plan, result, t_start, state_handle)
+        return self._success(
+            request, env, request_id, limits, restriction, provenance, revision, plan, result, t_start, state_handle
+        )
+
+    @staticmethod
+    def _provenance_diag(provenance, plan) -> dict[str, Any]:
+        if provenance is None:
+            return {"supplied": False, "applied": False}
+        from .untrusted import UNTRUSTED_ENCODER_ID
+
+        labels = plan.prompt_token_labels
+        return {
+            "supplied": True,
+            "applied": bool(plan.provenance_applied),
+            "schema": provenance["schema"],
+            "serializer": provenance["serializer"],
+            "default_trust": provenance["default_trust"],
+            "segments": provenance["segments"],
+            "instruction_tokens": None if labels is None else labels.get("instruction", 0),
+            "data_tokens": None if labels is None else labels.get("data", 0),
+            "template_tokens": None if labels is None else labels.get("template", 0),
+            "encoder_id": UNTRUSTED_ENCODER_ID,
+        }
 
     def _base(self, request: Any, request_id: Any) -> dict[str, Any]:
         model = request.get("model") if isinstance(request, dict) else None
@@ -238,6 +299,7 @@ class Decider:
             "adapter": versions.ADAPTER_VERSION,
             "interface": versions.INTERFACE_VERSION,
             "deltas": versions.DELTAS_VERSION if self.enable_v0_1_deltas else "disabled",
+            "request_fingerprint_algorithm": versions.FINGERPRINT_ALGORITHM,
             "wire": versions.WIRE_COMPAT,
         }
 
@@ -271,7 +333,9 @@ class Decider:
         }
         return resp
 
-    def _success(self, request, env, request_id, limits, restriction, revision, plan, result, t_start, state_handle):
+    def _success(
+        self, request, env, request_id, limits, restriction, provenance, revision, plan, result, t_start, state_handle
+    ):
         questions = request["questions"]
         raw, served, entropy, temps = {}, {}, {}, {}
         for qid, q in questions.items():
@@ -314,6 +378,14 @@ class Decider:
                 "revision_id": revision["revision_id"],
                 "model_revision": revision,
                 "request_fingerprint": request_fingerprint(request),
+                "request_fingerprint_algorithm": versions.FINGERPRINT_ALGORITHM,
+                "provenance": self._provenance_diag(provenance, plan),
+                "probability_stages": {
+                    "raw": {"domain": "all_supplied_options", "transform": "softmax(logits, T=1)"},
+                    "served": {"domain": "all_supplied_options",
+                               "transform": self.calibration.identity()["id"]},
+                    "policy_conditioned": "present" if restriction else "absent (no restriction supplied)",
+                },
                 "context_ref": env.get("context_ref"),
                 "policy_ref": env.get("policy_ref"),
                 "registry_ref": env.get("registry_ref"),
@@ -334,18 +406,28 @@ class Decider:
                 "versions": self._versions(),
             },
         }
+        if restriction:
+            pcp = {}
+            for qid, allowed in restriction.items():
+                mass = sum(served[qid][o] for o in allowed)
+                stage = {
+                    "allowed": allowed,
+                    "domain": "all_supplied_options (zero on excluded)",
+                    "restriction_id": sha256_text(canonical_json({"policy_ref": env.get("policy_ref"),
+                                                                  "question": qid, "allowed": allowed})),
+                    "excluded_served_mass": 1.0 - mass,
+                    "note": "trusted restriction; never substituted for served/benchmark probabilities",
+                }
+                if mass > 0:
+                    stage["status"] = "ok"
+                    stage["probabilities"] = {o: (served[qid][o] / mass if o in allowed else 0.0)
+                                              for o in served[qid]}
+                else:
+                    stage["status"] = "unavailable_zero_served_mass"
+                    stage["probabilities"] = None
+                pcp[qid] = stage
+            ssdm["policy_conditioned_probabilities"] = pcp
         if self.enable_v0_1_deltas:
-            if restriction:
-                pcp = {}
-                for qid, allowed in restriction.items():
-                    mass = sum(served[qid][o] for o in allowed)
-                    pcp[qid] = {
-                        "probabilities": {o: served[qid][o] / mass for o in allowed} if mass > 0 else None,
-                        "allowed": allowed,
-                        "excluded_served_mass": 1.0 - mass,
-                        "note": "trusted restriction; never substituted for served/benchmark probabilities",
-                    }
-                ssdm["policy_conditioned_probabilities"] = pcp
             if result.attribution is not None:
                 ssdm["attribution"] = {
                     "label": "accounting attribution, not causal effect",

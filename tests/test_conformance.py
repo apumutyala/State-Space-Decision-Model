@@ -126,7 +126,7 @@ def test_revision_and_versions_recorded():
 def test_envelope_fields_echoed():
     req = base_request()
     req["ssdm"] = {
-        "schema": "ssdm.decide.v0",
+        "schema": "ssdm.decide.v0.1",
         "request_id": "r-1",
         "context_ref": "catalog-revision-7",
         "policy_ref": "public-read-policy-3",
@@ -138,8 +138,10 @@ def test_envelope_fields_echoed():
     s = resp["ssdm"]
     assert s["request_id"] == "r-1"
     assert s["diagnostics"]["context_ref"] == "catalog-revision-7"
-    assert s["diagnostics"]["limits_applied"]["max_choices"] == 8
-    assert s["diagnostics"]["limits_applied"]["_source"]["max_choices"] == "request"
+    assert s["diagnostics"]["limits_applied"]["max_questions"] == 8
+    assert s["diagnostics"]["limits_applied"]["_source"]["max_questions"] == "request:max_choices_alias"
+    assert s["diagnostics"]["request_fingerprint_algorithm"] == "ssdm.request_fingerprint.v0.1"
+    assert s["schema"] == "ssdm.decide.v0.1"
 
 
 def test_legacy_request_without_envelope_gets_pure_wire_answers():

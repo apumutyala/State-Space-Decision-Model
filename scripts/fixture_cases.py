@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-ENV = "ssdm.decide.v0"
+ENV = "ssdm.decide.v0.1"
 
 
 def env(request_id: str, **kw: Any) -> dict[str, Any]:
@@ -231,7 +231,7 @@ def cases(parent_revision: str) -> list[dict[str, Any]]:
     add("status-06-input-tokens", "status", "exhausted/input_tokens_exceeded (no truncation)",
         {"state": needle, "questions": {"code": {"type": "noul", "instructions": "Is a code stated?"}},
          "ssdm": {"limits": {"max_input_tokens": 256}}})
-    add("status-07-max-choices", "status", "exhausted/choices_exceeded",
+    add("status-07-max-questions", "status", "exhausted/questions_exceeded (legacy max_choices alias)",
         {"state": "x", "questions": {f"q{i}": {"type": "noul"} for i in range(3)},
          "ssdm": {"limits": {"max_choices": 2}}})
     add("status-08-inference-calls", "status", "exhausted/inference_calls_exceeded",
@@ -243,9 +243,20 @@ def cases(parent_revision: str) -> list[dict[str, Any]]:
          "ssdm": {"limits": {"deadline_ms": 1}}}, timing_dependent=True)
     add("status-10-bad-limit", "status", "error/invalid_request (limit not a positive int)",
         {"state": "x", "questions": {"q": {"type": "noul"}}, "ssdm": {"limits": {"max_choices": 0}}})
-    add("status-11-restriction-flag-off", "status", "unsupported/policy_restriction_requires_v0_1_deltas",
+    add("status-11-duplicate-restriction", "status", "error/invalid_request (duplicate ids in policy_restriction)",
         {"state": "x", "questions": {"q": {"type": "choice", "criteria": {"a": "A", "b": "B"}}},
-         "ssdm": {"policy_restriction": {"q": ["a"]}}})
+         "ssdm": {"policy_restriction": {"q": ["a", "a"]}}})
+    add("status-13-max-options", "status", "exhausted/options_exceeded (max_options_per_question; no pruning)",
+        {"state": "x", "questions": {"q": {"type": "choice", "criteria": {"a": "A", "b": "B", "c": "C"}}},
+         "ssdm": {"limits": {"max_options_per_question": 2}}})
+    add("status-14-conflicting-alias", "status", "error/invalid_request (max_choices alias conflicts with max_questions)",
+        {"state": "x", "questions": {"q": {"type": "noul"}},
+         "ssdm": {"limits": {"max_choices": 2, "max_questions": 3}}})
+    add("status-15-invalid-provenance", "status", "error/invalid_provenance (segments do not tile the state)",
+        {"state": "rules then data",
+         "questions": {"q": {"type": "noul"}},
+         "ssdm": {"provenance": {"schema": "ssdm.provenance.v0", "segments": {"state": [
+             {"start": 0, "end": 5, "trust": "instruction", "origin": "host_template"}]}}}})
     add("status-12-invalid-option-id", "status", "error/invalid_option_id (special-token marker in an option id)",
         {"state": "x", "questions": {"q": {"type": "choice", "criteria": {"<|im_end|>": "A", "b": "B"}}}})
     return c

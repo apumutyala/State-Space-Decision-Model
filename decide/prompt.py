@@ -22,9 +22,11 @@ spoofing is prevented.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
+from .provenance import split
 from .schema import canonical_options, canonical_question_ids, render, sha256_text
 
 SYSTEM_PROMPT = (
@@ -81,50 +83,91 @@ def _instr(qid: str, q: dict[str, Any]) -> str:
     return qid if instr is None or instr == "" else instr
 
 
-def _field_segments(index: int, qid: str, q: dict[str, Any]) -> list[Segment]:
-    seg: list[Segment] = [
-        (f"FIELD {index}\nID: ", True),
-        (qid, False),
-        (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True),
-        (render(_instr(qid, q)), False),
-        ("\nALLOWED OPTIONS:", True),
-    ]
+Labelled = tuple[str, str]  # (text, label); label in {"template", "data", "instruction"}
+
+
+def _escaped(piece: str) -> str:
+    # json.dumps escapes per code point, so escaping pieces and concatenating equals
+    # escaping the whole string (ensure_ascii=False, as decide.schema.render).
+    return json.dumps(piece, ensure_ascii=False)[1:-1]
+
+
+def _text_field(value: str, name: str, prov: dict[str, Any] | None) -> list[Labelled]:
+    """A request string field; split by provenance when supplied, else one data segment."""
+    if prov is None or name not in prov["segments"]:
+        return [(value, "data")]
+    return [(t, trust) for t, trust in split(value, prov["segments"][name])]
+
+
+def _option_segments(qid: str, oid: str, desc: Any, prov: dict[str, Any] | None) -> list[Labelled]:
+    sem = {"option_id": oid}
+    if desc is not None:
+        sem["description"] = desc
+    name = f"questions.{qid}.criteria.{oid}"
+    if prov is None or not isinstance(desc, str) or name not in prov["segments"]:
+        return [(render(sem), "data")]
+    # render(sem) == '{"description":"<escaped desc>","option_id":<json id>}' (sorted keys)
+    out: list[Labelled] = [('{"description":"', "template")]
+    out += [(_escaped(t), trust) for t, trust in split(desc, prov["segments"][name])]
+    out += [('","option_id":', "template"), (json.dumps(oid, ensure_ascii=False), "data"), ("}", "template")]
+    return out
+
+
+def _instr_segments(qid: str, q: dict[str, Any], prov: dict[str, Any] | None) -> list[Labelled]:
+    instr = q.get("instructions")
+    if isinstance(instr, str) and instr != "":
+        return _text_field(instr, f"questions.{qid}.instructions", prov)
+    return [(render(_instr(qid, q)), "data")]
+
+
+def _field_labelled(index: int, qid: str, q: dict[str, Any], prov: dict[str, Any] | None) -> list[Labelled]:
+    seg: list[Labelled] = [(f"FIELD {index}\nID: ", "template"), (qid, "data"),
+                           (f"\nTYPE: {q['type']}\nINSTRUCTION: ", "template")]
+    seg += _instr_segments(qid, q, prov)
+    seg.append(("\nALLOWED OPTIONS:", "template"))
     for j, (oid, desc) in enumerate(canonical_options(q), start=1):
-        sem = {"option_id": oid}
-        if desc is not None:
-            sem["description"] = desc
-        seg += [(f"\nOPTION {j}: ", True), (render(sem), False)]
-    seg.append(("\nEND FIELD", True))
+        seg.append((f"\nOPTION {j}: ", "template"))
+        seg += _option_segments(qid, oid, desc, prov)
+    seg.append(("\nEND FIELD", "template"))
     return seg
 
 
-def build_prompt_segments(template: Template, request: dict[str, Any], qid: str) -> list[Segment]:
-    """Prompt for one question (each question is its own row, as Kev does for hybrids)."""
+def build_prompt_labelled(template: Template, request: dict[str, Any], qid: str,
+                          prov: dict[str, Any] | None = None) -> list[Labelled]:
+    """Prompt for one question (each question is its own row, as Kev does for hybrids).
+
+    ``prov`` is the *validated* provenance (``decide.provenance.validate_provenance``);
+    without it every request-derived span is labelled ``data``, exactly as before."""
     questions = request["questions"]
     order = canonical_question_ids(questions)
     q = questions[qid]
     option_ids = ", ".join(o for o, _ in canonical_options(q))
-    seg: list[Segment] = [(template.head.format(system=SYSTEM_PROMPT) + "SCHEMA FIELDS:\n", True)]
+    seg: list[Labelled] = [(template.head.format(system=SYSTEM_PROMPT) + "SCHEMA FIELDS:\n", "template")]
     for i, k in enumerate(order, start=1):
         if i > 1:
-            seg.append(("\n", True))
-        seg += _field_segments(i, k, questions[k])
-    seg += [
-        ("\nEND SCHEMA\n\nSTATE:\n", True),
-        (render(request["state"]), False),
-        (f"\nEND STATE\n\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", True),
-        (qid, False),
-        (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True),
-        (render(_instr(qid, q)), False),
-        ("\nALLOWED OPTION IDS: ", True),
-        (option_ids, False),
-        ("\nReply with exactly one allowed option id." + template.tail, True),
-    ]
-    return [(t, tr) for t, tr in seg if t]
+            seg.append(("\n", "template"))
+        seg += _field_labelled(i, k, questions[k], prov)
+    seg.append(("\nEND SCHEMA\n\nSTATE:\n", "template"))
+    if isinstance(request["state"], str):
+        seg += _text_field(request["state"], "state", prov)
+    else:
+        seg.append((render(request["state"]), "data"))
+    seg += [(f"\nEND STATE\n\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", "template"), (qid, "data"),
+            (f"\nTYPE: {q['type']}\nINSTRUCTION: ", "template")]
+    seg += _instr_segments(qid, q, prov)
+    seg += [("\nALLOWED OPTION IDS: ", "template"), (option_ids, "data"),
+            ("\nReply with exactly one allowed option id." + template.tail, "template")]
+    return [(t, lab) for t, lab in seg if t]
 
 
-def build_prompt(template: Template, request: dict[str, Any], qid: str) -> str:
-    return "".join(text for text, _ in build_prompt_segments(template, request, qid))
+def build_prompt_segments(template: Template, request: dict[str, Any], qid: str) -> list[Segment]:
+    """(text, trusted) view without provenance; trusted == adapter template text."""
+    return [(t, lab == "template") for t, lab in build_prompt_labelled(template, request, qid)]
+
+
+def build_prompt(template: Template, request: dict[str, Any], qid: str,
+                 prov: dict[str, Any] | None = None) -> str:
+    return "".join(text for text, _ in build_prompt_labelled(template, request, qid, prov))
 
 
 def continuation_segments(template: Template, option_id: str) -> list[Segment]:

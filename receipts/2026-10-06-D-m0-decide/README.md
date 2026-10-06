@@ -144,3 +144,24 @@ Tests: `pytest.txt` is now **115 passed, 10 skipped** (CPU).
 ## Inputs read as text only (never executed)
 
 - `Cloudflare/clef-flash/joint_schema_model.py`, sha256 `0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3`, plus its README. Both are stored outside the repo.
+
+## 7. Pre-alignment with contract 0.1 (PR #4 @ `8109b13`; adapter 0.2.0; CPU only, no model loads)
+
+| Change | Where |
+|---|---|
+| Envelope `ssdm.decide.v0.1` (v0 rejected as `envelope_version_unsupported`) | `decide/versions.py` |
+| `max_questions` and `max_options_per_question` limits (`exhausted/questions_exceeded`, `exhausted/options_exceeded`). `max_choices` is accepted only as an alias of `max_questions`; a conflicting alias is `error/invalid_request`. Planner budgets are rejected | `decide/adapter.py` |
+| `policy_restriction` is core, no longer behind the flag. Duplicate ids are rejected. The stage covers the full candidate set (zero on excluded) with `restriction_id`, `status` `ok` or `unavailable_zero_served_mass` | `decide/adapter.py` |
+| `diagnostics.request_fingerprint_algorithm = ssdm.request_fingerprint.v0.1` (equal to v0 without provenance), plus `diagnostics.probability_stages` | `decide/versions.py`, `decide/schema.py` |
+| Optional `ssdm.provenance` (schema `ssdm.provenance.v0`, exactly as proposed on #4): code-point tiling, per-segment tokenisation through `decide/untrusted.py`, echo in `diagnostics.provenance`, covered by the fingerprint, `error/invalid_provenance` | `decide/provenance.py`, `decide/prompt.py`, HF readout |
+| Root `INTERFACE.md` reduced to a pointer at the canonical contract, plus D notes and the pending provenance delta | `INTERFACE.md` |
+
+Fixture: rebuilt from the unchanged recordings by `scripts/rebuild_fixture_from_recordings.py`, with no model run.
+
+- Cases: 43. Added: duplicate restriction, `options_exceeded`, conflicting alias, `invalid_provenance`. Removed: the flag-off restriction case.
+- All 28 ok cases have the same answers, raw/served probabilities and fingerprints as before.
+- Replay is exact for 42/42 non-timing cases.
+- The template identity is unchanged (`jrt-chatml-v1.f7d108c4`).
+- Tokenizer check: 173/173 sequences are unchanged.
+
+Tests: **141 passed, 7 skipped** (CPU), including `tests/test_provenance.py`.

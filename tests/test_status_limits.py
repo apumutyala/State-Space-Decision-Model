@@ -19,7 +19,7 @@ def status(resp):
 
 def with_env(req, **env):
     req = dict(req)
-    req["ssdm"] = {"schema": "ssdm.decide.v0", **env}
+    req["ssdm"] = {"schema": "ssdm.decide.v0.1", **env}
     return req
 
 
@@ -62,9 +62,27 @@ def test_non_object_request():
     assert status(run(["not", "a", "dict"])) == ("error", "invalid_request")
 
 
-def test_max_choices_exceeded():
-    resp = run(with_env(base_request(), limits={"max_choices": 2}))
-    assert status(resp) == ("exhausted", "choices_exceeded")
+def test_max_questions_and_legacy_alias():
+    assert status(run(with_env(base_request(), limits={"max_questions": 2}))) == ("exhausted", "questions_exceeded")
+    assert status(run(with_env(base_request(), limits={"max_choices": 2}))) == ("exhausted", "questions_exceeded")
+    # alias equal to max_questions is fine; conflicting alias is rejected
+    assert status(run(with_env(base_request(), limits={"max_choices": 3, "max_questions": 3}))) == ("ok", None)
+    assert status(run(with_env(base_request(), limits={"max_choices": 3, "max_questions": 4}))) == (
+        "error", "invalid_request")
+
+
+def test_max_options_per_question():
+    # base request: status has 3 options; max_choices never caps options
+    assert status(run(with_env(base_request(), limits={"max_options_per_question": 2}))) == (
+        "exhausted", "options_exceeded")
+    assert status(run(with_env(base_request(), limits={"max_options_per_question": 3}))) == ("ok", None)
+    assert status(run(with_env(base_request(), limits={"max_choices": 2, "max_questions": 2}))) == (
+        "exhausted", "questions_exceeded")
+
+
+def test_planner_budgets_are_not_d_limits():
+    for k in ("max_proposal_calls", "max_repair_calls"):
+        assert status(run(with_env(base_request(), limits={k: 3}))) == ("error", "invalid_request")
 
 
 def test_max_input_tokens_exceeded_no_truncation():
@@ -154,9 +172,26 @@ def test_non_finite_logits_rejected():
     assert status(run(base_request(), backend=Nan())) == ("error", "non_finite_logits")
 
 
-def test_policy_restriction_requires_flag():
+def test_policy_restriction_is_core_in_v0_1():
     req = with_env(base_request(), policy_restriction={"status": ["paid", "overdue"]})
-    assert status(run(req)) == ("unsupported", "policy_restriction_requires_v0_1_deltas")
+    resp = run(req)  # no flag needed
+    assert status(resp) == ("ok", None)
+    assert resp["ssdm"]["policy_conditioned_probabilities"]["status"]["status"] == "ok"
+
+
+def test_zero_mass_restriction_is_explicitly_unavailable():
+    class Peaked(OracleBackend):
+        def score(self, request, check_deadline):
+            r = super().score(request, check_deadline)
+            r.logits["status"] = {"paid": -1e6, "draft": -1e6, "overdue": 0.0}
+            return r
+
+    req = with_env(base_request(), policy_restriction={"status": ["paid", "draft"]})
+    resp = run(req, backend=Peaked())
+    stage = resp["ssdm"]["policy_conditioned_probabilities"]["status"]
+    assert status(resp) == ("ok", None)
+    assert stage["status"] == "unavailable_zero_served_mass" and stage["probabilities"] is None
+    assert stage["excluded_served_mass"] == pytest.approx(1.0)
 
 
 def test_policy_conditioned_is_separate_and_never_substituted():
@@ -172,13 +207,17 @@ def test_policy_conditioned_is_separate_and_never_substituted():
     served = s["served_probabilities"]["status"]
     assert pcp["allowed"] == ["draft", "paid"]
     assert pcp["excluded_served_mass"] == pytest.approx(served["overdue"])
+    assert set(pcp["probabilities"]) == set(served)  # full candidate set, zero on excluded
+    assert pcp["probabilities"]["overdue"] == 0.0
     assert sum(pcp["probabilities"].values()) == pytest.approx(1.0)
+    assert len(pcp["restriction_id"]) == 64
     assert "policy_conditioned_probabilities" not in plain["ssdm"]
 
 
 @pytest.mark.parametrize(
     "restriction",
-    [{"nope": ["paid"]}, {"status": []}, {"status": ["refunded"]}, {"status": "paid"}],
+    [{"nope": ["paid"]}, {"status": []}, {"status": ["refunded"]}, {"status": "paid"},
+     {"status": ["paid", "paid"]}],
 )
 def test_policy_restriction_validation(restriction):
     req = with_env(base_request(), policy_restriction=restriction)

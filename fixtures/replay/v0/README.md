@@ -7,7 +7,9 @@ This is **not** the Qwen3.5-9B readout promised in `coordination/CLAUDE_RESPONSE
 - The 9B-backed adapter and fixture come with the paid m0 run, as `fixtures/replay/v0-9b`. It will have a new `parent_revision`.
 - Pin `parent_revision` from `manifest.json`. Do not assume it is the 9B parent.
 
-The fixture holds 40 synthetic requests; none are Decision Index items.
+The fixture holds 43 synthetic requests; none are Decision Index items. Requests use envelope `ssdm.decide.v0.1` (contract 0.1, PR #4).
+
+**Responses rebuilt without a model run (adapter 0.2.0).** `requests.jsonl` and `responses.jsonl` were rebuilt by `scripts/rebuild_fixture_from_recordings.py`; `recordings.jsonl` (the logits) is byte-identical to the CPU recording at `29b858c`. The rebuild runs every case through `ReplayBackend` and the current adapter. All 28 ok cases have the same answers, raw/served probabilities and request fingerprints as before. `manifest.responses_rebuilt` records this and lists `pending_live_recording` (`injection-03-added-tokens`).
 
 | File | Content |
 |---|---|
@@ -26,11 +28,17 @@ The fixture holds 40 synthetic requests; none are Decision Index items.
   - unicode text.
 - Track L shapes: a semantic-operation choice, an evidence-ref choice, and ask-vs-assert.
 - Injection cases: three of them (see "Injection" below).
-- A policy restriction (deltas on) and a pinned `parent_revision`.
+- A policy restriction (core in 0.1; full candidate set with zero on excluded, `restriction_id`, `excluded_served_mass`, stage `status`) and a pinned `parent_revision`.
 - Every status/reason code:
-  - `error/{unknown_question_type, empty_criteria, invalid_request, invalid_option_id}`
-  - `unsupported/{too_many_options, media_unsupported, parent_revision_mismatch, policy_restriction_requires_v0_1_deltas}`
-  - `exhausted/{input_tokens_exceeded, choices_exceeded, inference_calls_exceeded, deadline_exceeded}`
+  - `error/{unknown_question_type, empty_criteria, invalid_option_id, invalid_provenance}`
+  - `error/invalid_request` ×3: a bad limit, duplicate restriction ids, and a `max_choices` alias that conflicts with `max_questions`
+  - `unsupported/{too_many_options, media_unsupported, parent_revision_mismatch}`
+  - `exhausted/{input_tokens_exceeded, questions_exceeded, options_exceeded, inference_calls_exceeded, deadline_exceeded}`
+- Limit units follow contract 0.1:
+  - `max_questions` caps questions per request; `max_choices` is accepted only as its legacy alias.
+  - `max_options_per_question` caps supplied options per question.
+  - Planner budgets (`max_proposal_calls`, `max_repair_calls`) are not D limits and are rejected.
+- Fingerprint: `diagnostics.request_fingerprint_algorithm = ssdm.request_fingerprint.v0.1` (see the root `INTERFACE.md`). Optional request `provenance` is covered by the fingerprint; no provenance ok case is recorded yet.
 
 ## Usage
 
@@ -50,13 +58,13 @@ Replay is a deterministic function of the recorded logits. The contract is that 
 
 Two checks back this up:
 
-- `tests/test_replay_fixture.py` checks the contract for all 39 non-timing cases.
+- `tests/test_replay_fixture.py` checks the contract for all 42 non-timing cases.
 - It also recomputes every ok answer *without the adapter*: softmax of the recorded logits, then Cloudflare's own `systemone_answer` logic.
 
 Limits of the contract:
 
 - It is adapter/boundary evidence, not model evidence.
-- `status-09-deadline` (`timing_dependent: true`) is excluded. The deadline is checked *between* inference calls, so that case spent one full call before reporting `exhausted`.
+- `status-09-deadline` (`timing_dependent: true`) is excluded. The deadline is checked *between* inference calls, so the live case spent one full call before reporting `exhausted`. The rebuild reproduces that status with a replay backend that sleeps 5 ms per call.
 - A request that was never recorded returns `unsupported/replay_miss`; there is no model fallback.
 
 Order insensitivity is also an adapter property. The adapter canonicalises question and option order, so the model input is byte-identical under any shuffle. That says nothing about the model's own order robustness.
