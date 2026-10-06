@@ -12,8 +12,8 @@ is also poor: predicted relations flipped on only 24/159 pairs requiring a
 flip, and only 13/180 comparison seed/task pairs had both full answers correct.
 **Fold this exact random-initialized width-32, fixed-scale, 300-step recipe as
 an L0 candidate; retain it only as an in-domain control.** This verdict applies
-to this recipe and synthetic development evidence, not to the broader SSM
-architecture family.
+to this recipe and synthetic development evidence. It does not generalize to
+other numeric heads, the broader SSM family, or actual Track D parent models.
 
 One frozen condition used the exact previous architecture, source, numeric
 scales, training examples/order, three model seeds, optimizer, and 300 steps.
