@@ -1,0 +1,23 @@
+# L0d2 typed planner handoff
+
+The planner calls the same D provider for operation and argument choices. Static candidates are not prefiltered by truth or evaluator labels. Later slots see earlier selected slots labelled as proposals, never checked facts. One-shot is the default; an explicitly enabled repair receives one bounded reason and at most one further whole-program attempt. Every provider request during repair counts against the repair-call budget as well as the overall proposal-call budget. Model forwards reported by D are accounted separately, including unknown work after failures.
+
+The bridge serializes an audience-permitted view and exact typed host inputs. It rejects reusable state and nonempty accepted prefixes. Incoming successful responses must match request/model identity and a caller-pinned served configuration; probability supports, normalization and legacy answer rounding are checked. A checked program alone does not establish task relevance. Only a successful release through the renderer supplies `text`.
+
+`PlannerResult` is internal: program, reason and trace are permissioned diagnostic data. A public endpoint must expose accepted text or a fixed failure response, never serialize the full object. This PR does not provide a public endpoint or neural-state intervention port.
+
+Independent Track L adversarial review reproduced two defects in draft d10ba39: missing calibration identity was accepted, and callers could request more than one repair attempt. Both are fixed in d2a0f73 and passed the reviewer's focused recheck. Earlier internal review repaired arbitrary metadata serialization and separated repair provider requests from AST attempts. Root added selected-slot conditioning and a CPU smoke using D's actual Decider with a scripted OracleBackend. The smoke exercises read, comparison and false-comparison rejection; it never loads weights or supports a learned success claim.
+
+Dependencies: contract #4, fixture source 2fe814a in #5, D adapter #6 (smoke source pinned by receipt), kernel e1dd16b in #10, renderer a361de9 in #11. D's unresolved error handling remains a separate cross-review blocker. Merge dependencies before this PR. For pre-merge reproduction copy their files without overwriting this PR's planner/bridge/test files. Actual dependency file hashes are in the receipt. The development worktree is preserved; this isolated publication branch starts at agent-main.
+
+This initial planner expresses reads, explanations of reads, comparisons and registered Ask requests. It does not yet search arbitrary compositional graphs, provide rich language, or meet the L0 learned gates. Those gaps need model experiments after CPU proofs merge and the spend gate is acknowledged.
+
+## Adapter v0.1 integration revision
+
+The bridge now pins the v0.1 request/response envelope, provenance-free fingerprint algorithm and direct question/option limits against D source `0a30e7b`. Full-domain policy-stage validation matches that version. A host policy restriction is explicitly unsupported by the initial planner until a trusted per-slot mapping exists; it cannot be silently dropped. Independent recheck found and verified that preflight fix. Current L0 emits no provenance. Historical v0 receipts remain version-scoped; the new receipt supplies the current integration evidence. The adapter actual-forward cap finding remains a D-side cross-review item.
+
+## Shared oracle/replay integration
+
+The CPU smoke now records the actual D OracleBackend's synthetic logits and replays semantic planning through D ReplayBackend. It checks semantic equality separately from normalized D response equality, including probability stages and served configuration. The adversary found that output-only equality missed scaled logits; a regression now demonstrates that changed probabilities fail even when argmax/program/text stay the same. Changed task or evidence must produce a replay miss. Raw synthetic recordings and both response streams are retained in the smoke output. These are simulated backend work counts, not live learned-model inference or performance evidence.
+
+The earlier L-only alternate backend API draft is superseded by this shared implementation plus the strict bridge. Its source remains preserved in the local `ssdm-codex-l0-backends` worktree; it is not shipped as a fallback. The fold is recorded in LEDGER.md.

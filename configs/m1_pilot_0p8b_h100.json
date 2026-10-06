@@ -1,0 +1,19 @@
+{
+ "_comment": "0.8B pipeline-qualification curve on one H100 (paid run phase 1). Not a cost anchor for the 9B. policy=force: gate verdicts RECORDED, not enforced (curve mode).",
+ "seed": 0, "kernel": "fla", "seq_len": 1024, "batch": 16,
+ "model_dir": null,
+ "data": {"train_max_tokens": 40000000},
+ "vram_fraction": 0.9,
+ "deadline_minutes": 55,
+ "controls": {"swa_windows": [256], "swa_sinks": 4, "zero": true},
+ "probes": {"ppl": [[1024, 64], [4096, 16]], "niah_lengths": [512, 1024, 2048, 4096, 8192], "niah_n_per": 8,
+            "mqar_pairs": [8, 32, 64, 128], "mqar_n_seq": 20, "mmlu_k": 5},
+ "calibrate_out_scale": true,
+ "init": "reuse_attn",
+ "init_cmp": {"inits": ["random", "clone_neighbor", "reuse_attn"], "steps": 60, "lr": 1e-3},
+ "stage1": {"steps": 300, "lr": 1e-3, "eval_init": true, "guard": {"max_peak_gb": 76}},
+ "order": "kl",
+ "stage2": {"steps": 300, "lr": 5e-4, "train_all_converted": true, "guard": {"max_peak_gb": 76, "max_minutes": 5}},
+ "gate": {"n_windows": 32, "max_step_delta_nll": 0.05, "max_cum_delta_nll": 0.15, "min_hidden_cos": 0.95, "policy": "force"},
+ "throughput": {"lengths": [1024, 2048, 4096, 8192], "reps": 3}
+}

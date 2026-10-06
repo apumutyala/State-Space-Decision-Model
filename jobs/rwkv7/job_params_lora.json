@@ -1,0 +1,36 @@
+{
+ "_comment": "jobs/rwkv7 stage B (JOB=lora): LoRA m2 pilot cell with the cache fork head (train/run_cell.py, jobs/rwkv7/pilot_cell.json). depends_on stage A result.ok == true. Checked by tests/test_m1_next_jobs.py.",
+ "job": "rwkv7-lora",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 180,
+ "build_timeout_minutes": 30,
+ "max_restarts": 1,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 2880,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 20.0,
+ "reserve_minutes": 8,
+ "phase_caps_minutes": {
+  "setup": 25,
+  "smoke": 10,
+  "ladder": 20,
+  "train": 115,
+  "report": 2
+ },
+ "expected_minutes": {
+  "build": 15,
+  "setup": 10,
+  "smoke": 6,
+  "ladder": 12,
+  "train": 112,
+  "report": 1
+ },
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "model_bytes": 26540800536,
+ "depends_on_require": "result.ok == true",
+ "pilot_cell": "jobs/rwkv7/pilot_cell.json",
+ "mission": "m1-rwkv7-fallback"
+}

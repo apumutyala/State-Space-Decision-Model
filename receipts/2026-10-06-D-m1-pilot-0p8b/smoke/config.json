@@ -1,0 +1,64 @@
+{
+ "seed": 0,
+ "kernel": "fla",
+ "seq_len": 512,
+ "batch": 2,
+ "data": {
+  "train_max_tokens": 40000000
+ },
+ "controls": {
+  "swa_windows": [
+   128
+  ],
+  "swa_sinks": 4,
+  "zero": false
+ },
+ "probes": {
+  "ppl": [
+   [
+    1024,
+    4
+   ]
+  ],
+  "niah_lengths": [
+   512
+  ],
+  "niah_n_per": 1,
+  "mqar_pairs": [
+   8
+  ],
+  "mqar_n_seq": 2,
+  "mmlu_k": 1
+ },
+ "init": "reuse_attn",
+ "init_cmp": {
+  "inits": [
+   "random",
+   "reuse_attn"
+  ],
+  "steps": 3,
+  "lr": 0.001
+ },
+ "stage1": {
+  "steps": 5,
+  "lr": 0.001,
+  "eval_init": false
+ },
+ "stage2": {
+  "steps": 3,
+  "lr": 0.0003,
+  "train_all_converted": true
+ },
+ "gate": {
+  "n_windows": 4,
+  "max_step_delta_nll": -1.0,
+  "min_hidden_cos": 0.9,
+  "policy": "rollback"
+ },
+ "throughput": {
+  "lengths": [
+   1024
+  ],
+  "reps": 2
+ }
+}
