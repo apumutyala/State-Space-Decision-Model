@@ -32,12 +32,22 @@ not the attention-free Track D target, a strong unrestricted comparator, a
 parent-retention test, or Decision Index/held-out evidence. No model load or
 run belongs to this preparation phase.
 
+The original package-file invocation failed during interpreter startup because
+`language_growth/types.py` shadowed stdlib `types`. The repository-root entry
+point adds only the repository root under `-I`, then imports the probe's `main`.
+The owned child uses the same entry point and `-I`, with the existing offline CPU
+environment. Preparation tests cover subprocess `--help` for both modes even
+from the package directory with a conflicting `PYTHONPATH`, and assert the
+recorded child command and offline environment. These checks do not import
+Torch, load weights, or execute the diagnostic.
+
 After the resource owner clears a run, use the existing
 `C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe` runtime (known
-`transformers` 5.17.0, `accelerate` 1.15.0, `torch` 2.8.0, `psutil` 7.2.2):
+`transformers` 5.17.0, `accelerate` 1.15.0, `torch` 2.8.0, `psutil` 7.2.2).
+Run from the repository root:
 
 ```powershell
-& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -I language_growth/l0_qwen_cpu_probe.py --raw 'C:/Users/apumu/research/CHLabs/ssdm-data/l0-qwen-cpu-probe-271828/raw.jsonl'
+& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -I l0_qwen_cpu_probe.py --raw 'C:/Users/apumu/research/CHLabs/ssdm-data/l0-qwen-cpu-probe-271828/raw.jsonl'
 ```
 
 The output directory must be fresh. The launcher exits before loading if

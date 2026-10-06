@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from types import SimpleNamespace
@@ -14,6 +16,42 @@ from language_growth import l0_qwen_cpu_probe as probe
 
 
 class ProbePreparationTests(unittest.TestCase):
+    def test_isolated_root_launcher_help_starts_from_package_directory(self):
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(probe.ROOT / "language_growth")
+        for mode in ([], ["--child"]):
+            with self.subTest(mode=mode):
+                result = subprocess.run(
+                    [sys.executable, "-I", str(probe.ROOT / "l0_qwen_cpu_probe.py"),
+                     *mode, "--help"],
+                    cwd=probe.ROOT / "language_growth", env=env,
+                    capture_output=True, text=True, timeout=15, check=False)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("--raw", result.stdout)
+                self.assertIn("offline", result.stdout)
+
+    def test_child_invocation_uses_isolated_root_runner_and_offline_environment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            raw = Path(directory) / "new-run" / "raw.jsonl"
+            child = MagicMock()
+            child.poll.return_value = 0
+            with (patch.object(probe, "_check_dependencies", return_value={}),
+                  patch("psutil.virtual_memory", return_value=SimpleNamespace(available=9 * 1024**3)),
+                  patch.object(probe.subprocess, "Popen", return_value=child) as popen):
+                self.assertEqual(probe._parent(raw), 0)
+            command = [sys.executable, "-I", str(probe.ROOT / "l0_qwen_cpu_probe.py"),
+                       "--child", "--raw", str(raw)]
+            self.assertEqual(popen.call_args.args, (command,))
+            env = popen.call_args.kwargs["env"]
+            for name, value in (("CUDA_VISIBLE_DEVICES", "-1"),
+                                ("HF_HUB_OFFLINE", "1"),
+                                ("TRANSFORMERS_OFFLINE", "1"),
+                                ("HF_DATASETS_OFFLINE", "1"),
+                                ("HF_HUB_DISABLE_TELEMETRY", "1")):
+                self.assertEqual(env[name], value)
+            rows = [json.loads(line) for line in raw.read_text(encoding="utf-8").splitlines()]
+            self.assertEqual(rows[0]["command"], command)
+
     def test_clock_failure_after_spawn_stops_owned_child(self):
         with tempfile.TemporaryDirectory() as directory:
             raw = Path(directory) / "new-run" / "raw.jsonl"

@@ -164,14 +164,14 @@ def _parent(raw: Path) -> int:
     if available < MIN_START_AVAILABLE:
         raise RuntimeError(f"CPU probe requires >=8 GiB available RAM; found {available / 1024**3:.2f} GiB")
     raw.parent.mkdir(parents=True, exist_ok=False)
-    _write_event(raw, "launcher_start", command=[sys.executable, str(Path(__file__).resolve()),
-                 "--child", "--raw", str(raw)], timeout_seconds=TIMEOUT_SECONDS,
+    command = [sys.executable, "-I", str(ROOT / "l0_qwen_cpu_probe.py"),
+               "--child", "--raw", str(raw)]
+    _write_event(raw, "launcher_start", command=command, timeout_seconds=TIMEOUT_SECONDS,
                  min_start_available_bytes=MIN_START_AVAILABLE,
                  min_running_available_bytes=MIN_RUNNING_AVAILABLE,
                  available_bytes=available, task_id=task["task_id"],
                  task_sha256=_sha_task(task), software=versions)
-    child = subprocess.Popen([sys.executable, str(Path(__file__).resolve()),
-                              "--child", "--raw", str(raw)], env=_offline_env())
+    child = subprocess.Popen(command, env=_offline_env())
     stopped = False
     try:
         started = time.monotonic()
