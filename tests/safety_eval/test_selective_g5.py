@@ -226,3 +226,81 @@ def test_receipt_names_estimand_and_stress_reports_both_weightings():
     st = S.stress_test(0.5, s2, w2, ALPHA, DELTA, clusters=cl2)
     assert st["selective_risk"] == pytest.approx(100 / 110)
     assert st["selective_risk_cluster_weighted"] == pytest.approx(1 / 11)
+
+
+# ------------------------------------------------------------------ Track L counterexample: unequal cluster sizes
+UNEQ = (9000, 1000, 10, 0.6)  # 9000 safe size-1 clusters + 1000 size-10 clusters erring at 0.6 (1 - s)
+
+
+def gen_unequal(rng, n_small=UNEQ[0], n_big=UNEQ[1], big=UNEQ[2], c=UNEQ[3]):
+    sizes = np.r_[np.ones(n_small, int), np.full(n_big, big)]
+    cl = np.repeat(np.arange(sizes.size), sizes)
+    s = rng.random(cl.size)
+    w = rng.random(cl.size) < np.where(cl >= n_small, c * (1 - s), 0.0)
+    return s, w, [str(x) for x in cl]
+
+
+def unit_uniform_risk(lam, n_small=UNEQ[0], n_big=UNEQ[1], big=UNEQ[2], c=UNEQ[3]):
+    """Deployment-traffic selective risk: share of units in risky clusters x E[c (1 - s) | s >= lam]."""
+    return n_big * big / (n_small + n_big * big) * c * (1 - lam) / 2
+
+
+def test_unequal_cluster_sizes_thinned_bound_fails_unit_weighted_bound_holds():
+    """Regression for the Track L counterexample on PR #20: one-unit-per-cluster thinning controls the
+    cluster-uniform risk, so with risk concentrated in large clusters it under-covers the unit-uniform risk
+    (Track L: 56 % at nominal 99 %; this construction: ~0 %). ``weighting="unit"`` (the ``auto`` choice for
+    unequal sizes) must cover at >= 1 - delta and still certify in a good share of runs."""
+    delta, N = 0.01, 60
+    cover = {"cluster": 0, "auto": 0}
+    nonvacuous_auto = 0
+    for seed in range(N):
+        s, w, cl = gen_unequal(np.random.default_rng(seed))
+        for wt in cover:
+            r = S.ltt_selective(s, w, ALPHA, delta, clusters=cl, weighting=wt, thin_seed=seed)
+            lam = r["lam_hat"]
+            cover[wt] += lam is None or unit_uniform_risk(lam) <= ALPHA
+            if wt == "auto":
+                assert r["weighting"] == "unit" and r["estimand"].startswith("unit-uniform")
+                nonvacuous_auto += lam is not None
+    assert cover["cluster"] / N < 0.5  # the old default: coverage collapses
+    assert cover["auto"] / N >= 1 - delta  # fixed
+    assert nonvacuous_auto >= N // 4
+
+
+def test_unit_weighted_bound_validity_at_the_boundary():
+    """Single threshold where the unit-uniform risk equals alpha: rejection frequency <= delta."""
+    fb = UNEQ[1] * UNEQ[2] / (UNEQ[0] + UNEQ[1] * UNEQ[2])
+    lam0 = 1 - 2 * ALPHA / (fb * UNEQ[3])
+    assert unit_uniform_risk(lam0) == pytest.approx(ALPHA)
+    N = 100
+    rej = 0
+    for seed in range(N):
+        s, w, cl = gen_unequal(np.random.default_rng(500 + seed))
+        rej += S.ltt_selective(s, w, ALPHA, DELTA, grid=(lam0,), clusters=cl, weighting="unit")["lam_hat"] is not None
+    assert rej / N <= DELTA
+
+
+def test_auto_weighting_and_cluster_size_bound():
+    s, w, cl = gen_clustered(np.random.default_rng(0), 50, 10)  # equal sizes -> thinned (estimands coincide)
+    assert S.ltt_selective(s, w, ALPHA, DELTA, clusters=cl)["weighting"] == "cluster"
+    s, w, cl = gen_unequal(np.random.default_rng(0), 300, 50, 4)
+    r = S.ltt_selective(s, w, ALPHA, DELTA, clusters=cl)
+    assert r["weighting"] == "unit" and r["range_source"].startswith("observed_max")
+    assert S.ltt_selective(s, w, ALPHA, DELTA, clusters=cl, max_cluster_size=8)["range_source"] == "pre-registered"
+    with pytest.raises(ValueError):
+        S.ltt_selective(s, w, ALPHA, DELTA, clusters=cl, max_cluster_size=3)
+    with pytest.raises(ValueError):
+        S.ltt_selective(s, w, ALPHA, DELTA, clusters=cl, weighting="bogus")
+    json.dumps(r)
+
+
+def test_hb_and_empirical_bernstein_bounds():
+    from safety_eval.bounds import eb_upper, hb_pvalue
+    assert hb_pvalue(0.2, 100, 0.1) == 1.0
+    assert hb_pvalue(0.0, 100, 0.1) <= 0.9 ** 100 * math.e + 1e-12
+    rng = np.random.default_rng(1)
+    miss = 0
+    for _ in range(400):  # coverage of the EB upper bound on a skewed [0, 1] law
+        v = np.where(rng.random(300) < 0.05, rng.random(300), 0.1)
+        miss += eb_upper(v, 0.05) < 0.05 * 0.5 + 0.95 * 0.1
+    assert miss / 400 <= 0.05

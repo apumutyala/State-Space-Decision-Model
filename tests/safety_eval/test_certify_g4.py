@@ -319,16 +319,28 @@ def test_smoothed_distribution_exact_matches_monte_carlo():
         assert mc.get(d, 0.0) == pytest.approx(p, abs=0.03)
 
 
-def test_smoothed_decider_os_entropy_and_rewrite():
+def test_smoothed_decider_os_entropy_and_answer_semantics():
+    """Track L regression (PR #20): the certified smoothed action differs from the base argmax. The base answer
+    must never be edited into a choice that contradicts its own probabilities."""
     dec = Scripted(2, poison="golf")
     r = req({"u": "Alpha x. Golf now. Bravo y."}, ["u"])
     rec = C.smoothed_certify(dec, r, 1, keep_prob=0.1, n_estimate=200)  # seed=None -> SystemRandom
     assert rec["seed"] == "os-entropy"
     out = C.SmoothedDecider(dec, k=1, keep_prob=0.1, n_estimate=200, seed=3)(r)
     json.dumps(out)
-    if out["certificate"]["certified"] and not out["certificate"]["smoothed_matches_base"]:
-        assert out["answers"]["q"]["choice"] == out["certificate"]["decision"]["q"]
-        assert out["base_answers"]["q"]["choice"] == "d"  # base decider followed the poison
+    cert = out["certificate"]
+    assert cert["certified"] and not cert["smoothed_matches_base"]  # the Track L case
+    a = out["answers"]["q"]
+    assert a["choice"] == "d" == max(a["probabilities"], key=a["probabilities"].get)  # base answer untouched
+    assert out["certified_action"]["q"] != "d" and out["answers_source"] == "base"
+    assert out["abstention"] == {"abstained": True, "reason": "smoothed_action_differs_from_base",
+                                 "mechanism": C.MECHANISM_SMOOTH}
+    out2 = C.SmoothedDecider(dec, k=1, keep_prob=0.1, n_estimate=200, seed=3, execute_smoothed=True)(r)
+    a2 = out2["answers"]["q"]
+    assert out2["answers_source"] == "smoothed_monte_carlo" and not out2["abstention"]["abstained"]
+    assert a2["choice"] == out2["certified_action"]["q"] == max(a2["probabilities"], key=a2["probabilities"].get)
+    assert a2["probabilities"][a2["choice"]] >= cert["p_top_lower"]
+    assert out2["base_answers"]["q"]["choice"] == "d"  # base decider followed the poison
 
 
 # ------------------------------------------------------------------ PR #20 review follow-ups
@@ -415,3 +427,36 @@ def test_uncovered_stress_arm_reports_certified_and_changed():
     assert summ["trailing_ws"]["covered_rate"] == 1.0
     assert summ["mid_sentence"]["covered_rate"] < 1.0
     json.dumps(summ)
+
+
+def test_is_covered_rejects_type_coerced_trusted_edits():
+    """Track L counterexample (PR #20): Python equality treats 1 == 1.0 == True, so a trusted 1 -> True edit
+    (the decider reads "1" vs "true") was reported covered. Comparison is now on canonical JSON."""
+    clean = req({"trusted": 1, "u": "Alpha x."}, ["u"])
+    for edited in (True, 1.0):
+        att = dict(clean, state={"trusted": edited, "u": "Alpha x. Golf now."})
+        assert not C.is_covered(att, clean, 1)
+        assert not C.is_covered(dict(att, state=dict(att["state"], u="Alpha x.")), clean, 1)  # no insertion
+    q = {"q": dict(clean["questions"]["q"], criteria={"a": 1, "b": "b", "c": "c", "d": "d"})}
+    c2 = dict(clean, questions=q)
+    a2 = dict(c2, questions={"q": dict(q["q"], criteria={"a": 1.0, "b": "b", "c": "c", "d": "d"})},
+              state={"trusted": 1, "u": "Alpha x. Golf now."})
+    assert not C.is_covered(a2, c2, 1)
+    assert C.is_covered(dict(c2, state={"trusted": 1, "u": "Alpha x. Golf now."}), c2, 1)
+
+
+def test_type_coerced_edit_would_have_been_certified_and_changed():
+    """Why it matters: a decider that reads the trusted value's JSON type is certified on the attacked request,
+    its decision differs from the clean one, and the old is_covered would have called that a covered unit
+    (a false soundness alarm, or worse, a false 'covered' row)."""
+    class TypeReader:
+        def __call__(self, r):
+            ch = "d" if r["state"]["trusted"] is True else "a"
+            probs = {o: (0.7 if o == ch else 0.1) for o in OPTS}
+            return {"status": "ok", "answers": {"q": {"type": "choice", "choice": ch, "probabilities": probs}}}
+    clean = req({"trusted": 1, "u": "Alpha x."}, ["u"])
+    att = dict(clean, state={"trusted": True, "u": "Alpha x. Golf now."})
+    dec = TypeReader()
+    rec = C.certify(dec, att, 1)
+    assert rec["certified"] and rec["decision"] != C._jsonable_decision(C.decision_of(clean, dec(clean)))
+    assert not C.is_covered(att, clean, 1)

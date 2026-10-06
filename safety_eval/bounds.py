@@ -62,3 +62,30 @@ def cp_upper(k: int, n: int, delta: float) -> float:
     if n == 0 or k >= n:
         return 1.0
     return _bisect(lambda p: binom_cdf(k, n, p) - delta)
+
+
+def hb_pvalue(mean: float, n: int, alpha: float) -> float:
+    """Hoeffding-Bentkus p-value (LTT, arXiv 2110.01052, Prop. 3) for H0: E[W] >= alpha, W in [0, 1] i.i.d.,
+    given the sample mean of n draws. Valid for any distribution on [0, 1] (not only Bernoulli)."""
+    if n == 0:
+        return 1.0
+    t = min(max(mean, 0.0), 1.0)
+    if t >= alpha:
+        return 1.0
+    a = max(t, 1e-300)
+    kl = a * math.log(a / alpha) + (1 - a) * math.log((1 - a) / (1 - alpha)) if a < 1 else math.inf
+    hoeffding = math.exp(-n * kl)
+    bentkus = math.e * binom_cdf(math.ceil(n * t), n, alpha)
+    return float(min(1.0, hoeffding, bentkus))
+
+
+def eb_upper(values: np.ndarray, delta: float) -> float:
+    """Maurer-Pontil empirical-Bernstein upper confidence bound on E[W] for i.i.d. W in [0, 1] (arXiv 0907.3740,
+    Thm 4): with probability >= 1 - delta, E[W] <= mean + sqrt(2 V ln(2/delta) / n) + 7 ln(2/delta) / (3 (n - 1)),
+    V the unbiased sample variance. Variance-adaptive: tight when W concentrates (cluster totals, mostly idle)."""
+    v = np.asarray(values, float)
+    n = v.size
+    if n < 2:
+        return 1.0
+    lg = math.log(2.0 / delta)
+    return float(min(1.0, v.mean() + math.sqrt(2.0 * v.var(ddof=1) * lg / n) + 7.0 * lg / (3.0 * (n - 1))))

@@ -288,12 +288,18 @@ features. An abstention scores as wrong on the Decision Index, so neither ever r
 - **Calibration data** (m2, on stored predictions, CPU only):
   - dev predictions, including attacked units (2511.18562);
   - calibration and evaluation are split by cluster (`cluster_split`, salt `ssdm-g5-split-v1`, 50 %);
-  - the bound uses one unit per cluster (`thin_by_cluster`, seed recorded). **Its estimand is the
-    cluster-uniform selective risk**: a uniform unit of a uniform cluster. That equals deployment-traffic
-    (unit-uniform) risk only when cluster sizes are equal, or independent of risk and score. No size-weighted
-    variant is used, because resampling clusters by size breaks the i.i.d. draw. Held-out stress tests report
-    the realised risk under both weightings (`selective_risk`, `selective_risk_cluster_weighted`). When sizes
-    are uneven, the unit-weighted number is the one judged against the 0.05 / 0.07 criterion;
+  - the bound is chosen by `weighting="auto"`:
+    - **Equal cluster sizes:** one unit per cluster (`thin_by_cluster`, seed recorded) with the exact
+      binomial. The cluster-uniform and unit-uniform estimands coincide here.
+    - **Unequal sizes:** the unit-uniform (deployment-traffic) selective risk, tested on cluster totals
+      W_c = (X_c − αY_c + αm)/m. This is a union of Hoeffding–Bentkus and empirical-Bernstein tests, each at
+      half the level. The size bound m (`max_cluster_size`) is pre-registered per stratum as the largest
+      template cluster in the frozen manifest.
+    - **Why:** Track L showed on PR #20 that the thinned bound covers the unit-uniform risk in only 56 % of
+      runs at a nominal 99 % when risk sits in the large clusters. The regression test reproduces that
+      failure (about 0 %) and checks that the unit-weighted bound holds at ≥ 1 − δ.
+    - **Reporting:** held-out stress tests report realised risk under both weightings. The unit-weighted
+      number is the one judged against the 0.05 / 0.07 criterion;
   - the unit-level threshold is reported only as a labelled secondary (`unit_level_unsafe`). The synthetic
     clustered test shows it rejecting a true null at 2× δ.
 - **Feasibility floor before calibrating.** For each stratum, report (μ − α)/(1 − α) at the point estimate and
@@ -322,7 +328,8 @@ features. An abstention scores as wrong on the Decision Index, so neither ever r
 - **v0.4 (2026-10-06; revised in internal review of PR #20 before merge or any scoring).** Revisions:
   covered-insertions-only scope; `sent-leadws-v2`; the span-unit arm and the uncovered-insertion stress arm;
   certified-but-wrong is now wrong | certified, with `wrong_given_auto` beside it; the policy-conditioned
-  score is shared by G4 and G5; the cluster-uniform estimand is stated.
+  score is shared by G4 and G5; the cluster-uniform estimand is stated. Track L review (later): `is_covered`
+  compares canonical JSON; for unequal cluster sizes, `weighting="auto"` uses a unit-uniform cluster-total bound.
   Original entry: added §6: how G4 (erase-and-check, k = 1 / 2, plus a randomized-ablation smoothing arm)
   and G5 (LTT selective risk with the feasibility floor, cluster-thinned bounds and the held-out-goal stress
   test) are measured at m1/m2, on our model and on the Clef / Clef-flash baselines. No prior entry was edited,

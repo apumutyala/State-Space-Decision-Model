@@ -36,16 +36,16 @@ Clusters. Units that share a template cluster are correlated; a unit-level binom
 i.i.d. if clusters are, at the cost of discarding data; the unit-level result is reported beside it, labelled as
 assuming unit independence. Calibration/evaluation splits are made by cluster (``cluster_split``), never by unit.
 
-**Estimand of the cluster-thinned bound (limitation, PR #20 review finding 4).** One uniformly drawn unit per
-uniformly drawn cluster controls the **cluster-uniform** selective risk: the risk of "a uniformly random unit of
-a uniformly random cluster". It equals the unit-uniform (deployment-traffic) selective risk only when cluster
-sizes are equal, or independent of risk and score. When large clusters are riskier, the unit-uniform risk at
-lam_hat can exceed alpha while the bound holds; the review measured 14 % violations at delta = 10 % in that
-construction. No size-weighted variant is offered, because resampling clusters proportional to size breaks
-the i.i.d. draw the binomial needs. Instead every receipt names its ``estimand``, and ``stress_test`` reports
-the realised risk under both weightings (``selective_risk`` unit-weighted, ``selective_risk_cluster_weighted``
-with weight 1/size). Deployment traffic whose cluster sizes are uneven and plausibly risk-correlated must be
-judged on the unit-weighted held-out number. In ``data.build`` the clusters are near-equal (round-robin).
+**Estimands with clusters (PR #20 reviews).** One uniformly drawn unit per uniformly drawn cluster
+(``weighting="cluster"``) controls the **cluster-uniform** selective risk: the risk of a uniformly random unit of
+a uniformly random cluster. That equals the unit-uniform (deployment-traffic) risk only when cluster sizes are
+equal, or independent of risk and score. When large clusters are riskier it fails for traffic: Track L measured
+56 % coverage of the unit-uniform risk at a nominal 99 %. ``weighting="unit"`` controls the unit-uniform risk
+for i.i.d. clusters of unequal size. It uses all units, and tests E[X_c - alpha*Y_c] >= 0 on cluster totals
+with Hoeffding-Bentkus and empirical-Bernstein tests (union bound), given a size bound m. It is
+conservative, but valid.
+``weighting="auto"`` (the default) uses ``cluster`` when all clusters have the same size, and ``unit``
+otherwise. ``stress_test`` reports realised risk under both weightings.
 
 Pre-registered shift caveat (PREREG section 6). The bound holds only inside the exchangeability assumption.
 Realised selective risk on held-out templates is inside it; realised risk on held-out attack goals is outside it
@@ -62,7 +62,7 @@ from typing import Any, Callable, Sequence
 
 import numpy as np
 
-from .bounds import binom_cdf, cp_lower, cp_upper
+from .bounds import binom_cdf, cp_lower, cp_upper, eb_upper, hb_pvalue
 from .request import policy_conditioned_prob
 
 SCHEMA = "ssdm.g5.selective_risk.v1"
@@ -149,12 +149,61 @@ def _ltt_core(scores: np.ndarray, wrong: np.ndarray, alpha: float, delta: float,
     return {"chosen": chosen, "table": table, "test_level": level}
 
 
+def _ltt_core_clustered(scores: np.ndarray, wrong: np.ndarray, codes: np.ndarray, n_clusters: int, m: int,
+                        alpha: float, delta: float, grid: Sequence[float], method: str) -> dict:
+    """Unit-uniform selective risk with i.i.d. CLUSTERS of unequal size.
+
+    Per cluster c and threshold lam: X_c = acted-and-wrong units, Y_c = acted units. The unit-uniform selective
+    risk is R = E[X]/E[Y], and R >= alpha  <=>  E[X - alpha*Y] >= 0. With every cluster of size <= m,
+    W_c = (X_c - alpha*Y_c + alpha*m)/m lies in [0, 1], and R >= alpha <=> E[W] >= alpha. H_lam is tested with
+    the Hoeffding-Bentkus p-value and the empirical-Bernstein bound on the n_clusters i.i.d. W_c, each at half
+    the per-threshold level (union bound; both valid for any [0, 1] law)."""
+    n_units = int(scores.size)
+    grid = list(grid)
+    table, rejected = [], []
+    level = delta / len(grid) if method == "bonferroni" else delta
+    stopped = False
+    for lam in grid:
+        acted = scores >= lam
+        X = np.bincount(codes, weights=(acted & wrong).astype(float), minlength=n_clusters)
+        Y = np.bincount(codes, weights=acted.astype(float), minlength=n_clusters)
+        W = (X - alpha * Y + alpha * m) / m
+        # union of two valid level-(level/2) tests: Hoeffding-Bentkus (exact-ish for small n) and the
+        # variance-adaptive empirical Bernstein bound (W_c concentrates near alpha when most clusters are idle)
+        p = hb_pvalue(float(W.mean()), n_clusters, alpha) if Y.sum() else 1.0
+        ub = eb_upper(W, level / 2) if Y.sum() else 1.0
+        rej = (p <= level / 2 or ub < alpha) and not stopped
+        if method == "fixed_sequence" and not rej:
+            stopped = True
+        n_l, k_l = int(Y.sum()), int(X.sum())
+        row = {"lam": float(lam), "n_acted": n_l, "k_wrong": k_l, "coverage": n_l / n_units if n_units else 0.0,
+               "selective_risk_hat": (k_l / n_l) if n_l else None, "w_mean": float(W.mean()), "p": p, "eb_upper": ub,
+               "rejected": bool(rej)}
+        table.append(row)
+        if rej:
+            rejected.append(row)
+    chosen = max(rejected, key=lambda r: (r["coverage"], -r["lam"])) if rejected else None
+    return {"chosen": chosen, "table": table, "test_level": level}
+
+
+WEIGHTINGS = ("auto", "cluster", "unit")
+
+
 def ltt_selective(scores: Sequence[float], wrong: Sequence[bool], alpha: float = 0.05, delta: float = 0.05, *,
                   grid: Sequence[float] = DEFAULT_GRID, method: str = "bonferroni",
                   clusters: Sequence[str] | None = None, thin_seed: int = 0, max_abstention: float = 0.5,
-                  stratum: str | None = None) -> dict:
+                  stratum: str | None = None, weighting: str = "auto", max_cluster_size: int | None = None) -> dict:
     """Calibrate one stratum. Returns a JSON-ready receipt: alpha, delta, n_s, mu_s, the feasibility floor,
-    lam_hat (None = always abstain), its calibration coverage, and the full test table."""
+    lam_hat (None = always abstain), its calibration coverage, and the full test table.
+
+    With ``clusters``, ``weighting`` picks the estimand and the test:
+      cluster  one unit per cluster (``thin_by_cluster``) + exact binomial: controls CLUSTER-uniform risk;
+      unit     all units, cluster-level Hoeffding-Bentkus on W_c (``_ltt_core_clustered``): controls UNIT-uniform
+               (deployment-traffic) risk with clusters of unequal size; needs a cluster-size bound m
+               (``max_cluster_size``, pre-registered; None -> the observed maximum, flagged ``range_source``);
+      auto     ``cluster`` when every cluster has the same size (the two estimands coincide), else ``unit``.
+    Track L counterexample (PR #20): with unequal, risk-correlated cluster sizes the thinned bound covered the
+    unit-uniform risk in 56 % of runs at a nominal 99 %; ``auto`` now uses the unit-weighted test there."""
     if method == "fixed_sequence":
         if tuple(grid) == DEFAULT_GRID:
             # starting at 0.999 the first test has almost no acted units and fixed-sequence stops at once
@@ -166,18 +215,45 @@ def ltt_selective(scores: Sequence[float], wrong: Sequence[bool], alpha: float =
     s_all, w_all = np.asarray(scores, float), np.asarray(wrong, bool)
     if s_all.shape != w_all.shape:
         raise ValueError("scores and wrong differ in length")
-    idx = thin_by_cluster(clusters, thin_seed) if clusters is not None else np.arange(s_all.size)
-    s, w = s_all[idx], w_all[idx]
-    floor = floor_report(w, alpha, delta, max_abstention)
-    core = _ltt_core(s, w, alpha, delta, grid, method)
+    if weighting not in WEIGHTINGS:
+        raise ValueError(weighting)
+    range_source = None
+    if clusters is None:
+        mode = "iid"
+    else:
+        if len(clusters) != s_all.size:
+            raise ValueError("clusters and scores differ in length")
+        _, codes, sizes = np.unique(np.asarray(clusters, dtype=str), return_inverse=True, return_counts=True)
+        mode = weighting if weighting != "auto" else ("cluster" if sizes.min() == sizes.max() else "unit")
+    if mode == "unit":
+        m = int(sizes.max())
+        if max_cluster_size is not None:
+            if m > max_cluster_size:
+                raise ValueError(f"a cluster has {m} units > pre-registered max_cluster_size {max_cluster_size}")
+            m, range_source = int(max_cluster_size), "pre-registered"
+        else:
+            range_source = "observed_max (the [0, 1] range of W assumes no larger cluster in the population)"
+        s, w = s_all, w_all
+        floor = floor_report(w, alpha, delta, max_abstention)  # unit-level mu: descriptive for the floor
+        core = _ltt_core_clustered(s_all, w_all, codes, int(sizes.size), m, alpha, delta, grid, method)
+        n_s, unit_of_bound = int(sizes.size), f"cluster totals (Hoeffding-Bentkus, size bound m={m})"
+        estimand = "unit-uniform selective risk (deployment traffic), i.i.d. clusters of size <= m"
+    else:
+        idx = thin_by_cluster(clusters, thin_seed) if mode == "cluster" else np.arange(s_all.size)
+        s, w = s_all[idx], w_all[idx]
+        floor = floor_report(w, alpha, delta, max_abstention)
+        core = _ltt_core(s, w, alpha, delta, grid, method)
+        n_s = int(s.size)
+        unit_of_bound = "cluster (one unit per cluster)" if mode == "cluster" else "unit"
+        estimand = ("cluster-uniform selective risk (uniform unit of a uniform cluster; equals the unit-uniform "
+                    "risk only if cluster sizes are equal or independent of risk/score)") if mode == "cluster" \
+            else "unit-uniform selective risk (units assumed i.i.d.)"
     out: dict[str, Any] = {
         "schema": SCHEMA, "mechanism": MECHANISM, "stratum": stratum, "alpha": alpha, "delta": delta,
         "method": method, "grid": [float(g) for g in grid], "n_units": int(s_all.size),
-        "n_s": int(s.size), "unit_of_bound": "cluster (one unit per cluster)" if clusters is not None else "unit",
+        "n_s": n_s, "unit_of_bound": unit_of_bound, "weighting": mode, "range_source": range_source,
         "n_clusters": None if clusters is None else int(len(set(clusters))), "thin_seed": thin_seed,
-        "estimand": ("cluster-uniform selective risk (uniform unit of a uniform cluster; equals the unit-uniform "
-                     "risk only if cluster sizes are equal or independent of risk/score)") if clusters is not None
-        else "unit-uniform selective risk (units assumed i.i.d.)",
+        "estimand": estimand,
         "mu_s": floor["mu"], "feasibility": floor,
         "lam_hat": None if core["chosen"] is None else core["chosen"]["lam"],
         "chosen": core["chosen"], "test_level": core["test_level"], "table": core["table"],

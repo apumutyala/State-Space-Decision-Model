@@ -252,7 +252,10 @@ def is_covered(attacked: dict, clean: dict, k: int, unit: str = "sentence",
     """True iff ``clean`` is among the origins of ``attacked`` within budget k (the insertion is inside the
     exact certificate's threat model). Everything outside the untrusted fields (trusted fields, questions,
     policy, provenance) must be identical, else False: an edit there is never covered."""
-    if attacked == clean:
+    # Compare canonical JSON, never Python equality: 1 == 1.0 == True in Python, but the decider reads
+    # "1", "1.0" and "true" (Track L counterexample on PR #20: a trusted 1 -> True edit was "covered").
+    cj = canonical_json
+    if cj(attacked) == cj(clean):
         return True
     fields = untrusted_fields(attacked)
 
@@ -260,14 +263,14 @@ def is_covered(attacked: dict, clean: dict, k: int, unit: str = "sentence",
         return {key: (val if key != "state" else {f: v for f, v in val.items() if f not in fields})
                 for key, val in r.items() if not key.startswith("_") and key != "request_id"}
 
-    if rest(attacked) != rest(clean) or set(attacked["state"]) != set(clean["state"]):
+    if cj(rest(attacked)) != cj(rest(clean)) or set(attacked["state"]) != set(clean["state"]):
         return False
-    want = {f: clean["state"].get(f) for f in fields}
+    want = cj({f: clean["state"].get(f) for f in fields})
     try:
         origins = origin_requests(attacked, k, unit, max_span_tokens)
     except NotCertifiable:
         return False
-    return any({f: o["state"][f] for f in fields} == want for _, o in origins)
+    return any(cj({f: o["state"][f] for f in fields}) == want for _, o in origins)
 
 
 # ===================================================================== decisions
@@ -475,7 +478,15 @@ def smoothed_certify(decide_fn: DecideFn, request: dict, k: int = 1, *, keep_pro
         d = draw()
         sel[d] = sel.get(d, 0) + 1
     top = max(sel.items(), key=lambda kv: (kv[1], repr(kv[0])))[0]
-    hits = sum(draw() == top for _ in range(n_estimate))
+    est = [draw() for _ in range(n_estimate)]
+    hits = sum(d == top for d in est)
+    # Monte Carlo class frequencies of the smoothed decider per question (estimation samples only; a refused
+    # sample puts no mass on any option, so a row can sum to < 1)
+    smoothed_probs = {q: {o: 0.0 for o in spec.get("criteria", {})} for q, spec in request["questions"].items()}
+    for d in est:
+        if d and d[0] != "__status__":
+            for q, o in d:
+                smoothed_probs[q][o] = smoothed_probs[q].get(o, 0.0) + 1.0 / n_estimate
     p_low = cp_lower(hits, n_estimate, delta)
     r_ins, r_edit = insertion_radius(p_low, keep_prob), edit_radius(p_low, keep_prob)
     refused = top[0] == "__status__"
@@ -488,7 +499,9 @@ def smoothed_certify(decide_fn: DecideFn, request: dict, k: int = 1, *, keep_pro
             "decision": _jsonable_decision(top), "smoothed_matches_base": top == d_full, "alarm": alarm,
             "p_top_hits": hits, "p_top_lower": round(p_low, 6), "certified_insertion_radius": r_ins,
             "certified_edit_radius": r_edit, "n_segments": sum(len(s) for s in segs),
-            "n_samples": n_select + n_estimate, "n_decide_calls": dec.calls}
+            "n_samples": n_select + n_estimate, "n_decide_calls": dec.calls,
+            "smoothed_probabilities": {"kind": "monte_carlo_class_frequencies", "n": n_estimate,
+                                       "probabilities": smoothed_probs}}
 
 
 def smoothed_distribution(decide_fn: DecideFn, request: dict, keep_prob: float, *, exact_max_segments: int = 12,
@@ -521,21 +534,49 @@ def smoothed_distribution(decide_fn: DecideFn, request: dict, keep_prob: float, 
 
 
 class SmoothedDecider:
-    """``decide(request) -> response`` executing the smoothed decision only when certified at radius k.
+    """``decide(request) -> response`` acting only on a smoothed decision certified at radius k.
 
-    When the smoothed decision differs from the base decision, ``answers`` are rewritten to the smoothed choice
-    (the host executes g, not f); the original answers are kept under ``base_answers``."""
+    The base response's ``answers`` (choice + probabilities) are never edited in place: a choice that disagrees
+    with its own probabilities breaks the response semantics (Track L review of PR #20). The certified smoothed
+    action is always reported separately under ``certified_action``. When it differs from the base choice:
 
-    def __init__(self, decide_fn: DecideFn, k: int = 1, **kw):
-        self.fn, self.k, self.kw = decide_fn, k, kw
+    * default (``execute_smoothed=False``): the response abstains (``smoothed_action_differs_from_base``),
+      so the host never executes the base choice that the smoothed decider overruled;
+    * ``execute_smoothed=True``: ``answers`` are replaced by an explicitly identified smoothed answer whose
+      ``probabilities`` are the smoothed decider's Monte Carlo class frequencies and whose choice is their
+      argmax (``answers_source = "smoothed_monte_carlo"``; base answers kept as ``base_answers``). If the
+      certified action is not that argmax (possible with several questions), it abstains instead."""
+
+    def __init__(self, decide_fn: DecideFn, k: int = 1, execute_smoothed: bool = False, **kw):
+        self.fn, self.k, self.execute_smoothed, self.kw = decide_fn, k, execute_smoothed, kw
 
     def __call__(self, request: dict) -> dict:
         cache = CachedDecide(self.fn)
         rec = smoothed_certify(cache, request, self.k, **self.kw)
         resp = _abstained(cache(request), rec, MECHANISM_SMOOTH)
-        if rec.get("certified") and not rec["smoothed_matches_base"] and resp.get("status", "ok") == "ok":
-            resp["base_answers"] = resp["answers"]
-            resp["answers"] = {q: dict(a, choice=rec["decision"][q]) for q, a in resp["answers"].items()}
+        resp["answers_source"] = "base"
+        if not rec.get("certified") or resp.get("status", "ok") != "ok":
+            return resp
+        resp["certified_action"] = rec["decision"]
+        if rec["smoothed_matches_base"]:
+            return resp
+        if not self.execute_smoothed:
+            resp["abstention"] = {"abstained": True, "reason": "smoothed_action_differs_from_base",
+                                  "mechanism": MECHANISM_SMOOTH}
+            return resp
+        probs = rec["smoothed_probabilities"]["probabilities"]
+        new = {}
+        for q, a in resp["answers"].items():
+            p = probs[q]
+            top = max(sorted(p), key=lambda o: p[o])
+            if top != rec["decision"][q]:
+                resp["abstention"] = {"abstained": True, "reason": "smoothed_action_not_marginal_argmax",
+                                      "mechanism": MECHANISM_SMOOTH}
+                return resp
+            new[q] = {"type": a.get("type", "choice"), "choice": top, "probabilities": dict(p)}
+        resp["base_answers"] = resp["answers"]
+        resp["answers"] = new
+        resp["answers_source"] = "smoothed_monte_carlo"
         return resp
 
 
