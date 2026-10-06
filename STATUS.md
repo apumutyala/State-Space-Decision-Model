@@ -19,6 +19,7 @@
 - Synthetic planner data now has disjoint iterative development-train and development-validation domains (names, templates and value ranges), read/explain tasks, and price or warranty comparisons with both named operand orders and equality. Production-format and shuffled-choice cohorts remain separate; context identities bind evidence. Gold-prefix training examples are not free-running or audit qualification; Ask and richer composition coverage remain before a full pilot. No model training or paid run.
 - Track D approved the ordinal-only renderer in #11; it is now merged. L0d2 planner is updated to D's v0.1 envelope and pinned configuration/identity checks. Unsupported host policy restrictions fail before any provider call.
 - The planner's CPU receipts use scripted providers and the actual D adapter with an oracle/replay backend. They demonstrate transport and boundary behavior, not learned capability. Development evaluation remains in cross-review/integration; no GPU, paid run, or learned L0–L4 gate has passed.
+- A comparison-only paired development caller now measures direct three-relation choice and free-running planning on the same initial evidence with separate call and forward counts. Its direct arm uses the planner's response validator; CPU scripted receipts cover malformed responses, invalid pins, counterfactuals, and equal values. Unequal call budgets are reported rather than matched. This is neither a strong unrestricted baseline nor a learned retention result.
 
 ## Open decisions for the user
 - SF Compute credit expiry date.
