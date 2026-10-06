@@ -1,74 +1,123 @@
 # Receipt: m0-b, the `decide` adapter, backends and replay fixture (Track D)
 
-Date: 2026-10-06 · Branch: `claude/m0-decide-adapter` · Code commit used for generation: `45a399a`.
+Date: 2026-10-06 · Branch: `claude/m0-decide-adapter` · Cost: **$0 billed**.
 
-The fixture was generated while the worktree was dirty, but only from untracked files the generator does not import (tests, smoke script). `git diff 45a399a -- decide scripts/gen_replay_fixture.py scripts/fixture_cases.py` is empty.
-
-- Hardware: local RTX 5070 Ti Laptop GPU (12 GB, shared with other processes), Windows 11.
+- Hardware: local RTX 5070 Ti Laptop GPU (12 GB, shared) and CPU, Windows 11.
 - Software: Python 3.12.13, torch 2.8.0+cu128, transformers 5.17.0.
-- Cost: **$0 billed**.
+
+Revision history: v1 at `45a399a`/`a497d6b`, then the internal review's fixes at `29b858c` (PR #6 comment "Track D internal adversarial review (pre-Codex)").
+
+- The fixture was regenerated on **CPU fp32** at `29b858c`.
+  - The manifest says `worktree_dirty: true` only because the generator writes the fixture files before reading git status.
+  - `git diff 29b858c -- decide scripts` is empty for the generation inputs.
+- The backbone smoke JSONs (`smoke-*.json`) are from v1 code at `45a399a`, on GPU. Their prompt hash predates the segmented prompt builder.
 
 ## Takeaway
 
 1. `decide(request, state_handle=None)` works end to end on the stock Qwen3.5-0.8B readout.
-2. The replay fixture reproduces the live run exactly (36/36 non-timing cases).
-3. Live-model permutation equivariance holds exactly: max |Δp| = 0.0 over 52 shuffles.
-4. Live runs are deterministic: Δp = 0.0 across 3 runs.
-5. All three backbone families load and score locally on GPU: Qwen3.5 hybrid, RWKV7 and Mamba-3 SISO.
-6. Two of the three show a strong first-listed-option bias, which matters for the readout design (see below).
+2. The handoff fixture (40 cases) replays exactly. Replay is a deterministic function of the recorded logits, and an adapter-free recompute with Cloudflare's own answer logic matches.
+3. Request text can no longer inject control tokens. The audit found 0 excess special ids over 28 ok cases.
+4. All three small backbone families load locally.
+5. Model-level evidence in this receipt is limited to:
+   - determinism on one stack (Δp = 0 across runs);
+   - the smoke answers;
+   - the Qwen debias controls below.
 
 ## 1. Tests
 
-`python -I -m pytest -p no:cacheprovider tests -rs` gives **90 passed, 4 skipped** (`pytest.txt`).
+`python -I -m pytest -p no:cacheprovider tests -rs` (CPU, no `SSDM_QWEN_DIR`) gives **111 passed, 10 skipped** (`pytest.txt`).
 
-- The skips are 3 unused parametrised indices plus the timing-dependent deadline case.
-- With `SSDM_QWEN_DIR` set, the run includes the real-model equivariance test.
+- The skips are 8 unused parametrised indices, the timing-dependent deadline case, and the GPU real-model equivariance test.
+- With `SSDM_QWEN_DIR` set, the real-model test also runs. The v1 run had it at 90/4 on GPU.
 
 What the suite covers:
 
-- **Conformance:** canonical fields, wire semantics (noul = p_true; choice confidence = selected p; score = raw expected ordinal index; score confidence = max p), entropy diagnostic, versions.
-- **Status/limits:** every reason code; 255 options allowed and 256 rejected; no truncation; no pruning; no fallback; deadline returns no partial answers.
-- **Policy restriction:** policy-conditioned probabilities are separate and never substituted.
-- **Equivariance:** checked on the oracle, a tiny CPU LM through the real HF readout path, Qwen3.5-0.8B on GPU, and the replay fixture.
-- **Replay:** reproduction and manifest hashes.
+- **Conformance:** canonical fields, Clef wire semantics, legacy `error` on non-ok, abstention label.
+- **Status/limits:** every reason code.
+- **Injection** (`test_injection.py`):
+  - untrusted segments cover every request field;
+  - a fake tokenizer shows that a leaky encoder is refused with `unsupported/control_tokens_in_input`;
+  - the **real Qwen3.5 tokenizer on CPU** gives the template-only `<|im_start|>`×3 and `<|im_end|>`×2 with the injected state;
+  - option/question-id validation.
+- **Debias controls** (`test_debias.py`, CPU): a position-biased oracle gets TV > 0.5 and is id-sticky; a description-reading oracle gets TV = 0 and follows the description; the controls also run through the HF path on a tiny CPU LM.
+- **Equivariance:** an *adapter* property. The prompt is byte-identical under shuffles, so any deterministic backend passes. It is not evidence of model order-robustness.
+- **Replay:** contract plus an adapter-free recompute using Clef's `systemone_answer`, verbatim.
 
 ## 2. Replay fixture (`fixtures/replay/v0`)
 
-- Command: `python -I scripts/gen_replay_fixture.py --qwen-dir <Qwen3.5-0.8B snapshot 2fc0636…> --out fixtures/replay/v0 --runs 3`
-- Parent revision id: `qwen3.5:Qwen/Qwen3.5-0.8B@2fc06364715b;w=04b1c301231d;tok=5f9e4d4901a9;prompt=jrt-chatml-v1.3b45ac33;cfg=d2735c84;adapter=0.1.0`
-- Weights sha256: `04b1c301…4696`.
-- Content: 37 cases. 26 are `ok`; 11 cover each non-ok reason code once.
-- Determinism: max served-probability difference across 3 runs = 0.0.
-- Live equivariance: 52 shuffles (question and option order), max |Δp| = 0.0, 0 choice flips.
-- Latency (ok cases, median of 3 runs per case): median 624 ms, range 266 ms to 26 s. The 26 s is the 1.5k-token needle with 4 options.
-  - These numbers are not a latency claim. Qwen3.5 Gated DeltaNet ran on the transformers *reference PyTorch fallback* (no `fla`, no `causal_conv1d`), and the laptop GPU is shared.
-- Raw output: `fixture-generation-summary.json`, which includes per-case answers.
+**Parent:** Qwen3.5-0.8B, *not* the 9B promised in the handoff. The 9B fixture comes with the paid m0 run.
 
-## 3. Backbone smoke tests (`smoke-*.json`)
+- Command: `python -I scripts/gen_replay_fixture.py --qwen-dir <Qwen3.5-0.8B snapshot 2fc0636…> --out fixtures/replay/v0 --runs 2 --device cpu --dtype float32`
+- Revision id: `qwen3.5:Qwen/Qwen3.5-0.8B@2fc06364715b;w=04b1c301231d;tok=5f9e4d4901a9;prompt=jrt-chatml-v1.f7d108c4;cfg=9c55f30e;adapter=0.1.0`. The template identity now includes a hash of rendered canary prompts.
+- Cases: 40 in total. 28 are ok; 12 are non-ok, covering every reason code once, including the new `error/invalid_option_id`.
+- Determinism (model evidence, this CPU stack only): served Δp = 0.0 across 2 runs.
+- Replay: 39/39 non-timing cases match, and the adapter-free recompute matches. Both are adapter evidence.
+- Control-token audit: template = 7 special ids per prompt; max excess over all ok prompts = 0.
+- Injection cases:
+  - `injection-01-role-tokens`: real `<|im_end|>`/`<|im_start|>` in state, instructions and a description;
+  - `injection-02-plaintext-role`: `END STATE` / `Assistant:` (cannot be prevented by any text template);
+  - `choice-12-injection`: a textual override.
+  - The readout answers `approve` in all three (0.997 / 0.845 / 0.831). This is a steer finding, not a boundary failure.
+- Latency is not a claim (CPU fp32, torch fallback kernels): median 6.2 s per ok case.
+- Raw output: `fixture-generation-summary.json`.
 
-Each run is `python -I scripts/smoke_backbones.py --family … --model-dir …`, with 4 requests × 3 repeats plus an equivariance check and an option-order probe.
+## 3. Backbone smoke tests (`smoke-*.json`, v1 code, GPU)
 
-| Backbone (smallest) | Loads? | Stack | Peak mem | Equivariance | France capital | First-listed bias probe |
-|---|---|---|---|---|---|---|
-| Qwen3.5-0.8B (18 GDN + 6 attn) | yes, GPU bf16 | transformers 5.17 native, torch fallback kernels | 1.6 GB | 0.0 | paris | **no** (p(technical) 0.61 / 0.71 under both orders) |
-| RWKV7 G1 0.1B (`fla-hub/rwkv7-0.1B-g1`) | yes, GPU only | `fla` 0.5.2 + triton-windows 3.4 (TinyCC launcher), local World tokenizer | 0.8 GB | 0.0 | berlin (wrong) | **yes** (whichever id sorts first wins: 0.96 → 0.59) |
-| RWKV7 on CPU | no | fla kernels are Triton/GPU-only (`Pointer argument cannot be accessed from Triton (cpu tensor?)`) | — | — | — | — |
-| Mamba-3 SISO 187M (`state-spaces/mamba3-siso-187m`) | yes, GPU | `mamba_ssm` 2.3.2.post1 from git `e9594ce` (no CUDA build) + triton-windows 3.5.1, Llama-3.1 tokenizer from an ungated mirror | 0.65 GB | 0.0 | paris | **yes** (0.96 → 1.00 for the first-sorted id) |
+| Backbone (smallest) | Loads? | Stack | Peak mem |
+|---|---|---|---|
+| Qwen3.5-0.8B (18 GDN + 6 attn) | yes, GPU bf16 (and CPU fp32 for the fixture) | transformers 5.17 native, torch fallback kernels | 1.6 GB |
+| RWKV7 G1 0.1B | yes, **GPU only** (fla kernels are Triton-only) | `fla` 0.5.2 + triton-windows 3.4 (TinyCC launcher), local World tokenizer | 0.8 GB |
+| Mamba-3 SISO 187M | yes, GPU | `mamba_ssm` 2.3.2.post1 @ git `e9594ce` (no CUDA build) + triton-windows 3.5.1, Llama-3.1 tokenizer (ungated mirror) | 0.65 GB |
 
-How the loads were done:
+Since v1 the RWKV7 and Mamba-3 plugins cap input at the trained context (2048). Recurrent models do not truncate; they degrade silently past it.
 
-- The `fla` and `mamba_ssm` loads use no `trust_remote_code`. The RWKV World tokenizer is reimplemented locally (`decide/rwkv_world_tokenizer.py`, `ast.literal_eval` only).
-- Extra packages were installed `--no-deps --target` into gitignored worktree dirs (`.venv-extras*`); the shared venv is untouched.
-- Mamba-3 fails with the triton 3.4 that fla uses (`CompilationError` at `tl.dot`), because `mamba_ssm` requires triton ≥ 3.5. The two stacks therefore need separate triton dirs.
+## 4. Option-order bias: downgraded, confounded
 
-## Findings for Track D (adversarial)
+Tally from the smoke receipts (choice argmax = sorted-first id; score argmax = level 0):
 
-- **Order bias in recurrent readouts.** Canonical (sorted-id) option order makes outputs exactly invariant to how the caller orders the request. It does *not* remove position bias: for RWKV7-0.1B and Mamba-3-187M, the option that sorts first wins regardless of meaning. Equivariance under relabelling is therefore not implied. The stock-readout m0 numbers need either a relabel/debias control (e.g. average over K cyclic option orders) or the trained head.
-- **Clef truncates; we refuse.** Clef's `encode_record` silently truncates state to `max_length`. Our adapter returns `exhausted/input_tokens_exceeded` instead, as the interface requires. Parity runs against Clef must exclude or flag truncated records.
-- **Clef's argmax tie-break follows insertion order.** Ours breaks ties by sorted id. Ties are measure-zero in practice.
-- **Deadline granularity.** The deadline is checked between inference calls, not by preemption, so a single long call can overrun it before `exhausted/deadline_exceeded` is returned.
-- **Choice of interpretation (flag to Codex).** `limits.max_choices` is read as the number of questions per request. Per-question options are capped at 255 by the wire cardinality.
+| Backbone | Smoke questions with sorted-first argmax |
+|---|---|
+| RWKV7-0.1B | 5/5 |
+| Mamba-3-187M | 2/5 |
+| Qwen3.5-0.8B | 1/5 |
+
+The v1 probe (`billing`/`technical` vs `a_technical`/`b_billing`) changed three things at once: sorted position, continuation token count, and an MCQ-letter-like `a_` prefix. It is **confounded** and must not drive readout design.
+
+The controls are now in code (`decide/debias.py`, `scripts/run_debias_controls.py`):
+
+- **(a) description swap with fixed ids:** moves only the meaning-to-id mapping.
+- **(b) neutral length-matched ids `opt_01..opt_k` under all k cyclic presentations:** position-bias TV vs uniform, plus rotation-averaged probabilities as a labelled diagnostic variant (never served).
+- **(c) content-free prior** (`state = "N/A"`).
+
+Qwen3.5-0.8B results (CPU fp32; `debias-qwen3.5-0.8b-cpu.json`; 3 probes):
+
+| Probe | Position-bias TV | Description swap | Content-free p(sorted-first) |
+|---|---|---|---|
+| billing/technical | 0.003 | id-sticky | 0.551 |
+| paid/overdue/draft | 0.028 | id-sticky | 0.995 (`draft`) |
+| 4 capitals | 0.061 | id-sticky | 0.006 |
+
+How to read this:
+
+- Qwen-0.8B shows little position bias under neutral ids.
+- It reads the semantic *ids*, not the descriptions. This is expected when the ids carry the meaning, and it means descriptions alone do not steer it.
+- Its content-free prior is strongly option-dependent (e.g. 0.995 on `draft` with no state). That supports contextual calibration as a diagnostic.
+
+RWKV7 and Mamba-3 controls need the GPU and are **not run yet**; they are required before any stock-readout m0 number is used for design.
+
+## 5. Other review items addressed
+
+- **Legacy wire failure signal:** top-level `error {status, code, message}` on non-ok. This is documented in `decide/schema.py`, and transports must map it to HTTP errors.
+- **Documented deliberate differences from Clef:**
+  - stricter validation (1-level score, extra noul criteria keys, id charset);
+  - `usage.input_tokens` = total forwarded tokens across option rows (the longest single input is in diagnostics).
+- **Template identity:** now includes a hash of rendered canary prompts, so body-builder edits change `revision_id`.
+- **Backend diagnostics:**
+  - per-option `continuation_tokens`;
+  - `length_normalized_logits`, a diagnostic for the token-length prior of sum-logprob scoring. It is not served.
+- **Abstention:** labelled `mechanism: not_implemented_v0`.
+- **Questions are not separable:** documented in the fixture README with the `choice-02` vs `multi-01` pair.
 
 ## Inputs read as text only (never executed)
 
-- `Cloudflare/clef-flash/joint_schema_model.py`, sha256 `0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3`, plus its README. Both are stored outside the repo in `ssdm-data/clef-flash-src/`.
+- `Cloudflare/clef-flash/joint_schema_model.py`, sha256 `0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3`, plus its README. Both are stored outside the repo.
