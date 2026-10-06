@@ -109,7 +109,7 @@ def _program(kind: str, field: str, fact_index: int, relation: str | None) -> di
 
 
 def _relation(prices: tuple[int, int]) -> str:
-    return "greater_than" if prices[0] > prices[1] else "less_than"
+    return "equal" if prices[0] == prices[1] else ("greater_than" if prices[0] > prices[1] else "less_than")
 
 
 def _build(seed: int, index: int, names: tuple[str, str], warranties: tuple[int, int],
@@ -203,6 +203,9 @@ def generate_development_tasks(seed: int, count: int, *, choice_format: str = "m
         price_b = values.randint(5000, 25000)
         while price_b == price_a:
             price_b = values.randint(5000, 25000)
+        # Equality is a real skill, not merely an always-wrong offered option.
+        if _rng(seed, index, "equality-case").randrange(3) == 0:
+            price_b = price_a
         fmt = ("production" if index % 2 == 0 else "augmented") if choice_format == "mixed" else choice_format
         tasks.append(_build(seed, index, names, warranties, (price_a, price_b), fmt))
     return tasks

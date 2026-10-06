@@ -42,7 +42,9 @@ class DevelopmentDataTests(unittest.TestCase):
                         self.assertNotIn(value, options_text)
 
     def test_price_swap_changes_relation_target_without_changing_options(self):
-        task = generate_development_tasks(31, 3)[2]
+        task = next(task for task in generate_development_tasks(31, 30)
+                    if task["training_only"]["kind"] == "compare"
+                    and task["training_only"]["program"]["nodes"][2]["relation"] != "equal")
         swapped = price_swap_counterfactual(task)
         original_training = task["training_only"]
         swapped_training = swapped["training_only"]
@@ -67,6 +69,17 @@ class DevelopmentDataTests(unittest.TestCase):
             training = task["training_only"]
             self.assertEqual(set(training["catalog"]["snapshots"]), {training["host"]["context_ref"]})
             self.assertEqual(training["program"]["context_ref"], training["host"]["context_ref"])
+
+    def test_equality_is_a_supported_target_and_price_swap_is_neutral(self):
+        comparisons = [task for task in generate_development_tasks(31, 90)
+                       if task["training_only"]["kind"] == "compare"]
+        self.assertEqual({task["training_only"]["program"]["nodes"][2]["relation"] for task in comparisons},
+                         {"greater_than", "less_than", "equal"})
+        equal = next(task for task in comparisons
+                     if task["training_only"]["program"]["nodes"][2]["relation"] == "equal")
+        swapped = price_swap_counterfactual(equal)
+        self.assertEqual(equal["training_only"]["targets"], swapped["training_only"]["targets"])
+        self.assertEqual(equal["model_inputs"], swapped["model_inputs"])
 
     def test_option_ids_are_not_fixed_targets(self):
         tasks = generate_development_tasks(91, 60)
