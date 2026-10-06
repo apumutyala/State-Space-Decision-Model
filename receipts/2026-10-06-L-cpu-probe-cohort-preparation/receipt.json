@@ -1,0 +1,24 @@
+{
+  "source_commit": "9c724044f363eb1f7095a2ac4a04e699e424fdd2",
+  "command": "& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -B -m unittest language_growth.tests.test_l0_qwen_cpu_probe -v",
+  "config": {"launcher": "isolated root entry point -I", "timeout_seconds": 300, "minimum_start_gib": 8, "minimum_running_gib": 3, "cpu_threads": 2, "maximum_batch_rows": 2},
+  "development_seed": 271828,
+  "development_split": "development_validation",
+  "task_indices": [2, 5],
+  "task_hashes": ["e996f537fea463e480f691b36ed68d642d951ecea1029c1fd9b8ad6fa996a43f", "cc9d1d2418ef38891870e517dd1fcc75d01e238023e65dcc80e9de9aac783b0f"],
+  "tests_run": 16,
+  "tests_passed": true,
+  "torch_imported": false,
+  "weights_loaded": false,
+  "test_output_path": "receipts/2026-10-06-L-cpu-probe-cohort-preparation/tests.txt",
+  "test_output_sha256": "893a61415161a61b4599bc3b2718e19d0ee2731f896e679b338d93af9845eb26",
+  "source_file_sha256": {
+    "language_growth/l0_qwen_cpu_probe.py": "e58deb197e2b72ec913114ee2777d2e9241a61b19c6538c63e44828456553a61",
+    "language_growth/tests/test_l0_qwen_cpu_probe.py": "2b9658d2e3da9852afda7fa9bbbd d3844302922a790dc9c2d5648739ba9f7615",
+    "l0_qwen_cpu_probe.py": "3dccd5a16e9f8bcc00cca4debdaf243cf985bd6ee24eb281096b634e20fb5770"
+  },
+  "hardware": "Windows 11; CPU preparation tests only",
+  "billed_rate": 0,
+  "cost_usd": 0,
+  "scope": "Preparation proof only; does not constitute a model or learned-capability result."
+}

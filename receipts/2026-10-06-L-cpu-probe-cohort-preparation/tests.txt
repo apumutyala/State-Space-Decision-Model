@@ -1,0 +1,21 @@
+test_child_environment_forces_offline_cpu (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_child_environment_forces_offline_cpu) ... ok
+test_child_invocation_uses_isolated_root_runner_and_offline_environment (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_child_invocation_uses_isolated_root_runner_and_offline_environment) ... ok
+test_child_rechecks_ram_before_torch_or_model_import (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_child_rechecks_ram_before_torch_or_model_import) ... ok
+test_clock_failure_after_spawn_stops_owned_child (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_clock_failure_after_spawn_stops_owned_child) ... ok
+test_denominator_and_initial_state_checks_reject_corruption (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_denominator_and_initial_state_checks_reject_corruption) ... ok
+test_direct_pre_provider_failures_keep_denominator_with_unknown_initial_identity (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_direct_pre_provider_failures_keep_denominator_with_unknown_initial_identity) ... ok
+test_each_provider_request_and_failure_flushes_raw_jsonl (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_each_provider_request_and_failure_flushes_raw_jsonl) ... ok
+test_isolated_root_launcher_help_starts_from_package_directory (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_isolated_root_launcher_help_starts_from_package_directory) ... ok
+test_launcher_kills_owned_child_if_memory_monitor_raises (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_launcher_kills_owned_child_if_memory_monitor_raises) ... ok
+test_launcher_stops_only_its_child_on_timeout_or_low_memory (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_launcher_stops_only_its_child_on_timeout_or_low_memory) ... ok
+test_provider_failures_remain_in_both_denominators (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_provider_failures_remain_in_both_denominators) ... ok
+test_real_paired_caller_preserves_two_tasks_and_raw_identities (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_real_paired_caller_preserves_two_tasks_and_raw_identities) ... ok
+test_second_task_runner_failure_retains_first_pair (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_second_task_runner_failure_retains_first_pair) ... ok
+test_task_pin_rejects_content_drift_before_spawn (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_task_pin_rejects_content_drift_before_spawn) ... ok
+test_two_pinned_validation_comparisons (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_two_pinned_validation_comparisons) ... ok
+test_unmerged_paired_dependency_is_explicit (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_unmerged_paired_dependency_is_explicit) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.626s
+
+OK
