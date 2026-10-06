@@ -1,0 +1,10 @@
+test_authority_revocation_after_planning_denies_release (language_growth.tests.test_public_output.PublicOutputTests.test_authority_revocation_after_planning_denies_release) ... ok
+test_failures_have_one_indistinguishable_public_shape (language_growth.tests.test_public_output.PublicOutputTests.test_failures_have_one_indistinguishable_public_shape) ... ok
+test_private_audience_never_uses_public_release (language_growth.tests.test_public_output.PublicOutputTests.test_private_audience_never_uses_public_release) ... ok
+test_returned_planner_text_is_ignored_and_program_rechecked (language_growth.tests.test_public_output.PublicOutputTests.test_returned_planner_text_is_ignored_and_program_rechecked) ... ok
+test_valid_result_released_as_text_only (language_growth.tests.test_public_output.PublicOutputTests.test_valid_result_released_as_text_only) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.004s
+
+OK

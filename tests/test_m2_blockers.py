@@ -288,7 +288,8 @@ def test_v1_assignment_would_have_leaked_twins():
     from train.cohort import read_content_map
 
     cm = read_content_map()
-    v1 = gzip.open(ROOT / "train/cohorts/m2-dev-cohort-v1.jsonl.gz", "rt", encoding="utf-8").read().splitlines()[1:]
+    v1 = gzip.open(ROOT / "receipts/2026-10-06-D-m2-blockers/negative-evidence/cohort-v1-content-leak/"
+                   "m2-dev-cohort-v1.jsonl.gz", "rt", encoding="utf-8").read().splitlines()[1:]
     held = {json.loads(x)["id"] for x in v1 if json.loads(x)["role"] in ("dev", "calibration", "retention")}
     held_c = {cm[i] for i in held}
     assert any(cm[i] in held_c for i in cm if i not in held)
@@ -638,6 +639,9 @@ def test_watchdog_heartbeat_continues_across_iterations(runner, tmp_path):
     lines = [ln for ln in text.splitlines() if re.match(r"^(%s)=" % "|".join(need), ln)]
     assert {re.match(r"^(\w+)=", ln).group(1) for ln in lines} >= set(need), "runner does not set every watchdog var"
     assert text.index("MAIN_PID=") < text.index("watchdog &")
+    # paid runs: cadence and stall window are literals, never taken from the environment (round-2 review)
+    assert re.search(r"^HB_EVERY_S=60 STALL_S=1200(\s|$)", text, re.M) and "${HB_EVERY_S" not in text
+    assert "${STALL_S" not in text
     wd = (ROOT / "jobs/clef_baseline/watchdog.sh").as_posix()
     t = tmp_path.as_posix()
 
@@ -646,6 +650,7 @@ def test_watchdog_heartbeat_continues_across_iterations(runner, tmp_path):
             "set -Euo pipefail",
             f"export GMN_OUTPUT_DIR={t}/out GMN_CHECKPOINT_DIR={t}/ck HF_HOME={t}/hf HB_EVERY_S=1 STALL_S=600",
             *block,
+            "HB_EVERY_S=1",  # test-only: the runners hard-code 60 s (asserted below), too slow for a unit test
             f"WORK={t}/work; WATCH_EXTRA=$WORK",  # keep the test inside tmp (the runners use /tmp/<job>)
             'mkdir -p "$OUT" "$CK" "$HF_DIR" "$WORK"',
             f"source {wd}",

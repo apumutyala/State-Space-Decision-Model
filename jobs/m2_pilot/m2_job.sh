@@ -8,6 +8,7 @@
 #   9 report missing/invalid   10 snapshot / vendored code / records / cohort identity mismatch, or download failed
 #   30 guard: kit/suite identity   31 guard: content index != pin (new sha256 recorded)   32 guard: harness manifests
 #   33 held-out D1-B template found in the training records
+#   4 TOK_S missing / not a number   20 train.run_cell returned an unexpected code
 #   15 evals projected past their cap from the MEASURED rate (child arm not scored; re-price)
 #   40 / 41 / 42  train.m2_gates: G12 / G13 / both REJECTED (report written and exported; promotion = reject)
 #   21-29 train.run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite, 24 memory, 25 data, 26 too slow,
@@ -26,7 +27,7 @@ RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
 WORK=/tmp/m2-pilot
 CK=${GMN_CHECKPOINT_DIR:-$WORK/ck}
 META=${GMN_METADATA_URL:-http://169.254.42.1}
-HB_EVERY_S=${HB_EVERY_S:-60} STALL_S=${STALL_S:-1200}
+HB_EVERY_S=60 STALL_S=1200  # fixed in paid runs (not env-overridable)
 WATCH_EXTRA=$WORK
 mkdir -p "$OUT/phases" "$WORK/out" "$WORK/logs" "$CK"
 export SSDM_DATA=/data PYTHONUNBUFFERED=1 PYTHONUTF8=1
@@ -58,6 +59,8 @@ fail() { RC=$1; say "FAIL($1): $2"; exit "$1"; }
 hb
 watchdog & WD_PID=$!
 trap finish EXIT
+[ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s of this parent) is not set"
+case "$TOK_S" in *[!0-9.]*|"") fail 4 "TOK_S=$TOK_S is not a number" ;; esac
 
 # ------------------------------------------------------------------ setup: identities (exit 5 / 10)
 say "setup (PARENT=$PARENT)"
@@ -73,6 +76,8 @@ assert all(V.vendored_ok().values()), V.vendored_ok()
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
                   "transformers": transformers.__version__, "vendored_rwkv7": V.REVISION}))
 EOF
+# fla #640 guard: Hopper + Triton < 3.7.1 (or a non-Triton fla backward) -> exit 5 here, before any GPU phase.
+python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
 ( cd /data && sha256sum -c "$CODE/jobs/rwkv7/records.sha256" ) > "$WORK/out/records-verify.txt" 2>&1 || fail 10 "records sha256"
 python -X utf8 -m train.cohort verify > "$WORK/out/cohort-verify.json" 2>&1 || fail 10 "cohort does not rebuild to its committed sha256"
 CAP_SETUP=$(cap setup) || fail 5 "job_params"
@@ -82,16 +87,20 @@ if [ "$PARENT" = rwkv7 ]; then
   python -c "import sys, third_party.rwkv7_hf as V; V.verify_snapshot_code(sys.argv[1])" "$SNAP" || fail 10 "vendored code != snapshot code"
 else
   SNAP=$(timeout ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("Qwen/Qwen3.5-9B", revision="c202236235762e1c871ad0ccb60c8ee5ba337b9a"))') || fail 10 "download"
+  ( cd "$SNAP" && sha256sum -c "$CODE/jobs/m2_pilot/q9af_snapshot.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "q9af snapshot sha256"
 fi
 ( cd /data && sha256sum -c "$CODE/jobs/clef_baseline/data.sha256" ) > "$WORK/out/data-verify.txt" 2>&1 || fail 10 "DEV rows sha256"
 python -X utf8 -m jobs.common.dev_subset rows --rows /data/slices/dev-rows.jsonl.gz --out "$WORK/index-rows.jsonl.gz" \
   --subset jobs/common/dev_subset_m1.json > "$WORK/out/index-subset.json" || fail 10 "DEV subset rows"
 python -c "import json,sys; from jobs.m2_parent_arm.validate import valid_cache; sys.exit(0 if valid_cache(json.load(open('/data/parent_arm/arm.json'))) else 1)" \
   || fail 10 "no valid parent arm cache in /data/parent_arm"
+ARM_SHA=$(python -c "import json,sys; v=json.load(open(sys.argv[1]))['parent_arm_sha256'][sys.argv[2]]; print(v or '')" "$PARAMS" "$PARENT") || fail 5 "job_params"
+[ -n "$ARM_SHA" ] || fail 10 "parent_arm_sha256.$PARENT is not pinned in job_params.json"
+[ "$(sha256sum /data/parent_arm/arm.json | cut -d' ' -f1)" = "$ARM_SHA" ] || fail 10 "parent arm.json sha256 != pinned"
 # everything the evals phase needs is checked HERE, before the paid cell phase (PR #29 review)
 python -c "import train.m2_gates, train.heldout, jobs.m2_parent_arm.validate" || fail 5 "evals driver not importable"
 CAP_E=$(cap evals) || fail 5 "job_params"
-python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "${TOK_S:?TOK_S (measured prefill tok/s) required}" \
+python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --mode child \
   --cap-min "$CAP_E" --fixed-min 0 > "$WORK/out/evals-preflight.json" || fail 15 "child evals projected past their cap"
 gate "setup" 0
 export_phase setup
@@ -122,14 +131,14 @@ timeout ${CAP_C}m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" 
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
-case $r in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29) fail $r "cell stop" ;; *) fail 2 "cell rc=$r" ;; esac
+case $r in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
 
 # ------------------------------------------------------------------ evals: temperature, eval card, G12 + G13, promotion verdict
 say "phase evals (calibration fit on the cohort calibration role; card on dev; G12 steer_dev; G13 steer_gate + retention)"
 CAP_E=$(cap evals) || fail 5 "job_params"
 timeout ${CAP_E}m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" \
   "${GDN_ARGS[@]}" --records /data/m2/records.jsonl.gz --guard-readiness "$WORK/out/guard/readiness.json" \
-  --parent-arm /data/parent_arm --index-rows "$WORK/index-rows.jsonl.gz" --out "$WORK/out/report.json" --stage all \
+  --parent-arm /data/parent_arm --parent-arm-sha256 "$ARM_SHA" --index-rows "$WORK/index-rows.jsonl.gz" --out "$WORK/out/report.json" --stage all \
   > "$WORK/logs/evals.log" 2>&1; r=$?
 gate "evals" $r; export_phase evals
 case $r in 0) ;; 124) fail 7 "evals timeout" ;; 40|41|42) sample "$WORK/out/report.json" "report"; fail $r "promotion: reject" ;;

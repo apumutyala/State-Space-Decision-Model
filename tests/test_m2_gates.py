@@ -90,13 +90,14 @@ def _cache_parent(world, out, decide, steer, stages=("g12", "g13"), spec=SPEC, i
                             index_rows=world["index_rows"])
 
 
-def _gates(world, cache, decide, steer, stages=("g12", "g13"), out=None, expect_parent=None):
+def _gates(world, cache, decide, steer, stages=("g12", "g13"), out=None, expect_parent=None,
+           parent_arm_sha256=None):
     from train import m2_gates as G
 
     return G.run_gates(stages=stages, cohort=world["cohort"], spec=SPEC, child_decide=decide, child_steer=steer,
                        child_identity={"revision_id": "child"}, items_by_role=_items(world, SPEC),
                        records_by_id=world["records"], parent_arm=cache, expect_parent=expect_parent,
-                       index_rows=world["index_rows"], n_boot=200, out=out)
+                       index_rows=world["index_rows"], n_boot=200, out=out, parent_arm_sha256=parent_arm_sha256)
 
 
 @pytest.fixture(scope="module")
@@ -222,6 +223,7 @@ def test_exit_codes_and_report_validator():
     assert G.exit_code({"g12": ok, "g13": ok}) == 0
     assert G.exit_code({"g12": bad, "g13": ok}) == 40 and G.exit_code({"g12": ok, "g13": bad}) == 41
     assert G.exit_code({"g12": bad, "g13": bad}) == 42
+    assert G.exit_code({}) == G.EXIT["usage"] != 0  # nothing evaluated is never an accept
     assert not G.valid_report({}) and not G.valid_report({"schema": G.REPORT_SCHEMA})
     rep = {"schema": G.REPORT_SCHEMA, "identities": {}, "verdicts": {"g12": ok},
            "promotion": G.promotion_verdict({"g12": ok})}
@@ -234,7 +236,10 @@ def test_cli_usage_errors():
     from train import m2_gates as G
 
     assert G.main(["--cell", "x", "--ckpt-dir", "x", "--model-dir", "x", "--records", "x", "--guard-readiness", "x",
-                   "--parent-arm", "x", "--out", "x"]) == G.EXIT["usage"]  # g13 without --index-rows
+                   "--parent-arm", "x", "--parent-arm-sha256", "0" * 64, "--out", "x"]) == G.EXIT["usage"]  # g13, no rows
+    with pytest.raises(SystemExit):  # the arm.json pin is mandatory
+        G.main(["--cell", "x", "--ckpt-dir", "x", "--model-dir", "x", "--records", "x", "--guard-readiness", "x",
+                "--parent-arm", "x", "--out", "x", "--stage", "g12"])
 
 
 def test_served_child_uses_the_fitted_temperature(world):
@@ -262,7 +267,7 @@ def test_parent_arm_estimate_and_cap():
     from jobs.m2_parent_arm import score_parent as S
 
     e = S.estimate(5000.0)
-    assert e["tokens"]["g12"] == 3_487_676 + 5_378_738
+    assert e["tokens"]["g12"] == sum(S.VOLUME_TOKENS["g12"].values())
     assert e["total_minutes"] == pytest.approx(sum(e["tokens"].values()) / 5000 / 60 + S.FIXED_MIN)
     assert S.main(["estimate", "--tok-s", "5000", "--cap-min", "180"]) == 0
     assert S.main(["estimate", "--tok-s", "1000", "--cap-min", "180"]) == 15
@@ -334,12 +339,15 @@ def test_q9af_pin_check(tmp_path):
     ck = tmp_path / "gdn.pt"
     torch.save({3: {"x": torch.zeros(1)}}, ck)
     sha = hashlib.sha256(ck.read_bytes()).hexdigest()
-    pin = {"converted_sha256": sha, "base_repo": Q9AF_BASE_REPO, "base_revision": Q9AF_BASE_REVISION}
     (tmp_path / "config.json").write_text("{}")
+    cfg_sha = hashlib.sha256(b"{}").hexdigest()
+    pin = {"converted_sha256": sha, "base_repo": Q9AF_BASE_REPO, "base_revision": Q9AF_BASE_REVISION,
+           "base_config_sha256": cfg_sha}
     prov = q9af_pin_check(pin, ck, tmp_path)
-    assert prov["converted_sha256"] == sha and len(prov["base_config_sha256"]) == 64
+    assert prov["converted_sha256"] == sha and prov["base_config_sha256"] == cfg_sha
     for bad, msg in (({**pin, "converted_sha256": None}, "not pinned"), ({**pin, "converted_sha256": "0" * 64}, "!="),
-                     ({**pin, "base_revision": "x"}, "base"), ({**pin, "base_config_sha256": "0" * 64}, "config")):
+                     ({**pin, "base_revision": "x"}, "base"), ({**pin, "base_config_sha256": "0" * 64}, "config"),
+                     ({**pin, "base_config_sha256": None}, "base_config_sha256 is not pinned")):
         with pytest.raises(LineageError, match=msg):
             q9af_pin_check(bad, ck, tmp_path)
 
@@ -360,3 +368,158 @@ def test_run_cell_refuses_unpinned_q9af_before_loading_anything(tmp_path):
     assert main(args + ["--gdn-ckpt", str(ck)]) == EXIT["lineage"]
     with pytest.raises(ValueError):
         parent_encoder("mamba", "x")
+
+
+# ----------------------------------------------------------------------------------------------- round-2 review (B4 + nits)
+def test_child_evals_preflight_counts_fit_and_card_not_only_the_arm():
+    """B4: the m2_pilot evals phase scores the child arm AND forwards every calibration item (temperature fit) and every
+    dev item (eval card). At the 50-min evals cap that needs >= ~11.4k tok/s, not the arm-only ~9k."""
+    from jobs.m2_parent_arm import score_parent as S
+    from train.cohort import Cohort
+
+    assert S.VOLUME_COHORT_SHA256 == Cohort().sha256  # volumes were measured on the committed cohort
+    arm = S.estimate(1.0, fixed_min=0, mode="parent")["total_tokens"]
+    child = S.estimate(1.0, fixed_min=0, mode="child")["total_tokens"]
+    assert child == arm + sum(S.CHILD_EXTRA_TOKENS.values()) and 32e6 < child < 34e6
+    need = S.min_tok_s(50)
+    assert 11_000 < need < 12_000 and S.min_tok_s(50, mode="parent") < 9_000
+    assert S.main(["estimate", "--tok-s", "10000", "--mode", "child", "--cap-min", "50", "--fixed-min", "0"]) == 15
+    assert S.main(["estimate", "--tok-s", "10000", "--mode", "parent", "--cap-min", "50", "--fixed-min", "0"]) == 0
+    assert S.main(["estimate", "--tok-s", str(round(need) + 1), "--mode", "child", "--cap-min", "50",
+                   "--fixed-min", "0"]) == 0
+    root = Path(__file__).resolve().parents[1]
+    job = (root / "jobs/m2_pilot/m2_job.sh").read_text(encoding="utf-8")
+    pre = job[job.index("score_parent estimate"):job.index("evals-preflight.json")]
+    assert "--mode child" in pre and '--cap-min "$CAP_E"' in pre
+    assert job.index("evals-preflight.json") < job.index("python -m train.run_cell")  # before the paid cell phase
+    spec = (root / "jobs/m2_pilot/JOB_SPEC.md").read_text(encoding="utf-8")
+    assert "~9,000 tok/s" not in spec and "11,4" in spec
+
+
+@pytest.mark.parametrize("runner", ["jobs/m2_pilot/m2_job.sh", "jobs/m2_parent_arm/parent_arm_job.sh"])
+def test_runner_exit_codes_tok_s_and_q9af_snapshot(runner):
+    s = (Path(__file__).resolve().parents[1] / runner).read_text(encoding="utf-8")
+    trap = s.index("trap finish EXIT")
+    assert 'fail 4 "TOK_S' in s[trap:] and "${TOK_S:?" not in s  # a clear exit 4 after the trap, never rc 127/1
+    assert 'fail 2 "cell' not in s  # exit 2 is only "bad PARENT"
+    assert 'sha256sum -c "$CODE/jobs/m2_pilot/q9af_snapshot.sha256"' in s
+
+
+def test_tok_s_unset_gives_a_clear_exit(tmp_path):
+    import shutil
+    import subprocess
+
+    bash = shutil.which("bash")
+    if not bash:
+        pytest.skip("bash not available")
+    root = Path(__file__).resolve().parents[1]
+    text = (root / "jobs/m2_pilot/m2_job.sh").read_text(encoding="utf-8")
+    line = next(ln for ln in text.splitlines() if 'fail 4 "TOK_S' in ln)
+    script = "set -Euo pipefail\nfail() { echo \"FAIL($1): $2\"; exit \"$1\"; }\nunset TOK_S || true\n" + line + "\necho PAST"
+    r = subprocess.run([bash, "-c", script], capture_output=True, text=True, timeout=30)
+    assert r.returncode == 4 and "TOK_S" in r.stdout and "PAST" not in r.stdout
+
+
+def test_m2_pilot_pins_parent_arm_sha_and_checks_it():
+    root = Path(__file__).resolve().parents[1]
+    params = json.loads((root / "jobs/m2_pilot/job_params.json").read_text())
+    assert set(params["parent_arm_sha256"]) >= {"rwkv7", "q9af"}
+    job = (root / "jobs/m2_pilot/m2_job.sh").read_text(encoding="utf-8")
+    assert "parent_arm_sha256" in job and '--parent-arm-sha256 "$ARM_SHA"' in job
+    assert job.index("parent arm.json sha256 != pinned") < job.index("python -m train.run_cell")
+
+
+def test_arm_json_pin_and_parent_repo_revision_are_enforced(world, parent_cache):
+    from safety_eval.standin import KeywordDecider
+    from train import m2_gates as G
+
+    cache, dec = parent_cache
+    sha = hashlib.sha256((cache / "arm.json").read_bytes()).hexdigest()
+    code, _ = _gates(world, cache, dec.decide, KeywordDecider(0.0), stages=("g12",), parent_arm_sha256=sha)
+    assert code == 0
+    with pytest.raises(G.IdentityMismatch, match="pinned"):
+        _gates(world, cache, dec.decide, KeywordDecider(0.0), stages=("g12",), parent_arm_sha256="0" * 64)
+    exp = G.expected_parent_identity("rwkv7")
+    assert exp["repo"] == "RWKV/RWKV7-G1k-13.3B-20260930" and len(exp["revision"]) == 40
+    q = G.expected_parent_identity("q9af", {"converted_sha256": "a" * 64})
+    assert q["revision"] == "c202236235762e1c871ad0ccb60c8ee5ba337b9a" and q["converted_sha256"] == "a" * 64
+    with pytest.raises(G.IdentityMismatch):
+        G.expected_parent_identity("q9af", {})
+    with pytest.raises(G.IdentityMismatch, match="revision"):  # same family, other snapshot -> refused
+        _gates(world, cache, dec.decide, KeywordDecider(0.0), stages=("g12",),
+               expect_parent={"parent": "tiny", "revision": "other"})
+
+
+def test_q9af_cell_pins_base_config_and_snapshot_file():
+    root = Path(__file__).resolve().parents[1]
+    cfg = json.loads((root / "jobs/m2_pilot/m2_pilot_cell_q9af.json").read_text())["q9af"]
+    lines = dict(reversed(ln.split("  ", 1)) for ln in
+                 (root / "jobs/m2_pilot/q9af_snapshot.sha256").read_text().splitlines() if ln.strip())
+    assert cfg["base_config_sha256"] == lines["config.json"]
+    assert sum(f.endswith(".safetensors") for f in lines) == 4 and "tokenizer.json" in lines
+    from train.tokenizer_check import PINS
+
+    for f, h in PINS["qwen3.5-9b"]["files"].items():  # the same snapshot the tokenizer check pinned
+        assert lines[f] == h
+
+
+def test_convert_gdn_matches_the_hf_gdn_layer():
+    """Parity: convert.gdn.GDN (what convert/ trains and saves) == HF Qwen3_5GatedDeltaNet (what Q9-AF serves) on the
+    same weights, so a converted state dict means the same function after q9af_from_stock."""
+    from transformers import Qwen3_5TextConfig
+    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5GatedDeltaNet
+
+    from convert.gdn import GDN
+
+    torch.manual_seed(0)
+    cfg = Qwen3_5TextConfig(vocab_size=64, hidden_size=32, intermediate_size=64, num_hidden_layers=1,
+                            num_attention_heads=2, num_key_value_heads=1, head_dim=16, linear_num_key_heads=2,
+                            linear_num_value_heads=2, linear_key_head_dim=8, linear_value_head_dim=8,
+                            layer_types=["linear_attention"])
+    hf = Qwen3_5GatedDeltaNet(cfg, 0).float().eval()
+    with torch.no_grad():
+        for p in hf.parameters():
+            p.normal_(0.0, 0.2)
+    for kernel in ("recurrent", "chunk"):
+        ours = GDN.from_config(cfg, kernel=kernel).float().eval()
+        ours.load_state_dict(hf.state_dict(), strict=True)  # parameter-compatible, no renames
+        back = Qwen3_5GatedDeltaNet(cfg, 0).float().eval()
+        back.load_state_dict(ours.state_dict(), strict=True)  # and back: what q9af_from_stock does
+        x = torch.randn(2, 37, 32)
+        with torch.no_grad():
+            a, b, c = ours(x), hf(x), back(x)
+        a = a[0] if isinstance(a, tuple) else a
+        assert torch.allclose(a, b, atol=1e-4, rtol=1e-4), (kernel, (a - b).abs().max())
+        assert torch.equal(b, c)
+
+
+def test_temperature_status_and_from_dict_tamper():
+    import dataclasses
+
+    from decide.calibration import (CalibrationNotServable, FeatureTemperature, content_set_sha256,
+                                    disjointness_proof_sha256)
+
+    manual = FeatureTemperature(w=(0.2, 0.1, 0.0))
+    assert manual.identity()["status"] == "unfitted_manual"
+    with pytest.raises(CalibrationNotServable):
+        manual.assert_servable()
+    assert FeatureTemperature().identity()["status"] == "uncalibrated_identity"
+    calib = ("c" * 64,)
+    fo = content_set_sha256(calib)
+    dj = {"eval": content_set_sha256({"e" * 64})}
+    ok = FeatureTemperature(w=(0.3, 0.2, -0.4), fitted_on=fo, disjointness=tuple(dj.items()), calib_content=calib,
+                            proof_sha256=disjointness_proof_sha256(fo, dj))
+    assert FeatureTemperature.from_dict(ok.to_dict()) == ok
+    d = ok.to_dict()
+    del d["id"]
+    with pytest.raises(ValueError, match="no id"):
+        FeatureTemperature.from_dict(d)
+    stale = ok.to_dict()  # id still matches (disjointness is outside the id hash), but the proof no longer does
+    stale["disjointness"] = {"eval": "0" * 64}
+    with pytest.raises(ValueError, match="own proof"):
+        FeatureTemperature.from_dict(stale)
+    swapped = ok.to_dict()
+    swapped["calib_content"] = ["d" * 64]
+    with pytest.raises(ValueError, match="own proof"):
+        FeatureTemperature.from_dict(swapped)
+    assert dataclasses.replace(ok).identity()["id"] == ok.identity()["id"]

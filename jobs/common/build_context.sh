@@ -17,7 +17,7 @@ rm -rf "$OUTD"; mkdir -p "$OUTD/code/m1" "$OUTD/data/slices"
 git archive "$M1" | tar x -C "$OUTD/code/m1"
 cp "$OUTD/code/m1/jobs/$JOB/Dockerfile" "$OUTD/Dockerfile"
 cp "$DATA/slices/dev-rows.jsonl.gz" "$OUTD/data/slices/"
-[ "$(sha256sum "$OUTD/data/slices/dev-rows.jsonl.gz" | cut -d' ' -f1)" = "$(cut -d' ' -f1 "$OUTD/code/m1/jobs/clef_baseline/data.sha256")" ] \n  || { echo "DEV rows sha256 mismatch" >&2; exit 1; }  # data.sha256 names the in-image path /data/slices/...
+[ "$(sha256sum "$OUTD/data/slices/dev-rows.jsonl.gz" | cut -d' ' -f1)" = "$(cut -d' ' -f1 "$OUTD/code/m1/jobs/clef_baseline/data.sha256")" ] || { echo "DEV rows sha256 mismatch" >&2; exit 1; }  # data.sha256 names the in-image path /data/slices/...
 if [ "$JOB" = rwkv7 ]; then
   mkdir -p "$OUTD/data/m2"
   cp "$DATA/m2/build/sample-20000-seed20261006/records.jsonl.gz" "$OUTD/data/m2/records.jsonl.gz"

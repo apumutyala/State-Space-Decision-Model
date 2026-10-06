@@ -19,6 +19,6 @@
    "steer_gate": 1000
   },
   "content_map_sha256": "4fd3d9cae8b3a95e4b3c63da49156f1c060f4ce00c1490264af98a9a079af2e4",
-  "supersedes": "m2-dev-cohort-v1 cf339e4c989be3e1eaa9dc717e406f28a0089d80d8562418863a3bfd6f26ed6d (record-id assignment; 17 synthetic_factchange content groups straddled cohort/training)"
+  "supersedes": "m2-dev-cohort-v1 cf339e4c989be3e1eaa9dc717e406f28a0089d80d8562418863a3bfd6f26ed6d (record-id assignment; 17 synthetic_factchange content groups straddled cohort/training); files moved to negative-evidence/cohort-v1-content-leak/ (NOTE.json)"
  }
 }
