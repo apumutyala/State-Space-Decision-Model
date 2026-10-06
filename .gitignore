@@ -9,3 +9,4 @@ wandb/
 .env
 harness/ssdm_harness.egg-info/
 .pytest_cache/
+data/ssdm_data.egg-info/

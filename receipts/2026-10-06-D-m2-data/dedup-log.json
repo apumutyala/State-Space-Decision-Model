@@ -1,0 +1,1778 @@
+{
+ "fingerprint": {
+  "version": "ssdm-dedup-v2",
+  "rows": 155390,
+  "rows_by_catalog": {
+   "1": 1694,
+   "2": 1328,
+   "3": 508,
+   "4": 3080,
+   "5": 5500,
+   "6": 10000,
+   "9": 160,
+   "10": 2500,
+   "11": 123,
+   "12": 3200,
+   "20": 5000,
+   "21": 2628,
+   "22": 2000,
+   "23": 5000,
+   "24": 14042,
+   "25": 198,
+   "26": 2376,
+   "27": 1172,
+   "28": 1267,
+   "29": 10042,
+   "30": 2638,
+   "31": 5000,
+   "32": 756,
+   "33": 1650,
+   "34": 10,
+   "36": 637,
+   "37": 5000,
+   "38": 5479,
+   "39": 979,
+   "40": 4600,
+   "41": 3006,
+   "42": 5500,
+   "43": 570,
+   "44": 5000,
+   "45": 513,
+   "48": 10139,
+   "50": 1676,
+   "56": 2000,
+   "57": 12032,
+   "58": 5507,
+   "59": 2700,
+   "61": 4000,
+   "62": 3652,
+   "64": 528
+  },
+  "segments_unique": 873488,
+  "segments_boilerplate_removed": 2072,
+  "segments_indexed": 871416,
+  "ngram13_unique": 10964744,
+  "ngram13_boilerplate_removed": 22289,
+  "ngram13_indexed": 10942455,
+  "minhash_segments": 811688,
+  "params": {
+   "boilerplate_rows": 100,
+   "ngram_n": 13,
+   "minhash_perms": 64,
+   "minhash_bands": 16,
+   "minhash_max_chars": 1000,
+   "minhash_threshold": 0.75,
+   "shingle": "byte 5-gram",
+   "min_segment_chars": 12
+  },
+  "build_seconds": 207.7,
+  "suite_dir": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\suite-snapshot",
+  "suite_files_uncompressed_sha256": {
+   "selected-rows.jsonl.gz": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5",
+   "added-rows.jsonl.gz": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89"
+  },
+  "npz_sha256": "e44882d871162ef82babda0eee1d67a508b18fcd124ffffb9e02b88356272e19"
+ },
+ "rule": "drop a record if any matcher fires on its ITEM-tier texts against any Index 0.2.1 row (all catalogs, DEV and TEST, HLE included); whole-payload matches that are not item matches are logged as context overlap and kept",
+ "totals": {
+  "checked": 22815,
+  "kept": 20000,
+  "item_minhash": 1659,
+  "dropped": 2815,
+  "item_ngram13": 2514,
+  "item_exact": 1184,
+  "kept_with_context_overlap": 4755,
+  "context_ngram13": 2521,
+  "context_minhash": 3570,
+  "context_exact": 768
+ },
+ "by_source": {
+  "anli": {
+   "checked": 2383,
+   "kept": 1800,
+   "item_exact": 566,
+   "item_ngram13": 576,
+   "item_minhash": 574,
+   "dropped": 583,
+   "kept_with_context_overlap": 16,
+   "context_ngram13": 16,
+   "context_minhash": 6
+  },
+  "banking77": {
+   "checked": 1453,
+   "kept": 1400,
+   "item_minhash": 52,
+   "dropped": 53,
+   "item_ngram13": 8,
+   "item_exact": 3,
+   "kept_with_context_overlap": 7,
+   "context_ngram13": 7,
+   "context_minhash": 6
+  },
+  "boolq": {
+   "checked": 1205,
+   "kept": 1200,
+   "kept_with_context_overlap": 4,
+   "context_ngram13": 4,
+   "item_ngram13": 5,
+   "item_minhash": 3,
+   "dropped": 5,
+   "context_minhash": 1
+  },
+  "clinc150": {
+   "checked": 1423,
+   "kept": 1400,
+   "kept_with_context_overlap": 1400,
+   "context_minhash": 1400,
+   "item_minhash": 23,
+   "dropped": 23,
+   "item_exact": 7,
+   "context_ngram13": 6,
+   "item_ngram13": 1
+  },
+  "gsm8k": {
+   "checked": 1658,
+   "kept": 1400,
+   "item_exact": 253,
+   "item_ngram13": 258,
+   "item_minhash": 255,
+   "dropped": 258,
+   "kept_with_context_overlap": 6,
+   "context_ngram13": 6,
+   "context_minhash": 4
+  },
+  "hellaswag": {
+   "checked": 1629,
+   "kept": 1600,
+   "kept_with_context_overlap": 110,
+   "context_exact": 91,
+   "context_minhash": 106,
+   "context_ngram13": 12,
+   "item_ngram13": 13,
+   "item_minhash": 27,
+   "dropped": 29,
+   "item_exact": 9
+  },
+  "mmlu_aux": {
+   "checked": 1904,
+   "kept": 1800,
+   "item_exact": 69,
+   "item_minhash": 103,
+   "dropped": 104,
+   "kept_with_context_overlap": 9,
+   "context_ngram13": 9,
+   "context_minhash": 6,
+   "item_ngram13": 3
+  },
+  "multi": {
+   "checked": 1396,
+   "kept": 1200,
+   "kept_with_context_overlap": 369,
+   "context_minhash": 369,
+   "item_exact": 158,
+   "item_ngram13": 153,
+   "item_minhash": 187,
+   "dropped": 196,
+   "context_exact": 11
+  },
+  "nq": {
+   "checked": 1831,
+   "kept": 1800,
+   "kept_with_context_overlap": 888,
+   "context_ngram13": 888,
+   "context_minhash": 523,
+   "item_ngram13": 30,
+   "dropped": 31,
+   "item_minhash": 13
+  },
+  "sst5": {
+   "checked": 1000,
+   "kept": 1000,
+   "kept_with_context_overlap": 3,
+   "context_ngram13": 3,
+   "context_minhash": 3
+  },
+  "synthetic_factchange": {
+   "checked": 1200,
+   "kept": 1200
+  },
+  "toolace": {
+   "checked": 1637,
+   "kept": 1600,
+   "kept_with_context_overlap": 1124,
+   "context_ngram13": 960,
+   "context_minhash": 469,
+   "context_exact": 220,
+   "item_ngram13": 33,
+   "item_minhash": 35,
+   "dropped": 37,
+   "item_exact": 27
+  },
+  "when2call": {
+   "checked": 2683,
+   "item_ngram13": 1434,
+   "dropped": 1483,
+   "kept": 1200,
+   "kept_with_context_overlap": 813,
+   "context_exact": 446,
+   "context_ngram13": 604,
+   "context_minhash": 673,
+   "item_minhash": 374,
+   "item_exact": 83
+  },
+  "winogrande": {
+   "checked": 1413,
+   "kept": 1400,
+   "item_exact": 9,
+   "item_minhash": 13,
+   "dropped": 13,
+   "kept_with_context_overlap": 6,
+   "context_ngram13": 6,
+   "context_minhash": 4
+  }
+ },
+ "hits_by_source_and_index_catalog": {
+  "anli": {
+   "context_minhash:12": 1,
+   "context_minhash:61": 5,
+   "context_ngram13:12": 3,
+   "context_ngram13:36": 2,
+   "context_ngram13:37": 1,
+   "context_ngram13:61": 11,
+   "item_exact:12": 550,
+   "item_exact:61": 16,
+   "item_minhash:12": 558,
+   "item_minhash:61": 17,
+   "item_ngram13:12": 558,
+   "item_ngram13:36": 1,
+   "item_ngram13:61": 18
+  },
+  "banking77": {
+   "context_minhash:61": 6,
+   "context_ngram13:61": 7,
+   "item_exact:4": 3,
+   "item_minhash:4": 50,
+   "item_minhash:5": 2,
+   "item_ngram13:4": 8
+  },
+  "boolq": {
+   "context_minhash:61": 1,
+   "context_ngram13:36": 1,
+   "context_ngram13:37": 1,
+   "context_ngram13:61": 2,
+   "item_minhash:36": 2,
+   "item_minhash:61": 1,
+   "item_ngram13:36": 2,
+   "item_ngram13:61": 3
+  },
+  "clinc150": {
+   "context_minhash:1": 1400,
+   "context_minhash:3": 1400,
+   "context_minhash:36": 1400,
+   "context_minhash:5": 1400,
+   "context_minhash:57": 1400,
+   "context_minhash:61": 4,
+   "context_ngram13:36": 1,
+   "context_ngram13:61": 5,
+   "item_exact:10": 4,
+   "item_exact:5": 1,
+   "item_exact:62": 2,
+   "item_minhash:10": 4,
+   "item_minhash:32": 1,
+   "item_minhash:4": 1,
+   "item_minhash:5": 15,
+   "item_minhash:57": 1,
+   "item_minhash:62": 2,
+   "item_ngram13:5": 1
+  },
+  "gsm8k": {
+   "context_minhash:12": 1,
+   "context_minhash:61": 3,
+   "context_ngram13:12": 2,
+   "context_ngram13:36": 1,
+   "context_ngram13:61": 3,
+   "item_exact:36": 25,
+   "item_exact:6": 228,
+   "item_minhash:36": 27,
+   "item_minhash:6": 230,
+   "item_ngram13:30": 1,
+   "item_ngram13:36": 25,
+   "item_ngram13:6": 232
+  },
+  "hellaswag": {
+   "context_exact:24": 54,
+   "context_exact:36": 12,
+   "context_exact:41": 22,
+   "context_exact:43": 3,
+   "context_minhash:12": 1,
+   "context_minhash:20": 2,
+   "context_minhash:24": 54,
+   "context_minhash:27": 6,
+   "context_minhash:33": 47,
+   "context_minhash:36": 12,
+   "context_minhash:41": 22,
+   "context_minhash:43": 3,
+   "context_minhash:61": 7,
+   "context_ngram13:12": 1,
+   "context_ngram13:36": 2,
+   "context_ngram13:61": 9,
+   "item_exact:29": 9,
+   "item_minhash:12": 11,
+   "item_minhash:29": 16,
+   "item_minhash:6": 1,
+   "item_ngram13:12": 11,
+   "item_ngram13:29": 2
+  },
+  "mmlu_aux": {
+   "context_minhash:12": 2,
+   "context_minhash:61": 5,
+   "context_ngram13:12": 2,
+   "context_ngram13:36": 1,
+   "context_ngram13:61": 7,
+   "item_exact:1": 1,
+   "item_exact:2": 4,
+   "item_exact:24": 32,
+   "item_exact:26": 17,
+   "item_exact:27": 6,
+   "item_exact:32": 1,
+   "item_exact:33": 1,
+   "item_exact:36": 2,
+   "item_exact:37": 1,
+   "item_exact:41": 2,
+   "item_exact:50": 2,
+   "item_exact:57": 5,
+   "item_exact:6": 1,
+   "item_exact:64": 2,
+   "item_minhash:1": 2,
+   "item_minhash:10": 3,
+   "item_minhash:11": 1,
+   "item_minhash:2": 4,
+   "item_minhash:20": 2,
+   "item_minhash:24": 45,
+   "item_minhash:26": 24,
+   "item_minhash:27": 12,
+   "item_minhash:28": 1,
+   "item_minhash:32": 2,
+   "item_minhash:33": 5,
+   "item_minhash:36": 7,
+   "item_minhash:37": 2,
+   "item_minhash:41": 3,
+   "item_minhash:45": 3,
+   "item_minhash:50": 2,
+   "item_minhash:57": 9,
+   "item_minhash:58": 1,
+   "item_minhash:6": 22,
+   "item_minhash:64": 2,
+   "item_ngram13:24": 3
+  },
+  "multi": {
+   "context_exact:24": 6,
+   "context_exact:36": 4,
+   "context_exact:43": 1,
+   "context_minhash:1": 357,
+   "context_minhash:20": 2,
+   "context_minhash:24": 6,
+   "context_minhash:27": 1,
+   "context_minhash:3": 357,
+   "context_minhash:33": 6,
+   "context_minhash:36": 361,
+   "context_minhash:43": 1,
+   "context_minhash:5": 357,
+   "context_minhash:57": 357,
+   "item_exact:12": 82,
+   "item_exact:24": 3,
+   "item_exact:26": 6,
+   "item_exact:27": 3,
+   "item_exact:29": 4,
+   "item_exact:33": 1,
+   "item_exact:36": 7,
+   "item_exact:4": 1,
+   "item_exact:5": 1,
+   "item_exact:50": 2,
+   "item_exact:6": 51,
+   "item_exact:61": 6,
+   "item_minhash:10": 1,
+   "item_minhash:12": 86,
+   "item_minhash:24": 5,
+   "item_minhash:26": 9,
+   "item_minhash:27": 3,
+   "item_minhash:29": 6,
+   "item_minhash:33": 2,
+   "item_minhash:36": 7,
+   "item_minhash:37": 1,
+   "item_minhash:4": 18,
+   "item_minhash:45": 2,
+   "item_minhash:5": 7,
+   "item_minhash:50": 2,
+   "item_minhash:6": 56,
+   "item_minhash:61": 5,
+   "item_ngram13:12": 85,
+   "item_ngram13:24": 1,
+   "item_ngram13:26": 1,
+   "item_ngram13:29": 3,
+   "item_ngram13:36": 7,
+   "item_ngram13:4": 1,
+   "item_ngram13:6": 51,
+   "item_ngram13:61": 11
+  },
+  "nq": {
+   "context_minhash:12": 73,
+   "context_minhash:36": 12,
+   "context_minhash:61": 476,
+   "context_ngram13:12": 177,
+   "context_ngram13:2": 39,
+   "context_ngram13:24": 7,
+   "context_ngram13:26": 3,
+   "context_ngram13:36": 160,
+   "context_ngram13:37": 27,
+   "context_ngram13:42": 1,
+   "context_ngram13:59": 13,
+   "context_ngram13:6": 7,
+   "context_ngram13:61": 771,
+   "item_minhash:12": 3,
+   "item_minhash:24": 1,
+   "item_minhash:61": 9,
+   "item_ngram13:12": 6,
+   "item_ngram13:36": 1,
+   "item_ngram13:61": 23
+  },
+  "sst5": {
+   "context_minhash:61": 3,
+   "context_ngram13:61": 3
+  },
+  "toolace": {
+   "context_exact:1": 166,
+   "context_exact:10": 2,
+   "context_exact:11": 9,
+   "context_exact:24": 25,
+   "context_exact:26": 4,
+   "context_exact:28": 1,
+   "context_exact:33": 3,
+   "context_exact:36": 20,
+   "context_exact:43": 1,
+   "context_exact:5": 1,
+   "context_exact:57": 4,
+   "context_minhash:1": 368,
+   "context_minhash:10": 4,
+   "context_minhash:11": 14,
+   "context_minhash:2": 2,
+   "context_minhash:20": 6,
+   "context_minhash:24": 32,
+   "context_minhash:26": 7,
+   "context_minhash:28": 1,
+   "context_minhash:33": 9,
+   "context_minhash:36": 95,
+   "context_minhash:37": 1,
+   "context_minhash:41": 1,
+   "context_minhash:42": 5,
+   "context_minhash:43": 3,
+   "context_minhash:5": 2,
+   "context_minhash:57": 6,
+   "context_minhash:58": 1,
+   "context_minhash:6": 9,
+   "context_minhash:61": 5,
+   "context_ngram13:1": 1,
+   "context_ngram13:2": 959,
+   "context_ngram13:61": 7,
+   "item_exact:2": 27,
+   "item_minhash:2": 33,
+   "item_minhash:24": 1,
+   "item_minhash:3": 1,
+   "item_minhash:36": 1,
+   "item_ngram13:2": 32,
+   "item_ngram13:62": 1
+  },
+  "when2call": {
+   "context_exact:1": 157,
+   "context_exact:24": 12,
+   "context_exact:26": 2,
+   "context_exact:3": 1,
+   "context_exact:33": 3,
+   "context_exact:36": 349,
+   "context_exact:57": 5,
+   "context_minhash:1": 194,
+   "context_minhash:10": 3,
+   "context_minhash:12": 1,
+   "context_minhash:2": 7,
+   "context_minhash:20": 1,
+   "context_minhash:24": 14,
+   "context_minhash:26": 2,
+   "context_minhash:27": 5,
+   "context_minhash:3": 1,
+   "context_minhash:33": 3,
+   "context_minhash:36": 609,
+   "context_minhash:37": 4,
+   "context_minhash:57": 20,
+   "context_minhash:6": 10,
+   "context_minhash:61": 12,
+   "context_minhash:64": 2,
+   "context_ngram13:1": 26,
+   "context_ngram13:12": 1,
+   "context_ngram13:2": 592,
+   "context_ngram13:37": 1,
+   "context_ngram13:61": 3,
+   "item_exact:2": 5,
+   "item_exact:62": 78,
+   "item_minhash:2": 15,
+   "item_minhash:36": 2,
+   "item_minhash:4": 1,
+   "item_minhash:5": 1,
+   "item_minhash:62": 356,
+   "item_ngram13:2": 22,
+   "item_ngram13:36": 1,
+   "item_ngram13:62": 1420
+  },
+  "winogrande": {
+   "context_minhash:61": 4,
+   "context_ngram13:37": 1,
+   "context_ngram13:61": 5,
+   "item_exact:11": 1,
+   "item_exact:24": 2,
+   "item_exact:33": 4,
+   "item_exact:37": 1,
+   "item_exact:57": 1,
+   "item_minhash:11": 1,
+   "item_minhash:24": 6,
+   "item_minhash:33": 5,
+   "item_minhash:37": 1,
+   "item_minhash:57": 1,
+   "item_minhash:6": 1,
+   "item_minhash:64": 1
+  }
+ },
+ "dropped_examples": {
+  "banking77": [
+   {
+    "id": "m2:banking77:62",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      4
+     ]
+    }
+   },
+   {
+    "id": "m2:banking77:6459",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      4
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:banking77:2069",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      4
+     ]
+    }
+   },
+   {
+    "id": "m2:banking77:9921~inj:d1a:fake_correction",
+    "item_hits": {
+     "exact": [
+      4
+     ],
+     "ngram13": [
+      4
+     ],
+     "minhash": [
+      4
+     ]
+    }
+   },
+   {
+    "id": "m2:banking77:3355",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      4
+     ]
+    }
+   }
+  ],
+  "clinc150": [
+   {
+    "id": "m2:clinc150:7080",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      4
+     ]
+    }
+   },
+   {
+    "id": "m2:clinc150:11836",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      5
+     ]
+    }
+   },
+   {
+    "id": "m2:clinc150:7795",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      5
+     ]
+    }
+   },
+   {
+    "id": "m2:clinc150:4659",
+    "item_hits": {
+     "exact": [
+      10
+     ],
+     "ngram13": [],
+     "minhash": [
+      10
+     ]
+    }
+   },
+   {
+    "id": "m2:clinc150:13844",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      5
+     ]
+    }
+   }
+  ],
+  "anli": [
+   {
+    "id": "m2:anli:d12b1ea0-4e74-40b8-9020-3bd35a153a6e",
+    "item_hits": {
+     "exact": [
+      12
+     ],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12
+     ]
+    }
+   },
+   {
+    "id": "m2:anli:82645a51-3f7d-4862-931a-71347211bdad",
+    "item_hits": {
+     "exact": [
+      12
+     ],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12
+     ]
+    }
+   },
+   {
+    "id": "m2:anli:b930c5d5-706b-49bc-95e9-ca87efeb3024",
+    "item_hits": {
+     "exact": [
+      12
+     ],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12
+     ]
+    }
+   },
+   {
+    "id": "m2:anli:2c5bf901-e933-444c-9688-16d361a7d60b",
+    "item_hits": {
+     "exact": [
+      12
+     ],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12
+     ]
+    }
+   },
+   {
+    "id": "m2:anli:734c7214-eed6-40bd-854a-779e0b6e2804",
+    "item_hits": {
+     "exact": [
+      12
+     ],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12
+     ]
+    }
+   }
+  ],
+  "hellaswag": [
+   {
+    "id": "m2:hellaswag:36372",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12
+     ]
+    }
+   },
+   {
+    "id": "m2:hellaswag:13543",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      29
+     ]
+    }
+   },
+   {
+    "id": "m2:hellaswag:14171",
+    "item_hits": {
+     "exact": [
+      29
+     ],
+     "ngram13": [],
+     "minhash": [
+      29
+     ]
+    }
+   },
+   {
+    "id": "m2:hellaswag:15491~inj:d1a:system_note",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12
+     ]
+    }
+   },
+   {
+    "id": "m2:hellaswag:36508",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      29
+     ],
+     "minhash": []
+    }
+   }
+  ],
+  "winogrande": [
+   {
+    "id": "m2:winogrande:20191",
+    "item_hits": {
+     "exact": [
+      37
+     ],
+     "ngram13": [],
+     "minhash": [
+      37
+     ]
+    }
+   },
+   {
+    "id": "m2:winogrande:17120",
+    "item_hits": {
+     "exact": [
+      24
+     ],
+     "ngram13": [],
+     "minhash": [
+      6,
+      24
+     ]
+    }
+   },
+   {
+    "id": "m2:winogrande:7532",
+    "item_hits": {
+     "exact": [
+      33
+     ],
+     "ngram13": [],
+     "minhash": [
+      24,
+      33
+     ]
+    }
+   },
+   {
+    "id": "m2:winogrande:36708",
+    "item_hits": {
+     "exact": [
+      24
+     ],
+     "ngram13": [],
+     "minhash": [
+      24,
+      64
+     ]
+    }
+   },
+   {
+    "id": "m2:winogrande:8942",
+    "item_hits": {
+     "exact": [
+      33
+     ],
+     "ngram13": [],
+     "minhash": [
+      33
+     ]
+    }
+   }
+  ],
+  "gsm8k": [
+   {
+    "id": "m2:gsm8k:302",
+    "item_hits": {
+     "exact": [
+      6
+     ],
+     "ngram13": [
+      6
+     ],
+     "minhash": [
+      6
+     ]
+    }
+   },
+   {
+    "id": "m2:gsm8k:1875",
+    "item_hits": {
+     "exact": [
+      6
+     ],
+     "ngram13": [
+      6
+     ],
+     "minhash": [
+      6
+     ]
+    }
+   },
+   {
+    "id": "m2:gsm8k:6252",
+    "item_hits": {
+     "exact": [
+      6
+     ],
+     "ngram13": [
+      6
+     ],
+     "minhash": [
+      6
+     ]
+    }
+   },
+   {
+    "id": "m2:gsm8k:6896",
+    "item_hits": {
+     "exact": [
+      6
+     ],
+     "ngram13": [
+      6
+     ],
+     "minhash": [
+      6
+     ]
+    }
+   },
+   {
+    "id": "m2:gsm8k:453",
+    "item_hits": {
+     "exact": [
+      6
+     ],
+     "ngram13": [
+      6
+     ],
+     "minhash": [
+      6
+     ]
+    }
+   }
+  ],
+  "mmlu_aux": [
+   {
+    "id": "m2:mmlu_aux:1503",
+    "item_hits": {
+     "exact": [
+      24,
+      26
+     ],
+     "ngram13": [],
+     "minhash": [
+      24,
+      26
+     ]
+    }
+   },
+   {
+    "id": "m2:mmlu_aux:60713",
+    "item_hits": {
+     "exact": [
+      26
+     ],
+     "ngram13": [],
+     "minhash": [
+      26
+     ]
+    }
+   },
+   {
+    "id": "m2:mmlu_aux:34050",
+    "item_hits": {
+     "exact": [
+      24
+     ],
+     "ngram13": [],
+     "minhash": [
+      24,
+      33
+     ]
+    }
+   },
+   {
+    "id": "m2:mmlu_aux:62792",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      32
+     ]
+    }
+   },
+   {
+    "id": "m2:mmlu_aux:88566",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      10,
+      20
+     ]
+    }
+   }
+  ],
+  "boolq": [
+   {
+    "id": "m2:boolq:8225",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      36
+     ],
+     "minhash": [
+      36
+     ]
+    }
+   },
+   {
+    "id": "m2:boolq:8698",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:boolq:1047",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:boolq:1130",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      36
+     ],
+     "minhash": [
+      36
+     ]
+    }
+   },
+   {
+    "id": "m2:boolq:6168",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": []
+    }
+   }
+  ],
+  "when2call": [
+   {
+    "id": "m2:when2call:6772",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      62
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:when2call:2318",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      62
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:when2call:14486",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      62
+     ],
+     "minhash": [
+      62
+     ]
+    }
+   },
+   {
+    "id": "m2:when2call:1098",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      62
+     ],
+     "minhash": [
+      62
+     ]
+    }
+   },
+   {
+    "id": "m2:when2call:13274",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      62
+     ],
+     "minhash": []
+    }
+   }
+  ],
+  "toolace": [
+   {
+    "id": "m2:toolace:9477",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      2
+     ],
+     "minhash": [
+      2
+     ]
+    }
+   },
+   {
+    "id": "m2:toolace:625",
+    "item_hits": {
+     "exact": [
+      2
+     ],
+     "ngram13": [
+      2
+     ],
+     "minhash": [
+      2
+     ]
+    }
+   },
+   {
+    "id": "m2:toolace:9400",
+    "item_hits": {
+     "exact": [
+      2
+     ],
+     "ngram13": [
+      2
+     ],
+     "minhash": [
+      2
+     ]
+    }
+   },
+   {
+    "id": "m2:toolace:3356",
+    "item_hits": {
+     "exact": [
+      2
+     ],
+     "ngram13": [
+      2
+     ],
+     "minhash": [
+      2
+     ]
+    }
+   },
+   {
+    "id": "m2:toolace:4008",
+    "item_hits": {
+     "exact": [
+      2
+     ],
+     "ngram13": [
+      2
+     ],
+     "minhash": [
+      2
+     ]
+    }
+   }
+  ],
+  "nq": [
+   {
+    "id": "m2:nq:63506",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:nq:77191",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:nq:47618",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      12
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:nq:15292",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:nq:88874",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [
+      12
+     ],
+     "minhash": []
+    }
+   }
+  ],
+  "multi": [
+   {
+    "id": "m2:multi:m2:gsm8k:424+m2:boolq:5124+m2:gsm8k:57+m2:boolq:8035",
+    "item_hits": {
+     "exact": [
+      6
+     ],
+     "ngram13": [
+      6
+     ],
+     "minhash": [
+      6
+     ]
+    }
+   },
+   {
+    "id": "m2:multi:m2:anli:bcac01bf-4b5c-4c1d-a306-8cbd395cfe77+m2:clinc150:2474",
+    "item_hits": {
+     "exact": [
+      12
+     ],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12
+     ]
+    }
+   },
+   {
+    "id": "m2:multi:m2:winogrande:25863+m2:banking77:6764",
+    "item_hits": {
+     "exact": [
+      4
+     ],
+     "ngram13": [],
+     "minhash": [
+      4
+     ]
+    }
+   },
+   {
+    "id": "m2:multi:m2:boolq:8599+m2:clinc150:9002+m2:gsm8k:6826",
+    "item_hits": {
+     "exact": [
+      6
+     ],
+     "ngram13": [
+      6
+     ],
+     "minhash": [
+      6
+     ]
+    }
+   },
+   {
+    "id": "m2:multi:m2:clinc150:3106+m2:mmlu_aux:35660",
+    "item_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      24
+     ]
+    }
+   }
+  ]
+ },
+ "context_overlap_examples": {
+  "banking77": [
+   {
+    "id": "m2:banking77:4607",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:banking77:8934~inj:d1a:authority",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:banking77:7088",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": []
+    }
+   }
+  ],
+  "clinc150": [
+   {
+    "id": "m2:clinc150:14730",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      1,
+      3,
+      5,
+      36,
+      57
+     ]
+    }
+   },
+   {
+    "id": "m2:clinc150:12549",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      1,
+      3,
+      5,
+      36,
+      57
+     ]
+    }
+   },
+   {
+    "id": "m2:clinc150:1656",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      1,
+      3,
+      5,
+      36,
+      57
+     ]
+    }
+   }
+  ],
+  "anli": [
+   {
+    "id": "m2:anli:a0e932d8-2397-4af2-8cd1-4e8ca67dc244",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      12
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:anli:e821496f-a036-4be2-97fd-c2bf824bbd2b",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      36
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:anli:11b3520e-3ea3-445e-bed1-2741431933f4",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   }
+  ],
+  "hellaswag": [
+   {
+    "id": "m2:hellaswag:29090",
+    "context_hits": {
+     "exact": [
+      41
+     ],
+     "ngram13": [],
+     "minhash": [
+      41
+     ]
+    }
+   },
+   {
+    "id": "m2:hellaswag:26716",
+    "context_hits": {
+     "exact": [
+      24
+     ],
+     "ngram13": [],
+     "minhash": [
+      24,
+      33
+     ]
+    }
+   },
+   {
+    "id": "m2:hellaswag:22343",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   }
+  ],
+  "winogrande": [
+   {
+    "id": "m2:winogrande:1634",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:winogrande:24468",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:winogrande:30154",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      37
+     ],
+     "minhash": []
+    }
+   }
+  ],
+  "gsm8k": [
+   {
+    "id": "m2:gsm8k:701",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:gsm8k:3317",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      12
+     ],
+     "minhash": [
+      12
+     ]
+    }
+   },
+   {
+    "id": "m2:gsm8k:6537",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      12
+     ],
+     "minhash": []
+    }
+   }
+  ],
+  "mmlu_aux": [
+   {
+    "id": "m2:mmlu_aux:70124",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      36
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:mmlu_aux:6605",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      12,
+      61
+     ],
+     "minhash": [
+      12,
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:mmlu_aux:18668",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   }
+  ],
+  "sst5": [
+   {
+    "id": "m2:sst5:5306",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:sst5:1295",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:sst5:5032",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   }
+  ],
+  "boolq": [
+   {
+    "id": "m2:boolq:252",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      37
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:boolq:4385",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      36
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:boolq:1982",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": []
+    }
+   }
+  ],
+  "when2call": [
+   {
+    "id": "m2:when2call:8586~inj:d1a:system_note",
+    "context_hits": {
+     "exact": [
+      36
+     ],
+     "ngram13": [
+      2
+     ],
+     "minhash": [
+      36
+     ]
+    }
+   },
+   {
+    "id": "m2:when2call:2589",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      2
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:when2call:7799~inj:d1a:authority",
+    "context_hits": {
+     "exact": [
+      1
+     ],
+     "ngram13": [
+      2
+     ],
+     "minhash": [
+      1
+     ]
+    }
+   }
+  ],
+  "toolace": [
+   {
+    "id": "m2:toolace:10374",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      2
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:toolace:6745",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      2
+     ],
+     "minhash": [
+      1
+     ]
+    }
+   },
+   {
+    "id": "m2:toolace:7657",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      2
+     ],
+     "minhash": []
+    }
+   }
+  ],
+  "nq": [
+   {
+    "id": "m2:nq:70943",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      2
+     ],
+     "minhash": []
+    }
+   },
+   {
+    "id": "m2:nq:78992~inj:hijack:predecided",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   },
+   {
+    "id": "m2:nq:24536",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [
+      36,
+      61
+     ],
+     "minhash": [
+      61
+     ]
+    }
+   }
+  ],
+  "multi": [
+   {
+    "id": "m2:multi:m2:clinc150:14902+m2:hellaswag:25603+m2:hellaswag:16413",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      1,
+      3,
+      5,
+      36,
+      57
+     ]
+    }
+   },
+   {
+    "id": "m2:multi:m2:clinc150:4172+m2:clinc150:6531+m2:sst5:6999+m2:mmlu_aux:20842",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      1,
+      3,
+      5,
+      36,
+      57
+     ]
+    }
+   },
+   {
+    "id": "m2:multi:m2:anli:e9cc0259-0022-442d-bbc3-39d269a35387+m2:clinc150:2852+m2:mmlu_aux:47510+m2:mmlu_aux:87814",
+    "context_hits": {
+     "exact": [],
+     "ngram13": [],
+     "minhash": [
+      1,
+      3,
+      5,
+      36,
+      57
+     ]
+    }
+   }
+  ]
+ }
+}
