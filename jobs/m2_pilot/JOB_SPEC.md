@@ -124,9 +124,14 @@ Schedule 173 + reserve 7 = 180 min. **Worst case** (20 build + 2 × 180) × $0.0
 **$20 hard cap**; `set_workspace_cap(MTD + 20)` applies when the job runs alone.
 
 **Eval volume** (RWKV7 tokenizer, measured on the cohort; `jobs/m2_parent_arm/score_parent.VOLUME_TOKENS`):
-- The child arm is 25.7 M tokens (G12 8.9 M, G13 16.9 M). The parent arm is cached once per parent.
-- At the 50-minute evals cap this needs ≥ ~9,000 tok/s. The preflight (`TOK_S`, a measured rate) stops with exit
-  15 before scoring if the projection is over.
+- **Child arm:** 25.2 M tokens (G12 9.3 M, G13 15.9 M). The parent arm is cached once per parent.
+- **Evals phase total:** the arm plus the temperature fit over every calibration item (3.4 M) and the dev eval card
+  (4.0 M) gives **32.5 M tokens** (`estimate(..., mode="child")`; PR #29 round-2 review B4).
+- **Rate needed:** at the 50-minute evals cap, with the 95 % headroom rule, this needs **≥ ~11,420 tok/s**
+  (`score_parent.min_tok_s(50)`).
+- **Preflight:** it runs in setup, before the paid cell phase, as `score_parent estimate --mode child --cap-min
+  $CAP_E` with `TOK_S`, a measured rate. It stops with exit 15 if the projection is over.
+- **No `TOK_S`:** if `TOK_S` is unset or not a number, the job exits 4.
 - Below that rate, run G12 here (`--stage g12`) and G13 as a separate gate job.
 - An incomplete G12/G13 comparison **fails closed** by rule, so truncating the cohort is never an option.
 
