@@ -40,12 +40,12 @@ from decide.schema import canonical_options, canonical_question_ids, render
 
 LAYOUTS = ("ordered", "symmetric")
 #: bump on any change to tagged_segments / option_segments / build_row token accounting
-LAYOUT_VERSION = "m2-layout-v1"
+LAYOUT_VERSION = "m2-layout-v2"  # v2: empty-state rows use the re-read instruction as evidence
 
 #: encode(text, trusted) -> token ids.
 EncodeFn = Callable[[str, bool], list[int]]
 
-# (text, trusted, tag). Tags: "", "field", "option:<j>", "state", "reread".
+# (text, trusted, tag). Tags: "", "field", "option:<j>", "state", "reread", "reread_instr".
 TaggedSegment = tuple[str, bool, str]
 
 
@@ -91,7 +91,7 @@ def tagged_segments(template: Template, request: dict[str, Any], qid: str, layou
         (f"\nEND STATE\n\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", True, "reread"),
         (qid, False, "reread"),
         (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True, "reread"),
-        (render(_instr(qid, q)), False, "reread"),
+        (render(_instr(qid, q)), False, "reread_instr"),
         ("\nALLOWED OPTION IDS: ", True, "reread"),
         (ids_text, not with_options, "reread"),
         ("\nReply with exactly one allowed option id." + template.tail, True, "reread"),
@@ -138,6 +138,20 @@ class LayoutRow:
         return self.state_span[1] - self.state_span[0]
 
 
+def is_empty_state(state: Any) -> bool:
+    """True when the state carries no evidence content: None, a blank string, or a dict/list whose
+    values are all (recursively) empty. Keys alone are not content. Numbers and booleans are content."""
+    if state is None:
+        return True
+    if isinstance(state, str):
+        return not state.strip()
+    if isinstance(state, dict):
+        return all(is_empty_state(v) for v in state.values())
+    if isinstance(state, (list, tuple)):
+        return all(is_empty_state(v) for v in state)
+    return False
+
+
 def _encode_segments(encode: EncodeFn, segs: Sequence[tuple[str, bool]]) -> list[int]:
     out: list[int] = []
     for text, trusted in segs:
@@ -152,8 +166,17 @@ def build_row(
     template: Template | str = "jrt-plain-v1",
     layout: str = "ordered",
     option_order: Sequence[int] | None = None,
+    empty_state: str = "reread_instructions",
 ) -> LayoutRow:
     """Tokenise one question row and record spans.
+
+    Evidence span: the state's tokens. A request whose state is EMPTY in content (``is_empty_state``:
+    ``""``, whitespace, ``None``, ``{}``, ``[]``, or containers holding only such values; the PR #16
+    builder's ``placement: instructions`` augmentation emits ``""`` or ``{}`` and puts the passage in the
+    question instructions, ~21 % of the m2 sample) uses the target question's re-read INSTRUCTION tokens
+    as its evidence span instead (``meta["evidence"]`` says which), so heads integrate over the text that
+    carries the evidence rather than over the characters ``{}``. The prompt text itself is unchanged.
+    ``empty_state="error"`` refuses such rows instead.
 
     ``option_order`` permutes the option axis (a test hook for equivariance): row k
     of every per-option field is canonical option ``option_order[k]``. The shared
@@ -173,8 +196,15 @@ def build_row(
                 spans[tag][1] = len(ids)
             else:
                 spans[tag] = [start, len(ids)]
-    if "state" not in spans or spans["state"][1] <= spans["state"][0]:
-        raise ValueError("state encoded to zero tokens; heads need at least one evidence token")
+    evidence = "state"
+    no_state_tokens = "state" not in spans or spans["state"][1] <= spans["state"][0]
+    if no_state_tokens or is_empty_state(request["state"]):
+        # The prompt text is unchanged (byte-identical to decide.prompt.build_prompt, so "{}" is still
+        # rendered); only the evidence span moves to the text that actually carries the evidence.
+        alt = spans.get("reread_instr")
+        if empty_state != "reread_instructions" or alt is None or alt[1] <= alt[0]:
+            raise ValueError("state is empty (no evidence content); heads need at least one evidence token")
+        spans["state"], evidence = alt, "reread_instructions"
     perm = list(range(len(opts))) if option_order is None else list(option_order)
     if sorted(perm) != list(range(len(opts))):
         raise ValueError("option_order must be a permutation of range(n_options)")
@@ -196,7 +226,7 @@ def build_row(
         option_seqs=option_seqs,
         continuations=conts,
         layout=layout,
-        meta={"template": tpl.id, "perm": perm},
+        meta={"template": tpl.id, "perm": perm, "evidence": evidence},
     )
 
 

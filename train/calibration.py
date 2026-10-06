@@ -35,6 +35,18 @@ def features(evidence_tokens: Sequence[int], n_options: Sequence[int]) -> torch.
     return torch.stack([torch.ones_like(ev), torch.log1p(ev), torch.log(k.clamp_min(1))], -1)
 
 
+def _tempered(log_probs: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    """``log_softmax(log_probs / t)`` with padded options (-inf) kept at -inf WITHOUT dividing them:
+    d(-inf / t)/dt = +inf, and inf * 0 (their softmax weight) is NaN in the backward pass, which
+    turned every weight NaN when a calibration batch mixes option counts (the m2 data does).
+    Only -inf means "padded option"; NaN or +inf log-probabilities are a model fault and raise."""
+    if torch.isnan(log_probs).any() or torch.isposinf(log_probs).any():
+        raise FloatingPointError("NaN/+inf log-probabilities reached the temperature (model fault, not padding)")
+    pad = torch.isneginf(log_probs)
+    z = log_probs.masked_fill(pad, 0.0) / t
+    return torch.log_softmax(z.masked_fill(pad, float("-inf")), -1)
+
+
 def _inv_softplus(y: float) -> float:
     return math.log(math.expm1(y))
 
@@ -52,7 +64,7 @@ class FeatureTemperature:
 
     def apply(self, log_probs: torch.Tensor, phi: torch.Tensor) -> torch.Tensor:
         t = self.temperature(phi.to(log_probs.dtype)).unsqueeze(-1)
-        return torch.log_softmax(log_probs / t, -1)
+        return _tempered(log_probs, t)
 
     def identity(self) -> dict:
         d = {"kind": "feature_temperature", "features": FEATURES, "t_min": self.t_min,
@@ -73,7 +85,7 @@ class FeatureTemperature:
 
         def nll_of(wv):
             t = t_min + F.softplus(ph @ wv)
-            out = torch.log_softmax(lp / t.unsqueeze(-1), -1)
+            out = _tempered(lp, t.unsqueeze(-1))
             return -out.gather(1, y.unsqueeze(1)).mean()
 
         before = float(nll_of(w.detach()))
@@ -86,6 +98,8 @@ class FeatureTemperature:
 
         opt.step(closure)
         after = float(nll_of(w.detach()))
+        if not (torch.isfinite(w.detach()).all() and math.isfinite(after)):
+            raise FloatingPointError(f"temperature fit diverged (w={w.detach().tolist()}, nll_after={after})")
         split_hash = hashlib.sha256("\n".join(sorted(split_ids)).encode()).hexdigest()
         return cls(t_min=t_min, w=w.detach().tolist(), fitted_on=split_hash,
                    fit_report={"nll_before": before, "nll_after": after, "n": int(len(y))})
