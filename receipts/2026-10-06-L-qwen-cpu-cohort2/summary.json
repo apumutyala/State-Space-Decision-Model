@@ -25,6 +25,21 @@
   "direct_correct": 1,
   "planner_task_correct": 0,
   "paired_correct": 0,
+  "slot_diagnostics": {
+    "total_expected_slots": 8,
+    "correct_slots": 3,
+    "by_slot": {
+      "operation": {"correct": 2, "total": 2},
+      "left": {"correct": 1, "total": 2},
+      "right": {"correct": 0, "total": 2},
+      "relation": {"correct": 0, "total": 2}
+    }
+  },
+  "gap_classification": {
+    "semantic_language": "expressible; both generated reference programs pass the kernel during data generation",
+    "program_discovery": "failed in both cases: right operand is record-1 price; one left operand also selects the wrong field; both relations are greater_than",
+    "realizer": "not reached; both candidate programs are kernel-rejected before text is rendered"
+  },
   "confidence_interval": null,
   "claim_limit": "two preselected synthetic comparisons only; no population, capability or qualification claim"
 }

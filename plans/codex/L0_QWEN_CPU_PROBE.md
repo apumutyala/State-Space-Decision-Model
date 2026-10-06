@@ -42,6 +42,12 @@ attention-free parent or satisfy the L0 learned capability gate.
   two-case result has no CI and does not establish a population rate. Full raw
   trace and receipt are in
   `receipts/2026-10-06-L-qwen-cpu-cohort2/`.
+- **Post-call slot breakdown:** operation 2/2, left operand 1/2, right operand
+  0/2, relation 0/2. The generated targets are kernel-expressible; the parent
+  selected the wrong operand field/record and relation, then was rejected
+  before realization. Recompute command and output are saved alongside the raw
+  trace. This classifies the observed cases as program discovery/grounding,
+  not a semantic-language or surface-realization limit.
 - **Preparation tests:** Sixteen tests cover exact task hashes, the N=2
   denominator and matched initial-state checks, both-arm provider failures,
   pre-provider failures, per-task raw identities, and a second-task runner

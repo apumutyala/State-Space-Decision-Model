@@ -42,5 +42,21 @@
   "raw_sha256": "b2bc174efc6d3face4dde864399097e3d85e2d1db8a27b3c68e566bc6f872ae3",
   "paired_confidence_interval": "not estimable; N=2 deterministic development diagnostics, not a qualification sample",
   "interpretation": "On both preselected comparisons the planner chose development-record-1 price for both operands and greater_than. The kernel rejected both false assertions. Direct relation choice was correct on the warranty task and incorrect on the price task. This is limited evidence of program grounding/discovery errors; it does not estimate population performance.",
+  "posthoc_slot_analysis": {
+    "source_commit": "5f32d8d8d1957603ccfe527f37b041718dc41c0a",
+    "command": "python -B receipts/2026-10-06-L-qwen-cpu-cohort2/recompute_slots.py",
+    "script_path": "receipts/2026-10-06-L-qwen-cpu-cohort2/recompute_slots.py",
+    "script_sha256": "7393644ecf7cac8c2aaec1d44bc65a5d0e874ebbf90a18c6ab66a0b9f6a4b5bd",
+    "result_path": "receipts/2026-10-06-L-qwen-cpu-cohort2/slot_diagnostics.json",
+    "result_sha256": "b3b5040bfed2b4810f2568a0a0a2b244918bd8ffcca706078cdb50fed478381c",
+    "slots_correct": 3,
+    "slots_total": 8,
+    "by_slot": {
+      "operation": {"correct": 2, "total": 2},
+      "left": {"correct": 1, "total": 2},
+      "right": {"correct": 0, "total": 2},
+      "relation": {"correct": 0, "total": 2}
+    }
+  },
   "scope": "Two synthetic development-validation comparisons with an inherited hybrid Qwen checkpoint. Not an attention-free Track D parent, strong unrestricted comparator, full parent-retention result, broad capability estimate, or L0-L4 gate. No Index/held-out data inspected."
 }

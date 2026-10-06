@@ -1,0 +1,112 @@
+{
+  "by_slot": {
+    "left": {
+      "correct": 1,
+      "missing_choice": 0,
+      "total": 2
+    },
+    "operation": {
+      "correct": 2,
+      "missing_choice": 0,
+      "total": 2
+    },
+    "relation": {
+      "correct": 0,
+      "missing_choice": 0,
+      "total": 2
+    },
+    "right": {
+      "correct": 0,
+      "missing_choice": 0,
+      "total": 2
+    }
+  },
+  "confidence_interval": null,
+  "correct_slots": 3,
+  "development_seed": 271828,
+  "preselected_indices": [
+    2,
+    5
+  ],
+  "raw_sha256": "b2bc174efc6d3face4dde864399097e3d85e2d1db8a27b3c68e566bc6f872ae3",
+  "scope": "Post-call slot analysis of two preselected hybrid-Qwen development diagnostics; no population estimate.",
+  "source_commit": "4f4c3c0dfdd93c96a82a2c4bf2f992fca573dd55",
+  "split": "development_validation",
+  "tasks": [
+    {
+      "slots": {
+        "left": {
+          "correct": false,
+          "expected_runtime_description": "Fact development-record-1 field warranty_months",
+          "missing_choice": false,
+          "selected_description": "Fact development-record-1 field price",
+          "selected_id": "v001",
+          "status": "ok"
+        },
+        "operation": {
+          "correct": true,
+          "expected_runtime_description": "Compare two selected typed values and assert the selected relation",
+          "missing_choice": false,
+          "selected_description": "Compare two selected typed values and assert the selected relation",
+          "selected_id": "op003",
+          "status": "ok"
+        },
+        "relation": {
+          "correct": false,
+          "expected_runtime_description": "Relation less_than",
+          "missing_choice": false,
+          "selected_description": "Relation greater_than",
+          "selected_id": "r001",
+          "status": "ok"
+        },
+        "right": {
+          "correct": false,
+          "expected_runtime_description": "Fact development-record-2 field warranty_months",
+          "missing_choice": false,
+          "selected_description": "Fact development-record-1 field price",
+          "selected_id": "v001",
+          "status": "ok"
+        }
+      },
+      "task_id": "synthetic-development_validation-271828-2"
+    },
+    {
+      "slots": {
+        "left": {
+          "correct": true,
+          "expected_runtime_description": "Fact development-record-1 field price",
+          "missing_choice": false,
+          "selected_description": "Fact development-record-1 field price",
+          "selected_id": "v001",
+          "status": "ok"
+        },
+        "operation": {
+          "correct": true,
+          "expected_runtime_description": "Compare two selected typed values and assert the selected relation",
+          "missing_choice": false,
+          "selected_description": "Compare two selected typed values and assert the selected relation",
+          "selected_id": "op003",
+          "status": "ok"
+        },
+        "relation": {
+          "correct": false,
+          "expected_runtime_description": "Relation less_than",
+          "missing_choice": false,
+          "selected_description": "Relation greater_than",
+          "selected_id": "r001",
+          "status": "ok"
+        },
+        "right": {
+          "correct": false,
+          "expected_runtime_description": "Fact development-record-2 field price",
+          "missing_choice": false,
+          "selected_description": "Fact development-record-1 field price",
+          "selected_id": "v001",
+          "status": "ok"
+        }
+      },
+      "task_id": "synthetic-development_validation-271828-5"
+    }
+  ],
+  "total_expected_slots": 8
+}
