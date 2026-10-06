@@ -1,0 +1,5 @@
+Extracted completion summary from the executed test command (verbose integration JSON not retained):
+& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -m unittest discover -s language_growth/tests -q
+Ran 114 tests in 4.014s
+OK
+Exit code: 0

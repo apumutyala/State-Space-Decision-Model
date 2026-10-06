@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "C:\Users\apumu\research\CHLabs\ssdm-codex-l0-structured-grounding\receipts\2026-10-06-L-grounded-candidates\run.py", line 145, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "C:\Users\apumu\research\CHLabs\ssdm-codex-l0-structured-grounding\receipts\2026-10-06-L-grounded-candidates\run.py", line 119, in main
+    raise RuntimeError(f"available_bytes={available} < min_start_bytes={MIN_START_AVAILABLE}; refusing CPU model load")
+RuntimeError: available_bytes=7522709504 < min_start_bytes=8589934592; refusing CPU model load
