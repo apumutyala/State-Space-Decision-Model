@@ -1,4 +1,4 @@
-"""Small deterministic checker for the v0.1 semantic program language.
+"""Small deterministic checker for v0.1 and opt-in v0.2 semantic programs.
 
 The host supplies authority and evidence. A proposal supplies only references and
 operations. Acceptance is evidence-relative, not a judgment of task relevance.
@@ -270,7 +270,8 @@ def _exact_sum(left: Fact, right: Fact) -> ExactSum:
     if type(left.object) is int and type(right.object) is int:
         value: int | Decimal = coefficient
     else:
-        digits = tuple(int(char) for char in str(abs(coefficient)))
+        # Decimal(int) extracts digits exactly without Python's int->str limit.
+        digits = Decimal(abs(coefficient)).as_tuple().digits
         value = Decimal((1 if coefficient < 0 else 0, digits, exponent))
     return ExactSum(left, right, value, left.unit, left.interval, left.quantity_kind)
 

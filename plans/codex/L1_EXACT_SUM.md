@@ -19,7 +19,8 @@ and a v0.1 program cannot use `ExactSum`. The registry must explicitly list
 first arithmetic operation.
 
 **Exit proof.** CPU tests cover integer and decimal sums under a deliberately
-low ambient Decimal precision, both source dependencies, deterministic text,
+low ambient Decimal precision, including over 4,300 digits, negative values
+and cancellation; both source dependencies; deterministic text;
 registry/schema opt-in, nonnumeric operands, unit/kind/scope mismatches,
 unbound constants/free prose, stale or forbidden evidence, and unchanged v0.1
 fixture behavior. The canonical interface profile change is included on this

@@ -82,15 +82,35 @@ class ExactSumTests(unittest.TestCase):
         host, catalog = opted_world()
         atlas = next(rec for rec in catalog["records"] if rec["record_ref"] == "atlas-v1")
         boreal = next(rec for rec in catalog["records"] if rec["record_ref"] == "boreal-v1")
-        atlas["fields"]["price"]["value"] = "99999999999999999999.99"
+        digits = "9" * 4500  # beyond Python's default int-to-string digit limit
+        atlas["fields"]["price"]["value"] = digits + ".00"
         boreal["fields"]["price"]["value"] = "0.01"
         with localcontext() as context:
             context.prec = 2
             context.traps[Inexact] = True
             context.traps[Rounded] = True
             checked = check_program(program(host), host, catalog)
+            text = render_checked(checked, host, catalog)
         self.assertEqual(checked.status, "accepted")
-        self.assertEqual(str(checked.outputs[0].content.value), "100000000000000000000.00")
+        self.assertEqual(str(checked.outputs[0].content.value), digits + ".01")
+        self.assertIn(digits + '.01 "USD"', text)
+
+    def test_negative_and_cancelling_decimal_sums_remain_exact(self):
+        host, catalog = opted_world()
+        atlas = next(rec for rec in catalog["records"] if rec["record_ref"] == "atlas-v1")
+        boreal = next(rec for rec in catalog["records"] if rec["record_ref"] == "boreal-v1")
+        for left, right, wanted in (("-199.90", "149.90", "-50.00"),
+                                    ("199.90", "-199.90", "0.00"),
+                                    ("-0.01", "0.01", "0.00")):
+            with self.subTest(left=left, right=right), localcontext() as context:
+                context.prec = 2
+                context.traps[Inexact] = True
+                context.traps[Rounded] = True
+                atlas["fields"]["price"]["value"] = left
+                boreal["fields"]["price"]["value"] = right
+                checked = check_program(program(host), host, catalog)
+                self.assertEqual(checked.status, "accepted")
+                self.assertEqual(str(checked.outputs[0].content.value), wanted)
 
     def test_profile_and_registry_opt_in_are_both_required(self):
         host, catalog = world()
