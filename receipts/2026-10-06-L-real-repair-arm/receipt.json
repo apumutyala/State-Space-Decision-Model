@@ -39,7 +39,10 @@
     "language_growth/realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
     "language_growth/types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1"
   },
-  "raw_sha256": "0082501dacafe9b0e326529f6697a15f6d1b3398e6dc94062756a3f76e3fc3a3",
+  "raw_sha256": "83a64b040d345bf5622a672bb0a20e807261882ee88671f3b966814c89dd0ca3",
   "scope": "Synthetic nonlearned scripted provider. No learned capability, paired CI, held-out evaluation or latency claim. Previous failed local command named nonexistent test_direct_decision; corrected command uses test_decision_view.",
-  "single_run": true
+  "single_run": true,
+  "raw_sha256_original_windows_capture": "0082501dacafe9b0e326529f6697a15f6d1b3398e6dc94062756a3f76e3fc3a3",
+  "raw_hash_encoding": "committed UTF-8 LF bytes; original CRLF capture hash retained separately",
+  "superseded_by": "receipts/2026-10-06-L-free-running-merged/receipt.json"
 }
