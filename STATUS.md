@@ -5,6 +5,7 @@
 - 2026-10-06 (m0-b, PR #6): `decide/` adapter 0.2.0 aligned with interface 0.1 (envelope `ssdm.decide.v0.1`, fingerprint `ssdm.request_fingerprint.v0`, provenance experimental behind a flag), canonical untrusted encoder `decide/untrusted.py`, replay/oracle/HF-readout backends, replay fixture v0 (43 cases, Qwen3.5-0.8B CPU recording; 9B fixture comes with the paid m0 run). Qwen3.5-0.8B, RWKV7-0.1B, Mamba-3-187M loaded locally earlier (GPU smoke); further work CPU-only. Receipt: receipts/2026-10-06-D-m0-decide/.
 
 ## Track L — SSM-Language (owner: codex)
+- CPU training-record integration now exports the planner's existing slot requests to the shared decision trainer with labels separate from requests and explicit development split selection. This enables supervised adaptation after qualification; it does not claim learning or authorize spend.
 - Interface, corrected fixture pack and repaired semantic kernel/profile0.1.1 are merged (#4, #5, #10). These are CPU prerequisites, not learned-level gates.
 - Track D approved the ordinal-only renderer in #11. This branch integrates the merged dependencies and rechecks unchanged renderer code before integration.
 - Planner and development evaluation remain in cross-review/integration; no paid run or learned L0-L4 gate has passed.
