@@ -1,0 +1,62 @@
+"""Apply the pre-registered decision rule (configs/qual_h100.json: decision_rule) to the 9B probe results.
+
+python scripts/decide_9b.py <qual_9b.json> <configs/qual_h100.json> <decision.json>   (exit 9 if no valid decision could be made, else 0)
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+
+
+def decide(R, cfg):
+    rule = cfg["decision_rule"]
+    stopped = R.get("stopped")
+    steps = R.get("progressive", {}).get("steps", [])
+    s2 = steps[0] if steps else None
+    tok_s = (s2 or {}).get("steady_tok_s") or (s2 or {}).get("train_tok_s")
+    if stopped and stopped.get("tok_s"):
+        tok_s = stopped["tok_s"]
+    peaks = [x for x in [R.get("stage1", {}).get("peak_gb"), (s2 or {}).get("peak_gb"),
+                         (stopped or {}).get("peak_gb")] if x]
+    peak = max(peaks) if peaks else None
+    mfu = tok_s * rule["flop_per_token_stage2"] / rule["h100_peak_flops"] if tok_s else None
+    out = {"stage2_steady_tok_s": tok_s, "stage2_mfu": mfu, "peak_gb": peak, "stopped": stopped,
+           "stage1_steady_tok_s": R.get("stage1", {}).get("steady_tok_s"), "rules": rule["rules"]}
+    if stopped and stopped.get("exit_code") in (3, 4):
+        v = "fold"
+    elif mfu is None or peak is None:
+        v = "no-measurement (stage 2 did not run): do not spend further; diagnose from logs"
+    elif peak > 76 or mfu < 0.125:
+        v = "fold"
+    elif mfu >= 0.25 and peak <= 60:
+        v = "open-$40-one-layer-probe-spend-issue"
+    else:
+        v = "re-price-lean-plan"
+    out["verdict"] = v
+    return out
+
+
+VERDICTS = ("open-$40-one-layer-probe-spend-issue", "re-price-lean-plan", "fold")
+
+
+def valid_decision(d):
+    """A decision the qualification job may PASS on: a known verdict computed from real measurements."""
+    if not isinstance(d, dict) or d.get("verdict") not in VERDICTS:
+        return False
+    if d["verdict"] == "fold" and d.get("stopped"):
+        return True
+    return all(isinstance(d.get(k), (int, float)) for k in ("stage2_mfu", "peak_gb"))
+
+
+def main(result_json, config_json, out_json):
+    R = json.load(open(result_json))
+    cfg = json.load(open(config_json))
+    out = decide(R, cfg)
+    json.dump(out, open(out_json, "w"), indent=1)
+    print(json.dumps(out, indent=1))
+    return 0 if valid_decision(out) else 9
+
+
+if __name__ == "__main__":
+    sys.exit(main(*sys.argv[1:4]))
