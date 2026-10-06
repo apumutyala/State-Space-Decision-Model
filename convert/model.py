@@ -64,7 +64,18 @@ class MixerSwap(nn.Module):
             return self.attn(hidden_states, position_embeddings=position_embeddings, attention_mask=attention_mask,
                              past_key_values=past_key_values, **kw)
         if self.mode == "student":
-            return self.gdn(hidden_states), None
+            store = getattr(past_key_values, "_ssdm_state", None) if past_key_values is not None else None
+            if store is None:
+                return self.gdn(hidden_states), None
+            # cached readout (decide.backends.state_fork via ConvertedStateOps): continue the GDN state
+            key = ("swap", self.layer_idx)
+            out, store[key] = self.gdn.step(hidden_states, store.get(key))
+            # position bookkeeping only: this layer's cache slot is attention-typed, and the cache derives positions
+            # and mask sizes from attention KV lengths, so append a [B, 1, T, 1] placeholder (no real KV is kept)
+            B, T, _ = hidden_states.shape
+            ph = hidden_states.new_zeros(B, 1, T, 1)
+            past_key_values.update(ph, ph, self.layer_idx)
+            return out, None
         if self.mode == "swa":
             m = self._swa_mask(hidden_states.shape[1], hidden_states.device)
             return self.attn(hidden_states, position_embeddings=position_embeddings, attention_mask=m,
@@ -154,7 +165,7 @@ def replace_native_gdn(model: ConvertibleQwen, kernel="fla"):
                                                           dtype=old.out_proj.weight.dtype)
         new.load_state_dict(old.state_dict(), strict=True)
         new.requires_grad_(False)  # native layers stay frozen (fresh modules default to requires_grad=True)
-        layer.linear_attn = _NativeGDNShim(new)
+        layer.linear_attn = _NativeGDNShim(new, i)
         n += 1
     return n
 
@@ -162,14 +173,20 @@ def replace_native_gdn(model: ConvertibleQwen, kernel="fla"):
 class _NativeGDNShim(nn.Module):
     """Accepts the HF decoder layer's linear_attn call signature."""
 
-    def __init__(self, gdn: GDN):
+    def __init__(self, gdn: GDN, layer_idx: int = -1):
         super().__init__()
         self.gdn = gdn
+        self.layer_idx = layer_idx
 
     def forward(self, hidden_states, cache_params=None, attention_mask=None, **kw):
-        if cache_params is not None:
-            raise NotImplementedError("pilot uses no KV/recurrent cache (teacher-forced probes only)")
-        return self.gdn(hidden_states)
+        if cache_params is None:
+            return self.gdn(hidden_states)
+        store = getattr(cache_params, "_ssdm_state", None)
+        if store is None:
+            raise NotImplementedError("only a ConvertedStateOps cache (with _ssdm_state) is supported here")
+        key = ("native", self.layer_idx)
+        out, store[key] = self.gdn.step(hidden_states, store.get(key))
+        return out
 
 
 def _force_memory_efficient_sdpa():
@@ -305,3 +322,47 @@ def attach_gdn(model: ConvertibleQwen, i: int, gdn: GDN, train_dtype=torch.float
     for p in gdn.parameters():
         p.requires_grad_(True)
     return gdn
+
+
+class ConvertedStateOps:
+    """Prefix-fork readout (decide.backends.state_fork) over a ConvertibleQwen in any mix of modes: teacher attention
+    keeps its KV in an HF DynamicCache; native and student GDNs keep (conv tail, S) in ``cache._ssdm_state``."""
+
+    def __init__(self, model: ConvertibleQwen, autocast_dtype=None):
+        self.model = model
+        self.autocast_dtype = autocast_dtype
+
+    def _run(self, ids, cache, n_last):
+        dev = ids.device.type
+        ctx = (torch.autocast(device_type=dev, dtype=self.autocast_dtype) if self.autocast_dtype is not None
+               else contextlib.nullcontext())
+        with ctx:
+            h = self.model.lm(input_ids=ids, past_key_values=cache, use_cache=True).last_hidden_state
+        return self.model.lm_head(h[:, -n_last:]).float(), cache
+
+    def _clone(self, c):
+        import copy
+
+        return copy.deepcopy(c, {id(c.config): c.config} if getattr(c, "config", None) is not None else {})
+
+    def prefill(self, ids):
+        from transformers import DynamicCache
+
+        cache = DynamicCache(config=self.model.cfg)
+        cache._ssdm_state = {}
+        return self._run(ids, cache, 1)
+
+    def extend(self, cache, ids, n_last):
+        from decide.backends.state_fork import _batch, expand
+
+        c = self._clone(cache)
+        if ids.shape[0] > 1 and _batch(c) == 1:
+            expand(c, ids.shape[0])
+        return self._run(ids, c, n_last)
+
+    def select(self, cache, i):
+        from decide.backends.state_fork import select_row
+
+        c = self._clone(cache)
+        select_row(c, i)
+        return c

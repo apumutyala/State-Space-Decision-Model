@@ -104,8 +104,9 @@ def allowed_tokens(tok, vocab_rows: int) -> torch.Tensor:
 
 
 class Engine:
-    def __init__(self, dec: HFLetterDecider):
+    def __init__(self, dec: HFLetterDecider, prefix_cache: bool = True):
         self.dec, self.model, self.tok = dec, dec.model, dec.tok
+        self.prefix_cache = prefix_cache  # PERF_AUDIT: candidate eval reuses the shared prefix cache (equivalence-tested)
         self.E = self.model.get_input_embeddings().weight
         self.dev = self.E.device
         self.n_seqs = 0
@@ -119,9 +120,12 @@ class Engine:
     def eval_advs(self, prob: Problem, advs: torch.Tensor) -> torch.Tensor:
         """advs [C, n_adv] -> key-order log-probs [C, 2, n] (fp32)."""
         C = advs.shape[0]
-        encs = [prob.pre_ids + advs[c].tolist() + prob.post_ids[p] for c in range(C) for p in (0, 1)]
-        self.n_seqs += len(encs)
-        res = self.dec.score_ids(encs, [prob.n] * len(encs))
+        tails = [advs[c].tolist() + prob.post_ids[p] for c in range(C) for p in (0, 1)]
+        self.n_seqs += len(tails)
+        if self.prefix_cache and prob.pre_ids:  # the prefix is identical for every candidate and order: read it once
+            res = self.dec.score_prefixed(prob.pre_ids, tails, [prob.n] * len(tails))
+        else:
+            res = self.dec.score_ids([prob.pre_ids + t for t in tails], [prob.n] * len(tails))
         lp = torch.tensor([r[0] for r in res], dtype=torch.float32).view(C, 2, prob.n)
         return prob.to_keys(lp)
 

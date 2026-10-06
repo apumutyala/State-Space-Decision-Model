@@ -27,11 +27,15 @@ from typing import Any, Sequence
 
 #: Token volumes per stage, measured 2026-10-06 on cohort v2 (``VOLUME_COHORT_SHA256``) with the RWKV7-G1k tokenizer.
 #: Upper bounds: every question row of every role record (records whose rows the K/T filter drops still count), steer
-#: units = clean + D1 variants, Index DEV = the subset's kit proxy tokens x READ_FACTOR 2.
+#: units = clean + D1 variants. Index DEV = the EXACT positions of the 2,008-row subset under the prefix-fork readout
+#: (``jobs/common/readout_volume_rwkv7.json`` totals.fork.positions; PERF_AUDIT). It replaced "proxy tokens x 2"
+#: (4.74 M), which was a 50x under-count of the recompute readout (236.7 M) and a 35% under-count of the fork path.
+#: The per-record volumes assume one prompt read per question row: true for the prefix-fork readout (parent) and the
+#: shared-prefix decision-head eval (child); the old per-option recompute readout read each prompt K times.
 VOLUME_COHORT_SHA256 = "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2"
 VOLUME_TOKENS = {
     "g12": {"dev_records": 3_887_640, "steer_dev_units": 5_378_738},
-    "g13": {"retention_records": 5_724_231, "steer_gate_units": 5_430_015, "index_dev_subset": 2 * 2_370_062},
+    "g13": {"retention_records": 5_724_231, "steer_gate_units": 5_430_015, "index_dev_subset": 6_393_208},
 }
 #: What the CHILD evals phase scores on top of its arm (PR #29 round-2 review B4): the temperature fit forwards every
 #: calibration item and the eval card forwards every dev item (prefix + every option continuation, all labelled
