@@ -7,7 +7,9 @@ production adapter (validation, canonical option order, policy conditioning, sta
 
 Logits are the head's typed-output log-probabilities, one row per question, built with the same
 ``heads.layout.build_row`` (template, layout, encoder) the model was trained on. Calibration stays the
-adapter's job (``Decider(calibration=...)``); this backend never sees evaluation labels.
+adapter's job (``Decider(calibration=...)``); this backend never sees evaluation labels. It reports each row's
+``evidence_tokens`` (``LayoutRow.evidence_len``, the feature the fitted ``FeatureTemperature`` was trained on) in
+``ScoreResult.features``, so the served temperature sees exactly the training-time feature.
 
 * Untrusted text that can only encode to control tokens keeps the encoder's own status code
   (``decide.untrusted.ControlTokenError.code``, as ``hf_readout`` does), not a generic one.
@@ -86,6 +88,8 @@ class DecisionModelBackend:
         was_training = self.model.training
         self.model.eval()
         logits: dict[str, dict[str, float]] = {}
+        features = {r.qid: {"evidence_tokens": r.evidence_len, "n_options": r.n_options,
+                            "evidence_span": r.meta.get("evidence")} for r in rows}
         try:
             for row in rows:
                 check_deadline()
@@ -96,4 +100,4 @@ class DecisionModelBackend:
         finally:
             self.model.train(was_training)
         return ScoreResult(logits=logits, inference_calls=len(rows), total_input_tokens=sum(len(r.ids) for r in rows),
-                           extras={"head": type(self.model.head).__name__})
+                           extras={"head": type(self.model.head).__name__}, features=features)

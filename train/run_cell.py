@@ -27,7 +27,37 @@ import time
 import urllib.request
 from pathlib import Path
 
-EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26}
+EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26,
+        "guard": 27, "cohort": 28, "lineage": 29}
+PARENTS = ("rwkv7", "q9af")
+
+
+def parent_encoder(parent: str, model_dir: str):
+    """The training-time segment encoder of each parent (the same one its decide backend serves with)."""
+    if parent == "rwkv7":
+        from third_party.rwkv7_hf.tokenization_rwkv7 import Rwkv7Tokenizer
+
+        tok = Rwkv7Tokenizer.from_pretrained(model_dir)
+        return RwkvSegmentEncoder(tok, set(tok.all_special_ids))
+    if parent == "q9af":
+        from transformers import AutoTokenizer
+
+        from heads.layout import hf_segment_encoder
+
+        return hf_segment_encoder(AutoTokenizer.from_pretrained(model_dir))
+    raise ValueError(f"parent must be one of {PARENTS}, got {parent!r}")
+
+
+def load_parent_backbone(parent: str, model_dir: str, cfg: dict, gdn_ckpt: str | None = None, device: str = "cuda"):
+    if parent == "rwkv7":
+        from heads.backbone import load_rwkv7_hf_backbone
+
+        return load_rwkv7_hf_backbone(model_dir, device=device, fork_mode="cache")
+    if parent == "q9af":
+        from heads.backbone import load_q9af_backbone
+
+        return load_q9af_backbone(model_dir, gdn_ckpt, cfg.get("q9af") or {}, device=device, fork_mode="cache")
+    raise ValueError(f"parent must be one of {PARENTS}, got {parent!r}")
 CHECK_AFTER_STEPS = 10  # the in-training rate check uses the mean of the first steps actually run
 
 
@@ -42,6 +72,60 @@ def split_ids(ids: list[str], n_train: int, n_eval: int, seed: int) -> tuple[lis
     """Deterministic disjoint pilot split by sha256(seed:id) order."""
     order = sorted(ids, key=lambda i: hashlib.sha256(f"{seed}:{i}".encode()).hexdigest())
     return order[n_eval: n_eval + n_train], order[:n_eval]
+
+
+def cohort_split(record_ids: list[str], cfg: dict, records: dict | None = None) -> tuple[list[str], list[str], dict]:
+    """With ``cfg["cohort_sha256"]`` (the m2 job): train ids come ONLY from the PR #16 training pool (every record
+    outside the frozen development cohort BY ID AND BY NORMALIZED CONTENT, so content twins of held-out records are
+    never trained on) and eval ids are the cohort's ``dev`` role. With ``records`` (id -> record), every pool record's
+    content is re-hashed and must equal the committed content map. Without a cohort: the legacy pilot split
+    (``split_ids``). Raises ``train.cohort.CohortLeak`` / ``ValueError`` on any overlap, drift or cohort mismatch."""
+    if not cfg.get("cohort_sha256"):
+        tr, ev = split_ids(record_ids, cfg["n_train_records"], cfg["n_eval_records"], cfg["seed"])
+        return tr, ev, {"cohort": None}
+    from train.cohort import Cohort, read_content_map, record_content_hash
+
+    co = Cohort(expected_sha256=cfg["cohort_sha256"])
+    held, held_c = co.held_out(), co.held_out_content()
+    content = read_content_map()
+    unknown = [i for i in record_ids if i not in content]
+    if unknown:
+        raise ValueError(f"{len(unknown)} record(s) are not in the committed content map, e.g. {unknown[:3]}")
+    pool = [i for i in record_ids if i not in held and content[i] not in held_c]
+    tr, _ = split_ids(pool, cfg["n_train_records"], 0, cfg["seed"])
+    if records is not None:
+        drift = [i for i in tr if record_content_hash(records[i]) != content[i]]
+        if drift:
+            raise ValueError(f"{len(drift)} training record(s) differ in content from the content map, e.g. {drift[:3]}")
+        co.assert_training_content(record_content_hash(records[i]) for i in tr)
+    ev = co.ids("dev")
+    missing = sorted(set(ev) - set(record_ids))
+    if missing:
+        raise ValueError(f"cohort dev records missing from the records file: {missing[:3]}")
+    co.assert_training_ids(tr)
+    return tr, ev, {"cohort": co.identity()}
+
+
+def cell_items(recs: dict, ids, cfg: dict, enc, guard, max_t: int) -> list:
+    """Guarded rows of ``ids`` kept by the cell's K / T filter (``keep_item``). ``train.m2_gates`` rebuilds the
+    training items with this exact function, so a trained checkpoint's lineage (data hash) can be re-verified."""
+    from train.data import items_from_records
+
+    its = items_from_records([recs[i] for i in ids], enc, layout=cfg["layout"], template=cfg["template"], guard=guard)
+    return [x for x in its if keep_item(x.row, cfg["max_k"], max_t)]
+
+
+def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
+    """The cell's ``TrainConfig`` (its hash is checked when a checkpoint is loaded)."""
+    from train.losses import LossConfig
+    from train.trainer import TrainConfig
+
+    return TrainConfig(head=cfg["head"], head_kwargs=cfg.get("head_kwargs") or {}, layout=cfg["layout"],
+                       fork_mode="cache", lora_rank=cfg["lora_rank"], loss=LossConfig(arm=cfg["loss_arm"]),
+                       lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
+                       grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
+                       seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
+                       eval_every=cfg["eval_every"])
 
 
 def keep_item(row, max_k: int, max_t: int) -> bool:
@@ -115,23 +199,25 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--model-dir", required=True)
+    ap.add_argument("--gdn-ckpt", default=None, help="parent q9af: the converted all-GDN checkpoint from convert/ "
+                    "(its sha256 must equal the cell config's q9af.converted_sha256)")
     ap.add_argument("--records", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--ckpt-dir", required=True)
     ap.add_argument("--stage", choices=["smoke", "ladder", "train", "all"], default="all")
+    ap.add_argument("--guard-readiness", default=None,
+                    help="readiness.json from jobs.m2_pilot.guard_ready (required when the config sets "
+                         "require_guard_readiness): the guard then includes the verified content-hash index")
     a = ap.parse_args(argv)
 
     import torch
 
-    from heads.backbone import load_rwkv7_hf_backbone
+    from heads.backbone import LineageError
     from heads.features import build_head_input
     from heads.model import DecisionModel
-    from third_party.rwkv7_hf.tokenization_rwkv7 import Rwkv7Tokenizer
-    from train.data import items_from_records
     from train.guard import SplitGuard
     from train.lora import apply_lora, remove_lora
-    from train.losses import LossConfig
-    from train.trainer import TrainConfig, Trainer
+    from train.trainer import Trainer
 
     cfg = json.load(open(a.config))
     out = Path(a.out)
@@ -159,30 +245,55 @@ def main(argv=None):
             torch.cuda.empty_cache()
 
     torch.manual_seed(cfg["seed"])
-    tok = Rwkv7Tokenizer.from_pretrained(a.model_dir)
-    enc = RwkvSegmentEncoder(tok, set(tok.all_special_ids))
+    parent = cfg.get("parent", "rwkv7")
+    if parent == "q9af":  # pins are checked before tokenizer or weights are touched
+        try:
+            from heads.backbone import q9af_pin_check
+
+            if not a.gdn_ckpt:
+                raise LineageError("parent q9af needs --gdn-ckpt")
+            q9af_pin_check(cfg.get("q9af") or {}, a.gdn_ckpt, a.model_dir)
+        except (LineageError, OSError) as e:
+            print(f"q9af lineage: {e}", flush=True)
+            return EXIT["lineage"]
+    enc = parent_encoder(parent, a.model_dir)
     root = Path(__file__).resolve().parents[1] / "harness" / "manifests"
-    guard = SplitGuard.from_manifests([root / "dev-manifest.jsonl.gz", root / "test-manifest.jsonl.gz"])
+    if a.guard_readiness:
+        from jobs.m2_pilot.guard_ready import GuardNotReady, load_ready_guard
+
+        try:
+            guard = load_ready_guard(a.guard_readiness)
+        except GuardNotReady as e:
+            print(f"guard not ready: {e}", flush=True)
+            return EXIT["guard"]
+    elif cfg.get("require_guard_readiness"):
+        print("config requires --guard-readiness (verified content-hash index); refusing to train", flush=True)
+        return EXIT["guard"]
+    else:
+        guard = SplitGuard.from_manifests([root / "dev-manifest.jsonl.gz", root / "test-manifest.jsonl.gz"])
     with gzip.open(a.records, "rt", encoding="utf-8") as f:
         recs = {r["id"]: to_train_record(r) for r in map(json.loads, f)}
-    tr_ids, ev_ids = split_ids(sorted(recs), cfg["n_train_records"], cfg["n_eval_records"], cfg["seed"])
+    try:
+        tr_ids, ev_ids, cohort_ident = cohort_split(sorted(recs), cfg, recs)
+    except ValueError as e:  # CohortLeak subclasses ValueError
+        print(f"cohort: {e}", flush=True)
+        return EXIT["cohort"]
     t_cap = max(cfg["t_ladder"])
 
     def items(ids, max_t):
-        its = items_from_records([recs[i] for i in ids], enc, layout=cfg["layout"], template=cfg["template"],
-                                 guard=guard)
-        return [x for x in its if keep_item(x.row, cfg["max_k"], max_t)]
+        return cell_items(recs, ids, cfg, enc, guard, max_t)
 
     train_items, eval_items = items(tr_ids, t_cap), items(ev_ids, t_cap)
     cell["data"] = {"records_sha256": hashlib.sha256(Path(a.records).read_bytes()).hexdigest(),
                     "n_train_items": len(train_items), "n_eval_items": len(eval_items),
-                    "guard_manifests": guard.manifests, "max_k": cfg["max_k"]}
+                    "guard_manifests": guard.manifests, "guard": guard.identity(), "max_k": cfg["max_k"],
+                    **cohort_ident}
     save()
     if len(train_items) < cfg["min_train_items"]:
         print(f"too few items {len(train_items)}", flush=True)
         return EXIT["data"]
 
-    bb = load_rwkv7_hf_backbone(a.model_dir, fork_mode="cache")
+    bb = load_parent_backbone(parent, a.model_dir, cfg, a.gdn_ckpt)
     cuda = torch.cuda.is_available()
     dev_type = "cuda" if cuda else "cpu"
     cell["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
@@ -223,13 +334,7 @@ def main(argv=None):
     def make_trainer(max_steps, ckpt_dir=None):
         model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])
         model.to(bb.device)
-        tc = TrainConfig(head=cfg["head"], head_kwargs=cfg.get("head_kwargs") or {}, layout=cfg["layout"],
-                         fork_mode="cache", lora_rank=cfg["lora_rank"], loss=LossConfig(arm=cfg["loss_arm"]),
-                         lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
-                         grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=cuda, grad_checkpointing=False,
-                         seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
-                         eval_every=cfg["eval_every"])
-        return Trainer(model, tc, train_items, eval_items, guard=guard)
+        return Trainer(model, train_config(cfg, max_steps, ckpt_dir, cuda), train_items, eval_items, guard=guard)
 
     if "ladder" in stages and "ladder" not in cell:
         lad = {}
