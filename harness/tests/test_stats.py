@@ -97,3 +97,17 @@ def test_case_clusters_are_coarser_and_keep_the_point_estimate(dev_rows):
     for n, key in ((22, "song_id"), (23, "user_id")):
         if n in c:
             assert len(c[n].clusters) <= len({r["metadata"][key] for r in dev_rows if r["_evaluation"]["catalog_id"] == n})
+
+
+def test_compare_cli_handles_zero_se(dev_rows, tmp_path, capsys):
+    """Regression (Track L, PR #7): `harness compare` on identical results crashed in mde.table."""
+    import json
+
+    from harness import cli
+
+    path = tmp_path / "same.jsonl"
+    predictors.write_results(path, predictors.predict(dev_rows, "noisy", seed=12, acc=0.6))
+    cli.main(["compare", "--candidate", str(path), "--baseline", str(path), "--B", "50"])
+    out = json.loads(capsys.readouterr().out)
+    assert out["diff"]["index"]["se"] == 0.0 and out["diff"]["index"]["point"] == 0.0
+    assert out["mde"]["available"] is False
