@@ -8,7 +8,13 @@ Per layer, for the untrusted span [a, b) of one input (key-first states, ``adapt
 * ``sigma_max`` / ``log_volume`` of Phi per head (top singular value, sum of log singular values)
 * ``norm_growth`` = log(||X_{b-1}|| / ||X_{a-1}||)
 
-Detector score (default): ``-mean_l log(mean_h retained_l)`` -- high when the span erased the state.
+Detector scores: ``mean`` (default) ``-mean_l log(mean_h retained_l)``; ``min`` ``-max_l log(min_h retained_l)``
+(sensitive to single-head collapse). Both are reported; neither looks at write-domination (``norm_growth``).
+
+MEASURED STATUS (PR #42 review, B1): detection is WEAK and UNVALIDATED. Over seeds (model and trigger seed
+varied jointly, ``seed_sweep``) the AUROC is not stable; on RWKV-7 several seeds are below chance. Seed 0 was
+the best seed for both families and must never be quoted alone. The trigger objective (functional collapse)
+and the detector both measure decay, so even a high AUROC is a pipeline sanity check, not detection power.
 
 Status: EMPIRICAL. The detector is evaluated on a SYNTHETIC poisoning test: a tiny model with long memory and
 input-dependent decay (``long_memory_``), a trigger found by greedy coordinate search against a FUNCTIONAL
@@ -52,7 +58,9 @@ def span_stats(model, ids: Sequence[int], span: tuple[int, int]) -> dict[int, di
     return out
 
 
-def score(stats: dict[int, dict[str, float]]) -> float:
+def score(stats: dict[int, dict[str, float]], kind: str = "mean") -> float:
+    if kind == "min":
+        return -min(math.log(max(s["retained_min"], 1e-300)) for s in stats.values())
     return -sum(math.log(max(s["retained_mean"], 1e-300)) for s in stats.values()) / max(1, len(stats))
 
 
@@ -130,18 +138,48 @@ def poisoning_test(model, n: int = 24, prefix_len: int = 8, span_len: int = 16, 
 
     pa, pb, tail = rnd(prefix_len), rnd(prefix_len), rnd(tail_len)
     trig = find_trigger(model, (pa, pb), tail, trigger_len, seed=seed, vocab=vocab)
-    clean_s, pois_s, clean_d, pois_d = [], [], [], []
+    clean_s, pois_s, clean_d, pois_d, clean_m, pois_m = [], [], [], [], [], []
     for _ in range(n):
         body = rnd(span_len)
         at = int(torch.randint(0, span_len - trigger_len + 1, (1,), generator=g))
         pbody = body[:at] + trig + body[at + trigger_len:]
-        for bd, S, D in ((body, clean_s, clean_d), (pbody, pois_s, pois_d)):
+        for bd, S, D, Sm in ((body, clean_s, clean_d, clean_m), (pbody, pois_s, pois_d, pois_m)):
             ids = pa + bd + tail
-            S.append(score(span_stats(model, ids, (prefix_len, prefix_len + span_len))))
+            st = span_stats(model, ids, (prefix_len, prefix_len + span_len))
+            S.append(score(st))
+            Sm.append(score(st, "min"))
             D.append(distinguishability(model, (pa, pb), bd + tail))
     med = lambda v: float(torch.tensor(v).median())  # noqa: E731
-    return {"trigger": trig, "auroc": auroc(clean_s, pois_s),
+    return {"trigger": trig, "auroc": auroc(clean_s, pois_s), "auroc_min_score": auroc(clean_m, pois_m),
             "distinguishability_clean_median": med(clean_d), "distinguishability_poisoned_median": med(pois_d),
             "collapse_ratio": med(pois_d) / max(med(clean_d), 1e-30),
             "score_clean_median": med(clean_s), "score_poisoned_median": med(pois_s), "n": n,
             "status": "EMPIRICAL, synthetic (long_memory_ test model; functional-objective trigger; non-adaptive)"}
+
+
+def bootstrap_ci(values: Sequence[float], n_boot: int = 10000, alpha: float = 0.05, seed: int = 0) -> tuple:
+    """Percentile bootstrap CI of the mean over seeds (small n: wide and approximate; reported as such)."""
+    v = torch.tensor(list(values), dtype=torch.float64)
+    g = torch.Generator().manual_seed(seed)
+    idx = torch.randint(0, len(v), (n_boot, len(v)), generator=g)
+    means = v[idx].mean(1)
+    return float(means.quantile(alpha / 2)), float(means.quantile(1 - alpha / 2))
+
+
+def seed_sweep(make_model, seeds: Sequence[int], n: int = 24) -> dict[str, Any]:
+    """Run ``poisoning_test`` for each seed (``make_model(seed)`` builds the model; the same seed drives the
+    trigger search and the clean/poisoned bodies). Reports the whole distribution: per-seed values, mean
+    with a bootstrap CI over seeds, median, min, and how many seeds are at or below chance."""
+    rows = []
+    for sd in seeds:
+        r = poisoning_test(make_model(sd), n=n, seed=sd)
+        rows.append({"seed": sd, **{k: r[k] for k in ("auroc", "auroc_min_score", "collapse_ratio")}})
+    out: dict[str, Any] = {"n_seeds": len(rows), "per_seed": rows,
+                           "status": "EMPIRICAL, synthetic; detection weak and unvalidated (see module docstring)"}
+    for key in ("auroc", "auroc_min_score", "collapse_ratio"):
+        vals = [r[key] for r in rows]
+        t = torch.tensor(vals, dtype=torch.float64)
+        out[key] = {"mean": float(t.mean()), "ci95_mean_bootstrap": bootstrap_ci(vals), "median": float(t.median()),
+                    "min": float(t.min()), "max": float(t.max())}
+    out["seeds_auroc_at_or_below_chance"] = sum(r["auroc"] <= 0.5 for r in rows)
+    return out

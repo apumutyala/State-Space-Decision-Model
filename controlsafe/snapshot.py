@@ -137,9 +137,12 @@ def snapshot_certify(runner: Runner, readout: ReadoutFn, origins: Sequence[tuple
         "schema": "ssdm.g4.snapshot.v1", "n_origins": len(seqs) - 1, "decision": dec[0],
         "certified": all(d == dec[0] for d in dec), "changed": [list(origins[i][0]) for i, d in enumerate(dec) if d != dec[0]],
         "snapshot_tokens": res.tokens, "snapshot_calls": res.calls, "max_states_held": res.max_states_held,
-        "baseline_tokens": sum(len(s) for s in seqs), "baseline_calls": len(seqs),
+        # baseline = one fresh pass per origin, plus the same option continuations per origin
+        "baseline_tokens": sum(len(s) for s in seqs) + len(seqs) * sum(len(c) for c in (conts or [])),
+        "baseline_calls": len(seqs) * (1 + len(conts or [])),
     }
     rec["token_savings"] = 1.0 - rec["snapshot_tokens"] / rec["baseline_tokens"]
+    rec["call_ratio"] = rec["snapshot_calls"] / rec["baseline_calls"]  # >1 is common: more, shorter runs
     rec["forward_equivalents_snapshot"] = rec["snapshot_tokens"] / len(seqs[0])
     rec["forward_equivalents_baseline"] = rec["baseline_tokens"] / len(seqs[0])
     if verify:

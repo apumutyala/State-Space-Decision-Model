@@ -77,7 +77,19 @@ def _scatter_rows(base: torch.Tensor, where: list[tuple[int, int]], values: torc
 def _row_trust(backbone, row: LayoutRow) -> list[bool]:
     from controlsafe.trust_gate import row_trust
 
-    return row_trust(row, getattr(backbone, "trust_policy", "state"))
+    return row_trust(row, backbone.trust_policy)
+
+
+def _cont_trust(backbone, row: LayoutRow, k: int) -> list[bool]:
+    from controlsafe.trust_gate import continuation_trust
+
+    return continuation_trust(row, k, backbone.trust_policy)
+
+
+def _opt_trust(backbone, row: LayoutRow, k: int) -> list[bool]:
+    from controlsafe.trust_gate import option_seq_trust
+
+    return option_seq_trust(row, k, backbone.trust_policy)
 
 
 def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], need_fork: bool = False,
@@ -91,7 +103,9 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
     tkw = {"trust": pad_batch([[int(x) for x in t] for t in trusts], 0, device=dev)[0].bool()} if gated else {}
     fork_rows: list[torch.Tensor] = []
     if cache_fork:  # per-row prefix pass that also yields the K forked features
-        per = [backbone.fork_features(r.ids, r.continuations, **({"trust": t} if gated else {}))
+        per = [backbone.fork_features(r.ids, r.continuations,
+                                      **({"trust": t, "cont_trust": [_cont_trust(backbone, r, k) for k in
+                                                                     range(len(r.continuations))]} if gated else {}))
                for r, t in zip(rows, trusts or [None] * len(rows))]
         hs = []
         for hp, fk in per:
@@ -124,11 +138,12 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
         e_rows.append(torch.nn.functional.pad(er, (0, 0, 0, kmax - er.shape[0])))
     q_pre, q_end, e = torch.stack(q_pre_l), torch.stack(q_end_l), torch.stack(e_rows)
     if sym_seqs:
-        if gated and getattr(backbone, "trust_policy", "state") != "state":
-            raise ValueError("trust gate: the symmetric layout's option sequences carry no trust spans; "
-                             "trust_policy='caller' is only supported on the ordered layout (fail closed)")
         oid, om = pad_batch(sym_seqs, pad_id, device=dev)
-        he = backbone.features(oid, om).float()
+        okw = {}
+        if gated:
+            ot = [_opt_trust(backbone, rows[i], k) for i, k in sym_index]
+            okw = {"trust": pad_batch([[int(x) for x in t] for t in ot], 0, device=dev)[0].bool()}
+        he = backbone.features(oid, om, **okw).float()
         denom = om.sum(-1, keepdim=True).clamp_min(1)
         pooled = (he * om.unsqueeze(-1)).sum(1) / denom
         e = _scatter_rows(e, sym_index, pooled)
@@ -141,8 +156,8 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
             for k, cont in enumerate(r.continuations):
                 seqs.append(r.ids + cont)
                 where.append((i, k))
-                if gated:
-                    strust.append([int(x) for x in trusts[i]] + [1] * len(cont))  # continuations: template
+                if gated:  # continuations labelled by the same policy as the prefix (option ids are data)
+                    strust.append([int(x) for x in trusts[i]] + [int(x) for x in _cont_trust(backbone, r, k)])
         outs = []
         for s in range(0, len(seqs), fork_chunk):
             chunk = seqs[s : s + fork_chunk]

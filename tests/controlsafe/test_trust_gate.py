@@ -130,11 +130,20 @@ def test_layout_rows_carry_untrusted_spans_and_fail_closed():
     (a, b), = row.meta["untrusted_spans"]
     assert (a, b) == tuple(row.state_span) and b > a
     assert row.meta["caller_spans"] and all(e > s for s, e in row.meta["caller_spans"])
-    tr = TG.row_trust(row)
+    tr = TG.row_trust(row, "state")
     assert tr[a:b] == [False] * (b - a) and all(tr[:a]) and all(tr[b:])
+    # default provenance policy: nothing declared -> every caller segment (incl. the state) is untrusted
+    tp = TG.row_trust(row)
+    assert tp[a:b] == [False] * (b - a) and sum(tp) < sum(tr)
+    assert all(tp[i] is False for s, e in row.meta["caller_spans"] for i in range(s, e))
     row.meta.pop("untrusted_spans")
-    row.meta["evidence"] = "reread_instructions"
     with pytest.raises(ValueError):
+        TG.row_trust(row, "state")
+    row.meta["evidence"] = "reread_instructions"
+    with pytest.raises(TG.TrustUnavailable):
+        TG.row_trust(row, "state")
+    row.meta.pop("field_spans")
+    with pytest.raises(TG.TrustUnavailable):
         TG.row_trust(row)
 
 

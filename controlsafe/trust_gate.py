@@ -27,10 +27,25 @@ Scope and caveats (stated, not hidden):
   which IS reachable from untrusted inputs (it must be: the evidence is untrusted, reviews/02 section 6).
   G15 does not certify the decision; it guarantees that what is kept in P (schema, question, policy
   framing, earlier trusted records) cannot be overwritten, collapsed (G14) or steered by untrusted text.
-* Trust labels come from the host (``decide/provenance``, layout spans); a mislabelled span voids it.
-* Determinism: bitwise identity assumes the same device/kernels/batch composition for both inputs (the
-  P stream's padded batch shape depends on the longest trusted subsequence in the batch; tests run the
-  two inputs in separate batches of one to make the claim exactly about content).
+* Trust labels come from the host; a mislabelled span voids it. Policies (``row_trust``):
+  ``provenance`` (default): a caller segment is trusted only if the host declared its request field
+  instruction-trusted in ``request["ssdm"]["provenance"]`` (complete tiling, all ``instruction``); ids
+  and undeclared fields are data, so an untrusted passage placed in question instructions (m2
+  ``placement: instructions``) is untrusted wherever it sits. ``state``: only the rendered state is
+  untrusted -- sound ONLY if the host puts all untrusted text in ``state``; it fails closed on rows whose
+  evidence moved to the instructions (``meta["evidence"] == "reread_instructions"``). ``caller``: every
+  non-template token is untrusted (P then holds template text only). Continuations and stand-alone
+  option sequences are labelled by the same policy (option ids are data under ``provenance``/``caller``).
+  ``features`` refuses ``trust=None`` (fail closed).
+* Determinism: the protected features are independent of untrusted content and lengths ALWAYS (also of a
+  batch-mate's untrusted content/length); they are bitwise identical for identical host-controlled batch
+  shape (B, longest trusted subsequence in the batch): the kernels' chunking and GDN's batched reductions
+  can move the last bits when that shape changes.
+* Training scope: G15 is an INFERENCE-TIME reachability statement. LoRA is shared by both streams and is
+  trained on losses that read untrusted training text, so P's function (its weights) does depend on
+  untrusted TRAINING data; poisoning of training data is G6/G12 territory, not G15.
+* Gradient checkpointing is refused (the bridge injection lives in forward hooks that HF recompute would
+  not replay consistently).
 * Channel mixing/MLPs are not masked: they never need to be, because the P stream is a separate
   computation, not a sub-block of one shared residual stream. The price is compute: one extra pass over
   the trusted tokens (``compute_multiplier``). The in-place alternative (a head partition with masked
@@ -51,7 +66,9 @@ from heads.backbone import HiddenStateBackbone, pad_batch
 from . import adapters
 
 READOUTS = ("decision", "concat", "protected")
-TRUST_POLICIES = ("state", "caller")
+TRUST_POLICIES = ("provenance", "state", "caller")
+DEFAULT_POLICY = "provenance"
+ID_PATH = "#ids"  # == heads.layout.ID_PATH
 GUARANTEE_ID = "ssdm.g15.trust_gated_reachability.v1"
 
 
@@ -87,34 +104,80 @@ def carry(pc: torch.Tensor, cnt: torch.Tensor) -> torch.Tensor:
     return torch.where((cnt >= 0).unsqueeze(-1), out, torch.zeros_like(out))
 
 
-def row_untrusted_spans(row, policy: str = "state") -> list[tuple[int, int]]:
-    """Untrusted token spans of a ``heads.layout.LayoutRow`` (fail closed if the row cannot say)."""
+class TrustUnavailable(ValueError):
+    """The row cannot say which tokens are untrusted under the requested policy: fail closed."""
+
+
+def _meta(row, key):
     meta = getattr(row, "meta", {}) or {}
-    key = "untrusted_spans" if policy == "state" else "caller_spans"
     if key not in meta:
-        if policy == "state" and meta.get("evidence") == "state":
-            return [tuple(row.state_span)]
-        raise ValueError(f"row has no meta[{key!r}]: rebuild it with heads.layout.build_row (trust gate fails closed)")
-    return [tuple(s) for s in meta[key]]
+        raise TrustUnavailable(f"row has no meta[{key!r}]: rebuild it with heads.layout.build_row (trust gate "
+                               "fails closed)")
+    return meta[key]
 
 
-def row_trust(row, policy: str = "state", length: int | None = None) -> list[bool]:
-    n = len(row.ids) if length is None else length
+def _untrusted_by_paths(spans, policy: str, trusted_paths) -> list[tuple[int, int]]:
+    if policy == "caller":
+        return [(a, b) for a, b, _ in spans]
+    ok = set(trusted_paths)
+    return [(a, b) for a, b, path in spans if path == ID_PATH or path not in ok]
+
+
+def row_untrusted_spans(row, policy: str = DEFAULT_POLICY) -> list[tuple[int, int]]:
+    """Untrusted token spans of a ``heads.layout.LayoutRow`` (fail closed if the row cannot say)."""
+    if policy not in TRUST_POLICIES:
+        raise ValueError(policy)
+    meta = getattr(row, "meta", {}) or {}
+    if policy == "state":
+        if meta.get("evidence") != "state":
+            # m2 ``placement: instructions``: the passage is in the question instructions, which the "state"
+            # policy would label trusted. Refuse instead of silently protecting injected text.
+            raise TrustUnavailable("trust_policy='state' is unsound for this row (evidence is "
+                                   f"{meta.get('evidence')!r}, not the state): use trust_policy='provenance'")
+        return [tuple(s) for s in _meta(row, "untrusted_spans")]
+    return _untrusted_by_paths(_meta(row, "field_spans"), policy, meta.get("trusted_paths", []))
+
+
+def _mask(n: int, spans) -> list[bool]:
     t = [True] * n
-    for a, b in row_untrusted_spans(row, policy):
+    for a, b in spans:
         for i in range(a, min(b, n)):
             t[i] = False
     return t
 
 
+def row_trust(row, policy: str = DEFAULT_POLICY, length: int | None = None) -> list[bool]:
+    return _mask(len(row.ids) if length is None else length, row_untrusted_spans(row, policy))
+
+
+def continuation_trust(row, k: int, policy: str = DEFAULT_POLICY) -> list[bool]:
+    """Trust of option continuation k (``" <option id>"`` + template terminator). Under ``state`` the
+    continuation holds no state text (trusted); under ``provenance``/``caller`` the option id is data."""
+    n = len(row.continuations[k])
+    if policy == "state":
+        row_untrusted_spans(row, policy)  # the same fail-closed check as the prefix
+        return [True] * n
+    return _mask(n, _untrusted_by_paths(_meta(row, "cont_spans")[k], policy, row.meta.get("trusted_paths", [])))
+
+
+def option_seq_trust(row, k: int, policy: str = DEFAULT_POLICY) -> list[bool]:
+    """Trust of the symmetric layout's stand-alone option sequence k."""
+    n = len(row.option_seqs[k])
+    if policy == "state":
+        row_untrusted_spans(row, policy)
+        return [True] * n
+    spans = _meta(row, "option_seq_spans")[k]
+    return _mask(n, _untrusted_by_paths(spans, policy, row.meta.get("trusted_paths", [])))
+
+
 class TrustGatedBackbone(HiddenStateBackbone):
-    """``features(ids, mask, trust)``: see module docstring. ``trust`` is ``[B, T]`` bool (True = trusted);
-    ``None`` means all trusted (P == D at init)."""
+    """``features(ids, mask, trust)``: see module docstring. ``trust`` is ``[B, T]`` bool (True = trusted)
+    and is REQUIRED (``None`` raises: an unlabelled call must not silently treat everything as trusted)."""
 
     wants_trust = True
 
     def __init__(self, base: HiddenStateBackbone, bridge_rank: int = 8, readout: str = "decision",
-                 trust_policy: str = "state", seed: int = 0) -> None:
+                 trust_policy: str = DEFAULT_POLICY, seed: int = 0) -> None:
         if base.capture != "hidden_states":
             raise ValueError("trust gate needs capture='hidden_states' (RWKV-7 HF / Qwen3.5 GDN)")
         if readout not in READOUTS or trust_policy not in TRUST_POLICIES:
@@ -135,6 +198,8 @@ class TrustGatedBackbone(HiddenStateBackbone):
         self.last_protected: list[torch.Tensor] | None = None  # per-layer carried P features [B, T, d]
         self.last_protected_final: torch.Tensor | None = None
         self.tokens_processed = 0
+        self.p_cache_hits = 0
+        self.last_protected_compact: dict | None = None
         self.provenance = getattr(base, "provenance", None)  # lineage: Q9-AF provenance passes through
         self.controlsafe = self.identity()
 
@@ -149,6 +214,17 @@ class TrustGatedBackbone(HiddenStateBackbone):
 
     def trainable_bridge_parameters(self) -> list[nn.Parameter]:
         return list(self.bridges.parameters())
+
+    def enable_gradient_checkpointing(self) -> bool:
+        raise RuntimeError("controlsafe trust gate: gradient checkpointing is not supported (the P->D bridge "
+                           "injection lives in forward hooks); train the gated arm without checkpointing")
+
+    def _check_no_checkpointing(self) -> None:
+        if torch.is_grad_enabled() and (getattr(self.model, "is_gradient_checkpointing", False)
+                                        or any(getattr(m, "gradient_checkpointing", False)
+                                               for m in self.model.modules())):
+            raise RuntimeError("controlsafe trust gate: the wrapped model has gradient checkpointing enabled; "
+                               "disable it (gradient_checkpointing_disable) for the gated arm")
 
     # ------------------------------------------------------------------ hooks
     def _make_hook(self, i: int):
@@ -173,13 +249,20 @@ class TrustGatedBackbone(HiddenStateBackbone):
         return self.model(**kw).hidden_states[self.layer]
 
     # ------------------------------------------------------------------ streams
-    def protected_stream(self, ids: torch.Tensor, mask: torch.Tensor, trust: torch.Tensor):
+    def protected_stream(self, ids: torch.Tensor, mask: torch.Tensor, trust: torch.Tensor, p_cache: dict | None = None):
         """P stream. The only token ids that enter it are ``ids[b, pos[b]]`` (trusted positions): the
-        untrusted ids are never read. Returns (per-layer carried features, carried final features)."""
+        untrusted ids are never read. Returns (per-layer carried features, carried final features).
+
+        ``p_cache`` (a previous call's ``last_protected_compact``) is reused, without running P, iff its trusted
+        id lists equal this call's exactly: P is a function of those lists only, so reuse is exact (G4 over E)."""
         pos, cnt = compaction(mask, trust)
         dev = ids.device
         n_layers = len(self._blocks)
         trusted_ids = [[int(ids[b, j]) for j in p] for b, p in enumerate(pos)]
+        if p_cache is not None and p_cache["trusted_ids"] == trusted_ids:
+            self.p_cache_hits += 1
+            self.last_protected_compact = p_cache
+            return [carry(x, cnt) for x in p_cache["layers"]], carry(p_cache["final"], cnt)
         if max((len(s) for s in trusted_ids), default=0) == 0:
             zero = torch.zeros(ids.shape + (super().d_model,), device=dev)
             return [zero] * n_layers, zero
@@ -194,17 +277,21 @@ class TrustGatedBackbone(HiddenStateBackbone):
             final = self._run(cids, cmask)
         finally:
             self._mode = None
+        self.last_protected_compact = {"trusted_ids": trusted_ids, "layers": list(self._rec), "final": final}
         layers = [carry(self._rec[i], cnt) for i in range(n_layers)]
         self._rec = [None] * n_layers
         return layers, carry(final, cnt)
 
     def features(self, input_ids: torch.Tensor, attention_mask: torch.Tensor | None = None,
-                 trust: torch.Tensor | None = None) -> torch.Tensor:
+                 trust: torch.Tensor | None = None, p_cache: dict | None = None) -> torch.Tensor:
+        if trust is None:
+            raise ValueError("TrustGatedBackbone.features needs explicit per-token trust labels (fail closed)")
+        self._check_no_checkpointing()
         dev = self.device
         ids = input_ids.to(dev)
         mask = torch.ones_like(ids, dtype=torch.bool) if attention_mask is None else attention_mask.to(dev).bool()
-        trust = torch.ones_like(mask) if trust is None else trust.to(dev).bool()
-        p_layers, p_final = self.protected_stream(ids, mask, trust)
+        trust = trust.to(dev).bool()
+        p_layers, p_final = self.protected_stream(ids, mask, trust, p_cache)
         self.last_protected, self.last_protected_final = p_layers, p_final
         if self.readout == "protected":
             return p_final
@@ -223,12 +310,16 @@ class TrustGatedBackbone(HiddenStateBackbone):
     def forward(self, input_ids, attention_mask=None, trust=None):  # pragma: no cover - alias
         return self.features(input_ids, attention_mask, trust)
 
-    def fork_features(self, prefix: Sequence[int], conts: Sequence[Sequence[int]], trust: Sequence[bool] | None = None):
-        """Fork by recompute (continuations are trusted template tokens). ``fork_mode`` is ignored: the
-        two-stream cache fork is not implemented, and recompute is exact."""
-        tr = list(trust) if trust is not None else [True] * len(prefix)
+    def fork_features(self, prefix: Sequence[int], conts: Sequence[Sequence[int]], trust: Sequence[bool] | None = None,
+                      cont_trust: Sequence[Sequence[bool]] | None = None):
+        """Fork by recompute. ``trust`` labels the prefix and ``cont_trust`` each continuation (both required:
+        option ids are data under the provenance/caller policies). ``fork_mode`` is ignored: the two-stream
+        cache fork is not implemented, and recompute is exact."""
+        if trust is None or cont_trust is None:
+            raise ValueError("fork_features needs trust labels for the prefix and every continuation")
+        tr = list(trust)
         seqs = [list(prefix)] + [list(prefix) + list(c) for c in conts]
-        trs = [tr] + [tr + [True] * len(c) for c in conts]
+        trs = [tr] + [tr + list(ct) for ct in cont_trust]
         ids, mask = pad_batch(seqs, self.pad_id, device=self.device)
         tmask, _ = pad_batch([[int(x) for x in t] for t in trs], 0, device=self.device)
         h = self.features(ids, mask, tmask.bool())
@@ -238,11 +329,11 @@ class TrustGatedBackbone(HiddenStateBackbone):
 
 def wrap(backbone: HiddenStateBackbone, cfg: dict | None) -> HiddenStateBackbone:
     """Config-flag entry point (train/ and safety_eval): ``{"trust_gate": true, "bridge_rank": 8,
-    "readout": "decision", "trust_policy": "state"}``; anything falsy returns the backbone unchanged."""
+    "readout": "decision", "trust_policy": "provenance"}``; anything falsy returns the backbone unchanged."""
     if not cfg or not cfg.get("trust_gate"):
         return backbone
     return TrustGatedBackbone(backbone, bridge_rank=int(cfg.get("bridge_rank", 8)),
-                              readout=cfg.get("readout", "decision"), trust_policy=cfg.get("trust_policy", "state"),
+                              readout=cfg.get("readout", "decision"), trust_policy=cfg.get("trust_policy", DEFAULT_POLICY),
                               seed=int(cfg.get("seed", 0)))
 
 

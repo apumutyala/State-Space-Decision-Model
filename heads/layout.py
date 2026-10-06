@@ -36,6 +36,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Sequence
 
 from decide.prompt import SYSTEM_PROMPT, TEMPLATES, Template, _instr, continuation_segments
+from decide.provenance import field_strings, instructions_path, state_path
 from decide.schema import canonical_options, canonical_question_ids, render
 
 LAYOUTS = ("ordered", "symmetric")
@@ -47,56 +48,110 @@ EncodeFn = Callable[[str, bool], list[int]]
 
 # (text, trusted, tag). Tags: "", "field", "option:<j>", "state", "reread", "reread_instr".
 TaggedSegment = tuple[str, bool, str]
+# Internally each segment also carries the request field it renders (controlsafe trust gate): an RFC 6901
+# provenance path (``decide.provenance``), ID_PATH for question/option ids (ids are always data under the
+# provenance contract), or None for template text.
+ID_PATH = "#ids"
 
 
-def _field(index: int, qid: str, q: dict[str, Any], target: bool, with_options: bool) -> list[TaggedSegment]:
+def _instr_path(qid: str, q: dict[str, Any]) -> str:
+    instr = q.get("instructions")
+    return instructions_path(qid) if isinstance(instr, str) and instr != "" else ID_PATH
+
+
+def _field(index: int, qid: str, q: dict[str, Any], target: bool, with_options: bool) -> list[tuple]:
     ftag = "field" if target else ""
-    seg: list[TaggedSegment] = [
-        (f"FIELD {index}\nID: ", True, ftag),
-        (qid, False, ftag),
-        (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True, ftag),
-        (render(_instr(qid, q)), False, ftag),
+    seg: list[tuple] = [
+        (f"FIELD {index}\nID: ", True, ftag, None),
+        (qid, False, ftag, ID_PATH),
+        (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True, ftag, None),
+        (render(_instr(qid, q)), False, ftag, _instr_path(qid, q)),
     ]
     if with_options:
-        seg.append(("\nALLOWED OPTIONS:", True, ftag))
+        seg.append(("\nALLOWED OPTIONS:", True, ftag, None))
         for j, (oid, desc) in enumerate(canonical_options(q), start=1):
             sem = {"option_id": oid}
             if desc is not None:
                 sem["description"] = desc
             otag = f"option:{j - 1}" if target else ""
-            seg += [(f"\nOPTION {j}: ", True, ftag), (render(sem), False, otag)]
+            seg += [(f"\nOPTION {j}: ", True, ftag, None), (render(sem), False, otag, ID_PATH)]
     else:
         n = len(canonical_options(q))
-        seg.append((f"\nALLOWED OPTIONS: {n} options, given separately and unordered.", True, ftag))
-    seg.append(("\nEND FIELD", True, ftag))
+        seg.append((f"\nALLOWED OPTIONS: {n} options, given separately and unordered.", True, ftag, None))
+    seg.append(("\nEND FIELD", True, ftag, None))
     return seg
 
 
 def tagged_segments(template: Template, request: dict[str, Any], qid: str, layout: str) -> list[TaggedSegment]:
+    return [s[:3] for s in _tagged_segments_paths(template, request, qid, layout)]
+
+
+def declared_instruction_paths(request: dict[str, Any]) -> list[str]:
+    """Request field paths the HOST declared instruction-trusted in ``request["ssdm"]["provenance"]`` (the
+    ``decide.provenance`` shape): a non-state string field whose segments tile it completely and are all
+    ``trust == "instruction"``. Anything else (absent, partial, malformed, non-string) is data: fail closed."""
+    ssdm = request.get("ssdm")
+    prov = ssdm.get("provenance") if isinstance(ssdm, dict) else None
+    segs = prov.get("segments") if isinstance(prov, dict) else None
+    if not isinstance(segs, dict):
+        return []
+    try:
+        strings = field_strings(request)
+    except Exception:  # noqa: BLE001 - malformed request: nothing is trusted
+        return []
+    out = []
+    for path, lst in segs.items():
+        kv = strings.get(path)
+        if path == state_path() or kv is None or not isinstance(kv[1], str) or not kv[1] or not isinstance(lst, list):
+            continue
+        pos, ok = 0, bool(lst)
+        for sg in lst:
+            if not (isinstance(sg, dict) and sg.get("trust") == "instruction" and sg.get("start") == pos
+                    and isinstance(sg.get("end"), int) and sg["end"] > pos):
+                ok = False
+                break
+            pos = sg["end"]
+        if ok and pos == len(kv[1]):
+            out.append(path)
+    return sorted(out)
+
+
+def _tagged_segments_paths(template: Template, request: dict[str, Any], qid: str, layout: str) -> list[tuple]:
     if layout not in LAYOUTS:
         raise ValueError(f"layout must be one of {LAYOUTS}")
     with_options = layout == "ordered"
     questions = request["questions"]
     order = canonical_question_ids(questions)
     q = questions[qid]
-    seg: list[TaggedSegment] = [(template.head.format(system=SYSTEM_PROMPT) + "SCHEMA FIELDS:\n", True, "")]
+    seg: list[tuple] = [(template.head.format(system=SYSTEM_PROMPT) + "SCHEMA FIELDS:\n", True, "", None)]
     for i, k in enumerate(order, start=1):
         if i > 1:
-            seg.append(("\n", True, ""))
+            seg.append(("\n", True, "", None))
         seg += _field(i, k, questions[k], k == qid, with_options)
     ids_text = ", ".join(o for o, _ in canonical_options(q)) if with_options else "(the separately given options)"
     seg += [
-        ("\nEND SCHEMA\n\nSTATE:\n", True, ""),
-        (render(request["state"]), False, "state"),
-        (f"\nEND STATE\n\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", True, "reread"),
-        (qid, False, "reread"),
-        (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True, "reread"),
-        (render(_instr(qid, q)), False, "reread_instr"),
-        ("\nALLOWED OPTION IDS: ", True, "reread"),
-        (ids_text, not with_options, "reread"),
-        ("\nReply with exactly one allowed option id." + template.tail, True, "reread"),
+        ("\nEND SCHEMA\n\nSTATE:\n", True, "", None),
+        (render(request["state"]), False, "state", state_path()),
+        (f"\nEND STATE\n\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", True, "reread", None),
+        (qid, False, "reread", ID_PATH),
+        (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True, "reread", None),
+        (render(_instr(qid, q)), False, "reread_instr", _instr_path(qid, q)),
+        ("\nALLOWED OPTION IDS: ", True, "reread", None),
+        (ids_text, not with_options, "reread", ID_PATH if with_options else None),
+        ("\nReply with exactly one allowed option id." + template.tail, True, "reread", None),
     ]
     return [s for s in seg if s[0]]
+
+
+def _paths_spans(encode: EncodeFn, segs: Sequence[tuple[str, bool]], paths: Sequence[str | None]) -> list:
+    """Local token spans ``(start, end, path)`` of the caller segments of a stand-alone sequence."""
+    out, n = [], 0
+    for (text, trusted), path in zip(segs, paths):
+        m = len(encode(text, trusted))
+        if not trusted and m:
+            out.append((n, n + m, path))
+        n += m
+    return out
 
 
 def option_segments(qid: str, q: dict[str, Any], oid: str, desc: Any) -> list[tuple[str, bool]]:
@@ -183,17 +238,19 @@ def build_row(
     prefix is unaffected (ordered layout keeps canonical rendering).
     """
     tpl = TEMPLATES[template] if isinstance(template, str) else template
-    segs = tagged_segments(tpl, request, qid, layout)
+    segs4 = _tagged_segments_paths(tpl, request, qid, layout)
     q = request["questions"][qid]
     opts = canonical_options(q)
     ids: list[int] = []
     spans: dict[str, list[int]] = {}
     caller_spans: list[tuple[int, int]] = []  # every non-template (caller/host-data) segment, for trust gating
-    for text, trusted, tag in segs:
+    field_spans: list[tuple[int, int, str]] = []  # the same spans with the request field each one renders
+    for text, trusted, tag, path in segs4:
         start = len(ids)
         ids += encode(text, trusted)
         if not trusted and len(ids) > start:
             caller_spans.append((start, len(ids)))
+            field_spans.append((start, len(ids), path))
         if tag:
             if tag in spans:
                 spans[tag][1] = len(ids)
@@ -220,6 +277,9 @@ def build_row(
         [_encode_segments(encode, option_segments(qid, q, *opts[k])) for k in perm] if layout == "symmetric" else []
     )
     conts = [_encode_segments(encode, continuation_segments(tpl, opts[k][0])) for k in perm]
+    cont_spans = [_paths_spans(encode, continuation_segments(tpl, opts[k][0]), [ID_PATH, None]) for k in perm]
+    opt_seq_spans = ([_paths_spans(encode, option_segments(qid, q, *opts[k]), [None, ID_PATH, None, ID_PATH])
+                      for k in perm] if layout == "symmetric" else [])
     return LayoutRow(
         qid=qid,
         qtype=q["type"],
@@ -232,7 +292,8 @@ def build_row(
         continuations=conts,
         layout=layout,
         meta={"template": tpl.id, "perm": perm, "evidence": evidence, "untrusted_spans": untrusted_spans,
-              "caller_spans": caller_spans},
+              "caller_spans": caller_spans, "field_spans": field_spans, "cont_spans": cont_spans,
+              "option_seq_spans": opt_seq_spans, "trusted_paths": declared_instruction_paths(request)},
     )
 
 

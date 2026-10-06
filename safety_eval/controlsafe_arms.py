@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-ARMS = ("g15", "persistence", "gramian", "g4snap", "g14")
+ARMS = ("g15", "persistence", "gramian", "g4snap", "g14", "g16")
 FAMILIES = ("rwkv7", "q9af")
 
 
@@ -123,16 +123,65 @@ def arm_g4snap(fam: str, seed: int = 0, n_route: int = 6, n_pay: int = 4, ks=(1,
     return out
 
 
-def arm_g14(fam: str, seed: int = 0) -> dict[str, Any]:
+G14_SEEDS = 10
+
+
+def arm_g14(fam: str, seed: int = 0, n_seeds: int = G14_SEEDS) -> dict[str, Any]:
+    """Seed distribution (seeds ``seed .. seed + n_seeds - 1``, model + trigger jointly), never one seed."""
     from controlsafe import monitor
     from heads.backbone import tiny_hf_backbone
 
-    m = tiny_hf_backbone(fam, seed=seed).model
-    monitor.long_memory_(m, seed=seed)
-    return monitor.poisoning_test(m, n=24, seed=seed)
+    def make(sd):
+        m = tiny_hf_backbone(fam, seed=sd).model
+        monitor.long_memory_(m, seed=sd)
+        return m
+
+    return monitor.seed_sweep(make, range(seed, seed + n_seeds), n=24)
 
 
-FUNCS = {"g15": arm_g15, "persistence": arm_persistence, "gramian": arm_gramian, "g4snap": arm_g4snap, "g14": arm_g14}
+def arm_g16(fam: str, seed: int = 0, n_route: int = 6, n_pay: int = 4, ks=(1, 2)) -> dict[str, Any]:
+    """G16 on the real dev-split request generator: random (seeded) judge and evidence weights on a tiny
+    long-memory backbone. Reports the certificate mix (independent / G4-over-E certified / escalated), the radii,
+    and the cost (origins evaluated, P reused exactly). Every origin is verified against a full G16 recompute."""
+    import torch
+
+    from controlsafe import g16, monitor, trust_gate
+    from heads import ByteEncoder
+    from heads.backbone import tiny_hf_backbone
+    from heads.layout import build_row
+
+    from . import data
+
+    enc = ByteEncoder()
+    bb = tiny_hf_backbone(fam, seed=seed)
+    monitor.long_memory_(bb.model, seed=seed)
+    head = g16.G16Head(trust_gate.TrustGatedBackbone(bb, bridge_rank=4), r=8, c=1.0, max_options=16, seed=seed)
+    gen = torch.Generator().manual_seed(seed + 17)
+    with torch.no_grad():
+        for p in (head.A.weight, head.w.weight, head.u, head.beta, head.evidence.W_e.weight):
+            p.copy_(torch.randn(p.shape, generator=gen) * 0.5)
+    reqs = [data.strip_meta(r) for r in data.build(n_route, n_pay, split="dev")]
+    out: dict[str, Any] = {"status": "PIPELINE QUALIFICATION (random judge); certificate soundness is the tested part"}
+    for k in ks:
+        rows = []
+        for r in reqs:
+            qid = sorted(r["questions"])[0]
+            rows.append(g16.certify(head, r, qid, k, lambda q: build_row(q, qid, enc), verify=True))
+        n = len(rows)
+        out[f"k{k}"] = {
+            "n_requests": n,
+            "independent_rate": sum(x["independent_of_untrusted"] for x in rows) / n,
+            "certified_rate": sum(x["certified"] for x in rows) / n,
+            "origins_evaluated": sum(x["n_origins_evaluated"] for x in rows),
+            "p_cache_misses": sum(x["p_cache_misses"] for x in rows),
+            "rho_joint_l2_median": float(torch.tensor([x["rho_joint_l2"] for x in rows]).median()),
+            "verified_against_full_recompute": True,
+        }
+    return out
+
+
+FUNCS = {"g15": arm_g15, "persistence": arm_persistence, "gramian": arm_gramian, "g4snap": arm_g4snap, "g14": arm_g14,
+         "g16": arm_g16}
 
 
 def run_arms(arms=ARMS, families=FAMILIES, seed: int = 0) -> dict[str, Any]:

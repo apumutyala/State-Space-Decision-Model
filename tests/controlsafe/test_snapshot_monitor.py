@@ -84,13 +84,22 @@ def test_monitor_stats_and_auroc():
         M.span_stats(m, ids, (0, 5))
 
 
-@pytest.mark.parametrize("fam,min_auroc", [("rwkv7", 0.8), ("q9af", 0.75)])
-def test_synthetic_poisoning_collapses_memory_and_is_detected(fam, min_auroc):
-    m = tiny_hf_backbone(fam, seed=0).model
-    M.long_memory_(m)
-    r = M.poisoning_test(m, n=12, seed=0)
-    assert r["collapse_ratio"] < 0.8  # the trigger really makes the model forget its trusted prefix
-    assert r["auroc"] >= min_auroc  # the spectral statistic (not the attack objective) detects it
+@pytest.mark.parametrize("fam", FAMS)
+def test_g14_seed_sweep_smoke(fam):
+    """SMOKE test only (PR #42 review B1): detection is weak and seed-unstable, so no AUROC bar is asserted.
+    Checks the sweep reports the whole distribution with a CI and a below-chance count."""
+    def make(sd):
+        m = tiny_hf_backbone(fam, seed=sd).model
+        M.long_memory_(m, seed=sd)
+        return m
+
+    r = M.seed_sweep(make, [0, 1], n=6)
+    assert r["n_seeds"] == 2 and len(r["per_seed"]) == 2
+    for key in ("auroc", "auroc_min_score"):
+        lo, hi = r[key]["ci95_mean_bootstrap"]
+        assert 0.0 <= r[key]["min"] <= lo <= r[key]["mean"] <= hi <= r[key]["max"] <= 1.0
+    assert 0 <= r["seeds_auroc_at_or_below_chance"] <= 2
+    assert all(row["collapse_ratio"] >= 0 for row in r["per_seed"])
 
 
 @pytest.mark.parametrize("fam", FAMS)

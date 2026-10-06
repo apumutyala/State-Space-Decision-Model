@@ -62,10 +62,37 @@ CHECK_AFTER_STEPS = 10  # the in-training rate check uses the mean of the first 
 
 
 # ----------------------------------------------------------------------------- data (CPU-testable)
+def host_provenance(r: dict) -> dict | None:
+    """Explicit host provenance for an m2 record (``decide.provenance`` shape), for the controlsafe trust gate.
+
+    A question's instructions are declared instruction-trusted ONLY when the builder put the item in ``state``
+    (``aug.placement == "state"``) AND the instruction string is exactly one of the builder's own templates
+    (``data.augment.INSTR``). Everything else (the passage under ``placement: instructions``, tool names,
+    candidate dicts, option texts, the state) stays data: absent provenance is data (fail closed)."""
+    if (r.get("aug") or {}).get("placement") != "state":
+        return None
+    from data.augment import INSTR
+    from decide.provenance import PROVENANCE_SCHEMA, instructions_path
+
+    templates = {t for v in INSTR.values() for t in v} | {"Answer the question."}
+    segs = {}
+    for qid, q in r["questions"].items():
+        ins = q.get("instructions")
+        if isinstance(ins, str) and ins in templates:
+            segs[instructions_path(qid)] = [{"start": 0, "end": len(ins), "trust": "instruction",
+                                             "origin": "host_template"}]
+    return {"provenance": {"schema": PROVENANCE_SCHEMA, "default_trust": "data", "segments": segs}} if segs else None
+
+
 def to_train_record(r: dict) -> dict:
-    """m2 sample record (data/build.py: state/questions/labels at top level) -> train.data record format."""
-    return {"id": r["id"], "request": {"model": "m2", "state": r["state"], "questions": r["questions"]},
-            "labels": r["labels"]}
+    """m2 sample record (data/build.py: state/questions/labels at top level) -> train.data record format.
+    Carries ``host_provenance`` under ``request["ssdm"]`` (read only by the trust gate's provenance policy;
+    content hashes, guards and token ids are unchanged)."""
+    req = {"model": "m2", "state": r["state"], "questions": r["questions"]}
+    prov = host_provenance(r)
+    if prov:
+        req["ssdm"] = prov
+    return {"id": r["id"], "request": req, "labels": r["labels"]}
 
 
 def split_ids(ids: list[str], n_train: int, n_eval: int, seed: int) -> tuple[list[str], list[str]]:

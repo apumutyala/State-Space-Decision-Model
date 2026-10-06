@@ -269,7 +269,7 @@ def universal_decay_bound(model: nn.Module) -> dict[int, dict[str, Any]]:
 
     GDN: ``||A_t||_2 = alpha_t * ||I - beta k k^T||_2 = alpha_t`` (``beta`` in (0,1), ``||k|| <= 1`` after the
     kernel's l2norm), and ``alpha_t = exp(-exp(A_log) softplus(W_a x + dt_bias))`` with ``x`` the output of the
-    layer's input RMSNorm, so ``||x||_2 <= sqrt(d) max|1 + gamma|`` and ``W_a[h] x >= -||W_a[h]||_2 sqrt(d) max|1+gamma|``.
+    layer's input RMSNorm ``x = (1+gamma) * xhat`` with ``||xhat||_2 <= sqrt(d)``, so ``W_a[h] x >= -||W_a[h] * (1+gamma)||_2 sqrt(d)``.
     That gives ``rho_h < 1`` for every head: a CERTIFIED common induced-norm (2-norm, key axis) bound, hence
     ``||A_T ... A_1||_2 <= rho^T`` for every input sequence.
 
@@ -289,7 +289,8 @@ def universal_decay_bound(model: nn.Module) -> dict[int, dict[str, Any]]:
             gamma = norm.weight.detach().double()
             xmax = (d ** 0.5) * float((1.0 + gamma).abs().max())
             wa = _eff_weight(la.in_proj_a)  # [H, d]
-            lo = -wa.norm(dim=-1) * xmax + la.dt_bias.detach().double()
+            # W_a[h] x = sum_i (W_a[h,i] (1+gamma_i)) xhat_i with ||xhat|| <= sqrt(d): the tight constant
+            lo = -(wa * (1.0 + gamma)).norm(dim=-1) * (d ** 0.5) + la.dt_bias.detach().double()
             alpha = torch.exp(-la.A_log.detach().double().exp() * torch.nn.functional.softplus(lo))
             out[i] = {"family": "gdn", "norm": "2 (key axis, common to all t)", "per_head": alpha.tolist(),
                       "rho": float(alpha.max()), "certified": bool(alpha.max() < 1.0), "x_norm_bound": xmax}

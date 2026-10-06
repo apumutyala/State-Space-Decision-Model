@@ -1,110 +1,143 @@
 # controlsafe: what the dynamical-system view buys, stated exactly
 
-Both parent families are, per layer and head, `X_t = A_t X_{t-1} + k_t v_t^T`, `y_t = X_t^T r_t`
-(`adapters.py`; RWKV-7: `A_t = diag(w_t) - (kk_t*a_t) kk_t^T`; GDN/Q9-AF: `A_t = alpha_t (I - beta_t k_t k_t^T)`).
-Everything here is CPU-tested on tiny random RWKV-7 and all-GDN configs only. Nothing is a model result.
-SAFETY_SPEC section 5.2 still holds: no decay, contraction or Gramian number is a safety claim. The only
-STRUCTURAL row added is G15.
+Both parent families are the same recurrence per layer and head: `X_t = A_t X_{t-1} + k_t v_t^T`, `y_t = X_t^T r_t` (`adapters.py`).
+- RWKV-7: `A_t = diag(w_t) - (kk_t*a_t) kk_t^T`.
+- GDN / Q9-AF: `A_t = alpha_t (I - beta_t k_t k_t^T)`.
 
-## G15 (new): trust-gated reachability (STRUCTURAL, `trust_gate.py`)
+All of this is CPU-tested on tiny random RWKV-7 and all-GDN configs. **Nothing here is a model result.** SAFETY_SPEC §5.2 still holds: no decay, contraction or Gramian number is a safety claim. Two STRUCTURAL rows are proposed:
+- G15, trust-gated reachability.
+- G16, protected judge with a bounded evidence channel. Its veto and channel-isolation parts are STRUCTURAL; its radius and independence parts are CERTIFIED.
 
-**Statement.** Take two inputs with the same trusted token subsequence. Their untrusted spans may differ in content, length, count and placement. Every protected-block feature at the i-th trusted token is then bitwise identical in both, at every layer, and so is the protected recurrent state. Any readout that is a function of protected features alone is therefore invariant to untrusted text. This holds for any weights, including LoRA and trained bridges.
+Review: PR #42 (comment 6020811487). B1 and B2 and the non-blocking items are addressed below.
 
-**Construction.** The protected block P is the pretrained recurrence run over trusted tokens only. At an untrusted position P uses the identity transition and a zero write, and the token shift and causal conv skip that position. This is implemented exactly by compaction plus carry-forward. The data block D is the pretrained model over all tokens, plus zero-initialised low-rank P→D bridges. The joint transition is block lower-triangular, `[[A_PP,0],[A_DP,A_DD]]`, and the untrusted write is `[0;B_D]`. Across layers, P reads only P. The code-path argument is that `protected_stream` receives only the ids at trusted positions.
+## Trust labels (precondition of G15 and G16)
 
-**Tests.** `tests/controlsafe/test_trust_gate.py` checks four things:
-- Bitwise invariance under random untrusted content and lengths, leading spans and interleaved spans, with random bridges and random LoRA.
-- The P-stream Jacobian with respect to the untrusted embeddings is exactly 0, while the D-stream Gramian is greater than 0.
-- At init the result equals the pretrained model bitwise.
-- The guarantee survives a training run of the gated arm with DecisionModel, build_head_input and Trainer.
+`trust_gate.row_trust(row, policy)`, `continuation_trust` and `option_seq_trust` label every token: the prefix, each option continuation and each stand-alone option sequence.
 
-**Scope and caveats.**
-- The guarantee covers P only. The default `readout="decision"` reads D, which untrusted text can reach. It has to: the evidence is untrusted (reviews/02 §6). G15 does not certify the decision.
-- What G15 does guarantee is that trusted context (schema, question, policy framing, trusted records) cannot be overwritten, steered or collapsed by untrusted text.
-- Trust labels come from the host: `meta["untrusted_spans"]` (state) or `caller_spans` (all non-template text) on layout rows. Rows that cannot state their spans fail closed.
-- Cost: `compute_multiplier = 1 + |trusted|/T` (1.5 in the arm). The cache fork is replaced by recompute.
-- Bitwise identity assumes the same kernels and batch composition.
-- Masking mixing in place (a head partition) is not implemented, because it would destroy the init equivalence.
+| policy | untrusted tokens | when it is sound |
+|---|---|---|
+| `provenance` (default) | Every caller segment whose request field the host did not declare instruction-trusted. A declaration lives in `request["ssdm"]["provenance"]` (`decide.provenance` shape), must tile the whole field, and every segment must be `instruction`. Question and option ids are always data, and so is `state`. | Always (fail closed). P holds template text plus the explicitly declared host instructions. |
+| `state` | The rendered state only | Only if the host puts **all** untrusted text in `state`. Fails closed (`TrustUnavailable`) on rows whose evidence moved to the instructions (`meta["evidence"] == "reread_instructions"`, m2 `placement: instructions`, ~21 % of the m2 sample). |
+| `caller` | Every non-template token | Always. P then holds template text only. |
+
+`train.run_cell.to_train_record` declares a question's instructions trusted only when the builder placed the item in `state` and the instruction is exactly one of the builder's own templates (`data.augment.INSTR`). Everything else stays data, including the passage under `placement: instructions`. Real m2 rows built by `data.augment.render`, `to_train_record` and `build_row` are tested both ways (`tests/controlsafe/test_trust_policy.py`).
+
+Further fail-closed behaviour:
+- `TrustGatedBackbone.features(trust=None)` raises.
+- `fork_features` requires labels for the prefix and for every continuation.
+- Gradient checkpointing is refused with a clear error.
+
+## G15: trust-gated reachability (STRUCTURAL, `trust_gate.py`)
+
+**Statement.** Take two inputs with the same trusted token subsequence. Their untrusted parts may differ in content, length, count and placement, and so may a batch-mate's untrusted content and length. Then every protected-block feature at the i-th trusted token, at every layer, is identical between the two inputs, and so is the protected recurrent state.
+- The two are bitwise identical for an identical host-controlled batch shape: B, and the longest trusted subsequence in the batch.
+- They are independent of untrusted content always.
+- Any readout of protected features only is therefore invariant to untrusted text. This holds for any weights.
+
+**Construction.** P is the pretrained recurrence over trusted tokens only: identity transition and zero write at untrusted positions, with the shift and conv skipping them. It is implemented by compaction plus carry-forward. D is the full model plus zero-initialised P→D bridges. Block lower-triangular coupling means P never reads D. At init the output equals the pretrained model bitwise.
+
+**Scope.**
+- G15 is an **inference-time** statement. LoRA is shared by both streams and trained on losses that read untrusted training text, so P's weights do depend on training data; training-data poisoning belongs to G6/G12.
+- The default decision readout reads D, so G15 alone does not certify the decision (see G16).
+- Cost: `1 + |trusted|/T`.
+
+## G16: protected judge, bounded evidence channel, trusted veto (`g16.py`)
+
+`logit_k = b_k + a_k · E_k` for allowed k, and `-inf` otherwise, where:
+- `a_k = A h_P[k] + u_k` and `b_k = w·h_P[k] + β_k` come from P features only, plus option positions.
+- `E_k = c·tanh(W_e h_D[k]) ∈ (-c,c)^r`, with `W_e` zero-initialised.
+- The mask is the host allowed set (`policy.allowed`), ANDed with an optional P-only gate.
+
+The guarantees below assume the trust labels above and treat the schema (option set, canonical order, allowed set) as host structure.
+
+| | Statement | Tier |
+|---|---|---|
+| (a) veto | No untrusted text can make a vetoed option the decision | STRUCTURAL |
+| (b) isolation | `a`, `b` and the mask are bitwise invariant to untrusted text (G15). The decision is a fixed function of the bounded E. | STRUCTURAL |
+| (c) radius | With `μ_ij = logit_i − logit_j`, no `‖E'−E‖₂ < ρ₂ = min_j μ_ij/√(‖a_i‖²+‖a_j‖²)` (joint) flips the decision. Neither does any per-option ball `max_k‖E'_k−E_k‖₂ < ρ_opt = min_j μ_ij/(‖a_i‖+‖a_j‖)`. Both radii are tight. | CERTIFIED per decision |
+| (d) independence | If `b_i − b_j > c(‖a_i‖₁+‖a_j‖₁)` for every allowed `j ≠ i`, then the decision is identical for every E in the box, hence for every untrusted text. G4 then holds at zero recompute. | CERTIFIED per decision |
+| (e) G4 over E | Otherwise erase-and-check recomputes only E for each origin. P is reused exactly: origins share the trusted subsequence, which is checked token by token. Each origin's decision equals a full G16 recompute. | CERTIFIED (exact G4) |
+
+The review proposed a radius of `μ/L` with `L = max‖a_k‖`. It is **not sound**: it overstates ρ₂ by up to √2 and ρ_opt by up to 2. The counterexample is in `test_g16.py`. `μ/(√2 L) ≤ ρ₂` is a sound simplification.
+
+**Scope.** Untrusted text can still steer the decision within E's box. That steering is bounded, logged (r·K numbers per decision), and either certified or escalated.
+
+**Not done yet:**
+- G16 as a `train/` head arm.
+- Snapshot reuse of the D stream inside G4-over-E.
+- The capability cost against the D-head arm, `trust_gate.capability_cost` plus `harness.bootstrap.compare` (needs a trained run).
+
+**Arm result.** On 10 dev requests, with a random judge and every origin verified: k=1 evaluates 36 origins and k=2 evaluates 64. The P stream is computed once per request with 0 cache misses. The independence rate is 0 with random weights, so it says nothing about trained heads.
 
 ## Per-layer decay (`persistence.py`)
 
-- **CERTIFIED for every input, GDN only.**
-  - Statement: `||A_t||_2 = alpha_t <= rho_h = exp(-exp(A_log_h) softplus(dt_bias_h - ||W_a[h]|| sqrt(d) max|1+gamma|)) < 1`.
-  - This is a common induced norm, so `||A_T...A_1||_2 <= rho^T`.
-  - Tested against random inputs and embeddings with norms up to 1000×.
-  - The bound is real but loose: it is close to 1 whenever `||W_a||` is large.
-- **RWKV-7.**
-  - Only the diagonal decay part has a universal bound.
-  - The full transition has no universal 2-norm bound below 1; an explicit counterexample is in the tests.
-  - So the full-transition sup is reported over observed inputs only (EMPIRICAL).
-- **CERTIFIED per input, both families.**
-  - Perturb layer l's mixer input at t. For `tau > w` (w = 1 for the RWKV-7 shift, `conv_kernel-1` for GDN), `||dX_{t+tau}|| <= prod ||A_s|| ||dX_{t+w}|| <= rho_obs^(tau-w) ||dX_{t+w}||`.
-  - This holds exactly for that sequence, apart from float rounding, and is checked in the tests.
-- **EMPIRICAL.**
-  - End-to-end curves: perturb or swap an embedding and measure every layer's hidden state, state and final feature.
-  - These include the cross-layer cascade, for which no bound is claimed.
-  - Observed-sup norms in the 2, 1 and ∞ norms.
+**GDN — CERTIFIED for every input.**
+- `‖A_t‖₂ = α_t ≤ ρ_h = exp(−e^{A_log_h} softplus(dt_bias_h − √d ‖W_a[h]⊙(1+γ)‖₂)) < 1`.
+- This is a common induced norm, so `‖A_T…A_1‖₂ ≤ ρ^T`. The constant is the tight one the review suggested.
 
-## Untrusted-channel controllability (`gramian.py`, EMPIRICAL)
+**RWKV-7 — diagonal decay bound only.**
+- There is no common 2-norm bound below 1; the counterexample is in the tests.
+- This refutes the common 2-norm, not contraction. A weighted norm or joint spectral radius remains open.
+- Full-transition sups are observed-only (EMPIRICAL).
 
-- `W_l = Σ_{t∈U} J_t J_t^T`, taken with respect to untrusted embeddings (end-to-end) or with respect to layer l's own mixer input (local).
-- Reported: effective rank (entropy and participation ratio), numerical rank, and the overlap `tr(W P_R)/tr(W)` with the readable directions `span(r_T)⊗R^Nv`. The isotropic reference is `1/Nk`.
-- The Jacobian is checked against finite differences.
-- This is a first-order statement at one input, not a reachable-set certificate.
+**Both families — CERTIFIED per input.**
+- `‖dX_{t+τ}‖ ≤ ∏‖A_s‖ ‖dX_{t+w}‖`.
 
-## G4: snapshot erase-and-check (`snapshot.py`)
+**End-to-end curves: EMPIRICAL.**
 
-- Builds the token trie of the observed request and all of its covered origins (`certify.origin_requests`, the same dedup, the real `build_row` tokenisation) and runs each shared prefix once.
-- States are cloned only at branch points, so k=1 holds O(n) states.
-- It needs no assumption that the tokenizer composes across segments.
-- Decisions were verified identical to the C(n,k) full recompute on every origin (max |Δlogit| ≤ 1.4e-6).
-- The certificate is unchanged. Only its cost changes.
-- Scope: heads that read the final feature, plus option forks. Integrator heads would also need cached prefix features.
+## Untrusted-channel Gramians (`gramian.py`, EMPIRICAL)
 
-Measured on 10 dev-split generator requests (`receipts/2026-10-06-D-controlsafe-cpu/`), using backbone tokens and the same savings for both families:
+- `W_l = Σ_{t∈U} J_t J_t^T`, plus effective rank and readout overlap. Checked against finite differences.
+- **Scalability:** this is one autograd call per state coordinate and a dense S×S matrix. That is infeasible at Q9-AF scale (S ≈ 5e5 per layer); use `J^T J` or randomised trace estimates before any 9B run.
 
-| k | full-recompute forward-equivalents / request | snapshot forward-equivalents / request | tokens saved |
-|---|---|---|---|
-| 1 | 4.49 | 2.04 | 55% |
-| 2 | 7.10 | 2.84 | 60% |
+## G4 snapshot reuse (`snapshot.py`)
 
-Backbone call count rises, because there are more and shorter runs.
+- Exact prefix-trie reuse over the real covered origins and tokenisation.
+- Decisions are identical to the C(n,k) recompute (max |Δlogit| ≤ 1.4e-6).
+- On 10 dev requests:
 
-## G14: hidden-state poisoning monitor (`monitor.py`, EMPIRICAL, synthetic)
+| k | full recompute (forward-equivalents) | trie | tokens saved | backbone calls |
+|---|---|---|---|---|
+| 1 | 4.49 | 2.04 | 55 % | 74 vs 46 (1.6×) |
+| 2 | 7.10 | 2.84 | 60 % | 122 vs 74 (1.65×) |
 
-**Statistics.** For each layer, over the untrusted span:
-- retained fraction `||Φ X_{a-1}||/||X_{a-1}||`
-- `σ_max(Φ)` and log-volume
-- norm growth
+- GPU wall-time savings will be smaller than token savings, because there are more, shorter calls.
+- With option continuations, the baseline now counts continuation tokens too, so savings and the measured baseline agree.
+- Scope: heads that read the final feature, plus option forks.
 
-**Detector.** `-mean_l log retained`.
+## G14: hidden-state poisoning monitor (`monitor.py`): EMPIRICAL, synthetic, detection WEAK and UNVALIDATED
 
-**Synthetic test.**
-- Uses a long-memory tiny model with input-dependent decay.
-- The trigger is found by greedy coordinates against a functional objective (making two trusted prefixes indistinguishable), not against the detector.
-- Result: AUROC 0.96 (RWKV-7) and 0.91 (GDN), with collapse ratio 0.59 and 0.26.
+The previously quoted "AUROC 0.96 / 0.91" was seed 0, the best of the seeds tried, and is withdrawn. Ten joint seeds (model and trigger, `safety_eval.controlsafe_arms --arms g14`):
 
-**Not evaluated.** An adaptive attacker who also minimises the detector score. Trained parents.
+| family | AUROC per seed | mean [95 % bootstrap CI over seeds] | median | min | seeds ≤ chance | AUROC (min-head score) mean | collapse ratio median |
+|---|---|---|---|---|---|---|---|
+| RWKV-7 | .96 .37 .87 .38 .26 .39 .52 .91 .55 .49 | 0.57 [0.43, 0.72] | 0.49 | 0.26 | 5/10 | 0.50 | 0.76 |
+| GDN | .91 .79 .56 .81 .81 .95 1.00 .99 .98 .85 | 0.86 [0.78, 0.93] | 0.85 | 0.56 | 0/10 | 0.64 | 0.27 |
 
-**Structural link.** The G15 P block is bitwise unchanged under the trigger (tested). Memory collapse cannot touch protected context.
+**In SAFETY_SPEC terms.**
+- G14's alarm target (AUROC ≥ 0.9) is **not met on either family**.
+- On RWKV-7 the retained-norm detector is **no better than chance**.
+- G14 detection remains an unvalidated EMPIRICAL instrument.
+- The trigger objective (functional collapse) and the detector both measure decay, so even good AUROCs would be a pipeline check, not detection power.
+- Not evaluated: an adaptive attacker who also minimises the score, and trained parents.
 
-## Mapping to SAFETY_SPEC
+**What is solid.** G15's P block is bitwise unchanged under the trigger (tested). Protected context cannot collapse. The pinned-seed AUROC thresholds were removed from the tests; a seed-sweep smoke test replaces them.
+
+## Mapping to SAFETY_SPEC (proposed rows)
 
 | Row | What controlsafe adds | Tier |
 |---|---|---|
-| G2 | G15 carries host-declared provenance (G2(c)) into the model as an out-of-band, non-learned gate. ISE/ASIDE remain the learned, empirical channel | STRUCTURAL (P block only) |
-| G4 | Exact prefix-state reuse. Same certificate, measured cost | CERTIFIED (unchanged); cost EMPIRICAL |
-| G9 | Perturb-and-recompute influence curves and Gramians locate untrusted influence. G15 gives an exact zero-dependence statement for P features | (b) EMPIRICAL; zero-dependence STRUCTURAL |
-| G14 | Spectral and retained-norm telemetry plus a synthetic poisoning test. P block immune by construction | EMPIRICAL; immunity STRUCTURAL (P only) |
-| **G15** | Trust-gated reachability as stated above | STRUCTURAL |
+| G2 | G15 and G16 carry host-declared provenance (G2(c)) into the model as non-learned gates. The G16 veto enforces G2(a)'s host allowed set inside the decision function. | STRUCTURAL |
+| G4 | Snapshot reuse (cost), G16 independence (zero recompute) and G4-over-E | CERTIFIED (unchanged), cost EMPIRICAL |
+| G9 | Influence curves and Gramians: EMPIRICAL (b). Exact zero-dependence of P and of `a`, `b`: STRUCTURAL. | mixed |
+| G14 | Telemetry plus synthetic test (weak, unvalidated). P immune by construction. | EMPIRICAL / STRUCTURAL (P only) |
+| **G15** | Trust-gated reachability | STRUCTURAL (inference-time) |
+| **G16** | Veto plus isolation; radius plus independence plus G4-over-E | STRUCTURAL / CERTIFIED |
 
-## Arms and flags
+## Flags and entry points
 
-- **Training:** `TrainConfig.controlsafe = {"trust_gate": true, "bridge_rank": 8, "readout": "decision"|"concat"|"protected", "trust_policy": "state"|"caller"}`. In `run_cell`, the cell config uses the key `controlsafe`.
-  - The bridges train with the LoRA group.
-  - Lineage records the arm.
-  - An empty dict leaves the config hashes unchanged.
-- **Safety evaluation:**
-  - `python -m safety_eval.controlsafe_arms --out DIR [--arms g15,persistence,gramian,g4snap,g14]`
-  - `python -m safety_eval.run_guarantees_smoke --out DIR --controlsafe all`
-- **Capability cost:** `trust_gate.capability_cost(base_fn, gated_fn, items, metric)` (paired deltas, 0 at init) and `compute_multiplier`.
+- **Training:** `TrainConfig.controlsafe = {"trust_gate": true, "bridge_rank": 8, "readout": ..., "trust_policy": "provenance"}`. An empty dict leaves the config hashes unchanged.
+- **Evaluation:**
+  - `python -m safety_eval.controlsafe_arms --out DIR [--arms g15,persistence,gramian,g4snap,g14,g16]`
+  - `run_guarantees_smoke --controlsafe all`
+- **Receipt:** `receipts/2026-10-06-D-controlsafe-cpu/controlsafe.json`.

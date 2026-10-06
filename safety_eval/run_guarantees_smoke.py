@@ -174,7 +174,9 @@ def main(argv=None):
             "g15_pass": {f: r["pass"] for f, r in cs.get("g15", {}).items()},
             "g4snap": {f: {k: {m: v[m] for m in ("token_savings", "decisions_identical_all", "n_origins")}
                            for k, v in r.items() if k.startswith("k")} for f, r in cs.get("g4snap", {}).items()},
-            "g14": {f: {m: r[m] for m in ("auroc", "collapse_ratio")} for f, r in cs.get("g14", {}).items()},
+            "g14": {f: {m: r[m] for m in ("auroc", "auroc_min_score", "collapse_ratio",
+                                          "seeds_auroc_at_or_below_chance", "n_seeds")}
+                    for f, r in cs.get("g14", {}).items()},
         }
     (out / "summary.json").write_text(json.dumps(summary, indent=1, default=float), encoding="utf-8", newline="\n")
     print(json.dumps(summary, indent=1, default=float))
