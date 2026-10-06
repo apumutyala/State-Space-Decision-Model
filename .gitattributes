@@ -1,1 +1,3 @@
 fixtures/replay/** -text
+
+third_party/** -text
