@@ -15,3 +15,9 @@ This initial planner expresses reads, explanations of reads, comparisons and reg
 ## Adapter v0.1 integration revision
 
 The bridge now pins the v0.1 request/response envelope, provenance-free fingerprint algorithm and direct question/option limits against D source `0a30e7b`. Full-domain policy-stage validation matches that version. A host policy restriction is explicitly unsupported by the initial planner until a trusted per-slot mapping exists; it cannot be silently dropped. Independent recheck found and verified that preflight fix. Current L0 emits no provenance. Historical v0 receipts remain version-scoped; the new receipt supplies the current integration evidence. The adapter actual-forward cap finding remains a D-side cross-review item.
+
+## Shared oracle/replay integration
+
+The CPU smoke now records the actual D OracleBackend's synthetic logits and replays semantic planning through D ReplayBackend. It checks semantic equality separately from normalized D response equality, including probability stages and served configuration. The adversary found that output-only equality missed scaled logits; a regression now demonstrates that changed probabilities fail even when argmax/program/text stay the same. Changed task or evidence must produce a replay miss. Raw synthetic recordings and both response streams are retained in the smoke output. These are simulated backend work counts, not live learned-model inference or performance evidence.
+
+The earlier L-only alternate backend API draft is superseded by this shared implementation plus the strict bridge. Its source remains preserved in the local `ssdm-codex-l0-backends` worktree; it is not shipped as a fallback. The fold is recorded in LEDGER.md.
