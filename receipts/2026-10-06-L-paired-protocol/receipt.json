@@ -1,0 +1,43 @@
+{
+  "title": "Paired direct/planner protocol parity on synthetic CPU inputs",
+  "source_commit": "8b36bc2d8b6e917c4202ff548bda8b657027cc33",
+  "prior_receipt": "receipts/2026-10-06-L-paired-comparison/receipt.json (historical paired math proof)",
+  "checks": [
+    {
+      "command": "PYTHONUTF8=1 python -I -m unittest discover -s language_growth/tests -t . -p test_paired_comparison.py -v",
+      "exit_code": 0,
+      "result": "9 paired comparison tests passed",
+      "output": "focused-tests.txt"
+    },
+    {
+      "command": "PYTHONUTF8=1 python -I -m unittest discover -s language_growth/tests -t . -q",
+      "exit_code": 0,
+      "result": "84 language-growth tests passed",
+      "output": "language-tests.txt"
+    }
+  ],
+  "protocol_regressions": {
+    "extra_ssdm_key": "Direct arm provider_error/invalid_response, one direct call and one forward; planner arm remains correct; pair stays in denominator and is incorrect.",
+    "invalid_parent_pin": "Direct and planner arms precondition_failed/invalid_served_config_pin with zero provider and forward calls; pair stays in denominator and is incorrect.",
+    "shared_checks": "Direct arm uses planner _Session no-call preflight and _RESPONSE_ENVELOPE_KEYS."
+  },
+  "sha256": {
+    "language_growth/paired_comparison.py": "9edbe63b2da84bcb4f193c2d0d0cff0ff0cf49ecb41eff6d06623874b591b01c",
+    "language_growth/tests/test_paired_comparison.py": "e0c0c0c36188b39364114941fdce0db9cb4f7d2dabd19e7b5c5780e4bf06fc3e",
+    "language_growth/planner.py": "a4061d28f2a87fbf726eedf9c04affe83373ac0f75cb39c37d829872d3a701f3",
+    "language_growth/parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "language_growth/free_running_dev.py": "ce81dbdb6d0415c7c1fb3721b42159cd54983d0f2100e63c5b35532a2f238772",
+    "language_growth/development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+    "focused-tests.txt": "4f04c7637a25f8fe41ae11621160f3524883c4576699aa69af4b3aada0d06388",
+    "language-tests.txt": "10aad299f99c2b21a32f2e3eb406dbeab202929f44035afeef3c9d78c6276e07"
+  },
+  "environment": {
+    "platform": "Windows CPU",
+    "python": "3.12.13",
+    "model_calls": 0,
+    "gpu_used": false,
+    "index_or_heldout_data_used": false,
+    "billed_cost_usd": 0
+  },
+  "scope": "Synthetic scripted protocol validation only; no learned or retention-gate result."
+}

@@ -191,7 +191,8 @@ def write_arm_cache(cache_dir: str | Path, stage: str, units: dict, ident: dict,
     return man["stages"][stage]
 
 
-def read_arm_cache(cache_dir: str | Path, stage: str, expect_ident: dict, expect_parent: dict | None = None) -> tuple:
+def read_arm_cache(cache_dir: str | Path, stage: str, expect_ident: dict, expect_parent: dict | None = None,
+                   expect_sha256: str | None = None) -> tuple:
     """(units, manifest entry). Refuses (``IdentityMismatch``) a cache whose units identity differs from the child's
     (other cohort / unit spec / items / variants / Index rows), whose file hash drifted, or whose parent identity
     differs from ``expect_parent`` (keys present in it must match)."""
@@ -199,6 +200,8 @@ def read_arm_cache(cache_dir: str | Path, stage: str, expect_ident: dict, expect
     man_p = d / "arm.json"
     if not man_p.exists():
         raise IdentityMismatch(f"no parent arm cache at {d}")
+    if expect_sha256 is not None and hashlib.sha256(man_p.read_bytes()).hexdigest() != expect_sha256:
+        raise IdentityMismatch("parent arm.json sha256 != the pinned one (job_params parent_arm_sha256)")
     man = json.loads(man_p.read_text(encoding="utf-8"))
     if man.get("schema") != ARM_SCHEMA or stage not in man.get("stages", {}):
         raise IdentityMismatch(f"parent arm cache has no {stage} stage (schema {man.get('schema')})")
@@ -251,6 +254,8 @@ def promotion_verdict(verdicts: dict[str, dict]) -> dict[str, Any]:
 
 
 def exit_code(verdicts: dict[str, dict]) -> int:
+    if not verdicts:  # nothing was evaluated: never "accept"
+        return EXIT["usage"]
     rej = {s for s, v in verdicts.items() if not v["accept"]}
     if not rej:
         return EXIT["accept"]
@@ -296,6 +301,7 @@ def fit_child_temperature(model, calib_items: list, disjoint_from: dict[str, Ite
 def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_steer, child_identity: dict,
               items_by_role: dict[str, list], records_by_id: dict[str, dict], parent_arm: str | Path,
               expect_parent: dict | None = None, index_rows: list[dict] | None = None, n_boot: int = 2000,
+              parent_arm_sha256: str | None = None,
               out: str | Path | None = None, extra: dict | None = None) -> tuple[int, dict]:
     """Score the child per stage, load the matching parent units, apply the verdicts and the promotion rule."""
     from train.promotion import MARGINS
@@ -307,7 +313,7 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
         variants = stage_variants(cohort, stage)
         ident = units_identity(stage, cohort, spec, {r: items_by_role[r] for r in STAGE_ROLES[stage]}, variants,
                                index_rows if stage == "g13" else None)
-        parent, ent = read_arm_cache(parent_arm, stage, ident, expect_parent)
+        parent, ent = read_arm_cache(parent_arm, stage, ident, expect_parent, parent_arm_sha256)
         child = score_stage(stage, child_decide, child_steer, items_by_role, records_by_id, variants,
                             index_rows if stage == "g13" else None)
         v = stage_verdict(stage, child, parent, variants, index_rows, MARGINS, n_boot)
@@ -325,6 +331,24 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
     if out is not None:
         Path(out).write_text(json.dumps(report, indent=1, default=float), encoding="utf-8")
     return code, report
+
+
+def expected_parent_identity(parent: str, provenance: dict | None = None) -> dict:
+    """What the parent arm cache must say about its parent: family AND repo@revision (and, for Q9-AF, the converted
+    checkpoint sha256), so a cache scored on another snapshot of the same family is refused."""
+    if parent == "rwkv7":
+        import third_party.rwkv7_hf as V
+
+        return {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION}
+    if parent == "q9af":
+        from heads.backbone import Q9AF_BASE_REPO, Q9AF_BASE_REVISION
+
+        prov = provenance or {}
+        if not prov.get("converted_sha256"):
+            raise IdentityMismatch("q9af child has no converted_sha256 provenance")
+        return {"parent": "q9af", "repo": Q9AF_BASE_REPO, "revision": Q9AF_BASE_REVISION,
+                "converted_sha256": prov["converted_sha256"]}
+    raise ValueError(parent)
 
 
 # ------------------------------------------------------------------------------------------------ CLI (GPU job)
@@ -345,6 +369,7 @@ def main(argv=None) -> int:
     ap.add_argument("--records", required=True)
     ap.add_argument("--guard-readiness", required=True)
     ap.add_argument("--parent-arm", required=True)
+    ap.add_argument("--parent-arm-sha256", required=True, help="pinned sha256 of <parent-arm>/arm.json")
     ap.add_argument("--index-rows", default=None, help="the 2,008-row Index DEV subset rows (needed for g13)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--stage", choices=["g12", "g13", "all"], default="all")
@@ -431,7 +456,7 @@ def main(argv=None) -> int:
         index_rows = read_rows(a.index_rows)
     records_by_id = {r["id"]: r for rs in role_recs.values() for r in rs}
     prov = getattr(bb, "provenance", None) or {}
-    expect_parent = {"parent": parent, **({"converted_sha256": prov["converted_sha256"]} if prov else {})}
+    expect_parent = expected_parent_identity(parent, prov)
     try:
         code, rep = _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_id, a, expect_parent,
                          index_rows, out, guard, backend, tr, bb, ft, card)
@@ -454,6 +479,7 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
                                           "arm_calibration": "untempered, like the parent arm (identity calibration)"},
                           items_by_role=items_by_role, records_by_id=records_by_id, parent_arm=a.parent_arm,
                           expect_parent=expect_parent, index_rows=index_rows, n_boot=a.n_boot, out=out,
+                          parent_arm_sha256=a.parent_arm_sha256,
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),
                                  "temperature": {**ft.identity(), "disjointness": ft.disjointness,

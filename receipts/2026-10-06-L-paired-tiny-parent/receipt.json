@@ -1,0 +1,46 @@
+{
+  "title": "PR25 tiny-parent restore through paired comparison caller",
+  "paired_source_commit": "d710f529057fab83f08d492bc0c4903d3f4cf0e9",
+  "pr25_exporter_commit": "83eca37718812800bace6eab781457ee98e999d7",
+  "pr25_exporter_file_sha256": "cdd26b7218bfb1ce19af817e96fa5001ec8969b00f93c8eb33934b97fdc832bb",
+  "command": "PYTHONUTF8=1 CUDA_VISIBLE_DEVICES=-1 C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe receipts/2026-10-06-L-paired-tiny-parent/run.py receipts/2026-10-06-L-paired-tiny-parent/raw C:/Users/apumu/research/CHLabs/ssdm-codex-l0-training-records",
+  "exit_code": 0,
+  "configuration": {
+    "training": "one step, snapshot head, LoRA rank 2, batch size 1, seed 17, tiny random recurrent backbone hidden 8/layers 1, CPU",
+    "validation": "one synthetic development_validation comparison task, seed 19, production choices",
+    "parent": "one restored checkpoint and one OptionCountTemperature calibration instance served both direct and planner arms",
+    "checkpoint_scope": "temporary synthetic test artifact, deleted after run; SHA-256 recorded"
+  },
+  "observed": {
+    "train_slots": 4,
+    "train_items": 4,
+    "head_and_lora_parameters_changed": true,
+    "checkpoint_restore_exact": true,
+    "same_initial_state": true,
+    "direct": {"status": "ok", "correct": false, "provider_calls": 1, "forward_calls": 1},
+    "planner": {"status": "kernel_rejected", "reason": "unsupported_assertion", "task_correct": false, "provider_calls": 4, "forward_calls": 4}
+  },
+  "sha256": {
+    "language_growth/paired_comparison.py": "5c7709ad27b5ffa548bff1add2a71b26275cacef7653c536b4b96c1985d74c72",
+    "heads/backbone.py": "c2987cc26b825ee83e151da9277409540c650972a88aef47da18fbce6bfef147",
+    "heads/model.py": "54eea518219348ba2800737fbfd54db14487e3e61c5e1cd9b2cb739235749a87",
+    "heads/decide_backend.py": "f71c87b338449e53e3c131a3a5c395df211af90af54c66b9d4311733b44bf904",
+    "train/trainer.py": "63e2edb7d94a3c3d7cfa46009fcfde31819e60fb481974d43ce994e9c0b7b053",
+    "train/data.py": "11b7770b641e135f485f2a59c426df8f8409d7483e1eb339c33e614fab29679f",
+    "decide/adapter.py": "fe48552912a800aaef99833048cd07d55640dece1fafcad291b9bbe63722b859",
+    "decide/calibration.py": "f5ec90c23bb72d44f9d894c5ac64f726bc8fb43513ec0b5cabb55d0de73929fb",
+    "run.py": "a7408c1fe2eb4f438c44890a977663365f96552cc4c0acd6e20f95f56c62058b",
+    "check-run.txt": "d65cf8d34dc58df9c5f8719707358a68829c13728467c9c86d61ee8349023ba6",
+    "raw/raw-report.json": "f16230eb85228c35bf9c8ea180e0a81cc979cb2922849ce94ba26c742fff99c2",
+    "raw/summary.json": "ccf008ae018157765171aa9b397111d0abda4c075880f9e33e105db73a8b2c95"
+  },
+  "environment": {
+    "platform": "Windows CPU with CUDA hidden",
+    "torch": "2.8.0+cu128 in existing venv",
+    "downloads": 0,
+    "gpu_used": false,
+    "index_or_heldout_data_used": false,
+    "billed_cost_usd": 0
+  },
+  "scope": "Structural train/save/restore/serve composition only. The random parent's wrong direct answer and kernel-rejected planner output are preserved as raw failures, not interpreted as capability or retention estimates."
+}

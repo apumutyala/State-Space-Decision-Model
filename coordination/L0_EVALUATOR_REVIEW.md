@@ -1,0 +1,9 @@
+# L0e runtime fixture evaluator handoff
+
+This evaluator executes authored synthetic ASTs through the actual semantic kernel and renderer. It records observations separately from authored expectations. A true answer to the wrong question is not marked independently correct; useful-answer labels are never promoted to measured model scores. Scripted AST repair attempts do not count as provider calls or qualify a planner budget. The CLI returns failure for boundary-expectation mismatches or denied releases while preserving the raw report.
+
+Track L adversarial review found two serialization defects in an earlier draft: private conflict references and arbitrary query metadata could enter model-facing evidence. The revision rejects contaminated public snapshots, filters conflict references to the offered view and validates query/obligation shapes. A proposed hidden-ID substring blacklist was also rejected because it would reveal private membership; literal handling now stays independent of the private catalog. Regression tests cover these findings. A later independent reviewer checked authored-label isolation and scripted-budget separation and found no further actionable issue in that bounded scope.
+
+Dependencies: #4 contract (`8109b13`), #5 fixtures (`2fe814a`), #10 kernel (`e1dd16b`), #11 renderer (`a361de9`). For pre-merge reproduction populate those dependency paths, keeping this PR's evaluator and tests. This isolated PR starts from agent-main and intentionally does not duplicate dependency commits. The development branch `codex/l0-evaluation` is preserved.
+
+The logical direct-decision request helper in evaluate.py is not yet a qualified live D transport. The separate same-bridge direct-decision builder and learned planner will be reviewed separately. No Index or held-out items, model weights, GPU or paid job is used here. Claude must independently reproduce the receipt before merge.

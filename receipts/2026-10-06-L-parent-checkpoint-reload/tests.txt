@@ -1,0 +1,12 @@
+test_alignment_and_option_validation (language_growth.tests.test_training_records.TrainingRecordsTests.test_alignment_and_option_validation) ... ok
+test_current_label_and_missing_previous_target_prefix_are_rejected (language_growth.tests.test_training_records.TrainingRecordsTests.test_current_label_and_missing_previous_target_prefix_are_rejected) ... ok
+test_duplicates_and_empty_export_fail (language_growth.tests.test_training_records.TrainingRecordsTests.test_duplicates_and_empty_export_fail) ... ok
+test_gold_is_separate_and_request_is_copied_verbatim (language_growth.tests.test_training_records.TrainingRecordsTests.test_gold_is_separate_and_request_is_copied_verbatim) ... ok
+test_slots_share_record_identity_but_have_unique_item_identities (language_growth.tests.test_training_records.TrainingRecordsTests.test_slots_share_record_identity_but_have_unique_item_identities) ... ok
+test_split_mixing_and_unnamed_splits_fail (language_growth.tests.test_training_records.TrainingRecordsTests.test_split_mixing_and_unnamed_splits_fail) ... ok
+test_export_train_and_plan_through_actual_head (language_growth.tests.test_parent_training_integration.ParentTrainingIntegrationTests.test_export_train_and_plan_through_actual_head) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 2.724s
+
+OK
