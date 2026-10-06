@@ -1,0 +1,112 @@
+{
+  "case_id": "LG22",
+  "title": "unknown record reference",
+  "tags": [
+    "negative",
+    "unknown_reference"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Is Cedar repairable?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": false
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "cedar-absent-v1",
+        "field": "repairable"
+      },
+      {
+        "id": "n2",
+        "op": "Assert",
+        "proposition": "n1"
+      }
+    ],
+    "outputs": [
+      "n2"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "rejected",
+    "kernel_reason_category": "unknown_reference",
+    "task_outcome": "rejected_plan",
+    "useful_complete_answer": false,
+    "why": "The declared dangling record reference is absent from the catalog; the validator allowlist admits only this intentional invalid proposal reference.",
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 0,
+      "useful_complete_count": 0,
+      "ask_count": 0
+    }
+  },
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG22-D0",
+    "type": "choice",
+    "question": "Is Cedar repairable?",
+    "options": [
+      {
+        "id": "LG22-o01",
+        "description": "Cedar is not repairable."
+      },
+      {
+        "id": "LG22-o02",
+        "description": "Cedar is repairable."
+      },
+      {
+        "id": "LG22-o03",
+        "description": "Cedar repairability is not established."
+      }
+    ],
+    "target_option_id": "LG22-o03",
+    "target_description": "Evaluator-only authored task expectation, independent of the rejected proposal.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": false,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG22-no": "LG22-o01",
+      "LG22-yes": "LG22-o02",
+      "LG22-unknown": "LG22-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG22-o01": "LG22-o02",
+        "LG22-o02": "LG22-o03",
+        "LG22-o03": "LG22-o01"
+      },
+      "target_option_id": "LG22-o01",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
+  },
+  "unresolved": []
+}

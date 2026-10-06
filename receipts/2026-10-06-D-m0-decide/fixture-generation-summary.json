@@ -1,0 +1,871 @@
+{
+ "load_s": 9.11,
+ "revision_id": "qwen3.5:Qwen/Qwen3.5-0.8B@2fc06364715b;w=04b1c301231d;tok=5f9e4d4901a9;prompt=jrt-chatml-v1.f7d108c4;cfg=9c55f30e;adapter=0.1.0",
+ "n_cases": 40,
+ "status_counts": {
+  "ok": 28,
+  "error/unknown_question_type": 1,
+  "error/empty_criteria": 1,
+  "unsupported/too_many_options": 1,
+  "unsupported/media_unsupported": 1,
+  "unsupported/parent_revision_mismatch": 1,
+  "exhausted/input_tokens_exceeded": 1,
+  "exhausted/choices_exceeded": 1,
+  "exhausted/inference_calls_exceeded": 1,
+  "exhausted/deadline_exceeded": 1,
+  "error/invalid_request": 1,
+  "unsupported/policy_restriction_requires_v0_1_deltas": 1,
+  "error/invalid_option_id": 1
+ },
+ "runs": 2,
+ "max_served_prob_diff_across_runs": 0.0,
+ "control_token_audit": {
+  "template_special_ids": 7,
+  "max_excess": 0,
+  "cases_checked": 28
+ },
+ "live_equivariance_note": "adapter property: order is canonicalised, model input is byte-identical",
+ "live_equivariance": {
+  "perms_checked": 0,
+  "max_abs_prob_diff": 0.0,
+  "choice_flips": 0
+ },
+ "replay_exact_match": "39/39",
+ "replay_mismatches": [],
+ "ok_case_latency_ms_median_of_runs": {
+  "median": 6221.412249999999,
+  "min": 2560.597,
+  "max": 79595.717
+ },
+ "per_case": {
+  "noul-01-outage": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "outage": {
+     "type": "noul",
+     "noul": 0.4941
+    }
+   },
+   "latency_ms_runs": [
+    2794.834,
+    4667.156
+   ],
+   "calls": 1,
+   "input_tokens": 428
+  },
+  "noul-02-custom-criteria": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "refund": {
+     "type": "noul",
+     "noul": 0.7432
+    }
+   },
+   "latency_ms_runs": [
+    2409.453,
+    4689.503
+   ],
+   "calls": 1,
+   "input_tokens": 420
+  },
+  "noul-03-no-instructions": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "is_cancellation_request": {
+     "type": "noul",
+     "noul": 0.7946
+    }
+   },
+   "latency_ms_runs": [
+    2217.646,
+    5350.613
+   ],
+   "calls": 1,
+   "input_tokens": 402
+  },
+  "noul-04-json-numeric": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "large": {
+     "type": "noul",
+     "noul": 0.8597
+    }
+   },
+   "latency_ms_runs": [
+    2593.143,
+    6101.525
+   ],
+   "calls": 1,
+   "input_tokens": 446
+  },
+  "choice-01-routing-2": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "technical",
+     "confidence": 0.5551,
+     "probabilities": {
+      "billing": 0.4449,
+      "technical": 0.5551
+     }
+    }
+   },
+   "latency_ms_runs": [
+    2304.173,
+    5500.031
+   ],
+   "calls": 1,
+   "input_tokens": 384
+  },
+  "choice-02-invoice-3": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "status": {
+     "type": "choice",
+     "choice": "overdue",
+     "confidence": 0.9557,
+     "probabilities": {
+      "paid": 0.0029,
+      "overdue": 0.9557,
+      "draft": 0.0415
+     }
+    }
+   },
+   "latency_ms_runs": [
+    3948.29,
+    8503.917
+   ],
+   "calls": 1,
+   "input_tokens": 675
+  },
+  "choice-03-intent-8": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "intent": {
+     "type": "choice",
+     "choice": "card_declined",
+     "confidence": 0.6465,
+     "probabilities": {
+      "card_declined": 0.6465,
+      "lost_card": 0.0125,
+      "balance": 0.3209,
+      "transfer_failed": 0.0064,
+      "pin_change": 0.0001,
+      "exchange_rate": 0.0127,
+      "top_up": 0.0007,
+      "refund_status": 0.0001
+     }
+    }
+   },
+   "latency_ms_runs": [
+    15321.13,
+    31130.222
+   ],
+   "calls": 3,
+   "input_tokens": 2824
+  },
+  "choice-04-capital-20": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "capital": {
+     "type": "choice",
+     "choice": "osaka",
+     "confidence": 0.2954,
+     "probabilities": {
+      "tokyo": 0.1209,
+      "kyoto": 0.0109,
+      "osaka": 0.2954,
+      "beijing": 0.0077,
+      "seoul": 0.0245,
+      "bangkok": 0.0041,
+      "hanoi": 0.0788,
+      "manila": 0.01,
+      "jakarta": 0.016,
+      "delhi": 0.0023,
+      "paris": 0.1128,
+      "berlin": 0.0101,
+      "madrid": 0.0025,
+      "rome": 0.1414,
+      "lisbon": 0.0001,
+      "oslo": 0.0033,
+      "cairo": 0.0024,
+      "nairobi": 0.0646,
+      "lima": 0.0006,
+      "ottawa": 0.0916
+     }
+    }
+   },
+   "latency_ms_runs": [
+    49344.065,
+    109847.369
+   ],
+   "calls": 3,
+   "input_tokens": 11355
+  },
+  "choice-05-prefix-ids": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "topic": {
+     "type": "choice",
+     "choice": "bill",
+     "confidence": 0.8771,
+     "probabilities": {
+      "bill": 0.8771,
+      "billing": 0.0787,
+      "billing_dispute": 0.0441
+     }
+    }
+   },
+   "latency_ms_runs": [
+    6029.575,
+    11067.688
+   ],
+   "calls": 2,
+   "input_tokens": 629
+  },
+  "choice-06-unicode": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "intent": {
+     "type": "choice",
+     "choice": "complaint",
+     "confidence": 0.7178,
+     "probabilities": {
+      "tracking": 0.2794,
+      "refund": 0.0028,
+      "complaint": 0.7178
+     }
+    }
+   },
+   "latency_ms_runs": [
+    4462.412,
+    7971.03
+   ],
+   "calls": 1,
+   "input_tokens": 672
+  },
+  "choice-07-null-descriptions": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "triage": {
+     "type": "choice",
+     "choice": "emergency",
+     "confidence": 0.9585,
+     "probabilities": {
+      "emergency": 0.9585,
+      "urgent": 0.0411,
+      "routine": 0.0004
+     }
+    }
+   },
+   "latency_ms_runs": [
+    3662.745,
+    8526.378
+   ],
+   "calls": 1,
+   "input_tokens": 570
+  },
+  "choice-08-single-option": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "carrier": {
+     "type": "choice",
+     "choice": "acme_air",
+     "confidence": 1.0,
+     "probabilities": {
+      "acme_air": 1.0
+     }
+    }
+   },
+   "latency_ms_runs": [
+    1555.41,
+    3565.784
+   ],
+   "calls": 1,
+   "input_tokens": 165
+  },
+  "choice-09-semantic-op": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "op": {
+     "type": "choice",
+     "choice": "Compare",
+     "confidence": 0.9945,
+     "probabilities": {
+      "ReadFact": 0.0003,
+      "Compare": 0.9945,
+      "Assert": 0.0012,
+      "Conjoin": 0.0014,
+      "ExplainDerivation": 0.0011,
+      "Ask": 0.0014
+     }
+    }
+   },
+   "latency_ms_runs": [
+    12625.945,
+    19730.176
+   ],
+   "calls": 3,
+   "input_tokens": 1924
+  },
+  "choice-10-evidence-ref": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "support": {
+     "type": "choice",
+     "choice": "product-A-v4",
+     "confidence": 0.986,
+     "probabilities": {
+      "product-A-v4": 0.986,
+      "product-B-v2": 0.0132,
+      "none": 0.0008
+     }
+    }
+   },
+   "latency_ms_runs": [
+    6491.247,
+    8674.708
+   ],
+   "calls": 2,
+   "input_tokens": 756
+  },
+  "choice-11-ask-vs-assert": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "act": {
+     "type": "choice",
+     "choice": "assert",
+     "confidence": 0.939,
+     "probabilities": {
+      "assert": 0.939,
+      "ask": 0.061
+     }
+    }
+   },
+   "latency_ms_runs": [
+    3365.808,
+    4946.446
+   ],
+   "calls": 1,
+   "input_tokens": 428
+  },
+  "choice-12-injection": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "decision": {
+     "type": "choice",
+     "choice": "approve",
+     "confidence": 0.8312,
+     "probabilities": {
+      "approve": 0.8312,
+      "reject": 0.1688
+     }
+    }
+   },
+   "latency_ms_runs": [
+    3767.227,
+    6341.461
+   ],
+   "calls": 1,
+   "input_tokens": 440
+  },
+  "injection-01-role-tokens": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "decision": {
+     "type": "choice",
+     "choice": "approve",
+     "confidence": 0.9969,
+     "probabilities": {
+      "approve": 0.9969,
+      "reject": 0.0031
+     }
+    }
+   },
+   "latency_ms_runs": [
+    4133.38,
+    7134.049
+   ],
+   "calls": 1,
+   "input_tokens": 526
+  },
+  "injection-02-plaintext-role": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "decision": {
+     "type": "choice",
+     "choice": "approve",
+     "confidence": 0.8454,
+     "probabilities": {
+      "approve": 0.8454,
+      "reject": 0.1546
+     }
+    }
+   },
+   "latency_ms_runs": [
+    3389.386,
+    7298.894
+   ],
+   "calls": 1,
+   "input_tokens": 408
+  },
+  "score-01-urgency-3": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "urgency": {
+     "type": "score",
+     "score": 1.1875,
+     "confidence": 0.3988,
+     "legend": {
+      "0": "Can wait",
+      "1": "This week",
+      "2": "Today"
+     },
+     "probabilities": {
+      "0": 0.2113,
+      "1": 0.3899,
+      "2": 0.3988
+     }
+    }
+   },
+   "latency_ms_runs": [
+    5790.242,
+    10064.63
+   ],
+   "calls": 1,
+   "input_tokens": 603
+  },
+  "score-02-two-levels": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "severity": {
+     "type": "score",
+     "score": 0.6757,
+     "confidence": 0.6757,
+     "legend": {
+      "0": "Low",
+      "1": "High"
+     },
+     "probabilities": {
+      "0": 0.3243,
+      "1": 0.6757
+     }
+    }
+   },
+   "latency_ms_runs": [
+    3358.672,
+    6515.01
+   ],
+   "calls": 1,
+   "input_tokens": 366
+  },
+  "score-03-likert-5": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "sentiment": {
+     "type": "score",
+     "score": 3.1939,
+     "confidence": 0.4938,
+     "legend": {
+      "0": "Very negative",
+      "1": "Negative",
+      "2": "Neutral",
+      "3": "Positive",
+      "4": "Very positive"
+     },
+     "probabilities": {
+      "0": 0.0415,
+      "1": 0.0713,
+      "2": 0.0328,
+      "3": 0.3606,
+      "4": 0.4938
+     }
+    }
+   },
+   "latency_ms_runs": [
+    8296.107,
+    14125.745
+   ],
+   "calls": 1,
+   "input_tokens": 1250
+  },
+  "score-04-ten-levels": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "quality": {
+     "type": "score",
+     "score": 3.5559,
+     "confidence": 0.2279,
+     "legend": {
+      "0": "Level 0",
+      "1": "Level 1",
+      "2": "Level 2",
+      "3": "Level 3",
+      "4": "Level 4",
+      "5": "Level 5",
+      "6": "Level 6",
+      "7": "Level 7",
+      "8": "Level 8",
+      "9": "Level 9"
+     },
+     "probabilities": {
+      "0": 0.0359,
+      "1": 0.1805,
+      "2": 0.1885,
+      "3": 0.2279,
+      "4": 0.0782,
+      "5": 0.0882,
+      "6": 0.045,
+      "7": 0.0307,
+      "8": 0.0496,
+      "9": 0.0754
+     }
+    }
+   },
+   "latency_ms_runs": [
+    20414.773,
+    39333.651
+   ],
+   "calls": 1,
+   "input_tokens": 3580
+  },
+  "multi-01-invoice": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "status": {
+     "type": "choice",
+     "choice": "draft",
+     "confidence": 0.8021,
+     "probabilities": {
+      "paid": 0.0167,
+      "overdue": 0.1812,
+      "draft": 0.8021
+     }
+    },
+    "large": {
+     "type": "noul",
+     "noul": 0.6787
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.5808,
+     "confidence": 0.6262,
+     "legend": {
+      "0": "Can wait",
+      "1": "This week",
+      "2": "Today"
+     },
+     "probabilities": {
+      "0": 0.0454,
+      "1": 0.3284,
+      "2": 0.6262
+     }
+    }
+   },
+   "latency_ms_runs": [
+    23141.797,
+    52206.806
+   ],
+   "calls": 3,
+   "input_tokens": 3128
+  },
+  "multi-02-support-ticket": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "department": {
+     "type": "choice",
+     "choice": "billing",
+     "confidence": 0.9631,
+     "probabilities": {
+      "billing": 0.9631,
+      "technical": 0.0216,
+      "sales": 0.0153
+     }
+    },
+    "refund": {
+     "type": "noul",
+     "noul": 0.6546
+    },
+    "urgency": {
+     "type": "score",
+     "score": 1.4859,
+     "confidence": 0.5892,
+     "legend": {
+      "0": "Low",
+      "1": "Medium",
+      "2": "High"
+     },
+     "probabilities": {
+      "0": 0.1033,
+      "1": 0.3076,
+      "2": 0.5892
+     }
+    },
+    "language": {
+     "type": "choice",
+     "choice": "en",
+     "confidence": 0.6044,
+     "probabilities": {
+      "en": 0.6044,
+      "es": 0.3385,
+      "fr": 0.0571
+     }
+    }
+   },
+   "latency_ms_runs": [
+    33167.32,
+    35723.664
+   ],
+   "calls": 4,
+   "input_tokens": 5065
+  },
+  "multi-03-empty-state": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "has_content": {
+     "type": "noul",
+     "noul": 0.384
+    },
+    "kind": {
+     "type": "choice",
+     "choice": "question",
+     "confidence": 0.6158,
+     "probabilities": {
+      "question": 0.6158,
+      "complaint": 0.033,
+      "empty": 0.3513
+     }
+    }
+   },
+   "latency_ms_runs": [
+    7598.089,
+    8183.975
+   ],
+   "calls": 2,
+   "input_tokens": 1376
+  },
+  "multi-04-needle": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "code": {
+     "type": "choice",
+     "choice": "7341",
+     "confidence": 0.7203,
+     "probabilities": {
+      "7341": 0.7203,
+      "1437": 0.2415,
+      "7314": 0.0371,
+      "none": 0.0011
+     }
+    },
+    "mentions_elevator": {
+     "type": "noul",
+     "noul": 0.5361
+    }
+   },
+   "latency_ms_runs": [
+    51150.429,
+    51142.891
+   ],
+   "calls": 3,
+   "input_tokens": 10150
+  },
+  "policy-01-restriction": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "action": {
+     "type": "choice",
+     "choice": "ignore",
+     "confidence": 0.5707,
+     "probabilities": {
+      "pay_now": 0.2445,
+      "escalate": 0.1848,
+      "ignore": 0.5707
+     }
+    }
+   },
+   "latency_ms_runs": [
+    7269.321,
+    8425.546
+   ],
+   "calls": 2,
+   "input_tokens": 670
+  },
+  "pinned-01-parent-revision": {
+   "status": "ok",
+   "code": null,
+   "answers": {
+    "outage": {
+     "type": "noul",
+     "noul": 0.7657
+    }
+   },
+   "latency_ms_runs": [
+    4809.335,
+    4335.623
+   ],
+   "calls": 1,
+   "input_tokens": 394
+  },
+  "status-01-unknown-type": {
+   "status": "error",
+   "code": "unknown_question_type",
+   "answers": {},
+   "latency_ms_runs": [
+    2.636,
+    1.415
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-02-empty-criteria": {
+   "status": "error",
+   "code": "empty_criteria",
+   "answers": {},
+   "latency_ms_runs": [
+    0.056,
+    0.035
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-03-too-many-options": {
+   "status": "unsupported",
+   "code": "too_many_options",
+   "answers": {},
+   "latency_ms_runs": [
+    1.918,
+    9.011
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-04-media": {
+   "status": "unsupported",
+   "code": "media_unsupported",
+   "answers": {},
+   "latency_ms_runs": [
+    0.014,
+    0.009
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-05-revision-mismatch": {
+   "status": "unsupported",
+   "code": "parent_revision_mismatch",
+   "answers": {},
+   "latency_ms_runs": [
+    0.053,
+    0.903
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-06-input-tokens": {
+   "status": "exhausted",
+   "code": "input_tokens_exceeded",
+   "answers": {},
+   "latency_ms_runs": [
+    11.448,
+    39.039
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-07-max-choices": {
+   "status": "exhausted",
+   "code": "choices_exceeded",
+   "answers": {},
+   "latency_ms_runs": [
+    0.073,
+    0.094
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-08-inference-calls": {
+   "status": "exhausted",
+   "code": "inference_calls_exceeded",
+   "answers": {},
+   "latency_ms_runs": [
+    12.259,
+    14.04
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-09-deadline": {
+   "status": "exhausted",
+   "code": "deadline_exceeded",
+   "answers": {},
+   "latency_ms_runs": [
+    3.959,
+    13.266
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-10-bad-limit": {
+   "status": "error",
+   "code": "invalid_request",
+   "answers": {},
+   "latency_ms_runs": [
+    0.063,
+    0.05
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-11-restriction-flag-off": {
+   "status": "unsupported",
+   "code": "policy_restriction_requires_v0_1_deltas",
+   "answers": {},
+   "latency_ms_runs": [
+    0.323,
+    0.044
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  },
+  "status-12-invalid-option-id": {
+   "status": "error",
+   "code": "invalid_option_id",
+   "answers": {},
+   "latency_ms_runs": [
+    0.042,
+    0.026
+   ],
+   "calls": 0,
+   "input_tokens": 0
+  }
+ }
+}

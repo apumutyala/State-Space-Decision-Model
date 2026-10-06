@@ -1,0 +1,105 @@
+{
+ "family": "rwkv7",
+ "model_id": "fla-hub/rwkv7-0.1B-g1",
+ "device": "cpu",
+ "dtype": "float32",
+ "extras": [
+  ".venv-extras"
+ ],
+ "load_s": 15.76,
+ "loaded": true,
+ "revision_id": "rwkv7:fla-hub/rwkv7-0.1B-g1@7450ee04eb9c;w=051b3684ffa8;tok=e6dee3d4e31b;prompt=jrt-rwkv-g1-v1.37e225e2;cfg=8627f382;adapter=0.1.0",
+ "kernel_stack": {
+  "flash-linear-attention": "0.5.2",
+  "fla-core": "0.5.2",
+  "triton": null,
+  "triton-windows": "3.4.0.post21"
+ },
+ "notes": {
+  "model_class": "RWKV7ForCausalLM",
+  "trained_ctx": 2048,
+  "attention_free": true
+ },
+ "requests": {
+  "routing": {
+   "status": "error",
+   "error": {
+    "code": "backend_error",
+    "message": "ValueError: Pointer argument (at 0) cannot be accessed from Triton (cpu tensor?)"
+   },
+   "answers": {},
+   "latency_ms": {
+    "median": 61.993,
+    "min": 58.409,
+    "max": 790.582,
+    "n": 3
+   },
+   "calls": 0,
+   "input_tokens": 0,
+   "equivariance_max_abs_diff": 0.0
+  },
+  "invoice": {
+   "status": "error",
+   "error": {
+    "code": "backend_error",
+    "message": "ValueError: Pointer argument (at 0) cannot be accessed from Triton (cpu tensor?)"
+   },
+   "answers": {},
+   "latency_ms": {
+    "median": 34.013,
+    "min": 33.633,
+    "max": 34.44,
+    "n": 3
+   },
+   "calls": 0,
+   "input_tokens": 0,
+   "equivariance_max_abs_diff": 0.0
+  },
+  "capital": {
+   "status": "error",
+   "error": {
+    "code": "backend_error",
+    "message": "ValueError: Pointer argument (at 0) cannot be accessed from Triton (cpu tensor?)"
+   },
+   "answers": {},
+   "latency_ms": {
+    "median": 16.546,
+    "min": 15.785,
+    "max": 17.202,
+    "n": 3
+   },
+   "calls": 0,
+   "input_tokens": 0,
+   "equivariance_max_abs_diff": 0.0
+  },
+  "sentiment": {
+   "status": "error",
+   "error": {
+    "code": "backend_error",
+    "message": "ValueError: Pointer argument (at 0) cannot be accessed from Triton (cpu tensor?)"
+   },
+   "answers": {},
+   "latency_ms": {
+    "median": 21.113,
+    "min": 19.625,
+    "max": 525.694,
+    "n": 3
+   },
+   "calls": 0,
+   "input_tokens": 0,
+   "equivariance_max_abs_diff": 0.0
+  }
+ },
+ "option_order_probe": {
+  "error": [
+   {
+    "code": "backend_error",
+    "message": "ValueError: Pointer argument (at 0) cannot be accessed from Triton (cpu tensor?)"
+   },
+   {
+    "code": "backend_error",
+    "message": "ValueError: Pointer argument (at 0) cannot be accessed from Triton (cpu tensor?)"
+   }
+  ]
+ }
+}

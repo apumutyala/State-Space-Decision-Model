@@ -1,0 +1,166 @@
+{
+ "revision_id": "qwen3.5:Qwen/Qwen3.5-0.8B@2fc06364715b;w=04b1c301231d;tok=5f9e4d4901a9;prompt=jrt-chatml-v1.f7d108c4;cfg=9c55f30e;adapter=0.1.0",
+ "device": "cpu",
+ "dtype": "float32",
+ "reports": [
+  {
+   "question": "q",
+   "k": 2,
+   "base": {
+    "probabilities": {
+     "billing": 0.5673545169711761,
+     "technical": 0.43264548302882383
+    },
+    "argmax": "billing",
+    "argmax_is_sorted_first": true
+   },
+   "description_swap": {
+    "probabilities": {
+     "billing": 0.7939483033762854,
+     "technical": 0.2060516966237146
+    },
+    "argmax": "billing",
+    "follows_description": false,
+    "id_sticky": true,
+    "note": "same ids/order/token counts; only descriptions moved"
+   },
+   "neutral_cyclic": {
+    "ids": [
+     "opt_01",
+     "opt_02"
+    ],
+    "mean_prob_by_position": [
+     0.5025411498331833,
+     0.4974588501668166
+    ],
+    "position_bias_tv": 0.002541149833183348,
+    "rotation_averaged_probabilities": {
+     "billing": 0.4440716447752255,
+     "technical": 0.5559283552247745
+    },
+    "rotation_averaged_argmax": "technical",
+    "label": "diagnostic calibration variant; not served"
+   },
+   "content_free": {
+    "state": "N/A",
+    "probabilities": {
+     "billing": 0.5513812440664111,
+     "technical": 0.44861875593358885
+    },
+    "prior_on_sorted_first": 0.5513812440664111
+   }
+  },
+  {
+   "question": "q",
+   "k": 3,
+   "base": {
+    "probabilities": {
+     "draft": 0.04393427077832227,
+     "overdue": 0.9553060794061243,
+     "paid": 0.0007596498155534431
+    },
+    "argmax": "overdue",
+    "argmax_is_sorted_first": false
+   },
+   "description_swap": {
+    "probabilities": {
+     "draft": 0.10753329299893576,
+     "overdue": 0.8870105730365155,
+     "paid": 0.005456133964548748
+    },
+    "argmax": "overdue",
+    "follows_description": false,
+    "id_sticky": true,
+    "note": "same ids/order/token counts; only descriptions moved"
+   },
+   "neutral_cyclic": {
+    "ids": [
+     "opt_01",
+     "opt_02",
+     "opt_03"
+    ],
+    "mean_prob_by_position": [
+     0.3502380469157026,
+     0.34437500725502923,
+     0.3053869458292681
+    ],
+    "position_bias_tv": 0.027946387504065195,
+    "rotation_averaged_probabilities": {
+     "draft": 0.24911684507753482,
+     "overdue": 0.5855686431067726,
+     "paid": 0.16531451181569254
+    },
+    "rotation_averaged_argmax": "overdue",
+    "label": "diagnostic calibration variant; not served"
+   },
+   "content_free": {
+    "state": "N/A",
+    "probabilities": {
+     "draft": 0.9945964960171406,
+     "overdue": 0.003022493072637992,
+     "paid": 0.0023810109102213664
+    },
+    "prior_on_sorted_first": 0.9945964960171406
+   }
+  },
+  {
+   "question": "q",
+   "k": 4,
+   "base": {
+    "probabilities": {
+     "berlin": 0.0038818477502241366,
+     "madrid": 0.0005436617624931041,
+     "paris": 0.9954879257514916,
+     "rome": 8.656473579122812e-05
+    },
+    "argmax": "paris",
+    "argmax_is_sorted_first": false
+   },
+   "description_swap": {
+    "probabilities": {
+     "berlin": 0.11362899262442602,
+     "madrid": 0.008783729393784074,
+     "paris": 0.8751763689858019,
+     "rome": 0.002410908995988001
+    },
+    "argmax": "paris",
+    "follows_description": false,
+    "id_sticky": true,
+    "note": "same ids/order/token counts; only descriptions moved"
+   },
+   "neutral_cyclic": {
+    "ids": [
+     "opt_01",
+     "opt_02",
+     "opt_03",
+     "opt_04"
+    ],
+    "mean_prob_by_position": [
+     0.27977398060306213,
+     0.2693139938378931,
+     0.2622213876142527,
+     0.18869063794479207
+    ],
+    "position_bias_tv": 0.06130936205520793,
+    "rotation_averaged_probabilities": {
+     "berlin": 0.03300041654294451,
+     "madrid": 0.06295943233390301,
+     "paris": 0.8418862053797677,
+     "rome": 0.062153945743384745
+    },
+    "rotation_averaged_argmax": "paris",
+    "label": "diagnostic calibration variant; not served"
+   },
+   "content_free": {
+    "state": "N/A",
+    "probabilities": {
+     "berlin": 0.005992276753261421,
+     "madrid": 0.0005399672325031791,
+     "paris": 0.9934014340762015,
+     "rome": 6.63219380337622e-05
+    },
+    "prior_on_sorted_first": 0.005992276753261421
+   }
+  }
+ ]
+}

@@ -1,0 +1,120 @@
+{
+  "case_id": "LG04",
+  "title": "record splicing",
+  "tags": [
+    "negative",
+    "record_splicing"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Is Boreal repairable?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": false
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "atlas-v1",
+        "field": "repairable"
+      },
+      {
+        "id": "n2",
+        "op": "Assert",
+        "proposition": {
+          "predicate": "is_repairable",
+          "arguments": [
+            "boreal"
+          ],
+          "source_node": "n1"
+        }
+      }
+    ],
+    "outputs": [
+      "n2"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "rejected",
+    "kernel_reason_category": "invalid_graph",
+    "task_outcome": "rejected_plan",
+    "useful_complete_answer": false,
+    "why": "The assertion substitutes Boreal into an Atlas proposition. Assert requires a prior proposition node, never a model-authored literal.",
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 0,
+      "useful_complete_count": 0,
+      "ask_count": 0
+    }
+  },
+  "unresolved": [
+    "Primary failure is illegal Assert input shape; a future richer binding language also needs an independent semantic splicing test."
+  ],
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG04-D0",
+    "type": "choice",
+    "question": "Is Boreal repairable?",
+    "options": [
+      {
+        "id": "LG04-o01",
+        "description": "Boreal repairability is not established; request that record."
+      },
+      {
+        "id": "LG04-o02",
+        "description": "No, Boreal is not repairable."
+      },
+      {
+        "id": "LG04-o03",
+        "description": "Yes, Boreal is repairable."
+      }
+    ],
+    "target_option_id": "LG04-o01",
+    "target_description": "Atlas repairability does not establish Boreal repairability.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": false,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG04-unknown": "LG04-o01",
+      "LG04-no": "LG04-o02",
+      "LG04-yes": "LG04-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG04-o01": "LG04-o02",
+        "LG04-o02": "LG04-o03",
+        "LG04-o03": "LG04-o01"
+      },
+      "target_option_id": "LG04-o02",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
+  }
+}
