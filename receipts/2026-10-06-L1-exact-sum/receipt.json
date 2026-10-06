@@ -1,0 +1,35 @@
+{
+  "scope": "deterministic L1 ExactSum kernel/renderer CPU proof; no learned L1 or task-relevance claim",
+  "source_commit": "c6ecfaa8f65d38086f90d201290371397307aa1b",
+  "base_commit": "6e39d9bb540270ac999cff4929e41002568f85ca",
+  "command": ["python", "-m", "unittest", "language_growth.tests.test_kernel", "language_growth.tests.test_kernel_adversarial", "language_growth.tests.test_realize", "language_growth.tests.test_exact_sum", "language_growth.tests.test_planner", "-v"],
+  "exit_code": 0,
+  "tests": 57,
+  "runs": 1,
+  "median_and_spread": "not applicable to deterministic pass/fail CPU tests",
+  "seed": "not applicable; synthetic fixed fixture values",
+  "text_lf_sha256": {
+    "language_growth/kernel.py": "d5ca7e3f8f6b7e5e8b29cabd182ac8a1b4261911350649dbeeba21dfd8adf913",
+    "language_growth/types.py": "54b4bfaa8feaae11fdf68615d205d92db39fec0804409f29c5dd1443d3952502",
+    "language_growth/realize.py": "4012a28e171dfa282ec10502075b2a8f32d61d54c39b52aec6c1aa24259753f9",
+    "language_growth/tests/test_exact_sum.py": "630a30f9b878d9482386df038da21410458c862e31329c94a3bf86bbd68d0e89",
+    "interfaces/DECISION_LANGUAGE_V0.md": "1c6eb11a9b92f8534b44a95912966ce7e9aa6a73714d59422ad96b35d117fe64",
+    "plans/codex/L1_EXACT_SUM.md": "caf038f8a15332f210f2c3e6f84531c29818cedcef1408abf03287877d599225",
+    "fixtures/language_growth/catalog.json": "c97f785c4a1ecc7b0b73dcb7c7ca8b1287640e468505628b3acd2ccec352ab35",
+    "fixtures/language_growth/manifest.json": "3984b5e4dad6fd78cfcc8a761b9e88b0eccec1f74d6e6956125654ede0799dad",
+    "tests.txt": "6f366b596a361ee4a5322c71a4815c9415cdea4bb5589e1c40104491d8aaf521"
+  },
+  "fixture_cases": {
+    "count": 24,
+    "sha256": "539cf22c4ede945e945e14ef66b3f00a8d7624c40efdd64b549d51573613dd38",
+    "hash_rule": "sort *.json by filename; concatenate filename UTF-8, NUL, file bytes with CRLF normalized to LF, then LF"
+  },
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38)"
+  },
+  "billed_cost_usd": 0,
+  "raw_output": "tests.txt",
+  "raw_predictions": null
+}

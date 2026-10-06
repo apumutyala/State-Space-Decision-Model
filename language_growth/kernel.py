@@ -1,4 +1,4 @@
-"""Small deterministic checker for the v0.1 semantic program language.
+"""Small deterministic checker for v0.1 and opt-in v0.2 semantic programs.
 
 The host supplies authority and evidence. A proposal supplies only references and
 operations. Acceptance is evidence-relative, not a judgment of task relevance.
@@ -13,15 +13,16 @@ import weakref
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, SpeechAct
+from .types import AskContent, CheckResult, Comparison, ConstantValue, ExactSum, Fact, SpeechAct
 
-_SCHEMA = "ssdm.semantic_program.v0.1"
-_OPS = {"ReadFact", "Compare", "Assert", "Conjoin", "ExplainDerivation", "Ask"}
+_SCHEMAS = {"ssdm.semantic_program.v0.1", "ssdm.semantic_program.v0.2"}
+_OPS = {"ReadFact", "Compare", "ExactSum", "Assert", "Conjoin", "ExplainDerivation", "Ask"}
 _REASONS = {"unknown_reference", "stale_context", "stale_policy", "type_unit_mismatch", "unsupported_assertion", "forbidden_dependency", "invalid_graph", "conflict", "exceeded_limit", "scope_mismatch", "unsupported_operation", "unsupported_field"}
 _MINTED: weakref.WeakSet[CheckResult] = weakref.WeakSet()
 _NODE_KEYS = {
     "ReadFact": {"id", "op", "record_ref", "field"},
     "Compare": {"id", "op", "left", "right", "relation"},
+    "ExactSum": {"id", "op", "left", "right"},
     "Assert": {"id", "op", "proposition"},
     "Conjoin": {"id", "op", "speech_acts"},
     "ExplainDerivation": {"id", "op", "speech_act"},
@@ -234,10 +235,53 @@ def _compare(left: Fact | ConstantValue, right: Fact | ConstantValue, relation: 
     return Comparison(left, right, relation, left.interval)
 
 
+def _fact_projection(value: Any, prior: dict[str, Any]) -> Fact:
+    projection = _dict(value)
+    _keys(projection, {"node", "project"})
+    ref = _name(projection["node"])
+    if projection["project"] != "object" or ref not in prior or not isinstance(prior[ref], Fact):
+        _fail("invalid_graph")
+    return prior[ref]
+
+
+def _exact_parts(value: int | Decimal) -> tuple[int, int]:
+    if type(value) is int:
+        return value, 0
+    if not isinstance(value, Decimal) or not value.is_finite():
+        _fail("type_unit_mismatch")
+    parts = value.as_tuple()
+    coefficient = 0
+    for digit in parts.digits:
+        coefficient = coefficient * 10 + digit
+    return -coefficient if parts.sign else coefficient, parts.exponent
+
+
+def _exact_sum(left: Fact, right: Fact) -> ExactSum:
+    if left.interval != right.interval:
+        _fail("scope_mismatch")
+    _name(left.quantity_kind); _name(right.quantity_kind)
+    if left.unit != right.unit or left.quantity_kind != right.quantity_kind:
+        _fail("type_unit_mismatch")
+    left_coeff, left_exp = _exact_parts(left.object)
+    right_coeff, right_exp = _exact_parts(right.object)
+    exponent = min(left_exp, right_exp)
+    coefficient = (left_coeff * 10 ** (left_exp - exponent)
+                   + right_coeff * 10 ** (right_exp - exponent))
+    if type(left.object) is int and type(right.object) is int:
+        value: int | Decimal = coefficient
+    else:
+        # Decimal(int) extracts digits exactly without Python's int->str limit.
+        digits = Decimal(abs(coefficient)).as_tuple().digits
+        value = Decimal((1 if coefficient < 0 else 0, digits, exponent))
+    return ExactSum(left, right, value, left.unit, left.interval, left.quantity_kind)
+
+
 def _deps(value: Any) -> tuple[str, ...]:
     if isinstance(value, Fact):
         return (value.record_ref,)
     if isinstance(value, Comparison):
+        return tuple(dict.fromkeys(_deps(value.left) + _deps(value.right)))
+    if isinstance(value, ExactSum):
         return tuple(dict.fromkeys(_deps(value.left) + _deps(value.right)))
     if isinstance(value, SpeechAct):
         return value.dependencies
@@ -249,7 +293,7 @@ def _deps(value: Any) -> tuple[str, ...]:
 
 
 def _scopes(act: SpeechAct) -> set[str]:
-    if act.kind == "assert" and isinstance(act.content, (Fact, Comparison)):
+    if act.kind == "assert" and isinstance(act.content, (Fact, Comparison, ExactSum)):
         return {act.content.interval}
     if act.kind == "conjoin" and isinstance(act.content, tuple):
         return set().union(*(_scopes(part) for part in act.content))
@@ -262,7 +306,7 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
     h, by_ref, snapshot, policy, registry, _, _ = _environment(host, catalog)
     p = _dict(program)
     _keys(p, {"schema", "context_ref", "policy_ref", "registry_ref", "nodes", "outputs", "style"})
-    if p["schema"] != _SCHEMA:
+    if p["schema"] not in _SCHEMAS:
         _fail("invalid_graph")
     if p["context_ref"] != h["context_ref"]:
         _fail("stale_context")
@@ -284,6 +328,8 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
         op = _name(n.get("op"), "unsupported_operation")
         if op not in _OPS or op not in registry["allowed_ops"]:
             _fail("unsupported_operation")
+        if op == "ExactSum" and p["schema"] != "ssdm.semantic_program.v0.2":
+            _fail("unsupported_operation")
         _keys(n, _NODE_KEYS[op])
         node_id = _name(n["id"])
         if re.fullmatch(r"n[0-9]{1,3}", node_id) is None or node_id in prior:
@@ -293,9 +339,12 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
             value = _read(_name(n["record_ref"]), _name(n["field"]), by_ref, snapshot, policy, registry, catalog)
         elif op == "Compare":
             value = _compare(_operand(n["left"], prior, h), _operand(n["right"], prior, h), _name(n["relation"]), registry)
+        elif op == "ExactSum":
+            value = _exact_sum(_fact_projection(n["left"], prior),
+                               _fact_projection(n["right"], prior))
         elif op == "Assert":
             target = n["proposition"]
-            if not isinstance(target, str) or target not in prior or not isinstance(prior[target], (Fact, Comparison)):
+            if not isinstance(target, str) or target not in prior or not isinstance(prior[target], (Fact, Comparison, ExactSum)):
                 _fail("invalid_graph")
             content = prior[target]
             value = SpeechAct("assert", content, _deps(content), (ordinals[target], ordinal))

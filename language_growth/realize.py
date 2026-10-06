@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 
 from .kernel import validate_release
-from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, SpeechAct
+from .types import AskContent, CheckResult, Comparison, ConstantValue, ExactSum, Fact, SpeechAct
 
 
 def _quoted(value: str) -> str:
@@ -53,7 +53,7 @@ def _operand_value(item: Fact | ConstantValue) -> str:
     raise ValueError("invalid checked operand")
 
 
-def _assertion(content: Fact | Comparison) -> str:
+def _assertion(content: Fact | Comparison | ExactSum) -> str:
     if isinstance(content, Fact):
         return f"At {_quoted(content.interval)}, {_subject(content)} has value {_operand_value(content)}."
     if isinstance(content, Comparison):
@@ -64,6 +64,13 @@ def _assertion(content: Fact | Comparison) -> str:
             f"At {_quoted(content.interval)}, the value of {_subject(content.left)} "
             f"({_operand_value(content.left)}) is {relations[content.relation]} "
             f"the value of {_subject(content.right)} ({_operand_value(content.right)})."
+        )
+    if isinstance(content, ExactSum):
+        return (
+            f"At {_quoted(content.interval)}, the exact {_quoted(content.quantity_kind)} sum of "
+            f"{_subject(content.left)} ({_operand_value(content.left)}) and "
+            f"{_subject(content.right)} ({_operand_value(content.right)}) is "
+            f"{_value(content.value)}{_unit(content.unit)}."
         )
     raise ValueError("invalid checked assertion")
 

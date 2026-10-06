@@ -1,0 +1,25 @@
+{
+  "source_sha": "b033ed6672623504bd169da366001c94b307533f",
+  "dependency_pr38_sha": "6d8fa4b655c2a7242473ad4681b73a61527f86be",
+  "dependencies": "all in source archive; PR38 unmerged interface dependency",
+  "commands": [
+    "python -m unittest language_growth.tests.test_sum_planner language_growth.tests.test_planner language_growth.tests.test_exact_sum -v",
+    "python -c <contents of reproduce_raw.py>"
+  ],
+  "exits": [
+    0,
+    0
+  ],
+  "seed": "deterministic scripted choices; request UUIDs vary but do not enter model-facing state",
+  "runs": 1,
+  "hardware": "Windows-11-10.0.26200-SP0 CPU, Python 3.12.13",
+  "cost_usd": 0,
+  "fixture_catalog_sha256": "c97f785c4a1ecc7b0b73dcb7c7ca8b1287640e468505628b3acd2ccec352ab35",
+  "sha256_lf": {
+    "raw.jsonl": "db81333567b51ff0c850eaac226ba5ecc9025403407c71869a49a341f848c084",
+    "tests.txt": "31a90a6a51d7a4eb6a5fe51c1d783885d3794a24f2e0516b3ea5a514b8ec4099",
+    "reproduce_raw.py": "81fe5edb97e7a112a202cd94c3e0460c5427a02075a32a2d4107ccf7a073749e"
+  },
+  "scope": "Scripted parent-selected exact sum and rejection/legacy controls, no learned capability or paid use. Interface needs joint review before integration.",
+  "development_check_note": "Initial unit-mismatch test mutated a USD record into a conflicting EUR premise and correctly failed earlier at conflict; the final test selects the existing valid EUR premise to reach the sum unit check."
+}

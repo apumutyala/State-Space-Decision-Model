@@ -359,6 +359,8 @@ class _Session:
                 op_items.append(("explain_read", "Explain a checked assertion of one selected fact"))
         if operands and facts and {"ReadFact", "Compare", "Assert"} <= allowed_ops:
             op_items.append(("compare", "Compare two selected typed values and assert the selected relation"))
+        if facts and {"ReadFact", "ExactSum", "Assert"} <= allowed_ops:
+            op_items.append(("sum", "Sum two selected numeric facts and assert the exact result"))
         if obligations and "Ask" in allowed_ops:
             op_items.append(("ask", "Ask for a registered missing input"))
         op_options = {f"op{i:03d}": desc for i, (_, desc) in enumerate(op_items, 1)}
@@ -406,6 +408,20 @@ class _Session:
             nodes.append({"id": compare_id, "op": "Compare", "left": left_ref, "right": right_ref, "relation": relation})
             output = f"n{len(nodes) + 1}"
             nodes.append({"id": output, "op": "Assert", "proposition": compare_id})
+        elif kind == "sum":
+            # Only source-bound Facts are supported by the v0.2 sum profile.
+            # The parent selects references; the kernel checks and computes.
+            selected_facts = []
+            for slot in ("left", "right"):
+                opts, binding = _as_options(facts, lambda x: f"Fact {x['record_ref']} field {x['field']}", "v")
+                selected_facts.append(binding[self.choose(
+                    slot, f"Select the {slot} numeric fact to sum.", opts, repair=feedback is not None)])
+            nodes = [{"id": "n1", "op": "ReadFact", **selected_facts[0]},
+                     {"id": "n2", "op": "ReadFact", **selected_facts[1]},
+                     {"id": "n3", "op": "ExactSum", "left": {"node": "n1", "project": "object"},
+                      "right": {"node": "n2", "project": "object"}},
+                     {"id": "n4", "op": "Assert", "proposition": "n3"}]
+            output = "n4"
         else:
             opts, binding = _as_options(obligations, lambda x: f"Obligation {x['obligation_id']} category {x['category']}", "o")
             ob = binding[self.choose("obligation", "Select the unmet host obligation.", opts, repair=feedback is not None)]
@@ -414,7 +430,8 @@ class _Session:
             nodes = [{"id": "n1", "op": "Ask", "category": ob["category"],
                       "obligation_ref": ob["obligation_id"], "references": [ref]}]
             output = "n1"
-        return {"schema": "ssdm.semantic_program.v0.1", "context_ref": self.host["context_ref"],
+        schema = "ssdm.semantic_program.v0.2" if kind == "sum" else "ssdm.semantic_program.v0.1"
+        return {"schema": schema, "context_ref": self.host["context_ref"],
                 "policy_ref": self.host["policy_ref"], "registry_ref": self.host["registry_ref"],
                 "nodes": nodes, "outputs": [output], "style": "plain"}
 

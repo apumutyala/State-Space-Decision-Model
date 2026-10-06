@@ -1,6 +1,6 @@
-# Decision to language interface version 0.1.1
+# Decision to language interface version 0.1.2 (draft ExactSum profile)
 
-6 October 2026. Version 0.1 was cross-reviewed and merged in PR #4. Patch profile 0.1.1 closes the model-authored node-ID prose channel: node identifiers have a restricted lexical form and released derivations contain kernel-assigned integer ordinals. This patch is pending cross-review. The D request/response envelope remains `ssdm.decide.v0.1`, and semantic program syntax retains `ssdm.semantic_program.v0.1`; the patch tightens validation and the normalized derivation representation. Planned provenance remains a separate 0.2 extension.
+6 October 2026. Version 0.1 was cross-reviewed and merged in PR #4. Patch profile 0.1.1 closes the model-authored node-ID prose channel: node identifiers have a restricted lexical form and released derivations contain kernel-assigned integer ordinals. This 0.1.2 draft adds an opt-in L1 exact-sum semantic-program profile for joint Track D/L review; it does not change the D request/response envelope (`ssdm.decide.v0.1`) or existing `ssdm.semantic_program.v0.1` programs. Planned provenance remains a separate extension.
 
 ## Responsibilities
 
@@ -109,6 +109,12 @@ Programs are acyclic graphs in topological order, at most eight nodes in the fir
 Later operations need their own contracts. Arithmetic should use exact integers/decimals with units before floating-point approximations. Negation needs explicit support or a declared complete closed-world relation. `not found` is not a generic negation rule. New quantifiers require a declared domain and completeness premise. Comparison under conflicting dates or currencies fails rather than guessing a conversion.
 
 `ReadFact` does not return an unbound scalar: for example, reading warranty_months yields the proposition WarrantyMonths(product-A, 24) plus a typed object value 24 months. The numeric projection is explicit: `{"node":"n1","project":"object"}`. Asserting n1 realizes the bound relation; comparing the projection uses the numeric value. A host query constant uses `{"constant_ref":"threshold-1"}` and is resolved from the request registry, never invented inline by the model.
+
+### Draft L1 exact-sum profile (0.1.2)
+
+`ssdm.semantic_program.v0.2` adds `ExactSum`; the v0.1 program schema and operations remain valid without change. The host registry must include `ExactSum` in `allowed_ops`, and an `ExactSum` node in a v0.1 program is rejected even if the registry lists it. The node has exactly `id`, `op`, `left` and `right` keys, with `op: "ExactSum"`. Each operand is an explicit `{"node":prior_ReadFact_id,"project":"object"}` reference. This first arithmetic profile does not accept host constants, inline numbers or free strings as sum operands.
+
+The kernel resolves both prior Facts from the current permitted snapshot and admits only exact integers or finite decimal-string values. Their units, quantity kinds and temporal scopes must match exactly; booleans and strings are not numbers. The result is a typed `ExactSum` containing both bound Facts, the exact integer/decimal value, common unit, quantity kind and scope, with both record/source dependencies. Arithmetic must not round under the ambient Decimal context. `Assert` may assert this checked result, and `ExplainDerivation` may expose its kernel-assigned ordinal derivation. No currency conversion, scope inference, task-relevance claim or external effect is added.
 
 Example model proposal, before kernel acceptance:
 
