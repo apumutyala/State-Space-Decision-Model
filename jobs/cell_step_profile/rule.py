@@ -15,13 +15,14 @@ import math
 import statistics
 
 # ----------------------------------------------------------------------------- PRE-REGISTERED (do not tune on GPU data)
-#: execution order; each runs in its own process. Cumulative: +ckpt, +rows (all 8 rows of a step per call), +lean WKV
-VARIANTS = ("baseline", "ckpt", "ckpt_rows8", "ckpt_rows8_lean")
+#: execution order; each runs in its own process. Cumulative: +ckpt, +rows (a step's 8 rows in as few calls as fit a
+#: padded-token budget), +lean WKV. Amendment A1 (before any run): the row variants carry row_tokens = 8192 (JOB_SPEC.md)
+VARIANTS = ("baseline", "ckpt", "ckpt_rows", "ckpt_rows_lean")
 FLAGS = {
-    "baseline": {"act_ckpt": False, "row_batch": 1, "rwkv7_wkv": "chunked"},
-    "ckpt": {"act_ckpt": True, "row_batch": 1, "rwkv7_wkv": "chunked"},
-    "ckpt_rows8": {"act_ckpt": True, "row_batch": 8, "rwkv7_wkv": "chunked"},
-    "ckpt_rows8_lean": {"act_ckpt": True, "row_batch": 8, "rwkv7_wkv": "chunked_lean"},
+    "baseline": {"act_ckpt": False, "row_batch": 1, "row_tokens": 0, "rwkv7_wkv": "chunked"},
+    "ckpt": {"act_ckpt": True, "row_batch": 1, "row_tokens": 0, "rwkv7_wkv": "chunked"},
+    "ckpt_rows": {"act_ckpt": True, "row_batch": 8, "row_tokens": 8192, "rwkv7_wkv": "chunked"},
+    "ckpt_rows_lean": {"act_ckpt": True, "row_batch": 8, "row_tokens": 8192, "rwkv7_wkv": "chunked_lean"},
 }
 WARMUP_STEPS = 3
 TIMED_STEPS = 20
@@ -121,7 +122,7 @@ def decide(records: dict[str, dict | None]) -> dict:
         s["loss"] = loss_clause(s, base) if s["present"] else {"ok": False, "basis": "missing", "rel": None}
         s["qualifies"] = bool(s["qualifies_ex_loss"] and s["loss"]["ok"] and s["median_tok_s"] is not None)
     ok = [v for v in VARIANTS if summ[v]["qualifies"]]
-    out = {"rule": "cell_step_profile v1", "variants": summ, "max_peak_gb": MAX_PEAK_GB, "loss_rel_max": LOSS_REL_MAX}
+    out = {"rule": "cell_step_profile v1-A1", "variants": summ, "max_peak_gb": MAX_PEAK_GB, "loss_rel_max": LOSS_REL_MAX}
     if ok:
         best = sorted(ok, key=lambda v: (-summ[v]["median_tok_s"], summ[v]["peak_gb"], VARIANTS.index(v)))[0]
         s = summ[best]
@@ -153,7 +154,7 @@ VERDICTS = ("ADOPT", "CAP_T", "NO_FIT")
 def valid_decision(d) -> bool:
     """finalize.py validator: a well-formed decision whose verdict is one of the pre-registered ones."""
     try:
-        return (d.get("rule") == "cell_step_profile v1" and d.get("verdict") in VERDICTS
+        return (d.get("rule") == "cell_step_profile v1-A1" and d.get("verdict") in VERDICTS
                 and set(d["variants"]) == set(VARIANTS)
                 and (d["verdict"] == "NO_FIT") == (d.get("chosen") is None))
     except Exception:  # noqa: BLE001
