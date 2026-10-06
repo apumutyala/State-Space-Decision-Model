@@ -1,6 +1,18 @@
 {
   "source_sha": "950cebeced6735113482ea62dcdf0d004de3bb9d",
   "base_sha": "4733f785e5284ea959d4d640fff884136487bd05",
+  "historical_provenance": "source_sha, base_sha and tests.txt preserve the original pre-rebase CPU proof; they are not the current integration base.",
+  "rebase_validation": {
+    "base_sha": "24f164e9cfff1abe8f7eecef68a1771d357ca465",
+    "code_source_sha": "d455b28a1adbcac0ca9c1a29400b1170b6d5bb7f",
+    "tested_head_sha": "32b0d9ab9d6e60a6a85af10e172e30718c4eb3ea",
+    "working_tree_change_at_test": "one-line Track L STATUS.md update only; implementation and test files committed",
+    "checks": ["git diff --check", "same focused 41-test command and environment below"],
+    "exit_code": 0,
+    "tests_passed": 41,
+    "raw_log": "tests-rebased.txt",
+    "tests_sha256_lf": "b03180c05aed67a9a566aff426a072e82da5218152bb44d9b34e02302447495d"
+  },
   "scope": "Tested L loader contract on a tiny synthetic CPU cache-fork + LoRA model. No PR #74 artifact is loaded and no language capability is claimed.",
   "command": [
     "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
