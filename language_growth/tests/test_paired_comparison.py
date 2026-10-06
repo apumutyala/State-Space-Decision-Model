@@ -98,6 +98,7 @@ class PairedComparisonTests(unittest.TestCase):
         self.assertEqual((pair["planner"]["provider_calls"], pair["planner"]["forward_calls"]), (4, 4))
         self.assertEqual(len(pair["planner_calls"]), 4)
         self.assertIsNotNone(pair["direct"]["response"])
+        self.assertEqual(pair["direct_request"], provider.requests[0])
         self.assertNotIn("training_only", json.dumps(pair["direct_request"]))
         self.assertEqual(set(pair["direct_request"]["questions"][DIRECT_QID]["criteria"].values()),
                          {"Relation greater_than", "Relation less_than", "Relation equal"})
@@ -182,6 +183,35 @@ class PairedComparisonTests(unittest.TestCase):
                          ("provider_error", "invalid_response", 1, 1))
         self.assertEqual(pair["planner"]["provider_calls"], 4)
         self.assertTrue(pair["same_initial_state"])
+
+    def test_direct_rejects_boolean_legacy_answer_numbers(self):
+        class BooleanWireProvider(EvidenceProvider):
+            def __init__(self, changed):
+                super().__init__()
+                self.changed = changed
+
+            def decide(self, request):
+                response = super().decide(request)
+                if DIRECT_QID in request["questions"]:
+                    answer = response["answers"][DIRECT_QID]
+                    if self.changed == "confidence":
+                        answer["confidence"] = True
+                    else:
+                        answer["probabilities"] = {key: bool(value)
+                                                   for key, value in answer["probabilities"].items()}
+                return response
+
+        for changed in ("confidence", "probabilities"):
+            with self.subTest(changed=changed):
+                report = run([comparisons()[0]], BooleanWireProvider(changed))
+                pair = report["pairs"][0]
+                self.assertEqual((report["total"], report["direct_correct"],
+                                  report["planner_correct"], report["paired_correct"]), (1, 0, 1, 0))
+                self.assertEqual((pair["direct"]["status"], pair["direct"]["reason"],
+                                  pair["direct"]["provider_calls"], pair["direct"]["forward_calls"]),
+                                 ("provider_error", "invalid_probabilities", 1, 1))
+                self.assertEqual(pair["planner"]["provider_calls"], 4)
+                self.assertTrue(pair["same_initial_state"])
 
     def test_invalid_parent_pin_fails_both_arms_before_calls(self):
         provider = EvidenceProvider()

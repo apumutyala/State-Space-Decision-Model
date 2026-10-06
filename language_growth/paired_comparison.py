@@ -12,17 +12,16 @@ import hashlib
 from typing import Any, Iterable
 import uuid
 
-from decide.schema import wire_answer
-
 from .free_running_dev import _initial_task, run_development_tasks
-from .parent_bridge import (BridgeError, DECISION_SCHEMA, FINGERPRINT_ALGORITHM, decision_request,
-                            legacy_request_fingerprint)
-from .planner import PlannerFailure, _RESPONSE_ENVELOPE_KEYS, _Session, _check_stages
+from .parent_bridge import BridgeError, decision_request
+from .planner import PlannerFailure, _Session
 
 
 RELATIONS = ("greater_than", "less_than", "equal")
 DEFAULT_OPTION_IDS = {"greater_than": "r001", "less_than": "r002", "equal": "r003"}
-DIRECT_QID = "direct-comparison-relation"
+DIRECT_SLOT = "direct-comparison-relation"
+DIRECT_QID = f"slot-001-{DIRECT_SLOT}"
+DIRECT_QUESTION = "Select the relation between the requested quantities."
 
 
 def direct_comparison_request(example: dict[str, Any], *, model: str, parent_revision: str,
@@ -42,7 +41,7 @@ def direct_comparison_request(example: dict[str, Any], *, model: str, parent_rev
         task_input=task_input, host=training["host"], catalog=training["catalog"],
         model=model, parent_revision=parent_revision,
         request_id=f"direct-{uuid.uuid4().hex}", question_id=DIRECT_QID,
-        question="Select the relation between the requested quantities.", options=options,
+        question=DIRECT_QUESTION, options=options,
     )
     if request["state"] != example["model_inputs"][0]["state"]:
         raise ValueError("direct and planner initial evidence differ")
@@ -56,64 +55,6 @@ def _target_relation(example: dict[str, Any]) -> str:
     if len(comparisons) != 1 or comparisons[0].get("relation") not in RELATIONS:
         raise ValueError("comparison reference program has no single registered relation")
     return comparisons[0]["relation"]
-
-
-def _forward_calls(response: Any) -> int | None:
-    if not isinstance(response, dict) or not isinstance(response.get("ssdm"), dict):
-        return None
-    diagnostic = response["ssdm"].get("diagnostics")
-    calls = diagnostic.get("inference_calls") if isinstance(diagnostic, dict) else None
-    return calls if type(calls) is int and calls >= 0 else None
-
-
-def _score_direct(request: dict[str, Any], response: Any, parent_revision: str,
-                  expected_served_config: dict[str, Any], target_relation: str) -> dict[str, Any]:
-    row = {"status": "provider_error", "reason": "invalid_response", "selected_id": None,
-           "target_id": None, "correct": False, "provider_calls": 1,
-           "forward_calls": _forward_calls(response), "response": deepcopy(response)}
-    if not isinstance(response, dict) or not isinstance(response.get("ssdm"), dict):
-        return row
-    env = response["ssdm"]
-    if set(env) - _RESPONSE_ENVELOPE_KEYS:
-        return row
-    if env.get("schema") != DECISION_SCHEMA:
-        row["reason"] = "schema_mismatch"
-        return row
-    if env.get("status") != "ok":
-        row["status"] = env["status"] if env["status"] in ("unsupported", "exhausted", "error") else "provider_error"
-        row["reason"] = row["status"]
-        return row
-    diagnostics = env.get("diagnostics")
-    if (env.get("request_id") != request["ssdm"]["request_id"]
-            or not isinstance(diagnostics, dict)
-            or diagnostics.get("revision_id") != parent_revision
-            or diagnostics.get("request_fingerprint") != legacy_request_fingerprint(request)
-            or diagnostics.get("request_fingerprint_algorithm") != FINGERPRINT_ALGORITHM
-            or not isinstance(diagnostics.get("provenance"), dict)
-            or diagnostics["provenance"].get("supplied") is not False
-            or diagnostics["provenance"].get("applied") is not False
-            or diagnostics.get("state_handle_in") is not None
-            or diagnostics.get("state_reuse") is not False
-            or env.get("state_handle") is not None):
-        row["reason"] = "identity_mismatch"
-        return row
-    question = request["questions"][DIRECT_QID]
-    options = question["criteria"]
-    try:
-        served, _ = _check_stages(env, request, DIRECT_QID, options, expected_served_config)
-    except PlannerFailure as exc:
-        row["reason"] = exc.reason
-        return row
-    answers = response.get("answers")
-    answer = answers.get(DIRECT_QID) if isinstance(answers, dict) else None
-    if answer != wire_answer(question, served) or not isinstance(answers, dict) or set(answers) != {DIRECT_QID}:
-        row["reason"] = "invalid_choice"
-        return row
-    selected = answer["choice"]
-    target = next(oid for oid, description in options.items()
-                  if description == f"Relation {target_relation}")
-    row.update(status="ok", reason=None, selected_id=selected, target_id=target, correct=selected == target)
-    return row
 
 
 class _Capture:
@@ -151,33 +92,37 @@ def run_paired_comparisons(examples: Iterable[dict[str, Any]], provider: Any, *,
         direct = {"status": "runner_error", "reason": "runner_error", "selected_id": None,
                   "target_id": None, "correct": False, "provider_calls": 0,
                   "forward_calls": 0, "response": None}
+        direct_call_start = len(capture.calls)
+        session = None
         try:
             training = example["training_only"]
-            # Use the planner's own no-call parent/config preflight before either arm.
-            # Future parent pin checks in _Session therefore govern the direct arm too.
-            _Session(_initial_task(example), training["host"], training["catalog"],
-                     capture, model, parent_revision, expected_served_config)
-            direct_request = direct_comparison_request(example, model=model,
-                                                       parent_revision=parent_revision, option_ids=option_ids)
+            session = _Session(_initial_task(example), training["host"], training["catalog"],
+                               capture, model, parent_revision, expected_served_config)
+            preview = direct_comparison_request(example, model=model,
+                                                parent_revision=parent_revision, option_ids=option_ids)
+            options = preview["questions"][DIRECT_QID]["criteria"]
+            selected = session.choose(DIRECT_SLOT, DIRECT_QUESTION, options, repair=False)
+            sent = capture.calls[direct_call_start]["request"]
+            if sent["state"] != preview["state"] or sent["questions"] != preview["questions"]:
+                raise ValueError("direct request drifted from standalone builder")
+            target = next(oid for oid, description in options.items()
+                          if description == f"Relation {_target_relation(example)}")
+            direct.update(status="ok", reason=None, selected_id=selected,
+                          target_id=target, correct=selected == target)
         except PlannerFailure as exc:
             direct.update(status=exc.status, reason=exc.reason)
         except BridgeError as exc:
             direct.update(status="precondition_failed", reason=exc.code)
         except Exception:
             pass  # malformed development input still occupies the paired denominator
-        else:
-            try:
-                response = capture.decide(direct_request)
-            except Exception:
-                direct.update(status="provider_error", reason="provider_exception",
-                              provider_calls=1, forward_calls=None)
-            else:
-                try:
-                    direct = _score_direct(direct_request, response, parent_revision,
-                                           expected_served_config, _target_relation(example))
-                except Exception:
-                    direct.update(provider_calls=1, forward_calls=_forward_calls(response),
-                                  response=deepcopy(response))
+        finally:
+            if session is not None:
+                direct["provider_calls"] = session.provider_calls
+                direct["forward_calls"] = session.forward_calls
+            if len(capture.calls) > direct_call_start:
+                sent = capture.calls[direct_call_start]
+                direct_request = deepcopy(sent["request"])
+                direct["response"] = deepcopy(sent["response"])
         first_planner_call = len(capture.calls)
         planner_report = run_development_tasks([example], capture, model=model,
                                                parent_revision=parent_revision,
