@@ -3,17 +3,20 @@
 This is a bounded L0d2/L0e diagnostic under L0h. It does not qualify an
 attention-free parent or satisfy the L0 learned capability gate.
 
-- **Hypothesis:** The existing stock Qwen3.5-0.8B readout can make a direct
-  three-relation choice and drive the checked free-running planner on the same
-  generated development-validation evidence, with failures and work retained
-  in both denominators.
-- **Deliverable:** One bounded, offline CPU script for one seeded
-  `development_validation` comparison task (seed 271828, index 2). It uses the pinned local snapshot,
+- **Follow-up hypothesis:** The first diagnostic's wrong-field selection may
+  repeat across comparison tasks, indicating a field-grounding/program-discovery
+  failure. Test the same direct three-relation choice and checked free-running
+  planner on two pinned tasks; retain failures and work in both denominators.
+- **Deliverable:** One bounded, offline CPU script for two seeded
+  `development_validation` comparison tasks (seed 271828, indices 2 and 5;
+  warranty and price respectively). It uses the pinned local snapshot,
   the Track D `load_qwen35(device="cpu", dtype="float32")` readout, one
   `Decider`, and the PR #37 paired-comparison caller. It writes raw JSONL as
   soon as each stage finishes. The launcher checks memory before loading,
-  hides CUDA, limits Torch threads and batch rows, and enforces a 300-second
-  subprocess cap. The child rechecks free RAM before Torch loads.
+  hides CUDA, limits Torch threads to two and batch rows to two, and enforces
+  one 300-second subprocess cap for the entire cohort, including model load.
+  The child rechecks free RAM before Torch loads. Both pairs use the same
+  loaded parent/revision and start each arm from the same initial evidence.
 - **Preparation proof:** Static and synthetic tests verify task selection,
   runtime gates, no reference answer in provider inputs, stage flushing, and
   timeout/failure accounting. A failed package-file startup was traced to
@@ -26,15 +29,34 @@ attention-free parent or satisfy the L0 learned capability gate.
   `unsupported_assertion`. Both arms shared the same initial-state hash. The
   receipt and complete raw trace are in
   `receipts/2026-10-06-L-qwen-cpu-development-diagnostic/`.
-- **Decision unlocked:** For this one case, the target is expressible and the
+- **First diagnostic interpretation:** For this one case, the target is expressible and the
   realizer was not reached; the observed failure is program discovery/task
   grounding. A separate development cohort is needed to learn whether this is
   systematic, including per-slot accuracy and free-running task correctness.
   Do not infer a general capability rate or L0 pass from N=1.
+- **Current follow-up state:** Preparation only; no follow-up model run.
+  Sixteen preparation tests cover exact task hashes, the N=2 denominator and
+  matched initial-state checks, both-arm provider failures, pre-provider failures,
+  per-task raw identities, and a second-task runner exception preserving the
+  completed first pair. An unattempted task remains in the pinned cohort
+  manifest if the global cap stops execution; it cannot count as a success or
+  silently shrink the intended N=2 denominator. No N=2 aggregate is emitted
+  unless both task reports complete.
 
 Dependency: PR #37 merged into `agent-main` at `57804e2`; this branch now
 integrates the tracked paired caller. The script still fails with a clear
 dependency error if that module is absent. No source overlay is needed.
+
+This follow-up extends PR #52's current diagnostic head
+`14256ba` (`codex/l0-cpu-probe-bootstrap`), including its first-run receipt;
+PR #52 is a dependency, not an independent qualification result. The initial
+task is deliberately repeated without modifying prompts or choices, and the
+second task adds one bounded comparison. Their SHA256 pins are:
+
+| Index | Task SHA256 |
+| --- | --- |
+| 2 | `e996f537fea463e480f691b36ed68b5f3a8aa1da014e798b706a672473029e0c` |
+| 5 | `cc9d1d2418ef38891870e517dd1fcc75d01e238023e65dcc80e9de9aac783b0f` |
 
 The diagnostic is inherited **HYBRID** pretrained Qwen with attention layers,
 not the attention-free Track D target, a strong unrestricted comparator, a
@@ -63,4 +85,22 @@ available RAM is below 8 GiB or the paired dependency is absent. During the
 run it stops only its own child if available RAM falls below 3 GiB or elapsed
 time reaches 300 seconds, including if launcher monitoring is interrupted.
 Each request and response is flushed to `raw.jsonl`
-before the next provider call; a stopped run keeps partial evidence.
+before the next provider call, with task ID and task hash on every provider
+event. Each singleton `task_report` is flushed before validation and before
+starting the next task. The final `paired_report` includes both pairs and
+checks the full denominator, exact task order and both initial-state hashes;
+pre-provider failures retain their task with unknown state identity and cannot
+be credited as paired correct. A stopped run keeps all partial evidence.
+
+Prepared follow-up command (not executed; run from this worktree's root with
+a fresh output directory):
+
+```powershell
+& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -I l0_qwen_cpu_probe.py --raw 'C:/Users/apumu/research/CHLabs/ssdm-data/l0-qwen-cpu-probe-271828-cohort2-run1/raw.jsonl'
+```
+
+Exact preparation check (no model load, API calls or network):
+
+```powershell
+& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -m unittest language_growth.tests.test_l0_qwen_cpu_probe -v
+```

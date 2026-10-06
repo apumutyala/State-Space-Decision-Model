@@ -1,6 +1,6 @@
-"""One offline, bounded stock-Qwen CPU diagnostic on development validation.
+"""Two-task offline, bounded stock-Qwen CPU diagnostic on development validation.
 
-Preparation only until PR #37 is merged and a resource owner clears the run.
+Follow-up preparation to PR #52's first diagnostic; no qualification claim.
 The checkpoint is an inherited hybrid Qwen parent, not attention-free evidence.
 """
 
@@ -26,7 +26,12 @@ SNAPSHOT = Path(
     "2fc06364715b967f1860aea9cf38778875588b17"
 )
 SEED = 271828
-COUNT = 3
+TASK_INDICES = (2, 5)
+COUNT = max(TASK_INDICES) + 1
+TASK_HASHES = (
+    "e996f537fea463e480f691b36ed68b5f3a8aa1da014e798b706a672473029e0c",
+    "cc9d1d2418ef38891870e517dd1fcc75d01e238023e65dcc80e9de9aac783b0f",
+)
 TIMEOUT_SECONDS = 300
 MIN_START_AVAILABLE = 8 * 1024**3
 MIN_RUNNING_AVAILABLE = 3 * 1024**3
@@ -45,17 +50,24 @@ def _write_event(path: Path, event: str, **fields: Any) -> None:
         os.fsync(file.fileno())
 
 
-def _task() -> dict[str, Any]:
+def _tasks() -> list[dict[str, Any]]:
     from language_growth.development_data import generate_development_tasks
 
     tasks = generate_development_tasks(SEED, COUNT, choice_format="production",
                                        split="development_validation")
-    task = tasks[-1]
-    if (task["task_id"] != "synthetic-development_validation-271828-2"
-            or task["training_only"]["kind"] != "compare"
-            or task["development_split"] != "development_validation"):
-        raise RuntimeError("pinned development comparison changed")
-    return task
+    selected = [tasks[index] for index in TASK_INDICES]
+    for index, task, digest in zip(TASK_INDICES, selected, TASK_HASHES):
+        if (task["task_id"] != f"synthetic-development_validation-{SEED}-{index}"
+                or task["training_only"]["kind"] != "compare"
+                or task["training_only"]["choice_format"] != "production"
+                or task["development_split"] != "development_validation"
+                or _sha_task(task) != digest):
+            raise RuntimeError(f"pinned development comparison {index} changed")
+    return selected
+
+
+def _manifest(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{"task_id": task["task_id"], "task_sha256": _sha_task(task)} for task in tasks]
 
 
 def _sha_task(task: dict[str, Any]) -> str:
@@ -89,22 +101,75 @@ def _offline_env() -> dict[str, str]:
 
 
 class _LoggedDecider:
-    def __init__(self, parent: Any, raw: Path):
+    def __init__(self, parent: Any, raw: Path, task: dict[str, Any]):
         self.parent, self.raw = parent, raw
+        self.identity = _manifest([task])[0]
         self.calls = 0
 
     def decide(self, request: dict[str, Any]) -> dict[str, Any]:
         self.calls += 1
         call = self.calls
-        _write_event(self.raw, "provider_request", call=call, request=request)
+        _write_event(self.raw, "provider_request", **self.identity, call=call, request=request)
         try:
             response = self.parent.decide(request)
         except Exception as exc:
-            _write_event(self.raw, "provider_exception", call=call,
+            _write_event(self.raw, "provider_exception", **self.identity, call=call,
                          exception_type=type(exc).__name__, message=str(exc)[:500])
             raise
-        _write_event(self.raw, "provider_response", call=call, response=response)
+        _write_event(self.raw, "provider_response", **self.identity, call=call, response=response)
         return response
+
+
+def _check_report(report: dict[str, Any], tasks: list[dict[str, Any]]) -> None:
+    pairs = report["pairs"]
+    if (report["total"] != len(tasks) or len(pairs) != len(tasks)
+            or [pair["task_id"] for pair in pairs] != [task["task_id"] for task in tasks]):
+        raise RuntimeError("paired denominator or task identity failed")
+    for pair in pairs:
+        same = pair["same_initial_state"]
+        direct_hash = pair["direct_initial_state_sha256"]
+        planner_hash = pair["planner_initial_state_sha256"]
+        both_called = pair["direct_request"] is not None and bool(pair["planner_calls"])
+        if (same is False or (both_called and (same is not True or not direct_hash
+                                              or direct_hash != planner_hash))
+                or (not both_called and (same is not None or pair["paired_correct"]))):
+            raise RuntimeError("paired initial state identity failed")
+    for key, outcomes in (
+        ("direct_correct", [pair["direct"]["correct"] for pair in pairs]),
+        ("planner_correct", [pair["planner"]["task_correct"] for pair in pairs]),
+        ("paired_correct", [pair["paired_correct"] for pair in pairs]),
+    ):
+        if report[key] != sum(outcomes):
+            raise RuntimeError("paired outcome denominator failed")
+
+
+def _run_cohort(tasks: list[dict[str, Any]], parent: Any, raw: Path, *,
+                revision: str, served_config: dict[str, Any]) -> dict[str, Any]:
+    from language_growth.paired_comparison import run_paired_comparisons
+
+    reports = []
+    for task in tasks:
+        identity = _manifest([task])[0]
+        _write_event(raw, "task_start", **identity)
+        try:
+            report = run_paired_comparisons(
+                [task], _LoggedDecider(parent, raw, task), model=MODEL_ID,
+                parent_revision=revision, expected_served_config=served_config)
+            # Flush a completed pair before checking it or starting the next one.
+            _write_event(raw, "task_report", **identity, report=report)
+            _check_report(report, [task])
+        except Exception as exc:
+            _write_event(raw, "task_failure", **identity,
+                         exception_type=type(exc).__name__, message=str(exc)[:500])
+            raise
+        reports.append(report)
+    combined = {**reports[0], "total": len(tasks),
+                "pairs": [pair for report in reports for pair in report["pairs"]]}
+    for key in ("direct_correct", "planner_correct", "paired_correct"):
+        combined[key] = sum(report[key] for report in reports)
+    _write_event(raw, "paired_report", tasks=_manifest(tasks), report=combined)
+    _check_report(combined, tasks)
+    return combined
 
 
 def _child(raw: Path) -> int:
@@ -119,8 +184,8 @@ def _child(raw: Path) -> int:
     if available < MIN_START_AVAILABLE:
         raise RuntimeError(f"CPU probe child requires >=8 GiB available RAM before Torch; found {available / 1024**3:.2f} GiB")
     versions = _check_dependencies()
-    task = _task()
-    _write_event(raw, "task_pinned", task_id=task["task_id"], task_sha256=_sha_task(task),
+    tasks = _tasks()
+    _write_event(raw, "cohort_pinned", tasks=_manifest(tasks), total=len(tasks), indices=TASK_INDICES,
                  seed=SEED, split="development_validation", choice_format="production",
                  software=versions, model_snapshot=str(SNAPSHOT), available_bytes=available,
                  scope="hybrid_diagnostic")
@@ -133,7 +198,6 @@ def _child(raw: Path) -> int:
     from decide.adapter import Decider
     from decide.backends.hf_readout import HFReadoutBackend, load_qwen35
     from decide.calibration import OptionCountTemperature
-    from language_growth.paired_comparison import run_paired_comparisons
 
     _write_event(raw, "load_start")
     plugin = load_qwen35(SNAPSHOT, device="cpu", dtype="float32", model_id=MODEL_ID)
@@ -144,14 +208,9 @@ def _child(raw: Path) -> int:
     revision = parent.revision()["revision_id"]
     _write_event(raw, "load_complete", parent_revision=revision,
                  backend=backend.name, calibration=calibration.identity())
-    report = run_paired_comparisons(
-        [task], _LoggedDecider(parent, raw), model=MODEL_ID,
-        parent_revision=revision,
-        expected_served_config={"calibration": calibration.identity(),
-                                "policy_masking": "none (served covers every supplied option)"})
-    if report["total"] != 1 or report["pairs"][0]["same_initial_state"] is not True:
-        raise RuntimeError("paired denominator or initial state identity failed")
-    _write_event(raw, "paired_report", report=report)
+    _run_cohort(tasks, parent, raw, revision=revision,
+                served_config={"calibration": calibration.identity(),
+                               "policy_masking": "none (served covers every supplied option)"})
     return 0
 
 
@@ -159,7 +218,7 @@ def _parent(raw: Path) -> int:
     import psutil
 
     versions = _check_dependencies()
-    task = _task()  # validate the one intended task before starting a child
+    tasks = _tasks()  # validate both intended tasks before starting a child
     available = psutil.virtual_memory().available
     if available < MIN_START_AVAILABLE:
         raise RuntimeError(f"CPU probe requires >=8 GiB available RAM; found {available / 1024**3:.2f} GiB")
@@ -169,8 +228,8 @@ def _parent(raw: Path) -> int:
     _write_event(raw, "launcher_start", command=command, timeout_seconds=TIMEOUT_SECONDS,
                  min_start_available_bytes=MIN_START_AVAILABLE,
                  min_running_available_bytes=MIN_RUNNING_AVAILABLE,
-                 available_bytes=available, task_id=task["task_id"],
-                 task_sha256=_sha_task(task), software=versions)
+                 available_bytes=available, tasks=_manifest(tasks), total=len(tasks),
+                 indices=TASK_INDICES, software=versions)
     child = subprocess.Popen(command, env=_offline_env())
     stopped = False
     try:
