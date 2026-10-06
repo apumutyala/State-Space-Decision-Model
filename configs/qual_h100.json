@@ -4,11 +4,11 @@
  "vram_fraction": 0.95,
  "train_max_tokens": 20000000,
  "models": {
-  "0p8b": {"model_dir": null, "seq_len": 1024, "batch": 16, "gate_windows": 16, "init": "reuse_attn",
+  "0p8b": {"model_dir": "${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17", "seq_len": 1024, "batch": 16, "gate_windows": 16, "init": "reuse_attn",
            "stage1": {"steps": 100, "lr": 1e-3, "guard": {"max_peak_gb": 76}},
            "stage2": {"steps": 1000000, "lr": 5e-4, "guard": {"max_peak_gb": 76, "max_minutes": 5}},
            "throughput": {"lengths": [1024, 2048, 4096, 8192], "reps": 3}},
-  "9b": {"model_dir": "${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-9B/snapshots", "seq_len": 4096, "batch": 8,
+  "9b": {"model_dir": "${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-9B/snapshots/c202236235762e1c871ad0ccb60c8ee5ba337b9a", "seq_len": 4096, "batch": 8,
          "gate_windows": 8, "init": "clone_neighbor",
          "stage1": {"steps": 100, "lr": 1e-3, "guard": {"min_tok_s": 6150, "check_after_steps": 50, "max_peak_gb": 76}},
          "stage2": {"steps": 1000000, "lr": 3e-4,

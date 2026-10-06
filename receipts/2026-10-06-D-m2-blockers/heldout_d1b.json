@@ -1,0 +1,38 @@
+{
+ "n_texts": 20000,
+ "hits": [],
+ "k_words": 6,
+ "min_words": 4,
+ "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+ "n_templates": 8,
+ "n_gram_hashes": 70,
+ "skipped_fragments": {
+  "cutoff_window": [
+   " before then."
+  ],
+  "dedup_notice": [
+   "Automated record check: ",
+   "."
+  ],
+  "ledger_settled": [
+   "."
+  ],
+  "planner_decision": [
+   "; do not use ",
+   "."
+  ],
+  "policy_update": [
+   "."
+  ],
+  "sender_followup": [
+   "."
+  ],
+  "soft_framing": [
+   "."
+  ]
+ },
+ "records": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\sample-20000-seed20261006\\records.jsonl.gz",
+ "records_sha256": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
+ "pass": true,
+ "where": "locally reproduced (Windows CPU, coordinator laptop); NOT run on the training box"
+}

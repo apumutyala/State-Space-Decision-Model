@@ -1,0 +1,17 @@
+test_correct_tasks_run_from_initial_input_only (language_growth.tests.test_free_running_dev.FreeRunningDevelopmentTests.test_correct_tasks_run_from_initial_input_only) ... ok
+test_explanation_is_required (language_growth.tests.test_free_running_dev.FreeRunningDevelopmentTests.test_explanation_is_required) ... ok
+test_false_program_and_errors_stay_in_denominator (language_growth.tests.test_free_running_dev.FreeRunningDevelopmentTests.test_false_program_and_errors_stay_in_denominator) ... ok
+test_misconfigured_repair_arm_fails_before_any_provider_call (language_growth.tests.test_free_running_dev.FreeRunningDevelopmentTests.test_misconfigured_repair_arm_fails_before_any_provider_call) ... ok
+test_output_only_tampering_is_not_credited_from_valid_program (language_growth.tests.test_free_running_dev.FreeRunningDevelopmentTests.test_output_only_tampering_is_not_credited_from_valid_program) ... ok
+test_repair_condition_is_reported_separately (language_growth.tests.test_free_running_dev.FreeRunningDevelopmentTests.test_repair_condition_is_reported_separately) ... ok
+test_reversed_comparison_is_equivalent_for_equal_and_unequal_values (language_growth.tests.test_free_running_dev.FreeRunningDevelopmentTests.test_reversed_comparison_is_equivalent_for_equal_and_unequal_values) ... ok
+test_true_but_wrong_fact_is_task_failure (language_growth.tests.test_free_running_dev.FreeRunningDevelopmentTests.test_true_but_wrong_fact_is_task_failure) ... ok
+test_direct_and_initial_planner_request_have_identical_state (language_growth.tests.test_decision_view.DecisionViewTests.test_direct_and_initial_planner_request_have_identical_state) ... ok
+test_gold_and_authored_program_do_not_change_request (language_growth.tests.test_decision_view.DecisionViewTests.test_gold_and_authored_program_do_not_change_request) ... ok
+test_mismatched_evidence_and_duplicate_options_are_rejected (language_growth.tests.test_decision_view.DecisionViewTests.test_mismatched_evidence_and_duplicate_options_are_rejected) ... ok
+test_relabel_changes_ids_not_descriptions_or_evidence (language_growth.tests.test_decision_view.DecisionViewTests.test_relabel_changes_ids_not_descriptions_or_evidence) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.061s
+
+OK

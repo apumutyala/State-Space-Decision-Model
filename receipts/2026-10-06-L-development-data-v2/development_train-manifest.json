@@ -1,0 +1,57 @@
+{
+  "allow_one_repair": false,
+  "choice_formats": {
+    "augmented": 15,
+    "production": 15
+  },
+  "comparison_fields": {
+    "price": 7,
+    "warranty_months": 3
+  },
+  "comparison_left_records": {
+    "development-record-1": 6,
+    "development-record-2": 4
+  },
+  "comparison_relations": {
+    "equal": 3,
+    "greater_than": 4,
+    "less_than": 3
+  },
+  "count": 30,
+  "name_pool": [
+    "Aster",
+    "Bracken",
+    "Cinder",
+    "Dovetail",
+    "Ember",
+    "Fallow"
+  ],
+  "price_cents_range": [
+    5000,
+    20000
+  ],
+  "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+  "sample_sha256": "082507186fd5b5242104d7d576a487b21fef0f9910fd5c4391fb2a3cc3c4e643",
+  "schema": "ssdm.synthetic_development_manifest.v2",
+  "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+  "seed": 17,
+  "split": "development_train",
+  "template_ids": {
+    "compare": [
+      "development_train:compare:0",
+      "development_train:compare:1"
+    ],
+    "explain": [
+      "development_train:explain:0",
+      "development_train:explain:1"
+    ],
+    "read": [
+      "development_train:read:0",
+      "development_train:read:1"
+    ]
+  },
+  "warranty_range": [
+    1,
+    36
+  ]
+}

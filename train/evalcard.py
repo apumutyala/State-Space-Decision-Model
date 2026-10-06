@@ -64,6 +64,9 @@ def run_card(model, items, step: int, out_dir: str | Path | None = None,
         eval_hash = hashlib.sha256("\n".join(sorted(i.id for i in items)).encode()).hexdigest()
         if temperature.fitted_on == eval_hash:
             raise ValueError("temperature was fitted on the eval items themselves; use a separate calibration split")
+        content = [i.row.meta.get("content_sha256") for i in items]
+        temperature.assert_disjoint([i.id for i in items], "eval items",
+                                    content=[c for c in content if c])  # shared record OR shared content raises
     lp, labels, ev, ks = predict(model, items)
     card: dict[str, Any] = {"step": step, "n_items": len(items), "cohort": cohort}
     units: dict[str, Any] = {}

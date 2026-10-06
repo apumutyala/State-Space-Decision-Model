@@ -1,0 +1,50 @@
+{
+  "scope": "iterative synthetic development data integrity; no learned, audit, test-set, or held-out generalization result",
+  "source_commit": "a6b4d84153955953b64aaaa9e19902850f2aae96",
+  "integration_commit": "05e3b6cf7dedce3f54484a6754f67d100600974f",
+  "dependency_commits": {
+    "kernel_types": "d52c8e0e3ec0294b43e11a06355017416a92bd50",
+    "parent_bridge": "1fd78b3e6e3f9452073f6afba0a8f9beda789827",
+    "decision_adapter": "0a30e7be593999a5782dbe1e6daea6afbdb54083"
+  },
+  "text_lf_sha256": {
+    "language_growth/development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+    "language_growth/tests/test_development_data.py": "0e29bd54ea121cc4779026ea08b5180fda9be24b776b69162b136f69b78bbdab",
+    "language_growth/kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+    "language_growth/types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1",
+    "language_growth/parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "tests.txt": "1e416f2aaf525bf53988a54ad050664daed5896f8a2915f718e2fde3189937f3",
+    "adapter-v01-check.json": "156ae10dbae35ea20fa41b8b664c97d5b026138b58687e31c0b7ad79443b2c48"
+  },
+  "test_command": ["python", "-m", "unittest", "language_growth.tests.test_development_data", "-v"],
+  "test_exit_code": 0,
+  "tests": 12,
+  "adapter_check_command": ["python", "receipts/2026-10-06-L-development-data-v2/check_adapter.py"],
+  "adapter_check": "adapter-v01-check.json",
+  "adapter_check_exit_code": 0,
+  "sample_command": ["python", "receipts/2026-10-06-L-development-data-v2/reproduce.py"],
+  "sample_parameters": {"seed": 17, "count_per_split": 30, "choice_format": "mixed", "allow_one_repair": false},
+  "splits": {
+    "development_train": {
+      "sample": "development_train.jsonl",
+      "manifest": "development_train-manifest.json",
+      "sample_sha256": "082507186fd5b5242104d7d576a487b21fef0f9910fd5c4391fb2a3cc3c4e643",
+      "manifest_text_lf_sha256": "57d8c8fb1d882dfaa32ffb6ac023eab19854cea7de63bfd61d3abbfd11798f4f"
+    },
+    "development_validation": {
+      "sample": "development_validation.jsonl",
+      "manifest": "development_validation-manifest.json",
+      "sample_sha256": "adbecf3da62e9fead4be024410411531452babee126030227534a784925ae653",
+      "manifest_text_lf_sha256": "957e43a64b209c01f19fa8586195219905efa3e2c330cd10f7902ffba3870470"
+    }
+  },
+  "sample_encoding": "one sorted compact ensure_ascii JSON object per LF line, final LF",
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38)"
+  },
+  "runs": 1,
+  "billed_cost_usd": 0,
+  "raw_output": "tests.txt"
+}

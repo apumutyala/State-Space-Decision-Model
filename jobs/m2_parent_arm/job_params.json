@@ -1,0 +1,16 @@
+{
+ "_comment": "DRAFT, NOT SUBMITTED. jobs/m2_parent_arm: score the frozen m1 parent once per gate on the frozen development cohort (train.cohort v2) and cache the units for every m2 cell on that parent (jobs/m2_parent_arm/JOB_SPEC.md). Worst case = (build_timeout + 2 x max_duration) x batch rate.",
+ "job": "m2-parent-arm",
+ "status": "draft: not submitted",
+ "chip": "h100", "chip_count": 1,
+ "max_duration_minutes": 180, "build_timeout_minutes": 20,
+ "max_restarts": 0, "assumed_restart_floor": 1, "queue_ttl_minutes": 1440,
+ "resume": "none", "hf_cache": true,
+ "batch_usd_per_min": 0.0495, "hard_cap_usd": 20.0,
+ "phase_caps_minutes": {"setup": 15, "guard": 5, "preflight": 1, "g12": 60, "g13": 90, "report": 2},
+ "reserve_minutes": 7,
+ "parents": {"rwkv7": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+             "q9af": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a + converted GDNs (sha256 PENDING)"},
+ "cell_configs": {"rwkv7": "jobs/m2_pilot/m2_pilot_cell.json", "q9af": "jobs/m2_pilot/m2_pilot_cell_q9af.json"},
+ "mission": "m2-parent-arm"
+}

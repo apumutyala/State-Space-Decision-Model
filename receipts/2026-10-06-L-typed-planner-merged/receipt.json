@@ -1,0 +1,36 @@
+{
+  "source_sha": "310f734e5c021a0673e4fbf9b96151f0586ab4f3",
+  "merged_agent_main_sha": "6c1dd8aa039ddadd3d69aa4b65efe0fb256c931c",
+  "previous_planner_sha": "d66efc713f80dda268ca00a79a906d17fde15e7b",
+  "dependency_source_commits": {
+    "decide_adapter": "0a30e7be593999a5782dbe1e6daea6afbdb54083",
+    "kernel": "d52c8e0e3ec0294b43e11a06355017416a92bd50",
+    "renderer": "0375b7bce671a665828a683755e887d3aecd4ca7",
+    "fixture_catalog": "953566c32d24d8e6c6f810c82fb55866660f9c66"
+  },
+  "checks": [
+    {
+      "command": "python -m unittest language_growth.tests.test_planner language_growth.tests.test_integration_replay -v",
+      "exit_code": 0,
+      "raw_output": "tests.txt",
+      "result": "23 tests passed"
+    },
+    {
+      "command": "python -m language_growth.integration_smoke --fixtures fixtures/language_growth",
+      "exit_code": 0,
+      "raw_output": "oracle-replay-raw.json",
+      "result": "passed=true; three scenarios: accepted, accepted, kernel_rejected"
+    }
+  ],
+  "sha256_bytes": {
+    "fixtures/language_growth/catalog.json": "2a19356f67e55dcefa46595c177b1da758796ad6525e66edd77897f7b79e2e62",
+    "fixtures/language_growth/manifest.json": "a79994b0e589063a8a39fc3eacbafa8475d7364f6174808735a87dd077098df7",
+    "tests.txt": "3a6b6d656a818876b303b3a2dcb4540072be591f9b3112365969d134ea475c22",
+    "oracle-replay-raw.json": "2b568173618a9c98f285d9b7f3bc76846e10878143b497bd8b37643cc2ecdf54"
+  },
+  "seed": "deterministic scripted OracleBackend selectors; run UUIDs do not enter model-facing state",
+  "hardware": "Windows 11, AMD64 CPU, Python 3.12.13",
+  "billed_cost_usd": 0,
+  "runs_per_command": 1,
+  "scope": "Merged Track D adapter OracleBackend/ReplayBackend, Track L typed planner, kernel, renderer and fixtures. CPU protocol qualification only; no model weights, learned capability, GPU use or timing claim."
+}

@@ -1,0 +1,7 @@
+{
+ "path": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\167d8677-872b-45ed-b144-905f7c6dd3bc\\scratchpad\\ci-snap.txt.gz",
+ "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "n": 24150,
+ "n_rows": 24265,
+ "where": "locally reproduced (Windows CPU, coordinator laptop); NOT run on the training box"
+}
