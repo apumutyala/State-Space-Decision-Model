@@ -1,11 +1,11 @@
 {
  "edition": "0.2.1",
  "rows_file": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\suite-0.2\\selected-rows.jsonl.gz",
- "sha256": "a6a1593711e87fe5e4f5dbb00e83f7254e41292bb43ef7b531c28aa32855f356",
+ "sha256": "5510346a750e116184d810dff8abe8b3e2b1ff03e5e9e43516caaf00ce6dd55b",
  "expected_sha256": "25aac5e890a54a3172c7a0c184b4cc8b9a43f10b6ee89bbad8da923be423c656",
- "match": false,
- "uncompressed_sha256": "6787a1d5cfb693c0d6aaf320057368c10b3b56e23d9c4e4bb98057a8ce6c41c7",
- "uncompressed_match": false,
+ "match": true,
+ "uncompressed_sha256": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5",
+ "uncompressed_match": true,
  "added_file": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\suite-0.2\\added-rows.jsonl.gz",
  "added_sha256": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89",
  "added_match": true,
@@ -47,6 +47,7 @@
   "42": 5500,
   "43": 570,
   "44": 5000,
+  "45": 501,
   "48": 10139,
   "50": 1676,
   "56": 2000,
@@ -57,13 +58,11 @@
   "62": 3652,
   "64": 528
  },
- "missing_index_benchmarks": [
-  45
- ],
+ "missing_index_benchmarks": [],
  "files": {
   "selected-rows.jsonl.gz": {
-   "sha256_gz": "a6a1593711e87fe5e4f5dbb00e83f7254e41292bb43ef7b531c28aa32855f356",
-   "sha256_uncompressed": "6787a1d5cfb693c0d6aaf320057368c10b3b56e23d9c4e4bb98057a8ce6c41c7"
+   "sha256_gz": "5510346a750e116184d810dff8abe8b3e2b1ff03e5e9e43516caaf00ce6dd55b",
+   "sha256_uncompressed": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5"
   },
   "added-rows.jsonl.gz": {
    "sha256_gz": "921e245c4ec2f1ea37f9f82d206fe4ac3ac4104e75b3f92521606e5973934b18",

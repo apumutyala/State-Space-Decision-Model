@@ -1,9 +1,23 @@
+anyio==4.15.1
+certifi==2026.7.22
+click==8.5.0
 colorama==0.4.6
 decision-index @ file:///C:/Users/apumu/research/CHLabs/ssdm-data/decision-index
+filelock==4.0.12
+fsspec==2026.9.0
+h11==0.16.0
+hf-xet==1.6.0
+httpcore==1.0.9
+httpx==0.28.1
+huggingface_hub==1.33.0
+idna==3.20
 iniconfig==2.3.0
 numpy==2.5.3
 packaging==26.3
 pluggy==1.6.0
 Pygments==2.21.0
 pytest==9.1.1
--e git+https://github.com/apumutyala/State-Space-Decision-Model.git@81c4ec96b527d37b1b3b161cf1d887ce39d95a6f#egg=ssdm_harness&subdirectory=..\..\..\ssdm-wt\m0-harness\harness
+PyYAML==6.0.3
+-e git+https://github.com/apumutyala/State-Space-Decision-Model.git@a3739f4d75bf8b6c9c2f9321f8aeb0ab7dc8a802#egg=ssdm_harness&subdirectory=..\..\..\ssdm-wt\m0-harness\harness
+tqdm==4.70.1
+typing_extensions==4.16.0
