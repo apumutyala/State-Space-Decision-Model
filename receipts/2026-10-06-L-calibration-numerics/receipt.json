@@ -1,0 +1,15 @@
+{
+  "source_sha": "f09b70b9f217aa71fbb7a02aeddee1451888470a",
+  "base_agent_main_sha": "009c33f53ea9b1e33205cc4e5e16cfb95b75bdce",
+  "command": "C:/Users/apumu/research/CHLabs/ssdm-wt/m2-heads/.venv/Scripts/python.exe -m pytest -q tests/test_calibration_numerics.py tests/test_m2_blockers.py::test_serving_temperature_equals_training_temperature_and_identity tests/test_m2_blockers.py::test_identity_ids_unchanged_for_existing_receipts tests/test_m2_blockers.py::test_decider_serves_the_fitted_temperature_and_versions_it_in_the_revision tests/test_m2_blockers.py::test_serve_time_guard_is_bound_to_the_fit tests/test_m2_e2e_dryrun.py::test_temperature_fit_with_mixed_option_counts_is_finite tests/test_m2_train.py::test_feature_temperature_fits_length_dependent_miscalibration",
+  "exit_code": 0,
+  "raw_output": "tests.txt",
+  "raw_output_sha256": "3cf3b99b9c053f53130e5afb932dcd4af5a4f18975d9bb2bc2708dbdd8d2ea4c",
+  "result": "10 synthetic CPU tests passed",
+  "data": "Synthetic calibration content hashes and logits only; no cohort rows, model weights, Index or held-out data",
+  "seed": "Fixed synthetic numeric counterexamples; ordinary parity tests use their own local seed where specified",
+  "hardware": "Windows 11 AMD64 CPU; Python 3.12.13; torch 2.14.1+cpu",
+  "billed_cost_usd": 0,
+  "runs_per_command": 1,
+  "scope": "Feature-temperature identity hashes full floating-point weights; default weights match custom 0<t_min<1; identity status uses a 1e-12 numerical tolerance for actual constant-one temperature, not bitwise equality. Serving and training reject nonfinite or nonpositive derived temperatures. Invalid D temperatures fail with fixed calibration_temperature_invalid error and no answers. Existing fitted-metadata proof semantics are unchanged. No learned-capability or model-quality claim."
+}

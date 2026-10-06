@@ -32,7 +32,8 @@ class OptionCountTemperature:
 
     @property
     def is_identity(self) -> bool:
-        return self.t0 == 1.0 and self.t1 == 0.0
+        return (self.t0 == 1.0 and self.t1 == 0.0 and math.isfinite(self.t_min)
+                and self.temperature(2) == 1.0)
 
     def identity(self) -> dict:
         d = asdict(self)
@@ -45,6 +46,8 @@ class OptionCountTemperature:
 
 
 def softmax(logits: list[float], temperature: float = 1.0) -> list[float]:
+    if not math.isfinite(temperature) or temperature <= 0:
+        raise ValueError("temperature must be finite and positive")
     if not logits:
         return []
     scaled = [x / temperature for x in logits]
@@ -58,7 +61,15 @@ def softmax(logits: list[float], temperature: float = 1.0) -> list[float]:
 # --------------------------------------------------------------------------------------------- feature temperature
 #: Feature order of the m2 post-hoc temperature (``train.calibration``); part of its identity.
 FEATURE_TEMPERATURE_FEATURES = ("bias", "log1p_evidence_tokens", "log_n_options")
-IDENTITY_W = (math.log(math.expm1(1 - 0.05)), 0.0, 0.0)
+
+
+def _identity_weights(t_min: float) -> tuple[float, float, float]:
+    if not math.isfinite(t_min) or not 0 < t_min < 1:
+        raise ValueError("identity feature temperature needs 0 < t_min < 1")
+    return (math.log(math.expm1(1 - t_min)), 0.0, 0.0)
+
+
+IDENTITY_W = _identity_weights(0.05)
 _HEX64 = frozenset("0123456789abcdef")
 
 
@@ -89,11 +100,15 @@ def feature_temperature_identity(t_min: float, w, fitted_on: str | None, proof_s
     import hashlib
     import json
 
+    weights = [float(x) for x in w]
     d = {"kind": "feature_temperature", "features": FEATURE_TEMPERATURE_FEATURES, "t_min": t_min,
-         "w": [round(float(x), 8) for x in w], "fitted_on": fitted_on}
+         "w": weights, "fitted_on": fitted_on}
     if proof_sha256 is not None:
         d["disjointness_proof"] = proof_sha256
-    d["status"] = "fitted" if fitted_on else "uncalibrated_identity"
+    constant_one = (len(weights) == 3 and weights[1] == 0 and weights[2] == 0
+                    and math.isfinite(t_min + _softplus(weights[0]))
+                    and abs(t_min + _softplus(weights[0]) - 1.0) <= 1e-12)
+    d["status"] = "fitted" if fitted_on else ("uncalibrated_identity" if constant_one else "unfitted_manual")
     d["id"] = hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
     return d
 
@@ -126,7 +141,7 @@ class FeatureTemperature:
       one AND shares no content with the calibration set.
     """
 
-    w: tuple = IDENTITY_W
+    w: tuple | None = None
     t_min: float = 0.05
     fitted_on: str | None = None
     disjointness: tuple = ()  # ((split name, content-set sha256), ...), sorted by name
@@ -136,17 +151,19 @@ class FeatureTemperature:
     versioned_in_revision: bool = True
 
     def __post_init__(self) -> None:
-        if len(self.w) != len(FEATURE_TEMPERATURE_FEATURES) or not all(math.isfinite(float(x)) for x in self.w):
-            raise ValueError(f"w must be {len(FEATURE_TEMPERATURE_FEATURES)} finite numbers, got {self.w!r}")
         if not (math.isfinite(self.t_min) and self.t_min > 0):
             raise ValueError("t_min must be a positive finite number")
-        object.__setattr__(self, "w", tuple(float(x) for x in self.w))
+        weights = _identity_weights(self.t_min) if self.w is None else self.w
+        if len(weights) != len(FEATURE_TEMPERATURE_FEATURES) or not all(math.isfinite(float(x)) for x in weights):
+            raise ValueError(f"w must be {len(FEATURE_TEMPERATURE_FEATURES)} finite numbers, got {weights!r}")
+        object.__setattr__(self, "w", tuple(float(x) for x in weights))
         object.__setattr__(self, "disjointness", tuple(sorted((str(k), str(v)) for k, v in self.disjointness)))
         object.__setattr__(self, "calib_content", tuple(sorted(set(self.calib_content))))
 
     @property
     def is_identity(self) -> bool:
-        return self.fitted_on is None and all(abs(a - b) < 1e-12 for a, b in zip(self.w, IDENTITY_W))
+        return (self.fitted_on is None and self.w[1] == 0 and self.w[2] == 0
+                and abs(self.t_min + _softplus(self.w[0]) - 1.0) <= 1e-12)
 
     def temperature(self, k: int) -> float:  # pragma: no cover - guarded: the adapter calls temperature_for
         raise TypeError("FeatureTemperature needs evidence_tokens; use temperature_for(k, features)")
@@ -157,8 +174,14 @@ class FeatureTemperature:
         ev = features["evidence_tokens"]
         if isinstance(ev, bool) or not isinstance(ev, int) or ev < 0:
             raise ValueError(f"evidence_tokens must be a non-negative int, got {ev!r}")
-        z = self.w[0] + self.w[1] * math.log1p(ev) + self.w[2] * math.log(max(int(k), 1))
-        return self.t_min + _softplus(z)
+        try:
+            z = self.w[0] + self.w[1] * math.log1p(ev) + self.w[2] * math.log(max(int(k), 1))
+            temperature = self.t_min + _softplus(z)
+        except OverflowError as exc:
+            raise FloatingPointError("derived feature temperature is invalid") from exc
+        if not math.isfinite(temperature) or temperature <= 0:
+            raise FloatingPointError("derived feature temperature is invalid")
+        return temperature
 
     def identity(self) -> dict:
         d = feature_temperature_identity(self.t_min, self.w, self.fitted_on, self.proof_sha256)
