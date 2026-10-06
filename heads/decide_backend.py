@@ -81,7 +81,11 @@ class DecisionModelBackend:
     def plan(self, request: dict[str, Any]) -> Plan:
         rows = self._rows(request)
         lens = [len(r.ids) for r in rows]
-        return Plan(inference_calls=1, max_call_input_tokens=max(lens), total_input_tokens=sum(lens))
+        return Plan(inference_calls=1 if self._one_pass() else len(rows), max_call_input_tokens=max(lens),
+                    total_input_tokens=sum(lens))
+
+    def _one_pass(self) -> bool:
+        return not getattr(self.model.backbone, "wants_trust", False)
 
     @torch.no_grad()
     def score(self, request: dict[str, Any], check_deadline: Callable[[], None]) -> ScoreResult:
@@ -92,15 +96,24 @@ class DecisionModelBackend:
         features = {r.qid: {"evidence_tokens": r.evidence_len, "n_options": r.n_options,
                             "evidence_span": r.meta.get("evidence")} for r in rows}
         try:
-            # all questions of the request in one pass, reading the shared schema + state prefix once
-            # (heads.prefix_features; was one full-prompt forward per question, B=1)
-            check_deadline()
-            lps = self.model(rows, shared_prefix=self.shared_prefix).log_probs.float().cpu()
+            if self._one_pass():
+                # all questions of the request in one pass, reading the shared schema + state prefix once
+                # (heads.prefix_features; was one full-prompt forward per question, B=1)
+                check_deadline()
+                lps = list(self.model(rows, shared_prefix=self.shared_prefix).log_probs.float().cpu())
+            else:
+                # controlsafe trust-gated backbone: per-row calls exactly as before (its protected stream is bitwise
+                # stable only for a fixed host batch shape, and it needs per-token trust labels on every call)
+                lps = []
+                for row in rows:
+                    check_deadline()
+                    lps.append(self.model([row]).log_probs[0].float().cpu())
             for row, lp in zip(rows, lps):
                 if not torch.isfinite(lp[: row.n_options]).all():
                     raise FloatingPointError(f"{row.qid}: non-finite head log-probabilities {lp.tolist()}")
                 logits[row.qid] = {oid: float(lp[k]) for k, oid in enumerate(row.option_ids)}
         finally:
             self.model.train(was_training)
-        return ScoreResult(logits=logits, inference_calls=1, total_input_tokens=sum(len(r.ids) for r in rows),
+        return ScoreResult(logits=logits, inference_calls=1 if self._one_pass() else len(rows),
+                           total_input_tokens=sum(len(r.ids) for r in rows),
                            extras={"head": type(self.model.head).__name__}, features=features)

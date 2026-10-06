@@ -26,6 +26,8 @@ def supported(backbone) -> bool:
     from .backbone import _accepts
 
     m = backbone.model
+    if getattr(backbone, "wants_trust", False):  # controlsafe trust gate: two streams + labels, never this path
+        return False
     return (backbone.capture == "hidden_states" and not _accepts(m.forward, "cache_params")
             and (_accepts(m.forward, "state") or _accepts(m.forward, "past_key_values")))
 

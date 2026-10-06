@@ -1,0 +1,30 @@
+{
+  "source_sha": "c1d1289f797112a21102b63252c763563420c7a5",
+  "commands": [
+    [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-m",
+      "unittest",
+      "language_growth.tests.test_l0_qwen_cpu_probe",
+      "-v"
+    ],
+    [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-c",
+      "import json,sys; import psutil; from language_growth import l0_qwen_cpu_probe as p; print(json.dumps({'software':p._check_dependencies(),'task_id':p._task()['task_id'],'task_sha256':p._sha_task(p._task()),'available_bytes_observation':psutil.virtual_memory().available,'torch_imported':'torch' in sys.modules,'executed_model':False},sort_keys=True))"
+    ]
+  ],
+  "exit_codes": [
+    0,
+    0
+  ],
+  "seed": 271828,
+  "runs": 1,
+  "hardware": "Windows CPU preparation only; no Torch import or model load",
+  "cost_usd": 0,
+  "scope": "Eight synthetic launcher/guard tests and read-only metadata; not a model run or resource clearance. Actual load remains gated on current RAM and explicit coordinator go-ahead.",
+  "sha256_lf": {
+    "tests.txt": "ea688d0903842db425ed3af6d42cecee058d56f3412d7f275df71ffa59e924e2",
+    "metadata.json": "f35ea756df1da2fe7ac6d811998c6854edf7e8e2b3f052e6e829241e63ac62c1"
+  }
+}

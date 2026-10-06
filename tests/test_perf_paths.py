@@ -193,3 +193,55 @@ def test_cost_model_reproduces_the_measured_job_and_clears_the_cap():
                     str(Path(__file__).resolve().parents[1] / "jobs/common/readout_volume_rwkv7.json")]) == 0
     assert rg.main(["preflight", "--tok-s", "4307", "--call-s", "0.098", "--cap-min", "75", "--path", "recompute",
                     "--volume", str(Path(__file__).resolve().parents[1] / "jobs/common/readout_volume_rwkv7.json")]) == 15
+
+
+# ----------------------------------------------------------------------------- controlsafe (PR #42) x shared prefix
+def _gated_model(head, fam="rwkv7"):
+    from controlsafe import trust_gate as TG
+
+    bb = tiny_hf_backbone(fam, seed=2, fork_mode="cache")
+    g = TG.wrap(bb, {"trust_gate": True, "bridge_rank": 4, "readout": "concat"})
+    with torch.no_grad():
+        for p in g.bridges.parameters():
+            p.normal_(0, 0.3)
+    return DecisionModel(g, head, SMALL.get(head), seed=0).eval()
+
+
+@pytest.mark.parametrize("fam", ["rwkv7", "q9af"])
+@pytest.mark.parametrize("head", ["integrator", "fork"])
+def test_trust_gated_backbone_never_takes_the_prefix_path_and_keeps_its_labels(fam, head):
+    """A trust-gated backbone needs per-token trust labels on every call (fail closed) and a two-stream forward;
+    shared_prefix must leave it on the labelled path, bitwise identical to shared_prefix=False."""
+    from heads import prefix_features as PF
+    from heads.features import build_head_input
+
+    m = _gated_model(head, fam)
+    assert not PF.supported(m.backbone)
+    rs = rows(REQ_A) + rows(REQ_B)
+    called = []
+    orig = PF.shared_prefix_features
+    PF.shared_prefix_features = lambda *a, **k: called.append(1) or orig(*a, **k)
+    try:
+        with torch.no_grad():
+            a = build_head_input(m.backbone, rs, need_fork=m.head.needs_fork, shared_prefix=True)
+            b = build_head_input(m.backbone, rs, need_fork=m.head.needs_fork, shared_prefix=False)
+    finally:
+        PF.shared_prefix_features = orig
+    assert not called
+    assert torch.equal(a.h, b.h) and torch.equal(a.q_end, b.q_end)
+    assert (a.fork is None) == (b.fork is None) and (a.fork is None or torch.equal(a.fork, b.fork))
+    assert m.backbone.last_protected is not None  # the protected stream ran (labels were consumed)
+
+
+def test_trust_gated_decision_backend_keeps_per_row_calls():
+    from heads.decide_backend import DecisionModelBackend
+
+    m = _gated_model("integrator")
+    be = DecisionModelBackend(m, ENC, template="jrt-plain-v1")
+    res = be.score(REQ_A, lambda: None)
+    assert res.inference_calls == be.plan(REQ_A).inference_calls == len(REQ_A["questions"])
+    with torch.no_grad():
+        for r in rows(REQ_A):
+            lp = m([r]).log_probs[0]
+            for k, oid in enumerate(r.option_ids):
+                assert res.logits[r.qid][oid] == float(lp[k])  # exactly the old per-row call
