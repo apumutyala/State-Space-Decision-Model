@@ -1,0 +1,131 @@
+{
+  "case_id": "LG17",
+  "title": "avoidable ask",
+  "tags": [
+    "positive_kernel",
+    "negative_task",
+    "ask",
+    "coverage"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Does Atlas have a longer warranty than Boreal?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {
+      "optional-name": {
+        "entity_ref": "atlas",
+        "field": "display_name"
+      }
+    },
+    "unmet_obligations": [
+      {
+        "obligation_id": "optional-catalog-detail",
+        "category": "missing_catalog_field",
+        "allowed_refs": [
+          "optional-name"
+        ]
+      }
+    ],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "Ask",
+        "category": "missing_catalog_field",
+        "references": [
+          "optional-name"
+        ],
+        "obligation_ref": "optional-catalog-detail"
+      }
+    ],
+    "outputs": [
+      "n1"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "accepted",
+    "kernel_reason_category": null,
+    "task_outcome": "task_wrong",
+    "useful_complete_answer": false,
+    "why": "The host permits asking about an unrelated catalog gap, but both warranty facts already answer this question. This accepted ASK lowers useful coverage.",
+    "ask": true,
+    "avoidable_ask": true,
+    "coverage_eligible": true,
+    "complete_answer_denominator": true,
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 1,
+      "useful_complete_count": 0,
+      "ask_count": 1
+    }
+  },
+  "unresolved": [
+    "The optional catalog gap is deliberately not a formal task obligation; adding independent relevance obligations could cause kernel rejection instead."
+  ],
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG17-D0",
+    "type": "choice",
+    "question": "Does Atlas have a longer warranty than Boreal?",
+    "options": [
+      {
+        "id": "LG17-o01",
+        "description": "Atlas has the longer warranty."
+      },
+      {
+        "id": "LG17-o02",
+        "description": "No; Boreal has the longer warranty."
+      },
+      {
+        "id": "LG17-o03",
+        "description": "Request Atlas display-name information before answering."
+      }
+    ],
+    "target_option_id": "LG17-o01",
+    "target_description": "Both required numeric facts are already available; the unrelated catalog gap is not needed.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": true,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG17-atlas_longer": "LG17-o01",
+      "LG17-boreal_longer": "LG17-o02",
+      "LG17-ask_optional": "LG17-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG17-o01": "LG17-o02",
+        "LG17-o02": "LG17-o03",
+        "LG17-o03": "LG17-o01"
+      },
+      "target_option_id": "LG17-o02",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
+  }
+}
