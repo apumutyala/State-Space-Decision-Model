@@ -82,3 +82,39 @@ def test_tensor_dtype_changes_digest_without_changing_frozen_base():
     ra, rb = revision(a), revision(b)
     assert ra["backbone"] == rb["backbone"]
     assert ra["trained_state"]["sha256"] != rb["trained_state"]["sha256"]
+
+
+def test_snapshot_aggregator_and_boundary_count_change_revision_with_same_weights():
+    a, b = model(), model()
+    b.head.agg = "sum"
+    ra, rb = revision(a), revision(b)
+    assert ra["trained_state"]["sha256"] == rb["trained_state"]["sha256"]
+    assert ra["head_configuration"] != rb["head_configuration"]
+    assert ra["revision_id"] != rb["revision_id"]
+
+    c = model()
+    c.head.S = 4
+    rc = revision(c)
+    assert ra["trained_state"]["sha256"] == rc["trained_state"]["sha256"]
+    assert ra["revision_id"] != rc["revision_id"]
+
+
+def test_pad_id_changes_revision_with_same_weights():
+    a, b = model(), model()
+    b.pad_id = 1
+    assert revision(a)["trained_state"]["sha256"] == revision(b)["trained_state"]["sha256"]
+    assert revision(a)["revision_id"] != revision(b)["revision_id"]
+
+
+def test_clef_routing_head_count_changes_revision_with_same_weights():
+    kwargs = {"width": 16, "routing_layers": 1, "layers": 1, "feedforward": 32}
+    a = DecisionModel(tiny_backbone(seed=19, hidden=8, layers=1), "clef_control",
+                      head_kwargs={**kwargs, "heads": 2}, seed=7)
+    b = DecisionModel(tiny_backbone(seed=19, hidden=8, layers=1), "clef_control",
+                      head_kwargs={**kwargs, "heads": 4}, seed=7)
+    b.load_state_dict(a.state_dict())
+    ra, rb = revision(a), revision(b)
+    assert ra["trained_state"]["sha256"] == rb["trained_state"]["sha256"]
+    assert ra["head_configuration"]["routing_heads"] == [2]
+    assert rb["head_configuration"]["routing_heads"] == [4]
+    assert ra["revision_id"] != rb["revision_id"]

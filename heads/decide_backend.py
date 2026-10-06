@@ -12,9 +12,10 @@ adapter's job (``Decider(calibration=...)``); this backend never sees evaluation
 * Untrusted text that can only encode to control tokens keeps the encoder's own status code
   (``decide.untrusted.ControlTokenError.code``, as ``hf_readout`` does), not a generic one.
 * Non-finite logits raise (a model fault is never served as a decision).
-* ``revision()`` binds the actual head, typed-output and LoRA state with an exact digest, alongside the
-  existing sampled frozen-backbone identity. The model, encoder and checkpoint metadata must remain immutable
-  after the first call; build a new backend after training or loading a different checkpoint.
+* ``revision()`` binds the actual head, typed-output and LoRA state with an exact digest and the supported
+  head's behavior-changing configuration, alongside the existing sampled frozen-backbone identity. The model,
+  encoder and checkpoint metadata must remain immutable after the first call; build a new backend after training
+  or loading a different checkpoint.
 """
 
 from __future__ import annotations
@@ -73,6 +74,30 @@ def _trained_state_identity(model: DecisionModel) -> dict[str, Any]:
             "lora_modules": len(lora_modules)}
 
 
+def _head_configuration(head: torch.nn.Module) -> dict[str, Any]:
+    """Explicit inference settings for the supported factory heads; unknown heads fail closed."""
+    from .heads import (ClefCrossAttentionControl, FinalStateFork, HeadB, IntegratorBank,
+                        SnapshotFork)
+
+    if type(head) is IntegratorBank:
+        return {"kind": head.name, "channels": head.C, "t_chunk": head.t_chunk}
+    if type(head) is FinalStateFork:
+        return {"kind": head.name, "hidden": head.mlp[0].out_features, "norm_eps": head.norm.eps}
+    if type(head) is SnapshotFork:
+        return {"kind": head.name, "channels": head.inc.C, "t_chunk": head.inc.t_chunk,
+                "max_snapshots": head.S, "aggregator": head.agg}
+    if type(head) is HeadB:
+        return {"kind": head.name, "d_state": head.d, "t_chunk": head.t_chunk}
+    if type(head) is ClefCrossAttentionControl:
+        return {"kind": head.name, "width": head.width,
+                "routing_layers": len(head.routing), "decoder_layers": len(head.decoder.layers),
+                "routing_heads": [layer.attn.num_heads for layer in head.routing],
+                "decoder_heads": [layer.self_attn.num_heads for layer in head.decoder.layers],
+                "routing_feedforward": [layer.ff[0].out_features for layer in head.routing],
+                "decoder_feedforward": [layer.linear1.out_features for layer in head.decoder.layers]}
+    raise ValueError(f"no revision configuration contract for head {type(head).__name__}")
+
+
 class DecisionModelBackend:
     name = "decision_head"
 
@@ -94,8 +119,11 @@ class DecisionModelBackend:
         ident = {
             "backend": self.name,
             "head": type(self.model.head).__name__,
+            "head_configuration": _head_configuration(self.model.head),
             "backbone": backbone_identity(self.model.backbone),
             "trained_state": _trained_state_identity(self.model),
+            "pad_id": self.model.pad_id,
+            "fork_mode": self.model.backbone.fork_mode,
             "encoder": enc() if callable(enc) else {"kind": "unidentified"},
             "prompt_template": self.template.identity(),
             "layout": self.layout,
