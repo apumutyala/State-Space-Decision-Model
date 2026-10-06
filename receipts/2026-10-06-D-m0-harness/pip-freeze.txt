@@ -1,0 +1,9 @@
+colorama==0.4.6
+decision-index @ file:///C:/Users/apumu/research/CHLabs/ssdm-data/decision-index
+iniconfig==2.3.0
+numpy==2.5.3
+packaging==26.3
+pluggy==1.6.0
+Pygments==2.21.0
+pytest==9.1.1
+-e git+https://github.com/apumutyala/State-Space-Decision-Model.git@8654928484ded7906599b0123b60b72cf042b966#egg=ssdm_harness&subdirectory=..\..\..\ssdm-wt\m0-harness\harness
