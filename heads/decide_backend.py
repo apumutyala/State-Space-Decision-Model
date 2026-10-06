@@ -14,8 +14,10 @@ adapter's job (``Decider(calibration=...)``); this backend never sees evaluation
 * Untrusted text that can only encode to control tokens keeps the encoder's own status code
   (``decide.untrusted.ControlTokenError.code``, as ``hf_readout`` does), not a generic one.
 * Non-finite logits raise (a model fault is never served as a decision).
-* ``revision()`` is computed once per backend (it hashes the frozen weights); build a new backend per
-  checkpoint.
+* ``revision()`` binds the actual head, typed-output and LoRA state with an exact digest and the supported
+  head's behavior-changing configuration, alongside the existing sampled frozen-backbone identity. The model,
+  encoder and checkpoint metadata must remain immutable after the first call; build a new backend after training
+  or loading a different checkpoint.
 * G16 head (``controlsafe.g16.G16DecisionHead``): the logits returned are the UNVETOED ``b + a.E`` (finite, every
   supplied option), so ``raw`` / ``served`` are the model's distribution and ``served_config.policy_masking:
   none`` stays true. The veto source is ONLY the validated envelope ``ssdm.policy_restriction``
@@ -47,6 +49,83 @@ from .layout import EncodeFn, LayoutRow, build_row
 from .model import DecisionModel
 
 
+def _trained_state_identity(model: DecisionModel) -> dict[str, Any]:
+    """Exact digest of the state learned on top of the separately identified frozen backbone.
+
+    Read state rather than ``requires_grad``: inference commonly freezes every parameter. Hashing LoRA's
+    scaling and dropout configuration also distinguishes equal tensors with different adapter behavior.
+    """
+    from controlsafe.g16 import G16DecisionHead
+    from train.lora import LoRALinear  # local import: train depends on heads
+
+    digest = hashlib.sha256()
+
+    def add(label: str, value: Any) -> None:
+        encoded = json.dumps([label, value], sort_keys=True, separators=(",", ":")).encode("utf-8")
+        digest.update(len(encoded).to_bytes(8, "big"))
+        digest.update(encoded)
+
+    def add_tensor(name: str, tensor: torch.Tensor) -> None:
+        add("tensor", {"name": name, "shape": list(tensor.shape), "dtype": str(tensor.dtype)})
+        raw = tensor.detach().contiguous().cpu().reshape(-1).view(torch.uint8).numpy().tobytes()
+        digest.update(len(raw).to_bytes(8, "big"))
+        digest.update(raw)
+
+    head_state = model.head.state_dict()
+    if type(model.head) is G16DecisionHead and model.head.gated is model.backbone:
+        # G16 shares the backbone with DecisionModel. Its bridges remain exact here; the frozen
+        # model is identified separately, and its LoRA adapters are hashed below.
+        head_state = {name: tensor for name, tensor in head_state.items()
+                      if not name.startswith("gated.model.")}
+    for component, state in (("head", head_state), ("typed", model.typed.state_dict())):
+        for name, tensor in sorted(state.items()):
+            add_tensor(f"{component}.{name}", tensor)
+
+    lora_modules = [(name, module) for name, module in model.backbone.named_modules()
+                    if isinstance(module, LoRALinear)]
+    for name, module in sorted(lora_modules):
+        dropout = module.dropout.p if isinstance(module.dropout, torch.nn.Dropout) else 0.0
+        add("lora_config", {"name": name, "rank": module.rank,
+                            "scaling": module.scaling, "dropout": dropout})
+        add_tensor(f"backbone.{name}.lora_A", module.lora_A)
+        add_tensor(f"backbone.{name}.lora_B", module.lora_B)
+
+    return {"algorithm": "ssdm.trained_state_sha256.exact.v1", "sha256": digest.hexdigest(),
+            "head_tensors": len(head_state), "typed_tensors": len(model.typed.state_dict()),
+            "lora_modules": len(lora_modules)}
+
+
+def _head_configuration(head: torch.nn.Module) -> dict[str, Any]:
+    """Explicit inference settings for the supported factory heads; unknown heads fail closed."""
+    from controlsafe.g16 import G16DecisionHead
+    from .heads import (ClefCrossAttentionControl, FinalStateFork, HeadB, IntegratorBank,
+                        SnapshotFork)
+
+    if type(head) is G16DecisionHead:
+        # Use live inference attributes, not head.config or the constructor-time controlsafe stamp.
+        return {"kind": head.name, "r": head.A.out_features, "c": head.evidence.c,
+                "max_options": head.max_options, "p_gate": head.gate is not None,
+                "stream_mode": head.stream_mode,
+                "trust_gate": {**head.gated.identity(), "pad_id": head.gated.pad_id}}
+    if type(head) is IntegratorBank:
+        return {"kind": head.name, "channels": head.C, "t_chunk": head.t_chunk}
+    if type(head) is FinalStateFork:
+        return {"kind": head.name, "hidden": head.mlp[0].out_features, "norm_eps": head.norm.eps}
+    if type(head) is SnapshotFork:
+        return {"kind": head.name, "channels": head.inc.C, "t_chunk": head.inc.t_chunk,
+                "max_snapshots": head.S, "aggregator": head.agg}
+    if type(head) is HeadB:
+        return {"kind": head.name, "d_state": head.d, "t_chunk": head.t_chunk}
+    if type(head) is ClefCrossAttentionControl:
+        return {"kind": head.name, "width": head.width,
+                "routing_layers": len(head.routing), "decoder_layers": len(head.decoder.layers),
+                "routing_heads": [layer.attn.num_heads for layer in head.routing],
+                "decoder_heads": [layer.self_attn.num_heads for layer in head.decoder.layers],
+                "routing_feedforward": [layer.ff[0].out_features for layer in head.routing],
+                "decoder_feedforward": [layer.linear1.out_features for layer in head.decoder.layers]}
+    raise ValueError(f"no revision configuration contract for head {type(head).__name__}")
+
+
 class DecisionModelBackend:
     name = "decision_head"
 
@@ -73,12 +152,17 @@ class DecisionModelBackend:
         ident = {
             "backend": self.name,
             "head": type(self.model.head).__name__,
+            "head_configuration": _head_configuration(self.model.head),
             "backbone": backbone_identity(self.model.backbone),
+            "trained_state": _trained_state_identity(self.model),
+            "pad_id": self.model.pad_id,
+            "fork_mode": self.model.backbone.fork_mode,
             "encoder": enc() if callable(enc) else {"kind": "unidentified"},
             "prompt_template": self.template.identity(),
             "layout": self.layout,
             "checkpoint": self.checkpoint,
             "adapter_version": versions.ADAPTER_VERSION,
+            **({"g16_certify_k": self.g16_certify_k} if self._g16() else {}),
         }
         h = hashlib.sha256(json.dumps(ident, sort_keys=True, default=str).encode()).hexdigest()
         self._revision = {"revision_id": f"{self.name}:{ident['head']}@{h[:12]}",

@@ -1,0 +1,15 @@
+{
+  "source_sha": "a9dccf8d0abc1828de06d1c2e94f9495b9daabba",
+  "base_agent_main_sha": "6e39d9bb540270ac999cff4929e41002568f85ca",
+  "supersedes": "receipts/2026-10-06-L-parent-identity/receipt.json",
+  "command": "C:/Users/apumu/research/CHLabs/ssdm-wt/m2-heads/.venv/Scripts/python.exe -m pytest -q tests/test_parent_identity.py tests/test_m2_e2e_dryrun.py::test_decision_model_backend_through_decide_and_safety_bridge tests/test_m2_e2e_dryrun.py::test_backend_keeps_control_token_code_raises_on_nan_and_caches_revision",
+  "exit_code": 0,
+  "raw_output": "tests.txt",
+  "raw_output_sha256": "6bb933d46c02c2538be6b4af5b4ece27a5fe0e72dbb2f1b1faee91d766a69813",
+  "result": "12 tiny CPU tests passed",
+  "seeds": [7, 8, 19, 23],
+  "hardware": "Windows 11 AMD64 CPU; Python 3.12.13; torch 2.14.1+cpu",
+  "billed_cost_usd": 0,
+  "runs_per_command": 1,
+  "scope": "Revision identity over actual head, typed-output and repository LoRA state plus explicit supported-head settings, pad_id and fork_mode. The existing frozen-backbone sampled digest and immutable-backend cache assumption are unchanged. Tiny random backbone only; no downloaded model, GPU, Index, held-out data or learned-capability claim."
+}

@@ -55,6 +55,93 @@ def _model(fam="rwkv7", c=1.0, seed=0, stream_mode="cache", rank=4):
     return DecisionModel(g, "g16", hk, seed=seed), cfg
 
 
+def _revision(model):
+    from heads.decide_backend import DecisionModelBackend
+
+    return DecisionModelBackend(model, ENC).revision()
+
+
+def test_g16_revision_succeeds_and_freezing_keeps_identity():
+    model, _ = _model()
+    before = _revision(model)
+    assert before["head"] == "G16DecisionHead"
+    assert {k: before["head_configuration"][k] for k in model.head.config} == model.head.config
+    assert before["backbone"]["weights_digest_mode"] == "sampled"
+    for parameter in model.parameters():
+        parameter.requires_grad_(False)
+    assert _revision(model) == before
+
+
+@pytest.mark.parametrize("path", ["head.A.weight", "head.evidence.W_e.weight",
+                                  "backbone.bridges.0.lora_B"])
+def test_g16_revision_binds_head_and_bridge_weights(path):
+    model, _ = _model()
+    before = _revision(model)
+    with torch.no_grad():
+        model.get_parameter(path).reshape(-1)[0].add_(0.125)
+    after = _revision(model)
+    assert before["backbone"] == after["backbone"]
+    assert before["trained_state"]["sha256"] != after["trained_state"]["sha256"]
+    assert before["revision_id"] != after["revision_id"]
+
+
+@pytest.mark.parametrize("path,value", [("head.evidence.c", 0.5), ("head.max_options", 7),
+                                       ("head.stream_mode", "recompute"),
+                                       ("backbone.trust_policy", "state"),
+                                       ("backbone.stream_fork", "cache"), ("backbone.pad_id", 1)])
+def test_g16_revision_binds_live_configuration_with_identical_tensors(path, value):
+    model, _ = _model()
+    before = _revision(model)
+    module, attr = path.rsplit(".", 1)
+    setattr(model.get_submodule(module), attr, value)
+    after = _revision(model)
+    assert before["trained_state"] == after["trained_state"]
+    assert before["head_configuration"] != after["head_configuration"]
+    assert before["revision_id"] != after["revision_id"]
+
+
+def test_g16_shared_frozen_backbone_is_identified_separately():
+    model, _ = _model()
+    before = _revision(model)
+    with torch.no_grad():
+        next(model.backbone.model.parameters()).reshape(-1)[0].add_(0.125)
+    after = _revision(model)
+    assert before["trained_state"] == after["trained_state"]
+    assert before["backbone"]["weights_digest"] != after["backbone"]["weights_digest"]
+    assert before["revision_id"] != after["revision_id"]
+
+
+def test_g16_rank_and_certification_mode_change_revision():
+    from heads.decide_backend import DecisionModelBackend
+
+    model, _ = _model()
+    before = _revision(model)
+    certified = DecisionModelBackend(model, ENC, g16_certify_k=1).revision()
+    assert before["trained_state"] == certified["trained_state"]
+    assert before["revision_id"] != certified["revision_id"]
+    model.head = G.G16DecisionHead(model.backbone, **{**model.head.config, "r": 2})
+    after = _revision(model)
+    assert before["head_configuration"]["r"] == 4
+    assert after["head_configuration"]["r"] == 2
+    assert before["revision_id"] != after["revision_id"]
+
+
+def test_g16_revision_binds_lora_on_shared_backbone():
+    from train.lora import LoRALinear, apply_lora
+
+    model, _ = _model()
+    apply_lora(model.backbone.model, r"key$", rank=2, generator=torch.Generator().manual_seed(23))
+    adapter = next(m for m in model.backbone.model.modules() if isinstance(m, LoRALinear))
+    before = _revision(model)
+    with torch.no_grad():
+        adapter.lora_B.reshape(-1)[0].add_(0.125)
+    after = _revision(model)
+    assert before["backbone"] == after["backbone"]
+    assert before["trained_state"]["lora_modules"] > 0
+    assert before["trained_state"]["sha256"] != after["trained_state"]["sha256"]
+    assert before["revision_id"] != after["revision_id"]
+
+
 def _req(note, allowed=None):
     r = {"request_id": "r", "model": "t", "state": {"note": note}, "provenance": {"untrusted_fields": ["note"]},
          "questions": {"q": {"type": "choice", "instructions": INSTR, "criteria": dict(OPTS)}}}
