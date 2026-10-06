@@ -4,13 +4,25 @@ import unittest
 
 from language_growth.development_data import generate_development_tasks, comparison_swap_counterfactual
 from language_growth.training_records import export_training_records
-from language_growth.transparent_cpu import feature_rows, fit, LinearOptionBackend, rollout
+from language_growth.transparent_cpu import feature_rows, fit, LinearOptionBackend, rollout, operation_tokens
 
 
 class TransparentCPUTests(unittest.TestCase):
     def setUp(self):
         self.tasks = generate_development_tasks(17, 30)
         self.records = export_training_records(self.tasks)
+
+    def test_fixed_operation_filter_retains_intent_and_field_tokens(self):
+        tokens = operation_tokens("For October 2026, compare the Aster and Bracken warranty months in 2026-10. Show a checked derivation; what/how?")
+        self.assertFalse({"for", "october", "2026", "the", "and", "in", "10", "a"} & tokens)
+        self.assertTrue({"compare", "aster", "bracken", "warranty", "months", "show", "checked", "derivation", "what", "how"} <= tokens)
+        request = copy.deepcopy(self.records[0]["request"])
+        state = json.loads(request["state"])
+        state["task_input"] = "For October 2026, compare Aster and Bracken."
+        request["state"] = json.dumps(state)
+        for _, features in feature_rows(request)[2]:
+            self.assertTrue(any(key.endswith("/compare") for key in features))
+            self.assertFalse(any(key.rsplit("/", 1)[1] in {"for", "october", "2026", "and"} for key in features))
 
     def test_id_and_option_permutation_equivariance(self):
         request = copy.deepcopy(self.records[0]["request"])
