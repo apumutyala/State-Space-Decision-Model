@@ -5,33 +5,55 @@ slice in hand and is rescaled to other slice sizes by sqrt(clusters_now / cluste
 holds when the slice is grown with the same stratified design.
 """
 
+import math
+import numbers
 from statistics import NormalDist
 
 
+def _positive(name, x):
+    if isinstance(x, bool) or not isinstance(x, numbers.Real) or not math.isfinite(x) or x <= 0:
+        raise ValueError(f"{name} must be a positive finite number, got {x!r}")
+    return float(x)
+
+
+def _prob(name, x):
+    if isinstance(x, bool) or not isinstance(x, numbers.Real) or not (0 < x < 1):
+        raise ValueError(f"{name} must lie strictly between 0 and 1, got {x!r}")
+    return float(x)
+
+
 def z(p):
-    return NormalDist().inv_cdf(p)
+    return NormalDist().inv_cdf(_prob("p", p))
 
 
 def mde(se, alpha=0.05, power=0.8):
-    return (z(1 - alpha / 2) + z(power)) * se
+    se = _positive("se", se)
+    return (z(1 - _prob("alpha", alpha) / 2) + z(_prob("power", power))) * se
 
 
 def rescale_se(se, n_from, n_to):
-    return se * (n_from / n_to) ** 0.5
+    return _positive("se", se) * (_positive("n_from", n_from) / _positive("n_to", n_to)) ** 0.5
 
 
 def required_n(se, n_from, effect, alpha=0.05, power=0.8):
     """Clusters needed so that `effect` is detectable, given SE `se` measured at `n_from`."""
-    k = z(1 - alpha / 2) + z(power)
-    return n_from * (k * se / effect) ** 2
+    k = z(1 - _prob("alpha", alpha) / 2) + z(_prob("power", power))
+    return _positive("n_from", n_from) * (k * _positive("se", se) / _positive("effect", effect)) ** 2
 
 
 def paired_accuracy_se(discordant_rate, delta, n):
     """SE of a paired accuracy difference from the discordant-pair rate (McNemar-style)."""
-    return ((discordant_rate - delta**2) / n) ** 0.5
+    d = _prob("discordant_rate", discordant_rate)
+    if not (math.isfinite(delta) and delta**2 <= d):
+        raise ValueError("delta must be finite with delta^2 <= discordant_rate")
+    return ((d - delta**2) / _positive("n", n)) ** 0.5
 
 
 def table(se, n_clusters, sizes=(0.25, 0.5, 1, 2, 4), alpha=0.05, power=0.8):
+    _positive("se", se)
+    _positive("n_clusters", n_clusters)
+    for f in sizes:
+        _positive("size factor", f)
     rows = []
     for f in sizes:
         n = n_clusters * f
