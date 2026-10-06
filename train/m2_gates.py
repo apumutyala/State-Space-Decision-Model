@@ -43,11 +43,19 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Iterable, Sequence
 
-STAGES = ("g12", "g13")
+STAGES = ("g12", "g13")  # the promotion stages (G12 / G13 of SAFETY_SPEC)
+#: measurement-only stage (first trained cell, jobs/m2_first_cell): the 2,008-row Index DEV subset alone, both arms
+#: through the same ``score_stage``. It reports capability / ECE with the G13 capability criteria for information but
+#: is NOT a promotion stage: it never enters ``promotion_verdict`` or ``exit_code``.
+MEASURE_STAGES = ("index",)
+ALL_STAGES = STAGES + MEASURE_STAGES
 ARM_SCHEMA = "ssdm.m2.arm.v1"
 REPORT_SCHEMA = "ssdm.m2.gates.v1"
 EXIT = {"accept": 0, "g12": 40, "g13": 41, "both": 42, "identity": 10, "usage": 2}
-STAGE_ROLES = {"g12": ("dev",), "g13": ("retention",)}
+STAGE_ROLES = {"g12": ("dev",), "g13": ("retention",), "index": ()}
+#: progress weight of one scored unit = request JSON chars + this constant (the fitted per-call cost, 0.098 s at
+#: ~4k tok/s and ~3.5 chars/token ~= 1,400 chars; jobs/PERF_AUDIT.md). Used only by the live rate guard.
+CALL_WEIGHT_CHARS = 1500
 
 
 class IdentityMismatch(ValueError):
@@ -83,7 +91,13 @@ def stage_variants(cohort, stage: str) -> list[dict]:
     if stage == "g13":  # held-out D1-B: built only here, at a gate (final=True)
         return attacks.build_variants(cohort.steer_requests("steer_gate"), hijack=[], d1=list(attacks.D1_TEMPLATES_B),
                                       final=True)
+    if stage == "index":
+        return []
     raise ValueError(stage)
+
+
+def _uses_index(stage: str) -> bool:
+    return stage in ("g13", "index")
 
 
 def units_identity(stage: str, cohort, spec: dict, items_by_role: dict[str, list], variants: list[dict],
@@ -95,9 +109,15 @@ def units_identity(stage: str, cohort, spec: dict, items_by_role: dict[str, list
              "n_items": {r: len(its) for r, its in sorted(items_by_role.items())},
              "variants_sha256": _sha(sorted((v["request_id"], unit_fingerprint(v)) for v in variants)),
              "n_variants": len(variants)}
-    if stage == "g13":
+    if _uses_index(stage):
         ids = sorted(r["_evaluation"]["run_id"] for r in (index_rows or []))
         ident["index_rows"] = {"n": len(ids), "run_ids_sha256": _sha(ids)}
+    if stage == "index":  # the readout order diagnostic's rows and settings (jobs/m2_first_cell/readout_diag.py)
+        from jobs.m2_first_cell import readout_diag as RD
+
+        d = sorted(r["_evaluation"]["run_id"] for r in RD.diag_rows(index_rows or []))
+        ident["order_diag"] = {"n": len(d), "run_ids_sha256": _sha(d), "n_target": RD.DIAG_N, "seed": RD.DIAG_SEED,
+                               "conditions": list(RD.CONDITIONS)}
     ident["id"] = _sha(ident)[:16]
     return ident
 
@@ -155,21 +175,95 @@ def index_predict(decide: Callable[[dict], dict], rows: Sequence[dict], model: s
     return res
 
 
+def unit_weight(req: dict) -> int:
+    return len(json.dumps({"state": req.get("state"), "questions": req.get("questions")}, default=str)) + CALL_WEIGHT_CHARS
+
+
+class Progress:
+    """Live progress for ``jobs.common.rate_guard run-weighted``: ``<path>.total.json`` = total weight, written before
+    the first unit; then one ``{"w": weight}`` line per scored unit (decision record, steer variant, Index row)."""
+
+    def __init__(self, path: str | Path | None):
+        self.path = Path(path) if path else None
+
+    def plan(self, weights: list[int]) -> None:
+        if self.path:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text("", encoding="utf-8")
+            Path(str(self.path) + ".total.json").write_text(
+                json.dumps({"total_weight": int(sum(weights)), "n_units": len(weights)}), encoding="utf-8")
+
+    def wrap(self, fn):
+        if not self.path:
+            return fn
+        path = self.path
+
+        def log(req):
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"w": unit_weight(req)}) + "\n")
+
+        def call(req):
+            try:
+                return fn(req)
+            finally:
+                log(req)
+
+        if hasattr(fn, "decide_many"):  # keep the batched path (same semantics), log after the batch
+            def many(reqs):
+                try:
+                    return fn.decide_many(reqs)
+                finally:
+                    for r in reqs:
+                        log(r)
+            call.decide_many = many
+        return call
+
+
+def stage_unit_weights(stage: str, items_by_role: dict, records_by_id: dict, variants: list[dict],
+                       index_rows: list[dict] | None) -> list[int]:
+    from safety_eval.data import strip_meta
+    from train.guard import record_request
+
+    w = []
+    for role in STAGE_ROLES[stage]:
+        for rid in sorted({it.id.rsplit("/", 1)[0] for it in items_by_role[role]}):
+            w.append(unit_weight(record_request(records_by_id[rid])))
+    w += [unit_weight(strip_meta(v)) for v in variants]
+    if _uses_index(stage):
+        w += [unit_weight(r) for r in (index_rows or [])]
+    if stage == "index":
+        from jobs.m2_first_cell import readout_diag as RD
+
+        w += [unit_weight(r) for r in RD.diag_requests(RD.diag_rows(index_rows or []))]
+    return w
+
+
 def score_stage(stage: str, decide: Callable[[dict], dict], steer: Callable[[dict], dict],
                 items_by_role: dict[str, list], records_by_id: dict[str, dict], variants: list[dict],
-                index_rows: list[dict] | None = None) -> dict[str, Any]:
+                index_rows: list[dict] | None = None, progress: str | Path | None = None) -> dict[str, Any]:
     """One arm's units for one stage. ``decide``: ``decide.Decider.decide``-compatible; ``steer``: a safety_eval
-    decide callable (``DecideBridge``). Used for the child here and for the parent in ``jobs/m2_parent_arm``."""
+    decide callable (``DecideBridge``). Used for the child here and for the parent in ``jobs/m2_parent_arm``.
+    ``progress``: optional live-progress file for the rate guard (scores are unchanged by it)."""
     from safety_eval import metrics
 
+    if isinstance(progress, Progress):  # planned by the caller (several stages share one progress file)
+        pr = progress
+    else:
+        pr = Progress(progress)
+        pr.plan(stage_unit_weights(stage, items_by_role, records_by_id, variants, index_rows) if progress else [])
+    decide, steer = pr.wrap(decide), pr.wrap(steer)
     t0 = time.perf_counter()
     out: dict[str, Any] = {"stage": stage, "decision": {}, "decision_errors": {}}
     for role in STAGE_ROLES[stage]:
         f, err = arm_decision_fields(decide, records_by_id, items_by_role[role])
         out["decision"][role], out["decision_errors"][role] = f, err
-    out["steer_rows"] = metrics.run(steer, variants)
-    if stage == "g13":
+    out["steer_rows"] = metrics.run(steer, variants) if variants else []
+    if _uses_index(stage):
         out["index_results"] = index_predict(decide, index_rows or [])
+    if stage == "index":  # readout diagnostic: same options, forward vs reversed presentation (not a criterion)
+        from jobs.m2_first_cell import readout_diag as RD
+
+        out["order_diag"] = RD.order_diagnostic(decide, RD.diag_rows(index_rows or []))
     out["seconds"] = round(time.perf_counter() - t0, 3)
     return out
 
@@ -225,6 +319,16 @@ def stage_verdict(stage: str, child: dict, parent: dict, variants: list[dict], i
     from train import promotion as P
 
     margins = margins or P.MARGINS
+    if stage == "index":
+        out = index_measurement(index_rows or [], child["index_results"], parent["index_results"], margins, n_boot)
+        from jobs.m2_first_cell import readout_diag as RD
+
+        out["readout_diagnostics"] = {
+            "position_bias": {"child": RD.position_bias(index_rows or [], child["index_results"]),
+                              "parent": RD.position_bias(index_rows or [], parent["index_results"])},
+            "order": {"child": child["order_diag"]["summary"], "parent": parent["order_diag"]["summary"],
+                      "paired": RD.paired_order(child["order_diag"], parent["order_diag"], n_boot=n_boot)}}
+        return out
     if stage == "g12":
         dec = P.paired_decision(child["decision"]["dev"], parent["decision"]["dev"], n_boot=n_boot)
         v = P.verdict_g12(decision=dec, steer_child_rows=child["steer_rows"], steer_parent_rows=parent["steer_rows"],
@@ -240,9 +344,62 @@ def stage_verdict(stage: str, child: dict, parent: dict, variants: list[dict], i
     return v
 
 
+def index_measurement(rows: list[dict], child_results: dict, parent_results: dict, margins: dict,
+                      n_boot: int = 2000) -> dict[str, Any]:
+    """Index DEV subset, child vs parent (measurement stage ``index``): absolute Index score + 95% CI per arm and per
+    area, the paired difference (``harness.bootstrap.compare``), debiased ECE per arm, and the G13 capability / ECE
+    criteria evaluated for INFORMATION (``retention_comparison`` under the same draws). ``accept`` mirrors those two
+    criteria so the report shape matches the gate stages, but this stage is never part of the promotion verdict."""
+    from harness import bootstrap as HB
+    from harness import calibration as HC
+    from harness import score as S
+    from train import promotion as P
+
+    # Rows that BOTH arms refuse for the same deterministic reason (e.g. input_tokens_exceeded: 8 of the 2,008 subset
+    # rows exceed the 16,384-token input cap, job-tkfaj) are scored as the kit scores them (not ok = wrong) in the
+    # Index scores below, and left out of the strict paired criteria, which require every compared row to be ok.
+    def _code(r):
+        try:
+            return (json.loads((r or {}).get("error") or "null") or {}).get("code")
+        except (ValueError, AttributeError):
+            return (r or {}).get("error")
+
+    def _same_refusal(rid):
+        c, p = child_results.get(rid), parent_results.get(rid)
+        return (c is not None and p is not None and c.get("status") != "ok" and p.get("status") != "ok"
+                and _code(c) is not None and _code(c) == _code(p))
+
+    both = sorted(r["_evaluation"]["run_id"] for r in rows if _same_refusal(r["_evaluation"]["run_id"]))
+    crit_rows = [r for r in rows if r["_evaluation"]["run_id"] not in set(both)]
+    ret = P.retention_comparison(crit_rows, child_results, parent_results, B=n_boot, seed=0)
+    v = P.verdict_g13(retention=ret, steer_child_rows=[], steer_parent_rows=[], expected_variants=[],
+                      margins=margins, n_boot=n_boot)
+    crits = [c for c in v["criteria"] if c["criterion"] in ("g13_capability", "g13_ece")]
+    out: dict[str, Any] = {"accept": all(c["pass"] for c in crits), "failed": [c["criterion"] for c in crits
+                                                                               if not c["pass"]],
+                           "criteria": crits, "margins": dict(margins), "informational": True,
+                           "cohort": "Index DEV 2,008-row subset (development slice; TEST sealed); not a promotion stage"}
+    out["rows_not_ok_in_both_arms"] = {"n": len(both), "run_ids": both[:20],
+                                       "treatment": "scored as the kit scores them (not ok = no credit) in 'scores'; "
+                                                    "excluded from the paired criteria"}
+    missing = [r["_evaluation"]["run_id"] for r in rows for res in (child_results, parent_results)
+               if r["_evaluation"]["run_id"] not in res]
+    if not missing:  # official kit scoring over EVERY subset row (same rows, same treatment as job-tkfaj / the board)
+        cmp = HB.compare(S.decompose(rows, child_results), S.decompose(rows, parent_results), B=n_boot, seed=0)
+        out["scores"] = {"child": cmp["candidate"], "parent": cmp["baseline"], "diff": cmp["diff"],
+                         "B": n_boot, "seed": 0}
+        out["ece"] = {"child": HC.report(HC.fields(rows, child_results)),
+                      "parent": HC.report(HC.fields(rows, parent_results)), "diff": ret.get("ece_diff")}
+    else:
+        out["scores_error"] = f"{len(missing)} subset rows have no result in an arm, e.g. {missing[:3]}"
+    out["paired"] = {"index_dev": ret}
+    return out
+
+
 def promotion_verdict(verdicts: dict[str, dict]) -> dict[str, Any]:
     from train.promotion import MARGINS
 
+    verdicts = {s: v for s, v in verdicts.items() if s in STAGES}
     failed = {s: v["failed"] for s, v in verdicts.items() if not v["accept"]}
     pending = "PENDING USER APPROVAL" in str(MARGINS.get("status"))
     acc = not failed and bool(verdicts)
@@ -254,6 +411,7 @@ def promotion_verdict(verdicts: dict[str, dict]) -> dict[str, Any]:
 
 
 def exit_code(verdicts: dict[str, dict]) -> int:
+    verdicts = {s: v for s, v in verdicts.items() if s in STAGES}  # measurement stages never set the exit code
     if not verdicts:  # nothing was evaluated: never "accept"
         return EXIT["usage"]
     rej = {s for s, v in verdicts.items() if not v["accept"]}
@@ -302,20 +460,26 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
               items_by_role: dict[str, list], records_by_id: dict[str, dict], parent_arm: str | Path,
               expect_parent: dict | None = None, index_rows: list[dict] | None = None, n_boot: int = 2000,
               parent_arm_sha256: str | None = None,
-              out: str | Path | None = None, extra: dict | None = None) -> tuple[int, dict]:
+              out: str | Path | None = None, extra: dict | None = None,
+              progress_dir: str | Path | None = None) -> tuple[int, dict]:
     """Score the child per stage, load the matching parent units, apply the verdicts and the promotion rule."""
     from train.promotion import MARGINS
 
     report: dict[str, Any] = {"schema": REPORT_SCHEMA, "identities": {"cohort": cohort.identity(), "unit_spec": spec,
                                                                       "child": child_identity, **(extra or {})},
                               "verdicts": {}, "stages": {}}
+    variants_by = {s: stage_variants(cohort, s) for s in stages}
+    pr = Progress(Path(progress_dir) / "progress.jsonl" if progress_dir else None)
+    if progress_dir:  # one progress file over every stage of this run (the rate guard projects the whole phase)
+        pr.plan([w for s in stages for w in stage_unit_weights(s, items_by_role, records_by_id, variants_by[s],
+                                                                index_rows if _uses_index(s) else None)])
     for stage in stages:
-        variants = stage_variants(cohort, stage)
+        variants = variants_by[stage]
         ident = units_identity(stage, cohort, spec, {r: items_by_role[r] for r in STAGE_ROLES[stage]}, variants,
-                               index_rows if stage == "g13" else None)
+                               index_rows if _uses_index(stage) else None)
         parent, ent = read_arm_cache(parent_arm, stage, ident, expect_parent, parent_arm_sha256)
         child = score_stage(stage, child_decide, child_steer, items_by_role, records_by_id, variants,
-                            index_rows if stage == "g13" else None)
+                            index_rows if _uses_index(stage) else None, progress=pr)
         v = stage_verdict(stage, child, parent, variants, index_rows, MARGINS, n_boot)
         report["verdicts"][stage] = v
         report["stages"][stage] = {"units_identity": ident, "parent_arm": {k: ent[k] for k in ("sha256", "arm")},
@@ -372,13 +536,17 @@ def main(argv=None) -> int:
     ap.add_argument("--parent-arm-sha256", required=True, help="pinned sha256 of <parent-arm>/arm.json")
     ap.add_argument("--index-rows", default=None, help="the 2,008-row Index DEV subset rows (needed for g13)")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--stage", choices=["g12", "g13", "all"], default="all")
+    ap.add_argument("--stage", choices=["g12", "g13", "index", "g12+index", "all"], default="all",
+                    help="all = g12 + g13 (promotion); g12+index = the first-cell measurement (jobs/m2_first_cell)")
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--train-dir", default=None, help="cell config train_set: the pinned training-set dir "
+                    "(the training items are rebuilt from it for the checkpoint lineage check)")
+    ap.add_argument("--progress-dir", default=None, help="live progress for jobs.common.rate_guard run-weighted")
     a = ap.parse_args(argv)
-    stages = list(STAGES) if a.stage == "all" else [a.stage]
-    if "g13" in stages and not a.index_rows:
-        print("g13 needs --index-rows (Index DEV subset)", file=sys.stderr)
+    stages = {"all": list(STAGES), "g12+index": ["g12", "index"]}.get(a.stage, [a.stage])
+    if any(_uses_index(s) for s in stages) and not a.index_rows:
+        print(f"{a.stage} needs --index-rows (Index DEV subset)", file=sys.stderr)
         return EXIT["usage"]
 
     import torch
@@ -389,7 +557,7 @@ def main(argv=None) -> int:
     from jobs.m2_pilot.guard_ready import GuardNotReady, load_ready_guard
     from train.cohort import Cohort, CohortLeak
     from train.evalcard import run_card
-    from train.run_cell import cell_items, cohort_split, load_parent_backbone, parent_encoder, train_config
+    from train.run_cell import cell_items, load_cell_data, load_parent_backbone, parent_encoder, train_config
     from train.trainer import Trainer
 
     cell = json.loads(Path(a.cell).read_text(encoding="utf-8"))
@@ -403,19 +571,19 @@ def main(argv=None) -> int:
     parent = cfg.get("parent", "rwkv7")
     enc = parent_encoder(parent, a.model_dir)
     spec = unit_spec(cfg)
-    recs = _read_records(a.records)
-    role_recs = {}
-    for role in ("dev", "calibration", "retention"):
-        rr, _ = cohort.load_role_records(a.records, role)
-        role_recs[role] = [recs[r["id"]] for r in rr]
     try:
-        tr_ids, _, _ = cohort_split(sorted(recs), cfg, recs)
+        train_recs, recs, tr_ids, _, _ = load_cell_data(cfg, a.records, a.train_dir, cohort)
         cohort.assert_training_ids(tr_ids)
     except (ValueError, CohortLeak) as e:
         print(f"cohort: {e}", file=sys.stderr)
         return EXIT["identity"]
+    role_recs = {}
+    for role in ("dev", "calibration", "retention"):
+        rr, _ = cohort.load_role_records(a.records, role)
+        role_recs[role] = [recs[r["id"]] for r in rr]
     t_max = cell["ladder"]["T_max"]
-    train_items = [x for x in cell_items(recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"])) if len(x.row.ids) <= t_max]
+    train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]))
+                   if len(x.row.ids) <= t_max]
     bb = load_parent_backbone(parent, a.model_dir, cfg, a.gdn_ckpt, device=a.device)
     cuda = torch.cuda.is_available()
     model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])
@@ -479,7 +647,7 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
                                           "arm_calibration": "untempered, like the parent arm (identity calibration)"},
                           items_by_role=items_by_role, records_by_id=records_by_id, parent_arm=a.parent_arm,
                           expect_parent=expect_parent, index_rows=index_rows, n_boot=a.n_boot, out=out,
-                          parent_arm_sha256=a.parent_arm_sha256,
+                          parent_arm_sha256=a.parent_arm_sha256, progress_dir=a.progress_dir,
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),
                                  "temperature": {**ft.identity(), "disjointness": ft.disjointness,

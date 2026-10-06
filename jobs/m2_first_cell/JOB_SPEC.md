@@ -1,0 +1,78 @@
+# m2_first_cell: the first trained attention-free decision model. DRAFT, NOT SUBMITTED
+
+**Question.** Does training a decision head (plus LoRA) on the decision format move RWKV7-G1k-13.3B off its stock
+option-likelihood readout (24.9 [22.4, 27.8] on the 2,008-row Index DEV subset, job-tkfaj) toward Clef-flash
+(55.8 [53.0, 58.5] on the same rows; 56.8 [55.4, 58.2] on the full 12,104-row DEV)?
+
+**Cell** (`m2_first_cell_rwkv7.json`):
+
+| Item | Value | Why |
+|---|---|---|
+| Parent | `RWKV/RWKV7-G1k-13.3B-20260930@ce3630b8`, vendored code, eager `chunked` WKV | fla is not GPU-verified (job-4idg4 timed out) |
+| Head | final-state fork, `cache` mode | one prefix pass + K state copies: ~3x forward per step vs ~4x for the checkpointed integrator; it is the pilot's pre-registered entrant and its cache == recompute smoke (exit 21) is already built |
+| LoRA | r = 64 on `att.receptance/key/value/output`, `ffn.key/value` (288 M params) | r = 256 (M2_RUN_SPEC) adds 1.15 B params, ~72 GB estimated at T = 2,048 without checkpointing; r = 64 estimates 59 GB under the 76 GB stop |
+| Loss | Clef arm: LS-CE (0.1) + Brier, + RPS on score questions | as asked |
+| Data | PR #44 150k set (pointer `sample-150000-seed20261006`), 24,000 records drawn by `sha256(seed:id)`; injection augmentation is in the build (D1-A verbatim 8,049, training-only hijack 4,066, labels unchanged) | v2 is not merged |
+| Guards | content-index guard (`7cbe6c89…`, readiness file required), cohort v2 excluded by id + content + source item (build) and re-checked (`train.train_set`: 0 held-out records allowed, manifest-verified lines, content re-hash), D1-B held-out gate over all 150k | |
+| Steps | batch 1 x accumulation 8, warmup 50, `max_minutes` 190, `max_steps` 3,000, T ladder 512 / 1,024 / 2,048, K ≤ 16 | |
+
+**Held-out finding (new).** `train.heldout` finds a D1-B `soft_framing` fragment ("rather than relying on") in three
+MMLU aux_train records of the 150k set (natural text; the build's 6-gram guard does not flag them). They are excluded
+from the draw by a pinned list; the heldout phase passes only if the full-set hits equal that list (exit 33 otherwise),
+and every drawn record is re-scanned.
+
+## Measured rates and the expected throughput
+
+job-tkfaj probe: prefill 3,757 tok/s at 2,048 tokens (4,407 at 8,192), small call 0.117 s, pack call 0.60 s.
+Training rows (2,000-record sample of the 150k set, real tokenizer): 0.91 kept rows per record, mean 619 tokens, K 3.4.
+Expected step ≈ 8 rows x (3 x 619 / 3,757 + ~0.4 s of call overhead) ≈ 7 s, so 190 min ≈ 1,600 steps ≈ 13k rows ≈ 8 M
+tokens. Not a measurement: the ladder and the 10-step check measure it.
+
+## Phases (`job_params.json`; H100 batch $0.0495/min)
+
+| Phase | Cap | Expected | Content | Exit |
+|---|---|---|---|---|
+| setup | 25 | 15 | env pins; fla guard; PR #16 records, 150k set (pointer), cohort rebuild, snapshot + vendored code, DEV rows; subset rows; **every eval phase priced from `TOK_S` / `CALL_S`** | 4 / 5 / 10 / 15 |
+| guard | 5 | 3 | `guard_ready` (content index == pin) | 30 / 31 / 32 |
+| heldout | 10 | 3 | `train.train_set heldout` (hits == pinned exclusions) | 33 |
+| cell | 230 | 220 | smoke (cache == recompute fork), ladder, training (190 min), cards at step 0 and the end | 21–29 |
+| parent_g12 | 75 | 65 | stock readout: cohort dev + steer_dev (1,800 requests, clean + 4 D1-A = 9,000 units), live weighted rate guard | 15 / 10 / 9 / 7 |
+| parent_index | 55 | 48 | stock readout: Index DEV subset + order diagnostic | 15 / 10 / 9 / 7 |
+| evals | 170 | 155 | child: temperature fit (cohort calibration), dev card, G12 (full steer set), Index DEV subset + order diagnostic | 15 / 10 / 9 / 7 |
+| report | 5 | 4 | `summarize` -> `first_cell_result.json` (finalize validator); final checkpoint copied to `/output/ckpt` | 9 |
+
+Schedule 575 + reserve 7 = 582 min. **Worst case** (20 build + 2 x 582) x $0.0495 = **$58.61** (cap $60).
+**Expected ≈ $26.1** (528 min incl. build). A G12 reject is a measured outcome (exit 0, reported).
+
+Measured-rate stops: setup preflights (exit 15 before any training; the caps leave less than 20 % rate margin); ladder and
+10-step checks (exit 26 if 600 optimiser steps are out of reach); live weighted rate guard on every scoring phase
+(`rate_guard run-weighted`, exit 15 at a projection past 95 % of the cap). Restart: training resumes from
+`$GMN_CHECKPOINT_DIR`; cached parent stages are skipped.
+
+## What the result shows
+
+`first_cell_result.json`: Index DEV subset score + 95% CI, overall and per area, for the trained child and the stock
+parent, and the paired child − parent difference overall and per area; ECE (debiased and board protocol) per arm on
+the subset, and raw / tempered on the cohort dev card; steer and hijack under D1-A (paired, full G12 set); per-row
+latency; training loss / steps / step time / peak memory; cost; G12 verdict and the promotion verdict under the
+provisional margins (m_cap 1.0, m_steer 0.02, m_ece 0.01, **PENDING CODEX APPROVAL #36**; reported, not gating).
+Readout diagnostics (both arms): position / label bias (chosen-first vs gold-first, by K and area), and accuracy and
+agreement with the option order reversed (160 rows, forward vs reversed numbering). Optional shipped files add the
+child vs Clef-flash comparison on the identical rows and an independent re-measurement of the parent against job-tkfaj.
+
+## What it does not show
+
+- One seed, one cell: no head-vs-head or arm-vs-arm claim.
+- Steer is in-distribution: D1-A is in the training data. Held-out D1-B (G13) and the retention set are not run; the
+  exported checkpoint can be gated later by `train.m2_gates --stage g13`.
+- The Index comparison is untempered for both arms (like for like); the served, tempered Index number is not produced.
+- The 2,008-row subset is not the 12,104-row DEV slice; Clef-flash's 56.8 is on the full slice (55.8 on the subset).
+- The eager WKV bounds training to ~8 M tokens; a flat result is not evidence that more training would not help.
+
+## Before submit
+
+1. Independent fresh-context review; merge to `agent-main`.
+2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 60)`; credit expiry 2026-10-27.
+3. Env: `TOK_S=3757 CALL_S=0.117` (job-tkfaj probe).
+4. `build_context.sh <sha> <out> [<tkfaj results.jsonl> [<clef-flash results.jsonl>]]`; pin the optional files' sha256
+   in `job_params.json` `reference_results_sha256` to include those comparisons.
