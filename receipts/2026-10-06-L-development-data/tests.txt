@@ -1,0 +1,13 @@
+test_context_identity_changes_with_evidence (language_growth.tests.test_development_data.DevelopmentDataTests.test_context_identity_changes_with_evidence) ... ok
+test_equality_is_a_supported_target_and_price_swap_is_neutral (language_growth.tests.test_development_data.DevelopmentDataTests.test_equality_is_a_supported_target_and_price_swap_is_neutral) ... ok
+test_model_requests_keep_current_targets_and_programs_out (language_growth.tests.test_development_data.DevelopmentDataTests.test_model_requests_keep_current_targets_and_programs_out) ... ok
+test_option_ids_are_not_fixed_targets (language_growth.tests.test_development_data.DevelopmentDataTests.test_option_ids_are_not_fixed_targets) ... ok
+test_price_swap_changes_relation_target_without_changing_options (language_growth.tests.test_development_data.DevelopmentDataTests.test_price_swap_changes_relation_target_without_changing_options) ... ok
+test_production_choice_cohort_matches_runtime_slot_shapes (language_growth.tests.test_development_data.DevelopmentDataTests.test_production_choice_cohort_matches_runtime_slot_shapes) ... ok
+test_rejects_invalid_generation_requests (language_growth.tests.test_development_data.DevelopmentDataTests.test_rejects_invalid_generation_requests) ... ok
+test_seeded_tasks_are_reproducible_and_supported (language_growth.tests.test_development_data.DevelopmentDataTests.test_seeded_tasks_are_reproducible_and_supported) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.080s
+
+OK

@@ -1,0 +1,36 @@
+{
+  "status": "superseded; historical v0 request sample rejected by D v0.1",
+  "superseded_by": "../2026-10-06-L-development-data-v2/receipt.json",
+  "source_sha": "d94d45fdd43b23c6966dffda39e381de67ece4d3",
+  "test_command": [
+    "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+    "-m",
+    "unittest",
+    "language_growth.tests.test_development_data",
+    "-v"
+  ],
+  "exit_code": 0,
+  "sample_generation": "generate_development_tasks(seed=17,count=30,choice_format=\"mixed\")",
+  "canonical_sample_sha256": "3bae33259ebaf6152528a67aca966fd5e2d5c77c7e06ebeef2bb61b3a4649de4",
+  "sample_encoding": "one sorted compact ensure_ascii JSON object per LF line, final LF",
+  "dependency_text_lf_sha256": {
+    "language_growth/kernel.py": "b2a8274c641bf872157d53019fcdaf75ec5ac688628f9a24a5735a2c812e994e",
+    "language_growth/types.py": "16c5e32cc373e3ba348f2a718bb2c2dfed519d54819f180bdec4ac379ad31fa9",
+    "language_growth/parent_bridge.py": "215f829e79135202dcca6830ebaf09029d5a48a13eef08135a9ef604bd0eca07",
+    "language_growth/__init__.py": "d34d92c60696ec6b2969a937bdd0cb29876f151122bd7b58cea4226708df179f"
+  },
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "billed_cost_usd": 0,
+  "runs": 1,
+  "raw_output": "tests.txt",
+  "raw_predictions": null,
+  "scope": "synthetic DEVELOPMENT data integrity only; no learned or held-out result",
+  "dependency_commits": {
+    "kernel_types": "e1dd16b",
+    "parent_bridge": "821b139"
+  }
+}

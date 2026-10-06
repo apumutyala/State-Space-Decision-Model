@@ -1,0 +1,7 @@
+{
+  "backend": "synthetic CPU oracle; no weights",
+  "fingerprint_algorithm": "ssdm.request_fingerprint.v0",
+  "request_schema": "ssdm.decide.v0.1",
+  "response_schema": "ssdm.decide.v0.1",
+  "response_status": "ok"
+}
