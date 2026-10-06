@@ -1,0 +1,14 @@
+{
+ "_comment": "Single source of truth for the rung-2 qualification submit_job parameters and runner phase caps. tests/test_qual_job.py checks the cost arithmetic and the schedule against these values; jobs/qual/qual_job.sh reads the caps from here.",
+ "chip": "h100",
+ "max_duration_minutes": 180,
+ "build_timeout_minutes": 20,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 20.0,
+ "reserve_minutes": 8,
+ "phase_caps_minutes": {"setup": 15, "A_per_test": 5, "A_tests": 5, "B": 20, "C_weight_wait": 25, "C": 80},
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a"
+}
