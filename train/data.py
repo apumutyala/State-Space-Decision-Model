@@ -20,6 +20,8 @@ from decide.prompt import Template
 from decide.schema import validate_legacy
 from heads.layout import EncodeFn, LayoutRow, build_row
 
+from .guard import SplitGuard
+
 
 @dataclass
 class Item:
@@ -29,9 +31,13 @@ class Item:
 
 
 def items_from_records(records: Iterable[dict[str, Any]], encode: EncodeFn, layout: str = "ordered",
-                       template: "str | Template" = "jrt-plain-v1") -> list[Item]:
+                       template: "str | Template" = "jrt-plain-v1", guard: "SplitGuard | None" = None) -> list[Item]:
+    """Rows for training/eval. With a ``guard`` every record is checked against the protected
+    Index/test-slice manifests first (``train.guard``)."""
     out = []
     for rec in records:
+        if guard is not None:
+            guard.check(rec)
         req = rec["request"]
         validate_legacy(req)
         for qid, gold in sorted(rec["labels"].items()):

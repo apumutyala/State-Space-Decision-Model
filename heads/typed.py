@@ -42,7 +42,7 @@ class CumulativeLink(nn.Module):
 
     def eta(self, z: torch.Tensor) -> torch.Tensor:
         k = z.shape[-1]
-        c = torch.arange(k, dtype=z.dtype) - (k - 1) / 2
+        c = torch.arange(k, dtype=z.dtype, device=z.device) - (k - 1) / 2
         c = c / max(k - 1, 1)
         return self.eta_scale * (z * c).sum(-1)
 
@@ -61,8 +61,8 @@ class TypedOutput(nn.Module):
         super().__init__()
         self.ordinal = CumulativeLink(d_model)
 
-    def forward(self, logits: torch.Tensor, qtypes: list[str], option_mask: torch.Tensor,
-                e: torch.Tensor) -> torch.Tensor:
+    def forward(self, logits: torch.Tensor, qtypes: list[str], ks: list[int], e: torch.Tensor) -> torch.Tensor:
+        """``ks``: options per row as python ints (read without a device sync)."""
         if logits.shape[1] > MAX_OPTIONS:
             raise ValueError(f"{logits.shape[1]} options exceeds the {MAX_OPTIONS}-option limit")
         out = torch.log_softmax(logits, -1)  # -inf logits stay -inf
@@ -70,10 +70,10 @@ class TypedOutput(nn.Module):
         for i, qt in enumerate(qtypes):
             if qt not in QTYPES:
                 raise ValueError(qt)
-            if qt == "noul" and int(option_mask[i].sum()) != 2:
+            if qt == "noul" and ks[i] != 2:
                 raise ValueError("noul questions have exactly two options (true, false)")
             if qt == "score":
-                k = int(option_mask[i].sum())
+                k = ks[i]
                 lp = self.ordinal.log_probs(logits[i, :k], e[i, :k])
                 row = torch.full_like(logits[i], float("-inf"))
                 row = torch.cat([lp, row[k:]])
@@ -89,5 +89,5 @@ def to_wire(question: dict, option_ids: list[str], log_probs: torch.Tensor) -> d
     """SystemOne answer via the m0 adapter's ``wire_answer`` (same rounding and tie rules)."""
     from decide.schema import wire_answer
 
-    probs = {oid: float(p) for oid, p in zip(option_ids, log_probs[: len(option_ids)].exp().tolist())}
+    probs = {oid: float(p) for oid, p in zip(option_ids, log_probs[: len(option_ids)].detach().exp().cpu().tolist())}
     return wire_answer(question, probs)

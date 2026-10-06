@@ -4,27 +4,38 @@ A head never touches a backbone directly. It sees token features ``[B, T, D]``
 produced by ``HiddenStateBackbone.features``, which wraps any ``nn.Module`` LM:
 
 * HF models that accept ``output_hidden_states`` (Qwen3.5 hybrid, a Q9-AF
-  checkpoint saved with all-``linear_attention`` ``layer_types``, HF Mamba/Mamba-2,
-  RWKV7 in HF format once Transformers >= 5.15 ships it) -> ``capture="hidden_states"``.
+  checkpoint saved with all-``linear_attention`` ``layer_types``, HF Mamba,
+  RWKV7 via its custom ``modeling_rwkv7.py``) -> ``capture="hidden_states"``.
 * Anything else (``mamba_ssm`` Mamba-3 ``MambaLMHeadModel``, ``fla`` RWKV7) ->
   ``capture="<module name>"``: a forward hook on the final norm captures features,
   and the LM head is never run (no vocab-sized logits, which matters at 248k vocab).
+
+Device: every tensor the wrapper builds lives on the backbone's parameter device.
 
 Right padding only. Recurrent backbones without a padding mask are exact on
 right-padded rows because outputs at valid positions never depend on later
 positions.
 
-The final-state fork is implemented by recompute (prefix + continuation per
-option). That is backbone-agnostic and exact; a cache-copy fork is an
-optimisation whose per-option state bytes are priced in ``train/estimate.py``.
+Final-state fork, two modes (``fork_mode``):
 
-``BACKBONES`` records the three m1 candidates. Dimensions marked
-``verified=False`` are planning inputs, to be confirmed against ``config.json``
-at m1 qualification.
+``recompute``  run prefix + continuation_k for every option (K full rows). Exact and
+               backbone-agnostic, but costs K x prefix tokens: infeasible at K = 255 on
+               long rows (train/estimate.py prices it).
+``cache``      run the prefix once with a cache, replicate the cache K times
+               (``reorder_cache`` with an all-zeros index = a state copy per option),
+               then extend each copy by its continuation token by token. Cost: one
+               prefix + K x continuation tokens + K state copies. Implemented for the
+               tiny functional backbone (differentiable) and HF caches (Qwen3.5 hybrid,
+               all-GDN Q9-AF layout, HF Mamba); tests check it equals recompute.
+
+``BACKBONES`` records the m1 candidates. ``verified`` flags say which dimensions
+were checked against the published ``config.json`` (internal review of PR #14).
 """
 
 from __future__ import annotations
 
+import inspect
+import re
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
@@ -32,98 +43,159 @@ import torch
 from torch import nn
 from torch.utils.checkpoint import checkpoint
 
+#: (group name, regex over qualified module names, expected matches in the full model)
+LoraGroup = tuple[str, str, int]
+#: (in_features, out_features, count in the full model)
+LoraShape = tuple[int, int, int]
+
 
 @dataclass(frozen=True)
 class BackboneSpec:
     name: str
-    family: str  # qwen3.5 | rwkv7 | mamba3 | tiny
+    family: str  # qwen3.5 | rwkv7 | mamba3 | mamba | tiny
     hf_id: str
-    params: float  # text-path parameters
+    params: float  # non-embedding text parameters (FLOPs per token ~ 2 * params)
     n_layers: int
     d_model: int
-    lora_targets: str  # regex over module names
+    lora_groups: tuple[LoraGroup, ...]
     capture: str  # "hidden_states" or a module name for a forward hook
     attention_free: bool
-    #: per-layer projections that LoRA targets: list of (in, out) per layer
-    lora_shapes: tuple[tuple[int, int], ...] = ()
-    #: recurrent state scalars per layer (for fork/state pricing)
-    state_scalars_per_layer: int = 0
+    params_memory: float = 0.0  # resident weights (embeddings included, LM head dropped); 0 -> params
+    lora_shapes: tuple[LoraShape, ...] = ()
+    state_scalars_per_layer: int = 0  # recurrent state per layer (fork/state pricing)
     state_dtype_bytes: int = 4
     mfu_assumed: float = 0.30
     verified: dict[str, bool] = field(default_factory=dict)
     notes: str = ""
 
+    @property
+    def lora_targets(self) -> str:
+        return "|".join(f"(?:{rx})" for _, rx, _ in self.lora_groups)
 
-_QWEN_LORA = r"(linear_attn\.(in_proj_qkv|in_proj_z|out_proj)|self_attn\.(q_proj|k_proj|v_proj|o_proj)|mlp\.(gate_proj|up_proj|down_proj))$"
+    @property
+    def resident_params(self) -> float:
+        return self.params_memory or self.params
+
+
+_GDN = r"linear_attn\.(in_proj_qkv|in_proj_z|out_proj)$"
+_QATTN = r"self_attn\.(q_proj|k_proj|v_proj|o_proj)$"
+_QMLP = r"mlp\.(gate_proj|up_proj|down_proj)$"
+
+_QWEN_NOTE = ("Qwen/Qwen3.5-9B config.json (verified in PR #14 review): 32 layers, hidden 4096, "
+              "intermediate 12288, GDN 16 key x 128 / 32 value x 128 heads; 6.92e9 non-embedding, "
+              "7.94e9 with input embeddings (LM head dropped).")
 
 BACKBONES: dict[str, BackboneSpec] = {
     "q9af": BackboneSpec(
         name="q9af",
         family="qwen3.5",
-        hf_id="Qwen/Qwen3.5-9B (8 full-attention layers distilled to GDN at m1)",
-        params=8.5e9,
+        hf_id="Qwen/Qwen3.5-9B with its 8 full-attention layers distilled to GDN at m1",
+        params=6.92e9,
+        params_memory=7.94e9,
         n_layers=32,
         d_model=4096,
-        lora_targets=_QWEN_LORA,
+        lora_groups=(("gdn", _GDN, 32 * 3), ("mlp", _QMLP, 32 * 3)),
         capture="hidden_states",
         attention_free=True,
-        # GDN: in_proj_qkv 4096->8192, in_proj_z 4096->4096, out_proj 4096->4096;
-        # MLP gate/up 4096->I, down I->4096 with I = 12288 (unverified)
-        lora_shapes=((4096, 8192), (4096, 4096), (4096, 4096), (4096, 12288), (4096, 12288), (12288, 4096)),
+        lora_shapes=((4096, 8192, 32), (4096, 4096, 32), (4096, 4096, 32),
+                     (4096, 12288, 32), (4096, 12288, 32), (12288, 4096, 32)),
         state_scalars_per_layer=32 * 128 * 128 + 33_000,
         state_dtype_bytes=4,  # mamba_ssm_dtype float32
         mfu_assumed=0.35,
-        verified={"n_layers": True, "d_model": True, "gdn_heads": True, "intermediate_size": False, "params": False},
-        notes="B-review §1 row 1/§8A; GDN 32 value heads x 128, 16 key heads x 128; text params ~8.5e9 (estimate)",
+        verified={"n_layers": True, "d_model": True, "gdn_heads": True, "intermediate_size": True,
+                  "params": True, "module_names": True},
+        notes=_QWEN_NOTE + " Params of the 8 converted layers change by <1% (GDN vs attention projections).",
+    ),
+    "qwen3.5-9b": BackboneSpec(
+        name="qwen3.5-9b",
+        family="qwen3.5",
+        hf_id="Qwen/Qwen3.5-9B-Base (stock hybrid; rung-1 shape proxy for Q9-AF)",
+        params=6.92e9,
+        params_memory=7.94e9,
+        n_layers=32,
+        d_model=4096,
+        lora_groups=(("gdn", _GDN, 24 * 3), ("attn", _QATTN, 8 * 4), ("mlp", _QMLP, 32 * 3)),
+        capture="hidden_states",
+        attention_free=False,
+        lora_shapes=((4096, 8192, 24), (4096, 4096, 24), (4096, 4096, 24),
+                     (4096, 8192, 8), (4096, 1024, 8), (4096, 1024, 8), (4096, 4096, 8),
+                     (4096, 12288, 32), (4096, 12288, 32), (12288, 4096, 32)),
+        state_scalars_per_layer=32 * 128 * 128 + 33_000,
+        mfu_assumed=0.35,
+        verified={"n_layers": True, "d_model": True, "attn_proj_shapes": False, "module_names": True},
+        notes=_QWEN_NOTE + " Attention projection shapes (gated q) unverified; only LoRA size depends on them.",
     ),
     "rwkv7-13.3b": BackboneSpec(
         name="rwkv7-13.3b",
         family="rwkv7",
         hf_id="RWKV/RWKV7-G1k-13.3B-20260930",
-        params=13.27e9,
+        params=12.73e9,
+        params_memory=13.0e9,
         n_layers=61,
         d_model=4096,
-        lora_targets=r"(attn\.(r_proj|k_proj|v_proj|o_proj)|ffn\.(key|value))$",
+        lora_groups=(("att", r"att\.(receptance|key|value|output)$", 61 * 4),
+                     ("ffn", r"ffn\.(key|value)$", 61 * 2)),
         capture="hidden_states",
         attention_free=True,
-        lora_shapes=((4096, 4096),) * 4 + ((4096, 16384), (16384, 4096)),
+        lora_shapes=((4096, 4096, 61 * 4), (4096, 16384, 61), (16384, 4096, 61)),
         state_scalars_per_layer=64 * 64 * 64 + 2 * 4096,
         state_dtype_bytes=4,
         mfu_assumed=0.25,
-        verified={"n_layers": True, "d_model": True, "heads": True, "params": True, "module_names": False},
-        notes="reviews/01 row 5; module names for LoRA are unverified (fla RWKV7 naming); bundled WKV7 training throughput unverified -> low MFU",
+        verified={"n_layers": True, "d_model": True, "heads": True, "ffn": True, "module_names": True,
+                  "params_split": False},
+        notes=("13.27e9 total (card); non-embedding/resident split assumes vocab 65536 x 4096 embeddings "
+               "and an untied head. Module names are the HF custom modeling_rwkv7.py ones "
+               "(att.receptance/key/value/output, ffn.key/value); fla-converted repos use attn.*_proj "
+               "and need their own spec. Bundled WKV7 training throughput unverified -> low MFU."),
     ),
     "mamba3-1.5b": BackboneSpec(
         name="mamba3-1.5b",
         family="mamba3",
         hf_id="state-spaces/mamba3-siso-1.5b",
-        params=1.5e9,
-        n_layers=48,
+        params=1.24e9,
+        params_memory=1.5e9,
+        n_layers=24,
         d_model=2048,
-        lora_targets=r"mixer\.(in_proj|out_proj)$",
+        lora_groups=(("mixer", r"mixer\.(in_proj|out_proj)$", 24 * 2), ("mlp", r"mlp\.(fc1|fc2)$", 24 * 2)),
         capture="backbone.norm_f",
         attention_free=True,
-        lora_shapes=((2048, 2 * 4096 + 2 * 128 + 64), (4096, 2048)),
+        # in_proj width = 2*d_inner + 2*d_state*ngroups + 3*nheads + rope_angles (rope_angles = 64 assumed)
+        lora_shapes=((2048, 2 * 4096 + 2 * 128 + 3 * 64 + 64, 24), (4096, 2048, 24),
+                     (2048, 2 * 4096, 24), (4096, 2048, 24)),
         state_scalars_per_layer=64 * 64 * 128,
         state_dtype_bytes=4,
         mfu_assumed=0.30,
-        verified={"params": True, "state_size": True, "n_layers": False, "d_model": False},
-        notes="reviews/01: 1.50B params, ctx 2048, state 128; layer count / width unverified; mamba_ssm module, hook capture",
+        verified={"params": True, "state_size": True, "n_layers": True, "d_intermediate": True,
+                  "d_model": False, "in_proj_rope_angles": False},
+        notes=("config: n_layer 24, d_intermediate 4096 (GatedMLP fc1/fc2 per block), ctx 2048, state 128. "
+               "d_model 2048 inferred from 1.5e9 params; embeddings ~0.26e9 (llama-3.1 vocab)."),
     ),
 }
+
+
+def _accepts(fn, name: str) -> bool:
+    try:
+        return name in inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return False
 
 
 class HiddenStateBackbone(nn.Module):
     """Uniform ``features(input_ids, attention_mask) -> [B, T, D]`` over any LM module."""
 
+    FORK_MODES = ("recompute", "cache")
+
     def __init__(self, model: nn.Module, capture: str = "hidden_states", layer: int = -1,
-                 spec: BackboneSpec | None = None, pad_id: int = 0) -> None:
+                 spec: BackboneSpec | None = None, pad_id: int = 0, fork_mode: str = "recompute") -> None:
         super().__init__()
+        if fork_mode not in self.FORK_MODES:
+            raise ValueError(fork_mode)
         self.model = model
         self.capture = capture
         self.layer = layer
         self.spec = spec
         self.pad_id = pad_id
+        self.fork_mode = fork_mode
         self._captured: torch.Tensor | None = None
         self._hook = None
         if capture != "hidden_states":
@@ -132,6 +204,12 @@ class HiddenStateBackbone(nn.Module):
 
     def _grab(self, module, inputs, output):
         self._captured = output[0] if isinstance(output, tuple) else output
+
+    @property
+    def device(self) -> torch.device:
+        for p in self.model.parameters():
+            return p.device
+        return torch.device("cpu")
 
     @property
     def d_model(self) -> int:
@@ -151,11 +229,22 @@ class HiddenStateBackbone(nn.Module):
             fn()
         return True
 
+    # ------------------------------------------------------------------ plain features
+    def _pick(self, out) -> torch.Tensor:
+        if self.capture == "hidden_states":
+            return out.hidden_states[self.layer]
+        if self._captured is None:
+            raise RuntimeError(f"hook on {self.capture} did not fire")
+        return self._captured
+
     def features(self, input_ids: torch.Tensor, attention_mask: torch.Tensor | None = None) -> torch.Tensor:
+        dev = self.device
+        input_ids = input_ids.to(dev)
+        self._captured = None
         if self.capture == "hidden_states":
             kwargs: dict[str, Any] = {"input_ids": input_ids, "output_hidden_states": True}
             if attention_mask is not None and getattr(self.model, "_accepts_mask", True):
-                kwargs["attention_mask"] = attention_mask
+                kwargs["attention_mask"] = attention_mask.to(dev)
             try:
                 kwargs["use_cache"] = False
                 out = self.model(**kwargs)
@@ -163,25 +252,143 @@ class HiddenStateBackbone(nn.Module):
                 kwargs.pop("use_cache", None)
                 kwargs.pop("attention_mask", None)
                 out = self.model(**kwargs)
-            return out.hidden_states[self.layer]
-        self._captured = None
+            return self._pick(out)
         self.model(input_ids)
-        if self._captured is None:
-            raise RuntimeError(f"hook on {self.capture} did not fire")
-        return self._captured
+        return self._pick(None)
 
     def forward(self, input_ids, attention_mask=None):  # pragma: no cover - alias
         return self.features(input_ids, attention_mask)
 
+    # ------------------------------------------------------------------ cache-copy fork
+    def fork_features(self, prefix: Sequence[int], conts: Sequence[Sequence[int]]) -> tuple[torch.Tensor, torch.Tensor]:
+        """One prefix, K continuations -> (prefix features [T, D], fork features [K, D]).
 
-def pad_batch(seqs: Sequence[Sequence[int]], pad_id: int = 0) -> tuple[torch.Tensor, torch.Tensor]:
-    """Right-pad to the longest sequence. Returns (ids [B,T], mask [B,T] bool)."""
+        The prefix runs once; its recurrent state (or HF cache) is copied K times and each
+        copy is extended by its continuation. Equals the recompute fork (tested)."""
+        dev = self.device
+        k = len(conts)
+        ids = torch.tensor([list(prefix)], dtype=torch.long, device=dev)
+        cids, cmask = pad_batch(conts, self.pad_id, device=dev)
+        last = cmask.sum(-1) - 1
+        if hasattr(self.model, "prefill"):  # functional state API: differentiable
+            h, state = self.model.prefill(ids)
+            hc, _ = self.model.extend(cids, self.model.expand_state(state, k))
+            return h[0], hc[torch.arange(k, device=dev), last]
+        return self._hf_fork(ids, cids, last)
+
+    def _hf_fork(self, ids: torch.Tensor, cids: torch.Tensor, last: torch.Tensor):
+        dev = ids.device
+        m = self.model
+        if m.training and torch.is_grad_enabled() and getattr(m, "is_gradient_checkpointing", False):
+            # HF silently drops the cache under gradient checkpointing; the fork would then be wrong.
+            raise RuntimeError("cache fork is unavailable while HF gradient checkpointing is on in training: "
+                               "use fork_mode='recompute' or disable checkpointing for the fork head")
+        uses_cache_params = _accepts(m.forward, "cache_params")
+        base: dict[str, Any] = {"use_cache": True}
+        if self.capture == "hidden_states":
+            base["output_hidden_states"] = True
+        self._captured = None
+        if uses_cache_params:
+            out = m(input_ids=ids, **base)
+            cache = out.cache_params
+        else:
+            out = m(input_ids=ids, past_key_values=_linear_safe_cache(m.config), **base)
+            cache = out.past_key_values
+        if cache is None:
+            raise RuntimeError("backbone returned no cache for the cache fork")
+        h = self._pick(out)[0]
+        n = ids.shape[1]
+        _set_seen(cache, n)
+        k = cids.shape[0]
+        cache.reorder_cache(torch.zeros(k, dtype=torch.long, device=dev))  # K state copies
+        _assign_not_copy(cache)  # HF linear-attention caches write in place, which breaks autograd
+        feats = torch.zeros((k, h.shape[-1]), dtype=h.dtype, device=dev)
+        for t in range(cids.shape[1]):  # token by token: the cached-decode path every HF SSM supports
+            self._captured = None
+            kw = dict(base)
+            kw["cache_params" if uses_cache_params else "past_key_values"] = cache
+            if uses_cache_params:
+                kw["cache_position"] = torch.tensor([n + t], device=dev)
+            out = m(input_ids=cids[:, t : t + 1], **kw)
+            cache = out.cache_params if uses_cache_params else out.past_key_values
+            _set_seen(cache, n + t + 1)
+            step = self._pick(out)[:, -1]
+            feats = torch.where((last == t).unsqueeze(-1), step, feats)
+        return h, feats
+
+
+def _linear_safe_cache(config):
+    """HF DynamicCache that also works when every layer is linear attention (Q9-AF layout).
+
+    transformers 5.14 raises in get_seq_length/get_mask_sizes when a cache has no attention
+    layer; the model only needs the number of tokens already consumed."""
+    from transformers import DynamicCache
+
+    class _Cache(DynamicCache):
+        seen = 0
+
+        def get_seq_length(self, layer_idx=0):
+            try:
+                return super().get_seq_length(layer_idx)
+            except ValueError:
+                return self.seen
+
+        def get_mask_sizes(self, query_length, layer_idx=0):
+            try:
+                return super().get_mask_sizes(query_length, layer_idx)
+            except ValueError:
+                return self.seen + query_length, 0
+
+    return _Cache(config=config)
+
+
+def _assign_not_copy(cache) -> None:
+    """Make HF ``LinearAttentionLayer`` cache updates functional (assignment, not ``copy_``).
+
+    transformers 5.14 updates GDN conv/recurrent states with in-place ``copy_`` (static
+    addresses for CUDA graphs). During training the step that reads a state also overwrites
+    it, so backward fails. Rebinding the two update methods on this cache instance keeps
+    the same values (tested against recompute) and lets gradients flow through the fork."""
+    import types
+
+    for layer in getattr(cache, "layers", []) or []:
+        if not hasattr(layer, "update_recurrent_state") or not hasattr(layer, "conv_states"):
+            continue
+        orig_conv, orig_rec = layer.update_conv_state, layer.update_recurrent_state
+
+        def conv(self, conv_states, state_idx=0, conv_kernel_size=None, _orig=orig_conv, **kw):
+            if not self.is_conv_states_initialized[state_idx] or not self.has_previous_state[state_idx]:
+                return _orig(conv_states, state_idx=state_idx, conv_kernel_size=conv_kernel_size, **kw)
+            full = torch.cat([self.conv_states[state_idx], conv_states], dim=-1)
+            self.conv_states[state_idx] = full[..., -self.conv_kernel_size[state_idx]:]
+            return full
+
+        def rec(self, recurrent_states, state_idx=0, _orig=orig_rec, **kw):
+            if not self.is_recurrent_states_initialized[state_idx]:
+                return _orig(recurrent_states, state_idx=state_idx, **kw)
+            self.recurrent_states[state_idx] = recurrent_states
+            return recurrent_states
+
+        layer.update_conv_state = types.MethodType(conv, layer)
+        layer.update_recurrent_state = types.MethodType(rec, layer)
+
+
+def _set_seen(cache, n: int) -> None:
+    if hasattr(cache, "seen"):
+        cache.seen = n
+
+
+def pad_batch(seqs: Sequence[Sequence[int]], pad_id: int = 0,
+              device: torch.device | str | None = None) -> tuple[torch.Tensor, torch.Tensor]:
+    """Right-pad to the longest sequence. Returns (ids [B,T], mask [B,T] bool) on ``device``."""
     t = max(len(s) for s in seqs)
     ids = torch.full((len(seqs), t), pad_id, dtype=torch.long)
     mask = torch.zeros((len(seqs), t), dtype=torch.bool)
     for i, s in enumerate(seqs):
         ids[i, : len(s)] = torch.as_tensor(list(s), dtype=torch.long)
         mask[i, : len(s)] = True
+    if device is not None:
+        ids, mask = ids.to(device), mask.to(device)
     return ids, mask
 
 
@@ -218,6 +425,7 @@ class _TinyBlock(nn.Module):
     def __init__(self, d: int, expand: int) -> None:
         super().__init__()
         e = d * expand
+        self.e = e
         self.norm = _RMSNorm(d)
         self.in_proj = nn.Linear(d, 2 * e)
         self.gate_proj = nn.Linear(d, e)
@@ -226,21 +434,23 @@ class _TinyBlock(nn.Module):
         self.up = nn.Linear(d, 2 * d)
         self.down = nn.Linear(2 * d, d)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, h: torch.Tensor | None = None):
         u, z = self.in_proj(self.norm(x)).chunk(2, dim=-1)
         a = torch.sigmoid(self.gate_proj(self.norm(x)) + 2.0)  # slow decay at init
-        h = torch.zeros_like(u[:, 0])
+        if h is None:
+            h = torch.zeros_like(u[:, 0])
         outs = []
         for t in range(u.shape[1]):
             h = a[:, t] * h + (1 - a[:, t]) * u[:, t]
             outs.append(h)
         y = torch.stack(outs, dim=1) * torch.nn.functional.silu(z)
         x = x + self.out_proj(y)
-        return x + self.down(torch.nn.functional.gelu(self.up(self.norm2(x))))
+        return x + self.down(torch.nn.functional.gelu(self.up(self.norm2(x)))), h
 
 
 class TinyRecurrentLM(nn.Module):
-    """HF-shaped tiny LM: ``model(input_ids, output_hidden_states=True).hidden_states``."""
+    """HF-shaped tiny LM: ``model(input_ids, output_hidden_states=True).hidden_states``, plus a
+    functional state API (``prefill`` / ``expand_state`` / ``extend``) used by the cache fork."""
 
     _accepts_mask = False
 
@@ -257,32 +467,56 @@ class TinyRecurrentLM(nn.Module):
     def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
         self.gradient_checkpointing = True
 
-    def forward(self, input_ids, output_hidden_states=False, **_):
+    def _run(self, input_ids, state=None):
         x = self.embed(input_ids)
-        hs = [x]
-        for layer in self.layers:
+        hs, new_state = [x], []
+        for i, layer in enumerate(self.layers):
+            h0 = None if state is None else state[i]
             if self.gradient_checkpointing and torch.is_grad_enabled():
-                x = checkpoint(layer, x, use_reentrant=False)
+                x, h = checkpoint(layer, x, h0, use_reentrant=False)
             else:
-                x = layer(x)
+                x, h = layer(x, h0)
             hs.append(x)
+            new_state.append(h)
         hs[-1] = self.norm_f(x)
+        return hs, new_state
+
+    def forward(self, input_ids, output_hidden_states=False, **_):
+        hs, _ = self._run(input_ids)
         return _Out(tuple(hs))
 
+    def prefill(self, input_ids):
+        hs, state = self._run(input_ids)
+        return hs[-1], state
 
-TINY_SPEC = BackboneSpec(
-    name="tiny", family="tiny", hf_id="random", params=0, n_layers=2, d_model=32,
-    lora_targets=r"(in_proj|gate_proj|out_proj|up|down)$", capture="hidden_states", attention_free=True,
-)
+    @staticmethod
+    def expand_state(state, n: int):
+        return [h.expand(n, -1) for h in state]
+
+    def extend(self, input_ids, state):
+        hs, new_state = self._run(input_ids, state)
+        return hs[-1], new_state
 
 
-def tiny_backbone(seed: int = 0, hidden: int = 32, layers: int = 2) -> HiddenStateBackbone:
+def _tiny_groups(n_layers: int) -> tuple[LoraGroup, ...]:
+    return (("mixer", r"(in_proj|gate_proj|out_proj)$", 3 * n_layers), ("mlp", r"(up|down)$", 2 * n_layers))
+
+
+def tiny_spec(n_layers: int = 2, d: int = 32) -> BackboneSpec:
+    return BackboneSpec(name="tiny", family="tiny", hf_id="random", params=0, n_layers=n_layers, d_model=d,
+                        lora_groups=_tiny_groups(n_layers), capture="hidden_states", attention_free=True)
+
+
+TINY_SPEC = tiny_spec()
+
+
+def tiny_backbone(seed: int = 0, hidden: int = 32, layers: int = 2, fork_mode: str = "recompute") -> HiddenStateBackbone:
     torch.manual_seed(seed)
     model = TinyRecurrentLM(TinyConfig(hidden_size=hidden, num_hidden_layers=layers))
-    return HiddenStateBackbone(model, spec=TINY_SPEC)
+    return HiddenStateBackbone(model, spec=tiny_spec(layers, hidden), fork_mode=fork_mode)
 
 
-def tiny_hf_backbone(family: str, seed: int = 0, hidden: int = 32) -> HiddenStateBackbone:
+def tiny_hf_backbone(family: str, seed: int = 0, hidden: int = 32, fork_mode: str = "recompute") -> HiddenStateBackbone:
     """Tiny randomly initialised HF models (CPU torch fallbacks; no kernels needed).
 
     ``qwen3.5``: stock hybrid layout (3 GDN : 1 attention). ``q9af``: the same class with
@@ -298,22 +532,33 @@ def tiny_hf_backbone(family: str, seed: int = 0, hidden: int = 32) -> HiddenStat
                   linear_num_value_heads=2, linear_key_head_dim=8, linear_value_head_dim=8)
         if family == "q9af":
             kw["layer_types"] = ["linear_attention"] * 4
-        cfg = tf.Qwen3_5TextConfig(**kw)
-        model = tf.Qwen3_5ForCausalLM(cfg)
+            groups = (("gdn", _GDN, 4 * 3), ("mlp", _QMLP, 4 * 3))
+        else:
+            groups = (("gdn", _GDN, 3 * 3), ("attn", _QATTN, 1 * 4), ("mlp", _QMLP, 4 * 3))
+        model = tf.Qwen3_5ForCausalLM(tf.Qwen3_5TextConfig(**kw))
         spec = BackboneSpec(name=f"tiny-{family}", family="qwen3.5", hf_id="random", params=0, n_layers=4,
-                            d_model=hidden, lora_targets=_QWEN_LORA, capture="hidden_states",
+                            d_model=hidden, lora_groups=groups, capture="hidden_states",
                             attention_free=family == "q9af")
-        return HiddenStateBackbone(model, spec=spec)
+        return HiddenStateBackbone(model, spec=spec, fork_mode=fork_mode)
     if family == "mamba":
         cfg = tf.MambaConfig(vocab_size=260, hidden_size=hidden, state_size=4, num_hidden_layers=2, expand=2)
         model = tf.MambaForCausalLM(cfg)
         spec = BackboneSpec(name="tiny-mamba", family="mamba", hf_id="random", params=0, n_layers=2,
-                            d_model=hidden, lora_targets=r"mixer\.(in_proj|out_proj|x_proj)$",
+                            d_model=hidden, lora_groups=(("mixer", r"mixer\.(in_proj|out_proj|x_proj)$", 2 * 3),),
                             capture="backbone.norm_f", attention_free=True)
-        return HiddenStateBackbone(model, capture="backbone.norm_f", spec=spec)
+        return HiddenStateBackbone(model, capture="backbone.norm_f", spec=spec, fork_mode=fork_mode)
     raise ValueError(family)
 
 
 def count_params(module: nn.Module, trainable_only: bool = False) -> int:
     return sum(p.numel() for p in module.parameters() if p.requires_grad or not trainable_only)
+
+
+def group_matches(model: nn.Module, groups: Sequence[LoraGroup]) -> dict[str, list[str]]:
+    """Linear modules matched by each LoRA group (by qualified name)."""
+    out: dict[str, list[str]] = {}
+    for gname, rx, _ in groups:
+        pat = re.compile(rx)
+        out[gname] = [n for n, m in model.named_modules() if isinstance(m, nn.Linear) and pat.search(n)]
+    return out
 

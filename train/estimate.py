@@ -4,22 +4,27 @@ Every number here is an ESTIMATE from analytic formulas and stated assumptions, 
 measurement. The first paid rung (train/M2_RUN_SPEC.md) exists to replace these with receipts.
 
 Model of a training step (frozen bf16 backbone, LoRA, head, no LM head):
-* weights          params * 2 B
+* weights          resident params (embeddings, no LM head) * 2 B
 * LoRA             rank * (in + out) per targeted projection; fp32 master + grad + Adam m, v = 16 B/param
 * head             parameters counted by instantiating the real head on the ``meta`` device; 16 B/param
 * backbone acts    with checkpointing: one bf16 [B, T, D] tensor per layer boundary + one layer's
                    working set (``WORK_FACTOR`` x [B, T, D] bf16) + delta-rule chunk states for that
-                   layer's backward ((T / 64) states of ``state_scalars_per_layer`` fp32)
+                   layer's backward ((T / 64) states of ``state_scalars_per_layer`` fp32);
                    without checkpointing: every layer's working set
-* head acts        autograd keeps per-chunk tensors for the whole sequence (see per-head formulas)
-* fork             cache-copy fork: K copies of the full recurrent state + K continuation rows;
-                   recompute fork (what heads/features.py does today): K full rows
-* FLOPs/token      frozen backbone: 2N forward + 2N input-gradient backward (+ 2N recompute with
-                   checkpointing); LoRA adds 6 * lora_params; head adds 3x its forward FLOPs/token
+* head acts        autograd keeps per-chunk tensors for the whole sequence (per-head formulas)
+* FLOPs/token      2 * non-embedding params forward + 2x for input-gradient backward
+                   (+ 2x recompute with checkpointing); LoRA adds 6 * lora_params; head 3x its FLOPs
 * throughput       mfu_assumed (per backbone spec) * 989 TFLOP/s dense bf16
-* cost             $2.97/h batch, $3.96/h interactive (SF Compute rate card, B-review §1 row 10)
+* cost             $2.97/h batch, $3.96/h interactive (SF Compute rate card)
 
-    python -m train.estimate --json train/estimates/m2_estimates.json
+Final-state fork (the only head whose backbone cost depends on K), two modes, both implemented:
+* ``recompute``  K extra full rows (prefix + continuation) per question, all alive for backward:
+                 tokens x (1 + K), memory K x activations. Infeasible for large K on long rows.
+* ``cache``      one prefix pass, K state copies extended by the continuation. HF drops caches
+                 under gradient checkpointing (the code refuses rather than silently mis-forking),
+                 so the cache fork trains WITHOUT checkpointing: full prefix activations.
+
+    python -m train.estimate --json train/estimates/m2_estimates.json --table
 """
 
 from __future__ import annotations
@@ -42,6 +47,8 @@ RATE = {"batch": 2.97, "interactive": 3.96}
 WORK_FACTOR = 24  # one layer's live activations in units of a [B,T,D] bf16 tensor (assumption)
 CHUNK = 64  # delta-rule chunk length for chunkwise kernels
 GB = 1024**3
+MIN_USEFUL_TPS = 500.0  # prefix tokens/s below which a configuration is marked infeasible
+CELL = {"rows": 30_000, "T": 2048, "K": 6}  # pilot data assumption: 10k records x 3 questions
 
 HEAD_DEFAULTS = {
     "integrator": {"channels": 64},
@@ -80,37 +87,58 @@ def head_activation_bytes(name: str, B: int, T: int, K: int, d_model: int) -> fl
     raise KeyError(name)
 
 
-def train_point(spec: BackboneSpec, head: str, T: int, K: int, B: int = 1, rank: int = 256,
-                grad_ckpt: bool = True, fork_mode: str = "cache", cont_len: int = 8) -> dict:
+def _acts(spec: BackboneSpec, B: int, T: int, grad_ckpt: bool) -> float:
     D, L = spec.d_model, spec.n_layers
-    weights = spec.params * 2
-    lora = lora_param_count(spec.lora_shapes, rank, L)
-    hp = head_params(head, D)
-    act_unit = B * T * D * 2
+    unit = B * T * D * 2
     chunk_states = B * (T / CHUNK) * spec.state_scalars_per_layer * spec.state_dtype_bytes
-    acts = (L * act_unit + WORK_FACTOR * act_unit + chunk_states) if grad_ckpt else L * (WORK_FACTOR * act_unit + chunk_states)
+    if grad_ckpt:
+        return L * unit + WORK_FACTOR * unit + chunk_states
+    return L * (WORK_FACTOR * unit + chunk_states)
+
+
+def train_point(spec: BackboneSpec, head: str, T: int, K: int, B: int = 1, rank: int = 256,
+                grad_ckpt: bool = True, fork_mode: str = "recompute", cont_len: int = 8) -> dict:
+    D, L = spec.d_model, spec.n_layers
+    if head == "fork" and fork_mode == "cache":
+        grad_ckpt = False  # HF drops caches under checkpointing; see module docstring
+    weights = spec.resident_params * 2
+    lora = lora_param_count(spec.lora_shapes, rank)
+    hp = head_params(head, D)
+    acts = _acts(spec, B, T, grad_ckpt)
     hacts = head_activation_bytes(head, B, T, K, D)
     fork_bytes, fork_tokens = 0.0, 0
     if head == "fork":
         if fork_mode == "cache":
             state_bytes = L * spec.state_scalars_per_layer * spec.state_dtype_bytes
-            fork_bytes = B * K * (state_bytes + (L if grad_ckpt else L * WORK_FACTOR) * cont_len * D * 2)
+            # K state copies (plus their grads) + K continuation rows of activations
+            fork_bytes = B * K * (2 * state_bytes + _acts(spec, 1, cont_len, False))
             fork_tokens = K * cont_len
-        else:
-            fork_bytes = K * acts
+        elif fork_mode == "recompute":
+            fork_bytes = K * _acts(spec, B, T + cont_len, grad_ckpt)
             fork_tokens = K * (T + cont_len)
+        else:
+            raise ValueError(fork_mode)
     overhead = 2.0 * GB
     total = weights + 16 * (lora + hp) + acts + hacts + fork_bytes + overhead
     per_tok_head = head_cost(head, D, T, K)["flops"] / T
     f_tok = (6 if grad_ckpt else 4) * spec.params + 6 * lora + 3 * per_tok_head
     tokens_per_row = T + fork_tokens
     tps = spec.mfu_assumed * GPU["bf16_dense_tflops"] * 1e12 / f_tok * T / tokens_per_row  # prefix tokens/s
+    fits = total / GB <= GPU["usable_gb"]
+    reason = None
+    if not fits:
+        reason = f"needs {total / GB:.0f} GB at B={B} > {GPU['usable_gb']:.0f} GB usable"
+    elif tps < MIN_USEFUL_TPS:
+        reason = f"{tps:.0f} prefix tok/s < {MIN_USEFUL_TPS:.0f}"
     return {
-        "backbone": spec.name, "head": head, "T": T, "K": K, "B": B, "lora_rank": rank, "grad_ckpt": grad_ckpt,
+        "backbone": spec.name, "head": head, "fork_mode": fork_mode if head == "fork" else None,
+        "T": T, "K": K, "B": B, "lora_rank": rank, "grad_ckpt": grad_ckpt,
         "mem_gb": {"weights": weights / GB, "lora_opt": 16 * lora / GB, "head_opt": 16 * hp / GB,
                    "backbone_acts": acts / GB, "head_acts": hacts / GB, "fork": fork_bytes / GB,
                    "overhead": overhead / GB, "total": total / GB},
-        "fits_80gb": total / GB <= GPU["usable_gb"],
+        "fits_80gb": fits,
+        "feasible": reason is None,
+        "infeasible_reason": reason,
         "lora_params": lora, "head_params": hp,
         "train_flops_per_prefix_token": f_tok * tokens_per_row / T,
         "train_prefix_tokens_per_s": tps,
@@ -134,37 +162,54 @@ def cell_cost(spec: BackboneSpec, head: str, rows: int, T: int, K: int, epochs: 
     p = train_point(spec, head, T, K, **kw)
     tokens = rows * T * epochs
     hours = tokens / p["train_prefix_tokens_per_s"] / 3600
-    return {"backbone": spec.name, "head": head, "rows": rows, "T": T, "K": K, "epochs": epochs,
-            "train_tokens": tokens, "gpu_hours": hours, "usd_batch": hours * RATE["batch"],
-            "max_micro_batch": max_batch(spec, head, T, K, **kw)}
+    return {"backbone": spec.name, "head": head, "fork_mode": p["fork_mode"], "rows": rows, "T": T, "K": K,
+            "epochs": epochs, "train_tokens": tokens, "gpu_hours": hours, "usd_batch": hours * RATE["batch"],
+            "max_micro_batch": max_batch(spec, head, T, K, **kw), "feasible": p["feasible"],
+            "infeasible_reason": p["infeasible_reason"]}
+
+
+def _variants(head: str):
+    return [{"fork_mode": "recompute"}, {"fork_mode": "cache"}] if head == "fork" else [{}]
 
 
 def report() -> dict:
-    out: dict = {"gpu": GPU, "rates_usd_per_h": RATE, "assumptions": {
+    out: dict = {"gpu": GPU, "rates_usd_per_h": RATE, "cell_assumption": CELL, "assumptions": {
         "work_factor": WORK_FACTOR, "delta_chunk": CHUNK, "lm_head": "not run (heads read hidden states)",
+        "min_useful_prefix_tps": MIN_USEFUL_TPS,
         "status": "ESTIMATE ONLY - replace with receipts from the m2 qualification rung"},
-        "backbones": {k: asdict(v) for k, v in BACKBONES.items()}, "points": [], "max_batch": [], "cells": []}
+        "backbones": {}, "points": [], "max_batch": [], "cells": []}
     for name, spec in BACKBONES.items():
-        out["backbones"][name]["eval_tokens_per_s"] = eval_tokens_per_s(spec)
+        b = asdict(spec)
+        b["lora_params_r256"] = lora_param_count(spec.lora_shapes, 256)
+        b["lora_opt_gb_r256"] = 16 * b["lora_params_r256"] / GB
+        b["eval_tokens_per_s"] = eval_tokens_per_s(spec)
+        out["backbones"][name] = b
         for head in HEAD_DEFAULTS:
-            for T, K in ((2048, 4), (8192, 16), (8192, 255)):
-                out["points"].append(train_point(spec, head, T, K))
-            out["max_batch"].append({"backbone": name, "head": head,
-                                     **{f"T{T}_K{K}": max_batch(spec, head, T, K) for T, K in ((2048, 4), (8192, 16))}})
-            # m2 cell under the pilot-data assumption: 10k records x 3 questions, T=2048, K=6
-            out["cells"].append(cell_cost(spec, head, rows=30_000, T=2048, K=6))
+            for kw in _variants(head):
+                for T, K in ((2048, 4), (2048, 6), (8192, 16), (8192, 255)):
+                    out["points"].append(train_point(spec, head, T, K, **kw))
+                out["max_batch"].append({"backbone": name, "head": head, **kw,
+                                         **{f"T{T}_K{K}": max_batch(spec, head, T, K, **kw) for T, K in ((2048, 4), (8192, 16))}})
+                out["cells"].append(cell_cost(spec, head, **CELL, **kw))
     return out
 
 
 def _table(rep: dict) -> str:
-    lines = ["| backbone | head | T | K | mem GB (B=1) | fits | prefix tok/s | $/1M tok |", "|---|---|---|---|---|---|---|---|"]
+    lines = ["| backbone | head | fork | T | K | mem GB (B=1) | feasible | prefix tok/s | $/1M tok |",
+             "|---|---|---|---|---|---|---|---|---|"]
     for p in rep["points"]:
-        lines.append(f"| {p['backbone']} | {p['head']} | {p['T']} | {p['K']} | {p['mem_gb']['total']:.1f} | "
-                     f"{'y' if p['fits_80gb'] else 'NO'} | {p['train_prefix_tokens_per_s']:.0f} | "
-                     f"{p['usd_per_1m_train_tokens_batch']:.3f} |")
-    lines += ["", "| backbone | head | GPU-h per cell | $ per cell (batch) | max micro-batch |", "|---|---|---|---|---|"]
+        lines.append(f"| {p['backbone']} | {p['head']} | {p['fork_mode'] or ''} | {p['T']} | {p['K']} | "
+                     f"{p['mem_gb']['total']:.1f} | {'y' if p['feasible'] else 'NO: ' + p['infeasible_reason']} | "
+                     f"{p['train_prefix_tokens_per_s']:.0f} | {p['usd_per_1m_train_tokens_batch']:.3f} |")
+    lines += ["", f"Cells: {CELL['rows']} rows x T={CELL['T']}, K={CELL['K']}, 1 epoch", "",
+              "| backbone | head | fork | GPU-h per cell | $ per cell (batch) | max micro-batch | feasible |",
+              "|---|---|---|---|---|---|---|"]
     for c in rep["cells"]:
-        lines.append(f"| {c['backbone']} | {c['head']} | {c['gpu_hours']:.2f} | {c['usd_batch']:.2f} | {c['max_micro_batch']} |")
+        lines.append(f"| {c['backbone']} | {c['head']} | {c['fork_mode'] or ''} | {c['gpu_hours']:.2f} | "
+                     f"{c['usd_batch']:.2f} | {c['max_micro_batch']} | {'y' if c['feasible'] else 'NO'} |")
+    lines += ["", "| backbone | LoRA params (r=256) | LoRA optimizer GB |", "|---|---|---|"]
+    for n, b in rep["backbones"].items():
+        lines.append(f"| {n} | {b['lora_params_r256'] / 1e6:.0f}M | {b['lora_opt_gb_r256']:.1f} |")
     return "\n".join(lines)
 
 

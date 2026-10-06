@@ -102,12 +102,12 @@ def test_wire_answers_through_decide_schema(bb):
 def test_more_than_255_options_rejected():
     t = TypedOutput(8)
     with pytest.raises(ValueError):
-        t(torch.zeros(1, 256), ["choice"], torch.ones(1, 256, dtype=torch.bool), torch.zeros(1, 256, 8))
+        t(torch.zeros(1, 256), ["choice"], [256], torch.zeros(1, 256, 8))
 
 
 def test_choice_with_255_options_ok():
     t = TypedOutput(8)
-    lp = t(torch.randn(1, 255), ["choice"], torch.ones(1, 255, dtype=torch.bool), torch.zeros(1, 255, 8))
+    lp = t(torch.randn(1, 255), ["choice"], [255], torch.zeros(1, 255, 8))
     assert torch.isclose(lp.exp().sum(), torch.tensor(1.0), atol=1e-5)
 
 
