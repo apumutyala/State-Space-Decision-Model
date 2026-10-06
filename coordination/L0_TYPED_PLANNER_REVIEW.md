@@ -11,3 +11,7 @@ Independent Track L adversarial review reproduced two defects in draft d10ba39: 
 Dependencies: contract #4, fixture source 2fe814a in #5, D adapter #6 (smoke source pinned by receipt), kernel e1dd16b in #10, renderer a361de9 in #11. D's unresolved error handling remains a separate cross-review blocker. Merge dependencies before this PR. For pre-merge reproduction copy their files without overwriting this PR's planner/bridge/test files. Actual dependency file hashes are in the receipt. The development worktree is preserved; this isolated publication branch starts at agent-main.
 
 This initial planner expresses reads, explanations of reads, comparisons and registered Ask requests. It does not yet search arbitrary compositional graphs, provide rich language, or meet the L0 learned gates. Those gaps need model experiments after CPU proofs merge and the spend gate is acknowledged.
+
+## Adapter v0.1 integration revision
+
+The bridge now pins the v0.1 request/response envelope, provenance-free fingerprint algorithm and direct question/option limits against D source `0a30e7b`. Full-domain policy-stage validation matches that version. A host policy restriction is explicitly unsupported by the initial planner until a trusted per-slot mapping exists; it cannot be silently dropped. Independent recheck found and verified that preflight fix. Current L0 emits no provenance. Historical v0 receipts remain version-scoped; the new receipt supplies the current integration evidence. The adapter actual-forward cap finding remains a D-side cross-review item.

@@ -13,6 +13,8 @@ import re
 from typing import Any
 
 SERIALIZATION_REF = "ssdm.track_l_state.v0.1"
+DECISION_SCHEMA = "ssdm.decide.v0.1"
+FINGERPRINT_ALGORITHM = "ssdm.request_fingerprint.v0"
 MAX_D_OPTIONS = 255
 
 
@@ -218,7 +220,7 @@ def audience_state(task_input: str, host: dict[str, Any], catalog: dict[str, Any
 
 
 def legacy_request_fingerprint(request: dict[str, Any]) -> str:
-    """Pinned D v0 fingerprint over the actual legacy state/questions wire."""
+    """D v0 provenance-free hash, explicitly retained by the reviewed v0.1 wire."""
     questions = {}
     for qid, q in request["questions"].items():
         questions[str(qid)] = {
@@ -247,6 +249,10 @@ def decision_request(*, task_input: str, host: dict[str, Any], catalog: dict[str
         raise BridgeError("invalid_request")
     if len(options) > limits["max_options_per_question"]:
         raise BridgeError("options_exceeded")
+    if host.get("policy_restriction") is not None:
+        # This planner has no trusted mapping from a logical restriction to
+        # its dynamically generated slot/question IDs.
+        raise BridgeError("policy_restriction_unsupported")
     if state_handle is not None or host.get("state_handle") is not None:
         raise BridgeError("provider_state_forbidden")
     state = audience_state(task_input, host, catalog)
@@ -263,7 +269,11 @@ def decision_request(*, task_input: str, host: dict[str, Any], catalog: dict[str
     if supplied_state is not None and supplied_state != state:
         raise BridgeError("state_mismatch")
     hlimits = host["limits"]
-    dlimits: dict[str, int] = {"max_choices": 1, "max_program_nodes": limits["max_program_nodes"]}
+    dlimits: dict[str, int] = {
+        "max_questions": limits["max_questions"],
+        "max_options_per_question": limits["max_options_per_question"],
+        "max_program_nodes": limits["max_program_nodes"],
+    }
     for key in ("max_input_tokens", "max_inference_calls", "deadline_ms"):
         if key in hlimits:
             value = hlimits[key]
@@ -276,7 +286,7 @@ def decision_request(*, task_input: str, host: dict[str, Any], catalog: dict[str
         "state": state,
         "questions": {question_id: {"type": "choice", "instructions": question, "criteria": options}},
         "ssdm": {
-            "schema": "ssdm.decide.v0",
+            "schema": DECISION_SCHEMA,
             "request_id": request_id,
             "parent_revision": parent_revision,
             "context_ref": host["context_ref"],

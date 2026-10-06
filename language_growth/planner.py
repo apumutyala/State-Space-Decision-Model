@@ -17,10 +17,17 @@ from typing import Any, Callable
 
 from .kernel import check_program
 from .parent_bridge import (
-    BridgeError, SERIALIZATION_REF, audience_state, decision_request,
+    BridgeError, DECISION_SCHEMA, FINGERPRINT_ALGORITHM, SERIALIZATION_REF,
+    audience_state, decision_request,
     legacy_request_fingerprint, planner_limits,
 )
 from .realize import render_checked
+
+_RESPONSE_ENVELOPE_KEYS = {
+    "schema", "request_id", "status", "error", "abstention", "raw_probabilities",
+    "served_probabilities", "served_config", "proposed_evidence_refs", "state_handle",
+    "diagnostics", "policy_conditioned_probabilities", "attribution",
+}
 
 
 class PlannerFailure(Exception):
@@ -112,10 +119,19 @@ def _check_stages(env: dict[str, Any], request: dict[str, Any], qid: str,
         policy = policy_map[qid]
         if (not isinstance(allowed, list) or not allowed or any(not isinstance(x, str) for x in allowed)
                 or len(allowed) != len(set(allowed)) or not set(allowed) <= ids
-                or set(policy) != {"probabilities", "allowed", "excluded_served_mass", "note"}
+                or set(policy) != {"probabilities", "allowed", "domain", "restriction_id",
+                                   "excluded_served_mass", "status", "note"}
                 or not isinstance(policy["allowed"], list)
                 or any(not isinstance(x, str) for x in policy["allowed"])
-                or sorted(policy["allowed"]) != sorted(allowed)):
+                or policy["allowed"] != sorted(allowed)
+                or policy["domain"] != "all_supplied_options (zero on excluded)"
+                or not isinstance(policy["note"], str)):
+            raise PlannerFailure("provider_error", "invalid_probabilities")
+        expected_restriction_id = hashlib.sha256(json.dumps(
+            {"policy_ref": request["ssdm"].get("policy_ref"), "question": qid,
+             "allowed": sorted(allowed)}, ensure_ascii=False, separators=(",", ":"),
+            sort_keys=True).encode("utf-8")).hexdigest()
+        if policy["restriction_id"] != expected_restriction_id:
             raise PlannerFailure("provider_error", "invalid_probabilities")
         mass = math.fsum(served[x] for x in allowed)
         excluded = policy["excluded_served_mass"]
@@ -126,17 +142,21 @@ def _check_stages(env: dict[str, Any], request: dict[str, Any], qid: str,
         if not math.isfinite(excluded_number) or abs(excluded_number - (1 - mass)) > 1e-9:
             raise PlannerFailure("provider_error", "invalid_probabilities")
         if mass <= 0:
-            if policy["probabilities"] is not None:
+            if policy["status"] != "unavailable_zero_served_mass" or policy["probabilities"] is not None:
                 raise PlannerFailure("provider_error", "invalid_probabilities")
             stages["policy_conditioned"] = {"available": False, "allowed": sorted(allowed),
-                                            "excluded_served_mass": excluded}
+                                            "excluded_served_mass": excluded,
+                                            "restriction_id": expected_restriction_id}
         else:
-            conditioned = _probabilities(policy["probabilities"], set(allowed))
-            if conditioned is None or any(abs(conditioned[x] - served[x] / mass) > 1e-9 for x in allowed):
+            conditioned = _probabilities(policy["probabilities"], ids)
+            if (policy["status"] != "ok" or conditioned is None
+                    or any(abs(conditioned[x] - (served[x] / mass if x in allowed else 0.0)) > 1e-9
+                           for x in ids)):
                 raise PlannerFailure("provider_error", "invalid_probabilities")
             stages["policy_conditioned"] = {"available": True, "candidate_set_id": candidate_set_id,
-                                            "domain": sorted(allowed), "allowed": sorted(allowed),
+                                            "domain": sorted(ids), "allowed": sorted(allowed),
                                             "excluded_served_mass": excluded,
+                                            "restriction_id": expected_restriction_id,
                                             "transformation": "host_policy_restriction"}
     elif restriction:
         raise PlannerFailure("provider_error", "invalid_probabilities")
@@ -228,8 +248,10 @@ class _Session:
             raise PlannerFailure("precondition_failed", exc.code) from None
         step = {
             "slot": slot, "repair": repair, "request_id": rid,
+            "decision_schema": DECISION_SCHEMA,
             "serialization_ref": SERIALIZATION_REF, "state_sha256": state_digest,
             "request_fingerprint": legacy_request_fingerprint(request),
+            "request_fingerprint_algorithm": FINGERPRINT_ALGORITHM,
             "options": dict(options), "selected_id": None,
             "status": "invoked", "forward_calls": None,
         }
@@ -260,6 +282,12 @@ class _Session:
                 self.forward_calls += diagnostics["inference_calls"]
         else:
             self.forward_calls = None
+        if set(env) - _RESPONSE_ENVELOPE_KEYS:
+            step["status"] = "invalid_response"
+            raise PlannerFailure("provider_error", "invalid_response")
+        if env.get("schema") != DECISION_SCHEMA:
+            step["status"] = "schema_mismatch"
+            raise PlannerFailure("provider_error", "schema_mismatch")
         step["status"] = env.get("status")
         if env.get("status") != "ok":
             reason = env.get("status")
@@ -270,6 +298,10 @@ class _Session:
         if (env.get("request_id") != rid or not isinstance(diagnostics, dict)
                 or diagnostics.get("revision_id") != self.parent_revision
                 or diagnostics.get("request_fingerprint") != step["request_fingerprint"]
+                or diagnostics.get("request_fingerprint_algorithm") != FINGERPRINT_ALGORITHM
+                or not isinstance(diagnostics.get("provenance"), dict)
+                or diagnostics["provenance"].get("supplied") is not False
+                or diagnostics["provenance"].get("applied") is not False
                 or env.get("state_handle") is not None):
             step["status"] = "identity_mismatch"
             raise PlannerFailure("provider_error", "identity_mismatch")
@@ -278,7 +310,8 @@ class _Session:
             step["status"] = "invalid_response"
             raise PlannerFailure("provider_error", "invalid_response")
         answer = answers[qid]
-        if not isinstance(answer, dict) or answer.get("type") != "choice":
+        if (not isinstance(answer, dict) or set(answer) != {"type", "choice", "confidence", "probabilities"}
+                or answer.get("type") != "choice"):
             step["status"] = "invalid_response"
             raise PlannerFailure("provider_error", "invalid_response")
         try:
