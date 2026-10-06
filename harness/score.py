@@ -8,7 +8,12 @@ statistics over clusters with weight 1 reproduces the official value (checked in
 summing with multinomial bootstrap weights gives a cluster-bootstrap replicate in one
 matrix product, which is what `harness.bootstrap` does. Every branch below names the kit
 code path it mirrors; any change to the kit at a new commit must be re-checked by
-`tests/test_scorer_parity.py`.
+`tests/test_scorer.py`.
+
+Statistics are built per kit group (needed for the "linked case complete" rule) and then summed
+into source cases (`harness.cases`), which are the bootstrap clusters: at least as coarse as
+the kit's own clustering (POP909 songs, cfcolor users, BPoMP poems) and coarser wherever rows
+share a contest, trial, event, rater or identical payload.
 """
 
 import collections
@@ -99,6 +104,18 @@ class Bench:
         self.S = np.asarray(stats, dtype=np.float64).reshape(len(clusters), -1)
         self.fn = fn
         self.kind = kind
+
+    def collapse(self, cluster_of):
+        """Sum group rows of S into coarser clusters; cluster order = first appearance."""
+        order, index = [], {}
+        for g in self.clusters:
+            c = cluster_of(g)
+            if c not in index:
+                index[c] = len(order)
+                order.append(c)
+        S = np.zeros((len(order), self.S.shape[1]))
+        np.add.at(S, np.array([index[cluster_of(g)] for g in self.clusters], dtype=int), self.S)
+        return Bench(self.n, order, S, self.fn, self.kind)
 
     def value(self, T=None):
         """T: (B, d) summed statistics; default = plain sum (the point estimate)."""
@@ -411,8 +428,10 @@ def _added_bench(n, rows, results, chance):
     return Bench(n, clusters, S, fn, "added")
 
 
-def decompose(rows, results):
-    """{catalog_id: Bench} for every index benchmark present in `rows`."""
+def decompose(rows, results, clusters="case"):
+    """{catalog_id: Bench} for every index benchmark present in `rows`.
+
+    clusters="case" (default): bootstrap clusters are source cases; "group": kit group ids."""
     s = spec()
     baselines = chance_baselines()
     by = collections.defaultdict(list)
@@ -431,6 +450,13 @@ def decompose(rows, results):
             else:
                 chance = s["chance"][str(n)]["chance"] if str(n) in s["chance"] else 0.0
                 out[n] = _display_bench(n, rs, results, chance)
+    if clusters == "case":
+        from harness.cases import case_ids
+
+        ids = case_ids(rows)
+        out = {n: b.collapse(lambda g, n=n: ids[(n, g)]) for n, b in out.items()}
+    elif clusters != "group":
+        raise ValueError(clusters)
     return out
 
 

@@ -1,8 +1,12 @@
 """Deterministic, stratified, disjoint DEV / TEST slices of the 0.2.1 index rows.
 
-Unit of sampling: a linked case group (catalog_id, group_id). Linked cases (ToolRet/BRIGHT
-chunks, BFCL/SATA multi-field cases, ACOS reviews) only score when every linked request
-succeeded, so groups are never split across slices.
+Unit of sampling: a *source case* (`harness.cases`): the connected component of rows that share
+a kit group, a source key (contest, trial, event, song, rater, HotpotQA question, ...), a
+byte-identical payload or a byte-identical non-trivial state. No source case straddles DEV
+and TEST, so identical payloads are deduplicated across slices by construction. A case larger
+than `max_case_share` (default 25%) of its benchmark's slice quota cannot enter either slice
+and stays in the pool (NLI4CT trial chains and ForecastBench joint-event chains); this keeps
+slice sizes on target at the cost of under-sampling the most interlinked sources.
 
 Allocation:
 1. Per area, a row target (`area_target`, default 2,400) is spread equally over the
@@ -11,9 +15,10 @@ Allocation:
    same quota; at least 10% of every benchmark stays in an unused pool.
 2. Inside a benchmark, the quota is split over request-length bins in proportion to the
    rows in each bin (largest remainder).
-3. Inside a (benchmark, length-bin) stratum, groups are ordered by
-   sha256(f"{seed}:{catalog_id}:{group_id}"); TEST takes groups from the front until its
-   row quota is met, DEV takes the next groups.
+3. Inside a (benchmark, length-bin) stratum (bin = longest request of the case), cases are
+   ordered by sha256(f"{seed}:{catalog_id}:{case_id}"); TEST takes cases from the front until
+   its row quota is met, DEV takes the next cases.
+4. Slice rows and manifests are ordered by run_id, independent of loader order.
 
 Benchmarks missing from the local build (HLE is gated) are allocated with their published
 row count, so adding them later does not move any other benchmark's slice.
@@ -23,6 +28,7 @@ import collections
 import hashlib
 import json
 
+from harness import cases as cases_mod
 from harness import config
 from harness.suite import area_of, index_ids, row_sha256, spec
 
@@ -37,13 +43,6 @@ def group_key(row):
 
 def priority(seed, catalog_id, group_id):
     return hashlib.sha256(f"{seed}:{catalog_id}:{group_id}".encode()).hexdigest()
-
-
-def collect_groups(rows):
-    groups = collections.OrderedDict()
-    for r in rows:
-        groups.setdefault(group_key(r), []).append(r)
-    return groups
 
 
 def group_bin(rows):
@@ -93,24 +92,34 @@ def quotas(sizes, area_target, cap):
     return out
 
 
-def build(rows, seed=config.SLICE_SEED, area_target=2400, cap=0.45):
-    """Return {"test": [...rows], "dev": [...rows]} plus the allocation table."""
+def build(rows, seed=config.SLICE_SEED, area_target=2400, cap=0.45, max_case_share=0.25):
+    """Return ({"test": [...rows], "dev": [...rows]}, allocation table)."""
     ids = set(index_ids())
-    groups = collect_groups(r for r in rows if r["_evaluation"]["catalog_id"] in ids)
+    rows = [r for r in rows if r["_evaluation"]["catalog_id"] in ids]
+    case_of = cases_mod.case_of(rows)
+    by_case = collections.OrderedDict()
+    for r in rows:
+        by_case.setdefault((r["_evaluation"]["catalog_id"], case_of(r)), []).append(r)
     by_bench = collections.defaultdict(list)
-    for key, rs in groups.items():
-        by_bench[key[0]].append((key[1], rs))
+    for (n, cid), rs in by_case.items():
+        by_bench[n].append((cid, rs))
     sizes = {b: sum(len(rs) for _, rs in by_bench[b]) if b in by_bench else PUBLISHED_ROWS.get(b, 0) for b in ids}
     q = quotas(sizes, area_target, cap)
     out = {"test": [], "dev": []}
     table = {}
     for b in sorted(by_bench):
+        limit = max(1, int(max_case_share * q[b]))
         strata = collections.defaultdict(list)
-        for gid, rs in by_bench[b]:
-            strata[group_bin(rs)].append((priority(seed, b, gid), gid, rs))
+        too_big = 0
+        for cid, rs in by_bench[b]:
+            if len(rs) > limit:
+                too_big += len(rs)
+                continue
+            strata[group_bin(rs)].append((priority(seed, b, cid), cid, rs))
         bin_rows = {k: sum(len(rs) for _, _, rs in v) for k, v in strata.items()}
         per_bin = largest_remainder(q[b], bin_rows)
         taken = {"test": collections.Counter(), "dev": collections.Counter()}
+        cases_taken = collections.Counter()
         for k in sorted(strata):
             ordered = sorted(strata[k])
             i = 0
@@ -121,15 +130,18 @@ def build(rows, seed=config.SLICE_SEED, area_target=2400, cap=0.45):
                     out[name].extend(rs)
                     n += len(rs)
                     i += 1
+                    cases_taken[name] += 1
                 taken[name][k] = n
-        table[b] = {"rows": sizes[b], "quota": q[b], "bins": dict(sorted(bin_rows.items())), "test": dict(taken["test"]), "dev": dict(taken["dev"])}
+        table[b] = {"rows": sizes[b], "cases": len(by_bench[b]), "quota": q[b], "max_case_rows": limit, "rows_in_oversized_cases": too_big, "bins": dict(sorted(bin_rows.items())), "test": dict(taken["test"]), "dev": dict(taken["dev"]), "test_cases": cases_taken["test"], "dev_cases": cases_taken["dev"]}
     for b in ids - set(by_bench):
         table[b] = {"rows": sizes[b], "quota": q[b], "missing_locally": True}
+    for name in out:
+        out[name].sort(key=lambda r: r["_evaluation"]["run_id"])
     return out, table
 
 
 def manifest_entries(rows):
-    for r in rows:
+    for r in sorted(rows, key=lambda r: r["_evaluation"]["run_id"]):
         e = r["_evaluation"]
         yield {
             "run_id": e["run_id"],
@@ -159,10 +171,13 @@ def summarize(rows):
         by_bin[lb] += 1
         by_area_bin[a][lb] += 1
         groups.add((e["catalog_id"], str(e["group_id"])))
+    case_of = cases_mod.case_of(rows)
+    n_cases = len({(r["_evaluation"]["catalog_id"], case_of(r)) for r in rows})
     order = [a["id"] for a in spec()["areas"]]
     return {
         "rows": len(rows),
         "groups": len(groups),
+        "source_cases": n_cases,
         "benchmarks": len(by_bench),
         "by_area": {a: by_area[a] for a in order},
         "by_length_bin": {b: by_bin[b] for b in config.LENGTH_BIN_LABELS},
@@ -195,14 +210,14 @@ def read_manifest(path):
 def select(rows, manifest):
     """Materialise a slice from the suite and check every row hash against the manifest."""
     want = {m["run_id"]: m for m in manifest}
-    out = []
+    found = {}
     for r in rows:
         m = want.get(r["_evaluation"]["run_id"])
         if m is None:
             continue
         if row_sha256(r) != m["row_sha256"]:
             raise ValueError(f"row hash mismatch for {m['run_id']}")
-        out.append(r)
-    if len(out) != len(want):
-        raise ValueError(f"manifest lists {len(want)} rows, suite provided {len(out)}")
-    return out
+        found[m["run_id"]] = r
+    if len(found) != len(want):
+        raise ValueError(f"manifest lists {len(want)} rows, suite provided {len(found)}")
+    return [found[m["run_id"]] for m in manifest]

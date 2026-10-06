@@ -85,3 +85,15 @@ def test_smooth_ece_handles_boundary_mass():
     y = np.r_[np.ones(3000), np.zeros(2000)]
     assert calibration.binned_ece(conf, y)[0] == pytest.approx(0.4)
     assert calibration.smooth_ece(conf, y)["smece"] == pytest.approx(0.4, abs=0.01)
+
+
+def test_case_clusters_are_coarser_and_keep_the_point_estimate(dev_rows):
+    res = predictors.predict(dev_rows, "noisy", seed=9, acc=0.6)
+    g = score.decompose(dev_rows, res, clusters="group")
+    c = score.decompose(dev_rows, res, clusters="case")
+    assert score.point(g)["index"] == pytest.approx(score.point(c)["index"], abs=1e-9)
+    assert sum(len(b.clusters) for b in c.values()) < sum(len(b.clusters) for b in g.values())
+    # POP909 and cfcolor: never finer than the kit's song / user clustering
+    for n, key in ((22, "song_id"), (23, "user_id")):
+        if n in c:
+            assert len(c[n].clusters) <= len({r["metadata"][key] for r in dev_rows if r["_evaluation"]["catalog_id"] == n})

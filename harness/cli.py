@@ -18,7 +18,7 @@ import os
 import sys
 import time
 
-from harness import bootstrap, calibration, config, mde, predictors, score, slicing
+from harness import bootstrap, calibration, cases, config, mde, predictors, score, slicing
 from harness.suite import dump_json, file_hashes, index_rows, load_suite, read_rows, verify, write_rows
 
 DEV_ROWS = config.SLICE_ROWS_DIR / "dev-rows.jsonl.gz"
@@ -28,9 +28,32 @@ def manifest_path(name):
     return config.MANIFEST_DIR / f"{name}-manifest.jsonl.gz"
 
 
+UNSEAL_LOG = config.REPO_ROOT / "receipts" / "test-unseal-log.jsonl"
+
+
+def log_unseal(prereg):
+    """Every TEST load is appended to a committed log (who/when/why). The seal is procedural:
+    anyone with the suite can read the rows, so the log is what reviewers check."""
+    import datetime
+    import getpass
+    import subprocess
+
+    try:
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=config.REPO_ROOT, text=True).strip()
+    except Exception:
+        head = None
+    UNSEAL_LOG.parent.mkdir(parents=True, exist_ok=True)
+    entry = {"utc": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"), "user": getpass.getuser(), "commit": head, "prereg": prereg, "argv": sys.argv}
+    with UNSEAL_LOG.open("a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(entry) + "\n")
+    print(f"TEST unsealed; logged to {UNSEAL_LOG} -- commit that file", file=sys.stderr)
+
+
 def load_slice(name):
-    if name == "test" and os.environ.get("SSDM_UNSEAL_TEST") != "1":
-        sys.exit("TEST slice is sealed; set SSDM_UNSEAL_TEST=1 only for a pre-registered final evaluation.")
+    if name == "test":
+        if os.environ.get("SSDM_UNSEAL_TEST") != "1" or not os.environ.get("SSDM_PREREG"):
+            sys.exit("TEST slice is sealed. Unseal only for a pre-registered final evaluation: set SSDM_UNSEAL_TEST=1 and SSDM_PREREG=<path or URL of the committed pre-registration>.")
+        log_unseal(os.environ["SSDM_PREREG"])
     manifest = slicing.read_manifest(manifest_path(name))
     if name == "dev" and DEV_ROWS.exists():
         rows = read_rows(DEV_ROWS)
@@ -57,8 +80,8 @@ def cmd_slice(a):
     t = time.time()
     suite = load_suite()
     rows = list(index_rows(suite))
-    slices, table = slicing.build(rows, seed=a.seed, area_target=a.area_target, cap=a.cap)
-    out = {"seed": a.seed, "area_target": a.area_target, "cap": a.cap, "kit_commit": config.KIT_COMMIT, "edition": config.EDITION, "suite_files": file_hashes(suite), "index_rows_available": len(rows)}
+    slices, table = slicing.build(rows, seed=a.seed, area_target=a.area_target, cap=a.cap, max_case_share=a.max_case_share)
+    out = {"seed": a.seed, "area_target": a.area_target, "cap": a.cap, "max_case_share": a.max_case_share, "kit_commit": config.KIT_COMMIT, "edition": config.EDITION, "suite_files": file_hashes(suite), "index_rows_available": len(rows)}
     for name in ("dev", "test"):
         out[name] = {"manifest": manifest_path(name).name, "manifest_sha256": slicing.write_manifest(manifest_path(name), slices[name]), **slicing.summarize(slices[name])}
     dev_ids = {r["_evaluation"]["run_id"] for r in slices["dev"]}
@@ -67,11 +90,13 @@ def cmd_slice(a):
     test_g = {slicing.group_key(r) for r in slices["test"]}
     out["disjoint_rows"] = not (dev_ids & test_ids)
     out["disjoint_groups"] = not (dev_g & test_g)
+    out["source_overlap_dev_test"] = cases.overlap_report(slices["dev"], slices["test"])
+    out["disjoint_source_cases"] = not out["source_overlap_dev_test"]
     out["allocation"] = {str(k): v for k, v in sorted(table.items())}
     dump_json(config.MANIFEST_DIR / "slices.json", out)
     config.SLICE_ROWS_DIR.mkdir(parents=True, exist_ok=True)
     write_rows(DEV_ROWS, slices["dev"])
-    print(json.dumps({k: out[k] for k in ("disjoint_rows", "disjoint_groups")} | {n: {"rows": out[n]["rows"], "by_area": out[n]["by_area"]} for n in ("dev", "test")}, indent=1))
+    print(json.dumps({k: out[k] for k in ("disjoint_rows", "disjoint_groups", "disjoint_source_cases", "source_overlap_dev_test")} | {n: {"rows": out[n]["rows"], "by_area": out[n]["by_area"]} for n in ("dev", "test")}, indent=1))
     print(f"done in {time.time() - t:.1f}s", file=sys.stderr)
 
 
@@ -133,6 +158,7 @@ def main(argv=None):
     s.add_argument("--seed", type=int, default=config.SLICE_SEED)
     s.add_argument("--area-target", type=int, default=2400)
     s.add_argument("--cap", type=float, default=0.45)
+    s.add_argument("--max-case-share", type=float, default=0.25)
     for name in ("score", "ece"):
         s = sub.add_parser(name)
         s.add_argument("--results", required=True)
