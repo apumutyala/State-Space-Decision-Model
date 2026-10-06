@@ -155,3 +155,5 @@ The previously quoted "AUROC 0.96 / 0.91" was seed 0, the best of the seeds trie
   - `python -m safety_eval.controlsafe_arms --out DIR [--arms g15,persistence,gramian,g4snap,g14,g16]`
   - `run_guarantees_smoke --controlsafe all`
 - **Receipt:** `receipts/2026-10-06-D-controlsafe-cpu/controlsafe.json`.
+
+**G16 execution contract (PR #61 review, N7/N8).** The G16 veto binds the **policy-conditioned stage** (`ssdm` envelope `policy_restriction` → conditioned probabilities and the certificate's decision). It does not bind the legacy top-level `answers` field, which reports the unvetoed served distribution. The `answers` choice can therefore be a vetoed option. Hosts must execute the conditioned stage (the G2(d) "host re-masks" contract, as `safety_eval`'s bridge already does) and fail closed when it is absent. If the allowed set has zero served mass, the adapter fails closed (`unavailable_zero_served_mass`). Any certificate decision reported alongside such a response is not executable.
