@@ -200,9 +200,15 @@ def _as_options(items: list[Any], describe: Callable[[Any], str], prefix: str) -
 class _Session:
     def __init__(self, task_input: str, host: dict[str, Any], catalog: dict[str, Any],
                  provider: Any, model: str, parent_revision: str,
-                 expected_served_config: dict[str, Any]):
+                 expected_served_config: dict[str, Any], candidate_presentation: str = "reference"):
         self.task_input, self.host, self.catalog = task_input, host, catalog
         self.provider, self.model, self.parent_revision = provider, model, parent_revision
+        if candidate_presentation not in ("reference", "grounded"):
+            raise PlannerFailure("precondition_failed", "invalid_candidate_presentation")
+        self.candidate_presentation = candidate_presentation
+        # Read the same validated audience snapshot used in every request. Never
+        # consult catalog records outside that snapshot to enrich an option.
+        self.visible_state = json.loads(audience_state(task_input, host, catalog))
         if (not isinstance(expected_served_config, dict)
                 or set(expected_served_config) != {"calibration", "policy_masking"}
                 or not isinstance(expected_served_config["calibration"], dict)
@@ -222,6 +228,20 @@ class _Session:
         self.forward_calls: int | None = 0
         self.run_id = uuid.uuid4().hex
         self.attempt_trace_start = 0
+
+    def describe_operand(self, item: dict[str, str]) -> str:
+        if item.get("kind") == "constant":
+            description = f"Host constant {item['constant_ref']}"
+            data = self.visible_state["query_constants"][item["constant_ref"]]
+        else:
+            description = f"Fact {item['record_ref']} field {item['field']}"
+            record = next(rec for rec in self.visible_state["records"]
+                          if rec["record_ref"] == item["record_ref"])
+            data = {"entity": record["entity_ref"], "field": item["field"].replace("_", " "),
+                    **record["fields"][item["field"]]}
+        if self.candidate_presentation == "grounded":
+            description += "; visible data " + json.dumps(data, sort_keys=True, ensure_ascii=True)
+        return description
 
     def choose(self, slot: str, question: str, options: dict[str, str], *, repair: bool) -> str:
         if not options:
@@ -372,14 +392,17 @@ class _Session:
 
         def choose_operand(slot: str) -> dict[str, str]:
             opts, binding = _as_options(
-                operands,
-                lambda x: (f"Fact {x['record_ref']} field {x['field']}" if x["kind"] == "fact"
-                           else f"Host constant {x['constant_ref']}"), "v",
+                operands, self.describe_operand, "v",
             )
-            return binding[self.choose(slot, f"Select the {slot} typed operand.", opts, repair=feedback is not None)]
+            question = f"Select the {slot} typed operand."
+            if self.candidate_presentation == "grounded":
+                order = "first" if slot == "left" else "second"
+                question += (f" Select the requested field of the {order} entity named in the user's comparison,"
+                             " preserving the user's entity order. Use entity and field, not option position.")
+            return binding[self.choose(slot, question, opts, repair=feedback is not None)]
 
         if kind in ("read", "explain_read"):
-            opts, binding = _as_options(facts, lambda x: f"Fact {x['record_ref']} field {x['field']}", "f")
+            opts, binding = _as_options(facts, self.describe_operand, "f")
             fact = binding[self.choose("fact", "Select the fact to assert.", opts, repair=feedback is not None)]
             nodes = [{"id": "n1", "op": "ReadFact", **fact},
                      {"id": "n2", "op": "Assert", "proposition": "n1"}]
@@ -392,7 +415,13 @@ class _Session:
             right = choose_operand("right")
             relations = list(registry["comparators"])
             opts, binding = _as_options(relations, lambda x: f"Relation {x}", "r")
-            relation = binding[self.choose("relation", "Select the comparison relation.", opts, repair=feedback is not None)]
+            question = "Select the comparison relation."
+            if self.candidate_presentation == "grounded":
+                question += (f" Selected LEFT: {self.describe_operand(left)}."
+                             f" Selected RIGHT: {self.describe_operand(right)}."
+                             " Which relation holds for LEFT relative to RIGHT?"
+                             " greater_than means LEFT > RIGHT; less_than means LEFT < RIGHT; equal means LEFT = RIGHT.")
+            relation = binding[self.choose("relation", question, opts, repair=feedback is not None)]
 
             def operand(item: dict[str, str]) -> dict[str, str]:
                 if item["kind"] == "constant":
@@ -422,16 +451,20 @@ class _Session:
 def plan_checked_answer(task_input: str, host: dict[str, Any], catalog: dict[str, Any],
                         provider: Any, *, model: str, parent_revision: str,
                         expected_served_config: dict[str, Any],
-                        allow_repair: bool = False) -> PlannerResult:
+                        allow_repair: bool = False,
+                        candidate_presentation: str = "reference") -> PlannerResult:
     """Run one bounded planning attempt, optionally one or more declared repairs.
 
     ``provider`` can be a callable or an object with ``decide(request)``. Oracle
     and replay providers are test tools; this function never claims learning.
+    ``grounded`` repeats audience-visible entity/typed-value data in candidate
+    descriptions and selected operands in the relation question. It preserves
+    the candidate domain and never checks candidate truth before selection.
     """
     session: _Session | None = None
     try:
         session = _Session(task_input, host, catalog, provider, model, parent_revision,
-                           expected_served_config)
+                           expected_served_config, candidate_presentation)
         facts, operands, obligations = _candidate_sets(host, catalog, task_input)
         max_repairs = session.limits["max_repair_attempts"] if allow_repair else 0
         feedback = None
