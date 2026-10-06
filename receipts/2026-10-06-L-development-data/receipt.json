@@ -26,5 +26,9 @@
   "runs": 1,
   "raw_output": "tests.txt",
   "raw_predictions": null,
-  "scope": "synthetic DEVELOPMENT data integrity only; no learned or held-out result"
+  "scope": "synthetic DEVELOPMENT data integrity only; no learned or held-out result",
+  "dependency_commits": {
+    "kernel_types": "e1dd16b",
+    "parent_bridge": "821b139"
+  }
 }
