@@ -260,41 +260,102 @@ def test_eval_card_reports_certificates_and_capability_pair(tmp_path):
 
 
 # ------------------------------------------------------------------------------------------- decide backend
-def test_decide_backend_serves_g16_with_certificate_fields():
-    from decide import Decider, versions
+def _decide_setup(seed=4):
+    from decide import versions
     from decide.provenance import PROVENANCE_SCHEMA
-    from heads.decide_backend import DecisionModelBackend
-    from train.data import TOY_TEMPLATE
 
-    model, _ = _model("q9af", seed=4)
+    model, _ = _model("q9af", seed=seed)
     with torch.no_grad():
         model.head.evidence.W_e.weight.normal_(0, 0.5)
-        model.head.beta.copy_(torch.tensor([0.0, 3.0, 0.0] + [0.0] * 5))  # the judge prefers b ...
+        model.head.beta.copy_(torch.tensor([0.0, 3.0, 0.0] + [0.0] * 5))  # the judge prefers b
     req = {"model": "t", "state": "Card charged twice. Escalate to the manager!",
            "questions": {"q": {"type": "choice", "instructions": INSTR, "criteria": dict(OPTS)}},
-           "ssdm": {"schema": versions.ENVELOPE_SCHEMA, "policy_restriction": {"q": ["a", "c"]},  # ... b is vetoed
+           "ssdm": {"schema": versions.ENVELOPE_SCHEMA,
                     "provenance": {"schema": PROVENANCE_SCHEMA, "default_trust": "data", "segments": {
                         "/questions/q/instructions": [{"start": 0, "end": len(INSTR), "trust": "instruction",
                                                        "origin": "host_template"}]}}}}
+    return model, req
+
+
+def _decide(model, req, k=None):
+    from decide import Decider
+    from heads.decide_backend import DecisionModelBackend
+    from train.data import TOY_TEMPLATE
+
+    dec = Decider(DecisionModelBackend(model, ENC, template=TOY_TEMPLATE, g16_certify_k=k),
+                  enable_experimental_provenance=True)
+    ss = dec.decide(copy.deepcopy(req))["ssdm"]
+    assert ss["status"] == "ok", ss.get("error")
+    return ss
+
+
+def test_decide_backend_serves_g16_with_certificate_fields():
+    """Envelope restriction: raw/served stay the model's (unvetoed) distribution, the veto is the adapter's
+    policy-conditioned stage (present, labelled), and G16's vetoed decision is exactly that stage's argmax."""
+    model, req = _decide_setup()
+    req["ssdm"]["policy_restriction"] = {"q": ["a", "c"]}  # b (the judge's favourite) is vetoed
     for k in (None, 1):
-        dec = Decider(DecisionModelBackend(model, ENC, template=TOY_TEMPLATE, g16_certify_k=k),
-                      enable_experimental_provenance=True)
-        resp = dec.decide(copy.deepcopy(req))
-        ss = resp["ssdm"]
-        assert ss["status"] == "ok", ss.get("error")
-        assert ss["raw_probabilities"]["q"]["b"] == 0.0  # structural veto inside the decision function
+        ss = _decide(model, req, k)
+        raw, served = ss["raw_probabilities"]["q"], ss["served_probabilities"]["q"]
+        assert max(raw, key=raw.get) == "b" and raw["b"] > 0  # served is NOT replaced by the conditioned stage
+        assert ss["served_config"]["policy_masking"].startswith("none")  # true: served covers every option
+        assert ss["diagnostics"]["probability_stages"]["policy_conditioned"] == "present"
+        pcp = ss["policy_conditioned_probabilities"]["q"]
+        assert pcp["status"] == "ok" and pcp["allowed"] == ["a", "c"] and pcp["probabilities"]["b"] == 0.0
         cert = ss["diagnostics"]["backend"]["g16"]["q"]
         assert cert["schema"] == G.GUARANTEE_ID and cert["vetoed"] == ["b"] and cert["decision"] in ("a", "c")
-        for f in ("margin", "rho_joint_l2", "rho_per_option_l2", "independent_of_untrusted", "radius_covers_box", "E"):
+        assert cert["veto_source"] == "ssdm.policy_restriction"
+        assert cert["decision_stage"] == "policy_conditioned_probabilities"
+        for f in ("margin", "rho_joint_l2", "rho_per_option_l2", "independent_of_untrusted", "radius_covers_box", "E",
+                  "unvetoed_logits"):
             assert f in cert
-        served = max(ss["served_probabilities"]["q"], key=ss["served_probabilities"]["q"].get)
-        assert served == cert["decision"]
+        cond = pcp["probabilities"]
+        assert max(cond, key=cond.get) == cert["decision"]  # executed stage == G16 vetoed decision
+        # conditioned stage == softmax of the unvetoed G16 logits over the allowed set (identity temperature)
+        z = torch.tensor(cert["unvetoed_logits"], dtype=torch.float64)
+        ref = torch.softmax(z[[0, 2]], -1)
+        assert cond["a"] == pytest.approx(float(ref[0]), abs=1e-6) and cond["c"] == pytest.approx(float(ref[1]), abs=1e-6)
+        assert served["b"] > 0
         if k is None:
             assert "g4_over_E" not in cert
         else:
             g4 = cert["g4_over_E"]
             assert g4["k"] == 1 and g4["decision"] == cert["decision"] and g4["p_cache_misses"] in (0, None)
             assert ss["diagnostics"]["inference_calls"] >= 1 + (g4["n_origins_evaluated"] or 0)
+
+
+def test_decide_backend_ignores_non_envelope_policy():
+    """PR #61 review B1 probe: a top-level ``policy.allowed`` (not an envelope field, never validated) must not veto.
+    Before the fix: raw a=1.0, vetoed [b, c], while the wire said "no masking" / "conditioned absent"."""
+    model, req = _decide_setup()
+    probe = copy.deepcopy(req)
+    probe["policy"] = {"allowed": {"q": ["a"]}}
+    ss = _decide(model, probe, k=1)
+    raw = ss["raw_probabilities"]["q"]
+    assert raw["b"] > 0 and raw["c"] > 0 and raw["a"] < 1.0  # no veto applied
+    assert max(raw, key=raw.get) == "b"
+    assert ss["served_config"]["policy_masking"].startswith("none")
+    assert ss["diagnostics"]["probability_stages"]["policy_conditioned"].startswith("absent")
+    assert "policy_conditioned_probabilities" not in ss
+    cert = ss["diagnostics"]["backend"]["g16"]["q"]
+    assert cert["vetoed"] == [] and cert["veto_source"] is None and cert["decision"] == "b"
+    assert cert["decision_stage"] == "served_probabilities" and cert["g4_over_E"]["decision"] == "b"
+    # same request, no top-level policy: identical served output (the field is inert on the decide path)
+    assert _decide(model, req)["raw_probabilities"] == ss["raw_probabilities"]
+    # both present: only the envelope restriction counts
+    both = copy.deepcopy(probe)
+    both["ssdm"]["policy_restriction"] = {"q": ["b", "c"]}
+    cert2 = _decide(model, both)["diagnostics"]["backend"]["g16"]["q"]
+    assert cert2["vetoed"] == ["a"] and cert2["decision"] == "b"
+
+
+def test_g16_p_gate_head_is_refused_by_the_decide_backend():
+    from heads.decide_backend import DecisionModelBackend
+
+    bb = tiny_hf_backbone("rwkv7", seed=0)
+    m = DecisionModel(TG.wrap(bb, CS), "g16", {"r": 2, "max_options": 8, "p_gate": True}, seed=0)
+    with pytest.raises(ValueError):
+        DecisionModelBackend(m, ENC)
 
 
 # ------------------------------------------------------------------------------------------- configs / cost

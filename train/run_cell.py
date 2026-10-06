@@ -305,7 +305,9 @@ def main(argv=None):
     enc = parent_encoder(parent, a.model_dir)
     from train.g16_card import make_hook as g16_hook
 
-    g16 = g16_hook(cfg, enc)  # G16 cells: certify on the safety_eval DEV requests at every eval card
+    # G16 cells: certify on the safety_eval DEV requests ONCE, after the training loop and the final card (outside
+    # max_minutes), so the G16 arm and its non-G16 pair train under the same budget (step parity); wall-clock logged
+    g16 = g16_hook(cfg, enc)
     root = Path(__file__).resolve().parents[1] / "harness" / "manifests"
     if a.guard_readiness:
         from jobs.m2_pilot.guard_ready import GuardNotReady, load_ready_guard
@@ -360,6 +362,12 @@ def main(argv=None):
             if n.endswith("lora_B"):
                 with torch.no_grad():
                     p.normal_(0.0, 0.02)
+        # trust-gated backbone: the P -> D bridges live outside bb.model; randomise them too so the smoke exercises
+        # the bridge injection on the cache fork (prefix / continuation alignment), and re-zero them afterwards
+        bridges_b = [p for n, p in getattr(bb, "bridges", torch.nn.Module()).named_parameters() if n.endswith("lora_B")]
+        with torch.no_grad():
+            for p in bridges_b:
+                p.normal_(0.0, 0.02)
         res = {}
         for mode in ("cache", "recompute"):
             bb.fork_mode = mode
@@ -379,6 +387,11 @@ def main(argv=None):
         del res
         bb.model.zero_grad(set_to_none=True)
         remove_lora(bb.model)  # training starts from the pre-registered LoRA init, not the smoke one
+        with torch.no_grad():
+            for p in bridges_b:  # bridges back to their zero init (remove_lora does not touch them)
+                p.zero_()
+            for p in getattr(bb, "bridges", torch.nn.Module()).parameters():
+                p.grad = None
         bb.fork_mode = "cache"
         reset_peak()
         if not ok:
@@ -436,7 +449,7 @@ def main(argv=None):
         resumed = tr.resume()
         if not resumed:
             tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items, 0, a.out,
-                                                                                       g16=g16, keep_units=keep))
+                                                                                       keep_units=keep))
             tr.cards[-1].pop("units", None)
         t_start = time.time()
         t_end = t_start + 60 * cfg["max_minutes"]
@@ -470,19 +483,23 @@ def main(argv=None):
                 _checkpoint_post()
             if tr.step % cfg["eval_every"] == 0:
                 tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items,
-                                                                                           tr.step, a.out, g16=g16,
+                                                                                           tr.step, a.out,
                                                                                            keep_units=keep))
                 tr.cards[-1].pop("units", None)
         if not tr.cards or tr.cards[-1]["step"] != tr.step:
             # paired cells (cfg["pair"]) keep per-item units for train.g16_card.capability_cost
             tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(
-                tr.model, eval_items, tr.step, a.out, g16=g16, keep_units=keep))
+                tr.model, eval_items, tr.step, a.out, keep_units=keep))
             tr.cards[-1].pop("units", None)
         tr.save()
         _checkpoint_post()
         cell["train"] = {"steps": tr.step, "resumed": resumed, "T_max": t_max, "cards": tr.cards,
                          "lineage": tr.lineage, "verdict": pass_rule(tr.history, tr.cards, peak(), cfg["pass_rule"])}
         save()
+        if g16 is not None:  # after the checkpoint and verdict are saved: a timeout here loses only this record
+            t_g = time.time()
+            cell["train"]["g16_safety_eval"] = {"step": tr.step, **g16(tr.model), "seconds": round(time.time() - t_g, 1)}
+            save()
     return 0
 
 

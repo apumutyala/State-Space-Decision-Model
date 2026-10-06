@@ -7,7 +7,9 @@ Card fields (``card["g16"]``, filled by ``train.evalcard.run_card`` when the mod
                radius exceeds the farthest point of the box: also sound against any text), certified-by-either rate,
                mean / median joint and per-option radii and margins. These are the m2 decision items, so there is no
                G4-over-E (no erasable-origin structure); escalation = not certified by radius or independence.
-* ``safety_eval`` (``make_hook``) ``controlsafe.g16.certify`` on the safety_eval DEV requests: certified rate
+* ``safety_eval`` (``make_hook``; ``run_cell`` runs it ONCE after training, into ``cell["train"]["g16_safety_eval"]``
+               with its wall-clock, so it never eats the pair's training budget) ``controlsafe.g16.certify`` on the
+               safety_eval DEV requests: certified rate
                (independence, no untrusted text, or G4-over-E erase-and-check) vs escalated, by reason, radii,
                origins evaluated, P-cache misses. ``verify`` additionally checks every origin against a full G16
                recompute.

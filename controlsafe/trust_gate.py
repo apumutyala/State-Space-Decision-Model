@@ -39,7 +39,8 @@ Scope and caveats (stated, not hidden):
   ``features`` refuses ``trust=None`` (fail closed).
 * Determinism: the protected features are independent of untrusted content and lengths ALWAYS (also of a
   batch-mate's untrusted content/length); they are bitwise identical for identical host-controlled batch
-  shape (B, longest trusted subsequence in the batch): the kernels' chunking and GDN's batched reductions
+  shape (number of DISTINCT trusted subsequences in the batch -- identical ones run once -- and the longest
+  one): the kernels' chunking and GDN's batched reductions
   can move the last bits when that shape changes.
 * Training scope: G15 is an INFERENCE-TIME reachability statement. LoRA is shared by both streams and is
   trained on losses that read untrusted training text, so P's function (its weights) does depend on

@@ -16,12 +16,18 @@ adapter's job (``Decider(calibration=...)``); this backend never sees evaluation
 * Non-finite logits raise (a model fault is never served as a decision).
 * ``revision()`` is computed once per backend (it hashes the frozen weights); build a new backend per
   checkpoint.
-* G16 head (``controlsafe.g16.G16DecisionHead``): the host allowed set (``ssdm.policy_restriction`` and/or
-  ``policy.allowed``) is the structural veto INSIDE the decision function. Vetoed options get the finite logit
-  ``min(allowed) - G16_VETO_GAP`` (the adapter requires finite logits; their softmax mass is exactly 0 in float64),
-  and every question's certificate fields (margin, radii, independence, radius-covers-box, E, vetoed ids; and, with
-  ``g16_certify_k``, the full ``controlsafe.g16.certify`` G4-over-E record) are returned in
-  ``diagnostics.backend["g16"][qid]``.
+* G16 head (``controlsafe.g16.G16DecisionHead``): the logits returned are the UNVETOED ``b + a.E`` (finite, every
+  supplied option), so ``raw`` / ``served`` are the model's distribution and ``served_config.policy_masking:
+  none`` stays true. The veto source is ONLY the validated envelope ``ssdm.policy_restriction``
+  (``controlsafe.g16.envelope_allowed_ids``; a top-level ``request["policy"]`` is ignored). The adapter turns it
+  into ``policy_conditioned_probabilities`` (stage ``present``); G16's vetoed decision is exactly that stage's
+  argmax: ``softmax`` of ``b + a.E`` over the allowed set (``-inf`` elsewhere) IS the served distribution
+  conditioned on the allowed set (at T = 1 the distributions are equal; with a served temperature the argmax is).
+  So for G16, executing the policy-conditioned stage == executing the vetoed decision, and the served distribution
+  is never replaced (G2(d)). Every question's certificate (computed WITH the veto: margin, radii, independence,
+  radius-covers-box, E, ``unvetoed_logits``, ``vetoed``, ``veto_source``, ``decision_stage``; with
+  ``g16_certify_k`` the full ``controlsafe.g16.certify`` G4-over-E record) is in ``diagnostics.backend["g16"][qid]``.
+  The learned P-gate (``p_gate=True``) is a model-internal mask that would make logits non-finite: refused here.
 """
 
 from __future__ import annotations
@@ -41,9 +47,6 @@ from .layout import EncodeFn, LayoutRow, build_row
 from .model import DecisionModel
 
 
-G16_VETO_GAP = 1000.0
-
-
 class DecisionModelBackend:
     name = "decision_head"
 
@@ -51,6 +54,8 @@ class DecisionModelBackend:
                  layout: str = "ordered", checkpoint: dict[str, Any] | None = None, shared_prefix: bool = True,
                  g16_certify_k: int | None = None) -> None:
         self.model = model
+        if getattr(model.head, "name", None) == "g16" and getattr(model.head, "gate", None) is not None:
+            raise ValueError("decide backend: a G16 head with the learned P-gate is not servable (non-finite logits)")
         self.g16_certify_k = g16_certify_k
         self.shared_prefix = shared_prefix
         self.encode = encode
@@ -82,14 +87,9 @@ class DecisionModelBackend:
 
     def _rows(self, request: dict[str, Any]) -> list[LayoutRow]:
         try:
-            rows = [build_row(request, qid, self.encode, template=self.template, layout=self.layout)
+            # G16: rows carry NO host allowed set (unvetoed logits); the veto is the adapter's conditioned stage
+            return [build_row(request, qid, self.encode, template=self.template, layout=self.layout)
                     for qid in request["questions"]]
-            if self._g16():
-                from controlsafe.g16 import attach_host_allowed
-
-                for r in rows:
-                    attach_host_allowed(r, request)
-            return rows
         except ControlTokenError as exc:  # before ValueError: it subclasses ValueError
             raise BackendUnsupported(exc.code, str(exc)) from exc
         except ValueError as exc:
@@ -135,12 +135,6 @@ class DecisionModelBackend:
                         extra_calls += g16diag[row.qid].get("g4_over_E", {}).get("n_origins_evaluated") or 0
             for row, lp in zip(rows, lps):
                 lp = lp[: row.n_options]
-                if self._g16():
-                    veto = ~torch.tensor(g16diag[row.qid]["allowed_mask"], dtype=torch.bool)
-                    ok = lp[~veto]
-                    if not (torch.isfinite(ok).all() and bool((lp[veto] == float("-inf")).all())):
-                        raise FloatingPointError(f"{row.qid}: non-finite G16 log-probabilities {lp.tolist()}")
-                    lp = torch.where(veto, ok.min() - G16_VETO_GAP, lp)
                 if not torch.isfinite(lp).all():
                     raise FloatingPointError(f"{row.qid}: non-finite head log-probabilities {lp.tolist()}")
                 logits[row.qid] = {oid: float(lp[k]) for k, oid in enumerate(row.option_ids)}
@@ -159,14 +153,19 @@ class DecisionModelBackend:
         from controlsafe import g16 as G
 
         head = self.model.head
-        cert = head.certificate(0)
+        ok = G.envelope_allowed_ids(request, row.qid)
+        cert = head.certificate(0, allowed=G.host_allowed_mask(request, row.qid, row.option_ids,
+                                                                G.envelope_allowed_ids))
         cert["decision"] = row.option_ids[cert["decision"]]
         cert["vetoed"] = [o for o, m in zip(row.option_ids, cert["allowed_mask"]) if not m]
+        cert["veto_source"] = "ssdm.policy_restriction" if ok is not None else None
+        cert["decision_stage"] = "policy_conditioned_probabilities" if ok is not None else "served_probabilities"
         if self.g16_certify_k is not None:
             if check_deadline is not None:
                 check_deadline()
             rec = G.certify(head, request, row.qid, self.g16_certify_k,
-                            lambda r: build_row(r, row.qid, self.encode, template=self.template, layout=self.layout))
+                            lambda r: build_row(r, row.qid, self.encode, template=self.template, layout=self.layout),
+                            allowed_ids=G.envelope_allowed_ids)
             cert["g4_over_E"] = {k: rec.get(k) for k in ("certified", "reason", "k", "n_origins_evaluated",
                                                          "p_cache_misses", "d_tokens", "changed", "decision")}
         return cert

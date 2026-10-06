@@ -39,6 +39,12 @@ canonical order and the allowed set, as host structure):
 Scope: E is computed from the D stream, so it can still be steered within its box by untrusted text. The
 guarantee is that steering is bounded, logged (``E`` is r*K numbers per decision) and certified-or-escalated,
 not that it is impossible. The capability cost against the D-head arm is ``trust_gate.capability_cost``.
+Training-time scope (as for G15): (a)-(e) are statements about the activations of a FIXED set of weights. During
+training the losses read untrusted training text through E, so the gradients reaching the judge (A, w, u, beta),
+the shared LoRA and the P -> D bridges depend on untrusted training tokens: the judge's and P's FUNCTIONS are
+shaped by untrusted training data (data poisoning is G6/G12 territory). What training cannot do is make a, b or m
+read untrusted tokens at inference: that holds for every weight setting, before and after training (tested).
+
 Training: ``G16DecisionHead`` is the ``train/`` head arm (``TrainConfig(head="g16")`` over a trust-gated backbone,
 ``DecisionModel`` dispatches rows to ``forward_rows``). The decision is ``softmax(logit)`` for EVERY question type:
 the cumulative-link ordinal output of the other heads would be a second decision function outside the certificate,
@@ -183,9 +189,21 @@ def host_allowed_ids(request: dict, qid: str) -> set[str] | None:
     return set.intersection(*sets)
 
 
-def host_allowed_mask(request: dict, qid: str, option_ids: Sequence[str]) -> torch.Tensor:
-    """Host allowed set (``host_allowed_ids``; absent -> all allowed), in row order."""
-    ok = host_allowed_ids(request, qid)
+def envelope_allowed_ids(request: dict, qid: str) -> set[str] | None:
+    """The decide-wire veto source: ONLY the validated envelope field ``request["ssdm"]["policy_restriction"][qid]``
+    (``decide.adapter._restriction`` checks qids, non-empty subsets, no duplicates before the backend runs). A
+    top-level ``request["policy"]`` is not an envelope field and is never read on the decide path (G2(a))."""
+    env = request.get("ssdm") if isinstance(request.get("ssdm"), dict) else {}
+    res = env.get("policy_restriction") or {}
+    if isinstance(res, dict) and qid in res:
+        return set(res[qid])
+    return None
+
+
+def host_allowed_mask(request: dict, qid: str, option_ids: Sequence[str],
+                      allowed_ids: Callable[[dict, str], set[str] | None] | None = None) -> torch.Tensor:
+    """Host allowed set (``allowed_ids``, default ``host_allowed_ids``; absent -> all allowed), in row order."""
+    ok = (allowed_ids or host_allowed_ids)(request, qid)
     if ok is None:
         return torch.ones(len(option_ids), dtype=torch.bool)
     return torch.tensor([o in ok for o in option_ids], dtype=torch.bool)
@@ -247,14 +265,21 @@ class G16DecisionHead(G16Head):
                          for o in outs])
         return HeadOutput(z)
 
-    def certificate(self, i: int = 0) -> dict[str, Any]:
-        """Per-decision certificate fields of row ``i`` of the last ``forward_rows`` (no recompute)."""
+    def certificate(self, i: int = 0, allowed: torch.Tensor | None = None) -> dict[str, Any]:
+        """Per-decision certificate fields of row ``i`` of the last ``forward_rows`` (no recompute). ``allowed``
+        (bool [K]) applies a host veto on top of the forward's own mask: the vetoed decision is the argmax of the
+        same ``b + a.E`` over the allowed options, i.e. the argmax of the softmax conditioned on the allowed set."""
         o = self.last_outputs[i]
-        rad = radii(o.a, o.logits, o.allowed)
+        m = o.allowed if allowed is None else (o.allowed & allowed.bool().to(o.allowed.device))
+        if not bool(m.any()):
+            raise ValueError("no allowed option (host allowed set AND forward mask is empty)")
+        logits = self.combine(o.a, o.b, o.E, m)
+        rad = radii(o.a, logits, m)
         return {"schema": GUARANTEE_ID, **rad, "independent_of_untrusted": independent_of_untrusted(
-                    o.a, o.b, o.allowed, self.evidence.c),
-                "radius_covers_box": radius_covers_box(rad["rho_joint_l2"], o.E, o.allowed, self.evidence.c),
-                "c": self.evidence.c, "E": o.E.tolist(), "allowed_mask": o.allowed.tolist()}
+                    o.a, o.b, m, self.evidence.c),
+                "radius_covers_box": radius_covers_box(rad["rho_joint_l2"], o.E, m, self.evidence.c),
+                "c": self.evidence.c, "E": o.E.tolist(), "allowed_mask": m.tolist(),
+                "unvetoed_logits": self.combine(o.a, o.b, o.E, o.allowed).tolist()}
 
     def cost(self, T: int, K: int, trusted_frac: float = 0.5, cont_len: int = 8) -> dict:
         d, r = self.A.in_features, self.A.out_features
@@ -333,7 +358,7 @@ def independent_of_untrusted(a: torch.Tensor, b: torch.Tensor, allowed: torch.Te
 
 @torch.no_grad()
 def certify(head: G16Head, request: dict, qid: str, k: int, build_row: Callable[[dict], Any],
-            verify: bool = False) -> dict[str, Any]:
+            verify: bool = False, allowed_ids: Callable[[dict, str], set[str] | None] | None = None) -> dict[str, Any]:
     """G16 decision + certificate for one request. ``build_row(request) -> LayoutRow`` is the real layout
     (``heads.layout.build_row(req, qid, encode)``). Origins come from ``safety_eval.certify`` (covered
     insertions, same segmenter/dedup). With ``verify`` every origin is ALSO run through the full G16 model
@@ -344,7 +369,7 @@ def certify(head: G16Head, request: dict, qid: str, k: int, build_row: Callable[
     row = build_row(request)
     hP, hD = head.streams(row)
     cache = gated.last_protected_compact
-    allowed_in = host_allowed_mask(request, qid, row.option_ids)
+    allowed_in = host_allowed_mask(request, qid, row.option_ids, allowed_ids)  # decide path: envelope_allowed_ids
     a, b, allowed = head.judge(hP, allowed_in)
     E = head.evidence(hD)
     logits = head.combine(a, b, E, allowed)
