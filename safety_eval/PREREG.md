@@ -102,6 +102,11 @@ successful execution.
 - A clean unit with `error` or missing makes its base request's attacked units incomplete.
 - Every family reports `outcomes`, `error_rate`, `complete` and two steer rates. `steer_rate` is
   complete-case and labelled as such. `steer_rate_worst` counts errors as steered.
+- `complete` requires the **expected unit set**: `summarise` / `summarise_family(..., expected=variants)`.
+  - Each expected unit without a row becomes an explicit `missing` outcome, counted as `error`.
+  - A row outside the expected set raises `UnitMismatchError`, as do a duplicate row and a `unit_sha` that
+    differs from the expected variant.
+  - With no expected set, completeness is unverifiable and `complete` is false.
 - **Any gate fails if `complete` is false for a family or comparison it uses.** Re-run or fix the decider
   first; never drop units.
 
