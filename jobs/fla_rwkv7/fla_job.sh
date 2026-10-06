@@ -10,10 +10,20 @@
 #   34 throughput phase crashed. The optional fp32 phase (last, only with time left) never changes the exit code.
 #   1 finalize failed. Every verdict (ADOPT ... REJECT_NUMERICS, INCONCLUSIVE) is a successful run (exit 0).
 # The marker /output/FLA_RWKV7_DONE is written ONLY by jobs/common/finalize.py, and only when its final code is 0.
+# Mode (first argument): gate (default; the v1 rule above) | truth_v2 (RULE v2, JOB_SPEC.md "RULE v2"): the same setup /
+#   warmup / kernel / fork / snapshot / model / throughput phases, unchanged; then truth_v2 (captured real inputs at
+#   L0/15/30/45/60 vs fp64 truth; crash 35), train_v2 for chunked, fla, fla_safe_gate (the m2 cell's step, 3 + 20 steps;
+#   a crash or timeout there is recorded in the gates and leaves that measurement missing -> INCONCLUSIVE, never an exit
+#   code), decide_v2 -> decision_v2.json, marker FLA_RWKV7_TRUTH_V2_DONE. No fp32 tail in truth_v2 mode.
 set -Euo pipefail
 MAIN_PID=$$
 CODE=/opt/ssdm/m1
-PARAMS=$CODE/jobs/fla_rwkv7/job_params.json
+MODE=${1:-gate}
+case $MODE in
+  gate) PARAMS=$CODE/jobs/fla_rwkv7/job_params.json ;;
+  truth_v2) PARAMS=$CODE/jobs/fla_rwkv7/job_params_truth_v2.json ;;
+  *) echo "unknown mode '$MODE' (gate | truth_v2)" >&2; exit 5 ;;
+esac
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
 WORK=/tmp/fla-rwkv7
@@ -39,14 +49,17 @@ cd "$CODE"
 . "$CODE/jobs/common/lib.sh"
 # shellcheck source=../clef_baseline/watchdog.sh
 . "$CODE/jobs/clef_baseline/watchdog.sh"
-MARKER=FLA_RWKV7_DONE
-VALIDATOR=jobs.fla_rwkv7.fla_equivalence:valid_decision
+if [ "$MODE" = truth_v2 ]; then
+  MARKER=FLA_RWKV7_TRUTH_V2_DONE VALIDATOR=jobs.fla_rwkv7.fla_equivalence:valid_decision_v2 DECISION=decision_v2.json
+else
+  MARKER=FLA_RWKV7_DONE VALIDATOR=jobs.fla_rwkv7.fla_equivalence:valid_decision DECISION=decision.json
+fi
 finish() {
   local rc=${RC:-$?}
   kill "${WD_PID:-}" "${DL_PID:-}" 2> /dev/null || true
   export_phase final
   python "$CODE/jobs/common/finalize.py" "$RESULT" "$rc" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
-    "$WORK/out/decision.json" "$OUT" "$MARKER" "$VALIDATOR"
+    "$WORK/out/$DECISION" "$OUT" "$MARKER" "$VALIDATOR"
   local final=$?
   say "EXIT $final (runner rc $rc)"
   exit "$final"
@@ -57,7 +70,7 @@ watchdog & WD_PID=$!
 trap finish EXIT
 
 # ------------------------------------------------------------------ setup (exit 5 / 10)
-say "setup (fla_rwkv7)"
+say "setup (fla_rwkv7, mode $MODE)"
 cp /opt/ssdm/CONTEXT_MANIFEST.json "$WORK/out/" || fail 5 "no context manifest"
 nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
 # fla-core is not in the rwkv7 image: install the exact 0.5.2 wheel by hash, no deps (torch/triton/einops are pinned)
@@ -125,18 +138,42 @@ timeout ${CAP_T}m python -m jobs.fla_rwkv7.fla_equivalence throughput --out "$WO
 gate "throughput" $r; export_phase throughput
 case $r in 0) ;; 124) fail 7 "throughput timeout" ;; *) fail 34 "throughput rc=$r" ;; esac
 
-# optional fp32 (only sets allow_fp32): runs only if it can finish before max_duration minus the reserve; a timeout or
-# crash here is recorded and does not change the exit code (missing fp32 -> allow_fp32 false)
-MAXD=$(python -c "import json,sys;p=json.load(open(sys.argv[1]));print(p['max_duration_minutes']-p['reserve_minutes'])" "$PARAMS")
-LEFT_S=$(( MAXD * 60 - ($(date +%s) - T0) - 30 ))
-if [ "$LEFT_S" -ge 90 ]; then
-  say "phase fp32 (optional; ${LEFT_S}s left)"
-  timeout ${LEFT_S}s python -m jobs.fla_rwkv7.fla_equivalence fp32 --out "$WORK/out" > "$WORK/logs/fp32.log" 2>&1; r=$?
-  gate "fp32" $r; export_phase fp32
-else
-  say "phase fp32 skipped (${LEFT_S}s left)"
+if [ "$MODE" = gate ]; then
+  # optional fp32 (only sets allow_fp32): runs only if it can finish before max_duration minus the reserve; a timeout or
+  # crash here is recorded and does not change the exit code (missing fp32 -> allow_fp32 false)
+  MAXD=$(python -c "import json,sys;p=json.load(open(sys.argv[1]));print(p['max_duration_minutes']-p['reserve_minutes'])" "$PARAMS")
+  LEFT_S=$(( MAXD * 60 - ($(date +%s) - T0) - 30 ))
+  if [ "$LEFT_S" -ge 90 ]; then
+    say "phase fp32 (optional; ${LEFT_S}s left)"
+    timeout ${LEFT_S}s python -m jobs.fla_rwkv7.fla_equivalence fp32 --out "$WORK/out" > "$WORK/logs/fp32.log" 2>&1; r=$?
+    gate "fp32" $r; export_phase fp32
+  else
+    say "phase fp32 skipped (${LEFT_S}s left)"
+  fi
+
+  python -m jobs.fla_rwkv7.fla_equivalence decide --out "$WORK/out" > "$WORK/logs/decision.log" 2>&1 || fail 9 "decision"
+  say "decision: $(cat "$WORK/logs/decision.log")"
+  RC=0
 fi
 
-python -m jobs.fla_rwkv7.fla_equivalence decide --out "$WORK/out" > "$WORK/logs/decision.log" 2>&1 || fail 9 "decision"
-say "decision: $(cat "$WORK/logs/decision.log")"
-RC=0
+if [ "$MODE" = truth_v2 ]; then
+  CAP_TV=$(cap truth_v2) || fail 5 "job_params"
+  say "phase truth_v2 (captured real WKV inputs L0/15/30/45/60 vs fp64 token-serial truth)"
+  timeout ${CAP_TV}m python -m jobs.fla_rwkv7.fla_equivalence truth_v2 --out "$WORK/out" --model-dir "$SNAP" \
+    > "$WORK/logs/truth_v2.log" 2>&1; r=$?
+  gate "truth_v2" $r; export_phase truth_v2
+  case $r in 0) ;; 124) fail 7 "truth_v2 timeout" ;; *) fail 35 "truth_v2 rc=$r" ;; esac
+  # the m2 cell's training step, one process per impl (clean peak memory); no step starts within 45 s of the cap
+  for IMPL in chunked fla fla_safe_gate; do
+    CAP_TR=$(cap "train_$IMPL") || fail 5 "job_params"
+    say "phase train_v2 $IMPL (m2 cell step: LoRA r64, fork head, bf16, 1 x 8; 3 warmup + 20 timed steps)"
+    timeout ${CAP_TR}m python -m jobs.fla_rwkv7.fla_equivalence train_v2 --out "$WORK/out" --model-dir "$SNAP" \
+      --impl $IMPL --deadline-s $(( CAP_TR * 60 - 45 )) > "$WORK/logs/train_v2_$IMPL.log" 2>&1; r=$?
+    gate "train_v2_$IMPL" $r; export_phase "train_v2_$IMPL"
+    [ $r -eq 0 ] || say "train_v2 $IMPL rc=$r: recorded; its measurement is missing or partial (decide_v2)"
+  done
+  python -m jobs.fla_rwkv7.fla_equivalence decide_v2 --out "$WORK/out" > "$WORK/logs/decision_v2.log" 2>&1 \
+    || fail 9 "decision_v2"
+  say "decision_v2: $(cat "$WORK/logs/decision_v2.log")"
+  RC=0
+fi

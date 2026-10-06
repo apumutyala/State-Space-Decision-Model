@@ -8,6 +8,11 @@
     python -m jobs.fla_rwkv7.fla_equivalence throughput --out DIR --model-dir SNAP   # prefill 2k/8k/16k, train fwd+bwd 2k
     python -m jobs.fla_rwkv7.fla_equivalence fp32       --out DIR             # optional, last: kernel + fork at fp32
     python -m jobs.fla_rwkv7.fla_equivalence decide     --out DIR             # pre-registered rule -> DIR/decision.json
+  mode truth_v2 (RULE v2; the kernel / fork / model / throughput phases above run unchanged first):
+    python -m jobs.fla_rwkv7.fla_equivalence truth_v2   --out DIR --model-dir SNAP   # L0/15/30/45/60 vs fp64 truth
+    python -m jobs.fla_rwkv7.fla_equivalence train_v2   --out DIR --model-dir SNAP --impl IMPL --deadline-s S
+                                                                               # the m2 cell's step, 3 + 20 steps
+    python -m jobs.fla_rwkv7.fla_equivalence decide_v2  --out DIR             # RULE v2 -> DIR/decision_v2.json
 
 Compile cost (job-4idg4): every new Triton specialisation of fla's DPLR kernels (activation dtype, safe_gate,
 initial state on/off, varlen, backward) is JIT-compiled and autotuned on its first call. In job-4idg4 the bf16 kernel
@@ -239,6 +244,275 @@ def _fla_really_ran(phase: dict) -> bool:
 def valid_decision(d) -> bool:
     """finalize.py validator: a verdict from the rule and a chosen variant."""
     return isinstance(d, dict) and d.get("verdict") in VERDICTS and d.get("chosen") in VARIANTS
+
+
+# ============================================================================= RULE v2 (PRE-REGISTERED 2026-10-06)
+# Pre-registered by the coordinator on 2026-10-06, BEFORE any truth_v2 job ran, after job-jn47u (REJECT_NUMERICS from
+# the captured-real-input cases alone, where the production "chunked" path failed the same bf16-eager reference).
+# v1 above (TOL / decide) is NOT edited; v2 is a separate rule. Text, verbatim: jobs/fla_rwkv7/JOB_SPEC.md "RULE v2".
+# Constants pinned by tests/test_fla_rwkv7.py::test_rule_v2_constants_are_pinned. Do not tune them on GPU data.
+#: captured real WKV inputs (same 2,048-token prompt and capture construction as job-jn47u: prefix 1024 tokens -> carried
+#: state, capture during the next 1024): fwd at T=1024, gradients at the first 512 tokens
+TRUTH_V2_LAYERS = (0, 15, 30, 45, 60)
+V2_PROMPT_T = 2048
+V2_FWD_T = 1024
+V2_GRAD_T = 512
+#: e(fla) <= V2_SLACK * max(e(chunked), e(eager_bf16)) + ABS_FLOOR on EVERY (case, tensor) pair, and
+#: e(fla) <= V2_SLACK * e(chunked) + ABS_FLOOR on at least V2_FRAC_MIN of them
+V2_SLACK = 1.10
+V2_FRAC_MIN = 0.90
+V2_REF_IMPLS = ("chunked", "eager_bf16")
+V2_FWD_TENSORS = ("out", "state")
+V2_GRAD_TENSORS = ("out", "state") + tuple(f"grad_{n}" for n in ("r", "w_log", "k", "v", "kk", "a", "state"))
+#: training speed: the m2 first cell's actual step (train.trainer.Trainer.train_step, cell config), current impl vs fla
+V2_CURRENT = "chunked"
+V2_TRAIN_WARMUP = 3  # untimed optimiser steps first (fla compile / autotune, allocator warm-up)
+V2_TRAIN_STEPS = 20  # timed optimiser steps; median per-step tok/s
+#: Amendment A1 (2026-10-06, after independent review, before any v2 run): the binding train ratio is
+#: median(fla tok/s) / median(chunked tok/s) over the timed steps BOTH impls completed (matched rows), with at least
+#: this many matched steps, else INCONCLUSIVE. OOM steps are not zeros: chunked OOMs are a separate, non-binding
+#: finding (``chunked_oom``); an fla OOM still fails the peak clause. Replaces the withdrawn OOM-as-0 tok/s convention
+#: and V2_CURRENT_MIN_STEPS.
+V2_MIN_MATCHED_STEPS = 10
+#: A1: an fla variant's train measurement is void (INCONCLUSIVE) if any of its warmup or timed losses is non-finite, or
+#: if its step-0 loss differs from chunked's (same rows / seed / init) by more than this, relative, when chunked's
+#: step 0 completed
+V2_STEP0_LOSS_REL_MAX = 0.02
+V2_TRAIN_RATIO_MIN = 2.0
+V2_PREFILL_RATIO_MIN = 2.0  # at every length in LENGTHS (the unchanged throughput phase)
+V2_PEAK_GB_MAX = 76.0  # = the m2 cell's pass_rule max_peak_gb
+VERDICTS_V2 = ("ADOPT_FOR_TRAINING", "ADOPT_READOUT_ONLY", "REJECT_NUMERICS", "INCONCLUSIVE", "NOT_ADOPTED")
+
+
+def v2_required_cases() -> dict:
+    """{case name: tensors} the truth_v2 phase must produce."""
+    req = {}
+    for layer in TRUTH_V2_LAYERS:
+        req[f"real_L{layer}_fwd_T{V2_FWD_T}"] = V2_FWD_TENSORS
+        req[f"real_L{layer}_grad_T{V2_GRAD_T}"] = V2_GRAD_TENSORS
+    return req
+
+
+def _v2_truth_check(tv: dict | None, v: str) -> tuple[bool | None, list[str], dict]:
+    """The truth-reference half of NUMERICS_OK for variant ``v``. True / False, or None when the comparison is
+    undefined (a case, tensor, reference error or non-finite reference / truth is missing): INCONCLUSIVE.
+    A crash or a non-finite value of ``v`` itself is a failure (as in v1)."""
+    why, missing = [], []
+    by_name = {c.get("name"): c for c in (tv or {}).get("cases", [])}
+    n_pairs = n_tight = 0
+    worst = {"pair_fail": [], "tight_fail": []}
+    for name, tensors in v2_required_cases().items():
+        c = by_name.get(name)
+        if c is None:
+            missing.append(f"truth_v2:{name}")
+            continue
+        if not c.get("truth_finite", False):
+            missing.append(f"truth_v2:{name}:truth_nonfinite")
+            continue
+        imps = c.get("impls") or {}
+        mine = imps.get(v) or {}
+        if mine.get("error"):
+            why.append(f"truth_v2:{name}:{v}_error")
+            continue
+        if mine.get("finite") is False:
+            why.append(f"truth_v2:{name}:{v}_nonfinite")
+            continue
+        if mine.get("finite") is not True:
+            missing.append(f"truth_v2:{name}:{v}_missing")
+            continue
+        bad_refs = [r for r in V2_REF_IMPLS if (imps.get(r) or {}).get("error") or (imps.get(r) or {}).get("finite") is not True]
+        if bad_refs:
+            missing += [f"truth_v2:{name}:{r}_unusable" for r in bad_refs]
+            continue
+        for t in tensors:
+            ev = (mine.get("e") or {}).get(t)
+            ec = (imps["chunked"].get("e") or {}).get(t)
+            ee = (imps["eager_bf16"].get("e") or {}).get(t)
+            if ev is None or ec is None or ee is None:
+                missing.append(f"truth_v2:{name}:{t}")
+                continue
+            if not all(math.isfinite(x) for x in (ev, ec, ee)):
+                if not math.isfinite(ev):
+                    why.append(f"truth_v2:{name}:{t}:{v}_nonfinite")
+                else:
+                    missing.append(f"truth_v2:{name}:{t}:ref_nonfinite")
+                continue
+            n_pairs += 1
+            if not ev <= V2_SLACK * max(ec, ee) + ABS_FLOOR:
+                why.append(f"truth_v2:{name}:{t}")
+                worst["pair_fail"].append([name, t, ev, ec, ee])
+            if ev <= V2_SLACK * ec + ABS_FLOOR:
+                n_tight += 1
+            else:
+                worst["tight_fail"].append([name, t, ev, ec])
+    frac = n_tight / n_pairs if n_pairs else None
+    detail = {"pairs": n_pairs, "within_slack_of_chunked": n_tight, "frac_within_slack_of_chunked": frac, **worst}
+    if why:
+        return False, why, detail
+    if missing:
+        return None, missing, detail
+    if frac is None or frac < V2_FRAC_MIN:
+        return False, [f"truth_v2:frac_within_slack_of_chunked={frac}"], detail
+    return True, [], detail
+
+
+def _v2_synthetic_check(rep: dict, v: str) -> tuple[bool | None, list[str]]:
+    """The unchanged v1 synthetic checks (kernel + fork bf16 cases vs eager under TOL, model logits, model
+    continuation/fork), re-run by the same phases. The v1 captured-input cases are NOT part of v2."""
+    why, missing = [], []
+    for phase in ("kernel", "fork"):
+        cases = [c for c in (rep.get(phase) or {}).get("cases", []) if c.get("impl") == v and c.get("dtype") == "bfloat16"]
+        if not cases:
+            missing.append(f"{phase}:bf16")
+        for c in cases:
+            if c.get("error") or not case_passes(c.get("worst", {}), "bfloat16"):
+                why.append(f"{phase}:{c.get('name')}")
+    model = rep.get("model") or {}
+    mdl, ref = model.get("logits", {}).get(v), model.get("logits", {}).get("chunked")
+    if not mdl or not ref:
+        missing.append("model:logits")
+    elif not model_passes({"fla": mdl, "chunked": ref}):
+        why.append("model:logits")
+    cont = model.get("continuation", {}).get(v)
+    if not cont:
+        missing.append("model:continuation")
+    elif not (cont.get("rel", math.inf) <= CONT_REL_MAX and cont.get("fork_rel", math.inf) <= FORK_REL_MAX):
+        why.append("model:continuation")
+    if why:
+        return False, why
+    if missing:
+        return None, missing
+    return True, []
+
+
+def numerics_ok_v2(rep: dict, v: str) -> dict:
+    """NUMERICS_OK(v) under RULE v2: the truth check AND the unchanged synthetic checks. False beats None."""
+    t_ok, t_why, t_detail = _v2_truth_check(rep.get("truth_v2"), v)
+    s_ok, s_why = _v2_synthetic_check(rep, v)
+    if t_ok is False or s_ok is False:
+        ok = False
+    elif t_ok is None or s_ok is None:
+        ok = None
+    else:
+        ok = True
+    return {"ok": ok, "truth": t_ok, "synthetic": s_ok, "why": t_why + s_why, "truth_detail": t_detail}
+
+
+def _done(st: dict) -> bool:
+    """A step that completed (not OOM, not skipped by the deadline) and has a measured rate."""
+    return st.get("tok_s") is not None and not st.get("oom") and not st.get("skipped")
+
+
+def _loss_finite(st: dict) -> bool:
+    x = st.get("loss")
+    return st.get("finite") is not False and isinstance(x, (int, float)) and math.isfinite(x)
+
+
+def train_summary_v2(tr: dict | None) -> dict:
+    """Per-impl facts from a train_v2_<impl>.json: peak, OOM steps (and their longest rows), completed timed steps."""
+    if not tr:
+        return {"present": False}
+    steps = tr.get("steps", [])
+    ooms = [s for s in steps if s.get("oom")]
+    timed = [s for s in steps if s.get("timed") and _done(s)]
+    return {"present": True, "peak_gb": tr.get("peak_gb"), "oom_steps": len(ooms),
+            "oom_rows_max_T": [s.get("max_T") for s in ooms], "completed_timed_steps": len(timed),
+            "median_tok_s_completed": statistics.median([s["tok_s"] for s in timed]) if timed else None,
+            "nonfinite_loss_steps": [s.get("i") for s in steps if _done(s) and not _loss_finite(s)]}
+
+
+def train_ratio_v2(cur: dict | None, var: dict | None) -> dict:
+    """RULE v2 + Amendment A1: the binding train ratio of an fla variant against the current impl.
+    None (INCONCLUSIVE) when: a record is missing; the variant fell back or never called fla; any of the variant's
+    warmup or timed losses is non-finite; the current impl's step 0 completed and the variant's step-0 loss is missing
+    or differs by more than V2_STEP0_LOSS_REL_MAX (relative to the current impl's); fewer than V2_MIN_MATCHED_STEPS
+    timed steps were completed by BOTH. Else median(variant tok/s) / median(current tok/s) over exactly those steps."""
+    out = {"ratio": None, "matched_steps": 0, "step0_loss_rel_diff": None}
+    if not cur or not var:
+        out["reason"] = "missing train record"
+        return out
+    if var.get("fallbacks") or not (var.get("fla_calls") or {}).get(var.get("impl"), 0) > 0:
+        out["reason"] = "fla fallback or no fla call"
+        return out
+    bad = [s.get("i") for s in var.get("steps", []) if _done(s) and not _loss_finite(s)]
+    if bad:
+        out["reason"] = f"non-finite fla loss at steps {bad}"
+        return out
+    c_by = {s.get("i"): s for s in cur.get("steps", [])}
+    v_by = {s.get("i"): s for s in var.get("steps", [])}
+    c0, v0 = c_by.get(0) or {}, v_by.get(0) or {}
+    if _done(c0) and _loss_finite(c0):
+        if not (_done(v0) and _loss_finite(v0)):
+            out["reason"] = "current step 0 completed, fla step 0 did not"
+            return out
+        rel = abs(v0["loss"] - c0["loss"]) / max(abs(c0["loss"]), 1e-12)
+        out["step0_loss_rel_diff"] = rel
+        if rel > V2_STEP0_LOSS_REL_MAX:
+            out["reason"] = f"step-0 loss rel diff {rel:.4g} > {V2_STEP0_LOSS_REL_MAX}"
+            return out
+    matched = sorted(i for i, s in v_by.items() if s.get("timed") and _done(s) and _done(c_by.get(i) or {}))
+    out["matched_steps"] = len(matched)
+    if len(matched) < V2_MIN_MATCHED_STEPS:
+        out["reason"] = f"{len(matched)} matched timed steps < {V2_MIN_MATCHED_STEPS}"
+        return out
+    mv = statistics.median([v_by[i]["tok_s"] for i in matched])
+    mc = statistics.median([c_by[i]["tok_s"] for i in matched])
+    out.update(ratio=mv / mc, fla_tok_s=mv, current_tok_s=mc, matched=matched)
+    return out
+
+
+def decide_v2(rep: dict) -> dict:
+    """RULE v2 (verbatim in JOB_SPEC.md) with Amendment A1. rep = {'kernel','fork','model','throughput','truth_v2',
+    'train_v2': {impl: record}} phase JSONs. Per fla variant:
+      REJECT_NUMERICS    iff NUMERICS_OK is false;
+      INCONCLUSIVE       iff anything required is missing (numerics undefined, a prefill ratio, the train ratio
+                         (``train_ratio_v2`` None), the fla peak);
+      ADOPT_FOR_TRAINING iff NUMERICS_OK and train ratio >= V2_TRAIN_RATIO_MIN and fla peak <= V2_PEAK_GB_MAX (and
+                         no fla OOM step);
+      ADOPT_READOUT_ONLY iff NUMERICS_OK and prefill ratio >= V2_PREFILL_RATIO_MIN at every length but train ratio
+                         < V2_TRAIN_RATIO_MIN;
+      NOT_ADOPTED        every other measured combination (the rule names no verdict for it; reported, not adopted).
+    ``chunked_oom`` is reported and never binding. The top-level verdict is plain fla's; fla_safe_gate gets its own."""
+    trains = rep.get("train_v2") or {}
+    cur_rec = trains.get(V2_CURRENT)
+    cur = train_summary_v2(cur_rec)
+    chunked_oom = {"binding": False, "oom_steps": cur.get("oom_steps"), "rows_max_T": cur.get("oom_rows_max_T"),
+                   "finding": ("chunked cannot keep T_max=2048 at the cell config" if cur.get("oom_steps") else None)}
+    per = {}
+    for v in VARIANTS:
+        num = numerics_ok_v2(rep, v)
+        pre = _ratios(rep, v)["prefill"]
+        sp = train_summary_v2(trains.get(v))
+        tr = train_ratio_v2(cur_rec, trains.get(v))
+        ratio = tr["ratio"]
+        peak_ok = None if sp.get("peak_gb") is None else (sp["peak_gb"] <= V2_PEAK_GB_MAX and not sp.get("oom_steps"))
+        readout = None if any(x is None for x in pre.values()) else all(x >= V2_PREFILL_RATIO_MIN for x in pre.values())
+        if num["ok"] is False:
+            verdict = "REJECT_NUMERICS"
+        elif num["ok"] is None or readout is None or ratio is None or peak_ok is None:
+            verdict = "INCONCLUSIVE"
+        elif ratio >= V2_TRAIN_RATIO_MIN and peak_ok:
+            verdict = "ADOPT_FOR_TRAINING"
+        elif readout and ratio < V2_TRAIN_RATIO_MIN:
+            verdict = "ADOPT_READOUT_ONLY"
+        else:
+            verdict = "NOT_ADOPTED"
+        per[v] = {"verdict": verdict, "numerics": num, "prefill_ratios": pre, "readout_speed_ok": readout,
+                  "train": sp, "train_ratio": ratio, "train_ratio_detail": tr, "peak_ok": peak_ok}
+    return {"rule": "v2", "amendments": ["A1"], "verdict": per["fla"]["verdict"], "variant": "fla", "variants": per,
+            "current_train": cur, "chunked_oom": chunked_oom,
+            "constants": {"layers": list(TRUTH_V2_LAYERS), "fwd_t": V2_FWD_T, "grad_t": V2_GRAD_T, "slack": V2_SLACK,
+                          "frac_min": V2_FRAC_MIN, "abs_floor": ABS_FLOOR, "train_warmup": V2_TRAIN_WARMUP,
+                          "train_steps": V2_TRAIN_STEPS, "min_matched_steps": V2_MIN_MATCHED_STEPS,
+                          "step0_loss_rel_max": V2_STEP0_LOSS_REL_MAX,
+                          "train_ratio_min": V2_TRAIN_RATIO_MIN, "prefill_ratio_min": V2_PREFILL_RATIO_MIN,
+                          "lengths": list(LENGTHS), "peak_gb_max": V2_PEAK_GB_MAX, "current": V2_CURRENT}}
+
+
+def valid_decision_v2(d) -> bool:
+    """finalize.py validator for the truth_v2 mode."""
+    return (isinstance(d, dict) and d.get("rule") == "v2" and d.get("verdict") in VERDICTS_V2
+            and all((d.get("variants") or {}).get(v, {}).get("verdict") in VERDICTS_V2 for v in VARIANTS))
 
 
 # ----------------------------------------------------------------------------- GPU side
@@ -625,6 +899,214 @@ def phase_model(out: Path, model_dir: str):
         _cmp_case(cap, f"real_L{layer}_grad_T512", "bfloat16", _slice(x, 0, 512), grad=True)
 
 
+# ----------------------------------------------------------------------------- RULE v2 phases (mode truth_v2)
+def truth_grad(x: dict, seed: int = 1) -> dict:
+    """fp64 token-serial run WITH gradients: autograd through ``rwkv7_recurrent`` at fp64 on the same (bf16-rounded)
+    inputs, with the same cotangents as ``run_impl`` (same generator, same draws, cast to fp64)."""
+    torch = _torch()
+    from third_party.rwkv7_hf import modeling_rwkv7 as M
+
+    leaves = {n: x[n].detach().double().requires_grad_(True) for n in ARGS}
+    o, s = M.rwkv7_recurrent(*(leaves[n] for n in ARGS), compute_dtype=torch.float64)
+    g = torch.Generator(device="cpu").manual_seed(seed)
+    do = torch.randn(o.shape, generator=g).to(o.device)
+    ds = torch.randn(s.shape, generator=g).to(s.device)
+    ((o * do.double()).sum() + (s * ds.double()).sum()).backward()
+    res = {"out": o.detach(), "state": s.detach()}
+    for n in ARGS:
+        res[f"grad_{n}"] = _grad(leaves[n])
+    return res
+
+
+def capture_wkv_inputs(m, ids, layers, tail: int) -> dict:
+    """job-jn47u's construction: ids[:, :-tail] builds the carried state, the WKV inputs of ``layers`` are captured
+    during ids[:, -tail:] (chunked path, non-zero carried state)."""
+    torch = _torch()
+    from heads import rwkv7_wkv as W
+    from third_party.rwkv7_hf import modeling_rwkv7 as M
+
+    caught, calls = {}, [0]
+
+    def capture(r, w_log, k, v, kk, a, state, cu_seq_lens=None, **kw):
+        layer = calls[0] % m.config.num_hidden_layers
+        calls[0] += 1
+        if layer in layers:
+            caught[layer] = {n: t.detach().clone() for n, t in zip(ARGS, (r, w_log, k, v, kk, a, state))}
+        return M.rwkv7_parallel(r, w_log, k, v, kk, a, state, cu_seq_lens=cu_seq_lens)
+
+    _use(m, "chunked")
+    with torch.no_grad():
+        st = m(input_ids=ids[:, :-tail], use_cache=True, logits_to_keep=1).state
+    M.RWKV7_WKV_FUNCTIONS["ssdm_capture_v2"] = capture
+    for cfg in W._configs(m):
+        cfg.wkv_implementation = W.WkvName("ssdm_capture_v2")
+    try:
+        with torch.no_grad():
+            m(input_ids=ids[:, -tail:], state=st, use_cache=True, logits_to_keep=1)
+    finally:
+        M.RWKV7_WKV_FUNCTIONS.pop("ssdm_capture_v2", None)
+        _use(m, "chunked")
+    return caught
+
+
+#: the training-row shape table (jobs/fla_rwkv7/train_mix_v2.json); None = that committed file (tests point it elsewhere)
+MIX_PATH = None
+#: truth_v2 implementations: (name in truth_v2.json, run_impl name)
+V2_IMPLS = (("eager_bf16", "eager"), ("chunked", "chunked"), ("fla", "fla"), ("fla_safe_gate", "fla_safe_gate"))
+
+
+def _truth_v2_case(rep: Report, name: str, layer: int, x: dict, grad: bool):
+    torch = _torch()
+    tensors = V2_GRAD_TENSORS if grad else V2_FWD_TENSORS
+    t0 = time.perf_counter()
+    tr = truth_grad(x) if grad else truth(x)
+    case = {"name": name, "layer": layer, "grad": grad, "shape": list(x["r"].shape), "tensors": list(tensors),
+            "truth_s": round(time.perf_counter() - t0, 3),
+            "truth_finite": all(bool(tr[t].isfinite().all().item()) for t in tensors), "impls": {}}
+    if DEVICE == "cuda":
+        case["truth_peak_gb"] = torch.cuda.max_memory_allocated() / 1e9
+    for label, impl in V2_IMPLS:
+        try:
+            got = run_impl(impl, x, grad)
+            case["impls"][label] = {"e": {t: rel_err(got[t], tr[t]) for t in tensors},
+                                    "cos": {t: cosine(got[t], tr[t]) for t in tensors},
+                                    "finite": all(bool(got[t].isfinite().all().item()) for t in tensors)}
+        except Exception as e:  # noqa: BLE001  recorded; decide_v2: fla error -> reject, reference error -> inconclusive
+            case["impls"][label] = {"error": f"{type(e).__name__}: {e}"[:500]}
+        if DEVICE == "cuda":
+            torch.cuda.empty_cache()
+    rep.add(case)
+
+
+def phase_truth_v2(out: Path, model_dir: str):
+    """RULE v2 numerics: capture the real WKV inputs at TRUTH_V2_LAYERS (job-jn47u prompt and construction), then every
+    implementation vs the fp64 token-serial truth on those exact bf16-rounded inputs (fwd T=V2_FWD_T, grads on the
+    first V2_GRAD_T tokens)."""
+    torch = _torch()
+    m = _load(model_dir)
+    ids = _text_ids(model_dir, V2_PROMPT_T)
+    caught = capture_wkv_inputs(m, ids, TRUTH_V2_LAYERS, V2_FWD_T)
+    del m
+    if DEVICE == "cuda":
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+    rep = Report(out / "truth_v2.json", env=_env(), layers=list(TRUTH_V2_LAYERS), prompt_t=V2_PROMPT_T,
+                 fwd_t=V2_FWD_T, grad_t=V2_GRAD_T, captured=sorted(caught), complete=False)
+    for layer, x in sorted(caught.items()):
+        rep.d.setdefault("stats", {})[str(layer)] = {n: float(x[n].float().abs().max()) for n in ARGS}
+        _truth_v2_case(rep, f"real_L{layer}_fwd_T{V2_FWD_T}", layer, x, grad=False)
+        _truth_v2_case(rep, f"real_L{layer}_grad_T{V2_GRAD_T}", layer, _slice(x, 0, V2_GRAD_T), grad=True)
+    rep.d["complete"] = True
+    rep.flush()
+
+
+def _load_backbone(model_dir: str):
+    from heads.backbone import load_rwkv7_hf_backbone
+
+    return load_rwkv7_hf_backbone(model_dir, device=DEVICE, fork_mode="cache", wkv=None)
+
+
+def phase_train_v2(out: Path, model_dir: str, impl: str, deadline_s: float):
+    """RULE v2 training speed: the m2 first cell's own optimiser step (``train.trainer.Trainer.train_step`` with the
+    cell's TrainConfig via ``train.run_cell.train_config``: fork head, cache fork, LoRA, Clef loss, batch x grad_accum,
+    bf16 autocast, no checkpointing) on rows with the shapes of the cell's first steps (``train_mix_v2.json``).
+    V2_TRAIN_WARMUP untimed steps, then V2_TRAIN_STEPS timed ones. An OOM step is recorded (0 tok/s in decide_v2) and
+    the run goes on; a step that cannot start before ``deadline_s`` (from process start) is recorded as skipped."""
+    t_start = time.perf_counter()
+    torch = _torch()
+    import gc
+
+    from heads import rwkv7_wkv as W
+    from heads.model import DecisionModel
+    from jobs.fla_rwkv7 import train_mix
+    from train.guard import SplitGuard
+    from train.run_cell import train_config
+    from train.trainer import Trainer
+
+    mix = train_mix.load(MIX_PATH)
+    cell = mix["cell"]
+    n_steps = V2_TRAIN_WARMUP + V2_TRAIN_STEPS
+    per_step = cell["batch_size"] * cell["grad_accum"]
+    if len(mix["rows"]) < n_steps * per_step:
+        raise SystemExit(f"train_mix_v2.json has {len(mix['rows'])} rows < {n_steps} x {per_step}")
+    rep = Report(out / f"train_v2_{impl}.json", env=_env(), impl=impl, mix_sha256=mix["sha256"], cell=cell,
+                 deadline_s=deadline_s, steps=[], complete=False)
+    W.FALLBACKS.clear()
+    W.CALLS.clear()
+    cuda = DEVICE == "cuda"
+    bb = _load_backbone(model_dir)
+    from heads.rwkv7_wkv import select_wkv
+
+    select_wkv(bb.model, impl, allow_unverified=True)
+    # Amendment A1 / B2: record the dtypes of r / kk / w_log / state that reach the WKV during training (autocast may
+    # hand fla something other than bf16); the model looks the function up in the registry on every call
+    from collections import Counter
+
+    from third_party.rwkv7_hf import modeling_rwkv7 as M
+
+    wkv_dtypes, inner = Counter(), M.RWKV7_WKV_FUNCTIONS[impl]
+
+    def recording_wkv(r, w_log, k, v, kk, a, state, *args, **kw):
+        wkv_dtypes[f"r={r.dtype} kk={kk.dtype} w_log={w_log.dtype} state={state.dtype}"] += 1
+        return inner(r, w_log, k, v, kk, a, state, *args, **kw)
+
+    M.RWKV7_WKV_FUNCTIONS[impl] = recording_wkv
+    rep.d["load_s"] = round(time.perf_counter() - t_start, 1)
+    rep.d["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
+    items = train_mix.rows_from_shapes(mix["rows"][: n_steps * per_step], vocab=bb.model.config.vocab_size, seed=0)
+    if cuda:
+        torch.cuda.reset_peak_memory_stats()
+    model = DecisionModel(bb, cell["head"], cell.get("head_kwargs") or {}, pad_id=0, seed=cell["seed"])
+    model.to(bb.device)
+    tcfg = train_config({**cell, "ckpt_every": 0, "eval_every": 0}, n_steps, None, cuda)
+    tr = Trainer(model, tcfg, items, [], guard=SplitGuard.synthetic_only("fla_rwkv7 truth_v2 train speed: "
+                                                                         "synthetic ids at the m2 cell's row shapes"))
+    tr._order = lambda epoch: list(range(len(items)))  # the mix is already in the cell's epoch-0 order
+    rep.d["setup_s"] = round(time.perf_counter() - t_start, 1)
+    rep.flush()
+    done = []
+    for i in range(n_steps):
+        rows = items[i * per_step:(i + 1) * per_step]
+        rec = {"i": i, "timed": i >= V2_TRAIN_WARMUP, "tokens": sum(len(x.row.ids) for x in rows),
+               "cont_tokens": sum(sum(map(len, x.row.continuations)) for x in rows),
+               "max_T": max(len(x.row.ids) for x in rows), "K": [x.row.n_options for x in rows]}
+        left = deadline_s - (time.perf_counter() - t_start)
+        if left <= 0 or (done and left < 1.5 * max(done)):
+            rec["skipped"] = "deadline"
+            rep.d["steps"].append(rec)
+            rep.flush()
+            continue
+        tr.epoch, tr.cursor = 0, i * per_step
+        if cuda:
+            torch.cuda.synchronize()
+        t = time.perf_counter()
+        try:
+            loss = tr.train_step()
+            if cuda:
+                torch.cuda.synchronize()
+            dt = time.perf_counter() - t
+            done.append(dt)
+            rec.update(s=dt, tok_s=rec["tokens"] / dt, loss=loss, finite=math.isfinite(loss))
+        except torch.OutOfMemoryError as e:
+            rec.update(oom=True, s=time.perf_counter() - t, error=str(e)[:200])
+        if "oom" in rec:
+            tr.opt.zero_grad(set_to_none=True)
+            gc.collect()
+            if cuda:
+                torch.cuda.empty_cache()
+        rep.d["steps"].append(rec)
+        rep.d["peak_gb"] = torch.cuda.max_memory_allocated() / 1e9 if cuda else 0.0
+        rep.d["fallbacks"], rep.d["fla_calls"] = dict(W.FALLBACKS), dict(W.CALLS)
+        rep.d["wkv_input_dtypes"] = dict(wkv_dtypes)
+        rep.flush()
+    timed = [s for s in rep.d["steps"] if s["timed"] and "tok_s" in s]
+    rep.d["median_tok_s_completed"] = statistics.median([s["tok_s"] for s in timed]) if timed else None
+    rep.d["wall_s"] = round(time.perf_counter() - t_start, 1)
+    M.RWKV7_WKV_FUNCTIONS[impl] = inner
+    rep.d["complete"] = True
+    rep.flush()
+
+
 def _timed(fn, reps: int = REPS) -> list[float]:
     torch = _torch()
     ts = []
@@ -726,11 +1208,35 @@ def _read(out: Path, name: str):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("phase", choices=("warmup", "kernel", "fork", "model", "throughput", "fp32", "decide"))
+    ap.add_argument("phase", choices=("warmup", "kernel", "fork", "model", "throughput", "fp32", "decide",
+                                      "truth_v2", "train_v2", "decide_v2"))
     ap.add_argument("--out", required=True)
     ap.add_argument("--model-dir")
+    ap.add_argument("--impl", choices=(V2_CURRENT,) + VARIANTS, help="train_v2: the WKV implementation timed")
+    ap.add_argument("--deadline-s", type=float, default=math.inf, help="train_v2: no step starts after this")
     a = ap.parse_args(argv)
     out = Path(a.out)
+    if a.phase == "decide_v2":
+        rep = {k: _read(out, k) for k in ("kernel", "fork", "model", "throughput", "truth_v2")}
+        for k in ("model", "throughput"):
+            if rep[k] and not _fla_really_ran(rep[k]):
+                rep[k] = None  # -> INCONCLUSIVE
+        rep["train_v2"] = {i: _read(out, f"train_v2_{i}") for i in (V2_CURRENT,) + VARIANTS}
+        d = decide_v2(rep)
+        (out / "decision_v2.json").write_text(json.dumps(d, indent=1), encoding="utf-8")
+        print(json.dumps({"rule": "v2", "verdict": d["verdict"],
+                          "variants": {v: d["variants"][v]["verdict"] for v in VARIANTS}}))
+        return 0 if valid_decision_v2(d) else 9
+    if a.phase in ("truth_v2", "train_v2"):
+        if not a.model_dir:
+            ap.error("--model-dir is required")
+        if a.phase == "truth_v2":
+            phase_truth_v2(out, a.model_dir)
+        else:
+            if not a.impl:
+                ap.error("--impl is required")
+            phase_train_v2(out, a.model_dir, a.impl, a.deadline_s)
+        return 0
     if a.phase == "decide":
         rep = {k: _read(out, k) for k in ("kernel", "fork", "captured", "model", "throughput", "fp32")}
         for k in ("model", "throughput"):

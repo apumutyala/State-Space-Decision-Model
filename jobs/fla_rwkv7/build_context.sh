@@ -2,7 +2,8 @@
 # Build the immutable build context for jobs/fla_rwkv7 (CPU only, local). DRAFT; nothing is submitted.
 #   jobs/fla_rwkv7/build_context.sh <sha> <out_dir>
 # Code only: `git archive <sha>` (must be merged into origin/agent-main). No private data ships (the gate uses synthetic
-# WKV inputs, the snapshot's own tokenizer and the vendored LICENSE text). The image is the jobs/rwkv7 one; fla-core
+# WKV inputs, the snapshot's own tokenizer and the vendored LICENSE text; truth_v2's train_mix_v2.json is row SHAPES only:
+# lengths, spans, option counts, question types -- no ids, no text, no labels). The image is the jobs/rwkv7 one; fla-core
 # 0.5.2 is installed by the runner at setup from jobs/fla_rwkv7/requirements-fla.txt (wheel sha256 pinned).
 set -euo pipefail
 SHA=$1; OUTD=$2
@@ -21,7 +22,9 @@ d, sha = sys.argv[1:3]
 h = lambda p: hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
 c = f"{d}/code/m1"
 files = ["jobs/fla_rwkv7/fla_job.sh", "jobs/fla_rwkv7/job_params.json", "jobs/fla_rwkv7/fla_equivalence.py",
-         "jobs/fla_rwkv7/requirements-fla.txt", "heads/rwkv7_wkv.py", "jobs/rwkv7/snapshot.sha256"]
+         "jobs/fla_rwkv7/requirements-fla.txt", "heads/rwkv7_wkv.py", "jobs/rwkv7/snapshot.sha256",
+         "jobs/fla_rwkv7/job_params_truth_v2.json", "jobs/fla_rwkv7/train_mix.py", "jobs/fla_rwkv7/train_mix_v2.json",
+         "train/trainer.py", "train/run_cell.py"]
 man = {"job": "fla_rwkv7", "m1_sha": sha, "dockerfile_sha256": h(f"{d}/Dockerfile"),
        "files_sha256": {f: h(f"{c}/{f}") for f in files}, "data_sha256": {}}
 json.dump(man, open(f"{d}/CONTEXT_MANIFEST.json", "w"), indent=1)
