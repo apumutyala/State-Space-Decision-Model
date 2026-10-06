@@ -1,0 +1,135 @@
+{
+  "condition": "one_shot",
+  "source": "synthetic_development_nonlearned_unless_provider_proven_otherwise",
+  "total": 3,
+  "kernel_accepted": 3,
+  "task_correct": 3,
+  "observations": [
+    {
+      "task_id": "synthetic-7-0",
+      "status": "accepted",
+      "reason": null,
+      "kernel_accepted": true,
+      "task_correct": true,
+      "text": "At \"2026-10\", \"WarrantyMonths\" for \"Ember\" has value 1 \"month\".",
+      "program": {
+        "schema": "ssdm.semantic_program.v0.1",
+        "context_ref": "synthetic-development-context-v1:7fe3bfe72a4311e9cd42162d9ecf4d71a4a4ba941506d3fb0c112d6a15b3f575",
+        "policy_ref": "synthetic-development-public-v1",
+        "registry_ref": "synthetic-development-registry-v1",
+        "nodes": [
+          {
+            "id": "n1",
+            "op": "ReadFact",
+            "record_ref": "development-record-1",
+            "field": "warranty_months"
+          },
+          {
+            "id": "n2",
+            "op": "Assert",
+            "proposition": "n1"
+          }
+        ],
+        "outputs": [
+          "n2"
+        ],
+        "style": "plain"
+      },
+      "provider_calls": 2,
+      "repair_requests": 0,
+      "forward_calls": 2
+    },
+    {
+      "task_id": "synthetic-7-1",
+      "status": "accepted",
+      "reason": null,
+      "kernel_accepted": true,
+      "task_correct": true,
+      "text": "Checked derivation through program nodes [\"n1\", \"n2\", \"n3\"]: At \"2026-10\", \"WarrantyMonths\" for \"Hearth\" has value 8 \"month\".",
+      "program": {
+        "schema": "ssdm.semantic_program.v0.1",
+        "context_ref": "synthetic-development-context-v1:c7a821ec85e6de02e636d20b662c8ef13b7b810a9576ce6c41940303d2900a59",
+        "policy_ref": "synthetic-development-public-v1",
+        "registry_ref": "synthetic-development-registry-v1",
+        "nodes": [
+          {
+            "id": "n1",
+            "op": "ReadFact",
+            "record_ref": "development-record-2",
+            "field": "warranty_months"
+          },
+          {
+            "id": "n2",
+            "op": "Assert",
+            "proposition": "n1"
+          },
+          {
+            "id": "n3",
+            "op": "ExplainDerivation",
+            "speech_act": "n2"
+          }
+        ],
+        "outputs": [
+          "n3"
+        ],
+        "style": "plain"
+      },
+      "provider_calls": 2,
+      "repair_requests": 0,
+      "forward_calls": 2
+    },
+    {
+      "task_id": "synthetic-7-2",
+      "status": "accepted",
+      "reason": null,
+      "kernel_accepted": true,
+      "task_correct": true,
+      "text": "At \"2026-10\", the value of \"Price\" for \"Kestrel\" (171.56 \"USD\") is less than the value of \"Price\" for \"Indigo\" (215.84 \"USD\").",
+      "program": {
+        "schema": "ssdm.semantic_program.v0.1",
+        "context_ref": "synthetic-development-context-v1:32576737db95e4a6eed2467150e64cdfe836d2c2f4ce40f8c029baf5155dc732",
+        "policy_ref": "synthetic-development-public-v1",
+        "registry_ref": "synthetic-development-registry-v1",
+        "nodes": [
+          {
+            "id": "n1",
+            "op": "ReadFact",
+            "record_ref": "development-record-1",
+            "field": "price"
+          },
+          {
+            "id": "n2",
+            "op": "ReadFact",
+            "record_ref": "development-record-2",
+            "field": "price"
+          },
+          {
+            "id": "n3",
+            "op": "Compare",
+            "left": {
+              "node": "n1",
+              "project": "object"
+            },
+            "right": {
+              "node": "n2",
+              "project": "object"
+            },
+            "relation": "less_than"
+          },
+          {
+            "id": "n4",
+            "op": "Assert",
+            "proposition": "n3"
+          }
+        ],
+        "outputs": [
+          "n4"
+        ],
+        "style": "plain"
+      },
+      "provider_calls": 4,
+      "repair_requests": 0,
+      "forward_calls": 4
+    }
+  ]
+}
