@@ -28,5 +28,13 @@
   "seed": "scripted synthetic provider selections; no learned model",
   "hardware": "Windows 11, AMD64 CPU, Python 3.12.13",
   "billed_cost_usd": 0,
-  "scope": "Callable public-output boundary on merged kernel/renderer and exact PR #13 planner dependency. No network authentication, timing-side-channel, learned-capability, GPU, Index or paid-run claim. Re-run from clean merged source after PR #13 lands before claiming the L0f gate."
+  "scope": "Callable public-output boundary on merged kernel/renderer and exact PR #13 planner dependency. No network authentication, timing-side-channel, learned-capability, GPU, Index or paid-run claim. Re-run from clean merged source after PR #13 lands before claiming the L0f gate.",
+  "additional_current_base_check": {
+    "source_sha": "553bdf135c4d0f5f0120e7429ea9fa237b46453a",
+    "agent_main_sha": "db53bddf9faabcd10bd3505d0c096c0d321057ca",
+    "composition": "fresh git archive source plus planner/parent_bridge paths from e19c308; no other overlays",
+    "command": "python -m unittest language_growth.tests.test_public_output -v",
+    "exit": 0,
+    "raw_output": "current-base-tests.txt"
+  }
 }
