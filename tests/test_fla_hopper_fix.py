@@ -22,9 +22,10 @@ ROOT = Path(__file__).resolve().parents[1]
 NEW_BASE = ("pytorch/pytorch:2.13.0-cuda12.6-cudnn9-devel"
             "@sha256:09c0260351b12b617408ff5711e08d88ccdbb9a21f7f6d7de67e39039b022ae1")
 OLD_DIGEST = "a7103283ea7113e10ae5d014bd2342acebda0bc53164b2f7b1dd6eb7a766bdb6"
-# Not on the pytorch/pytorch base: Clef baseline pins torch 2.11.0 to match Cloudflare's model card and is
-# inference-only (no backward, so chunk_bwd_dqkwg never runs; fla still raises loudly if it ever did).
-EXEMPT = {"clef_baseline"}
+# No exemptions. clef_baseline used to be exempt as "inference-only", which was false: its S1 --grad-probe and job B
+# (GCG-lite) call backward() through fla's gated GDN kernels (PR #41 review). It is now on the same base, with
+# transformers kept at the model card's 5.10.2 (declared deviation: torch 2.11 -> 2.13; see its Dockerfile/JOB_SPEC).
+EXEMPT: set[str] = set()
 # job -> runner; m2_pilot / m2_parent_arm build from the rwkv7 Dockerfile (their build_context.sh copies it).
 RUNNERS = {"qual": "jobs/qual/qual_job.sh", "probe9b": "jobs/probe9b/probe_job.sh", "rwkv7": "jobs/rwkv7/rwkv7_job.sh",
            "m2_pilot": "jobs/m2_pilot/m2_job.sh", "m2_parent_arm": "jobs/m2_parent_arm/parent_arm_job.sh"}
@@ -47,11 +48,11 @@ def _job_dockerfile(job: str) -> str:
 # ----------------------------------------------------------------------------- Dockerfiles carry the fix
 def test_every_dockerfile_is_covered_or_explicitly_exempt():
     jobs = {p.parent.name for p in DOCKERFILES}
-    assert EXEMPT <= jobs and {"qual", "probe9b", "rwkv7"} <= jobs
-    assert jobs - EXEMPT == {"qual", "probe9b", "rwkv7"}, "new Dockerfile: add it to the fix (or justify an exemption)"
+    assert EXEMPT <= jobs and {"qual", "probe9b", "rwkv7", "clef_baseline"} <= jobs
+    assert jobs - EXEMPT == {"qual", "probe9b", "rwkv7", "clef_baseline"},         "new Dockerfile: add it to the fix (or justify an exemption)"
 
 
-@pytest.mark.parametrize("job", sorted(RUNNERS))
+@pytest.mark.parametrize("job", sorted(RUNNERS) + ["clef_baseline"])
 def test_job_image_carries_fix(job):
     d = _job_dockerfile(job)
     froms = re.findall(r"^FROM (\S+)", d, re.M)
@@ -93,6 +94,38 @@ def test_runner_calls_guard_before_gpu_work(job, runner):
                                             r"^timeout |^export_phase (?!\(\))", s, re.M)]
     assert heavy and min(heavy) > m.start(), f"{runner}: GPU/heavy work before the guard"
     assert "\\n  ||" not in s, f"{runner}: literal \\n in a shell continuation"
+
+
+CLEF_RUNNER = "jobs/clef_baseline/run_job.sh"
+CLEF_GUARD = re.compile(r'^python -I /app/jobs/common/fla_guard\.py --out "\$OUT/env/fla_guard\.json".*\|\| fail 5 ', re.M)
+
+
+def test_clef_runner_calls_guard_before_download_and_gpu_phases():
+    """Clef's runner has its own layout (/app, $OUT); the guard must precede the weights download and every phase
+    that touches the GPU (S1 probes incl. --grad-probe, the Index runs, safety_eval and GCG)."""
+    s = (ROOT / CLEF_RUNNER).read_text(encoding="utf-8")
+    m = CLEF_GUARD.search(s)
+    assert m, f"{CLEF_RUNNER}: no fla_guard call failing with exit 5"
+    heavy = [h.start() for h in re.finditer(r"^[^#\n]*(snapshot_download|baselines\.clef_probes|decision_index run|"
+                                            r"baselines\.run_clef_safety)", s, re.M)]
+    assert len(heavy) >= 5 and min(heavy) > m.start(), "Clef GPU/heavy work before the guard"
+    assert "--grad-probe" in s  # the backward the guard exists for is still there (else re-derive the need)
+    header = "".join(ln for ln in s.splitlines(keepends=True)[:12] if ln.startswith("#"))
+    assert "5 setup: fla #640 guard" in header  # exit 5 documented in the header
+
+
+def test_clef_image_keeps_card_transformers_and_no_tilelang():
+    d = (ROOT / "jobs/clef_baseline/Dockerfile").read_text(encoding="utf-8")
+    assert '"transformers==5.10.2"' in d  # the model card's version: Qwen3.5 model code + processor unchanged
+    assert "tilelang" not in re.sub(r"^#.*$", "", d, flags=re.M)
+    assert re.search(r'"causal-conv1d==\d+\.\d+\.\d+"', d), "causal-conv1d must be pinned"
+    assert "torch==2.11" not in d and "whl/cu128" not in d
+
+
+def test_clef_spec_documents_fix():
+    spec = (ROOT / "jobs/clef_baseline/JOB_SPEC.md").read_text(encoding="utf-8")
+    assert NEW_BASE in spec and "#640" in spec and "fla_guard.py" in spec and "kernel_path" in spec
+    assert "torch 2.11" in spec  # the deviation from the model card is declared, not hidden
 
 
 def test_no_literal_backslash_n_continuations_in_shell():

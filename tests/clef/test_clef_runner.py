@@ -16,7 +16,7 @@ from clef_mocks import FakeTok, MockProcessor, build_mock_model  # noqa: E402
 @pytest.fixture
 def mock_load(monkeypatch):
     jsm = CB.load_jsm()
-    model = build_mock_model(jsm, seed=2)
+    model = build_mock_model(jsm, seed=4)  # seed with clean-correct route + pay requests, so GCG runs
 
     def fake_load(model_dir, release="clef-flash", *, encoding="ssdm", device="cpu", dtype="float32", **kw):
         be = CB.ClefBackend(model, FakeTok(), release=release, encoding=encoding, jsm=jsm, device="cpu",
@@ -37,6 +37,7 @@ def test_runner_writes_receipt_and_resumes(tmp_path, mock_load):
     assert set(s["arms"]) == {"clef_ssdm", "clef_native_encoding"}
     assert any("clef_native_encoding - clef_ssdm" in k for k in s["arm_vs_arm"])
     n_attacks = len((tmp_path / "gcg_attacks.jsonl").read_text(encoding="utf-8").splitlines())
+    assert n_attacks >= 1  # the resume check below is only meaningful if attacks ran
     assert R.main(args + ["--gcg-only"]) == 0  # resume: no attack is redone
     assert len((tmp_path / "gcg_attacks.jsonl").read_text(encoding="utf-8").splitlines()) == n_attacks
 
@@ -93,3 +94,42 @@ def test_backend_overlength_backstop_is_exhausted():
     with pytest.raises(RequestRejected) as e:
         be.score(base_request(), lambda: None)
     assert e.value.status == "exhausted" and e.value.code == "input_tokens_exceeded"
+
+
+def test_reference_gdn_path_switches_and_restores():
+    import clef_mocks as M
+
+    jsm = CB.load_jsm()
+    model = build_mock_model(jsm, seed=3)
+    gdn = model.language_model.model.gdn
+    with CB.reference_gdn_path(model) as n:
+        assert n == 1
+        assert gdn.chunk_gated_delta_rule is M.torch_chunk_gated_delta_rule and gdn.causal_conv1d_fn is None
+    assert gdn.chunk_gated_delta_rule is M.fast_chunk_gated_delta_rule and gdn.causal_conv1d_fn is not None
+
+
+def test_kernel_path_check_passes_close_and_fails_far(monkeypatch):
+    import clef_mocks as M
+    from baselines import clef_probes as P
+    from conftest import base_request
+
+    jsm = CB.load_jsm()
+    model = build_mock_model(jsm, seed=4)
+    be = CB.ClefBackend(model, FakeTok(), jsm=jsm, device="cpu", dtype="float32")
+    dec = CB.build_decider(be)
+    rows = []
+    for i in range(3):
+        r = base_request()
+        r["state"] = f"row {i} " * (i + 1)
+        r["_evaluation"] = {"run_id": f"k{i}"}
+        rows.append(r)
+    ok = P.kernel_path_check(dec, model, rows, "clef-flash")
+    assert ok["ok"] and ok["n"] == 3 and ok["gdn_layers_switched"] == 1 and 0 < ok["max_abs_dp"] <= P.KERNEL_TOL
+    monkeypatch.setitem(M.FAST_KERNEL_ERROR, "scale", 5.0)  # a badly wrong "fast kernel"
+    bad = P.kernel_path_check(dec, model, rows, "clef-flash")
+    assert not bad["ok"] and (bad["max_abs_dp"] > P.KERNEL_TOL or bad["argmax_flips"])
+    # vacuous pass refused: no GDN layer to switch
+    monkeypatch.setitem(M.FAST_KERNEL_ERROR, "scale", 1e-4)
+    del model.language_model.model.gdn.causal_conv1d_fn
+    vac = P.kernel_path_check(dec, model, rows, "clef-flash")
+    assert vac["gdn_layers_switched"] == 0 and not vac["ok"]

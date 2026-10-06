@@ -10,6 +10,11 @@
 3. G8       an over-length request (state of ~1.5x max_length) and a 256-option request: Clef's native
             status/usage vs decide's status.
 4. G2(b)    the safety_eval chatml-spoof string: control ids produced inside Clef's sequence, native vs ssdm.
+5. kernel   fast GDN kernels (fla chunk_gated_delta_rule + causal-conv1d, the path the image runs) vs
+            transformers' own torch reference (``clef_backend.reference_gdn_path``) on up to N_KERNEL parity
+            rows of <= KERNEL_MAX_TOKENS tokens: max |dp| <= KERNEL_TOL and no argmax flip where the margin
+            exceeds KERNEL_MARGIN. This is the in-image evidence that Clef scores the same on our pinned stack
+            (torch 2.13 / triton 3.7.1 / fla 0.5.2, off the model card's torch 2.11). Failure -> exit 11.
 
     python -X utf8 -m baselines.clef_probes --model-dir /models/clef-flash --release clef-flash \
         --dev-rows /data/slices/dev-rows.jsonl.gz --out /out/probes.json --n-parity 64
@@ -24,6 +29,36 @@ import sys
 from pathlib import Path
 
 from . import clef_backend as CB
+
+N_KERNEL = 16
+KERNEL_MAX_TOKENS = 2048  # the torch reference GDN is O(T) python-chunked and slow; short rows suffice
+KERNEL_TOL = 2e-2         # bf16 kernel-to-kernel numerics on probabilities (pre-registered)
+KERNEL_MARGIN = 2e-2      # an argmax may only differ where the top-2 gap is below this
+
+
+def kernel_path_check(decider, model, rows, release, max_tokens=KERNEL_MAX_TOKENS, n=N_KERNEL) -> dict:
+    """Fast-kernel vs torch-reference GDN on the same requests through the same decide path."""
+    picked, worst, flips, n_layers = [], 0.0, [], 0
+    for r in rows:
+        if len(picked) >= n:
+            break
+        req = {"model": release, "state": r["state"], "questions": r["questions"]}
+        fast = decider.decide(req)["ssdm"]
+        if fast["status"] != "ok" or fast["diagnostics"]["input_counts"]["max_call_input_tokens"] > max_tokens:
+            continue
+        with CB.reference_gdn_path(model) as n_layers:
+            ref = decider.decide(req)["ssdm"]
+        picked.append(r["_evaluation"]["run_id"])
+        for qid, pf in fast["raw_probabilities"].items():
+            pr = ref["raw_probabilities"][qid]
+            worst = max(worst, max(abs(pf[k] - pr[k]) for k in pf))
+            top = sorted(pf.values())
+            if len(top) > 1 and top[-1] - top[-2] > KERNEL_MARGIN and max(pf, key=pf.get) != max(pr, key=pr.get):
+                flips.append([r["_evaluation"]["run_id"], qid])
+    return {"n": len(picked), "run_ids": picked, "gdn_layers_switched": n_layers,
+            "max_abs_dp": worst, "argmax_flips": flips, "tol": KERNEL_TOL, "margin": KERNEL_MARGIN,
+            # a vacuous pass (no GDN layer switched, or no row checked) is a failure, not a pass
+            "ok": bool(picked) and n_layers > 0 and worst <= KERNEL_TOL and not flips}
 
 
 def read_rows(path: str):
@@ -132,6 +167,9 @@ def main(argv=None) -> int:
     out["parity"] = {"n": len(parity_ids), "max_abs_dp": worst, "argmax_mismatch": argmax_mismatch,
                      "ok": worst <= 2e-4 and not argmax_mismatch}
 
+    # 5. fast GDN kernels vs torch reference (in-image "scores the same" check)
+    out["kernel_path"] = kernel_path_check(decider, model, [by_id[r] for r in parity_ids], a.release)
+
     # 3. G8 probes
     long_req = {"model": a.release, "state": "lorem ipsum " * int(backend.max_length * 0.75),
                 "questions": {"q": {"type": "choice", "instructions": "Pick one.", "criteria": {"a": "A", "b": "B"}}}}
@@ -184,8 +222,9 @@ def main(argv=None) -> int:
         out["max_memory_allocated_gib"] = round(torch.cuda.max_memory_allocated() / 2**30, 2)
         out["device_total_gib"] = round(torch.cuda.get_device_properties(0).total_memory / 2**30, 2)
     Path(a.out).write_text(json.dumps(out, indent=1, default=str), encoding="utf-8")
-    print(json.dumps({"parity": out["parity"], "native_arm_rows": len(native_rows), "g8": {k: v["decide_status"] for k, v in g8.items()}}), flush=True)
-    return 0 if out["parity"]["ok"] else 11
+    print(json.dumps({"parity": out["parity"], "kernel_path_ok": out["kernel_path"]["ok"],
+                      "native_arm_rows": len(native_rows), "g8": {k: v["decide_status"] for k, v in g8.items()}}), flush=True)
+    return 0 if out["parity"]["ok"] and out["kernel_path"]["ok"] else 11
 
 
 if __name__ == "__main__":
