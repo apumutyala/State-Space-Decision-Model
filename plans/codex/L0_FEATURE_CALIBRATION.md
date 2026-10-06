@@ -1,6 +1,7 @@
 # L0 feature-temperature boundary proposal
 
-6 October 2026. Design only; no L runtime change or learned result. Base:
+6 October 2026. Feature-temperature support remains a proposal; the interim
+unsupported-kind rejection is implemented. No learned result. Base:
 `agent-main` `6e39d9b`; reviewed D PR #29 head `302da55`; current L planner
 PR #13 head `e19c308`. The first identity-calibration parent probe does not
 need this extension.
@@ -19,12 +20,12 @@ it is **not** `total_input_tokens` or the state's character/byte count.
 the resulting `temperature_per_question`. L cannot recompute `T` from its
 current response.
 
-The current L planner compares the complete caller-pinned calibration object,
-checks a finite positive reported temperature and recomputes the
-`option_count_temperature` formula. It does not explicitly reject unknown
-calibration kinds: a caller that pins `feature_temperature` can presently pass
-without a formula check. Add an explicit supported-kind guard while this
-extension is pending; retain the existing option-count path.
+Before the interim guard, L compared the complete caller-pinned calibration
+object, checked a finite positive reported temperature and recomputed the
+`option_count_temperature` formula. It did not explicitly reject unknown
+calibration kinds: a caller that pinned `feature_temperature` could pass
+without a formula check. The guard below closes that path while this
+extension is pending; the existing option-count path remains available.
 
 ## Small contract extension to review jointly
 
