@@ -1,7 +1,9 @@
 # m1-prep pilot: attention → GDN conversion on Qwen3.5-0.8B. Status: INCOMPLETE
 
-**Bottom line.** The pipeline code is written, its kernels are numerically verified, and it ran end to end in a
-tiny smoke run (alignment, importance ordering, end-to-end KL, gate with rollback, probes). The
+**Bottom line.** The pipeline code is written and its kernels are numerically verified. A tiny smoke run exercised
+alignment, importance ordering, end-to-end KL, the gate's **rollback** branch and the stock-model probes.
+**Never executed:** the gate's accept branch, probes on a converted model, and converted-model throughput (in the smoke
+every layer was rolled back, so `converted_0` was the stock model). The first paid phase exists to exercise them. The
 **"cost of attention-freedom" curve was not produced.** A memory bug in the probes (now fixed), on a laptop GPU
 shared with another worker, crashed the machine. After that, local GPU runs were stopped by the coordinator.
 The curve and the 9B throughput numbers move to a rented GPU (the ≤$20 qualification spec is below).
@@ -16,7 +18,9 @@ This is pipeline qualification only, not a 9B claim.
 | Our `GDN` module vs HF `Qwen3_5GatedDeltaNet`, real layer-0 weights, pure-torch HF path | 6.8e-7 (recurrent), 3.1e-7 (chunk) | same |
 | fla 0.5.2 Triton kernel on Windows (`triton-windows` 3.4) vs fp32 recurrent, bf16 inputs (fwd + grads) | o 5.3e-3, grads ≤ 8.4e-3 | `tests/test_gdn_fla_venv.json` |
 | Our module (fla) vs HF layer (HF auto-picks fla when importable) | 7.8e-3 | same |
-| Pipeline end to end, tiny budget, rollback path exercised (impossible ΔNLL threshold → every layer rolled back) | runs | `smoke/` |
+| Pipeline smoke, tiny budget, rollback path exercised (impossible ΔNLL threshold → every layer rolled back); accept path, converted probes and converted throughput NOT exercised | runs | `smoke/` |
+| `init_gdn` on the real 0.8B and 9B head layouts (random weights, hidden 512, one layer, CPU): shapes, finite forward, exact v/z/o row mapping, 0.8B q/k split exact, 9B per-head SVD key projection (q·k score corr 0.915 min, energy 0.71 on random weights), unsupported layout raises | PASS | `tests/test_init_shapes_cpu.json` |
+| Paid-run stop conditions (`align.Guard`: throughput exit 3, wall clock) and the pre-registered 9B decision rule (CPU) | PASS | `tests/test_guard_cpu.json` |
 
 flash-linear-attention **does** work on Windows with an RTX 5070 Ti Laptop (sm_120) through `triton-windows`. It is
 installed in a gitignored overlay venv (`.venv-fla`, which adds `.venv-gpu` site-packages through a `.pth` file).
@@ -30,6 +34,23 @@ installed in a gitignored overlay venv (`.venv-fla`, which adds `.venv-gpu` site
   matching the fallback prior. Too few steps to trust.
 - Uncontended laptop training throughput: stage 1 ≈ 3.5–5k tok/s, stage 2 (end-to-end KL with checkpointing) ≈ 0.85–1.0k tok/s.
   When the other worker held the GPU this fell to about 50 tok/s, which is why the 9B is priced from FLOPs and not from these numbers.
+
+## Gate semantics
+
+`policy: force` (the curve configs) **records** the gate verdict and never enforces it: every layer is converted so the
+curve reaches 0 attention layers. `policy: enforce` (alias `rollback`) enforces it: a failing layer returns to attention
+and the other GDNs are restored. The gate checks per-step ΔNLL vs the previous accepted student, cumulative ΔNLL vs the
+teacher (`max_cum_delta_nll`, added after review so drift cannot accumulate unbounded) and final-hidden cosine.
+
+## Known gaps (from internal review)
+
+- `results.json` / `smoke/results.json` record `env.commit` SHAs (`2a742bad`, `8654928`) that the rebase onto agent-main made
+  unreachable, both `dirty: true`; the code they ran is the content of `1237320` / pre-rebase working tree.
+- The post-fix memory numbers below were measured interactively; no log of them is in this directory.
+- No decision-shaped probe yet (PLAN m1 lists decision next to MQAR/S-NIAH); the 9B run needs the m0 stock-readout slice to
+  inform parent selection.
+- "Stock" numbers use our GDN kernel for the native GDN layers (verified equal to HF's to ≤7e-7 fp32), not HF's code path.
+- Throughput is batch-1 prefill only.
 
 ## Why it crashed (root cause, fixed in commit 7df43d5)
 
@@ -57,25 +78,41 @@ activation backward, KL head). N = 8.5e9 text params, 15% eval overhead, H100 at
 Memory on one 80 GB card (est. 43 GB): bf16 weights 18; 0.54B trainable GDN params with fp32 master + Adam 8.6;
 checkpointed layer inputs at 8×4096 = 8.6; one layer's recompute ≈ 6; chunked KL logits ≈ 2.
 
-## ≤$20 SF Compute qualification run (spec only; NOT launched)
+Review notes: the laptop smoke implies ~15–17% MFU, so 25% at 8×4096 on an H100 is plausible but **35% is unsupported until
+measured**; the 100M-tokens-per-layer budget is generous relative to RADLADS (350–700M tokens for all layers of a 7B).
 
-1×H100-80GB batch at $2.97/h. Hard ceiling 6.0 h ($17.8). Stop the node afterwards.
-`spend` issue and LEDGER row first, acknowledged by the other agent (COORDINATION.md spend ladder).
+## First paid job: ≤$20 H100 qualification (spec; NOT launched)
 
-1. 0.25 h: environment (torch 2.8, transformers 5.17, fla 0.5.2), download Qwen3.5-9B, tokenise 60M tokens.
-2. 0.25 h: run `tests/test_gdn.py` on the H100. **PASS is required.**
-3. 0.5 h: stock probes plus the SWA+sinks control on the 9B.
-4. 0.5 h: stage-1 alignment of all 8 layers, 200 steps at 8×4096. Record tok/s and peak memory.
-5. 0.5 h: importance ordering (8 single-swap KLs).
-6. 2.5 h: one-layer conversion of the lowest-KL layer: about 30M stage-2 tokens, then gate and probes.
-7. 0.5 h: throughput and memory (prefill 4k–32k, stock vs converted), then the receipt.
-8. 1.0 h: slack.
+Runner `scripts/sf_qual_run.sh` (orchestration steps in its header). Configs `configs/m1_pilot_0p8b_h100.json`, `configs/m1_9b_qual.json`.
 
-Stop conditions: any test FAIL; stage-2 tok/s below 50% of the 25%-MFU prediction after 50 steps; peak memory above 76 GB; 6 h wall clock.
-Exit proof: a receipt with the measured 9B tok/s and memory, used to re-price the full m1 run.
+| Item | Value |
+|---|---|
+| Platform / shape | SF Compute autoresearch, `create_node(chip="h100-1")`, 1×H100-80GB, $2.97/h batch rate |
+| Image | catalog `pytorch-*` entry (torch preinstalled; exact name confirmed at create — an unknown name is refused with the list, at no cost); pins installed by the runner: transformers 5.17.0, flash-linear-attention 0.5.2, fla-core 0.5.2; mamba_ssm @ e9594ce (Triton-only) in a side dir |
+| Launch | `run_command(node, "bash /home/dev/m1q/sf_qual_run.sh", detach=true, max_duration_minutes=345)` |
+| Max $ | 345 min × $2.97/h = **$17.08** (platform-enforced); the script also POSTs `/v1/stop` in its EXIT trap |
+| Code | three `git archive`s: `claude/m1-conversion-pilot` HEAD, `claude/m0-decide-adapter@a5031f7`, `claude/m0-steer-eval@944fa02` |
+| Export | `/home/dev/m1q/export/<phase>.tgz` + `MANIFEST` after every phase and every `results.json` write (PHASE_HOOK) and on EXIT; orchestrator `export_file`s each; disk survives the stop |
 
-Run the 0.8B curve (`configs/m1_pilot_0p8b.json`, about 9M tokens, about 1 h on an H100) first in the same session. It is cheap
-and produces the pipeline-qualification curve this receipt is missing.
+Timeline (all bounds enforced by `timeout` or in-code guards):
+
+| Phase | Cap | Content | Exit proof |
+|---|---|---|---|
+| setup | — | pip pins; fetch 0.8B + wikitext + MMLU (fg); RWKV7-0.1B, Mamba-3-187M, Llama-3.1 tokenizer, **Qwen3.5-9B in background from t≈0** | `env.json`, `nvidia-smi.txt` |
+| A | 10 + 5 min | `tests/test_gdn.py` (first Linux/H100 fla run) + `tests/test_init_shapes.py` | FAIL → exit 2 → node stops |
+| 0 | 20 min total | m0 GPU items: RWKV7-0.1B and Mamba-3-187M debias controls (`decide/debias.py`, PR #6); fixture v0 regeneration incl. `injection-03-added-tokens` (CPU fp32, as the original); PR #8 canonical-path steer smoke on Qwen3.5-0.8B (`SSDM_QWEN_DIR`, `--backend decide`, GPU) | `out/m0/*` with per-item status |
+| 1 | `timeout 60m` | 0.8B curve, batch 16×1024, `vram_fraction` 0.9, `policy: force`, all 6 layers, stage 2 ≤5 min/layer, probes per point, throughput 1k–8k | `out/m1-0p8b/` + `curve.png` — the missing curve, and the first execution of the accept/converted-probe/throughput path |
+| 2 | remaining budget (≥90 min or skipped) | 9B **throughput/memory probe**: stock + SWA control probes, stage 1 200 steps @ 8×4096, 8 single-swap KLs, stage 2 on the lowest-KL layer for a **fixed 60 min** with `clone_neighbor`, gate (`enforce`) + probes only before the deadline, throughput 4k–32k | `out/m1-9b/` |
+| 3 | 12 min reserve | `scripts/decide_9b.py` → `decision.json`; final export; `/v1/stop` | |
+
+Stop conditions in code (`align.Guard`, `vram_fraction` 0.95 so OOM fails fast): stage 1 steady tok/s < 6,150 or stage 2 < 1,450
+after 50 steps (= 50% of the 25%-MFU prediction) → exit 3; peak > 76 GB → exit 4; wall clock via `timeout`/`max_duration_minutes`.
+
+Pre-registered decision rule (`configs/m1_9b_qual.json: decision_rule`, tested in `tests/test_guard.py`): stage-2 MFU ≥ 25% and
+peak ≤ 60 GB → open the **$40 one-layer-probe** `spend` issue at the measured rate; 12.5–25% (or 60–76 GB) → **re-price to the
+lean plan** first; < 12.5%, peak > 76 GB, or a stop exit 3/4 → **fold** (cache teacher hidden states / fuse the KL head first).
+
+Preconditions before launch: LEDGER planned row + `spend` issue acknowledged by Codex; this code merged to agent-main.
 
 ## Files
 

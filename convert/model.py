@@ -21,7 +21,9 @@ import torch.nn as nn
 
 from .gdn import GDN
 
-DEFAULT_MODEL_DIR = r"C:\Users\apumu\research\CHLabs\ssdm-data\hf\models--Qwen--Qwen3.5-0.8B\snapshots"
+from .data import DATA_ROOT  # noqa: E402
+
+DEFAULT_MODEL_DIR = os.path.join(DATA_ROOT, "hf", "models--Qwen--Qwen3.5-0.8B", "snapshots")
 
 
 def resolve_model_dir(path: str | None) -> str:
@@ -179,8 +181,8 @@ def init_gdn(model: ConvertibleQwen, i: int, how: str = "reuse_attn", seed: int 
     how = ``random``         HF-style fresh init (std 0.02 linears, conv/A/dt as HF)
           ``clone_neighbor`` copy the preceding native GDN layer's weights
           ``reuse_attn``     Mamba-in-the-Llama/LoLCATs-style: q/k/v/gate/o from the attention projections
-                             (8 heads x 256 split into 16 x 128; GQA kv heads repeated), decay/beta/norm
-                             from the preceding native GDN layer, conv1d = identity (delta at last tap).
+                             (see ``reuse_attn_weights``: head split on 0.8B, per-head SVD key projection on
+                             9B), decay/beta/norm from the preceding native GDN layer, conv1d = identity tap.
     """
     cfg = model.cfg
     attn = model.swaps[i].attn
@@ -211,38 +213,67 @@ def init_gdn(model: ConvertibleQwen, i: int, how: str = "reuse_attn", seed: int 
         return gdn
     if how != "reuse_attn":
         raise ValueError(how)
-    H, hd = cfg.num_attention_heads, cfg.head_dim
-    KV = cfg.num_key_value_heads
-    nk, dk, nv, dv = gdn.nk, gdn.dk, gdn.nv, gdn.dv
-    assert H * hd == nk * dk == nv * dv, "head-splitting reuse needs H*head_dim == GDN key/value dims"
-    split = hd // dk  # 256 -> 2 x 128
-    hid = cfg.hidden_size
     with torch.no_grad():
-        Wq_all = attn.q_proj.weight.view(H, 2 * hd, hid)
-        Wq, Wgate = Wq_all[:, :hd], Wq_all[:, hd:]
-        qn = (1.0 + attn.q_norm.weight.float()).to(dt)  # fold zero-centred RMSNorm scale (direction-preserving)
-        kn = (1.0 + attn.k_norm.weight.float()).to(dt)
-        Wq = Wq * qn[None, :, None]
-        Wk = attn.k_proj.weight.view(KV, hd, hid) * kn[None, :, None]
-        Wv = attn.v_proj.weight.view(KV, hd, hid)
-        rep = H // KV
-        Wk = Wk.repeat_interleave(rep, 0)  # [H, hd, hid]
-        Wv = Wv.repeat_interleave(rep, 0)
-        # GDN head j = split*h + s takes rows s*dk:(s+1)*dk of attention head h -> contiguous reshape
-        q_new = Wq.reshape(H * hd, hid)
-        k_new = Wk.reshape(H * hd, hid)
-        v_new = Wv.reshape(H * hd, hid)
-        gdn.in_proj_qkv.weight.copy_(torch.cat([q_new, k_new, v_new], 0))
-        gdn.in_proj_z.weight.copy_(Wgate.reshape(H * hd, hid))
-        gdn.out_proj.weight.copy_(attn.o_proj.weight)
+        W = reuse_attn_weights(attn, cfg, gdn.nk, gdn.dk, gdn.nv, gdn.dv)
+        gdn.in_proj_qkv.weight.copy_(torch.cat([W["q"], W["k"], W["v"]], 0).to(dt))
+        gdn.in_proj_z.weight.copy_(W["z"].to(dt))
+        gdn.out_proj.weight.copy_(W["o"].to(dt))
         cw = torch.zeros_like(gdn.conv1d.weight)
         cw[..., -1] = 1.0
         gdn.conv1d.weight.copy_(cw)
-        for name in ("dt_bias", "A_log", "in_proj_a", "in_proj_b", "norm"):
-            getattr(gdn, name).load_state_dict(getattr(nb, name).state_dict()) if isinstance(
-                getattr(gdn, name), nn.Module) else getattr(gdn, name).copy_(getattr(nb, name))
-    _ = split
+        gdn.dt_bias.copy_(nb.dt_bias)
+        gdn.A_log.copy_(nb.A_log)
+        gdn.in_proj_a.load_state_dict(nb.in_proj_a.state_dict())
+        gdn.in_proj_b.load_state_dict(nb.in_proj_b.state_dict())
+        gdn.norm.load_state_dict(nb.norm.state_dict())
+    gdn.reuse_info = W["info"]
     return gdn
+
+
+@torch.no_grad()
+def reuse_attn_weights(attn, cfg, nk, dk, nv, dv):
+    """Map a gated GQA softmax-attention layer onto GDN projections (Mamba-in-the-Llama / LoLCATs-style reuse).
+
+    Value side (needs nv*dv == H*hd): value head j <- half (j % s) of attention head j // s, s = hd // dv;
+    v from the GQA-repeated v_proj rows, z (output gate) from the q_proj gate rows, out_proj = o_proj.
+    Key side, two supported layouts:
+      * ``split``  nk*dk == H*hd (Qwen3.5-0.8B: 8x256 -> 16x128): key head i <- half (i % s) of attention head i // s.
+      * ``proj``   nk == H, dk < hd, nv/nk == hd/dv (Qwen3.5-9B: 16x256 -> 16x128 keys, 32x128 values; GDN repeats key
+                   head i for value heads 2i, 2i+1 = the two halves of attention head i): key head i <- attention head
+                   i compressed hd -> dk by a data-free per-head SVD basis P_i (top-dk left singular vectors of
+                   [Wq_i | Wk_i]); q'.k' = q^T P^T P k keeps the dominant shared subspace of q and k.
+    q_norm / k_norm scales (1 + w) are folded into the rows (direction-preserving only per normalised block); the
+    RMS normalisation itself is replaced by GDN's L2 norm after conv + SiLU, so this is an initialisation, not an
+    equivalence.
+    """
+    H, hd, KV, hid = cfg.num_attention_heads, cfg.head_dim, cfg.num_key_value_heads, cfg.hidden_size
+    if nv * dv != H * hd or hd % dv:
+        raise ValueError(f"reuse_attn: value dims {nv}x{dv} incompatible with attention {H}x{hd}; use clone_neighbor")
+    f = lambda t: t.float()  # noqa: E731
+    Wq_all = f(attn.q_proj.weight).view(H, 2 * hd, hid)
+    Wq, Wgate = Wq_all[:, :hd], Wq_all[:, hd:]
+    Wq = Wq * (1.0 + f(attn.q_norm.weight))[None, :, None]
+    Wk = f(attn.k_proj.weight).view(KV, hd, hid) * (1.0 + f(attn.k_norm.weight))[None, :, None]
+    Wv = f(attn.v_proj.weight).view(KV, hd, hid)
+    rep = H // KV
+    Wk, Wv = Wk.repeat_interleave(rep, 0), Wv.repeat_interleave(rep, 0)  # [H, hd, hid]
+    out = {"v": Wv.reshape(H * hd, hid), "z": Wgate.reshape(H * hd, hid), "o": f(attn.o_proj.weight)}
+    if nk * dk == H * hd and hd % dk == 0:
+        out["q"], out["k"] = Wq.reshape(H * hd, hid), Wk.reshape(H * hd, hid)
+        out["info"] = {"key_map": "split", "retained_energy": 1.0}
+    elif nk == H and dk < hd and nv // nk == hd // dv:
+        qs, ks, en = [], [], []
+        for h in range(H):
+            U, S, _ = torch.linalg.svd(torch.cat([Wq[h], Wk[h]], 1), full_matrices=False)
+            P = U[:, :dk].T  # [dk, hd], orthonormal rows
+            qs.append(P @ Wq[h])
+            ks.append(P @ Wk[h])
+            en.append(float((S[:dk] ** 2).sum() / (S ** 2).sum()))
+        out["q"], out["k"] = torch.cat(qs, 0), torch.cat(ks, 0)
+        out["info"] = {"key_map": "proj", "retained_energy": sum(en) / len(en), "retained_energy_min": min(en)}
+    else:
+        raise ValueError(f"reuse_attn: key dims {nk}x{dk} vs attention {H}x{hd} unsupported; use clone_neighbor")
+    return out
 
 
 def attach_gdn(model: ConvertibleQwen, i: int, gdn: GDN, train_dtype=torch.float32):

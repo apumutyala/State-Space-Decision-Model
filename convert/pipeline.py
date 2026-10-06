@@ -23,6 +23,7 @@ import os
 import platform
 import random
 import subprocess
+import sys
 import time
 
 import numpy as np
@@ -56,6 +57,12 @@ class Results:
         tmp = self.path + ".tmp"
         json.dump(self.d, open(tmp, "w"), indent=1)
         os.replace(tmp, self.path)
+        hook = os.environ.get("PHASE_HOOK")  # e.g. the paid runner's per-phase artifact export; never fatal
+        if hook:
+            try:
+                subprocess.run(hook + " " + k, shell=True, timeout=600)
+            except Exception as e:  # noqa: BLE001
+                print(f"PHASE_HOOK failed for {k}: {e}", flush=True)
 
 
 def env_info():
@@ -75,6 +82,21 @@ def env_info():
 
 
 def main():
+    try:
+        _main()
+    except align.StopCondition as e:
+        print(json.dumps({"STOP_CONDITION": e.reason, "exit_code": e.code, **e.data}), flush=True)
+        if _R is not None:
+            _R.set("stopped", {"reason": e.reason, "exit_code": e.code, **e.data})
+        sys.exit(e.code)
+
+
+_R = None
+
+
+def _main():
+    global _R
+    t_start = time.time()
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--out", required=True)
@@ -83,7 +105,11 @@ def main():
     os.makedirs(a.out, exist_ok=True)
     ckpt_dir = cfg.get("ckpt_dir", os.path.join(data.DATA_ROOT, "ckpt", os.path.basename(a.out.rstrip("/\\"))))
     os.makedirs(ckpt_dir, exist_ok=True)
-    R = Results(os.path.join(a.out, "results.json"))
+    R = _R = Results(os.path.join(a.out, "results.json"))
+    if os.environ.get("DEADLINE_MINUTES"):  # the paid runner sets the remaining budget
+        cfg["deadline_minutes"] = float(os.environ["DEADLINE_MINUTES"])
+    deadline = 60 * cfg["deadline_minutes"] if cfg.get("deadline_minutes") else None
+    past_deadline = lambda: bool(deadline and time.time() - t_start > deadline)  # noqa: E731
     logf = open(os.path.join(a.out, "train_log.jsonl"), "a")
 
     def log(rec, phase=""):
@@ -171,9 +197,13 @@ def main():
         init_eval = {i: align.evaluate(model, gate_w[:8], {i: "student"}) for i in A} if s1.get("eval_init") else None
         bt = data.Batcher(splits["train"], L, B, seed=cfg["seed"] + 2)
         scales = align.calibrate_out_scale(model, A, next(bt)) if cfg.get("calibrate_out_scale", True) else None
-        hist, ntok, sec = align.stage1_align(model, A, bt, s1["steps"], s1["lr"], log=lambda r: log(r, "stage1"))
+        g1 = align.Guard(s1.get("guard"), "stage1")
+        hist, ntok, sec = align.stage1_align(model, A, bt, s1["steps"], s1["lr"], log=lambda r: log(r, "stage1"),
+                                             guard=g1)
         save_gdns("stage1", A)
         R.set("stage1", {"init": init_how, "hist": hist, "tokens": ntok, "seconds": sec, "tok_s": ntok / sec,
+                         "steady_tok_s": g1.rate, "peak_gb": g1.peak_gb(),
+                         "reuse_info": {str(i): getattr(model.swaps[i].gdn, "reuse_info", None) for i in A},
                          "init_eval_single_swap": init_eval,
                          "out_scale_calibration": {str(k): v for k, v in (scales or {}).items()}})
     else:
@@ -200,24 +230,35 @@ def main():
     prev_nll = prog["steps"][-1]["gate_eval"]["nll_student"] if prog["steps"] else None
     if prev_nll is None:
         prev_nll = align.evaluate(model, gate_w, {})["nll_teacher"]
-    for k, i in enumerate(order):
+    max_layers = cfg.get("progressive", {}).get("max_layers", len(order))
+    for k, i in enumerate(order[:max_layers]):
         if k < len(prog["steps"]):
             continue
+        if past_deadline():
+            log({"skipped_layer": i, "reason": "deadline"}, "deadline")
+            break
         snap = {j: copy.deepcopy(model.swaps[j].gdn.state_dict()) for j in converted}
         trial = converted + [i]
         modes = {j: "student" for j in trial}
         seed_all(cfg["seed"] + 10 + k)
         bt = data.Batcher(splits["train"], L, B, seed=cfg["seed"] + 100 + k)
+        g2 = align.Guard(s2.get("guard"), f"stage2:L{i}")
         hist, ntok, sec = align.stage2_kl(model, trial if s2.get("train_all_converted", True) else [i], modes, bt,
-                                          s2["steps"], s2["lr"], log=lambda r: log(r, f"stage2:L{i}"))
+                                          s2["steps"], s2["lr"], log=lambda r: log(r, f"stage2:L{i}"), guard=g2)
         ge = align.evaluate(model, gate_w, modes)
         step_dnll = ge["nll_student"] - prev_nll
-        passed = bool(step_dnll <= gate["max_step_delta_nll"] and ge["hidden_cos"] >= gate["min_hidden_cos"])
+        # gate: per-step dNLL (vs previous accepted student) + cumulative dNLL vs teacher + hidden-state fidelity
+        passed = bool(step_dnll <= gate["max_step_delta_nll"]
+                      and ge["delta_nll"] <= gate.get("max_cum_delta_nll", float("inf"))
+                      and ge["hidden_cos"] >= gate["min_hidden_cos"])
         policy = gate.get("policy", "force")
+        if policy not in ("force", "enforce", "rollback"):
+            raise ValueError(policy)
+        # force = verdict recorded, never enforced (curve mode); enforce/rollback = a failing layer is rolled back
         accepted = passed or policy == "force"
         rec = {"k": k, "layer": i, "gate_eval": ge, "step_delta_nll": step_dnll, "gate_pass": passed,
                "policy": policy, "accepted": accepted, "train_tokens": ntok, "train_seconds": sec,
-               "train_tok_s": ntok / sec, "hist": hist}
+               "train_tok_s": ntok / sec, "steady_tok_s": g2.rate, "peak_gb": g2.peak_gb(), "hist": hist}
         if accepted:
             converted = trial
             prev_nll = ge["nll_student"]
@@ -228,10 +269,12 @@ def main():
         rec["converted_after"] = list(converted)
         log({kk: v for kk, v in rec.items() if kk != "hist"}, "gate")
         save_gdns(f"prog_{k + 1}", [j for j in A if model.swaps[j].gdn is not None])
-        if accepted:
+        if accepted and not past_deadline():
             tag = f"conv{len(converted)}_kept{len(A) - len(converted)}"
             rec["probe_tag"] = tag
             run_probes(tag, {j: "student" for j in converted})
+        elif accepted:
+            rec["probes_skipped"] = "deadline"
         prog["steps"].append(rec)
         prog["converted"] = converted
         R.set("progressive", prog)

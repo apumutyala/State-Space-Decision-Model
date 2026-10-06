@@ -14,7 +14,7 @@ import os
 import numpy as np
 import torch
 
-DATA_ROOT = r"C:\Users\apumu\research\CHLabs\ssdm-data"
+DATA_ROOT = os.environ.get("SSDM_DATA_ROOT", r"C:\Users\apumu\research\CHLabs\ssdm-data")
 WT = os.path.join(DATA_ROOT, "hf", "datasets--Salesforce--wikitext", "snapshots")
 TOK_DIR = os.path.join(DATA_ROOT, "tokens")
 

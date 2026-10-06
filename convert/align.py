@@ -20,14 +20,63 @@ from torch.utils.checkpoint import checkpoint
 AC = dict(device_type="cuda", dtype=torch.bfloat16)
 
 
-def _cosine_lr(step, total, warmup, base):
+def _cosine_lr(step, total, warmup, base, guard=None):
     if step < warmup:
         return base * (step + 1) / warmup
     p = (step - warmup) / max(1, total - warmup)
-    return base * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * p)))
+    if guard is not None:
+        p = max(p, guard.time_fraction())  # wall-clock-capped stages anneal on time
+    return base * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * min(1.0, p))))
 
 
-def stage1_align(model, layers, batcher, steps, lr, warmup=20, log_every=25, log=print):
+class StopCondition(Exception):
+    """A pre-registered stop condition fired; the pipeline records it and exits with ``code``."""
+
+    def __init__(self, reason, code, data=None):
+        super().__init__(reason)
+        self.reason, self.code, self.data = reason, code, data or {}
+
+
+class Guard:
+    """Wall-clock cap + pre-registered stop conditions for an unattended (paid) run.
+
+    cfg keys: max_minutes (graceful: the stage ends early), min_tok_s + check_after_steps (exit 3),
+    max_peak_gb (exit 4). Throughput is measured from step 10 (after kernel autotune) to check_after_steps.
+    """
+
+    def __init__(self, cfg=None, name=""):
+        cfg = cfg or {}
+        self.name = name
+        self.max_sec = 60 * cfg["max_minutes"] if cfg.get("max_minutes") else None
+        self.min_tok_s = cfg.get("min_tok_s")
+        self.check_after = cfg.get("check_after_steps", 50)
+        self.max_peak_gb = cfg.get("max_peak_gb")
+        self.t0 = time.time()
+        self.mark = None
+        self.rate = None
+
+    def time_fraction(self):
+        return (time.time() - self.t0) / self.max_sec if self.max_sec else 0.0
+
+    def peak_gb(self):
+        return torch.cuda.max_memory_allocated() / 1e9 if torch.cuda.is_available() else 0.0
+
+    def step(self, step, ntok):
+        """Call after each optimiser step. Returns True when the wall-clock cap says stop (graceful)."""
+        if step == 10:
+            self.mark = (time.time(), ntok)
+        if self.mark and step == max(self.check_after, 11):
+            self.rate = (ntok - self.mark[1]) / max(time.time() - self.mark[0], 1e-9)
+            if self.min_tok_s and self.rate < self.min_tok_s:
+                raise StopCondition(f"{self.name}: tok/s {self.rate:.0f} < {self.min_tok_s} after {step} steps", 3,
+                                    {"tok_s": self.rate})
+        if self.max_peak_gb and self.peak_gb() > self.max_peak_gb:
+            raise StopCondition(f"{self.name}: peak {self.peak_gb():.1f} GB > {self.max_peak_gb} GB", 4,
+                                {"peak_gb": self.peak_gb()})
+        return bool(self.max_sec and time.time() - self.t0 > self.max_sec)
+
+
+def stage1_align(model, layers, batcher, steps, lr, warmup=20, log_every=25, log=print, guard=None):
     swaps = [model.swaps[i] for i in layers]
     params = [p for sw in swaps for p in sw.gdn.parameters()]
     opt = torch.optim.AdamW(params, lr=lr, betas=(0.9, 0.95), weight_decay=0.0)
@@ -46,7 +95,7 @@ def stage1_align(model, layers, batcher, steps, lr, warmup=20, log_every=25, log
         with model.modes({}):  # all teacher
             for step in range(steps):
                 for gpar in opt.param_groups:
-                    gpar["lr"] = _cosine_lr(step, steps, warmup, lr)
+                    gpar["lr"] = _cosine_lr(step, steps, warmup, lr, guard)
                 x = next(batcher)
                 losses.clear()
                 with torch.no_grad(), torch.autocast(**AC):
@@ -58,11 +107,15 @@ def stage1_align(model, layers, batcher, steps, lr, warmup=20, log_every=25, log
                 torch.nn.utils.clip_grad_norm_(params, 1.0)
                 opt.step()
                 ntok += x.numel()
-                if step % log_every == 0 or step == steps - 1:
+                stop = guard.step(step, ntok) if guard else False
+                if step % log_every == 0 or step == steps - 1 or stop:
                     rec = {"step": step, "tokens": ntok, "tok_s": ntok / (time.time() - t0),
+                           "peak_gb": round(torch.cuda.max_memory_allocated() / 1e9, 2),
                            **{f"rel_mse_L{k}": round(v.item(), 5) for k, v in losses.items()}}
                     hist.append(rec)
                     log(rec)
+                if stop:
+                    break
     finally:
         for h in hs:
             h.remove()
@@ -109,7 +162,7 @@ def kl_from_hidden(hs, ht, lm_head, chunk=512):
 
 
 def stage2_kl(model, layers_train, student_modes, batcher, steps, lr, warmup=20, log_every=25, log=print,
-              grad_ckpt=True):
+              grad_ckpt=True, guard=None):
     params = list(model.gdn_parameters(layers_train))
     opt = torch.optim.AdamW(params, lr=lr, betas=(0.9, 0.95), weight_decay=0.0)
     if grad_ckpt:
@@ -119,7 +172,7 @@ def stage2_kl(model, layers_train, student_modes, batcher, steps, lr, warmup=20,
     try:
         for step in range(steps):
             for gpar in opt.param_groups:
-                gpar["lr"] = _cosine_lr(step, steps, warmup, lr)
+                gpar["lr"] = _cosine_lr(step, steps, warmup, lr, guard)
             x = next(batcher)
             with torch.no_grad(), torch.autocast(**AC), model.modes({}):
                 ht = model.hidden(x)
@@ -133,11 +186,14 @@ def stage2_kl(model, layers_train, student_modes, batcher, steps, lr, warmup=20,
             gn = torch.nn.utils.clip_grad_norm_(params, 1.0)
             opt.step()
             ntok += x.numel()
-            if step % log_every == 0 or step == steps - 1:
+            stop = guard.step(step, ntok) if guard else False
+            if step % log_every == 0 or step == steps - 1 or stop:
                 rec = {"step": step, "tokens": ntok, "tok_s": ntok / (time.time() - t0), "kl": round(loss.item(), 5),
-                       "grad_norm": round(float(gn), 4)}
+                       "grad_norm": round(float(gn), 4), "peak_gb": round(torch.cuda.max_memory_allocated() / 1e9, 2)}
                 hist.append(rec)
                 log(rec)
+            if stop:
+                break
     finally:
         model.lm.eval()
         if grad_ckpt:
