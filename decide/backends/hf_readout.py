@@ -31,7 +31,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .. import versions
-from ..prompt import TEMPLATES, Segment, Template, build_prompt_segments, continuation_segments
+from ..prompt import TEMPLATES, Segment, Template, build_prompt_labelled, continuation_segments
+from ..provenance import validate_provenance
 from ..schema import canonical_json, canonical_options, sha256_text
 from ..untrusted import UNTRUSTED_ENCODER_ID, ControlTokenError, UntrustedEncoder
 from .base import BackendUnsupported, Plan, ScoreResult
@@ -139,9 +140,12 @@ class HFReadoutBackend:
         return self._revision
 
     # --------------------------------------------------------------- planning
-    def _encode(self, segments: list[Segment]) -> list[int]:
+    def _encode(self, segments: list[Segment], counts: dict[str, int] | None = None,
+                labels: list[str] | None = None) -> list[int]:
+        """Encode (text, trusted) segments one by one (no BPE merge across segments).
+        Untrusted segments go through decide.untrusted and fail closed on control ids."""
         ids: list[int] = []
-        for text, trusted in segments:
+        for k, (text, trusted) in enumerate(segments):
             try:
                 seg_ids = self.plugin.encode(text, trusted)
             except ControlTokenError as exc:
@@ -151,12 +155,23 @@ class HFReadoutBackend:
                     "control_tokens_in_input", "request text encoded to control/special token ids; refused"
                 )
             ids += seg_ids
+            if counts is not None and labels is not None:
+                counts[labels[k]] = counts.get(labels[k], 0) + len(seg_ids)
         return ids
 
-    def _rows(self, request: dict[str, Any]) -> list[dict[str, Any]]:
+    @staticmethod
+    def _provenance(request: dict[str, Any]) -> dict[str, Any] | None:
+        env = request.get("ssdm") if isinstance(request.get("ssdm"), dict) else {}
+        raw = env.get("provenance")
+        return None if raw is None else validate_provenance(request, raw)
+
+    def _rows(self, request: dict[str, Any], label_counts: dict[str, int] | None = None) -> list[dict[str, Any]]:
         rows = []
+        prov = self._provenance(request)
         for qid in request["questions"]:
-            prompt_ids = self._encode(build_prompt_segments(self.template, request, qid))
+            labelled = build_prompt_labelled(self.template, request, qid, prov)
+            labels = [lab for _, lab in labelled]
+            prompt_ids = self._encode([(t, lab == "template") for t, lab in labelled], label_counts, labels)
             options = [o for o, _ in canonical_options(request["questions"][qid])]
             for o in options:
                 cont = self._encode(continuation_segments(self.template, o))
@@ -181,7 +196,8 @@ class HFReadoutBackend:
         return chunks
 
     def plan(self, request: dict[str, Any]) -> Plan:
-        rows = self._rows(request)
+        label_counts: dict[str, int] = {}
+        rows = self._rows(request, label_counts)
         chunks = self._chunks(rows)
         lengths = [len(r["prompt"]) + len(r["cont"]) for r in rows]
         per_q: dict[str, dict[str, Any]] = {}
@@ -193,6 +209,7 @@ class HFReadoutBackend:
             max_call_input_tokens=max(lengths),
             total_input_tokens=sum(lengths),
             per_question=per_q,
+            prompt_token_labels=label_counts,
         )
 
     # ---------------------------------------------------------------- scoring

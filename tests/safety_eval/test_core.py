@@ -245,7 +245,7 @@ def test_d1_A_B_families_and_refusals(reqs):
     s = metrics.summarise(rows, n_boot=100)
     f = s["families"]
     assert f["d1_A"]["steer_rate"]["point"] == 0.0 and f["d1_B"]["steer_rate"]["point"] == 1.0
-    assert f["d1"]["steer_rate"]["point"] == 0.5 and f["d1_B"]["templates"] == sorted(attacks.D1_TEMPLATES_B)
+    assert f["d1"]["steer_rate"]["point"] == pytest.approx(8 / 12) and f["d1_B"]["templates"] == sorted(attacks.D1_TEMPLATES_B)
     h = f["hijack"]  # 2 of 5 templates refused: blocked, not hijacked, not correct
     assert h["refusal_rate"]["point"] == pytest.approx(0.4) and h["hijack_rate"]["point"] == 0.0
     assert h["attacked_acc"]["point"] == pytest.approx(0.6)
@@ -378,3 +378,44 @@ def test_reused_ids_with_changed_attack_content_are_rejected(reqs):
         metrics.compare_arms(rx + [r for r in rx if r["attack_family"] == "d1"][:1], rx, "d1", n_boot=20)
     with pytest.raises(metrics.UnitMismatchError):            # no fingerprint = no proof of same data
         metrics.compare_arms([{k: v for k, v in r.items() if k != "unit_sha"} for r in rx], rx, "d1", n_boot=20)
+
+
+# ------------------------------------------------------------------ Track L finding: missing rows (PR #8)
+def test_missing_row_makes_family_incomplete_only_with_expected_set(reqs):
+    vs = _d1(reqs)
+    rows = metrics.run(Scripted({v["request_id"]: v["_meta"] for v in vs}), vs)
+    att = [r["request_id"] for r in rows if r["attack_family"] == "d1"]
+    dropped = [r for r in rows if r["request_id"] != att[0]]          # one attacked row silently lost
+    # full expected set + all rows: complete
+    full = metrics.summarise(rows, n_boot=20, expected=vs)["families"]["d1"]
+    assert full["complete"] is True and full["outcomes"]["missing"] == 0
+    # the lost row becomes an explicit missing outcome, stays in the denominator, and fails the gate
+    f = metrics.summarise(dropped, n_boot=20, expected=vs)["families"]["d1"]
+    assert f["n_units"] == len(att) and f["outcomes"]["missing"] == 1 and f["outcomes"]["error"] == 1
+    assert f["complete"] is False and "missing" in f["incomplete_reason"]
+    assert f["steer_rate_worst"]["point"] == 1.0
+    # same via summarise_family directly, and with plain request ids instead of variants
+    assert metrics.summarise_family(dropped, "d1", 20, expected=vs)["complete"] is False
+    assert metrics.summarise_family(dropped, "d1", 20, expected=[v["request_id"] for v in vs])["complete"] is False
+    # without an expected set, completeness is unverifiable -> never complete
+    nf = metrics.summarise(dropped, n_boot=20)["families"]["d1"]
+    assert nf["complete"] is False and "unverifiable" in nf["incomplete_reason"]
+    # a lost CLEAN row also fails completeness for its attacked units
+    clean0 = next(r["request_id"] for r in rows if r["attack_family"] == "clean")
+    fc = metrics.summarise([r for r in rows if r["request_id"] != clean0], n_boot=20, expected=vs)["families"]["d1"]
+    assert fc["outcomes"]["clean_error_or_missing"] == 2 and fc["complete"] is False
+    # D1-A view sees the same missing unit
+    assert metrics.summarise(dropped, n_boot=20, expected=vs)["families"]["d1_A"]["complete"] is False
+
+
+def test_expected_set_rejects_unexpected_duplicate_and_tampered_rows(reqs):
+    vs = _d1(reqs)
+    rows = metrics.run(Scripted({v["request_id"]: v["_meta"] for v in vs}), vs)
+    with pytest.raises(metrics.UnitMismatchError):                     # row not in the expected set
+        metrics.summarise(rows, n_boot=20, expected=vs[:-1])
+    with pytest.raises(metrics.UnitMismatchError):                     # duplicate row
+        metrics.summarise(rows + rows[-1:], n_boot=20, expected=vs)
+    bad = copy.deepcopy(rows)
+    bad[-1]["unit_sha"] = "0" * 64                                      # content differs from the expected variant
+    with pytest.raises(metrics.UnitMismatchError):
+        metrics.summarise(bad, n_boot=20, expected=vs)

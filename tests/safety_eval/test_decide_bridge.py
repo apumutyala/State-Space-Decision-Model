@@ -36,9 +36,50 @@ def test_bridge_end_to_end_on_oracle(reqs):
     assert s["families"]["d1_A"]["n_units"] == len(reqs) * 4
 
 
-def test_bridge_requires_v0_1_deltas():
-    with pytest.raises(ValueError):
-        DecideBridge(Decider(OracleBackend()))
+def test_bridge_sends_current_envelope_and_restriction_is_core(reqs):
+    """Contract 0.1 (decide 0.2.0): envelope schema comes from decide.versions, and policy_restriction is core,
+    so a Decider WITHOUT enable_v0_1_deltas must still return policy-conditioned probabilities that the bridge
+    executes. (Replaces the 0.1.0-era test that required the deltas flag.)"""
+    from decide import versions
+    w = to_decide_request(data.strip_meta(reqs[0]))
+    assert w["ssdm"]["schema"] == versions.ENVELOPE_SCHEMA
+    br = DecideBridge(Decider(OracleBackend()))
+    vs = attacks.build_variants(reqs[:4], hijack=["ignore_previous"], d1=["urgency"])
+    rows = metrics.run(br, vs)
+    assert all(r["status"] == "ok" for r in rows)
+    assert all(r["executed"] in v["policy"]["allowed"][data.QKEY] and r["violation"] is False
+               for r, v in zip(rows, vs))
+
+
+class _Fake:
+    """Decider stand-in returning a fixed response (contract-violation cases the oracle cannot produce)."""
+
+    def __init__(self, resp):
+        self.resp = resp
+
+    def decide(self, request):
+        return self.resp
+
+
+def _ok_resp(req, pcp):
+    keys = list(req["questions"][data.QKEY]["criteria"])
+    u = {k: 1.0 / len(keys) for k in keys}
+    ss = {"status": "ok", "raw_probabilities": {data.QKEY: u}, "served_probabilities": {data.QKEY: u}}
+    if pcp is not None:
+        ss["policy_conditioned_probabilities"] = pcp
+    return {"model": "x", "answers": {}, "ssdm": ss}
+
+
+def test_bridge_never_falls_back_to_unrestricted_served(reqs):
+    req = data.strip_meta(reqs[0])
+    # restriction sent, no conditioning returned: contract violation -> error row (not a silent served argmax)
+    rows = metrics.run(DecideBridge(_Fake(_ok_resp(req, None))), [reqs[0] | {"_meta": dict(reqs[0]["_meta"],
+                       variant="clean", attack_family="clean", template="clean")}])
+    assert rows[0]["status"] == "error" and "policy_conditioned" in rows[0]["error"]
+    # zero allowed served mass: nothing executes -> unsupported with an explicit code
+    stage = {data.QKEY: {"status": "unavailable_zero_served_mass", "probabilities": None}}
+    r = DecideBridge(_Fake(_ok_resp(req, stage)))(req)
+    assert r["status"] == "unsupported" and r["error"] == "policy_conditioned_unavailable"
 
 
 def test_bridge_maps_refusal(reqs):

@@ -1,0 +1,114 @@
+{
+ "rejected_last_step": {
+  "uninterrupted": [
+   [
+    "a",
+    true,
+    2.0,
+    0.01
+   ],
+   [
+    "b",
+    false,
+    2.01,
+    -0.32
+   ],
+   [
+    "c",
+    true,
+    2.01,
+    0.01
+   ],
+   [
+    "d",
+    true,
+    2.02,
+    -0.02
+   ]
+  ],
+  "all_resumes_equal": true,
+  "resumes": [
+   {
+    "crash_at": 1,
+    "mode": "after_persist",
+    "equal": true
+   },
+   {
+    "crash_at": 2,
+    "mode": "after_persist",
+    "equal": true
+   },
+   {
+    "crash_at": 3,
+    "mode": "after_persist",
+    "equal": true
+   },
+   {
+    "crash_at": 1,
+    "mode": "before_persist",
+    "equal": true
+   },
+   {
+    "crash_at": 2,
+    "mode": "before_persist",
+    "equal": true
+   },
+   {
+    "crash_at": 3,
+    "mode": "before_persist",
+    "equal": true
+   }
+  ]
+ },
+ "no_accepted_step": {
+  "uninterrupted": [
+   [
+    "b",
+    false,
+    2.0,
+    -0.31
+   ],
+   [
+    "c",
+    true,
+    2.0,
+    0.02
+   ],
+   [
+    "d",
+    true,
+    2.02,
+    -0.01
+   ]
+  ],
+  "all_resumes_equal": true,
+  "resumes": [
+   {
+    "crash_at": 1,
+    "mode": "after_persist",
+    "equal": true
+   },
+   {
+    "crash_at": 2,
+    "mode": "after_persist",
+    "equal": true
+   },
+   {
+    "crash_at": 1,
+    "mode": "before_persist",
+    "equal": true
+   },
+   {
+    "crash_at": 2,
+    "mode": "before_persist",
+    "equal": true
+   }
+  ]
+ },
+ "prefix_bug_detected": {
+  "rejected_last_step": true,
+  "no_accepted_step": true
+ },
+ "expected_verdicts_ok": true,
+ "PASS": true
+}
