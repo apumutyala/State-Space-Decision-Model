@@ -1,0 +1,1174 @@
+{
+  "cost_usd": 0,
+  "id_permutation_checks": "Exact semantic observations matched for both families in all three restored checkpoints.",
+  "paired": {
+    "all_task_diversity": {
+      "exact": {
+        "new_disjoint": {
+          "all": {
+            "after_correct": 233,
+            "before_correct": 141,
+            "count": 540,
+            "delta_accuracy": 0.17037037037037037,
+            "improved": 136,
+            "regressed": 44,
+            "task_cluster_ci95": [
+              0.11666666666666667,
+              0.22592592592592592
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 50,
+            "before_correct": 46,
+            "count": 180,
+            "delta_accuracy": 0.022222222222222223,
+            "improved": 25,
+            "regressed": 21,
+            "task_cluster_ci95": [
+              -0.05555555555555556,
+              0.10013888888888815
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 90,
+            "before_correct": 14,
+            "count": 180,
+            "delta_accuracy": 0.4222222222222222,
+            "improved": 79,
+            "regressed": 3,
+            "task_cluster_ci95": [
+              0.3333333333333333,
+              0.5111111111111112
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 93,
+            "before_correct": 81,
+            "count": 180,
+            "delta_accuracy": 0.06666666666666668,
+            "improved": 32,
+            "regressed": 20,
+            "task_cluster_ci95": [
+              -0.011111111111111112,
+              0.14444444444444446
+            ],
+            "task_clusters": 60
+          }
+        },
+        "old_failing": {
+          "all": {
+            "after_correct": 318,
+            "before_correct": 317,
+            "count": 540,
+            "delta_accuracy": 0.001851851851851851,
+            "improved": 71,
+            "regressed": 70,
+            "task_cluster_ci95": [
+              -0.04259259259259259,
+              0.04629629629629629
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 82,
+            "before_correct": 71,
+            "count": 180,
+            "delta_accuracy": 0.06111111111111111,
+            "improved": 40,
+            "regressed": 29,
+            "task_cluster_ci95": [
+              -0.03333333333333333,
+              0.16111111111111107
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 109,
+            "before_correct": 126,
+            "count": 180,
+            "delta_accuracy": -0.09444444444444443,
+            "improved": 14,
+            "regressed": 31,
+            "task_cluster_ci95": [
+              -0.15,
+              -0.03888888888888888
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 127,
+            "before_correct": 120,
+            "count": 180,
+            "delta_accuracy": 0.03888888888888888,
+            "improved": 17,
+            "regressed": 10,
+            "task_cluster_ci95": [
+              -0.016666666666666666,
+              0.09999999999999999
+            ],
+            "task_clusters": 60
+          }
+        },
+        "pooled": {
+          "all": {
+            "after_correct": 551,
+            "before_correct": 458,
+            "count": 1080,
+            "delta_accuracy": 0.08611111111111111,
+            "improved": 207,
+            "regressed": 114,
+            "task_cluster_ci95": [
+              0.048148148148148155,
+              0.1231712962962962
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 132,
+            "before_correct": 117,
+            "count": 360,
+            "delta_accuracy": 0.04166666666666666,
+            "improved": 65,
+            "regressed": 50,
+            "task_cluster_ci95": [
+              -0.027777777777777773,
+              0.11388888888888887
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 199,
+            "before_correct": 140,
+            "count": 360,
+            "delta_accuracy": 0.1638888888888889,
+            "improved": 93,
+            "regressed": 34,
+            "task_cluster_ci95": [
+              0.10277777777777776,
+              0.2278472222222219
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 220,
+            "before_correct": 201,
+            "count": 360,
+            "delta_accuracy": 0.05277777777777778,
+            "improved": 49,
+            "regressed": 30,
+            "task_cluster_ci95": [
+              -0.002777777777777776,
+              0.10833333333333334
+            ],
+            "task_clusters": 60
+          }
+        }
+      },
+      "operation": {
+        "new_disjoint": {
+          "all": {
+            "after_correct": 419,
+            "before_correct": 222,
+            "count": 540,
+            "delta_accuracy": 0.36481481481481476,
+            "improved": 243,
+            "regressed": 46,
+            "task_cluster_ci95": [
+              0.29810185185185184,
+              0.4314814814814814
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 113,
+            "before_correct": 95,
+            "count": 180,
+            "delta_accuracy": 0.10000000000000003,
+            "improved": 47,
+            "regressed": 29,
+            "task_cluster_ci95": [
+              -0.01666666666666667,
+              0.21680555555555484
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 126,
+            "before_correct": 28,
+            "count": 180,
+            "delta_accuracy": 0.5444444444444445,
+            "improved": 115,
+            "regressed": 17,
+            "task_cluster_ci95": [
+              0.44999999999999996,
+              0.6444444444444444
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 180,
+            "before_correct": 99,
+            "count": 180,
+            "delta_accuracy": 0.45,
+            "improved": 81,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.35,
+              0.5499999999999999
+            ],
+            "task_clusters": 60
+          }
+        },
+        "old_failing": {
+          "all": {
+            "after_correct": 540,
+            "before_correct": 490,
+            "count": 540,
+            "delta_accuracy": 0.09259259259259257,
+            "improved": 50,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.07037037037037036,
+              0.11851851851851851
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 180,
+            "before_correct": 139,
+            "count": 180,
+            "delta_accuracy": 0.2277777777777778,
+            "improved": 41,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.18333333333333332,
+              0.27777777777777773
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 180,
+            "before_correct": 171,
+            "count": 180,
+            "delta_accuracy": 0.049999999999999996,
+            "improved": 9,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.02222222222222222,
+              0.08333333333333331
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 180,
+            "before_correct": 180,
+            "count": 180,
+            "delta_accuracy": 0.0,
+            "improved": 0,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.0,
+              0.0
+            ],
+            "task_clusters": 60
+          }
+        },
+        "pooled": {
+          "all": {
+            "after_correct": 959,
+            "before_correct": 712,
+            "count": 1080,
+            "delta_accuracy": 0.2287037037037037,
+            "improved": 293,
+            "regressed": 46,
+            "task_cluster_ci95": [
+              0.19722222222222222,
+              0.2601851851851852
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 293,
+            "before_correct": 234,
+            "count": 360,
+            "delta_accuracy": 0.16388888888888886,
+            "improved": 88,
+            "regressed": 29,
+            "task_cluster_ci95": [
+              0.10277777777777779,
+              0.22499999999999998
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 306,
+            "before_correct": 199,
+            "count": 360,
+            "delta_accuracy": 0.2972222222222222,
+            "improved": 124,
+            "regressed": 17,
+            "task_cluster_ci95": [
+              0.24444444444444444,
+              0.35
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 360,
+            "before_correct": 279,
+            "count": 360,
+            "delta_accuracy": 0.225,
+            "improved": 81,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.175,
+              0.27499999999999997
+            ],
+            "task_clusters": 60
+          }
+        }
+      }
+    },
+    "baseline": {
+      "exact": {
+        "new_disjoint": {
+          "all": {
+            "after_correct": 233,
+            "before_correct": 101,
+            "count": 540,
+            "delta_accuracy": 0.24444444444444444,
+            "improved": 164,
+            "regressed": 32,
+            "task_cluster_ci95": [
+              0.18888888888888888,
+              0.30004629629629603
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 50,
+            "before_correct": 0,
+            "count": 180,
+            "delta_accuracy": 0.27777777777777773,
+            "improved": 50,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.19999999999999998,
+              0.36111111111111105
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 90,
+            "before_correct": 15,
+            "count": 180,
+            "delta_accuracy": 0.4166666666666667,
+            "improved": 80,
+            "regressed": 5,
+            "task_cluster_ci95": [
+              0.31666666666666665,
+              0.5168055555555549
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 93,
+            "before_correct": 86,
+            "count": 180,
+            "delta_accuracy": 0.03888888888888888,
+            "improved": 34,
+            "regressed": 27,
+            "task_cluster_ci95": [
+              -0.03333333333333333,
+              0.11111111111111112
+            ],
+            "task_clusters": 60
+          }
+        },
+        "old_failing": {
+          "all": {
+            "after_correct": 318,
+            "before_correct": 235,
+            "count": 540,
+            "delta_accuracy": 0.15370370370370373,
+            "improved": 131,
+            "regressed": 48,
+            "task_cluster_ci95": [
+              0.10185185185185185,
+              0.20555555555555555
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 82,
+            "before_correct": 26,
+            "count": 180,
+            "delta_accuracy": 0.3111111111111111,
+            "improved": 71,
+            "regressed": 15,
+            "task_cluster_ci95": [
+              0.21666666666666665,
+              0.4055555555555556
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 109,
+            "before_correct": 70,
+            "count": 180,
+            "delta_accuracy": 0.2166666666666667,
+            "improved": 50,
+            "regressed": 11,
+            "task_cluster_ci95": [
+              0.15,
+              0.2777777777777778
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 127,
+            "before_correct": 139,
+            "count": 180,
+            "delta_accuracy": -0.06666666666666667,
+            "improved": 10,
+            "regressed": 22,
+            "task_cluster_ci95": [
+              -0.1388888888888889,
+              2.7986872079091227e-18
+            ],
+            "task_clusters": 60
+          }
+        },
+        "pooled": {
+          "all": {
+            "after_correct": 551,
+            "before_correct": 336,
+            "count": 1080,
+            "delta_accuracy": 0.1990740740740741,
+            "improved": 295,
+            "regressed": 80,
+            "task_cluster_ci95": [
+              0.1518287037037037,
+              0.2453703703703704
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 132,
+            "before_correct": 26,
+            "count": 360,
+            "delta_accuracy": 0.2944444444444444,
+            "improved": 121,
+            "regressed": 15,
+            "task_cluster_ci95": [
+              0.2138888888888889,
+              0.3722222222222222
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 199,
+            "before_correct": 85,
+            "count": 360,
+            "delta_accuracy": 0.3166666666666667,
+            "improved": 130,
+            "regressed": 16,
+            "task_cluster_ci95": [
+              0.24166666666666667,
+              0.38888888888888895
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 220,
+            "before_correct": 225,
+            "count": 360,
+            "delta_accuracy": -0.013888888888888893,
+            "improved": 44,
+            "regressed": 49,
+            "task_cluster_ci95": [
+              -0.07222222222222223,
+              0.04444444444444443
+            ],
+            "task_clusters": 60
+          }
+        }
+      },
+      "operation": {
+        "new_disjoint": {
+          "all": {
+            "after_correct": 419,
+            "before_correct": 152,
+            "count": 540,
+            "delta_accuracy": 0.49444444444444446,
+            "improved": 269,
+            "regressed": 2,
+            "task_cluster_ci95": [
+              0.4388888888888889,
+              0.5518518518518518
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 113,
+            "before_correct": 0,
+            "count": 180,
+            "delta_accuracy": 0.6277777777777778,
+            "improved": 113,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.5222222222222223,
+              0.7277777777777779
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 126,
+            "before_correct": 24,
+            "count": 180,
+            "delta_accuracy": 0.5666666666666667,
+            "improved": 104,
+            "regressed": 2,
+            "task_cluster_ci95": [
+              0.4777777777777777,
+              0.6611111111111111
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 180,
+            "before_correct": 128,
+            "count": 180,
+            "delta_accuracy": 0.28888888888888886,
+            "improved": 52,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.21666666666666667,
+              0.3666666666666666
+            ],
+            "task_clusters": 60
+          }
+        },
+        "old_failing": {
+          "all": {
+            "after_correct": 540,
+            "before_correct": 348,
+            "count": 540,
+            "delta_accuracy": 0.35555555555555557,
+            "improved": 192,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.3074074074074074,
+              0.4018518518518519
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 180,
+            "before_correct": 51,
+            "count": 180,
+            "delta_accuracy": 0.7166666666666665,
+            "improved": 129,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.6833333333333331,
+              0.7555555555555553
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 180,
+            "before_correct": 117,
+            "count": 180,
+            "delta_accuracy": 0.34999999999999987,
+            "improved": 63,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.29999999999999993,
+              0.39999999999999997
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 180,
+            "before_correct": 180,
+            "count": 180,
+            "delta_accuracy": 0.0,
+            "improved": 0,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.0,
+              0.0
+            ],
+            "task_clusters": 60
+          }
+        },
+        "pooled": {
+          "all": {
+            "after_correct": 959,
+            "before_correct": 500,
+            "count": 1080,
+            "delta_accuracy": 0.425,
+            "improved": 461,
+            "regressed": 2,
+            "task_cluster_ci95": [
+              0.3842592592592592,
+              0.4675925925925926
+            ],
+            "task_clusters": 180
+          },
+          "compare": {
+            "after_correct": 293,
+            "before_correct": 51,
+            "count": 360,
+            "delta_accuracy": 0.6722222222222223,
+            "improved": 242,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.6111111111111113,
+              0.7333333333333332
+            ],
+            "task_clusters": 60
+          },
+          "explain": {
+            "after_correct": 306,
+            "before_correct": 141,
+            "count": 360,
+            "delta_accuracy": 0.45833333333333337,
+            "improved": 167,
+            "regressed": 2,
+            "task_cluster_ci95": [
+              0.4082638888888888,
+              0.5055555555555556
+            ],
+            "task_clusters": 60
+          },
+          "read": {
+            "after_correct": 360,
+            "before_correct": 308,
+            "count": 360,
+            "delta_accuracy": 0.14444444444444443,
+            "improved": 52,
+            "regressed": 0,
+            "task_cluster_ci95": [
+              0.10833333333333334,
+              0.1833333333333333
+            ],
+            "task_clusters": 60
+          }
+        }
+      }
+    }
+  },
+  "parameters": 28004,
+  "preregistration": {
+    "base_commit": "4733f785e5284ea959d4d640fff884136487bd05",
+    "ci": "95% percentile bootstrap over task IDs, keeping all seeds and both pooled wording renderings together; conditional on fixed seeds/families.",
+    "config": {
+      "batch_size": 32,
+      "bootstrap_replicates": 2000,
+      "bootstrap_seed": 3197,
+      "clip_norm": 1.0,
+      "cpu_threads": 2,
+      "inference": "argmax operation, then argmax structured score within operation",
+      "loss": "operation CE plus conditional structured-target CE, equal weight",
+      "lr": 0.003,
+      "max_runtime_seconds": 180,
+      "model_seeds": [
+        20261006,
+        20261016,
+        20261026
+      ],
+      "steps": 300,
+      "width": 32
+    },
+    "decision": "One architecture, three fixed seeds, final step only; no validation tuning. Report both raw baseline and matched all_task_diversity reference pairs.",
+    "parameters": 28004,
+    "reference_data_sha256": "cad509047e4b1b52f26d8ab43428935bfb8c8adf4c0bb6237256e55022377d8b",
+    "reference_observations_sha256": "aa6f78c81dd057a7d2545cf56492ccb026c6eb1bcbbb88b8514dd217bcb79cf6",
+    "reference_parameters": 27937,
+    "reference_registration": {
+      "base_commit": "4733f785e5284ea959d4d640fff884136487bd05",
+      "ci": "Percentile 95% paired bootstrap over validation task IDs, keeping both wording families and all three training seeds together in each cluster. Conditional on these three fixed training seeds; not a seed-population CI.",
+      "config": {
+        "batch_size": 32,
+        "bootstrap_replicates": 2000,
+        "bootstrap_seed": 3197,
+        "cpu_threads": 2,
+        "device": "cpu",
+        "lr": 0.003,
+        "max_runtime_seconds": 180,
+        "model_seeds": [
+          20261006,
+          20261016,
+          20261026
+        ],
+        "steps": 300,
+        "train_count": 600,
+        "train_seed": 20261006,
+        "validation_count": 180,
+        "validation_seed": 20261009,
+        "width": 32
+      },
+      "copied_model_source_commit": "fcf620177d8e9b1575e5e0ed590d4aae1a9cb3b3",
+      "decision": "One fixed final-step checkpoint per arm/seed. No validation selection, no post-hoc variants. A negative result only folds this exact six-template/all-kind 600-world/300-step recipe if supported across seeds; weak mixed evidence remains inconclusive.",
+      "manifests": {
+        "train": {
+          "allow_one_repair": false,
+          "choice_formats": {
+            "augmented": 300,
+            "production": 300
+          },
+          "comparison_fields": {
+            "price": 95,
+            "warranty_months": 105
+          },
+          "comparison_left_records": {
+            "development-record-1": 99,
+            "development-record-2": 101
+          },
+          "comparison_relations": {
+            "equal": 33,
+            "greater_than": 74,
+            "less_than": 93
+          },
+          "count": 600,
+          "name_pool": [
+            "Aster",
+            "Bracken",
+            "Cinder",
+            "Dovetail",
+            "Ember",
+            "Fallow"
+          ],
+          "price_cents_range": [
+            5000,
+            20000
+          ],
+          "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+          "sample_sha256": "de27b10530f6a45e4f50d89b9b0e120b3914c65a035375b206aeb1ef68aa93e2",
+          "schema": "ssdm.synthetic_development_manifest.v2",
+          "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+          "seed": 20261006,
+          "split": "development_train",
+          "template_ids": {
+            "compare": [
+              "development_train:compare:0",
+              "development_train:compare:1"
+            ],
+            "explain": [
+              "development_train:explain:0",
+              "development_train:explain:1"
+            ],
+            "read": [
+              "development_train:read:0",
+              "development_train:read:1"
+            ]
+          },
+          "warranty_range": [
+            1,
+            36
+          ]
+        },
+        "validation": {
+          "allow_one_repair": false,
+          "choice_formats": {
+            "augmented": 90,
+            "production": 90
+          },
+          "comparison_fields": {
+            "price": 31,
+            "warranty_months": 29
+          },
+          "comparison_left_records": {
+            "development-record-1": 34,
+            "development-record-2": 26
+          },
+          "comparison_relations": {
+            "equal": 11,
+            "greater_than": 25,
+            "less_than": 24
+          },
+          "count": 180,
+          "name_pool": [
+            "Grove",
+            "Hearth",
+            "Indigo",
+            "Juniper",
+            "Kestrel",
+            "Lumen"
+          ],
+          "price_cents_range": [
+            20001,
+            30000
+          ],
+          "sample_encoding": "sorted compact ensure_ascii JSON per LF line, final LF",
+          "sample_sha256": "e8f9773abcf7f4584882a3fa03fb7d24ea355652b2ee35543495160fcf10c273",
+          "schema": "ssdm.synthetic_development_manifest.v2",
+          "scope": "iterative synthetic development only; no audit or held-out generalization claim",
+          "seed": 20261009,
+          "split": "development_validation",
+          "template_ids": {
+            "compare": [
+              "development_validation:compare:0"
+            ],
+            "explain": [
+              "development_validation:explain:0"
+            ],
+            "read": [
+              "development_validation:read:0"
+            ]
+          },
+          "warranty_range": [
+            37,
+            60
+          ]
+        }
+      },
+      "primary_measure": "Paired exact-target change on old_failing comparison wording, with new_disjoint comparison transfer and read/explain side effects reported.",
+      "row_hashes": {
+        "train": {
+          "all_task_diversity": "f3cb933ec2a22a8bf45ae37c2bd2788c3de4c8fab0be3e17867e26671dfb8e31",
+          "baseline": "ad7d71fb7a5542e1395bd73db07d83e4ef03701e2467dab8d023be8c039714ad"
+        },
+        "validation": {
+          "new_disjoint": "a48575e2976892e2b074b13ef1409df7d61d13ef7908fb83aeb7041b5a340fe2",
+          "old_failing": "ad9339355d23c371c446cbf62a29ca4c356c2a0fc2d232ca72446d7a38301ca2"
+        }
+      },
+      "schema": "ssdm.query_template_transfer_preregistration.v1",
+      "scope": "CPU only, 2 intraop threads/1 interop thread; no GPU/network/spend/Index/test data/teacher API. Synthetic iterative development only. Targets select kind/field/entity/order, not answer values; no production planner or interface changes.",
+      "source_sha256": "85b0dac611665dc463f15a39a2a31981fbe908e72676f31dcebd12d0310ca23c",
+      "train_templates": {
+        "compare": [
+          "Compare the October {field} of {left} and {right}.",
+          "How do {left}'s and {right}'s October {field} compare?",
+          "In October 2026, compare {left} and {right} on {field}.",
+          "Assess how {left}'s October {field} compares to {right}'s.",
+          "Considering October 2026 {field}, compare {left} against {right}.",
+          "Please compare {left} with {right} using their October 2026 {field}."
+        ],
+        "explain": [
+          "Explain the checked {field} fact for {entity}.",
+          "Show the checked derivation for {entity}'s {field}.",
+          "For {entity}, explain how the {field} fact is established.",
+          "Give a checked explanation for the {field} of {entity}.",
+          "Please justify {entity}'s {field} using the checked derivation.",
+          "Walk through the derivation that supports {entity}'s {field}."
+        ],
+        "read": [
+          "What is {entity}'s {field} in October 2026?",
+          "Give the October 2026 {field} for {entity}.",
+          "For {entity}, report the {field} recorded in October 2026.",
+          "In October 2026, what {field} does {entity} have?",
+          "Please retrieve {entity}'s October 2026 {field}.",
+          "Find the October 2026 fact about {field} for {entity}."
+        ]
+      },
+      "validation_templates": {
+        "new_disjoint": {
+          "compare": "With {left} first and {right} second, compare their October 2026 {field}.",
+          "explain": "Describe the checked reasoning behind the {field} belonging to {entity}.",
+          "read": "Tell me the {field} belonging to {entity} as of October 2026."
+        },
+        "old_failing": {
+          "compare": "For October 2026, compare {left}'s and {right}'s {field}.",
+          "explain": "Provide a checked derivation of {entity}'s {field}.",
+          "read": "State {entity}'s {field} for October 2026."
+        }
+      }
+    },
+    "row_hashes": {
+      "train": {
+        "all_task_diversity": "f3cb933ec2a22a8bf45ae37c2bd2788c3de4c8fab0be3e17867e26671dfb8e31",
+        "baseline": "ad7d71fb7a5542e1395bd73db07d83e4ef03701e2467dab8d023be8c039714ad"
+      },
+      "validation": {
+        "new_disjoint": "a48575e2976892e2b074b13ef1409df7d61d13ef7908fb83aeb7041b5a340fe2",
+        "old_failing": "ad9339355d23c371c446cbf62a29ca4c356c2a0fc2d232ca72446d7a38301ca2"
+      }
+    },
+    "schema": "ssdm.factorized_query_target_preregistration.v1",
+    "scope": "Synthetic iterative development, CPU <=2 threads, <=180 seconds, $0; no GPU/network/Index/held-out/teacher API or production changes.",
+    "source_sha256": "93855953277ab69681fc0890529cd5aad5f8fa04738abe6499ed1fbc1ea8cd9c"
+  },
+  "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]",
+  "results": {
+    "20261006": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-factorized-query-target-20261006-run1\\seed-20261006-factorized.pt",
+      "checkpoint_sha256": "66e0539897b4e2395588dc5e056c7befd576161db93e002ef36a5fe638ec4896",
+      "history": [
+        {
+          "operation_loss": 0.5438917875289917,
+          "step": 100,
+          "target_loss": 0.53243488073349
+        },
+        {
+          "operation_loss": 0.19438916444778442,
+          "step": 200,
+          "target_loss": 0.430322527885437
+        },
+        {
+          "operation_loss": 0.15588226914405823,
+          "step": 300,
+          "target_loss": 0.28106245398521423
+        }
+      ],
+      "train": {
+        "by_kind": {
+          "compare": {
+            "correct": 163,
+            "count": 200,
+            "operation_correct": 199
+          },
+          "explain": {
+            "correct": 194,
+            "count": 200,
+            "operation_correct": 200
+          },
+          "read": {
+            "correct": 193,
+            "count": 200,
+            "operation_correct": 198
+          }
+        },
+        "count": 600,
+        "exact_correct": 550,
+        "operation_correct": 597
+      },
+      "training_seconds": 11.31199999999808,
+      "validation": {
+        "new_disjoint": {
+          "by_kind": {
+            "compare": {
+              "correct": 24,
+              "count": 60,
+              "operation_correct": 46
+            },
+            "explain": {
+              "correct": 26,
+              "count": 60,
+              "operation_correct": 33
+            },
+            "read": {
+              "correct": 34,
+              "count": 60,
+              "operation_correct": 60
+            }
+          },
+          "count": 180,
+          "exact_correct": 84,
+          "operation_correct": 139
+        },
+        "old_failing": {
+          "by_kind": {
+            "compare": {
+              "correct": 34,
+              "count": 60,
+              "operation_correct": 60
+            },
+            "explain": {
+              "correct": 34,
+              "count": 60,
+              "operation_correct": 60
+            },
+            "read": {
+              "correct": 42,
+              "count": 60,
+              "operation_correct": 60
+            }
+          },
+          "count": 180,
+          "exact_correct": 110,
+          "operation_correct": 180
+        }
+      }
+    },
+    "20261016": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-factorized-query-target-20261006-run1\\seed-20261016-factorized.pt",
+      "checkpoint_sha256": "c34b19c825926ba135f1797cccd836a9a4c2b5a6fe0ab72d77906a4b69e83c9f",
+      "history": [
+        {
+          "operation_loss": 0.5593727827072144,
+          "step": 100,
+          "target_loss": 0.49505943059921265
+        },
+        {
+          "operation_loss": 0.2203114926815033,
+          "step": 200,
+          "target_loss": 0.3348816931247711
+        },
+        {
+          "operation_loss": 0.14340755343437195,
+          "step": 300,
+          "target_loss": 0.14579427242279053
+        }
+      ],
+      "train": {
+        "by_kind": {
+          "compare": {
+            "correct": 167,
+            "count": 200,
+            "operation_correct": 193
+          },
+          "explain": {
+            "correct": 193,
+            "count": 200,
+            "operation_correct": 200
+          },
+          "read": {
+            "correct": 189,
+            "count": 200,
+            "operation_correct": 197
+          }
+        },
+        "count": 600,
+        "exact_correct": 549,
+        "operation_correct": 590
+      },
+      "training_seconds": 13.0,
+      "validation": {
+        "new_disjoint": {
+          "by_kind": {
+            "compare": {
+              "correct": 12,
+              "count": 60,
+              "operation_correct": 36
+            },
+            "explain": {
+              "correct": 38,
+              "count": 60,
+              "operation_correct": 53
+            },
+            "read": {
+              "correct": 28,
+              "count": 60,
+              "operation_correct": 60
+            }
+          },
+          "count": 180,
+          "exact_correct": 78,
+          "operation_correct": 149
+        },
+        "old_failing": {
+          "by_kind": {
+            "compare": {
+              "correct": 20,
+              "count": 60,
+              "operation_correct": 60
+            },
+            "explain": {
+              "correct": 34,
+              "count": 60,
+              "operation_correct": 60
+            },
+            "read": {
+              "correct": 39,
+              "count": 60,
+              "operation_correct": 60
+            }
+          },
+          "count": 180,
+          "exact_correct": 93,
+          "operation_correct": 180
+        }
+      }
+    },
+    "20261026": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-factorized-query-target-20261006-run1\\seed-20261026-factorized.pt",
+      "checkpoint_sha256": "9d722f4ff63c6a4dc5e92a9ae252a051bb0f03759d71afda7c4d42d5b1435ecf",
+      "history": [
+        {
+          "operation_loss": 0.48691582679748535,
+          "step": 100,
+          "target_loss": 0.5363810658454895
+        },
+        {
+          "operation_loss": 0.29141268134117126,
+          "step": 200,
+          "target_loss": 0.4614187479019165
+        },
+        {
+          "operation_loss": 0.0945616066455841,
+          "step": 300,
+          "target_loss": 0.22401615977287292
+        }
+      ],
+      "train": {
+        "by_kind": {
+          "compare": {
+            "correct": 168,
+            "count": 200,
+            "operation_correct": 196
+          },
+          "explain": {
+            "correct": 188,
+            "count": 200,
+            "operation_correct": 200
+          },
+          "read": {
+            "correct": 191,
+            "count": 200,
+            "operation_correct": 198
+          }
+        },
+        "count": 600,
+        "exact_correct": 547,
+        "operation_correct": 594
+      },
+      "training_seconds": 12.609000000004016,
+      "validation": {
+        "new_disjoint": {
+          "by_kind": {
+            "compare": {
+              "correct": 14,
+              "count": 60,
+              "operation_correct": 31
+            },
+            "explain": {
+              "correct": 26,
+              "count": 60,
+              "operation_correct": 40
+            },
+            "read": {
+              "correct": 31,
+              "count": 60,
+              "operation_correct": 60
+            }
+          },
+          "count": 180,
+          "exact_correct": 71,
+          "operation_correct": 131
+        },
+        "old_failing": {
+          "by_kind": {
+            "compare": {
+              "correct": 28,
+              "count": 60,
+              "operation_correct": 60
+            },
+            "explain": {
+              "correct": 41,
+              "count": 60,
+              "operation_correct": 60
+            },
+            "read": {
+              "correct": 46,
+              "count": 60,
+              "operation_correct": 60
+            }
+          },
+          "count": 180,
+          "exact_correct": 115,
+          "operation_correct": 180
+        }
+      }
+    }
+  },
+  "schema": "ssdm.factorized_query_target_cpu.v1",
+  "torch": "2.8.0+cu128",
+  "wall_seconds": 40.8440000000046
+}

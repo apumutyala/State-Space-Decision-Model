@@ -1,0 +1,380 @@
+{
+  "20261006": {
+    "all_task_diversity": {
+      "new_disjoint": {
+        "all": {
+          "after_correct": 84,
+          "before_correct": 69,
+          "count": 180,
+          "improved": 35,
+          "regressed": 20
+        },
+        "compare": {
+          "after_correct": 24,
+          "before_correct": 23,
+          "count": 60,
+          "improved": 9,
+          "regressed": 8
+        },
+        "explain": {
+          "after_correct": 26,
+          "before_correct": 14,
+          "count": 60,
+          "improved": 15,
+          "regressed": 3
+        },
+        "read": {
+          "after_correct": 34,
+          "before_correct": 32,
+          "count": 60,
+          "improved": 11,
+          "regressed": 9
+        }
+      },
+      "old_failing": {
+        "all": {
+          "after_correct": 110,
+          "before_correct": 88,
+          "count": 180,
+          "improved": 30,
+          "regressed": 8
+        },
+        "compare": {
+          "after_correct": 34,
+          "before_correct": 15,
+          "count": 60,
+          "improved": 20,
+          "regressed": 1
+        },
+        "explain": {
+          "after_correct": 34,
+          "before_correct": 37,
+          "count": 60,
+          "improved": 4,
+          "regressed": 7
+        },
+        "read": {
+          "after_correct": 42,
+          "before_correct": 36,
+          "count": 60,
+          "improved": 6,
+          "regressed": 0
+        }
+      }
+    },
+    "baseline": {
+      "new_disjoint": {
+        "all": {
+          "after_correct": 84,
+          "before_correct": 22,
+          "count": 180,
+          "improved": 63,
+          "regressed": 1
+        },
+        "compare": {
+          "after_correct": 24,
+          "before_correct": 0,
+          "count": 60,
+          "improved": 24,
+          "regressed": 0
+        },
+        "explain": {
+          "after_correct": 26,
+          "before_correct": 0,
+          "count": 60,
+          "improved": 26,
+          "regressed": 0
+        },
+        "read": {
+          "after_correct": 34,
+          "before_correct": 22,
+          "count": 60,
+          "improved": 13,
+          "regressed": 1
+        }
+      },
+      "old_failing": {
+        "all": {
+          "after_correct": 110,
+          "before_correct": 78,
+          "count": 180,
+          "improved": 44,
+          "regressed": 12
+        },
+        "compare": {
+          "after_correct": 34,
+          "before_correct": 0,
+          "count": 60,
+          "improved": 34,
+          "regressed": 0
+        },
+        "explain": {
+          "after_correct": 34,
+          "before_correct": 40,
+          "count": 60,
+          "improved": 3,
+          "regressed": 9
+        },
+        "read": {
+          "after_correct": 42,
+          "before_correct": 38,
+          "count": 60,
+          "improved": 7,
+          "regressed": 3
+        }
+      }
+    }
+  },
+  "20261016": {
+    "all_task_diversity": {
+      "new_disjoint": {
+        "all": {
+          "after_correct": 78,
+          "before_correct": 26,
+          "count": 180,
+          "improved": 63,
+          "regressed": 11
+        },
+        "compare": {
+          "after_correct": 12,
+          "before_correct": 7,
+          "count": 60,
+          "improved": 11,
+          "regressed": 6
+        },
+        "explain": {
+          "after_correct": 38,
+          "before_correct": 0,
+          "count": 60,
+          "improved": 38,
+          "regressed": 0
+        },
+        "read": {
+          "after_correct": 28,
+          "before_correct": 19,
+          "count": 60,
+          "improved": 14,
+          "regressed": 5
+        }
+      },
+      "old_failing": {
+        "all": {
+          "after_correct": 93,
+          "before_correct": 111,
+          "count": 180,
+          "improved": 11,
+          "regressed": 29
+        },
+        "compare": {
+          "after_correct": 20,
+          "before_correct": 31,
+          "count": 60,
+          "improved": 5,
+          "regressed": 16
+        },
+        "explain": {
+          "after_correct": 34,
+          "before_correct": 40,
+          "count": 60,
+          "improved": 3,
+          "regressed": 9
+        },
+        "read": {
+          "after_correct": 39,
+          "before_correct": 40,
+          "count": 60,
+          "improved": 3,
+          "regressed": 4
+        }
+      }
+    },
+    "baseline": {
+      "new_disjoint": {
+        "all": {
+          "after_correct": 78,
+          "before_correct": 50,
+          "count": 180,
+          "improved": 48,
+          "regressed": 20
+        },
+        "compare": {
+          "after_correct": 12,
+          "before_correct": 0,
+          "count": 60,
+          "improved": 12,
+          "regressed": 0
+        },
+        "explain": {
+          "after_correct": 38,
+          "before_correct": 13,
+          "count": 60,
+          "improved": 28,
+          "regressed": 3
+        },
+        "read": {
+          "after_correct": 28,
+          "before_correct": 37,
+          "count": 60,
+          "improved": 8,
+          "regressed": 17
+        }
+      },
+      "old_failing": {
+        "all": {
+          "after_correct": 93,
+          "before_correct": 106,
+          "count": 180,
+          "improved": 16,
+          "regressed": 29
+        },
+        "compare": {
+          "after_correct": 20,
+          "before_correct": 25,
+          "count": 60,
+          "improved": 10,
+          "regressed": 15
+        },
+        "explain": {
+          "after_correct": 34,
+          "before_correct": 30,
+          "count": 60,
+          "improved": 6,
+          "regressed": 2
+        },
+        "read": {
+          "after_correct": 39,
+          "before_correct": 51,
+          "count": 60,
+          "improved": 0,
+          "regressed": 12
+        }
+      }
+    }
+  },
+  "20261026": {
+    "all_task_diversity": {
+      "new_disjoint": {
+        "all": {
+          "after_correct": 71,
+          "before_correct": 46,
+          "count": 180,
+          "improved": 38,
+          "regressed": 13
+        },
+        "compare": {
+          "after_correct": 14,
+          "before_correct": 16,
+          "count": 60,
+          "improved": 5,
+          "regressed": 7
+        },
+        "explain": {
+          "after_correct": 26,
+          "before_correct": 0,
+          "count": 60,
+          "improved": 26,
+          "regressed": 0
+        },
+        "read": {
+          "after_correct": 31,
+          "before_correct": 30,
+          "count": 60,
+          "improved": 7,
+          "regressed": 6
+        }
+      },
+      "old_failing": {
+        "all": {
+          "after_correct": 115,
+          "before_correct": 118,
+          "count": 180,
+          "improved": 30,
+          "regressed": 33
+        },
+        "compare": {
+          "after_correct": 28,
+          "before_correct": 25,
+          "count": 60,
+          "improved": 15,
+          "regressed": 12
+        },
+        "explain": {
+          "after_correct": 41,
+          "before_correct": 49,
+          "count": 60,
+          "improved": 7,
+          "regressed": 15
+        },
+        "read": {
+          "after_correct": 46,
+          "before_correct": 44,
+          "count": 60,
+          "improved": 8,
+          "regressed": 6
+        }
+      }
+    },
+    "baseline": {
+      "new_disjoint": {
+        "all": {
+          "after_correct": 71,
+          "before_correct": 29,
+          "count": 180,
+          "improved": 53,
+          "regressed": 11
+        },
+        "compare": {
+          "after_correct": 14,
+          "before_correct": 0,
+          "count": 60,
+          "improved": 14,
+          "regressed": 0
+        },
+        "explain": {
+          "after_correct": 26,
+          "before_correct": 2,
+          "count": 60,
+          "improved": 26,
+          "regressed": 2
+        },
+        "read": {
+          "after_correct": 31,
+          "before_correct": 27,
+          "count": 60,
+          "improved": 13,
+          "regressed": 9
+        }
+      },
+      "old_failing": {
+        "all": {
+          "after_correct": 115,
+          "before_correct": 51,
+          "count": 180,
+          "improved": 71,
+          "regressed": 7
+        },
+        "compare": {
+          "after_correct": 28,
+          "before_correct": 1,
+          "count": 60,
+          "improved": 27,
+          "regressed": 0
+        },
+        "explain": {
+          "after_correct": 41,
+          "before_correct": 0,
+          "count": 60,
+          "improved": 41,
+          "regressed": 0
+        },
+        "read": {
+          "after_correct": 46,
+          "before_correct": 50,
+          "count": 60,
+          "improved": 3,
+          "regressed": 7
+        }
+      }
+    }
+  }
+}
