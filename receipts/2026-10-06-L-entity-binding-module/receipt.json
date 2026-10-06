@@ -1,0 +1,28 @@
+{
+  "agent_main_dependency_blobs": {
+    "fixtures/language_growth/cases/01_supported_read.json": "f597de0155fe7da1e4eb66d74131a16441bd5574",
+    "fixtures/language_growth/cases/16_necessary_ask.json": "691ef83193e8e1c3344f9320bf176b95a01aa6e9",
+    "fixtures/language_growth/catalog.json": "8b0d104ec1311bf4ea2bdf19461bdfebdc68ebda",
+    "language_growth/kernel.py": "4180ccd6d182e3dd5efb01d64c0133b113a53a99",
+    "language_growth/parent_bridge.py": "32bffe01cdd9abc0bca7f05aee0423ced516616b",
+    "language_growth/realize.py": "1dd3461d3b89679541e1c4acd8a34048689ef32d",
+    "language_growth/types.py": "d3e57c174eb4e4868a922cf743588b903bf81c37"
+  },
+  "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
+  "branch": "codex/l0-entity-binding-module",
+  "diff_check": "git diff --cached --check",
+  "schema": "ssdm.entity_binding_module_code_tests.v1",
+  "scope": "Code-only boundary tests. Controlled positive grammar and trusted allowed records; adapter rebuilds canonical host audience view. Only resolved read/explain compiles v0.1 programs and runs existing kernel then release-validating realizer. Unresolved has no text; no Ask argument/path and no Compare. No experiment runner/data/model dependency, training, GPU, spend, network or capability claim. No shared schema/kernel/realizer changes.",
+  "source_sha256": {
+    "language_growth/entity_binding.py": "c5bc1d7804155ef03deb5637ce8f15d1ccc1d4b2814aa3aa49c67b91dcf39c6e",
+    "language_growth/entity_binding_kernel.py": "55b3fe0d57262ed1ca8954b41b6047a302303e26c184e75966516bd2dec166a0",
+    "language_growth/tests/test_entity_binding.py": "6ae95f7d6444a698e3d5e93a98f3a8f5ecd8e523b3b372c293b506e0dd43afdc",
+    "language_growth/tests/test_entity_binding_kernel.py": "082490a71d8b9bad16c781bb4829fc1f9ef4a49b96a177d4d8e98832b87a4970"
+  },
+  "tests": {
+    "command": "python -m unittest language_growth.tests.test_entity_binding language_growth.tests.test_entity_binding_kernel -v",
+    "passed": 10,
+    "result": "OK",
+    "skipped": 0
+  }
+}
