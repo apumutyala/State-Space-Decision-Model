@@ -1,0 +1,20 @@
+{
+  "baseline_predictions.json.gz": {
+    "compressed_bytes": 57380,
+    "compressed_sha256": "fa2b77030e2ae40fc8ad70f943090395723d3ac77e05f5c4e915f2888d447b52",
+    "decompressed_bytes": 1862876,
+    "decompressed_sha256": "8e164ee8bc163c8eee346cd394c84922d4825ec097c99d817b485dffd0a36678"
+  },
+  "frozen_rows.json.gz": {
+    "compressed_bytes": 176252,
+    "compressed_sha256": "a215b4047706fd81426cf08c04f023e36d11669ec6d2be8cbdef3aa2ee12e78d",
+    "decompressed_bytes": 8196316,
+    "decompressed_sha256": "e3cec785d4abcbf796196a1dfc36fc3be2b99ad89b732a56724cc8b495e94505"
+  },
+  "predictions.json.gz": {
+    "compressed_bytes": 60503,
+    "compressed_sha256": "85eb39c6d55aff2917a363652bc747a83e147f7b90116a2362a9ab3d3343cd20",
+    "decompressed_bytes": 1977014,
+    "decompressed_sha256": "edbcb8393949cbefbf0d25e49cb1b11f2de2b2d40917ba39df7598decb1489e4"
+  }
+}
