@@ -196,6 +196,9 @@ class HiddenStateBackbone(nn.Module):
         self.spec = spec
         self.pad_id = pad_id
         self.fork_mode = fork_mode
+        #: cache fork over several rows in ONE prefix call + ONE continuation call (``fork_features_rows``); set by
+        #: ``train.trainer.prepare_model`` from ``TrainConfig.row_batch > 1``. Off = one prefix call per row (as before).
+        self.batch_rows = False
         self._captured: torch.Tensor | None = None
         self._hook = None
         if capture != "hidden_states":
@@ -343,6 +346,46 @@ class HiddenStateBackbone(nn.Module):
         self._captured = None
         out = m(input_ids=cids, state=cache, **base)
         return h, self._pick(out)[torch.arange(k, device=ids.device), last]
+
+    # ------------------------------------------------------------------ cache fork, several rows per call
+    def can_fork_rows(self) -> bool:
+        """Batched-row cache fork: models whose recurrent state travels as ``state=`` and that take a right-padding
+        ``attention_mask`` (the vendored RWKV-7). Not the functional tiny model (no mask) nor HF caches."""
+        m = self.model
+        return (not hasattr(m, "prefill") and _accepts(m.forward, "state") and _accepts(m.forward, "attention_mask")
+                and not _accepts(m.forward, "cache_params") and self.capture == "hidden_states")
+
+    def fork_features_rows(self, prefixes: Sequence[Sequence[int]], conts: Sequence[Sequence[Sequence[int]]]):
+        """B rows, row i with K_i continuations -> (prefix features [B, T_max, D], zero on padding; fork features per
+        row [K_i, D]). Equals ``fork_features`` row by row (tests/test_cell_perf.py):
+
+        * prefix call: the rows right-padded with an ``attention_mask``. RWKV-7 then holds the WKV state exactly on
+          padding (decay 1, k = v = kk = 0) and takes each row's token shift from its last REAL token, so every row's
+          state after the call is the state of its own unpadded prefix;
+        * the state of row i is copied K_i times (``batch_select_indices`` with repeated indices: new tensors, autograd
+          intact), and all sum(K_i) continuations run in ONE call, right-padded (causal; only positions <= last are read).
+        """
+        m = self.model
+        dev = self.device
+        ids, mask = pad_batch(prefixes, self.pad_id, device=dev)
+        base: dict[str, Any] = {"use_cache": True, "output_hidden_states": True}
+        self._captured = None
+        out = m(input_ids=ids, attention_mask=mask.long(), **base)
+        cache = out.state
+        if cache is None:
+            raise RuntimeError("backbone returned no state for the cache fork")
+        hp = self._pick(out)
+        h = hp * mask.unsqueeze(-1).to(hp.dtype)  # zeros on padding, as the per-row path's F.pad
+        ks = [len(c) for c in conts]
+        rep = torch.repeat_interleave(torch.arange(len(ks)), torch.tensor(ks)).to(dev)
+        cache.batch_select_indices(rep)  # sum(K_i) state copies
+        flat = [list(c) for cs in conts for c in cs]
+        cids, cmask = pad_batch(flat, self.pad_id, device=dev)
+        last = cmask.sum(-1) - 1
+        self._captured = None
+        out = m(input_ids=cids, state=cache, **base)
+        f = self._pick(out)[torch.arange(len(flat), device=dev), last]
+        return h, list(f.split(ks))
 
 
 def _linear_safe_cache(config):

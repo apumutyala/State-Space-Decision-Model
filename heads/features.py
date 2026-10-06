@@ -113,6 +113,10 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
     use_prefix = (shared_prefix and not gated and not torch.is_grad_enabled() and PF.supported(backbone))
     if use_prefix:
         h, pre_fork = PF.shared_prefix_features(backbone, rows, need_fork, pad_id)
+    elif (cache_fork and not gated and len(rows) > 1 and getattr(backbone, "batch_rows", False)
+          and backbone.can_fork_rows()):  # TrainConfig.row_batch: all rows in one prefix call + one continuation call
+        h, fork_rows = backbone.fork_features_rows([r.ids for r in rows], [r.continuations for r in rows])
+        h = h.float()
     elif cache_fork:  # per-row prefix pass that also yields the K forked features
         per = [backbone.fork_features(r.ids, r.continuations,
                                       **({"trust": t, "cont_trust": [_cont_trust(backbone, r, k) for k in
