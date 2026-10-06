@@ -74,21 +74,32 @@ def _scatter_rows(base: torch.Tensor, where: list[tuple[int, int]], values: torc
     return base.index_put((ii, kk), values)
 
 
+def _row_trust(backbone, row: LayoutRow) -> list[bool]:
+    from controlsafe.trust_gate import row_trust
+
+    return row_trust(row, getattr(backbone, "trust_policy", "state"))
+
+
 def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], need_fork: bool = False,
                      pad_id: int = 0, fork_chunk: int = 64) -> HeadInput:
     dev = backbone.device
     cache_fork = need_fork and backbone.fork_mode == "cache"
     ids, mask = pad_batch([r.ids for r in rows], pad_id, device=dev)
+    # controlsafe trust gate (G15): a backbone with ``wants_trust`` gets per-token trust labels from the rows
+    gated = getattr(backbone, "wants_trust", False)
+    trusts = [_row_trust(backbone, r) for r in rows] if gated else None
+    tkw = {"trust": pad_batch([[int(x) for x in t] for t in trusts], 0, device=dev)[0].bool()} if gated else {}
     fork_rows: list[torch.Tensor] = []
     if cache_fork:  # per-row prefix pass that also yields the K forked features
-        per = [backbone.fork_features(r.ids, r.continuations) for r in rows]
+        per = [backbone.fork_features(r.ids, r.continuations, **({"trust": t} if gated else {}))
+               for r, t in zip(rows, trusts or [None] * len(rows))]
         hs = []
         for hp, fk in per:
             hs.append(torch.nn.functional.pad(hp, (0, 0, 0, ids.shape[1] - hp.shape[0])))
             fork_rows.append(fk)
         h = torch.stack(hs).float()
     else:
-        h = backbone.features(ids, mask).float()
+        h = backbone.features(ids, mask, **tkw).float()
     bsz, t, d = h.shape
     ks = [r.n_options for r in rows]
     kmax = max(ks)
@@ -113,6 +124,9 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
         e_rows.append(torch.nn.functional.pad(er, (0, 0, 0, kmax - er.shape[0])))
     q_pre, q_end, e = torch.stack(q_pre_l), torch.stack(q_end_l), torch.stack(e_rows)
     if sym_seqs:
+        if gated and getattr(backbone, "trust_policy", "state") != "state":
+            raise ValueError("trust gate: the symmetric layout's option sequences carry no trust spans; "
+                             "trust_policy='caller' is only supported on the ordered layout (fail closed)")
         oid, om = pad_batch(sym_seqs, pad_id, device=dev)
         he = backbone.features(oid, om).float()
         denom = om.sum(-1, keepdim=True).clamp_min(1)
@@ -122,16 +136,19 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
     if cache_fork:
         fork = torch.stack([torch.nn.functional.pad(f.float(), (0, 0, 0, kmax - f.shape[0])) for f in fork_rows])
     elif need_fork:
-        seqs, where = [], []
+        seqs, where, strust = [], [], []
         for i, r in enumerate(rows):
             for k, cont in enumerate(r.continuations):
                 seqs.append(r.ids + cont)
                 where.append((i, k))
+                if gated:
+                    strust.append([int(x) for x in trusts[i]] + [1] * len(cont))  # continuations: template
         outs = []
         for s in range(0, len(seqs), fork_chunk):
             chunk = seqs[s : s + fork_chunk]
             fid, fm = pad_batch(chunk, pad_id, device=dev)
-            hf = backbone.features(fid, fm).float()
+            ckw = {"trust": pad_batch(strust[s : s + fork_chunk], 0, device=dev)[0].bool()} if gated else {}
+            hf = backbone.features(fid, fm, **ckw).float()
             last = fm.sum(-1) - 1
             outs.append(hf[torch.arange(len(chunk), device=dev), last])
         fork = _scatter_rows(h.new_zeros((bsz, kmax, d)), where, torch.cat(outs))

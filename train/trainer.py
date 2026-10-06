@@ -66,6 +66,9 @@ class TrainConfig:
     ckpt_every: int = 0
     eval_every: int = 0
     require_guard: bool = True  # refuse to train without a SplitGuard (GOAL.md integrity rule)
+    # optional controlsafe arm (G15 trust gate): {"trust_gate": true, "bridge_rank": 8, "readout": "decision",
+    # "trust_policy": "state"}. Empty = off; an empty dict is left out of the config hash (old hashes unchanged).
+    controlsafe: dict = field(default_factory=dict)
 
     def to_json(self) -> dict:
         d = asdict(self)
@@ -77,6 +80,8 @@ class TrainConfig:
 
     def hash(self) -> str:
         d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL}
+        if not d.get("controlsafe"):
+            d.pop("controlsafe", None)
         return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -100,6 +105,11 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     else:
         for p in model.backbone.parameters():
             p.requires_grad_(False)
+    if cfg.controlsafe.get("trust_gate") and not getattr(model.backbone, "wants_trust", False):
+        raise ValueError("cfg.controlsafe.trust_gate is set but the backbone is not a controlsafe "
+                         "TrustGatedBackbone: wrap it with controlsafe.trust_gate.wrap(...) before DecisionModel")
+    for p in getattr(model.backbone, "trainable_bridge_parameters", lambda: [])():
+        p.requires_grad_(True)  # P -> D bridges train with the LoRA group (named lora_A / lora_B)
     model.backbone.fork_mode = cfg.fork_mode
     if cfg.grad_checkpointing:
         model.backbone.enable_gradient_checkpointing()

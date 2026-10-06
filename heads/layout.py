@@ -188,14 +188,19 @@ def build_row(
     opts = canonical_options(q)
     ids: list[int] = []
     spans: dict[str, list[int]] = {}
+    caller_spans: list[tuple[int, int]] = []  # every non-template (caller/host-data) segment, for trust gating
     for text, trusted, tag in segs:
         start = len(ids)
         ids += encode(text, trusted)
+        if not trusted and len(ids) > start:
+            caller_spans.append((start, len(ids)))
         if tag:
             if tag in spans:
                 spans[tag][1] = len(ids)
             else:
                 spans[tag] = [start, len(ids)]
+    # provenance-untrusted tokens (controlsafe trust gate): the rendered state, before any evidence-span move
+    untrusted_spans = [tuple(spans["state"])] if "state" in spans and spans["state"][1] > spans["state"][0] else []
     evidence = "state"
     no_state_tokens = "state" not in spans or spans["state"][1] <= spans["state"][0]
     if no_state_tokens or is_empty_state(request["state"]):
@@ -226,7 +231,8 @@ def build_row(
         option_seqs=option_seqs,
         continuations=conts,
         layout=layout,
-        meta={"template": tpl.id, "perm": perm, "evidence": evidence},
+        meta={"template": tpl.id, "perm": perm, "evidence": evidence, "untrusted_spans": untrusted_spans,
+              "caller_spans": caller_spans},
     )
 
 

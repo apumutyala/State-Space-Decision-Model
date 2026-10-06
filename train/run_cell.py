@@ -125,7 +125,7 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
                        lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
                        seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
-                       eval_every=cfg["eval_every"])
+                       eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {})
 
 
 def keep_item(row, max_k: int, max_t: int) -> bool:
@@ -294,6 +294,10 @@ def main(argv=None):
         return EXIT["data"]
 
     bb = load_parent_backbone(parent, a.model_dir, cfg, a.gdn_ckpt)
+    if (cfg.get("controlsafe") or {}).get("trust_gate"):  # optional G15 arm (controlsafe/CONTROLSAFE.md)
+        from controlsafe.trust_gate import wrap as trust_gate_wrap
+
+        bb = trust_gate_wrap(bb, {**cfg["controlsafe"], "seed": cfg["seed"]})
     cuda = torch.cuda.is_available()
     dev_type = "cuda" if cuda else "cpu"
     cell["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
