@@ -1,10 +1,11 @@
 {
- "_comment": "probe9b LEAN variant, used only if the qualification verdict is re-price-lean-plan (MFU 12.5-25% or peak 60-76 GB): batch 4 (memory), stage-2 45 min, NIAH to 8k, the stop thresholds at 50% of the 12.5%-MFU prediction. Same success rule, same DEV subset.",
+ "_comment": "probe9b LEAN variant, used only if the qualification verdict is re-price-lean-plan (MFU 12.5-25% or peak 60-76 GB): batch 4 (micro_batch 4, no accumulation), stage-2 45 min, NIAH to 8k, the stop thresholds at half the full config's (25% of the job-4j3vu measured rates). Same success rule, same bands, same DEV subset. NOT used after job-4j3vu (verdict open-$40-one-layer-probe-spend-issue = full).",
  "seed": 0,
  "kernel": "fla",
  "model_dir": "${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-9B/snapshots",
  "seq_len": 4096,
  "batch": 4,
+ "micro_batch": 4,
  "data": {
   "train_max_tokens": 40000000
  },
@@ -51,7 +52,7 @@
   "lr": 0.001,
   "eval_init": false,
   "guard": {
-   "min_tok_s": 3075,
+   "min_tok_s": 4738,
    "check_after_steps": 50,
    "max_peak_gb": 76,
    "max_minutes": 20
@@ -66,14 +67,14 @@
   "lr": 0.0003,
   "train_all_converted": true,
   "guard": {
-   "min_tok_s": 725,
+   "min_tok_s": 1365,
    "check_after_steps": 50,
    "max_peak_gb": 76,
    "max_minutes": 45
   }
  },
  "gate": {
-  "n_windows": 16,
+  "n_windows": 32,
   "max_step_delta_nll": 0.05,
   "max_cum_delta_nll": 0.15,
   "min_hidden_cos": 0.95,
@@ -104,6 +105,55 @@
    "proceed-all-8": "gate passed and every quality, retrieval and Index criterion passed -> open the ~$150 full-conversion spend issue (all 8 layers, KL order, accept/rollback, recall levers)",
    "retrieval-fail": "gate, quality and Index passed but MQAR or S-NIAH fell past its bound -> pre-registered fallback: no full-8 spend; report the cost-of-attention-freedom curve; RWKV7 jobs; ship-hybrid is decision-needed for the user",
    "quality-fail": "gate rejected the layer, or ppl / MMLU / Index fell past its bound -> no full-8 spend; RWKV7 jobs (jobs/rwkv7)"
+  }
+ },
+ "diagnostic_bands_posthoc": {
+  "_comment": "Reported, not binding (scripts/decide_probe9b.py: diagnostic_bands_posthoc).",
+  "note": "written after seeing job-4j3vu qual gate numbers; not used for the verdict",
+  "pilot_0p8b": {
+   "source": "job-c4zkm phase B (0.8B, one layer, LEDGER.md 2026-10-06)",
+   "delta_nll": -0.0036,
+   "kl": 0.017,
+   "hidden_cos": 0.991,
+   "hidden_cos_provenance": "coordinator-reported (HANDOFF.md), not in LEDGER or issue #3"
+  },
+  "bands": {
+   "_comment": "POST-HOC DIAGNOSTIC, NOT USED FOR THE VERDICT. Written after seeing the job-4j3vu qualification 9B layer-3 gate numbers (dNLL -0.0005, KL 0.054, cos 0.980); reported in decision.json under diagnostic_bands_posthoc only. The binding verdict is success_rule (pre-registered at commit 511e8dd, unchanged). Derivation: dNLL green = 0.15/8 = 0.019; KL and (1 - cos) green = 3x the 0.8B pilot (KL 0.017, cos 0.991, the cos value coordinator-reported and unverified); amber edges = the enforced gate or ~3x green.",
+   "gate_delta_nll": {
+    "green_max": 0.019,
+    "amber_max": 0.05
+   },
+   "gate_kl": {
+    "green_max": 0.05,
+    "amber_max": 0.15
+   },
+   "gate_hidden_cos": {
+    "green_min": 0.97,
+    "amber_min": 0.95
+   },
+   "ppl_ratio": {
+    "green_max": 1.02,
+    "amber_max": 1.05
+   },
+   "mmlu_drop_pts": {
+    "green_max": 3.0,
+    "amber_max": 6.0
+   },
+   "index_diff_point": {
+    "green_min": -1.0,
+    "amber_min": -2.5
+   },
+   "index_diff_lo": {
+    "green_min": -2.5,
+    "amber_min": -5.0
+   }
+  },
+  "adjust_hint": {
+   "_comment": "POST-HOC DIAGNOSTIC SUGGESTION ONLY: never changes the verdict and never authorises spend. Uses the measured stage-2 KL gain = (importance KL of the layer after stage 1 - gate KL after stage 2) / the former.",
+   "stage2_gain_frac_min": 0.1,
+   "if_stage2_not_learning": "stage-2 gained < 10% of its starting KL: stage 2 is not the lever (job-4j3vu layer 3 moved 0.051 -> 0.054 in 35 min): re-probe with stage-1 1,200 steps and stage-2 lr 1e-4",
+   "if_stage2_learning": "stage-2 gained >= 10%: the cap stopped a still-improving run: re-probe with stage-2 max_minutes 120 (same lr)",
+   "max_reprobes": 1
   }
  }
 }

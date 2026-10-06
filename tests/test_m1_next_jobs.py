@@ -65,11 +65,15 @@ def test_pipeline_fits_its_phase_cap():
 
 
 def test_reprice_reports_tokens_and_stop_rule():
-    q = {"stage2_steady_tok_s": 1000.0, "stage1_steady_tok_s": 4000.0, "stage2_mfu": 0.17, "peak_gb": 55.0}
+    q = {"stage2_steady_tok_s": 1500.0, "stage1_steady_tok_s": 5000.0, "stage2_mfu": 0.17, "peak_gb": 55.0}
     r = costs.reprice_probe(q, FULL, LEAN, PP)
-    assert r["lean"]["stage2_tokens"] == 1000.0 * 60 * 45 and r["full"]["stage2_tokens"] == 1000.0 * 60 * 60
-    assert r["full"]["passes_stop_rule"] is False  # 1000 < 1450: the full config would stop with exit 3
-    assert r["lean"]["passes_stop_rule"] is True  # 1000 >= 725 and 4000 >= 3075
+    assert r["lean"]["stage2_tokens"] == 1500.0 * 60 * 45 and r["full"]["stage2_tokens"] == 1500.0 * 60 * 60
+    assert r["full"]["passes_stop_rule"] is False  # 1500 < 2730: the full config would stop with exit 3
+    assert r["lean"]["passes_stop_rule"] is True  # 1500 >= 1365 and 5000 >= 4738
+    m = PP["measured"]  # the job-4j3vu receipt passes the full config's floors with a 50% margin
+    r = costs.reprice_probe({"stage2_steady_tok_s": m["stage2_steady_tok_s"], "stage1_steady_tok_s":
+                             m["stage1_steady_tok_s"]}, FULL, LEAN, PP)
+    assert r["full"]["passes_stop_rule"] is True
 
 
 # ----------------------------------------------------------------------------- probe config validation
@@ -83,7 +87,7 @@ def test_probe_config_is_one_layer_enforced_kl_order():
         assert c["probes"]["mmlu_k"] > 0 and c["probes"]["mqar_pairs"]
         assert c["model_dir"].startswith("${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-9B")
     assert min(FULL["probes"]["niah_lengths"]) == 1024 and max(FULL["probes"]["niah_lengths"]) == 16384
-    assert FULL["stage1"]["guard"]["min_tok_s"] == 6150 and FULL["stage2"]["guard"]["min_tok_s"] == 1450  # = qual
+    assert FULL["stage1"]["guard"]["min_tok_s"] == 9476 and FULL["stage2"]["guard"]["min_tok_s"] == 2730  # 50% of job-4j3vu
 
 
 def test_lean_changes_only_cost_knobs_never_the_rule():
@@ -100,10 +104,11 @@ def _results(gate_pass=True, conv=None, stock=None, stopped=None):
     conv = conv or json.loads(json.dumps(stock))
     step = {"layer": 3, "gate_pass": gate_pass, "accepted": gate_pass, "step_delta_nll": 0.01 if gate_pass else 0.09,
             "gate_eval": {"delta_nll": 0.01, "hidden_cos": 0.98, "kl": 0.02}}
+    imp = {"order": [3, 7, 11, 15, 19, 23, 27, 31], "per_layer": {"3": {"kl": 0.03}}}
     if gate_pass:
         step["probe_tag"] = "conv1_kept7"
     R = {"progressive": {"steps": [step], "converted": [3] if gate_pass else []}, "probe_stock": stock,
-         "importance": {"order": [3, 7, 11, 15, 19, 23, 27, 31]}}
+         "importance": imp}
     if gate_pass:
         R["probe_conv1_kept7"] = conv
     if stopped:

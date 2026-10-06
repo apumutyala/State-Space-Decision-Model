@@ -11,7 +11,7 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 |---|---|---|---|---|
 | qual (rung-2 qualification, unchanged) | `jobs/qual/` | $18.81 | $20 | <= $8.91 (one attempt, validate_job) |
 | qual_c_only (phase-C re-run after the job-c4zkm 9B OOM; A and B passed there; env `QUAL_MODE=c_only`) | `jobs/qual/job_params_c_only.json` | $14.85 | $20 | <= $6.93 (one attempt; $7.92 with the 20-min build) |
-| probe9b (one-layer 9B conversion probe) | `jobs/probe9b/` | $28.21 | $40 | ~$11.04 |
+| probe9b (one-layer 9B conversion probe; re-priced from the job-4j3vu measured rates, issue #68) | `jobs/probe9b/` | $28.21 | $40 | ~$6.58 |
 | rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $16.34 | $20 | ~$4.70 |
 | rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $19.30 | $20 | ~$7.72 |
 
@@ -38,6 +38,10 @@ submitted while A can still bill). A job submitted alone: MTD + its hard cap.
 | `quality-fail` (gate rejected the layer, or ppl / MMLU / Index past its bound) | rwkv7 stage B (stage A already ran as comparator) |
 | probe exit 3/4 (its own stop rule) | rwkv7 stage B |
 | any other non-zero exit | diagnose; at most one probe re-run from the reserve |
+
+The verdict is computed from the 511e8dd `success_rule` only. `decision.json: diagnostic_bands_posthoc` (gate dNLL / KL /
+cosine bands and a suggested recipe change) was written after seeing the job-4j3vu qualification gate numbers; it is
+reported for the reviewer and never changes the verdict or authorises spend.
 
 Parent choice at m1 (PLAN gate "parent selected and frozen") compares the Q9-AF probe arms and the RWKV7 stage-A
 readout on the **same 2,008-row DEV subset** (`jobs/common/dev_subset_m1.json`), plus steer and memory. It is a
