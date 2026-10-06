@@ -63,7 +63,8 @@ def main():
     for case in build_cases(manifest["revision"]["revision_id"]):
         backend = slow if case["timing_dependent"] else replay
         d = Decider(backend, calibration=calibration, enable_v0_1_deltas=case["decider"]["enable_v0_1_deltas"],
-                    backend_max_input_tokens=manifest["revision"].get("max_context"))
+                    backend_max_input_tokens=manifest["revision"].get("max_context"),
+                    enable_experimental_provenance=case["decider"].get("enable_experimental_provenance", False))
         resp = d.decide(case["request"])
         if (resp["ssdm"]["error"] or {}).get("code") == "replay_miss":
             pending.append(case["case_id"])

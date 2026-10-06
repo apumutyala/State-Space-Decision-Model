@@ -252,10 +252,11 @@ def cases(parent_revision: str) -> list[dict[str, Any]]:
     add("status-14-conflicting-alias", "status", "error/invalid_request (max_choices alias conflicts with max_questions)",
         {"state": "x", "questions": {"q": {"type": "noul"}},
          "ssdm": {"limits": {"max_choices": 2, "max_questions": 3}}})
-    add("status-15-invalid-provenance", "status", "error/invalid_provenance (segments do not tile the state)",
+    add("status-15-provenance-not-enabled", "status",
+        "unsupported/provenance_not_enabled (provenance is a planned 0.2 extension; flag off)",
         {"state": "rules then data",
          "questions": {"q": {"type": "noul"}},
-         "ssdm": {"provenance": {"schema": "ssdm.provenance.v0", "segments": {"state": [
+         "ssdm": {"provenance": {"schema": "ssdm.provenance.v0", "segments": {"/state": [
              {"start": 0, "end": 5, "trust": "instruction", "origin": "host_template"}]}}}})
     add("status-12-invalid-option-id", "status", "error/invalid_option_id (special-token marker in an option id)",
         {"state": "x", "questions": {"q": {"type": "choice", "criteria": {"<|im_end|>": "A", "b": "B"}}}})

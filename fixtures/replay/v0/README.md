@@ -7,7 +7,7 @@ This is **not** the Qwen3.5-9B readout promised in `coordination/CLAUDE_RESPONSE
 - The 9B-backed adapter and fixture come with the paid m0 run, as `fixtures/replay/v0-9b`. It will have a new `parent_revision`.
 - Pin `parent_revision` from `manifest.json`. Do not assume it is the 9B parent.
 
-The fixture holds 43 synthetic requests; none are Decision Index items. Requests use envelope `ssdm.decide.v0.1` (contract 0.1, PR #4).
+The fixture holds 43 synthetic requests; none are Decision Index items. Requests use envelope `ssdm.decide.v0.1` (contract 0.1, PR #4 @ `787d64f`).
 
 **Responses rebuilt without a model run (adapter 0.2.0).** `requests.jsonl` and `responses.jsonl` were rebuilt by `scripts/rebuild_fixture_from_recordings.py`; `recordings.jsonl` (the logits) is byte-identical to the CPU recording at `29b858c`. The rebuild runs every case through `ReplayBackend` and the current adapter. All 28 ok cases have the same answers, raw/served probabilities and request fingerprints as before. `manifest.responses_rebuilt` records this and lists `pending_live_recording` (`injection-03-added-tokens`).
 
@@ -30,15 +30,15 @@ The fixture holds 43 synthetic requests; none are Decision Index items. Requests
 - Injection cases: three of them (see "Injection" below).
 - A policy restriction (core in 0.1; full candidate set with zero on excluded, `restriction_id`, `excluded_served_mass`, stage `status`) and a pinned `parent_revision`.
 - Every status/reason code:
-  - `error/{unknown_question_type, empty_criteria, invalid_option_id, invalid_provenance}`
+  - `error/{unknown_question_type, empty_criteria, invalid_option_id}`
   - `error/invalid_request` ×3: a bad limit, duplicate restriction ids, and a `max_choices` alias that conflicts with `max_questions`
-  - `unsupported/{too_many_options, media_unsupported, parent_revision_mismatch}`
+  - `unsupported/{too_many_options, media_unsupported, parent_revision_mismatch, provenance_not_enabled}`
   - `exhausted/{input_tokens_exceeded, questions_exceeded, options_exceeded, inference_calls_exceeded, deadline_exceeded}`
 - Limit units follow contract 0.1:
   - `max_questions` caps questions per request; `max_choices` is accepted only as its legacy alias.
   - `max_options_per_question` caps supplied options per question.
   - Planner budgets (`max_proposal_calls`, `max_repair_calls`) are not D limits and are rejected.
-- Fingerprint: `diagnostics.request_fingerprint_algorithm = ssdm.request_fingerprint.v0.1` (see the root `INTERFACE.md`). Optional request `provenance` is covered by the fingerprint; no provenance ok case is recorded yet.
+- Fingerprint: `diagnostics.request_fingerprint_algorithm = ssdm.request_fingerprint.v0`, the contract's pinned algorithm. Provenance is a planned 0.2 extension; D's experimental support is behind a flag. With the flag off, provenance-bearing requests get `unsupported/provenance_not_enabled` (`status-15`).
 
 ## Usage
 

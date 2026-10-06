@@ -140,7 +140,7 @@ def test_envelope_fields_echoed():
     assert s["diagnostics"]["context_ref"] == "catalog-revision-7"
     assert s["diagnostics"]["limits_applied"]["max_questions"] == 8
     assert s["diagnostics"]["limits_applied"]["_source"]["max_questions"] == "request:max_choices_alias"
-    assert s["diagnostics"]["request_fingerprint_algorithm"] == "ssdm.request_fingerprint.v0.1"
+    assert s["diagnostics"]["request_fingerprint_algorithm"] == "ssdm.request_fingerprint.v0"
     assert s["schema"] == "ssdm.decide.v0.1"
 
 

@@ -1,6 +1,6 @@
 # D → L interface
 
-The canonical contract is [`interfaces/DECISION_LANGUAGE_V0.md`](interfaces/DECISION_LANGUAGE_V0.md), version 0.1 (Codex, PR #4). This file keeps only what is not yet in that contract.
+The canonical contract is [`interfaces/DECISION_LANGUAGE_V0.md`](interfaces/DECISION_LANGUAGE_V0.md), version 0.1 (Codex, PR #4 @ `787d64f`, approved by Track D). This file keeps only what is not yet in that contract.
 
 Claude's original three requests (attribution, semantic_records, policy-conditioned probabilities) have been incorporated into the canonical 0.1 text, so they are no longer listed here.
 
@@ -16,36 +16,29 @@ These document how D realises the contract. They do not change it.
 - **Policy restriction.**
   - Duplicate ids are rejected.
   - The policy-conditioned stage covers the full candidate set, with zero on excluded options. It carries `allowed`, `restriction_id`, `excluded_served_mass` and `status` (`ok` | `unavailable_zero_served_mass`; probabilities are `null` when unavailable).
-- **Request fingerprint.** `diagnostics.request_fingerprint` is computed with algorithm `ssdm.request_fingerprint.v0.1`:
-
-  ```
-  sha256(canonical_json({"state": state, "questions": {qid: {"type", "instructions", "options": canonical_options(q)}}}
-                        + {"provenance": ssdm.provenance} only if supplied))
-  ```
-
-  - `canonical_json` is `json.dumps(sort_keys=True, separators=(",", ":"), ensure_ascii=False)`.
-  - `canonical_options` orders noul as (true, false), choice by sorted id, and score by level.
-  - Without provenance, the result equals the v0 algorithm.
-- **Failures.** A non-ok response carries a top-level `error {status, code, message}` and `answers == {}`.
+- **Request fingerprint.** D implements the contract's pinned `ssdm.request_fingerprint.v0` exactly, and `diagnostics.request_fingerprint_algorithm` says so on every provenance-free `ok` response.
+  - A provenance-bearing request is possible only with the experimental flag. It uses the separately versioned `ssdm.request_fingerprint.provenance.experimental-0.2`: the same payload plus `"provenance"`.
+- **Failures.**
+  - A non-ok response carries a top-level `error {status, code, message}` and `answers == {}`.
+  - Messages are fixed text per code; raw exception text is never returned.
+  - `diagnostics.inference_calls` counts attempted calls, with an accounting note. It is `null` when unknown, never a false zero.
 - **Abstention.** `abstention.mechanism = "not_implemented_v0"`.
 - **Untrusted text.** It is encoded only by `decide/untrusted.py`, which fails closed as `unsupported/control_tokens_in_input`.
 
-## Pending delta: request provenance (proposed on PR #4; D accepts it now)
+## Planned 0.2: request provenance (experimental in D, behind a flag)
 
-The optional `ssdm.provenance` field has schema `ssdm.provenance.v0` and is populated by the L bridge from `serialization_ref`. Its keys are `serializer`, `default_trust` and `segments{field: [{start, end, trust ∈ {instruction, data}, origin ∈ {host_template, record, task_input, program_prefix, other}, source_ref?, audience?, epistemic_class?}]}`.
+The contract lists `ssdm.provenance` as a planned optional 0.2 extension. D carries experimental support only behind `Decider(enable_experimental_provenance=True)`. Without the flag, a request that carries it is `unsupported/provenance_not_enabled`. The 0.1 L0 bridge sends none.
 
-Field names are `state`, `questions.<qid>.instructions` and `questions.<qid>.criteria.<option_id>`.
+The shape follows the contract: schema `ssdm.provenance.v0`, plus `serializer`, `default_trust` and `segments{field_path: [{start, end, trust, origin, source_ref?, audience?, epistemic_class?}]}`.
 
-Rules:
+D's experimental choices, proposed for ratification in 0.2:
 
-- Offsets are code points into the exact scored string.
-- Segments tile each string, with no gaps or overlaps.
-- `state` must be a string.
-- D tokenises each segment separately. Both trust classes go through `decide/untrusted.py`.
-- The provenance is echoed in `diagnostics.provenance` (`supplied`, `applied`, segments, per-label token counts, `encoder_id`) and is covered by the request fingerprint.
-- Malformed provenance is `error/invalid_provenance`.
+- **Field paths.** These use RFC 6901 JSON Pointer (`path_encoding: "rfc6901-json-pointer"`), with `~` escaped as `~0` and `/` as `~1` inside ids. The paths are `/state`, `/questions/<qid>/instructions` and `/questions/<qid>/criteria/<option_id>`. The encoding is unambiguous for ids containing `.` or `/`; the earlier dotted form was not.
+- **Trust default.** `default_trust` may only be `data`. Every unlisted field defaults to `data`, including question instructions, as the contract's tightened rule requires. Instruction authority comes only from explicitly declared spans. Verifying the host-template binding of those spans is the bridge's responsibility.
+- **Strings and spans.** Offsets are code points into the exact scored string, and `state` must be a string. Spans tile each field. Malformed provenance is `error/invalid_provenance`.
+- **Tokenisation and echo.** Each span is tokenised separately, and both trust classes go through `decide/untrusted.py`. `diagnostics.provenance` echoes `applied` (false for the stock readout), the segments, per-label token counts and the encoder id.
 
-Full rules are in `decide/provenance.py`. This delta becomes canonical once the provenance row lands in the contract.
+Full rules are in `decide/provenance.py`. Both tracks must approve 0.2 before any measurement uses this extension.
 
 ## Change rules
 

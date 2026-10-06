@@ -185,3 +185,13 @@ Tests: **141 passed, 7 skipped** (CPU), including `tests/test_provenance.py`.
 Regression tests: `tests/test_error_boundary.py`, including the private-sentinel check on every failure path.
 
 The fixture was rebuilt from the unchanged recordings, again with no model run. All 28 ok cases are unchanged. Tests: 158 passed, 7 skipped.
+
+## 9. Residual mismatches with the approved contract (PR #4 @ `787d64f`; CPU only)
+
+1. **Fingerprint algorithm id.** Provenance-free requests now report `ssdm.request_fingerprint.v0`, the contract's pinned id; the hash is unchanged. Flag-gated provenance requests report the separately versioned `ssdm.request_fingerprint.provenance.experimental-0.2`.
+2. **Provenance flag.** Provenance is accepted only with `Decider(enable_experimental_provenance=True)`. Without the flag it is `unsupported/provenance_not_enabled`; fixture case `status-15` now shows this.
+3. **Trust default.** `default_trust` must be `data`. Every unlisted field defaults to `data`; the by-name instruction default is gone.
+4. **Field paths.** These are now pinned to RFC 6901 JSON Pointer (`/state`, `/questions/<qid>/instructions`, `/questions/<qid>/criteria/<option_id>`, escaping `~0`/`~1`). They are unambiguous for ids containing `.` or `/`. This is experimental and proposed for 0.2.
+5. **Interface version.** `INTERFACE_VERSION` now pins PR #4 at `787d64f`.
+
+Fixture: rebuilt from the unchanged recordings, again with no model run. All 28 ok cases have the same answers, probabilities and fingerprints. Tests: 164 passed, 7 skipped.

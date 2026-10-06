@@ -20,7 +20,7 @@ Request envelope (all optional; legacy requests are accepted without it)::
                  "max_program_nodes", "max_inference_calls", "deadline_ms",
                  "max_choices"},  # positive ints; max_choices = legacy alias of max_questions only
       "policy_restriction": {qid: [allowed option ids]},  # nonempty subset, no duplicates
-      "provenance": {...}                                  # optional, see decide/provenance.py
+      "provenance": {...}   # planned 0.2; needs enable_experimental_provenance (decide/provenance.py)
     }
 
 Limit units (contract 0.1): ``max_questions`` caps questions per request;
@@ -130,7 +130,9 @@ class Decider:
         calibration: OptionCountTemperature | None = None,
         enable_v0_1_deltas: bool = False,
         backend_max_input_tokens: int | None = None,
+        enable_experimental_provenance: bool = False,
     ) -> None:
+        self.enable_experimental_provenance = enable_experimental_provenance
         self.backend = backend
         self.calibration = calibration or OptionCountTemperature()
         self.enable_v0_1_deltas = enable_v0_1_deltas
@@ -232,6 +234,11 @@ class Decider:
             restriction = self._restriction(env, request)
             provenance = None
             if env.get("provenance") is not None:
+                if not self.enable_experimental_provenance:
+                    raise RequestRejected(
+                        "unsupported", "provenance_not_enabled",
+                        "ssdm.provenance is a planned 0.2 extension; this adapter has it disabled",
+                    )
                 provenance = validate_provenance(request, env["provenance"])
             revision = self.backend.revision()
             wanted = env.get("parent_revision")
@@ -336,6 +343,7 @@ class Decider:
             "schema": provenance["schema"],
             "serializer": provenance["serializer"],
             "default_trust": provenance["default_trust"],
+            "path_encoding": provenance["path_encoding"],
             "segments": provenance["segments"],
             "instruction_tokens": None if labels is None else labels.get("instruction", 0),
             "data_tokens": None if labels is None else labels.get("data", 0),
@@ -352,7 +360,7 @@ class Decider:
             "adapter": versions.ADAPTER_VERSION,
             "interface": versions.INTERFACE_VERSION,
             "deltas": versions.DELTAS_VERSION if self.enable_v0_1_deltas else "disabled",
-            "request_fingerprint_algorithm": versions.FINGERPRINT_ALGORITHM,
+            "experimental_provenance": "enabled" if self.enable_experimental_provenance else "disabled",
             "wire": versions.WIRE_COMPAT,
         }
 
@@ -443,7 +451,10 @@ class Decider:
                 "revision_id": revision["revision_id"],
                 "model_revision": revision,
                 "request_fingerprint": request_fingerprint(request),
-                "request_fingerprint_algorithm": versions.FINGERPRINT_ALGORITHM,
+                "request_fingerprint_algorithm": (
+                    versions.FINGERPRINT_ALGORITHM if provenance is None
+                    else versions.FINGERPRINT_ALGORITHM_PROVENANCE
+                ),
                 "provenance": self._provenance_diag(provenance, plan),
                 "probability_stages": {
                     "raw": {"domain": "all_supplied_options", "transform": "softmax(logits, T=1)"},

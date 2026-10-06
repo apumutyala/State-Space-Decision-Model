@@ -26,7 +26,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from .provenance import split
+from .provenance import criteria_path, instructions_path, split, state_path
 from .schema import canonical_options, canonical_question_ids, render, sha256_text
 
 SYSTEM_PROMPT = (
@@ -103,7 +103,7 @@ def _option_segments(qid: str, oid: str, desc: Any, prov: dict[str, Any] | None)
     sem = {"option_id": oid}
     if desc is not None:
         sem["description"] = desc
-    name = f"questions.{qid}.criteria.{oid}"
+    name = criteria_path(qid, oid)
     if prov is None or not isinstance(desc, str) or name not in prov["segments"]:
         return [(render(sem), "data")]
     # render(sem) == '{"description":"<escaped desc>","option_id":<json id>}' (sorted keys)
@@ -116,7 +116,7 @@ def _option_segments(qid: str, oid: str, desc: Any, prov: dict[str, Any] | None)
 def _instr_segments(qid: str, q: dict[str, Any], prov: dict[str, Any] | None) -> list[Labelled]:
     instr = q.get("instructions")
     if isinstance(instr, str) and instr != "":
-        return _text_field(instr, f"questions.{qid}.instructions", prov)
+        return _text_field(instr, instructions_path(qid), prov)
     return [(render(_instr(qid, q)), "data")]
 
 
@@ -149,7 +149,7 @@ def build_prompt_labelled(template: Template, request: dict[str, Any], qid: str,
         seg += _field_labelled(i, k, questions[k], prov)
     seg.append(("\nEND SCHEMA\n\nSTATE:\n", "template"))
     if isinstance(request["state"], str):
-        seg += _text_field(request["state"], "state", prov)
+        seg += _text_field(request["state"], state_path(), prov)
     else:
         seg.append((render(request["state"]), "data"))
     seg += [(f"\nEND STATE\n\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", "template"), (qid, "data"),
