@@ -31,5 +31,10 @@
  "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
  "margins_from": "train.promotion.MARGINS",
  "margins_status": "PENDING USER APPROVAL",
- "mission": "m2-pilot-cache-fork"
+ "mission": "m2-pilot-cache-fork",
+ "parent_arm_sha256": {
+  "rwkv7": null,
+  "q9af": null,
+  "_note": "sha256 of the parent arm cache's arm.json (jobs/m2_parent_arm output) per parent; PENDING until that job runs. m2_job.sh refuses (exit 10) while null or on mismatch."
+ }
 }

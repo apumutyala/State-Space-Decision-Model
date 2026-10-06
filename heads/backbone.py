@@ -682,7 +682,8 @@ def q9af_pin_check(pin: dict, gdn_ckpt, model_dir=None) -> dict:
     """Lineage pins of a Q9-AF build. ``pin`` (the cell config's ``q9af`` block):
       ``converted_sha256``  sha256 of the converted GDN checkpoint file (REQUIRED; no pin -> refuse)
       ``base_repo`` / ``base_revision``  must equal the pinned stock parent
-      ``base_config_sha256`` (optional)  sha256 of the snapshot's config.json
+      ``base_config_sha256`` (REQUIRED)  sha256 of the snapshot's config.json (= its line in
+                                          ``jobs/m2_pilot/q9af_snapshot.sha256``); checked whenever ``model_dir`` is given
     Returns the provenance block stamped into the backbone identity."""
     from pathlib import Path
 
@@ -692,13 +693,16 @@ def q9af_pin_check(pin: dict, gdn_ckpt, model_dir=None) -> dict:
     got = _sha256_file(gdn_ckpt)
     if got != want:
         raise LineageError(f"converted checkpoint sha256 {got} != pinned {want}")
+    cfg_pin = pin.get("base_config_sha256")
+    if not cfg_pin or len(str(cfg_pin)) != 64:
+        raise LineageError(f"q9af.base_config_sha256 is not pinned ({cfg_pin!r})")
     if (pin.get("base_repo"), pin.get("base_revision")) != (Q9AF_BASE_REPO, Q9AF_BASE_REVISION):
         raise LineageError(f"base {pin.get('base_repo')}@{pin.get('base_revision')} != {Q9AF_BASE_REPO}@{Q9AF_BASE_REVISION}")
     prov = {"kind": "q9af", "base_repo": Q9AF_BASE_REPO, "base_revision": Q9AF_BASE_REVISION,
             "converted_sha256": got, "converted_from": pin.get("converted_from")}
     if model_dir is not None:
         cfg_sha = _sha256_file(Path(model_dir) / "config.json")
-        if pin.get("base_config_sha256") and pin["base_config_sha256"] != cfg_sha:
+        if cfg_pin != cfg_sha:
             raise LineageError(f"base config.json sha256 {cfg_sha} != pinned {pin['base_config_sha256']}")
         prov["base_config_sha256"] = cfg_sha
     return prov

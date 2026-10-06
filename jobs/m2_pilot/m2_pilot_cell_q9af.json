@@ -46,8 +46,9 @@
   "converted_sha256": null,
   "base_repo": "Qwen/Qwen3.5-9B",
   "base_revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
-  "base_config_sha256": null,
-  "converted_from": "PENDING: full-8 conversion job output (gdn_converted.pt lineage)"
+  "base_config_sha256": "d0883072e01861ed0b2d47be3c16c36a8e81c224c7ffaa310c6558fb3f932b05",
+  "converted_from": "PENDING: full-8 conversion job output (gdn_converted.pt lineage)",
+  "snapshot_sha256_file": "jobs/m2_pilot/q9af_snapshot.sha256"
  },
  "max_minutes_note": "training wall-clock inside the 95-min cell phase: 95 - smoke 10 - ladder 15 - 5 margin (PR #29 review: max_minutes must be <= the cell cap)"
 }

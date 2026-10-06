@@ -1,0 +1,35 @@
+{
+  "source_sha": "52c660734f0ca2472c5f9b4cacc83547938c949d",
+  "dependencies": "all tracked, fresh archive, no overlays",
+  "command": [
+    "C:/Users/apumu/research/CHLabs/ssdm-wt/m2-heads/.venv/Scripts/python.exe",
+    "-m",
+    "unittest",
+    "language_growth.tests.test_training_records",
+    "language_growth.tests.test_parent_training_integration",
+    "-v"
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2"
+  },
+  "seed": {
+    "model_and_training": 17,
+    "development_validation": 19
+  },
+  "hardware": "Windows-11-10.0.26200-SP0 AMD64 CPU, two torch threads",
+  "cost_usd": 0,
+  "runs": 1,
+  "exit_code": 0,
+  "scope": "Tiny random recurrent CPU test, not a qualified parent or capability result. One training step updates head and LoRA; frozen parameters unchanged. Strict checkpoint reload preserves full state; restored model drives planner. Temporary synthetic checkpoint is hashed but not a release artifact.",
+  "outcome": {
+    "checkpoint_reload_exact": true,
+    "task_correct": false,
+    "kernel_status": "accepted"
+  },
+  "sha256_lf": {
+    "raw.jsonl": "22189545a1c82de88c907fe4399c4b4532a3ff9a0155c83d00259b5a3a5bfc1e",
+    "tests.txt": "73241a58a3202130ea54c398db60b1bde48dc504fde12175d8058913e499288e"
+  }
+}
