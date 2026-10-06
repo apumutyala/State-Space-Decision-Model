@@ -133,3 +133,107 @@ def test_kernel_path_check_passes_close_and_fails_far(monkeypatch):
     del model.language_model.model.gdn.causal_conv1d_fn
     vac = P.kernel_path_check(dec, model, rows, "clef-flash")
     assert vac["gdn_layers_switched"] == 0 and not vac["ok"]
+
+
+# ----------------------------------------------------------------------------- PR #43 B1: real transformers GDN class
+# transformers 5.10.2 (Clef's pinned version; read from its wheel) and the installed 5.14.1 both build the layer as
+#     self.causal_conv1d_fn = causal_conv1d_fn
+#     self.chunk_gated_delta_rule = chunk_gated_delta_rule or torch_chunk_gated_delta_rule
+# and import fla only when CUDA is available. On CPU (and on any image where fla fails to import) the "fast" arm IS the
+# torch reference, which made the old kernel_path report ok=True with 3 layers "switched" and max|dp| = 0.
+GDN_PATTERN = ("self.causal_conv1d_fn = causal_conv1d_fn",
+               "self.chunk_gated_delta_rule = chunk_gated_delta_rule or torch_chunk_gated_delta_rule")
+
+
+def _real_gdn_model(jsm, seed=4):
+    """Mock Clef whose GDN layer is transformers' real Qwen3_5GatedDeltaNet (CPU, tiny config)."""
+    M = pytest.importorskip("transformers.models.qwen3_5.modeling_qwen3_5")
+    from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5TextConfig
+
+    import inspect
+
+    src = inspect.getsource(M.Qwen3_5GatedDeltaNet.__init__)
+    assert all(line in src for line in GDN_PATTERN), "transformers changed the GDN kernel-selection pattern"
+    cfg = Qwen3_5TextConfig(hidden_size=32, linear_num_key_heads=2, linear_num_value_heads=2, linear_key_head_dim=8,
+                            linear_value_head_dim=8, num_hidden_layers=1, num_attention_heads=2, num_key_value_heads=1,
+                            head_dim=8, intermediate_size=32, vocab_size=64, layer_types=["linear_attention"])
+    torch.manual_seed(seed)
+    layer = M.Qwen3_5GatedDeltaNet(cfg, 0).eval()
+
+    class Wrap(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.layer = layer
+
+        def forward(self, x):
+            return x + self.layer(x)
+
+    model = build_mock_model(jsm, seed=seed)
+    model.language_model.model.gdn = Wrap()
+    return model, layer, M
+
+
+def _kernel_rows():
+    from conftest import base_request
+
+    rows = []
+    for i in range(3):
+        r = base_request()
+        r["state"] = f"row {i} " * (i + 1)
+        r["_evaluation"] = {"run_id": f"k{i}"}
+        rows.append(r)
+    return rows
+
+
+def test_kernel_path_not_vacuous_on_real_transformers_fallback():
+    from baselines import clef_probes as P
+
+    jsm = CB.load_jsm()
+    model, layer, M = _real_gdn_model(jsm)
+    assert layer.chunk_gated_delta_rule is M.torch_chunk_gated_delta_rule  # fla unavailable on CPU: silent fallback
+    dec = CB.build_decider(CB.ClefBackend(model, FakeTok(), jsm=jsm, device="cpu", dtype="float32"))
+    res = P.kernel_path_check(dec, model, _kernel_rows(), "clef-flash")
+    assert res["gdn_layers_found"] == 1 and res["gdn_layers_already_reference"] == 1
+    assert res["gdn_layers_switched"] == 0 and res["max_abs_dp"] == 0.0
+    assert res["ok"] is False
+    assert any("no fast GDN kernel in use" in r for r in res["fail_reasons"])
+    assert any("max_abs_dp == 0" in r for r in res["fail_reasons"])
+
+
+def test_kernel_path_passes_when_a_real_fast_kernel_is_in_use():
+    """Positive control on the same real class: a non-reference kernel object (reference + bf16-sized noise)."""
+    from baselines import clef_probes as P
+
+    jsm = CB.load_jsm()
+    model, layer, M = _real_gdn_model(jsm)
+
+    def fast(*args, **kwargs):  # stands in for fla's chunk_gated_delta_rule
+        out, state = M.torch_chunk_gated_delta_rule(*args, **kwargs)
+        return out * (1 + 1e-3), state
+
+    layer.chunk_gated_delta_rule = fast
+    dec = CB.build_decider(CB.ClefBackend(model, FakeTok(), jsm=jsm, device="cpu", dtype="float32"))
+    res = P.kernel_path_check(dec, model, _kernel_rows(), "clef-flash")
+    assert res["gdn_layers_switched"] == 1 and res["gdn_layers_already_reference"] == 0
+    assert 0 < res["max_abs_dp"] <= P.KERNEL_TOL and res["ok"] is True, res
+    assert layer.chunk_gated_delta_rule is fast  # restored after the check
+
+
+def test_summarize_gates_job_b_on_kernel_path(tmp_path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("summ", CB.REPO_ROOT / "jobs/clef_baseline/summarize.py")
+    S = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(S)
+    import contextlib
+    import io
+
+    for parity, kp, want in ((True, True, True), (True, False, False), (False, True, False)):
+        (tmp_path / "probes.json").write_text(json.dumps({"parity": {"ok": parity}, "kernel_path": {"ok": kp}}))
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            S.main(["report", "--out-dir", str(tmp_path), "--release", "clef-flash", "--job", "A"])
+        r = json.loads(buf.getvalue())
+        assert r["s1_ok"] is want and r["kernel_path_ok"] is kp
+    spec_md = (CB.REPO_ROOT / "jobs/clef_baseline/JOB_SPEC.md").read_text(encoding="utf-8")
+    assert spec_md.count('"result.s1_ok == true"') == 2 and "result.parity_ok == true" not in spec_md

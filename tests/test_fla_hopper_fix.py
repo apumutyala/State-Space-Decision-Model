@@ -120,12 +120,21 @@ def test_clef_image_keeps_card_transformers_and_no_tilelang():
     assert "tilelang" not in re.sub(r"^#.*$", "", d, flags=re.M)
     assert re.search(r'"causal-conv1d==\d+\.\d+\.\d+"', d), "causal-conv1d must be pinned"
     assert "torch==2.11" not in d and "whl/cu128" not in d
+    # PR #43 review: ninja for the causal-conv1d source build; torchvision matched to cu126; the build-time assert also
+    # pins transformers 5.10.2 + torchvision and imports AutoProcessor / Qwen3_5ForConditionalGeneration
+    assert '"ninja==' in d and d.index('"ninja==') < d.index('"causal-conv1d==')
+    assert re.search(r'"torchvision==0\.28\.0" --index-url https://download\.pytorch\.org/whl/cu126', d)
+    assert re.search(r"^RUN python -c .*from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration.*'5\.10\.2'"
+                     r".*'0\.28\.0'", d, re.M)
+    assert d.index("from transformers import AutoProcessor") > d.index('"torchvision==0.28.0"')
 
 
 def test_clef_spec_documents_fix():
     spec = (ROOT / "jobs/clef_baseline/JOB_SPEC.md").read_text(encoding="utf-8")
     assert NEW_BASE in spec and "#640" in spec and "fla_guard.py" in spec and "kernel_path" in spec
     assert "torch 2.11" in spec  # the deviation from the model card is declared, not hidden
+    assert "H200" in spec and "H100" in spec and '"build_timeout_minutes": 90' in spec  # latency + build deviations
+    assert '"result.s1_ok == true"' in spec and "result.parity_ok == true" not in spec  # job B gated on kernel_path
 
 
 def test_no_literal_backslash_n_continuations_in_shell():

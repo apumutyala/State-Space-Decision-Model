@@ -148,11 +148,18 @@ class reference_gdn_path:
     the reference path (the check that matters after moving off the model card's torch 2.11; see
     JOB_SPEC "Image"). ``FusedRMSNormGated`` (an fla Triton norm) is left in place: its parameters are
     not interchangeable with the torch norm without re-wiring, and it has no #640 exposure (forward only
-    in this probe). Returns the number of layers switched.
+    in this probe).
+
+    ``__enter__`` returns the number of GDN layers whose kernel was ACTUALLY replaced, i.e. whose
+    ``chunk_gated_delta_rule`` was not already the torch reference. transformers sets
+    ``self.chunk_gated_delta_rule = chunk_gated_delta_rule or torch_chunk_gated_delta_rule`` and falls back
+    silently when fla is unavailable (no CUDA, import failure, fla < 0.2.2); such layers are counted in
+    ``n_found`` and ``n_already_reference`` but not as switched, so the probe cannot pass vacuously (PR #43 B1).
     """
 
     def __init__(self, model: Any) -> None:
         self.model, self.saved = model, []
+        self.n_found = self.n_already_reference = self.n_switched = 0
 
     def __enter__(self) -> int:
         for m in self.model.modules():
@@ -160,9 +167,14 @@ class reference_gdn_path:
                 ref = getattr(sys.modules[type(m).__module__], "torch_chunk_gated_delta_rule", None)
                 if ref is None:
                     raise RuntimeError(f"{type(m).__name__}: no torch_chunk_gated_delta_rule reference in its module")
+                self.n_found += 1
+                if m.chunk_gated_delta_rule is ref or m.chunk_gated_delta_rule is None:
+                    self.n_already_reference += 1
+                else:
+                    self.n_switched += 1
                 self.saved.append((m, m.chunk_gated_delta_rule, m.causal_conv1d_fn))
                 m.chunk_gated_delta_rule, m.causal_conv1d_fn = ref, None
-        return len(self.saved)
+        return self.n_switched
 
     def __exit__(self, *exc) -> None:
         for m, chunk, conv in self.saved:

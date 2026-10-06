@@ -37,8 +37,16 @@ KERNEL_MARGIN = 2e-2      # an argmax may only differ where the top-2 gap is bel
 
 
 def kernel_path_check(decider, model, rows, release, max_tokens=KERNEL_MAX_TOKENS, n=N_KERNEL) -> dict:
-    """Fast-kernel vs torch-reference GDN on the same requests through the same decide path."""
-    picked, worst, flips, n_layers = [], 0.0, [], 0
+    """Fast-kernel vs torch-reference GDN on the same requests through the same decide path.
+
+    Non-vacuous by construction (PR #43 B1): ``ok`` needs (a) at least one GDN layer whose fast kernel object
+    is NOT the torch reference (transformers silently falls back when fla is unavailable, in which case the
+    "fast" arm already is the reference), and (b) a measured difference ``max_abs_dp > 0`` (two different
+    kernels in bf16 never agree bit-for-bit on every probability; exact equality means the switch did not
+    reach the forward), plus the tolerance and argmax rules.
+    """
+    picked, worst, flips = [], 0.0, []
+    found = already_ref = switched = 0
     for r in rows:
         if len(picked) >= n:
             break
@@ -46,8 +54,10 @@ def kernel_path_check(decider, model, rows, release, max_tokens=KERNEL_MAX_TOKEN
         fast = decider.decide(req)["ssdm"]
         if fast["status"] != "ok" or fast["diagnostics"]["input_counts"]["max_call_input_tokens"] > max_tokens:
             continue
-        with CB.reference_gdn_path(model) as n_layers:
+        ctx = CB.reference_gdn_path(model)
+        with ctx:
             ref = decider.decide(req)["ssdm"]
+        found, already_ref, switched = ctx.n_found, ctx.n_already_reference, ctx.n_switched
         picked.append(r["_evaluation"]["run_id"])
         for qid, pf in fast["raw_probabilities"].items():
             pr = ref["raw_probabilities"][qid]
@@ -55,10 +65,21 @@ def kernel_path_check(decider, model, rows, release, max_tokens=KERNEL_MAX_TOKEN
             top = sorted(pf.values())
             if len(top) > 1 and top[-1] - top[-2] > KERNEL_MARGIN and max(pf, key=pf.get) != max(pr, key=pr.get):
                 flips.append([r["_evaluation"]["run_id"], qid])
-    return {"n": len(picked), "run_ids": picked, "gdn_layers_switched": n_layers,
+    reasons = []
+    if not picked:
+        reasons.append("no eligible row")
+    if switched == 0:
+        reasons.append(f"no fast GDN kernel in use ({found} GDN layers, {already_ref} already on the torch reference)")
+    if picked and worst == 0.0:
+        reasons.append("max_abs_dp == 0: the reference switch did not change the forward")
+    if worst > KERNEL_TOL:
+        reasons.append(f"max_abs_dp {worst:.3g} > tol {KERNEL_TOL}")
+    if flips:
+        reasons.append(f"{len(flips)} argmax flips at margin > {KERNEL_MARGIN}")
+    return {"n": len(picked), "run_ids": picked, "gdn_layers_found": found,
+            "gdn_layers_already_reference": already_ref, "gdn_layers_switched": switched,
             "max_abs_dp": worst, "argmax_flips": flips, "tol": KERNEL_TOL, "margin": KERNEL_MARGIN,
-            # a vacuous pass (no GDN layer switched, or no row checked) is a failure, not a pass
-            "ok": bool(picked) and n_layers > 0 and worst <= KERNEL_TOL and not flips}
+            "fail_reasons": reasons, "ok": not reasons}
 
 
 def read_rows(path: str):

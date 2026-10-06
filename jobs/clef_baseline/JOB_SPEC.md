@@ -60,9 +60,21 @@ families (hijack best-of-5, D1-A/D1-B, GCG-lite pooled and both-orders), plus th
 
 **Not claimed: bitwise identity with Cloudflare's runs.** cuBLAS, SDPA and fla Triton numerics can differ at bf16 rounding level between torch versions. Cloudflare does not say whether it used fla at all. Two checks inside the image decide whether our stack scores Clef the same way:
 1. The S1 **parity** gate compares the decide path with Clef's own `systemone`: max |dp| <= 2e-4.
-2. The new S1 **`kernel_path`** check compares the fast fla/causal-conv1d GDN path with transformers' own torch reference (`clef_backend.reference_gdn_path`, which swaps `torch_chunk_gated_delta_rule` and the conv fallback into every GDN layer). It runs on up to 16 parity rows of at most 2,048 tokens. The bar is max |dp| <= 2e-2, with no argmax flip where the top-2 margin exceeds 2e-2. It also requires at least one GDN layer to have been switched, so a vacuous pass fails. A failure exits 11.
+2. The new S1 **`kernel_path`** check compares the fast fla/causal-conv1d GDN path with transformers' own torch reference (`clef_backend.reference_gdn_path`, which swaps `torch_chunk_gated_delta_rule` and the conv fallback into every GDN layer). It runs on up to 16 parity rows of at most 2,048 tokens. The bar is max |dp| <= 2e-2, with no argmax flip where the top-2 margin exceeds 2e-2. **Non-vacuous (PR #43 B1).** transformers sets `chunk_gated_delta_rule = fla_kernel or torch_chunk_gated_delta_rule` and falls back silently when fla is unavailable. On a stack where that happens, the old check "switched" 3 layers from the reference to the reference, measured max |dp| = 0 and reported `ok=True`. The check now passes only if three things hold:
+   - (a) at least one GDN layer's kernel object is **not** already the torch reference (`gdn_layers_switched` > 0; `gdn_layers_found` and `gdn_layers_already_reference` are reported);
+   - (b) a real difference was measured (`max_abs_dp > 0`; two different kernels never agree on every bf16 probability);
+   - (c) the tolerance and argmax rules above hold.
+
+   `fail_reasons` names every failed condition. A failure exits 11, and job B is gated on `result.s1_ok` (parity **and** `kernel_path`).
 
 `FusedRMSNormGated` (an fla Triton norm; not the gated `chunk_bwd_dqkwg` kernel of #640) stays on in both arms of that check. Clef numbers are reported as "Clef weights under our pinned stack (`kernel_stack`)", next to the card's own numbers, never merged with them.
+
+**Image build pins (review non-blocking items).**
+- `ninja` is installed before the `causal-conv1d==1.7.0` source build (its build requirement; without it the build falls back to a serial setuptools compile).
+- `build_timeout_minutes` is raised to 90 for that compile.
+- The build-time assert now also checks `transformers==5.10.2`, imports `torchvision` (needed by the Qwen3.5 image/video processor classes that `AutoProcessor` resolves), and imports `transformers.AutoProcessor` / `Qwen3_5ForConditionalGeneration`. A missing processor dependency therefore fails the free build, not the paid S1 load.
+
+**Latency deviation (H200 -> H100).** Cloudflare's card reports Index latency on **one H200** (median/p95: Clef-flash 38.8/122.4 ms, Clef 209.3/238.6 ms). The board's own admission measurement is on one RTX PRO 6000. Our latency row is on **one H100 80 GB SXM**, which has less HBM bandwidth than the H200 (3.35 vs 4.8 TB/s), with `clock_lock: true`, batch 1, our pinned `kernel_stack` and DEV rows. It is therefore comparable to neither number. It is reported as "H100, our stack", next to the card's H200 figures, and is never used for a latency "better than" claim against the card or the board.
 
 ## 3. Fit check: does Clef-27B fit one H100 80 GB?
 
@@ -79,7 +91,7 @@ Three jobs share one build context. A fourth (GCG on Clef-27B) is scoped out bel
 | Job | Release | Stages | Gate | max_duration | Expected | Ceiling at $2.97/h |
 |---|---|---|---|---|---|---|
 | **A-flash** | clef-flash | S0-S1-S2-S3-S4-S5 | (none) | 120 min | ~55 min, **~$2.7** | $5.94 |
-| **B-flash** | clef-flash | S0-S4b-S5 (GCG, resumable) | `depends_on: {job: A-flash, require: "result.parity_ok == true"}` | 600 min | ~3.3 h, **~$10** | $29.70 |
+| **B-flash** | clef-flash | S0-S4b-S5 (GCG, resumable) | `depends_on: {job: A-flash, require: "result.s1_ok == true"}` (parity **and** non-vacuous `kernel_path`) | 600 min | ~3.3 h, **~$10** | $29.70 |
 | **C-27b** | clef | S0-S5 as A | `depends_on: {job: A-flash, require: "result.ok == true"}` | 240 min | ~1.8 h, **~$5.4** | $11.88 |
 | *D-27b-gcg* | clef | GCG | not planned | - | ~9 h, ~$27 | worst case exceeds the 720-min cap |
 
@@ -109,7 +121,7 @@ Build the context first: `bash jobs/clef_baseline/build_context.sh` produces `cl
   "hf_cache": true,
   "max_duration_minutes": 120,
   "max_restarts": 1,
-  "build_timeout_minutes": 60,
+  "build_timeout_minutes": 90,
   "queue_ttl_minutes": 4320,
   "resume": "none",
   "clock_lock": true,
@@ -126,7 +138,7 @@ Build the context first: `bash jobs/clef_baseline/build_context.sh` produces `cl
 ```
 
 The other jobs differ only in these fields:
-- **B-flash.** `env {"RELEASE":"clef-flash","JOB":"B"}`, `idempotency_key "clef-baseline-B-flash-<sha12>"`, `max_duration_minutes 600`, `resume "checkpoint"`, `depends_on {"job":"<A-flash id>","require":"result.parity_ok == true"}`. Its checks are `file_exists /output/clef-flash-jobB/safety/gcg_attacks.jsonl` plus `result.json`. It uses the same heartbeat health check as A (`interval_s 600`, `fail_threshold 2`, `kill`); the watchdog keeps the heartbeat fresh through long attacks because GCG logs every 10 steps.
+- **B-flash.** `env {"RELEASE":"clef-flash","JOB":"B"}`, `idempotency_key "clef-baseline-B-flash-<sha12>"`, `max_duration_minutes 600`, `resume "checkpoint"`, `depends_on {"job":"<A-flash id>","require":"result.s1_ok == true"}`. `s1_ok` is true only if the S1 parity gate **and** `kernel_path` passed. GCG backward through the GDN kernels never starts unless the fast path was shown to be in use and to match the reference. Its checks are `file_exists /output/clef-flash-jobB/safety/gcg_attacks.jsonl` plus `result.json`. It uses the same heartbeat health check as A (`interval_s 600`, `fail_threshold 2`, `kill`); the watchdog keeps the heartbeat fresh through long attacks because GCG logs every 10 steps.
 - **C-27b.** `env {"RELEASE":"clef","JOB":"A"}`, `model "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c"`, `max_duration_minutes 240`, `depends_on {"job":"<A-flash id>","require":"result.ok == true"}`, the check paths under `/output/clef-jobA/`, and **`hf_cache: false`** (review N4). The manual guarantees only at least 32 GiB of free cache room and warns that a larger single download "can still fill the cache mid-pull (submit unusually large models without the flag)". The 55 GB of weights therefore download into the job's own scratch: 55 GB of weights plus a ~15 GB image and outputs fit the 100 GiB `job_scratch_bytes`. Preflight's disk warning should report ~55 GB.
 - **Heartbeat semantics (review B1).** `run_job.sh` sources `watchdog.sh`, a background loop that touches `$OUT/heartbeat` every 60 s, but **only while** two things hold:
   1. The main script is alive (`kill -0 $MAIN_PID`). The loop is also killed by the EXIT trap.
