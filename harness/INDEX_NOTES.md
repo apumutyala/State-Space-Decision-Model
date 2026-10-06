@@ -49,7 +49,7 @@ Quotes below are verbatim from those files unless marked *inferred*.
 
 Verbatim (`index-v0.2.1.json` `suite.calibration_note`): "32 benchmarks with a per-field right or wrong answer (ToolRet, BRIGHT, RouterBench and ForecastBench excluded), each weighted equally; a 1-in-6 sample of requests; confidence is the probability placed on the chosen option. Rows an entrant trained on count as wrong here too." Board entries report `acc, conf, ece, brier, over95, n` (72,594 fields for every entrant), 10 equal-width bins (`rel`), and per-area ECE.
 
-- **Not published:** the rule that picks the 1-in-6 sample, and the list of the 32 benchmarks. A natural guess (the 37 base benchmarks minus the four exclusions and SimpleBench) has 216,932 scored fields in the 0.2.1 scope (with HLE), so one sixth is ~36k fields, half the board's n = 72,594. Even every scored field of the whole 0.2.1 scope minus the four exclusions gives only 42k per sixth. **So the board's ECE sample is drawn from a wider scope than the scored 0.2.1 rows.** The most likely candidate is the full 0.1 ACOS (5,479 reviews; ACOS alone has 91k fields in its 400-review subset). This is unresolved; ask the maintainers before claiming a board-comparable ECE. `harness.calibration.board_ece` uses a hash-of-run-id 1-in-6 stand-in, benchmark-equal weights and 10 bins. Its numbers match the board's definition but not its sample.
+- **Not published:** the rule that picks the 1-in-6 sample, and the list of the 32 benchmarks. A natural guess (the 37 base benchmarks minus the four exclusions and SimpleBench) has 216,932 scored fields in the 0.2.1 scope (with HLE), so one sixth is ~36k fields, half the board's n = 72,594. Even every scored field of the whole 0.2.1 scope minus the four exclusions gives only 42k per sixth. **So the board's ECE sample is drawn from a wider scope than the scored 0.2.1 rows.** The most likely candidate is the full 0.1 ACOS (5,479 reviews; ACOS alone has 91k fields in its 400-review subset). This is unresolved; ask the maintainers before claiming a board-comparable ECE. `harness.calibration.board_ece` uses a hash-of-run-id 1-in-6 stand-in, benchmark-equal weights and 10 bins. It drops the seven 0.2 additions, since the board's 32 are most likely base-edition benchmarks. MMLU, ARC and SGD are not index benchmarks and are absent from our slices. So both the benchmark set and the sample differ from the board's, and its numbers are not board-comparable. Field-weighted summaries are dominated by ACOS (~48% of DEV fields), so the harness also reports benchmark-equal ECE per block. iSarcasmEval contributes only its scored A-English track.
 - Board ECE is the plain binned L1 estimator, which is biased upward on small or sharp samples; the harness additionally reports debiased L2 ECE (Kumar et al. 2019) and SmoothECE (Błasiok & Nakkiran 2023) per request-length bin.
 
 ## 5. Latency protocol
@@ -66,7 +66,7 @@ Verbatim (`index-v0.2.1.json` `suite.calibration_note`): "32 benchmarks with a p
 - "Treat the suite as evaluation data …; do not train on it and do not republish it." Training on **test items** is scored as wrong for those items (benchmark still computed over the full set); a confirmed leak gets the entry removed (reflex-4B: LoRA trained on 800 MMLU-Pro test items, 13.7-point held-in gap).
 - **Train/dev splits of the public sources are allowed**, but the maintainers rebuild declared training sets and count *exact duplicates of test items that sit in public train splits* as wrong (lev: 45 items; Jet v6.2: 5 BANKING77/CLINC duplicates; Lumma-Fev: 3,077 BANKING77 items found in the author's own datasets though undeclared). Home appliances dropped 48 test rows identical to dev rows.
 - Overlap that does not carry the label (e.g. GSM8K questions inside RouterBench prompts) is not counted.
-- Detection: rebuilding declared training data, held-in vs held-out gaps, and a shuffle test (options reordered on MMLU, GPQA, ARC-C, HellaSwag, MMLU-Pro; flag = drop ≥5 points with CI excluding zero) plus a 1,695-row perturbation control set.
+- Detection: rebuilding declared training data, held-in vs held-out gaps, and a shuffle test (options reordered on MMLU, GPQA, ARC-C, HellaSwag, MMLU-Pro; flag = drop ≥5 points with CI excluding zero). (The 1,695-row perturbation control set in `notes.run_variation` measures run-to-run choice agreement; it is not a contamination detector.)
 
 ## 8. Submission process
 
@@ -83,11 +83,27 @@ Verbatim (`index-v0.2.1.json` `suite.calibration_note`): "32 benchmarks with a p
 3. **ForecastBench is a gold benchmark scored by Brier.** Calibrated probabilities move the score directly, not only ECE. Its events resolved 2026-07-01 to 2026-09-18, so any backbone or teacher trained on data after July 2026 can leak outcomes. Record the knowledge cutoff of every parent and teacher.
 4. **Contamination gate.** Train-split data is allowed, but maintainers count exact duplicates of test items found in public train splits as wrong (lev, Jet, Lumma). Every training/distillation set needs an auditable dedup log against the suite's `state`/question text, not only against benchmark names. They also run a shuffle test (options reordered).
 5. **Latency is an admission gate (<1,000 ms median, one RTX PRO 6000, one request at a time), measured by the maintainers on a private sample.** The m3 serving path must be the fastest path the code supports.
-6. **HLE is gated** (see §10). The harness runs without it. m3 and any full-suite parity claim need an HF token with the HLE terms accepted.
-7. Per-benchmark noise matters for m2 decisions. On DEV (11,125 clusters) a paired comparison between two systems ~5 points apart has SE ≈ 0.90 index points, so MDE ≈ 2.5 points (α 0.05, power 0.8). Doubling the slice brings MDE to ≈1.8 and quadrupling to ≈1.3. Gaps under ~2.5 points between m2 arms cannot be resolved on DEV alone.
+6. **HLE is gated** (see §11). The harness runs without it. m3 and any full-suite parity claim need an HF token with the HLE terms accepted.
+7. **Resolution on DEV is a range, not a number.** The minimum detectable index difference (α 0.05, power 0.8, paired bootstrap over 8,248 source-case clusters) depends on how correlated the two systems' errors are:
+   - **≈0.65–1.1 points** when the candidate shares most of the baseline's errors (fixture: baseline plus 4–11% of rows fixed);
+   - **≈1.2 points** when the fix comes whole source cases at a time;
+   - **≈2.4 points** when the errors are independent (two independent noisy oracles 6.4 points apart).
+
+   m2 arms that share a backbone sit near the low end, while different parents sit near the high end. These fixtures are iid inside a case. Real models are correlated within a contest, trial or rater, which pushes every figure up. Per-benchmark CIs on NLI4CT (11 DEV cases) and other few-case benchmarks are coarse.
 8. The board itself publishes "point estimates only", and ties within 0.25 points share a rank. T1/T2 margins (56.88, 57.91, ≈57.07) are within ~1 point of each other, below what one full run can separate without the paired bootstrap.
 
-## 10. Local build status (2026-10-06)
+## 10. Slices after review (source-case disjointness)
+
+The first cut (3db3b0b) was disjoint by kit `group_id` only. Rows sharing a cartoon contest, clinical trial, When2Call scenario, forecast event, song, rater, HotpotQA question, RAGTruth source, Habermas question or tweet still straddled DEV and TEST, and 11 byte-identical payloads sat on both sides. The slices are now cut by **source case** (`harness/cases.py`), the connected component over shared group, per-benchmark source key, identical payload and identical non-trivial state. `cases.overlap_report(DEV, TEST)` is empty (tested).
+
+The same cases are the bootstrap clusters. Cases larger than 25% of a benchmark's slice quota stay in the pool:
+- NLI4CT: 2,202 rows in trial chains; DEV holds 11 cases.
+- ForecastBench: 6,255 rows in joint-event chains; DEV holds 141 cases.
+- cfcolor: 939 rows from prolific raters.
+
+The slices therefore under-sample the most interlinked sources.
+
+## 11. Local build status (2026-10-06)
 
 - Built with `suite rebuild` in WSL (`bi-ubuntu`, Python 3.12.3, C.UTF-8) from the pinned kit, everything except HLE (gated; no HF login on this machine). Script and log: `receipts/2026-10-06-D-m0-harness/`.
 - `added-rows.jsonl`: **byte-identical** to the official file (sha256 `7429f3c9…f89a`).

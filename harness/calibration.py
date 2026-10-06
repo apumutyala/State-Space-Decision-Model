@@ -19,13 +19,19 @@ from harness import config
 BOARD_EXCLUDED = {2, 36, 6, 48}
 
 
-def fields(rows, results, trained_on=(), exclude=BOARD_EXCLUDED):
+ADDED_02 = {56, 57, 58, 59, 61, 62, 64}  # 0.2 additions; most likely outside the board's 32
+HEADLINE_TRACK = {40: "iSarcasmEval-A-En"}  # only this track enters the index
+
+
+def fields(rows, results, trained_on=(), exclude=BOARD_EXCLUDED, headline_only=True):
     trained_on = set(trained_on)
     out = []
     for r in rows:
         e = r["_evaluation"]
         n = e["catalog_id"]
         if n in exclude:
+            continue
+        if headline_only and n in HEADLINE_TRACK and e["track"] != HEADLINE_TRACK[n]:
             continue
         res = results.get(e["run_id"])
         if not res or res["status"] != "ok":
@@ -76,9 +82,12 @@ def binned_ece(conf, correct, weights=None, bins=10):
     return float(ece), rel
 
 
-def board_ece(field_list, sample=True):
-    """Board protocol: 1-in-6 request sample, each benchmark weighted equally, 10 bins."""
-    fl = [f for f in field_list if not sample or one_in_six(f[2])]
+def board_ece(field_list, sample=True, base_only=True):
+    """Board protocol: 1-in-6 request sample, each benchmark weighted equally, 10 bins.
+
+    base_only drops the seven 0.2 additions (the board's 32 are most likely base-edition
+    benchmarks; MMLU/ARC/SGD are not index benchmarks and so are not in our slices)."""
+    fl = [f for f in field_list if (not sample or one_in_six(f[2])) and (not base_only or f[0] not in ADDED_02)]
     if not fl:
         return None
     per = collections.Counter(f[0] for f in fl)
@@ -163,16 +172,6 @@ def smooth_ece(conf, correct, tol=1e-4):
             hi = mid
     s = (lo + hi) / 2
     return {"smece": smece_sigma(conf, correct, s, h), "sigma": s}
-    if smece_sigma(conf, correct, lo) <= lo:
-        return {"smece": smece_sigma(conf, correct, lo), "sigma": lo}
-    while hi - lo > tol:
-        mid = (lo + hi) / 2
-        if smece_sigma(conf, correct, mid) > mid:
-            lo = mid
-        else:
-            hi = mid
-    s = (lo + hi) / 2
-    return {"smece": smece_sigma(conf, correct, s), "sigma": s}
 
 
 def report(field_list):
@@ -183,7 +182,9 @@ def report(field_list):
         conf = [f[3] for f in fl]
         cor = [f[4] for f in fl]
         ece, _ = binned_ece(conf, cor)
-        return {"n": len(fl), "acc": float(np.mean(cor)), "conf": float(np.mean(conf)), "ece_10bin": ece, **debiased_ece(conf, cor), **smooth_ece(conf, cor)}
+        per = collections.Counter(f[0] for f in fl)
+        ece_eq, _ = binned_ece(conf, cor, [1.0 / per[f[0]] for f in fl])
+        return {"n": len(fl), "benchmarks": len(per), "largest_benchmark_share": max(per.values()) / len(fl), "acc": float(np.mean(cor)), "conf": float(np.mean(conf)), "ece_10bin": ece, "ece_10bin_benchmark_equal": ece_eq, **debiased_ece(conf, cor), **smooth_ece(conf, cor)}
 
     by_bin = collections.defaultdict(list)
     for f in field_list:
