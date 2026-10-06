@@ -17,6 +17,18 @@ Deliberate differences from Clef (each required by the canonical interface):
   an over-long input returns ``status = exhausted``.
 * Clef breaks argmax ties by request insertion order. We break ties by sorted
   option id so that the answer is invariant to option order in the request.
+* Validation is stricter than Clef: a 1-level ``score`` is ``invalid_request``
+  (Clef accepts it and returns score 0); noul ``criteria`` keys other than
+  true/false are ``invalid_request`` (Clef ignores them); option ids and
+  question ids containing control characters or special-token markers
+  (``<|``, ``|>``) are ``invalid_option_id`` / ``invalid_request``.
+* ``usage.input_tokens`` is the total number of tokens forwarded (all option
+  rows of all questions); Clef reports the length of its single joint sequence.
+  The longest single model input is ``diagnostics.input_counts.max_call_input_tokens``.
+* Non-ok responses carry a top-level ``error`` object (``{status, code,
+  message}``) besides the ``ssdm`` envelope, with ``answers == {}``. Clef raises
+  ``ValueError`` instead. Transports must map ``status != ok`` to an HTTP error;
+  consumers must branch on ``ssdm.status`` (or ``error``), never on ``answers``.
 """
 
 from __future__ import annotations
@@ -33,6 +45,17 @@ NOUL_DEFAULT_CRITERIA = {
 #: SystemOne option cardinality limit per question.
 MAX_OPTIONS_WIRE = 255
 WIRE_ROUND = 4
+MAX_ID_CHARS = 128
+_FORBIDDEN_ID_MARKERS = ("<|", "|>")
+
+
+def _bad_id(value: str) -> bool:
+    return (
+        not value
+        or len(value) > MAX_ID_CHARS
+        or any(ord(ch) < 32 or ord(ch) == 127 for ch in value)
+        or any(m in value for m in _FORBIDDEN_ID_MARKERS)
+    )
 
 
 class RequestRejected(Exception):
@@ -96,6 +119,8 @@ def validate_legacy(request: Any) -> None:
     if not isinstance(questions, dict) or not questions:
         raise RequestRejected("error", "invalid_request", "at least one question is required")
     for qid, q in questions.items():
+        if _bad_id(str(qid)):
+            raise RequestRejected("error", "invalid_request", f"question id {qid!r} has control characters or markers")
         if not isinstance(q, dict):
             raise RequestRejected("error", "invalid_request", f"{qid}: question must be an object")
         qtype = q.get("type")
@@ -107,6 +132,12 @@ def validate_legacy(request: Any) -> None:
         if qtype == "choice":
             if not isinstance(crit, dict) or not crit:
                 raise RequestRejected("error", "empty_criteria", f"{qid}: criteria must be a non-empty object")
+            for oid in crit:
+                if _bad_id(str(oid)):
+                    raise RequestRejected(
+                        "error", "invalid_option_id",
+                        f"{qid}: option id {oid!r} is empty, too long, or has control characters/special-token markers",
+                    )
             n = len(crit)
         elif qtype == "score":
             if not isinstance(crit, list) or not crit:

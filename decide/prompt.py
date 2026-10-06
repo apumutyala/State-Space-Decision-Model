@@ -7,8 +7,17 @@ the opposite of Clef's state-first order, which is fine for Clef only because
 its attention head can look back over the whole sequence.
 
 Questions and options are rendered in canonical order (questions sorted by id;
-choice options sorted by id; noul true,false; score by level), so the prompt,
-and therefore the readout, is invariant to the order of keys in the request.
+choice options sorted by id; noul true,false; score by level), so the model
+input is byte-identical under any reordering of keys in the request. That is
+an adapter property; it says nothing about the model's own order robustness.
+
+Prompts are built as (text, trusted) segments. Trusted = template and fixed
+scaffolding. Untrusted = everything from the request (state, question ids,
+instructions, option ids and descriptions); backends must encode untrusted
+segments so they cannot produce control/special tokens (role-token injection,
+interface fixture 7). Plain-text spoofing (a state containing ``END STATE`` or
+``Assistant:``) cannot be prevented by any text template; only control-token
+spoofing is prevented.
 """
 
 from __future__ import annotations
@@ -22,6 +31,9 @@ SYSTEM_PROMPT = (
     "Read the schema, then the state, then the question. Answer with exactly one of "
     "the question's allowed option ids."
 )
+BODY_VERSION = "jrt-body-v2-segmented"
+
+Segment = tuple[str, bool]  # (text, trusted)
 
 
 @dataclass(frozen=True)
@@ -32,11 +44,12 @@ class Template:
     terminator: str  # appended to every option continuation
 
     def identity(self) -> dict[str, str]:
-        text = "\x1f".join([self.id, self.head, self.tail, self.terminator, SYSTEM_PROMPT, BODY_VERSION])
+        # A rendered canary is hashed in, so any edit to the body builder changes the identity.
+        text = "\x1f".join(
+            [self.id, self.head, self.tail, self.terminator, SYSTEM_PROMPT, BODY_VERSION, canary_sha256(self)]
+        )
         return {"id": self.id, "sha256": sha256_text(text)}
 
-
-BODY_VERSION = "jrt-body-v1"
 
 TEMPLATES = {
     # Qwen3.5 chat format, thinking disabled (empty think block), as Clef's suffix.
@@ -63,40 +76,79 @@ TEMPLATES = {
 }
 
 
-def _field_block(index: int, qid: str, q: dict[str, Any]) -> str:
+def _instr(qid: str, q: dict[str, Any]) -> str:
     instr = q.get("instructions")
-    if instr is None or instr == "":
-        instr = qid
-    lines = [f"FIELD {index}", f"ID: {qid}", f"TYPE: {q['type']}", f"INSTRUCTION: {render(instr)}", "ALLOWED OPTIONS:"]
+    return qid if instr is None or instr == "" else instr
+
+
+def _field_segments(index: int, qid: str, q: dict[str, Any]) -> list[Segment]:
+    seg: list[Segment] = [
+        (f"FIELD {index}\nID: ", True),
+        (qid, False),
+        (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True),
+        (render(_instr(qid, q)), False),
+        ("\nALLOWED OPTIONS:", True),
+    ]
     for j, (oid, desc) in enumerate(canonical_options(q), start=1):
         sem = {"option_id": oid}
         if desc is not None:
             sem["description"] = desc
-        lines.append(f"OPTION {j}: {render(sem)}")
-    lines.append("END FIELD")
-    return "\n".join(lines)
+        seg += [(f"\nOPTION {j}: ", True), (render(sem), False)]
+    seg.append(("\nEND FIELD", True))
+    return seg
 
 
-def build_prompt(template: Template, request: dict[str, Any], qid: str) -> str:
+def build_prompt_segments(template: Template, request: dict[str, Any], qid: str) -> list[Segment]:
     """Prompt for one question (each question is its own row, as Kev does for hybrids)."""
     questions = request["questions"]
     order = canonical_question_ids(questions)
-    schema = "\n".join(_field_block(i, k, questions[k]) for i, k in enumerate(order, start=1))
     q = questions[qid]
-    instr = q.get("instructions")
-    if instr is None or instr == "":
-        instr = qid
     option_ids = ", ".join(o for o, _ in canonical_options(q))
-    body = (
-        f"SCHEMA FIELDS:\n{schema}\nEND SCHEMA\n\n"
-        f"STATE:\n{render(request['state'])}\nEND STATE\n\n"
-        f"QUESTION (re-read FIELD {order.index(qid) + 1}):\n"
-        f"ID: {qid}\nTYPE: {q['type']}\nINSTRUCTION: {render(instr)}\n"
-        f"ALLOWED OPTION IDS: {option_ids}\n"
-        "Reply with exactly one allowed option id."
-    )
-    return template.head.format(system=SYSTEM_PROMPT) + body + template.tail
+    seg: list[Segment] = [(template.head.format(system=SYSTEM_PROMPT) + "SCHEMA FIELDS:\n", True)]
+    for i, k in enumerate(order, start=1):
+        if i > 1:
+            seg.append(("\n", True))
+        seg += _field_segments(i, k, questions[k])
+    seg += [
+        ("\nEND SCHEMA\n\nSTATE:\n", True),
+        (render(request["state"]), False),
+        (f"\nEND STATE\n\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", True),
+        (qid, False),
+        (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True),
+        (render(_instr(qid, q)), False),
+        ("\nALLOWED OPTION IDS: ", True),
+        (option_ids, False),
+        ("\nReply with exactly one allowed option id." + template.tail, True),
+    ]
+    return [(t, tr) for t, tr in seg if t]
+
+
+def build_prompt(template: Template, request: dict[str, Any], qid: str) -> str:
+    return "".join(text for text, _ in build_prompt_segments(template, request, qid))
+
+
+def continuation_segments(template: Template, option_id: str) -> list[Segment]:
+    return [(" " + option_id, False), (template.terminator, True)]
 
 
 def continuation(template: Template, option_id: str) -> str:
     return " " + option_id + template.terminator
+
+
+CANARY_REQUEST = {
+    "model": "canary",
+    "state": {"k": "v"},
+    "questions": {
+        "b": {"type": "choice", "instructions": "pick", "criteria": {"y": "Y", "x": None}},
+        "a": {"type": "score", "criteria": ["lo", "hi"]},
+        "c": {"type": "noul"},
+    },
+}
+
+
+def canary_sha256(template: Template) -> str:
+    parts = []
+    for qid in ("a", "b", "c"):
+        parts += [f"{t}\x1e{int(tr)}" for t, tr in build_prompt_segments(template, CANARY_REQUEST, qid)]
+    parts += [f"{t}\x1e{int(tr)}" for t, tr in continuation_segments(template, "x")]
+    return sha256_text("\x1f".join(parts))

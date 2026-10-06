@@ -26,11 +26,12 @@ REQUIRED_SSDM = {
 
 
 def check_response(req, resp):
-    assert set(resp) == {"model", "answers", "usage", "ssdm"}
     s = resp["ssdm"]
+    expected_keys = {"model", "answers", "usage", "ssdm"} | ({"error"} if s["status"] != "ok" else set())
+    assert set(resp) == expected_keys
     assert REQUIRED_SSDM <= set(s)
     assert s["status"] in STATUSES
-    assert s["abstention"] == {"abstained": False, "reason": None}
+    assert s["abstention"] == {"abstained": False, "reason": None, "mechanism": "not_implemented_v0"}
     assert s["state_handle"] is None
     assert "semantic_records" not in s  # never emitted before its gate
     d = s["diagnostics"]
@@ -39,6 +40,7 @@ def check_response(req, resp):
     if s["status"] != "ok":
         assert resp["answers"] == {}
         assert s["error"]["code"] and s["error"]["message"]
+        assert resp["error"] == {"status": s["status"], **s["error"]}  # legacy-visible failure signal
         return
     assert s["error"] is None
     assert set(resp["answers"]) == set(req["questions"])
@@ -155,3 +157,11 @@ def test_attribution_only_with_flag_and_labelled():
     on = Decider(OracleBackend(emit_attribution=True), enable_v0_1_deltas=True).decide(req)
     assert on["ssdm"]["attribution"]["label"] == "accounting attribution, not causal effect"
     assert on["answers"] == off["answers"]
+
+
+def test_non_ok_response_conforms_and_has_legacy_error():
+    req = base_request()
+    req["questions"]["status"]["type"] = "multi"
+    resp = Decider(OracleBackend()).decide(req)
+    check_response(req, resp)
+    assert resp["error"]["status"] == "error"
