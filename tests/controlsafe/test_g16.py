@@ -193,3 +193,76 @@ def test_g16_fails_closed_without_trust_labels():
         h(_row(r))
     with pytest.raises(ValueError):
         G.G16Head(TG.TrustGatedBackbone(tiny_hf_backbone("rwkv7"), readout="concat"), r=2)
+
+
+# --- B3 regression (PR #42 review round 2): no vacuous certificates ------------------------------------
+def test_certify_escalates_when_untrusted_text_is_outside_erasable_fields(monkeypatch):
+    import torch
+    from controlsafe import g16
+
+    class _Row:
+        option_ids = ["a", "b"]
+        meta = {"trusted_paths": [], "field_spans": [(0, 5, "/questions/q/instructions")]}
+
+    class _Gated:
+        last_protected_compact = None
+        p_cache_hits = 0
+
+    class _Ev:
+        c = 1.0
+
+    class _Head:
+        gated = _Gated()
+        evidence = _Ev()
+
+        def streams(self, row, p_cache=None):
+            return torch.zeros(1), torch.zeros(1)
+
+        def judge(self, hP, allowed_in):
+            return torch.tensor([[1.0], [1.0]]), torch.tensor([0.1, 0.0]), torch.tensor([True, True])
+
+        def combine(self, a, b, E, allowed):
+            return torch.tensor([0.1, 0.0])
+
+    head = _Head()
+    head.evidence = lambda hD: torch.zeros(1)
+    head.evidence.c = 1.0
+    monkeypatch.setattr(g16, "host_allowed_mask", lambda *a, **k: None)
+    monkeypatch.setattr(g16, "radii", lambda a, l, al: {"decision": 0})
+    monkeypatch.setattr(g16, "independent_of_untrusted", lambda *a, **k: False)
+    rec = g16.certify(head, {"state": {}}, "q", 1, build_row=lambda r: _Row())
+    assert rec["certified"] is False and rec["reason"] == "untrusted_outside_erasable_fields"
+
+
+def test_certify_refuses_non_finite_evidence(monkeypatch):
+    import torch
+    from controlsafe import g16
+
+    class _Row:
+        option_ids = ["a", "b"]
+        meta = {"trusted_paths": [], "field_spans": []}
+
+    class _Gated:
+        last_protected_compact = None
+        p_cache_hits = 0
+
+    class _Head:
+        gated = _Gated()
+
+        def streams(self, row, p_cache=None):
+            return torch.zeros(1), torch.zeros(1)
+
+        def judge(self, hP, allowed_in):
+            return torch.zeros(2, 1), torch.zeros(2), torch.tensor([True, True])
+
+        def combine(self, a, b, E, allowed):
+            return torch.tensor([float("nan"), 0.0])
+
+    head = _Head()
+    head.evidence = lambda hD: torch.tensor([float("nan")])
+    head.evidence.c = 1.0
+    monkeypatch.setattr(g16, "host_allowed_mask", lambda *a, **k: None)
+    monkeypatch.setattr(g16, "radii", lambda a, l, al: {"decision": 0})
+    monkeypatch.setattr(g16, "independent_of_untrusted", lambda *a, **k: True)
+    rec = g16.certify(head, {"state": {}}, "q", 1, build_row=lambda r: _Row())
+    assert rec["certified"] is False and rec["reason"] == "non_finite_evidence_or_logits"

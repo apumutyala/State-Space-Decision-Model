@@ -216,8 +216,31 @@ def certify(head: G16Head, request: dict, qid: str, k: int, build_row: Callable[
                            "decision": row.option_ids[rad["decision"]],
                            "independent_of_untrusted": indep, "E": E.tolist(), "k": k,
                            "allowed": [o for o, m in zip(row.option_ids, allowed.tolist()) if m]}
+    if not (torch.isfinite(E).all() and torch.isfinite(logits).all()):
+        # Non-finite evidence or logits: never certify (review round 2, non-blocking -> fixed).
+        rec.update({"certified": False, "reason": "non_finite_evidence_or_logits", "n_origins_evaluated": 0,
+                    "d_tokens": 0, "p_cache_misses": 0})
+        return rec
     if indep:
         rec.update({"certified": True, "reason": "independent_of_untrusted", "n_origins_evaluated": 0,
+                    "d_tokens": 0, "p_cache_misses": 0})
+        return rec
+    # B3 (review round 2): erasure origins only edit the state. Untrusted text anywhere else (e.g. an injected
+    # passage placed in question instructions) cannot be erased, so a certificate over origins would be vacuous
+    # for it: escalate instead. Option ids are host structure (excluded).
+    from heads.layout import ID_PATH, state_path
+    from controlsafe.trust_gate import DEFAULT_POLICY
+    meta = getattr(row, "meta", {}) or {}
+    trusted_paths = set(meta.get("trusted_paths", []))
+    outside = sorted({p for _, _, p in meta.get("field_spans", [])
+                      if p not in trusted_paths and p != ID_PATH and p != state_path()})
+    if outside:
+        rec.update({"certified": False, "reason": "untrusted_outside_erasable_fields", "untrusted_paths": outside,
+                    "n_origins_evaluated": 0, "d_tokens": 0, "p_cache_misses": 0, "trust_policy": DEFAULT_POLICY})
+        return rec
+    if not any(p == state_path() and p not in trusted_paths for _, _, p in meta.get("field_spans", [])):
+        # No untrusted text at all (besides host-structure option ids): the decision cannot depend on it.
+        rec.update({"certified": True, "reason": "no_untrusted_text", "n_origins_evaluated": 0,
                     "d_tokens": 0, "p_cache_misses": 0})
         return rec
     hits0 = gated.p_cache_hits
@@ -244,6 +267,11 @@ def certify(head: G16Head, request: dict, qid: str, k: int, build_row: Callable[
                 raise AssertionError("G4-over-E decision differs from the full G16 recompute")
         if do != rad["decision"]:
             changed.append({"erased": list(lab), "decision": ro.option_ids[do]})
+    if n == 0:
+        # No erasable origin was evaluated: nothing was checked, so do not certify (B3).
+        rec.update({"certified": False, "reason": "no_origins_evaluated", "n_origins_evaluated": 0,
+                    "changed": [], "d_tokens": 0, "p_cache_misses": 0})
+        return rec
     rec.update({"certified": not changed, "reason": None if not changed else "decision_changed_under_erasure",
                 "n_origins_evaluated": n, "changed": changed, "d_tokens": d_tokens,
                 "p_cache_misses": n - (gated.p_cache_hits - hits0)})
