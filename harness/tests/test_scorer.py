@@ -21,7 +21,8 @@ def noisy(dev_rows):
 def test_decomposition_matches_official_per_benchmark(dev_rows, noisy):
     off = score.official(dev_rows, noisy)
     dec = score.point(score.decompose(dev_rows, noisy), renormalize=False)
-    assert set(dec["per_benchmark"]) == {n for n in off["values"] if n != 45}
+    present = {r["_evaluation"]["catalog_id"] for r in dev_rows}
+    assert set(dec["per_benchmark"]) == present == {n for n in off["values"] if n in present}
     for n, v in dec["per_benchmark"].items():
         assert v["skill"] == pytest.approx(off["values"][n]["skill"], abs=1e-4), n
         assert v["raw"] == pytest.approx(off["values"][n]["raw"], abs=1e-4), n
