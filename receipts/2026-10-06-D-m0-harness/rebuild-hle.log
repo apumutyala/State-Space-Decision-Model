@@ -1,0 +1,60 @@
+{"event": "normalize", "builder": "hle", "catalog_id": 45, "dataset": "HLE"}
+{"event": "pool_frozen", "catalog_id": 1, "dataset": "BFCL", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 1694, "selected_cases": 1694, "requests": 1694, "fields": 4768, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 2, "dataset": "ToolRet", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 7961, "selected_cases": 7961, "requests": 8032, "fields": 254650, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 3, "dataset": "API-Bank", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 508, "selected_cases": 508, "requests": 508, "fields": 508, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 4, "dataset": "BANKING77", "benchmark_origin": "Original-task benchmarks", "available_cases": 3080, "selected_cases": 3080, "requests": 3080, "fields": 3080, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 5, "dataset": "CLINC150+OOS", "benchmark_origin": "Original-task benchmarks", "available_cases": 5500, "selected_cases": 5500, "requests": 5500, "fields": 5500, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 6, "dataset": "RouterBench", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 29163, "selected_cases": 5001, "requests": 10000, "fields": 20000, "request_cap": 10000, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 9, "dataset": "Home appliance simulator", "benchmark_origin": "Purpose-built benchmarks", "available_cases": 160, "selected_cases": 160, "requests": 160, "fields": 2895, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 10, "dataset": "SGD/SGD-X", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 46116, "selected_cases": 2500, "requests": 2500, "fields": 2500, "request_cap": null, "case_cap": 2500}
+{"event": "pool_frozen", "catalog_id": 11, "dataset": "ContractNLI", "benchmark_origin": "Original-task benchmarks", "available_cases": 123, "selected_cases": 123, "requests": 123, "fields": 2091, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 12, "dataset": "ANLI", "benchmark_origin": "Original-task benchmarks", "available_cases": 3200, "selected_cases": 3200, "requests": 3200, "fields": 3200, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 20, "dataset": "BPoMP", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 22419, "selected_cases": 811, "requests": 5000, "fields": 5000, "request_cap": 5000, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 21, "dataset": "Humicroedit", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 2628, "selected_cases": 2628, "requests": 2628, "fields": 2628, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 22, "dataset": "POP909-CL", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 75582, "selected_cases": 2000, "requests": 2000, "fields": 2000, "request_cap": null, "case_cap": 2000}
+{"event": "pool_frozen", "catalog_id": 23, "dataset": "cfcolor", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 11821, "selected_cases": 5000, "requests": 5000, "fields": 5000, "request_cap": null, "case_cap": 5000}
+{"event": "pool_frozen", "catalog_id": 24, "dataset": "MMLU", "benchmark_origin": "Original-task benchmarks", "available_cases": 14042, "selected_cases": 14042, "requests": 14042, "fields": 14042, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 25, "dataset": "GPQA Diamond", "benchmark_origin": "Original-task benchmarks", "available_cases": 198, "selected_cases": 198, "requests": 198, "fields": 198, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 26, "dataset": "ARC-Easy", "benchmark_origin": "Original-task benchmarks", "available_cases": 2376, "selected_cases": 2376, "requests": 2376, "fields": 2376, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 27, "dataset": "ARC-Challenge", "benchmark_origin": "Original-task benchmarks", "available_cases": 1172, "selected_cases": 1172, "requests": 1172, "fields": 1172, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 28, "dataset": "WinoGrande", "benchmark_origin": "Original-task benchmarks", "available_cases": 1267, "selected_cases": 1267, "requests": 1267, "fields": 1267, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 29, "dataset": "HellaSwag", "benchmark_origin": "Original-task benchmarks", "available_cases": 10042, "selected_cases": 10042, "requests": 10042, "fields": 10042, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 30, "dataset": "GSM8K", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 1319, "selected_cases": 1319, "requests": 2638, "fields": 2638, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 31, "dataset": "ChessBench", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 61833, "selected_cases": 5000, "requests": 5000, "fields": 5000, "request_cap": null, "case_cap": 5000}
+{"event": "pool_frozen", "catalog_id": 32, "dataset": "MuSR", "benchmark_origin": "Original-task benchmarks", "available_cases": 756, "selected_cases": 756, "requests": 756, "fields": 756, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 33, "dataset": "SATA-Bench", "benchmark_origin": "Original-task benchmarks", "available_cases": 1650, "selected_cases": 1650, "requests": 1650, "fields": 15517, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 34, "dataset": "SimpleBench", "benchmark_origin": "Original-task benchmarks", "available_cases": 10, "selected_cases": 10, "requests": 10, "fields": 10, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 36, "dataset": "BRIGHT", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 1384, "selected_cases": 1384, "requests": 1384, "fields": 44286, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 37, "dataset": "Amazon ESCI", "benchmark_origin": "Original-task benchmarks", "available_cases": 638016, "selected_cases": 5000, "requests": 5000, "fields": 5000, "request_cap": null, "case_cap": 5000}
+{"event": "pool_frozen", "catalog_id": 38, "dataset": "ACOS", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 1399, "selected_cases": 1399, "requests": 5479, "fields": 318945, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 39, "dataset": "FinEntity", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 979, "selected_cases": 979, "requests": 979, "fields": 2129, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 40, "dataset": "iSarcasmEval", "benchmark_origin": "Original-task benchmarks", "available_cases": 4600, "selected_cases": 4600, "requests": 4600, "fields": 11600, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 41, "dataset": "VAST", "benchmark_origin": "Original-task benchmarks", "available_cases": 3006, "selected_cases": 3006, "requests": 3006, "fields": 3006, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 42, "dataset": "NLI4CT", "benchmark_origin": "Original-task benchmarks", "available_cases": 5500, "selected_cases": 5500, "requests": 5500, "fields": 5500, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 43, "dataset": "CRUXEval", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 570, "selected_cases": 570, "requests": 570, "fields": 570, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 44, "dataset": "CLadder", "benchmark_origin": "Original-task benchmarks", "available_cases": 10112, "selected_cases": 5000, "requests": 5000, "fields": 5000, "request_cap": null, "case_cap": 5000}
+{"event": "pool_frozen", "catalog_id": 45, "dataset": "HLE", "benchmark_origin": "Original-task benchmarks", "available_cases": 513, "selected_cases": 513, "requests": 513, "fields": 513, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 48, "dataset": "ForecastBench", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 10139, "selected_cases": 10139, "requests": 10139, "fields": 10139, "request_cap": null, "case_cap": null}
+{"event": "pool_frozen", "catalog_id": 50, "dataset": "Habermas Machine", "benchmark_origin": "Jev-adapted benchmarks", "available_cases": 1676, "selected_cases": 1676, "requests": 1676, "fields": 1676, "request_cap": null, "case_cap": null}
+{"event": "release_v2_cut", "requests": 124971, "sha256": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5", "toolret_requests": 1328, "bright_requests": 637, "byte_identical": true}
+{
+  "edition": "0.2",
+  "release_v1": {
+    "work": "/root/ssdm-data/work",
+    "out": "/root/ssdm-data/work/artifacts/benchmark-suite/release-v1-rebuilt",
+    "requests": 132422,
+    "selected_cases": 117764,
+    "fields": 775202,
+    "selected_rows_sha256": "288d37207a9581187bdf83eada1983aa63de6fc50b0108e2badb229547a57f99",
+    "expected_sha256": "288d37207a9581187bdf83eada1983aa63de6fc50b0108e2badb229547a57f99",
+    "byte_identical": true
+  },
+  "out": "/root/ssdm-data/work/artifacts/benchmark-suite/release-v2-rebuilt",
+  "rows": {
+    "requests": 124971,
+    "sha256": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5",
+    "toolret_requests": 1328,
+    "bright_requests": 637
+  },
+  "rows_byte_identical": true
+}

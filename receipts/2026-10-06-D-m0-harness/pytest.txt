@@ -2,6 +2,7 @@
 platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\apumu\research\CHLabs\ssdm-wt\m0-harness\.venv\Scripts\python.exe
 rootdir: C:\Users\apumu\research\CHLabs\ssdm-wt\m0-harness\harness
 configfile: pyproject.toml
+plugins: anyio-4.15.1
 collecting ... collected 40 items
 
 harness\tests\test_aggregate.py::test_panel_is_38_benchmarks_with_published_area_weights PASSED [  2%]
@@ -45,4 +46,4 @@ harness\tests\test_stats.py::test_point_column_equals_official PASSED    [ 95%]
 harness\tests\test_stats.py::test_smooth_ece_handles_boundary_mass PASSED [ 97%]
 harness\tests\test_stats.py::test_case_clusters_are_coarser_and_keep_the_point_estimate PASSED [100%]
 
-============================= 40 passed in 30.65s =============================
+======================== 40 passed in 60.42s (0:01:00) ========================
