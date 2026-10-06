@@ -82,6 +82,7 @@ class ScriptedProvider:
                                 "request_fingerprint": legacy_request_fingerprint(request),
                                 "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
                                 "provenance": {"supplied": False, "applied": False},
+                                "state_handle_in": None, "state_reuse": False,
                                 "inference_calls": 1},
             },
         }
