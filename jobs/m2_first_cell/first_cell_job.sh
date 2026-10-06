@@ -158,7 +158,8 @@ for STAGE in g12 index; do
 done
 ARM_SHA=$(sha256sum "$ARM/arm.json" | cut -d' ' -f1)
 say "re-price the child evals from the measured parent scoring speed"
-python -X utf8 -m jobs.m2_first_cell.reprice --arm-dir "$ARM" --params "$PARAMS" --tok-s "$TOK_S" --call-s "$CALL_S" \n  --out "$WORK/out/reprice.json" > "$WORK/logs/reprice.log" 2>&1; r=$?
+python -X utf8 -m jobs.m2_first_cell.reprice --arm-dir "$ARM" --params "$PARAMS" --tok-s "$TOK_S" --call-s "$CALL_S" \
+  --out "$WORK/out/reprice.json" > "$WORK/logs/reprice.log" 2>&1; r=$?
 gate "reprice" $r
 case $r in 0) ;; 15) fail 15 "child evals re-priced past their cap at the box's measured speed (before training)" ;;
   *) fail 5 "reprice rc=$r" ;; esac

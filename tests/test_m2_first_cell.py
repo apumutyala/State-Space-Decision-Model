@@ -468,3 +468,15 @@ def test_group_bins_never_cut_a_group():
     b = group_bins(rows, lengths)
     ids = {k: [r["_evaluation"]["run_id"] for r in v] for k, v in b.items()}
     assert ids == {"<=2048": ["r2", "r3"], ">2048": ["r0", "r1"], "unmeasurable": ["r4", "r5"]}
+
+
+def test_no_literal_backslash_n_continuations_in_job_scripts():
+    """A literal backslash-n where a line continuation was meant passes `bash -n` but hands the command a stray 'n'
+    argument (first_cell_job.sh reprice: argparse rc 2 -> exit 5 right after the paid parent arm). Catch it in every
+    runner."""
+    import re
+    bad = re.compile(r"[\\]n[ \t]+--")  # a backslash, the letter n, blanks, then an option
+    assert bad.search('--call-s "$CALL_S" ' + chr(92) + "n  --out") and not bad.search("--call-s x " + chr(92))
+    hits = [(str(p.relative_to(ROOT)), i + 1) for p in sorted((ROOT / "jobs").rglob("*.sh"))
+            for i, line in enumerate(p.read_text(encoding="utf-8").splitlines()) if bad.search(line)]
+    assert not hits, hits
