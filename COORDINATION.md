@@ -134,3 +134,13 @@ One independent review is sufficient to merge or to launch spend. It can be eith
 - a fresh-context adversarial reviewer subagent that didn't write the code.
 
 The review's findings must be fixed first, and the spend must stay within the approved envelope and workspace cap. Every spend still gets a ledger row and a launch receipt. The other agent reviews afterwards, and any findings get fix PRs. This never applies to `main`.
+
+## Lean review (user direction, 2026-10-06)
+
+Reviews check only these:
+- correctness;
+- contamination and test-slice integrity;
+- safety-claim soundness;
+- spend safety.
+
+They don't rebuild datasets or re-verify byte-for-byte reproducibility. A recorded hash plus the build's own guard is sufficient. Small data-quality fixes (well under 1 pt impact) never block training. Docs and spec-only changes need no review.
