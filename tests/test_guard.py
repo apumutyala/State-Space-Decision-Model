@@ -40,7 +40,7 @@ def test_wall_clock():
 
 def test_rules():
     mk = lambda tok_s, peak, stopped=None: {"stage1": {"peak_gb": peak}, "progressive": {"steps": [  # noqa: E731
-        {"steady_tok_s": tok_s, "peak_gb": peak}]}, **({"stopped": stopped} if stopped else {})}
+        {"steady_tok_s": tok_s, "peak_gb": peak, "flop_per_token": 8.5e10}]}, **({"stopped": stopped} if stopped else {})}
     f = 8.5e10 / 989e12
     cases = [
         (mk(0.30 / f, 50), "open-$40-one-layer-probe-spend-issue"),
