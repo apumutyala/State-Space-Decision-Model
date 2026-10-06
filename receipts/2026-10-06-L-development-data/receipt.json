@@ -1,4 +1,6 @@
 {
+  "status": "superseded; historical v0 request sample rejected by D v0.1",
+  "superseded_by": "../2026-10-06-L-development-data-v2/receipt.json",
   "source_sha": "d94d45fdd43b23c6966dffda39e381de67ece4d3",
   "test_command": [
     "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
