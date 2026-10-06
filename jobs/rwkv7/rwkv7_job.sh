@@ -100,8 +100,12 @@ if [ "$JOB" = readout ]; then
   # measured stop condition: the probe's MEASURED prefill rate must let the readout fit its cap (else exit 15)
   TOKS=$(python -c "import json,sys;p=json.load(open(sys.argv[1]))['prefill'];print(max(v['tok_s'] for v in p.values() if 'tok_s' in v))" \
     "$WORK/out/probe.json") || fail 11 "no measured prefill rate"
-  python -m jobs.common.rate_guard preflight --tok-s "$TOKS" --subset "$SUBSET" --cap-min "$CAP_I" \
-    --out "$WORK/out/index/preflight.json" > "$WORK/logs/preflight.log" 2>&1; r=$?
+  # per-call latency MEASURED by the probe (small_call_s); the fitted job-mhc3h value if the probe could not time it
+  CALLS=$(python -c "import json,sys;from jobs.common.readout_cost import CALL_S_FITTED_RWKV7 as F;print(json.load(open(sys.argv[1])).get('small_call_s', F))" \
+    "$WORK/out/probe.json") || fail 11 "no call latency"
+  # exact subset volume of the prefix-fork readout (jobs/common/readout_cost.py), not a proxy-token guess
+  python -m jobs.common.rate_guard preflight --tok-s "$TOKS" --call-s "$CALLS" --volume jobs/common/readout_volume_rwkv7.json \
+    --path fork --cap-min "$CAP_I" --out "$WORK/out/index/preflight.json" > "$WORK/logs/preflight.log" 2>&1; r=$?
   gate "index:preflight" $r
   [ $r -eq 0 ] || fail $r "readout projected past its cap from the measured prefill rate"
   python -m jobs.common.rate_guard run --results "$WORK/out/index/stock/results.jsonl" --total "$NROWS" \

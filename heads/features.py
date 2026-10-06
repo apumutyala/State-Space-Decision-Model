@@ -75,12 +75,20 @@ def _scatter_rows(base: torch.Tensor, where: list[tuple[int, int]], values: torc
 
 
 def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], need_fork: bool = False,
-                     pad_id: int = 0, fork_chunk: int = 64) -> HeadInput:
+                     pad_id: int = 0, fork_chunk: int = 64, shared_prefix: bool = False) -> HeadInput:
+    """``shared_prefix=True`` (evaluation only, no grad): rows of the same request read their common schema + state
+    prefix once (``heads.prefix_features``); equal to the plain path up to float rounding (tests/test_perf_paths.py)."""
+    from . import prefix_features as PF
+
     dev = backbone.device
     cache_fork = need_fork and backbone.fork_mode == "cache"
     ids, mask = pad_batch([r.ids for r in rows], pad_id, device=dev)
     fork_rows: list[torch.Tensor] = []
-    if cache_fork:  # per-row prefix pass that also yields the K forked features
+    pre_fork = None
+    use_prefix = shared_prefix and not torch.is_grad_enabled() and PF.supported(backbone)
+    if use_prefix:
+        h, pre_fork = PF.shared_prefix_features(backbone, rows, need_fork, pad_id)
+    elif cache_fork:  # per-row prefix pass that also yields the K forked features
         per = [backbone.fork_features(r.ids, r.continuations) for r in rows]
         hs = []
         for hp, fk in per:
@@ -119,7 +127,9 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
         pooled = (he * om.unsqueeze(-1)).sum(1) / denom
         e = _scatter_rows(e, sym_index, pooled)
     fork = None
-    if cache_fork:
+    if use_prefix:
+        fork = pre_fork
+    elif cache_fork:
         fork = torch.stack([torch.nn.functional.pad(f.float(), (0, 0, 0, kmax - f.shape[0])) for f in fork_rows])
     elif need_fork:
         seqs, where = [], []
