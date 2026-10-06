@@ -64,18 +64,18 @@ def g5_standin(variants, alpha, delta):
             "stress_attacked": stress, "risk_coverage_all": selective.risk_coverage(sc, wr)}
 
 
-def g5_synthetic(alpha, delta, n=3000, seed=0):
+def g5_synthetic(alpha, delta, n=5000, seed=0, c=0.3):
     rng = np.random.default_rng(seed)
     s = rng.random(n)
-    w = rng.random(n) < 0.6 * (1 - s)
+    w = rng.random(n) < c * (1 - s)
     r = selective.ltt_selective(s, w, alpha, delta)
     s2 = rng.random(4000)
-    held_tpl = selective.stress_test(r["lam_hat"], s2, rng.random(4000) < 0.6 * (1 - s2), alpha, delta,
+    held_tpl = selective.stress_test(r["lam_hat"], s2, rng.random(4000) < c * (1 - s2), alpha, delta,
                                      label="held_out_template")
     s3 = rng.random(4000)
-    held_goal = selective.stress_test(r["lam_hat"], s3, rng.random(4000) < np.minimum(1, 0.6 * (1 - s3) + 0.15),
+    held_goal = selective.stress_test(r["lam_hat"], s3, rng.random(4000) < np.minimum(1, c * (1 - s3) + 0.15),
                                       alpha, delta, label="held_out_goal")
-    return {"generator": "s~U(0,1); wrong~Bern(0.6(1-s)); goal shift adds +0.15", "seed": seed, "n": n,
+    return {"generator": f"s~U(0,1); wrong~Bern({c}(1-s)); goal shift adds +0.15", "seed": seed, "n": n,
             "calibration": {kk: r[kk] for kk in ("n_s", "mu_s", "feasibility", "lam_hat", "chosen", "guarantee")},
             "held_out_template": held_tpl, "held_out_goal": held_goal}
 

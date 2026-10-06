@@ -431,6 +431,35 @@ def smoothed_certify(decide_fn: DecideFn, request: dict, k: int = 1, *, keep_pro
             "n_samples": n_select + n_estimate, "n_decide_calls": dec.calls}
 
 
+def smoothed_distribution(decide_fn: DecideFn, request: dict, keep_prob: float, *, exact_max_segments: int = 12,
+                          n_mc: int = 4000, seed: int = 0) -> tuple[dict[tuple, float], str]:
+    """The smoothed decider's class probabilities P(f(ablate(x)) = c). Exact (enumerating all 2^n keep masks)
+    when n <= ``exact_max_segments``, else a Monte Carlo estimate. Used as the evaluation reference g(clean)."""
+    fields = untrusted_fields(request)
+    segs = [stripped_segments(request["state"][f]) for f in fields]
+    flat = [(i, j) for i, ss in enumerate(segs) for j in range(len(ss))]
+    dec = CachedDecide(decide_fn)
+    dist: dict[tuple, float] = {}
+
+    def add(mask: Sequence[bool], w: float) -> None:
+        keep = [[False] * len(ss) for ss in segs]
+        for (i, j), m in zip(flat, mask):
+            keep[i][j] = m
+        r = ablate(request, fields, segs, keep)
+        d = decision_of(r, dec(r))
+        dist[d] = dist.get(d, 0.0) + w
+
+    if len(flat) <= exact_max_segments:
+        for mask in itertools.product([False, True], repeat=len(flat)):
+            kept = sum(mask)
+            add(mask, keep_prob ** kept * (1 - keep_prob) ** (len(flat) - kept))
+        return dist, "exact"
+    rng = random.Random(seed)
+    for _ in range(n_mc):
+        add([rng.random() < keep_prob for _ in flat], 1.0 / n_mc)
+    return dist, f"monte_carlo:{n_mc}"
+
+
 class SmoothedDecider:
     """``decide(request) -> response`` executing the smoothed decision only when certified at radius k.
 
@@ -455,7 +484,8 @@ def evaluate(decide_fn: DecideFn, variants: list[dict], k: int = 1, arm: str = "
     """Certificate + cost row per variant (safety_eval variants with ``_meta``). The reference decision for
     ``changed_vs_clean`` is the certified decider's decision on the ``clean`` variant of the same base request
     (must be present): the base decide() for ``exact``, the smoothed decider g (same sampling config) for
-    ``smooth``. For ``smooth`` that reference is itself a Monte Carlo estimate."""
+    ``smooth``, computed exactly by ``smoothed_distribution`` (all 2^n keep masks) when n <= 12, so the
+    smoothing soundness check is not confounded by Monte Carlo noise in the reference."""
     from .data import strip_meta
     from .metrics import base_id
     clean_req = {base_id(v["request_id"]): v for v in variants if v["_meta"]["attack_family"] == "clean"}
@@ -468,8 +498,8 @@ def evaluate(decide_fn: DecideFn, variants: list[dict], k: int = 1, arm: str = "
         if bid not in clean_dec:  # reference = the certified decider's own decision on the clean request
             c = strip_meta(clean_req[bid])
             if arm == "smooth":  # the smoothing guarantee is about g (the smoothed decider), not f
-                ref = smoothed_certify(decide_fn, c, k, **kw)["decision"]
-                clean_dec[bid] = tuple(sorted(ref.items())) if "status" not in ref else ("__status__", ref["status"], "")
+                dist, _ = smoothed_distribution(decide_fn, c, kw.get("keep_prob", 0.2))
+                clean_dec[bid] = max(dist.items(), key=lambda kv: (kv[1], repr(kv[0])))[0]
             else:
                 clean_dec[bid] = decision_of(c, decide_fn(c))
         if arm == "exact":

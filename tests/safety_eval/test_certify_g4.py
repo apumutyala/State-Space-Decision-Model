@@ -302,9 +302,21 @@ def test_smoothed_certificate_sound_on_poison_insertions():
         rec = C.smoothed_certify(dec, att, 1, keep_prob=0.15, n_select=16, n_estimate=200, delta=0.05, seed=trial)
         if rec["certified"]:
             certified += 1
-            ref = C.smoothed_certify(dec, clean, 1, keep_prob=0.15, n_select=64, n_estimate=800, seed=10_000 + trial)
-            bad += ref["decision"] != rec["decision"]
-    assert certified > 20 and bad <= 2
+            dist, how = C.smoothed_distribution(dec, clean, 0.15)  # exact g(clean)
+            assert how == "exact" and sum(dist.values()) == pytest.approx(1.0)
+            top = max(dist, key=dist.get)
+            bad += C._jsonable_decision(top) != rec["decision"]
+    assert certified > 20 and bad <= 2  # probabilistic certificate: rare failures allowed (prob <= delta each)
+
+
+def test_smoothed_distribution_exact_matches_monte_carlo():
+    dec = Scripted(4, poison="golf")
+    r = req({"u": "Alpha x. Golf now. Bravo y. Charlie z."}, ["u"])
+    ex, how = C.smoothed_distribution(dec, r, 0.3)
+    mc, how2 = C.smoothed_distribution(dec, r, 0.3, exact_max_segments=0, n_mc=4000, seed=1)
+    assert how == "exact" and how2.startswith("monte_carlo")
+    for d, p in ex.items():
+        assert mc.get(d, 0.0) == pytest.approx(p, abs=0.03)
 
 
 def test_smoothed_decider_os_entropy_and_rewrite():
