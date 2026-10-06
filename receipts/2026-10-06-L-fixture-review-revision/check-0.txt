@@ -1,0 +1,2 @@
+PASS: 24 fixture files, 9 records; JSON shape and declared references only.
+No kernel execution, semantic validation, model run, or independent label validation was performed.
