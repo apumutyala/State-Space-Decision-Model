@@ -1,0 +1,31 @@
+{
+  "source_commit": "584fa3410de15eee2de9906b8ecbe87dee3f9b4e",
+  "command": "& 'C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe' -I language_growth/l0_qwen_cpu_probe.py --raw 'C:/Users/apumu/research/CHLabs/ssdm-data/l0-qwen-cpu-probe-271828/raw.jsonl'",
+  "config": {
+    "model": "Qwen/Qwen3.5-0.8B",
+    "snapshot": "2fc06364715b967f1860aea9cf38778875588b17",
+    "task_id": "synthetic-development_validation-271828-2",
+    "seed": 271828,
+    "split": "development_validation",
+    "initial_available_bytes": 9624879104,
+    "timeout_seconds": 300,
+    "minimum_start_bytes": 8589934592,
+    "minimum_running_bytes": 3221225472,
+    "execution": "offline CPU; CUDA hidden in child"
+  },
+  "task_sha256": "e996f537fea463e480f691b36ed68b5f3a8aa1da014e798b706a672473029e0c",
+  "raw_path": "C:/Users/apumu/research/CHLabs/ssdm-data/l0-qwen-cpu-probe-271828/raw.jsonl",
+  "raw_sha256": "f5db5490cd42d05b58dc6e0ffcde470b4d419e594d7d665e353add11e6ed8dd3",
+  "raw_events": ["launcher_start", "launcher_exit"],
+  "process_exit_code": 1,
+  "failure": "The child interpreter started from language_growth/ and imported language_growth/types.py while the standard library requested top-level types.GenericAlias; it exited with ImportError before the model-load stage.",
+  "torch_imported": false,
+  "weights_loaded": false,
+  "capability_result": null,
+  "hardware": "Windows 11; CPU only",
+  "billed_rate": 0,
+  "cost_usd": 0,
+  "runtime_seconds": 0.5,
+  "median_spread": "not applicable; startup failure before model execution",
+  "scope": "launcher startup failure only; no capability, parent-retention, or learned-language measurement"
+}
