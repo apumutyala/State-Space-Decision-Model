@@ -69,6 +69,7 @@ class ScriptedProvider:
             "answers": {qid: {"type": "choice", "choice": selected,
                               "confidence": 1.0, "probabilities": dict(probs)}},
             "ssdm": {
+                "schema": "ssdm.decide.v0.1",
                 "status": "ok", "request_id": request["ssdm"]["request_id"],
                 "raw_probabilities": {qid: dict(probs)},
                 "served_probabilities": {qid: dict(probs)},
@@ -76,6 +77,8 @@ class ScriptedProvider:
                 "state_handle": None,
                 "diagnostics": {"revision_id": REVISION,
                                 "request_fingerprint": legacy_request_fingerprint(request),
+                                "request_fingerprint_algorithm": "ssdm.request_fingerprint.v0",
+                                "provenance": {"supplied": False, "applied": False},
                                 "inference_calls": 1},
             },
         }
