@@ -81,38 +81,11 @@ checkpointed layer inputs at 8×4096 = 8.6; one layer's recompute ≈ 6; chunked
 Review notes: the laptop smoke implies ~15–17% MFU, so 25% at 8×4096 on an H100 is plausible but **35% is unsupported until
 measured**; the 100M-tokens-per-layer budget is generous relative to RADLADS (350–700M tokens for all layers of a 7B).
 
-## First paid job: ≤$20 H100 qualification (spec; NOT launched)
+## First paid job: rung-2 hardware qualification (spec only; NOT submitted)
 
-Runner `scripts/sf_qual_run.sh` (orchestration steps in its header). Configs `configs/m1_pilot_0p8b_h100.json`, `configs/m1_9b_qual.json`.
-
-| Item | Value |
-|---|---|
-| Platform / shape | SF Compute autoresearch, `create_node(chip="h100-1")`, 1×H100-80GB, $2.97/h batch rate |
-| Image | catalog `pytorch-*` entry (torch preinstalled; exact name confirmed at create — an unknown name is refused with the list, at no cost); pins installed by the runner: transformers 5.17.0, flash-linear-attention 0.5.2, fla-core 0.5.2; mamba_ssm @ e9594ce (Triton-only) in a side dir |
-| Launch | `run_command(node, "bash /home/dev/m1q/sf_qual_run.sh", detach=true, max_duration_minutes=345)` |
-| Max $ | 345 min × $2.97/h = **$17.08** (platform-enforced); the script also POSTs `/v1/stop` in its EXIT trap |
-| Code | three `git archive`s: `claude/m1-conversion-pilot` HEAD, `claude/m0-decide-adapter@a5031f7`, `claude/m0-steer-eval@944fa02` |
-| Export | `/home/dev/m1q/export/<phase>.tgz` + `MANIFEST` after every phase and every `results.json` write (PHASE_HOOK) and on EXIT; orchestrator `export_file`s each; disk survives the stop |
-
-Timeline (all bounds enforced by `timeout` or in-code guards):
-
-| Phase | Cap | Content | Exit proof |
-|---|---|---|---|
-| setup | — | pip pins; fetch 0.8B + wikitext + MMLU (fg); RWKV7-0.1B, Mamba-3-187M, Llama-3.1 tokenizer, **Qwen3.5-9B in background from t≈0** | `env.json`, `nvidia-smi.txt` |
-| A | 10 + 5 min | `tests/test_gdn.py` (first Linux/H100 fla run) + `tests/test_init_shapes.py` | FAIL → exit 2 → node stops |
-| 0 | 20 min total | m0 GPU items: RWKV7-0.1B and Mamba-3-187M debias controls (`decide/debias.py`, PR #6); fixture v0 regeneration incl. `injection-03-added-tokens` (CPU fp32, as the original); PR #8 canonical-path steer smoke on Qwen3.5-0.8B (`SSDM_QWEN_DIR`, `--backend decide`, GPU) | `out/m0/*` with per-item status |
-| 1 | `timeout 60m` | 0.8B curve, batch 16×1024, `vram_fraction` 0.9, `policy: force`, all 6 layers, stage 2 ≤5 min/layer, probes per point, throughput 1k–8k | `out/m1-0p8b/` + `curve.png` — the missing curve, and the first execution of the accept/converted-probe/throughput path |
-| 2 | remaining budget (≥90 min or skipped) | 9B **throughput/memory probe**: stock + SWA control probes, stage 1 200 steps @ 8×4096, 8 single-swap KLs, stage 2 on the lowest-KL layer for a **fixed 60 min** with `clone_neighbor`, gate (`enforce`) + probes only before the deadline, throughput 4k–32k | `out/m1-9b/` |
-| 3 | 12 min reserve | `scripts/decide_9b.py` → `decision.json`; final export; `/v1/stop` | |
-
-Stop conditions in code (`align.Guard`, `vram_fraction` 0.95 so OOM fails fast): stage 1 steady tok/s < 6,150 or stage 2 < 1,450
-after 50 steps (= 50% of the 25%-MFU prediction) → exit 3; peak > 76 GB → exit 4; wall clock via `timeout`/`max_duration_minutes`.
-
-Pre-registered decision rule (`configs/m1_9b_qual.json: decision_rule`, tested in `tests/test_guard.py`): stage-2 MFU ≥ 25% and
-peak ≤ 60 GB → open the **$40 one-layer-probe** `spend` issue at the measured rate; 12.5–25% (or 60–76 GB) → **re-price to the
-lean plan** first; < 12.5%, peak > 76 GB, or a stop exit 3/4 → **fold** (cache teacher hidden states / fuse the KL head first).
-
-Preconditions before launch: LEDGER planned row + `spend` issue acknowledged by Codex; this code merged to agent-main.
+Superseded after issue #3 review: the interactive-node runner and the bundled 0.8B curve are withdrawn. The paid job is now a
+batch `submit_job` hardware qualification (numerics, throughput, memory, artifact recovery only), validate_job worst case
+$9.90 with a $20 workspace-cap ceiling: see `jobs/qual/JOB_SPEC.md`. The 0.8B curve becomes a separate later job.
 
 ## Files
 

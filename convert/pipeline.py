@@ -31,6 +31,7 @@ import torch
 
 from convert import align, data
 from convert.model import attach_gdn, init_gdn, load
+from convert.progressive import run_progressive
 from probes import core as probes
 from probes.throughput import measure as measure_throughput
 
@@ -224,60 +225,45 @@ def _main():
     s2, gate = cfg["stage2"], cfg["gate"]
     prog = R["progressive"] if "progressive" in R else {"steps": [], "converted": []}
     stage1_state = {i: copy.deepcopy(model.swaps[i].gdn.state_dict()) for i in A}
-    if prog["steps"]:
-        load_gdns(f"prog_{len(prog['steps'])}")
-    converted = list(prog["converted"])
-    prev_nll = prog["steps"][-1]["gate_eval"]["nll_student"] if prog["steps"] else None
-    if prev_nll is None:
-        prev_nll = align.evaluate(model, gate_w, {})["nll_teacher"]
-    max_layers = cfg.get("progressive", {}).get("max_layers", len(order))
-    for k, i in enumerate(order[:max_layers]):
-        if k < len(prog["steps"]):
-            continue
-        if past_deadline():
-            log({"skipped_layer": i, "reason": "deadline"}, "deadline")
-            break
-        snap = {j: copy.deepcopy(model.swaps[j].gdn.state_dict()) for j in converted}
-        trial = converted + [i]
-        modes = {j: "student" for j in trial}
-        seed_all(cfg["seed"] + 10 + k)
-        bt = data.Batcher(splits["train"], L, B, seed=cfg["seed"] + 100 + k)
-        g2 = align.Guard(s2.get("guard"), f"stage2:L{i}")
-        hist, ntok, sec = align.stage2_kl(model, trial if s2.get("train_all_converted", True) else [i], modes, bt,
-                                          s2["steps"], s2["lr"], log=lambda r: log(r, f"stage2:L{i}"), guard=g2)
-        ge = align.evaluate(model, gate_w, modes)
-        step_dnll = ge["nll_student"] - prev_nll
-        # gate: per-step dNLL (vs previous accepted student) + cumulative dNLL vs teacher + hidden-state fidelity
-        passed = bool(step_dnll <= gate["max_step_delta_nll"]
-                      and ge["delta_nll"] <= gate.get("max_cum_delta_nll", float("inf"))
-                      and ge["hidden_cos"] >= gate["min_hidden_cos"])
-        policy = gate.get("policy", "force")
-        if policy not in ("force", "enforce", "rollback"):
-            raise ValueError(policy)
-        # force = verdict recorded, never enforced (curve mode); enforce/rollback = a failing layer is rolled back
-        accepted = passed or policy == "force"
-        rec = {"k": k, "layer": i, "gate_eval": ge, "step_delta_nll": step_dnll, "gate_pass": passed,
-               "policy": policy, "accepted": accepted, "train_tokens": ntok, "train_seconds": sec,
-               "train_tok_s": ntok / sec, "steady_tok_s": g2.rate, "peak_gb": g2.peak_gb(), "hist": hist}
-        if accepted:
-            converted = trial
-            prev_nll = ge["nll_student"]
-        else:  # rollback: layer i returns to attention, other GDNs restored to their pre-step weights
+
+    class Ops:
+        def load(self, n):
+            load_gdns(f"prog_{n}")
+
+        def snapshot(self, converted):
+            return {j: copy.deepcopy(model.swaps[j].gdn.state_dict()) for j in converted}
+
+        def train(self, k, i, trial):
+            seed_all(cfg["seed"] + 10 + k)
+            bt = data.Batcher(splits["train"], L, B, seed=cfg["seed"] + 100 + k)
+            g2 = align.Guard(s2.get("guard"), f"stage2:L{i}")
+            hist, ntok, sec = align.stage2_kl(model, trial if s2.get("train_all_converted", True) else [i],
+                                              {j: "student" for j in trial}, bt, s2["steps"], s2["lr"],
+                                              log=lambda r: log(r, f"stage2:L{i}"), guard=g2)
+            return {"train_tokens": ntok, "train_seconds": sec, "train_tok_s": ntok / sec,
+                    "steady_tok_s": g2.rate, "peak_gb": g2.peak_gb(), "hist": hist}
+
+        def evaluate(self, trial):
+            return align.evaluate(model, gate_w, {j: "student" for j in trial})
+
+        def restore(self, snap, i):
             for j, sd in snap.items():
                 model.swaps[j].gdn.load_state_dict(sd)
             model.swaps[i].gdn.load_state_dict(stage1_state[i])
-        rec["converted_after"] = list(converted)
-        log({kk: v for kk, v in rec.items() if kk != "hist"}, "gate")
-        save_gdns(f"prog_{k + 1}", [j for j in A if model.swaps[j].gdn is not None])
-        if accepted and not past_deadline():
+
+        def save(self, n):
+            save_gdns(f"prog_{n}", [j for j in A if model.swaps[j].gdn is not None])
+
+        def teacher_nll(self):
+            return align.evaluate(model, gate_w, {})["nll_teacher"]
+
+        def probe(self, converted):
             tag = f"conv{len(converted)}_kept{len(A) - len(converted)}"
-            rec["probe_tag"] = tag
             run_probes(tag, {j: "student" for j in converted})
-        elif accepted:
-            rec["probes_skipped"] = "deadline"
-        prog["steps"].append(rec)
-        prog["converted"] = converted
-        R.set("progressive", prog)
+            return tag
+
+    converted = run_progressive(order, prog, gate, Ops(), cfg.get("progressive", {}).get("max_layers"),
+                                past_deadline, lambda p: R.set("progressive", p), log)
 
     # ------------------------------------------------------------------ throughput / memory
     if "throughput" not in R and cfg.get("throughput"):

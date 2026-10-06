@@ -11,7 +11,7 @@ import time
 from convert.align import Guard, StopCondition
 from scripts.decide_9b import decide
 
-CFG = json.load(open("configs/m1_9b_qual.json"))
+CFG = json.load(open("configs/qual_h100.json"))
 
 
 def test_throughput_stop():

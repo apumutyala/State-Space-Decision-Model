@@ -1,6 +1,6 @@
-"""Apply the pre-registered decision rule (configs/m1_9b_qual.json: decision_rule) to the 9B probe results.
+"""Apply the pre-registered decision rule (configs/qual_h100.json: decision_rule) to the 9B probe results.
 
-python scripts/decide_9b.py <9b receipt dir>   -> <dir>/decision.json (exit 0 always; the verdict is data)
+python scripts/decide_9b.py <qual_9b.json> <configs/qual_h100.json> <decision.json>   (exit 0; the verdict is data)
 """
 from __future__ import annotations
 
@@ -37,13 +37,13 @@ def decide(R, cfg):
     return out
 
 
-def main(d):
-    R = json.load(open(os.path.join(d, "results.json")))
-    cfg = json.load(open(os.path.join(d, "config.json")))
+def main(result_json, config_json, out_json):
+    R = json.load(open(result_json))
+    cfg = json.load(open(config_json))
     out = decide(R, cfg)
-    json.dump(out, open(os.path.join(d, "decision.json"), "w"), indent=1)
+    json.dump(out, open(out_json, "w"), indent=1)
     print(json.dumps(out, indent=1))
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(*sys.argv[1:4])
