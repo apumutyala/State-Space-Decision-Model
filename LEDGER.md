@@ -5,6 +5,11 @@ Credits: SF Compute $525. Batch rate is $2.97/H100-h and interactive is $3.96/h;
 | Date | Track | Experiment / hypothesis | Planned $ | Stop condition | Actual $ | Verdict | Receipt |
 |---|---|---|---|---|---|---|---|
 | 2026-10-06 (planned, not launched) | D | Rung-2 H100 hardware qualification: numerics, throughput, memory, artifact recovery (jobs/qual/JOB_SPEC.md) | 9.90 (build 20 min + run 180 min at $0.0495/min; validate_job run worst case $8.91; hard cap = workspace cap MTD+$20, required) | exit 1/2/3/4/5/6/7/8/9; max_duration 180 min; queue TTL 24 h | — | — | jobs/qual/ |
+| 2026-10-06 | D | job-jbw22 qual v1 (SF batch H100) | ≤9.90 | gates | 0.07 | stopped at numerics gate: fla #640 Triton bug (fixed PR #41) | issue #3 |
+| 2026-10-06 | D | job-c4zkm qual v2 (torch 2.13/triton 3.7.1) | ≤8.91 | gates | 0.74 | A+B PASS (0.8B one-layer ΔNLL −0.0036, KL 0.017); C 9B OOM at 68.9 GB (fixed PR #48) | issue #3 |
+| 2026-10-06 | D | job-mhc3h RWKV7-13.3B stock readout | ≤7.43 | rate guard | 0.56 | stopped by rate guard (per-option prompt recompute, fixed PR #50) | issue #3 |
+| 2026-10-06 | D | job-sgihj Clef-flash baseline A | ≤5.94 | caps | (running) | — | issue #3 |
+| 2026-10-06 | D | 9B C-only qual re-run (PR #48) | ≤6.93 (worst 14.85) | exits 2–9, MFU floors | (planned) | — | issue #3 |
 
 ## Negative results and false positives
 
