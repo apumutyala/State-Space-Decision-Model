@@ -1,22 +1,58 @@
-import json, sys, collections
+"""Receipt demo: paired bootstrap SE / MDE under group vs source-case clusters, for an
+independent-noise fixture pair and correlated fixture pairs; calibration report.
+Fixtures see the gold answer; they are scorer fixtures, not models.
+Run: python -X utf8 -I receipts/2026-10-06-D-m0-harness/demo.py > demo-bootstrap-ece.json"""
+import json
+import random
+import sys
+
+from harness import bootstrap, calibration, mde, predictors, score
 from harness.cli import load_slice
-from harness import predictors, score, bootstrap, calibration, mde
-from harness.suite import load_suite
-out = {}
+
 rows = load_slice("dev")
 base = predictors.predict(rows, "noisy", seed=6, acc=0.55)
-cand = predictors.predict(rows, "noisy", seed=7, acc=0.60)
-cmp_ = bootstrap.compare(score.decompose(rows, cand), score.decompose(rows, base), B=2000, seed=0)
-nclu = sum(len(b.clusters) for b in score.decompose(rows, base).values())
-out["compare_noisy_0.60_vs_0.55"] = {"diff_index": cmp_["diff"]["index"], "diff_areas": cmp_["diff"]["areas"], "candidate_index": cmp_["candidate"]["index"], "baseline_index": cmp_["baseline"]["index"], "clusters": nclu, "mde_table": mde.table(cmp_["diff"]["index"]["se"], nclu)}
-out["calibration_noisy_0.60_onehot"] = calibration.report(calibration.fields(rows, cand))
-# board ECE set check: fields of the inferred 32 benchmarks over the whole local suite
-ex = {2, 36, 6, 48, 34}
-n_fields = collections.Counter()
-for r in load_suite().rows(apply_exclusions=True):
-    c = r["_evaluation"]["catalog_id"]
-    if c < 56 and c not in ex:
-        n_fields[c] += sum(1 for k, g in r["expected"].items() if g is not None)
-tot = sum(n_fields.values()) + 501  # + HLE (1 field per row, not built locally)
-out["board_ece_set_check"] = {"benchmarks": len(n_fields) + 1, "fields_total_incl_hle": tot, "one_sixth": tot / 6, "board_n": 72594}
+perfect = predictors.predict(rows, "perfect", seed=1)
+
+
+def improve(res, frac, seed):
+    """Correlated candidate: the baseline with a random `frac` of rows answered perfectly."""
+    rng = random.Random(seed)
+    return {k: (perfect[k] if rng.random() < frac else v) for k, v in res.items()}
+
+
+from harness.cases import case_of as _case_of
+
+_case = _case_of(rows)
+_case_by_rid = {r["_evaluation"]["run_id"]: _case(r) for r in rows}
+
+
+def improve_by_case(res, frac, seed):
+    """Within-source correlated candidate: whole source cases flip to perfect together."""
+    rng = random.Random(seed)
+    cases = sorted(set(_case_by_rid.values()))
+    chosen = {c for c in cases if rng.random() < frac}
+    return {k: (perfect[k] if _case_by_rid[k] in chosen else v) for k, v in res.items()}
+
+
+pairs = {
+    "independent_noise_0.60_vs_0.55": predictors.predict(rows, "noisy", seed=7, acc=0.60),
+    "correlated_base+11pct_perfect": improve(base, 0.11, 21),
+    "correlated_base+4pct_perfect": improve(base, 0.04, 22),
+    "case_correlated_base+11pct_cases_perfect": improve_by_case(base, 0.11, 23),
+}
+out = {"dev_rows": len(rows), "B": 2000, "seed": 0, "pairs": {}}
+for name, cand in pairs.items():
+    entry = {}
+    for cl in ("group", "case"):
+        c, b = score.decompose(rows, cand, clusters=cl), score.decompose(rows, base, clusters=cl)
+        r = bootstrap.compare(c, b, B=2000, seed=0)
+        n = sum(len(x.clusters) for x in b.values())
+        d = r["diff"]["index"]
+        unpaired = (r["candidate"]["index"]["se"] ** 2 + r["baseline"]["index"]["se"] ** 2) ** 0.5
+        entry[cl] = {"clusters": n, "diff": d, "unpaired_se": unpaired, "mde": mde.mde(d["se"]), "mde_table": mde.table(d["se"], n)}
+    out["pairs"][name] = entry
+ses = [e["case"]["diff"]["se"] for e in out["pairs"].values()]
+out["mde_range_case_clusters"] = {"low": mde.mde(min(ses)), "high": mde.mde(max(ses)), "note": "low = row-correlated pair (shared errors), high = independent-noise or case-correlated pair"}
+cand = pairs["independent_noise_0.60_vs_0.55"]
+out["calibration_independent_0.60_onehot"] = calibration.report(calibration.fields(rows, cand))
 json.dump(out, sys.stdout, indent=1)
