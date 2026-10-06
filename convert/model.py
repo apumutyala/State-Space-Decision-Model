@@ -33,7 +33,10 @@ def resolve_model_dir(path: str | None) -> str:
     snaps = sorted(glob.glob(os.path.join(path, "*", "config.json")))
     if not snaps:
         raise FileNotFoundError(path)
-    return os.path.dirname(snaps[-1])
+    if len(snaps) > 1:
+        # Fail closed: never pick a snapshot by sort order. Pinned runs must name the exact revision dir.
+        raise ValueError(f"ambiguous model dir {path!r}: {len(snaps)} snapshots; pass the exact pinned snapshot path")
+    return os.path.dirname(snaps[0])
 
 
 class MixerSwap(nn.Module):

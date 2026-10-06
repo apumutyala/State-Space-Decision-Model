@@ -623,3 +623,108 @@ def group_matches(model: nn.Module, groups: Sequence[LoraGroup]) -> dict[str, li
         out[gname] = [n for n, m in model.named_modules() if isinstance(m, nn.Linear) and pat.search(n)]
     return out
 
+
+
+# --------------------------------------------------------------------------------------------- Q9-AF (all-GDN Qwen3.5-9B)
+#: The stock parent of Q9-AF (jobs/probe9b, jobs/qual pin the same revision).
+Q9AF_BASE_REPO = "Qwen/Qwen3.5-9B"
+Q9AF_BASE_REVISION = "c202236235762e1c871ad0ccb60c8ee5ba337b9a"
+
+
+class LineageError(RuntimeError):
+    """A Q9-AF component does not match its pin (converted checkpoint, base config, layer set)."""
+
+
+def _sha256_file(path) -> str:
+    import hashlib
+
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while chunk := f.read(1 << 24):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def q9af_from_stock(text_model: nn.Module, gdn_state: dict, provenance: dict | None = None) -> nn.Module:
+    """Turn a stock Qwen3.5 text model (3 GDN : 1 attention) into Q9-AF IN PLACE: every ``full_attention`` layer gets a
+    native HF ``Qwen3_5GatedDeltaNet`` loaded (strict) from the converted state dict that ``convert/`` produced for it
+    (``convert.gdn.GDN`` is parameter-compatible with the HF layer), its attention module is deleted and
+    ``config.layer_types`` becomes all ``linear_attention`` (so the HF cache / masks treat it as attention-free).
+
+    ``gdn_state`` = ``{layer index: GDN state_dict}`` (``torch.save`` format of ``convert.pipeline.save_gdns`` /
+    ``gdn_converted.pt``). It must cover EXACTLY the attention layers: a partial conversion is a hybrid, not Q9-AF."""
+    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5GatedDeltaNet
+
+    cfg = text_model.config
+    attn = [i for i, t in enumerate(cfg.layer_types) if t == "full_attention"]
+    got = sorted(int(k) for k in gdn_state)
+    if got != attn:
+        raise LineageError(f"converted layers {got} != the stock model's attention layers {attn} (Q9-AF needs all)")
+    cfg.layer_types = ["linear_attention"] * len(cfg.layer_types)
+    layers = text_model.layers
+    for i in attn:
+        layer = layers[i]
+        ref = layer.mlp.down_proj.weight
+        gdn = Qwen3_5GatedDeltaNet(cfg, i).to(device=ref.device, dtype=ref.dtype)
+        sd = gdn_state[i] if i in gdn_state else gdn_state[str(i)]
+        gdn.load_state_dict(sd, strict=True)
+        gdn.requires_grad_(False)
+        layer.linear_attn = gdn
+        del layer.self_attn
+        layer.block_type = "linear_attention"
+    if hasattr(text_model, "layer_types"):
+        text_model.layer_types = list(cfg.layer_types)
+    text_model.q9af_provenance = provenance or {}
+    return text_model
+
+
+def q9af_pin_check(pin: dict, gdn_ckpt, model_dir=None) -> dict:
+    """Lineage pins of a Q9-AF build. ``pin`` (the cell config's ``q9af`` block):
+      ``converted_sha256``  sha256 of the converted GDN checkpoint file (REQUIRED; no pin -> refuse)
+      ``base_repo`` / ``base_revision``  must equal the pinned stock parent
+      ``base_config_sha256`` (REQUIRED)  sha256 of the snapshot's config.json (= its line in
+                                          ``jobs/m2_pilot/q9af_snapshot.sha256``); checked whenever ``model_dir`` is given
+    Returns the provenance block stamped into the backbone identity."""
+    from pathlib import Path
+
+    want = pin.get("converted_sha256")
+    if not want or len(str(want)) != 64:
+        raise LineageError(f"q9af.converted_sha256 is not pinned ({want!r}); refusing to train on an unpinned conversion")
+    got = _sha256_file(gdn_ckpt)
+    if got != want:
+        raise LineageError(f"converted checkpoint sha256 {got} != pinned {want}")
+    cfg_pin = pin.get("base_config_sha256")
+    if not cfg_pin or len(str(cfg_pin)) != 64:
+        raise LineageError(f"q9af.base_config_sha256 is not pinned ({cfg_pin!r})")
+    if (pin.get("base_repo"), pin.get("base_revision")) != (Q9AF_BASE_REPO, Q9AF_BASE_REVISION):
+        raise LineageError(f"base {pin.get('base_repo')}@{pin.get('base_revision')} != {Q9AF_BASE_REPO}@{Q9AF_BASE_REVISION}")
+    prov = {"kind": "q9af", "base_repo": Q9AF_BASE_REPO, "base_revision": Q9AF_BASE_REVISION,
+            "converted_sha256": got, "converted_from": pin.get("converted_from")}
+    if model_dir is not None:
+        cfg_sha = _sha256_file(Path(model_dir) / "config.json")
+        if cfg_pin != cfg_sha:
+            raise LineageError(f"base config.json sha256 {cfg_sha} != pinned {pin['base_config_sha256']}")
+        prov["base_config_sha256"] = cfg_sha
+    return prov
+
+
+def load_q9af_backbone(model_dir: str, gdn_ckpt: str, pin: dict, device: str = "cuda", dtype: str = "bfloat16",
+                       fork_mode: str = "cache") -> HiddenStateBackbone:
+    """Q9-AF for m2 training: stock ``Qwen/Qwen3.5-9B`` (text path, loaded exactly as ``convert.model.load`` does)
+    with all 8 attention layers replaced by the converted GDNs from ``gdn_ckpt``. Pins are checked BEFORE any weight
+    is loaded; the provenance (checkpoint sha256, base revision, config sha256) goes into ``backbone_identity`` and
+    therefore into every checkpoint lineage and decide revision."""
+    from transformers import Qwen3_5ForConditionalGeneration
+
+    prov = q9af_pin_check(pin, gdn_ckpt, model_dir)
+    gdn_state = torch.load(gdn_ckpt, map_location="cpu", weights_only=True)
+    full = Qwen3_5ForConditionalGeneration.from_pretrained(model_dir, dtype=getattr(torch, dtype),
+                                                           device_map={"": device})
+    text = full.model.language_model
+    del full  # the vision tower and LM head are not part of the backbone
+    for p in text.parameters():
+        p.requires_grad_(False)
+    q9af_from_stock(text, gdn_state, prov)
+    bb = HiddenStateBackbone(text, spec=BACKBONES["q9af"], pad_id=0, fork_mode=fork_mode)
+    bb.provenance = prov
+    return bb
