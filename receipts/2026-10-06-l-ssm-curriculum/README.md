@@ -95,7 +95,7 @@ under the inherited `receipts/2026-10-06-l-tiny-ssm-slots-run1/` directory.
 `audit.json` recomputes raw program meaning, exactness, kernel status, counts,
 paired intervals and latent-world equality; it passed for all seven models.
 There are no free-running top-logit ties. `tests.txt` records 24 passing focused
-tests. An independent reviewer still needs to recompute the evidence before a PR.
+tests. Independent recomputation is recorded in `INDEPENDENT_REVIEW.md`; this result is negative for useful-answer transfer. No PR has been opened pending coordinator review.
 
 Commands, from this worktree (the freeze and run outputs must be fresh paths
 to replay, because the CLI refuses to overwrite evidence):
@@ -106,3 +106,4 @@ to replay, because the CLI refuses to overwrite evidence):
 & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -X utf8 -m language_growth.curriculum_audit --root receipts/2026-10-06-l-ssm-curriculum --old-records C:/Users/apumu/research/CHLabs/ssdm-data/l0-training-cohort-20261006-seed271828-5k/training_records.jsonl
 & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -X utf8 -m unittest language_growth.tests.test_curriculum_probe language_growth.tests.test_development_data language_growth.tests.test_training_records language_growth.tests.test_tiny_ssm_slots
 ```
+
