@@ -1,0 +1,49 @@
+{
+  "architecture_reference_only": "PR #78 local source at 59e6622ba121676ea75cdbc8e580d0623657de01; no unmerged imports",
+  "base_commit": "24f164e9cfff1abe8f7eecef68a1771d357ca465",
+  "candidate_contract": "12 structural candidates (4 each operation), three relation options for each comparison, no truth filtering",
+  "config": {
+    "batch_size": 32,
+    "clip_norm": 1.0,
+    "cpu_threads": 2,
+    "development_clusters": 180,
+    "development_seed": 9102,
+    "inference": "argmax operation, conditional argmax target, relation argmax on predicted operands",
+    "loss": "operation CE + conditional target CE + comparison relation CE",
+    "lr": 0.003,
+    "max_seconds": 180,
+    "numeric_scales": {
+      "price": 200.0,
+      "warranty_months": 36.0
+    },
+    "relation_features": [
+      "left/scale",
+      "right/scale",
+      "delta",
+      "delta_squared"
+    ],
+    "scope": "One condition; final step only; iterative synthetic development; no validation tuning; random initialization; no parent retention claim",
+    "seeds": [
+      20261006,
+      20261016,
+      20261026
+    ],
+    "steps": 300,
+    "train_count": 600,
+    "train_seed": 9101,
+    "width": 32
+  },
+  "cost_usd": 0,
+  "frozen_data_sha256": "45260083441225ecb9a2abb3fd7790ba45ef806d18d3141e6574c456166787e2",
+  "initialization": "random; no teacher or parent checkpoint",
+  "paired_task_clusters": 180,
+  "source": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-codex-l0-typed-emission-ssm\\language_growth\\typed_emission_ssm.py",
+  "source_hashes": {
+    "development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+    "kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+    "parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
+    "typed_emission_ssm.py": "93ae22e267186f5453f520a2bf30747e4cd097662068c066b8535d956ee5f2d6",
+    "types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1"
+  }
+}
