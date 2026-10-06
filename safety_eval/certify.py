@@ -11,14 +11,22 @@ Two arms, both wrappers around a safety_eval ``decide(request) -> response`` cal
    ``segment`` (SEGMENTER_ID). Let n be the total number of segments over all untrusted fields. For budget k the
    checker evaluates the executed decision on the full request and on every *origin*: every request obtained by
    erasing a set D of 1..k segments (plus, when D contains a field's first segment, the variant with that
-   field's leading whitespace stripped, so a sentence inserted at the very start is also undone exactly).
+   field's leading whitespace stripped, and when D contains a field's last segment, the variants that keep a
+   prefix of its leading whitespace, so sentences inserted at the very start, or appended after trailing
+   whitespace, are also undone exactly; ``sent-leadws-v2``).
+
+   **Scope: covered insertions only.** The guarantee is about whole segments inserted at segmenter boundaries.
+   The attacker chooses the boundaries: an injection merged into a sentence (no terminal punctuation), placed
+   mid-sentence, or appended without a space is NOT covered and can be certified while it changes the
+   decision (``uncovered_stress`` measures this). ``unit="span"`` is the hardened arm: one contiguous
+   token-aligned insertion anywhere, at O(T^2) origins for T tokens (k = 1 only).
 
    **Guarantee (CERTIFIED tier, exact, per decision).** Threat model: the adversary took a clean request and
    inserted at most k whole segments into its untrusted fields, i.e. the observed request's segmentation is the
    clean request's segmentation with <= k extra segments (whitespace convention of ``segment``). Then the clean
    request is one of the origins checked, so if the decision is identical on the full request and on every
    origin (``certified``), it equals the decision the same decider makes on the clean request. A certified
-   decision cannot have been changed by <= k insertions. Otherwise the request escalates.
+   decision cannot have been changed by <= k COVERED insertions. Otherwise the request escalates.
 
    Assumptions: provenance labels the untrusted fields correctly; trusted fields, questions and policy are
    untouched (the adversary only inserts); the decider is deterministic (same request -> same decision); the

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "commit": "5b0b05018447376412adc068c607c3574a1a5fd6",
+  "commit": "89458f9594a38724c56a81ff47e7a66281a78073",
   "command": "python.exe -m safety_eval.run_guarantees_smoke --out receipts/2026-10-06-D-g4g5-standin",
   "python": "3.12.13",
   "numpy": "2.5.2",

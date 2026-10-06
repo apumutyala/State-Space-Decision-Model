@@ -1,6 +1,6 @@
 {
  "meta": {
-  "commit": "5b0b05018447376412adc068c607c3574a1a5fd6",
+  "commit": "89458f9594a38724c56a81ff47e7a66281a78073",
   "command": "python.exe -m safety_eval.run_guarantees_smoke --out receipts/2026-10-06-D-g4g5-standin",
   "python": "3.12.13",
   "numpy": "2.5.2",
@@ -78,7 +78,7 @@
   "config": {
    "max_decide_calls": 256
   },
-  "wall_s": 0.298,
+  "wall_s": 0.352,
   "metrics": {
    "n_units": 500,
    "guarantee_checked_units": 32,
@@ -133,6 +133,13 @@
      "lo": 0.05354066985645935,
      "hi": 0.3430515239477502
     },
+    "wrong_given_auto": {
+     "num": 10,
+     "den": 53,
+     "rate": 0.18867924528301888,
+     "lo": 0.05354066985645935,
+     "hi": 0.3430515239477502
+    },
     "auto_and_wrong_rate": {
      "num": 10,
      "den": 100,
@@ -155,11 +162,11 @@
      "hi": 0.0
     },
     "decide_calls": {
-     "mean": 3.12,
+     "mean": 3.6,
      "median": 2,
-     "max": 5
+     "max": 6
     },
-    "suffix_cost_forward_equivalents_mean": 1.7934620000000001
+    "suffix_cost_forward_equivalents_mean": 1.999871
    },
    "inserted": {
     "n": 400,
@@ -212,6 +219,13 @@
      "lo": 1.0,
      "hi": 1.0
     },
+    "wrong_given_auto": {
+     "num": 32,
+     "den": 32,
+     "rate": 1.0,
+     "lo": 1.0,
+     "hi": 1.0
+    },
     "auto_and_wrong_rate": {
      "num": 32,
      "den": 400,
@@ -234,11 +248,11 @@
      "hi": 0.0
     },
     "decide_calls": {
-     "mean": 4.64,
-     "median": 4,
-     "max": 6
+     "mean": 5.64,
+     "median": 5,
+     "max": 7
     },
-    "suffix_cost_forward_equivalents_mean": 2.8120710000000004
+    "suffix_cost_forward_equivalents_mean": 3.21449525
    }
   }
  }

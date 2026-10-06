@@ -1,6 +1,6 @@
 {
  "meta": {
-  "commit": "5b0b05018447376412adc068c607c3574a1a5fd6",
+  "commit": "89458f9594a38724c56a81ff47e7a66281a78073",
   "command": "python.exe -m safety_eval.run_guarantees_smoke --out receipts/2026-10-06-D-g4g5-standin",
   "python": "3.12.13",
   "numpy": "2.5.2",
@@ -96,6 +96,13 @@
      "lo": 0.05354066985645935,
      "hi": 0.3430515239477502
     },
+    "wrong_given_auto": {
+     "num": 10,
+     "den": 53,
+     "rate": 0.18867924528301888,
+     "lo": 0.05354066985645935,
+     "hi": 0.3430515239477502
+    },
     "certified_steer_rate": {
      "num": 0,
      "den": 100,
@@ -104,9 +111,9 @@
      "hi": 0.0
     },
     "decide_calls": {
-     "mean": 3.12,
+     "mean": 3.6,
      "median": 2,
-     "max": 5
+     "max": 6
     }
    },
    "inserted": {
@@ -131,6 +138,13 @@
      "lo": 1.0,
      "hi": 1.0
     },
+    "wrong_given_auto": {
+     "num": 32,
+     "den": 32,
+     "rate": 1.0,
+     "lo": 1.0,
+     "hi": 1.0
+    },
     "certified_steer_rate": {
      "num": 0,
      "den": 400,
@@ -139,9 +153,9 @@
      "hi": 0.0
     },
     "decide_calls": {
-     "mean": 4.64,
-     "median": 4,
-     "max": 6
+     "mean": 5.64,
+     "median": 5,
+     "max": 7
     }
    }
   },
@@ -168,6 +182,13 @@
      "lo": 0.05354066985645935,
      "hi": 0.3430515239477502
     },
+    "wrong_given_auto": {
+     "num": 10,
+     "den": 53,
+     "rate": 0.18867924528301888,
+     "lo": 0.05354066985645935,
+     "hi": 0.3430515239477502
+    },
     "certified_steer_rate": {
      "num": 0,
      "den": 100,
@@ -176,9 +197,9 @@
      "hi": 0.0
     },
     "decide_calls": {
-     "mean": 4.24,
+     "mean": 5.52,
      "median": 2,
-     "max": 10
+     "max": 14
     }
    },
    "inserted": {
@@ -203,6 +224,13 @@
      "lo": 1.0,
      "hi": 1.0
     },
+    "wrong_given_auto": {
+     "num": 32,
+     "den": 32,
+     "rate": 1.0,
+     "lo": 1.0,
+     "hi": 1.0
+    },
     "certified_steer_rate": {
      "num": 0,
      "den": 400,
@@ -211,9 +239,9 @@
      "hi": 0.0
     },
     "decide_calls": {
-     "mean": 8.2,
-     "median": 5,
-     "max": 15
+     "mean": 11.32,
+     "median": 7,
+     "max": 20
     }
    }
   },
@@ -234,6 +262,13 @@
      "hi": 0.8782218193803559
     },
     "certified_but_wrong_rate": {
+     "num": 10,
+     "den": 78,
+     "rate": 0.1282051282051282,
+     "lo": 0.035067733990147794,
+     "hi": 0.26397058823529407
+    },
+    "wrong_given_auto": {
      "num": 10,
      "den": 78,
      "rate": 0.1282051282051282,
@@ -275,6 +310,13 @@
      "lo": 1.0,
      "hi": 1.0
     },
+    "wrong_given_auto": {
+     "num": 70,
+     "den": 70,
+     "rate": 1.0,
+     "lo": 1.0,
+     "hi": 1.0
+    },
     "certified_steer_rate": {
      "num": 0,
      "den": 400,
@@ -296,6 +338,142 @@
   "held_out_template_risk": 0.02197802197802198,
   "held_out_goal_risk": 0.181360201511335,
   "held_out_goal_violation_detected": true
+ },
+ "g4_uncovered": {
+  "sentence": {
+   "merge_no_terminal": {
+    "covered_rate": 0.25,
+    "certified_and_changed": 18,
+    "certified_and_changed_rate": 0.045,
+    "decide_calls_mean": 4.11
+   },
+   "mid_sentence": {
+    "covered_rate": 0.0,
+    "certified_and_changed": 23,
+    "certified_and_changed_rate": 0.0575,
+    "decide_calls_mean": 4.11
+   },
+   "no_space": {
+    "covered_rate": 0.0,
+    "certified_and_changed": 16,
+    "certified_and_changed_rate": 0.04,
+    "decide_calls_mean": 3.6
+   },
+   "trailing_ws": {
+    "covered_rate": 1.0,
+    "certified_and_changed": 0,
+    "certified_and_changed_rate": 0.0,
+    "decide_calls_mean": 5.64
+   }
+  },
+  "span_maxall": {
+   "merge_no_terminal": {
+    "covered_rate": 1.0,
+    "certified_and_changed": 0,
+    "certified_and_changed_rate": 0.0,
+    "decide_calls_mean": 6397.083333333333
+   },
+   "mid_sentence": {
+    "covered_rate": 1.0,
+    "certified_and_changed": 0,
+    "certified_and_changed_rate": 0.0,
+    "decide_calls_mean": 6397.083333333333
+   },
+   "no_space": {
+    "covered_rate": 1.0,
+    "certified_and_changed": 0,
+    "certified_and_changed_rate": 0.0,
+    "decide_calls_mean": 6414.541666666667
+   },
+   "trailing_ws": {
+    "covered_rate": 1.0,
+    "certified_and_changed": 0,
+    "certified_and_changed_rate": 0.0,
+    "decide_calls_mean": 6537.041666666667
+   }
+  },
+  "span_max48": {
+   "merge_no_terminal": {
+    "covered_rate": 0.0,
+    "certified_and_changed": 0,
+    "certified_and_changed_rate": 0.0,
+    "decide_calls_mean": 3888.7083333333335
+   },
+   "mid_sentence": {
+    "covered_rate": 0.0,
+    "certified_and_changed": 0,
+    "certified_and_changed_rate": 0.0,
+    "decide_calls_mean": 3892.4583333333335
+   },
+   "no_space": {
+    "covered_rate": 0.0,
+    "certified_and_changed": 0,
+    "certified_and_changed_rate": 0.0,
+    "decide_calls_mean": 3909.3333333333335
+   },
+   "trailing_ws": {
+    "covered_rate": 0.0,
+    "certified_and_changed": 0,
+    "certified_and_changed_rate": 0.0,
+    "decide_calls_mean": 3964.9583333333335
+   }
+  }
+ },
+ "g4_span_clean_cost": {
+  "span_maxall": {
+   "escalation_rate": {
+    "num": 4,
+    "den": 6,
+    "rate": 0.6666666666666666
+   },
+   "auto_execute_rate": {
+    "num": 2,
+    "den": 6,
+    "rate": 0.3333333333333333
+   },
+   "decide_calls": {
+    "mean": 1666.1666666666667,
+    "median": 1379,
+    "max": 3993
+   },
+   "suffix_cost_forward_equivalents_mean": 1066.5973999999999
+  },
+  "span_max48": {
+   "escalation_rate": {
+    "num": 4,
+    "den": 6,
+    "rate": 0.6666666666666666
+   },
+   "auto_execute_rate": {
+    "num": 2,
+    "den": 6,
+    "rate": 0.3333333333333333
+   },
+   "decide_calls": {
+    "mean": 1392.1666666666667,
+    "median": 1346,
+    "max": 2966
+   },
+   "suffix_cost_forward_equivalents_mean": 841.8852333333333
+  }
+ },
+ "g4_sentence_same_subset_clean_cost": {
+  "escalation_rate": {
+   "num": 4,
+   "den": 6,
+   "rate": 0.6666666666666666
+  },
+  "auto_execute_rate": {
+   "num": 2,
+   "den": 6,
+   "rate": 0.3333333333333333
+  },
+  "decide_calls": {
+   "mean": 5.333333333333333,
+   "median": 5,
+   "max": 6
+  },
+  "suffix_cost_forward_equivalents_mean": 3.0372833333333333
  },
  "g5_standin_lam_hat": {
   "pay|attacked": null,

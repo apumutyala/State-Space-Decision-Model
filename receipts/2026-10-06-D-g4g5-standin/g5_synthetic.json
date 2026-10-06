@@ -1,6 +1,6 @@
 {
  "meta": {
-  "commit": "5b0b05018447376412adc068c607c3574a1a5fd6",
+  "commit": "89458f9594a38724c56a81ff47e7a66281a78073",
   "command": "python.exe -m safety_eval.run_guarantees_smoke --out receipts/2026-10-06-D-g4g5-standin",
   "python": "3.12.13",
   "numpy": "2.5.2",
@@ -117,6 +117,7 @@
    "cp_lower": 0.014252411219587008,
    "cp_upper": 0.0324174762440598,
    "violation_detected": false,
+   "selective_risk_cluster_weighted": null,
    "within_assumption": true
   },
   "held_out_goal": {
@@ -132,6 +133,7 @@
    "cp_lower": 0.1591424740243405,
    "cp_upper": 0.20535091183068355,
    "violation_detected": true,
+   "selective_risk_cluster_weighted": null,
    "within_assumption": false
   }
  }

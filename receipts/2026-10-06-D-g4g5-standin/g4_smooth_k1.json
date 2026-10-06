@@ -1,6 +1,6 @@
 {
  "meta": {
-  "commit": "5b0b05018447376412adc068c607c3574a1a5fd6",
+  "commit": "89458f9594a38724c56a81ff47e7a66281a78073",
   "command": "python.exe -m safety_eval.run_guarantees_smoke --out receipts/2026-10-06-D-g4g5-standin",
   "python": "3.12.13",
   "numpy": "2.5.2",
@@ -82,7 +82,7 @@
    "delta": 0.05,
    "seed": 20261006
   },
-  "wall_s": 1.347,
+  "wall_s": 1.367,
   "metrics": {
    "n_units": 500,
    "guarantee_checked_units": 0,
@@ -131,6 +131,13 @@
      "hi": 0.9649322660098523
     },
     "certified_but_wrong_rate": {
+     "num": 10,
+     "den": 78,
+     "rate": 0.1282051282051282,
+     "lo": 0.035067733990147794,
+     "hi": 0.26397058823529407
+    },
+    "wrong_given_auto": {
      "num": 10,
      "den": 78,
      "rate": 0.1282051282051282,
@@ -210,6 +217,13 @@
      "hi": 0.0
     },
     "certified_but_wrong_rate": {
+     "num": 70,
+     "den": 70,
+     "rate": 1.0,
+     "lo": 1.0,
+     "hi": 1.0
+    },
+    "wrong_given_auto": {
      "num": 70,
      "den": 70,
      "rate": 1.0,
