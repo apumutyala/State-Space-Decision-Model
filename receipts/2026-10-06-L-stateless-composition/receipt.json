@@ -1,0 +1,27 @@
+{
+  "source_sha": "8c0690f",
+  "overlays": {
+    "language_growth/planner.py": "310f734",
+    "language_growth/parent_bridge.py": "310f734",
+    "language_growth/development_data.py": "a6b4d84"
+  },
+  "test_command": "python -m unittest language_growth.tests.test_free_running_dev language_growth.tests.test_decision_view -v",
+  "raw_command": [
+    "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+    "-c",
+    "import json\nfrom language_growth.development_data import generate_development_tasks, development_manifest\nfrom language_growth.tests.test_free_running_dev import ScriptedProvider,run\nfor split in ('development_train','development_validation'):\n examples=generate_development_tasks(17,30,choice_format='production',split=split)\n print(json.dumps({'manifest':development_manifest(examples),'report':run(examples,ScriptedProvider())},sort_keys=True))\n"
+  ],
+  "test_exit": 0,
+  "raw_exit": 0,
+  "raw_identical_to_prior_receipt": true,
+  "seed": 17,
+  "hardware": "Windows-11-10.0.26200-SP0 CPU",
+  "cost_usd": 0,
+  "runs": 1,
+  "raw_sha256": "83a64b040d345bf5622a672bb0a20e807261882ee88671f3b966814c89dd0ca3",
+  "initial_invocation_failure": "Running the nested receipt script by path removed repo root from import search path; ModuleNotFoundError, not semantic change. Empty raw file was briefly committed in 0695e8f before command-chain failure was detected. Corrected command executes the same saved script from repo context; stderr retained.",
+  "scope": "Nonlearned CPU composition after stateless diagnostic pin; no model, GPU, learned gate or timing claim.",
+  "raw_sha256_original_windows_capture": "0082501dacafe9b0e326529f6697a15f6d1b3398e6dc94062756a3f76e3fc3a3",
+  "raw_hash_encoding": "committed UTF-8 LF bytes; original CRLF capture hash retained separately",
+  "superseded_by": "receipts/2026-10-06-L-free-running-merged/receipt.json"
+}
