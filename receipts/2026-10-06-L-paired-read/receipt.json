@@ -1,0 +1,26 @@
+{
+  "billed_rate": 0,
+  "command": "python receipts/2026-10-06-L-paired-read/run.py",
+  "config": {
+    "choice_format": "production",
+    "condition": "one_shot",
+    "filter": "training_only.kind == read",
+    "generated_count": 12,
+    "provider": "CPU scripted ReadProvider"
+  },
+  "cost_usd": 0,
+  "data_sha256": "27cf185443a28fe7d3058c9736e88d642d951ecea1029c1fd9b8ad6fa996a43f",
+  "hardware": "Windows-11-10.0.26200-SP0; CPU only",
+  "median_spread": "not a timing/learned estimate; one deterministic scripted proof",
+  "raw_path": "receipts/2026-10-06-L-paired-read/raw.json",
+  "raw_sha256": "a0182b7ca555fcfe89c71dd902afacc15f80f05ce0b0781421e0f14395ac0d11",
+  "runs": 1,
+  "scope": "development plain-read boundary proof; no learned-level, unrestricted-baseline or full-retention claim",
+  "script_sha256": "8007cca88c134ed8e4f852ddb64c9d46f60a058f65080f8121299e5e11f65cd6",
+  "seed": 17,
+  "source_commit": "23b579360613a13c23d2ee11caacd462031a953f",
+  "split": "synthetic development_train",
+  "tests_passed": true,
+  "tests_run": 58,
+  "torch_imported": false
+}
