@@ -40,9 +40,10 @@ def test_cell_config_is_the_specified_cell():
 def test_cost_worst_case_and_expected():
     from jobs.common.costs import cap_ok, expected_usd, schedule_ok, worst_case_usd
 
-    assert worst_case_usd(PARAMS) == round((20 + 2 * 592) * 0.0495, 2) == 59.6
+    assert worst_case_usd(PARAMS) == round((20 + 2 * 637) * 0.0495, 2) == 64.05
     assert PARAMS["phase_caps_minutes"]["parent_index"] == 65
-    assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 60.0 and schedule_ok(PARAMS)
+    assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 70.0 and schedule_ok(PARAMS)
+    assert CELL["max_minutes"] == 190  # pre-registered
     assert expected_usd(PARAMS) == round(sum(PARAMS["expected_minutes"].values()) * 0.0495, 2)
     assert 20 <= expected_usd(PARAMS) <= 30
     assert sum(PARAMS["phase_caps_minutes"].values()) + PARAMS["reserve_minutes"] == PARAMS["max_duration_minutes"]
@@ -60,6 +61,9 @@ def test_eval_preflights_pass_at_the_measured_rates_and_stop_when_slower(stages,
     cap_min = PARAMS["phase_caps_minutes"][cap]
     est = estimate(TKFAJ["TOK_S"], stages=stages.split(","), fixed_min=fixed, mode=mode, call_s=TKFAJ["CALL_S"])
     assert est["total_minutes"] <= 0.95 * cap_min, est
+    ok = estimate(TKFAJ["TOK_S"] / 1.25, stages=stages.split(","), fixed_min=fixed, mode=mode,
+                  call_s=TKFAJ["CALL_S"] * 1.25)
+    assert ok["total_minutes"] <= 0.95 * cap_min  # a box 25 % slower than job-tkfaj completes the phase
     k = 1.35  # a box 35 % slower than job-tkfaj's (rates and per-call latency) is over every cap: exit 15
     slow = estimate(TKFAJ["TOK_S"] / k, stages=stages.split(","), fixed_min=fixed, mode=mode, call_s=TKFAJ["CALL_S"] * k)
     assert slow["total_minutes"] > 0.95 * cap_min
@@ -425,7 +429,7 @@ def _rate_report(d, st, scoring_min, exit_=0):
                                                            "elapsed_min": 2.0 + scoring_min}))
 
 
-@pytest.mark.parametrize("slow,code", [(1.0, 0), (1.15, 15)])
+@pytest.mark.parametrize("slow,code", [(1.0, 0), (1.25, 0), (1.3, 15)])
 def test_reprice_stops_a_slow_box_before_training(tmp_path, slow, code):
     from jobs.m2_first_cell.reprice import main
     from jobs.m2_parent_arm.score_parent import estimate

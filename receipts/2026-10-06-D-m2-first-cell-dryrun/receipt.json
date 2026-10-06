@@ -18,21 +18,21 @@
   {
    "phase": "train_set_verify",
    "rc": 0,
-   "seconds": 3.0,
+   "seconds": 3.3,
    "log": "train_set_verify.log",
    "ok": true
   },
   {
    "phase": "cohort_verify",
    "rc": 0,
-   "seconds": 0.5,
+   "seconds": 0.6,
    "log": "cohort_verify.log",
    "ok": true
   },
   {
    "phase": "dev_subset_rows",
    "rc": 0,
-   "seconds": 4.5,
+   "seconds": 5.2,
    "log": "dev_subset_rows.log",
    "ok": true
   },
@@ -60,28 +60,28 @@
   {
    "phase": "guard",
    "rc": 0,
-   "seconds": 11.7,
+   "seconds": 12.5,
    "log": "guard.log",
    "ok": true
   },
   {
    "phase": "heldout",
    "rc": 0,
-   "seconds": 95.9,
+   "seconds": 143.2,
    "log": "heldout.log",
    "ok": true
   },
   {
    "phase": "parent_g12",
    "rc": 0,
-   "seconds": 26.2,
+   "seconds": 44.2,
    "log": "parent_g12.log",
    "ok": true
   },
   {
    "phase": "parent_index",
    "rc": 0,
-   "seconds": 106.1,
+   "seconds": 130.2,
    "log": "parent_index.log",
    "ok": true
   },
@@ -95,28 +95,28 @@
   {
    "phase": "cell",
    "rc": 0,
-   "seconds": 44.8,
+   "seconds": 53.5,
    "log": "cell.log",
    "ok": true
   },
   {
    "phase": "evals",
    "rc": 0,
-   "seconds": 302.2,
+   "seconds": 396.2,
    "log": "evals.log",
    "ok": true
   },
   {
    "phase": "report",
    "rc": 0,
-   "seconds": 5.1,
+   "seconds": 5.0,
    "log": "report.log",
    "ok": true
   }
  ],
  "all_ok": true,
  "result_valid": true,
- "minutes": 10.01,
+ "minutes": 13.24,
  "result": {
   "schema": "ssdm.m2.first_cell.v1",
   "cell": {
@@ -161,30 +161,30 @@
      "512": {
       "ok": true,
       "peak_gb": 0.0,
-      "step_s": 0.5305328369140625,
+      "step_s": 0.8504691123962402,
       "row_len": 453,
       "k": 4
      },
      "1024": {
       "ok": true,
       "peak_gb": 0.0,
-      "step_s": 0.7950091361999512,
+      "step_s": 0.8311076164245605,
       "row_len": 915,
       "k": 6
      },
      "2048": {
       "ok": true,
       "peak_gb": 0.0,
-      "step_s": 0.8810956478118896,
+      "step_s": 1.0752270221710205,
       "row_len": 1672,
       "k": 8
      }
     },
     "T_max": 2048,
     "rate_check": {
-     "step_s": 0.5305328369140625,
+     "step_s": 0.8311076164245605,
      "minutes_left": 4,
-     "affordable_steps": 452.37539187206994,
+     "affordable_steps": 288.77126771197715,
      "need_steps": 4,
      "too_slow": false
     }
@@ -197,7 +197,7 @@
    "data": {
     "records_sha256": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
     "n_train_records": 64,
-    "tokenize_s": 11.4,
+    "tokenize_s": 13.7,
     "n_train_items": 62,
     "n_eval_items": 72,
     "guard_manifests": {
@@ -213,7 +213,7 @@
      "n_hashes": 48415,
      "note": "",
      "content_index": {
-      "path": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\167d8677-872b-45ed-b144-905f7c6dd3bc\\scratchpad\\dry-receipt2\\work\\guard\\index-content-hashes.txt.gz",
+      "path": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\167d8677-872b-45ed-b144-905f7c6dd3bc\\scratchpad\\dry-receipt3\\work\\guard\\index-content-hashes.txt.gz",
       "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
       "n": 24150
      }
@@ -2020,18 +2020,18 @@
   "latency": {
    "child": {
     "n": 399,
-    "mean_ms": 299.7466864662168,
-    "median_ms": 40.95689999667229,
-    "p90_ms": 449.47790000151144,
-    "p99_ms": 6052.986800001236,
+    "mean_ms": 444.55029523809924,
+    "median_ms": 52.43740000150865,
+    "p90_ms": 718.317400001979,
+    "p99_ms": 7348.711500002537,
     "scope": "decide() wall time per Index DEV row (all questions of the row), H100, batch 1"
    },
    "parent": {
     "n": 399,
-    "mean_ms": 107.33435964887994,
-    "median_ms": 30.76119999604998,
-    "p90_ms": 244.21240000083344,
-    "p99_ms": 1063.1689999936498,
+    "mean_ms": 149.15941754413797,
+    "median_ms": 47.045300001627766,
+    "p90_ms": 377.2924999939278,
+    "p99_ms": 1356.4659000039683,
     "scope": "decide() wall time per Index DEV row (all questions of the row), H100, batch 1"
    }
   },
@@ -2110,12 +2110,12 @@
    "gates_this_measurement": false
   },
   "cost": {
-   "elapsed_min": 9.92,
-   "runtime_usd": 0.49,
+   "elapsed_min": 13.16,
+   "runtime_usd": 0.65,
    "usd_per_min": 0.0495,
    "build_minutes_not_included": true,
-   "worst_case_usd": 59.6,
-   "hard_cap_usd": 60.0
+   "worst_case_usd": 64.05,
+   "hard_cap_usd": 70.0
   },
   "verdict": "measured",
   "references": {

@@ -22,7 +22,7 @@
  "n_eval_records": 0,
  "min_train_items": 5000,
  "max_steps": 3000,
- "max_minutes": 180,
+ "max_minutes": 190,
  "min_steps": 600,
  "ckpt_every": 400,
  "eval_every": 100000,
@@ -59,7 +59,7 @@
  },
  "rwkv7_wkv": "chunked",
  "rwkv7_wkv_note": "the checkpoint's own pure-PyTorch chunked WKV (the measured 3.6-4.4k tok/s path; 'eager' is the tokenwise loop). Flip to 'fla' only after jobs/fla_rwkv7 (job-jn47u) returns ADOPT and heads.rwkv7_wkv.GPU_VERIFIED is set (select_wkv refuses otherwise; setup checks it), and re-measure TOK_S / CALL_S on the fla path. Both arms read it (child: run_cell / m2_gates; parent: score_parent).",
- "max_minutes_note": "training wall-clock inside the 220-min cell phase: 220 - load/draw/tokenize ~10 - smoke+ladder ~10 - two dev cards ~10 - checkpoints/margin 10 = 180 (10 min moved to the evals cap after review: the child evals then tolerate a box ~12 % slower than job-tkfaj, was ~5 %); cumulative over restarts (train_clock in cell.json)",
+ "max_minutes_note": "training wall-clock inside the 230-min cell phase: 230 - load/draw/tokenize ~10 - smoke+ladder ~10 - two dev cards ~10 - checkpoints/margin 10 = 190 (pre-registered); cumulative over restarts (train_clock in cell.json)",
  "min_steps_note": "exit 26 if the measured step time cannot reach 600 optimiser steps (4,800 rows) inside max_minutes: below that the cell is not a meaningful first measurement; re-price instead of spending the evals",
  "lora_rank_note": "M2_RUN_SPEC r=256 adds ~1.15B trainable params (~18 GB of fp32 weights + grads + Adam) on top of 26.5 GB bf16 weights and the un-checkpointed cache-fork activations; r=64 (the pilot's pre-registered rank) keeps the T=2048 ladder rung inside the 76 GB stop"
 }
