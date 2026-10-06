@@ -37,7 +37,9 @@ def score_development_task(example: dict[str, Any], result: PlannerResult) -> bo
     """Compare checked output meaning with the generated task's intended meaning.
 
     This uses the reference program only inside the scorer, after planning. A
-    valid assertion about another fact is still a task failure.
+    valid assertion about another fact is still a task failure. An explanation
+    of the requested fact is credited for a read task; explanation tasks require
+    an explanation. This measures answer meaning, not minimal verbosity.
     """
     if result.status != "accepted" or result.program is None or result.text is None:
         return False
@@ -86,13 +88,37 @@ def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
                           model: str, parent_revision: str,
                           expected_served_config: dict[str, Any],
                           allow_repair: bool = False) -> dict[str, Any]:
-    """Run each task from scratch and retain every outcome in the denominator."""
+    """Run each task from scratch and retain every outcome in the denominator.
+
+    A requested repair arm must authorize one complete retry of the longest
+    supported L0 program (four provider requests). Reject a misconfigured arm
+    before calling the provider; never silently relabel one-shot access.
+    """
+    examples = list(examples)
+    if allow_repair:
+        for example in examples:
+            try:
+                limits = example["training_only"]["host"]["limits"]
+                values = [limits[key] for key in
+                          ("max_repair_attempts", "max_repair_calls", "max_proposal_calls")]
+            except (KeyError, TypeError):
+                raise ValueError("one_repair requires explicit host budgets") from None
+            if (any(type(value) is not int for value in values)
+                    or values[0] != 1 or values[1] < 4 or values[2] < 8):
+                raise ValueError("one_repair requires attempts=1, repair calls>=4, proposal calls>=8")
     observations = []
     for example in examples:
         task_id = example.get("task_id") if isinstance(example, dict) else None
+        effective_budget = None
         try:
             task_input = _initial_task(example)
             training = example["training_only"]
+            limits = training["host"]["limits"]
+            effective_budget = {
+                "max_proposal_calls": limits["max_proposal_calls"],
+                "max_repair_attempts": limits["max_repair_attempts"] if allow_repair else 0,
+                "max_repair_calls": limits["max_repair_calls"] if allow_repair else 0,
+            }
             result = plan_checked_answer(
                 task_input, training["host"], training["catalog"], provider,
                 model=model, parent_revision=parent_revision,
@@ -105,6 +131,7 @@ def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
                 "text": result.text, "program": result.program,
                 "provider_calls": result.provider_calls, "repair_requests": result.repair_requests,
                 "forward_calls": result.forward_calls,
+                "effective_budget": effective_budget,
             })
         except Exception:
             # An exception still occupies a development request. Work before an
@@ -114,6 +141,7 @@ def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
                 "kernel_accepted": False, "task_correct": False,
                 "text": None, "program": None, "provider_calls": None,
                 "repair_requests": None, "forward_calls": None,
+                "effective_budget": effective_budget,
             })
     return {
         "condition": "one_repair" if allow_repair else "one_shot",

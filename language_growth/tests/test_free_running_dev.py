@@ -156,10 +156,32 @@ class FreeRunningDevelopmentTests(unittest.TestCase):
         self.assertEqual(runner_error["observations"][0]["status"], "runner_error")
 
     def test_repair_condition_is_reported_separately(self):
-        example = generate_development_tasks(7, 1, choice_format="production")[0]
-        report = run([example], ScriptedProvider(), repair=True)
+        example = generate_development_tasks(7, 3, choice_format="production")[2]
+        example["training_only"]["host"]["limits"].update(
+            max_repair_attempts=1, max_repair_calls=4, max_proposal_calls=8)
+
+        class RepairingProvider(ScriptedProvider):
+            def decide(self, request):
+                self.mode = "false_relation" if len(self.requests) < 4 else "correct"
+                return super().decide(request)
+
+        report = run([example], RepairingProvider(), repair=True)
         self.assertEqual(report["condition"], "one_repair")
         self.assertEqual((report["total"], report["task_correct"]), (1, 1))
+        row = report["observations"][0]
+        self.assertEqual((row["provider_calls"], row["repair_requests"]), (8, 4))
+        self.assertEqual(row["effective_budget"], {
+            "max_repair_attempts": 1, "max_repair_calls": 4, "max_proposal_calls": 8})
+        one_shot = run([example], RepairingProvider())
+        self.assertEqual(one_shot["task_correct"], 0)
+        self.assertEqual(one_shot["observations"][0]["effective_budget"]["max_repair_attempts"], 0)
+
+    def test_misconfigured_repair_arm_fails_before_any_provider_call(self):
+        example = generate_development_tasks(7, 1, choice_format="production")[0]
+        provider = ScriptedProvider()
+        with self.assertRaisesRegex(ValueError, "one_repair requires"):
+            run([example], provider, repair=True)
+        self.assertEqual(provider.requests, [])
 
     def test_output_only_tampering_is_not_credited_from_valid_program(self):
         example = generate_development_tasks(7, 1, choice_format="production")[0]
