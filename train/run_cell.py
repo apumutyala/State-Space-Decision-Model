@@ -62,10 +62,37 @@ CHECK_AFTER_STEPS = 10  # the in-training rate check uses the mean of the first 
 
 
 # ----------------------------------------------------------------------------- data (CPU-testable)
+def host_provenance(r: dict) -> dict | None:
+    """Explicit host provenance for an m2 record (``decide.provenance`` shape), for the controlsafe trust gate.
+
+    A question's instructions are declared instruction-trusted ONLY when the builder put the item in ``state``
+    (``aug.placement == "state"``) AND the instruction string is exactly one of the builder's own templates
+    (``data.augment.INSTR``). Everything else (the passage under ``placement: instructions``, tool names,
+    candidate dicts, option texts, the state) stays data: absent provenance is data (fail closed)."""
+    if (r.get("aug") or {}).get("placement") != "state":
+        return None
+    from data.augment import INSTR
+    from decide.provenance import PROVENANCE_SCHEMA, instructions_path
+
+    templates = {t for v in INSTR.values() for t in v} | {"Answer the question."}
+    segs = {}
+    for qid, q in r["questions"].items():
+        ins = q.get("instructions")
+        if isinstance(ins, str) and ins in templates:
+            segs[instructions_path(qid)] = [{"start": 0, "end": len(ins), "trust": "instruction",
+                                             "origin": "host_template"}]
+    return {"provenance": {"schema": PROVENANCE_SCHEMA, "default_trust": "data", "segments": segs}} if segs else None
+
+
 def to_train_record(r: dict) -> dict:
-    """m2 sample record (data/build.py: state/questions/labels at top level) -> train.data record format."""
-    return {"id": r["id"], "request": {"model": "m2", "state": r["state"], "questions": r["questions"]},
-            "labels": r["labels"]}
+    """m2 sample record (data/build.py: state/questions/labels at top level) -> train.data record format.
+    Carries ``host_provenance`` under ``request["ssdm"]`` (read only by the trust gate's provenance policy;
+    content hashes, guards and token ids are unchanged)."""
+    req = {"model": "m2", "state": r["state"], "questions": r["questions"]}
+    prov = host_provenance(r)
+    if prov:
+        req["ssdm"] = prov
+    return {"id": r["id"], "request": req, "labels": r["labels"]}
 
 
 def split_ids(ids: list[str], n_train: int, n_eval: int, seed: int) -> tuple[list[str], list[str]]:
@@ -125,7 +152,7 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
                        lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
                        seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
-                       eval_every=cfg["eval_every"])
+                       eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {})
 
 
 def keep_item(row, max_k: int, max_t: int) -> bool:
@@ -294,6 +321,10 @@ def main(argv=None):
         return EXIT["data"]
 
     bb = load_parent_backbone(parent, a.model_dir, cfg, a.gdn_ckpt)
+    if (cfg.get("controlsafe") or {}).get("trust_gate"):  # optional G15 arm (controlsafe/CONTROLSAFE.md)
+        from controlsafe.trust_gate import wrap as trust_gate_wrap
+
+        bb = trust_gate_wrap(bb, {**cfg["controlsafe"], "seed": cfg["seed"]})
     cuda = torch.cuda.is_available()
     dev_type = "cuda" if cuda else "cpu"
     cell["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None

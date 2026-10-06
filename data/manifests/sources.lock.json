@@ -41,6 +41,13 @@
   "revision": "branch head at fetch (sha256 pinned)",
   "license": "CC-BY-3.0"
  },
+ "glaive_fc/default/train/0000.parquet": {
+  "sha256": "7e7e32f0466699513b38923bc4991858e192c9274df22e243b9e77eb2775b6e8",
+  "bytes": 97037816,
+  "url": "https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2/resolve/8862406ff857565709af3dca7fed589b84edf235/default/train/0000.parquet",
+  "revision": "8862406ff857565709af3dca7fed589b84edf235",
+  "license": "Apache-2.0"
+ },
  "gsm8k/main/train-00000-of-00001.parquet": {
   "sha256": "ea82612ea9582142387730c793eb67d3b12849002bc0b7fa6f8efafa7351419d",
   "bytes": 2306545,
@@ -54,6 +61,20 @@
   "url": "https://huggingface.co/datasets/Rowan/hellaswag/resolve/218ec52e09a7e7462a5400043bb9a69a41d06b76/data/train-00000-of-00001.parquet",
   "revision": "218ec52e09a7e7462a5400043bb9a69a41d06b76",
   "license": "MIT"
+ },
+ "humicroedit_s1/subtask-1/train-00000-of-00001.parquet": {
+  "sha256": "a5230f6004932f51d1d6120553aef5df1ce6d0d1e763cb1534ef6f8cd86db5eb",
+  "bytes": 1271328,
+  "url": "https://huggingface.co/datasets/tasksource/humicroedit/resolve/f5a16e65b0854032ab9b4c82ca182a6381b83bd5/subtask-1/train-00000-of-00001.parquet",
+  "revision": "f5a16e65b0854032ab9b4c82ca182a6381b83bd5",
+  "license": "unspecified on HF; SemEval-2020 T7 research release (verify)"
+ },
+ "humicroedit_s2/subtask-2/train.parquet": {
+  "sha256": "69dba9bb9daf27a891cdf78f3366622477198df5dbeba07a3a20e6bf0dcf76af",
+  "bytes": 696496,
+  "url": "https://huggingface.co/datasets/tasksource/humicroedit/resolve/f5a16e65b0854032ab9b4c82ca182a6381b83bd5/subtask-2/train.parquet",
+  "revision": "f5a16e65b0854032ab9b4c82ca182a6381b83bd5",
+  "license": "unspecified on HF; SemEval-2020 T7 research release (verify)"
  },
  "mmlu_aux/auxiliary_train/train-00000-of-00001.parquet": {
   "sha256": "ae6662576ef989fed82a9289da1b89e950499c320f6849b052ec344dfcb709eb",

@@ -93,6 +93,17 @@ INSTR = {
     "retrieval_yesno": ["Is this candidate passage relevant to the query?", "Does this passage answer the query?",
                         "Relevance judgement: is the candidate useful for the query?",
                         "Mark yes if the passage answers the search query.", "Is the document relevant?"],
+    # added for the 150k build (arts area: Humicroedit)
+    "humor_score": ["How funny is the edited headline?", "Rate the humour of the one-word headline edit.",
+                    "Place the edited headline on the funniness scale.",
+                    "Judge how funny the edit makes the headline.",
+                    "Score the edited headline for humour, using the scale given.",
+                    "How amusing is the headline after the edit?"],
+    "humor_pair": ["Which edited version of the headline is funnier?",
+                   "Pick the funnier one-word edit of the headline.",
+                   "Two edits of the same headline: which one is more humorous?",
+                   "Choose the edited headline most readers would find funnier.",
+                   "Which headline edit gets the bigger laugh?", "Select the funnier edit."],
 }
 
 FIELD_SYNONYMS = {
@@ -112,6 +123,9 @@ FIELD_SYNONYMS = {
     "tools": ["tools", "functions", "catalog"],
     "dialogue": ["dialogue", "conversation", "messages"],
     "query": ["query", "search_query", "question"],
+    "original_headline": ["original_headline", "headline", "original"],
+    "edited_headline": ["edited_headline", "edited", "new_headline"],
+    "headline": ["headline", "original_headline", "title"],
 }
 
 QKEYS = ["q1", "answer", "label", "decision", "choice", "output", "field_1", "result"]

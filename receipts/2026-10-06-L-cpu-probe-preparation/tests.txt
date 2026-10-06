@@ -1,0 +1,13 @@
+test_child_environment_forces_offline_cpu (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_child_environment_forces_offline_cpu) ... ok
+test_child_rechecks_ram_before_torch_or_model_import (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_child_rechecks_ram_before_torch_or_model_import) ... ok
+test_clock_failure_after_spawn_stops_owned_child (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_clock_failure_after_spawn_stops_owned_child) ... ok
+test_each_provider_request_and_failure_flushes_raw_jsonl (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_each_provider_request_and_failure_flushes_raw_jsonl) ... ok
+test_launcher_kills_owned_child_if_memory_monitor_raises (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_launcher_kills_owned_child_if_memory_monitor_raises) ... ok
+test_launcher_stops_only_its_child_on_timeout_or_low_memory (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_launcher_stops_only_its_child_on_timeout_or_low_memory) ... ok
+test_one_pinned_validation_comparison (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_one_pinned_validation_comparison) ... ok
+test_unmerged_paired_dependency_is_explicit (language_growth.tests.test_l0_qwen_cpu_probe.ProbePreparationTests.test_unmerged_paired_dependency_is_explicit) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.060s
+
+OK

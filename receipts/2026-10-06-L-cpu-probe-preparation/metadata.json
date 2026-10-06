@@ -1,0 +1,1 @@
+{"available_bytes_observation": 6522531840, "executed_model": false, "software": {"accelerate": "1.15.0", "psutil": "7.2.2", "torch": "2.8.0+cu128", "transformers": "5.17.0"}, "task_id": "synthetic-development_validation-271828-2", "task_sha256": "e996f537fea463e480f691b36ed68b5f3a8aa1da014e798b706a672473029e0c", "torch_imported": false}
