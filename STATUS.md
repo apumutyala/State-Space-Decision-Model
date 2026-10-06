@@ -9,6 +9,8 @@
 
 - Review revision: neutral decision option IDs with evaluator-only relabel maps; no target-only numerical hints. L provider gating and planner budgets are distinct from D transport behavior. Missing/hidden reference fixtures share one repair code. Pack remains authored development data, with no learned result or paid run.
 
+- Receipt correction pending merged contract: prior fixture packaging validation depended on PR #4 outside its source tree. The reproducibility failure is recorded in LEDGER; old receipt cannot unlock spend.
+
 ## Open decisions for the user
 - SF Compute credit expiry date.
 - Approve creating the private GitHub repo + `agent-main` branch.

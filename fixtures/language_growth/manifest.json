@@ -319,5 +319,8 @@
     "LG22": [
       "cedar-absent-v1"
     ]
-  }
+  },
+  "unclaimed_kernel_reason_categories": [
+    "forbidden_dependency"
+  ]
 }
