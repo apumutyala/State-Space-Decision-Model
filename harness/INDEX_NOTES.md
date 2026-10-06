@@ -83,10 +83,10 @@ Verbatim (`index-v0.2.1.json` `suite.calibration_note`): "32 benchmarks with a p
 3. **ForecastBench is a gold benchmark scored by Brier.** Calibrated probabilities move the score directly, not only ECE. Its events resolved 2026-07-01 to 2026-09-18, so any backbone or teacher trained on data after July 2026 can leak outcomes. Record the knowledge cutoff of every parent and teacher.
 4. **Contamination gate.** Train-split data is allowed, but maintainers count exact duplicates of test items found in public train splits as wrong (lev, Jet, Lumma). Every training/distillation set needs an auditable dedup log against the suite's `state`/question text, not only against benchmark names. They also run a shuffle test (options reordered).
 5. **Latency is an admission gate (<1,000 ms median, one RTX PRO 6000, one request at a time), measured by the maintainers on a private sample.** The m3 serving path must be the fastest path the code supports.
-6. **HLE is gated** (see §11). The harness runs without it. m3 and any full-suite parity claim need an HF token with the HLE terms accepted.
-7. **Resolution on DEV is a range, not a number.** The minimum detectable index difference (α 0.05, power 0.8, paired bootstrap over 8,248 source-case clusters) depends on how correlated the two systems' errors are:
-   - **≈0.65–1.1 points** when the candidate shares most of the baseline's errors (fixture: baseline plus 4–11% of rows fixed);
-   - **≈1.2 points** when the fix comes whole source cases at a time;
+6. **HLE is gated** on the Hub (accept its terms, then log in). It is now built locally (see §11), so full-suite parity is available for m3.
+7. **Resolution on DEV is a range, not a number.** The minimum detectable index difference (α 0.05, power 0.8, paired bootstrap over 8,473 source-case clusters) depends on how correlated the two systems' errors are:
+   - **≈0.65–1.0 points** when the candidate shares most of the baseline's errors (fixture: baseline plus 4–11% of rows fixed);
+   - **≈1.1 points** when the fix comes whole source cases at a time;
    - **≈2.4 points** when the errors are independent (two independent noisy oracles 6.4 points apart).
 
    m2 arms that share a backbone sit near the low end, while different parents sit near the high end. These fixtures are iid inside a case. Real models are correlated within a contest, trial or rater, which pushes every figure up. Per-benchmark CIs on NLI4CT (11 DEV cases) and other few-case benchmarks are coarse.
@@ -105,10 +105,10 @@ The slices therefore under-sample the most interlinked sources.
 
 ## 11. Local build status (2026-10-06)
 
-- Built with `suite rebuild` in WSL (`bi-ubuntu`, Python 3.12.3, C.UTF-8) from the pinned kit, everything except HLE (gated; no HF login on this machine). Script and log: `receipts/2026-10-06-D-m0-harness/`.
+- Built with `suite rebuild` in WSL (`bi-ubuntu`, Python 3.12.3, C.UTF-8) from the pinned kit. HLE was added later (2026-10-06) once the HF terms were accepted on account amutyala3: `hle_fetch.py` downloads the pinned parquet (sha256 `6d0ee060…726a`), then `hle_rebuild.sh` runs `suite rebuild --only 45 --skip-download`. Scripts and logs: `receipts/2026-10-06-D-m0-harness/`.
 - `added-rows.jsonl`: **byte-identical** to the official file (sha256 `7429f3c9…f89a`).
-- Base rows cannot match the official hash without HLE, but every count matches the published numbers with HLE's 513 rows removed: 0.1 rows 131,909 = 132,422 − 513; cases 117,251 = 117,764 − 513; fields 774,689 = 775,202 − 513; 0.2 cut 124,458 = 124,971 − 513 (ToolRet 1,328, BRIGHT 637 as documented). In the 0.2.1 scope, 119,397 scoreable base rows + HLE's published 501 = **119,898**, exactly the official count. Exclusions and all five read-time subset files match their pinned hashes.
-- Our base file: uncompressed sha256 `6787a1d5…41c7`.
+- **Base rows are now byte-identical too:** rebuilt 0.1 rows `288d3720…7f99` = official, and the 0.2 cut `b2b56d6f…92d5` = official (124,971 rows; ToolRet 1,328, BRIGHT 637). All 43 normalised source files match the per-file hashes in the kit's 0.1 manifest. HLE normalises to 513 rows (12 excluded at scoring), so 501 count, and the scoreable base is exactly **119,898**; with the 30,419 added rows the 0.2.1 scope is 150,317.
+- Gotcha: the HLE normaliser writes the HF download-cache signature and etag (`.cache/huggingface/download/...parquet.metadata`) into every row's provenance. Copying the parquet without that file gives `null` fields and a different hash, so `hle_rebuild.sh` copies it too.
 - **Two kit portability bugs found on Windows** (no effect on Linux/the board):
   - A Windows clone with `core.autocrlf=true` changes the packaged subset JSON hashes. Fix: clone with `core.autocrlf=false`.
   - The kit decodes its subset lists with the locale encoding. Under cp1252, two BRIGHT run ids containing U+2019 are garbled and silently dropped (218 instead of 220 BRIGHT rows). The harness refuses to import unless Python runs in UTF-8 mode (`python -X utf8 -I`). Worth an upstream issue/PR.

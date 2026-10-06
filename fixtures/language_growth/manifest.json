@@ -1,0 +1,326 @@
+{
+  "schema": "ssdm.language_fixture_manifest.v0",
+  "fixture_pack": "catalog-boundary-design-2026-10-06",
+  "status": "pilot_design_only",
+  "catalog": "catalog.json",
+  "case_count": 24,
+  "cases": [
+    {
+      "case_id": "LG01",
+      "path": "cases/01_supported_read.json",
+      "tags": [
+        "positive",
+        "read"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG01-D0"
+    },
+    {
+      "case_id": "LG02",
+      "path": "cases/02_supported_exact_comparison.json",
+      "tags": [
+        "positive",
+        "comparison",
+        "exact_decimal"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG02-D0"
+    },
+    {
+      "case_id": "LG03",
+      "path": "cases/03_false_comparison.json",
+      "tags": [
+        "negative",
+        "comparison"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG03-D0"
+    },
+    {
+      "case_id": "LG04",
+      "path": "cases/04_record_splicing.json",
+      "tags": [
+        "negative",
+        "record_splicing"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG04-D0"
+    },
+    {
+      "case_id": "LG05",
+      "path": "cases/05_unsupported_negation.json",
+      "tags": [
+        "negative",
+        "open_world_negation"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG05-D0"
+    },
+    {
+      "case_id": "LG06",
+      "path": "cases/06_unsupported_because.json",
+      "tags": [
+        "negative",
+        "unsupported_relation"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG06-D0"
+    },
+    {
+      "case_id": "LG07",
+      "path": "cases/07_stale_context.json",
+      "tags": [
+        "negative",
+        "stale_context"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG07-D0"
+    },
+    {
+      "case_id": "LG08",
+      "path": "cases/08_revoked_cached_policy.json",
+      "tags": [
+        "negative",
+        "stale_policy",
+        "revocation"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG08-D0"
+    },
+    {
+      "case_id": "LG09",
+      "path": "cases/09_currency_mismatch.json",
+      "tags": [
+        "negative",
+        "unit_mismatch"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG09-D0"
+    },
+    {
+      "case_id": "LG10",
+      "path": "cases/10_time_scope_mismatch.json",
+      "tags": [
+        "negative",
+        "time_mismatch"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG10-D0"
+    },
+    {
+      "case_id": "LG11",
+      "path": "cases/11_conflicting_premises.json",
+      "tags": [
+        "negative",
+        "conflict"
+      ],
+      "world_id": "LGW002",
+      "decision_question_id": "LG11-D0"
+    },
+    {
+      "case_id": "LG12",
+      "path": "cases/12_belief_authority_escalation.json",
+      "tags": [
+        "negative",
+        "epistemic_escalation"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG12-D0"
+    },
+    {
+      "case_id": "LG13",
+      "path": "cases/13_source_role_injection.json",
+      "tags": [
+        "renderer_attack",
+        "decision_probe",
+        "exact_integer"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG13-D0"
+    },
+    {
+      "case_id": "LG14",
+      "path": "cases/14_supported_but_wrong_question.json",
+      "tags": [
+        "positive_kernel",
+        "negative_task",
+        "relevance"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG14-D0"
+    },
+    {
+      "case_id": "LG15",
+      "path": "cases/15_private_conditioned_selection.json",
+      "tags": [
+        "provider_precondition",
+        "noninterference"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG15-D0"
+    },
+    {
+      "case_id": "LG16",
+      "path": "cases/16_necessary_ask.json",
+      "tags": [
+        "positive_kernel",
+        "ask",
+        "missing_record",
+        "coverage"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG16-D0"
+    },
+    {
+      "case_id": "LG17",
+      "path": "cases/17_avoidable_ask.json",
+      "tags": [
+        "positive_kernel",
+        "negative_task",
+        "ask",
+        "coverage"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG17-D0"
+    },
+    {
+      "case_id": "LG18",
+      "path": "cases/18_one_bounded_repair.json",
+      "tags": [
+        "repair",
+        "positive_final",
+        "planning_error"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG18-D0"
+    },
+    {
+      "case_id": "LG19",
+      "path": "cases/19_repair_budget_exhausted.json",
+      "tags": [
+        "repair",
+        "exhausted",
+        "coverage"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG19-D0"
+    },
+    {
+      "case_id": "LG20",
+      "path": "cases/20_unknown_operation_and_text.json",
+      "tags": [
+        "negative",
+        "unknown_operation"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG20-D0"
+    },
+    {
+      "case_id": "LG21",
+      "path": "cases/21_arbitrary_text_assertion.json",
+      "tags": [
+        "negative",
+        "arbitrary_text"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG21-D0"
+    },
+    {
+      "case_id": "LG22",
+      "path": "cases/22_unknown_reference.json",
+      "tags": [
+        "negative",
+        "unknown_reference"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG22-D0"
+    },
+    {
+      "case_id": "LG23",
+      "path": "cases/23_forbidden_dependency.json",
+      "tags": [
+        "negative",
+        "forbidden_dependency"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG23-D0"
+    },
+    {
+      "case_id": "LG24",
+      "path": "cases/24_exceeded_limit.json",
+      "tags": [
+        "negative",
+        "exceeded_limit"
+      ],
+      "world_id": "LGW001",
+      "decision_question_id": "LG24-D0"
+    }
+  ],
+  "contract_reference": "../../interfaces/DECISION_LANGUAGE_V0.md",
+  "plan_reference": "../../plans/codex/LANGUAGE_GROWTH_PLAN.md",
+  "claims": {
+    "empirical_model_results": false,
+    "independently_authored_evaluation_labels": false,
+    "semantic_checker_implemented": false,
+    "json_shape_proves_semantics": false
+  },
+  "expectation_layers": [
+    "provider_precondition",
+    "kernel_status",
+    "task_outcome",
+    "useful_complete_answer"
+  ],
+  "interpretation_notes": [
+    "Expected values are design hypotheses for joint review; no case is a held-out audit example.",
+    "accepted is an expected kernel outcome, never an author-issued proof.",
+    "The bounded repair case reports final kernel status; its initial_expected preserves the first failure.",
+    "Unknown references and malformed semantic inputs may be intentional. The validator checks declared fixture references and integrity, not semantic acceptance.",
+    "Do not aggregate these hand-picked cases into a learned accuracy, risk or coverage claim.",
+    "LG20 unknown-operation and LG21 arbitrary-text assertion are independent counterexamples.",
+    "Host max_proposal_calls and max_repair_calls are Track L planner budgets across requests; neither is forwarded as a Track D per-request limit.",
+    "Expected task labels and decision-only targets are evaluator annotations, never model input or proven kernel results.",
+    "LG05/LG20 reject unregistered operations and LG06 rejects an unsupported field; they do not prove natural-language negation or causal reasoning."
+  ],
+  "kernel_reason_categories": [
+    "unknown_reference",
+    "stale_context",
+    "stale_policy",
+    "type_unit_mismatch",
+    "scope_mismatch",
+    "unsupported_assertion",
+    "unsupported_operation",
+    "unsupported_field",
+    "invalid_graph",
+    "conflict",
+    "exceeded_limit"
+  ],
+  "semantic_program_schema": "ssdm.semantic_program.v0.1",
+  "worlds": [
+    {
+      "world_id": "LGW001",
+      "context_ref": "catalog-public-r7"
+    },
+    {
+      "world_id": "LGW002",
+      "context_ref": "catalog-public-conflict-r7"
+    },
+    {
+      "world_id": "LGW003",
+      "context_ref": "catalog-public-r6"
+    },
+    {
+      "world_id": "LGW004",
+      "context_ref": "catalog-private-r1"
+    }
+  ],
+  "model_input_rule": "Expose only question, options, host-authorized evidence/policy/registry and declared budgets. Never expose proposals, targets, expected outcomes or review notes as decision-only inputs.",
+  "decision_only_scope": "Same-task pilot retention targets; authored in the same design pass and not independent labels. ASK support belongs to this domain and does not modify any external benchmark.",
+  "intentional_invalid_record_refs": {
+    "LG22": [
+      "cedar-absent-v1"
+    ]
+  },
+  "unclaimed_kernel_reason_categories": [
+    "forbidden_dependency"
+  ]
+}

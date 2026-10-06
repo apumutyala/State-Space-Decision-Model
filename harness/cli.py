@@ -115,9 +115,7 @@ def cmd_compare(a):
     c = score.decompose(rows, load_results(a.candidate))
     b = score.decompose(rows, load_results(a.baseline))
     out = bootstrap.compare(c, b, B=a.B, seed=a.seed)
-    se = out["diff"]["index"]["se"]
-    n = sum(len(x.clusters) for x in c.values())
-    out["mde"] = mde.table(se, n)
+    out["mde"] = mde.report(out["diff"]["index"]["se"], sum(len(x.clusters) for x in c.values()))
     print(json.dumps(out, indent=1))
 
 

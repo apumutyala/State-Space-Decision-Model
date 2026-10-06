@@ -7,42 +7,42 @@
  "edition": "0.2.1",
  "suite_files": {
   "selected-rows.jsonl.gz": {
-   "sha256_gz": "a6a1593711e87fe5e4f5dbb00e83f7254e41292bb43ef7b531c28aa32855f356",
-   "sha256_uncompressed": "6787a1d5cfb693c0d6aaf320057368c10b3b56e23d9c4e4bb98057a8ce6c41c7"
+   "sha256_gz": "5510346a750e116184d810dff8abe8b3e2b1ff03e5e9e43516caaf00ce6dd55b",
+   "sha256_uncompressed": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5"
   },
   "added-rows.jsonl.gz": {
    "sha256_gz": "921e245c4ec2f1ea37f9f82d206fe4ac3ac4104e75b3f92521606e5973934b18",
    "sha256_uncompressed": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89"
   }
  },
- "index_rows_available": 119725,
+ "index_rows_available": 120226,
  "dev": {
   "manifest": "dev-manifest.jsonl.gz",
-  "manifest_sha256": "78868fdb9625c66b9cfd678798b55ce5f70a36d01efb622603f94c615d9a23e3",
-  "rows": 11879,
-  "groups": 11241,
-  "source_cases": 8248,
-  "benchmarks": 37,
+  "manifest_sha256": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+  "rows": 12104,
+  "groups": 11466,
+  "source_cases": 8473,
+  "benchmarks": 38,
   "by_area": {
-   "knowledge": 2177,
+   "knowledge": 2402,
    "language": 2466,
    "retrieval": 2400,
    "tools": 2402,
    "arts": 2434
   },
   "by_length_bin": {
-   "<128": 1260,
-   "128-511": 4939,
-   "512-2047": 4256,
-   "2048-8191": 1202,
+   "<128": 1304,
+   "128-511": 5082,
+   "512-2047": 4292,
+   "2048-8191": 1204,
    ">=8192": 222
   },
   "by_area_and_length_bin": {
    "knowledge": {
-    "<128": 362,
-    "128-511": 1294,
-    "512-2047": 492,
-    "2048-8191": 29,
+    "<128": 406,
+    "128-511": 1437,
+    "512-2047": 528,
+    "2048-8191": 31,
     ">=8192": 0
    },
    "language": {
@@ -103,6 +103,7 @@
    "42": 304,
    "43": 256,
    "44": 262,
+   "45": 225,
    "48": 389,
    "50": 361,
    "56": 460,
@@ -116,31 +117,31 @@
  },
  "test": {
   "manifest": "test-manifest.jsonl.gz",
-  "manifest_sha256": "c1a01eb22708c3c13a28eebece92d447987f7d86e1960a5978b04c749f56f016",
-  "rows": 11936,
-  "groups": 11293,
-  "source_cases": 8184,
-  "benchmarks": 37,
+  "manifest_sha256": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a",
+  "rows": 12161,
+  "groups": 11518,
+  "source_cases": 8409,
+  "benchmarks": 38,
   "by_area": {
-   "knowledge": 2179,
+   "knowledge": 2404,
    "language": 2500,
    "retrieval": 2399,
    "tools": 2403,
    "arts": 2455
   },
   "by_length_bin": {
-   "<128": 1250,
-   "128-511": 5007,
-   "512-2047": 4242,
-   "2048-8191": 1214,
+   "<128": 1294,
+   "128-511": 5150,
+   "512-2047": 4278,
+   "2048-8191": 1216,
    ">=8192": 223
   },
   "by_area_and_length_bin": {
    "knowledge": {
-    "<128": 357,
-    "128-511": 1300,
-    "512-2047": 493,
-    "2048-8191": 29,
+    "<128": 401,
+    "128-511": 1443,
+    "512-2047": 529,
+    "2048-8191": 31,
     ">=8192": 0
    },
    "language": {
@@ -201,6 +202,7 @@
    "42": 336,
    "43": 256,
    "44": 263,
+   "45": 225,
    "48": 375,
    "50": 360,
    "56": 460,
@@ -792,8 +794,30 @@
   },
   "45": {
    "rows": 501,
+   "cases": 501,
    "quota": 225,
-   "missing_locally": true
+   "max_case_rows": 56,
+   "rows_in_oversized_cases": 0,
+   "bins": {
+    "128-511": 319,
+    "2048-8191": 5,
+    "512-2047": 80,
+    "<128": 97
+   },
+   "test": {
+    "128-511": 143,
+    "2048-8191": 2,
+    "512-2047": 36,
+    "<128": 44
+   },
+   "dev": {
+    "128-511": 143,
+    "2048-8191": 2,
+    "512-2047": 36,
+    "<128": 44
+   },
+   "test_cases": 225,
+   "dev_cases": 225
   },
   "48": {
    "rows": 10139,

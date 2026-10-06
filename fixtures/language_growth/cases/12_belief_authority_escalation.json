@@ -1,0 +1,130 @@
+{
+  "case_id": "LG12",
+  "title": "belief authority escalation",
+  "tags": [
+    "negative",
+    "epistemic_escalation"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Does Atlas have a longer warranty than Boreal?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "atlas-belief-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n2",
+        "op": "ReadFact",
+        "record_ref": "boreal-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n3",
+        "op": "Compare",
+        "left": {
+          "node": "n1",
+          "project": "object"
+        },
+        "right": {
+          "node": "n2",
+          "project": "object"
+        },
+        "relation": "greater_than"
+      },
+      {
+        "id": "n4",
+        "op": "Assert",
+        "proposition": "n3"
+      }
+    ],
+    "outputs": [
+      "n4"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "rejected",
+    "kernel_reason_category": "unsupported_assertion",
+    "task_outcome": "rejected_plan",
+    "useful_complete_answer": false,
+    "why": "An extracted 36-month belief cannot become an unconditional authoritative assertion merely by passing through Compare.",
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 1,
+      "useful_complete_count": 0,
+      "ask_count": 0
+    }
+  },
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG12-D0",
+    "type": "choice",
+    "question": "Does Atlas have a longer warranty than Boreal?",
+    "options": [
+      {
+        "id": "LG12-o01",
+        "description": "Atlas has the longer warranty."
+      },
+      {
+        "id": "LG12-o02",
+        "description": "Boreal has the longer warranty."
+      },
+      {
+        "id": "LG12-o03",
+        "description": "No authoritative warranty comparison is available."
+      }
+    ],
+    "target_option_id": "LG12-o01",
+    "target_description": "The direct answer is supported by atlas-v1, independently of the extracted 36-month belief; answer correctness alone does not test provenance selection.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": true,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG12-atlas_longer": "LG12-o01",
+      "LG12-boreal_longer": "LG12-o02",
+      "LG12-unknown": "LG12-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG12-o01": "LG12-o02",
+        "LG12-o02": "LG12-o03",
+        "LG12-o03": "LG12-o01"
+      },
+      "target_option_id": "LG12-o02",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
+  }
+}

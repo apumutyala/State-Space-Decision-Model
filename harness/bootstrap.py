@@ -21,6 +21,14 @@ def replicate_skills(benches_list, B=2000, seed=0):
     """benches_list: list of {n: Bench} (one per system) over the same rows.
 
     Returns, per system, {n: (raw[B+1], skill[B+1])}; column 0 is the point estimate."""
+    if not benches_list or not benches_list[0]:
+        raise ValueError("no systems / benchmarks to resample")
+    keys = [set(b) for b in benches_list]
+    if any(k != keys[0] for k in keys[1:]):
+        diff = sorted(set().union(*keys) - set.intersection(*keys))
+        raise ValueError(f"systems must cover identical benchmark sets before pairing; mismatched: {diff}")
+    if not (isinstance(B, int) and B >= 1):
+        raise ValueError("B must be a positive integer")
     rng = np.random.default_rng(seed)
     ids = sorted(benches_list[0])
     out = [dict() for _ in benches_list]

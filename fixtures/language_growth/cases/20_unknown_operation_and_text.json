@@ -1,0 +1,107 @@
+{
+  "case_id": "LG20",
+  "title": "unknown operation",
+  "tags": [
+    "negative",
+    "unknown_operation"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Is Atlas repairable?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "FreeText"
+      }
+    ],
+    "outputs": [
+      "n1"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "rejected",
+    "kernel_reason_category": "unsupported_operation",
+    "task_outcome": "rejected_plan",
+    "useful_complete_answer": false,
+    "why": "FreeText is unregistered. This tests unknown operation rejection, independent of LG21's arbitrary-string Assert input.",
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 1,
+      "useful_complete_count": 0,
+      "ask_count": 0
+    }
+  },
+  "unresolved": [
+    "The separate LG21 case tests arbitrary-string assertion with registered operations."
+  ],
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG20-D0",
+    "type": "choice",
+    "question": "Is Atlas repairable?",
+    "options": [
+      {
+        "id": "LG20-o01",
+        "description": "No, Atlas is not repairable."
+      },
+      {
+        "id": "LG20-o02",
+        "description": "Atlas is repairable because all Atlas products are perfect."
+      },
+      {
+        "id": "LG20-o03",
+        "description": "Yes, Atlas is repairable."
+      }
+    ],
+    "target_option_id": "LG20-o03",
+    "target_description": "The repairable fact is supported; the arbitrary explanatory claim is not.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": true,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG20-no": "LG20-o01",
+      "LG20-because_perfect": "LG20-o02",
+      "LG20-yes": "LG20-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG20-o01": "LG20-o02",
+        "LG20-o02": "LG20-o03",
+        "LG20-o03": "LG20-o01"
+      },
+      "target_option_id": "LG20-o01",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
+  }
+}
