@@ -22,7 +22,7 @@ MODULES = ["language_growth.tests.test_paired_read",
 
 
 def write_json(path, value):
-    path.write_text(json.dumps(value, sort_keys=True, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    path.write_bytes((json.dumps(value, sort_keys=True, indent=2, allow_nan=False) + "\n").encode("utf-8"))
 
 
 if __name__ == "__main__":
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     tests = unittest.TextTestRunner(stream=stream, verbosity=2).run(
         unittest.defaultTestLoader.loadTestsFromNames(MODULES))
     assert "torch" not in sys.modules, "CPU proof must not import Torch"
-    (output / "tests.txt").write_text(stream.getvalue(), encoding="utf-8")
+    (output / "tests.txt").write_bytes(stream.getvalue().encode("utf-8"))
     write_json(output / "raw.json", raw)
     write_json(output / "receipt.json", {
         "source_commit": source,
