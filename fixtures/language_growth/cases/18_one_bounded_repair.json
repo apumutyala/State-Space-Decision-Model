@@ -1,0 +1,190 @@
+{
+  "case_id": "LG18",
+  "title": "one bounded repair",
+  "tags": [
+    "repair",
+    "positive_final",
+    "planning_error"
+  ],
+  "label_provenance": "codex_authored_pilot_design_expectation_not_independent_evaluation",
+  "question": "Does Atlas have a longer warranty than Boreal?",
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "audience": "public",
+    "query_constants": {},
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 4,
+      "max_proposal_calls": 8
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1",
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "fixture-catalog-grammar-v0",
+    "nodes": [
+      {
+        "id": "n1",
+        "op": "ReadFact",
+        "record_ref": "boreal-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n2",
+        "op": "ReadFact",
+        "record_ref": "atlas-v1",
+        "field": "warranty_months"
+      },
+      {
+        "id": "n3",
+        "op": "Compare",
+        "left": {
+          "node": "n1",
+          "project": "object"
+        },
+        "right": {
+          "node": "n2",
+          "project": "object"
+        },
+        "relation": "greater_than"
+      },
+      {
+        "id": "n4",
+        "op": "Assert",
+        "proposition": "n3"
+      }
+    ],
+    "outputs": [
+      "n4"
+    ],
+    "style": "plain"
+  },
+  "expected": {
+    "provider_precondition": "pass",
+    "kernel_status": "accepted",
+    "kernel_reason_category": null,
+    "task_outcome": "repaired_complete_answer",
+    "useful_complete_answer": true,
+    "why": "The first false scripted proposal is rejected. One permitted repair selects the true comparison. Preserve the initial planning error and record actual provider calls only from a planner trace.",
+    "initial_planning_errors": 1,
+    "repair_calls_charged": 1,
+    "latency_result": "unmeasured",
+    "coverage": {
+      "provider_valid_denominator": 1,
+      "request_denominator": 1,
+      "answerable_request_denominator": 1,
+      "useful_complete_count": 1,
+      "ask_count": 0
+    },
+    "scripted_proposal_attempts": 2
+  },
+  "repair": {
+    "requested": true,
+    "permitted": true,
+    "feedback_to_planner": {
+      "reason_code": "unsupported_assertion"
+    },
+    "repaired_proposal": {
+      "schema": "ssdm.semantic_program.v0.1",
+      "context_ref": "catalog-public-r7",
+      "policy_ref": "public-read-r3",
+      "registry_ref": "fixture-catalog-grammar-v0",
+      "nodes": [
+        {
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "atlas-v1",
+          "field": "warranty_months"
+        },
+        {
+          "id": "n2",
+          "op": "ReadFact",
+          "record_ref": "boreal-v1",
+          "field": "warranty_months"
+        },
+        {
+          "id": "n3",
+          "op": "Compare",
+          "left": {
+            "node": "n1",
+            "project": "object"
+          },
+          "right": {
+            "node": "n2",
+            "project": "object"
+          },
+          "relation": "greater_than"
+        },
+        {
+          "id": "n4",
+          "op": "Assert",
+          "proposition": "n3"
+        }
+      ],
+      "outputs": [
+        "n4"
+      ],
+      "style": "plain"
+    },
+    "initial_expected": {
+      "kernel_status": "rejected",
+      "kernel_reason_category": "unsupported_assertion"
+    },
+    "accounting_unit": "Two authored AST attempts in the scripted evaluator; actual typed-choice provider calls require a planner trace",
+    "max_scripted_attempts": 2
+  },
+  "world_id": "LGW001",
+  "decision_only": {
+    "question_id": "LG18-D0",
+    "type": "choice",
+    "question": "Does Atlas have a longer warranty than Boreal?",
+    "options": [
+      {
+        "id": "LG18-o01",
+        "description": "No; Boreal has the longer warranty."
+      },
+      {
+        "id": "LG18-o02",
+        "description": "Atlas has the longer warranty."
+      },
+      {
+        "id": "LG18-o03",
+        "description": "The comparison is unavailable."
+      }
+    ],
+    "target_option_id": "LG18-o02",
+    "target_description": "The same direct task has the same answer; separately evaluate one-shot and equally budgeted one-repair conditions.",
+    "evidence_context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "expected_invocation": "one_stateless_call",
+    "score_eligible_on_original_provider_input": true,
+    "answerability_denominator": true,
+    "condition_note": "Decision target is evaluator-only; no semantic program or expected outcome is supplied to the model.",
+    "option_key_map_evaluator_only": {
+      "LG18-boreal_longer": "LG18-o01",
+      "LG18-atlas_longer": "LG18-o02",
+      "LG18-unknown": "LG18-o03"
+    },
+    "relabel_control": {
+      "method": "cyclic_id_rotation_v1",
+      "id_map": {
+        "LG18-o01": "LG18-o02",
+        "LG18-o02": "LG18-o03",
+        "LG18-o03": "LG18-o01"
+      },
+      "target_option_id": "LG18-o03",
+      "note": "Repeat the identical task, evidence, policy and descriptions after renaming option IDs by id_map; score each arm against its own evaluator-only target."
+    }
+  }
+}

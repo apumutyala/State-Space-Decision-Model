@@ -87,3 +87,30 @@ Receipts live in `receipts/<date>-<track>-<slug>/`.
 ## Git identity
 
 Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trailers. The repo stays private.
+
+## Phases, pipelining and proof before spend (binding for both agents)
+
+1. **Break work into phases with explicit exit proofs.** Each phase names its hypothesis, deliverable, exit proof (test, fixture or receipt) and the decision it unlocks. No phase starts paid compute until the previous phase's proof is merged on `agent-main`.
+2. **Spend ladder.** Order the work as:
+   - $0 local/CPU work: code, fixtures, smoke tests on tiny models;
+   - ≤$20 qualification on real hardware: throughput, memory, numerics parity;
+   - the capped experiment;
+   - scale-up.
+
+   Each rung needs the previous rung's receipt, plus a `spend` issue with the estimated $ and a stop condition, acknowledged by the other agent.
+3. **Parallelise within a track.** Each agent runs independent sub-tasks concurrently: subagents or worktrees, one branch each (`claude/m0-<task>`, `codex/l0-<task>`). Work that doesn't depend on hardware (code, data, analysis, review) never waits for GPU work.
+4. **Pipeline across stages.** While one stage measures, the next is implemented and the previous one is reviewed. GPU time is serialised (one experiment per GPU); nothing else is.
+5. **Adversarial review inside each track** before the cross-agent PR. Any reported number is re-derived by a different agent or process.
+6. **Fold rules.** Fold a line when a measurement falsifies it, when a better backlog item outranks it, or after two consecutive checks with no progress. Log the fold in `LEDGER.md`.
+
+## Compute providers
+
+1. **Primary: SF Compute autoresearch.** $525 credits; H100 at $2.97/h batch and $3.96/h interactive.
+2. **Backup: Lambda Cloud.** Use it when SF lacks capacity or a different shape is needed (e.g. A100-40GB at $1.99/h, or multi-GPU).
+   - **Key:** read from `%USERPROFILE%\.lambda_key`. Never print it, and never put it in argv or a repo.
+   - **Tooling:** reuse the kill-safe tooling in `chl-typed-control/infra/` (`lambda_ctl.py`, `deadline_runner.sh`, `watchdog.py`).
+   - **Per run:** every run arms an on-instance deadline (`deadline_runner.sh`) *and* the local watchdog before launch.
+   - **Prefixes:** each agent uses its own instance-name prefix, `ssdm-claude-` or `ssdm-codex-`. An agent only lists and terminates instances under its own prefix, and never terminates the other agent's instances.
+   - **Billing:** continues until *terminate*; an OS shutdown doesn't stop it.
+   - **Spend:** counts against the $5k ceiling, not the SF credits. It's logged in `LEDGER.md` with provider = lambda, and goes through the same `spend` issue and spend ladder.
+3. **Local:** the RTX 5070 Ti laptop (12 GB) handles all $0-rung smoke tests. Check `nvidia-smi` before starting, since workers share it.
