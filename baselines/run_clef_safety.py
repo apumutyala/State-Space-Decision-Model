@@ -13,7 +13,15 @@ GCG-lite (PREREG 2.3, HP_GATE) uses baselines.clef_gcg and is re-checked through
         --split test --final --out /out/safety [--gcg-steer 30 --gcg-hijack 15] [--gcg-only | --skip-gcg]
 
 GCG results are appended per attack to ``gcg_attacks.jsonl`` and the run resumes from that file
-(``$GMN_CHECKPOINT_DIR`` friendly). Exit codes: 0 ok, 30 load/verify failure, 31 run failure.
+(``$GMN_CHECKPOINT_DIR`` friendly). Exit codes: 0 ok, 30 load/verify failure, 31 run failure,
+32 PREREG gate (test split / D1-B scoring before the k=8 blind D1-B amendment).
+
+PREREG gate (safety_eval/PREREG.md G1(d)): "Before any m1 test scoring, 4 more B templates are written blind
+..., giving k=8. They are logged as an amendment with their sha256." Scoring Clef on the test split or on D1-B
+with fewer than 8 B templates would put Clef's gate-family number on different units than our parent's, so it
+is refused here unless ``--prereg-deviation`` names a declared deviation (recorded in summary.json). The D1-B
+template set sha256 is recorded in every receipt; any later data amendment (black-box family, payment
+scenarios) means one declared re-score with the new sha, never a silent overwrite.
 """
 from __future__ import annotations
 
@@ -32,6 +40,13 @@ from safety_eval.decide_bridge import DecideBridge
 from safety_eval.request import sha256_obj
 
 from . import clef_backend as CB
+
+PREREG_D1B_MIN_TEMPLATES = 8  # PREREG G1(d): k=8 blind B templates before any test scoring
+
+
+def d1b_identity() -> dict:
+    t = attacks.D1_TEMPLATES_B
+    return {"n_templates": len(t), "sha256": sha256_obj(sorted(t.items())), "required": PREREG_D1B_MIN_TEMPLATES}
 
 
 def git_sha() -> str:
@@ -78,10 +93,17 @@ def main(argv=None) -> int:
     ap.add_argument("--boot", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--no-verify", action="store_true", help="skip weight sha256 (never for a receipt)")
+    ap.add_argument("--prereg-deviation", default=None,
+                    help="declared deviation text; allows test/D1-B scoring before the k=8 amendment (recorded)")
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     log = lambda s: print(s, flush=True)  # noqa: E731
+    d1b = d1b_identity()
+    if (a.split == "test" or a.final) and d1b["n_templates"] < PREREG_D1B_MIN_TEMPLATES and not a.prereg_deviation:
+        log(f"PREREG GATE: {d1b['n_templates']} D1-B templates < {PREREG_D1B_MIN_TEMPLATES}; test-split / D1-B scoring "
+            "is refused until the blind-template amendment lands (or pass --prereg-deviation).")
+        return 32
     t_start = time.time()
 
     try:
@@ -155,6 +177,7 @@ def main(argv=None) -> int:
             "note": "Clef baseline on the safety_eval harness (SAFETY_SPEC section 7). Clef is a frozen external "
                     "checkpoint; --final scores D1-B once for it.",
             "release": a.release, "revision": backend.revision(), "split": a.split, "final": a.final,
+            "d1b_templates": d1b, "prereg_deviation": a.prereg_deviation,
             "arms": {n: metrics.summarise(rs + (rows_gcg if n == "clef_ssdm" else []), a.boot) for n, rs in arms.items()},
             "arm_vs_arm": {f"{n} - clef_ssdm | hijack | eligibility=reference_y": metrics.compare_arms(
                 rs, rows, "hijack", a.boot, eligibility="reference_y",
@@ -182,7 +205,8 @@ def main(argv=None) -> int:
             if a.device.startswith("cuda") and torch.cuda.is_available() else None,
             "release": a.release, "model_dir": a.model_dir, "files_sha256": backend.files_sha256,
             "requests_manifest": data.manifest(reqs), "variants_sha256": sha256_obj([v["request_id"] for v in variants]),
-            "predictions_sha256": sha256_obj(all_rows), "seed": a.seed, "data_seed": data.SEED, "boot_n": a.boot,
+            "predictions_sha256": sha256_obj(all_rows), "d1b_templates": d1b,
+            "prereg_deviation": a.prereg_deviation, "seed": a.seed, "data_seed": data.SEED, "boot_n": a.boot,
             "wall_secs_total": round(time.time() - t_start, 1), "wall_secs_main_arm": round(t_main, 1),
             "n_units": {**{k: len(v) for k, v in arms.items()}, "gcg": len(rows_gcg)},
         }

@@ -36,7 +36,13 @@ def composite(a) -> int:
     p.write_text("".join(json.dumps(r) + "\n" for r in out), encoding="utf-8")
     side = {"decide": a.decide, "decide_sha256": sha(Path(a.decide)), "native": a.native,
             "native_sha256": sha(Path(a.native)), "replaced_run_ids": sorted(set(nat) & {r["run_id"] for r in dec}),
-            "rule": "rows whose native and ssdm encodings differ, or that Clef truncates, use Clef's own systemone"}
+            "rule": "rows in probes.native_arm_run_ids use Clef's own systemone: ids differ, Clef truncates, ssdm encoder "
+                    "refuses, >255 options, or the adapter rejects before scoring (validate_legacy / max_choices)"}
+    if a.probes and Path(a.probes).exists():
+        enc = json.loads(Path(a.probes).read_text(encoding="utf-8")).get("encodings", {})
+        side["categories"] = {k: (len(v) if isinstance(v, list) else v) for k, v in enc.items()}
+        missing = sorted(set(json.loads(Path(a.probes).read_text(encoding="utf-8"))["native_arm_run_ids"]) - set(nat))
+        side["native_rows_missing_from_native_run"] = missing  # must be [] (kit writes every row, incl. errors)
     (p.parent / "composite.provenance.json").write_text(json.dumps(side, indent=1), encoding="utf-8")
     return 0
 
@@ -110,6 +116,7 @@ def main(argv=None) -> int:
     c.add_argument("--decide", required=True)
     c.add_argument("--native", required=True)
     c.add_argument("--out", required=True)
+    c.add_argument("--probes", default=None)
     r = sub.add_parser("report")
     r.add_argument("--out-dir", required=True)
     r.add_argument("--release", required=True)

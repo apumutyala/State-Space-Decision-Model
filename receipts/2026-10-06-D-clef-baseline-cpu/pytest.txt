@@ -3,26 +3,31 @@ platform win32 -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\apumu\r
 cachedir: .pytest_cache
 rootdir: C:\Users\apumu\research\CHLabs\ssdm-wt\clef-baseline
 plugins: anyio-4.15.1
-collecting ... collected 19 items
+collecting ... collected 24 items
 
-tests/clef/test_clef_backend.py::test_vendored_file_is_pinned_and_tamper_refused PASSED [  5%]
-tests/clef/test_clef_backend.py::test_release_pins_present PASSED        [ 10%]
-tests/clef/test_clef_backend.py::test_encoder_matches_clef_encode_record_on_benign_input[ssdm] PASSED [ 15%]
-tests/clef/test_clef_backend.py::test_encoder_matches_clef_encode_record_on_benign_input[clef_native] PASSED [ 21%]
-tests/clef/test_clef_backend.py::test_native_encoding_lets_request_text_become_control_tokens PASSED [ 26%]
-tests/clef/test_clef_backend.py::test_raw_probabilities_equal_clef_softmax PASSED [ 31%]
-tests/clef/test_clef_backend.py::test_wire_answers_match_clef_systemone PASSED [ 36%]
-tests/clef/test_clef_backend.py::test_option_order_invariant_question_order_recorded PASSED [ 42%]
-tests/clef/test_clef_backend.py::test_policy_restriction_is_separate_from_served PASSED [ 47%]
-tests/clef/test_clef_backend.py::test_overlength_exhausted_where_clef_silently_truncates PASSED [ 52%]
-tests/clef/test_clef_backend.py::test_uncuttable_control_token_fails_closed PASSED [ 57%]
-tests/clef/test_clef_backend.py::test_native_meta_counts_control_ids_from_request PASSED [ 63%]
-tests/clef/test_clef_backend.py::test_revision_identity_names_encoding_and_pins PASSED [ 68%]
-tests/clef/test_clef_backend.py::test_real_qwen_tokenizer_parity_and_hardening PASSED [ 73%]
-tests/clef/test_clef_gcg.py::test_problem_maps_keys_and_roundtrips PASSED [ 78%]
-tests/clef/test_clef_gcg.py::test_grad_path_matches_eval_path PASSED     [ 84%]
-tests/clef/test_clef_gcg.py::test_attack_runs_and_rechecks_through_decide PASSED [ 89%]
-tests/clef/test_clef_runner.py::test_runner_writes_receipt_and_resumes PASSED [ 94%]
-tests/clef/test_clef_runner.py::test_probes_dry_run PASSED               [100%]
+tests/clef/test_clef_backend.py::test_vendored_file_is_pinned_and_tamper_refused PASSED [  4%]
+tests/clef/test_clef_backend.py::test_release_pins_present PASSED        [  8%]
+tests/clef/test_clef_backend.py::test_encoder_matches_clef_encode_record_on_benign_input[ssdm] PASSED [ 12%]
+tests/clef/test_clef_backend.py::test_encoder_matches_clef_encode_record_on_benign_input[clef_native] PASSED [ 16%]
+tests/clef/test_clef_backend.py::test_native_encoding_lets_request_text_become_control_tokens PASSED [ 20%]
+tests/clef/test_clef_backend.py::test_raw_probabilities_equal_clef_softmax PASSED [ 25%]
+tests/clef/test_clef_backend.py::test_wire_answers_match_clef_systemone PASSED [ 29%]
+tests/clef/test_clef_backend.py::test_option_order_invariant_question_order_recorded PASSED [ 33%]
+tests/clef/test_clef_backend.py::test_policy_restriction_is_separate_from_served PASSED [ 37%]
+tests/clef/test_clef_backend.py::test_overlength_exhausted_where_clef_silently_truncates PASSED [ 41%]
+tests/clef/test_clef_backend.py::test_uncuttable_control_token_fails_closed PASSED [ 45%]
+tests/clef/test_clef_backend.py::test_native_meta_counts_control_ids_from_request PASSED [ 50%]
+tests/clef/test_clef_backend.py::test_revision_identity_names_encoding_and_pins PASSED [ 54%]
+tests/clef/test_clef_backend.py::test_real_tokenizer_parity_and_hardening[clef] PASSED [ 58%]
+tests/clef/test_clef_backend.py::test_real_tokenizer_parity_and_hardening[qwen3.5-0.8b] PASSED [ 62%]
+tests/clef/test_clef_backend.py::test_clef_tokenizer_gcg_init_is_one_token PASSED [ 66%]
+tests/clef/test_clef_gcg.py::test_problem_maps_keys_and_roundtrips PASSED [ 70%]
+tests/clef/test_clef_gcg.py::test_grad_path_matches_eval_path PASSED     [ 75%]
+tests/clef/test_clef_gcg.py::test_attack_runs_and_rechecks_through_decide PASSED [ 79%]
+tests/clef/test_clef_runner.py::test_runner_writes_receipt_and_resumes PASSED [ 83%]
+tests/clef/test_clef_runner.py::test_probes_dry_run PASSED               [ 87%]
+tests/clef/test_clef_runner.py::test_runner_refuses_test_split_before_d1b_amendment PASSED [ 91%]
+tests/clef/test_clef_runner.py::test_backend_overlength_backstop_is_exhausted PASSED [ 95%]
+tests/clef/test_watchdog.py::test_watchdog_progress_gated_and_dies_with_main PASSED [100%]
 
-============================= 19 passed in 8.76s ==============================
+============================= 24 passed in 34.00s =============================

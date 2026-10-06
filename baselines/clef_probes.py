@@ -56,13 +56,32 @@ def main(argv=None) -> int:
     decider = CB.build_decider(backend)
     out: dict = {"release": a.release, "revision": backend.revision(), "files_sha256": backend.files_sha256}
 
-    # 2. encodings over every DEV row (tokenizer only)
+    # 2. encodings over every DEV row (tokenizer only). The native arm must cover EVERY row where the decide
+    #    path does not run the same forward Clef would: ids differ, Clef truncates, our encoder refuses, or the
+    #    adapter rejects before scoring (validate_legacy: >255 options, 1-level score, noul criteria keys, ids
+    #    with control chars / '<|' '|>'; or more than DEFAULT_LIMITS max_choices questions).
+    from decide.adapter import DEFAULT_LIMITS
+    from decide.schema import RequestRejected, validate_legacy
+
     rows = list(read_rows(a.dev_rows))
-    differ, trunc, refused, over255, same = [], [], [], [], []
-    for r in rows:
+    differ, trunc, refused, over255, same, rejected = [], [], [], [], [], []
+    for n_done, r in enumerate(rows, 1):
+        if n_done % 1000 == 0:
+            print(f"[probes] encodings {n_done}/{len(rows)}", flush=True)
         rid = r["_evaluation"]["run_id"]
         req = {"model": a.release, "state": r["state"], "questions": r["questions"]}
-        nat = native_enc.parts(req)
+        try:
+            validate_legacy(req)
+            if len(req["questions"]) > DEFAULT_LIMITS["max_choices"]:
+                raise RequestRejected("exhausted", "choices_exceeded", "too many questions")
+        except RequestRejected as exc:
+            rejected.append({"run_id": rid, "status": exc.status, "code": exc.code})
+        try:
+            nat = native_enc.parts(req)
+        except Exception as exc:  # noqa: BLE001  (Clef's own encode_record would fail the same way)
+            differ.append(rid)
+            out.setdefault("native_encode_failed", []).append({"run_id": rid, "error": f"{type(exc).__name__}: {exc}"})
+            continue
         if any(len(q.option_ids) > 255 for q in nat.questions):
             over255.append(rid)
         if nat.length() > backend.max_length:
@@ -74,10 +93,18 @@ def main(argv=None) -> int:
             continue
         ids_n = native_enc.assemble(nat).input_ids
         ids_s = backend.encoder.assemble(ss).input_ids
-        (same if ids_n == ids_s and nat.length() <= backend.max_length else differ).append(rid)
-    out["encodings"] = {"rows": len(rows), "identical_and_fit": len(same), "ids_differ": sorted(set(differ) - {t["run_id"] for t in trunc}),
-                        "clef_would_truncate": trunc, "ssdm_refused_control_tokens": refused, "over_255_options": over255}
-    native_rows = sorted(set(differ) | {t["run_id"] for t in trunc} | set(refused))
+        rej = bool(rejected) and rejected[-1]["run_id"] == rid
+        (same if ids_n == ids_s and nat.length() <= backend.max_length and not rej else differ).append(rid)
+    trunc_ids = {t["run_id"] for t in trunc}
+    rej_ids = {x["run_id"] for x in rejected}
+    out["encodings"] = {"rows": len(rows), "identical_and_fit": len(same),
+                        "ids_differ": sorted(set(differ) - trunc_ids - rej_ids),
+                        "clef_would_truncate": trunc, "ssdm_refused_control_tokens": refused,
+                        "over_255_options": over255, "decide_rejected_before_scoring": rejected}
+    native_rows = sorted(set(differ) | trunc_ids | set(refused) | set(over255) | rej_ids)
+    out["native_arm_rule"] = ("union of: ids differ, Clef truncates, ssdm encoder refuses, >255 options, adapter "
+                              "rejects before scoring (validate_legacy / max_choices); every other row runs identical "
+                              "ids through the identical forward, so its native output equals the decide output")
     rng = random.Random(a.seed)
     parity_ids = sorted(rng.sample(same, min(a.n_parity, len(same))))
     out["native_arm_run_ids"] = native_rows

@@ -31,7 +31,7 @@ def mock_load(monkeypatch):
 def test_runner_writes_receipt_and_resumes(tmp_path, mock_load):
     args = ["--model-dir", "unused", "--out", str(tmp_path), "--device", "cpu", "--dtype", "float32",
             "--n-route", "4", "--n-pay", "2", "--final", "--boot", "50", "--gcg-steer", "1", "--gcg-hijack", "1",
-            "--gcg-hp", "smoke"]
+            "--gcg-hp", "smoke", "--prereg-deviation", "unit test (mock model)"]
     assert R.main(args) == 0
     s = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
     assert set(s["arms"]) == {"clef_ssdm", "clef_native_encoding"}
@@ -69,3 +69,24 @@ def test_probes_dry_run(tmp_path, mock_load):
     assert res["g8"]["options_256"]["decide_status"] == "unsupported"
     assert res["g2b_chatml_spoof"]["clef_native_control_ids_from_request"] > 0
     assert res["g2b_chatml_spoof"]["ssdm_control_ids_from_request"] == 0
+
+
+def test_runner_refuses_test_split_before_d1b_amendment(tmp_path, mock_load):
+    from safety_eval import attacks
+
+    if len(attacks.D1_TEMPLATES_B) >= R.PREREG_D1B_MIN_TEMPLATES:
+        pytest.skip("amendment landed; gate open")
+    for extra in (["--split", "test"], ["--final"]):
+        assert R.main(["--model-dir", "unused", "--out", str(tmp_path), "--device", "cpu", *extra]) == 32
+    assert not (tmp_path / "summary.json").exists()
+
+
+def test_backend_overlength_backstop_is_exhausted():
+    from decide.schema import RequestRejected
+    from conftest import base_request
+
+    jsm = CB.load_jsm()
+    be = CB.ClefBackend(build_mock_model(jsm), FakeTok(), jsm=jsm, device="cpu", dtype="float32", max_length=50)
+    with pytest.raises(RequestRejected) as e:
+        be.score(base_request(), lambda: None)
+    assert e.value.status == "exhausted" and e.value.code == "input_tokens_exceeded"

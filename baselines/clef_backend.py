@@ -53,7 +53,7 @@ from typing import Any, Callable
 
 from decide import versions
 from decide.backends.base import BackendUnsupported, Plan, ScoreResult
-from decide.schema import canonical_json, sha256_text
+from decide.schema import RequestRejected, canonical_json, sha256_text
 from decide.untrusted import UNTRUSTED_ENCODER_ID, ControlTokenError, UntrustedEncoder
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -110,6 +110,29 @@ ENCODINGS = ("ssdm", "clef_native")
 
 class JSMIntegrityError(RuntimeError):
     pass
+
+
+def kernel_stack() -> dict[str, Any]:
+    """Installed versions + importability of the fast GDN path (part of the revision identity).
+
+    If ``fla``/``causal_conv1d`` do not import, transformers runs Qwen3.5's torch fallback for the
+    linear-attention layers: outputs agree up to kernel numerics, latency does not.
+    """
+    from importlib import metadata
+
+    out: dict[str, Any] = {}
+    for n in ("torch", "transformers", "flash-linear-attention", "fla-core", "causal-conv1d", "triton"):
+        try:
+            out[n] = metadata.version(n)
+        except Exception:  # noqa: BLE001
+            out[n] = None
+    for mod in ("fla", "causal_conv1d"):
+        try:
+            importlib.import_module(mod)
+            out[f"import:{mod}"] = True
+        except Exception:  # noqa: BLE001
+            out[f"import:{mod}"] = False
+    return out
 
 
 def load_jsm(path: Path = JSM_PATH, expected_sha256: str = JSM_SHA256):
@@ -244,6 +267,7 @@ class ClefBackend:
         self.encoding = encoding
         self.device, self.dtype, self.max_length = device, dtype, max_length
         self.files_sha256 = files_sha256 or {}
+        self.kernel_stack = kernel_stack()
         self._revision = self._build_revision()
 
     def _build_revision(self) -> dict[str, Any]:
@@ -255,6 +279,7 @@ class ClefBackend:
             "question_order": "request order (as Clef)",
             "dtype": self.dtype,
             "device": self.device,
+            "kernel_stack": self.kernel_stack,
         }
         cfg_hash = sha256_text(canonical_json(cfg))
         rev = (self.info.get("revision") or "local")[:12]
@@ -301,8 +326,9 @@ class ClefBackend:
         import torch
 
         parts = self._parts(request)
-        if parts.length() > self.max_length:  # adapter normally refuses first; never truncate here
-            raise BackendUnsupported("input_tokens_exceeded", f"{parts.length()} > {self.max_length}")
+        if parts.length() > self.max_length:  # adapter's plan check normally fires first; same status here
+            raise RequestRejected("exhausted", "input_tokens_exceeded",
+                                  f"longest model input {parts.length()} tokens > {self.max_length} (no truncation)")
         record = self.encoder.assemble(parts)
         check_deadline()
         t0 = time.perf_counter()

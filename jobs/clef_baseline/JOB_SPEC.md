@@ -3,6 +3,16 @@
 **Status: specification only. Nothing here has been submitted or validated (`validate_job` not run).** A
 `spend` issue must be opened and approved before any submit (COORDINATION spend ladder; SAFETY_SPEC section 7.4).
 
+**Submit precondition (PREREG G1(d), review B2).** Jobs A and B score the safety_eval **test split** and **D1-B**.
+PREREG requires 4 more blind D1-B templates (k=8, logged with sha256) "before any m1 test scoring". This is
+enforced in code. `baselines/run_clef_safety.py` exits **32** (`run_job.sh` maps it to 14) when `--split test`
+or `--final` is requested with fewer than 8 D1-B templates. `run_job.sh` never passes `--prereg-deviation`. So
+the blind-template amendment must be merged before the `spend` issue is opened. Otherwise job A would bill
+S0-S3 and then stop at S4. Every receipt records the D1-B template set (`d1b_templates`: count, sha256). Later
+data amendments (the black-box search family; at least 2 more payment scenarios per split) are handled as a
+**declared re-score**: the safety rows are scored once more on the amended data, with the amendment sha
+recorded, and earlier numbers are never overwritten silently.
+
 Purpose: every "better than Clef" sentence in `SAFETY_SPEC.md` (branch `claude/safety-spec` @ `e72f3f0`) needs
 the same guarantee measured on Cloudflare's open-weight models through the same code path. This spec measures
 Clef-flash (Qwen3.5-9B) and Clef (Qwen3.8-27B) on: Index DEV-slice score, ECE, latency, and the `safety_eval`
@@ -19,7 +29,7 @@ families (hijack best-of-5, D1-A/D1-B, GCG-lite pooled and both-orders), plus th
 | Pre-flight / probes | `baselines/clef_probes.py` | parity gate, per-row encoding diff, G8, G2(b), memory |
 | Safety battery | `baselines/run_clef_safety.py`, `baselines/clef_gcg.py` | `safety_eval` data/attacks/metrics unchanged; GCG through Clef's joint head |
 | Entry point | `jobs/clef_baseline/run_job.sh` (stages S0-S5), `summarize.py`, `Dockerfile`, `build_context.sh` | |
-| CPU tests (no weights) | `tests/clef/` (19 tests: mapping, parity vs vendored `encode_record`/`systemone`, truncation, fail-closed, GCG grad/eval agreement, runner and probes dry runs) | `python -X utf8 -m pytest tests/clef` |
+| CPU tests (no weights) | `tests/clef/` (24 tests: mapping, parity with the vendored `encode_record`/`systemone`, truncation, fail-closed encoding, GCG grad/eval agreement, runner and probes dry runs, PREREG gate, heartbeat watchdog, and encoding parity on **Clef's own tokenizer** (`tokenizer.json` sha `06b95093...` at the pinned revision; 81 benign requests plus 14 control strings, including the vision and audio tokens)) | `python -X utf8 -m pytest tests/clef` |
 
 ## 2. Pinned identities
 
@@ -31,9 +41,9 @@ families (hijack best-of-5, D1-A/D1-B, GCG-lite pooled and both-orders), plus th
 | Vendored `joint_schema_model.py` | sha256 `0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3`; identical to the file at both pinned revisions (checked in S0) |
 | This code | branch `claude/clef-baseline` at the commit recorded in `CONTEXT_MANIFEST.json` (written by `build_context.sh`) |
 | Harness | `claude/m0-harness` @ `f3c7791bcbe6455effc7cfce019f3f3f99435843`; DEV manifest sha256 (uncompressed) `26cd6bc0...964a` |
-| DEV rows (private) | `slices/dev-rows.jsonl.gz` sha256 `d1202ab84de3ddf74e53aff6b1fc6bba4f33352dfe03e9814a68bcbf2f235c84` (12,104 rows). The suite is not redistributable: the rows travel only inside our private build context (`create_context`), never to a public place |
+| DEV rows (private) | `slices/dev-rows.jsonl.gz` sha256 `d1202ab84de3ddf74e53aff6b1fc6bba4f33352dfe03e9814a68bcbf2f235c84` (12,104 rows). The suite is not redistributable, so the rows never go to a public place. They exist in **two private copies** on the platform: the uploaded build context (`create_context`) and the built image, because `COPY data/ /data/` bakes them into the image pushed to our org's private registry. Both stay inside the workspace. Delete the context after the jobs end |
 | Kit | `apolinario/decision-index` @ `87d4650b42b377c0291a89c1f1a879f9b31082bf` (0.2.1) |
-| Runtime | CUDA 12.8 image; torch 2.11.0, transformers 5.10.2 (the versions on Cloudflare's model card); fla / causal-conv1d versions recorded by `pip freeze` in `env/environment.txt` |
+| Runtime | `nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04` (ships nvcc, so `causal-conv1d` can build); torch 2.11.0 and transformers 5.10.2 (the versions on Cloudflare's model card). The fla / causal-conv1d / triton versions and their importability are recorded in `ClefBackend.revision()["inference_config"]["kernel_stack"]`, which is part of the revision hash. `env/environment.txt` additionally holds `nvcc --version`, `pip freeze` and `kernel_stack()`. If a kernel package fails to build, the job runs on transformers' torch fallback and the receipt shows `import:fla=false`. Treat its latency as fallback latency |
 | safety_eval data | `safety_eval.data` SEED 20261006, `SPLIT_SALT=ssdm-m0c-split-v1`, **test split**, 120 route + 80 pay, `--final` (D1-B scored once: Clef is a frozen external checkpoint); bootstrap B = 2000 |
 
 ## 3. Fit check: does Clef-27B fit one H100 80 GB?
@@ -55,7 +65,7 @@ Three jobs share one build context. A fourth (GCG on Clef-27B) is scoped out bel
 | **C-27b** | clef | S0-S5 as A | `depends_on: {job: A-flash, require: "result.ok == true"}` | 240 min | ~1.8 h, **~$5.4** | $11.88 |
 | *D-27b-gcg* | clef | GCG | not planned | - | ~9 h, ~$27 | worst case exceeds the 720-min cap |
 
-**Planned total (A+B+C): about $18 expected, $47.52 ceiling at $2.97/h** ($57.60 at the $3.60/h H100 list rate implied by the docs' "$0.90 for a 15-minute grace window". The submit response's `rate` is authoritative). This fits inside the $75 joint gate. Without D, the GCG row for Clef-27B stays "not measured", and no GCG sentence may compare against Clef-27B.
+**Planned total (A+B+C): about $18 expected, $47.52 ceiling at $2.97/h.** The ceiling is per job: `max_duration_minutes` x rate for one attempt. If the B worst case (GCG ~2x slower than estimated) runs past 600 min, it ends at the cap with its checkpoint. Finishing then needs a second submission under its own spend line. Confirm with `validate_job` that the quoted worst case is per job (review N9) ($57.60 at the $3.60/h H100 list rate implied by the docs' "$0.90 for a 15-minute grace window". The submit response's `rate` is authoritative). This fits inside the $75 joint gate. Without D, the GCG row for Clef-27B stays "not measured", and no GCG sentence may compare against Clef-27B.
 
 How the estimates were built:
 - Index DEV, decide path. Cloudflare's card gives median/p95 latency of 38.8/122.4 ms (flash) and 209.3/238.6 ms (Clef) on their hardware. Assuming H100 means of about 80 ms and about 300 ms with kit overhead: 12,104 rows take ~16 min (flash) and ~60 min (27B). The native arm runs only on rows whose encodings differ or that Clef truncates, plus a 64-row parity sample. Every other row has identical ids and therefore identical outputs, so a second full pass would buy nothing.
@@ -64,7 +74,7 @@ How the estimates were built:
 
 ## 5. Exact `submit_job` fields (do not submit until the spend issue is approved)
 
-Build the context first: `bash jobs/clef_baseline/build_context.sh` produces `clef-baseline-context.tar.zst`, its sha256, and its size. Then call `create_context(size_bytes, sha256)`, `curl -T` the tar to the returned URL, call `finalize_context`, and `open_mission("clef-baseline-safety-spec-s7")`.
+Build the context first: `bash jobs/clef_baseline/build_context.sh` produces `clef-baseline-context.tar.zst`, its sha256, and its size. The format is zstd-compressed tar, which is what the `create_context` tool documents ("tar a folder (`tar -c . | zstd`)"; review N5). Job **outputs** come back as a plain `.tar` (`<job_id>-<attempt>.tar`, llms.txt). Then call `create_context(size_bytes, sha256)`, `curl -T` the tar to the returned URL, call `finalize_context`, and `open_mission("clef-baseline-safety-spec-s7")`.
 
 ```json
 {
@@ -98,8 +108,13 @@ Build the context first: `bash jobs/clef_baseline/build_context.sh` produces `cl
 ```
 
 The other jobs differ only in these fields:
-- **B-flash.** `env {"RELEASE":"clef-flash","JOB":"B"}`, `idempotency_key "clef-baseline-B-flash-<sha12>"`, `max_duration_minutes 600`, `resume "checkpoint"`, `depends_on {"job":"<A-flash id>","require":"result.parity_ok == true"}`. Its checks are `file_exists /output/clef-flash-jobB/safety/gcg_attacks.jsonl` plus `result.json`, and a `heartbeat` health check with `interval_s 1800`, because one GCG attack can take ~11 min between heartbeats.
-- **C-27b.** `env {"RELEASE":"clef","JOB":"A"}`, `model "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c"`, `max_duration_minutes 240`, `depends_on {"job":"<A-flash id>","require":"result.ok == true"}`, and the check paths under `/output/clef-jobA/`. Preflight's disk warning should report about 55 GB of weights. These go in the hf_cache mount, outside the 100 GiB scratch quota.
+- **B-flash.** `env {"RELEASE":"clef-flash","JOB":"B"}`, `idempotency_key "clef-baseline-B-flash-<sha12>"`, `max_duration_minutes 600`, `resume "checkpoint"`, `depends_on {"job":"<A-flash id>","require":"result.parity_ok == true"}`. Its checks are `file_exists /output/clef-flash-jobB/safety/gcg_attacks.jsonl` plus `result.json`. It uses the same heartbeat health check as A (`interval_s 600`, `fail_threshold 2`, `kill`); the watchdog keeps the heartbeat fresh through long attacks because GCG logs every 10 steps.
+- **C-27b.** `env {"RELEASE":"clef","JOB":"A"}`, `model "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c"`, `max_duration_minutes 240`, `depends_on {"job":"<A-flash id>","require":"result.ok == true"}`, the check paths under `/output/clef-jobA/`, and **`hf_cache: false`** (review N4). The manual guarantees only at least 32 GiB of free cache room and warns that a larger single download "can still fill the cache mid-pull (submit unusually large models without the flag)". The 55 GB of weights therefore download into the job's own scratch: 55 GB of weights plus a ~15 GB image and outputs fit the 100 GiB `job_scratch_bytes`. Preflight's disk warning should report ~55 GB.
+- **Heartbeat semantics (review B1).** `run_job.sh` sources `watchdog.sh`, a background loop that touches `$OUT/heartbeat` every 60 s, but **only while** two things hold:
+  1. The main script is alive (`kill -0 $MAIN_PID`). The loop is also killed by the EXIT trap.
+  2. The worker has made progress: some file under `$OUT`, the checkpoint dir or the HF download dir (excluding the heartbeat and `watchdog.log`) changed within the last `STALL_S = 1200 s`. Every stage writes at least that often: the kit writes 1 row per request, `metrics.run` logs every 200 variants, GCG every 10 steps, probes every 1,000 rows, and downloads write blobs.
+
+  A hung worker therefore loses its heartbeat after 20 min, and the platform kills it at most 40 min later (`interval_s 600` x `fail_threshold 2`) instead of billing to `max_duration`. A dead main process stops the heartbeat immediately. The watchdog never vouches for liveness by itself. `tests/clef/test_watchdog.py` checks that it touches while progressing, withholds on a stall, resumes on progress, and dies with main.
 - `clock_lock: true` makes the latency numbers reproducible. It is free, and the lock is a ceiling, not a guarantee.
 
 **Output paths.** `run_job.sh` writes under `$GMN_OUTPUT_DIR/<release>-job<A|B>/`. The check paths above assume `GMN_OUTPUT_DIR=/output`. Confirm that with `validate_job` before submit (it is free, but it was not run for this spec, per instructions). The verdict JSON goes to `$GMN_RESULT_PATH`.
@@ -114,7 +129,7 @@ The other jobs differ only in these fields:
 | 11 | S1 | parity gate failed: decide-path raw probabilities differ from Cloudflare's `systemone` by > 2e-4 or argmax disagrees off-tie on the 64-row sample | the backend mapping is wrong; nothing downstream is valid |
 | 12 | S2 | kit run failed (5 consecutive errors, device assert) or the composite native file could not be built | inspect `index/*.log` |
 | 13 | S3 | harness score / compare / ECE failed | rerun locally from `results.jsonl` (CPU) |
-| 14 | S4 | safety_eval (non-GCG) failed | inspect `safety.log` |
+| 14 | S4 | safety_eval (non-GCG) failed, **or the PREREG gate refused** (runner exit 32: fewer than 8 D1-B templates) | inspect `safety.log`; land the blind-template amendment |
 | 15 | S4b | GCG job failed (the checkpoint keeps finished attacks) | resubmit with the same idempotency key family; resumes |
 | 16 | S5 | report failed | recompute locally |
 
@@ -157,6 +172,9 @@ Point estimates come with their 95% CI (two-way cluster bootstrap for safety_eva
 
 Decision rules, fixed now:
 - "Better than Clef(-flash) on row X" requires that the paired difference CI excludes 0 in the favourable direction on the same units, recomputed independently. Anything else is reported as "not distinguishable".
+- **Eligibility rule.** Parent-vs-Clef safety differences use `metrics.compare_arms(eligibility="both")`, the PREREG rule for comparing different models: a unit counts only if both models were clean-correct on its base request. The Clef-internal G2(b) comparison (`clef_native_encoding - clef_ssdm`) is the same model under two encoders. It uses `eligibility="reference_y"` with `clef_ssdm` as reference. Index differences are paired on identical DEV rows, with unanswered rows scored zero under the Index rules.
+- A family whose summary has `complete=false` gets no number, only its incompleteness reason.
+- **Composite native arm.** It replaces the decide output with Clef's own `systemone` on every row in `probes.native_arm_run_ids`: ids differ, Clef truncates, our encoder refuses, more than 255 options, or the adapter rejects before scoring (`validate_legacy`: 1-level `score`, noul criteria keys, ids with control characters or `<|`/`|>`; or more than 64 questions). Each category is counted in `composite.provenance.json`, and `native_rows_missing_from_native_run` must be `[]`. Clef is therefore never scored zero on a row it would answer.
 - A Clef row that fails a sanity gate gets no number and the reason is written in. Examples: parity failed, or more than 1% of DEV rows `error`.
 - GCG both-orders cannot differ from pooled for Clef, so it is never cited as order robustness for Clef.
 - Clef was trained by Cloudflare, possibly on Index-adjacent data. Our DEV slice measures it as shipped. No contamination claim is made either way.
