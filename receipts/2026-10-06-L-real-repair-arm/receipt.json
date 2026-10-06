@@ -1,0 +1,45 @@
+{
+  "source_commit": "e949341d88526b0f78e360d05e1f2d507926c4de",
+  "dependency_overlays": [
+    [
+      "dc1a3fe",
+      [
+        "language_growth/planner.py",
+        "language_growth/parent_bridge.py"
+      ]
+    ],
+    [
+      "a6b4d84",
+      [
+        "language_growth/development_data.py"
+      ]
+    ]
+  ],
+  "reproduction": "git archive source into empty directory; overlay each listed dependency with git archive SHA PATHS; run test_command and generate_raw.py from that directory",
+  "test_command": [
+    "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+    "-m",
+    "unittest",
+    "language_growth.tests.test_free_running_dev",
+    "language_growth.tests.test_decision_view",
+    "-v"
+  ],
+  "test_exit": 0,
+  "raw_exit": 0,
+  "seed": 17,
+  "hardware": "Windows-11-10.0.26200-SP0 CPU; no model/GPU",
+  "cost_usd": 0,
+  "source_hashes_lf": {
+    "language_growth/free_running_dev.py": "ce81dbdb6d0415c7c1fb3721b42159cd54983d0f2100e63c5b35532a2f238772",
+    "language_growth/tests/test_free_running_dev.py": "f605847bd50ba08d2a50159bdb6cac895c940b511549e53430b270d486bcd896",
+    "language_growth/development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+    "language_growth/planner.py": "378fec95e97729b39d54d3d1d5009f253b727f965622af650b1e82939ab2e027",
+    "language_growth/parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "language_growth/kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+    "language_growth/realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
+    "language_growth/types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1"
+  },
+  "raw_sha256": "0082501dacafe9b0e326529f6697a15f6d1b3398e6dc94062756a3f76e3fc3a3",
+  "scope": "Synthetic nonlearned scripted provider. No learned capability, paired CI, held-out evaluation or latency claim. Previous failed local command named nonexistent test_direct_decision; corrected command uses test_decision_view.",
+  "single_run": true
+}
