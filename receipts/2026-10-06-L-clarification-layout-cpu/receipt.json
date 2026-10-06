@@ -2,6 +2,8 @@
   "title": "Clarification catalog-layout shortcut repair",
   "implementation_commit": "4aacf8a9269d40752739c87d0f2f5b3ce5a4958e",
   "pre_fix_commit": "49f852c78e15e1eff45489609b3b083ec1d57fce",
+  "supersedes_receipt": "receipts/2026-10-06-L-clarification-cpu/receipt.json",
+  "supersession_reason": "The earlier synthetic tasks allowed catalog field layout to identify the Ask arm without reading the question; its test results remain historical, not current evidence.",
   "environment": {
     "platform": "Windows CPU",
     "python": "3.12.13",
