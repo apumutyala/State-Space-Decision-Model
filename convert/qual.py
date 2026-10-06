@@ -16,9 +16,13 @@ import os
 import sys
 import time
 
-import torch
+# must be set before CUDA initialises: lets the caching allocator grow segments instead of fragmenting
+# (job-c4zkm 9B OOM: 2.8 GB reserved-but-unallocated at the failure)
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
-from convert import align, data
+import torch  # noqa: E402
+
+from convert import align, data, memmodel
 from convert.model import attach_gdn, init_gdn, load
 from probes.throughput import measure as measure_throughput
 
@@ -52,6 +56,12 @@ def run(cfg, mkey, out_dir):
         L, B = mc["seq_len"], mc["batch"]
         gate_w = data.fixed_windows(data.load_tokens(gp), L, mc["gate_windows"])
         A = model.attn_layers
+        dims = memmodel.Dims.from_config(model.cfg)
+        mb = mc.get("micro_batch") or B
+        layer = {"first": A[0], "last": A[-1]}.get(str(mc.get("stage2_layer", "last")), None)
+        layer = int(mc["stage2_layer"]) if layer is None else layer
+        f1, f2 = memmodel.flops_stage1(dims, A), memmodel.flops_stage2(dims, [layer])
+        R["plan"] = {**memmodel.plan(dims, B, L, mb, layer), "PYTORCH_CUDA_ALLOC_CONF": os.environ.get("PYTORCH_CUDA_ALLOC_CONF")}
         for i in A:
             attach_gdn(model, i, init_gdn(model, i, mc["init"], cfg["seed"]))
         bt = data.Batcher(train, L, B, seed=cfg["seed"] + 2)
@@ -59,22 +69,26 @@ def run(cfg, mkey, out_dir):
         save()
 
         torch.cuda.reset_peak_memory_stats()
-        g1 = align.Guard(mc["stage1"].get("guard"), f"{mkey}:stage1")
+        g1 = align.Guard(mc["stage1"].get("guard"), f"{mkey}:stage1", flop_per_token=f1)
         hist, ntok, sec = align.stage1_align(model, A, bt, mc["stage1"]["steps"], mc["stage1"]["lr"],
-                                             log=lambda r: log(r, "stage1"), guard=g1)
+                                             log=lambda r: log(r, "stage1"), guard=g1, micro_batch=mb)
         R["stage1"] = {"tokens": ntok, "seconds": sec, "tok_s": ntok / sec, "steady_tok_s": g1.rate,
-                       "peak_gb": g1.peak_gb(), "hist": hist}
+                       "peak_gb": g1.peak_gb(), "micro_batch": mb, "flop_per_token": f1, "min_tok_s": g1.min_tok_s,
+                       "mfu": (g1.rate or 0) * f1 / memmodel.H100_PEAK, "hist": hist}
         save()
 
-        layer = A[-1] if mc.get("stage2_layer", "last") == "last" else int(mc["stage2_layer"])
         modes = {layer: "student"}
+        for i in A:  # only the converted layer's GDN trains in stage 2; the rest stay frozen (no grads, no Adam)
+            model.swaps[i].gdn.requires_grad_(i == layer)
+        torch.cuda.empty_cache()
         torch.cuda.reset_peak_memory_stats()
-        g2 = align.Guard(mc["stage2"].get("guard"), f"{mkey}:stage2")
+        g2 = align.Guard(mc["stage2"].get("guard"), f"{mkey}:stage2", flop_per_token=f2)
         bt2 = data.Batcher(train, L, B, seed=cfg["seed"] + 100)
         hist, ntok, sec = align.stage2_kl(model, [layer], modes, bt2, mc["stage2"]["steps"], mc["stage2"]["lr"],
-                                          log=lambda r: log(r, "stage2"), guard=g2)
+                                          log=lambda r: log(r, "stage2"), guard=g2, micro_batch=mb)
         step = {"layer": layer, "tokens": ntok, "seconds": sec, "train_tok_s": ntok / sec, "steady_tok_s": g2.rate,
-                "peak_gb": g2.peak_gb(), "hist": hist}
+                "peak_gb": g2.peak_gb(), "micro_batch": mb, "flop_per_token": f2, "min_tok_s": g2.min_tok_s,
+                "mfu": (g2.rate or 0) * f2 / memmodel.H100_PEAK, "hist": hist}
         R["progressive"] = {"steps": [step]}
         save()
 

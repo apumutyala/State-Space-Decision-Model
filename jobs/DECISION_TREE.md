@@ -10,6 +10,7 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | Job | Spec | Worst case | Hard cap (workspace cap) | Expected |
 |---|---|---|---|---|
 | qual (rung-2 qualification, unchanged) | `jobs/qual/` | $18.81 | $20 | <= $8.91 (one attempt, validate_job) |
+| qual_c_only (phase-C re-run after the job-c4zkm 9B OOM; A and B passed there; env `QUAL_MODE=c_only`) | `jobs/qual/job_params_c_only.json` | $14.85 | $20 | <= $6.93 (one attempt; $7.92 with the 20-min build) |
 | probe9b (one-layer 9B conversion probe) | `jobs/probe9b/` | $28.21 | $40 | ~$11.04 |
 | rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $16.34 | $20 | ~$4.70 |
 | rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $19.30 | $20 | ~$7.72 |
