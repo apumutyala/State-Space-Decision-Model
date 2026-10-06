@@ -49,7 +49,7 @@ def test_fixture_size_and_coverage():
     assert statuses == {"ok", "unsupported", "exhausted", "error"}
 
 
-@pytest.mark.parametrize("case_index", range(40))
+@pytest.mark.parametrize("case_index", range(48))
 def test_replay_reproduces_recorded_response(case_index):
     manifest, cases, responses = load()
     if case_index >= len(cases):
@@ -82,3 +82,49 @@ def test_replay_reports_recorded_parent_revision():
     manifest, cases, _ = load()
     backend = ReplayBackend(FIXTURE_DIR)
     assert backend.revision()["revision_id"] == manifest["revision"]["revision_id"]
+
+
+def _clef_systemone_answer(question, probabilities):
+    """Verbatim logic of Cloudflare clef-flash joint_schema_model.systemone_answer (sha256 0e304cf7...)."""
+    if question["type"] == "noul":
+        return {"type": "noul", "noul": round(probabilities["true"], 4)}
+    if question["type"] == "choice":
+        options = [str(option) for option in question["criteria"]]
+        choice = max(options, key=probabilities.__getitem__)
+        return {"type": "choice", "choice": choice, "confidence": round(probabilities[choice], 4),
+                "probabilities": {option: round(probabilities[option], 4) for option in options}}
+    levels = [str(index) for index in range(len(question["criteria"]))]
+    return {"type": "score",
+            "score": round(sum(index * probabilities[level] for index, level in enumerate(levels)), 4),
+            "confidence": round(max(probabilities[level] for level in levels), 4),
+            "legend": dict(zip(levels, question["criteria"])),
+            "probabilities": {level: round(probabilities[level], 4) for level in levels}}
+
+
+def test_independent_recompute_from_recorded_logits():
+    """Adapter-free: softmax of recorded logits + Clef's own answer logic == recorded wire answers.
+    This verifies replay is a deterministic function of the recorded logits; it is not model evidence."""
+    import math
+
+    from decide.schema import request_fingerprint
+
+    _, cases, responses = load()
+    recs = {}
+    for line in open(FIXTURE_DIR / "recordings.jsonl", encoding="utf-8"):
+        if line.strip():
+            r = json.loads(line)
+            recs[r["fingerprint"]] = r
+    checked = 0
+    for case in cases:
+        resp = responses[case["case_id"]]
+        if resp["ssdm"]["status"] != "ok":
+            continue
+        logits = recs[request_fingerprint(case["request"])]["logits"]
+        for qid, q in case["request"]["questions"].items():
+            vals = logits[qid]
+            m = max(vals.values())
+            z = sum(math.exp(v - m) for v in vals.values())
+            probs = {o: math.exp(v - m) / z for o, v in vals.items()}
+            assert _clef_systemone_answer(q, probs) == resp["answers"][qid]
+            checked += 1
+    assert checked >= 30

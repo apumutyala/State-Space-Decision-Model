@@ -72,6 +72,8 @@ ENVELOPE_KEYS = {
     "limits",
     "policy_restriction",
 }
+#: No abstention mechanism exists in the v0 adapter; this is not a measured non-abstention.
+ABSTENTION_V0 = {"abstained": False, "reason": None, "mechanism": "not_implemented_v0"}
 DEFAULT_LIMITS = {
     "max_input_tokens": 16384,  # Clef encode_record default
     "max_choices": 64,  # Workers AI: 1-64 questions per request
@@ -241,6 +243,8 @@ class Decider:
 
     def _failure(self, request, request_id, status, code, message, t_start, state_handle) -> dict[str, Any]:
         resp = self._base(request, request_id)
+        # Legacy-visible failure signal (SystemOne clients ignore ``ssdm``).
+        resp["error"] = {"status": status, "code": code, "message": message}
         try:
             revision = self.backend.revision()
         except Exception:  # pragma: no cover - revision itself failed
@@ -250,7 +254,7 @@ class Decider:
             "request_id": request_id,
             "status": status,
             "error": {"code": code, "message": message},
-            "abstention": {"abstained": False, "reason": None},
+            "abstention": dict(ABSTENTION_V0),
             "raw_probabilities": {},
             "served_probabilities": {},
             "served_config": None,
@@ -296,7 +300,7 @@ class Decider:
             "request_id": request_id,
             "status": "ok",
             "error": None,
-            "abstention": {"abstained": False, "reason": None},
+            "abstention": dict(ABSTENTION_V0),
             "raw_probabilities": raw,
             "served_probabilities": served,
             "served_config": {

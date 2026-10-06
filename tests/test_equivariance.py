@@ -1,6 +1,10 @@
 """Permutation equivariance: shuffling choice options / question order in the
 request must not change any option's probability (within float tolerance).
 
+This is an *adapter* property: the adapter canonicalises order, so the model
+input is byte-identical under shuffles (``test_prompt_is_canonical``) and any
+deterministic backend passes. It is not evidence that a model is order-robust.
+
 Covered for the oracle, the HF readout path (on a tiny deterministic CPU LM, so
 prompt canonicalisation and batching are exercised without downloads), and,
 when ``SSDM_QWEN_DIR`` points at a Qwen3.5 snapshot, the real model.
@@ -59,7 +63,7 @@ def test_jrt_order_schema_then_state_then_reread():
     assert p.endswith("ANSWER:")
 
 
-def _tiny_plugin():
+def tiny_plugin():
     torch = pytest.importorskip("torch")
     from decide.backends.hf_readout import ModelPlugin
 
@@ -69,7 +73,7 @@ def _tiny_plugin():
     rnn = torch.nn.GRU(16, 16, batch_first=True)
     head = torch.nn.Linear(16, vocab)
 
-    def encode(text):
+    def encode(text, trusted=True):
         return [b + 3 for b in text.encode("utf-8")]
 
     def forward(ids, n_last):
@@ -85,7 +89,7 @@ def _tiny_plugin():
 def test_hf_readout_equivariance_tiny_cpu_lm():
     from decide.backends.hf_readout import HFReadoutBackend
 
-    backend = HFReadoutBackend(_tiny_plugin(), "jrt-plain-v1", max_batch_rows=2)
+    backend = HFReadoutBackend(tiny_plugin(), "jrt-plain-v1", max_batch_rows=2)
     assert_equivariant(Decider(backend), base_request(), seeds=range(3))
 
 
@@ -94,7 +98,7 @@ def test_hf_readout_logprob_math_and_plan():
     from decide.backends.hf_readout import HFReadoutBackend
     from decide.prompt import continuation
 
-    plugin = _tiny_plugin()
+    plugin = tiny_plugin()
     backend = HFReadoutBackend(plugin, "jrt-plain-v1", max_batch_rows=2)
     req = base_request()
     plan = backend.plan(req)
@@ -103,8 +107,8 @@ def test_hf_readout_logprob_math_and_plan():
     assert result.total_input_tokens == plan.total_input_tokens
     # recompute one option's sequence log-prob by hand, unbatched
     tmpl = TEMPLATES["jrt-plain-v1"]
-    prompt = plugin.encode(build_prompt(tmpl, req, "status"))
-    cont = plugin.encode(continuation(tmpl, "overdue"))
+    prompt = plugin.encode(build_prompt(tmpl, req, "status"), True)
+    cont = plugin.encode(continuation(tmpl, "overdue"), True)
     ids = torch.tensor([prompt + cont])
     with torch.inference_mode():
         logp = torch.log_softmax(plugin.forward(ids, ids.shape[1]).float(), -1)[0]
@@ -123,7 +127,7 @@ def test_hf_readout_logprob_math_and_plan():
 def test_hf_revision_is_complete():
     from decide.backends.hf_readout import HFReadoutBackend
 
-    rev = HFReadoutBackend(_tiny_plugin(), "jrt-plain-v1").revision()
+    rev = HFReadoutBackend(tiny_plugin(), "jrt-plain-v1").revision()
     for key in ("revision_id", "files_sha256", "prompt_template", "inference_config", "adapter_version"):
         assert key in rev
     assert "prompt=jrt-plain-v1." in rev["revision_id"]

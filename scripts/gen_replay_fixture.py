@@ -96,6 +96,8 @@ def main():
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--dtype", default="bfloat16")
+    ap.add_argument("--live-equivariance", type=int, default=0,
+                    help="shuffles per ok case; tautological for any deterministic backend (adapter canonicalises)")
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -143,7 +145,7 @@ def main():
             continue
         d = Decider(live, calibration=calibration, enable_v0_1_deltas=case["decider"]["enable_v0_1_deltas"],
                     backend_max_input_tokens=plugin.max_context)
-        for seed in (11, 12):
+        for seed in range(11, 11 + args.live_equivariance):
             perm = shuffled(case["request"], seed)
             other = d.decide(perm)
             eq_checked += 1
@@ -160,7 +162,7 @@ def main():
     with open(out / "responses.jsonl", "w", encoding="utf-8", newline="\n") as fh:
         for case in the_cases:
             fh.write(json.dumps({"case_id": case["case_id"], "response": runs[0][case["case_id"]]},
-                                ensure_ascii=False, sort_keys=True) + "\n")
+                                ensure_ascii=False) + "\n")  # no sort_keys: keep served option order
     with open(out / "recordings.jsonl", "w", encoding="utf-8", newline="\n") as fh:
         for fp in sorted(rec_backend.recordings):
             rec = dict(rec_backend.recordings[fp])
@@ -221,6 +223,24 @@ def main():
         else:
             replay_bad.append(case["case_id"])
 
+    # control-token audit: no prompt may carry more special ids than the template itself
+    from decide.prompt import build_prompt_segments
+
+    special = plugin.special_ids
+
+    def n_special(req, qid):
+        return sum(i in special for i in live._encode(build_prompt_segments(live.template, req, qid)))
+
+    baseline = n_special({"model": "m", "state": "x", "questions": {"q": {"type": "noul"}}}, "q")
+    control_audit = {"template_special_ids": baseline, "max_excess": 0, "cases_checked": 0}
+    for case in the_cases:
+        req = case["request"]
+        if runs[0][case["case_id"]]["ssdm"]["status"] != "ok":
+            continue
+        for qid in req["questions"]:
+            control_audit["max_excess"] = max(control_audit["max_excess"], n_special(req, qid) - baseline)
+        control_audit["cases_checked"] += 1
+
     ok_lat = [statistics.median(latencies[c["case_id"]]) for c in the_cases
               if runs[0][c["case_id"]]["ssdm"]["status"] == "ok"]
     summary = {
@@ -230,6 +250,8 @@ def main():
         "status_counts": status_counts,
         "runs": args.runs,
         "max_served_prob_diff_across_runs": max_prob_diff,
+        "control_token_audit": control_audit,
+        "live_equivariance_note": "adapter property: order is canonicalised, model input is byte-identical",
         "live_equivariance": {"perms_checked": eq_checked, "max_abs_prob_diff": eq_max, "choice_flips": eq_choice_flips},
         "replay_exact_match": f"{replay_ok}/{len([c for c in the_cases if not c['timing_dependent']])}",
         "replay_mismatches": replay_bad,

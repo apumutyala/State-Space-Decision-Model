@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .. import versions
-from ..prompt import TEMPLATES, Template, build_prompt, continuation
+from ..prompt import TEMPLATES, Segment, Template, build_prompt_segments, continuation_segments
 from ..schema import canonical_json, canonical_options, sha256_text
 from .base import BackendUnsupported, Plan, ScoreResult
 
@@ -52,7 +52,9 @@ class ModelPlugin:
     family: str
     model_id: str
     snapshot: str | None
-    encode: Callable[[str], list[int]]
+    #: encode(text, trusted) -> ids. Untrusted text (anything from the request) must be
+    #: encoded so it cannot yield control/special tokens (e.g. split_special_tokens=True).
+    encode: Callable[[str, bool], list[int]]
     forward: Callable[[Any, int], Any]
     files: dict[str, str] = field(default_factory=dict)  # role -> sha256
     max_context: int | None = None
@@ -60,6 +62,8 @@ class ModelPlugin:
     device: str = "cuda"
     notes: dict[str, Any] = field(default_factory=dict)
     kernel_stack: dict[str, Any] = field(default_factory=dict)  # part of the revision hash
+    #: ids that must never come from untrusted text (special + added tokens); checked per segment
+    special_ids: frozenset[int] = frozenset()
 
 
 def _pkg_versions(*names: str) -> dict[str, Any]:
@@ -95,6 +99,7 @@ class HFReadoutBackend:
             tf_version = None
         inference_config = {
             "scoring": "sum_logprob(' ' + option_id + terminator)",
+            "untrusted_encoding": "special tokens split; control ids in untrusted segments -> unsupported",
             "rows": "one per question; grouped by length; unpadded",
             "max_batch_rows": self.max_batch_rows,
             "dtype": self.plugin.dtype,
@@ -131,13 +136,24 @@ class HFReadoutBackend:
         return self._revision
 
     # --------------------------------------------------------------- planning
+    def _encode(self, segments: list[Segment]) -> list[int]:
+        ids: list[int] = []
+        for text, trusted in segments:
+            seg_ids = self.plugin.encode(text, trusted)
+            if not trusted and self.plugin.special_ids and any(i in self.plugin.special_ids for i in seg_ids):
+                raise BackendUnsupported(
+                    "control_tokens_in_input", "request text encoded to control/special token ids; refused"
+                )
+            ids += seg_ids
+        return ids
+
     def _rows(self, request: dict[str, Any]) -> list[dict[str, Any]]:
         rows = []
         for qid in request["questions"]:
-            prompt_ids = self.plugin.encode(build_prompt(self.template, request, qid))
+            prompt_ids = self._encode(build_prompt_segments(self.template, request, qid))
             options = [o for o, _ in canonical_options(request["questions"][qid])]
             for o in options:
-                cont = self.plugin.encode(continuation(self.template, o))
+                cont = self._encode(continuation_segments(self.template, o))
                 if not cont:
                     raise BackendUnsupported("tokenization_failed", f"{qid}/{o}: empty continuation")
                 rows.append({"qid": qid, "option": o, "prompt": prompt_ids, "cont": cont})
@@ -205,7 +221,18 @@ class HFReadoutBackend:
             logits=logits,
             inference_calls=len(chunks),
             total_input_tokens=total_tokens,
-            extras={"call_latency_ms": call_ms, "rows": len(rows)},
+            extras={
+                "call_latency_ms": call_ms,
+                "rows": len(rows),
+                # diagnostic only: sum-logprob carries a token-length prior over option ids
+                "continuation_tokens": {
+                    qid: {r["option"]: len(r["cont"]) for r in rows if r["qid"] == qid} for qid in logits
+                },
+                "length_normalized_logits": {
+                    qid: {r["option"]: logits[qid][r["option"]] / len(r["cont"]) for r in rows if r["qid"] == qid}
+                    for qid in logits
+                },
+            },
         )
 
 
@@ -226,6 +253,18 @@ def _hash_files(model_dir: Path, patterns: list[str]) -> str:
     return sha256_text("".join(f"{f.name}:{sha256_file(f.resolve())}\n" for f in files))
 
 
+def _special_ids(tok) -> frozenset[int]:
+    ids = set(getattr(tok, "all_special_ids", []) or [])
+    ids |= set((getattr(tok, "added_tokens_decoder", None) or {}).keys())
+    return frozenset(int(i) for i in ids)
+
+
+#: Trained context of the small recurrent checkpoints (RWKV7 config max_position_embeddings;
+#: Mamba-3 SISO model card "Context length 2,048"). Recurrent models do not truncate, they
+#: degrade silently past it, so it is enforced as the backend input cap.
+TRAINED_CTX_DEFAULT = 2048
+
+
 def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None) -> ModelPlugin:
     """Qwen3.5-* via transformers (text-only causal LM view of the checkpoint)."""
     import torch
@@ -240,8 +279,8 @@ def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloa
     text_cfg = cfg.get("text_config", cfg)
     layer_types = text_cfg.get("layer_types") or []
 
-    def encode(text: str) -> list[int]:
-        return tok(text, add_special_tokens=False).input_ids
+    def encode(text: str, trusted: bool = True) -> list[int]:
+        return tok(text, add_special_tokens=False, split_special_tokens=not trusted).input_ids
 
     def forward(ids, n_last: int):
         return model(input_ids=ids, logits_to_keep=n_last, use_cache=False).logits
@@ -252,6 +291,7 @@ def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloa
         snapshot=_snapshot_of(model_dir),
         encode=encode,
         forward=forward,
+        special_ids=_special_ids(tok),
         files={
             "weights": _hash_files(model_dir, ["*.safetensors"]),
             "tokenizer": _hash_files(model_dir, ["tokenizer.json"]),
@@ -295,14 +335,14 @@ def load_rwkv7(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat
         family="rwkv7",
         model_id=model_id or model_dir.name,
         snapshot=_snapshot_of(model_dir),
-        encode=tok.encode,
+        encode=lambda text, trusted=True: tok.encode(text),  # World tokenizer has no control tokens
         forward=forward,
         files={
             "weights": _hash_files(model_dir, ["*.safetensors"]),
             "tokenizer": _hash_files(model_dir, ["rwkv_vocab_v20230424.txt"]),
             "config": _hash_files(model_dir, ["config.json"]),
         },
-        max_context=None,  # recurrent; trained ctx recorded in notes
+        max_context=cfg.get("max_position_embeddings") or TRAINED_CTX_DEFAULT,  # trained ctx, enforced
         dtype=dtype,
         device=device,
         kernel_stack=_pkg_versions("flash-linear-attention", "fla-core", "triton", "triton-windows"),
@@ -324,8 +364,8 @@ def load_mamba3(model_dir: str | Path, tokenizer_dir: str | Path, device: str = 
     tok = AutoTokenizer.from_pretrained(tokenizer_dir)
     model = MambaLMHeadModel.from_pretrained(str(model_dir), device=device, dtype=getattr(torch, dtype)).eval()
 
-    def encode(text: str) -> list[int]:
-        return tok(text, add_special_tokens=False).input_ids
+    def encode(text: str, trusted: bool = True) -> list[int]:
+        return tok(text, add_special_tokens=False, split_special_tokens=not trusted).input_ids
 
     def forward(ids, n_last: int):
         return model(ids, num_last_tokens=n_last).logits
@@ -336,12 +376,13 @@ def load_mamba3(model_dir: str | Path, tokenizer_dir: str | Path, device: str = 
         snapshot=_snapshot_of(model_dir),
         encode=encode,
         forward=forward,
+        special_ids=_special_ids(tok),
         files={
             "weights": _hash_files(model_dir, ["*.bin", "*.safetensors"]),
             "tokenizer": _hash_files(Path(tokenizer_dir), ["tokenizer.json"]),
             "config": _hash_files(model_dir, ["config.json"]),
         },
-        max_context=None,
+        max_context=TRAINED_CTX_DEFAULT,
         dtype=dtype,
         device=device,
         kernel_stack=_pkg_versions("mamba_ssm", "triton", "triton-windows"),
