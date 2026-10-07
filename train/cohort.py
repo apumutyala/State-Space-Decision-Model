@@ -178,14 +178,24 @@ def _dev_clusters() -> list[str]:
 
 
 def normalize_content(obj: Any) -> Any:
-    """NFKC + casefold + whitespace-collapsed strings (keys too), recursively; numbers/bools unchanged."""
+    """NFKC + casefold + whitespace-collapsed strings (keys too), recursively; numbers/bools unchanged.
+
+    Keys that collide after normalisation (e.g. ``iSIN`` / ``isin``) used to keep whichever came last, so the hash
+    depended on key order (PR #44 review finding 4). Their normalised values are now grouped into one list sorted
+    by canonical JSON: order-independent, and every dict without a collision normalises exactly as before (so
+    existing content hashes, the cohort and the committed content maps are unchanged)."""
     import re
     import unicodedata
 
     if isinstance(obj, str):
         return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", obj).casefold()).strip()
     if isinstance(obj, dict):
-        return {normalize_content(k): normalize_content(v) for k, v in obj.items()}
+        groups: dict[Any, list] = {}
+        for k, v in obj.items():
+            groups.setdefault(normalize_content(k), []).append(normalize_content(v))
+        return {k: vs[0] if len(vs) == 1 else
+                sorted(vs, key=lambda x: json.dumps(x, sort_keys=True, ensure_ascii=False, separators=(",", ":")))
+                for k, vs in groups.items()}
     if isinstance(obj, (list, tuple)):
         return [normalize_content(x) for x in obj]
     return obj

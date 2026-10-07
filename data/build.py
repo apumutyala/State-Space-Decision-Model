@@ -17,7 +17,7 @@ from pathlib import Path
 from . import augment as A
 from . import config, convert as C, injection as I
 from .dedup import DedupLog, Fingerprint
-from .text import canonical_json, words
+from .text import MIN_SEGMENT_CHARS, canonical_json, normalize, strings_in, words
 
 # Kept-record shares of the sample (sum 1.0).
 SHARES = {"banking77": 0.07, "clinc150": 0.07, "anli": 0.09, "hellaswag": 0.08, "winogrande": 0.07,
@@ -27,11 +27,11 @@ MULTI_FROM = ["banking77", "clinc150", "anli", "winogrande", "hellaswag", "mmlu_
 # The 150k mix (Track D m2-data-150k): kept-record COUNTS per bucket for n=150,000 (shares = count / n). Weighted
 # toward knowledge / retrieval / tools (Index area weights K 25.8, L 25.8, R 20, T 18.3, A 10); each count is
 # capped below the source's measured post-guard, post-cohort capacity (receipts/2026-10-06-D-m2-data-150k).
-COUNTS_150K = {"mmlu_aux": 33000, "gsm8k": 5500,                                        # knowledge
+COUNTS_150K = {"mmlu_aux": 31000, "gsm8k": 5500,                                        # knowledge
                "anli": 10000, "hellaswag": 9000, "winogrande": 7000, "sst5": 4000,      # language
                "nq": 10000, "banking77": 7000, "clinc150": 9000, "boolq": 8000,         # retrieval
                "glaive_fc": 15000, "toolace": 6000, "when2call": 5500,                  # tools
-               "humicroedit_s1": 5000, "humicroedit_s2": 4500,                          # arts
+               "humicroedit_s1": 5000, "humicroedit_s2": 6500,                          # arts
                "multi": 8500, "factchange": 3000}
 SHARES_150K = {k: v / 150000 for k, v in COUNTS_150K.items()}
 #: Index area of each source (SOURCES.md section 1; BoolQ = passage-evidence verification like HoVer -> retrieval;
@@ -70,18 +70,21 @@ class Exclusion:
     """Records that must never enter this training set: the frozen m2 dev cohort (``train/cohorts``) held-out
     roles (dev / calibration / retention), by record id, by normalized content (twins) and by source item."""
 
-    def __init__(self, ids: set[str], contents: set[str], items: set[str], identity: dict):
+    def __init__(self, ids: set[str], contents: set[str], items: set[str], identity: dict,
+                 probes: set[str] | None = None):
         self.ids, self.contents, self.items, self.identity = ids, contents, items, identity
+        self.probes = probes or set()
 
     @classmethod
-    def from_cohort(cls) -> "Exclusion":
+    def from_cohort(cls, seed: int = config.SEED, with_probes: bool = True) -> "Exclusion":
         from train.cohort import Cohort  # the repo root must be importable (the build CLI runs from the repo)
         c = Cohort()  # verifies the committed sha256
         ids = c.held_out()
         items = set().union(*(item_keys(i) for i in ids))
+        probes, pinfo = held_out_probes(items, seed) if with_probes else (set(), {})
         return cls(ids, c.held_out_content(), items,
                    {**c.identity(), "n_held_out_ids": len(ids), "n_held_out_content": len(c.held_out_content()),
-                    "n_held_out_items": len(items)})
+                    "n_held_out_items": len(items), "probe_texts": pinfo}, probes)
 
     def reason(self, rec: dict, content: str | None) -> str | None:
         if rec["id"] in self.ids:
@@ -90,7 +93,47 @@ class Exclusion:
             return "content"
         if item_keys(rec["id"]) & self.items:
             return "item"
+        if self.probes and rec.get("source") != "synthetic_factchange" and any(
+                p in self.probes for p in probe_norms(rec.get("_probe") or [])):
+            return "probe"
         return None
+
+
+def probe_norms(texts) -> set[str]:
+    """Normalised item texts long enough to identify an item (the exact matcher's segment floor)."""
+    out = set()
+    for t in texts:
+        n = normalize(t)
+        if len(n) >= MIN_SEGMENT_CHARS:
+            out.add(n)
+    return out
+
+
+def held_out_probes(items: set[str], seed: int) -> tuple[set[str], dict]:
+    """Normalised ITEM-field texts of every held-out source item (PR #44 review finding 1: the same item text can
+    recur under another id, e.g. duplicate When2Call questions or BoolQ questions that are NQ queries). Each held
+    source item is re-derived from its pinned loader (deterministic order), so no record text is needed. Fact-change
+    items are synthetic templates and are excluded by id/item/content only."""
+    want: dict[str, set[str]] = collections.defaultdict(set)
+    for k in items:
+        parts = k.split(":")
+        if parts[1] != "factchange":
+            want[parts[1]].add(k)
+    probes, found = set(), collections.Counter()
+    for sid, keys in sorted(want.items()):
+        left = set(keys)
+        for base in C.LOADERS[sid](seed):
+            if base["id"] in left:
+                left.discard(base["id"])
+                found[sid] += 1
+                probes |= probe_norms(t for f in base["item_fields"] for t in strings_in(base["fields"].get(f)))
+                if not left:
+                    break
+        if left:
+            raise RuntimeError(f"held-out items not found in the {sid} loader: {sorted(left)[:3]}")
+    return probes, {"n_items": sum(found.values()), "n_texts": len(probes), "by_source": dict(sorted(found.items())),
+                    "rule": f"normalize(text) >= {MIN_SEGMENT_CHARS} chars; candidate _probe (item tier) vs held "
+                            "item fields; fact-change excluded"}
 
 
 def content_guard():

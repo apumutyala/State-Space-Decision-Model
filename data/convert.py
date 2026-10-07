@@ -307,8 +307,8 @@ def glaive_fc(seed: int) -> Iterator[dict]:
         user, first = user.strip(), rest.split("<|endoftext|>", 1)[0].strip()
         if not user or not first:
             continue
-        if first.startswith("<functioncall>"):
-            m = GLAIVE_NAME.search(first)
+        if "<functioncall>" in first:  # a short preamble can precede the call (PR #44 review finding 3)
+            m = GLAIVE_NAME.search(first.split("<functioncall>", 1)[1])
             if not m or m.group(1) not in names:
                 continue
             gold = m.group(1)
@@ -345,16 +345,21 @@ def humicroedit_s1(seed: int) -> Iterator[dict]:
                     source_ind=str(r["id"]))
 
 
+def _ws(s: str) -> str:
+    return " ".join(s.split())
+
+
 def humicroedit_s2(seed: int) -> Iterator[dict]:
     """Subtask-2 train: two one-word edits of the same headline -> which is funnier (ties, label 0, skipped)."""
     rows = _parquet_rows("humicroedit_s2", "subtask-2/train.parquet")
     for i in _order(len(rows), "humicroedit_s2", seed):
         r = rows[i]
         a, b = _humi_edit(r["original1"], r["edit1"]), _humi_edit(r["original2"], r["edit2"])
-        if a is None or b is None or a[0] != b[0] or a[1] == b[1] or int(r["label"]) not in (1, 2):
+        # compare whitespace-normalised: 2,452 rows differ only by trailing spaces around the slot (review finding 2)
+        if a is None or b is None or _ws(a[0]) != _ws(b[0]) or _ws(a[1]) == _ws(b[1]) or int(r["label"]) not in (1, 2):
             continue
-        yield _base("humicroedit_s2", i, "humor_pair", {"headline": a[0]}, "choice",
-                    {"edit_1": a[1], "edit_2": b[1]}, f"edit_{int(r['label'])}", item_fields=["headline"],
+        yield _base("humicroedit_s2", i, "humor_pair", {"headline": _ws(a[0])}, "choice",
+                    {"edit_1": _ws(a[1]), "edit_2": _ws(b[1])}, f"edit_{int(r['label'])}", item_fields=["headline"],
                     item_options="all", source_ind=str(r["id"]))
 
 
