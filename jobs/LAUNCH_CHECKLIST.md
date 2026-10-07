@@ -70,8 +70,9 @@ The coordinator then works through `submit.json` in this order:
 2. Get the `spend` issue reviewed per COORDINATION 'Review sufficiency'. The other agent's acknowledgement is requested but not blocking.
 3. Add every other active reservation with a repeated `--active-reservation-job <costs.PARAMS job key>`. Then run
    `set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)`. The increment includes the configured
-   `workspace_cap_jobs` plus these active reservations; a chained job without its configured list is refused. For
-   RWKV7 stage B, it covers both `rwkv7_readout` and `rwkv7_lora`, not only the child. The operator must reconcile
+   `workspace_cap_jobs` plus these active reservations; a chained job must declare its `workspace_cap_parent_jobs`
+   and include them in `workspace_cap_jobs`, or launch is refused. Repeated job keys count separate active instances.
+   For RWKV7 stage B, it covers both `rwkv7_readout` and `rwkv7_lora`, not only the child. The operator must reconcile
    this list against the live workspace before submitting.
 4. Paste the calls from `submit.json`.
 5. Run `validate_job`. It must pass without `force`.
@@ -82,6 +83,7 @@ Fields for new jobs go in `job_params.json`. Legacy jobs use tables in `launch.p
 - `"context": {"dockerfile", ["cmd_rewrite"], "data": [{"src", "dest", "pin"}]}`
 - `"decision_rule": "<path.py>"`, or `null` + `"no_verdict_reason"`
 - `"workspace_cap_jobs": ["<costs.PARAMS job key>", ...]` when multiple jobs can bill against the workspace concurrently
+- `"workspace_cap_parent_jobs": ["<costs.PARAMS parent job key>", ...]` for any submit block with `depends_on`
 
 `m2_pilot` and `m2_parent_arm` still use their own `build_context.sh`, because they need the parent-arm cache and a `guard_ready` dry run.
 

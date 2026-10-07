@@ -249,7 +249,8 @@ def test_chained_job_requires_combined_workspace_reservations(tmp_path):
 
 
 def test_chained_job_cap_includes_parent_and_child_worst_cases(tmp_path):
-    p = params(workspace_cap_jobs=["parent", "tiny"], submit={**params()["submit"],
+    p = params(workspace_cap_jobs=["parent", "tiny"], workspace_cap_parent_jobs=["parent"],
+        submit={**params()["submit"],
         "depends_on": {"job": "parent-id", "require": "result.ok == true"}})
     repo, data, sha = make_repo(tmp_path, p=p)
     result = run(repo, data, sha, tmp_path / "o", run_job_tests=False)
@@ -257,13 +258,31 @@ def test_chained_job_cap_includes_parent_and_child_worst_cases(tmp_path):
     assert result["cost"]["set_workspace_cap_increment_usd"] == 10
 
 
+def test_chained_job_cannot_list_only_its_own_cost(tmp_path):
+    p = params(workspace_cap_jobs=["tiny"], workspace_cap_parent_jobs=["parent"],
+        submit={**params()["submit"],
+        "depends_on": {"job": "parent-id", "require": "result.ok == true"}})
+    repo, data, sha = make_repo(tmp_path, p=p)
+    with pytest.raises(launch.LaunchError, match="must include all workspace_cap_parent_jobs"):
+        run(repo, data, sha, tmp_path / "o", run_job_tests=False)
+
+
+def test_chained_job_requires_parent_mapping(tmp_path):
+    p = params(workspace_cap_jobs=["parent", "tiny"], submit={**params()["submit"],
+        "depends_on": {"job": "parent-id", "require": "result.ok == true"}})
+    repo, data, sha = make_repo(tmp_path, p=p)
+    with pytest.raises(launch.LaunchError, match="workspace_cap_parent_jobs"):
+        run(repo, data, sha, tmp_path / "o", run_job_tests=False)
+
+
 def test_active_reservation_jobs_are_added_to_workspace_cap(tmp_path):
-    p = params(workspace_cap_jobs=["tiny"], submit={**params()["submit"],
+    p = params(workspace_cap_jobs=["parent", "tiny"], workspace_cap_parent_jobs=["parent"],
+        submit={**params()["submit"],
         "depends_on": {"job": "parent-id", "require": "result.ok == true"}})
     repo, data, sha = make_repo(tmp_path, p=p)
     result = run(repo, data, sha, tmp_path / "o", run_job_tests=False, active_reservation_jobs=["parent"])
-    assert result["cost"]["workspace_cap_jobs"] == ["tiny", "parent"]
-    assert result["cost"]["set_workspace_cap_increment_usd"] == 10
+    assert result["cost"]["workspace_cap_jobs"] == ["parent", "tiny", "parent"]
+    assert result["cost"]["set_workspace_cap_increment_usd"] == 16
 
 
 @pytest.mark.parametrize("case,match", [

@@ -175,5 +175,5 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Symptom: a child launch's workspace-cap increment covered only its own ceiling while its parent could still be queued or running.
 - Cost: caught during review before a paid launch.
 - Root cause: launcher pricing used one-job worst case and ignored simultaneous reservations.
-- **Check:** chained jobs list all fixed concurrent cost keys in `workspace_cap_jobs`, and coordinators add other live reservations with `--active-reservation-job`; `tests/test_launch.py::test_chained_job_cap_includes_parent_and_child_worst_cases`, `test_active_reservation_jobs_are_added_to_workspace_cap`, and the missing-reservation refusal test.
+- **Check:** chained jobs list required parents in `workspace_cap_parent_jobs` and all fixed concurrent cost keys in `workspace_cap_jobs`; repeated `--active-reservation-job` keys count separate instances. Tests cover child-only refusal, parent+child, and repeated active reservations.
 - **Status:** ENFORCED.

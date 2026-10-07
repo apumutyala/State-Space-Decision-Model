@@ -83,7 +83,8 @@ Schedule 172 + reserve 8 = 180. Worst case (30 + 2 x 180) x 0.0495 = **$19.30**;
 **Workspace cap when B is chained.** The cap is workspace-wide and B is submitted (with `depends_on`) while A is still
 queued or running, so at submit time it must cover A's remaining worst case plus B's: `set_workspace_cap(MTD + 36)`
 (`costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"])` = ceil(16.34 + 19.30)). MTD + 20 is right only if B is
-submitted after A has ended. The launcher derives the A+B reservation from stage B's `workspace_cap_jobs`. With the
+submitted after A has ended. The launcher derives the A+B reservation from stage B's `workspace_cap_jobs` and
+`workspace_cap_parent_jobs`. With the
 probe also live (qual pass branch), add `--active-reservation-job probe9b` so the launcher includes its reservation.
 
 ## `submit_job` fields (one build context for both stages, so `depends_on` needs no `allow_different_context`)

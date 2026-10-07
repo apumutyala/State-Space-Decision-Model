@@ -146,8 +146,8 @@ def validate_review_url(review_url: str | None) -> str:
 def workspace_cap_increment(costs, p: dict, sub: dict, params_path: str, worst: float,
                             active_reservation_jobs: list[str] | None = None) -> tuple[int, list[str]]:
     """Reserve the simultaneous worst case for every configured active/chained job."""
-    active_reservation_jobs = active_reservation_jobs or []
-    if any(not isinstance(name, str) for name in active_reservation_jobs):
+    active_reservation_jobs = [] if active_reservation_jobs is None else active_reservation_jobs
+    if not isinstance(active_reservation_jobs, list) or any(not isinstance(name, str) for name in active_reservation_jobs):
         raise LaunchError("active reservation jobs must be cost-table job names")
     names = p.get("workspace_cap_jobs")
     if names is None:
@@ -159,10 +159,17 @@ def workspace_cap_increment(costs, p: dict, sub: dict, params_path: str, worst: 
                 raise LaunchError(f"{params_path}: cannot price active reservations without a cost-table job key")
             return math.ceil(worst), []
         names = names[:1]
-    if (not isinstance(names, list) or not names
-            or any(not isinstance(name, str) for name in names) or len(set(names)) != len(names)):
-        raise LaunchError(f"{params_path}: workspace_cap_jobs must be a non-empty unique job-name list")
-    names = list(dict.fromkeys([*names, *active_reservation_jobs]))
+    if not isinstance(names, list) or not names or any(not isinstance(name, str) for name in names):
+        raise LaunchError(f"{params_path}: workspace_cap_jobs must be a non-empty job-name list")
+    if sub.get("depends_on"):
+        parents = p.get("workspace_cap_parent_jobs")
+        if not isinstance(parents, list) or not parents or any(not isinstance(name, str) for name in parents):
+            raise LaunchError(f"{params_path}: chained job must declare workspace_cap_parent_jobs")
+        if not set(parents).issubset(names):
+            raise LaunchError(f"{params_path}: workspace_cap_jobs must include all workspace_cap_parent_jobs")
+    # Preserve duplicates: two active instances of the same job reserve two
+    # worst-case costs, whether declared in params or supplied on the CLI.
+    names = [*names, *active_reservation_jobs]
     unknown = sorted(set(names) - set(costs.PARAMS))
     if unknown:
         raise LaunchError(f"{params_path}: unknown workspace_cap_jobs entries: {unknown}")

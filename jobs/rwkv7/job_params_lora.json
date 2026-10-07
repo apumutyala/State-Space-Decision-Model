@@ -32,6 +32,7 @@
  "model_bytes": 26540800536,
  "depends_on_require": "result.ok == true",
  "workspace_cap_jobs": ["rwkv7_readout", "rwkv7_lora"],
+ "workspace_cap_parent_jobs": ["rwkv7_readout"],
  "pilot_cell": "jobs/rwkv7/pilot_cell.json",
  "mission": "m1-rwkv7-fallback"
 }
