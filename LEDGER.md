@@ -8,8 +8,15 @@ Credits: SF Compute $525. Batch rate is $2.97/H100-h and interactive is $3.96/h;
 | 2026-10-06 | D | job-jbw22 qual v1 (SF batch H100) | ≤9.90 | gates | 0.07 | stopped at numerics gate: fla #640 Triton bug (fixed PR #41) | issue #3 |
 | 2026-10-06 | D | job-c4zkm qual v2 (torch 2.13/triton 3.7.1) | ≤8.91 | gates | 0.74 | A+B PASS (0.8B one-layer ΔNLL −0.0036, KL 0.017); C 9B OOM at 68.9 GB (fixed PR #48) | issue #3 |
 | 2026-10-06 | D | job-mhc3h RWKV7-13.3B stock readout | ≤7.43 | rate guard | 0.56 | stopped by rate guard (per-option prompt recompute, fixed PR #50) | issue #3 |
-| 2026-10-06 | D | job-sgihj Clef-flash baseline A | ≤5.94 | caps | (running) | — | issue #3 |
-| 2026-10-06 | D | 9B C-only qual re-run (PR #48) | ≤6.93 (worst 14.85) | exits 2–9, MFU floors | (planned) | — | issue #3 |
+| 2026-10-06 | D | job-sgihj Clef-flash baseline A | ≤5.94 | caps | 1.40 | Clef-flash DEV 56.8 [55.4, 58.2]; 2,008 subset 55.8 [53.0, 58.5] (composite crashed on a truncated native file; scored locally) | issue #3 |
+| 2026-10-06 | D | job-4j3vu 9B C-only qual re-run (PR #48) | ≤6.93 (worst 14.85) | exits 2–9, MFU floors | 2.48 | PASS: stage2 5,461 tok/s, MFU 0.341, peak 31.9 GB → open $40 probe issue | #68 |
+| 2026-10-06 | D | job-tkfaj RWKV7 stage A v2 (state-fork readout) | ≤7.43 | rate guard | 1.79 | RWKV7 stock 2,008 subset 24.9 [22.4, 27.8]; prefill 3,757 tok/s @2k | issue #3 |
+| 2026-10-06 | D | job-4idg4 fla RWKV7 kernel gate v1 | ≤1.04 | caps | 0.30 | exit 7: kernel phase timeout (first-call compiles) | PR #59 |
+| 2026-10-06 | D | job-jucxx fla gate v2 (warmup) | ≤1.04 | caps | 0.25 | exit 7: warmup cap 3 min vs ~70 s/specialisation measured | PR #66 |
+| 2026-10-06 | D | job-jn47u fla gate v3 | ≤3.96 | rule v1 | 0.84 | REJECT_NUMERICS (v1 reference = bf16 serial eager; production chunked also fails it); fla prefill ~3x | PR #77 |
+| 2026-10-06 | D | job-mden7 fla truth_v2 (fp64 truth + cell train step) | ≤5.74 | rule v2+A1 | 1.06 | REJECT_NUMERICS (fla 2–3x chunked's grad error vs fp64, ~100x on state). Cell train step OOMs from T≈1k on chunked (17/20 steps), launch-bound ~2 s/row → first cell blocked on PR #86 | PR #77, #86 |
+| 2026-10-06 | D | job-5cmat probe9b one-layer GDN (Qwen3.5-9B) | ≤29.70 (one attempt 13.37) | 511e8dd rule | 5.01 | **proceed-all-8**: layer 23 ΔNLL 0.0068, ppl 1.007, MMLU −1.75, Index +1.66 [+0.19, +3.18] (stock 38.3 → 39.9), MQAR −0.006, NIAH 0 | #68, #87 |
+| | | **October MTD (SF receipts)** | | | **14.49** | | get_usage |
 
 ## Negative results and false positives
 
