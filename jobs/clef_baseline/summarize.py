@@ -262,6 +262,12 @@ def compact_result(result: dict) -> dict:
         keep = ("ok", "release", "job", "rows", "dry_run", "s1_ok", "parity_ok", "kernel_path_ok", "headline",
                 "index_dev_decide", "index_dev_native_composite", "paired_compare", "full_report")
         out = {k: out.get(k) for k in keep} | {"truncated": "result.json over 31 KiB; see report.json"}
+        if len(json.dumps(out, indent=1, default=str).encode()) > RESULT_MAX_BYTES:  # PR #106 review: re-check
+            out = {k: out.get(k) for k in ("ok", "release", "job", "rows", "dry_run", "s1_ok", "parity_ok",
+                                           "kernel_path_ok", "paired_compare", "full_report")} | {
+                "truncated": "result.json over 31 KiB even when trimmed; see report.json"}
+            out = {k: (v if len(json.dumps(v, default=str)) <= 512 else "see report.json") for k, v in out.items()}
+    assert len(json.dumps(out, indent=1, default=str).encode()) <= RESULT_MAX_BYTES
     return out
 
 

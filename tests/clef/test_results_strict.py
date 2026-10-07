@@ -197,3 +197,17 @@ def test_result_json_stays_under_the_platform_limit_job_ftpnf():
     big = dict(full, junk={"x" * 10: ["y" * 100] * 15 for _ in range(1)}, more=["z" * 200] * 400)
     cb = S.compact_result(big)
     assert len(json.dumps(cb, indent=1).encode()) <= S.RESULT_MAX_BYTES and cb["ok"] is True
+
+
+
+def test_compact_result_fallback_rechecks_its_own_size():
+    """PR #106 review: the trimmed fallback must itself fit (a huge headline / paired_compare is replaced)."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("summ2", SUMMARIZE)
+    S = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(S)
+    huge = {"ok": True, "release": "clef", "job": "I", "headline": {"why": "w" * 40000},
+            "paired_compare": "p" * 40000, "index_dev_decide": {"note": "n" * 40000}}
+    c = S.compact_result(huge)
+    assert len(json.dumps(c, indent=1).encode()) <= S.RESULT_MAX_BYTES and c["ok"] is True

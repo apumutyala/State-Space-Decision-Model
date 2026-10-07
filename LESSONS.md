@@ -266,6 +266,13 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Cost: $0.38 and one launch round.
 - Root cause: the preflight took the plain mean over the sample, so one-time warm-up was extrapolated over 2,008 rows. This is the L-04 class (first-call JIT inside a measured phase) on the estimator side.
 - **Check:** `jobs/clef_baseline/price.py::preflight` excludes rows slower than `COMPILE_SPIKE_FACTOR` (4) x the median per-model ratio from the rate, charges their time once as fixed warm-up, and lists them in `compile_spikes`. `tests/clef/test_clef_pricing.py::test_preflight_excludes_one_time_compile_spikes_job_5mw9h` uses job-5mw9h's real timing (`tests/clef/fixtures/job_5mw9h_parity_timing.json`). It asserts that a uniformly slow box is still stopped.
+- **Tightened (PR #106 review).**
+  - A slow row is excluded only if a LATER fast row of >= 0.75x its token length exists, i.e. the shape demonstrably runs fast once compiled. Unconfirmed slow rows stay in the rate.
+  - Excluding more than 10% of the timed rows fails closed (`too_many_spikes`).
+  - A zero median fails closed.
+  - On job-5mw9h this keeps 3 spikes. The 10,595-token row has no fast repeat, so it stays in the rate: s = 5.23x, projection 18.7 min, below 0.95 x 27.
+  - The reviewer's two slow-box scenarios now fail. `test_preflight_slow_long_rows_with_no_fast_repeat_are_not_excluded` covers rows above 5k tokens running steadily 30x. `test_preflight_more_than_10pct_excluded_is_not_ok` covers a 25% bimodal box.
+  - "Charged once" covers only the shapes the sample hit; the live rate guard covers the rest.
 - **Status:** ENFORCED for the Clef preflight. The live rate guard is still mean-based, but it starts its projection only after the check-after window and excludes the time before the first row.
 
 ### L-27 A result file over the platform's 32 KiB limit was dropped

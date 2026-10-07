@@ -172,12 +172,52 @@ def test_preflight_excludes_one_time_compile_spikes_job_5mw9h():
     f = ROOT / "tests/clef/fixtures/job_5mw9h_parity_timing.json"
     probes = json.loads(f.read_text(encoding="utf-8"))
     r = P.preflight(probes, "dev_subset", 27)
-    assert r["ok"] and len(r["compile_spikes"]) == 4 and all(x["ms"] > 11000 for x in r["compile_spikes"])
-    assert 2.4 < r["speed_vs_flash_sgihj"] < 2.7 and r["projected_min"] < 0.95 * 27
-    assert 0.8 < r["warmup_min_charged_once"] < 0.9  # the spikes' time is still charged, once
+    # tightened (PR #106 review): 3 spikes are confirmed by a later fast row of comparable length; the 10,595-token
+    # row has no fast repeat, so it stays IN the rate: s ~5.23x, projection ~18.7 min, still < 0.95 x 27 = 25.65
+    assert r["ok"] and len(r["compile_spikes"]) == 3 and all(x["ms"] > 11000 for x in r["compile_spikes"])
+    assert r["slow_rows_unconfirmed"] == 1 and 10595 not in [x["tokens"] for x in r["compile_spikes"]]
+    assert abs(r["speed_vs_flash_sgihj"] - 5.23) < 0.05 and abs(r["projected_min"] - 18.7) < 0.15
+    assert r["projected_min"] < 0.95 * 27 and not r["too_many_spikes"]
+    assert 0.55 < r["warmup_min_charged_once"] < 0.65  # the confirmed spikes' time is still charged, once
     # a uniformly slow box is still stopped: no row is a spike when every row is slow
     slow = {"release": "clef", "parity_timing": [dict(x, ms=x["ms"] * 1.0) for x in probes["parity_timing"][:3]] +
             [dict(x, ms=12.0 * (P.SGIHJ["row_ms_intercept"] + P.SGIHJ["row_ms_per_token"] * x["tokens"]))
              for x in probes["parity_timing"][3:]]}
     s = P.preflight(slow, "dev_subset", 27)
     assert not s["ok"] and s["compile_spikes"] == []
+
+
+
+def _model_ms(x):
+    return P.SGIHJ["row_ms_intercept"] + P.SGIHJ["row_ms_per_token"] * x["tokens"]
+
+
+def _fixture():
+    return json.loads((ROOT / "tests/clef/fixtures/job_5mw9h_parity_timing.json").read_text(encoding="utf-8"))
+
+
+def test_preflight_slow_long_rows_with_no_fast_repeat_are_not_excluded():
+    """PR #106 review, scenario 1: a box that is steadily 30x Clef-flash on rows > 5k tokens (a slow long-sequence
+    path, not a compile) must fail closed. The untightened rule excluded those rows and passed (10.9 vs truly 51 min)."""
+    base = _fixture()["parity_timing"]
+    rows = [dict(x, ms=x["ms"] if i < 3 else (30.0 if x["tokens"] > 5000 else 2.5) * _model_ms(x))
+            for i, x in enumerate(base)]
+    r = P.preflight({"release": "clef", "parity_timing": rows}, "dev_subset", 27)
+    assert not r["ok"] and r["compile_spikes"] == [] and r["slow_rows_unconfirmed"] > 0
+
+
+def test_preflight_more_than_10pct_excluded_is_not_ok():
+    """PR #106 review, scenario 2: 25% of rows 5x the median (bimodal), each followed by fast rows of the same length.
+    Even if every slow row is 'confirmed', excluding more than 10% of the sample fails closed."""
+    base = _fixture()["parity_timing"]
+    fast = [dict(x, ms=x["ms"] if i < 3 else 2.5 * _model_ms(x)) for i, x in enumerate(base)]
+    k = int(0.25 * (len(fast) - 3))
+    rows = fast[:3] + [dict(x, ms=x["ms"] * 5) for x in fast[3:3 + k]] + fast[3 + k:] +         [dict(x, ms=2.5 * _model_ms(x)) for x in fast[3:3 + k]]  # fast repeats of the same shapes, later
+    r = P.preflight({"release": "clef", "parity_timing": rows}, "dev_subset", 27)
+    assert r["too_many_spikes"] and not r["ok"]
+
+
+def test_preflight_zero_median_fails_closed():
+    rows = [{"run_id": str(i), "ms": 0.0 if i < 40 else 500.0, "tokens": 1000} for i in range(64)]
+    r = P.preflight({"release": "clef", "parity_timing": rows}, "dev_subset", 27)
+    assert r["ok"] is False and "median" in r["note"]
