@@ -40,9 +40,7 @@ Residual risks:
 
 ## Domain split
 
-- **IN_DOMAIN** catalog ids: 1, 4, 5, 12, 21, 28, 29, 30, 57, 62. These are the benchmarks whose own train split, or a proxy named for them in `data/SOURCES.md`, is in the 150k mix.
-- **NEW_DOMAIN:** the other 28 DEV benchmarks.
-- Defined from harness catalog ids. The Index-0.3 migration branch's family definition was not on origin at commit time. If it lands, it is reported alongside this split.
+Superseded by amendment A1(a), before any data: the families-v1 columns `in_domain`, `new_domain` and `new_domain_frozen` (below). v1's hand-defined list (1, 4, 5, 12, 21, 28, 29, 30, 57, 62) is withdrawn. It missed 9 same-family benchmarks, so its new-domain column would have been optimistic.
 
 ## Recipes (anchor-then-ablate)
 
@@ -74,3 +72,18 @@ A head is attention-free if it has no softmax-normalised, or otherwise normalise
 Mixing over the fixed set of option and field vectors of one request is allowed and disclosed. It is O(Q·K), not O(T).
 
 Family (c), the attention routing head, violates this definition by construction. It is labelled `attention_free = False` and is excluded by `CANDIDATE_FAMILIES`.
+
+## Amendment A1 (2026-10-07, before any feature cache exists; no GPU job has run)
+
+The coordinator requested this after the independent review of PR #101 (REQUEST-CHANGES). The request, quoted:
+
+> Pre-data amendment A1 [...]: (a) Replace the hand-defined IN_DOMAIN_CATALOG_IDS with agent-main's harness/families.py families-v1 split. Report three columns: in-domain, new-domain, and new_domain_frozen (the 9 frozen benchmarks). (b) Equalise optimiser steps across arms, or else state that conv1/e5 comparisons use a matched-steps stock arm. (c) Pin the verdict to edition 0.2.1 and report 0.3 alongside. (d) Declare the post-job stock-check tolerance now: |Δ| ≤ 0.3 against job-5cmat's 38.27 on SELECT. (e) State that "attention-free" refers to the head; the stock features come from a backbone with attention. Keep the go threshold at 50.0 on HOLDOUT, with escalation to the user, unchanged.
+
+| Item | Rule after A1 (`train/proxy_rule.py`, pinned in `tests/test_proxy_rule.py`) |
+|---|---|
+| (a) Domain columns | families-v1 (`harness/families.py`, sha256 `e0e4bd5f…`), evaluated in edition 0.2.1. `in_domain` (19 benchmarks: same_source + same_family): 1, 2, 3, 4, 5, 11, 12, 21, 25, 28, 29, 30, 36, 37, 39, 42, 45, 57, 62. `new_domain` (19, the 'none' tier): 9, 20, 22, 23, 31, 32, 33, 38, 40, 41, 43, 44, 48, 50, 56, 58, 59, 61, 64. `new_domain_frozen` (heldout-draw-v1, 9): 9, 20, 22, 31, 32, 33, 44, 58, 64 |
+| (b) Training budget | Every recipe trains exactly 2,000 optimiser steps of 8 requests, on every arm (was 3 epochs). The arms still differ in data: stock has 20,000 rows, conv1/e5 the first 5,000 rows of the same draw. So R09/R10 (conv1/e5 mixer) are compared only with **R14** (R01 on the stock arm's first 5,000 rows), and R13 (conv1 fork) only with **R15** (R11 on those 5,000 rows). Matched data, matched steps |
+| (c) Edition | The verdict, the SELECT choice and the threshold use edition **0.2.1**. Every score is also reported under 0.3's public index, scored without the 0.3 GSM8K twin rows, which the 0.2.1-row cache does not hold |
+| (d) Stock check | Before any recipe trains, the stock readout is recomputed from the cached option log-likelihoods on SELECT. If it differs from job-5cmat's 38.27 by more than **0.3** Index points, the whole loop is `no-measurement` |
+| (e) Scope | "Attention-free" refers to the **head**. The stock features come from Qwen3.5-9B with all 8 softmax-attention layers; conv1 converts 1 of 8. A "go" bounds what an attention-free head can reach on these features. It is not a Q9-AF measurement. The verdict record carries this `scope`, and the conv1 − stock gap is reported next to it |
+| Unchanged | GO = 50.0 on HOLDOUT; below it, **escalate to the user**; SELECT/HOLDOUT; the transfer rule; HOLDOUT is single-shot. All candidate recipes, now R01–R15, must have a SELECT score before the choice, and the holdout runs once, for the chosen recipe only |

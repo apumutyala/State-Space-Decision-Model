@@ -17,11 +17,9 @@ Splits (DEV only; TEST is never read):
            stratified procedure (``jobs.common.dev_subset.build_subset``) over the DEV manifest rows NOT in SELECT
            (whole kit groups, so no group straddles the two splits), seed ``HOLDOUT_SEED``. Scored ONCE, for the one
            recipe chosen on SELECT (and its pre-declared seeds). The verdict reads HOLDOUT.
-  Domain split (reported for every scored recipe, both splits; Index 0.3 rewards new-domain transfer): IN_DOMAIN =
-           benchmarks whose own train split, or a proxy named for it in data/SOURCES.md, is in the 150k training mix;
-           NEW_DOMAIN = every other DEV benchmark. Defined here from harness catalog ids (the Index-0.3 migration
-           branch's family definition did not exist on origin when this was committed; if it lands, its split is
-           reported ALONGSIDE this one, never instead of it).
+  Domain split (reported for every scored recipe, both splits; Index 0.3 rewards new-domain transfer): since
+           amendment A1, the merged harness/families.py families-v1 groups (see AMENDMENT A1 below); v1's hand-defined
+           catalog-id list is withdrawn before any data.
 
 Scoring: the real harness / kit scorer (``jobs.common.dev_subset score|compare``: chance-corrected per-benchmark
 skills, gold weights, unanswered or errored rows score as wrong, no truncation of the row set). CIs are the harness
@@ -46,6 +44,36 @@ Verdict (``verdict``), read from HOLDOUT for the recipe chosen on SELECT:
   no-measurement  the chosen recipe is not attention-free, a split is incomplete, or scoring failed
 The SELECT number, the selection gap (SELECT - HOLDOUT), paired CIs vs Clef-flash and vs stock Q9 on both splits, and
 the IN/NEW domain breakdown are always reported; none of them changes the verdict.
+
+AMENDMENT A1 (2026-10-07, before any feature cache exists; no GPU job has run). Requested by the coordinator after
+the independent review of PR #101, quoted: "Pre-data amendment A1 [...]: (a) Replace the hand-defined
+IN_DOMAIN_CATALOG_IDS with agent-main's harness/families.py families-v1 split. Report three columns: in-domain,
+new-domain, and new_domain_frozen (the 9 frozen benchmarks). (b) Equalise optimiser steps across arms, or else state
+that conv1/e5 comparisons use a matched-steps stock arm. (c) Pin the verdict to edition 0.2.1 and report 0.3
+alongside. (d) Declare the post-job stock-check tolerance now: |delta| <= 0.3 against job-5cmat's 38.27 on SELECT.
+(e) State that "attention-free" refers to the head; the stock features come from a backbone with attention. Keep the
+go threshold at 50.0 on HOLDOUT, with escalation to the user, unchanged." What A1 changes:
+  (a) Domain columns = families-v1 (``FAMILIES_V1_SHA256``) groups evaluated in the verdict edition:
+      ``in_domain`` (same_source + same_family tiers), ``new_domain`` (= families ``new_domain_proxy``, the 'none'
+      tier) and ``new_domain_frozen`` (heldout-draw-v1's 9 frozen benchmarks). Pinned as literals below (so the rule
+      imports without the kit); tests/test_proxy_rule.py checks them against harness.families when the kit is present.
+  (b) Every recipe trains exactly ``TRAIN_STEPS`` optimiser steps of ``GRAD_ACCUM`` requests (not epochs), on every
+      arm. The arms still differ in data: stock has 20,000 training rows, conv1 / e5 the first 5,000 rows of the same
+      draw. So conv1 / e5 recipes (R09, R10, R13) are compared ONLY against the matched-data, matched-steps stock
+      controls added here, R14 (= R01) and R15 (= R11) trained on the stock arm's first ``MATCHED_TRAIN_ROWS`` rows.
+      R14 / R15 are attention-free candidates like any other.
+  (c) The verdict, SELECT choice and every threshold use edition ``VERDICT_EDITION`` = 0.2.1 (GO = 50.0 was set
+      against Clef-flash 55.78 on 0.2.1). Every score is also reported under 0.3's public index
+      (``REPORT_EDITIONS``), scored without the 0.3 GSM8K twin rows (the cache holds 0.2.1 DEV rows only).
+  (d) Before any recipe is trained, ``stock-check`` recomputes the stock readout from the cached option
+      log-likelihoods on SELECT; |that - job-5cmat's 38.27| must be <= ``STOCK_CHECK_TOL`` (0.3 Index points), else
+      the whole loop is no-measurement (the features do not reproduce the measured readout).
+  (e) "Attention-free" refers to the HEAD. The stock features come from Qwen3.5-9B with its 8 softmax-attention layers
+      (conv1 replaces 1 of 8). A "go" bounds what an attention-free HEAD can reach on these features; it is not a
+      measurement of Q9-AF. The verdict record carries ``scope`` saying so, and the conv1 - stock gap is reported next
+      to it.
+  Unchanged: GO_THRESHOLD 50.0 on HOLDOUT; below it the verdict is "escalate" to the user; SELECT / HOLDOUT; the
+  transfer rule.
 
 Proxy -> real transfer (``adopt_ranking``): the proxy ranking is adopted for the S2 cell recipe only if, over the
 recipes that have BOTH a proxy score and a real (head + LoRA) cell score, there are >= MIN_TRANSFER_RECIPES of them,
@@ -79,10 +107,27 @@ BOOTSTRAP_SEED = 0
 #: seeds 1-2 reported as spread)
 SELECT_SEEDS = (0,)
 HOLDOUT_SEEDS = (0, 1, 2)
-#: catalog ids whose own train split (or a proxy named for it in data/SOURCES.md) is in the 150k mix:
-#: BFCL (Glaive FC / ToolACE proxies), BANKING77, CLINC150, ANLI, Humicroedit, WinoGrande, HellaSwag, GSM8K,
-#: MMLU-Pro (cais/mmlu aux_train proxy), When2Call
-IN_DOMAIN_CATALOG_IDS = (1, 4, 5, 12, 21, 28, 29, 30, 57, 62)
+#: --- amendment A1 ---
+AMENDMENTS = ("A1",)
+#: (a) families-v1 groups in the 0.2.1 DEV edition (harness/families.py members(group, "0.2.1") at families-v1.json
+#: sha256 FAMILIES_V1_SHA256 and heldout-draw-v1)
+FAMILIES_V1_SHA256 = "e0e4bd5f76ca928f2a05c3f52150592aed462b4018350346eb723e9b40096f46"
+DOMAIN_COLUMNS = ("in_domain", "new_domain", "new_domain_frozen")
+IN_DOMAIN = (1, 2, 3, 4, 5, 11, 12, 21, 25, 28, 29, 30, 36, 37, 39, 42, 45, 57, 62)
+NEW_DOMAIN = (9, 20, 22, 23, 31, 32, 33, 38, 40, 41, 43, 44, 48, 50, 56, 58, 59, 61, 64)
+NEW_DOMAIN_FROZEN = (9, 20, 22, 31, 32, 33, 44, 58, 64)
+#: (b) optimiser steps per recipe (every arm) and the matched-data control size
+TRAIN_STEPS = 2000
+GRAD_ACCUM = 8
+MATCHED_TRAIN_ROWS = 5000
+#: (c) editions
+VERDICT_EDITION = "0.2.1"
+REPORT_EDITIONS = ("0.2.1", "0.3")
+#: (d) post-job stock-check tolerance (Index points, SELECT, vs job-5cmat 38.27)
+STOCK_CHECK_TOL = 0.3
+#: (e) the verdict's scope statement
+VERDICT_SCOPE = ("attention-free HEAD on features of Qwen3.5-9B WITH its 8 attention layers (stock), or with 1 of 8 "
+                 "converted (conv1): bounds the head ceiling on these features; not a Q9-AF measurement")
 #: the anchor and the one-factor ablations, in run order. family: fork | mixer | attn_ref. Fields not named take the
 #: family default (train/proxy_heads.py). "arm" = feature-cache arm. "loss": ce | clef (LS-CE 0.1 + Brier + RPS on
 #: score questions) | clef_norps (LS-CE 0.1 + Brier).
@@ -101,13 +146,32 @@ RECIPES = (
     {"id": "R11", "family": "fork", "arm": "stock", "loss": "clef", "note": "m2 fork MLP head (baseline)"},
     {"id": "R12", "family": "fork", "arm": "stock", "loss": "ce", "note": "m2 fork MLP head, CE"},
     {"id": "R13", "family": "fork", "arm": "conv1", "loss": "clef", "note": "fork head on converted features"},
+    # A1(b): matched-data, matched-steps stock controls for the 5,000-row arms (R09, R10 vs R14; R13 vs R15)
+    {"id": "R14", "family": "mixer", "arm": "stock", "loss": "clef", "train_rows": 5000,
+     "note": "R01 on the stock arm's first 5,000 rows (control for R09 / R10)"},
+    {"id": "R15", "family": "fork", "arm": "stock", "loss": "clef", "train_rows": 5000,
+     "note": "R11 on the stock arm's first 5,000 rows (control for R13)"},
 )
+#: recipes that must ALL have a SELECT score before ``choose`` may pick one (single-shot HOLDOUT; A1 / review B2)
+def candidate_ids(recipes=None) -> tuple:
+    return tuple(r["id"] for r in (recipes or RECIPES) if r["family"] in ("fork", "mixer"))
+
 #: families that may be chosen; attn_ref is a reference and can never be the verdict's head
 CANDIDATE_FAMILIES = ("fork", "mixer")
 
 
-def in_domain(catalog_id: int) -> bool:
-    return int(catalog_id) in IN_DOMAIN_CATALOG_IDS
+def domain_of(catalog_id: int) -> tuple[str, ...]:
+    """A1(a): the families-v1 columns a benchmark counts in (new_domain_frozen is a subset of new_domain)."""
+    n = int(catalog_id)
+    out = ("in_domain",) if n in IN_DOMAIN else ("new_domain",) if n in NEW_DOMAIN else ()
+    return out + (("new_domain_frozen",) if n in NEW_DOMAIN_FROZEN else ())
+
+
+def stock_check(point: float) -> dict:
+    """A1(d): the cache-recomputed stock readout on SELECT must reproduce job-5cmat within STOCK_CHECK_TOL."""
+    d = float(point) - STOCK_Q9_SELECT
+    return {"point": float(point), "reference": STOCK_Q9_SELECT, "delta": d, "tol": STOCK_CHECK_TOL,
+            "ok": abs(d) <= STOCK_CHECK_TOL}
 
 
 def choose(select_scores: Mapping[str, float], recipes: Sequence[Mapping] = RECIPES) -> str | None:
@@ -127,7 +191,8 @@ def verdict(chosen: str | None, holdout_point: float | None, recipes: Sequence[M
         return {"verdict": "no-measurement", "reason": "HOLDOUT score missing or incomplete", "rule": RULE_VERSION}
     v = "go" if float(holdout_point) >= GO_THRESHOLD else "escalate"
     return {"verdict": v, "chosen": chosen, "holdout_point": float(holdout_point), "threshold": GO_THRESHOLD,
-            "rule": RULE_VERSION}
+            "rule": RULE_VERSION, "amendments": list(AMENDMENTS), "edition": VERDICT_EDITION, "scope": VERDICT_SCOPE,
+            "escalate_to": None if v == "go" else "user"}
 
 
 def kendall_tau(a: Sequence[float], b: Sequence[float]) -> float:
