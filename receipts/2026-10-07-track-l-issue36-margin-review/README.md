@@ -16,4 +16,3 @@ Source SHA256: `c217afa09a33ca575b959b63c10d24ec96211bb7a7db22841e7a36be16b2ed8e
 Original PowerShell output SHA256: `6080e711218149be41424b0d9a52a6fdcdcaf156e6c380491ef6227a155ee46d`. The committed LF-normalized `simulation.json` SHA256 is `af71dec3c7c51434fb36bfd17890c3ea1ab93dec40a3f43eb427a16f96cd4a7b`; rerunning in this worktree reproduced that committed hash.
 
 Committed evidence used for the Index SE / area example is `receipts/2026-10-06-D-index03-rescore/rescore.json` at the Track D review's referenced commit. Its 95% area interval is not sufficient for the proposed 99% Bonferroni gate; recompute before use.
-
