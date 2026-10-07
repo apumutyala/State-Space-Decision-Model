@@ -194,8 +194,9 @@ time records the skipped steps and cannot qualify. A variant crash or timeout is
 (`jobs/common/costs.py`: build + 2 attempts) = (60 + 2 x 53) x 0.0495 = **$8.22** (hard cap $8.50; A2: no strict cap,
 the figure is stated); one attempt $2.62; expected **$1.59**.
 
-`submit_job` fields. `python -m jobs.common.launch cell_step_profile --sha <merged sha> --out <dir>` writes them to
-`submit.json`; `tests/test_launch.py` checks that launch.py emits exactly these:
+`submit_job` fields. `python -m jobs.common.launch cell_step_profile --sha <merged sha> --review-url <PR URL> --out <dir>`
+writes them to `submit.json`; a pre-promotion variant uses its exact pushed `stack/<family>/<variant>` tip and
+`--candidate-branch`. `tests/test_launch.py` checks that launch.py emits exactly these:
 
 ```json
 {"chip": "h100", "chip_count": 1, "mission": "m2-cell-step-profile",

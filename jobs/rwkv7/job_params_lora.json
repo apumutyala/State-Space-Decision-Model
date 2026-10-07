@@ -31,6 +31,7 @@
  "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
  "model_bytes": 26540800536,
  "depends_on_require": "result.ok == true",
+ "workspace_cap_jobs": ["rwkv7_readout", "rwkv7_lora"],
  "pilot_cell": "jobs/rwkv7/pilot_cell.json",
  "mission": "m1-rwkv7-fallback"
 }

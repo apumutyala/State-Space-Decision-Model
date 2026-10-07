@@ -153,7 +153,8 @@ job-c4zkm ($0.74) PASSED phase A (all GPU tests, including test_gdn on torch 2.1
 
 **Job:** the same `submit_job` with these differences:
 - `env={"QUAL_MODE": "c_only"}`;
-- `idempotency_key="m1-hw-qual-c-only-<context_sha256[:12]>"` (from `python -m jobs.common.launch qual --mode c_only`);
+- `idempotency_key="m1-hw-qual-c-only-<context_sha256[:12]>"` (from
+  `python -m jobs.common.launch qual --mode c_only --sha <sha> --review-url <PR URL> --out <dir>`);
 - `max_duration_minutes=140`, from `jobs/qual/job_params_c_only.json`: setup 15, CPU gates 5×2, weight wait 25, C 80, reserve 8.
 
 The run skips `test_gdn` and phase B. It re-runs only the CPU gates that cover the changed code (`test_progressive_resume`, `test_guard`, `test_qual_job`, `test_microbatch`, `test_memmodel`), then phases C and D.

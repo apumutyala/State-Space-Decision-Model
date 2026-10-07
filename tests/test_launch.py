@@ -22,23 +22,51 @@ from jobs.common import launch, lint
 zstandard = pytest.importorskip("zstandard")
 ROOT = Path(__file__).resolve().parents[1]
 BS = chr(92)
-pytestmark = pytest.mark.skipif(shutil.which("git") is None or shutil.which("bash") is None,
+
+
+def bash_executable() -> str | None:
+    """Prefer Git for Windows Bash; WindowsApps\\bash.exe is only a WSL shim."""
+    git_exe = shutil.which("git")
+    if git_exe:
+        candidate = Path(git_exe).resolve().parents[1] / "bin" / "bash.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return shutil.which("bash")
+
+
+pytestmark = pytest.mark.skipif(shutil.which("git") is None or bash_executable() is None,
                                 reason="needs git and bash")
 
-COSTS = '''PARAMS = {"tiny": "jobs/tiny/job_params.json"}
+COSTS = '''PARAMS = {"tiny": "jobs/tiny/job_params.json", "parent": "jobs/tiny/parent_params.json"}
+def load(name):
+    import json
+    from pathlib import Path
+    return json.loads((Path(__file__).resolve().parents[2] / PARAMS[name]).read_text())
 def attempts(p):
     return 1 + max(p["max_restarts"], p.get("assumed_restart_floor", 0))
 def worst_case_usd(p):
     return round((p["build_timeout_minutes"] + attempts(p) * p["max_duration_minutes"]) * p["batch_usd_per_min"], 2)
+def concurrent_cap_usd(names):
+    import math
+    return math.ceil(sum(worst_case_usd(load(n)) for n in names))
 '''
-RUNNER = "#!/usr/bin/env bash\nset -euo pipefail\npython -m jobs.tiny.preflight\necho ran tiny\n"
+RUNNER = ('#!/usr/bin/env bash\nset -euo pipefail\n'
+          'ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"\n'
+          'bash "$ROOT/preflight.sh"\necho ran tiny\n')
 TEST = '''import os, shutil, subprocess, sys
 from pathlib import Path
 from jobs.tiny import rule
 ROOT = Path(__file__).resolve().parents[1]
+def bash_executable():
+    git_exe = shutil.which("git")
+    if git_exe:
+        candidate = Path(git_exe).resolve().parents[1] / "bin" / "bash.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return shutil.which("bash")
 def test_runner_executes():
     env = {**os.environ, "PATH": os.path.dirname(sys.executable) + os.pathsep + os.environ["PATH"]}
-    r = subprocess.run([shutil.which("bash"), str(ROOT / "jobs/tiny/tiny_job.sh")], capture_output=True, text=True,
+    r = subprocess.run([bash_executable(), str(ROOT / "jobs/tiny/tiny_job.sh")], capture_output=True, text=True,
                        cwd=ROOT, env=env)
     assert r.returncode == 0 and "ran tiny" in r.stdout and "preflight ok" in r.stdout, r.stdout + r.stderr
 def test_rule_pinned():
@@ -85,8 +113,11 @@ def make_repo(tmp: Path, p: dict | None = None, runner: str = RUNNER, test: str 
         "jobs/tiny/preflight.py": b"print('preflight ok')\n",
         "jobs/DECISION_TREE.md": b"| tiny | `jobs/tiny/` | $3.96 |\n",
         "jobs/tiny/__init__.py": b"",
+        "jobs/tiny/preflight.sh": b"#!/usr/bin/env bash\nset -euo pipefail\necho preflight ok\n",
         "jobs/tiny/JOB_SPEC.md": spec,
         "jobs/tiny/job_params.json": json.dumps(p or params(), indent=1).encode(),
+        "jobs/tiny/parent_params.json": json.dumps({"build_timeout_minutes": 60, "max_duration_minutes": 30,
+            "max_restarts": 0, "assumed_restart_floor": 1, "batch_usd_per_min": 0.0495}).encode(),
         "jobs/tiny/tiny_job.sh": runner.encode(),
         "jobs/tiny/rule.py": b"MIN_GAIN = 0.5\n",
         "jobs/tiny/Dockerfile": b"FROM scratch\nCOPY code/m1 /opt/ssdm/m1\nCOPY data/ /data/\n",
@@ -112,6 +143,7 @@ def make_repo(tmp: Path, p: dict | None = None, runner: str = RUNNER, test: str 
 
 
 def run(repo, data, sha, out, **kw):
+    kw.setdefault("review_url", "https://github.com/example/ssdm/pull/1")
     return launch.launch("tiny", sha, out, root=repo, fetch=False, data_dir=data, level=3, **kw)
 
 
@@ -138,6 +170,8 @@ def test_launch_end_to_end_is_deterministic(tmp_path):
     sub = s["calls"][-1]
     assert sub["tool"] == "submit_job"
     a = sub["args"]
+    assert s["source"] == {"kind": "agent-main", "branch": "agent-main"}
+    assert s["review_url"] == "https://github.com/example/ssdm/pull/1"
     assert a["idempotency_key"] == f"tiny-{r1['context']['sha256'][:12]}"
     assert (a["build_timeout_minutes"], a["max_duration_minutes"], a["max_restarts"]) == (60, 10, 0)
     assert a["command"] == "bash /opt/ssdm/m1/jobs/tiny/tiny_job.sh" and a["model"] == "org/tiny@abc123"
@@ -161,6 +195,75 @@ def test_refuses_unmerged_sha(tmp_path):
     g(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "unmerged")
     with pytest.raises(launch.LaunchError, match="not merged"):
         run(repo, data, g(repo, "rev-parse", "HEAD"), tmp_path / "o")
+
+
+def test_candidate_branch_launches_exact_pushed_stack_tip_without_agent_main_merge(tmp_path):
+    repo, data, _ = make_repo(tmp_path)
+    g(repo, "checkout", "-qb", "stack/tiny/variant")
+    (repo / "candidate.txt").write_text("candidate")
+    g(repo, "add", "candidate.txt")
+    g(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "candidate")
+    candidate_sha = g(repo, "rev-parse", "HEAD")
+    g(repo, "update-ref", "refs/remotes/origin/stack/tiny/variant", candidate_sha)
+    result = run(repo, data, candidate_sha, tmp_path / "candidate", candidate_branch="stack/tiny/variant",
+                 run_job_tests=False)
+    assert result["sha"] == candidate_sha
+    assert result["source"] == {"kind": "candidate_branch", "branch": "stack/tiny/variant"}
+    assert result["review_url"] == "https://github.com/example/ssdm/pull/1"
+
+
+@pytest.mark.parametrize("branch", ["codex/feature", "stack/tiny", "stack/../bad/variant"])
+def test_candidate_branch_requires_stack_family_variant(branch, tmp_path):
+    repo, data, sha = make_repo(tmp_path)
+    with pytest.raises(launch.LaunchError, match="stack/<family>/<variant>"):
+        run(repo, data, sha, tmp_path / "candidate", candidate_branch=branch, run_job_tests=False)
+
+
+def test_candidate_branch_requires_exact_remote_tip(tmp_path):
+    repo, data, _ = make_repo(tmp_path)
+    g(repo, "checkout", "-qb", "stack/tiny/variant")
+    (repo / "candidate.txt").write_text("candidate")
+    g(repo, "add", "candidate.txt")
+    g(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "candidate")
+    old_sha = g(repo, "rev-parse", "HEAD")
+    (repo / "candidate.txt").write_text("moved tip")
+    g(repo, "add", "candidate.txt")
+    g(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "moved candidate")
+    tip = g(repo, "rev-parse", "HEAD")
+    g(repo, "update-ref", "refs/remotes/origin/stack/tiny/variant", tip)
+    with pytest.raises(launch.LaunchError, match="exact pushed tip"):
+        run(repo, data, old_sha, tmp_path / "candidate", candidate_branch="stack/tiny/variant", run_job_tests=False)
+
+
+def test_refuses_missing_review_url(tmp_path):
+    repo, data, sha = make_repo(tmp_path)
+    with pytest.raises(launch.LaunchError, match="independent review URL"):
+        run(repo, data, sha, tmp_path / "o", review_url=None, run_job_tests=False)
+
+
+def test_chained_job_requires_combined_workspace_reservations(tmp_path):
+    repo, data, sha = make_repo(tmp_path, p=params(submit={**params()["submit"],
+        "depends_on": {"job": "parent-id", "require": "result.ok == true"}}))
+    with pytest.raises(launch.LaunchError, match="workspace_cap_jobs"):
+        run(repo, data, sha, tmp_path / "o", run_job_tests=False)
+
+
+def test_chained_job_cap_includes_parent_and_child_worst_cases(tmp_path):
+    p = params(workspace_cap_jobs=["parent", "tiny"], submit={**params()["submit"],
+        "depends_on": {"job": "parent-id", "require": "result.ok == true"}})
+    repo, data, sha = make_repo(tmp_path, p=p)
+    result = run(repo, data, sha, tmp_path / "o", run_job_tests=False)
+    assert result["cost"]["workspace_cap_jobs"] == ["parent", "tiny"]
+    assert result["cost"]["set_workspace_cap_increment_usd"] == 10
+
+
+def test_active_reservation_jobs_are_added_to_workspace_cap(tmp_path):
+    p = params(workspace_cap_jobs=["tiny"], submit={**params()["submit"],
+        "depends_on": {"job": "parent-id", "require": "result.ok == true"}})
+    repo, data, sha = make_repo(tmp_path, p=p)
+    result = run(repo, data, sha, tmp_path / "o", run_job_tests=False, active_reservation_jobs=["parent"])
+    assert result["cost"]["workspace_cap_jobs"] == ["tiny", "parent"]
+    assert result["cost"]["set_workspace_cap_increment_usd"] == 10
 
 
 @pytest.mark.parametrize("case,match", [
@@ -234,7 +337,7 @@ def test_lint_runs_from_the_launched_sha_not_the_caller(tmp_path, monkeypatch):
 def test_cli_refusal_exit_code(tmp_path, capsys):
     repo, data, sha = make_repo(tmp_path, p=params(build_timeout_minutes=18))
     rc = launch.main(["tiny", "--sha", sha, "--out", str(tmp_path / "o"), "--repo", str(repo), "--data", str(data),
-                      "--no-fetch", "--level", "3"])
+                      "--review-url", "https://github.com/example/ssdm/pull/1", "--no-fetch", "--level", "3"])
     assert rc == 1 and "REFUSED" in capsys.readouterr().err
 
 

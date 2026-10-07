@@ -144,8 +144,8 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - Blocker fixes merged in the same minute with no re-review: #43, #59, #42 (B3), #73 and #86.
 - Cost: L-15 is a direct consequence; the other unfixed findings are listed in PRs #33 and #40.
 - Root cause: the review rules ("stalled", "one review suffices", "lean") had no mechanical gate.
-- **Check:** `launch.py` refuses any sha not merged into `origin/agent-main`. COORDINATION.md "Before any paid job / before any PR" requires the review link in the launch receipt.
-- **Status:** PARTIAL. Review presence is not machine-checked (that needs the GitHub API). Next step: a merge-time check that the PR has a review comment, or a `reviews/` file, newer than its last commit.
+- **Check:** `launch.py` requires either a merged `origin/agent-main` SHA or the exact pushed `stack/<family>/<variant>` tip, and records a GitHub review URL in the launch receipt.
+- **Status:** PARTIAL. The review URL is required but its approval/head state is not machine-checked (that needs the GitHub API). Review sufficiency remains a coordinator gate.
 
 ### L-17 Variants and champion mixed on the integration branch
 - Date: 2026-10-06 (operator directive).
@@ -161,3 +161,19 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: a newer user decision was added as a new section, and the older sentence was never edited.
 - **Check:** the stale sentence was replaced so that the later user decision governs. `tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule` asserts that the old sentence is gone.
 - **Status:** PARTIAL. Only this sentence is checked. Spend-ladder item 2 ("acknowledged by the other agent") still reads as blocking and needs the same reconciliation. When a user decision supersedes a rule, edit the old rule in the same PR.
+
+### L-20 Candidate branches could not be measured before promotion
+- Date: 2026-10-07 (cross-review of PR #93).
+- Symptom: the new `stack/<family>/<variant>` policy requires measuring candidates before promotion, while the launcher accepted only SHAs merged into `agent-main`.
+- Cost: caught during review before a paid launch.
+- Root cause: the launcher modeled only champion/integration runs and had no exact candidate-tip path.
+- **Check:** `resolve_candidate` requires the exact pushed stack-branch tip and a review URL; `tests/test_launch.py::test_candidate_branch_launches_exact_pushed_stack_tip_without_agent_main_merge` and candidate-refusal tests.
+- **Status:** ENFORCED.
+
+### L-21 Chained jobs under-reserved workspace cap
+- Date: 2026-10-07 (cross-review of PR #93).
+- Symptom: a child launch's workspace-cap increment covered only its own ceiling while its parent could still be queued or running.
+- Cost: caught during review before a paid launch.
+- Root cause: launcher pricing used one-job worst case and ignored simultaneous reservations.
+- **Check:** chained jobs list all fixed concurrent cost keys in `workspace_cap_jobs`, and coordinators add other live reservations with `--active-reservation-job`; `tests/test_launch.py::test_chained_job_cap_includes_parent_and_child_worst_cases`, `test_active_reservation_jobs_are_added_to_workspace_cap`, and the missing-reservation refusal test.
+- **Status:** ENFORCED.

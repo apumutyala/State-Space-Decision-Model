@@ -37,7 +37,10 @@ codex/<topic>     Track L work branches
 - Read `LESSONS.md`, the failure classes we already paid for.
 - Follow `jobs/LAUNCH_CHECKLIST.md`.
   - `tests/test_jobs_lint.py` must pass.
-  - Launch only through `python -m jobs.common.launch <job> --sha <merged sha> --out <dir>`, then paste its `submit.json`.
+- Launch only through `python -m jobs.common.launch <job> --sha <sha> --review-url <PR URL> --out <dir>`; champion runs
+  use merged `agent-main` SHAs, while pre-promotion measurements use the exact pushed `stack/<family>/<variant>` tip
+  with `--candidate-branch`. Reconcile active reservations with repeated `--active-reservation-job` flags. Paste its
+  `submit.json`.
 - **Every incident appends a `LESSONS.md` entry and an enforcing check (a test, lint check or guard) in the same PR.** A lesson without a check is not done.
 
 ## PR rules
