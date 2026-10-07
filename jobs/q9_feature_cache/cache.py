@@ -326,6 +326,13 @@ def main(argv=None) -> int:
         bad = [r for r in checks if not (r["logic_ok"] and r["cache_ok"])]
         return done(EXIT["numerics"], f"self-check failed on {len(bad)} of {len(checks)} records: {bad[:3]}")
     summary["selfcheck_minutes"] = (time.time() - t_model) / 60
+    summary["selfcheck_end_t"] = time.time()
+    # re-project with the MEASURED load + self-check time before any extraction spend (PR #117 review, item 2)
+    if a.cap_min is not None and a.tok_s:
+        proj = a.elapsed_before_min + (time.time() - t0) / 60 + total_w / 60
+        summary["preflight"].update(post_selfcheck_projected_min=proj)
+        if proj > MARGIN * a.cap_min:
+            return done(EXIT["too_slow"], f"after load + self-check: projected {proj:.1f} min > {MARGIN} x cap {a.cap_min}")
     # ---------------------------------------------------------------- extraction
     # The live rate guard's clock starts when the total file appears, so it is written only NOW, after the one-time
     # model load and fp32 self-check (LESSONS L-29: job-kxc5e wrote it before them, and the guard extrapolated their

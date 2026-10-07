@@ -142,6 +142,8 @@ def test_runner_dry_run_end_to_end_then_proxy_heads(tmp_path):
         assert tot["t"] <= first
         summ = json.loads(next((out_p / "cache" / "stock").glob("summary_*.json")).read_text(encoding="utf-8"))
         assert summ["selfcheck_minutes"] > 0 and summ["selfcheck"]
+        assert tot["t"] >= summ["selfcheck_end_t"]  # the total postdates the end of the self-check (L-29)
+        assert summ["preflight"]["post_selfcheck_projected_min"] > 0  # re-projected after load + self-check
     assert res_tr["arms"]["stock"]["splits"]["train"]["questions"] == 16
     # the parts unpack into ONE cache directory (as the artifacts would be downloaded)
     out = tmp_path / "merged"

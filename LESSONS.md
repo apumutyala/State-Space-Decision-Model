@@ -323,8 +323,10 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - The guard extrapolated the one-time 300 s over the whole weight: (8.0 min / 9.7%) ≈ 87 min, against a true ≈ 4.75 + 5.0 + 29.3 ≈ 39 min.
   - This is the L-26 class: a one-time cost extrapolated by a rate projection. The missing causal_conv1d kernel (the log warning) is not the cause; the measured extraction is faster than priced.
 - **Check:**
-  - `cache.py` writes `.total.json` only after the model load and self-check, with `after_selfcheck: true` and a timestamp. `tests/test_q9_feature_cache_shell.py` asserts both, and that the file postdates the self-check.
-  - The in-job preflight and `jobs/q9_feature_cache/preflight.py` count a measured 5.0-min load + self-check allowance (`selfcheck.allowance_min`, `SELFCHECK_MIN`) once per part.
+  - `cache.py` writes `.total.json` only after the model load and self-check, with `after_selfcheck: true` and a timestamp. `tests/test_q9_feature_cache_shell.py` asserts both, that the timestamp is ≥ the summary's `selfcheck_end_t`, and that it predates the first unit.
+  - The setup phase is bounded by `jobs.common.rate_guard run-weighted --setup-cap-min` (off by default; `cache_job.sh` passes `setup_cap_minutes` = 30 = ceil(14.2 tokenise + 0.7 load + 3 x 5.0)). A child whose total never appears within that time is stopped with exit 15 (`tests/test_rate_guard_setup_cap.py`).
+  - `cache.py` re-projects right after the self-check with the measured elapsed time and exits 15 before any extraction spend if the projection exceeds 0.95 x the cap.
+  - The in-job preflight and `jobs/q9_feature_cache/preflight.py` count a measured 5.0-min load + self-check allowance (`selfcheck.allowance_min`, `SELFCHECK_MIN`) once per part. The static projection also keeps the 0.7-min `model_load_s` beside it: a deliberate, conservative double count of the load.
   - Caps are recomputed at ≥ 1.3× (stock_dev 70, stock_train 90, conv1/e5 dev 70, train 45 min); `tests/test_q9_feature_cache_params.py` holds them.
   - Receipt: `receipts/2026-10-07-D-q9-cache-reprice/`.
 - **Status:** PARTIAL. The fix is per job: any runner that announces a weighted total before a one-time setup phase repeats this. A lint that requires the total to be written after setup is a candidate.

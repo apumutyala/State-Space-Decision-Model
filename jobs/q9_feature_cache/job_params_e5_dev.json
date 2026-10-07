@@ -45,6 +45,7 @@
   "arm_e5": 70,
   "report": 10
  },
+ "setup_cap_minutes": 30,
  "reserve_minutes": 5,
  "expected_minutes": {
   "build": 15,
@@ -135,5 +136,6 @@
   "holdout"
  ],
  "max_output_gib": 4.5,
- "est_output_gib": 2.874
+ "est_output_gib": 2.874,
+ "_comment_setup_cap": "rate_guard --setup-cap-min = ceil(TOKENIZE_MIN 14.2 + model load 0.7 + 3 x SELFCHECK_MIN 5.0) (jobs/q9_feature_cache/preflight.setup_cap_minutes; PR #117 review)"
 }
