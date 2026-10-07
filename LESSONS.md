@@ -355,7 +355,7 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
 
-### L-34 Final-model measurements survived a deadline-shortened conversion
+### L-42 Final-model measurements survived a deadline-shortened conversion
 - Date: 2026-10-07 (cross-track review of PR #94; synthetic CPU reproduction only).
 - Symptom: the pipeline stopped new layers at the deadline after seven attempts, then cached full MMLU and throughput for that model. Resume accepted the eighth layer but skipped both measurements because their result keys existed. The final MMLU modes still named seven converted layers, so the decision refused the completed conversion with missing valid MMLU evidence; throughput also described the earlier model.
 - Cost: $0; caught before a full8 model run or paid launch. This is distinct from the orphan per-layer probe incident in open PR #109 and the decision-audit fixes in #114. L-33 is reserved by open PR #141.
