@@ -7,7 +7,8 @@
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
 #        child evals (g12 + index) -> report.
-# Exit codes: 0 measured + result valid + exports verified (a G12 reject is a MEASURED outcome, reported, exit 0)
+# Exit codes: 0 measured + result valid + exports verified (a G12 reject, m2_gates 40, and a PENDING promotion,
+#   m2_gates 43 until the #36 margins are approved, are MEASURED outcomes: reported, verdict "measured", exit 0)
 #   4 TOK_S / CALL_S missing or not a number   5 setup   6 export verification   7 phase timeout
 #   9 report / arm / evals missing or invalid   10 snapshot / vendored code / records / train set / cohort / arm identity
 #   15 an eval phase projected (preflight at the env rates, or re-priced at the parent arm's measured speed BEFORE
@@ -202,7 +203,9 @@ python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/pro
   --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --index-rows "$WORK/index-rows.jsonl.gz" \
   --out "$WORK/out/report.json" --stage g12+index --progress-dir "$WORK/logs" > "$WORK/logs/evals.log" 2>&1; r=$?
 gate "evals" $r; export_phase evals
-case $r in 0|40) ;; 124) fail 7 "evals timeout" ;; 15) fail 15 "evals: live rate past the cap" ;;
+# 0 accept / 40 G12 reject / 43 promotion PENDING (Codex #36 contract, PR #102: margins not yet approved): all three are
+# "trained + measured" -- the report is written, the checkpoint and every eval export follow; 43 = not promotable
+case $r in 0|40|43) ;; 124) fail 7 "evals timeout" ;; 15) fail 15 "evals: live rate past the cap" ;;
   10) fail 10 "evals identity (cohort / parent arm / checkpoint lineage)" ;; *) fail 9 "evals rc=$r" ;; esac
 
 # ------------------------------------------------------------------ report: result + checkpoint export

@@ -180,7 +180,7 @@ def summarize(a) -> dict:
         "decision_dev_g12": rep["verdicts"]["g12"].get("paired"),
         "latency": {"child": latency(child_idx["index_results"]), "parent": latency(par_idx["index_results"])},
         "g12": {k: rep["verdicts"]["g12"][k] for k in ("accept", "failed", "criteria")},
-        "promotion": {**rep["promotion"], "margins_status": MARGINS_STATUS, "gates_this_measurement": False},
+        "promotion": promotion_block(rep),
         "cost": {"elapsed_min": a.elapsed_min, "runtime_usd": round(a.elapsed_min * usd, 2),
                  "usd_per_min": usd, "build_minutes_not_included": True,
                  "worst_case_usd": worst_case_usd(params), "hard_cap_usd": params["hard_cap_usd"]},
@@ -192,6 +192,22 @@ def summarize(a) -> dict:
     return out
 
 
+#: m2_gates exit codes that are a completed measurement: accept, G12 reject, promotion PENDING (Codex #36, PR #102)
+MEASURED_EVAL_EXITS = {0: "accept", 40: "reject", 43: "pending"}
+
+
+def promotion_block(rep: dict) -> dict:
+    """The report's promotion verdict, labelled. m2_gates exit 43 (PR #102: the #36 margins are not approved yet) is
+    'pending': trained and measured, NOT promotable; it never makes the result invalid."""
+    pv = dict(rep.get("promotion") or {})
+    code = rep.get("exit_code")
+    if code == 43 or pv.get("verdict") == "pending":
+        pv["verdict"] = "pending"
+    pv.update(margins_status=MARGINS_STATUS, gates_this_measurement=False, evals_exit_code=code,
+              promotable=bool(pv.get("promotable")) and code != 43 and pv["verdict"] != "pending")
+    return pv
+
+
 def valid_result(d: Any) -> bool:
     """``jobs/common/finalize.py`` validator: a trained, scored, self-consistent first-cell result."""
     try:
@@ -201,7 +217,7 @@ def valid_result(d: Any) -> bool:
                 and all(fin(ix[k]["index"][f]) for k in ("child", "parent_stock_readout") for f in ("point", "lo", "hi"))
                 and fin(ix["child_minus_parent"]["index"]["point"]) and set(ix["child"]["areas"])
                 and d["steer_hijack_d1a"]["n_units"] > 0 and d["latency"]["child"]["n"] > 0
-                and d["promotion"]["verdict"] in ("accept", "reject") and d["readout_diagnostics"]["order"]["child"])
+                and d["promotion"]["verdict"] in ("accept", "reject", "pending") and d["readout_diagnostics"]["order"]["child"])
     except Exception:  # noqa: BLE001
         return False
 

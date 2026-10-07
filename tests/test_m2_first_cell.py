@@ -365,7 +365,7 @@ def test_runner_orders_guards_before_training_and_prices_every_eval_first():
     assert "jobs/common/finalize.py" in JOB and not re.search(r"touch [^\n]*DONE", JOB)
     assert not re.search(r"timeout \d+m", JOB)  # every cap comes from job_params
     assert "--final" not in JOB and "SSDM_UNSEAL_TEST" not in JOB and "--slice test" not in JOB
-    assert "case $r in 0|40)" in JOB  # a G12 reject is a measured outcome here
+    assert "case $r in 0|40|43)" in JOB  # a G12 reject and a PENDING promotion (PR #102) are measured outcomes
     assert "--stage g12+index" in JOB and "VALIDATOR=jobs.m2_first_cell.summarize:valid_result" in JOB
     for ph in PARAMS["phase_caps_minutes"]:
         assert f"cap {ph}" in JOB or f"cap \"$3\"" in JOB or f"cap parent_$STAGE" in JOB, ph
@@ -531,3 +531,54 @@ def test_registered_for_the_launch_lint():
     tree = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
     assert "`jobs/m2_first_cell/` | $66.03 | $70 |" in tree
     assert f"{costs.worst_case_usd(PARAMS):.2f}" in (ROOT / "jobs/m2_first_cell/JOB_SPEC.md").read_text(encoding="utf-8")
+
+
+# ----------------------------------------------------------------------------- m2_gates exit 43 (Codex #36, PR #102)
+@pytest.mark.parametrize("code,measured", [(0, True), (40, True), (43, True), (10, False), (2, False)])
+def test_evals_exit_43_is_a_measurement_not_a_crash(code, measured):
+    """Until PR #102 lands the #36 margins, m2_gates exits 43 (promotion PENDING). The runner must treat it like 0 / 40:
+    no fail(), so the report phase writes the result and exports the checkpoint after the evals export."""
+    bash = shutil.which("bash")
+    if not bash or re.search(r"system32|windowsapps", bash, re.I):
+        pytest.skip("no POSIX bash")
+    lines = JOB.splitlines()
+    i = next(k for k, ln in enumerate(lines) if ln.startswith("case $r in 0|40|43)"))
+    block = "\n".join(lines[i:i + 2])
+    script = ("set -Euo pipefail\nfail() { echo \"FAIL($1): $2\"; exit \"$1\"; }\n"
+              f"r={code}\n{block}\necho MEASURED")
+    r = subprocess.run([bash, "-c", script], capture_output=True, text=True, timeout=30)
+    assert ("MEASURED" in r.stdout and r.returncode == 0) is measured, r.stdout
+    assert JOB.index("gate \"evals\" $r; export_phase evals") < JOB.index("case $r in 0|40|43)")  # evals exported first
+    assert JOB.index("case $r in 0|40|43)") < JOB.index('cp "$CK/cell/$LATEST"')  # then the checkpoint export
+
+
+def test_pending_promotion_is_a_valid_measured_result():
+    from jobs.m2_first_cell.summarize import MEASURED_EVAL_EXITS, promotion_block
+
+    assert MEASURED_EVAL_EXITS == {0: "accept", 40: "reject", 43: "pending"}
+    pv = promotion_block({"exit_code": 43, "promotion": {"verdict": "reject", "promotable": False}})
+    assert pv["verdict"] == "pending" and pv["promotable"] is False and pv["evals_exit_code"] == 43
+    assert "PENDING CODEX APPROVAL (#36)" in pv["margins_status"]
+    ok = promotion_block({"exit_code": 0, "promotion": {"verdict": "accept", "promotable": True}})
+    assert ok["verdict"] == "accept" and ok["promotable"] is True
+    src = (ROOT / "jobs/m2_first_cell/summarize.py").read_text(encoding="utf-8")
+    assert 'in ("accept", "reject", "pending")' in src and '"verdict": "measured"' in src
+
+
+def test_launch_blocks_and_data_pins():
+    p = PARAMS
+    assert p["submit"]["command"] == "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh"
+    assert p["submit"]["env"] == {"TOK_S": "3757", "CALL_S": "0.117"}
+    assert p["context"]["cmd_rewrite"] == ["jobs/rwkv7/rwkv7_job.sh", "jobs/m2_first_cell/first_cell_job.sh"]
+    dests = {d["dest"] for d in p["context"]["data"]}
+    assert dests == {"m2/records.jsonl.gz", "slices/dev-rows.jsonl.gz", "m2-150k/records.jsonl.gz",
+                     "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+                     "m2-150k/sample-150000-seed20261006.content.jsonl.gz", "suite-0.2/selected-rows.jsonl.gz",
+                     "suite-0.2/added-rows.jsonl.gz", "suite-0.2/excluded-questions.json"}
+    from jobs.common.launch import pins
+
+    for d in p["context"]["data"]:  # every shipped file has a pin line under its context path
+        assert d["dest"] in pins((ROOT / d["pin"]).read_text(encoding="utf-8")), d
+    # the runner reads exactly these context paths (M2FC_DATA defaults to /data)
+    for rel in ("$DATA/m2-150k", "$DATA/m2/records.jsonl.gz", "$DATA/suite-0.2", "$DATA/slices/dev-rows.jsonl.gz"):
+        assert rel in JOB, rel

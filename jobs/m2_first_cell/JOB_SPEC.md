@@ -87,6 +87,64 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 - The 2,008-row subset is not the 12,104-row DEV slice; Clef-flash's 56.8 is on the full slice (55.8 on the subset).
 - The eager WKV bounds training to ~8 M tokens; a flat result is not evidence that more training would not help.
 
+## `submit_job` fields (do not submit until PR #74 is merged and independently reviewed)
+
+1. Context: `python -m jobs.common.launch m2_first_cell --sha <merged sha> --out <dir> --data <SSDM_DATA>` (PR #93:
+   lint + job tests on the archived tree, pinned data, deterministic context, `submit.json`), then `create_context`,
+   upload, `finalize_context`.
+2. `open_mission("m2-first-cell")`; `set_workspace_cap(MTD + 70)`.
+
+```json
+{
+ "chip": "h100",
+ "chip_count": 1,
+ "mission": "m2-first-cell",
+ "idempotency_key": "m2-first-cell-<context_sha256[:12]>",
+ "label": "m2 first cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k; tvuat ADOPT exec",
+ "context_id": "<from create_context>",
+ "dockerfile_path": "Dockerfile",
+ "build_timeout_minutes": 60,
+ "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh",
+ "env": {
+  "TOK_S": "3757",
+  "CALL_S": "0.117"
+ },
+ "max_duration_minutes": 637,
+ "max_restarts": 0,
+ "resume": "checkpoint",
+ "queue_ttl_minutes": 1440,
+ "hf_cache": true,
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "checks": {
+  "success": {
+   "check": {
+    "all_of": [
+     {
+      "type": "file_exists",
+      "path": "/output/M2_FIRST_CELL_DONE"
+     },
+     {
+      "type": "file_exists",
+      "path": "/output/MANIFEST.jsonl"
+     }
+    ]
+   }
+  },
+  "health": {
+   "check": {
+    "type": "heartbeat",
+    "path": "/output/heartbeat"
+   },
+   "interval_s": 600,
+   "grace_period_s": 1800,
+   "fail_threshold": 2,
+   "on_fail": "kill"
+  }
+ },
+ "clock_lock": true
+}
+```
+
 ## Before submit
 
 1. Independent fresh-context review; merge to `agent-main`.
