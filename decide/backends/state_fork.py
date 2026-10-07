@@ -37,9 +37,9 @@ TOKEN_BUDGET = 4096  # tail positions per packed call: logits <= 4096 x V floats
 #: Prefix-state copies per packed call, in prefix TOKENS x rows (``state_budget``). ``extend`` expands the prefix state
 #: to one copy per row, so for a model with an attention KV cache a pack costs rows x |P| x (KV bytes per token)
 #: whatever the tail length. ``TOKEN_BUDGET`` alone bounds the logits, not this: on job-5cmat (Qwen3.5-9B, H100 80 GB)
-#: a one-question 129-option POP909-CL row (|P| ~ 7.3-8.7k tokens, 1-token question suffix) packed 128 rows, and the
-#: SDPA KV-head repeat of ONE attention layer asked for 128 x |P| x 16 heads x 256 x 2 B = 1 MiB per prefix token
-#: (7.5-9.2 GB; the logged CUDACachingAllocator OOMs are exactly 2^20 x |P| bytes) on top of the 128 expanded KV caches:
+#: a one-question 129-option POP909-CL row (|P| ~ 6-8.7k tokens, 1-token question suffix) packed all 129 rows, each
+#: with its own prefix KV copy (plus SDPA's per-layer KV-head repeat); the stock arm OOMed on every row with |P| >= 6,226
+#: (the only ok row had |P| = 6,087; allocator OOMs of 2.3-9.2 GB logged inside the POP909 block):
 #: CUDA OOM -> ``decide`` ``backend_error`` on 58/59 (stock) and 39/59 (conv) POP909 rows, arm-asymmetric because the
 #: converted arm keeps one attention layer fewer. Plugins with a KV cache set ``ModelPlugin.fork_state_token_budget``;
 #: recurrent-only states (RWKV-7, all-GDN Q9-AF) are |P|-independent and keep ``None`` (unbounded).

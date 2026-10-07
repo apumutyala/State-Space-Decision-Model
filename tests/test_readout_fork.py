@@ -216,14 +216,15 @@ def test_common_prefix_and_plan_shape():
 
 # ---------------------------------------------------------------------- job-5cmat POP909-CL OOM (issue #36 review)
 def test_state_budget_caps_rows_x_prefix_per_pack():
-    """job-5cmat root cause: a one-question 129-option row (1-token question suffix, |P| ~ 8k) packed 128 rows under
-    the tail token budget, and every row got its own copy of the prefix KV state -> CUDA OOM -> backend_error. The
-    state budget caps rows x |P| per pack; the tail token budget alone does not."""
+    """job-5cmat root cause: a one-question 129-option row (1-token question suffix, |P| ~ 6-8.7k) packed all option
+    rows under the tail token budget, and every row got its own copy of the prefix KV state -> CUDA OOM ->
+    backend_error (stock arm: every row with |P| >= 6,226). The state budget caps rows x |P| per pack; the tail token
+    budget alone does not."""
     L = 8000
     prompt = list(range(L + 1))
     rows = [{"qid": "chord", "option": f"chord_{i}", "prompt": prompt, "cont": [7] * (1 + i % 3)} for i in range(129)]
     _, free = fork_plan(rows, 256)
-    assert max(len(c.tails) for c in free if c.kind == "pack") == 129  # the shape that OOMed (128 + 1 at W = 32)
+    assert max(len(c.tails) for c in free if c.kind == "pack") == 129  # the shape that OOMed: every option row copies the whole prefix state
     budget = 2 ** 18
     Lp, capped = fork_plan(rows, 256, state_budget=budget)
     packs = [c for c in capped if c.kind == "pack"]

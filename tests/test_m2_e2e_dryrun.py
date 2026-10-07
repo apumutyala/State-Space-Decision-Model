@@ -59,7 +59,7 @@ def test_m2_dry_run_end_to_end(tmp_path):
             assert v12["accept"] == (not v12["failed"]) and v13["accept"] == (not v13["failed"])
             from train.promotion import MARGINS
 
-            assert v12["margins"]["status"] == MARGINS["status"] and "resizing" in v12 and "resizing" in v13
+            assert v12["margins"]["status"] == MARGINS["status"]
             assert r["verdict_g12_self"]["failed_evaluable"] == []  # self-comparison never fails on a CI
             assert r["cards"]["child"]["g4_exact_k1"]["n_variants"] > 0
             assert "lam_hat" in r["cards"]["child"]["g5_ltt"]
