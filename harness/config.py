@@ -24,6 +24,9 @@ KIT_03_COMMIT = "62d2f51de34a2de64906345b6bc3e98e27ff55c7"
 INDEX_03_SPEC_SHA256 = "158c38439c004a1bfb371dab02ec614046aabd3de08a02629ae89e7137d67167"
 INDEX_03_SPEC = Path(__file__).resolve().parent / "editions_data" / "index-0.3.json"
 GSM8K_03_RUN_ID_PREFIX = "v0.3-gsm8k:"  # editions.py@62d2f51: replaced={30: "v0.3-gsm8k:"}
+# Rebuilt 0.3 GSM8K rows (kit PR #74 gsm8k_v3.build over the pinned GSM8K test parquet + our 0.2 rows);
+# uncompressed sha256 pinned in editions.py@62d2f51 and reproduced locally byte-identically.
+GSM8K_03_SHA256 = "759334894858a37d6bd7bd07298eac8e55da236e31dad327ccd06a9979f4738a"
 RETIRED = {"0.2.1": (), "0.3": (48,)}  # ForecastBench retired in 0.3
 REPLACED = {"0.2.1": {}, "0.3": {30: GSM8K_03_RUN_ID_PREFIX}}  # GSM8K rows rebuilt in 0.3
 # Board data for 0.3 (Space multimodalart/jev-decision-index @ 6ceab83, fetched 2026-10-06).
@@ -48,6 +51,7 @@ DATA_ROOT = Path(os.environ.get("SSDM_DATA", r"C:\Users\apumu\research\CHLabs\ss
 SUITE_DIR = Path(os.environ.get("SSDM_DI_SUITE", str(DATA_ROOT / "suite-0.2")))
 KIT_CLONE = Path(os.environ.get("SSDM_DI_KIT", str(DATA_ROOT / "decision-index")))
 SPACE_DIR = DATA_ROOT / "di-space"
+GSM8K_03_ROWS = Path(os.environ.get("SSDM_DI_GSM8K03", str(DATA_ROOT / "suite-0.3-gsm8k" / "gsm8k-rows.jsonl.gz")))
 
 # Slices: manifests are committed (IDs + hashes only); materialised rows stay outside git.
 REPO_ROOT = Path(__file__).resolve().parents[1]

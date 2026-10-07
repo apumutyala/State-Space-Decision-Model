@@ -6,8 +6,9 @@
   compare --candidate A --baseline B [--slice dev] [--edition E]  paired CI for A - B
 
 --edition 0.3 scores the 0.3 *public* index (37 benchmarks; ForecastBench retired, WinoGrande under
-Knowledge, fixed area weights). 0.2.1 GSM8K rows do not count in 0.3; until the rebuilt GSM8K rows
-are run, GSM8K is absent and its weight is spread over Knowledge (slice index). Default: 0.2.1.
+Knowledge, fixed area weights). 0.2.1 GSM8K rows do not count in 0.3; the slice gets the rebuilt GSM8K
+twins (`python -X utf8 -m harness.gsm8k03` builds the addenda). --omit-gsm8k03 drops them (old result
+files that never ran them; GSM8K weight is then spread over Knowledge). Default: 0.2.1.
   ece     --results R [--slice dev]          board ECE, debiased ECE, SmoothECE per length bin
   mde     --se SE --clusters N               MDE table
   selfcheck [--slice dev]                    parity + perfect/uniform/noisy-oracle checks
@@ -53,7 +54,23 @@ def log_unseal(prereg):
     print(f"TEST unsealed; logged to {UNSEAL_LOG} -- commit that file", file=sys.stderr)
 
 
-def load_slice(name):
+def load_slice(name, edition=None, gsm8k03=True):
+    """0.2.1 slice rows (default). edition="0.3": the 0.3 restriction (no ForecastBench, no 0.2.1 GSM8K) plus,
+    if gsm8k03, the rebuilt GSM8K twins from the slice's addendum manifest (`harness.gsm8k03`). gsm8k03=False
+    is for re-scoring old result files that never saw the rebuilt rows. TEST stays behind the same unseal gate."""
+    rows = _load_slice_021(name)
+    if config.edition_id(edition) == "0.2.1":
+        return rows
+    from harness import gsm8k03 as g03  # not `gsm8k03`: that name is the bool parameter
+    from harness.suite import edition_rows
+
+    rows = edition_rows(rows, edition)
+    if gsm8k03:
+        rows = sorted(rows + g03.addendum_rows(name), key=lambda r: r["_evaluation"]["run_id"])
+    return rows
+
+
+def _load_slice_021(name):
     if name == "test":
         if os.environ.get("SSDM_UNSEAL_TEST") != "1" or not os.environ.get("SSDM_PREREG"):
             sys.exit("TEST slice is sealed. Unseal only for a pre-registered final evaluation: set SSDM_UNSEAL_TEST=1 and SSDM_PREREG=<path or URL of the committed pre-registration>.")
@@ -105,7 +122,7 @@ def cmd_slice(a):
 
 
 def cmd_score(a):
-    rows = load_slice(a.slice)
+    rows = load_slice(a.slice, a.edition, not a.omit_gsm8k03)
     res = load_results(a.results)
     off = score.official(rows, res, edition=a.edition)
     benches = score.decompose(rows, res, edition=a.edition)
@@ -115,7 +132,7 @@ def cmd_score(a):
 
 
 def cmd_compare(a):
-    rows = load_slice(a.slice)
+    rows = load_slice(a.slice, a.edition, not a.omit_gsm8k03)
     c = score.decompose(rows, load_results(a.candidate), edition=a.edition)
     b = score.decompose(rows, load_results(a.baseline), edition=a.edition)
     out = bootstrap.compare(c, b, B=a.B, seed=a.seed)
@@ -168,6 +185,7 @@ def main(argv=None):
         s.add_argument("--B", type=int, default=2000)
         s.add_argument("--seed", type=int, default=0)
         s.add_argument("--edition", default=config.EDITION, choices=config.EDITIONS)
+        s.add_argument("--omit-gsm8k03", action="store_true", help="0.3: leave out the rebuilt GSM8K rows (old result files)")
     s = sub.add_parser("compare")
     s.add_argument("--candidate", required=True)
     s.add_argument("--baseline", required=True)
@@ -175,6 +193,7 @@ def main(argv=None):
     s.add_argument("--B", type=int, default=2000)
     s.add_argument("--seed", type=int, default=0)
     s.add_argument("--edition", default=config.EDITION, choices=config.EDITIONS)
+    s.add_argument("--omit-gsm8k03", action="store_true", help="0.3: leave out the rebuilt GSM8K rows (old result files)")
     s = sub.add_parser("mde")
     s.add_argument("--se", type=float, required=True)
     s.add_argument("--clusters", type=int, required=True)
