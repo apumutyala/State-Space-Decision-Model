@@ -135,7 +135,8 @@ Estimated output (`cache.estimate_bytes`, a bf16 upper bound from the same plan;
    1. `python -m train.proxy_loop stock-check` (A1(d): |Δ| ≤ 0.3, else no-measurement);
    2. `recipes`;
    3. `select`;
-   4. `holdout` (single shot).
+   4. `holdout --dev-rows ... --clef ...` (single shot). It re-derives the choice from the SELECT receipts and checks their hashes, scores, and the code identity. It validates every input before creating anything, then binds the attempt in `holdout_attempt.json`. After a crash, re-running resumes the same attempt.
+5. Commit `select_summary.json`, `holdout_attempt.json` and `verdict.json` to `stack/q9/proxy-head` (`receipts/<date>-D-q9-proxy-holdout/`) as soon as each is written. Those commits are the once-only record.
 
 ## Exact submit_job fields (one block per mode; generated from job_params by jobs/common/launch.py, checked field by field in tests/test_launch.py)
 

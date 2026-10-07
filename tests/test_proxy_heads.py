@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -196,50 +197,212 @@ def test_select_summary_refuses_mixed_budgets_and_a_changed_cache(tmp_path, monk
         PL.select_summary(t2, "cache")
 
 
-def _summary(out, chosen="R01"):
-    (out / "select_summary.json").write_text(json.dumps({
-        "chosen": chosen, "candidates": list(R.candidate_ids()), "rows": [{"id": i} for i in R.candidate_ids()],
-        "budget_sha256": PL.budget_sha(PL.TRAIN), "cache_identity": {"stock": {}}}), encoding="utf-8")
+# ------------------------------------------------------------------ HOLDOUT hardening (re-review N1 / N2 / N3)
+def _select_world(out, monkeypatch, chosen_bias="R03"):
+    """A complete, authentic SELECT stage on disk: one receipt dir per recipe (results.jsonl + head.pt + receipt with
+    their sha256s), select_summary written by PL.select_summary itself, a cache with stock holdout / train manifests,
+    dev rows and Clef-flash results covering every HOLDOUT id."""
+    import gzip
+
+    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {a: {"m": "1"} for a in arms})
+    monkeypatch.setattr(PL, "compare", lambda *a, **k: {"diff": {"point": 0.0}})
+    for r in RECIPES:
+        d = out / f"{r['id']}_s0_select"
+        d.mkdir(parents=True)
+        (d / "results.jsonl").write_text(r["id"], encoding="utf-8")
+        (d / "head.pt").write_bytes(r["id"].encode())
+        pt = 40.0 + (5.0 if r["id"] == chosen_bias else 0.0) + int(r["id"][1:]) / 100
+        (d / "receipt.json").write_text(json.dumps({
+            "recipe": r, "budget_sha256": PL.budget_sha(PL.TRAIN), "cache_identity": {r["arm"]: {"m": "1"}},
+            "score": {"all": {"point": pt, "lo": 0, "hi": 1}}, "results": str(d / "results.jsonl"),
+            "results_sha256": PL._sha(d / "results.jsonl"), "head_sha256": PL._sha(d / "head.pt")}), encoding="utf-8")
+    PL.select_summary(out, "cache")
+    cache = out.parent / "cache"
+    for sp in ("holdout", "train"):
+        (cache / "stock" / sp).mkdir(parents=True, exist_ok=True)
+        (cache / "stock" / sp / "MANIFEST.jsonl").write_text("{}\n", encoding="utf-8")
+    ids = PL.subset_ids(R.HOLDOUT_SUBSET)
+    dev = out.parent / "dev.jsonl.gz"
+    with gzip.open(dev, "wt", encoding="utf-8") as f:
+        for i in ids:
+            f.write(json.dumps({"_evaluation": {"run_id": i, "catalog_id": 1}, "questions": {}}) + "\n")
+    clef = out.parent / "clef.jsonl"
+    clef.write_text("".join(json.dumps({"run_id": i, "status": "ok"}) + "\n" for i in ids), encoding="utf-8")
+    return str(cache), str(dev), str(clef)
 
 
-def _fake_run(calls, counts, point):
+def _fake_run(calls, counts, point, fail_seed=None):
     def run(recipe, cache, dev_rows, out, split, subset, seed, *a, **k):
         calls.append((recipe["id"], split, seed))
-        (out / f"{recipe['id']}_s{seed}_{split}").mkdir(exist_ok=True)
-        return {"seed": seed, "counts": counts, "score": {"all": {"point": point}, "0.3": {"all": {"point": point}},
-                                                          R.VERDICT_EDITION: {"vs_clef_flash": None,
-                                                                              **{c: {} for c in R.DOMAIN_COLUMNS}}}}
+        if seed == fail_seed:
+            raise RuntimeError("simulated crash mid-HOLDOUT")
+        rec = {"seed": seed, "counts": counts, "score": {"all": {"point": point}, "0.3": {"all": {"point": point}},
+                                                         R.VERDICT_EDITION: {"vs_clef_flash": None,
+                                                                             **{c: {} for c in R.DOMAIN_COLUMNS}}}}
+        d = out / f"{recipe['id']}_s{seed}_{split}"
+        d.mkdir()
+        (d / "receipt.json").write_text(json.dumps(rec), encoding="utf-8")
+        return rec
     return run
 
 
-def test_holdout_is_single_shot(tmp_path, monkeypatch):
-    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {a: {} for a in arms})
-    with pytest.raises(PL.OutOfOrder, match="select_summary"):
-        PL.holdout(tmp_path, "cache", "rows", None, 10)
-    _summary(tmp_path)
-    with pytest.raises(PL.OutOfOrder, match="only the chosen recipe"):
-        PL.holdout(tmp_path, "cache", "rows", None, 10, recipe="R11")
+FULL = {"ids": 2014, "rows": 2014, "cached": 2014}
+
+
+def test_holdout_runs_once_for_the_rederived_choice(tmp_path, monkeypatch):
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
     calls = []
-    monkeypatch.setattr(PL, "run_recipe", _fake_run(calls, {"ids": 2014, "rows": 2014, "cached": 2014}, 51.0))
-    v = PL.holdout(tmp_path, "cache", "rows", None, 10, recipe="R01")
-    assert v["verdict"] == "go" and [c[0] for c in calls] == ["R01"] * 3 and {c[1] for c in calls} == {"holdout"}
-    assert v["scope"] == R.VERDICT_SCOPE and v["edition"] == "0.2.1"
+    monkeypatch.setattr(PL, "run_recipe", _fake_run(calls, FULL, 51.0))
+    with pytest.raises(PL.OutOfOrder, match="only the chosen recipe"):
+        PL.holdout(out, cache, dev, clef, 10, recipe="R11")
+    assert not list(out.glob("*_holdout")) and not (out / "holdout_attempt.json").exists()
+    v = PL.holdout(out, cache, dev, clef, 10, recipe="R03")
+    assert v["verdict"] == "go" and v["chosen"] == "R03" and [c[0] for c in calls] == ["R03"] * 3
+    assert v["scope"] == R.VERDICT_SCOPE and v["holdout_attempt_sha256"] == PL._sha(out / "holdout_attempt.json")
     with pytest.raises(PL.OutOfOrder, match="once"):
-        PL.holdout(tmp_path, "cache", "rows", None, 10)
+        PL.holdout(out, cache, dev, clef, 10)
 
 
-def test_holdout_with_a_stale_summary_or_cache_is_refused(tmp_path, monkeypatch):
-    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {a: {"train": "NEW"} for a in arms})
-    _summary(tmp_path)
-    with pytest.raises(PL.OutOfOrder, match="differs"):
-        PL.holdout(tmp_path, "cache", "rows", None, 10)
+def test_holdout_rederives_the_choice_and_refuses_a_hand_edited_summary(tmp_path, monkeypatch):
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
+    sp = out / "select_summary.json"
+    doc = json.loads(sp.read_text(encoding="utf-8"))
+    sp.write_text(json.dumps({**doc, "chosen": "R11"}), encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match="own rows choose 'R03'"):
+        PL.holdout(out, cache, dev, clef, 10)
+    rows = [{**r, "select": 99.0} if r["id"] == "R11" else r for r in doc["rows"]]  # inflate a score too
+    sp.write_text(json.dumps({**doc, "chosen": "R11", "rows": rows}), encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match="R11: select_summary SELECT score"):  # consistent but forged
+        PL.holdout(out, cache, dev, clef, 10)
+    assert not list(out.glob("*_holdout"))
+
+
+def test_holdout_checks_receipts_and_files_against_the_summary(tmp_path, monkeypatch):
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
+    (out / "R07_s0_select" / "head.pt").write_bytes(b"swapped")
+    with pytest.raises(PL.OutOfOrder, match="R07: the SELECT results / head files"):
+        PL.holdout(out, cache, dev, clef, 10)
+    t2 = tmp_path / "p"
+    cache, dev, clef = _select_world(t2, monkeypatch)
+    rec = t2 / "R05_s0_select" / "receipt.json"
+    rec.write_text(json.dumps({**json.loads(rec.read_text(encoding="utf-8")), "head_sha256": "0" * 64}), encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match="R05: select_summary head_sha256"):
+        PL.holdout(t2, cache, dev, clef, 10)
+
+
+def test_holdout_refuses_changed_code(tmp_path, monkeypatch):
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
+    real = PL.code_identity()
+    monkeypatch.setattr(PL, "code_identity", lambda: {**real, "train/proxy_heads.py": "edited"})
+    with pytest.raises(PL.OutOfOrder, match="code_identity"):
+        PL.holdout(out, cache, dev, clef, 10)
+
+
+def test_holdout_refuses_partial_coverage_and_a_budget_mismatch(tmp_path, monkeypatch):
+    """N3: the holdout-side refusals (select_summary's own are tested above)."""
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
+    sp = out / "select_summary.json"
+    doc = json.loads(sp.read_text(encoding="utf-8"))
+    sp.write_text(json.dumps({**doc, "rows": [r for r in doc["rows"] if r["id"] != "R12"]}), encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match=r"no SELECT score for \['R12'\]"):
+        PL.holdout(out, cache, dev, clef, 10)
+    sp.write_text(json.dumps({**doc, "candidates": doc["candidates"][:-1]}), encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match="every candidate"):
+        PL.holdout(out, cache, dev, clef, 10)
+    sp.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match="budget"):
+        PL.holdout(out, cache, dev, clef, 10, budget={**PL.TRAIN, "steps": 1999})
+    assert not list(out.glob("*_holdout")) and not (out / "holdout_attempt.json").exists()
+
+
+def test_holdout_validates_every_input_before_any_training_or_directory(tmp_path, monkeypatch):
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
+    calls = []
+    monkeypatch.setattr(PL, "run_recipe", _fake_run(calls, FULL, 51.0))
+    before = sorted(p.name for p in out.iterdir())
+    with pytest.raises(PL.OutOfOrder, match="--clef"):
+        PL.holdout(out, cache, dev, str(tmp_path / "missing.jsonl"), 10)
+    short = tmp_path / "clef_short.jsonl"
+    short.write_text("".join(Path(clef).read_text(encoding="utf-8").splitlines(keepends=True)[:-3]), encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match="miss 3 HOLDOUT ids"):
+        PL.holdout(out, cache, dev, str(short), 10)
+    with pytest.raises(PL.OutOfOrder, match="--dev-rows"):
+        PL.holdout(out, cache, str(tmp_path / "nope.gz"), clef, 10)
+    with pytest.raises(PL.OutOfOrder, match="no stock holdout"):
+        PL.holdout(out, str(tmp_path / "empty_cache"), dev, clef, 10)
+    assert calls == [] and sorted(p.name for p in out.iterdir()) == before  # nothing created, nothing trained
+
+
+def test_a_crash_after_validation_resumes_the_same_attempt(tmp_path, monkeypatch):
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
+    calls = []
+    monkeypatch.setattr(PL, "run_recipe", _fake_run(calls, FULL, 49.0, fail_seed=1))
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        PL.holdout(out, cache, dev, clef, 10)
+    assert (out / "holdout_attempt.json").exists() and not (out / "verdict.json").exists()
+    assert (out / "R03_s0_holdout").exists() and not (out / "R03_s1_holdout").exists()
+    # changed input after the attempt was bound: refused
+    Path(clef).write_text(Path(clef).read_text(encoding="utf-8") + json.dumps({"run_id": "x"}) + "\n", encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match="holdout_attempt.json binds"):
+        PL.holdout(out, cache, dev, clef, 10)
+    Path(clef).write_text("".join(Path(clef).read_text(encoding="utf-8").splitlines(keepends=True)[:-1]), encoding="utf-8")
+    calls.clear()
+    monkeypatch.setattr(PL, "run_recipe", _fake_run(calls, FULL, 49.0))
+    v = PL.holdout(out, cache, dev, clef, 10)
+    assert [c[2] for c in calls] == [1, 2]  # seed 0 kept from the first attempt; no re-choice
+    assert v["verdict"] == "escalate" and v["escalate_to"] == "user" and v["chosen"] == "R03"
+
+
+def test_holdout_dirs_without_an_attempt_are_refused(tmp_path, monkeypatch):
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
+    (out / "R03_s0_holdout").mkdir()
+    with pytest.raises(PL.OutOfOrder, match="without a holdout_attempt.json"):
+        PL.holdout(out, cache, dev, clef, 10)
 
 
 def test_holdout_incomplete_split_is_no_measurement(tmp_path, monkeypatch):
-    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {a: {} for a in arms})
-    _summary(tmp_path)
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
     monkeypatch.setattr(PL, "run_recipe", _fake_run([], {"ids": 2014, "rows": 2010, "cached": 2010}, 60.0))
-    assert PL.holdout(tmp_path, "cache", "rows", None, 10)["verdict"] == "no-measurement"
+    assert PL.holdout(out, cache, dev, clef, 10)["verdict"] == "no-measurement"
+
+
+def test_run_recipe_receipt_dir_appears_only_when_complete(tmp_path, monkeypatch):
+    """N2: a crash inside run_recipe leaves only a *.partial-* directory, never a *_holdout receipt."""
+    monkeypatch.setattr(PL, "load_split", lambda *a, **k: synthetic(4, 0))
+    monkeypatch.setattr(PL, "subset_ids", lambda subset: ["a"])
+    monkeypatch.setattr(PL, "_dev_rows", lambda dev, ids: {})
+    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {})
+
+    def boom(*a, **k):
+        raise RuntimeError("scoring crashed")
+
+    monkeypatch.setattr(PL, "report", boom)
+    with pytest.raises(RuntimeError, match="scoring crashed"):
+        PL.run_recipe({**RECIPES[11]}, "c", "d", tmp_path, "holdout", R.HOLDOUT_SUBSET, 0, "clef", None, 10,
+                      {**PL.TRAIN, "steps": 1, "grad_accum": 2})
+    assert not list(tmp_path.glob("*_holdout")) and len(list(tmp_path.glob("*_holdout.partial-*"))) == 1
+    monkeypatch.setattr(PL, "report", lambda *a, **k: {"all": {"point": 1.0}})
+    rec = PL.run_recipe({**RECIPES[11]}, "c", "d", tmp_path, "holdout", R.HOLDOUT_SUBSET, 0, "clef", None, 10,
+                        {**PL.TRAIN, "steps": 1, "grad_accum": 2})
+    d = tmp_path / "R11_s0_holdout"
+    assert (d / "receipt.json").exists() and rec["results"] == str(d / "results.jsonl")
+    assert rec["head_sha256"] == PL._sha(d / "head.pt") and rec["code_identity"] == PL.code_identity()
+
+
+def test_holdout_cli_requires_clef_and_dev_rows_and_an_existing_out(tmp_path):
+    with pytest.raises(SystemExit):
+        PL.main(["holdout", "--cache", "c", "--out", str(tmp_path)])
+    assert PL.main(["holdout", "--cache", "c", "--dev-rows", "d", "--clef", "x", "--out", str(tmp_path / "new")]) == 4
+    assert not (tmp_path / "new").exists()
 
 
 def test_recipes_only_never_writes_select_summary(tmp_path, monkeypatch):
@@ -252,4 +415,20 @@ def test_recipes_only_never_writes_select_summary(tmp_path, monkeypatch):
 def test_recipes_and_holdout_need_a_passing_stock_check(tmp_path):
     assert PL.main(["recipes", "--cache", "c", "--out", str(tmp_path)]) == 4
     (tmp_path / "stock_check.json").write_text(json.dumps({"ok": False}), encoding="utf-8")
-    assert PL.main(["holdout", "--cache", "c", "--out", str(tmp_path)]) == 4
+    assert PL.main(["holdout", "--cache", "c", "--dev-rows", "d", "--clef", "x", "--out", str(tmp_path)]) == 4
+
+
+def test_holdout_refuses_a_summary_made_under_other_rule_amendments(tmp_path, monkeypatch):
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
+    sp = out / "select_summary.json"
+    doc = json.loads(sp.read_text(encoding="utf-8"))
+    assert doc["amendments"] == list(R.AMENDMENTS)
+    sp.write_text(json.dumps({**doc, "amendments": []}), encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match="amendments"):
+        PL.holdout(out, cache, dev, clef, 10)
+    sp.write_text(json.dumps(doc), encoding="utf-8")
+    monkeypatch.setattr(R, "AMENDMENTS", tuple(R.AMENDMENTS) + ("A2",))  # the rule gained an amendment since SELECT
+    with pytest.raises(PL.OutOfOrder, match="amendments"):
+        PL.holdout(out, cache, dev, clef, 10)
+    assert not list(out.glob("*_holdout")) and not (out / "holdout_attempt.json").exists()

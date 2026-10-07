@@ -15,10 +15,22 @@ job parts (e.g. stock select+holdout and stock train) unpack into one cache dire
 with any unanswerable question is written with status "error" and scores zero, as the stock readout's errored rows do.
 Verdict edition 0.2.1; every score is also reported under 0.3 (A1(c)).
 
-Single-shot HOLDOUT (review B2): ``holdout`` refuses if verdict.json or any holdout receipt exists, refuses a recipe other
-than select_summary's choice, requires select_summary to cover EVERY candidate (R01-R15) trained with one budget and one
-cache identity (which must still match the cache on disk), and counts the split complete only if cached == len(ids) ==
-rows over the HOLDOUT id list.
+Single-shot HOLDOUT (review B2, re-review N1 / N2):
+  * the choice is RE-DERIVED: ``chosen == proxy_rule.choose(rows)`` over select_summary's rows, and every row's
+    ``results_sha256`` / ``head_sha256`` must equal its SELECT receipt AND the files on disk; select_summary records a
+    code identity (sha256 of the proxy loop's own modules) that must still match the code that runs the holdout;
+  * select_summary must cover EVERY candidate (R01-R15) trained with one budget and one cache identity (which must still
+    match the cache on disk); ``--recipe`` other than the choice is refused;
+  * every input (``--dev-rows`` and ``--clef`` are REQUIRED) is validated BEFORE any training or directory creation: the
+    dev-rows file holds every HOLDOUT id, the Clef-flash results cover every HOLDOUT id, the cached HOLDOUT split exists;
+  * the attempt is then bound atomically in ``holdout_attempt.json`` (choice, select_summary sha256, input sha256s,
+    code identity). Each seed's receipt directory is built under a temporary name and renamed into place only when its
+    receipt is complete, so a crash never leaves a half receipt. Re-running ``holdout`` after a crash RESUMES the same
+    attempt (same choice, same inputs; completed seeds are kept, missing ones are run) and cannot re-choose; a
+    ``*_holdout`` directory without an attempt file, a changed input, or an existing verdict.json is refused;
+  * the split counts complete only if cached == len(ids) == rows over the HOLDOUT id list.
+Procedure (once-only record): commit select_summary.json, holdout_attempt.json and verdict.json to the results branch
+``stack/q9/proxy-head`` (``receipts/<date>-D-q9-proxy-holdout/``) as soon as each is written.
 """
 
 from __future__ import annotations
@@ -27,6 +39,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import os
 import sys
 import time
 from argparse import Namespace
@@ -57,6 +70,16 @@ def _sha(path) -> str:
 
 def budget_sha(budget: dict) -> str:
     return hashlib.sha256(json.dumps(budget, sort_keys=True).encode()).hexdigest()
+
+
+#: the modules whose code decides a proxy score (re-review N1: the holdout must run the code SELECT ran)
+CODE_FILES = ("train/proxy_loop.py", "train/proxy_heads.py", "train/proxy_rule.py", "train/losses.py",
+              "heads/heads.py", "heads/typed.py", "jobs/q9_feature_cache/extract.py")
+
+
+def code_identity() -> dict:
+    """sha256 of each file in CODE_FILES, with CRLF normalised to LF (a Windows checkout scores the same code)."""
+    return {f: hashlib.sha256((ROOT / f).read_bytes().replace(b"\r\n", b"\n")).hexdigest() for f in CODE_FILES}
 
 
 # ----------------------------------------------------------------------------------------------- data
@@ -295,8 +318,10 @@ def run_recipe(recipe: dict, cache: str, dev_rows: str, out: Path, split: str, s
     reqs = load_split(cache, arm, split)
     ids = subset_ids(subset)
     rows = _dev_rows(dev_rows, set(ids))
-    d = out / f"{recipe['id']}_s{seed}_{split}"
-    d.mkdir(parents=True, exist_ok=True)
+    final = out / f"{recipe['id']}_s{seed}_{split}"
+    # built under a temporary name, renamed into place only when the receipt is complete (re-review N2)
+    d = out / f"{final.name}.partial-{os.getpid()}-{time.time_ns()}"
+    d.mkdir(parents=True)
     res = d / "results.jsonl"
     counts = write_results(res, rows, reqs, predict(head, reqs), f"proxy-{recipe['id']}")
     counts.update(ids=len(ids), rows=len(rows), cached=len({r.rid for r in reqs} & set(ids)))
@@ -305,11 +330,14 @@ def run_recipe(recipe: dict, cache: str, dev_rows: str, out: Path, split: str, s
         write_results(stock, rows, reqs, stock_predictions(reqs), "stock-from-cache")
     torch.save(head.state_dict(), d / "head.pt")  # the trained head itself (Track L review: a pinned artifact)
     rec = {"recipe": recipe, "seed": seed, "split": split, "head": describe(head), "head_sha256": _sha(d / "head.pt"),
-           "train": tr, "train_fit": nll(head, train[: min(len(train), 2000)]), "results": str(res),
+           "train": tr, "train_fit": nll(head, train[: min(len(train), 2000)]), "results": str(final / "results.jsonl"),
            "results_sha256": _sha(res), "counts": counts, "rule": R.RULE_VERSION, "amendments": list(R.AMENDMENTS),
            "budget": budget, "budget_sha256": budget_sha(budget), "cache_identity": cache_identity(cache, [arm]),
-           "score": report(str(res), _subset_path(subset), d, clef, stock, B)}
+           "code_identity": code_identity(), "score": report(str(res), _subset_path(subset), d, clef, stock, B)}
     (d / "receipt.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    if final.exists():
+        raise OutOfOrder(f"{final} appeared while this run was writing {d.name}: refusing to overwrite a receipt")
+    os.replace(d, final)
     return rec
 
 
@@ -344,49 +372,128 @@ def select_summary(out: Path, cache: str, budget: dict = TRAIN, clef: str | None
         if i in recs and ctl in recs:
             controls[f"{i}-{ctl}"] = compare(recs[i]["results"], recs[ctl]["results"], _subset_path(R.SELECT_SUBSET), B)["diff"]
     doc = {"chosen": chosen, "rows": rows, "candidates": list(R.candidate_ids()), "budget_sha256": budget_sha(budget),
+           "code_identity": code_identity(),
            "cache_identity": ident, "matched_controls": controls, "rule": R.RULE_VERSION,
            "amendments": list(R.AMENDMENTS), "edition": R.VERDICT_EDITION}
     p.write_text(json.dumps(doc, indent=1), encoding="utf-8")
     return doc
 
 
-def holdout(out: Path, cache: str, dev_rows: str, clef: str | None, B: int, recipe: str | None = None,
+def _validate_selection(out: Path, summ: dict, recipe: str | None, budget: dict) -> str | None:
+    """Re-derive and authenticate the SELECT choice (re-review N1). -> the chosen recipe id."""
+    if set(summ.get("candidates") or []) != set(R.candidate_ids()):
+        raise OutOfOrder("select_summary does not list every candidate recipe")
+    by = {r["id"]: r for r in summ.get("rows") or []}
+    missing = [i for i in R.candidate_ids() if i not in by or by[i].get("select") is None]
+    if missing:
+        raise OutOfOrder(f"select_summary does not cover every candidate recipe: no SELECT score for {missing}")
+    if summ.get("budget_sha256") != budget_sha(budget):
+        raise OutOfOrder("select_summary budget != the pre-registered budget")
+    if list(summ.get("amendments") or []) != list(R.AMENDMENTS):
+        raise OutOfOrder(f"select_summary was made under rule amendments {summ.get('amendments')!r}, the rule now has "
+                         f"{list(R.AMENDMENTS)!r}: the SELECT choice must be re-made under the current rule")
+    if summ.get("code_identity") != code_identity():
+        raise OutOfOrder("the proxy-loop code differs from the code that made the SELECT choice (code_identity)")
+    chosen = R.choose({i: r["select"] for i, r in by.items()})
+    if summ.get("chosen") != chosen:
+        raise OutOfOrder(f"select_summary says chosen={summ.get('chosen')!r} but its own rows choose {chosen!r}")
+    if recipe is not None and recipe != chosen:
+        raise OutOfOrder(f"--recipe {recipe} != the SELECT choice {chosen}: only the chosen recipe is scored on HOLDOUT")
+    for i, row in by.items():
+        f = out / f"{i}_s{R.SELECT_SEEDS[0]}_select" / "receipt.json"
+        if not f.exists():
+            raise OutOfOrder(f"{i}: no SELECT receipt in {out}")
+        x = json.loads(f.read_text(encoding="utf-8"))
+        for k in ("results_sha256", "head_sha256"):
+            if x.get(k) != row.get(k):
+                raise OutOfOrder(f"{i}: select_summary {k} != the SELECT receipt's")
+        if x["score"]["all"]["point"] != row["select"]:
+            raise OutOfOrder(f"{i}: select_summary SELECT score {row['select']} != the receipt's {x['score']['all']['point']}")
+        if _sha(f.parent / "results.jsonl") != row["results_sha256"] or _sha(f.parent / "head.pt") != row["head_sha256"]:
+            raise OutOfOrder(f"{i}: the SELECT results / head files on disk do not match select_summary")
+    return chosen
+
+
+def _validate_inputs(cache: str, dev_rows: str, clef: str, arm: str) -> dict:
+    """Every HOLDOUT input, checked before any training or directory creation (re-review N2). -> input identity."""
+    from harness.jsonl import read_jsonl_strict
+
+    ids = set(subset_ids(R.HOLDOUT_SUBSET))
+    for name, p in (("--dev-rows", dev_rows), ("--clef", clef)):
+        if not p or not Path(p).is_file():
+            raise OutOfOrder(f"{name} {p!r} is not a file")
+    got = set(_dev_rows(dev_rows, ids))
+    if got != ids:
+        raise OutOfOrder(f"--dev-rows holds {len(got)} of the {len(ids)} HOLDOUT ids")
+    cl = {r.get("run_id") for r in read_jsonl_strict(clef)}
+    if not ids <= cl:
+        raise OutOfOrder(f"--clef results miss {len(ids - cl)} HOLDOUT ids")
+    man = Path(cache) / arm / "holdout" / "MANIFEST.jsonl"
+    if not man.is_file() or not (Path(cache) / arm / "train" / "MANIFEST.jsonl").is_file():
+        raise OutOfOrder(f"the cache has no {arm} holdout / train split")
+    return {"dev_rows_sha256": _sha(dev_rows), "clef_sha256": _sha(clef), "holdout_ids_sha256": _sha(_subset_path(R.HOLDOUT_SUBSET)),
+            "cache_identity": cache_identity(cache, [arm])[arm]}
+
+
+def _write_atomic(p: Path, obj: dict) -> None:
+    tmp = p.with_name(f"{p.name}.tmp-{os.getpid()}-{time.time_ns()}")
+    tmp.write_text(json.dumps(obj, indent=1), encoding="utf-8")
+    os.replace(tmp, p)
+
+
+def holdout(out: Path, cache: str, dev_rows: str, clef: str, B: int, recipe: str | None = None,
             budget: dict = TRAIN) -> dict:
-    """The single-shot HOLDOUT run (review B2)."""
+    """The single-shot HOLDOUT run (review B2, re-review N1 / N2; see the module docstring)."""
     if (out / "verdict.json").exists():
         raise OutOfOrder("verdict.json exists: HOLDOUT is scored once")
-    if any(out.glob("*_holdout")):
-        raise OutOfOrder(f"a holdout receipt already exists in {out}: HOLDOUT is scored once")
     sp = out / "select_summary.json"
     if not sp.exists():
         raise OutOfOrder("no select_summary.json: run every candidate on SELECT, then `select`")
     summ = json.loads(sp.read_text(encoding="utf-8"))
-    chosen = summ["chosen"]
-    if recipe is not None and recipe != chosen:
-        raise OutOfOrder(f"--recipe {recipe} != the SELECT choice {chosen}: only the chosen recipe is scored on HOLDOUT")
-    if set(summ["candidates"]) != set(R.candidate_ids()) or {r["id"] for r in summ["rows"]} < set(R.candidate_ids()):
-        raise OutOfOrder("select_summary does not cover every candidate recipe")
-    if summ["budget_sha256"] != budget_sha(budget):
-        raise OutOfOrder("select_summary budget != the pre-registered budget")
+    chosen = _validate_selection(out, summ, recipe, budget)
     recipes = {r["id"]: dict(r) for r in R.RECIPES}
-    arm = recipes[chosen]["arm"] if chosen else None
-    if chosen and cache_identity(cache, [arm])[arm] != summ["cache_identity"].get(arm):
-        raise OutOfOrder(f"the cache on disk ({arm}) differs from the one SELECT was run on")
+    attempt_p = out / "holdout_attempt.json"
     if not chosen:
+        if any(out.glob("*_holdout")) or attempt_p.exists():
+            raise OutOfOrder("holdout receipts exist although no candidate was chosen")
         v = R.verdict(None, None)
+        v["select_summary_sha256"] = _sha(sp)
+        _write_atomic(out / "verdict.json", v)
+        return v
+    arm = recipes[chosen]["arm"]
+    if cache_identity(cache, [arm])[arm] != summ["cache_identity"].get(arm):
+        raise OutOfOrder(f"the cache on disk ({arm}) differs from the one SELECT was run on")
+    inputs = _validate_inputs(cache, dev_rows, clef, arm)
+    attempt = {"chosen": chosen, "select_summary_sha256": _sha(sp), "inputs": inputs, "code_identity": code_identity(),
+               "seeds": list(R.HOLDOUT_SEEDS), "budget_sha256": budget_sha(budget), "rule": R.RULE_VERSION}
+    if attempt_p.exists():  # resume after a crash: the SAME attempt only (no re-choice, no changed input)
+        prev = json.loads(attempt_p.read_text(encoding="utf-8"))
+        if {k: prev.get(k) for k in attempt} != attempt:
+            raise OutOfOrder("holdout_attempt.json binds a different choice / select_summary / input / code: refused")
     else:
-        recs = [run_recipe(recipes[chosen], cache, dev_rows, out, "holdout", R.HOLDOUT_SUBSET, s, clef, "from-cache", B,
-                           budget) for s in R.HOLDOUT_SEEDS]
-        c = recs[0]["counts"]
-        complete = c["cached"] == c["ids"] == c["rows"]
-        v = R.verdict(chosen, recs[0]["score"]["all"]["point"], holdout_complete=complete)
-        v["holdout_seeds"] = {r["seed"]: r["score"]["all"]["point"] for r in recs}
-        v["holdout_0.3"] = recs[0]["score"]["0.3"]["all"]
-        v["counts"] = c
-        v["vs_clef_flash"] = recs[0]["score"][R.VERDICT_EDITION].get("vs_clef_flash")
-        v["domain_columns"] = {col: recs[0]["score"][R.VERDICT_EDITION][col] for col in R.DOMAIN_COLUMNS}
+        if any(out.glob("*_holdout")):
+            raise OutOfOrder(f"holdout receipts exist in {out} without a holdout_attempt.json: HOLDOUT is scored once")
+        _write_atomic(attempt_p, attempt)
+    stray = [p.name for p in out.glob("*_holdout") if not p.name.startswith(f"{chosen}_s")]
+    if stray:
+        raise OutOfOrder(f"holdout receipts of a non-chosen recipe exist: {stray}")
+    recs = []
+    for s in R.HOLDOUT_SEEDS:
+        f = out / f"{chosen}_s{s}_holdout" / "receipt.json"
+        recs.append(json.loads(f.read_text(encoding="utf-8")) if f.exists() else
+                    run_recipe(recipes[chosen], cache, dev_rows, out, "holdout", R.HOLDOUT_SUBSET, s, clef, "from-cache", B,
+                               budget))
+    c = recs[0]["counts"]
+    complete = c["cached"] == c["ids"] == c["rows"]
+    v = R.verdict(chosen, recs[0]["score"]["all"]["point"], holdout_complete=complete)
+    v["holdout_seeds"] = {r["seed"]: r["score"]["all"]["point"] for r in recs}
+    v["holdout_0.3"] = recs[0]["score"]["0.3"]["all"]
+    v["counts"] = c
+    v["vs_clef_flash"] = recs[0]["score"][R.VERDICT_EDITION].get("vs_clef_flash")
+    v["domain_columns"] = {col: recs[0]["score"][R.VERDICT_EDITION][col] for col in R.DOMAIN_COLUMNS}
     v["select_summary_sha256"] = _sha(sp)
-    (out / "verdict.json").write_text(json.dumps(v, indent=1), encoding="utf-8")
+    v["holdout_attempt_sha256"] = _sha(attempt_p)
+    _write_atomic(out / "verdict.json", v)
     return v
 
 
@@ -417,9 +524,9 @@ def main(argv=None) -> int:
     for name in ("recipes", "select", "holdout", "stock-check"):
         s = sub.add_parser(name)
         s.add_argument("--cache", required=True)
-        s.add_argument("--dev-rows", default=None)
+        s.add_argument("--dev-rows", default=None, required=name == "holdout")
         s.add_argument("--out", default="proxy-out")
-        s.add_argument("--clef", default=None)
+        s.add_argument("--clef", default=None, required=name == "holdout")
         s.add_argument("--stock", default=None)
         s.add_argument("--B", type=int, default=R.BOOTSTRAP_B)
         if name == "recipes":
@@ -428,6 +535,10 @@ def main(argv=None) -> int:
             s.add_argument("--recipe", default=None, help="must equal select_summary's choice (checked)")
     a = ap.parse_args(argv)
     out = Path(a.out)
+    if a.cmd == "holdout" and not out.is_dir():  # holdout never creates its output directory (re-review N2)
+        print(f"refused: --out {out} does not exist (holdout runs in the directory holding the SELECT receipts)",
+              file=sys.stderr)
+        return 4
     out.mkdir(parents=True, exist_ok=True)
     try:
         if a.cmd == "stock-check":
