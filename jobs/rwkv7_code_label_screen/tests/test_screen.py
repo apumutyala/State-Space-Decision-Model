@@ -201,13 +201,75 @@ def test_synthetic_identity_sentinels_and_explicit_null_transformers_are_valid(p
     for arm, revision in revisions.items():
         assert revision["snapshot"] is None
         assert revision["files_sha256"]["weights"] == "not-loaded"
-        S.check_revision(revision, arm)
+        S.check_revision(revision, arm, synthetic=True)
         revision["inference_config"]["transformers"] = None
         config_hash = __import__("hashlib").sha256(S.canonical_json(revision["inference_config"]).encode()).hexdigest()
         revision["revision_id"] = revision["revision_id"].replace(
             ";cfg=" + revision["inference_config_sha256"][:8], ";cfg=" + config_hash[:8])
         revision["inference_config_sha256"] = config_hash
+        S.check_revision(revision, arm, synthetic=True)
+
+
+def bind_revision_id(revision):
+    # Model an internally consistent submitted identity, including mutations.
+    files, template = revision["files_sha256"], revision["prompt_template"]
+    revision["revision_id"] = (
+        f"{revision['family']}:{revision['model_id']}@{(revision['snapshot'] or 'local')[:12]}"
+        f";w={files['weights'][:12]};tok={files['tokenizer'][:12]}"
+        f";prompt={template['id']}.{template['sha256'][:8]}"
+        f";cfg={revision['inference_config_sha256'][:8]};adapter={revision['adapter_version']}"
+    )
+
+
+def test_pinned_model_identity_matches_manifest_and_backend_hash_recipe(tmp_path, monkeypatch):
+    from decide.backends import hf_readout
+
+    model_id, snapshot, weights_hash = S.pinned_model_identity()
+    assert model_id == "RWKV/RWKV7-G1k-13.3B-20260930"
+    assert snapshot == "ce3630b854cedbd673569f4600c6cf744bca9dba"
+    assert weights_hash == "0359db5847e46dd1c72fe91360faec09479436f8e198b65ee4c9c55277a18721"
+    pins = {}
+    for line in (ROOT / "jobs/rwkv7/snapshot.sha256").read_text().splitlines():
+        digest, name = line.split("  ", 1)
+        if name.endswith(".safetensors"):
+            pins[name] = digest
+            (tmp_path / name).touch()  # empty stand-ins, never real weights
+    assert len(pins) == 28
+    monkeypatch.setattr(hf_readout, "sha256_file", lambda path: pins[path.name])
+    assert hf_readout._hash_files(tmp_path, ["*.safetensors"]) == weights_hash
+
+
+@pytest.mark.parametrize("arm", ["v1", "v2"])
+@pytest.mark.parametrize("mutation", [None, "not-loaded", "unknown", "missing", "placeholder", "short-hash",
+                                      "nonhex-hash", "different-valid-hash", "model_id", "snapshot", "null-snapshot"])
+def test_real_revision_requires_pinned_model_snapshot_and_weights_even_with_rebuilt_id(proof, arm, mutation):
+    revision = copy.deepcopy(proof[2][arm])
+    model_id, snapshot, weights_hash = S.pinned_model_identity()
+    revision.update({"model_id": model_id, "snapshot": snapshot})
+    revision["files_sha256"]["weights"] = weights_hash
+    if mutation == "model_id":
+        revision["model_id"] = "different-model"
+    elif mutation == "snapshot":
+        revision["snapshot"] = "a" * 40
+    elif mutation == "null-snapshot":
+        revision["snapshot"] = None
+    elif mutation is not None:
+        revision["files_sha256"]["weights"] = {
+            "short-hash": "a" * 63, "nonhex-hash": "g" * 64,
+            "different-valid-hash": "a" * 64,
+        }.get(mutation, mutation)
+    bind_revision_id(revision)
+    if mutation is None:
         S.check_revision(revision, arm)
+    else:
+        with pytest.raises(ValueError, match="weights hash|pinned model"):
+            S.check_revision(revision, arm)
+
+
+@pytest.mark.parametrize("arm", ["v1", "v2"])
+def test_synthetic_sentinels_cannot_enter_real_audit(proof, arm):
+    with pytest.raises(ValueError, match="weights hash"):
+        S.check_revision(proof[2][arm], arm)
 
 
 @pytest.mark.parametrize("status", ["exhausted", "unsupported"])

@@ -10,6 +10,7 @@ import collections
 import hashlib
 import json
 from pathlib import Path
+import re
 
 from decide.calibration import OptionCountTemperature
 from decide.schema import canonical_json, canonical_options, request_fingerprint, wire_answer
@@ -43,7 +44,22 @@ def checked_cohort():
     return subset
 
 
-def check_revision(revision, arm):
+def pinned_model_identity():
+    params = json.loads((ROOT / "jobs/rwkv7/job_params_readout.json").read_text(encoding="utf-8"))
+    model_id, snapshot = params["model"].rsplit("@", 1)
+    entries = [line.split("  ", 1) for line in
+               (ROOT / "jobs/rwkv7/snapshot.sha256").read_text(encoding="utf-8").splitlines() if line]
+    weights = sorted((name, digest) for digest, name in entries if name.endswith(".safetensors"))
+    if not weights:
+        raise ValueError("missing pinned weight hashes")
+    # Exact hf_readout._hash_files formula: one file uses its digest; multiple
+    # files hash sorted basename:digest lines, including each trailing newline.
+    weights_hash = weights[0][1] if len(weights) == 1 else hashlib.sha256(
+        "".join(f"{name}:{digest}\n" for name, digest in weights).encode()).hexdigest()
+    return model_id, snapshot, weights_hash
+
+
+def check_revision(revision, arm, *, synthetic=False):
     required = {"revision_id", "backend", "family", "model_id", "snapshot", "files_sha256",
                 "prompt_template", "inference_config", "inference_config_sha256", "adapter_version",
                 "max_context", "notes"}
@@ -65,6 +81,15 @@ def check_revision(revision, arm):
         # sentinel while preventing a shared absence from passing matching.
         if not isinstance(value, dict) or any(not isinstance(value.get(k), str) or not value[k] for k in keys):
             raise ValueError(f"{arm}: missing/malformed revision {label}")
+    if not re.fullmatch(r"[0-9a-fA-F]{64}", files["weights"]) and not (synthetic and files["weights"] == "not-loaded"):
+        raise ValueError(f"{arm}: malformed weights hash; synthetic sentinel forbidden in real audit")
+    if not synthetic:
+        model_id, snapshot, weights_hash = pinned_model_identity()
+        for key, expected in (("model_id", model_id), ("snapshot", snapshot)):
+            if revision[key] != expected:
+                raise ValueError(f"{arm}: changed pinned model {key}")
+        if files["weights"] != weights_hash:
+            raise ValueError(f"{arm}: changed pinned weights hash")
     runtime = {"dtype", "device", "torch", "transformers", "kernel_stack"}
     if not isinstance(config, dict):
         raise ValueError(f"{arm}: malformed inference_config")
@@ -173,7 +198,7 @@ def summarize(rows, arms, revisions, *, synthetic=False):
     minimum = len(rows) - 1 if synthetic else R.MIN_OK_ROWS
     reports, ok_sets, benches = {}, {}, {}
     for arm in ("v1", "v2"):
-        check_revision(revisions[arm], arm)
+        check_revision(revisions[arm], arm, synthetic=synthetic)
         reports[arm], ok_sets[arm] = audit_arm(rows, arms[arm], revisions[arm], minimum)
         score.require_results(rows, arms[arm])
         fields = calibration.fields(rows, arms[arm])

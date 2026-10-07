@@ -21,6 +21,11 @@ All identity fields must be explicitly present and well formed before matching;
 an explicitly null snapshot is allowed. The audit recomputes the canonical
 backend revision ID from family, model, snapshot, weights/tokenizer identities,
 prompt, configuration hash and adapter, then requires every record to use it.
+For real artifacts, model ID and snapshot must equal the committed
+`jobs/rwkv7/job_params_readout.json` registration. The 64-hex weight identity
+must equal the aggregate of the 28 shard pins in `jobs/rwkv7/snapshot.sha256`,
+using the backend's sorted `filename:digest\n` hash formula. The `not-loaded`
+weight sentinel and null snapshot belong only to the synthetic proof.
 This checks recorded evidence; it does not attest that arbitrary submitted
 predictions were produced by a model.
 
