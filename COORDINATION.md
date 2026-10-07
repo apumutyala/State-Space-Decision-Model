@@ -108,7 +108,7 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
 1. **Break work into phases with explicit exit proofs.** Each phase names its hypothesis, deliverable, exit proof (test, fixture or receipt) and the decision it unlocks. No phase starts paid compute until the previous phase's proof is merged on `agent-main`.
 2. **Spend ladder.** Order the work as:
    - $0 local/CPU work: code, fixtures, smoke tests on tiny models;
-   - ≤$20 qualification on real hardware: throughput, memory, numerics parity;
+   - real-hardware qualification: scope and maximum cost derived from the measured workload and the approved track allocation (the former fixed ≤$20 qualification ceiling is superseded by the user's 2026-10-07 direction);
    - the capped experiment;
    - scale-up.
 
@@ -128,7 +128,7 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
    - **Prefixes:** each agent uses its own instance-name prefix, `ssdm-claude-` or `ssdm-codex-`. An agent only lists and terminates instances under its own prefix, and never terminates the other agent's instances.
    - **Billing:** continues until *terminate*; an OS shutdown doesn't stop it.
    - **Spend:** counts against the $5k ceiling, not the SF credits. It's logged in `LEDGER.md` with provider = lambda, and goes through the same `spend` issue and spend ladder.
-3. **Local:** the RTX 5070 Ti laptop (12 GB) handles all $0-rung smoke tests. Check `nvidia-smi` before starting, since workers share it.
+3. **Local:** the RTX 5070 Ti laptop (12 GB) handles CPU-only $0-rung smoke tests. Do not run GPU jobs on anyone's laptop; workers share the device.
 
 ## Stalled cross-review (user authorization, 2026-10-06)
 
@@ -168,5 +168,5 @@ Human teammates with write access, and the coding agents they send, work on rese
 - **PRs.** Into `agent-main` only, when ready, using the PR template with a scoped claim and a receipt. Merge needs one independent review per "Review sufficiency" above (the other track's agent, or a fresh-context adversarial reviewer that did not write the code); findings fixed first; lean-review scope applies. Results PRs get their headline number re-derived by someone else.
 - **Shared contracts.** `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md`, `SAFETY_SPEC.md` rows and `harness/manifests/` change only through an `interface` issue approved by both owners, with a version bump.
 - **Integrity.** Never open or tune on the sealed TEST slice, Decision Index test items or the held-out D1-B templates. Open-weight teachers only. Every training set goes through the contamination guard with a committed log.
-- **Spend.** Collaborators do not spend the shared SF credits (or Lambda, which counts against the $5k ceiling) without the user's explicit OK on a `spend` issue that carries the estimate, stop condition and a planned `LEDGER.md` row; the spend ladder applies ($0 CPU → ≤ $20 qualification → capped → scale-up). Never run GPU jobs on anyone's laptop. Record actual cost and stop nodes.
+- **Spend.** Collaborators do not spend the shared SF credits (or Lambda, which counts against the $5k ceiling) without the user's explicit OK on a `spend` issue that carries the estimate, stop condition and a planned `LEDGER.md` row; the spend ladder applies ($0 CPU → real-hardware qualification sized within the approved track allocation → capped → scale-up). Do not impose the superseded fixed ≤$20 qualification ceiling. Keep a measured per-job maximum and stop condition, never exceed the shared $525 envelope or $250 System 1 line without the user's updated authorization, and never run GPU jobs on anyone's laptop. Record actual cost and stop nodes.
 - **Identity.** Each contributor commits under their own name and email; nobody commits as another person. The repo stays private.

@@ -20,7 +20,7 @@ You are joining a repo run by two owning agents: **Claude = Track D** (decision 
 
 **Compute and money**
 - **Never run GPU jobs on anyone's laptop.** Local machines are for CPU tests on tiny models only.
-- Any paid job (SF Compute or Lambda) needs: a `spend` issue with estimate and stop condition, a planned row in `LEDGER.md`, a runtime ceiling and workspace cap, and the owner's acknowledgement. **Collaborators do not spend the shared $525 SF credits without the user's explicit OK** in that issue. Climb the spend ladder: $0 CPU → ≤ $20 hardware qualification → capped experiment → scale-up, each rung after the previous rung's receipt is merged.
+- Any paid job (SF Compute or Lambda) needs: a `spend` issue with estimate and stop condition, a planned row in `LEDGER.md`, a runtime ceiling and workspace cap, and the owner's acknowledgement. **Collaborators do not spend the shared $525 SF credits without the user's explicit OK** in that issue. Climb the spend ladder: $0 CPU → real-hardware qualification sized to measured workload and approved track allocation → capped experiment → scale-up, each rung after the previous rung's receipt is merged. The user superseded the earlier fixed ≤$20 qualification ceiling on 2026-10-07; retain a measured per-job maximum and do not exceed the approved track allocation.
 - Record actual cost afterwards. Stop nodes. Auto top-up stays off; no credit purchases.
 
 **Identity and contracts**
