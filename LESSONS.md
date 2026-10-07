@@ -79,6 +79,8 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - PR #93 review (B1): `launch.py` silently defaulted `hf_cache` to false. The qual JOB_SPEC and job-4j3vu use true, so the default would have re-downloaded 19 GB inside the capped run. Every submit field must now be stated in job_params or the submit block (`REQUIRED_FIELDS`, `test_refusals[hf_cache_missing]`). `test_submit_args_equal_the_job_spec_field_by_field` parses every JOB_SPEC submit block and compares every field.
 - **Status:** ENFORCED. m2_pilot and m2_parent_arm are waived as DRAFT.
 
+- PR #93 post-hoc cross-track review (2026-10-06): `worst_case_stated` treated a missing `hard_cap_usd` as infinity and accepted an explicitly infinite cap. Removing the cell-step cap reproduced a passing check with `hard_cap_usd None`; no paid run was launched. The root cause was a permissive default instead of validating the authorization ceiling. **Check:** `jobs/common/lint.py::chk_worst_case_stated` now requires a finite positive numeric cap; `tests/test_jobs_lint.py::test_worst_case_requires_finite_positive_numeric_hard_cap` rejects absent, null, zero, negative, NaN, infinite, boolean and nonnumeric caps, and retains both the quoted-cost and within-cap checks. No job exemptions were added. **Status:** ENFORCED.
+
 ### L-09 Image publish timeout at build_timeout 18
 - Date: 2026-10-06 (issue #68; jn47u-era fla jobs).
 - Symptom: "publishing the built image timed out". The platform docs say a resubmit does not fix this.

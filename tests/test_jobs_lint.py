@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -65,6 +66,22 @@ def test_build_timeout_and_schedule_rules():
     q = {"max_duration_minutes": 180, "reserve_minutes": 8,
          "phase_caps_minutes": {"setup": 15, "A_per_test": 3, "A_tests": 7, "B": 20, "C_weight_wait": 25, "C": 80}}
     assert lint.schedule_total(q) == 169
+
+
+@pytest.mark.parametrize("cap", [None, 0, -1, float("nan"), float("inf"), float("-inf"), "10", True, [], {}])
+def test_worst_case_requires_finite_positive_numeric_hard_cap(tmp_path, cap):
+    job = tmp_path / "jobs/new"
+    job.mkdir(parents=True)
+    (job / "JOB_SPEC.md").write_text("Worst case $2.50", encoding="utf-8")
+    costs = SimpleNamespace(worst_case_usd=lambda p: 2.5)
+    kw = dict(root=tmp_path, job="new", costs=costs)
+    assert not lint.chk_worst_case_stated({}, **kw)[0]
+    assert not lint.chk_worst_case_stated({"hard_cap_usd": cap}, **kw)[0]
+    assert lint.chk_worst_case_stated({"hard_cap_usd": 2.5}, **kw)[0]
+    assert lint.chk_worst_case_stated({"hard_cap_usd": 3}, **kw)[0]
+    assert not lint.chk_worst_case_stated({"hard_cap_usd": 2}, **kw)[0]
+    (job / "JOB_SPEC.md").write_text("No cost stated", encoding="utf-8")
+    assert not lint.chk_worst_case_stated({"hard_cap_usd": 3}, **kw)[0]
 
 
 def test_backslash_n_regex_fires_on_known_bad_and_not_on_good():
