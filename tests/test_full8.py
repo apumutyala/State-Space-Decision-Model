@@ -203,6 +203,53 @@ def test_cumulative_budget_rejects_exactly_the_eighth_layer():
     assert d["converted"] == ORDER[:7] and d["attention_layers_kept"] == [27]
 
 
+def test_L29_drifting_teacher_cannot_reset_the_cumulative_budget():
+    R = make_R()
+    for k, step in enumerate(R["progressive"]["steps"]):
+        baseline = 1.96 + .04 * k
+        student = 1.96 + .04 * (k + 1)
+        step["gate_eval"].update(nll_student=student, nll_teacher=baseline,
+                                 delta_nll=student - baseline)
+        step.update(baseline_nll=baseline, step_delta_nll=.04, gate_pass=True, accepted=True)
+    d = D.decide(R, CMP, RULE)
+    assert d["verdict"].startswith("no-measurement") and not D.valid_decision(d)
+    assert any("teacher" in problem for problem in d["gate_audit_problems"])
+    assert d["report"]["steps"][-1]["delta_nll"] == pytest.approx(.32)
+
+
+@pytest.mark.parametrize("step_index", [1, 7])
+def test_L29_teacher_drift_is_refused_even_within_the_cumulative_budget(step_index):
+    R = make_R()
+    ge = R["progressive"]["steps"][step_index]["gate_eval"]
+    ge["nll_teacher"] += .001
+    ge["delta_nll"] -= .001
+    d = D.decide(R, CMP, RULE)
+    assert d["verdict"].startswith("no-measurement") and not D.valid_decision(d)
+    assert any("teacher" in problem for problem in d["gate_audit_problems"])
+
+
+@pytest.mark.parametrize("corruption", ["subset", "extra", "wrong_key", "none", "nan", "inf", "bool"])
+def test_L29_finalizer_requires_exact_configured_finite_niah_lengths(tmp_path, corruption):
+    from jobs.common.finalize import final_code
+
+    d = D.decide(make_R(), CMP, RULE)
+    path = tmp_path / "decision.json"
+    path.write_text(json.dumps(d), encoding="utf-8")
+    assert final_code(0, 0, str(path), D.valid_decision) == 0
+    lengths = d["numbers"]["niah_length_drop"]
+    if corruption == "subset":
+        d["numbers"]["niah_length_drop"] = {"L1024": 0.0}
+    elif corruption == "extra":
+        lengths["L32768"] = 0.0
+    elif corruption == "wrong_key":
+        lengths["L1025"] = lengths.pop("L1024")
+    else:
+        lengths["L1024"] = {"none": None, "nan": float("nan"), "inf": float("inf"), "bool": True}[corruption]
+    path.write_text(json.dumps(d), encoding="utf-8")
+    assert not D.valid_decision(d)
+    assert final_code(0, 0, str(path), D.valid_decision) == 9
+
+
 def test_report_is_never_binding_and_carries_the_curve(monkeypatch):
     R, cmp, want = _case("all pass")
     d = D.decide(R, cmp, RULE)
@@ -721,7 +768,8 @@ def test_shell_dry_run_partial_conversion_exports_a_hybrid_not_q9af(tmp_path):
 
 
 # ----------------------------------------------------------------------------- Amendment A1 code (B2, B3, MMLU)
-def test_A1_rule_and_decide_are_pinned_to_the_amendment_commit():
+def test_A1_rule_and_decision_constants_remain_pinned_to_the_amendment_commit():
+    import ast
     try:
         old = subprocess.check_output(["git", "show", f"{A1_COMMIT}:jobs/full8/rule.json"], cwd=ROOT,
                                       stderr=subprocess.DEVNULL)
@@ -732,7 +780,13 @@ def test_A1_rule_and_decide_are_pinned_to_the_amendment_commit():
     except Exception:  # noqa: BLE001
         pytest.skip("git history not available")
     assert json.loads(old) == RULE
-    assert old_dec.replace(b"\r\n", b"\n") == (ROOT / "scripts/decide_full8.py").read_bytes().replace(b"\r\n", b"\n")
+    # L-29 repairs fail-closed validation, without changing the historical decision constants or rule mapping.
+    def constants(source):
+        names = {"VERDICTS", "REQUIRED", "TOL"}
+        return {target.id: ast.literal_eval(node.value)
+                for node in ast.parse(source).body if isinstance(node, ast.Assign)
+                for target in node.targets if isinstance(target, ast.Name) and target.id in names}
+    assert constants(old_dec) == constants((ROOT / "scripts/decide_full8.py").read_text(encoding="utf-8"))
     sec = lambda t: t.replace("\r\n", "\n").split("## Decision rule")[1].split("\n## ")[0].rstrip()  # noqa: E731
     assert sec(old_spec) == sec(SPEC)
     assert P8["rule_commit"] == RULE_COMMIT and A1_COMMIT in P8["rule_amendments"][0]

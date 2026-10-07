@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import math
 import os
+from pathlib import Path
 import sys
 
 VERDICTS = ("q9af-backbone", "retrieval-fail", "quality-fail", "partial-conversion", "no-conversion")
@@ -102,7 +103,10 @@ def gate_audit(R, rule):
         if not all(_num(ge.get(x)) for x in ("nll_student", "nll_teacher", "delta_nll", "hidden_cos")):
             prob.append(f"step {k}: gate numbers missing")
             continue
-        teacher = ge["nll_teacher"] if teacher is None else teacher
+        if teacher is None:
+            teacher = ge["nll_teacher"]
+        elif abs(ge["nll_teacher"] - teacher) > 1e-6:
+            prob.append(f"step {k}: teacher nll {ge['nll_teacher']} != original teacher nll {teacher}")
         if k < len(order) and s.get("layer") != order[k]:
             prob.append(f"step {k}: layer {s.get('layer')} != importance order {order[k]}")
         last_acc = next((r for r in reversed(rows) if r["accepted"]), None)
@@ -110,11 +114,11 @@ def gate_audit(R, rule):
         if not _num(s.get("baseline_nll")) or abs(s["baseline_nll"] - base_want) > 1e-6:
             prob.append(f"step {k}: baseline {s.get('baseline_nll')} != last accepted / teacher nll {base_want}")
         step_d = ge["nll_student"] - base_want
-        cum_d = ge["nll_student"] - ge["nll_teacher"]
+        cum_d = ge["nll_student"] - teacher
         passed = (step_d <= g["max_step_delta_nll"] + TOL and cum_d <= g["max_cum_delta_nll"] + TOL
                   and ge["hidden_cos"] >= g["min_hidden_cos"] - TOL)
         if abs(cum_d - ge["delta_nll"]) > 1e-6:
-            prob.append(f"step {k}: delta_nll {ge['delta_nll']} != nll_student - nll_teacher {cum_d}")
+            prob.append(f"step {k}: delta_nll {ge['delta_nll']} != nll_student - original teacher nll {cum_d}")
         if s.get("policy") != g["policy"]:
             prob.append(f"step {k}: policy {s.get('policy')} != {g['policy']}")
         if s.get("gate_pass") is not passed:
@@ -248,6 +252,15 @@ def valid_decision(d):
         return d.get("n_converted") == 0
     n = d.get("numbers") or {}
     if not all(_present(n, k) for k in REQUIRED):
+        return False
+    # The finalizer must use the configured rule, not coverage claimed by the receipt being validated.
+    try:
+        rule_path = Path(__file__).resolve().parents[1] / "jobs/full8/rule.json"
+        required_lengths = json.loads(rule_path.read_text(encoding="utf-8"))["required_niah_lengths"]
+        expected_keys = {f"L{length}" for length in required_lengths}
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    if set(n["niah_length_drop"]) != expected_keys:
         return False
     return (d["verdict"] == "partial-conversion") == (not d.get("attention_free")) and d.get("n_converted", 0) > 0
 
