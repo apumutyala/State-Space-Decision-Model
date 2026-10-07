@@ -11,6 +11,7 @@ from language_growth.parent_bridge import DECISION_SCHEMA, SERIALIZATION_REF
 
 RELATION_QID = "slot-004-relation"
 PRIOR_SLOTS = ("operation", "left", "right")
+ENVELOPE_STATE_BINDINGS = ("context_ref", "policy_ref", "registry_ref", "audience")
 STATE_KEYS = frozenset({
     "schema", "task_input", "audience", "context_ref", "policy_ref", "registry_ref",
     "records", "registry", "query_constants", "unmet_obligations",
@@ -21,10 +22,11 @@ RECORD_KEYS = frozenset({
     "epistemic_class", "freshness", "conflicts", "fields", "source",
 })
 ROUTING_CONTRACT = {
-    "id": "relation-only-public-exact-prefix-v1",
+    "id": "relation-only-public-exact-prefix-v2",
     "question_id": RELATION_QID, "question_type": "choice", "question_count": 1,
     "serialization": SERIALIZATION_REF, "state_keys": sorted(STATE_KEYS),
     "record_keys": sorted(RECORD_KEYS),
+    "envelope_state_bindings_if_present": list(ENVELOPE_STATE_BINDINGS),
     "audience": "public", "accepted_partial_program": [],
     "prior_slots": list(PRIOR_SLOTS),
     "prior_fields": ["description", "option_id", "slot"],
@@ -111,6 +113,8 @@ def relation_request(request):
                    for v in state["registry"].values())
             or not isinstance(state["query_constants"], dict)
             or not isinstance(state["unmet_obligations"], list)):
+        return False
+    if any(key in env and env[key] != state[key] for key in ENVELOPE_STATE_BINDINGS):
         return False
     prior = state["proposed_slot_choices"]
     return (isinstance(prior, list) and len(prior) == len(PRIOR_SLOTS)

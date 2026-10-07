@@ -199,6 +199,32 @@ def test_nonobject_requests_and_missing_question_are_not_relations():
         assert not relation_request(req)
 
 
+@pytest.mark.parametrize("key", ["context_ref", "policy_ref", "registry_ref", "audience"])
+@pytest.mark.parametrize("value", ["different", "private", None, {}, []])
+def test_envelope_state_binding_mismatch_delegates_unchanged(key, value):
+    req = request()
+    req["ssdm"] = {"schema": DECISION_SCHEMA, key: value}
+    assert_delegates(req)
+
+
+def test_matching_envelope_bindings_reach_head_and_outer_decider_cannot_repair_mismatch():
+    backend, learned, stock = composition()
+    req = request()
+    state = json.loads(req["state"])
+    req["ssdm"] = {"schema": DECISION_SCHEMA,
+                   **{k: state[k] for k in ("context_ref", "policy_ref", "registry_ref", "audience")}}
+    assert relation_request(req) and backend.route(req) is learned
+    assert Decider(backend).decide(req)["ssdm"]["status"] == "ok"
+    assert learned.calls and not stock.calls
+    learned.calls.clear()
+    req["ssdm"]["context_ref"] = "different-context"
+    before = deepcopy(req)
+    # The outer Decider accepts this envelope; the relation seam must decline it.
+    assert Decider(backend).decide(req)["ssdm"]["status"] == "ok"
+    assert stock.calls and not learned.calls
+    assert req == before
+
+
 def test_composite_revision_binds_both_complete_revisions_and_contract():
     backend, learned, stock = composition()
     revision = backend.revision()
