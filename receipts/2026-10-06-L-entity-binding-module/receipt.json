@@ -1,0 +1,40 @@
+{
+  "agent_main_dependency_blobs": {
+    "fixtures/language_growth/cases/01_supported_read.json": "f597de0155fe7da1e4eb66d74131a16441bd5574",
+    "fixtures/language_growth/cases/16_necessary_ask.json": "691ef83193e8e1c3344f9320bf176b95a01aa6e9",
+    "fixtures/language_growth/catalog.json": "8b0d104ec1311bf4ea2bdf19461bdfebdc68ebda",
+    "language_growth/kernel.py": "4180ccd6d182e3dd5efb01d64c0133b113a53a99",
+    "language_growth/parent_bridge.py": "32bffe01cdd9abc0bca7f05aee0423ced516616b",
+    "language_growth/realize.py": "1dd3461d3b89679541e1c4acd8a34048689ef32d",
+    "language_growth/types.py": "d3e57c174eb4e4868a922cf743588b903bf81c37"
+  },
+  "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
+  "branch": "codex/l0-entity-binding-module",
+  "diff_check": "git diff --cached --check",
+  "schema": "ssdm.entity_binding_module_code_tests.v1",
+  "scope": "Code-only boundary tests. Controlled positive grammar and trusted allowed records; adapter rebuilds canonical host audience view. Only resolved read/explain compiles v0.1 programs and runs existing kernel then release-validating realizer. Unresolved has no text; no Ask argument/path and no Compare. No experiment runner/data/model dependency, training, GPU, spend, network or capability claim. No shared schema/kernel/realizer changes.",
+  "semantic_guard": "Every admitted form retains requested kind/field and ordered subject/operand refs. Model kind/field/left/right disagreements fail closed before program construction/kernel/renderer; no model choice is overwritten. For read/explain, right may be absent or None and is preserved; any non-null right rejects.",
+  "source_sha256": {
+    "language_growth/entity_binding.py": "f7e2df7aa7377abc4cd0cbf851a34cb2db3abddd91a8e96c349d701cf30a18de",
+    "language_growth/entity_binding_kernel.py": "97c36e35d3ac7bd7d73d5d2d1842c4a25384926efaf2f944437099a19a9046f8",
+    "language_growth/tests/test_entity_binding.py": "4a3d475f2ac407fa1bb4af11d286bf39ed487feeb468b2f65d582b994b61fe83",
+    "language_growth/tests/test_entity_binding_kernel.py": "45ec71cdb84f531762668ba9534e8fad9caa0aff789b0928d6ad51d5f78e924b"
+  },
+  "temporal_guard": "Every selected field must exist and have a nonempty scope equal to model temporal_scope. Dated forms additionally require that evidence scope equal parsed YYYY-MM. Undated forms require model scope to match active evidence. Missing/stale model or evidence scope rejects before construction/kernel/renderer; no broader date grammar or Compare release.",
+  "tests": {
+    "command": "python -m unittest -v language_growth.tests.test_entity_binding language_growth.tests.test_entity_binding_kernel",
+    "guards": "Wrong left/right/model scope stay unreleased and invoke neither adapter program constructor, kernel nor renderer. Positive read/explain with right=None still checks and renders; compare remains unsupported.",
+    "passed": 19,
+    "result": "OK",
+    "skipped": 0
+  },
+  "validation_scaffold_overlap": {
+    "count": 3,
+    "limitation": "These three admitted scaffolds verbatim match the iterative development-validation templates. That data cannot support a transfer/generalization claim for this grammar. This receipt is code-only, not a capability evaluation.",
+    "verbatim_iterative_validation_templates": [
+      "State {entity}'s {field} for October 2026.",
+      "Provide a checked derivation of {entity}'s {field}.",
+      "For October 2026, compare {left}'s and {right}'s {field}."
+    ]
+  }
+}
