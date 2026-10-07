@@ -1,0 +1,152 @@
+{
+ "point": 38.31715644788281,
+ "reference": 38.27,
+ "delta": 0.04715644788280571,
+ "tol": 0.3,
+ "unmasked_point": 39.04242737008436,
+ "unmasked_delta": 0.7724273700843582,
+ "masked": {
+  "n": 65,
+  "n_rows": 2008,
+  "frac": 0.03237051792828685,
+  "max_frac": 0.05,
+  "ids_sha256": "d3465d44c3073b35685cab7bf5e827dfef3d85b36d33004767dc47c115466629",
+  "ids": [
+   "22:POP909-chord-pitch-class:POP909:015:beat-14",
+   "22:POP909-chord-pitch-class:POP909:056:beat-122",
+   "22:POP909-chord-pitch-class:POP909:071:beat-226",
+   "22:POP909-chord-pitch-class:POP909:074:beat-170",
+   "22:POP909-chord-pitch-class:POP909:116:beat-114",
+   "22:POP909-chord-pitch-class:POP909:148:beat-206",
+   "22:POP909-chord-pitch-class:POP909:150:beat-110",
+   "22:POP909-chord-pitch-class:POP909:154:beat-134",
+   "22:POP909-chord-pitch-class:POP909:168:beat-126",
+   "22:POP909-chord-pitch-class:POP909:168:beat-290",
+   "22:POP909-chord-pitch-class:POP909:179:beat-22",
+   "22:POP909-chord-pitch-class:POP909:179:beat-26",
+   "22:POP909-chord-pitch-class:POP909:188:beat-102",
+   "22:POP909-chord-pitch-class:POP909:188:beat-366",
+   "22:POP909-chord-pitch-class:POP909:195:beat-18",
+   "22:POP909-chord-pitch-class:POP909:304:beat-10",
+   "22:POP909-chord-pitch-class:POP909:317:beat-10",
+   "22:POP909-chord-pitch-class:POP909:368:beat-90",
+   "22:POP909-chord-pitch-class:POP909:373:beat-314",
+   "22:POP909-chord-pitch-class:POP909:374:beat-14",
+   "22:POP909-chord-pitch-class:POP909:402:beat-366",
+   "22:POP909-chord-pitch-class:POP909:453:beat-50",
+   "22:POP909-chord-pitch-class:POP909:498:beat-166",
+   "22:POP909-chord-pitch-class:POP909:500:beat-6",
+   "22:POP909-chord-pitch-class:POP909:504:beat-34",
+   "22:POP909-chord-pitch-class:POP909:512:beat-46",
+   "22:POP909-chord-pitch-class:POP909:519:beat-186",
+   "22:POP909-chord-pitch-class:POP909:523:beat-10",
+   "22:POP909-chord-pitch-class:POP909:535:beat-334",
+   "22:POP909-chord-pitch-class:POP909:535:beat-94",
+   "22:POP909-chord-pitch-class:POP909:541:beat-530",
+   "22:POP909-chord-pitch-class:POP909:541:beat-90",
+   "22:POP909-chord-pitch-class:POP909:545:beat-126",
+   "22:POP909-chord-pitch-class:POP909:607:beat-230",
+   "22:POP909-chord-pitch-class:POP909:616:beat-114",
+   "22:POP909-chord-pitch-class:POP909:648:beat-82",
+   "22:POP909-chord-pitch-class:POP909:681:beat-374",
+   "22:POP909-chord-pitch-class:POP909:682:beat-14",
+   "22:POP909-chord-pitch-class:POP909:723:beat-222",
+   "22:POP909-chord-pitch-class:POP909:745:beat-162",
+   "22:POP909-chord-pitch-class:POP909:745:beat-306",
+   "22:POP909-chord-pitch-class:POP909:752:beat-126",
+   "22:POP909-chord-pitch-class:POP909:756:beat-314",
+   "22:POP909-chord-pitch-class:POP909:771:beat-14",
+   "22:POP909-chord-pitch-class:POP909:771:beat-206",
+   "22:POP909-chord-pitch-class:POP909:796:beat-14",
+   "22:POP909-chord-pitch-class:POP909:796:beat-158",
+   "22:POP909-chord-pitch-class:POP909:803:beat-174",
+   "22:POP909-chord-pitch-class:POP909:811:beat-130",
+   "22:POP909-chord-pitch-class:POP909:844:beat-110",
+   "22:POP909-chord-pitch-class:POP909:844:beat-26",
+   "22:POP909-chord-pitch-class:POP909:855:beat-534",
+   "22:POP909-chord-pitch-class:POP909:862:beat-370",
+   "22:POP909-chord-pitch-class:POP909:864:beat-282",
+   "22:POP909-chord-pitch-class:POP909:890:beat-198",
+   "22:POP909-chord-pitch-class:POP909:890:beat-202",
+   "22:POP909-chord-pitch-class:POP909:890:beat-310",
+   "22:POP909-chord-pitch-class:POP909:902:beat-114",
+   "2:ToolRet-retrieval:ToolRet-retrieval:gorilla-huggingface:gorilla_huggingface_query_118:chunk0",
+   "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_1070:chunk0",
+   "2:ToolRet-retrieval:ToolRet-retrieval:toollens:toolLens_query_313:chunk0",
+   "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:130:chunk0",
+   "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:48:chunk0",
+   "36:BRIGHT-retrieval:BRIGHT-retrieval:stackoverflow:56:chunk0",
+   "36:BRIGHT-retrieval:BRIGHT-retrieval:theoremqa_questions:TheoremQA_wenhuchen/t_test3.json:chunk0"
+  ]
+ },
+ "by_reference_status": {
+  "error": {
+   "n": 58,
+   "point_only_this_masked": 38.984094036751024,
+   "contribution": 0.05833333333333712
+  },
+  "unsupported": {
+   "n": 7,
+   "point_only_this_masked": 38.375489781216146,
+   "contribution": 0.6669375888682154
+  }
+ },
+ "masked_problems": [],
+ "within_tol": true,
+ "mask_cap_ok": true,
+ "masked_ids_pinned_ok": true,
+ "masked_rows_valid": true,
+ "amendment": "A3",
+ "ok": true,
+ "vs_job_5cmat": {
+  "diff": {
+   "point": 0.04849441600700288,
+   "lo": -0.7883490621120666,
+   "hi": 0.7220475485703127,
+   "se": 0.38773165644974994,
+   "p_le_zero": 0.4565,
+   "excludes_zero": false
+  },
+  "candidate": {
+   "point": 38.31715644788281,
+   "lo": 34.95520653686539,
+   "hi": 41.349747415585895,
+   "se": 1.6140761683181573
+  },
+  "baseline": {
+   "point": 38.268662031875806,
+   "lo": 34.96691686055704,
+   "hi": 41.395250376536815,
+   "se": 1.639692132650366
+  }
+ },
+ "vs_job_5cmat_unmasked": {
+  "diff": {
+   "point": 0.7737653382085554,
+   "lo": -0.20337319874681756,
+   "hi": 1.6482002367315907,
+   "se": 0.46707402653079055,
+   "p_le_zero": 0.0545,
+   "excludes_zero": false
+  },
+  "candidate": {
+   "point": 39.04242737008436,
+   "lo": 35.69840185705893,
+   "hi": 41.99823226137125,
+   "se": 1.5987389702166996
+  },
+  "baseline": {
+   "point": 38.268662031875806,
+   "lo": 34.96691686055704,
+   "hi": 41.395250376536815,
+   "se": 1.639692132650366
+  }
+ },
+ "results_sha256": "ab8f1254d3610d31b3424315012039ac130bd15a413d8a76021d0a8f28f82d7c",
+ "unmasked_results_sha256": "12ffc634daa1952cafce6394a91b2247cd46572d4d5012aa07e60ea2808e0da7",
+ "reference_sha256": "646b61490a37b3aa8887a57bb1a6797f8254c0136a63a0c3cf18d00f90497beb"
+}
+
+real	0m35.240s
+user	0m0.016s
+sys	0m0.202s
