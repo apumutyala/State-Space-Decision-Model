@@ -8,7 +8,8 @@ This is a no-checkpoint contract and copy-isolation test using a tiny fake RWKV-
 
 - Base: `agent-main@d7f12909ee7158a65d09b310c1b0a84e11d6eaec`.
 - Command: `C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest -q -p no:cacheprovider language_growth/tests/test_semantic_state_intervention.py tests/test_jobs_lint.py`.
-- Result: **76 passed** (9 focused state-protocol tests +67 repository lint tests).
+- Result at initial review: **76 passed** (9 focused state-protocol tests +67 repository lint tests).
+- Rechecked after integration of the L1 data PRs on current `agent-main`: **79 passed** (same 9 focused tests +70 repository lint tests).
 - `git diff --check`: passed.
 - Runtime container reference: installed `transformers/cache_utils.py` initializes the three recurrent slots and their flags as dictionaries keyed by 0, 1 and 2. The test fake uses the same keyed shape; the wrapper canonicalizes by numeric key order and rejects extra/missing keys. This review correction is recorded as L-32 with its enforcing fake-cache test.
 
