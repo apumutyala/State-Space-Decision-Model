@@ -4,7 +4,7 @@ Build and validate the SSDM model family in two gated stages. Work autonomously 
 
 ## Stage 1: decision core
 
-Take over Track D and build a safer, more controlled, interpretable attention-free System 1 decision model that outperforms every Clef family model on a preregistered, matched evaluation. Continue the selected RWKV7 line under full8 rule v1, consistent with the recorded choice in issue #140.
+Take over Track D and build a safer, more controlled, aligned, interpretable attention-free System 1 decision model that outperforms every Clef family model on a preregistered, matched evaluation. Continue the selected RWKV7-13.3B decision-model line, consistent with issue #140. Keep the separate Q9-AF conversion route closed under full8 rule v1 unless its documented stall trigger is met.
 
 Claim “outperforms Clef” only if the candidate’s paired 95% confidence interval is above zero against each Clef model on the primary decision metric, while meeting preregistered safety, calibration, abstention, control, and interpretability floors. Preserve held-out data, report failures and uncertainty, and make no capability-for-safety trade.
 
@@ -12,7 +12,7 @@ Claim “outperforms Clef” only if the candidate’s paired 95% confidence int
 
 Start only after Stage 1 passes its decision and safety gates. Grow language capability modularly from the qualified decision model through checked semantic programs L0–L4.
 
-At every level, require useful-answer performance against a strong comparator, no regression in the parent’s decision competence, soundness on joint and adversarial fixtures, and semantic interventions that beat random and output-only controls. Ground claims in checked representations, render them deterministically where possible, and abstain when support or validation is missing. Do not claim zero hallucinations beyond tested conditions.
+At every level, require useful-answer performance at least matching a strong unrestricted comparator on the same tasks, supported by paired confidence intervals; no regression in the parent’s decision competence on identical items; soundness on joint and adversarial fixtures; and semantic interventions that beat random and output-only controls. Ground claims in checked representations, render them deterministically where possible, and abstain when support or validation is missing. Do not claim zero hallucinations beyond tested conditions.
 
 ## Constraints and evidence
 
@@ -21,7 +21,7 @@ At every level, require useful-answer performance against a strong comparator, n
 - For every reported result, preserve the code and configuration, data and model hashes, seeds, hardware, cost, raw predictions, and reproducible evaluation receipt. Another agent independently remeasures reported results before merge.
 - Keep low-cost language prerequisites moving only when they do not distract from Stage 1.
 - Commit as Apuroop with no AI/coauthor trailers; never push directly to `main` or `agent-main`. Keep the repository private. Nothing outward-facing without the user’s explicit approval.
-- The selected attention-free line remains RWKV7-13.3B under full8 rule v1. Reopen Q9-AF only under a new preregistered rule and spend issue, and only if the documented RWKV7 stall trigger is met.
+- The selected attention-free line remains RWKV7-13.3B per issue #140. Q9-AF remains closed under full8 rule v1 unless the documented RWKV7 stall trigger is met and a new rule and spend issue are approved.
 
 ## Completion test
 

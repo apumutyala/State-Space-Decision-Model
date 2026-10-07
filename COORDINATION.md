@@ -1,24 +1,25 @@
 # Coordination protocol
 
-Two agents build one model family. Git is the only shared memory: no claim, plan or result counts until it is in a reviewed PR. The user approves anything that reaches `main`.
+Codex owns the two gated SSDM stages under the user’s 2026-10-07 takeover direction. Fresh-context adversarial subagents provide independent review; Git is the shared record, and no claim, plan or result counts until it is in a reviewed PR. The user approves anything that reaches `main`.
 
 ## Who owns what
 
 | Track | Owner | Scope |
 |---|---|---|
-| **D: SSM-Decision (System 1)** | `claude` (Claude Code; branches `claude/*`) | Backbones (Q9-AF conversion, RWKV7, Mamba-3 reference), decision heads, typed outputs, calibration, injection/steer evaluation, Decision Index harness, the semantic-interface arms *inside* the core (records, KEEP/SET/RETRACT/UNKNOWN/CONFLICT) |
-| **L: SSM-Language (grown from D)** | `codex` (branches `codex/*`; paths `plans/codex/`, `language_growth/`) | Semantic program language (Assert/Infer/Compare/Explain/Ask/Quote/Hypothesize/Plan), module contracts and checker, realizer/grammar, verified emission, L0–L4 growth, authority and information-flow specification |
-| **Shared** | both, cross-reviewed | `interfaces/DECISION_LANGUAGE_V0.md` (canonical D→L seam; Claude deltas in `INTERFACE.md`), evaluation harness, intervention protocol, spend ledger, `techniques/` |
+| **D: SSM-Decision (System 1)** | `codex` (user-directed Track D takeover; branches `codex/d-*` and `stack/rwkv7/*`) | Backbones (Q9-AF conversion, RWKV7, Mamba-3 reference), decision heads, typed outputs, calibration, injection/steer evaluation, Decision Index harness, the semantic-interface arms *inside* the core (records, KEEP/SET/RETRACT/UNKNOWN/CONFLICT) |
+| **L: SSM-Language (grown from D)** | `codex` (branches `codex/l-*`; paths `plans/codex/`, `language_growth/`) | Semantic program language (Assert/Infer/Compare/Explain/Ask/Quote/Hypothesize/Plan), module contracts and checker, realizer/grammar, verified emission, L0–L4 growth, authority and information-flow specification |
+| **Shared** | Codex, reviewed by a fresh-context adversarial subagent | `interfaces/DECISION_LANGUAGE_V0.md` (canonical D→L seam; existing deltas recorded in `INTERFACE.md`), evaluation harness, intervention protocol, spend ledger, `techniques/` |
 
-Ownership means you write it and merge it after review. It does not mean the other agent can't open PRs against it; those just need the owner's approval.
+Codex owns both tracks. A fresh-context adversarial subagent reviews each PR and does not become a file owner or spend approver.
 
 ## Branches
 
 ```
 main          user-approved milestones only (tagged m0, m1, ...)
-agent-main    integration branch; both agents merge here after cross-review
-claude/<topic>    Track D work branches
-codex/<topic>     Track L work branches
+agent-main    integration branch; reviewed PRs merge here
+codex/d-<topic>  Track D takeover work branches
+codex/l-<topic>  Track L work branches
+stack/rwkv7/<variant>  measured RWKV7 decision-model variants
 ```
 
 - Branch from `agent-main`. Rebase on it before opening a PR.
@@ -45,10 +46,10 @@ codex/<topic>     Track L work branches
 
 Every PR uses the template in `.github/pull_request_template.md`.
 
-- **Cross-review is mandatory.** The other agent reviews every PR into `agent-main`. Nobody approves their own PR.
+- **Independent review is mandatory.** A fresh-context adversarial subagent that did not write the change reviews each PR into `agent-main`. The coordinator does not count their own review as independent.
 - **Results PRs need an independent re-measurement.** Before merge, the reviewer re-runs the numbers from the committed receipt, or at least recomputes them from the raw predictions. A win that doesn't reproduce is logged as a false positive in `LEDGER.md`.
-- **Interface changes** (anything touching `INTERFACE.md` or a type in it) need both agents' approval plus a version bump.
-- Review verdicts: `approve`, `request-changes` (with specific blocking items), or `comment`. Disagreements that survive two rounds go to the user as a `decision-needed` issue. Neither agent overrules the other.
+- **Interface changes** (anything touching `INTERFACE.md` or a type in it) need an `interface` issue, an independent fresh-context adversarial review, and a version bump. Changes reaching `main` still require the user's approval.
+- Review verdicts: `approve`, `request-changes` (with specific blocking items), or `comment`. Disagreements that survive two rounds go to the user as a `decision-needed` issue.
 
 ## Messaging
 
@@ -89,7 +90,7 @@ Receipts live in `receipts/<date>-<track>-<slug>/`.
 
 ## Compute and spend
 
-- **Budget:** a single shared $525 SF Compute envelope (one allowance, not one per agent): $75 joint setup/baseline/throughput gate · $250 System 1 · $100 language · $100 shared reserve. $5k planning ceiling. The first commitment is the joint $75 gate. Exceeding a line needs the other agent's sign-off.
+- **Budget:** a single shared $525 SF Compute envelope: $75 joint setup/baseline/throughput gate · $250 System 1 · $100 language · $100 shared reserve. $5k planning ceiling. The first commitment is the joint $75 gate. Exceeding a line needs the user's explicit authorization.
 - **Before launching a paid job:**
   - add a planned row to `LEDGER.md`, with the estimated $ and a stop condition;
   - set a runtime ceiling;
@@ -103,19 +104,19 @@ Receipts live in `receipts/<date>-<track>-<slug>/`.
 
 Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trailers. The repo stays private.
 
-## Phases, pipelining and proof before spend (binding for both agents)
+## Phases, pipelining and proof before spend (binding for both stages)
 
 1. **Break work into phases with explicit exit proofs.** Each phase names its hypothesis, deliverable, exit proof (test, fixture or receipt) and the decision it unlocks. No phase starts paid compute until the previous phase's proof is merged on `agent-main`.
 2. **Spend ladder.** Order the work as:
    - $0 local/CPU work: code, fixtures, smoke tests on tiny models;
-   - ≤$20 qualification on real hardware: throughput, memory, numerics parity;
+   - real-hardware qualification sized from the measured workload and remaining approved track allocation: throughput, memory, numerics parity;
    - the capped experiment;
    - scale-up.
 
-   Each rung needs the previous rung's receipt, plus a `spend` issue with the estimated $ and a stop condition, reviewed per 'Review sufficiency' (the other agent's acknowledgement is requested but not blocking).
-3. **Parallelise within a track.** Each agent runs independent sub-tasks concurrently: subagents or worktrees, one branch each (`claude/m0-<task>`, `codex/l0-<task>`). Work that doesn't depend on hardware (code, data, analysis, review) never waits for GPU work.
+   Each paid rung needs the previous rung's merged receipt, a `spend` issue with the exact estimate and stop condition, an independent fresh-context adversarial review, and the user's explicit OK in that issue.
+3. **Parallelise within a track.** Codex runs independent bounded sub-tasks concurrently using fresh-context subagents or worktrees, one owner and branch per task (`codex/d-<task>`, `codex/l0-<task>`). Work that doesn't depend on hardware (code, data, analysis, review) never waits for GPU work.
 4. **Pipeline across stages.** While one stage measures, the next is implemented and the previous one is reviewed. GPU time is serialised (one experiment per GPU); nothing else is.
-5. **Adversarial review inside each track** before the cross-agent PR. Any reported number is re-derived by a different agent or process.
+5. **Adversarial review.** A fresh-context adversarial subagent reviews each PR before merge and independently re-derives reported numbers from receipts or raw predictions.
 6. **Fold rules.** Fold a line when a measurement falsifies it, when a better backlog item outranks it, or after two consecutive checks with no progress. Log the fold in `LEDGER.md`.
 
 ## Compute providers
@@ -125,30 +126,16 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
    - **Key:** read from `%USERPROFILE%\.lambda_key`. Never print it, and never put it in argv or a repo.
    - **Tooling:** reuse the kill-safe tooling in `chl-typed-control/infra/` (`lambda_ctl.py`, `deadline_runner.sh`, `watchdog.py`).
    - **Per run:** every run arms an on-instance deadline (`deadline_runner.sh`) *and* the local watchdog before launch.
-   - **Prefixes:** each agent uses its own instance-name prefix, `ssdm-claude-` or `ssdm-codex-`. An agent only lists and terminates instances under its own prefix, and never terminates the other agent's instances.
+   - **Prefixes:** each paid worker uses an explicitly assigned instance-name prefix. Codex only lists and terminates instances it launched; never terminate an unowned instance.
    - **Billing:** continues until *terminate*; an OS shutdown doesn't stop it.
    - **Spend:** counts against the $5k ceiling, not the SF credits. It's logged in `LEDGER.md` with provider = lambda, and goes through the same `spend` issue and spend ladder.
 3. **Local:** the RTX 5070 Ti laptop (12 GB) handles all $0-rung smoke tests. Check `nvidia-smi` before starting, since workers share it.
 
-## Stalled cross-review (user authorization, 2026-10-06)
+## Independent review and spend sufficiency (user direction, 2026-10-07)
 
-When the other agent's review is stalled, Track D may merge its own PRs into `agent-main` with the user's explicit authorization. Three conditions must all hold:
+Codex owns Track D and Track L; fresh-context adversarial subagents are the independent reviewers. One nonauthor reviewer is required before merge to `agent-main`. Fix material findings first and rerun the relevant checks. Results require independent remeasurement. These rules never authorize a merge to `main`.
 
-1. An independent internal adversarial review approved the PR.
-2. The other agent's known findings were fixed first, each with a regression test.
-3. The integrator test run on the merged tree passes.
-
-The merge comment records all three. The other agent reviews after the merge, and any finding gets a fix PR. A result claim the other agent couldn't reproduce stays labelled as reproduced by one track only.
-
-This rule never applies to `main`. Spend follows 'Review sufficiency' below (one independent review — the other agent's or a fresh-context adversarial reviewer — plus the envelope and workspace cap); the other agent's acknowledgement on the spend issue is requested but not blocking.
-
-## Review sufficiency (user decision, 2026-10-06)
-
-One independent review is sufficient to merge or to launch spend. It can be either:
-- the other agent's review; or
-- a fresh-context adversarial reviewer subagent that didn't write the code.
-
-The review's findings must be fixed first, and the spend must stay within the approved envelope and workspace cap. Every spend still gets a ledger row and a launch receipt. The other agent reviews afterwards, and any findings get fix PRs. This never applies to `main`.
+Every paid job requires its own `spend` issue, planned `LEDGER.md` row, hard runtime/cost stop, and the user's explicit OK in that issue after independent review. Stay within the approved envelope and track allocation; a reviewer's GO is not spend authorization.
 
 ## Lean review (user direction, 2026-10-06)
 
@@ -165,8 +152,8 @@ They don't rebuild datasets or re-verify byte-for-byte reproducibility. A record
 Human teammates with write access, and the coding agents they send, work on research directions of their own choosing without delaying or disturbing the two owning tracks. Full onboarding: `HANDOFF.md` (humans) and `AGENT_HANDOFF.md` (agents).
 
 - **Branches.** `collab/<github-user>/<topic>`, branched from `agent-main` and rebased on it before a PR. Never push to `main` or `agent-main`; never touch `claude/*` or `codex/*` branches or worktrees; never force-push a shared branch; stage only your own paths.
-- **PRs.** Into `agent-main` only, when ready, using the PR template with a scoped claim and a receipt. Merge needs one independent review per "Review sufficiency" above (the other track's agent, or a fresh-context adversarial reviewer that did not write the code); findings fixed first; lean-review scope applies. Results PRs get their headline number re-derived by someone else.
-- **Shared contracts.** `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md`, `SAFETY_SPEC.md` rows and `harness/manifests/` change only through an `interface` issue approved by both owners, with a version bump.
+- **PRs.** Into `agent-main` only, when ready, using the PR template with a scoped claim and a receipt. Merge needs one independent fresh-context adversarial reviewer who did not write the code; findings are fixed first. Results PRs get their headline number re-derived from the receipt or raw predictions.
+- **Shared contracts.** `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md`, `SAFETY_SPEC.md` rows and `harness/manifests/` change only through an `interface` issue, independent adversarial review and version bump. Anything reaching `main` needs the user's approval.
 - **Integrity.** Never open or tune on the sealed TEST slice, Decision Index test items or the held-out D1-B templates. Open-weight teachers only. Every training set goes through the contamination guard with a committed log.
-- **Spend.** Collaborators do not spend the shared SF credits (or Lambda, which counts against the $5k ceiling) without the user's explicit OK on a `spend` issue that carries the estimate, stop condition and a planned `LEDGER.md` row; the spend ladder applies ($0 CPU → ≤ $20 qualification → capped → scale-up). Never run GPU jobs on anyone's laptop. Record actual cost and stop nodes.
+- **Spend.** Collaborators do not spend the shared SF credits (or Lambda, which counts against the $5k ceiling) without the user's explicit OK on a `spend` issue that carries the estimate, stop condition and a planned `LEDGER.md` row; the spend ladder applies ($0 CPU → measured real-hardware qualification → capped experiment → scale-up). Never run GPU jobs on anyone's laptop. Record actual cost and stop nodes.
 - **Identity.** Each contributor commits under their own name and email; nobody commits as another person. The repo stays private.

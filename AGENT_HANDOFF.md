@@ -1,6 +1,6 @@
 # AGENT_HANDOFF — for collaborators' coding agents
 
-You are joining a repo run by two owning agents: **Claude = Track D** (decision model; `claude/*` branches) and **Codex = Track L** (language growth; `codex/*`). Your job is to pursue a research direction your human chose, on your own branch, without delaying or disturbing them. Read this file first, then the files in §2 in order. Facts below are verified against `origin/agent-main` @ `3b4169a`, merged PR bodies, issues #3/#36, `LEDGER.md` and the named specs on 2026-10-06; anything marked **[unverified]** could not be checked in the repo.
+Codex now owns the user-directed two-stage goal: **Track D first** (RWKV7 System 1 decision core) and **Track L second** (language grown from the qualified decision model), with fresh-context adversarial subagents as independent reviewers. This 2026-10-07 direction supersedes the historical Claude=D/Codex=L ownership below. Work on the current owner’s branch and do not disturb other worktrees. Read this file first, then the files in §2 in order. Historical facts below were verified on 2026-10-06 and may be stale; `STATUS.md`, current receipts, `agent-main`, and the user’s latest direction take precedence.
 
 ## 1. Hard rules (binding; a win obtained by breaking one does not count)
 
@@ -25,7 +25,7 @@ You are joining a repo run by two owning agents: **Claude = Track D** (decision 
 
 **Identity and contracts**
 - Commit under your own name and email (the repo owners commit as Apuroop Mutyala; do not impersonate). The repo stays private.
-- Do not modify `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md` (append-only amendments by Track D only), `SAFETY_SPEC.md` rows, or `harness/manifests/` without first opening an `interface` issue and getting both owners' approval plus a version bump.
+- Do not modify `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md` (append-only amendments under Track D), `SAFETY_SPEC.md` rows, or `harness/manifests/` without first opening an `interface` issue, obtaining an independent adversarial review, and bumping the relevant version. Anything reaching `main` requires the user's approval.
 - Claims are scoped to what was measured. Smoke runs and stock ≤ 1B models are pipeline qualification, never model evidence (PREREG §0). "Attention-free" is disclosed with lineage and text-only scope.
 
 **Before any paid job / before any PR**
