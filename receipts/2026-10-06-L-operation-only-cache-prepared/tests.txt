@@ -1,0 +1,7 @@
+CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+python -m pytest language_growth/tests/test_operation_cache.py -q
+.......                                                                  [100%]
+7 passed in 9.52s
+
+Scope: tiny random CPU fixtures and stdlib no-load preparation only.
+Real checkpoint load/fit/inference: not run.
