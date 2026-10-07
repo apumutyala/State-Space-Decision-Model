@@ -760,7 +760,8 @@ def test_arm_seed_installs_only_a_pinned_matching_arm(tmp_path):
     pin = _fake_arm(src, CELL)
     dst = tmp_path / "ck" / "parent_arm"
     rec = seed(src, dst, pin, CELL)
-    assert rec["seeded"] and sorted(p.name for p in dst.iterdir()) == ["arm.json", "units-g12.json", "units-index.json"]
+    assert rec["seeded"] and sorted(p.name for p in dst.iterdir()) == ["arm.json", "seed-provenance.json",
+                                                                   "units-g12.json", "units-index.json"]
     assert hashlib.sha256((dst / "arm.json").read_bytes()).hexdigest() == pin
     assert seed(src, dst, pin, CELL)["seeded"] is False  # a restart's own cache is left as is
     assert seed(tmp_path / "absent", tmp_path / "ck2", pin, CELL)["seeded"] is False  # nothing shipped
@@ -789,3 +790,139 @@ def test_arm_seed_pin_is_the_uhxb5_export():
                                    "index": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001"}
     assert "--src \"$DATA/parent_arm_seed\"" in JOB and "jobs.m2_first_cell.arm_seed seed" in JOB
     assert JOB.index("arm_seed seed") < JOB.index("for STAGE in g12 index")
+
+
+def test_arm_seed_is_atomic_a_failed_check_never_becomes_the_cache(tmp_path, monkeypatch):
+    """PR #147 review B: the seed is copied to a private temp dir, the COPY is checked, and only then renamed into
+    place, so a copy that fails its check can never be reused as $CK/parent_arm by a restart."""
+    pytest.importorskip("torch")
+    from jobs.m2_first_cell import arm_seed as AS
+
+    src = tmp_path / "seed"
+    pin = _fake_arm(src, CELL)
+    dst = tmp_path / "ck" / "parent_arm"
+    real = AS.check
+
+    def fail_on_copy(d, *a, **k):
+        if Path(d) != src:
+            raise AS.SeedError("copy corrupted in transit")
+        return real(d, *a, **k)
+
+    monkeypatch.setattr(AS, "check", fail_on_copy)
+    with pytest.raises(AS.SeedError, match="in transit"):
+        AS.seed(src, dst, pin, CELL)
+    assert not (dst / "arm.json").exists() and not list((tmp_path / "ck").glob(".*seed-tmp"))
+    monkeypatch.setattr(AS, "check", real)
+    dst.mkdir(parents=True)  # the runner's empty dir is fine ...
+    assert AS.seed(src, dst, pin, CELL)["seeded"] and (dst / "arm.json").exists()
+    part = tmp_path / "ck2" / "parent_arm"  # ... a partial cache without arm.json is refused, never overwritten
+    part.mkdir(parents=True)
+    (part / "units-g12.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(AS.SeedError, match="partial cache"):
+        AS.seed(src, part, pin, CELL)
+
+
+def test_seed_probe_comparison_rule():
+    from jobs.m2_parent_arm.score_parent import PROBE_MAX_ABS_DCONF, compare_probe
+
+    cached = {f"r{i}/q": {"conf": 0.6, "correct": 1.0, "cluster": f"r{i}"} for i in range(20)}
+    same = {k: dict(v, conf=v["conf"] + 0.004) for k, v in cached.items()}  # cross-box bf16 noise
+    assert compare_probe(cached, same)["ok"]
+    drift = dict(same, **{"r0/q": dict(cached["r0/q"], conf=0.6 + 2 * PROBE_MAX_ABS_DCONF)})
+    assert not compare_probe(cached, drift)["ok"]
+    flips = {k: dict(v, correct=0.0 if i < 3 else 1.0) for i, (k, v) in enumerate(same.items())}  # 3/20 > 10 %
+    assert not compare_probe(cached, flips)["ok"]
+    assert not compare_probe(cached, {k: v for k, v in same.items() if k != "r5/q"})["ok"]  # an item not scored
+    assert not compare_probe({}, {})["ok"]
+
+
+def test_seed_restart_after_install_before_result_keeps_atomic_provenance(tmp_path, monkeypatch):
+    from jobs.m2_first_cell import arm_seed as AS
+
+    src, dst = tmp_path / "seed", tmp_path / "ck" / "parent_arm"
+    pin = _fake_arm(src, CELL)
+    rename = Path.rename
+
+    def interrupt_after_install(path, target):
+        result = rename(path, target)
+        if Path(target) == dst:
+            raise KeyboardInterrupt("process died after install, before the result/old shell marker")
+        return result
+
+    monkeypatch.setattr(Path, "rename", interrupt_after_install)
+    with pytest.raises(KeyboardInterrupt):
+        AS.seed(src, dst, pin, CELL)
+    assert (dst / AS.PROVENANCE).exists() and not (dst.parent / "arm-seed.json").exists()
+    monkeypatch.setattr(Path, "rename", rename)
+    # The installed provenance remains sufficient even when the original shipped source is unavailable.
+    resumed = AS.seed(tmp_path / "absent", dst, pin, CELL)
+    assert not resumed["seeded"] and resumed["verify_seed"] and resumed["arm_sha256"] == pin
+    with pytest.raises(AS.SeedError, match="provenance pin"):
+        AS.seed(tmp_path / "absent", dst, "0" * 64, CELL)
+
+
+def test_seed_restart_recognizes_legacy_install_without_any_marker(tmp_path):
+    from jobs.m2_first_cell import arm_seed as AS
+
+    src, dst = tmp_path / "seed", tmp_path / "ck" / "parent_arm"
+    pin = _fake_arm(src, CELL)
+    shutil.copytree(src, dst)
+    assert not (dst / AS.PROVENANCE).exists()
+    assert AS.seed(src, dst, pin, CELL)["verify_seed"]
+    assert AS.seed(tmp_path / "absent", dst, pin, CELL)["verify_seed"]  # recognized by the pinned manifest
+    (dst / "units-index.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(AS.SeedError, match="units-index.json sha256"):
+        AS.seed(src, dst, pin, CELL)
+
+
+def test_cache_verifier_refuses_full_item_guard_and_revision_mismatches(tmp_path):
+    from types import SimpleNamespace
+
+    from jobs.m2_parent_arm.score_parent import verify_cache
+    from train import m2_gates as G
+
+    cohort = SimpleNamespace(sha256=CELL["cohort_sha256"], steer_requests=lambda role: [])
+    item = SimpleNamespace(id="record/question")
+    items = {"dev": [item]}
+    spec, guard = G.unit_spec(CELL), {"manifests": {"path": "hash"}, "n_ids": 1}
+    parent = G.expected_parent_identity("rwkv7", wkv=CELL["rwkv7_wkv"])
+    for st in ("g12", "index"):
+        identity = G.units_identity(st, cohort, spec, {r: items[r] for r in G.STAGE_ROLES[st]}, [], [])
+        G.write_arm_cache(tmp_path, st, {}, identity, {"parent": parent, "revision": "pinned", "guard": guard})
+    pin = hashlib.sha256((tmp_path / "arm.json").read_bytes()).hexdigest()
+    args = dict(arm_dir=tmp_path, arm_sha256=pin, cfg=CELL, parent="rwkv7", cohort=cohort, spec=spec,
+                stages=["g12", "index"], items_by_role=items, records_by_id={}, index_rows=[], guard_identity=guard)
+    assert verify_cache(**args)[0] == 0
+    rc, record = verify_cache(**{**args, "items_by_role": {"dev": [SimpleNamespace(id="other/question")]}})
+    assert rc == 10 and "units differ" in record["error"]
+    rc, record = verify_cache(**{**args, "guard_identity": {"manifests": {"path": "other"}, "n_ids": 1}})
+    assert rc == 10 and "another guard" in record["error"]
+    rc, record = verify_cache(**args, probe_n=1,
+                              decider=lambda: (None, {"parent": parent, "revision": "changed"}))
+    assert rc == 10 and "parent decider" in record["error"]
+
+
+def test_reprice_uses_the_seed_probe_only_without_rate_reports(tmp_path):
+    from jobs.m2_first_cell.reprice import main
+
+    probe = tmp_path / "seed-verify.json"
+    probe.write_text(json.dumps({"ok": True, "probe": {"factor_estimate": 0.7, "records": 24}}), encoding="utf-8")
+    params = str(ROOT / "jobs/m2_first_cell/job_params.json")
+    out = tmp_path / "r.json"
+    assert main(["--arm-dir", str(tmp_path), "--params", params, "--tok-s", "3757", "--call-s", "0.117",
+                 "--out", str(out), "--probe", str(probe)]) == 0
+    rec = json.loads(out.read_text(encoding="utf-8"))
+    assert rec["factor"] == 0.7 and rec["source"].startswith("seed probe") and "child_projection" in rec
+    probe.write_text(json.dumps({"ok": True, "probe": {"factor_estimate": 9.0}}), encoding="utf-8")  # a slow box
+    assert main(["--arm-dir", str(tmp_path), "--params", params, "--tok-s", "3757", "--call-s", "0.117",
+                 "--probe", str(probe)]) == 15
+    assert main(["--arm-dir", str(tmp_path), "--params", params, "--tok-s", "3757", "--call-s", "0.117"]) == 0
+
+
+def test_runner_verifies_a_seed_before_training_and_sets_the_tvuat_allocator():
+    assert "export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True" in JOB
+    assert JOB.index("export PYTORCH_CUDA_ALLOC_CONF") < JOB.index("python -m train.run_cell")
+    v = JOB.index("score_parent --verify-cache")
+    assert JOB.index("arm_seed seed") < v < JOB.index("-m jobs.m2_first_cell.reprice") < JOB.index('say "phase cell"')
+    assert '--probe-n "$PROBE_N"' in JOB and '"${PROBE[@]}"' in JOB and PARAMS["parent_arm_seed"]["probe_records"] >= 8
+    assert 'cp "$ARM"/*.json "$WORK/out/parent_arm/"' in JOB[v:JOB.index('say "phase cell"')]  # comparator units kept

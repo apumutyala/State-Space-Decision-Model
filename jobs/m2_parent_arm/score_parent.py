@@ -151,6 +151,113 @@ def parent_decider(parent: str, model_dir: str, gdn_ckpt: str | None, cfg: dict,
     return dec, {"parent": ident, "revision": dec.revision()["revision_id"], "calibration": "uncalibrated_identity"}
 
 
+#: seed probe acceptance (``--verify-cache --probe-n``): the cached parent units must reproduce on THIS box within
+#: cross-box bf16 noise -- every probed item scored, max |conf difference| and the share of flipped ``correct`` flags
+PROBE_MAX_ABS_DCONF = 0.05
+PROBE_MAX_FLIP_FRAC = 0.10
+
+
+def _guard_key(ident: dict) -> dict:
+    """The guard identity without file locations (manifest paths, content-index path): what was guarded, not where."""
+    ci = ident.get("content_index")
+    return {"manifests": sorted((ident.get("manifests") or {}).values()), "n_ids": ident.get("n_ids"),
+            "n_hashes": ident.get("n_hashes"), "note": ident.get("note"),
+            "content_index": {k: v for k, v in ci.items() if k != "path"} if isinstance(ci, dict) else ci}
+
+
+def compare_probe(cached: dict[str, dict], fresh: dict[str, dict]) -> dict[str, Any]:
+    """Re-scored decision fields vs the cached ones (``arm_decision_fields`` format) on the same item ids."""
+    ids = sorted(cached)
+    missing = [i for i in ids if i not in fresh]
+    both = [i for i in ids if i in fresh]
+    d = [abs(fresh[i]["conf"] - cached[i]["conf"]) for i in both]
+    flips = [i for i in both if fresh[i]["correct"] != cached[i]["correct"]]
+    rec = {"n_items": len(ids), "missing": missing[:10], "n_missing": len(missing), "max_abs_dconf": max(d, default=0.0),
+           "n_flipped": len(flips), "flipped": flips[:10],
+           "rule": {"max_abs_dconf": PROBE_MAX_ABS_DCONF, "max_flip_frac": PROBE_MAX_FLIP_FRAC}}
+    rec["ok"] = bool(ids) and not missing and rec["max_abs_dconf"] <= PROBE_MAX_ABS_DCONF \
+        and len(flips) <= PROBE_MAX_FLIP_FRAC * len(ids)
+    return rec
+
+
+def verify_cache(*, arm_dir: str | Path, arm_sha256: str, cfg: dict, parent: str, cohort, spec: dict,
+                 stages: Sequence[str], items_by_role: dict, records_by_id: dict, index_rows: list[dict] | None,
+                 guard_identity: dict, probe_n: int = 0, decider=None, tok_s: float | None = None,
+                 call_s: float = 0.0) -> tuple[int, dict]:
+    """Fail-fast check of a SEEDED parent arm before any training (LESSONS L-34): per stage, the full units identity
+    this job computes (cohort, unit spec, items, variants, Index rows; CPU only) must equal the cache's, through the
+    same ``train.m2_gates.read_arm_cache`` the evals use (pinned arm.json sha256, parent identity, file hashes), and
+    the guard must match. With ``probe_n`` > 0 and a ``decider`` (factory -> (Decider, identity)) loaded on this box:
+    its revision must equal the cached arm's, ``probe_n`` g12 dev records are re-scored and must reproduce the cached
+    units (``compare_probe``), and their speed relative to the cached run estimates this box's re-price factor.
+    Returns (exit code: 0 ok / 10 mismatch, record)."""
+    import time
+
+    from train import m2_gates as G
+    from train.guard import record_request
+
+    expect_parent = G.expected_parent_identity(parent, wkv=cfg.get("rwkv7_wkv"))
+    rec: dict[str, Any] = {"arm_dir": str(arm_dir), "arm_sha256": arm_sha256, "stages": {}}
+    units, entries, variants_by = {}, {}, {}
+    for st in stages:
+        variants_by[st] = G.stage_variants(cohort, st)
+        ident = G.units_identity(st, cohort, spec, {r: items_by_role[r] for r in G.STAGE_ROLES[st]}, variants_by[st],
+                                 index_rows if G._uses_index(st) else None)
+        try:
+            units[st], entries[st] = G.read_arm_cache(arm_dir, st, ident, expect_parent, arm_sha256)
+        except G.IdentityMismatch as e:
+            rec["error"] = f"{st}: {e}"
+            return 10, rec
+        if _guard_key((entries[st].get("arm") or {}).get("guard") or {}) != _guard_key(guard_identity):
+            rec["error"] = f"{st}: the cached arm was scored under another guard"
+            return 10, rec
+        rec["stages"][st] = {"units_id": ident["id"], "sha256": entries[st]["sha256"]}
+    if probe_n <= 0 or decider is None:
+        return 0, rec
+    dec, ident = decider()
+    for st, e in entries.items():
+        arm = e.get("arm") or {}
+        if arm.get("revision") != ident["revision"] or arm.get("parent") != ident["parent"]:
+            rec["error"] = (f"{st}: this box's parent decider {ident['revision']} / {ident['parent']} != the cached "
+                            f"arm's {arm.get('revision')} / {arm.get('parent')}")
+            return 10, rec
+    if "g12" not in units:
+        return 0, rec
+    by_rec: dict[str, list] = {}
+    for it in items_by_role["dev"]:
+        by_rec.setdefault(it.id.rsplit("/", 1)[0], []).append(it)
+    cached_dec = units["g12"]["decision"]["dev"]
+    rids = [r for r in sorted(by_rec) if all(it.id in cached_dec for it in by_rec[r])]  # records the cache scored
+    if not rids:
+        rec["error"] = "probe: the cached g12 arm scored no dev record"
+        return 10, rec
+    step = max(1, len(rids) // probe_n)
+    pick = rids[::step][:probe_n]  # spread over the sorted ids (lengths vary)
+    G.arm_decision_fields(dec.decide, records_by_id, by_rec[pick[0]])  # warm-up (kernels, caches): untimed
+    items = [it for r in pick for it in by_rec[r]]
+    t0 = time.perf_counter()
+    fresh, _errors = G.arm_decision_fields(dec.decide, records_by_id, items)
+    probe_s = time.perf_counter() - t0
+    cmp = compare_probe({it.id: cached_dec[it.id] for it in items}, fresh)
+    probe_w = sum(G.unit_weight(record_request(records_by_id[r])) for r in pick)
+    total_w = sum(G.stage_unit_weights("g12", items_by_role, records_by_id, variants_by["g12"], None))
+    cached_s = float(units["g12"]["seconds"])
+    rel = (probe_s / probe_w) / (cached_s / total_w) if probe_w and cached_s > 0 else None
+    probe = {"records": len(pick), "items": len(items), "seconds": round(probe_s, 3), "weight": probe_w,
+             "cached_g12_seconds": cached_s, "cached_g12_weight": total_w, "relative_speed": rel, **cmp}
+    if rel is not None and tok_s:
+        proj = estimate(tok_s, stages=["g12"], fixed_min=0, mode="parent", call_s=call_s)["total_minutes"]
+        probe["factor_estimate"] = rel * (cached_s / 60) / proj
+        probe["factor_note"] = ("this box's per-weight probe time / the cached run's g12 per-weight time, times the "
+                                "cached g12 minutes over their projection at TOK_S / CALL_S (an estimate; reprice uses "
+                                "it only when no rate report exists)")
+    rec["probe"] = probe
+    if not cmp["ok"]:
+        rec["error"] = f"probe: the cached parent units do not reproduce on this box: {cmp}"
+        return 10, rec
+    return 0, rec
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv[:1] == ["estimate"]:
@@ -188,8 +295,23 @@ def main(argv=None) -> int:
                     help="cohort pool outside the PR #16 file (cohort v3 retention: m2-150k=<dir>)")
     ap.add_argument("--progress", default=None, help="live progress file for jobs.common.rate_guard run-weighted "
                     "({stage} is replaced by the stage name)")
+    ap.add_argument("--verify-cache", action="store_true",
+                    help="score nothing: verify the arm cache in --out-dir (a SEEDED parent arm, LESSONS L-34) for "
+                         "--verify-stages against this job's units identity; exit 10 on any mismatch")
+    ap.add_argument("--verify-stages", default="g12,index")
+    ap.add_argument("--arm-sha256", default=None, help="--verify-cache: the pinned sha256 of <out-dir>/arm.json")
+    ap.add_argument("--probe-n", type=int, default=0, help="--verify-cache: re-score this many g12 dev records on "
+                    "this box (loads the parent; 0 = CPU identity check only)")
+    ap.add_argument("--tok-s", type=float, default=None, help="--verify-cache probe: the env TOK_S (factor estimate)")
+    ap.add_argument("--call-s", type=float, default=0.0)
+    ap.add_argument("--verify-out", default=None)
     a = ap.parse_args(argv)
     stages = ["g12", "g13"] if a.stage == "all" else [a.stage]
+    if a.verify_cache:
+        stages = [s for s in a.verify_stages.split(",") if s]
+        if not a.arm_sha256 or any(s not in ("g12", "index") for s in stages):
+            print("--verify-cache needs --arm-sha256 and --verify-stages from g12,index", file=sys.stderr)
+            return 2
     if "index" in stages and not a.index_rows:
         print(f"{a.stage} needs --index-rows (the Index DEV subset rows)", file=sys.stderr)
         return 2
@@ -226,6 +348,30 @@ def main(argv=None) -> int:
         print(f"cohort: {e}", file=sys.stderr)
         return 10
     items_by_role = {r: G.decision_items(v, enc, spec, guard) for r, v in role_recs.items()}
+    if a.verify_cache:
+        from harness.suite import read_rows
+
+        def decider():
+            dec, ident = parent_decider(a.parent, a.model_dir, a.gdn_ckpt, cfg, a.device)
+            return dec, ident
+
+        try:
+            rc, rec = verify_cache(arm_dir=a.out_dir, arm_sha256=a.arm_sha256, cfg=cfg, parent=a.parent, cohort=cohort,
+                                   spec=spec, stages=stages, items_by_role=items_by_role,
+                                   records_by_id={r["id"]: r for rs in role_recs.values() for r in rs},
+                                   index_rows=read_rows(a.index_rows) if "index" in stages else None,
+                                   guard_identity=guard.identity(), probe_n=a.probe_n, decider=decider,
+                                   tok_s=a.tok_s, call_s=a.call_s)
+        except Exception as e:  # noqa: BLE001 - a cache that cannot even be read is a mismatch, never a pass
+            rc, rec = 10, {"error": f"verify: {e!r}"}
+        rec["ok"] = rc == 0
+        text = json.dumps(rec, indent=1, default=str)
+        if a.verify_out:
+            Path(a.verify_out).write_text(text, encoding="utf-8")
+        print(text)
+        if rc:
+            print(f"seeded parent arm refused: {rec.get('error')}", file=sys.stderr)
+        return rc
     try:
         dec, ident = parent_decider(a.parent, a.model_dir, a.gdn_ckpt, cfg, a.device)
     except Exception as e:  # noqa: BLE001 - LineageError / pins: never score an unpinned parent

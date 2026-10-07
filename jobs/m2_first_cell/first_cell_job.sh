@@ -51,6 +51,9 @@ HB_EVERY_S=60 STALL_S=1200  # fixed in paid runs (not env-overridable)
 WATCH_EXTRA=$WORK
 mkdir -p "$OUT/phases" "$WORK/out" "$WORK/logs" "$CK"
 export SSDM_DATA=$DATA PYTHONUNBUFFERED=1 PYTHONUTF8=1 SSDM_PROGRESS_BEAT=$WORK/logs/beat
+# the allocator every job-tvuat variant ran with (jobs/cell_step_profile/cell_step_job.sh, rule.ALLOC_CONF): without it
+# fragmentation can OOM a ladder rung the profile fit, and the ladder's OOM catch would silently lower T_max (PR #147)
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 HF_DIR=${HF_HUB_CACHE:-${HF_HOME:-$HOME/.cache/huggingface}}
 mkdir -p "$HF_DIR"
 T0=$(date +%s)
@@ -158,14 +161,34 @@ case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B frag
 # Its live weighted rate guard measures this box's scoring speed before any training spend; then the child evals are
 # re-priced from that measured speed (jobs.m2_first_cell.reprice, exit 15). Cached in $CK across restarts.
 ARM=$CK/parent_arm
-mkdir -p "$ARM"
 # A RESUBMITTED job (empty checkpoint slot) seeds the cache from a pinned earlier export shipped as data/parent_arm_seed/
-# (job_params parent_arm_seed; LESSONS L-34). A restart's own cache is left as is; nothing shipped = score the parent.
-ARM_SRC=restart
-[ -f "$ARM/arm.json" ] || ARM_SRC="seeded from data/parent_arm_seed"
+# (job_params parent_arm_seed; LESSONS L-34): installed atomically (temp dir, checked, renamed), then verified BEFORE
+# any training (seed_verify: full units identity via read_arm_cache, guard, the parent's revision on this box and a
+# short re-score probe whose speed feeds the re-price). A restart's own cache is left as is (a seeded one is
+# re-verified using provenance inside the atomic cache install); nothing shipped = score the parent.
 python -X utf8 -m jobs.m2_first_cell.arm_seed seed --src "$DATA/parent_arm_seed" --dst "$ARM" --params "$PARAMS" \
   --cell "$CELL" --out "$WORK/out/arm-seed.json" > "$WORK/logs/arm-seed.log" 2>&1; r=$?
 case $r in 0) ;; 10) fail 10 "parent arm seed refused: $(tail -1 "$WORK/logs/arm-seed.log")" ;; *) fail 5 "arm seed rc=$r" ;; esac
+mkdir -p "$ARM"
+ARM_SRC=restart
+PROBE=()
+if python -c "import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get('verify_seed') else 1)" "$WORK/out/arm-seed.json"; then
+  ARM_SRC="seeded from data/parent_arm_seed"
+  SEED_SHA=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['parent_arm_seed']['arm_sha256'])" "$PARAMS") \
+    || fail 5 "job_params parent_arm_seed"
+  PROBE_N=$(python -c "import json,sys; print(int(json.load(open(sys.argv[1]))['parent_arm_seed']['probe_records']))" "$PARAMS") \
+    || fail 5 "job_params parent_arm_seed"
+  say "phase seed_verify (seeded parent arm: units identity, guard, revision + $PROBE_N-record re-score on this box)"
+  timeout $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent rwkv7 \
+    --model-dir "$SNAP" --cell-config "$CELL" --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" \
+    --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$ARM" --arm-sha256 "$SEED_SHA" --probe-n "$PROBE_N" \
+    --tok-s "$TOK_S" --call-s "$CALL_S" --verify-out "$WORK/out/seed-verify.json" > "$WORK/logs/seed-verify.log" 2>&1; r=$?
+  mkdir -p "$WORK/out/parent_arm"; cp "$ARM"/*.json "$WORK/out/parent_arm/" 2>/dev/null || true  # comparator units
+  case $r in 0) ;; 124) fail 7 "seed_verify timeout" ;;
+    10) fail 10 "seeded parent arm failed verification: $(tail -1 "$WORK/logs/seed-verify.log")" ;;
+    *) fail 5 "seed_verify rc=$r" ;; esac
+  PROBE=(--probe "$WORK/out/seed-verify.json")
+fi
 for STAGE in g12 index; do
   if python -c "import json,sys,hashlib,pathlib; d=pathlib.Path(sys.argv[1]); e=json.load(open(d/'arm.json'))['stages'][sys.argv[2]]; sys.exit(0 if hashlib.sha256((d/e['file']).read_bytes()).hexdigest()==e['sha256'] else 1)" "$ARM" "$STAGE" 2>/dev/null; then
     say "parent $STAGE: cached ($ARM_SRC)"; gate "parent_$STAGE" 0; continue
@@ -184,9 +207,21 @@ for STAGE in g12 index; do
     10) fail 10 "parent $STAGE identity" ;; *) fail 9 "parent $STAGE rc=$r" ;; esac
 done
 ARM_SHA=$(sha256sum "$ARM/arm.json" | cut -d' ' -f1)
+# Preserve the comparator even when every stage came from the checkpoint cache, including ordinary restarts.
+mkdir -p "$WORK/out/parent_arm" && cp "$ARM"/*.json "$WORK/out/parent_arm/" || fail 6 "parent arm export copy"
+if [ ${#PROBE[@]} -eq 0 ]; then
+  # A cache from this job also needs full identity validation BEFORE training, not just per-file hashes.
+  timeout $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent rwkv7 \
+    --model-dir "$SNAP" --cell-config "$CELL" --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" \
+    --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$ARM" --arm-sha256 "$ARM_SHA" \
+    --verify-out "$WORK/out/parent-cache-verify.json" > "$WORK/logs/parent-cache-verify.log" 2>&1; r=$?
+  case $r in 0) ;; 124) fail 7 "parent cache verification timeout" ;;
+    10) fail 10 "parent cache failed verification: $(tail -1 "$WORK/logs/parent-cache-verify.log")" ;;
+    *) fail 5 "parent cache verification rc=$r" ;; esac
+fi
 say "re-price the child evals from the measured parent scoring speed"
 python -X utf8 -m jobs.m2_first_cell.reprice --arm-dir "$ARM" --params "$PARAMS" --tok-s "$TOK_S" --call-s "$CALL_S" \
-  --out "$WORK/out/reprice.json" > "$WORK/logs/reprice.log" 2>&1; r=$?
+  --out "$WORK/out/reprice.json" "${PROBE[@]}" > "$WORK/logs/reprice.log" 2>&1; r=$?
 gate "reprice" $r
 case $r in 0) ;; 15) fail 15 "child evals re-priced past their cap at the box's measured speed (before training)" ;;
   *) fail 5 "reprice rc=$r" ;; esac
