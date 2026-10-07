@@ -160,6 +160,16 @@ def two_stage(ns: int, k: int) -> bool:
     return (k - 1) * ns > TWO_STAGE_MIN_SAVED
 
 
+#: cap on (state copies x cached tokens) per call: the 8 attention layers keep a KV cache of 32 KiB per token (job-5cmat
+#: throughput.stock.state.kv_bytes_per_token), so 2**19 copied tokens ~ 16 GiB; a 28k-token DEV row is forked in
+#: chunks of <= 18 options instead of 32 (the GDN states are fixed-size and small)
+KV_COPY_TOKENS = 1 << 19
+
+
+def chunk_size(cached_len: int, opt_chunk: int) -> int:
+    return max(1, min(opt_chunk, KV_COPY_TOKENS // max(cached_len, 1)))
+
+
 @torch.no_grad()
 def extract_request(text, w_out: torch.Tensor, rows: Sequence[LayoutRow], opt_chunk: int = 32, bank_chunks: int = 0,
                     pad_id: int = 0) -> tuple[list[dict], dict]:
@@ -186,8 +196,9 @@ def extract_request(text, w_out: torch.Tensor, rows: Sequence[LayoutRow], opt_ch
         if two:  # two stages: the suffix once, then only the continuations from the suffix state
             hs1, base = _run(text, torch.tensor([suf], dtype=torch.long, device=dev), _clone(sp))
             hs, off = hs1[0], 0
-        for c0 in range(0, k_all, opt_chunk):
-            part = conts[c0:c0 + opt_chunk]
+        step = chunk_size(L + (ns if two else 0), opt_chunk)
+        for c0 in range(0, k_all, step):
+            part = conts[c0:c0 + step]
             c = len(part)
             wmax = max(len(x) for x in part)
             ids = torch.full((c, off + wmax), pad_id, dtype=torch.long, device=dev)
@@ -216,6 +227,7 @@ def extract_request(text, w_out: torch.Tensor, rows: Sequence[LayoutRow], opt_ch
             logits = (hsel @ w_out.T).float()
             tok_lp = torch.log_softmax(logits, -1).gather(-1, tg.unsqueeze(-1)).squeeze(-1)
             lm_lp[c0:c0 + c] = torch.zeros(c, device=dev).index_add_(0, kk, tok_lp)
+            del h, st
         hrow = torch.cat([hp, hs], 0)  # [T, D]
         e = torch.stack([_span_mean(hrow, sp_) for sp_ in r.option_spans])
         lex = torch.stack([w_out[r.ids[a:b]].float().mean(0) for a, b in r.option_spans])
@@ -333,8 +345,9 @@ def n_chunks_calls(rows: Sequence[LayoutRow], opt_chunk: int) -> tuple[int, int]
         off = ns
         if two_stage(ns, r.n_options):
             pos, calls, off = pos + ns, calls + 1, 0
-        for c0 in range(0, r.n_options, opt_chunk):
-            part = r.continuations[c0:c0 + opt_chunk]
+        step = chunk_size(L + (ns if off == 0 else 0), opt_chunk)
+        for c0 in range(0, r.n_options, step):
+            part = r.continuations[c0:c0 + step]
             pos += len(part) * (off + max(len(x) for x in part))
             calls += 1
     return pos, calls

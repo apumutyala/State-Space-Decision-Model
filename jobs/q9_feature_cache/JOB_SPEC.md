@@ -73,6 +73,8 @@ Arm projection = extraction + 14.2 min of tokenisation/draw (the maximum measure
 
 Inside each arm, `cache.py` re-projects the exact volume at the same rates after tokenising. It exits 15 before loading the model if the projection exceeds 95% of the cap. `jobs.common.rate_guard run-weighted` then stops the arm (exit 15) if the measured progress projects past the cap.
 
+Memory: option copies per call are capped so that copies × cached tokens ≤ 2^19 (about 16 GiB of attention KV at 32 KiB per token). A 28k-token DEV row is forked 18 options at a time instead of 32.
+
 The extractor runs a question's re-read once and forks only the continuations when copying it K times would cost more than 512 positions. Without that, the DEV splits were 24.8M positions per split; with it they are 6.1M, about the same as the readout's own fork volume.
 
 Estimated output (`summary.json` `est_output_gb`, a bf16 upper bound from the same plan): stock 6.86 GB (select 1.82, holdout 1.83, train 3.21); conv1 5.34 GB; e5 about 5.3 GB.

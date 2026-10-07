@@ -52,10 +52,12 @@ def _reference(text, w, row, k):
     return h[-1], float(lp.gather(-1, torch.tensor(row.continuations[k]).unsqueeze(-1)).sum())
 
 
-@pytest.mark.parametrize("min_saved", [10**9, 0])  # one-stage everywhere / two-stage everywhere
-def test_extract_equals_recompute_and_m2_features(tiny, monkeypatch, min_saved):
+@pytest.mark.parametrize("min_saved,kv_budget", [(10**9, X.KV_COPY_TOKENS), (0, X.KV_COPY_TOKENS), (0, 600)])
+def test_extract_equals_recompute_and_m2_features(tiny, monkeypatch, min_saved, kv_budget):
+    """one-stage everywhere / two-stage everywhere / two-stage with the long-row KV-copy cap forcing small chunks"""
     text, w, _ = tiny
     monkeypatch.setattr(X, "TWO_STAGE_MIN_SAVED", min_saved)
+    monkeypatch.setattr(X, "KV_COPY_TOKENS", kv_budget)
     rows = _rows()
     feats, banks = X.extract_request(text, w, rows, opt_chunk=5, bank_chunks=4)
     hb = HiddenStateBackbone(text, fork_mode="recompute")
@@ -74,10 +76,12 @@ def test_extract_equals_recompute_and_m2_features(tiny, monkeypatch, min_saved):
         assert chk["fork_rel_diff"] < 0.01 and chk["lm_abs_diff"] < 1e-3
 
 
+@pytest.mark.parametrize("kv_budget", [X.KV_COPY_TOKENS, 600])  # 600: forces 1-3 option chunks (long-row memory cap)
 @pytest.mark.parametrize("min_saved", [10**9, 0, X.TWO_STAGE_MIN_SAVED])
-def test_volume_model_counts_the_calls_and_positions_made(tiny, monkeypatch, min_saved):
+def test_volume_model_counts_the_calls_and_positions_made(tiny, monkeypatch, min_saved, kv_budget):
     text, w, _ = tiny
     monkeypatch.setattr(X, "TWO_STAGE_MIN_SAVED", min_saved)
+    monkeypatch.setattr(X, "KV_COPY_TOKENS", kv_budget)
     rows = _rows()
     seen = {"calls": 0, "pos": 0}
 
