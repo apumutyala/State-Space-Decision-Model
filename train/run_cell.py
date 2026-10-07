@@ -347,6 +347,55 @@ def _checkpoint_post():
         print(f"checkpoint declare: {e!r}", flush=True)
 
 
+def smoke_stage(bb, train_items, cfg: dict, cuda: bool, peak=lambda: 0.0) -> dict:
+    """Cache-fork smoke: features and LoRA gradients of the cache fork equal the recompute fork on a few short rows
+    (``cfg["smoke"]``). Leaves the backbone as it found it (no LoRA, bridges zeroed, ``fork_mode`` "cache")."""
+    import torch
+
+    from heads.features import build_head_input
+    from train.lora import apply_lora, remove_lora
+
+    dev_type = "cuda" if cuda else "cpu"
+    sm = cfg["smoke"]
+    rows = [x.row for x in train_items if x.row.n_options <= sm["max_k"] and len(x.row.ids) <= sm["max_t"]][: sm["rows"]]
+    mods = apply_lora(bb.model, bb.spec.lora_groups, rank=sm["lora_rank"], generator=torch.Generator().manual_seed(5))
+    for n, p in bb.model.named_parameters():
+        if n.endswith("lora_B"):
+            with torch.no_grad():
+                p.normal_(0.0, 0.02)
+    # trust-gated backbone: the P -> D bridges live outside bb.model; randomise them too so the smoke exercises
+    # the bridge injection on the cache fork (prefix / continuation alignment), and re-zero them afterwards
+    bridges_b = [p for n, p in getattr(bb, "bridges", torch.nn.Module()).named_parameters() if n.endswith("lora_B")]
+    with torch.no_grad():
+        for p in bridges_b:
+            p.normal_(0.0, 0.02)
+    res = {}
+    for mode in ("cache", "recompute"):
+        bb.fork_mode = mode
+        bb.model.zero_grad(set_to_none=True)
+        with torch.autocast(dev_type, dtype=torch.bfloat16, enabled=cuda):
+            x = build_head_input(bb, rows, need_fork=True)
+        x.fork.float().pow(2).mean().backward()
+        g = torch.cat([p.grad.flatten().float() for n, p in bb.model.named_parameters() if n.endswith("lora_A")])
+        res[mode] = (x.fork.detach().float(), g)
+    fa, fb = res["cache"][0], res["recompute"][0]
+    rel = float((fa - fb).abs().max() / fb.abs().max().clamp_min(1e-12))
+    cos = float(torch.nn.functional.cosine_similarity(res["cache"][1], res["recompute"][1], dim=0))
+    ok = rel <= sm["max_rel_feature_diff"] and cos >= sm["min_grad_cos"]
+    out = {"rows": len(rows), "rel_feature_diff": rel, "grad_cos": cos, "pass": ok, "peak_gb": peak(),
+           "lora_modules": {k: len(v) for k, v in mods.items()}, "pass_rule": sm}
+    del res
+    bb.model.zero_grad(set_to_none=True)
+    remove_lora(bb.model)  # training starts from the pre-registered LoRA init, not the smoke one
+    with torch.no_grad():
+        for p in bridges_b:  # bridges back to their zero init (remove_lora does not touch them)
+            p.zero_()
+        for p in getattr(bb, "bridges", torch.nn.Module()).parameters():
+            p.grad = None
+    bb.fork_mode = "cache"
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
@@ -370,10 +419,9 @@ def main(argv=None):
     import torch
 
     from heads.backbone import LineageError
-    from heads.features import build_head_input
     from heads.model import DecisionModel
     from train.guard import SplitGuard
-    from train.lora import apply_lora, remove_lora
+    from train.lora import remove_lora
     from train.trainer import Trainer
 
     cfg = json.load(open(a.config))
@@ -478,51 +526,14 @@ def main(argv=None):
 
         bb = trust_gate_wrap(bb, {**cfg["controlsafe"], "seed": cfg["seed"]})
     cuda = on_cuda
-    dev_type = "cuda" if cuda else "cpu"
     cell["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
     stages = ["smoke", "ladder", "train"] if a.stage == "all" else [a.stage]
 
     if "smoke" in stages and "smoke" not in cell:
-        sm = cfg["smoke"]
-        rows = [x.row for x in train_items if x.row.n_options <= sm["max_k"] and len(x.row.ids) <= sm["max_t"]][: sm["rows"]]
-        mods = apply_lora(bb.model, bb.spec.lora_groups, rank=sm["lora_rank"], generator=torch.Generator().manual_seed(5))
-        for n, p in bb.model.named_parameters():
-            if n.endswith("lora_B"):
-                with torch.no_grad():
-                    p.normal_(0.0, 0.02)
-        # trust-gated backbone: the P -> D bridges live outside bb.model; randomise them too so the smoke exercises
-        # the bridge injection on the cache fork (prefix / continuation alignment), and re-zero them afterwards
-        bridges_b = [p for n, p in getattr(bb, "bridges", torch.nn.Module()).named_parameters() if n.endswith("lora_B")]
-        with torch.no_grad():
-            for p in bridges_b:
-                p.normal_(0.0, 0.02)
-        res = {}
-        for mode in ("cache", "recompute"):
-            bb.fork_mode = mode
-            bb.model.zero_grad(set_to_none=True)
-            with torch.autocast(dev_type, dtype=torch.bfloat16, enabled=cuda):
-                x = build_head_input(bb, rows, need_fork=True)
-            x.fork.float().pow(2).mean().backward()
-            g = torch.cat([p.grad.flatten().float() for n, p in bb.model.named_parameters() if n.endswith("lora_A")])
-            res[mode] = (x.fork.detach().float(), g)
-        fa, fb = res["cache"][0], res["recompute"][0]
-        rel = float((fa - fb).abs().max() / fb.abs().max().clamp_min(1e-12))
-        cos = float(torch.nn.functional.cosine_similarity(res["cache"][1], res["recompute"][1], dim=0))
-        ok = rel <= sm["max_rel_feature_diff"] and cos >= sm["min_grad_cos"]
-        cell["smoke"] = {"rows": len(rows), "rel_feature_diff": rel, "grad_cos": cos, "pass": ok, "peak_gb": peak(),
-                         "lora_modules": {k: len(v) for k, v in mods.items()}, "pass_rule": sm}
+        cell["smoke"] = smoke_stage(bb, train_items, cfg, cuda, peak)
         save()
-        del res
-        bb.model.zero_grad(set_to_none=True)
-        remove_lora(bb.model)  # training starts from the pre-registered LoRA init, not the smoke one
-        with torch.no_grad():
-            for p in bridges_b:  # bridges back to their zero init (remove_lora does not touch them)
-                p.zero_()
-            for p in getattr(bb, "bridges", torch.nn.Module()).parameters():
-                p.grad = None
-        bb.fork_mode = "cache"
         reset_peak()
-        if not ok:
+        if not cell["smoke"]["pass"]:
             return EXIT["fork_mismatch"]
 
     def make_trainer(max_steps, ckpt_dir=None):
