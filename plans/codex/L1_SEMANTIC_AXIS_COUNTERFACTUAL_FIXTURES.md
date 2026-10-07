@@ -1,66 +1,69 @@
 # L1 semantic-axis counterfactual fixture preparation
 
-2026-10-07. Local CPU, $0. Base is exact PR #133 commit
+2026-10-07. Local CPU, $0. Exact PR #133 base:
 `e94c79793082fc8643bae34ac52813760f1950e8`. This phase prepares synthetic
 evidence interventions for future recurrent semantic-state experiments.
-It is a fixture pack, with no training, model loading, inference, weights,
-GPU, paid compute, Decision Index, audit corpus or heldout access.
+No models, weights, GPU, paid compute, Decision Index or heldout data.
 
-Hypothesis: if a future system responds to the offered scalar facts, moving
-one registered price/USD or warranty/month value from below to equal to above
-a comparator should change the direct answer, explanation value and both
-comparison directions, while preserving answers about the other field.
-This is a testable prediction for factual counterfactual responsiveness;
-this preparation reports no observed model response.
+Hypothesis: changing one registered price/USD or warranty/month value from
+below to equal to above a comparator should change the checked direct fact,
+explanation value and both comparison directions, while preserving answers
+about the other field. This is a factual counterfactual responsiveness
+prediction; the scripted integration controls are not learned responses.
 
-Deliverable: `language_growth/semantic_axis_fixtures.py` plus separately
-serialized request-only and scorer-only files in
-`receipts/2026-10-07-L1-semantic-axis-counterfactuals`. Each of two disjoint
-synthetic development splits, discovery and validation, has 32 base worlds
-with four named records. Each world has two independent axis groups on the
-same target record, one per field. Each group has low/equal/high variants
-and six fixed queries: direct scalar read, forward comparison, reverse
-comparison, explanation, unrelated-field read and unrelated-field comparison.
-That is 64 axis groups, 192 variants and 1,152 requests/programs per split.
-Use the shared base-world ID to cluster future uncertainty estimates across
-axes; this sample size is not an adequacy or statistical-power claim.
+Deliverable: `language_growth/semantic_axis_fixtures.py` plus separate
+`*-inputs.jsonl`, `*-scorer.jsonl` and manifest files under
+`receipts/2026-10-07-L1-semantic-axis-counterfactuals`. Each of discovery and
+validation has 32 disjoint synthetic base worlds with four named records.
+Each world has two independent axis groups on the same target record, one
+per field. Each group has low/equal/high variants and six queries: direct
+read, forward/reverse comparison, explanation, unrelated-field read and
+unrelated-field comparison. Per split: 64 axis groups, 192 variants and
+1,152 inputs/programs. The shared base-world ID is the future uncertainty
+clustering unit; sample size is not an adequacy or statistical-power claim.
 
-Within an axis group, only the target field's typed value changes. Unit,
-type, quantity kind, scope, all other facts, records, question/task text,
-option IDs, order and descriptions remain fixed. The content-bound snapshot
-and request IDs necessarily change with evidence. Snapshot IDs hash the
-catalog with its snapshot under a fixed placeholder, then replace that
-placeholder with the resulting ID. Those identity changes carry no authored
-level label. Options are shuffled once per world/query, independently of
-variant values and targets. The queries and answer candidates are authored
-diagnostic scaffolding, not a free-running compositional planner trace.
+Each input contains exactly `task_input`, permitted `host` and `catalog`.
+It can be passed directly to `plan_checked_answer` with a separately supplied
+provider. The existing planner synthesizes typed operation/fact/operand/
+relation menus. Reference programs, slot-choice targets, checked meanings,
+rendered answers, axis/variant labels and input offsets are scorer-only.
+There is no prebuilt choice among final natural-language answers. Training
+allowlists, planner/model adapters and prior fixture bytes are unchanged.
 
-Only lines in `*-requests.jsonl` are provider inputs. All axis coordinates,
-variant labels, world IDs, split identity, request offsets, target option
-IDs, reference programs and checked outputs stay in `*-scorer.jsonl` or
-manifests. Send independent stateless probes; no recurrent state edit or
-cross-variant context cache is implemented. Existing training allowlists,
-model adapters, score paths and prior fixture bytes are unchanged.
+Within an axis group, only the selected field's typed value changes. All
+other fields, records, types, units, scopes and task wording remain fixed.
+The catalog-bound context identity changes with the evidence. Snapshot IDs
+hash the catalog with its snapshot under a fixed placeholder, then replace
+that placeholder with the resulting ID. Planner-generated question IDs,
+wording, option IDs/order/descriptions and pre-relation choice prefixes are
+matched across variants. Runtime request IDs are fresh planner identities.
+Each query is a separate stateless planning run; no recurrent edit is present.
 
-Exit proof: deterministic byte regeneration; manifests and artifact hashes;
-disjoint world/entity/value/catalog sets across the two splits; both axes
-per base world; exactly one semantic fact mutation; fixed wording and
-choices; all authored programs accepted by the existing v0.1 kernel;
-independent target-to-checked-meaning checks; false-relation rejection;
-scalar response changes and unrelated-field invariance in scorer targets;
-empty authored prefixes and no scorer metadata in requests. Mutation and
-leakage assertions are adversarial fixture checks, not model accuracy tests.
-The receipt includes reproducible local commands and source provenance.
+The test-only `InputOracle` derives choices from each offered task and
+permitted state; its constructor accepts no scorer input. Its narrow parser,
+exact decimal comparison and one-hot distributions are scripted controls,
+not learned ability or calibrated confidence. All 2,304 positive tasks run
+through the real planner, kernel and release-validating renderer. Their
+program, typed-slot choices, checked meanings and rendered text must match
+the separate scorer. All 1,152 deliberately false comparison controls must
+fail the kernel without releasing text. A supported wrong-field selection
+remains kernel-valid but mismatches the task scorer: kernel acceptance alone
+does not establish relevance. These checks do not prove neural mediation.
 
-Decision unlocked: review of a bounded evidence-counterfactual substrate
-and design of a separately reviewed recurrent intervention protocol. These
-fixtures test factual counterfactual responsiveness and can support future
-semantic-state edits, but do not demonstrate learned recurrent mediation,
-calibrated ability, alignment, or internal interpretability. Evidence edits
-alone cannot show that any internal state mediates a learned behavior.
-Discovery/validation are iterative synthetic development groups, not an
-independent evaluation or heldout qualification. They unlock no level
-promotion, paid run or model capability claim.
+Exit proof: deterministic exact-byte regeneration; manifests/hashes; both
+axes per base world; split disjointness; one semantic fact mutation; fixed
+planner menus; no scorer leakage; correct inverse relations; changing
+checked/rendered axis outputs; invariant unrelated outputs; real planner/
+kernel/renderer integration; and preserved artifacts on duplicate generation
+or injected staging failure. The generator requires a fresh `--output-dir`,
+preferably external `ssdm-data`, and stages the complete six-file pack before
+an atomic directory rename. It refuses existing paths, including receipts.
 
-The local commit is prepared for fresh exact-head adversarial review before
-any push or pull request. Preserve all fixture and verification artifacts.
+Decision unlocked: review of this evidence-counterfactual substrate and a
+separately reviewed recurrent intervention protocol. These fixtures test
+factual counterfactual responsiveness and can support future semantic-state
+edits, but do not demonstrate learned recurrent mediation, calibrated
+ability, alignment, or internal interpretability. Discovery/validation are
+iterative synthetic development groups, not independent or heldout
+qualification. This unlocks no level promotion, paid run or model claim.
+Fresh exact-head review is required before push or PR creation.

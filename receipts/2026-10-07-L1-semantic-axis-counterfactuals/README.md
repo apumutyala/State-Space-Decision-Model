@@ -2,61 +2,69 @@
 
 2026-10-07. Windows CPU, $0. No models, weights, GPU, paid compute, Decision
 Index, audit corpus or heldout access. Branch
-`codex/l1-semantic-axis-counterfactual-fixtures`, exact base
-`e94c79793082fc8643bae34ac52813760f1950e8` (PR #133).
+`codex/l1-semantic-axis-counterfactual-fixtures`, exact PR #133 base
+`e94c79793082fc8643bae34ac52813760f1950e8`.
 
-The generator prepares 32 disjoint base worlds in each of discovery and
-validation. Each base world has independent price and warranty axis groups,
-each with low/equal/high variants and six tasks. Per split: 64 axis groups,
-192 variants, 1,152 model requests and 1,152 checker-accepted programs. Both
-splits total 2,304 authored programs. Each task keeps four records available.
-The shared base-world ID is the future uncertainty-clustering unit; neither
-this count nor synthetic validation implies adequate statistical power.
+Each split has 32 disjoint base worlds, both independent scalar axes, 64
+axis groups, 192 low/equal/high variants and 1,152 inputs/programs. Total:
+2,304 authored programs. The shared base-world ID is the future clustering
+unit; this count is not a power or capability claim.
 
-Each `*-requests.jsonl` line is a standalone decision request. Only these
-lines can reach a future provider. `*-scorer.jsonl` and `*-manifest.json`
-are evaluator-only. The scorer links requests by zero-based line index;
-axis metadata, target option IDs, reference programs and checked meanings
-never enter the model requests. Option order is fixed within each triplet.
-Direct/explanation choices include all three scalar intervention values and
-one distractor, with no low/equal/high labels; comparison choices include
-all three relations. Unrelated-field read/comparison choices remain fixed.
-This explicit menu is diagnostic scaffolding and not model-discovered task
-structure, a training export or a free-running planner evaluation.
+Only `*-inputs.jsonl` enters `plan_checked_answer`. Each line contains only
+`task_input`, permitted `host` and `catalog`; supply a provider and model
+configuration separately. The existing semantic planner generates typed
+operation/fact/operand/relation requests. There are no prebuilt answer-string
+choice requests. `*-scorer.jsonl` and manifests remain evaluator-only: axis
+coordinates, level/world/split labels, zero-based input offsets, typed-slot
+targets, reference programs, checked meanings and rendered text stay there.
 
-Catalog-bound snapshot IDs and request IDs change when evidence changes.
-After excluding these opaque identity fields, each corresponding request
-differs at exactly one path: the selected record/field's typed value. All
-other visible evidence, question wording, option IDs/order and descriptions
-are fixed. Other-field target choices and checked outputs stay identical.
-Discovery/validation have disjoint world, axis-group, entity, numeric-value
-and catalog identities; schema, refs and task vocabulary are shared.
+Catalog-bound contexts change with each premise value. After normalizing
+those identities, corresponding inputs differ at exactly one typed value.
+All other evidence, task wording and generated typed menus remain fixed.
+The oracle control also verifies matched question IDs, option IDs/order/
+descriptions and prior model-selected prefixes across variants. Unrelated
+checked meanings, rendered text and target choices remain identical.
+Discovery/validation have disjoint worlds, axis groups, entities, values
+and catalogs. Schema, record refs and task vocabulary are shared.
 
-Reproduce from the repository root with:
+The test-only `InputOracle` receives only each planner request and derives
+its typed selections from permitted task/state. All 2,304 positive tasks
+pass through the actual planner, kernel and release-validating renderer,
+with exact scorer program/slot/meaning/text parity. This uses 6,912 scripted
+provider calls and zero model forward calls. One-hot oracle distributions
+are not calibrated confidence. All 1,152 false-relation controls are rejected
+without released text, using 4,608 more scripted calls. Two supported
+wrong-field controls use four calls, for 11,524 total in-process scripted
+calls in the fixture test suite. External provider/model calls remain zero.
+Supported wrong-field selections remain kernel-valid
+but fail scorer matching; correctness and task relevance are distinct.
+
+Reproduce to a fresh external directory (choose a new destination each run):
 
 ```powershell
-python -m language_growth.semantic_axis_fixtures
+python -m language_growth.semantic_axis_fixtures --output-dir ../ssdm-data/semantic-axis-reproduction-20261007
 python -m unittest language_growth.tests.test_semantic_axis_fixtures
-python -m unittest language_growth.tests.test_kernel language_growth.tests.test_kernel_adversarial language_growth.tests.test_decision_view
-git diff --check
+python -m unittest language_growth.tests.test_kernel language_growth.tests.test_kernel_adversarial language_growth.tests.test_decision_view language_growth.tests.test_planner
+ git diff --check
 ```
 
-`verification.json` pins exact artifact bytes and SHA-256 hashes, source
-hash/blob, base ancestry, counts and validation commands. Its checks cover
-deterministic regeneration, mutation isolation, identity binding, exact
-choices, target meanings, inverse comparisons, kernel rejection of false
-relations, metadata exclusion and invariant unrelated answers. These
-adversarial fixture assertions are authored checks, not independent labels.
-The enclosing commit preserves the generator and all listed artifacts.
+`RECEIPT_DIR` is the read-only baseline used by tests. Generation requires a
+fresh path and refuses existing output or receipt directories. It builds
+both three-file split bundles in a sibling staging directory, then publishes
+the full pack by atomic directory rename. Tests verify duplicate attempts
+and injected staging-write failure preserve existing receipt/output bytes
+and leave no partial published pack.
 
-The phase note is
-`plans/codex/L1_SEMANTIC_AXIS_COUNTERFACTUAL_FIXTURES.md`. Existing training,
-evaluation and prior source fixtures are unchanged. This pack has no runtime
-adapter and no recurrent intervention implementation. A future protocol must
-separately define its state edit port, controls, matching and qualification.
+`verification.json` pins byte sizes/hashes, generator hash/blob, base ancestry,
+counts and verification commands. The enclosing commit preserves the phase
+note at `plans/codex/L1_SEMANTIC_AXIS_COUNTERFACTUAL_FIXTURES.md` and every
+artifact. Earlier answer-choice fixture files are replaced by planner inputs;
+no prior training or other fixture cohort is changed. Fresh exact-head review
+is required before push or PR creation.
 
 These fixtures test factual counterfactual responsiveness and can support
 future semantic-state edits, but do not demonstrate learned recurrent
 mediation, calibrated ability, alignment, or internal interpretability.
-They contain no model result and unlock only fixture/protocol review.
-Fresh exact-head review is required before push or PR creation.
+This is an evidence-edit substrate and scripted boundary control, with no
+recurrent state edit, learned provider or model result. A separate protocol
+must define its edit port, matching, controls and qualification.
