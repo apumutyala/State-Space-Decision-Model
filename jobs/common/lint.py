@@ -222,18 +222,104 @@ def chk_shell_test(p: dict, root: Path, job: str, tests: dict[str, str], **_) ->
     return bool(hits), f"tests executing {runner} in a subprocess: {hits or 'none'}"
 
 
-def rule_constants(src: str) -> list[str]:
-    out = []
+def _rule_literals(src: str) -> dict[str, object]:
+    out = {}
     for n in ast.parse(src).body:
         if isinstance(n, (ast.Assign, ast.AnnAssign)):
             tgts = n.targets if isinstance(n, ast.Assign) else [n.target]
             for t in tgts:
-                if isinstance(t, ast.Name) and re.fullmatch(r"[A-Z][A-Z0-9_]+", t.id) and n.value is not None:
+                if isinstance(t, ast.Name) and re.fullmatch(r"[A-Z][A-Z0-9_]*", t.id) and n.value is not None:
                     try:
-                        ast.literal_eval(n.value)
+                        value = ast.literal_eval(n.value)
                     except (ValueError, TypeError, SyntaxError, RecursionError):
                         continue
-                    out.append(t.id)
+                    out[t.id] = value
+    return out
+
+
+def rule_constants(src: str) -> list[str]:
+    return list(_rule_literals(src))
+
+
+def _same_literal(a: object, b: object) -> bool:
+    """Compare literal values without accepting bool/int or nested container type substitutions."""
+    if type(a) is not type(b):
+        return False
+    if isinstance(a, (list, tuple)):
+        return len(a) == len(b) and all(_same_literal(x, y) for x, y in zip(a, b))
+    if isinstance(a, dict):
+        return len(a) == len(b) and all(any(_same_literal(k, k2) and _same_literal(v, v2)
+                                           for k2, v2 in b.items()) for k, v in a.items())
+    if isinstance(a, (set, frozenset)):
+        return len(a) == len(b) and all(any(_same_literal(x, y) for y in b) for x in a)
+    return a == b
+
+
+@functools.lru_cache(maxsize=None)
+def _rule_test_tree(src: str, mod: str) -> tuple[dict[str, str], tuple[ast.expr, ...]]:
+    """Resolve explicit imports; only equality clauses required by an assertion can pin a constant."""
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return {}, ()
+    bindings = {}
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Import):
+            for alias in n.names:
+                if alias.name == mod:
+                    bindings[alias.asname or mod] = mod
+        elif isinstance(n, ast.ImportFrom) and not n.level:
+            for alias in n.names:
+                full = f"{n.module}.{alias.name}"
+                if full == mod or (n.module == mod and alias.name != "*"):
+                    bindings[alias.asname or alias.name] = full
+
+    def required(expr):
+        if isinstance(expr, ast.BoolOp) and isinstance(expr.op, ast.And):
+            for part in expr.values:
+                yield from required(part)
+        elif isinstance(expr, ast.Compare):
+            yield expr
+
+    assertions = tuple(part for n in ast.walk(tree) if isinstance(n, ast.Assert) for part in required(n.test))
+    return bindings, assertions
+
+
+def pinned_rule_constants(src: str, mod: str, consts: dict[str, object]) -> set[str]:
+    bindings, assertions = _rule_test_tree(src, mod)
+
+    def dotted(n):
+        if isinstance(n, ast.Name):
+            return n.id
+        if isinstance(n, ast.Attribute):
+            base = dotted(n.value)
+            return f"{base}.{n.attr}" if base else None
+        return None
+
+    def pins(ref, literal):
+        name = dotted(ref)
+        if name:
+            resolved = bindings.get(name)
+            if resolved is None and "." in name:
+                base, attr = name.rsplit(".", 1)
+                resolved = f"{bindings.get(base, '')}.{attr}"
+            for constant, expected in consts.items():
+                if resolved == f"{mod}.{constant}":
+                    try:
+                        actual = ast.literal_eval(literal)
+                    except (ValueError, TypeError, SyntaxError, RecursionError):
+                        return set()
+                    return {constant} if _same_literal(actual, expected) else set()
+        if isinstance(ref, (ast.Tuple, ast.List)) and type(ref) is type(literal) and len(ref.elts) == len(literal.elts):
+            return set().union(*(pins(a, b) for a, b in zip(ref.elts, literal.elts)))
+        return set()
+
+    out = set()
+    for expr in assertions:
+        operands = [expr.left, *expr.comparators]
+        for left, op, right in zip(operands, expr.ops, operands[1:]):
+            if isinstance(op, ast.Eq):
+                out |= pins(left, right) | pins(right, left)
     return out
 
 
@@ -255,18 +341,13 @@ def chk_decision_rule(p: dict, root: Path, job: str, tests: dict[str, str], rel:
     src = _read(root, rule)
     if not src:
         return False, f"decision rule {rule} missing"
-    consts = rule_constants(src)
+    consts = _rule_literals(src)
     mod = rule[:-3].replace("/", ".")
-    stem = Path(rule).stem
-    pinned = []
-    for f, s in tests.items():
-        if mod not in s and not re.search(rf"\b{re.escape(stem)}\b", s):
-            continue
-        for line in s.splitlines():
-            if ("==" in line or "assert" in line) and any(re.search(rf"\b{c}\b", line) for c in consts):
-                pinned.append(f)
-                break
-    return bool(consts and pinned), f"{rule}: {len(consts)} literal constants; pinned by {pinned or 'no test'}"
+    pinned = {f: hit for f, s in tests.items() if (hit := pinned_rule_constants(s, mod, consts))}
+    covered = set().union(*pinned.values()) if pinned else set()
+    missing = sorted(set(consts) - covered)
+    return bool(consts and not missing), (f"{rule}: {len(covered)}/{len(consts)} literal constants equality-pinned; "
+                                         f"missing {missing}; tests {list(pinned) or 'none'}")
 
 
 def chk_rate_guard(p: dict, root: Path, job: str, **_) -> tuple[bool, str]:
