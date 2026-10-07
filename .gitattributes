@@ -5,6 +5,8 @@
 *.json text eol=lf
 *.sha256 text eol=lf
 Dockerfile text eol=lf
+# This preregistration plan is part of the head-fit executable/source hash closure.
+plans/codex/L0_RWKV_HEAD_FIT_AUDIT.md text eol=lf
 
 # byte-exact vendored code and fixtures
 fixtures/replay/** -text
