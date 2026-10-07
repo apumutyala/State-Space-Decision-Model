@@ -218,7 +218,7 @@ assert 'torch' not in sys.modules
     subprocess.run([sys.executable, "-c", code, str(tmp_path / "refused")], cwd=runner.ROOT, check=True)
 
 
-@pytest.mark.parametrize("stage", ["spawn", "partial_spawn", "handshake", "supervisor"])
+@pytest.mark.parametrize("stage", ["spawn", "partial_spawn", "handshake", "supervisor", "interrupt"])
 def test_launcher_exceptions_preserve_incomplete_receipt_and_owned_cleanup_without_runtime(tmp_path, stage):
     code = r'''
 import json, os, sys
@@ -265,19 +265,21 @@ class Context:
     def Process(self, **kwargs): return child
 runner.multiprocessing.get_context = lambda mode: Context()
 def supervise(*args, **kwargs):
+    if stage == 'interrupt': raise KeyboardInterrupt('simulated launcher interruption')
     assert stage == 'supervisor'
     raise RuntimeError('simulated supervisor failure')
 runner.supervise = supervise
 old = dict(os.environ)
 out = Path(sys.argv[1])
-assert runner.launch(out) == 1
+assert runner.launch(out) == (130 if stage == 'interrupt' else 1)
 assert dict(os.environ) == old
 assert receive.closes and send.closes
 assert child.kills == child.joins == (0 if stage == 'spawn' else 1)
 receipt = json.loads((out / 'receipt.json').read_text())
 assert receipt['status'] == 'incomplete'
-assert receipt['stop_reason'] == ('spawn_error' if stage == 'partial_spawn' else stage + '_error')
-assert receipt['exception_type'] == {'spawn':'OSError', 'partial_spawn':'OSError', 'handshake':'BrokenPipeError', 'supervisor':'RuntimeError'}[stage]
+assert receipt['stop_reason'] == {'partial_spawn':'spawn_error', 'interrupt':'launcher_interrupted'}.get(stage, stage + '_error')
+assert receipt['exit_code'] == (130 if stage == 'interrupt' else 1)
+assert receipt['exception_type'] == {'spawn':'OSError', 'partial_spawn':'OSError', 'handshake':'BrokenPipeError', 'supervisor':'RuntimeError', 'interrupt':'KeyboardInterrupt'}[stage]
 assert 'simulated' in receipt['exception_message']
 assert not any(k in receipt for k in ('summary', 'metrics', 'eligible', 'eligible_for_review'))
 assert 'torch' not in sys.modules

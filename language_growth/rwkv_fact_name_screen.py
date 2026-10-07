@@ -375,6 +375,7 @@ def launch(out):
                  required_start_bytes=CONFIG["min_start_bytes"])
     receive = send = process = None
     failure, cleanup_errors = None, []
+    failure_code = 1
     phase = "spawn"
     try:
         context = multiprocessing.get_context("spawn")
@@ -395,6 +396,10 @@ def launch(out):
         phase = "supervisor"
         handle = _ProcessHandle(process)
         code = supervise(handle, out / "launcher.jsonl", available=lambda: psutil.virtual_memory().available)
+    except KeyboardInterrupt as exc:
+        failure_code = 130
+        failure = {"reason": "launcher_interrupted", "exception_type": type(exc).__name__,
+                   "exception_message": str(exc)}
     except Exception as exc:
         failure = {"reason": f"{phase}_error", "exception_type": type(exc).__name__,
                    "exception_message": str(exc)}
@@ -417,8 +422,8 @@ def launch(out):
     if failure is not None or cleanup_errors:
         failure = failure or {"reason": "cleanup_error"}
         reason = failure.pop("reason")
-        record_incomplete(out, reason, 1, **failure, cleanup_errors=cleanup_errors)
-        return 1
+        record_incomplete(out, reason, failure_code, **failure, cleanup_errors=cleanup_errors)
+        return failure_code
     try:
         return finalize_launch(out, code)
     except Exception as exc:
