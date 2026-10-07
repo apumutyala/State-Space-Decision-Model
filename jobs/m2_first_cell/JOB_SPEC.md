@@ -63,6 +63,11 @@ grace. Up to nine executed phase graces (4.5 min), three rate-guard polling allo
 (0.75 min) and terminal export/finalize (1.5 min) total 6.75 min within the existing
 seven-minute reserve. Measured caps, stop thresholds and global 637-minute ceiling
 are unchanged. A terminal timeout is a failed job, never a success marker.
+After the final export, the timeout's shell `exec`s the Python finalizer so it owns
+that process directly. Any nonzero terminal exit removes the completion marker
+again in the parent shell, including a finalizer that wrote a marker and then
+ignored TERM. This cleanup retains verified partial exports and any incomplete
+failure receipt already written.
 
 Measured-rate stops: setup preflights at the env rates (exit 15); the parent arm's live weighted rate guard and the
 re-price at its measured speed, both before training (exit 15); ladder and 10-step checks (exit 26 if 600 optimiser

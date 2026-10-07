@@ -82,10 +82,11 @@ finish() {
   export FINISH_RC=$rc
   timeout --kill-after=30s 60s bash -c '
     export_phase final
-    python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
+    exec python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
       "$WORK/out/first_cell_result.json" "$OUT" "$MARKER" "$VALIDATOR"
   '
   local final=$?
+  [ "$final" -eq 0 ] || rm -f "$OUT/$MARKER"
   say "EXIT $final (runner rc $rc)"
   exit "$final"
 }
