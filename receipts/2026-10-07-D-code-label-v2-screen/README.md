@@ -49,3 +49,9 @@ Then separately prepare real H100 kernel parity/peak-memory evidence and a
 price accounting for both padded positions and increased call count. Paid
 launch registration, merged proof and an acknowledged spend issue remain
 required. This is CPU preparation only and has no paid-launch configuration.
+
+## Follow-up identity-hardening integration (after the initial receipt)
+
+The first review found that mutually missing identity fields, caller-selected revision IDs, and malformed refusal containers could pass. The runner now requires field presence and schema, derives the revision ID from the recorded model/snapshot/weights/tokenizer/prompt/config/adapter identity, and accepts the exact production RWKV loader metadata only in real-audit mode; the synthetic sentinel remains synthetic-only. The real identity is pinned to `RWKV/RWKV7-G1k-13.3B-20260930` @ `ce3630b854cedbd673569f4600c6cf744bca9dba` and the 28-shard aggregate weights hash `0359db5847e46dd1c72fe91360faec09479436f8e198b65ee4c9c55277a18721`, derived from `jobs/rwkv7/snapshot.sha256`.
+
+The merged implementation adds negative tests for missing/malformed identities, revision-ID changes, wrong-mode metadata and malformed refusals. On the CPU-only integrated tree (`agent-main@a0ecb78`), 304 tests pass in 11.93 s. Independent review approved the mode-aware identity fix. This verifies internal recorded-evidence consistency; it does not attest which weights executed. Real DEV predictions, GPU/kernel parity, throughput, peak memory, capability, calibration and safety floors remain unmeasured.
