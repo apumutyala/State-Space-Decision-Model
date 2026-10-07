@@ -171,17 +171,19 @@ def workspace_cap_increment(costs, p: dict, sub: dict, params_path: str, worst: 
         if parent_counts - Counter(names):
             raise LaunchError(f"{params_path}: workspace_cap_jobs must include all workspace_cap_parent_jobs "
                               "instances, including repeated keys")
+    # Configured reservations must cover the launched child independently of
+    # every parent; CLI entries represent additional jobs already active.
+    current = [key for key, value in costs.PARAMS.items() if value == params_path]
+    remaining = Counter(names) - parent_counts
+    if (current or sub.get("depends_on")) and not any(remaining[name] for name in current):
+        raise LaunchError(f"{params_path}: workspace_cap_jobs must include a cost-table key for the launched job "
+                          f"{current}, separately from every parent instance")
     # Preserve duplicates: two active instances of the same job reserve two
     # worst-case costs, whether declared in params or supplied on the CLI.
     names = [*names, *active_reservation_jobs]
     unknown = sorted(set(names) - set(costs.PARAMS))
     if unknown:
         raise LaunchError(f"{params_path}: unknown workspace_cap_jobs entries: {unknown}")
-    current = [key for key, value in costs.PARAMS.items() if value == params_path]
-    remaining = Counter(names) - parent_counts
-    if (current or sub.get("depends_on")) and not any(remaining[name] for name in current):
-        raise LaunchError(f"{params_path}: workspace_cap_jobs must include a cost-table key for the launched job "
-                          f"{current}, separately from every parent instance")
     increment = costs.concurrent_cap_usd(names)
     if increment < math.ceil(worst):
         raise LaunchError(f"{params_path}: combined workspace cap is below this job's worst-case ceiling")
