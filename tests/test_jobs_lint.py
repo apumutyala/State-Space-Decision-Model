@@ -158,16 +158,30 @@ def test_lessons_entries_name_an_enforcing_check():
         assert "**Check:**" in block and "**Status:**" in block, block.splitlines()[0]
 
 
-def test_coordination_requires_issue_level_user_spend_ok():
-    """L-18: a review never substitutes for the user's explicit spend authorization."""
+def test_coordination_requires_bounded_autonomous_spend():
+    """L-18: standing budget authorization removes per-job approval, not spend safeguards."""
     t = (ROOT / "COORDINATION.md").read_text(encoding="utf-8")
+    checklist = (ROOT / "jobs/LAUNCH_CHECKLIST.md").read_text(encoding="utf-8")
     assert "Every paid job requires its own `spend` issue" in t
-    assert "Each paid rung needs the previous rung's merged receipt, a `spend` issue with the exact estimate and stop condition, an independent fresh-context adversarial review, and the user's explicit OK in that issue." in t
-    assert "the user's explicit OK in that issue after independent review" in t
-    assert "a reviewer's GO is not spend authorization" in t
+    assert "Each paid rung needs the previous rung's merged receipt" in t
+    assert "no per-job user OK is required inside those limits" in t
+    assert "independent fresh-context adversarial review" in t
+    assert "live provider preflight" in t
+    assert "The user's standing authorization lets Codex submit SF jobs autonomously" in t
+    assert "shared $525 SF envelope" in t and "$250 System 1 allocation" in t
+    assert "planned `LEDGER.md` row" in t and "hard runtime/cost stop" in t
+    assert "set the workspace cap" in t and "`validate_job` to pass without `force`" in t
+    assert "neither can enlarge the envelope or allocation" in t
+    assert "Any spend beyond either limit" in t
+    assert "use of Lambda" in t
+    assert "Other collaborators require the user's explicit OK" in t
+    assert "outward-facing/public action still requires the user's explicit authorization" in t
+    assert "Anything reaching `main` needs the user's approval." in t
+    assert "independent fresh-context reviewer to approve the exact job and final launch bundle" in checklist
+    assert "Refresh live credit balance and expiry, MTD, outstanding commitments and remaining track allocation" in checklist
+    assert "set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)" in checklist
+    assert "validate_job`. It must pass without `force`" in checklist
     assert "Spend still needs the other agent's acknowledgement on a `spend` issue." not in t
-    assert "requested but not blocking" not in t
-    assert "reviewed per 'Review sufficiency' (the other agent's acknowledgement is requested but not blocking)" not in t
     assert "stop condition, acknowledged by the other agent." not in t
     assert "Do not impose the superseded fixed ≤$20 qualification ceiling." in t
     cap_mentions = [line for line in t.splitlines() if "$20" in line]

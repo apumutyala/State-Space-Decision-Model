@@ -58,8 +58,8 @@ The command does the following. Each step refuses on failure.
 
 The coordinator then works through `submit.json` in this order:
 1. Add a planned `LEDGER.md` row.
-2. Get the `spend` issue reviewed per COORDINATION 'Review sufficiency'. The other agent's acknowledgement is requested but not blocking.
-3. Run `set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)`.
+2. Get an independent fresh-context reviewer to approve the exact job and final launch bundle on its `spend` issue. Codex's standing SF authorization is bounded by the remaining shared $525 envelope and $250 System 1 allocation; no per-job user OK or second-agent acknowledgement is needed within those limits.
+3. Refresh live credit balance and expiry, MTD, outstanding commitments and remaining track allocation. Run `set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)` within the authorized envelope.
 4. Paste the calls from `submit.json`.
 5. Run `validate_job`. It must pass without `force`.
 6. Run `submit_job`.
