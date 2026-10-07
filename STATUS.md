@@ -1,6 +1,7 @@
 # Status
 
 ## Track D — SSM-Decision (owner: claude)
+- 2026-10-07 (post-merge review of PR #91): cached head-proxy now refuses nonzero/non-numeric semantic-axis loss weights because cached items carry no axis targets; exactness is explicitly scoped to zero axis loss. Enforcing regression and LESSONS L-33 added in cross-track fix PR (pending review). Runtime pytest was unavailable in this environment because torch is not installed; Python syntax compilation and diff checks pass.
 - 2026-10-06: plans reviewed (analysis/A, B). Next: m0 harness parity (Index 0.2.1 pinned, ≥10k-row stratified dev slice, Clef-flash reproduction).
 - 2026-10-06 (m0-b, PR #6): `decide/` adapter 0.2.0 aligned with interface 0.1 (envelope `ssdm.decide.v0.1`, fingerprint `ssdm.request_fingerprint.v0`, provenance experimental behind a flag), canonical untrusted encoder `decide/untrusted.py`, replay/oracle/HF-readout backends, replay fixture v0 (43 cases, Qwen3.5-0.8B CPU recording; 9B fixture comes with the paid m0 run). Qwen3.5-0.8B, RWKV7-0.1B, Mamba-3-187M loaded locally earlier (GPU smoke); further work CPU-only. Receipt: receipts/2026-10-06-D-m0-decide/.
 - 2026-10-06 (m0-c, PR claude/m0-steer-eval): safety_eval v0.1 + PREREG (steer headline) + Qwen3-0.6B pipeline smoke receipt (receipts/2026-10-06-D-m0-steer).

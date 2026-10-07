@@ -354,3 +354,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the test double matched the conceptual slot count but not the runtime container contract.
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
+
+### L-33 The cached training proxy silently omitted semantic-axis supervision
+- Date: 2026-10-07 (cross-track review of PR #91).
+- Symptom: `train_head_cached` could be called with `axis_loss_weight > 0` but its `CachedItem` has no axis target and the cached loop uses `decision_loss` directly; the regular `Trainer` adds an axis MSE term. Proxy and trainer therefore optimize different objectives under that configuration despite the rank-0 parity claim.
+- Cost: $0; found by code review before relying on the proxy for a nonzero axis-loss configuration. No evidence of an affected paid job.
+- Root cause: the cached item schema and loss path did not represent the optional semantic-axis target.
+- **Check:** `tests/test_premortem_probes.py::test_p5_proxy_refuses_what_the_trainer_would_do_differently` requires `train_head_cached` to reject nonzero `axis_loss_weight` until axis targets and parity are implemented.
+- **Status:** ENFORCED.
