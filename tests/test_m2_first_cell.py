@@ -410,7 +410,10 @@ def test_first_cell_dry_run_end_to_end(tmp_path):
     rec = json.loads((tmp_path / "dry" / "receipt.json").read_text(encoding="utf-8"))
     assert r.returncode == 0 and rec["all_ok"] and rec["result_valid"], r.stdout[-3000:]
     res = rec["result"]
-    assert res["training"]["steps"] == 6 and res["training"]["data"]["train_set"]["n_pool"] == 149_997
+    ts = res["training"]["data"]["train_set"]
+    # 150,000 - 3 pinned D1-B exclusions - cohort v3 (#105, removed before the draw: 38,202 records)
+    assert res["training"]["steps"] == 6 and ts["n_pool"] == 149_997 - ts["cohort_v3_excluded"]["n"] == 111_795
+    assert ts["cohort_v3_excluded"]["drawn_overlap"] == 0
     assert res["index_dev_subset"]["rows"] >= 24 and res["steer_hijack_d1a"]["complete"]
     assert set(res["index_dev_subset"]["child_minus_parent"]["areas"]) == set(res["index_dev_subset"]["child"]["areas"])
     assert res["readout_diagnostics"]["order"]["paired"]["identical_questions"]
