@@ -12,6 +12,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 from pathlib import Path
 
@@ -51,7 +52,7 @@ def params(**kw) -> dict:
          "max_restarts": 0, "assumed_restart_floor": 1, "queue_ttl_minutes": 1440, "resume": "none",
          "hf_cache": True, "batch_usd_per_min": 0.0495, "hard_cap_usd": 5.0, "reserve_minutes": 1,
          "phase_caps_minutes": {"setup": 4, "run": 5}, "model": "org/tiny@abc123", "mission": "tiny-mission",
-         "decision_rule": "jobs/tiny/rule.py",
+         "decision_rule": "jobs/tiny/rule.py", "test_env": {"transformers": None},
          "submit": {"command": "bash /opt/ssdm/m1/jobs/tiny/tiny_job.sh", "env": {}, "key": "tiny",
                     "checks": launch._checks("TINY_DONE", 300, 600)},
          "context": {"dockerfile": "jobs/tiny/Dockerfile",
@@ -405,3 +406,115 @@ def test_clef_real_pins_name_the_reviewed_identities():
     idx = {d["dest"]: launch.data_pin(files, d) for d in launch.CONTEXT_RECIPES[("clef_baseline", "index_subset")]["data"]}
     assert idx["reference/clef_flash.decide.results.jsonl"].startswith("463f21ff")
     assert idx["slices/dev-rows.jsonl.gz"] == files["jobs/clef_baseline/data.sha256"][0].decode().split()[0]
+
+
+# ----------------------------------------------------------------------------- per-job test environments (L-24)
+JUNIT = """<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest">
+<testcase classname="tests.a" name="test_ok"/>
+<testcase classname="tests.a" name="test_bad"><failure message="x"/></testcase>
+<testcase classname="tests.b" name="test_clef_kernel"><skipped message="requires_transformers 5.10.2 (installed 5.17.0)"/></testcase>
+<testcase classname="tests.c" name="test_q9af"><skipped message="requires_transformers 5.17.0 (installed 5.10.2)"/></testcase>
+<testcase classname="tests.d" name="test_needs_data"><skipped message="private DEV rows not present"/></testcase>
+</testsuite></testsuites>"""
+
+
+def test_junit_summary_never_counts_a_skip_as_passed(tmp_path):
+    f = tmp_path / "j.xml"
+    f.write_text(JUNIT, encoding="utf-8")
+    s = launch.junit_summary(f)
+    assert (s["passed"], s["failed"], s["skipped"]) == (1, 1, 3)
+    assert [x["test"] for x in launch.required_skips(s, {"transformers": "5.10.2"})] == ["tests.b::test_clef_kernel"]
+    assert [x["test"] for x in launch.required_skips(s, {"transformers": "5.17.0"})] == ["tests.c::test_q9af"]
+    assert launch.required_skips(s, {"transformers": "5.10"}) == []  # exact pin, not a prefix
+
+
+def test_job_test_command_uses_the_jobs_pin(tmp_path):
+    code = tmp_path / "code"
+    (code / "harness").mkdir(parents=True)
+    (code / "harness" / "pyproject.toml").write_text("[project]\nname='h'\n")
+    kit = tmp_path / "kit"
+    (kit / "decision_index").mkdir(parents=True)
+    if shutil.which("uv") is None:
+        with pytest.raises(launch.LaunchError, match="uv"):
+            launch.job_test_command(code, {"transformers": "5.10.2"}, ["tests/x.py"], tmp_path / "j.xml", kit)
+        return
+    cmd = launch.job_test_command(code, {"transformers": "5.10.2"}, ["tests/x.py"], tmp_path / "j.xml", kit)
+    assert "transformers==5.10.2" in cmd and str(kit) in cmd and str(code / "harness") in cmd
+    assert cmd[-1] == "tests/x.py" and f"--junitxml={tmp_path / 'j.xml'}" in cmd
+    assert launch.job_test_command(code, {"transformers": None}, ["t.py"], tmp_path / "j.xml", None)[0] == sys.executable
+    for bad in (None, {}, {"image": "x"}):
+        with pytest.raises(launch.LaunchError, match="test_env"):
+            launch.job_test_command(code, bad, ["t.py"], tmp_path / "j.xml", None)
+
+
+@pytest.mark.parametrize("pin, refused", [("5.10.2", True), ("5.17.0", True), ("4.0.0", False)])
+def test_run_tests_refuses_when_the_jobs_own_pinned_tests_were_skipped(tmp_path, monkeypatch, pin, refused):
+    code = tmp_path / "stage" / "abc"
+    (code / "tests").mkdir(parents=True)
+    (code / "tests" / "test_x.py").write_text("# jobs/tiny/\n", encoding="utf-8")
+    monkeypatch.setattr(launch, "job_test_command", lambda *a, **k: ["fake"])
+
+    class R:
+        returncode, stdout, stderr = 0, "1 passed, 3 skipped", ""
+
+    def fake_run(cmd, **kw):
+        (code.parent / "junit-tiny.xml").write_text(JUNIT.replace('<testcase classname="tests.a" name="test_bad"><failure message="x"/></testcase>', ""),
+                                                    encoding="utf-8")
+        return R()
+
+    monkeypatch.setattr(launch.subprocess, "run", fake_run)
+    if refused:
+        with pytest.raises(launch.LaunchError, match="require this job's pinned stack were skipped"):
+            launch.run_tests(code, "tiny", {"transformers": pin}, None)
+    else:
+        r = launch.run_tests(code, "tiny", {"transformers": pin}, None)
+        assert r["passed"] == 1 and r["skipped"] == 3 and len(r["skipped_other_pins"]) == 2
+        assert [x["test"] for x in r["skipped_other"]] == ["tests.d::test_needs_data"]
+
+
+def test_launch_refuses_a_job_without_test_env(tmp_path):
+    repo, data, sha = make_repo(tmp_path, p=params(test_env=DROP))
+    with pytest.raises(launch.LaunchError, match="test_env"):
+        run(repo, data, sha, tmp_path / "o")
+
+
+def test_requires_transformers_marker_skips_on_mismatch_and_runs_on_match(tmp_path):
+    """The root conftest.py marker, executed by a real pytest run."""
+    import importlib.metadata as md
+
+    try:
+        have = md.version("transformers")
+    except md.PackageNotFoundError:
+        have = None
+    shutil.copy(ROOT / "conftest.py", tmp_path / "conftest.py")
+    (tmp_path / "test_m.py").write_text(
+        "import pytest\n"
+        f"@pytest.mark.requires_transformers({have!r})\ndef test_match():\n    pass\n"
+        "@pytest.mark.requires_transformers('0.0.0')\ndef test_other():\n    pass\n", encoding="utf-8")
+    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={tmp_path / 'j.xml'}",
+                        str(tmp_path / "test_m.py")], cwd=tmp_path, capture_output=True, text=True)
+    s = launch.junit_summary(tmp_path / "j.xml")
+    assert r.returncode == 0 and s["passed"] == 1 and s["skipped"] == 1, r.stdout + r.stderr
+    assert s["skips"][0]["reason"].startswith("requires_transformers 0.0.0 (installed")
+
+
+def test_every_job_declares_its_image_pin_as_test_env():
+    """test_env.transformers == the transformers pin of the Dockerfile the job's image is built from."""
+    import re as _re
+
+    def image_of(job, rel):
+        for spec in (launch.CONTEXT_RECIPES.get((job, lint.mode_of(rel))), launch.LEGACY_CONTEXT.get(job)):
+            if spec and "dockerfile" in spec:
+                return spec["dockerfile"]
+        own = ROOT / "jobs" / job / "Dockerfile"
+        if own.exists():
+            return f"jobs/{job}/Dockerfile"
+        bc = (ROOT / "jobs" / job / "build_context.sh").read_text(encoding="utf-8")
+        return _re.search(r'code/m1/(jobs/[a-z0-9_]+/Dockerfile)', bc).group(1)
+
+    for rel in lint.params_files(ROOT):
+        job = lint.job_of(rel)
+        p = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+        df = (ROOT / image_of(job, rel)).read_text(encoding="utf-8")
+        pin = _re.search(r'"transformers==([0-9.]+)"', df).group(1)
+        assert p["test_env"]["transformers"] == pin, rel

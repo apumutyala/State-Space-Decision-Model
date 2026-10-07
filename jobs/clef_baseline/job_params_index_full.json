@@ -1,4 +1,5 @@
 {
+ "test_env": {"transformers": "5.10.2", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
  "_comment": "Clef (27B) Index on the full 12,104-row DEV slice. Same phases as index_subset (sensitivity on all 51 over-length rows). depends_on the subset job's result.s1_ok AND result.ok; before submit run price.py rederive on the subset's rate_guard_index.json and raise caps if it says so (budget authorised). Planning rate 5.39x: index 101.6 + load 1.6. DEV only: the full 150,317-row board run would load TEST and is NOT this job.",
  "job": "clef-index-full",
  "chip": "h100",

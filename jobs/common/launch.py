@@ -6,7 +6,10 @@ Steps (each refuses with a non-zero exit; jobs/LAUNCH_CHECKLIST.md):
   1. `git fetch origin agent-main`; the SHA must be an ancestor of origin/agent-main.
   2. `git -c core.autocrlf=false archive <sha>` -> code/m1 (in memory, plus a staged copy under <out>/stage).
   3. The sha's own jobs/common/lint.py on the staged tree (waived failures only with --allow-waived, recorded in submit.json).
-  4. The job's CPU tests on the staged tree (every tests/ file naming jobs/<job>/ or jobs.<job>, + test_jobs_lint).
+  4. The job's CPU tests on the staged tree (every tests/ file naming jobs/<job>/ or jobs.<job>, + test_jobs_lint), in
+     the job image's own stack: `uv run --with transformers==<job_params test_env pin>` (LESSONS L-24). Tests marked
+     requires_transformers(<other pin>) are skipped and reported, never counted as passed; a skipped test that requires
+     THIS job's pin refuses the launch.
   5. Context = Dockerfile (+ CMD rewrite) + code/m1 + pinned data (sha256 checked against the pin file in the
      archive) + CONTEXT_MANIFEST.json, as a deterministic tar (sorted, mtime 2026-01-01, uid/gid 0, modes 644/755)
      compressed with Python zstandard (no zstd binary). Shipped *.sh/*.sha256/*.json/*.py/Dockerfile must have no CR.
@@ -240,17 +243,87 @@ def job_tests(code: Path, job: str) -> list[str]:
     return out
 
 
-def run_tests(code: Path, job: str) -> dict:
+#: base packages of every job-test environment (the per-job transformers pin is added from job_params "test_env")
+TEST_DEPS = ("pytest", "torch", "numpy", "pyarrow", "zstandard")
+TORCH_CPU_INDEX = "https://download.pytorch.org/whl/cpu"
+REQUIRES_REASON = "requires_transformers"  # the skip reason root conftest.py gives a pin-dependent test
+
+
+def job_test_command(code: Path, test_env: dict | None, tests: list[str], junit: Path, kit_dir: Path | None) -> list[str]:
+    """The job tests' command under the job image's own transformers pin (LESSONS L-24). ``test_env`` is job_params'
+    {"transformers": "<pin>" | null}; null = the job imports no transformers and runs under this interpreter. A missing
+    test_env is refused: one environment cannot satisfy two pinned stacks."""
+    if not isinstance(test_env, dict) or "transformers" not in test_env:
+        raise LaunchError("job_params has no test_env {\"transformers\": <the job image's pin>}: the job tests must run "
+                          "under the job's own stack (LESSONS L-24)")
+    pytest_args = ["-X", "utf8", "-m", "pytest", "-q", "-rs", "-p", "no:cacheprovider", f"--junitxml={junit}", *tests]
+    pin = test_env["transformers"]
+    if pin is None:
+        return [sys.executable, *pytest_args]
+    import shutil
+
+    uv = shutil.which("uv")
+    if uv is None:
+        raise LaunchError("job tests need `uv` to build the job's test environment (transformers==%s)" % pin)
+    cmd = [uv, "run", "--no-project", "--index", TORCH_CPU_INDEX, "--index-strategy", "unsafe-best-match",
+           "--with", f"transformers=={pin}"]
+    for d in TEST_DEPS:
+        cmd += ["--with", d]
+    if kit_dir is not None and (kit_dir / "decision_index").is_dir():
+        cmd += ["--with", str(kit_dir)]
+    if (code / "harness" / "pyproject.toml").is_file():
+        cmd += ["--with-editable", str(code / "harness")]
+    return cmd + ["python", *pytest_args]
+
+
+def junit_summary(junit: Path) -> dict:
+    """passed / failed / skipped from pytest's junit xml; skips grouped by reason. A skip is never a pass."""
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(junit).getroot()
+    out = {"passed": 0, "failed": 0, "skipped": 0, "skips": []}
+    for tc in root.iter("testcase"):
+        name = f"{tc.get('classname')}::{tc.get('name')}"
+        if tc.find("failure") is not None or tc.find("error") is not None:
+            out["failed"] += 1
+        elif tc.find("skipped") is not None:
+            out["skipped"] += 1
+            sk = tc.find("skipped")
+            out["skips"].append({"test": name, "reason": (sk.get("message") or sk.text or "").strip()})
+        else:
+            out["passed"] += 1
+    return out
+
+
+def required_skips(summary: dict, test_env: dict) -> list[dict]:
+    """Tests that require THIS job's pin but were skipped (the environment did not match): the launch is refused."""
+    pin = test_env.get("transformers")
+    if pin is None:
+        return [s for s in summary["skips"] if REQUIRES_REASON in s["reason"]]
+    return [s for s in summary["skips"] if f"{REQUIRES_REASON} {pin} " in s["reason"] + " "]
+
+
+def run_tests(code: Path, job: str, test_env: dict | None = None, kit_dir: Path | None = None) -> dict:
     tests = job_tests(code, job)
     if not tests:
         raise LaunchError(f"no CPU tests reference jobs/{job}/")
+    junit = code.parent / f"junit-{job}.xml"
+    cmd = job_test_command(code, test_env, tests, junit, kit_dir)
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUTF8": "1"}
-    cmd = [sys.executable, "-X", "utf8", "-m", "pytest", "-q", "-p", "no:cacheprovider", *tests]
     r = subprocess.run(cmd, cwd=code, env=env, capture_output=True, text=True)
     tail = (r.stdout + r.stderr).strip().splitlines()[-3:]
     if r.returncode:
         raise LaunchError(f"job tests failed ({' '.join(tests)}):\n" + "\n".join(tail))
-    return {"files": tests, "summary": tail[-1] if tail else ""}
+    summ = junit_summary(junit) if junit.is_file() else {"passed": None, "failed": None, "skipped": None, "skips": []}
+    req = required_skips(summ, test_env)
+    if req:
+        raise LaunchError(f"{len(req)} test(s) that require this job's pinned stack were skipped (the test environment "
+                          f"does not match test_env {test_env}): {[s['test'] for s in req]}")
+    other = [s for s in summ["skips"] if REQUIRES_REASON in s["reason"]]
+    return {"files": tests, "summary": tail[-1] if tail else "", "test_env": test_env,
+            "passed": summ["passed"], "failed": summ["failed"], "skipped": summ["skipped"],
+            "skipped_other_pins": [s["test"] for s in other],
+            "skipped_other": [s for s in summ["skips"] if REQUIRES_REASON not in s["reason"]]}
 
 
 def sha256(b: bytes) -> str:
@@ -396,7 +469,8 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
     stage(files, code)
     sha_lint = load_lint(code)
     lint_res = run_lint(code, rel, allow_waived, sha_lint)
-    tests = run_tests(code, job) if run_job_tests else {"skipped": True}
+    tests = run_tests(code, job, p.get("test_env"), data_dir / "decision-index" if data_dir else None) \
+        if run_job_tests else {"skipped": True}
     sub = p.get("submit") or LEGACY_SUBMIT.get((job, mode))
     spec = p.get("context") or LEGACY_CONTEXT.get(job)
     if (not spec or "unsupported" in spec) and (job, mode) in CONTEXT_RECIPES:

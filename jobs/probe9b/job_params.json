@@ -1,4 +1,5 @@
 {
+ "test_env": {"transformers": "5.17.0", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
  "_comment": "Single source of truth for the probe9b submit_job fields and runner phase caps (jobs/probe9b/JOB_SPEC.md). Re-priced 2026-10-06 from the MEASURED job-4j3vu rates (issue #68; `measured` below). tests/test_probe9b.py and tests/test_m1_next_jobs.py check the cost arithmetic, the schedule and the >= 30% margin of every cap over its measured-rate projection (jobs/probe9b/preflight.py); jobs/probe9b/probe_job.sh reads the caps from here.",
  "job": "probe9b",
  "chip": "h100",

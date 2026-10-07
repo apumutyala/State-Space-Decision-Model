@@ -185,6 +185,7 @@ def _kernel_rows():
     return rows
 
 
+@pytest.mark.requires_transformers("5.10.2")  # the Clef image's pin: checks its Qwen3.5 GDN kernel-selection source
 def test_kernel_path_not_vacuous_on_real_transformers_fallback():
     from baselines import clef_probes as P
 
@@ -200,6 +201,7 @@ def test_kernel_path_not_vacuous_on_real_transformers_fallback():
     assert any("max_abs_dp == 0" in r for r in res["fail_reasons"])
 
 
+@pytest.mark.requires_transformers("5.10.2")  # the Clef image's pin: checks its Qwen3.5 GDN kernel-selection source
 def test_kernel_path_passes_when_a_real_fast_kernel_is_in_use():
     """Positive control on the same real class: a non-reference kernel object (reference + bf16-sized noise)."""
     from baselines import clef_probes as P

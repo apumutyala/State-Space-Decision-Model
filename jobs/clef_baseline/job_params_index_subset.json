@@ -1,4 +1,5 @@
 {
+ "test_env": {"transformers": "5.10.2", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
  "_comment": "Clef (27B) Index on the pre-registered 2,008-row m1 DEV subset (jobs/common/dev_subset_m1.json): S0 env + 55 GB download (hf_cache false), S1 probes (parity, kernel_path, encodings; no gradient probe) + measured-rate preflight, S2 decide (live rate guard), S2c over-length sensitivity at max_length 32768 (rows of jobs/clef_baseline/overlength_rows.json in the subset), S2b native arm, S3 score (edition 0.2.1 as job-sgihj, plus a 0.3 report) / composite (headline) / ECE / latency / required paired compare vs Clef-flash job-sgihj. DEV only. Canary for the full job; its measured index rate re-derives the full job's caps (price.py rederive). Planning rate: the card's 5.39x Clef/Clef-flash latency ratio (index 17.1 + load 1.6).",
  "job": "clef-index-subset",
  "chip": "h100",

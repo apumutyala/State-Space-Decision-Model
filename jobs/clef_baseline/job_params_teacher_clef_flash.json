@@ -1,4 +1,5 @@
 {
+ "test_env": {"transformers": "5.10.2", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
  "_comment": "Teacher export, Clef-flash, on the m2 first cell's 24,000-record TRAINING draw (jobs/clef_baseline/teacher_scope.json). guard = guard_ready (content index rebuild) + clef_teacher select (pointer, cohort, SplitGuard DEV/TEST, held-out D1-B), all on CPU before the download. Expected export: 42.9 + 0.5 load (price.py, job-sgihj per-row model x the draw's 45.2 M tokens). Never DEV/TEST rows.",
  "job": "clef-teacher-flash",
  "chip": "h100",

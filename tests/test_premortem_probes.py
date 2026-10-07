@@ -69,6 +69,7 @@ def toy():
 
 
 # ----------------------------------------------------------------------------------------------------- P1
+@pytest.mark.requires_transformers("5.17.0")  # the probe9b/full8/rwkv7 images' pin: Q9-AF layer layout
 def test_p1_q9af_plugs_into_the_m2_train_step(toy, tmp_path):
     bb, attn = q9af_tiny()
     model = DecisionModel(bb, "fork", seed=0)
@@ -100,6 +101,7 @@ def _lora_grads(bb, rows, mode):
     return {n: p.grad.detach().clone() for n, p in bb.named_parameters() if p.requires_grad and p.grad is not None}
 
 
+@pytest.mark.requires_transformers("5.17.0")  # the probe9b/full8/rwkv7 images' pin: Q9-AF layer layout
 def test_p2_q9af_cache_fork_lora_gradients_equal_recompute(toy):
     from train.lora import apply_lora
 
@@ -124,6 +126,7 @@ def test_p2_q9af_cache_fork_lora_gradients_equal_recompute(toy):
 
 
 # ----------------------------------------------------------------------------------------------------- P3
+@pytest.mark.requires_transformers("5.17.0")  # the probe9b/full8/rwkv7 images' pin: Q9-AF layer layout
 def test_p3_pr86_levers_do_not_apply_to_q9af(toy):
     from heads import act_ckpt
 
@@ -180,6 +183,7 @@ def _per_token_layer_d(bb, n_layers, d, lengths, k=4):
     return slope / n_layers / d, meas
 
 
+@pytest.mark.requires_transformers("5.17.0")  # the probe9b/full8/rwkv7 images' pin: Q9-AF layer layout
 def test_p4_activation_bytes_per_token_q9af_vs_rwkv7():
     torch.manual_seed(0)
     lengths = [128, 512]

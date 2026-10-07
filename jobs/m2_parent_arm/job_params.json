@@ -1,4 +1,5 @@
 {
+ "test_env": {"transformers": "5.17.0", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
  "_comment": "DRAFT, NOT SUBMITTED. jobs/m2_parent_arm: score the frozen m1 parent once per gate on the frozen development cohort (train.cohort v2) and cache the units for every m2 cell on that parent (jobs/m2_parent_arm/JOB_SPEC.md). Worst case = (build_timeout + 2 x max_duration) x batch rate.",
  "job": "m2-parent-arm",
  "status": "draft: not submitted",

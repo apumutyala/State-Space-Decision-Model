@@ -1,4 +1,5 @@
 {
+ "test_env": {"transformers": "5.10.2", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
  "_comment": "Clef-flash sensitivity arm (JOB_SPEC 4c): the 51 DEV rows over Clef's shipped max_length 16,384 (jobs/clef_baseline/overlength_rows.json) re-read through the decide path at max_length 32,768, substituted into job-sgihj's decide results (pinned reference), re-scored on the same DEV slice. The Clef-27B jobs run the same arm in-job (phase sens). DEV only.",
  "job": "clef-flash-overlength",
  "chip": "h100",
