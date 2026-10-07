@@ -1,0 +1,63 @@
+{
+  "scope": "local unpushed issue #175 ExactSum boundary draft, no qualification claim",
+  "timestamp_utc": "2026-10-07T23:48:37.167019+00:00",
+  "base_head": "e098f9d0f828b0ba2353ab336efbe1881d1202ca",
+  "branch": "codex/l1-exact-sum-rules-draft",
+  "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]",
+  "integer_string_digit_limit": 4300,
+  "command": [
+    "C:\\Users\\apumu\\AppData\\Roaming\\uv\\tools\\awscli\\Scripts\\python.exe",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "language_growth/tests",
+    "-v"
+  ],
+  "exit_code": 0,
+  "tests": 97,
+  "rational_oracle_pairs": 121,
+  "maximum_case": {
+    "terms": 16,
+    "input_integer_digits": 4300,
+    "scale": 5000,
+    "result_integer_digits": 4302,
+    "complete_output_byte_cap": 262144
+  },
+  "versioning": {
+    "document_draft": "0.1.2",
+    "semantic_program": "v0.2",
+    "decide": "v0.1",
+    "provenance": "deferred; future version requires Track D reconciliation"
+  },
+  "source_sha256": {
+    "language_growth/types.py": "967385f96dec258ab01e3e069344e7b837120cfd2ef28e82ece2e971182e0bca",
+    "language_growth/kernel.py": "b753abcc306b6f17a60b69b2dcd1213e6efab60b196b70d29e37d3f612f71a1f",
+    "language_growth/realize.py": "7bd02c95fa6ee09ae57d34c685a3bb9869e8aa8153a84d3cfe1c1159715aeb18",
+    "language_growth/tests/test_exact_sum.py": "78eb99a275d2ea6cc049cba1c88f5637598aff6dd987b17e81dbef6283f2bed6",
+    "interfaces/DECISION_LANGUAGE_V0.md": "1fc5eb3b4a5015fffafb20252f2f572ecc4261d1fb393d35adfd4de6015800ef",
+    "plans/codex/L1_EXACT_SUM.md": "446553e087e95da5ef84e114b63532f7a10633bc96638b34038f2e4f13ce1233",
+    "STATUS.md": "cb8a8e9c88664d3d80de3342755ba8a1e091610b82094e8ba5e4b9bc86262d8e",
+    "receipts/2026-10-07-L-exact-sum-rules-draft/verify.py": "dd75d31bb743a825d391ded7c7826cca2ba698b393dddda292a95674941763e7",
+    "receipts/2026-10-07-L-exact-sum-rules-draft/tests.txt": "7745517fe8280fbe907edad8fda179f7468b491eab39594f96c83c60c32e6ee8"
+  },
+  "preserved_historical_integer_carry_receipt_sha256": {
+    "before-after.txt": "77e7e443b6977853f710da592c1291d70d686fd299f6ae62bbc5949493583813",
+    "receipt.json": "584be447af60d6ad35a79b99cd1c1fa9a7d2f3fb640360324e5c93b5e1a79e8a",
+    "tests.txt": "12b6024f7255246cf9d1393755b9ec39a75b2f5be3069e8d27a27ab1f795183a",
+    "verify.py": "f797e219887cb563e062008d53d3ef20e0d5b54b2078e996232bc427b558addc"
+  },
+  "remaining_gates": [
+    "independent review",
+    "joint Track D/L profile approval",
+    "agent-main port/reconciliation",
+    "parent planner/evaluator integration"
+  ],
+  "excluded": [
+    "model/weights",
+    "GPU",
+    "Index/heldout",
+    "paid compute",
+    "push/PR/merge"
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "scope": "CPU ExactSum integer-carry release/serialization fix; no model capability claim",
+  "base_commit": "6d8fa4b655c2a7242473ad4681b73a61527f86be",
+  "source_commit": "2f9f3a160504cdf3b787b64f6d29b04490d1b045",
+  "commands": [
+    [
+      "python",
+      "-B",
+      "-m",
+      "unittest",
+      "language_growth.tests.test_kernel",
+      "language_growth.tests.test_kernel_adversarial",
+      "language_growth.tests.test_realize",
+      "language_growth.tests.test_exact_sum",
+      "language_growth.tests.test_planner",
+      "fixtures.language_growth.test_fixture_pack",
+      "-v"
+    ],
+    [
+      "python",
+      "-B",
+      "receipts\\2026-10-07-L-exact-sum-integer-carry\\verify.py"
+    ]
+  ],
+  "exit_codes": [
+    0,
+    0
+  ],
+  "tests": 62,
+  "rational_oracle_pairs": 121,
+  "runs": 1,
+  "seed": "none; deterministic authored inputs",
+  "median_and_spread": "not applicable to deterministic correctness checks",
+  "source_and_artifact_sha256_lf": {
+    "language_growth/kernel.py": "c8a8452b0215959571cb3dea71527ad0cc1fe8e880c2208854148c58c3da2016",
+    "language_growth/types.py": "0c0d134d367019d425294389a591638b9180749568b1f034dbd4ba5251403ecd",
+    "language_growth/tests/test_exact_sum.py": "15cf765a2d0b27ad5c42dda84f7a72c63699d4c2ff9db7f89fd9fab348d7836c",
+    "interfaces/DECISION_LANGUAGE_V0.md": "8be5ee2bb14d3d708e7c90f2dcc3c15d0cf615b0827002be50b1c379a7c669c3",
+    "receipts\\2026-10-07-L-exact-sum-integer-carry\\verify.py": "f797e219887cb563e062008d53d3ef20e0d5b54b2078e996232bc427b558addc",
+    "fixtures/language_growth/catalog.json": "c97f785c4a1ecc7b0b73dcb7c7ca8b1287640e468505628b3acd2ccec352ab35",
+    "fixtures/language_growth/manifest.json": "3984b5e4dad6fd78cfcc8a761b9e88b0eccec1f74d6e6956125654ede0799dad",
+    "receipts\\2026-10-07-L-exact-sum-integer-carry\\tests.txt": "cf9716792f6dce67c10a92c99401566e8ca9308785566e80e5632af3d599635f",
+    "receipts\\2026-10-07-L-exact-sum-integer-carry\\before-after.txt": "6abdeeca06fe918202584f1e17f3811ab51d2a3ecc522f8dd23b4d94d630b942"
+  },
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "billed_cost_usd": 0,
+  "model_calls": 0,
+  "gpu_used": false,
+  "raw_predictions": "none; deterministic assertions and before-after.txt",
+  "integer_digit_limit": 4300,
+  "representation": "Every ExactSum result is a lossless Decimal serialized as a string; source Fact types unchanged"
+}

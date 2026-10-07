@@ -1,0 +1,28 @@
+ExactSum local integration reproduction record
+
+Source commit: 7b3205a78101e8fdab674b3fa9a4367188a53ba5
+Merged agent-main: a6b0755a3b81de7948edd71425e663a52fe9557d
+Branch: codex/l1-exact-sum-rules-draft
+Working directory: C:/Users/apumu/research/CHLabs/ssdm-wt/l1-exact-sum-rules-draft
+
+Exact command from the completed merged-head run:
+python -X utf8 -m pytest -q language_growth/tests/test_exact_sum.py language_growth/tests/test_kernel.py language_growth/tests/test_kernel_adversarial.py language_growth/tests/test_realize.py language_growth/tests/test_planner.py language_growth/tests/test_public_output.py language_growth/tests/test_task_relevance.py tests/test_jobs_lint.py
+
+Recorded result:
+158 passed, 62 subtests passed in 3.10s
+Exit code: 0
+
+git diff --check
+Exit code: 0; no output.
+
+This receipt transcribes the already completed integration run; tests were not
+rerun during this receipt-only change. The source HEAD was verified to equal
+7b3205a78101e8fdab674b3fa9a4367188a53ba5 before writing the receipt.
+
+Windows CPU only; billed cost USD 0. No model/weights/GPU/Index/heldout access.
+No raw predictions (not applicable). No performance or learned-capability claim;
+the 3.10s duration identifies the test run and is not a benchmark result.
+Synthetic fixture/split identities reference existing pinned receipts, with
+their recorded hashes checked against Git blob bytes at the source commit.
+Historical #129 integer-carry receipts remain unchanged. No push, PR or merge
+was performed as part of this receipt-only change.

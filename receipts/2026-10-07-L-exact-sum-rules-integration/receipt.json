@@ -1,0 +1,152 @@
+{
+  "schema": "ssdm.exact_sum_integration_receipt.v1",
+  "scope": "receipt-only record of the completed local ExactSum merged-head integration check; no qualification claim",
+  "recorded_at_utc": "2026-10-07T23:56:45.652051+00:00",
+  "source_commit": "7b3205a78101e8fdab674b3fa9a4367188a53ba5",
+  "source_tree": "21525527f04f6519a7bffc45a1b43ad206149352",
+  "agent_main_commit": "a6b0755a3b81de7948edd71425e663a52fe9557d",
+  "branch": "codex/l1-exact-sum-rules-draft",
+  "source_identity_verification": {
+    "head_equal_source_before_write": true,
+    "second_parent_equal_agent_main": true,
+    "tracked_source_tree_clean_before_write": true,
+    "hash_rule": "SHA-256 of Git blob bytes at source_commit; independent of checkout EOL"
+  },
+  "source_blob_sha256": {
+    "language_growth/kernel.py": "b753abcc306b6f17a60b69b2dcd1213e6efab60b196b70d29e37d3f612f71a1f",
+    "language_growth/types.py": "967385f96dec258ab01e3e069344e7b837120cfd2ef28e82ece2e971182e0bca",
+    "language_growth/realize.py": "7bd02c95fa6ee09ae57d34c685a3bb9869e8aa8153a84d3cfe1c1159715aeb18",
+    "language_growth/planner.py": "dae3ec636755c599bf1c3ade4295d8cfc8e199081d2d17e1a3481b1a08ce8034",
+    "language_growth/public_output.py": "cbb508c8b607fbffc25aacb5fde7b0af5ab2498d2f157910503f89237a8dbada",
+    "language_growth/task_relevance.py": "e918508da22ce8922c8546e1a45e239ae9d57b5a188b1387d576f8a120fd032a",
+    "interfaces/DECISION_LANGUAGE_V0.md": "edb262c02f11c25543ab0b9343e9d3714efad70ecdf11c6cdb1884b216ce04ed",
+    "STATUS.md": "6f686dae9e16153e9ec03f51705ee691ac6d441b1bbf7f69e23dd19bb725e6b9",
+    ".gitattributes": "e00dbcb271c9913f4dd2cf238afecbea0da7bbed7f158bff93102e9f917966b8",
+    "plans/codex/L1_EXACT_SUM.md": "948d450e33ca3302fe53b23c6717d12583406d21545a6f7a975e2ec7898b60fc",
+    "conftest.py": "2985155319e3f460a61fe63ec2fac1b6f4b014ec8cd8d17a42396ae3899dc0b2",
+    "tests/conftest.py": "5bc2dbc92b28f1796ec91a1e5067e20916c6514dc69754623b874a4786e0f9ef",
+    "jobs/common/lint.py": "76fd84e7ba9a63b26a62bec9f3f5fe84e1d5585bfc143dd951acc8a321448239",
+    "language_growth/tests/test_exact_sum.py": "78eb99a275d2ea6cc049cba1c88f5637598aff6dd987b17e81dbef6283f2bed6",
+    "language_growth/tests/test_kernel.py": "9a3bfffd48de6e5f4b87cc5e732c051551d65418906a527635c51403e9c563e4",
+    "language_growth/tests/test_kernel_adversarial.py": "1095aa538571557960ce99170e6b3e24782a2112f5d1f1d007003ddf5ce36d03",
+    "language_growth/tests/test_realize.py": "1552bafadacd3c7e9cc8c7784b01fa4526eec60deb522be6e648c83dbb6fa109",
+    "language_growth/tests/test_planner.py": "9051f7067a72473d520e62a1f4e0148192e7f54599c4932048fa565328e404cd",
+    "language_growth/tests/test_public_output.py": "5ccbcf6c7a55a04404de001a56ba5f58ef9e275cfc37aba1b9207d1b1c356f50",
+    "language_growth/tests/test_task_relevance.py": "0012224b6a9811f36bb0af03e724d9c19acc4d23d32508242c4bc89dfcdc743e",
+    "tests/test_jobs_lint.py": "77a035000c3f72de9c5e4a0b42c35b8bd963a98c8bc95d4238479c8bdd2964f2"
+  },
+  "test_run": {
+    "command": [
+      "python",
+      "-X",
+      "utf8",
+      "-m",
+      "pytest",
+      "-q",
+      "language_growth/tests/test_exact_sum.py",
+      "language_growth/tests/test_kernel.py",
+      "language_growth/tests/test_kernel_adversarial.py",
+      "language_growth/tests/test_realize.py",
+      "language_growth/tests/test_planner.py",
+      "language_growth/tests/test_public_output.py",
+      "language_growth/tests/test_task_relevance.py",
+      "tests/test_jobs_lint.py"
+    ],
+    "exit_code": 0,
+    "passed": 158,
+    "subtests_passed": 62,
+    "reported_seconds": 3.1,
+    "runs_recorded": 1,
+    "evidence": "completed merged-head tool run in the integration handoff; not rerun for this receipt-only change",
+    "reported_summary": "158 passed, 62 subtests passed in 3.10s"
+  },
+  "diff_check": {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0,
+    "output": ""
+  },
+  "execution": {
+    "platform": "Windows CPU",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]",
+    "billed_cost_usd": 0,
+    "model_access": false,
+    "weights_access": false,
+    "gpu_access": false,
+    "index_access": false,
+    "heldout_access": false
+  },
+  "raw_predictions": null,
+  "raw_predictions_reason": "not applicable to deterministic/scripted CPU boundary tests",
+  "performance_claims": false,
+  "timing_purpose": "test-run identification only; no model latency/throughput benchmark",
+  "synthetic_data_references": [
+    {
+      "receipt_path": "receipts/2026-10-06-L1-exact-sum/receipt.json",
+      "receipt_blob_sha256": "905671d7b4b68e3818ecc4d3bfc057ad8d18099afc771d4500b5d576f29ce324",
+      "fixture_status": "synthetic fixed boundary fixtures; no held-out status",
+      "text_lf_sha256": {
+        "fixtures/language_growth/catalog.json": "c97f785c4a1ecc7b0b73dcb7c7ca8b1287640e468505628b3acd2ccec352ab35",
+        "fixtures/language_growth/manifest.json": "3984b5e4dad6fd78cfcc8a761b9e88b0eccec1f74d6e6956125654ede0799dad"
+      },
+      "fixture_cases": {
+        "count": 24,
+        "sha256": "539cf22c4ede945e945e14ef66b3f00a8d7624c40efdd64b549d51573613dd38",
+        "hash_rule": "sort *.json by filename; concatenate filename UTF-8, NUL, file bytes with CRLF normalized to LF, then LF"
+      }
+    },
+    {
+      "receipt_path": "receipts/2026-10-07-L1-semantic-axis-counterfactuals/verification.json",
+      "receipt_blob_sha256": "8a58c6a757e578d0c2c585a0b4f2c1e6866368f06fe8ae91e2eaa8fc6efe185d",
+      "seed": 1707,
+      "splits": [
+        "semantic_axis_discovery",
+        "semantic_axis_validation"
+      ],
+      "artifact_sha256": {
+        "language_growth/semantic_axis_fixtures.py": "4179553a120b60b65a1b161529a995d87455459e9846e4ae0cf176cee0f062cd",
+        "receipts/2026-10-07-L1-semantic-axis-counterfactuals/semantic_axis_discovery-inputs.jsonl": "5bb73a63c7f6ed085b850e8680576ac4670be5d74c36e5da9af188c1d8f7065f",
+        "receipts/2026-10-07-L1-semantic-axis-counterfactuals/semantic_axis_discovery-manifest.json": "337ed5cd8b1ba762e16aa08a099ed6a54c19e79a4b3105284b501589aae8143d",
+        "receipts/2026-10-07-L1-semantic-axis-counterfactuals/semantic_axis_discovery-scorer.jsonl": "4f3d458d190ebff9ffcae796d07ac3686927e5ab127a65bce1e251663170e6a4",
+        "receipts/2026-10-07-L1-semantic-axis-counterfactuals/semantic_axis_validation-inputs.jsonl": "76d11ae78e81c3aef66f73748549c79151c876d1a03400b54470f4ef6effd00f",
+        "receipts/2026-10-07-L1-semantic-axis-counterfactuals/semantic_axis_validation-manifest.json": "f161ba4bd64207ff190f73f7f5b4b97484ed82781546252e19962f12e9ba3c58",
+        "receipts/2026-10-07-L1-semantic-axis-counterfactuals/semantic_axis_validation-scorer.jsonl": "dd54d94b4f7980002569680af093d7be9dc467e1abeb07c4de56ed819bf51edf"
+      },
+      "note": "existing synthetic development split pins; no full split validation rerun claimed for this focused integration run"
+    }
+  ],
+  "preserved_historical_integer_carry_receipts_sha256": {
+    "receipts/2026-10-07-L-exact-sum-integer-carry/before-after.txt": {
+      "source_git_blob_sha256": "6abdeeca06fe918202584f1e17f3811ab51d2a3ecc522f8dd23b4d94d630b942",
+      "preserved_worktree_sha256": "77e7e443b6977853f710da592c1291d70d686fd299f6ae62bbc5949493583813"
+    },
+    "receipts/2026-10-07-L-exact-sum-integer-carry/receipt.json": {
+      "source_git_blob_sha256": "584be447af60d6ad35a79b99cd1c1fa9a7d2f3fb640360324e5c93b5e1a79e8a",
+      "preserved_worktree_sha256": "584be447af60d6ad35a79b99cd1c1fa9a7d2f3fb640360324e5c93b5e1a79e8a"
+    },
+    "receipts/2026-10-07-L-exact-sum-integer-carry/tests.txt": {
+      "source_git_blob_sha256": "cf9716792f6dce67c10a92c99401566e8ca9308785566e80e5632af3d599635f",
+      "preserved_worktree_sha256": "12b6024f7255246cf9d1393755b9ec39a75b2f5be3069e8d27a27ab1f795183a"
+    },
+    "receipts/2026-10-07-L-exact-sum-integer-carry/verify.py": {
+      "source_git_blob_sha256": "f797e219887cb563e062008d53d3ef20e0d5b54b2078e996232bc427b558addc",
+      "preserved_worktree_sha256": "f797e219887cb563e062008d53d3ef20e0d5b54b2078e996232bc427b558addc"
+    }
+  },
+  "historical_preservation_note": "Existing working-file bytes match the prior hardening receipt pins. Git blob hashes are recorded separately because receipt checkout EOL policy changed when agent-main was merged; no historical receipt bytes were rewritten.",
+  "historical_worktree_pin_receipt": "receipts/2026-10-07-L-exact-sum-rules-draft/receipt.json",
+  "reproduction_record": {
+    "path": "tests.txt",
+    "sha256": "08572408c3b06eaba623cf8707982644b522d822a597bc18ed2bbdba7644b9b9"
+  },
+  "receipt_only_change": true,
+  "published": false,
+  "remaining_gates": [
+    "fresh exact-head independent review",
+    "joint Track D/L profile approval",
+    "separate planner/evaluator integration and learned qualification"
+  ]
+}
