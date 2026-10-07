@@ -1,0 +1,192 @@
+{
+  "schema": "ssdm.order-debias-handoff.v1",
+  "source_head": "478aec24f19656243ec8e347bf1563acb188c5b8",
+  "parent_integration_base": "ee0adb70029fc80c65ee6072c307873034052362",
+  "hardware": "local Windows CPU; no model calls; CUDA_VISIBLE_DEVICES empty",
+  "cost_usd": 0,
+  "input_files": {
+    "C:\\Users\\apumu\\research\\CHLabs\\review-artifacts\\order-debias-handoff-20261007\\units-index.json": {
+      "sha256": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001",
+      "bytes": 2870250
+    },
+    "C:\\Users\\apumu\\research\\CHLabs\\review-artifacts\\order-debias-handoff-20261007\\index-rows.jsonl.gz": {
+      "sha256": "406d40e6891690fad48fb82252c44b89a5337c603ff79e03ceb11fffc4eb28f2",
+      "bytes": 1599061
+    },
+    "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\order-debias\\receipts\\2026-10-07-D-order-debias\\analysis.py": {
+      "sha256": "701d0a3e07d8c724170498dabd6eae9e574bf6e35d22778ab8c2ad93f9201fb0",
+      "bytes": 7591
+    },
+    "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\order-debias\\receipts\\2026-10-07-D-order-debias\\analysis.json": {
+      "sha256": "347eca08ba18c1c6ae8891c4c1d2cdb535f92777a2f70e38fb72de4250d492d5",
+      "bytes": 10663
+    },
+    "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\order-debias\\receipts\\2026-10-07-D-order-debias\\position_bias.json": {
+      "sha256": "1b03e42e490f59107daf90a3a0d4aad62c60ff3db21d915207aea57a0117eeb1",
+      "bytes": 2486
+    },
+    "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\order-debias-handoff\\receipts\\2026-10-07-D-order-debias-handoff\\recomputed.json": {
+      "sha256": "347eca08ba18c1c6ae8891c4c1d2cdb535f92777a2f70e38fb72de4250d492d5",
+      "bytes": 10663
+    }
+  },
+  "validation": {
+    "analysis_exact_json_equality": true,
+    "position_bias_exact_json_equality": true,
+    "diagnostic_selection_and_schema": true,
+    "counterexamples": true
+  },
+  "source_receipt_seed": 0,
+  "source_receipt_bootstraps": 2000,
+  "rows": 2008,
+  "diagnostic_rows": 160,
+  "diagnostic_questions": 482,
+  "by_k": {
+    "3": {
+      "questions": 17,
+      "both_valid": 17,
+      "forward_invalid": 0,
+      "reversed_invalid": 0,
+      "choice_changes": 4,
+      "first_in_both_orders": 2,
+      "last_in_both_orders": 0,
+      "same_original_choice": 13
+    },
+    "2": {
+      "questions": 387,
+      "both_valid": 386,
+      "forward_invalid": 1,
+      "reversed_invalid": 1,
+      "choice_changes": 56,
+      "first_in_both_orders": 25,
+      "last_in_both_orders": 31,
+      "same_original_choice": 330
+    },
+    ">16": {
+      "questions": 24,
+      "both_valid": 24,
+      "forward_invalid": 0,
+      "reversed_invalid": 0,
+      "choice_changes": 21,
+      "first_in_both_orders": 6,
+      "last_in_both_orders": 0,
+      "same_original_choice": 3
+    },
+    "4": {
+      "questions": 38,
+      "both_valid": 38,
+      "forward_invalid": 0,
+      "reversed_invalid": 0,
+      "choice_changes": 14,
+      "first_in_both_orders": 2,
+      "last_in_both_orders": 0,
+      "same_original_choice": 24
+    },
+    "5-16": {
+      "questions": 16,
+      "both_valid": 16,
+      "forward_invalid": 0,
+      "reversed_invalid": 0,
+      "choice_changes": 11,
+      "first_in_both_orders": 1,
+      "last_in_both_orders": 1,
+      "same_original_choice": 5
+    }
+  },
+  "benchmarks_by_k": {
+    "3": {
+      "ANLI": 4,
+      "ChessBench": 1,
+      "MuSR": 1,
+      "FinEntity": 3,
+      "VAST": 4,
+      "CRUXEval": 2,
+      "Home appliance simulator": 2
+    },
+    "2": {
+      "BFCL": 28,
+      "BPoMP": 5,
+      "Humicroedit": 5,
+      "cfcolor": 6,
+      "WinoGrande": 5,
+      "ToolRet": 6,
+      "MuSR": 1,
+      "SATA-Bench": 23,
+      "BRIGHT": 1,
+      "ACOS": 256,
+      "iSarcasmEval": 2,
+      "NLI4CT": 1,
+      "CRUXEval": 1,
+      "CLadder": 3,
+      "ForecastBench": 6,
+      "Home appliance simulator": 15,
+      "PhishNChips phishing decisions": 18,
+      "BBH fixed-option tasks": 1,
+      "HoVer claim verification": 4
+    },
+    ">16": {
+      "POP909-CL": 6,
+      "ChessBench": 2,
+      "API-Bank": 3,
+      "BANKING77": 7,
+      "CLINC150+OOS": 6
+    },
+    "4": {
+      "GPQA Diamond": 2,
+      "HellaSwag": 2,
+      "GSM8K": 2,
+      "MuSR": 1,
+      "Amazon ESCI": 6,
+      "Habermas Machine": 7,
+      "MMLU-Pro": 1,
+      "BBH fixed-option tasks": 1,
+      "When2Call MCQ": 16
+    },
+    "5-16": {
+      "ChessBench": 1,
+      "CRUXEval": 1,
+      "HLE": 4,
+      "Habermas Machine": 2,
+      "Home appliance simulator": 2,
+      "MMLU-Pro": 3,
+      "BBH fixed-option tasks": 1,
+      "New Yorker caption matching": 2
+    }
+  },
+  "forward_request_latency_all": {
+    "n": 2008,
+    "sum_seconds": 1315.6832746030777,
+    "median_ms": 270.30275400102255,
+    "mean_ms": 655.2207542844012,
+    "p80_ms": 603.756311199686
+  },
+  "forward_request_latency_ok": {
+    "n": 2000,
+    "sum_seconds": 1314.142698137082,
+    "median_ms": 272.1151580008154,
+    "mean_ms": 657.071349068541,
+    "p80_ms": 603.8152421999257
+  },
+  "whole_index_stage_seconds_including_order_diag": 1531.344,
+  "remaining_stage_seconds_after_index_request_wall_sum": 215.66072539692232,
+  "pricing_at_recorded_rate_not_new_launch_quote": {
+    "usd_per_h100_minute": 0.0495,
+    "original_stage_minutes_including_diag": 25.5224,
+    "original_stage_compute_usd_including_diag": 1.2633588,
+    "forward_request_wall_minutes": 21.92805457671796,
+    "forward_request_wall_compute_usd": 1.085438701547539,
+    "note": "No setup/build/finalize/retry pricing and no new-order latency measurement; not a spend cap."
+  },
+  "counterexample_fixed_original_endpoint": {
+    "2": 0.0,
+    "3": 0.16666666666666669,
+    "4": 0.25,
+    "77": 0.487012987012987
+  },
+  "next_experiment": {
+    "mixed_original_plus_reversed_relabelled": "one new full pass; tests a combined relabelling/order ensemble",
+    "symmetric_relabelled_forward_plus_reversed": "two new full passes; save both probability maps",
+    "position_only": "requires explicit presentation independent of continuation IDs or balanced neutral controls",
+    "status": "not implemented or launched"
+  }
+}
