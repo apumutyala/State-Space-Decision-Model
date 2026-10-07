@@ -12,10 +12,12 @@ Data builders:
 CLI (exit 1 on any hit):
     python -X utf8 -I -m harness.heldout check records.jsonl[.gz] [more files]
 
-A record/generator is refused when any of its tag fields (`source`, `family`, `task_family`, `generator`,
-`name`, `targets`/`target_benchmarks`, also inside `meta`/`metadata`/`provenance`/`aug`) contains a frozen
-catalog id (as int or "catalog:<id>") or, after lower-casing and dropping non-alphanumerics, contains a frozen
-family name or alias as a substring. It is deliberately fail-closed: a false positive is fixed by renaming a tag,
+A record/generator is refused when any non-content leaf (every key except item content such as state/questions/
+expected/labels; keys matched case-insensitively, any nesting depth, free-text descriptions included) names a
+frozen benchmark: a frozen family name or alias as a substring after lower-casing and dropping non-alphanumerics,
+"catalog<sep>NN" anywhere, or any integer token under a key containing target/catalog/benchmark (58, 58.0,
+"58, 9", "catalog-58", dict keys, ids inside lists of dicts). A generator must also declare a NON-EMPTY
+task_family or targets. It is deliberately fail-closed: a false positive is fixed by renaming a tag,
 never by editing the frozen list (that needs a new heldout-draw version and the operator's approval).
 """
 
@@ -29,8 +31,17 @@ import sys
 from harness import config, families
 
 DRAW = config.MANIFEST_DIR / "heldout-draw-v1.json"
-TAG_FIELDS = ("source", "family", "task_family", "generator", "name", "targets", "target_benchmarks", "benchmark", "catalog_id")
-NESTED = ("meta", "metadata", "provenance", "aug")
+# Keys whose values are item CONTENT (prompts, options, gold); never scanned, so item text cannot false-positive.
+CONTENT_KEYS = {"state", "questions", "expected", "labels", "answers", "response", "criteria", "untrusted_fields",
+                "choices", "options", "prompt", "completion", "messages", "text"}
+# Keys whose values (and everything nested under them, dict keys included) are read as benchmark ids: any key
+# containing "catalog" or "benchmark", plus these target spellings. (A bare "target" is NOT one: injection records
+# use it for the hijack's target option, e.g. "k_9e2a6267".)
+ID_KEY_PARTS = ("catalog", "benchmark")
+ID_KEYS = {"targets", "target_benchmark", "target_benchmarks", "target_catalog", "target_catalogs", "target_ids"}
+DECLARE_KEYS = ("task_family", "targets", "target_benchmarks")
+_ID_TOKEN = re.compile(r"(?<![A-Za-z0-9.])\d+(?:\.0+)?(?![A-Za-z0-9])")
+_CATALOG_ANYWHERE = re.compile(r"catalog\s*[:#_\-\s]\s*(\d+)", re.I)
 
 
 class FrozenFamilyError(ValueError):
@@ -78,37 +89,63 @@ def _tokens():
     return out
 
 
-def _tags(obj):
-    for f in TAG_FIELDS:
-        if f in obj and obj[f] is not None:
-            v = obj[f]
-            yield from (v if isinstance(v, (list, tuple, set)) else [v])
-    for f in NESTED:
-        if isinstance(obj.get(f), dict):
-            yield from _tags(obj[f])
+def _is_id_key(k):
+    k = str(k).lower()
+    return k in ID_KEYS or any(part in k for part in ID_KEY_PARTS)
+
+
+def _leaves(obj, id_ctx=False):
+    """(value, is_id_context) for every scalar leaf outside content keys; dict keys under an id key count too."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if str(k).lower() in CONTENT_KEYS:
+                continue
+            ctx = id_ctx or _is_id_key(k)
+            if id_ctx:
+                yield k, True
+            yield from _leaves(v, ctx)
+    elif isinstance(obj, (list, tuple, set)):
+        for v in obj:
+            yield from _leaves(v, id_ctx)
+    elif obj is not None and not isinstance(obj, bool):
+        yield obj, id_ctx
+
+
+def _ids_in(v):
+    if isinstance(v, (int, float)):
+        return [int(v)] if float(v).is_integer() else []
+    return [int(float(t)) for t in _ID_TOKEN.findall(str(v))]
 
 
 def hits(obj):
-    """[(tag, frozen catalog id)] for every tag that names a frozen benchmark/family."""
+    """[(tag, frozen catalog id)] for every non-content leaf that names a frozen benchmark/family.
+
+    - names, families and aliases: substring match on any string leaf (lower-cased, non-alphanumerics dropped),
+      free-text descriptions included;
+    - ids: any standalone integer token (58, 58.0, "58, 9", "catalog-58", dict keys) under an id key (contains
+      catalog/benchmark, or targets/target_benchmarks/...), and "catalog<sep>NN" anywhere."""
     fz = set(frozen())
     out = []
-    for t in _tags(obj):
-        if isinstance(t, bool):
-            continue
-        if isinstance(t, int):
-            if t in fz:
-                out.append((t, t))
-            continue
-        s = str(t)
-        m = re.fullmatch(r"(?:catalog:)?(\d+)", s.strip())
-        if m and int(m.group(1)) in fz:
-            out.append((s, int(m.group(1))))
-            continue
-        ns = _norm(s)
-        for tok, n in _tokens().items():
-            if tok in ns:
-                out.append((s, n))
+    for v, id_ctx in _leaves(obj):
+        if id_ctx:
+            out += [(v, n) for n in _ids_in(v) if n in fz]
+        if isinstance(v, str):
+            out += [(v, int(m)) for m in _CATALOG_ANYWHERE.findall(v) if int(m) in fz]
+            ns = _norm(v)
+            out += [(v, n) for tok, n in _tokens().items() if tok in ns]
     return out
+
+
+def _declared(v):
+    if isinstance(v, bool) or v is None:
+        return False
+    if isinstance(v, (int, float)):
+        return True
+    if isinstance(v, str):
+        return bool(v.strip())
+    if isinstance(v, (list, tuple, set, dict)):
+        return any(_declared(x) for x in (v.keys() if isinstance(v, dict) else v)) or (isinstance(v, dict) and any(_declared(x) for x in v.values()))
+    return False
 
 
 def check_record(rec):
@@ -120,8 +157,8 @@ def check_record(rec):
 
 def check_generator(gen_spec):
     """A generator spec must declare `task_family` or `targets`; refused if either names a frozen family."""
-    if not any(k in gen_spec for k in ("task_family", "targets", "target_benchmarks")):
-        raise FrozenFamilyError("generator spec must declare task_family or targets (fail-closed)")
+    if not any(_declared(gen_spec.get(k)) for k in DECLARE_KEYS):
+        raise FrozenFamilyError("generator spec must declare a non-empty task_family or targets (fail-closed)")
     h = hits(gen_spec)
     if h:
         raise FrozenFamilyError(f"generator {gen_spec.get('name')!r} targets frozen held-out benchmark(s) {sorted({n for _, n in h})}")

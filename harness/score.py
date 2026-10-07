@@ -497,7 +497,26 @@ def decompose(rows, results, clusters="case", edition=None):
         out = {n: b.collapse(lambda g, n=n: ids[(n, g)]) for n, b in out.items()}
     elif clusters != "group":
         raise ValueError(clusters)
+    for n, b in out.items():  # which of this benchmark's rows the system has ANY result for (pairing check)
+        b.result_rows = frozenset(r["_evaluation"]["run_id"] for r in by[n] if r["_evaluation"]["run_id"] in results)
+        b.n_rows = len(by[n])
     return out
+
+
+def missing_results(rows, results):
+    """{catalog_id: n_rows} of slice rows with no entry at all in a results file (scored as wrong if kept)."""
+    out = collections.Counter(r["_evaluation"]["catalog_id"] for r in rows if r["_evaluation"]["run_id"] not in results)
+    return dict(sorted(out.items()))
+
+
+def require_results(rows, results, allow_missing=False, what="results"):
+    """Refuse to score slice rows the results file never saw, unless explicitly allowed. Under 0.3 the usual cause
+    is an old result file without the rebuilt GSM8K twins: use --omit-gsm8k03 (or --allow-missing to score them 0)."""
+    miss = missing_results(rows, results)
+    if miss and not allow_missing:
+        raise SystemExit(f"{what}: {sum(miss.values())} slice rows have no result (by catalog: {miss}). "
+                         "Old file without the 0.3 GSM8K twins? pass --omit-gsm8k03; to score missing rows as wrong pass --allow-missing.")
+    return miss
 
 
 def edition_of(benches):
@@ -540,7 +559,10 @@ def index_from_skills(skills, renormalize=True, edition=None):
 
 
 def point(benches, renormalize=True, edition=None):
-    edition = edition or edition_of(benches)
+    have = edition_of(benches)
+    if edition is not None and config.edition_id(edition) != have:
+        raise ValueError(f"point(edition={edition!r}) but the benches were decomposed under {have}")
+    edition = have
     vals = {n: b.value() for n, b in benches.items()}
     skills = {n: v[1] for n, v in vals.items()}
     return {

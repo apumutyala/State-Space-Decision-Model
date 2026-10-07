@@ -124,10 +124,13 @@ def _rows(subset, edition=None, gsm8k03=True):
             raise SystemExit(f"DEV rows matched {len(rows)} of {len(ids)} subset ids")
         return rows
     # 0.3: the same subset mapped onto the edition (ForecastBench and 0.2.1 GSM8K drop out; GSM8K twins come in)
-    from harness.gsm8k03 import map_ids
+    from harness.gsm8k03 import PREFIX, map_ids
 
-    ids = set(map_ids(subset["run_ids"]))
-    return [r for r in rows_all if r["_evaluation"]["run_id"] in ids]
+    want = {i for i in map_ids(subset["run_ids"]) if not i.startswith(("30:", "48:")) and (gsm8k03 or not i.startswith(PREFIX))}
+    rows = [r for r in rows_all if r["_evaluation"]["run_id"] in want]
+    if len(rows) != len(want):
+        raise SystemExit(f"DEV rows matched {len(rows)} of {len(want)} 0.3 subset ids")
+    return rows
 
 
 def cmd_score(a, subset):
@@ -136,7 +139,9 @@ def cmd_score(a, subset):
 
     ed = getattr(a, "edition", None)
     rows = _rows(subset, ed, not getattr(a, "omit_gsm8k03", False))
-    rep = bootstrap.replicate_skills([score.decompose(rows, load_results(a.results), edition=ed)], B=a.B, seed=a.seed)[0]
+    res = load_results(a.results)
+    score.require_results(rows, res, getattr(a, "allow_missing", False))
+    rep = bootstrap.replicate_skills([score.decompose(rows, res, edition=ed)], B=a.B, seed=a.seed)[0]
     return {"subset_ids_sha256": subset["ids_sha256"], "rows": len(rows), "slice_index": bootstrap.summarize_one(rep, edition=ed)}
 
 
@@ -146,9 +151,13 @@ def cmd_compare(a, subset):
 
     ed = getattr(a, "edition", None)
     rows = _rows(subset, ed, not getattr(a, "omit_gsm8k03", False))
-    c = score.decompose(rows, load_results(a.candidate), edition=ed)
-    b = score.decompose(rows, load_results(a.baseline), edition=ed)
-    out = bootstrap.compare(c, b, B=a.B, seed=a.seed)
+    allow = getattr(a, "allow_missing", False)
+    rc, rb = load_results(a.candidate), load_results(a.baseline)
+    score.require_results(rows, rc, allow, "candidate")
+    score.require_results(rows, rb, allow, "baseline")
+    c = score.decompose(rows, rc, edition=ed)
+    b = score.decompose(rows, rb, edition=ed)
+    out = bootstrap.compare(c, b, B=a.B, seed=a.seed, allow_unaligned=allow)
     out["mde"] = mde.report(out["diff"]["index"]["se"], sum(len(x.clusters) for x in c.values()))
     out["subset_ids_sha256"], out["rows"] = subset["ids_sha256"], len(rows)
     return out
@@ -195,6 +204,7 @@ def main(argv=None):
         if name != "ece":
             s.add_argument("--edition", default=None, choices=["0.2.1", "0.3"], help="default: harness config.EDITION (0.2.1)")
             s.add_argument("--omit-gsm8k03", action="store_true", help="0.3: leave out the rebuilt GSM8K rows (old result files)")
+            s.add_argument("--allow-missing", action="store_true", help="score rows with no result as wrong instead of refusing")
     for s in sub.choices.values():
         s.add_argument("--subset", default=str(SUBSET))
     a = p.parse_args(argv)

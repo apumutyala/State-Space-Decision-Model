@@ -87,7 +87,12 @@ def build_addenda(rows_path=None):
 
 
 def addendum_rows(name):
-    """Rebuilt GSM8K rows of a slice, hash-checked against its addendum manifest. Callers gate TEST."""
+    """Rebuilt GSM8K rows of a slice, hash-checked against its addendum manifest. TEST is gated HERE too (a direct
+    call cannot materialise TEST twins without SSDM_UNSEAL_TEST=1 and SSDM_PREREG; `cli.load_slice` logs the unseal)."""
+    import os
+
+    if name == "test" and (os.environ.get("SSDM_UNSEAL_TEST") != "1" or not os.environ.get("SSDM_PREREG")):
+        raise SystemExit("TEST slice is sealed (0.3 GSM8K addendum): set SSDM_UNSEAL_TEST=1 and SSDM_PREREG for a pre-registered final evaluation.")
     manifest = slicing.read_manifest(manifest_path(name))
     if name == "dev" and DEV_ROWS.exists():
         rows = read_rows(DEV_ROWS)

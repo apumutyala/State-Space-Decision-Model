@@ -23,14 +23,16 @@ class Replicates(dict):
 
 
 def resolve_edition(*reps, edition=None):
-    """The edition shared by every replicate dict (and `edition`, if given). Raises on any disagreement.
-    Plain dicts (no tag) fall back to config.EDITION only when nothing else names an edition."""
+    """The edition shared by every replicate dict (and `edition`, if given). Raises on any disagreement, and when
+    an untagged (plain dict) replicate meets no explicit edition: there is no silent default."""
     tags = {r.edition for r in reps if isinstance(r, Replicates)}
     if edition is not None:
         tags.add(config.edition_id(edition))
     if len(tags) > 1:
         raise ValueError(f"edition mismatch: {sorted(tags)} (replicates and the requested edition must agree)")
-    return tags.pop() if tags else config.EDITION
+    if not tags:
+        raise ValueError("untagged replicates: pass edition= explicitly (no default edition)")
+    return tags.pop()
 
 
 def _weights(rng, n_clusters, B):
@@ -97,13 +99,28 @@ def summarize_one(rep, level=0.95, renormalize=True, edition=None):
     }
 
 
-def compare(candidate_benches, baseline_benches, B=2000, seed=0, level=0.95, renormalize=True):
+def check_aligned(candidate_benches, baseline_benches):
+    """Refuse a pairing in which the two systems have results for different rows of any benchmark (e.g. a new run
+    with the 0.3 GSM8K twins vs an old file without them: the old side would score GSM8K 0)."""
+    bad = {}
+    for n in sorted(set(candidate_benches) & set(baseline_benches)):
+        a, b = (getattr(x[n], "result_rows", None) for x in (candidate_benches, baseline_benches))
+        if a is not None and b is not None and a != b:
+            bad[n] = {"candidate_only": len(a - b), "baseline_only": len(b - a)}
+    if bad:
+        raise ValueError(f"systems have results for different rows: {bad}. Re-run the missing rows, restrict both to the "
+                         "same rows (e.g. --omit-gsm8k03), or pass allow_unaligned=True / --allow-missing deliberately.")
+
+
+def compare(candidate_benches, baseline_benches, B=2000, seed=0, level=0.95, renormalize=True, allow_unaligned=False):
     """Paired CI for candidate - baseline on the index, each area and each benchmark (0-100 scale).
 
     The edition is taken from the benches (`score.decompose(..., edition=...)`); both sides must agree."""
     edition = S.edition_of(candidate_benches)
     if S.edition_of(baseline_benches) != edition:
         raise ValueError("candidate and baseline were decomposed under different editions")
+    if not allow_unaligned:
+        check_aligned(candidate_benches, baseline_benches)
     cand, base = replicate_skills([candidate_benches, baseline_benches], B=B, seed=seed)
     resolve_edition(cand, base, edition=edition)
     cs = {n: v[1] for n, v in cand.items()}

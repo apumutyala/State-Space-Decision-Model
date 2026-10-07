@@ -44,4 +44,4 @@ B = 2,000, seed 0, source-case clusters; all systems in a block share resamples 
 PYTHONPATH=<ssdm-data>/decision-index uv run --with pytest --with torch --with numpy --with pyarrow --with transformers==5.17.0 \
     --index https://download.pytorch.org/whl/cpu --index-strategy unsafe-best-match python -X utf8 -m pytest -q harness/tests jobs
 ```
-Result in `pytest.txt` (148 passed after the 2026-10-07 amendments: edition-enforcing replicates, heldout-draw-v1, 0.3 GSM8K addenda).
+Result in `pytest.txt`.

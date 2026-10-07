@@ -49,6 +49,24 @@ def test_family_groups_follow_the_draw():
     {"name": "device records", "task_family": "device_state_record"},
     {"name": "chess positions", "targets": []},
     {"name": "no declaration"},
+    # re-review B1: empty declarations, dict-keyed ids, free-text descriptions
+    {"name": "x", "targets": []},
+    {"name": "x", "task_family": None},
+    {"name": "x", "task_family": ""},
+    {"name": "x", "targets": {"58": 1}},
+    {"name": "x", "task_family": "logic", "description": "BIG-Bench Hard style"},
+    # re-review S3: more fields, case-insensitive keys, id spellings, list-of-dict targets
+    {"task_family": "x", "dataset": "bbh"},
+    {"task_family": "x", "task": "MuSR-like murder mysteries"},
+    {"task_family": "x", "benchmark_name": "New Yorker"},
+    {"task_family": "x", "tags": ["chess"]},
+    {"task_family": "x", "Meta": {"Source": "cladder-gen"}},
+    {"targets": ["catalog: 58"]},
+    {"targets": ["catalog-58"]},
+    {"targets": [58.0]},
+    {"targets": "58, 9"},
+    {"targets": [{"catalog_id": 58}]},
+    {"targets": [{"id": 44}]},
 ])
 def test_generator_check_refuses_frozen(bad):
     with pytest.raises(heldout.FrozenFamilyError):
@@ -59,6 +77,7 @@ def test_generator_check_refuses_frozen(bad):
     {"name": "gen_cruxeval_exec", "task_family": "code_execution", "targets": [43]},
     {"name": "gen_hover_claims", "task_family": "claim_verification", "targets": [61]},
     {"name": "gen_ragtruth", "targets": ["catalog:59"]},
+    {"name": "gen_hover", "task_family": "claim_verification", "targets": [{"catalog_id": 61}], "description": "HoVer-style multi-hop claims, 3 hops"},
 ])
 def test_generator_check_passes_generatable(ok):
     assert heldout.check_generator(ok) is ok
@@ -95,3 +114,10 @@ def test_manifest_hashes_pinned():
     # the frozen ids themselves, so a re-pinned file with a different draw also fails
     ids_sha = hashlib.sha256(",".join(map(str, heldout.frozen())).encode()).hexdigest()
     assert ids_sha == hashlib.sha256(b"9,20,22,31,32,33,44,58,64").hexdigest()
+
+
+def test_record_check_ignores_item_content_and_option_targets():
+    # injection records name a hijack target option ("target": "k_9e2a6267"); content keys are never scanned
+    rec = {"id": "m2:x~inj", "source": "mmlu_aux", "family": "mcq", "aug": {"injection": {"target": "k_9e2a6267"}},
+           "state": "The New Yorker cartoon about chess and BBH", "questions": {"q": {"criteria": {"A": "CLadder"}}}, "labels": {"result": 9}}
+    assert heldout.check_record(rec) is rec

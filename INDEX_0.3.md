@@ -21,7 +21,7 @@ Written 2026-10-06 (Track D), amended 2026-10-07. Everything below was fetched f
    - On the m1 subset, the 1-layer GDN conversion stays above stock: **+1.52 [+0.04, +3.02]**.
    - All three of our backbones remain 14–29 points below Clef-flash.
 6. **New held-out-family split (families-v1).**
-   - 18 of the 37 0.3 benchmarks have no training coverage in our 150k mix. They are the local "new-domain proxy".
+   - 18 of the 37 0.3 benchmarks have no training coverage in our 150k mix. Since the 2026-10-07 seeded draw, only their 9-benchmark FROZEN half is the local "new-domain proxy" (section 5.1); the other 9 may receive generated training data.
    - Clef-flash's DEV in-domain minus proxy gap is +10.9 [6.9, 14.1]. Untrained stock Qwen3.5-9B's gap is even larger (+16.3), so the proxy benchmarks are also intrinsically harder.
    - The usable signal is therefore the *paired change vs the parent* on each tier, not the raw gap (section 5).
 
@@ -102,7 +102,7 @@ For orientation, the board's full-suite public 0.3 score for Clef-flash is 56.15
 
 Takeaways:
 - The edition change moves our numbers by under 1 point. The ranking of our arms and their gaps to Clef-flash do not change.
-- The 1-layer conversion's small gain survives 0.3, with the CI barely above zero. It is concentrated on the new-domain proxy: +2.59 [+0.53, +4.63] there, vs +0.37 [−1.91, +2.97] in-domain.
+- The 1-layer conversion's small gain survives 0.3, with the CI barely above zero. It is concentrated on the zero-coverage ("none") tier: +2.59 [+0.53, +4.63] there, vs +0.37 [−1.91, +2.97] in-domain.
 
 ### 3.3 What the board says that DEV cannot
 
@@ -137,7 +137,10 @@ GOAL.md: "beats every Cloudflare Clef model … on the full Decision Index 0.2.1
    - **Same-skill proxy** = fresh items for the same skills that no public suite row and no training row comes from. Options, cheapest first:
      - (a) the **DEV "same_family" tier** (families-v1: 11 benchmarks whose task family, but not dataset, we train on);
      - (b) **re-generated items** from public generators for the generator-backed benchmarks (CLadder, MuSR, CRUXEval-style executed functions, GSM8K-style rebuilt options, Home-appliances-style device records), drawn fresh with a held-out seed. This needs a pinned generator receipt and our dedup guard.
-   - **New-domain proxy** = the **families-v1 "none" tier** (18 benchmarks in 0.3 with zero coverage in our 150k mix). Better still: a frozen **held-out task-generator set** we never train on (for example 3–5 decision formats absent from both the Index and our data).
+       - **Eval-only for frozen benchmarks.** CLadder (44), MuSR (32) and Home appliances (9) are in the heldout-draw-v1 FROZEN half (section 5.1). Generators for them may only produce *evaluation* items and can never feed training or distillation; `harness.heldout.check_generator` / `check_record` refuse them at build time.
+       - Only generators for GENERATABLE benchmarks (e.g. CRUXEval 43) or non-Index skills may also produce training data.
+   - **New-domain proxy** = the **9 FROZEN benchmarks of heldout-draw-v1** (Home appliances 9, BPoMP 20, POP909 22, ChessBench 31, MuSR 32, SATA-Bench 33, CLadder 44, BBH 58, New Yorker 64; section 5.1). It is **not** the whole 18-benchmark families-v1 "none" tier: the other 9 are generatable and lose proxy status once E6 trains on them.
+   - **Second, independent new-domain proxy (planned):** a frozen **held-out task-generator set** we never train on (for example 3–5 decision formats absent from both the Index and our data).
    - Every candidate reports in-domain and new-domain-proxy scores and their paired Δ vs the parent and vs Clef-flash.
 3. **G-full: the board.**
    - What: after G-pub and G-proxy pass, and only with explicit user approval at that moment, submit to the board. The maintainers' Full score is the only measure of the private 80%.
@@ -179,11 +182,11 @@ Still open for the operator: whether to reorder the tiers in PLAN.md.
 |---|---|
 | same_source (8) | GSM8K 30, WinoGrande 28, ANLI 12, HellaSwag 29, BANKING77 4, CLINC 5, When2Call 62, Humicroedit 21 |
 | same_family (11) | MMLU-Pro 57, GPQA 25, HLE 45 (academic MCQ via mmlu_aux); ContractNLI 11, NLI4CT 42 (NLI); FinEntity 39 (sentiment); BRIGHT 36, ESCI 37 (relevance via NQ); BFCL 1, API-Bank 3, ToolRet 2 (function selection via Glaive/ToolACE) |
-| **none = new-domain proxy (18)** | ChessBench 31, MuSR 32, SATA 33, CRUXEval 43, CLadder 44, BBH 58; ACOS 38, iSarcasmEval 40, VAST 41, RAGTruth 59; PhishNChips 56, HoVer 61; Home appliances 9; BPoMP 20, POP909 22, cfcolor 23, Habermas 50, New Yorker 64 (ForecastBench 48 in 0.2.1 only) |
+| **none (18; its FROZEN half is the new-domain proxy, section 5.1)** | ChessBench 31, MuSR 32, SATA 33, CRUXEval 43, CLadder 44, BBH 58; ACOS 38, iSarcasmEval 40, VAST 41, RAGTruth 59; PhishNChips 56, HoVer 61; Home appliances 9; BPoMP 20, POP909 22, cfcolor 23, Habermas 50, New Yorker 64 (ForecastBench 48 in 0.2.1 only) |
 
 Measured on DEV (0.3 public, no GSM8K):
 
-| System | in-domain | new-domain proxy | in − proxy |
+| System | in-domain | whole "none" tier (18) | in − none |
 |---|---|---|---|
 | Clef-flash (full DEV) | 60.47 [58.58, 62.02] | 49.56 [46.86, 53.05] | +10.90 [6.90, 14.06] |
 | Q9 stock (subset) | 43.98 | 27.65 | +16.34 [8.77, 23.86] |

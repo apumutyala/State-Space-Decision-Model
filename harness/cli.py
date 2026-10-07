@@ -124,6 +124,7 @@ def cmd_slice(a):
 def cmd_score(a):
     rows = load_slice(a.slice, a.edition, not a.omit_gsm8k03)
     res = load_results(a.results)
+    score.require_results(rows, res, a.allow_missing)
     off = score.official(rows, res, edition=a.edition)
     benches = score.decompose(rows, res, edition=a.edition)
     rep = bootstrap.replicate_skills([benches], B=a.B, seed=a.seed)[0]
@@ -133,9 +134,12 @@ def cmd_score(a):
 
 def cmd_compare(a):
     rows = load_slice(a.slice, a.edition, not a.omit_gsm8k03)
-    c = score.decompose(rows, load_results(a.candidate), edition=a.edition)
-    b = score.decompose(rows, load_results(a.baseline), edition=a.edition)
-    out = bootstrap.compare(c, b, B=a.B, seed=a.seed)
+    rc, rb = load_results(a.candidate), load_results(a.baseline)
+    score.require_results(rows, rc, a.allow_missing, "candidate")
+    score.require_results(rows, rb, a.allow_missing, "baseline")
+    c = score.decompose(rows, rc, edition=a.edition)
+    b = score.decompose(rows, rb, edition=a.edition)
+    out = bootstrap.compare(c, b, B=a.B, seed=a.seed, allow_unaligned=a.allow_missing)
     out["mde"] = mde.report(out["diff"]["index"]["se"], sum(len(x.clusters) for x in c.values()))
     print(json.dumps(out, indent=1))
 
@@ -186,6 +190,7 @@ def main(argv=None):
         s.add_argument("--seed", type=int, default=0)
         s.add_argument("--edition", default=config.EDITION, choices=config.EDITIONS)
         s.add_argument("--omit-gsm8k03", action="store_true", help="0.3: leave out the rebuilt GSM8K rows (old result files)")
+        s.add_argument("--allow-missing", action="store_true", help="score slice rows with no result as wrong instead of refusing")
     s = sub.add_parser("compare")
     s.add_argument("--candidate", required=True)
     s.add_argument("--baseline", required=True)
@@ -194,6 +199,7 @@ def main(argv=None):
     s.add_argument("--seed", type=int, default=0)
     s.add_argument("--edition", default=config.EDITION, choices=config.EDITIONS)
     s.add_argument("--omit-gsm8k03", action="store_true", help="0.3: leave out the rebuilt GSM8K rows (old result files)")
+    s.add_argument("--allow-missing", action="store_true", help="score missing rows as wrong and allow unaligned pairing")
     s = sub.add_parser("mde")
     s.add_argument("--se", type=float, required=True)
     s.add_argument("--clusters", type=int, required=True)
