@@ -14,6 +14,25 @@ from harness import score as S
 from harness.suite import spec
 
 
+class Replicates(dict):
+    """{n: (raw[B+1], skill[B+1])} for one system, tagged with the edition its benches were decomposed under."""
+
+    def __init__(self, data, edition):
+        super().__init__(data)
+        self.edition = config.edition_id(edition)
+
+
+def resolve_edition(*reps, edition=None):
+    """The edition shared by every replicate dict (and `edition`, if given). Raises on any disagreement.
+    Plain dicts (no tag) fall back to config.EDITION only when nothing else names an edition."""
+    tags = {r.edition for r in reps if isinstance(r, Replicates)}
+    if edition is not None:
+        tags.add(config.edition_id(edition))
+    if len(tags) > 1:
+        raise ValueError(f"edition mismatch: {sorted(tags)} (replicates and the requested edition must agree)")
+    return tags.pop() if tags else config.EDITION
+
+
 def _weights(rng, n_clusters, B):
     return rng.multinomial(n_clusters, np.full(n_clusters, 1.0 / n_clusters), size=B).astype(np.float64)
 
@@ -25,6 +44,9 @@ def replicate_skills(benches_list, B=2000, seed=0):
     if not benches_list or not benches_list[0]:
         raise ValueError("no systems / benchmarks to resample")
     keys = [set(b) for b in benches_list]
+    eds = [S.edition_of(b) for b in benches_list]
+    if len(set(eds)) > 1:
+        raise ValueError(f"systems were decomposed under different editions: {eds}")
     if any(k != keys[0] for k in keys[1:]):
         diff = sorted(set().union(*keys) - set.intersection(*keys))
         raise ValueError(f"systems must cover identical benchmark sets before pairing; mismatched: {diff}")
@@ -42,7 +64,7 @@ def replicate_skills(benches_list, B=2000, seed=0):
         for k, bl in enumerate(benches_list):
             raw, skill = bl[n].value(W @ bl[n].S)
             out[k][n] = (raw, skill)
-    return out
+    return [Replicates(o, eds[0]) for o in out]
 
 
 def _ci(x, level=0.95):
@@ -63,7 +85,8 @@ def area_skills(skills, renormalize=True, edition=None):
 
 
 def summarize_one(rep, level=0.95, renormalize=True, edition=None):
-    """`edition` must match the one the benches were decomposed under (default config.EDITION)."""
+    """Edition comes from the replicates (`replicate_skills` tags them); passing a different one raises."""
+    edition = resolve_edition(rep, edition=edition)
     skills = {n: v[1] for n, v in rep.items()}
     idx = S.index_from_skills(skills, renormalize, edition)
     return {
@@ -82,6 +105,7 @@ def compare(candidate_benches, baseline_benches, B=2000, seed=0, level=0.95, ren
     if S.edition_of(baseline_benches) != edition:
         raise ValueError("candidate and baseline were decomposed under different editions")
     cand, base = replicate_skills([candidate_benches, baseline_benches], B=B, seed=seed)
+    resolve_edition(cand, base, edition=edition)
     cs = {n: v[1] for n, v in cand.items()}
     bs = {n: v[1] for n, v in base.items()}
     diff_idx = S.index_from_skills(cs, renormalize, edition) - S.index_from_skills(bs, renormalize, edition)

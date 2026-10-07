@@ -11,7 +11,8 @@ SPACE_COMMIT = "cdbd1cab3b6eb1811ebd82d2686ad563a4d0fc0d"  # methodology-v0.2.1.
 METHODOLOGY_SHA256 = "3724d15e6698d9a5c39fd2fc9ab70c5cc94a03aeea8fdefe2b8b30ec72420ce8"
 BOARD_INDEX_SHA256 = "37526dd3f3d8f06e37722ef749344a7c877ed31260bad37de2e348cca1220d50"
 
-# Default edition stays 0.2.1 so every existing receipt reproduces byte-for-byte. Pass
+# Default edition stays 0.2.1 so every existing receipt reproduces the same NUMBERS (score/compare JSON now also
+# carries an "edition" key, so output bytes differ by that key). Pass
 # `edition="0.3"` (or `--edition 0.3` on the CLI) for the 0.3 *public* index. See INDEX_0.3.md.
 EDITION = "0.2.1"
 EDITIONS = ("0.2.1", "0.3")
@@ -27,6 +28,9 @@ GSM8K_03_RUN_ID_PREFIX = "v0.3-gsm8k:"  # editions.py@62d2f51: replaced={30: "v0
 # Rebuilt 0.3 GSM8K rows (kit PR #74 gsm8k_v3.build over the pinned GSM8K test parquet + our 0.2 rows);
 # uncompressed sha256 pinned in editions.py@62d2f51 and reproduced locally byte-identically.
 GSM8K_03_SHA256 = "759334894858a37d6bd7bd07298eac8e55da236e31dad327ccd06a9979f4738a"
+# Frozen contracts (new versions get new files; tests and loaders enforce these hashes).
+FAMILIES_V1_SHA256 = "e0e4bd5f76ca928f2a05c3f52150592aed462b4018350346eb723e9b40096f46"  # manifests/families-v1.json
+HELDOUT_DRAW_V1_SHA256 = "c3172003e65e933450337476e6122b2fa90d187cf8d09c56852e7a038915a4cb"  # manifests/heldout-draw-v1.json
 RETIRED = {"0.2.1": (), "0.3": (48,)}  # ForecastBench retired in 0.3
 REPLACED = {"0.2.1": {}, "0.3": {30: GSM8K_03_RUN_ID_PREFIX}}  # GSM8K rows rebuilt in 0.3
 # Board data for 0.3 (Space multimodalart/jev-decision-index @ 6ceab83, fetched 2026-10-06).

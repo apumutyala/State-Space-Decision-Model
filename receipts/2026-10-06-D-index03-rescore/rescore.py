@@ -82,7 +82,7 @@ def main():
     sub_rows = [r for r in dev if r["_evaluation"]["run_id"] in ids]
     assert len(sub_rows) == len(ids) == 2008
     res = {k: load_results(p) for k, p in FILES.items()}
-    out = {"B": B, "seed": SEED, "families": families.load()["id"],
+    out = {"B": B, "seed": SEED, "families": families.load()["id"], "families_sha256": families.sha256(), "heldout_draw": "heldout-draw-v1",
            "inputs": {k: {"path": p.relative_to(S).as_posix(), "sha256": sha(p), "rows": len(res[k])} for k, p in FILES.items()},
            "dev_rows": len(dev), "subset": {"ids_sha256": sub["ids_sha256"], "rows": len(sub_rows)}}
     for k, r in res.items():

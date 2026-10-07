@@ -5,6 +5,9 @@ import pytest
 
 from harness import config, families, heldout
 
+# Literal pins (deliberately duplicated from config so editing both is required to move them)
+FAMILIES_V1_SHA256 = "e0e4bd5f76ca928f2a05c3f52150592aed462b4018350346eb723e9b40096f46"
+HELDOUT_DRAW_V1_SHA256 = "c3172003e65e933450337476e6122b2fa90d187cf8d09c56852e7a038915a4cb"
 M150K = config.DATA_ROOT / "m2" / "build" / "sample-150000-seed20261006" / "sample-150000-seed20261006.manifest.jsonl.gz"
 
 # (source, family) pairs present in the committed 150k build (manifest sha256 0be33669...)
@@ -80,3 +83,15 @@ def test_training_source_families_are_not_frozen():
 def test_existing_150k_manifest_passes():
     rep = heldout.check_files([M150K])
     assert rep["records"] == 150000 and rep["refused"] == 0
+
+
+def test_manifest_hashes_pinned():
+    import hashlib
+
+    # families-v1 and heldout-draw-v1 are frozen contracts: any edit must be a new version file
+    assert hashlib.sha256(families.FAMILIES.read_bytes()).hexdigest() == FAMILIES_V1_SHA256
+    assert hashlib.sha256(heldout.DRAW.read_bytes()).hexdigest() == HELDOUT_DRAW_V1_SHA256
+    assert (config.FAMILIES_V1_SHA256, config.HELDOUT_DRAW_V1_SHA256) == (FAMILIES_V1_SHA256, HELDOUT_DRAW_V1_SHA256)
+    # the frozen ids themselves, so a re-pinned file with a different draw also fails
+    ids_sha = hashlib.sha256(",".join(map(str, heldout.frozen())).encode()).hexdigest()
+    assert ids_sha == hashlib.sha256(b"9,20,22,31,32,33,44,58,64").hexdigest()

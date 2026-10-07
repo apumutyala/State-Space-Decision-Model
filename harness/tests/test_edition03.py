@@ -181,3 +181,26 @@ def test_edition_rows_filters_dev(dev_rows):
     cats = {r["_evaluation"]["catalog_id"] for r in kept}
     assert 48 not in cats and 30 not in cats and len(kept) < len(dev_rows)
     assert len(edition_rows(dev_rows, "0.2.1")) == len(dev_rows)
+
+
+# ----------------------------------------------------------------------------- review fix: no silent edition default
+
+
+def test_summaries_carry_and_enforce_the_edition(dev_rows, noisy03):
+    b03 = score.decompose(dev_rows, noisy03, edition="0.3")
+    b21 = score.decompose(dev_rows, noisy03)
+    (r03,) = bootstrap.replicate_skills([b03], B=20, seed=0)
+    (r21,) = bootstrap.replicate_skills([b21], B=20, seed=0)
+    assert r03.edition == "0.3" and r21.edition == "0.2.1"
+    s = bootstrap.summarize_one(r03)  # no edition argument: must NOT fall back to 0.2.1 weights
+    assert s["edition"] == "0.3" and s["index"]["point"] == pytest.approx(score.point(b03)["index"], abs=1e-9)
+    with pytest.raises(ValueError):
+        bootstrap.summarize_one(r03, edition="0.2.1")
+    with pytest.raises(ValueError):
+        bootstrap.replicate_skills([b03, b21], B=5)
+    assert families.summarize(r03)["edition"] == "0.3"
+    with pytest.raises(ValueError):
+        families.summarize(r03, edition="0.2.1")
+    with pytest.raises(ValueError):
+        families.compare(r03, r21)
+    assert families.compare(r03, r03)["edition"] == "0.3"

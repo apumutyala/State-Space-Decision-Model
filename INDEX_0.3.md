@@ -1,6 +1,6 @@
-# Decision Index 0.3: verified facts, what changed for us, and a retarget proposal
+# Decision Index 0.3: verified facts, what changed for us, and the working retarget
 
-Written 2026-10-06 (Track D). Everything below was fetched from primary sources on 2026-10-06 between 17:20 and 17:45 UTC. Hashes and URLs are in `receipts/2026-10-06-D-index03-rescore/README.md`. **This file is a proposal; `GOAL.md` and `PLAN.md` are not edited. The retarget in section 4 is the user's decision.**
+Written 2026-10-06 (Track D), amended 2026-10-07. Everything below was fetched from primary sources on 2026-10-06 between 17:20 and 17:45 UTC. Hashes and URLs are in `receipts/2026-10-06-D-index03-rescore/README.md`. `GOAL.md` and `PLAN.md` are not edited. **The section 4 reading was adopted 2026-10-07 by the coordinator under the operator's delegation; the operator may override it.**
 
 ## 0. Summary
 
@@ -58,13 +58,13 @@ V = verified verbatim in a primary source. V* = verified, but PR #92's wording n
 | Headline | public index (38 benchmarks) | **Full** = 0.2 pub + 0.5 eq(same) + 0.3 eq(new) | `harness/full03.py` (arithmetic only; private parts come from the board) |
 | Public panel | 38 | 37: −ForecastBench; GSM8K rows replaced; WinoGrande K | `config.EDITIONS`, `suite.spec(edition)`, `suite.in_edition`, vendored `harness/editions_data/index-0.3.json` (sha `158c3843…`) |
 | Area weights | √n with Arts fixed at 10% | the same numbers, now `fixed` | from the spec; tested |
-| GSM8K | 2,638 rows (center-value artifact) | 2,638 rebuilt `v0.3-gsm8k:` rows | 0.2.1 GSM8K rows are dropped under 0.3. **Our DEV slice has no rebuilt rows yet**, so 0.3 DEV scores omit GSM8K and spread its weight over K (slice index). Follow-up: `suite rebuild` the GSM8K rows (CPU, $0) and amend the DEV/TEST manifests by the same seed rule. |
+| GSM8K | 2,638 rows (center-value artifact) | 2,638 rebuilt `v0.3-gsm8k:` rows | **Rebuilt locally** (CPU, $0) with kit PR #74's `gsm8k_v3.build` from the pinned GSM8K test parquet (`openai/gsm8k@740312a`, sha256 `ee7b8da9…`): byte-identical to the board's file (uncompressed sha256 `75933489…`). **Slices amended** (`harness/gsm8k03.py`): each slice gets the rebuilt twins of its own GSM8K rows (run id `v0.3-gsm8k:` + the 0.2.1 id; same id, group, track and state), a pure ID mapping of the committed manifests. DEV 262 / TEST 262 rows, disjoint, no source overlap. 58 answer groups (shared *numeric* option sets) span both sides, because 0.3 distractors are other test problems' golds; no question text is shared. The TEST addendum is IDs and hashes only and is never materialised; TEST loads keep the unseal gate. `load_slice(name, edition="0.3")` includes the twins; `--omit-gsm8k03` leaves them out for old result files that never ran them. The section 3 re-score omits GSM8K for exactly that reason. |
 | Ties | 0.25 on public | 0.9 on Full | `full03.ranks` |
 | Latency gate | median ≤ 1 s | median, mean **and** p80 ≤ 1 s | none needed in the harness. The m3 serving-latency report must now give mean and p80. |
 | Submission | public run + PR line | the same, plus model repo on the Hub, inference code or a `/v1/systemone` server, and settings, because the maintainers re-run privately | none. This is an outward-facing step and needs the user's explicit approval at the time. |
 | ECE note | 32 benchmarks, "ToolRet, BRIGHT, RouterBench and ForecastBench excluded" | the same note without ForecastBench | unchanged. `board_ece` was already flagged not board-comparable. |
 
-The default stays **0.2.1**, so every existing receipt reproduces unchanged. `--edition 0.3` is opt-in on `python -m harness score|compare` and `python -m jobs.common.dev_subset score|compare`. Tests: `harness/tests/test_edition03.py` (25 tests). They check:
+The default stays **0.2.1**, so every existing receipt reproduces the same numbers. The score/compare JSON now also carries an `"edition"` key, so the output bytes differ by that key only. `--edition 0.3` is opt-in on `python -m harness score|compare` and `python -m jobs.common.dev_subset score|compare`. Replicates carry their edition: `summarize_one`, `families.summarize` and `families.compare` take it from the replicates and raise on any disagreement, so there is no silent 0.2.1 default. Tests: `harness/tests/test_edition03.py`, `test_gsm8k03.py`, `test_heldout.py` (148 tests pass across `harness/tests` and `jobs`). They check:
 - the 0.3 public index against the kit fixture for 11 entrants and the live board for Clef and Clef-flash;
 - Full and tie ranks against all 112 live entrants;
 - DEV-slice parity between the official kit path and our decomposition under 0.3;
@@ -119,7 +119,9 @@ Per-benchmark public raw score vs the undocumented `private_eq` (live `index.jso
 
 If `private_eq` is what it appears to be, Clef-flash's largest public advantages (Home appliances, WinoGrande, CRUXEval) mostly do not carry over to the private same-skill tests. That fits PR #92's "format supervision" hypothesis but does not prove it.
 
-## 4. Retarget PROPOSAL (user decision; GOAL.md and PLAN.md untouched)
+## 4. Retarget: working interpretation (adopted 2026-10-07 by the coordinator under the operator's delegation; operator may override)
+
+GOAL.md and PLAN.md are untouched. This is the working reading of GOAL.md's "the edition current at submission".
 
 GOAL.md: "beats every Cloudflare Clef model … on the full Decision Index 0.2.1 (or the edition current at submission) … a paired confidence interval for candidate-minus-Clef that sits above zero". Under 0.3, 80% of the score is private and unpublished, so that sentence can only be met in parts.
 
@@ -152,10 +154,22 @@ GOAL.md: "beats every Cloudflare Clef model … on the full Decision Index 0.2.1
 
 Each raw private point is worth about 0.51 Full points (same-skills) or 0.40 (new-domains). A public point is worth 0.20. The private same-skill score is the lever. Nimble shows the profile that wins: public 57.2, same 52.3, new 49.1. Clef-flash's own private profile (44.0 / 42.5) is what we must beat.
 
-**Decisions needed from the user:**
-- (i) Accept the three-gate reading, or pick another.
-- (ii) Freeze families-v1's "none" tier as **held out from training** (excluded from data and generator work) so it stays a valid proxy. This conflicts with PR #92's E6, which wants generator data for CRUXEval/CLadder/Home appliances, all currently in "none". Alternative: let E6 proceed, move those benchmarks to `same_family` in a families-v2, and build a held-out *generator* new-domain set instead.
-- (iii) Whether T1 (Nimble 54.67 on Full) remains a local milestone stated on the public portion plus proxies.
+**Restated T1–T3 against the 0.3 board** (PLAN.md's tiers keep their comparators; numbers from `v03.json`; "beat" = Full above the comparator by more than the 0.9 tie band, plus G-pub and G-proxy passed locally):
+
+| Tier | PLAN.md (0.2.1) | 0.3 restatement | Full needed |
+|---|---|---|---|
+| T1 | First attention-free entrant; beats the best non-Clef 9B open entrant (Nimble-9B-v3, 56.88); ECE in the board's top 3; steer rate reported | First attention-free entrant; beats the best 9B entrant on Full, which is still Nimble-9B-v3 (54.67, rank 18; the next 9B is JevK5-9B at 48.35); ECE and steer rate reported as before | ≥ 55.57 |
+| T2 | Beats Jev (57.91) and Clef-flash (≈57.07) | Beats Clef-flash (47.61, =31) **and** Jev (60.11, =2) on Full | ≥ 48.51 and ≥ 61.01 |
+| T3 | Beats Clef (61.98, pending) | Beats Clef (53.08, rank 19) on Full | ≥ 53.98 |
+
+What the reorder means: on 0.3, Clef (53.08) sits *below* T1's Nimble bar (54.67), and Jev sits above all of them. So T1 implies T3 and T2's Clef-flash half. The hardest gate is now Jev, in T2. The tiers are restated literally and not reordered; reordering is a PLAN.md change and is left to the operator.
+
+**Resolved by the coordinator (2026-10-07):**
+- (i) The three-gate reading above is adopted.
+- (ii) The held-out families are split by a seeded draw, not frozen wholesale (section 5.1).
+- (iii) T1–T3 are restated as above.
+
+Still open for the operator: whether to reorder the tiers in PLAN.md.
 
 ## 5. Held-out-family split (E1), as implemented
 
@@ -181,7 +195,40 @@ How to read it:
 - A candidate's *generalisation* is therefore its paired gain over its own parent on the proxy, compared with its gain in-domain (`families.compare`).
 - A training change that raises in-domain but not proxy is the 0.3 failure mode, and does not count.
 
-**Caveats:**
+### 5.1 Frozen vs generatable half (heldout-draw-v1, adopted 2026-10-07)
+
+The 18 "none" benchmarks were split by a seeded draw, committed before any generator data existed (`harness/manifests/heldout-draw-v1.json`, sha256 `c3172003…`; reproduced by `harness.heldout.draw` and tested).
+- Seed **20261007**.
+- Procedure: key(n) = sha256(`heldout-draw-v1:{seed}:{n}`) for each catalog id n; sort ascending; the first 9 are frozen.
+
+| Half | Benchmarks |
+|---|---|
+| **FROZEN** (new-domain proxy; never targeted by training data or generators) | Home appliances 9, BPoMP 20, POP909 22, ChessBench 31, MuSR 32, SATA-Bench 33, CLadder 44, BBH 58, New Yorker 64 |
+| GENERATABLE (PR #92 E6 may add generated data) | cfcolor 23, ACOS 38, iSarcasmEval 40, VAST 41, CRUXEval 43, Habermas 50, PhishNChips 56, RAGTruth 59, HoVer 61 |
+
+- The draw put CLadder and Home appliances in the frozen half and CRUXEval in the generatable half. That is binding for E6.
+- `harness.heldout.check_record` / `check_generator` (and `python -m harness.heldout check FILE`) refuse any record or generator whose tags name a frozen benchmark, catalog id, family or alias. The check is fail-closed.
+- The existing 150k build passes: 0 of 150,000 records refused (`receipts/2026-10-06-D-index03-rescore/heldout-check-150k.json`).
+- Interface issue #97 (decision-needed for Codex) covers the new shared files under `harness/manifests/`.
+
+Measured on DEV (0.3 public, no GSM8K):
+
+| System | in-domain | frozen proxy | generatable half |
+|---|---|---|---|
+| Clef-flash (full DEV) | 60.47 [58.58, 62.02] | 68.71 [65.69, 71.14] | 45.06 [41.66, 49.62] |
+| Q9 stock (subset) | 43.98 | 22.18 | 23.28 |
+| Q9 1-GDN (subset) | 44.35 | 23.17 | 26.63 |
+| RWKV7-13.3B (subset) | 28.14 | 7.93 | 19.05 |
+| Q9 1-GDN − stock (paired) | +0.37 [−1.91, +2.97] | +0.99 [−1.55, +3.61] | +3.35 [−0.46, +7.28] |
+
+Caveats on the frozen half:
+- **It covers only three areas** (Knowledge: 31, 32, 33, 44, 58; Tools: 9; Arts: 20, 22, 64). It has no Language or Retrieval benchmark. The proxy index renormalises over those three areas.
+- It contains Clef-flash's most format-inflated public benchmarks (Home appliances, CLadder, SATA). That is why Clef-flash scores *higher* on the frozen half (68.7) than in-domain, while every stock backbone scores far lower.
+- Compare candidates against their own parent on this proxy, not against Clef-flash's level.
+- The second, independent new-domain proxy is a frozen set of held-out task *generators* (3–5 decision formats absent from both the Index and our data). It is kept as planned work and is not built yet.
+
+### 5.2 Caveats
+
 - Tier assignment is a judgement made once, by task family, before any score was seen. The rationale is in the JSON. GPQA and HLE are the weakest "same_family" calls (mmlu_aux is far easier), and moving them to "none" is defensible.
 - DEV proxy CIs are wide on the 2,008-row subset (±6). Use full DEV for decisions.
 - The proxy is public and the board's new-domain set is private and unknown. Agreement between them is untested until we have a board submission.

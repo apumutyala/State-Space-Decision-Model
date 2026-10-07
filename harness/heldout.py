@@ -39,7 +39,10 @@ class FrozenFamilyError(ValueError):
 
 @functools.lru_cache(maxsize=None)
 def spec():
-    return json.loads(DRAW.read_text(encoding="utf-8"))
+    raw = DRAW.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != config.HELDOUT_DRAW_V1_SHA256:
+        raise RuntimeError("heldout-draw-v1.json changed; it is frozen -- a new draw needs a new version file and operator approval")
+    return json.loads(raw.decode("utf-8"))
 
 
 def pool(edition="0.3"):

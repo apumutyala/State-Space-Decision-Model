@@ -26,8 +26,16 @@ GROUPS = {"same_source": ("same_source",), "same_family": ("same_family",), "in_
           "new_domain_frozen": "frozen", "new_domain_generatable": "generatable"}
 
 
+def sha256(path=None):
+    import hashlib
+
+    return hashlib.sha256((path or FAMILIES).read_bytes()).hexdigest()
+
+
 @functools.lru_cache(maxsize=None)
 def load(path=None):
+    if path is None and sha256() != config.FAMILIES_V1_SHA256:
+        raise RuntimeError("families-v1.json changed; it is frozen -- write families-v2.json instead")
     d = json.loads((path or FAMILIES).read_text(encoding="utf-8"))
     for n, b in d["benchmarks"].items():
         if b["tier"] not in TIERS:
@@ -71,8 +79,11 @@ def _ci(x, level=0.95):
 
 def summarize(rep, edition=None, level=0.95):
     """rep: one system's `bootstrap.replicate_skills` output -> {group: CI} plus the gap in-domain minus proxy."""
+    from harness.bootstrap import resolve_edition
+
+    edition = resolve_edition(rep, edition=edition)
     skills = {n: v[1] for n, v in rep.items()}
-    out = {"families": load()["id"], "edition": config.edition_id(edition)}
+    out = {"families": load()["id"], "families_sha256": sha256(), "edition": edition}
     vals = {}
     for g in GROUPS:
         ids = members(g, edition)
@@ -85,9 +96,12 @@ def summarize(rep, edition=None, level=0.95):
 
 def compare(cand_rep, base_rep, edition=None, level=0.95):
     """Paired per-group CI for candidate - baseline (both from one `replicate_skills` call)."""
+    from harness.bootstrap import resolve_edition
+
+    edition = resolve_edition(cand_rep, base_rep, edition=edition)
     cs = {n: v[1] for n, v in cand_rep.items()}
     bs = {n: v[1] for n, v in base_rep.items()}
-    out = {"families": load()["id"], "edition": config.edition_id(edition)}
+    out = {"families": load()["id"], "families_sha256": sha256(), "edition": edition}
     for g in GROUPS:
         ids = members(g, edition)
         out[g] = _ci(group_index(cs, ids, edition) - group_index(bs, ids, edition), level)
