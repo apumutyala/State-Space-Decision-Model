@@ -25,15 +25,28 @@ def resume_baseline(steps):
 
 
 def run_progressive(order, prog, gate, ops, max_layers=None, past_deadline=lambda: False, persist=lambda p: None,
-                    log=lambda rec, phase="": None):
+                    log=lambda rec, phase="": None, probe_after_deadline=False):
     """ops: load(n_done), snapshot(converted)->snap, train(k, i, trial)->dict, evaluate(trial)->gate_eval dict,
-    restore(snap, i), save(n_done), teacher_nll()->float, probe(converted)->tag|None."""
+    restore(snap, i), save(n_done), teacher_nll()->float, probe(converted)->tag|None.
+
+    probe_after_deadline (jobs/full8, Amendment A1 B2): an accepted layer's probes run even past the deadline (the
+    deadline then only stops NEW layers). Independently, on resume the last accepted step's probes are re-run if that
+    step has none (a deadline-skipped or interrupted probe), so the final model's numbers can never be lost for good."""
     policy = gate.get("policy", "force")
     if policy not in ("force", "enforce", "rollback"):
         raise ValueError(policy)
     if prog["steps"]:
         ops.load(len(prog["steps"]))  # checkpoint written after step n: accepted weights (+ rolled-back layer reset)
     converted = list(prog["converted"])
+    last = next((r for r in reversed(prog["steps"]) if r["accepted"]), None)
+    if last is not None and not last.get("probe_tag"):  # resume repair: the loaded weights ARE that model
+        tag = ops.probe(converted)
+        if tag:
+            last["probe_tag"] = tag
+            last.pop("probes_skipped", None)
+            last["probe_repaired_on_resume"] = True
+            log({"layer": last["layer"], "probe_tag": tag}, "probe_repair")
+            persist(prog)
     baseline = resume_baseline(prog["steps"])
     if baseline is None:
         baseline = ops.teacher_nll()
@@ -62,7 +75,7 @@ def run_progressive(order, prog, gate, ops, max_layers=None, past_deadline=lambd
         log({kk: v for kk, v in rec.items() if kk != "hist"}, "gate")
         ops.save(k + 1)
         if accepted:
-            tag = None if past_deadline() else ops.probe(converted)
+            tag = ops.probe(converted) if (probe_after_deadline or not past_deadline()) else None
             if tag:
                 rec["probe_tag"] = tag
             else:

@@ -360,6 +360,7 @@ from jobs.common import costs  # noqa: E402
 from jobs.full8 import preflight as pf  # noqa: E402
 
 RULE_COMMIT = "be9eed8"
+A1_COMMIT = "2cb8cbc"  # Amendment A1 (2026-10-07, after independent review, before any run)
 P8 = json.loads((ROOT / "jobs/full8/job_params.json").read_text(encoding="utf-8"))
 CFG8 = json.loads((ROOT / "configs/full8_h100.json").read_text(encoding="utf-8"))
 RUNNER = (ROOT / "jobs/full8/full8_job.sh").read_text(encoding="utf-8")
@@ -379,8 +380,9 @@ def test_spec_rule_section_is_the_preregistered_text_plus_the_A1_note():
 # ----------------------------------------------------------------------------- config = the probe recipe, 8 layers
 def test_config_is_the_5cmat_recipe_with_only_max_layers_changed():
     diff = {k for k in set(PROBE) | set(CFG8) if PROBE.get(k) != CFG8.get(k)}
-    assert diff == {"_comment", "progressive", "ckpt_dir", "success_rule", "diagnostic_bands_posthoc"}, diff
-    assert CFG8["progressive"] == {"max_layers": 8} and PROBE["progressive"] == {"max_layers": 1}
+    assert diff == {"_comment", "progressive", "ckpt_dir", "success_rule", "diagnostic_bands_posthoc", "mmlu_full"}, diff
+    assert CFG8["progressive"] == {"max_layers": 8, "probe_after_deadline": True}  # A1 B2
+    assert PROBE["progressive"] == {"max_layers": 1} and CFG8["mmlu_full"]["batch_tokens"] == 16384
     assert CFG8["ckpt_dir"] == "${FULL8_CK}/gdn"
     assert {k: CFG8["gate"][k] for k in RULE["gate"] if k != "_comment"} == {k: v for k, v in RULE["gate"].items()
                                                                                if k != "_comment"}
@@ -423,7 +425,7 @@ def test_preflight_margins_hold_and_every_cap_is_at_least_1p3x():
         assert usable >= 1.3 * proj, ph
         assert res["phases_measured_basis"][ph] <= P8["expected_minutes"][ph] < P8["phase_caps_minutes"][ph], ph
     # the model reproduces 5cmat's own one-layer P (79.2 min) within 3 minutes
-    one = res["P_parts"]["pre_progressive"] + res["P_parts"]["per_layer"] + res["P_parts"]["throughput"] / 2
+    one = res["P_parts"]["pre_progressive"] + res["P_parts"]["per_layer"] + P8["measured"]["throughput_s"] / 60
     assert abs(one - P8["measured"]["P_min"]) < 3, one
 
 
@@ -467,12 +469,12 @@ def test_stage2_dominates_and_is_wall_clock_capped_per_layer():
 def test_cost_line_costs_convention():
     w = costs.worst_case_usd(P8)
     assert costs.attempts(P8) == 2 and P8["build_timeout_minutes"] == 60 and P8["resume"] == "checkpoint"
-    assert w == round((60 + 2 * 820) * 0.0495, 2) == 84.15 <= P8["hard_cap_usd"] == 85.0
-    assert costs.single_attempt_usd(P8) == 40.59
-    assert costs.expected_usd(P8) == round(557 * 0.0495, 2) == 27.57
+    assert w == 84.65 <= P8["hard_cap_usd"] == 85.0 and abs(w - (60 + 2 * 825) * 0.0495) < 0.006
+    assert costs.single_attempt_usd(P8) == 40.84
+    assert costs.expected_usd(P8) == round(563 * 0.0495, 2) == 27.87
     assert "full8" in costs.PARAMS and costs.cap_ok(P8) and costs.schedule_ok(P8)
     spec = (ROOT / "jobs/full8/JOB_SPEC.md").read_text(encoding="utf-8")
-    for s in ("$84.15", "$40.59", "$27.57", "MTD + 85"):
+    for s in ("$84.65", "$40.84", "$27.87", "MTD + 85"):
         assert s in spec, s
 
 
@@ -593,6 +595,10 @@ def _stage2_starts(log_path):
     return out
 
 
+def _num(x):
+    return isinstance(x, (int, float)) and math.isfinite(x)
+
+
 def _gdn(path):
     import torch
 
@@ -665,7 +671,12 @@ def test_shell_dry_run_end_to_end_then_resume_after_layer_k(tmp_path):
     assert cks.count("progressive") == 8 and "stage1" in cks
     assert (rootA / "curl.log").read_text().count("/v1/checkpoint") == len(cks)
     RA = json.loads((rootA / "ck/pipeline/results.json").read_text())
-    assert RA["throughput"]["converted_8"]["call_latency"]["small_call_s"] > 0  # the 5cmat dtype failure is fixed
+    assert RA["throughput"]["converted_8"]["call_latency"]["measured_on_cpu"]["small_call_s"] > 0  # 5cmat dtype bug fixed
+    mf = RA["mmlu_full"]  # A1: the real full-MMLU scorer ran on both arms over 14,042 (synthetic) items
+    assert mf["stock"]["n"] == mf["final"]["n"] == 14042 and mf["stock"]["items_sha256"] == mf["final"]["items_sha256"]
+    assert mf["stock"]["modes"] == {} and sorted(map(int, mf["final"]["modes"])) == RULE["attention_layers"]
+    assert dec["report"]["mmlu_full"]["paired_ci_drop_pts"] and _num(dec["numbers"]["mmlu_drop_pts"])
+    assert json.loads((rootA / "work/out/index/preflight_conv.json").read_text())["ok"]  # conv arm, own rate
 
     # ---- B: preemption after layer 3, then the restarted attempt
     rootB = _dry_root(tmp_path / "B")
@@ -707,3 +718,130 @@ def test_shell_dry_run_partial_conversion_exports_a_hybrid_not_q9af(tmp_path):
     assert (out / "gdn_partial.pt").exists() and not (out / "gdn_converted.pt").exists()
     with pytest.raises(LineageError):
         _q9af(_gdn(out / "gdn_partial.pt"))
+
+
+# ----------------------------------------------------------------------------- Amendment A1 code (B2, B3, MMLU)
+def test_A1_rule_and_decide_are_pinned_to_the_amendment_commit():
+    try:
+        old = subprocess.check_output(["git", "show", f"{A1_COMMIT}:jobs/full8/rule.json"], cwd=ROOT,
+                                      stderr=subprocess.DEVNULL)
+        old_dec = subprocess.check_output(["git", "show", f"{A1_COMMIT}:scripts/decide_full8.py"], cwd=ROOT,
+                                          stderr=subprocess.DEVNULL)
+        old_spec = subprocess.check_output(["git", "show", f"{A1_COMMIT}:jobs/full8/JOB_SPEC.md"], cwd=ROOT,
+                                           stderr=subprocess.DEVNULL).decode()
+    except Exception:  # noqa: BLE001
+        pytest.skip("git history not available")
+    assert json.loads(old) == RULE
+    assert old_dec.replace(b"\r\n", b"\n") == (ROOT / "scripts/decide_full8.py").read_bytes().replace(b"\r\n", b"\n")
+    sec = lambda t: t.replace("\r\n", "\n").split("## Decision rule")[1].split("\n## ")[0].rstrip()  # noqa: E731
+    assert sec(old_spec) == sec(SPEC)
+    assert P8["rule_commit"] == RULE_COMMIT and A1_COMMIT in P8["rule_amendments"][0]
+
+
+def test_A1_B3_job_params_declare_the_decision_rule():
+    assert P8["decision_rule"] == "scripts/decide_full8.py" and (ROOT / P8["decision_rule"]).exists()
+
+
+class _Ops:
+    def __init__(self):
+        self.probed, self.loaded = [], []
+
+    def load(self, n):
+        self.loaded.append(n)
+
+    def snapshot(self, conv):
+        return {}
+
+    def train(self, k, i, trial):
+        return {}
+
+    def evaluate(self, trial):
+        return {"nll_student": 2.0 + 0.001 * len(trial), "nll_teacher": 2.0, "delta_nll": 0.001 * len(trial),
+                "hidden_cos": 0.99, "kl": 0.01}
+
+    def restore(self, snap, i):
+        pass
+
+    def save(self, n):
+        pass
+
+    def teacher_nll(self):
+        return 2.0
+
+    def probe(self, conv):
+        self.probed.append(list(conv))
+        return f"conv{len(conv)}"
+
+
+GATE = {"max_step_delta_nll": 0.05, "max_cum_delta_nll": 0.15, "min_hidden_cos": 0.95, "policy": "enforce"}
+
+
+def test_A1_B2_probe_is_never_deadline_gated_with_the_full8_flag():
+    from convert.progressive import run_progressive
+
+    ops, prog = _Ops(), {"steps": [], "converted": []}
+    n = {"k": 0}
+    real = ops.train
+    ops.train = lambda *a: (n.__setitem__("k", n["k"] + 1), real(*a))[1]
+    run_progressive([1, 2], prog, GATE, ops, past_deadline=lambda: n["k"] >= 2, probe_after_deadline=True)
+    assert prog["steps"][-1]["probe_tag"] == "conv2" and ops.probed[-1] == [1, 2]
+
+
+def test_A1_B2_deadline_skipped_final_probe_is_repaired_on_resume():
+    """deadline passes during layer 8 -> its probe is skipped (flag off) -> the attempt dies -> resume: the probe runs
+    for the last accepted step before anything else, and the record now carries it."""
+    from convert.progressive import run_progressive
+
+    order = list(range(8))
+    ops, prog = _Ops(), {"steps": [], "converted": []}
+    n = {"k": 0}
+    real = ops.train
+    ops.train = lambda *a: (n.__setitem__("k", n["k"] + 1), real(*a))[1]
+    run_progressive(order, prog, GATE, ops, past_deadline=lambda: n["k"] >= 8)
+    assert prog["steps"][-1]["probes_skipped"] == "deadline" and "probe_tag" not in prog["steps"][-1]
+    saved = json.loads(json.dumps(prog))  # what results.json holds when the attempt is killed
+    ops2, persisted = _Ops(), []
+    run_progressive(order, saved, GATE, ops2, persist=lambda p: persisted.append(len(p["steps"])))
+    last = saved["steps"][-1]
+    assert ops2.loaded == [8] and ops2.probed == [order] and last["probe_tag"] == "conv8"
+    assert last["probe_repaired_on_resume"] and "probes_skipped" not in last and persisted == [8]
+    ops3 = _Ops()  # a second resume does nothing more
+    run_progressive(order, saved, GATE, ops3)
+    assert ops3.probed == []
+
+
+def test_A1_mmlu_full_batched_equals_one_at_a_time_and_shares_the_prompt():
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("transformers")
+    from probes import core
+    from tests.full8_dryrun.tiny import mmlu_rows, tiny_convertible, tokenizer
+
+    m, tok, rows = tiny_convertible(0), tokenizer(), mmlu_rows(40)
+    for r in rows[::7]:  # longer items land in other padding buckets
+        r["question"] = " ".join(["w3"] * 150)
+    a = core.mmlu_full(m, tok, rows=rows, batch_tokens=16384)
+    b = core.mmlu_full(m, tok, rows=rows, batch_tokens=1)  # one item per forward
+    assert a["correct"] == b["correct"] and a["n"] == 40 and a["calls"] < b["calls"] == 40
+    assert a["items_sha256"] == core.mmlu_items_sha256(rows) and torch.is_tensor(torch.zeros(1))
+    src = (ROOT / "probes/core.py").read_text(encoding="utf-8")
+    assert src.count("_mmlu_prompt(r, letters)") == 2  # the subset probe and the full set build the same prompt
+
+
+@needs_bash
+def test_shell_dry_run_A1_B2_deadline_after_layer_8_kill_resume_probe_verdict(tmp_path):
+    """The deadline passes after layer 8 (flag off in this stand-in), so its probe is skipped; the attempt is killed
+    after step 8 is persisted; the restarted attempt repairs the probe, runs full MMLU, and decides."""
+    pytest.importorskip("torch")
+    root = _dry_root(tmp_path)
+    rc1, out1 = run_dry(root, "out1", {"FULL8_DRYRUN_DEADLINE_AFTER_TRAIN": "8", "FULL8_DRYRUN_CRASH_AFTER_STEP": "8"})
+    assert rc1 == 2, (root / "out1.console.log").read_text(errors="replace")[-3000:]
+    R1 = json.loads((root / "ck/pipeline/results.json").read_text())
+    assert len(R1["progressive"]["steps"]) == 8 and R1["progressive"]["steps"][-1]["probes_skipped"] == "deadline"
+    rc2, out2 = run_dry(root, "out2")
+    assert rc2 == 0, (root / "out2.console.log").read_text(errors="replace")[-4000:]
+    R2 = json.loads((root / "ck/pipeline/results.json").read_text())
+    last = R2["progressive"]["steps"][-1]
+    assert last["probe_repaired_on_resume"] and last["probe_tag"] == "conv8_kept0" and "probe_conv8_kept0" in R2
+    assert _stage2_starts(root / "work/logs/pipeline.log") == []  # nothing re-trained
+    dec = json.loads((out2 / "decision.json").read_text())
+    assert dec["verdict"] == "q9af-backbone" and (out2 / "FULL8_DONE").exists()

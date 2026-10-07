@@ -232,7 +232,7 @@ The rule: every cap >= 1.3 x its projection. For the Index arms the usable cap i
 |---|---|---|---|---|---|
 | setup | 10 | 2.4 | 317% | manifest, nvidia-smi, pins, fla #640 guard, **measured-rate preflight**, DEV rows sha256, the 2,008-row subset | 5 / 10 |
 | weights | 20 | 0.3 | >40x | `sf_fetch --stage probe9b` (wikitext, MMLU, 9B @ pinned revisions) | 8 |
-| P | 670 (deadline 585) | **509.3** | 31.5% | `convert.pipeline` into `$GMN_CHECKPOINT_DIR` (see below) | 2 / 3 / 4 / 7 |
+| P | 675 (deadline 585) | **514.8** | 31.1% | `convert.pipeline` into `$GMN_CHECKPOINT_DIR` (see below), then the full-MMLU arms (A1) | 2 / 3 / 4 / 7 |
 | X | 15 | 3.0 (estimate) | 400% | `jobs.full8.export_gdn --mode final`: the accepted GDNs, verified | 6 |
 | I_stock | 40 | 22.5 (measured 10.0) | 69% | Decision Index DEV subset, stock arm, prefix-fork readout; preflight and live row-rate guard | 12 / 7 / 15 |
 | I_conv | 40 | 22.5 (measured 9.0) | 69% | same, converted arm, loading the exported file | 12 / 7 / 15 |
@@ -240,7 +240,7 @@ The rule: every cap >= 1.3 x its projection. For the Index arms the usable cap i
 | D | - | - | - | `scripts/decide_full8.py` (the pre-registered rule); `finalize.py` re-validates; `FULL8_DONE` only on exit 0 | 9 |
 | reserve | 15 | | | | |
 
-10 + 20 + 670 + 15 + 40 + 40 + 10 + reserve 15 = 820 = `max_duration_minutes`.
+10 + 20 + 675 + 15 + 40 + 40 + 10 + reserve 15 = 825 = `max_duration_minutes`.
 
 **What P is made of.**
 - Pre-progressive work: 17.4 min. This is load + data 0.8, stock probes 1.8, stage 1 13.6, teacher cache + importance
@@ -251,10 +251,13 @@ The rule: every cap >= 1.3 x its projection. For the Index arms the usable cap i
   - evaluate + checkpoint save: 0.29;
   - converted probes: 0.96.
 - Throughput, both arms with call latency: 1.1 min.
+- Full MMLU, stock + final (A1): 5.5 min. Per arm that is 2.49M padded positions / 22,144 tok/s, plus 156 calls x
+  0.237 s, plus 0.25 min of tokenisation. The volume was computed exactly with the pinned tokenizer.
 
 **Deadline.** The pipeline starts no new layer after 585 min. Two conditions fix that number:
 - in a healthy run the 8th layer starts at 446.9 min, and 1.3 x 446.9 = 581;
-- a layer started just before the deadline still fits the P cap: 585 + 1.3 x (61.35 + 1.1) = 666.2 <= 670.
+- a layer started just before the deadline still fits the P cap, including the post-progressive work (throughput
+  and full MMLU, never deadline-gated): 585 + 1.3 x (61.35 + 6.6) = 673.3 <= 675.
 
 If a layer is skipped at the deadline, the result is `no-measurement` (exit 9), never a verdict. The checkpoint keeps
 every finished layer.
@@ -347,9 +350,9 @@ variable (tested).
 
 ## Bottleneck analysis (`jobs/PERF_AUDIT.md` discipline)
 
-| Phase | Share of the expected run (557 min) | Dominant cost | Decision |
+| Phase | Share of the expected run (563 min) | Dominant cost | Decision |
 |---|---|---|---|
-| **Stage 2** | **481 min, 86%** (94% of P) | Wall-clock capped at 60 min per layer, by pre-registration, so $ do not depend on speed. Per step: no-grad shared prefix + teacher suffix (~1/4 of FLOPs), student suffix forward + checkpoint re-forward + activation backward. MFU 0.34 measured on two layers | **Recipe kept** (pre-registered). Faster steps would buy tokens, not dollars. See "waste" |
+| **Stage 2** | **481 min, 85%** (93% of P) | Wall-clock capped at 60 min per layer, by pre-registration, so $ do not depend on speed. Per step: no-grad shared prefix + teacher suffix (~1/4 of FLOPs), student suffix forward + checkpoint re-forward + activation backward. MFU 0.34 measured on two layers | **Recipe kept** (pre-registered). Faster steps would buy tokens, not dollars. See "waste" |
 | Stage 1 | 13.6 min, 2.4% | Teacher to layer 31 + 8 GDN graphs, 0.32 MFU | Kept. It must re-run anyway (no clean warm start) |
 | Probes after each layer | 8 x 1.0 min | B=1 probe loops | Kept: they are the PLAN's cost-of-attention-freedom curve |
 | Index arms | 19 min measured, 3.4% | Per-call overhead + 6.2M positions | Already prefix-forked (PERF_AUDIT). The stock arm repeats 5cmat's stock arm. Kept for same-job pairing, and it doubles as a reproduction check of that arm |
@@ -384,14 +387,15 @@ runs under `no_grad` with the same autocast for both calls. The dry run asserts 
 | Item | Minutes | $ at $0.0495/min |
 |---|---|---|
 | Build (`build_timeout_minutes`, counted billable) | 60 | 2.97 |
-| One attempt (`max_duration_minutes`; what `validate_job` should report) | 820 | $40.59 |
-| **Worst case: build + 2 full attempts** | 1,700 | **$84.15** (<= $85 hard cap) |
-| Expected (build 15, setup 3, weights 1, P 512, X 3, I 11 + 10, S 2) | 557 | **$27.57** |
+| One attempt (`max_duration_minutes`; what `validate_job` should report) | 825 | $40.84 |
+| **Worst case: build + 2 full attempts** | 1,710 | **$84.65** (<= $85 hard cap) |
+| Expected (build 15, setup 3, weights 1, P 518, X 3, I 11 + 10, S 2) | 563 | **$27.87** |
 
 **Measured pricing is far below the ~$150 budget.** DECISION_TREE branch A budgeted ~$150 from the PR #9 FLOP model.
-The measured 5cmat phases put the expected cost at **$27.57**. Even the costs.py worst case, **$84.15**, is 56% of
+The measured 5cmat phases put the expected cost at **$27.87**. Even the costs.py worst case, **$84.65**, is 56% of
 the budget. That worst case is conservative: a resumed attempt does not repeat finished layers, so a real second
-attempt costs only the remaining work. Branch A now leaves $121.30 of System 1 for m2.
+attempt costs only the remaining work. Branch A now leaves $120.80 of System 1 for m2. A1's full-MMLU arms add
+5.5 projected minutes (+$0.30 expected, +$0.50 worst case).
 
 **Hard cap: `set_workspace_cap(MTD + 85)`.** MTD is $13.44 including 5cmat. Then re-run `validate_job` and require
 scope = workspace cap and `verdict: pass`.
@@ -408,7 +412,7 @@ scope = workspace cap and `verdict: pass`.
  "label": "full8: all 8 attention layers -> GDN (Q9-AF), rule be9eed8, 5cmat-priced",
  "context_id": "<from create_context>", "dockerfile_path": "Dockerfile", "build_timeout_minutes": 60,
  "command": "bash /opt/ssdm/m1/jobs/full8/full8_job.sh", "env": {},
- "max_duration_minutes": 820, "max_restarts": 1, "resume": "checkpoint", "queue_ttl_minutes": 1440,
+ "max_duration_minutes": 825, "max_restarts": 1, "resume": "checkpoint", "queue_ttl_minutes": 1440,
  "hf_cache": true, "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a", "clock_lock": true,
  "checks": {"success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/FULL8_DONE"},
                                              {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
@@ -461,7 +465,7 @@ files on CPU, and both must reproduce.
 4. **PLAN m1 also lists a "steer baseline on all parents".** It is not part of this job.
 5. **The ppl bound is rescaled to exp(0.15) = 1.1618.** The derivation is in the rule section. It is the only
    rescaled bound.
-6. **The budget is far below plan.** ~$150 was planned; $84.15 is the worst case and $27.57 the expected cost.
+6. **The budget is far below plan.** ~$150 was planned; $84.65 is the worst case and $27.87 the expected cost.
 
 ## Pre-mortem (PR #91) and m2-consumer checks
 
@@ -469,7 +473,7 @@ files on CPU, and both must reproduce.
 
 1. **The probe runner was single-layer.** `probe_job.sh` and `max_layers: 1` were built for one layer, per-layer
    checkpoints were never exported, and the deadline was undersized. This job has its own runner, `max_layers: 8`, a
-   deadline of 585 min and a P cap of 670 min (8.5 h projected, 1.3x margins). Every layer is checkpointed in
+   deadline of 585 min and a P cap of 675 min (8.6 h projected, 1.3x margins). Every layer is checkpointed in
    `$GMN_CHECKPOINT_DIR` with a platform checkpoint POST, and a failed attempt gets a salvage export.
 2. **Hidden-cos error compounds against the 0.95 gate, so late layers may be rejected.** The handling is
    pre-registered as `partial-conversion` (be9eed8):
@@ -503,3 +507,71 @@ shape on the converted backbone. Three checks, each tested in dry-run A:
 - the weights are fp32 (as gated) and m2 loads them into bf16 by `load_state_dict` casting;
 - `q9af_from_stock` refuses a partial conversion, by design;
 - `load_q9af_backbone` needs `base_config_sha256` pinned, and that value equals `export.json: base_config_sha256`.
+
+## Amendment A1: code changes (separate commit after the rule commit 2cb8cbc)
+
+- **Full MMLU arms (the A1 measurement).**
+  - `probes.core.mmlu_full` uses the same `_mmlu_prompt` and letter-logit scoring as the subset probe, over all 14,042
+    items.
+  - Items are batched by padded length (right padding to 128, at most 16,384 positions per forward), so a batched
+    forward scores each item exactly as a one-item forward would. Tested on CPU: the per-item correctness is equal.
+  - `convert.pipeline` runs it after the 8th layer, for stock and then the final model, never gated by the deadline,
+    and writes it as `results.json: mmlu_full` (per-item 0/1, `items_sha256`, modes).
+- **B2: the final probe.** There are two independent guards:
+  - `progressive.probe_after_deadline: true` in the config: an accepted layer's probes always run, and the deadline
+    only stops new layers;
+  - a resume repair in `convert.progressive.run_progressive`: if the last accepted step has no probes, they run on
+    resume, before anything else.
+
+  Both are tested, the first with a fake ops object. The repair is also tested in the shell dry run: the deadline
+  passes during layer 8 with the flag off, the probe is skipped, the attempt is killed after step 8, and the restarted
+  attempt repairs the probe with nothing re-trained, giving `q9af-backbone` and `FULL8_DONE`. The late-start budget
+  already covered a post-deadline probe.
+- **B3.** `job_params.json` now has `"decision_rule": "scripts/decide_full8.py"`. PR #93's lint
+  (`jobs/common/lint.py` from `claude/flywheel-tooling`, run in a scratch worktree, not in this PR) passes:
+  `python -m jobs.common.lint full8` gives `ok`.
+- **Non-blocking #2: the converted arm's own preflight.** The converted Index arm is preflighted with **its own**
+  measured prefill rate and call latency (`throughput.converted_<n>`): `index/preflight_conv.json`, gate
+  `I:preflight_conv`. It falls back to the stock numbers only if the converted ones are missing.
+
+**Re-pricing.**
+- The full-MMLU volume, computed exactly with the pinned tokenizer, is 2,485,632 padded positions and 156 calls per
+  arm.
+- At 5cmat's measured 22,144 tok/s and 0.237 s/call, plus 0.25 min of tokenisation per arm, that is 5.5 min for both
+  arms.
+- So P = 514.8 min, against a cap of 675 (1.31x). The deadline stays 585: 585 + 1.3 x (61.35 + 6.6) = 673.3 <= 675.
+- max_duration is 825.
+- **Worst case $84.65**, single attempt $40.84, **expected $27.87** (563 min). The hard cap stays $85.
+
+## Info only (not binding): what 5cmat's single-swap numbers project for the 8-layer gate
+
+**Inputs.** This costs $0, using art-2bybh's `importance.per_layer`: the single-swap gate numbers after stage 1,
+before stage 2, in 5cmat's KL order. The table also gives the running sums.
+
+| Layer (order) | dNLL | 1 - cos | Σ dNLL | Σ (1 - cos) | Additive cos |
+|---|---|---|---|---|---|
+| 23 | 0.0109 | 0.0053 | 0.0109 | 0.0053 | 0.995 |
+| 31 | 0.0179 | 0.0064 | 0.0287 | 0.0116 | 0.988 |
+| 15 | 0.0077 | 0.0058 | 0.0364 | 0.0175 | 0.983 |
+| 11 | 0.0088 | 0.0064 | 0.0452 | 0.0239 | 0.976 |
+| 7 | 0.0013 | 0.0091 | 0.0465 | 0.0330 | 0.967 |
+| 19 | 0.0136 | 0.0073 | 0.0601 | 0.0403 | 0.960 |
+| 3 | 0.0051 | 0.0139 | 0.0652 | **0.0542** | **0.946 < 0.95** |
+| 27 | 0.0281 | 0.0134 | 0.0934 | 0.0676 | 0.932 |
+
+**Stage 2 on layer 23 in 5cmat.** It cut dNLL by a factor of 0.63 (0.0109 -> 0.0068). It did *not* improve the
+cosine: 1 - cos went 0.0053 -> 0.0055.
+
+**The projection.**
+- **dNLL.** The cumulative dNLL projects to 0.058-0.093, inside the 0.15 budget under either scaling.
+- **Final-hidden cosine.** Under the independent-error model (additive 1 - cos), the cumulative cosine crosses the
+  0.95 gate at the 7th layer (layer 3, cos ≈ 0.946) and ends near 0.93. If the errors add coherently (angles add),
+  it is far worse: cos ≈ 0.52.
+- **Stage-2 scaling.** Applying the stage-2 scaling seen on layer 23 changes nothing, because stage 2 did not move
+  the cosine.
+
+**What this suggests.** The most likely pre-registered outcome is `partial-conversion` with layers 3 and 27 rejected
+(`Q9-H2`), unless joint stage-2 training of later layers reduces the accumulated hidden-state error better than
+layer 23's single-layer stage 2 did. This is an information-only estimate: single-swap numbers do not compose
+exactly, and the rule is unchanged by it. It is the main risk to the `q9af-backbone` verdict and should be weighed
+before the spend. A rejected layer is not retried; see the rule section.

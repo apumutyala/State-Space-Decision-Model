@@ -3,7 +3,7 @@
  "job": "full8",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 820,
+ "max_duration_minutes": 825,
  "build_timeout_minutes": 60,
  "max_restarts": 1,
  "assumed_restart_floor": 1,
@@ -17,7 +17,7 @@
  "phase_caps_minutes": {
   "setup": 10,
   "weights": 20,
-  "P": 670,
+  "P": 675,
   "X": 15,
   "I_stock": 40,
   "I_conv": 40,
@@ -28,7 +28,7 @@
   "build": 15,
   "setup": 3,
   "weights": 1,
-  "P": 512,
+  "P": 518,
   "X": 3,
   "I_stock": 11,
   "I_conv": 10,
@@ -71,12 +71,25 @@
  },
  "estimates_not_measured": {
   "export_X_min": 3.0,
-  "_comment": "X (write the 8-layer fp32 GDN file, ~2.16 GB, hash it, re-read it, strict-load every layer into the HF Qwen3_5GatedDeltaNet on CPU) has no receipt; 3 min is an estimate (torch.save + 2 sha256 passes over 2.2 GB on local NVMe ~0.5 min, plus 8 CPU module builds)."
+  "_comment": "X (write the 8-layer fp32 GDN file, ~2.16 GB, hash it, re-read it, strict-load every layer into the HF Qwen3_5GatedDeltaNet on CPU) has no receipt; 3 min is an estimate (torch.save + 2 sha256 passes over 2.2 GB on local NVMe ~0.5 min, plus 8 CPU module builds).",
+  "mmlu_full": {
+   "_comment": "Amendment A1: full MMLU test set per arm, volume computed exactly (local, CPU) with the pinned Qwen3.5 tokenizer (tokenizer.json sha256 5f9e4d49... = the 9B snapshot's, jobs/m2_pilot/q9af_snapshot.sha256) over cais/mmlu all/test @ c30699e8: prompt = probes.core._mmlu_prompt, right-padded to 128, batches of 16,384 positions. Time = positions / measured min prefill tok/s + calls x measured pack_call_s (both job-5cmat) + 0.5 min CPU tokenisation (estimate).",
+   "items": 14042,
+   "tokens_per_arm": 1700816,
+   "positions_per_arm": 2485632,
+   "calls_per_arm": 156,
+   "arms": 2,
+   "tokenise_min_per_arm_est": 0.25
+  }
  },
  "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
  "config": "configs/full8_h100.json",
  "rule": "jobs/full8/rule.json",
  "rule_commit": "be9eed8",
  "dev_subset": "jobs/common/dev_subset_m1.json",
- "mission": "m1-full8-q9af"
+ "mission": "m1-full8-q9af",
+ "decision_rule": "scripts/decide_full8.py",
+ "rule_amendments": [
+  "2cb8cbc (Amendment A1, 2026-10-07, after independent review, before any run)"
+ ]
 }

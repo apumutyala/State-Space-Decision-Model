@@ -65,6 +65,10 @@ def project(params: dict, cfg: dict) -> dict:
     overshoot = B * L / rates["worst"]["tok_s"] / 60  # the guard stops after the step that crosses the cap
     layer = s2min + overshoot + step_overhead + m["converted_probes_s"] / 60
     thr = 2 * m["throughput_s"] / 60  # the converted arm's call latency now runs too (it failed on 5cmat)
+    mv = params["estimates_not_measured"]["mmlu_full"]  # A1: full MMLU, stock + final, after the 8th layer
+    mmlu = mv["arms"] * (mv["positions_per_arm"] / m["stock_prefill_tok_s_min"] / 60
+                         + mv["calls_per_arm"] * m["pack_call_s"] / 60 + mv["tokenise_min_per_arm_est"])
+    thr = thr + mmlu  # post-progressive work (never deadline-gated)
     P = pre + N_LAYERS * layer + thr
     from jobs.common.readout_cost import project as readout
 
@@ -77,7 +81,8 @@ def project(params: dict, cfg: dict) -> dict:
     return {"phases": phases, "phases_measured_basis": measured_like,
             "P_parts": {"pre_progressive": pre, "per_layer": layer, "per_layer_stage2_cap": s2min,
                         "per_layer_overshoot": overshoot, "per_layer_eval_save": step_overhead,
-                        "per_layer_probes": m["converted_probes_s"] / 60, "throughput": thr,
+                        "per_layer_probes": m["converted_probes_s"] / 60, "throughput_and_mmlu_full": thr,
+                        "mmlu_full_both_arms": mmlu,
                         "stage2_total": N_LAYERS * (s2min + overshoot)},
             "last_layer_start": pre + (N_LAYERS - 1) * layer, "layer_min": layer, "throughput_min": thr,
             "stage2_rates": rates,

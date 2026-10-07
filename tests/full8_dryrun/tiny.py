@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 VOCAB = 101
 SPECIALS = ["<|endoftext|>", "<|im_start|>", "<|im_end|>"]
+LETTERS = ["A", "B", "C", "D"]
 
 
 def text_config():
@@ -51,7 +52,9 @@ def tokenizer():
     from tokenizers import Tokenizer, models, pre_tokenizers
     from transformers import PreTrainedTokenizerFast
 
-    vocab = {f"w{i}": i for i in range(VOCAB - len(SPECIALS) - 1)}
+    vocab = {f"w{i}": i for i in range(VOCAB - len(SPECIALS) - 1 - len(LETTERS))}
+    for c in LETTERS:  # MMLU answer letters get their own ids (probes.core scores " A".." D")
+        vocab[c] = len(vocab)
     vocab["[UNK]"] = len(vocab)
     for s in SPECIALS:
         vocab[s] = len(vocab)
@@ -87,5 +90,11 @@ def stub_probes(model, tok, eval_toks, cfg):
     nll = float(-lp[:, :-1].gather(-1, x[:, 1:, None]).mean())
     acc = float((lp[:, :-1].argmax(-1) == x[:, 1:]).float().mean())
     return {"ppl": {"ctx1024": {"ppl": math.exp(nll)}, "ctx4096": {"ppl": math.exp(nll)}},
-            "niah": {"L1024": {"acc": 1.0}, "L16384": {"acc": 1.0}, "mean_acc": 1.0},
+            "niah": {**{f"L{n}": {"acc": 1.0} for n in cfg["probes"]["niah_lengths"]}, "mean_acc": 1.0},
             "mqar": {"mean_acc": acc}, "mmlu": {"acc": acc, "n": 285}}
+
+
+def mmlu_rows(n=14042):
+    """A synthetic stand-in for the full MMLU test set with the real item count (the rule requires n == 14,042)."""
+    return [{"subject": f"s{i % 57}", "question": " ".join(f"w{(i * 7 + j) % 90}" for j in range(6)),
+             "choices": [f"w{(i + j) % 90}" for j in range(4)], "answer": i % 4} for i in range(n)]

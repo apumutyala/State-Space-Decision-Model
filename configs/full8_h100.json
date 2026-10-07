@@ -1,5 +1,5 @@
 {
- "_comment": "full8: all 8 attention layers of Qwen3.5-9B -> GDN (Q9-AF, jobs/full8/JOB_SPEC.md, issue #87). The probe9b recipe (configs/probe9b_h100.json as run in job-5cmat) with ONE change: progressive.max_layers 1 -> 8 (all layers, KL-importance order, enforced 511e8dd gate, rollback on reject). Same seed, data (wikitext-103 train, 40M tokens), stage 1 (400 steps), stage 2 (60-min wall-clock cap PER LAYER, lr 3e-4, all converted GDNs train), probes, gate, micro_batch 4, floors (50% of the slowest measured stage rate: stage 2 = layer 3 on job-4j3vu). ckpt_dir is the platform checkpoint dir (FULL8_CK = $GMN_CHECKPOINT_DIR) so a restarted attempt resumes at the last finished layer. The binding rule is jobs/full8/rule.json (pre-registered at be9eed8), not this file.",
+ "_comment": "full8: all 8 attention layers of Qwen3.5-9B -> GDN (Q9-AF, jobs/full8/JOB_SPEC.md, issue #87). The probe9b recipe (configs/probe9b_h100.json as run in job-5cmat) with ONE recipe change: progressive.max_layers 1 -> 8 (all layers, KL-importance order, enforced 511e8dd gate, rollback on reject). Measurement additions (Amendment A1, 2cb8cbc): progressive.probe_after_deadline (an accepted layer's probes are never deadline-gated) and mmlu_full (the full MMLU test set, both arms). Same seed, data (wikitext-103 train, 40M tokens), stage 1 (400 steps), stage 2 (60-min wall-clock cap PER LAYER, lr 3e-4, all converted GDNs train), probes, gate, micro_batch 4, floors (50% of the slowest measured stage rate: stage 2 = layer 3 on job-4j3vu). ckpt_dir is the platform checkpoint dir (FULL8_CK = $GMN_CHECKPOINT_DIR) so a restarted attempt resumes at the last finished layer. The binding rule is jobs/full8/rule.json (pre-registered at be9eed8), not this file.",
  "seed": 0,
  "kernel": "fla",
  "model_dir": "${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-9B/snapshots",
@@ -62,7 +62,8 @@
  },
  "order": "kl",
  "progressive": {
-  "max_layers": 8
+  "max_layers": 8,
+  "probe_after_deadline": true
  },
  "stage2": {
   "steps": 1000000,
@@ -90,5 +91,9 @@
    32768
   ],
   "reps": 2
+ },
+ "mmlu_full": {
+  "_comment": "Amendment A1: the binding MMLU drop on the FULL test set (14,042 items), stock vs final, probes.core.mmlu_full; never deadline-gated",
+  "batch_tokens": 16384
  }
 }

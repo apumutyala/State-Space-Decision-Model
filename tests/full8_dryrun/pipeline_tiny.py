@@ -10,6 +10,9 @@ Env (dry run only):
   FULL8_DRYRUN_GATE   "real" = the tiny model's own gate numbers;  "pass" (default) = the real evaluate runs, then its
                       numbers are replaced by small deterministic, rule-consistent ones (every layer passes);
                       "reject:<l1,l2>" = as pass, but any trial containing those layers fails the cosine bound
+  FULL8_DRYRUN_DEADLINE_AFTER_TRAIN=<n>  the deadline passes right after the n-th stage-2 run (A1 B2 test); the
+                      shrunk config then sets probe_after_deadline false, so that layer's probes are deadline-skipped
+                      and must be repaired on resume
   FULL8_DRYRUN_CRASH_AFTER_STEP=<k>   hard-kill the process (os._exit 137, no cleanup: a preemption) right after the
                       k-th progressive step has been persisted (results.json + prog_k.pt + the checkpoint POST)
 """
@@ -30,6 +33,8 @@ def shrink(cfg: dict) -> dict:
     c["stage2"]["steps"] = 3
     c["gate"]["n_windows"] = 4
     c["throughput"] = {"lengths": [24], "reps": 1}
+    if os.environ.get("FULL8_DRYRUN_DEADLINE_AFTER_TRAIN"):
+        c["progressive"]["probe_after_deadline"] = False
     return c
 
 
@@ -42,7 +47,7 @@ def patch(pipeline):
     import torch  # noqa: F401
 
     from probes import throughput as T
-    from tests.full8_dryrun.tiny import VOCAB, stub_probes, tiny_convertible
+    from tests.full8_dryrun.tiny import VOCAB, mmlu_rows, stub_probes, tiny_convertible, tokenizer
 
     pipeline.load = lambda *a, **k: (tiny_convertible(0), None, "tiny")
     toks = {s: np.random.default_rng(i).integers(0, VOCAB, 6000).astype(np.uint32)
@@ -50,12 +55,24 @@ def patch(pipeline):
     pipeline.data.build = lambda tok, s, max_tokens=None: (s, {"split": s, "dry_run": True})
     pipeline.data.load_tokens = lambda p: toks[p]
     pipeline.probes.run_all = stub_probes
+    real_mmlu_full, ttok, rows = pipeline.probes.mmlu_full, tokenizer(), mmlu_rows()
+    # the REAL full-MMLU scorer (batching, padding, letter logits) on the tiny model, with a tiny tokenizer and a
+    # synthetic item set of the real size
+    # (padding multiple 32 instead of 128 on CPU only: the tiny prompts are ~30 tokens; scoring is unchanged)
+    pipeline.probes.mmlu_full = lambda model, tok, **k: real_mmlu_full(model, ttok, rows=rows, mult=32, **k)
     # prefill timing is a GPU number: the stand-in replays job-5cmat's measured minimum (so the runner's real Index
-    # volume preflight sees a 9B-like rate); the per-call latency below is measured for real on the tiny model
+    # volume preflight sees a 9B-like rate); the per-call latency is MEASURED for real on the tiny model (both arms:
+    # the 5cmat dtype failure must not recur), then its values are replaced by job-5cmat's 9B receipts, since a loaded
+    # CPU's 0.1-0.6 s per call would make the runner's real Index preflight flaky
     pipeline.measure_throughput = lambda model, modes, lengths, reps=3: {
         str(L): {"tok_s": 22144.5, "dry_run": "job-5cmat prefill rate replayed"} for L in lengths}
-    pipeline.call_latency = lambda model, modes: T.call_latency(model, modes, prefix_len=32, tail=(2, 4), small_len=4,
-                                                                reps=2)
+    def call_latency(model, modes):
+        cpu = T.call_latency(model, modes, prefix_len=32, tail=(2, 4), small_len=4, reps=2)
+        assert cpu["pack_call_s"] > 0 and cpu["small_call_s"] > 0
+        return {**cpu, "pack_call_s": 0.2369, "small_call_s": 0.0493, "measured_on_cpu": cpu,
+                "dry_run": "job-5cmat call latency replayed"}
+
+    pipeline.call_latency = call_latency
     mode = os.environ.get("FULL8_DRYRUN_GATE", "pass")
     if mode != "real":
         reject = {int(x) for x in mode.split(":", 1)[1].split(",")} if mode.startswith("reject:") else set()
@@ -71,16 +88,29 @@ def patch(pipeline):
 
         pipeline.align.evaluate = evaluate
     crash = os.environ.get("FULL8_DRYRUN_CRASH_AFTER_STEP")
-    if crash:
+    dl_after = os.environ.get("FULL8_DRYRUN_DEADLINE_AFTER_TRAIN")
+    if crash or dl_after:
         real_prog = pipeline.run_progressive
 
-        def run_progressive(order, prog, gate, ops, max_layers, past_deadline, persist, log):
+        def run_progressive(order, prog, gate, ops, max_layers, past_deadline, persist, log, **kw):
+            n_train = {"n": 0}
+            if dl_after:
+                real_train = ops.train
+
+                def train(*a):
+                    out = real_train(*a)
+                    n_train["n"] += 1
+                    return out
+
+                ops.train = train
+                past_deadline = lambda: n_train["n"] >= int(dl_after)  # noqa: E731
+
             def persist_then_maybe_die(p):
                 persist(p)
-                if len(p["steps"]) == int(crash):
+                if crash and len(p["steps"]) == int(crash):
                     print(f"DRY RUN: simulated preemption after step {crash}", flush=True)
                     os._exit(137)
-            return real_prog(order, prog, gate, ops, max_layers, past_deadline, persist_then_maybe_die, log)
+            return real_prog(order, prog, gate, ops, max_layers, past_deadline, persist_then_maybe_die, log, **kw)
 
         pipeline.run_progressive = run_progressive
 

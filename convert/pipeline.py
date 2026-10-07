@@ -312,8 +312,24 @@ def _main():
 
     t0 = time.time()
     converted = run_progressive(order, prog, gate, Ops(), cfg.get("progressive", {}).get("max_layers"),
-                                past_deadline, lambda p: R.set("progressive", p), log)
+                                past_deadline, lambda p: R.set("progressive", p), log,
+                                probe_after_deadline=cfg.get("progressive", {}).get("probe_after_deadline", False))
     timed("progressive", t0)
+
+    # ------------------------------------------------------------------ full MMLU test set, stock vs final (jobs/full8 A1)
+    # Never deadline-gated: the binding MMLU drop of the full-8 rule. Both arms, same code path (probes.core.mmlu_full).
+    if cfg.get("mmlu_full") and converted and "mmlu_full" not in R:
+        t0 = time.time()
+        mf = {}
+        for arm, modes in (("stock", {}), ("final", {j: "student" for j in converted})):
+            with model.modes(modes):
+                res = probes.mmlu_full(model, tok, batch_tokens=cfg["mmlu_full"].get("batch_tokens", 16384))
+            res["modes"] = {str(k): v for k, v in modes.items()}
+            mf[arm] = res
+            log({"tag": f"mmlu_full:{arm}", "acc": res["acc"], "n": res["n"], "seconds": res["seconds"]}, "probe")
+            torch.cuda.empty_cache()
+        R.set("mmlu_full", mf)
+        timed("mmlu_full", t0)
 
     # ------------------------------------------------------------------ throughput / memory
     if "throughput" not in R and cfg.get("throughput"):

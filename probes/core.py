@@ -176,6 +176,14 @@ def _mmlu_rows(k_per_subject=5, seed=0):
     return rows, fp
 
 
+def _mmlu_prompt(r, letters=("A", "B", "C", "D")):
+    subj = r["subject"].replace("_", " ")
+    p = f"The following is a multiple choice question about {subj}.\n\n{r['question'].strip()}\n"
+    for l, c in zip(letters, r["choices"]):
+        p += f"{l}. {c}\n"
+    return p + "Answer:"
+
+
 @torch.no_grad()
 def mmlu(model, tok, k_per_subject=5, seed=0):
     rows, fp = _mmlu_rows(k_per_subject, seed)
@@ -183,11 +191,7 @@ def mmlu(model, tok, k_per_subject=5, seed=0):
     lid = [tok(" " + l, add_special_tokens=False)["input_ids"][-1] for l in letters]
     hits, preds = [], []
     for r in rows:
-        subj = r["subject"].replace("_", " ")
-        p = f"The following is a multiple choice question about {subj}.\n\n{r['question'].strip()}\n"
-        for l, c in zip(letters, r["choices"]):
-            p += f"{l}. {c}\n"
-        p += "Answer:"
+        p = _mmlu_prompt(r, letters)
         ids = tok(p, add_special_tokens=False)["input_ids"]
         x = torch.tensor([_pad(ids, 128)], device="cuda")
         with torch.autocast(**AC):
@@ -198,6 +202,63 @@ def mmlu(model, tok, k_per_subject=5, seed=0):
         hits.append(int(pr == int(r["answer"])))
     return {"acc": float(np.mean(hits)), "n": len(hits), "k_per_subject": k_per_subject, "preds": preds,
             "source": os.path.basename(fp)}
+
+
+def mmlu_full_rows():
+    """The FULL MMLU test set (cais/mmlu all/test at the pinned snapshot: 14,042 items), in file order."""
+    import pyarrow.parquet as pq
+
+    fp = sorted(glob.glob(os.path.join(DATA_ROOT, "hf", "datasets--cais--mmlu", "snapshots", "*", "all",
+                                       "test-*.parquet")))[0]
+    return pq.read_table(fp).to_pylist(), fp
+
+
+def mmlu_items_sha256(rows) -> str:
+    import hashlib
+
+    return hashlib.sha256("\n".join(f"{r['subject']}\t{r['question']}\t{r['answer']}" for r in rows).encode()).hexdigest()
+
+
+@torch.no_grad()
+def mmlu_full(model, tok, rows=None, batch_tokens=16384, mult=128):
+    """0-shot MMLU on the FULL test set (jobs/full8 Amendment A1): the same prompt (``_mmlu_prompt``) and letter-logit
+    scoring as ``mmlu``, batched: items are bucketed by their padded length (right padding to a multiple of ``mult``,
+    as ``mmlu``; invisible to the causal model at the scored position) and run ``batch_tokens // length`` at a time.
+    Returns per-item 0/1 correctness in row order, plus the item-list hash both arms must share."""
+    import time
+
+    t0 = time.time()
+    src = None
+    if rows is None:
+        rows, src = mmlu_full_rows()
+    letters = ["A", "B", "C", "D"]
+    lid = [tok(" " + l, add_special_tokens=False)["input_ids"][-1] for l in letters]
+    ids = [tok(_mmlu_prompt(r, letters), add_special_tokens=False)["input_ids"] for r in rows]
+    dev = next(model.lm.parameters()).device
+    by = {}
+    for i, x in enumerate(ids):
+        by.setdefault(len(_pad(x, mult)), []).append(i)
+    correct, calls, positions = [0] * len(rows), 0, 0
+    for L in sorted(by):
+        idx = by[L]
+        bs = max(1, batch_tokens // L)
+        for s in range(0, len(idx), bs):
+            chunk = idx[s:s + bs]
+            x = torch.tensor([ids[i] + [0] * (L - len(ids[i])) for i in chunk], device=dev)
+            if dev.type == "cuda":
+                with torch.autocast(**AC):
+                    h = model.hidden(x)
+            else:
+                h = model.hidden(x)
+            last = h[torch.arange(len(chunk), device=dev), torch.tensor([len(ids[i]) - 1 for i in chunk], device=dev)]
+            pred = model.lm_head(last).float()[:, lid].argmax(-1).tolist()
+            for i, pr in zip(chunk, pred):
+                correct[i] = int(pr == int(rows[i]["answer"]))
+            calls += 1
+            positions += x.numel()
+    return {"n": len(rows), "correct": correct, "acc": float(np.mean(correct)) if correct else None,
+            "items_sha256": mmlu_items_sha256(rows), "source": os.path.basename(src) if src else "rows given",
+            "calls": calls, "positions": positions, "seconds": time.time() - t0}
 
 
 def run_all(model, tok, eval_toks, cfg):

@@ -177,6 +177,23 @@ if [ -n "$LAYERS" ]; then
   gate "I:stock" $r
   export_phase I_stock
   case $r in 0) ;; 124) fail 7 "index stock timeout" ;; 15) fail 15 "index stock: measured rate too slow" ;; *) fail 12 "index stock rc=$r" ;; esac
+  # the converted arm is preflighted on ITS OWN measured prefill rate and call latency (review non-blocking #2; an
+  # 8-GDN arm may be slower than stock), falling back to the stock numbers only if the converted ones are missing
+  read -r TOKS_C CALLS_C < <(python - "$CK/pipeline/results.json" "$TOKS" "$CALLS" <<'EOF'
+import json, sys
+t = json.load(open(sys.argv[1]))["throughput"]
+arm = next((v for k, v in t.items() if k.startswith("converted_")), {}) or {}
+rates = [v["tok_s"] for v in arm.values() if isinstance(v, dict) and "tok_s" in v]
+c = arm.get("call_latency", {})
+calls = [c[k] for k in ("small_call_s", "pack_call_s") if k in c]
+print(min(rates) if rates else sys.argv[2], max(calls) if calls else sys.argv[3])
+EOF
+) || fail 2 "reading the converted arm's measured rate"
+  TOKS_C=${TOKS_C%$'\r'} CALLS_C=${CALLS_C%$'\r'}
+  python -m jobs.common.rate_guard preflight --tok-s "$TOKS_C" --call-s "$CALLS_C" --volume jobs/common/readout_volume_qwen3.5.json \
+    --path fork --cap-min "$CAP_IC" --out "$WORK/out/index/preflight_conv.json" > "$WORK/logs/preflight_conv.log" 2>&1; r=$?
+  gate "I:preflight_conv" $r
+  [ $r -eq 0 ] || fail $r "converted readout projected past its cap from the converted arm's measured rate"
   say "phase I (converted arm: layers $LAYERS from $GDN_FILE)"
   python -m jobs.common.rate_guard run --results "$WORK/out/index/conv/results.jsonl" --total "$NROWS" \
     --cap-min "$CAP_IC" --report "$WORK/out/index/rate_conv.json" -- \
