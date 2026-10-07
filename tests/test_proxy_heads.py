@@ -416,3 +416,19 @@ def test_recipes_and_holdout_need_a_passing_stock_check(tmp_path):
     assert PL.main(["recipes", "--cache", "c", "--out", str(tmp_path)]) == 4
     (tmp_path / "stock_check.json").write_text(json.dumps({"ok": False}), encoding="utf-8")
     assert PL.main(["holdout", "--cache", "c", "--dev-rows", "d", "--clef", "x", "--out", str(tmp_path)]) == 4
+
+
+def test_holdout_refuses_a_summary_made_under_other_rule_amendments(tmp_path, monkeypatch):
+    out = tmp_path / "o"
+    cache, dev, clef = _select_world(out, monkeypatch)
+    sp = out / "select_summary.json"
+    doc = json.loads(sp.read_text(encoding="utf-8"))
+    assert doc["amendments"] == list(R.AMENDMENTS)
+    sp.write_text(json.dumps({**doc, "amendments": []}), encoding="utf-8")
+    with pytest.raises(PL.OutOfOrder, match="amendments"):
+        PL.holdout(out, cache, dev, clef, 10)
+    sp.write_text(json.dumps(doc), encoding="utf-8")
+    monkeypatch.setattr(R, "AMENDMENTS", tuple(R.AMENDMENTS) + ("A2",))  # the rule gained an amendment since SELECT
+    with pytest.raises(PL.OutOfOrder, match="amendments"):
+        PL.holdout(out, cache, dev, clef, 10)
+    assert not list(out.glob("*_holdout")) and not (out / "holdout_attempt.json").exists()

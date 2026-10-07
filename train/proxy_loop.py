@@ -389,6 +389,9 @@ def _validate_selection(out: Path, summ: dict, recipe: str | None, budget: dict)
         raise OutOfOrder(f"select_summary does not cover every candidate recipe: no SELECT score for {missing}")
     if summ.get("budget_sha256") != budget_sha(budget):
         raise OutOfOrder("select_summary budget != the pre-registered budget")
+    if list(summ.get("amendments") or []) != list(R.AMENDMENTS):
+        raise OutOfOrder(f"select_summary was made under rule amendments {summ.get('amendments')!r}, the rule now has "
+                         f"{list(R.AMENDMENTS)!r}: the SELECT choice must be re-made under the current rule")
     if summ.get("code_identity") != code_identity():
         raise OutOfOrder("the proxy-loop code differs from the code that made the SELECT choice (code_identity)")
     chosen = R.choose({i: r["select"] for i, r in by.items()})
