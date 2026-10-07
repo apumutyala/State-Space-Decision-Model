@@ -56,7 +56,12 @@ def load_parent_backbone(parent: str, model_dir: str, cfg: dict, gdn_ckpt: str |
     if parent == "q9af":
         from heads.backbone import load_q9af_backbone
 
-        return load_q9af_backbone(model_dir, gdn_ckpt, cfg.get("q9af") or {}, device=device, fork_mode="cache")
+        q = cfg.get("q9af") or {}
+        # hybrid (a partial export, attention layers kept) loads ONLY when the config says so; it is then labelled
+        # kind "q9af-hybrid", attention_free False in the provenance (heads.backbone.hybrid_label)
+        return load_q9af_backbone(model_dir, gdn_ckpt, q, device=device, fork_mode="cache",
+                                  dtype="bfloat16" if str(device).startswith("cuda") else "float32",
+                                  hybrid=bool(q.get("hybrid")))
     raise ValueError(f"parent must be one of {PARENTS}, got {parent!r}")
 CHECK_AFTER_STEPS = 10  # the in-training rate check uses the mean of the first steps actually run
 
@@ -190,13 +195,53 @@ def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, c
     return train_recs, recs, tr_ids, ev_ids, {"cohort": co.identity(), "train_set": tident}
 
 
+def kd_fields(cfg: dict) -> dict:
+    """``LossConfig`` KD fields from the cell's optional ``teacher`` block ({alpha, temperature, ...}). No block = {}:
+    the loss config, and so the TrainConfig hash of every non-KD cell, is unchanged (``LossConfig.identity``)."""
+    t = cfg.get("teacher")
+    if not t:
+        return {}
+    return {"kd_alpha": float(t["alpha"]), "kd_temperature": float(t["temperature"])}
+
+
+def attach_teacher(cfg: dict, items: list, teacher_dir, train_ids, expected: dict | None = None,
+                   contamination: bool = True) -> dict | None:
+    """KD cells (``cfg["teacher"]``): load the PINNED teacher (``train.teacher.load_teacher``: identity, file sha256,
+    draw, contamination), require the cell's training draw to BE the teacher's draw and its file sha256 to be the one
+    the config names, and attach per-item teacher probabilities (``train.teacher.attach``). None for a non-KD cell.
+    Raises ValueError (``TeacherIdentityError`` subclasses it) on any mismatch; ``expected`` / ``contamination`` are for
+    tests on synthetic teachers only."""
+    t = cfg.get("teacher")
+    if not t:
+        if teacher_dir:
+            raise ValueError("--teacher-dir given but the cell config has no teacher block")
+        return None
+    if not teacher_dir:
+        raise ValueError("the cell config sets 'teacher' (KD): pass --teacher-dir with the pinned teacher export")
+    from train.teacher import attach, ids_sha256, load_teacher, pinned
+
+    exp = dict(expected) if expected is not None else pinned()
+    if t.get("teacher_sha256") != exp["sha256"]:
+        raise ValueError(f"teacher.teacher_sha256 {str(t.get('teacher_sha256'))[:12]} != the pinned teacher "
+                         f"{exp['sha256'][:12]}")
+    if ids_sha256(list(train_ids)) != exp["drawn_ids_sha256"]:
+        raise ValueError("the cell's training draw is not the teacher's draw (drawn ids sha256 differ)")
+    ts = load_teacher(teacher_dir, exp, contamination=contamination)
+    cov = attach(items, ts)
+    if not cov["with_teacher"]:
+        raise ValueError("no training item received a teacher distribution")
+    return {**cov, "teacher_sha256": exp["sha256"], "drawn_ids_sha256": exp["drawn_ids_sha256"],
+            "alpha": float(t["alpha"]), "temperature": float(t["temperature"])}
+
+
 def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
     """The cell's ``TrainConfig`` (its hash is checked when a checkpoint is loaded)."""
     from train.losses import LossConfig
     from train.trainer import TrainConfig
 
     return TrainConfig(head=cfg["head"], head_kwargs=cfg.get("head_kwargs") or {}, layout=cfg["layout"],
-                       fork_mode="cache", lora_rank=cfg["lora_rank"], loss=LossConfig(arm=cfg["loss_arm"]),
+                       fork_mode="cache", lora_rank=cfg["lora_rank"],
+                       loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg)),
                        lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
                        warmup_steps=int(cfg.get("warmup_steps") or 0),
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
@@ -318,6 +363,8 @@ def main(argv=None):
     ap.add_argument("--train-dir", default=None, help="config train_set: dir with the pointer-pinned training-set files "
                     "(train.train_set); --records then supplies only the cohort (eval) records")
     ap.add_argument("--device", default="cuda", help="cuda (paid runs); cpu only for the tiny-model dry run")
+    ap.add_argument("--teacher-dir", default=None, help="KD cells (config 'teacher'): the pinned teacher export "
+                    "(train.teacher.load_teacher); refused for a cell without a teacher block")
     a = ap.parse_args(argv)
 
     import torch
@@ -359,12 +406,18 @@ def main(argv=None):
             torch.cuda.empty_cache()
 
     torch.manual_seed(cfg["seed"])
+    parent = cfg.get("parent", "rwkv7")
     try:
         validate_head(cfg)
+        if parent == "q9af" or cfg.get("teacher") or cfg.get("head_from_proxy"):
+            from jobs.q9af_cell import hooks  # typed KD-teacher / proxy-head hooks (fail closed until wired)
+
+            cfg_eff = hooks.apply(cfg)
+            if cfg_eff != cfg:
+                raise ValueError("hooks changed the config: resolve head_from_proxy into the committed config first")
     except ValueError as e:
         print(f"config: {e}", flush=True)
         return EXIT["config"]
-    parent = cfg.get("parent", "rwkv7")
     if parent == "q9af":  # pins are checked before tokenizer or weights are touched
         try:
             from heads.backbone import q9af_pin_check
@@ -404,11 +457,16 @@ def main(argv=None):
     t_tok = time.time()
     train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap)
     eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap)
+    try:
+        kd_cov = attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)
+    except ValueError as e:  # TeacherIdentityError / TeacherContamination subclass ValueError
+        print(f"teacher: {e}", flush=True)
+        return EXIT["config"]
     cell["data"] = {"records_sha256": hashlib.sha256(Path(a.records).read_bytes()).hexdigest(),
                     "n_train_records": len(tr_ids), "tokenize_s": round(time.time() - t_tok, 1),
                     "n_train_items": len(train_items), "n_eval_items": len(eval_items),
                     "guard_manifests": guard.manifests, "guard": guard.identity(), "max_k": cfg["max_k"],
-                    **cohort_ident}
+                    **cohort_ident, **({"teacher": kd_cov} if kd_cov else {})}
     save()
     if len(train_items) < cfg["min_train_items"]:
         print(f"too few items {len(train_items)}", flush=True)

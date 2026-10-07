@@ -308,6 +308,7 @@ class HiddenStateBackbone(nn.Module):
         cache.reorder_cache(torch.zeros(k, dtype=torch.long, device=dev))  # K state copies
         _assign_not_copy(cache)  # HF linear-attention caches write in place, which breaks autograd
         if not uses_cache_params:
+            _refuse_short_continuations_on_fla(last)
             # past_key_values models (Qwen3.5 hybrid, Q9-AF) continue a cache over several tokens in ONE call; right
             # padding of the continuations is exact (causal; only positions <= last are read; the state is dropped).
             # Replaces cids.shape[1] full-model calls per row (PERF_AUDIT: training / eval-card fork head).
@@ -386,6 +387,28 @@ class HiddenStateBackbone(nn.Module):
         out = m(input_ids=cids, state=cache, **base)
         f = self._pick(out)[torch.arange(len(flat), device=dev), last]
         return h, list(f.split(ks))
+
+
+def fla_installed() -> bool:
+    """fla (flash-linear-attention) importable: transformers then routes the GDN single-token decode step to fla's
+    ``fused_recurrent_gated_delta_rule``, whose backward raises NotImplementedError (fla 0.5.2)."""
+    import importlib.util
+
+    return importlib.util.find_spec("fla") is not None
+
+
+def _refuse_short_continuations_on_fla(last: torch.Tensor) -> None:
+    """PR #121 review (non-blocking 1): fail closed BEFORE a training forward whose cache continuation could take the
+    fla single-token recurrent path (no backward). Every continuation must be >= 2 tokens while autograd records on
+    an fla install. The CPU tests use the torch fallback (which has a backward), so this guard is the only thing that
+    would catch it before a paid GPU step. ``jrt-chatml-v1`` continuations are always >= 2 tokens (option id + end)."""
+    if not torch.is_grad_enabled() or not fla_installed():
+        return
+    n = int(last.min().item()) + 1
+    if n < 2:
+        raise RuntimeError(f"cache-fork continuation of {n} token(s) under autograd with fla installed: fla's "
+                           "fused_recurrent_gated_delta_rule (the GDN single-token path) has no backward. Use a "
+                           "template whose continuations are >= 2 tokens, or fork_mode='recompute'")
 
 
 def _linear_safe_cache(config):
@@ -697,24 +720,34 @@ def _sha256_file(path) -> str:
     return h.hexdigest()
 
 
-def q9af_from_stock(text_model: nn.Module, gdn_state: dict, provenance: dict | None = None) -> nn.Module:
+def q9af_from_stock(text_model: nn.Module, gdn_state: dict, provenance: dict | None = None,
+                    allow_partial: bool = False) -> nn.Module:
     """Turn a stock Qwen3.5 text model (3 GDN : 1 attention) into Q9-AF IN PLACE: every ``full_attention`` layer gets a
     native HF ``Qwen3_5GatedDeltaNet`` loaded (strict) from the converted state dict that ``convert/`` produced for it
     (``convert.gdn.GDN`` is parameter-compatible with the HF layer), its attention module is deleted and
     ``config.layer_types`` becomes all ``linear_attention`` (so the HF cache / masks treat it as attention-free).
 
     ``gdn_state`` = ``{layer index: GDN state_dict}`` (``torch.save`` format of ``convert.pipeline.save_gdns`` /
-    ``gdn_converted.pt``). It must cover EXACTLY the attention layers: a partial conversion is a hybrid, not Q9-AF."""
+    ``gdn_converted.pt``). It must cover EXACTLY the attention layers: a partial conversion is a hybrid, not Q9-AF.
+
+    ``allow_partial=True`` (an EXPLICITLY configured hybrid, e.g. ``gdn_partial.pt`` of a full-8 run whose gate rolled
+    some layers back): ``gdn_state`` may cover any non-empty subset of the attention layers; the others keep their
+    attention, ``config.layer_types`` keeps them ``full_attention`` and the provenance is stamped
+    ``kind: "q9af-hybrid"``, ``attention_free: False`` (``hybrid_label``). Never an attention-free model."""
     from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5GatedDeltaNet
 
     cfg = text_model.config
     attn = [i for i, t in enumerate(cfg.layer_types) if t == "full_attention"]
     got = sorted(int(k) for k in gdn_state)
     if got != attn:
-        raise LineageError(f"converted layers {got} != the stock model's attention layers {attn} (Q9-AF needs all)")
-    cfg.layer_types = ["linear_attention"] * len(cfg.layer_types)
+        if not allow_partial:
+            raise LineageError(f"converted layers {got} != the stock model's attention layers {attn} (Q9-AF needs all)")
+        if not got or not set(got) <= set(attn):
+            raise LineageError(f"hybrid: converted layers {got} must be a non-empty subset of the attention layers {attn}")
+    cfg.layer_types = ["linear_attention" if (t == "linear_attention" or i in got) else "full_attention"
+                       for i, t in enumerate(cfg.layer_types)]
     layers = text_model.layers
-    for i in attn:
+    for i in got:
         layer = layers[i]
         ref = layer.mlp.down_proj.weight
         gdn = Qwen3_5GatedDeltaNet(cfg, i).to(device=ref.device, dtype=ref.dtype)
@@ -726,8 +759,19 @@ def q9af_from_stock(text_model: nn.Module, gdn_state: dict, provenance: dict | N
         layer.block_type = "linear_attention"
     if hasattr(text_model, "layer_types"):
         text_model.layer_types = list(cfg.layer_types)
-    text_model.q9af_provenance = provenance or {}
+    prov = dict(provenance or {})
+    if got != attn:  # a hybrid is labelled as such wherever its provenance travels (identity, lineage, reports)
+        prov.update(hybrid_label(got, attn))
+    text_model.q9af_provenance = prov
     return text_model
+
+
+def hybrid_label(converted: Sequence[int], attention_layers: Sequence[int]) -> dict:
+    """The label every hybrid (partial-conversion) build carries: NOT attention-free."""
+    kept = sorted(set(attention_layers) - set(int(i) for i in converted))
+    return {"kind": "q9af-hybrid", "attention_free": False, "converted_layers": sorted(int(i) for i in converted),
+            "attention_layers_kept": kept,
+            "label": f"HYBRID Q9-H{len(kept)}: {len(kept)} attention layer(s) kept {kept}; NOT attention-free"}
 
 
 def q9af_pin_check(pin: dict, gdn_ckpt, model_dir=None) -> dict:
@@ -761,22 +805,43 @@ def q9af_pin_check(pin: dict, gdn_ckpt, model_dir=None) -> dict:
 
 
 def load_q9af_backbone(model_dir: str, gdn_ckpt: str, pin: dict, device: str = "cuda", dtype: str = "bfloat16",
-                       fork_mode: str = "cache") -> HiddenStateBackbone:
+                       fork_mode: str = "cache", hybrid: bool = False) -> HiddenStateBackbone:
     """Q9-AF for m2 training: stock ``Qwen/Qwen3.5-9B`` (text path, loaded exactly as ``convert.model.load`` does)
     with all 8 attention layers replaced by the converted GDNs from ``gdn_ckpt``. Pins are checked BEFORE any weight
     is loaded; the provenance (checkpoint sha256, base revision, config sha256) goes into ``backbone_identity`` and
     therefore into every checkpoint lineage and decide revision."""
-    from transformers import Qwen3_5ForConditionalGeneration
+    from transformers import AutoConfig, Qwen3_5ForCausalLM, Qwen3_5ForConditionalGeneration
 
     prov = q9af_pin_check(pin, gdn_ckpt, model_dir)
     gdn_state = torch.load(gdn_ckpt, map_location="cpu", weights_only=True)
-    full = Qwen3_5ForConditionalGeneration.from_pretrained(model_dir, dtype=getattr(torch, dtype),
-                                                           device_map={"": device})
-    text = full.model.language_model
+    # device_map needs accelerate; a CPU load (the shell dry runs) does without it
+    place = {} if str(device) == "cpu" else {"device_map": {"": device}}
+    if hasattr(AutoConfig.from_pretrained(model_dir), "text_config"):  # the real 9B snapshot (vision + text)
+        full = Qwen3_5ForConditionalGeneration.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+        text = full.model.language_model
+    else:  # a text-only Qwen3.5 checkpoint (the tiny CPU stand-in of the shell dry runs)
+        full = Qwen3_5ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+        text = full.model
     del full  # the vision tower and LM head are not part of the backbone
     for p in text.parameters():
         p.requires_grad_(False)
-    q9af_from_stock(text, gdn_state, prov)
-    bb = HiddenStateBackbone(text, spec=BACKBONES["q9af"], pad_id=0, fork_mode=fork_mode)
+    q9af_from_stock(text, gdn_state, prov, allow_partial=hybrid)
+    prov = text.q9af_provenance
+    spec = BACKBONES["q9af"]
+    n = len(text.layers)
+    if n != spec.n_layers:  # a smaller Qwen3.5 stand-in (CPU dry runs): the same per-layer LoRA targets, scaled counts
+        import dataclasses
+
+        spec = dataclasses.replace(spec, name=f"q9af-standin-{n}l", n_layers=n, d_model=int(text.config.hidden_size),
+                                   lora_groups=tuple((g, rx, c * n // spec.n_layers) for g, rx, c in spec.lora_groups),
+                                   lora_shapes=())
+    if prov.get("kind") == "q9af-hybrid":  # LoRA also on the kept attention layers; never attention_free
+        import dataclasses
+
+        kept = len(prov["attention_layers_kept"])
+        spec = dataclasses.replace(spec, name="q9af-hybrid", attention_free=False,
+                                   hf_id=spec.hf_id + " (HYBRID: " + prov["label"] + ")",
+                                   lora_groups=spec.lora_groups + (("attn", _QATTN, kept * 4),))
+    bb = HiddenStateBackbone(text, spec=spec, pad_id=0, fork_mode=fork_mode)
     bb.provenance = prov
     return bb

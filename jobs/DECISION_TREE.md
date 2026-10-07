@@ -30,6 +30,9 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | q9_feature_cache e5_dev (proxy head loop, PREMORTEM blocker #1; E5 short-code DEV features; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_dev.json` | $15.35 | $30 | ~$3.86 |
 | q9_feature_cache e5_train (proxy head loop, PREMORTEM blocker #1; E5 short-code, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_train.json` | $12.87 | $30 | ~$2.82 |
 | m2_first_cell (first trained cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k set; job-tvuat ADOPT execution config; PR #74) | `jobs/m2_first_cell/` | $66.03 | $70 | ~$26.14 |
+| q9af_cell parent (the Q9-AF PARENT ARM once: stock readout of the converted model on cohort v3 + full DEV; shared comparator + lineage anchor of both cells; rule `jobs/q9af_cell/rule.py` 2d18afa; blocked on the job-2xe5w export pin; G13 re-priced at T <= 4,096) | `jobs/q9af_cell/job_params_parent.json` | $38.12 | $40 | ~$12.56 |
+| q9af_cell cell_r64 (first Q9-AF decision cell: LoRA r64 + fork head, clef arm, 150k draw, act_ckpt, G12/G13 vs the parent arm; `depends_on` parent; E9 pair) | `jobs/q9af_cell/job_params_cell_r64.json` | $74.25 | $75 | ~$23.15 |
+| q9af_cell cell_r256 (same cell, LoRA r256; E9 pair) | `jobs/q9af_cell/job_params_cell_r256.json` | $74.25 | $75 | ~$23.15 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
 need one cap covering all of them: MTD + `costs.concurrent_cap_usd([...])` = the ceiling of the sum of their worst

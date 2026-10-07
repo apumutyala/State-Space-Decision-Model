@@ -1,0 +1,27 @@
+{
+ "bytes_per_token_per_layer_per_d": {
+  "False": 112.814453125,
+  "True": 5.015625
+ },
+ "ckpt": {
+  "saved_bytes": [
+   196736,
+   689792
+  ],
+  "slope_bytes_per_token": 1284.0
+ },
+ "lengths": [
+  128,
+  512
+ ],
+ "no_ckpt": {
+  "saved_bytes": [
+   7397456,
+   18487568
+  ],
+  "slope_bytes_per_token": 28880.5
+ },
+ "slope_ratio": 22.49260124610592,
+ "test": "tests/test_q9af_act_ckpt.py::test_act_ckpt_shrinks_saved_activations_per_token",
+ "what": "saved-for-backward bytes, one cache-fork forward (prefix T + 4 two-token continuations), tiny Q9-AF stand-in (4 layers, d=64, GDN head dims 8, LoRA r4 on gdn+mlp), fp32 CPU"
+}

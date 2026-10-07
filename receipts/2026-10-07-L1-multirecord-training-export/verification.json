@@ -1,0 +1,15 @@
+{
+  "base_commit": "4538e9d72dfc587221aba096b91ca60f1bca76d9",
+  "billed_cost_usd": 0,
+  "output_sha256": {
+    "export-manifest.json": "2e1fe53b3cca6498c6ab9af00ac2b1f007d7637375cc525f1fce44358a561f0b",
+    "training_records.jsonl": "bf251a42c177a84cf0bc0eaa03f1396821c59ed0a67efdc22cb74f07ec9b0796"
+  },
+  "python": "3.12.13",
+  "scope": "data plumbing only; no model training or L1 capability",
+  "source_sha256": {
+    "language_growth/multirecord_training.py": "b3d2e43d701e4b1d6aad9bca2d7abc4fabf28d3bee499ef6a33af19234a998f4",
+    "language_growth/tests/test_multirecord_training.py": "f41b401035058a3dda121e319f9d2baa46cd7f07c0eb734355b3c9c5235b3623",
+    "language_growth/training_records.py": "9c145e2eec589287bf4a4bc84acb95f9b37685f096fa1a103db5c31ae97cf555"
+  }
+}

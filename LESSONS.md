@@ -331,6 +331,14 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - Receipt: `receipts/2026-10-07-D-q9-cache-reprice/`.
 - **Status:** PARTIAL. The fix is per job: any runner that announces a weighted total before a one-time setup phase repeats this. A lint that requires the total to be written after setup is a candidate.
 
+### L-31 A mutable in-memory fit partition admitted reserved calibration worlds
+- Date: 2026-10-07.
+- Symptom: an adversarial review appended the eight reserved calibration worlds to the loaded fit-record list; the first consumer version converted all 4,096 rows into Items because it trusted the load-time hash and derived its expected IDs from the same mutated list.
+- Cost: $0; caught before model conversion, training or measurement.
+- Root cause: the source hash was checked only when loading. The mutable bundle crossed another trust boundary before trainer conversion.
+- **Check:** `language_growth/l1_world_training.py::L1WorldTrainingData.fit_items` re-hashes the pinned fit bytes and checks exact fit-world membership before importing/calling the existing Item converter. `language_growth/tests/test_l1_world_training.py::test_reserved_calibration_rows_cannot_be_appended_before_fit_conversion` injects the reserved rows and asserts rejection. Returned top-level cohorts are tuples.
+- **Status:** ENFORCED.
+
 ### L-32 The recurrent-state fake used the wrong slot-container shape
 - Date: 2026-10-07.
 - Symptom: a fresh review compared the protocol against the installed Transformers cache implementation and found that the fake used lists while `LinearAttentionLayer` stores recurrent states and initialization flags as dictionaries keyed by `0, 1, 2`. The fake passed while every real native RWKV capture would have refused.

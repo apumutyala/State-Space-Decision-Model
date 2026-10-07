@@ -1,0 +1,21 @@
+{
+ "_comment": "Teacher data pin for the KD cell (PR #121 review non-blocking 5/6). job_params_cell_r64_kd.json does NOT exist yet (a dated KD-vs-r64 rule amendment and pricing come first, JOB_SPEC TODO); when it is added, its context must include this data entry and these manifest_files (tests/test_q9af_cell.py checks it). The launcher refuses the file unless its sha256 equals the KD config's teacher.teacher_sha256 (= train.proxy_rule.TEACHER sha256).",
+ "data": [
+  {
+   "src": "teacher/teacher-clef-flash.jsonl",
+   "src_env": "Q9AF_TEACHER_JSONL",
+   "dest": "teacher/teacher-clef-flash.jsonl",
+   "pin_json": [
+    "jobs/q9af_cell/q9af_cell_r64_kd.json",
+    "teacher",
+    "teacher_sha256"
+   ]
+  }
+ ],
+ "manifest_files": [
+  "jobs/q9af_cell/q9af_cell_r64_kd.json",
+  "jobs/q9af_cell/kd_context.json",
+  "train/teacher.py",
+  "train/proxy_rule.py"
+ ]
+}
