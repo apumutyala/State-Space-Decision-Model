@@ -1,6 +1,8 @@
 """CPU scripted-state parity/accounting; no model/checkpoint construction or real forwards."""
 import copy
 import hashlib
+import json
+from pathlib import Path
 
 import pytest
 
@@ -190,3 +192,23 @@ def test_nonfinite_state_output_is_refused():
     with pytest.raises(BackendUnsupported, match="nonfinite"):
         backend.score(request(), lambda: None)
     assert not full_calls
+
+
+def test_committed_exact_volume_sums_preserve_rows_options_and_admission():
+    root = Path(__file__).resolve().parents[1]
+    result = json.loads((root / "receipts/2026-10-07-D-code-label-v2-fork/dev-volume.json").read_text(encoding="utf-8"))
+    assert result["input_rows_sha256"] == "406d40e6891690fad48fb82252c44b89a5337c603ff79e03ceb11fffc4eb28f2"
+    assert result["rows"] == len(result["per_row"]) == 2008
+    assert result["volume_script_sha256"] == hashlib.sha256((root / "scripts/volume_rwkv_g1_code_label_v2.py").read_bytes()).hexdigest()
+    per = list(result["per_row"].values())
+    assert all(row["admitted"]["v1"] == row["admitted"]["v2"] for row in per)
+    for arm in ("v1", "v2"):
+        for key in ("tokens", "positions", "calls", "n_options"):
+            assert sum(row[arm][key] for row in per) == result["totals"]["all_planned"][arm][key]
+            assert sum(row[arm][key] for row in per if row["admitted"][arm]) == result["totals"]["admitted"][arm][key]
+    totals = result["totals"]["all_planned"]
+    assert totals["v2"]["positions"] == 6675792 < totals["v1"]["positions"] / 8
+    assert totals["v2"]["calls"] == 14437 > totals["v1"]["calls"] == 8467
+    assert totals["v1"]["n_options"] == totals["v2"]["n_options"] == 46807
+    assert totals["v2"]["max_pack_rows"] == 4 and totals["v2"]["max_pack_positions"] <= 4096
+    assert totals["v2"]["oversized_singleton_packs"] == 0
