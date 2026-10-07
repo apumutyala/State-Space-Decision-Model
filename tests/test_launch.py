@@ -338,3 +338,70 @@ def test_real_tree_context_builds_without_cr_and_deterministically():
     assert b"jobs/cell_step_profile/cell_step_job.sh" in ctx["Dockerfile"][0]
     assert launch.cr_violations(ctx, ROOT, sha) == []
     assert launch.deterministic_tar(ctx) == launch.deterministic_tar(dict(reversed(list(ctx.items()))))
+
+
+# ----------------------------------------------------------------------------- Clef recipes (CONTEXT_RECIPES)
+def _clef_files(extra=None):
+    """The real tree's archive (HEAD) plus optional overrides, as build_context sees it."""
+    if not (ROOT / ".git").exists():
+        pytest.skip("needs a git checkout")
+    sha = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    files = dict(launch.archive(ROOT, sha))
+    files.update(extra or {})
+    return sha, files
+
+
+def test_clef_recipes_cover_every_clef_mode_and_rewrite_the_image():
+    modes = {lint.mode_of(r) for r in lint.params_files(ROOT) if lint.job_of(r) == "clef_baseline"}
+    assert modes == {m for (j, m) in launch.CONTEXT_RECIPES if j == "clef_baseline"}
+    sha, files = _clef_files()
+    spec = {**launch.CONTEXT_RECIPES[("clef_baseline", "teacher_clef_flash")], "data": []}
+    ctx = launch.build_context(files, "clef_baseline", sha, spec, "jobs/clef_baseline/job_params_teacher_clef_flash.json", None)
+    df = ctx["Dockerfile"][0].decode()
+    assert "COPY code/m1/ /app/" in df and "COPY app/ /app/" not in df
+    assert "COPY CONTEXT_MANIFEST.json /app/CONTEXT_MANIFEST.json" in df and "COPY data/ /data/" in df
+    man = json.loads(ctx["CONTEXT_MANIFEST.json"][0])
+    assert man["branch_commit"] == sha  # run_job.sh reads /app/CONTEXT_MANIFEST.json['branch_commit']
+    assert "jobs/m2_pilot/guard_pin.json" in man["files_sha256"]
+
+
+def test_clef_data_pins_literal_json_gunzip_and_src_env(tmp_path, monkeypatch):
+    import gzip as gz
+
+    raw = b'{"id": "x"}\n'
+    blob = gz.compress(raw, mtime=0)
+    ptr = json.dumps({"records_uncompressed_sha256": hashlib.sha256(raw).hexdigest()}).encode()
+    sha, files = _clef_files({"tmp/pointer.json": (ptr, 0o644)})
+    (tmp_path / "d").mkdir()
+    (tmp_path / "d" / "records.jsonl.gz").write_bytes(blob)
+    ref = tmp_path / "elsewhere.jsonl"
+    ref.write_bytes(b"ref\n")
+    base = {**launch.CONTEXT_RECIPES[("clef_baseline", "index_subset")]}
+    ok = {**base, "data": [
+        {"src": "records.jsonl.gz", "dest": "m2-150k/records.jsonl.gz", "gunzip": True,
+         "pin_json": ["tmp/pointer.json", "records_uncompressed_sha256"]},
+        {"src": "nope", "src_env": "REF_FLASH", "dest": "reference/r.jsonl", "pin_sha256": hashlib.sha256(b"ref\n").hexdigest()}]}
+    monkeypatch.setenv("REF_FLASH", str(ref))
+    ctx = launch.build_context(files, "clef_baseline", sha, ok, "jobs/clef_baseline/job_params_index_subset.json",
+                               tmp_path / "d")
+    assert ctx["data/m2-150k/records.jsonl.gz"][0] == blob and ctx["data/reference/r.jsonl"][0] == b"ref\n"
+    bad = {**ok, "data": [dict(ok["data"][1], pin_sha256="0" * 64)]}
+    with pytest.raises(launch.LaunchError, match="!= pin"):
+        launch.build_context(files, "clef_baseline", sha, bad, "x", tmp_path / "d")
+    monkeypatch.delenv("REF_FLASH")
+    with pytest.raises(launch.LaunchError, match="set REF_FLASH"):
+        launch.build_context(files, "clef_baseline", sha, ok, "x", tmp_path / "d")
+
+
+def test_clef_real_pins_name_the_reviewed_identities():
+    """The recipe's pins are the committed pointer / guard pin values (no new hash was introduced by the recipe)."""
+    sha, files = _clef_files()
+    ptr = json.loads(files["data/manifests/sample-150000-seed20261006.pointer.json"][0])
+    gp = json.loads(files["jobs/m2_pilot/guard_pin.json"][0])
+    pins = {d["dest"]: launch.data_pin(files, d) for d in launch.CONTEXT_RECIPES[("clef_baseline", "teacher_clef")]["data"]}
+    assert pins["m2-150k/records.jsonl.gz"] == ptr["records_uncompressed_sha256"]
+    assert pins["suite-0.2/selected-rows.jsonl.gz"] == gp["suite_files_sha256_uncompressed"]["selected-rows.jsonl.gz"]
+    assert pins["suite-0.2/excluded-questions.json"] == gp["suite_exclusions_sha256"]
+    idx = {d["dest"]: launch.data_pin(files, d) for d in launch.CONTEXT_RECIPES[("clef_baseline", "index_subset")]["data"]}
+    assert idx["reference/clef_flash.decide.results.jsonl"].startswith("463f21ff")
+    assert idx["slices/dev-rows.jsonl.gz"] == files["jobs/clef_baseline/data.sha256"][0].decode().split()[0]

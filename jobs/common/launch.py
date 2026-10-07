@@ -14,11 +14,13 @@ Steps (each refuses with a non-zero exit; jobs/LAUNCH_CHECKLIST.md):
      finalize_context / open_mission / submit_job arguments (idempotency key from the context sha256).
 
 The context and submit fields come from job_params ("submit" and "context" blocks) for new jobs, or from the tables
-below, transcribed from each legacy JOB_SPEC's platform call and build_context.sh.
+below, transcribed from each legacy JOB_SPEC's platform call and build_context.sh. CONTEXT_RECIPES supplies the context
+for jobs whose params defer to a build_context.sh (Clef: Dockerfile rewrite, literal / JSON-key data pins, REF_FLASH).
 """
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import io
 import json
@@ -94,6 +96,52 @@ LEGACY_CONTEXT: dict[str, dict] = {
     "qual": {"dockerfile": "jobs/qual/Dockerfile", "data": []},
     "m2_pilot": {"unsupported": "needs the parent-arm cache + guard_ready dry run: use jobs/m2_pilot/build_context.sh"},
     "m2_parent_arm": {"unsupported": "runs guard_ready on the shipped suite: use jobs/m2_parent_arm/build_context.sh"},
+}
+
+# ----------------------------------------------------------------------------- Clef baseline (jobs/clef_baseline)
+#: The Clef image copies app/ -> /app (not code/m1) and reads /app/CONTEXT_MANIFEST.json, so its Dockerfile is rewritten
+#: to take the launcher's layout. Data pins that are not `<sha>  <path>` files in the archive:
+#:   pin_sha256  literal sha256 of the shipped bytes (job-sgihj's decide results, art-8y6d8);
+#:   pin_json    [archive file, key, ...]: the sha256 the committed pointer / guard pin records, of the UNCOMPRESSED
+#:               bytes when "gunzip" is true (the 150k pointer, jobs/m2_pilot/guard_pin.json).
+#: src_env names an environment variable that may point at the source file outside --data (REF_FLASH).
+_CLEF_IMAGE = {"dockerfile": "jobs/clef_baseline/Dockerfile",
+               "rewrites": [["COPY app/ /app/",
+                             "COPY code/m1/ /app/\nCOPY CONTEXT_MANIFEST.json /app/CONTEXT_MANIFEST.json"]]}
+_CLEF_REF = {"src": "reference/clef_flash.decide.results.jsonl", "src_env": "REF_FLASH",
+             "dest": "reference/clef_flash.decide.results.jsonl",
+             "pin_sha256": "463f21ff492fc792da4d40ecc501cffab0498d2458715f8effd3270614cbd0aa"}
+_PTR = "data/manifests/sample-150000-seed20261006.pointer.json"
+_B150 = "m2/build/sample-150000-seed20261006/"
+_GPIN = "jobs/m2_pilot/guard_pin.json"
+_CLEF_TEACHER_DATA = [
+    {"src": _B150 + "records.jsonl.gz", "dest": "m2-150k/records.jsonl.gz", "gunzip": True,
+     "pin_json": [_PTR, "records_uncompressed_sha256"]},
+    {"src": _B150 + "sample-150000-seed20261006.manifest.jsonl.gz",
+     "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz", "gunzip": True,
+     "pin_json": [_PTR, "manifest_uncompressed_sha256"]},
+    {"src": _B150 + "sample-150000-seed20261006.content.jsonl.gz",
+     "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz", "gunzip": True,
+     "pin_json": [_PTR, "content_map_uncompressed_sha256"]},
+    {"src": "suite-0.2/selected-rows.jsonl.gz", "dest": "suite-0.2/selected-rows.jsonl.gz", "gunzip": True,
+     "pin_json": [_GPIN, "suite_files_sha256_uncompressed", "selected-rows.jsonl.gz"]},
+    {"src": "suite-0.2/added-rows.jsonl.gz", "dest": "suite-0.2/added-rows.jsonl.gz", "gunzip": True,
+     "pin_json": [_GPIN, "suite_files_sha256_uncompressed", "added-rows.jsonl.gz"]},
+    {"src": "suite-0.2/excluded-questions.json", "dest": "suite-0.2/excluded-questions.json",
+     "pin_json": [_GPIN, "suite_exclusions_sha256"]},
+]
+_CLEF_INDEX = {**_CLEF_IMAGE, "data": [_DEV, _CLEF_REF],
+               "manifest_files": ["jobs/clef_baseline/overlength_rows.json", "jobs/common/dev_subset_m1.json"]}
+_CLEF_TEACHER = {**_CLEF_IMAGE, "data": _CLEF_TEACHER_DATA, "manifest_files": ["jobs/clef_baseline/teacher_scope.json",
+                                                                              _PTR, _GPIN]}
+#: (job, mode) -> context recipe. Takes precedence over a job_params "context" block that says "unsupported" (the
+#: Clef params merged in #98 point at build_context.sh, which needs a zstd binary and a hand-built submit.json).
+CONTEXT_RECIPES: dict[tuple[str, str | None], dict] = {
+    ("clef_baseline", "index_subset"): _CLEF_INDEX,
+    ("clef_baseline", "index_full"): _CLEF_INDEX,
+    ("clef_baseline", "overlength_flash"): _CLEF_INDEX,
+    ("clef_baseline", "teacher_clef_flash"): _CLEF_TEACHER,
+    ("clef_baseline", "teacher_clef"): _CLEF_TEACHER,
 }
 
 
@@ -219,14 +267,30 @@ def pins(text: str) -> dict[str, str]:
     return out
 
 
+def data_pin(files: dict, item: dict) -> str | None:
+    """The sha256 a data item must have: from a `<sha>  <path>` pin file, a literal, or a key of a committed JSON."""
+    if item.get("pin"):
+        return pins(files[item["pin"]][0].decode()).get(item["dest"])
+    if item.get("pin_sha256"):
+        return item["pin_sha256"]
+    if item.get("pin_json"):
+        rel, *keys = item["pin_json"]
+        v = json.loads(files[rel][0])
+        for k in keys:
+            v = v.get(k) if isinstance(v, dict) else None
+        return v if isinstance(v, str) else None
+    raise LaunchError(f"data {item['dest']}: no pin")
+
+
 def build_context(files: dict, job: str, sha: str, spec: dict, params_path: str, data_dir: Path | None) -> dict:
     """{path in context: (bytes, mode)}: Dockerfile, code/m1/**, data/**, CONTEXT_MANIFEST.json."""
     if "unsupported" in spec:
         raise LaunchError(f"{job}: {spec['unsupported']}")
     ctx = {f"code/m1/{p}": v for p, v in files.items()}
     df = files[spec["dockerfile"]][0].decode()
-    if spec.get("cmd_rewrite"):
-        old, new = spec["cmd_rewrite"]
+    for old, new in ([spec["cmd_rewrite"]] if spec.get("cmd_rewrite") else []) + list(spec.get("rewrites", [])):
+        if old not in df:
+            raise LaunchError(f"Dockerfile rewrite failed: {old!r} not in {spec['dockerfile']}")
         df = df.replace(old, new)
         if new not in df:
             raise LaunchError("Dockerfile CMD rewrite failed")
@@ -234,14 +298,20 @@ def build_context(files: dict, job: str, sha: str, spec: dict, params_path: str,
     for item in spec.get("data", []):
         if data_dir is None:
             raise LaunchError(f"{job} ships data ({item['dest']}): pass --data <SSDM_DATA dir>")
-        b = (data_dir / item["src"]).read_bytes()
-        want = pins(files[item["pin"]][0].decode()).get(item["dest"])
-        if want != sha256(b):
-            raise LaunchError(f"data {item['dest']}: sha256 {sha256(b)} != pin {want} ({item['pin']})")
+        src = Path(os.environ[item["src_env"]]) if item.get("src_env") and os.environ.get(item["src_env"]) \
+            else data_dir / item["src"]
+        if not src.is_file():
+            raise LaunchError(f"data {item['dest']}: source {src} missing" +
+                              (f" (set {item['src_env']})" if item.get("src_env") else ""))
+        b = src.read_bytes()
+        want, got, what = data_pin(files, item), sha256(gzip.decompress(b) if item.get("gunzip") else b), \
+            item.get("pin") or item.get("pin_json") or "pin_sha256"
+        if not want or want != got:
+            raise LaunchError(f"data {item['dest']}: sha256 {got} != pin {want} ({what})")
         ctx[f"data/{item['dest']}"] = (b, 0o644)
     if "COPY data/" in df and not any(p.startswith("data/") for p in ctx):
         ctx["data/.keep"] = (b"", 0o644)
-    man = {"job": job, "m1_sha": sha, "builder": "jobs.common.launch", "params": params_path,
+    man = {"job": job, "m1_sha": sha, "branch_commit": sha, "builder": "jobs.common.launch", "params": params_path,
            "dockerfile_sha256": sha256(ctx["Dockerfile"][0]),
            "files_sha256": {p: sha256(files[p][0]) for p in sorted({params_path, *spec.get("manifest_files", [])})},
            "data_sha256": {p: sha256(b) for p, (b, _) in sorted(ctx.items()) if p.startswith("data/")}}
@@ -329,6 +399,8 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
     tests = run_tests(code, job) if run_job_tests else {"skipped": True}
     sub = p.get("submit") or LEGACY_SUBMIT.get((job, mode))
     spec = p.get("context") or LEGACY_CONTEXT.get(job)
+    if (not spec or "unsupported" in spec) and (job, mode) in CONTEXT_RECIPES:
+        spec = CONTEXT_RECIPES[(job, mode)]
     if not sub or not spec:
         raise LaunchError(f"{job}/{mode}: job_params needs 'submit' {{command, key, checks}} and 'context' blocks")
     runner = sha_lint.runner_of(code, job, p)
