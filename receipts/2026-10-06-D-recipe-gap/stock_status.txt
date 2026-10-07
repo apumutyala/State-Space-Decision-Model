@@ -1,0 +1,47 @@
+['run_id', 'catalog_id', 'dataset', 'track', 'group_id', 'payload_sha256', 'benchmark_origin', 'proxy_tokens', 'batch', 'started_utc', 'engine', 'status', 'response', 'raw_output', 'completed_utc', 'total_wall_ms', 'model_request_wall_ms']
+1 {'ok': 126}
+2 {'ok': 48, 'unsupported': 3}
+3 {'ok': 38}
+4 {'ok': 76}
+5 {'ok': 76}
+9 {'ok': 12}
+11 {'ok': 12}
+12 {'ok': 43}
+20 {'ok': 61}
+21 {'ok': 59}
+22 {'error': 58, 'ok': 1}
+23 {'ok': 60}
+25 {'ok': 14}
+28 {'ok': 43}
+29 {'ok': 43}
+30 {'ok': 44}
+31 {'ok': 43}
+32 {'ok': 43}
+33 {'ok': 43}
+36 {'ok': 12, 'unsupported': 4}
+37 {'ok': 76}
+38 {'ok': 45}
+39 {'ok': 43}
+40 {'ok': 45}
+41 {'ok': 43}
+42 {'ok': 50}
+43 {'ok': 42}
+44 {'ok': 43}
+45 {'ok': 37}
+48 {'ok': 64}
+50 {'ok': 60}
+56 {'ok': 76}
+57 {'ok': 43}
+58 {'ok': 43}
+59 {'ok': 45}
+61 {'ok': 76}
+62 {'ok': 176}
+64 {'ok': 39}
+58 (22, 'error/backend_error: the backend failed or returned a malformed result; details withheld')
+1 (2, 'exhausted/input_tokens_exceeded: longest model input 17128 tokens > max_input_tokens 16384')
+1 (2, 'exhausted/input_tokens_exceeded: longest model input 17977 tokens > max_input_tokens 16384')
+1 (2, 'exhausted/input_tokens_exceeded: longest model input 17364 tokens > max_input_tokens 16384')
+1 (36, 'exhausted/input_tokens_exceeded: longest model input 25037 tokens > max_input_tokens 16384')
+1 (36, 'exhausted/input_tokens_exceeded: longest model input 28499 tokens > max_input_tokens 16384')
+1 (36, 'exhausted/input_tokens_exceeded: longest model input 22244 tokens > max_input_tokens 16384')
+1 (36, 'exhausted/input_tokens_exceeded: longest model input 24399 tokens > max_input_tokens 16384')
