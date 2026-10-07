@@ -195,3 +195,52 @@ def test_rebuild_is_byte_identical_and_the_first_cell_draw_is_unchanged(v3):
     assert hashlib.sha256("\n".join(after).encode()).hexdigest() == V.FIRST_CELL_DRAW["drawn_ids_sha256"]
     after60 = split_ids(sorted(set(pool) - ex["ids"]), V.DRAW_RESERVE, 0, 0)[0]
     assert after60 == split_ids(pool, V.DRAW_RESERVE, 0, 0)[0]
+
+
+def _toy_train_set(d: Path, ids: list[str]) -> Path:
+    """A pointer-shaped training set (records / manifest / content map with real hashes) and its pointer file."""
+    from train.cohort import record_content_hash
+
+    recs = [{"id": i, "family": "toy", "source": "toy", "state": {"ticket": f"toy ticket {k}: printer {k} jammed"},
+             "questions": {"team": {"type": "choice", "instructions": "Which team?",
+                                    "criteria": {"it": "IT", "fac": "Facilities"}}},
+             "labels": {"team": "it"}} for k, i in enumerate(ids)]
+    d.mkdir(parents=True, exist_ok=True)
+    lines = [json.dumps(r, ensure_ascii=False, sort_keys=True) for r in recs]
+    raw = {"records.jsonl.gz": "".join(x + "\n" for x in lines),
+           "toy.manifest.jsonl.gz": "".join(json.dumps({"id": r["id"], "sha256": hashlib.sha256(x.encode()).hexdigest(),
+                                                        "source": "toy"}) + "\n" for r, x in zip(recs, lines)),
+           "toy.content.jsonl.gz": "".join(json.dumps({"content_sha256": record_content_hash(r), "id": r["id"]}) + "\n"
+                                           for r in recs)}
+    for name, text in raw.items():
+        with gzip.open(d / name, "wt", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    ptr = {"build": "toy", "manifest": "toy.manifest.jsonl.gz", "content_map": "toy.content.jsonl.gz",
+           "n_records": len(ids), **{k: hashlib.sha256(raw[f].encode()).hexdigest() for k, f in (
+               ("records_uncompressed_sha256", "records.jsonl.gz"),
+               ("manifest_uncompressed_sha256", "toy.manifest.jsonl.gz"),
+               ("content_map_uncompressed_sha256", "toy.content.jsonl.gz"))}}
+    (d / "pointer.json").write_text(json.dumps(ptr), encoding="utf-8")
+    return d / "pointer.json"
+
+
+def test_train_set_draw_excludes_cohort_v3_and_rechecks(tmp_path, v3, new):
+    """train.train_set.draw (m2 first cell, q9_feature_cache, fla_rwkv7 train mix) removes v3 before split_ids."""
+    from train.run_cell import split_ids
+    from train.train_set import draw
+
+    held = [e["id"] for e in new[:20]]
+    item_twin = f"m2:multi:{new[30]['id']}+m2:sst5:999999"  # renders a v3 source item
+    clean = [f"m2:toy:{k}" for k in range(200)]
+    ids = held + [item_twin] + clean
+    ptr = _toy_train_set(tmp_path / "set", ids)
+    cfg = {"train_set": {"pointer": str(ptr)}, "cohort_sha256": V2_SHA256, "seed": 0, "n_train_records": 150}
+    _, tr, ident = draw(cfg, tmp_path / "set")
+    assert not set(tr) & (set(held) | {item_twin})
+    assert tr == split_ids(sorted(clean), 150, 0, 0)[0]  # exactly the draw over the pool minus v3
+    assert ident["cohort_v3_excluded"]["n"] == 21 and ident["cohort_v3_excluded"]["cohort"]["sha256"] == V3_SHA256
+    with pytest.raises(Exception, match="pool"):  # v3 records never count toward the pool
+        draw({**cfg, "n_train_records": 201}, tmp_path / "set")
+    # a cell pinning v3 itself is allowed to point at the set v3 was carved from
+    _, tr3, _ = draw({**cfg, "cohort_sha256": V3_SHA256}, tmp_path / "set")
+    assert tr3 == tr

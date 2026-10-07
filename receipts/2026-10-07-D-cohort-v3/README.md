@@ -143,3 +143,19 @@ so the floor is met with ~8 % headroom over the ECE pin. The 1/sqrt(n) re-estima
 
 Tests: `pytest.txt` holds the task command plus test_margin_sim / test_promotion_margins / test_m2_gates.
 `pytest-rebuild.txt` holds the opt-in byte-identical rebuild.
+
+## train.train_set.draw guard (after #101 merged) and the in-flight q9 cache job
+
+`train.train_set.draw` serves the m2 first cell, q9_feature_cache and the fla_rwkv7 train mix. It now:
+- removes cohort v3 from the pool before `split_ids`, by id, content and source item, whatever cohort the cell pins;
+- re-checks the draw with `assert_draw_disjoint`;
+- records `cohort_v3_excluded` in its identity.
+
+A cell pinning v3 itself may point at the 150k set. The test is `test_train_set_draw_excludes_cohort_v3_and_rechecks`.
+
+**job-8vjve** is the q9_feature_cache stock_train job at 06e9733. Its 24,000-record draw was recomputed with the
+06e9733 code (`q9-cache-draw-check.json`):
+- `drawn_ids_sha256` is `2bbbf180…`, equal to `volume_plan.json`.
+- The draw has **0 overlap with v3** by id, content and source item.
+- The guarded draw on this branch gives the same sha.
+- The guarded draw's pool is 111,995 = 149,997 − 38,002 excluded; the excluded set is exactly the v3 records.

@@ -1,6 +1,4 @@
-............s.........................s................................. [ 53%]
-...............................................................          [100%]
-=========================== short test summary info ===========================
-SKIPPED [1] tests\test_cohort_v3.py:176: set COHORT_V3_REBUILD=1 and SSDM_M2_150K_DIR to the 150k set's files
-SKIPPED [1] tests\test_m2_blockers.py:479: could not import 'decision_index': No module named 'decision_index'
-133 passed, 2 skipped in 65.42s (0:01:05)
+uv run ... pytest -q -rs tests/test_cohort*.py tests/test_m2_blockers.py tests/test_jobs_lint.py tests/test_margin_sim.py tests/test_promotion_margins.py tests/test_m2_gates.py tests/test_q9_feature_cache*.py  (branch merged with agent-main 06e9733)
+SKIPPED [1] tests/test_cohort_v3.py: COHORT_V3_REBUILD opt-in (see pytest-rebuild.txt)
+SKIPPED [1] tests/test_m2_blockers.py:479: could not import 'decision_index'
+177 passed, 2 skipped, 1 warning in 202.19s

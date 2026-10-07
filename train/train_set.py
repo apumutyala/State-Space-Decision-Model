@@ -15,7 +15,12 @@ What ``draw`` checks before any record reaches a trainer (any failure raises ``T
   4. the draw: ``n_train_records`` ids in sha256(seed:id) order (``train.run_cell.split_ids``);
   5. every line read is verified against the manifest (``train.data.load_m2_records``), every drawn record's content is
      re-hashed and must equal the content map, and ``Cohort.assert_training_ids`` / ``assert_training_content`` pass.
-Evaluation records (cohort roles) never come from this set: they stay in the PR #16 sample the cohort was built from.
+  6. cohort v3 (``train.cohort_v3``: the G13 retention role expanded FROM this set, sha256 0c0309b9...) is removed from
+     the pool before the draw, by id, normalized content and source item (``training_exclusion``), whatever cohort the
+     cell pins, and the drawn ids are re-checked (``assert_draw_disjoint``). v3 holds nothing among the first 60,000 of
+     the seed-0 order, so every seed-0 draw of up to 60,000 records (the first cell's 24,000, q9_feature_cache) is
+     unchanged. Records v3 holds are the only cohort-held-out records allowed in the set (check 3).
+Evaluation records of v2 roles never come from this set: they stay in the PR #16 sample the cohort was built from.
 """
 from __future__ import annotations
 
@@ -88,9 +93,13 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
         raise TrainSetMismatch("content-map ids != manifest ids")
     if len(man) != int(ptr["n_records"]):
         raise TrainSetMismatch(f"manifest has {len(man)} ids, pointer says {ptr['n_records']}")
+    from train.cohort_v3 import cohort_v3, training_exclusion
+
+    co3 = cohort_v3()
+    v3x = training_exclusion(man, content, co3)
     held, held_c = co.held_out(), co.held_out_content()
-    by_id = sorted(i for i in man if i in held)
-    by_content = sorted(i for i in man if content[i] in held_c)
+    by_id = sorted(i for i in man if i in held and i not in v3x["ids"])
+    by_content = sorted(i for i in man if content[i] in held_c and i not in v3x["ids"])
     if by_id or by_content:
         raise TrainSetMismatch(f"training set contains cohort-held-out records ({len(by_id)} by id, {len(by_content)} "
                                f"by content, e.g. {(by_id + by_content)[:3]}): not the reviewed cohort-excluded build")
@@ -98,7 +107,7 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
     unknown = sorted(excluded - set(man))
     if unknown:
         raise TrainSetMismatch(f"heldout_excluded ids not in the set: {unknown[:3]}")
-    pool = sorted(set(man) - excluded)
+    pool = sorted(set(man) - excluded - v3x["ids"])
     n = int(cfg["n_train_records"])
     if n > len(pool):
         raise TrainSetMismatch(f"n_train_records {n} > pool {len(pool)}")
@@ -116,6 +125,7 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
         raise TrainSetMismatch(f"{len(drift)} drawn record(s) differ in content from the content map, e.g. {drift[:3]}")
     co.assert_training_ids(tr)
     co.assert_training_content(content[i] for i in tr)
+    co3.assert_draw_disjoint(tr, content)
     from train.heldout import record_text, scan
 
     rep = scan((i, record_text(got[i])) for i in tr)
@@ -127,7 +137,8 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
                 "drawn_heldout_scan": {"n_texts": rep["n_texts"], "hits": 0, "templates_sha256": rep["templates_sha256"]},
                 "held_out_in_set": {"by_id": 0, "by_content": 0}, "n_drawn": len(tr), "draw_seed": cfg["seed"],
                 "drawn_ids_sha256": hashlib.sha256("\n".join(tr).encode()).hexdigest(),
-                "lines_manifest_verified": ident["lines_read"], "cohort": co.identity()}
+                "lines_manifest_verified": ident["lines_read"], "cohort": co.identity(),
+                "cohort_v3_excluded": {"n": v3x["n"], "rule": v3x["rule"], "cohort": v3x["cohort"], "drawn_overlap": 0}}
     return {i: to_train_record(got[i]) for i in tr}, tr, identity
 
 
