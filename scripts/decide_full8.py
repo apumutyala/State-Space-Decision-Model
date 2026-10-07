@@ -4,7 +4,12 @@ python scripts/decide_full8.py <pipeline results.json> <index compare.json or ->
 (exit 9 if no valid decision could be made, else 0).
 
 Binding: the verdict is computed from rule.json only. Everything under "report" (the cost-of-attention-freedom curve,
-per-layer gate numbers, stage-2 receipts, the MMLU noise note) is reported and never changes the verdict.
+per-layer gate numbers, stage-2 receipts, the paired MMLU CI) is reported and never changes the verdict.
+
+Amendment A1 (2026-10-07, after independent review, before any run): every number the verdict reads must be numeric
+in BOTH arms -- including every configured S-NIAH length (rule.required_niah_lengths) -- else "missing" (exit 9); the
+binding MMLU drop comes from the FULL MMLU test set (results.json: mmlu_full, 14,042 items, both arms, identical item
+list, per-item correctness), with a paired per-item bootstrap 95% CI reported (never binding).
 
 Before any verdict the gate record is re-checked independently: the 8 steps must be the 8 attention layers in the
 recorded ascending-KL importance order, every step's pass/fail must re-compute from its own gate numbers with the
@@ -21,12 +26,57 @@ import sys
 
 VERDICTS = ("q9af-backbone", "retrieval-fail", "quality-fail", "partial-conversion", "no-conversion")
 REQUIRED = ("ppl_ratio_ctx1024", "ppl_ratio_ctx4096", "mmlu_drop_pts", "mqar_drop", "niah_mean_drop",
-            "index_diff_point", "index_diff_lo")
+            "index_diff_point", "index_diff_lo", "niah_length_drop")  # A1: niah_length_drop added (B1)
 TOL = 1e-9
 
 
 def _num(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+
+
+def _present(num, k):
+    """A REQUIRED number is present: a finite number, or (niah_length_drop) a non-empty dict of finite numbers."""
+    v = num.get(k)
+    if k == "niah_length_drop":
+        return isinstance(v, dict) and bool(v) and all(_num(x) for x in v.values())
+    return _num(v)
+
+
+def mmlu_full(R, conv, rule):
+    """A1: the binding MMLU drop from the full test set. -> (drop_pts or None, report dict). Both arms must carry
+    n == rule n_items per-item 0/1 results over the same items (items_sha256), the stock arm with no student layer and
+    the final arm with exactly the converted layers; anything else is missing."""
+    src = rule["quality"]["mmlu_source"]
+    m = R.get(src["results_key"]) or {}
+    st, fi = m.get("stock") or {}, m.get("final") or {}
+    n = src["n_items"]
+    info = {"n_items": n, "problems": []}
+    for name, arm, want in (("stock", st, []), ("final", fi, sorted(conv))):
+        c = arm.get("correct")
+        if not (isinstance(c, list) and len(c) == n and all(x in (0, 1) and not isinstance(x, bool) for x in c)):
+            info["problems"].append(f"{name}: per-item correctness missing or not {n} items")
+        if sorted(int(k) for k in (arm.get("modes") or {})) != want:
+            info["problems"].append(f"{name}: modes {sorted(arm.get('modes') or {})} != {want}")
+    if st.get("items_sha256") is None or st.get("items_sha256") != fi.get("items_sha256"):
+        info["problems"].append("the two arms did not score the same item list")
+    if info["problems"]:
+        return None, info
+    a, b = sum(st["correct"]) / n, sum(fi["correct"]) / n
+    info.update(acc_stock=a, acc_final=b)
+    try:  # paired per-item bootstrap (reported only). The per-item difference takes values in {-1, 0, +1}, so a
+        # resample of n items is exactly a multinomial draw over those three counts (same distribution, O(B) not O(B n))
+        import numpy as np
+
+        d = [x - y for x, y in zip(st["correct"], fi["correct"])]
+        p = np.array([d.count(1), d.count(-1), d.count(0)], dtype=float) / n
+        draws = np.random.default_rng(src["ci"]["seed"]).multinomial(n, p, size=src["ci"]["B"])
+        bs = 100 * (draws[:, 0] - draws[:, 1]) / n
+        lo = (1 - src["ci"]["level"]) / 2
+        info["paired_ci_drop_pts"] = [float(np.quantile(bs, lo)), float(np.quantile(bs, 1 - lo))]
+        info["discordant"] = {"stock_only_correct": d.count(1), "final_only_correct": d.count(-1)}
+    except Exception as e:  # noqa: BLE001
+        info["ci_error"] = repr(e)[:200]
+    return 100 * (a - b), info
 
 
 def gate_audit(R, rule):
@@ -84,8 +134,9 @@ def gate_audit(R, rule):
     return prob, rows, accepted
 
 
-def probe_numbers(st, cv, cmp):
-    """Final model (cv) minus stock (st): the same numbers as the probe's 511e8dd rule. None = missing."""
+def probe_numbers(st, cv, cmp, niah_lengths=None):
+    """Final model (cv) minus stock (st): the same numbers as the probe's 511e8dd rule. None = missing.
+    A1: niah_length_drop covers every configured length; a length missing in EITHER arm is None (missing)."""
     num = {}
     for ctx in ("ctx1024", "ctx4096"):
         a, b = (cv.get("ppl") or {}).get(ctx, {}).get("ppl"), (st.get("ppl") or {}).get(ctx, {}).get("ppl")
@@ -99,10 +150,11 @@ def probe_numbers(st, cv, cmp):
     a, b = (cv.get("niah") or {}).get("mean_acc"), (st.get("niah") or {}).get("mean_acc")
     num["niah_mean_drop"] = b - a if _num(a) and _num(b) else None
     per = {}
-    for k, v in (st.get("niah") or {}).items():
-        if k.startswith("L") and isinstance(v, dict):
-            c = (cv.get("niah") or {}).get(k, {}).get("acc")
-            per[k] = v["acc"] - c if _num(c) and _num(v.get("acc")) else None
+    keys = [f"L{n}" for n in niah_lengths] if niah_lengths else [k for k in (st.get("niah") or {}) if k.startswith("L")]
+    for k in keys:
+        a = ((st.get("niah") or {}).get(k) or {}).get("acc")
+        c = ((cv.get("niah") or {}).get(k) or {}).get("acc")
+        per[k] = a - c if _num(c) and _num(a) else None
     num["niah_length_drop"] = per
     return num
 
@@ -146,7 +198,9 @@ def decide(R, cmp, rule):
     cv = (R.get(f"probe_{last['probe_tag']}") if last and last["probe_tag"] else None) or {}
     if last and cv and sorted(int(k) for k in (cv.get("modes") or {})) != sorted(conv):
         prob.append(f"final probe {last['probe_tag']} modes {sorted(cv.get('modes') or {})} != converted {conv}")
-    num = probe_numbers(st, cv, cmp)
+    num = probe_numbers(st, cv, cmp, rule.get("required_niah_lengths"))
+    num["mmlu_subset_drop_pts"] = num["mmlu_drop_pts"]  # the 285-item subset: reported (curve), not binding (A1)
+    num["mmlu_drop_pts"], mm_info = mmlu_full(R, conv, rule) if conv else (None, {"problems": ["nothing converted"]})
     qc, rc = checks(num, rule)
     n = len(conv)
     out = {"rule_version": rule["version"], "n_converted": n, "converted": conv,
@@ -154,7 +208,7 @@ def decide(R, cmp, rule):
            "attention_free": n == len(rule["attention_layers"]),
            "gate_audit_problems": prob, "quality_checks": qc, "retrieval_checks": rc, "numbers": num,
            "stopped": R.get("stopped"), "rule": {k: rule[k] for k in ("gate", "quality", "retrieval")}}
-    missing = [k for k in REQUIRED if not _num(num.get(k))]
+    missing = [k for k in REQUIRED if not _present(num, k)]
     if R.get("stopped"):
         out["verdict"] = f"stopped (exit {R['stopped'].get('exit_code')}): no verdict"
     elif prob:
@@ -174,17 +228,13 @@ def decide(R, cmp, rule):
         out["verdict"] = "q9af-backbone"
     out["next"] = rule["verdicts"].get(out["verdict"], rule["no_verdict"])
     out["report"] = report(R, rows, st, num)  # reported only: computed AFTER the verdict, never read by it
+    out["report"]["mmlu_full"] = mm_info
     return out
 
 
 def report(R, rows, st, num):
     try:
-        mm = (st.get("mmlu") or {}).get("acc")
-        n_mmlu = (st.get("mmlu") or {}).get("n") or 285
-        se = math.sqrt(2 * mm * (1 - mm) / n_mmlu) * 100 if _num(mm) else None  # unpaired upper bound on the diff SE
         return {"binding": False, "curve": curve(R, rows, st), "steps": rows,
-                "mmlu_diff_se_upper_pts": se,
-                "mmlu_noise_limited": bool(_num(num.get("mmlu_drop_pts")) and se and 3.0 < num["mmlu_drop_pts"] <= 3.0 + 2 * se),
                 "throughput": R.get("throughput"), "timing": R.get("timing")}
     except Exception as e:  # noqa: BLE001
         return {"binding": False, "error": repr(e)[:300]}
@@ -197,7 +247,7 @@ def valid_decision(d):
     if d["verdict"] == "no-conversion":
         return d.get("n_converted") == 0
     n = d.get("numbers") or {}
-    if not all(_num(n.get(k)) for k in REQUIRED):
+    if not all(_present(n, k) for k in REQUIRED):
         return False
     return (d["verdict"] == "partial-conversion") == (not d.get("attention_free")) and d.get("n_converted", 0) > 0
 

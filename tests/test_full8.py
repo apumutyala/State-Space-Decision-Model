@@ -62,10 +62,30 @@ def test_verdicts_are_exactly_the_rule_verdicts_and_each_has_a_next_step():
 
 # ----------------------------------------------------------------------------- synthetic, gate-consistent results
 STOCK = {"ppl": {"ctx1024": {"ppl": 8.45}, "ctx4096": {"ppl": 7.17}}, "mmlu": {"acc": 0.80, "n": 285},
-         "mqar": {"mean_acc": 0.92}, "niah": {"L1024": {"acc": 1.0}, "L16384": {"acc": 1.0}, "mean_acc": 1.0}}
+         "mqar": {"mean_acc": 0.92},
+         "niah": {**{f"L{n}": {"acc": 1.0} for n in (1024, 2048, 4096, 8192, 16384)}, "mean_acc": 1.0}}
+N_MMLU = 14042
 
 
-def make_R(step_dnll=0.01, reject=(), cos=0.99, final=None, n_steps=8, teacher=1.96):
+def mmlu_arm(acc, modes, flip_from=None):
+    """Per-item 0/1 over the full MMLU test set (A1). flip_from: derive from the stock list by flipping correct
+    items to wrong (or back) until the accuracy is reached, so the pairing is realistic."""
+    k = round(acc * N_MMLU)
+    if flip_from is None:
+        c = [1 if i % 5 else 0 for i in range(N_MMLU)]  # 80%
+        c = [1] * k + [0] * (N_MMLU - k) if abs(sum(c) - k) > 0 else c
+    else:
+        c = list(flip_from)
+        ones = [i for i, x in enumerate(c) if x]
+        zeros = [i for i, x in enumerate(c) if not x]
+        for i in (ones[: max(0, sum(c) - k)]):
+            c[i] = 0
+        for i in (zeros[: max(0, k - sum(flip_from))]):
+            c[i] = 1
+    return {"n": N_MMLU, "correct": c, "acc": sum(c) / N_MMLU, "items_sha256": "f" * 64, "modes": modes}
+
+
+def make_R(step_dnll=0.01, reject=(), cos=0.99, final=None, n_steps=8, teacher=1.96, mmlu_final=0.80):
     """A results.json whose progressive record is exactly what convert.progressive writes under policy enforce."""
     kl = {str(i): 0.01 * (k + 1) for k, i in enumerate(ORDER)}
     R = {"importance": {"order": list(ORDER), "per_layer": {i: {"kl": v} for i, v in kl.items()}},
@@ -90,6 +110,9 @@ def make_R(step_dnll=0.01, reject=(), cos=0.99, final=None, n_steps=8, teacher=1
         s["converted_after"] = list(conv)
         R["progressive"]["steps"].append(s)
     R["progressive"]["converted"] = conv
+    if conv:
+        st = mmlu_arm(0.80, {})
+        R["mmlu_full"] = {"stock": st, "final": mmlu_arm(mmlu_final, {str(j): "student" for j in conv}, st["correct"])}
     return R
 
 
@@ -107,7 +130,7 @@ def _final(**kw):
             f["mqar"]["mean_acc"] = v
         elif k == "niah_long":
             f["niah"]["L16384"]["acc"] = v
-            f["niah"]["mean_acc"] = (1.0 + v) / 2
+            f["niah"]["mean_acc"] = (4.0 + v) / 5
     return f
 
 
@@ -121,8 +144,12 @@ def _case(name):
         return make_R(final=_final(ppl4k=7.17 * 1.1619)), cmp, "quality-fail"
     if name == "ppl 1.05 (fails the 1-layer 1.02, passes the 8-layer bound)":
         return make_R(final=_final(ppl4k=7.17 * 1.05)), cmp, "q9af-backbone"
-    if name == "mmlu":
-        return make_R(final=_final(mmlu=0.769)), cmp, "quality-fail"
+    if name == "mmlu":  # A1: the full-test-set drop binds: 80.0 -> 76.9 = 3.1 pts
+        return make_R(mmlu_final=0.769), cmp, "quality-fail"
+    if name == "mmlu at the bound (full set)":
+        return make_R(mmlu_final=0.7705), cmp, "q9af-backbone"  # 80.00 -> 77.05: 2.96 pts
+    if name == "mmlu subset fails but the full set passes (A1: the subset is not binding)":
+        return make_R(final=_final(mmlu=0.70)), cmp, "q9af-backbone"
     if name == "index point":
         cmp["diff"]["index"]["point"] = -1.01
         return make_R(), cmp, "quality-fail"
@@ -134,7 +161,7 @@ def _case(name):
     if name == "niah one length":
         return make_R(final=_final(niah_long=0.74)), cmp, "retrieval-fail"
     if name == "quality before retrieval":
-        return make_R(final=_final(mmlu=0.70, mqar=0.5)), cmp, "quality-fail"
+        return make_R(final=_final(mqar=0.5), mmlu_final=0.70), cmp, "quality-fail"
     if name == "one layer rejected":
         return make_R(reject=(3,)), cmp, "partial-conversion"
     if name == "partial even if every number passes":
@@ -147,7 +174,8 @@ def _case(name):
 
 
 CASES = ["all pass", "ppl at the derived bound", "ppl past the derived bound",
-         "ppl 1.05 (fails the 1-layer 1.02, passes the 8-layer bound)", "mmlu", "index point", "index lo", "mqar",
+         "ppl 1.05 (fails the 1-layer 1.02, passes the 8-layer bound)", "mmlu", "mmlu at the bound (full set)",
+         "mmlu subset fails but the full set passes (A1: the subset is not binding)", "index point", "index lo", "mqar",
          "niah one length", "quality before retrieval", "one layer rejected", "partial even if every number passes",
          "cumulative budget exhausted at layer 8", "all rejected"]
 
@@ -231,11 +259,87 @@ def test_missing_numbers_and_stops_never_pass():
     assert not D.valid_decision(bad)
 
 
+@pytest.mark.parametrize("hole", ["final_length_none", "final_niah_empty", "stock_length_missing",
+                                  "final_length_missing", "stock_niah_none"])
+def test_A1_B1_every_configured_niah_length_must_be_numeric_in_both_arms(hole):
+    R = make_R()
+    fin = R["probe_conv8_kept0"]["niah"]
+    if hole == "final_length_none":
+        fin["L4096"]["acc"] = None
+    elif hole == "final_niah_empty":
+        R["probe_conv8_kept0"]["niah"] = {}
+    elif hole == "stock_length_missing":
+        del R["probe_stock"]["niah"]["L8192"]
+    elif hole == "final_length_missing":
+        del fin["L2048"]
+    else:
+        R["probe_stock"]["niah"] = None
+    d = D.decide(R, CMP, RULE)
+    assert d["verdict"].startswith("no-measurement") and "niah_length_drop" in d["verdict"], (hole, d["verdict"])
+    assert not D.valid_decision(d)
+    bad = D.decide(make_R(), CMP, RULE)  # valid_decision itself refuses a decision carrying a hole
+    bad["numbers"]["niah_length_drop"]["L1024"] = None
+    assert not D.valid_decision(bad)
+    bad["numbers"]["niah_length_drop"] = {}
+    assert not D.valid_decision(bad)
+
+
+@pytest.mark.parametrize("hole", ["absent", "short", "item_list_differs", "final_modes", "stock_modes", "not_binary"])
+def test_A1_mmlu_full_must_be_complete_and_paired(hole):
+    R = make_R()
+    m = R["mmlu_full"]
+    if hole == "absent":
+        del R["mmlu_full"]
+    elif hole == "short":
+        m["final"]["correct"] = m["final"]["correct"][:-1]
+    elif hole == "item_list_differs":
+        m["final"]["items_sha256"] = "e" * 64
+    elif hole == "final_modes":
+        m["final"]["modes"] = {"3": "student"}
+    elif hole == "stock_modes":
+        m["stock"]["modes"] = {"3": "student"}
+    else:
+        m["stock"]["correct"][0] = 2
+    d = D.decide(R, CMP, RULE)
+    assert d["verdict"].startswith("no-measurement") and "mmlu_drop_pts" in d["verdict"], (hole, d["verdict"])
+    assert not D.valid_decision(d) and d["report"]["mmlu_full"]["problems"]
+
+
+def test_A1_mmlu_paired_ci_is_reported_not_binding():
+    d = D.decide(make_R(mmlu_final=0.785), CMP, RULE)
+    mm = d["report"]["mmlu_full"]
+    assert d["verdict"] == "q9af-backbone" and abs(d["numbers"]["mmlu_drop_pts"] - 1.5) < 0.01
+    lo, hi = mm["paired_ci_drop_pts"]
+    assert lo < 1.5 < hi and hi - lo < 1.0  # 14k paired items: far tighter than the 285-item subset (~+-7 pts)
+    assert mm["discordant"]["stock_only_correct"] > 0
+    assert d["numbers"]["mmlu_subset_drop_pts"] == 0.0  # the subset number is still reported
+
+
+def test_A1_amends_only_by_adding_and_never_loosens():
+    try:
+        old = json.loads(subprocess.check_output(["git", "show", "be9eed8:jobs/full8/rule.json"], cwd=ROOT,
+                                                 stderr=subprocess.DEVNULL))
+    except Exception:  # noqa: BLE001
+        pytest.skip("git history not available")
+    for k in ("attention_layers", "gate", "retrieval", "verdicts", "no_verdict", "_comment"):
+        assert RULE[k] == old[k], k
+    q_old = {k: v for k, v in old["quality"].items()}
+    q_new = {k: v for k, v in RULE["quality"].items() if k != "mmlu_source"}
+    assert q_new == q_old  # every bound identical; only the MMLU source was added
+    assert RULE["version"] == "full8-rule-v1-A1" and RULE["required_niah_lengths"] == PROBE["probes"]["niah_lengths"]
+    a1 = RULE["amendment_A1"]
+    assert a1["note"].startswith("Amendment A1 (2026-10-07, after independent review") and "before any run" in a1["note"]
+    assert "25 min" in a1["coordinator_decisions"] and "knowing 5cmat's ppl" in a1["coordinator_decisions"]
+    assert RULE["quality"]["mmlu_source"]["n_items"] == 14042 and RULE["quality"]["mmlu_source"]["ci"]["binding"] is False
+    assert "niah_length_drop" in D.REQUIRED
+
+
 def test_spec_states_the_binding_rule():
     rule_txt = SPEC.split("## Decision rule")[1].split("\n## ")[0]
     for s in ("BINDING", "511e8dd", "caa8f55", "1.1618", "exp(0.15)", "<= 3.0", ">= -1.0", ">= -2.5", "<= 0.10",
               "<= 0.25", "<= 0.05", "<= 0.15", ">= 0.95", "Q9-H", "not attention-free", "decision-needed",
-              "no-measurement", "5cmat"):
+              "no-measurement", "5cmat", "Amendment A1 (2026-10-07, after independent review, before any run)",
+              "14,042", "paired", "25 min", "knowing 5cmat"):
         assert s in rule_txt, s
     for v in D.VERDICTS:
         assert v in rule_txt, v
@@ -261,20 +365,15 @@ CFG8 = json.loads((ROOT / "configs/full8_h100.json").read_text(encoding="utf-8")
 RUNNER = (ROOT / "jobs/full8/full8_job.sh").read_text(encoding="utf-8")
 
 
-def test_rule_is_byte_identical_to_the_preregistration_commit():
+def test_spec_rule_section_is_the_preregistered_text_plus_the_A1_note():
     try:
-        old = subprocess.check_output(["git", "show", f"{RULE_COMMIT}:jobs/full8/rule.json"], cwd=ROOT,
-                                      stderr=subprocess.DEVNULL)
-        old_dec = subprocess.check_output(["git", "show", f"{RULE_COMMIT}:scripts/decide_full8.py"], cwd=ROOT,
-                                          stderr=subprocess.DEVNULL)
+        old_spec = subprocess.check_output(["git", "show", f"{RULE_COMMIT}:jobs/full8/JOB_SPEC.md"], cwd=ROOT,
+                                           stderr=subprocess.DEVNULL).decode()
     except Exception:  # noqa: BLE001  (no git history in a build context)
         pytest.skip("git history not available")
-    assert json.loads(old) == RULE
-    assert old_dec.replace(b"\r\n", b"\n") == (ROOT / "scripts/decide_full8.py").read_bytes().replace(b"\r\n", b"\n")
-    assert P8["rule_commit"] == RULE_COMMIT and RULE_COMMIT in CFG8["_comment"]
-    old_spec = subprocess.check_output(["git", "show", f"{RULE_COMMIT}:jobs/full8/JOB_SPEC.md"], cwd=ROOT).decode()
     rule_sec = lambda s: s.replace("\r\n", "\n").split("## Decision rule")[1].split("\n## ")[0].rstrip()  # noqa: E731
-    assert rule_sec(old_spec) == rule_sec(SPEC)  # the spec's rule text is unchanged since the pre-registration
+    old, new = rule_sec(old_spec), rule_sec(SPEC)
+    assert new.startswith(old) and "Amendment A1 (2026-10-07" in new[len(old):]  # append-only amendment
 
 
 # ----------------------------------------------------------------------------- config = the probe recipe, 8 layers

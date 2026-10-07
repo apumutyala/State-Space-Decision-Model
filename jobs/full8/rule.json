@@ -1,7 +1,33 @@
 {
  "_comment": "PRE-REGISTERED binding decision rule of the full 8-layer Qwen3.5-9B -> Gated DeltaNet conversion (Q9-AF, issue #87). Committed BEFORE any full-8 run, in its own commit. Applied by scripts/decide_full8.py only. Every constant comes from text that existed before job-5cmat ran (2026-10-06T21:33Z): the 511e8dd probe success_rule and gate (configs/probe9b_h100.json @ 511e8dd), and the full-8 gate row of HANDOFF.md / AGENT_HANDOFF.md @ caa8f55 ('per-layer gate dNLL <= 0.05, cumulative <= 0.15, hidden cos >= 0.95; on retrieval failure: no further spend, report the cost-of-attention-freedom curve, decision-needed on shipping a hybrid'). No constant was tuned on job-5cmat's numbers. Deltas are final converted model minus stock, same code path, same items.",
- "version": "full8-rule-v1",
- "attention_layers": [3, 7, 11, 15, 19, 23, 27, 31],
+ "amendment_A1": {
+  "date": "2026-10-07",
+  "note": "Amendment A1 (2026-10-07, after independent review of PR #94, before any run)",
+  "coordinator_decisions": "Coordinator decisions for Amendment A1, made before any run: B1: every configured niah_lengths value, and every other number the verdict reads, must be numeric in BOTH arms; missing/None -> 'missing' decision, exit 9; niah_length_drop is added to REQUIRED and valid_decision. B2: in full8 the final probe is never deadline-gated, or on resume it re-runs for the last accepted step if missing (code, separate commit). B3: job_params gets decision_rule (code). MMLU noise: do not loosen the bound; remove the noise by scoring MMLU on the FULL test set (14,042 items, both arms, same code path) with a paired per-item bootstrap; the bound stays point drop <= 3.0; the paired 95% CI is reported. Honesty: be9eed8 was committed ~25 min after job-5cmat finished, with its numbers known; constants trace to pre-5cmat text, but the exp(0.15) ppl derivation was written knowing 5cmat's ppl.",
+  "changes": [
+   "B1: required_niah_lengths (= configs/full8_h100.json probes.niah_lengths, unchanged from the probe recipe) must each be numeric in BOTH arms; niah_length_drop is REQUIRED (missing -> no-measurement, exit 9). Every number the verdict reads is likewise required in both arms.",
+   "MMLU: the binding drop is measured on the FULL MMLU test set (mmlu_full, 14,042 items, both arms, same code path, per-item correctness, identical item list) instead of the 285-item subset; the bound is unchanged (point drop <= 3.0 pts); the paired per-item bootstrap 95% CI is reported, never binding. The 285-item subset stays in the per-layer curve only.",
+   "Disclosure: be9eed8 (2026-10-06T23:40Z) was committed ~25 min after job-5cmat finished (21:33Z + 101 min), with 5cmat's numbers known. Every constant is copied from pre-5cmat text (511e8dd, HANDOFF@caa8f55); the exp(0.15) ppl derivation was written knowing 5cmat's ppl ratio (1.007). No bound was loosened by A1."
+  ]
+ },
+ "version": "full8-rule-v1-A1",
+ "attention_layers": [
+  3,
+  7,
+  11,
+  15,
+  19,
+  23,
+  27,
+  31
+ ],
+ "required_niah_lengths": [
+  1024,
+  2048,
+  4096,
+  8192,
+  16384
+ ],
  "gate": {
   "_comment": "The 511e8dd enforced gate, unchanged; n_windows 32 as shipped and run in job-5cmat (PR #73, a non-directional precision change disclosed there). Enforced in-run by convert.progressive (policy enforce: a failing layer is rolled back to attention and the loop continues with the next layer). decide_full8 re-computes every step's verdict from its recorded gate numbers and these constants; a mismatch is no-measurement.",
   "max_step_delta_nll": 0.05,
@@ -18,6 +44,18 @@
   },
   "ppl_ratio_derivation": "exp(gate.max_cum_delta_nll)",
   "mmlu_drop_max_pts": 3.0,
+  "mmlu_source": {
+   "_comment": "A1: full MMLU test set, cais/mmlu all/test (pinned revision c30699e8), 14,042 items, same prompt and letter-logit scoring as probes.core.mmlu, both arms in the same job on the same code path. drop = 100 x (acc_stock - acc_final). Each arm must report n == 14042, the same items_sha256, and per-item correctness; the stock arm runs with no student layer and the final arm with exactly the converted layers.",
+   "results_key": "mmlu_full",
+   "n_items": 14042,
+   "ci": {
+    "method": "paired per-item bootstrap of the accuracy difference",
+    "B": 10000,
+    "seed": 0,
+    "level": 0.95,
+    "binding": false
+   }
+  },
   "index_diff_point_min": -1.0,
   "index_diff_lo_min": -2.5
  },

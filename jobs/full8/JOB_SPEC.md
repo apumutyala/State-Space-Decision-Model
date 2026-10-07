@@ -103,6 +103,55 @@ depend on why a layer was rejected.
 Job-5cmat's single-layer numbers (dNLL 0.0068, ppl ratio 1.007, Index +1.66) are context only. No bound depends on
 them.
 
+### Amendment A1 (2026-10-07, after independent review, before any run)
+
+The independent review of PR #94 returned FIX-THEN-LAUNCH. The coordinator's decisions, quoted:
+
+> Coordinator decisions for Amendment A1, made before any run.
+> - **B1:** every configured niah_lengths value must be numeric in BOTH arms, and the same for every other number the
+>   verdict reads. Missing or None means a "missing" decision and exit 9. Add `niah_length_drop` to REQUIRED and
+>   valid_decision. Add tests for None, an empty dict, and a length missing from the stock arm.
+> - **B2:** in full8, the final probe must never be deadline-gated, or on resume the probe must re-run for the last
+>   accepted step if it has none. Do whichever is cleaner and test it: deadline passes after layer 8, kill, resume,
+>   probe runs, verdict.
+> - **B3:** add `"decision_rule": "scripts/decide_full8.py"` to job_params.json.
+> - **MMLU noise:** don't loosen the bound. Remove the noise: score MMLU on the FULL MMLU test set (~14k items, both
+>   arms, same code path), with a paired per-item bootstrap. The bound stays a point drop ≤ 3.0. Also report the
+>   paired 95% CI.
+> - **Honesty:** the JOB_SPEC must state that be9eed8 was committed about 25 min after 5cmat finished, with its
+>   numbers known. The constants trace to pre-5cmat text, but the exp(0.15) ppl derivation was written knowing
+>   5cmat's ppl.
+
+**What A1 changes in the binding rule.** These changes touch only `rule.json`, `decide_full8.py`, its tests and this
+section. B2, B3 and the MMLU measurement itself are code, in a separate commit.
+
+1. **S-NIAH lengths (B1).** `rule.json: required_niah_lengths` is [1024, 2048, 4096, 8192, 16384]. That equals the
+   recipe's `probes.niah_lengths`, unchanged.
+   - Each `L<n>` must be numeric in both the stock and the final arm.
+   - `niah_length_drop` is in `REQUIRED`, and `valid_decision` refuses a None or an empty per-length dict.
+   - A hole gives `no-measurement` (exit 9). Before A1 it could become a `retrieval-fail` verdict.
+   - Every other number the verdict reads was already REQUIRED from both arms.
+2. **MMLU on the full test set.** The binding MMLU drop is now measured on the **full MMLU test set**:
+   - cais/mmlu `all/test` @ c30699e8, **14,042 items**, instead of the 285-item subset;
+   - both arms run in the same job on the same code path, as `results.json: mmlu_full`;
+   - each arm reports per-item 0/1 correctness, the same `items_sha256`, and stock vs exactly-the-converted modes;
+     anything less is missing.
+
+   **The bound is unchanged:** point drop <= 3.0 points.
+   - The paired per-item bootstrap 95% CI (B = 10,000, seed 0) is **reported, never binding**.
+   - The 285-item subset stays in the per-layer curve as a report.
+   - No bound was loosened. With 14,042 paired items the CI is about ±0.5 point, against about ±7 for the subset.
+     A fail is therefore a measured drop, not noise.
+3. **Disclosure (honesty).** be9eed8 (2026-10-06T23:40Z) was committed **about 25 min after job-5cmat finished**
+   (21:33Z + 101 min), **with 5cmat's numbers known**.
+   - Every constant is copied from pre-5cmat text: 511e8dd, and HANDOFF @ caa8f55.
+   - But the exp(0.15) ppl derivation was written **knowing 5cmat's ppl** (ratio 1.007 on one layer).
+   - The independent review accepted exp(0.15) on the merits:
+     - the pre-5cmat full-8 text has no ppl bound, only the gate's cumulative 0.15;
+     - exp(0.15) is stricter than 1.02^8 = 1.172;
+     - with wikitext distillation, gate and evaluation, the bound is nearly redundant with the gate.
+   - It also noted that this reading, rather than a strict 1.02, decides whether ppl can fail at all.
+
 ## Question and recipe
 
 **Question.** Can all 8 attention layers of Qwen3.5-9B be replaced by Gated DeltaNets with the probe's recipe, giving
