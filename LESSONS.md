@@ -155,12 +155,12 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Status:** ENFORCED (structure). The promotion rule itself (paired CI > 0 plus G12/G13 plus review) is a review item.
 
 ### L-18 Contradictory coordination rules
-- Date: 2026-10-06 (found by the coordinator's pre-mortem).
-- Symptom: COORDINATION.md "Stalled cross-review" said "This rule never applies to `main` or to spend approval. Spend still needs the other agent's acknowledgement on a `spend` issue." The later user decision, "Review sufficiency", says one independent review is enough to launch spend. An agent could follow either rule.
-- Cost: none billed. The risk was a blocked launch or an unauthorized one, depending on which rule was read.
-- Root cause: a newer user decision was added as a new section, and the older sentence was never edited.
-- **Check:** the stale sentence was replaced so that the later user decision governs. `tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule` asserts that the old sentence is gone.
-- **Status:** PARTIAL. Only this sentence is checked. Spend-ladder item 2 ("acknowledged by the other agent") still reads as blocking and needs the same reconciliation. When a user decision supersedes a rule, edit the old rule in the same PR.
+- Date: 2026-10-06 (found by the coordinator's pre-mortem; resolved 2026-10-07 after the user took over both tracks).
+- Symptom: old two-owner text mixed review sufficiency with spend authorization and could imply that an agent's review or acknowledgement permitted launch.
+- Cost: none billed. The risk was either an unnecessary hold or an unauthorized launch.
+- Root cause: superseded two-owner rules remained after Codex took over both tracks.
+- **Check:** `tests/test_jobs_lint.py::test_coordination_requires_issue_level_user_spend_ok` asserts that every paid job has its own issue, exact estimate/stop condition, independent review, and the user's explicit OK; reviewer approval alone is insufficient.
+- **Status:** RESOLVED. Keep `COORDINATION.md`, this lesson, and the enforcing test synchronized when spend authority changes.
 
 ### L-19 The benchmark edition changed under us
 - Date: 2026-10-06 (Track D, found via research PR #92; fixed in PR #95).
