@@ -9,3 +9,7 @@ Dockerfile text eol=lf
 # byte-exact vendored code and fixtures
 fixtures/replay/** -text
 third_party/** -text
+
+# receipts are byte-exact evidence (their own sha256 lists cover the bytes): never EOL-converted on checkout
+# (PR #74 review N1: a core.autocrlf=true checkout turned the tvuat MANIFEST.jsonl into CRLF)
+receipts/** -text

@@ -1,0 +1,92 @@
+{
+  "base_commit": "e94c79793082fc8643bae34ac52813760f1950e8",
+  "branch": "codex/l1-world-level-calibration-split",
+  "calibration_performed": false,
+  "checks": {
+    "focused": "28 passed, 23 subtests passed in 53.44s",
+    "repository_lint": "67 passed in 7.28s"
+  },
+  "cost_usd": 0,
+  "files": {
+    "calibration.jsonl": {
+      "bytes": 5345728,
+      "sha256": "f58d51a51cdb6621d9b7ae86d348d67406488e13bb0c6839c174aaa5c47dce28"
+    },
+    "fit.jsonl": {
+      "bytes": 16036232,
+      "sha256": "34909156035594729d7891d64c840efb8ed853dfe4fcb10a56f77b0fa8e91be0"
+    },
+    "split-manifest.json": {
+      "bytes": 196071,
+      "sha256": "3ad9f962cc6896c4540a13633ea371a00d8537c46d061813b66188e43920b0ec"
+    }
+  },
+  "model_execution": false,
+  "output_directory": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l1-world-calibration-split-20261007",
+  "partitions": {
+    "calibration": {
+      "bytes": 5345728,
+      "file": "calibration.jsonl",
+      "row_count": 1024,
+      "sha256": "f58d51a51cdb6621d9b7ae86d348d67406488e13bb0c6839c174aaa5c47dce28",
+      "task_count": 320,
+      "world_count": 8,
+      "world_ids": [
+        "synthetic-l1_multiworld_development_train-1707-world-1",
+        "synthetic-l1_multiworld_development_train-1707-world-10",
+        "synthetic-l1_multiworld_development_train-1707-world-14",
+        "synthetic-l1_multiworld_development_train-1707-world-20",
+        "synthetic-l1_multiworld_development_train-1707-world-21",
+        "synthetic-l1_multiworld_development_train-1707-world-24",
+        "synthetic-l1_multiworld_development_train-1707-world-27",
+        "synthetic-l1_multiworld_development_train-1707-world-3"
+      ]
+    },
+    "fit": {
+      "bytes": 16036232,
+      "file": "fit.jsonl",
+      "row_count": 3072,
+      "sha256": "34909156035594729d7891d64c840efb8ed853dfe4fcb10a56f77b0fa8e91be0",
+      "task_count": 960,
+      "world_count": 24,
+      "world_ids": [
+        "synthetic-l1_multiworld_development_train-1707-world-0",
+        "synthetic-l1_multiworld_development_train-1707-world-11",
+        "synthetic-l1_multiworld_development_train-1707-world-12",
+        "synthetic-l1_multiworld_development_train-1707-world-13",
+        "synthetic-l1_multiworld_development_train-1707-world-15",
+        "synthetic-l1_multiworld_development_train-1707-world-16",
+        "synthetic-l1_multiworld_development_train-1707-world-17",
+        "synthetic-l1_multiworld_development_train-1707-world-18",
+        "synthetic-l1_multiworld_development_train-1707-world-19",
+        "synthetic-l1_multiworld_development_train-1707-world-2",
+        "synthetic-l1_multiworld_development_train-1707-world-22",
+        "synthetic-l1_multiworld_development_train-1707-world-23",
+        "synthetic-l1_multiworld_development_train-1707-world-25",
+        "synthetic-l1_multiworld_development_train-1707-world-26",
+        "synthetic-l1_multiworld_development_train-1707-world-28",
+        "synthetic-l1_multiworld_development_train-1707-world-29",
+        "synthetic-l1_multiworld_development_train-1707-world-30",
+        "synthetic-l1_multiworld_development_train-1707-world-31",
+        "synthetic-l1_multiworld_development_train-1707-world-4",
+        "synthetic-l1_multiworld_development_train-1707-world-5",
+        "synthetic-l1_multiworld_development_train-1707-world-6",
+        "synthetic-l1_multiworld_development_train-1707-world-7",
+        "synthetic-l1_multiworld_development_train-1707-world-8",
+        "synthetic-l1_multiworld_development_train-1707-world-9"
+      ]
+    }
+  },
+  "source_cohort_hashes": {
+    "manifest_sha256": "eaa38a852dab840a51175a12a1a58a74539338f3ee119088a3442f054d0586e7",
+    "sample_sha256": "175cf7cc2d7c39a8c931a3a452149be7c141db712bde81a0ce7f606b0a27e9f4"
+  },
+  "source_files": {
+    "language_growth/multirecord_calibration_split.py": "24d84c26a5ba237d010ca3c1f58281d84432786781cf1a41e5bd9f1c8d0d72f6",
+    "language_growth/tests/test_multirecord_calibration_split.py": "7964b0c65f8220e2646e9fa4d74142548b334fb274b486f86d400cfddf2e8c71",
+    "plans/codex/L1_WORLD_CALIBRATION_SPLIT.md": "5cb5c793f8b0cb1168794d406a2bac901db16891995475bba083a1208ebcd14a"
+  },
+  "source_training_export_sha256": "a7806d12672be658f66f75d57a0d53a888cb00b93074b183a0a7c5bceb52d489",
+  "split_method": "sha256-canonical-[ssdm.l1_world_split.v1,seed,world_id]-ascending-first-8",
+  "split_seed": 1708
+}

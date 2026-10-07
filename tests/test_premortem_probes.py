@@ -135,8 +135,10 @@ def test_p3_pr86_levers_do_not_apply_to_q9af(toy):
     from heads import act_ckpt
 
     bb, _ = q9af_tiny()
-    with pytest.raises(ValueError, match="RWKV-7"):
-        act_ckpt.enable_block_checkpointing(bb.model)  # TrainConfig(act_ckpt=True) raises for Q9-AF
+    # RESOLVED (stack/q9af/train-cell): block checkpointing now covers Q9-AF / Qwen3.5 decoders with the cache fork
+    # (equivalence + memory: tests/test_q9af_act_ckpt.py); it was "raises: RWKV-7 only" when this probe ran
+    assert act_ckpt.enable_block_checkpointing(bb.model) == 4
+    act_ckpt.disable_block_checkpointing(bb.model)
     assert not bb.can_fork_rows()  # TrainConfig(row_batch>1) silently falls back to one prefix call per row
     model = DecisionModel(bb, "fork", seed=0)
     tr = Trainer(model, TrainConfig(head="fork", lora_rank=2, batch_size=2, row_batch=2, max_steps=1), toy, guard=G)
@@ -148,7 +150,7 @@ def test_p3_pr86_levers_do_not_apply_to_q9af(toy):
                   toy, guard=G)
     with pytest.raises(RuntimeError, match="gradient checkpointing"):
         tr2.train_step()  # the only remaining memory lever is refused under the cache fork
-    _write("p3_levers.json", {"act_ckpt": "raises (RWKV-7 only)", "row_batch": "silent per-row fallback",
+    _write("p3_levers.json", {"act_ckpt": "resolved: Qwen3.5 / Q9-AF block checkpointing (tests/test_q9af_act_ckpt.py)", "row_batch": "silent per-row fallback",
                               "hf_grad_ckpt_with_cache_fork": "refused", "status": "pass (blocker confirmed)"})
 
 

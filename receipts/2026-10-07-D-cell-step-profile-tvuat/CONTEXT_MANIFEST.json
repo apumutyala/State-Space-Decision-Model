@@ -1,0 +1,24 @@
+{
+ "job": "cell_step_profile",
+ "m1_sha": "54ee89d4aec43dc0d4290dc2197adefc3f2cc40c",
+ "dockerfile_sha256": "0cd889b55534133989d07c1cea7e5ae9786199a0115d3b2f8130213a2957a017",
+ "files_sha256": {
+  "jobs/cell_step_profile/cell_step_job.sh": "362ae6c7fa343ccb6b9490950b30ed7233bca910e856b6013dcc2dbf34060c44",
+  "jobs/cell_step_profile/job_params.json": "b7b6b144cb1846f48625f6bc73c65090da167c323aa3fc0da5c0b6fbfac5d4a0",
+  "jobs/cell_step_profile/cell_step.py": "a68777ae4aba2b6d418f2c92b248eb51444197ed541ed3cfbcfbd11876e91ae3",
+  "jobs/cell_step_profile/rule.py": "8c34022aa7ce46a5c69f7f5c124837f7f08ea5f6ea6ea2ebf30906458a116d3e",
+  "jobs/fla_rwkv7/train_mix.py": "7af03e4202061d6727aa0d2f343cec89d576622060a70e35e549c9098d6593e2",
+  "jobs/fla_rwkv7/train_mix_v2.json": "25b280429bc9d757e27acaf423e1d45bf4d42b1296d531a050dd46537d0fa4d2",
+  "jobs/rwkv7/snapshot.sha256": "aec230e7aaab26c4a876b0cff125288f8e100eb98d01f91966e40299cccd205f",
+  "heads/act_ckpt.py": "128d28fe8b1eba6f28623bcd88a2e41f748a78a9b1c85c9e3573fe047baa8b24",
+  "heads/rwkv7_lean.py": "0cc8cfc70dfcd8f180f8ea9145ee742d79ca956a145559df19e1dab4dd936f9c",
+  "heads/rwkv7_wkv.py": "f1c0d05385c7a7f3c91f91ba3113cbc6243d590e180c2a0c469d4bbfaf5272ea",
+  "heads/backbone.py": "59be50926ad04249680921381e3fcf879c837f1a6db55339e659c06f30e5bc4d",
+  "heads/features.py": "bcc5b62c77177d78a11e989994493fdd5738cbf008ec37614c59d30c9438dbe1",
+  "train/trainer.py": "2d00161a6382168c61bbd19cc3f2cb75f3dbdfcde9ba6366053e67667c216191",
+  "train/run_cell.py": "0f2abde001cbb105bc8369d07808c2ddebc413daed9dc87f33ea2a61649f5e4e",
+  "tests/test_cell_perf.py": "fabcfa7d61c3a857060596ade105ad4aaa8c28052877f9797ef10054945d1483",
+  "tests/test_cell_step_rule.py": "e95df95b17e29a87677433a4f97505d6e506d669e9771066e5fe377f70203e7f"
+ },
+ "data_sha256": {}
+}

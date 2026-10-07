@@ -242,7 +242,7 @@ Cost of late discovery is scored 1-5: 5 = the goal becomes unreachable before 10
 | 1 | **Head/recipe ceiling vs the same-backbone Clef-flash.** Unknown whether ANY of our attention-free heads on frozen Q9 states reaches ~56, before we pay for S1 + S2 | 0.6 | 5 | 3.0 | S8 proxy on cached frozen-Q9 features (~$4 cache, then CPU) | D | yes |
 | 2 | Full Index = TEST unseal; no full-rows scoring path; candidate full Index ≈ 45 h / $134 on the current path | 1.0 | 3 | 3.0 | Full-rows CLI + selfcheck; price `shared_prefix` scoring ($0) | D | yes |
 | 3 | Clef unmeasured: composite crash (reproduced, P7) + the job-C dependency | 1.0 | 3 | 3.0 | One-line fix + test (done as a probe) | D | yes |
-| 4 | Q9-AF train step has no cache-fork-compatible checkpointing: OOM above T≈1.95k (P3, P4) | 0.7 | 4 | 2.8 | Port `act_ckpt` to HF GDN; CPU equivalence test | D | yes |
+| 4 | Q9-AF train step has no cache-fork-compatible checkpointing: OOM above T≈1.95k (P3, P4). **CPU-resolved on stack/q9af/train-cell:** `heads/act_ckpt.py` covers Q9-AF / hybrid Qwen3.5 blocks with the cache fork; Trainer loss and LoRA/head gradients bit-identical with and without it; saved bytes per token 22.5x smaller (`tests/test_q9af_act_ckpt.py`); the GPU peak is measured by the `jobs/q9af_cell` ladder | 0.7 | 4 | 2.8 | Port `act_ckpt` to HF GDN; CPU equivalence test | D | yes |
 | 5 | Full-8 hidden-cos compounding → hybrid → no Q9-AF | 0.5 | 5 | 2.5 | Sum per-layer (1−cos) from art-2bybh ($0); ≤ $3 all-student eval | D | yes |
 | 6 | Full-8 runner missing / no checkpoint export / deadline sizing (S1-F1..F3) | 0.5 | 4 | 2.0 | Shell dry run + `PHASE_HOOK` export ($0) | D | yes |
 | 7 | Retrieval collapse with all attention gone | 0.45 | 4 | 1.8 | ≤ $3 zero-attention MQAR/S-NIAH | D | yes |
