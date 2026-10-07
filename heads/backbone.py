@@ -308,6 +308,7 @@ class HiddenStateBackbone(nn.Module):
         cache.reorder_cache(torch.zeros(k, dtype=torch.long, device=dev))  # K state copies
         _assign_not_copy(cache)  # HF linear-attention caches write in place, which breaks autograd
         if not uses_cache_params:
+            _refuse_short_continuations_on_fla(last)
             # past_key_values models (Qwen3.5 hybrid, Q9-AF) continue a cache over several tokens in ONE call; right
             # padding of the continuations is exact (causal; only positions <= last are read; the state is dropped).
             # Replaces cids.shape[1] full-model calls per row (PERF_AUDIT: training / eval-card fork head).
@@ -386,6 +387,28 @@ class HiddenStateBackbone(nn.Module):
         out = m(input_ids=cids, state=cache, **base)
         f = self._pick(out)[torch.arange(len(flat), device=dev), last]
         return h, list(f.split(ks))
+
+
+def fla_installed() -> bool:
+    """fla (flash-linear-attention) importable: transformers then routes the GDN single-token decode step to fla's
+    ``fused_recurrent_gated_delta_rule``, whose backward raises NotImplementedError (fla 0.5.2)."""
+    import importlib.util
+
+    return importlib.util.find_spec("fla") is not None
+
+
+def _refuse_short_continuations_on_fla(last: torch.Tensor) -> None:
+    """PR #121 review (non-blocking 1): fail closed BEFORE a training forward whose cache continuation could take the
+    fla single-token recurrent path (no backward). Every continuation must be >= 2 tokens while autograd records on
+    an fla install. The CPU tests use the torch fallback (which has a backward), so this guard is the only thing that
+    would catch it before a paid GPU step. ``jrt-chatml-v1`` continuations are always >= 2 tokens (option id + end)."""
+    if not torch.is_grad_enabled() or not fla_installed():
+        return
+    n = int(last.min().item()) + 1
+    if n < 2:
+        raise RuntimeError(f"cache-fork continuation of {n} token(s) under autograd with fla installed: fla's "
+                           "fused_recurrent_gated_delta_rule (the GDN single-token path) has no backward. Use a "
+                           "template whose continuations are >= 2 tokens, or fork_mode='recompute'")
 
 
 def _linear_safe_cache(config):

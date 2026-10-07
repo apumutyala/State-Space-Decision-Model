@@ -51,13 +51,13 @@
  "mode": "parent",
  "cell_config": "jobs/q9af_cell/q9af_cell_r64.json",
  "resume": "none",
- "max_duration_minutes": 255,
- "hard_cap_usd": 30.0,
+ "max_duration_minutes": 355,
+ "hard_cap_usd": 40.0,
  "phase_caps_minutes": {
   "setup": 25,
   "guard": 5,
   "parent_g12": 30,
-  "parent_g13": 180,
+  "parent_g13": 280,
   "report": 5
  },
  "reserve_minutes": 10,
@@ -66,7 +66,7 @@
   "setup": 4,
   "guard": 1,
   "parent_g12": 18.6,
-  "parent_g13": 134.6,
+  "parent_g13": 214.2,
   "report": 1
  },
  "expected_minutes_sources": {
@@ -180,5 +180,6 @@
    "data/manifests/sample-150000-seed20261006.pointer.json",
    "train/cohorts/m2-dev-cohort-v3.sha256"
   ]
- }
+ },
+ "_repriced": "PR #121 review B1 (2026-10-07): G13 retention re-measured at the cells' T <= 4,096 (receipts/2026-10-07-D-q9af-cell-v3-retention-t4096/: 97.7 M positions / 86,452 calls = 159.3 min per arm, was 79.7 at T <= 2,048); caps raised to >= 1.3 x the new projection; max_duration <= 720 kept"
 }

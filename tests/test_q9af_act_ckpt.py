@@ -12,7 +12,8 @@ Tiny Qwen3.5 stand-ins on CPU (torch fallbacks of the GDN chunk / recurrent rule
 Equivalence (fp32): one and two optimiser steps of the real ``Trainer`` (cache-fork ``fork`` head, Clef arm, LoRA on
 the spec groups incl. the converted layer) with ``act_ckpt`` on vs off: loss bit-identical and every LoRA / head
 gradient bit-identical (asserted <= 1e-6 relative as the documented bound; measured 0.0). 1-token continuations take
-HF's single-token decode path (in-place ``causal_conv1d_update``) and are covered separately.
+HF's single-token decode path (in-place ``causal_conv1d_update``) and are covered separately ON CPU ONLY
+(torch fallback); on an fla install the fork refuses them under autograd (fla's single-token kernel has no backward).
 Memory: saved-for-backward bytes at T in {128, 512} with and without checkpointing; the per-token slope must shrink
 by >= 3x (measured on the stand-in; receipt with SSDM_WRITE_RECEIPTS=1).
 """
@@ -318,3 +319,23 @@ def test_act_ckpt_shrinks_saved_activations_per_token():
             "bytes_per_token_per_layer_per_d": per_layer_d,
             "test": "tests/test_q9af_act_ckpt.py::test_act_ckpt_shrinks_saved_activations_per_token"},
             indent=1, sort_keys=True), encoding="utf-8")
+
+
+@pytest.mark.requires_transformers(PIN)
+def test_short_continuations_fail_closed_under_autograd_on_fla(monkeypatch):
+    """PR #121 review (non-blocking 1): with fla installed, a 1-token continuation under autograd would take fla's
+    single-token recurrent kernel, which has no backward (a GPU-only crash). The fork refuses it up front; >= 2-token
+    continuations and no_grad evaluation are unaffected. (CPU: fla is absent, so the detector is forced on.)"""
+    import heads.backbone as B
+
+    bb = build("q9af", seed=5)
+    bb.train()
+    prefix = list(range(5, 40))
+    monkeypatch.setattr(B, "fla_installed", lambda: True)
+    with pytest.raises(RuntimeError, match="no backward"):
+        bb.fork_features(prefix, [[30, 31], [40]])
+    bb.fork_features(prefix, [[30, 31], [40, 41, 42]])[1].sum().backward()  # every continuation >= 2 tokens: fine
+    with torch.no_grad():
+        bb.fork_features(prefix, [[30], [40]])  # evaluation: no backward, no refusal
+    monkeypatch.setattr(B, "fla_installed", lambda: False)
+    bb.fork_features(prefix, [[30], [40]])[1].sum().backward()  # torch fallback (has a backward): allowed

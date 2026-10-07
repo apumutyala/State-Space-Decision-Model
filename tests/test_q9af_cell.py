@@ -55,12 +55,13 @@ def test_projection_numbers_quoted_in_job_spec():
     assert (s64["step_s"], s256["step_s"]) == (3.107, 3.205)
     assert "3.11 s" in spec and "3.21 s" in spec
     m64, m256 = price.memory_gb(64, 4096), price.memory_gb(256, 4096)
-    assert (m64["total"], m256["total"]) == (24.84, 32.49) and "24.8 GB" in spec and "32.5 GB" in spec
+    assert (m64["total"], m256["total"]) == (25.94, 33.59) and "25.9 GB" in spec and "33.6 GB" in spec
+    assert m64["states"] == 2.2  # K-state copies + the copies the checkpoint closures retain until backward (review)
     assert price.memory_gb(64, 4096, ckpt=False)["total"] == 146.67 and "146.7 GB" in spec
     assert (price.max_t(64, False), price.max_t(256, False)) == (1819, 1572) and "1,819" in spec and "1,572" in spec
     assert price.lora_params(64) == 159_383_552 and price.lora_params(256) == 637_534_208
     arm = price.arm_minutes(False)
-    assert (arm["g12"], arm["g13"]) == (17.9, 133.9) and "133.9 min" in spec
+    assert (arm["g12"], arm["g13"]) == (17.9, 213.5) and "213.5 min" in spec and "159.3 min" in spec
     from jobs.common.costs import worst_case_usd
 
     for mode in MODES:
@@ -75,6 +76,15 @@ def test_measured_rates_are_job_5cmat_receipts():
     assert price.ASSUMPTIONS["train_mfu"] < m["stage1_mfu"]
     v3 = json.loads((ROOT / "receipts/2026-10-07-D-cohort-v3/measure.json").read_text(encoding="utf-8"))
     assert v3["cohort_sha256"] == _cfg(64)["cohort_sha256"]
+    # review B1: the retention volume is priced at the cells' OWN unit spec (eval_max_t 4,096), not the T <= 2,048 receipt
+    t4 = json.loads((ROOT / price.V3_RETENTION["receipt"]).read_text(encoding="utf-8"))
+    assert t4["cohort_sha256"] == _cfg(64)["cohort_sha256"] and t4["unit_spec"]["max_t"] == _cfg(64)["eval_max_t"] == 4096
+    q = t4["cost"]["qwen3.5"]["all"]
+    assert (q["positions"], q["calls"], q["items"]) == tuple(price.V3_RETENTION[k] for k in ("positions", "calls", "items"))
+    assert q["minutes"] == 159.3 and q["rates"]["tok_s"] == price.MEASURED["prefill_tok_s_min"]
+    from train.promotion import MARGINS
+
+    assert price.V3_RETENTION["items"] >= max((MARGINS.get("required_n") or {}).values() or [0])
 
 
 def test_the_two_cells_differ_only_in_rank_so_one_parent_arm_serves_both():
@@ -359,3 +369,23 @@ def test_attach_teacher_and_a_kd_train_step_on_the_q9af_standin_with_act_ckpt(tm
     with pytest.raises(TeacherIdentityError, match="content"):
         attach_teacher({**cfg, "teacher": {**cfg["teacher"], "teacher_sha256": exp2["sha256"]}}, items, tmp_path / "bad",
                        ids, expected=exp2, contamination=False)
+
+
+def test_kd_teacher_data_pin_is_committed_for_the_future_kd_params():
+    """Review non-blocking 5/6: the teacher file is pinned for the KD cell's context (data + manifest_files) before its
+    params exist; the pin resolves to the pinned teacher sha256 through the launcher's own data_pin."""
+    from jobs.common import launch
+
+    kc = json.loads((JOB / "kd_context.json").read_text(encoding="utf-8"))
+    (item,) = kc["data"]
+    assert item["dest"] == "teacher/teacher-clef-flash.jsonl"
+    rel = "jobs/q9af_cell/q9af_cell_r64_kd.json"
+    files = {rel: ((ROOT / rel).read_bytes(), 0o644)}
+    from train.teacher import pinned
+
+    assert launch.data_pin(files, item) == pinned()["sha256"]
+    assert {rel, "train/teacher.py", "train/proxy_rule.py"} <= set(kc["manifest_files"])
+    kdp = JOB / "job_params_cell_r64_kd.json"
+    if kdp.exists():  # when added (after the KD rule amendment), it must carry the pin
+        ctx = json.loads(kdp.read_text(encoding="utf-8"))["context"]
+        assert item in ctx["data"] and set(kc["manifest_files"]) <= set(ctx["manifest_files"])

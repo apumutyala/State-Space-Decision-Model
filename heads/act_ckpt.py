@@ -254,7 +254,7 @@ def _wrap_hf(layer, idx: int):
             return (out,) + _HFSlot.outputs(slot.kind, priv)
 
         outs = checkpoint(run, hidden_states, *slot.inputs, use_reentrant=False)
-        slot.write(box["priv"], outs[1:])
+        slot.write(box.pop("priv"), outs[1:])  # the forward's holder is not kept alive until backward (review nb 2)
         return outs[0]
 
     return forward

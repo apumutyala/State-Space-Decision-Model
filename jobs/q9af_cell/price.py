@@ -14,7 +14,8 @@ Memory at prefix length T (GB = 1e9 B), the act-ckpt projection:
     weights bf16 (params_memory x 2) + LoRA fp32 param/grad/Adam (16 B / param)
     + kept block inputs: n_layers x T x d x 2 B x CKPT_KEPT_OVERHEAD          (CPU-measured: 5.0 B vs 4 B fp32 per d)
     + one block's recompute live: NOCKPT_BYTES_PER_TOKEN_LAYER x T             (PREMORTEM P4 anchor, job-mden7)
-    + K continuation state copies saved at block inputs: K x n_layers x (S fp32 + conv tail bf16)
+    + K continuation state copies saved at block inputs: K x n_layers x (S fp32 + conv tail bf16), and with act_ckpt one
+      more set retained by the checkpoint closures until backward (review non-blocking 2: ~+1.1 GB at K = 16)
   without checkpointing: NOCKPT_BYTES_PER_TOKEN_LAYER x n_layers x T (+ the same weights / LoRA / states).
 """
 from __future__ import annotations
@@ -33,10 +34,15 @@ MEASURED = {"source_job": "job-5cmat", "artifact": "art-2bybh",
 #: the CPU measurement of this PR (tests/test_q9af_act_ckpt.py, receipts/2026-10-07-D-q9af-act-ckpt/)
 CPU_ACT_CKPT = {"bytes_per_token_layer_d_ckpt": 5.015625, "bytes_per_token_layer_d_plain": 112.814453125,
                 "slope_ratio": 22.49}
-#: receipts/2026-10-07-D-cohort-v3/measure.json (Q9 rates): the G13 retention term of ONE arm on cohort v3
-V3_RETENTION = {"positions": 22_106_052, "calls": 63_583}
+#: the G13 retention term of ONE arm on cohort v3 AT THE CELLS' UNIT SPEC (K <= 16, T <= eval_max_t = 4,096), measured
+#: with the real Qwen3.5 template + tokenizer: receipts/2026-10-07-D-q9af-cell-v3-retention-t4096/measure.json (PR #121
+#: review B1; the earlier receipts/2026-10-07-D-cohort-v3/measure.json is T <= 2,048: 22,106,052 / 63,583 = 79.7 min,
+#: which under-priced the cells by 2x). 41,991 usable items (>= REQUIRED_N 33,300).
+V3_RETENTION = {"positions": 97_725_678, "calls": 86_452, "items": 41_991, "max_t": 4096,
+                "receipt": "receipts/2026-10-07-D-q9af-cell-v3-retention-t4096/measure.json"}
 #: jobs/m2_parent_arm/score_parent.py VOLUME_TOKENS / CHILD_EXTRA_TOKENS (upper bounds, cohort v2 roles; the dev and
-#: steer roles are unchanged in v3) + the full-DEV Index projection (38.79 M fork positions)
+#: steer roles are unchanged in v3) + the full-DEV Index projection (38.79 M fork positions: EVERY frozen DEV row, no
+#: T filter: the Index term scores all rows whatever their length, so it does not depend on eval_max_t)
 VOLUME = {"dev_records": 3_887_640, "steer_dev_units": 5_378_738, "steer_gate_units": 5_430_015,
           "index_dev_full": 38_787_584, "calibration_fit": 3_393_271, "dev_card": 3_993_020,
           "steer_units_per_stage": 9_000, "dev_record_calls": 2_000, "index_dev_rows": 12_104}
@@ -54,6 +60,9 @@ ASSUMPTIONS = {
     "nockpt_bytes_per_token_layer": 0.97e6,  # PREMORTEM P4 (Q9-AF/RWKV7 0.97 x job-mden7's ~1.0 MB)
     "ckpt_kept_overhead": 1.25,  # CPU measured 5.0 B per d per token per layer vs 4 B (fp32 h): x1.25
     "gdn_state_bytes_per_seq_layer": 32 * 128 * 128 * 4 + 8192 * 3 * 2,  # S fp32 + conv tail bf16
+    # PR #121 review (non-blocking 2): under act_ckpt the checkpoint closures keep the real cache and the continuation
+    # call's K-way output states alive until backward: one more set of K state copies (~1.1 GB at K = 16, T-independent)
+    "ckpt_retained_state_copies": 1,
     "max_peak_gb": 76.0,
     "tokenize_min": 15.0,  # q9_feature_cache TOKENIZE_MIN 14.2 (24k draw + DEV), rounded up
     "evals_head_slowdown": 1.0,  # the decision-head arm scored at the stock readout's measured rates
@@ -77,7 +86,7 @@ def train_step_s(rank: int, a: dict = ASSUMPTIONS) -> dict:
 def memory_gb(rank: int, T: int, K: int = 16, ckpt: bool = True, a: dict = ASSUMPTIONS) -> dict:
     w = a["params_memory"] * 2
     lo = lora_params(rank) * 16
-    st = K * a["n_layers"] * a["gdn_state_bytes_per_seq_layer"]
+    st = K * a["n_layers"] * a["gdn_state_bytes_per_seq_layer"] * (1 + (a["ckpt_retained_state_copies"] if ckpt else 0))
     if ckpt:
         act = (a["n_layers"] * T * a["d_model"] * 2 * a["ckpt_kept_overhead"]
                + a["nockpt_bytes_per_token_layer"] * T)

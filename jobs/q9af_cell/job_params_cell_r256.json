@@ -51,15 +51,15 @@
  "mode": "cell_r256",
  "cell_config": "jobs/q9af_cell/q9af_cell_r256.json",
  "resume": "checkpoint",
- "max_duration_minutes": 620,
- "hard_cap_usd": 65.0,
+ "max_duration_minutes": 720,
+ "hard_cap_usd": 75.0,
  "phase_caps_minutes": {
   "setup": 25,
   "guard": 5,
   "heldout": 10,
   "frozen": 10,
   "cell": 310,
-  "evals": 235,
+  "evals": 335,
   "report": 10
  },
  "reserve_minutes": 15,
@@ -70,7 +70,7 @@
   "heldout": 3,
   "frozen": 5,
   "cell": 180,
-  "evals": 177,
+  "evals": 256.6,
   "report": 3
  },
  "expected_minutes_sources": {
@@ -232,5 +232,6 @@
    "data/manifests/sample-150000-seed20261006.pointer.json",
    "train/cohorts/m2-dev-cohort-v3.sha256"
   ]
- }
+ },
+ "_repriced": "PR #121 review B1 (2026-10-07): G13 retention re-measured at the cells' T <= 4,096 (receipts/2026-10-07-D-q9af-cell-v3-retention-t4096/: 97.7 M positions / 86,452 calls = 159.3 min per arm, was 79.7 at T <= 2,048); caps raised to >= 1.3 x the new projection; max_duration <= 720 kept"
 }

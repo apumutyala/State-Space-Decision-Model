@@ -4,7 +4,8 @@
         --gates-rc <rc> --child-units <units-child-g13.json> --parent-arm <dir> --index-rows <dev-rows.jsonl.gz> \
         --index-frozen <frozen.json> --index-frozen-sha256 <sha> --subset jobs/common/dev_subset_m1.json \
         --label <export label.json> --out-dir <dir> [--B 2000]
-    python -X utf8 -m jobs.q9af_cell.summarize pair --r64 <dir>/report.json --r256 <dir>/report.json --out <pair.json>
+    python -X utf8 -m jobs.q9af_cell.summarize pair --r64-dir <dir> --r256-dir <dir> --index-rows <rows>
+        --index-frozen <frozen.json> --index-frozen-sha256 <sha> --out <pair.json>
 
 Index numbers, child and its own parent arm (the untrained Q9-AF stock readout, the SAME frozen full-DEV rows):
 * slices: the FULL DEV slice (frozen rows, ``jobs.common.dev_full``) and the 2,008-row DEV subset
@@ -39,7 +40,8 @@ def _ci(d: dict | None) -> dict | None:
     return None if d is None else {k: round(float(d[k]), 3) for k in ("point", "lo", "hi") if k in d}
 
 
-def index_block(rows: list[dict], child: dict, parent: dict, edition: str, B: int, seed: int = 0) -> dict[str, Any]:
+def index_block(rows: list[dict], child: dict, parent: dict, edition: str, B: int = R.BOOTSTRAP_B,
+                seed: int = R.BOOTSTRAP_SEED) -> dict[str, Any]:
     """Child, parent and paired child - parent on ``rows`` under ``edition`` (+ the family columns)."""
     from harness import bootstrap as HB
     from harness import families as HF
@@ -119,15 +121,16 @@ def build(a) -> tuple[dict, dict]:
             sub_ids = set(json.loads(Path(a.subset).read_text(encoding="utf-8"))["run_ids"])
         sub = [r for r in rows if r["_evaluation"]["run_id"] in sub_ids]
         for ed in (R.EDITION_BINDING, R.EDITION_REPORTED):
-            report["index"][ed] = {"full_dev": index_block(rows, child, parent, ed, a.B),
-                                   "subset_2008": index_block(sub, child, parent, ed, a.B)}
+            report["index"][ed] = {"full_dev": index_block(rows, child, parent, ed, a.B, R.BOOTSTRAP_SEED),
+                                   "subset_2008": index_block(sub, child, parent, ed, a.B, R.BOOTSTRAP_SEED)}
         report["index"]["subset_rows_present"] = {"n": len(sub), "of": len(sub_ids)}
     full = ((report["index"].get(R.EDITION_BINDING) or {}).get("full_dev")) or {}
     m = {"export_pinned": bool(label.get("sha256")), "attention_free": bool(label.get("attention_free")),
          "train_rc": a.train_rc, "train_pass": bool(report["train"].get("pass")), "gates_rc": a.gates_rc,
          "gates_stages": (report.get("gates") or {}).get("stages") or [],
          "full_dev_child": ((full.get("child") or {}).get("index") or {}).get("point"),
-         "full_dev_gain": (full.get("diff") or {}).get("index")}
+         "full_dev_gain": (full.get("diff") or {}).get("index"),
+         "bootstrap": {"B": full["B"], "seed": full["seed"]} if full else None}  # A1 (d): checked by the rule
     report["rule_inputs"] = m
     report["verdict"] = R.decide(m)
     return report, compact(report)
@@ -136,6 +139,8 @@ def build(a) -> tuple[dict, dict]:
 def compact(rep: dict) -> dict:
     """The platform result: headline numbers only (L-27: the full report is report.json)."""
     out = {k: rep.get(k) for k in ("schema", "rule", "variant", "lora_rank", "train_rc", "gates_rc", "references")}
+    out["amendments"] = list(R.AMENDMENTS)
+    out["action"] = R.ACTIONS.get(rep["verdict"]["verdict"])
     out["label"] = {k: rep["label"].get(k) for k in ("attention_free", "label", "sha256")}
     out["verdict"] = rep["verdict"]["verdict"]
     out["why"] = rep["verdict"].get("why")
@@ -163,7 +168,7 @@ def compact(rep: dict) -> dict:
 def valid_result(r: Any) -> bool:
     """``jobs/common/finalize.py`` validator: a rule verdict over a schema-complete compact result."""
     try:
-        return (r["schema"] == RESULT_SCHEMA and r["rule"] == R.RULE_ID and r["verdict"] in R.VERDICTS
+        return (r["schema"] == RESULT_SCHEMA and r["rule"] == R.RULE_ID and r["verdict"] in R.VERDICTS_A1
                 and isinstance(r["label"]["attention_free"], bool) and len(json.dumps(r)) <= RESULT_MAX_BYTES
                 and (r["verdict"] in ("NO_MEASUREMENT", "THROUGHPUT")
                      or all(math.isfinite(r["index"][f"{R.EDITION_BINDING}/full_dev"][k]["point"])
@@ -237,7 +242,7 @@ def main(argv=None) -> int:
     c.add_argument("--subset", default="jobs/common/dev_subset_m1.json")
     c.add_argument("--label", required=True)
     c.add_argument("--out-dir", required=True)
-    c.add_argument("--B", type=int, default=2000)
+    c.add_argument("--B", type=int, default=R.BOOTSTRAP_B, help="rule A1 pins it; any other B -> NO_MEASUREMENT")
     c.add_argument("--dry-run", action="store_true", help="CPU dry run: synthetic rows (jobs.q9af_cell.dry_gates)")
     e = sub.add_parser("export")
     e.add_argument("--ckpt-dir", required=True)
@@ -249,7 +254,7 @@ def main(argv=None) -> int:
     p.add_argument("--index-frozen", required=True)
     p.add_argument("--index-frozen-sha256", required=True)
     p.add_argument("--out", required=True)
-    p.add_argument("--B", type=int, default=2000)
+    p.add_argument("--B", type=int, default=R.BOOTSTRAP_B)
     a = ap.parse_args(argv)
     if a.cmd == "cell":
         rep, res = build(a)
@@ -271,7 +276,7 @@ def main(argv=None) -> int:
              for k, d in (("r64", a.r64_dir), ("r256", a.r256_dir))}
     rows = _rows(a.index_rows, a.index_frozen, a.index_frozen_sha256)
     cmp = HB.compare(S.decompose(rows, units["r256"], edition=R.EDITION_BINDING),
-                     S.decompose(rows, units["r64"], edition=R.EDITION_BINDING), B=a.B, seed=0)
+                     S.decompose(rows, units["r64"], edition=R.EDITION_BINDING), B=a.B, seed=R.BOOTSTRAP_SEED)
     d = _ci(cmp["diff"]["index"])
     out = {**pair(reps["r64"], reps["r256"]), "paired_r256_minus_r64_full_dev_021": d,
            "rank_verdict": R.compare_ranks(reps["r64"]["verdict"], reps["r256"]["verdict"], d)}
