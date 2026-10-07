@@ -130,7 +130,7 @@ def test_select_summary_refuses_stale_amendments_and_a_wrong_teacher(tmp_path, m
     c = tmp_path / "c"
     _fake_receipts(c, ids)
     doc = PL.select_summary(c, "cache")
-    assert doc["chosen"] == "R17" and doc["amendments"] == ["A1", "A2"]
+    assert doc["chosen"] == "R17" and doc["amendments"] == list(R.AMENDMENTS) == ["A1", "A2", "A3"]
     assert set(doc["matched_controls"]) >= {"R16-R01", "R17-R01"}
 
 
