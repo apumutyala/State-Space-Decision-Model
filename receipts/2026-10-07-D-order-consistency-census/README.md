@@ -65,4 +65,6 @@ The final CENSUS_RESULT line is the aggregate report. Compare it to aggregate.js
 
 Repository jobs-lint on receipt base 6ab62f5: 69 passed, one existing failure in tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule (3.58 s). That test requires the old literal phrase "requested but not blocking", which the takeover COORDINATION.md no longer contains. Neither coordination nor tests are changed by this receipt. This failure is recorded rather than reported as a passing repository check.
 
+Integration follow-up: PR #163 updated the stale L-18 spend-policy assertion on `agent-main@7648f1f`. Root reran `python -B -X utf8 -m pytest -q tests/test_jobs_lint.py` on the integrated tree: 70 passed in 1.93 s. The earlier 6ab62f5 failure remains recorded above as the exact receipt-base result.
+
 Limits: syntactic eligibility is not general semantic equivalence; source distribution is uneven; current coverage does not address high-K sensitivity; no safety/calibration/abstention/control/interpretability floor or primary model metric is measured. This receipt does not register a new training arm or change the existing default-off objective.
