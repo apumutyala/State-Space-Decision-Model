@@ -16,11 +16,18 @@ into the empty cache only when ALL of these hold, else exit 10 before any GPU wo
 * each stage's parent identity == ``train.m2_gates.expected_parent_identity`` for the cell (repo, revision, WKV),
   its cohort sha256 == the cell's, its unit spec == ``train.m2_gates.unit_spec(cell)``.
 
-The full units identity (items, variants, Index rows) is re-checked by ``train.m2_gates.read_arm_cache`` at the evals
-phase, exactly as for a restart. Only ``arm.json`` + the two units files are installed: the earlier box's rate reports
-are NOT, so ``jobs.m2_first_cell.reprice`` records the factor as unmeasured and the setup preflight (env rates) stands;
-the cell's measured-rate stop (exit 26) and the evals' live rate guard still measure THIS box. A cache already in
-``--dst`` (a restart of this job) is left untouched. Absent ``--src``: nothing to do (the job scores the parent).
+The copy is atomic: files go to a private temp dir, the copy is checked, then renamed to ``--dst`` (a failed check
+never leaves a cache a restart could reuse). The runner then runs ``score_parent --verify-cache`` BEFORE the cell
+phase: the full units identity (items, variants, Index rows) through ``train.m2_gates.read_arm_cache``, the guard, the
+parent decider's revision on this box and a short re-score probe (exit 10 on any mismatch, before training).
+``arm.json``, the two units files and a pinned ``seed-provenance.json`` are installed together: the earlier box's
+rate reports are NOT, so
+``jobs.m2_first_cell.reprice`` takes its factor from the probe measured on THIS box (``--probe``); the cell's
+measured-rate stop (exit 26) and the evals' live rate guard still run. A cache already in
+``--dst`` (a restart of this job) is left untouched, but a seeded cache returns ``verify_seed`` on every restart,
+including older installs without provenance when the manifest matches the pin. The runner
+also verifies ordinary cached arms before training and always exports their comparator files.
+Absent both a cache and ``--src``: nothing to do (the job scores the parent).
 """
 from __future__ import annotations
 
@@ -32,6 +39,7 @@ import sys
 from pathlib import Path
 
 STAGES = ("g12", "index")
+PROVENANCE = "seed-provenance.json"
 
 
 class SeedError(ValueError):
@@ -89,21 +97,50 @@ def check(src: str | Path, arm_sha256: str | None, cell: dict) -> dict:
 def seed(src: str | Path, dst: str | Path, arm_sha256: str | None, cell: dict) -> dict:
     src, dst = Path(src), Path(dst)
     if (dst / "arm.json").exists():
-        return {"seeded": False, "reason": "parent arm cache already present (restart of this job): left as is"}
+        # The provenance lives INSIDE the atomic install, so a restart cannot lose it between installation and a
+        # shell-side marker write. Also recognize older installs interrupted before their external marker existed.
+        meta = dst / PROVENANCE
+        is_seed = meta.exists() or bool(arm_sha256 and _sha(dst / "arm.json") == arm_sha256)
+        if is_seed:
+            if meta.exists():
+                try:
+                    saved_pin = json.loads(meta.read_text(encoding="utf-8"))["arm_sha256"]
+                except (ValueError, KeyError) as e:
+                    raise SeedError(f"invalid seed provenance in {meta}: {e}") from e
+                if saved_pin != arm_sha256:
+                    raise SeedError(f"seed provenance pin {saved_pin} != job_params pin {arm_sha256}")
+            units = check(dst, arm_sha256, cell)
+            return {"seeded": False, "verify_seed": True, "arm_sha256": arm_sha256, "units_sha256": units,
+                    "reason": "seeded cache restart: re-verify full identity and probe before training"}
+        return {"seeded": False, "verify_seed": False,
+                "reason": "parent arm cache already present (restart of this job): left as is"}
     if not src.exists():
         return {"seeded": False, "reason": f"no seed shipped ({src}): the job scores the parent"}
-    units = check(src, arm_sha256, cell)
+    check(src, arm_sha256, cell)
+    if dst.exists() and any(dst.iterdir()):
+        raise SeedError(f"{dst} holds files but no arm.json: refusing to seed over a partial cache")
     man = json.loads((src / "arm.json").read_text(encoding="utf-8"))
-    dst.mkdir(parents=True, exist_ok=True)
-    files = [man["stages"][st]["file"] for st in STAGES]
-    for f in files:  # units first, arm.json last: a half-copied dir never looks like a cache to the runner
-        shutil.copyfile(src / f, dst / f)
-    tmp = dst / "arm.json.tmp"
-    shutil.copyfile(src / "arm.json", tmp)
-    tmp.replace(dst / "arm.json")
-    check(dst, arm_sha256, cell)  # the installed copy, re-verified
-    return {"seeded": True, "arm_sha256": arm_sha256, "units_sha256": units, "files": ["arm.json", *files],
-            "rate_reports": "not installed: reprice factor unmeasured, the setup preflight stands"}
+    files = ["arm.json"] + [man["stages"][st]["file"] for st in STAGES]
+    # atomic (PR #147 review): copy into a private temp dir, verify THE COPY, then rename it into place. A copy that
+    # fails its check never becomes $CK/parent_arm, so a restart can never pick up an unverified cache.
+    tmp = dst.parent / f".{dst.name}.seed-tmp"
+    if tmp.exists():
+        shutil.rmtree(tmp)  # our own leftover from an interrupted attempt
+    tmp.mkdir(parents=True)
+    try:
+        for f in files:
+            shutil.copyfile(src / f, tmp / f)
+        units = check(tmp, arm_sha256, cell)
+        (tmp / PROVENANCE).write_text(json.dumps({"arm_sha256": arm_sha256}), encoding="utf-8", newline="\n")
+        if dst.exists():
+            dst.rmdir()  # empty (checked above)
+        tmp.rename(dst)
+    except BaseException:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
+    return {"seeded": True, "verify_seed": True, "arm_sha256": arm_sha256, "units_sha256": units,
+            "files": [*files, PROVENANCE],
+            "rate_reports": "not installed: reprice uses the seed_verify probe factor (score_parent --verify-cache)"}
 
 
 def main(argv=None) -> int:
