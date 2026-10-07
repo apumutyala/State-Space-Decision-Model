@@ -14,7 +14,7 @@ open_mission("m1-hw-qual-h100")
 create_context(<jobs/qual/build_context.sh output .tar.gz>)  -> context_id   (immutable: sha256 printed by the builder)
 submit_job(
   chip="h100", chip_count=1, mission="m1-hw-qual-h100",
-  idempotency_key="m1-hw-qual-<m1_sha[:12]>",
+  idempotency_key="m1-hw-qual-<context_sha256[:12]>",
   context_id=<id>, dockerfile_path="Dockerfile", build_timeout_minutes=20,
   command="bash /opt/ssdm/m1/jobs/qual/qual_job.sh",
   max_duration_minutes=180, max_restarts=0, resume="none", queue_ttl_minutes=1440,
@@ -153,6 +153,7 @@ job-c4zkm ($0.74) PASSED phase A (all GPU tests, including test_gdn on torch 2.1
 
 **Job:** the same `submit_job` with these differences:
 - `env={"QUAL_MODE": "c_only"}`;
+- `idempotency_key="m1-hw-qual-c-only-<context_sha256[:12]>"` (from `python -m jobs.common.launch qual --mode c_only`);
 - `max_duration_minutes=140`, from `jobs/qual/job_params_c_only.json`: setup 15, CPU gates 5×2, weight wait 25, C 80, reserve 8.
 
 The run skips `test_gdn` and phase B. It re-runs only the CPU gates that cover the changed code (`test_progressive_resume`, `test_guard`, `test_qual_job`, `test_microbatch`, `test_memmodel`), then phases C and D.

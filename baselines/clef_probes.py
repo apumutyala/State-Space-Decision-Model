@@ -25,6 +25,7 @@ import argparse
 import gzip
 import json
 import random
+import time
 import sys
 from pathlib import Path
 
@@ -170,11 +171,15 @@ def main(argv=None) -> int:
 
     # 1. parity
     by_id = {r["_evaluation"]["run_id"]: r for r in rows}
-    worst, argmax_mismatch = 0.0, []
+    worst, argmax_mismatch, timing = 0.0, [], []
     for rid in parity_ids:
         r = by_id[rid]
         req = {"model": a.release, "state": r["state"], "questions": r["questions"]}
-        ours = decider.decide(req)["ssdm"]
+        t_dec = time.perf_counter()
+        resp = decider.decide(req)
+        timing.append({"run_id": rid, "ms": round((time.perf_counter() - t_dec) * 1000.0, 3),
+                       "tokens": (resp.get("usage") or {}).get("input_tokens")})
+        ours = resp["ssdm"]
         theirs, _ = CB.native_systemone(jsm, model, processor, req, backend.max_length)
         for qid, ans in theirs["answers"].items():
             pr = ours["raw_probabilities"][qid]
@@ -187,6 +192,8 @@ def main(argv=None) -> int:
                     argmax_mismatch.append([rid, qid])
     out["parity"] = {"n": len(parity_ids), "max_abs_dp": worst, "argmax_mismatch": argmax_mismatch,
                      "ok": worst <= 2e-4 and not argmax_mismatch}
+    # measured decide-path rate on this box (jobs/clef_baseline/price.py preflight; first rows are warm-up)
+    out["parity_timing"] = timing
 
     # 5. fast GDN kernels vs torch reference (in-image "scores the same" check)
     out["kernel_path"] = kernel_path_check(decider, model, [by_id[r] for r in parity_ids], a.release)

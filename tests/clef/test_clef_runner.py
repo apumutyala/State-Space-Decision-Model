@@ -185,6 +185,7 @@ def _kernel_rows():
     return rows
 
 
+@pytest.mark.requires_transformers("5.10.2")  # the Clef image's pin: checks its Qwen3.5 GDN kernel-selection source
 def test_kernel_path_not_vacuous_on_real_transformers_fallback():
     from baselines import clef_probes as P
 
@@ -200,6 +201,7 @@ def test_kernel_path_not_vacuous_on_real_transformers_fallback():
     assert any("max_abs_dp == 0" in r for r in res["fail_reasons"])
 
 
+@pytest.mark.requires_transformers("5.10.2")  # the Clef image's pin: checks its Qwen3.5 GDN kernel-selection source
 def test_kernel_path_passes_when_a_real_fast_kernel_is_in_use():
     """Positive control on the same real class: a non-reference kernel object (reference + bf16-sized noise)."""
     from baselines import clef_probes as P
@@ -236,4 +238,6 @@ def test_summarize_gates_job_b_on_kernel_path(tmp_path):
         r = json.loads(buf.getvalue())
         assert r["s1_ok"] is want and r["kernel_path_ok"] is kp
     spec_md = (CB.REPO_ROOT / "jobs/clef_baseline/JOB_SPEC.md").read_text(encoding="utf-8")
-    assert spec_md.count('"result.s1_ok == true"') == 2 and "result.parity_ok == true" not in spec_md
+    # B (and, since 2026-10-06, C and the 27B teacher export on the I-subset canary) are gated on s1_ok, never parity
+    assert spec_md.count('"result.s1_ok == true"') >= 2 and "result.parity_ok == true" not in spec_md
+    assert '"require":"result.s1_ok == true"' in spec_md.split("**B-flash.**")[1].split("\n")[0]

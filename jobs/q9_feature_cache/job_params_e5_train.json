@@ -1,0 +1,148 @@
+{
+ "test_env": {"transformers": "5.17.0", "with": ["flash-linear-attention==0.5.2", "fla-core==0.5.2"], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}], "image": "jobs/probe9b/Dockerfile"},
+ "_comment": "jobs/q9_feature_cache part 'e5_train' (JOB_SPEC.md): the E5 short-code arm's first 5,000 training rows. One job = one part = one <= 4.5 GiB output artifact (review B1). Caps from the exact volume (volume_plan.json) at the MEASURED job-5cmat rates below; every cap >= 1.3 x its projection (jobs/q9_feature_cache/preflight.py, tests/test_q9_feature_cache_params.py).",
+ "job": "q9-feature-cache-e5-train",
+ "mode": "e5_train",
+ "arms": [
+  "e5"
+ ],
+ "runner": "jobs/q9_feature_cache/cache_job.sh",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement job: it caches frozen-backbone features only; the go/no-go verdict is the CPU proxy loop's pre-registered rule train/proxy_rule.py (commit e9db899), applied off-box",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 95,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 30.0,
+ "margin_min_frac": 0.3,
+ "phase_caps_minutes": {
+  "setup": 25,
+  "guard": 5,
+  "heldout": 10,
+  "arm_e5": 40,
+  "report": 10
+ },
+ "reserve_minutes": 5,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 4,
+  "guard": 1,
+  "heldout": 3,
+  "arm_e5": 27,
+  "report": 2
+ },
+ "measured": {
+  "_comment": "job-5cmat (probe9b @ 24f164e, artifact art-2bybh; same image stack and 9B revision). stock_prefill_tok_s_min = min over 4k-32k of the pipeline's stock prefill (results.json throughput.stock; 32,768 -> 22,144 tok/s). call_s_fitted_5cmat = (548.9 s I_stock kit wall time - 6,234,496 fork positions / 22,144 tok/s) / 4,501 calls: the per-call cost of the real stock readout end to end (prompt build, tokenisation, scheduling, sync) on this model.",
+  "source_job": "job-5cmat",
+  "artifact": "art-2bybh",
+  "stock_prefill_tok_s_min": 22144,
+  "stock_prefill_tok_s_4096": 23674,
+  "converted_1_prefill_tok_s_4096": 24512,
+  "readout_I_stock_wall_s": 548.9,
+  "readout_fork_positions": 6234496,
+  "readout_fork_calls": 4501,
+  "call_s_fitted_5cmat": 0.0595,
+  "model_load_s": 43
+ },
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "config": "jobs/q9_feature_cache/cache_config.json",
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/q9_feature_cache/cache_job.sh",
+  "key": "q9-feature-cache-e5-train",
+  "env": {
+   "Q9C_MODE": "e5_train"
+  },
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/Q9_CACHE_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/probe9b/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/probe9b/probe_job.sh",
+   "jobs/q9_feature_cache/cache_job.sh"
+  ],
+  "data": [
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+    "dest": "m2-150k/records.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.manifest.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.content.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   }
+  ],
+  "manifest_files": [
+   "jobs/q9_feature_cache/cache_job.sh",
+   "jobs/q9_feature_cache/cache_config.json",
+   "jobs/q9_feature_cache/extract.py",
+   "jobs/q9_feature_cache/cache.py",
+   "jobs/q9_feature_cache/dev_holdout.json",
+   "train/proxy_rule.py",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/sample-150000-seed20261006.pointer.json"
+  ]
+ },
+ "mission": "q9-feature-cache",
+ "splits": [
+  "train"
+ ],
+ "max_output_gib": 4.5,
+ "est_output_gib": 1.612
+}

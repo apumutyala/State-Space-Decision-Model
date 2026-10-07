@@ -2,7 +2,7 @@
 
     python -X utf8 -m jobs.m2_parent_arm.score_parent --parent rwkv7|q9af --model-dir <snapshot> [--gdn-ckpt <pt>] \
         --cell-config jobs/m2_pilot/m2_pilot_cell.json --records <records.jsonl.gz> \
-        --guard-readiness <readiness.json> --index-rows <dev-subset-rows.jsonl.gz> --out-dir <cache> [--stage all]
+        --guard-readiness <readiness.json> --index-rows <dev-rows.jsonl.gz>         (--index-frozen-out <frozen.json> | --index-frozen <frozen.json> --index-frozen-sha256 <sha>)         --out-dir <cache> [--stage all]
     python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s <measured prefill tok/s>
 
 Every m2 cell on the same parent compares against these units (``train.m2_gates.read_arm_cache``), so the parent is
@@ -11,7 +11,9 @@ the stock decision readout (``decide.backends.hf_readout``) through ``decide.Dec
 
 The cache is valid for a child only when ``train.m2_gates.units_identity`` agrees: same cohort sha256, same unit spec
 (K cap, pre-registered token cap, template, layout), same decision item ids, same steer variants (``unit_sha`` of
-every unit), same Index DEV run ids. The parent identity (family, repo@revision, converted-checkpoint sha256 for Q9-AF,
+every unit), same Index DEV run ids and frozen-set hashes. G13's Index term is the FULL DEV slice minus the rows the
+parent's decider refuses before any forward, frozen by ``jobs.common.dev_full.freeze`` HERE, before anything is scored
+(``--index-frozen-out``); pin the printed sha256 as ``index_frozen_sha256`` (issue #36). The parent identity (family, repo@revision, converted-checkpoint sha256 for Q9-AF,
 served revision id) is stored beside the units; ``m2_gates`` refuses a cache from another parent.
 
 Exit codes: 0 cached | 10 identity (cohort / guard / pins) | 15 projected past the cap from a MEASURED rate | 2 usage.
@@ -27,15 +29,17 @@ from typing import Any, Sequence
 
 #: Token volumes per stage, measured 2026-10-06 on cohort v2 (``VOLUME_COHORT_SHA256``) with the RWKV7-G1k tokenizer.
 #: Upper bounds: every question row of every role record (records whose rows the K/T filter drops still count), steer
-#: units = clean + D1 variants. Index DEV = the EXACT positions of the 2,008-row subset under the prefix-fork readout
-#: (``jobs/common/readout_volume_rwkv7.json`` totals.fork.positions; PERF_AUDIT). It replaced "proxy tokens x 2"
-#: (4.74 M), which was a 50x under-count of the recompute readout (236.7 M) and a 35% under-count of the fork path.
+#: units = clean + D1 variants. Index DEV = the FULL DEV slice (issue #36): a PROJECTION, the EXACT 2,008-row-subset
+#: fork positions (``jobs/common/readout_volume_rwkv7.json`` totals.fork.positions = 6,393,208; PERF_AUDIT) scaled by
+#: the full/subset proxy-token ratio of the committed DEV manifest (14,379,163 / 2,370,062 = 6.067) = 38.79 M. Re-measure
+#: on the first parent-arm run (exact positions need the private DEV rows). The subset number replaced "proxy tokens x
+#: 2" (4.74 M), a 50x under-count of the recompute readout (236.7 M) and a 35% under-count of the fork path.
 #: The per-record volumes assume one prompt read per question row: true for the prefix-fork readout (parent) and the
 #: shared-prefix decision-head eval (child); the old per-option recompute readout read each prompt K times.
 VOLUME_COHORT_SHA256 = "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2"
 VOLUME_TOKENS = {
     "g12": {"dev_records": 3_887_640, "steer_dev_units": 5_378_738},
-    "g13": {"retention_records": 5_724_231, "steer_gate_units": 5_430_015, "index_dev_subset": 6_393_208},
+    "g13": {"retention_records": 5_724_231, "steer_gate_units": 5_430_015, "index_dev_full": 38_787_584},
 }
 #: What the CHILD evals phase scores on top of its arm (PR #29 round-2 review B4): the temperature fit forwards every
 #: calibration item and the eval card forwards every dev item (prefix + every option continuation, all labelled
@@ -73,7 +77,7 @@ def min_tok_s(cap_min: float, mode: str = "child", stages: Sequence[str] = ("g12
 
 def score_parent_arm(*, stages: Sequence[str], cohort, spec: dict, decide, steer, items_by_role: dict,
                      records_by_id: dict, out_dir: str | Path, parent_identity: dict,
-                     index_rows: list[dict] | None = None) -> dict[str, Any]:
+                     index_rows: list[dict] | None = None, index_frozen: dict | None = None) -> dict[str, Any]:
     """Score + cache each stage (device-agnostic; tests drive it with tiny CPU models)."""
     from train import m2_gates as G
 
@@ -81,7 +85,7 @@ def score_parent_arm(*, stages: Sequence[str], cohort, spec: dict, decide, steer
     for stage in stages:
         variants = G.stage_variants(cohort, stage)
         ident = G.units_identity(stage, cohort, spec, {r: items_by_role[r] for r in G.STAGE_ROLES[stage]}, variants,
-                                 index_rows if stage == "g13" else None)
+                                 index_rows if stage == "g13" else None, index_frozen if stage == "g13" else None)
         units = G.score_stage(stage, decide, steer, items_by_role, records_by_id, variants,
                               index_rows if stage == "g13" else None)
         entries[stage] = G.write_arm_cache(out_dir, stage, units, ident, parent_identity)
@@ -137,14 +141,18 @@ def main(argv=None) -> int:
     ap.add_argument("--cell-config", required=True)
     ap.add_argument("--records", required=True)
     ap.add_argument("--guard-readiness", required=True)
-    ap.add_argument("--index-rows", default=None)
+    ap.add_argument("--index-rows", default=None, help="the FULL Index DEV rows")
+    ap.add_argument("--index-frozen-out", default=None, help="freeze the unsupported-row set here BEFORE scoring")
+    ap.add_argument("--index-frozen", default=None, help="an already frozen set (with --index-frozen-sha256)")
+    ap.add_argument("--index-frozen-sha256", default=None)
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--stage", choices=["g12", "g13", "all"], default="all")
     ap.add_argument("--device", default="cuda")
     a = ap.parse_args(argv)
     stages = ["g12", "g13"] if a.stage == "all" else [a.stage]
-    if "g13" in stages and not a.index_rows:
-        print("g13 needs --index-rows", file=sys.stderr)
+    if "g13" in stages and not (a.index_rows and (a.index_frozen_out or (a.index_frozen and a.index_frozen_sha256))):
+        print("g13 needs --index-rows and --index-frozen-out (or --index-frozen + --index-frozen-sha256)",
+              file=sys.stderr)
         return 2
 
     from jobs.m2_pilot.guard_ready import GuardNotReady, load_ready_guard
@@ -171,21 +179,34 @@ def main(argv=None) -> int:
         rr, _ = cohort.load_role_records(a.records, role)
         role_recs[role] = [recs[r["id"]] for r in rr]
     items_by_role = {r: G.decision_items(v, enc, spec, guard) for r, v in role_recs.items()}
-    index_rows = None
-    if a.index_rows:
-        from harness.suite import read_rows
-
-        index_rows = read_rows(a.index_rows)
     try:
         dec, ident = parent_decider(a.parent, a.model_dir, a.gdn_ckpt, cfg, a.device)
     except Exception as e:  # noqa: BLE001 - LineageError / pins: never score an unpinned parent
         print(f"parent identity: {e!r}", file=sys.stderr)
         return 10
     ident["guard"] = guard.identity()
+    index_rows, index_frozen = None, None
+    if a.index_rows and "g13" in stages:
+        from harness.suite import read_rows
+        from jobs.common import dev_full as F
+
+        rows = read_rows(a.index_rows)
+        try:
+            if a.index_frozen_out:  # pre-declared: frozen with the parent's own decider before ANY arm is scored
+                index_frozen = F.freeze(rows, dec)
+                sha = F.write_frozen(a.index_frozen_out, index_frozen)
+                print(json.dumps({"index_frozen": a.index_frozen_out, "sha256": sha, **F.identity(index_frozen)}))
+            else:
+                index_frozen = F.load_frozen(a.index_frozen, a.index_frozen_sha256)
+            index_rows = F.select_rows(rows, index_frozen)
+        except F.FrozenMismatch as e:
+            print(f"identity: {e}", file=sys.stderr)
+            return 10
     entries = score_parent_arm(stages=stages, cohort=cohort, spec=spec, decide=dec.decide, steer=DecideBridge(dec),
                                items_by_role=items_by_role,
                                records_by_id={r["id"]: r for rs in role_recs.values() for r in rs},
-                               out_dir=a.out_dir, parent_identity=ident, index_rows=index_rows)
+                               out_dir=a.out_dir, parent_identity=ident, index_rows=index_rows,
+                               index_frozen=index_frozen)
     print(json.dumps({s: {"sha256": e["sha256"], "units": e["units_identity"]["id"]} for s, e in entries.items()}))
     return 0
 

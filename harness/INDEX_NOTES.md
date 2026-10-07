@@ -112,3 +112,7 @@ The slices therefore under-sample the most interlinked sources.
 - **Two kit portability bugs found on Windows** (no effect on Linux/the board):
   - A Windows clone with `core.autocrlf=true` changes the packaged subset JSON hashes. Fix: clone with `core.autocrlf=false`.
   - The kit decodes its subset lists with the locale encoding. Under cp1252, two BRIGHT run ids containing U+2019 are garbled and silently dropped (218 instead of 220 BRIGHT rows). The harness refuses to import unless Python runs in UTF-8 mode (`python -X utf8 -I`). Worth an upstream issue/PR.
+
+## 12. Edition 0.3 (2026-10-06)
+
+The board moved to 0.3 on 2026-10-06. This note stays the 0.2.1 reference, which is still the harness default. For 0.3, see `INDEX_0.3.md` at the repo root: verified facts, the edition flag (`--edition 0.3`), Full-score arithmetic (`harness/full03.py`) and the held-out-family split (`harness/families.py`).

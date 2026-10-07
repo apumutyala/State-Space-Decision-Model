@@ -25,6 +25,21 @@ codex/<topic>     Track L work branches
 - Never push directly to `agent-main` or `main`. Never force-push a shared branch.
 - Stage only your own paths (no `git add -A` over the other agent's uncommitted files).
 - Small PRs (one experiment, one module, or one doc), merged often. A PR open more than 2 working sessions gets split or closed.
+- **Branches and the champion.**
+  - Every hypothesis variant gets its own branch, `stack/<family>/<variant>`, pushed at every checkpoint. WIP commits are fine there.
+  - Infra goes on `claude/*` or `codex/*`.
+  - `agent-main` holds only the best candidate (`CHAMPION.md`) plus shared infra.
+  - Every measured variant gets a row in `CANDIDATES.md`, kept or folded.
+  - Promotion requires a paired DEV-subset CI above zero vs the champion, plus G12/G13, a receipt and an independent review. Tag the promotion `champion/<YYYYMMDD>-<name>`; tag measured candidates `cand/<YYYYMMDD>-<name>`.
+
+## Before any paid job / before any PR
+
+- Read `LESSONS.md`, the failure classes we already paid for.
+- Follow `jobs/LAUNCH_CHECKLIST.md`.
+  - `tests/test_jobs_lint.py` must pass.
+  - Launch only through `python -m jobs.common.launch <job> --sha <merged sha> --out <dir>`, then paste its `submit.json`.
+- **Every incident appends a `LESSONS.md` entry and an enforcing check (a test, lint check or guard) in the same PR.** A lesson without a check is not done.
+- **Never kill processes by image name or name pattern** (`taskkill /IM` or `/FI` window-title filters, `pkill`, `killall`) on the shared laptop. That kills other agents' and Codex's processes. Kill only PIDs you started yourself and recorded (`taskkill /PID <pid>`, `kill <pid>`). See LESSONS L-23, enforced by `tests/test_no_kill_by_name.py`.
 
 ## PR rules
 
@@ -97,7 +112,7 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
    - the capped experiment;
    - scale-up.
 
-   Each rung needs the previous rung's receipt, plus a `spend` issue with the estimated $ and a stop condition, acknowledged by the other agent.
+   Each rung needs the previous rung's receipt, plus a `spend` issue with the estimated $ and a stop condition, reviewed per 'Review sufficiency' (the other agent's acknowledgement is requested but not blocking).
 3. **Parallelise within a track.** Each agent runs independent sub-tasks concurrently: subagents or worktrees, one branch each (`claude/m0-<task>`, `codex/l0-<task>`). Work that doesn't depend on hardware (code, data, analysis, review) never waits for GPU work.
 4. **Pipeline across stages.** While one stage measures, the next is implemented and the previous one is reviewed. GPU time is serialised (one experiment per GPU); nothing else is.
 5. **Adversarial review inside each track** before the cross-agent PR. Any reported number is re-derived by a different agent or process.
@@ -125,7 +140,7 @@ When the other agent's review is stalled, Track D may merge its own PRs into `ag
 
 The merge comment records all three. The other agent reviews after the merge, and any finding gets a fix PR. A result claim the other agent couldn't reproduce stays labelled as reproduced by one track only.
 
-This rule never applies to `main` or to spend approval. Spend still needs the other agent's acknowledgement on a `spend` issue.
+This rule never applies to `main`. Spend follows 'Review sufficiency' below (one independent review — the other agent's or a fresh-context adversarial reviewer — plus the envelope and workspace cap); the other agent's acknowledgement on the spend issue is requested but not blocking.
 
 ## Review sufficiency (user decision, 2026-10-06)
 
