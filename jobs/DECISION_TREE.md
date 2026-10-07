@@ -23,17 +23,17 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | clef_overlength_flash (Clef-flash 32k sensitivity on the 51 over-length DEV rows, substituted into job-sgihj; `ROWS=overlength`) | `jobs/clef_baseline/job_params_overlength_flash.json` | $5.25 | $6 | ~$1.49 |
 | clef_teacher_flash (optional m2 teacher: Clef-flash probabilities on the 24k TRAINING draw; guard exit 20) | `jobs/clef_baseline/job_params_teacher_clef_flash.json` | $11.68 | $12 | ~$3.56 |
 | clef_teacher_clef (optional m2 teacher: Clef-27B, same draw; `depends_on` index_subset `s1_ok`; planned at 5.39x) | `jobs/clef_baseline/job_params_teacher_clef.json` | $35.74 | $36 | ~$13.22 |
-| q9_feature_cache stock_dev (proxy head loop, PREMORTEM blocker #1; stock Q9 SELECT + HOLDOUT DEV features; independent of full-8; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_stock_dev.json` | $14.85 | $20 | ~$3.66 |
-| q9_feature_cache stock_train (proxy head loop, PREMORTEM blocker #1; stock Q9 20,000 training rows; independent of full-8; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_stock_train.json` | $16.83 | $30 | ~$4.41 |
-| q9_feature_cache conv1_dev (proxy head loop, PREMORTEM blocker #1; 1-layer-converted (L23 GDN) DEV features; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_conv1_dev.json` | $14.85 | $30 | ~$3.66 |
-| q9_feature_cache conv1_train (proxy head loop, PREMORTEM blocker #1; 1-layer-converted, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_conv1_train.json` | $12.38 | $30 | ~$2.62 |
-| q9_feature_cache e5_dev (proxy head loop, PREMORTEM blocker #1; E5 short-code DEV features; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_dev.json` | $14.85 | $30 | ~$3.61 |
-| q9_feature_cache e5_train (proxy head loop, PREMORTEM blocker #1; E5 short-code, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_train.json` | $12.38 | $30 | ~$2.57 |
+| q9_feature_cache stock_dev (proxy head loop, PREMORTEM blocker #1; stock Q9 SELECT + HOLDOUT DEV features; independent of full-8; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_stock_dev.json` | $15.35 | $20 | ~$3.91 |
+| q9_feature_cache stock_train (proxy head loop, PREMORTEM blocker #1; stock Q9 20,000 training rows; independent of full-8; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_stock_train.json` | $17.32 | $30 | ~$4.65 |
+| q9_feature_cache conv1_dev (proxy head loop, PREMORTEM blocker #1; 1-layer-converted (L23 GDN) DEV features; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_conv1_dev.json` | $15.35 | $30 | ~$3.91 |
+| q9_feature_cache conv1_train (proxy head loop, PREMORTEM blocker #1; 1-layer-converted, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_conv1_train.json` | $12.87 | $30 | ~$2.87 |
+| q9_feature_cache e5_dev (proxy head loop, PREMORTEM blocker #1; E5 short-code DEV features; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_dev.json` | $15.35 | $30 | ~$3.86 |
+| q9_feature_cache e5_train (proxy head loop, PREMORTEM blocker #1; E5 short-code, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_train.json` | $12.87 | $30 | ~$2.82 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
 need one cap covering all of them: MTD + `costs.concurrent_cap_usd([...])` = the ceiling of the sum of their worst
 cases. probe9b + rwkv7 A (qual pass branch): MTD + 45. rwkv7 A + B chained with `depends_on`: MTD + 36 (B is
-submitted while A can still bill). A job submitted alone: MTD + its hard cap. All six q9_feature_cache parts in parallel: MTD + 87; the two stock parts alone: MTD + 32.
+submitted while A can still bill). A job submitted alone: MTD + its hard cap. All six q9_feature_cache parts in parallel: MTD + 90; the two stock parts alone: MTD + 33.
 
 ## After the qualification (`scripts/decide_9b.py` verdict, `jobs/qual` exit code)
 

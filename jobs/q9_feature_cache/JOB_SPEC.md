@@ -15,16 +15,16 @@ The parts can run in parallel.
 
 | Part (`Q9C_MODE`) | Arm / splits | Needs | Est. output | Arm projection / cap (min) | Worst case | Hard cap | Expected |
 |---|---|---|---|---|---|---|---|
-| `stock_dev` | stock / select + holdout | nothing (independent of full-8). **Ship first** | 2.87 GiB | 48.1 / 65 | **$14.85** | $20 | ~$3.66 |
-| `stock_train` | stock / train (20,000 rows) | nothing. **Ship first** | 2.77 GiB | 63.3 / 85 | **$16.83** | $30 | ~$4.41 |
-| `conv1_dev` | conv1 / select + holdout | `gdn_converted.pt` (sha256 `8a50c36c…`) | 2.87 GiB | 48.1 / 65 | **$14.85** | $30 | ~$3.66 |
-| `conv1_train` | conv1 / train (first 5,000 rows) | `gdn_converted.pt` | 1.61 GiB | 27.0 / 40 | **$12.38** | $30 | ~$2.62 |
-| `e5_dev` | e5 / select + holdout | nothing | 2.87 GiB | 47.7 / 65 | **$14.85** | $30 | ~$3.61 |
-| `e5_train` | e5 / train (first 5,000 rows) | nothing | 1.61 GiB | 26.9 / 40 | **$12.38** | $30 | ~$2.57 |
+| `stock_dev` | stock / select + holdout | nothing (independent of full-8). **Ship first** | 2.87 GiB | 53.1 / 70 | **$15.35** | $20 | ~$3.91 |
+| `stock_train` | stock / train (20,000 rows) | nothing. **Ship first** | 2.77 GiB | 68.3 / 90 | **$17.32** | $30 | ~$4.65 |
+| `conv1_dev` | conv1 / select + holdout | `gdn_converted.pt` (sha256 `8a50c36c…`) | 2.87 GiB | 53.1 / 70 | **$15.35** | $30 | ~$3.91 |
+| `conv1_train` | conv1 / train (first 5,000 rows) | `gdn_converted.pt` | 1.61 GiB | 32.0 / 45 | **$12.87** | $30 | ~$2.87 |
+| `e5_dev` | e5 / select + holdout | nothing | 2.87 GiB | 52.7 / 70 | **$15.35** | $30 | ~$3.86 |
+| `e5_train` | e5 / train (first 5,000 rows) | nothing | 1.61 GiB | 31.9 / 45 | **$12.87** | $30 | ~$2.82 |
 
 - Worst case = `costs.worst_case_usd`: (build_timeout 60 + 2 attempts × max_duration) × $0.0495/min. Every hard cap is at least 1.2× its worst case; the conv1 and e5 parts use $30.
-- Expected = the exact volume at the measured rates, plus a 15-min build. The stock arm costs ~$8.07 (two parts) and all six parts ~$20.5. Splitting into parts adds about $1 of setup and model load per extra job. That is the price of the 5 GiB bound.
-- The workspace cap for all six in parallel is MTD + 87; for the two stock parts, MTD + 32 (`costs.concurrent_cap_usd`).
+- Expected = the exact volume at the measured rates, plus a 15-min build. The stock arm costs ~$8.56 (two parts) and all six parts ~$22.0. Splitting into parts adds about $1 of setup and model load per extra job. That is the price of the 5 GiB bound.
+- The workspace cap for all six in parallel is MTD + 90; for the two stock parts, MTD + 33 (`costs.concurrent_cap_usd`).
 
 ## What it stores (per arm; `jobs/q9_feature_cache/extract.py`)
 
@@ -78,7 +78,9 @@ The rates come from job-5cmat on the same image and the same 9B revision:
 - prefill: 22,144 tok/s, the minimum over 4k–32k;
 - per call: 0.0595 s. That is (548.9 s stock-readout kit wall time − 6.23M fork positions / 22,144) / 4,501 calls.
 
-Part projection = its extraction + 14.2 min of tokenisation/draw (the maximum measured locally for a whole arm; DEV-only parts tokenise less) + 0.7 min load. Every cap is ≥ 1.3× its projection, checked by `preflight.py` at setup and in `tests/test_q9_feature_cache_params.py`.
+Part projection = its extraction + 14.2 min of tokenisation/draw (the maximum measured locally for a whole arm; DEV-only parts tokenise less) + 0.7 min load + 5.0 min for the model load and fp32 self-check (measured on the H100 in job-kxc5e: 300 s).
+
+**Measured on the H100 (job-kxc5e, stock_dev).** Extraction ran at **0.884× the priced time**: 534 units with 191.3 planned seconds took 169.1 s. The 5cmat-based pricing is therefore conservative, and it is kept. The job stopped with exit 15 for a different reason. The live rate guard's clock started when the total-weight file appeared, and that file was written *before* the model load and fp32 self-check. So the guard counted those 300 one-time seconds as scoring and extrapolated them about 10× (projected 87 min against a true ~39 min). The file is now written after the self-check (LESSONS L-29). Every cap is ≥ 1.3× its projection, checked by `preflight.py` at setup and in `tests/test_q9_feature_cache_params.py`.
 
 Inside each part, `cache.py` re-projects the exact volume at the same rates after tokenising. It exits 15 before loading the model if the projection exceeds 95% of the cap. `jobs.common.rate_guard run-weighted` then stops the part (exit 15) if the measured progress projects past the cap.
 
@@ -157,7 +159,7 @@ Mode `conv1_dev` (`job_params_conv1_dev.json`):
  "env": {
   "Q9C_MODE": "conv1_dev"
  },
- "max_duration_minutes": 120,
+ "max_duration_minutes": 125,
  "max_restarts": 0,
  "resume": "none",
  "queue_ttl_minutes": 1440,
@@ -207,7 +209,7 @@ Mode `conv1_train` (`job_params_conv1_train.json`):
  "env": {
   "Q9C_MODE": "conv1_train"
  },
- "max_duration_minutes": 95,
+ "max_duration_minutes": 100,
  "max_restarts": 0,
  "resume": "none",
  "queue_ttl_minutes": 1440,
@@ -257,7 +259,7 @@ Mode `e5_dev` (`job_params_e5_dev.json`):
  "env": {
   "Q9C_MODE": "e5_dev"
  },
- "max_duration_minutes": 120,
+ "max_duration_minutes": 125,
  "max_restarts": 0,
  "resume": "none",
  "queue_ttl_minutes": 1440,
@@ -307,7 +309,7 @@ Mode `e5_train` (`job_params_e5_train.json`):
  "env": {
   "Q9C_MODE": "e5_train"
  },
- "max_duration_minutes": 95,
+ "max_duration_minutes": 100,
  "max_restarts": 0,
  "resume": "none",
  "queue_ttl_minutes": 1440,
@@ -357,7 +359,7 @@ Mode `stock_dev` (`job_params_stock_dev.json`):
  "env": {
   "Q9C_MODE": "stock_dev"
  },
- "max_duration_minutes": 120,
+ "max_duration_minutes": 125,
  "max_restarts": 0,
  "resume": "none",
  "queue_ttl_minutes": 1440,
@@ -407,7 +409,7 @@ Mode `stock_train` (`job_params_stock_train.json`):
  "env": {
   "Q9C_MODE": "stock_train"
  },
- "max_duration_minutes": 140,
+ "max_duration_minutes": 145,
  "max_restarts": 0,
  "resume": "none",
  "queue_ttl_minutes": 1440,
