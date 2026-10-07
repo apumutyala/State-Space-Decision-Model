@@ -1,0 +1,16 @@
+{
+  "decide/prompt.py": "1f986ea74c79d5dd96c419c30873311ea9c722224da0159a3e1aa45bfe3f9c9a",
+  "decide/rwkv_world_tokenizer.py": "2421f6465fa4e5590b3a11a47ac12b9b7f27e715b0e44f2a23f4500bdf2c910d",
+  "language_growth/l1_relation_data.py": "e0d6ff4495f5494f4b746fd9380da8452108786c268bbcb331bf3966e1849517",
+  "language_growth/l1_world_training.py": "c9ae7362579533ff12c0b9d9b893a37b0bfbd6c69d9e72e39a888d9eba6bc833",
+  "language_growth/multirecord_calibration_split.py": "24d84c26a5ba237d010ca3c1f58281d84432786781cf1a41e5bd9f1c8d0d72f6",
+  "language_growth/multirecord_data.py": "e3470d2b61ff2b31790b5ee70dac0528cc94fd8647325c24bd6ba3e1311da14f",
+  "language_growth/multirecord_eval.py": "a87811198748fb08a77615f3ed9fa8fb848695a174320b6249210265f8ee9319",
+  "language_growth/multirecord_training.py": "4e257278759e6d2a380c66ce3d66e05c10f0f483bd82bdd2ff3a1529df14c8c2",
+  "language_growth/parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+  "language_growth/tests/test_l1_relation_data.py": "97f9d6119cf0ceb7eb497e5fe53cc6ba9ee9af28d0188b9432dc5ceb1b11a0e7",
+  "language_growth/training_records.py": "d95825784d9825b7a79e28f0be137353a9ae8fdee8c72d10ca2fd2aef975edcb",
+  "plans/codex/L1R0_RELATION_DATA.md": "8970665a981f49f25f9f0bef9afbbe447a26c43f3db66661dd56c01d0c120b92",
+  "train/cohort.py": "aa1b5871aeaf968ed76ed3dcb32a6aa6d7c7b4276cdfd740dbf4ff203690bb24",
+  "train/guard.py": "5e14e190360623bfd893f90f6bf6d1f406b03d4bc3cfb85f3687a98774544158"
+}

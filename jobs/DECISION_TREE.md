@@ -1,5 +1,20 @@
 # m1 decision tree: qualification outcome -> next job (spec only, nothing submitted)
 
+Track D's next RWKV7 line is registered as `jobs/rwkv7_code_label_h100/job_params.json`
+(`jobs/rwkv7_code_label_h100/JOB_SPEC.md`): matched code-label v1/v2 on the exact 2,008
+DEV IDs, all eight exhausted rows retained. Launch disabled pending merged proof,
+independent review and explicit spend-issue approval. Exact admitted workload projects
+212.071453 minutes at the recorded small-call reference; the hard budget uses a
+conservative inherited planning stress estimate of 474.984510 minutes (old 64x64 tails,
+not current v2 packs; historical small-call projection 293.991278 minutes).
+Real-shape H100 memory/parity and probe-derived rate
+gates precede scoring. Runtime 710 min, build 60 min, two-attempt conservative
+worst case/hard cap **$73.26**, published-rate bound **$70.89**, expected **$26.54**,
+workspace increment $74.
+This is derived within the $250 System 1 allocation; no fixed qualification-dollar
+ceiling applies. Completion produces an integrity receipt only: no promotion, Clef win,
+safety floors or automatic follow-on spend. Failed feasibility keeps permitted $0 work moving.
+
 Every job below still needs its own `spend` issue, a LEDGER planned row, `set_workspace_cap` = MTD + its hard cap,
 and a `validate_job` re-run against that cap before submit (same preconditions as `jobs/qual/JOB_SPEC.md`). The
 numbers are computed by `python -m jobs.common.costs` and checked by `tests/test_m1_next_jobs.py`.

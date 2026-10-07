@@ -1,0 +1,64 @@
+{
+  "schema": "ssdm.rwkv7-code-label-screen.cpu-proof.v1",
+  "code_commit": "1ff42ce3974c9569d9ce2296b8a4e52ae3b88d9b",
+  "integration_base": "6ab62f5b8f43f9f916900fb1963d37a36657dda4",
+  "branch": "codex/rwkv7-code-label-v2-screen",
+  "hardware": {
+    "system": "Windows",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "execution": "CPU scripted tensors only; CUDA_VISIBLE_DEVICES empty"
+  },
+  "billed_rate_usd_per_hour": 0,
+  "cost_usd": 0,
+  "runs": 1,
+  "performance_median_and_spread": "not measured; no hardware performance claim",
+  "bootstrap_seed": 20261007,
+  "bootstrap_replicates": 2000,
+  "confidence_level": 0.95,
+  "kit_commit": "87d4650b42b377c0291a89c1f1a879f9b31082bf",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "PYTHONPATH": "C:/Users/apumu/research/CHLabs/ssdm-data/decision-index",
+    "PYTHON": "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe"
+  },
+  "commands": [
+    "& 'C:/Program Files/Git/bin/bash.exe' jobs/rwkv7_code_label_screen/screen_job.sh --dry-run receipts/2026-10-07-D-code-label-v2-screen",
+    "& C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -B -X utf8 -m pytest -q jobs/rwkv7_code_label_screen/tests/test_screen.py tests/test_jobs_lint.py tests/test_rwkv_g1_code_label_v2.py tests/test_code_label_family_selection.py tests/test_rwkv_g1_filtered_codes.py tests/test_rwkv_g1_code_label.py"
+  ],
+  "test_outcome": "........................................................................ [ 41%]\n.F...................................................................... [ 83%]\n.............................                                            [100%]\n================================== FAILURES ===================================\n_______________ test_coordination_has_no_superseded_spend_rule ________________\n\n    def test_coordination_has_no_superseded_spend_rule():\n        \"\"\"L-18: the later 'Review sufficiency' user decision governs spend; the old blocking sentence must not return.\"\"\"\n        t = (ROOT / \"COORDINATION.md\").read_text(encoding=\"utf-8\")\n        assert \"Spend still needs the other agent's acknowledgement on a `spend` issue.\" not in t\n        assert \"never applies to `main` or to spend approval\" not in t\n>       assert \"requested but not blocking\" in t\nE       AssertionError: assert 'requested but not blocking' in '# Coordination protocol\\n\\nCodex owns the two gated SSDM stages under the user\u00e2\u20ac\u2122s 2026-10-07 takeover direction. Fresh...* Each contributor commits under their own name and email; nobody commits as another person. The repo stays private.\\n'\n\ntests\\test_jobs_lint.py:166: AssertionError\n=========================== short test summary info ===========================\nFAILED tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule\n1 failed, 172 passed in 13.44s",
+  "data_access": "synthetic fixture plus committed DEV IDs/manifest only; no private DEV or TEST items",
+  "registered_dev_rows_sha256": "406d40e6891690fad48fb82252c44b89a5337c603ff79e03ceb11fffc4eb28f2",
+  "registered_dev_ids_sha256": "6e4cb8dfac94a40a6e014e05744ff775aebcdf99d7a572190034e6bc026095c3",
+  "source_sha256": {
+    "jobs/rwkv7_code_label_screen/__init__.py": "9537c58c307e9e2d9ada002feaecef011f3d1940b3114506874456ad7afe3ebd",
+    "jobs/rwkv7_code_label_screen/JOB_SPEC.md": "5df8ca2f42688fa1e6d68eab73874740a7f5f1191a107722fbc886cae589d0ae",
+    "jobs/rwkv7_code_label_screen/rule.py": "687de61267d7c2e749d1881b405b0fc6e41c9b84f634e3957975f4b6a153a334",
+    "jobs/rwkv7_code_label_screen/runner.py": "f9ef0a85cf5532468588aa42eefdf1c4b49b0c2b6e8f6cbdbeb6c9a423163fe5",
+    "jobs/rwkv7_code_label_screen/screen_job.sh": "bdb5cd1c03738e91dd32b6fe5b8cc24a65b995aea92f40d34866dd79fae13cf5",
+    "jobs/rwkv7_code_label_screen/screen_params.json": "300b21d346a4cf2752a243257156537a72fa875977c5fd1ce9e7a4b2e467e60a",
+    "jobs/rwkv7_code_label_screen/synthetic.py": "39a20dc41a29689484cc611a61c750aa96be5b37311ac4f417fcda0bd8331bcc",
+    "jobs/rwkv7_code_label_screen/tests/test_screen.py": "8a132b595951991e6d11a6e9cffd1386c05b0c8a2cd86b56c64aa12a19b81756"
+  },
+  "synthetic_artifacts_sha256": {
+    "pytest.txt": "2b43ed7b141701f78b673b92ef3f3ae690e2c21113b1236eaae7c06a4d869de2",
+    "report.json": "a51299dbcad90c3a3b6cebc913949d4e78c733dd4c61e1aa3aee30c337736bce",
+    "synthetic.identities.json": "f611d475995380d274c7db20e92538f066504fd37bceff74177aa5856ed2bf25",
+    "synthetic.rows.jsonl": "089c384e6c4565e66d0b18e4870793eda715bd155fe04836082ff713c7417eda",
+    "v1.predictions.jsonl": "63ecb374cfeb26ee3610345eef1fc3c61cc26b267f251f6f7746a469fb78a930",
+    "v2.predictions.jsonl": "631fe3ed933687c2dbce16eb9c6a1d06b4c739559c14a43446bfe50a64ce5e8a"
+  },
+  "claims": {
+    "synthetic_api_proof": true,
+    "model_loaded": false,
+    "gpu_used": false,
+    "real_dev_scored": false,
+    "test_opened": false,
+    "promotable": false,
+    "beats_clef": false,
+    "spend_authorized": false
+  },
+  "test_log_newlines": "LF normalized from PowerShell Tee-Object; output text unchanged"
+}

@@ -1,6 +1,6 @@
 # Bounded public task-relevance gate
 
-CPU-only implementation and boundary tests for L-35. The public projection now
+CPU-only implementation and boundary tests for L-39. The public projection now
 parses only the fixed development read/explain/compare grammar, resolves
 ordered record/field/scope operands from the audience-filtered snapshot, and
 refuses a checked program whose final speech act does not match that task.
