@@ -1,4 +1,5 @@
-"""Cache-fork-compatible block activation checkpointing for Q9-AF and its hybrids (heads/act_ckpt.py; PREMORTEM
+"""Cache-fork-compatible block activation checkpointing for Q9-AF and its hybrids (heads/act_ckpt.py; jobs/q9af_cell/
+launch evidence, LAUNCH_CHECKLIST row 13; PREMORTEM
 blocker #4 / S2-F1, S2-F2).
 
 Tiny Qwen3.5 stand-ins on CPU (torch fallbacks of the GDN chunk / recurrent rules and of causal_conv1d):

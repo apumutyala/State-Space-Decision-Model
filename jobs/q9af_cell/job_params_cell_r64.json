@@ -1,0 +1,236 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "flash-linear-attention==0.5.2",
+   "fla-core==0.5.2"
+  ],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"
+   },
+   {
+    "reason": "Decision Index kit",
+    "why": "the CPU dry run needs the pinned kit clone (harness scoring); the image ships the kit and setup imports it"
+   }
+  ],
+  "image": "jobs/probe9b/Dockerfile"
+ },
+ "runner": "jobs/q9af_cell/q9af_cell_job.sh",
+ "decision_rule": "jobs/q9af_cell/rule.py",
+ "rule_commit": "2d18afa",
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "margin_min_frac": 0.3,
+ "measured": {
+  "_comment": "job-5cmat (probe9b one-layer 9B, art-2bybh; same image stack and 9B revision; jobs/full8/job_params.json measured). Scoring = positions / prefill_tok_s_min + calls x call_s_fitted (jobs.common.readout_cost model). Training step = jobs/q9af_cell/price.py (MFU anchored below stage 1's measured 0.316; per-call floor = small_call_s per pass).",
+  "source_job": "job-5cmat",
+  "artifact": "art-2bybh",
+  "prefill_tok_s_min": 22144,
+  "call_s_fitted": 0.0595,
+  "small_call_s": 0.0493,
+  "stage1_mfu": 0.316,
+  "model_load_s": 43
+ },
+ "mission": "q9af-cell",
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "status": "DRAFT, NOT SUBMITTED: blocked on the job-2xe5w export pin (jobs.q9af_cell.pin fill), merge + independent review, spend issue",
+ "_comment": "jobs/q9af_cell mode cell_r64 (JOB_SPEC.md): ONE Q9-AF decision cell, LoRA rank 64 (E9 pair), in one resumable job: setup -> guard -> heldout (D1-B) -> frozen-family -> cell (smoke, T ladder, training under act_ckpt, wall-clock capped by max_minutes, resumable from GMN_CHECKPOINT_DIR) -> evals (train.m2_gates G12 + G13 vs the pinned parent arm = lineage anchor, cohort v3, full DEV) -> report (jobs.q9af_cell.summarize: subset + full DEV, 0.2.1 binding / 0.3 reported, family columns, rule verdict). Caps >= 1.3 x price.py projections (preflight, exit 5).",
+ "job": "q9af-cell-r64",
+ "mode": "cell_r64",
+ "cell_config": "jobs/q9af_cell/q9af_cell_r64.json",
+ "resume": "checkpoint",
+ "max_duration_minutes": 620,
+ "hard_cap_usd": 65.0,
+ "phase_caps_minutes": {
+  "setup": 25,
+  "guard": 5,
+  "heldout": 10,
+  "frozen": 10,
+  "cell": 310,
+  "evals": 235,
+  "report": 10
+ },
+ "reserve_minutes": 15,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 4,
+  "guard": 1,
+  "heldout": 3,
+  "frozen": 5,
+  "cell": 180,
+  "evals": 177,
+  "report": 3
+ },
+ "expected_minutes_sources": {
+  "setup": "job-5cmat setup 2.4 min + fetch + sha checks",
+  "guard": "q9_feature_cache expected 1",
+  "heldout": "q9_feature_cache expected 3 (whole 150k scan)",
+  "frozen": "draw re-verify (150k pointer files) + check_record over 24,000 records: assumption, capped",
+  "cell": "price.cell_projection: fixed parts + expected training min(max_minutes, max_steps x projected step)",
+  "evals": "price.arm_minutes(child) + re-tokenisation + load",
+  "report": "summarize: 4 paired bootstraps per edition"
+ },
+ "parent_arm_sha256": null,
+ "index_frozen_sha256": null,
+ "parent_arm_files": {
+  "units-g12.json": null,
+  "units-g13.json": null
+ },
+ "_parent_arm_note": "PENDING the q9af-cell-parent job: sha256 of its parent_arm/arm.json, index-frozen.json and units files. The runner refuses (exit 10) while null or on mismatch; the launcher refuses the data pins while null.",
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/q9af_cell/q9af_cell_job.sh",
+  "key": "q9af-cell-r64",
+  "env": {
+   "Q9AFC_MODE": "cell_r64"
+  },
+  "label": "q9af_cell r64: Q9-AF LoRA r64 + fork head, clef arm, 150k draw, G12/G13 (rule 2d18afa)",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/Q9AF_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/probe9b/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/probe9b/probe_job.sh",
+   "jobs/q9af_cell/q9af_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "gdn/gdn_converted.pt",
+    "src_env": "Q9AF_GDN_PT",
+    "dest": "gdn/gdn_converted.pt",
+    "pin": "jobs/q9af_cell/gdn.sha256"
+   },
+   {
+    "src": "gdn/export.json",
+    "src_env": "Q9AF_EXPORT_JSON",
+    "dest": "gdn/export.json",
+    "pin": "jobs/q9af_cell/gdn.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+    "dest": "m2-150k/records.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.manifest.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.content.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "parent_arm/arm.json",
+    "src_env": "Q9AF_PARENT_ARM_JSON",
+    "dest": "parent_arm/arm.json",
+    "pin_json": [
+     "jobs/q9af_cell/job_params_cell_r64.json",
+     "parent_arm_sha256"
+    ]
+   },
+   {
+    "src": "parent_arm/units-g12.json",
+    "src_env": "Q9AF_PARENT_UNITS_G12",
+    "dest": "parent_arm/units-g12.json",
+    "pin_json": [
+     "jobs/q9af_cell/job_params_cell_r64.json",
+     "parent_arm_files",
+     "units-g12.json"
+    ]
+   },
+   {
+    "src": "parent_arm/units-g13.json",
+    "src_env": "Q9AF_PARENT_UNITS_G13",
+    "dest": "parent_arm/units-g13.json",
+    "pin_json": [
+     "jobs/q9af_cell/job_params_cell_r64.json",
+     "parent_arm_files",
+     "units-g13.json"
+    ]
+   },
+   {
+    "src": "parent_arm/index-frozen.json",
+    "src_env": "Q9AF_INDEX_FROZEN",
+    "dest": "parent_arm/index-frozen.json",
+    "pin_json": [
+     "jobs/q9af_cell/job_params_cell_r64.json",
+     "index_frozen_sha256"
+    ]
+   }
+  ],
+  "manifest_files": [
+   "jobs/q9af_cell/q9af_cell_job.sh",
+   "jobs/q9af_cell/q9af_cell_r64.json",
+   "jobs/q9af_cell/q9af_cell_r256.json",
+   "jobs/q9af_cell/rule.py",
+   "jobs/q9af_cell/price.py",
+   "jobs/q9af_cell/gdn.sha256",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/sample-150000-seed20261006.pointer.json",
+   "train/cohorts/m2-dev-cohort-v3.sha256"
+  ]
+ }
+}

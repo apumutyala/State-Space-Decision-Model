@@ -188,6 +188,46 @@ def index_predict(decide: Callable[[dict], dict], rows: Sequence[dict], model: s
     return res
 
 
+def beat_wrap(fn):
+    """Touch ``$SSDM_PROGRESS_BEAT`` (at most every 30 s) after each finished call, so a runner's progress-gated
+    watchdog (jobs/clef_baseline/watchdog.sh) sees a long scoring stage advance; a hung forward never touches it.
+    Unset (every test, every legacy runner): ``fn`` is returned unchanged. Scores are unchanged either way."""
+    import os
+
+    path = os.environ.get("SSDM_PROGRESS_BEAT")
+    if not path or fn is None:
+        return fn
+    last = [0.0]
+
+    def touch():
+        now = time.monotonic()
+        if now - last[0] >= 30:
+            last[0] = now
+            try:
+                Path(path).touch()
+            except OSError:
+                pass
+
+    def call(req):
+        r = fn(req)
+        touch()
+        return r
+
+    if hasattr(fn, "decide_many"):
+        def many(reqs):
+            r = fn.decide_many(reqs)
+            touch()
+            return r
+        call.decide_many = many
+    for k in ("revision", "__self__"):
+        if hasattr(fn, k):
+            try:
+                setattr(call, k, getattr(fn, k))
+            except (AttributeError, TypeError):
+                pass
+    return call
+
+
 def score_stage(stage: str, decide: Callable[[dict], dict], steer: Callable[[dict], dict],
                 items_by_role: dict[str, list], records_by_id: dict[str, dict], variants: list[dict],
                 index_rows: list[dict] | None = None, index_decide: Callable[[dict], dict] | None = None
@@ -197,6 +237,8 @@ def score_stage(stage: str, decide: Callable[[dict], dict], steer: Callable[[dic
     ``index_decide``: the child's SERVED decider for the Index rows (``index_predict(untempered_from_raw=True)``)."""
     from safety_eval import metrics
 
+    decide, steer = beat_wrap(decide), beat_wrap(steer)
+    index_decide = beat_wrap(index_decide) if index_decide is not None else None
     t0 = time.perf_counter()
     out: dict[str, Any] = {"stage": stage, "decision": {}, "decision_errors": {}}
     for role in STAGE_ROLES[stage]:
@@ -469,6 +511,27 @@ def _read_records(path: str | Path) -> dict[str, dict]:
         return {r["id"]: to_train_record(r) for r in map(json.loads, f)}
 
 
+def pool_dirs_arg(values: Sequence[str] | None) -> dict[str, str]:
+    """``--pool-dir NAME=DIR`` (repeatable): cohort pools outside the PR #16 file (cohort v3 retention: ``m2-150k``)."""
+    out = {}
+    for v in values or []:
+        name, sep, d = v.partition("=")
+        if not sep or not name or not d:
+            raise ValueError(f"--pool-dir must be NAME=DIR, got {v!r}")
+        out[name] = d
+    return out
+
+
+def role_records(cohort, records_path: str | Path, role: str, recs: dict[str, dict],
+                 pool_dirs: dict[str, str] | None = None) -> list[dict]:
+    """A cohort role's records in train-record format: PR #16 entries from ``recs`` (the verified records file), entries
+    of another pool (cohort v3 retention) from ``pool_dirs`` (manifest-verified by ``Cohort.load_role_records``)."""
+    from train.run_cell import to_train_record
+
+    rr, _ = cohort.load_role_records(records_path, role, pool_dirs=pool_dirs or None)
+    return [recs[r["id"]] if r["id"] in recs else to_train_record(r) for r in rr]
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="python -X utf8 -m train.m2_gates")
     ap.add_argument("--cell", required=True, help="cell.json written by train.run_cell (config + ladder)")
@@ -493,6 +556,10 @@ def main(argv=None) -> int:
     ap.add_argument("--stage", choices=["g12", "g13", "all"], default="all")
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--train-dir", default=None, help="cell config train_set: the pinned training-set dir (the "
+                    "training items are rebuilt from it for the checkpoint lineage check)")
+    ap.add_argument("--pool-dir", action="append", default=None, metavar="NAME=DIR",
+                    help="cohort pool outside the PR #16 file (cohort v3 retention: m2-150k=<dir>)")
     a = ap.parse_args(argv)
     stages = list(STAGES) if a.stage == "all" else [a.stage]
     if "g13" in stages and not (a.index_rows and a.index_frozen and a.index_frozen_sha256):
@@ -510,8 +577,8 @@ def main(argv=None) -> int:
     from jobs.m2_pilot.guard_ready import GuardNotReady, load_ready_guard
     from train.cohort import Cohort, CohortLeak
     from train.evalcard import run_card
-    from train.run_cell import cell_items, cohort_split, load_parent_backbone, parent_encoder, train_config
-    from train.trainer import Trainer
+    from train.run_cell import cell_items, load_cell_data, load_parent_backbone, parent_encoder, train_config
+    from train.trainer import Trainer, with_execution
 
     cell = json.loads(Path(a.cell).read_text(encoding="utf-8"))
     cfg = cell["config"]
@@ -524,24 +591,27 @@ def main(argv=None) -> int:
     parent = cfg.get("parent", "rwkv7")
     enc = parent_encoder(parent, a.model_dir)
     spec = unit_spec(cfg)
-    recs = _read_records(a.records)
-    role_recs = {}
-    for role in ("dev", "calibration", "retention"):
-        rr, _ = cohort.load_role_records(a.records, role)
-        role_recs[role] = [recs[r["id"]] for r in rr]
     try:
-        tr_ids, _, _ = cohort_split(sorted(recs), cfg, recs)
+        pools = pool_dirs_arg(a.pool_dir)
+        # training ids/items: the PR #16 split, or the pointer-pinned 150k draw (cfg train_set) with the cohort
+        # (v2 / v3) excluded by id, content and source item (train.train_set.draw)
+        train_recs, recs, tr_ids, _, _ = load_cell_data(cfg, a.records, a.train_dir, cohort)
         cohort.assert_training_ids(tr_ids)
+        role_recs = {role: role_records(cohort, a.records, role, recs, pools)
+                     for role in ("dev", "calibration", "retention")}
     except (ValueError, CohortLeak) as e:
         print(f"cohort: {e}", file=sys.stderr)
         return EXIT["identity"]
     t_max = cell["ladder"]["T_max"]
-    train_items = [x for x in cell_items(recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"])) if len(x.row.ids) <= t_max]
+    train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]))
+                   if len(x.row.ids) <= t_max]
     bb = load_parent_backbone(parent, a.model_dir, cfg, a.gdn_ckpt, device=a.device)
-    cuda = torch.cuda.is_available()
+    cuda = torch.cuda.is_available() and str(a.device).startswith("cuda")  # follows --device
     model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])
     model.to(bb.device)
-    tr = Trainer(model, train_config(cfg, cfg["max_steps"], a.ckpt_dir, cuda), train_items, guard=guard)
+    # same execution flags as training (act_ckpt / row_batch: not in the config hash)
+    tr = Trainer(model, with_execution(train_config(cfg, cfg["max_steps"], a.ckpt_dir, cuda), cfg), train_items,
+                 guard=guard)
     ckpt = Path(a.ckpt) if a.ckpt else Trainer.latest(a.ckpt_dir)
     if ckpt is None:
         print("no checkpoint", file=sys.stderr)

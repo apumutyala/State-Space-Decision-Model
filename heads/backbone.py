@@ -787,19 +787,31 @@ def load_q9af_backbone(model_dir: str, gdn_ckpt: str, pin: dict, device: str = "
     with all 8 attention layers replaced by the converted GDNs from ``gdn_ckpt``. Pins are checked BEFORE any weight
     is loaded; the provenance (checkpoint sha256, base revision, config sha256) goes into ``backbone_identity`` and
     therefore into every checkpoint lineage and decide revision."""
-    from transformers import Qwen3_5ForConditionalGeneration
+    from transformers import AutoConfig, Qwen3_5ForCausalLM, Qwen3_5ForConditionalGeneration
 
     prov = q9af_pin_check(pin, gdn_ckpt, model_dir)
     gdn_state = torch.load(gdn_ckpt, map_location="cpu", weights_only=True)
-    full = Qwen3_5ForConditionalGeneration.from_pretrained(model_dir, dtype=getattr(torch, dtype),
-                                                           device_map={"": device})
-    text = full.model.language_model
+    # device_map needs accelerate; a CPU load (the shell dry runs) does without it
+    place = {} if str(device) == "cpu" else {"device_map": {"": device}}
+    if hasattr(AutoConfig.from_pretrained(model_dir), "text_config"):  # the real 9B snapshot (vision + text)
+        full = Qwen3_5ForConditionalGeneration.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+        text = full.model.language_model
+    else:  # a text-only Qwen3.5 checkpoint (the tiny CPU stand-in of the shell dry runs)
+        full = Qwen3_5ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+        text = full.model
     del full  # the vision tower and LM head are not part of the backbone
     for p in text.parameters():
         p.requires_grad_(False)
     q9af_from_stock(text, gdn_state, prov, allow_partial=hybrid)
     prov = text.q9af_provenance
     spec = BACKBONES["q9af"]
+    n = len(text.layers)
+    if n != spec.n_layers:  # a smaller Qwen3.5 stand-in (CPU dry runs): the same per-layer LoRA targets, scaled counts
+        import dataclasses
+
+        spec = dataclasses.replace(spec, name=f"q9af-standin-{n}l", n_layers=n, d_model=int(text.config.hidden_size),
+                                   lora_groups=tuple((g, rx, c * n // spec.n_layers) for g, rx, c in spec.lora_groups),
+                                   lora_shapes=())
     if prov.get("kind") == "q9af-hybrid":  # LoRA also on the kept attention layers; never attention_free
         import dataclasses
 

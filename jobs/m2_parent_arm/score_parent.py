@@ -148,6 +148,8 @@ def main(argv=None) -> int:
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--stage", choices=["g12", "g13", "all"], default="all")
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--pool-dir", action="append", default=None, metavar="NAME=DIR",
+                    help="cohort pool outside the PR #16 file (cohort v3 retention: m2-150k=<dir>)")
     a = ap.parse_args(argv)
     stages = ["g12", "g13"] if a.stage == "all" else [a.stage]
     if "g13" in stages and not (a.index_rows and (a.index_frozen_out or (a.index_frozen and a.index_frozen_sha256))):
@@ -174,10 +176,12 @@ def main(argv=None) -> int:
     enc = parent_encoder(a.parent, a.model_dir)
     spec = G.unit_spec(cfg)
     recs = G._read_records(a.records)
-    role_recs = {}
-    for role in ("dev", "retention"):
-        rr, _ = cohort.load_role_records(a.records, role)
-        role_recs[role] = [recs[r["id"]] for r in rr]
+    try:
+        pools = G.pool_dirs_arg(a.pool_dir)
+        role_recs = {role: G.role_records(cohort, a.records, role, recs, pools) for role in ("dev", "retention")}
+    except ValueError as e:
+        print(f"cohort: {e}", file=sys.stderr)
+        return 10
     items_by_role = {r: G.decision_items(v, enc, spec, guard) for r, v in role_recs.items()}
     try:
         dec, ident = parent_decider(a.parent, a.model_dir, a.gdn_ckpt, cfg, a.device)
