@@ -1,0 +1,48 @@
+{
+  "features.pt": {
+    "sha256": "b56911e6d1d073d4336c94fcd9a42697ee19d2c5b600793288bbab6f9dfbfc54"
+  },
+  "initial-head.pt": {
+    "sha256": "4d4184073a2426962f4471719cba889fe2d150855ad3a0e87838a37be8dcd4ed"
+  },
+  "operation-records.json.gz": {
+    "compressed_sha256": "4e7a5f7a0519f0a28ebcf4d67e128dba052d0b5a952cfe470aaece422a518363",
+    "uncompressed_sha256": "9b32ee60ff3bd89d9de2c3995b17633da5badf463c00f22507a8195d1288af43"
+  },
+  "raw.jsonl": {
+    "sha256": "1d81eda6270be603e621be18dca7bbd2ee36415ac9b5d7c93a4c4ff30293e7fe"
+  },
+  "receipt.json.gz": {
+    "compressed_sha256": "174dd22d03252b8a79c8cd2180d15d93838529bf139afe3ef78bc73d32fd8b49",
+    "uncompressed_sha256": "483aa33d222ae00700b45f58bf8187a9b6b3bc9587259d92020ba623ea1a7a38"
+  },
+  "registration.json.gz": {
+    "compressed_sha256": "1f6644a0585ae5f7ca910f3fc305901e8a3dd88e2d5beb4017e65ef20a4d7ea0",
+    "uncompressed_sha256": "8f72a091516c268c3bc915a926c2d6da90afca02bd34804fd2be67f1f216f997"
+  },
+  "stderr.txt": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stdout.txt": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stock.json.gz": {
+    "compressed_sha256": "d9609ee0453d6b253d53bc342bfc607420dc5fa9e9c5b387ed1cf24f4a1675a1",
+    "uncompressed_sha256": "794665512e49afdc7ff944297341abbc8a7eac79dd9d6e9e32acba14e5d4f8e3"
+  },
+  "targets.json.gz": {
+    "compressed_sha256": "233a63c5876f69f3872f27422ae062ce0fc6bb1eed1e38de65956f09bfade6e4",
+    "uncompressed_sha256": "220155b9a070d6569d991632ffe4e8630abdd9acad28e27989aa080e72061aa9"
+  },
+  "trained-head.pt": {
+    "sha256": "0ac583634c93e82fce3698f098fcba99cdc059b94439f8d9be0af08be2e9f60a"
+  },
+  "trained.json.gz": {
+    "compressed_sha256": "db229531506b1b3c84465d3c68d23810e79d8328a03ac1bac26346ca01ed32e3",
+    "uncompressed_sha256": "6ad0afa7aa162df44deeb558344797eaa9252aed69200f4a4c3da50ae21c7ea2"
+  },
+  "zero_update.json.gz": {
+    "compressed_sha256": "381c017758f6cd3568af24bda1e371815121eeff97b34dd58e284da7b3476e51",
+    "uncompressed_sha256": "32c58676f82aef733677da0c15279bd1195567a4796424d36bf52602793220a9"
+  }
+}

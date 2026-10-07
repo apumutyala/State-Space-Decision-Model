@@ -125,8 +125,8 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Symptom: `*.sha256` files shipped CRLF from a Windows `git archive` (`core.autocrlf=true`), so `sha256sum -c` fails and setup exits 10 on the box.
 - Cost: caught before spend.
 - Root cause: `.gitattributes` pinned only sh/py/json/Dockerfile.
-- **Check:** `.gitattributes` adds `*.sha256 text eol=lf`. `test_gitattributes_pin_lf` and `test_git_archive_head_has_no_cr_even_with_autocrlf` (`tests/test_jobs_lint.py`). `launch.py` archives with `core.autocrlf=false` and refuses CR in shipped `*.sh/*.sha256/*.json/Dockerfile` (`tests/test_launch.py::test_refusals[crlf_sha256]`).
-- **Status:** ENFORCED. Existing Windows checkouts still hold CRLF working copies of the `*.sha256` files; blobs are LF and `git archive` is now LF.
+- **Check:** `.gitattributes` adds `*.sha256 text eol=lf`. `test_gitattributes_pin_lf` and `test_git_archive_head_has_no_cr_even_with_autocrlf` (`tests/test_jobs_lint.py`). `launch.py` archives with `core.autocrlf=false` and refuses CR in shipped `*.sh/*.sha256/*.json/Dockerfile` (`tests/test_launch.py::test_refusals[crlf_sha256]`). For byte-exact run evidence, the operation receipt stores CRLF JSON as `.json.gz` payloads; `tests/test_operation_cache_receipt.py` verifies compressed and uncompressed hashes from its artifact manifest.
+- **Status:** ENFORCED. Existing Windows checkouts still hold CRLF working copies of the `*.sha256` files; job blobs are LF and `git archive` is now LF. Run evidence outside shipped job files retains exact bytes under its manifest.
 
 ### L-15 Clef composite crash: U+2028 + `str.splitlines()` (first recorded as a "truncated native file")
 - Date: 2026-10-06 (job-sgihj). Corrected 2026-10-07 (PR #98), reproduced from the job's artifact art-8y6d8.
