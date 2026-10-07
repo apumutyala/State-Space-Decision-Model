@@ -71,9 +71,8 @@ artifact. Earlier answer-choice fixture files are replaced by planner inputs;
 no prior training or other fixture cohort is changed. The first review of
 answer-choice head `6dd103da` flagged that it did not exercise the L planner.
 Planner-input schema was introduced at `f205c8f`; visible world-index suffixes
-were removed at `2eefbaa`. Fresh exact-head review at `ecb2d34` found no
-source/data blockers. This follow-up corrects review provenance; Track D review
-will be requested on the stacked PR before merge.
+were removed at `2eefbaa`. Fresh exact-head source/data review at `ecb2d34` found no blockers. Track D
+review will be requested on the stacked PR before merge.
 
 These fixtures test factual counterfactual responsiveness and can support
 future semantic-state edits, but do not demonstrate learned recurrent

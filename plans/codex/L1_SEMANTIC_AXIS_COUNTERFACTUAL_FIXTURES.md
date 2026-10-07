@@ -78,7 +78,8 @@ qualification. This unlocks no level promotion, paid run or model claim.
 The first review of answer-choice head `6dd103da` found that those requests
 were not sufficiently tied to Track L's semantic-planner path. Planner-input
 schema was introduced at `f205c8f`, and visible world-index suffixes were
-removed at `2eefbaa`. Fresh exact-head review at `ecb2d34` found no source/data
-blockers; this follow-up corrects review provenance before PR publication.
-The revised fixture exercises `plan_checked_answer`, kernel and renderer with
-an input-derived scripted oracle, not a learned provider or recurrent edit.
+removed at `2eefbaa`. Fresh exact-head source/data review at `ecb2d34` found no blockers. Receipt
+and status record the review sequence; Track D review will be requested on
+the stacked PR. The revised fixture exercises
+`plan_checked_answer`, kernel and renderer with an input-derived scripted
+oracle, not a learned provider or recurrent edit.
