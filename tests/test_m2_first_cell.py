@@ -175,11 +175,13 @@ def test_train_set_refuses_tampering_and_cohort_records(tmp_path):
     Path(cfg["train_set"]["pointer"]).write_text(json.dumps({**ptr, "records_uncompressed_sha256": "0" * 64}))
     with pytest.raises(TrainSetMismatch, match="records uncompressed sha256"):
         draw(cfg, d)
-    held = Cohort().ids("dev")[0]  # a cohort id inside the set: the reviewed build never has one
+    held = Cohort().ids("dev")[0]  # a cohort id inside the set
     (tmp_path / "b").mkdir()
     d, cfg = _train_set(tmp_path / "b", recs + [{**_rec(99), "id": held}])
-    with pytest.raises(TrainSetMismatch, match="cohort-held-out"):
-        draw(cfg, d)
+    # since #105, cohort v3 (which holds every v2 role byte for byte) is removed from the pool BEFORE the draw, by id,
+    # content and source item, so the held-out record can never be drawn even when the whole pool is drawn
+    got, tr, ident = draw({**cfg, "n_train_records": len(recs)}, d)
+    assert held not in tr and ident["cohort_v3_excluded"]["n"] >= 1 and ident["cohort_v3_excluded"]["drawn_overlap"] == 0
     (tmp_path / "c").mkdir()
     d, cfg = _train_set(tmp_path / "c", recs, content_override={r["id"]: "f" * 64 for r in recs})
     with pytest.raises(TrainSetMismatch, match="differ in content"):
@@ -255,7 +257,8 @@ def test_index_stage_never_enters_promotion_or_exit_code():
 
     v = {"g12": {"accept": True, "failed": []}, "index": {"accept": False, "failed": ["g13_capability"]}}
     pv = promotion_verdict(v)
-    assert pv["verdict"] == "accept" and pv["stages"] == ["g12"] and exit_code(v) == 0
+    # #102: a run that accepts but did not run both G12 and G13 is partial (44), never 0; index never counts
+    assert pv["verdict"] == "accept" and pv["stages"] == ["g12"] and exit_code(v) == EXIT["partial"] == 44
     assert exit_code({"index": v["index"]}) == EXIT["usage"]
     rep = {"schema": "ssdm.m2.gates.v1", "promotion": pv, "verdicts": v, "identities": {}}
     assert valid_report(rep)
@@ -365,7 +368,7 @@ def test_runner_orders_guards_before_training_and_prices_every_eval_first():
     assert "jobs/common/finalize.py" in JOB and not re.search(r"touch [^\n]*DONE", JOB)
     assert not re.search(r"timeout \d+m", JOB)  # every cap comes from job_params
     assert "--final" not in JOB and "SSDM_UNSEAL_TEST" not in JOB and "--slice test" not in JOB
-    assert "case $r in 0|40|43)" in JOB  # a G12 reject and a PENDING promotion (PR #102) are measured outcomes
+    assert "case $r in 0|40|43|44|45)" in JOB  # PR #102: 40 / 43 / 44 / 45 are measured, not promotable
     assert "--stage g12+index" in JOB and "VALIDATOR=jobs.m2_first_cell.summarize:valid_result" in JOB
     for ph in PARAMS["phase_caps_minutes"]:
         assert f"cap {ph}" in JOB or f"cap \"$3\"" in JOB or f"cap parent_$STAGE" in JOB, ph
@@ -411,7 +414,7 @@ def test_first_cell_dry_run_end_to_end(tmp_path):
     assert res["index_dev_subset"]["rows"] >= 24 and res["steer_hijack_d1a"]["complete"]
     assert set(res["index_dev_subset"]["child_minus_parent"]["areas"]) == set(res["index_dev_subset"]["child"]["areas"])
     assert res["readout_diagnostics"]["order"]["paired"]["identical_questions"]
-    assert "PENDING CODEX APPROVAL (#36)" in res["promotion"]["margins_status"]
+    assert "#36" in res["promotion"]["margins_status"] and res["promotion"]["promotable"] is False
     assert [p["phase"] for p in rec["phases"]].index("reprice") < [p["phase"] for p in rec["phases"]].index("cell")
     assert res["index_by_prompt_length"]["split_t"] == 2048
 
@@ -514,8 +517,8 @@ def test_training_reprice_from_the_measured_step():
 
 
 def test_decision_rule_constants_pinned():
-    """job_params decision_rule = train/promotion.py: the provisional margins the report states (PENDING CODEX
-    APPROVAL #36) and the G12 clean-accuracy drop."""
+    """job_params decision_rule = train/promotion.py: the issue #36 margins (approved in PR #102) and the G12
+    clean-accuracy drop."""
     from train import promotion
 
     assert PARAMS["decision_rule"] == "train/promotion.py"
@@ -534,7 +537,8 @@ def test_registered_for_the_launch_lint():
 
 
 # ----------------------------------------------------------------------------- m2_gates exit 43 (Codex #36, PR #102)
-@pytest.mark.parametrize("code,measured", [(0, True), (40, True), (43, True), (10, False), (2, False)])
+@pytest.mark.parametrize("code,measured", [(0, True), (40, True), (43, True), (44, True), (45, True), (41, False),
+                                           (10, False), (2, False)])
 def test_evals_exit_43_is_a_measurement_not_a_crash(code, measured):
     """Until PR #102 lands the #36 margins, m2_gates exits 43 (promotion PENDING). The runner must treat it like 0 / 40:
     no fail(), so the report phase writes the result and exports the checkpoint after the evals export."""
@@ -542,27 +546,31 @@ def test_evals_exit_43_is_a_measurement_not_a_crash(code, measured):
     if not bash or re.search(r"system32|windowsapps", bash, re.I):
         pytest.skip("no POSIX bash")
     lines = JOB.splitlines()
-    i = next(k for k, ln in enumerate(lines) if ln.startswith("case $r in 0|40|43)"))
+    i = next(k for k, ln in enumerate(lines) if ln.startswith("case $r in 0|40|43|44|45)"))
     block = "\n".join(lines[i:i + 2])
     script = ("set -Euo pipefail\nfail() { echo \"FAIL($1): $2\"; exit \"$1\"; }\n"
               f"r={code}\n{block}\necho MEASURED")
     r = subprocess.run([bash, "-c", script], capture_output=True, text=True, timeout=30)
     assert ("MEASURED" in r.stdout and r.returncode == 0) is measured, r.stdout
-    assert JOB.index("gate \"evals\" $r; export_phase evals") < JOB.index("case $r in 0|40|43)")  # evals exported first
-    assert JOB.index("case $r in 0|40|43)") < JOB.index('cp "$CK/cell/$LATEST"')  # then the checkpoint export
+    assert JOB.index("gate \"evals\" $r; export_phase evals") < JOB.index("case $r in 0|40|43|44|45)")  # evals exported first
+    assert JOB.index("case $r in 0|40|43|44|45)") < JOB.index('cp "$CK/cell/$LATEST"')  # then the checkpoint export
 
 
-def test_pending_promotion_is_a_valid_measured_result():
+def test_pending_partial_underpowered_are_valid_measured_results():
+    """PR #102 exit codes: 43 pending / 44 partial / 45 underpowered = trained + measured, not promotable, with the
+    reason; only 0 is promotable (and this cell, G12 + index without G13, can never get 0)."""
     from jobs.m2_first_cell.summarize import MEASURED_EVAL_EXITS, promotion_block
 
-    assert MEASURED_EVAL_EXITS == {0: "accept", 40: "reject", 43: "pending"}
-    pv = promotion_block({"exit_code": 43, "promotion": {"verdict": "reject", "promotable": False}})
-    assert pv["verdict"] == "pending" and pv["promotable"] is False and pv["evals_exit_code"] == 43
-    assert "PENDING CODEX APPROVAL (#36)" in pv["margins_status"]
+    assert set(MEASURED_EVAL_EXITS) == {0, 40, 43, 44, 45}
+    for code in (40, 43, 44, 45):
+        pv = promotion_block({"exit_code": code, "promotion": {"verdict": "accept", "promotable": False}})
+        assert pv["promotable"] is False and pv["evals_exit_code"] == code
+        assert pv["not_promotable_reason"] == MEASURED_EVAL_EXITS[code]
+    assert "underpowered" in MEASURED_EVAL_EXITS[45] and "partial" in MEASURED_EVAL_EXITS[44]
     ok = promotion_block({"exit_code": 0, "promotion": {"verdict": "accept", "promotable": True}})
-    assert ok["verdict"] == "accept" and ok["promotable"] is True
+    assert ok["promotable"] is True and ok["not_promotable_reason"] is None
     src = (ROOT / "jobs/m2_first_cell/summarize.py").read_text(encoding="utf-8")
-    assert 'in ("accept", "reject", "pending")' in src and '"verdict": "measured"' in src
+    assert 'in MEASURED_EVAL_EXITS' in src and '"verdict": "measured"' in src
 
 
 def test_launch_blocks_and_data_pins():

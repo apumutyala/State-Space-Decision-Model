@@ -49,16 +49,20 @@ CHILD_EXTRA_TOKENS = {"calibration_fit": 3_393_271, "dev_card": 3_993_020}
 #: plus the readout order diagnostic (jobs/m2_first_cell/readout_diag.py): its 160 rows hold 193,815 of the subset's
 #: 2,370,062 proxy tokens (8.18%), read twice (forward + reversed); x 1.25 planning margin (the relabelled ids are
 #: slightly longer). Calls: 2 x 160/2008 x 4,536 x 1.25.
-DIAG_TOKENS = round(1.25 * 2 * VOLUME_TOKENS["g13"]["index_dev_subset"] * 193_815 / 2_370_062)
+#: the 2,008-row subset's exact prefix-fork positions (jobs/common/readout_volume_rwkv7.json; G13 now reads the FULL DEV)
+INDEX_SUBSET_TOKENS = 6_393_208
+DIAG_TOKENS = round(1.25 * 2 * INDEX_SUBSET_TOKENS * 193_815 / 2_370_062)
 DIAG_CALLS = round(1.25 * 2 * 160 / 2008 * 4_536)
-VOLUME_TOKENS["index"] = {"index_dev_subset": VOLUME_TOKENS["g13"]["index_dev_subset"], "order_diag": DIAG_TOKENS}
+VOLUME_TOKENS["index"] = {"index_dev_subset": INDEX_SUBSET_TOKENS, "order_diag": DIAG_TOKENS}
 #: Forward CALLS per stage (upper-bound planning counts, used only with a MEASURED per-call latency ``call_s``; the
 #: fitted cost model is wall = positions / tok_s + calls x call_s, jobs/PERF_AUDIT.md). Index DEV: the subset's exact
 #: prefix-fork calls (readout_volume_rwkv7.json, 4,536). Decision records: 2 calls each (shared prefix + packed tails;
 #: dev 835, retention 1,670, calibration 1,000 records). Steer: 1 call per unit (~600-token requests, one pack), 9,000
 #: units per steer role. Dev card: 835 records x 2.
 VOLUME_CALLS = {"g12": {"dev_records": 2 * 835, "steer_dev_units": 9_000},
-                "g13": {"retention_records": 2 * 1_670, "steer_gate_units": 9_000, "index_dev_subset": 4_536},
+                # G13 reads the full DEV (12,104 rows): calls scaled from the subset's 4,536 by rows (planning count)
+                "g13": {"retention_records": 2 * 1_670, "steer_gate_units": 9_000,
+                        "index_dev_full": round(4_536 * 12_104 / 2_008)},
                 "index": {"index_dev_subset": 4_536, "order_diag": DIAG_CALLS}}
 CHILD_EXTRA_CALLS = {"calibration_fit": 2 * 1_000, "dev_card": 2 * 835}
 USD_PER_MIN = 0.0495  # SF H100 batch rate (jobs/DECISION_TREE.md)

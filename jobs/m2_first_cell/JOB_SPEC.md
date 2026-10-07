@@ -74,8 +74,14 @@ parent, and the paired child − parent difference overall and per area; ECE (de
 the subset, and raw / tempered on the cohort dev card; the child − parent Index difference split at the training length
 (kit groups whose longest training-layout row is ≤ 2,048 vs > 2,048 RWKV7 tokens: 455 of 2,008 rows are longer,
 `index_lengths_rwkv7.json`), with paired CIs; steer and hijack under D1-A (paired, full G12 set); per-row
-latency; training loss / steps / step time / peak memory; cost; G12 verdict and the promotion verdict under the
-provisional margins (m_cap 1.0, m_steer 0.02, m_ece 0.01, **PENDING CODEX APPROVAL #36**; reported, not gating).
+latency; training loss / steps / step time / peak memory; cost; the G12 verdict and the promotion verdict under the
+issue #36 margins (`train.promotion.MARGINS`, approved in PR #102). The cell runs G12 + the `index` measurement stage,
+not G13, so it is never promotable: m2_gates exits 44 (partial) when G12 accepts, 40 when it rejects; 43 (pending) and
+45 (underpowered) are handled the same way. All of them are "trained + measured": the report, every eval and the
+checkpoint are exported, `verdict: measured`, `promotable: false` with the reason (exit 45 is tested end to end in
+`tests/test_m2_first_cell_shell.py`). The parent arm is passed as both `--parent-arm` and `--anchor-arm` (same
+in-job cache, one pinned sha256). Before the child scores the subset, a $0 plan-only check requires it to refuse
+exactly the rows the parent arm refused (`m2_gates.index_plan_check`, `dev_full.classify`; exit 10 otherwise).
 Readout diagnostics (both arms): position / label bias (chosen-first vs gold-first, by K and area), and accuracy and
 agreement with the option order reversed (160 rows, forward vs reversed numbering). Optional shipped files add the
 child vs Clef-flash comparison on the identical rows and an independent re-measurement of the parent against job-tkfaj.
@@ -84,7 +90,17 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 
 - One seed, one cell: no head-vs-head or arm-vs-arm claim.
 - Steer is in-distribution: D1-A is in the training data. Held-out D1-B (G13) and the retention set are not run; the
-  exported checkpoint can be gated later by `train.m2_gates --stage g13`.
+  exported checkpoint is gated later by a separate G13 job (`train.m2_gates --stage g13 --anchor-arm ...` on the full
+  frozen DEV set).
+- **Cohort: this cell pins v2, deliberately.** v3 (#105) keeps every v2 role byte for byte and only expands the G13
+  retention role (36.7k items). This cell does not run G13, so pinning v3 would buy no power and would add the v3
+  retention records to the temperature fit's disjointness proof (~39k records loaded and tokenized, needs `pool_dirs`).
+  The training draw already excludes v3 regardless of the pinned cohort (`train.train_set.draw`, #105; the 24k draw
+  `2bbbf180` is unchanged). The G13 gate for this checkpoint should pin v3. Its retention term alone is ~226 min / arm
+  on RWKV7 at the job-tkfaj rates (#105 cost notes: 22.9 M positions, 63.7k calls, $11.18 / arm; conservative 739
+  min / arm). With both arms, at the job-tkfaj rates: retention 2 x 226 min, steer_gate 2 x ~42 min (5.43 M positions,
+  9,000 calls), full frozen DEV 2 x ~225 min (38.8 M positions, ~27k calls): about 16–17 H100-hours (~$50) before its
+  own preflight. That is a separate G13 job, as #105 recommends; it is not folded into this cell.
 - The Index comparison is untempered for both arms (like for like); the served, tempered Index number is not produced.
 - The 2,008-row subset is not the 12,104-row DEV slice; Clef-flash's 56.8 is on the full slice (55.8 on the subset).
 - The eager WKV bounds training to ~8 M tokens; a flat result is not evidence that more training would not help.

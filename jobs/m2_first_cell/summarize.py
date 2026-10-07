@@ -25,7 +25,8 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA = "ssdm.m2.first_cell.v1"
-MARGINS_STATUS = "PROVISIONAL (m_cap 1.0, m_steer 0.02, m_ece 0.01): PENDING CODEX APPROVAL (#36); reported, not gating"
+MARGINS_STATUS = ("issue #36 margins as train.promotion.MARGINS states them (PR #102: approved, Codex cross-track "
+                  "decision); this cell runs G12 + the index measurement, not G13, so it is never promotable here")
 
 
 def _load(p) -> Any:
@@ -193,18 +194,20 @@ def summarize(a) -> dict:
 
 
 #: m2_gates exit codes that are a completed measurement: accept, G12 reject, promotion PENDING (Codex #36, PR #102)
-MEASURED_EVAL_EXITS = {0: "accept", 40: "reject", 43: "pending"}
+MEASURED_EVAL_EXITS = {0: "promotable", 40: "G12 rejected", 43: "margins pending approval",
+                      44: "partial: G12 + index measurement only, G13 not run",
+                      45: "underpowered: a criterion was evaluated below its simulated required n"}
 
 
 def promotion_block(rep: dict) -> dict:
-    """The report's promotion verdict, labelled. m2_gates exit 43 (PR #102: the #36 margins are not approved yet) is
-    'pending': trained and measured, NOT promotable; it never makes the result invalid."""
+    """The report's promotion verdict, labelled with the m2_gates exit code (PR #102, Codex #36). 40 / 43 / 44 / 45
+    are trained + measured outcomes; only 0 is promotable. Never makes the result invalid."""
     pv = dict(rep.get("promotion") or {})
     code = rep.get("exit_code")
-    if code == 43 or pv.get("verdict") == "pending":
-        pv["verdict"] = "pending"
+    reason = MEASURED_EVAL_EXITS.get(code, f"m2_gates exit {code}")
+    promotable = bool(pv.get("promotable")) and code == 0
     pv.update(margins_status=MARGINS_STATUS, gates_this_measurement=False, evals_exit_code=code,
-              promotable=bool(pv.get("promotable")) and code != 43 and pv["verdict"] != "pending")
+              promotion_status=reason, promotable=promotable, not_promotable_reason=None if promotable else reason)
     return pv
 
 
@@ -217,7 +220,7 @@ def valid_result(d: Any) -> bool:
                 and all(fin(ix[k]["index"][f]) for k in ("child", "parent_stock_readout") for f in ("point", "lo", "hi"))
                 and fin(ix["child_minus_parent"]["index"]["point"]) and set(ix["child"]["areas"])
                 and d["steer_hijack_d1a"]["n_units"] > 0 and d["latency"]["child"]["n"] > 0
-                and d["promotion"]["verdict"] in ("accept", "reject", "pending") and d["readout_diagnostics"]["order"]["child"])
+                and d["promotion"]["verdict"] in ("accept", "reject") and d["promotion"]["evals_exit_code"] in MEASURED_EVAL_EXITS and d["readout_diagnostics"]["order"]["child"])
     except Exception:  # noqa: BLE001
         return False
 

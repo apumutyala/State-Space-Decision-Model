@@ -14,6 +14,8 @@ never on a job image's path. It only stands in for what a CPU laptop cannot prov
 * ``rate_guard run-weighted``: ``--poll-s`` from M2FC_STUB_POLL_S and, if set, ``--check-after-min`` from
   M2FC_STUB_CHECK_AFTER_MIN (time compression; the guard's projection rule itself is unchanged); on Windows the
   wrapped command's bare ``python`` becomes sys.executable (CreateProcess would find the venv's base interpreter);
+* M2FC_STUB_GATES_EXIT=<code>: train.m2_gates' measured exit (0/40/43/44/45) and its report's exit_code become <code>
+  (the exit-45 underpowered path);
 * negative tests: M2FC_STUB_SLOW_PARENT=<stage> makes that score_parent stage a slow box (each scored unit weighs
   1e6 x its planned share of the total, plus 0.05 s); M2FC_STUB_EVALS_CAP=<min> hands jobs.m2_first_cell.reprice a
   copy of job_params with that evals cap (the box's measured speed no longer fits the child evals).
@@ -114,6 +116,24 @@ if os.environ.get("M2FC_STUB") == "1":
             return call
 
         _G.Progress.wrap = _slow_wrap
+
+    if os.environ.get("M2FC_STUB_GATES_EXIT") and _kind == "-m" and _what == "train.m2_gates":
+        # edge test: the real driver (run as __main__) goes to the end; when it exits with a measured code, that code
+        # and the report's exit_code are replaced (sys.exit hook), so the runner sees exactly what m2_gates would emit
+        import json as _json
+
+        _code, _real_exit = int(os.environ["M2FC_STUB_GATES_EXIT"]), sys.exit
+        _out = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else None
+
+        def _exit(c=0):
+            if c in (0, 40, 43, 44, 45) and _out and os.path.exists(_out):
+                rep = _json.loads(Path(_out).read_text(encoding="utf-8"))
+                rep["exit_code"] = _code
+                Path(_out).write_text(_json.dumps(rep, indent=1, default=float), encoding="utf-8")
+                c = _code
+            _real_exit(c)
+
+        sys.exit = _exit
 
     if os.environ.get("M2FC_STUB_EVALS_CAP") and _kind == "-m" and _what == "jobs.m2_first_cell.reprice":
         import json

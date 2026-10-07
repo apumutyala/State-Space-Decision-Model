@@ -189,7 +189,8 @@ def test_runner_executes_every_phase_end_to_end(full_run):
     res = r["result"]
     assert res["ok"] is True and res["exit_code"] == 0 and res["runner_rc"] == 0 and res["exports_verified"]
     assert list(res["gates"]) == PHASES and all(v == 0 for k, v in res["gates"].items() if k != "evals")
-    assert res["gates"]["evals"] in (0, 40)  # a G12 reject is a measured outcome (exit 0)
+    # PR #102: G12 + index (no G13) accepts as 44 (partial) or rejects as 40; both are measured outcomes (exit 0)
+    assert res["gates"]["evals"] in (0, 40, 43, 44, 45)
     from jobs.m2_first_cell.summarize import valid_result
 
     dec = json.loads((r["work"] / "out/first_cell_result.json").read_text(encoding="utf-8"))
@@ -251,6 +252,24 @@ def test_reprice_failure_exits_15_before_training(ctx):
     rp = json.loads((r["work"] / "out/reprice.json").read_text())
     assert rp["ok"] is False and rp["cap_min"] == 5 and rp["child_projection"]["total_minutes"] > 0.95 * 5
     assert r["result"]["gates"]["parent_index"] == 0
+
+
+def test_underpowered_evals_exit_45_is_trained_measured_not_promotable(ctx):
+    """m2_gates exit 45 (PR #102: a criterion evaluated below its simulated required n, e.g. a G13 run on the v2
+    retention cohort) must flow through as trained + measured: the report phase runs, the checkpoint and every eval
+    are exported, the result verdict is "measured", and promotable is false with the reason. Stubbed from outside
+    (M2FC_STUB_GATES_EXIT): the real m2_gates runs to the end and only its exit code is replaced."""
+    r = run_job(ctx, "gates-45", M2FC_STUB_GATES_EXIT="45")
+    assert r["rc"] == 0, r["tail"]
+    res = r["result"]
+    assert res["ok"] and res["exit_code"] == 0 and res["gates"]["evals"] == 45 and res["verdict"] == "measured"
+    assert "evals" in _exports_verified(r) and "FAIL(" not in r["log"]
+    dec = json.loads((r["work"] / "out/first_cell_result.json").read_text(encoding="utf-8"))
+    pv = dec["promotion"]
+    assert pv["evals_exit_code"] == 45 and pv["promotable"] is False and "underpowered" in pv["not_promotable_reason"]
+    ck = sorted((r["out"] / "ckpt").glob("ckpt-step*.pt"))
+    assert ck and (r["out"] / "ckpt" / (ck[-1].name + ".sha256")).exists()
+    assert json.loads((r["out"] / "M2_FIRST_CELL_DONE").read_text()) == {"exit_code": 0}
 
 
 def test_overrides_default_to_the_paid_run_paths():

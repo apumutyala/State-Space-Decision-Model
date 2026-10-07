@@ -1,5 +1,20 @@
 {
  "_comment": "DRAFT, NOT SUBMITTED. First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md). Phase order: setup, guard, heldout, parent_g12, parent_index (live rate guard measures the box BEFORE training; jobs.m2_first_cell.reprice re-prices the child evals), cell, evals, report. Caps sized so a box up to 25 % slower than job-tkfaj (prefill and per-call latency) completes every scoring phase (projection <= 95 % of the cap); slower boxes stop before training. Worst case = (build_timeout + attempts x max_duration) x batch rate with attempts = 1 + max(max_restarts, assumed_restart_floor) (jobs/common/costs.py) = (60 + 2 x 637) x 0.0495 = $66.03. build_timeout 60 per the launch lint (L-09: image publish timeouts). Expected minutes: scoring phases at the job-tkfaj probe rates (TOK_S 3,757 at 2,048 tokens, CALL_S 0.117); training at the job-tvuat ADOPT step time (median 8.25 s, ckpt_rows_lean).",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
  "job": "m2-first-cell",
  "status": "draft: not submitted; reviewed FIX-THEN-LAUNCH (fixes applied), execution config from job-tvuat ADOPT",
  "chip": "h100",
@@ -55,7 +70,7 @@
  "guard_pin": "jobs/m2_pilot/guard_pin.json",
  "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
  "margins_from": "train.promotion.MARGINS",
- "margins_status": "PROVISIONAL: PENDING CODEX APPROVAL (#36); the promotion verdict is reported and does not gate this measurement",
+ "margins_status": "issue #36 margins approved in PR #102 (train.promotion.MARGINS); this cell runs G12 + the index measurement, not G13, so m2_gates exits 44 (partial) / 40 and it is never promotable; 43/44/45 are trained + measured outcomes",
  "reference_results_sha256": {
   "_note": "optional files shipped under /data/reference/ (same 2,008 subset rows); used only for the report's comparisons. null = not shipped / not used",
   "rwkv7_stock_tkfaj": null,
@@ -159,5 +174,6 @@
    "jobs/rwkv7/snapshot.sha256",
    "jobs/m2_first_cell/data.sha256"
   ]
- }
+ },
+ "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates)."
 }
