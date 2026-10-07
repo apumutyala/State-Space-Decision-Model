@@ -34,6 +34,16 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 TOKEN_BUDGET = 4096  # tail positions per packed call: logits <= 4096 x V floats (1 GB fp32 at V = 65,536)
+#: Prefix-state copies per packed call, in prefix TOKENS x rows (``state_budget``). ``extend`` expands the prefix state
+#: to one copy per row, so for a model with an attention KV cache a pack costs rows x |P| x (KV bytes per token)
+#: whatever the tail length. ``TOKEN_BUDGET`` alone bounds the logits, not this: on job-5cmat (Qwen3.5-9B, H100 80 GB)
+#: a one-question 129-option POP909-CL row (|P| ~ 6-8.7k tokens, 1-token question suffix) packed all 129 rows, each
+#: with its own prefix KV copy (plus SDPA's per-layer KV-head repeat); the stock arm OOMed on every row with |P| >= 6,226
+#: (the only ok row had |P| = 6,087; allocator OOMs of 2.3-9.2 GB logged inside the POP909 block):
+#: CUDA OOM -> ``decide`` ``backend_error`` on 58/59 (stock) and 39/59 (conv) POP909 rows, arm-asymmetric because the
+#: converted arm keeps one attention layer fewer. Plugins with a KV cache set ``ModelPlugin.fork_state_token_budget``;
+#: recurrent-only states (RWKV-7, all-GDN Q9-AF) are |P|-independent and keep ``None`` (unbounded).
+KV_STATE_TOKEN_BUDGET = 262_144  # Qwen3.5-9B: 7-8 attn layers x 2 x 4 KV heads x 256 x 2 B + 1-layer repeat ~ 44 KiB/token -> ~11 GB
 PAD_ID = 0  # any valid id: padded positions are never read
 
 
@@ -58,15 +68,18 @@ class ForkCall:
     tokens: int = 0
 
 
-def fork_plan(rows: list[dict[str, Any]], max_batch_rows: int, token_budget: int = TOKEN_BUDGET
-              ) -> tuple[int, list[ForkCall]]:
+def fork_plan(rows: list[dict[str, Any]], max_batch_rows: int, token_budget: int = TOKEN_BUDGET,
+              state_budget: int | None = None) -> tuple[int, list[ForkCall]]:
     """rows: [{qid, option, prompt, cont}] (one per option, the recompute layout). -> (prefix_len, calls).
-    ``tokens`` counts real (unpadded) tokens."""
+    ``tokens`` counts real (unpadded) tokens. ``state_budget`` (prefix tokens x rows per pack, see
+    ``KV_STATE_TOKEN_BUDGET``) caps the rows of a pack at max(1, state_budget // |P|); None = no cap."""
     prompts: dict[str, list[int]] = {}
     for r in rows:
         prompts.setdefault(r["qid"], r["prompt"])
     L = common_prefix_len(list(prompts.values()))
     calls = [ForkCall("prefix", tokens=L)] if L > 0 else []
+    if state_budget is not None:
+        max_batch_rows = max(1, min(max_batch_rows, state_budget // max(L, 1)))
     tails = []
     for r in rows:
         suf = prompts[r["qid"]][L:]
@@ -85,14 +98,14 @@ def fork_plan(rows: list[dict[str, Any]], max_batch_rows: int, token_budget: int
 
 
 def fork_score(rows, ops, max_batch_rows: int, device: str, check_deadline: Callable[[], None],
-               token_budget: int = TOKEN_BUDGET):
+               token_budget: int = TOKEN_BUDGET, state_budget: int | None = None):
     """-> (logits {qid: {option: sum logprob}}, calls, total_tokens, call_ms). Needs a shared prefix (L >= 1); the
     backend uses the recompute path otherwise (every JRT prompt shares at least the template head)."""
     import time
 
     import torch
 
-    L, calls = fork_plan(rows, max_batch_rows, token_budget)
+    L, calls = fork_plan(rows, max_batch_rows, token_budget, state_budget)
     first_prompt = rows[0]["prompt"]
     logits: dict[str, dict[str, float]] = {}
     for r in rows:

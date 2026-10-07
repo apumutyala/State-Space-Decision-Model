@@ -69,8 +69,10 @@ else
   ( cd "$SNAP" && sha256sum -c "$CODE/jobs/m2_pilot/q9af_snapshot.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "q9af snapshot sha256"
   GDN_ARGS=(--gdn-ckpt /data/q9af/gdn_converted.pt)  # pinned by sha256 in the q9af cell config (checked in Python)
 fi
-python -X utf8 -m jobs.common.dev_subset rows --rows /data/slices/dev-rows.jsonl.gz --out "$WORK/index-rows.jsonl.gz" \
-  --subset jobs/common/dev_subset_m1.json > "$WORK/out/index-subset.json" || fail 10 "DEV subset rows"
+# G13 Index term = the FULL DEV slice (issue #36); the 2,008-row subset is a screen only. The rows the parent's decider
+# refuses before any forward are frozen (jobs.common.dev_full) at the start of the g13 phase, before any Index row is
+# scored; pin the printed sha256 as index_frozen_sha256.<parent> in jobs/m2_pilot/job_params.json.
+cp /data/slices/dev-rows.jsonl.gz "$WORK/index-rows.jsonl.gz" || fail 10 "DEV rows"
 gate "setup" 0; export_phase setup
 
 say "phase guard"
@@ -88,9 +90,11 @@ gate "preflight" $r
 
 for STAGE in g12 g13; do
   say "phase $STAGE (parent arm, cached)"
+  FROZEN=()
+  [ "$STAGE" = g13 ] && FROZEN=(--index-frozen-out "$WORK/out/arm/index-frozen.json")
   timeout $(cap $STAGE)m python -X utf8 -m jobs.m2_parent_arm.score_parent --parent "$PARENT" --model-dir "$SNAP" \
     "${GDN_ARGS[@]}" --cell-config "$CELL" --records /data/m2/records.jsonl.gz \
-    --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" \
+    --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" "${FROZEN[@]}" \
     --out-dir "$WORK/out/arm" --stage "$STAGE" > "$WORK/logs/$STAGE.log" 2>&1; r=$?
   gate "$STAGE" $r; export_phase "$STAGE"
   case $r in 0) ;; 124) fail 7 "$STAGE timeout" ;; 10) fail 10 "$STAGE identity" ;; *) fail 9 "$STAGE rc=$r" ;; esac
