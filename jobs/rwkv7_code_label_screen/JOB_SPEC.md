@@ -17,6 +17,10 @@ Revision checks bind the codebook, tokenizer, prompt renderer, transform, source
 hashes, inference configuration and conservative packing limits to the merged
 v2 volume receipt. Model/snapshot/files, dtype/device/kernel stack and versions
 must match between arms. Records bind request fingerprints and backend revision.
+All identity fields must be explicitly present and well formed before matching;
+an explicitly null snapshot is allowed. The audit recomputes the canonical
+backend revision ID from family, model, snapshot, weights/tokenizer identities,
+prompt, configuration hash and adapter, then requires every record to use it.
 This checks recorded evidence; it does not attest that arbitrary submitted
 predictions were produced by a model.
 
@@ -29,6 +33,8 @@ loader, data filtering, partial-results flag, or 0.3 remapping exists here.
 
 The score denominator is always all 2,008 rows. Exhausted and unsupported rows
 must have an explicit reason and no partial answers; they remain in scoring.
+Their response must contain an explicit `answers: {}` dictionary; missing,
+null, list and other malformed answer containers invalidate the screen.
 Missing/extra/duplicate rows, malformed/truncated files, error statuses,
 incomplete option domains, nonfinite/negative/unnormalized probabilities,
 calibration/masking changes and identity drift invalidate the screen.

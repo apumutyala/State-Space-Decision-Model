@@ -132,6 +132,102 @@ def test_changed_identity_fails_closed(proof, mutation):
         S.summarize(rows, arms, revisions, synthetic=True)
 
 
+IDENTITY_PATHS = [(key,) for key in ("revision_id", "backend", "family", "model_id", "snapshot", "files_sha256",
+                                    "prompt_template", "inference_config", "inference_config_sha256", "adapter_version",
+                                    "max_context", "notes")]
+IDENTITY_PATHS += [("files_sha256", key) for key in ("weights", "tokenizer")]
+IDENTITY_PATHS += [("prompt_template", key) for key in ("id", "sha256")]
+IDENTITY_PATHS += [("inference_config", key) for key in ("dtype", "device", "torch", "transformers", "kernel_stack")]
+
+
+@pytest.mark.parametrize("path", IDENTITY_PATHS, ids=lambda path: ".".join(path))
+def test_identity_field_deleted_from_both_arms_fails(proof, path):
+    rows, arms, revisions = copy.deepcopy(proof)
+    for revision in revisions.values():
+        target = revision if len(path) == 1 else revision[path[0]]
+        del target[path[-1]]
+        if path[0] == "inference_config" and len(path) > 1:
+            # Even a correctly rehashed, equally incomplete config must fail.
+            revision["inference_config_sha256"] = __import__("hashlib").sha256(
+                S.canonical_json(revision["inference_config"]).encode()).hexdigest()
+    with pytest.raises(ValueError, match="missing"):
+        S.summarize(rows, arms, revisions, synthetic=True)
+
+
+@pytest.mark.parametrize("path,value", [
+    (("revision_id",), None), (("backend",), []), (("family",), 7), (("model_id",), ""),
+    (("snapshot",), []), (("snapshot",), ""), (("files_sha256",), []),
+    (("files_sha256", "weights"), None), (("files_sha256", "tokenizer"), []),
+    (("prompt_template",), None), (("prompt_template", "id"), []), (("prompt_template", "sha256"), ""),
+    (("inference_config",), []), (("inference_config_sha256",), []), (("adapter_version",), None),
+    (("max_context",), True), (("notes",), []), (("inference_config", "dtype"), None),
+    (("inference_config", "device"), []), (("inference_config", "torch"), ""),
+    (("inference_config", "transformers"), []), (("inference_config", "kernel_stack"), None),
+])
+def test_matching_malformed_identities_fail(proof, path, value):
+    rows, arms, revisions = copy.deepcopy(proof)
+    for revision in revisions.values():
+        target = revision if len(path) == 1 else revision[path[0]]
+        target[path[-1]] = copy.deepcopy(value)
+        if path[0] == "inference_config" and len(path) > 1:
+            revision["inference_config_sha256"] = __import__("hashlib").sha256(
+                S.canonical_json(revision["inference_config"]).encode()).hexdigest()
+    with pytest.raises(ValueError, match="malformed"):
+        S.summarize(rows, arms, revisions, synthetic=True)
+
+
+@pytest.mark.parametrize("mutation", ["model_id", "snapshot", "weights", "runtime", "revision_id"])
+def test_shared_identity_changes_with_stale_or_arbitrary_revision_ids_fail(proof, mutation):
+    rows, arms, revisions = copy.deepcopy(proof)
+    for arm, revision in revisions.items():
+        if mutation == "weights":
+            revision["files_sha256"]["weights"] = "a" * 64
+        elif mutation == "runtime":
+            revision["inference_config"]["dtype"] = "bfloat16"
+            revision["inference_config_sha256"] = __import__("hashlib").sha256(
+                S.canonical_json(revision["inference_config"]).encode()).hexdigest()
+        elif mutation == "revision_id":
+            revision["revision_id"] = "arbitrary-claimed-revision"
+            for record in arms[arm].values():
+                record["screen_evidence"]["revision_id"] = revision["revision_id"]
+        else:
+            revision[mutation] = "different-model-or-snapshot"
+    with pytest.raises(ValueError, match="inconsistent revision ID"):
+        S.summarize(rows, arms, revisions, synthetic=True)
+
+
+def test_synthetic_identity_sentinels_and_explicit_null_transformers_are_valid(proof):
+    _, _, revisions = copy.deepcopy(proof)
+    for arm, revision in revisions.items():
+        assert revision["snapshot"] is None
+        assert revision["files_sha256"]["weights"] == "not-loaded"
+        S.check_revision(revision, arm)
+        revision["inference_config"]["transformers"] = None
+        config_hash = __import__("hashlib").sha256(S.canonical_json(revision["inference_config"]).encode()).hexdigest()
+        revision["revision_id"] = revision["revision_id"].replace(
+            ";cfg=" + revision["inference_config_sha256"][:8], ";cfg=" + config_hash[:8])
+        revision["inference_config_sha256"] = config_hash
+        S.check_revision(revision, arm)
+
+
+@pytest.mark.parametrize("status", ["exhausted", "unsupported"])
+@pytest.mark.parametrize("response", [None, [], {}, {"answers": None}, {"answers": []},
+                                      {"answers": ""}, {"answers": False}, {"answers": 0}])
+def test_non_ok_rows_require_explicit_empty_answer_dict(proof, status, response):
+    rows, arms, revisions = copy.deepcopy(proof)
+    record = arms["v2"]["synthetic:11"]
+    record["status"], record["response"] = status, response
+    with pytest.raises(ValueError, match="non-ok row"):
+        S.summarize(rows, arms, revisions, synthetic=True)
+
+
+def test_non_ok_row_missing_response_fails(proof):
+    rows, arms, revisions = copy.deepcopy(proof)
+    del arms["v2"]["synthetic:11"]["response"]
+    with pytest.raises(ValueError, match="non-ok row"):
+        S.summarize(rows, arms, revisions, synthetic=True)
+
+
 def test_inadequate_counts_and_calibration_fields_fail(proof):
     rows, arms, revisions = proof
     with pytest.raises(ValueError, match="inadequate answered"):

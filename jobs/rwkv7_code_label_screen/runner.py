@@ -44,22 +44,59 @@ def checked_cohort():
 
 
 def check_revision(revision, arm):
+    required = {"revision_id", "backend", "family", "model_id", "snapshot", "files_sha256",
+                "prompt_template", "inference_config", "inference_config_sha256", "adapter_version",
+                "max_context", "notes"}
+    if not isinstance(revision, dict) or not required <= revision.keys():
+        raise ValueError(f"{arm}: missing revision identity fields")
+    for key in ("revision_id", "backend", "family", "model_id", "inference_config_sha256", "adapter_version"):
+        if not isinstance(revision[key], str) or not revision[key]:
+            raise ValueError(f"{arm}: malformed revision {key}")
+    if revision["snapshot"] is not None and (not isinstance(revision["snapshot"], str) or not revision["snapshot"]):
+        raise ValueError(f"{arm}: malformed revision snapshot")
+    if ((revision["max_context"] is not None and
+         (type(revision["max_context"]) is not int or revision["max_context"] <= 0))
+            or not isinstance(revision["notes"], dict)):
+        raise ValueError(f"{arm}: malformed revision max_context/notes")
+    files, template, config = (revision[k] for k in ("files_sha256", "prompt_template", "inference_config"))
+    for value, keys, label in ((files, ("weights", "tokenizer"), "files_sha256"),
+                               (template, ("id", "sha256"), "prompt_template")):
+        # Nonempty strings preserve the explicit synthetic weights="not-loaded"
+        # sentinel while preventing a shared absence from passing matching.
+        if not isinstance(value, dict) or any(not isinstance(value.get(k), str) or not value[k] for k in keys):
+            raise ValueError(f"{arm}: missing/malformed revision {label}")
+    runtime = {"dtype", "device", "torch", "transformers", "kernel_stack"}
+    if not isinstance(config, dict):
+        raise ValueError(f"{arm}: malformed inference_config")
+    if not runtime <= config.keys():
+        raise ValueError(f"{arm}: missing runtime identity fields")
+    if (any(not isinstance(config[k], str) or not config[k] for k in ("dtype", "device", "torch"))
+            or (config["transformers"] is not None and
+                (not isinstance(config["transformers"], str) or not config["transformers"]))
+            or not isinstance(config["kernel_stack"], dict)):
+        raise ValueError(f"{arm}: malformed runtime identity")
     # The merged volume receipt pins the existing renderer, codebook, sources and
     # scoring configuration. Runtime/model identity is separately matched below.
     reference = json.loads((ROOT / "receipts/2026-10-07-D-code-label-v2-fork/dev-volume.json").read_text(encoding="utf-8"))[arm + "_revision"]
     for key in ("backend", "family", "prompt_template", "adapter_version", "max_context", "notes"):
-        if revision.get(key) != reference[key]:
+        if revision[key] != reference[key]:
             raise ValueError(f"{arm}: changed revision {key}")
-    config = revision["inference_config"]
-    runtime = {"dtype", "device", "torch", "transformers", "kernel_stack"}
     if {k: v for k, v in config.items() if k not in runtime} != {k: v for k, v in reference["inference_config"].items() if k not in runtime}:
         raise ValueError(f"{arm}: changed scoring/config/source hash")
     if hashlib.sha256(canonical_json(config).encode()).hexdigest() != revision["inference_config_sha256"]:
         raise ValueError(f"{arm}: invalid inference config hash")
-    if revision.get("files_sha256", {}).get("tokenizer") != reference["files_sha256"]["tokenizer"]:
+    if files["tokenizer"] != reference["files_sha256"]["tokenizer"]:
         raise ValueError(f"{arm}: changed tokenizer hash")
-    if not isinstance(revision.get("revision_id"), str) or not revision["revision_id"]:
-        raise ValueError(f"{arm}: missing revision ID")
+    # Exact HFReadoutBackend._build_revision format: internal consistency only,
+    # never execution attestation for externally supplied prediction records.
+    expected_id = (
+        f"{revision['family']}:{revision['model_id']}@{(revision['snapshot'] or 'local')[:12]}"
+        f";w={files['weights'][:12]};tok={files['tokenizer'][:12]}"
+        f";prompt={template['id']}.{template['sha256'][:8]}"
+        f";cfg={revision['inference_config_sha256'][:8]};adapter={revision['adapter_version']}"
+    )
+    if revision["revision_id"] != expected_id:
+        raise ValueError(f"{arm}: inconsistent revision ID")
 
 
 def audit_arm(rows, records, revision, minimum_ok):
@@ -83,15 +120,18 @@ def audit_arm(rows, records, revision, minimum_ok):
         request = {"model": "screen", "state": row["state"], "questions": row["questions"]}
         if evidence.get("request_fingerprint") != request_fingerprint(request):
             raise ValueError(f"{rid}: request changed")
-        response = rec.get("response") or {}
+        response = rec.get("response")
         raw = (rec.get("raw_output") or {}).get("raw_probabilities")
         if status != "ok":
-            if (response.get("answers") or raw != {} or evidence.get("served_probabilities") != {}
+            if (not isinstance(response, dict) or not isinstance(response.get("answers"), dict)
+                    or response["answers"] != {} or raw != {} or evidence.get("served_probabilities") != {}
                     or evidence.get("served_config") is not None or not isinstance(rec.get("error"), dict)
                     or not isinstance(rec["error"].get("code"), str) or not rec["error"]["code"]):
                 raise ValueError(f"{rid}: non-ok row needs explicit reason and no partial answers")
             continue
         ok_ids.add(rid)
+        if not isinstance(response, dict) or not isinstance(response.get("answers"), dict):
+            raise ValueError(f"{rid}: malformed answer fields")
         qs = row["questions"]
         served = evidence.get("served_probabilities")
         config = evidence.get("served_config") or {}
@@ -146,10 +186,10 @@ def summarize(rows, arms, revisions, *, synthetic=False):
         reports[arm]["raw_audit"] = g1_audit(list(arms[arm].values()))
         reports[arm]["calibration_diagnostic"] = calibration.board_ece(fields, sample=False, base_only=False)
     for key in ("model_id", "snapshot", "files_sha256", "max_context"):
-        if revisions["v1"].get(key) != revisions["v2"].get(key):
+        if revisions["v1"][key] != revisions["v2"][key]:
             raise ValueError(f"unmatched model {key}")
     for key in ("dtype", "device", "torch", "transformers", "kernel_stack"):
-        if revisions["v1"]["inference_config"].get(key) != revisions["v2"]["inference_config"].get(key):
+        if revisions["v1"]["inference_config"][key] != revisions["v2"]["inference_config"][key]:
             raise ValueError(f"unmatched runtime {key}")
     paired = len(ok_sets["v1"] & ok_sets["v2"])
     if paired < minimum:
