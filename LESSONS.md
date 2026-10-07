@@ -12,6 +12,15 @@ Entry format:
 
 Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a check covers part of the class), `OPEN` (no check yet, owner named).
 
+### L-L0-01 Prepared head diagnostic must preserve output evidence and decode typed choices
+- Date: 2026-10-06 (CPU head-learning preparation review; no real checkpoint run).
+- Symptom: a rejected reused output directory could receive a new failure event; treating a typed choice object as a string would report every selected description as missing.
+- Cost: $0; detected before freezing the experiment.
+- Root cause: exception logging did not track directory ownership, and attribution assumed the wrong adapter wire shape.
+- **Check:** `language_growth/tests/test_rwkv_head_learning.py::test_default_dry_run_never_imports_torch_or_opens_checkpoint` verifies reused-output bytes remain untouched; `test_evaluation_never_supplies_labels_or_gold_prefixes` verifies selected descriptions exist after actual tiny-RWKV adapter calls. `test_tiny_rwkv_fit_freezes_backbone_and_strict_reload` additionally rejects incomplete trained-state restores that the generic trainer's partial-copy path would accept.
+- Independent preparation review also found that a spoofable environment PID marker could bypass the watchdog through the former public child CLI. That mode is removed; an internal spawned worker authenticates an inherited anonymous pipe and fresh launcher secret. `test_internal_child_cannot_bypass_launcher` and `test_internal_pipe_handshake_works_only_for_matching_secret` enforce both refusal and actual IPC authentication. Source closure, provider-exception evidence, and full parent parameter/buffer/LM-head parity are enforced by the corresponding preregistration, logger and state-digest tests in the same file.
+- **Status:** ENFORCED for this prepared diagnostic. No broad capability or real-checkpoint result.
+
 ### L-01 Per-option prompt recompute in the readout
 - Date: 2026-10-06 (job-mhc3h).
 - Symptom: rwkv7 stage A stopped with exit 15 after 25 rows in 9.5 min. It projected 763 min against a 75-min cap.

@@ -1,0 +1,63 @@
+{
+  "all_runtime_sources_match": true,
+  "canonical_corpus_sha256": "cf70a3e1abd8a8e5b1c2a7efe93ff0f2c0392982b1ef33dec11d60bd81143466",
+  "corpus_archive_sha256": "0d3be636b0b2d7b19823c4c42f083e8cddd5196348a8b5f110930e0e4752b65b",
+  "cost_usd": 0,
+  "dry_run": {
+    "command": [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "language_growth.rwkv_head_learning",
+      "--dry-run",
+      "--out",
+      "C:/Users/apumu/research/CHLabs/ssdm-data/rwkv-head-learning-prepared-v2-20261006"
+    ],
+    "exit_code": 0,
+    "status": "prepared_not_run"
+  },
+  "frozen_registration": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-stack-rwkv7-l0-head-only\\receipts\\2026-10-06-L-rwkv-head-learning-prepared-v2\\registration.json",
+  "frozen_registration_sha256": "d11425bfb49b7f588353d048a152435e701fc18fbd4aa5606289c8fa63c689db",
+  "original_registration_preserved_byte_identically": true,
+  "real_checkpoint_inspected": false,
+  "real_checkpoint_loaded": false,
+  "real_execution_authorized": false,
+  "real_training_performed": false,
+  "schema": "ssdm.prepared-rwkv-head-learning-verification.v1",
+  "scope": "exact-path source/corpus verification plus tiny random CPU RWKV tests; no real checkpoint load or fitting",
+  "source_files_verified": 89,
+  "source_sha256": "771dcc622e91ac12a6fdf5940a5cc23257bd22d36155f43940681161a0cc7a06",
+  "split_sha256": {
+    "development_train": "4dfd05d495cdcc5bf38c0db857ac31fbd6367fcf96c2df64d8791ad77978ceaf",
+    "development_validation": "e8847f275c4001d53c8d2a4bb88863faec4b0de1c0645dd9605cba7559f7d4cb"
+  },
+  "status": "prepared_not_run",
+  "tests": {
+    "command": [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "pytest",
+      "language_growth/tests/test_rwkv_head_learning.py",
+      "language_growth/tests/test_rwkv_decision_head.py",
+      "language_growth/tests/test_rwkv_cpu_encoder_identity.py",
+      "language_growth/tests/test_rwkv7_cpu_parent.py",
+      "-q"
+    ],
+    "elapsed_seconds": 25.62,
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "HF_DATASETS_OFFLINE": "1",
+      "HF_HUB_OFFLINE": "1",
+      "MKL_NUM_THREADS": "2",
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2",
+      "TRANSFORMERS_OFFLINE": "1"
+    },
+    "exit_code": 0,
+    "passed": 72,
+    "stdout_sha256": "52032e1c92f2e808a8bde99dfe27b148999789bdb31908e1b36a0f8d29cfe00f"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "approval": "Real checkpoint load and fitting are not authorized by preparation.",
+  "claim_rule": "Report all outcomes; tiny exploratory cohort cannot qualify a level.",
+  "config": {
+    "batch_size": 2,
+    "bootstrap_samples": 2000,
+    "bootstrap_seed": 9203,
+    "head": "snapshot",
+    "head_kwargs": {
+      "channels": 4,
+      "max_snapshots": 2
+    },
+    "lora_rank": 0,
+    "lr_head": 0.001,
+    "min_running_bytes": 3221225472,
+    "min_start_bytes": 8589934592,
+    "seed": 20261006,
+    "steps": 24,
+    "threads": 2,
+    "timeout_seconds": 900,
+    "train_count": 24,
+    "train_seed": 9201,
+    "validation_count": 12,
+    "validation_seed": 9202
+  },
+  "corpus_sha256": "cf70a3e1abd8a8e5b1c2a7efe93ff0f2c0392982b1ef33dec11d60bd81143466",
+  "dependencies": {
+    "PR71": "14aa0daa486804ca82bf332dd0469717cc7a040b",
+    "PR85": "e9447e64e97fac8a2e0b3377acdacc4e10d343e9",
+    "agent-main": "0c8eaf7276dd7680aedd7d7b3b7d6814eada5f41"
+  },
+  "expected_parent": {
+    "file_sha256": {
+      "config.json": "dd5da97874e0d4134d8114de3c722b7ba35798cd92870a774166c225b8b20968",
+      "model.safetensors": "051b3684ffa896aa842522e5bbc2f355ac00783e12e373a8eb7e4907dd5ead70",
+      "rwkv_vocab_v20230424.txt": "e6dee3d4e31b4d5c40ac99508ac6c701ceef4bed681bf2167ce9a908552bca89"
+    },
+    "model_id": "fla-hub/rwkv7-0.1B-g1",
+    "snapshot": "7450ee04eb9c66baa7161b7a5c0fe09e5b2817d8"
+  },
+  "hypothesis": "Head-only supervision improves free-running useful answers over the same untrained head.",
+  "primary": "Post-minus-pre useful-answer accuracy, paired bootstrap over validation worlds.",
+  "schema": "ssdm.rwkv-head-learning.v1",
+  "scope": "exploratory frozen RWKV7-0.1B surrogate; not L0 qualification or D-parent retention",
+  "selection": "One seed, one recipe, final step only; no validation-based selection.",
+  "source_sha256": {
+    "heads/features.py": "bcc5b62c77177d78a11e989994493fdd5738cbf008ec37614c59d30c9438dbe1",
+    "heads/heads.py": "42849337bf8dcaa5618a372b7cf5ee319a914df67accc4bfe75697da9884187e",
+    "heads/model.py": "416f35377b48e73eb58cac7953af23ba66a9ef6b1d1259cb8e401a195188e82e",
+    "heads/typed.py": "f52a18055f0ea63fa240e3ab0b155628105f9a3d9fb43d25e8beb5e521f9e0fd",
+    "language_growth/development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+    "language_growth/free_running_dev.py": "ce81dbdb6d0415c7c1fb3721b42159cd54983d0f2100e63c5b35532a2f238772",
+    "language_growth/kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+    "language_growth/planner.py": "a4061d28f2a87fbf726eedf9c04affe83373ac0f75cb39c37d829872d3a701f3",
+    "language_growth/realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
+    "language_growth/rwkv7_cpu_parent.py": "d463c2d52625eaf3f5842abe18457a7ea1f1f16d99deac025945102ff3436e41",
+    "language_growth/rwkv_decision_head.py": "8627457baf5641bbc9252199b78ec51fcfa0ab5d5a4eea19ea2dd24420e0fe56",
+    "language_growth/rwkv_head_learning.py": "74fc73bcad7d336c890e7c4627da8f56716a83f1bf578d30e5f0ab4b0de5944d",
+    "language_growth/training_records.py": "cdd26b7218bfb1ce19af817e96fa5001ec8969b00f93c8eb33934b97fdc832bb",
+    "train/data.py": "11b7770b641e135f485f2a59c426df8f8409d7483e1eb339c33e614fab29679f",
+    "train/trainer.py": "2d00161a6382168c61bbd19cc3f2cb75f3dbdfcde9ba6366053e67667c216191"
+  },
+  "split_sha256": {
+    "development_train": "4dfd05d495cdcc5bf38c0db857ac31fbd6367fcf96c2df64d8791ad77978ceaf",
+    "development_validation": "e8847f275c4001d53c8d2a4bb88863faec4b0de1c0645dd9605cba7559f7d4cb"
+  },
+  "status": "prepared_not_run"
+}

@@ -9,3 +9,6 @@ Dockerfile text eol=lf
 # byte-exact vendored code and fixtures
 fixtures/replay/** -text
 third_party/** -text
+
+# Preserve the original dry-run registration bytes as historical evidence.
+receipts/2026-10-06-L-rwkv-head-learning-prepared/registration.json -text
