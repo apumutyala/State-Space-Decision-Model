@@ -95,6 +95,49 @@ class ExactSumTests(unittest.TestCase):
         self.assertEqual(str(checked.outputs[0].content.value), digits + ".01")
         self.assertIn(digits + '.01 "USD"', text)
 
+    def test_integer_carry_beyond_default_digit_limit_releases_and_serializes(self):
+        host, catalog = opted_world()
+        for record in catalog["records"]:
+            if record["record_ref"] in ("atlas-v1", "boreal-v1"):
+                record["fields"]["price"].update(value=9 * 10**4299, value_type="integer")
+        with localcontext() as context:
+            context.prec = 2
+            context.traps[Inexact] = True
+            context.traps[Rounded] = True
+            checked = check_program(program(host), host, catalog)
+            self.assertEqual(checked.status, "accepted")
+            text = render_checked(checked, host, catalog)
+            self.assertEqual(text, render_checked(checked, host, catalog))
+            encoded = json.dumps(checked.to_dict(), sort_keys=True)
+        wanted = "18" + "0" * 4299
+        self.assertIsInstance(checked.outputs[0].content.value, Decimal)
+        self.assertEqual(str(checked.outputs[0].content.value), wanted)
+        self.assertIn(wanted + ' "USD"', text)
+        self.assertEqual(json.loads(encoded)["outputs"][0]["content"]["value"], wanted)
+
+    def test_all_sums_have_lossless_decimal_result_representation(self):
+        host, catalog = opted_world()
+        rows = ((7, -8, "-1"), (-7, 8, "1"), (0, 0, "0"),
+                (7, "-0.125", "6.875"), ("-0.125", 7, "6.875"),
+                ("-001.2500", "1.25", "0.0000"), ("0.001", "0.00002", "0.00102"))
+        for left, right, wanted in rows:
+            with self.subTest(left=left, right=right), localcontext() as context:
+                context.prec = 1
+                context.Emin = -1
+                context.Emax = 1
+                context.traps[Inexact] = True
+                context.traps[Rounded] = True
+                for ref, value in (("atlas-v1", left), ("boreal-v1", right)):
+                    record = next(r for r in catalog["records"] if r["record_ref"] == ref)
+                    record["fields"]["price"].update(value=value,
+                        value_type="integer" if type(value) is int else "decimal")
+                checked = check_program(program(host), host, catalog)
+                self.assertEqual(checked.status, "accepted")
+                self.assertIsInstance(checked.outputs[0].content.value, Decimal)
+                self.assertEqual(str(checked.outputs[0].content.value), wanted)
+                self.assertEqual(json.loads(json.dumps(checked.to_dict()))["outputs"][0]["content"]["value"], wanted)
+                render_checked(checked, host, catalog)
+
     def test_negative_and_cancelling_decimal_sums_remain_exact(self):
         host, catalog = opted_world()
         atlas = next(rec for rec in catalog["records"] if rec["record_ref"] == "atlas-v1")

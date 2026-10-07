@@ -62,7 +62,7 @@ class Comparison:
 class ExactSum:
     left: Fact
     right: Fact
-    value: int | Decimal
+    value: Decimal
     unit: str | None
     interval: str
     quantity_kind: str

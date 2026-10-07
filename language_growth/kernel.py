@@ -267,12 +267,11 @@ def _exact_sum(left: Fact, right: Fact) -> ExactSum:
     exponent = min(left_exp, right_exp)
     coefficient = (left_coeff * 10 ** (left_exp - exponent)
                    + right_coeff * 10 ** (right_exp - exponent))
-    if type(left.object) is int and type(right.object) is int:
-        value: int | Decimal = coefficient
-    else:
-        # Decimal(int) extracts digits exactly without Python's int->str limit.
-        digits = Decimal(abs(coefficient)).as_tuple().digits
-        value = Decimal((1 if coefficient < 0 else 0, digits, exponent))
+    # Always normalize results to Decimal, including integer-only sums. A carry
+    # can exceed Python's int->str limit even when both input integers fit.
+    # These constructors extract digits exactly, independent of the context.
+    digits = Decimal(abs(coefficient)).as_tuple().digits
+    value = Decimal((1 if coefficient < 0 else 0, digits, exponent))
     return ExactSum(left, right, value, left.unit, left.interval, left.quantity_kind)
 
 
