@@ -54,6 +54,16 @@ the parent scoring instead of after training.
 Schedule 630 + reserve 7 = 637 min. **Worst case** (60 build + 2 x 637) x $0.0495 = **$66.03** (cap $70; build_timeout 60 per the launch lint, L-09).
 **Expected ≈ $26.1** (528 min incl. build). A G12 reject is a measured outcome (exit 0, reported).
 
+Every bounded long command uses GNU `timeout --kill-after=30s` at its existing cap;
+parent/child scoring children retain the measured live rate guards outside that
+timeout. TERM-resistant work is killed after the grace, and both timeout statuses
+124/137 fail closed (training timeout exits 7) before partial artifacts are exported.
+Final export and result validation share a 60-second deadline plus 30-second KILL
+grace. Up to nine executed phase graces (4.5 min), three rate-guard polling allowances
+(0.75 min) and terminal export/finalize (1.5 min) total 6.75 min within the existing
+seven-minute reserve. Measured caps, stop thresholds and global 637-minute ceiling
+are unchanged. A terminal timeout is a failed job, never a success marker.
+
 Measured-rate stops: setup preflights at the env rates (exit 15); the parent arm's live weighted rate guard and the
 re-price at its measured speed, both before training (exit 15); ladder and 10-step checks (exit 26 if 600 optimiser
 steps are out of reach); live weighted rate guard on the child evals (exit 15 at a projection past 95 % of the cap).
@@ -64,8 +74,12 @@ Restart: cached parent stages are skipped (their rate reports stay in the arm di
 `$GMN_CHECKPOINT_DIR` with the 190-min budget reduced by what the checkpointed steps already used (`train_clock` in
 `cell.json`), so a restart cannot train past the pre-registered budget.
 
-WKV: `rwkv7_wkv: "chunked"` (the checkpoint's own path, the measured one). If the fla gate (job-jn47u) returns ADOPT
-and `GPU_VERIFIED` is set, flipping the config to `"fla"` switches both arms; re-measure `TOK_S` / `CALL_S` first.
+WKV: the exact cell sets `rwkv7_wkv: "chunked_lean"`, `act_ckpt: true`, `row_batch: 8`, and `row_tokens: 8192`
+(job-tvuat training execution). PR #147 applies checkpointing to the pre-training smoke too and can seed the
+parent arm from job-uhxb5's pinned export; the runner verifies its full identity and re-scores the registered
+24-record probe before training, then re-prices evaluation on this box. An ordinary cached parent is also
+identity-verified. Historical job-tkfaj stock-readout reference and rates used `chunked`; they are not a new
+`chunked_lean` measurement. The seeded probe or fresh in-job parent measures current scoring speed.
 
 ## What the result shows
 
