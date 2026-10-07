@@ -1,0 +1,424 @@
+{
+ "cohort_sha256": "0c0309b9ec96dec8907e5c421925924d70a4df0f87f9a3dae3dbd2e5701cc32f",
+ "composition_retention_role": {
+  "all": {
+   "by_source": {
+    "anli": 2521,
+    "banking77": 1712,
+    "boolq": 2234,
+    "clinc150": 2269,
+    "glaive_fc": 4291,
+    "gsm8k": 1257,
+    "hellaswag": 2274,
+    "humicroedit_s1": 1568,
+    "humicroedit_s2": 1266,
+    "mixed": 2492,
+    "mmlu_aux": 9073,
+    "nq": 2653,
+    "sst5": 1028,
+    "synthetic_factchange": 468,
+    "toolace": 1507,
+    "when2call": 1366,
+    "winogrande": 1693
+   },
+   "families": {
+    "continuation": 2224,
+    "factchange_delivery": 97,
+    "factchange_rating": 44,
+    "factchange_renewal": 73,
+    "factchange_schedule": 71,
+    "factchange_spend_limit": 108,
+    "factchange_stock": 75,
+    "fill_blank": 1633,
+    "humor_pair": 1266,
+    "humor_score": 1568,
+    "intent_banking": 1695,
+    "intent_general": 2241,
+    "math_mcq": 1250,
+    "mcq": 9025,
+    "multi": 2786,
+    "nli": 2493,
+    "response_select": 1366,
+    "retrieval": 2653,
+    "sentiment_score": 984,
+    "tool_multi": 481,
+    "tool_select": 5317,
+    "yesno_passage": 2222
+   },
+   "items_by_area": {
+    "arts": 2834,
+    "knowledge": 11493,
+    "language": 11401,
+    "retrieval": 10525,
+    "tools": 7632
+   },
+   "length_words": {
+    "1024-4095": 2090,
+    "256-1023": 14882,
+    "64-255": 15005,
+    "<64": 6263,
+    ">=4096": 1432
+   },
+   "n_questions": 53165,
+   "n_questions_k_le_16": 46167,
+   "n_records": 39672,
+   "question_types": {
+    "choice": 46918,
+    "noul": 2588,
+    "score": 3659
+   },
+   "shapes": {
+    "multi": 3254,
+    "per_candidate_yesno": 438,
+    "per_tool_yesno": 481,
+    "single": 35499
+   }
+  },
+  "m2-150k": {
+   "by_source": {
+    "anli": 2370,
+    "banking77": 1595,
+    "boolq": 2133,
+    "clinc150": 2152,
+    "glaive_fc": 4291,
+    "gsm8k": 1139,
+    "hellaswag": 2140,
+    "humicroedit_s1": 1568,
+    "humicroedit_s2": 1266,
+    "mixed": 2397,
+    "mmlu_aux": 8922,
+    "nq": 2503,
+    "sst5": 944,
+    "synthetic_factchange": 368,
+    "toolace": 1373,
+    "when2call": 1266,
+    "winogrande": 1575
+   },
+   "families": {
+    "continuation": 2090,
+    "factchange_delivery": 90,
+    "factchange_renewal": 64,
+    "factchange_schedule": 60,
+    "factchange_spend_limit": 94,
+    "factchange_stock": 60,
+    "fill_blank": 1517,
+    "humor_pair": 1266,
+    "humor_score": 1568,
+    "intent_banking": 1578,
+    "intent_general": 2124,
+    "math_mcq": 1134,
+    "mcq": 8874,
+    "multi": 2685,
+    "nli": 2342,
+    "response_select": 1266,
+    "retrieval": 2503,
+    "sentiment_score": 900,
+    "tool_multi": 446,
+    "tool_select": 5218,
+    "yesno_passage": 2123
+   },
+   "items_by_area": {
+    "arts": 2834,
+    "knowledge": 11158,
+    "language": 10799,
+    "retrieval": 9945,
+    "tools": 7298
+   },
+   "length_words": {
+    "1024-4095": 1976,
+    "256-1023": 14285,
+    "64-255": 14425,
+    "<64": 5960,
+    ">=4096": 1356
+   },
+   "n_questions": 50917,
+   "n_questions_k_le_16": 44304,
+   "n_records": 38002,
+   "question_types": {
+    "choice": 44982,
+    "noul": 2433,
+    "score": 3502
+   },
+   "shapes": {
+    "multi": 3053,
+    "per_candidate_yesno": 418,
+    "per_tool_yesno": 446,
+    "single": 34085
+   }
+  },
+  "pr16": {
+   "by_source": {
+    "anli": 151,
+    "banking77": 117,
+    "boolq": 101,
+    "clinc150": 117,
+    "gsm8k": 118,
+    "hellaswag": 134,
+    "mixed": 95,
+    "mmlu_aux": 151,
+    "nq": 150,
+    "sst5": 84,
+    "synthetic_factchange": 100,
+    "toolace": 134,
+    "when2call": 100,
+    "winogrande": 118
+   },
+   "families": {
+    "continuation": 134,
+    "factchange_delivery": 7,
+    "factchange_rating": 44,
+    "factchange_renewal": 9,
+    "factchange_schedule": 11,
+    "factchange_spend_limit": 14,
+    "factchange_stock": 15,
+    "fill_blank": 116,
+    "intent_banking": 117,
+    "intent_general": 117,
+    "math_mcq": 116,
+    "mcq": 151,
+    "multi": 101,
+    "nli": 151,
+    "response_select": 100,
+    "retrieval": 150,
+    "sentiment_score": 84,
+    "tool_multi": 35,
+    "tool_select": 99,
+    "yesno_passage": 99
+   },
+   "items_by_area": {
+    "knowledge": 335,
+    "language": 602,
+    "retrieval": 580,
+    "tools": 334
+   },
+   "length_words": {
+    "1024-4095": 114,
+    "256-1023": 597,
+    "64-255": 580,
+    "<64": 303,
+    ">=4096": 76
+   },
+   "n_questions": 2248,
+   "n_questions_k_le_16": 1863,
+   "n_records": 1670,
+   "question_types": {
+    "choice": 1936,
+    "noul": 155,
+    "score": 157
+   },
+   "shapes": {
+    "multi": 201,
+    "per_candidate_yesno": 20,
+    "per_tool_yesno": 35,
+    "single": 1414
+   }
+  }
+ },
+ "cost": {
+  "qwen3.5": {
+   "all": {
+    "calls": 63930,
+    "items": 35992,
+    "minutes": 78.8,
+    "minutes_conservative_pack_call": 267.9,
+    "positions": 20514242,
+    "rates": {
+     "call_s": 0.0595,
+     "job": "job-5cmat",
+     "pack_call_s": 0.2369,
+     "tok_s": 22144.0
+    },
+    "upper_bound_all_rows_minutes": 99.5,
+    "upper_bound_usd": 4.93,
+    "usd": 3.9,
+    "usd_conservative": 13.26
+   },
+   "m2-150k": {
+    "calls": 61432,
+    "items": 34502,
+    "minutes": 75.7,
+    "minutes_conservative_pack_call": 257.4,
+    "positions": 19697524,
+    "rates": {
+     "call_s": 0.0595,
+     "job": "job-5cmat",
+     "pack_call_s": 0.2369,
+     "tok_s": 22144.0
+    },
+    "upper_bound_all_rows_minutes": 95.1,
+    "upper_bound_usd": 4.71,
+    "usd": 3.75,
+    "usd_conservative": 12.74
+   },
+   "pr16": {
+    "calls": 2498,
+    "items": 1490,
+    "minutes": 3.1,
+    "minutes_conservative_pack_call": 10.5,
+    "positions": 816718,
+    "rates": {
+     "call_s": 0.0595,
+     "job": "job-5cmat",
+     "pack_call_s": 0.2369,
+     "tok_s": 22144.0
+    },
+    "upper_bound_all_rows_minutes": 4.4,
+    "upper_bound_usd": 0.22,
+    "usd": 0.15,
+    "usd_conservative": 0.52
+   }
+  },
+  "rwkv7": {
+   "all": {
+    "calls": 64054,
+    "items": 36005,
+    "minutes": 218.9,
+    "minutes_conservative_pack_call": 734.5,
+    "positions": 21182992,
+    "rates": {
+     "call_s": 0.117,
+     "job": "job-tkfaj",
+     "pack_call_s": 0.6,
+     "tok_s": 3757.0
+    },
+    "upper_bound_all_rows_minutes": 575.0,
+    "upper_bound_usd": 28.46,
+    "usd": 10.83,
+    "usd_conservative": 36.36
+   },
+   "m2-150k": {
+    "calls": 61552,
+    "items": 34514,
+    "minutes": 210.3,
+    "minutes_conservative_pack_call": 705.8,
+    "positions": 20342781,
+    "rates": {
+     "call_s": 0.117,
+     "job": "job-tkfaj",
+     "pack_call_s": 0.6,
+     "tok_s": 3757.0
+    },
+    "upper_bound_all_rows_minutes": 549.6,
+    "upper_bound_usd": 27.2,
+    "usd": 10.41,
+    "usd_conservative": 34.94
+   },
+   "pr16": {
+    "calls": 2502,
+    "items": 1491,
+    "minutes": 8.6,
+    "minutes_conservative_pack_call": 28.7,
+    "positions": 840211,
+    "rates": {
+     "call_s": 0.117,
+     "job": "job-tkfaj",
+     "pack_call_s": 0.6,
+     "tok_s": 3757.0
+    },
+    "upper_bound_all_rows_minutes": 25.4,
+    "upper_bound_usd": 1.26,
+    "usd": 0.43,
+    "usd_conservative": 1.42
+   }
+  }
+ },
+ "families": {
+  "qwen3.5": {
+   "refused_examples": [],
+   "secs": 92.5,
+   "totals": {
+    "all": {
+     "fork_calls_scored": 63930,
+     "fork_positions_scored": 20514242,
+     "fork_tokens_scored": 20261198,
+     "items_kept": 35992,
+     "prompt_tokens_all_rows": 132232588,
+     "records": 39672,
+     "records_with_items": 31774,
+     "refused": 0,
+     "rows": 53165,
+     "vol_refused": 0
+    },
+    "m2-150k": {
+     "fork_calls_scored": 61432,
+     "fork_positions_scored": 19697524,
+     "fork_tokens_scored": 19460988,
+     "items_kept": 34502,
+     "prompt_tokens_all_rows": 126376522,
+     "records": 38002,
+     "records_with_items": 30532,
+     "refused": 0,
+     "rows": 50917,
+     "vol_refused": 0
+    },
+    "pr16": {
+     "fork_calls_scored": 2498,
+     "fork_positions_scored": 816718,
+     "fork_tokens_scored": 800210,
+     "items_kept": 1490,
+     "prompt_tokens_all_rows": 5856066,
+     "records": 1670,
+     "records_with_items": 1242,
+     "refused": 0,
+     "rows": 2248,
+     "vol_refused": 0
+    }
+   }
+  },
+  "rwkv7": {
+   "refused_examples": [],
+   "secs": 546.5,
+   "totals": {
+    "all": {
+     "fork_calls_scored": 64054,
+     "fork_positions_scored": 21182992,
+     "fork_tokens_scored": 20907259,
+     "items_kept": 36005,
+     "prompt_tokens_all_rows": 129613702,
+     "records": 39672,
+     "records_with_items": 31808,
+     "refused": 0,
+     "rows": 53165,
+     "vol_refused": 0
+    },
+    "m2-150k": {
+     "fork_calls_scored": 61552,
+     "fork_positions_scored": 20342781,
+     "fork_tokens_scored": 20083942,
+     "items_kept": 34514,
+     "prompt_tokens_all_rows": 123889471,
+     "records": 38002,
+     "records_with_items": 30564,
+     "refused": 0,
+     "rows": 50917,
+     "vol_refused": 0
+    },
+    "pr16": {
+     "fork_calls_scored": 2502,
+     "fork_positions_scored": 840211,
+     "fork_tokens_scored": 823317,
+     "items_kept": 1491,
+     "prompt_tokens_all_rows": 5724231,
+     "records": 1670,
+     "records_with_items": 1244,
+     "refused": 0,
+     "rows": 2248,
+     "vol_refused": 0
+    }
+   }
+  }
+ },
+ "unit_spec": {
+  "layout": "ordered",
+  "max_k": 16,
+  "max_t": 2048,
+  "templates": {
+   "qwen3.5": "jrt-chatml-v1",
+   "rwkv7": "jrt-rwkv-g1-v1"
+  },
+  "tokenizers": {
+   "qwen3.5": "Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+   "rwkv7": "RWKV--RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba"
+  }
+ }
+}

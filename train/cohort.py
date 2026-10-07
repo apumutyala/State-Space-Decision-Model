@@ -61,6 +61,11 @@ COHORT_VERSION = "m2-dev-cohort-v2"
 SEED = 20261006
 ROLES = ("dev", "calibration", "retention")
 STEER_ROLES = ("steer_dev", "steer_gate")
+#: Committed cohorts by version. ``Cohort(expected_sha256=...)`` without a path opens the committed file whose .sha256
+#: equals the pin, so a config pinning v3 loads v3 (``train/cohort_v3.py``); v2 stays the default.
+COHORTS = {COHORT_VERSION: OUT, "m2-dev-cohort-v3": ROOT / "train" / "cohorts" / "m2-dev-cohort-v3.jsonl.gz"}
+#: Pool of a decision entry without a ``pool`` key (every v2 entry): the PR #16 20k sample.
+PR16_POOL = "pr16"
 
 #: Planning assumptions for sizing (NOT measurements). Parent steer rate 0.5 maximises Bernoulli variance;
 #: Qwen3-0.6B measured D1 steer 0.87 (receipts/2026-10-06-D-m0-steer), so 0.5 is the conservative choice.
@@ -365,15 +370,47 @@ def write(text: str, path: Path = OUT) -> str:
 
 
 # ------------------------------------------------------------------------------------------------- use
+def sha_file(path: Path) -> Path:
+    return Path(path).with_name(Path(path).name.replace(".jsonl.gz", ".sha256"))
+
+
+def committed_sha256(path: Path) -> str | None:
+    f = sha_file(path)
+    return f.read_text(encoding="utf-8").split()[0] if f.exists() else None
+
+
+def committed_path(sha256: str | None) -> Path | None:
+    """The committed cohort file whose pinned sha256 is ``sha256`` (None if none is)."""
+    for p in COHORTS.values():
+        if sha256 is not None and p.exists() and committed_sha256(p) == sha256:
+            return p
+    return None
+
+
+def record_item_keys(rec_id: str) -> set[str]:
+    """Source-item identity of a record id (verbatim ``data.build.item_keys``; equality: tests/test_cohort_v3.py):
+    the base item(s) it renders (injection suffix stripped; a multi record's parts; both variants of a fact-change
+    pair share one key)."""
+    rid = rec_id.split("~inj:", 1)[0]
+    if rid.startswith("m2:multi:"):
+        return {p.split("~inj:", 1)[0] for p in rid[len("m2:multi:"):].split("+")}
+    if rid.startswith("m2:factchange:"):
+        return {rid.rsplit(":", 1)[0]}
+    return {rid}
+
+
 class CohortLeak(ValueError):
     """A training id is in the frozen cohort (or a role was used outside its purpose)."""
 
 
 class Cohort:
-    def __init__(self, path: Path = OUT, expected_sha256: str | None = None) -> None:
+    def __init__(self, path: Path | None = None, expected_sha256: str | None = None) -> None:
+        path = Path(path) if path is not None else (committed_path(expected_sha256) or OUT)
         text = gzip.open(path, "rt", encoding="utf-8").read()
+        self.path = path
         self.sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
-        want = expected_sha256 or (OUT_SHA.read_text(encoding="utf-8").split()[0] if path == OUT else None)
+        committed = {p.resolve() for p in COHORTS.values()}
+        want = expected_sha256 or (committed_sha256(path) if path.resolve() in committed else None)
         if want is not None and want != self.sha256:
             raise ValueError(f"cohort sha256 {self.sha256} != committed {want}")
         lines = [json.loads(x) for x in text.split("\n") if x.strip()]  # "\n" only: U+2028 is not a line break
@@ -383,6 +420,9 @@ class Cohort:
             self.roles[e["role"]].append(e)
         self.hashes = {e["id"]: e["sha256"] for r in ROLES for e in self.roles[r]}
         self.content = {e["id"]: e.get("content_sha256") for r in ROLES for e in self.roles[r]}
+        self.pools = {e["id"]: e.get("pool", PR16_POOL) for r in ROLES for e in self.roles[r]}
+        #: v3+: training must also avoid every SOURCE ITEM a held-out record renders (``record_item_keys``)
+        self.exclude_items = bool(self.header.get("exclude_source_items"))
 
     def ids(self, role: str) -> list[str]:
         return [e["id"] for e in self.roles[role]]
@@ -392,6 +432,36 @@ class Cohort:
 
     def held_out_content(self) -> set[str]:
         return {h for h in self.content.values() if h}
+
+    def held_out_items(self) -> set[str]:
+        return set().union(set(), *(record_item_keys(i) for i in self.held_out()))
+
+    def pool_ids(self, pool: str, role: str | None = None) -> list[str]:
+        """Held-out decision ids drawn from ``pool`` (``PR16_POOL`` or e.g. ``"m2-150k"``), optionally one role."""
+        return sorted(e["id"] for r in (ROLES if role is None else (role,)) for e in self.roles[r]
+                      if e.get("pool", PR16_POOL) == pool)
+
+    def assert_training_items(self, record_ids: Iterable[str]) -> None:
+        """No training record may render a source item of a held-out record (any shape: single, multi part,
+        fact-change twin, injected variant)."""
+        held = self.held_out_items()
+        both = sorted({str(i) for i in record_ids if record_item_keys(str(i).rsplit("/", 1)[0]) & held})
+        if both:
+            raise CohortLeak(f"{len(both)} training record(s) render a held-out source item, e.g. {both[:3]}")
+
+    def assert_draw_disjoint(self, record_ids: Iterable[str], content: dict[str, str] | None = None) -> None:
+        """The training-draw guard: refuse any overlap with the held-out roles by id, by normalized content
+        (``content``: id -> content hash in the draw's own set) and, for cohorts that declare it (v3), by source
+        item."""
+        ids = list(record_ids)
+        self.assert_training_ids(ids)
+        if content is not None:
+            missing = [i for i in ids if i not in content]
+            if missing:
+                raise CohortLeak(f"{len(missing)} drawn id(s) have no content hash, e.g. {missing[:3]}")
+            self.assert_training_content(content[i] for i in ids)
+        if self.exclude_items:
+            self.assert_training_items(ids)
 
     def role_content(self, role: str) -> set[str]:
         return {e["content_sha256"] for e in self.roles[role]}
@@ -416,26 +486,48 @@ class Cohort:
                       ) -> list[str]:
         """Records outside the cohort BY ID AND BY CONTENT (content twins of held-out records are excluded)."""
         held, held_c = self.held_out(), self.held_out_content()
+        held_i = self.held_out_items() if self.exclude_items else set()
         content = content if content is not None else read_content_map()
         return sorted(r["id"] for r in (manifest or read_pr16_manifest())
-                      if r["id"] not in held and content.get(r["id"]) not in held_c)
+                      if r["id"] not in held and content.get(r["id"]) not in held_c
+                      and not (held_i and record_item_keys(r["id"]) & held_i))
 
-    def load_role_records(self, records_path: str | Path, role: str) -> tuple[list[dict], dict]:
-        """The role's PR #16 records, every line verified against the committed PR #16 manifest
-        (``train.data.load_m2_records``) and its hash against the cohort entry. Missing records raise: a cohort
-        is complete or it is not used."""
+    def load_role_records(self, records_path: str | Path, role: str,
+                          pool_dirs: dict[str, str | Path] | None = None) -> tuple[list[dict], dict]:
+        """The role's records, every line verified against its pool's manifest (``train.data.load_m2_records``) and
+        its hash against the cohort entry. PR #16 entries (all of v2) come from ``records_path`` and the committed
+        PR #16 manifest; entries of another pool (v3 retention: ``"m2-150k"``) come from ``pool_dirs[pool]``, a
+        directory holding that pool's pointer-pinned files (``train.cohort_v3.pool_files`` re-hashes all three).
+        Missing records raise: a cohort is complete or it is not used."""
         from train.data import load_m2_records, read_manifest
 
-        want = {e["id"]: e["sha256"] for e in self.roles[role]}
-        man = read_manifest(PR16_MANIFEST)
-        drift = [i for i, h in want.items() if man.get(i) != h]
-        if drift:
-            raise ValueError(f"cohort role {role}: {len(drift)} hash(es) differ from the PR #16 manifest")
-        recs, ident = load_m2_records(records_path, man, keep=lambda r: r["id"] in want)
-        missing = sorted(set(want) - {r["id"] for r in recs})
-        if missing:
-            raise ValueError(f"cohort role {role}: {len(missing)} record(s) missing, e.g. {missing[:3]}")
-        return sorted(recs, key=lambda r: r["id"]), {**ident, "cohort": self.identity(), "role": role}
+        by_pool: dict[str, dict[str, str]] = {}
+        for e in self.roles[role]:
+            by_pool.setdefault(e.get("pool", PR16_POOL), {})[e["id"]] = e["sha256"]
+        out: list[dict] = []
+        idents: dict[str, dict] = {}
+        for pool, want in sorted(by_pool.items()):
+            if pool == PR16_POOL:
+                path, man = records_path, read_manifest(PR16_MANIFEST)
+            else:
+                if not pool_dirs or pool not in pool_dirs:
+                    raise ValueError(f"cohort role {role}: {len(want)} record(s) come from pool {pool!r}; pass "
+                                     f"pool_dirs={{{pool!r}: <dir with its pointer-pinned files>}}")
+                from train.cohort_v3 import pool_files
+
+                fs = pool_files(pool, pool_dirs[pool])
+                path, man = fs["records"], read_manifest(fs["manifest"])
+            drift = [i for i, h in want.items() if man.get(i) != h]
+            if drift:
+                raise ValueError(f"cohort role {role}: {len(drift)} hash(es) differ from the {pool} manifest")
+            recs, ident = load_m2_records(path, man, keep=lambda r, w=want: r["id"] in w)
+            missing = sorted(set(want) - {r["id"] for r in recs})
+            if missing:
+                raise ValueError(f"cohort role {role}: {len(missing)} record(s) missing from {pool}, e.g. {missing[:3]}")
+            out += recs
+            idents[pool] = ident
+        ident = idents[PR16_POOL] if set(idents) == {PR16_POOL} else {"pools": idents}
+        return sorted(out, key=lambda r: r["id"]), {**ident, "cohort": self.identity(), "role": role}
 
     def steer_requests(self, role: str) -> list[dict]:
         """Rebuild the role's safety_eval requests and verify each against its frozen content hash."""
