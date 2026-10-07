@@ -29,6 +29,8 @@ def test_conditional_pointer_decomposition_reproduces_from_frozen_saved_probabil
     beta0_ci = pooled["beta0"]["overall_ci95"]
     beta005 = pooled["beta005"]["overall"]
     beta005_ci = pooled["beta005"]["overall_ci95"]
+    assert beta0_ci["oracle_gold_operation_pointer_exact"]["n_world_clusters"] == 180
+    assert pooled["beta005_minus_beta0"]["oracle_gold_operation_pointer_exact"]["n_world_clusters"] == 180
     assert beta0["operation_marginal_correct"] > .94
     assert beta0_ci["operation_marginal_correct"]["ci95"][0] > .93
     assert .44 < beta0["oracle_gold_operation_pointer_exact"] < .55
