@@ -50,18 +50,34 @@ class EntityBindingTests(unittest.TestCase):
                 self.assertNotEqual(resolve_mentions(text,RECORDS).status,'resolved')
 
     def test_overlay_preserves_operation_field_scope_and_requires_cardinality(self):
-        predicted={'kind':'compare','field':'price','left':'a','right':'b','temporal_scope':'2026-10'}
+        predicted={'kind':'compare','field':'price','left':'b','right':'a','temporal_scope':'2026-10'}
         result=overlay_request(request('With Hearth first and Grove second, compare their October 2026 price.'),predicted)
-        self.assertEqual(result['predicted'],dict(predicted,left='b',right='a'))
-        self.assertEqual(predicted['left'],'a')
+        self.assertEqual(result['predicted'],predicted)
+        self.assertEqual(predicted['left'],'b')
         for kind in ('read','explain'):
-            target={'kind':kind,'field':'warranty_months','left':'b','temporal_scope':'2026-10'}
+            target={'kind':kind,'field':'warranty_months','left':'a','right':None,'temporal_scope':'2026-10'}
             task=("State Grove's warranty months for October 2026." if kind=='read'
                   else "Provide a checked derivation of Grove's warranty months.")
             result=overlay_request(request(task),target)
-            self.assertEqual(result['predicted'],dict(target,left='a'))
+            self.assertEqual(result['predicted'],target)
             self.assertEqual(overlay_request(request("For October 2026, compare Grove's and Hearth's price."),target)['disposition'],'unresolved')
         self.assertEqual(overlay_request(request("State Grove's price for October 2026."),predicted)['disposition'],'unresolved')
+
+    def test_subject_operand_and_model_scope_disagreement_never_corrects_choices(self):
+        read={'kind':'read','field':'price','left':'a','right':None,'temporal_scope':'2026-10'}
+        compare=dict(read,kind='compare',right='b')
+        cases=(("State Grove's price for October 2026.",dict(read,left='b'),'requested_subject_mismatch'),
+               ("For October 2026, compare Grove's and Hearth's price.",dict(compare,right='c'),'requested_operand_mismatch'),
+               ("For October 2026, compare Grove's and Hearth's price.",dict(compare,left='b',right='a'),'requested_subject_mismatch'),
+               ("State Grove's price for October 2026.",dict(read,temporal_scope='2026-09'),'model_scope_mismatch'),
+               ("Provide a checked derivation of Grove's price.",dict(read,kind='explain',temporal_scope='2026-09'),'model_scope_mismatch'))
+        for task,predicted,reason in cases:
+            original=copy.deepcopy(predicted)
+            result=overlay_request(request(task),predicted)
+            self.assertEqual(result['disposition'],'unresolved')
+            self.assertIsNone(result['predicted'])
+            self.assertEqual(result['resolution']['reason'],reason)
+            self.assertEqual(predicted,original)
 
     def test_all_six_forms_retain_requested_operation_and_registered_field(self):
         forms=(('read',"State Grove's warranty months for October 2026."),
@@ -78,7 +94,7 @@ class EntityBindingTests(unittest.TestCase):
 
     def test_each_bound_record_requires_selected_field_and_explicit_scope(self):
         task="For October 2026, compare Grove's and Hearth's price."
-        target={'kind':'compare','field':'price','left':'b','right':'a','temporal_scope':'2026-10'}
+        target={'kind':'compare','field':'price','left':'a','right':'b','temporal_scope':'2026-10'}
         for mutation in ('missing_field','missing_scope','stale_scope'):
             value=request(task)
             state=json.loads(value['state'])
@@ -99,7 +115,7 @@ class EntityBindingTests(unittest.TestCase):
 
     def test_no_label_or_evaluation_metadata_leakage(self):
         original=request("Provide a checked derivation of Grove's price.")
-        prediction={'kind':'explain','field':'price','left':'b','temporal_scope':'2026-10'}
+        prediction={'kind':'explain','field':'price','left':'a','temporal_scope':'2026-10'}
         changed=copy.deepcopy(original)
         changed['evaluation_only']={'target':dict(prediction,left='c')}
         state=json.loads(changed['state'])

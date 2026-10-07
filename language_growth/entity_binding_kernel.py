@@ -2,8 +2,8 @@
 
 The canonical host audience view supplies binding records. Only the existing
 kernel and release-validating renderer may produce text. Compare is unsupported.
-Binding checks requested operation/field and explicit month/year scope within
-its supported grammar. Undated forms retain the active host-context behavior.
+Binding validates model operation/field/subject/operands and scope against the
+supported grammar and active evidence. It never replaces model choices.
 """
 from dataclasses import dataclass
 

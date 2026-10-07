@@ -2,7 +2,7 @@
 
 Literal references bind only within the caller-supplied trusted allowed records.
 The matched form retains requested operation/field and explicit month/year scope;
-model disagreement or mismatched selected-field scope rejects.
+Model subject/operand/scope choices must also agree; no choice is replaced.
 Unsupported or ambiguous text is unresolved. This is a small controlled grammar,
 not general natural-language interpretation or an authority checker.
 """
@@ -107,7 +107,10 @@ def resolve_mentions(task_input: str, records: tuple[AllowedRecord, ...]) -> Res
 
 
 def overlay_request(request: dict, predicted: dict) -> dict:
-    """No evaluator input accepted. Unresolved is a clarification disposition only."""
+    """Validate model choices against parsed intent; never correct a choice.
+
+    No evaluator input accepted. Unresolved permits no answer release.
+    """
     state = json.loads(request["state"])
     records = tuple(AllowedRecord(record["record_ref"], record["entity_ref"], tuple(record["fields"]))
                     for record in state["records"])
@@ -128,8 +131,12 @@ def overlay_request(request: dict, predicted: dict) -> dict:
     expected = 2 if kind == "compare" else 1 if kind in ("read", "explain") else 0
     if expected == 0 or len(resolution.mentions) != expected:
         return reject("operation_mention_count")
-    if kind != "compare" and "right" in predicted:
+    if kind != "compare" and predicted.get("right") is not None:
         return reject("malformed_prediction")
+    if predicted.get("left") != resolution.mentions[0].record_ref:
+        return reject("requested_subject_mismatch")
+    if kind == "compare" and predicted.get("right") != resolution.mentions[1].record_ref:
+        return reject("requested_operand_mismatch")
     by_ref = {record["record_ref"]: record for record in state["records"]}
     for mention in resolution.mentions:
         descriptor = by_ref[mention.record_ref]["fields"].get(resolution.requested_field)
@@ -137,10 +144,10 @@ def overlay_request(request: dict, predicted: dict) -> dict:
             return reject("selected_field_missing")
         if resolution.requested_scope is not None and descriptor.get("temporal_scope") != resolution.requested_scope:
             return reject("requested_scope_mismatch")
+        scope = descriptor.get("temporal_scope")
+        if not isinstance(scope, str) or not scope or predicted.get("temporal_scope") != scope:
+            return reject("model_scope_mismatch")
     target = copy.deepcopy(predicted)
-    target["left"] = resolution.mentions[0].record_ref
-    if kind == "compare":
-        target["right"] = resolution.mentions[1].record_ref
     assert json.dumps(anchor, sort_keys=True).encode() == json.dumps(
         {key: target[key] for key in ("kind", "field")}, sort_keys=True).encode()
     output.update(disposition="resolved", predicted=target)

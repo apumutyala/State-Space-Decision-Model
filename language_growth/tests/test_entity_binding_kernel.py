@@ -21,7 +21,7 @@ def fixture():
 
 
 def prediction(kind='read',field='price'):
-    return {'kind':kind,'field':field,'left':'boreal-v1','temporal_scope':'2026-10',
+    return {'kind':kind,'field':field,'left':'atlas-v1','right':None,'temporal_scope':'2026-10',
             'model_text':'MODEL_TEXT_MUST_NOT_RENDER'}
 
 
@@ -92,6 +92,34 @@ class EntityBindingKernelTests(unittest.TestCase):
             check.assert_not_called()
             render.assert_not_called()
 
+    def test_wrong_subject_operand_or_model_scope_never_constructs_checks_or_renders(self):
+        host,catalog=fixture()
+        read="State Atlas's price for October 2026."
+        explain="Provide a checked derivation of Atlas's price."
+        compare="For October 2026, compare Atlas's and Boreal's price."
+        valid_compare=dict(prediction('compare'),right='boreal-v1')
+        cases=((read,dict(prediction(),left='boreal-v1')),
+               (explain,dict(prediction('explain'),left='boreal-v1')),
+               (read,dict(prediction(),right='boreal-v1')),
+               (compare,dict(valid_compare,left='boreal-v1',right='atlas-v1')),
+               (compare,dict(valid_compare,right='atlas-v1')),
+               (compare,dict(valid_compare,right=None)),
+               (read,dict(prediction(),temporal_scope='2026-09')),
+               (explain,dict(prediction('explain'),temporal_scope='2026-09')),
+               (read,{key:value for key,value in prediction().items() if key!='temporal_scope'}))
+        with (patch.object(adapter,'_program') as construct,
+              patch.object(adapter.kernel,'check_program') as check,
+              patch.object(adapter.realize,'render_checked') as render):
+            for task,predicted in cases:
+                with self.subTest(task=task,predicted=predicted):
+                    result=release_bound_answer(task,predicted,host,catalog)
+                    self.assertEqual(result.status,'unreleased')
+                    self.assertIsNone(result.program)
+                    self.assertIsNone(result.text)
+            construct.assert_not_called()
+            check.assert_not_called()
+            render.assert_not_called()
+
     def test_stale_date_missing_scope_or_field_never_invokes_kernel_or_renderer(self):
         for mismatch in ('query_date','evidence_date','missing_scope','missing_field'):
             host,catalog=fixture()
@@ -116,7 +144,7 @@ class EntityBindingKernelTests(unittest.TestCase):
         host,catalog=fixture()
         atlas=next(record for record in catalog['records'] if record['record_ref']=='atlas-v1')
         atlas['fields']['price']['temporal_scope']='2026-11'
-        result=release_bound_answer("Provide a checked derivation of Atlas's price.",prediction('explain'),host,catalog)
+        result=release_bound_answer("Provide a checked derivation of Atlas's price.",dict(prediction('explain'),temporal_scope='2026-11'),host,catalog)
         self.assertEqual(result.status,'accepted')
         self.assertIn('2026-11',result.text)
 
@@ -134,7 +162,7 @@ class EntityBindingKernelTests(unittest.TestCase):
             bad_catalog['records'].append(duplicate)
             bad_catalog['snapshots'][host['context_ref']]['record_refs'].append('duplicate-atlas')
             self.assertIsNone(release_bound_answer("State Atlas's price for October 2026.",prediction(),host,bad_catalog).text)
-            compare=dict(prediction('compare'),right='atlas-v1')
+            compare=dict(prediction('compare'),right='boreal-v1')
             result=release_bound_answer("For October 2026, compare Atlas's and Boreal's price.",compare,host,catalog)
             self.assertEqual(result.reason,'unsupported_operation')
             self.assertIsNone(result.text)
