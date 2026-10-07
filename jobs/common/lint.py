@@ -14,6 +14,7 @@ import functools
 import importlib.util
 import json
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -178,7 +179,7 @@ def _norm(s: str) -> str:
 
 def executes_runner(src: str, runner: str) -> bool:
     """True if some subprocess.<run|call|check_call|check_output|Popen>(...) in this test source executes `runner`:
-    the path appears in the call itself or in an assignment / for-target of a name the call uses."""
+    the path is the executable or a shell's script argument, never a read-only command or syntax check."""
     if Path(runner).name not in _norm(src):
         return False
     return any(runner in t for call in _subprocess_texts(src) for t in call)
@@ -186,31 +187,93 @@ def executes_runner(src: str, runner: str) -> bool:
 
 @functools.lru_cache(maxsize=None)
 def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
-    """Per subprocess call: its source plus the bound values of every name it uses (normalised paths)."""
+    """Executable script arguments and their bound paths for subprocess argv lists.
+
+    A literal Bash -c command counts only when its last command explicitly execs the script.
+    """
     try:
         tree = ast.parse(src)
     except SyntaxError:
         return ()
-    binds: dict[str, list[str]] = {}
+    binds: dict[str, list[ast.AST]] = {}
+    subprocess_names = {"subprocess"}
     for n in ast.walk(tree):
+        if isinstance(n, ast.Import):
+            subprocess_names.update(a.asname or a.name for a in n.names if a.name == "subprocess")
         if isinstance(n, ast.Assign):
             for t in n.targets:
                 for nm in ast.walk(t):
                     if isinstance(nm, ast.Name):
-                        binds.setdefault(nm.id, []).append(ast.get_source_segment(src, n.value) or "")
+                        binds.setdefault(nm.id, []).append(n.value)
         elif isinstance(n, (ast.For, ast.comprehension)):
             for nm in ast.walk(n.target):
                 if isinstance(nm, ast.Name):
-                    binds.setdefault(nm.id, []).append(ast.get_source_segment(src, n.iter) or "")
+                    binds.setdefault(nm.id, []).append(n.iter)
+
+    def texts(expr):
+        out = [ast.get_source_segment(src, expr) or ast.unparse(expr)]
+        for nm in ast.walk(expr):
+            if isinstance(nm, ast.Name):
+                out += [ast.get_source_segment(src, value) or "" for value in binds.get(nm.id, [])]
+        return tuple(_norm(t) for t in out)
+
+    def argv_lists(expr):
+        if isinstance(expr, (ast.List, ast.Tuple)):
+            yield expr.elts
+        elif isinstance(expr, ast.Name):
+            for value in binds.get(expr.id, []):
+                if isinstance(value, (ast.List, ast.Tuple)):
+                    yield value.elts
+
     out = []
     for n in ast.walk(tree):
-        if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in _SUBPROC):
+        if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in _SUBPROC
+                and isinstance(n.func.value, ast.Name) and n.func.value.id in subprocess_names):
             continue
-        texts = [ast.get_source_segment(src, n) or ""]
-        for nm in ast.walk(n):
-            if isinstance(nm, ast.Name):
-                texts += binds.get(nm.id, [])
-        out.append(tuple(_norm(t) for t in texts))
+        if any(k.arg == "shell" and not (isinstance(k.value, ast.Constant) and k.value.value is False)
+               for k in n.keywords):
+            continue
+        args = n.args[0] if n.args else next((k.value for k in n.keywords if k.arg == "args"), None)
+        commands = list(argv_lists(args))
+        for argv in commands:
+            if not argv:
+                continue
+            first = texts(argv[0])
+            # A direct executable path is also valid (its path is checked by executes_runner).
+            executable = first[1:] if isinstance(argv[0], ast.Name) and binds.get(argv[0].id) else first
+            shell = any(re.search(r"\bbash(?:\.exe)?\b|\bBASH\b", t) for t in executable)
+            if not shell:
+                out.append(first)
+                continue
+            i, skip = 1, False
+            while i < len(argv):
+                arg = argv[i]
+                value = arg.value if isinstance(arg, ast.Constant) and isinstance(arg.value, str) else None
+                if value == "--":
+                    i += 1
+                    break
+                if value is None or not value.startswith(("-", "+")):
+                    break
+                if value == "-c" and i + 1 < len(argv) and isinstance(argv[i + 1], ast.Constant) \
+                        and isinstance(argv[i + 1].value, str):
+                    try:
+                        terminal = shlex.split(argv[i + 1].value.split(";")[-1])
+                    except ValueError:
+                        terminal = []
+                    if terminal[:1] == ["exec"]:
+                        commands.append([ast.Constant(value=arg) for arg in terminal[1:]])
+                if value in {"--noexec", "--help", "--version"} or (value.startswith("-")
+                        and not value.startswith("--") and any(flag in value[1:] for flag in "ncs")):
+                    skip = True
+                    break
+                if value in {"-o", "+o", "-O", "+O"}:
+                    i += 1
+                    if i >= len(argv) or not isinstance(argv[i], ast.Constant) or argv[i].value == "noexec":
+                        skip = True
+                        break
+                i += 1
+            if not skip and i < len(argv):
+                out.append(texts(argv[i]))
     return tuple(out)
 
 

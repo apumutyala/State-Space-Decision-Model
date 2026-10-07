@@ -163,3 +163,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: a newer user decision was added as a new section, and the older sentence was never edited.
 - **Check:** the stale sentence was replaced so that the later user decision governs. `tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule` asserts that the old sentence is gone.
 - **Status:** PARTIAL. Only this sentence is checked. Spend-ladder item 2 ("acknowledged by the other agent") still reads as blocking and needs the same reconciliation. When a user decision supersedes a rule, edit the old rule in the same PR.
+
+### L-36 Syntax checks mistaken for shell runner execution
+- Date: 2026-10-07 (PR #99 review).
+- Symptom: `shell_test` accepted `subprocess.run(["bash", "-n", runner])` and read-only commands such as `cat runner`, although neither executes the job phases.
+- Cost: caught before spend; a runtime argument bug could otherwise pass the launch gate.
+- Root cause: the detector searched all subprocess call text for the runner path without checking its command or argument position.
+- **Check:** `jobs/common/lint.py::executes_runner` requires the executable path or an executing Bash script argument. `tests/test_jobs_lint.py::test_runner_execution_detector_rejects_read_only_commands` covers syntax-only flags, read-only commands, and runner paths passed as arguments to another script; `test_runner_execution_detector_accepts_script_arguments` preserves real argv execution.
+- **Status:** ENFORCED for subprocess argv lists, including literal Bash `-c` commands whose final command explicitly `exec`s the runner.

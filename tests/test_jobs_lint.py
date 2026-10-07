@@ -94,6 +94,38 @@ def test_runner_execution_detector():
     assert not lint.executes_runner(f"# {runner}\n", runner)
 
 
+@pytest.mark.parametrize("command", [
+    '["bash", "-n", runner]', '["bash", "-en", runner]', '["bash", "--noexec", runner]',
+    '["bash", "-o", "noexec", runner]', '["bash", "--help", runner]',
+    '["bash", "-c", "cat " + runner]', '["bash", "-c", "exec bash -n " + runner]',
+    '["bash", "-c", "exec cat " + runner]', '["cat", runner]', '["head", runner]',
+    '["grep", "flag", runner]', '["echo", runner]', '["bash", "other.sh", runner]',
+])
+def test_runner_execution_detector_rejects_read_only_commands(command):
+    runner = "jobs/x/x_job.sh"
+    src = NL.join(['import subprocess', f'runner = "{runner}"', f'cmd = {command}',
+                   'subprocess.run(cmd, check=True)'])
+    assert not lint.executes_runner(src, runner)
+
+
+@pytest.mark.parametrize("command", [
+    '["bash", "-eu", "--", runner]', '["bash", "-o", "pipefail", runner]', '[runner]',
+    '["bash", "-c", "export X=1; exec bash jobs/x/x_job.sh"]',
+])
+def test_runner_execution_detector_accepts_script_arguments(command):
+    runner = "jobs/x/x_job.sh"
+    src = NL.join(['import subprocess as sp', f'runner = "{runner}"', f'cmd = {command}',
+                   'sp.run(args=cmd, check=True)'])
+    assert lint.executes_runner(src, runner)
+
+
+def test_runner_execution_detector_rejects_non_shell_bindings():
+    runner = "jobs/x/x_job.sh"
+    src = NL.join(['import subprocess', 'BASH = "cat"',
+                   f'subprocess.run([BASH, "{runner}"], check=True)'])
+    assert not lint.executes_runner(src, runner)
+
+
 def test_rule_constants_are_literal_module_level():
     src = "A_MIN = 0.5\nBB = (1, 2)\nlower = 3\nC = f()\ndef g():\n    D = 1\n"
     assert lint.rule_constants(src) == ["A_MIN", "BB"]
@@ -190,8 +222,39 @@ def test_remaining_legacy_rule_constants_are_pinned():
                          "mmlu_drop_pts": "mmlu_drop_pts", "index_diff_point": "index_diff_point",
                          "index_diff_lo": "index_diff_lo"}
     assert D.CLEAN_ACC_DROP == 0.01
+    # Approved #36 contract, including the frozen-set power requirements; never restore the superseded proposal.
     assert D.MARGINS == {"m_cap": 1.0, "m_steer": 0.02, "m_ece": 0.01, "m_ret_acc": 0.01,
-                         "status": "proposed in SAFETY_SPEC v1.2 (m_ret_acc: m2 cohort retention, PR m2-blockers); PENDING USER APPROVAL"}
+                         "m_false_alarm": 0.01, "m_refusal": 0.01, "fa_abs_cap": 0.01,
+                         "min_valid_draw_frac": 0.95,
+                         "required_n": {"g13_retention_acc": 9300, "g13_retention_ece": 33300},
+                         "alpha": 0.05, "area_family_alpha": 0.05, "template_family_alpha": 0.05,
+                         "steer_bootstrap": "fixed_template", "null_pass_floor": 0.8, "approved": True,
+                         "status": "approved: Codex cross-track decision, #36 comments 6028537932 + 6028610849 (2026-10-07); "
+                                   "activated by the Track D coordinator under the user's delegation after independent re-reviews of "
+                                   "#102 (FIX-THEN-MERGE findings resolved)"}
+    assert D.E1_GROUPS == ("new_domain_proxy", "new_domain_frozen")
+    assert D.G13_REPORT_EDITIONS == ("0.3",)
+
+
+def test_current_candidate_rule_constants_are_pinned():
+    """Keep current agent-main candidates covered when the stricter rule lint is integrated."""
+    from scripts import decide_full8 as F
+    from jobs.q9af_cell import rule as R
+
+    assert F.REQUIRED == ("ppl_ratio_ctx1024", "ppl_ratio_ctx4096", "mmlu_drop_pts", "mqar_drop", "niah_mean_drop",
+                          "index_diff_point", "index_diff_lo", "niah_length_drop")
+    assert F.TOL == 1e-9
+    assert F.VERDICTS == ("q9af-backbone", "retrieval-fail", "quality-fail", "partial-conversion", "no-conversion")
+    assert R.ACTIONS == {
+        "NO_MEASUREMENT": "fix the missing input / stop cause and re-run; no recipe conclusion",
+        "THROUGHPUT": "re-price from the measured step time (run_cell exit 26); no recipe conclusion",
+        "HYBRID_REPORT": "report as a hybrid (NOT attention-free); decision-needed issue to the user; never promoted",
+        "FOLD": "stop this variant; log the negative result in CANDIDATES.md",
+        "ESCALATE": "decision-needed issue to the user before any further spend, PREREG, full Index or TEST unseal",
+        "PROMOTE": "CANDIDATES.md row; the variant is the scale-up base",
+        "CONTINUE": "a scale-up cell may build on it; not a candidate",
+        "INCONCLUSIVE": "expand the frozen retention evaluation and re-gate the same checkpoint; not a scale-up base",
+    }
 
 
 def test_no_control_characters_in_sources():
