@@ -1,4 +1,4 @@
-"""Paired cluster bootstrap through the complete 0.2.1 index formula.
+"""Paired cluster bootstrap through the complete index formula (0.2.1, or the 0.3 public index).
 
 Clusters are linked case groups (record families) and are resampled with replacement inside
 each benchmark (benchmarks and their weights are fixed, as in the board's declared
@@ -9,8 +9,9 @@ paired difference.
 
 import numpy as np
 
+from harness import config
 from harness import score as S
-from harness.suite import area_of, spec
+from harness.suite import spec
 
 
 def _weights(rng, n_clusters, B):
@@ -49,10 +50,9 @@ def _ci(x, level=0.95):
     return {"point": float(x[0]), "lo": float(lo), "hi": float(hi), "se": float(np.std(x[1:], ddof=1))}
 
 
-def area_skills(skills, renormalize=True):
-    s = spec()
-    w = S.weights(set(skills), renormalize)
-    amap = area_of()
+def area_skills(skills, renormalize=True, edition=None):
+    s = spec(edition)
+    w = S.weights(set(skills), renormalize, edition)
     out = {}
     for a in s["areas"]:
         ids = [n for n in a["benchmarks"] if n in w]
@@ -62,29 +62,37 @@ def area_skills(skills, renormalize=True):
     return out
 
 
-def summarize_one(rep, level=0.95, renormalize=True):
+def summarize_one(rep, level=0.95, renormalize=True, edition=None):
+    """`edition` must match the one the benches were decomposed under (default config.EDITION)."""
     skills = {n: v[1] for n, v in rep.items()}
-    idx = S.index_from_skills(skills, renormalize)
+    idx = S.index_from_skills(skills, renormalize, edition)
     return {
+        "edition": config.edition_id(edition),
         "index": _ci(idx, level),
-        "areas": {a: _ci(v, level) for a, v in area_skills(skills, renormalize).items()},
+        "areas": {a: _ci(v, level) for a, v in area_skills(skills, renormalize, edition).items()},
         "benchmarks": {str(n): _ci(100 * v[1], level) for n, v in sorted(rep.items())},
     }
 
 
 def compare(candidate_benches, baseline_benches, B=2000, seed=0, level=0.95, renormalize=True):
-    """Paired CI for candidate - baseline on the index, each area and each benchmark (0-100 scale)."""
+    """Paired CI for candidate - baseline on the index, each area and each benchmark (0-100 scale).
+
+    The edition is taken from the benches (`score.decompose(..., edition=...)`); both sides must agree."""
+    edition = S.edition_of(candidate_benches)
+    if S.edition_of(baseline_benches) != edition:
+        raise ValueError("candidate and baseline were decomposed under different editions")
     cand, base = replicate_skills([candidate_benches, baseline_benches], B=B, seed=seed)
     cs = {n: v[1] for n, v in cand.items()}
     bs = {n: v[1] for n, v in base.items()}
-    diff_idx = S.index_from_skills(cs, renormalize) - S.index_from_skills(bs, renormalize)
-    ca, ba = area_skills(cs, renormalize), area_skills(bs, renormalize)
+    diff_idx = S.index_from_skills(cs, renormalize, edition) - S.index_from_skills(bs, renormalize, edition)
+    ca, ba = area_skills(cs, renormalize, edition), area_skills(bs, renormalize, edition)
     out = {
         "B": B,
         "seed": seed,
         "level": level,
-        "candidate": summarize_one(cand, level, renormalize),
-        "baseline": summarize_one(base, level, renormalize),
+        "edition": edition,
+        "candidate": summarize_one(cand, level, renormalize, edition),
+        "baseline": summarize_one(base, level, renormalize, edition),
         "diff": {
             "index": _ci(diff_idx, level),
             "areas": {a: _ci(ca[a] - ba[a], level) for a in ca},

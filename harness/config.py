@@ -11,7 +11,34 @@ SPACE_COMMIT = "cdbd1cab3b6eb1811ebd82d2686ad563a4d0fc0d"  # methodology-v0.2.1.
 METHODOLOGY_SHA256 = "3724d15e6698d9a5c39fd2fc9ab70c5cc94a03aeea8fdefe2b8b30ec72420ce8"
 BOARD_INDEX_SHA256 = "37526dd3f3d8f06e37722ef749344a7c877ed31260bad37de2e348cca1220d50"
 
+# Default edition stays 0.2.1 so every existing receipt reproduces byte-for-byte. Pass
+# `edition="0.3"` (or `--edition 0.3` on the CLI) for the 0.3 *public* index. See INDEX_0.3.md.
 EDITION = "0.2.1"
+EDITIONS = ("0.2.1", "0.3")
+
+# Edition 0.3 (live on the board 2026-10-06). The kit's 0.3 code is still an OPEN PR (#74,
+# head 62d2f51, not merged at 2026-10-06T17:40Z), so the 0.3 index spec is vendored from that
+# head and pinned by hash; the installed kit (87d4650b) is only used for row-level scoring.
+KIT_03_PR = 74
+KIT_03_COMMIT = "62d2f51de34a2de64906345b6bc3e98e27ff55c7"
+INDEX_03_SPEC_SHA256 = "158c38439c004a1bfb371dab02ec614046aabd3de08a02629ae89e7137d67167"
+INDEX_03_SPEC = Path(__file__).resolve().parent / "editions_data" / "index-0.3.json"
+GSM8K_03_RUN_ID_PREFIX = "v0.3-gsm8k:"  # editions.py@62d2f51: replaced={30: "v0.3-gsm8k:"}
+RETIRED = {"0.2.1": (), "0.3": (48,)}  # ForecastBench retired in 0.3
+REPLACED = {"0.2.1": {}, "0.3": {30: GSM8K_03_RUN_ID_PREFIX}}  # GSM8K rows rebuilt in 0.3
+# Board data for 0.3 (Space multimodalart/jev-decision-index @ 6ceab83, fetched 2026-10-06).
+SPACE_03_COMMIT = "6ceab8392133b34f880d6f87f66ba068f068d2af"
+BOARD_V03_SHA256 = "9f8a0a0327b800c33219042fbed6db597557819608c7254dc37fb183e13b01af"  # data/v03.json
+BOARD_INDEX_03_SHA256 = "62b016ec9eb4f5bbd5bc67a2d1b0fad62372b5ed674264fae7dca72601e0d4dc"  # data/index.json (0.3 public)
+METHODOLOGY_03_SHA256 = "d68c323f4d8d87d2efc4a1218751b5005629116e7ee2a858d53bac68f9418294"  # data/methodology.json
+
+
+def edition_id(edition=None):
+    e = str(edition or EDITION)
+    e = {"v0.2.1": "0.2.1", "release-v2.1": "0.2.1", "v0.3": "0.3", "release-v3": "0.3"}.get(e, e)
+    if e not in EDITIONS:
+        raise ValueError(f"unsupported edition {edition!r}; choose from {EDITIONS}")
+    return e
 # Official uncompressed hashes of the two row files (editions.py at KIT_COMMIT).
 ROWS_SHA256 = "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5"
 ADDED_SHA256 = "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89"

@@ -128,8 +128,9 @@ def cmd_score(a, subset):
     from harness.cli import load_results
 
     rows = _rows(subset)
-    rep = bootstrap.replicate_skills([score.decompose(rows, load_results(a.results))], B=a.B, seed=a.seed)[0]
-    return {"subset_ids_sha256": subset["ids_sha256"], "rows": len(rows), "slice_index": bootstrap.summarize_one(rep)}
+    ed = getattr(a, "edition", None)
+    rep = bootstrap.replicate_skills([score.decompose(rows, load_results(a.results), edition=ed)], B=a.B, seed=a.seed)[0]
+    return {"subset_ids_sha256": subset["ids_sha256"], "rows": len(rows), "slice_index": bootstrap.summarize_one(rep, edition=ed)}
 
 
 def cmd_compare(a, subset):
@@ -137,8 +138,9 @@ def cmd_compare(a, subset):
     from harness.cli import load_results
 
     rows = _rows(subset)
-    c = score.decompose(rows, load_results(a.candidate))
-    b = score.decompose(rows, load_results(a.baseline))
+    ed = getattr(a, "edition", None)
+    c = score.decompose(rows, load_results(a.candidate), edition=ed)
+    b = score.decompose(rows, load_results(a.baseline), edition=ed)
     out = bootstrap.compare(c, b, B=a.B, seed=a.seed)
     out["mde"] = mde.report(out["diff"]["index"]["se"], sum(len(x.clusters) for x in c.values()))
     out["subset_ids_sha256"], out["rows"] = subset["ids_sha256"], len(rows)
@@ -183,6 +185,8 @@ def main(argv=None):
             s.add_argument(x, required=True)
         s.add_argument("--B", type=int, default=2000)
         s.add_argument("--seed", type=int, default=0)
+        if name != "ece":
+            s.add_argument("--edition", default=None, choices=["0.2.1", "0.3"], help="default: harness config.EDITION (0.2.1)")
     for s in sub.choices.values():
         s.add_argument("--subset", default=str(SUBSET))
     a = p.parse_args(argv)

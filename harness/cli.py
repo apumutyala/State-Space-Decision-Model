@@ -2,8 +2,12 @@
 
   verify                         official hash check + per-catalog counts of the local suite
   slice   [--seed S]             build DEV/TEST manifests (IDs + hashes) and materialise DEV rows
-  score   --results R [--slice dev]          official point estimate + cluster-bootstrap CI
-  compare --candidate A --baseline B [--slice dev]   paired CI for A - B
+  score   --results R [--slice dev] [--edition 0.2.1|0.3]        official point estimate + cluster-bootstrap CI
+  compare --candidate A --baseline B [--slice dev] [--edition E]  paired CI for A - B
+
+--edition 0.3 scores the 0.3 *public* index (37 benchmarks; ForecastBench retired, WinoGrande under
+Knowledge, fixed area weights). 0.2.1 GSM8K rows do not count in 0.3; until the rebuilt GSM8K rows
+are run, GSM8K is absent and its weight is spread over Knowledge (slice index). Default: 0.2.1.
   ece     --results R [--slice dev]          board ECE, debiased ECE, SmoothECE per length bin
   mde     --se SE --clusters N               MDE table
   selfcheck [--slice dev]                    parity + perfect/uniform/noisy-oracle checks
@@ -103,17 +107,17 @@ def cmd_slice(a):
 def cmd_score(a):
     rows = load_slice(a.slice)
     res = load_results(a.results)
-    off = score.official(rows, res)
-    benches = score.decompose(rows, res)
+    off = score.official(rows, res, edition=a.edition)
+    benches = score.decompose(rows, res, edition=a.edition)
     rep = bootstrap.replicate_skills([benches], B=a.B, seed=a.seed)[0]
-    out = {"official_index_missing_as_zero": off["scores"]["balanced_skill"], "slice_index": bootstrap.summarize_one(rep)}
+    out = {"edition": config.edition_id(a.edition), "official_index_missing_as_zero": off["scores"]["balanced_skill"], "slice_index": bootstrap.summarize_one(rep, edition=a.edition)}
     print(json.dumps(out, indent=1))
 
 
 def cmd_compare(a):
     rows = load_slice(a.slice)
-    c = score.decompose(rows, load_results(a.candidate))
-    b = score.decompose(rows, load_results(a.baseline))
+    c = score.decompose(rows, load_results(a.candidate), edition=a.edition)
+    b = score.decompose(rows, load_results(a.baseline), edition=a.edition)
     out = bootstrap.compare(c, b, B=a.B, seed=a.seed)
     out["mde"] = mde.report(out["diff"]["index"]["se"], sum(len(x.clusters) for x in c.values()))
     print(json.dumps(out, indent=1))
@@ -163,12 +167,14 @@ def main(argv=None):
         s.add_argument("--slice", default="dev", choices=["dev", "test"])
         s.add_argument("--B", type=int, default=2000)
         s.add_argument("--seed", type=int, default=0)
+        s.add_argument("--edition", default=config.EDITION, choices=config.EDITIONS)
     s = sub.add_parser("compare")
     s.add_argument("--candidate", required=True)
     s.add_argument("--baseline", required=True)
     s.add_argument("--slice", default="dev", choices=["dev", "test"])
     s.add_argument("--B", type=int, default=2000)
     s.add_argument("--seed", type=int, default=0)
+    s.add_argument("--edition", default=config.EDITION, choices=config.EDITIONS)
     s = sub.add_parser("mde")
     s.add_argument("--se", type=float, required=True)
     s.add_argument("--clusters", type=int, required=True)
