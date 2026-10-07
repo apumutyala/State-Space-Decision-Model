@@ -65,15 +65,19 @@ free-running planner call. Random test weights are not a language result.
 
 The L0e fixture evaluator runs the authored proposal schedule through the merged kernel and renderer with `python -m language_growth.evaluate --fixtures fixtures/language_growth --out <fresh-directory>`. It records observed boundary behavior separately from authored task labels and makes no provider call. For a same-evidence direct decision comparison, use PR #17's `language_growth.decision_view.direct_decision_request` after its canonical `parent_bridge` dependency from PR #13 lands. The evaluator does not maintain a second decision-request serializer.
 
-Export the committed L1 development-train fixture with `python -m
+Export the committed L1 development-train cohort with `python -m
 language_growth.multirecord_training --out <fresh-directory>`. The bridge
-accepts only the exact pinned 40-task `l1_development_train` cohort and manifest,
-checks every typed reference program, and uses the shared
-`export_training_records` path with an explicit L1 allowlist. Each state contains
-only earlier teacher-forced target IDs and their offered descriptions; the
-current-slot target is a separate label. Task/world IDs and source row,
-manifest, world-row and catalog hashes stay outside requests. The export
-manifest preserves the complete original source manifest. L0 export is unchanged.
+accepts only the exact pinned 32-world `l1_multiworld_development_train` cohort
+(1,280 tasks, 4,096 slot rows) and its manifest. It checks every typed reference
+program and uses the shared `export_training_records` path with an explicit
+train-only L1 allowlist. Each state contains only earlier teacher-forced target
+IDs and their offered descriptions; the current-slot target is a separate
+label. Task/world IDs and source row, manifest, world-row and catalog hashes
+stay outside requests. The export manifest preserves the complete source
+manifest. The 40-task `l1_development_train` fixture is retained only for
+plumbing/evaluation tests and is not accepted for training. The separate
+`l1_multiworld_development_validation` cohort is evaluator-only and rejected by
+the training exporter. L0 export is unchanged.
 
 This is data plumbing only, not model training, free-running qualification or
 L1 capability. Strong comparator, decision retention, adversarial soundness and
