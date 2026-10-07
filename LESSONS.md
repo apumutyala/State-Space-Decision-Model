@@ -354,3 +354,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the test double matched the conceptual slot count but not the runtime container contract.
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
+
+### L-35 The relation router rejected a valid native-parent snapshot alias
+- Date: 2026-10-07 (adversarial review of the L1 relation router).
+- Symptom: a native RWKV decision head whose pinned parent recorded `snapshot_revision` was refused against the same stock revision recorded as `snapshot`.
+- Cost: $0; found before loading or measuring a parent model.
+- Root cause: the composition router compared only one spelling even though the parent bridge accepts either alias.
+- **Check:** `language_growth/relation_router.py::_snapshot_identity` normalizes both spellings and rejects disagreement; `language_growth/tests/test_relation_router.py::test_mismatched_models_and_native_parent_revisions_refused` accepts an alias-only matching parent and rejects conflicting aliases.
+- **Status:** ENFORCED.
