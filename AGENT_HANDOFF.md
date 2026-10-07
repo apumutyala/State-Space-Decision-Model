@@ -9,7 +9,7 @@ Codex now owns the user-directed two-stage goal: **Track D first** (RWKV7 System
 - Never commit to, rebase, or otherwise touch `claude/*` or `codex/*` branches or their worktrees. Do not `git add -A` over files you did not write.
 - Work on `collab/<github-user>/<topic>` (e.g. `collab/pranavdulepet/rwkv7-fla-kernel`), branched from `agent-main` and rebased on it before you open a PR.
 - Open PRs into `agent-main` only, only when the work is ready, using `.github/pull_request_template.md` (claim scoped exactly; receipt with commit, command, hashes, seeds, hardware, cost; gates ticked). Small PRs, one experiment or module each; a PR open more than two working sessions gets split or closed.
-- Merging needs **one independent review** per `COORDINATION.md` "Review sufficiency": the other track's agent, or a fresh-context adversarial reviewer that did not write the code. Findings get fixed first. Reviews are lean: correctness, contamination/test-slice integrity, safety-claim soundness, spend safety. Nobody approves their own PR. Docs-only changes need no review.
+- Merging needs **one independent review** per `COORDINATION.md`: a fresh-context adversarial reviewer subagent that did not write the code. Findings get fixed first. Reviews are lean: correctness, contamination/test-slice integrity, safety-claim soundness, and spend safety. The coordinator does not count their own review as independent.
 - Any reported number is re-derived by someone else from the committed receipt before a PR claims it. A win that does not reproduce is logged in `LEDGER.md` as a false positive.
 
 **Data integrity**
@@ -20,7 +20,7 @@ Codex now owns the user-directed two-stage goal: **Track D first** (RWKV7 System
 
 **Compute and money**
 - **Never run GPU jobs on anyone's laptop.** Local machines are for CPU tests on tiny models only.
-- Any paid job (SF Compute or Lambda) needs: a `spend` issue with estimate and stop condition, a planned row in `LEDGER.md`, a runtime ceiling and workspace cap, and the owner's acknowledgement. **Collaborators do not spend the shared $525 SF credits without the user's explicit OK** in that issue. Climb the spend ladder: $0 CPU → ≤ $20 hardware qualification → capped experiment → scale-up, each rung after the previous rung's receipt is merged.
+- Any paid job (SF Compute or Lambda) needs: a `spend` issue with estimate and stop condition, a planned row in `LEDGER.md`, a runtime ceiling and workspace cap, and the owner's acknowledgement. **Collaborators do not spend the shared $525 SF credits without the user's explicit OK** in that issue. Climb the spend ladder: $0 CPU → real-hardware qualification sized to measured workload and approved track allocation → capped experiment → scale-up, each rung after the previous rung's receipt is merged. The user superseded the earlier fixed ≤$20 qualification ceiling on 2026-10-07; retain a measured per-job maximum and do not exceed the approved track allocation.
 - Record actual cost afterwards. Stop nodes. Auto top-up stays off; no credit purchases.
 
 **Identity and contracts**

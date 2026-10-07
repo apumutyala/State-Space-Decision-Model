@@ -8,7 +8,7 @@ Codex owns the two gated SSDM stages under the user’s 2026-10-07 takeover dire
 |---|---|---|
 | **D: SSM-Decision (System 1)** | `codex` (user-directed Track D takeover; branches `codex/d-*` and `stack/rwkv7/*`) | Backbones (Q9-AF conversion, RWKV7, Mamba-3 reference), decision heads, typed outputs, calibration, injection/steer evaluation, Decision Index harness, the semantic-interface arms *inside* the core (records, KEEP/SET/RETRACT/UNKNOWN/CONFLICT) |
 | **L: SSM-Language (grown from D)** | `codex` (branches `codex/l-*`; paths `plans/codex/`, `language_growth/`) | Semantic program language (Assert/Infer/Compare/Explain/Ask/Quote/Hypothesize/Plan), module contracts and checker, realizer/grammar, verified emission, L0–L4 growth, authority and information-flow specification |
-| **Shared** | Codex, reviewed by a fresh-context adversarial subagent | `interfaces/DECISION_LANGUAGE_V0.md` (canonical D→L seam; existing deltas recorded in `INTERFACE.md`), evaluation harness, intervention protocol, spend ledger, `techniques/` |
+| **Shared** | Codex, reviewed by a fresh-context adversarial subagent | `interfaces/DECISION_LANGUAGE_V0.md` (canonical D→L seam; Claude deltas in `INTERFACE.md`), evaluation harness, intervention protocol, spend ledger, `techniques/` |
 
 Codex owns both tracks. A fresh-context adversarial subagent reviews each PR and does not become a file owner or spend approver.
 
@@ -109,7 +109,7 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
 1. **Break work into phases with explicit exit proofs.** Each phase names its hypothesis, deliverable, exit proof (test, fixture or receipt) and the decision it unlocks. No phase starts paid compute until the previous phase's proof is merged on `agent-main`.
 2. **Spend ladder.** Order the work as:
    - $0 local/CPU work: code, fixtures, smoke tests on tiny models;
-   - real-hardware qualification sized from the measured workload and remaining approved track allocation: throughput, memory, numerics parity;
+   - real-hardware qualification: scope and maximum cost derived from the measured workload and the approved track allocation (the former fixed ≤$20 qualification ceiling is superseded by the user's 2026-10-07 direction);
    - the capped experiment;
    - scale-up.
 
@@ -129,7 +129,7 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
    - **Prefixes:** each paid worker uses an explicitly assigned instance-name prefix. Codex only lists and terminates instances it launched; never terminate an unowned instance.
    - **Billing:** continues until *terminate*; an OS shutdown doesn't stop it.
    - **Spend:** counts against the $5k ceiling, not the SF credits. It's logged in `LEDGER.md` with provider = lambda, and goes through the same `spend` issue and spend ladder.
-3. **Local:** the RTX 5070 Ti laptop (12 GB) handles all $0-rung smoke tests. Check `nvidia-smi` before starting, since workers share it.
+3. **Local:** the RTX 5070 Ti laptop (12 GB) handles CPU-only $0-rung smoke tests. Do not run GPU jobs on anyone's laptop; workers share the device.
 
 ## Independent review and spend sufficiency (user direction, 2026-10-07)
 
@@ -152,8 +152,8 @@ They don't rebuild datasets or re-verify byte-for-byte reproducibility. A record
 Human teammates with write access, and the coding agents they send, work on research directions of their own choosing without delaying or disturbing the two owning tracks. Full onboarding: `HANDOFF.md` (humans) and `AGENT_HANDOFF.md` (agents).
 
 - **Branches.** `collab/<github-user>/<topic>`, branched from `agent-main` and rebased on it before a PR. Never push to `main` or `agent-main`; never touch `claude/*` or `codex/*` branches or worktrees; never force-push a shared branch; stage only your own paths.
-- **PRs.** Into `agent-main` only, when ready, using the PR template with a scoped claim and a receipt. Merge needs one independent fresh-context adversarial reviewer who did not write the code; findings are fixed first. Results PRs get their headline number re-derived from the receipt or raw predictions.
+- **PRs.** Into `agent-main` only, when ready, using the PR template with a scoped claim and a receipt. Merge needs one independent fresh-context adversarial reviewer who did not write the code; findings are fixed first. Results PRs get their headline number re-derived by someone else.
 - **Shared contracts.** `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md`, `SAFETY_SPEC.md` rows and `harness/manifests/` change only through an `interface` issue, independent adversarial review and version bump. Anything reaching `main` needs the user's approval.
 - **Integrity.** Never open or tune on the sealed TEST slice, Decision Index test items or the held-out D1-B templates. Open-weight teachers only. Every training set goes through the contamination guard with a committed log.
-- **Spend.** Collaborators do not spend the shared SF credits (or Lambda, which counts against the $5k ceiling) without the user's explicit OK on a `spend` issue that carries the estimate, stop condition and a planned `LEDGER.md` row; the spend ladder applies ($0 CPU → measured real-hardware qualification → capped experiment → scale-up). Never run GPU jobs on anyone's laptop. Record actual cost and stop nodes.
+- **Spend.** Collaborators do not spend the shared SF credits (or Lambda, which counts against the $5k ceiling) without the user's explicit OK on a `spend` issue that carries the estimate, stop condition and a planned `LEDGER.md` row; the spend ladder applies ($0 CPU → real-hardware qualification sized within the approved track allocation → capped → scale-up). Do not impose the superseded fixed ≤$20 qualification ceiling. Keep a measured per-job maximum and stop condition, never exceed the shared $525 envelope or $250 System 1 line without the user's updated authorization, and never run GPU jobs on anyone's laptop. Record actual cost and stop nodes.
 - **Identity.** Each contributor commits under their own name and email; nobody commits as another person. The repo stays private.
