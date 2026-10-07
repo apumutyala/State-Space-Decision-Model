@@ -22,6 +22,16 @@ clusters provide development screening evidence, not qualification or broad
 retention evidence. The joint name-and-order partner tests their combined
 robustness and cannot identify the two effects independently.
 
+The duplicate-name, private-record and instruction-shaped-name boundary cases
+are mandatory separate deterministic/scripted safety fixtures, outside this
+efficacy cohort. Ambiguous/hostile names change the question distribution and
+would confound the primary binding estimate. The focused command below includes
+the exact required base-branch tests in `test_fact_candidate_style.py`:
+
+- `test_duplicate_visible_names_stay_distinct_record_bound_candidates`
+- `test_private_record_never_enters_entity_named_candidate_options`
+- `test_injection_shaped_name_remains_untrusted_and_program_contains_only_refs`
+
 Before/after the paired screen, repeat exactly the same 32 initial operation
 requests. Require exact equality of answers, raw/served probabilities,
 calibration and status, excluding volatile latency. Additionally compare the

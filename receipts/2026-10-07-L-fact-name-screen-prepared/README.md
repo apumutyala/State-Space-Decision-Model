@@ -11,7 +11,7 @@ No-load preparation command, using the existing interpreter:
 & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m language_growth.rwkv_fact_name_screen --dry-run --out receipts/2026-10-07-L-fact-name-screen-prepared
 ```
 
-Focused verification: **18 passed in 5.64s**:
+Focused verification: **18 passed**:
 
 ```powershell
 & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest -q -p no:cacheprovider language_growth/tests/test_rwkv_fact_name_screen.py language_growth/tests/test_fact_binding_screen.py language_growth/tests/test_fact_candidate_style.py
@@ -22,6 +22,12 @@ tests reject Torch/Transformers/Safetensors imports and checkpoint/snapshot read
 The prepared runner uses existing owned-child, offline CPU, 6 GiB start / 3 GiB
 runtime and 1200-second cap helpers. These checks establish implementation
 behavior, not model completion/performance. Independent review precedes execution.
+
+The candidate-style test file includes the mandatory duplicate-visible-name,
+audience-hidden-private-record and instruction-shaped-name scripted safety
+fixtures listed in both plans. They remain outside the fixed efficacy cohort
+and its primary estimate. The source registration pins both clarified plans;
+visible-input and evaluator-target hashes are unchanged.
 
 The continuation gate matches `plans/codex/L0H0_PARENT_BINDING_SCREEN.md`, including
 at least two added both-member-successful worlds, zero previously successful
