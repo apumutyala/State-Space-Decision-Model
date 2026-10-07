@@ -212,3 +212,61 @@ def test_common_prefix_and_plan_shape():
     assert calls[1].width == 3 and sum(c.tokens for c in calls) == 3 + 2 + 3 + 1
     _, calls = fork_plan(rows, 1)
     assert [c.kind for c in calls] == ["prefix", "pack", "pack", "pack"]
+
+
+# ---------------------------------------------------------------------- job-5cmat POP909-CL OOM (issue #36 review)
+def test_state_budget_caps_rows_x_prefix_per_pack():
+    """job-5cmat root cause: a one-question 129-option row (1-token question suffix, |P| ~ 6-8.7k) packed all option
+    rows under the tail token budget, and every row got its own copy of the prefix KV state -> CUDA OOM ->
+    backend_error (stock arm: every row with |P| >= 6,226). The state budget caps rows x |P| per pack; the tail token
+    budget alone does not."""
+    L = 8000
+    prompt = list(range(L + 1))
+    rows = [{"qid": "chord", "option": f"chord_{i}", "prompt": prompt, "cont": [7] * (1 + i % 3)} for i in range(129)]
+    _, free = fork_plan(rows, 256)
+    assert max(len(c.tails) for c in free if c.kind == "pack") == 129  # the shape that OOMed: every option row copies the whole prefix state
+    budget = 2 ** 18
+    Lp, capped = fork_plan(rows, 256, state_budget=budget)
+    packs = [c for c in capped if c.kind == "pack"]
+    assert Lp == L and all(len(c.tails) * Lp <= budget for c in packs)
+    assert sorted((t["qid"], t["option"]) for c in packs for t in c.tails) == sorted(
+        (r["qid"], r["option"]) for r in rows)  # every option still scored exactly once
+    assert len(fork_plan(rows, 256, state_budget=1)[1]) == 1 + 129  # never fewer than one row per pack
+
+
+@pytest.mark.parametrize("family", sorted(FAMILIES))
+def test_state_budget_changes_packing_not_scores(family):
+    plug = FAMILIES[family]()
+    tmpl = "jrt-rwkv-g1-v1" if family == "rwkv7" else "jrt-chatml-v1"
+    a = _score(HFReadoutBackend(plug, tmpl, fork=True), REQ)
+    plug.fork_state_token_budget = 64  # far below |P|: one row per pack
+    be = HFReadoutBackend(plug, tmpl, fork=True)
+    b = _score(be, REQ)
+    assert _close(a.logits, b.logits)
+    assert b.inference_calls > a.inference_calls and be.plan(REQ).inference_calls == b.inference_calls
+    assert be.revision()["inference_config"]["fork_state_token_budget"] == 64
+
+
+def test_kv_cache_plugins_carry_the_state_budget_and_recurrent_ones_do_not():
+    from decide.backends.state_fork import KV_STATE_TOKEN_BUDGET
+
+    assert rwkv7_plugin().fork_state_token_budget is None
+    be = HFReadoutBackend(rwkv7_plugin(), "jrt-rwkv-g1-v1", fork=True)
+    assert "fork_state_token_budget" not in be.revision()["inference_config"]  # RWKV7 revision ids unchanged
+    # behavioural (#102 review): a real tiny ConvertibleQwen, all attention layers converted vs one kept
+    from convert.model import ConvertibleQwen, replace_native_gdn
+    from convert.readout import fork_state_budget
+
+    causal = _tiny_qwen()
+    full = types.SimpleNamespace(model=types.SimpleNamespace(language_model=causal.model), lm_head=causal.lm_head)
+    cm = ConvertibleQwen(full, kernel="chunk")
+    replace_native_gdn(cm, kernel="chunk")
+    assert cm.attn_layers
+    assert fork_state_budget(cm, list(cm.attn_layers)) is None  # all-GDN: no KV, no cap
+    assert fork_state_budget(cm, list(cm.attn_layers)[1:]) == KV_STATE_TOKEN_BUDGET  # one attention layer kept
+    assert fork_state_budget(cm, []) == KV_STATE_TOKEN_BUDGET  # stock path
+    all_gdn = converted_plugin()
+    all_gdn.fork_state_token_budget = fork_state_budget(cm, list(cm.attn_layers))
+    rev = HFReadoutBackend(all_gdn, "jrt-chatml-v1", fork=True).revision()
+    assert "fork_state_token_budget" not in rev["inference_config"]  # all-GDN revision id unchanged
+    assert KV_STATE_TOKEN_BUDGET * 44 * 1024 < 16 * 2 ** 30  # ~44 KiB / prefix token on Qwen3.5-9B: < 16 GB per pack

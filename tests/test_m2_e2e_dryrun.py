@@ -52,10 +52,14 @@ def test_m2_dry_run_end_to_end(tmp_path):
         assert (tmp_path / f"{r['backbone']}-{r['head']}-{r['arm']}" / "ckpt" / "latest.json").exists()
         if r["full_card"]:
             v12, v13 = r["verdict_g12"], r["verdict_g13"]
-            assert {c["criterion"] for c in v12["criteria"]} == {"g12_violation", "g12_steer_d1a", "g12_clean_acc"}
-            assert {c["criterion"] for c in v13["criteria"]} == {"g13_steer_d1b", "g13_capability", "g13_ece"}
+            assert {c["criterion"] for c in v12["criteria"]} == {"g12_violation", "g12_steer_d1a", "g12_false_alarm",
+                                                                 "g12_clean_acc"}
+            assert {c["criterion"] for c in v13["criteria"]} - {"g13_capability_e1", "g13_capability_e1_frozen"} == {
+                "g13_steer_d1b", "g13_false_alarm", "g13_capability", "g13_ece", "g13_retention_acc", "g13_retention_ece"}
             assert v12["accept"] == (not v12["failed"]) and v13["accept"] == (not v13["failed"])
-            assert "PENDING USER APPROVAL" in v12["margins"]["status"]
+            from train.promotion import MARGINS
+
+            assert v12["margins"]["status"] == MARGINS["status"]
             assert r["verdict_g12_self"]["failed_evaluable"] == []  # self-comparison never fails on a CI
             assert r["cards"]["child"]["g4_exact_k1"]["n_variants"] > 0
             assert "lam_hat" in r["cards"]["child"]["g5_ltt"]
@@ -478,7 +482,7 @@ def test_steer_rule_decision_table(monkeypatch, standin, lo, hi, pt, ok, why):
 
     def fake(*a, **k):
         out = real(*a, **k)
-        out["steer_rate"]["diff"] = {"point": pt, "lo": lo, "hi": hi}
+        out["steer_rate"]["diff"] = {"point": pt, "lo": lo, "hi": hi, "n_boot": 50, "valid_draws": 50}
         return out
 
     monkeypatch.setattr(M, "compare_arms", fake)
@@ -516,12 +520,16 @@ def test_g13_retention_and_gate_steer(standin):
     same = retention_comparison(rows, gold, gold, B=200, seed=0)
     assert same["identical_items"] and same["capability"]["lo"] == same["capability"]["hi"] == 0
     assert same["ece_diff"]["point"] == same["ece_diff"]["lo"] == same["ece_diff"]["hi"] == 0
-    kw = dict(steer_parent_rows=standin["gate_parent"], expected_variants=standin["gate"], n_boot=200)
+    cnt = {"n_boot": 200, "n_requested": 200}
+    dr = {"identical_items": True, "acc_diff": {"point": 0, "lo": 0, "hi": 0, **cnt},
+          "ece_diff": {"point": 0, "lo": 0, "hi": 0, **cnt}, "n_items": 40000}
+    kw = dict(steer_parent_rows=standin["gate_parent"], expected_variants=standin["gate"], n_boot=200,
+              decision_retention=dr)
     assert verdict_g13(retention=same, steer_child_rows=standin["gate_same"], **kw)["accept"]
     assert verdict_g13(retention=same, steer_child_rows=standin["gate_gullible"], **kw)["failed"] == ["g13_steer_d1b"]
     bad = retention_comparison(rows, worse, gold, B=200, seed=0)
     assert set(verdict_g13(retention=bad, steer_child_rows=standin["gate_same"], **kw)["failed"]) == {
-        "g13_capability", "g13_ece"}
+        "g13_capability", "g13_ece", "g13_capability_e1", "g13_capability_e1_frozen"}  # E1 regression demonstrated
     dropped = dict(gold)
     dropped.pop(rows[0]["_evaluation"]["run_id"])
     gone = retention_comparison(rows, dropped, gold, B=200, seed=0)
