@@ -10,11 +10,12 @@ import json
 from pathlib import Path
 import tempfile
 
-from .multirecord_eval import _FIXTURE_DIR, _canonical
-from .training_records import L1_TRAINING_ALLOWLIST, export_training_records
+from .multirecord_data import MULTIWORLD_TRAIN_SPLIT
+from .multirecord_eval import MULTIWORLD_FIXTURE_DIR, _canonical
+from .training_records import L1_GENERATOR_SOURCE, L1_TRAINING_ALLOWLIST, export_training_records
 
 
-def load_multirecord_training(*, split="l1_development_train", fixture_dir=_FIXTURE_DIR):
+def load_multirecord_training(*, split=MULTIWORLD_TRAIN_SPLIT, fixture_dir=MULTIWORLD_FIXTURE_DIR):
     """Relocation is allowed; replacing either pinned source file is not."""
     if split not in L1_TRAINING_ALLOWLIST:
         raise ValueError("only the pinned L1 development-train cohort is supported")
@@ -38,7 +39,8 @@ def main():
     rows = b"".join((_canonical(row) + "\n").encode("ascii") for row in records)
     manifest = {"schema": "ssdm.l1_training_export.v1", "record_count": len(records),
                 "training_records_sha256": hashlib.sha256(rows).hexdigest(),
-                "source_manifest": source_manifest, **L1_TRAINING_ALLOWLIST["l1_development_train"],
+                "source_manifest": source_manifest, **L1_TRAINING_ALLOWLIST[MULTIWORLD_TRAIN_SPLIT],
+                **L1_GENERATOR_SOURCE,
                 "scope": __doc__.strip()}
     if args.out.exists():
         raise FileExistsError(args.out)

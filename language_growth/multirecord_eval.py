@@ -14,11 +14,12 @@ from pathlib import Path
 from typing import Any
 
 from .kernel import check_program
-from .multirecord_data import multirecord_manifest
+from .multirecord_data import MULTIWORLD_VALIDATION_SPLIT, multirecord_manifest
 from .parent_bridge import audience_state
 
 FIXTURE_SOURCE_COMMIT = "bd31c9051732ddfa325b17f6ad986c2d08574f49"
 _FIXTURE_DIR = Path(__file__).resolve().parents[1] / "receipts/2026-10-07-L1-multirecord-data"
+MULTIWORLD_FIXTURE_DIR = Path(__file__).resolve().parents[1] / "receipts/2026-10-07-L1-training-world-distribution"
 # Pins are independent of the caller-supplied manifest. Updating the cohort is
 # a reviewed source change, never a runtime option to accept another hash.
 _PINS = {
@@ -29,6 +30,10 @@ _PINS = {
     "l1_development_validation": (
         "613d5b293cebbb883c46df6e8d0f361b61d81e65277d8ba8a3eeb8baacca141d",
         "6a6d3f8012c8b6089c6c8d40a2c6eb6ded60320ba7551d332fdd668bdd9d1cc1",
+    ),
+    MULTIWORLD_VALIDATION_SPLIT: (
+        "a25c938eba725611a74ba9ff9dac4b83ed4e28bb00a2bc50f9e76c1202c85339",
+        "140b0f7f577f23fd98090c583c1fdb3d5adc2cf7d1a13f626700724f55657870",
     ),
 }
 
@@ -72,7 +77,7 @@ def _adapt_task(task: dict[str, Any], split: str, seed: int) -> dict[str, Any]:
     }
 
 
-def load_multirecord_evaluation(split: str, *, fixture_dir: Path = _FIXTURE_DIR) -> list[dict[str, Any]]:
+def load_multirecord_evaluation(split: str, *, fixture_dir: Path | None = None) -> list[dict[str, Any]]:
     """Load one exact committed iterative cohort, preserving its L1 split name.
 
     The optional directory permits relocated copies of these exact files, not
@@ -81,6 +86,8 @@ def load_multirecord_evaluation(split: str, *, fixture_dir: Path = _FIXTURE_DIR)
     """
     if split not in _PINS:
         raise ValueError("only pinned L1 development splits are supported")
+    if fixture_dir is None:
+        fixture_dir = MULTIWORLD_FIXTURE_DIR if split == MULTIWORLD_VALIDATION_SPLIT else _FIXTURE_DIR
     rows = (Path(fixture_dir) / f"{split}.jsonl").read_bytes()
     manifest_bytes = (Path(fixture_dir) / f"{split}-manifest.json").read_bytes()
     actual = (hashlib.sha256(rows).hexdigest(), hashlib.sha256(manifest_bytes).hexdigest())

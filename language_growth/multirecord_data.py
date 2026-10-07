@@ -38,6 +38,14 @@ _SPLITS = {
         },
     },
 }
+# Distinct cohort identities retain the already disjoint development domains.
+# Do not rename or alter the original smoke splits: their bytes are receipts.
+MULTIWORLD_TRAIN_SPLIT = "l1_multiworld_development_train"
+MULTIWORLD_VALIDATION_SPLIT = "l1_multiworld_development_validation"
+_SPLITS[MULTIWORLD_TRAIN_SPLIT] = copy.deepcopy(_SPLITS["l1_development_train"])
+_SPLITS[MULTIWORLD_VALIDATION_SPLIT] = copy.deepcopy(_SPLITS["l1_development_validation"])
+MULTIWORLD_COUNT = 32
+MULTIWORLD_SEED = 1707
 _FIELDS = ("price", "warranty_months")
 _REFS = tuple(f"l1-development-record-{i}" for i in range(1, 5))
 _OPS = (("read", "Assert one selected fact"),
