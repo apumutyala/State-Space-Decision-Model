@@ -87,27 +87,30 @@ def _task_bindings(task_input: str, visible: dict[str, Any]) -> tuple[str, tuple
     candidates: list[tuple[str, str, tuple[str, ...], bool]] = []
     templates = {
         "read": (
-            ("What is {entity}'s {field} in October 2026?", True),
-            ("Give the October 2026 {field} for {entity}.", True),
-            ("State {entity}'s {field} for October 2026.", True),
+            ("What is {entity}'s {field} in October 2026?", True, "spaced"),
+            ("Give the October 2026 {field} for {entity}.", True, "spaced"),
+            ("State {entity}'s {field} for October 2026.", True, "spaced"),
+            ("What is the recorded {field} for {entity} in October 2026?", True, "canonical"),
         ),
         "explain": (
-            ("Explain the checked {field} fact for {entity}.", False),
-            ("Show the checked derivation for {entity}'s {field}.", False),
-            ("Provide a checked derivation of {entity}'s {field}.", False),
+            ("Explain the checked {field} fact for {entity}.", False, "spaced"),
+            ("Show the checked derivation for {entity}'s {field}.", False, "spaced"),
+            ("Provide a checked derivation of {entity}'s {field}.", False, "spaced"),
+            ("Explain the recorded {field} for {entity} in October 2026.", True, "canonical"),
         ),
         "compare": (
-            ("Compare the October {field} of {left} and {right}.", True),
-            ("How do {left}'s and {right}'s October {field} compare?", True),
-            ("For October 2026, compare {left}'s and {right}'s {field}.", True),
+            ("Compare the October {field} of {left} and {right}.", True, "spaced"),
+            ("How do {left}'s and {right}'s October {field} compare?", True, "spaced"),
+            ("For October 2026, compare {left}'s and {right}'s {field}.", True, "spaced"),
+            ("Compare {left}'s {field} with {right}'s {field} in October 2026, in that order.", True, "canonical"),
         ),
     }
     unique_entities = sorted({name for names in entities.values() for name in names})
     unique_fields = sorted(registry_fields)
     for kind, forms in templates.items():
-        for form, has_explicit_month in forms:
+        for form, has_explicit_month, field_surface in forms:
             for field in unique_fields:
-                display_field = field.replace("_", " ")
+                display_field = field if field_surface == "canonical" else field.replace("_", " ")
                 if kind in ("read", "explain"):
                     for entity in unique_entities:
                         rendered = form.format(entity=entity, field=display_field)
