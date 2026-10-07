@@ -1,0 +1,35 @@
+{
+ "edition": "0.3",
+ "kit_pr": 74,
+ "kit_commit": "62d2f51de34a2de64906345b6bc3e98e27ff55c7",
+ "gsm8k_rows_sha256": "759334894858a37d6bd7bd07298eac8e55da236e31dad327ccd06a9979f4738a",
+ "rule": "membership = rebuilt twins (run_id prefix v0.3-gsm8k:) of each 0.2.1 slice's GSM8K rows; 0.2.1 manifests unchanged",
+ "rebuilt_rows": 2638,
+ "dev": {
+  "manifest": "dev-manifest-0.3-gsm8k.jsonl.gz",
+  "manifest_sha256": "6a3d40c1d3099d772d746916333dcce5cab109ee13cf4e6a0a3a80652184f760",
+  "rows": 262,
+  "old_gsm8k_rows": 262,
+  "by_track": {
+   "GSM8K-10choice": 131,
+   "GSM8K-4choice": 131
+  }
+ },
+ "test": {
+  "manifest": "test-manifest-0.3-gsm8k.jsonl.gz",
+  "manifest_sha256": "4772431739e961c26a08e43159f031f7a95a1cd0170d5e4e1bc315f34d8c91b1",
+  "rows": 262,
+  "old_gsm8k_rows": 262,
+  "by_track": {
+   "GSM8K-10choice": 131,
+   "GSM8K-4choice": 131
+  }
+ },
+ "disjoint_rows": true,
+ "source_overlap_dev_test": {},
+ "answer_groups": {
+  "dev": 86,
+  "test": 87,
+  "shared": 58
+ }
+}

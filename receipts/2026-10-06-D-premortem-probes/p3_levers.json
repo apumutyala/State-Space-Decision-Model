@@ -1,0 +1,6 @@
+{
+ "act_ckpt": "raises (RWKV-7 only)",
+ "hf_grad_ckpt_with_cache_fork": "refused",
+ "row_batch": "silent per-row fallback",
+ "status": "pass (blocker confirmed)"
+}

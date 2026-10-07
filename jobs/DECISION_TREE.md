@@ -17,6 +17,7 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | fla_rwkv7 (fla chunk_rwkv7 gate, v1 rule; ran as job-jn47u) | `jobs/fla_rwkv7/` | $3.96 | $4.50 | ~$1.09 |
 | fla_rwkv7 truth_v2 (RULE v2 + A1: fp64-truth numerics, m2 cell train speed; `fla_job.sh truth_v2`) | `jobs/fla_rwkv7/job_params_truth_v2.json` | $5.74 | $6 | ~$1.19 |
 | cell_step_profile (m2 cell train step: baseline / ckpt_rows_lean / ckpt_rows / ckpt; pre-registered rule v1-A2) | `jobs/cell_step_profile/` | $8.22 | $8.50 | ~$1.59 |
+| full8 (all 8 layers -> GDN, Q9-AF; priced from job-5cmat's measured phases; rule pre-registered at be9eed8; issue #87) | `jobs/full8/` | $84.65 | $85 | ~$27.87 |
 | m2_first_cell (first trained cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k set; job-tvuat ADOPT execution config; PR #74) | `jobs/m2_first_cell/` | $66.03 | $70 | ~$26.14 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
@@ -37,7 +38,7 @@ submitted while A can still bill). A job submitted alone: MTD + its hard cap.
 
 | Probe outcome | Next |
 |---|---|
-| `proceed-all-8` | full 8-layer conversion (~$150, PLAN m1; its own spec: KL order, accept/rollback, recall levers, starting from `gdn_converted.pt`) |
+| `proceed-all-8` | full 8-layer conversion: **`jobs/full8/`** (issue #87). Budgeted ~$150 in PLAN m1; priced from job-5cmat's measured phases at **$84.65 worst case / ~$27.87 expected**. KL order, accept/rollback, binding rule `jobs/full8/rule.json` (pre-registered at be9eed8; Amendment A1 2cb8cbc before any run). Layer 23 is re-converted, not warm-started from `gdn_converted.pt` (JOB_SPEC: no warm-start path in the pipeline). The distillation-mix recall lever is not applied: open text only, as in the probe |
 | `retrieval-fail` | pre-registered fallback: no full-8 spend; report the cost-of-attention-freedom curve; rwkv7 stage B; shipping a hybrid is `decision-needed` for the user |
 | `quality-fail` (gate rejected the layer, or ppl / MMLU / Index past its bound) | rwkv7 stage B (stage A already ran as comparator) |
 | probe exit 3/4 (its own stop rule) | rwkv7 stage B |
@@ -51,16 +52,28 @@ Parent choice at m1 (PLAN gate "parent selected and frozen") compares the Q9-AF 
 readout on the **same 2,008-row DEV subset** (`jobs/common/dev_subset_m1.json`), plus steer and memory. It is a
 recorded decision, not an automatic one.
 
-## The $525 envelope (October MTD actual spend $8.43 as of 2026-10-06, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)
+## After the full-8 conversion (`scripts/decide_full8.py`, rule `jobs/full8/rule.json` @ be9eed8)
+
+| Full-8 outcome | Next |
+|---|---|
+| `q9af-backbone` (8/8 layers accepted, every bound passes) | pin `gdn_converted.pt`'s sha256 in `jobs/m2_pilot/m2_pilot_cell_q9af.json` (own reviewed PR), then m2 parent arm + pilot cell with `PARENT=q9af` |
+| `retrieval-fail` | PLAN fallback: no attention added back, cost-of-attention-freedom curve reported, Q9-AF stays the pure-recurrent entrant; the m2 backbone is `decision-needed` |
+| `quality-fail` | m2 on RWKV7 |
+| `partial-conversion` (1-7 layers accepted: a hybrid, not attention-free) | m2 on RWKV7; the `Q9-H<k>` hybrid and the curve are reported; shipping it is `decision-needed` |
+| `no-conversion` | m2 on RWKV7 |
+| exit 2 / 7 (crash, preemption, timeout) | finished layers are kept (checkpoint dir + salvage export): one resubmission from the reserve resumes |
+| any other non-zero exit (incl. 9 = no-measurement) | diagnose; at most one re-run from the reserve |
+
+## The $525 envelope (October MTD actual spend $16.11 as of 2026-10-07 incl. job-mden7 $1.06, job-5cmat $5.01 and job-tvuat $1.62, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)
 
 | Line (PLAN.md) | Budget | Worst case committed by this tree |
 |---|---|---|
 | Joint gate | $75 | qual $18.81 + Clef baseline A+B+C $47.52 = $66.33 |
-| System 1, branch A: probe proceeds | $250 | probe $28.21 + full-8 ~$150 (estimate) + rwkv7 A $16.34 = $194.55 -> $55.45 left for m2 (the cache-fork plan needs ~$51) |
+| System 1, branch A: probe proceeds | $250 | probe $28.21 + full-8 $84.65 (jobs/full8 worst case; was a ~$150 estimate) + rwkv7 A $16.34 = $129.20 -> $120.80 left for m2 (the cache-fork plan needs ~$51) |
 | System 1, branch B: probe fails | $250 | probe $28.21 + rwkv7 A $16.34 + rwkv7 B $19.30 = $63.85 -> $186.15 left for m2 on RWKV7 (~$12-17 per cell, M2_RUN_SPEC) |
 | System 1, branch C: qual folds | $250 | rwkv7 A + B = $35.64 -> $214.36 left for m2 |
 | Language / Reserve | $100 / $100 | untouched; re-runs come from the reserve |
 
-Worst-case envelope total, including the $8.43 MTD spend, is at most $269.31 (branch A), so every branch fits $525 with the Language and Reserve
-lines intact. Branch A leaves System 1 only ~$4 above the cache-fork m2 plan: if the full-8 job runs over its
-estimate, m2 takes option (b)/(c) from M2_RUN_SPEC or draws on the reserve via a spend issue.
+Worst-case envelope total, including the $16.11 MTD spend, is at most $211.64 (branch A), so every branch fits $525 with the Language and Reserve
+lines intact. Branch A now leaves System 1 ~$70 above the cache-fork m2 plan (it left ~$4 at the old ~$150 full-8
+estimate); the full-8 worst case already counts a 60-min build and two full attempts.

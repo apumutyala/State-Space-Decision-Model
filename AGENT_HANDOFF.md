@@ -28,6 +28,13 @@ You are joining a repo run by two owning agents: **Claude = Track D** (decision 
 - Do not modify `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md` (append-only amendments by Track D only), `SAFETY_SPEC.md` rows, or `harness/manifests/` without first opening an `interface` issue and getting both owners' approval plus a version bump.
 - Claims are scoped to what was measured. Smoke runs and stock ≤ 1B models are pipeline qualification, never model evidence (PREREG §0). "Attention-free" is disclosed with lineage and text-only scope.
 
+**Before any paid job / before any PR**
+- Read `LESSONS.md` (failure classes already paid for) and follow `jobs/LAUNCH_CHECKLIST.md`.
+  - `tests/test_jobs_lint.py` must pass.
+  - Launch only through `python -m jobs.common.launch` and its `submit.json`.
+- Every incident appends a `LESSONS.md` entry and an enforcing check in the same PR.
+- Variants go on `stack/<family>/<variant>`. `agent-main` holds only `CHAMPION.md`'s best candidate plus infra. Every measured variant is a row in `CANDIDATES.md`.
+
 ## 2. Get oriented fast (read in this order)
 
 1. `README.md` (status table, repo map, quick start).

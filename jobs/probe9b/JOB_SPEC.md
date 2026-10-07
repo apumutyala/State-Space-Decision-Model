@@ -195,6 +195,9 @@ Context:
                        "interval_s": 600, "grace_period_s": 1800, "fail_threshold": 2, "on_fail": "kill"}}}
 ```
 
+Lean config (`python -m jobs.common.launch probe9b --mode lean`): the same block with `env {"PROBE_CONFIG": "lean"}`,
+`idempotency_key "m1-probe9b-lean-<context_sha256[:12]>"` and label `probe9b: one-layer Q9-AF conversion probe (lean, job-4j3vu rates)`.
+
 `depends_on` on the qual job is not used: the probe needs a human-approved spend issue after the qual receipt anyway.
 
 ## Health check (`checks.health`) and heartbeat

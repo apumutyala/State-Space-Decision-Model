@@ -140,6 +140,19 @@ Written 2026-10-06 from web verification plus `reviews/01–04` and both plans. 
 | Data-mixture control (DoReMi, RegMix, mixing laws, ADO, Aioli, Skill-it) | B | R family | $0 | optimises loss; lab: loss ≠ decisions | 2305.10429; 2407.01492; 2403.16952; 2410.11820; 2411.05735; 2307.14430 |
 | Checkpoint eval card (our assembly: Index slice, NLL, calibration, steer, recall, mechanism, leakage, logged LLC) | B | X (design) | $ / checkpoint | — | files 02–06, 08 §8.6 |
 
+## 10 — Clef recipe and gap attribution
+
+| Technique / finding | Serves | Evidence | Cost | Failure modes | Cite |
+|---|---|---|---|---|---|
+| Index 0.3 Full score (20% public / 50% private same-skills / 30% private new-domains); Clef 53.08, Clef-flash 47.61, Jev 60.11, Nimble-9B-v3 54.67 | D (targets) | P (board data) | $0 | PLAN tiers stale; `decision-needed` | Space `data/v03.json` 2026-10-06 |
+| Clef recipe: frozen backbone + r=256 LoRA + 128M routing head + LS-CE + Brier + RLCD on synthetic schema permutations | D (anchor E2) | P (blog; data undisclosed) | $–$$ | public-format overfit (public→Full −8.5) | blog.cloudflare.com/clef-decision-models |
+| Measured gap stock Q9 → Clef-flash: 17.5 Index pts on DEV subset, all post-training; option-key tax (letter/option_N/hash) | D | R-int (lab receipts) | $0 | 12–60 rows per benchmark | `receipts/2026-10-06-D-recipe-gap` |
+| Readout fusion: LM answer-logprob × trained head (+1.27 [−0.38, 2.83], in-sample) | D (head input E4) | R-int (diagnostic) | $0 | per-benchmark weights forbidden; must be feature-gated | same receipt |
+| Head + LoRA ≈ generation SFT at 8B; head-only ≈ 40% of LoRA gain | D | P | $ | — | 2607.03801; 2501.17994 |
+| LS inverts confidence ranking (fix: logit normalisation) | D | S | $0 | — | 2403.14715 |
+| Attention-free retention at 7–8B: MMLU 88–95%, GSM8K ~49%; no MMLU-Pro/GPQA/tool numbers exist | D | P | — | log-likelihood scoring understates gaps | 2505.03005; 2502.14458; 2501.15570; 2603.26556 |
+| Anchor-then-ablate (vs component-first from stock) | D (method) | X | — | readout×training, training×calibration, conversion×training must be end-to-end | file 10 §10 |
+
 ## Cross-domain verdicts (one line each)
 - Attention-free conversion will lose retrieval; the fallback (1 layer or 15% heads) is the expected result — pre-register it (01).
 - Options-first ordering + chunk-and-aggregate forks + retrieval-objective mixture are the three cheap recall levers with evidence (02).
@@ -148,3 +161,4 @@ Written 2026-10-06 from web verification plus `reviews/01–04` and both plans. 
 - Predicted temperature + debiased ECE for the Index; SCRC + AUGRC + reordering scores for deployment (06).
 - Rung A is a GF grammar; round trips go through the symbolic parser; the AST needs scope/tense/number before L1 (07).
 - Card metrics over seeds, NLL-based phase detection, mixture control on decision metrics, LLC logged only (08).
+- Clef-flash's 17.5-point lead over stock Qwen3.5-9B is post-training, not backbone; under Index 0.3 transferable levers (readout, joint decoding, calibration, generator data) beat public-format supervision; run anchor-then-ablate (10).
