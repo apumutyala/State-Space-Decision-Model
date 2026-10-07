@@ -107,3 +107,20 @@ def test_parent_recovers_only_after_watchdog_stop_and_preserves_stop_code(monkey
     assert runner.recover_stopped_run(tmp_path, 125) == 125
     assert raw.read_bytes() == b"preserved watchdog stop\n"
     assert json.loads((tmp_path / "partial_recovery_error.json").read_text())["exception_type"] == "RuntimeError"
+
+
+@pytest.mark.parametrize("stop_code", [124, 125])
+def test_parent_preserves_stop_code_when_recovery_and_error_log_write_fail(monkeypatch, tmp_path, stop_code):
+    raw = tmp_path / "raw.jsonl"
+    raw.write_bytes(b"preserved watchdog stop\n")
+    def recovery_fails(out):
+        raise RuntimeError("recovery fixture error")
+    monkeypatch.setattr(recovery, "recover_partial", recovery_fails)
+    original_open = Path.open
+    def write_fails(path, *args, **kwargs):
+        if path.name == "partial_recovery_error.json":
+            raise OSError("mock disk write failure")
+        return original_open(path, *args, **kwargs)
+    monkeypatch.setattr(Path, "open", write_fails)
+    assert runner.recover_stopped_run(tmp_path, stop_code) == stop_code
+    assert raw.read_bytes() == b"preserved watchdog stop\n"

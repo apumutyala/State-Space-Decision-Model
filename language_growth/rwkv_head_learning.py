@@ -201,7 +201,7 @@ def recover_stopped_run(out, result):
             try:
                 with (Path(out) / "partial_recovery_error.json").open("x", encoding="utf-8") as stream:
                     json.dump({"exception_type": type(exc).__name__, "message": str(exc)}, stream)
-            except FileExistsError:
+            except OSError:
                 pass
     return result
 

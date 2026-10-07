@@ -1,0 +1,29 @@
+{
+  "base_commit": "62f735df3351b0b48ccf6ea5d296e2c158fdc75e",
+  "broad_suite_repeated": false,
+  "diff_check_exit_code": 0,
+  "existing_legacy_waivers_unchanged": true,
+  "fix": "Best-effort recovery error-file OSError cannot replace timeout124 or memory-stop125.",
+  "focused_tests": {
+    "command": [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "pytest",
+      "language_growth/tests/test_rwkv_head_partial_recovery.py",
+      "-q"
+    ],
+    "elapsed_seconds": 0.68,
+    "exit_code": 0,
+    "passed": 5
+  },
+  "jobs_common_lint_exit_code": 0,
+  "model_access_or_retry": false,
+  "preserved_partial_receipt_sha256": "4ca61e2f9f631f811cb493bb41b4e742a4301f97a0d7b7b57c89955925ad8c4c",
+  "schema": "ssdm.rwkv-head-ce96-recovery-hook-fix.v1",
+  "source_sha256": {
+    "language_growth/rwkv_head_learning.py": "7af59a23b016771de66e75a182b5a8c97737b2ad7d64436a824cfb034fc0f3b7",
+    "language_growth/tests/test_rwkv_head_partial_recovery.py": "cd084ae7b4e227a1e28200bc2a932af20cdc19926d391bc9445eddb7fcb6daa0"
+  }
+}
