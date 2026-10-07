@@ -1,0 +1,2852 @@
+{
+  "schema": "ssdm.rwkv-g1-filtered-component-proof.v1",
+  "status": "tokenizer_component_ready_renderer_blocked",
+  "cost_usd": 0,
+  "base_commit": "ee0adb70029fc80c65ee6072c307873034052362",
+  "preregistration_commit": "bfbb9acdb28c1e0fa081a86d74c89fa01d86d01c",
+  "hardware": "local Windows CPU; tokenizer operations only",
+  "model_loaded": false,
+  "model_forward_calls": 0,
+  "checkpoint_loaded": false,
+  "gpu_used": false,
+  "tokenizer_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\tokenizers\\RWKV--RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba\\tokenizer.json",
+  "tokenizer_sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+  "tokenizer_source_sha256": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+  "proof_context_sha256": "597cc204a1db6d8bbe9c4c2e3e2948084cd95695b6bec5598a0565c1e6d9c165",
+  "source_candidates": 702,
+  "eligible_candidates": 498,
+  "selected_count": 255,
+  "last_selected": {
+    "code": "LB",
+    "token_id": 3967,
+    "source_ordinal": 314
+  },
+  "all_boundary_checks_passed": true,
+  "checks": [
+    {
+      "code": "A",
+      "token_ids": [
+        300
+      ],
+      "decoded": " A",
+      "context_token_ids": [
+        300
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "B",
+      "token_ids": [
+        301
+      ],
+      "decoded": " B",
+      "context_token_ids": [
+        301
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "C",
+      "token_ids": [
+        302
+      ],
+      "decoded": " C",
+      "context_token_ids": [
+        302
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "D",
+      "token_ids": [
+        303
+      ],
+      "decoded": " D",
+      "context_token_ids": [
+        303
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "E",
+      "token_ids": [
+        304
+      ],
+      "decoded": " E",
+      "context_token_ids": [
+        304
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "F",
+      "token_ids": [
+        305
+      ],
+      "decoded": " F",
+      "context_token_ids": [
+        305
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "G",
+      "token_ids": [
+        306
+      ],
+      "decoded": " G",
+      "context_token_ids": [
+        306
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "H",
+      "token_ids": [
+        307
+      ],
+      "decoded": " H",
+      "context_token_ids": [
+        307
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "I",
+      "token_ids": [
+        308
+      ],
+      "decoded": " I",
+      "context_token_ids": [
+        308
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "J",
+      "token_ids": [
+        309
+      ],
+      "decoded": " J",
+      "context_token_ids": [
+        309
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "K",
+      "token_ids": [
+        310
+      ],
+      "decoded": " K",
+      "context_token_ids": [
+        310
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "L",
+      "token_ids": [
+        311
+      ],
+      "decoded": " L",
+      "context_token_ids": [
+        311
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "M",
+      "token_ids": [
+        312
+      ],
+      "decoded": " M",
+      "context_token_ids": [
+        312
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "N",
+      "token_ids": [
+        313
+      ],
+      "decoded": " N",
+      "context_token_ids": [
+        313
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "O",
+      "token_ids": [
+        314
+      ],
+      "decoded": " O",
+      "context_token_ids": [
+        314
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "P",
+      "token_ids": [
+        315
+      ],
+      "decoded": " P",
+      "context_token_ids": [
+        315
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "Q",
+      "token_ids": [
+        316
+      ],
+      "decoded": " Q",
+      "context_token_ids": [
+        316
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "R",
+      "token_ids": [
+        317
+      ],
+      "decoded": " R",
+      "context_token_ids": [
+        317
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "S",
+      "token_ids": [
+        318
+      ],
+      "decoded": " S",
+      "context_token_ids": [
+        318
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "T",
+      "token_ids": [
+        319
+      ],
+      "decoded": " T",
+      "context_token_ids": [
+        319
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "U",
+      "token_ids": [
+        320
+      ],
+      "decoded": " U",
+      "context_token_ids": [
+        320
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "V",
+      "token_ids": [
+        321
+      ],
+      "decoded": " V",
+      "context_token_ids": [
+        321
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "W",
+      "token_ids": [
+        322
+      ],
+      "decoded": " W",
+      "context_token_ids": [
+        322
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "X",
+      "token_ids": [
+        323
+      ],
+      "decoded": " X",
+      "context_token_ids": [
+        323
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "Y",
+      "token_ids": [
+        324
+      ],
+      "decoded": " Y",
+      "context_token_ids": [
+        324
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "Z",
+      "token_ids": [
+        325
+      ],
+      "decoded": " Z",
+      "context_token_ids": [
+        325
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AA",
+      "token_ids": [
+        3601
+      ],
+      "decoded": " AA",
+      "context_token_ids": [
+        3601
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AB",
+      "token_ids": [
+        3602
+      ],
+      "decoded": " AB",
+      "context_token_ids": [
+        3602
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AC",
+      "token_ids": [
+        3603
+      ],
+      "decoded": " AC",
+      "context_token_ids": [
+        3603
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AD",
+      "token_ids": [
+        3604
+      ],
+      "decoded": " AD",
+      "context_token_ids": [
+        3604
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AE",
+      "token_ids": [
+        3605
+      ],
+      "decoded": " AE",
+      "context_token_ids": [
+        3605
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AF",
+      "token_ids": [
+        3606
+      ],
+      "decoded": " AF",
+      "context_token_ids": [
+        3606
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AG",
+      "token_ids": [
+        3607
+      ],
+      "decoded": " AG",
+      "context_token_ids": [
+        3607
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AH",
+      "token_ids": [
+        3608
+      ],
+      "decoded": " AH",
+      "context_token_ids": [
+        3608
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AI",
+      "token_ids": [
+        3609
+      ],
+      "decoded": " AI",
+      "context_token_ids": [
+        3609
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AJ",
+      "token_ids": [
+        3610
+      ],
+      "decoded": " AJ",
+      "context_token_ids": [
+        3610
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AK",
+      "token_ids": [
+        3611
+      ],
+      "decoded": " AK",
+      "context_token_ids": [
+        3611
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AL",
+      "token_ids": [
+        3612
+      ],
+      "decoded": " AL",
+      "context_token_ids": [
+        3612
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AM",
+      "token_ids": [
+        3613
+      ],
+      "decoded": " AM",
+      "context_token_ids": [
+        3613
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AN",
+      "token_ids": [
+        3614
+      ],
+      "decoded": " AN",
+      "context_token_ids": [
+        3614
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AO",
+      "token_ids": [
+        3615
+      ],
+      "decoded": " AO",
+      "context_token_ids": [
+        3615
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AP",
+      "token_ids": [
+        3616
+      ],
+      "decoded": " AP",
+      "context_token_ids": [
+        3616
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AQ",
+      "token_ids": [
+        3617
+      ],
+      "decoded": " AQ",
+      "context_token_ids": [
+        3617
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AR",
+      "token_ids": [
+        3618
+      ],
+      "decoded": " AR",
+      "context_token_ids": [
+        3618
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AS",
+      "token_ids": [
+        3619
+      ],
+      "decoded": " AS",
+      "context_token_ids": [
+        3619
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AT",
+      "token_ids": [
+        3620
+      ],
+      "decoded": " AT",
+      "context_token_ids": [
+        3620
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AU",
+      "token_ids": [
+        3621
+      ],
+      "decoded": " AU",
+      "context_token_ids": [
+        3621
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AV",
+      "token_ids": [
+        3622
+      ],
+      "decoded": " AV",
+      "context_token_ids": [
+        3622
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AW",
+      "token_ids": [
+        3623
+      ],
+      "decoded": " AW",
+      "context_token_ids": [
+        3623
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AX",
+      "token_ids": [
+        3624
+      ],
+      "decoded": " AX",
+      "context_token_ids": [
+        3624
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "AZ",
+      "token_ids": [
+        3625
+      ],
+      "decoded": " AZ",
+      "context_token_ids": [
+        3625
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BA",
+      "token_ids": [
+        3649
+      ],
+      "decoded": " BA",
+      "context_token_ids": [
+        3649
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BB",
+      "token_ids": [
+        3650
+      ],
+      "decoded": " BB",
+      "context_token_ids": [
+        3650
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BC",
+      "token_ids": [
+        3651
+      ],
+      "decoded": " BC",
+      "context_token_ids": [
+        3651
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BD",
+      "token_ids": [
+        3652
+      ],
+      "decoded": " BD",
+      "context_token_ids": [
+        3652
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BE",
+      "token_ids": [
+        3653
+      ],
+      "decoded": " BE",
+      "context_token_ids": [
+        3653
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BF",
+      "token_ids": [
+        3654
+      ],
+      "decoded": " BF",
+      "context_token_ids": [
+        3654
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BG",
+      "token_ids": [
+        3655
+      ],
+      "decoded": " BG",
+      "context_token_ids": [
+        3655
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BH",
+      "token_ids": [
+        3656
+      ],
+      "decoded": " BH",
+      "context_token_ids": [
+        3656
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BI",
+      "token_ids": [
+        3657
+      ],
+      "decoded": " BI",
+      "context_token_ids": [
+        3657
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BJ",
+      "token_ids": [
+        3658
+      ],
+      "decoded": " BJ",
+      "context_token_ids": [
+        3658
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BL",
+      "token_ids": [
+        3659
+      ],
+      "decoded": " BL",
+      "context_token_ids": [
+        3659
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BM",
+      "token_ids": [
+        3660
+      ],
+      "decoded": " BM",
+      "context_token_ids": [
+        3660
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BN",
+      "token_ids": [
+        3661
+      ],
+      "decoded": " BN",
+      "context_token_ids": [
+        3661
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BO",
+      "token_ids": [
+        3662
+      ],
+      "decoded": " BO",
+      "context_token_ids": [
+        3662
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BP",
+      "token_ids": [
+        3663
+      ],
+      "decoded": " BP",
+      "context_token_ids": [
+        3663
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BR",
+      "token_ids": [
+        3664
+      ],
+      "decoded": " BR",
+      "context_token_ids": [
+        3664
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BS",
+      "token_ids": [
+        3665
+      ],
+      "decoded": " BS",
+      "context_token_ids": [
+        3665
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BT",
+      "token_ids": [
+        3666
+      ],
+      "decoded": " BT",
+      "context_token_ids": [
+        3666
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BU",
+      "token_ids": [
+        3667
+      ],
+      "decoded": " BU",
+      "context_token_ids": [
+        3667
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BV",
+      "token_ids": [
+        3668
+      ],
+      "decoded": " BV",
+      "context_token_ids": [
+        3668
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BW",
+      "token_ids": [
+        3669
+      ],
+      "decoded": " BW",
+      "context_token_ids": [
+        3669
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "BY",
+      "token_ids": [
+        3670
+      ],
+      "decoded": " BY",
+      "context_token_ids": [
+        3670
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CA",
+      "token_ids": [
+        3682
+      ],
+      "decoded": " CA",
+      "context_token_ids": [
+        3682
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CB",
+      "token_ids": [
+        3683
+      ],
+      "decoded": " CB",
+      "context_token_ids": [
+        3683
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CC",
+      "token_ids": [
+        3684
+      ],
+      "decoded": " CC",
+      "context_token_ids": [
+        3684
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CD",
+      "token_ids": [
+        3685
+      ],
+      "decoded": " CD",
+      "context_token_ids": [
+        3685
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CE",
+      "token_ids": [
+        3686
+      ],
+      "decoded": " CE",
+      "context_token_ids": [
+        3686
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CF",
+      "token_ids": [
+        3687
+      ],
+      "decoded": " CF",
+      "context_token_ids": [
+        3687
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CG",
+      "token_ids": [
+        3688
+      ],
+      "decoded": " CG",
+      "context_token_ids": [
+        3688
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CH",
+      "token_ids": [
+        3689
+      ],
+      "decoded": " CH",
+      "context_token_ids": [
+        3689
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CI",
+      "token_ids": [
+        3690
+      ],
+      "decoded": " CI",
+      "context_token_ids": [
+        3690
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CJ",
+      "token_ids": [
+        3691
+      ],
+      "decoded": " CJ",
+      "context_token_ids": [
+        3691
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CK",
+      "token_ids": [
+        3692
+      ],
+      "decoded": " CK",
+      "context_token_ids": [
+        3692
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CL",
+      "token_ids": [
+        3693
+      ],
+      "decoded": " CL",
+      "context_token_ids": [
+        3693
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CM",
+      "token_ids": [
+        3694
+      ],
+      "decoded": " CM",
+      "context_token_ids": [
+        3694
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CN",
+      "token_ids": [
+        3695
+      ],
+      "decoded": " CN",
+      "context_token_ids": [
+        3695
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CO",
+      "token_ids": [
+        3696
+      ],
+      "decoded": " CO",
+      "context_token_ids": [
+        3696
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CP",
+      "token_ids": [
+        3697
+      ],
+      "decoded": " CP",
+      "context_token_ids": [
+        3697
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CR",
+      "token_ids": [
+        3698
+      ],
+      "decoded": " CR",
+      "context_token_ids": [
+        3698
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CS",
+      "token_ids": [
+        3699
+      ],
+      "decoded": " CS",
+      "context_token_ids": [
+        3699
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CT",
+      "token_ids": [
+        3700
+      ],
+      "decoded": " CT",
+      "context_token_ids": [
+        3700
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CU",
+      "token_ids": [
+        3701
+      ],
+      "decoded": " CU",
+      "context_token_ids": [
+        3701
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CV",
+      "token_ids": [
+        3702
+      ],
+      "decoded": " CV",
+      "context_token_ids": [
+        3702
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CW",
+      "token_ids": [
+        3703
+      ],
+      "decoded": " CW",
+      "context_token_ids": [
+        3703
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CX",
+      "token_ids": [
+        3704
+      ],
+      "decoded": " CX",
+      "context_token_ids": [
+        3704
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "CY",
+      "token_ids": [
+        3705
+      ],
+      "decoded": " CY",
+      "context_token_ids": [
+        3705
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DA",
+      "token_ids": [
+        3721
+      ],
+      "decoded": " DA",
+      "context_token_ids": [
+        3721
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DB",
+      "token_ids": [
+        3722
+      ],
+      "decoded": " DB",
+      "context_token_ids": [
+        3722
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DC",
+      "token_ids": [
+        3723
+      ],
+      "decoded": " DC",
+      "context_token_ids": [
+        3723
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DD",
+      "token_ids": [
+        3724
+      ],
+      "decoded": " DD",
+      "context_token_ids": [
+        3724
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DE",
+      "token_ids": [
+        3725
+      ],
+      "decoded": " DE",
+      "context_token_ids": [
+        3725
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DF",
+      "token_ids": [
+        3726
+      ],
+      "decoded": " DF",
+      "context_token_ids": [
+        3726
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DG",
+      "token_ids": [
+        3727
+      ],
+      "decoded": " DG",
+      "context_token_ids": [
+        3727
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DH",
+      "token_ids": [
+        3728
+      ],
+      "decoded": " DH",
+      "context_token_ids": [
+        3728
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DI",
+      "token_ids": [
+        3729
+      ],
+      "decoded": " DI",
+      "context_token_ids": [
+        3729
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DJ",
+      "token_ids": [
+        3730
+      ],
+      "decoded": " DJ",
+      "context_token_ids": [
+        3730
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DK",
+      "token_ids": [
+        3731
+      ],
+      "decoded": " DK",
+      "context_token_ids": [
+        3731
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DL",
+      "token_ids": [
+        3732
+      ],
+      "decoded": " DL",
+      "context_token_ids": [
+        3732
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DM",
+      "token_ids": [
+        3733
+      ],
+      "decoded": " DM",
+      "context_token_ids": [
+        3733
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DN",
+      "token_ids": [
+        3734
+      ],
+      "decoded": " DN",
+      "context_token_ids": [
+        3734
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DO",
+      "token_ids": [
+        3735
+      ],
+      "decoded": " DO",
+      "context_token_ids": [
+        3735
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DP",
+      "token_ids": [
+        3736
+      ],
+      "decoded": " DP",
+      "context_token_ids": [
+        3736
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DR",
+      "token_ids": [
+        3737
+      ],
+      "decoded": " DR",
+      "context_token_ids": [
+        3737
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DS",
+      "token_ids": [
+        3738
+      ],
+      "decoded": " DS",
+      "context_token_ids": [
+        3738
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DT",
+      "token_ids": [
+        3739
+      ],
+      "decoded": " DT",
+      "context_token_ids": [
+        3739
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DU",
+      "token_ids": [
+        3740
+      ],
+      "decoded": " DU",
+      "context_token_ids": [
+        3740
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DV",
+      "token_ids": [
+        3741
+      ],
+      "decoded": " DV",
+      "context_token_ids": [
+        3741
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DW",
+      "token_ids": [
+        3742
+      ],
+      "decoded": " DW",
+      "context_token_ids": [
+        3742
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "DX",
+      "token_ids": [
+        3743
+      ],
+      "decoded": " DX",
+      "context_token_ids": [
+        3743
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EA",
+      "token_ids": [
+        3755
+      ],
+      "decoded": " EA",
+      "context_token_ids": [
+        3755
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EB",
+      "token_ids": [
+        3756
+      ],
+      "decoded": " EB",
+      "context_token_ids": [
+        3756
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EC",
+      "token_ids": [
+        3757
+      ],
+      "decoded": " EC",
+      "context_token_ids": [
+        3757
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "ED",
+      "token_ids": [
+        3758
+      ],
+      "decoded": " ED",
+      "context_token_ids": [
+        3758
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EE",
+      "token_ids": [
+        3759
+      ],
+      "decoded": " EE",
+      "context_token_ids": [
+        3759
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EF",
+      "token_ids": [
+        3760
+      ],
+      "decoded": " EF",
+      "context_token_ids": [
+        3760
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EG",
+      "token_ids": [
+        3761
+      ],
+      "decoded": " EG",
+      "context_token_ids": [
+        3761
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EH",
+      "token_ids": [
+        3762
+      ],
+      "decoded": " EH",
+      "context_token_ids": [
+        3762
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EL",
+      "token_ids": [
+        3763
+      ],
+      "decoded": " EL",
+      "context_token_ids": [
+        3763
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EM",
+      "token_ids": [
+        3764
+      ],
+      "decoded": " EM",
+      "context_token_ids": [
+        3764
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EN",
+      "token_ids": [
+        3765
+      ],
+      "decoded": " EN",
+      "context_token_ids": [
+        3765
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EO",
+      "token_ids": [
+        3766
+      ],
+      "decoded": " EO",
+      "context_token_ids": [
+        3766
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EP",
+      "token_ids": [
+        3767
+      ],
+      "decoded": " EP",
+      "context_token_ids": [
+        3767
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EQ",
+      "token_ids": [
+        3768
+      ],
+      "decoded": " EQ",
+      "context_token_ids": [
+        3768
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "ER",
+      "token_ids": [
+        3769
+      ],
+      "decoded": " ER",
+      "context_token_ids": [
+        3769
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "ES",
+      "token_ids": [
+        3770
+      ],
+      "decoded": " ES",
+      "context_token_ids": [
+        3770
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "ET",
+      "token_ids": [
+        3771
+      ],
+      "decoded": " ET",
+      "context_token_ids": [
+        3771
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EU",
+      "token_ids": [
+        3772
+      ],
+      "decoded": " EU",
+      "context_token_ids": [
+        3772
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EV",
+      "token_ids": [
+        3773
+      ],
+      "decoded": " EV",
+      "context_token_ids": [
+        3773
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EW",
+      "token_ids": [
+        3774
+      ],
+      "decoded": " EW",
+      "context_token_ids": [
+        3774
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "EX",
+      "token_ids": [
+        3775
+      ],
+      "decoded": " EX",
+      "context_token_ids": [
+        3775
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FA",
+      "token_ids": [
+        3796
+      ],
+      "decoded": " FA",
+      "context_token_ids": [
+        3796
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FB",
+      "token_ids": [
+        3797
+      ],
+      "decoded": " FB",
+      "context_token_ids": [
+        3797
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FC",
+      "token_ids": [
+        3798
+      ],
+      "decoded": " FC",
+      "context_token_ids": [
+        3798
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FD",
+      "token_ids": [
+        3799
+      ],
+      "decoded": " FD",
+      "context_token_ids": [
+        3799
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FE",
+      "token_ids": [
+        3800
+      ],
+      "decoded": " FE",
+      "context_token_ids": [
+        3800
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FF",
+      "token_ids": [
+        3801
+      ],
+      "decoded": " FF",
+      "context_token_ids": [
+        3801
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FG",
+      "token_ids": [
+        3802
+      ],
+      "decoded": " FG",
+      "context_token_ids": [
+        3802
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FH",
+      "token_ids": [
+        3803
+      ],
+      "decoded": " FH",
+      "context_token_ids": [
+        3803
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FI",
+      "token_ids": [
+        3804
+      ],
+      "decoded": " FI",
+      "context_token_ids": [
+        3804
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FK",
+      "token_ids": [
+        3805
+      ],
+      "decoded": " FK",
+      "context_token_ids": [
+        3805
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FL",
+      "token_ids": [
+        3806
+      ],
+      "decoded": " FL",
+      "context_token_ids": [
+        3806
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FM",
+      "token_ids": [
+        3807
+      ],
+      "decoded": " FM",
+      "context_token_ids": [
+        3807
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FN",
+      "token_ids": [
+        3808
+      ],
+      "decoded": " FN",
+      "context_token_ids": [
+        3808
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FO",
+      "token_ids": [
+        3809
+      ],
+      "decoded": " FO",
+      "context_token_ids": [
+        3809
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FP",
+      "token_ids": [
+        3810
+      ],
+      "decoded": " FP",
+      "context_token_ids": [
+        3810
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FR",
+      "token_ids": [
+        3811
+      ],
+      "decoded": " FR",
+      "context_token_ids": [
+        3811
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FS",
+      "token_ids": [
+        3812
+      ],
+      "decoded": " FS",
+      "context_token_ids": [
+        3812
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FT",
+      "token_ids": [
+        3813
+      ],
+      "decoded": " FT",
+      "context_token_ids": [
+        3813
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FW",
+      "token_ids": [
+        3814
+      ],
+      "decoded": " FW",
+      "context_token_ids": [
+        3814
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FX",
+      "token_ids": [
+        3815
+      ],
+      "decoded": " FX",
+      "context_token_ids": [
+        3815
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "FY",
+      "token_ids": [
+        3816
+      ],
+      "decoded": " FY",
+      "context_token_ids": [
+        3816
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GA",
+      "token_ids": [
+        3825
+      ],
+      "decoded": " GA",
+      "context_token_ids": [
+        3825
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GB",
+      "token_ids": [
+        3826
+      ],
+      "decoded": " GB",
+      "context_token_ids": [
+        3826
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GC",
+      "token_ids": [
+        3827
+      ],
+      "decoded": " GC",
+      "context_token_ids": [
+        3827
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GD",
+      "token_ids": [
+        3828
+      ],
+      "decoded": " GD",
+      "context_token_ids": [
+        3828
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GE",
+      "token_ids": [
+        3829
+      ],
+      "decoded": " GE",
+      "context_token_ids": [
+        3829
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GF",
+      "token_ids": [
+        3830
+      ],
+      "decoded": " GF",
+      "context_token_ids": [
+        3830
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GG",
+      "token_ids": [
+        3831
+      ],
+      "decoded": " GG",
+      "context_token_ids": [
+        3831
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GH",
+      "token_ids": [
+        3832
+      ],
+      "decoded": " GH",
+      "context_token_ids": [
+        3832
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GI",
+      "token_ids": [
+        3833
+      ],
+      "decoded": " GI",
+      "context_token_ids": [
+        3833
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GL",
+      "token_ids": [
+        3834
+      ],
+      "decoded": " GL",
+      "context_token_ids": [
+        3834
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GM",
+      "token_ids": [
+        3835
+      ],
+      "decoded": " GM",
+      "context_token_ids": [
+        3835
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GN",
+      "token_ids": [
+        3836
+      ],
+      "decoded": " GN",
+      "context_token_ids": [
+        3836
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GO",
+      "token_ids": [
+        3837
+      ],
+      "decoded": " GO",
+      "context_token_ids": [
+        3837
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GP",
+      "token_ids": [
+        3838
+      ],
+      "decoded": " GP",
+      "context_token_ids": [
+        3838
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GR",
+      "token_ids": [
+        3839
+      ],
+      "decoded": " GR",
+      "context_token_ids": [
+        3839
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GS",
+      "token_ids": [
+        3840
+      ],
+      "decoded": " GS",
+      "context_token_ids": [
+        3840
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GT",
+      "token_ids": [
+        3841
+      ],
+      "decoded": " GT",
+      "context_token_ids": [
+        3841
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GU",
+      "token_ids": [
+        3842
+      ],
+      "decoded": " GU",
+      "context_token_ids": [
+        3842
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GV",
+      "token_ids": [
+        3843
+      ],
+      "decoded": " GV",
+      "context_token_ids": [
+        3843
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "GW",
+      "token_ids": [
+        3844
+      ],
+      "decoded": " GW",
+      "context_token_ids": [
+        3844
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HA",
+      "token_ids": [
+        3855
+      ],
+      "decoded": " HA",
+      "context_token_ids": [
+        3855
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HB",
+      "token_ids": [
+        3856
+      ],
+      "decoded": " HB",
+      "context_token_ids": [
+        3856
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HC",
+      "token_ids": [
+        3857
+      ],
+      "decoded": " HC",
+      "context_token_ids": [
+        3857
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HD",
+      "token_ids": [
+        3858
+      ],
+      "decoded": " HD",
+      "context_token_ids": [
+        3858
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HE",
+      "token_ids": [
+        3859
+      ],
+      "decoded": " HE",
+      "context_token_ids": [
+        3859
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HF",
+      "token_ids": [
+        3860
+      ],
+      "decoded": " HF",
+      "context_token_ids": [
+        3860
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HG",
+      "token_ids": [
+        3861
+      ],
+      "decoded": " HG",
+      "context_token_ids": [
+        3861
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HH",
+      "token_ids": [
+        3862
+      ],
+      "decoded": " HH",
+      "context_token_ids": [
+        3862
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HI",
+      "token_ids": [
+        3863
+      ],
+      "decoded": " HI",
+      "context_token_ids": [
+        3863
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HK",
+      "token_ids": [
+        3864
+      ],
+      "decoded": " HK",
+      "context_token_ids": [
+        3864
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HL",
+      "token_ids": [
+        3865
+      ],
+      "decoded": " HL",
+      "context_token_ids": [
+        3865
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HM",
+      "token_ids": [
+        3866
+      ],
+      "decoded": " HM",
+      "context_token_ids": [
+        3866
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HO",
+      "token_ids": [
+        3867
+      ],
+      "decoded": " HO",
+      "context_token_ids": [
+        3867
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HP",
+      "token_ids": [
+        3868
+      ],
+      "decoded": " HP",
+      "context_token_ids": [
+        3868
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HQ",
+      "token_ids": [
+        3869
+      ],
+      "decoded": " HQ",
+      "context_token_ids": [
+        3869
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HR",
+      "token_ids": [
+        3870
+      ],
+      "decoded": " HR",
+      "context_token_ids": [
+        3870
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HS",
+      "token_ids": [
+        3871
+      ],
+      "decoded": " HS",
+      "context_token_ids": [
+        3871
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HT",
+      "token_ids": [
+        3872
+      ],
+      "decoded": " HT",
+      "context_token_ids": [
+        3872
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HU",
+      "token_ids": [
+        3873
+      ],
+      "decoded": " HU",
+      "context_token_ids": [
+        3873
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HV",
+      "token_ids": [
+        3874
+      ],
+      "decoded": " HV",
+      "context_token_ids": [
+        3874
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HW",
+      "token_ids": [
+        3875
+      ],
+      "decoded": " HW",
+      "context_token_ids": [
+        3875
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "HY",
+      "token_ids": [
+        3876
+      ],
+      "decoded": " HY",
+      "context_token_ids": [
+        3876
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IA",
+      "token_ids": [
+        3885
+      ],
+      "decoded": " IA",
+      "context_token_ids": [
+        3885
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IB",
+      "token_ids": [
+        3886
+      ],
+      "decoded": " IB",
+      "context_token_ids": [
+        3886
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IC",
+      "token_ids": [
+        3887
+      ],
+      "decoded": " IC",
+      "context_token_ids": [
+        3887
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "ID",
+      "token_ids": [
+        3888
+      ],
+      "decoded": " ID",
+      "context_token_ids": [
+        3888
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IE",
+      "token_ids": [
+        3889
+      ],
+      "decoded": " IE",
+      "context_token_ids": [
+        3889
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IF",
+      "token_ids": [
+        3890
+      ],
+      "decoded": " IF",
+      "context_token_ids": [
+        3890
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IG",
+      "token_ids": [
+        3891
+      ],
+      "decoded": " IG",
+      "context_token_ids": [
+        3891
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "II",
+      "token_ids": [
+        3892
+      ],
+      "decoded": " II",
+      "context_token_ids": [
+        3892
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IK",
+      "token_ids": [
+        3893
+      ],
+      "decoded": " IK",
+      "context_token_ids": [
+        3893
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IL",
+      "token_ids": [
+        3894
+      ],
+      "decoded": " IL",
+      "context_token_ids": [
+        3894
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IM",
+      "token_ids": [
+        3895
+      ],
+      "decoded": " IM",
+      "context_token_ids": [
+        3895
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IN",
+      "token_ids": [
+        3896
+      ],
+      "decoded": " IN",
+      "context_token_ids": [
+        3896
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IO",
+      "token_ids": [
+        3897
+      ],
+      "decoded": " IO",
+      "context_token_ids": [
+        3897
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IP",
+      "token_ids": [
+        3898
+      ],
+      "decoded": " IP",
+      "context_token_ids": [
+        3898
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IQ",
+      "token_ids": [
+        3899
+      ],
+      "decoded": " IQ",
+      "context_token_ids": [
+        3899
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IR",
+      "token_ids": [
+        3900
+      ],
+      "decoded": " IR",
+      "context_token_ids": [
+        3900
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IS",
+      "token_ids": [
+        3901
+      ],
+      "decoded": " IS",
+      "context_token_ids": [
+        3901
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IT",
+      "token_ids": [
+        3902
+      ],
+      "decoded": " IT",
+      "context_token_ids": [
+        3902
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IU",
+      "token_ids": [
+        3903
+      ],
+      "decoded": " IU",
+      "context_token_ids": [
+        3903
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IV",
+      "token_ids": [
+        3904
+      ],
+      "decoded": " IV",
+      "context_token_ids": [
+        3904
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "IX",
+      "token_ids": [
+        3905
+      ],
+      "decoded": " IX",
+      "context_token_ids": [
+        3905
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JA",
+      "token_ids": [
+        3921
+      ],
+      "decoded": " JA",
+      "context_token_ids": [
+        3921
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JC",
+      "token_ids": [
+        3922
+      ],
+      "decoded": " JC",
+      "context_token_ids": [
+        3922
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JD",
+      "token_ids": [
+        3923
+      ],
+      "decoded": " JD",
+      "context_token_ids": [
+        3923
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JE",
+      "token_ids": [
+        3924
+      ],
+      "decoded": " JE",
+      "context_token_ids": [
+        3924
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JJ",
+      "token_ids": [
+        3925
+      ],
+      "decoded": " JJ",
+      "context_token_ids": [
+        3925
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JM",
+      "token_ids": [
+        3926
+      ],
+      "decoded": " JM",
+      "context_token_ids": [
+        3926
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JO",
+      "token_ids": [
+        3927
+      ],
+      "decoded": " JO",
+      "context_token_ids": [
+        3927
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JP",
+      "token_ids": [
+        3928
+      ],
+      "decoded": " JP",
+      "context_token_ids": [
+        3928
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JR",
+      "token_ids": [
+        3929
+      ],
+      "decoded": " JR",
+      "context_token_ids": [
+        3929
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JS",
+      "token_ids": [
+        3930
+      ],
+      "decoded": " JS",
+      "context_token_ids": [
+        3930
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "JU",
+      "token_ids": [
+        3931
+      ],
+      "decoded": " JU",
+      "context_token_ids": [
+        3931
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KA",
+      "token_ids": [
+        3938
+      ],
+      "decoded": " KA",
+      "context_token_ids": [
+        3938
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KB",
+      "token_ids": [
+        3939
+      ],
+      "decoded": " KB",
+      "context_token_ids": [
+        3939
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KC",
+      "token_ids": [
+        3940
+      ],
+      "decoded": " KC",
+      "context_token_ids": [
+        3940
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KD",
+      "token_ids": [
+        3941
+      ],
+      "decoded": " KD",
+      "context_token_ids": [
+        3941
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KE",
+      "token_ids": [
+        3942
+      ],
+      "decoded": " KE",
+      "context_token_ids": [
+        3942
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KG",
+      "token_ids": [
+        3943
+      ],
+      "decoded": " KG",
+      "context_token_ids": [
+        3943
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KH",
+      "token_ids": [
+        3944
+      ],
+      "decoded": " KH",
+      "context_token_ids": [
+        3944
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KK",
+      "token_ids": [
+        3945
+      ],
+      "decoded": " KK",
+      "context_token_ids": [
+        3945
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KL",
+      "token_ids": [
+        3946
+      ],
+      "decoded": " KL",
+      "context_token_ids": [
+        3946
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KM",
+      "token_ids": [
+        3947
+      ],
+      "decoded": " KM",
+      "context_token_ids": [
+        3947
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KN",
+      "token_ids": [
+        3948
+      ],
+      "decoded": " KN",
+      "context_token_ids": [
+        3948
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KO",
+      "token_ids": [
+        3949
+      ],
+      "decoded": " KO",
+      "context_token_ids": [
+        3949
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KP",
+      "token_ids": [
+        3950
+      ],
+      "decoded": " KP",
+      "context_token_ids": [
+        3950
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KR",
+      "token_ids": [
+        3951
+      ],
+      "decoded": " KR",
+      "context_token_ids": [
+        3951
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KS",
+      "token_ids": [
+        3952
+      ],
+      "decoded": " KS",
+      "context_token_ids": [
+        3952
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KT",
+      "token_ids": [
+        3953
+      ],
+      "decoded": " KT",
+      "context_token_ids": [
+        3953
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "KY",
+      "token_ids": [
+        3954
+      ],
+      "decoded": " KY",
+      "context_token_ids": [
+        3954
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "LA",
+      "token_ids": [
+        3966
+      ],
+      "decoded": " LA",
+      "context_token_ids": [
+        3966
+      ],
+      "prefix_stable": true
+    },
+    {
+      "code": "LB",
+      "token_ids": [
+        3967
+      ],
+      "decoded": " LB",
+      "context_token_ids": [
+        3967
+      ],
+      "prefix_stable": true
+    }
+  ],
+  "revision": {
+    "revision_id": "rwkv-g1-filtered-codebook-v1;tok=1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf;table=7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466;impl=bf6afe20bd71cd550222026675a0553dfcd3c1abadae6496db1118f9d9cd397e;renderer=blocked",
+    "backend": "rwkv_g1_filtered_codes_experimental",
+    "family": "rwkv7",
+    "model_id": null,
+    "snapshot": null,
+    "codebook_id": "rwkv-g1-filtered-codebook-v1",
+    "codebook_table_sha256": "7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466",
+    "tokenizer_sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+    "tokenizer_source_sha256": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+    "implementation_sha256": "bf6afe20bd71cd550222026675a0553dfcd3c1abadae6496db1118f9d9cd397e",
+    "codebook_file_sha256": "ea8384ef7d18893085b347896d93464f944a08d3442ab3381689b86d1783eea9",
+    "proof_context_sha256": "597cc204a1db6d8bbe9c4c2e3e2948084cd95695b6bec5598a0565c1e6d9c165",
+    "max_context": null,
+    "renderer_integration": "blocked",
+    "model_provenance": "not established by this component"
+  },
+  "renderer_integration": "blocked: predecessor C1 has no reviewed full request transformation; preserve exact state/provenance semantics",
+  "default_changed": false,
+  "serving_enabled": false
+}
