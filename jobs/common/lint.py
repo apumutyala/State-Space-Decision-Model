@@ -200,9 +200,17 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
     if any(isinstance(n, ast.Attribute) and isinstance(n.ctx, (ast.Store, ast.Del))
            and isinstance(n.value, ast.Name) and n.value.id in imported_subprocess for n in ast.walk(tree)):
         return ()  # even a helper's rebind changes the shared module for every import alias
-    if any(isinstance(n, ast.Assign) and isinstance(n.value, ast.Name) and n.value.id in imported_subprocess
+    def stores_subprocess(value):
+        if isinstance(value, ast.Name):
+            return value.id in imported_subprocess
+        if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+            return any(stores_subprocess(item) for item in value.elts)
+        if isinstance(value, ast.Dict):
+            return any(stores_subprocess(item) for item in [*value.keys, *value.values])
+        return False
+    if any(isinstance(n, (ast.Assign, ast.AnnAssign)) and stores_subprocess(n.value)
            for n in ast.walk(tree)):
-        return ()  # module aliases can hide attribute mutation; they are outside the proof contract
+        return ()  # annotated/container module aliases can hide mutation; they are outside the proof contract
     if any(isinstance(n, ast.Call) and any(isinstance(arg, ast.Name) and arg.id in imported_subprocess
            for arg in [*n.args, *(kw.value for kw in n.keywords)]) for n in ast.walk(tree)):
         return ()  # setattr/monkeypatch or any unknown consumer can replace the module's methods
@@ -276,6 +284,7 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
                     and isinstance(n.ctx, (ast.Store, ast.Del))}
         shadowed.update(a.asname or a.name.split(".")[0] for n in nodes if isinstance(n, ast.Import) for a in n.names)
         shadowed.update(a.asname or a.name for n in nodes if isinstance(n, ast.ImportFrom) for a in n.names)
+        shadowed.update(n.name for n in scope.body if isinstance(n, ast.ClassDef))
         if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
             shadowed.update(n.arg for n in ast.walk(scope.args) if isinstance(n, ast.arg))
         defs = [n for n in scope.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
