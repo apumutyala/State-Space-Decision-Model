@@ -1,0 +1,33 @@
+{
+ "load_s": 9.286344528198242,
+ "weights_gb": 26.540597248,
+ "code_sha256": {
+  "modeling_rwkv7.py": "28fc373673b2c98805275cc55381db0dd1dd9325ec0c1b34264d49ca1bc16958",
+  "configuration_rwkv7.py": "14050c631e27d66cd2f52ca5ec53b62eef04e602c4f1fc4e3696c328bc8e200e",
+  "tokenization_rwkv7.py": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+  "config.json": "abb02dc8556ed94926d28593fce202430500f132f77273c7a158fab2eb0beccf"
+ },
+ "wkv_implementation": "chunked",
+ "state_bytes_per_seq": 64962560,
+ "params": 13269245952,
+ "prefill": {
+  "2048": {
+   "tok_s": 3757.39821244465,
+   "s": 0.545058012008667,
+   "peak_gb": 27.80524544
+  },
+  "8192": {
+   "tok_s": 4407.498444408015,
+   "s": 1.8586506843566895,
+   "peak_gb": 31.479504896
+  },
+  "16384": {
+   "tok_s": 3898.1729974926593,
+   "s": 4.2029945850372314,
+   "peak_gb": 36.378517504
+  }
+ },
+ "pack_call_s": 0.5997345447540283,
+ "small_call_s": 0.11704301834106445,
+ "peak_gb": 36.378517504
+}
