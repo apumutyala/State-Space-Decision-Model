@@ -1,6 +1,6 @@
 # AGENT_HANDOFF — for collaborators' coding agents
 
-You are joining a repo run by two owning agents: **Claude = Track D** (decision model; `claude/*` branches) and **Codex = Track L** (language growth; `codex/*`). Your job is to pursue a research direction your human chose, on your own branch, without delaying or disturbing them. Read this file first, then the files in §2 in order. Facts below are verified against `origin/agent-main` @ `3b4169a`, merged PR bodies, issues #3/#36, `LEDGER.md` and the named specs on 2026-10-06; anything marked **[unverified]** could not be checked in the repo.
+Codex now owns the user-directed two-stage goal: **Track D first** (RWKV7 System 1 decision core) and **Track L second** (language grown from the qualified decision model), with fresh-context adversarial subagents as independent reviewers. This 2026-10-07 direction supersedes the historical Claude=D/Codex=L ownership below. Work on the current owner’s branch and do not disturb other worktrees. Read this file first, then the files in §2 in order. Historical facts below were verified on 2026-10-06 and may be stale; `STATUS.md`, current receipts, `agent-main`, and the user’s latest direction take precedence.
 
 ## 1. Hard rules (binding; a win obtained by breaking one does not count)
 
@@ -9,7 +9,7 @@ You are joining a repo run by two owning agents: **Claude = Track D** (decision 
 - Never commit to, rebase, or otherwise touch `claude/*` or `codex/*` branches or their worktrees. Do not `git add -A` over files you did not write.
 - Work on `collab/<github-user>/<topic>` (e.g. `collab/pranavdulepet/rwkv7-fla-kernel`), branched from `agent-main` and rebased on it before you open a PR.
 - Open PRs into `agent-main` only, only when the work is ready, using `.github/pull_request_template.md` (claim scoped exactly; receipt with commit, command, hashes, seeds, hardware, cost; gates ticked). Small PRs, one experiment or module each; a PR open more than two working sessions gets split or closed.
-- Merging needs **one independent review** per `COORDINATION.md` "Review sufficiency": the other track's agent, or a fresh-context adversarial reviewer that did not write the code. Findings get fixed first. Reviews are lean: correctness, contamination/test-slice integrity, safety-claim soundness, spend safety. Nobody approves their own PR. Docs-only changes need no review.
+- Merging needs **one independent review** per `COORDINATION.md`: a fresh-context adversarial reviewer subagent that did not write the code. Findings get fixed first. Reviews are lean: correctness, contamination/test-slice integrity, safety-claim soundness, and spend safety. The coordinator does not count their own review as independent.
 - Any reported number is re-derived by someone else from the committed receipt before a PR claims it. A win that does not reproduce is logged in `LEDGER.md` as a false positive.
 
 **Data integrity**
@@ -25,7 +25,7 @@ You are joining a repo run by two owning agents: **Claude = Track D** (decision 
 
 **Identity and contracts**
 - Commit under your own name and email (the repo owners commit as Apuroop Mutyala; do not impersonate). The repo stays private.
-- Do not modify `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md` (append-only amendments by Track D only), `SAFETY_SPEC.md` rows, or `harness/manifests/` without first opening an `interface` issue and getting both owners' approval plus a version bump.
+- Do not modify `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md` (append-only amendments under Track D), `SAFETY_SPEC.md` rows, or `harness/manifests/` without first opening an `interface` issue, obtaining an independent adversarial review, and bumping the relevant version. Anything reaching `main` requires the user's approval.
 - Claims are scoped to what was measured. Smoke runs and stock ≤ 1B models are pipeline qualification, never model evidence (PREREG §0). "Attention-free" is disclosed with lineage and text-only scope.
 
 **Before any paid job / before any PR**
