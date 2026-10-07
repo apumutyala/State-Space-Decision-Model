@@ -20,7 +20,10 @@ from harness import score as S
 
 FAMILIES = config.MANIFEST_DIR / "families-v1.json"
 TIERS = ("same_source", "same_family", "none")
-GROUPS = {"same_source": ("same_source",), "same_family": ("same_family",), "in_domain": ("same_source", "same_family"), "new_domain_proxy": ("none",)}
+GROUPS = {"same_source": ("same_source",), "same_family": ("same_family",), "in_domain": ("same_source", "same_family"), "new_domain_proxy": ("none",),
+          # heldout-draw-v1 (seeded split of the 'none' tier): the FROZEN half is the new-domain proxy that no
+          # training data or generator may target; the generatable half may receive E6 generator data.
+          "new_domain_frozen": "frozen", "new_domain_generatable": "generatable"}
 
 
 @functools.lru_cache(maxsize=None)
@@ -43,6 +46,11 @@ def members(group, edition=None):
     from harness.suite import index_ids
 
     tiers = GROUPS[group]
+    if isinstance(tiers, str):
+        from harness import heldout
+
+        keep = set(heldout.spec()[tiers])
+        return [n for n in index_ids(edition) if n in keep]
     return [n for n in index_ids(edition) if tier_of(n) in tiers]
 
 
@@ -71,6 +79,7 @@ def summarize(rep, edition=None, level=0.95):
         vals[g] = group_index(skills, ids, edition)
         out[g] = dict(_ci(vals[g], level), benchmarks=[n for n in ids if n in skills])
     out["in_minus_proxy"] = _ci(vals["in_domain"] - vals["new_domain_proxy"], level)
+    out["in_minus_frozen"] = _ci(vals["in_domain"] - vals["new_domain_frozen"], level)
     return out
 
 
