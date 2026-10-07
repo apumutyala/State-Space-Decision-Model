@@ -1,0 +1,35 @@
+{
+  "batch_size": 2,
+  "bf16": false,
+  "ckpt_dir": null,
+  "ckpt_every": 0,
+  "controlsafe": {},
+  "eval_every": 0,
+  "fork_mode": "cache",
+  "grad_accum": 1,
+  "grad_checkpointing": false,
+  "head": "snapshot",
+  "head_kwargs": {
+    "channels": 4,
+    "max_snapshots": 2
+  },
+  "layout": "ordered",
+  "lora_alpha": null,
+  "lora_dropout": 0.0,
+  "lora_rank": 0,
+  "lora_targets": null,
+  "loss": {
+    "arm": "ce",
+    "brier_weight": 0.0,
+    "label_smoothing": 0.0,
+    "rps_weight": 0.0
+  },
+  "lr_head": 0.001,
+  "lr_lora": 0.0001,
+  "max_grad_norm": 1.0,
+  "max_steps": 24,
+  "require_guard": true,
+  "seed": 20261006,
+  "warmup_steps": 0,
+  "weight_decay": 0.0
+}
