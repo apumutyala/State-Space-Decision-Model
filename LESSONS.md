@@ -198,7 +198,7 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - It also pins the margins to the contract (`test_margins_are_the_codex_contract_and_never_loosened_for_power`).
   - At run time, `train.promotion.resizing` reports n required vs n evaluated at the MEASURED SE, and labels an underpowered failure `inconclusive_underpowered` (not promotable).
   - `train.m2_gates` never exits 0 unless the run is promotable: 43 while margins are pending, 44 for partial-stage runs.
-- **Status:** PARTIAL. Recorded shortfalls: the retention role (1,420 items) needs ~9.3k items for `g13_retention_acc` and ~31k for `g13_retention_ece` (simulated; discordance and ECE arms are assumptions). Until cohort v3 expands it, G13 does not promote on retention. Every simulation input except the capability SE is an assumption; the first real runs replace them.
+- **Status:** PARTIAL. Recorded shortfalls: the retention role (1,420 items) needs ~9.3k items for `g13_retention_acc` and ~31k for `g13_retention_ece` (simulated; discordance and ECE arms are assumptions). Until cohort v3 expands it, G13 does not promote on retention. Cohort v3 (`train/cohort_v3.py`) now supplies 35,992 measured items (>= `REQUIRED_N` 9,300 / 33,300); `SHORTFALLS` is empty. Every simulation input except the capability SE is an assumption; the first real runs replace them.
 
 ### L-21 Prefix-fork state copies OOM on many-option rows (POP909-CL backend_error)
 - Date: 2026-10-07 (root-caused from job-5cmat logs; predicted on PR #50 by Track L, "KV memory at 255 options", merged over it, see L-01 / L-16).

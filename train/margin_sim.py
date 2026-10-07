@@ -30,6 +30,11 @@ FLOOR = 0.8
 HW_TARGET = 1.96 / (1.96 + NormalDist().inv_cdf(FLOOR))  # CI half-width / margin at which the null pass rate is 0.8
 SUBSET_INDEX_SE, SUBSET_ROWS = 0.738, 2008  # job-5cmat paired index SE on the 2,008-row subset (1,943 ok rows)
 
+#: Retention = cohort v3 (train/cohort_v3.py, sha256 498efa61...76da): 39,872 records; MEASURED usable items (K <= 16,
+#: T <= 2,048, real template + tokenizer) 36,696 RWKV7 / 36,691 Qwen3.5, the smaller is used
+#: (receipts/2026-10-07-D-cohort-v3/measure.json). Cohort v2's 1,420 items were the recorded shortfall.
+RETENTION_V3 = "cohort v3 retention role: 39,872 records, 36,691 measured usable items (min over RWKV7 / Q9)"
+
 #: Configured frozen evaluation sizes (what we HAVE). Cohort v2 header (train/cohorts/m2-dev-cohort-v2.jsonl.gz) and the
 #: frozen full DEV slice (12,104 rows minus the pre-declared unsupported ids; ~5.5k fields per 2,008 rows).
 EVAL_SIZES = {
@@ -39,10 +44,8 @@ EVAL_SIZES = {
     "g13_false_alarm": {"n": 1000, "unit": "clean units", "source": "cohort v2 steer_gate"},
     "g13_capability": {"n": 12_097, "unit": "Index DEV rows", "source": "full DEV minus pre-declared unsupported"},
     "g13_ece": {"n": 33_000, "unit": "Index DEV scored fields", "source": "full DEV (5,515 fields / 2,008 rows)"},
-    "g13_retention_acc": {"n": 1420, "unit": "retention decision items",
-                          "source": "cohort v2 retention role: 1,670 records x ~0.85 usable"},
-    "g13_retention_ece": {"n": 1420, "unit": "retention decision items",
-                          "source": "cohort v2 retention role: 1,670 records x ~0.85 usable"},
+    "g13_retention_acc": {"n": 36_691, "unit": "retention decision items", "source": RETENTION_V3},
+    "g13_retention_ece": {"n": 36_691, "unit": "retention decision items", "source": RETENTION_V3},
 }
 
 #: Pinned simulated required n (max over scale 0.5 / 1.0 runs, rounded up), enforced by the gate through
@@ -52,17 +55,7 @@ REQUIRED_N = {"g13_retention_acc": 9300, "g13_retention_ece": 33300}
 
 #: Criteria whose configured set is below the simulated requirement: recorded shortfall + plan. The margin is NOT
 #: relaxed; until the set is expanded the criterion is inconclusive-prone and the gate does not promote on it.
-SHORTFALLS = {
-    "g13_retention_acc": {
-        "plan": "cohort v3: expand the frozen retention role to >= n_required items from the PR #16 pool (content-"
-                "disjoint from dev/calibration/train, frozen and hashed before any arm is scored), before the first "
-                "G13 gate; parent arm re-cached once. Until then g13_retention_acc is inconclusive-prone and G13 does "
-                "not promote. Margin m_ret_acc stays 0.01."},
-    "g13_retention_ece": {
-        "plan": "same cohort v3 retention expansion (the debiased-ECE CI needs ~an order of magnitude more items than "
-                "accuracy); if the PR #16 pool cannot supply it, add a second frozen retention source and record it. "
-                "Margin m_ece stays 0.01; an inconclusive interval is never counted as calibration safety."},
-}
+SHORTFALLS: dict[str, dict] = {}  # retention (v2: 1,420 items) resolved by cohort v3; margins unchanged
 
 
 def _pct(r, level=0.95):

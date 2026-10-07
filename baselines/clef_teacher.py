@@ -22,7 +22,10 @@ Two phases, so every contamination check runs on the CPU before any GPU minute o
   7. ``train.heldout.scan`` (held-out D1-B fragments, k=8 templates) over every drawn record's text: zero hits;
      and ``harness.heldout.check_record`` (frozen held-out families of heldout-draw-v1, whose frozen_rule forbids any
      distillation set from targeting them): zero ``FrozenFamilyError``; its file sha256 goes into selection.json;
-  8. ``Cohort.assert_training_ids`` / ``assert_training_content`` on the draw.
+  8. ``Cohort.assert_training_ids`` / ``assert_training_content`` on the draw;
+  9. cohort v3 (``train.cohort_v3``: the G13 retention role expanded from THIS set) is removed from the pool before
+     the draw (by id, normalized content and source item) and the draw is re-checked against it. v3 holds no record
+     among the first 60,000 of the seed-0 order, so the 24,000 draw is unchanged (drawn ids sha256 2bbbf180...).
   It writes ``selection.json`` (identity of every check, drawn ids sha256) and ``selected-ids.txt``.
 
 ``export`` re-reads the records, keeps exactly the selected ids (content re-hashed against ``selection.json``), and runs
@@ -179,10 +182,17 @@ def select(a) -> int:
     if sorted(set(excl) - set(man)) and not a.allow_n_mismatch:
         raise IdentityMismatch(f"pinned exclusions not in the set: {sorted(set(excl) - set(man))[:3]}")
     n = int(a.n if a.n is not None else scope["draw"]["n_records"])
-    ids = draw_ids(man, excl, n, int(scope["draw"]["seed"]))
+    from train.cohort_v3 import cohort_v3, training_exclusion
+
+    co3 = cohort_v3()
+    from train.cohort_v3 import POINTERS, POOL_150K
+
+    pinned_150k = Path(scope["pointer"]).as_posix() == POINTERS[POOL_150K].relative_to(ROOT).as_posix()
+    v3x = training_exclusion(man, content, co3, pool=POOL_150K if pinned_150k and not a.allow_n_mismatch else None)
+    ids = draw_ids(man, set(excl) | v3x["ids"], n, int(scope["draw"]["seed"]))
     want = set(ids)
     guard = load_guard(a.guard_readiness, a.guard_standin)
-    forbidden, frozen, drift, texts, got = [], [], [], [], set()
+    forbidden, frozen, drift, texts, got, drawn = [], [], [], [], set(), []
     for rec in stream_records(files["records"], want, man):
         got.add(rec["id"])
         ch = record_content_hash(rec)
@@ -198,6 +208,7 @@ def select(a) -> int:
         except FrozenFamilyError as e:
             frozen.append(str(e))
         texts.append((rec["id"], record_text(rec)))
+        drawn.append(rec)
     missing = sorted(want - got)
     if missing or drift:
         raise IdentityMismatch(f"{len(missing)} drawn ids missing from the records file, {len(drift)} drifted "
@@ -209,12 +220,15 @@ def select(a) -> int:
                             f"{len(rep['hits'])} carry a held-out D1-B fragment ({rep['hits'][:2]})")
     co.assert_training_ids(ids)
     co.assert_training_content(content[i] for i in ids)
+    co3.assert_draw_disjoint(ids, content, records=drawn)
     sel = {"ok": True, "scope": scope["_scope_sha256"], "scope_path": str(a.scope), "pointer": scope["pointer"],
            "pointer_sha256": ptr["_pointer_sha256"], "files_uncompressed_sha256": sha,
            "lines_manifest_verified": getattr(stream_records, "lines_read", None), "n_set": len(man),
            "n_drawn": len(ids), "draw_seed": scope["draw"]["seed"],
            "drawn_ids_sha256": hashlib.sha256("\n".join(ids).encode()).hexdigest(),
            "heldout_excluded": sorted(excl), "cohort": co.identity(), "cohort_hits": {"by_id": 0, "by_content": 0},
+           "cohort_v3_excluded": {"n": v3x["n"], "rule": v3x["rule"], "cohort": v3x["cohort"],
+                                  "drawn_overlap": 0},
            "guard": guard.identity(), "guard_refused": 0, "frozen_family_refused": 0,
            "heldout_draw_v1_sha256": hconfig.HELDOUT_DRAW_V1_SHA256,
            "frozen_families": sorted(frozen_families()),

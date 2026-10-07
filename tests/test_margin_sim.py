@@ -41,10 +41,24 @@ def test_every_configured_evaluation_meets_the_simulated_size_or_its_shortfall_i
 
 
 def test_retention_size_is_a_parameter_and_the_required_n_is_reported(table):
-    r = table["g13_retention_acc"]
-    assert r["have"] == 1420 and r["need"] > 5000  # ~9k items at discordance 0.10 (assumption)
-    bigger = M.required_n("g13_retention_acc", scale=0.5, sizes={"g13_retention_acc": r["need"]})
-    assert bigger["meets"] and bigger["have"] == r["need"]
+    v2 = M.required_n("g13_retention_acc", scale=0.5, sizes={"g13_retention_acc": 1420})  # cohort v2: the shortfall
+    assert not v2["meets"] and v2["need"] > 5000  # ~9k items at discordance 0.10 (assumption)
+    bigger = M.required_n("g13_retention_acc", scale=0.5, sizes={"g13_retention_acc": v2["need"]})
+    assert bigger["meets"] and bigger["have"] == v2["need"]
+
+
+def test_retention_is_cohort_v3_measured_and_clears_the_pinned_required_n(table):
+    import json
+    from pathlib import Path
+
+    m = json.loads((Path(__file__).resolve().parents[1] / "receipts/2026-10-07-D-cohort-v3/measure.json"
+                    ).read_text(encoding="utf-8"))
+    assert m["cohort_sha256"] == (Path(__file__).resolve().parents[1] / "train/cohorts/m2-dev-cohort-v3.sha256"
+                                  ).read_text(encoding="utf-8").split()[0]
+    have = min(f["totals"]["all"]["items_kept"] for f in m["families"].values())
+    for c in ("g13_retention_acc", "g13_retention_ece"):
+        assert M.EVAL_SIZES[c]["n"] == have >= M.REQUIRED_N[c]  # the gate's exit-45 floor is met
+        assert table[c]["meets"] and table[c]["pass_at_have"] >= M.FLOOR
 
 
 def test_simulated_criteria_still_catch_a_regression_at_the_margin():

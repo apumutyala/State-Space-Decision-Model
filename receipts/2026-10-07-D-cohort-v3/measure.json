@@ -1,0 +1,421 @@
+{
+ "cohort_sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+ "composition_retention_role": {
+  "all": {
+   "by_source": {
+    "anli": 1334,
+    "banking77": 1432,
+    "boolq": 2657,
+    "clinc150": 1877,
+    "glaive_fc": 2469,
+    "gsm8k": 1630,
+    "hellaswag": 2949,
+    "humicroedit_s1": 1211,
+    "humicroedit_s2": 1642,
+    "mixed": 2855,
+    "mmlu_aux": 10226,
+    "nq": 3460,
+    "sst5": 889,
+    "synthetic_factchange": 218,
+    "toolace": 1875,
+    "when2call": 977,
+    "winogrande": 2171
+   },
+   "families": {
+    "continuation": 2883,
+    "factchange_delivery": 7,
+    "factchange_rating": 44,
+    "factchange_renewal": 9,
+    "factchange_schedule": 11,
+    "factchange_spend_limit": 96,
+    "factchange_stock": 51,
+    "fill_blank": 2098,
+    "humor_pair": 1642,
+    "humor_score": 1211,
+    "intent_banking": 1410,
+    "intent_general": 1834,
+    "math_mcq": 1622,
+    "mcq": 10176,
+    "multi": 3220,
+    "nli": 1305,
+    "response_select": 977,
+    "retrieval": 3460,
+    "sentiment_score": 826,
+    "tool_multi": 629,
+    "tool_select": 3715,
+    "yesno_passage": 2646
+   },
+   "items_by_area": {
+    "arts": 2853,
+    "knowledge": 13067,
+    "language": 11862,
+    "retrieval": 11440,
+    "tools": 5539
+   },
+   "length_words": {
+    "1024-4095": 2701,
+    "256-1023": 15276,
+    "64-255": 13249,
+    "<64": 6775,
+    ">=4096": 1871
+   },
+   "n_questions": 57070,
+   "n_questions_k_le_16": 49939,
+   "n_records": 39872,
+   "question_types": {
+    "choice": 50635,
+    "noul": 3036,
+    "score": 3399
+   },
+   "shapes": {
+    "multi": 3438,
+    "per_candidate_yesno": 568,
+    "per_tool_yesno": 629,
+    "single": 35237
+   }
+  },
+  "m2-150k": {
+   "by_source": {
+    "anli": 1183,
+    "banking77": 1315,
+    "boolq": 2556,
+    "clinc150": 1760,
+    "glaive_fc": 2469,
+    "gsm8k": 1512,
+    "hellaswag": 2815,
+    "humicroedit_s1": 1211,
+    "humicroedit_s2": 1642,
+    "mixed": 2760,
+    "mmlu_aux": 10075,
+    "nq": 3310,
+    "sst5": 805,
+    "synthetic_factchange": 118,
+    "toolace": 1741,
+    "when2call": 877,
+    "winogrande": 2053
+   },
+   "families": {
+    "continuation": 2749,
+    "factchange_spend_limit": 82,
+    "factchange_stock": 36,
+    "fill_blank": 1982,
+    "humor_pair": 1642,
+    "humor_score": 1211,
+    "intent_banking": 1293,
+    "intent_general": 1717,
+    "math_mcq": 1506,
+    "mcq": 10025,
+    "multi": 3119,
+    "nli": 1154,
+    "response_select": 877,
+    "retrieval": 3310,
+    "sentiment_score": 742,
+    "tool_multi": 594,
+    "tool_select": 3616,
+    "yesno_passage": 2547
+   },
+   "items_by_area": {
+    "arts": 2853,
+    "knowledge": 12732,
+    "language": 11260,
+    "retrieval": 10860,
+    "tools": 5205
+   },
+   "length_words": {
+    "1024-4095": 2587,
+    "256-1023": 14679,
+    "64-255": 12669,
+    "<64": 6472,
+    ">=4096": 1795
+   },
+   "n_questions": 54822,
+   "n_questions_k_le_16": 48076,
+   "n_records": 38202,
+   "question_types": {
+    "choice": 48699,
+    "noul": 2881,
+    "score": 3242
+   },
+   "shapes": {
+    "multi": 3237,
+    "per_candidate_yesno": 548,
+    "per_tool_yesno": 594,
+    "single": 33823
+   }
+  },
+  "pr16": {
+   "by_source": {
+    "anli": 151,
+    "banking77": 117,
+    "boolq": 101,
+    "clinc150": 117,
+    "gsm8k": 118,
+    "hellaswag": 134,
+    "mixed": 95,
+    "mmlu_aux": 151,
+    "nq": 150,
+    "sst5": 84,
+    "synthetic_factchange": 100,
+    "toolace": 134,
+    "when2call": 100,
+    "winogrande": 118
+   },
+   "families": {
+    "continuation": 134,
+    "factchange_delivery": 7,
+    "factchange_rating": 44,
+    "factchange_renewal": 9,
+    "factchange_schedule": 11,
+    "factchange_spend_limit": 14,
+    "factchange_stock": 15,
+    "fill_blank": 116,
+    "intent_banking": 117,
+    "intent_general": 117,
+    "math_mcq": 116,
+    "mcq": 151,
+    "multi": 101,
+    "nli": 151,
+    "response_select": 100,
+    "retrieval": 150,
+    "sentiment_score": 84,
+    "tool_multi": 35,
+    "tool_select": 99,
+    "yesno_passage": 99
+   },
+   "items_by_area": {
+    "knowledge": 335,
+    "language": 602,
+    "retrieval": 580,
+    "tools": 334
+   },
+   "length_words": {
+    "1024-4095": 114,
+    "256-1023": 597,
+    "64-255": 580,
+    "<64": 303,
+    ">=4096": 76
+   },
+   "n_questions": 2248,
+   "n_questions_k_le_16": 1863,
+   "n_records": 1670,
+   "question_types": {
+    "choice": 1936,
+    "noul": 155,
+    "score": 157
+   },
+   "shapes": {
+    "multi": 201,
+    "per_candidate_yesno": 20,
+    "per_tool_yesno": 35,
+    "single": 1414
+   }
+  }
+ },
+ "cost": {
+  "qwen3.5": {
+   "all": {
+    "calls": 63583,
+    "items": 36691,
+    "minutes": 79.7,
+    "minutes_conservative_pack_call": 267.7,
+    "positions": 22106052,
+    "rates": {
+     "call_s": 0.0595,
+     "job": "job-5cmat",
+     "pack_call_s": 0.2369,
+     "tok_s": 22144.0
+    },
+    "upper_bound_all_rows_minutes": 122.0,
+    "upper_bound_usd": 6.04,
+    "usd": 3.94,
+    "usd_conservative": 13.25
+   },
+   "m2-150k": {
+    "calls": 61085,
+    "items": 35201,
+    "minutes": 76.6,
+    "minutes_conservative_pack_call": 257.2,
+    "positions": 21289334,
+    "rates": {
+     "call_s": 0.0595,
+     "job": "job-5cmat",
+     "pack_call_s": 0.2369,
+     "tok_s": 22144.0
+    },
+    "upper_bound_all_rows_minutes": 117.6,
+    "upper_bound_usd": 5.82,
+    "usd": 3.79,
+    "usd_conservative": 12.73
+   },
+   "pr16": {
+    "calls": 2498,
+    "items": 1490,
+    "minutes": 3.1,
+    "minutes_conservative_pack_call": 10.5,
+    "positions": 816718,
+    "rates": {
+     "call_s": 0.0595,
+     "job": "job-5cmat",
+     "pack_call_s": 0.2369,
+     "tok_s": 22144.0
+    },
+    "upper_bound_all_rows_minutes": 4.4,
+    "upper_bound_usd": 0.22,
+    "usd": 0.15,
+    "usd_conservative": 0.52
+   }
+  },
+  "rwkv7": {
+   "all": {
+    "calls": 63741,
+    "items": 36696,
+    "minutes": 225.8,
+    "minutes_conservative_pack_call": 738.9,
+    "positions": 22877944,
+    "rates": {
+     "call_s": 0.117,
+     "job": "job-tkfaj",
+     "pack_call_s": 0.6,
+     "tok_s": 3757.0
+    },
+    "upper_bound_all_rows_minutes": 704.9,
+    "upper_bound_usd": 34.89,
+    "usd": 11.18,
+    "usd_conservative": 36.58
+   },
+   "m2-150k": {
+    "calls": 61239,
+    "items": 35205,
+    "minutes": 217.2,
+    "minutes_conservative_pack_call": 710.2,
+    "positions": 22037733,
+    "rates": {
+     "call_s": 0.117,
+     "job": "job-tkfaj",
+     "pack_call_s": 0.6,
+     "tok_s": 3757.0
+    },
+    "upper_bound_all_rows_minutes": 679.5,
+    "upper_bound_usd": 33.64,
+    "usd": 10.75,
+    "usd_conservative": 35.15
+   },
+   "pr16": {
+    "calls": 2502,
+    "items": 1491,
+    "minutes": 8.6,
+    "minutes_conservative_pack_call": 28.7,
+    "positions": 840211,
+    "rates": {
+     "call_s": 0.117,
+     "job": "job-tkfaj",
+     "pack_call_s": 0.6,
+     "tok_s": 3757.0
+    },
+    "upper_bound_all_rows_minutes": 25.4,
+    "upper_bound_usd": 1.26,
+    "usd": 0.43,
+    "usd_conservative": 1.42
+   }
+  }
+ },
+ "families": {
+  "qwen3.5": {
+   "refused_examples": [],
+   "secs": 143.1,
+   "totals": {
+    "all": {
+     "fork_calls_scored": 63583,
+     "fork_positions_scored": 22106052,
+     "fork_tokens_scored": 21805039,
+     "items_kept": 36691,
+     "prompt_tokens_all_rows": 162063242,
+     "records": 39872,
+     "records_with_items": 31547,
+     "refused": 0,
+     "rows": 57070,
+     "vol_refused": 0
+    },
+    "m2-150k": {
+     "fork_calls_scored": 61085,
+     "fork_positions_scored": 21289334,
+     "fork_tokens_scored": 21004829,
+     "items_kept": 35201,
+     "prompt_tokens_all_rows": 156207176,
+     "records": 38202,
+     "records_with_items": 30305,
+     "refused": 0,
+     "rows": 54822,
+     "vol_refused": 0
+    },
+    "pr16": {
+     "fork_calls_scored": 2498,
+     "fork_positions_scored": 816718,
+     "fork_tokens_scored": 800210,
+     "items_kept": 1490,
+     "prompt_tokens_all_rows": 5856066,
+     "records": 1670,
+     "records_with_items": 1242,
+     "refused": 0,
+     "rows": 2248,
+     "vol_refused": 0
+    }
+   }
+  },
+  "rwkv7": {
+   "refused_examples": [],
+   "secs": 697.6,
+   "totals": {
+    "all": {
+     "fork_calls_scored": 63741,
+     "fork_positions_scored": 22877944,
+     "fork_tokens_scored": 22549574,
+     "items_kept": 36696,
+     "prompt_tokens_all_rows": 158903447,
+     "records": 39872,
+     "records_with_items": 31586,
+     "refused": 0,
+     "rows": 57070,
+     "vol_refused": 0
+    },
+    "m2-150k": {
+     "fork_calls_scored": 61239,
+     "fork_positions_scored": 22037733,
+     "fork_tokens_scored": 21726257,
+     "items_kept": 35205,
+     "prompt_tokens_all_rows": 153179216,
+     "records": 38202,
+     "records_with_items": 30342,
+     "refused": 0,
+     "rows": 54822,
+     "vol_refused": 0
+    },
+    "pr16": {
+     "fork_calls_scored": 2502,
+     "fork_positions_scored": 840211,
+     "fork_tokens_scored": 823317,
+     "items_kept": 1491,
+     "prompt_tokens_all_rows": 5724231,
+     "records": 1670,
+     "records_with_items": 1244,
+     "refused": 0,
+     "rows": 2248,
+     "vol_refused": 0
+    }
+   }
+  }
+ },
+ "unit_spec": {
+  "layout": "ordered",
+  "max_k": 16,
+  "max_t": 2048,
+  "templates": {
+   "qwen3.5": "jrt-chatml-v1",
+   "rwkv7": "jrt-rwkv-g1-v1"
+  },
+  "tokenizers": {
+   "qwen3.5": "Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+   "rwkv7": "RWKV--RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba"
+  }
+ }
+}
