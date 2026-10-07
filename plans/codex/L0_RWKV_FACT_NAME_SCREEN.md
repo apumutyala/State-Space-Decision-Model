@@ -59,11 +59,13 @@ this host-available change does not isolate model RSS. The unchanged protocol
 projected 1,255.5 seconds for 192 requests/384 forwards before longer fact
 prompts and final checks, exceeding the cap; max_batch_rows=1 also projected
 over cap. Removing the bookends leaves nominally 128 requests/256 forwards
-(837.0 seconds by proportional arithmetic alone), not a measured completion
-prediction. Longer prompts and final checks remain uncertain. The runtime
+(879.78 seconds by the request-type calculation below), not a measured
+completion prediction. Longer prompts and final checks remain uncertain. The runtime
 floor and 1,200-second cap remain binding. Terminal stops write an incomplete
 receipt without metrics or eligibility; partial outputs remain preserved.
 No automatic retry is supplied.
+
+Using the 11 completed responses' `diagnostics.backend.call_latency_ms`, mean batch-2 cost is 3.872005 s and singleton cost is 1.998568 s; startup is 8.449448 s (first request timestamp minus supervisor start). Original projection: `128*(3.872005+1.998568) + 64*(2*3.872005) + 8.449448 = 1255.50 s`. Revised projection: `64*(3.872005+1.998568) + 64*(2*3.872005) + 8.449448 = 879.78 s`. Operation requests use one batch-2 and one singleton forward; four-option fact requests are projected as two batch-2 forwards. The latter is an unmeasured proxy from operation prompts, before longer fact prompts and final checks; it is not completion or efficacy evidence.
 
 Default and `--dry-run` generate the fixed registration, visible inputs and
 evaluator targets without importing Torch/Transformers/Safetensors or opening

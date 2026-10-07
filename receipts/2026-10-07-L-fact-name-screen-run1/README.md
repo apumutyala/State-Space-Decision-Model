@@ -19,3 +19,8 @@ Reducing max_batch_rows to 1 also projected over cap. The follow-up removes
 only the 64 direct inference bookends, keeps the paired initial-operation
 equality and full-state hashes, and raises the admission reserve to 9 GiB.
 No retry or parent execution was performed for this follow-up.
+
+The revised projection is **879.78 seconds**, using separate operation/fact
+request costs; exact inputs, formulas and proxy assumptions are in receipt.json.
+This corrects the earlier 837.0-second request-count scaling and remains an
+unmeasured projection before longer fact prompts and final checks.

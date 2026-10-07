@@ -21,9 +21,24 @@
   "elapsed_seconds": 74.06299999999464,
   "exec_wrapper_exit_code": 1,
   "feasibility": {
+    "assumptions": "Each 3-option operation uses one batch-2 plus one singleton; each 4-option fact request is an unmeasured two-batch-2 proxy using operation-prompt latencies. Longer fact prompts and final checks are excluded.",
+    "correction": "Supersedes the erroneous 837.0-second proportional request-count estimate; removing operation bookends changes the request-type mix.",
     "kind": "projection only; no efficacy evidence",
     "max_batch_rows_1_also_projected_over_cap": true,
-    "projected_seconds_before_longer_prompts_and_checks": 1255.5,
+    "original_formula": "128*(mean_batch_2_seconds+mean_singleton_seconds)+64*(2*mean_batch_2_seconds)+startup_seconds",
+    "projected_seconds_before_longer_prompts_and_checks": 1255.4994785454546,
+    "projection_inputs": {
+      "completed_operation_responses": 11,
+      "latency_source": "raw.jsonl response.ssdm.diagnostics.backend.call_latency_ms; index 0=batch-2, index 1=singleton",
+      "mean_batch_2_seconds": 3.872005181818182,
+      "mean_singleton_seconds": 1.998568,
+      "startup_seconds": 8.449448,
+      "startup_source": "first raw request at_utc minus (launcher terminal at_utc minus elapsed_seconds)"
+    },
+    "revised_formula": "64*(mean_batch_2_seconds+mean_singleton_seconds)+64*(2*mean_batch_2_seconds)+startup_seconds",
+    "revised_projected_seconds_before_longer_prompts_and_checks": 879.782794909091,
+    "revised_protocol_forwards": 256,
+    "revised_protocol_requests": 128,
     "unchanged_protocol_forwards": 384,
     "unchanged_protocol_requests": 192
   },
