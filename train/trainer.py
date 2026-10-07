@@ -37,7 +37,7 @@ from .guard import SplitGuard
 from .lineage import diff as lineage_diff
 from .lineage import lineage
 from .lora import apply_lora, lora_parameters
-from .losses import LossConfig, decision_loss
+from .losses import LossConfig, add_order_consistency, aligned_order_js, decision_loss
 
 
 def teacher_tensor(batch, lp: torch.Tensor) -> torch.Tensor:
@@ -100,7 +100,7 @@ class TrainConfig:
 
     def to_json(self) -> dict:
         d = asdict(self)
-        d["loss"] = self.loss.identity()  # KD fields only when KD is on (old hashes unchanged)
+        d["loss"] = self.loss.identity()  # optional KD/order-consistency fields only when enabled (old hashes unchanged)
         if d["axis_loss_weight"] == 0.0:
             d.pop("axis_loss_weight")  # preserve legacy config identities
         for k in self.EXECUTION:  # at their defaults the execution fields are left out: old records stay identical
@@ -140,6 +140,38 @@ def row_groups(lengths: list[int], row_batch: int, row_tokens: int = 0) -> list[
         if g is not None and len(g) < row_batch and (
                 not row_tokens or (len(g) + 1) * lengths[g[0]] <= row_tokens):
             g.append(i)
+        else:
+            groups.append([i])
+    return groups
+
+
+def row_groups_with_views(base_lengths: list[int], view_lengths: list[int], row_batch: int,
+                          row_tokens: int = 0) -> list[list[int]]:
+    """Group base/view rows under the total padded-token budget for their separate forward calls.
+
+    ``view_lengths[i] == 0`` means row i has no paired view. A group consumes
+    ``n_base * max(base_lengths) + n_views * max(view_lengths for paired rows)`` padded tokens while both
+    autograd graphs are live. This avoids undercounting when the longest base and view belong to different rows.
+    """
+    if len(base_lengths) != len(view_lengths):
+        raise ValueError("base_lengths and view_lengths must have the same length")
+    if row_batch < 1 or row_tokens < 0:
+        raise ValueError("row_batch must be positive and row_tokens nonnegative")
+    if any(type(x) is not int or x < 1 for x in base_lengths) or any(type(x) is not int or x < 0 for x in view_lengths):
+        raise ValueError("base lengths must be positive integers and view lengths nonnegative integers")
+
+    def padded(group: list[int]) -> int:
+        base_tokens = len(group) * max(base_lengths[i] for i in group)
+        paired = [i for i in group if view_lengths[i] > 0]
+        view_tokens = len(paired) * max((view_lengths[i] for i in paired), default=0)
+        return base_tokens + view_tokens
+
+    order = sorted(range(len(base_lengths)), key=lambda i: -max(base_lengths[i], view_lengths[i]))
+    groups: list[list[int]] = []
+    for i in order:
+        group = groups[-1] if groups else None
+        if group is not None and len(group) < row_batch and (not row_tokens or padded(group + [i]) <= row_tokens):
+            group.append(i)
         else:
             groups.append([i])
     return groups
@@ -203,6 +235,34 @@ class Trainer:
             raise ValueError("loss.kd_alpha > 0 but no training item carries a teacher distribution: call "
                              "train.teacher.attach(items, load_teacher(...)) first (a KD run without a teacher is the "
                              "clef arm under another name)")
+        if cfg.loss.order_consistency_weight > 0:
+            if cfg.loss.kd:
+                raise ValueError("order-consistency arm currently requires KD off; view-teacher semantics are not registered")
+            if cfg.axis_loss_weight != 0.0:
+                raise ValueError("order-consistency arm currently requires axis_loss_weight=0; view-axis semantics are not registered")
+            paired = [i for i in train_items if getattr(i, "view", None) is not None]
+            if not paired:
+                raise ValueError("order_consistency_weight > 0 but no training items carry eligible views")
+            if any(getattr(i, "view", None) is not None or getattr(i, "view_perm", None) is not None
+                   for i in (eval_items or [])):
+                raise ValueError("order-consistency views are training-only; eval_items must not contain views")
+            for item in train_items:
+                view, perm = getattr(item, "view", None), getattr(item, "view_perm", None)
+                if (view is None) != (perm is None):
+                    raise ValueError(f"{item.id}: view and view_perm must either both be present or both be absent")
+                if view is None:
+                    continue
+                k = len(item.row.option_ids)
+                if (item.row.qtype != "choice" or view.row.qtype != "choice" or k < 2
+                        or view.view is not None or view.view_perm is not None):
+                    raise ValueError(f"{item.id}: malformed or nested order-consistency view")
+                if tuple(item.row.option_ids) != tuple(view.row.option_ids) or len(perm) != k:
+                    raise ValueError(f"{item.id}: view must preserve the canonical option-ID domain")
+                if sorted(perm) != list(range(k)) or perm[view.label] != item.label:
+                    raise ValueError(f"{item.id}: view label/permutation does not preserve the gold option content")
+        elif any(getattr(i, "view", None) is not None or getattr(i, "view_perm", None) is not None
+                 for i in (eval_items or [])):
+            raise ValueError("eval_items must not contain order-consistency views")
         self._seed_all(cfg.seed)
         self.guard = guard
         self.model, self.cfg = model, cfg
@@ -252,7 +312,7 @@ class Trainer:
     def _autocast(self):
         if not self.cfg.bf16:
             return nullcontext()
-        dev = "cuda" if torch.cuda.is_available() else "cpu"
+        dev = "cuda" if torch.cuda.is_available() and torch.cuda.device_count() > 0 else "cpu"
         return torch.autocast(device_type=dev, dtype=torch.bfloat16)
 
     def _row_loss(self, batch: list[Item], weight: float) -> float:
@@ -267,6 +327,25 @@ class Trainer:
         y = torch.tensor([i.label for i in batch], device=lp.device)
         teacher = teacher_tensor(batch, lp) if self.cfg.loss.kd else None
         loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss, teacher)
+        weight_order = self.cfg.loss.order_consistency_weight
+        if weight_order:
+            paired = [(i, item) for i, item in enumerate(batch) if getattr(item, "view", None) is not None]
+            if paired:
+                with self._autocast():
+                    view_fw = self.model([item.view.row for _, item in paired])
+                view_lp = view_fw.log_probs.float()
+                view_y = torch.tensor([item.view.label for _, item in paired], device=view_lp.device)
+                view_supervised = decision_loss(
+                    view_lp, view_y, [item.view.row.qtype for _, item in paired], self.cfg.loss
+                )
+                js = []
+                for j, (base_i, item) in enumerate(paired):
+                    k = len(item.row.option_ids)
+                    js.append(aligned_order_js(lp[base_i, :k], view_lp[j, :k], tuple(item.view_perm)))
+                # Express extra-view terms per base row. _row_loss weights micro-batches by base-row count;
+                # normalising each group by base rows makes gradients invariant to row_batch/group composition.
+                loss = add_order_consistency(loss, view_supervised, torch.stack(js).mean(),
+                                             len(batch), len(paired), weight_order)
         weight = self.cfg.axis_loss_weight
         if type(weight) not in (int, float) or not 0 <= weight < float("inf"):
             raise ValueError("axis_loss_weight must be finite and nonnegative")
@@ -290,7 +369,13 @@ class Trainer:
             # step loss sum_m mean(m) / grad_accum = sum_rows / (batch_size x grad_accum) = sum_g mean(g) x |g| / n
             rows = [it for _ in range(self.cfg.grad_accum) for it in self._next_batch()]
             n = len(rows)
-            for g in row_groups([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens):
+            if self.cfg.loss.order_consistency_weight:
+                base_lengths = [len(it.row.ids) for it in rows]
+                view_lengths = [len(it.view.row.ids) if it.view is not None else 0 for it in rows]
+                groups = row_groups_with_views(base_lengths, view_lengths, self.cfg.row_batch, self.cfg.row_tokens)
+            else:
+                groups = row_groups([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens)
+            for g in groups:
                 total += self._row_loss([rows[j] for j in g], len(g) / n)
             return self._finish_step(total)
         for _ in range(self.cfg.grad_accum):

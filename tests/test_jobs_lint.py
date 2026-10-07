@@ -158,14 +158,34 @@ def test_lessons_entries_name_an_enforcing_check():
         assert "**Check:**" in block and "**Status:**" in block, block.splitlines()[0]
 
 
-def test_coordination_has_no_superseded_spend_rule():
-    """L-18: the later 'Review sufficiency' user decision governs spend; the old blocking sentence must not return."""
+def test_coordination_requires_bounded_autonomous_spend():
+    """L-18: standing budget authorization removes per-job approval, not spend safeguards."""
     t = (ROOT / "COORDINATION.md").read_text(encoding="utf-8")
+    checklist = (ROOT / "jobs/LAUNCH_CHECKLIST.md").read_text(encoding="utf-8")
+    assert "Every paid job requires its own `spend` issue" in t
+    assert "Each paid rung needs the previous rung's merged receipt" in t
+    assert "no per-job user OK is required inside those limits" in t
+    assert "independent fresh-context adversarial review" in t
+    assert "live provider preflight" in t
+    assert "The user's standing authorization lets Codex submit SF jobs autonomously" in t
+    assert "shared $525 SF envelope" in t and "$250 System 1 allocation" in t
+    assert "planned `LEDGER.md` row" in t and "hard runtime/cost stop" in t
+    assert "set the workspace cap" in t and "`validate_job` to pass without `force`" in t
+    assert "neither can enlarge the envelope or allocation" in t
+    assert "Any spend beyond either limit" in t
+    assert "use of Lambda" in t
+    assert "Other collaborators require the user's explicit OK" in t
+    assert "outward-facing/public action still requires the user's explicit authorization" in t
+    assert "Anything reaching `main` needs the user's approval." in t
+    assert "independent fresh-context reviewer to approve the exact job and final launch bundle" in checklist
+    assert "Refresh live credit balance and expiry, MTD, outstanding commitments and remaining track allocation" in checklist
+    assert "set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)" in checklist
+    assert "validate_job`. It must pass without `force`" in checklist
     assert "Spend still needs the other agent's acknowledgement on a `spend` issue." not in t
-    assert "never applies to `main` or to spend approval" not in t
-    assert "requested but not blocking" in t
-    assert "stop condition, acknowledged by the other agent." not in t  # spend ladder item 2 (PR #93 review)
-    assert "reviewed per 'Review sufficiency' (the other agent's acknowledgement is requested but not blocking)" in t
+    assert "stop condition, acknowledged by the other agent." not in t
+    assert "Do not impose the superseded fixed ≤$20 qualification ceiling." in t
+    cap_mentions = [line for line in t.splitlines() if "$20" in line]
+    assert len(cap_mentions) == 2 and all("superseded" in line for line in cap_mentions)
 
 
 def test_rate_guard_requires_an_executed_call():
