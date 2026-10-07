@@ -13,7 +13,9 @@ from language_growth.kernel import check_program
 from language_growth.parent_bridge import DECISION_SCHEMA, FINGERPRINT_ALGORITHM, legacy_request_fingerprint
 from language_growth.planner import plan_checked_answer
 from language_growth.realize import render_checked
+from language_growth.multirecord_data import _world as l1_world, multirecord_split_spec
 from language_growth.semantic_axis_fixtures import FIELDS, LEVELS, RECEIPT_DIR, SPLITS, TASKS, canonical, generate_split, manifest, rows, sha, write_pack
+from language_growth.semantic_axis_fixtures import NAME_SPLITS, SEED, REFS
 
 REVISION = "semantic-axis-scripted-oracle:v1"
 CONFIG = {"calibration": {"kind": "none", "id": "semantic-axis-scripted-oracle"},
@@ -231,6 +233,35 @@ class SemanticAxisFixtureTests(unittest.TestCase):
         for attribute in ("entity", "catalog"):
             sets = [{r["entity_ref"] for g in self.cohorts[s][1] for v in g["variants"] for r in v["catalog"]["records"]} if attribute == "entity" else {sha(v["catalog"]) for g in self.cohorts[s][1] for v in g["variants"]} for s in SPLITS]
             self.assertFalse(sets[0] & sets[1])
+
+    def test_recurring_names_all_ref_bindings_and_no_visible_world_ids(self):
+        for split_index, split in enumerate(SPLITS):
+            inputs, groups = self.cohorts[split]
+            pool = set(multirecord_split_spec(NAME_SPLITS[split_index])["names"])
+            worlds, bindings = {name: set() for name in pool}, {name: set() for name in pool}
+            for world_index, group in enumerate(groups[::2]):
+                _, source = l1_world(NAME_SPLITS[split_index], SEED, world_index)
+                records = group["variants"][0]["catalog"]["records"]
+                self.assertEqual([r["entity_ref"] for r in records], [r["entity_ref"] for r in source["records"]])
+                self.assertEqual(len({r["entity_ref"] for r in records}), 4)
+                for record in records:
+                    name = record["entity_ref"]
+                    self.assertIn(name, pool)
+                    self.assertFalse(any(c.isdigit() for c in name))
+                    worlds[name].add(group["world_id"])
+                    bindings[name].add(record["record_ref"])
+            self.assertTrue(all(len(occurrences) > 1 for occurrences in worlds.values()))
+            self.assertTrue(all(refs == set(REFS) for refs in bindings.values()))
+            for field in FIELDS:
+                observed = [Decimal(str(r["fields"][field]["value"])) for g in groups
+                            for v in g["variants"] for r in v["catalog"]["records"]]
+                prior_key = "price_cents_range" if field == "price" else "warranty_range"
+                prior_max = max(multirecord_split_spec(s)[prior_key][1] for s in NAME_SPLITS)
+                self.assertGreater(min(observed) * (100 if field == "price" else 1), prior_max)
+            visible = rows(inputs).decode("ascii")
+            for group in groups:
+                self.assertNotIn(group["world_id"], visible)
+                self.assertNotIn(group["axis_group_id"], visible)
 
     def test_fresh_atomic_bundle_duplicate_and_failure_preserve_artifacts(self):
         baseline = {p.name: p.read_bytes() for p in RECEIPT_DIR.iterdir() if p.is_file()}

@@ -22,6 +22,15 @@ unrelated-field comparison. Per split: 64 axis groups, 192 variants and
 1,152 inputs/programs. The shared base-world ID is the future uncertainty
 clustering unit; sample size is not an adequacy or statistical-power claim.
 
+Visible entity names use the pinned PR #133 L1 multiworld generator's
+seed-1707 sampling from six split-disjoint names per domain. Names recur
+across worlds and each name binds to all four record refs; no numeric world
+suffix is present. Low/equal/high variants preserve their mapping. These
+name pools intentionally overlap the original L1 development cohorts; the
+new scalar domains remain disjoint from those cohorts and from one another.
+This is not unseen-name generalization evidence. Scorer world/axis-group IDs
+remain absent from planner inputs.
+
 Each input contains exactly `task_input`, permitted `host` and `catalog`.
 It can be passed directly to `plan_checked_answer` with a separately supplied
 provider. The existing planner synthesizes typed operation/fact/operand/

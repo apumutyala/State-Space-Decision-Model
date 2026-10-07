@@ -16,12 +16,17 @@ from pathlib import Path
 from typing import Any
 
 from .kernel import check_program
+from .multirecord_data import (
+    MULTIWORLD_SEED, MULTIWORLD_TRAIN_SPLIT, MULTIWORLD_VALIDATION_SPLIT,
+    _world as _l1_world,
+)
 from .realize import render_checked
 
 BASE_COMMIT = "e94c79793082fc8643bae34ac52813760f1950e8"
 WORLD_COUNT = 32
-SEED = 2707
+SEED = MULTIWORLD_SEED
 SPLITS = ("semantic_axis_discovery", "semantic_axis_validation")
+NAME_SPLITS = (MULTIWORLD_TRAIN_SPLIT, MULTIWORLD_VALIDATION_SPLIT)
 LEVELS = ("low", "equal", "high")
 TASKS = ("direct_read", "forward_compare", "reverse_compare", "explanation",
          "unrelated_read", "unrelated_compare")
@@ -59,13 +64,15 @@ def _relation(left: int, right: int) -> str:
 
 def _world(split: str, index: int) -> tuple[dict[str, Any], dict[str, Any]]:
     domain = SPLITS.index(split)
-    # Disjoint entity identities and numeric ranges; shared schema/refs are intentional.
-    names = ("Beryl", "Coral", "Flint", "Mica") if domain == 0 else ("Aspen", "Birch", "Maple", "Willow")
+    # Reuse the pinned L1 generator's recurring names and changing ref bindings.
+    # Scalar domains below are fresh; shared L1 name pools are intentional.
+    _, name_catalog = _l1_world(NAME_SPLITS[domain], SEED, index)
+    names = [record["entity_ref"] for record in name_catalog["records"]]
     records = []
     for position, name in enumerate(names):
         records.append({
             "record_ref": REFS[position], "version": 1,
-            "entity_ref": f"{name}{index + 1:02d}", "source_ref": "synthetic-premises",
+            "entity_ref": name, "source_ref": "synthetic-premises",
             "audience": "public", "epistemic_class": "authoritative_structured_premise",
             "freshness": "current", "conflicts": [],
             "fields": {"price": _field(70000 + domain * 40000 + index * 401 + position * 79, "price"),
@@ -206,6 +213,8 @@ def generate_split(split: str, world_count: int = WORLD_COUNT) -> tuple[list[dic
 def manifest(split: str, inputs: list[dict[str, Any]], groups: list[dict[str, Any]]) -> dict[str, Any]:
     return {"schema": "ssdm.semantic_axis_fixture_manifest.v1", "split": split,
             "fixture_only": True, "label_status": LABEL_STATUS, "seed": SEED,
+            "name_mapping_source": {"module": "language_growth.multirecord_data._world",
+                                    "split": NAME_SPLITS[SPLITS.index(split)], "base_commit": BASE_COMMIT},
             "world_count": len({g["world_id"] for g in groups}), "axis_group_count": len(groups),
             "variant_count": len(groups) * len(LEVELS),
             "input_count": len(inputs), "program_count": len(inputs),
