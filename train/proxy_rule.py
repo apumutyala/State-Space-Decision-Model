@@ -103,6 +103,27 @@ PLAN.md allows open-weight teachers; recipe per techniques/10) as two candidate 
   Unchanged: GO_THRESHOLD 50.0 on HOLDOUT; below it the verdict is "escalate" to the user; splits, editions, budget,
   seeds, the transfer rule.
 
+AMENDMENT A3 (2026-10-07, written AFTER the stock-check failed with delta=+0.772; see
+receipts/2026-10-07-D-q9-proxy-stock-check; before any recipe, select or holdout data). Changes ONLY the A1(d)
+stock-check, a validity check of the cache (not the go/no-go rule). The failure is fully explained by the reference's
+own serving failures: job-5cmat answered 58 SELECT rows with status "error" (the documented POP909 OOM, fixed in
+#102) and 7 with "unsupported", all scored as wrong, while the cache answers all 65; with those rows masked the
+delta is +0.047. No recipe has been trained or scored, no select_summary and no HOLDOUT score exist.
+  (a) Rule: the stock-check compares the cached readout to the reference ONLY on rows the reference answered with
+      status "ok". A row whose reference status is anything else (error / unsupported / ...) is MASKED from both
+      sides: the cached results carry the reference's own row for it (``stock_check_mask``), so it contributes
+      identically to the cached index and to the reference's 38.27, and the delta measures only the rows the
+      reference answered. The tolerance is unchanged: |delta| <= STOCK_CHECK_TOL (0.3).
+  (b) Reference pinned: the reference is job-5cmat's stock results file, sha256 ``STOCK_REFERENCE_SHA256``; it must
+      hold exactly the SELECT ids (no missing, extra or duplicate rows).
+  (c) Reference failure cap: the check FAILS CLOSED if more than ``STOCK_CHECK_MAX_MASKED_FRAC`` (5%) of the SELECT
+      rows are masked.
+  (d) Reporting: stock_check.json carries the masked delta (decisive), the unmasked delta, the masked-row count,
+      fraction and ids, and both paired comparisons vs job-5cmat.
+  Unchanged: GO_THRESHOLD 50.0 on HOLDOUT; below it the verdict is "escalate" to the user; STOCK_CHECK_TOL 0.3;
+  STOCK_Q9_SELECT 38.27; splits, editions, budget, seeds, recipes, teacher, the transfer rule. A3 is recorded in
+  ``AMENDMENTS`` (receipts and select_summary carry it).
+
 Proxy -> real transfer (``adopt_ranking``): the proxy ranking is adopted for the S2 cell recipe only if, over the
 recipes that have BOTH a proxy score and a real (head + LoRA) cell score, there are >= MIN_TRANSFER_RECIPES of them,
 Kendall tau-a >= TAU_MIN, and on the one real-cell calibration pair (the proxy's best and worst recipe) the real cells
@@ -136,7 +157,7 @@ BOOTSTRAP_SEED = 0
 SELECT_SEEDS = (0,)
 HOLDOUT_SEEDS = (0, 1, 2)
 #: --- amendment A1 ---
-AMENDMENTS = ("A1", "A2")
+AMENDMENTS = ("A1", "A2", "A3")
 #: (a) families-v1 groups in the 0.2.1 DEV edition (harness/families.py members(group, "0.2.1") at families-v1.json
 #: sha256 FAMILIES_V1_SHA256 and heldout-draw-v1)
 FAMILIES_V1_SHA256 = "e0e4bd5f76ca928f2a05c3f52150592aed462b4018350346eb723e9b40096f46"
@@ -199,6 +220,13 @@ TEACHER = {
     "rows": 24000,
     "status_counts": {"ok": 23458, "exhausted": 542},
 }
+#: --- amendment A3 (stock-check masking; see the module docstring) ---
+#: the stock-check reference: job-5cmat's stock results file (SELECT, 2,008 rows)
+STOCK_REFERENCE_SHA256 = "646b61490a37b3aa8887a57bb1a6797f8254c0136a63a0c3cf18d00f90497beb"
+#: a reference row counts (is not masked) only with this status
+STOCK_CHECK_REFERENCE_OK = "ok"
+#: fail closed above this fraction of masked SELECT rows
+STOCK_CHECK_MAX_MASKED_FRAC = 0.05
 #: KD recipes and the recipe each is compared against (same arm, data and budget)
 KD_RECIPES = ("R16", "R17")
 KD_CONTROL = "R01"
@@ -217,11 +245,35 @@ def domain_of(catalog_id: int) -> tuple[str, ...]:
     return out + (("new_domain_frozen",) if n in NEW_DOMAIN_FROZEN else ())
 
 
-def stock_check(point: float) -> dict:
-    """A1(d): the cache-recomputed stock readout on SELECT must reproduce job-5cmat within STOCK_CHECK_TOL."""
-    d = float(point) - STOCK_Q9_SELECT
+def stock_check_mask(cached_rows: Sequence[Mapping], reference_rows: Sequence[Mapping],
+                     ids: Sequence[str]) -> tuple[list, list[str]]:
+    """A3(a, b): (cached rows with every reference-failed row replaced by the reference's own row, masked ids).
+    Both row lists must hold exactly ``ids`` once each; a row is masked iff its reference status != "ok"."""
+    want = set(ids)
+    for name, rows in (("cached", cached_rows), ("reference", reference_rows)):
+        got = [r["run_id"] for r in rows]
+        if len(got) != len(set(got)) or set(got) != want:
+            raise ValueError(f"A3: {name} rows do not hold exactly the {len(want)} SELECT ids once each")
+    ref = {r["run_id"]: r for r in reference_rows}
+    masked = sorted(k for k, r in ref.items() if r.get("status") != STOCK_CHECK_REFERENCE_OK)
+    m = set(masked)
+    return [dict(ref[r["run_id"]]) if r["run_id"] in m else dict(r) for r in cached_rows], masked
+
+
+def stock_check(point: float, *, unmasked_point: float, masked_ids: Sequence[str], n_rows: int) -> dict:
+    """A1(d) as amended by A3: ``point`` = the cache-recomputed stock readout on SELECT with the reference's failed rows
+    masked (``stock_check_mask``); it must reproduce job-5cmat's 38.27 within STOCK_CHECK_TOL, and at most
+    STOCK_CHECK_MAX_MASKED_FRAC of the ``n_rows`` SELECT rows may be masked (else fail closed)."""
+    if int(n_rows) <= 0:
+        raise ValueError("A3: n_rows must be the SELECT row count")
+    d, du = float(point) - STOCK_Q9_SELECT, float(unmasked_point) - STOCK_Q9_SELECT
+    frac = len(masked_ids) / int(n_rows)
+    within, cap_ok = abs(d) <= STOCK_CHECK_TOL, frac <= STOCK_CHECK_MAX_MASKED_FRAC
     return {"point": float(point), "reference": STOCK_Q9_SELECT, "delta": d, "tol": STOCK_CHECK_TOL,
-            "ok": abs(d) <= STOCK_CHECK_TOL}
+            "unmasked_point": float(unmasked_point), "unmasked_delta": du,
+            "masked": {"n": len(masked_ids), "n_rows": int(n_rows), "frac": frac,
+                       "max_frac": STOCK_CHECK_MAX_MASKED_FRAC, "ids": sorted(masked_ids)},
+            "within_tol": within, "mask_cap_ok": cap_ok, "amendment": "A3", "ok": within and cap_ok}
 
 
 def choose(select_scores: Mapping[str, float], recipes: Sequence[Mapping] = RECIPES) -> str | None:

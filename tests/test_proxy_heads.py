@@ -441,3 +441,48 @@ def test_holdout_refuses_a_summary_made_under_other_rule_amendments(tmp_path, mo
     with pytest.raises(PL.OutOfOrder, match="amendments"):
         PL.holdout(out, cache, dev, clef, 10)
     assert not list(out.glob("*_holdout")) and not (out / "holdout_attempt.json").exists()
+
+
+def test_a3_stock_check_wiring_masks_reference_failures(tmp_path, monkeypatch):
+    """A3: stock-check needs the pinned --stock, scores the cached readout with the reference's failed rows masked,
+    reports both deltas and the masked ids, and fails closed on a wrong reference file."""
+    ids = [f"r{i}" for i in range(40)]
+    ref = tmp_path / "ref.jsonl"
+    ref.write_text("".join(json.dumps({"run_id": i, "status": "error" if i == "r3" else "ok"}) + "\n" for i in ids),
+                   encoding="utf-8")
+    monkeypatch.setattr(PL, "subset_ids", lambda subset: list(ids))
+    monkeypatch.setattr(PL, "load_split", lambda *a, **k: [])
+    monkeypatch.setattr(PL, "stock_predictions", lambda reqs: {})
+    monkeypatch.setattr(PL, "_dev_rows", lambda path, want: {})
+
+    def fake_write(path, dev_rows, reqs, preds, model):
+        Path(path).write_text("".join(json.dumps({"run_id": i, "status": "ok"}) + "\n" for i in ids), encoding="utf-8")
+
+    def fake_score(path, subset, B):  # index = 38.27 + 0.4 * (cached-ok rows the reference did not answer)
+        rows = [json.loads(x) for x in Path(path).read_text(encoding="utf-8").splitlines()]
+        return {"slice_index": {"index": {"point": 38.27 + 0.4 * (rows[3]["status"] == "ok")}}}
+
+    monkeypatch.setattr(PL, "write_results", fake_write)
+    monkeypatch.setattr(PL, "score", fake_score)
+    monkeypatch.setattr(PL, "compare", lambda c, b, s, B: {"candidate": c})
+    out = tmp_path / "o"
+    out.mkdir()
+    with pytest.raises(PL.OutOfOrder, match="--stock"):
+        PL.stock_check(out, "c", "d", None, 10)
+    with pytest.raises(PL.OutOfOrder, match="pinned reference"):
+        PL.stock_check(out, "c", "d", str(ref), 10)
+    monkeypatch.setattr(R, "STOCK_REFERENCE_SHA256", PL._sha(ref))
+    rep = PL.stock_check(out, "c", "d", str(ref), 10)
+    assert rep["ok"] and abs(rep["delta"]) < 1e-9 and abs(rep["unmasked_delta"] - 0.4) < 1e-9
+    assert rep["masked"] == {"n": 1, "n_rows": 40, "frac": 1 / 40, "max_frac": 0.05, "ids": ["r3"]}
+    assert rep["vs_job_5cmat"]["candidate"].endswith("stock_from_cache_select_masked.jsonl")
+    assert rep["vs_job_5cmat_unmasked"]["candidate"].endswith("stock_from_cache_select.jsonl")
+    assert json.loads((out / "stock_check.json").read_text(encoding="utf-8")) == rep
+    # three failed reference rows of 40 = 7.5% > 5%: fail closed although the masked delta is 0
+    ref.write_text("".join(json.dumps({"run_id": i, "status": "error" if i in ("r3", "r4", "r5") else "ok"}) + "\n"
+                           for i in ids), encoding="utf-8")
+    monkeypatch.setattr(R, "STOCK_REFERENCE_SHA256", PL._sha(ref))
+    rep = PL.stock_check(out, "c", "d", str(ref), 10)
+    assert not rep["ok"] and rep["within_tol"] and not rep["mask_cap_ok"]
+    with pytest.raises(PL.OutOfOrder, match="stock-check failed"):
+        PL.require_stock_check(out)

@@ -580,14 +580,32 @@ def holdout(out: Path, cache: str, dev_rows: str, clef: str, B: int, recipe: str
 
 
 def stock_check(out: Path, cache: str, dev_rows: str, stock: str | None, B: int) -> dict:
-    """A1(d): the stock readout recomputed from the cached option log-likelihoods on SELECT vs job-5cmat."""
+    """A1(d) as amended by A3: the stock readout recomputed from the cached option log-likelihoods on SELECT vs
+    job-5cmat (``--stock``, pinned by sha256), compared only on the rows job-5cmat answered "ok"."""
+    from harness.jsonl import read_jsonl_strict
+
+    if not stock:
+        raise OutOfOrder("stock-check needs --stock (job-5cmat's results; A3 masks its failed rows)")
+    if _sha(stock) != R.STOCK_REFERENCE_SHA256:
+        raise OutOfOrder(f"--stock sha256 {_sha(stock)[:12]} != the pinned reference {R.STOCK_REFERENCE_SHA256[:12]} (A3(b))")
     reqs = load_split(cache, "stock", "select")
-    ids = set(subset_ids(R.SELECT_SUBSET))
+    ids = subset_ids(R.SELECT_SUBSET)
+    sub = _subset_path(R.SELECT_SUBSET)
     res = out / "stock_from_cache_select.jsonl"
-    write_results(res, _dev_rows(dev_rows, ids), reqs, stock_predictions(reqs), "stock-from-cache")
-    point = score(str(res), _subset_path(R.SELECT_SUBSET), B)["slice_index"]["index"]["point"]
-    rep = {**R.stock_check(point), "vs_job_5cmat": compare(str(res), stock, _subset_path(R.SELECT_SUBSET), B) if stock else None,
-           "results_sha256": _sha(res)}
+    write_results(res, _dev_rows(dev_rows, set(ids)), reqs, stock_predictions(reqs), "stock-from-cache")
+    unmasked = score(str(res), sub, B)["slice_index"]["index"]["point"]
+    try:
+        rows, masked = R.stock_check_mask(read_jsonl_strict(res), read_jsonl_strict(stock), ids)
+    except ValueError as e:
+        raise OutOfOrder(str(e)) from e
+    resm = out / "stock_from_cache_select_masked.jsonl"
+    with open(resm, "w", encoding="utf-8", newline="\n") as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    point = score(str(resm), sub, B)["slice_index"]["index"]["point"]
+    rep = {**R.stock_check(point, unmasked_point=unmasked, masked_ids=masked, n_rows=len(ids)),
+           "vs_job_5cmat": compare(str(resm), stock, sub, B), "vs_job_5cmat_unmasked": compare(str(res), stock, sub, B),
+           "results_sha256": _sha(resm), "unmasked_results_sha256": _sha(res), "reference_sha256": _sha(stock)}
     (out / "stock_check.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
     return rep
 
@@ -597,7 +615,8 @@ def require_stock_check(out: Path) -> None:
     if not p.exists():
         raise OutOfOrder("run `stock-check` first (A1(d))")
     if not json.loads(p.read_text(encoding="utf-8"))["ok"]:
-        raise OutOfOrder("stock-check failed (|delta| > STOCK_CHECK_TOL): the loop is no-measurement (A1(d))")
+        raise OutOfOrder("stock-check failed (|masked delta| > STOCK_CHECK_TOL or > 5% rows masked): the loop "
+                         "is no-measurement (A1(d), A3)")
 
 
 def _load_teacher(path: str):
