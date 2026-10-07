@@ -98,5 +98,6 @@
     "language_growth/tests/test_task_relevance.py": "180660ddbcb6206764a98f6700e42f0f81f52a61a2599216e2974bbfb8f812fe",
     "plans/codex/L1_PUBLIC_TASK_CONTRACT.md": "ecfc98eed2b4e3235f5345baf783885722b87e3fa8fbd25a93e08dc622455f10"
   },
+  "tested_commit": "7cf20e6",
   "total_scripted_tasks": 160
 }
