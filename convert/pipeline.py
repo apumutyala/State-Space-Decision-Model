@@ -52,6 +52,16 @@ class Results:
     def __init__(self, path):
         self.path = path
         self.d = json.load(open(path)) if os.path.exists(path) else {}
+        # A probe writes its JSON before run_progressive commits the step. Preemption in that gap leaves a
+        # count-tagged probe for weights the next attempt will retrain (wall-clock caps need not repeat exactly).
+        # Only a persisted accepted step binds a cached conversion probe to its saved checkpoint.
+        referenced = {f"probe_{s['probe_tag']}" for s in self.d.get("progressive", {}).get("steps", [])
+                      if s.get("accepted") and s.get("probe_tag")}
+        orphaned = [k for k in self.d if k.startswith("probe_conv") and k not in referenced]
+        if orphaned:
+            for k in orphaned:
+                del self.d[k]
+            self.set("resume_invalidated_probes", self.d.get("resume_invalidated_probes", []) + orphaned)
 
     def __contains__(self, k):
         return k in self.d

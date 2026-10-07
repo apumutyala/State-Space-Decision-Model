@@ -233,3 +233,17 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - The check is tested on chr-built bad samples, as L-11 requires.
   - COORDINATION.md "Before any paid job / before any PR" carries the rule.
 - **Status:** PARTIAL. Ad-hoc shell commands typed by an agent are not in the repo, so only the rule (COORDINATION.md) covers them. Kill only PIDs you started and recorded.
+
+### L-24 Orphan conversion probes survived a retrained checkpoint
+- Date: 2026-10-07 (cross-track post-hoc review of PR #94; CPU reproduction).
+- Symptom: a crash after the conversion probe's JSON write but before the progressive-step record was persisted
+  left a cached `probe_convN` measurement. Resume retrained that step, then reused the old measurement for new weights.
+- Cost: none billed for discovery or repair. Previously completed results are not presumed affected; the failure
+  requires an interruption in this specific write gap.
+- Root cause: `run_progressive` saves the next checkpoint, runs its probe, then persists the step. Probe cache keys
+  encode only conversion count, and time-limited training need not reproduce identical weights on a retry.
+- **Check:** `convert.pipeline.Results` discards conversion probes not referenced by any persisted accepted step
+  at startup and records the discarded keys. `tests/test_full8_orphan_probe.py` injects a crash immediately after
+  the real `Results.set` probe write at both the first and final steps, makes retry weights differ, and requires
+  resumed metrics to match the final saved weights. It also preserves stock probes and completed curve points.
+- **Status:** ENFORCED.
