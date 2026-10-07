@@ -19,9 +19,9 @@
 **New primary-source fact (operator, Cloudflare blog).** Clef-flash is a FROZEN Qwen3.5-9B plus a jointly trained routing head plus rank-256 LoRA. It is trained with label-smoothed CE + Brier on synthetic data that permutes field orders, prompts and schemas, plus an RLCD secondary objective. Inference is prefill-only with parallel scoring of all schema choices. The head is a two-stage attention head: option-specific evidence routing, joint cross-field attention, and a lexical prior. Weights are Apache-2.0.
 
 **Strategic consequence.**
-- Clef-flash is our exact same-backbone comparator. Our backbone is that same Qwen3.5-9B with its 8 attention layers distilled to GDN, so it can only be equal or weaker.
+- Clef-flash is our same-base-backbone comparator. Our backbone starts from that Qwen3.5-9B with its 8 attention layers distilled to GDN. Conversion may reduce quality; it does not establish a monotonic quality bound on downstream training.
 - The whole 38 → 56 gap is closed by head + LoRA + data on a frozen backbone.
-- To beat Clef-flash we must out-do Cloudflare's head, data and recipe, with an attention-free head and a weaker backbone. To beat Clef (27B) we must also make up a 27B-vs-9B backbone gap.
+- To beat Clef-flash we must out-do Cloudflare's head, data and recipe, with an attention-free head and a converted backbone whose downstream quality must be measured. To beat Clef (27B) we must also make up a 27B-vs-9B backbone gap.
 - The critical path therefore centres on **Q9-AF + trained head**. RWKV7 becomes the fallback.
 - The cheapest decisive experiment is a head on cached, frozen Q9 states (§11).
 
@@ -280,7 +280,7 @@ Near misses:
    - Storage per row: fork/final-state heads need only `fork` [K, D] + `q_end` + `e` (≈ 30 KB bf16), so 20k rows ≈ 0.6 GB. Heads that read every position (integrator, a Clef-style routing control) need `h` [T, D] ≈ 5 MB per row, so cache them for ≤ 5k rows (≈ 25 GB, on a node, not the laptop).
 2. **Iteration (seconds to minutes, CPU or ≤ $1 GPU).** `train_head_cached` trains any head/loss/lr/warmup/data-mix/KD-α recipe. For LoRA rank 0 it is **exactly** the m2 `Trainer` update (P5), in fp32 and in bf16: with `bf16` set the proxy caches the features and runs the head under the Trainer's bf16 autocast (run_cell, m2_gates and cell_step pass `bf16=cuda`), and it refuses cached features whose precision or fork mode differ from the config. `eval_cached` gives dev NLL/accuracy. Scoring the DEV subset needs the cached Index rows plus the kit scorer (`harness score`), so Index points come for free per iteration.
 3. **Questions it answers first, in order.**
-   - (a) Does an attention-free head on frozen Q9 states reach Clef-flash's ~56 on the DEV subset? If no head reaches ~50, no Q9-AF variant will. That is blocker #1, decided for about $4 before S1's $28-74.
+   - (a) Does an attention-free head on frozen Q9 states reach Clef-flash's ~56 on the DEV subset? If no tested head reaches ~50, pause S1 spend and escalate the measured result and next hypothesis. This finite recipe sweep is not an upper bound on Q9-AF variants, LoRA adaptation or later data recipes. The conditional spend go/no-go costs about $4 before S1's $28-74.
    - (b) Rank heads: fork vs HeadB vs snapshot vs fork + field-mixer vs the `ClefCrossAttentionControl` upper reference.
    - (c) Loss: `ce` vs `clef` (± RPS) vs KD from Clef-flash soft labels (S3b).
    - (d) Data mix per area / benchmark coverage.
@@ -291,7 +291,7 @@ Near misses:
 - *Exact part:* for head-only recipes the proxy is the real training update (P5). Every head, loss, lr, data or KD decision is measured, not approximated, on the same frozen backbone.
 - *Empirical part, the LoRA term:* Clef-flash's own recipe is frozen backbone + head + LoRA, and its head + LoRA moved Q9 from 38.3 to 55.8. The proxy measures the head share of that gain. Transfer to head + LoRA is a measurement: P6 runs it (Kendall τ between proxy and head + LoRA recipe rankings) and found τ = 1.0 on a tiny model.
   - At 9B, calibrate with **one** pair of real cells (the proxy's best and worst recipe, ≤ $10 each, short ladder) before trusting the ranking. Adopt the proxy ranking only if τ ≥ 0.6 over ≥ 4 recipes and argmin agrees.
-- *Backbone transfer (frozen Q9 → Q9-AF):* the 1-layer-converted cache (art-2bybh) gives a second point. If a recipe's rank holds between stock and 1-layer features, it should hold on Q9-AF, whose states differ more. Re-check the top-2 recipes on Q9-AF features (one more ~$3 cache) before the scale-up cell.
+- *Backbone transfer (frozen Q9 → Q9-AF):* the 1-layer-converted cache (art-2bybh) gives a second point. Rank stability between stock and 1-layer features is a transfer hypothesis, not evidence that the ranking persists after all 8 conversions. Re-check the top-2 recipes on Q9-AF features (one more ~$3 cache) before the scale-up cell; expand the comparison or revise the recipe if that check fails.
 - *Known blind spots:* recipes whose benefit comes from adapting the backbone (long-context recall, retrieval through LoRA) and from length > the cached T. These are measured only in S2.
 
 ## 12. Critical-path schedule (dates UTC; ★ = critical path)
