@@ -55,7 +55,7 @@
  "finished_at": "2026-10-07T00:44:00Z",
  "fetched_via": "get_job job-tvuat + get_artifact art-bzip3 (2026-10-07)",
  "files_sha256": {
-  "CONTEXT_MANIFEST.json": "7909efd214f9657b01a9699dcf721333d9b3c41b30581f1fe2dd012f7f27d2a8",
+  "CONTEXT_MANIFEST.json": "4f2189caa8c25f4aaa54f5fe6ff4e86c98ae0264198056909b211da68b047b18",
   "decision.json": "7900e4d0804b227b7c0dc34022fddab0f786c138407eadc6e3dfee12c8d45c30",
   "env.json": "d9a65d90d20df4e2c8f5f978903bdf29470af4899320060d526d27288b4d420a",
   "MANIFEST.jsonl": "f02aacd100321d3e418a050c7673f785faaa579023594f8bcfdd2358024d151c",
@@ -63,5 +63,11 @@
   "variant_ckpt.json": "c043b8022777359015c379b4f6432efc097dd0a73fc1ba4371b629680d198d61",
   "variant_ckpt_rows.json": "b4f36ea3889ef68ceee86789f859b24e231fbc64d1b2fbd4cb7e3cc6484dc89b",
   "variant_ckpt_rows_lean.json": "b3919f65fdce2f0e727cca1950d953c1993ba20b9b60a5204908b64d1facedac"
+ },
+ "lf_normalized": {
+  "files": {
+   "CONTEXT_MANIFEST.json": "7909efd214f9657b01a9699dcf721333d9b3c41b30581f1fe2dd012f7f27d2a8"
+  },
+  "note": "these artifact files were CRLF as extracted; committed LF-normalized (.gitattributes *.json eol=lf); original sha256 listed here"
  }
 }
