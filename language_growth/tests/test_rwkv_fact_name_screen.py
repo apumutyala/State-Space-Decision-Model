@@ -90,24 +90,39 @@ def test_provider_failure_is_logged_and_kept_in_denominator(tmp_path):
     assert runner.paired_summary(rows, examples)["all"]["kernel_accepted"]["baseline"] == 0
 
 
-def test_direct_operation_inputs_and_decisions_are_identical_but_drift_is_visible(tmp_path):
-    examples = runner.screen_data()
-    requests = runner.direct_requests(examples, "scripted", REVISION)
-    original = deepcopy(requests)
-    choices = ["Assert one selected fact" if e["training_only"]["kind"] == "read" else
-               "Explain a checked assertion of one selected fact" for e in examples]
-    provider = ScriptedProvider(choices * 2)
-    a = runner.direct_operations(provider, requests, tmp_path / "raw.jsonl", "direct-before")
-    b = runner.direct_operations(provider, requests, tmp_path / "raw.jsonl", "direct-after")
-    assert a == b and requests == original and len(a) == 32
-    assert all(r["decision"]["status"] == "ok" for r in a)
+def test_paired_operation_decision_fields_exclude_latency_but_detect_drift(tmp_path):
+    _, provider, _, _, equal = evaluate(tmp_path)
+    assert equal and len(provider.requests) == 128  # no 64-request direct bookends
     changed = deepcopy(provider.requests[0])
     response = ScriptedProvider(["Assert one selected fact"]).decide(changed)
-    projected = runner.decision_fields(response)
+    projected = deepcopy(runner.decision_fields(response))
     response["ssdm"]["diagnostics"]["latency_ms"] = 1000
     assert runner.decision_fields(response) == projected
     response["answers"]["slot-001-operation"]["choice"] = "op002"
-    assert runner.decision_fields(response) != a[0]["decision"]
+    assert runner.decision_fields(response) != projected
+
+
+@pytest.mark.parametrize("drift", ["answer", "probability", "calibration", "status", "request"])
+def test_paired_operation_equality_covers_every_member_and_exact_decisions(monkeypatch, tmp_path, drift):
+    from language_growth import free_running_dev
+    original = free_running_dev.run_development_tasks
+    calls = 0
+    def run(*args, **kwargs):
+        nonlocal calls
+        result = original(*args, **kwargs)
+        calls += 1
+        if calls == 64:  # last member: completeness must include more than the first pair
+            first = args[1].calls[0]
+            if drift == "request":
+                first["request"]["state"] += " "
+            elif drift == "answer":
+                first["response"]["answers"]["slot-001-operation"]["choice"] = "op001"
+            else:
+                key = {"probability": "raw_probabilities", "calibration": "served_config", "status": "status"}[drift]
+                first["response"]["ssdm"][key] = "changed"
+        return result
+    monkeypatch.setattr(free_running_dev, "run_development_tasks", run)
+    assert not evaluate(tmp_path)[-1]
 
 
 def test_preflight_and_default_do_not_import_runtime_or_access_snapshot(tmp_path):
@@ -136,19 +151,89 @@ assert 'torch' not in sys.modules
         assert len(json.loads((out / "screen-inputs.json").read_text())) == 32
 
 
+def test_identical_operation_errors_in_both_arms_do_not_pass_equality_or_gate(monkeypatch, tmp_path):
+    from language_growth import free_running_dev
+    original = free_running_dev.run_development_tasks
+    def errors(*args, **kwargs):
+        result = original(*args, **kwargs)
+        # Both arms retain identical recorded initial responses, but not `ok`.
+        args[1].calls[0]["response"]["ssdm"]["status"] = "error"
+        return result
+    monkeypatch.setattr(free_running_dev, "run_development_tasks", errors)
+    examples, _, rows, _, equal = evaluate(tmp_path)
+    assert not equal
+    gate = runner.continuation_gate(rows, examples, runner.paired_summary(rows, examples),
+                                    frozen_parent=True, operation_equal=equal)
+    assert not gate["gates"]["arm_operation_equal"] and not gate["eligible_for_review"]
+
+
 def test_resource_and_worker_guards_refuse_before_load(monkeypatch, tmp_path):
     import psutil
     monkeypatch.setattr(runner, "preparation", lambda out: out.mkdir())
-    monkeypatch.setattr(psutil, "virtual_memory", lambda: SimpleNamespace(available=6 * 1024**3 - 1))
+    monkeypatch.setattr(psutil, "virtual_memory", lambda: SimpleNamespace(available=9 * 1024**3 - 1, total=16 * 1024**3))
     assert runner.launch(tmp_path / "refused") == 125
+    refused = json.loads((tmp_path / "refused" / "receipt.json").read_text())
+    assert refused["status"] == "incomplete" and refused["stop_reason"] == "start_memory_guard"
+    assert "eligible_for_review" not in refused and "summary" not in refused
     monkeypatch.setattr(runner, "assert_environment", lambda: None)
-    with pytest.raises(MemoryError, match="start guard"):
+    with pytest.raises(MemoryError, match="start reserve"):
         runner.run(tmp_path)
     monkeypatch.setattr(runner.time, "monotonic", lambda: 1200.)
     with pytest.raises(TimeoutError): runner.budget_check(0., 20 * 1024**3)
     monkeypatch.setattr(runner.time, "monotonic", lambda: 0.)
     with pytest.raises(MemoryError): runner.budget_check(0., 3 * 1024**3 - 1)
     with pytest.raises(Exception): runner.worker(tmp_path, None, -1, b"invalid")
+
+
+def test_9gib_admission_refuses_before_runtime_import_or_checkpoint_access(tmp_path):
+    code = r'''
+import sys
+from types import SimpleNamespace
+class Reject:
+    def find_spec(self, fullname, *args):
+        if fullname.split('.')[0] in ('torch', 'transformers', 'safetensors'):
+            raise AssertionError('runtime imported before admission refusal')
+sys.meta_path.insert(0, Reject())
+def audit(event, args):
+    if event == 'open':
+        path = str(args[0]).lower().replace('\\', '/')
+        if path.endswith(('.pt', '.safetensors')) or '/snapshots/' in path:
+            raise AssertionError('snapshot/checkpoint opened before admission refusal')
+sys.addaudithook(audit)
+import psutil
+psutil.virtual_memory = lambda: SimpleNamespace(available=9 * 1024**3 - 1, total=16 * 1024**3)
+from pathlib import Path
+from language_growth import rwkv_fact_name_screen as runner
+assert runner.CONFIG['min_start_bytes'] == 9 * 1024**3
+assert runner.launch(Path(sys.argv[1])) == 125
+runner.assert_environment = lambda: None
+try:
+    runner.run(Path(sys.argv[1]))
+except MemoryError:
+    pass
+else:
+    raise AssertionError('worker admission did not refuse')
+assert 'torch' not in sys.modules
+'''
+    subprocess.run([sys.executable, "-c", code, str(tmp_path / "refused")], cwd=runner.ROOT, check=True)
+
+
+@pytest.mark.parametrize("reason,code", [("memory_guard", 125), ("timeout", 124), ("worker_failed", 1)])
+def test_terminal_abort_records_incomplete_without_success_fields(tmp_path, reason, code):
+    event = {"event": "launcher_stopped" if code != 1 else "launcher_exit",
+             "elapsed_seconds": 74.063, "minimum_available_bytes": 3202723840}
+    if code != 1:
+        event["reason"] = reason
+    (tmp_path / "launcher.jsonl").write_text(json.dumps(event) + "\n")
+    (tmp_path / "raw.jsonl").write_text('{"event":"request"}\n')
+    # Even a stale complete receipt cannot survive a nonzero terminal exit.
+    runner.write(tmp_path / "receipt.json", {"status": "complete", "eligible_for_review": True})
+    assert runner.finalize_launch(tmp_path, code) == code
+    receipt = json.loads((tmp_path / "receipt.json").read_text())
+    assert receipt["status"] == "incomplete" and receipt["stop_reason"] == reason
+    assert receipt["cost_usd"] == 0 and receipt["exit_code"] == code
+    assert receipt["artifact_sha256"]["raw.jsonl"] == runner.sha(tmp_path / "raw.jsonl")
+    assert not any(k in receipt for k in ("summary", "metrics", "eligible", "eligible_for_review"))
 
 
 def test_supervisor_kills_only_owned_child_on_timeout_or_low_memory(tmp_path):
@@ -187,7 +272,7 @@ def test_continuation_gate_requires_world_gains_without_losses_fact_gain_operati
         row.update(task_correct=True, fact_correct=True, record_correct=True)
     def gate(value):
         return runner.continuation_gate(value, examples, runner.paired_summary(value, examples),
-            direct_equal=True, frozen_parent=True, operation_equal=True)
+            frozen_parent=True, operation_equal=True)
     passed = gate(rows)
     assert passed["eligible_for_review"] and passed["both_member_world_gains"] == 4
     short = deepcopy(rows)
@@ -207,5 +292,5 @@ def test_continuation_gate_requires_world_gains_without_losses_fact_gain_operati
     for row in fact["entity_name"]: row["fact_correct"] = False
     assert not gate(fact)["gates"]["exact_fact_binding_improved"]
     summary = runner.paired_summary(rows, examples)
-    assert not runner.continuation_gate(rows, examples, summary, direct_equal=False,
-        frozen_parent=True, operation_equal=True)["eligible_for_review"]
+    assert not runner.continuation_gate(rows, examples, summary,
+        frozen_parent=True, operation_equal=False)["eligible_for_review"]

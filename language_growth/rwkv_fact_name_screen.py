@@ -9,7 +9,9 @@ import json
 import multiprocessing
 import os
 from pathlib import Path
+import platform
 import secrets
+import subprocess
 import sys
 import time
 
@@ -21,13 +23,13 @@ from language_growth.rwkv_operation_cache import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE_COMMIT = "986a70b678a130ef00b57e5173d81e95c5813839"
+BASE_COMMIT = "96f5bd0c7298690d90e36918d5ca73cb302d447a"
 PLAN = "plans/codex/L0H0_PARENT_BINDING_SCREEN.md"
 RUNNER_PLAN = "plans/codex/L0_RWKV_FACT_NAME_SCREEN.md"
-PREPARED = ROOT / "receipts/2026-10-07-L-fact-name-screen-prepared"
+PREPARED = ROOT / "receipts/2026-10-07-L-fact-name-screen-retry-prepared"
 CONFIG = {"seed": 20261007, "worlds": 16, "members_per_world": 2,
           "styles": ["record_ref", "entity_name"], "threads": 2,
-          "min_start_bytes": 6 * 1024**3, "min_running_bytes": 3 * 1024**3,
+          "min_start_bytes": 9 * 1024**3, "min_running_bytes": 3 * 1024**3,
           "timeout_seconds": 1200, "max_batch_rows": 2, "max_context": 2048,
           "bootstrap_seed": 9203, "bootstrap_samples": 2000}
 
@@ -75,14 +77,17 @@ def registration():
                      ("torch", "transformers", "safetensors", "numpy", "psutil")},
         "source_sha256": {name: sha(ROOT / name) for name in sources},
         "order": "even world: record_ref then entity_name; odd world: reversed; both members per style",
-        "direct_retention": "same 32 initial operation requests before/after; exact decision fields, latency excluded",
+        "direct_retention": "all 32 members: exact paired initial-operation request and decision equality across arms, request IDs/latency excluded; no separate inference bookends",
+        "measurement_amendment": "after incomplete run1 memory_guard: remove 64 redundant pre/post direct requests; retain all paired initial operations and full-state pre/post hashes",
+        "planned_requests": 128, "planned_forwards": 256,
+        "start_guard_basis": "9 GiB operational reserve after resource abort; not a model-only RAM estimate",
         "state_retention": "separate pre/post hashes of all parent parameters and registered buffers, including LM head",
         "primary": "entity_name minus record_ref useful-answer accuracy, paired by world; all failures retained",
         "secondary": ["kernel acceptance", "read/explain useful answers", "both-member useful answers",
                       "operation and fact selections", "direct operation decision equality"],
         "selection": "one fixed display comparison; no tuning, training, parser correction or retries",
-        "decision": "complete 16 worlds; >=2 both-member world gains and zero world losses; exact fact gain; zero operation losses; useful CI lower>0; unchanged direct/arm operation and full state; screening only",
-        "execution": "explicit --execute only, offline owned CPU child; 6 GiB start / 3 GiB run / 2 threads / 1200s cap",
+        "decision": "complete 16 worlds; >=2 both-member world gains and zero world losses; exact fact gain; zero operation losses; useful CI lower>0; exact paired initial-operation equality and unchanged full state; screening only",
+        "execution": "explicit --execute only, offline owned CPU child; 9 GiB start reserve / 3 GiB run / 2 threads / 1200s cap",
         "cost_usd": 0, "adoption": False}
 
 
@@ -109,29 +114,6 @@ def decision_fields(response):
     env = response.get("ssdm", {})
     return {"answers": response.get("answers"), **{k: env.get(k) for k in
         ("status", "error", "abstention", "raw_probabilities", "served_probabilities", "served_config")}}
-
-
-def direct_requests(examples, model, revision):
-    requests = []
-    for example in examples:
-        request = deepcopy(example["model_inputs"][0])
-        request["model"] = model
-        request["ssdm"]["parent_revision"] = revision
-        requests.append((example["task_id"], request))
-    return requests
-
-
-def direct_operations(provider, requests, raw, phase, check=lambda: None):
-    rows = []
-    capture = Capture(provider, raw, phase)
-    for task_id, request in requests:
-        check()
-        response = capture.decide(deepcopy(request))
-        check()
-        rows.append({"task_id": task_id, "request_sha256": digest(request),
-                     "decision": decision_fields(response)})
-    write(raw.parent / f"{phase}.json", rows)
-    return rows
 
 
 def selection_metrics(example, calls):
@@ -240,7 +222,7 @@ def paired_summary(rows, examples):
     return summary
 
 
-def continuation_gate(rows, examples, summary, *, direct_equal, frozen_parent, operation_equal):
+def continuation_gate(rows, examples, summary, *, frozen_parent, operation_equal):
     """Apply the existing L0h0 plan; never promote a partial or regressing screen."""
     # paired_summary validates completeness/unique matching before this gate.
     paired_summary(rows, examples)
@@ -263,7 +245,7 @@ def continuation_gate(rows, examples, summary, *, direct_equal, frozen_parent, o
         "useful_answer_ci_lower_positive": summary["all"]["task_correct"]["ci95"][0] > 0,
         "read_explain_nonregression": all(summary[kind][metric]["estimate"] >= 0
             for kind in ("read", "explain") for metric in ("task_correct", "kernel_accepted")),
-        "direct_operation_equal": direct_equal, "full_parent_state_equal": frozen_parent,
+        "full_parent_state_equal": frozen_parent,
         "arm_operation_equal": operation_equal}
     return {"eligible_for_review": all(gates.values()), "gates": gates,
             "both_member_world_gains": gained, "both_member_world_losses": lost,
@@ -274,7 +256,7 @@ def run(out):
     import psutil
     assert_environment()
     if psutil.virtual_memory().available < CONFIG["min_start_bytes"]:
-        raise MemoryError("6 GiB start guard before Torch/checkpoint load")
+        raise MemoryError("9 GiB start reserve before Torch/checkpoint load")
     frozen = json.loads((out / "registration.json").read_text(encoding="utf-8"))
     verify_registration(frozen)
     if registration() != frozen:
@@ -318,32 +300,53 @@ def run(out):
     revision = provider.revision()["revision_id"]
     config = {"calibration": provider.calibration.identity(),
               "policy_masking": "none (served covers every supplied option)"}
-    requests = direct_requests(examples, plugin.model_id, revision)
     raw = out / "raw.jsonl"
-    before_direct = direct_operations(provider, requests, raw, "direct-before", check)
     rows, order, operation_equal = evaluate_screen(examples, provider, model=plugin.model_id,
         revision=revision, served_config=config, raw=raw, check=check)
-    after_direct = direct_operations(provider, requests, raw, "direct-after", check)
     check()
     after_state = state_digest(parent)
     write(out / "state-after.json", {"full_state_sha256": after_state})
-    direct_equal = before_direct == after_direct and all(
-        row["decision"]["status"] == "ok" for row in before_direct)
     frozen_parent = before_state == after_state
     summary = paired_summary(rows, examples)
-    gate = continuation_gate(rows, examples, summary, direct_equal=direct_equal,
+    gate = continuation_gate(rows, examples, summary,
                              frozen_parent=frozen_parent, operation_equal=operation_equal)
+    if not frozen_parent or not operation_equal:
+        raise ValueError("parent state or identical-input operation decision drift")
     write(out / "receipt.json", {"schema": "ssdm.rwkv-fact-name-screen-result.v1", "status": "complete",
         "registration_sha256": sha(out / "registration.json"), "parent_evidence": evidence,
         "revision": revision, "summary": summary, "order": order,
-        "direct_operation_equal": direct_equal, "arm_operation_equal": operation_equal,
+        "arm_operation_equal": operation_equal,
         "full_state_sha256_before": before_state, "full_state_sha256_after": after_state,
         "frozen_parent": frozen_parent, **gate, "adopted": False,
         "cost_usd": 0, "elapsed_seconds": time.monotonic() - started,
         "artifact_sha256": {p.name: sha(p) for p in out.iterdir() if p.is_file() and
             p.name not in ("stdout.txt", "stderr.txt", "launcher.jsonl")}})
-    if not direct_equal or not frozen_parent or not operation_equal:
-        raise ValueError("parent state or identical-input operation decision drift")
+
+
+def record_incomplete(out, reason, exit_code, **details):
+    """Terminal resource stops are results, never efficacy/success receipts."""
+    import psutil
+    write(out / "receipt.json", {"schema": "ssdm.rwkv-fact-name-screen-result.v1",
+        "status": "incomplete", "stop_reason": reason, "exit_code": exit_code,
+        "cost_usd": 0, "source_commit": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+        "base_commit": BASE_COMMIT, "command_argv": [sys.executable, *sys.argv],
+        "cwd": str(Path.cwd()),
+        "hardware": {"processor": platform.processor(), "platform": platform.platform(),
+                     "total_physical_bytes": psutil.virtual_memory().total, "device": "cpu"},
+        "artifact_sha256": {p.name: sha(p) for p in out.iterdir()
+                            if p.is_file() and p.name != "receipt.json"}, **details})
+
+
+def finalize_launch(out, exit_code):
+    receipt = out / "receipt.json"
+    if exit_code == 0 and receipt.exists() and json.loads(receipt.read_text())["status"] == "complete":
+        return 0
+    events = [json.loads(line) for line in (out / "launcher.jsonl").read_text().splitlines()]
+    terminal = events[-1] if events else {}
+    record_incomplete(out, terminal.get("reason", "worker_failed" if exit_code else "missing_complete_result"),
+                      exit_code, launcher_terminal=terminal)
+    return exit_code if exit_code else 1
 
 
 def worker(out, pipe, launcher_pid, secret):
@@ -362,9 +365,14 @@ def launch(out):
     import psutil
     from language_growth.l0_qwen_cpu_probe import _offline_env
     preparation(out)
-    if psutil.virtual_memory().available < CONFIG["min_start_bytes"]:
-        write(out / "failure.json", {"status": "refused", "reason": "6 GiB start guard", "cost_usd": 0})
+    available_at_start = psutil.virtual_memory().available
+    if available_at_start < CONFIG["min_start_bytes"]:
+        record_incomplete(out, "start_memory_guard", 125,
+                          available_bytes=available_at_start)
         return 125
+    from language_growth.l0_qwen_cpu_probe import _write_event
+    _write_event(out / "launcher.jsonl", "launcher_start", available_bytes=available_at_start,
+                 required_start_bytes=CONFIG["min_start_bytes"])
     context = multiprocessing.get_context("spawn")
     receive, send = context.Pipe(duplex=False)
     secret = secrets.token_bytes(32)
@@ -381,7 +389,8 @@ def launch(out):
     try:
         send.send_bytes(secret)
         send.close()
-        return supervise(handle, out / "launcher.jsonl", available=lambda: psutil.virtual_memory().available)
+        code = supervise(handle, out / "launcher.jsonl", available=lambda: psutil.virtual_memory().available)
+        return finalize_launch(out, code)
     finally:
         send.close()
         if handle.poll() is None:

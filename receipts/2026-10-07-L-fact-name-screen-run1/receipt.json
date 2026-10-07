@@ -1,0 +1,58 @@
+{
+  "artifact_sha256": {
+    "evaluator-targets.json": "762274823fb2bf561419cf2c8435e9459dda27d7eba641f9c5b656bfed4065b5",
+    "launcher.jsonl": "983ead9632efc46e77ed9b41d2fe346e8350451dab73b3868d6e6a66aad8ba30",
+    "raw.jsonl": "36f40dde9915c9b134d3ab17e5b78d737c738af7a1ebcfaab464ef4590f801e3",
+    "registration.json": "a147956ea509253d8dfd0916487d6e1b81c23774bb82b7fb9af143191eb0f11d",
+    "screen-inputs.json": "7dcd53525fca971737fcd4e60a1b7ae9157977709dabd83be74e05de1e3736d6",
+    "state-before.json": "f3a2b6f9a40d8e933246f2cd472db288f88ab85764540891072363c377a7ce4f",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "base_commit": "986a70b678a130ef00b57e5173d81e95c5813839",
+  "command": "& C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m language_growth.rwkv_fact_name_screen --execute --out C:/Users/apumu/research/CHLabs/ssdm-stack-rwkv7-fact-name-screen-runner/receipts/2026-10-07-L-fact-name-screen-run1",
+  "cost_usd": 0,
+  "cwd": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-stack-rwkv7-fact-name-screen-runner",
+  "data_sha256": {
+    "evaluator_targets_sha256": "2a0c1cd82d1df78633738333d9dc1f426162b08a9b510e8a6b777d93a0275941",
+    "examples_sha256": "e20511ff1ee0115d9b3786ae6c78ed8a1b8817559ca9a2fe1111d63e3b03b856",
+    "visible_inputs_sha256": "68e04820c506cf6bac378db225a9852acf405e4a6ee1f82c753856a098d3d3d5"
+  },
+  "elapsed_seconds": 74.06299999999464,
+  "exec_wrapper_exit_code": 1,
+  "feasibility": {
+    "kind": "projection only; no efficacy evidence",
+    "max_batch_rows_1_also_projected_over_cap": true,
+    "projected_seconds_before_longer_prompts_and_checks": 1255.5,
+    "unchanged_protocol_forwards": 384,
+    "unchanged_protocol_requests": 192
+  },
+  "hardware": {
+    "cuda_visible_devices": "-1",
+    "device": "cpu",
+    "os": "Windows",
+    "processor": "AMD Ryzen AI 9 HX 375 w/ Radeon 890M",
+    "threads": 2,
+    "total_physical_bytes": 33597927424
+  },
+  "initial_available_bytes": 7920824320,
+  "interpretation": "Terminal resource abort; no efficacy estimate, retention result, or eligibility. Available-memory change does not isolate model RSS. No state-after or complete result exists.",
+  "minimum_available_bytes": 3202723840,
+  "owned_child_cap_seconds": 1200,
+  "progress": {
+    "completed_efficacy_worlds": 0,
+    "completed_responses": 11,
+    "phases": [
+      "direct-before"
+    ],
+    "requests": 12
+  },
+  "registration_sha256": "a147956ea509253d8dfd0916487d6e1b81c23774bb82b7fb9af143191eb0f11d",
+  "runner_pr": 120,
+  "running_floor_bytes": 3221225472,
+  "schema": "ssdm.rwkv-fact-name-screen-result.v1",
+  "source_commit": "96f5bd0c7298690d90e36918d5ca73cb302d447a",
+  "status": "incomplete",
+  "stop_reason": "memory_guard",
+  "supervisor_exit_code": 125
+}

@@ -1,9 +1,12 @@
 # Prepared RWKV7 paired fact-name screen
 
-Based on candidate-display commit `986a70b678a130ef00b57e5173d81e95c5813839`
-from `stack/rwkv7/fact-name-options` (PR #119). This stacked change prepares
-execution only. No real parent load, inference, training, GPU or spend is part
-of implementation or verification. Independent review precedes any later run.
+Follow-up to runner PR #120 at `96f5bd0c7298690d90e36918d5ca73cb302d447a`.
+Run1 stopped safely at the runtime memory guard after 74.063 seconds, with
+12 requests, 11 completed responses, all in direct-before, and zero efficacy
+worlds. Its receipt is `receipts/2026-10-07-L-fact-name-screen-run1/` and its
+status is incomplete; partial raw calls are not efficacy evidence. This
+follow-up prepares changes only. No retry or parent execution is part of
+implementation or verification. Independent review precedes any later run.
 
 The fixed synthetic screen has 16 worlds, eight read and eight explain, each
 with an entity-renamed and record-list-reversed partner. All 32 task members
@@ -32,27 +35,42 @@ the exact required base-branch tests in `test_fact_candidate_style.py`:
 - `test_private_record_never_enters_entity_named_candidate_options`
 - `test_injection_shaped_name_remains_untrusted_and_program_contains_only_refs`
 
-Before/after the paired screen, repeat exactly the same 32 initial operation
-requests. Require exact equality of answers, raw/served probabilities,
-calibration and status, excluding volatile latency. Additionally compare the
-two styles' first operation inputs after removing request IDs and their exact
-decision fields. Record separate pre/post hashes of every parent parameter
-and registered buffer, including the LM head. Same error responses do not
-establish direct retention; all direct responses must be `ok`.
+Measurement amendment after run1: remove the 64 redundant direct inference
+bookends. Instead require exact paired initial-operation request and decision
+equality across arms for all 32 members, already observed within the screen.
+Compare inputs after removing request IDs and require equal answers,
+raw/served probabilities, calibration and status, excluding volatile latency.
+All paired initial responses must be `ok`; equal errors do not pass. Retain
+separate pre/post hashes of every parent parameter and registered buffer,
+including the LM head. This narrow change removes repeated measurement, while
+preserving all 16 worlds, 32 members per arm, primary paired estimates,
+mandatory boundary fixtures and statistical gates. It does not measure
+temporal response equality on a repeated post-screen inference request.
 
 The explicit execution mode loads only the existing pinned RWKV7 CPU parent.
-It uses offline environment variables, hidden CUDA, two CPU threads, a 6 GiB
-start floor checked before Torch/checkpoint loading, a 3 GiB running floor,
+It uses offline environment variables, hidden CUDA, two CPU threads, a 9 GiB
+start reserve checked before Torch/checkpoint loading, a 3 GiB running floor,
 and an authenticated owned child with a 1200-second supervisor cap. The merged
 operation-cache runner supplies these existing guard/hash helpers. Stock
-readout is capped at two rows and 2048 tokens. Repeated direct checks add 64
-calls; the complete screen may exceed the cap. Partial outputs are preserved
-and cannot support a success claim. No automatic retry is supplied.
+readout is capped at two rows and 2048 tokens. The 9 GiB threshold is an
+operational reserve after the resource abort, not a model-only RAM estimate.
+Run1 began at 7,920,824,320 available bytes and stopped at 3,202,723,840;
+this host-available change does not isolate model RSS. The unchanged protocol
+projected 1,255.5 seconds for 192 requests/384 forwards before longer fact
+prompts and final checks, exceeding the cap; max_batch_rows=1 also projected
+over cap. Removing the bookends leaves nominally 128 requests/256 forwards
+(837.0 seconds by proportional arithmetic alone), not a measured completion
+prediction. Longer prompts and final checks remain uncertain. The runtime
+floor and 1,200-second cap remain binding. Terminal stops write an incomplete
+receipt without metrics or eligibility; partial outputs remain preserved.
+No automatic retry is supplied.
 
 Default and `--dry-run` generate the fixed registration, visible inputs and
 evaluator targets without importing Torch/Transformers/Safetensors or opening
-snapshots/checkpoints. Source/software/data identities must equal the prepared
-receipt before later execution. Commands use the existing interpreter:
+snapshots/checkpoints. Source/software/data identities must equal the new
+`receipts/2026-10-07-L-fact-name-screen-retry-prepared/` registration before
+later execution. The original prepared/run1 registrations remain preserved.
+Commands use the existing interpreter:
 
 ```powershell
 & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m language_growth.rwkv_fact_name_screen --dry-run --out <fresh-preflight-directory>
