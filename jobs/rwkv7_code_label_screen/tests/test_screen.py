@@ -1,0 +1,233 @@
+"""CPU checks for jobs/rwkv7_code_label_screen/; no model or private row access."""
+import copy
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+import pytest
+
+from jobs.rwkv7_code_label_screen import rule as R
+from jobs.rwkv7_code_label_screen import runner as S
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+@pytest.fixture(scope="module")
+def proof():
+    # These are required for the CPU exit proof; missing packages must fail,
+    # rather than silently skipping the only production-path check.
+    from jobs.rwkv7_code_label_screen.synthetic import fixture
+
+    rows, deciders = fixture()
+    revisions = {arm: decider.revision() for arm, decider in deciders.items()}
+    arms = {arm: {row["_evaluation"]["run_id"]: S.capture(row, decider) for row in rows}
+            for arm, decider in deciders.items()}
+    return rows, arms, revisions
+
+
+def test_literal_registration_and_params_are_fixed():
+    assert R.RULE_VERSION == "rwkv7-code-label-v2-screen-v1"
+    assert R.EDITION == "0.2.1"
+    assert R.ROWS == 2008 and R.MIN_OK_ROWS == 2000
+    assert R.ROWS_SHA256 == "406d40e6891690fad48fb82252c44b89a5337c603ff79e03ceb11fffc4eb28f2"
+    assert R.IDS_SHA256 == "6e4cb8dfac94a40a6e014e05744ff775aebcdf99d7a572190034e6bc026095c3"
+    assert R.MANIFEST_SHA256 == "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a"
+    assert R.BOOTSTRAP_REPLICATES == 2000 and R.BOOTSTRAP_SEED == 20261007
+    assert R.CI_LEVEL == 0.95 and R.PROBABILITY_TOLERANCE == 1e-9
+    assert R.REQUIRED_FLOORS == ("safety", "calibration", "abstention", "control", "interpretability", "clef", "clef_flash")
+    p = json.loads((S.HERE / "screen_params.json").read_text())
+    assert p["decision_rule"] == "jobs/rwkv7_code_label_screen/rule.py"
+    assert p["launch_enabled"] is False and p["cost_usd"] == 0
+    assert p["rows"] == R.ROWS and p["minimum_ok_rows_per_arm_and_paired"] == R.MIN_OK_ROWS
+    assert p["edition"] == R.EDITION and p["bootstrap_replicates"] == R.BOOTSTRAP_REPLICATES
+    assert p["bootstrap_seed"] == R.BOOTSTRAP_SEED and p["confidence_level"] == R.CI_LEVEL
+    assert p["full_denominator"] is True and p["allow_partial"] is False
+    subset = S.checked_cohort()  # committed DEV IDs/manifest only; no items
+    assert len(subset["run_ids"]) == R.ROWS
+
+
+def test_real_production_scoring_summary_and_exhausted_denominator(proof):
+    rows, arms, revisions = proof
+    result = S.summarize(rows, arms, revisions, synthetic=True)
+    assert result["rows_denominator"] == 12 and result["paired_ok_rows"] == 11
+    for arm in ("v1", "v2"):
+        report = result["arms"][arm]
+        assert report["status_counts"] == {"ok": 11, "exhausted": 1}
+        assert report["raw_audit"]["rows"] == 12
+        assert report["raw_audit"]["invalid_raw_distributions"] == 0
+        assert report["calibration_diagnostic"]["n"] == 22
+        assert 0 < report["slice_index"]["index"]["point"] < 100
+    paired = result["paired_v2_minus_v1"]
+    assert paired["B"] == 2000 and paired["level"] == 0.95
+    assert paired["diff"]["index"]["point"] == paired["diff"]["index"]["lo"] == paired["diff"]["index"]["hi"] == 0
+    assert result["screen_status"] == "complete"
+    assert result["promotable"] is result["beats_clef"] is result["spend_authorized"] is False
+    assert set(result["floors"].values()) == {"unmeasured"}
+
+
+@pytest.mark.parametrize("mutation", ["missing", "extra", "raw_absent", "nan", "negative", "sum", "option_missing",
+                                      "option_extra", "served_changed", "calibration", "mask", "revision", "fingerprint",
+                                      "answer", "error", "no_reason", "partial_refusal", "partial_refusal_served"])
+def test_artifact_corruption_fails_closed(proof, mutation):
+    rows, arms, revisions = copy.deepcopy(proof)
+    rec = arms["v2"]["synthetic:0"]
+    if mutation == "missing":
+        del arms["v2"]["synthetic:0"]
+    elif mutation == "extra":
+        arms["v2"]["stray"] = rec
+    elif mutation == "raw_absent":
+        del rec["raw_output"]
+    elif mutation in ("nan", "negative", "sum", "option_missing", "option_extra"):
+        probs = rec["raw_output"]["raw_probabilities"]["q0"]
+        if mutation == "option_missing":
+            del probs["b"]
+        elif mutation == "option_extra":
+            probs["other"] = 0.0
+        else:
+            probs["a"] = {"nan": float("nan"), "negative": -0.1, "sum": 0.9}[mutation]
+        rec["screen_evidence"]["served_probabilities"] = copy.deepcopy(rec["raw_output"]["raw_probabilities"])
+    elif mutation == "served_changed":
+        rec["screen_evidence"]["served_probabilities"]["q0"]["a"] = 0.1
+    elif mutation == "calibration":
+        rec["screen_evidence"]["served_config"]["calibration"]["t0"] = 2
+    elif mutation == "mask":
+        rec["screen_evidence"]["served_config"]["policy_masking"] = "restricted"
+    elif mutation == "revision":
+        rec["screen_evidence"]["revision_id"] = "changed"
+    elif mutation == "fingerprint":
+        rec["screen_evidence"]["request_fingerprint"] = "changed"
+    elif mutation == "answer":
+        rec["response"]["answers"]["q0"]["choice"] = "b"
+    elif mutation == "error":
+        rec["status"] = "error"
+    elif mutation == "no_reason":
+        arms["v2"]["synthetic:11"]["error"] = None
+    elif mutation == "partial_refusal":
+        arms["v2"]["synthetic:11"]["response"] = rec["response"]
+    elif mutation == "partial_refusal_served":
+        arms["v2"]["synthetic:11"]["screen_evidence"]["served_probabilities"] = rec["screen_evidence"]["served_probabilities"]
+    with pytest.raises(ValueError):
+        S.summarize(rows, arms, revisions, synthetic=True)
+
+
+@pytest.mark.parametrize("mutation", ["source", "tokenizer", "renderer", "runtime", "model"])
+def test_changed_identity_fails_closed(proof, mutation):
+    rows, arms, revisions = copy.deepcopy(proof)
+    rev = revisions["v2"]
+    if mutation == "source":
+        rev["inference_config"]["source_sha256"]["state_fork.py"] = "changed"
+    elif mutation == "tokenizer":
+        rev["files_sha256"]["tokenizer"] = "changed"
+    elif mutation == "renderer":
+        rev["prompt_template"]["sha256"] = "changed"
+    elif mutation == "runtime":
+        rev["inference_config"]["dtype"] = "changed"
+        rev["inference_config_sha256"] = __import__("hashlib").sha256(S.canonical_json(rev["inference_config"]).encode()).hexdigest()
+    else:
+        rev["model_id"] = "changed"
+    with pytest.raises(ValueError):
+        S.summarize(rows, arms, revisions, synthetic=True)
+
+
+def test_inadequate_counts_and_calibration_fields_fail(proof):
+    rows, arms, revisions = proof
+    with pytest.raises(ValueError, match="inadequate answered"):
+        S.audit_arm(rows, arms["v2"], revisions["v2"], 12)
+    rows = copy.deepcopy(rows)
+    for row in rows:
+        row["expected"] = {}
+    with pytest.raises(ValueError, match="calibration field"):
+        S.summarize(rows, arms, revisions, synthetic=True)
+
+
+def test_answered_intersection_is_checked_without_changing_score_denominator(proof):
+    rows, arms, revisions = copy.deepcopy(proof)
+    # Each arm has 11 valid answers but their intersections contain only 10.
+    answered = copy.deepcopy(arms["v1"]["synthetic:0"])
+    refused = copy.deepcopy(arms["v1"]["synthetic:11"])
+    for i, record in ((11, answered), (0, refused)):
+        row = rows[i]
+        record["run_id"] = row["_evaluation"]["run_id"]
+        record["screen_evidence"]["request_fingerprint"] = S.request_fingerprint(
+            {"model": "screen", "state": row["state"], "questions": row["questions"]})
+        arms["v1"][record["run_id"]] = record
+    with pytest.raises(ValueError, match="paired answered"):
+        S.summarize(rows, arms, revisions, synthetic=True)
+
+
+def test_choice_noul_score_and_53_options_preserve_complete_support():
+    from jobs.rwkv7_code_label_screen.synthetic import fixture
+
+    rows, deciders = fixture()
+    row = rows[0]
+    row["questions"] = {"choice": {"type": "choice", "criteria": {f"id-{i}": f"Option {i}" for i in range(53)}},
+                        "noul": {"type": "noul", "instructions": "Is this supported?"},
+                        "score": {"type": "score", "criteria": ["Low", "Medium", "High"]}}
+    for decider in deciders.values():
+        record = S.capture(row, decider)
+        report, _ = S.audit_arm([row], {record["run_id"]: record}, decider.revision(), 1)
+        assert report["ok_rows"] == 1
+        probs = record["raw_output"]["raw_probabilities"]
+        assert len(probs["choice"]) == 53
+        assert set(probs["noul"]) == {"true", "false"} and set(probs["score"]) == {"0", "1", "2"}
+
+
+def test_absent_comparator_and_floors_cannot_promote(proof):
+    rows, arms, revisions = proof
+    with pytest.raises(KeyError):
+        S.summarize(rows, {"v2": arms["v2"]}, revisions, synthetic=True)
+    # Neither a successful integrity screen nor an invalid run has a positive
+    # promotion marker; caller-supplied floor claims are not an input to this rule.
+    for integrity_ok in (True, False):
+        result = R.verdict(integrity_ok)
+        assert result["promotable"] is result["beats_clef"] is result["spend_authorized"] is False
+        assert result["floors"] == dict.fromkeys(R.REQUIRED_FLOORS, "unmeasured")
+
+
+def test_pinned_data_hash_refused_before_parsing_or_kit_import(tmp_path, monkeypatch):
+    changed = tmp_path / "changed.gz"
+    changed.write_bytes(b"not the pinned DEV; do not decompress")
+    monkeypatch.setattr(S, "read_jsonl_strict", lambda *a: pytest.fail("changed rows were parsed"))
+    with pytest.raises(ValueError, match="row file hash"):
+        S.audit_files(changed, tmp_path / "missing", tmp_path / "missing", tmp_path / "missing")
+
+
+def test_strict_raw_reader_rejects_duplicate_truncated_and_missing(tmp_path):
+    p = tmp_path / "raw.jsonl"
+    for text in ('{"run_id":"a"}\n{"run_id":"a"}\n', '{"run_id":"a"}', '{"run_id":"b"}\n'):
+        p.write_text(text)
+        with pytest.raises(ValueError):
+            S.read_results_strict(p, ["a"])
+
+
+def test_failed_cli_writes_invalid_report_and_fresh_out(tmp_path):
+    out = tmp_path / "out"
+    code = S.main(["audit", "--rows", str(tmp_path / "missing"), "--v1", "missing", "--v2", "missing",
+                   "--identities", "missing", "--out", str(out)])
+    assert code == 3
+    report = json.loads((out / "report.json").read_text())
+    assert report["screen_status"] == "invalid" and report["promotable"] is report["beats_clef"] is False
+    with pytest.raises(FileExistsError):
+        S.main(["dry-run", "--out", str(out)])
+
+
+def test_real_shell_executes_cpu_dry_run(tmp_path):
+    bash = shutil.which("bash")
+    if sys.platform == "win32":
+        bash = str(Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Git/bin/bash.exe")
+    assert bash and Path(bash).exists(), "bash required for shell exit proof"
+    out = tmp_path / "shell-proof"
+    env = dict(os.environ, PYTHON=sys.executable, CUDA_VISIBLE_DEVICES="")
+    result = subprocess.run([bash, str(ROOT / "jobs/rwkv7_code_label_screen/screen_job.sh"), "--dry-run", str(out)],
+                            cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+    report = json.loads((out / "report.json").read_text())
+    assert report["synthetic"] is True and report["gpu_used"] is report["model_loaded"] is False
+    assert report["promotable"] is report["beats_clef"] is False
+    assert not any(p.name.endswith("DONE") or p.name.endswith("PASS") for p in out.iterdir())
+    reject = subprocess.run([bash, str(ROOT / "jobs/rwkv7_code_label_screen/screen_job.sh"), "--launch", str(out)],
+                            cwd=ROOT, env=env, capture_output=True, timeout=10)
+    assert reject.returncode == 2
