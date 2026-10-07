@@ -155,12 +155,12 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Status:** ENFORCED (structure). The promotion rule itself (paired CI > 0 plus G12/G13 plus review) is a review item.
 
 ### L-18 Contradictory coordination rules
-- Date: 2026-10-06 (found by the coordinator's pre-mortem; resolved 2026-10-07 after the user took over both tracks).
-- Symptom: old two-owner text mixed review sufficiency with spend authorization and could imply that an agent's review or acknowledgement permitted launch.
-- Cost: none billed. The risk was either an unnecessary hold or an unauthorized launch.
-- Root cause: superseded two-owner rules remained after Codex took over both tracks.
-- **Check:** `tests/test_jobs_lint.py::test_coordination_requires_issue_level_user_spend_ok` asserts that every paid job has its own issue, exact estimate/stop condition, independent review, and the user's explicit OK; reviewer approval alone is insufficient.
-- **Status:** RESOLVED. Keep `COORDINATION.md`, this lesson, and the enforcing test synchronized when spend authority changes.
+- Date: 2026-10-06; policy clarified 2026-10-07 after Codex took over both tracks.
+- Symptom: contradictory approval language both blocked jobs already within the user's approved envelope and risked treating reviewer approval as permission to exceed it.
+- Cost: none billed. The practical risk was an unnecessary training delay or an unbounded spend claim.
+- Root cause: the prior two-owner process did not separate the user's standing $525 SF / $250 Track D authorization from independent review of each exact job.
+- **Check:** `tests/test_jobs_lint.py::test_coordination_requires_bounded_autonomous_spend` requires a per-job issue, planned ledger row, exact estimate and stop condition, independent fresh-context review, live balance/expiry/MTD/workspace-cap preflight, and `validate_job` without force. It rejects a per-job user-OK gate inside the standing envelope, while preserving user authorization for exceeding either budget limit, collaborator spending, Lambda, and outward-facing actions.
+- **Status:** RESOLVED. Codex may spend autonomously only inside the standing envelope and allocation after all per-job proofs and preflights pass. Keep the coordination, checklist, issue template and enforcing test synchronized.
 
 ### L-19 The benchmark edition changed under us
 - Date: 2026-10-06 (Track D, found via research PR #92; fixed in PR #95).

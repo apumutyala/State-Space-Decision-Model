@@ -113,7 +113,7 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
    - the capped experiment;
    - scale-up.
 
-   Each paid rung needs the previous rung's merged receipt, a `spend` issue with the exact estimate and stop condition, an independent fresh-context adversarial review, and the user's explicit OK in that issue.
+   Each paid rung needs the previous rung's merged receipt, a per-job `spend` issue with the exact estimate and stop condition, an independent fresh-context adversarial review of that exact job, and a passing live spend preflight. The user has preauthorized Codex to spend within the shared $525 SF envelope and $250 System 1 allocation; no per-job user OK is required inside those limits.
 3. **Parallelise within a track.** Codex runs independent bounded sub-tasks concurrently using fresh-context subagents or worktrees, one owner and branch per task (`codex/d-<task>`, `codex/l0-<task>`). Work that doesn't depend on hardware (code, data, analysis, review) never waits for GPU work.
 4. **Pipeline across stages.** While one stage measures, the next is implemented and the previous one is reviewed. GPU time is serialised (one experiment per GPU); nothing else is.
 5. **Adversarial review.** A fresh-context adversarial subagent reviews each PR before merge and independently re-derives reported numbers from receipts or raw predictions.
@@ -131,11 +131,13 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
    - **Spend:** counts against the $5k ceiling, not the SF credits. It's logged in `LEDGER.md` with provider = lambda, and goes through the same `spend` issue and spend ladder.
 3. **Local:** the RTX 5070 Ti laptop (12 GB) handles CPU-only $0-rung smoke tests. Do not run GPU jobs on anyone's laptop; workers share the device.
 
-## Independent review and spend sufficiency (user direction, 2026-10-07)
+## Independent review and preauthorized spend (user direction, 2026-10-07)
 
 Codex owns Track D and Track L; fresh-context adversarial subagents are the independent reviewers. One nonauthor reviewer is required before merge to `agent-main`. Fix material findings first and rerun the relevant checks. Results require independent remeasurement. These rules never authorize a merge to `main`.
 
-Every paid job requires its own `spend` issue, planned `LEDGER.md` row, hard runtime/cost stop, and the user's explicit OK in that issue after independent review. Stay within the approved envelope and track allocation; a reviewer's GO is not spend authorization.
+Every paid job requires its own `spend` issue, planned `LEDGER.md` row, hard runtime/cost stop, one fresh-context nonauthor reviewer who approves the exact job and cost, and a live provider preflight. Before submission, refresh credit balance and expiry, MTD and outstanding commitments, set the workspace cap, and require `validate_job` to pass without `force`.
+
+The user's standing authorization lets Codex submit SF jobs autonomously within the shared $525 SF envelope and the $250 System 1 allocation. The reviewer GO and spend issue document that bounded authorization; neither can enlarge the envelope or allocation, waive a stop, or bypass a failed preflight. Do not pause for a second user approval on a job that stays within these limits. Any spend beyond either limit, use of Lambda (the $5k figure is only a planning ceiling), or outward-facing/public action still requires the user's explicit authorization.
 
 ## Lean review (user direction, 2026-10-06)
 
@@ -155,5 +157,5 @@ Human teammates with write access, and the coding agents they send, work on rese
 - **PRs.** Into `agent-main` only, when ready, using the PR template with a scoped claim and a receipt. Merge needs one independent fresh-context adversarial reviewer who did not write the code; findings are fixed first. Results PRs get their headline number re-derived by someone else.
 - **Shared contracts.** `interfaces/DECISION_LANGUAGE_V0.md`, `INTERFACE.md`, `decide/schema.py` wire shapes, `safety_eval/PREREG.md`, `SAFETY_SPEC.md` rows and `harness/manifests/` change only through an `interface` issue, independent adversarial review and version bump. Anything reaching `main` needs the user's approval.
 - **Integrity.** Never open or tune on the sealed TEST slice, Decision Index test items or the held-out D1-B templates. Open-weight teachers only. Every training set goes through the contamination guard with a committed log.
-- **Spend.** Collaborators do not spend the shared SF credits (or Lambda, which counts against the $5k ceiling) without the user's explicit OK on a `spend` issue that carries the estimate, stop condition and a planned `LEDGER.md` row; the spend ladder applies ($0 CPU → real-hardware qualification sized within the approved track allocation → capped → scale-up). Do not impose the superseded fixed ≤$20 qualification ceiling. Keep a measured per-job maximum and stop condition, never exceed the shared $525 envelope or $250 System 1 line without the user's updated authorization, and never run GPU jobs on anyone's laptop. Record actual cost and stop nodes.
+- **Spend.** Codex's SF authorization is the bounded standing authorization in “Independent review and preauthorized spend.” Other collaborators require the user's explicit OK on a `spend` issue before spending shared funds; no collaborator may use Lambda without that approval. The spend ladder applies ($0 CPU → real-hardware qualification sized within the approved track allocation → capped → scale-up). Do not impose the superseded fixed ≤$20 qualification ceiling. Keep a measured per-job maximum and stop condition, never exceed the shared $525 envelope or $250 System 1 line, and never run GPU jobs on anyone's laptop. Record actual cost and stop nodes.
 - **Identity.** Each contributor commits under their own name and email; nobody commits as another person. The repo stays private.
