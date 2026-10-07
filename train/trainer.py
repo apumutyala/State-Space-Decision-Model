@@ -40,6 +40,21 @@ from .lora import apply_lora, lora_parameters
 from .losses import LossConfig, decision_loss
 
 
+def teacher_tensor(batch, lp: torch.Tensor) -> torch.Tensor:
+    """[B, K] teacher probabilities (``Item.teacher``, in ``row.option_ids`` order; ``train.teacher.attach``), zero on
+    padded options; a row without a teacher is all NaN (``decision_loss`` falls back to the arm for it)."""
+    t = torch.full(lp.shape, float("nan"), dtype=lp.dtype, device=lp.device)
+    for b, it in enumerate(batch):
+        tp = getattr(it, "teacher", None)
+        if tp is None:
+            continue
+        if len(tp) != it.row.n_options:
+            raise ValueError(f"{it.id}: teacher has {len(tp)} options, row has {it.row.n_options}")
+        t[b] = 0.0
+        t[b, : len(tp)] = torch.tensor(tp, dtype=lp.dtype, device=lp.device)
+    return t
+
+
 @dataclass
 class TrainConfig:
     head: str = "integrator"
@@ -85,7 +100,7 @@ class TrainConfig:
 
     def to_json(self) -> dict:
         d = asdict(self)
-        d["loss"] = asdict(self.loss)
+        d["loss"] = self.loss.identity()  # KD fields only when KD is on (old hashes unchanged)
         if d["axis_loss_weight"] == 0.0:
             d.pop("axis_loss_weight")  # preserve legacy config identities
         for k in self.EXECUTION:  # at their defaults the execution fields are left out: old records stay identical
@@ -184,6 +199,10 @@ class Trainer:
         # Seed the ambient RNGs FIRST, before any initialisation below. Head init (DecisionModel)
         # and LoRA init (explicit generator) are already independent of the ambient state; this
         # makes everything after construction (dropout, data order helpers) a function of cfg.seed.
+        if cfg.loss.kd and not any(getattr(i, "teacher", None) is not None for i in train_items):
+            raise ValueError("loss.kd_alpha > 0 but no training item carries a teacher distribution: call "
+                             "train.teacher.attach(items, load_teacher(...)) first (a KD run without a teacher is the "
+                             "clef arm under another name)")
         self._seed_all(cfg.seed)
         self.guard = guard
         self.model, self.cfg = model, cfg
@@ -246,7 +265,8 @@ class Trainer:
     def _supervised_loss(self, fw, batch: list[Item]) -> torch.Tensor:
         lp = fw.log_probs.float()
         y = torch.tensor([i.label for i in batch], device=lp.device)
-        loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss)
+        teacher = teacher_tensor(batch, lp) if self.cfg.loss.kd else None
+        loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss, teacher)
         weight = self.cfg.axis_loss_weight
         if type(weight) not in (int, float) or not 0 <= weight < float("inf"):
             raise ValueError("axis_loss_weight must be finite and nonnegative")
