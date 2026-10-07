@@ -40,6 +40,9 @@ FLA = "fla"
 FLA_SAFE_GATE = "fla_safe_gate"  # safe_gate=True: w_log is in [-e^-0.5, 0], inside fla's "approximately [-5, 0)"
 FLA_NAMES = (FLA, FLA_SAFE_GATE)
 VENDORED = ("eager", "chunked")
+#: our own pure-PyTorch rearrangement of "chunked" with fewer launches (heads/rwkv7_lean.py): same algebra, CPU-tested
+#: against the vendored function (tests/test_cell_perf.py), so it needs no GPU gate; default off
+LEAN = ("chunked_lean",)
 FLA_CORE_PIN = "0.5.2"
 #: flipped ONLY by the coordinator after jobs/fla_rwkv7 returns ADOPT (receipt path in jobs/fla_rwkv7/JOB_SPEC.md)
 GPU_VERIFIED = False
@@ -185,6 +188,11 @@ def select_wkv(model_or_config, name: str | None, *, allow_unverified: bool = Fa
         return str(cfgs[0].wkv_implementation)
     if name in VENDORED:
         value = str(name)
+    elif name in LEAN:
+        from heads import rwkv7_lean
+
+        rwkv7_lean.register()
+        value = WkvName(name)
     elif name in FLA_NAMES:
         if not (GPU_VERIFIED or allow_unverified):
             raise RuntimeError(f"wkv={name!r} is not GPU-verified yet (jobs/fla_rwkv7 gate); "
@@ -192,7 +200,7 @@ def select_wkv(model_or_config, name: str | None, *, allow_unverified: bool = Fa
         register()
         value = WkvName(name)
     else:
-        raise ValueError(f"unknown wkv implementation {name!r}; known: {VENDORED + FLA_NAMES}")
+        raise ValueError(f"unknown wkv implementation {name!r}; known: {VENDORED + LEAN + FLA_NAMES}")
     for cfg in cfgs:
         cfg.wkv_implementation = value
     return str(value)

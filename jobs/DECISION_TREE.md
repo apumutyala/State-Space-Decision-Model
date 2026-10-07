@@ -11,9 +11,12 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 |---|---|---|---|---|
 | qual (rung-2 qualification, unchanged) | `jobs/qual/` | $18.81 | $20 | <= $8.91 (one attempt, validate_job) |
 | qual_c_only (phase-C re-run after the job-c4zkm 9B OOM; A and B passed there; env `QUAL_MODE=c_only`) | `jobs/qual/job_params_c_only.json` | $14.85 | $20 | <= $6.93 (one attempt; $7.92 with the 20-min build) |
-| probe9b (one-layer 9B conversion probe) | `jobs/probe9b/` | $28.21 | $40 | ~$11.04 |
+| probe9b (one-layer 9B conversion probe; re-priced from the job-4j3vu measured rates, issue #68) | `jobs/probe9b/` | $28.21 | $40 | ~$6.58 |
 | rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $16.34 | $20 | ~$4.70 |
 | rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $19.30 | $20 | ~$7.72 |
+| fla_rwkv7 (fla chunk_rwkv7 gate, v1 rule; ran as job-jn47u) | `jobs/fla_rwkv7/` | $3.96 | $4.50 | ~$1.09 |
+| fla_rwkv7 truth_v2 (RULE v2 + A1: fp64-truth numerics, m2 cell train speed; `fla_job.sh truth_v2`) | `jobs/fla_rwkv7/job_params_truth_v2.json` | $5.74 | $6 | ~$1.19 |
+| cell_step_profile (m2 cell train step: baseline / ckpt_rows_lean / ckpt_rows / ckpt; pre-registered rule v1-A2) | `jobs/cell_step_profile/` | $8.22 | $8.50 | ~$1.59 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
 need one cap covering all of them: MTD + `costs.concurrent_cap_usd([...])` = the ceiling of the sum of their worst
@@ -39,11 +42,15 @@ submitted while A can still bill). A job submitted alone: MTD + its hard cap.
 | probe exit 3/4 (its own stop rule) | rwkv7 stage B |
 | any other non-zero exit | diagnose; at most one probe re-run from the reserve |
 
+The verdict is computed from the 511e8dd `success_rule` only. `decision.json: diagnostic_bands_posthoc` (gate dNLL / KL /
+cosine bands and a suggested recipe change) was written after seeing the job-4j3vu qualification gate numbers; it is
+reported for the reviewer and never changes the verdict or authorises spend.
+
 Parent choice at m1 (PLAN gate "parent selected and frozen") compares the Q9-AF probe arms and the RWKV7 stage-A
 readout on the **same 2,008-row DEV subset** (`jobs/common/dev_subset_m1.json`), plus steer and memory. It is a
 recorded decision, not an automatic one.
 
-## The $525 envelope (ledger: $0 spent as of 2026-10-06; $500 promo expires 2026-10-27T06:53Z)
+## The $525 envelope (October MTD actual spend $8.43 as of 2026-10-06, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)
 
 | Line (PLAN.md) | Budget | Worst case committed by this tree |
 |---|---|---|
@@ -53,6 +60,6 @@ recorded decision, not an automatic one.
 | System 1, branch C: qual folds | $250 | rwkv7 A + B = $35.64 -> $214.36 left for m2 |
 | Language / Reserve | $100 / $100 | untouched; re-runs come from the reserve |
 
-Worst-case envelope total is at most $260.88 (branch A), so every branch fits $525 with the Language and Reserve
+Worst-case envelope total, including the $8.43 MTD spend, is at most $269.31 (branch A), so every branch fits $525 with the Language and Reserve
 lines intact. Branch A leaves System 1 only ~$4 above the cache-fork m2 plan: if the full-8 job runs over its
 estimate, m2 takes option (b)/(c) from M2_RUN_SPEC or draws on the reserve via a spend issue.
