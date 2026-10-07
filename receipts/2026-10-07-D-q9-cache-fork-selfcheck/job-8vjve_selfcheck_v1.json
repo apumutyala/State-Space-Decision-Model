@@ -1,0 +1,29 @@
+{
+ "job": "job-8vjve (stock_train)",
+ "selfcheck_v1": [
+  {
+   "fork_rel_diff": 0.0402233824133873,
+   "lm_abs_diff": 0.15786409378051758,
+   "n_cont": 9
+  },
+  {
+   "fork_rel_diff": 0.03890712186694145,
+   "lm_abs_diff": 0.12453222274780273,
+   "n_cont": 10
+  },
+  {
+   "fork_rel_diff": 0.0350833386182785,
+   "lm_abs_diff": 0.016598224639892578,
+   "n_cont": 2
+  }
+ ],
+ "reason": "self-check failed: [{'fork_rel_diff': 0.0402233824133873, 'lm_abs_diff': 0.15786409378051758, 'n_cont': 9}, {'fork_rel_diff': 0.03890712186694145, 'lm_abs_diff': 0.12453222274780273, 'n_cont': 10}, {'fork_rel_diff': 0.0350833386182785, 'lm_abs_diff': 0.016598224639892578, 'n_cont': 2}]",
+ "env": {
+  "torch": "2.13.0+cu126",
+  "cuda": "12.6",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "transformers": "5.17.0",
+  "flash-linear-attention": "0.5.2",
+  "fla-core": "0.5.2"
+ }
+}

@@ -282,3 +282,33 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: `summarize.py report` wrote the whole report, including per-area and per-benchmark bootstrap blocks of every score and compare, to `$GMN_RESULT_PATH`.
 - **Check:** the full report now goes to `report.json` in the output directory. `result.json` holds `compact_result(...)`: index point estimates and CIs, gates and counts, `full_report: "report.json"`, and a hard fallback that keeps it under `RESULT_MAX_BYTES` (31 KiB). Tests: `tests/clef/test_results_strict.py::test_result_json_stays_under_the_platform_limit_job_ftpnf` (job-ftpnf's real 34,322-byte report, which compacts to about 2.8 KB with the same headline numbers) and `tests/clef/test_clef_job_sh.py::_result`, which asserts every dry-run result.json is < 32 KiB.
 - **Status:** ENFORCED for the Clef runner. Other runners write small result files today; there is no generic size check yet.
+### L-28 Cache self-check compared two bf16 computations against unmeasured bounds (job-8vjve, job-b7d3n)
+- Date: 2026-10-07.
+- Symptom: both stock feature-cache parts stopped in arm_stock with exit 2 at the numerics self-check: job-8vjve (stock_train, $0.48) and job-b7d3n (stock_dev, $0.43).
+  - The cached fork differed from a plain full-sequence forward by fork rel 0.035-0.040 and LM 0.017-0.158 (n_cont 2-10), against bounds of 0.03 / 0.15.
+  - The log's `causal_conv1d` fallback warning is the reference conv and is a red herring: the CPU tests run the same fallback.
+- Cost: $0.91 and one launch round.
+- Root cause: no extractor bug. The gate's reference was another bf16 computation, so the gate measured bf16 rounding, and its absolute bounds had no measurement behind them. This is the L-06 class: a gate reference not validated through the production path.
+  - Measured on the real Qwen3.5-0.8B (same hybrid family as the 9B), CPU, real rows (`scripts/q9_cache_bf16_noise_probe.py`):
+    - In fp32 the cached fork equals the plain forward to 2.4e-6 (fork) / 4.9e-6 (LM).
+    - In bf16 the cached fork and the plain forward are each about 0.02 from the fp32 truth (cache/plain distance ratio 0.85-1.08). Between themselves they differ by 0.018-0.029, which on the deeper, wider 9B under the GPU kernels becomes the observed 0.035-0.040.
+  - The v1 metric could not separate the correct path (0.029) from an injected off-by-one KV bug (0.032) or a zeroed conv state (0.045).
+  - Candidates (a) GDN state handling at the fork, (b) the causal_conv1d fallback and (c) the KV chunking / positions are each excluded by the fp32 exactness: one injected error per candidate fails the new logic check at 7-340x its tolerance.
+- **Check:**
+  - `jobs/q9_feature_cache/extract.selfcheck` (v3 after the PR #111 review) compares against an fp32 TRUTH. It uses fp32 weights (restored bit-exactly) and the pure-torch reference kernels with TF32 off (`reference_kernels`), because fla's fp32 chunk kernel uses TF32. The swap fails closed (`KernelSwapError`): all 4 kernels must be swapped, and the implementations are recorded.
+  - It covers every row of each request's first two rows and options {0, K//2, K-1}. q_end / q_pre / e are checked against the plain fp32 hidden states (5e-3).
+  - The logic check: the cached fork in fp32 must equal the plain fp32 forward (1e-3). It sits about 400x above the exact path's floor and below every injected bug (≥ 6.9e-3).
+  - The cache check: the bf16 production fork may be no further from the truth than 1.5x the plain bf16 forward, plus a floor.
+  - The fla fp32 pass (production kernels at fp32) is RECORD-ONLY on the first launch.
+  - Tests (`tests/test_q9_feature_cache.py`):
+    - `test_selfcheck_v2_passes_the_exact_fork_in_bf16` (all rows, the three options, ratios and bounds recorded);
+    - `test_selfcheck_v2_catches_injected_fork_bugs[conv_zero|rec_zero|kv_drop1]`;
+    - `test_selfcheck_v3_catches_the_reviewers_missed_bugs[q_end_offby1|q_pre_span_shift|e_option_span_shift|later_row_lm_offby1|middle_option_swap]`;
+    - `test_reference_kernels_fail_closed_when_a_kernel_cannot_be_swapped`;
+    - `test_fla_pass_is_record_only_unless_gated`;
+    - `test_fp32_weights_restores_every_tensor_bitwise_and_reference_kernels_restore`.
+  - Receipt: `receipts/2026-10-07-D-q9-cache-fork-selfcheck/` (the noise probe, the bug-injection probe, job-8vjve's v1 numbers).
+- **Status:** PARTIAL.
+  - The logic check runs the reference kernels, so it proves the fork LOGIC on the box. A bug confined to fla's continuation kernel is covered by the bf16 cache check's ratio bound and by the fla fp32 pass. That pass is record-only until its 9B noise is measured; the first GPU summary measures it.
+  - The first passing GPU self-check (its `summary_*.json` selfcheck records) closes this entry.
+  - Generalising the rule: every numerics gate needs its reference run through the production path and a measured noise floor before spend (LAUNCH_CHECKLIST row 12). That remains a review item, not a lint.
