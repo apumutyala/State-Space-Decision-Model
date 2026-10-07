@@ -346,3 +346,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the source hash was checked only when loading. The mutable bundle crossed another trust boundary before trainer conversion.
 - **Check:** `language_growth/l1_world_training.py::L1WorldTrainingData.fit_items` re-hashes the pinned fit bytes and checks exact fit-world membership before importing/calling the existing Item converter. `language_growth/tests/test_l1_world_training.py::test_reserved_calibration_rows_cannot_be_appended_before_fit_conversion` injects the reserved rows and asserts rejection. Returned top-level cohorts are tuples.
 - **Status:** ENFORCED.
+
+### L-32 The recurrent-state fake used the wrong slot-container shape
+- Date: 2026-10-07.
+- Symptom: a fresh review compared the protocol against the installed Transformers cache implementation and found that the fake used lists while `LinearAttentionLayer` stores recurrent states and initialization flags as dictionaries keyed by `0, 1, 2`. The fake passed while every real native RWKV capture would have refused.
+- Cost: $0; caught before any pretrained model/checkpoint was loaded or measured.
+- Root cause: the test double matched the conceptual slot count but not the runtime container contract.
+- **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
+- **Status:** ENFORCED.
