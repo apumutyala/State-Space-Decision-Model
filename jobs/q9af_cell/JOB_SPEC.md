@@ -14,6 +14,16 @@ THROUGHPUT (run_cell exit 26), NO_MEASUREMENT. Pair: R256 iff paired r256 - r64 
 G12 / G13 and their margins are `train.m2_gates` / `train.promotion.MARGINS` (PR #102, Codex #36 contract): read
 through the gates exit code, never re-derived. A gate REJECT is a measured outcome (job exit 0, verdict recorded).
 
+**Amendment A1 (2026-10-07, after independent review, before any data)** (its own commit; rule.py, its tests and this
+text only; nothing loosened):
+- A G12 reject (rc 40) can never yield CONTINUE or PROMOTE (rc 40 / 42 -> FOLD unless an ESCALATE condition holds first).
+- An underpowered G13 (rc 45) yields INCONCLUSIVE, never PROMOTE or CONTINUE (action: expand the frozen retention
+  evaluation and re-gate the same checkpoint).
+- A run that failed its training-pass rule cannot PROMOTE.
+- Bootstrap B = 2000 and seed = 0 are pinned in the rule (`BOOTSTRAP_B`, `BOOTSTRAP_SEED`), not in summarize.py; a
+  verdict computed under any other B / seed is NO_MEASUREMENT.
+- Every verdict maps to an action (`rule.ACTIONS`, pinned by the tests).
+
 ## Modes (one runner, `jobs/q9af_cell/q9af_cell_job.sh`, env `Q9AFC_MODE`)
 
 | Mode | What | depends on |

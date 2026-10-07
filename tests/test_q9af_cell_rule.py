@@ -28,9 +28,31 @@ def test_constants_are_pinned():
     assert R.RANK_VERDICTS == ("R256", "R64", "NO_MEASUREMENT")
 
 
+def test_amendment_a1_constants_are_pinned():
+    assert R.AMENDMENTS == ("A1",)
+    assert R.GATES_G12_REJECT == (40, 42) and R.GATES_UNDERPOWERED == 45
+    assert R.BOOTSTRAP_B == 2000 and R.BOOTSTRAP_SEED == 0
+    assert R.VERDICTS_A1 == R.VERDICTS + ("INCONCLUSIVE",)
+    assert set(R.ACTIONS) == set(R.VERDICTS_A1) and all(isinstance(v, str) and v for v in R.ACTIONS.values())
+
+
+def test_every_reachable_verdict_maps_to_an_action():
+    import itertools
+
+    seen = set()
+    for rc, gates, af, tp, idx, lo in itertools.product((0, 24, 26, None), (0, 40, 41, 42, 43, 44, 45), (True, False),
+                                                       (True, False), (30.0, 45.0, 52.0, 60.0), (-1.0, 2.0)):
+        v = R.decide(_m(train_rc=rc, gates_rc=gates, attention_free=af, train_pass=tp, full_dev_child=idx,
+                        full_dev_gain={"point": lo + 1, "lo": lo, "hi": lo + 4}))["verdict"]
+        assert v in R.ACTIONS, v
+        seen.add(v)
+    assert seen == set(R.VERDICTS_A1)
+
+
 def _m(**over):
     m = {"export_pinned": True, "attention_free": True, "train_rc": 0, "train_pass": True, "gates_rc": 0,
-         "gates_stages": ["g12", "g13"], "full_dev_child": 52.0, "full_dev_gain": {"point": 12.0, "lo": 10.0, "hi": 14.0}}
+         "gates_stages": ["g12", "g13"], "full_dev_child": 52.0, "full_dev_gain": {"point": 12.0, "lo": 10.0, "hi": 14.0},
+         "bootstrap": {"B": 2000, "seed": 0}}
     m.update(over)
     return m
 
@@ -51,6 +73,17 @@ def _m(**over):
     ({"gates_rc": 43, "full_dev_child": 45.0}, "CONTINUE"),
     ({"gates_rc": 0, "full_dev_child": 49.99}, "CONTINUE"),
     ({"gates_rc": 40, "full_dev_child": 43.99}, "FOLD"),
+    # Amendment A1
+    ({"gates_rc": 40}, "FOLD"),  # (a) a G12 reject never CONTINUE / PROMOTE
+    ({"gates_rc": 40, "full_dev_child": 45.0}, "FOLD"),
+    ({"gates_rc": 42, "full_dev_gain": {"point": 1.0, "lo": -1.0, "hi": 4.0}}, "FOLD"),
+    ({"gates_rc": 42}, "ESCALATE"),  # both rejected with a positive capability gain: the user decides
+    ({"gates_rc": 40, "full_dev_child": 57.0}, "ESCALATE"),
+    ({"gates_rc": 45}, "INCONCLUSIVE"),  # (b) underpowered G13
+    ({"gates_rc": 45, "full_dev_child": 45.0}, "INCONCLUSIVE"),
+    ({"train_pass": False}, "CONTINUE"),  # (c) a failed training-pass rule cannot PROMOTE
+    ({"bootstrap": {"B": 1000, "seed": 0}}, "NO_MEASUREMENT"),  # (d) B and seed are part of the rule
+    ({"bootstrap": None}, "NO_MEASUREMENT"),
     ({"train_pass": False, "full_dev_gain": {"point": 0.5, "lo": -1.0, "hi": 2.0}}, "FOLD"),
 ])
 def test_decision_table(over, verdict):
@@ -67,3 +100,4 @@ def test_rank_pair():
     assert R.compare_ranks(ok, ok, {"point": 0.5, "lo": -0.5, "hi": 1.5})["verdict"] == "R64"
     assert R.compare_ranks(ok, {"verdict": "THROUGHPUT"}, {"point": 9, "lo": 8, "hi": 10})["verdict"] == "NO_MEASUREMENT"
     assert R.compare_ranks(ok, ok, None)["verdict"] == "NO_MEASUREMENT"
+    assert R.compare_ranks(ok, {"verdict": "INCONCLUSIVE"}, {"point": 9, "lo": 8, "hi": 10})["verdict"] == "NO_MEASUREMENT"

@@ -37,7 +37,20 @@ Verdicts of ONE variant (``decide``), first match wins:
 Rank pair (``compare_ranks``, E9 of techniques/10): paired child(r256) - child(r64) on full DEV (0.2.1):
   R256  CI lower > RANK_MIN_GAIN_PTS (r256 is better beyond noise: keep the 4x adapter)
   R64   otherwise (r64 is cheaper and transfers better per techniques/10 E9; ties go to r64)
-  NO_MEASUREMENT if either variant is NO_MEASUREMENT / THROUGHPUT / HYBRID_REPORT.
+  NO_MEASUREMENT if either variant is NO_MEASUREMENT / THROUGHPUT / HYBRID_REPORT (A1: or INCONCLUSIVE).
+
+Amendment A1 (2026-10-07, after independent review, before any data). Committed alone (rule.py, its tests and the
+JOB_SPEC rule text only) after the independent review of PR #121 (FIX-THEN-LAUNCH, rule edge cases); no q9af_cell
+run, export or Index number existed. Nothing above is loosened; A1 only removes positive outcomes and pins inputs:
+  (a) A G12 reject (gates rc 40, or 42 = both rejected) can never yield CONTINUE or PROMOTE: such a run is FOLD unless
+      an ESCALATE condition holds first (the user decides a Clef-flash-level or safety-vs-capability result).
+  (b) An underpowered G13 (gates rc 45) yields INCONCLUSIVE, never PROMOTE or CONTINUE. Action: expand the frozen
+      evaluation (retention cohort) and re-gate the SAME checkpoint; the variant is no scale-up base meanwhile.
+  (c) A run that failed its training-pass rule (run_cell pass_rule: finite, loss drop, eval NLL improves, memory)
+      cannot PROMOTE (it may still be CONTINUE / FOLD / ESCALATE by the other conditions).
+  (d) The bootstrap is part of the rule: B = BOOTSTRAP_B, seed = BOOTSTRAP_SEED for every CI the rule reads.
+      ``decide`` requires the inputs to state them (``m["bootstrap"]``) and returns NO_MEASUREMENT otherwise.
+  (e) Every verdict maps to an action (``ACTIONS``, pinned by the tests).
 """
 from __future__ import annotations
 
@@ -62,6 +75,23 @@ TRAIN_TOO_SLOW = 26
 GATES_ACCEPT = 0
 GATES_G13_REJECT = (41, 42)
 VERDICTS = ("NO_MEASUREMENT", "THROUGHPUT", "HYBRID_REPORT", "FOLD", "ESCALATE", "PROMOTE", "CONTINUE")
+#: --- Amendment A1 (2026-10-07, after independent review, before any data) ---
+AMENDMENTS = ("A1",)
+GATES_G12_REJECT = (40, 42)
+GATES_UNDERPOWERED = 45
+BOOTSTRAP_B = 2000
+BOOTSTRAP_SEED = 0
+VERDICTS_A1 = VERDICTS + ("INCONCLUSIVE",)
+ACTIONS = {
+    "NO_MEASUREMENT": "fix the missing input / stop cause and re-run; no recipe conclusion",
+    "THROUGHPUT": "re-price from the measured step time (run_cell exit 26); no recipe conclusion",
+    "HYBRID_REPORT": "report as a hybrid (NOT attention-free); decision-needed issue to the user; never promoted",
+    "FOLD": "stop this variant; log the negative result in CANDIDATES.md",
+    "ESCALATE": "decision-needed issue to the user before any further spend, PREREG, full Index or TEST unseal",
+    "PROMOTE": "CANDIDATES.md row; the variant is the scale-up base",
+    "CONTINUE": "a scale-up cell may build on it; not a candidate",
+    "INCONCLUSIVE": "expand the frozen retention evaluation and re-gate the same checkpoint; not a scale-up base",
+}
 RANK_VERDICTS = ("R256", "R64", "NO_MEASUREMENT")
 
 
@@ -73,7 +103,8 @@ def decide(m: dict[str, Any]) -> dict[str, Any]:
     """``m`` (built by summarize.py from the job outputs):
       export_pinned (bool), attention_free (bool), train_rc (int), train_pass (bool), gates_rc (int | None),
       gates_stages (list[str]), full_dev_child (float, 0.2.1 index point), full_dev_gain (dict point/lo/hi: paired
-      child - parent, 0.2.1), capability_gain_positive (bool, optional; defaults to full_dev_gain lo > 0)."""
+      child - parent, 0.2.1), capability_gain_positive (bool, optional; defaults to full_dev_gain lo > 0),
+      bootstrap ({"B", "seed"}: A1 d, must equal BOOTSTRAP_B / BOOTSTRAP_SEED)."""
     why: list[str] = []
     if not m.get("export_pinned"):
         return {"verdict": "NO_MEASUREMENT", "why": ["export pin not filled"], "rule": RULE_ID}
@@ -89,6 +120,10 @@ def decide(m: dict[str, Any]) -> dict[str, Any]:
                 "rule": RULE_ID}
     if sorted(m.get("gates_stages") or []) != ["g12", "g13"] or m.get("gates_rc") is None:
         return {"verdict": "NO_MEASUREMENT", "why": ["G12 and G13 were not both run"], "rule": RULE_ID}
+    if m.get("bootstrap") != {"B": BOOTSTRAP_B, "seed": BOOTSTRAP_SEED}:  # A1 (d)
+        return {"verdict": "NO_MEASUREMENT", "why": [f"bootstrap {m.get('bootstrap')} != the pinned "
+                                                      f"B {BOOTSTRAP_B} / seed {BOOTSTRAP_SEED} (A1 d)"],
+                "rule": RULE_ID}
     if not m.get("attention_free"):
         return {"verdict": "HYBRID_REPORT", "why": ["parent is a hybrid: attention layers kept; never promoted"],
                 "rule": RULE_ID}
@@ -103,7 +138,13 @@ def decide(m: dict[str, Any]) -> dict[str, Any]:
                                                "decision-needed before any PREREG / full Index"], "rule": RULE_ID}
     if m["gates_rc"] in GATES_G13_REJECT and cap_pos:
         return {"verdict": "ESCALATE", "why": ["G13 rejected with a positive capability gain"], "rule": RULE_ID}
-    if m["gates_rc"] == GATES_ACCEPT and gain["lo"] > 0 and idx >= PROMOTE_MIN_INDEX:
+    if m["gates_rc"] in GATES_G12_REJECT:  # A1 (a)
+        return {"verdict": "FOLD", "why": [f"G12 rejected (gates rc {m['gates_rc']}): never CONTINUE / PROMOTE (A1 a)"],
+                "rule": RULE_ID}
+    if m["gates_rc"] == GATES_UNDERPOWERED:  # A1 (b)
+        return {"verdict": "INCONCLUSIVE", "why": ["G13 underpowered (gates rc 45): never PROMOTE / CONTINUE (A1 b)"],
+                "rule": RULE_ID}
+    if m["gates_rc"] == GATES_ACCEPT and gain["lo"] > 0 and idx >= PROMOTE_MIN_INDEX and trained:  # A1 (c): trained
         return {"verdict": "PROMOTE", "why": ["G12+G13 accepted, gain CI > 0, index >= promote floor"],
                 "rule": RULE_ID}
     if gain["lo"] > 0 and idx >= CONTINUE_MIN_INDEX:
@@ -114,7 +155,7 @@ def decide(m: dict[str, Any]) -> dict[str, Any]:
 
 def compare_ranks(v64: dict, v256: dict, paired_256_minus_64: dict | None) -> dict[str, Any]:
     """E9: ``paired_256_minus_64`` = paired full-DEV (0.2.1) child(r256) - child(r64): point / lo / hi."""
-    bad = {"NO_MEASUREMENT", "THROUGHPUT", "HYBRID_REPORT"}
+    bad = {"NO_MEASUREMENT", "THROUGHPUT", "HYBRID_REPORT", "INCONCLUSIVE"}  # A1: INCONCLUSIVE added
     if v64.get("verdict") in bad or v256.get("verdict") in bad or not paired_256_minus_64 \
             or not all(_num(paired_256_minus_64.get(k)) for k in ("point", "lo", "hi")):
         return {"verdict": "NO_MEASUREMENT", "rule": RULE_ID}
