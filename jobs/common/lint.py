@@ -156,7 +156,10 @@ def chk_schedule(p: dict, **_) -> tuple[bool, str]:
 def chk_worst_case_stated(p: dict, root: Path, job: str, costs, **_) -> tuple[bool, str]:
     w = costs.worst_case_usd(p)
     spec = _read(root, f"jobs/{job}/JOB_SPEC.md")
-    ok = f"{w:.2f}" in spec and w <= p.get("hard_cap_usd", float("inf"))
+    cap = p.get("hard_cap_usd")
+    # Missing/non-finite caps must fail closed; bool is not a dollar amount.
+    valid_cap = type(cap) in (int, float) and 0 < cap < float("inf")
+    ok = valid_cap and f"{w:.2f}" in spec and w <= cap
     return ok, f"worst case ${w:.2f} (costs.worst_case_usd) stated in JOB_SPEC.md and <= hard_cap_usd {p.get('hard_cap_usd')}"
 
 

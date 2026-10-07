@@ -17,7 +17,7 @@ Each item below is enforced by `tests/test_jobs_lint.py`, which runs every check
 | 1 | `build_timeout_minutes >= 60` | `build_timeout` | L-09 |
 | 2 | phase caps + reserve **==** `max_duration_minutes` (no unaccounted minutes) | `schedule` | L-05 |
 | 3 | every cap is measured, not guessed: `expected_minutes` from a receipt, cap >= 1.3–1.5x it (per-job test) | job's own test | L-04, L-05 |
-| 4 | `costs.worst_case_usd` (build + 2 attempts) printed as `$X.XX` in `JOB_SPEC.md`, <= `hard_cap_usd` | `worst_case_stated` | L-08 |
+| 4 | `costs.worst_case_usd` (build + 2 attempts) printed as `$X.XX` in `JOB_SPEC.md`, <= an explicitly stated finite positive numeric `hard_cap_usd` | `worst_case_stated` | L-08 |
 | 5 | registered in `jobs/common/costs.py` `PARAMS` **and** `jobs/DECISION_TREE.md` | `registered` | L-08 |
 | 6 | a test **executes the runner `.sh` in a subprocess** (dry-run mode on CPU); Python-level tests do not count | `shell_test` | L-10 |
 | 7 | no literal backslash-n continuation in any `jobs/**/*.sh` (regex `[\\]n[ \t]+--`, asserted to fire) | `no_backslash_n` | L-10 |
