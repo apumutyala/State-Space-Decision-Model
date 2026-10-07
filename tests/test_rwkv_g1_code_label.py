@@ -1,5 +1,6 @@
 """CPU scripted-output tests; no checkpoint/model construction or forward calls."""
 import copy
+import hashlib
 
 import pytest
 
@@ -75,6 +76,41 @@ def test_original_request_segments_state_ids_and_v1_tail_are_exact(backend):
     rows = b._rows(r)
     assert all(0 not in row["prompt"] and len(row["cont"]) == 1 for row in rows)
     assert r == before and request_fingerprint(r) == fingerprint
+
+
+def test_every_cardinality_1_through_255_preserves_all_offered_options(backend):
+    b, calls = backend
+    table = load_frozen_table()
+    for k in range(1, 256):
+        r = request(k)
+        original = build_prompt_labelled(TEMPLATES[BASE_TEMPLATE_ID], r, "a")
+        labelled = render_code_labels(r, "a")
+        assert non_template(labelled) == non_template(original)
+        assert len([t for t, label in labelled if label == "template" and t.startswith("[ANSWER CODE ")]) == k
+        mapping = b.codebook.option_token_ids(r["questions"]["a"])
+        assert len(mapping) == k
+        assert b.parse_exact_token_ids(r["questions"]["a"], [table[k - 1].token_id]) == f"original-{k - 1:03}"
+    assert not calls
+
+
+@pytest.mark.parametrize("id_style", ["tool_ids", "hash_ids"])
+def test_synthetic_53_option_tool_and_hash_id_cases_preserve_original_semantics(backend, id_style):
+    b, calls = backend
+    r = request(53)
+    criteria = r["questions"]["a"]["criteria"]
+    r["questions"]["a"]["criteria"] = {
+        (hashlib.sha256(key.encode()).hexdigest() if id_style == "hash_ids" else "tool_" + key): text
+        for key, text in criteria.items()}
+    r["ssdm"] = {"limits": {"max_input_tokens": 50000}}  # Artificial byte-codec fixture only.
+    before = copy.deepcopy(r)
+    original = build_prompt_labelled(TEMPLATES[BASE_TEMPLATE_ID], r, "a")
+    labelled = render_code_labels(r, "a")
+    assert non_template(labelled) == non_template(original)
+    response = Decider(b).decide(r)
+    assert response["ssdm"]["status"] == "ok"
+    assert set(response["ssdm"]["raw_probabilities"]["a"]) == set(r["questions"]["a"]["criteria"])
+    assert response["answers"]["a"]["choice"] == min(r["questions"]["a"]["criteria"])
+    assert r == before and len(calls) == 2
 
 
 def test_provenance_split_instruction_and_data_segments_remain_byte_exact(backend):
