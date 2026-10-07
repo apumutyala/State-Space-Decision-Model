@@ -10,20 +10,27 @@ import json
 from typing import Any, Iterable
 
 from .parent_bridge import audience_state
+from .multirecord_data import MULTIWORLD_TRAIN_SPLIT
 
-# L1 is deliberately a single committed train cohort, not a generic split
+# L1 is deliberately a single committed multiworld train cohort, not a generic split
 # extension. Validation, audit, and heldout data cannot enter this branch.
 L1_TRAINING_ALLOWLIST = {
-    "l1_development_train": {
-        "sample_sha256": "2d455c7ad7e2a1116d026bb5801dec0c821de24602375ccecf66b2569011f007",
-        "manifest_sha256": "c5d94f90e4c41daab59fedb6745ecac758bce48b2724acfa7ca13e1dc47e9e2d",
+    MULTIWORLD_TRAIN_SPLIT: {
+        "sample_sha256": "175cf7cc2d7c39a8c931a3a452149be7c141db712bde81a0ce7f606b0a27e9f4",
+        "manifest_sha256": "eaa38a852dab840a51175a12a1a58a74539338f3ee119088a3442f054d0586e7",
     },
+}
+L1_GENERATOR_SOURCE = {
+    "fixture_source_base_commit": "427a3f3b20473669647832e87027d9e3df1c8e87",
+    "generator_source_path": "language_growth/multirecord_data.py",
+    "generator_source_sha256": "e3470d2b61ff2b31790b5ee70dac0528cc94fd8647325c24bd6ba3e1311da14f",
+    "generator_source_git_blob": "c87c835b5094ff2d8ae23fc50416f5c9f851d1c8",
 }
 
 
 def _prepare_l1_training(examples, split, manifest):
     from .multirecord_data import multirecord_manifest, multirecord_rows
-    from .multirecord_eval import FIXTURE_SOURCE_COMMIT, _adapt_task, _canonical
+    from .multirecord_eval import _adapt_task, _canonical
 
     pins = L1_TRAINING_ALLOWLIST[split]
     if (not isinstance(manifest, dict)
@@ -63,7 +70,7 @@ def _prepare_l1_training(examples, split, manifest):
         lineage[task["task_id"]] = {
             "schema": "ssdm.l1_training_lineage.v1", "development_split": split,
             "world_id": task["world_id"], "task_id": task["task_id"],
-            "fixture_source_commit": FIXTURE_SOURCE_COMMIT, **pins,
+            **L1_GENERATOR_SOURCE, **pins,
             "world_rows_sha256": world["rows_sha256"],
             "catalog_sha256": world["catalog_sha256"], "context_ref": world["context_ref"],
         }

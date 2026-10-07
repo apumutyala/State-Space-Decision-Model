@@ -10,13 +10,14 @@ from unittest.mock import patch
 
 from language_growth.development_data import generate_development_tasks
 from language_growth.kernel import check_program
+from language_growth.multirecord_data import MULTIWORLD_TRAIN_SPLIT, MULTIWORLD_VALIDATION_SPLIT
 from language_growth.multirecord_eval import _canonical
 from language_growth.multirecord_training import load_multirecord_training, main
 from language_growth.parent_bridge import audience_state
-from language_growth.training_records import L1_TRAINING_ALLOWLIST, export_training_records
+from language_growth.training_records import L1_GENERATOR_SOURCE, L1_TRAINING_ALLOWLIST, export_training_records
 
-FIXTURES = Path(__file__).resolve().parents[2] / "receipts/2026-10-07-L1-multirecord-data"
-SPLIT = "l1_development_train"
+FIXTURES = Path(__file__).resolve().parents[2] / "receipts/2026-10-07-L1-training-world-distribution"
+SPLIT = MULTIWORLD_TRAIN_SPLIT
 
 
 def source():
@@ -60,9 +61,9 @@ class MultirecordTrainingTests(unittest.TestCase):
         untouched = deepcopy(tasks)
         with patch("language_growth.multirecord_eval.check_program", wraps=check_program) as checker:
             records, actual_manifest = load_multirecord_training()
-        self.assertEqual(checker.call_count, 40)
+        self.assertEqual(checker.call_count, 1280)
         self.assertEqual(actual_manifest, manifest)
-        self.assertEqual((len(records), len({r["id"] for r in records})), (128, 40))
+        self.assertEqual((len(records), len({r["id"] for r in records})), (4096, 1280))
         cursor = 0
         for task in tasks:
             prior = []
@@ -80,12 +81,16 @@ class MultirecordTrainingTests(unittest.TestCase):
                 self.assertEqual(row["labels"], {qid: target["option_id"]})
                 self.assertEqual(row["id"], task["task_id"])
                 self.assertEqual(row["metadata"]["world_id"], task["world_id"])
-                for forbidden in ("targets", "program", "labels", "evaluator_only", "training_only", "metadata"):
+                for forbidden in ("targets", "program", "labels", "evaluator_only", "training_only", "metadata",
+                                  "task_id", "world_id", "task_index", "world_index", "seed", "development_split"):
                     self.assertNotIn(f'"{forbidden}"', json.dumps(request))
                 prior.append({**target, "description": question["criteria"][target["option_id"]]})
         self.assertEqual(tasks, untouched)
 
     def test_all_source_hashes_and_world_identities_survive_outside_requests(self):
+        generator = Path(__file__).resolve().parents[2] / L1_GENERATOR_SOURCE["generator_source_path"]
+        self.assertEqual(hashlib.sha256(generator.read_bytes()).hexdigest(),
+                         L1_GENERATOR_SOURCE["generator_source_sha256"])
         records, manifest = load_multirecord_training()
         worlds = {w["world_id"]: w for w in manifest["worlds"]}
         for row in records:
@@ -95,6 +100,8 @@ class MultirecordTrainingTests(unittest.TestCase):
             self.assertIn(row["id"], world["task_ids"])
             for key, value in L1_TRAINING_ALLOWLIST[SPLIT].items():
                 self.assertEqual(meta[key], value)
+            for key, value in L1_GENERATOR_SOURCE.items():
+                self.assertEqual(meta[key], value)
             self.assertEqual(meta["world_rows_sha256"], world["rows_sha256"])
             self.assertEqual(meta["catalog_sha256"], world["catalog_sha256"])
             self.assertEqual(meta["context_ref"], world["context_ref"])
@@ -103,7 +110,8 @@ class MultirecordTrainingTests(unittest.TestCase):
 
     def test_non_train_splits_fail_before_file_access(self):
         tasks, manifest = source()
-        for split in ("l1_development_validation", "development_validation", "audit", "heldout"):
+        for split in ("l1_development_train", "l1_development_validation", MULTIWORLD_VALIDATION_SPLIT,
+                      "development_validation", "audit", "heldout"):
             with self.subTest(split=split), self.assertRaises(ValueError):
                 load_multirecord_training(split=split, fixture_dir=Path("does-not-exist"))
             if split != "development_validation":
