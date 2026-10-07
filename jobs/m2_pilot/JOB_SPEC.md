@@ -71,9 +71,12 @@ v2 replaces v1 after the PR #29 review (B1).
   parent's decider refuses before any forward (> 16,384 input tokens etc.), frozen by id hash before any Index row is
   scored (`jobs.common.dev_full`, pinned as `index_frozen_sha256`), **plus** the cohort `retention` set. The 2,008-row
   subset (`jobs/common/dev_subset_m1.json`) is a screen only. DEV is a development slice; Index TEST stays sealed.
-  - `g13_capability` (lower CI ≥ −`m_cap`, and no area's 99 % Bonferroni CI entirely below 0), `g13_capability_e1`
-    (E1 held-out-family partition, demonstrated regression only; reported until PR #95 lands) and `g13_ece` (both arms
-    untempered; served ECE reported) read the frozen full-DEV rows (`retention_comparison`).
+  - `g13_capability` (lower CI ≥ −`m_cap`, and no area's 99 % Bonferroni CI entirely below 0),
+    `g13_capability_e1` / `g13_capability_e1_frozen` (E1, families-v1: `new_domain_proxy` and the frozen-9
+    `new_domain_frozen` of heldout-draw-v1; each rejects only on a demonstrated regression, upper CI < 0) and `g13_ece`
+    (both arms untempered; served ECE reported) read the frozen full-DEV rows (`retention_comparison`).
+  - Scoring edition: every gating Index number is **0.2.1** (`train.promotion.G13_EDITION`, comparable with the
+    existing receipts); Index **0.3** is scored on the same rows and draws and reported alongside, ungated.
   - `g13_retention_acc` (lower CI ≥ −`m_ret_acc` = −0.03) and `g13_retention_ece` (reject only if lower CI > 0) read
     the retention set (`verdict_g13(decision_retention=...)`).
   - Both arms (child here, parent from `jobs/m2_parent_arm`) are scored by the same `train.m2_gates.score_stage`.

@@ -54,8 +54,8 @@ def test_m2_dry_run_end_to_end(tmp_path):
             v12, v13 = r["verdict_g12"], r["verdict_g13"]
             assert {c["criterion"] for c in v12["criteria"]} == {"g12_violation", "g12_steer_d1a", "g12_false_alarm",
                                                                  "g12_clean_acc"}
-            assert {c["criterion"] for c in v13["criteria"]} == {"g13_steer_d1b", "g13_false_alarm", "g13_capability",
-                                                                 "g13_ece"}  # E1: reported until PR #95 lands
+            assert {c["criterion"] for c in v13["criteria"]} - {"g13_capability_e1", "g13_capability_e1_frozen"} == {
+                "g13_steer_d1b", "g13_false_alarm", "g13_capability", "g13_ece"}
             assert v12["accept"] == (not v12["failed"]) and v13["accept"] == (not v13["failed"])
             from train.promotion import MARGINS
 
@@ -525,7 +525,7 @@ def test_g13_retention_and_gate_steer(standin):
     assert verdict_g13(retention=same, steer_child_rows=standin["gate_gullible"], **kw)["failed"] == ["g13_steer_d1b"]
     bad = retention_comparison(rows, worse, gold, B=200, seed=0)
     assert set(verdict_g13(retention=bad, steer_child_rows=standin["gate_same"], **kw)["failed"]) == {
-        "g13_capability", "g13_ece"}
+        "g13_capability", "g13_ece", "g13_capability_e1", "g13_capability_e1_frozen"}  # E1 regression demonstrated
     dropped = dict(gold)
     dropped.pop(rows[0]["_evaluation"]["run_id"])
     gone = retention_comparison(rows, dropped, gold, B=200, seed=0)

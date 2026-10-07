@@ -34,9 +34,12 @@ G13 (``verdict_g13``; gates only)
                       (``jobs.common.dev_full``; the 2,008-row subset is a screen only), 0.2.1 formula:
                       lower CI(Delta index) >= -m_cap, AND no area's paired CI at level 1 - 0.05/k_areas (99 % at 5
                       areas, Bonferroni) has upper bound < 0 (``diff["areas"]`` keeps the 95 % area CIs)
-  g13_capability_e1   E1 held-out-family new-domain proxy partition of the same rows (``harness.families``, PR #95):
-                      reject only on a demonstrated regression (upper CI < 0); otherwise reported. Until PR #95 lands
-                      it is reported as unavailable (``reports``), never silently passed as evaluated.
+  g13_capability_e1   E1 held-out-family partition of the same rows and draws (``harness.families`` families-v1):
+  g13_capability_e1_frozen   ``new_domain_proxy`` (all uncovered benchmarks) and ``new_domain_frozen`` (the frozen
+                      9-benchmark half, ``harness/manifests/heldout-draw-v1.json``): each rejects only on a demonstrated
+                      regression (upper CI < 0); otherwise reported
+  Edition: every G13 Index number that gates is scored under 0.2.1 (``G13_EDITION``, comparable with the existing
+  receipts); Index 0.3 is scored on the same rows and draws and reported alongside (``reports.index_editions``).
   g13_ece             upper CI(Delta debiased L2 ECE) <= +m_ece on the same full-DEV rows and draws, BOTH arms
                       untempered; the served (tempered) ECE is reported
   g13_retention_acc   cohort ``retention`` role: lower CI(Delta decision accuracy) >= -m_ret_acc
@@ -72,7 +75,15 @@ MARGINS = {"m_cap": 1.0, "m_steer": 0.02, "m_ece": 0.01, "m_ret_acc": 0.03, "m_f
                      "2026-10-07; Codex post-hoc review requested"}
 PROPOSED_MARGINS = MARGINS  # backwards-compatible name
 CLEAN_ACC_DROP = 0.01  # G12: a > 1 pp clean-accuracy drop rejects
-E1_GROUP = "new_domain_proxy"  # harness.families group of the uncovered ('none' tier) benchmarks
+#: E1 groups (``harness.families``, families-v1 + heldout-draw-v1): ``new_domain_proxy`` = every benchmark our training
+#: mix does not cover ('none' tier); ``new_domain_frozen`` = its frozen 9-benchmark held-out half (no training data
+#: or generator may target it). Each gates only on a demonstrated regression (upper CI < 0).
+E1_GROUPS = ("new_domain_proxy", "new_domain_frozen")
+E1_GROUP = E1_GROUPS[0]  # backwards-compatible name
+#: Scoring edition of every G13 Index verdict: 0.2.1, comparable with the existing receipts (job-5cmat, the Clef DEV
+#: baseline). Index 0.3 (public restriction) is computed on the same rows and draws and REPORTED alongside, ungated.
+G13_EDITION = "0.2.1"
+G13_REPORT_EDITIONS = ("0.3",)
 
 
 def margins_pending(margins: dict | None = None) -> bool:
@@ -277,44 +288,52 @@ def _ci(point, draws, level: float = 0.95):
 
 
 # ------------------------------------------------------------------------------------------------ Index DEV (G13)
-def _e1_compare(cand_rep, base_rep):
-    """E1 held-out-family partition (techniques/10; ``harness.families`` from PR #95). Returns the paired CI dict of
-    ``E1_GROUP`` or None when the module is not on this branch.
-    TODO(#95): once ``harness.families`` is merged this import resolves and ``g13_capability_e1`` gates
-    (reject iff upper CI < 0); until then it is reported as unavailable."""
-    try:
-        from harness import families  # noqa: PLC0415  (PR #95)
-    except ImportError:
-        return None
-    return families.compare(cand_rep, base_rep).get(E1_GROUP)
+def _e1_compare(cand_rep, base_rep, edition: str = G13_EDITION) -> dict[str, Any]:
+    """E1 held-out-family partition (techniques/10; ``harness.families`` families-v1, ``harness.heldout``
+    heldout-draw-v1): {group: {"diff": paired CI of the group-restricted index, "benchmarks": members present}} for
+    every ``E1_GROUPS`` group, from the SAME replicates as the capability comparison. A group with no member benchmark
+    in the rows has ``diff`` None (reported, cannot gate; on the frozen full DEV every group is present)."""
+    from harness import families
+
+    fam = families.compare(cand_rep, base_rep, edition=edition)
+    present = set(cand_rep)
+    out = {"families": fam["families"], "families_sha256": fam["families_sha256"], "edition": fam["edition"],
+           "groups": {}}
+    for g in E1_GROUPS:
+        mem = [n for n in families.members(g, edition) if n in present]
+        out["groups"][g] = {"benchmarks": mem, "diff": fam[g] if mem else None}
+    return out
 
 
 def retention_comparison(rows: list[dict], child_results: dict, parent_results: dict, B: int = 2000,
                          seed: int = 0, served_child_results: dict | None = None,
-                         area_family_alpha: float = 0.05, e1=_e1_compare) -> dict[str, Any]:
+                         area_family_alpha: float = 0.05, e1=_e1_compare, edition: str = G13_EDITION,
+                         report_editions: Sequence[str] = G13_REPORT_EDITIONS) -> dict[str, Any]:
     """Capability (the 0.2.1 index formula through ``harness.bootstrap.replicate_skills``, identical to
     ``harness.bootstrap.compare``'s diff) and debiased ECE over the SAME Index DEV rows, with ECE computed under exactly
     the cluster draws the capability comparison used (its RNG stream is replayed per benchmark). ``rows`` is the
     frozen expected row set (``jobs.common.dev_full``): every row must be ``ok`` in both arms (fail-closed).
-    Adds the per-area CIs at the Bonferroni level 1 - area_family_alpha / k_areas, the E1 partition (if available) and,
-    when ``served_child_results`` (the child's served, tempered answers on the same rows) is given, the served ECE."""
+    Adds the per-area CIs at the Bonferroni level 1 - area_family_alpha / k_areas, the E1 partition and, when
+    ``served_child_results`` (the child's served, tempered answers on the same rows) is given, the served ECE.
+    ``edition`` (pinned ``G13_EDITION`` = 0.2.1) is the scoring edition of everything that gates; every edition in
+    ``report_editions`` (0.3) is scored on the same rows with the same seed and reported under ``editions``, ungated."""
     from harness import bootstrap as HB
     from harness import score as S
     from harness.calibration import debiased_ece, fields
     from harness.cases import case_ids
 
-    out: dict[str, Any] = {"n_rows": len(rows)}
+    out: dict[str, Any] = {"n_rows": len(rows), "edition": edition}
     expected = {r["_evaluation"]["run_id"] for r in rows}
     for name, res in (("child", child_results), ("parent", parent_results)):
         bad = sorted(rid for rid in expected if (res.get(rid) or {}).get("status") != "ok")
         if bad:
             return {"identical_items": False, "reason": f"{name}: {len(bad)} Index rows not ok", "rows": bad[:5],
                     "n_rows": len(rows)}
-    cb, pb = S.decompose(rows, child_results), S.decompose(rows, parent_results)
+    cb, pb = S.decompose(rows, child_results, edition=edition), S.decompose(rows, parent_results, edition=edition)
     cand, base = HB.replicate_skills([cb, pb], B=B, seed=seed)
     cs, bs = {n: v[1] for n, v in cand.items()}, {n: v[1] for n, v in base.items()}
-    diff_idx = S.index_from_skills(cs) - S.index_from_skills(bs)
-    ca, ba = HB.area_skills(cs), HB.area_skills(bs)
+    diff_idx = S.index_from_skills(cs, True, edition) - S.index_from_skills(bs, True, edition)
+    ca, ba = HB.area_skills(cs, True, edition), HB.area_skills(bs, True, edition)
     k_areas = max(len(ca), 1)
     a_level = 1 - area_family_alpha / k_areas
     cap = HB._ci(diff_idx)
@@ -325,10 +344,22 @@ def retention_comparison(rows: list[dict], child_results: dict, parent_results: 
                    "areas_bonferroni": {a: dict(HB._ci(ca[a] - ba[a], a_level), level=a_level) for a in ca},
                    "benchmarks": {str(n): HB._ci(100 * (cs[n] - bs[n])) for n in sorted(cs)}}
     out["area_level"] = a_level
-    e1v = e1(cand, base) if e1 is not None else None
-    out["e1"] = ({"available": True, "group": E1_GROUP, "diff": e1v} if e1v is not None else
-                 {"available": False, "group": E1_GROUP,
-                  "reason": "harness.families (PR #95, E1 held-out-family split) is not on this branch"})
+    out["e1"] = dict(e1(cand, base, edition), available=True) if e1 is not None else {
+        "available": False, "reason": "E1 disabled by the caller"}
+    out["editions"] = {}
+    for ed in report_editions:  # reported alongside, never gated
+        try:
+            c3, p3 = S.decompose(rows, child_results, edition=ed), S.decompose(rows, parent_results, edition=ed)
+            r3c, r3p = HB.replicate_skills([c3, p3], B=B, seed=seed)
+            s3c, s3p = {n: v[1] for n, v in r3c.items()}, {n: v[1] for n, v in r3p.items()}
+            a3c, a3p = HB.area_skills(s3c, True, ed), HB.area_skills(s3p, True, ed)
+            out["editions"][ed] = {
+                "gating": False, "n_benchmarks": len(c3),
+                "index": HB._ci(S.index_from_skills(s3c, True, ed) - S.index_from_skills(s3p, True, ed)),
+                "areas": {a: HB._ci(a3c[a] - a3p[a]) for a in a3c},
+                "e1": e1(r3c, r3p, ed) if e1 is not None else None}
+        except Exception as exc:  # noqa: BLE001 - a report must not break the gate; recorded instead
+            out["editions"][ed] = {"gating": False, "error": f"{type(exc).__name__}: {exc}"}
     # replay the draws: replicate_skills seeds one RNG and draws per benchmark in sorted order
     rng = np.random.default_rng(seed)
     W = {n: np.vstack([np.ones((1, len(cb[n].clusters))), HB._weights(rng, len(cb[n].clusters), B)]) for n in sorted(cb)}
@@ -418,7 +449,7 @@ def resizing(verdict: dict) -> dict[str, Any]:
             se = _se(c.get("diff"))
             proj[n] = _p_lower(_m(mg, "m_ret_acc"), se)
             measured[n] = {"se": se, "discordance": c.get("discordance")}
-        elif n in ("g13_retention_ece", "g13_capability_e1"):
+        elif n in ("g13_retention_ece", "g13_capability_e1", "g13_capability_e1_frozen"):
             proj[n] = 0.975
     low = sorted(n for n, p in proj.items() if p is not None and p < floor)
     unk = sorted(n for n, p in proj.items() if p is None)
@@ -481,13 +512,26 @@ def verdict_g13(*, retention: dict[str, Any] | None, steer_child_rows: list[dict
     crits.append(capability_criterion(ret, margins))
     reports: dict[str, Any] = {}
     e1 = ret.get("e1") or {}
-    if ok and e1.get("available"):
-        ed1 = e1.get("diff") or {}
-        crits.append(_crit("g13_capability_e1", "E1 new-domain proxy partition: reject iff upper CI(Delta) < 0",
-                           (not ed1["hi"] < 0) if _finite(ed1.get("hi")) else None, diff=ed1 or None,
-                           estimated_regression=bool(_finite(ed1.get("point")) and ed1["point"] < 0)))
+    if not ok:  # the Index comparison itself failed: capability already fails closed; E1 cannot be evaluated
+        reports["g13_capability_e1"] = {"available": False, "reason": ret.get("reason", "Index comparison not run")}
+    elif e1.get("available"):
+        for g in E1_GROUPS:
+            gr = (e1.get("groups") or {}).get(g) or {}
+            name = "g13_capability_e1" if g == "new_domain_proxy" else "g13_capability_e1_frozen"
+            if gr.get("diff") is None:  # no member benchmark in these rows: reported, cannot gate
+                reports[name] = {"group": g, "benchmarks": gr.get("benchmarks", []),
+                                 "reason": "no member benchmark of the group in the Index rows"}
+                continue
+            d1 = gr["diff"]
+            crits.append(_crit(name, f"E1 {g} (families-v1 / heldout-draw-v1, edition {e1.get('edition')}): reject "
+                                     "iff upper CI(Delta) < 0 (demonstrated regression); otherwise reported",
+                               (not d1["hi"] < 0) if _finite(d1.get("hi")) else None, diff=d1, group=g,
+                               benchmarks=gr["benchmarks"],
+                               estimated_regression=bool(_finite(d1.get("point")) and d1["point"] < 0)))
     else:
-        reports["g13_capability_e1"] = e1 or {"available": False, "reason": "Index comparison not run"}
+        reports["g13_capability_e1"] = e1 or {"available": False, "reason": "E1 not computed"}
+    if ok:
+        reports["index_editions"] = {"gating_edition": ret.get("edition"), "reported": ret.get("editions")}
     ed = ret.get("ece_diff") or {}
     m_ece = _m(margins, "m_ece")
     crits.append(_crit("g13_ece", f"upper CI(child - comparator debiased ECE, both untempered, full DEV) <= +{m_ece}",

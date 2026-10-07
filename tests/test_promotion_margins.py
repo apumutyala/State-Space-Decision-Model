@@ -110,7 +110,7 @@ def test_false_alarm_criterion(gate):
     assert not c["pass"] and not c["evaluable"]  # fail-closed on a missing clean unit
 
 
-def test_g13_includes_false_alarm_and_reports_e1_until_pr95(gate):
+def test_g13_includes_false_alarm_and_fails_closed_without_the_index_comparison(gate):
     v = P.verdict_g13(retention=None, steer_child_rows=gate["same"], steer_parent_rows=gate["parent"],
                       expected_variants=gate["v"], n_boot=100)
     names = [c["criterion"] for c in v["criteria"]]
@@ -119,12 +119,18 @@ def test_g13_includes_false_alarm_and_reports_e1_until_pr95(gate):
 
 
 # ------------------------------------------------------------------------------------------------ capability
+def _e1(proxy=(0.0, -1.0, 1.0), frozen=(0.0, -1.0, 1.0)):
+    g = lambda t: {"benchmarks": [32], "diff": dict(zip(("point", "lo", "hi"), t)) if t else None}  # noqa: E731
+    return {"available": True, "edition": "0.2.1", "groups": {"new_domain_proxy": g(proxy),
+                                                                "new_domain_frozen": g(frozen)}}
+
+
 def _ret(lo=-0.5, area_hi=1.0, e1=None, ece_hi=0.0):
     a = {"point": 0.2, "lo": -0.8, "hi": area_hi}
     return {"identical_items": True, "capability": {"point": 0.4, "lo": lo, "hi": 1.3, "se": 0.4},
             "diff": {"areas": {"x": a, "y": {"point": 0, "lo": -1, "hi": 1}},
                      "areas_bonferroni": {"x": a, "y": {"point": 0, "lo": -1, "hi": 1}}},
-            "area_level": 0.99, "e1": e1 or {"available": False},
+            "area_level": 0.99, "e1": e1 or _e1(), "edition": "0.2.1", "editions": {"0.3": {"gating": False}},
             "ece_diff": {"point": 0.0, "lo": -0.004, "hi": ece_hi, "se": 0.002}, "ece": {}}
 
 
@@ -141,13 +147,20 @@ def test_capability_index_margin_and_bonferroni_area_rule(ret, ok, why):
     assert c["areas"] is not None  # the 95 % area CIs are kept
 
 
-def test_e1_rejects_only_a_demonstrated_regression(gate):
+def test_e1_rejects_only_a_demonstrated_regression_on_new_domain_and_frozen(gate):
     kw = dict(steer_child_rows=gate["same"], steer_parent_rows=gate["parent"], expected_variants=gate["v"], n_boot=50)
-    reg = P.verdict_g13(retention=_ret(e1={"available": True, "diff": {"point": -2, "lo": -4, "hi": -0.5}}), **kw)
-    assert "g13_capability_e1" in reg["failed"]
-    est = P.verdict_g13(retention=_ret(e1={"available": True, "diff": {"point": -2, "lo": -4, "hi": 0.5}}), **kw)
-    e1 = next(c for c in est["criteria"] if c["criterion"] == "g13_capability_e1")
-    assert e1["pass"] and e1["estimated_regression"]  # negative point estimate: reported, not rejected
+    ok = P.verdict_g13(retention=_ret(), **kw)
+    assert {"g13_capability_e1", "g13_capability_e1_frozen"} <= {c["criterion"] for c in ok["criteria"]}
+    assert ok["reports"]["index_editions"]["gating_edition"] == "0.2.1"
+    reg = P.verdict_g13(retention=_ret(e1=_e1(proxy=(-2, -4, -0.5))), **kw)
+    assert reg["failed"] == ["g13_capability_e1"]
+    frz = P.verdict_g13(retention=_ret(e1=_e1(frozen=(-3, -6, -0.1))), **kw)
+    assert frz["failed"] == ["g13_capability_e1_frozen"]
+    est = P.verdict_g13(retention=_ret(e1=_e1(proxy=(-2, -4, 0.5), frozen=(-2, -5, 0.2))), **kw)
+    assert est["accept"]  # negative point estimates inside the CI: reported, never rejected
+    assert all(c["estimated_regression"] for c in est["criteria"] if c["criterion"].startswith("g13_capability_e1"))
+    absent = P.verdict_g13(retention=_ret(e1=_e1(frozen=None)), **kw)
+    assert absent["accept"] and "g13_capability_e1_frozen" in absent["reports"]  # no member in the rows: reported
 
 
 def test_retention_rules(gate):
@@ -191,7 +204,20 @@ def test_retention_comparison_is_harness_compare_plus_bonferroni_areas_and_serve
     for a, c in ret["diff"]["areas_bonferroni"].items():  # wider than the 95 % area CI
         assert c["lo"] <= ret["diff"]["areas"][a]["lo"] and c["hi"] >= ret["diff"]["areas"][a]["hi"]
     assert ret["ece_diff"]["arms"] == "both untempered" and "child_served_tempered" in ret["ece"]
-    assert ret["e1"]["available"] is False or ret["e1"]["diff"] is not None
+    # gating edition pinned to 0.2.1 (receipt-comparable); 0.3 reported on the same rows and seed, ungated
+    assert ret["edition"] == P.G13_EDITION == "0.2.1" and ret["editions"]["0.3"]["gating"] is False
+    assert "index" in ret["editions"]["0.3"], ret["editions"]["0.3"]
+    # E1 from the real families-v1 split: synthetic rows are MuSR (32, frozen) and ACOS (38, generatable)
+    from harness import families
+
+    fam = families.compare(*HB.replicate_skills([S.decompose(rows, child), S.decompose(rows, parent)], B=200, seed=0),
+                           edition="0.2.1")
+    for g in P.E1_GROUPS:
+        assert ret["e1"]["groups"][g]["diff"] == fam[g]
+    assert ret["e1"]["groups"]["new_domain_frozen"]["benchmarks"] == [32]
+    assert sorted(ret["e1"]["groups"]["new_domain_proxy"]["benchmarks"]) == [32, 38]
+    v = P.verdict_g13(retention=ret, steer_child_rows=[], steer_parent_rows=[], expected_variants=[], n_boot=20)
+    assert {"g13_capability_e1", "g13_capability_e1_frozen"} <= {c["criterion"] for c in v["criteria"]}
 
 
 # ------------------------------------------------------------------------------------------------ comparators
