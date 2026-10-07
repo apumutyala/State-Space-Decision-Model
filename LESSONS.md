@@ -184,6 +184,56 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - The harness side is ENFORCED: edition-flagged, 0.2.1 kept as the default for receipt reproducibility, mixed editions refused.
   - The "verify the live board before each plan" step is a procedure, not an automated check. Owner: Track D. Candidate check: a launch-checklist row comparing the live `v03.json` sha256 with `harness/config.BOARD_V03_SHA256`.
 
+### L-20 Size the evaluation by simulation; never loosen safety margins for power
+- Date: 2026-10-07 (issue #36). Codex's cross-track decision, comments 6028537932 and 6028610849, governs. PR #102 first adopted the earlier independent review instead, and the independent review of #102 (B1) caught it.
+- Symptom:
+  - The first margin proposal (m_cap 1.0 on the 2,008-row subset, m_ece 0.01, m_ret_acc 0.01, two-way steer CI) sat inside the measured noise. A genuinely unchanged candidate almost never passed.
+  - The independent review "fixed" this by loosening safety and retention margins for power: m_ret_acc 0.01 -> 0.03, and retention ECE gated only on a demonstrated regression.
+  - Codex rejected that: low power means the comparison is INCONCLUSIVE, so expand the frozen evaluation or do not promote. Separately, `train.m2_gates` exited 0 while the margins were pending.
+- Cost: no run billed. One review round, and an approval flip that would have promoted candidates the delegated approver's contract rejects.
+- Root cause: margins and evaluation sizes were chosen separately. Nobody computed, per criterion, the frozen-set size at which an unchanged candidate passes the APPROVED margin, so "low power" was misread as "margin too strict".
+- **Check:** `tests/test_margin_sim.py` covers sizing and pins the margins:
+  - For each criterion it simulates the frozen-set size an unchanged candidate needs to pass with probability >= 0.8 at the approved margins (`train/margin_sim.py::required_n`: measure the CI half-width at the configured n, scale it, then confirm by simulation at the required n).
+  - It asserts that each configured evaluation size (`EVAL_SIZES`) meets that requirement, or that the shortfall is recorded with an expansion plan (`SHORTFALLS`). The simulated and recorded shortfall sets must be equal.
+  - It also pins the margins to the contract (`test_margins_are_the_codex_contract_and_never_loosened_for_power`).
+  - At run time, `train.promotion.resizing` reports n required vs n evaluated at the MEASURED SE, and labels an underpowered failure `inconclusive_underpowered` (not promotable).
+  - `train.m2_gates` never exits 0 unless the run is promotable: 43 while margins are pending, 44 for partial-stage runs.
+- **Status:** PARTIAL. Recorded shortfalls: the retention role (1,420 items) needs ~9.3k items for `g13_retention_acc` and ~31k for `g13_retention_ece` (simulated; discordance and ECE arms are assumptions). Until cohort v3 expands it, G13 does not promote on retention. Every simulation input except the capability SE is an assumption; the first real runs replace them.
+
+### L-21 Prefix-fork state copies OOM on many-option rows (POP909-CL backend_error)
+- Date: 2026-10-07 (root-caused from job-5cmat logs; predicted on PR #50 by Track L, "KV memory at 255 options", merged over it, see L-01 / L-16).
+- Symptom: on job-5cmat (Qwen3.5-9B, H100 80 GB) 58 of 59 POP909-CL rows in the stock arm and 39 of 59 in the converted arm returned `error/backend_error ... details withheld`. 19 errors were arm-asymmetric, which made G13 capability and ECE non-evaluable on every run (fail-closed).
+- Cost: part of job-5cmat's Index phases; G13 non-evaluable until fixed.
+- Root cause: a POP909-CL row has one question with 129 options. The JRT prefix shared by all options is the whole prompt (|P| ~6-8.7k Qwen tokens, a 1-token question suffix), so the prefix-fork packed all 129 short option tails into one call: the 4,096-position tail budget was the only cap. `extend` gives every packed row its own copy of the prefix state, KV cache included, and SDPA repeats the KV heads per layer on top, so memory grows as rows x |P|. Evidence: the `CUDACachingAllocator` OOM warnings (requests of 2.3-9.2 GB with < 8 GB free) fall exactly inside the POP909 block of each arm's log. In the stock arm the outcome splits cleanly at |P|: the one ok row has |P| = 6,087 and every row from 6,226 up OOMed. The converted arm keeps one attention layer fewer (smaller KV), so its threshold is higher and fragmentation-dependent: ok up to 7,556, errors from 6,869. That is the 19-row asymmetry. The adapter maps the exception to `backend_error`. The tail budget bounded the logits, never the state copies. The per-token cost (~44 KiB per prefix-token copy on Qwen3.5-9B) is a memory-model estimate, not a measurement.
+- **Check:** `decide.backends.state_fork.fork_plan(state_budget=...)` caps rows x |P| per pack. `ModelPlugin.fork_state_token_budget` = `KV_STATE_TOKEN_BUDGET` (262,144 prefix-token copies, about 11 GB on Qwen3.5-9B) is set for every plugin that keeps a KV cache (`load_qwen35`; `convert.readout` whenever attention layers remain). Recurrent-only plugins (RWKV-7, all-GDN Q9-AF) keep `None`, and their revision ids are unchanged. Tests in `tests/test_readout_fork.py`: `test_state_budget_caps_rows_x_prefix_per_pack` (the POP909 shape), `test_state_budget_changes_packing_not_scores` (budgeted vs unbudgeted: RWKV7 bitwise; KV-cache models within 1.5e-5 absolute, measured by the #102 review; paired comparisons are unaffected because both arms on one tokenizer get the same packing) and `test_kv_cache_plugins_carry_the_state_budget_and_recurrent_ones_do_not` (behavioural, on a real tiny ConvertibleQwen: all-GDN -> no budget, unchanged revision). Scoring-time failures are never excluded from the frozen full-DEV row set (`jobs/common/dev_full.py`, `tests/test_promotion_margins.py::test_freeze_excludes_only_pre_forward_refusals_and_is_pinned`).
+- **Status:** PARTIAL. The budget is from a memory model, not yet a GPU measurement at the POP909 shape. The first full-DEV Index run must show 0 `backend_error` rows, and its receipt closes this entry. The adapter still withholds the exception class; a non-secret `resource_exhausted` diagnostic code is a follow-up.
+
+### L-22 Shared scratchpad file names collided across agents
+- Date: 2026-10-07 (PR #102).
+- Symptom: two agents in one session wrote PR descriptions to the same scratch file name (`pr_body.md`). The #102 agent then ran `gh pr edit --body-file` after its own write had failed. That published another PR's description (a q9 feature-cache PR stacked on #91) as #102's body. It was restored minutes later.
+- Cost: none billed. A wrong PR description was briefly public, so reviewers could have reviewed the wrong text.
+- Root cause:
+  - The session scratchpad is shared by every agent in the session, and file names were generic.
+  - The publishing command was chained after a failing step with `;` and a newline, not `&&`.
+  - The published body was not read back.
+- **Check:** procedure, because the scratchpad is outside the repo and has no automated check:
+  - prefix every scratch file with the PR or task id (e.g. `pr102_*`);
+  - chain publishing commands with `&&` after the step that writes their input;
+  - after `gh pr edit`/`gh pr create`, read back `gh pr view --json body` and compare its first line with the intended text.
+- **Status:** PARTIAL. No automated check yet; the procedure is the guard. Candidate check: a `jobs/common/launch.py`-style wrapper for PR body publishing that refuses a body file whose first line does not name the PR's branch or issue.
+
+### L-23 An agent killed processes by name on the shared laptop
+- Date: 2026-10-07 (reported by the coordinator).
+- Symptom: an agent ran `taskkill /F /IM python.exe` with a window-title filter on the shared laptop. That kills other agents' and Codex's processes too, including their test runs and local servers.
+- Cost: possible silent loss of other agents' in-flight work. Test runs that die mid-way look like hangs or truncated output.
+- Root cause: the process was selected by image name or window title, not by a PID the agent itself had started and recorded. Several agents and Codex share one machine and one `python.exe` image.
+- **Check:**
+  - `tests/test_no_kill_by_name.py` greps `jobs/`, `scripts/`, `tests/` and the agent docs (`*.md` at the root and under `jobs/`) for `taskkill /IM` or `/FI`, `pkill` and `killall`, and fails on any hit.
+  - PID-based use is allowed (`taskkill /PID`, `kill <pid>`).
+  - The check is tested on chr-built bad samples, as L-11 requires.
+  - COORDINATION.md "Before any paid job / before any PR" carries the rule.
+- **Status:** PARTIAL. Ad-hoc shell commands typed by an agent are not in the repo, so only the rule (COORDINATION.md) covers them. Kill only PIDs you started and recorded.
+
 ### L-24 One test environment cannot satisfy two pinned stacks
 - Date: 2026-10-07 (PR #103, the Clef launch packages for 5b478e3).
 - Symptom: `launch.run_tests` ran every clef_baseline job test under one interpreter. With transformers 5.17.0 (the probe9b/rwkv7/full8 pin) the two Clef kernel-path tests failed, because they read the 5.10.2 GDN source the Clef image pins. With 5.10.2, premortem P1-P4 (Q9-AF) failed: `Qwen3_5DecoderLayer` has no `self_attn`. So no environment could pass the gate. Whichever group failed was explained away as "pre-existing / env", which is how a real failure would also look.

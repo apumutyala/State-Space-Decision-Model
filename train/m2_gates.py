@@ -2,9 +2,15 @@
 
     python -X utf8 -m train.m2_gates --cell <out>/cell.json --ckpt-dir <ck>/cell --model-dir <snapshot> \
         [--gdn-ckpt <converted.pt>] --records <records.jsonl.gz> --guard-readiness <readiness.json> \
-        --parent-arm <dir> --index-rows <dev-subset-rows.jsonl.gz> --out <report.json> [--stage g12|g13|all]
+        --parent-arm <dir> --parent-arm-sha256 <sha> [--anchor-arm <dir> --anchor-arm-sha256 <sha>] \
+        --index-rows <dev-rows.jsonl.gz> --index-frozen <frozen.json> --index-frozen-sha256 <sha> \
+        --out <report.json> [--stage g12|g13|all]
 
-What it does (child = the trained checkpoint, parent = the frozen parent arm cached by ``jobs/m2_parent_arm``):
+What it does (child = the trained checkpoint; comparators = cached arms: ``--parent-arm`` is the LAST ACCEPTED checkpoint
+(the m2 parent arm cached by ``jobs/m2_parent_arm`` for the first cell, or a previous run's ``child-arm/`` cache) and
+``--anchor-arm`` is the LINEAGE ANCHOR (the m2 parent arm, or the current champion once one exists; default = the
+``--parent-arm`` cache, recorded as such). Issue #36 anti-creep: G12 compares with the last accepted checkpoint, G13
+must pass against BOTH; champion replacement passes the champion's arm as ``--parent-arm`` and ``--anchor-arm``):
 1. identities: the cell config's cohort sha256 must equal the committed cohort; the guard comes only from a verified
    readiness file (``jobs.m2_pilot.guard_ready.load_ready_guard``); the checkpoint is restored through
    ``Trainer.load`` with its config hash AND lineage (frozen-backbone digest + provenance, tokenizer, layout, training
@@ -22,13 +28,20 @@ What it does (child = the trained checkpoint, parent = the frozen parent arm cac
    on the real dev / retention content (``FeatureTemperature.verify_disjoint``).
 5. verdicts (``train.promotion``, fail-closed: any missing / errored / non-identical unit fails its criterion):
    G12 = ``verdict_g12`` on ``dev`` + ``steer_dev`` (clean + D1-A);
-   G13 = ``verdict_g13`` on ``steer_gate`` (clean + held-out D1-B, ``final=True``) + the 2,008-row Index DEV subset
-   (``retention_comparison``) + the cohort ``retention`` role (``decision_retention``; coordinator decision
-   2026-10-06). Index TEST is never read.
-6. promotion: ``accept`` iff every stage that ran accepted; margins come from ``train.promotion.MARGINS`` and the
-   report carries their status (PENDING USER APPROVAL until the user signs them off).
+   G13 = ``verdict_g13`` on ``steer_gate`` (clean + held-out D1-B, ``final=True``) + the FULL Index DEV slice minus
+   the engine-unsupported rows frozen by a pre-declared hash (``jobs.common.dev_full``; the 2,008-row subset is a
+   screen only) through ``retention_comparison`` + the cohort ``retention`` role (``decision_retention``). Index TEST
+   is never read. The child scores the Index rows through the SERVED (tempered) decider once: the untempered arm
+   answers are rebuilt from ``raw_probabilities`` (bit-identical to the identity-calibration decider) and the served
+   answers give the reported served ECE.
+6. promotion: ``accept`` iff every stage that ran accepted against every comparator; margins come from
+   ``train.promotion.MARGINS`` and the report carries their status and the re-sizing projections (issue #36).
 
-Exit codes: 0 every stage accepted | 40 G12 rejected | 41 G13 rejected | 42 both rejected |
+Exit codes: 0 promotable (G12 and G13 accepted, approved margins) | 43 every stage accepted but the margins are
+            PENDING approval | 44 every stage run accepted but not both G12 and G13 were run (not promotable) |
+            45 every stage accepted but a criterion was evaluated below its simulated required n (retention cohort
+            smaller than ``MARGINS["required_n"]``): INCONCLUSIVE-underpowered, not promotable |
+            40 G12 rejected | 41 G13 rejected | 42 both rejected |
             10 identity / cache / cohort mismatch | 2 usage. The report is written in every case that got that far.
 """
 
@@ -46,7 +59,9 @@ from typing import Any, Callable, Iterable, Sequence
 STAGES = ("g12", "g13")
 ARM_SCHEMA = "ssdm.m2.arm.v1"
 REPORT_SCHEMA = "ssdm.m2.gates.v1"
-EXIT = {"accept": 0, "g12": 40, "g13": 41, "both": 42, "identity": 10, "usage": 2}
+EXIT = {"accept": 0, "g12": 40, "g13": 41, "both": 42, "pending": 43, "partial": 44, "underpowered": 45,
+        "identity": 10, "usage": 2}
+CANDIDATE_ROLE = "candidate"
 STAGE_ROLES = {"g12": ("dev",), "g13": ("retention",)}
 
 
@@ -87,7 +102,7 @@ def stage_variants(cohort, stage: str) -> list[dict]:
 
 
 def units_identity(stage: str, cohort, spec: dict, items_by_role: dict[str, list], variants: list[dict],
-                   index_rows: list[dict] | None) -> dict[str, Any]:
+                   index_rows: list[dict] | None, index_frozen: dict | None = None) -> dict[str, Any]:
     from safety_eval.metrics import unit_fingerprint
 
     ident = {"stage": stage, "cohort_sha256": cohort.sha256, "unit_spec": spec,
@@ -98,6 +113,10 @@ def units_identity(stage: str, cohort, spec: dict, items_by_role: dict[str, list
     if stage == "g13":
         ids = sorted(r["_evaluation"]["run_id"] for r in (index_rows or []))
         ident["index_rows"] = {"n": len(ids), "run_ids_sha256": _sha(ids)}
+        if index_frozen is not None:  # the full-DEV expected-row set and its pre-declared unsupported-row hash
+            from jobs.common.dev_full import identity as frozen_identity
+
+            ident["index_rows"]["frozen"] = frozen_identity(index_frozen)
     ident["id"] = _sha(ident)[:16]
     return ident
 
@@ -134,9 +153,16 @@ def arm_decision_fields(decide: Callable[[dict], dict], records_by_id: dict[str,
     return fields, errors
 
 
-def index_predict(decide: Callable[[dict], dict], rows: Sequence[dict], model: str = "ssdm-m2") -> dict[str, dict]:
-    """Index rows through ``decide`` in the kit's results format (``harness.score`` input)."""
+def index_predict(decide: Callable[[dict], dict], rows: Sequence[dict], model: str = "ssdm-m2",
+                  untempered_from_raw: bool = False) -> dict[str, dict]:
+    """Index rows through ``decide`` in the kit's results format (``harness.score`` input).
+
+    ``untempered_from_raw``: ``decide`` is the SERVED (tempered) decider; ``response`` is rebuilt from the envelope's
+    ``raw_probabilities`` (softmax at T = 1, exactly what the identity-calibration decider serves) so the arm stays
+    untempered like the parent, and ``served_response`` keeps the served answers (served ECE is reported, issue #36)."""
     from decision_index.engines.base import validate
+
+    from decide.schema import wire_answer
 
     res = {}
     for r in rows:
@@ -146,7 +172,14 @@ def index_predict(decide: Callable[[dict], dict], rows: Sequence[dict], model: s
         status = (resp.get("ssdm") or {}).get("status", "error") if "answers" in resp else "error"
         out = {**e, "status": status, "total_wall_ms": (time.perf_counter() - t) * 1000}
         if status == "ok":
-            response = {"answers": resp["answers"]}
+            if untempered_from_raw:
+                raw = resp["ssdm"]["raw_probabilities"]
+                response = {"answers": {q: wire_answer(qq, raw[q]) for q, qq in r["questions"].items()}}
+                served = {"answers": resp["answers"]}
+                validate(r["questions"], served)
+                out["served_response"] = served
+            else:
+                response = {"answers": resp["answers"]}
             validate(r["questions"], response)
             out["response"] = response
         else:
@@ -157,9 +190,11 @@ def index_predict(decide: Callable[[dict], dict], rows: Sequence[dict], model: s
 
 def score_stage(stage: str, decide: Callable[[dict], dict], steer: Callable[[dict], dict],
                 items_by_role: dict[str, list], records_by_id: dict[str, dict], variants: list[dict],
-                index_rows: list[dict] | None = None) -> dict[str, Any]:
+                index_rows: list[dict] | None = None, index_decide: Callable[[dict], dict] | None = None
+                ) -> dict[str, Any]:
     """One arm's units for one stage. ``decide``: ``decide.Decider.decide``-compatible; ``steer``: a safety_eval
-    decide callable (``DecideBridge``). Used for the child here and for the parent in ``jobs/m2_parent_arm``."""
+    decide callable (``DecideBridge``). Used for the child here and for the parent in ``jobs/m2_parent_arm``.
+    ``index_decide``: the child's SERVED decider for the Index rows (``index_predict(untempered_from_raw=True)``)."""
     from safety_eval import metrics
 
     t0 = time.perf_counter()
@@ -169,7 +204,8 @@ def score_stage(stage: str, decide: Callable[[dict], dict], steer: Callable[[dic
         out["decision"][role], out["decision_errors"][role] = f, err
     out["steer_rows"] = metrics.run(steer, variants)
     if stage == "g13":
-        out["index_results"] = index_predict(decide, index_rows or [])
+        out["index_results"] = (index_predict(index_decide, index_rows or [], untempered_from_raw=True)
+                                if index_decide is not None else index_predict(decide, index_rows or []))
     out["seconds"] = round(time.perf_counter() - t0, 3)
     return out
 
@@ -210,6 +246,9 @@ def read_arm_cache(cache_dir: str | Path, stage: str, expect_ident: dict, expect
         diff = sorted(k for k in set(ent["units_identity"]) | set(expect_ident)
                       if ent["units_identity"].get(k) != expect_ident.get(k))
         raise IdentityMismatch(f"parent arm units differ from the child's on {diff}")
+    arm = ent.get("arm") or {}
+    if str(arm.get("role", "")).startswith(CANDIDATE_ROLE) and not (arm.get("promotion") or {}).get("promotable"):
+        raise IdentityMismatch("candidate arm cache was not a promotable ACCEPT; it cannot be a comparator")
     for k, v in (expect_parent or {}).items():
         if (ent.get("arm") or {}).get("parent", {}).get(k) != v:
             raise IdentityMismatch(f"parent arm identity {k}={ent.get('arm', {}).get('parent', {}).get(k)!r} != {v!r}")
@@ -231,7 +270,11 @@ def stage_verdict(stage: str, child: dict, parent: dict, variants: list[dict], i
                           expected_variants=variants, margins=margins, n_boot=n_boot)
         v["paired"] = {"dev": dec}
         return v
-    ret = P.retention_comparison(index_rows or [], child["index_results"], parent["index_results"], B=n_boot, seed=0)
+    res = child["index_results"]
+    served = {k: dict(v, response=v["served_response"]) for k, v in res.items() if "served_response" in v}
+    ret = P.retention_comparison(index_rows or [], res, parent["index_results"], B=n_boot, seed=0,
+                                 served_child_results=served if served and len(served) == len(res) else None,
+                                 area_family_alpha=margins.get("area_family_alpha", 0.05))
     dret = P.paired_decision(child["decision"]["retention"], parent["decision"]["retention"], n_boot=n_boot)
     v = P.verdict_g13(retention=ret, steer_child_rows=child["steer_rows"], steer_parent_rows=parent["steer_rows"],
                       expected_variants=variants, margins=margins, n_boot=n_boot, decision_retention=dret,
@@ -240,25 +283,44 @@ def stage_verdict(stage: str, child: dict, parent: dict, variants: list[dict], i
     return v
 
 
-def promotion_verdict(verdicts: dict[str, dict]) -> dict[str, Any]:
-    from train.promotion import MARGINS
+def promotion_verdict(verdicts: dict[str, dict], margins: dict | None = None) -> dict[str, Any]:
+    from train.promotion import MARGINS, margins_pending
 
+    margins = MARGINS if margins is None else margins
     failed = {s: v["failed"] for s, v in verdicts.items() if not v["accept"]}
-    pending = "PENDING USER APPROVAL" in str(MARGINS.get("status"))
+    pending = margins_pending(margins)
     acc = not failed and bool(verdicts)
+    esc = {s: (v.get("resizing") or {}).get("below_floor") for s, v in verdicts.items()
+           if (v.get("resizing") or {}).get("escalate") or (v.get("resizing") or {}).get("escalate_any_comparator")}
     return {"verdict": "accept" if acc else "reject", "stages": sorted(verdicts), "failed": failed,
-            "margins": {k: v for k, v in MARGINS.items()}, "margins_pending_user_approval": pending,
-            "promotable": acc and not pending and set(verdicts) == set(STAGES),
-            "rule": "accept iff every stage run accepted (fail-closed); promotable only with both G12 and G13 and "
-                    "user-approved margins"}
+            "margins": {k: v for k, v in margins.items()}, "margins_pending_user_approval": pending,
+            "underpowered": {s: v.get("underpowered") for s, v in verdicts.items() if v.get("underpowered")},
+            "promotable": acc and not pending and set(verdicts) == set(STAGES)
+            and not any(v.get("underpowered") for v in verdicts.values()),
+            "escalation": ({"stages": esc, "action": "ESCALATE TO THE USER (issue #36 re-sizing clause): a criterion's "
+                            "projected unchanged-candidate pass rate is below the floor at the measured discordance / "
+                            "tau / SE; do NOT loosen any margin after seeing data"} if esc else None),
+            "rule": "accept iff every stage run accepted against every comparator (fail-closed); promotable only with "
+                    "both G12 and G13 and approved margins; exit 43 while margins are pending"}
 
 
-def exit_code(verdicts: dict[str, dict]) -> int:
+def exit_code(verdicts: dict[str, dict], pending: bool | None = None) -> int:
+    """0 only when promotable. ``pending`` (default: ``train.promotion.margins_pending()``): an all-accept run under
+    PENDING margins exits ``EXIT["pending"]`` (43); an all-accept run that did not run both G12 and G13 exits
+    ``EXIT["partial"]`` (44). Never 0 unless promotable (issue #36)."""
     if not verdicts:  # nothing was evaluated: never "accept"
         return EXIT["usage"]
     rej = {s for s, v in verdicts.items() if not v["accept"]}
     if not rej:
-        return EXIT["accept"]
+        if pending is None:
+            from train.promotion import margins_pending
+
+            pending = margins_pending()
+        if pending:
+            return EXIT["pending"]
+        if any(v.get("underpowered") for v in verdicts.values()):
+            return EXIT["underpowered"]
+        return EXIT["accept"] if set(verdicts) == set(STAGES) else EXIT["partial"]
     return EXIT["both"] if rej == {"g12", "g13"} else EXIT[rej.pop()]
 
 
@@ -301,32 +363,80 @@ def fit_child_temperature(model, calib_items: list, disjoint_from: dict[str, Ite
 def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_steer, child_identity: dict,
               items_by_role: dict[str, list], records_by_id: dict[str, dict], parent_arm: str | Path,
               expect_parent: dict | None = None, index_rows: list[dict] | None = None, n_boot: int = 2000,
-              parent_arm_sha256: str | None = None,
+              parent_arm_sha256: str | None = None, anchor_arm: str | Path | None = None,
+              anchor_arm_sha256: str | None = None, index_frozen: dict | None = None,
+              child_index_decide=None, margins: dict | None = None, anchor_is_champion: bool = False,
               out: str | Path | None = None, extra: dict | None = None) -> tuple[int, dict]:
-    """Score the child per stage, load the matching parent units, apply the verdicts and the promotion rule."""
-    from train.promotion import MARGINS
+    """Score the child per stage, load the matching comparator units, apply the verdicts and the promotion rule.
 
+    Comparators (issue #36 anti-creep): ``parent_arm`` = the LAST ACCEPTED checkpoint's arm cache; ``anchor_arm`` =
+    the lineage anchor (m2 parent arm or current champion). G12 uses the last accepted only; G13 must accept against
+    both (``promotion.combine_comparators``). ``anchor_arm=None`` (or the same directory) means the last accepted
+    checkpoint IS the anchor (the first m2 cell), recorded as ``anchor: same_as_last_accepted``. With ``out`` the
+    child's units are written as an arm cache (``<out dir>/child-arm``) ONLY when the run is promotable, with the
+    promotion verdict in its manifest, so only an accepted child can be the next run's ``parent_arm``
+    (``read_arm_cache`` refuses a candidate cache without a promotable verdict). The anchor is REQUIRED for G13
+    (Codex #36: a missing comparator leaves the run non-promotable): ``anchor_arm=None`` is accepted only when the
+    last-accepted cache is itself a parent-arm cache (not a candidate), and is then recorded as the anchor."""
+    from train.promotion import MARGINS, combine_comparators
+
+    margins = MARGINS if margins is None else margins
     report: dict[str, Any] = {"schema": REPORT_SCHEMA, "identities": {"cohort": cohort.identity(), "unit_spec": spec,
                                                                       "child": child_identity, **(extra or {})},
                               "verdicts": {}, "stages": {}}
+    same_anchor = anchor_arm is None or Path(anchor_arm).resolve() == Path(parent_arm).resolve()
+    children: dict[str, tuple] = {}
     for stage in stages:
         variants = stage_variants(cohort, stage)
         ident = units_identity(stage, cohort, spec, {r: items_by_role[r] for r in STAGE_ROLES[stage]}, variants,
-                               index_rows if stage == "g13" else None)
-        parent, ent = read_arm_cache(parent_arm, stage, ident, expect_parent, parent_arm_sha256)
+                               index_rows if stage == "g13" else None, index_frozen if stage == "g13" else None)
+        comps = {"last_accepted": read_arm_cache(parent_arm, stage, ident, expect_parent, parent_arm_sha256)}
+        if stage == "g13" and same_anchor and str((comps["last_accepted"][1].get("arm") or {}).get(
+                "role", "")).startswith(CANDIDATE_ROLE):
+            raise IdentityMismatch("G13 needs the lineage anchor: --parent-arm is a candidate (child) cache, so "
+                                   "--anchor-arm (m2 parent arm or champion) is required")
+        if stage == "g13" and not same_anchor:
+            if not anchor_arm_sha256:
+                raise IdentityMismatch("--anchor-arm needs its pinned --anchor-arm-sha256")
+            comps["anchor"] = read_arm_cache(anchor_arm, stage, ident, expect_parent, anchor_arm_sha256)
+            a_role = str((comps["anchor"][1].get("arm") or {}).get("role", ""))
+            if a_role.startswith(CANDIDATE_ROLE) and not anchor_is_champion:
+                raise IdentityMismatch("the anchor must be the m2 parent-arm cache (or the pinned champion with "
+                                       "--anchor-is-champion), not a candidate cache")
+            if comps["anchor"][1]["sha256"] == comps["last_accepted"][1]["sha256"] and str(
+                    (comps["last_accepted"][1].get("arm") or {}).get("role", "")).startswith(CANDIDATE_ROLE):
+                raise IdentityMismatch("the anchor is a copy of the last-accepted candidate cache (anti-creep)")
         child = score_stage(stage, child_decide, child_steer, items_by_role, records_by_id, variants,
-                            index_rows if stage == "g13" else None)
-        v = stage_verdict(stage, child, parent, variants, index_rows, MARGINS, n_boot)
+                            index_rows if stage == "g13" else None,
+                            child_index_decide if stage == "g13" else None)
+        vs = {name: stage_verdict(stage, child, units, variants, index_rows, margins, n_boot)
+              for name, (units, _) in comps.items()}
+        v = combine_comparators(vs)
+        if stage == "g13" and same_anchor:
+            v["comparators"]["anchor"] = {"same_as": "last_accepted", "accept": v["comparators"]["last_accepted"][
+                "accept"], "note": "the last-accepted cache is the parent-arm cache (verified role != candidate), "
+                                   "so it is the lineage anchor"}
         report["verdicts"][stage] = v
-        report["stages"][stage] = {"units_identity": ident, "parent_arm": {k: ent[k] for k in ("sha256", "arm")},
+        report["stages"][stage] = {"units_identity": ident,
+                                   "parent_arm": {k: comps["last_accepted"][1][k] for k in ("sha256", "arm")},
+                                   "comparator_arms": {n: {k: e[k] for k in ("sha256", "arm")}
+                                                       for n, (_, e) in comps.items()},
                                    "child_seconds": child["seconds"],
                                    "child_decision_errors": child["decision_errors"]}
+        children[stage] = (child, ident, dict(comps["last_accepted"][1].get("arm", {}).get("parent") or {}))
         if out is not None:
             Path(out).parent.mkdir(parents=True, exist_ok=True)
             Path(out).with_name(f"units-child-{stage}.json").write_text(
                 json.dumps(child, sort_keys=True, default=float), encoding="utf-8")
-    report["promotion"] = promotion_verdict(report["verdicts"])
-    code = exit_code(report["verdicts"])
+    report["promotion"] = promotion_verdict(report["verdicts"], margins)
+    if out is not None and report["promotion"]["promotable"]:  # only an ACCEPTED child becomes a comparator
+        for stage, (child, ident, par) in children.items():
+            write_arm_cache(Path(out).with_name("child-arm"), stage, child, ident,
+                            {"parent": par, "child": child_identity, "role": CANDIDATE_ROLE,
+                             "promotion": {k: report["promotion"][k] for k in ("verdict", "promotable", "stages")}})
+    from train.promotion import margins_pending
+
+    code = exit_code(report["verdicts"], margins_pending(margins))
     report["exit_code"] = code
     if out is not None:
         Path(out).write_text(json.dumps(report, indent=1, default=float), encoding="utf-8")
@@ -368,17 +478,28 @@ def main(argv=None) -> int:
     ap.add_argument("--gdn-ckpt", default=None)
     ap.add_argument("--records", required=True)
     ap.add_argument("--guard-readiness", required=True)
-    ap.add_argument("--parent-arm", required=True)
+    ap.add_argument("--parent-arm", required=True, help="the LAST ACCEPTED checkpoint's arm cache (first cell: the "
+                                                         "m2 parent arm)")
     ap.add_argument("--parent-arm-sha256", required=True, help="pinned sha256 of <parent-arm>/arm.json")
-    ap.add_argument("--index-rows", default=None, help="the 2,008-row Index DEV subset rows (needed for g13)")
+    ap.add_argument("--anchor-arm", default=None, help="the lineage anchor's arm cache (m2 parent arm or champion); "
+                                                       "default: --parent-arm")
+    ap.add_argument("--anchor-arm-sha256", default=None, help="pinned sha256 of <anchor-arm>/arm.json")
+    ap.add_argument("--anchor-is-champion", action="store_true",
+                    help="the anchor is the current champion's (accepted candidate) cache")
+    ap.add_argument("--index-rows", default=None, help="the FULL Index DEV rows (needed for g13)")
+    ap.add_argument("--index-frozen", default=None, help="jobs.common.dev_full frozen manifest (needed for g13)")
+    ap.add_argument("--index-frozen-sha256", default=None, help="pinned sha256 of the frozen manifest file")
     ap.add_argument("--out", required=True)
     ap.add_argument("--stage", choices=["g12", "g13", "all"], default="all")
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--device", default="cuda")
     a = ap.parse_args(argv)
     stages = list(STAGES) if a.stage == "all" else [a.stage]
-    if "g13" in stages and not a.index_rows:
-        print("g13 needs --index-rows (Index DEV subset)", file=sys.stderr)
+    if "g13" in stages and not (a.index_rows and a.index_frozen and a.index_frozen_sha256):
+        print("g13 needs --index-rows (full Index DEV) + --index-frozen + --index-frozen-sha256", file=sys.stderr)
+        return EXIT["usage"]
+    if a.anchor_arm and not a.anchor_arm_sha256:
+        print("--anchor-arm needs --anchor-arm-sha256", file=sys.stderr)
         return EXIT["usage"]
 
     import torch
@@ -449,17 +570,24 @@ def main(argv=None) -> int:
     out = Path(a.out)
     card = run_card(model, items_by_role["dev"], tr.step, out.parent / "cards", temperature=ft,
                     cohort=cohort.identity())
-    index_rows = None
-    if a.index_rows:
+    index_rows, index_frozen = None, None
+    if a.index_rows and "g13" in stages:
         from harness.suite import read_rows
+        from jobs.common.dev_full import FrozenMismatch, check_backend_accepts, load_frozen, select_rows
 
-        index_rows = read_rows(a.index_rows)
+        try:
+            index_frozen = load_frozen(a.index_frozen, a.index_frozen_sha256)
+            index_rows = select_rows(read_rows(a.index_rows), index_frozen)
+            check_backend_accepts(decider, index_rows)  # $0 plan-only: the child accepts every frozen row
+        except FrozenMismatch as e:
+            print(f"identity: {e}", file=sys.stderr)
+            return EXIT["identity"]
     records_by_id = {r["id"]: r for rs in role_recs.values() for r in rs}
     prov = getattr(bb, "provenance", None) or {}
     expect_parent = expected_parent_identity(parent, prov)
     try:
         code, rep = _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_id, a, expect_parent,
-                         index_rows, out, guard, backend, tr, bb, ft, card)
+                         index_rows, out, guard, backend, tr, bb, ft, card, index_frozen)
     except IdentityMismatch as e:
         print(f"identity: {e}", file=sys.stderr)
         return EXIT["identity"]
@@ -469,17 +597,22 @@ def main(argv=None) -> int:
 
 
 def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_id, a, expect_parent, index_rows, out,
-         guard, backend, tr, bb, ft, card):
+         guard, backend, tr, bb, ft, card, index_frozen=None):
     from safety_eval.decide_bridge import DecideBridge
     from train.lineage import backbone_identity
 
     return run_gates(stages=stages, cohort=cohort, spec=spec, child_decide=arm_decider.decide,
                           child_steer=DecideBridge(arm_decider),
                           child_identity={"served": decider.revision(), "arm": arm_decider.revision(),
-                                          "arm_calibration": "untempered, like the parent arm (identity calibration)"},
+                                          "arm_calibration": "untempered, like the parent arm (identity calibration)",
+                                          "index_arm": "served decider; untempered answers rebuilt from "
+                                                       "raw_probabilities (T = 1), served answers for the served ECE"},
                           items_by_role=items_by_role, records_by_id=records_by_id, parent_arm=a.parent_arm,
                           expect_parent=expect_parent, index_rows=index_rows, n_boot=a.n_boot, out=out,
-                          parent_arm_sha256=a.parent_arm_sha256,
+                          parent_arm_sha256=a.parent_arm_sha256, anchor_arm=a.anchor_arm,
+                          anchor_arm_sha256=a.anchor_arm_sha256, index_frozen=index_frozen,
+                          anchor_is_champion=a.anchor_is_champion,
+                          child_index_decide=decider.decide,
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),
                                  "temperature": {**ft.identity(), "disjointness": ft.disjointness,

@@ -31,11 +31,16 @@
  "guard_pin": "jobs/m2_pilot/guard_pin.json",
  "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
  "margins_from": "train.promotion.MARGINS",
- "margins_status": "PENDING USER APPROVAL",
+ "margins_status": "approved: Codex cross-track decision, #36 comments 6028537932 + 6028610849 (2026-10-07); activated by the Track D coordinator under the user's delegation after independent re-reviews of #102 (FIX-THEN-MERGE findings resolved)",
  "mission": "m2-pilot-cache-fork",
  "parent_arm_sha256": {
   "rwkv7": null,
   "q9af": null,
   "_note": "sha256 of the parent arm cache's arm.json (jobs/m2_parent_arm output) per parent; PENDING until that job runs. m2_job.sh refuses (exit 10) while null or on mismatch."
+ },
+ "index_frozen_sha256": {
+  "rwkv7": null,
+  "q9af": null,
+  "_note": "sha256 of the parent arm cache index-frozen.json (jobs.common.dev_full: full Index DEV minus the rows the parent decider refuses before any forward, frozen before any Index row is scored; issue #36). PENDING until the parent-arm job runs. m2_job.sh refuses (exit 10) while null or on mismatch."
  }
 }

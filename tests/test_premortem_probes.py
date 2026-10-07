@@ -254,6 +254,23 @@ def test_p5_proxy_refuses_what_the_trainer_would_do_differently(toy):
         train_head_cached(m, cached, dataclasses.replace(cfg, bf16=True), guard=G)
     with pytest.raises(ValueError, match="bf16, fork_mode"):
         train_head_cached(m, cached, dataclasses.replace(cfg, fork_mode="recompute"), guard=G)
+    with pytest.raises(ValueError, match="row_batch"):
+        train_head_cached(m, cached, dataclasses.replace(cfg, row_batch=2), guard=G)
+    with pytest.raises(ValueError, match="trust_gate"):
+        train_head_cached(m, cached, dataclasses.replace(cfg, controlsafe={"trust_gate": True}), guard=G)
+    with pytest.raises(ValueError, match="trust_gate"):
+        cache_items(m, toy[:1], cfg=dataclasses.replace(cfg, controlsafe={"trust_gate": True}))
+
+
+def test_p5_eval_cached_runs_in_eval_mode_and_restores(toy):
+    from train.proxy import cache_items, eval_cached
+
+    m = _fresh("fork", 5)
+    seen = []
+    m.head.register_forward_pre_hook(lambda mod, args: seen.append(mod.training))
+    m.train()
+    eval_cached(m, cache_items(m, toy[:2]))
+    assert seen and not any(seen) and m.training
 
 
 RECIPES = [  # (head, loss arm, lr_head)
@@ -311,12 +328,10 @@ def test_p7_clef_composite_reader_splits_jsonl_on_unicode_line_separators(tmp_pa
     recs = [{"id": "a", "text": "plain"}, {"id": "b", "text": "line separator"}]
     p.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in recs), encoding="utf-8")
     assert [json.loads(x) for x in p.read_text(encoding="utf-8").split("\n") if x.strip()] == recs  # kit-style read
-    # the cause, kept as evidence: str.splitlines() cuts the record inside its JSON string
-    with pytest.raises(json.JSONDecodeError, match="Unterminated string"):
-        [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
-    # fixed in #98 (harness/jsonl.py): summarize.rows splits on "\n" only and parses both records
+    # The reader at the time of the pre-mortem (str.splitlines) raised "Unterminated string" here, reproducing
+    # job-sgihj's crash. PR #98 replaced it with the strict newline-only reader (harness.jsonl.read_jsonl_strict); the
+    # probe now pins the fix: the same file reads back exactly.
     assert S.rows(p) == recs
-    _write("p7_composite_crash.json", {"reproduced": True, "fixed_in": "PR #98 (harness/jsonl.py, LESSONS L-15)",
-                                       "file": "jobs/clef_baseline/summarize.py rows()",
+    _write("p7_composite_crash.json", {"reproduced": True, "file": "jobs/clef_baseline/summarize.py:24",
                                        "cause": "str.splitlines() splits inside a JSON string on U+2028",
                                        "fix": "strict newline-only reader; truncated/partial files exit 17"})

@@ -1,0 +1,180 @@
+{
+ "_comment": "Exact extraction volume and output-size estimate per arm and split, produced locally on CPU by 'python -X utf8 -m jobs.q9_feature_cache.cache run --arm <arm> --plan-only --tok-s 22144 --call-s 0.0595' (2026-10-07) on the REAL inputs: train.train_set.draw over the pointer-verified 150k set (cohort-v2 exclusion, pinned D1-B exclusions, drawn-record heldout scan, harness.heldout.check_record frozen-family check), the content-index guard from jobs.m2_pilot.guard_ready (index sha256 7cbe6c89... reproduced locally), the private DEV rows (sha256 d1202ab8...) and the Qwen3.5-9B tokenizer @ c2022362. est_gib = cache.estimate_bytes (bf16 upper bound; one lm_head lexical table per part: lex_split per split, lex_union_all for a part holding every split). One job = one part (review B1: the platform packages a job's whole output as ONE tar artifact bounded by 5 GiB).",
+ "volume_model": "jobs.q9_feature_cache.extract.n_chunks_calls (opt_chunk 32, TWO_STAGE_MIN_SAVED 512, KV_COPY_TOKENS 2**19)",
+ "arms": {
+  "stock": {
+   "select": {
+    "requests": 2008,
+    "questions": 8467,
+    "skipped_questions": 0,
+    "positions": 6144989,
+    "calls": 11818
+   },
+   "holdout": {
+    "requests": 2014,
+    "questions": 8680,
+    "skipped_questions": 0,
+    "positions": 6391991,
+    "calls": 12109
+   },
+   "train": {
+    "requests": 17917,
+    "questions": 20000,
+    "skipped_questions": 0,
+    "positions": 13137459,
+    "calls": 38817
+   },
+   "est_gib": {
+    "splits": {
+     "select": 1.364,
+     "holdout": 1.377,
+     "train": 2.514
+    },
+    "lex_split": {
+     "select": 0.066,
+     "holdout": 0.065,
+     "train": 0.256
+    },
+    "lex_union_all": 0.388,
+    "lex_union_all_tokens": 50769
+   },
+   "train_identity": {
+    "pointer_sha256": "c65c10450fe9edef801dce6bbf24f091c1014263fd66ceb5412af23fc08ddc09",
+    "n_pool": 149997,
+    "n_drawn": 24000,
+    "drawn_ids_sha256": "2bbbf1808c0bdd6cf0ba3ecd236cf9a64110c5e429e22f8b8e9cd2df7507556b",
+    "heldout_excluded": [
+     "m2:mmlu_aux:21118",
+     "m2:mmlu_aux:39640",
+     "m2:mmlu_aux:39643"
+    ]
+   },
+   "train_rows": {
+    "rows": 20000,
+    "requests": 17917,
+    "dropped": {
+     "filter": 9287
+    },
+    "short": false
+   },
+   "frozen_family_check": "harness.heldout.check_record (heldout-draw-v1)",
+   "plan_minutes_local": 4.8
+  },
+  "conv1": {
+   "select": {
+    "requests": 2008,
+    "questions": 8467,
+    "skipped_questions": 0,
+    "positions": 6144989,
+    "calls": 11818
+   },
+   "holdout": {
+    "requests": 2014,
+    "questions": 8680,
+    "skipped_questions": 0,
+    "positions": 6391991,
+    "calls": 12109
+   },
+   "train": {
+    "requests": 4492,
+    "questions": 5000,
+    "skipped_questions": 0,
+    "positions": 3281602,
+    "calls": 9731
+   },
+   "est_gib": {
+    "splits": {
+     "select": 1.364,
+     "holdout": 1.377,
+     "train": 1.469
+    },
+    "lex_split": {
+     "select": 0.066,
+     "holdout": 0.065,
+     "train": 0.145
+    },
+    "lex_union_all": 0.277,
+    "lex_union_all_tokens": 36294
+   },
+   "train_identity": {
+    "pointer_sha256": "c65c10450fe9edef801dce6bbf24f091c1014263fd66ceb5412af23fc08ddc09",
+    "n_pool": 149997,
+    "n_drawn": 24000,
+    "drawn_ids_sha256": "2bbbf1808c0bdd6cf0ba3ecd236cf9a64110c5e429e22f8b8e9cd2df7507556b",
+    "heldout_excluded": [
+     "m2:mmlu_aux:21118",
+     "m2:mmlu_aux:39640",
+     "m2:mmlu_aux:39643"
+    ]
+   },
+   "train_rows": {
+    "rows": 5000,
+    "requests": 4492,
+    "dropped": {
+     "filter": 2167
+    },
+    "short": false
+   },
+   "frozen_family_check": "harness.heldout.check_record (heldout-draw-v1)",
+   "plan_minutes_local": 8.1
+  },
+  "e5": {
+   "select": {
+    "requests": 2008,
+    "questions": 8467,
+    "skipped_questions": 0,
+    "positions": 5870060,
+    "calls": 11816
+   },
+   "holdout": {
+    "requests": 2014,
+    "questions": 8680,
+    "skipped_questions": 0,
+    "positions": 6116154,
+    "calls": 12108
+   },
+   "train": {
+    "requests": 4491,
+    "questions": 5000,
+    "skipped_questions": 0,
+    "positions": 3142712,
+    "calls": 9694
+   },
+   "est_gib": {
+    "splits": {
+     "select": 1.364,
+     "holdout": 1.377,
+     "train": 1.468
+    },
+    "lex_split": {
+     "select": 0.067,
+     "holdout": 0.066,
+     "train": 0.144
+    },
+    "lex_union_all": 0.277,
+    "lex_union_all_tokens": 36215
+   },
+   "train_identity": {
+    "pointer_sha256": "c65c10450fe9edef801dce6bbf24f091c1014263fd66ceb5412af23fc08ddc09",
+    "n_pool": 149997,
+    "n_drawn": 24000,
+    "drawn_ids_sha256": "2bbbf1808c0bdd6cf0ba3ecd236cf9a64110c5e429e22f8b8e9cd2df7507556b",
+    "heldout_excluded": [
+     "m2:mmlu_aux:21118",
+     "m2:mmlu_aux:39640",
+     "m2:mmlu_aux:39643"
+    ]
+   },
+   "train_rows": {
+    "rows": 5000,
+    "requests": 4491,
+    "dropped": {
+     "filter": 2150
+    },
+    "short": false
+   },
+   "frozen_family_check": "harness.heldout.check_record (heldout-draw-v1)",
+   "plan_minutes_local": 8.0
+  }
+ }
+}
