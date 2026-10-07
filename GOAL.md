@@ -25,4 +25,4 @@ At every level, require useful-answer performance against a strong comparator, n
 
 ## Completion test
 
-Complete the goal only when both stages pass their stated gates and their evidence is merged to the agreed branch. If a gate fails or the budget blocks progress, provide the receipts, identify the failing component and cheapest justified next experiment, and leave the goal paused rather than claiming success.
+Complete the goal only when both stages pass their stated gates and their evidence is merged to the agreed branch. A failed gate folds that line and unlocks the next justified experiment; it does not pause the overall goal. If a paid step is blocked by budget, approval or preflight, continue with independent $0 model work, resolve the blocker with a receipted spend proposal, and keep the goal active. Never claim success without its gates. Pause only if the user explicitly asks to pause or no permissible work remains, and then provide receipts plus the exact next action that would resume progress.
