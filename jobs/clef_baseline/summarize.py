@@ -1,7 +1,10 @@
 """Stage S5 of the Clef baseline job: composite native results, latency, G1 audit, result JSON + table.
 
     python -X utf8 jobs/clef_baseline/summarize.py composite --decide R --native N --out C
-    python -X utf8 jobs/clef_baseline/summarize.py report --out-dir OUT --release clef-flash --job A|B > result.json
+    python -X utf8 jobs/clef_baseline/summarize.py report --out-dir OUT --release clef-flash --job A|B|I|T [--rows subset|full] > result.json
+
+Exit codes: 0 ok | 3 a results file is truncated / malformed / has duplicate run_ids | 4 inputs incomplete (decide rows !=
+probes' row count, native-arm rows missing). run_job.sh maps 3 and 4 to its exit 17.
 
 Never edits a results file in place; the composite is a new file whose provenance is in its sidecar.
 """
@@ -140,8 +143,11 @@ def report(a) -> int:
     def fam(arm, f):
         return (arms.get(arm, {}).get("families") or {}).get(f)
 
+    teach = load(o / "teacher" / f"teacher-{a.release}.identity.json")
+    sel = load(o / "teacher" / "selection.json") or {}
     result = {
-        "ok": True, "release": a.release, "job": a.job,
+        "ok": True, "release": a.release, "job": a.job, "rows": a.rows if a.job == "I" else None,
+        "dry_run": str(a.dry_run) == "1",
         "parity_ok": (probes.get("parity") or {}).get("ok"),
         # fast GDN kernels vs torch reference, non-vacuous (PR #43 B1); job B is gated on s1_ok
         "kernel_path_ok": (probes.get("kernel_path") or {}).get("ok"),
@@ -150,6 +156,13 @@ def report(a) -> int:
                          "max_abs_dp", "argmax_flips", "fail_reasons")},
         "s1_ok": (probes.get("parity") or {}).get("ok") is True and (probes.get("kernel_path") or {}).get("ok") is True,
         "index_dev_decide": idx_dec, "index_dev_native_composite": idx_nat, "ece_decide": ece,
+        "index_dev_decide_on_m1_subset": load(o / "index" / "score_decide_subset.json"),
+        "compare_decide_vs_native": load(o / "index" / "compare_decide_vs_native.json"),
+        "compare_clef_vs_flash": load(o / "index" / "compare_clef_vs_flash.json"),
+        "composite_provenance": load(o / "index" / "native_composite" / "composite.provenance.json"),
+        "rate_guard": {k: load(o / "env" / f"rate_guard_{k}.json") for k in ("index", "export")},
+        "preflight_index": load(o / "env" / "preflight_index.json"),
+        "parity_timing_n": len(probes.get("parity_timing") or []),
         "latency_decide": latency(res_dec) if res_dec else None,
         "g1_audit": g1_audit(res_dec) if res_dec else None,
         "g8": probes.get("g8"), "g2b_chatml_spoof": probes.get("g2b_chatml_spoof"),
@@ -158,7 +171,14 @@ def report(a) -> int:
         "safety": {"arms": {n: {"clean": arms[n].get("clean"), "status_counts": arms[n].get("status_counts"),
                                 **{f: fam(n, f) for f in ("hijack", "d1_A", "d1_B", "gcg_steer", "gcg_hijack")}}
                             for n in arms}, "arm_vs_arm": saf.get("arm_vs_arm"), "gcg": saf.get("gcg")},
+        "teacher": None if teach is None else {
+            **teach, "selection": {k: sel.get(k) for k in ("pointer", "pointer_sha256", "n_set", "n_drawn",
+                                                           "drawn_ids_sha256", "cohort_hits", "guard_refused",
+                                                           "heldout_scan", "files_uncompressed_sha256")},
+            "guard": (sel.get("guard") or {}).get("content_index"), "guard_note": (sel.get("guard") or {}).get("note")},
     }
+    if a.job == "T" and teach is None:
+        raise Incomplete("job T without teacher identity")
     json.dump(result, sys.stdout, indent=1, default=str)
     return 0
 
@@ -175,6 +195,8 @@ def main(argv=None) -> int:
     r.add_argument("--out-dir", required=True)
     r.add_argument("--release", required=True)
     r.add_argument("--job", required=True)
+    r.add_argument("--rows", default="full")
+    r.add_argument("--dry-run", default="0")
     a = ap.parse_args(argv)
     from harness.jsonl import ResultsFileError
 

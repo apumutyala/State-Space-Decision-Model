@@ -1,0 +1,107 @@
+{
+ "_comment": "Teacher export, Clef (27B), same 24,000-record draw and guard as teacher_clef_flash. Expected export: 150.9 + 1.6 load (FLOPs-scaled job-sgihj rate). Run only after clef-index-subset has passed (s1_ok) so the 27B decide path is known to match systemone on this stack.",
+ "job": "clef-teacher-clef",
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "batch_usd_per_min": 0.0495,
+ "clock_lock": true,
+ "runner": "jobs/clef_baseline/run_job.sh",
+ "decision_rule": null,
+ "no_verdict_reason": "data export (teacher probabilities on m2 training records): no verdict; the contamination guard is a fail-closed precondition (exit 20), not a decision rule",
+ "mission": "clef-baseline-safety-spec-s7",
+ "pricing": "jobs/clef_baseline/price.py (job-sgihj measured rates; Clef = x FLOPs ratio 3.52)",
+ "max_duration_minutes": 258,
+ "hf_cache": false,
+ "hard_cap_usd": 29.0,
+ "reserve_minutes": 5,
+ "phase_caps_minutes": {
+  "guard": 6,
+  "setup": 15,
+  "export": 230,
+  "report": 2
+ },
+ "expected_minutes": {
+  "build": 20,
+  "guard": 3,
+  "setup": 10,
+  "export": 153,
+  "report": 1
+ },
+ "model": "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c",
+ "env": {
+  "RELEASE": "clef",
+  "JOB": "T"
+ },
+ "submit": {
+  "command": "/app/jobs/clef_baseline/run_job.sh",
+  "key": "clef-teacher-clef",
+  "env": {
+   "RELEASE": "clef",
+   "JOB": "T"
+  },
+  "clock_lock": false,
+  "depends_on": {
+   "job": "<clef-index-subset job id>",
+   "require": "result.s1_ok == true"
+  },
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/result.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/teacher/selection.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/teacher/teacher-clef.jsonl"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/teacher/teacher-clef.identity.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/SHA256SUMS"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/clef-teacher/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/clef_baseline/Dockerfile",
+  "builder": "jobs/clef_baseline/build_context.sh teacher",
+  "data": [
+   {
+    "src": "m2/build/sample-150000-seed20261006/{records.jsonl.gz,*.manifest.jsonl.gz,*.content.jsonl.gz}",
+    "dest": "data/m2-150k/",
+    "pin": "data/manifests/sample-150000-seed20261006.pointer.json"
+   },
+   {
+    "src": "suite-0.2/{selected-rows,added-rows}.jsonl.gz + excluded-questions.json",
+    "dest": "data/suite-0.2/",
+    "pin": "jobs/m2_pilot/guard_pin.json"
+   }
+  ]
+ }
+}

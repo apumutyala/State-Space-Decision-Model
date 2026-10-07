@@ -22,9 +22,19 @@ LINES = {"joint_gate": 75.0, "system1": 250.0, "language": 100.0, "reserve": 100
 PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_params_c_only.json", "probe9b": "jobs/probe9b/job_params.json",
           "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_lora": "jobs/rwkv7/job_params_lora.json",
           "fla_rwkv7": "jobs/fla_rwkv7/job_params.json", "fla_rwkv7_truth_v2": "jobs/fla_rwkv7/job_params_truth_v2.json",
-          "cell_step_profile": "jobs/cell_step_profile/job_params.json"}
-#: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here
-OTHER = {"clef_baseline_ABC": 47.52}  # jobs/clef_baseline/JOB_SPEC.md: per-job ceilings at $2.97/h
+          "cell_step_profile": "jobs/cell_step_profile/job_params.json",
+          "clef_index_subset": "jobs/clef_baseline/job_params_index_subset.json",
+          "clef_index_full": "jobs/clef_baseline/job_params_index_full.json",
+          "clef_teacher_flash": "jobs/clef_baseline/job_params_teacher_clef_flash.json",
+          "clef_teacher_clef": "jobs/clef_baseline/job_params_teacher_clef.json"}
+#: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here. Clef baseline (JOB_SPEC):
+#: A ran as job-sgihj ($1.40, in SPENT_USD); C (27B, job A shape) is superseded for the Index by clef_index_subset +
+#: clef_index_full (PARAMS); B (Clef-flash GCG, $29.70 one-attempt ceiling) is still planned.
+OTHER = {"clef_baseline_B": 29.70}
+#: the Clef-27B Index jobs belong to the joint gate (every "better than Clef" claim needs them)
+JOINT_GATE_JOBS = ("qual", "clef_index_subset", "clef_index_full")
+#: optional m2 distillation teachers (System 1 line, only if a distillation cell is approved)
+TEACHER_JOBS = ("clef_teacher_flash", "clef_teacher_clef")
 FULL8_ESTIMATE = 150.0  # PLAN.md m1 full conversion (~$150); its own spec + spend issue after proceed-all-8
 
 
@@ -136,7 +146,8 @@ def next_jobs_after_probe(verdict: str | None, exit_code: int | None = 0) -> lis
 def branch_ledger() -> dict:
     """Worst-case $ per branch through the tree, against the envelope and the PLAN lines."""
     w = {k: worst_case_usd(load(k)) for k in PARAMS}
-    joint = w["qual"] + OTHER["clef_baseline_ABC"]
+    joint = sum(w[k] for k in JOINT_GATE_JOBS) + OTHER["clef_baseline_B"]
+    teachers = round(sum(w[k] for k in TEACHER_JOBS), 2)
     branches = {
         "A: qual pass -> probe proceed -> full-8 (+rwkv7 readout comparator)":
             {"m1": w["probe9b"] + FULL8_ESTIMATE + w["rwkv7_readout"]},
@@ -146,9 +157,11 @@ def branch_ledger() -> dict:
     for b in branches.values():
         b["m1"] = round(b["m1"], 2)
         b["system1_left_for_m2"] = round(LINES["system1"] - b["m1"], 2)
-        b["envelope_total_worst"] = round(SPENT_USD + joint + b["m1"], 2)
+        b["system1_left_after_teachers"] = round(b["system1_left_for_m2"] - teachers, 2)
+        b["envelope_total_worst"] = round(SPENT_USD + joint + b["m1"] + teachers, 2)
         b["fits_envelope"] = b["envelope_total_worst"] <= ENVELOPE_USD
     return {"worst_case_usd": w, "joint_gate_worst": round(joint, 2), "joint_gate_fits": joint <= LINES["joint_gate"],
+            "teachers_optional_worst": teachers,
             "envelope": ENVELOPE_USD, "spent": SPENT_USD, "branches": branches}
 
 

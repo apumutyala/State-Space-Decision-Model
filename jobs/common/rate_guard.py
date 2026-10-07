@@ -57,9 +57,11 @@ def preflight_volume(volume: dict, tok_s: float, call_s: float, cap_min: float, 
             "ok": p["projected_min"] <= MARGIN * cap_min, "method": "volume"}
 
 
-def project(rows_done: int, elapsed_s: float, total: int) -> float:
-    """Projected total minutes from the measured row rate."""
-    return elapsed_s / max(rows_done, 1) * total / 60
+def project(rows_done: int, elapsed_s: float, total: int, startup_s: float = 0.0) -> float:
+    """Projected total minutes from the measured row rate. ``startup_s`` (opt-in, ``--exclude-startup``): seconds
+    before the first row was written (model load, warm-up). They are counted once, not extrapolated per row, so a
+    phase whose load is a large share of the first check is not stopped for its load time."""
+    return (startup_s + (elapsed_s - startup_s) / max(rows_done, 1) * total) / 60
 
 
 def _rows(path: Path) -> int:
@@ -71,10 +73,11 @@ def _rows(path: Path) -> int:
 
 
 def run(cmd: list[str], results: Path, total: int, cap_min: float, check_after_min: float = CHECK_AFTER_MIN,
-        poll_s: float = 15.0, report: Path | None = None) -> int:
+        poll_s: float = 15.0, report: Path | None = None, exclude_startup: bool = False) -> int:
     t0 = time.time()
     child = subprocess.Popen(cmd, start_new_session=(os.name != "nt"))
-    rec = {"cmd": cmd, "total": total, "cap_min": cap_min, "checks": []}
+    rec = {"cmd": cmd, "total": total, "cap_min": cap_min, "checks": [], "exclude_startup": exclude_startup}
+    startup_s = None
 
     def stop(code, why):
         rec.update(stopped=why, exit=code)
@@ -100,8 +103,11 @@ def run(cmd: list[str], results: Path, total: int, cap_min: float, check_after_m
             code = stop(124, "wall-clock cap")
             break
         n = _rows(results)
+        if startup_s is None and n > 0:
+            startup_s = el
+            rec["startup_s"] = round(el, 1)
         if el >= 60 * check_after_min and n >= MIN_ROWS:
-            proj = project(n, el, total)
+            proj = project(n, el, total, startup_s if exclude_startup and startup_s else 0.0)
             rec["checks"].append({"elapsed_min": el / 60, "rows": n, "projected_min": proj})
             if proj > MARGIN * cap_min:
                 code = stop(EXIT_TOO_SLOW, f"measured {n} rows in {el / 60:.1f} min -> {proj:.0f} min > cap {cap_min}")
@@ -138,6 +144,8 @@ def main(argv=None):
     r.add_argument("--check-after-min", type=float, default=CHECK_AFTER_MIN)
     r.add_argument("--poll-s", type=float, default=15.0)
     r.add_argument("--report", default=None)
+    r.add_argument("--exclude-startup", action="store_true",
+                   help="count the time before the first row once instead of extrapolating it (model load)")
     a = ap.parse_args(argv)
     if a.cmd == "preflight":
         if a.volume:
@@ -155,7 +163,7 @@ def main(argv=None):
     if not tail:
         ap.error("run needs a command after --")
     return run(tail, Path(a.results), a.total, a.cap_min, a.check_after_min, a.poll_s,
-               Path(a.report) if a.report else None)
+               Path(a.report) if a.report else None, a.exclude_startup)
 
 
 if __name__ == "__main__":

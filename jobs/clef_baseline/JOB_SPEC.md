@@ -1,6 +1,8 @@
 # JOB_SPEC: Clef / Clef-flash baseline on our harness (SAFETY_SPEC section 7)
 
-**Status: specification only. Nothing here has been submitted or validated (`validate_job` not run).** A
+**Status (2026-10-06): job A (Clef-flash) ran as `job-sgihj` ($1.40) and stopped at exit 12 in the composite step
+(root cause and fix: section 12; the safety battery S4 therefore never ran). Jobs B, C and the new Clef-27B Index
+(section 4b) and teacher-export (section 11) jobs are specification only: not submitted, `validate_job` not run.** A
 `spend` issue must be opened and approved before any submit (COORDINATION spend ladder; SAFETY_SPEC section 7.4).
 
 **Submit precondition (PREREG G1(d), review B2).** Jobs A and B score the safety_eval **test split** and **D1-B**.
@@ -92,15 +94,118 @@ Three jobs share one build context. A fourth (GCG on Clef-27B) is scoped out bel
 |---|---|---|---|---|---|---|
 | **A-flash** | clef-flash | S0-S1-S2-S3-S4-S5 | (none) | 120 min | ~55 min, **~$2.7** | $5.94 |
 | **B-flash** | clef-flash | S0-S4b-S5 (GCG, resumable) | `depends_on: {job: A-flash, require: "result.s1_ok == true"}` (parity **and** non-vacuous `kernel_path`) | 600 min | ~3.3 h, **~$10** | $29.70 |
-| **C-27b** | clef | S0-S5 as A | `depends_on: {job: A-flash, require: "result.ok == true"}` | 240 min | ~1.8 h, **~$5.4** | $11.88 |
+| **C-27b** | clef | S0-S5 as A | `depends_on: {job: <I-subset-27b id>, require: "result.s1_ok == true"}` (was A-flash `result.ok`, which job-sgihj never wrote: C could not launch as specced). For the Index, C is superseded by I-subset/I-full (section 4b); C stays only for the 27B safety battery and is not proposed now | 240 min | ~1.8 h, **~$5.4** | $11.88 |
+| **I-subset-27b** | clef | S0-S1-S2-S2b-S3-S5 on the 2,008-row m1 DEV subset (section 4b) | (none) | 58 min | **$2.82** | worst $8.71 |
+| **I-full-27b** | clef | as I-subset on all 12,104 DEV rows | `depends_on: {job: <I-subset-27b id>, require: "result.s1_ok == true and result.ok == true"}` | 145 min | **$5.69** | worst $17.32 |
+| *T-flash / T-27b* | clef-flash / clef | teacher export on the m2 TRAINING draw (section 11) | T-27b on I-subset `s1_ok` | 88 / 258 min | $3.56 / $9.26 | worst $11.68 / $28.51 |
 | *D-27b-gcg* | clef | GCG | not planned | - | ~9 h, ~$27 | worst case exceeds the 720-min cap |
 
-**Planned total (A+B+C): about $18 expected, $47.52 ceiling at $2.97/h.** The ceiling is per job: `max_duration_minutes` x rate for one attempt. If the B worst case (GCG ~2x slower than estimated) runs past 600 min, it ends at the cap with its checkpoint. Finishing then needs a second submission under its own spend line. Confirm with `validate_job` that the quoted worst case is per job (review N9) ($57.60 at the $3.60/h H100 list rate implied by the docs' "$0.90 for a 15-minute grace window". The submit response's `rate` is authoritative). This fits inside the $75 joint gate. Without D, the GCG row for Clef-27B stays "not measured", and no GCG sentence may compare against Clef-27B.
+**Update 2026-10-06:** A ran (job-sgihj, $1.40). Joint-gate commitments now: B $29.70 + I-subset-27b $8.71 + I-full-27b $17.32 worst case (`costs.branch_ledger`). The original plan follows. **Planned total (A+B+C): about $18 expected, $47.52 ceiling at $2.97/h.** The ceiling is per job: `max_duration_minutes` x rate for one attempt. If the B worst case (GCG ~2x slower than estimated) runs past 600 min, it ends at the cap with its checkpoint. Finishing then needs a second submission under its own spend line. Confirm with `validate_job` that the quoted worst case is per job (review N9) ($57.60 at the $3.60/h H100 list rate implied by the docs' "$0.90 for a 15-minute grace window". The submit response's `rate` is authoritative). This fits inside the $75 joint gate. Without D, the GCG row for Clef-27B stays "not measured", and no GCG sentence may compare against Clef-27B.
 
 How the estimates were built:
 - Index DEV, decide path. Cloudflare's card gives median/p95 latency of 38.8/122.4 ms (flash) and 209.3/238.6 ms (Clef) on their hardware. Assuming H100 means of about 80 ms and about 300 ms with kit overhead: 12,104 rows take ~16 min (flash) and ~60 min (27B). The native arm runs only on rows whose encodings differ or that Clef truncates, plus a 64-row parity sample. Every other row has identical ids and therefore identical outputs, so a second full pass would buy nothing.
 - safety_eval without GCG: ~2,800 decide variants plus ~1,200 native-encoding variants at ~600 tokens is about 4 min (flash). Bootstrap runs on the CPU.
 - GCG-lite at HP_GATE (20 tokens, 150 steps, batch 128, top-k 128): one step is about 131 forward-equivalents x 600 tokens on 9.4 B params, so ~4 s on an H100. The worst case is 10.6 min per attack, or 8 h for 45 attacks. Early stop on success is expected to average ~60 steps, giving ~3.3 h. The cap is 600 min, and the job checkpoints after every attack (`resume: "checkpoint"`).
+
+## 4b. Clef (27B) on the Index: I-subset-27b and I-full-27b (`JOB=I`, `ROWS=subset|full`)
+
+Purpose: measure Clef, which has never been measured, through exactly the harness and readout that measured
+Clef-flash in job-sgihj. Every Clef vs Clef-flash vs ours comparison is then **paired on identical DEV rows**. This is
+a baseline measurement: nothing is tunable, and only the stop conditions below are pre-stated.
+
+**DEV only.**
+- The jobs load `slices/dev-rows.jsonl.gz` (12,104 rows) and score with `--slice dev` / `jobs.common.dev_subset`.
+- `SSDM_UNSEAL_TEST` is never set, so the harness refuses TEST.
+- The Index board scores all 150,317 rows; our CLI scores only dev/test and renormalises. A full-board run therefore
+  includes the sealed TEST slice and is itself a TEST unseal. It needs explicit operator approval and is **not** part
+  of these jobs.
+
+**Model pin (verified 2026-10-06 against the Hugging Face API and model card).**
+
+| | Clef | Clef-flash |
+|---|---|---|
+| Repo @ revision | `Cloudflare/clef` @ `2f3de3dd85f379784083b0814d997ab627200f0c` (= `main` on 2026-10-06; lastModified 2026-10-01) | `Cloudflare/clef-flash` @ `17f0b0ad64efb65d273590632833508766b2aae6` (= `main`) |
+| License | **apache-2.0** (card metadata + `LICENSE` file) | apache-2.0 |
+| Base | `Qwen/Qwen3.8-27B`, `base_model_relation: finetune` | `Qwen/Qwen3.5-9B` |
+| Repo size | 54,989,894,057 B (12 shards) | 19,083,377,402 B (4 shards) |
+| Text backbone | hidden 5,120; 64 layers (48 GDN + 16 gated full attention); MLP 17,408 | hidden 4,096; 32 layers (24 + 8); MLP 12,288 |
+| Per-token matmul params (`price.py`) | 24.35 B | 6.92 B, so the FLOPs ratio is **3.52x** |
+
+Two notes on the release:
+- Cloudflare's blog describes both models as frozen Qwen backbones with a jointly trained routing head and rank-256
+  LoRA adapters. The repos ship full merged weights plus `joint_head.safetensors`.
+- The blog says "64k context", but the shipped `joint_schema_model.py` defaults `max_length` to 16,384. Both our decide
+  path (`exhausted`) and the native arm (silent truncation) use 16,384. 51 DEV rows exceed it (job-sgihj). A 64k arm
+  would be a separate, declared measurement.
+
+**GPU shape: one H100 80 GB.** This is a scaled measurement, not an estimate from scratch.
+- Weights: 27.36 B params x 2 B = 50.9 GiB, vision encoder included.
+- job-sgihj measured the Clef-flash peak at **20.34 GiB** after a 16k-token forward **and** a GCG gradient step. That
+  is 17.5 GiB of weights plus ~2.8 GiB transient.
+- Scaling the transient by width x depth (1.25 x 2 = 2.5) gives ~7 GiB.
+- So the estimated 27B peak is **~58 GiB of 79 GiB usable**.
+- `JOB=I` runs no gradient probe, so its peak is lower still. No 2-GPU fallback is needed. S1 records
+  `max_memory_allocated_gib` and exits 10 on OOM.
+
+**Pricing (measured, `jobs/clef_baseline/price.py`).**
+- **Clef-flash rate from job-sgihj.** 12,104 rows and 18.60 M input tokens took 18.86 min of summed per-row wall time.
+  The per-row model is ms = 32.0 + 0.0399 x tokens; with an intercept, the fitted sum equals the measured sum.
+  Latency: median 57.1 ms, p95 286.5 ms (H100, our stack).
+- **Clef projection.** Clef runs at the FLOPs ratio 3.52x: **66.3 min full DEV, 11.1 min subset**, plus 1.6 min of load.
+- **Stress case.** Cloudflare's card gives a second ratio: median 209.3/38.8 = 5.39x and p95 1.95x, on an H200. It is
+  reported as the stress case (101.6 / 17.1 min).
+- **Caps** are sized at >= 1.3x the FLOPs projection.
+
+Two guards replace that assumption with a measurement before money goes into the long phase:
+- **Preflight (S1 -> S2).** The 64 parity rows run through the same decide path on this box. Their measured time over
+  the job-sgihj model's time for the same token counts gives the box's speed factor. Speed factor x volume gives the
+  projected Index minutes. If that exceeds 95% of the cap, the job exits 18 before S2.
+- **Live guard (S2).** `jobs.common.rate_guard run --exclude-startup` checks after 3 min (subset) or 8 min (full). The
+  model-load seconds before the first row are not extrapolated. Along job-sgihj's row order, a linear projection made
+  after 12% of the phase overshoots the final time by at most 1.32x (subset) or 1.28x (full). So the expected rate
+  stays under 95% of the cap: 13 x 1.32 = 17.2 < 19, and 68 x 1.28 = 87 < 95.
+
+| Job | Phases: expected / cap (min) | max_duration | Expected $ | One attempt $ | Worst $ (build 60 + 2 attempts) | Hard cap |
+|---|---|---|---|---|---|---|
+| I-subset-27b (`job_params_index_subset.json`) | build 20; setup 10/15; probes 8/11; index 13/20; native 3/4; score 2/3; report 1/2; reserve 3 | 58 | **$2.82** | $2.87 | **$8.71** | $9 |
+| I-full-27b (`job_params_index_full.json`) | build 20; setup 10/15; probes 10/15; index 68/100; native 4/6; score 2/3; report 1/2; reserve 4 | 145 | **$5.69** | $7.18 | **$17.32** | $18 |
+
+How the two jobs relate:
+- The subset job is the canary. The full job `depends_on` its `result.s1_ok == true and result.ok == true`.
+- If budget is short, run I-full alone. Its report also scores the 2,008-row subset from the same rows
+  (`index_dev_decide_on_m1_subset`), as was done for Clef-flash (55.8 [53.0, 58.5]).
+- Chained, the workspace cap is MTD + `costs.concurrent_cap_usd(["clef_index_subset", "clef_index_full"])` = MTD + $27.
+- Setup is unmeasured for a 55 GB pull (`hf_cache: false`, review N4). Its cap is 1.5x a 10-min estimate, and a slower
+  pull ends at exit 10/18 inside the setup cap.
+
+**Readout (identical to Clef-flash, paired).** The report carries:
+- `index_dev_decide`: slice index + cluster-bootstrap CI.
+- `index_dev_native_composite`: Clef's own systemone on the native-arm rows.
+- `compare_decide_vs_native`.
+- `ece_decide`: board protocol, debiased L2, SmoothECE.
+- `latency_decide`: median/p95 after 10 warm-up rows.
+- The G1 audit and the probes: parity, kernel_path, encodings, G8, G2b.
+- `compare_clef_vs_flash` (Clef - Clef-flash), when job-sgihj's decide results ship as
+  `data/reference/clef_flash.decide.results.jsonl` (sha256 `463f21ff...d0aa`, via `build_context.sh index` with
+  `REF_FLASH=`).
+
+For reference, Clef-flash recomputed locally from job-sgihj's own files with the fixed reader:
+
+| Clef-flash (job-sgihj, recomputed locally) | Value |
+|---|---|
+| DEV, decide path | 56.79 [55.40, 58.22] |
+| DEV, native composite | 56.82 |
+| 2,008-row subset | 55.78 [52.99, 58.52] |
+| Board-protocol ECE | 0.0285 (n 5,615) |
+| Overall SmoothECE | 0.0239 |
+
+**Stop conditions (pre-stated; nothing tunable).**
+- Any identity mismatch: exit 10.
+- Parity > 2e-4 or kernel_path failure: exit 11. No Index number is reported.
+- Preflight or live projection past 95% of a cap, or any phase timeout: exit 18.
+- A truncated, malformed or partial results file: exit 17. Nothing is scored from it.
+- More than 1% of rows `error`: no number; the reason is written in (section 8 sanity rule).
+- No retries beyond the platform's one restart. A re-run needs its own spend line.
 
 ## 5. Exact `submit_job` fields (do not submit until the spend issue is approved)
 
@@ -139,7 +244,7 @@ Build the context first: `bash jobs/clef_baseline/build_context.sh` produces `cl
 
 The other jobs differ only in these fields:
 - **B-flash.** `env {"RELEASE":"clef-flash","JOB":"B"}`, `idempotency_key "clef-baseline-B-flash-<sha12>"`, `max_duration_minutes 600`, `resume "checkpoint"`, `depends_on {"job":"<A-flash id>","require":"result.s1_ok == true"}`. `s1_ok` is true only if the S1 parity gate **and** `kernel_path` passed. GCG backward through the GDN kernels never starts unless the fast path was shown to be in use and to match the reference. Its checks are `file_exists /output/clef-flash-jobB/safety/gcg_attacks.jsonl` plus `result.json`. It uses the same heartbeat health check as A (`interval_s 600`, `fail_threshold 2`, `kill`); the watchdog keeps the heartbeat fresh through long attacks because GCG logs every 10 steps.
-- **C-27b.** `env {"RELEASE":"clef","JOB":"A"}`, `model "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c"`, `max_duration_minutes 240`, `depends_on {"job":"<A-flash id>","require":"result.ok == true"}`, the check paths under `/output/clef-jobA/`, and **`hf_cache: false`** (review N4). The manual guarantees only at least 32 GiB of free cache room and warns that a larger single download "can still fill the cache mid-pull (submit unusually large models without the flag)". The 55 GB of weights therefore download into the job's own scratch: 55 GB of weights plus a ~15 GB image and outputs fit the 100 GiB `job_scratch_bytes`. Preflight's disk warning should report ~55 GB.
+- **C-27b.** `env {"RELEASE":"clef","JOB":"A"}`, `model "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c"`, `max_duration_minutes 240`, `depends_on {"job":"<I-subset-27b id>","require":"result.s1_ok == true"}` (fixed 2026-10-06: the old dependency on A-flash `result.ok` can never be met after job-sgihj), the check paths under `/output/clef-jobA/`, and **`hf_cache: false`** (review N4). The manual guarantees only at least 32 GiB of free cache room and warns that a larger single download "can still fill the cache mid-pull (submit unusually large models without the flag)". The 55 GB of weights therefore download into the job's own scratch: 55 GB of weights plus a ~15 GB image and outputs fit the 100 GiB `job_scratch_bytes`. Preflight's disk warning should report ~55 GB.
 - **Heartbeat semantics (review B1).** `run_job.sh` sources `watchdog.sh`, a background loop that touches `$OUT/heartbeat` every 60 s, but **only while** two things hold:
   1. The main script is alive (`kill -0 $MAIN_PID`). The loop is also killed by the EXIT trap.
   2. The worker has made progress: some file under `$OUT`, the checkpoint dir or the HF download dir (excluding the heartbeat and `watchdog.log`) changed within the last `STALL_S = 1200 s`. Every stage writes at least that often: the kit writes 1 row per request, `metrics.run` logs every 200 variants, GCG every 10 steps, probes every 1,000 rows, and downloads write blobs.
@@ -163,6 +268,10 @@ The other jobs differ only in these fields:
 | 14 | S4 | safety_eval (non-GCG) failed, **or the PREREG gate refused** (runner exit 32: fewer than 8 D1-B templates) | inspect `safety.log`; land the blind-template amendment |
 | 15 | S4b | GCG job failed (the checkpoint keeps finished attacks) | resubmit with the same idempotency key family; resumes |
 | 16 | S5 | report failed | recompute locally |
+| 17 | S3/S5 | a results file is truncated (no final newline), has an unparseable line or a duplicate `run_id`, or misses rows it must have (decide rows != probes' row count; native-arm rows missing; a slice/subset row with no result). Raised by `harness/jsonl.py` (scoring CLIs exit 3) and `summarize.py composite` (exit 3/4); nothing is scored or written from a partial file | inspect the named file and line; never re-score with `--allow-partial` for a receipt |
+| 18 | S1/S2/T1 | too slow: the measured-rate preflight (S1 parity timing, `price.py preflight`) or the live rate guard (`rate_guard run --exclude-startup`) projected the phase past 95% of its cap, or a phase timeout hit | re-price from `env/preflight_index.json` / `env/rate_guard_*.json`; do not resubmit unchanged |
+| 19 | T1 | teacher export failed (model load, decide error, row/selection mismatch) | inspect `teacher/`; the export resumes from its own file |
+| 20 | T0 | contamination guard refused: a drawn record is an Index DEV/TEST row (id, payload hash or content hash), is in the frozen m2 cohort, carries a held-out D1-B fragment, or `guard_ready` could not verify the pinned content index | nothing was exported and no weights were downloaded; investigate the training set |
 
 Platform terminal states also apply: `check_failed` means a required file is missing, and `self_terminated` means the heartbeat was missed and the job was killed.
 
@@ -222,3 +331,115 @@ Evaluating Jev through its API on this harness is a **`decision-needed` item for
 4. **Question order.** Clef numbers fields in request order. We keep request order to measure Clef as shipped.
 5. **Validation.** The adapter is stricter (1-level `score`, malformed ids, more than 255 options). Clef accepts or raises `ValueError`.
 6. **Media.** Clef accepts images and videos. Our baseline is text-only, and media requests are `unsupported`. Index rows are text-only.
+
+## 11. Teacher export (`JOB=T`): Clef / Clef-flash per-option probabilities on m2 TRAINING records
+
+This export is for later distillation into the attention-free student. PLAN.md allows open-weight teachers, and both
+Clef models are Apache-2.0. It is optional and is not on the joint-gate path.
+
+**Records.**
+- **Source.** The PR #44 150k m2 training set, named by `data/manifests/sample-150000-seed20261006.pointer.json`. This
+  is the pointer `jobs/m2_first_cell` trains on.
+- **Draw.** `jobs/clef_baseline/teacher_scope.json`: 24,000 records, seed 0, by `train.run_cell.split_ids` over the set
+  minus the three pinned held-out D1-B exclusions. This is exactly the m2 first cell's training draw.
+- **Wider draw.** `--n` (or `CLEF_TEACHER_N`) widens the draw to the 149,997-record pool, priced below.
+- DEV, TEST and held-out rows are **never** exported.
+
+**Contamination guard (`baselines/clef_teacher.py select`).** It reuses the train/ guard machinery and runs on the CPU
+before the weight download and before any GPU phase. Any hit exits 20 and nothing is exported. Checks:
+1. Pointer file hashes: uncompressed sha256 of the records, manifest and content map (exit 10 on mismatch).
+2. Manifest ids == content-map ids == `n_records`.
+3. `train.cohort` holds none of the set. This is the frozen m2 dev/calibration/retention cohort v2, matched by id
+   **and** by normalized content.
+4. For every drawn record:
+   - its line matches the manifest sha256;
+   - its content hash matches the content map;
+   - `train.guard.SplitGuard.check` passes. That covers Index metadata, any id or payload hash in the harness DEV
+     **or TEST** manifest, and a content-hash match against the pinned content index of every DEV + TEST row
+     (24,150 hashes, rebuilt and verified on the box by `jobs.m2_pilot.guard_ready`; its exits 30-32 map to 20).
+5. `train.heldout.scan` (held-out D1-B fragments, k=8 templates) finds zero hits in the draw.
+6. `Cohort.assert_training_ids` and `assert_training_content` pass.
+
+I ran this locally on 2026-10-06 against the real files, with the production guard and the pinned content index:
+
+| Draw | Result | Time |
+|---|---|---|
+| 24,000 records | passes | 61 s |
+| Whole 149,997 pool | passes | 172 s |
+
+Both runs: cohort hits 0/0, guard refusals 0, held-out hits 0, template set `7a81287e...`.
+
+**Export (`clef_teacher export`).**
+- Each record goes through the same `decide()` path as the Index readout: ssdm encoding, no truncation. Labels are
+  never read into the request.
+- Output is one line per record in `teacher-<release>.jsonl`: `id`, `content_sha256`, `status`, `raw_probabilities`
+  {question: {option: p}}, `sequence_tokens`, `wall_ms`.
+- Lines are appended and flushed. The export resumes: a partial last line is cut and kept as `.truncated-tail`, and
+  finished ids are skipped.
+- `teacher-<release>.identity.json` records the model and backend revisions, the selection's drawn-ids sha256, status
+  counts and the file's sha256.
+- About 550 of the 24,000 records (~3.4k of the 150k) exceed 16,384 tokens. They come out `exhausted`, with no
+  probabilities, and are counted.
+
+**Pricing.** The job-sgihj per-row model is applied to the draw's measured volume: 24,000 records with 45.2 M tokens
+(proxy x 1.381), and 279.6 M tokens for the 150k pool. Clef runs at 3.52x Clef-flash.
+
+| Job | Phases: expected / cap (min) | max_duration | Expected $ | Worst $ | Hard cap |
+|---|---|---|---|---|---|
+| T-flash, 24k draw (`job_params_teacher_clef_flash.json`) | build 20; guard 3/6; setup 4/10; export 44/66; report 1/2; reserve 4 | 88 | **$3.56** | **$11.68** | $12 |
+| T-27b, 24k draw (`job_params_teacher_clef.json`) | build 20; guard 3/6; setup 10/15; export 153/230; report 1/2; reserve 5 | 258 | **$9.26** | **$28.51** | $29 |
+| T-flash, whole 149,997 pool (not proposed; `--n 149997`) | export 266.6 expected | ~430 | ~$14.70 | ~$47 | - |
+| T-27b, whole pool | export ~937 min > the 720-min job cap | - | ~$48 | not feasible at batch 1 | - |
+
+Batching (`collate_records`) is the obvious lever for the whole pool. It is unmeasured, so it is not priced. T-27b
+`depends_on` I-subset-27b `s1_ok`, so the 27B decide path is first shown to match systemone on this stack.
+
+## 12. job-sgihj composite crash: root cause and fix (LESSONS L-15)
+
+I reproduced this from the job's own output: artifact `art-8y6d8`, sha256 `eab45f29...64cb`.
+
+**Symptom.**
+- `summarize.py composite` raised `JSONDecodeError: Unterminated string ... line 1 column 1399`.
+- The runner mapped this to exit 12 at 17:33:23Z, after S2b.
+- S3 scoring, **S4 safety** and S5 never ran. The Clef-flash numbers in LEDGER were scored off-box afterwards.
+
+**Root cause: not a truncated file.**
+- Both inputs were complete. `index/decide/results.jsonl` has 12,104 rows and a final newline;
+  `native/results.jsonl` has 115 rows.
+- Row `25:GPQA-Diamond:GPQA-Diamond:test:4` carries a raw **U+2028** (LINE SEPARATOR) inside a JSON string, because
+  the kit writes `ensure_ascii=False`.
+- `rows()` split the file with `str.splitlines()`. That method also breaks on U+2028/U+2029, U+0085, \v, \f and
+  \x1c-\x1e.
+- So 12,104 records became 12,105 "lines", and one record was cut mid-string. The crash came from reading the
+  **decide** file, not the native one.
+
+A second, opposite failure was latent in the scoring path. The kit's `load_results` stops silently at a partial last
+line. A truncated or partial results file would therefore have scored its missing rows as unanswered, with no error.
+
+**Fix: strict reader in `harness/jsonl.py`.** It is used by `summarize.py`, `harness score|compare|ece`,
+`jobs.common.dev_subset` and the GCG resume.
+- Lines split on `\n` only.
+- A missing final newline raises `truncated_tail`.
+- An unparseable line raises `malformed`, with path:line.
+- A duplicate `run_id` raises `duplicate`.
+- A slice or subset row with no result raises `incomplete`. `--allow-partial` opts out explicitly and is never used
+  for a receipt.
+- Every CLI exits **3** on these errors.
+
+**Fix: fail-closed composite.**
+- Decide rows must equal the probes' row count.
+- Every native-arm id must be present.
+- Nothing is written unless all checks pass (exit 3 or 4).
+
+**Fix: runner.**
+- `run_job.sh` maps exits 3 and 4 to **exit 17**.
+- It now scores the decide arm *before* building the composite, so the primary number exists even if the composite
+  is refused.
+
+The same U+2028 hazard is removed from `train/cohort.py` and `train/guard.py` (the manifest readers).
+
+**Tests.**
+- `tests/clef/test_results_strict.py` covers the U+2028 reproduction, the other separators, truncated, malformed,
+  duplicate and incomplete files, composite exits 3 and 4, and `drop_truncated_tail`.
+- `tests/clef/test_clef_job_sh.py` executes `run_job.sh` end to end on CPU. The stand-in subset includes the GPQA
+  U+2028 row and a native-arm row, and a fault-injected truncated decide file must end in exit 17.
