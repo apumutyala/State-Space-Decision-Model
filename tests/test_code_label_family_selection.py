@@ -196,6 +196,24 @@ def test_existing_safety_bridge_rwkv7_hf_still_uses_stock_backend(engine_module,
     assert [event[0] for event in events] == ["plugin"]
 
 
+def test_v2_index_and_safety_selection_preserve_v1_reference(engine_module, fake_loader):
+    from decide.backends.rwkv_g1_code_label_v2 import G1CodeLabelV2Backend, TEMPLATE_ID as V2_TEMPLATE
+
+    plugin, _ = fake_loader
+    def no_state_call(*args, **kwargs):
+        pytest.fail("construction must not call state/model operations")
+    plugin.state_ops = types.SimpleNamespace(prefill=no_state_call, extend=no_state_call)
+    index = engine_module.ReadoutIndexEngine(family=engine_module.CODE_LABEL_V2_FAMILY, model_dir="snapshot", device="cpu", dtype="float32")
+    smoke = bridge.build_hf_bridge("snapshot", family=engine_module.CODE_LABEL_V2_FAMILY, device="cpu", dtype="float32")
+    reference = engine_module.ReadoutIndexEngine(family=engine_module.CODE_LABEL_FAMILY, model_dir="snapshot", device="cpu", dtype="float32")
+    assert isinstance(index.backend, G1CodeLabelV2Backend)
+    assert index.backend.revision() == smoke.decider.backend.revision()
+    assert index.backend.revision()["prompt_template"]["id"] == V2_TEMPLATE
+    assert index.backend.fork and index.backend.fork_max_rows == 4
+    assert type(reference.backend) is G1CodeLabelBackend and not reference.backend.fork
+    assert reference.backend.revision()["prompt_template"]["id"] == TEMPLATE_ID
+
+
 @pytest.mark.parametrize("status", ["unsupported", "exhausted", "error"])
 def test_engine_response_error_handling_is_unchanged(engine_module, fake_loader, status):
     engine = engine_module.ReadoutIndexEngine(family=engine_module.CODE_LABEL_FAMILY, model_dir="snapshot")

@@ -141,13 +141,18 @@ def build_hf_bridge(model_dir: str | None = None, family: str = "qwen3.5", devic
     model_dir = model_dir or os.environ.get(ENV_QWEN_DIR)
     if not model_dir:
         raise ValueError(f"pass model_dir or set {ENV_QWEN_DIR}")
-    if family == "rwkv7-hf-code-label-v1":
+    if family in ("rwkv7-hf-code-label-v1", "rwkv7-hf-code-label-v2"):
         from jobs.common.readout_engine import _load_code_label_decode
         from decide.backends.rwkv_g1_code_label import G1CodeLabelBackend
 
         decode = _load_code_label_decode(model_dir)  # tokenizer/source pins before model loading
         plug = H.load_rwkv7_hf(model_dir, device=device, dtype=dtype)
-        backend = G1CodeLabelBackend(plug, tokenizer_decode=decode)
+        if family == "rwkv7-hf-code-label-v2":
+            from decide.backends.rwkv_g1_code_label_v2 import G1CodeLabelV2Backend
+
+            backend = G1CodeLabelV2Backend(plug, tokenizer_decode=decode)
+        else:
+            backend = G1CodeLabelBackend(plug, tokenizer_decode=decode)
         return DecideBridge(Decider(backend, backend_max_input_tokens=plug.max_context))
     templates = {"qwen3.5": "jrt-chatml-v1", "rwkv7": "jrt-rwkv-g1-v1", "rwkv7-hf": "jrt-rwkv-g1-v1",
                  "mamba3": "jrt-plain-v1"}
