@@ -307,8 +307,12 @@ def test_p7_clef_composite_reader_splits_jsonl_on_unicode_line_separators(tmp_pa
     recs = [{"id": "a", "text": "plain"}, {"id": "b", "text": "line separator"}]
     p.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in recs), encoding="utf-8")
     assert [json.loads(x) for x in p.read_text(encoding="utf-8").split("\n") if x.strip()] == recs  # kit-style read
+    # the cause, kept as evidence: str.splitlines() cuts the record inside its JSON string
     with pytest.raises(json.JSONDecodeError, match="Unterminated string"):
-        S.rows(p)  # the reader on agent-main: reproduces job-sgihj's crash (fix: split on "\n" only)
-    _write("p7_composite_crash.json", {"reproduced": True, "file": "jobs/clef_baseline/summarize.py:24",
+        [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    # fixed in #98 (harness/jsonl.py): summarize.rows splits on "\n" only and parses both records
+    assert S.rows(p) == recs
+    _write("p7_composite_crash.json", {"reproduced": True, "fixed_in": "PR #98 (harness/jsonl.py, LESSONS L-15)",
+                                       "file": "jobs/clef_baseline/summarize.py rows()",
                                        "cause": "str.splitlines() splits inside a JSON string on U+2028",
-                                       "fix": "path.read_text(...).split('\n') or iterate the file object"})
+                                       "fix": "strict newline-only reader; truncated/partial files exit 17"})
