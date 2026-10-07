@@ -1,0 +1,220 @@
+{
+  "artifacts": {
+    "preflight.json": {
+      "archive": "run2-preflight.json.gz",
+      "archive_bytes": 9909,
+      "archive_sha256": "6848c26805d699703829a877e7a512b3c7c4cf91da7b5c3045e374fd72fe3691",
+      "original_bytes": 140930,
+      "original_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-rwkv-cpu-parent-20261006-run2\\preflight.json",
+      "original_sha256": "95f3d8b3e741f5d9e802182dd409474fc496db0641e2305ae058d41198e99cd8"
+    },
+    "raw.jsonl": {
+      "archive": "run2-raw.jsonl.gz",
+      "archive_bytes": 6523,
+      "archive_sha256": "13510a765268df5b6a2778c40bf4689c2a95ae9662155614fd2ccacee8308c4c",
+      "original_bytes": 67845,
+      "original_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-rwkv-cpu-parent-20261006-run2\\raw.jsonl",
+      "original_sha256": "4478688860a19616e3566de80f628b0332415b83d5d2ede52d4f90fafb4a8c0c"
+    },
+    "smoke.pt": {
+      "bytes": 4720655,
+      "external_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-rwkv-cpu-parent-20261006-run2\\smoke.pt",
+      "sha256": "15ca4d0e41b77049f349608d897d30a5ac3c849b325838a5a2ade852d3b18f8e"
+    },
+    "stderr.txt": {
+      "bytes": 0,
+      "external_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-rwkv-cpu-parent-20261006-run2\\stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stdout.txt": {
+      "bytes": 0,
+      "external_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-rwkv-cpu-parent-20261006-run2\\stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "task.json": {
+      "archive": "run2-task.json.gz",
+      "archive_bytes": 2193,
+      "archive_sha256": "81b0549f4ad6db0ae0cc1e6145b055abb689b6c4c5f31ad468a83bb8f952a498",
+      "original_bytes": 18034,
+      "original_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-rwkv-cpu-parent-20261006-run2\\task.json",
+      "original_sha256": "e7382baad9422cb6b97889d4da4d2df5f1942fc16527de31c6e2039f87ead6a4"
+    }
+  },
+  "billed_cost_usd": 0,
+  "canonical_task_sha256": "3a1b194029877be8914c299de5299f52e3b980998eb5f4bab40e64756b36bca9",
+  "cpu_smoke": {
+    "at_utc": "2026-10-06T21:24:35.345712+00:00",
+    "chunked_argmax": [
+      [
+        38499,
+        22748,
+        30302,
+        45,
+        11,
+        47,
+        286,
+        296,
+        287
+      ]
+    ],
+    "eager_argmax": [
+      [
+        38499,
+        22748,
+        30302,
+        45,
+        11,
+        47,
+        286,
+        296,
+        287
+      ]
+    ],
+    "event": "cpu_smoke_pass",
+    "max_abs_logits_delta": 3.814697265625e-05,
+    "tensor_sha256": "15ca4d0e41b77049f349608d897d30a5ac3c849b325838a5a2ade852d3b18f8e",
+    "tokens": [
+      [
+        6699,
+        22485,
+        4600,
+        30302,
+        47,
+        285,
+        278,
+        285,
+        296
+      ]
+    ]
+  },
+  "direct": {
+    "correct": true,
+    "forward_calls": 2,
+    "provider_calls": 1,
+    "reason": null,
+    "selected_id": "r001",
+    "status": "ok",
+    "target_id": "r001"
+  },
+  "direct_correct": 1,
+  "guarded_execution": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "available_bytes": 7554498560,
+    "min_running_available_bytes": 3221225472,
+    "min_start_available_bytes": 6442450944,
+    "threads": 2,
+    "timeout_seconds": 300
+  },
+  "initial_state_sha256": "2f012642169bdc6c4e2cdf84806e0379c89a196c2581a709cc2e9bb90091bdc7",
+  "interpretation": "Direct r001=greater_than was correct for Bracken price156.40 versus Ember72.58; planner chose op001 then f001 and asserted Ember price, yielding a supported but wrong-task program. No general capability, calibration, or retention claim.",
+  "launcher_exit": {
+    "at_utc": "2026-10-06T21:24:50.341369+00:00",
+    "elapsed_seconds": 32.54699999999866,
+    "event": "launcher_exit",
+    "exit_code": 0,
+    "minimum_available_bytes": 6093643776
+  },
+  "paired_correct": 0,
+  "paired_total": 1,
+  "parent_revision": "rwkv7:fla-hub/rwkv7-0.1B-g1@7450ee04eb9c;w=051b3684ffa8;tok=e6dee3d4e31b;prompt=jrt-rwkv-g1-v1.e4125a57;cfg=c67405cd;adapter=0.2.0",
+  "planner": {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 4,
+    "kernel_accepted": true,
+    "program": {
+      "context_ref": "synthetic-development-context-v1:1279ca372c31f0acfa93218fea71afb399e734cac54254afdc3a4a1a92a7ee0e",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_train-271828-2",
+    "text": "At \"2026-10\", \"Price\" for \"Ember\" has value 72.58 \"USD\"."
+  },
+  "planner_correct": 0,
+  "provider_choices": [
+    {
+      "answers": {
+        "slot-001-direct-comparison-relation": {
+          "choice": "r001",
+          "confidence": 0.9309,
+          "probabilities": {
+            "r001": 0.9309,
+            "r002": 0.0362,
+            "r003": 0.0329
+          },
+          "type": "choice"
+        }
+      },
+      "call": 1
+    },
+    {
+      "answers": {
+        "slot-001-operation": {
+          "choice": "op001",
+          "confidence": 0.9258,
+          "probabilities": {
+            "op001": 0.9258,
+            "op002": 0.0441,
+            "op003": 0.0301
+          },
+          "type": "choice"
+        }
+      },
+      "call": 2
+    },
+    {
+      "answers": {
+        "slot-002-fact": {
+          "choice": "f001",
+          "confidence": 0.6474,
+          "probabilities": {
+            "f001": 0.6474,
+            "f002": 0.232,
+            "f003": 0.0871,
+            "f004": 0.0336
+          },
+          "type": "choice"
+        }
+      },
+      "call": 3
+    }
+  ],
+  "run_directory": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\l0-rwkv-cpu-parent-20261006-run2",
+  "run_source_commit": "4c1eb36f8f57cc1f6bbe8f024d47b516b30f1428",
+  "same_initial_state": true,
+  "scope": "one synthetic development_train comparison; CPU execution and narrow task failure only",
+  "software": {
+    "psutil": "7.2.2",
+    "safetensors": "0.8.0",
+    "torch": "2.8.0+cu128",
+    "transformers": "5.17.0"
+  },
+  "task_id": "synthetic-development_train-271828-2",
+  "verification": "Archived files round-trip byte-identically; canonical task, smoke tensor file, initial state hashes and recorded count/outcome fields checked without Torch import or model load."
+}
