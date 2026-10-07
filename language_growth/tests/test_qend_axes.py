@@ -160,7 +160,7 @@ def test_legacy_head_zero_weight_is_exact_original_loss(head):
     torch.testing.assert_close(trainer._supervised_loss(fw, batch), expected, atol=0, rtol=0)
 
 
-@pytest.mark.parametrize("weight", [-1, float("inf"), float("nan"), "1"])
+@pytest.mark.parametrize("weight", [-1, float("inf"), float("nan"), "1", True, False])
 def test_invalid_axis_weight_is_rejected(weight):
     trainer, _, items, _ = make_training(weight)
     with pytest.raises(ValueError, match="axis_loss_weight"):

@@ -248,7 +248,7 @@ class Trainer:
         y = torch.tensor([i.label for i in batch], device=lp.device)
         loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss)
         weight = self.cfg.axis_loss_weight
-        if not isinstance(weight, (int, float)) or not 0 <= weight < float("inf"):
+        if type(weight) not in (int, float) or not 0 <= weight < float("inf"):
             raise ValueError("axis_loss_weight must be finite and nonnegative")
         if weight:
             z = fw.head.semantic_axes
