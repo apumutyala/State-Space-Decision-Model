@@ -1,0 +1,6 @@
+Command:
+py -3.12 -m pytest language_growth/tests/test_causal_relation_screen.py language_growth/tests/test_planner.py language_growth/tests/test_semantic_axis_fixtures.py -q
+
+Output:
+......................................                                   [100%]
+38 passed in 8.61s
