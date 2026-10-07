@@ -130,3 +130,16 @@ measured.
   done in `baselines.clef_teacher`. The 24k draw is unchanged by this.
 - The power inputs are still the `margin_sim` assumptions: synthetic ECE arms and discordance 0.10. The first real G13
   run re-sizes from measured values.
+
+## Power re-check on top of PR #102 (`margin_sim.json`)
+
+`python -X utf8 -m train.margin_sim` was run with `EVAL_SIZES` retention = 35,992 measured items, the smaller of the
+two tokenizers. Both retention criteria now meet the 0.8 floor, with a simulated null pass rate of 1.0 at that size.
+`SHORTFALLS` is empty.
+
+The pinned `REQUIRED_N` is 9,300 for accuracy and 33,300 for ECE; it is the gate's exit-45 floor. 35,992 clears both,
+so the floor is met with ~8 % headroom over the ECE pin. The 1/sqrt(n) re-estimate from the simulated half-width at
+35,992 is ~7.5k (accuracy) and ~7.9k (ECE). That suggests the 33,300 ECE pin is conservative. The pin is left unchanged.
+
+Tests: `pytest.txt` holds the task command plus test_margin_sim / test_promotion_margins / test_m2_gates.
+`pytest-rebuild.txt` holds the opt-in byte-identical rebuild.
