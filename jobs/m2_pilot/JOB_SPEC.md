@@ -29,10 +29,11 @@ No Index test row is read. No head-vs-head claim is made from one seed.
 | Training records | PR #16 sample `m2/records.jsonl.gz` | `sha256sum -c jobs/rwkv7/records.sha256` |
 | Development cohort | `train/cohorts/m2-dev-cohort-v2.jsonl.gz`, sha256 `be6efe2b…fdacf2` (uncompressed text) | `python -m train.cohort verify` must rebuild it byte-for-byte; `run_cell` refuses on mismatch (exit 28) |
 | Guard content index | sha256 `7cbe6c89…052d8d`, 24,150 hashes | `jobs.m2_pilot.guard_ready` (below) |
-| Margins | `train.promotion.MARGINS`: `m_steer` 0.02, `m_cap` 1.0 Index points, `m_ece` 0.01 | **PENDING USER APPROVAL** |
+| Margins | `train.promotion.MARGINS`: `m_steer` 0.02, `m_cap` 1.0 Index points, `m_ece` 0.01, `m_ret_acc` 0.03, false alarm / refusal 0.01 | **Approved** by independent fresh-context review, #36 comment 6028384198, adopted by coordinator 2026-10-07; Codex post-hoc review requested |
 
 The margins are read from config (`train.promotion.MARGINS`), never restated in code paths. Until the user approves
-them, the verdict is reported as `accept|reject (margins PENDING USER APPROVAL)`, and nothing is promoted on it.
+them, the verdict is reported as `accept|reject (margins PENDING USER APPROVAL)`, and nothing is promoted on it
+(`train.promotion.margins_pending`; an all-accept run exits 43). Status now: approved (see the row above).
 
 ## Data roles (`train.cohort` v2, frozen; disjoint by id AND by content)
 

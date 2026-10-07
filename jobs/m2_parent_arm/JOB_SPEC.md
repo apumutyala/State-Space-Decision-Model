@@ -76,4 +76,5 @@ and price it with the same `estimate`.
   - its sha256 pinned in `jobs/m2_pilot/m2_pilot_cell_q9af.json` (currently `null`, so the job exits 10);
   - preferably also `base_config_sha256`.
 - The usual spend steps: a `spend` issue, a LEDGER row, `validate_job` against $20, and the credit-expiry check.
-- Margins stay **PENDING USER APPROVAL**. This job produces no verdict; it only caches the parent's units.
+- Margins: approved by independent fresh-context review (#36 comment 6028384198), adopted by coordinator 2026-10-07;
+  Codex post-hoc review requested. This job produces no verdict; it only caches the parent's units.

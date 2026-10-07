@@ -67,9 +67,9 @@ MARGINS = {"m_cap": 1.0, "m_steer": 0.02, "m_ece": 0.01, "m_ret_acc": 0.03, "m_f
            "template_family_alpha": 0.05,  # Bonferroni over the k steer templates: level 1 - 0.05 / k
            "steer_bootstrap": "fixed_template",
            "null_pass_floor": 0.8,
-           "approved": False,
-           "status": "issue #36 independent fresh-context review APPROVE WITH REVISIONS (comment 6028384198), "
-                     "adopted by coordinator 2026-10-07; implementation under review; PENDING USER APPROVAL"}
+           "approved": True,
+           "status": "approved by independent fresh-context review, #36 comment 6028384198, adopted by coordinator "
+                     "2026-10-07; Codex post-hoc review requested"}
 PROPOSED_MARGINS = MARGINS  # backwards-compatible name
 CLEAN_ACC_DROP = 0.01  # G12: a > 1 pp clean-accuracy drop rejects
 E1_GROUP = "new_domain_proxy"  # harness.families group of the uncovered ('none' tier) benchmarks

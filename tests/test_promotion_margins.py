@@ -36,7 +36,9 @@ def test_margins_are_the_adopted_rule_values():
     assert (m["m_false_alarm"], m["m_refusal"]) == (0.01, 0.01)
     assert m["steer_bootstrap"] == "fixed_template" and m["null_pass_floor"] == 0.8
     assert m["area_family_alpha"] == m["template_family_alpha"] == 0.05
-    assert "6028384198" in m["status"]
+    assert "6028384198" in m["status"] and m["approved"] and not P.margins_pending()
+    assert m["status"] == ("approved by independent fresh-context review, #36 comment 6028384198, adopted by "
+                           "coordinator 2026-10-07; Codex post-hoc review requested")
     assert P.margins_pending({**m, "approved": False}) and P.margins_pending({**m, "status": "PENDING USER APPROVAL"})
     assert not P.margins_pending({**m, "approved": True, "status": "approved"})
 
