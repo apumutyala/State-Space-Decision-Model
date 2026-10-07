@@ -628,3 +628,26 @@ def test_tvuat_receipt_backs_the_execution_config_and_the_repricing():
     assert "job-tvuat" in (ROOT / "LEDGER.md").read_text(encoding="utf-8")
     assert "receipts/2026-10-07-D-cell-step-profile-tvuat" in (ROOT / "jobs/m2_first_cell/JOB_SPEC.md").read_text(
         encoding="utf-8")
+
+
+def test_tvuat_receipt_bytes_survive_an_autocrlf_checkout(tmp_path):
+    """PR #74 final review N1: receipts are byte-exact (``receipts/** -text``), so a core.autocrlf=true checkout or
+    archive keeps the tvuat MANIFEST.jsonl (and every receipt file) equal to its recorded sha256."""
+    import io
+    import tarfile
+
+    git = shutil.which("git")
+    if not git or not (ROOT / ".git").exists():
+        pytest.skip("needs a git checkout")
+    rd = "receipts/2026-10-07-D-cell-step-profile-tvuat"
+    attr = subprocess.run([git, "-C", str(ROOT), "check-attr", "text", "--", f"{rd}/MANIFEST.jsonl"],
+                          capture_output=True, text=True, check=True).stdout
+    assert attr.strip().endswith("text: unset"), attr
+    raw = subprocess.run([git, "-C", str(ROOT), "-c", "core.autocrlf=true", "archive", "HEAD", "--", rd],
+                         capture_output=True, check=True).stdout
+    rec = json.loads((ROOT / rd / "receipt.json").read_text(encoding="utf-8"))
+    with tarfile.open(fileobj=io.BytesIO(raw)) as t:
+        got = {m.name.rsplit("/", 1)[1]: t.extractfile(m).read() for m in t.getmembers() if m.isfile()}
+    assert b"\r" not in got["MANIFEST.jsonl"]
+    for f, h in rec["files_sha256"].items():
+        assert hashlib.sha256(got[f]).hexdigest() == h, f
