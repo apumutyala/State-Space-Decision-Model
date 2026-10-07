@@ -12,6 +12,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 from pathlib import Path
 
@@ -51,7 +52,7 @@ def params(**kw) -> dict:
          "max_restarts": 0, "assumed_restart_floor": 1, "queue_ttl_minutes": 1440, "resume": "none",
          "hf_cache": True, "batch_usd_per_min": 0.0495, "hard_cap_usd": 5.0, "reserve_minutes": 1,
          "phase_caps_minutes": {"setup": 4, "run": 5}, "model": "org/tiny@abc123", "mission": "tiny-mission",
-         "decision_rule": "jobs/tiny/rule.py",
+         "decision_rule": "jobs/tiny/rule.py", "test_env": {"transformers": None},
          "submit": {"command": "bash /opt/ssdm/m1/jobs/tiny/tiny_job.sh", "env": {}, "key": "tiny",
                     "checks": launch._checks("TINY_DONE", 300, 600)},
          "context": {"dockerfile": "jobs/tiny/Dockerfile",
@@ -261,6 +262,12 @@ def spec_blocks(job: str) -> list[dict]:
 
 #: (job, mode) -> (block index, overrides stated in the JOB_SPEC prose, evidence strings that prose must contain)
 SPEC_BLOCK = {
+    ("q9_feature_cache", "conv1_dev"): (0, {}, []),
+    ("q9_feature_cache", "conv1_train"): (1, {}, []),
+    ("q9_feature_cache", "e5_dev"): (2, {}, []),
+    ("q9_feature_cache", "e5_train"): (3, {}, []),
+    ("q9_feature_cache", "stock_dev"): (4, {}, []),
+    ("q9_feature_cache", "stock_train"): (5, {}, []),
     ("cell_step_profile", None): (0, {}, []),
     ("fla_rwkv7", None): (0, {}, []),
     ("fla_rwkv7", "truth_v2"): (1, {}, []),
@@ -338,3 +345,281 @@ def test_real_tree_context_builds_without_cr_and_deterministically():
     assert b"jobs/cell_step_profile/cell_step_job.sh" in ctx["Dockerfile"][0]
     assert launch.cr_violations(ctx, ROOT, sha) == []
     assert launch.deterministic_tar(ctx) == launch.deterministic_tar(dict(reversed(list(ctx.items()))))
+
+
+# ----------------------------------------------------------------------------- Clef recipes (CONTEXT_RECIPES)
+def _clef_files(extra=None):
+    """The real tree's archive (HEAD) plus optional overrides, as build_context sees it."""
+    if not (ROOT / ".git").exists():
+        pytest.skip("needs a git checkout")
+    sha = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    files = dict(launch.archive(ROOT, sha))
+    files.update(extra or {})
+    return sha, files
+
+
+def test_clef_recipes_cover_every_clef_mode_and_rewrite_the_image():
+    modes = {lint.mode_of(r) for r in lint.params_files(ROOT) if lint.job_of(r) == "clef_baseline"}
+    assert modes == {m for (j, m) in launch.CONTEXT_RECIPES if j == "clef_baseline"}
+    sha, files = _clef_files()
+    spec = {**launch.CONTEXT_RECIPES[("clef_baseline", "teacher_clef_flash")], "data": []}
+    ctx = launch.build_context(files, "clef_baseline", sha, spec, "jobs/clef_baseline/job_params_teacher_clef_flash.json", None)
+    df = ctx["Dockerfile"][0].decode()
+    assert "COPY code/m1/ /app/" in df and "COPY app/ /app/" not in df
+    assert "COPY CONTEXT_MANIFEST.json /app/CONTEXT_MANIFEST.json" in df and "COPY data/ /data/" in df
+    man = json.loads(ctx["CONTEXT_MANIFEST.json"][0])
+    assert man["branch_commit"] == sha  # run_job.sh reads /app/CONTEXT_MANIFEST.json['branch_commit']
+    assert "jobs/m2_pilot/guard_pin.json" in man["files_sha256"]
+
+
+def test_clef_data_pins_literal_json_gunzip_and_src_env(tmp_path, monkeypatch):
+    import gzip as gz
+
+    raw = b'{"id": "x"}\n'
+    blob = gz.compress(raw, mtime=0)
+    ptr = json.dumps({"records_uncompressed_sha256": hashlib.sha256(raw).hexdigest()}).encode()
+    sha, files = _clef_files({"tmp/pointer.json": (ptr, 0o644)})
+    (tmp_path / "d").mkdir()
+    (tmp_path / "d" / "records.jsonl.gz").write_bytes(blob)
+    ref = tmp_path / "elsewhere.jsonl"
+    ref.write_bytes(b"ref\n")
+    base = {**launch.CONTEXT_RECIPES[("clef_baseline", "index_subset")]}
+    ok = {**base, "data": [
+        {"src": "records.jsonl.gz", "dest": "m2-150k/records.jsonl.gz", "gunzip": True,
+         "pin_json": ["tmp/pointer.json", "records_uncompressed_sha256"]},
+        {"src": "nope", "src_env": "REF_FLASH", "dest": "reference/r.jsonl", "pin_sha256": hashlib.sha256(b"ref\n").hexdigest()}]}
+    monkeypatch.setenv("REF_FLASH", str(ref))
+    ctx = launch.build_context(files, "clef_baseline", sha, ok, "jobs/clef_baseline/job_params_index_subset.json",
+                               tmp_path / "d")
+    assert ctx["data/m2-150k/records.jsonl.gz"][0] == blob and ctx["data/reference/r.jsonl"][0] == b"ref\n"
+    bad = {**ok, "data": [dict(ok["data"][1], pin_sha256="0" * 64)]}
+    with pytest.raises(launch.LaunchError, match="!= pin"):
+        launch.build_context(files, "clef_baseline", sha, bad, "x", tmp_path / "d")
+    monkeypatch.delenv("REF_FLASH")
+    with pytest.raises(launch.LaunchError, match="set REF_FLASH"):
+        launch.build_context(files, "clef_baseline", sha, ok, "x", tmp_path / "d")
+
+
+def test_clef_real_pins_name_the_reviewed_identities():
+    """The recipe's pins are the committed pointer / guard pin values (no new hash was introduced by the recipe)."""
+    sha, files = _clef_files()
+    ptr = json.loads(files["data/manifests/sample-150000-seed20261006.pointer.json"][0])
+    gp = json.loads(files["jobs/m2_pilot/guard_pin.json"][0])
+    pins = {d["dest"]: launch.data_pin(files, d) for d in launch.CONTEXT_RECIPES[("clef_baseline", "teacher_clef")]["data"]}
+    assert pins["m2-150k/records.jsonl.gz"] == ptr["records_uncompressed_sha256"]
+    assert pins["suite-0.2/selected-rows.jsonl.gz"] == gp["suite_files_sha256_uncompressed"]["selected-rows.jsonl.gz"]
+    assert pins["suite-0.2/excluded-questions.json"] == gp["suite_exclusions_sha256"]
+    idx = {d["dest"]: launch.data_pin(files, d) for d in launch.CONTEXT_RECIPES[("clef_baseline", "index_subset")]["data"]}
+    assert idx["reference/clef_flash.decide.results.jsonl"].startswith("463f21ff")
+    assert idx["slices/dev-rows.jsonl.gz"] == files["jobs/clef_baseline/data.sha256"][0].decode().split()[0]
+
+
+# ----------------------------------------------------------------------------- per-job test environments (L-24)
+JUNIT = """<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest">
+<testcase classname="tests.a" name="test_ok"/>
+<testcase classname="tests.a" name="test_bad"><failure message="x"/></testcase>
+<testcase classname="tests.b" name="test_clef_kernel"><skipped message="requires_transformers 5.10.2 (installed 5.17.0)"/></testcase>
+<testcase classname="tests.c" name="test_q9af"><skipped message="requires_transformers 5.17.0 (installed 5.10.2)"/></testcase>
+<testcase classname="tests.d" name="test_needs_data"><skipped message="private DEV rows not present"/></testcase>
+</testsuite></testsuites>"""
+
+
+def test_junit_summary_never_counts_a_skip_as_passed(tmp_path):
+    f = tmp_path / "j.xml"
+    f.write_text(JUNIT, encoding="utf-8")
+    s = launch.junit_summary(f)
+    assert (s["passed"], s["failed"], s["skipped"]) == (1, 1, 3)
+    assert [x["test"] for x in launch.required_skips(s, {"transformers": "5.10.2"})] == ["tests.b::test_clef_kernel"]
+    assert [x["test"] for x in launch.required_skips(s, {"transformers": "5.17.0"})] == ["tests.c::test_q9af"]
+    assert launch.required_skips(s, {"transformers": "5.10"}) == []  # exact pin, not a prefix
+
+
+def test_job_test_command_uses_the_jobs_pin(tmp_path):
+    code = tmp_path / "code"
+    (code / "harness").mkdir(parents=True)
+    (code / "harness" / "pyproject.toml").write_text("[project]\nname='h'\n")
+    kit = tmp_path / "kit"
+    (kit / "decision_index").mkdir(parents=True)
+    if shutil.which("uv") is None:
+        with pytest.raises(launch.LaunchError, match="uv"):
+            launch.job_test_command(code, {"transformers": "5.10.2"}, ["tests/x.py"], tmp_path / "j.xml", kit)
+        return
+    cmd = launch.job_test_command(code, {"transformers": "5.10.2"}, ["tests/x.py"], tmp_path / "j.xml", kit)
+    assert "transformers==5.10.2" in cmd and str(kit) in cmd and str(code / "harness") in cmd
+    assert cmd[-1] == "tests/x.py" and f"--junitxml={tmp_path / 'j.xml'}" in cmd
+    assert launch.job_test_command(code, {"transformers": None}, ["t.py"], tmp_path / "j.xml", None)[0] == sys.executable
+    for bad in (None, {}, {"image": "x"}):
+        with pytest.raises(launch.LaunchError, match="test_env"):
+            launch.job_test_command(code, bad, ["t.py"], tmp_path / "j.xml", None)
+    cmd = launch.job_test_command(code, {"transformers": "5.17.0", "with": ["fla-core==0.5.2"]}, ["t.py"],
+                                  tmp_path / "j.xml", kit)
+    assert "fla-core==0.5.2" in cmd  # the image's further pins (B2: the fla mirror test runs instead of skipping)
+    with pytest.raises(launch.LaunchError, match="no decision_index"):  # B1: never drop the kit silently
+        launch.job_test_command(code, {"transformers": "5.10.2"}, ["t.py"], tmp_path / "j.xml", tmp_path / "nokit")
+
+
+@pytest.mark.parametrize("pin, refused", [("5.10.2", True), ("5.17.0", True), ("4.0.0", False)])
+def test_run_tests_refuses_when_the_jobs_own_pinned_tests_were_skipped(tmp_path, monkeypatch, pin, refused):
+    code = tmp_path / "stage" / "abc"
+    (code / "tests").mkdir(parents=True)
+    (code / "tests" / "test_x.py").write_text("# jobs/tiny/\n", encoding="utf-8")
+    monkeypatch.setattr(launch, "job_test_command", lambda *a, **k: ["fake"])
+
+    class R:
+        returncode, stdout, stderr = 0, "1 passed, 3 skipped", ""
+
+    def fake_run(cmd, **kw):
+        (code.parent / "junit-tiny.xml").write_text(JUNIT.replace('<testcase classname="tests.a" name="test_bad"><failure message="x"/></testcase>', ""),
+                                                    encoding="utf-8")
+        return R()
+
+    monkeypatch.setattr(launch.subprocess, "run", fake_run)
+    env = {"transformers": pin, "allowed_skips": [{"reason": "private DEV rows not present", "why": "test fixture"}]}
+    if refused:
+        with pytest.raises(launch.LaunchError, match="require this job's pinned stack were skipped"):
+            launch.run_tests(code, "tiny", env, None)
+    else:
+        r = launch.run_tests(code, "tiny", env, None)
+        assert r["passed"] == 1 and r["skipped"] == 3 and len(r["skipped_other_pins"]) == 2
+        assert [x["test"] for x in r["skipped_allowed"]] == ["tests.d::test_needs_data"]
+
+
+def test_launch_refuses_a_job_without_test_env(tmp_path):
+    repo, data, sha = make_repo(tmp_path, p=params(test_env=DROP))
+    with pytest.raises(launch.LaunchError, match="test_env"):
+        run(repo, data, sha, tmp_path / "o")
+
+
+def test_requires_transformers_marker_skips_on_mismatch_and_runs_on_match(tmp_path):
+    """The root conftest.py marker, executed by a real pytest run."""
+    import importlib.metadata as md
+
+    try:
+        have = md.version("transformers")
+    except md.PackageNotFoundError:
+        have = None
+    shutil.copy(ROOT / "conftest.py", tmp_path / "conftest.py")
+    (tmp_path / "test_m.py").write_text(
+        "import pytest\n"
+        f"@pytest.mark.requires_transformers({have!r})\ndef test_match():\n    pass\n"
+        "@pytest.mark." + "requires_" + "transformers('0.0.0')\ndef test_other():\n    pass\n",  # split: not a pin
+        encoding="utf-8")
+    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={tmp_path / 'j.xml'}",
+                        str(tmp_path / "test_m.py")], cwd=tmp_path, capture_output=True, text=True)
+    s = launch.junit_summary(tmp_path / "j.xml")
+    assert r.returncode == 0 and s["passed"] == 1 and s["skipped"] == 1, r.stdout + r.stderr
+    assert s["skips"][0]["reason"].startswith("requires_transformers 0.0.0 (installed")
+
+
+def test_every_job_declares_its_image_pin_as_test_env():
+    """test_env.transformers == the transformers pin of the Dockerfile the job's image is built from."""
+    import re as _re
+
+    def image_of(job, rel):
+        for spec in (launch.CONTEXT_RECIPES.get((job, lint.mode_of(rel))), launch.LEGACY_CONTEXT.get(job)):
+            if spec and "dockerfile" in spec:
+                return spec["dockerfile"]
+        own = ROOT / "jobs" / job / "Dockerfile"
+        if own.exists():
+            return f"jobs/{job}/Dockerfile"
+        bc = (ROOT / "jobs" / job / "build_context.sh").read_text(encoding="utf-8")
+        return _re.search(r'code/m1/(jobs/[a-z0-9_]+/Dockerfile)', bc).group(1)
+
+    for rel in lint.params_files(ROOT):
+        job = lint.job_of(rel)
+        p = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+        df = (ROOT / image_of(job, rel)).read_text(encoding="utf-8")
+        pin = _re.search(r'"transformers==([0-9.]+)"', df).group(1)
+        assert p["test_env"]["transformers"] == pin, rel
+
+
+def test_submit_args_refuses_a_non_schema_checks_value():
+    """L-25: launch.py emitted "checks": ["result.ok == true"] for q9_feature_cache; it must refuse instead."""
+    p = params()
+    sub = dict(p["submit"], checks=["result.ok == true"])
+    with pytest.raises(launch.LaunchError, match="CheckSpec schema"):
+        launch.submit_args("tiny", None, p, sub, "0" * 64)
+    a = launch.submit_args("tiny", None, p, p["submit"], "0" * 64)
+    assert lint.checks_problems(a["checks"]) == []
+    for k, sub in launch.LEGACY_SUBMIT.items():  # every legacy table entry is valid too
+        assert lint.checks_problems(sub["checks"]) == [], k
+
+
+
+# ----------------------------------------------------------------------------- PR #103 review B1: fail closed
+def _fake_tests(tmp_path, monkeypatch, junit_text, seen=None):
+    code = tmp_path / "stage" / "abc"
+    (code / "tests").mkdir(parents=True)
+    (code / "tests" / "test_x.py").write_text("# jobs/tiny/\n", encoding="utf-8")
+    monkeypatch.setattr(launch, "job_test_command", lambda *a, **k: ["fake"])
+
+    class R:
+        returncode, stdout, stderr = 0, "", ""
+
+    def fake_run(cmd, **kw):
+        if seen is not None:
+            seen.update(kw.get("env") or {})
+        if junit_text is not None:
+            (code.parent / "junit-tiny.xml").write_text(junit_text, encoding="utf-8")
+        return R()
+
+    monkeypatch.setattr(launch.subprocess, "run", fake_run)
+    return code
+
+
+def _junit(*cases):
+    return "<testsuites><testsuite>" + "".join(cases) + "</testsuite></testsuites>"
+
+
+PASS = '<testcase classname="t" name="ok"/>'
+SKIP_KIT = '<testcase classname="t" name="needs_kit"><skipped message="kit not installed"/></testcase>'
+SKIP_OTHER_PIN = '<testcase classname="t" name="q9"><skipped message="requires_transformers 5.17.0 (installed 5.10.2)"/></testcase>'
+
+
+def test_run_tests_refuses_a_skip_not_on_the_allowlist(tmp_path, monkeypatch):
+    code = _fake_tests(tmp_path, monkeypatch, _junit(PASS, SKIP_KIT, SKIP_OTHER_PIN))
+    with pytest.raises(launch.LaunchError, match="not on test_env.allowed_skips"):
+        launch.run_tests(code, "tiny", {"transformers": "5.10.2"}, None)
+    allow = {"transformers": "5.10.2", "allowed_skips": [{"reason": "kit not installed", "why": "x"}]}
+    r = launch.run_tests(code, "tiny", allow, None)
+    assert r["passed"] == 1 and r["skipped_other_pins"] == ["t::q9"]
+    unreasoned = {"transformers": "5.10.2", "allowed_skips": [{"reason": "kit not installed"}]}  # no "why"
+    with pytest.raises(launch.LaunchError, match="not on test_env.allowed_skips"):
+        launch.run_tests(code, "tiny", unreasoned, None)
+
+
+def test_run_tests_refuses_missing_junit_and_zero_passed(tmp_path, monkeypatch):
+    code = _fake_tests(tmp_path, monkeypatch, None)
+    with pytest.raises(launch.LaunchError, match="no junit"):
+        launch.run_tests(code, "tiny", {"transformers": None}, None)
+    code2 = _fake_tests(tmp_path / "b", monkeypatch, _junit(SKIP_OTHER_PIN))
+    with pytest.raises(launch.LaunchError, match="0 passed"):
+        launch.run_tests(code2, "tiny", {"transformers": "5.10.2"}, None)
+
+
+def test_run_tests_passes_the_launch_data_dir_as_SSDM_DATA(tmp_path, monkeypatch):
+    seen = {}
+    data = tmp_path / "data"
+    (data / "decision-index" / "decision_index").mkdir(parents=True)
+    code = _fake_tests(tmp_path, monkeypatch, _junit(PASS), seen)
+    monkeypatch.setenv("SSDM_DATA", "C:/somewhere/else")
+    launch.run_tests(code, "tiny", {"transformers": "5.10.2"}, data)
+    assert seen["SSDM_DATA"] == str(data)
+
+
+def test_run_tests_refuses_a_data_dir_without_the_kit(tmp_path, monkeypatch):
+    code = _fake_tests(tmp_path, monkeypatch, _junit(PASS))
+    monkeypatch.undo()  # the real job_test_command
+    monkeypatch.setattr(launch.shutil if hasattr(launch, "shutil") else shutil, "which", lambda x: "uv")
+    with pytest.raises(launch.LaunchError, match="no decision_index"):
+        launch.run_tests(code, "tiny", {"transformers": "5.10.2"}, tmp_path / "data-without-kit")
+
+
+def test_every_job_test_env_is_reasoned_and_matches_its_image():
+    import re as _re
+
+    for rel in lint.params_files(ROOT):
+        te = json.loads((ROOT / rel).read_text(encoding="utf-8"))["test_env"]
+        df = (ROOT / te["image"]).read_text(encoding="utf-8")
+        assert te["with"] == _re.findall(r'"((?:flash-linear-attention|fla-core)==[0-9.]+)"', df), rel
+        assert all(a.get("reason") and a.get("why") for a in te["allowed_skips"]), rel

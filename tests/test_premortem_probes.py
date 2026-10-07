@@ -13,6 +13,10 @@ P5  Proxy loop exactness: head training on cached frozen-backbone features (trai
 P6  Proxy transfer: recipe ranking under the proxy vs under head + LoRA training (Kendall tau), and the speed-up.
     Results -> receipts/2026-10-06-D-premortem-probes/p6_proxy_transfer.json.
 Receipts are written with SSDM_WRITE_RECEIPTS=1 (how the committed ones were produced).
+
+Launch collection (LESSONS L-24): P1-P4 require transformers 5.17.0, the Q9-AF stack of jobs/full8/ (and
+jobs/probe9b/, jobs/q9_feature_cache/), so jobs.common.launch runs them in those jobs' test environments; P7 reads
+jobs/clef_baseline/summarize.py and runs under every job that collects this file.
 """
 
 from __future__ import annotations
@@ -69,6 +73,7 @@ def toy():
 
 
 # ----------------------------------------------------------------------------------------------------- P1
+@pytest.mark.requires_transformers("5.17.0")  # the probe9b/full8/rwkv7 images' pin: Q9-AF layer layout
 def test_p1_q9af_plugs_into_the_m2_train_step(toy, tmp_path):
     bb, attn = q9af_tiny()
     model = DecisionModel(bb, "fork", seed=0)
@@ -100,6 +105,7 @@ def _lora_grads(bb, rows, mode):
     return {n: p.grad.detach().clone() for n, p in bb.named_parameters() if p.requires_grad and p.grad is not None}
 
 
+@pytest.mark.requires_transformers("5.17.0")  # the probe9b/full8/rwkv7 images' pin: Q9-AF layer layout
 def test_p2_q9af_cache_fork_lora_gradients_equal_recompute(toy):
     from train.lora import apply_lora
 
@@ -124,6 +130,7 @@ def test_p2_q9af_cache_fork_lora_gradients_equal_recompute(toy):
 
 
 # ----------------------------------------------------------------------------------------------------- P3
+@pytest.mark.requires_transformers("5.17.0")  # the probe9b/full8/rwkv7 images' pin: Q9-AF layer layout
 def test_p3_pr86_levers_do_not_apply_to_q9af(toy):
     from heads import act_ckpt
 
@@ -180,6 +187,7 @@ def _per_token_layer_d(bb, n_layers, d, lengths, k=4):
     return slope / n_layers / d, meas
 
 
+@pytest.mark.requires_transformers("5.17.0")  # the probe9b/full8/rwkv7 images' pin: Q9-AF layer layout
 def test_p4_activation_bytes_per_token_q9af_vs_rwkv7():
     torch.manual_seed(0)
     lengths = [128, 512]
@@ -330,4 +338,4 @@ def test_p7_clef_composite_reader_splits_jsonl_on_unicode_line_separators(tmp_pa
     assert S.rows(p) == recs
     _write("p7_composite_crash.json", {"reproduced": True, "file": "jobs/clef_baseline/summarize.py:24",
                                        "cause": "str.splitlines() splits inside a JSON string on U+2028",
-                                       "fix": "path.read_text(...).split('\n') or iterate the file object"})
+                                       "fix": "strict newline-only reader; truncated/partial files exit 17"})

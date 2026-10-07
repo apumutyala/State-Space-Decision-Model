@@ -1,4 +1,5 @@
 {
+ "test_env": {"transformers": "5.17.0", "with": ["flash-linear-attention==0.5.2", "fla-core==0.5.2"], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}], "image": "jobs/probe9b/Dockerfile"},
  "_comment": "jobs/q9_feature_cache part 'stock_dev' (JOB_SPEC.md): the stock arm's SELECT + HOLDOUT DEV features (independent of full-8; ship first). One job = one part = one <= 4.5 GiB output artifact (review B1). Caps from the exact volume (volume_plan.json) at the MEASURED job-5cmat rates below; every cap >= 1.3 x its projection (jobs/q9_feature_cache/preflight.py, tests/test_q9_feature_cache_params.py).",
  "job": "q9-feature-cache-stock-dev",
  "mode": "stock_dev",
@@ -57,9 +58,32 @@
   "env": {
    "Q9C_MODE": "stock_dev"
   },
-  "checks": [
-   "result.ok == true"
-  ]
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/Q9_CACHE_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
  },
  "context": {
   "dockerfile": "jobs/probe9b/Dockerfile",

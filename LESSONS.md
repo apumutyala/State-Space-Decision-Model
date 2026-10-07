@@ -233,3 +233,29 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - The check is tested on chr-built bad samples, as L-11 requires.
   - COORDINATION.md "Before any paid job / before any PR" carries the rule.
 - **Status:** PARTIAL. Ad-hoc shell commands typed by an agent are not in the repo, so only the rule (COORDINATION.md) covers them. Kill only PIDs you started and recorded.
+
+### L-24 One test environment cannot satisfy two pinned stacks
+- Date: 2026-10-07 (PR #103, the Clef launch packages for 5b478e3).
+- Symptom: `launch.run_tests` ran every clef_baseline job test under one interpreter. With transformers 5.17.0 (the probe9b/rwkv7/full8 pin) the two Clef kernel-path tests failed, because they read the 5.10.2 GDN source the Clef image pins. With 5.10.2, premortem P1-P4 (Q9-AF) failed: `Qwen3_5DecoderLayer` has no `self_attn`. So no environment could pass the gate. Whichever group failed was explained away as "pre-existing / env", which is how a real failure would also look.
+- Cost: none billed. The three packages were built with the launcher's test step off and their tests run by hand; one review round.
+- Root cause: tests that check a specific pinned stack had no declared stack, and the launcher had no notion of a job's stack.
+- **Check:** every `jobs/*/job_params*.json` declares `test_env.transformers` = its image's Dockerfile pin (`tests/test_launch.py::test_every_job_declares_its_image_pin_as_test_env`). `launch.run_tests` runs the job tests under `uv run --with transformers==<pin>` (`job_test_command`). A missing `test_env` is refused (`test_launch_refuses_a_job_without_test_env`). Version-dependent tests carry `@pytest.mark.requires_transformers("x.y.z")` (root `conftest.py`) and are SKIPPED under any other version (`test_requires_transformers_marker_skips_on_mismatch_and_runs_on_match`). The launcher parses the junit xml: a skip is never counted as passed, and a skipped test that requires THIS job's pin refuses the launch (`test_run_tests_refuses_when_the_jobs_own_pinned_tests_were_skipped`, `test_junit_summary_never_counts_a_skip_as_passed`).
+- **Fail closed (PR #103 review B1/B2).**
+  - **Refusals.** `run_tests` refuses:
+    - a kit dir without `decision_index` (it is never dropped silently);
+    - any skip that is neither another pin's `requires_transformers` nor on the job's reasoned `test_env.allowed_skips` (each entry needs `reason` and `why`);
+    - a missing junit file;
+    - zero passed tests.
+  - **Environment.** It passes `SSDM_DATA=<--data>` to the test subprocess. `test_env.with` adds the image's further pins (fla 0.5.2 where the image has it), so the fla mirror test runs.
+  - **Coverage lint.** `lint.pinned_tests_uncovered` requires every `requires_transformers(X)` test to be collected by a job whose pin is X. `test_premortem_probes.py` names jobs/full8/, jobs/probe9b/ and jobs/q9_feature_cache/.
+  - **Tests.** `tests/test_launch.py::test_run_tests_refuses_*`, `test_every_job_test_env_is_reasoned_and_matches_its_image`, `tests/test_jobs_lint.py::test_every_pinned_test_runs_under_its_pin_in_some_launch`.
+- **Status:** ENFORCED for the marked tests (Clef kernel path: 5.10.2; premortem P1-P4: 5.17.0). Other version-sensitive tests must be marked as they are found. Rule: a test that fails under one pinned stack and passes under another gets the marker, never an "env" excuse.
+
+### L-25 The launcher passed a non-schema `checks` value
+- Date: 2026-10-07 (q9_feature_cache stock_dev / stock_train launch packages, PR #101 params).
+- Symptom: `launch.py` copied the params' `"checks": ["result.ok == true"]` (a list of expressions) into submit.json. The platform's submit_job needs `{"success": {"check": CheckSpec}, "health": {...}}`. The coordinator caught it and submitted both jobs with a hand-written block (Q9_CACHE_DONE + MANIFEST.jsonl success; heartbeat /output/heartbeat, 600 s / 1800 s grace / threshold 2, kill).
+- Cost: none billed. A hand-written block at submit time is exactly the drift the launcher exists to prevent.
+- Root cause: neither lint nor `launch.submit_args` checked the shape of `checks`. They checked only that the key existed (REQUIRED_SUBMIT).
+- **Check:** `lint.checks_problems` encodes the platform schema from the manual: an object with a required `success.check`; CheckSpec types file_exists, file_grows, file_size, jsonl_field, jsonl_rate, heartbeat, gpu_util, gemm_sane, http, tensor_changed, exec, or `all_of`/`any_of` lists; health `interval_s` > 0 and `on_fail` record|kill|reschedule; absolute paths. Lint check `submit_checks` requires a valid block in every job's submit block (`tests/test_jobs_lint.py::test_every_submit_block_has_valid_checks_and_q9_carries_the_submitted_block`, with 9 refusal shapes including the q9 value). `launch.submit_args` refuses a non-schema value, and every LEGACY_SUBMIT entry is valid (`tests/test_launch.py::test_submit_args_refuses_a_non_schema_checks_value`). The q9_feature_cache params now carry the submitted block.
+- **Per-type table (PR #103 review B3).** The validator is the platform's own table, probed with `validate_job` on 2026-10-07: for every type, the required keys, the allowed keys (anything else is "an ignored field"), the value types (no bool-as-int; absolute paths; min_pct 1..100; port 1..65535) and the phase (heartbeat, file_grows, jsonl_rate, gpu_util, gemm_sane, http and tensor_changed are health-only). It also checks file_size bounds, success takes only `check`, and health keys. `tests/test_jobs_lint.py` covers every type in each of its phases plus the reviewer's rejections, and a 4,000-case fuzz test asserts that `checks_problems` never raises and never accepts junk.
+- **Status:** ENFORCED.

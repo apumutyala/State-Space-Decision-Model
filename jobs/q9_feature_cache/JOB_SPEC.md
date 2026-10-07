@@ -130,3 +130,307 @@ Estimated output (`cache.estimate_bytes`, a bf16 upper bound from the same plan;
    2. `recipes`;
    3. `select`;
    4. `holdout` (single shot).
+
+## Exact submit_job fields (one block per mode; generated from job_params by jobs/common/launch.py, checked field by field in tests/test_launch.py)
+
+The `checks` block is the platform CheckSpec the coordinator submitted stock_dev / stock_train with (LESSONS L-25): success = `/output/Q9_CACHE_DONE` and `/output/MANIFEST.jsonl`; health = heartbeat `/output/heartbeat`, 600 s, grace 1800 s, threshold 2, kill.
+
+Mode `conv1_dev` (`job_params_conv1_dev.json`):
+
+```json
+{
+ "chip": "h100",
+ "chip_count": 1,
+ "mission": "q9-feature-cache",
+ "idempotency_key": "q9-feature-cache-conv1-dev-<context sha256[:12]>",
+ "context_id": "<from create_context>",
+ "dockerfile_path": "Dockerfile",
+ "build_timeout_minutes": 60,
+ "command": "bash /opt/ssdm/m1/jobs/q9_feature_cache/cache_job.sh",
+ "env": {
+  "Q9C_MODE": "conv1_dev"
+ },
+ "max_duration_minutes": 120,
+ "max_restarts": 0,
+ "resume": "none",
+ "queue_ttl_minutes": 1440,
+ "hf_cache": true,
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "checks": {
+  "success": {
+   "check": {
+    "all_of": [
+     {
+      "type": "file_exists",
+      "path": "/output/Q9_CACHE_DONE"
+     },
+     {
+      "type": "file_exists",
+      "path": "/output/MANIFEST.jsonl"
+     }
+    ]
+   }
+  },
+  "health": {
+   "check": {
+    "type": "heartbeat",
+    "path": "/output/heartbeat"
+   },
+   "interval_s": 600,
+   "grace_period_s": 1800,
+   "fail_threshold": 2,
+   "on_fail": "kill"
+  }
+ }
+}
+```
+
+Mode `conv1_train` (`job_params_conv1_train.json`):
+
+```json
+{
+ "chip": "h100",
+ "chip_count": 1,
+ "mission": "q9-feature-cache",
+ "idempotency_key": "q9-feature-cache-conv1-train-<context sha256[:12]>",
+ "context_id": "<from create_context>",
+ "dockerfile_path": "Dockerfile",
+ "build_timeout_minutes": 60,
+ "command": "bash /opt/ssdm/m1/jobs/q9_feature_cache/cache_job.sh",
+ "env": {
+  "Q9C_MODE": "conv1_train"
+ },
+ "max_duration_minutes": 95,
+ "max_restarts": 0,
+ "resume": "none",
+ "queue_ttl_minutes": 1440,
+ "hf_cache": true,
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "checks": {
+  "success": {
+   "check": {
+    "all_of": [
+     {
+      "type": "file_exists",
+      "path": "/output/Q9_CACHE_DONE"
+     },
+     {
+      "type": "file_exists",
+      "path": "/output/MANIFEST.jsonl"
+     }
+    ]
+   }
+  },
+  "health": {
+   "check": {
+    "type": "heartbeat",
+    "path": "/output/heartbeat"
+   },
+   "interval_s": 600,
+   "grace_period_s": 1800,
+   "fail_threshold": 2,
+   "on_fail": "kill"
+  }
+ }
+}
+```
+
+Mode `e5_dev` (`job_params_e5_dev.json`):
+
+```json
+{
+ "chip": "h100",
+ "chip_count": 1,
+ "mission": "q9-feature-cache",
+ "idempotency_key": "q9-feature-cache-e5-dev-<context sha256[:12]>",
+ "context_id": "<from create_context>",
+ "dockerfile_path": "Dockerfile",
+ "build_timeout_minutes": 60,
+ "command": "bash /opt/ssdm/m1/jobs/q9_feature_cache/cache_job.sh",
+ "env": {
+  "Q9C_MODE": "e5_dev"
+ },
+ "max_duration_minutes": 120,
+ "max_restarts": 0,
+ "resume": "none",
+ "queue_ttl_minutes": 1440,
+ "hf_cache": true,
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "checks": {
+  "success": {
+   "check": {
+    "all_of": [
+     {
+      "type": "file_exists",
+      "path": "/output/Q9_CACHE_DONE"
+     },
+     {
+      "type": "file_exists",
+      "path": "/output/MANIFEST.jsonl"
+     }
+    ]
+   }
+  },
+  "health": {
+   "check": {
+    "type": "heartbeat",
+    "path": "/output/heartbeat"
+   },
+   "interval_s": 600,
+   "grace_period_s": 1800,
+   "fail_threshold": 2,
+   "on_fail": "kill"
+  }
+ }
+}
+```
+
+Mode `e5_train` (`job_params_e5_train.json`):
+
+```json
+{
+ "chip": "h100",
+ "chip_count": 1,
+ "mission": "q9-feature-cache",
+ "idempotency_key": "q9-feature-cache-e5-train-<context sha256[:12]>",
+ "context_id": "<from create_context>",
+ "dockerfile_path": "Dockerfile",
+ "build_timeout_minutes": 60,
+ "command": "bash /opt/ssdm/m1/jobs/q9_feature_cache/cache_job.sh",
+ "env": {
+  "Q9C_MODE": "e5_train"
+ },
+ "max_duration_minutes": 95,
+ "max_restarts": 0,
+ "resume": "none",
+ "queue_ttl_minutes": 1440,
+ "hf_cache": true,
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "checks": {
+  "success": {
+   "check": {
+    "all_of": [
+     {
+      "type": "file_exists",
+      "path": "/output/Q9_CACHE_DONE"
+     },
+     {
+      "type": "file_exists",
+      "path": "/output/MANIFEST.jsonl"
+     }
+    ]
+   }
+  },
+  "health": {
+   "check": {
+    "type": "heartbeat",
+    "path": "/output/heartbeat"
+   },
+   "interval_s": 600,
+   "grace_period_s": 1800,
+   "fail_threshold": 2,
+   "on_fail": "kill"
+  }
+ }
+}
+```
+
+Mode `stock_dev` (`job_params_stock_dev.json`):
+
+```json
+{
+ "chip": "h100",
+ "chip_count": 1,
+ "mission": "q9-feature-cache",
+ "idempotency_key": "q9-feature-cache-stock-dev-<context sha256[:12]>",
+ "context_id": "<from create_context>",
+ "dockerfile_path": "Dockerfile",
+ "build_timeout_minutes": 60,
+ "command": "bash /opt/ssdm/m1/jobs/q9_feature_cache/cache_job.sh",
+ "env": {
+  "Q9C_MODE": "stock_dev"
+ },
+ "max_duration_minutes": 120,
+ "max_restarts": 0,
+ "resume": "none",
+ "queue_ttl_minutes": 1440,
+ "hf_cache": true,
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "checks": {
+  "success": {
+   "check": {
+    "all_of": [
+     {
+      "type": "file_exists",
+      "path": "/output/Q9_CACHE_DONE"
+     },
+     {
+      "type": "file_exists",
+      "path": "/output/MANIFEST.jsonl"
+     }
+    ]
+   }
+  },
+  "health": {
+   "check": {
+    "type": "heartbeat",
+    "path": "/output/heartbeat"
+   },
+   "interval_s": 600,
+   "grace_period_s": 1800,
+   "fail_threshold": 2,
+   "on_fail": "kill"
+  }
+ }
+}
+```
+
+Mode `stock_train` (`job_params_stock_train.json`):
+
+```json
+{
+ "chip": "h100",
+ "chip_count": 1,
+ "mission": "q9-feature-cache",
+ "idempotency_key": "q9-feature-cache-stock-train-<context sha256[:12]>",
+ "context_id": "<from create_context>",
+ "dockerfile_path": "Dockerfile",
+ "build_timeout_minutes": 60,
+ "command": "bash /opt/ssdm/m1/jobs/q9_feature_cache/cache_job.sh",
+ "env": {
+  "Q9C_MODE": "stock_train"
+ },
+ "max_duration_minutes": 140,
+ "max_restarts": 0,
+ "resume": "none",
+ "queue_ttl_minutes": 1440,
+ "hf_cache": true,
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "checks": {
+  "success": {
+   "check": {
+    "all_of": [
+     {
+      "type": "file_exists",
+      "path": "/output/Q9_CACHE_DONE"
+     },
+     {
+      "type": "file_exists",
+      "path": "/output/MANIFEST.jsonl"
+     }
+    ]
+   }
+  },
+  "health": {
+   "check": {
+    "type": "heartbeat",
+    "path": "/output/heartbeat"
+   },
+   "interval_s": 600,
+   "grace_period_s": 1800,
+   "fail_threshold": 2,
+   "on_fail": "kill"
+  }
+ }
+}
+```

@@ -1,4 +1,5 @@
 {
+ "test_env": {"transformers": "5.17.0", "with": [], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}, {"reason": "fla not installed here", "why": "this job's image pins no fla, so the fla source-mirror test has nothing to mirror"}], "image": "jobs/rwkv7/Dockerfile"},
  "_comment": "DRAFT, NOT SUBMITTED. jobs/m2_parent_arm: score the frozen m1 parent once per gate on the frozen development cohort (train.cohort v2) and cache the units for every m2 cell on that parent (jobs/m2_parent_arm/JOB_SPEC.md). Worst case = (build_timeout + 2 x max_duration) x batch rate.",
  "job": "m2-parent-arm",
  "status": "draft: not submitted",
