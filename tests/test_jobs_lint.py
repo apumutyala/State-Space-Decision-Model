@@ -83,10 +83,11 @@ def test_no_backslash_n_continuation_in_any_job_shell():
 
 def test_runner_execution_detector():
     runner = "jobs/x/x_job.sh"
-    direct = 'import subprocess\nsubprocess.run(["bash", str(ROOT / "jobs/x/x_job.sh")])\n'
+    direct = 'import subprocess\ndef test_run():\n    subprocess.run(["bash", str(ROOT / "jobs/x/x_job.sh")])\n'
     split = ('import subprocess, shutil\nBASH = shutil.which("bash")\n'
-             'subprocess.run([BASH, str(ROOT / "jobs" / "x" / "x_job.sh")])\n')
-    via_name = 'import subprocess\np = ROOT / "jobs/x/x_job.sh"\nsubprocess.run(["bash", str(p)], check=True)\n'
+             'def test_run():\n    subprocess.run([BASH, str(ROOT / "jobs" / "x" / "x_job.sh")])\n')
+    via_name = ('import subprocess\ndef test_run():\n    p = ROOT / "jobs/x/x_job.sh"\n'
+                '    subprocess.run(["bash", str(p)], check=True)\n')
     snippet = ('import subprocess\nlines = open("jobs/x/x_job.sh").read().splitlines()[:3]\n'
                'subprocess.run(["bash", "-c", "echo hi"])\n')
     assert lint.executes_runner(direct, runner) and lint.executes_runner(split, runner)
@@ -104,8 +105,8 @@ def test_runner_execution_detector():
 ])
 def test_runner_execution_detector_rejects_read_only_commands(command):
     runner = "jobs/x/x_job.sh"
-    src = NL.join(['import subprocess', f'runner = "{runner}"', f'cmd = {command}',
-                   'subprocess.run(cmd, check=True)'])
+    src = NL.join(['import subprocess', f'runner = "{runner}"', 'def test_run():', f'    cmd = {command}',
+                   '    subprocess.run(cmd, check=True)'])
     assert not lint.executes_runner(src, runner)
 
 
@@ -115,15 +116,15 @@ def test_runner_execution_detector_rejects_read_only_commands(command):
 ])
 def test_runner_execution_detector_accepts_script_arguments(command):
     runner = "jobs/x/x_job.sh"
-    src = NL.join(['import subprocess as sp', f'runner = "{runner}"', f'cmd = {command}',
-                   'sp.run(args=cmd, check=True)'])
+    src = NL.join(['import subprocess as sp', f'runner = "{runner}"', 'def test_run():', f'    cmd = {command}',
+                   '    sp.run(args=cmd, check=True)'])
     assert lint.executes_runner(src, runner)
 
 
 def test_runner_execution_detector_rejects_non_shell_bindings():
     runner = "jobs/x/x_job.sh"
     src = NL.join(['import subprocess', 'BASH = "cat"',
-                   f'subprocess.run([BASH, "{runner}"], check=True)'])
+                   'def test_run():', f'    subprocess.run([BASH, "{runner}"], check=True)'])
     assert not lint.executes_runner(src, runner)
 
 
@@ -147,6 +148,8 @@ def test_runner_execution_detector_rejects_non_shell_bindings():
     'def test_unreachable():\n    return\n    subprocess.run(["bash", runner])',
 ])
 def test_runner_execution_detector_rejects_overrides_mutation_and_shadowing(body):
+    if not body.startswith('def test_'):
+        body = 'def test_run():' + NL + NL.join('    ' + line for line in body.splitlines())
     src = NL.join(['import subprocess', 'runner = "jobs/x/x_job.sh"', body])
     assert not lint.executes_runner(src, "jobs/x/x_job.sh")
 
@@ -156,6 +159,35 @@ def test_runner_execution_detector_preserves_nested_literal_invocation():
                    '        cmd = ["bash", "jobs/x/x_job.sh"]', '        subprocess.run(cmd)',
                    '    run_part()'])
     assert lint.executes_runner(src, "jobs/x/x_job.sh")
+
+
+@pytest.mark.parametrize("body", [
+    'subprocess.run = lambda *args, **kwargs: None\ndef test_run():\n    subprocess.run(["bash", runner])',
+    'def test_run():\n    subprocess.run = lambda *args, **kwargs: None\n    subprocess.run(["bash", runner])',
+    'def helper():\n    subprocess.run(["bash", runner])\ndef test_run():\n    pass',
+    'def test_run():\n    def unused():\n        subprocess.run(["bash", runner])\n    pass',
+    'def test_run():\n    subprocess.run(["bash", "-c", "exit 0; exec bash jobs/x/x_job.sh"])',
+    'def test_run():\n    subprocess.run(["bash", "-c", "echo ok #; exec bash jobs/x/x_job.sh"])',
+    'def test_run():\n    subprocess.run(["bash", "-c", "export X=1 #; exec bash jobs/x/x_job.sh"])',
+    'def test_run():\n    subprocess.run(["bash", "-c", "export X=$(exit 0); exec bash jobs/x/x_job.sh"])',
+    'def test_run():\n    subprocess.run(["bash", "-c", "export X=${UNSET:?error}; exec bash jobs/x/x_job.sh"])',
+])
+def test_runner_execution_detector_requires_trusted_reachable_calls(body):
+    src = NL.join(['import subprocess', 'runner = "jobs/x/x_job.sh"', body])
+    assert not lint.executes_runner(src, "jobs/x/x_job.sh")
+
+
+def test_runner_execution_detector_preserves_called_top_level_helper():
+    src = NL.join(['import subprocess', 'def helper():',
+                   '    subprocess.run(["bash", "jobs/x/x_job.sh"])', 'def test_run():', '    helper()'])
+    assert lint.executes_runner(src, "jobs/x/x_job.sh")
+
+
+def test_runner_execution_detector_preserves_full8_export_exec():
+    src = NL.join(['import subprocess, shutil', 'BASH = shutil.which("bash")', 'def dry_run():',
+                   '''    cmd = [BASH, "-c", 'export PATH="$FULL8_DRYRUN_PATH_PREFIX:$PATH"; exec bash jobs/full8/full8_job.sh']''',
+                   '    subprocess.run(cmd)', 'def test_full8():', '    dry_run()'])
+    assert lint.executes_runner(src, "jobs/full8/full8_job.sh")
 
 
 def test_rule_constants_are_literal_module_level():

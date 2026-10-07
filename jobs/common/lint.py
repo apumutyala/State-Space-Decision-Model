@@ -189,12 +189,17 @@ def executes_runner(src: str, runner: str) -> bool:
 def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
     """Executable script arguments and their bound paths for subprocess argv lists.
 
-    A literal Bash -c command counts only when its last command explicitly execs the script.
+    Only test functions and their directly called helpers count. Bash -c accepts only exports followed by exec.
     """
     try:
         tree = ast.parse(src)
     except SyntaxError:
         return ()
+    imported_subprocess = {a.asname or a.name for n in ast.walk(tree) if isinstance(n, ast.Import)
+                           for a in n.names if a.name == "subprocess"}
+    if any(isinstance(n, ast.Attribute) and isinstance(n.ctx, (ast.Store, ast.Del))
+           and isinstance(n.value, ast.Name) and n.value.id in imported_subprocess for n in ast.walk(tree)):
+        return ()  # even a helper's rebind changes the shared module for every import alias
     def scope_nodes(scope):
         def walk(n):
             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
@@ -254,19 +259,73 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
             if derived <= invalid:
                 break
             invalid |= derived
+        if invalid & subprocess_aliases:
+            subprocess_aliases = set()  # aliases all refer to the same imported module
         return {name: value for name, value in bindings.items() if name not in invalid}, subprocess_aliases, nodes
 
-    module_binds, module_subprocess, module_nodes = scope_bindings(tree, {}, set())
+    module_binds, module_subprocess, _ = scope_bindings(tree, {}, set())
+    def visible_helpers(scope, inherited):
+        shadowed = {n.id for n in scope_nodes(scope) if isinstance(n, ast.Name)
+                    and isinstance(n.ctx, (ast.Store, ast.Del))}
+        if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            shadowed.update(n.arg for n in ast.walk(scope.args) if isinstance(n, ast.arg))
+        defs = [n for n in scope.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        out = {name: fn for name, fn in inherited.items() if name not in shadowed}
+        for fn in defs:
+            if fn.name not in shadowed and sum(other.name == fn.name for other in defs) == 1:
+                out[fn.name] = fn
+        return out
+
+    module_helpers = visible_helpers(tree, {})
     scopes = [(n, module_binds, module_subprocess) for n in tree.body
               if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
     scopes += [(m, module_binds, module_subprocess) for n in tree.body if isinstance(n, ast.ClassDef) for m in n.body
                if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))]
-    calls = [(n, module_binds, module_subprocess) for n in module_nodes if isinstance(n, ast.Call)]
+    info, helpers = {}, {tree: module_helpers}
     for scope, inherited, inherited_aliases in scopes:
         local_binds, aliases, nodes = scope_bindings(scope, inherited, inherited_aliases)
-        calls += [(n, local_binds, aliases) for n in nodes if isinstance(n, ast.Call)]
+        info[scope] = (local_binds, aliases, nodes)
+        helpers.setdefault(scope, visible_helpers(scope, module_helpers))
         scopes += [(n, local_binds, aliases) for n in scope.body
                    if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        for n in scope.body:
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                helpers[n] = visible_helpers(n, helpers[scope])
+    reachable = [fn for fn in module_helpers.values() if fn.name.startswith("test_")]
+    reachable += [m for n in tree.body if isinstance(n, ast.ClassDef) and n.name.startswith("Test") for m in n.body
+                  if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef)) and m.name.startswith("test_")]
+    calls, visited = [], set()
+    for scope in reachable:
+        if scope in visited:
+            continue
+        visited.add(scope)
+        bindings, aliases, nodes = info[scope]
+        calls += [(n, bindings, aliases) for n in nodes if isinstance(n, ast.Call)]
+        reachable += [helpers[scope][n.func.id] for n in nodes if isinstance(n, ast.Call)
+                      and isinstance(n.func, ast.Name) and n.func.id in helpers[scope]]
+
+    def terminal_exec(command):
+        # This deliberately is not a general shell parser. No comments, substitutions or control flow count.
+        if any(c in command for c in "#`\n\r") or "$(" in command or "${" in command:
+            return []
+        try:
+            lex = shlex.shlex(command, posix=True, punctuation_chars=";&|<>()")
+            lex.whitespace_split = True
+            tokens = list(lex)
+        except ValueError:
+            return []
+        while tokens[:1] == ["export"]:
+            try:
+                end = tokens.index(";")
+            except ValueError:
+                return []
+            if end < 2 or not all(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=(?:[A-Za-z0-9_./:+-]|\$[A-Za-z_][A-Za-z0-9_]*)*",
+                                             t) for t in tokens[1:end]):
+                return []
+            tokens = tokens[end + 1:]
+        if tokens[:1] != ["exec"] or any(t in {";", "&&", "||", "&", "|", "<", ">", "(", ")"} for t in tokens):
+            return []
+        return [ast.Constant(value=arg) for arg in tokens[1:]]
 
     def texts(expr):
         out = [ast.get_source_segment(src, expr) or ast.unparse(expr)]
@@ -316,12 +375,9 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
                     break
                 if value == "-c" and i + 1 < len(argv) and isinstance(argv[i + 1], ast.Constant) \
                         and isinstance(argv[i + 1].value, str):
-                    try:
-                        terminal = shlex.split(argv[i + 1].value.split(";")[-1])
-                    except ValueError:
-                        terminal = []
-                    if terminal[:1] == ["exec"]:
-                        commands.append([ast.Constant(value=arg) for arg in terminal[1:]])
+                    terminal = terminal_exec(argv[i + 1].value)
+                    if terminal:
+                        commands.append(terminal)
                 if value in {"--noexec", "--help", "--version"} or (value.startswith("-")
                         and not value.startswith("--") and any(flag in value[1:] for flag in "ncs")):
                     skip = True
