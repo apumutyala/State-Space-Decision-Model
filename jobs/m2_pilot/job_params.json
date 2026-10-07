@@ -36,5 +36,10 @@
   "rwkv7": null,
   "q9af": null,
   "_note": "sha256 of the parent arm cache's arm.json (jobs/m2_parent_arm output) per parent; PENDING until that job runs. m2_job.sh refuses (exit 10) while null or on mismatch."
+ },
+ "index_frozen_sha256": {
+  "rwkv7": null,
+  "q9af": null,
+  "_note": "sha256 of the parent arm cache index-frozen.json (jobs.common.dev_full: full Index DEV minus the rows the parent decider refuses before any forward, frozen before any Index row is scored; issue #36). PENDING until the parent-arm job runs. m2_job.sh refuses (exit 10) while null or on mismatch."
  }
 }

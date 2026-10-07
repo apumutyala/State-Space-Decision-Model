@@ -91,13 +91,13 @@ def _cache_parent(world, out, decide, steer, stages=("g12", "g13"), spec=SPEC, i
 
 
 def _gates(world, cache, decide, steer, stages=("g12", "g13"), out=None, expect_parent=None,
-           parent_arm_sha256=None):
+           parent_arm_sha256=None, **kw):
     from train import m2_gates as G
 
     return G.run_gates(stages=stages, cohort=world["cohort"], spec=SPEC, child_decide=decide, child_steer=steer,
                        child_identity={"revision_id": "child"}, items_by_role=_items(world, SPEC),
                        records_by_id=world["records"], parent_arm=cache, expect_parent=expect_parent,
-                       index_rows=world["index_rows"], n_boot=200, out=out, parent_arm_sha256=parent_arm_sha256)
+                       index_rows=world["index_rows"], n_boot=200, out=out, parent_arm_sha256=parent_arm_sha256, **kw)
 
 
 @pytest.fixture(scope="module")
@@ -116,13 +116,21 @@ def test_identical_child_accepts_both_stages_but_is_not_promotable_with_pending_
     from train import m2_gates as G
 
     cache, dec = parent_cache
-    code, rep = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), out=tmp_path / "report.json")
-    assert code == 0, rep["promotion"]
+    from train.promotion import MARGINS
+
+    pending = {**MARGINS, "approved": False, "status": "PENDING USER APPROVAL"}
+    code, rep = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), out=tmp_path / "report.json",
+                       margins=pending)
+    assert code == G.EXIT["pending"] == 43, rep["promotion"]  # issue #36: never exit 0 while margins are pending
     assert rep["promotion"]["verdict"] == "accept" and rep["promotion"]["margins_pending_user_approval"]
     assert rep["promotion"]["promotable"] is False
     crit = {c["criterion"] for s in rep["verdicts"].values() for c in s["criteria"]}
-    assert {"g12_violation", "g12_steer_d1a", "g12_clean_acc", "g13_steer_d1b", "g13_capability", "g13_ece",
-            "g13_retention_acc", "g13_retention_ece"} <= crit
+    assert {"g12_violation", "g12_steer_d1a", "g12_false_alarm", "g12_clean_acc", "g13_steer_d1b", "g13_false_alarm",
+            "g13_capability", "g13_ece", "g13_retention_acc", "g13_retention_ece"} <= crit
+    assert rep["verdicts"]["g13"]["comparators"]["anchor"]["same_as"] == "last_accepted"
+    approved = {**MARGINS, "approved": True, "status": "approved (test)"}
+    code2, rep2 = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), margins=approved)
+    assert code2 == 0 and rep2["promotion"]["promotable"] is True
     on_disk = json.loads((tmp_path / "report.json").read_text())
     assert G.valid_report(on_disk) and (tmp_path / "units-child-g13.json").exists()
     assert on_disk["stages"]["g13"]["units_identity"]["index_rows"]["n"] == len(world["index_rows"])
@@ -220,14 +228,16 @@ def test_exit_codes_and_report_validator():
     from train import m2_gates as G
 
     ok, bad = {"accept": True, "failed": []}, {"accept": False, "failed": ["x"]}
-    assert G.exit_code({"g12": ok, "g13": ok}) == 0
+    assert G.exit_code({"g12": ok, "g13": ok}, pending=False) == 0
+    assert G.exit_code({"g12": ok, "g13": ok}, pending=True) == G.EXIT["pending"] == 43  # issue #36
+    assert G.exit_code({"g12": bad, "g13": ok}, pending=True) == 40  # a rejection is reported as such
     assert G.exit_code({"g12": bad, "g13": ok}) == 40 and G.exit_code({"g12": ok, "g13": bad}) == 41
     assert G.exit_code({"g12": bad, "g13": bad}) == 42
     assert G.exit_code({}) == G.EXIT["usage"] != 0  # nothing evaluated is never an accept
     assert not G.valid_report({}) and not G.valid_report({"schema": G.REPORT_SCHEMA})
     rep = {"schema": G.REPORT_SCHEMA, "identities": {}, "verdicts": {"g12": ok},
            "promotion": G.promotion_verdict({"g12": ok})}
-    assert G.valid_report(rep) and rep["promotion"]["promotable"] is False  # g13 not run + margins pending
+    assert G.valid_report(rep) and rep["promotion"]["promotable"] is False  # g13 not run
     rep["promotion"]["verdict"] = "reject"
     assert not G.valid_report(rep)
 
@@ -269,7 +279,7 @@ def test_parent_arm_estimate_and_cap():
     e = S.estimate(5000.0)
     assert e["tokens"]["g12"] == sum(S.VOLUME_TOKENS["g12"].values())
     assert e["total_minutes"] == pytest.approx(sum(e["tokens"].values()) / 5000 / 60 + S.FIXED_MIN)
-    assert S.main(["estimate", "--tok-s", "5000", "--cap-min", "180"]) == 0
+    assert S.main(["estimate", "--tok-s", "10000", "--cap-min", "180"]) == 0
     assert S.main(["estimate", "--tok-s", "1000", "--cap-min", "180"]) == 15
     with pytest.raises(ValueError):
         S.estimate(0)
@@ -373,18 +383,20 @@ def test_run_cell_refuses_unpinned_q9af_before_loading_anything(tmp_path):
 # ----------------------------------------------------------------------------------------------- round-2 review (B4 + nits)
 def test_child_evals_preflight_counts_fit_and_card_not_only_the_arm():
     """B4: the m2_pilot evals phase scores the child arm AND forwards every calibration item (temperature fit) and every
-    dev item (eval card). At the 50-min evals cap that needs >= ~11.4k tok/s, not the arm-only ~9k."""
+    dev item (eval card). Issue #36: G13's Index term is the FULL DEV slice (projected 38.8 M fork positions, was the
+    6.4 M subset), so at the 50-min evals cap the child phase needs >= ~23.4k tok/s (was ~12k); below that, G13 runs
+    as a separate gate job (JOB_SPEC)."""
     from jobs.m2_parent_arm import score_parent as S
     from train.cohort import Cohort
 
     assert S.VOLUME_COHORT_SHA256 == Cohort().sha256  # volumes were measured on the committed cohort
     arm = S.estimate(1.0, fixed_min=0, mode="parent")["total_tokens"]
     child = S.estimate(1.0, fixed_min=0, mode="child")["total_tokens"]
-    assert child == arm + sum(S.CHILD_EXTRA_TOKENS.values()) and 34e6 < child < 35e6
+    assert child == arm + sum(S.CHILD_EXTRA_TOKENS.values()) and 66e6 < child < 67e6
     need = S.min_tok_s(50)
-    assert 11_500 < need < 12_500 and S.min_tok_s(50, mode="parent") < 9_500
+    assert 23_000 < need < 24_000 and S.min_tok_s(50, mode="parent") < 21_000
     assert S.main(["estimate", "--tok-s", "10000", "--mode", "child", "--cap-min", "50", "--fixed-min", "0"]) == 15
-    assert S.main(["estimate", "--tok-s", "10000", "--mode", "parent", "--cap-min", "50", "--fixed-min", "0"]) == 0
+    assert S.main(["estimate", "--tok-s", "21000", "--mode", "parent", "--cap-min", "50", "--fixed-min", "0"]) == 0
     assert S.main(["estimate", "--tok-s", str(round(need) + 1), "--mode", "child", "--cap-min", "50",
                    "--fixed-min", "0"]) == 0
     root = Path(__file__).resolve().parents[1]
@@ -393,7 +405,7 @@ def test_child_evals_preflight_counts_fit_and_card_not_only_the_arm():
     assert "--mode child" in pre and '--cap-min "$CAP_E"' in pre
     assert job.index("evals-preflight.json") < job.index("python -m train.run_cell")  # before the paid cell phase
     spec = (root / "jobs/m2_pilot/JOB_SPEC.md").read_text(encoding="utf-8")
-    assert "~9,000 tok/s" not in spec and "12,000" in spec  # PERF_AUDIT: Index DEV re-measured (fork positions)
+    assert "~9,000 tok/s" not in spec and "23,400" in spec  # full Index DEV (issue #36), projected fork positions
 
 
 @pytest.mark.parametrize("runner", ["jobs/m2_pilot/m2_job.sh", "jobs/m2_parent_arm/parent_arm_job.sh"])
@@ -436,7 +448,7 @@ def test_arm_json_pin_and_parent_repo_revision_are_enforced(world, parent_cache)
     cache, dec = parent_cache
     sha = hashlib.sha256((cache / "arm.json").read_bytes()).hexdigest()
     code, _ = _gates(world, cache, dec.decide, KeywordDecider(0.0), stages=("g12",), parent_arm_sha256=sha)
-    assert code == 0
+    assert code in (0, G.EXIT["pending"])  # accepted (43 only while the margins are pending)
     with pytest.raises(G.IdentityMismatch, match="pinned"):
         _gates(world, cache, dec.decide, KeywordDecider(0.0), stages=("g12",), parent_arm_sha256="0" * 64)
     exp = G.expected_parent_identity("rwkv7")
@@ -523,3 +535,56 @@ def test_temperature_status_and_from_dict_tamper():
     with pytest.raises(ValueError, match="own proof"):
         FeatureTemperature.from_dict(swapped)
     assert dataclasses.replace(ok).identity()["id"] == ok.identity()["id"]
+
+
+# ----------------------------------------------------------------------------------------------- issue #36 comparators
+def test_g13_needs_both_comparators_and_the_child_arm_is_reusable(world, parent_cache, tmp_path):
+    """Anti-creep: the last accepted checkpoint (here identical to the child) accepts, but the lineage anchor (an
+    'informed' parent the child is worse than) rejects, so G13 rejects. G12 uses the last accepted only."""
+    from safety_eval.standin import KeywordDecider
+    from train import m2_gates as G
+
+    cache, dec = parent_cache
+    gold = {json.dumps(r["request"]["state"]): r["labels"] for r in world["records"].values()}
+
+    def informed(req):
+        resp = dec.decide(req)
+        labels = gold.get(json.dumps(req["state"]))
+        for q, p in resp["ssdm"]["served_probabilities"].items():
+            if labels and q in labels:
+                g = str(labels[q]).lower() if str(labels[q]).lower() in p else str(labels[q])
+                resp["ssdm"]["served_probabilities"][q] = {o: (0.9 if o == g else 0.1 / max(1, len(p) - 1)) for o in p}
+        return resp
+
+    anchor = tmp_path / "anchor"
+    _cache_parent(world, anchor, informed, KeywordDecider(gullibility=0.0))
+    code, rep = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), anchor_arm=anchor,
+                       out=tmp_path / "run" / "report.json")
+    comps = rep["verdicts"]["g13"]["comparators"]
+    assert comps["last_accepted"]["accept"] and not comps["anchor"]["accept"]
+    assert code == 41 and "g13_retention_acc" in rep["promotion"]["failed"]["g13"]
+    assert set(rep["stages"]["g13"]["comparator_arms"]) == {"last_accepted", "anchor"}
+    assert "comparators" in rep["verdicts"]["g12"] and set(rep["stages"]["g12"]["comparator_arms"]) == {"last_accepted"}
+    # the child's own units were cached as an arm: a later run can use it as its last accepted checkpoint
+    child_arm = tmp_path / "run" / "child-arm"
+    code2, rep2 = _gates(world, child_arm, dec.decide, KeywordDecider(gullibility=0.0), anchor_arm=cache)
+    assert rep2["verdicts"]["g13"]["accept"] and code2 in (0, G.EXIT["pending"])
+
+
+def test_index_arm_from_the_served_decider_is_bitwise_the_untempered_arm(world):
+    _kit_or_skip()
+    from decide import Decider
+    from heads.decide_backend import DecisionModelBackend
+    from heads.layout import ByteEncoder
+    from train import m2_gates as G
+
+    _, model = _decider(2)
+    items = _items(world, SPEC)
+    ft = G.fit_child_temperature(model, items["calibration"], {"eval": items["dev"], "retention": items["retention"]})
+    be = DecisionModelBackend(model, ByteEncoder(), template=TEMPLATE)
+    served, plain = Decider(be, calibration=ft.to_serving()), Decider(be)
+    a = G.index_predict(served.decide, world["index_rows"], untempered_from_raw=True)
+    b = G.index_predict(plain.decide, world["index_rows"])
+    assert all(a[k]["status"] == "ok" for k in a)
+    assert {k: v["response"] for k, v in a.items()} == {k: v["response"] for k, v in b.items()}
+    assert all("served_response" in v for v in a.values())

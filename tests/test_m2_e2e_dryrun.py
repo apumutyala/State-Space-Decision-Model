@@ -52,10 +52,14 @@ def test_m2_dry_run_end_to_end(tmp_path):
         assert (tmp_path / f"{r['backbone']}-{r['head']}-{r['arm']}" / "ckpt" / "latest.json").exists()
         if r["full_card"]:
             v12, v13 = r["verdict_g12"], r["verdict_g13"]
-            assert {c["criterion"] for c in v12["criteria"]} == {"g12_violation", "g12_steer_d1a", "g12_clean_acc"}
-            assert {c["criterion"] for c in v13["criteria"]} == {"g13_steer_d1b", "g13_capability", "g13_ece"}
+            assert {c["criterion"] for c in v12["criteria"]} == {"g12_violation", "g12_steer_d1a", "g12_false_alarm",
+                                                                 "g12_clean_acc"}
+            assert {c["criterion"] for c in v13["criteria"]} == {"g13_steer_d1b", "g13_false_alarm", "g13_capability",
+                                                                 "g13_ece"}  # E1: reported until PR #95 lands
             assert v12["accept"] == (not v12["failed"]) and v13["accept"] == (not v13["failed"])
-            assert "PENDING USER APPROVAL" in v12["margins"]["status"]
+            from train.promotion import MARGINS
+
+            assert v12["margins"]["status"] == MARGINS["status"] and "resizing" in v12 and "resizing" in v13
             assert r["verdict_g12_self"]["failed_evaluable"] == []  # self-comparison never fails on a CI
             assert r["cards"]["child"]["g4_exact_k1"]["n_variants"] > 0
             assert "lam_hat" in r["cards"]["child"]["g5_ltt"]

@@ -11,6 +11,7 @@
 #   4 TOK_S missing / not a number   20 train.run_cell returned an unexpected code
 #   15 evals projected past their cap from the MEASURED rate (child arm not scored; re-price)
 #   40 / 41 / 42  train.m2_gates: G12 / G13 / both REJECTED (report written and exported; promotion = reject)
+#   43  train.m2_gates: every stage accepted but the margins are PENDING approval (never an accept; issue #36)
 #   21-29 train.run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite, 24 memory, 25 data, 26 too slow,
 #         27 guard not ready, 28 cohort leak/mismatch, 29 q9af lineage / unpinned conversion)
 #   1 finalize failed
@@ -90,8 +91,12 @@ else
   ( cd "$SNAP" && sha256sum -c "$CODE/jobs/m2_pilot/q9af_snapshot.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "q9af snapshot sha256"
 fi
 ( cd /data && sha256sum -c "$CODE/jobs/clef_baseline/data.sha256" ) > "$WORK/out/data-verify.txt" 2>&1 || fail 10 "DEV rows sha256"
-python -X utf8 -m jobs.common.dev_subset rows --rows /data/slices/dev-rows.jsonl.gz --out "$WORK/index-rows.jsonl.gz" \
-  --subset jobs/common/dev_subset_m1.json > "$WORK/out/index-subset.json" || fail 10 "DEV subset rows"
+# G13 Index term = the FULL DEV slice minus the parent arm's frozen unsupported rows (issue #36; jobs.common.dev_full)
+cp /data/slices/dev-rows.jsonl.gz "$WORK/index-rows.jsonl.gz" || fail 10 "DEV rows"
+FROZEN_SHA=$(python -c "import json,sys; v=json.load(open(sys.argv[1]))['index_frozen_sha256'][sys.argv[2]]; print(v or '')" "$PARAMS" "$PARENT") || fail 5 "job_params"
+[ -n "$FROZEN_SHA" ] || fail 10 "index_frozen_sha256.$PARENT is not pinned in job_params.json"
+python -X utf8 -m jobs.common.dev_full verify --frozen /data/parent_arm/index-frozen.json --sha256 "$FROZEN_SHA" \
+  > "$WORK/out/index-frozen.json" || fail 10 "frozen full-DEV row set != pinned"
 python -c "import json,sys; from jobs.m2_parent_arm.validate import valid_cache; sys.exit(0 if valid_cache(json.load(open('/data/parent_arm/arm.json'))) else 1)" \
   || fail 10 "no valid parent arm cache in /data/parent_arm"
 ARM_SHA=$(python -c "import json,sys; v=json.load(open(sys.argv[1]))['parent_arm_sha256'][sys.argv[2]]; print(v or '')" "$PARAMS" "$PARENT") || fail 5 "job_params"
@@ -138,10 +143,12 @@ say "phase evals (calibration fit on the cohort calibration role; card on dev; G
 CAP_E=$(cap evals) || fail 5 "job_params"
 timeout ${CAP_E}m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" \
   "${GDN_ARGS[@]}" --records /data/m2/records.jsonl.gz --guard-readiness "$WORK/out/guard/readiness.json" \
-  --parent-arm /data/parent_arm --parent-arm-sha256 "$ARM_SHA" --index-rows "$WORK/index-rows.jsonl.gz" --out "$WORK/out/report.json" --stage all \
+  --parent-arm /data/parent_arm --parent-arm-sha256 "$ARM_SHA" --index-rows "$WORK/index-rows.jsonl.gz" \
+  --index-frozen /data/parent_arm/index-frozen.json --index-frozen-sha256 "$FROZEN_SHA" --out "$WORK/out/report.json" --stage all \
   > "$WORK/logs/evals.log" 2>&1; r=$?
 gate "evals" $r; export_phase evals
 case $r in 0) ;; 124) fail 7 "evals timeout" ;; 40|41|42) sample "$WORK/out/report.json" "report"; fail $r "promotion: reject" ;;
+  43) sample "$WORK/out/report.json" "report"; fail 43 "promotion: every stage accepted but the margins are PENDING approval" ;;
   10) fail 10 "evals identity (cohort / parent arm / checkpoint lineage)" ;; *) fail 9 "evals rc=$r" ;; esac
 sample "$WORK/out/report.json" "report"
 RC=0

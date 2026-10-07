@@ -37,6 +37,7 @@ def load_converted_plugin(model_dir: str, gdn_ckpt: str | None, converted, devic
 
     from convert.model import ConvertedStateOps, attach_gdn, init_gdn, load, resolve_model_dir
     from decide.backends.hf_readout import ModelPlugin, _hash_files, _pkg_versions, _snapshot_of
+    from decide.backends.state_fork import KV_STATE_TOKEN_BUDGET
     from decide.untrusted import UntrustedEncoder
 
     layers = parse_layers(converted)
@@ -87,6 +88,8 @@ def load_converted_plugin(model_dir: str, gdn_ckpt: str | None, converted, devic
         device=device,
         kernel_stack=_pkg_versions("flash-linear-attention", "fla-core", "causal-conv1d", "triton"),
         state_ops=ConvertedStateOps(model, torch.bfloat16 if str(device).startswith("cuda") else None),
+        # kept attention layers hold a KV cache that the fork copies once per packed row (job-5cmat POP909-CL OOM)
+        fork_state_token_budget=KV_STATE_TOKEN_BUDGET if [i for i in model.attn_layers if i not in layers] else None,
         notes={"model_class": "convert.model.ConvertibleQwen", "converted_layers": layers,
                "attention_layers_kept": [i for i in model.attn_layers if i not in layers],
                "attention_free": False, "path": "convert.readout (same code path for both arms)"},
