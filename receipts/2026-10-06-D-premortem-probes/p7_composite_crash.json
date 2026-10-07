@@ -1,0 +1,6 @@
+{
+ "cause": "str.splitlines() splits inside a JSON string on U+2028",
+ "file": "jobs/clef_baseline/summarize.py:24",
+ "fix": "path.read_text(...).split('\n') or iterate the file object",
+ "reproduced": true
+}
