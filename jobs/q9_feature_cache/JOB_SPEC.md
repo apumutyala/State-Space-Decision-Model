@@ -75,7 +75,7 @@ Inside each arm, `cache.py` re-projects the exact volume at the same rates after
 
 The extractor runs a question's re-read once and forks only the continuations when copying it K times would cost more than 512 positions. Without that, the DEV splits were 24.8M positions per split; with it they are 6.1M, about the same as the readout's own fork volume.
 
-Estimated output: stock ≈ 6–7 GB, conv1 / e5 ≈ 4–5 GB each (`summary.json` `est_output_gb`, bf16 upper bound).
+Estimated output (`summary.json` `est_output_gb`, a bf16 upper bound from the same plan): stock 6.86 GB (select 1.82, holdout 1.83, train 3.21); conv1 5.34 GB; e5 about 5.3 GB.
 
 ## Phases and exit codes (`cache_job.sh`)
 

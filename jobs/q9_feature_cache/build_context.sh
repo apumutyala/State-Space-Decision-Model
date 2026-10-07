@@ -26,13 +26,13 @@ cp "$OUTD/code/m1/jobs/probe9b/Dockerfile" "$OUTD/Dockerfile"
 sed -i 's#jobs/probe9b/probe_job.sh#jobs/q9_feature_cache/cache_job.sh#' "$OUTD/Dockerfile"
 grep -q 'jobs/q9_feature_cache/cache_job.sh' "$OUTD/Dockerfile" || { echo "CMD rewrite failed" >&2; exit 1; }
 cp "$DATA/slices/dev-rows.jsonl.gz" "$OUTD/data/slices/"
-( cd "$OUTD/data" && sha256sum -c "$OUTD/code/m1/jobs/q9_feature_cache/data.sha256" )
 cp "$B150/records.jsonl.gz" "$B150/sample-150000-seed20261006.manifest.jsonl.gz" \
    "$B150/sample-150000-seed20261006.content.jsonl.gz" "$OUTD/data/m2-150k/"
 ( cd "$OUTD/code/m1" && python -X utf8 -m train.train_set verify --config jobs/q9_feature_cache/cache_config.json \
     --train-dir "$OUTD/data/m2-150k" ) || { echo "150k set != pointer" >&2; exit 1; }
 cp "$DATA/suite-0.2/selected-rows.jsonl.gz" "$DATA/suite-0.2/added-rows.jsonl.gz" "$DATA/suite-0.2/excluded-questions.json" \
   "$OUTD/data/suite-0.2/"
+( cd "$OUTD/data" && sha256sum -c "$OUTD/code/m1/jobs/q9_feature_cache/data.sha256" )  # every shipped data file
 if [ "$MODE" = extra ]; then
   mkdir -p "$OUTD/data/gdn"
   cp "$GDN" "$OUTD/data/gdn/gdn_converted.pt"

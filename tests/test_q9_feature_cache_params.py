@@ -56,7 +56,7 @@ def test_pins_and_runner_hygiene():
     assert cfg["arms"]["conv1"]["layers"] == [23]
     for f in ("data.sha256", "gdn_converted.sha256", "cache_job.sh", "build_context.sh"):
         assert b"\r" not in (J / f).read_bytes(), f
-    bad = re.compile(chr(92) + r"n[ \t]+--")
+    bad = re.compile(r"[\\]n[ \t]+--")  # == jobs/common/lint.py BACKSLASH_N (L-10)
     assert bad.search("x " + chr(92) + "n  --out") and not bad.search("x --out")
     for f in ("cache_job.sh", "build_context.sh"):
         assert not bad.search((J / f).read_text(encoding="utf-8")), f

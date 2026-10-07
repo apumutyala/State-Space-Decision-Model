@@ -8,6 +8,7 @@
  ],
  "runner": "jobs/q9_feature_cache/cache_job.sh",
  "decision_rule": null,
+ "no_verdict_reason": "measurement job: it caches frozen-backbone features only; the go/no-go verdict is the CPU proxy loop's pre-registered rule train/proxy_rule.py (commit e9db899), applied off-box",
  "chip": "h100",
  "chip_count": 1,
  "max_duration_minutes": 215,
@@ -76,20 +77,51 @@
     "pin": "jobs/q9_feature_cache/data.sha256"
    },
    {
-    "src": "m2/build/sample-150000-seed20261006",
-    "dest": "m2-150k",
-    "pin": "data/manifests/sample-150000-seed20261006.pointer.json"
+    "src": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+    "dest": "m2-150k/records.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data.sha256"
    },
    {
-    "src": "suite-0.2",
-    "dest": "suite-0.2",
-    "pin": "jobs/m2_pilot/guard_pin.json"
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.manifest.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data.sha256"
    },
    {
-    "src": "<art-2bybh>/gdn_converted.pt",
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.content.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/q9_feature_cache/data.sha256"
+   },
+   {
+    "src": "q9-feature-cache/gdn_converted.pt",
     "dest": "gdn/gdn_converted.pt",
-    "pin": "jobs/q9_feature_cache/gdn_converted.sha256"
+    "pin": "jobs/q9_feature_cache/gdn_converted.sha256",
+    "note": "place the art-2bybh member (job-5cmat) at <SSDM_DATA>/q9-feature-cache/gdn_converted.pt before launch"
    }
+  ],
+  "manifest_files": [
+   "jobs/q9_feature_cache/cache_job.sh",
+   "jobs/q9_feature_cache/cache_config.json",
+   "jobs/q9_feature_cache/extract.py",
+   "jobs/q9_feature_cache/cache.py",
+   "jobs/q9_feature_cache/dev_holdout.json",
+   "train/proxy_rule.py",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/sample-150000-seed20261006.pointer.json"
   ]
  },
  "mission": "q9-feature-cache"

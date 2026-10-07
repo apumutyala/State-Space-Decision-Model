@@ -106,7 +106,7 @@ def test_runner_dry_run_end_to_end_then_proxy_heads(tmp_path):
            "PATH": os.path.dirname(sys.executable) + os.pathsep + os.environ.get("PATH", "")}
     if os.name == "nt":  # GNU tar (Git Bash) reads "C:\..." as host:path without --force-local; Linux needs nothing
         env["TAR_OPTIONS"] = "--force-local"
-    cmd = [BASH, RUNNER]
+    cmd = [BASH, "jobs/q9_feature_cache/cache_job.sh"]  # == RUNNER, spelled out for the launch lint (L-10)
     p = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True, timeout=1200)
     log = (work / "logs" / "run.log").read_text(encoding="utf-8", errors="replace") if (work / "logs/run.log").exists() else ""
     arm = (work / "logs" / "arm_stock.log")
