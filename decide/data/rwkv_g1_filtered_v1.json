@@ -1,0 +1,1290 @@
+{
+  "schema": "ssdm.rwkv-g1-filtered-codebook.v1",
+  "codebook_id": "rwkv-g1-filtered-codebook-v1",
+  "max_k": 255,
+  "source_candidates": 702,
+  "eligible_candidates": 498,
+  "tokenizer_sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+  "tokenizer_source_sha256": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+  "proof_context": "User: Choose the fixed code.\n\nAssistant: <think></think>\nANSWER:",
+  "proof_context_sha256": "597cc204a1db6d8bbe9c4c2e3e2948084cd95695b6bec5598a0565c1e6d9c165",
+  "codes_sha256": "2878be9488928b108ff83d0587e41cc25f433a023407a3040e459a274db5d0df",
+  "code_token_table_sha256": "7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466",
+  "codes": [
+    {
+      "code": "A",
+      "token_id": 300,
+      "source_ordinal": 1
+    },
+    {
+      "code": "B",
+      "token_id": 301,
+      "source_ordinal": 2
+    },
+    {
+      "code": "C",
+      "token_id": 302,
+      "source_ordinal": 3
+    },
+    {
+      "code": "D",
+      "token_id": 303,
+      "source_ordinal": 4
+    },
+    {
+      "code": "E",
+      "token_id": 304,
+      "source_ordinal": 5
+    },
+    {
+      "code": "F",
+      "token_id": 305,
+      "source_ordinal": 6
+    },
+    {
+      "code": "G",
+      "token_id": 306,
+      "source_ordinal": 7
+    },
+    {
+      "code": "H",
+      "token_id": 307,
+      "source_ordinal": 8
+    },
+    {
+      "code": "I",
+      "token_id": 308,
+      "source_ordinal": 9
+    },
+    {
+      "code": "J",
+      "token_id": 309,
+      "source_ordinal": 10
+    },
+    {
+      "code": "K",
+      "token_id": 310,
+      "source_ordinal": 11
+    },
+    {
+      "code": "L",
+      "token_id": 311,
+      "source_ordinal": 12
+    },
+    {
+      "code": "M",
+      "token_id": 312,
+      "source_ordinal": 13
+    },
+    {
+      "code": "N",
+      "token_id": 313,
+      "source_ordinal": 14
+    },
+    {
+      "code": "O",
+      "token_id": 314,
+      "source_ordinal": 15
+    },
+    {
+      "code": "P",
+      "token_id": 315,
+      "source_ordinal": 16
+    },
+    {
+      "code": "Q",
+      "token_id": 316,
+      "source_ordinal": 17
+    },
+    {
+      "code": "R",
+      "token_id": 317,
+      "source_ordinal": 18
+    },
+    {
+      "code": "S",
+      "token_id": 318,
+      "source_ordinal": 19
+    },
+    {
+      "code": "T",
+      "token_id": 319,
+      "source_ordinal": 20
+    },
+    {
+      "code": "U",
+      "token_id": 320,
+      "source_ordinal": 21
+    },
+    {
+      "code": "V",
+      "token_id": 321,
+      "source_ordinal": 22
+    },
+    {
+      "code": "W",
+      "token_id": 322,
+      "source_ordinal": 23
+    },
+    {
+      "code": "X",
+      "token_id": 323,
+      "source_ordinal": 24
+    },
+    {
+      "code": "Y",
+      "token_id": 324,
+      "source_ordinal": 25
+    },
+    {
+      "code": "Z",
+      "token_id": 325,
+      "source_ordinal": 26
+    },
+    {
+      "code": "AA",
+      "token_id": 3601,
+      "source_ordinal": 27
+    },
+    {
+      "code": "AB",
+      "token_id": 3602,
+      "source_ordinal": 28
+    },
+    {
+      "code": "AC",
+      "token_id": 3603,
+      "source_ordinal": 29
+    },
+    {
+      "code": "AD",
+      "token_id": 3604,
+      "source_ordinal": 30
+    },
+    {
+      "code": "AE",
+      "token_id": 3605,
+      "source_ordinal": 31
+    },
+    {
+      "code": "AF",
+      "token_id": 3606,
+      "source_ordinal": 32
+    },
+    {
+      "code": "AG",
+      "token_id": 3607,
+      "source_ordinal": 33
+    },
+    {
+      "code": "AH",
+      "token_id": 3608,
+      "source_ordinal": 34
+    },
+    {
+      "code": "AI",
+      "token_id": 3609,
+      "source_ordinal": 35
+    },
+    {
+      "code": "AJ",
+      "token_id": 3610,
+      "source_ordinal": 36
+    },
+    {
+      "code": "AK",
+      "token_id": 3611,
+      "source_ordinal": 37
+    },
+    {
+      "code": "AL",
+      "token_id": 3612,
+      "source_ordinal": 38
+    },
+    {
+      "code": "AM",
+      "token_id": 3613,
+      "source_ordinal": 39
+    },
+    {
+      "code": "AN",
+      "token_id": 3614,
+      "source_ordinal": 40
+    },
+    {
+      "code": "AO",
+      "token_id": 3615,
+      "source_ordinal": 41
+    },
+    {
+      "code": "AP",
+      "token_id": 3616,
+      "source_ordinal": 42
+    },
+    {
+      "code": "AQ",
+      "token_id": 3617,
+      "source_ordinal": 43
+    },
+    {
+      "code": "AR",
+      "token_id": 3618,
+      "source_ordinal": 44
+    },
+    {
+      "code": "AS",
+      "token_id": 3619,
+      "source_ordinal": 45
+    },
+    {
+      "code": "AT",
+      "token_id": 3620,
+      "source_ordinal": 46
+    },
+    {
+      "code": "AU",
+      "token_id": 3621,
+      "source_ordinal": 47
+    },
+    {
+      "code": "AV",
+      "token_id": 3622,
+      "source_ordinal": 48
+    },
+    {
+      "code": "AW",
+      "token_id": 3623,
+      "source_ordinal": 49
+    },
+    {
+      "code": "AX",
+      "token_id": 3624,
+      "source_ordinal": 50
+    },
+    {
+      "code": "AZ",
+      "token_id": 3625,
+      "source_ordinal": 52
+    },
+    {
+      "code": "BA",
+      "token_id": 3649,
+      "source_ordinal": 53
+    },
+    {
+      "code": "BB",
+      "token_id": 3650,
+      "source_ordinal": 54
+    },
+    {
+      "code": "BC",
+      "token_id": 3651,
+      "source_ordinal": 55
+    },
+    {
+      "code": "BD",
+      "token_id": 3652,
+      "source_ordinal": 56
+    },
+    {
+      "code": "BE",
+      "token_id": 3653,
+      "source_ordinal": 57
+    },
+    {
+      "code": "BF",
+      "token_id": 3654,
+      "source_ordinal": 58
+    },
+    {
+      "code": "BG",
+      "token_id": 3655,
+      "source_ordinal": 59
+    },
+    {
+      "code": "BH",
+      "token_id": 3656,
+      "source_ordinal": 60
+    },
+    {
+      "code": "BI",
+      "token_id": 3657,
+      "source_ordinal": 61
+    },
+    {
+      "code": "BJ",
+      "token_id": 3658,
+      "source_ordinal": 62
+    },
+    {
+      "code": "BL",
+      "token_id": 3659,
+      "source_ordinal": 64
+    },
+    {
+      "code": "BM",
+      "token_id": 3660,
+      "source_ordinal": 65
+    },
+    {
+      "code": "BN",
+      "token_id": 3661,
+      "source_ordinal": 66
+    },
+    {
+      "code": "BO",
+      "token_id": 3662,
+      "source_ordinal": 67
+    },
+    {
+      "code": "BP",
+      "token_id": 3663,
+      "source_ordinal": 68
+    },
+    {
+      "code": "BR",
+      "token_id": 3664,
+      "source_ordinal": 70
+    },
+    {
+      "code": "BS",
+      "token_id": 3665,
+      "source_ordinal": 71
+    },
+    {
+      "code": "BT",
+      "token_id": 3666,
+      "source_ordinal": 72
+    },
+    {
+      "code": "BU",
+      "token_id": 3667,
+      "source_ordinal": 73
+    },
+    {
+      "code": "BV",
+      "token_id": 3668,
+      "source_ordinal": 74
+    },
+    {
+      "code": "BW",
+      "token_id": 3669,
+      "source_ordinal": 75
+    },
+    {
+      "code": "BY",
+      "token_id": 3670,
+      "source_ordinal": 77
+    },
+    {
+      "code": "CA",
+      "token_id": 3682,
+      "source_ordinal": 79
+    },
+    {
+      "code": "CB",
+      "token_id": 3683,
+      "source_ordinal": 80
+    },
+    {
+      "code": "CC",
+      "token_id": 3684,
+      "source_ordinal": 81
+    },
+    {
+      "code": "CD",
+      "token_id": 3685,
+      "source_ordinal": 82
+    },
+    {
+      "code": "CE",
+      "token_id": 3686,
+      "source_ordinal": 83
+    },
+    {
+      "code": "CF",
+      "token_id": 3687,
+      "source_ordinal": 84
+    },
+    {
+      "code": "CG",
+      "token_id": 3688,
+      "source_ordinal": 85
+    },
+    {
+      "code": "CH",
+      "token_id": 3689,
+      "source_ordinal": 86
+    },
+    {
+      "code": "CI",
+      "token_id": 3690,
+      "source_ordinal": 87
+    },
+    {
+      "code": "CJ",
+      "token_id": 3691,
+      "source_ordinal": 88
+    },
+    {
+      "code": "CK",
+      "token_id": 3692,
+      "source_ordinal": 89
+    },
+    {
+      "code": "CL",
+      "token_id": 3693,
+      "source_ordinal": 90
+    },
+    {
+      "code": "CM",
+      "token_id": 3694,
+      "source_ordinal": 91
+    },
+    {
+      "code": "CN",
+      "token_id": 3695,
+      "source_ordinal": 92
+    },
+    {
+      "code": "CO",
+      "token_id": 3696,
+      "source_ordinal": 93
+    },
+    {
+      "code": "CP",
+      "token_id": 3697,
+      "source_ordinal": 94
+    },
+    {
+      "code": "CR",
+      "token_id": 3698,
+      "source_ordinal": 96
+    },
+    {
+      "code": "CS",
+      "token_id": 3699,
+      "source_ordinal": 97
+    },
+    {
+      "code": "CT",
+      "token_id": 3700,
+      "source_ordinal": 98
+    },
+    {
+      "code": "CU",
+      "token_id": 3701,
+      "source_ordinal": 99
+    },
+    {
+      "code": "CV",
+      "token_id": 3702,
+      "source_ordinal": 100
+    },
+    {
+      "code": "CW",
+      "token_id": 3703,
+      "source_ordinal": 101
+    },
+    {
+      "code": "CX",
+      "token_id": 3704,
+      "source_ordinal": 102
+    },
+    {
+      "code": "CY",
+      "token_id": 3705,
+      "source_ordinal": 103
+    },
+    {
+      "code": "DA",
+      "token_id": 3721,
+      "source_ordinal": 105
+    },
+    {
+      "code": "DB",
+      "token_id": 3722,
+      "source_ordinal": 106
+    },
+    {
+      "code": "DC",
+      "token_id": 3723,
+      "source_ordinal": 107
+    },
+    {
+      "code": "DD",
+      "token_id": 3724,
+      "source_ordinal": 108
+    },
+    {
+      "code": "DE",
+      "token_id": 3725,
+      "source_ordinal": 109
+    },
+    {
+      "code": "DF",
+      "token_id": 3726,
+      "source_ordinal": 110
+    },
+    {
+      "code": "DG",
+      "token_id": 3727,
+      "source_ordinal": 111
+    },
+    {
+      "code": "DH",
+      "token_id": 3728,
+      "source_ordinal": 112
+    },
+    {
+      "code": "DI",
+      "token_id": 3729,
+      "source_ordinal": 113
+    },
+    {
+      "code": "DJ",
+      "token_id": 3730,
+      "source_ordinal": 114
+    },
+    {
+      "code": "DK",
+      "token_id": 3731,
+      "source_ordinal": 115
+    },
+    {
+      "code": "DL",
+      "token_id": 3732,
+      "source_ordinal": 116
+    },
+    {
+      "code": "DM",
+      "token_id": 3733,
+      "source_ordinal": 117
+    },
+    {
+      "code": "DN",
+      "token_id": 3734,
+      "source_ordinal": 118
+    },
+    {
+      "code": "DO",
+      "token_id": 3735,
+      "source_ordinal": 119
+    },
+    {
+      "code": "DP",
+      "token_id": 3736,
+      "source_ordinal": 120
+    },
+    {
+      "code": "DR",
+      "token_id": 3737,
+      "source_ordinal": 122
+    },
+    {
+      "code": "DS",
+      "token_id": 3738,
+      "source_ordinal": 123
+    },
+    {
+      "code": "DT",
+      "token_id": 3739,
+      "source_ordinal": 124
+    },
+    {
+      "code": "DU",
+      "token_id": 3740,
+      "source_ordinal": 125
+    },
+    {
+      "code": "DV",
+      "token_id": 3741,
+      "source_ordinal": 126
+    },
+    {
+      "code": "DW",
+      "token_id": 3742,
+      "source_ordinal": 127
+    },
+    {
+      "code": "DX",
+      "token_id": 3743,
+      "source_ordinal": 128
+    },
+    {
+      "code": "EA",
+      "token_id": 3755,
+      "source_ordinal": 131
+    },
+    {
+      "code": "EB",
+      "token_id": 3756,
+      "source_ordinal": 132
+    },
+    {
+      "code": "EC",
+      "token_id": 3757,
+      "source_ordinal": 133
+    },
+    {
+      "code": "ED",
+      "token_id": 3758,
+      "source_ordinal": 134
+    },
+    {
+      "code": "EE",
+      "token_id": 3759,
+      "source_ordinal": 135
+    },
+    {
+      "code": "EF",
+      "token_id": 3760,
+      "source_ordinal": 136
+    },
+    {
+      "code": "EG",
+      "token_id": 3761,
+      "source_ordinal": 137
+    },
+    {
+      "code": "EH",
+      "token_id": 3762,
+      "source_ordinal": 138
+    },
+    {
+      "code": "EL",
+      "token_id": 3763,
+      "source_ordinal": 142
+    },
+    {
+      "code": "EM",
+      "token_id": 3764,
+      "source_ordinal": 143
+    },
+    {
+      "code": "EN",
+      "token_id": 3765,
+      "source_ordinal": 144
+    },
+    {
+      "code": "EO",
+      "token_id": 3766,
+      "source_ordinal": 145
+    },
+    {
+      "code": "EP",
+      "token_id": 3767,
+      "source_ordinal": 146
+    },
+    {
+      "code": "EQ",
+      "token_id": 3768,
+      "source_ordinal": 147
+    },
+    {
+      "code": "ER",
+      "token_id": 3769,
+      "source_ordinal": 148
+    },
+    {
+      "code": "ES",
+      "token_id": 3770,
+      "source_ordinal": 149
+    },
+    {
+      "code": "ET",
+      "token_id": 3771,
+      "source_ordinal": 150
+    },
+    {
+      "code": "EU",
+      "token_id": 3772,
+      "source_ordinal": 151
+    },
+    {
+      "code": "EV",
+      "token_id": 3773,
+      "source_ordinal": 152
+    },
+    {
+      "code": "EW",
+      "token_id": 3774,
+      "source_ordinal": 153
+    },
+    {
+      "code": "EX",
+      "token_id": 3775,
+      "source_ordinal": 154
+    },
+    {
+      "code": "FA",
+      "token_id": 3796,
+      "source_ordinal": 157
+    },
+    {
+      "code": "FB",
+      "token_id": 3797,
+      "source_ordinal": 158
+    },
+    {
+      "code": "FC",
+      "token_id": 3798,
+      "source_ordinal": 159
+    },
+    {
+      "code": "FD",
+      "token_id": 3799,
+      "source_ordinal": 160
+    },
+    {
+      "code": "FE",
+      "token_id": 3800,
+      "source_ordinal": 161
+    },
+    {
+      "code": "FF",
+      "token_id": 3801,
+      "source_ordinal": 162
+    },
+    {
+      "code": "FG",
+      "token_id": 3802,
+      "source_ordinal": 163
+    },
+    {
+      "code": "FH",
+      "token_id": 3803,
+      "source_ordinal": 164
+    },
+    {
+      "code": "FI",
+      "token_id": 3804,
+      "source_ordinal": 165
+    },
+    {
+      "code": "FK",
+      "token_id": 3805,
+      "source_ordinal": 167
+    },
+    {
+      "code": "FL",
+      "token_id": 3806,
+      "source_ordinal": 168
+    },
+    {
+      "code": "FM",
+      "token_id": 3807,
+      "source_ordinal": 169
+    },
+    {
+      "code": "FN",
+      "token_id": 3808,
+      "source_ordinal": 170
+    },
+    {
+      "code": "FO",
+      "token_id": 3809,
+      "source_ordinal": 171
+    },
+    {
+      "code": "FP",
+      "token_id": 3810,
+      "source_ordinal": 172
+    },
+    {
+      "code": "FR",
+      "token_id": 3811,
+      "source_ordinal": 174
+    },
+    {
+      "code": "FS",
+      "token_id": 3812,
+      "source_ordinal": 175
+    },
+    {
+      "code": "FT",
+      "token_id": 3813,
+      "source_ordinal": 176
+    },
+    {
+      "code": "FW",
+      "token_id": 3814,
+      "source_ordinal": 179
+    },
+    {
+      "code": "FX",
+      "token_id": 3815,
+      "source_ordinal": 180
+    },
+    {
+      "code": "FY",
+      "token_id": 3816,
+      "source_ordinal": 181
+    },
+    {
+      "code": "GA",
+      "token_id": 3825,
+      "source_ordinal": 183
+    },
+    {
+      "code": "GB",
+      "token_id": 3826,
+      "source_ordinal": 184
+    },
+    {
+      "code": "GC",
+      "token_id": 3827,
+      "source_ordinal": 185
+    },
+    {
+      "code": "GD",
+      "token_id": 3828,
+      "source_ordinal": 186
+    },
+    {
+      "code": "GE",
+      "token_id": 3829,
+      "source_ordinal": 187
+    },
+    {
+      "code": "GF",
+      "token_id": 3830,
+      "source_ordinal": 188
+    },
+    {
+      "code": "GG",
+      "token_id": 3831,
+      "source_ordinal": 189
+    },
+    {
+      "code": "GH",
+      "token_id": 3832,
+      "source_ordinal": 190
+    },
+    {
+      "code": "GI",
+      "token_id": 3833,
+      "source_ordinal": 191
+    },
+    {
+      "code": "GL",
+      "token_id": 3834,
+      "source_ordinal": 194
+    },
+    {
+      "code": "GM",
+      "token_id": 3835,
+      "source_ordinal": 195
+    },
+    {
+      "code": "GN",
+      "token_id": 3836,
+      "source_ordinal": 196
+    },
+    {
+      "code": "GO",
+      "token_id": 3837,
+      "source_ordinal": 197
+    },
+    {
+      "code": "GP",
+      "token_id": 3838,
+      "source_ordinal": 198
+    },
+    {
+      "code": "GR",
+      "token_id": 3839,
+      "source_ordinal": 200
+    },
+    {
+      "code": "GS",
+      "token_id": 3840,
+      "source_ordinal": 201
+    },
+    {
+      "code": "GT",
+      "token_id": 3841,
+      "source_ordinal": 202
+    },
+    {
+      "code": "GU",
+      "token_id": 3842,
+      "source_ordinal": 203
+    },
+    {
+      "code": "GV",
+      "token_id": 3843,
+      "source_ordinal": 204
+    },
+    {
+      "code": "GW",
+      "token_id": 3844,
+      "source_ordinal": 205
+    },
+    {
+      "code": "HA",
+      "token_id": 3855,
+      "source_ordinal": 209
+    },
+    {
+      "code": "HB",
+      "token_id": 3856,
+      "source_ordinal": 210
+    },
+    {
+      "code": "HC",
+      "token_id": 3857,
+      "source_ordinal": 211
+    },
+    {
+      "code": "HD",
+      "token_id": 3858,
+      "source_ordinal": 212
+    },
+    {
+      "code": "HE",
+      "token_id": 3859,
+      "source_ordinal": 213
+    },
+    {
+      "code": "HF",
+      "token_id": 3860,
+      "source_ordinal": 214
+    },
+    {
+      "code": "HG",
+      "token_id": 3861,
+      "source_ordinal": 215
+    },
+    {
+      "code": "HH",
+      "token_id": 3862,
+      "source_ordinal": 216
+    },
+    {
+      "code": "HI",
+      "token_id": 3863,
+      "source_ordinal": 217
+    },
+    {
+      "code": "HK",
+      "token_id": 3864,
+      "source_ordinal": 219
+    },
+    {
+      "code": "HL",
+      "token_id": 3865,
+      "source_ordinal": 220
+    },
+    {
+      "code": "HM",
+      "token_id": 3866,
+      "source_ordinal": 221
+    },
+    {
+      "code": "HO",
+      "token_id": 3867,
+      "source_ordinal": 223
+    },
+    {
+      "code": "HP",
+      "token_id": 3868,
+      "source_ordinal": 224
+    },
+    {
+      "code": "HQ",
+      "token_id": 3869,
+      "source_ordinal": 225
+    },
+    {
+      "code": "HR",
+      "token_id": 3870,
+      "source_ordinal": 226
+    },
+    {
+      "code": "HS",
+      "token_id": 3871,
+      "source_ordinal": 227
+    },
+    {
+      "code": "HT",
+      "token_id": 3872,
+      "source_ordinal": 228
+    },
+    {
+      "code": "HU",
+      "token_id": 3873,
+      "source_ordinal": 229
+    },
+    {
+      "code": "HV",
+      "token_id": 3874,
+      "source_ordinal": 230
+    },
+    {
+      "code": "HW",
+      "token_id": 3875,
+      "source_ordinal": 231
+    },
+    {
+      "code": "HY",
+      "token_id": 3876,
+      "source_ordinal": 233
+    },
+    {
+      "code": "IA",
+      "token_id": 3885,
+      "source_ordinal": 235
+    },
+    {
+      "code": "IB",
+      "token_id": 3886,
+      "source_ordinal": 236
+    },
+    {
+      "code": "IC",
+      "token_id": 3887,
+      "source_ordinal": 237
+    },
+    {
+      "code": "ID",
+      "token_id": 3888,
+      "source_ordinal": 238
+    },
+    {
+      "code": "IE",
+      "token_id": 3889,
+      "source_ordinal": 239
+    },
+    {
+      "code": "IF",
+      "token_id": 3890,
+      "source_ordinal": 240
+    },
+    {
+      "code": "IG",
+      "token_id": 3891,
+      "source_ordinal": 241
+    },
+    {
+      "code": "II",
+      "token_id": 3892,
+      "source_ordinal": 243
+    },
+    {
+      "code": "IK",
+      "token_id": 3893,
+      "source_ordinal": 245
+    },
+    {
+      "code": "IL",
+      "token_id": 3894,
+      "source_ordinal": 246
+    },
+    {
+      "code": "IM",
+      "token_id": 3895,
+      "source_ordinal": 247
+    },
+    {
+      "code": "IN",
+      "token_id": 3896,
+      "source_ordinal": 248
+    },
+    {
+      "code": "IO",
+      "token_id": 3897,
+      "source_ordinal": 249
+    },
+    {
+      "code": "IP",
+      "token_id": 3898,
+      "source_ordinal": 250
+    },
+    {
+      "code": "IQ",
+      "token_id": 3899,
+      "source_ordinal": 251
+    },
+    {
+      "code": "IR",
+      "token_id": 3900,
+      "source_ordinal": 252
+    },
+    {
+      "code": "IS",
+      "token_id": 3901,
+      "source_ordinal": 253
+    },
+    {
+      "code": "IT",
+      "token_id": 3902,
+      "source_ordinal": 254
+    },
+    {
+      "code": "IU",
+      "token_id": 3903,
+      "source_ordinal": 255
+    },
+    {
+      "code": "IV",
+      "token_id": 3904,
+      "source_ordinal": 256
+    },
+    {
+      "code": "IX",
+      "token_id": 3905,
+      "source_ordinal": 258
+    },
+    {
+      "code": "JA",
+      "token_id": 3921,
+      "source_ordinal": 261
+    },
+    {
+      "code": "JC",
+      "token_id": 3922,
+      "source_ordinal": 263
+    },
+    {
+      "code": "JD",
+      "token_id": 3923,
+      "source_ordinal": 264
+    },
+    {
+      "code": "JE",
+      "token_id": 3924,
+      "source_ordinal": 265
+    },
+    {
+      "code": "JJ",
+      "token_id": 3925,
+      "source_ordinal": 270
+    },
+    {
+      "code": "JM",
+      "token_id": 3926,
+      "source_ordinal": 273
+    },
+    {
+      "code": "JO",
+      "token_id": 3927,
+      "source_ordinal": 275
+    },
+    {
+      "code": "JP",
+      "token_id": 3928,
+      "source_ordinal": 276
+    },
+    {
+      "code": "JR",
+      "token_id": 3929,
+      "source_ordinal": 278
+    },
+    {
+      "code": "JS",
+      "token_id": 3930,
+      "source_ordinal": 279
+    },
+    {
+      "code": "JU",
+      "token_id": 3931,
+      "source_ordinal": 281
+    },
+    {
+      "code": "KA",
+      "token_id": 3938,
+      "source_ordinal": 287
+    },
+    {
+      "code": "KB",
+      "token_id": 3939,
+      "source_ordinal": 288
+    },
+    {
+      "code": "KC",
+      "token_id": 3940,
+      "source_ordinal": 289
+    },
+    {
+      "code": "KD",
+      "token_id": 3941,
+      "source_ordinal": 290
+    },
+    {
+      "code": "KE",
+      "token_id": 3942,
+      "source_ordinal": 291
+    },
+    {
+      "code": "KG",
+      "token_id": 3943,
+      "source_ordinal": 293
+    },
+    {
+      "code": "KH",
+      "token_id": 3944,
+      "source_ordinal": 294
+    },
+    {
+      "code": "KK",
+      "token_id": 3945,
+      "source_ordinal": 297
+    },
+    {
+      "code": "KL",
+      "token_id": 3946,
+      "source_ordinal": 298
+    },
+    {
+      "code": "KM",
+      "token_id": 3947,
+      "source_ordinal": 299
+    },
+    {
+      "code": "KN",
+      "token_id": 3948,
+      "source_ordinal": 300
+    },
+    {
+      "code": "KO",
+      "token_id": 3949,
+      "source_ordinal": 301
+    },
+    {
+      "code": "KP",
+      "token_id": 3950,
+      "source_ordinal": 302
+    },
+    {
+      "code": "KR",
+      "token_id": 3951,
+      "source_ordinal": 304
+    },
+    {
+      "code": "KS",
+      "token_id": 3952,
+      "source_ordinal": 305
+    },
+    {
+      "code": "KT",
+      "token_id": 3953,
+      "source_ordinal": 306
+    },
+    {
+      "code": "KY",
+      "token_id": 3954,
+      "source_ordinal": 311
+    },
+    {
+      "code": "LA",
+      "token_id": 3966,
+      "source_ordinal": 313
+    },
+    {
+      "code": "LB",
+      "token_id": 3967,
+      "source_ordinal": 314
+    }
+  ]
+}
