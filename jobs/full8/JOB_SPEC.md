@@ -4,11 +4,13 @@
 `jobs/DECISION_TREE.md` branch A maps that verdict to this job: convert all 8 layers in KL-importance order, with
 accept/rollback per layer.
 
-**Status of this file.** The decision rule (`jobs/full8/rule.json`, `scripts/decide_full8.py`) was pre-registered
-in its own commit, **be9eed8**, before the runner, the pricing or any run. That commit also held this file's
-"Decision rule" section. Nothing in the rule has changed since. `tests/test_full8.py` checks:
-- `rule.json` and `decide_full8.py` against `git show be9eed8:...`;
-- this file's Decision rule section, byte for byte.
+**Status of this file.** The decision rule (`jobs/full8/rule.json`, `scripts/decide_full8.py`) was prospectively
+registered in its own commit, **be9eed8**, before the full8 runner, pricing and experiment, but after the completed
+job-5cmat pilot with its results known. That commit also held this file's
+"Decision rule" section. Amendment A1 subsequently tightened measurement completeness and changed the MMLU
+measurement to the full test set without changing numerical bounds. `tests/test_full8.py` pins the rule and
+decision implementation to A1 (`2cb8cbc`) and preserves the original rule section plus A1's appended note.
+The explanatory correction below supersedes the historical perplexity justification; it changes no threshold.
 
 Everything after that section was added afterwards: pricing, runner, export, resume, dry run. Spec only: nothing is
 submitted.
@@ -151,6 +153,24 @@ section. B2, B3 and the MMLU measurement itself are code, in a separate commit.
      - exp(0.15) is stricter than 1.02^8 = 1.172;
      - with wikitext distillation, gate and evaluation, the bound is nearly redundant with the gate.
    - It also noted that this reading, rather than a strict 1.02, decides whether ppl can fail at all.
+
+## Cross-track review correction (2026-10-07; explanatory only)
+
+The held-out perplexity check is a **separate measurement** from the conversion gate. On any one fixed evaluation
+set, `ppl_student / ppl_stock = exp(NLL_student - NLL_stock)`. A validation-set cumulative gate of 0.15 nats does
+**not** bound that difference on the disjoint wikitext-2 test set. Both checks must be measured independently.
+
+The 1.1618 held-out threshold is an **explicit pilot-informed prospective budget** for the full-eight experiment:
+it was selected knowing job-5cmat's one-layer result, using the earlier 0.15-nat validation budget as its numerical
+reference. It permits more held-out degradation than the one-layer 1.02 threshold. Passing the validation gate
+does not imply passing either held-out context check, and retaining 1.02 would be a coherent stricter policy.
+No plan text establishes a mathematical per-layer allocation of the held-out budget.
+
+The historical Decision rule section and `rule.json` commentary remain unchanged to preserve their pre-run pins;
+the assertions there that the validation budget bounds held-out performance, that 1.02 is necessarily a per-layer
+share, and that a 1.02 full-model threshold would make the gate budget unreachable are superseded by this correction.
+The binding constants and verdict mapping remain exactly A1's. This correction makes no claim about a full-eight
+run result and does not retroactively change any registered gate.
 
 ## Question and recipe
 
