@@ -139,6 +139,16 @@ else
   ( cd "$Q9B" && sha256sum -c "$CODE/jobs/m2_pilot/q9af_snapshot.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 \
     || fail 10 "9B snapshot sha256"
 fi
+TEACHER_ARGS=()  # KD cells only (config 'teacher'): the pinned Clef-flash export (train.run_cell.attach_teacher)
+if python -c "import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get('teacher') else 1)" "$CELL"; then
+  [ "$MODE" != parent ] || fail 35 "the parent arm takes no teacher"
+  if [ "$DRY" != 1 ]; then
+    TSHA=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['teacher']['teacher_sha256'])" "$CELL")
+    [ "$(sha256sum "$DATA/teacher/teacher-clef-flash.jsonl" | cut -d' ' -f1)" = "$TSHA" ] || fail 10 "teacher file sha256 != config"
+  fi
+  TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
+  say "KD cell: teacher $DATA/teacher"
+fi
 if [ "$MODE" != parent ]; then  # the pinned parent arm (comparator + lineage anchor) and its frozen full-DEV row set
   ARM_SHA=${Q9AFC_PARENT_ARM_SHA256:-$(pval parent_arm_sha256)}
   FROZEN_SHA=$(pval index_frozen_sha256)
@@ -239,7 +249,7 @@ say "phase cell (smoke -> ladder -> train under act_ckpt; resumes from $CK/cell)
 mkdir -p "$CK/cell" "$WORK/out/cell"
 [ -f "$CK/cell/cell.json" ] && cp "$CK/cell/cell.json" "$WORK/out/cell/cell.json"
 timeout "$(cap cell)m" python -X utf8 -m train.run_cell --config "$CELL" --model-dir "$Q9B" --gdn-ckpt "$GDN" \
-  "${DATA_ARGS[@]}" "${GUARD_ARGS[@]}" --out "$WORK/out/cell" --ckpt-dir "$CK/cell" --stage all --device "$DEVICE" \
+  "${DATA_ARGS[@]}" "${GUARD_ARGS[@]}" "${TEACHER_ARGS[@]}" --out "$WORK/out/cell" --ckpt-dir "$CK/cell" --stage all --device "$DEVICE" \
   > "$WORK/logs/cell.log" 2>&1; TRAIN_RC=$?
 cp "$WORK/out/cell/cell.json" "$CK/cell/cell.json" 2> /dev/null || true
 gate "cell" $TRAIN_RC
@@ -257,7 +267,7 @@ if [ "$DRY" = 1 ]; then
   INDEX_ARGS=(--index-rows "$(dirname "$PARENT_DIR")/dev-rows.jsonl.gz" --dry-run)
 else
   timeout "$(cap evals)m" python -X utf8 -m train.m2_gates --cell "$WORK/out/cell/cell.json" --ckpt-dir "$CK/cell" \
-    --model-dir "$Q9B" --gdn-ckpt "$GDN" "${DATA_ARGS[@]}" "${GUARD_ARGS[@]}" --pool-dir "m2-150k=$TRAIN_DIR" \
+    --model-dir "$Q9B" --gdn-ckpt "$GDN" "${DATA_ARGS[@]}" "${GUARD_ARGS[@]}" "${TEACHER_ARGS[@]}" --pool-dir "m2-150k=$TRAIN_DIR" \
     --parent-arm "$PARENT_DIR" --parent-arm-sha256 "$ARM_SHA" --anchor-arm "$PARENT_DIR" --anchor-arm-sha256 "$ARM_SHA" \
     --index-rows "$DATA/slices/dev-rows.jsonl.gz" --index-frozen "$PARENT_DIR/index-frozen.json" \
     --index-frozen-sha256 "$FROZEN_SHA" --out "$WORK/out/gates/report.json" --stage all --device "$DEVICE" \

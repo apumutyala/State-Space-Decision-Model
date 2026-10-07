@@ -156,8 +156,8 @@ def test_hooks_fail_closed():
     cfg = _cfg(64)
     assert hooks.apply(cfg) == cfg
     kd = {**cfg, "teacher": {"alpha": 0.5, "temperature": 1.0, "source": "t.jsonl", "teacher_sha256": "a" * 64}}
-    with pytest.raises(hooks.HookUnavailable):
-        hooks.apply(kd)  # train.teacher is not merged (or not wired): never train without the configured KD term
+    with pytest.raises(ValueError, match="pinned teacher"):
+        hooks.apply(kd)  # a KD block must name the pinned Clef-flash teacher file (train.proxy_rule.TEACHER)
     with pytest.raises(ValueError, match="teacher_sha256"):
         hooks.KDConfig(alpha=0.5)
     with pytest.raises(ValueError, match="alpha"):
@@ -232,3 +232,130 @@ def test_runner_maps_every_documented_exit_and_runs_the_preflight():
     assert "--anchor-arm" in sh and "--pool-dir" in sh and "--train-dir" in sh
     spec = (JOB / "JOB_SPEC.md").read_text(encoding="utf-8")
     assert "2d18afa" in spec and "57.35" in spec and "new_domain_frozen" in spec
+
+
+# ------------------------------------------------------------------------------------------------ KD (PR #116 wiring)
+#: TrainConfig hashes of the default cells BEFORE the KD wiring (computed at 2fad27f, pre-merge of b511643): turning
+#: KD support on must not change them (LossConfig.identity drops the KD fields at their defaults).
+DEFAULT_HASHES = {64: "cea41d9610c90faf", 256: "90d6e79a70c23165"}
+
+
+def test_default_cell_hashes_are_unchanged_by_the_kd_wiring():
+    from train.run_cell import kd_fields, train_config
+
+    for r, h in DEFAULT_HASHES.items():
+        cfg = _cfg(r)
+        assert cfg["teacher"] is None and kd_fields(cfg) == {}
+        tc = train_config(cfg, cfg["max_steps"])
+        assert tc.hash() == h and not tc.loss.kd
+        assert "kd_alpha" not in tc.to_json()["loss"]
+
+
+def test_kd_variant_is_r64_plus_the_pinned_teacher_and_is_not_launchable():
+    from jobs.common import launch
+    from train.run_cell import train_config
+    from train.teacher import pinned
+
+    kd, base = json.loads((JOB / "q9af_cell_r64_kd.json").read_text(encoding="utf-8")), _cfg(64)
+    assert {k for k in set(kd) | set(base) if kd.get(k) != base.get(k)} == {"variant", "variant_note", "teacher",
+                                                                            "teacher_note"}
+    t = kd["teacher"]
+    assert (t["alpha"], t["temperature"]) == (0.5, 1.0)
+    assert t["teacher_sha256"] == pinned()["sha256"] == "a88b4fe0f6a79a8fc48bdea51391524bd4f5da885705461a543becf81c81e7f7"
+    assert "art-ggrs8" in t["source"]
+    tc = train_config(kd, kd["max_steps"])
+    assert tc.loss.kd and (tc.loss.kd_alpha, tc.loss.kd_temperature) == (0.5, 1.0)
+    assert tc.hash() not in DEFAULT_HASHES.values()
+    assert hooks.apply(kd) == kd and hooks.kd_arm(kd).alpha == 0.5
+    with pytest.raises(ValueError, match="pinned teacher"):
+        hooks.kd_arm({**kd, "teacher": {**t, "teacher_sha256": "0" * 64}})
+    # committed but unlaunched until R16/R17 report: no params file -> launch.py refuses the mode
+    assert not (JOB / "job_params_cell_r64_kd.json").exists()
+    files = {p.relative_to(ROOT).as_posix(): (b"", 0o644) for p in JOB.glob("job_params_*.json")}
+    with pytest.raises(launch.LaunchError):
+        launch.params_rel(files, "q9af_cell", "cell_r64_kd")
+
+
+def _write_teacher(d: Path, rows: list, ids: list, content: dict) -> dict:
+    """A synthetic teacher export in train.teacher's file format (as tests/test_teacher.py::_write_teacher, for ids
+    of any shape) + the matching ``expected`` identity; synthetic ids, so contamination checks are off."""
+    from train.teacher import ids_sha256
+
+    d.mkdir(parents=True, exist_ok=True)
+    text = "".join(json.dumps(r) + chr(10) for r in rows)
+    (d / "teacher-syn.jsonl").write_text(text, encoding="utf-8", newline=chr(10))
+    sha = hashlib.sha256(text.encode()).hexdigest()
+    counts = {}
+    for r in rows:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+    exp = {"release": "syn", "repo": "x/syn", "revision": "r1", "backend_revision": "b1", "sha256": sha,
+           "drawn_ids_sha256": ids_sha256(ids), "rows": len(ids), "status_counts": counts}
+    ident = {**{k: exp[k] for k in ("release", "repo", "revision", "backend_revision", "rows", "status_counts")},
+             "standin": False, "selection_drawn_ids_sha256": ids_sha256(ids), "teacher_sha256": sha}
+    (d / "teacher-syn.identity.json").write_text(json.dumps(ident), encoding="utf-8")
+    (d / "selected-ids.txt").write_text("".join(i + chr(10) for i in ids), encoding="utf-8", newline=chr(10))
+    (d / "selection.json").write_text(json.dumps({"ok": True, "drawn_ids_sha256": ids_sha256(ids),
+                                                  "content_sha256": content}), encoding="utf-8")
+    return exp
+
+
+@pytest.mark.requires_transformers("5.17.0")
+def test_attach_teacher_and_a_kd_train_step_on_the_q9af_standin_with_act_ckpt(tmp_path):
+    """train.run_cell.attach_teacher (the path run_cell and m2_gates take) on a synthetic teacher, then real Trainer
+    steps with KD under Q9-AF block checkpointing: finite, and different from the same steps without KD."""
+    import math
+
+    import torch
+
+    from heads import ByteEncoder, DecisionModel
+    from tests.test_q9af_act_ckpt import build
+    from train.data import TOY_TEMPLATE, items_from_records, toy_records
+    from train.guard import SplitGuard
+    from train.run_cell import attach_teacher, train_config
+    from train.teacher import TeacherIdentityError, ids_sha256
+    from train.trainer import Trainer, with_execution
+
+    items = items_from_records(toy_records(12, seed=0), ByteEncoder(), template=TOY_TEMPLATE)
+    ids = list(dict.fromkeys(it.id.rsplit("/", 1)[0] for it in items))
+    probs, content = {}, {}
+    for it in items:
+        rid, qid = it.id.rsplit("/", 1)
+        k = it.row.n_options
+        p = [0.4 / (k - 1)] * k
+        p[it.label] = 0.6
+        probs.setdefault(rid, {})[qid] = dict(zip(it.row.option_ids, p))
+        content[rid] = it.row.meta["content_sha256"]
+    rows = [{"id": r, "content_sha256": content[r], "status": "ok", "raw_probabilities": probs[r]} for r in ids]
+    exp = _write_teacher(tmp_path, rows, ids, content)
+    cfg = {**json.loads((JOB / "q9af_cell_r64_kd.json").read_text(encoding="utf-8")), "lora_rank": 4, "max_steps": 2,
+           "batch_size": 1, "grad_accum": 4, "head_kwargs": {}}
+    cfg["teacher"] = {**cfg["teacher"], "teacher_sha256": exp["sha256"]}
+    with pytest.raises(ValueError, match="teacher's draw"):
+        attach_teacher(cfg, items, tmp_path, ids[::-1], expected=exp, contamination=False)
+    with pytest.raises(ValueError, match="--teacher-dir"):
+        attach_teacher(cfg, items, None, ids, expected=exp, contamination=False)
+    with pytest.raises(ValueError, match="no teacher block"):
+        attach_teacher(_cfg(64), items, tmp_path, ids)
+    with pytest.raises(ValueError, match="pinned teacher"):
+        attach_teacher({**cfg, "teacher": {**cfg["teacher"], "teacher_sha256": "0" * 64}}, items, tmp_path, ids,
+                       expected=exp, contamination=False)
+    cov = attach_teacher(cfg, items, tmp_path, ids, expected=exp, contamination=False)
+    assert cov["with_teacher"] == len(items) and cov["fallback"] == 0
+    assert ids_sha256(ids) == cov["drawn_ids_sha256"]
+    g = SplitGuard.synthetic_only("q9af_cell KD unit test: toy records")
+    losses = {}
+    for kd in (True, False):
+        c = cfg if kd else {**cfg, "teacher": None}
+        torch.manual_seed(0)
+        model = DecisionModel(build("q9af", seed=0), "fork", {}, pad_id=0, seed=0)
+        tc = with_execution(train_config(c, 2), c)
+        assert tc.act_ckpt and tc.loss.kd == kd
+        tr = Trainer(model, tc, items, guard=g)
+        losses[kd] = [tr.train_step() for _ in range(2)]
+    assert all(math.isfinite(x) for v in losses.values() for x in v) and losses[True] != losses[False]
+    rid0 = ids[0]
+    bad = [dict(r, content_sha256="DIFFERENT") if r["id"] == rid0 else r for r in rows]
+    exp2 = _write_teacher(tmp_path / "bad", bad, ids, {**content, rid0: "DIFFERENT"})
+    with pytest.raises(TeacherIdentityError, match="content"):
+        attach_teacher({**cfg, "teacher": {**cfg["teacher"], "teacher_sha256": exp2["sha256"]}}, items, tmp_path / "bad",
+                       ids, expected=exp2, contamination=False)

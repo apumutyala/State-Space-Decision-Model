@@ -6,7 +6,7 @@
  "head_from_proxy": null,
  "head_from_proxy_note": "hook for the proxy loop's winning attention-free mixer head (train/proxy_rule.py verdict): set {head, head_kwargs, proxy_verdict_sha256} and resolve it into head/head_kwargs of a NEW committed config (jobs.q9af_cell.hooks.resolve); never resolved at run time",
  "teacher": null,
- "teacher_note": "optional KD arm hook (jobs.q9af_cell.hooks.KDConfig: alpha, temperature, source, teacher_sha256); refuses (exit 35) until train.teacher (stack/q9/teacher-distill) is merged and wired",
+ "teacher_note": "KD hook (wired, PR #116): OFF here (null). The KD variant is q9af_cell_r64_kd.json (alpha 0.5, T 1, the pinned Clef-flash teacher); null keeps this cell's TrainConfig hash unchanged",
  "layout": "ordered",
  "template": "jrt-chatml-v1",
  "loss_arm": "clef",

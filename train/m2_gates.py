@@ -560,6 +560,8 @@ def main(argv=None) -> int:
                     "training items are rebuilt from it for the checkpoint lineage check)")
     ap.add_argument("--pool-dir", action="append", default=None, metavar="NAME=DIR",
                     help="cohort pool outside the PR #16 file (cohort v3 retention: m2-150k=<dir>)")
+    ap.add_argument("--teacher-dir", default=None, help="KD cells: the pinned teacher export (the training items are "
+                    "rebuilt with their teacher distributions, as in training)")
     a = ap.parse_args(argv)
     stages = list(STAGES) if a.stage == "all" else [a.stage]
     if "g13" in stages and not (a.index_rows and a.index_frozen and a.index_frozen_sha256):
@@ -577,7 +579,8 @@ def main(argv=None) -> int:
     from jobs.m2_pilot.guard_ready import GuardNotReady, load_ready_guard
     from train.cohort import Cohort, CohortLeak
     from train.evalcard import run_card
-    from train.run_cell import cell_items, load_cell_data, load_parent_backbone, parent_encoder, train_config
+    from train.run_cell import (attach_teacher, cell_items, load_cell_data, load_parent_backbone, parent_encoder,
+                                train_config)
     from train.trainer import Trainer, with_execution
 
     cell = json.loads(Path(a.cell).read_text(encoding="utf-8"))
@@ -605,6 +608,11 @@ def main(argv=None) -> int:
     t_max = cell["ladder"]["T_max"]
     train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]))
                    if len(x.row.ids) <= t_max]
+    try:
+        attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)  # KD cells only; None otherwise
+    except ValueError as e:
+        print(f"teacher: {e}", file=sys.stderr)
+        return EXIT["identity"]
     bb = load_parent_backbone(parent, a.model_dir, cfg, a.gdn_ckpt, device=a.device)
     cuda = torch.cuda.is_available() and str(a.device).startswith("cuda")  # follows --device
     model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])

@@ -1,12 +1,12 @@
 """Typed hooks of the Q9-AF cell config, fail closed until the code they name is merged.
 
-``teacher``        optional KD arm (PREMORTEM S3b; techniques/10). Another lane is building ``train/teacher.py``
-                   (branch ``stack/q9/teacher-distill``; NOT merged into agent-main when this was written, and the
-                   branch had no ``train/teacher.py`` yet). The hook is the contract that module must satisfy:
-                   ``train.teacher.TEACHER_API == 1`` and ``train.teacher.make_kd_arm(KDConfig) -> callable`` with
-                   a ``TeacherSource`` (per-item teacher probabilities keyed by the cell's item id, guard-checked
-                   against the training draw). Until then a non-null ``teacher`` REFUSES (run_cell exit 35): the
-                   cell never silently trains without the KD term it was configured with.
+``teacher``        optional KD arm (PREMORTEM S3b; amendment A2's R16/R17 recipe), WIRED (PR #116, b511643):
+                   {alpha, temperature, source, teacher_sha256} -> ``LossConfig(kd_alpha, kd_temperature)``
+                   (``train.run_cell.kd_fields``; absent = the KD fields stay out of the config hash) and
+                   ``train.run_cell.attach_teacher`` (the PINNED Clef-flash export ``train.proxy_rule.TEACHER``: identity,
+                   file sha256, the cell's draw == the teacher's draw, contamination checks). ``kd_arm`` refuses a
+                   teacher block that does not name the pinned file. OFF in the default cells; ``q9af_cell_r64_kd.json``
+                   is committed but has no job_params (launch.py refuses an unknown mode) until R16/R17 report.
 ``head_from_proxy`` hook for the proxy loop's winning attention-free mixer head (train/proxy_rule.py verdict): the
                    head name + kwargs + the sha256 of the proxy verdict receipt. It is resolved into ``head`` /
                    ``head_kwargs`` of a NEW committed config (``resolve``), never at run time: ``apply`` refuses a
@@ -55,20 +55,21 @@ class HookUnavailable(ValueError):
     """A configured hook names code that is not merged (fail closed: run_cell exit 35)."""
 
 
-def kd_arm(cfg: dict) -> Callable | None:
+def kd_arm(cfg: dict) -> KDConfig | None:
+    """The validated KD block (None = no KD). Refuses a block whose teacher file is not the pinned A2 teacher."""
     t = cfg.get("teacher")
     if not t:
         return None
     kd = KDConfig(**t)
     try:
-        import train.teacher as T  # noqa: N812
-    except ImportError as e:
-        raise HookUnavailable("cell config sets 'teacher' (KD arm) but train.teacher is not merged "
-                              "(stack/q9/teacher-distill); refusing to train without the configured KD term") from e
-    if getattr(T, "TEACHER_API", None) != TEACHER_API or not callable(getattr(T, "make_kd_arm", None)):
-        raise HookUnavailable(f"train.teacher does not implement TEACHER_API {TEACHER_API} (make_kd_arm)")
-    raise HookUnavailable("train.teacher is present but the Trainer has no KD loss term wired yet: integrate it "
-                          f"(train.teacher.make_kd_arm({kd})) in a reviewed PR before setting 'teacher'")
+        from train.teacher import pinned
+    except ImportError as e:  # pragma: no cover - merged in b511643
+        raise HookUnavailable("cell config sets 'teacher' (KD arm) but train.teacher is not importable") from e
+    want = pinned()["sha256"]
+    if kd.teacher_sha256 != want:
+        raise ValueError(f"teacher.teacher_sha256 {kd.teacher_sha256[:12]} != the pinned teacher {want[:12]} "
+                         "(train.proxy_rule.TEACHER)")
+    return kd
 
 
 def resolve(cfg: dict) -> dict:

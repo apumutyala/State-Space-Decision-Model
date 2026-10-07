@@ -33,7 +33,7 @@ differ only in `lora_rank` / `variant`, asserted by `tests/test_q9af_cell.py`), 
 | Head | `fork` (final-state fork MLP, cache fork) | best available attention-free head now; hook `head_from_proxy` for the proxy loop's winning mixer head (resolved into a new committed config, never at run time; a non-attention-free head is refused) |
 | LoRA | r = 64 / r = 256 on the GDN (`in_proj_qkv`, `in_proj_z`, `out_proj`) and MLP projections of all 32 layers (159.4 M / 637.5 M params) | E9 single-factor pair; Clef-flash uses r = 256 |
 | Loss | `clef` arm: LS-CE (0.1) + Brier, + RPS on score questions | the Clef-flash loss (RPS ablation is a proxy-loop question) |
-| KD | hook `teacher` (`jobs.q9af_cell.hooks.KDConfig`): refuses (exit 35) until `train/teacher.py` (stack/q9/teacher-distill; not merged, no teacher.py on it yet) is merged AND wired into the Trainer | never trains silently without a configured KD term |
+| KD | WIRED (PR #116, b511643), OFF in both default cells (`teacher: null`; their TrainConfig hashes are unchanged: r64 `cea41d9610c90faf`, r256 `90d6e79a70c23165`, pinned by `tests/test_q9af_cell.py`). Variant `q9af_cell_r64_kd.json`: alpha 0.5, T 1 (proxy recipe R16), teacher = Clef-flash export art-ggrs8 (job-tnrwu, sha256 `a88b4fe0…`, `train.proxy_rule.TEACHER`); `train.run_cell.attach_teacher` loads it through `train.teacher.load_teacher` (identity, file sha256, contamination) and requires the cell's draw to BE the teacher's draw (`2bbbf180…`); m2_gates rebuilds the items the same way. **Committed, not launchable**: there is no `job_params_cell_r64_kd.json` (launch.py refuses the mode) until the proxy loop's KD recipes R16/R17 report | KD on the same draw the teacher scored |
 | Data | PR #44 150k set (pointer `sample-150000-seed20261006`), 24,000 records by `sha256(seed:id)`; cohort **v3** (`498efa61…76da`) excluded by id, content and source item (`train.train_set.draw` + `cohort_v3.training_exclusion`); pinned D1-B exclusions (3 MMLU aux records); D1-B heldout gate over the whole set (exit 33); **frozen-family check** (`harness.heldout.check_record`, heldout-draw-v1) over every drawn record (exit 34) | GOAL integrity; INDEX_0.3 frozen new-domain proxy |
 | Execution | `act_ckpt: true` (this PR), `row_batch: 1` | PREMORTEM blocker #4; row batching: below |
 | Steps | 8 rows / optimiser step (batch 1 x accumulation 8), warmup 50, `max_steps` 2,800 (~1 epoch of the draw's ~21.8k kept rows), `min_steps` 1,000 (exit 26 if the MEASURED step time cannot reach it), `max_minutes` 200 (cumulative over restarts), T ladder 1,024 / 2,048 / 4,096, K <= 16, `eval_max_t` 4,096 | the 455 / 2,008 DEV rows above 2,048 tokens are now trainable (PREMORTEM S2-F4) |
@@ -128,7 +128,7 @@ rule verdict. `/output/adapters/adapters.pt` holds the trained LoRA + head weigh
 
 ## What it does not show
 
-- One seed per rank; one head; no KD (hook only).
+- One seed per rank; one head; the KD variant is committed but not launched (it waits for R16/R17).
 - The full Index / TEST is never read; the full-DEV slice is a development slice.
 - The child is scored at the stock readout's rates in the price; the head arm's own rate is measured only in-job.
 - The dry run (`tests/test_q9af_cell_shell.py`) replaces the two GPU scoring phases by `jobs.q9af_cell.dry_gates`
