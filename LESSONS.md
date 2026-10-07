@@ -161,3 +161,25 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: a newer user decision was added as a new section, and the older sentence was never edited.
 - **Check:** the stale sentence was replaced so that the later user decision governs. `tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule` asserts that the old sentence is gone.
 - **Status:** PARTIAL. Only this sentence is checked. Spend-ladder item 2 ("acknowledged by the other agent") still reads as blocking and needs the same reconciliation. When a user decision supersedes a rule, edit the old rule in the same PR.
+
+### L-19 The benchmark edition changed under us
+- Date: 2026-10-06 (Track D, found via research PR #92; fixed in PR #95).
+- Symptom:
+  - GOAL/PLAN targets (T1–T3) and every DEV comparison were stated on Decision Index 0.2.1.
+  - The board switched to 0.3 the same day: an 80%-private Full score with equated parts, GSM8K rebuilt, ForecastBench retired, WinoGrande moved to Knowledge, a mean/p80 latency gate and a 0.9 tie band.
+  - The kit's 0.3 code was still an unmerged PR at the time.
+  - PR #92 also misstated two details: it omitted the equating of the private parts, and it called the GSM8K artifact the "centre option" when it was the centre *value*.
+  - A first harness fix still applied 0.2.1 weights silently to 0.3 bootstrap replicates (38.26 vs 38.96) when no edition was passed.
+- Cost: no money. One review round, plus the stale-target risk on every plan written that day.
+- Root cause:
+  - Targets and the scorer were pinned to an edition without a check against the live board.
+  - The edition was a global default instead of a property carried by the data.
+- **Check:**
+  - `harness/tests/test_edition03.py::test_vendored_files_match_pins` and `::test_full_score_reproduces_every_board_entrant` (board data pinned by sha256, Full/ties reproduced for all 112 entrants).
+  - `::test_03_public_index_reproduces_board`.
+  - `::test_summaries_carry_and_enforce_the_edition`: replicates carry their edition; mixing editions raises.
+  - `::test_03_compare_and_family_split` (compare refuses mixed editions).
+  - Rule for plans: before any plan, pre-registration or spend decision, re-fetch the board's edition file and methodology and record their sha256 and `generated_utc` in the receipt.
+- **Status:** PARTIAL.
+  - The harness side is ENFORCED: edition-flagged, 0.2.1 kept as the default for receipt reproducibility, mixed editions refused.
+  - The "verify the live board before each plan" step is a procedure, not an automated check. Owner: Track D. Candidate check: a launch-checklist row comparing the live `v03.json` sha256 with `harness/config.BOARD_V03_SHA256`.
