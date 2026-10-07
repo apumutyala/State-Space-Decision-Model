@@ -194,6 +194,22 @@ time records the skipped steps and cannot qualify. A variant crash or timeout is
 (`jobs/common/costs.py`: build + 2 attempts) = (60 + 2 x 53) x 0.0495 = **$8.22** (hard cap $8.50; A2: no strict cap,
 the figure is stated); one attempt $2.62; expected **$1.59**.
 
+`submit_job` fields. `python -m jobs.common.launch cell_step_profile --sha <merged sha> --out <dir>` writes them to
+`submit.json`; `tests/test_launch.py` checks that launch.py emits exactly these:
+
+```json
+{"chip": "h100", "chip_count": 1, "mission": "m2-cell-step-profile",
+ "idempotency_key": "m2-cell-step-profile-<context_sha256[:12]>",
+ "context_id": "<from create_context>", "dockerfile_path": "Dockerfile", "build_timeout_minutes": 60,
+ "command": "bash /opt/ssdm/m1/jobs/cell_step_profile/cell_step_job.sh", "env": {},
+ "max_duration_minutes": 53, "max_restarts": 0, "resume": "none", "queue_ttl_minutes": 1440,
+ "hf_cache": true, "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba", "clock_lock": true,
+ "checks": {"success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/CELL_STEP_PROFILE_DONE"},
+                                             {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+            "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"},
+                       "interval_s": 300, "grace_period_s": 600, "fail_threshold": 2, "on_fail": "kill"}}}
+```
+
 Outputs (exported per phase): `variant_<V>.json` (probe loss; per-step seconds, tok/s, peak / reserved GB, OOM,
 loss; ladder),
 `decision.json` (verdict, chosen variant, recommended cell config, projection), `profile.json` (+ traces),

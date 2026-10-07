@@ -113,13 +113,23 @@ def load_subset(path=SUBSET, check_manifest=True):
 
 
 # ----------------------------------------------------------------------------- scoring (kit + DEV rows needed)
-def _rows(subset):
+def _rows(subset, edition=None, gsm8k03=True):
     from harness.cli import load_slice  # DEV only; refuses TEST without the unseal env
 
-    ids = set(subset["run_ids"])
-    rows = [r for r in load_slice("dev") if r["_evaluation"]["run_id"] in ids]
-    if len(rows) != len(ids):
-        raise SystemExit(f"DEV rows matched {len(rows)} of {len(ids)} subset ids")
+    rows_all = load_slice("dev", edition, gsm8k03)
+    if edition in (None, "0.2.1"):
+        ids = set(subset["run_ids"])
+        rows = [r for r in rows_all if r["_evaluation"]["run_id"] in ids]
+        if len(rows) != len(ids):
+            raise SystemExit(f"DEV rows matched {len(rows)} of {len(ids)} subset ids")
+        return rows
+    # 0.3: the same subset mapped onto the edition (ForecastBench and 0.2.1 GSM8K drop out; GSM8K twins come in)
+    from harness.gsm8k03 import PREFIX, map_ids
+
+    want = {i for i in map_ids(subset["run_ids"]) if not i.startswith(("30:", "48:")) and (gsm8k03 or not i.startswith(PREFIX))}
+    rows = [r for r in rows_all if r["_evaluation"]["run_id"] in want]
+    if len(rows) != len(want):
+        raise SystemExit(f"DEV rows matched {len(rows)} of {len(want)} 0.3 subset ids")
     return rows
 
 
@@ -127,20 +137,30 @@ def cmd_score(a, subset):
     from harness import bootstrap, score
     from harness.cli import load_results
 
-    rows = _rows(subset)
-    res = load_results(a.results, subset["run_ids"], a.allow_partial)
-    rep = bootstrap.replicate_skills([score.decompose(rows, res)], B=a.B, seed=a.seed)[0]
-    return {"subset_ids_sha256": subset["ids_sha256"], "rows": len(rows), "slice_index": bootstrap.summarize_one(rep)}
+    ed = getattr(a, "edition", None)
+    rows = _rows(subset, ed, not getattr(a, "omit_gsm8k03", False))
+    allow = getattr(a, "allow_missing", False) or getattr(a, "allow_partial", False)
+    # strict reader first (exit 3: truncated / malformed / duplicate / missing subset rows), then #95's slice check
+    res = load_results(a.results, subset["run_ids"], allow)
+    score.require_results(rows, res, allow)
+    rep = bootstrap.replicate_skills([score.decompose(rows, res, edition=ed)], B=a.B, seed=a.seed)[0]
+    return {"subset_ids_sha256": subset["ids_sha256"], "rows": len(rows), "slice_index": bootstrap.summarize_one(rep, edition=ed)}
 
 
 def cmd_compare(a, subset):
     from harness import bootstrap, mde, score
     from harness.cli import load_results
 
-    rows = _rows(subset)
-    c = score.decompose(rows, load_results(a.candidate, subset["run_ids"], a.allow_partial))
-    b = score.decompose(rows, load_results(a.baseline, subset["run_ids"], a.allow_partial))
-    out = bootstrap.compare(c, b, B=a.B, seed=a.seed)
+    ed = getattr(a, "edition", None)
+    rows = _rows(subset, ed, not getattr(a, "omit_gsm8k03", False))
+    allow = getattr(a, "allow_missing", False) or getattr(a, "allow_partial", False)
+    rc = load_results(a.candidate, subset["run_ids"], allow)
+    rb = load_results(a.baseline, subset["run_ids"], allow)
+    score.require_results(rows, rc, allow, "candidate")
+    score.require_results(rows, rb, allow, "baseline")
+    c = score.decompose(rows, rc, edition=ed)
+    b = score.decompose(rows, rb, edition=ed)
+    out = bootstrap.compare(c, b, B=a.B, seed=a.seed, allow_unaligned=allow)
     out["mde"] = mde.report(out["diff"]["index"]["se"], sum(len(x.clusters) for x in c.values()))
     out["subset_ids_sha256"], out["rows"] = subset["ids_sha256"], len(rows)
     return out
@@ -186,7 +206,11 @@ def main(argv=None):
         s.add_argument("--B", type=int, default=2000)
         s.add_argument("--seed", type=int, default=0)
         s.add_argument("--allow-partial", action="store_true",
-                       help="score a partial results file (missing subset rows = unanswered); default: exit 3")
+                       help="alias of --allow-missing: score a partial results file (missing subset rows = unanswered); default: exit 3")
+        if name != "ece":
+            s.add_argument("--edition", default=None, choices=["0.2.1", "0.3"], help="default: harness config.EDITION (0.2.1)")
+            s.add_argument("--omit-gsm8k03", action="store_true", help="0.3: leave out the rebuilt GSM8K rows (old result files)")
+            s.add_argument("--allow-missing", action="store_true", help="score rows with no result as wrong instead of refusing")
     for s in sub.choices.values():
         s.add_argument("--subset", default=str(SUBSET))
     a = p.parse_args(argv)
