@@ -8,7 +8,7 @@ Codex owns the two gated SSDM stages under the user’s 2026-10-07 takeover dire
 |---|---|---|
 | **D: SSM-Decision (System 1)** | `codex` (user-directed Track D takeover; branches `codex/d-*` and `stack/rwkv7/*`) | Backbones (Q9-AF conversion, RWKV7, Mamba-3 reference), decision heads, typed outputs, calibration, injection/steer evaluation, Decision Index harness, the semantic-interface arms *inside* the core (records, KEEP/SET/RETRACT/UNKNOWN/CONFLICT) |
 | **L: SSM-Language (grown from D)** | `codex` (branches `codex/l-*`; paths `plans/codex/`, `language_growth/`) | Semantic program language (Assert/Infer/Compare/Explain/Ask/Quote/Hypothesize/Plan), module contracts and checker, realizer/grammar, verified emission, L0–L4 growth, authority and information-flow specification |
-| **Shared** | Codex, reviewed by a fresh-context adversarial subagent | `interfaces/DECISION_LANGUAGE_V0.md` (canonical D→L seam; Claude deltas in `INTERFACE.md`), evaluation harness, intervention protocol, spend ledger, `techniques/` |
+| **Shared** | Codex, reviewed by a fresh-context adversarial subagent | `interfaces/DECISION_LANGUAGE_V0.md` (canonical D→L seam; existing changes recorded in `INTERFACE.md`), evaluation harness, intervention protocol, spend ledger, `techniques/` |
 
 Codex owns both tracks. A fresh-context adversarial subagent reviews each PR and does not become a file owner or spend approver.
 
@@ -145,11 +145,11 @@ Reviews check only these:
 - safety-claim soundness;
 - spend safety.
 
-They don't rebuild datasets or re-verify byte-for-byte reproducibility. A recorded hash plus the build's own guard is sufficient. Small data-quality fixes (well under 1 pt impact) never block training. Docs and spec-only changes need no review.
+They don't rebuild datasets or re-verify byte-for-byte reproducibility. A recorded hash plus the build's own guard is sufficient. Small data-quality fixes (well under 1 pt impact) never block training. Every PR, including docs and spec-only changes, receives one fresh-context nonauthor review.
 
 ## Collaborators (2026-10-06)
 
-Human teammates with write access, and the coding agents they send, work on research directions of their own choosing without delaying or disturbing the two owning tracks. Full onboarding: `HANDOFF.md` (humans) and `AGENT_HANDOFF.md` (agents).
+Human teammates with write access, and the coding agents they send, work on research directions of their own choosing without delaying the D-first critical path or gated language stage. Full onboarding: `HANDOFF.md` (humans) and `AGENT_HANDOFF.md` (agents).
 
 - **Branches.** `collab/<github-user>/<topic>`, branched from `agent-main` and rebased on it before a PR. Never push to `main` or `agent-main`; never touch `claude/*` or `codex/*` branches or worktrees; never force-push a shared branch; stage only your own paths.
 - **PRs.** Into `agent-main` only, when ready, using the PR template with a scoped claim and a receipt. Merge needs one independent fresh-context adversarial reviewer who did not write the code; findings are fixed first. Results PRs get their headline number re-derived by someone else.
