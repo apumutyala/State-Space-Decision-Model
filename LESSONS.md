@@ -330,3 +330,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - Caps are recomputed at ≥ 1.3× (stock_dev 70, stock_train 90, conv1/e5 dev 70, train 45 min); `tests/test_q9_feature_cache_params.py` holds them.
   - Receipt: `receipts/2026-10-07-D-q9-cache-reprice/`.
 - **Status:** PARTIAL. The fix is per job: any runner that announces a weighted total before a one-time setup phase repeats this. A lint that requires the total to be written after setup is a candidate.
+
+### L-32 The recurrent-state fake used the wrong slot-container shape
+- Date: 2026-10-07.
+- Symptom: a fresh review compared the protocol against the installed Transformers cache implementation and found that the fake used lists while `LinearAttentionLayer` stores recurrent states and initialization flags as dictionaries keyed by `0, 1, 2`. The fake passed while every real native RWKV capture would have refused.
+- Cost: $0; caught before any pretrained model/checkpoint was loaded or measured.
+- Root cause: the test double matched the conceptual slot count but not the runtime container contract.
+- **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
+- **Status:** ENFORCED.
