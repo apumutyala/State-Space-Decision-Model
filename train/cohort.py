@@ -376,7 +376,7 @@ class Cohort:
         want = expected_sha256 or (OUT_SHA.read_text(encoding="utf-8").split()[0] if path == OUT else None)
         if want is not None and want != self.sha256:
             raise ValueError(f"cohort sha256 {self.sha256} != committed {want}")
-        lines = [json.loads(x) for x in text.splitlines() if x.strip()]
+        lines = [json.loads(x) for x in text.split("\n") if x.strip()]  # "\n" only: U+2028 is not a line break
         self.header = lines[0]["header"]
         self.roles: dict[str, list[dict]] = {r: [] for r in ROLES + STEER_ROLES}
         for e in lines[1:]:

@@ -1,0 +1,94 @@
+{
+ "_comment": "Teacher export, Clef (27B), same 24,000-record draw and guard as teacher_clef_flash. Planning export at 5.39x Clef-flash: 231.3 + 1.6 load. Run only after clef-index-subset has passed (s1_ok).",
+ "job": "clef-teacher-clef",
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "batch_usd_per_min": 0.0495,
+ "clock_lock": true,
+ "runner": "jobs/clef_baseline/run_job.sh",
+ "decision_rule": null,
+ "no_verdict_reason": "data export (teacher probabilities on m2 training records): no verdict; the contamination guard is a fail-closed precondition (exit 20), not a decision rule",
+ "mission": "clef-baseline-safety-spec-s7",
+ "pricing": "jobs/clef_baseline/price.py: job-sgihj measured Clef-flash rates; Clef planned at the card's 5.39x median-latency ratio (FLOPs ratio 3.52 is the optimistic reference)",
+ "max_duration_minutes": 331,
+ "hf_cache": false,
+ "hard_cap_usd": 36.0,
+ "reserve_minutes": 5,
+ "phase_caps_minutes": {
+  "guard": 6,
+  "setup": 15,
+  "export": 303,
+  "report": 2
+ },
+ "expected_minutes": {
+  "build": 20,
+  "guard": 3,
+  "setup": 10,
+  "export": 233,
+  "report": 1
+ },
+ "model": "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c",
+ "env": {
+  "RELEASE": "clef",
+  "JOB": "T"
+ },
+ "submit": {
+  "command": "/app/jobs/clef_baseline/run_job.sh",
+  "key": "clef-teacher-clef",
+  "env": {
+   "RELEASE": "clef",
+   "JOB": "T"
+  },
+  "clock_lock": false,
+  "depends_on": {
+   "job": "<clef-index-subset job id>",
+   "require": "result.s1_ok == true"
+  },
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/result.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/teacher/selection.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/teacher/teacher-clef.jsonl"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/teacher/teacher-clef.identity.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-teacher/SHA256SUMS"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/clef-teacher/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "unsupported": "the Clef image copies app/ (not code/m1/) and ships job-specific pinned data: build with jobs/clef_baseline/build_context.sh teacher <merged sha> (REF_FLASH=<job-sgihj decide results> for index)"
+ }
+}

@@ -1,0 +1,15 @@
+{
+ "_comment": "Teacher-export scope (baselines/clef_teacher.py; JOB_SPEC.md section 11). TRAINING records only: the PR #44 150k m2 set named by the same pointer jobs/m2_first_cell trains on, drawn exactly as that cell draws (train.run_cell.split_ids over the set minus the pinned held-out D1-B exclusions, seed 0). Never Index DEV/TEST rows (SplitGuard over the harness DEV + TEST manifests and the pinned content index), never the frozen m2 cohort (dev/calibration/retention, by id and content), never a record carrying a held-out D1-B fragment (train.heldout). Any hit = exit 20 before any GPU phase.",
+ "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "draw": {
+  "n_records": 24000,
+  "seed": 0,
+  "rule": "train.run_cell.split_ids(sorted(set(manifest ids) - heldout_excluded.ids), n_records, 0, seed)[0]; identical to jobs/m2_first_cell (m2_first_cell_rwkv7.json: n_train_records 24000, seed 0)"
+ },
+ "heldout_excluded": {
+  "ids": ["m2:mmlu_aux:21118", "m2:mmlu_aux:39640", "m2:mmlu_aux:39643"],
+  "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+  "source": "jobs/m2_first_cell/m2_first_cell_rwkv7.json train_set.heldout_excluded (branch claude/m2-first-cell): train.heldout finds the D1-B fragment 'rather than relying on' in these three MMLU aux_train records"
+ }
+}
