@@ -2,7 +2,15 @@
 
 Both agents work autonomously toward these goals and do not stop until the exit condition is met. The constraints are binding: they are never traded away to reach the goal faster. A win obtained by breaking a constraint doesn't count.
 
-## Track D (Claude Code): beat the Clef family with an attention-free decision model
+## Order of work (user update, 2026-10-07)
+
+The campaign is staged: **qualify and improve Track D's safer decision core first; grow Track L language capability from that qualified core second.** Track L may finish low-cost interface, fixture and contract prerequisites in parallel, but it must not divert the decision-model critical path or spend on language-capability expansion before the Track D gate is met, unless the user explicitly changes the order.
+
+Control, alignment, and interpretability are co-equal promotion requirements with Index capability. Do not relax them to gain score or speed. A model that beats Clef while failing its safety, retention, or interpretability gates does not satisfy the goal.
+
+Current line choice, from issue #140: RWKV7-13.3B is the sole attention-free decision-model line under full8-rule-v1-A1; the Q9-AF conversion route is closed under that rule. Reopen a Q9-AF variant only under a new pre-registered rule and spend issue, and only if the RWKV7 line stalls under the recorded trigger.
+
+## Track D (decision core; primary near-term objective)
 
 **Goal:** an attention-free state-space System 1 decision model (text path: no softmax over positions, no growing KV cache) that **beats every Cloudflare Clef model (Clef, Clef-flash) on the full Decision Index 0.2.1** (or the edition current at submission). It must have:
 - a paired confidence interval for candidate-minus-Clef that sits above zero;
