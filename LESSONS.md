@@ -233,3 +233,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - The check is tested on chr-built bad samples, as L-11 requires.
   - COORDINATION.md "Before any paid job / before any PR" carries the rule.
 - **Status:** PARTIAL. Ad-hoc shell commands typed by an agent are not in the repo, so only the rule (COORDINATION.md) covers them. Kill only PIDs you started and recorded.
+
+### L-25 A finite proxy sweep was described as a downstream quality ceiling
+- Date: 2026-10-07 (cross-track post-merge review of PR #91).
+- Symptom: PREMORTEM said conversion can only weaken the backbone, that failure of tested frozen-stock heads rules out every Q9-AF variant, and that ranking transfer through one conversion should persist through eight.
+- Cost: one review round; no paid run was launched by this correction.
+- Root cause: conditional resource-allocation heuristics were written as universal quality and transfer claims without an ablation or bound supporting them. Frozen features do not test LoRA adaptation or every later data recipe.
+- **Check:** `tests/test_premortem_claim_scope.py` rejects the three known absolute claims, tests its checker against the original offending sentences, and requires the local qualifications and conditional spend gate. PREMORTEM now treats transfer as a hypothesis with a Q9-AF re-check and retains the pause/escalate decision for the finite sweep.
+- **Status:** PARTIAL. The check enforces these known claim classes in PREMORTEM; new scientific claims still require review of their evidence.
