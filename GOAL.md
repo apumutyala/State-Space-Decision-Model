@@ -1,71 +1,28 @@
-# Standing goals (set by the user, 2026-10-06)
+# SSDM goal
 
-Both agents work autonomously toward these goals and do not stop until the exit condition is met. The constraints are binding: they are never traded away to reach the goal faster. A win obtained by breaking a constraint doesn't count.
+Build and validate the SSDM model family in two gated stages. Work autonomously toward both stages; do not stop at an intermediate milestone. The constraints are binding and are never traded away to reach a capability target faster.
 
-## Order of work (user update, 2026-10-07)
+## Stage 1: decision core
 
-The campaign is staged: **qualify and improve Track D's safer decision core first; grow Track L language capability from that qualified core second.** Track L may finish low-cost interface, fixture and contract prerequisites in parallel, but it must not divert the decision-model critical path or spend on language-capability expansion before the Track D gate is met, unless the user explicitly changes the order.
+Take over Track D and build a safer, more controlled, interpretable attention-free System 1 decision model that outperforms every Clef family model on a preregistered, matched evaluation. Continue the selected RWKV7 line under full8 rule v1, consistent with the recorded choice in issue #140.
 
-Control, alignment, and interpretability are co-equal promotion requirements with Index capability. Do not relax them to gain score or speed. A model that beats Clef while failing its safety, retention, or interpretability gates does not satisfy the goal.
+Claim “outperforms Clef” only if the candidate’s paired 95% confidence interval is above zero against each Clef model on the primary decision metric, while meeting preregistered safety, calibration, abstention, control, and interpretability floors. Preserve held-out data, report failures and uncertainty, and make no capability-for-safety trade.
 
-Current line choice, from issue #140: RWKV7-13.3B is the sole attention-free decision-model line under full8-rule-v1-A1; the Q9-AF conversion route is closed under that rule. Reopen a Q9-AF variant only under a new pre-registered rule and spend issue, and only if the RWKV7 line stalls under the recorded trigger.
+## Stage 2: language growth
 
-## Track D (decision core; primary near-term objective)
+Start only after Stage 1 passes its decision and safety gates. Grow language capability modularly from the qualified decision model through checked semantic programs L0–L4.
 
-**Goal:** an attention-free state-space System 1 decision model (text path: no softmax over positions, no growing KV cache) that **beats every Cloudflare Clef model (Clef, Clef-flash) on the full Decision Index 0.2.1** (or the edition current at submission). It must have:
-- a paired confidence interval for candidate-minus-Clef that sits above zero;
-- independent reproduction by another agent or process;
-- a submitted PR to the Index;
-- calibration, steer/hijack rate, interpretability evidence, latency and cost reported alongside the score;
-- the same report against Jev.
+At every level, require useful-answer performance against a strong comparator, no regression in the parent’s decision competence, soundness on joint and adversarial fixtures, and semantic interventions that beat random and output-only controls. Ground claims in checked representations, render them deterministically where possible, and abstain when support or validation is missing. Do not claim zero hallucinations beyond tested conditions.
 
-**Exit condition (only these):**
-1. **Achieved:** the conditions above are met and merged to `main` with receipts. Or:
-2. **Budget wall:** approved funds are exhausted before (1). Stop paid work and hand the user a receipted, exhaustive account containing:
-   - the best measured point;
-   - the gap to Clef, broken down by Index area;
-   - each remaining gap attributed to a named, measured cause (backbone knowledge, retrieval without attention, head, data, calibration);
-   - the cheapest next experiment and its cost.
+## Constraints and evidence
 
-   Then ask for funds. This is a pause, not a finish.
+- Follow `COORDINATION.md`, the repo’s review and data rules, and the staged spend ladder. Do not launch paid work without its required merged proof and acknowledged spend issue. Stay within the shared $525 SF envelope and the $5k ceiling; no credit purchases or automatic top-ups.
+- Preserve held-out and test data. Use open-weight teachers only. Report negative results, uncertainty, and the exact scope of every claim.
+- For every reported result, preserve the code and configuration, data and model hashes, seeds, hardware, cost, raw predictions, and reproducible evaluation receipt. Another agent independently remeasures reported results before merge.
+- Keep low-cost language prerequisites moving only when they do not distract from Stage 1.
+- Commit as Apuroop with no AI/coauthor trailers; never push directly to `main` or `agent-main`. Keep the repository private. Nothing outward-facing without the user’s explicit approval.
+- The selected attention-free line remains RWKV7-13.3B under full8 rule v1. Reopen Q9-AF only under a new preregistered rule and spend issue, and only if the documented RWKV7 stall trigger is met.
 
-Every intermediate milestone (T1 → T2 → T3 in `PLAN.md`) is a step, never a stopping point.
+## Completion test
 
-## Track L (Codex): grow language capability and intelligence from the decision model
-
-**Goal:** a language model grown from the Track D parent, in which every output passes through checked typed semantic programs (no unchecked text path), and which climbs L0 → L4:
-- **L0:** checked explanations of decisions.
-- **L1:** multi-record answers, comparisons and exact calculations.
-- **L2:** compositional reasoning, assumptions, questions and plans.
-- **L3:** rich discourse and licensed paraphrase.
-- **L4:** new knowledge domains via semantic modules.
-
-At each level it must show, with receipts and paired CIs:
-- useful-answer capability at least matching a strong unrestricted comparator on the same tasks;
-- no regression in the parent's decision competence on identical items;
-- relation-level soundness on the joint fixtures and adversarial cases (splicing, negation, stale facts, units, injected authority, wrong-question answers);
-- causal semantic-intervention fidelity measured against random and output-only controls.
-
-**Exit condition:**
-1. **Achieved:** L4 is reached with all of the above, merged to `main` with receipts. Or:
-2. **Budget/blocker wall:** stop and hand the user an exhaustive, receipted account. For every remaining gap, say whether the semantic language can't express it, the parent can't discover the program, or the realizer can't say it. Include the measured evidence and the cheapest next experiment.
-
-## Binding constraints for both tracks
-
-- **Money:** never exceed approved funds. Currently that's the shared $525 SF envelope, within a $5k ceiling. Climb the spend ladder in `COORDINATION.md`. No credit purchases, no automatic top-ups.
-- **Integrity:**
-  - No training on, or tuning against, Index test items or the untouched test slice.
-  - No prompt tuning, truncation or option pruning on submitted runs.
-  - Teachers are open-weight only.
-  - No benchmark gaming.
-  - Report negative results and false positives.
-- **Honesty:**
-  - Claims are scoped to what was measured.
-  - "Attention-free" is disclosed precisely, including lineage ("Qwen3.5-9B with attention layers distilled to delta-rule") and the text-only scope.
-  - Guarantees are stated exactly as proven.
-- **Safety and repo rules:**
-  - Personal accounts only. Repos stay private.
-  - Commit as Apuroop with no AI trailers.
-  - Never push to `main`.
-  - Nothing irreversible or outward-facing (Index submission PR, public release) without the user's explicit approval at that moment.
-- **Coordination:** follow `COORDINATION.md`, which covers phases, proof before spend, parallel and pipelined work, cross-review, and `decision-needed` issues for the user.
+Complete the goal only when both stages pass their stated gates and their evidence is merged to the agreed branch. If a gate fails or the budget blocks progress, provide the receipts, identify the failing component and cheapest justified next experiment, and leave the goal paused rather than claiming success.

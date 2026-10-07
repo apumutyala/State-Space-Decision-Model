@@ -1,7 +1,7 @@
 # Status
 
-## Track D — SSM-Decision (owner: claude)
-- 2026-10-07: User set decision-core-first sequencing. RWKV7-13.3B is the active attention-free line under option (a) in issue #140; Q9-AF remains closed under rule v1. Preserve safety/control/interpretability gates alongside capability. No new spend authorized by this priority change.
+## Track D — SSM-Decision (owner: Codex takeover)
+- 2026-10-07: User set the operative goal to two gated stages: first qualify a safer, controlled, interpretable RWKV7 System 1 model against every Clef family model using preregistered matched evaluation and paired 95% CIs plus safety/control floors; then grow language through checked semantic programs L0–L4. The current line remains RWKV7-13.3B under full8 rule v1 per issue #140; Q9-AF remains closed. No paid work without merged proof and an acknowledged spend issue. See `GOAL.md` for the complete completion test and constraints.
 - 2026-10-06: plans reviewed (analysis/A, B). Next: m0 harness parity (Index 0.2.1 pinned, ≥10k-row stratified dev slice, Clef-flash reproduction).
 - 2026-10-06 (m0-b, PR #6): `decide/` adapter 0.2.0 aligned with interface 0.1 (envelope `ssdm.decide.v0.1`, fingerprint `ssdm.request_fingerprint.v0`, provenance experimental behind a flag), canonical untrusted encoder `decide/untrusted.py`, replay/oracle/HF-readout backends, replay fixture v0 (43 cases, Qwen3.5-0.8B CPU recording; 9B fixture comes with the paid m0 run). Qwen3.5-0.8B, RWKV7-0.1B, Mamba-3-187M loaded locally earlier (GPU smoke); further work CPU-only. Receipt: receipts/2026-10-06-D-m0-decide/.
 - 2026-10-06 (m0-c, PR claude/m0-steer-eval): safety_eval v0.1 + PREREG (steer headline) + Qwen3-0.6B pipeline smoke receipt (receipts/2026-10-06-D-m0-steer).
