@@ -1,0 +1,14 @@
+{
+  "frozen_rows.json.gz": {
+    "compressed_bytes": 168975,
+    "compressed_sha256": "cbf5c1b6caaae000ab585b240010cce86e2df495185ad8215efbde8c389861b4",
+    "decompressed_bytes": 8192461,
+    "decompressed_sha256": "4c63f494a42ec66da89236225d3d9aa6a6c22e4b9844df96c4a8188ee00b0faa"
+  },
+  "predictions.json.gz": {
+    "compressed_bytes": 57380,
+    "compressed_sha256": "fa2b77030e2ae40fc8ad70f943090395723d3ac77e05f5c4e915f2888d447b52",
+    "decompressed_bytes": 1862876,
+    "decompressed_sha256": "8e164ee8bc163c8eee346cd394c84922d4825ec097c99d817b485dffd0a36678"
+  }
+}

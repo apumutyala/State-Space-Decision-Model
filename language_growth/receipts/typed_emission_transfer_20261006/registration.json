@@ -1,0 +1,122 @@
+{
+  "alternate_validation_templates": {
+    "explain": "For {entity}, provide the checked derivation of the {field}.",
+    "read": "For October 2026, state the {field} of {entity}."
+  },
+  "architecture": "Byte-identical copied PR #80 core; no architecture, scales, seeds, optimizer or training changes",
+  "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
+  "candidate_contract": "12 structural candidates; all three relation choices; no truth filtering or target-dependent inference",
+  "config": {
+    "batch_size": 32,
+    "clip_norm": 1.0,
+    "cpu_threads": 2,
+    "development_clusters": 180,
+    "development_seed": 9102,
+    "inference": "argmax operation, conditional argmax target, relation argmax on predicted operands",
+    "loss": "operation CE + conditional target CE + comparison relation CE",
+    "lr": 0.003,
+    "max_seconds": 180,
+    "numeric_scales": {
+      "price": 200.0,
+      "warranty_months": 36.0
+    },
+    "relation_features": [
+      "left/scale",
+      "right/scale",
+      "delta",
+      "delta_squared"
+    ],
+    "scope": "One condition; final step only; iterative synthetic development; no validation tuning; random initialization; no parent retention claim",
+    "seeds": [
+      20261006,
+      20261016,
+      20261026
+    ],
+    "steps": 300,
+    "train_count": 600,
+    "train_seed": 9101,
+    "width": 32
+  },
+  "cost_usd": 0,
+  "evaluation_split": "development_validation",
+  "frozen_data_sha256": "4c63f494a42ec66da89236225d3d9aa6a6c22e4b9844df96c4a8188ee00b0faa",
+  "implementation_source_commit": "c0db91df4b28fbb3cbd9fe05b210b85ff2a396ee",
+  "initialization": "random; no teacher or parent checkpoint",
+  "paired_task_clusters": 180,
+  "pairing": "Original plus selected-field value swap for compare; original plus preauthored disjoint alternate wording for read/explain",
+  "scope": "Single train-to-disjoint-validation transfer condition; iterative synthetic development, not official holdout; no tuning or parent-retention claim",
+  "source": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-codex-l0-typed-emission-transfer\\language_growth\\typed_emission_ssm.py",
+  "source_hashes": {
+    "development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+    "kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+    "parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
+    "typed_emission_ssm.py": "93ae22e267186f5453f520a2bf30747e4cd097662068c066b8535d956ee5f2d6",
+    "typed_emission_ssm_transfer.py": "44da0a6e92628191d195c557d55fe47e2ffee4d27b012fc8e4f7007e5a75fdc2",
+    "types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1"
+  },
+  "split_specs": {
+    "development_train": {
+      "names": [
+        "Aster",
+        "Bracken",
+        "Cinder",
+        "Dovetail",
+        "Ember",
+        "Fallow"
+      ],
+      "price_cents_range": [
+        5000,
+        20000
+      ],
+      "templates": {
+        "compare": [
+          "Compare the October {field} of {left} and {right}.",
+          "How do {left}'s and {right}'s October {field} compare?"
+        ],
+        "explain": [
+          "Explain the checked {field} fact for {entity}.",
+          "Show the checked derivation for {entity}'s {field}."
+        ],
+        "read": [
+          "What is {entity}'s {field} in October 2026?",
+          "Give the October 2026 {field} for {entity}."
+        ]
+      },
+      "warranty_range": [
+        1,
+        36
+      ]
+    },
+    "development_validation": {
+      "names": [
+        "Grove",
+        "Hearth",
+        "Indigo",
+        "Juniper",
+        "Kestrel",
+        "Lumen"
+      ],
+      "price_cents_range": [
+        20001,
+        30000
+      ],
+      "templates": {
+        "compare": [
+          "For October 2026, compare {left}'s and {right}'s {field}."
+        ],
+        "explain": [
+          "Provide a checked derivation of {entity}'s {field}."
+        ],
+        "read": [
+          "State {entity}'s {field} for October 2026."
+        ]
+      },
+      "warranty_range": [
+        37,
+        60
+      ]
+    }
+  },
+  "train_split": "development_train"
+}

@@ -1,0 +1,604 @@
+{
+  "adversarial": {
+    "existing_fixture_09": {
+      "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-codex-l0-typed-emission-transfer\\fixtures\\language_growth\\cases\\09_currency_mismatch.json",
+      "reason": "type_unit_mismatch",
+      "sha256": "b354a3b9098bd3940eb006e46fef8c336cb674d7073f639bc61e319bdbe1f9db",
+      "status": "rejected"
+    },
+    "unit_mismatch": {
+      "audience": null,
+      "context_ref": null,
+      "dependencies": [],
+      "outputs": [],
+      "policy_ref": null,
+      "reason": "type_unit_mismatch",
+      "registry_ref": null,
+      "status": "rejected",
+      "style": null
+    },
+    "wrong_record": {
+      "interpretation": "Kernel checks evidence-relative validity, not question relevance; scorer rejects wrong requested record.",
+      "kernel_status": "accepted",
+      "whole_answer_correct": false
+    },
+    "wrong_relation": {
+      "audience": null,
+      "context_ref": null,
+      "dependencies": [],
+      "outputs": [],
+      "policy_ref": null,
+      "reason": "unsupported_assertion",
+      "registry_ref": null,
+      "status": "rejected",
+      "style": null
+    }
+  },
+  "cost_usd": 0,
+  "data_sha256": "4c63f494a42ec66da89236225d3d9aa6a6c22e4b9844df96c4a8188ee00b0faa",
+  "parameters": 28263,
+  "pooled": {
+    "all": {
+      "count": 1080,
+      "kernel_accepted": 1036,
+      "operation_correct": 832,
+      "relation_correct": 43,
+      "structure_exact": 546,
+      "target_exact": 519,
+      "whole_answer_correct": 519
+    },
+    "by_kind": {
+      "compare": {
+        "count": 360,
+        "kernel_accepted": 316,
+        "operation_correct": 112,
+        "relation_correct": 43,
+        "structure_exact": 56,
+        "target_exact": 29,
+        "whole_answer_correct": 29
+      },
+      "explain": {
+        "count": 360,
+        "kernel_accepted": 360,
+        "operation_correct": 360,
+        "relation_correct": 0,
+        "structure_exact": 257,
+        "target_exact": 257,
+        "whole_answer_correct": 257
+      },
+      "read": {
+        "count": 360,
+        "kernel_accepted": 360,
+        "operation_correct": 360,
+        "relation_correct": 0,
+        "structure_exact": 233,
+        "target_exact": 233,
+        "whole_answer_correct": 233
+      }
+    }
+  },
+  "raw_predictions_sha256": "8e164ee8bc163c8eee346cd394c84922d4825ec097c99d817b485dffd0a36678",
+  "registration": {
+    "alternate_validation_templates": {
+      "explain": "For {entity}, provide the checked derivation of the {field}.",
+      "read": "For October 2026, state the {field} of {entity}."
+    },
+    "architecture": "Byte-identical copied PR #80 core; no architecture, scales, seeds, optimizer or training changes",
+    "base_commit": "0f4b8ad2ea717c79858ddfbc4deb55c9b71940af",
+    "candidate_contract": "12 structural candidates; all three relation choices; no truth filtering or target-dependent inference",
+    "config": {
+      "batch_size": 32,
+      "clip_norm": 1.0,
+      "cpu_threads": 2,
+      "development_clusters": 180,
+      "development_seed": 9102,
+      "inference": "argmax operation, conditional argmax target, relation argmax on predicted operands",
+      "loss": "operation CE + conditional target CE + comparison relation CE",
+      "lr": 0.003,
+      "max_seconds": 180,
+      "numeric_scales": {
+        "price": 200.0,
+        "warranty_months": 36.0
+      },
+      "relation_features": [
+        "left/scale",
+        "right/scale",
+        "delta",
+        "delta_squared"
+      ],
+      "scope": "One condition; final step only; iterative synthetic development; no validation tuning; random initialization; no parent retention claim",
+      "seeds": [
+        20261006,
+        20261016,
+        20261026
+      ],
+      "steps": 300,
+      "train_count": 600,
+      "train_seed": 9101,
+      "width": 32
+    },
+    "cost_usd": 0,
+    "evaluation_split": "development_validation",
+    "frozen_data_sha256": "4c63f494a42ec66da89236225d3d9aa6a6c22e4b9844df96c4a8188ee00b0faa",
+    "implementation_source_commit": "c0db91df4b28fbb3cbd9fe05b210b85ff2a396ee",
+    "initialization": "random; no teacher or parent checkpoint",
+    "paired_task_clusters": 180,
+    "pairing": "Original plus selected-field value swap for compare; original plus preauthored disjoint alternate wording for read/explain",
+    "scope": "Single train-to-disjoint-validation transfer condition; iterative synthetic development, not official holdout; no tuning or parent-retention claim",
+    "source": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-codex-l0-typed-emission-transfer\\language_growth\\typed_emission_ssm.py",
+    "source_hashes": {
+      "development_data.py": "368d29aaeb4ae61bd79848bbe18025cf5b16c9188cf495e122721f050033e629",
+      "kernel.py": "241d4306da002c1f2352d48fd5d868752ec96b8d601745c9f8263f75ac32f046",
+      "parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+      "realize.py": "ca937cd935cc43178dcfdf80ef9ccb15cd7994be7c07c054928a218ff7ad7d62",
+      "typed_emission_ssm.py": "93ae22e267186f5453f520a2bf30747e4cd097662068c066b8535d956ee5f2d6",
+      "typed_emission_ssm_transfer.py": "44da0a6e92628191d195c557d55fe47e2ffee4d27b012fc8e4f7007e5a75fdc2",
+      "types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1"
+    },
+    "split_specs": {
+      "development_train": {
+        "names": [
+          "Aster",
+          "Bracken",
+          "Cinder",
+          "Dovetail",
+          "Ember",
+          "Fallow"
+        ],
+        "price_cents_range": [
+          5000,
+          20000
+        ],
+        "templates": {
+          "compare": [
+            "Compare the October {field} of {left} and {right}.",
+            "How do {left}'s and {right}'s October {field} compare?"
+          ],
+          "explain": [
+            "Explain the checked {field} fact for {entity}.",
+            "Show the checked derivation for {entity}'s {field}."
+          ],
+          "read": [
+            "What is {entity}'s {field} in October 2026?",
+            "Give the October 2026 {field} for {entity}."
+          ]
+        },
+        "warranty_range": [
+          1,
+          36
+        ]
+      },
+      "development_validation": {
+        "names": [
+          "Grove",
+          "Hearth",
+          "Indigo",
+          "Juniper",
+          "Kestrel",
+          "Lumen"
+        ],
+        "price_cents_range": [
+          20001,
+          30000
+        ],
+        "templates": {
+          "compare": [
+            "For October 2026, compare {left}'s and {right}'s {field}."
+          ],
+          "explain": [
+            "Provide a checked derivation of {entity}'s {field}."
+          ],
+          "read": [
+            "State {entity}'s {field} for October 2026."
+          ]
+        },
+        "warranty_range": [
+          37,
+          60
+        ]
+      }
+    },
+    "train_split": "development_train"
+  },
+  "results": {
+    "20261006": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\review-artifacts\\l0-typed-emission-transfer-20261006\\seed-20261006.pt",
+      "checkpoint_sha256": "28601d550a51b2800a396186e66a10a8de4ed1fbf195618ea9366790aafde611",
+      "history": [
+        {
+          "operation_loss": 0.3192637264728546,
+          "relation_loss": 0.4665713310241699,
+          "step": 100,
+          "target_loss": 0.40010643005371094
+        },
+        {
+          "operation_loss": 0.0975845456123352,
+          "relation_loss": 0.23918947577476501,
+          "step": 200,
+          "target_loss": 0.24538657069206238
+        },
+        {
+          "operation_loss": 0.04545564204454422,
+          "relation_loss": 0.35805416107177734,
+          "step": 300,
+          "target_loss": 0.2232026308774948
+        }
+      ],
+      "metrics": {
+        "all": {
+          "count": 360,
+          "kernel_accepted": 357,
+          "operation_correct": 246,
+          "relation_correct": 0,
+          "structure_exact": 179,
+          "target_exact": 177,
+          "whole_answer_correct": 177
+        },
+        "by_kind": {
+          "compare": {
+            "count": 120,
+            "kernel_accepted": 117,
+            "operation_correct": 6,
+            "relation_correct": 0,
+            "structure_exact": 2,
+            "target_exact": 0,
+            "whole_answer_correct": 0
+          },
+          "explain": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 92,
+            "target_exact": 92,
+            "whole_answer_correct": 92
+          },
+          "read": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 85,
+            "target_exact": 85,
+            "whole_answer_correct": 85
+          }
+        }
+      },
+      "paired": {
+        "all": {
+          "both_kernel_accepted": 178,
+          "both_target_exact": 73,
+          "both_whole_answer_correct": 73,
+          "clusters": 180
+        },
+        "compare": {
+          "both_kernel_accepted": 58,
+          "both_target_exact": 0,
+          "both_whole_answer_correct": 0,
+          "clusters": 60
+        },
+        "explain": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 44,
+          "both_whole_answer_correct": 44,
+          "clusters": 60
+        },
+        "read": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 29,
+          "both_whole_answer_correct": 29,
+          "clusters": 60
+        }
+      },
+      "train": {
+        "all": {
+          "count": 600,
+          "kernel_accepted": 582,
+          "operation_correct": 600,
+          "relation_correct": 150,
+          "structure_exact": 560,
+          "target_exact": 545,
+          "whole_answer_correct": 545
+        },
+        "by_kind": {
+          "compare": {
+            "count": 200,
+            "kernel_accepted": 182,
+            "operation_correct": 200,
+            "relation_correct": 150,
+            "structure_exact": 161,
+            "target_exact": 146,
+            "whole_answer_correct": 146
+          },
+          "explain": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 200,
+            "target_exact": 200,
+            "whole_answer_correct": 200
+          },
+          "read": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 199,
+            "target_exact": 199,
+            "whole_answer_correct": 199
+          }
+        }
+      }
+    },
+    "20261016": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\review-artifacts\\l0-typed-emission-transfer-20261006\\seed-20261016.pt",
+      "checkpoint_sha256": "0e2df6464e8e8d76cf26870f4de4fe4fbe85ff1b7362da9cdc9aae9725c676ce",
+      "history": [
+        {
+          "operation_loss": 0.3027835488319397,
+          "relation_loss": 0.4865449368953705,
+          "step": 100,
+          "target_loss": 0.4528464078903198
+        },
+        {
+          "operation_loss": 0.19968555867671967,
+          "relation_loss": 0.3074946999549866,
+          "step": 200,
+          "target_loss": 0.2976718544960022
+        },
+        {
+          "operation_loss": 0.07489021122455597,
+          "relation_loss": 0.44695794582366943,
+          "step": 300,
+          "target_loss": 0.14643435180187225
+        }
+      ],
+      "metrics": {
+        "all": {
+          "count": 360,
+          "kernel_accepted": 339,
+          "operation_correct": 294,
+          "relation_correct": 23,
+          "structure_exact": 181,
+          "target_exact": 168,
+          "whole_answer_correct": 168
+        },
+        "by_kind": {
+          "compare": {
+            "count": 120,
+            "kernel_accepted": 99,
+            "operation_correct": 54,
+            "relation_correct": 23,
+            "structure_exact": 30,
+            "target_exact": 17,
+            "whole_answer_correct": 17
+          },
+          "explain": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 76,
+            "target_exact": 76,
+            "whole_answer_correct": 76
+          },
+          "read": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 75,
+            "target_exact": 75,
+            "whole_answer_correct": 75
+          }
+        }
+      },
+      "paired": {
+        "all": {
+          "both_kernel_accepted": 168,
+          "both_target_exact": 72,
+          "both_whole_answer_correct": 72,
+          "clusters": 180
+        },
+        "compare": {
+          "both_kernel_accepted": 48,
+          "both_target_exact": 8,
+          "both_whole_answer_correct": 8,
+          "clusters": 60
+        },
+        "explain": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 37,
+          "both_whole_answer_correct": 37,
+          "clusters": 60
+        },
+        "read": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 27,
+          "both_whole_answer_correct": 27,
+          "clusters": 60
+        }
+      },
+      "train": {
+        "all": {
+          "count": 600,
+          "kernel_accepted": 586,
+          "operation_correct": 599,
+          "relation_correct": 151,
+          "structure_exact": 557,
+          "target_exact": 543,
+          "whole_answer_correct": 543
+        },
+        "by_kind": {
+          "compare": {
+            "count": 200,
+            "kernel_accepted": 186,
+            "operation_correct": 199,
+            "relation_correct": 151,
+            "structure_exact": 158,
+            "target_exact": 144,
+            "whole_answer_correct": 144
+          },
+          "explain": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 200,
+            "target_exact": 200,
+            "whole_answer_correct": 200
+          },
+          "read": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 199,
+            "target_exact": 199,
+            "whole_answer_correct": 199
+          }
+        }
+      }
+    },
+    "20261026": {
+      "checkpoint": "C:\\Users\\apumu\\research\\CHLabs\\review-artifacts\\l0-typed-emission-transfer-20261006\\seed-20261026.pt",
+      "checkpoint_sha256": "3a7bdef5a9365be4012c0184026baa42bb6e0f52a82477bd3085dbc36a3d9297",
+      "history": [
+        {
+          "operation_loss": 0.2595415711402893,
+          "relation_loss": 0.5770182013511658,
+          "step": 100,
+          "target_loss": 0.4310697317123413
+        },
+        {
+          "operation_loss": 0.1034792885184288,
+          "relation_loss": 0.44749706983566284,
+          "step": 200,
+          "target_loss": 0.3025524616241455
+        },
+        {
+          "operation_loss": 0.04029560834169388,
+          "relation_loss": 0.14541447162628174,
+          "step": 300,
+          "target_loss": 0.19350144267082214
+        }
+      ],
+      "metrics": {
+        "all": {
+          "count": 360,
+          "kernel_accepted": 340,
+          "operation_correct": 292,
+          "relation_correct": 20,
+          "structure_exact": 186,
+          "target_exact": 174,
+          "whole_answer_correct": 174
+        },
+        "by_kind": {
+          "compare": {
+            "count": 120,
+            "kernel_accepted": 100,
+            "operation_correct": 52,
+            "relation_correct": 20,
+            "structure_exact": 24,
+            "target_exact": 12,
+            "whole_answer_correct": 12
+          },
+          "explain": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 89,
+            "target_exact": 89,
+            "whole_answer_correct": 89
+          },
+          "read": {
+            "count": 120,
+            "kernel_accepted": 120,
+            "operation_correct": 120,
+            "relation_correct": 0,
+            "structure_exact": 73,
+            "target_exact": 73,
+            "whole_answer_correct": 73
+          }
+        }
+      },
+      "paired": {
+        "all": {
+          "both_kernel_accepted": 169,
+          "both_target_exact": 76,
+          "both_whole_answer_correct": 76,
+          "clusters": 180
+        },
+        "compare": {
+          "both_kernel_accepted": 49,
+          "both_target_exact": 5,
+          "both_whole_answer_correct": 5,
+          "clusters": 60
+        },
+        "explain": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 42,
+          "both_whole_answer_correct": 42,
+          "clusters": 60
+        },
+        "read": {
+          "both_kernel_accepted": 60,
+          "both_target_exact": 29,
+          "both_whole_answer_correct": 29,
+          "clusters": 60
+        }
+      },
+      "train": {
+        "all": {
+          "count": 600,
+          "kernel_accepted": 589,
+          "operation_correct": 600,
+          "relation_correct": 154,
+          "structure_exact": 556,
+          "target_exact": 546,
+          "whole_answer_correct": 546
+        },
+        "by_kind": {
+          "compare": {
+            "count": 200,
+            "kernel_accepted": 189,
+            "operation_correct": 200,
+            "relation_correct": 154,
+            "structure_exact": 156,
+            "target_exact": 146,
+            "whole_answer_correct": 146
+          },
+          "explain": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 200,
+            "target_exact": 200,
+            "whole_answer_correct": 200
+          },
+          "read": {
+            "count": 200,
+            "kernel_accepted": 200,
+            "operation_correct": 200,
+            "relation_correct": 0,
+            "structure_exact": 200,
+            "target_exact": 200,
+            "whole_answer_correct": 200
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "device": "cpu",
+    "interop_threads": 1,
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]",
+    "threads": 2,
+    "torch": "2.8.0+cu128"
+  },
+  "scope": "One condition; final step only; iterative synthetic development; no validation tuning; random initialization; no parent retention claim",
+  "wall_seconds": 11.844000000004598
+}
