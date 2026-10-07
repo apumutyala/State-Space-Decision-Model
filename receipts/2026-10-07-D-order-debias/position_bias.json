@@ -1,0 +1,125 @@
+{
+ "n_questions": 5892,
+ "unanswered_or_invalid": 11,
+ "accuracy": 0.7756279701289884,
+ "p_chosen_first": 0.6905974202308215,
+ "p_gold_first": 0.6692124915139172,
+ "p_chosen_last": 0.16395112016293278,
+ "p_gold_last": 0.18906992532247116,
+ "uniform_first_rate": 0.4350566010849248,
+ "accuracy_by_gold_position": {
+  "first": {
+   "n": 3943,
+   "accuracy": 0.9140248541719503
+  },
+  "last": {
+   "n": 1114,
+   "accuracy": 0.5350089766606823
+  },
+  "middle": {
+   "n": 835,
+   "accuracy": 0.4431137724550898
+  }
+ },
+ "by_k": {
+  "2": {
+   "n": 4566,
+   "p_chosen_first": 0.8486640385457731,
+   "p_gold_first": 0.8223828296101621
+  },
+  "3": {
+   "n": 438,
+   "p_chosen_first": 0.15296803652968036,
+   "p_gold_first": 0.2191780821917808
+  },
+  "4": {
+   "n": 404,
+   "p_chosen_first": 0.12376237623762376,
+   "p_gold_first": 0.1311881188118812
+  },
+  "5-16": {
+   "n": 198,
+   "p_chosen_first": 0.21717171717171718,
+   "p_gold_first": 0.18181818181818182
+  },
+  ">16": {
+   "n": 286,
+   "p_chosen_first": 0.11888111888111888,
+   "p_gold_first": 0.01048951048951049
+  }
+ },
+ "by_area": {
+  "arts": {
+   "n": 402,
+   "accuracy": 0.4527363184079602,
+   "p_chosen_first": 0.5870646766169154,
+   "p_gold_first": 0.3855721393034826
+  },
+  "knowledge": {
+   "n": 777,
+   "accuracy": 0.49935649935649934,
+   "p_chosen_first": 0.6666666666666666,
+   "p_gold_first": 0.45302445302445304
+  },
+  "language": {
+   "n": 3293,
+   "accuracy": 0.9259034315214091,
+   "p_chosen_first": 0.8603097479501974,
+   "p_gold_first": 0.8788338900698451
+  },
+  "retrieval": {
+   "n": 544,
+   "accuracy": 0.5882352941176471,
+   "p_chosen_first": 0.2113970588235294,
+   "p_gold_first": 0.31985294117647056
+  },
+  "tools": {
+   "n": 876,
+   "accuracy": 0.7203196347031964,
+   "p_chosen_first": 0.4189497716894977,
+   "p_gold_first": 0.4200913242009132
+  }
+ },
+ "top_chosen_labels": [
+  {
+   "label": "no",
+   "chosen": 3413,
+   "gold": 3301
+  },
+  {
+   "label": "yes",
+   "chosen": 304,
+   "gold": 416
+  },
+  {
+   "label": "B",
+   "chosen": 267,
+   "gold": 210
+  },
+  {
+   "label": "A",
+   "chosen": 227,
+   "gold": 165
+  },
+  {
+   "label": "NotMentioned",
+   "chosen": 132,
+   "gold": 86
+  },
+  {
+   "label": "legitimate",
+   "chosen": 102,
+   "gold": 82
+  },
+  {
+   "label": "option_0",
+   "chosen": 101,
+   "gold": 76
+  },
+  {
+   "label": "Entailment",
+   "chosen": 95,
+   "gold": 112
+  }
+ ]
+}
