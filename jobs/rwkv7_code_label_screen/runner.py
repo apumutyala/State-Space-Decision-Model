@@ -101,9 +101,16 @@ def check_revision(revision, arm, *, synthetic=False):
             or not isinstance(config["kernel_stack"], dict)):
         raise ValueError(f"{arm}: malformed runtime identity")
     # The merged volume receipt pins the existing renderer, codebook, sources and
-    # scoring configuration. Runtime/model identity is separately matched below.
+    # scoring configuration. Its scripted plugin metadata differs from the real
+    # load_rwkv7_hf plugin; only those two documented fields vary by mode.
     reference = json.loads((ROOT / "receipts/2026-10-07-D-code-label-v2-fork/dev-volume.json").read_text(encoding="utf-8"))[arm + "_revision"]
-    for key in ("backend", "family", "prompt_template", "adapter_version", "max_context", "notes"):
+    if not synthetic:
+        reference["notes"] = {"model_class": "Rwkv7ForCausalLM", "trained_ctx": 25600,
+                              "attention_free": True, "vendored_code": reference["notes"]["vendored_code"]}
+        reference["inference_config"]["untrusted_encoding"] = "rwkv7-hf-trie (fail closed on <|endoftext|>)"
+    if canonical_json(revision["notes"]) != canonical_json(reference["notes"]):
+        raise ValueError(f"{arm}: changed revision notes")
+    for key in ("backend", "family", "prompt_template", "adapter_version", "max_context"):
         if revision[key] != reference[key]:
             raise ValueError(f"{arm}: changed revision {key}")
     if {k: v for k, v in config.items() if k not in runtime} != {k: v for k, v in reference["inference_config"].items() if k not in runtime}:

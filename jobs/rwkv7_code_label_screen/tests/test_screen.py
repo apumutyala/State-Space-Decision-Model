@@ -221,6 +221,20 @@ def bind_revision_id(revision):
     )
 
 
+def production_revision(proof, arm):
+    revision = copy.deepcopy(proof[2][arm])
+    model_id, snapshot, weights_hash = S.pinned_model_identity()
+    revision.update({"model_id": model_id, "snapshot": snapshot,
+                     "notes": {"model_class": "Rwkv7ForCausalLM", "trained_ctx": 25600,
+                               "attention_free": True, "vendored_code": snapshot}})
+    revision["files_sha256"]["weights"] = weights_hash
+    revision["inference_config"]["untrusted_encoding"] = "rwkv7-hf-trie (fail closed on <|endoftext|>)"
+    revision["inference_config_sha256"] = __import__("hashlib").sha256(
+        S.canonical_json(revision["inference_config"]).encode()).hexdigest()
+    bind_revision_id(revision)
+    return revision
+
+
 def test_pinned_model_identity_matches_manifest_and_backend_hash_recipe(tmp_path, monkeypatch):
     from decide.backends import hf_readout
 
@@ -243,10 +257,7 @@ def test_pinned_model_identity_matches_manifest_and_backend_hash_recipe(tmp_path
 @pytest.mark.parametrize("mutation", [None, "not-loaded", "unknown", "missing", "placeholder", "short-hash",
                                       "nonhex-hash", "different-valid-hash", "model_id", "snapshot", "null-snapshot"])
 def test_real_revision_requires_pinned_model_snapshot_and_weights_even_with_rebuilt_id(proof, arm, mutation):
-    revision = copy.deepcopy(proof[2][arm])
-    model_id, snapshot, weights_hash = S.pinned_model_identity()
-    revision.update({"model_id": model_id, "snapshot": snapshot})
-    revision["files_sha256"]["weights"] = weights_hash
+    revision = production_revision(proof, arm)
     if mutation == "model_id":
         revision["model_id"] = "different-model"
     elif mutation == "snapshot":
@@ -270,6 +281,48 @@ def test_real_revision_requires_pinned_model_snapshot_and_weights_even_with_rebu
 def test_synthetic_sentinels_cannot_enter_real_audit(proof, arm):
     with pytest.raises(ValueError, match="weights hash"):
         S.check_revision(proof[2][arm], arm)
+
+
+@pytest.mark.parametrize("arm", ["v1", "v2"])
+@pytest.mark.parametrize("synthetic", [False, True])
+@pytest.mark.parametrize("mutation", [None, "other-mode-notes", "extra-note", "vendored-code", "encoder-missing",
+                                      "encoder-other-mode", "encoder-malformed", "encoder-changed"])
+def test_revision_metadata_is_exact_for_production_or_synthetic_mode(proof, arm, synthetic, mutation):
+    revision = copy.deepcopy(proof[2][arm]) if synthetic else production_revision(proof, arm)
+    other = production_revision(proof, arm) if synthetic else proof[2][arm]
+    if mutation == "other-mode-notes":
+        revision["notes"] = copy.deepcopy(other["notes"])
+    elif mutation == "extra-note":
+        revision["notes"]["extra"] = True
+    elif mutation == "vendored-code":
+        revision["notes"]["vendored_code"] = "changed"
+    elif mutation == "encoder-missing":
+        del revision["inference_config"]["untrusted_encoding"]
+    elif mutation == "encoder-other-mode":
+        revision["inference_config"]["untrusted_encoding"] = other["inference_config"]["untrusted_encoding"]
+    elif mutation == "encoder-malformed":
+        revision["inference_config"]["untrusted_encoding"] = None
+    elif mutation == "encoder-changed":
+        revision["inference_config"]["untrusted_encoding"] = "changed"
+    # A valid config hash and revision ID cannot legitimize wrong-mode metadata.
+    revision["inference_config_sha256"] = __import__("hashlib").sha256(
+        S.canonical_json(revision["inference_config"]).encode()).hexdigest()
+    bind_revision_id(revision)
+    if mutation is None:
+        S.check_revision(revision, arm, synthetic=synthetic)
+    else:
+        with pytest.raises(ValueError, match="revision notes|scoring/config/source"):
+            S.check_revision(revision, arm, synthetic=synthetic)
+
+
+@pytest.mark.parametrize("arm", ["v1", "v2"])
+@pytest.mark.parametrize("field,value", [("model_class", "OtherModel"), ("trained_ctx", 2048),
+                                        ("attention_free", False), ("attention_free", 1)])
+def test_production_loader_notes_mutations_fail(proof, arm, field, value):
+    revision = production_revision(proof, arm)
+    revision["notes"][field] = value
+    with pytest.raises(ValueError, match="revision notes"):
+        S.check_revision(revision, arm)
 
 
 @pytest.mark.parametrize("status", ["exhausted", "unsupported"])
