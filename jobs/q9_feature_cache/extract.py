@@ -13,7 +13,10 @@ same template the stock readout uses (``jrt-chatml-v1``):
   3. stored per question (bf16 unless noted):
        fork [K, D]   final feature after prefix + continuation_k  (== heads.features ``fork``, cache-fork mode)
        e    [K, D]   mean feature over option k's span in the schema (== ``HeadInput.e``, ordered layout)
-       lex  [K, D]   mean OUTPUT-embedding row (lm_head) over option k's span tokens (Clef's lexical prior input)
+       opt_tok / opt_off   option k's span token ids (int32, concatenated; offsets [K+1]). The lexical feature (mean
+                     OUTPUT-embedding row over those tokens, Clef's lexical-prior input) is recomputed on CPU from the
+                     arm's ``lex_vocab.pt`` (lm_head rows of every token any stored option uses), not stored per option
+                     (review B1: the cache must fit one <= 4.5 GiB job artifact)
        q_pre [D], q_end [D]   target field mean / answer-position feature (== ``HeadInput.q_pre / q_end``)
        lm_lp [K] fp32, lm_ntok [K]   summed log-likelihood of continuation_k (``" " + option_id + <|im_end|>``) under
                      the frozen LM: the stock readout's own option score (E4 input; the stock readout's
@@ -230,10 +233,15 @@ def extract_request(text, w_out: torch.Tensor, rows: Sequence[LayoutRow], opt_ch
             del h, st
         hrow = torch.cat([hp, hs], 0)  # [T, D]
         e = torch.stack([_span_mean(hrow, sp_) for sp_ in r.option_spans])
-        lex = torch.stack([w_out[r.ids[a:b]].float().mean(0) for a, b in r.option_spans])
+        toks = [r.ids[a:b] for a, b in r.option_spans]
+        off = [0]
+        for t in toks:
+            off.append(off[-1] + len(t))
         q = {"qid": r.qid, "qtype": r.qtype, "option_ids": list(r.option_ids), "T": len(r.ids), "K": r.n_options,
              "evidence_len": r.evidence_len, "evidence": r.meta.get("evidence"), "key_class": key_class(r.option_ids),
-             "fork": fork.cpu(), "e": e.to(torch.bfloat16).cpu(), "lex": lex.to(torch.bfloat16).cpu(),
+             "fork": fork.cpu(), "e": e.to(torch.bfloat16).cpu(),
+             "opt_tok": torch.tensor([x for t in toks for x in t], dtype=torch.int32),
+             "opt_off": torch.tensor(off, dtype=torch.int32),
              "q_pre": _span_mean(hrow, r.field_span).to(torch.bfloat16).cpu(),
              "q_end": hrow[r.answer_pos].to(torch.bfloat16).cpu(), "lm_lp": lm_lp.cpu(),
              "lm_ntok": torch.tensor([len(x) for x in conts], dtype=torch.int16)}
@@ -351,6 +359,25 @@ def n_chunks_calls(rows: Sequence[LayoutRow], opt_chunk: int) -> tuple[int, int]
             pos += len(part) * (off + max(len(x) for x in part))
             calls += 1
     return pos, calls
+
+
+def lex_vocab(w_out: torch.Tensor, token_ids) -> dict:
+    """lm_head rows of the given token ids (bf16, CPU): the lexical table the proxy loader averages per option."""
+    ids = torch.tensor(sorted(set(int(t) for t in token_ids)), dtype=torch.long)
+    return {"ids": ids, "rows": w_out[ids.to(w_out.device)].to(torch.bfloat16).cpu()}
+
+
+def lexical(q: dict, table: dict) -> torch.Tensor:
+    """[K, D] bf16: mean lm_head row over each option's span tokens (== the extractor's former ``lex`` field)."""
+    pos = {int(t): i for i, t in enumerate(table["ids"].tolist())}
+    tok, off = q["opt_tok"].tolist(), q["opt_off"].tolist()
+    rows = table["rows"]
+    return torch.stack([rows[[pos[t] for t in tok[off[k]:off[k + 1]]]].float().mean(0)
+                        for k in range(len(off) - 1)]).to(torch.bfloat16)
+
+
+def option_tokens(rows: Sequence[LayoutRow]) -> set:
+    return {t for r in rows for a, b in r.option_spans for t in r.ids[a:b]}
 
 
 def lm_tokens(rows: Sequence[LayoutRow]) -> int:

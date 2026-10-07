@@ -14,23 +14,23 @@ DEV subset = the 2,008-row m1 subset (`jobs/common/dev_subset_m1.json`); CI = 95
 | 2026-10-06 | RWKV7-G1k-13.3B stock | attention-free fallback parent readout | `claude/readout-fork` | see issue #3 | job-tkfaj, LEDGER.md | 24.9 [22.4, 27.8] | readout-measured (−31 pts vs Clef-flash) | kept as fallback parent |
 | 2026-10-06 | RWKV7 + fla kernel | fla `chunk_rwkv7` matches eager numerics and is faster | `claude/fla-rwkv7-kernel` | see PR #77 | job-jn47u, job-mden7 | n/a (kernel gate) | REJECT_NUMERICS (fla 2–3x chunked's grad error vs fp64) | folded |
 
-### Proxy head loop on frozen Qwen3.5-9B features (PREMORTEM blocker #1)
+## Registered, not yet measured: proxy head loop on frozen Qwen3.5-9B features (PREMORTEM blocker #1)
 
-Pre-registered rule `train/proxy_rule.py` (proxy-rule-v1, commit `e9db899`, before any data). Scored with the real harness scorer on SELECT (the 2,008-row DEV subset; used for selection) and, for the chosen attention-free recipe only, on the disjoint 2,014-row HOLDOUT split (verdict). No row below is measured yet: the feature cache (`jobs/q9_feature_cache`, modes stock + extra) has not run (no cloud job submitted). Receipts will be `train.proxy_loop` `receipt.json` files (results sha256, head params, train curve, scores, paired CIs vs Clef-flash and stock Q9, IN/NEW-domain split).
+Pre-registered in `train/proxy_rule.py` (proxy-rule-v1, commit `e9db899`, plus pre-data amendment A1 `06abf1f`) on branch `stack/q9/proxy-head`. They move into the table above, one row each with its `train.proxy_loop` receipt (results sha256, head sha256, scores with paired CIs vs Clef-flash and stock Q9, families-v1 columns, 0.2.1 and 0.3), once the `jobs/q9_feature_cache` parts have run. No cloud job has been submitted.
 
-| Date | Family | Hypothesis | Branch | Sha | Receipt | Score (DEV subset) + CI | Verdict | Kept/folded |
-|---|---|---|---|---|---|---|---|---|
-| 2026-10-06 | proxy R00: attn_ref (REFERENCE, not attention-free) | Clef-like anchor: 2 cross-attention routing layers over the 32-chunk evidence bank + 2 joint self-attention layers over all options of the request + lexical prior, on frozen stock-Q9 features, clef loss. Upper bound on what routing buys; never a candidate | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R01: mixer (attention-free) | full attention-free mixer: gated linear-recurrence evidence routing + DeepSets option mixing + field mixer + lexical prior + gated LM-logprob pool (E4) + key class, clef loss, reaches >= 50 on HOLDOUT | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R02: mixer | R01 minus the LM answer log-prob (E4): the stock readout's own signal is worth > 0 (techniques/10 §5: stock beats Clef-flash on 6 benchmarks) | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R03: mixer | R01 minus key-class embedding: the opaque-key tax (letter 36 vs 55, option_N 51 vs 77, hash 68 vs 99) is partly learnable from the key class | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R04: mixer | R01 minus evidence routing: option-conditioned recurrence over the evidence adds over final-state forks | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R05: mixer | R01 minus field mixing: joint multi-field decoding helps case-exact slices (Home appliances, SATA, BFCL) | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R06: mixer | R01 minus lexical prior | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R07: mixer | R01 with plain CE instead of LS-CE+Brier+RPS | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R08: mixer | R01 with LS-CE+Brier, no RPS | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R09: mixer | R01 on E5 features (opaque option keys rendered as short codes A, B, ...): the rendering closes part of the opaque-key gap | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R10: mixer | R01 on 1-layer-converted (L23 GDN) features: head-level conversion gap ~0 (stock-readout gap was +1.66) | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R11: fork (m2 head) | m2 FinalStateFork head on cached fork features, clef loss: the current head's frozen-backbone ceiling | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R12: fork (m2 head) | R11 with CE | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
-| 2026-10-06 | proxy R13: fork (m2 head) | R11 on 1-layer-converted features | `stack/q9/proxy-head` | `e9db899` (rule) | pending: jobs/q9_feature_cache not run | not measured | registered (pre-registered recipe) | pending |
+- **proxy R00: attn_ref (REFERENCE, not attention-free)**: Clef-like anchor: 2 cross-attention routing layers over the 32-chunk evidence bank + 2 joint self-attention layers over all options of the request + lexical prior, on frozen stock-Q9 features, clef loss. Upper bound on what routing buys; never a candidate
+- **proxy R01: mixer (attention-free)**: full attention-free mixer: gated linear-recurrence evidence routing + DeepSets option mixing + field mixer + lexical prior + gated LM-logprob pool (E4) + key class, clef loss, reaches >= 50 on HOLDOUT
+- **proxy R02: mixer**: R01 minus the LM answer log-prob (E4): the stock readout's own signal is worth > 0 (techniques/10 §5: stock beats Clef-flash on 6 benchmarks)
+- **proxy R03: mixer**: R01 minus key-class embedding: the opaque-key tax (letter 36 vs 55, option_N 51 vs 77, hash 68 vs 99) is partly learnable from the key class
+- **proxy R04: mixer**: R01 minus evidence routing: option-conditioned recurrence over the evidence adds over final-state forks
+- **proxy R05: mixer**: R01 minus field mixing: joint multi-field decoding helps case-exact slices (Home appliances, SATA, BFCL)
+- **proxy R06: mixer**: R01 minus lexical prior
+- **proxy R07: mixer**: R01 with plain CE instead of LS-CE+Brier+RPS
+- **proxy R08: mixer**: R01 with LS-CE+Brier, no RPS
+- **proxy R09: mixer**: R01 on E5 features (opaque option keys rendered as short codes A, B, ...): the rendering closes part of the opaque-key gap
+- **proxy R10: mixer**: R01 on 1-layer-converted (L23 GDN) features: head-level conversion gap ~0 (stock-readout gap was +1.66)
+- **proxy R11: fork (m2 head)**: m2 FinalStateFork head on cached fork features, clef loss: the current head's frozen-backbone ceiling
+- **proxy R12: fork (m2 head)**: R11 with CE
+- **proxy R13: fork (m2 head)**: R11 on 1-layer-converted features
+- **proxy R14: mixer (A1 control)**: R01 on the stock arm's first 5,000 training rows, 2,000 steps: the matched-data, matched-steps control for R09 / R10
+- **proxy R15: fork (A1 control)**: R11 on the stock arm's first 5,000 training rows: the matched control for R13

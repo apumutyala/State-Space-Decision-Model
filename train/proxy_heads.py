@@ -71,9 +71,20 @@ class ProxyRequest:
     skipped: dict = field(default_factory=dict)
 
 
-def from_record(rec: dict) -> ProxyRequest:
-    """A cached request record (jobs.q9_feature_cache.extract) -> ProxyRequest (tensors stay bf16 on CPU)."""
-    qs = [ProxyQuestion(q["qid"], q["qtype"], list(q["option_ids"]), q["fork"], q["e"], q["lex"], q["q_pre"],
+def from_record(rec: dict, lex_table: dict | None = None) -> ProxyRequest:
+    """A cached request record (jobs.q9_feature_cache.extract) -> ProxyRequest (tensors stay bf16 on CPU). The lexical
+    feature is rebuilt from the arm's ``lex_vocab.pt`` table and the stored option token ids (the cache does not store
+    it per option; jobs/q9_feature_cache review B1)."""
+    from jobs.q9_feature_cache.extract import lexical
+
+    def lex(q):
+        if "lex" in q:  # legacy records
+            return q["lex"]
+        if lex_table is None:
+            raise ValueError("records without a stored lexical feature need the arm's lex_vocab.pt table")
+        return lexical(q, lex_table)
+
+    qs = [ProxyQuestion(q["qid"], q["qtype"], list(q["option_ids"]), q["fork"], q["e"], lex(q), q["q_pre"],
                         q["q_end"], q["lm_lp"].float(), q["lm_ntok"].float(), q["key_class"], q.get("bank_key"),
                         int(q.get("label", -1))) for q in rec["questions"]]
     return ProxyRequest(rec["rid"], rec["split"], qs, dict(rec.get("banks") or {}), rec.get("catalog_id"),

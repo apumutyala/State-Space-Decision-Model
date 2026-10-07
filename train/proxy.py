@@ -66,6 +66,8 @@ def cache_items(model, items: Sequence, device: str = "cpu", cfg: TrainConfig | 
     (as ``Trainer`` does)."""
     if model.row_head:
         raise ValueError("row heads (G16) have no shared HeadInput; the proxy does not apply")
+    if getattr(model.backbone, "wants_trust", False) or (cfg is not None and (cfg.controlsafe or {}).get("trust_gate")):
+        raise ValueError("controlsafe trust_gate (G15) backbones have no shared cached HeadInput; the proxy does not apply")
     bf16 = bool(cfg and cfg.bf16)
     if cfg is not None:
         model.backbone.fork_mode = cfg.fork_mode
@@ -99,6 +101,11 @@ def train_head_cached(model, cached: list[CachedItem], cfg: TrainConfig, steps: 
         raise ValueError("the proxy batches by gradient accumulation; use batch_size=1, grad_accum=N")
     if cfg.lora_rank:
         raise ValueError("the proxy has no backbone in the loop: lora_rank must be 0")
+    if cfg.row_batch > 1:
+        raise ValueError("the proxy replays the Trainer's per-row micro-batches; row_batch > 1 (batched rows, sorted by "
+                         "length) is a different update order: use row_batch=1")
+    if (cfg.controlsafe or {}).get("trust_gate"):
+        raise ValueError("controlsafe trust_gate (G15) backbones have no shared cached HeadInput; the proxy does not apply")
     if cfg.require_guard and guard is None:
         raise ValueError("TrainConfig.require_guard: pass the SplitGuard the cached items were built with "
                          "(or SplitGuard.synthetic_only for synthetic toys), as Trainer requires")
@@ -107,6 +114,7 @@ def train_head_cached(model, cached: list[CachedItem], cfg: TrainConfig, steps: 
         raise ValueError(f"cached features were computed with (bf16, fork_mode) {sorted(bad, key=str)} but cfg has "
                          f"({bool(cfg.bf16)}, {cfg.fork_mode!r}): re-cache with cache_items(..., cfg=cfg)")
     torch.manual_seed(cfg.seed)
+    model.train()  # as Trainer.train_step
     params = model.head_parameters()
     opt = torch.optim.AdamW([{"params": params, "lr": cfg.lr_head}], weight_decay=cfg.weight_decay)
     warm = max(cfg.warmup_steps, 0)
@@ -139,12 +147,18 @@ def train_head_cached(model, cached: list[CachedItem], cfg: TrainConfig, steps: 
 
 @torch.no_grad()
 def eval_cached(model, cached: list[CachedItem]) -> dict:
-    nll, acc = 0.0, 0
-    for c in cached:
-        with _autocast(c.bf16):
-            lp = _lp(model, c)[0].float()
-        nll -= float(lp[c.label])
-        acc += int(int(lp.argmax()) == c.label)
+    """Eval mode (as Trainer.evaluate), restored afterwards."""
+    was = model.training
+    model.eval()
+    try:
+        nll, acc = 0.0, 0
+        for c in cached:
+            with _autocast(c.bf16):
+                lp = _lp(model, c)[0].float()
+            nll -= float(lp[c.label])
+            acc += int(int(lp.argmax()) == c.label)
+    finally:
+        model.train(was)
     return {"nll": nll / len(cached), "acc": acc / len(cached)}
 
 

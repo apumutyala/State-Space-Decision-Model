@@ -15,7 +15,8 @@ against the DEV/TEST manifests by the guard. ``--toy-train-records`` exists for 
 records, synthetic-only guard) and is recorded as such in summary.json.
 
 Exit codes: 0 ok; 2 numerics self-check; 5 setup/usage; 10 data identity (train set, DEV rows, gdn sha256);
-15 projected too slow (in-job preflight); 27 guard not ready; 28 cohort / train-set leak.
+15 projected too slow (in-job preflight); 16 output over max_output_gib (estimate or bytes written);
+27 guard not ready; 28 cohort / train-set leak or a record that targets a frozen held-out benchmark.
 """
 from __future__ import annotations
 
@@ -28,7 +29,12 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-EXIT = {"ok": 0, "numerics": 2, "setup": 5, "data": 10, "too_slow": 15, "guard": 27, "leak": 28}
+EXIT = {"ok": 0, "numerics": 2, "setup": 5, "data": 10, "too_slow": 15, "too_big": 16, "guard": 27, "leak": 28}
+#: the platform packages a job's WHOLE output directory as ONE tar artifact, bounded by max_artifact_bytes = 5 GiB
+#: (list_limits: "the object store's single-PUT bound; cannot be raised past it today"). One arm per job, and its output
+#: must stay <= cfg["max_output_gib"] (4.5 GiB, 10% under the bound): checked on the exact estimate before the model
+#: loads and on the bytes actually written before the job may succeed (exit 16 either way).
+GIB = 1 << 30
 #: the in-job preflight margin (as jobs.common.rate_guard.MARGIN)
 MARGIN = 0.95
 
@@ -69,8 +75,23 @@ def train_records(cfg: dict, a, guard) -> tuple[list[dict], dict]:
     return [by_id[i] for i in order], ident
 
 
-def train_rows(recs: list[dict], cfg: dict, arm: dict, enc, guard, n_rows: int) -> tuple[list[dict], dict]:
-    """Requests of guarded, keep_item-filtered training rows, in draw order, until ``n_rows`` rows."""
+def frozen_family_check(dry_run: bool):
+    """``harness.heldout.check_record`` (heldout-draw-v1: refuses a record that targets one of the 9 FROZEN held-out
+    benchmarks). Fail-closed on the paid path; only the CPU dry run, whose test env has no Decision Index kit (the harness
+    imports it), may run without it, and summary.json records that."""
+    try:
+        from harness.heldout import check_record
+    except ImportError:
+        if not dry_run:
+            raise
+        return None
+    return check_record
+
+
+def train_rows(recs: list[dict], cfg: dict, arm: dict, enc, guard, n_rows: int,
+               frozen_check=None) -> tuple[list[dict], dict]:
+    """Requests of guarded, keep_item-filtered training rows, in draw order, until ``n_rows`` rows. Every record passes
+    ``guard.check`` and (when given) the frozen-family check on its ORIGINAL form before tokenisation."""
     from heads.option_keys import e5_labels, e5_recode
     from train.data import items_from_records
     from train.run_cell import keep_item
@@ -80,6 +101,8 @@ def train_rows(recs: list[dict], cfg: dict, arm: dict, enc, guard, n_rows: int) 
         if kept >= n_rows:
             break
         guard.check(rec)  # on the ORIGINAL record (the E5 rendering changes content hashes)
+        if frozen_check is not None:
+            frozen_check(rec)
         use = rec
         if arm.get("e5"):
             req, back = e5_recode(rec["request"])
@@ -92,6 +115,36 @@ def train_rows(recs: list[dict], cfg: dict, arm: dict, enc, guard, n_rows: int) 
             out.append({"rid": rec["id"], "rows": [it.row for it in keep], "labels": [it.label for it in keep]})
             kept += len(keep)
     return out, {"rows": kept, "requests": len(out), "dropped": dropped, "short": kept < n_rows}
+
+
+def estimate_bytes(units: dict, cfg: dict) -> dict:
+    """Upper bound of what the arm writes: per question (fork, e) [K, D] + (q_pre, q_end) [D] in bf16 + option token
+    ids (int32) + lm_lp / lm_ntok; one bank [<= bank_chunks, D] bf16 per DEV request and per rich training request;
+    the lex_vocab table (lm_head rows of every option token, bf16); pickle overhead 2%."""
+    from .extract import option_tokens
+
+    d, nb = cfg["d_model"], cfg["bank_chunks"]
+    out, union = {}, set()
+    for s, us in units.items():
+        toks = set()
+        q_bytes, banks, seen = 0, 0, 0
+        for u in us:
+            for r in u["rows"]:
+                q_bytes += (2 * r.n_options + 2) * d * 2 + 4 * sum(b - a for a, b in r.option_spans) + 6 * r.n_options
+            banks += bool(u["rows"]) and (s != "train" or seen < cfg["rich_rows"])
+            seen += len(u["rows"])
+            toks |= option_tokens(u["rows"])
+        out[s] = int(1.02 * (q_bytes + banks * nb * d * 2))
+        out[f"lex_{s}"] = len(toks) * (d * 2 + 8)  # this split alone (an upper bound for any part holding it)
+        union |= toks
+    out["lex_vocab"] = len(union) * (d * 2 + 8)  # ONE table per part: the union over the part's splits
+    out["lex_vocab_tokens"] = len(union)
+    out["total"] = sum(out[s] for s in units) + out["lex_vocab"]
+    return out
+
+
+def dir_bytes(d: Path) -> int:
+    return sum(p.stat().st_size for p in Path(d).rglob("*") if p.is_file())
 
 
 def plan(units: list[dict], opt_chunk: int, tok_s: float, call_s: float) -> float:
@@ -130,6 +183,8 @@ def main(argv=None) -> int:
     r.add_argument("--elapsed-before-min", type=float, default=0.0)
     r.add_argument("--progress", default=None, help="weighted progress file (jobs.common.rate_guard run-weighted)")
     r.add_argument("--plan-only", action="store_true", help="tokenise + volume + preflight, no model")
+    r.add_argument("--splits", default="select,holdout,train",
+                   help="the splits this PART caches (one job = one part = one <= max_output_gib artifact)")
     a = ap.parse_args(argv)
     t0 = time.time()
     cfg = json.loads(Path(a.config).read_text(encoding="utf-8"))
@@ -137,14 +192,20 @@ def main(argv=None) -> int:
         print(f"unknown arm {a.arm}", file=sys.stderr)
         return EXIT["setup"]
     arm = cfg["arms"][a.arm]
+    splits = [s for s in ("select", "holdout", "train") if s in a.splits.split(",")]
+    if not splits or set(a.splits.split(",")) - set(splits):
+        print(f"--splits must name select / holdout / train, got {a.splits}", file=sys.stderr)
+        return EXIT["setup"]
     out = Path(a.out) / a.arm
     out.mkdir(parents=True, exist_ok=True)
-    summary: dict = {"arm": a.arm, "arm_cfg": arm, "feature_version": cfg["feature_version"],
+    part = "+".join(splits)
+    summary: dict = {"arm": a.arm, "splits": splits, "part": f"{a.arm}:{part}", "arm_cfg": arm,
+                     "feature_version": cfg["feature_version"],
                      "config_sha256": hashlib.sha256(Path(a.config).read_bytes()).hexdigest(), "dry_run": bool(a.toy_train_records)}
 
     def done(code: int, why: str = "") -> int:
         summary.update(exit=code, reason=why, minutes=(time.time() - t0) / 60)
-        (out / "summary.json").write_text(json.dumps(summary, indent=1, default=str), encoding="utf-8")
+        (out / f"summary_{part}.json").write_text(json.dumps(summary, indent=1, default=str), encoding="utf-8")
         print(json.dumps({"exit": code, "reason": why}), flush=True)
         return code
 
@@ -154,7 +215,9 @@ def main(argv=None) -> int:
     from heads.layout import hf_segment_encoder
 
     enc = hf_segment_encoder(AutoTokenizer.from_pretrained(a.model_dir))
-    if a.toy_train_records:
+    if "train" not in splits:
+        guard = None  # a DEV-only part draws no training records
+    elif a.toy_train_records:
         from train.guard import SplitGuard
 
         guard = SplitGuard.synthetic_only("q9_feature_cache dry run: toy records")
@@ -165,7 +228,7 @@ def main(argv=None) -> int:
             guard = load_ready_guard(a.guard_readiness)
         except GuardNotReady as e:
             return done(EXIT["guard"], f"guard not ready: {e}")
-    summary["guard"] = guard.identity()
+    summary["guard"] = guard.identity() if guard is not None else "no train split in this part"
     # ---------------------------------------------------------------- rows of every split
     from train.cohort import CohortLeak
     from train.guard import ForbiddenRow
@@ -176,6 +239,8 @@ def main(argv=None) -> int:
     try:
         units: dict[str, list[dict]] = {}
         for split, path in cfg["dev_splits"].items():
+            if split not in splits:
+                continue
             reqs = dev_requests(a.dev_rows, path, bool(arm.get("e5")))
             for u in reqs:
                 rows, bad = build_rows(u["request"], enc)
@@ -184,33 +249,42 @@ def main(argv=None) -> int:
                 u["skipped"] = {**bad, **{q: f"T > dev_max_t {cfg['dev_max_t']}" for q in long}}
                 u["labels"] = None
             units[split] = reqs
-        recs, ident = train_records(cfg, a, guard)
-        summary["train_identity"] = ident
-        units["train"], summary["train_rows"] = train_rows(recs, cfg, arm, enc, guard, arm["train_rows"])
+        if "train" in splits:
+            recs, ident = train_records(cfg, a, guard)
+            summary["train_identity"] = ident
+            fz = frozen_family_check(bool(a.toy_train_records))
+            summary["frozen_family_check"] = ("harness.heldout.check_record (heldout-draw-v1)" if fz else
+                                              "SKIPPED: dry run without the kit (paid path is fail-closed)")
+            units["train"], summary["train_rows"] = train_rows(recs, cfg, arm, enc, guard, arm["train_rows"], fz)
     except (TrainSetMismatch, LookupError) as e:
         return done(EXIT["data"], f"data identity: {e}")
     except (CohortLeak, ForbiddenRow) as e:
         return done(EXIT["leak"], f"leak: {e}")
-    if summary["train_rows"]["short"]:
+    except ValueError as e:  # harness.heldout.FrozenFamilyError subclasses ValueError
+        if type(e).__name__ != "FrozenFamilyError":
+            raise
+        return done(EXIT["leak"], f"frozen held-out family: {e}")
+    if "train" in splits and summary["train_rows"]["short"]:
         return done(EXIT["data"], f"only {summary['train_rows']['rows']} training rows after the filter")
     # ---------------------------------------------------------------- exact volume + in-job preflight
     tok_s, call_s = a.tok_s or 1.0, a.call_s or 0.0
-    allu = [u for s in ("select", "holdout", "train") for u in units[s]]
+    allu = [u for s in splits for u in units[s]]
     total_w = plan(allu, cfg["opt_chunk"], tok_s, call_s)
     vol = {s: {"requests": len(units[s]), "questions": sum(len(u["rows"]) for u in units[s]),
                "skipped_questions": sum(len(u.get("skipped") or {}) for u in units[s]),
                "positions": sum(u["positions"] for u in units[s]), "calls": sum(u["calls"] for u in units[s]),
                "projected_min": sum(u["w"] for u in units[s]) / 60} for s in units}
-    d, nb = cfg["d_model"], cfg["bank_chunks"]
-    for s in units:  # upper-bound output size: (fork, e, lex) per option + 2 question vectors, bf16; one bank/request
-        q_bytes = sum((3 * r.n_options + 2) * d * 2 for u in units[s] for r in u["rows"])
-        banks, seen = 0, 0
-        for u in units[s]:
-            banks += s != "train" or seen < cfg["rich_rows"]
-            seen += len(u["rows"])
-        vol[s]["est_gb"] = round((q_bytes + banks * nb * d * 2) / 1e9, 2)
-    summary["est_output_gb"] = round(sum(v["est_gb"] for v in vol.values()), 2)
+    est = estimate_bytes(units, cfg)
+    for s in units:
+        vol[s]["est_gib"] = round(est[s] / GIB, 3)
+    summary["est_output_gib"] = {"splits": {s: vol[s]["est_gib"] for s in units}, "lex_vocab": round(est["lex_vocab"] / GIB, 3),
+                                 "part": f"{a.arm}:{part}",
+                                 "lex_vocab_splits": {s: round(est[f"lex_{s}"] / GIB, 3) for s in units},
+                                 "lex_vocab_tokens": est["lex_vocab_tokens"], "total": round(est["total"] / GIB, 3),
+                                 "max_output_gib": cfg["max_output_gib"]}
     summary["volume"] = vol
+    if est["total"] > cfg["max_output_gib"] * GIB:
+        return done(EXIT["too_big"], f"estimated output {est['total'] / GIB:.2f} GiB > max_output_gib {cfg['max_output_gib']}")
     summary["preflight"] = {"tok_s": a.tok_s, "call_s": a.call_s, "cap_min": a.cap_min,
                             "elapsed_before_min": a.elapsed_before_min, "projected_min": total_w / 60}
     if a.cap_min is not None and a.tok_s:
@@ -225,7 +299,7 @@ def main(argv=None) -> int:
     # ---------------------------------------------------------------- model + numerics self-check
     import torch
 
-    from .extract import ShardWriter, extract_request, load, recompute_check
+    from .extract import ShardWriter, extract_request, lex_vocab, load, option_tokens, recompute_check, sha256_file
 
     try:
         text, w_out, prov = load(a.model_dir, a.device, a.dtype, a.gdn_ckpt, arm.get("gdn_sha256"), arm["layers"])
@@ -235,7 +309,7 @@ def main(argv=None) -> int:
     torch.manual_seed(cfg["seed"])
     sc = cfg["selfcheck"]
     checks = []
-    for u in units["select"][: sc["rows"]]:
+    for u in [u for u in units[splits[0]] if u["rows"]][: sc["rows"]]:
         if not u["rows"]:
             continue
         feats, _ = extract_request(text, w_out, u["rows"], cfg["opt_chunk"])
@@ -247,7 +321,7 @@ def main(argv=None) -> int:
     # ---------------------------------------------------------------- extraction
     rich_left = cfg["rich_rows"]
     timing = {}
-    for split in ("select", "holdout", "train"):
+    for split in splits:
         ts = time.time()
         wr = ShardWriter(out / split, cfg["shard_requests"], out / f"progress_{split}.jsonl")
         for u in units[split]:
@@ -274,6 +348,18 @@ def main(argv=None) -> int:
         timing[split] = {"minutes": (time.time() - ts) / 60, "requests": wr.n_requests, "questions": wr.n_questions,
                          "shards": wr.n_shards}
     summary["timing"] = timing
+    toks = set()
+    for s in splits:
+        for u in units[s]:
+            toks |= option_tokens(u["rows"])
+    lv = out / f"lex_vocab_{part}.pt"  # ONE lexical table per part (parts of one arm unpack side by side)
+    torch.save(lex_vocab(w_out, toks), lv)
+    summary["lex_vocab"] = {"file": lv.name, "splits": splits, "sha256": sha256_file(lv), "tokens": len(toks),
+                            "bytes": lv.stat().st_size}
+    written = sum(dir_bytes(out / s) for s in splits) + lv.stat().st_size
+    summary["output_bytes"] = written
+    if written > cfg["max_output_gib"] * GIB:
+        return done(EXIT["too_big"], f"wrote {written / GIB:.2f} GiB > max_output_gib {cfg['max_output_gib']}")
     if torch.cuda.is_available():
         summary["peak_gb"] = round(torch.cuda.max_memory_allocated() / 1e9, 2)
     return done(EXIT["ok"], "ok")

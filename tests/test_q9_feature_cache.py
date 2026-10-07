@@ -153,3 +153,15 @@ def test_convert_layers_partial(tiny):
     assert not hasattr(stock.layers[attn[0]], "self_attn")
     with pytest.raises(ValueError):
         X.convert_layers(stock, sd, [0 if attn[0] else 1])  # not an attention layer
+
+
+def test_lexical_feature_is_rebuilt_from_the_vocab_table(tiny):
+    """Review B1: the cache stores option token ids + one lm_head table instead of a [K, D] lex per option."""
+    text, w, _ = tiny
+    rows = _rows()
+    feats, _ = X.extract_request(text, w, rows, opt_chunk=8)
+    table = X.lex_vocab(w, X.option_tokens(rows))
+    assert len(table["ids"]) == len(X.option_tokens(rows)) and "lex" not in feats[0]
+    for r, f in zip(rows, feats):
+        want = torch.stack([w[r.ids[a:b]].float().mean(0) for a, b in r.option_spans])
+        assert torch.allclose(X.lexical(f, table).float(), want, atol=2e-2)

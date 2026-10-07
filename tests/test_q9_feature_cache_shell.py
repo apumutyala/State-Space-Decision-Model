@@ -98,32 +98,56 @@ def test_runner_dry_run_end_to_end_then_proxy_heads(tmp_path):
                          "holdout": _subset(ROOT / "jobs/q9_feature_cache/dev_holdout.json", hol, tmp_path / "hol.json")}
     (tmp_path / "cfg.json").write_text(json.dumps(cfg), encoding="utf-8")
     (tmp_path / "ctx.json").write_text("{}", encoding="utf-8")
-    env = {**os.environ, "Q9C_MODE": "stock", "Q9C_DRYRUN": "1", "Q9C_CODE": str(ROOT), "Q9C_DATA": str(data),
-           "Q9C_WORK": str(work), "Q9C_MODEL_DIR": str(model), "Q9C_CONFIG": str(tmp_path / "cfg.json"),
-           "Q9C_DATA_PINS": str(tmp_path / "pins.sha256"), "Q9C_CONTEXT_MANIFEST": str(tmp_path / "ctx.json"),
-           "GMN_OUTPUT_DIR": str(out), "GMN_RESULT_PATH": str(out / "result.json"),
-           "GMN_METADATA_URL": "http://127.0.0.1:9", "HF_HUB_CACHE": str(tmp_path / "hf"),
-           "PATH": os.path.dirname(sys.executable) + os.pathsep + os.environ.get("PATH", "")}
-    if os.name == "nt":  # GNU tar (Git Bash) reads "C:\..." as host:path without --force-local; Linux needs nothing
-        env["TAR_OPTIONS"] = "--force-local"
-    cmd = [BASH, "jobs/q9_feature_cache/cache_job.sh"]  # == RUNNER, spelled out for the launch lint (L-10)
-    p = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True, timeout=1200)
-    log = (work / "logs" / "run.log").read_text(encoding="utf-8", errors="replace") if (work / "logs/run.log").exists() else ""
-    arm = (work / "logs" / "arm_stock.log")
-    arm_log = arm.read_text(encoding="utf-8", errors="replace") if arm.exists() else ""
-    assert p.returncode == 0, (p.returncode, log[-2000:], arm_log[-3000:])
-    assert (out / "Q9_CACHE_DONE").exists()
-    res = json.loads((work / "out" / "cache_result.json").read_text(encoding="utf-8"))
-    assert res["valid"] and res["arms"]["stock"]["dry_run"]
-    sp = res["arms"]["stock"]["splits"]
-    assert sp["select"]["requests"] == 5 and sp["holdout"]["requests"] == 5 and sp["train"]["questions"] == 16
-    assert "TEST OVERRIDES SET" in log
     import re
 
-    # parsed by regex: Git Bash's sha256sum prefixes the hash with "\\" for a Windows path holding backslashes
-    man = (out / "MANIFEST.jsonl").read_text().splitlines()
-    assert {re.search(r'"phase": "(\w+)"', x).group(1) for x in man} >= {"setup", "guard", "arm_stock", "final"}
-    assert all('"ok": true' in x for x in man)
+    def run_part(mode):
+        """One job = one part (review B1): each writes its own output directory, as the platform packages each."""
+        out, work = tmp_path / f"output_{mode}", tmp_path / f"work_{mode}"
+        env = {**os.environ, "Q9C_MODE": mode, "Q9C_DRYRUN": "1", "Q9C_CODE": str(ROOT), "Q9C_DATA": str(data),
+               "Q9C_WORK": str(work), "Q9C_MODEL_DIR": str(model), "Q9C_CONFIG": str(tmp_path / "cfg.json"),
+               "Q9C_DATA_PINS": str(tmp_path / "pins.sha256"), "Q9C_CONTEXT_MANIFEST": str(tmp_path / "ctx.json"),
+               "GMN_OUTPUT_DIR": str(out), "GMN_RESULT_PATH": str(out / "result.json"),
+               "GMN_METADATA_URL": "http://127.0.0.1:9", "HF_HUB_CACHE": str(tmp_path / "hf"),
+               "PATH": os.path.dirname(sys.executable) + os.pathsep + os.environ.get("PATH", "")}
+        if os.name == "nt":  # GNU tar (Git Bash) reads "C:\..." as host:path without --force-local; Linux needs nothing
+            env["TAR_OPTIONS"] = "--force-local"
+        cmd = [BASH, "jobs/q9_feature_cache/cache_job.sh"]  # == RUNNER, spelled out for the launch lint (L-10)
+        p = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True, timeout=1200)
+        log = (work / "logs" / "run.log").read_text(encoding="utf-8", errors="replace") if (work / "logs/run.log").exists() else ""
+        arm = work / "logs" / "arm_stock.log"
+        arm_log = arm.read_text(encoding="utf-8", errors="replace") if arm.exists() else ""
+        assert p.returncode == 0, (mode, p.returncode, log[-2000:], arm_log[-3000:])
+        assert (out / "Q9_CACHE_DONE").exists()
+        assert "TEST OVERRIDES SET" in log
+        res = json.loads((work / "out" / "cache_result.json").read_text(encoding="utf-8"))
+        assert res["valid"] and res["output_bytes"] <= res["max_bytes"]
+        assert res["arms"]["stock"]["dry_run"] == (mode == "stock_train")  # toy training records only
+        # parsed by regex: Git Bash's sha256sum prefixes the hash with "\\" for a Windows path holding backslashes
+        man = (out / "MANIFEST.jsonl").read_text().splitlines()
+        assert {re.search(r'"phase": "(\w+)"', x).group(1) for x in man} >= {"setup", "guard", "arm_stock", "final"}
+        assert all('"ok": true' in x for x in man)
+        return out, res
+
+    out_dev, res_dev = run_part("stock_dev")
+    sp = res_dev["arms"]["stock"]["splits"]
+    assert sp["select"]["requests"] == 5 and sp["holdout"]["requests"] == 5 and "train" not in sp
+    assert sp["select"]["lex_vocab_ok"] and not (out_dev / "cache" / "stock" / "train").exists()
+    out_tr, res_tr = run_part("stock_train")
+    assert res_tr["arms"]["stock"]["splits"]["train"]["questions"] == 16
+    # the parts unpack into ONE cache directory (as the artifacts would be downloaded)
+    out = tmp_path / "merged"
+    shutil.copytree(out_dev / "cache", out / "cache")
+    shutil.copytree(out_tr / "cache", out / "cache", dirs_exist_ok=True)
+    # a tampered part file is caught by the report validator
+    from jobs.q9_feature_cache.report import arm_report, valid_result
+
+    shard = next((out / "cache" / "stock" / "select").glob("shard_*.pt"))
+    shard.write_bytes(shard.read_bytes() + b"x")
+    r = {"arms": {"stock": arm_report(out / "cache" / "stock", ["select", "holdout"])}, "output_bytes": 1, "max_bytes": 2}
+    assert not valid_result(r)
+    shutil.copy(out_dev / "cache" / "stock" / "select" / shard.name, shard)
+    r = {"arms": {"stock": arm_report(out / "cache" / "stock", ["select", "holdout"])}, "output_bytes": 1, "max_bytes": 2}
+    assert valid_result(r) and not valid_result({**r, "output_bytes": 3})
 
     # --- the proxy loop on the cache the runner wrote: every family trains, predicts and writes kit rows
     from train import proxy_loop as PL
@@ -132,7 +156,7 @@ def test_runner_dry_run_end_to_end_then_proxy_heads(tmp_path):
     train = PL.load_split(out / "cache", "stock", "train")
     dev = PL.load_split(out / "cache", "stock", "select")
     assert all(q.label >= 0 for r in train for q in r.questions)
-    budget = {**PL.TRAIN, "epochs": 1, "grad_accum": 2, "warmup_steps": 1}
+    budget = {**PL.TRAIN, "steps": 4, "grad_accum": 2, "warmup_steps": 1}
     dev_rows = {r["_evaluation"]["run_id"]: r for r in rows if r["_evaluation"]["run_id"] in set(sel)}
     for rid in ("R00", "R01", "R04", "R11"):
         rec = next(r for r in RECIPES if r["id"] == rid)

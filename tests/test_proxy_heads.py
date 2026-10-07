@@ -10,6 +10,7 @@ torch = pytest.importorskip("torch")
 
 from train import proxy_loop as PL  # noqa: E402
 from train.proxy_heads import AFMixer, AttnRef, ForkProxy, ProxyQuestion, ProxyRequest, make_proxy_head  # noqa: E402
+from train import proxy_rule as R  # noqa: E402
 from train.proxy_rule import CANDIDATE_FAMILIES, RECIPES  # noqa: E402
 
 D = 16
@@ -41,9 +42,11 @@ def synthetic(n: int, seed: int, learnable: bool = True) -> list[ProxyRequest]:
 
 @pytest.mark.parametrize("rid", [r["id"] for r in RECIPES if r["arm"] == "stock"])
 def test_every_recipe_builds_trains_and_is_deterministic(rid):
-    rec = next(r for r in RECIPES if r["id"] == rid)
+    rec = dict(next(r for r in RECIPES if r["id"] == rid))
+    if rec.get("train_rows"):
+        rec["train_rows"] = 12  # matched-data controls (R14 / R15) on the synthetic set's first 12 rows
     data = synthetic(24, 0)
-    budget = {**PL.TRAIN, "epochs": 1, "grad_accum": 4, "warmup_steps": 2}
+    budget = {**PL.TRAIN, "steps": 6, "grad_accum": 4, "warmup_steps": 2}
     h1, i1 = PL.train_head(rec, data, seed=3, budget=budget)
     h2, i2 = PL.train_head(rec, data, seed=3, budget=budget)
     assert i1["steps"] == 6 and i1["loss_last"] == i2["loss_last"]
@@ -57,7 +60,7 @@ def test_every_recipe_builds_trains_and_is_deterministic(rid):
 
 def test_mixer_learns_the_signal_and_beats_chance():
     data, dev = synthetic(120, 0), synthetic(60, 1)
-    head, _ = PL.train_head(RECIPES[1], data, seed=0, budget={**PL.TRAIN, "epochs": 3, "grad_accum": 4})
+    head, _ = PL.train_head(RECIPES[1], data, seed=0, budget={**PL.TRAIN, "steps": 90, "grad_accum": 4})
     assert PL.nll(head, dev)["acc"] > 0.8
 
 
@@ -140,3 +143,113 @@ def test_write_results_kit_rows_and_unanswerable_rows_are_errors(tmp_path):
     p = ok["response"]["answers"]["q0"]["probabilities"]
     assert abs(sum(p.values()) - 1) < 1e-3
     assert {x["status"] for x in lines[1:]} == {"error"}
+
+
+def test_train_budget_is_fixed_steps_and_first_rows_is_exact():
+    data = synthetic(30, 0)  # 1-3 questions per request
+    rows = PL.first_rows(data, 17)
+    assert sum(len(r.questions) for r in rows) == 17
+    assert [q.qid for r in rows for q in r.questions] == [q.qid for r in data for q in r.questions][:17]
+    with pytest.raises(ValueError):
+        PL.first_rows(data, 10**6)
+    _, info = PL.train_head({**RECIPES[11], "train_rows": 17}, data, 0, {**PL.TRAIN, "steps": 7, "grad_accum": 3})
+    assert info["steps"] == 7 and info["train_questions"] == 17
+    assert PL.TRAIN["steps"] == 2000 and PL.TRAIN["grad_accum"] == 8  # A1(b)
+
+
+# ------------------------------------------------------------------ single-shot HOLDOUT (review B2)
+def _fake_receipts(out, ids, budget=PL.TRAIN, cache_ident=None):
+    for rid in ids:
+        rec = next(r for r in RECIPES if r["id"] == rid)
+        d = out / f"{rid}_s0_select"
+        d.mkdir(parents=True)
+        (d / "receipt.json").write_text(json.dumps({
+            "recipe": rec, "budget_sha256": PL.budget_sha(budget), "cache_identity": cache_ident or {},
+            "score": {"all": {"point": 40.0 + int(rid[1:]), "lo": 0, "hi": 1}}, "results": "x",
+            "results_sha256": "0", "head_sha256": "0"}), encoding="utf-8")
+
+
+def test_select_summary_requires_every_candidate_and_is_written_once(tmp_path, monkeypatch):
+    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {})
+    monkeypatch.setattr(PL, "compare", lambda *a, **k: {"diff": {"point": 0.0}})
+    _fake_receipts(tmp_path, ["R00"] + [f"R{i:02d}" for i in range(1, 15)])  # R15 missing
+    with pytest.raises(PL.OutOfOrder, match="R15"):
+        PL.select_summary(tmp_path, "cache")
+    _fake_receipts(tmp_path, ["R15"])
+    doc = PL.select_summary(tmp_path, "cache")
+    assert doc["chosen"] == "R15" and doc["candidates"] == list(R.candidate_ids())
+    with pytest.raises(PL.OutOfOrder, match="once"):
+        PL.select_summary(tmp_path, "cache")
+
+
+def test_select_summary_refuses_mixed_budgets_and_a_changed_cache(tmp_path, monkeypatch):
+    monkeypatch.setattr(PL, "compare", lambda *a, **k: {"diff": {"point": 0.0}})
+    ids = [f"R{i:02d}" for i in range(16)]
+    _fake_receipts(tmp_path, ids, budget={**PL.TRAIN, "steps": 5})
+    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {})
+    with pytest.raises(PL.OutOfOrder, match="budget"):
+        PL.select_summary(tmp_path, "cache")
+    t2 = tmp_path / "b"
+    _fake_receipts(t2, ids, cache_ident={"stock": {"train": "a"}, "conv1": {}, "e5": {}})
+    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {"stock": {"train": "CHANGED"}, "conv1": {}, "e5": {}})
+    with pytest.raises(PL.OutOfOrder, match="cache identity"):
+        PL.select_summary(t2, "cache")
+
+
+def _summary(out, chosen="R01"):
+    (out / "select_summary.json").write_text(json.dumps({
+        "chosen": chosen, "candidates": list(R.candidate_ids()), "rows": [{"id": i} for i in R.candidate_ids()],
+        "budget_sha256": PL.budget_sha(PL.TRAIN), "cache_identity": {"stock": {}}}), encoding="utf-8")
+
+
+def _fake_run(calls, counts, point):
+    def run(recipe, cache, dev_rows, out, split, subset, seed, *a, **k):
+        calls.append((recipe["id"], split, seed))
+        (out / f"{recipe['id']}_s{seed}_{split}").mkdir(exist_ok=True)
+        return {"seed": seed, "counts": counts, "score": {"all": {"point": point}, "0.3": {"all": {"point": point}},
+                                                          R.VERDICT_EDITION: {"vs_clef_flash": None,
+                                                                              **{c: {} for c in R.DOMAIN_COLUMNS}}}}
+    return run
+
+
+def test_holdout_is_single_shot(tmp_path, monkeypatch):
+    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {a: {} for a in arms})
+    with pytest.raises(PL.OutOfOrder, match="select_summary"):
+        PL.holdout(tmp_path, "cache", "rows", None, 10)
+    _summary(tmp_path)
+    with pytest.raises(PL.OutOfOrder, match="only the chosen recipe"):
+        PL.holdout(tmp_path, "cache", "rows", None, 10, recipe="R11")
+    calls = []
+    monkeypatch.setattr(PL, "run_recipe", _fake_run(calls, {"ids": 2014, "rows": 2014, "cached": 2014}, 51.0))
+    v = PL.holdout(tmp_path, "cache", "rows", None, 10, recipe="R01")
+    assert v["verdict"] == "go" and [c[0] for c in calls] == ["R01"] * 3 and {c[1] for c in calls} == {"holdout"}
+    assert v["scope"] == R.VERDICT_SCOPE and v["edition"] == "0.2.1"
+    with pytest.raises(PL.OutOfOrder, match="once"):
+        PL.holdout(tmp_path, "cache", "rows", None, 10)
+
+
+def test_holdout_with_a_stale_summary_or_cache_is_refused(tmp_path, monkeypatch):
+    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {a: {"train": "NEW"} for a in arms})
+    _summary(tmp_path)
+    with pytest.raises(PL.OutOfOrder, match="differs"):
+        PL.holdout(tmp_path, "cache", "rows", None, 10)
+
+
+def test_holdout_incomplete_split_is_no_measurement(tmp_path, monkeypatch):
+    monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {a: {} for a in arms})
+    _summary(tmp_path)
+    monkeypatch.setattr(PL, "run_recipe", _fake_run([], {"ids": 2014, "rows": 2010, "cached": 2010}, 60.0))
+    assert PL.holdout(tmp_path, "cache", "rows", None, 10)["verdict"] == "no-measurement"
+
+
+def test_recipes_only_never_writes_select_summary(tmp_path, monkeypatch):
+    (tmp_path / "stock_check.json").write_text(json.dumps({"ok": True}), encoding="utf-8")
+    monkeypatch.setattr(PL, "run_recipe", lambda *a, **k: {"score": {"all": {"point": 1.0}}})
+    assert PL.main(["recipes", "--cache", "c", "--dev-rows", "d", "--out", str(tmp_path), "--only", "R01,R11"]) == 0
+    assert not (tmp_path / "select_summary.json").exists()
+
+
+def test_recipes_and_holdout_need_a_passing_stock_check(tmp_path):
+    assert PL.main(["recipes", "--cache", "c", "--out", str(tmp_path)]) == 4
+    (tmp_path / "stock_check.json").write_text(json.dumps({"ok": False}), encoding="utf-8")
+    assert PL.main(["holdout", "--cache", "c", "--out", str(tmp_path)]) == 4

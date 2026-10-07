@@ -23,13 +23,20 @@ TOKENIZE_MIN = 14.2
 #: phases other than the arms: projection = their expected_minutes (each from a receipt in job_params / JOB_SPEC)
 
 
+def part_gib(est: dict, splits) -> float:
+    """A part's output estimate: its splits + ONE lexical table (the all-splits union when the part holds every split,
+    else the sum of the per-split tables, an upper bound of their union)."""
+    lex = est["lex_union_all"] if set(splits) == set(est["splits"]) else sum(est["lex_split"][s] for s in splits)
+    return sum(est["splits"][s] for s in splits) + lex
+
+
 def project(params: dict, volume: dict) -> dict:
     m = params["measured"]
     tok_s, call_s = m["stock_prefill_tok_s_min"], m["call_s_fitted_5cmat"]
     out = {}
     for arm in params["arms"]:
         v = volume["arms"][arm]
-        ext = sum(v[s]["positions"] / tok_s + v[s]["calls"] * call_s for s in ("select", "holdout", "train")) / 60
+        ext = sum(v[s]["positions"] / tok_s + v[s]["calls"] * call_s for s in params["splits"]) / 60
         out[f"arm_{arm}"] = {"extract_min": round(ext, 2), "tokenize_min": TOKENIZE_MIN,
                              "load_min": round(m["model_load_s"] / 60, 2),
                              "projected_min": round(ext + TOKENIZE_MIN + m["model_load_s"] / 60, 2)}
@@ -52,12 +59,17 @@ def check(params: dict, volume: dict) -> dict:
     w = worst_case_usd(params)
     rows["worst_case"] = {"usd": w, "hard_cap_usd": params["hard_cap_usd"], "ok": w <= params["hard_cap_usd"]}
     rows["build_timeout"] = {"minutes": params["build_timeout_minutes"], "ok": params["build_timeout_minutes"] >= 60}
+    # review B1: the whole job output is ONE tar artifact (max_artifact_bytes 5 GiB): this part's estimate must fit
+    for arm in params["arms"]:
+        gib = part_gib(volume["arms"][arm]["est_gib"], params["splits"])
+        rows[f"output_{arm}"] = {"est_gib": round(gib, 3), "max_output_gib": params["max_output_gib"],
+                                 "ok": gib <= params["max_output_gib"] <= 4.5}
     return {"ok": all(r["ok"] for r in rows.values()), "checks": rows, "arms": proj}
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="jobs.q9_feature_cache.preflight")
-    ap.add_argument("--mode", required=True, choices=("stock", "extra"))
+    ap.add_argument("--mode", required=True, choices=("stock_dev", "stock_train", "conv1_dev", "conv1_train", "e5_dev", "e5_train"))
     ap.add_argument("--out", default=None)
     a = ap.parse_args(argv)
     params = json.loads((HERE / f"job_params_{a.mode}.json").read_text(encoding="utf-8"))

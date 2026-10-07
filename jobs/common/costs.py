@@ -23,8 +23,8 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
           "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_lora": "jobs/rwkv7/job_params_lora.json",
           "fla_rwkv7": "jobs/fla_rwkv7/job_params.json", "fla_rwkv7_truth_v2": "jobs/fla_rwkv7/job_params_truth_v2.json",
           "cell_step_profile": "jobs/cell_step_profile/job_params.json",
-          "q9_feature_cache_stock": "jobs/q9_feature_cache/job_params_stock.json",
-          "q9_feature_cache_extra": "jobs/q9_feature_cache/job_params_extra.json"}
+          **{f"q9_feature_cache_{p}": f"jobs/q9_feature_cache/job_params_{p}.json"
+             for p in ("stock_dev", "stock_train", "conv1_dev", "conv1_train", "e5_dev", "e5_train")}}
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here
 OTHER = {"clef_baseline_ABC": 47.52}  # jobs/clef_baseline/JOB_SPEC.md: per-job ceilings at $2.97/h
 FULL8_ESTIMATE = 150.0  # PLAN.md m1 full conversion (~$150); its own spec + spend issue after proceed-all-8
