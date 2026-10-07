@@ -107,5 +107,6 @@
   "targeted_result": {
     "status": "pass",
     "tests_passed": 15
-  }
+  },
+  "tested_commit": "39bf716"
 }
