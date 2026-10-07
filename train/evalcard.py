@@ -55,7 +55,22 @@ def predict(model, items, batch_size: int = 8, certs: list | None = None
         labels += [i.label for i in chunk]
         ev += [i.row.evidence_len for i in chunk]
         ks += [i.row.n_options for i in chunk]
+        _beat()
     return torch.cat(lps), labels, ev, ks
+
+
+def _beat() -> None:
+    """Touch ``$SSDM_PROGRESS_BEAT`` after each finished batch: the paid runners' progress-gated watchdog
+    (jobs/clef_baseline/watchdog.sh) withholds the heartbeat after 20 min without a file write, and a long
+    temperature fit / eval card otherwise writes nothing until it ends. A hung forward never touches it."""
+    import os
+
+    p = os.environ.get("SSDM_PROGRESS_BEAT")
+    if p:
+        try:
+            Path(p).touch()
+        except OSError:
+            pass
 
 
 def run_card(model, items, step: int, out_dir: str | Path | None = None,

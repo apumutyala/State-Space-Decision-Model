@@ -45,25 +45,51 @@ VOLUME_TOKENS = {
 #: calibration item and the eval card forwards every dev item (prefix + every option continuation, all labelled
 #: items, no K/T filter: upper bounds), same cohort / tokenizer.
 CHILD_EXTRA_TOKENS = {"calibration_fit": 3_393_271, "dev_card": 3_993_020}
+#: measurement stage ``index`` (jobs/m2_first_cell): the Index DEV subset alone (same exact fork positions as in g13)
+#: plus the readout order diagnostic (jobs/m2_first_cell/readout_diag.py): its 160 rows hold 193,815 of the subset's
+#: 2,370,062 proxy tokens (8.18%), read twice (forward + reversed); x 1.25 planning margin (the relabelled ids are
+#: slightly longer). Calls: 2 x 160/2008 x 4,536 x 1.25.
+#: the 2,008-row subset's exact prefix-fork positions (jobs/common/readout_volume_rwkv7.json; G13 now reads the FULL DEV)
+INDEX_SUBSET_TOKENS = 6_393_208
+DIAG_TOKENS = round(1.25 * 2 * INDEX_SUBSET_TOKENS * 193_815 / 2_370_062)
+DIAG_CALLS = round(1.25 * 2 * 160 / 2008 * 4_536)
+VOLUME_TOKENS["index"] = {"index_dev_subset": INDEX_SUBSET_TOKENS, "order_diag": DIAG_TOKENS}
+#: Forward CALLS per stage (upper-bound planning counts, used only with a MEASURED per-call latency ``call_s``; the
+#: fitted cost model is wall = positions / tok_s + calls x call_s, jobs/PERF_AUDIT.md). Index DEV: the subset's exact
+#: prefix-fork calls (readout_volume_rwkv7.json, 4,536). Decision records: 2 calls each (shared prefix + packed tails;
+#: dev 835, retention 1,670, calibration 1,000 records). Steer: 1 call per unit (~600-token requests, one pack), 9,000
+#: units per steer role. Dev card: 835 records x 2.
+VOLUME_CALLS = {"g12": {"dev_records": 2 * 835, "steer_dev_units": 9_000},
+                # G13 reads the full DEV (12,104 rows): calls scaled from the subset's 4,536 by rows (planning count)
+                "g13": {"retention_records": 2 * 1_670, "steer_gate_units": 9_000,
+                        "index_dev_full": round(4_536 * 12_104 / 2_008)},
+                "index": {"index_dev_subset": 4_536, "order_diag": DIAG_CALLS}}
+CHILD_EXTRA_CALLS = {"calibration_fit": 2 * 1_000, "dev_card": 2 * 835}
 USD_PER_MIN = 0.0495  # SF H100 batch rate (jobs/DECISION_TREE.md)
 FIXED_MIN = 35  # build 15 + setup/download/verify 15 + finalize 5 (expected, rwkv7 stage-A measured shape)
 
 
 def estimate(tok_s: float, stages: Sequence[str] = ("g12", "g13"), fixed_min: float = FIXED_MIN,
-             mode: str = "parent") -> dict[str, Any]:
+             mode: str = "parent", call_s: float = 0.0) -> dict[str, Any]:
     """Projected minutes / $ at a MEASURED prefill rate (no number here is a measurement of the model).
     ``mode="parent"``: the cached parent arm only. ``mode="child"``: the m2_pilot evals phase = the child's arm PLUS
-    the temperature fit over the calibration items and the dev eval card (``CHILD_EXTRA_TOKENS``)."""
+    the temperature fit over the calibration items and the dev eval card (``CHILD_EXTRA_TOKENS``).
+    ``call_s`` (a MEASURED per-call latency; 0 keeps the legacy token-only projection) adds calls x call_s."""
     if not tok_s > 0:
         raise ValueError("tok_s must be a positive measured rate")
     if mode not in ("parent", "child"):
         raise ValueError(mode)
+    if call_s < 0:
+        raise ValueError("call_s must be >= 0")
     per = {s: sum(VOLUME_TOKENS[s].values()) for s in stages}
+    calls = {s: sum(VOLUME_CALLS[s].values()) for s in stages}
     if mode == "child":
         per.update(CHILD_EXTRA_TOKENS)
-    minutes = {s: n / tok_s / 60 for s, n in per.items()}
+        calls.update(CHILD_EXTRA_CALLS)
+    minutes = {s: n / tok_s / 60 + calls[s] * call_s / 60 for s, n in per.items()}
     total = sum(minutes.values()) + fixed_min
-    return {"tok_s": tok_s, "mode": mode, "tokens": per, "total_tokens": sum(per.values()),
+    return {"tok_s": tok_s, "call_s": call_s, "mode": mode, "tokens": per, "total_tokens": sum(per.values()),
+            "calls": calls, "total_calls": sum(calls.values()),
             "score_minutes": minutes, "total_minutes": total, "usd": round(total * USD_PER_MIN, 2),
             "fixed_minutes": fixed_min, "usd_per_min": USD_PER_MIN, "volume_cohort_sha256": VOLUME_COHORT_SHA256}
 
@@ -77,17 +103,19 @@ def min_tok_s(cap_min: float, mode: str = "child", stages: Sequence[str] = ("g12
 
 def score_parent_arm(*, stages: Sequence[str], cohort, spec: dict, decide, steer, items_by_role: dict,
                      records_by_id: dict, out_dir: str | Path, parent_identity: dict,
-                     index_rows: list[dict] | None = None, index_frozen: dict | None = None) -> dict[str, Any]:
+                     index_rows: list[dict] | None = None, index_frozen: dict | None = None,
+                     progress: str | Path | None = None) -> dict[str, Any]:
     """Score + cache each stage (device-agnostic; tests drive it with tiny CPU models)."""
     from train import m2_gates as G
 
     entries = {}
     for stage in stages:
         variants = G.stage_variants(cohort, stage)
+        rows = index_rows if G._uses_index(stage) else None
         ident = G.units_identity(stage, cohort, spec, {r: items_by_role[r] for r in G.STAGE_ROLES[stage]}, variants,
-                                 index_rows if stage == "g13" else None, index_frozen if stage == "g13" else None)
-        units = G.score_stage(stage, decide, steer, items_by_role, records_by_id, variants,
-                              index_rows if stage == "g13" else None)
+                                 rows, index_frozen if stage == "g13" else None)
+        units = G.score_stage(stage, decide, steer, items_by_role, records_by_id, variants, rows,
+                              progress=Path(str(progress).replace("{stage}", stage)) if progress else None)
         entries[stage] = G.write_arm_cache(out_dir, stage, units, ident, parent_identity)
     return entries
 
@@ -101,8 +129,11 @@ def parent_decider(parent: str, model_dir: str, gdn_ckpt: str | None, cfg: dict,
         import third_party.rwkv7_hf as V
         from decide.backends.hf_readout import load_rwkv7_hf
 
-        plug = load_rwkv7_hf(model_dir, device=device)
-        ident = {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION}
+        plug = load_rwkv7_hf(model_dir, device=device, wkv=cfg.get("rwkv7_wkv"))  # same WKV as the child
+        # the WKV implementation the stock readout actually ran (the model config after select_wkv): m2_gates refuses a
+        # cache scored with another one (a "chunked" cache against a chunked_lean child; PR #74 review N1)
+        ident = {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION,
+                 "wkv": str(plug.kernel_stack.get("wkv_implementation"))}
     elif parent == "q9af":
         from convert.readout import load_converted_plugin
         from heads.backbone import q9af_pin_check
@@ -130,8 +161,13 @@ def main(argv=None) -> int:
                         help="non-scoring minutes to add (0 for a scoring phase inside a running job)")
         ap.add_argument("--mode", choices=["parent", "child"], default="parent",
                         help="child = the m2_pilot evals phase (arm + temperature fit + dev card)")
+        ap.add_argument("--stages", default="g12,g13", help="comma list of g12, g13, index")
+        ap.add_argument("--call-s", type=float, default=0.0, help="MEASURED per-call latency (probe small_call_s)")
         a = ap.parse_args(argv[1:])
-        est = estimate(a.tok_s, fixed_min=a.fixed_min, mode=a.mode)
+        stages = [s for s in a.stages.split(",") if s]
+        if not stages or any(s not in VOLUME_TOKENS for s in stages):
+            ap.error(f"--stages must name some of {sorted(VOLUME_TOKENS)}")
+        est = estimate(a.tok_s, stages=stages, fixed_min=a.fixed_min, mode=a.mode, call_s=a.call_s)
         print(json.dumps(est, indent=1))
         return 15 if a.cap_min is not None and est["total_minutes"] > 0.95 * a.cap_min else 0
     ap = argparse.ArgumentParser(prog="python -X utf8 -m jobs.m2_parent_arm.score_parent")
@@ -146,10 +182,15 @@ def main(argv=None) -> int:
     ap.add_argument("--index-frozen", default=None, help="an already frozen set (with --index-frozen-sha256)")
     ap.add_argument("--index-frozen-sha256", default=None)
     ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--stage", choices=["g12", "g13", "all"], default="all")
+    ap.add_argument("--stage", choices=["g12", "g13", "index", "all"], default="all")
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--progress", default=None, help="live progress file for jobs.common.rate_guard run-weighted "
+                    "({stage} is replaced by the stage name)")
     a = ap.parse_args(argv)
     stages = ["g12", "g13"] if a.stage == "all" else [a.stage]
+    if "index" in stages and not a.index_rows:
+        print(f"{a.stage} needs --index-rows (the Index DEV subset rows)", file=sys.stderr)
+        return 2
     if "g13" in stages and not (a.index_rows and (a.index_frozen_out or (a.index_frozen and a.index_frozen_sha256))):
         print("g13 needs --index-rows and --index-frozen-out (or --index-frozen + --index-frozen-sha256)",
               file=sys.stderr)
@@ -175,7 +216,7 @@ def main(argv=None) -> int:
     spec = G.unit_spec(cfg)
     recs = G._read_records(a.records)
     role_recs = {}
-    for role in ("dev", "retention"):
+    for role in sorted({r for s in stages for r in G.STAGE_ROLES[s]}):  # only the roles these stages score
         rr, _ = cohort.load_role_records(a.records, role)
         role_recs[role] = [recs[r["id"]] for r in rr]
     items_by_role = {r: G.decision_items(v, enc, spec, guard) for r, v in role_recs.items()}
@@ -186,6 +227,10 @@ def main(argv=None) -> int:
         return 10
     ident["guard"] = guard.identity()
     index_rows, index_frozen = None, None
+    if a.index_rows and "index" in stages:  # measurement stage: the 2,008-row subset (no frozen full-DEV set)
+        from harness.suite import read_rows
+
+        index_rows = read_rows(a.index_rows)
     if a.index_rows and "g13" in stages:
         from harness.suite import read_rows
         from jobs.common import dev_full as F
@@ -206,7 +251,7 @@ def main(argv=None) -> int:
                                items_by_role=items_by_role,
                                records_by_id={r["id"]: r for rs in role_recs.values() for r in rs},
                                out_dir=a.out_dir, parent_identity=ident, index_rows=index_rows,
-                               index_frozen=index_frozen)
+                               index_frozen=index_frozen, progress=a.progress)
     print(json.dumps({s: {"sha256": e["sha256"], "units": e["units_identity"]["id"]} for s, e in entries.items()}))
     return 0
 

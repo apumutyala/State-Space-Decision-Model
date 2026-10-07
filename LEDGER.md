@@ -15,6 +15,7 @@ Credits: SF Compute $525. Batch rate is $2.97/H100-h and interactive is $3.96/h;
 | 2026-10-06 | D | job-jucxx fla gate v2 (warmup) | ≤1.04 | caps | 0.25 | exit 7: warmup cap 3 min vs ~70 s/specialisation measured | PR #66 |
 | 2026-10-06 | D | job-jn47u fla gate v3 | ≤3.96 | rule v1 | 0.84 | REJECT_NUMERICS (v1 reference = bf16 serial eager; production chunked also fails it); fla prefill ~3x | PR #77 |
 | 2026-10-06 | D | job-mden7 fla truth_v2 (fp64 truth + cell train step) | ≤5.74 | rule v2+A1 | 1.06 | REJECT_NUMERICS (fla 2–3x chunked's grad error vs fp64, ~100x on state). Cell train step OOMs from T≈1k on chunked (17/20 steps), launch-bound ~2 s/row → first cell blocked on PR #86 | PR #77, #86 |
+| 2026-10-06 | D | job-tvuat cell_step_profile (m2 cell train step: baseline / ckpt_rows_lean / ckpt_rows / ckpt) | ≤8.22 | rule v1-A2 | 1.62 | **ADOPT ckpt_rows_lean** (act_ckpt + 8 rows per call ≤ 8,192 padded tokens + chunked_lean): median step 8.25 s (2.43x baseline), 0 OOM, peak 49.8 GB → 1,382 steps / 11,056 rows in 190 min; baseline OOM 15/23 steps at 83 GB | PR #86, receipts/2026-10-07-D-cell-step-profile-tvuat |
 | 2026-10-06 | D | job-5cmat probe9b one-layer GDN (Qwen3.5-9B) | ≤29.70 (one attempt 13.37) | 511e8dd rule | 5.01 | **proceed-all-8**: layer 23 ΔNLL 0.0068, ppl 1.007, MMLU −1.75, Index +1.66 [+0.19, +3.18] (stock 38.3 → 39.9), MQAR −0.006, NIAH 0 | #68, #87 |
 | | | **October MTD (SF receipts)** | | | **14.49** | | get_usage |
 

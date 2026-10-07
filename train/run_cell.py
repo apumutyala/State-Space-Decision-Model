@@ -133,13 +133,61 @@ def cohort_split(record_ids: list[str], cfg: dict, records: dict | None = None) 
     return tr, ev, {"cohort": co.identity()}
 
 
-def cell_items(recs: dict, ids, cfg: dict, enc, guard, max_t: int) -> list:
+def cell_items(recs: dict, ids, cfg: dict, enc, guard, max_t: int, workers: int | None = None) -> list:
     """Guarded rows of ``ids`` kept by the cell's K / T filter (``keep_item``). ``train.m2_gates`` rebuilds the
-    training items with this exact function, so a trained checkpoint's lineage (data hash) can be re-verified."""
+    training items with this exact function, so a trained checkpoint's lineage (data hash) can be re-verified.
+    ``workers`` (default ``cfg["tokenize_workers"]``, else 1) tokenizes contiguous chunks in worker processes; the
+    output is the same list in the same order as the serial path (``tests/test_m2_first_cell.py``)."""
+    ids = list(ids)
+    workers = int(workers if workers is not None else (cfg.get("tokenize_workers") or 1))
+    workers = max(1, min(workers, os.cpu_count() or 1))
+    if workers == 1 or len(ids) < 4 * workers:
+        return _items_chunk([recs[i] for i in ids], cfg, enc, guard, max_t)
+    import multiprocessing
+    from concurrent.futures import ProcessPoolExecutor
+
+    size = math.ceil(len(ids) / workers)
+    chunks = [[recs[i] for i in ids[k: k + size]] for k in range(0, len(ids), size)]
+    # spawn on every platform: never fork a process that may hold CUDA / torch threads (same path the CPU tests run)
+    with ProcessPoolExecutor(workers, mp_context=multiprocessing.get_context("spawn")) as ex:
+        parts = list(ex.map(_items_chunk, chunks, [cfg] * len(chunks), [enc] * len(chunks), [guard] * len(chunks),
+                            [max_t] * len(chunks)))
+    return [x for p in parts for x in p]
+
+
+def _items_chunk(records: list, cfg: dict, enc, guard, max_t: int) -> list:
     from train.data import items_from_records
 
-    its = items_from_records([recs[i] for i in ids], enc, layout=cfg["layout"], template=cfg["template"], guard=guard)
+    its = items_from_records(records, enc, layout=cfg["layout"], template=cfg["template"], guard=guard)
     return [x for x in its if keep_item(x.row, cfg["max_k"], max_t)]
+
+
+def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, cohort=None):
+    """(train records by id, eval records by id, train ids, eval ids, data identity) for a cell config.
+
+    Without ``cfg["train_set"]``: the PR #16 sample at ``records_path`` provides both (``cohort_split``). With it: train
+    records come from the pointer-pinned external set in ``train_dir`` (``train.train_set.draw``: cohort excluded by id
+    and content, manifest-verified, content re-hashed) and eval records (the cohort ``dev`` role) from ``records_path``.
+    Raises ``ValueError`` (``CohortLeak`` / ``TrainSetMismatch`` subclass it) on any identity problem."""
+    with gzip.open(records_path, "rt", encoding="utf-8") as f:
+        recs = {r["id"]: to_train_record(r) for r in map(json.loads, f)}
+    if not cfg.get("train_set"):
+        tr_ids, ev_ids, ident = cohort_split(sorted(recs), cfg, recs)
+        return recs, recs, tr_ids, ev_ids, ident
+    if not train_dir:
+        raise ValueError("the cell config names a train_set: pass --train-dir with its pinned files")
+    from train.cohort import Cohort
+    from train.train_set import draw
+
+    co = cohort if cohort is not None else Cohort(expected_sha256=cfg["cohort_sha256"])
+    train_recs, tr_ids, tident = draw(cfg, train_dir, co)
+    ev_ids = co.ids("dev")
+    missing = sorted(set(ev_ids) - set(recs))
+    if missing:
+        raise ValueError(f"cohort dev records missing from the records file: {missing[:3]}")
+    if set(tr_ids) & set(ev_ids):
+        raise ValueError("training ids overlap the cohort dev role")
+    return train_recs, recs, tr_ids, ev_ids, {"cohort": co.identity(), "train_set": tident}
 
 
 def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
@@ -150,6 +198,7 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
     return TrainConfig(head=cfg["head"], head_kwargs=cfg.get("head_kwargs") or {}, layout=cfg["layout"],
                        fork_mode="cache", lora_rank=cfg["lora_rank"], loss=LossConfig(arm=cfg["loss_arm"]),
                        lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
+                       warmup_steps=int(cfg.get("warmup_steps") or 0),
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
                        seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
                        eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {})
@@ -178,10 +227,15 @@ class RwkvSegmentEncoder:
 
     def __init__(self, tok, special: set[int]):
         self.tok, self.special = tok, set(special) | {0}
+        self._ident = None
 
     def identity(self) -> dict:
-        vocab = hashlib.sha256(json.dumps(sorted(self.tok.get_vocab().items())).encode()).hexdigest()
-        return {"kind": "rwkv7-hf-trie", "vocab_sha256": vocab, "untrusted": "fail-closed on special ids"}
+        # memoised: hashing the 65,536-entry vocabulary took ~32 ms and ran once per ROW (row.meta["encoder"]), about
+        # half of the training-set tokenization time; the vocabulary is immutable, so the value is unchanged
+        if self._ident is None:
+            vocab = hashlib.sha256(json.dumps(sorted(self.tok.get_vocab().items())).encode()).hexdigest()
+            self._ident = {"kind": "rwkv7-hf-trie", "vocab_sha256": vocab, "untrusted": "fail-closed on special ids"}
+        return dict(self._ident)
 
     def __call__(self, text: str, trusted: bool = True) -> list[int]:
         from decide.untrusted import ControlTokenError
@@ -192,9 +246,21 @@ class RwkvSegmentEncoder:
         return ids
 
 
-def steps_needed(rule: dict) -> int:
-    """The pass rule compares two disjoint windows of steps, so fewer than 2 x window steps can never pass."""
-    return 2 * rule.get("window", 50)
+def train_seconds_used(cell: dict, resumed: bool) -> float:
+    """Training wall-clock already spent by the checkpointed steps (``cell["train_clock"]``, written with every
+    checkpoint and mirrored in the checkpoint dir). A fresh start uses 0; a resume subtracts it from ``max_minutes``, so
+    restarts can never train past the pre-registered budget. Time after the last checkpoint is not counted: those steps
+    are lost and re-run."""
+    if not resumed:
+        return 0.0
+    return float((cell.get("train_clock") or {}).get("used_s") or 0.0)
+
+
+def steps_needed(rule: dict, min_steps: int | None = None) -> int:
+    """The pass rule compares two disjoint windows of steps, so fewer than 2 x window steps can never pass. A cell may
+    pre-register a larger ``min_steps`` (the training it needs to be a meaningful measurement); the exit-26 checks then
+    stop before spending on a run that cannot reach it."""
+    return max(2 * rule.get("window", 50), int(min_steps or 0))
 
 
 def too_slow(step_s: float, minutes_left: float, need_steps: int) -> dict:
@@ -249,6 +315,9 @@ def main(argv=None):
     ap.add_argument("--guard-readiness", default=None,
                     help="readiness.json from jobs.m2_pilot.guard_ready (required when the config sets "
                          "require_guard_readiness): the guard then includes the verified content-hash index")
+    ap.add_argument("--train-dir", default=None, help="config train_set: dir with the pointer-pinned training-set files "
+                    "(train.train_set); --records then supplies only the cohort (eval) records")
+    ap.add_argument("--device", default="cuda", help="cuda (paid runs); cpu only for the tiny-model dry run")
     a = ap.parse_args(argv)
 
     import torch
@@ -277,11 +346,15 @@ def main(argv=None):
             tmp.write_text(json.dumps(cell, indent=1))
             os.replace(tmp, p)
 
+    # CUDA paths (bf16 autocast, peak memory) follow --device, not merely an installed CUDA build: a CPU run on a
+    # CUDA-capable host (CUDA_VISIBLE_DEVICES="" can still report is_available) must not autocast to a cuda device
+    on_cuda = torch.cuda.is_available() and str(a.device).startswith("cuda")
+
     def peak():
-        return torch.cuda.max_memory_allocated() / 1e9 if torch.cuda.is_available() else 0.0
+        return torch.cuda.max_memory_allocated() / 1e9 if on_cuda else 0.0
 
     def reset_peak():
-        if torch.cuda.is_available():
+        if on_cuda:
             torch.cuda.reset_peak_memory_stats()
             torch.cuda.empty_cache()
 
@@ -322,20 +395,17 @@ def main(argv=None):
         return EXIT["guard"]
     else:
         guard = SplitGuard.from_manifests([root / "dev-manifest.jsonl.gz", root / "test-manifest.jsonl.gz"])
-    with gzip.open(a.records, "rt", encoding="utf-8") as f:
-        recs = {r["id"]: to_train_record(r) for r in map(json.loads, f)}
     try:
-        tr_ids, ev_ids, cohort_ident = cohort_split(sorted(recs), cfg, recs)
-    except ValueError as e:  # CohortLeak subclasses ValueError
+        train_recs, eval_recs, tr_ids, ev_ids, cohort_ident = load_cell_data(cfg, a.records, a.train_dir)
+    except ValueError as e:  # CohortLeak / TrainSetMismatch subclass ValueError
         print(f"cohort: {e}", flush=True)
         return EXIT["cohort"]
     t_cap = max(cfg["t_ladder"])
-
-    def items(ids, max_t):
-        return cell_items(recs, ids, cfg, enc, guard, max_t)
-
-    train_items, eval_items = items(tr_ids, t_cap), items(ev_ids, t_cap)
+    t_tok = time.time()
+    train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap)
+    eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap)
     cell["data"] = {"records_sha256": hashlib.sha256(Path(a.records).read_bytes()).hexdigest(),
+                    "n_train_records": len(tr_ids), "tokenize_s": round(time.time() - t_tok, 1),
                     "n_train_items": len(train_items), "n_eval_items": len(eval_items),
                     "guard_manifests": guard.manifests, "guard": guard.identity(), "max_k": cfg["max_k"],
                     **cohort_ident}
@@ -344,12 +414,12 @@ def main(argv=None):
         print(f"too few items {len(train_items)}", flush=True)
         return EXIT["data"]
 
-    bb = load_parent_backbone(parent, a.model_dir, cfg, a.gdn_ckpt)
+    bb = load_parent_backbone(parent, a.model_dir, cfg, a.gdn_ckpt, device=a.device)
     if (cfg.get("controlsafe") or {}).get("trust_gate"):  # optional G15 arm (controlsafe/CONTROLSAFE.md)
         from controlsafe.trust_gate import wrap as trust_gate_wrap
 
         bb = trust_gate_wrap(bb, {**cfg["controlsafe"], "seed": cfg["seed"]})
-    cuda = torch.cuda.is_available()
+    cuda = on_cuda
     dev_type = "cuda" if cuda else "cpu"
     cell["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
     stages = ["smoke", "ladder", "train"] if a.stage == "all" else [a.stage]
@@ -400,7 +470,10 @@ def main(argv=None):
     def make_trainer(max_steps, ckpt_dir=None):
         model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])
         model.to(bb.device)
-        return Trainer(model, train_config(cfg, max_steps, ckpt_dir, cuda), train_items, eval_items, guard=guard)
+        from train.trainer import with_execution  # act_ckpt / row_batch / row_tokens of the cell (PR #86 hook)
+
+        return Trainer(model, with_execution(train_config(cfg, max_steps, ckpt_dir, cuda), cfg), train_items,
+                       eval_items, guard=guard)
 
     if "ladder" in stages and "ladder" not in cell:
         lad = {}
@@ -434,7 +507,7 @@ def main(argv=None):
         # measured stop condition 1: even the fastest fitting rung's MEASURED step time (worst rows of that rung)
         # cannot reach the pass rule's step count inside max_minutes -> exit 26 before any training spend
         fastest = min(lad[str(T)]["step_s"] for T in fits)
-        cell["ladder"]["rate_check"] = too_slow(fastest, cfg["max_minutes"], steps_needed(cfg["pass_rule"]))
+        cell["ladder"]["rate_check"] = too_slow(fastest, cfg["max_minutes"], steps_needed(cfg["pass_rule"], cfg.get("min_steps")))
         save()
         if cell["ladder"]["rate_check"]["too_slow"]:
             return EXIT["too_slow"]
@@ -452,7 +525,12 @@ def main(argv=None):
                                                                                        keep_units=keep))
             tr.cards[-1].pop("units", None)
         t_start = time.time()
-        t_end = t_start + 60 * cfg["max_minutes"]
+        # the max_minutes budget is cumulative over attempts: a restart resumes with what the checkpointed steps used
+        used_before = train_seconds_used(cell, resumed)
+        t_end = t_start + 60 * cfg["max_minutes"] - used_before
+        cell["train_clock_resume"] = {"resumed": resumed, "step": tr.step, "used_s_before": used_before,
+                                      "left_s": max(0.0, t_end - t_start)}
+        save()
         step0 = tr.step
         logf = open(out / "train_log.jsonl", "a")
         while tr.step < cfg["max_steps"] and time.time() < t_end:
@@ -460,7 +538,7 @@ def main(argv=None):
             if tr.step - step0 == CHECK_AFTER_STEPS:  # measured stop condition 2: the real data mix's step time
                 el = time.time() - t_start
                 chk = too_slow(el / CHECK_AFTER_STEPS, (t_end - time.time()) / 60,
-                               max(0, steps_needed(cfg["pass_rule"]) - tr.step))
+                               max(0, steps_needed(cfg["pass_rule"], cfg.get("min_steps")) - tr.step))
                 cell["train_rate_check"] = chk
                 save()
                 if chk["too_slow"]:
@@ -480,6 +558,8 @@ def main(argv=None):
                 return EXIT["memory"]
             if tr.step % cfg["ckpt_every"] == 0:
                 tr.save()
+                cell["train_clock"] = {"step": tr.step, "used_s": used_before + time.time() - t_start}
+                save()
                 _checkpoint_post()
             if tr.step % cfg["eval_every"] == 0:
                 tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items,
@@ -492,6 +572,7 @@ def main(argv=None):
                 tr.model, eval_items, tr.step, a.out, keep_units=keep))
             tr.cards[-1].pop("units", None)
         tr.save()
+        cell["train_clock"] = {"step": tr.step, "used_s": used_before + time.time() - t_start}
         _checkpoint_post()
         cell["train"] = {"steps": tr.step, "resumed": resumed, "T_max": t_max, "cards": tr.cards,
                          "lineage": tr.lineage, "verdict": pass_rule(tr.history, tr.cards, peak(), cfg["pass_rule"])}
