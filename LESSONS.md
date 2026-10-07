@@ -354,3 +354,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the test double matched the conceptual slot count but not the runtime container contract.
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
+
+### L-37 Mutable receipt hashes could authorize changed relation validation truth
+- Date: 2026-10-07 (L1r0 relation-data review).
+- Symptom: changing a loaded conditional-validation target and its manifest hash together passed `L1RelationData._verify`, despite the independently pinned source fixtures remaining unchanged. Selected relation requests had the same gap.
+- Cost: $0; found before model execution, training or measurement. No affected learned result is known.
+- Root cause: `frozen=True` did not freeze nested dictionaries, and the verifier trusted mutable reporting hashes as its expectations.
+- **Check:** `L1RelationData._verify` derives fit/calibration relation selections from the complete constant-pinned world partitions and reloads validation records/targets from independently pinned raw fixture and manifest bytes. It compares both the data and reporting hashes against those derived expectations. `language_growth/tests/test_l1_relation_data.py::test_changed_target_and_matching_mutable_manifest_still_refused` and `test_changed_selected_records_and_matching_mutable_manifest_still_refused` reject paired data/hash edits; `test_source_rechecked_before_accepting_unchanged_validation_view` rejects later source drift while accepting exact relocated bytes.
+- **Status:** ENFORCED.

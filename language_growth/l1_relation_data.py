@@ -165,14 +165,27 @@ class L1RelationData:
     teacher_forced_validation_records: tuple
     teacher_forced_validation_targets: dict
     manifest: dict
+    validation_source_dir: Path = MULTIWORLD_FIXTURE_DIR
 
     def _verify(self):
         _verify_worlds(self.world_data)
+        # Re-derive expectations from independently pinned inputs. The manifest
+        # is a reporting value, not authority to replace records or eval truth.
+        validation, targets = _validation_view(self.validation_source_dir, self.world_data)
+        expected_records = {
+            "fit": _relation_records(self.world_data.fit_records),
+            "calibration": _relation_records(self.world_data.calibration_records),
+            "teacher_forced_validation": validation,
+        }
         for name, records in (("fit", self.fit_records), ("calibration", self.calibration_records),
                               ("teacher_forced_validation", self.teacher_forced_validation_records)):
-            if hashlib.sha256(_record_bytes(list(records))).hexdigest() != self.manifest["partitions"][name]["rows_sha256"]:
+            expected = hashlib.sha256(_record_bytes(list(expected_records[name]))).hexdigest()
+            if (hashlib.sha256(_record_bytes(list(records))).hexdigest() != expected
+                    or self.manifest["partitions"][name]["rows_sha256"] != expected):
                 raise ValueError("relation records changed after pinned selection")
-        if _sha(self.teacher_forced_validation_targets) != self.manifest["validation_targets_sha256"]:
+        expected_targets = _sha(targets)
+        if (_sha(self.teacher_forced_validation_targets) != expected_targets
+                or self.manifest["validation_targets_sha256"] != expected_targets):
             raise ValueError("validation relation target sidecar changed")
 
     def fit_items(self, encode, *, guard, layout="ordered", template="jrt-rwkv-g1-v1"):
@@ -260,7 +273,7 @@ def load_l1_relation_data(*, fixture_dir=None):
                 "validation_targets_sha256": _sha(targets), "normalized_content": contents,
                 "token_limit": MAX_INPUT_TOKENS, "tokens_checked": False,
                 "cost_usd": 0, "model_execution": False}
-    return L1RelationData(worlds, fit, calibration, validation, targets, manifest)
+    return L1RelationData(worlds, fit, calibration, validation, targets, manifest, root.resolve())
 
 
 class PinnedRWKVEncoder:

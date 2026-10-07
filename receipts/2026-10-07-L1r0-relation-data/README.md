@@ -1,6 +1,8 @@
 # L1r0 relation data receipt
 
 Data-only CPU preparation from `agent-main@32d975159c64216193c47478e102d17c8d7e5658`.
+The original preparation and `source-sha256.json` describe commit `563aacb`;
+they are preserved unchanged after the source-verification follow-up.
 No Torch, checkpoint/model load, inference, GPU, paid service, Index or heldout
 access. Cost $0. There are no predictions or performance claims.
 
@@ -42,3 +44,10 @@ the guarded L1r1 runner: it must pass the active backend template and encoder,
 convert all 3,072 pinned fit records before selecting the 576 relation Items,
 and recheck row lengths before feature extraction. R0's dispatch test mocks
 the Torch-dependent consumer and proves ordering only.
+
+Review follow-up: verification now derives selected records and validation
+targets from the independently pinned full-world/raw-source data instead of
+trusting mutable manifest hashes. Thirteen focused CPU tests pass, including
+paired data/hash edits and post-load source drift. The original source hashes,
+preparation manifest and complete vocabulary-only census reproduced exactly;
+no token or data result changed. LESSONS L-37 records the correction.

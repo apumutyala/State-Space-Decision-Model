@@ -142,6 +142,45 @@ class L1RelationDataTests(unittest.TestCase):
                     guard=SplitGuard.synthetic_only("partition substitution test"))
             encoder.assert_not_called()
 
+    def test_changed_target_and_matching_mutable_manifest_still_refused(self):
+        targets = deepcopy(self.data.teacher_forced_validation_targets)
+        manifest = deepcopy(self.data.manifest)
+        row = self.data.teacher_forced_validation_records[0]
+        key = f"{row['id']}/{RELATION_QID}"
+        options = row["request"]["questions"][RELATION_QID]["criteria"]
+        targets[key] = next(option for option in options if option != targets[key])
+        manifest["validation_targets_sha256"] = hashlib.sha256(_canonical(targets).encode("ascii")).hexdigest()
+        changed = replace(self.data, teacher_forced_validation_targets=targets, manifest=manifest)
+        with self.assertRaisesRegex(ValueError, "target sidecar changed"):
+            changed._verify()
+
+    def test_changed_selected_records_and_matching_mutable_manifest_still_refused(self):
+        for name, field in (("fit", "fit_records"), ("calibration", "calibration_records"),
+                            ("teacher_forced_validation", "teacher_forced_validation_records")):
+            records = deepcopy(getattr(self.data, field))
+            state = json.loads(records[0]["request"]["state"])
+            state["task_input"] = "Changed after pinned selection"
+            records[0]["request"]["state"] = _canonical(state)
+            manifest = deepcopy(self.data.manifest)
+            raw = b"".join((_canonical(row) + "\n").encode("ascii") for row in records)
+            manifest["partitions"][name]["rows_sha256"] = hashlib.sha256(raw).hexdigest()
+            changed = replace(self.data, **{field: records}, manifest=manifest)
+            with self.subTest(partition=name), self.assertRaisesRegex(ValueError, "records changed"):
+                changed._verify()
+
+    def test_source_rechecked_before_accepting_unchanged_validation_view(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for suffix in (".jsonl", "-manifest.json"):
+                src = MULTIWORLD_FIXTURE_DIR / f"{MULTIWORLD_VALIDATION_SPLIT}{suffix}"
+                (root / src.name).write_bytes(src.read_bytes())
+            changed = replace(self.data, validation_source_dir=root)
+            changed._verify()  # exact relocated bytes remain supported
+            path = root / f"{MULTIWORLD_VALIDATION_SPLIT}.jsonl"
+            path.write_bytes(path.read_bytes() + b" ")
+            with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
+                changed._verify()
+
     def test_normalized_content_overlap_rejected_even_with_new_identity_and_labels(self):
         left = deepcopy(self.data.fit_records[0])
         right = deepcopy(left)
