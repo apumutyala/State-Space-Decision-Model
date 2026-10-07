@@ -1,0 +1,1 @@
+{"prior_head": "6d8fa4b655c2a7242473ad4681b73a61527f86be", "prior_status": "accepted", "prior_failures": ["render", "json"], "fixed_status": "accepted", "result_digits": 4301, "deterministic_render": true, "json_roundtrip": true, "rational_oracle_pairs": 121}
