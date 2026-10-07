@@ -95,7 +95,7 @@ class ScriptedProvider:
                                          "inference_calls": 1}}}
 
 
-def ask(host, catalog, provider, task="What is alpha's repairable value?"):
+def ask(host, catalog, provider, task="State alpha's repairable for October 2026."):
     return public_answer(task, host, catalog, provider, model="scripted",
                          parent_revision=REVISION, expected_served_config=CONFIG)
 
@@ -107,6 +107,46 @@ class PublicOutputTests(unittest.TestCase):
         self.assertEqual(set(result), {"status", "text"})
         self.assertEqual(result["status"], "ok")
         self.assertIn('"IsRepairable" for "alpha" has value true.', result["text"])
+
+    def test_unsupported_task_is_refused_before_provider_call(self):
+        host, catalog = world()
+        provider = ScriptedProvider(["Assert one selected fact", "alpha-v1 field repairable"])
+        self.assertEqual(ask(host, catalog, provider, "What is alpha's repairable value?"), FAILURE)
+        self.assertEqual(provider.calls, 0)
+
+    def test_kernel_valid_wrong_entity_or_field_is_not_released(self):
+        host, catalog = world()
+        for record_ref, field in (("beta-v1", "repairable"), ("alpha-v1", "price")):
+            program = read_program(host)
+            program["nodes"][0]["record_ref"] = record_ref
+            program["nodes"][0]["field"] = field
+            with patch.object(boundary, "plan_checked_answer", return_value=PlannerResult(
+                    "accepted", "INJECTED TEXT", program)):
+                self.assertEqual(ask(host, catalog, object()), FAILURE)
+
+    def test_wrong_speech_act_and_multiple_outputs_are_not_released(self):
+        host, catalog = world()
+        explain = read_program(host)
+        explain["nodes"].append({"id": "n3", "op": "ExplainDerivation", "speech_act": "n2"})
+        explain["outputs"] = ["n3"]
+        self.assertEqual(boundary.check_program(explain, host, catalog).status, "accepted")
+        with patch.object(boundary, "plan_checked_answer", return_value=PlannerResult(
+                "accepted", "INJECTED", explain)):
+            self.assertEqual(ask(host, catalog, object()), FAILURE)
+
+        multiple = read_program(host)
+        multiple["nodes"].append({"id": "n3", "op": "Assert", "proposition": "n1"})
+        multiple["outputs"] = ["n2", "n3"]
+        self.assertEqual(boundary.check_program(multiple, host, catalog).status, "accepted")
+        with patch.object(boundary, "plan_checked_answer", return_value=PlannerResult(
+                "accepted", "INJECTED", multiple)):
+            self.assertEqual(ask(host, catalog, object()), FAILURE)
+
+    def test_hidden_entity_refuses_before_provider_call(self):
+        host, catalog = world()
+        provider = ScriptedProvider(["Assert one selected fact", "alpha-v1 field repairable"])
+        self.assertEqual(ask(host, catalog, provider, "State hidden-product's price for October 2026."), FAILURE)
+        self.assertEqual(provider.calls, 0)
 
     def test_failures_have_one_indistinguishable_public_shape(self):
         host, catalog = world()

@@ -384,3 +384,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: `frozen=True` did not freeze nested dictionaries, and the verifier trusted mutable reporting hashes as its expectations.
 - **Check:** `L1RelationData._verify` derives fit/calibration relation selections from the complete constant-pinned world partitions and reloads validation records/targets from independently pinned raw fixture and manifest bytes. It compares both the data and reporting hashes against those derived expectations. `language_growth/tests/test_l1_relation_data.py::test_changed_target_and_matching_mutable_manifest_still_refused` and `test_changed_selected_records_and_matching_mutable_manifest_still_refused` reject paired data/hash edits; `test_source_rechecked_before_accepting_unchanged_validation_view` rejects later source drift while accepting exact relocated bytes.
 - **Status:** ENFORCED.
+
+### L-39 Kernel-valid evidence can answer the wrong public task
+- Date: 2026-10-07 (Track L public-output review).
+- Symptom: `public_answer` rechecked and rendered a kernel-accepted program but never compared its entity, field, order, scope or speech act with the user's task. A true fact about another entity or field could therefore be released as the answer.
+- Cost: $0; caught in CPU/code review before a model-backed public release.
+- Root cause: evidence-relative kernel soundness was being used as if it established task relevance.
+- **Check:** `language_growth/task_relevance.py` builds a bounded exact-grammar contract from `audience_state` before provider calls, then verifies the final checked speech-act and ordered host-resolved operands against a fresh exact task/state hash before public rendering. `language_growth/tests/test_public_output.py::test_kernel_valid_wrong_entity_or_field_is_not_released` checks kernel-valid mismatches; `language_growth/tests/test_task_relevance.py::test_every_development_template_has_an_exact_kernel_bound_contract` covers all fixed train/validation templates. Unsupported wording fails before provider use.
+- **Status:** ENFORCED for `public_answer` and the enumerated grammar only. This does not establish relevance for arbitrary natural language or for other direct renderer/library callers.

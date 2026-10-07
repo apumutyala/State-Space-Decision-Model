@@ -65,3 +65,15 @@ Result: **106 passed** in 20.13 seconds; `git diff --check` passed after the
 prepared README's CR-at-EOL preservation was made explicit in `.gitattributes`.
 No parent/checkpoint, model inference, GPU, Index/held-out data, or spend was
 used.
+
+## Source-registration refresh for public task-relevance work
+
+The L0 public-output relevance gate added `task_relevance.py` and updated
+`public_output.py`; the two frozen no-load screen registrations hash the full
+Python source trees, including tests. Their source maps were refreshed while
+holding the serialized screen inputs, evaluator targets, corpus, configuration,
+thresholds and arm definitions byte-for-byte constant. The exact old/new
+registration hashes and unchanged-field comparison are recorded in
+`receipts/2026-10-07-L-public-task-relevance/registration-refresh.json`.
+This refresh only keeps the existing no-load dry-run guards truthful; neither
+screen was launched and no model or checkpoint was loaded.
