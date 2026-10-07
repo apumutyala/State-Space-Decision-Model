@@ -68,9 +68,11 @@ and leave no partial published pack.
 counts and verification commands. The enclosing commit preserves the phase
 note at `plans/codex/L1_SEMANTIC_AXIS_COUNTERFACTUAL_FIXTURES.md` and every
 artifact. Earlier answer-choice fixture files are replaced by planner inputs;
-no prior training or other fixture cohort is changed. Fresh exact-head review
-at `2eefbaa99f995fa97afc3d1830e8dade5ed9b2ba` found no blockers; the revised
-planner-input scope is undergoing a second exact-head review. Track D review
+no prior training or other fixture cohort is changed. The first review of
+answer-choice head `6dd103da` flagged that it did not exercise the L planner.
+Planner-input schema was introduced at `f205c8f`; visible world-index suffixes
+were removed at `2eefbaa`. Fresh exact-head review at `ecb2d34` found no
+source/data blockers. This follow-up corrects review provenance; Track D review
 will be requested on the stacked PR before merge.
 
 These fixtures test factual counterfactual responsiveness and can support

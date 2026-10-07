@@ -75,8 +75,10 @@ edits, but do not demonstrate learned recurrent mediation, calibrated
 ability, alignment, or internal interpretability. Discovery/validation are
 iterative synthetic development groups, not independent or heldout
 qualification. This unlocks no level promotion, paid run or model claim.
-The first exact-head review found that one-shot answer-choice requests were
-not sufficiently tied to Track L's semantic-planner path. The fixture was
-revised to provide only task/evidence inputs and exercise `plan_checked_answer`,
-kernel and renderer with an input-derived scripted oracle. Fresh exact-head
-review of the revised schema is required before push or PR creation.
+The first review of answer-choice head `6dd103da` found that those requests
+were not sufficiently tied to Track L's semantic-planner path. Planner-input
+schema was introduced at `f205c8f`, and visible world-index suffixes were
+removed at `2eefbaa`. Fresh exact-head review at `ecb2d34` found no source/data
+blockers; this follow-up corrects review provenance before PR publication.
+The revised fixture exercises `plan_checked_answer`, kernel and renderer with
+an input-derived scripted oracle, not a learned provider or recurrent edit.
