@@ -60,6 +60,13 @@ using reused development names, numeric ranges, and wording families. They are
 not the old PR #78 validation rows. No `development_validation`, Index, audit,
 held-out data, teacher API, network, GPU, or paid resource was used.
 
+**Question-surface exposure:** 346 of the 360 evaluation `task_input` strings
+occur verbatim among the 600 training rows; there are zero exact world-plus-
+question duplicates. The read/explain partner wording also reuses the other
+`development_train` template, so this paired set is not a wording-transfer
+test. The in-domain results measure this generated distribution and must not
+be cited as wording robustness or clean template generalization.
+
 Config and source/data hashes were frozen before training. All three seeds
 (20261006, 20261016, 20261026) trained for exactly 300 steps with batch size 32,
 Adam learning rate .003, gradient norm cap 1, and equal-weight operation,
