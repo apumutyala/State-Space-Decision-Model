@@ -18,6 +18,7 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Cost: $0.56 and one stage-A attempt.
 - Root cause: every (question, option) pair re-forwarded the whole prompt, 236.7 M tokens instead of 6.2 M. The preflight priced a proxy volume 40x too small.
 - **Check:** `decide/backends/state_fork.py`, with fork == recompute verified in `tests/test_readout_fork.py`. The exact-volume preflight `jobs/common/rate_guard.py preflight` is verified in `tests/test_perf_paths.py::test_cost_model_reproduces_the_measured_job_and_clears_the_cap`. Lint `rate_guard` requires the runner to call a measured-rate guard (`tests/test_jobs_lint.py`).
+- PR #93 review (B2): the first `rate_guard` lint matched the word "preflight" anywhere, including a `# TODO preflight` comment. It now requires an executed `python -m jobs.common.rate_guard` / `python -m jobs.<job>.preflight` (or `bash ...preflight...sh`) line (`test_rate_guard_requires_an_executed_call`, `test_refusals[preflight_comment|preflight_echo]`). m2_pilot and m2_parent_arm (`score_parent estimate`) are waived.
 - **Status:** ENFORCED. Note that PR #50 merged with Track L request-changes open (KV memory at 255 options, `shared_prefix` missing from `revision()`).
 
 ### L-02 9B OOM without micro-batching; the probe pipeline dropped `micro_batch`
@@ -66,6 +67,7 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Cost: review rounds, plus a credibility risk on every verdict.
 - Root cause: there was no pre-registration discipline. Rule constants lived in code that changed alongside results.
 - **Check:** a rule module is committed before the run, with literal constants pinned by a test. Lint `decision_rule` (`tests/test_jobs_lint.py`) requires this for every verdict job. Post-hoc bands are reported only as `diagnostic_bands_posthoc`, with the binding rule pinned to 511e8dd. Amendments are dated, committed before any run (A1 a714638, A2 1c33d84).
+- PR #93 review (B3): new jobs must now declare `decision_rule`, either a rule path or `null` with a `no_verdict_reason`. A JOB_SPEC saying "PASS if ... else FAIL" without the word "verdict" no longer counts as "no verdict" (`test_new_job_must_declare_decision_rule`, `test_refusals[no_decision_rule]`).
 - **Status:** ENFORCED for new jobs. rwkv7 is waived (`lint.WAIVERS`); m2_pilot margins are PENDING USER APPROVAL.
 
 ### L-08 Cost and schedule arithmetic drift
@@ -74,6 +76,7 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Cost: none billed. This is the risk of an over-cap submit.
 - Root cause: the numbers were hand-copied between params, spec and tree.
 - **Check:** lint `worst_case_stated` requires `costs.worst_case_usd` (build + 2 attempts) printed in JOB_SPEC.md and <= hard cap. Lint `registered` requires the job in `costs.PARAMS` and `DECISION_TREE.md`. `launch.py` prints `set_workspace_cap_increment_usd`.
+- PR #93 review (B1): `launch.py` silently defaulted `hf_cache` to false. The qual JOB_SPEC and job-4j3vu use true, so the default would have re-downloaded 19 GB inside the capped run. Every submit field must now be stated in job_params or the submit block (`REQUIRED_FIELDS`, `test_refusals[hf_cache_missing]`). `test_submit_args_equal_the_job_spec_field_by_field` parses every JOB_SPEC submit block and compares every field.
 - **Status:** ENFORCED. m2_pilot and m2_parent_arm are waived as DRAFT.
 
 ### L-09 Image publish timeout at build_timeout 18
@@ -98,6 +101,7 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Cost: one review round; caught locally the second time.
 - Root cause: source code was written through a shell quoting layer, and tests asserted only "no hits".
 - **Check:** every regex test asserts it fires on a `chr(92)`-built bad sample and not on a good one (`test_backslash_n_regex_fires_on_known_bad_and_not_on_good`). `test_no_control_characters_in_sources` scans `jobs/ tests/ scripts/`. Write code with an editor or `Write`, never a heredoc.
+- It happened a third time in the PR #93 fix round: backslash-n escapes in a generated test, passed through a shell heredoc into a Python string, became real newlines (a SyntaxError, caught by the test run). The tests now build newlines with `chr(10)`.
 - **Status:** ENFORCED.
 
 ### L-12 Cell spec memory estimate wrong by 2x

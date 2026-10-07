@@ -18,7 +18,7 @@ attention-free**: 7 of 8 attention layers are still softmax attention):
 | Family | Q9-AF (Qwen3.5-9B with attention layers converted to GDN) |
 | Variant | one layer converted (layer 23 of the 8 attention layers), probe9b |
 | Branch | `claude/q9-one-layer-probe` (pre-policy); next work on `stack/q9af/full8` |
-| Merged sha | launched from `agent-main` after PR #73 (`24f164e`; gate rule pinned to `511e8dd`). Confirm against the CONTEXT_MANIFEST in art-2bybh |
+| Merged sha | `24f164e9cfff1abe8f7eecef68a1771d357ca465` ("Merge PR #73"; CONTEXT_MANIFEST `m1_sha` in art-2bybh, verified by the PR #93 review); gate rule pinned to `511e8dd` |
 | Config | `configs/probe9b_h100.json` (full), `jobs/probe9b/job_params.json` |
 | Checkpoint artifact | art-2bybh, sha256 `dd491ade…` (full hash in issue #68) |
 | DEV subset (2,008 rows) | 39.9 [36.5, 42.9] vs stock Qwen3.5-9B 38.3 [35.0, 41.4]; paired diff **+1.66 [+0.19, +3.18]** |

@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PARAMS = lint.params_files(ROOT)
 COSTS = lint.load_costs(ROOT)
 TESTS = lint._test_sources(ROOT)
+NL = chr(10)
 GIT = shutil.which("git") is not None and (ROOT / ".git").exists()
 
 
@@ -162,3 +163,35 @@ def test_coordination_has_no_superseded_spend_rule():
     assert "Spend still needs the other agent's acknowledgement on a `spend` issue." not in t
     assert "never applies to `main` or to spend approval" not in t
     assert "requested but not blocking" in t
+    assert "stop condition, acknowledged by the other agent." not in t  # spend ladder item 2 (PR #93 review)
+    assert "reviewed per 'Review sufficiency' (the other agent's acknowledgement is requested but not blocking)" in t
+
+
+def test_rate_guard_requires_an_executed_call():
+    """PR #93 B2: a comment, an echo or a log path naming the guard is not a guard."""
+    ok = ["python -m jobs.common.rate_guard preflight --tok-s 1",
+          "  python -X utf8 -m jobs.probe9b.preflight --params p",
+          "X=1 python3 -m jobs.common.rate_guard run --results r",
+          "if ! python -m jobs.common.rate_guard preflight; then exit 15; fi",
+          "bash jobs/x/preflight_check.sh"]
+    bad = ["# TODO preflight", "# python -m jobs.common.rate_guard preflight",
+           "echo 'python -m jobs.common.rate_guard'", "say phase preflight",
+           "python -m jobs.x.score estimate > \"$WORK/out/preflight.json\"",
+           "python -m jobs.common.rate_guard_v2 run"]
+    for line in ok:
+        assert lint.RATE_GUARD.search(f"#!/bin/bash{NL}{line}{NL}"), line
+    for line in bad:
+        assert not lint.RATE_GUARD.search(f"#!/bin/bash{NL}{line}{NL}"), line
+
+
+def test_new_job_must_declare_decision_rule(tmp_path):
+    """PR #93 B3: no `decision_rule` key -> fail, whatever the JOB_SPEC wording; null needs a reason."""
+    (tmp_path / "jobs/new").mkdir(parents=True)
+    (tmp_path / "jobs/new/JOB_SPEC.md").write_text("Decision: PASS if gain >= 0.5 else FAIL" + NL, encoding="utf-8")
+    kw = dict(root=tmp_path, job="new", tests={}, rel="jobs/new/job_params.json")
+    assert not lint.chk_decision_rule({}, **kw)[0]
+    assert not lint.chk_decision_rule({"decision_rule": None}, **kw)[0]
+    assert not lint.chk_decision_rule({"decision_rule": None, "no_verdict_reason": " "}, **kw)[0]
+    assert lint.chk_decision_rule({"decision_rule": None, "no_verdict_reason": "throughput only"}, **kw)[0]
+    # the legacy fallbacks never apply to a non-legacy params file
+    assert not lint.chk_decision_rule({}, **{**kw, "job": "m2_parent_arm", "rel": "jobs/m2_parent_arm/job_params_x.json"})[0]

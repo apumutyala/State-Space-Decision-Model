@@ -5,11 +5,11 @@
 Steps (each refuses with a non-zero exit; jobs/LAUNCH_CHECKLIST.md):
   1. `git fetch origin agent-main`; the SHA must be an ancestor of origin/agent-main.
   2. `git -c core.autocrlf=false archive <sha>` -> code/m1 (in memory, plus a staged copy under <out>/stage).
-  3. jobs.common.lint on the staged tree (waived failures only with --allow-waived, recorded in submit.json).
+  3. The sha's own jobs/common/lint.py on the staged tree (waived failures only with --allow-waived, recorded in submit.json).
   4. The job's CPU tests on the staged tree (every tests/ file naming jobs/<job>/ or jobs.<job>, + test_jobs_lint).
   5. Context = Dockerfile (+ CMD rewrite) + code/m1 + pinned data (sha256 checked against the pin file in the
      archive) + CONTEXT_MANIFEST.json, as a deterministic tar (sorted, mtime 2026-01-01, uid/gid 0, modes 644/755)
-     compressed with Python zstandard (no zstd binary). Shipped *.sh/*.sha256/*.json/Dockerfile must have no CR.
+     compressed with Python zstandard (no zstd binary). Shipped *.sh/*.sha256/*.json/*.py/Dockerfile must have no CR.
   6. <out>/<name>.tar.zst, <out>/CONTEXT_MANIFEST.json and <out>/submit.json: create_context / upload /
      finalize_context / open_mission / submit_job arguments (idempotency key from the context sha256).
 
@@ -29,10 +29,12 @@ import sys
 import tarfile
 from pathlib import Path
 
-from jobs.common import lint
+import importlib.util
+
+from jobs.common import lint  # only for the caller-side helpers; every check on a sha runs the sha's own lint.py
 
 MTIME = 1767225600  # 2026-01-01T00:00:00Z, as `tar --mtime=2026-01-01` in the build_context.sh scripts
-LF_SHIPPED = (".sh", ".sha256", ".json")
+LF_SHIPPED = (".sh", ".sha256", ".json", ".py")
 _HB = {"type": "heartbeat", "path": "/output/heartbeat"}
 
 
@@ -50,26 +52,37 @@ _RWKV7_IMAGE = {"dockerfile": "jobs/rwkv7/Dockerfile"}
 
 #: (job, mode) -> submit fields not in job_params. Transcribed from the JOB_SPEC "submit_job" blocks (2026-10-06).
 LEGACY_SUBMIT: dict[tuple[str, str | None], dict] = {
-    ("cell_step_profile", None): {"command": "bash /opt/ssdm/m1/jobs/cell_step_profile/cell_step_job.sh",
-                                  "key": "m2-cell-step-profile", "checks": _checks("CELL_STEP_PROFILE_DONE", 300, 600)},
-    ("fla_rwkv7", None): {"command": "bash /opt/ssdm/m1/jobs/fla_rwkv7/fla_job.sh", "key": "m2-fla-rwkv7-gate",
+    ("cell_step_profile", None): {"command": "bash /opt/ssdm/m1/jobs/cell_step_profile/cell_step_job.sh", "env": {},
+                                  "key": "m2-cell-step-profile", "clock_lock": True,
+                                  "checks": _checks("CELL_STEP_PROFILE_DONE", 300, 600)},
+    ("fla_rwkv7", None): {"command": "bash /opt/ssdm/m1/jobs/fla_rwkv7/fla_job.sh", "env": {}, "key": "m2-fla-rwkv7-gate",
                           "checks": _checks("FLA_RWKV7_DONE", 300, 600)},
-    ("fla_rwkv7", "truth_v2"): {"command": "bash /opt/ssdm/m1/jobs/fla_rwkv7/fla_job.sh truth_v2",
+    ("fla_rwkv7", "truth_v2"): {"command": "bash /opt/ssdm/m1/jobs/fla_rwkv7/fla_job.sh truth_v2", "env": {},
                                 "key": "m2-fla-rwkv7-truth-v2", "checks": _checks("FLA_RWKV7_TRUTH_V2_DONE", 300, 600)},
     ("probe9b", None): {"command": "bash /opt/ssdm/m1/jobs/probe9b/probe_job.sh", "env": {"PROBE_CONFIG": "full"},
-                        "key": "m1-probe9b-full", "clock_lock": True, "checks": _checks("PROBE_DONE")},
+                        "key": "m1-probe9b-full", "clock_lock": True, "checks": _checks("PROBE_DONE"),
+                        "label": "probe9b: one-layer Q9-AF conversion probe (full, job-4j3vu rates)"},
     ("probe9b", "lean"): {"command": "bash /opt/ssdm/m1/jobs/probe9b/probe_job.sh", "env": {"PROBE_CONFIG": "lean"},
-                          "key": "m1-probe9b-lean", "clock_lock": True, "checks": _checks("PROBE_DONE")},
-    ("qual", None): {"command": "bash /opt/ssdm/m1/jobs/qual/qual_job.sh", "key": "m1-hw-qual", "mission": "m1-hw-qual-h100",
+                          "key": "m1-probe9b-lean", "clock_lock": True, "checks": _checks("PROBE_DONE"),
+                          "label": "probe9b: one-layer Q9-AF conversion probe (lean, job-4j3vu rates)"},
+    ("qual", None): {"command": "bash /opt/ssdm/m1/jobs/qual/qual_job.sh", "env": {}, "key": "m1-hw-qual",
+                     "mission": "m1-hw-qual-h100", "chip_count": 1, "resume": "none", "hf_cache": True,
                      "checks": _checks("QUAL_PASS", 600, 900)},
     ("qual", "c_only"): {"command": "bash /opt/ssdm/m1/jobs/qual/qual_job.sh", "env": {"QUAL_MODE": "c_only"},
-                         "key": "m1-hw-qual-c-only", "mission": "m1-hw-qual-h100", "checks": _checks("QUAL_PASS", 600, 900)},
+                         "key": "m1-hw-qual-c-only", "mission": "m1-hw-qual-h100", "chip_count": 1, "resume": "none",
+                         "hf_cache": True, "checks": _checks("QUAL_PASS", 600, 900)},
     ("rwkv7", "readout"): {"command": "bash /opt/ssdm/m1/jobs/rwkv7/rwkv7_job.sh", "env": {"JOB": "readout"},
-                           "key": "m1-rwkv7-readout", "clock_lock": True, "checks": _checks("RWKV7_READOUT_DONE")},
+                           "key": "m1-rwkv7-readout", "clock_lock": True, "checks": _checks("RWKV7_READOUT_DONE"),
+                           "label": "rwkv7 stage A: readout + steer smoke"},
     ("rwkv7", "lora"): {"command": "bash /opt/ssdm/m1/jobs/rwkv7/rwkv7_job.sh", "env": {"JOB": "lora"},
                         "key": "m1-rwkv7-lora", "clock_lock": True, "checks": _checks("RWKV7_LORA_DONE"),
-                        "depends_on": {"job": "<stage A job id>", "require": "result.ok == true"}},
+                        "label": "rwkv7 stage B: LoRA pilot (cache fork)",
+                        "depends_on": {"job": "<stage A id>", "require": "result.ok == true"}},
 }
+#: submit_job fields that must be stated explicitly (job_params, else the submit block); no silent defaults (PR #93 B1).
+REQUIRED_FIELDS = ("chip", "chip_count", "mission", "build_timeout_minutes", "max_duration_minutes", "max_restarts",
+                   "resume", "queue_ttl_minutes", "hf_cache", "model")
+REQUIRED_SUBMIT = ("command", "env", "key", "checks")
 
 #: job -> context recipe, transcribed from jobs/<job>/build_context.sh and jobs/common/build_context.sh.
 LEGACY_CONTEXT: dict[str, dict] = {
@@ -109,18 +122,43 @@ def archive(root: Path, sha: str) -> dict[str, tuple[bytes, int]]:
     """`git -c core.autocrlf=false archive <sha>` as {path: (bytes, mode)}; modes normalised to 644/755."""
     raw = git(root, "archive", sha, binary=True)
     out = {}
+    odd = []
     with tarfile.open(fileobj=io.BytesIO(raw)) as t:
         for m in t.getmembers():
             if m.isfile():
                 out[m.name] = (t.extractfile(m).read(), 0o755 if m.mode & 0o111 else 0o644)
+            elif not m.isdir() and m.name != "pax_global_header":
+                odd.append(f"{m.name} ({'symlink -> ' + m.linkname if m.issym() else 'type ' + repr(m.type)})")
+    if odd:
+        raise LaunchError(f"the archive has non-regular members (symlinks are not shipped silently): {odd}")
     return out
 
 
 def params_rel(files: dict, job: str, mode: str | None) -> str:
-    for rel in ([f"jobs/{job}/job_params_{mode}.json"] if mode else []) + [f"jobs/{job}/job_params.json"]:
+    """job_params_<mode>.json for a mode; job_params.json without one. A mode with no params file is accepted only
+    when a legacy submit entry defines it on the base params (probe9b lean); anything else is a typo and refused."""
+    if mode:
+        rel = f"jobs/{job}/job_params_{mode}.json"
         if rel in files:
             return rel
-    raise LaunchError(f"no job_params for {job} mode {mode} at this sha")
+        if (job, mode) not in LEGACY_SUBMIT:
+            raise LaunchError(f"unknown --mode {mode!r} for {job}: no {rel} at this sha")
+    rel = f"jobs/{job}/job_params.json"
+    if rel not in files:
+        raise LaunchError(f"no {rel} at this sha" + (f" (pass --mode)" if not mode else ""))
+    return rel
+
+
+def load_lint(code: Path):
+    """The lint module of the sha being launched (not the caller's checkout)."""
+    f = code / "jobs/common/lint.py"
+    if not f.is_file():
+        raise LaunchError("this sha predates jobs/common/lint.py: launch a sha that contains it")
+    spec = importlib.util.spec_from_file_location(f"_sha_lint_{abs(hash(str(code)))}", f)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def stage(files: dict, d: Path) -> None:
@@ -130,15 +168,16 @@ def stage(files: dict, d: Path) -> None:
         f.write_bytes(b)
 
 
-def run_lint(code: Path, rel: str, allow_waived: bool) -> dict:
-    res = lint.lint_params(rel, code)
-    bad, waived = lint.failures(rel, res)
+def run_lint(code: Path, rel: str, allow_waived: bool, sha_lint=None) -> dict:
+    sha_lint = sha_lint or load_lint(code)
+    res = sha_lint.lint_params(rel, code)
+    bad, waived = sha_lint.failures(rel, res)
     if bad:
         raise LaunchError(f"lint failed for {rel}: {json.dumps(bad, indent=1)}")
     if waived and not allow_waived:
         raise LaunchError(f"lint has WAIVED failures for {rel} (fix them, or pass --allow-waived and say why in the "
                           f"launch receipt): {json.dumps(waived, indent=1)}")
-    hits = lint.backslash_n_hits(code)
+    hits = sha_lint.backslash_n_hits(code)
     if hits:
         raise LaunchError(f"literal backslash-n continuation in shipped shell: {hits}")
     return {"waived": waived}
@@ -210,10 +249,10 @@ def build_context(files: dict, job: str, sha: str, spec: dict, params_path: str,
     return ctx
 
 
-def cr_violations(ctx: dict, root: Path, sha: str) -> list[str]:
+def cr_violations(ctx: dict, root: Path, sha: str, exempt: tuple[str, ...] = lint.CR_EXEMPT_PREFIXES) -> list[str]:
     """Shipped text files that must be LF but carry CR (byte-exact `-text` paths in the archive are exempt)."""
     cand = [p for p, (b, _) in ctx.items() if (p.endswith(LF_SHIPPED) or p.endswith("Dockerfile")) and b"\r" in b
-            and not p.removeprefix("code/m1/").startswith(lint.CR_EXEMPT_PREFIXES)]
+            and not p.removeprefix("code/m1/").startswith(exempt)]
     if not cand:
         return []
     code = [p.removeprefix("code/m1/") for p in cand if p.startswith("code/m1/")]
@@ -251,21 +290,25 @@ def compress(b: bytes, level: int) -> bytes:
 
 
 def submit_args(job: str, mode: str | None, p: dict, sub: dict, ctx_sha: str) -> dict:
-    a = {"chip": p["chip"], "chip_count": p.get("chip_count", 1), "mission": p.get("mission") or sub.get("mission"),
+    """Every platform field is read from job_params, else from the submit block; a missing one is an error, never a
+    default (PR #93 B1: a defaulted hf_cache=false would have re-downloaded 19 GB inside the capped run)."""
+    missing = [k for k in REQUIRED_FIELDS if k not in p and k not in sub] + [k for k in REQUIRED_SUBMIT if k not in sub]
+    if missing:
+        raise LaunchError(f"{job}/{mode}: submit fields not stated (no defaults): {missing}")
+    field = {k: (p[k] if k in p else sub[k]) for k in REQUIRED_FIELDS}
+    if not field["mission"]:
+        raise LaunchError(f"{job}/{mode}: empty mission")
+    a = {"chip": field["chip"], "chip_count": field["chip_count"], "mission": field["mission"],
          "idempotency_key": f"{sub['key']}-{ctx_sha[:12]}",
          "label": sub.get("label", f"{job}{'/' + mode if mode else ''} @ ctx {ctx_sha[:12]}"),
          "context_id": "<from create_context>", "dockerfile_path": "Dockerfile",
-         "build_timeout_minutes": p["build_timeout_minutes"], "command": sub["command"], "env": sub.get("env", {}),
-         "max_duration_minutes": p["max_duration_minutes"], "max_restarts": p["max_restarts"],
-         "resume": p.get("resume", "none"), "queue_ttl_minutes": p.get("queue_ttl_minutes", 1440),
-         "hf_cache": p.get("hf_cache", False), "checks": sub["checks"]}
-    if p.get("model"):
-        a["model"] = p["model"]
+         "build_timeout_minutes": field["build_timeout_minutes"], "command": sub["command"], "env": sub["env"],
+         "max_duration_minutes": field["max_duration_minutes"], "max_restarts": field["max_restarts"],
+         "resume": field["resume"], "queue_ttl_minutes": field["queue_ttl_minutes"], "hf_cache": field["hf_cache"],
+         "model": field["model"], "checks": sub["checks"]}
     for k in ("clock_lock", "depends_on"):
         if k in sub:
             a[k] = sub[k]
-    if not a["mission"]:
-        raise LaunchError("no mission (job_params 'mission' or submit.mission)")
     return a
 
 
@@ -281,16 +324,17 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
     if code.exists():
         raise LaunchError(f"{code} exists: use a fresh --out so stale files cannot be linted or tested")
     stage(files, code)
-    lint_res = run_lint(code, rel, allow_waived)
+    sha_lint = load_lint(code)
+    lint_res = run_lint(code, rel, allow_waived, sha_lint)
     tests = run_tests(code, job) if run_job_tests else {"skipped": True}
     sub = p.get("submit") or LEGACY_SUBMIT.get((job, mode))
     spec = p.get("context") or LEGACY_CONTEXT.get(job)
     if not sub or not spec:
         raise LaunchError(f"{job}/{mode}: job_params needs 'submit' {{command, key, checks}} and 'context' blocks")
-    runner = lint.runner_of(code, job, p)
+    runner = sha_lint.runner_of(code, job, p)
     spec = {**spec, "manifest_files": [*spec.get("manifest_files", []), *([runner] if runner else [])]}
     ctx = build_context(files, job, full, spec, rel, data_dir)
-    bad = cr_violations(ctx, root, full)
+    bad = cr_violations(ctx, root, full, sha_lint.CR_EXEMPT_PREFIXES)
     if bad:
         raise LaunchError(f"CR in shipped LF files (fix .gitattributes / the blob): {bad}")
     blob = compress(deterministic_tar(ctx), level)
@@ -298,7 +342,7 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
     name = f"{job}{'-' + mode if mode else ''}-{full[:12]}"
     (out / f"{name}.tar.zst").write_bytes(blob)
     (out / "CONTEXT_MANIFEST.json").write_bytes(ctx["CONTEXT_MANIFEST.json"][0])
-    costs = lint.load_costs(code)
+    costs = sha_lint.load_costs(code)
     worst = costs.worst_case_usd(p)
     receipt = {
         "job": job, "mode": mode, "sha": full, "params": rel,
@@ -307,7 +351,7 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
                  "set_workspace_cap_increment_usd": math.ceil(worst)},
         "lint": lint_res, "tests": tests,
         "calls": [
-            {"tool": "open_mission", "args": {"name": p.get("mission") or sub.get("mission")}},
+            {"tool": "open_mission", "args": {"name": p["mission"] if "mission" in p else sub["mission"]}},
             {"tool": "create_context", "args": {"sha256": ctx_sha, "size_bytes": size}},
             {"tool": "upload", "args": {"file": str(out / f"{name}.tar.zst"), "how": "curl -T <file> '<put url>'"}},
             {"tool": "finalize_context", "args": {"context_id": "<from create_context>"}},

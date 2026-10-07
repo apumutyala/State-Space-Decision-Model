@@ -28,8 +28,13 @@ BACKSLASH_N = re.compile(r"[\\]n[ \t]+--")
 LF_PATTERNS = ("*.sh", "*.py", "*.json", "*.sha256", "Dockerfile")
 #: paths exempt from the archive CR scan: byte-exact by design (`-text` in .gitattributes) or immutable evidence.
 CR_EXEMPT_PREFIXES = ("receipts/",)
-#: L-08: a runner must call a measured-rate preflight / live rate guard before its long phase.
-RATE_GUARD = re.compile(r"jobs[./]common[./]rate_guard|preflight")
+#: L-08: a runner must EXECUTE a measured-rate preflight / live rate guard before its long phase: a non-comment line
+#: that starts (after optional VAR=x assignments, `if`, `!`, `(`) with `python -m jobs.common.rate_guard` or
+#: `python -m jobs.<job>.preflight`, or `bash <...>preflight<...>.sh`. A comment or an echo does not count (PR #93 B2).
+RATE_GUARD = re.compile(
+    r"^\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:if\s+|!\s*|\(\s*)*"
+    r"(?:python[0-9.]*\s+(?:-[A-Za-z]\s*\S+\s+)*-m\s+(?:jobs\.common\.rate_guard|jobs\.\w+\.preflight)\b"
+    r"|bash\s+\S*preflight\S*\.sh\b)", re.M)
 
 #: params files that existed when this lint landed (2026-10-06). Only these may carry waivers.
 LEGACY_PARAMS = frozenset({
@@ -49,6 +54,8 @@ LEGACY_NO_VERDICT = frozenset({"m2_parent_arm"})
 
 _B = "2026-10-06: spec predates the >=60 min build rule (L-09); raise build_timeout_minutes before its next launch"
 _T = "2026-10-06: no test executes the runner in a subprocess (L-10); add a dry-run shell test before its next launch"
+_R = ("2026-10-06: measured-rate projection via `python -m jobs.m2_parent_arm.score_parent estimate` (exit 15), not "
+      "jobs.common.rate_guard / a *.preflight module; route it through rate_guard before launch")
 #: {params file: {check: dated reason}}. tests/test_jobs_lint.py fails if a waiver is stale (the check now passes),
 #: so this list only shrinks. launch.py refuses waived failures unless --allow-waived, which is recorded in submit.json.
 WAIVERS: dict[str, dict[str, str]] = {
@@ -63,10 +70,12 @@ WAIVERS: dict[str, dict[str, str]] = {
         "rate_guard": "2026-10-06: fixed-size kernel gate, every phase capped from job-jucxx/jn47u measurements"},
     "jobs/m2_parent_arm/job_params.json": {
         "build_timeout": _B, "shell_test": _T,
-        "registered": "2026-10-06: DRAFT, blocked on PENDING margins; register in costs.PARAMS + DECISION_TREE first"},
+        "registered": "2026-10-06: DRAFT, blocked on PENDING margins; register in costs.PARAMS + DECISION_TREE first",
+        "rate_guard": _R},
     "jobs/m2_pilot/job_params.json": {
         "build_timeout": _B, "shell_test": _T,
-        "registered": "2026-10-06: DRAFT, blocked on PENDING margins; register in costs.PARAMS + DECISION_TREE first"},
+        "registered": "2026-10-06: DRAFT, blocked on PENDING margins; register in costs.PARAMS + DECISION_TREE first",
+        "rate_guard": _R},
     "jobs/probe9b/job_params.json": {"build_timeout": _B, "shell_test": _T},
     "jobs/qual/job_params.json": {
         "build_timeout": _B, "shell_test": _T,
@@ -228,19 +237,21 @@ def rule_constants(src: str) -> list[str]:
     return out
 
 
-def chk_decision_rule(p: dict, root: Path, job: str, tests: dict[str, str], **_) -> tuple[bool, str]:
+def chk_decision_rule(p: dict, root: Path, job: str, tests: dict[str, str], rel: str = "", **_) -> tuple[bool, str]:
+    """New jobs MUST declare `decision_rule`: a rule module path, or null plus a non-empty `no_verdict_reason`. The
+    JOB_SPEC wording is never trusted to mean "no verdict" (PR #93 B3). Legacy files use LEGACY_RULES/NO_VERDICT."""
     if "decision_rule" in p:
         rule = p["decision_rule"]
         if rule is None:
-            return True, "job_params declares no verdict (decision_rule: null)"
-    elif job in LEGACY_NO_VERDICT:
-        return True, "no verdict (JOB_SPEC)"
-    elif job in LEGACY_RULES:
+            why = p.get("no_verdict_reason")
+            ok = isinstance(why, str) and bool(why.strip())
+            return ok, f"decision_rule: null; no_verdict_reason: {why!r} (required, non-empty)"
+    elif rel in LEGACY_PARAMS and job in LEGACY_NO_VERDICT:
+        return True, "no verdict (legacy JOB_SPEC)"
+    elif rel in LEGACY_PARAMS and job in LEGACY_RULES:
         rule = LEGACY_RULES[job]
-    elif "verdict" in _read(root, f"jobs/{job}/JOB_SPEC.md").lower():
-        return False, "JOB_SPEC has a verdict but job_params has no 'decision_rule' (module path, or null)"
     else:
-        return True, "no verdict"
+        return False, "job_params has no 'decision_rule' (a rule module path, or null + 'no_verdict_reason')"
     src = _read(root, rule)
     if not src:
         return False, f"decision rule {rule} missing"

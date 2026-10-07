@@ -21,8 +21,8 @@ Each item below is enforced by `tests/test_jobs_lint.py`, which runs every check
 | 5 | registered in `jobs/common/costs.py` `PARAMS` **and** `jobs/DECISION_TREE.md` | `registered` | L-08 |
 | 6 | a test **executes the runner `.sh` in a subprocess** (dry-run mode on CPU); Python-level tests do not count | `shell_test` | L-10 |
 | 7 | no literal backslash-n continuation in any `jobs/**/*.sh` (regex `[\\]n[ \t]+--`, asserted to fire) | `no_backslash_n` | L-10 |
-| 8 | verdict jobs: pre-registered rule module (`decision_rule` in job_params), literal constants pinned by a test, committed **before** the run | `decision_rule` | L-07 |
-| 9 | the runner calls a measured-rate preflight / `jobs.common.rate_guard` before its long phase | `rate_guard` | L-01, L-08 |
+| 8 | every new job declares `decision_rule`: a pre-registered rule module whose literal constants are pinned by a test and committed **before** the run, or `null` + `no_verdict_reason` (JOB_SPEC wording is never trusted) | `decision_rule` | L-07 |
+| 9 | the runner **executes** `python -m jobs.common.rate_guard` / `python -m jobs.<job>.preflight` (or `bash ...preflight...sh`) on a non-comment line before its long phase | `rate_guard` | L-01, L-08 |
 | 10 | `.gitattributes` pins `*.sh *.py *.json *.sha256 Dockerfile` to LF; `git -c core.autocrlf=true archive HEAD` has no CR | `test_gitattributes_pin_lf`, `test_git_archive_head_has_no_cr_even_with_autocrlf` | L-14 |
 | 11 | no control characters in `jobs/ tests/ scripts/` sources (heredoc escape collapse) | `test_no_control_characters_in_sources` | L-11 |
 | 12 | gate reference is run through the production path on CPU first; it must pass its own gate | job's own test | L-06 |
@@ -41,12 +41,12 @@ python -m jobs.common.launch <job> [--mode M] --sha <merged sha> --out <dir> [--
 
 The command does the following. Each step refuses on failure.
 1. Fetches origin and checks that the sha is an ancestor of `origin/agent-main`.
-2. Runs `git -c core.autocrlf=false archive <sha>` and stages the result in `<dir>/stage/`.
-3. Runs `jobs.common.lint` on the staged tree. Waived failures are allowed only with `--allow-waived`; they are recorded in `submit.json` and must be justified in the launch receipt.
+2. Runs `git -c core.autocrlf=false archive <sha>` and stages the result in a fresh `<dir>/stage/`. Symlinks or other non-regular members, an unknown `--mode`, or a reused `--out` are refused.
+3. Runs **the sha's own** `jobs/common/lint.py`, loaded from the staged tree (not the caller's checkout). Waived failures are allowed only with `--allow-waived`; they are recorded in `submit.json` and must be justified in the launch receipt.
 4. Runs the job's CPU tests on the staged tree: every `tests/` file naming `jobs/<job>/` or `jobs.<job>`, plus `test_jobs_lint.py`.
 5. Builds the context: the Dockerfile (with its CMD rewritten), `code/m1/`, and pinned data. Each data file's sha256 is checked against its pin file in the archive. `CONTEXT_MANIFEST.json` is written.
 6. Writes a deterministic tar (sorted, mtime 2026-01-01, uid/gid 0, modes 644/755), compressed with Python `zstandard`. No `zstd` binary is needed.
-7. Asserts there is no CR in any shipped `*.sh`, `*.sha256`, `*.json` or `Dockerfile`. `-text` vendored paths and `receipts/` are exempt.
+7. Asserts there is no CR in any shipped `*.sh`, `*.sha256`, `*.json`, `*.py` or `Dockerfile`. `-text` vendored paths and `receipts/` are exempt.
 8. Prints the sha256 and size.
 9. Writes `<dir>/submit.json` with these calls in order:
    - `open_mission`
@@ -58,16 +58,16 @@ The command does the following. Each step refuses on failure.
 
 The coordinator then works through `submit.json` in this order:
 1. Add a planned `LEDGER.md` row.
-2. Get the `spend` issue acknowledged.
+2. Get the `spend` issue reviewed per COORDINATION 'Review sufficiency'. The other agent's acknowledgement is requested but not blocking.
 3. Run `set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)`.
 4. Paste the calls from `submit.json`.
 5. Run `validate_job`. It must pass without `force`.
 6. Run `submit_job`.
 
 Fields for new jobs go in `job_params.json`. Legacy jobs use tables in `launch.py` transcribed from their JOB_SPECs (`tests/test_launch.py` cross-checks them). New jobs add:
-- `"submit": {"command", "key", "checks", ["env", "clock_lock", "depends_on"]}`
+- `"submit": {"command", "env", "key", "checks", ["label", "clock_lock", "depends_on"]}`; platform fields (chip, chip_count, mission, build_timeout, max_duration, max_restarts, resume, queue_ttl, hf_cache, model) are required in job_params: launch.py has **no defaults**, and its output must equal the JOB_SPEC submit block field by field (`test_submit_args_equal_the_job_spec_field_by_field`)
 - `"context": {"dockerfile", ["cmd_rewrite"], "data": [{"src", "dest", "pin"}]}`
-- `"decision_rule": "<path.py>" | null`
+- `"decision_rule": "<path.py>"`, or `null` + `"no_verdict_reason"`
 
 `m2_pilot` and `m2_parent_arm` still use their own `build_context.sh`, because they need the parent-arm cache and a `guard_ready` dry run.
 

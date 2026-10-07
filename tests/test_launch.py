@@ -5,9 +5,11 @@ legacy submit/context tables cross-checked against the real JOB_SPECs and a real
 """
 from __future__ import annotations
 
+import ast
 import hashlib
 import io
 import json
+import re
 import shutil
 import subprocess
 import tarfile
@@ -29,14 +31,16 @@ def attempts(p):
 def worst_case_usd(p):
     return round((p["build_timeout_minutes"] + attempts(p) * p["max_duration_minutes"]) * p["batch_usd_per_min"], 2)
 '''
-RUNNER = "#!/usr/bin/env bash\nset -euo pipefail\necho preflight ok\necho ran tiny\n"
-TEST = '''import shutil, subprocess
+RUNNER = "#!/usr/bin/env bash\nset -euo pipefail\npython -m jobs.tiny.preflight\necho ran tiny\n"
+TEST = '''import os, shutil, subprocess, sys
 from pathlib import Path
 from jobs.tiny import rule
 ROOT = Path(__file__).resolve().parents[1]
 def test_runner_executes():
-    r = subprocess.run([shutil.which("bash"), str(ROOT / "jobs/tiny/tiny_job.sh")], capture_output=True, text=True)
-    assert r.returncode == 0 and "ran tiny" in r.stdout
+    env = {**os.environ, "PATH": os.path.dirname(sys.executable) + os.pathsep + os.environ["PATH"]}
+    r = subprocess.run([shutil.which("bash"), str(ROOT / "jobs/tiny/tiny_job.sh")], capture_output=True, text=True,
+                       cwd=ROOT, env=env)
+    assert r.returncode == 0 and "ran tiny" in r.stdout and "preflight ok" in r.stdout, r.stdout + r.stderr
 def test_rule_pinned():
     assert rule.MIN_GAIN == 0.5
 '''
@@ -48,12 +52,15 @@ def params(**kw) -> dict:
          "hf_cache": True, "batch_usd_per_min": 0.0495, "hard_cap_usd": 5.0, "reserve_minutes": 1,
          "phase_caps_minutes": {"setup": 4, "run": 5}, "model": "org/tiny@abc123", "mission": "tiny-mission",
          "decision_rule": "jobs/tiny/rule.py",
-         "submit": {"command": "bash /opt/ssdm/m1/jobs/tiny/tiny_job.sh", "key": "tiny",
+         "submit": {"command": "bash /opt/ssdm/m1/jobs/tiny/tiny_job.sh", "env": {}, "key": "tiny",
                     "checks": launch._checks("TINY_DONE", 300, 600)},
          "context": {"dockerfile": "jobs/tiny/Dockerfile",
                      "data": [{"src": "d/rows.txt", "dest": "rows.txt", "pin": "jobs/tiny/data.sha256"}]}}
     p.update(kw)
-    return p
+    return {k: v for k, v in p.items() if v is not DROP}
+
+
+DROP = object()
 
 
 def g(repo: Path, *a: str) -> str:
@@ -62,18 +69,23 @@ def g(repo: Path, *a: str) -> str:
 
 
 def make_repo(tmp: Path, p: dict | None = None, runner: str = RUNNER, test: str = TEST, attrs: bool = True,
-              extra: dict[str, bytes] | None = None) -> tuple[Path, Path, str]:
+              extra: dict[str, bytes] | None = None, symlink: bool = False,
+              spec: bytes = b"# tiny\nWorst case (60 + 2 x 10) x 0.0495 = $3.96. verdict: PASS/FAIL by rule.py\n"
+              ) -> tuple[Path, Path, str]:
     repo, data = tmp / "repo", tmp / "data"
     rows = b"row1\nrow2\n"
     (data / "d").mkdir(parents=True)
     (data / "d/rows.txt").write_bytes(rows)
     files = {
-        ".gitattributes": ("*.sh text eol=lf\n*.py text eol=lf\n*.json text eol=lf\n"
-                           + ("*.sha256 text eol=lf\n" if attrs else "") + "Dockerfile text eol=lf\n").encode(),
+        ".gitattributes": ("*.sh text eol=lf\n*.json text eol=lf\n"
+                           + ("*.sha256 text eol=lf\n*.py text eol=lf\n" if attrs else "")
+                           + "Dockerfile text eol=lf\n").encode(),
         "jobs/__init__.py": b"", "jobs/common/__init__.py": b"", "jobs/common/costs.py": COSTS.encode(),
+        "jobs/common/lint.py": (ROOT / "jobs/common/lint.py").read_bytes(),
+        "jobs/tiny/preflight.py": b"print('preflight ok')\n",
         "jobs/DECISION_TREE.md": b"| tiny | `jobs/tiny/` | $3.96 |\n",
         "jobs/tiny/__init__.py": b"",
-        "jobs/tiny/JOB_SPEC.md": b"# tiny\nWorst case (60 + 2 x 10) x 0.0495 = $3.96. verdict: PASS/FAIL by rule.py\n",
+        "jobs/tiny/JOB_SPEC.md": spec,
         "jobs/tiny/job_params.json": json.dumps(p or params(), indent=1).encode(),
         "jobs/tiny/tiny_job.sh": runner.encode(),
         "jobs/tiny/rule.py": b"MIN_GAIN = 0.5\n",
@@ -89,6 +101,10 @@ def make_repo(tmp: Path, p: dict | None = None, runner: str = RUNNER, test: str 
     g(repo.parent, "init", "-q", str(repo))
     g(repo, "add", "-A")
     g(repo, "update-index", "--chmod=+x", "jobs/tiny/tiny_job.sh")
+    if symlink:
+        blob = subprocess.run(["git", "-C", str(repo), "hash-object", "-w", "--stdin"], input="tiny_job.sh",
+                              capture_output=True, text=True, check=True).stdout.strip()
+        g(repo, "update-index", "--add", "--cacheinfo", f"120000,{blob},jobs/tiny/link.sh")
     g(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "fixture")
     sha = g(repo, "rev-parse", "HEAD")
     g(repo, "update-ref", "refs/remotes/origin/agent-main", sha)
@@ -152,12 +168,38 @@ def test_refuses_unmerged_sha(tmp_path):
     ("backslash_n", "no_backslash_n"),                        # L-10
     ("no_shell_test", "shell_test"),                          # L-10
     ("crlf_sha256", "CR in shipped"),                         # L-14
+    ("crlf_py", "CR in shipped"),                             # L-14 (.py too)
     ("data_pin", "sha256"),                                   # pinned data
     ("failing_test", "job tests failed"),
+    ("preflight_comment", "rate_guard"),                      # PR #93 B2: a comment is not a guard
+    ("preflight_echo", "rate_guard"),                         # ... nor an echo of the command
+    ("no_decision_rule", "decision_rule"),                    # PR #93 B3: PASS/FAIL spec without the word verdict
+    ("null_rule_no_reason", "no_verdict_reason"),             # null needs a reason
+    ("hf_cache_missing", "no defaults"),                      # PR #93 B1: no silent hf_cache=false
+    ("symlink", "non-regular"),                               # symlinks refused loudly
+    ("unknown_mode", "unknown --mode"),
 ])
 def test_refusals(tmp_path, case, match):
-    kw = {}
-    if case == "build_timeout":
+    kw, mode = {}, None
+    if case == "preflight_comment":
+        kw["runner"] = "#!/usr/bin/env bash\nset -euo pipefail\n# TODO preflight\necho ran tiny\n"
+    elif case == "preflight_echo":
+        kw["runner"] = "#!/usr/bin/env bash\nset -euo pipefail\necho 'python -m jobs.common.rate_guard'\necho ran tiny\n"
+    elif case == "no_decision_rule":
+        kw["p"] = params(decision_rule=DROP)
+        kw["spec"] = b"# tiny\nWorst case $3.96. Decision: PASS if gain >= 0.5 else FAIL\n"
+    elif case == "null_rule_no_reason":
+        kw["p"] = params(decision_rule=None)
+    elif case == "hf_cache_missing":
+        kw["p"] = params(hf_cache=DROP)
+    elif case == "symlink":
+        kw["symlink"] = True
+    elif case == "unknown_mode":
+        mode = "typo"
+    elif case == "crlf_py":
+        kw["attrs"] = False
+        kw["extra"] = {"jobs/tiny/extra.py": b"x = 1\r\n"}
+    elif case == "build_timeout":
         kw["p"] = params(build_timeout_minutes=18)
     elif case == "backslash_n":
         kw["runner"] = RUNNER + f"python -m x {BS}n    --flag 1\n"
@@ -172,7 +214,21 @@ def test_refusals(tmp_path, case, match):
     if case == "data_pin":
         (data / "d/rows.txt").write_bytes(b"tampered\n")
     with pytest.raises(launch.LaunchError, match=match):
-        run(repo, data, sha, tmp_path / "o")
+        run(repo, data, sha, tmp_path / "o", mode=mode)
+
+
+def test_null_decision_rule_with_reason_launches(tmp_path):
+    repo, data, sha = make_repo(tmp_path, p=params(decision_rule=None, no_verdict_reason="throughput probe only"))
+    r = run(repo, data, sha, tmp_path / "o", run_job_tests=False)
+    assert r["calls"][-1]["args"]["hf_cache"] is True
+
+
+def test_lint_runs_from_the_launched_sha_not_the_caller(tmp_path, monkeypatch):
+    """A looser caller-side lint must not apply: the sha's own jobs/common/lint.py decides."""
+    repo, data, sha = make_repo(tmp_path, p=params(build_timeout_minutes=18))
+    monkeypatch.setattr(lint, "MIN_BUILD_TIMEOUT", 1)
+    with pytest.raises(launch.LaunchError, match="build_timeout"):
+        run(repo, data, sha, tmp_path / "o", run_job_tests=False)
 
 
 def test_cli_refusal_exit_code(tmp_path, capsys):
@@ -183,23 +239,90 @@ def test_cli_refusal_exit_code(tmp_path, capsys):
 
 
 # ----------------------------------------------------------------------------- legacy tables vs the real specs
+def spec_blocks(job: str) -> list[dict]:
+    """Every submit_job block in jobs/<job>/JOB_SPEC.md, in document order: ```json {...}``` blocks with a "chip"
+    key and python-style submit_job(...) calls (bare <placeholders> quoted, true/false mapped)."""
+    text = (ROOT / f"jobs/{job}/JOB_SPEC.md").read_text(encoding="utf-8")
+    found = []
+    for m in re.finditer(r"```json\n(.*?)```", text, re.S):
+        if '"chip"' in m.group(1):
+            found.append((m.start(), json.loads(m.group(1))))
+    for m in re.finditer(r"submit_job\(", text):
+        i, depth = m.end(), 1
+        while depth:
+            depth += {"(": 1, ")": -1}.get(text[i], 0)
+            i += 1
+        body = re.sub(r"=(<[^>]*>)", r'="\1"', text[m.end():i - 1])
+        body = re.sub(r"\btrue\b", "True", re.sub(r"\bfalse\b", "False", body))
+        call = ast.parse("f(" + body + ")", mode="eval").body
+        found.append((m.start(), {k.arg: ast.literal_eval(k.value) for k in call.keywords}))
+    return [b for _, b in sorted(found, key=lambda t: t[0])]
+
+
+#: (job, mode) -> (block index, overrides stated in the JOB_SPEC prose, evidence strings that prose must contain)
+SPEC_BLOCK = {
+    ("cell_step_profile", None): (0, {}, []),
+    ("fla_rwkv7", None): (0, {}, []),
+    ("fla_rwkv7", "truth_v2"): (1, {}, []),
+    ("probe9b", None): (0, {}, []),
+    ("probe9b", "lean"): (0, {"env": {"PROBE_CONFIG": "lean"}, "idempotency_key": "m1-probe9b-lean-<sha12>",
+                          "label": "probe9b: one-layer Q9-AF conversion probe (lean, job-4j3vu rates)"},
+                      ['env {"PROBE_CONFIG": "lean"}', 'idempotency_key "m1-probe9b-lean-']),
+    ("qual", None): (0, {}, []),
+    ("qual", "c_only"): (0, {"env": {"QUAL_MODE": "c_only"}, "max_duration_minutes": 140,
+                          "idempotency_key": "m1-hw-qual-c-only-<sha12>"},
+                         ['env={"QUAL_MODE": "c_only"}', "max_duration_minutes=140", 'idempotency_key="m1-hw-qual-c-only-']),
+    ("rwkv7", "readout"): (0, {}, []),
+    ("rwkv7", "lora"): (0, {"env": {"JOB": "lora"}, "max_duration_minutes": 180, "max_restarts": 1,
+                            "resume": "checkpoint", "queue_ttl_minutes": 2880, "label": None,
+                            "idempotency_key": "m1-rwkv7-lora-<sha12>",
+                            "depends_on": {"job": "<stage A id>", "require": "result.ok == true"},
+                            "_marker": "RWKV7_LORA_DONE"},
+                        ['idempotency_key "m1-rwkv7-lora-', 'env {"JOB": "lora"}', "max_duration_minutes 180", "max_restarts 1", 'resume "checkpoint"',
+                         "queue_ttl_minutes 2880", "/output/RWKV7_LORA_DONE"]),
+}
+
+
 @pytest.mark.parametrize("rel", lint.params_files(ROOT))
-def test_legacy_tables_cover_every_real_params_file(rel):
+def test_submit_args_equal_the_job_spec_field_by_field(rel):
+    """PR #93 B1: every field launch.py emits equals the JOB_SPEC's submit block (and the block has no field launch.py
+    drops). Only label (cosmetic), context_id and the idempotency suffix (always the context sha256) are exempt."""
     job, mode = lint.job_of(rel), lint.mode_of(rel)
     p = json.loads((ROOT / rel).read_text(encoding="utf-8"))
-    spec = p.get("context") or launch.LEGACY_CONTEXT[job]
-    if "unsupported" in spec:
+    if "unsupported" in (p.get("context") or launch.LEGACY_CONTEXT[job]):
         return
-    sub = p.get("submit") or launch.LEGACY_SUBMIT[(job, mode)]
-    runner = sub["command"].split()[1].removeprefix("/opt/ssdm/m1/")
-    assert (ROOT / runner).is_file() and runner == lint.runner_of(ROOT, job, p)
-    spec_text = (ROOT / f"jobs/{job}/JOB_SPEC.md").read_text(encoding="utf-8") + p.get("_comment", "")
-    assert sub["command"] in spec_text, f"{rel}: command not transcribed from JOB_SPEC"
-    marker = sub["checks"]["success"]["check"]["all_of"][0]["path"].removeprefix("/output/")
-    assert marker in spec_text or marker in (ROOT / runner).read_text(encoding="utf-8") or "RWKV7_" in marker
-    a = launch.submit_args(job, mode, p, sub, "0" * 64)
-    assert a["build_timeout_minutes"] == p["build_timeout_minutes"] and a["max_duration_minutes"] == p["max_duration_minutes"]
-    assert (ROOT / spec["dockerfile"]).is_file()
+    # this file's own mode, plus legacy modes that run on the base params (probe9b lean: no job_params_lean.json)
+    keys = [k for k in launch.LEGACY_SUBMIT if k[0] == job and (
+        k[1] == mode or (mode is None and k[1] and not (ROOT / f"jobs/{job}/job_params_{k[1]}.json").exists()))]
+    assert keys, f"{rel}: no LEGACY_SUBMIT entry"
+    text = (ROOT / f"jobs/{job}/JOB_SPEC.md").read_text(encoding="utf-8")
+    for key in keys:
+        idx, over, evidence = SPEC_BLOCK[key]
+        for e in evidence:
+            assert e in text, f"{key}: override evidence {e!r} not in JOB_SPEC"
+        want = dict(spec_blocks(job)[idx])
+        over = dict(over)
+        marker = over.pop("_marker", None)
+        want.update(over)
+        if marker:
+            want["checks"] = json.loads(json.dumps(want["checks"]).replace(
+                want["checks"]["success"]["check"]["all_of"][0]["path"], f"/output/{marker}"))
+        got = launch.submit_args(job, key[1], p, launch.LEGACY_SUBMIT[key], "c" * 64)
+        assert want.pop("idempotency_key").split("<")[0] == got["idempotency_key"][:-12], key
+        want.pop("context_id", None)
+        label = want.pop("label", None)
+        if label:
+            assert got["label"] == label, key
+        for k, v in want.items():
+            assert got.get(k) == v, f"{key}: {k}: launch {got.get(k)!r} != JOB_SPEC {v!r}"
+        extra = set(got) - set(want) - {"label", "idempotency_key", "context_id"}
+        assert extra <= {"env"} and (got["env"] == {} or "env" in want), f"{key}: fields not in JOB_SPEC: {extra}"
+
+
+def test_spec_parser_reads_both_block_styles():
+    assert spec_blocks("qual")[0]["hf_cache"] is True  # job-4j3vu ran with hf_cache true
+    assert spec_blocks("fla_rwkv7")[1]["command"].endswith("truth_v2")
+    assert spec_blocks("rwkv7")[0]["env"] == {"JOB": "readout"}
 
 
 def test_real_tree_context_builds_without_cr_and_deterministically():
