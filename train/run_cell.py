@@ -370,9 +370,10 @@ def main(argv=None):
     import torch
 
     from heads.backbone import LineageError
+    from heads.features import build_head_input
     from heads.model import DecisionModel
     from train.guard import SplitGuard
-    from train.lora import remove_lora
+    from train.lora import apply_lora, remove_lora
     from train.trainer import Trainer
 
     cfg = json.load(open(a.config))
@@ -477,6 +478,7 @@ def main(argv=None):
 
         bb = trust_gate_wrap(bb, {**cfg["controlsafe"], "seed": cfg["seed"]})
     cuda = on_cuda
+    dev_type = "cuda" if cuda else "cpu"
     cell["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
     stages = ["smoke", "ladder", "train"] if a.stage == "all" else [a.stage]
 
