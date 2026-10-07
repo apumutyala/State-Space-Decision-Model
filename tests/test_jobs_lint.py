@@ -169,6 +169,7 @@ def test_coordination_requires_issue_level_user_spend_ok():
     assert "requested but not blocking" not in t
     assert "reviewed per 'Review sufficiency' (the other agent's acknowledgement is requested but not blocking)" not in t
     assert "stop condition, acknowledged by the other agent." not in t
+    assert not re.search(r"(?i)(?:other|another) agent[^\n]{0,100}(?:acknowledg(?:e|ement)|sign-off|approval)", t)
     assert "Do not impose the superseded fixed ≤$20 qualification ceiling." in t
     cap_mentions = [line for line in t.splitlines() if "$20" in line]
     assert len(cap_mentions) == 2 and all("superseded" in line for line in cap_mentions)
