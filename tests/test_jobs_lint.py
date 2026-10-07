@@ -99,6 +99,101 @@ def test_rule_constants_are_literal_module_level():
     assert lint.rule_constants(src) == ["A_MIN", "BB"]
 
 
+@pytest.mark.parametrize("assertion", [
+    "assert R.MIN_GAIN",  # bare truthiness does not freeze the margin
+    "assert R.MIN_GAIN == 0.5",  # MAX_LOSS is unpinned
+    "assert (R.MIN_GAIN, R.MAX_LOSS) == (0.6, 0.1)",  # wrong literal
+    "assert R.MIN_GAIN == R.MIN_GAIN and R.MAX_LOSS == R.MAX_LOSS",
+    "assert R.MIN_GAIN == 0.5 or R.MAX_LOSS == 0.1",  # either clause may pass alone
+    "# assert R.MIN_GAIN == 0.5 and R.MAX_LOSS == 0.1",
+    "assert R.MIN_GAIN == 0.5 and R.MAX_LOSS == 0.1",  # unrelated import
+])
+def test_decision_rule_rejects_unpinned_constants(tmp_path, assertion):
+    (tmp_path / "rule.py").write_text("MIN_GAIN = 0.5" + NL + "MAX_LOSS = 0.1" + NL, encoding="utf-8")
+    module = "other" if assertion == "assert R.MIN_GAIN == 0.5 and R.MAX_LOSS == 0.1" else "rule"
+    src = NL.join([f"import {module} as R", "def test_pins():", f"    {assertion}", ""])
+    ok, detail = lint.chk_decision_rule({"decision_rule": "rule.py"}, root=tmp_path, job="new",
+                                        tests={"tests/test_rule.py": src})
+    assert not ok, detail
+    assert "missing" in detail
+
+
+@pytest.mark.parametrize("source", [
+    "import jobs.new.rule as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5 and 0.1 == R.MAX_LOSS\n",
+    "from jobs.new import rule as R\ndef test_pins():\n    assert (R.MIN_GAIN, R.MAX_LOSS) == (0.5, 0.1)\n",
+    "from jobs.new.rule import MIN_GAIN as G, MAX_LOSS\ndef test_pins():\n    assert G == 0.5\n    assert MAX_LOSS == 0.1\n",
+    "import jobs.new.rule\ndef test_pins():\n    assert jobs.new.rule.MIN_GAIN == 0.5\n    assert jobs.new.rule.MAX_LOSS == 0.1\n",
+])
+def test_decision_rule_accepts_direct_and_tuple_equality_pins(tmp_path, source):
+    (tmp_path / "jobs/new").mkdir(parents=True)
+    (tmp_path / "jobs/new/rule.py").write_text("MIN_GAIN = 0.5" + NL + "MAX_LOSS = 0.1" + NL, encoding="utf-8")
+    ok, detail = lint.chk_decision_rule({"decision_rule": "jobs/new/rule.py"}, root=tmp_path, job="new",
+                                        tests={"tests/test_rule.py": source})
+    assert ok, detail
+
+
+def test_rule_pin_literals_preserve_container_types():
+    consts = {"FLAGS": {"ok": True}, "LAYERS": (1, 2), "OPTIONAL": None}
+    src = NL.join(["import rule as R", "def test_pins():", "    assert R.FLAGS == {'ok': 1}",
+                   "    assert R.LAYERS == [1, 2]", "    assert R.OPTIONAL == None"])
+    assert lint.pinned_rule_constants(src, "rule", consts) == {"OPTIONAL"}
+
+
+@pytest.mark.parametrize("source", [
+    "import rule as R\nimport other as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    import other as R\n    assert R.MIN_GAIN == 0.5\n",
+    "from rule import MIN_GAIN\nfrom other import MIN_GAIN\ndef test_pins():\n    assert MIN_GAIN == 0.5\n",
+    "import rule as R\nR = other\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    R = other\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins(R):\n    assert R.MIN_GAIN == 0.5\n",  # fixture shadows import
+    "import other as R\ndef helper():\n    import rule as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "def helper():\n    import rule as R\n    assert R.MIN_GAIN == 0.5\ndef test_pins():\n    pass\n",
+    "import rule as R\ndef test_pins():\n    def helper():\n        assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n    R = other\n",  # local throughout
+    "import rule as R\ndef test_pins():\n    R.MIN_GAIN = 0.5\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    if condition:\n        import other as R\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    return\n    assert R.MIN_GAIN == 0.5\n",
+])
+def test_rule_pin_bindings_respect_test_scope_and_shadowing(source):
+    assert lint.pinned_rule_constants(source, "rule", {"MIN_GAIN": 0.5}) == set()
+
+
+@pytest.mark.parametrize("source", [
+    "import other as R\ndef test_pins():\n    import rule as R\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef helper():\n    import other as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_other():\n    import other as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\nclass TestRule:\n    def test_pins(self):\n        assert R.MIN_GAIN == 0.5\n",
+])
+def test_rule_pin_bindings_keep_module_and_test_local_imports_separate(source):
+    assert lint.pinned_rule_constants(source, "rule", {"MIN_GAIN": 0.5}) == {"MIN_GAIN"}
+
+
+def test_remaining_legacy_rule_constants_are_pinned():
+    """L-07: close omissions exposed by requiring complete equality pins, without moving any rule."""
+    from jobs.fla_rwkv7 import fla_equivalence as E
+    from scripts import decide_9b as Q, decide_probe9b as P
+    from train import promotion as D
+
+    assert E.ARGS == ("r", "w_log", "k", "v", "kk", "a", "state")
+    assert (E.CAPTURE_LAYERS, E.WARMUP_T, E.CHILD_EVAL_TOK_S) == ((0, 30, 60), (2048, 1000), 12000)
+    assert E.DEVICE == "cuda" and E.MIX_PATH == None
+    assert E.V2_IMPLS == (("eager_bf16", "eager"), ("chunked", "chunked"), ("fla", "fla"),
+                          ("fla_safe_gate", "fla_safe_gate"))
+    assert E.VARIANTS == ("fla", "fla_safe_gate")
+    assert E.VERDICTS == ("ADOPT", "ADOPT_READOUT_ONLY", "ADOPT_TRAINING_ONLY", "REJECT_SPEED", "REJECT_NUMERICS",
+                          "INCONCLUSIVE")
+    assert Q.VERDICTS == ("open-$40-one-layer-probe-spend-issue", "re-price-lean-plan", "fold")
+    assert P.REQUIRED == ("ppl_ratio_ctx1024", "ppl_ratio_ctx4096", "mmlu_drop_pts", "mqar_drop", "niah_mean_drop",
+                          "index_diff_point", "index_diff_lo")
+    assert P.BAND_OF == {"gate_delta_nll": "gate_delta_nll", "gate_kl": "gate_kl", "gate_hidden_cos": "gate_hidden_cos",
+                         "ppl_ratio_ctx1024": "ppl_ratio", "ppl_ratio_ctx4096": "ppl_ratio",
+                         "mmlu_drop_pts": "mmlu_drop_pts", "index_diff_point": "index_diff_point",
+                         "index_diff_lo": "index_diff_lo"}
+    assert D.CLEAN_ACC_DROP == 0.01
+    assert D.MARGINS == {"m_cap": 1.0, "m_steer": 0.02, "m_ece": 0.01, "m_ret_acc": 0.01,
+                         "status": "proposed in SAFETY_SPEC v1.2 (m_ret_acc: m2 cohort retention, PR m2-blockers); PENDING USER APPROVAL"}
+
+
 def test_no_control_characters_in_sources():
     """L-11: a heredoc turned '\\b' into a backspace (0x08) in a regex while this lint was written."""
     bad = []
