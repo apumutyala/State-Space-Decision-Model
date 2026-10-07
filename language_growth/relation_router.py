@@ -161,7 +161,8 @@ class RelationOnlyBackend:
             actual = {"model_id": native_parent.get("model_id") if isinstance(native_parent, dict) else None,
                       "snapshot": _snapshot_identity(native_parent),
                       "files_sha256": native_parent.get("files_sha256") if isinstance(native_parent, dict) else None}
-            if any(actual[k] != v for k, v in expected.items()):
+            if (expected["snapshot"] is None or actual["snapshot"] is None
+                    or any(actual[k] != v for k, v in expected.items())):
                 raise ValueError("relation head parent does not match stock revision")
         elif learned_revision["model_id"] != stock_revision["model_id"]:
             raise ValueError("relation head model does not match stock revision")

@@ -271,6 +271,14 @@ def test_mismatched_models_and_native_parent_revisions_refused():
     conflicting_revision["backbone"]["provenance"]["track_l_parent"] = conflicting_parent
     with pytest.raises(ValueError, match="parent does not match"):
         RelationOnlyBackend(Fake("head", conflicting_revision), stock)
+    conflicting_stock = Fake("stock", {**stock.identity, "snapshot_revision": "other"})
+    with pytest.raises(ValueError, match="parent does not match"):
+        RelationOnlyBackend(Fake("head", conflicting_revision), conflicting_stock)
+    missing_stock = Fake("stock", {k: v for k, v in stock.identity.items() if k != "snapshot"})
+    missing_parent = deepcopy(learned_revision)
+    missing_parent["backbone"]["provenance"]["track_l_parent"].pop("snapshot")
+    with pytest.raises(ValueError, match="parent does not match"):
+        RelationOnlyBackend(Fake("head", missing_parent), missing_stock)
     for key in ("model_id", "snapshot", "files_sha256"):
         broken = deepcopy(learned_revision)
         broken["backbone"]["provenance"]["track_l_parent"][key] = "wrong"
