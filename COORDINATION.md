@@ -25,6 +25,20 @@ codex/<topic>     Track L work branches
 - Never push directly to `agent-main` or `main`. Never force-push a shared branch.
 - Stage only your own paths (no `git add -A` over the other agent's uncommitted files).
 - Small PRs (one experiment, one module, or one doc), merged often. A PR open more than 2 working sessions gets split or closed.
+- **Branches and the champion.**
+  - Every hypothesis variant gets its own branch, `stack/<family>/<variant>`, pushed at every checkpoint. WIP commits are fine there.
+  - Infra goes on `claude/*` or `codex/*`.
+  - `agent-main` holds only the best candidate (`CHAMPION.md`) plus shared infra.
+  - Every measured variant gets a row in `CANDIDATES.md`, kept or folded.
+  - Promotion requires a paired DEV-subset CI above zero vs the champion, plus G12/G13, a receipt and an independent review. Tag the promotion `champion/<YYYYMMDD>-<name>`; tag measured candidates `cand/<YYYYMMDD>-<name>`.
+
+## Before any paid job / before any PR
+
+- Read `LESSONS.md`, the failure classes we already paid for.
+- Follow `jobs/LAUNCH_CHECKLIST.md`.
+  - `tests/test_jobs_lint.py` must pass.
+  - Launch only through `python -m jobs.common.launch <job> --sha <merged sha> --out <dir>`, then paste its `submit.json`.
+- **Every incident appends a `LESSONS.md` entry and an enforcing check (a test, lint check or guard) in the same PR.** A lesson without a check is not done.
 
 ## PR rules
 
