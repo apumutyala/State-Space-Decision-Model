@@ -25,7 +25,7 @@ rate reports are NOT, so
 ``jobs.m2_first_cell.reprice`` takes its factor from the probe measured on THIS box (``--probe``); the cell's
 measured-rate stop (exit 26) and the evals' live rate guard still run. A cache already in
 ``--dst`` (a restart of this job) is left untouched, but a seeded cache returns ``verify_seed`` on every restart,
-including older installs without provenance when the seed is shipped or the manifest matches the pin. The runner
+including older installs without provenance when the manifest matches the pin. The runner
 also verifies ordinary cached arms before training and always exports their comparator files.
 Absent both a cache and ``--src``: nothing to do (the job scores the parent).
 """
@@ -100,7 +100,7 @@ def seed(src: str | Path, dst: str | Path, arm_sha256: str | None, cell: dict) -
         # The provenance lives INSIDE the atomic install, so a restart cannot lose it between installation and a
         # shell-side marker write. Also recognize older installs interrupted before their external marker existed.
         meta = dst / PROVENANCE
-        is_seed = meta.exists() or src.exists() or bool(arm_sha256 and _sha(dst / "arm.json") == arm_sha256)
+        is_seed = meta.exists() or bool(arm_sha256 and _sha(dst / "arm.json") == arm_sha256)
         if is_seed:
             if meta.exists():
                 try:

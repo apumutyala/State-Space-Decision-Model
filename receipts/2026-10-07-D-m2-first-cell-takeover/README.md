@@ -22,3 +22,15 @@ The shell regressions execute the real parent-cache/reprice section with scoring
 
 An earlier broader unit invocation selected the WindowsApps WSL launcher and failed two existing rate-env tests; the final Git Bash invocation above passed them. Initial new shell-test attempts exposed PATH/shebang errors in the test stand-in, which were corrected before the passing run.
 The private-data end-to-end dry run, full shell suite, and GPU qualification were not run. No job was submitted and no paid resources were used.
+
+## Follow-up: ordinary cache with shipped source present
+
+Seed classification now requires in-cache provenance or an exact match to the configured seed manifest hash. A source directory alone cannot classify a same-job cache as seeded. The added unit case preserves an ordinary destination with a different arm hash; two added real shell-block cases verify that it follows the full ordinary-cache verifier and stops before training on verifier rejection.
+
+Using the same CPU command prefix and environment above:
+
+| Arguments after the command prefix | Result |
+| --- | --- |
+| `tests/test_m2_first_cell.py -k 'arm_seed or seed_probe or seed_restart or shipped_seed or cache_verifier or reprice_uses_the_seed_probe or runner_verifies_a_seed' --tb=short` | 10 passed, 50 deselected; 1.64 s |
+| `tests/test_m2_first_cell_shell.py -k cached_parent_block --tb=short` | 6 passed, 12 deselected; 23.83 s |
+| `tests/test_jobs_lint.py --tb=short` | 70 passed; 1.84 s |

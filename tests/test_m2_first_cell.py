@@ -875,6 +875,22 @@ def test_seed_restart_recognizes_legacy_install_without_any_marker(tmp_path):
         AS.seed(src, dst, pin, CELL)
 
 
+def test_shipped_seed_does_not_reclassify_an_ordinary_restart_cache(tmp_path):
+    from jobs.m2_first_cell import arm_seed as AS
+
+    src, dst = tmp_path / "seed", tmp_path / "ck" / "parent_arm"
+    pin = _fake_arm(src, CELL)
+    shutil.copytree(src, dst)
+    manifest = json.loads((dst / "arm.json").read_text(encoding="utf-8"))
+    manifest["stages"]["g12"]["arm"]["revision"] = "scored by this job"
+    (dst / "arm.json").write_text(json.dumps(manifest), encoding="utf-8", newline="\n")
+    before = (dst / "arm.json").read_bytes()
+    assert hashlib.sha256(before).hexdigest() != pin
+    resumed = AS.seed(src, dst, pin, CELL)
+    assert not resumed["seeded"] and not resumed["verify_seed"]
+    assert (dst / "arm.json").read_bytes() == before
+
+
 def test_cache_verifier_refuses_full_item_guard_and_revision_mismatches(tmp_path):
     from types import SimpleNamespace
 

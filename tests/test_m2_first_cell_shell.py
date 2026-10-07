@@ -401,8 +401,11 @@ def test_seed_with_other_units_identity_exits_10_before_training(ctx, full_run):
     assert (r["work"] / "out/parent_arm/arm.json").exists()  # the refused comparator is kept for the record
 
 
-@pytest.mark.parametrize("seeded,verify_rc", [(False, 0), (True, 0), (True, 10), (False, 10)])
-def test_cached_parent_block_preserves_artifacts_and_verifies_before_training(tmp_path, seeded, verify_rc):
+@pytest.mark.parametrize("seeded,verify_rc,source_present", [
+    (False, 0, False), (True, 0, True), (True, 10, True), (False, 10, False),
+    (False, 0, True), (False, 10, True)])
+def test_cached_parent_block_preserves_artifacts_and_verifies_before_training(tmp_path, seeded, verify_rc,
+                                                                            source_present):
     """Execute the real parent-cache/reprice block without the expensive model fixture. Only scoring/repricing
     drivers are stood in; seed installation, restart classification, hashes, copies and shell control flow run.
     The seeded case recreates the old interruption: arm installed, no shell-side or in-cache provenance marker."""
@@ -426,10 +429,18 @@ def test_cached_parent_block_preserves_artifacts_and_verifies_before_training(tm
             "units_identity": {"stage": st, "cohort_sha256": cell["cohort_sha256"], "unit_spec": unit_spec(cell)}}
     (arm / "arm.json").write_text(json.dumps(manifest), encoding="utf-8", newline="\n")
     pin = hashlib.sha256((arm / "arm.json").read_bytes()).hexdigest()
-    if seeded:
-        shutil.copytree(arm, data / "parent_arm_seed")
+    if source_present:
+        source = data / "parent_arm_seed"
+        shutil.copytree(arm, source)
+        if not seeded:
+            # The shipment is another run's export; this job previously scored its own valid cache.
+            source_manifest = json.loads((source / "arm.json").read_text())
+            source_manifest["stages"]["g12"]["arm"]["revision"] = "earlier shipped run"
+            (source / "arm.json").write_text(json.dumps(source_manifest), encoding="utf-8", newline="\n")
+            pin = hashlib.sha256((source / "arm.json").read_bytes()).hexdigest()
+            assert pin != hashlib.sha256((arm / "arm.json").read_bytes()).hexdigest()
     params = json.loads((ROOT / "jobs/m2_first_cell/job_params.json").read_text())
-    params["parent_arm_seed"]["arm_sha256"] = pin if seeded else None
+    params["parent_arm_seed"]["arm_sha256"] = pin if source_present else None
     param_path, cell_path = tmp_path / "params.json", tmp_path / "cell.json"
     param_path.write_text(json.dumps(params))
     cell_path.write_text(json.dumps(cell))
