@@ -1,0 +1,68 @@
+{
+ "_comment": "Feature-cache config (jobs/q9_feature_cache/JOB_SPEC.md). Training rows: the m2 first-cell draw (PR #74 train_set.draw: 150k set pointer, cohort-v2 exclusion by id and content, pinned D1-B heldout exclusions, content-index guard via jobs.m2_pilot.guard_ready) in draw order, rows kept by the cell's own filter (train.run_cell.keep_item: K <= max_k, T <= max_t, continuation <= 16), until n_train_rows (per arm: arm_train_rows). Never DEV/TEST/heldout: DEV rows are read ONLY for the select/holdout splits and never written with labels.",
+ "feature_version": "q9-cache-v1",
+ "template": "jrt-chatml-v1",
+ "layout": "ordered",
+ "d_model": 4096,
+ "seed": 0,
+ "n_train_records": 24000,
+ "max_k": 16,
+ "max_t": 2048,
+ "rich_rows": 5000,
+ "bank_chunks": 32,
+ "opt_chunk": 32,
+ "dev_max_t": 32768,
+ "max_output_gib": 4.5,
+ "shard_requests": 256,
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "train_set": {
+  "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+  "heldout_excluded": {
+   "ids": [
+    "m2:mmlu_aux:21118",
+    "m2:mmlu_aux:39640",
+    "m2:mmlu_aux:39643"
+   ],
+   "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+   "reason": "as jobs/m2_first_cell/m2_first_cell_rwkv7.json (PR #74): train.heldout finds a D1-B soft_framing fragment in these three MMLU aux_train records; excluded from the draw, fail-closed"
+  }
+ },
+ "dev_splits": {
+  "select": "jobs/common/dev_subset_m1.json",
+  "holdout": "jobs/q9_feature_cache/dev_holdout.json"
+ },
+ "selfcheck": {
+  "_comment": "v2 (LESSONS L-28): against an fp32 TRUTH (fp32 weights, pure-torch reference GDN/conv kernels, TF32 off), not bf16-vs-bf16 absolute bounds. logic: the cached fork in fp32 (fp32 fork feature) must equal the plain fp32 forward: logic_fork_max / logic_lm_per_token sit far below every injected fork bug measured on Qwen3.5-0.8B (CPU) and far above the exact path's fp32 floor. cache: the production (bf16) cached fork may be no further from the truth than ratio x the plain production forward + an absolute floor (0.8B measured cache/plain distance-to-truth ratio 0.86-1.10 for the fork feature). receipts/2026-10-07-D-q9-cache-fork-selfcheck/. v3 (PR #111 review): every row of each request's first two rows and options {0, K//2, K-1}; q_end / q_pre / e of the fp32 extraction vs the plain fp32 hidden states (feature_rel_max 5e-3; bf16 storage floor ~2e-3); an fla fp32 pass (production kernels, fp32 weights) RECORD-ONLY on the first launch (fla_gate false; bound fla_ratio x plain + fla_fork_abs, fla's TF32 noise on the 9B is unmeasured); per-record ratios and applied bounds in summary selfcheck records.",
+  "rows": 3,
+  "ratio": 1.5,
+  "fork_abs": 0.005,
+  "lm_abs_per_token": 0.02,
+  "logic_fork_max": 0.001,
+  "logic_lm_per_token": 0.001,
+  "feature_rel_max": 0.005,
+  "fla_ratio": 1.5,
+  "fla_fork_abs": 0.005,
+  "fla_gate": false
+ },
+ "arms": {
+  "stock": {
+   "layers": [],
+   "e5": false,
+   "train_rows": 20000
+  },
+  "conv1": {
+   "layers": [
+    23
+   ],
+   "e5": false,
+   "train_rows": 5000,
+   "gdn_sha256": "8a50c36ca010e54000d246f76f4ba93c4c0948fd2f4e3d0d35f4fcb06f0f0724",
+   "gdn_source": "job-5cmat artifact art-2bybh member gdn_converted.pt (layer 23, probe9b @ 24f164e)"
+  },
+  "e5": {
+   "layers": [],
+   "e5": true,
+   "train_rows": 5000
+  }
+ }
+}

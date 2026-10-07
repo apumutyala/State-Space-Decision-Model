@@ -1,0 +1,20 @@
+{
+  "scope": "Fix review blocker: inconsistent parent/encoder identity in native RWKV head constructor",
+  "base_commit": "c1b0b2d7e5c6d6418c233a8dab2bff0b4b3d715c",
+  "change": {
+    "required": "Parent model_id and snapshot/snapshot_revision must match encoder model_id and snapshot",
+    "snapshot_aliases": "Conflicting parent snapshot and snapshot_revision are refused",
+    "shared_file_pins": "All overlapping files_sha256 roles must agree; file-pin maps must be objects",
+    "failure_timing": "Checks precede parent freezing and DecisionModel construction",
+    "trust_boundary": "Consistency of caller-supplied provenance only; no checkpoint/tokenizer authentication is inferred. Strict loading and artifact/runtime verification remain required."
+  },
+  "validation": {
+    "command": "../.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_rwkv_decision_head.py language_growth/tests/test_rwkv_cpu_encoder_identity.py -q",
+    "environment": {"CUDA_VISIBLE_DEVICES": "-1", "HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1", "HF_DATASETS_OFFLINE": "1"},
+    "result": "46 passed in 7.76s",
+    "regressions": ["Different wrapper model_id refused", "Different wrapper snapshot refused", "Different wrapper weights SHA refused", "Different wrapper tokenizer SHA refused", "Missing model/snapshot and conflicting aliases refused", "Parent remains trainable after failed binding", "Matching shared pins accepted"],
+    "model_scope": "Existing tiny random CPU module tests only; no pretrained model load or cached checkpoint smoke"
+  },
+  "restrictions": {"network": false, "gpu": false, "paid_compute": false, "push": false, "pull_request": false},
+  "source_preservation": "Existing prototype, encoder wrapper, receipts and source commits retained"
+}

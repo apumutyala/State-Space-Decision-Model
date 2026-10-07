@@ -1,4 +1,5 @@
 {
+ "test_env": {"transformers": "5.17.0", "with": ["flash-linear-attention==0.5.2", "fla-core==0.5.2"], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}], "image": "jobs/qual/Dockerfile"},
  "_comment": "QUAL_MODE=c_only re-run of phase C (9B) after the job-c4zkm stage-1 OOM. Phases A (all GPU tests incl. test_gdn on torch 2.13 / triton 3.7.1) and B (0.8B) PASSED on job-c4zkm ($0.74); only the CPU gates of A re-run (they cover the changed code: micro-batch accumulation, memory model). Submit with env {QUAL_MODE: c_only} and these max_duration/build values.",
  "mode": "c_only",
  "prior_receipts": {

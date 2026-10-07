@@ -177,3 +177,37 @@ def test_missing_row_exits_3_through_both_clis(tmp_path, edition):
     assert dev_subset.main(["score", "--results", str(g), "--edition", edition, "--omit-gsm8k03", "--B", "10"]) == 3
     t = _write(tmp_path / "trunc.jsonl", [{"run_id": i, "status": "ok"} for i in sorted(sub)], tail='{"run_id": "x"')
     assert dev_subset.main(["score", "--results", str(t), "--edition", edition, "--B", "10"]) == 3
+
+
+def test_result_json_stays_under_the_platform_limit_job_ftpnf():
+    """job-ftpnf succeeded but the platform dropped its 34,322-byte result.json ("exceeds 32 KiB"). The report now
+    writes the full report to report.json and prints a compact result: same headline numbers, < 32 KiB."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("summ", SUMMARIZE)
+    S = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(S)
+    full = json.loads((ROOT / "tests/clef/fixtures/job_ftpnf_result_full.json").read_text(encoding="utf-8"))
+    assert len(json.dumps(full, indent=1).encode()) > 32 * 1024
+    c = S.compact_result(full)
+    assert len(json.dumps(c, indent=1).encode()) <= S.RESULT_MAX_BYTES
+    sens = c["sensitivity_32k"]
+    assert sens["index_dev_decide_32k_substituted"]["index"] ==         full["sensitivity_32k"]["index_dev_decide_32k_substituted"]["slice_index"]["index"]
+    assert sens["compare_32k_vs_16k"]["diff_index"] == full["sensitivity_32k"]["compare_32k_vs_16k"]["diff"]["index"]
+    big = dict(full, junk={"x" * 10: ["y" * 100] * 15 for _ in range(1)}, more=["z" * 200] * 400)
+    cb = S.compact_result(big)
+    assert len(json.dumps(cb, indent=1).encode()) <= S.RESULT_MAX_BYTES and cb["ok"] is True
+
+
+
+def test_compact_result_fallback_rechecks_its_own_size():
+    """PR #106 review: the trimmed fallback must itself fit (a huge headline / paired_compare is replaced)."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("summ2", SUMMARIZE)
+    S = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(S)
+    huge = {"ok": True, "release": "clef", "job": "I", "headline": {"why": "w" * 40000},
+            "paired_compare": "p" * 40000, "index_dev_decide": {"note": "n" * 40000}}
+    c = S.compact_result(huge)
+    assert len(json.dumps(c, indent=1).encode()) <= S.RESULT_MAX_BYTES and c["ok"] is True

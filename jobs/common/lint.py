@@ -94,7 +94,135 @@ WAIVERS: dict[str, dict[str, str]] = {
 }
 
 CHECKS = ("build_timeout", "schedule", "worst_case_stated", "registered", "shell_test", "decision_rule",
-          "rate_guard", "no_backslash_n")
+          "rate_guard", "no_backslash_n", "submit_checks")
+
+#: L-25: the platform's CheckSpec table (validate_job's own error table, probed 2026-10-07: "<type> takes only ...",
+#: "needs ...", "has no meaning in a success check"). type -> (required keys, allowed keys, phases, value rules).
+#: A combinator is {"all_of"|"any_of": [CheckSpec, ...]}. success takes only `check`; health takes check, interval_s,
+#: grace_period_s, fail_threshold, on_fail (record|kill|reschedule; interval_s and on_fail required).
+def _int(lo=None, hi=None):
+    def ok(v):
+        return isinstance(v, int) and not isinstance(v, bool) and (lo is None or v >= lo) and (hi is None or v <= hi)
+    ok.desc = f"an integer{'' if lo is None else f' >= {lo}'}{'' if hi is None else f' <= {hi}'} (not a bool)"
+    return ok
+
+
+def _num_pos(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0
+
+
+_num_pos.desc = "a positive number (not a bool)"
+
+
+def _abs_path(v):
+    return isinstance(v, str) and v.startswith("/")
+
+
+_abs_path.desc = "an absolute path string"
+
+
+def _nonempty_str(v):
+    return isinstance(v, str) and bool(v.strip())
+
+
+_nonempty_str.desc = "a non-empty string"
+
+
+def _any(v):
+    return v is not None
+
+
+_any.desc = "a value"
+
+BOTH, HEALTH = ("success", "health"), ("health",)
+CHECK_TYPES: dict[str, dict] = {
+    "file_exists": {"req": {"path"}, "opt": set(), "phases": BOTH},
+    "file_grows": {"req": {"path"}, "opt": set(), "phases": HEALTH},
+    "file_size": {"req": {"path"}, "opt": {"min_bytes", "max_bytes"}, "phases": BOTH,
+                  "one_of": {"min_bytes", "max_bytes"}},
+    "jsonl_field": {"req": {"path", "field"}, "opt": {"require"}, "phases": BOTH},
+    "jsonl_rate": {"req": {"path", "min_per_interval"}, "opt": set(), "phases": HEALTH},
+    "heartbeat": {"req": {"path"}, "opt": set(), "phases": HEALTH},
+    "gpu_util": {"req": {"min_pct"}, "opt": set(), "phases": HEALTH},
+    "gemm_sane": {"req": set(), "opt": set(), "phases": HEALTH},
+    "http": {"req": {"port"}, "opt": {"path"}, "phases": HEALTH},
+    "tensor_changed": {"req": {"path"}, "opt": set(), "phases": HEALTH},
+    "exec": {"req": {"command"}, "opt": set(), "phases": BOTH},
+}
+VALUE_RULES = {"path": _abs_path, "min_bytes": _int(0), "max_bytes": _int(0), "field": _nonempty_str,
+               "require": _any, "min_per_interval": _num_pos, "min_pct": _int(1, 100), "port": _int(1, 65535),
+               "command": _nonempty_str}
+VALUE_RULES_HTTP = {"path": lambda v: isinstance(v, str) and v.startswith("/")}
+PLATFORM_CHECK_TYPES = frozenset(CHECK_TYPES)
+HEALTH_ON_FAIL = frozenset({"record", "kill", "reschedule"})
+HEALTH_KEYS = frozenset({"check", "interval_s", "grace_period_s", "fail_threshold", "on_fail"})
+
+
+def check_spec_problems(spec, where: str = "check", phase: str = "success") -> list[str]:
+    """Why one CheckSpec is not valid for this phase ([] = valid). Never raises on malformed input."""
+    if not isinstance(spec, dict):
+        return [f"{where}: a CheckSpec must be an object, got {type(spec).__name__} {spec!r:.80}"]
+    combos = [k for k in ("all_of", "any_of") if k in spec]
+    if combos:
+        if len(combos) > 1 or len(spec) != 1:
+            return [f"{where}: a combinator object holds exactly one of all_of / any_of, got keys {sorted(map(str, spec))}"]
+        items = spec[combos[0]]
+        if not isinstance(items, list) or not items:
+            return [f"{where}.{combos[0]}: must be a non-empty list"]
+        return [x for i, c in enumerate(items) for x in check_spec_problems(c, f"{where}.{combos[0]}[{i}]", phase)]
+    t = spec.get("type")
+    if not isinstance(t, str) or t not in CHECK_TYPES:
+        return [f"{where}.type: {t!r:.80} is not a platform check type {sorted(CHECK_TYPES)}"]
+    rule = CHECK_TYPES[t]
+    out = []
+    if phase not in rule["phases"]:
+        out.append(f"{where}: {t} has no meaning in a {phase} check (phases: {', '.join(rule['phases'])})")
+    keys = {k for k in spec if k != "type"}
+    for k in sorted(map(str, keys - rule["req"] - rule["opt"])):
+        out.append(f"{where}.{k}: {t} takes only type, {', '.join(sorted(rule['req'] | rule['opt'])) or '(nothing else)'}")
+    for k in sorted(rule["req"] - keys):
+        out.append(f"{where}: {t} needs `{k}`")
+    if rule.get("one_of") and not (rule["one_of"] & keys):
+        out.append(f"{where}: {t} needs {' or '.join(sorted(rule['one_of']))} (or both)")
+    for k in sorted(map(str, keys & (rule["req"] | rule["opt"]))):
+        ok = (VALUE_RULES_HTTP if t == "http" and k in VALUE_RULES_HTTP else VALUE_RULES)[k]
+        if not ok(spec[k]):
+            out.append(f"{where}.{k}: must be {getattr(ok, 'desc', 'valid')}, got {spec[k]!r:.80}")
+    if t == "file_size" and isinstance(spec.get("min_bytes"), int) and isinstance(spec.get("max_bytes"), int) \
+            and spec["min_bytes"] > spec["max_bytes"]:
+        out.append(f"{where}: file_size min_bytes > max_bytes")
+    return out
+
+
+def checks_problems(checks) -> list[str]:
+    """Why a submit_job `checks` value is not the platform schema ([] = valid). A success check is required.
+    Never raises: any input (lists, bools, nested junk) yields a list of problems."""
+    if not isinstance(checks, dict):
+        return [f"checks must be an object {{success, health}}, got {type(checks).__name__} {checks!r:.80}"]
+    out = [f"checks: unknown key {k!r:.40}" for k in checks if k not in ("success", "health")]
+    succ = checks.get("success")
+    if not isinstance(succ, dict) or "check" not in succ:
+        out.append("checks.success: required, as {\"check\": CheckSpec}")
+    else:
+        out += [f"checks.success.{k}: the success phase takes only `check`" for k in map(str, succ) if k != "check"]
+        out += check_spec_problems(succ["check"], "checks.success.check", "success")
+    if "health" in checks:
+        h = checks["health"]
+        if not isinstance(h, dict) or "check" not in h:
+            out.append("checks.health: must be {\"check\": CheckSpec, \"interval_s\": N, \"on_fail\": ...}")
+        else:
+            out += [f"checks.health.{k}: unknown field (health takes {sorted(HEALTH_KEYS)})"
+                    for k in map(str, h) if k not in HEALTH_KEYS]
+            out += check_spec_problems(h["check"], "checks.health.check", "health")
+            if not _int(1)(h.get("interval_s")):
+                out.append("checks.health.interval_s: required positive integer (not a bool)")
+            on_fail = h.get("on_fail")
+            if not isinstance(on_fail, str) or on_fail not in HEALTH_ON_FAIL:
+                out.append(f"checks.health.on_fail: one of {sorted(HEALTH_ON_FAIL)}, got {on_fail!r:.40}")
+            for k in ("grace_period_s", "fail_threshold"):
+                if k in h and not _int(0)(h[k]):
+                    out.append(f"checks.health.{k}: non-negative integer (not a bool)")
+    return out
 
 
 # ----------------------------------------------------------------------------- discovery
@@ -287,6 +415,42 @@ def backslash_n_hits(root: Path, sub: str = "jobs") -> list[str]:
             if BACKSLASH_N.search(line):
                 hits.append(f"{f.relative_to(root).as_posix()}:{i}")
     return hits
+
+
+def chk_submit_checks(p: dict, **_) -> tuple[bool, str]:
+    """L-25: a submit block's checks must be the platform's CheckSpec schema (legacy jobs without a submit block get
+    theirs from launch.py's LEGACY_SUBMIT, which launch.submit_args validates the same way)."""
+    sub = p.get("submit")
+    if not sub:
+        return True, "no submit block (legacy table in launch.py; validated at submit_args)"
+    bad = checks_problems(sub.get("checks"))
+    return not bad, f"submit.checks: {bad or 'valid'}"
+
+
+REQUIRES_TRANSFORMERS = re.compile(r"requires_transformers\(\s*[\"']([0-9][0-9.]*)[\"']\s*\)")
+
+
+def collected_by(src: str, job: str, rel_test: str) -> bool:
+    """launch.job_tests' collection rule, mirrored: a test file names jobs/<job>/ or jobs.<job>, or is the lint test."""
+    return f"jobs/{job}/" in src or f"jobs.{job}" in src or rel_test.endswith("test_jobs_lint.py")
+
+
+def pinned_tests_uncovered(root: Path = ROOT, tests: dict[str, str] | None = None) -> list[str]:
+    """PR #103 review B2: every test file with requires_transformers(X) must be collected by at least one job whose
+    test_env.transformers == X, or its pinned tests run in no launch at all (skipped everywhere, tested nowhere)."""
+    tests = _test_sources(root) if tests is None else tests
+    pins: dict[str, set[str]] = {}
+    for rel in params_files(root):
+        te = json.loads((root / rel).read_text(encoding="utf-8")).get("test_env") or {}
+        if te.get("transformers"):
+            pins.setdefault(te["transformers"], set()).add(job_of(rel))
+    bad = []
+    for f, src in tests.items():
+        for want in sorted(set(REQUIRES_TRANSFORMERS.findall(src))):
+            if not any(collected_by(src, j, f) for j in pins.get(want, ())):
+                bad.append(f"{f}: requires_transformers({want}) but no job with test_env.transformers == {want} "
+                           f"collects it (jobs with that pin: {sorted(pins.get(want, ()))})")
+    return bad
 
 
 def lint_params(rel: str, root: Path = ROOT, costs=None, tests=None) -> dict[str, tuple[bool, str]]:

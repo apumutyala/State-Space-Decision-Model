@@ -6,6 +6,7 @@ backslash-n / control-character checks; CHAMPION.md + CANDIDATES.md structure. C
 """
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -195,3 +196,115 @@ def test_new_job_must_declare_decision_rule(tmp_path):
     assert lint.chk_decision_rule({"decision_rule": None, "no_verdict_reason": "throughput only"}, **kw)[0]
     # the legacy fallbacks never apply to a non-legacy params file
     assert not lint.chk_decision_rule({}, **{**kw, "job": "m2_parent_arm", "rel": "jobs/m2_parent_arm/job_params_x.json"})[0]
+
+
+# ----------------------------------------------------------------------------- L-25: submit checks schema
+GOOD_CHECKS = {"success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/Q9_CACHE_DONE"},
+                                                {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+               "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 600,
+                          "grace_period_s": 1800, "fail_threshold": 2, "on_fail": "kill"}}
+
+
+@pytest.mark.parametrize("bad, why", [
+    (["result.ok == true"], "must be an object"),  # what launch.py emitted for q9_feature_cache
+    ({"health": GOOD_CHECKS["health"]}, "checks.success: required"),
+    ({"success": {"check": {"type": "result_ok"}}}, "not a platform check type"),
+    ({"success": {"check": {"type": "file_exists", "path": "output/x"}}}, "absolute path"),
+    ({"success": {"check": {"all_of": []}}}, "non-empty list"),
+    ({"success": {"check": {"all_of": ["result.ok == true"]}}}, "must be an object"),
+    ({"success": GOOD_CHECKS["success"], "health": {"check": {"type": "heartbeat", "path": "/o/h"}}}, "interval_s"),
+    ({"success": GOOD_CHECKS["success"], "health": dict(GOOD_CHECKS["health"], on_fail="restart")}, "on_fail"),
+    ({"success": GOOD_CHECKS["success"], "require": "result.ok == true"}, "unknown key"),
+    # PR #103 review B3: the platform's own rejections (validate_job, probed 2026-10-07)
+    ({"success": {"check": {"type": "heartbeat", "path": "/o/h"}}}, "no meaning in a success check"),
+    ({"success": {"check": {"type": "file_exists", "pth": "/o/x"}}}, "takes only type, path"),
+    ({"success": GOOD_CHECKS["success"], "health": dict(GOOD_CHECKS["health"], interval_s=True)}, "interval_s"),
+    ({"success": GOOD_CHECKS["success"], "health": dict(GOOD_CHECKS["health"], fail_threshold=False)}, "fail_threshold"),
+    ({"success": {"check": {"type": ["file_exists"], "path": "/o/x"}}}, "not a platform check type"),
+    ({"success": {"check": {"type": "file_size", "path": "/o/x"}}}, "needs max_bytes or min_bytes"),
+    ({"success": {"check": {"type": "jsonl_field", "path": "/o/x"}}}, "needs `field`"),
+    ({"success": GOOD_CHECKS["success"], "health": dict(GOOD_CHECKS["health"],
+      check={"type": "heartbeat", "path": "/o/h", "max_age_s": 5})}, "heartbeat takes only type, path"),
+    ({"success": GOOD_CHECKS["success"], "health": dict(GOOD_CHECKS["health"], check={"type": "http"})}, "needs `port`"),
+    ({"success": GOOD_CHECKS["success"], "health": dict(GOOD_CHECKS["health"], check={"type": "gpu_util"})},
+     "needs `min_pct`"),
+    ({"success": GOOD_CHECKS["success"], "health": dict(GOOD_CHECKS["health"],
+      check={"type": "gpu_util", "min_pct": 0})}, "min_pct"),
+    ({"success": {"check": {"type": "exec"}}}, "needs `command`"),
+    ({"success": {"check": GOOD_CHECKS["success"]["check"], "interval_s": 5}}, "takes only `check`"),
+])
+def test_checks_schema_refuses_non_platform_values(bad, why):
+    probs = lint.checks_problems(bad)
+    assert probs and any(why in x for x in probs), probs
+
+
+def test_checks_schema_accepts_the_platform_shapes():
+    assert lint.checks_problems(GOOD_CHECKS) == []
+    assert lint.checks_problems({"success": {"check": {"type": "file_exists", "path": "/output/x"}}}) == []
+    assert lint.checks_problems({"success": {"check": {"any_of": [GOOD_CHECKS["success"]["check"],
+                                                                  {"type": "exec", "command": "test -s /output/x"}]}}}) == []
+
+
+def test_every_submit_block_has_valid_checks_and_q9_carries_the_submitted_block():
+    for rel in lint.params_files(ROOT):
+        p = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+        ok, msg = lint.chk_submit_checks(p)
+        assert ok, f"{rel}: {msg}"
+    for rel in sorted((ROOT / "jobs/q9_feature_cache").glob("job_params_*.json")):
+        assert json.loads(rel.read_text(encoding="utf-8"))["submit"]["checks"] == GOOD_CHECKS, rel.name
+
+
+
+def test_checks_schema_accepts_every_platform_type_in_its_phases():
+    ok_health = {"file_grows": {"path": "/o/x"}, "jsonl_rate": {"path": "/o/r.jsonl", "min_per_interval": 1},
+                 "heartbeat": {"path": "/o/h"}, "gpu_util": {"min_pct": 20}, "gemm_sane": {},
+                 "http": {"port": 8000, "path": "/health"}, "tensor_changed": {"path": "/o/t"}}
+    ok_both = {"file_exists": {"path": "/o/x"}, "file_size": {"path": "/o/x", "min_bytes": 1},
+               "jsonl_field": {"path": "/o/r.jsonl", "field": "ok", "require": "== true"},
+               "exec": {"command": "test -s /o/x"}}
+    assert set(ok_health) | set(ok_both) == set(lint.CHECK_TYPES)
+    for t, kw in {**ok_health, **ok_both}.items():
+        h = {"check": {"type": t, **kw}, "interval_s": 60, "on_fail": "record"}
+        assert lint.checks_problems({"success": GOOD_CHECKS["success"], "health": h}) == [], t
+    for t, kw in ok_both.items():
+        assert lint.checks_problems({"success": {"check": {"type": t, **kw}}}) == [], t
+    for t, kw in ok_health.items():
+        assert lint.checks_problems({"success": {"check": {"type": t, **kw}}}), t  # health-only as success
+
+
+def test_checks_schema_fuzz_never_raises_and_rejects_junk():
+    import random
+
+    rng = random.Random(20261007)
+    atoms = [None, True, False, 0, 1, -1, 600, 1.5, "", "/output/x", "x", "kill", "record", [], {}, ["a"],
+             {"type": "file_exists"}] + sorted(lint.CHECK_TYPES)
+    keys = ["success", "health", "check", "type", "path", "all_of", "any_of", "interval_s", "on_fail",
+            "grace_period_s", "fail_threshold", "min_bytes", "max_bytes", "field", "port", "min_pct", "command", "x"]
+
+    def gen(d):
+        r = rng.random()
+        if d > 3 or r < 0.35:
+            return rng.choice(atoms)
+        if r < 0.5:
+            return [gen(d + 1) for _ in range(rng.randint(0, 3))]
+        return {rng.choice(keys): gen(d + 1) for _ in range(rng.randint(0, 4))}
+
+    n_valid = 0
+    for _ in range(4000):
+        c = gen(0)
+        probs = lint.checks_problems(c)  # must never raise
+        assert isinstance(probs, list) and all(isinstance(x, str) for x in probs)
+        n_valid += not probs
+    assert n_valid == 0  # random junk is never a valid platform checks block
+
+
+
+def test_every_pinned_test_runs_under_its_pin_in_some_launch():
+    """PR #103 review B2: a requires_transformers(X) test must be collected by a job whose test_env pins X."""
+    assert lint.pinned_tests_uncovered(ROOT) == []
+    pin = "requires_" + "transformers(" + repr("9.9.9") + ")"
+    bad = lint.pinned_tests_uncovered(ROOT, {"tests/test_fake.py": "# jobs/full8/\n@pytest.mark." + pin + "\n"})
+    assert bad and "9.9.9" in bad[0]
+    full8 = json.loads((ROOT / "jobs/full8/job_params.json").read_text(encoding="utf-8"))["test_env"]["transformers"]
+    src = (ROOT / "tests/test_premortem_probes.py").read_text(encoding="utf-8")
+    assert full8 == "5.17.0" and lint.collected_by(src, "full8", "tests/test_premortem_probes.py")

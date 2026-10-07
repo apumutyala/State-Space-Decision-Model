@@ -1,0 +1,2 @@
+{"at_utc": "2026-10-06T20:32:30.322953+00:00", "available_bytes": 5769748480, "event": "launcher_refused", "min_start_available_bytes": 6442450944}
+{"at_utc": "2026-10-06T20:32:30.323953+00:00", "event": "failure", "exception_type": "RuntimeError", "message": "RWKV CPU probe requires >=6 GiB available; found 5.37"}

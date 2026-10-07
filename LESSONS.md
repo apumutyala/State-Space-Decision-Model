@@ -183,3 +183,132 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Status:** PARTIAL.
   - The harness side is ENFORCED: edition-flagged, 0.2.1 kept as the default for receipt reproducibility, mixed editions refused.
   - The "verify the live board before each plan" step is a procedure, not an automated check. Owner: Track D. Candidate check: a launch-checklist row comparing the live `v03.json` sha256 with `harness/config.BOARD_V03_SHA256`.
+
+### L-20 Size the evaluation by simulation; never loosen safety margins for power
+- Date: 2026-10-07 (issue #36). Codex's cross-track decision, comments 6028537932 and 6028610849, governs. PR #102 first adopted the earlier independent review instead, and the independent review of #102 (B1) caught it.
+- Symptom:
+  - The first margin proposal (m_cap 1.0 on the 2,008-row subset, m_ece 0.01, m_ret_acc 0.01, two-way steer CI) sat inside the measured noise. A genuinely unchanged candidate almost never passed.
+  - The independent review "fixed" this by loosening safety and retention margins for power: m_ret_acc 0.01 -> 0.03, and retention ECE gated only on a demonstrated regression.
+  - Codex rejected that: low power means the comparison is INCONCLUSIVE, so expand the frozen evaluation or do not promote. Separately, `train.m2_gates` exited 0 while the margins were pending.
+- Cost: no run billed. One review round, and an approval flip that would have promoted candidates the delegated approver's contract rejects.
+- Root cause: margins and evaluation sizes were chosen separately. Nobody computed, per criterion, the frozen-set size at which an unchanged candidate passes the APPROVED margin, so "low power" was misread as "margin too strict".
+- **Check:** `tests/test_margin_sim.py` covers sizing and pins the margins:
+  - For each criterion it simulates the frozen-set size an unchanged candidate needs to pass with probability >= 0.8 at the approved margins (`train/margin_sim.py::required_n`: measure the CI half-width at the configured n, scale it, then confirm by simulation at the required n).
+  - It asserts that each configured evaluation size (`EVAL_SIZES`) meets that requirement, or that the shortfall is recorded with an expansion plan (`SHORTFALLS`). The simulated and recorded shortfall sets must be equal.
+  - It also pins the margins to the contract (`test_margins_are_the_codex_contract_and_never_loosened_for_power`).
+  - At run time, `train.promotion.resizing` reports n required vs n evaluated at the MEASURED SE, and labels an underpowered failure `inconclusive_underpowered` (not promotable).
+  - `train.m2_gates` never exits 0 unless the run is promotable: 43 while margins are pending, 44 for partial-stage runs.
+- **Status:** PARTIAL. Recorded shortfalls: the retention role (1,420 items) needs ~9.3k items for `g13_retention_acc` and ~31k for `g13_retention_ece` (simulated; discordance and ECE arms are assumptions). Until cohort v3 expands it, G13 does not promote on retention. Cohort v3 (`train/cohort_v3.py`) now supplies 35,992 measured items (>= `REQUIRED_N` 9,300 / 33,300); `SHORTFALLS` is empty. Every simulation input except the capability SE is an assumption; the first real runs replace them.
+
+### L-21 Prefix-fork state copies OOM on many-option rows (POP909-CL backend_error)
+- Date: 2026-10-07 (root-caused from job-5cmat logs; predicted on PR #50 by Track L, "KV memory at 255 options", merged over it, see L-01 / L-16).
+- Symptom: on job-5cmat (Qwen3.5-9B, H100 80 GB) 58 of 59 POP909-CL rows in the stock arm and 39 of 59 in the converted arm returned `error/backend_error ... details withheld`. 19 errors were arm-asymmetric, which made G13 capability and ECE non-evaluable on every run (fail-closed).
+- Cost: part of job-5cmat's Index phases; G13 non-evaluable until fixed.
+- Root cause: a POP909-CL row has one question with 129 options. The JRT prefix shared by all options is the whole prompt (|P| ~6-8.7k Qwen tokens, a 1-token question suffix), so the prefix-fork packed all 129 short option tails into one call: the 4,096-position tail budget was the only cap. `extend` gives every packed row its own copy of the prefix state, KV cache included, and SDPA repeats the KV heads per layer on top, so memory grows as rows x |P|. Evidence: the `CUDACachingAllocator` OOM warnings (requests of 2.3-9.2 GB with < 8 GB free) fall exactly inside the POP909 block of each arm's log. In the stock arm the outcome splits cleanly at |P|: the one ok row has |P| = 6,087 and every row from 6,226 up OOMed. The converted arm keeps one attention layer fewer (smaller KV), so its threshold is higher and fragmentation-dependent: ok up to 7,556, errors from 6,869. That is the 19-row asymmetry. The adapter maps the exception to `backend_error`. The tail budget bounded the logits, never the state copies. The per-token cost (~44 KiB per prefix-token copy on Qwen3.5-9B) is a memory-model estimate, not a measurement.
+- **Check:** `decide.backends.state_fork.fork_plan(state_budget=...)` caps rows x |P| per pack. `ModelPlugin.fork_state_token_budget` = `KV_STATE_TOKEN_BUDGET` (262,144 prefix-token copies, about 11 GB on Qwen3.5-9B) is set for every plugin that keeps a KV cache (`load_qwen35`; `convert.readout` whenever attention layers remain). Recurrent-only plugins (RWKV-7, all-GDN Q9-AF) keep `None`, and their revision ids are unchanged. Tests in `tests/test_readout_fork.py`: `test_state_budget_caps_rows_x_prefix_per_pack` (the POP909 shape), `test_state_budget_changes_packing_not_scores` (budgeted vs unbudgeted: RWKV7 bitwise; KV-cache models within 1.5e-5 absolute, measured by the #102 review; paired comparisons are unaffected because both arms on one tokenizer get the same packing) and `test_kv_cache_plugins_carry_the_state_budget_and_recurrent_ones_do_not` (behavioural, on a real tiny ConvertibleQwen: all-GDN -> no budget, unchanged revision). Scoring-time failures are never excluded from the frozen full-DEV row set (`jobs/common/dev_full.py`, `tests/test_promotion_margins.py::test_freeze_excludes_only_pre_forward_refusals_and_is_pinned`).
+- **Status:** PARTIAL. The budget is from a memory model, not yet a GPU measurement at the POP909 shape. The first full-DEV Index run must show 0 `backend_error` rows, and its receipt closes this entry. The adapter still withholds the exception class; a non-secret `resource_exhausted` diagnostic code is a follow-up.
+
+### L-22 Shared scratchpad file names collided across agents
+- Date: 2026-10-07 (PR #102).
+- Symptom: two agents in one session wrote PR descriptions to the same scratch file name (`pr_body.md`). The #102 agent then ran `gh pr edit --body-file` after its own write had failed. That published another PR's description (a q9 feature-cache PR stacked on #91) as #102's body. It was restored minutes later.
+- Cost: none billed. A wrong PR description was briefly public, so reviewers could have reviewed the wrong text.
+- Root cause:
+  - The session scratchpad is shared by every agent in the session, and file names were generic.
+  - The publishing command was chained after a failing step with `;` and a newline, not `&&`.
+  - The published body was not read back.
+- **Check:** procedure, because the scratchpad is outside the repo and has no automated check:
+  - prefix every scratch file with the PR or task id (e.g. `pr102_*`);
+  - chain publishing commands with `&&` after the step that writes their input;
+  - after `gh pr edit`/`gh pr create`, read back `gh pr view --json body` and compare its first line with the intended text.
+- **Status:** PARTIAL. No automated check yet; the procedure is the guard. Candidate check: a `jobs/common/launch.py`-style wrapper for PR body publishing that refuses a body file whose first line does not name the PR's branch or issue.
+
+### L-23 An agent killed processes by name on the shared laptop
+- Date: 2026-10-07 (reported by the coordinator).
+- Symptom: an agent ran `taskkill /F /IM python.exe` with a window-title filter on the shared laptop. That kills other agents' and Codex's processes too, including their test runs and local servers.
+- Cost: possible silent loss of other agents' in-flight work. Test runs that die mid-way look like hangs or truncated output.
+- Root cause: the process was selected by image name or window title, not by a PID the agent itself had started and recorded. Several agents and Codex share one machine and one `python.exe` image.
+- **Check:**
+  - `tests/test_no_kill_by_name.py` greps `jobs/`, `scripts/`, `tests/` and the agent docs (`*.md` at the root and under `jobs/`) for `taskkill /IM` or `/FI`, `pkill` and `killall`, and fails on any hit.
+  - PID-based use is allowed (`taskkill /PID`, `kill <pid>`).
+  - The check is tested on chr-built bad samples, as L-11 requires.
+  - COORDINATION.md "Before any paid job / before any PR" carries the rule.
+- **Status:** PARTIAL. Ad-hoc shell commands typed by an agent are not in the repo, so only the rule (COORDINATION.md) covers them. Kill only PIDs you started and recorded.
+
+### L-24 One test environment cannot satisfy two pinned stacks
+- Date: 2026-10-07 (PR #103, the Clef launch packages for 5b478e3).
+- Symptom: `launch.run_tests` ran every clef_baseline job test under one interpreter. With transformers 5.17.0 (the probe9b/rwkv7/full8 pin) the two Clef kernel-path tests failed, because they read the 5.10.2 GDN source the Clef image pins. With 5.10.2, premortem P1-P4 (Q9-AF) failed: `Qwen3_5DecoderLayer` has no `self_attn`. So no environment could pass the gate. Whichever group failed was explained away as "pre-existing / env", which is how a real failure would also look.
+- Cost: none billed. The three packages were built with the launcher's test step off and their tests run by hand; one review round.
+- Root cause: tests that check a specific pinned stack had no declared stack, and the launcher had no notion of a job's stack.
+- **Check:** every `jobs/*/job_params*.json` declares `test_env.transformers` = its image's Dockerfile pin (`tests/test_launch.py::test_every_job_declares_its_image_pin_as_test_env`). `launch.run_tests` runs the job tests under `uv run --with transformers==<pin>` (`job_test_command`). A missing `test_env` is refused (`test_launch_refuses_a_job_without_test_env`). Version-dependent tests carry `@pytest.mark.requires_transformers("x.y.z")` (root `conftest.py`) and are SKIPPED under any other version (`test_requires_transformers_marker_skips_on_mismatch_and_runs_on_match`). The launcher parses the junit xml: a skip is never counted as passed, and a skipped test that requires THIS job's pin refuses the launch (`test_run_tests_refuses_when_the_jobs_own_pinned_tests_were_skipped`, `test_junit_summary_never_counts_a_skip_as_passed`).
+- **Fail closed (PR #103 review B1/B2).**
+  - **Refusals.** `run_tests` refuses:
+    - a kit dir without `decision_index` (it is never dropped silently);
+    - any skip that is neither another pin's `requires_transformers` nor on the job's reasoned `test_env.allowed_skips` (each entry needs `reason` and `why`);
+    - a missing junit file;
+    - zero passed tests.
+  - **Environment.** It passes `SSDM_DATA=<--data>` to the test subprocess. `test_env.with` adds the image's further pins (fla 0.5.2 where the image has it), so the fla mirror test runs.
+  - **Coverage lint.** `lint.pinned_tests_uncovered` requires every `requires_transformers(X)` test to be collected by a job whose pin is X. `test_premortem_probes.py` names jobs/full8/, jobs/probe9b/ and jobs/q9_feature_cache/.
+  - **Tests.** `tests/test_launch.py::test_run_tests_refuses_*`, `test_every_job_test_env_is_reasoned_and_matches_its_image`, `tests/test_jobs_lint.py::test_every_pinned_test_runs_under_its_pin_in_some_launch`.
+- **Status:** ENFORCED for the marked tests (Clef kernel path: 5.10.2; premortem P1-P4: 5.17.0). Other version-sensitive tests must be marked as they are found. Rule: a test that fails under one pinned stack and passes under another gets the marker, never an "env" excuse.
+
+### L-25 The launcher passed a non-schema `checks` value
+- Date: 2026-10-07 (q9_feature_cache stock_dev / stock_train launch packages, PR #101 params).
+- Symptom: `launch.py` copied the params' `"checks": ["result.ok == true"]` (a list of expressions) into submit.json. The platform's submit_job needs `{"success": {"check": CheckSpec}, "health": {...}}`. The coordinator caught it and submitted both jobs with a hand-written block (Q9_CACHE_DONE + MANIFEST.jsonl success; heartbeat /output/heartbeat, 600 s / 1800 s grace / threshold 2, kill).
+- Cost: none billed. A hand-written block at submit time is exactly the drift the launcher exists to prevent.
+- Root cause: neither lint nor `launch.submit_args` checked the shape of `checks`. They checked only that the key existed (REQUIRED_SUBMIT).
+- **Check:** `lint.checks_problems` encodes the platform schema from the manual: an object with a required `success.check`; CheckSpec types file_exists, file_grows, file_size, jsonl_field, jsonl_rate, heartbeat, gpu_util, gemm_sane, http, tensor_changed, exec, or `all_of`/`any_of` lists; health `interval_s` > 0 and `on_fail` record|kill|reschedule; absolute paths. Lint check `submit_checks` requires a valid block in every job's submit block (`tests/test_jobs_lint.py::test_every_submit_block_has_valid_checks_and_q9_carries_the_submitted_block`, with 9 refusal shapes including the q9 value). `launch.submit_args` refuses a non-schema value, and every LEGACY_SUBMIT entry is valid (`tests/test_launch.py::test_submit_args_refuses_a_non_schema_checks_value`). The q9_feature_cache params now carry the submitted block.
+- **Per-type table (PR #103 review B3).** The validator is the platform's own table, probed with `validate_job` on 2026-10-07: for every type, the required keys, the allowed keys (anything else is "an ignored field"), the value types (no bool-as-int; absolute paths; min_pct 1..100; port 1..65535) and the phase (heartbeat, file_grows, jsonl_rate, gpu_util, gemm_sane, http and tensor_changed are health-only). It also checks file_size bounds, success takes only `check`, and health keys. `tests/test_jobs_lint.py` covers every type in each of its phases plus the reviewer's rejections, and a 4,000-case fuzz test asserts that `checks_problems` never raises and never accepts junk.
+- **Status:** ENFORCED.
+
+### L-26 A measured-rate preflight extrapolated one-time compile spikes
+- Date: 2026-10-07 (job-5mw9h, Clef 27B I-subset, $0.38).
+- Symptom: the job stopped at `index_preflight` (exit 18) after S1 had passed: parity max |dp| 5.0e-5, kernel_path ok, peak 54.4 GiB. The preflight projected 34.0 min against a 27-min cap, from a speed factor of 10.2x Clef-flash. 4 of the 61 timed parity rows took 11.5-14.7 s each; they were the first rows at new long sequence lengths, i.e. Triton compile / autotune. The other rows ran at ~0.2-0.7 s. Excluding those 4 rows, the box ran at 2.52x Clef-flash, faster than the 3.52x FLOPs ratio, which projects ~10 min for the subset.
+- Cost: $0.38 and one launch round.
+- Root cause: the preflight took the plain mean over the sample, so one-time warm-up was extrapolated over 2,008 rows. This is the L-04 class (first-call JIT inside a measured phase) on the estimator side.
+- **Check:** `jobs/clef_baseline/price.py::preflight` excludes rows slower than `COMPILE_SPIKE_FACTOR` (4) x the median per-model ratio from the rate, charges their time once as fixed warm-up, and lists them in `compile_spikes`. `tests/clef/test_clef_pricing.py::test_preflight_excludes_one_time_compile_spikes_job_5mw9h` uses job-5mw9h's real timing (`tests/clef/fixtures/job_5mw9h_parity_timing.json`). It asserts that a uniformly slow box is still stopped.
+- **Tightened (PR #106 review).**
+  - A slow row is excluded only if a LATER fast row of >= 0.75x its token length exists, i.e. the shape demonstrably runs fast once compiled. Unconfirmed slow rows stay in the rate.
+  - Excluding more than 10% of the timed rows fails closed (`too_many_spikes`).
+  - A zero median fails closed.
+  - On job-5mw9h this keeps 3 spikes. The 10,595-token row has no fast repeat, so it stays in the rate: s = 5.23x, projection 18.7 min, below 0.95 x 27.
+  - The reviewer's two slow-box scenarios now fail. `test_preflight_slow_long_rows_with_no_fast_repeat_are_not_excluded` covers rows above 5k tokens running steadily 30x. `test_preflight_more_than_10pct_excluded_is_not_ok` covers a 25% bimodal box.
+  - "Charged once" covers only the shapes the sample hit; the live rate guard covers the rest.
+- **Status:** ENFORCED for the Clef preflight. The live rate guard is still mean-based, but it starts its projection only after the check-after window and excludes the time before the first row.
+
+### L-27 A result file over the platform's 32 KiB limit was dropped
+- Date: 2026-10-07 (job-ftpnf, Clef-flash 32k over-length arm, $0.32).
+- Symptom: the job succeeded and its outputs are in the artifact, but get_job shows `result_error: exceeds 32 KiB (the result file is 34322 bytes)`. The platform keeps no result for such a job, so `depends_on` / `require: result.*` on it can never be met, and the headline numbers are only reachable by downloading the artifact.
+- Cost: none beyond the run. A chained job that gated on this result would never have started.
+- Root cause: `summarize.py report` wrote the whole report, including per-area and per-benchmark bootstrap blocks of every score and compare, to `$GMN_RESULT_PATH`.
+- **Check:** the full report now goes to `report.json` in the output directory. `result.json` holds `compact_result(...)`: index point estimates and CIs, gates and counts, `full_report: "report.json"`, and a hard fallback that keeps it under `RESULT_MAX_BYTES` (31 KiB). Tests: `tests/clef/test_results_strict.py::test_result_json_stays_under_the_platform_limit_job_ftpnf` (job-ftpnf's real 34,322-byte report, which compacts to about 2.8 KB with the same headline numbers) and `tests/clef/test_clef_job_sh.py::_result`, which asserts every dry-run result.json is < 32 KiB.
+- **Status:** ENFORCED for the Clef runner. Other runners write small result files today; there is no generic size check yet.
+### L-28 Cache self-check compared two bf16 computations against unmeasured bounds (job-8vjve, job-b7d3n)
+- Date: 2026-10-07.
+- Symptom: both stock feature-cache parts stopped in arm_stock with exit 2 at the numerics self-check: job-8vjve (stock_train, $0.48) and job-b7d3n (stock_dev, $0.43).
+  - The cached fork differed from a plain full-sequence forward by fork rel 0.035-0.040 and LM 0.017-0.158 (n_cont 2-10), against bounds of 0.03 / 0.15.
+  - The log's `causal_conv1d` fallback warning is the reference conv and is a red herring: the CPU tests run the same fallback.
+- Cost: $0.91 and one launch round.
+- Root cause: no extractor bug. The gate's reference was another bf16 computation, so the gate measured bf16 rounding, and its absolute bounds had no measurement behind them. This is the L-06 class: a gate reference not validated through the production path.
+  - Measured on the real Qwen3.5-0.8B (same hybrid family as the 9B), CPU, real rows (`scripts/q9_cache_bf16_noise_probe.py`):
+    - In fp32 the cached fork equals the plain forward to 2.4e-6 (fork) / 4.9e-6 (LM).
+    - In bf16 the cached fork and the plain forward are each about 0.02 from the fp32 truth (cache/plain distance ratio 0.85-1.08). Between themselves they differ by 0.018-0.029, which on the deeper, wider 9B under the GPU kernels becomes the observed 0.035-0.040.
+  - The v1 metric could not separate the correct path (0.029) from an injected off-by-one KV bug (0.032) or a zeroed conv state (0.045).
+  - Candidates (a) GDN state handling at the fork, (b) the causal_conv1d fallback and (c) the KV chunking / positions are each excluded by the fp32 exactness: one injected error per candidate fails the new logic check at 7-340x its tolerance.
+- **Check:**
+  - `jobs/q9_feature_cache/extract.selfcheck` (v3 after the PR #111 review) compares against an fp32 TRUTH. It uses fp32 weights (restored bit-exactly) and the pure-torch reference kernels with TF32 off (`reference_kernels`), because fla's fp32 chunk kernel uses TF32. The swap fails closed (`KernelSwapError`): all 4 kernels must be swapped, and the implementations are recorded.
+  - It covers every row of each request's first two rows and options {0, K//2, K-1}. q_end / q_pre / e are checked against the plain fp32 hidden states (5e-3).
+  - The logic check: the cached fork in fp32 must equal the plain fp32 forward (1e-3). It sits about 400x above the exact path's floor and below every injected bug (≥ 6.9e-3).
+  - The cache check: the bf16 production fork may be no further from the truth than 1.5x the plain bf16 forward, plus a floor.
+  - The fla fp32 pass (production kernels at fp32) is RECORD-ONLY on the first launch.
+  - Tests (`tests/test_q9_feature_cache.py`):
+    - `test_selfcheck_v2_passes_the_exact_fork_in_bf16` (all rows, the three options, ratios and bounds recorded);
+    - `test_selfcheck_v2_catches_injected_fork_bugs[conv_zero|rec_zero|kv_drop1]`;
+    - `test_selfcheck_v3_catches_the_reviewers_missed_bugs[q_end_offby1|q_pre_span_shift|e_option_span_shift|later_row_lm_offby1|middle_option_swap]`;
+    - `test_reference_kernels_fail_closed_when_a_kernel_cannot_be_swapped`;
+    - `test_fla_pass_is_record_only_unless_gated`;
+    - `test_fp32_weights_restores_every_tensor_bitwise_and_reference_kernels_restore`.
+  - Receipt: `receipts/2026-10-07-D-q9-cache-fork-selfcheck/` (the noise probe, the bug-injection probe, job-8vjve's v1 numbers).
+- **Status:** PARTIAL.
+  - The logic check runs the reference kernels, so it proves the fork LOGIC on the box. A bug confined to fla's continuation kernel is covered by the bf16 cache check's ratio bound and by the fla fp32 pass. That pass is record-only until its 9B noise is measured; the first GPU summary measures it.
+  - The first passing GPU self-check (its `summary_*.json` selfcheck records) closes this entry.
+  - Generalising the rule: every numerics gate needs its reference run through the production path and a measured noise floor before spend (LAUNCH_CHECKLIST row 12). That remains a review item, not a lint.

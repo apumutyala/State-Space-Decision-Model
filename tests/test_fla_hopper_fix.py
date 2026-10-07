@@ -49,11 +49,12 @@ def _job_dockerfile(job: str) -> str:
 # ----------------------------------------------------------------------------- Dockerfiles carry the fix
 def test_every_dockerfile_is_covered_or_explicitly_exempt():
     jobs = {p.parent.name for p in DOCKERFILES}
-    assert EXEMPT <= jobs and {"qual", "probe9b", "rwkv7", "clef_baseline"} <= jobs
-    assert jobs - EXEMPT == {"qual", "probe9b", "rwkv7", "clef_baseline"},         "new Dockerfile: add it to the fix (or justify an exemption)"
+    covered = {"qual", "probe9b", "rwkv7", "clef_baseline", "full8"}  # full8: the probe9b image (#94), same base + pins
+    assert EXEMPT <= jobs and covered <= jobs
+    assert jobs - EXEMPT == covered,         "new Dockerfile: add it to the fix (or justify an exemption)"
 
 
-@pytest.mark.parametrize("job", sorted(RUNNERS) + ["clef_baseline"])
+@pytest.mark.parametrize("job", sorted(RUNNERS) + ["clef_baseline", "full8"])
 def test_job_image_carries_fix(job):
     d = _job_dockerfile(job)
     froms = re.findall(r"^FROM (\S+)", d, re.M)

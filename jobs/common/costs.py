@@ -30,7 +30,9 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
           "clef_teacher_clef": "jobs/clef_baseline/job_params_teacher_clef.json",
           "clef_overlength_flash": "jobs/clef_baseline/job_params_overlength_flash.json",
           "full8": "jobs/full8/job_params.json",
-          "m2_first_cell": "jobs/m2_first_cell/job_params.json"}
+          "m2_first_cell": "jobs/m2_first_cell/job_params.json",
+          **{f"q9_feature_cache_{p}": f"jobs/q9_feature_cache/job_params_{p}.json"
+             for p in ("stock_dev", "stock_train", "conv1_dev", "conv1_train", "e5_dev", "e5_train")}}
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here. Clef baseline (JOB_SPEC):
 #: A ran as job-sgihj ($1.40, in SPENT_USD); C (27B, job A shape) is superseded for the Index by clef_index_subset +
 #: clef_index_full (PARAMS); B (Clef-flash GCG, $29.70 one-attempt ceiling) is still planned.

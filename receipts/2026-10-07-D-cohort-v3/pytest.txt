@@ -1,0 +1,5 @@
+uv run ... pytest -q -rs tests/test_cohort*.py tests/test_m2_blockers.py tests/test_jobs_lint.py tests/test_margin_sim.py tests/test_promotion_margins.py tests/test_m2_gates.py tests/test_q9_feature_cache*.py  (cohort v3 498efa61)
+SKIPPED [1] tests/test_cohort_v3.py: COHORT_V3_REBUILD opt-in (see pytest-rebuild.txt: 1 passed)
+SKIPPED [1] tests/test_m2_blockers.py:479: could not import 'decision_index'
+180 passed, 2 skipped, 1 warning in 227.94s
+tests/clef/test_clef_job_sh.py -k teacher (with the kit): 6 passed

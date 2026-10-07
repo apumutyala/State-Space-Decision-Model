@@ -36,7 +36,7 @@ from ..provenance import validate_provenance
 from ..schema import canonical_json, canonical_options, sha256_text
 from ..untrusted import UNTRUSTED_ENCODER_ID, ControlTokenError, UntrustedEncoder
 from .base import BackendUnsupported, Plan, ScoreResult
-from .state_fork import HFCacheStateOps, RWKV7StateOps
+from .state_fork import KV_STATE_TOKEN_BUDGET, HFCacheStateOps, RWKV7StateOps
 
 
 def sha256_file(path: Path, chunk: int = 1 << 24) -> str:
@@ -72,6 +72,9 @@ class ModelPlugin:
     #: optional prefill/extend/select over the model's recurrent state + KV cache (decide.backends.state_fork):
     #: when present the backend reads the shared prompt prefix once and forks per question and option
     state_ops: Any = None
+    #: prefix-fork packs copy the prefix state once per row; for a KV-cache model that is rows x |prefix| x KV bytes.
+    #: Cap rows x |prefix| per pack (``state_fork.KV_STATE_TOKEN_BUDGET``); None = uncapped (|prefix|-independent state)
+    fork_state_token_budget: int | None = None
 
 
 def _pkg_versions(*names: str) -> dict[str, Any]:
@@ -124,6 +127,8 @@ class HFReadoutBackend:
                              f"{self.fork_token_budget} positions per call)") if self.fork
             else "recompute(prompt + continuation per option)",
             "max_batch_rows": self.max_batch_rows,
+            **({"fork_state_token_budget": self.plugin.fork_state_token_budget}
+               if self.fork and self.plugin.fork_state_token_budget is not None else {}),
             "dtype": self.plugin.dtype,
             "device": self.plugin.device,
             "torch": torch.__version__,
@@ -234,7 +239,7 @@ class HFReadoutBackend:
         if self._use_fork(rows):
             from .state_fork import fork_plan
 
-            _, calls = fork_plan(rows, self.fork_max_rows, self.fork_token_budget)
+            _, calls = fork_plan(rows, self.fork_max_rows, self.fork_token_budget, self.plugin.fork_state_token_budget)
             n_calls, total = len(calls), sum(c.tokens for c in calls)
         else:
             chunks = self._chunks(rows)
@@ -262,7 +267,8 @@ class HFReadoutBackend:
 
             logits, n_calls, total_tokens, call_ms = fork_score(rows, self.plugin.state_ops, self.fork_max_rows,
                                                                 self.plugin.device, check_deadline,
-                                                                self.fork_token_budget)
+                                                                self.fork_token_budget,
+                                                                self.plugin.fork_state_token_budget)
             return self._result(rows, logits, n_calls, total_tokens, call_ms)
         chunks = self._chunks(rows)
         logits: dict[str, dict[str, float]] = {qid: {} for qid in request["questions"]}
@@ -374,6 +380,7 @@ def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloa
         device=device,
         kernel_stack=_pkg_versions("flash-linear-attention", "fla-core", "causal-conv1d", "triton", "triton-windows"),
         state_ops=HFCacheStateOps(model),
+        fork_state_token_budget=KV_STATE_TOKEN_BUDGET if "full_attention" in layer_types or not layer_types else None,
         notes={
             "model_class": type(model).__name__,
             "layer_types": {t: layer_types.count(t) for t in sorted(set(layer_types))},

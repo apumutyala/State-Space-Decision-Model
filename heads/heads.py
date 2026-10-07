@@ -70,6 +70,7 @@ class HeadOutput:
     logits: torch.Tensor  # [B, K], -inf on padded options
     bias: torch.Tensor | None = None  # [B, K] evidence-free part (prior), integrator/snapshot
     attribution: torch.Tensor | None = None  # [B, T, K] (integrator) or [B, S, K] (snapshot)
+    semantic_axes: torch.Tensor | None = None  # optional supervised head port [B, 6]; never input metadata
 
 
 def _masked(z: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -94,6 +95,44 @@ class DecisionHead(nn.Module):
 
     def n_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
+
+class QEndSemanticAxes(DecisionHead):
+    """Explicit supervised head port, not emergent or backbone-causal axes.
+
+    Reads only the existing q_end/e tensors. No option IDs, descriptions,
+    row metadata, supervision or host parsing enters this scorer.
+    """
+    name = "qend_axes"
+
+    def __init__(self, d_model: int) -> None:
+        super().__init__()
+        self.query_norm = nn.LayerNorm(d_model)
+        self.axis_projection = nn.Linear(d_model, 6)
+        self.option_projection = nn.Linear(d_model, 6, bias=False)
+        self.option_bias = nn.Linear(d_model, 1)
+
+    def axes(self, x: HeadInput) -> torch.Tensor:
+        return torch.tanh(self.axis_projection(self.query_norm(x.q_end)))
+
+    def score_axes(self, x: HeadInput, z: torch.Tensor) -> HeadOutput:
+        """Fixed port intervention; callers must record its explicit identity."""
+        # Meta tensors carry shape/device only; actual ports must also have finite values.
+        if z.shape != (x.q_end.shape[0], 6) or (z.device.type != "meta" and not torch.isfinite(z).all()):
+            raise ValueError("semantic head port must be finite [B, 6]")
+        bias = self.option_bias(x.e).squeeze(-1)
+        logits = torch.einsum("bd,bkd->bk", z, self.option_projection(x.e)) + bias
+        return HeadOutput(_masked(logits, x.option_mask), bias=bias, semantic_axes=z)
+
+    def forward(self, x: HeadInput, return_attribution: bool = False) -> HeadOutput:
+        return self.score_axes(x, self.axes(x))
+
+    def cost(self, T: int, K: int) -> dict:
+        d = self.axis_projection.in_features
+        return {"flops": 2 * d * 6 + 2 * K * d * 7 + 12 * K,
+                "accumulator_scalars": 6 + K, "attention_free": True,
+                "streaming_implemented": False,
+                "scope": "existing non-streaming backbone features; supervised head port only"}
 
 
 # ---------------------------------------------------------------- (a) integrator bank
@@ -357,6 +396,7 @@ class ClefCrossAttentionControl(DecisionHead):
 
 
 HEADS = {
+    "qend_axes": QEndSemanticAxes,
     "integrator": IntegratorBank,
     "fork": FinalStateFork,
     "snapshot": SnapshotFork,

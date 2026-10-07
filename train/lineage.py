@@ -94,7 +94,11 @@ def items_identity(items: Sequence) -> dict[str, Any]:
     h = hashlib.sha256()
     for it in items:
         r = it.row
-        h.update(_h([it.id, it.label, r.ids, r.option_ids, r.continuations, r.option_seqs, r.qtype]).encode())
+        value = [it.id, it.label, r.ids, r.option_ids, r.continuations, r.option_seqs, r.qtype]
+        axes = getattr(it, "axis_target", None)
+        if axes is not None:
+            value.append({"axis_target": list(axes)})  # opt-in sidecar identity; legacy digests unchanged
+        h.update(_h(value).encode())
     return {"n": len(items), "sha256": h.hexdigest(), "order_fn": ORDER_FN}
 
 

@@ -14,7 +14,8 @@ support both possible parents:
 
 **Output.**
 - an eval card on the frozen development cohort;
-- G12 and G13 verdicts against the parent;
+- G12 and G13 verdicts against the parent (G12: last accepted checkpoint; G13: last accepted AND lineage anchor,
+  `--anchor-arm`; on the first cell both are the parent arm, issue #36);
 - one **promotion verdict**: `accept` only if every G12 and G13 criterion passes (`train.promotion`, fail-closed).
 
 No Index test row is read. No head-vs-head claim is made from one seed.
@@ -28,10 +29,11 @@ No Index test row is read. No head-vs-head claim is made from one seed.
 | Training records | PR #16 sample `m2/records.jsonl.gz` | `sha256sum -c jobs/rwkv7/records.sha256` |
 | Development cohort | `train/cohorts/m2-dev-cohort-v2.jsonl.gz`, sha256 `be6efe2b…fdacf2` (uncompressed text) | `python -m train.cohort verify` must rebuild it byte-for-byte; `run_cell` refuses on mismatch (exit 28) |
 | Guard content index | sha256 `7cbe6c89…052d8d`, 24,150 hashes | `jobs.m2_pilot.guard_ready` (below) |
-| Margins | `train.promotion.MARGINS`: `m_steer` 0.02, `m_cap` 1.0 Index points, `m_ece` 0.01 | **PENDING USER APPROVAL** |
+| Margins | `train.promotion.MARGINS` (Codex #36 contract 6028537932 + 6028610849): `m_cap` 1.0 Index points, `m_steer` 0.02, `m_ece` 0.01, `m_ret_acc` 0.01, clean false-alarm cap 1 % (PREREG G2(f)) + false alarm / refusal change 0.01 | `MARGINS["status"]` (`margins_status` in `job_params.json` mirrors it) |
 
 The margins are read from config (`train.promotion.MARGINS`), never restated in code paths. Until the user approves
-them, the verdict is reported as `accept|reject (margins PENDING USER APPROVAL)`, and nothing is promoted on it.
+them, the verdict is reported as `accept|reject (margins PENDING USER APPROVAL)`, and nothing is promoted on it
+(`train.promotion.margins_pending`; an all-accept run exits 43). Status now: approved (see the row above).
 
 ## Data roles (`train.cohort` v2, frozen; disjoint by id AND by content)
 
@@ -65,12 +67,19 @@ v2 replaces v1 after the PR #29 review (B1).
     (`PLANNING`). They are not measurements. The first G12 run measures the real discordance, and the sizes are
     re-derived from it.
 - `dev` comes from McNemar: 709 items, at discordance 0.10 and power 0.8.
-- **G13 capability** (coordinator decision 2026-10-06) is the 2,008-row Index **DEV** subset
-  (`jobs/common/dev_subset_m1.json`) **plus** the cohort `retention` set. DEV is a development slice; Index TEST stays
-  sealed.
-  - `g13_capability` / `g13_ece` (`retention_comparison`) read the DEV subset.
-  - `g13_retention_acc` (lower CI ≥ −`m_ret_acc`) and `g13_retention_ece` (upper CI ≤ `m_ece`) read the retention
-    set (`verdict_g13(decision_retention=...)`).
+- **G13 capability** (issue #36 review, adopted 2026-10-07) is the **FULL** Index **DEV** slice minus the rows the
+  parent's decider refuses before any forward (> 16,384 input tokens etc.), frozen by id hash before any Index row is
+  scored (`jobs.common.dev_full`, pinned as `index_frozen_sha256`), **plus** the cohort `retention` set. The 2,008-row
+  subset (`jobs/common/dev_subset_m1.json`) is a screen only. DEV is a development slice; Index TEST stays sealed.
+  - `g13_capability` (lower CI ≥ −`m_cap`, and no area's 99 % Bonferroni CI entirely below 0),
+    `g13_capability_e1` / `g13_capability_e1_frozen` (E1, families-v1: `new_domain_proxy` and the frozen-9
+    `new_domain_frozen` of heldout-draw-v1; each rejects on a demonstrated regression, upper CI < 0; a CI crossing 0
+    is inconclusive and makes no claim; a partition with no member rows fails closed) and `g13_ece`
+    (both arms untempered; served ECE reported) read the frozen full-DEV rows (`retention_comparison`).
+  - Scoring edition: every gating Index number is **0.2.1** (`train.promotion.G13_EDITION`, comparable with the
+    existing receipts); Index **0.3** is scored on the same rows and draws and reported alongside, ungated.
+  - `g13_retention_acc` (lower CI ≥ −`m_ret_acc` = −0.01) and `g13_retention_ece` (upper CI ≤ +0.01) read
+    the retention set (`verdict_g13(decision_retention=...)`).
   - Both arms (child here, parent from `jobs/m2_parent_arm`) are scored by the same `train.m2_gates.score_stage`.
 
 ## Guard readiness (before any training)
@@ -110,12 +119,12 @@ What the evals phase runs:
 | Temperature fit | On the cohort `calibration` role, with disjointness attested against `dev`, `retention` and the train ids |
 | Eval card | `run_card` on `dev`, raw and tempered; cohort hash stamped |
 | G12 | Child arm on `dev` + `steer_dev`, against the parent cache's g12 units |
-| G13 | Child arm on `retention` + `steer_gate` (`final=True`) + the Index DEV subset, against the parent cache's g13 units |
+| G13 | Child arm on `retention` + `steer_gate` (`final=True`) + the frozen FULL Index DEV rows, against the parent cache's g13 units |
 | Verdict | `verdict_g12` / `verdict_g13`, then the promotion verdict |
 
 The promotion verdict is `accept` only if every stage accepted; otherwise the exit is 40 (G12), 41 (G13) or
-42 (both). The report is exported in both cases, and `valid_report` is the finalize validator. `promotable` stays
-false while the margins are pending.
+42 (both). An all-accept run under PENDING margins exits **43**, never 0 (issue #36). The report is exported in every
+case, and `valid_report` is the finalize validator. `promotable` stays false while the margins are pending.
 
 Every response is served through `decide.Decider(calibration=FeatureTemperature)`, so served probabilities use the
 fitted temperature. `revision_id` = `<backend>+T:<temperature id>`.
@@ -124,11 +133,15 @@ Schedule 173 + reserve 7 = 180 min. **Worst case** (20 build + 2 × 180) × $0.0
 **$20 hard cap**; `set_workspace_cap(MTD + 20)` applies when the job runs alone.
 
 **Eval volume** (RWKV7 tokenizer, measured on the cohort; `jobs/m2_parent_arm/score_parent.VOLUME_TOKENS`):
-- **Child arm:** 26.8 M tokens (G12 9.3 M, G13 17.5 M; Index DEV re-measured as exact prefix-fork positions, `jobs/PERF_AUDIT.md`). The parent arm is cached once per parent.
+- **Child arm:** 59.2 M tokens (G12 9.3 M, G13 49.9 M). G13's Index term is now the FULL DEV slice (issue #36):
+  38.8 M, a PROJECTION (the 2,008-row subset's exact prefix-fork positions, 6.39 M, x the full/subset proxy-token
+  ratio 6.07; re-measure on the first parent-arm run). The parent arm is cached once per parent.
 - **Evals phase total:** the arm plus the temperature fit over every calibration item (3.4 M) and the dev eval card
-  (4.0 M) gives **34.2 M tokens** (`estimate(..., mode="child")`; PR #29 round-2 review B4).
-- **Rate needed:** at the 50-minute evals cap, with the 95 % headroom rule, this needs **≥ ~12,000 tok/s**
-  (`score_parent.min_tok_s(50)`).
+  (4.0 M) gives **66.6 M tokens** (`estimate(..., mode="child")`; PR #29 round-2 review B4). It was 34.2 M with the
+  2,008-row subset.
+- **Rate needed:** at the 50-minute evals cap, with the 95 % headroom rule, this needs **≥ ~23,400 tok/s**
+  (`score_parent.min_tok_s(50)`). The only measured fork rate so far is 22.1k tok/s (Qwen3.5-9B, job-5cmat
+  preflight), so expect the G13 gate to run as its own job (next bullet but two).
 - **Preflight:** it runs in setup, before the paid cell phase, as `score_parent estimate --mode child --cap-min
   $CAP_E` with `TOK_S`, a measured rate. It stops with exit 15 if the projection is over.
 - **No `TOK_S`:** if `TOK_S` is unset or not a number, the job exits 4.
@@ -151,8 +164,10 @@ Every stop below exits and lands in the receipt:
 1. **Parent arm cache.** Run `jobs/m2_parent_arm` once for the chosen parent (≤ $20; ≈ $4–6 at 5–10k tok/s) and ship
    its `arm.json` and units in the context (`build_context.sh <sha> <out> <arm_dir> [<gdn.pt>]`).
 2. **A measured `TOK_S`** for the parent: rwkv7 stage-A probe, or the probe9b throughput for Q9-AF.
-3. **Margins.** `m_steer`, `m_cap`, `m_ece` and `m_ret_acc` are **PENDING USER APPROVAL**, and so is the G12/G13
-   steer-rule reconciliation from PR #27.
+3. **Margins.** `train.promotion.MARGINS` (issue #36 review rule text; see its `status`). While `approved` is false
+   the job exits 43 on an all-accept run and nothing is promotable.
+3a. **Frozen full-DEV row set.** `index_frozen_sha256.<parent>` in `job_params.json` (written by `jobs/m2_parent_arm`
+   before it scores any Index row); `m2_job.sh` exits 10 while it is null or on mismatch.
 4. **Q9-AF only:** the full-8 conversion output and its sha256 pinned in `m2_pilot_cell_q9af.json`
    (`converted_sha256`, optionally `base_config_sha256`).
 5. **The usual spend steps:**
@@ -160,3 +175,22 @@ Every stop below exits and lands in the receipt:
    - a LEDGER planned row;
    - `validate_job` against the $20 cap;
    - the SF credit-expiry check (promo expires 2026-10-27T06:53Z).
+
+## Cohort v3 retention cost (G13 child arm)
+
+Cohort v3 (`train/cohort_v3.py`, sha256 `498efa61…76da`) grows the G13 retention role to 39,872 records: 36,696
+usable items on RWKV7 and 36,691 on Qwen3.5, sized for issue #36's retention ECE and accuracy margins. These are
+measured volumes at measured rates (`receipts/2026-10-07-D-cohort-v3/measure.json`). The retention term alone costs,
+per arm:
+
+| Backbone | Rate | Minutes | $ |
+|---|---|---|---|
+| RWKV7-13.3B | job-tkfaj | **225.8** | **$11.18** |
+| Q9 (Qwen3.5-9B) | job-5cmat | **79.7** | **$3.94** |
+
+- These figures are per arm. They double when the parent arm is not cached. Pricing details are in `jobs/m2_parent_arm/JOB_SPEC.md`.
+- G13 on v3 cannot run inside this cell's 50-minute evals phase. It runs as its own gate job.
+- The cell configs here still pin v2. Switching to v3 means three things:
+  - re-caching the parent arm;
+  - passing `pool_dirs={"m2-150k": <dir>}` to `Cohort.load_role_records`;
+  - the v3 training-draw guard, which is already enforced in `baselines.clef_teacher`.

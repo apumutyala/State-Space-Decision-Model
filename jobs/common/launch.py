@@ -6,7 +6,10 @@ Steps (each refuses with a non-zero exit; jobs/LAUNCH_CHECKLIST.md):
   1. `git fetch origin agent-main`; the SHA must be an ancestor of origin/agent-main.
   2. `git -c core.autocrlf=false archive <sha>` -> code/m1 (in memory, plus a staged copy under <out>/stage).
   3. The sha's own jobs/common/lint.py on the staged tree (waived failures only with --allow-waived, recorded in submit.json).
-  4. The job's CPU tests on the staged tree (every tests/ file naming jobs/<job>/ or jobs.<job>, + test_jobs_lint).
+  4. The job's CPU tests on the staged tree (every tests/ file naming jobs/<job>/ or jobs.<job>, + test_jobs_lint), in
+     the job image's own stack: `uv run --with transformers==<job_params test_env pin>` (LESSONS L-24). Tests marked
+     requires_transformers(<other pin>) are skipped and reported, never counted as passed; a skipped test that requires
+     THIS job's pin refuses the launch.
   5. Context = Dockerfile (+ CMD rewrite) + code/m1 + pinned data (sha256 checked against the pin file in the
      archive) + CONTEXT_MANIFEST.json, as a deterministic tar (sorted, mtime 2026-01-01, uid/gid 0, modes 644/755)
      compressed with Python zstandard (no zstd binary). Shipped *.sh/*.sha256/*.json/*.py/Dockerfile must have no CR.
@@ -14,11 +17,13 @@ Steps (each refuses with a non-zero exit; jobs/LAUNCH_CHECKLIST.md):
      finalize_context / open_mission / submit_job arguments (idempotency key from the context sha256).
 
 The context and submit fields come from job_params ("submit" and "context" blocks) for new jobs, or from the tables
-below, transcribed from each legacy JOB_SPEC's platform call and build_context.sh.
+below, transcribed from each legacy JOB_SPEC's platform call and build_context.sh. CONTEXT_RECIPES supplies the context
+for jobs whose params defer to a build_context.sh (Clef: Dockerfile rewrite, literal / JSON-key data pins, REF_FLASH).
 """
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import io
 import json
@@ -94,6 +99,52 @@ LEGACY_CONTEXT: dict[str, dict] = {
     "qual": {"dockerfile": "jobs/qual/Dockerfile", "data": []},
     "m2_pilot": {"unsupported": "needs the parent-arm cache + guard_ready dry run: use jobs/m2_pilot/build_context.sh"},
     "m2_parent_arm": {"unsupported": "runs guard_ready on the shipped suite: use jobs/m2_parent_arm/build_context.sh"},
+}
+
+# ----------------------------------------------------------------------------- Clef baseline (jobs/clef_baseline)
+#: The Clef image copies app/ -> /app (not code/m1) and reads /app/CONTEXT_MANIFEST.json, so its Dockerfile is rewritten
+#: to take the launcher's layout. Data pins that are not `<sha>  <path>` files in the archive:
+#:   pin_sha256  literal sha256 of the shipped bytes (job-sgihj's decide results, art-8y6d8);
+#:   pin_json    [archive file, key, ...]: the sha256 the committed pointer / guard pin records, of the UNCOMPRESSED
+#:               bytes when "gunzip" is true (the 150k pointer, jobs/m2_pilot/guard_pin.json).
+#: src_env names an environment variable that may point at the source file outside --data (REF_FLASH).
+_CLEF_IMAGE = {"dockerfile": "jobs/clef_baseline/Dockerfile",
+               "rewrites": [["COPY app/ /app/",
+                             "COPY code/m1/ /app/\nCOPY CONTEXT_MANIFEST.json /app/CONTEXT_MANIFEST.json"]]}
+_CLEF_REF = {"src": "reference/clef_flash.decide.results.jsonl", "src_env": "REF_FLASH",
+             "dest": "reference/clef_flash.decide.results.jsonl",
+             "pin_sha256": "463f21ff492fc792da4d40ecc501cffab0498d2458715f8effd3270614cbd0aa"}
+_PTR = "data/manifests/sample-150000-seed20261006.pointer.json"
+_B150 = "m2/build/sample-150000-seed20261006/"
+_GPIN = "jobs/m2_pilot/guard_pin.json"
+_CLEF_TEACHER_DATA = [
+    {"src": _B150 + "records.jsonl.gz", "dest": "m2-150k/records.jsonl.gz", "gunzip": True,
+     "pin_json": [_PTR, "records_uncompressed_sha256"]},
+    {"src": _B150 + "sample-150000-seed20261006.manifest.jsonl.gz",
+     "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz", "gunzip": True,
+     "pin_json": [_PTR, "manifest_uncompressed_sha256"]},
+    {"src": _B150 + "sample-150000-seed20261006.content.jsonl.gz",
+     "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz", "gunzip": True,
+     "pin_json": [_PTR, "content_map_uncompressed_sha256"]},
+    {"src": "suite-0.2/selected-rows.jsonl.gz", "dest": "suite-0.2/selected-rows.jsonl.gz", "gunzip": True,
+     "pin_json": [_GPIN, "suite_files_sha256_uncompressed", "selected-rows.jsonl.gz"]},
+    {"src": "suite-0.2/added-rows.jsonl.gz", "dest": "suite-0.2/added-rows.jsonl.gz", "gunzip": True,
+     "pin_json": [_GPIN, "suite_files_sha256_uncompressed", "added-rows.jsonl.gz"]},
+    {"src": "suite-0.2/excluded-questions.json", "dest": "suite-0.2/excluded-questions.json",
+     "pin_json": [_GPIN, "suite_exclusions_sha256"]},
+]
+_CLEF_INDEX = {**_CLEF_IMAGE, "data": [_DEV, _CLEF_REF],
+               "manifest_files": ["jobs/clef_baseline/overlength_rows.json", "jobs/common/dev_subset_m1.json"]}
+_CLEF_TEACHER = {**_CLEF_IMAGE, "data": _CLEF_TEACHER_DATA, "manifest_files": ["jobs/clef_baseline/teacher_scope.json",
+                                                                              _PTR, _GPIN]}
+#: (job, mode) -> context recipe. Takes precedence over a job_params "context" block that says "unsupported" (the
+#: Clef params merged in #98 point at build_context.sh, which needs a zstd binary and a hand-built submit.json).
+CONTEXT_RECIPES: dict[tuple[str, str | None], dict] = {
+    ("clef_baseline", "index_subset"): _CLEF_INDEX,
+    ("clef_baseline", "index_full"): _CLEF_INDEX,
+    ("clef_baseline", "overlength_flash"): _CLEF_INDEX,
+    ("clef_baseline", "teacher_clef_flash"): _CLEF_TEACHER,
+    ("clef_baseline", "teacher_clef"): _CLEF_TEACHER,
 }
 
 
@@ -192,17 +243,122 @@ def job_tests(code: Path, job: str) -> list[str]:
     return out
 
 
-def run_tests(code: Path, job: str) -> dict:
+#: base packages of every job-test environment (the per-job transformers pin is added from job_params "test_env")
+TEST_DEPS = ("pytest", "torch", "numpy", "pyarrow", "zstandard")
+TORCH_CPU_INDEX = "https://download.pytorch.org/whl/cpu"
+REQUIRES_REASON = "requires_transformers"  # the skip reason root conftest.py gives a pin-dependent test
+
+
+def job_test_command(code: Path, test_env: dict | None, tests: list[str], junit: Path, kit_dir: Path | None) -> list[str]:
+    """The job tests' command under the job image's own transformers pin (LESSONS L-24). ``test_env`` is job_params'
+    {"transformers": "<pin>" | null}; null = the job imports no transformers and runs under this interpreter. A missing
+    test_env is refused: one environment cannot satisfy two pinned stacks."""
+    if not isinstance(test_env, dict) or "transformers" not in test_env:
+        raise LaunchError("job_params has no test_env {\"transformers\": <the job image's pin>}: the job tests must run "
+                          "under the job's own stack (LESSONS L-24)")
+    pytest_args = ["-X", "utf8", "-m", "pytest", "-q", "-rs", "-p", "no:cacheprovider", f"--junitxml={junit}", *tests]
+    pin = test_env["transformers"]
+    if pin is None:
+        return [sys.executable, *pytest_args]
+    import shutil
+
+    uv = shutil.which("uv")
+    if uv is None:
+        raise LaunchError("job tests need `uv` to build the job's test environment (transformers==%s)" % pin)
+    cmd = [uv, "run", "--no-project", "--index", TORCH_CPU_INDEX, "--index-strategy", "unsafe-best-match",
+           "--with", f"transformers=={pin}"]
+    for d in TEST_DEPS:
+        cmd += ["--with", d]
+    for d in test_env.get("with", []):  # further image pins (fla 0.5.2), so their mirror tests run instead of skipping
+        cmd += ["--with", d]
+    if kit_dir is not None:
+        if not (kit_dir / "decision_index").is_dir():  # PR #103 review B1: never drop the kit silently
+            raise LaunchError(f"kit dir {kit_dir} has no decision_index package: the job's kit-dependent tests would "
+                              f"skip, untested (pass --data <SSDM_DATA with decision-index/>)")
+        cmd += ["--with", str(kit_dir)]
+    if (code / "harness" / "pyproject.toml").is_file():
+        cmd += ["--with-editable", str(code / "harness")]
+    return cmd + ["python", *pytest_args]
+
+
+def junit_summary(junit: Path) -> dict:
+    """passed / failed / skipped from pytest's junit xml; skips grouped by reason. A skip is never a pass."""
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(junit).getroot()
+    out = {"passed": 0, "failed": 0, "skipped": 0, "skips": []}
+    for tc in root.iter("testcase"):
+        name = f"{tc.get('classname')}::{tc.get('name')}"
+        if tc.find("failure") is not None or tc.find("error") is not None:
+            out["failed"] += 1
+        elif tc.find("skipped") is not None:
+            out["skipped"] += 1
+            sk = tc.find("skipped")
+            out["skips"].append({"test": name, "reason": (sk.get("message") or sk.text or "").strip()})
+        else:
+            out["passed"] += 1
+    return out
+
+
+def required_skips(summary: dict, test_env: dict) -> list[dict]:
+    """Tests that require THIS job's pin but were skipped (the environment did not match): the launch is refused."""
+    pin = test_env.get("transformers")
+    if pin is None:
+        return [s for s in summary["skips"] if REQUIRES_REASON in s["reason"]]
+    return [s for s in summary["skips"] if f"{REQUIRES_REASON} {pin} " in s["reason"] + " "]
+
+
+def other_pin_skip(reason: str, test_env: dict) -> bool:
+    """A requires_transformers skip for a DIFFERENT pin (run by that pin's job instead; lint pinned_tests_uncovered)."""
+    pin = test_env.get("transformers")
+    return reason.startswith(REQUIRES_REASON + " ") and not (pin and reason.startswith(f"{REQUIRES_REASON} {pin} "))
+
+
+def disallowed_skips(summary: dict, test_env: dict) -> list[dict]:
+    """PR #103 review B1: every skip must be either another pin's test or on the job's explicit, reasoned allowlist
+    (test_env.allowed_skips: [{"reason": <substring of the skip reason>, "why": <why it may skip>}]). Anything else
+    (kit missing, private data missing, an importorskip) means untested code: refuse."""
+    allow = [a for a in test_env.get("allowed_skips", []) if isinstance(a, dict) and a.get("reason") and a.get("why")]
+    return [s for s in summary["skips"] if not other_pin_skip(s["reason"], test_env)
+            and not any(a["reason"] in s["reason"] for a in allow)]
+
+
+def run_tests(code: Path, job: str, test_env: dict | None = None, data_dir: Path | None = None) -> dict:
     tests = job_tests(code, job)
     if not tests:
         raise LaunchError(f"no CPU tests reference jobs/{job}/")
+    junit = code.parent / f"junit-{job}.xml"
+    if junit.exists():
+        junit.unlink()  # a stale file from an earlier run must never be read as this run's result
+    kit = data_dir / "decision-index" if data_dir is not None and isinstance(test_env, dict) \
+        and test_env.get("transformers") is not None else None
+    cmd = job_test_command(code, test_env, tests, junit, kit)
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUTF8": "1"}
-    cmd = [sys.executable, "-X", "utf8", "-m", "pytest", "-q", "-p", "no:cacheprovider", *tests]
+    if data_dir is not None:
+        env["SSDM_DATA"] = str(data_dir)  # B1: the private-data tests read the launch's own --data, not the caller's env
     r = subprocess.run(cmd, cwd=code, env=env, capture_output=True, text=True)
     tail = (r.stdout + r.stderr).strip().splitlines()[-3:]
     if r.returncode:
         raise LaunchError(f"job tests failed ({' '.join(tests)}):\n" + "\n".join(tail))
-    return {"files": tests, "summary": tail[-1] if tail else ""}
+    if not junit.is_file():
+        raise LaunchError("job tests wrote no junit xml: no evidence that any test ran")
+    summ = junit_summary(junit)
+    if not summ["passed"]:
+        raise LaunchError(f"job tests: 0 passed ({summ['skipped']} skipped): nothing was tested")
+    req = required_skips(summ, test_env)
+    if req:
+        raise LaunchError(f"{len(req)} test(s) that require this job's pinned stack were skipped (the test environment "
+                          f"does not match test_env {test_env}): {[s['test'] for s in req]}")
+    bad = disallowed_skips(summ, test_env)
+    if bad:
+        raise LaunchError(f"{len(bad)} test(s) skipped for a reason not on test_env.allowed_skips (untested code): "
+                          f"{[(s['test'], s['reason']) for s in bad][:10]}")
+    other = [s for s in summ["skips"] if other_pin_skip(s["reason"], test_env)]
+    summary = f"{summ['passed']} passed, {summ['failed']} failed, {summ['skipped']} skipped"
+    return {"files": tests, "summary": summary, "test_env": test_env,
+            "passed": summ["passed"], "failed": summ["failed"], "skipped": summ["skipped"],
+            "skipped_other_pins": [s["test"] for s in other],
+            "skipped_allowed": [s for s in summ["skips"] if not other_pin_skip(s["reason"], test_env)]}
 
 
 def sha256(b: bytes) -> str:
@@ -219,14 +375,30 @@ def pins(text: str) -> dict[str, str]:
     return out
 
 
+def data_pin(files: dict, item: dict) -> str | None:
+    """The sha256 a data item must have: from a `<sha>  <path>` pin file, a literal, or a key of a committed JSON."""
+    if item.get("pin"):
+        return pins(files[item["pin"]][0].decode()).get(item["dest"])
+    if item.get("pin_sha256"):
+        return item["pin_sha256"]
+    if item.get("pin_json"):
+        rel, *keys = item["pin_json"]
+        v = json.loads(files[rel][0])
+        for k in keys:
+            v = v.get(k) if isinstance(v, dict) else None
+        return v if isinstance(v, str) else None
+    raise LaunchError(f"data {item['dest']}: no pin")
+
+
 def build_context(files: dict, job: str, sha: str, spec: dict, params_path: str, data_dir: Path | None) -> dict:
     """{path in context: (bytes, mode)}: Dockerfile, code/m1/**, data/**, CONTEXT_MANIFEST.json."""
     if "unsupported" in spec:
         raise LaunchError(f"{job}: {spec['unsupported']}")
     ctx = {f"code/m1/{p}": v for p, v in files.items()}
     df = files[spec["dockerfile"]][0].decode()
-    if spec.get("cmd_rewrite"):
-        old, new = spec["cmd_rewrite"]
+    for old, new in ([spec["cmd_rewrite"]] if spec.get("cmd_rewrite") else []) + list(spec.get("rewrites", [])):
+        if old not in df:
+            raise LaunchError(f"Dockerfile rewrite failed: {old!r} not in {spec['dockerfile']}")
         df = df.replace(old, new)
         if new not in df:
             raise LaunchError("Dockerfile CMD rewrite failed")
@@ -234,14 +406,20 @@ def build_context(files: dict, job: str, sha: str, spec: dict, params_path: str,
     for item in spec.get("data", []):
         if data_dir is None:
             raise LaunchError(f"{job} ships data ({item['dest']}): pass --data <SSDM_DATA dir>")
-        b = (data_dir / item["src"]).read_bytes()
-        want = pins(files[item["pin"]][0].decode()).get(item["dest"])
-        if want != sha256(b):
-            raise LaunchError(f"data {item['dest']}: sha256 {sha256(b)} != pin {want} ({item['pin']})")
+        src = Path(os.environ[item["src_env"]]) if item.get("src_env") and os.environ.get(item["src_env"]) \
+            else data_dir / item["src"]
+        if not src.is_file():
+            raise LaunchError(f"data {item['dest']}: source {src} missing" +
+                              (f" (set {item['src_env']})" if item.get("src_env") else ""))
+        b = src.read_bytes()
+        want, got, what = data_pin(files, item), sha256(gzip.decompress(b) if item.get("gunzip") else b), \
+            item.get("pin") or item.get("pin_json") or "pin_sha256"
+        if not want or want != got:
+            raise LaunchError(f"data {item['dest']}: sha256 {got} != pin {want} ({what})")
         ctx[f"data/{item['dest']}"] = (b, 0o644)
     if "COPY data/" in df and not any(p.startswith("data/") for p in ctx):
         ctx["data/.keep"] = (b"", 0o644)
-    man = {"job": job, "m1_sha": sha, "builder": "jobs.common.launch", "params": params_path,
+    man = {"job": job, "m1_sha": sha, "branch_commit": sha, "builder": "jobs.common.launch", "params": params_path,
            "dockerfile_sha256": sha256(ctx["Dockerfile"][0]),
            "files_sha256": {p: sha256(files[p][0]) for p in sorted({params_path, *spec.get("manifest_files", [])})},
            "data_sha256": {p: sha256(b) for p, (b, _) in sorted(ctx.items()) if p.startswith("data/")}}
@@ -295,6 +473,9 @@ def submit_args(job: str, mode: str | None, p: dict, sub: dict, ctx_sha: str) ->
     missing = [k for k in REQUIRED_FIELDS if k not in p and k not in sub] + [k for k in REQUIRED_SUBMIT if k not in sub]
     if missing:
         raise LaunchError(f"{job}/{mode}: submit fields not stated (no defaults): {missing}")
+    bad = lint.checks_problems(sub["checks"])
+    if bad:
+        raise LaunchError(f"{job}/{mode}: submit checks are not the platform CheckSpec schema (L-25): {bad}")
     field = {k: (p[k] if k in p else sub[k]) for k in REQUIRED_FIELDS}
     if not field["mission"]:
         raise LaunchError(f"{job}/{mode}: empty mission")
@@ -326,9 +507,11 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
     stage(files, code)
     sha_lint = load_lint(code)
     lint_res = run_lint(code, rel, allow_waived, sha_lint)
-    tests = run_tests(code, job) if run_job_tests else {"skipped": True}
+    tests = run_tests(code, job, p.get("test_env"), data_dir) if run_job_tests else {"skipped": True}
     sub = p.get("submit") or LEGACY_SUBMIT.get((job, mode))
     spec = p.get("context") or LEGACY_CONTEXT.get(job)
+    if (not spec or "unsupported" in spec) and (job, mode) in CONTEXT_RECIPES:
+        spec = CONTEXT_RECIPES[(job, mode)]
     if not sub or not spec:
         raise LaunchError(f"{job}/{mode}: job_params needs 'submit' {{command, key, checks}} and 'context' blocks")
     runner = sha_lint.runner_of(code, job, p)
