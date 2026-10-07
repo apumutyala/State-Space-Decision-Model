@@ -168,11 +168,13 @@ def test_identifier_substrings_do_not_count_as_token_references(text):
     assert perm == [2, 1, 0]
 
 
-def test_only_target_criteria_and_record_bookkeeping_are_excluded_from_reference_scan():
+def test_record_bookkeeping_is_excluded_but_target_descriptions_are_scanned():
     rec = record()
     rec["id"] = "opt-1"  # record id and labels are not request input
     rec["metadata"] = {"note": "opt-1"}
     rec["request"]["questions"]["choice"]["criteria"]["opt-0"] = "opt-1: a description"
+    assert reversed_record(rec, "choice") is None
+    rec["request"]["questions"]["choice"]["criteria"]["opt-0"] = "an independent description"
     view, _ = reversed_record(rec, "choice")
     assert view is not None
     # A question id is rendered input outside the excluded criteria subtree.

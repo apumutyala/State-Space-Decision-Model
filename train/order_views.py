@@ -36,11 +36,12 @@ VIEW = "reverse"
 
 
 def _ids_unreferenced(request: dict[str, Any], qid: str, ids: list[str]) -> bool:
-    """Fail closed unless supported option ids have no literal references outside their criteria subtree.
+    """Fail closed unless supported option ids have no literal references in model-visible request text.
 
     Scan request keys and scalar values (including structured state/instructions). The whole request is a
-    conservative superset of model-visible fields. The target criteria's keys/values must be excluded because
-    they intentionally define those ids. Unsupported punctuation/whitespace ids are never declared safe.
+    conservative superset of model-visible fields. Target criteria keys define option ids and are excluded, but their
+    descriptions are scanned because one option description can refer to another option id. Unsupported
+    punctuation/whitespace ids are never declared safe.
     """
     if any(re.fullmatch(r"\w+(?:[-.]\w+)*", oid) is None for oid in ids):
         return False
@@ -57,7 +58,9 @@ def _ids_unreferenced(request: dict[str, Any], qid: str, ids: list[str]) -> bool
         text = (value if isinstance(value, str) else canonical_json(value)).casefold()
         return any(p.search(text) is not None for p in patterns)
 
-    return not referenced(outside)
+    if referenced(outside):
+        return False
+    return not any(referenced(desc) for _, desc in canonical_options(request["questions"][qid]))
 
 
 def reversed_record(rec: dict[str, Any], qid: str) -> tuple[dict[str, Any], list[int]] | None:
