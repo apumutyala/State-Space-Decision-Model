@@ -373,29 +373,58 @@ def launch(out):
     from language_growth.l0_qwen_cpu_probe import _write_event
     _write_event(out / "launcher.jsonl", "launcher_start", available_bytes=available_at_start,
                  required_start_bytes=CONFIG["min_start_bytes"])
-    context = multiprocessing.get_context("spawn")
-    receive, send = context.Pipe(duplex=False)
-    secret = secrets.token_bytes(32)
-    process = context.Process(target=worker, args=(out, receive, os.getpid(), secret), daemon=True)
-    old = dict(os.environ)
+    receive = send = process = None
+    failure, cleanup_errors = None, []
+    phase = "spawn"
     try:
-        os.environ.update(_offline_env())
-        process.start()
-    finally:
-        os.environ.clear()
-        os.environ.update(old)
-    receive.close()
-    handle = _ProcessHandle(process)
-    try:
+        context = multiprocessing.get_context("spawn")
+        receive, send = context.Pipe(duplex=False)
+        secret = secrets.token_bytes(32)
+        process = context.Process(target=worker, args=(out, receive, os.getpid(), secret), daemon=True)
+        old = dict(os.environ)
+        try:
+            os.environ.update(_offline_env())
+            process.start()
+        finally:
+            os.environ.clear()
+            os.environ.update(old)
+        phase = "handshake"
+        receive.close()
         send.send_bytes(secret)
         send.close()
+        phase = "supervisor"
+        handle = _ProcessHandle(process)
         code = supervise(handle, out / "launcher.jsonl", available=lambda: psutil.virtual_memory().available)
-        return finalize_launch(out, code)
+    except Exception as exc:
+        failure = {"reason": f"{phase}_error", "exception_type": type(exc).__name__,
+                   "exception_message": str(exc)}
     finally:
-        send.close()
-        if handle.poll() is None:
-            handle.kill()
-            handle.wait()
+        for connection in (receive, send):
+            if connection is not None:
+                try:
+                    connection.close()
+                except Exception as exc:
+                    cleanup_errors.append({"type": type(exc).__name__, "message": str(exc)})
+        # A failed start may still have assigned a PID. Never join an unstarted
+        # process, and never discover/kill processes outside this owned handle.
+        if process is not None and process.pid is not None:
+            try:
+                if process.exitcode is None:
+                    process.kill()
+                process.join()
+            except Exception as exc:
+                cleanup_errors.append({"type": type(exc).__name__, "message": str(exc)})
+    if failure is not None or cleanup_errors:
+        failure = failure or {"reason": "cleanup_error"}
+        reason = failure.pop("reason")
+        record_incomplete(out, reason, 1, **failure, cleanup_errors=cleanup_errors)
+        return 1
+    try:
+        return finalize_launch(out, code)
+    except Exception as exc:
+        record_incomplete(out, "finalization_error", 1,
+                          exception_type=type(exc).__name__, exception_message=str(exc))
+        return 1
 
 
 def main():

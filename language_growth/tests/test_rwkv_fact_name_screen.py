@@ -218,6 +218,73 @@ assert 'torch' not in sys.modules
     subprocess.run([sys.executable, "-c", code, str(tmp_path / "refused")], cwd=runner.ROOT, check=True)
 
 
+@pytest.mark.parametrize("stage", ["spawn", "partial_spawn", "handshake", "supervisor"])
+def test_launcher_exceptions_preserve_incomplete_receipt_and_owned_cleanup_without_runtime(tmp_path, stage):
+    code = r'''
+import json, os, sys
+from pathlib import Path
+from types import SimpleNamespace
+class Reject:
+    def find_spec(self, fullname, *args):
+        if fullname.split('.')[0] in ('torch', 'transformers', 'safetensors'):
+            raise AssertionError('runtime imported by failing launcher')
+sys.meta_path.insert(0, Reject())
+def audit(event, args):
+    if event == 'open':
+        path = str(args[0]).lower().replace('\\', '/')
+        if path.endswith(('.pt', '.safetensors')) or '/snapshots/' in path:
+            raise AssertionError('checkpoint accessed by failing launcher')
+sys.addaudithook(audit)
+import psutil
+psutil.virtual_memory = lambda: SimpleNamespace(available=12 * 1024**3, total=16 * 1024**3)
+from language_growth import rwkv_fact_name_screen as runner
+stage = sys.argv[2]
+class Pipe:
+    closes = 0
+    def close(self): self.closes += 1
+    def send_bytes(self, secret):
+        if stage == 'handshake': raise BrokenPipeError('simulated handshake failure')
+class Child:
+    pid = exitcode = None
+    kills = joins = 0
+    def start(self):
+        assert os.environ['CUDA_VISIBLE_DEVICES'] == '-1'
+        if stage == 'spawn': raise OSError('simulated spawn failure')
+        self.pid = 12345
+        if stage == 'partial_spawn': raise OSError('simulated partial spawn failure')
+    def kill(self):
+        assert self.pid is not None
+        self.kills += 1
+        self.exitcode = -9
+    def join(self):
+        assert self.pid is not None
+        self.joins += 1
+receive, send, child = Pipe(), Pipe(), Child()
+class Context:
+    def Pipe(self, **kwargs): return receive, send
+    def Process(self, **kwargs): return child
+runner.multiprocessing.get_context = lambda mode: Context()
+def supervise(*args, **kwargs):
+    assert stage == 'supervisor'
+    raise RuntimeError('simulated supervisor failure')
+runner.supervise = supervise
+old = dict(os.environ)
+out = Path(sys.argv[1])
+assert runner.launch(out) == 1
+assert dict(os.environ) == old
+assert receive.closes and send.closes
+assert child.kills == child.joins == (0 if stage == 'spawn' else 1)
+receipt = json.loads((out / 'receipt.json').read_text())
+assert receipt['status'] == 'incomplete'
+assert receipt['stop_reason'] == ('spawn_error' if stage == 'partial_spawn' else stage + '_error')
+assert receipt['exception_type'] == {'spawn':'OSError', 'partial_spawn':'OSError', 'handshake':'BrokenPipeError', 'supervisor':'RuntimeError'}[stage]
+assert 'simulated' in receipt['exception_message']
+assert not any(k in receipt for k in ('summary', 'metrics', 'eligible', 'eligible_for_review'))
+assert 'torch' not in sys.modules
+'''
+    subprocess.run([sys.executable, "-c", code, str(tmp_path / stage), stage], cwd=runner.ROOT, check=True)
+
+
 @pytest.mark.parametrize("reason,code", [("memory_guard", 125), ("timeout", 124), ("worker_failed", 1)])
 def test_terminal_abort_records_incomplete_without_success_fields(tmp_path, reason, code):
     event = {"event": "launcher_stopped" if code != 1 else "launcher_exit",

@@ -17,10 +17,15 @@ No-load preparation:
 & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m language_growth.rwkv_fact_name_screen --dry-run --out receipts/2026-10-07-L-fact-name-screen-retry-prepared
 ```
 
-Focused verification: **28 passed** with scripted providers/tiny random CPU
+Focused verification: **32 passed** with scripted providers/tiny random CPU
 tensors; no parent weights loaded. `git diff --check` passed. No CI workflow
 is configured. Independent cross-review is pending.
 
 ```powershell
 & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest -q -p no:cacheprovider language_growth/tests/test_rwkv_fact_name_screen.py language_growth/tests/test_fact_binding_screen.py language_growth/tests/test_fact_candidate_style.py
 ```
+
+Launcher exception regression checks simulate spawn, partial-spawn, handshake
+and supervisor failures with runtime imports/checkpoint reads rejected. Every
+case records an incomplete receipt, restores the environment, closes pipes,
+and kills/joins only its owned started child.
