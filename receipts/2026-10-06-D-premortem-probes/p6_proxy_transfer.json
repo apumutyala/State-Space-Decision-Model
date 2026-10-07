@@ -1,0 +1,59 @@
+{
+ "argmin_agrees": true,
+ "dev_nll_head_plus_lora": [
+  1.2411618083715439,
+  1.2148456213374932,
+  1.2429511559506257,
+  1.2435132960478466,
+  1.2493590340018272,
+  1.2449918190638225
+ ],
+ "dev_nll_proxy": [
+  1.2414042850335438,
+  1.2159912958741188,
+  1.2429382006327312,
+  1.2441692153612773,
+  1.250443493326505,
+  1.2453582634528477
+ ],
+ "kendall_tau": 1.0,
+ "note": "tiny random backbone, toy task: a mechanism check of the transfer measurement, not evidence about 9B",
+ "recipes": [
+  [
+   "integrator",
+   "ce",
+   0.001
+  ],
+  [
+   "integrator",
+   "ce",
+   0.01
+  ],
+  [
+   "integrator",
+   "clef",
+   0.003
+  ],
+  [
+   "fork",
+   "ce",
+   0.001
+  ],
+  [
+   "fork",
+   "ce",
+   0.01
+  ],
+  [
+   "fork",
+   "clef",
+   0.003
+  ]
+ ],
+ "speedup_train_loop": 46.930102147092285,
+ "steps": 40,
+ "train_seconds": {
+  "head_plus_lora": 124.42989089999901,
+  "proxy_head_only": 2.6513876000099117
+ }
+}
