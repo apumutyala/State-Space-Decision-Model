@@ -354,3 +354,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the test double matched the conceptual slot count but not the runtime container contract.
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
+
+### L-34 Checkpoint resume must exactly match the current trainable state
+- Date: 2026-10-07 (post-merge Track L review of PR #121).
+- Symptom: `Trainer.load` accepted a checkpoint missing a head/LoRA tensor, accepted a frozen parameter as a trainable entry, and could broadcast a wrong-shaped tensor during `copy_`. An invalid later tensor or optimizer/scheduler/RNG payload could fail after earlier weights had already been copied.
+- Cost: $0; source review found the flaw before Track L used a resumed checkpoint. No trained artifact was accepted or job stopped by this review.
+- Root cause: load checked only that each saved name existed in the model; it did not compare against the exact duplicate-eliding trainable-name set or preflight tensor/optimizer/scheduler/RNG structures before mutation.
+- **Check:** `tests/test_m2_codex_fixes.py::test_resume_rejects_inexact_trainable_payload_without_any_mutation` corrupts missing, unexpected/frozen, broadcastable and malformed late weight keys plus optimizer, scheduler and RNG state; it checks model parameters, optimizer/scheduler state, counters/history and Python/NumPy/Torch RNG remain unchanged. Integrity checks run regardless of config/lineage strictness flags.
+- **Status:** ENFORCED.

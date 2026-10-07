@@ -1,6 +1,10 @@
 """PR #14 Codex review: init seeding independent of the ambient RNG, resume lineage, and the
 snapshot memory claim narrowed to the accumulator. CPU only, tiny random backbones."""
 
+import copy
+import random
+
+import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
@@ -28,6 +32,42 @@ def _cfg(**kw):
 
 def _params(module):
     return {n: p.detach().clone() for n, p in module.named_parameters()}
+
+
+def _state_equal(left, right):
+    if isinstance(left, torch.Tensor):
+        return isinstance(right, torch.Tensor) and torch.equal(left, right)
+    if isinstance(left, np.ndarray):
+        return isinstance(right, np.ndarray) and np.array_equal(left, right)
+    if isinstance(left, dict):
+        return isinstance(right, dict) and set(left) == set(right) and all(
+            _state_equal(left[key], right[key]) for key in left)
+    if isinstance(left, (list, tuple)):
+        return (isinstance(right, type(left)) and len(left) == len(right)
+                and all(_state_equal(a, b) for a, b in zip(left, right)))
+    return left == right
+
+
+def _trainer_mutable_snapshot(trainer):
+    return {
+        "params": _params(trainer.model),
+        "optimizer": copy.deepcopy(trainer.opt.state_dict()),
+        "scheduler": copy.deepcopy(trainer.sched.state_dict()),
+        "counters": (trainer.step, trainer.epoch, trainer.cursor, copy.deepcopy(trainer.history)),
+        "torch_rng": torch.get_rng_state().clone(),
+        "python_rng": random.getstate(),
+        "numpy_rng": copy.deepcopy(np.random.get_state()),
+    }
+
+
+def _assert_trainer_unchanged(trainer, before):
+    assert _state_equal(_params(trainer.model), before["params"])
+    assert _state_equal(trainer.opt.state_dict(), before["optimizer"])
+    assert _state_equal(trainer.sched.state_dict(), before["scheduler"])
+    assert _state_equal((trainer.step, trainer.epoch, trainer.cursor, trainer.history), before["counters"])
+    assert torch.equal(torch.get_rng_state(), before["torch_rng"])
+    assert random.getstate() == before["python_rng"]
+    assert _state_equal(np.random.get_state(), before["numpy_rng"])
 
 
 # ------------------------------------------------------------------------- seeding
@@ -145,6 +185,84 @@ def test_resume_accepts_identical_lineage(tmp_path, toy):
     st = torch.load(p, weights_only=False)
     assert set(st["lineage"]) == {"backbone", "tokenizer", "layout", "data"}
     assert "cuda" in st["rng"]  # None on CPU-only machines, restored when CUDA is present
+
+
+def test_resume_rejects_inexact_trainable_payload_without_any_mutation(tmp_path, toy):
+    source_path = _checkpoint(tmp_path / "source", toy)
+    valid = torch.load(source_path, map_location="cpu", weights_only=False)
+
+    def missing_key(st, target):
+        st["trainable"].pop(next(iter(st["trainable"])))
+
+    def unknown_key(st, target):
+        st["trainable"]["not_a_model_parameter"] = torch.zeros(1)
+
+    def frozen_parameter(st, target):
+        name, param = next((name, p) for name, p in target.model.named_parameters() if not p.requires_grad)
+        st["trainable"][name] = torch.zeros_like(param, device="cpu")
+
+    def broadcastable_shape(st, target):
+        name, tensor = next((name, t) for name, t in st["trainable"].items()
+                            if t.ndim >= 2 and t.shape[0] > 1)
+        st["trainable"][name] = tensor[:1].clone()
+
+    def late_nonbroadcastable_shape(st, target):
+        name = next(reversed(st["trainable"]))
+        expected = dict(target.model.named_parameters())[name]
+        bad_shape = list(expected.shape)
+        bad_shape[-1] += 1
+        # An earlier, otherwise valid tensor differs so a copy-before-full-validation regression is observable.
+        first = next(iter(st["trainable"]))
+        st["trainable"][first] = st["trainable"][first] + 0.125
+        st["trainable"][name] = torch.zeros(bad_shape, dtype=expected.dtype)
+
+    def non_tensor(st, target):
+        name = next(iter(st["trainable"]))
+        st["trainable"][name] = "not-a-tensor"
+
+    def dtype_mismatch(st, target):
+        name, tensor = next(iter(st["trainable"].items()))
+        st["trainable"][name] = tensor.to(torch.float16)
+
+    def nonfinite(st, target):
+        name, tensor = next((name, t) for name, t in st["trainable"].items() if t.is_floating_point())
+        st["trainable"][name] = torch.full_like(tensor, float("nan"))
+
+    def optimizer_group_mismatch(st, target):
+        st["optimizer"]["param_groups"][0]["params"].pop()
+
+    def partial_optimizer_state(st, target):
+        param_id = next(iter(st["optimizer"]["state"]))
+        st["optimizer"]["state"][param_id].pop("step")
+
+    def malformed_optimizer_step(st, target):
+        param_id = next(iter(st["optimizer"]["state"]))
+        st["optimizer"]["state"][param_id]["step"] = torch.tensor([[1.0]])
+
+    def invalid_optimizer_group_options(st, target):
+        st["optimizer"]["param_groups"][0]["betas"] = (float("nan"), 0.99)
+
+    def scheduler_mismatch(st, target):
+        st["scheduler"]["_last_lr"] = []
+
+    def torch_rng_mismatch(st, target):
+        st["rng"]["torch"] = torch.zeros(3, dtype=torch.uint8)
+
+    corruptions = [missing_key, unknown_key, frozen_parameter, broadcastable_shape,
+                   late_nonbroadcastable_shape, non_tensor, dtype_mismatch, nonfinite,
+                   optimizer_group_mismatch, partial_optimizer_state, malformed_optimizer_step,
+                   invalid_optimizer_group_options, scheduler_mismatch, torch_rng_mismatch]
+    for index, corrupt in enumerate(corruptions):
+        st = copy.deepcopy(valid)
+        target = Trainer(DecisionModel(tiny_backbone(hidden=16), "snapshot"), _cfg(seed=0), toy, guard=G)
+        corrupt(st, target)
+        path = tmp_path / f"corrupt-{index}.pt"
+        torch.save(st, path)
+        before = _trainer_mutable_snapshot(target)
+        # Trainable-state integrity is mandatory even when callers relax config/data-lineage comparisons.
+        with pytest.raises(ValueError):
+            target.load(path, strict_config=False, strict_lineage=False)
+        _assert_trainer_unchanged(target, before)
 
 
 def test_resume_rejects_a_different_frozen_backbone(tmp_path, toy):

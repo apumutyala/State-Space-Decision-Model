@@ -43,6 +43,7 @@
 - L0e runtime fixture replay checks the merged kernel and renderer and saves per-attempt outputs. Authored task labels remain annotations; provider calls are zero. The original receipt predates merged ordinal derivations; the refreshed merged-source receipt is in `receipts/2026-10-06-L-runtime-evaluation-merged`.
 
 - Operation-only q_end cached CPU diagnostic is prepared on merged #71/#85/#110 dependencies, with the frozen 24/12 development corpus, CE-only 96-update recipe and 6 GiB start / 3 GiB runtime / 1200-second owned-child guards. Focused synthetic CPU checks cover cache parity, lineage, delegation and resource limits; no real-parent execution, learned result, paid spend or level qualification is claimed. Plan: `plans/codex/L0_OPERATION_ONLY_CACHE.md`; prepared receipt: `receipts/2026-10-06-L-operation-only-cache-prepared`.
+- 2026-10-07 (parent-resume exactness prerequisite, $0 CPU): `Trainer.load` now preflights exact canonical trainable names and tensor type/shape/dtype/layout/finiteness, AdamW parameter groups/state, scheduler structure, counters and CPU/Python/NumPy RNG before applying weights or restoring mutable state. Lesson L-34 and a mutation-invariance matrix are in this PR; keep it after PR #141's L-33 append. Focused resume, m2 training, G16 shared-head resume and native RWKV-head reload suites pass: 53 tests. Receipt: `receipts/2026-10-07-parent-checkpoint-load-exactness/`. Synthetic tiny checkpoints only; no real parent, GPU, Index, held-out or paid run.
 
 ## Open decisions for the user
 - SF Compute credit expiry date.
