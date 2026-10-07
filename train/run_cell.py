@@ -349,12 +349,23 @@ def _checkpoint_post():
 
 def smoke_stage(bb, train_items, cfg: dict, cuda: bool, peak=lambda: 0.0) -> dict:
     """Cache-fork smoke: features and LoRA gradients of the cache fork equal the recompute fork on a few short rows
-    (``cfg["smoke"]``). Leaves the backbone as it found it (no LoRA, bridges zeroed, ``fork_mode`` "cache")."""
+    (``cfg["smoke"]``). Leaves the backbone as it found it (no LoRA, bridges zeroed, ``fork_mode`` "cache").
+
+    Runs under the cell's per-block activation checkpointing (``cfg["act_ckpt"]``), exactly as training does (job-uhxb5,
+    LESSONS L-33): the recompute fork pushes every (row, option) continuation through the backbone in one batch, and
+    without checkpointing its activations do not fit beside 13.3B bf16 weights on 80 GB (CUDA OOM at 77 GiB). The
+    checkpointed gradients equal the plain ones (tests/test_cell_perf.py), so the comparison is unchanged; it now also
+    covers the checkpointed cache fork that training actually runs."""
     import torch
 
+    from heads import act_ckpt
     from heads.features import build_head_input
     from train.lora import apply_lora, remove_lora
 
+    use_ckpt = bool(cfg.get("act_ckpt"))
+    was_ckpt = act_ckpt.is_enabled(bb.model)
+    if use_ckpt:
+        act_ckpt.enable_block_checkpointing(bb.model)  # raises for an unsupported backbone, as the Trainer would
     dev_type = "cuda" if cuda else "cpu"
     sm = cfg["smoke"]
     rows = [x.row for x in train_items if x.row.n_options <= sm["max_k"] and len(x.row.ids) <= sm["max_t"]][: sm["rows"]]
@@ -378,12 +389,13 @@ def smoke_stage(bb, train_items, cfg: dict, cuda: bool, peak=lambda: 0.0) -> dic
         x.fork.float().pow(2).mean().backward()
         g = torch.cat([p.grad.flatten().float() for n, p in bb.model.named_parameters() if n.endswith("lora_A")])
         res[mode] = (x.fork.detach().float(), g)
+        del x, g  # the cache pass's tensors are not kept alive through the recompute pass
     fa, fb = res["cache"][0], res["recompute"][0]
     rel = float((fa - fb).abs().max() / fb.abs().max().clamp_min(1e-12))
     cos = float(torch.nn.functional.cosine_similarity(res["cache"][1], res["recompute"][1], dim=0))
     ok = rel <= sm["max_rel_feature_diff"] and cos >= sm["min_grad_cos"]
     out = {"rows": len(rows), "rel_feature_diff": rel, "grad_cos": cos, "pass": ok, "peak_gb": peak(),
-           "lora_modules": {k: len(v) for k, v in mods.items()}, "pass_rule": sm}
+           "lora_modules": {k: len(v) for k, v in mods.items()}, "pass_rule": sm, "act_ckpt": use_ckpt}
     del res
     bb.model.zero_grad(set_to_none=True)
     remove_lora(bb.model)  # training starts from the pre-registered LoRA init, not the smoke one
@@ -393,6 +405,8 @@ def smoke_stage(bb, train_items, cfg: dict, cuda: bool, peak=lambda: 0.0) -> dic
         for p in getattr(bb, "bridges", torch.nn.Module()).parameters():
             p.grad = None
     bb.fork_mode = "cache"
+    if use_ckpt and not was_ckpt:  # the Trainer applies (or removes) its own execution flags afterwards
+        act_ckpt.disable_block_checkpointing(bb.model)
     return out
 
 

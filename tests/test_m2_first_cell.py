@@ -651,3 +651,76 @@ def test_tvuat_receipt_bytes_survive_an_autocrlf_checkout(tmp_path):
     assert b"\r" not in got["MANIFEST.jsonl"]
     for f, h in rec["files_sha256"].items():
         assert hashlib.sha256(got[f]).hexdigest() == h, f
+
+
+# ----------------------------------------------------------------------------- job-uhxb5: smoke OOM (L-33)
+def _smoke_bytes(act_ckpt_flag: bool, monkeypatch):
+    """Run train.run_cell.smoke_stage on a tiny RWKV7 (chunked_lean, like the cell) and return (smoke record,
+    per-mode saved-for-backward bytes of build_head_input, per-mode act_ckpt state seen inside the call, backbone)."""
+    import torch
+
+    from heads import act_ckpt, features
+    from heads.backbone import tiny_hf_backbone
+    from heads.rwkv7_wkv import select_wkv
+    from jobs.fla_rwkv7 import train_mix as TM
+    from train import run_cell
+    from train.data import Item
+
+    def shape(T, conts):  # the tests/test_cell_perf.py row layout
+        a = T - 2 * len(conts) - 2
+        return {"T": T, "conts": conts, "qtype": "choice", "state_span": [4, a], "field_span": [1, 3],
+                "option_spans": [[a + 2 * j, a + 2 * j + 1] for j in range(len(conts))]}
+
+    shapes = [shape(150, [3, 2, 4]), shape(120, [2, 5])]
+    rows = TM.rows_from_shapes(shapes, vocab=260, seed=0)
+    items = [Item(x.id, x.row, 0) for x in rows]
+    bb = tiny_hf_backbone("rwkv7", seed=0, fork_mode="cache")
+    select_wkv(bb.model, CELL["rwkv7_wkv"])
+    cfg = {**CELL, "act_ckpt": act_ckpt_flag}
+    real = features.build_head_input
+    seen, saved = {}, {}
+
+    def spy(backbone, rws, **kw):
+        tot = [0]
+
+        def pack(t):
+            tot[0] += t.numel() * t.element_size()
+            return t
+
+        with torch.autograd.graph.saved_tensors_hooks(pack, lambda t: t):
+            out = real(backbone, rws, **kw)
+        seen[backbone.fork_mode] = act_ckpt.is_enabled(backbone.model)
+        saved[backbone.fork_mode] = tot[0]
+        return out
+
+    with monkeypatch.context() as mp:  # undone on return: a second call must not wrap this spy
+        mp.setattr(features, "build_head_input", spy)
+        rec = run_cell.smoke_stage(bb, items, cfg, cuda=False)
+    return rec, saved, seen, bb
+
+
+def test_smoke_runs_under_the_cells_activation_checkpointing(monkeypatch):
+    """job-uhxb5 (L-33): the cell trains with per-block activation checkpointing (act_ckpt, job-tvuat ADOPT), but the
+    pre-training smoke ran its cache-vs-recompute fork comparison WITHOUT it (the flag was applied only inside the
+    Trainer). The recompute fork batches every (row, option) continuation through the 13.3B backbone with full
+    activations kept: CUDA OOM at 77 GiB after 3 minutes, 71 minutes into the paid job. The smoke must run under the
+    cell's execution flags (both modes), keep far fewer activations, still pass, and leave the backbone as found."""
+    pytest.importorskip("torch")
+    from heads import act_ckpt
+    from heads.rwkv7_lean import NAME
+    from third_party.rwkv7_hf import modeling_rwkv7 as M
+
+    try:
+        rec_on, saved_on, seen_on, bb_on = _smoke_bytes(True, monkeypatch)
+        rec_off, saved_off, seen_off, _ = _smoke_bytes(False, monkeypatch)
+    finally:
+        M.RWKV7_WKV_FUNCTIONS.pop(NAME, None)
+    assert CELL["act_ckpt"] is True
+    assert seen_on == {"cache": True, "recompute": True}, seen_on
+    assert seen_off == {"cache": False, "recompute": False}, seen_off
+    for mode in ("cache", "recompute"):  # only block inputs + states are kept for backward
+        assert saved_on[mode] * 2 < saved_off[mode], (mode, saved_on, saved_off)
+    assert rec_on["pass"] and rec_off["pass"], (rec_on, rec_off)
+    assert rec_on["act_ckpt"] is True and rec_off["act_ckpt"] is False
+    assert not act_ckpt.is_enabled(bb_on.model)  # the Trainer applies its own flags afterwards
+    assert bb_on.fork_mode == "cache" and not any("lora_" in n for n, _ in bb_on.model.named_parameters())
