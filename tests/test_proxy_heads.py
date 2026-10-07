@@ -173,19 +173,22 @@ def _fake_receipts(out, ids, budget=PL.TRAIN, cache_ident=None):
 def test_select_summary_requires_every_candidate_and_is_written_once(tmp_path, monkeypatch):
     monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {})
     monkeypatch.setattr(PL, "compare", lambda *a, **k: {"diff": {"point": 0.0}})
-    _fake_receipts(tmp_path, ["R00"] + [f"R{i:02d}" for i in range(1, 15)])  # R15 missing
+    _fake_receipts(tmp_path, ["R00"] + [f"R{i:02d}" for i in range(1, 15)])  # R15-R17 missing
     with pytest.raises(PL.OutOfOrder, match="R15"):
         PL.select_summary(tmp_path, "cache")
-    _fake_receipts(tmp_path, ["R15"])
+    _fake_receipts(tmp_path, ["R15", "R16"])
+    with pytest.raises(PL.OutOfOrder, match="R17"):  # A2: the KD candidates are candidates like any other
+        PL.select_summary(tmp_path, "cache")
+    _fake_receipts(tmp_path, ["R17"])
     doc = PL.select_summary(tmp_path, "cache")
-    assert doc["chosen"] == "R15" and doc["candidates"] == list(R.candidate_ids())
+    assert doc["chosen"] == "R17" and doc["candidates"] == list(R.candidate_ids())
     with pytest.raises(PL.OutOfOrder, match="once"):
         PL.select_summary(tmp_path, "cache")
 
 
 def test_select_summary_refuses_mixed_budgets_and_a_changed_cache(tmp_path, monkeypatch):
     monkeypatch.setattr(PL, "compare", lambda *a, **k: {"diff": {"point": 0.0}})
-    ids = [f"R{i:02d}" for i in range(16)]
+    ids = [f"R{i:02d}" for i in range(18)]
     _fake_receipts(tmp_path, ids, budget={**PL.TRAIN, "steps": 5})
     monkeypatch.setattr(PL, "cache_identity", lambda cache, arms: {})
     with pytest.raises(PL.OutOfOrder, match="budget"):
