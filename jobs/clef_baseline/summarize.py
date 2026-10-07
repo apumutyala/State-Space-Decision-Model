@@ -230,8 +230,45 @@ def report(a) -> int:
         raise Incomplete("RELEASE=clef index job without the paired Clef - Clef-flash comparison")
     if a.job == "T" and teach is None:
         raise Incomplete("job T without teacher identity")
-    json.dump(result, sys.stdout, indent=1, default=str)
+    # job-ftpnf: the platform refuses a $GMN_RESULT_PATH file over 32 KiB ("result_error: exceeds 32 KiB") and then
+    # keeps no result for depends_on / get_job. The full report goes to report.json next to it; result.json is compact.
+    Path(a.out_dir, "report.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
+    json.dump(compact_result(result), sys.stdout, indent=1, default=str)
     return 0
+
+
+RESULT_MAX_BYTES = 32 * 1024 - 1024  # the platform limit is 32 KiB; keep 1 KiB of slack
+
+
+def _slim(v):
+    """Scores / compares -> their index point estimate + CI; everything else unchanged (recursively)."""
+    if isinstance(v, dict):
+        if "slice_index" in v and isinstance(v["slice_index"], dict):
+            return {"index": v["slice_index"].get("index"), "rows": v.get("rows"), "edition": v.get("edition")}
+        if "diff" in v and isinstance(v["diff"], dict):
+            return {"diff_index": v["diff"].get("index")}
+        return {k: _slim(x) for k, x in v.items()}
+    if isinstance(v, list) and len(v) > 20:
+        return {"n": len(v), "first": v[:3]}
+    return v
+
+
+def compact_result(result: dict) -> dict:
+    """result.json for the platform (<= RESULT_MAX_BYTES): index points and CIs, gates, counts; the full report is
+    report.json in the output directory."""
+    out = _slim(result)
+    out["full_report"] = "report.json"
+    if len(json.dumps(out, indent=1, default=str).encode()) > RESULT_MAX_BYTES:
+        keep = ("ok", "release", "job", "rows", "dry_run", "s1_ok", "parity_ok", "kernel_path_ok", "headline",
+                "index_dev_decide", "index_dev_native_composite", "paired_compare", "full_report")
+        out = {k: out.get(k) for k in keep} | {"truncated": "result.json over 31 KiB; see report.json"}
+        if len(json.dumps(out, indent=1, default=str).encode()) > RESULT_MAX_BYTES:  # PR #106 review: re-check
+            out = {k: out.get(k) for k in ("ok", "release", "job", "rows", "dry_run", "s1_ok", "parity_ok",
+                                           "kernel_path_ok", "paired_compare", "full_report")} | {
+                "truncated": "result.json over 31 KiB even when trimmed; see report.json"}
+            out = {k: (v if len(json.dumps(v, default=str)) <= 512 else "see report.json") for k, v in out.items()}
+    assert len(json.dumps(out, indent=1, default=str).encode()) <= RESULT_MAX_BYTES
+    return out
 
 
 def main(argv=None) -> int:

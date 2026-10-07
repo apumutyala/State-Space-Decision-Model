@@ -152,6 +152,9 @@ def check_params(p: dict) -> dict:
 
 
 PREFLIGHT_WARMUP_ROWS = 3  # the first decide calls after load include compile/allocator warm-up
+COMPILE_SPIKE_FACTOR = 4.0  # a parity row > 4x the median per-model-ms ratio is a one-time compile (L-26)
+SPIKE_CONFIRM_LEN = 0.75   # a spike is confirmed by a later fast row of >= 0.75x its token length
+MAX_SPIKE_FRAC = 0.10      # more than 10% of timed rows excluded -> not a warm-up: fail closed
 PREFLIGHT_MARGIN = 0.95    # same rule as jobs/common/rate_guard.py: stop if the projection is past 95 % of the cap
 EXIT_TOO_SLOW = 15         # rate_guard's code; run_job.sh maps it to 18
 
@@ -164,14 +167,33 @@ def preflight(probes: dict, volume: str, cap_min: float) -> dict:
     t = [x for x in probes.get("parity_timing") or [] if x.get("tokens")][PREFLIGHT_WARMUP_ROWS:]
     if not t:
         return {"ok": True, "measured": False, "note": "no parity timing (old probes file); live guard only"}
-    meas = sum(x["ms"] for x in t)
-    model = sum(SGIHJ["row_ms_intercept"] + SGIHJ["row_ms_per_token"] * x["tokens"] for x in t)
-    s = meas / model
+    model = [SGIHJ["row_ms_intercept"] + SGIHJ["row_ms_per_token"] * x["tokens"] for x in t]
+    ratio = sorted(x["ms"] / m for x, m in zip(t, model))
+    med = ratio[len(ratio) // 2]
+    if not med > 0:  # PR #106 review: a 0 median (clock resolution) would exclude every row and pass at s = 0
+        return {"ok": False, "measured": True, "n_rows": len(t), "median_row_ratio": med,
+                "note": "median per-row ratio is 0: timing unusable, fail closed"}
+    hi = [x["ms"] / m > COMPILE_SPIKE_FACTOR * med for x, m in zip(t, model)]
+    # L-26 (tightened, PR #106 review): a slow row counts as a one-time compile ONLY if a LATER fast row of comparable
+    # length (>= SPIKE_CONFIRM_LEN x its tokens) shows that shape running fast. Unconfirmed slow rows (e.g. a box that
+    # takes a slow path above some sequence length) stay IN the rate. Confirmed spikes are charged once as warm-up.
+    spike_idx = [i for i, x in enumerate(t) if hi[i] and any(
+        not hi[j] and t[j]["tokens"] >= SPIKE_CONFIRM_LEN * x["tokens"] for j in range(i + 1, len(t)))]
+    sset = set(spike_idx)
+    keep = [(x, m) for i, (x, m) in enumerate(zip(t, model)) if i not in sset]
+    s = sum(x["ms"] for x, _ in keep) / sum(m for _, m in keep)
+    warm = sum(t[i]["ms"] for i in spike_idx) / 60000.0
     v = VOLUMES[volume]
-    proj = s * decide_minutes("clef-flash", v["rows"], v["tokens"]) + load_minutes(probes.get("release", "clef"))
-    return {"ok": proj <= PREFLIGHT_MARGIN * cap_min, "measured": True, "n_rows": len(t),
-            "speed_vs_flash_sgihj": round(s, 3), "projected_min": round(proj, 1), "cap_min": cap_min,
-            "volume": volume, "flops_ratio_prediction": round(flops_ratio(), 3)}
+    proj = s * decide_minutes("clef-flash", v["rows"], v["tokens"]) + load_minutes(probes.get("release", "clef")) + warm
+    too_many = len(spike_idx) > MAX_SPIKE_FRAC * len(t)  # fail closed: a "spike" that common is not a warm-up
+    return {"ok": proj <= PREFLIGHT_MARGIN * cap_min and not too_many, "measured": True, "n_rows": len(t),
+            "speed_vs_flash_sgihj": round(s, 3), "median_row_ratio": round(med, 3),
+            "compile_spikes": [{"run_id": t[i].get("run_id"), "ms": t[i]["ms"], "tokens": t[i]["tokens"]}
+                               for i in spike_idx],
+            "slow_rows_unconfirmed": sum(1 for i, h in enumerate(hi) if h and i not in sset),
+            "too_many_spikes": too_many, "warmup_min_charged_once": round(warm, 2),
+            "projected_min": round(proj, 1), "cap_min": cap_min, "volume": volume,
+            "flops_ratio_prediction": round(flops_ratio(), 3)}
 
 
 def main(argv=None) -> int:
