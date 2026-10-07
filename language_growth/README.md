@@ -16,4 +16,51 @@ The fixture host, ontology and coarse temporal scopes are trusted inputs. Genera
 
 The kernel-only tests are authored boundary tests, not independent audit labels or evidence of alignment, model capability or causal interpretation. No model weights, GPU or paid service is used.
 
+`language_growth.rwkv_decision_head.rwkv_decision_backend` is a CPU FP32
+prototype for growing a decision head from an already strictly loaded native
+RWKV-7 parent. It uses the merged `HiddenStateBackbone`, `DecisionModel`, and
+`DecisionModelBackend` APIs directly. Supply a vendored `Rwkv7Model` (or
+`Rwkv7ForCausalLM`), an encoder with `identity()`, and `source_identity` containing
+`model_id` and the checkpoint/loader pins. Caller-supplied identity records
+provenance; checkpoint verification remains the loader's responsibility.
+Parent and encoder identities must agree on `model_id` and snapshot revision
+(`snapshot` or `snapshot_revision` in the parent, `snapshot` in the encoder).
+The constructor also compares every shared role in their `files_sha256` maps;
+any mismatch fails before the caller's parent is frozen. These checks establish
+consistency between supplied identities, not authenticity of checkpoint bytes.
+
+The constructor takes ownership of the base module and freezes it in place;
+the LM vocabulary head is excluded. The default snapshot head and the
+integrator, Head B, and final-state fork heads remain trainable. Use the merged
+`Trainer` with `lora_rank=0`, matching seed, template and layout for head-only
+training; its checkpoint stores head/typed parameters and parent/tokenizer
+lineage. Serve the returned backend with the ordinary `Decider` and L planner.
+Loading a saved head requires the identical parent and encoder again. This
+prototype does not load checkpoints or depend on the separate FLA-to-native
+CPU conversion workstream, and no pretrained capability is claimed.
+
+After PR #71's strict CPU loader returns `plugin, parent, evidence`, use
+`rwkv_cpu_parent_identity(plugin, evidence)` and
+`rwkv_cpu_parent_encoder(plugin)` from this module when constructing the
+backend. The identity helper reconciles the loader's full filesystem snapshot
+path, revision alias, filename-keyed file hashes and implementation digest
+with the bridge's role-keyed pins; disagreement fails closed. The encoder
+wrapper delegates to that exact loaded World encoder and binds its model,
+snapshot, full weight/config/tokenizer/implementation hashes and no-control-
+token policy. Changing the source plugin later cannot replace its captured
+callable or identity.
+
+Bind serving through `rwkv_cpu_parent_decider(backend, plugin, calibration=...)`.
+It verifies backend/encoder provenance and applies the plugin's context limit
+(at most 2048 tokens); do not use an uncapped `Decider(backend)` for this CPU
+parent. This adds no loading or fallback path. Serving a trained artifact still
+requires PR #79's strict artifact, complete revision, calibration and runtime
+pins; a newly initialized head is not a reconstructed trained artifact.
+
+The native bridge tests run with `python -m pytest
+language_growth/tests/test_rwkv_decision_head.py -q`. They cover actual tiny
+RWKV hidden states, all four attention-free head gradients, an unchanged
+frozen parent, exact head checkpoint reload, shared-prefix inference, and a
+free-running planner call. Random test weights are not a language result.
+
 The L0e fixture evaluator runs the authored proposal schedule through the merged kernel and renderer with `python -m language_growth.evaluate --fixtures fixtures/language_growth --out <fresh-directory>`. It records observed boundary behavior separately from authored task labels and makes no provider call. For a same-evidence direct decision comparison, use PR #17's `language_growth.decision_view.direct_decision_request` after its canonical `parent_bridge` dependency from PR #13 lands. The evaluator does not maintain a second decision-request serializer.
