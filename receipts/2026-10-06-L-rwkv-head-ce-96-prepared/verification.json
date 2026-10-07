@@ -1,0 +1,106 @@
+{
+  "base_commit": "bb2eadd798b5d5ae317524767b37115e9a8df168",
+  "canonical_corpus_sha256": "cf70a3e1abd8a8e5b1c2a7efe93ff0f2c0392982b1ef33dec11d60bd81143466",
+  "corpus_archive_sha256": "0d3be636b0b2d7b19823c4c42f083e8cddd5196348a8b5f110930e0e4752b65b",
+  "cost_usd": 0,
+  "dry_run": {
+    "command": [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "language_growth.rwkv_head_learning",
+      "--dry-run",
+      "--out",
+      "C:/Users/apumu/research/CHLabs/ssdm-data/rwkv-head-ce-96-prepared-20261006"
+    ],
+    "exit_code": 0,
+    "status": "prepared_not_run"
+  },
+  "frozen_registration_sha256": "1b87c229e7aaba508908cf1f01f704548228e3addf4241a7fdebfed8b9b938ad",
+  "plan_sha256": "04eccb790c594d74de3d95411f71a8484ce8659144aa06827f041ba4ae6d607c",
+  "planned_exposure": {
+    "batch_size": 2,
+    "complete_passes": 3,
+    "dropped_tail": 0,
+    "ordered_item_ids_sha256": "900398f53f4791b7a5d4c60a9e7c5dd6f050bfacfd4d50bbfdb4def4680f902b",
+    "prior_exposures": 48,
+    "sampler": "unchanged Trainer._order/_next_batch; randperm(seed*100003+epoch)",
+    "slot_exposures": 192,
+    "train_slots": 64,
+    "updates": 96
+  },
+  "real_checkpoint_access": false,
+  "real_execution_authorized": false,
+  "real_fit": false,
+  "reference_sha256": {
+    "receipts/2026-10-06-L-rwkv-head-fit-run1/rows.json": "0feeac867d8028ebf3001f406b0ab70669e2423c1c5641ce86af9a1bf7129a98",
+    "receipts/2026-10-06-L-rwkv-head-learning-run1/receipt.json": "950f1bc202b55f01e79953d07505757368eceede2ab5c95939dcb4b3ae867ecd",
+    "receipts/2026-10-06-L-rwkv-head-learning-run1/registration.json": "952c44a84e6140488179027d39e8a92297b355d91b31f3fde05d5975aa46dc15",
+    "receipts/2026-10-06-L-rwkv-head-learning-run1/train-config.json": "c59db7602b6a0623842c3e76cb43d61988e2ca9e6e580e959f8b7d5f60aaf82a"
+  },
+  "reporter_sha256": "4c958f8c07e267a6b69fc500b9f7d21a9eed63de19daf5a5b19a2fd09dffd9a4",
+  "runner_sha256": "a82a515b0bfb261db0ceb358ebcf64dda1ff0cbe9f2f6d51be128549b294fb5c",
+  "sampler_proof": "Actual unchanged Trainer._next_batch test:3 complete64-item passes; first24 batches identical; no optimizer steps in sampler proof.",
+  "schema": "ssdm.rwkv-head-ce96-preparation-verification.v1",
+  "scientific_training_delta": {
+    "steps": [
+      24,
+      96
+    ]
+  },
+  "scope": "One exposure-only surrogate variant prepared for independent review; no learned result or qualification.",
+  "source_files_verified": 94,
+  "split_sha256": {
+    "development_train": "4dfd05d495cdcc5bf38c0db857ac31fbd6367fcf96c2df64d8791ad77978ceaf",
+    "development_validation": "e8847f275c4001d53c8d2a4bb88863faec4b0de1c0645dd9605cba7559f7d4cb"
+  },
+  "status": "prepared_not_run",
+  "tests": {
+    "command": [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "pytest",
+      "language_growth/tests/test_rwkv_head_ce96.py",
+      "language_growth/tests/test_rwkv_head_learning.py",
+      "language_growth/tests/test_rwkv_head_fit_audit.py",
+      "language_growth/tests/test_rwkv_decision_head.py",
+      "language_growth/tests/test_rwkv_cpu_encoder_identity.py",
+      "language_growth/tests/test_rwkv7_cpu_parent.py",
+      "-q"
+    ],
+    "elapsed_seconds": 18.78,
+    "exit_code": 0,
+    "passed": 90,
+    "result_note_sha256": "7162fed501aa1c4542cd470271721538abf15e8f8c925e2ebea1448a6695227f"
+  },
+  "unchanged_training_settings": {
+    "batch_size": 2,
+    "bootstrap_samples": 2000,
+    "bootstrap_seed": 9203,
+    "head": "snapshot",
+    "head_kwargs": {
+      "channels": 4,
+      "max_snapshots": 2
+    },
+    "lora_rank": 0,
+    "loss": {
+      "arm": "ce",
+      "brier_weight": 0.0,
+      "label_smoothing": 0.0,
+      "rps_weight": 0.0
+    },
+    "lr_head": 0.001,
+    "min_running_bytes": 3221225472,
+    "min_start_bytes": 8589934592,
+    "seed": 20261006,
+    "threads": 2,
+    "timeout_seconds": 900,
+    "train_count": 24,
+    "train_seed": 9201,
+    "validation_count": 12,
+    "validation_seed": 9202
+  }
+}

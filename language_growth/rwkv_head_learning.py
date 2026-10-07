@@ -21,9 +21,10 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-FROZEN_REGISTRATION = ROOT / "receipts/2026-10-06-L-rwkv-head-learning-prepared-v2/registration.json"
+FROZEN_REGISTRATION = ROOT / "receipts/2026-10-06-L-rwkv-head-ce-96-prepared/registration.json"
+PLAN = "plans/codex/L0_RWKV_HEAD_CE_96.md"
 CONFIG = {"seed": 20261006, "train_seed": 9201, "validation_seed": 9202,
-          "train_count": 24, "validation_count": 12, "steps": 24,
+          "train_count": 24, "validation_count": 12, "steps": 96,
           "batch_size": 2, "lr_head": 0.001, "head": "snapshot",
           "head_kwargs": {"channels": 4, "max_snapshots": 2},
           "lora_rank": 0, "threads": 2, "timeout_seconds": 900,
@@ -67,12 +68,16 @@ def preparation(out):
     out.mkdir(parents=True, exist_ok=False)
     from language_growth.rwkv7_cpu_parent import MODEL_ID, SNAPSHOT, PINNED_HASHES
     data = corpus()
+    from language_growth.rwkv_head_ce96_evaluation import exposure_contract, references
+    exposure = exposure_contract(data, CONFIG)
+    prior = references()
     write(out / "corpus.json", data)
     # Freeze the complete local executable closure, including losses/layout/
     # adapter helpers and the vendored model. Receipts are data, not runtime code.
     sources = sorted(str(p.relative_to(ROOT)).replace("\\", "/")
                      for folder in ("language_growth", "heads", "train", "decide", "third_party")
                      for p in (ROOT / folder).rglob("*.py") if "receipts" not in p.parts)
+    sources.append(PLAN)
     registration = {"schema": "ssdm.rwkv-head-learning.v1", "status": "prepared_not_run",
                     "scope": SCOPE, "config": CONFIG, "dependencies": DEPENDENCIES,
                     "expected_parent": {"model_id": MODEL_ID, "snapshot": SNAPSHOT.name,
@@ -82,9 +87,12 @@ def preparation(out):
                     "source_sha256": {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in sources},
                     "software": {name: importlib.metadata.version(name) for name in
                                  ("torch", "transformers", "safetensors", "numpy", "psutil")},
-                    "hypothesis": "Head-only supervision improves free-running useful answers over the same untrained head.",
+                    "variant_base": "bb2eadd798b5d5ae317524767b37115e9a8df168",
+                    "training_delta": "Only optimizer steps 24 to 96; same initialization, sampler, corpus, parent, head, loss and seed.",
+                    "exposure": exposure, "reference_sha256": prior["sha256"],
+                    "hypothesis": "Three complete passes (96 updates) improve train-slot fit and possibly useful free-running answers over the weak 24-step head.",
                     "selection": "One seed, one recipe, final step only; no validation-based selection.",
-                    "primary": "Post-minus-pre useful-answer accuracy, paired bootstrap over validation worlds.",
+                    "primary": "Final teacher-forced train/dev exact accuracy and CE; free-running useful answers and kernel acceptance versus step 0 and step 24, with world-cluster paired intervals.",
                     "claim_rule": "Report all outcomes; tiny exploratory cohort cannot qualify a level.",
                     "approval": "Real checkpoint load and fitting are not authorized by preparation."}
     write(out / "registration.json", registration)
@@ -102,7 +110,7 @@ def assert_environment():
 
 def verify_frozen(registration):
     frozen = json.loads(FROZEN_REGISTRATION.read_text(encoding="utf-8"))
-    for key in ("config", "dependencies", "expected_parent", "corpus_sha256", "split_sha256", "source_sha256", "software"):
+    for key in ("config", "dependencies", "expected_parent", "corpus_sha256", "split_sha256", "source_sha256", "software", "variant_base", "training_delta", "exposure", "reference_sha256"):
         if registration[key] != frozen[key]:
             raise ValueError(f"committed preregistration drift: {key}")
 
@@ -364,11 +372,21 @@ def _run(out):
     backend = rwkv_decision_backend(parent, rwkv_cpu_parent_encoder(plugin), source_identity=identity,
         seed=CONFIG["seed"], head=CONFIG["head"], head_kwargs=CONFIG["head_kwargs"])
     trainer = trainer_for(backend, data["development_train"])
+    from language_growth.rwkv_head_ce96_evaluation import training_config_parity
+    training_config_parity(trainer.cfg.to_json())
     write(out / "train-config.json", trainer.cfg.to_json())
     raw = out / "raw.jsonl"
     frozen_sha256 = state_digest(parent)
     before = evaluate(backend, rwkv_cpu_parent_decider(backend, plugin),
                       data["development_validation"], raw, "before")
+    from language_growth.rwkv_head_ce96_evaluation import (references, initial_parity,
+        teacher_forced, comparison_report, exposure_contract)
+    prior = references()
+    if prior["sha256"] != registration["reference_sha256"]:
+        raise ValueError("prior measurement artifacts drifted")
+    initial_parity(before, prior["learning"]["before"])
+    exposure_contract(data, CONFIG)
+    teacher_before = teacher_forced(data, backend, out, "teacher-before")
     # Independent unchanged LM-head baseline, same direct requests before/after.
     from decide.adapter import Decider
     from decide.backends.hf_readout import HFReadoutBackend
@@ -396,6 +414,9 @@ def _run(out):
         _write_event(raw, "train_step", step=trainer.step, loss=loss)
     checkpoint = trainer.save(out / "checkpoint-after")
     strict_restore(trainer, checkpoint)
+    history = deepcopy(trainer.history)
+    del trainer  # post-evaluation has no optimizer or checkpoint selection
+    backend.model.eval().requires_grad_(False)
     if state_digest(parent) != frozen_sha256:
         raise ValueError("frozen full parent state changed (parameters, buffers or LM head)")
     # New backend identity after head mutation; cached revisions are immutable.
@@ -403,10 +424,15 @@ def _run(out):
         layout=backend.layout, checkpoint={"sha256": sha(checkpoint)})
     after = evaluate(after_backend, rwkv_cpu_parent_decider(after_backend, plugin),
                      data["development_validation"], raw, "after")
+    teacher_after = teacher_forced(data, after_backend, out, "teacher-after")
+    comparisons = comparison_report(before, after, teacher_before, teacher_after, prior)
+    write(out / "comparisons.json", comparisons)
     parent.eval()
     direct_after = baseline("direct_after")
     if direct_before != direct_after:
         raise ValueError("unchanged direct baseline drifted")
+    if state_digest(parent) != frozen_sha256:
+        raise ValueError("full parent state changed during post-evaluation")
     write(out / "receipt.json", {"scope": SCOPE, "identity": identity,
         "parent_evidence_sha256": sha(out / "parent-evidence.json"), "registration_sha256": sha(out / "registration.json"),
         "checkpoint_before_sha256": sha(checkpoint0), "checkpoint_after_sha256": sha(checkpoint),
@@ -414,7 +440,10 @@ def _run(out):
         "strict_reload": True, "frozen_backbone_unchanged": True, "direct_baseline_parity": True,
         "direct_before": direct_before, "direct_after": direct_after,
         "paired_usefulness": bootstrap([r["task_correct"] for r in before], [r["task_correct"] for r in after]),
-        "before": before, "after": after, "history": trainer.history, "cost_usd": 0,
+        "before": before, "after": after, "history": history, "cost_usd": 0,
+        "training_exposure": registration["exposure"],
+        "teacher_forced_before": teacher_before, "teacher_forced_after": teacher_after,
+        "comparisons": comparisons, "initial_checkpoint_parity": True,
         "hardware": {"device": "existing local CPU", "platform": platform.platform(),
                      "processor": platform.processor(), "threads": torch.get_num_threads()},
         "software": {name: importlib.metadata.version(name) for name in

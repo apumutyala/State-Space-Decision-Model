@@ -192,3 +192,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Status:** PARTIAL.
   - The harness side is ENFORCED: edition-flagged, 0.2.1 kept as the default for receipt reproducibility, mixed editions refused.
   - The "verify the live board before each plan" step is a procedure, not an automated check. Owner: Track D. Candidate check: a launch-checklist row comparing the live `v03.json` sha256 with `harness/config.BOARD_V03_SHA256`.
+
+### L-L0-02 Count slot exposure before interpreting a weak semantic-head fit
+- Date: 2026-10-06 (the 24-update CPU recipe and its independent fit audit).
+- Symptom: useful answers fell 2/12 to 1/12 and train-slot accuracy was 22/64; the recipe had exposed only 48 of 64 slots, less than one complete pass.
+- Cost: $0; one bounded local CPU recipe and one evaluation-only fit audit.
+- Root cause: an update cap alone did not establish corpus coverage; the negative result could not separate incomplete fit from representation or transfer limitations.
+- **Check:** `language_growth/tests/test_rwkv_head_ce96.py::test_actual_sampler_replays_three_passes_and_same_initial_24_batches` proves the unchanged sampler visits every slot once in each of three passes and preserves the prior first 24 batches. `exposure_contract` and `training_config_parity` refuse a changed corpus, incomplete pass count or any additional training-setting change in this variant.
+- **Status:** ENFORCED for the fixed 96-update exposure experiment. Three passes are exposure evidence, not a claim of convergence, usefulness or qualification.

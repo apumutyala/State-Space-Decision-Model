@@ -1,0 +1,8 @@
+Captured test result from the preparation tool invocation:
+90 passed in 18.78s
+
+Command:
+C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -X utf8 -m pytest language_growth/tests/test_rwkv_head_ce96.py language_growth/tests/test_rwkv_head_learning.py language_growth/tests/test_rwkv_head_fit_audit.py language_growth/tests/test_rwkv_decision_head.py language_growth/tests/test_rwkv_cpu_encoder_identity.py language_growth/tests/test_rwkv7_cpu_parent.py -q
+
+Environment: CUDA_VISIBLE_DEVICES=-1, HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1, HF_DATASETS_OFFLINE=1, OMP_NUM_THREADS=2, MKL_NUM_THREADS=2, OPENBLAS_NUM_THREADS=2.
+Scope: tiny random CPU RWKV, actual sampler-only coverage, mock evaluation and guards; no cached model load or training.
