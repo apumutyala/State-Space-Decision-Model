@@ -43,7 +43,11 @@ class LoadedNativeParent:
 
 class NativeParentLoader(Protocol):
     def __call__(self, artifact: Path, *, artifact_sha256: str) -> LoadedNativeParent:
-        """Strictly reconstruct the exact local artifact, or raise; no fallback."""
+        """Strictly reconstruct the exact local artifact, or raise; no fallback.
+
+        The caller must keep the resolved artifact immutable for the entire
+        loader call. The loader may stream from the path but must not modify it.
+        """
         ...
 
 
@@ -99,13 +103,20 @@ class NativeParent:
                 or _json(_runtime(self._loaded)) != _json(self._pin.runtime)
                 or self._decider.backend_max_input_tokens != self._pin.runtime["max_input_tokens"]):
             raise ValueError("native parent serving pins do not match loader result")
-        # revision() is cached by the backend. Check the small live configuration
-        # too; do not rehash a full backbone on each planner slot.
+        # revision() is cached by the backend. Check the live configuration,
+        # capture point and layer too; do not rehash full backbone weights on
+        # each planner slot.
         revision = self._pin.revision
+        from train.lineage import backbone_config_identity
+
+        backbone_config = backbone_config_identity(backend.model.backbone)
+        pinned_backbone = revision["backbone"]
         if (backend.layout != revision["layout"]
                 or _json(backend.template.identity()) != _json(revision["prompt_template"])
                 or _json(backend.encode.identity()) != _json(revision["encoder"])
-                or _json(backend.checkpoint) != _json(revision["checkpoint"])):
+                or _json(backend.checkpoint) != _json(revision["checkpoint"])
+                or _json(backbone_config) != _json(
+                    {key: pinned_backbone.get(key) for key in backbone_config})):
             raise ValueError("native parent backend configuration changed")
 
     def planner_kwargs(self) -> dict[str, Any]:
@@ -130,7 +141,9 @@ def load_native_parent(artifact: str | Path, loader: NativeParentLoader, *,
     """Verify bytes before loading, then bind exact serving pins before inference.
 
     A path selects only the checkpoint; backbone location and dtype/device policy
-    belong to the caller-supplied D loader. This function does not fetch weights.
+    belong to the caller-supplied D loader. The caller must keep the resolved
+    checkpoint path immutable until the loader returns. This function does not
+    fetch weights.
     """
     if (not isinstance(pin.artifact_sha256, str) or len(pin.artifact_sha256) != 64
             or any(c not in "0123456789abcdef" for c in pin.artifact_sha256)):
