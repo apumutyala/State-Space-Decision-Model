@@ -10,6 +10,7 @@ LESSONS.md entry it prevents.
 from __future__ import annotations
 
 import ast
+import functools
 import importlib.util
 import json
 import re
@@ -169,10 +170,18 @@ def _norm(s: str) -> str:
 def executes_runner(src: str, runner: str) -> bool:
     """True if some subprocess.<run|call|check_call|check_output|Popen>(...) in this test source executes `runner`:
     the path appears in the call itself or in an assignment / for-target of a name the call uses."""
+    if Path(runner).name not in _norm(src):
+        return False
+    return any(runner in t for call in _subprocess_texts(src) for t in call)
+
+
+@functools.lru_cache(maxsize=None)
+def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
+    """Per subprocess call: its source plus the bound values of every name it uses (normalised paths)."""
     try:
         tree = ast.parse(src)
     except SyntaxError:
-        return False
+        return ()
     binds: dict[str, list[str]] = {}
     for n in ast.walk(tree):
         if isinstance(n, ast.Assign):
@@ -184,17 +193,16 @@ def executes_runner(src: str, runner: str) -> bool:
             for nm in ast.walk(n.target):
                 if isinstance(nm, ast.Name):
                     binds.setdefault(nm.id, []).append(ast.get_source_segment(src, n.iter) or "")
+    out = []
     for n in ast.walk(tree):
         if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in _SUBPROC):
             continue
-        seg = ast.get_source_segment(src, n) or ""
-        texts = [seg]
+        texts = [ast.get_source_segment(src, n) or ""]
         for nm in ast.walk(n):
             if isinstance(nm, ast.Name):
                 texts += binds.get(nm.id, [])
-        if any(runner in _norm(t) for t in texts):
-            return True
-    return False
+        out.append(tuple(_norm(t) for t in texts))
+    return tuple(out)
 
 
 def chk_shell_test(p: dict, root: Path, job: str, tests: dict[str, str], **_) -> tuple[bool, str]:

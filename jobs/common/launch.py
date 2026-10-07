@@ -278,6 +278,8 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
     p = json.loads(files[rel][0])
     out.mkdir(parents=True, exist_ok=True)
     code = out / "stage" / full[:12]
+    if code.exists():
+        raise LaunchError(f"{code} exists: use a fresh --out so stale files cannot be linted or tested")
     stage(files, code)
     lint_res = run_lint(code, rel, allow_waived)
     tests = run_tests(code, job) if run_job_tests else {"skipped": True}

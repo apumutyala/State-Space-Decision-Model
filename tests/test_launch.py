@@ -131,6 +131,13 @@ def test_launch_end_to_end_is_deterministic(tmp_path):
     assert cc["tool"] == "create_context" and cc["args"]["sha256"] == r1["context"]["sha256"]
 
 
+def test_refuses_reused_out_dir(tmp_path):
+    repo, data, sha = make_repo(tmp_path)
+    run(repo, data, sha, tmp_path / "o", run_job_tests=False)
+    with pytest.raises(launch.LaunchError, match="fresh --out"):
+        run(repo, data, sha, tmp_path / "o", run_job_tests=False)
+
+
 def test_refuses_unmerged_sha(tmp_path):
     repo, data, sha = make_repo(tmp_path)
     (repo / "x.txt").write_text("x")
