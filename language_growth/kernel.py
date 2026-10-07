@@ -13,16 +13,19 @@ import weakref
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .types import AskContent, CheckResult, Comparison, ConstantValue, ExactSum, Fact, SpeechAct
+from .types import AskContent, CheckResult, Comparison, ConstantValue, ExactSum, Fact, OutputLimitError, SpeechAct
 
 _SCHEMAS = {"ssdm.semantic_program.v0.1", "ssdm.semantic_program.v0.2"}
 _OPS = {"ReadFact", "Compare", "ExactSum", "Assert", "Conjoin", "ExplainDerivation", "Ask"}
 _REASONS = {"unknown_reference", "stale_context", "stale_policy", "type_unit_mismatch", "unsupported_assertion", "forbidden_dependency", "invalid_graph", "conflict", "exceeded_limit", "scope_mismatch", "unsupported_operation", "unsupported_field"}
 _MINTED: weakref.WeakSet[CheckResult] = weakref.WeakSet()
+_MAX_INTEGER_DIGITS = 4300
+_MAX_SCALE = 5000
+_INTEGER_BOUND = 10 ** _MAX_INTEGER_DIGITS
 _NODE_KEYS = {
     "ReadFact": {"id", "op", "record_ref", "field"},
     "Compare": {"id", "op", "left", "right", "relation"},
-    "ExactSum": {"id", "op", "left", "right"},
+    "ExactSum": {"id", "op", "rule_ref", "operands"},
     "Assert": {"id", "op", "proposition"},
     "Conjoin": {"id", "op", "speech_acts"},
     "ExplainDerivation": {"id", "op", "speech_act"},
@@ -129,8 +132,19 @@ def _numeric_or_typed(field: dict[str, Any]) -> str | int | bool | Decimal:
     value_type = field.get("value_type")
     value = field.get("value")
     if value_type == "integer" and type(value) is int:
+        if abs(value) >= _INTEGER_BOUND:
+            _fail("exceeded_limit")
         return value
-    if value_type == "decimal" and isinstance(value, str) and re.fullmatch(r"[+-]?(?:[0-9]+)(?:\.[0-9]+)?", value):
+    if value_type == "decimal" and isinstance(value, str):
+        # Bound raw components, including leading zeros, before regex/Decimal.
+        if len(value) > _MAX_INTEGER_DIGITS + _MAX_SCALE + 2:
+            _fail("exceeded_limit")
+        unsigned = value[1:] if value[:1] in ("+", "-") else value
+        integer, _, fraction = unsigned.partition(".")
+        if len(integer) > _MAX_INTEGER_DIGITS or len(fraction) > _MAX_SCALE:
+            _fail("exceeded_limit")
+        if re.fullmatch(r"[+-]?[0-9]+(?:\.[0-9]+)?", value) is None:
+            _fail("type_unit_mismatch")
         try:
             result = Decimal(value)
             if result.is_finite():
@@ -256,23 +270,55 @@ def _exact_parts(value: int | Decimal) -> tuple[int, int]:
     return -coefficient if parts.sign else coefficient, parts.exponent
 
 
-def _exact_sum(left: Fact, right: Fact) -> ExactSum:
-    if left.interval != right.interval:
-        _fail("scope_mismatch")
-    _name(left.quantity_kind); _name(right.quantity_kind)
-    if left.unit != right.unit or left.quantity_kind != right.quantity_kind:
-        _fail("type_unit_mismatch")
-    left_coeff, left_exp = _exact_parts(left.object)
-    right_coeff, right_exp = _exact_parts(right.object)
-    exponent = min(left_exp, right_exp)
-    coefficient = (left_coeff * 10 ** (left_exp - exponent)
-                   + right_coeff * 10 ** (right_exp - exponent))
+def _exact_sum(operands: tuple[Fact, ...], rule_ref: str, registry: dict[str, Any],
+               by_ref: dict[str, Any]) -> ExactSum:
+    rules = _dict(registry.get("sum_rules", {}))
+    if rule_ref not in rules:
+        _fail("unknown_reference")
+    rule = _dict(rules[rule_ref])
+    _keys(rule, {"field", "predicate", "unit", "quantity_kind", "scope_policy", "max_terms"})
+    for key in ("field", "predicate", "quantity_kind"):
+        _name(rule[key])
+    if rule["unit"] is not None:
+        _name(rule["unit"])
+    if rule["scope_policy"] != "identical":
+        _fail("unsupported_operation")
+    if type(rule["max_terms"]) is not int or not 2 <= rule["max_terms"] <= 16:
+        _fail("exceeded_limit")
+    if not 2 <= len(operands) <= rule["max_terms"]:
+        _fail("exceeded_limit")
+    interval = operands[0].interval
+    identities = set()
+    for operand in operands:
+        # v0.1 ReadFact may infer a kind from its field. ExactSum requires the
+        # explicit host metadata and cannot upgrade that compatibility default.
+        raw = by_ref[operand.record_ref]["fields"][operand.field]
+        _name(raw.get("quantity_kind"), "type_unit_mismatch")
+        if operand.interval != interval:
+            _fail("scope_mismatch")
+        if (operand.field, operand.predicate, operand.unit, operand.quantity_kind) != (
+                rule["field"], rule["predicate"], rule["unit"], rule["quantity_kind"]):
+            _fail("type_unit_mismatch")
+        identity = (operand.subject, operand.field, operand.predicate, operand.unit,
+                    operand.quantity_kind, operand.interval)
+        if identity in identities:
+            _fail("invalid_graph")
+        identities.add(identity)
+    parts = [_exact_parts(operand.object) for operand in operands]
+    exponent = min(exponent for _, exponent in parts)
+    # All parts came from bounded lexemes/integers; scale alignment is <=5000.
+    if not -_MAX_SCALE <= exponent <= 0:
+        _fail("exceeded_limit")
+    coefficient = sum(coefficient * 10 ** (part_exp - exponent)
+                      for coefficient, part_exp in parts)
     # Always normalize results to Decimal, including integer-only sums. A carry
     # can exceed Python's int->str limit even when both input integers fit.
     # These constructors extract digits exactly, independent of the context.
     digits = Decimal(abs(coefficient)).as_tuple().digits
+    if max(1, len(digits) + exponent) > _MAX_INTEGER_DIGITS + 2:
+        _fail("exceeded_limit")
     value = Decimal((1 if coefficient < 0 else 0, digits, exponent))
-    return ExactSum(left, right, value, left.unit, left.interval, left.quantity_kind)
+    return ExactSum(operands, rule_ref, value, rule["unit"], interval, rule["quantity_kind"])
 
 
 def _deps(value: Any) -> tuple[str, ...]:
@@ -281,7 +327,7 @@ def _deps(value: Any) -> tuple[str, ...]:
     if isinstance(value, Comparison):
         return tuple(dict.fromkeys(_deps(value.left) + _deps(value.right)))
     if isinstance(value, ExactSum):
-        return tuple(dict.fromkeys(_deps(value.left) + _deps(value.right)))
+        return _deps(value.operands)
     if isinstance(value, SpeechAct):
         return value.dependencies
     if isinstance(value, tuple):
@@ -322,6 +368,7 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
         _fail("exceeded_limit")
     prior: dict[str, Any] = {}
     ordinals: dict[str, int] = {}
+    sum_steps: dict[str, tuple[int, ...]] = {}
     for ordinal, raw in enumerate(nodes, 1):
         n = _dict(raw)
         op = _name(n.get("op"), "unsupported_operation")
@@ -339,14 +386,18 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
         elif op == "Compare":
             value = _compare(_operand(n["left"], prior, h), _operand(n["right"], prior, h), _name(n["relation"]), registry)
         elif op == "ExactSum":
-            value = _exact_sum(_fact_projection(n["left"], prior),
-                               _fact_projection(n["right"], prior))
+            projections = _sequence(n["operands"])
+            if not 2 <= len(projections) <= 16:
+                _fail("exceeded_limit")
+            operands = tuple(_fact_projection(projection, prior) for projection in projections)
+            value = _exact_sum(operands, _name(n["rule_ref"]), registry, by_ref)
+            sum_steps[node_id] = tuple(ordinals[projection["node"]] for projection in projections)
         elif op == "Assert":
             target = n["proposition"]
             if not isinstance(target, str) or target not in prior or not isinstance(prior[target], (Fact, Comparison, ExactSum)):
                 _fail("invalid_graph")
             content = prior[target]
-            value = SpeechAct("assert", content, _deps(content), (ordinals[target], ordinal))
+            value = SpeechAct("assert", content, _deps(content), sum_steps.get(target, ()) + (ordinals[target], ordinal))
         elif op == "Conjoin":
             refs = _sequence(n["speech_acts"])
             if len(refs) < 2 or len(refs) != len(set(refs)) or any(ref not in prior or not isinstance(prior[ref], SpeechAct) or prior[ref].kind not in ("assert", "conjoin") for ref in refs):
@@ -377,6 +428,12 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
             if len(matches) != 1 or any(ref not in matches[0].get("allowed_refs", []) for ref in references):
                 _fail("unknown_reference")
             value = SpeechAct("ask", AskContent(category, obligation_ref, tuple(references)), tuple(references), (ordinal,))
+        if isinstance(value, SpeechAct):
+            # Apply the same cap to constructed acts before later scope walks
+            # can repeatedly traverse an oversized shared conjunction graph.
+            from .realize import _render_outputs
+            value.to_dict()
+            _render_outputs((value,))
         prior[node_id] = value
     outputs = _sequence(p["outputs"])
     if not outputs or len(outputs) != len(set(outputs)) or any(ref not in prior or not isinstance(prior[ref], SpeechAct) for ref in outputs):
@@ -392,7 +449,13 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
         "unmet_obligations": h["unmet_obligations"],
     }
     binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")).hexdigest()
-    return CheckResult("accepted", None, acts, _deps(acts), h["context_ref"], h["policy_ref"], h["registry_ref"], h["audience"], p["style"], json.dumps(p, sort_keys=True, separators=(",", ":"), ensure_ascii=True), binding_digest)
+    result = CheckResult("accepted", None, acts, _deps(acts), h["context_ref"], h["policy_ref"], h["registry_ref"], h["audience"], p["style"], json.dumps(p, sort_keys=True, separators=(",", ":"), ensure_ascii=True), binding_digest)
+    # Bound both complete destination representations before minting. The
+    # renderer helper does not validate/recheck or consume any raw evidence.
+    from .realize import _render_outputs
+    result.to_dict()
+    _render_outputs(result.outputs)
+    return result
 
 
 def check_program(program: Any, host: Any, catalog: Any) -> CheckResult:
@@ -405,6 +468,8 @@ def check_program(program: Any, host: Any, catalog: Any) -> CheckResult:
         return CheckResult("provider_rejected", exc.reason)
     except _Reject as exc:
         return CheckResult("rejected", exc.reason)
+    except OutputLimitError:
+        return CheckResult("rejected", "exceeded_limit")
     except (TypeError, ValueError, KeyError, OverflowError, RecursionError):
         return CheckResult("rejected", "invalid_graph")
 

@@ -2,18 +2,59 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import json
+from dataclasses import dataclass, field, is_dataclass
 from decimal import Decimal
 from typing import Any
 
 
-def _json_value(value: Any) -> Any:
+MAX_OUTPUT_BYTES = 262144
+
+
+class OutputLimitError(ValueError):
+    """A complete released representation exceeds the profile's byte budget."""
+
+
+class _OutputBudget:
+    def __init__(self) -> None:
+        self.remaining = MAX_OUTPUT_BYTES
+
+    def consume(self, count: int) -> None:
+        self.remaining -= count
+        if self.remaining < 0:
+            raise OutputLimitError("exceeded output limit")
+
+
+def _json_value(value: Any, budget: _OutputBudget | None = None) -> Any:
+    """Build a bounded JSON tree, counting default ensure_ascii JSON bytes.
+
+    Count before expanding repeated speech-act subgraphs so a small DAG cannot
+    materialize an exponentially large result. Only ExactSum results acquire
+    fixed-point formatting; source Facts/constants retain legacy formatting.
+    """
+    if budget is None:
+        budget = _OutputBudget()
     if isinstance(value, Decimal):
-        return str(value)
-    if isinstance(value, tuple):
-        return [_json_value(part) for part in value]
-    if hasattr(value, "to_dict"):
-        return value.to_dict()
+        value = str(value)
+    if isinstance(value, ExactSum):
+        value = {name: getattr(value, name) for name in value.__dataclass_fields__}
+        value["value"] = format(value["value"], "f")
+    if is_dataclass(value):
+        value = {name: getattr(value, name) for name in value.__dataclass_fields__}
+    if isinstance(value, dict):
+        budget.consume(2 + max(0, len(value) - 1) * 2)
+        converted = {}
+        for key, part in value.items():
+            _json_value(key, budget)
+            budget.consume(2)
+            converted[key] = _json_value(part, budget)
+        return converted
+    if isinstance(value, (tuple, list)):
+        budget.consume(2 + max(0, len(value) - 1) * 2)
+        return [_json_value(part, budget) for part in value]
+    if isinstance(value, str) and len(value) > MAX_OUTPUT_BYTES:
+        raise OutputLimitError("exceeded output limit")
+    budget.consume(len(json.dumps(value, ensure_ascii=True).encode("ascii")))
     return value
 
 
@@ -31,7 +72,7 @@ class Fact:
     quantity_kind: str
 
     def to_dict(self) -> dict[str, Any]:
-        return {name: _json_value(getattr(self, name)) for name in self.__dataclass_fields__}
+        return _json_value(self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,7 +85,7 @@ class ConstantValue:
     constant_ref: str
 
     def to_dict(self) -> dict[str, Any]:
-        return {name: _json_value(getattr(self, name)) for name in self.__dataclass_fields__}
+        return _json_value(self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,22 +96,20 @@ class Comparison:
     interval: str
 
     def to_dict(self) -> dict[str, Any]:
-        return {"left": self.left.to_dict(), "right": self.right.to_dict(), "relation": self.relation, "interval": self.interval}
+        return _json_value(self)
 
 
 @dataclass(frozen=True, slots=True)
 class ExactSum:
-    left: Fact
-    right: Fact
+    operands: tuple[Fact, ...]
+    rule_ref: str
     value: Decimal
     unit: str | None
     interval: str
     quantity_kind: str
 
     def to_dict(self) -> dict[str, Any]:
-        return {"left": self.left.to_dict(), "right": self.right.to_dict(),
-                "value": _json_value(self.value), "unit": self.unit,
-                "interval": self.interval, "quantity_kind": self.quantity_kind}
+        return _json_value(self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,7 +119,7 @@ class AskContent:
     references: tuple[str, ...]
 
     def to_dict(self) -> dict[str, Any]:
-        return {"category": self.category, "obligation_ref": self.obligation_ref, "references": list(self.references)}
+        return _json_value(self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,7 +130,7 @@ class SpeechAct:
     derivation: tuple[int, ...]
 
     def to_dict(self) -> dict[str, Any]:
-        return {"kind": self.kind, "content": _json_value(self.content), "dependencies": list(self.dependencies), "derivation": list(self.derivation)}
+        return _json_value(self)
 
 
 @dataclass(frozen=True, slots=True, eq=False, weakref_slot=True)
@@ -109,14 +148,14 @@ class CheckResult:
     _binding_digest: str | None = field(default=None, repr=False, compare=False)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        return _json_value({
             "status": self.status,
             "reason": self.reason,
-            "outputs": [output.to_dict() for output in self.outputs],
+            "outputs": self.outputs,
             "dependencies": list(self.dependencies),
             "context_ref": self.context_ref,
             "policy_ref": self.policy_ref,
             "registry_ref": self.registry_ref,
             "audience": self.audience,
             "style": self.style,
-        }
+        })

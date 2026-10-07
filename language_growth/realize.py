@@ -10,12 +10,14 @@ import json
 from decimal import Decimal
 
 from .kernel import validate_release
-from .types import AskContent, CheckResult, Comparison, ConstantValue, ExactSum, Fact, SpeechAct
+from .types import AskContent, CheckResult, Comparison, ConstantValue, ExactSum, Fact, MAX_OUTPUT_BYTES, OutputLimitError, SpeechAct
 
 
 def _quoted(value: str) -> str:
     if not isinstance(value, str):
         raise ValueError("invalid checked value")
+    if len(value) > MAX_OUTPUT_BYTES:
+        raise OutputLimitError("exceeded output limit")
     return json.dumps(value, ensure_ascii=True)
 
 
@@ -66,32 +68,39 @@ def _assertion(content: Fact | Comparison | ExactSum) -> str:
             f"the value of {_subject(content.right)} ({_operand_value(content.right)})."
         )
     if isinstance(content, ExactSum):
+        terms = ", ".join(f"{_subject(operand)} ({_operand_value(operand)})"
+                          for operand in content.operands)
         return (
-            f"At {_quoted(content.interval)}, the exact {_quoted(content.quantity_kind)} sum of "
-            f"{_subject(content.left)} ({_operand_value(content.left)}) and "
-            f"{_subject(content.right)} ({_operand_value(content.right)}) is "
-            f"{_value(content.value)}{_unit(content.unit)}."
+            f"At {_quoted(content.interval)}, the exact arithmetic {_quoted(content.quantity_kind)} "
+            f"sum of these explicitly listed premises [{terms}] is "
+            f"{format(content.value, 'f')}{_unit(content.unit)}."
         )
     raise ValueError("invalid checked assertion")
 
 
-def _speech(act: SpeechAct) -> str:
+def _speech_parts(act: SpeechAct):
     if not isinstance(act, SpeechAct):
         raise ValueError("invalid checked speech act")
     if act.kind == "assert":
-        return _assertion(act.content)
+        yield _assertion(act.content)
+        return
     if act.kind == "ask":
         if not isinstance(act.content, AskContent):
             raise ValueError("invalid checked ask")
         refs = ", ".join(_quoted(ref) for ref in act.content.references)
-        return (
+        yield (
             f"Please provide {_quoted(act.content.category)} for obligation "
             f"{_quoted(act.content.obligation_ref)}; references: [{refs}]."
         )
+        return
     if act.kind == "conjoin":
         if not isinstance(act.content, tuple) or not act.content:
             raise ValueError("invalid checked conjunction")
-        return " ".join(_speech(item) for item in act.content)
+        for index, item in enumerate(act.content):
+            if index:
+                yield " "
+            yield from _speech_parts(item)
+        return
     if act.kind == "explain":
         if not isinstance(act.content, SpeechAct):
             raise ValueError("invalid checked explanation")
@@ -99,8 +108,30 @@ def _speech(act: SpeechAct) -> str:
                 or any(type(step) is not int or step <= 0 for step in act.derivation)):
             raise ValueError("invalid checked derivation")
         steps = ", ".join(str(step) for step in act.derivation)
-        return f"Checked derivation through program steps [{steps}]: {_speech(act.content)}"
+        yield f"Checked derivation through program steps [{steps}]: "
+        yield from _speech_parts(act.content)
+        return
     raise ValueError("invalid checked speech act")
+
+
+def _render_outputs(outputs: tuple[SpeechAct, ...]) -> str:
+    parts = []
+    remaining = MAX_OUTPUT_BYTES
+    for index, act in enumerate(outputs):
+        if index:
+            remaining -= 1
+            parts.append("\n")
+        for part in _speech_parts(act):
+            remaining -= len(part.encode("utf-8"))
+            if remaining < 0:
+                raise OutputLimitError("exceeded output limit")
+            parts.append(part)
+    return "".join(parts)
+
+
+def _speech(act: SpeechAct) -> str:
+    """Bounded single-act linearization retained for the renderer fixture API."""
+    return _render_outputs((act,))
 
 
 def render_checked(result: CheckResult, host: dict, catalog: dict) -> str:
@@ -115,4 +146,4 @@ def render_checked(result: CheckResult, host: dict, catalog: dict) -> str:
         raise ValueError("release denied")
     if not checked.outputs:
         raise ValueError("release denied")
-    return "\n".join(_speech(act) for act in checked.outputs)
+    return _render_outputs(checked.outputs)
