@@ -19,7 +19,7 @@ package-dir = {"harness" = "."}
 packages = ["harness", "harness.tests"]
 
 [tool.setuptools.package-data]
-harness = ["manifests/*"]
+harness = ["manifests/*", "editions_data/*"]
 
 [tool.pytest.ini_options]
 markers = ["suite: needs the locally built 0.2.1 suite (skipped when absent)"]
