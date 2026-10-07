@@ -354,3 +354,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the test double matched the conceptual slot count but not the runtime container contract.
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
+
+### L-35 Kernel-valid evidence can answer the wrong public task
+- Date: 2026-10-07 (Track L public-output review).
+- Symptom: `public_answer` rechecked and rendered a kernel-accepted program but never compared its entity, field, order, scope or speech act with the user's task. A true fact about another entity or field could therefore be released as the answer.
+- Cost: $0; caught in CPU/code review before a model-backed public release.
+- Root cause: evidence-relative kernel soundness was being used as if it established task relevance.
+- **Check:** `language_growth/task_relevance.py` builds a bounded exact-grammar contract from `audience_state` before provider calls, then verifies the final checked speech-act and ordered host-resolved operands against a fresh exact task/state hash before public rendering. `language_growth/tests/test_public_output.py::test_kernel_valid_wrong_entity_or_field_is_not_released` checks kernel-valid mismatches; `language_growth/tests/test_task_relevance.py::test_every_development_template_has_an_exact_kernel_bound_contract` covers all fixed train/validation templates. Unsupported wording fails before provider use.
+- **Status:** ENFORCED for `public_answer` and the enumerated grammar only. This does not establish relevance for arbitrary natural language or for other direct renderer/library callers.

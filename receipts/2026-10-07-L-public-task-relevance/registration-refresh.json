@@ -1,0 +1,88 @@
+{
+  "command": "Use the pinned repository venv to call each runner registration() and write its canonical JSON; no --execute path.",
+  "cost_usd": 0,
+  "gpu": false,
+  "model_inference_or_training": false,
+  "model_or_checkpoint_loaded": false,
+  "paid_compute": false,
+  "reason": "The public task-relevance module and tests changed Python files covered by the prepared CPU-screen source-tree hashes. Refresh exact source hashes so existing no-load dry-run guards remain valid.",
+  "registrations": [
+    {
+      "added_sources": [
+        "language_growth/fact_binding_screen.py",
+        "language_growth/l1_world_training.py",
+        "language_growth/multirecord_calibration_split.py",
+        "language_growth/multirecord_data.py",
+        "language_growth/multirecord_eval.py",
+        "language_growth/multirecord_training.py",
+        "language_growth/rwkv_fact_name_screen.py",
+        "language_growth/semantic_axis_fixtures.py",
+        "language_growth/semantic_state_intervention.py",
+        "language_growth/task_relevance.py",
+        "language_growth/tests/test_fact_binding_screen.py",
+        "language_growth/tests/test_fact_candidate_style.py",
+        "language_growth/tests/test_l1_world_training.py",
+        "language_growth/tests/test_multirecord_calibration_split.py",
+        "language_growth/tests/test_multirecord_data.py",
+        "language_growth/tests/test_multirecord_distribution.py",
+        "language_growth/tests/test_multirecord_eval.py",
+        "language_growth/tests/test_multirecord_training.py",
+        "language_growth/tests/test_rwkv_fact_name_screen.py",
+        "language_growth/tests/test_semantic_axis_fixtures.py",
+        "language_growth/tests/test_semantic_state_intervention.py",
+        "language_growth/tests/test_task_relevance.py",
+        "train/teacher.py"
+      ],
+      "changed_source_hashes": [
+        "heads/act_ckpt.py",
+        "heads/backbone.py",
+        "language_growth/free_running_dev.py",
+        "language_growth/planner.py",
+        "language_growth/public_output.py",
+        "language_growth/tests/test_public_output.py",
+        "language_growth/training_records.py",
+        "train/data.py",
+        "train/evalcard.py",
+        "train/losses.py",
+        "train/m2_gates.py",
+        "train/proxy_heads.py",
+        "train/proxy_loop.py",
+        "train/proxy_rule.py",
+        "train/run_cell.py",
+        "train/trainer.py"
+      ],
+      "cohort_config_targets_unchanged": true,
+      "name": "operation-only-cache",
+      "non_source_registration_fields_unchanged": true,
+      "path": "receipts/2026-10-06-L-operation-only-cache-prepared/registration.json",
+      "previous_sha256": "77867a9404cdf8870b653329468c6275211bcbbbd22cd998998f6806483612bf",
+      "previous_source_count": 101,
+      "refreshed_sha256": "b981fa8a625d6cc864efe96d0b4b62d2492ec696bbf5623447e0563d205752d9",
+      "refreshed_source_count": 124
+    },
+    {
+      "added_sources": [
+        "language_growth/semantic_state_intervention.py",
+        "language_growth/task_relevance.py",
+        "language_growth/tests/test_semantic_state_intervention.py",
+        "language_growth/tests/test_task_relevance.py"
+      ],
+      "changed_source_hashes": [
+        "language_growth/public_output.py",
+        "language_growth/tests/test_public_output.py"
+      ],
+      "cohort_config_targets_unchanged": true,
+      "evaluator_targets_sha256": "2a0c1cd82d1df78633738333d9dc1f426162b08a9b510e8a6b777d93a0275941",
+      "name": "fact-name-screen",
+      "non_source_registration_fields_unchanged": true,
+      "path": "receipts/2026-10-07-L-fact-name-screen-retry-prepared/registration.json",
+      "previous_sha256": "6442e00c53ab2dd51e583e4cf7af2b500d30cd1734f9f5df0e54d7baeb6e84f9",
+      "previous_source_count": 82,
+      "refreshed_sha256": "a4f4f1f59a4078179eaffd2793f05d50e010c7602b6a1b5d6480a1087ad6d5a5",
+      "refreshed_source_count": 86,
+      "visible_inputs_sha256": "68e04820c506cf6bac378db225a9852acf405e4a6ee1f82c753856a098d3d3d5"
+    }
+  ],
+  "schema": "ssdm.full_source_registration_refresh.v1",
+  "validation": "The full no-load CPU source-registration checks passed as part of 372 passing language_growth and jobs-lint tests. Refreshed manifests match generated registration JSON under the pinned venv; only source_sha256 changed from the pre-branch registration."
+}

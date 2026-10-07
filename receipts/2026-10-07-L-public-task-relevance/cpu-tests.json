@@ -1,0 +1,111 @@
+{
+  "base_commit": "32d975159c64216193c47478e102d17c8d7e5658",
+  "claim": "bounded public task-relevance release contract and regression checks only; not model capability, general natural-language relevance, neural alignment, or an arbitrary-caller release guarantee",
+  "command": "$env:CUDA_VISIBLE_DEVICES='-1'; & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests tests/test_jobs_lint.py -q",
+  "cost_usd": 0,
+  "data": {
+    "cohorts": [
+      {
+        "count": 90,
+        "sample_sha256": "d835c0d77900d8b6c88f1952345f7a0b0acc6b9eacde97022824e7c2865671db",
+        "seed": 1708,
+        "split": "development_train"
+      },
+      {
+        "count": 90,
+        "sample_sha256": "4d7e3b98d64f57054d56dfd84a854b5ec01560a002f18643cbc42d6566608bb9",
+        "seed": 1708,
+        "split": "development_validation"
+      },
+      {
+        "count": 2,
+        "sample_sha256": "23bf51aa16e647d62ae2ca3c43535c169194c34d82ca7647b279543d008c306f",
+        "seed": 19,
+        "split": "development_validation"
+      },
+      {
+        "count": 1,
+        "sample_sha256": "b80e291026cc80febe52fa3ea2c4488fd317a123df6b29abf790e99cde7d2072",
+        "seed": 21,
+        "split": "development_validation"
+      },
+      {
+        "count": 1,
+        "sample_sha256": "b7c0ed0685eb29fc6b818af0989abc0c8692c76e0ab181b2853d08de4998d9c8",
+        "seed": 31,
+        "split": "development_validation"
+      },
+      {
+        "count": 1,
+        "sample_sha256": "ddb151261c07cbb2dc029d0dd0cc369b213a3a4cf40774ae375cf1262446fd45",
+        "seed": 33,
+        "split": "development_validation"
+      },
+      {
+        "count": 180,
+        "sample_sha256": "60def7e1672eb4f6cc33f433b4e12a1518bd78e898f8ddbbc74217f89e4e35c4",
+        "seed": 311,
+        "split": "development_validation"
+      }
+    ],
+    "heldout_or_index": false,
+    "source": "language_growth.development_data.generate_development_tasks; synthetic development only"
+  },
+  "model_checkpoint_gpu_paid_compute": false,
+  "raw_predictions": "none; no model/provider evaluation; scripted boundary tests only",
+  "registration_refresh_receipt": "receipts/2026-10-07-L-public-task-relevance/registration-refresh.json",
+  "registrations": [
+    {
+      "name": "operation-only",
+      "path": "receipts/2026-10-06-L-operation-only-cache-prepared/registration.json",
+      "previous_registration_sha256": "77867a9404cdf8870b653329468c6275211bcbbbd22cd998998f6806483612bf",
+      "refresh_scope": "source_sha256 only; serialized inputs, targets, config, data and protocol are unchanged",
+      "refreshed_registration_sha256": "0fd70ee801b4e7f84258cdb323e854c7a08d21e9ffe616fc7bd0260ec98c8147",
+      "source_count": 124
+    },
+    {
+      "name": "fact-name",
+      "path": "receipts/2026-10-07-L-fact-name-screen-retry-prepared/registration.json",
+      "previous_registration_sha256": "6442e00c53ab2dd51e583e4cf7af2b500d30cd1734f9f5df0e54d7baeb6e84f9",
+      "refresh_scope": "source_sha256 only; serialized inputs, targets, config, data and protocol are unchanged",
+      "refreshed_registration_sha256": "83393f9b8780c2c1cf56b659f5d3d5149b2f5081563748ff1b60a3d22a1375ae",
+      "source_count": 86
+    }
+  ],
+  "result": {
+    "elapsed_seconds": 56.16,
+    "status": "pass",
+    "tests_passed": 372
+  },
+  "runtime": {
+    "cuda_visible_devices": "-1",
+    "gpu_used": false,
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13",
+    "system": "Windows-11-10.0.26200-SP0",
+    "torch_distribution": "2.8.0+cu128"
+  },
+  "schema": "ssdm.track_l0_public_task_relevance_cpu_receipt.v1",
+  "seeds": [
+    1708,
+    19,
+    21,
+    31,
+    33,
+    311
+  ],
+  "source_sha256": {
+    "LESSONS.md": "1f9d73df591be01cbfd3f689a9cbc7eda1913c821f3de7be37c9ec7a60efec00",
+    "STATUS.md": "7ace2eeb47fa9a96f4de40b3e7b81c7fb1e24ec3a38015086a2494c5eaa8a4f0",
+    "language_growth/public_output.py": "cbb508c8b607fbffc25aacb5fde7b0af5ab2498d2f157910503f89237a8dbada",
+    "language_growth/task_relevance.py": "40cdfd2d63d0c92b38b55a14aa34a53a33a370a70109f1a50ca2fe081448118b",
+    "language_growth/tests/test_public_output.py": "5ccbcf6c7a55a04404de001a56ba5f58ef9e275cfc37aba1b9207d1b1c356f50",
+    "language_growth/tests/test_task_relevance.py": "e0dabb7fcb5414f1a63b85b87de3d9ca8d698600451ad7a5d562ad77e4e940f5",
+    "plans/codex/L0_TASK_RELEVANCE_GATE.md": "889ebd3432e6fe5c21ed10d4e52e92de5f68c0bff5c60bc0755396cfbd2a8143"
+  },
+  "targeted_command": "& C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_public_output.py language_growth/tests/test_task_relevance.py -q",
+  "targeted_result": {
+    "status": "pass",
+    "tests_passed": 15
+  }
+}
