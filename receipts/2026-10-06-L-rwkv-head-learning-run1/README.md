@@ -42,5 +42,6 @@ This result does not falsify semantic-program learning in general. It falsifies 
 | `receipt.json` | `950f1bc202b55f01e79953d07505757368eceede2ab5c95939dcb4b3ae867ecd` |
 | `registration.json` | `952c44a84e6140488179027d39e8a92297b355d91b31f3fde05d5975aa46dc15` |
 | `parent-evidence.json` | `a06d205c82d7bea564d3fcb38df18bb2887e1eb1da3274ec02ef290d93b34e4c` |
+| `train-config.json` | `c59db7602b6a0623842c3e76cb43d61988e2ca9e6e580e959f8b7d5f60aaf82a` |
 | before head checkpoint (external `ssdm-data` run directory) | `7e2122ff5e2ad3f5f77b65b95379a0382006db43cdb055eadb09bd994d0a31d2` |
 | after head checkpoint (external `ssdm-data` run directory) | `3a896a00dc06fdd79aa8656f5272fcd4307038633efb0e0d642773280affe13c` |
