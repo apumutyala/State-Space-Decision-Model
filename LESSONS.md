@@ -354,3 +354,19 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the test double matched the conceptual slot count but not the runtime container contract.
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
+
+### L-39 Cache sizing and transfer adoption must describe the implemented evidence
+- Date: 2026-10-07 (remaining post-merge findings on PR #91, corrected in PR #107).
+- Symptom: PREMORTEM sized 20k fork rows at about 0.6 GB as though the cache retained only compact bf16 features. `cache_items` actually retains the complete `HeadInput`, including fp32 sequence features. The text also suggested trusting a ranking after a best/worst two-recipe pair despite the adoption rule requiring at least four matched recipes.
+- Cost: review and correction only; no checkpoint load or paid run for this correction.
+- Root cause: desired head inputs were substituted for retained tensors, autocast was mistaken for stored dtype, and a screening comparison was described as sufficient transfer evidence.
+- **Check:** `tests/test_premortem_probes.py::test_p5_fork_cache_retained_payload_matches_documented_formula` measures every retained tensor and backing allocation on tiny synthetic CPU inputs under fp32/bf16 autocast and checks `4 * D * (T + 2 + 2 * K) + 2 * T + K`. `tests/test_premortem_claim_scope.py` rejects the old sizing/trust sentences and requires the formula, no-RAM-fit qualification and provisional screening/adoption distinction. `tests/test_proxy_rule.py::test_best_worst_screening_pair_cannot_adopt_even_with_perfect_tau` rejects adoption from two matched recipes despite perfect tau and pair agreement, including when extra real-only recipes exist.
+- **Status:** PARTIAL. Retained-payload accounting and the existing four-recipe rule are enforced. Full-size peak host memory and ranking transfer remain unmeasured; compact fork-only caching is not implemented.
+
+### L-40 A finite proxy sweep was described as a downstream quality ceiling
+- Date: 2026-10-07 (cross-track post-merge review of PR #91).
+- Symptom: PREMORTEM said conversion can only weaken the backbone, that failure of tested frozen-stock heads rules out every Q9-AF variant, and that ranking transfer through one conversion should persist through eight.
+- Cost: one review round; no paid run was launched by this correction.
+- Root cause: conditional resource-allocation heuristics were written as universal quality and transfer claims without an ablation or bound supporting them. Frozen features do not test LoRA adaptation or every later data recipe.
+- **Check:** `tests/test_premortem_claim_scope.py` rejects the three known absolute claims, tests its checker against the original offending sentences, and requires the local qualifications and conditional spend gate. PREMORTEM treats transfer as a hypothesis with a Q9-AF re-check and retains the pause/escalate decision for the finite sweep.
+- **Status:** PARTIAL. The check enforces these known claim classes in PREMORTEM; new scientific claims still require review of their evidence.

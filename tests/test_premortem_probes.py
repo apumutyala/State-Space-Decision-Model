@@ -246,6 +246,35 @@ def test_p5_cached_feature_proxy_equals_trainer_at_lora_rank_0(toy, head, bf16):
         assert torch.allclose(pa[n], pb[n], atol=1e-5), (n, float((pa[n] - pb[n]).abs().max()))
 
 
+@pytest.mark.parametrize("bf16", [False, True])
+def test_p5_fork_cache_retained_payload_matches_documented_formula(toy, bf16):
+    """L-39: account for actual retained fp32 sequence/features and bool masks under either autocast mode."""
+    from dataclasses import fields
+
+    from train.proxy import cache_items
+
+    model = _fresh("fork", 5)
+    cfg = TrainConfig(head="fork", lora_rank=0, bf16=bf16)
+    cached_items = cache_items(model, toy[:3], cfg=cfg)
+    assert len(cached_items) == 3
+    for item, cached in zip(toy[:3], cached_items):
+        x = cached.x
+        t, k, d = len(item.row.ids), item.row.n_options, x.h.shape[-1]
+        tensors = {f.name: getattr(x, f.name) for f in fields(x) if isinstance(getattr(x, f.name), torch.Tensor)}
+        shapes = {"h": (1, t, d), "q_pre": (1, d), "q_end": (1, d), "e": (1, k, d),
+                  "fork": (1, k, d), "token_mask": (1, t), "evidence_mask": (1, t), "option_mask": (1, k)}
+        assert set(tensors) == set(shapes), "include every retained tensor in the memory formula"
+        for name, tensor in tensors.items():
+            assert tuple(tensor.shape) == shapes[name]
+            assert tensor.dtype == (torch.bool if name.endswith("mask") else torch.float32)
+            assert tensor.device.type == "cpu" and not tensor.requires_grad
+        payload = sum(v.numel() * v.element_size() for v in tensors.values())
+        assert payload == 4 * d * (t + 2 + 2 * k) + 2 * t + k
+        # Count backing allocations as well: no oversized views or assumed tensor sharing.
+        storages = {v.untyped_storage().data_ptr(): v.untyped_storage().nbytes() for v in tensors.values()}
+        assert sum(storages.values()) == payload
+
+
 def test_p5_proxy_refuses_what_the_trainer_would_do_differently(toy):
     import dataclasses
 

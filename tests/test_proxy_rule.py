@@ -249,3 +249,15 @@ def test_adopt_ranking():
     from train.proxy import kendall_tau
 
     assert R.kendall_tau([1, 2, 3, 5], [2, 1, 3, 4]) == kendall_tau([1, 2, 3, 5], [2, 1, 3, 4])
+
+
+def test_best_worst_screening_pair_cannot_adopt_even_with_perfect_tau():
+    proxy = {"best": 4, "middle1": 3, "middle2": 2, "worst": 1}
+    real = {"best": 40, "worst": 10, "unmatched1": 30, "unmatched2": 20}
+    result = R.adopt_ranking(proxy, real, ("best", "worst"))
+    assert result["pair_agrees"] and result["tau"] == 1.0
+    assert result["n_recipes"] == 2
+    assert not result["enough_recipes"] and not result["adopt"]
+    real.update(middle1=30, middle2=20)
+    result = R.adopt_ranking(proxy, real, ("best", "worst"))
+    assert result["n_recipes"] == 4 and result["enough_recipes"] and result["adopt"]
