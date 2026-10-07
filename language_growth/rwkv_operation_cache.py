@@ -353,9 +353,11 @@ def evaluate_tasks(backend, decider, examples, raw, phase):
             slot = qid.split("-", 2)[-1]
             answer = (call["response"] or {}).get("answers", {}).get(qid, {}).get("choice")
             actual = q["criteria"].get(answer) if isinstance(answer, str) else None
+            expected = reference.get(slot)
+            scored = slot in reference and expected is not None and actual is not None
             errors.append({"slot": slot, "selected": answer, "selected_description": actual,
-                           "expected_description": reference.get(slot),
-                           "matches_reference_slot": actual == reference.get(slot)})
+                           "expected_description": expected, "scored": scored,
+                           "matches_reference_slot": scored and actual == expected})
         report.append({**observation, "slot_attribution": errors,
                        "missing_reference_slots": sorted(set(reference) - {e["slot"] for e in errors})})
     write(raw.parent / f"{phase}.json", report)

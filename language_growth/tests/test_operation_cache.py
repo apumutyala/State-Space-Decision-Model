@@ -216,3 +216,28 @@ def test_owned_supervisor_stops_on_timeout_or_running_memory_floor(tmp_path):
         assert child.kills == child.waits == 1
         event = json.loads(raw.read_text())
         assert event["event"] == "launcher_stopped" and event["reason"] == reason
+
+
+def test_wrong_operation_failed_nonreference_slot_is_unscored_and_incorrect(tmp_path):
+    from decide.adapter import Decider
+    from decide.backends.base import BackendUnsupported
+    from decide.backends.oracle import OracleBackend
+
+    class WrongOperationThenMissingLeft(OracleBackend):
+        def plan(self, request):
+            if "slot-002-left" in request["questions"]:
+                raise BackendUnsupported("scripted_missing_slot", "left unavailable")
+            return super().plan(request)
+
+    example = next(e for e in runner.corpus()["development_validation"]
+                   if e["training_only"]["kind"] == "read")
+    backend = WrongOperationThenMissingLeft({"slot-001-operation": "op003"}, margin=20)
+    rows = runner.evaluate_tasks(backend, Decider(backend), [example], tmp_path/"raw.jsonl", "scripted")
+    assert not rows[0]["task_correct"] and not rows[0]["kernel_accepted"]
+    operation, left = rows[0]["slot_attribution"]
+    assert operation["slot"] == "operation" and not operation["matches_reference_slot"]
+    assert left["slot"] == "left" and left["selected_description"] is None
+    assert left["expected_description"] is None
+    assert not left["matches_reference_slot"] and not left["scored"]
+    assert "fact" in rows[0]["missing_reference_slots"]
+    assert runner.downstream(rows)["correct_later_slots"] == 0

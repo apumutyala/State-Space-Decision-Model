@@ -140,7 +140,7 @@ def rwkv_decision_backend(parent, encode: EncodeFn, *, source_identity: dict[str
 
     if not isinstance(parent, (Rwkv7Model, Rwkv7ForCausalLM)):
         raise TypeError("requires the merged vendored native RWKV-7 model")
-    if head not in ("integrator", "snapshot", "head_b", "fork"):
+    if head not in ("integrator", "snapshot", "head_b", "fork", "qend_axes"):
         raise ValueError("prototype requires an attention-free decision head")
     if (not isinstance(source_identity, dict) or not isinstance(source_identity.get("model_id"), str)
             or not source_identity["model_id"]):

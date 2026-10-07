@@ -33,8 +33,8 @@ Checks use `CUDA_VISIBLE_DEVICES=-1`, `OMP_NUM_THREADS=2`, `MKL_NUM_THREADS=2`,
 `OPENBLAS_NUM_THREADS=2`, `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1` and
 `HF_DATASETS_OFFLINE=1`. The suite uses only tiny random recurrent fixtures;
 96 synthetic optimizer steps are execution proof, not a real diagnostic fit.
-Verification: **8 passed in 14.69s**, using the focused operation-cache test file
-with pytest cache disabled. The additional synthetic supervisor test proves
+Verification: **31 passed in 5.82s**, using the focused native bridge and
+operation-cache test files with pytest cache disabled. The synthetic supervisor test proves
 timeout and low-memory cleanup without starting a worker. Default/dry-run
 preparation rejects Torch/Transformers/Safetensors imports and checkpoint/snapshot
 access. Exact command, environment and output are saved in `tests.txt`.
@@ -52,3 +52,9 @@ guard and owned-child limits. This floor does not establish full-run completion.
 No real checkpoint load, real fit/inference, GPU, heldout/Index data access,
 spend or PR. The standing goal authorizes gated CPU work; this receipt grants
 no paid/GPU authority. Plan: `plans/codex/L0_OPERATION_ONLY_CACHE.md`.
+
+PR #112 review fixes add `qend_axes` to the validated native bridge allowlist
+and reject null/nonreference slot matches in downstream attribution. Tiny
+random native-parent and scripted wrong-operation/missing-slot regressions
+first reproduced both defects, then passed after the fixes. Missing or failed
+slots are marked unscored and incorrect; useful-answer denominators are unchanged.

@@ -177,6 +177,7 @@ def test_l_planner_calls_actual_native_head():
     ("snapshot", {"channels": 4, "max_snapshots": 2}),
     ("head_b", {"d_state": 4, "hidden": 8}),
     ("fork", {"hidden": 8}),
+    ("qend_axes", {}),
 ])
 def test_attention_free_heads_receive_trainable_gradients(head, kwargs):
     base = tiny_hf_backbone("rwkv7", seed=31, hidden=16).model
