@@ -6,3 +6,4 @@ fixtures/replay/** -text
 
 third_party/** -text
 *.sh text eol=lf
+*.sha256 text eol=lf
