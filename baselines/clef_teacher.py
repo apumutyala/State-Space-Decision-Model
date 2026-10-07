@@ -20,6 +20,8 @@ Two phases, so every contamination check runs on the CPU before any GPU minute o
      TEST manifest, or (production) a content-hash match against the pinned content index of every DEV + TEST row
      (``jobs.m2_pilot.guard_ready`` readiness file, re-hashed against ``guard_pin.json``);
   7. ``train.heldout.scan`` (held-out D1-B fragments, k=8 templates) over every drawn record's text: zero hits;
+     and ``harness.heldout.check_record`` (frozen held-out families of heldout-draw-v1, whose frozen_rule forbids any
+     distillation set from targeting them): zero ``FrozenFamilyError``; its file sha256 goes into selection.json;
   8. ``Cohort.assert_training_ids`` / ``assert_training_content`` on the draw.
   It writes ``selection.json`` (identity of every check, drawn ids sha256) and ``selected-ids.txt``.
 
@@ -149,6 +151,8 @@ def select(a) -> int:
     from train.cohort import Cohort, read_content_map, record_content_hash
     from train.data import read_manifest
     from train.guard import ForbiddenRow
+    from harness import config as hconfig
+    from harness.heldout import FrozenFamilyError, check_record, frozen as frozen_families
     from train.heldout import record_text, scan
 
     scope = read_scope(a.scope)
@@ -178,7 +182,7 @@ def select(a) -> int:
     ids = draw_ids(man, excl, n, int(scope["draw"]["seed"]))
     want = set(ids)
     guard = load_guard(a.guard_readiness, a.guard_standin)
-    forbidden, drift, texts, got = [], [], [], set()
+    forbidden, frozen, drift, texts, got = [], [], [], [], set()
     for rec in stream_records(files["records"], want, man):
         got.add(rec["id"])
         ch = record_content_hash(rec)
@@ -189,15 +193,20 @@ def select(a) -> int:
             guard.check(rec)
         except ForbiddenRow as e:
             forbidden.append(str(e))
+        try:  # frozen held-out families (harness heldout-draw-v1): no distillation set may target them
+            check_record(rec)
+        except FrozenFamilyError as e:
+            frozen.append(str(e))
         texts.append((rec["id"], record_text(rec)))
     missing = sorted(want - got)
     if missing or drift:
         raise IdentityMismatch(f"{len(missing)} drawn ids missing from the records file, {len(drift)} drifted "
                                f"from the content map (e.g. {(missing + drift)[:3]})")
     rep = scan(texts)
-    if forbidden or rep["hits"]:
-        raise Contamination(f"{len(forbidden)} drawn record(s) refused by the DEV/TEST guard "
-                            f"({forbidden[:2]}), {len(rep['hits'])} carry a held-out D1-B fragment ({rep['hits'][:2]})")
+    if forbidden or frozen or rep["hits"]:
+        raise Contamination(f"{len(forbidden)} drawn record(s) refused by the DEV/TEST guard ({forbidden[:2]}), "
+                            f"{len(frozen)} target a frozen held-out family ({frozen[:2]}), "
+                            f"{len(rep['hits'])} carry a held-out D1-B fragment ({rep['hits'][:2]})")
     co.assert_training_ids(ids)
     co.assert_training_content(content[i] for i in ids)
     sel = {"ok": True, "scope": scope["_scope_sha256"], "scope_path": str(a.scope), "pointer": scope["pointer"],
@@ -206,7 +215,9 @@ def select(a) -> int:
            "n_drawn": len(ids), "draw_seed": scope["draw"]["seed"],
            "drawn_ids_sha256": hashlib.sha256("\n".join(ids).encode()).hexdigest(),
            "heldout_excluded": sorted(excl), "cohort": co.identity(), "cohort_hits": {"by_id": 0, "by_content": 0},
-           "guard": guard.identity(), "guard_refused": 0,
+           "guard": guard.identity(), "guard_refused": 0, "frozen_family_refused": 0,
+           "heldout_draw_v1_sha256": hconfig.HELDOUT_DRAW_V1_SHA256,
+           "frozen_families": sorted(frozen_families()),
            "heldout_scan": {"n_texts": rep["n_texts"], "hits": 0, "templates_sha256": rep["templates_sha256"]},
            "content_sha256": {i: content[i] for i in ids}, "secs": round(time.time() - t0, 1)}
     (out / "selected-ids.txt").write_text("".join(i + "\n" for i in ids), encoding="utf-8", newline="\n")

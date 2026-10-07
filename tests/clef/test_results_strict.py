@@ -136,3 +136,44 @@ def test_composite_truncated_decide_exits_3(tmp_path):
 
 def test_exit_code_constant():
     assert EXIT_RESULTS == 3
+
+
+# ----------------------------------------------------------------------------- merged tree (PR #95 require_results)
+def _dev_or_skip():
+    pytest.importorskip("decision_index", reason="kit not installed")
+    from harness import config
+
+    if not (config.DATA_ROOT / "slices" / "dev-rows.jsonl.gz").exists():
+        pytest.skip("private DEV rows not present")
+
+
+def _rows_for(ids, tmp_path, name):
+    rows = [{"run_id": i, "catalog_id": 0, "status": "ok", "response": {"answers": {}}} for i in ids]
+    return _write(tmp_path / name, rows)
+
+
+@pytest.mark.parametrize("edition", ["0.2.1", "0.3"])
+def test_missing_row_exits_3_through_both_clis(tmp_path, edition):
+    """On the merged tree the strict reader runs BEFORE #95's require_results (which would exit 1): a results file that
+    misses one slice/subset row must exit 3, which run_job.sh maps to 17."""
+    _dev_or_skip()
+    import gzip
+
+    from harness import cli
+    from jobs.common import dev_subset
+
+    man = [json.loads(x) for x in gzip.open(ROOT / "harness/manifests/dev-manifest.jsonl.gz", "rt", encoding="utf-8")]
+    ids = [m["run_id"] for m in man]
+    f = _rows_for(ids[1:], tmp_path, "dev.jsonl")  # every DEV row but one
+    with pytest.raises(SystemExit) as e:
+        cli.main(["score", "--results", str(f), "--slice", "dev", "--edition", edition, "--omit-gsm8k03", "--B", "10"])
+    assert e.value.code == 3
+    with pytest.raises(SystemExit) as e:
+        cli.main(["compare", "--candidate", str(f), "--baseline", str(f), "--slice", "dev", "--edition", edition,
+                  "--omit-gsm8k03", "--B", "10"])
+    assert e.value.code == 3
+    sub = dev_subset.load_subset()["run_ids"]
+    g = _rows_for(sorted(sub)[1:], tmp_path, "sub.jsonl")
+    assert dev_subset.main(["score", "--results", str(g), "--edition", edition, "--omit-gsm8k03", "--B", "10"]) == 3
+    t = _write(tmp_path / "trunc.jsonl", [{"run_id": i, "status": "ok"} for i in sorted(sub)], tail='{"run_id": "x"')
+    assert dev_subset.main(["score", "--results", str(t), "--edition", edition, "--B", "10"]) == 3

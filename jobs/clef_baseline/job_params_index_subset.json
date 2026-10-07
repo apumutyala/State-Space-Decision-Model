@@ -1,5 +1,5 @@
 {
- "_comment": "Clef (27B) Index on the pre-registered 2,008-row m1 DEV subset (jobs/common/dev_subset_m1.json, ids sha256 6e4cb8df...): S0 env + 55 GB download (hf_cache false), S1 probes (parity, kernel_path, encodings; no gradient probe) + measured-rate preflight, S2 decide (live rate guard), S2b native arm, S3 score/composite/ECE/latency (+ paired compare vs Clef-flash job-sgihj on identical rows). DEV only. Canary for the full-DEV job. Expected minutes: price.py projections (index 11.1 + load 1.6) and job-sgihj stage times.",
+ "_comment": "Clef (27B) Index on the pre-registered 2,008-row m1 DEV subset (jobs/common/dev_subset_m1.json): S0 env + 55 GB download (hf_cache false), S1 probes (parity, kernel_path, encodings; no gradient probe) + measured-rate preflight, S2 decide (live rate guard), S2c over-length sensitivity at max_length 32768 (rows of jobs/clef_baseline/overlength_rows.json in the subset), S2b native arm, S3 score (edition 0.2.1 as job-sgihj, plus a 0.3 report) / composite (headline) / ECE / latency / required paired compare vs Clef-flash job-sgihj. DEV only. Canary for the full job; its measured index rate re-derives the full job's caps (price.py rederive). Planning rate: the card's 5.39x Clef/Clef-flash latency ratio (index 17.1 + load 1.6).",
  "job": "clef-index-subset",
  "chip": "h100",
  "chip_count": 1,
@@ -14,26 +14,28 @@
  "decision_rule": null,
  "no_verdict_reason": "baseline measurement of a frozen external checkpoint (Clef 27B) on the Index DEV slice: numbers are reported with CIs, nothing is promoted or selected, so there is no verdict; stop conditions are in JOB_SPEC 4b",
  "mission": "clef-baseline-safety-spec-s7",
- "pricing": "jobs/clef_baseline/price.py (job-sgihj measured rates; Clef = x FLOPs ratio 3.52)",
- "max_duration_minutes": 58,
+ "pricing": "jobs/clef_baseline/price.py: job-sgihj measured Clef-flash rates; Clef planned at the card's 5.39x median-latency ratio (FLOPs ratio 3.52 is the optimistic reference)",
+ "max_duration_minutes": 73,
  "hf_cache": false,
- "hard_cap_usd": 9.0,
+ "hard_cap_usd": 10.5,
  "reserve_minutes": 3,
  "phase_caps_minutes": {
   "setup": 15,
   "probes": 11,
-  "index": 20,
-  "native": 4,
-  "score": 3,
+  "index": 27,
+  "sens": 5,
+  "native": 6,
+  "score": 4,
   "report": 2
  },
  "expected_minutes": {
   "build": 20,
   "setup": 10,
   "probes": 8,
-  "index": 13,
-  "native": 3,
-  "score": 2,
+  "index": 19,
+  "sens": 3,
+  "native": 4,
+  "score": 3,
   "report": 1
  },
  "model": "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c",
@@ -91,20 +93,6 @@
   }
  },
  "context": {
-  "dockerfile": "jobs/clef_baseline/Dockerfile",
-  "builder": "jobs/clef_baseline/build_context.sh index",
-  "data": [
-   {
-    "src": "slices/dev-rows.jsonl.gz",
-    "dest": "data/slices/dev-rows.jsonl.gz",
-    "pin": "jobs/clef_baseline/data.sha256"
-   },
-   {
-    "src": "job-sgihj index/decide/results.jsonl (art-8y6d8)",
-    "dest": "data/reference/clef_flash.decide.results.jsonl",
-    "pin_sha256": "463f21ff492fc792da4d40ecc501cffab0498d2458715f8effd3270614cbd0aa",
-    "optional": true
-   }
-  ]
+  "unsupported": "the Clef image copies app/ (not code/m1/) and ships job-specific pinned data: build with jobs/clef_baseline/build_context.sh index <merged sha> (REF_FLASH=<job-sgihj decide results> for index)"
  }
 }

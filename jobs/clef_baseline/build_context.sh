@@ -8,14 +8,14 @@
 # Data (PRIVATE; the context goes only to our own SF workspace via create_context, never to a public place; delete the
 # context after the jobs end):
 #   index:   slices/dev-rows.jsonl.gz (sha256 pinned in data.sha256)
-#            + OPTIONAL reference/clef_flash.decide.results.jsonl: job-sgihj's decide results (art-8y6d8), pinned below;
-#              enables the in-job paired compare Clef - Clef-flash on identical rows
+#            + REQUIRED reference/clef_flash.decide.results.jsonl (REF_FLASH=...): job-sgihj's decide results (art-8y6d8),
+#              pinned below: the in-job paired compare Clef - Clef-flash and the Clef-flash 32k sensitivity base
 #   teacher: m2-150k/ (records + manifest + content map; each checked against the committed pointer) and suite-0.2/
 #            (official row files for jobs.m2_pilot.guard_ready's content index; hashes pinned in guard_pin.json)
 set -euo pipefail
 MODE=${1:?index|teacher|all}; SHA=${2:-HEAD}; OUTD=${3:-clef-baseline-context-$MODE}
 DATA=${SSDM_DATA:-$HOME/research/CHLabs/ssdm-data}
-REF_FLASH=${REF_FLASH:-}   # path to job-sgihj index/decide/results.jsonl (optional)
+REF_FLASH=${REF_FLASH:-}   # path to job-sgihj index/decide/results.jsonl (required for index mode)
 REF_FLASH_SHA=463f21ff492fc792da4d40ecc501cffab0498d2458715f8effd3270614cbd0aa
 B150=$DATA/m2/build/sample-150000-seed20261006
 case "$MODE" in index|teacher|all) ;; *) echo "mode must be index, teacher or all" >&2; exit 2 ;; esac
@@ -33,6 +33,7 @@ if [ "$MODE" != teacher ]; then
   cp "$DATA/slices/dev-rows.jsonl.gz" "$OUTD/data/slices/"
   [ "$(sha256sum "$OUTD/data/slices/dev-rows.jsonl.gz" | cut -d' ' -f1)" = "$(cut -d' ' -f1 "$OUTD/app/jobs/clef_baseline/data.sha256")" ] \
     || { echo "DEV rows sha256 mismatch" >&2; exit 1; }
+  [ -n "$REF_FLASH" ] || { echo "index mode needs REF_FLASH=<job-sgihj decide results.jsonl>" >&2; exit 1; }
   if [ -n "$REF_FLASH" ]; then
     mkdir -p "$OUTD/data/reference"
     cp "$REF_FLASH" "$OUTD/data/reference/clef_flash.decide.results.jsonl"
@@ -60,7 +61,8 @@ a = f"{d}/app"
 files = ["jobs/clef_baseline/run_job.sh", "jobs/clef_baseline/summarize.py", "jobs/clef_baseline/price.py",
          "jobs/clef_baseline/teacher_scope.json", "harness/jsonl.py", "baselines/clef_teacher.py",
          "jobs/clef_baseline/job_params_index_subset.json", "jobs/clef_baseline/job_params_index_full.json",
-         "jobs/clef_baseline/job_params_teacher_clef_flash.json", "jobs/clef_baseline/job_params_teacher_clef.json"]
+         "jobs/clef_baseline/job_params_teacher_clef_flash.json", "jobs/clef_baseline/job_params_teacher_clef.json",
+         "jobs/clef_baseline/job_params_overlength_flash.json", "jobs/clef_baseline/overlength_rows.json"]
 tl = pathlib.Path(d, "teacher-local", "selection.json")
 man = {"branch_commit": sha, "mode": mode, "dockerfile_sha256": h(f"{d}/Dockerfile"),
        "files_sha256": {f: h(f"{a}/{f}") for f in files},

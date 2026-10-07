@@ -15,7 +15,8 @@ SPEC = (ROOT / "jobs/clef_baseline/JOB_SPEC.md").read_text(encoding="utf-8")
 TREE = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
 RUNNER = (ROOT / "jobs/clef_baseline/run_job.sh").read_text(encoding="utf-8")
 NAMES = {"clef_index_subset": "job_params_index_subset.json", "clef_index_full": "job_params_index_full.json",
-         "clef_teacher_flash": "job_params_teacher_clef_flash.json", "clef_teacher_clef": "job_params_teacher_clef.json"}
+         "clef_teacher_flash": "job_params_teacher_clef_flash.json", "clef_teacher_clef": "job_params_teacher_clef.json",
+         "clef_overlength_flash": "job_params_overlength_flash.json"}
 
 
 def test_flops_ratio_from_pinned_configs():
@@ -33,8 +34,11 @@ def test_flops_ratio_from_pinned_configs():
 def test_sgihj_rate_model_reproduces_the_receipt():
     # the fitted per-row model sums to the measured 18.86 summed minutes over the job's 12,053 ok rows (+51 unsupported)
     assert abs(P.decide_minutes("clef-flash", 12053, P.SGIHJ["decide_tokens"]) - 18.81) < 0.1
-    assert abs(P.projection("clef", "dev_full")["decide_min"] - 66.3) < 0.2
-    assert abs(P.projection("clef", "dev_subset")["decide_min"] - 11.1) < 0.2
+    # planning at the card's 5.39x latency ratio (PR #98 review); the FLOPs ratio is the optimistic reference
+    assert round(P.PLANNING_RATIO, 2) == 5.39
+    assert abs(P.projection("clef", "dev_full")["decide_min"] - 101.6) < 0.2
+    assert abs(P.projection("clef", "dev_full")["flops_ratio_min"] - 66.3) < 0.2
+    assert abs(P.projection("clef", "dev_subset")["decide_min"] - 17.1) < 0.2
 
 
 @pytest.mark.parametrize("name", list(NAMES))
@@ -51,7 +55,7 @@ def test_caps_margins_schedule_and_costs(name):
 
 
 def test_index_caps_cover_the_projection_and_the_rate_guard_overshoot():
-    # projection = FLOPs-scaled decide minutes + load; the live linear projection overshoots by <= 1.32 (job-sgihj
+    # projection = planning-ratio (5.39x) decide minutes + load; the live linear projection overshoots by <= 1.32 (job-sgihj
     # row order, after 12% of the phase); it must stay under rate_guard's 95% of the cap at the expected rate
     for name, vol, over in (("clef_index_subset", "dev_subset", 1.32), ("clef_index_full", "dev_full", 1.28)):
         p = costs.load(name)
@@ -59,6 +63,30 @@ def test_index_caps_cover_the_projection_and_the_rate_guard_overshoot():
         exp = proj["decide_min"] + proj["load_min"]
         assert p["expected_minutes"]["index"] >= exp
         assert exp * over <= 0.95 * p["phase_caps_minutes"]["index"]
+
+
+def test_rederive_full_caps_from_the_subset_measurement():
+    full = costs.load("clef_index_full")
+    sub_model = P.decide_minutes("clef-flash", 2008, P.VOLUMES["dev_subset"]["tokens"])
+    at = lambda s: {"elapsed_min": s * sub_model + 1.6, "rows_done": 2008, "startup_s": 96.0}  # noqa: E731
+    ok = P.rederive(at(5.39), full)  # the planning case fits the committed cap
+    assert ok["ok"] and abs(ok["projected_full_index_min"] - 103.2) < 0.5
+    slow = P.rederive(at(7.0), full)  # a slower box: the full job's cap must be raised before it is submitted
+    assert not slow["ok"] and slow["required_index_cap_min"] > full["phase_caps_minutes"]["index"]
+    with pytest.raises(ValueError):
+        P.rederive({"elapsed_min": 10, "rows_done": 100}, full)
+
+
+def test_sensitivity_phase_caps():
+    for name, vol in (("clef_index_subset", "overlength_subset"), ("clef_index_full", "overlength_all"),
+                      ("clef_overlength_flash", "overlength_all")):
+        p = costs.load(name)
+        rel = "clef-flash" if "flash" in name else "clef"
+        pr = P.projection(rel, vol)
+        assert p["expected_minutes"]["sens"] >= pr["load_min"] + P.LONG_ROW_FACTOR * pr["decide_min"] - 0.5
+    ov = json.loads((ROOT / "jobs/clef_baseline/overlength_rows.json").read_text(encoding="utf-8"))
+    assert ov["n"] == len(ov["rows"]) == 51 and ov["max_tokens"] <= ov["max_length_sensitivity"] == 32768
+    assert sum(r["tokens"] for r in ov["rows"]) == P.VOLUMES["overlength_all"]["tokens"]
 
 
 def test_teacher_caps_cover_the_projection():
@@ -71,7 +99,11 @@ def test_teacher_caps_cover_the_projection():
 
 def test_joint_gate_and_dependencies():
     led = costs.branch_ledger()
-    assert led["joint_gate_fits"] and led["joint_gate_worst"] == 74.54
+    assert led["joint_gate_fits"] and led["joint_gate_worst"] == 48.51  # qual + Clef-flash GCG B
+    # Clef-27B Index (re-priced at 5.39x) is a separately authorised line, still counted in the envelope
+    assert led["clef27b_index_authorised_worst"] == round(sum(costs.worst_case_usd(costs.load(n))
+                                                              for n in costs.CLEF27B_INDEX_JOBS), 2)
+    assert all(b["fits_envelope"] for b in led["branches"].values())
     full = costs.load("clef_index_full")
     assert full["submit"]["depends_on"]["require"] == "result.s1_ok == true and result.ok == true"
     assert costs.load("clef_teacher_clef")["submit"]["depends_on"]["require"] == "result.s1_ok == true"

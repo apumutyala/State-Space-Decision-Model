@@ -54,6 +54,9 @@ SGIHJ = {
 SCORE_CPU_MIN = 1.3
 CARD_MEDIAN_RATIO = 209.3 / 38.8  # Cloudflare card, H200: Clef / Clef-flash median latency
 CARD_P95_RATIO = 238.6 / 122.4
+#: planning ratio for Clef / Clef-flash (PR #98 review): the card's median-latency ratio, not the optimistic FLOPs ratio
+#: (3.52). Caps are sized on it; the S1 preflight and the subset job's measured rate (``rederive``) replace it.
+PLANNING_RATIO = CARD_MEDIAN_RATIO
 
 
 def matmul_params_per_token(c: dict) -> int:
@@ -77,7 +80,7 @@ def flops_ratio() -> float:
 
 def decide_minutes(release: str, rows: int, tokens: float, ratio: float | None = None) -> float:
     """Projected summed kit wall minutes for ``rows`` requests of ``tokens`` total input tokens, batch 1."""
-    r = 1.0 if release == "clef-flash" else (flops_ratio() if ratio is None else ratio)
+    r = 1.0 if release == "clef-flash" else (PLANNING_RATIO if ratio is None else ratio)
     return r * (rows * SGIHJ["row_ms_intercept"] + tokens * SGIHJ["row_ms_per_token"]) / 60000.0
 
 
@@ -96,17 +99,44 @@ VOLUMES = {
     "dev_subset": {"rows": 2008, "tokens": 3146552},
     "teacher_draw_24k": {"rows": 24000, "tokens": 45200200, "over_16k_tokens_est": 550},
     "teacher_pool_150k": {"rows": 149997, "tokens": 279600000, "over_16k_tokens_est": 3427},
+    # jobs/clef_baseline/overlength_rows.json (51 rows over 16,384 tokens; 4 of them in the m1 subset)
+    "overlength_all": {"rows": 51, "tokens": 1160794},
+    "overlength_subset": {"rows": 4, "tokens": 94182},
 }
 
 
 def projection(release: str, volume: str) -> dict:
+    """Planning projection (Clef at PLANNING_RATIO = the card's 5.39x median-latency ratio, PR #98 review) plus the
+    optimistic FLOPs-ratio figure for reference."""
     v = VOLUMES[volume]
     m = decide_minutes(release, v["rows"], v["tokens"])
     out = {"release": release, "volume": volume, **v, "decide_min": round(m, 1),
            "load_min": round(load_minutes(release), 1)}
     if release == "clef":
-        out["stress_card_median_ratio_min"] = round(decide_minutes(release, v["rows"], v["tokens"], CARD_MEDIAN_RATIO), 1)
+        out["flops_ratio_min"] = round(decide_minutes(release, v["rows"], v["tokens"], flops_ratio()), 1)
     return out
+
+
+#: the sensitivity arm re-reads rows of 16k-32k tokens; attention is quadratic there, so the per-token model is doubled
+LONG_ROW_FACTOR = 2.0
+
+
+def rederive(rate_guard_subset: dict, full_params: dict, overshoot: float = 1.28) -> dict:
+    """Re-derive the full-DEV index cap from the subset job's MEASURED index phase (its rate_guard_index.json):
+    measured minutes per unit of the job-sgihj model, x the full-DEV model minutes, + the measured startup. The cap
+    must cover that projection x the live guard's worst early overshoot (1.28 on job-sgihj's full-DEV row order) at
+    95 %, and be >= 1.3x it. Run before submitting the full job; raise its caps if ``ok`` is false."""
+    el, rows, st = rate_guard_subset["elapsed_min"], rate_guard_subset["rows_done"], rate_guard_subset.get("startup_s", 0) / 60
+    sub = VOLUMES["dev_subset"]
+    if rows != sub["rows"]:
+        raise ValueError(f"subset rate guard saw {rows} rows, expected {sub['rows']}")
+    s = (el - st) / decide_minutes("clef-flash", sub["rows"], sub["tokens"])
+    full = VOLUMES["dev_full"]
+    proj = s * decide_minutes("clef-flash", full["rows"], full["tokens"]) + st
+    need = max(1.3 * proj, overshoot * proj / 0.95)
+    cap = full_params["phase_caps_minutes"]["index"]
+    return {"measured_speed_vs_flash": round(s, 3), "projected_full_index_min": round(proj, 1),
+            "required_index_cap_min": round(need, 1), "params_index_cap_min": cap, "ok": cap >= need}
 
 
 def params_files() -> list[Path]:

@@ -98,6 +98,39 @@ def composite(a) -> int:
     return 0
 
 
+def substitute(a) -> int:
+    """The 32k sensitivity arm (JOB_SPEC 4c): ``base`` results with every row of ``rows`` (the over-length rows re-read
+    at max_length 32768) put in place of the base row with the same run_id. Strict: every sensitivity row must exist
+    in the base, ``--expect`` rows exactly, nothing written otherwise."""
+    bpath, rpath = Path(a.base), Path(a.rows)
+    base, sens = rows(bpath), rows(rpath)
+    ids = _unique(sens, rpath)
+    base_ids = _unique(base, bpath)
+    if a.expect is not None and len(sens) != a.expect:
+        raise Incomplete(f"{rpath}: {len(sens)} sensitivity rows, expected {a.expect}: partial run")
+    stray = sorted(ids - base_ids)
+    if stray:
+        raise Incomplete(f"{len(stray)} sensitivity rows not in the base results (e.g. {stray[:3]})")
+    by = {r["run_id"]: r for r in sens}
+    out = [by.get(r["run_id"], r) for r in base]
+    p = Path(a.out)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text("".join(json.dumps(r) + "\n" for r in out), encoding="utf-8", newline="\n")
+    prov = {"base": a.base, "base_sha256": sha(bpath), "rows": a.rows, "rows_sha256": sha(rpath),
+            "substituted_run_ids": sorted(ids),
+            "status_before": _count(r.get("status") for r in base if r["run_id"] in ids),
+            "status_after": _count(r.get("status") for r in sens)}
+    (p.parent / "substitute.provenance.json").write_text(json.dumps(prov, indent=1), encoding="utf-8")
+    return 0
+
+
+def _count(xs):
+    c = {}
+    for x in xs:
+        c[x] = c.get(x, 0) + 1
+    return c
+
+
 def pct(xs, q):
     xs = sorted(xs)
     return xs[min(len(xs) - 1, max(0, math.ceil(q * len(xs)) - 1))] if xs else None
@@ -155,7 +188,21 @@ def report(a) -> int:
                         ("n", "gdn_layers_found", "gdn_layers_already_reference", "gdn_layers_switched",
                          "max_abs_dp", "argmax_flips", "fail_reasons")},
         "s1_ok": (probes.get("parity") or {}).get("ok") is True and (probes.get("kernel_path") or {}).get("ok") is True,
+        # headline Clef number = the native composite: Clef's own systemone (silent truncation at its shipped
+        # 16,384) on the rows our decide path scores exhausted; decide and the 32k sensitivity arm alongside (4c)
+        "headline": {"metric": "index_dev_native_composite", "edition": "0.2.1", "value": idx_nat,
+                     "why": "Clef as shipped answers over-length rows on a truncated state; the decide path scores "
+                            "them exhausted (= wrong), which is one-directional against Clef"},
         "index_dev_decide": idx_dec, "index_dev_native_composite": idx_nat, "ece_decide": ece,
+        "index_dev_decide_03": load(o / "index" / "score_decide_03.json"),
+        "index_dev_native_composite_03": load(o / "index" / "score_native_composite_03.json"),
+        "sensitivity_32k": {"index_dev_decide_32k_substituted": load(o / "index" / "score_decide_32k_substituted.json"),
+                            "reference_decide": load(o / "index" / "score_reference_decide.json"),
+                            "compare_32k_vs_16k": load(o / "index" / "compare_32k_vs_16k.json"),
+                            "provenance": load(o / "index" / "decide_32k_substituted" / "substitute.provenance.json")},
+        "paired_compare": ("present" if (o / "index" / "compare_clef_vs_flash.json").exists()
+                           else ("absent" if a.release == "clef" and a.job == "I" else "n/a")),
+        "compare_clef_composite_vs_flash": load(o / "index" / "compare_clef_composite_vs_flash.json"),
         "index_dev_decide_on_m1_subset": load(o / "index" / "score_decide_subset.json"),
         "compare_decide_vs_native": load(o / "index" / "compare_decide_vs_native.json"),
         "compare_clef_vs_flash": load(o / "index" / "compare_clef_vs_flash.json"),
@@ -174,9 +221,13 @@ def report(a) -> int:
         "teacher": None if teach is None else {
             **teach, "selection": {k: sel.get(k) for k in ("pointer", "pointer_sha256", "n_set", "n_drawn",
                                                            "drawn_ids_sha256", "cohort_hits", "guard_refused",
-                                                           "heldout_scan", "files_uncompressed_sha256")},
+                                                           "heldout_scan", "files_uncompressed_sha256",
+                                                           "frozen_family_refused", "heldout_draw_v1_sha256",
+                                                           "frozen_families")},
             "guard": (sel.get("guard") or {}).get("content_index"), "guard_note": (sel.get("guard") or {}).get("note")},
     }
+    if a.job == "I" and a.release == "clef" and result["paired_compare"] == "absent" and not result["dry_run"]:
+        raise Incomplete("RELEASE=clef index job without the paired Clef - Clef-flash comparison")
     if a.job == "T" and teach is None:
         raise Incomplete("job T without teacher identity")
     json.dump(result, sys.stdout, indent=1, default=str)
@@ -191,6 +242,11 @@ def main(argv=None) -> int:
     c.add_argument("--native", required=True)
     c.add_argument("--out", required=True)
     c.add_argument("--probes", default=None)
+    t = sub.add_parser("substitute")
+    t.add_argument("--base", required=True)
+    t.add_argument("--rows", required=True)
+    t.add_argument("--out", required=True)
+    t.add_argument("--expect", type=int, default=None)
     r = sub.add_parser("report")
     r.add_argument("--out-dir", required=True)
     r.add_argument("--release", required=True)
@@ -201,7 +257,7 @@ def main(argv=None) -> int:
     from harness.jsonl import ResultsFileError
 
     try:
-        return composite(a) if a.cmd == "composite" else report(a)
+        return {"composite": composite, "substitute": substitute, "report": report}[a.cmd](a)
     except ResultsFileError as e:
         print(f"summarize {a.cmd}: results file unusable: {e}", file=sys.stderr)
         return EXIT_BAD_FILE

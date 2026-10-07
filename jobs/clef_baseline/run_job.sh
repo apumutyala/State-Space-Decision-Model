@@ -15,6 +15,10 @@
 #             job-sgihj class) | 18 too slow: the live rate guard projected the phase past its cap, or the cap hit |
 #             19 teacher export failed | 20 contamination guard refused (T: DEV/TEST/cohort/held-out hit, or the
 #             guard is not ready)
+# I extras (JOB_SPEC 4b/4c): scores are edition 0.2.1 (as job-sgihj) plus a 0.3 report; the headline Clef number is
+# the native composite (Clef's own 16,384-token truncation); phase sens re-reads the over-length rows
+# (overlength_rows.json) at max_length 32768; ROWS=overlength (Clef-flash) runs only that arm, substituted into the
+# pinned job-sgihj decide results. RELEASE=clef I jobs require that reference (exit 10 if absent).
 #
 # Heartbeat semantics (platform health check: heartbeat on $OUT/heartbeat, interval 600 s, fail_threshold 2,
 # on_fail kill). A background watchdog touches $OUT/heartbeat every HB_EVERY_S (60 s) ONLY while BOTH hold:
@@ -28,11 +32,12 @@
 #
 # CPU dry run (tests/clef/test_clef_job_sh.py executes THIS script end to end): CLEF_DRY_RUN=1 with
 # CLEF_STANDIN=<module:function> (a tiny stand-in model; refused without CLEF_DRY_RUN), CLEF_APP / CLEF_DATA (code and
-# data roots, default /app and /data), CLEF_SUBSET (subset file), CLEF_TEACHER_N (draw size), CLEF_N_PARITY. The dry
+# data roots, default /app and /data), CLEF_SUBSET (subset file), CLEF_TEACHER_N (draw size), CLEF_N_PARITY,
+# CLEF_OVERLENGTH (over-length id list); every one of these overrides is refused (exit 2) outside a dry run. The dry
 # run skips only what needs a GPU or the network (fla_guard, snapshot download + weight hashes, guard_ready's suite
 # rebuild); every other phase, file check, exit-code mapping and the rate guard run unchanged. result.json says
-# "dry_run": true. CLEF_DRY_FAULT=truncate_decide (dry run only) cuts the decide results mid-line before the
-# composite, to prove the exit-17 path end to end.
+# "dry_run": true. CLEF_DRY_FAULT=truncate_decide|drop_decide_row (dry run only) cuts the decide results mid-line or
+# drops one complete row before scoring, to prove the exit-17 path end to end (strict reader on the merged harness).
 set -uo pipefail
 MAIN_PID=$$
 HB_EVERY_S="${HB_EVERY_S:-60}"
@@ -48,16 +53,24 @@ case "$RELEASE" in
   clef)       REPO=Cloudflare/clef;       REV=2f3de3dd85f379784083b0814d997ab627200f0c ;;
   *) echo "unknown RELEASE $RELEASE"; exit 2 ;;
 esac
-case "$JOB" in A|B|T) ;; I) case "$ROWS" in subset|full) ;; *) echo "ROWS must be subset or full"; exit 2 ;; esac ;;
+case "$JOB" in A|B|T) ;; I) case "$ROWS" in subset|full|overlength) ;; *) echo "ROWS must be subset, full or overlength"; exit 2 ;; esac ;;
   *) echo "unknown JOB $JOB"; exit 2 ;; esac
+# ROWS=overlength (Clef-flash only): the 51-row max_length-32768 sensitivity arm substituted into job-sgihj's decide
+# results. The Clef-27B jobs run the same arm in-job (phase sens) on their own results.
+[ "$ROWS" = "overlength" ] && [ "$RELEASE" != "clef-flash" ] && { echo "ROWS=overlength is the Clef-flash arm"; exit 2; }
 if [ "$DRY" = "1" ]; then
   [ -n "${CLEF_STANDIN:-}" ] || { echo "CLEF_DRY_RUN=1 needs CLEF_STANDIN"; exit 2; }
   DEVOPT=(--option device=cpu --option dtype=float32); DEVARG=(--device cpu)
 else
-  [ -z "${CLEF_STANDIN:-}" ] || { echo "CLEF_STANDIN is for CLEF_DRY_RUN=1 only"; exit 2; }
-  [ -z "${CLEF_DRY_FAULT:-}" ] || { echo "CLEF_DRY_FAULT is for CLEF_DRY_RUN=1 only"; exit 2; }
+  for v in CLEF_STANDIN CLEF_DRY_FAULT CLEF_TEACHER_N CLEF_SUBSET CLEF_N_PARITY CLEF_OVERLENGTH; do
+    [ -z "${!v:-}" ] || { echo "$v is for CLEF_DRY_RUN=1 only"; exit 2; }
+  done
   DEVOPT=(); DEVARG=()
 fi
+# Index edition: 0.2.1, explicitly, so every number stays comparable to job-sgihj whatever the harness default
+# becomes; a 0.3 score is reported alongside (--edition 0.3 --omit-gsm8k03: these runs never read the rebuilt GSM8K).
+ED=(--edition 0.2.1); ED03=(--edition 0.3 --omit-gsm8k03)
+SENS_MAX=32768
 cd "$APP" || exit 2
 case "$JOB" in I) TAG="${RELEASE}-index-${ROWS}" ;; T) TAG="${RELEASE}-teacher" ;; *) TAG="${RELEASE}-job${JOB}" ;; esac
 OUT="${GMN_OUTPUT_DIR:-/output}/${TAG}"
@@ -72,6 +85,7 @@ mkdir -p "$HF_DIR"
 case "$JOB$ROWS" in
   Isubset) PFILE=jobs/clef_baseline/job_params_index_subset.json ;;
   Ifull)   PFILE=jobs/clef_baseline/job_params_index_full.json ;;
+  Ioverlength) PFILE=jobs/clef_baseline/job_params_overlength_flash.json ;;
   T*)      PFILE=jobs/clef_baseline/job_params_teacher_${RELEASE//-/_}.json ;;
   *)       PFILE="" ;;
 esac
@@ -112,6 +126,17 @@ if [ "$JOB" != "T" ]; then
   echo "$GOT $DEV_ROWS (want $WANT)" > "$OUT/env/data-verify.txt"
   [ "$GOT" = "$WANT" ] && echo OK >> "$OUT/env/data-verify.txt" || fail 10 data_verify
 fi
+# The paired Clef - Clef-flash comparison (and the Clef-flash sensitivity base) needs job-sgihj's decide results,
+# pinned by sha256. Required in production before any download; a dry run records its absence in result.json.
+REF="$DATA/reference/clef_flash.decide.results.jsonl"
+REF_SHA=463f21ff492fc792da4d40ecc501cffab0498d2458715f8effd3270614cbd0aa
+if [ "$JOB" = "I" ] && { [ "$RELEASE" = "clef" ] || [ "$ROWS" = "overlength" ]; }; then
+  if [ -f "$REF" ]; then
+    [ "$DRY" = "1" ] || [ "$(sha256sum "$REF" | cut -d' ' -f1)" = "$REF_SHA" ] || fail 10 reference_sha256
+  elif [ "$DRY" != "1" ]; then
+    fail 10 reference_missing
+  fi
+fi
 
 if [ "$JOB" = "T" ]; then
   # Contamination guard + selection BEFORE any GPU phase or weight download (exit 20 = refused).
@@ -124,7 +149,7 @@ if [ "$JOB" = "T" ]; then
         --out-dir "$OUT/guard" > "$OUT/guard.log" 2>&1 || fail 20 guard_ready
     GUARD=(--guard-readiness "$OUT/guard/readiness.json")
   fi
-  N_ARG=(); [ -n "${CLEF_TEACHER_N:-}" ] && N_ARG=(--n "$CLEF_TEACHER_N")
+  N_ARG=(); [ "$DRY" = "1" ] && [ -n "${CLEF_TEACHER_N:-}" ] && N_ARG=(--n "$CLEF_TEACHER_N")  # dry run only
   timeout "$(cap guard 6)m" python -X utf8 -m baselines.clef_teacher select --train-dir "$DATA/m2-150k" \
       --out "$TEACH" "${GUARD[@]}" "${N_ARG[@]}" > "$OUT/teacher-select.log" 2>&1
   rc=$?; case $rc in 0) ;; 20) fail 20 teacher_select_contamination ;; 124) fail 18 teacher_select_timeout ;; *) fail 10 teacher_select ;; esac
@@ -149,6 +174,7 @@ EOF
 fi
 
 if [ "$JOB" = "A" ] || [ "$JOB" = "I" ]; then
+  IDX="$OUT/index"
   if [ "$JOB" = "I" ] && [ "$ROWS" = "subset" ]; then
     SUBSET="${CLEF_SUBSET:-jobs/common/dev_subset_m1.json}"
     python -X utf8 -m jobs.common.dev_subset rows --rows "$DEV_ROWS" --out "$OUT/index/rows.jsonl.gz" \
@@ -157,6 +183,33 @@ if [ "$JOB" = "A" ] || [ "$JOB" = "I" ]; then
   else
     ROWS_FILE="$DEV_ROWS"
   fi
+  # S2c rows: the committed over-length list (rows Clef's shipped max_length 16,384 cuts; 51 on DEV) within this job's rows
+  OVERLEN="${CLEF_OVERLENGTH:-jobs/clef_baseline/overlength_rows.json}"
+  python -X utf8 - "$OVERLEN" "$ROWS_FILE" "$OUT/index/overlength-rows.jsonl.gz" <<'EOF' || fail 10 overlength_rows
+import gzip, json, sys
+ids = {r["run_id"] for r in json.load(open(sys.argv[1], encoding="utf-8"))["rows"]}
+with gzip.open(sys.argv[2], "rt", encoding="utf-8", newline="\n") as fi, \
+     gzip.open(sys.argv[3], "wt", encoding="utf-8", newline="\n") as fo:
+    for line in fi:
+        if line.strip() and json.loads(line)["_evaluation"]["run_id"] in ids:
+            fo.write(line)
+EOF
+  N_SENS=$(python -c "import gzip,sys; print(sum(1 for x in gzip.open(sys.argv[1],'rt',encoding='utf-8') if x.strip()))" "$OUT/index/overlength-rows.jsonl.gz")
+  if [ "$ROWS" = "overlength" ]; then
+    SC=(python -X utf8 -I -m harness); SL=(--slice dev)
+    stage "S2c over-length sensitivity: $N_SENS rows at max_length $SENS_MAX (decide path)"
+    timeout "$(cap sens 10)m" python -X utf8 -m decision_index run --engine baselines.clef_index_engine:ClefIndexEngine \
+        --option model_dir="$SNAP" --option release="$RELEASE" --option path=decide --option max_length="$SENS_MAX" \
+        "${DEVOPT[@]}" --rows "$OUT/index/overlength-rows.jsonl.gz" --out "$IDX/decide_32k" > "$IDX/decide_32k.log" 2>&1
+    rc=$?; case $rc in 0) ;; 124) fail 18 sens_timeout ;; *) fail 12 sens ;; esac
+    stage "S3 score: job-sgihj decide results with the $N_SENS rows substituted (edition 0.2.1)"
+    python -X utf8 jobs/clef_baseline/summarize.py substitute --base "$REF" --rows "$IDX/decide_32k/results.jsonl" \
+        --expect "$N_SENS" --out "$IDX/decide_32k_substituted/results.jsonl"; score_rc $? substitute_32k
+    # read-only input (the pinned job-sgihj reference), not a phase output: hence --results=PATH
+    "${SC[@]}" score --results="$REF" "${SL[@]}" "${ED[@]}" > "$IDX/score_reference_decide.json"; score_rc $? score_reference
+    "${SC[@]}" score --results "$IDX/decide_32k_substituted/results.jsonl" "${SL[@]}" "${ED[@]}" > "$IDX/score_decide_32k_substituted.json"; score_rc $? score_32k
+    "${SC[@]}" compare --candidate "$IDX/decide_32k_substituted/results.jsonl" --baseline "$REF" "${SL[@]}" "${ED[@]}" > "$IDX/compare_32k_vs_16k.json"; score_rc $? compare_32k
+  else
   N_ROWS=$(python -c "import gzip,sys; print(sum(1 for x in gzip.open(sys.argv[1],'rt',encoding='utf-8') if x.strip()))" "$ROWS_FILE")
   GRAD=(); [ "$JOB" = "A" ] && GRAD=(--grad-probe)
   stage "S1 probes (parity, kernel_path, encodings, G8, G2b${GRAD:+, memory}) on $N_ROWS rows"
@@ -165,7 +218,7 @@ if [ "$JOB" = "A" ] || [ "$JOB" = "I" ]; then
       > "$OUT/probes.log" 2>&1
   rc=$?; case $rc in 0) ;; 11) fail 11 probes ;; 124) fail 18 probes_timeout ;; *) fail 10 probes ;; esac
 
-  CAPI=$(cap index "$([ "$RELEASE" = clef ] && echo 100 || echo 60)")
+  CAPI=$(cap index "$([ "$RELEASE" = clef ] && echo 141 || echo 60)")
   # measured-rate preflight: the S1 parity rows' decide timing on THIS box vs the job-sgihj rate model -> projected
   # Index minutes; past 95 % of the cap = stop now (18), before the long phase. Advisory in the CPU dry run.
   ADV=(); [ "$DRY" = "1" ] && ADV=(--advisory)
@@ -179,6 +232,13 @@ if [ "$JOB" = "A" ] || [ "$JOB" = "I" ]; then
     python -X utf8 -m decision_index run --engine baselines.clef_index_engine:ClefIndexEngine \
       --option model_dir="$SNAP" --option release="$RELEASE" --option path=decide "${DEVOPT[@]}" \
       --rows "$ROWS_FILE" --out "$OUT/index/decide"
+  if [ "$N_SENS" -gt 0 ]; then
+    stage "S2c over-length sensitivity: $N_SENS rows at max_length $SENS_MAX (decide path; declared, JOB_SPEC 4c)"
+    timeout "$(cap sens 15)m" python -X utf8 -m decision_index run --engine baselines.clef_index_engine:ClefIndexEngine \
+        --option model_dir="$SNAP" --option release="$RELEASE" --option path=decide --option max_length="$SENS_MAX" \
+        "${DEVOPT[@]}" --rows "$OUT/index/overlength-rows.jsonl.gz" --out "$IDX/decide_32k" > "$IDX/decide_32k.log" 2>&1
+    rc=$?; case $rc in 0) ;; 124) fail 18 sens_timeout ;; *) fail 12 sens ;; esac
+  fi
   python -X utf8 - "$OUT/probes.json" "$ROWS_FILE" "$OUT/index/native-rows.jsonl.gz" <<'EOF' || fail 12 index_native_rows
 import gzip, json, sys
 p = json.load(open(sys.argv[1]))
@@ -195,29 +255,41 @@ EOF
       --option model_dir="$SNAP" --option release="$RELEASE" --option path=native --option verify=false "${DEVOPT[@]}" \
       --rows "$OUT/index/native-rows.jsonl.gz" --out "$OUT/index/native" > "$OUT/index/native.log" 2>&1
   rc=$?; case $rc in 0) ;; 124) fail 18 index_native_timeout ;; *) fail 12 index_native ;; esac
-  if [ "$DRY" = "1" ] && [ "${CLEF_DRY_FAULT:-}" = "truncate_decide" ]; then  # fault injection, dry run only
-    python -c "import sys; p=sys.argv[1]; b=open(p,'rb').read(); open(p,'wb').write(b[:len(b)-len(b.rstrip(b'\n').rsplit(b'\n',1)[-1])//2-1])" "$OUT/index/decide/results.jsonl"
+  if [ "$DRY" = "1" ]; then  # fault injection, dry run only: a partial write / a lost row must end in exit 17
+    case "${CLEF_DRY_FAULT:-}" in
+      truncate_decide) python -c "import sys; p=sys.argv[1]; b=open(p,'rb').read(); open(p,'wb').write(b[:len(b)-len(b.rstrip(b'\n').rsplit(b'\n',1)[-1])//2-1])" "$IDX/decide/results.jsonl" ;;
+      drop_decide_row) python -c "import sys; p=sys.argv[1]; b=open(p,'rb').read(); open(p,'wb').write(b[b.index(b'\n')+1:])" "$IDX/decide/results.jsonl" ;;
+    esac
   fi
 
-  stage "S3 score (decide first) + composite + ECE + latency"
-  IDX="$OUT/index"; REF="$DATA/reference/clef_flash.decide.results.jsonl"
+  stage "S3 score (decide first; edition 0.2.1 + a 0.3 report) + composite (headline) + 32k sensitivity + ECE + latency"
   if [ "$JOB" = "I" ] && [ "$ROWS" = "subset" ]; then
-    SC=(python -X utf8 -m jobs.common.dev_subset); SL=(--subset "$SUBSET")
+    SC=(python -X utf8 -m jobs.common.dev_subset); SL=(--subset "$SUBSET"); ECE_ED=()
   else
-    SC=(python -X utf8 -I -m harness); SL=(--slice dev)
+    SC=(python -X utf8 -I -m harness); SL=(--slice dev); ECE_ED=("${ED[@]}")
   fi
-  "${SC[@]}" score --results "$IDX/decide/results.jsonl" "${SL[@]}" > "$IDX/score_decide.json"; score_rc $? score_decide
+  "${SC[@]}" score --results "$IDX/decide/results.jsonl" "${SL[@]}" "${ED[@]}" > "$IDX/score_decide.json"; score_rc $? score_decide
   python -X utf8 jobs/clef_baseline/summarize.py composite --decide "$IDX/decide/results.jsonl" \
       --native "$IDX/native/results.jsonl" --probes "$OUT/probes.json" --out "$IDX/native_composite/results.jsonl"
   rc=$?; case $rc in 0) ;; 3|4) fail 17 composite ;; *) fail 12 composite ;; esac
-  "${SC[@]}" score --results "$IDX/native_composite/results.jsonl" "${SL[@]}" > "$IDX/score_native_composite.json"; score_rc $? score_native
-  "${SC[@]}" compare --candidate "$IDX/decide/results.jsonl" --baseline "$IDX/native_composite/results.jsonl" "${SL[@]}" > "$IDX/compare_decide_vs_native.json"; score_rc $? compare
-  "${SC[@]}" ece --results "$IDX/decide/results.jsonl" "${SL[@]}" > "$IDX/ece_decide.json"; score_rc $? ece
-  if [ "$ROWS" = "full" ] && [ -f "$APP/jobs/common/dev_subset_m1.json" ] && [ "$DRY" != "1" ]; then
-    python -X utf8 -m jobs.common.dev_subset score --results "$IDX/decide/results.jsonl" > "$IDX/score_decide_subset.json"; score_rc $? score_subset
+  "${SC[@]}" score --results "$IDX/native_composite/results.jsonl" "${SL[@]}" "${ED[@]}" > "$IDX/score_native_composite.json"; score_rc $? score_native
+  "${SC[@]}" compare --candidate "$IDX/decide/results.jsonl" --baseline "$IDX/native_composite/results.jsonl" "${SL[@]}" "${ED[@]}" > "$IDX/compare_decide_vs_native.json"; score_rc $? compare
+  "${SC[@]}" ece --results "$IDX/decide/results.jsonl" "${SL[@]}" "${ECE_ED[@]}" > "$IDX/ece_decide.json"; score_rc $? ece
+  # 0.3 report (not the comparison basis: job-sgihj and every receipt so far are 0.2.1)
+  "${SC[@]}" score --results "$IDX/decide/results.jsonl" "${SL[@]}" "${ED03[@]}" > "$IDX/score_decide_03.json"; score_rc $? score_decide_03
+  "${SC[@]}" score --results "$IDX/native_composite/results.jsonl" "${SL[@]}" "${ED03[@]}" > "$IDX/score_native_composite_03.json"; score_rc $? score_native_03
+  if [ "$N_SENS" -gt 0 ]; then
+    python -X utf8 jobs/clef_baseline/summarize.py substitute --base "$IDX/decide/results.jsonl" \
+        --rows "$IDX/decide_32k/results.jsonl" --expect "$N_SENS" --out "$IDX/decide_32k_substituted/results.jsonl"; score_rc $? substitute_32k
+    "${SC[@]}" score --results "$IDX/decide_32k_substituted/results.jsonl" "${SL[@]}" "${ED[@]}" > "$IDX/score_decide_32k_substituted.json"; score_rc $? score_32k
   fi
-  if [ -f "$REF" ] && [ "$RELEASE" = "clef" ]; then  # paired on identical rows: Clef - Clef-flash (job-sgihj)
-    "${SC[@]}" compare --candidate "$IDX/decide/results.jsonl" --baseline "$REF" "${SL[@]}" > "$IDX/compare_clef_vs_flash.json"; score_rc $? compare_vs_flash
+  if [ "$ROWS" = "full" ] && [ -f "$APP/jobs/common/dev_subset_m1.json" ] && [ "$DRY" != "1" ]; then
+    python -X utf8 -m jobs.common.dev_subset score --results "$IDX/decide/results.jsonl" "${ED[@]}" > "$IDX/score_decide_subset.json"; score_rc $? score_subset
+  fi
+  if [ -f "$REF" ] && [ "$RELEASE" = "clef" ]; then  # paired on identical rows: Clef - Clef-flash (job-sgihj); required in production
+    "${SC[@]}" compare --candidate "$IDX/decide/results.jsonl" --baseline "$REF" "${SL[@]}" "${ED[@]}" > "$IDX/compare_clef_vs_flash.json"; score_rc $? compare_vs_flash
+    "${SC[@]}" compare --candidate "$IDX/native_composite/results.jsonl" --baseline "$REF" "${SL[@]}" "${ED[@]}" > "$IDX/compare_clef_composite_vs_flash.json"; score_rc $? compare_composite_vs_flash
+  fi
   fi
 fi
 

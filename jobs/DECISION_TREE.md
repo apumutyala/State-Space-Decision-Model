@@ -17,10 +17,11 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | fla_rwkv7 (fla chunk_rwkv7 gate, v1 rule; ran as job-jn47u) | `jobs/fla_rwkv7/` | $3.96 | $4.50 | ~$1.09 |
 | fla_rwkv7 truth_v2 (RULE v2 + A1: fp64-truth numerics, m2 cell train speed; `fla_job.sh truth_v2`) | `jobs/fla_rwkv7/job_params_truth_v2.json` | $5.74 | $6 | ~$1.19 |
 | cell_step_profile (m2 cell train step: baseline / ckpt_rows_lean / ckpt_rows / ckpt; pre-registered rule v1-A2) | `jobs/cell_step_profile/` | $8.22 | $8.50 | ~$1.59 |
-| clef_index_subset (Clef-27B Index on the 2,008-row m1 DEV subset; canary; `RELEASE=clef JOB=I ROWS=subset`) | `jobs/clef_baseline/job_params_index_subset.json` | $8.71 | $9 | ~$2.82 |
-| clef_index_full (Clef-27B Index on all 12,104 DEV rows; `depends_on` index_subset `s1_ok and ok`; DEV only) | `jobs/clef_baseline/job_params_index_full.json` | $17.32 | $18 | ~$5.69 |
+| clef_index_subset (Clef-27B Index on the 2,008-row m1 DEV subset; canary; `RELEASE=clef JOB=I ROWS=subset`; planned at 5.39x) | `jobs/clef_baseline/job_params_index_subset.json` | $10.20 | $10.50 | ~$3.37 |
+| clef_index_full (Clef-27B Index on all 12,104 DEV rows; `depends_on` index_subset `s1_ok and ok`; caps re-derived from the subset with `price.py rederive`; DEV only) | `jobs/clef_baseline/job_params_index_full.json` | $23.46 | $24 | ~$8.27 |
+| clef_overlength_flash (Clef-flash 32k sensitivity on the 51 over-length DEV rows, substituted into job-sgihj; `ROWS=overlength`) | `jobs/clef_baseline/job_params_overlength_flash.json` | $5.25 | $6 | ~$1.49 |
 | clef_teacher_flash (optional m2 teacher: Clef-flash probabilities on the 24k TRAINING draw; guard exit 20) | `jobs/clef_baseline/job_params_teacher_clef_flash.json` | $11.68 | $12 | ~$3.56 |
-| clef_teacher_clef (optional m2 teacher: Clef-27B, same draw; `depends_on` index_subset `s1_ok`) | `jobs/clef_baseline/job_params_teacher_clef.json` | $28.51 | $29 | ~$9.26 |
+| clef_teacher_clef (optional m2 teacher: Clef-27B, same draw; `depends_on` index_subset `s1_ok`; planned at 5.39x) | `jobs/clef_baseline/job_params_teacher_clef.json` | $35.74 | $36 | ~$13.22 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
 need one cap covering all of them: MTD + `costs.concurrent_cap_usd([...])` = the ceiling of the sum of their worst
@@ -58,13 +59,14 @@ recorded decision, not an automatic one.
 
 | Line (PLAN.md) | Budget | Worst case committed by this tree |
 |---|---|---|
-| Joint gate | $75 | qual $18.81 + Clef-flash GCG B $29.70 + Clef-27B Index subset $8.71 + full $17.32 = $74.54 (Clef A ran as job-sgihj, $1.40 in MTD; C is superseded for the Index by the two Index jobs) |
+| Joint gate | $75 | qual $18.81 + Clef-flash GCG B $29.70 = $48.51 (Clef A ran as job-sgihj, $1.40 in MTD; C is superseded for the Index by the Clef-27B Index line below) |
+| Clef-27B Index (authorised by the coordinator 2026-10-07, PR #98 review) | - | index_subset $10.20 + index_full $23.46 + overlength_flash $5.25 = $38.91 (re-priced at the card's 5.39x latency ratio; it would overrun the $75 joint line, so it is its own line, counted in the envelope) |
 | System 1, branch A: probe proceeds | $250 | probe $28.21 + full-8 ~$150 (estimate) + rwkv7 A $16.34 = $194.55 -> $55.45 left for m2 (the cache-fork plan needs ~$51) |
 | System 1, branch B: probe fails | $250 | probe $28.21 + rwkv7 A $16.34 + rwkv7 B $19.30 = $63.85 -> $186.15 left for m2 on RWKV7 (~$12-17 per cell, M2_RUN_SPEC) |
 | System 1, branch C: qual folds | $250 | rwkv7 A + B = $35.64 -> $214.36 left for m2 |
 | Language / Reserve | $100 / $100 | untouched; re-runs come from the reserve |
-| Optional m2 teachers (System 1) | - | clef_teacher_flash $11.68 + clef_teacher_clef $28.51 = $40.19, only if a distillation cell is approved; `costs.branch_ledger` counts it in every branch (`system1_left_after_teachers`) |
+| Optional m2 teachers (System 1) | - | clef_teacher_flash $11.68 + clef_teacher_clef $35.74 = $47.42, only if a distillation cell is approved; `costs.branch_ledger` counts it in every branch (`system1_left_after_teachers`) |
 
-Worst-case envelope total, including the $8.43 MTD spend and both optional teachers, is at most $317.71 (branch A), so every branch fits $525 with the Language and Reserve
+Worst-case envelope total, including the $8.43 MTD spend, the Clef-27B Index line and both optional teachers, is at most $337.82 (branch A), so every branch fits $525 with the Language and Reserve
 lines intact. Branch A leaves System 1 only ~$4 above the cache-fork m2 plan: if the full-8 job runs over its
 estimate, m2 takes option (b)/(c) from M2_RUN_SPEC or draws on the reserve via a spend issue.
