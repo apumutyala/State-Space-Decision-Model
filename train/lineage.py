@@ -98,6 +98,11 @@ def items_identity(items: Sequence) -> dict[str, Any]:
         axes = getattr(it, "axis_target", None)
         if axes is not None:
             value.append({"axis_target": list(axes)})  # opt-in sidecar identity; legacy digests unchanged
+        view = getattr(it, "view", None)
+        if view is not None:  # order-consistency view (train.order_views): opt-in, legacy digests unchanged
+            v = view.row
+            value.append({"view": [view.id, view.label, v.ids, v.option_ids, v.continuations, v.option_seqs, v.qtype,
+                                   list(it.view_perm)]})
         h.update(_h(value).encode())
     return {"n": len(items), "sha256": h.hexdigest(), "order_fn": ORDER_FN}
 
