@@ -82,7 +82,7 @@ watchdog & WD_PID=$!
 trap finish EXIT
 case "$MODE" in stock_dev|stock_train|conv1_dev|conv1_train|e5_dev|e5_train) ;; *) fail 5 "Q9C_MODE must be one of stock_dev stock_train conv1_dev conv1_train e5_dev e5_train (got '$MODE')" ;; esac
 [ -f "$PARAMS" ] || fail 5 "no $PARAMS"
-ARMS=$(pval arms) && SPLITS=$(pval splits | tr ' ' ',') && MAXGIB=$(pval max_output_gib) && TOK_S=$(pval measured.stock_prefill_tok_s_min) && CALL_S=$(pval measured.call_s_fitted_5cmat) \
+ARMS=$(pval arms) && SPLITS=$(pval splits | tr ' ' ',') && MAXGIB=$(pval max_output_gib) && SETUP_CAP=$(pval setup_cap_minutes) && TOK_S=$(pval measured.stock_prefill_tok_s_min) && CALL_S=$(pval measured.call_s_fitted_5cmat) \
   || fail 5 "job_params"
 say "part $MODE: arm [$ARMS] splits [$SPLITS] (<= $MAXGIB GiB) at TOK_S=$TOK_S CALL_S=$CALL_S"
 
@@ -163,7 +163,7 @@ for ARM in $ARMS; do
   CAP=$(cap "arm_$ARM") || fail 5 "no cap for arm_$ARM"
   GDN_ARGS=()
   [ "$ARM" = conv1 ] && GDN_ARGS=(--gdn-ckpt "$DATA/gdn/gdn_converted.pt")
-  python -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress_$ARM.jsonl" --cap-min "$CAP" \
+  python -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress_$ARM.jsonl" --cap-min "$CAP" --setup-cap-min "$SETUP_CAP" \
     --report "$WORK/out/rate_$ARM.json" -- \
     "$PY" -X utf8 -m jobs.q9_feature_cache.cache run --arm "$ARM" --config "$CFG" --model-dir "$Q9B" \
     --dev-rows "$DATA/slices/dev-rows.jsonl.gz" --out "$OUT/cache" "${TRAIN_ARGS[@]}" "${GDN_ARGS[@]}" \

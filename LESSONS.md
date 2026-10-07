@@ -312,3 +312,21 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - The logic check runs the reference kernels, so it proves the fork LOGIC on the box. A bug confined to fla's continuation kernel is covered by the bf16 cache check's ratio bound and by the fla fp32 pass. That pass is record-only until its 9B noise is measured; the first GPU summary measures it.
   - The first passing GPU self-check (its `summary_*.json` selfcheck records) closes this entry.
   - Generalising the rule: every numerics gate needs its reference run through the production path and a measured noise floor before spend (LAUNCH_CHECKLIST row 12). That remains a review item, not a lint.
+
+### L-29 The live rate guard's clock started before a one-time model load + self-check (job-kxc5e)
+- Date: 2026-10-07.
+- Symptom: job-kxc5e (q9_feature_cache stock_dev, $0.74) passed the v3 numerics self-check. It was then stopped with exit 15: "534 units (9.7% of the weight) in 8.0 min of scoring -> 87 min > cap 65.0".
+- Cost: $0.74 and one relaunch.
+- Root cause: not a slow box. `cache.py` wrote the weighted progress total (`.total.json`) right after the plan. `jobs.common.rate_guard run-weighted` starts its projection clock when that file appears.
+  - The model load and the v3 fp32 self-check came after the file: 300 s from the file (07:03:55Z) to the first unit (07:08:55Z), measured from art-daqb2's progress files.
+  - Extraction itself ran at **0.884× the priced time**: 534 units with 191.3 planned seconds took 169.1 s.
+  - The guard extrapolated the one-time 300 s over the whole weight: (8.0 min / 9.7%) ≈ 87 min, against a true ≈ 4.75 + 5.0 + 29.3 ≈ 39 min.
+  - This is the L-26 class: a one-time cost extrapolated by a rate projection. The missing causal_conv1d kernel (the log warning) is not the cause; the measured extraction is faster than priced.
+- **Check:**
+  - `cache.py` writes `.total.json` only after the model load and self-check, with `after_selfcheck: true` and a timestamp. `tests/test_q9_feature_cache_shell.py` asserts both, that the timestamp is ≥ the summary's `selfcheck_end_t`, and that it predates the first unit.
+  - The setup phase is bounded by `jobs.common.rate_guard run-weighted --setup-cap-min` (off by default; `cache_job.sh` passes `setup_cap_minutes` = 30 = ceil(14.2 tokenise + 0.7 load + 3 x 5.0)). A child whose total never appears within that time is stopped with exit 15 (`tests/test_rate_guard_setup_cap.py`).
+  - `cache.py` re-projects right after the self-check with the measured elapsed time and exits 15 before any extraction spend if the projection exceeds 0.95 x the cap.
+  - The in-job preflight and `jobs/q9_feature_cache/preflight.py` count a measured 5.0-min load + self-check allowance (`selfcheck.allowance_min`, `SELFCHECK_MIN`) once per part. The static projection also keeps the 0.7-min `model_load_s` beside it: a deliberate, conservative double count of the load.
+  - Caps are recomputed at ≥ 1.3× (stock_dev 70, stock_train 90, conv1/e5 dev 70, train 45 min); `tests/test_q9_feature_cache_params.py` holds them.
+  - Receipt: `receipts/2026-10-07-D-q9-cache-reprice/`.
+- **Status:** PARTIAL. The fix is per job: any runner that announces a weighted total before a one-time setup phase repeats this. A lint that requires the total to be written after setup is a candidate.

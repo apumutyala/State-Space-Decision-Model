@@ -143,11 +143,15 @@ def project_weighted(start_s: float, now_s: float, done_w: float, total_w: float
 
 
 def run_weighted(cmd: list[str], progress: Path, cap_min: float, check_after_min: float = CHECK_AFTER_MIN,
-                 poll_s: float = 15.0, report: Path | None = None, min_units: int = MIN_ROWS) -> int:
+                 poll_s: float = 15.0, report: Path | None = None, min_units: int = MIN_ROWS,
+                 setup_cap_min: float | None = None) -> int:
     """Like ``run`` for the m2 scoring drivers (``train.m2_gates.Progress``): units are heterogeneous (decision records,
     ~600-token steer units, ~3k-token Index rows), so the projection uses their weights (request chars + a per-call
     constant) instead of a row count. ``<progress>.total.json`` gives the total weight; the clock for the projection
-    starts when it appears. Checked after ``check_after_min`` minutes of scoring and >= ``min_units`` units."""
+    starts when it appears. Checked after ``check_after_min`` minutes of scoring and >= ``min_units`` units.
+    ``setup_cap_min`` (OFF by default, so the m2 drivers are unchanged): if the total file has not appeared within that
+    many minutes, the child is stopped with EXIT_TOO_SLOW. That bounds a slow or hung setup phase (model load, numerics
+    self-check) that runs before the projection clock starts (LESSONS L-29)."""
     total_file = Path(str(progress) + ".total.json")
     for p in (progress, total_file):  # never project from a previous attempt's files
         try:
@@ -181,6 +185,9 @@ def run_weighted(cmd: list[str], progress: Path, cap_min: float, check_after_min
             break
         if el > 60 * cap_min:
             code = stop(124, "wall-clock cap")
+            break
+        if setup_cap_min is not None and total is None and not total_file.exists() and el > 60 * setup_cap_min:
+            code = stop(EXIT_TOO_SLOW, f"no weighted total after {setup_cap_min:g} min (setup: load / self-check)")
             break
         if total is None and total_file.exists():
             try:
@@ -238,12 +245,14 @@ def main(argv=None):
     w.add_argument("--check-after-min", type=float, default=CHECK_AFTER_MIN)
     w.add_argument("--poll-s", type=float, default=15.0)
     w.add_argument("--report", default=None)
+    w.add_argument("--setup-cap-min", type=float, default=None,
+                   help="stop (15) if the total file has not appeared within this many minutes (default: off)")
     a = ap.parse_args(argv)
     if a.cmd == "run-weighted":
         if not tail:
             ap.error("run-weighted needs a command after --")
         return run_weighted(tail, Path(a.progress), a.cap_min, a.check_after_min, a.poll_s,
-                            Path(a.report) if a.report else None)
+                            Path(a.report) if a.report else None, setup_cap_min=a.setup_cap_min)
     if a.cmd == "preflight":
         if a.volume:
             if a.call_s is None:
