@@ -36,7 +36,7 @@ Nothing is in flight. Finished today:
 - **job-uhxb5 (RWKV7 first cell, m2_first_cell @9c76c93): FAILED, exit 20.** The `cell` gate returned rc 1 about 3 minutes into the cell phase.
   - The parent_g12 and parent_index phases passed and exported.
   - $3.69. Artifact art-sq6mp.
-  - Diagnosis and fix: branch `stack/rwkv7/first-cell-fix`, in progress.
+  - Root cause: CUDA OOM in the pre-training smoke (recompute fork without act_ckpt). Fix + parent-arm seed reuse in PR #147 (review FIX-THEN-MERGE; fixes in progress).
 - Earlier: q9_feature_cache stock_dev job-sxv3u and stock_train job-wuw7g (art-mtqne).
   - The train cache is at `C:\Users\apumu\q9cache\stock_train\x\cache`.
   - Teacher dir: `C:\Users\apumu\td\art\clef-flash-teacher\teacher`.
