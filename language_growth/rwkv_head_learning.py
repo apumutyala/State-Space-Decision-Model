@@ -21,13 +21,13 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-FROZEN_REGISTRATION = ROOT / "receipts/2026-10-06-L-rwkv-head-ce-96-prepared/registration.json"
+FROZEN_REGISTRATION = ROOT / "receipts/2026-10-06-L-rwkv-head-ce-96-prepared-v2/registration.json"
 PLAN = "plans/codex/L0_RWKV_HEAD_CE_96.md"
 CONFIG = {"seed": 20261006, "train_seed": 9201, "validation_seed": 9202,
           "train_count": 24, "validation_count": 12, "steps": 96,
           "batch_size": 2, "lr_head": 0.001, "head": "snapshot",
           "head_kwargs": {"channels": 4, "max_snapshots": 2},
-          "lora_rank": 0, "threads": 2, "timeout_seconds": 900,
+          "lora_rank": 0, "threads": 2, "timeout_seconds": 1200,
           "loss": {"arm": "ce", "label_smoothing": 0.0, "brier_weight": 0.0, "rps_weight": 0.0},
           "min_start_bytes": 8 * 1024**3, "min_running_bytes": 3 * 1024**3,
           "bootstrap_seed": 9203, "bootstrap_samples": 2000}
@@ -68,9 +68,10 @@ def preparation(out):
     out.mkdir(parents=True, exist_ok=False)
     from language_growth.rwkv7_cpu_parent import MODEL_ID, SNAPSHOT, PINNED_HASHES
     data = corpus()
-    from language_growth.rwkv_head_ce96_evaluation import exposure_contract, references
+    from language_growth.rwkv_head_ce96_evaluation import exposure_contract, references, operational_budget
     exposure = exposure_contract(data, CONFIG)
     prior = references()
+    budget = operational_budget()
     write(out / "corpus.json", data)
     # Freeze the complete local executable closure, including losses/layout/
     # adapter helpers and the vendored model. Receipts are data, not runtime code.
@@ -89,6 +90,7 @@ def preparation(out):
                                  ("torch", "transformers", "safetensors", "numpy", "psutil")},
                     "variant_base": "bb2eadd798b5d5ae317524767b37115e9a8df168",
                     "training_delta": "Only optimizer steps 24 to 96; same initialization, sampler, corpus, parent, head, loss and seed.",
+                    "operational_delta": budget,
                     "exposure": exposure, "reference_sha256": prior["sha256"],
                     "hypothesis": "Three complete passes (96 updates) improve train-slot fit and possibly useful free-running answers over the weak 24-step head.",
                     "selection": "One seed, one recipe, final step only; no validation-based selection.",
@@ -110,7 +112,7 @@ def assert_environment():
 
 def verify_frozen(registration):
     frozen = json.loads(FROZEN_REGISTRATION.read_text(encoding="utf-8"))
-    for key in ("config", "dependencies", "expected_parent", "corpus_sha256", "split_sha256", "source_sha256", "software", "variant_base", "training_delta", "exposure", "reference_sha256"):
+    for key in ("config", "dependencies", "expected_parent", "corpus_sha256", "split_sha256", "source_sha256", "software", "variant_base", "training_delta", "operational_delta", "exposure", "reference_sha256"):
         if registration[key] != frozen[key]:
             raise ValueError(f"committed preregistration drift: {key}")
 

@@ -66,11 +66,25 @@ change this recipe in response.
 
 All original guards remain: existing CPU only, offline, CUDA hidden, two
 threads, fresh output, at least 8 GiB available at start, 3 GiB running floor,
-900-second hard watchdog and cleanup only of the owned authenticated worker.
+1200-second hard watchdog and cleanup only of the owned authenticated worker.
 Preserve parent/tokenizer/code identity, full parent state parity, unchanged
 LM-readout direct baseline parity, raw choices, checked programs, final head
 checkpoint and receipts. The direct baseline parity is a frozen-path integrity
 check; it does not establish adapted-head decision retention.
+
+The watchdog is the only operational change, from 900 to 1200 seconds. The
+independent preparation review found the former cap too short for the fixed
+training and reporting workload. Preserved CPU timestamps give 278.14 seconds
+for the prior run, 404.13 seconds for 72 additional updates (mean 5.6129088
+seconds across the prior 23 update intervals), and 331.40 seconds for two
+teacher-forced passes (165.699866 seconds per 96-row scoring span). The total
+projection is **1013.67 seconds**; the 1200-second ceiling leaves **186.33
+seconds**, or 18.38% of the projection, as headroom. The fit audit's complete
+launcher elapsed time was 175.625 seconds, including its load/setup overhead;
+the pass estimate uses its first-request to last-row-result interval because
+the parent is already loaded in this combined run. Evidence hashes are frozen
+under `operational_delta` in the new registration. This watchdog adjustment
+does not alter TrainConfig, the 96 updates, sampling, or any reporting pass.
 
 This one-seed experiment uses reused synthetic development data and an
 exploratory RWKV7-0.1B surrogate. Neither a positive fit result nor three data

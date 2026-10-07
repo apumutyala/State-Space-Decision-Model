@@ -16,6 +16,7 @@ def test_recipe_changes_only_step_count_and_keeps_exact_corpus():
     prior = reporting.references()["old_recipe"]
     old = deepcopy(prior["config"])
     old["steps"] = 96
+    old["timeout_seconds"] = 1200  # operational guard only; absent from TrainConfig
     assert runner.CONFIG == old
     data = runner.corpus()
     assert runner.digest(data) == prior["corpus_sha256"]
@@ -23,7 +24,7 @@ def test_recipe_changes_only_step_count_and_keeps_exact_corpus():
     assert contract["slot_exposures"] == 192
     assert contract["complete_passes"] == 3
     assert contract["dropped_tail"] == 0
-    for change in ({"batch_size": 3}, {"steps": 97}, {"lr_head": .002}):
+    for change in ({"batch_size": 3}, {"steps": 97}, {"lr_head": .002}, {"timeout_seconds": 900}):
         with pytest.raises(ValueError):
             reporting.exposure_contract(data, {**runner.CONFIG, **change})
 
@@ -78,11 +79,23 @@ assert 'torch' not in sys.modules
     assert reg["status"] == "prepared_not_run"
     monkeypatch.setattr(runner, "FROZEN_REGISTRATION", out / "registration.json")
     runner.verify_frozen(reg)
-    for key in ("variant_base", "training_delta", "exposure", "reference_sha256"):
+    for key in ("variant_base", "training_delta", "operational_delta", "exposure", "reference_sha256"):
         changed = deepcopy(reg)
         changed[key] = "drift"
         with pytest.raises(ValueError, match="preregistration drift"):
             runner.verify_frozen(changed)
+
+
+def test_measured_operational_budget_and_exact_watchdog_boundary():
+    budget = reporting.operational_budget()
+    assert budget["predicted_total_seconds"] == 1013.67
+    assert budget["headroom_seconds"] == 186.33
+    assert budget["timeout_seconds"] == [900, 1200]
+    assert budget["scientific_recipe_change"] is False
+    assert runner.CONFIG["timeout_seconds"] == 1200
+    assert runner.stop_reason(1199.999, 20 * 1024**3) is None
+    assert runner.stop_reason(1200, 20 * 1024**3) == ("timeout", 124)
+    assert runner.stop_reason(0, 1) == ("memory_guard", 125)
 
 
 def test_teacher_forced_scoring_is_optimizer_free_and_keeps_failed_rows(monkeypatch, tmp_path):

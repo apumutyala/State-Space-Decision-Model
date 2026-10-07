@@ -1,0 +1,131 @@
+{
+  "amendment_config_delta": {
+    "timeout_seconds": [
+      900,
+      1200
+    ]
+  },
+  "amends_preparation_commit": "a0003c732f7c11c1e8ba96a505a1b2a8b50115ac",
+  "base_commit": "bb2eadd798b5d5ae317524767b37115e9a8df168",
+  "canonical_corpus_sha256": "cf70a3e1abd8a8e5b1c2a7efe93ff0f2c0392982b1ef33dec11d60bd81143466",
+  "corpus_archive_sha256": "0d3be636b0b2d7b19823c4c42f083e8cddd5196348a8b5f110930e0e4752b65b",
+  "cost_usd": 0,
+  "dry_run": {
+    "command": [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "language_growth.rwkv_head_learning",
+      "--dry-run",
+      "--out",
+      "C:/Users/apumu/research/CHLabs/ssdm-data/rwkv-head-ce-96-prepared-v2-20261006"
+    ],
+    "exit_code": 0,
+    "status": "prepared_not_run"
+  },
+  "frozen_registration_sha256": "3e177dd12a936c5947400ca8e13863f2afae60972722039b7279b0a1d72e2b6e",
+  "operational_budget": {
+    "additional_72_updates_seconds": 404.13,
+    "evidence_sha256": {
+      "receipts/2026-10-06-L-rwkv-head-fit-run1/raw.jsonl": "ed2e20bdbabfb6bd01f242dca88253b5c3732241c278266bc86af7c0bafe5ba5",
+      "receipts/2026-10-06-L-rwkv-head-learning-run1/raw.jsonl": "5c77c1ea91289d4ceb20765a6951f27a123ba883f37723aa1b4f1730ea7683ea"
+    },
+    "headroom_percent_of_prediction": 18.38,
+    "headroom_seconds": 186.33,
+    "predicted_total_seconds": 1013.67,
+    "prior_run_seconds": 278.14,
+    "scientific_recipe_change": false,
+    "timeout_seconds": [
+      900,
+      1200
+    ],
+    "two_teacher_passes_seconds": 331.4
+  },
+  "original_preparation_preserved": true,
+  "original_registration_sha256": "1b87c229e7aaba508908cf1f01f704548228e3addf4241a7fdebfed8b9b938ad",
+  "plan_sha256": "ac9184255be57f4d89ad062632545e03104f9cc534f577458d60fb8ad2751792",
+  "planned_exposure": {
+    "batch_size": 2,
+    "complete_passes": 3,
+    "dropped_tail": 0,
+    "ordered_item_ids_sha256": "900398f53f4791b7a5d4c60a9e7c5dd6f050bfacfd4d50bbfdb4def4680f902b",
+    "prior_exposures": 48,
+    "sampler": "unchanged Trainer._order/_next_batch; randperm(seed*100003+epoch)",
+    "slot_exposures": 192,
+    "train_slots": 64,
+    "updates": 96
+  },
+  "real_checkpoint_access": false,
+  "real_execution_authorized": false,
+  "real_fit": false,
+  "reference_sha256": {
+    "receipts/2026-10-06-L-rwkv-head-fit-run1/rows.json": "0feeac867d8028ebf3001f406b0ab70669e2423c1c5641ce86af9a1bf7129a98",
+    "receipts/2026-10-06-L-rwkv-head-learning-run1/receipt.json": "950f1bc202b55f01e79953d07505757368eceede2ab5c95939dcb4b3ae867ecd",
+    "receipts/2026-10-06-L-rwkv-head-learning-run1/registration.json": "952c44a84e6140488179027d39e8a92297b355d91b31f3fde05d5975aa46dc15",
+    "receipts/2026-10-06-L-rwkv-head-learning-run1/train-config.json": "c59db7602b6a0623842c3e76cb43d61988e2ca9e6e580e959f8b7d5f60aaf82a"
+  },
+  "reporter_sha256": "8ca7d931b5cf5ffdec671e2d7cf9afa4cc6b3722e164e28ed4a599c9f7eb67e1",
+  "runner_sha256": "2db9db87b801a5e65127c4605200b8297cc84108d6a0ead544c5c9637b6a6c63",
+  "sampler_proof": "Same first24 batches;3 complete64-slot passes; no dropped tail; scientific TrainConfig changes only max_steps.",
+  "schema": "ssdm.rwkv-head-ce96-preparation-verification.v2",
+  "scientific_trainconfig_delta": {
+    "max_steps": [
+      24,
+      96
+    ]
+  },
+  "scope": "Operational watchdog amendment only; all fixed training and reporting work retained; no real model access or fit.",
+  "source_files_verified": 94,
+  "split_sha256": {
+    "development_train": "4dfd05d495cdcc5bf38c0db857ac31fbd6367fcf96c2df64d8791ad77978ceaf",
+    "development_validation": "e8847f275c4001d53c8d2a4bb88863faec4b0de1c0645dd9605cba7559f7d4cb"
+  },
+  "status": "prepared_not_run",
+  "tests": {
+    "command": [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "pytest",
+      "language_growth/tests/test_rwkv_head_ce96.py",
+      "language_growth/tests/test_rwkv_head_learning.py",
+      "language_growth/tests/test_rwkv_head_fit_audit.py",
+      "language_growth/tests/test_rwkv_decision_head.py",
+      "language_growth/tests/test_rwkv_cpu_encoder_identity.py",
+      "language_growth/tests/test_rwkv7_cpu_parent.py",
+      "-q"
+    ],
+    "elapsed_seconds": 11.19,
+    "exit_code": 0,
+    "passed": 91,
+    "result_note_sha256": "9c9130150581deaf32be5096ba3e0bd2ac8aefc1d153e23b1140c459461ae531"
+  },
+  "unchanged_scientific_controls": {
+    "batch_size": 2,
+    "bootstrap_samples": 2000,
+    "bootstrap_seed": 9203,
+    "head": "snapshot",
+    "head_kwargs": {
+      "channels": 4,
+      "max_snapshots": 2
+    },
+    "lora_rank": 0,
+    "loss": {
+      "arm": "ce",
+      "brier_weight": 0.0,
+      "label_smoothing": 0.0,
+      "rps_weight": 0.0
+    },
+    "lr_head": 0.001,
+    "min_running_bytes": 3221225472,
+    "min_start_bytes": 8589934592,
+    "seed": 20261006,
+    "threads": 2,
+    "train_count": 24,
+    "train_seed": 9201,
+    "validation_count": 12,
+    "validation_seed": 9202
+  }
+}

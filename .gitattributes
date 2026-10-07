@@ -16,6 +16,7 @@ third_party/** -text
 receipts/2026-10-06-L-rwkv-head-learning-prepared/registration.json -text -diff
 plans/codex/L0_RWKV_HEAD_CE_96.md text eol=lf
 receipts/2026-10-06-L-rwkv-head-ce-96-prepared/tests.txt text eol=lf
+receipts/2026-10-06-L-rwkv-head-ce-96-prepared-v2/tests.txt text eol=lf
 # Preserve run outputs byte-for-byte so the receipt hashes the archived files.
 receipts/2026-10-06-L-rwkv-head-learning-run1/*.json -text -diff
 receipts/2026-10-06-L-rwkv-head-learning-run1/*.jsonl -text -diff

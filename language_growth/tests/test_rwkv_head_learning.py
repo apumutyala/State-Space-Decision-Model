@@ -123,7 +123,7 @@ class Child:
 
 @pytest.mark.parametrize("reason,available,clock,code", [
     ("memory_guard", 1, lambda: 0, 125),
-    ("timeout", 10 * 1024**3, iter([0, 901]).__next__, 124),
+    ("timeout", 10 * 1024**3, iter([0, probe.CONFIG["timeout_seconds"] + 1]).__next__, 124),
 ])
 def test_stop_paths_kill_only_owned_child(tmp_path, reason, available, clock, code):
     child, unrelated = Child(), Child()

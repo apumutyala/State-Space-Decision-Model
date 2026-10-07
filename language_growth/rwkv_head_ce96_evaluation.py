@@ -10,6 +10,7 @@ import hashlib
 import json
 from pathlib import Path
 import random
+from datetime import datetime
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE_PATHS = {
@@ -32,9 +33,12 @@ def exposure_contract(data, config):
     from language_growth.training_records import export_training_records
     from language_growth.rwkv_head_learning import digest
     old = references()["old_recipe"]
-    if {k: v for k, v in config.items() if k != "steps"} != {
-            k: v for k, v in old["config"].items() if k != "steps"}:
+    operational = {"steps", "timeout_seconds"}
+    if {k: v for k, v in config.items() if k not in operational} != {
+            k: v for k, v in old["config"].items() if k not in operational}:
         raise ValueError("exposure ablation changed another training setting")
+    if config["timeout_seconds"] != 1200 or old["config"]["timeout_seconds"] != 900:
+        raise ValueError("registered operational watchdog must change 900 to 1200 seconds")
     if old["config"]["steps"] != 24 or config["steps"] != 96:
         raise ValueError("fixed 24-to-96 step comparison required")
     if digest(data) != old["corpus_sha256"]:
@@ -49,6 +53,37 @@ def exposure_contract(data, config):
             "complete_passes": 3, "dropped_tail": 0, "prior_exposures": 48,
             "ordered_item_ids_sha256": digest(ids),
             "sampler": "unchanged Trainer._order/_next_batch; randperm(seed*100003+epoch)"}
+
+
+def operational_budget():
+    """Recompute the watchdog estimate from preserved raw CPU timestamps."""
+    learning_path = ROOT / "receipts/2026-10-06-L-rwkv-head-learning-run1/raw.jsonl"
+    fit_path = ROOT / "receipts/2026-10-06-L-rwkv-head-fit-run1/raw.jsonl"
+    learning = [json.loads(line) for line in learning_path.read_text().splitlines()]
+    fit = [json.loads(line) for line in fit_path.read_text().splitlines()]
+    steps = [r for r in learning if r.get("event") == "train_step"]
+    if [r["step"] for r in steps] != list(range(1, 25)):
+        raise ValueError("prior training-timing evidence changed")
+    seconds = lambda end, start: (datetime.fromisoformat(end["at_utc"]) -
+                                  datetime.fromisoformat(start["at_utc"])).total_seconds()
+    mean_step = seconds(steps[-1], steps[0]) / 23
+    prior_run = next(r["elapsed_seconds"] for r in learning if r.get("event") == "launcher_exit")
+    requests = [r for r in fit if r.get("event") == "request"]
+    results = [r for r in fit if r.get("event") == "row_result"]
+    if len(requests) != 96 or len(results) != 96:
+        raise ValueError("prior teacher-pass timing evidence changed")
+    teacher_pass = seconds(results[-1], requests[0])
+    prediction = prior_run + 72 * mean_step + 2 * teacher_pass
+    return {"timeout_seconds": [900, 1200], "scientific_recipe_change": False,
+            "prior_run_seconds": round(prior_run, 2),
+            "additional_72_updates_seconds": round(72 * mean_step, 2),
+            "two_teacher_passes_seconds": round(2 * teacher_pass, 2),
+            "predicted_total_seconds": round(prediction, 2),
+            "headroom_seconds": round(1200 - prediction, 2),
+            "headroom_percent_of_prediction": round(100 * (1200 / prediction - 1), 2),
+            "evidence_sha256": {str(p.relative_to(ROOT)).replace("\\", "/"):
+                                hashlib.sha256(p.read_bytes()).hexdigest()
+                                for p in (learning_path, fit_path)}}
 
 
 def initial_parity(current, prior):

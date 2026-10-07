@@ -200,3 +200,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: an update cap alone did not establish corpus coverage; the negative result could not separate incomplete fit from representation or transfer limitations.
 - **Check:** `language_growth/tests/test_rwkv_head_ce96.py::test_actual_sampler_replays_three_passes_and_same_initial_24_batches` proves the unchanged sampler visits every slot once in each of three passes and preserves the prior first 24 batches. `exposure_contract` and `training_config_parity` refuse a changed corpus, incomplete pass count or any additional training-setting change in this variant.
 - **Status:** ENFORCED for the fixed 96-update exposure experiment. Three passes are exposure evidence, not a claim of convergence, usefulness or qualification.
+
+### L-L0-03 Price the complete fixed CPU workload before freezing its watchdog
+- Date: 2026-10-06 (independent review of the 96-update preparation; no run launched).
+- Symptom: the inherited 900-second cap was shorter than the measured 1013.67-second projection once 72 additional updates and both teacher-forced reporting passes were included.
+- Cost: $0; one preparation review round, with the premature timeout prevented before execution.
+- Root cause: the earlier recipe's guard was retained without adding the longer fit and complete reporting costs.
+- **Check:** `language_growth/tests/test_rwkv_head_ce96.py::test_measured_operational_budget_and_exact_watchdog_boundary` recomputes the projection from preserved CPU timestamps, pins the 1200-second ceiling and proves its exact stop boundary. The registration freezes those timing-evidence hashes; full trainer-config parity still permits only the scientific `max_steps` change.
+- **Status:** ENFORCED for this fixed workload. All 96 updates and reporting passes remain; only the operational ceiling increases.
