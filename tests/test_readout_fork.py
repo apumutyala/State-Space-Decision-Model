@@ -253,7 +253,20 @@ def test_kv_cache_plugins_carry_the_state_budget_and_recurrent_ones_do_not():
     assert rwkv7_plugin().fork_state_token_budget is None
     be = HFReadoutBackend(rwkv7_plugin(), "jrt-rwkv-g1-v1", fork=True)
     assert "fork_state_token_budget" not in be.revision()["inference_config"]  # RWKV7 revision ids unchanged
-    src = (__import__("pathlib").Path(__file__).resolve().parents[1] / "convert" / "readout.py").read_text(
-        encoding="utf-8")
-    assert "fork_state_token_budget=KV_STATE_TOKEN_BUDGET if [i for i in model.attn_layers if i not in layers]" in src
+    # behavioural (#102 review): a real tiny ConvertibleQwen, all attention layers converted vs one kept
+    from convert.model import ConvertibleQwen, replace_native_gdn
+    from convert.readout import fork_state_budget
+
+    causal = _tiny_qwen()
+    full = types.SimpleNamespace(model=types.SimpleNamespace(language_model=causal.model), lm_head=causal.lm_head)
+    cm = ConvertibleQwen(full, kernel="chunk")
+    replace_native_gdn(cm, kernel="chunk")
+    assert cm.attn_layers
+    assert fork_state_budget(cm, list(cm.attn_layers)) is None  # all-GDN: no KV, no cap
+    assert fork_state_budget(cm, list(cm.attn_layers)[1:]) == KV_STATE_TOKEN_BUDGET  # one attention layer kept
+    assert fork_state_budget(cm, []) == KV_STATE_TOKEN_BUDGET  # stock path
+    all_gdn = converted_plugin()
+    all_gdn.fork_state_token_budget = fork_state_budget(cm, list(cm.attn_layers))
+    rev = HFReadoutBackend(all_gdn, "jrt-chatml-v1", fork=True).revision()
+    assert "fork_state_token_budget" not in rev["inference_config"]  # all-GDN revision id unchanged
     assert KV_STATE_TOKEN_BUDGET * 44 * 1024 < 16 * 2 ** 30  # ~44 KiB / prefix token on Qwen3.5-9B: < 16 GB per pack

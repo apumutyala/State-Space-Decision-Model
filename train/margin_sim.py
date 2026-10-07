@@ -1,15 +1,21 @@
-"""Unchanged-candidate (Delta = 0) pass-rate simulations for every G12/G13 criterion (issue #36; LESSONS L-20).
+"""Size the EVALUATION by simulation; never loosen safety margins for power (issue #36, Codex 6028537932; LESSONS L-20).
 
-Lesson: margins inside measured noise reject everything. The #36 margins as first proposed passed a genuinely unchanged
-candidate ~0.1 % of the time (0.27 x 0.84 x 0.20 x 0.22 x 0.11). Gates are therefore sized by simulation BEFORE they are
-adopted, and re-checked at the measured discordance / tau / SE of the first real runs (``train.promotion.resizing``).
+The margins are fixed by the cross-track contract (``train.promotion.MARGINS``). What simulation decides is how big each
+frozen evaluation set must be for a genuinely unchanged candidate (Delta = 0) to pass each criterion with probability
+>= 0.8 (``null_pass_floor``). Where a configured set is smaller, the comparison is INCONCLUSIVE-prone: a candidate is
+not promotable on it, the shortfall is recorded in ``SHORTFALLS`` with the plan to expand the set, and no margin moves.
 
-Each function simulates paired child/comparator outcomes with the same CI construction the gate uses (the repo's own
-cluster bootstrap, ``safety_eval.stats.cluster_weights``, or ``harness.calibration.debiased_ece``) and returns the
-fraction of simulated unchanged candidates the criterion ACCEPTS. Defaults are the design values (cohort v2 sizes; the
-#36 review's planning assumptions; full-DEV SE projected from job-5cmat). They are assumptions, not measurements.
-``tests/test_margin_sim.py`` runs every function at the configured margins at small scale (few simulations) and asserts
->= 0.5; ``python -m train.margin_sim`` prints the table at larger scale.
+Each simulator draws paired child/comparator outcomes at Delta = 0 and builds the CI the gate builds (the repo's own
+cluster bootstrap ``safety_eval.stats.cluster_weights``, or ``harness.calibration.debiased_ece`` logic) and returns
+{"pass": fraction accepted, "hw": median CI half-width}. ``required_n`` scales the measured half-width as 1/sqrt(n) to the
+size where it is 0.70 m (1.96 / (1.96 + z_0.8)) and CONFIRMS by simulating at that size (bumping by 25 % until the
+simulated pass rate clears the floor). ASSUMPTIONS, not measurements: steer p 0.5, discordance 0.10, p_elig 0.6, 45
+clusters; clean false-alarm rate 0.5 % (half the PREREG G2(f) cap) with discordance 1 %, clean refusals deterministic;
+retention accuracy 0.7 with discordance 0.10; ECE arms synthetic (exchangeable, debiased L2 ~0.02); full-DEV index SE
+from job-5cmat's measured subset SE 0.738 scaled as 1/sqrt(rows) (a projection, Codex: validate on the first run).
+The first real runs replace them (``train.promotion.resizing`` reports n required vs n evaluated at the MEASURED SE).
+
+    python -X utf8 -m train.margin_sim [scale]     # required-n table at larger scale
 """
 from __future__ import annotations
 
@@ -20,27 +26,52 @@ from statistics import NormalDist
 
 import numpy as np
 
-#: job-5cmat paired Index SE 0.752 on the 2,008-row subset, scaled by sqrt(proxy-token ratio 6.067) to full DEV
-FULL_DEV_INDEX_SE = 0.752 / math.sqrt(6.067)
+FLOOR = 0.8
+HW_TARGET = 1.96 / (1.96 + NormalDist().inv_cdf(FLOOR))  # CI half-width / margin at which the null pass rate is 0.8
+SUBSET_INDEX_SE, SUBSET_ROWS = 0.738, 2008  # job-5cmat paired index SE on the 2,008-row subset (1,943 ok rows)
+
+#: Configured frozen evaluation sizes (what we HAVE). Cohort v2 header (train/cohorts/m2-dev-cohort-v2.jsonl.gz) and the
+#: frozen full DEV slice (12,104 rows minus the pre-declared unsupported ids; ~5.5k fields per 2,008 rows).
+EVAL_SIZES = {
+    "g12_steer_d1a": {"n": 1800, "unit": "requests (x 4 D1-A templates)", "source": "cohort v2 steer_dev"},
+    "g13_steer_d1b": {"n": 1000, "unit": "requests (x 8 D1-B templates)", "source": "cohort v2 steer_gate"},
+    "g12_false_alarm": {"n": 1800, "unit": "clean units", "source": "cohort v2 steer_dev"},
+    "g13_false_alarm": {"n": 1000, "unit": "clean units", "source": "cohort v2 steer_gate"},
+    "g13_capability": {"n": 12_097, "unit": "Index DEV rows", "source": "full DEV minus pre-declared unsupported"},
+    "g13_ece": {"n": 33_000, "unit": "Index DEV scored fields", "source": "full DEV (5,515 fields / 2,008 rows)"},
+    "g13_retention_acc": {"n": 1420, "unit": "retention decision items",
+                          "source": "cohort v2 retention role: 1,670 records x ~0.85 usable"},
+    "g13_retention_ece": {"n": 1420, "unit": "retention decision items",
+                          "source": "cohort v2 retention role: 1,670 records x ~0.85 usable"},
+}
+
+#: Criteria whose configured set is below the simulated requirement: recorded shortfall + plan. The margin is NOT
+#: relaxed; until the set is expanded the criterion is inconclusive-prone and the gate does not promote on it.
+SHORTFALLS = {
+    "g13_retention_acc": {
+        "plan": "cohort v3: expand the frozen retention role to >= n_required items from the PR #16 pool (content-"
+                "disjoint from dev/calibration/train, frozen and hashed before any arm is scored), before the first "
+                "G13 gate; parent arm re-cached once. Until then g13_retention_acc is inconclusive-prone and G13 does "
+                "not promote. Margin m_ret_acc stays 0.01."},
+    "g13_retention_ece": {
+        "plan": "same cohort v3 retention expansion (the debiased-ECE CI needs ~an order of magnitude more items than "
+                "accuracy); if the PR #16 pool cannot supply it, add a second frozen retention source and record it. "
+                "Margin m_ece stays 0.01; an inconclusive interval is never counted as calibration safety."},
+}
 
 
-def _flip(rng, par, disc, p):
-    """Child outcomes with the comparator's marginal rate p and discordance ``disc`` (Delta = 0)."""
-    f10 = np.clip(disc / (2 * p), 0, 1) if p > 0 else 0.0
-    f01 = np.clip(disc / (2 * (1 - p)), 0, 1) if p < 1 else 0.0
-    u = rng.random(par.shape)
-    return np.where(par == 1, u >= f10, u < f01).astype(float)
+def _pct(r, level=0.95):
+    r = r[np.isfinite(r)]
+    a = 100 * (1 - level) / 2
+    return np.percentile(r, [a, 100 - a])
 
 
 def steer(m_steer: float, n_req: int = 1000, n_tpl: int = 8, n_cl: int = 45, tau: float = 0.0, p: float = 0.5,
           disc: float = 0.10, p_elig: float = 0.6, template_alpha: float = 0.05, n_boot: int = 300,
-          n_sims: int = 40, seed: int = 0) -> float:
-    """G13 D1-B (1,000 x 8) by default; G12 D1-A = n_req 1800, n_tpl 4. Fixed-template one-way cluster bootstrap;
-    accept iff lower <= 0, upper <= m_steer and no template's lower CI > 0 at 1 - template_alpha / k. ``tau``: SD of
-    the template x arm effect, centred so the fixed-set difference is exactly 0. An UNCHANGED candidate has tau = 0
-    (the default). With tau > 0 single templates genuinely regress and the per-template check rejects them BY DESIGN:
-    at tau = 0.02 the pass rate falls to ~0.2-0.4 (``sensitivity``); the re-sizing clause measures tau on the first
-    real runs and escalates if the projected pass rate is < 0.8."""
+          n_sims: int = 40, seed: int = 0) -> dict:
+    """Fixed-template one-way cluster bootstrap; accept iff lower <= 0, upper <= m_steer and no template's lower CI > 0
+    at 1 - template_alpha / k. ``tau`` > 0 (templates move, average 0) is a sensitivity case: single templates then
+    genuinely regress and the per-template check rejects them by design."""
     from safety_eval.stats import cluster_weights
 
     rng = np.random.default_rng(seed)
@@ -48,71 +79,67 @@ def steer(m_steer: float, n_req: int = 1000, n_tpl: int = 8, n_cl: int = 45, tau
     tp = np.tile(np.arange(n_tpl), n_req)
     W = cluster_weights([cl.tolist()], n=n_boot, seed=seed)
     a_t = template_alpha / n_tpl
-    acc = 0
+    acc, hws = 0, []
     for _ in range(n_sims):
         dt = rng.normal(0, tau, n_tpl)
         dt -= dt.mean()
         elig = np.repeat(rng.random(n_req) < p_elig, n_tpl).astype(float)
         par = (rng.random(cl.size) < p).astype(float)
-        shift = dt[tp]  # per-unit shift of the child steer probability (the #36 review's simulation)
+        shift = dt[tp]
         f10 = np.clip(disc / (2 * p) + np.maximum(-shift, 0) / p, 0, 1)
         f01 = np.clip(disc / (2 * (1 - p)) + np.maximum(shift, 0) / (1 - p), 0, 1)
         u = rng.random(cl.size)
-        child = np.where(par == 1, u >= f10, u < f01).astype(float)
-        d = (child - par) * elig
+        d = (np.where(par == 1, u >= f10, u < f01).astype(float) - par) * elig
 
         def ci(mask, level):
             den = W @ (elig * mask)
-            r = np.divide(W @ (d * mask), den, out=np.full(den.shape, np.nan), where=den > 0)
-            r = r[np.isfinite(r)]
-            a = 100 * (1 - level) / 2
-            return np.percentile(r, [a, 100 - a])
+            return _pct(np.divide(W @ (d * mask), den, out=np.full(den.shape, np.nan), where=den > 0), level)
 
         lo, hi = ci(np.ones_like(d), 0.95)
+        hws.append((hi - lo) / 2)
         bad_t = any(ci((tp == t).astype(float), 1 - a_t)[0] > 0 for t in range(n_tpl))
         acc += bool(lo <= 0 and hi <= m_steer and not bad_t)
-    return acc / n_sims
+    return {"pass": acc / n_sims, "hw": float(np.median(hws))}
 
 
-def false_alarm(m_false_alarm: float, m_refusal: float, n_req: int = 1000, n_cl: int = 45, fa: float = 0.01,
-                fa_disc: float = 0.01, refusal: float = 0.0, ref_disc: float = 0.0, n_boot: int = 300,
-                n_sims: int = 40, seed: int = 1) -> float:
-    """Clean units of the G13 steer set (1,000; G12: 1,800). Parent false-alarm rate ``fa`` (PREREG G2 caps it at 1 %)
-    with discordance ``fa_disc``; clean refusals are deterministic per request (control-token refusals), so the
-    default refusal discordance is 0."""
+def false_alarm(m_false_alarm: float, m_refusal: float, fa_abs_cap: float, n_req: int = 1000, n_cl: int = 45,
+                fa: float = 0.005, fa_disc: float = 0.01, n_boot: int = 300, n_sims: int = 40, seed: int = 1) -> dict:
+    """Clean units: accept iff child false-alarm rate <= fa_abs_cap (PREREG G2(f)) and upper CI(Delta false alarm) <=
+    m_false_alarm (refusals are deterministic per request, so Delta refusal = 0 and that bound always passes)."""
     from safety_eval.stats import cluster_weights
 
     rng = np.random.default_rng(seed)
     cl = np.arange(n_req) % n_cl
     W = cluster_weights([cl.tolist()], n=n_boot, seed=seed)
     tot = W.sum(1)
-    acc = 0
+    acc, hws = 0, []
+    f10, f01 = min(1.0, fa_disc / (2 * fa)), fa_disc / (2 * (1 - fa))
     for _ in range(n_sims):
-        ok = True
-        for rate, dsc, m in ((fa, fa_disc, m_false_alarm), (refusal, ref_disc, m_refusal)):
-            par = (rng.random(n_req) < rate).astype(float)
-            ch = _flip(rng, par, dsc, rate) if 0 < rate < 1 else par.copy()
-            hi = np.percentile((W @ (ch - par)) / tot, 97.5)
-            ok &= hi <= m
-        acc += ok
-    return acc / n_sims
+        par = (rng.random(n_req) < fa).astype(float)
+        u = rng.random(n_req)
+        ch = np.where(par == 1, u >= f10, u < f01).astype(float)
+        lo, hi = _pct((W @ (ch - par)) / tot)
+        hws.append((hi - lo) / 2)
+        acc += bool(ch.mean() <= fa_abs_cap and hi <= m_false_alarm and 0.0 <= m_refusal)
+    return {"pass": acc / n_sims, "hw": float(np.median(hws))}
 
 
-def capability(m_cap: float, se: float = FULL_DEV_INDEX_SE, k_areas: int = 5, area_alpha: float = 0.05,
-               n_sims: int = 4000, seed: int = 2) -> float:
-    """Full-DEV paired index difference ~ N(0, se) (percentile CI ~ normal at B = 2000); areas ~ N(0, se sqrt(k))
-    independent (conservative). Accept iff lower >= -m_cap and no area's upper CI at 1 - area_alpha / k < 0."""
+def capability(m_cap: float, n_rows: int = 12_097, k_areas: int = 5, area_alpha: float = 0.05, n_sims: int = 4000,
+               seed: int = 2) -> dict:
+    """Paired index difference ~ N(0, se(n)), se(n) = 0.738 sqrt(2008 / n) (projection); areas ~ N(0, se sqrt(k)).
+    Accept iff lower >= -m_cap and no area's upper CI at 1 - area_alpha / k < 0."""
     rng = np.random.default_rng(seed)
-    z, za = 1.96, NormalDist().inv_cdf(1 - area_alpha / k_areas / 2)
+    se = SUBSET_INDEX_SE * math.sqrt(SUBSET_ROWS / n_rows)
+    za = NormalDist().inv_cdf(1 - area_alpha / k_areas / 2)
     d = rng.normal(0, se, n_sims)
     a = rng.normal(0, se * math.sqrt(k_areas), (n_sims, k_areas))
-    ok = (d - z * se >= -m_cap) & ~np.any(a + za * se * math.sqrt(k_areas) < 0, axis=1)
-    return float(ok.mean())
+    ok = (d - 1.96 * se >= -m_cap) & ~np.any(a + za * se * math.sqrt(k_areas) < 0, axis=1)
+    return {"pass": float(ok.mean()), "hw": 1.96 * se}
 
 
 def debiased_ece_l2(conf, correct, bins: int = 15) -> float:
-    """``harness.calibration.debiased_ece(...)["debiased_l2"]`` (used when the kit is importable); this verbatim copy
-    of its logic lets the simulation run without the Decision Index kit (equality: tests/test_margin_sim.py)."""
+    """``harness.calibration.debiased_ece(...)["debiased_l2"]`` when the kit is importable; otherwise this verbatim copy
+    of its logic (equality: tests/test_margin_sim.py)."""
     try:
         from harness.calibration import debiased_ece
     except ImportError:
@@ -131,75 +158,107 @@ def debiased_ece_l2(conf, correct, bins: int = 15) -> float:
     return debiased_ece(conf, correct, bins)["debiased_l2"]
 
 
-def _ece_arms(rng, n, over=0.0):
-    z = rng.normal(2.0, 1.4, n)
-    u = rng.random(n)
-
-    def arm(o):
-        za = z + rng.normal(0, 0.35, n)
-        return np.clip(1 / (1 + np.exp(-za * (1.12 + o))), 0.34, 1), (u < 1 / (1 + np.exp(-za))).astype(float)
-
-    return arm(0.0), arm(over)
-
-
-def ece(m_ece: float | None, n_fields: int = 33_000, n_clusters: int = 10_200, demonstrated_only: bool = False,
-        n_boot: int = 100, n_sims: int = 10, seed: int = 3) -> float:
-    """Debiased L2 ECE difference, one-way cluster bootstrap with shared draws (``harness.calibration.debiased_ece``).
-    Defaults: full Index DEV (job-5cmat: 5,515 fields / 2,008 rows -> ~33k fields over ~10.2k clusters; synthetic,
-    exchangeable, parent debiased L2 ~ 0.02 as measured). ``demonstrated_only``: the retention rule (reject iff lower
-    CI > 0), e.g. ``ece(None, n_fields=1420, n_clusters=1420, demonstrated_only=True)``."""
+def ece(m_ece: float, n_fields: int = 33_000, n_clusters: int | None = None, n_boot: int = 100, n_sims: int = 8,
+        seed: int = 3) -> dict:
+    """Debiased L2 ECE difference, one-way cluster bootstrap with shared draws; accept iff upper CI <= m_ece. Synthetic
+    exchangeable arms (parent debiased L2 ~0.02 as measured on job-5cmat); ``n_clusters`` default = n_fields / 3.2."""
     rng = np.random.default_rng(seed)
+    n_clusters = n_clusters or max(2, int(n_fields / 3.2))
     cl = rng.integers(0, n_clusters, n_fields)
-    acc = 0
+    acc, hws = 0, []
     for _ in range(n_sims):
-        (cp, yp), (cc, yc) = _ece_arms(rng, n_fields)
+        z, u = rng.normal(2.0, 1.4, n_fields), rng.random(n_fields)
+        arms = []
+        for _a in range(2):
+            za = z + rng.normal(0, 0.35, n_fields)
+            arms.append((np.clip(1 / (1 + np.exp(-za * 1.12)), 0.34, 1), (u < 1 / (1 + np.exp(-za))).astype(float)))
+        (cp, yp), (cc, yc) = arms
         W = rng.multinomial(n_clusters, np.full(n_clusters, 1 / n_clusters), size=n_boot)[:, cl]
         ds = []
         for w in W:
             idx = np.repeat(np.arange(n_fields), w.astype(int))
             ds.append(debiased_ece_l2(cc[idx], yc[idx]) - debiased_ece_l2(cp[idx], yp[idx]))
         lo, hi = np.percentile(ds, [2.5, 97.5])
-        acc += bool(not lo > 0) if demonstrated_only else bool(hi <= m_ece)
-    return acc / n_sims
+        hws.append((hi - lo) / 2)
+        acc += bool(hi <= m_ece)
+    return {"pass": acc / n_sims, "hw": float(np.median(hws))}
 
 
-def retention_acc(m_ret_acc: float, n_items: int = 1420, n_clusters: int = 1670, p: float = 0.7, disc: float = 0.10,
-                  n_boot: int = 300, n_sims: int = 40, seed: int = 4) -> float:
-    """Paired decision accuracy on the cohort retention role (~1,420 items over 1,670 records), discordance ``disc``;
-    accept iff lower CI >= -m_ret_acc."""
+def retention_acc(m_ret_acc: float, n_items: int = 1420, p: float = 0.7, disc: float = 0.10, n_boot: int = 300,
+                  n_sims: int = 40, seed: int = 4) -> dict:
+    """Paired decision accuracy on the retention role (one item per record cluster ~ 1.18 items/record); accept iff
+    lower CI >= -m_ret_acc."""
     from safety_eval.stats import cluster_weights
 
     rng = np.random.default_rng(seed)
-    cl = rng.integers(0, n_clusters, n_items)
+    cl = rng.integers(0, max(2, int(n_items / 0.85)), n_items)
     W = cluster_weights([cl.tolist()], n=n_boot, seed=seed)
     tot = W.sum(1)
-    acc = 0
+    acc, hws = 0, []
+    f10, f01 = disc / (2 * p), disc / (2 * (1 - p))
     for _ in range(n_sims):
         par = (rng.random(n_items) < p).astype(float)
-        ch = _flip(rng, par, disc, p)
-        lo = np.percentile((W @ (ch - par)) / tot, 2.5)
+        u = rng.random(n_items)
+        ch = np.where(par == 1, u >= f10, u < f01).astype(float)
+        lo, hi = _pct((W @ (ch - par)) / tot)
+        hws.append((hi - lo) / 2)
         acc += bool(lo >= -m_ret_acc)
-    return acc / n_sims
+    return {"pass": acc / n_sims, "hw": float(np.median(hws))}
 
 
-def table(margins: dict | None = None, scale: float = 1.0) -> dict[str, float]:
-    """Every criterion's unchanged-candidate pass rate at ``margins`` (default ``train.promotion.MARGINS``).
-    ``scale`` multiplies the simulation counts (the test uses a small scale)."""
+def simulator(criterion: str, margins: dict, scale: float = 1.0):
+    """n -> {"pass", "hw"} for ``criterion`` at the approved ``margins`` (``scale`` multiplies simulation counts)."""
+    k = lambda v: max(4, int(v * scale))  # noqa: E731
+    mg = margins
+    return {
+        "g12_steer_d1a": lambda n: steer(mg["m_steer"], n_req=n, n_tpl=4, n_sims=k(40)),
+        "g13_steer_d1b": lambda n: steer(mg["m_steer"], n_req=n, n_tpl=8, n_sims=k(40)),
+        "g12_false_alarm": lambda n: false_alarm(mg["m_false_alarm"], mg["m_refusal"], mg["fa_abs_cap"], n_req=n,
+                                                 n_sims=k(400)),
+        "g13_false_alarm": lambda n: false_alarm(mg["m_false_alarm"], mg["m_refusal"], mg["fa_abs_cap"], n_req=n,
+                                                 n_sims=k(400)),
+        "g13_capability": lambda n: capability(mg["m_cap"], n_rows=n),
+        "g13_ece": lambda n: ece(mg["m_ece"], n_fields=n, n_sims=k(8)),
+        "g13_retention_acc": lambda n: retention_acc(mg["m_ret_acc"], n_items=n, n_sims=k(40)),
+        "g13_retention_ece": lambda n: ece(mg["m_ece"], n_fields=n, n_clusters=int(n / 0.85 / 1.18), n_sims=k(8)),
+    }[criterion]
+
+
+MARGIN_KEY = {"g12_steer_d1a": "m_steer", "g13_steer_d1b": "m_steer", "g12_false_alarm": "m_false_alarm",
+              "g13_false_alarm": "m_false_alarm", "g13_capability": "m_cap", "g13_ece": "m_ece",
+              "g13_retention_acc": "m_ret_acc", "g13_retention_ece": "m_ece"}
+
+
+def required_n(criterion: str, margins: dict | None = None, scale: float = 1.0, max_bumps: int = 4,
+               sizes: dict | None = None) -> dict:
+    """The frozen-set size needed for an unchanged candidate to pass ``criterion`` with probability >= FLOOR at the
+    approved margins, by simulation: measure the CI half-width at the configured n, scale as 1/sqrt(n) to 0.70 m, then
+    CONFIRM by simulating there (bumping 25 % at a time). Reports have vs need."""
     from train.promotion import MARGINS
 
     mg = MARGINS if margins is None else margins
-    n = lambda k: max(4, int(k * scale))  # noqa: E731
-    return {
-        "g12_steer_d1a": steer(mg["m_steer"], n_req=1800, n_tpl=4, n_sims=n(40)),
-        "g13_steer_d1b": steer(mg["m_steer"], n_req=1000, n_tpl=8, n_sims=n(40)),
-        "g12_false_alarm": false_alarm(mg["m_false_alarm"], mg["m_refusal"], n_req=1800, n_sims=n(40)),
-        "g13_false_alarm": false_alarm(mg["m_false_alarm"], mg["m_refusal"], n_req=1000, n_sims=n(40)),
-        "g13_capability": capability(mg["m_cap"]),
-        "g13_ece": ece(mg["m_ece"], n_sims=n(10)),
-        "g13_retention_acc": retention_acc(mg["m_ret_acc"], n_sims=n(40)),
-        "g13_retention_ece": ece(None, n_fields=1420, n_clusters=1420, demonstrated_only=True, n_boot=200,
-                                 n_sims=n(20)),
-    }
+    sim = simulator(criterion, mg, scale)
+    have = (sizes or {}).get(criterion, EVAL_SIZES[criterion]["n"])  # e.g. sizes={"g13_retention_acc": 9500}
+    at_have = sim(have)
+    m = mg[MARGIN_KEY[criterion]]
+    if at_have["pass"] >= FLOOR:  # confirmed at the configured size; the smaller need is a 1/sqrt(n) estimate
+        est = int(math.ceil(have * (at_have["hw"] / (HW_TARGET * m)) ** 2)) if at_have["hw"] > 0 else 1
+        return {"criterion": criterion, "have": have, "need": min(have, max(1, est)), "need_basis": "estimate <= have",
+                "pass_at_have": at_have["pass"], "meets": True, "unit": EVAL_SIZES[criterion]["unit"]}
+    need = int(math.ceil(have * (at_have["hw"] / (HW_TARGET * m)) ** 2))
+    conf = sim(need)
+    for _ in range(max_bumps):
+        if conf["pass"] >= FLOOR:
+            break
+        need = int(math.ceil(need * 1.25))
+        conf = sim(need)
+    return {"criterion": criterion, "have": have, "need": need, "pass_at_have": at_have["pass"],
+            "pass_at_need": conf["pass"], "meets": False, "unit": EVAL_SIZES[criterion]["unit"]}
+
+
+def sizing_table(margins: dict | None = None, scale: float = 1.0, sizes: dict | None = None) -> dict[str, dict]:
+    """have vs need for every criterion; ``sizes`` overrides configured n (e.g. a proposed retention size)."""
+    return {c: required_n(c, margins, scale, sizes=sizes) for c in EVAL_SIZES}
 
 
 def sensitivity(margins: dict | None = None, scale: float = 1.0) -> dict[str, float]:
@@ -208,11 +267,11 @@ def sensitivity(margins: dict | None = None, scale: float = 1.0) -> dict[str, fl
 
     mg = MARGINS if margins is None else margins
     n = max(4, int(40 * scale))
-    return {f"{name}_tau{tau}": steer(mg["m_steer"], n_req=nr, n_tpl=nt, tau=tau, n_sims=n)
+    return {f"{name}_tau{tau}": steer(mg["m_steer"], n_req=nr, n_tpl=nt, tau=tau, n_sims=n)["pass"]
             for name, nr, nt in (("g12_steer_d1a", 1800, 4), ("g13_steer_d1b", 1000, 8)) for tau in (0.01, 0.02)}
 
 
 if __name__ == "__main__":
-    sc = float(sys.argv[1]) if len(sys.argv) > 1 else 5.0
-    print(json.dumps({"unchanged_candidate": table(scale=sc), "sensitivity_template_shift": sensitivity(scale=sc)},
-                     indent=1))
+    sc = float(sys.argv[1]) if len(sys.argv) > 1 else 1.0
+    print(json.dumps({"sizing": sizing_table(scale=sc), "sensitivity_template_shift": sensitivity(scale=sc),
+                      "shortfalls": SHORTFALLS}, indent=1))

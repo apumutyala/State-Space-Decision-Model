@@ -39,6 +39,7 @@ codex/<topic>     Track L work branches
   - `tests/test_jobs_lint.py` must pass.
   - Launch only through `python -m jobs.common.launch <job> --sha <merged sha> --out <dir>`, then paste its `submit.json`.
 - **Every incident appends a `LESSONS.md` entry and an enforcing check (a test, lint check or guard) in the same PR.** A lesson without a check is not done.
+- **Never kill processes by image name or name pattern** (`taskkill /IM` or `/FI` window-title filters, `pkill`, `killall`) on the shared laptop. That kills other agents' and Codex's processes. Kill only PIDs you started yourself and recorded (`taskkill /PID <pid>`, `kill <pid>`). See LESSONS L-23, enforced by `tests/test_no_kill_by_name.py`.
 
 ## PR rules
 

@@ -37,8 +37,9 @@ must pass against BOTH; champion replacement passes the champion's arm as ``--pa
 6. promotion: ``accept`` iff every stage that ran accepted against every comparator; margins come from
    ``train.promotion.MARGINS`` and the report carries their status and the re-sizing projections (issue #36).
 
-Exit codes: 0 every stage accepted (approved margins) | 43 every stage accepted but the margins are PENDING approval
-            (never read as accept by a pipeline) | 40 G12 rejected | 41 G13 rejected | 42 both rejected |
+Exit codes: 0 promotable (G12 and G13 accepted, approved margins) | 43 every stage accepted but the margins are
+            PENDING approval | 44 every stage run accepted but not both G12 and G13 were run (not promotable) |
+            40 G12 rejected | 41 G13 rejected | 42 both rejected |
             10 identity / cache / cohort mismatch | 2 usage. The report is written in every case that got that far.
 """
 
@@ -56,7 +57,8 @@ from typing import Any, Callable, Iterable, Sequence
 STAGES = ("g12", "g13")
 ARM_SCHEMA = "ssdm.m2.arm.v1"
 REPORT_SCHEMA = "ssdm.m2.gates.v1"
-EXIT = {"accept": 0, "g12": 40, "g13": 41, "both": 42, "pending": 43, "identity": 10, "usage": 2}
+EXIT = {"accept": 0, "g12": 40, "g13": 41, "both": 42, "pending": 43, "partial": 44, "identity": 10, "usage": 2}
+CANDIDATE_ROLE = "candidate"
 STAGE_ROLES = {"g12": ("dev",), "g13": ("retention",)}
 
 
@@ -241,6 +243,9 @@ def read_arm_cache(cache_dir: str | Path, stage: str, expect_ident: dict, expect
         diff = sorted(k for k in set(ent["units_identity"]) | set(expect_ident)
                       if ent["units_identity"].get(k) != expect_ident.get(k))
         raise IdentityMismatch(f"parent arm units differ from the child's on {diff}")
+    arm = ent.get("arm") or {}
+    if str(arm.get("role", "")).startswith(CANDIDATE_ROLE) and not (arm.get("promotion") or {}).get("promotable"):
+        raise IdentityMismatch("candidate arm cache was not a promotable ACCEPT; it cannot be a comparator")
     for k, v in (expect_parent or {}).items():
         if (ent.get("arm") or {}).get("parent", {}).get(k) != v:
             raise IdentityMismatch(f"parent arm identity {k}={ent.get('arm', {}).get('parent', {}).get(k)!r} != {v!r}")
@@ -295,8 +300,9 @@ def promotion_verdict(verdicts: dict[str, dict], margins: dict | None = None) ->
 
 
 def exit_code(verdicts: dict[str, dict], pending: bool | None = None) -> int:
-    """``pending`` (default: ``train.promotion.margins_pending()``): an all-accept run under PENDING margins exits
-    ``EXIT["pending"]`` (43), never 0, so no pipeline reads it as an accept (issue #36)."""
+    """0 only when promotable. ``pending`` (default: ``train.promotion.margins_pending()``): an all-accept run under
+    PENDING margins exits ``EXIT["pending"]`` (43); an all-accept run that did not run both G12 and G13 exits
+    ``EXIT["partial"]`` (44). Never 0 unless promotable (issue #36)."""
     if not verdicts:  # nothing was evaluated: never "accept"
         return EXIT["usage"]
     rej = {s for s, v in verdicts.items() if not v["accept"]}
@@ -305,7 +311,9 @@ def exit_code(verdicts: dict[str, dict], pending: bool | None = None) -> int:
             from train.promotion import margins_pending
 
             pending = margins_pending()
-        return EXIT["pending"] if pending else EXIT["accept"]
+        if pending:
+            return EXIT["pending"]
+        return EXIT["accept"] if set(verdicts) == set(STAGES) else EXIT["partial"]
     return EXIT["both"] if rej == {"g12", "g13"} else EXIT[rej.pop()]
 
 
@@ -358,8 +366,11 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
     the lineage anchor (m2 parent arm or current champion). G12 uses the last accepted only; G13 must accept against
     both (``promotion.combine_comparators``). ``anchor_arm=None`` (or the same directory) means the last accepted
     checkpoint IS the anchor (the first m2 cell), recorded as ``anchor: same_as_last_accepted``. With ``out`` the
-    child's units are also written as an arm cache (``<out dir>/child-arm``) so an accepted child can be the next
-    run's ``parent_arm``."""
+    child's units are written as an arm cache (``<out dir>/child-arm``) ONLY when the run is promotable, with the
+    promotion verdict in its manifest, so only an accepted child can be the next run's ``parent_arm``
+    (``read_arm_cache`` refuses a candidate cache without a promotable verdict). The anchor is REQUIRED for G13
+    (Codex #36: a missing comparator leaves the run non-promotable): ``anchor_arm=None`` is accepted only when the
+    last-accepted cache is itself a parent-arm cache (not a candidate), and is then recorded as the anchor."""
     from train.promotion import MARGINS, combine_comparators
 
     margins = MARGINS if margins is None else margins
@@ -367,11 +378,16 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
                                                                       "child": child_identity, **(extra or {})},
                               "verdicts": {}, "stages": {}}
     same_anchor = anchor_arm is None or Path(anchor_arm).resolve() == Path(parent_arm).resolve()
+    children: dict[str, tuple] = {}
     for stage in stages:
         variants = stage_variants(cohort, stage)
         ident = units_identity(stage, cohort, spec, {r: items_by_role[r] for r in STAGE_ROLES[stage]}, variants,
                                index_rows if stage == "g13" else None, index_frozen if stage == "g13" else None)
         comps = {"last_accepted": read_arm_cache(parent_arm, stage, ident, expect_parent, parent_arm_sha256)}
+        if stage == "g13" and same_anchor and str((comps["last_accepted"][1].get("arm") or {}).get(
+                "role", "")).startswith(CANDIDATE_ROLE):
+            raise IdentityMismatch("G13 needs the lineage anchor: --parent-arm is a candidate (child) cache, so "
+                                   "--anchor-arm (m2 parent arm or champion) is required")
         if stage == "g13" and not same_anchor:
             comps["anchor"] = read_arm_cache(anchor_arm, stage, ident, expect_parent, anchor_arm_sha256)
         child = score_stage(stage, child_decide, child_steer, items_by_role, records_by_id, variants,
@@ -382,7 +398,8 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
         v = combine_comparators(vs)
         if stage == "g13" and same_anchor:
             v["comparators"]["anchor"] = {"same_as": "last_accepted", "accept": v["comparators"]["last_accepted"][
-                "accept"], "note": "the last accepted checkpoint is the lineage anchor (first m2 cell on this parent)"}
+                "accept"], "note": "the last-accepted cache is the parent-arm cache (verified role != candidate), "
+                                   "so it is the lineage anchor"}
         report["verdicts"][stage] = v
         report["stages"][stage] = {"units_identity": ident,
                                    "parent_arm": {k: comps["last_accepted"][1][k] for k in ("sha256", "arm")},
@@ -390,15 +407,17 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
                                                        for n, (_, e) in comps.items()},
                                    "child_seconds": child["seconds"],
                                    "child_decision_errors": child["decision_errors"]}
+        children[stage] = (child, ident, dict(comps["last_accepted"][1].get("arm", {}).get("parent") or {}))
         if out is not None:
             Path(out).parent.mkdir(parents=True, exist_ok=True)
             Path(out).with_name(f"units-child-{stage}.json").write_text(
                 json.dumps(child, sort_keys=True, default=float), encoding="utf-8")
-            write_arm_cache(Path(out).with_name("child-arm"), stage, child, ident,
-                            {"parent": dict(comps["last_accepted"][1].get("arm", {}).get("parent") or {}),
-                             "child": child_identity, "role": "candidate (usable as the next last-accepted arm "
-                                                               "only if this run's promotion verdict is accept)"})
     report["promotion"] = promotion_verdict(report["verdicts"], margins)
+    if out is not None and report["promotion"]["promotable"]:  # only an ACCEPTED child becomes a comparator
+        for stage, (child, ident, par) in children.items():
+            write_arm_cache(Path(out).with_name("child-arm"), stage, child, ident,
+                            {"parent": par, "child": child_identity, "role": CANDIDATE_ROLE,
+                             "promotion": {k: report["promotion"][k] for k in ("verdict", "promotable", "stages")}})
     from train.promotion import margins_pending
 
     code = exit_code(report["verdicts"], margins_pending(margins))
@@ -536,11 +555,12 @@ def main(argv=None) -> int:
     index_rows, index_frozen = None, None
     if a.index_rows and "g13" in stages:
         from harness.suite import read_rows
-        from jobs.common.dev_full import FrozenMismatch, load_frozen, select_rows
+        from jobs.common.dev_full import FrozenMismatch, check_backend_accepts, load_frozen, select_rows
 
         try:
             index_frozen = load_frozen(a.index_frozen, a.index_frozen_sha256)
             index_rows = select_rows(read_rows(a.index_rows), index_frozen)
+            check_backend_accepts(decider, index_rows)  # $0 plan-only: the child accepts every frozen row
         except FrozenMismatch as e:
             print(f"identity: {e}", file=sys.stderr)
             return EXIT["identity"]

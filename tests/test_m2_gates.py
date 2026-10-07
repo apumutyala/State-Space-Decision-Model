@@ -231,6 +231,7 @@ def test_exit_codes_and_report_validator():
     assert G.exit_code({"g12": ok, "g13": ok}, pending=False) == 0
     assert G.exit_code({"g12": ok, "g13": ok}, pending=True) == G.EXIT["pending"] == 43  # issue #36
     assert G.exit_code({"g12": bad, "g13": ok}, pending=True) == 40  # a rejection is reported as such
+    assert G.exit_code({"g12": ok}, pending=False) == G.EXIT["partial"] == 44  # g12-only: never 0 (not promotable)
     assert G.exit_code({"g12": bad, "g13": ok}) == 40 and G.exit_code({"g12": ok, "g13": bad}) == 41
     assert G.exit_code({"g12": bad, "g13": bad}) == 42
     assert G.exit_code({}) == G.EXIT["usage"] != 0  # nothing evaluated is never an accept
@@ -448,7 +449,7 @@ def test_arm_json_pin_and_parent_repo_revision_are_enforced(world, parent_cache)
     cache, dec = parent_cache
     sha = hashlib.sha256((cache / "arm.json").read_bytes()).hexdigest()
     code, _ = _gates(world, cache, dec.decide, KeywordDecider(0.0), stages=("g12",), parent_arm_sha256=sha)
-    assert code in (0, G.EXIT["pending"])  # accepted (43 only while the margins are pending)
+    assert code in (G.EXIT["partial"], G.EXIT["pending"])  # accepted, but a g12-only run is never promotable
     with pytest.raises(G.IdentityMismatch, match="pinned"):
         _gates(world, cache, dec.decide, KeywordDecider(0.0), stages=("g12",), parent_arm_sha256="0" * 64)
     exp = G.expected_parent_identity("rwkv7")
@@ -556,19 +557,41 @@ def test_g13_needs_both_comparators_and_the_child_arm_is_reusable(world, parent_
                 resp["ssdm"]["served_probabilities"][q] = {o: (0.9 if o == g else 0.1 / max(1, len(p) - 1)) for o in p}
         return resp
 
+    from train.promotion import MARGINS
+
+    ok_m = {**MARGINS, "approved": True, "status": "approved (test)"}
     anchor = tmp_path / "anchor"
     _cache_parent(world, anchor, informed, KeywordDecider(gullibility=0.0))
     code, rep = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), anchor_arm=anchor,
-                       out=tmp_path / "run" / "report.json")
+                       out=tmp_path / "run" / "report.json", margins=ok_m)
     comps = rep["verdicts"]["g13"]["comparators"]
     assert comps["last_accepted"]["accept"] and not comps["anchor"]["accept"]
     assert code == 41 and "g13_retention_acc" in rep["promotion"]["failed"]["g13"]
     assert set(rep["stages"]["g13"]["comparator_arms"]) == {"last_accepted", "anchor"}
     assert "comparators" in rep["verdicts"]["g12"] and set(rep["stages"]["g12"]["comparator_arms"]) == {"last_accepted"}
-    # the child's own units were cached as an arm: a later run can use it as its last accepted checkpoint
-    child_arm = tmp_path / "run" / "child-arm"
-    code2, rep2 = _gates(world, child_arm, dec.decide, KeywordDecider(gullibility=0.0), anchor_arm=cache)
-    assert rep2["verdicts"]["g13"]["accept"] and code2 in (0, G.EXIT["pending"])
+    assert not (tmp_path / "run" / "child-arm").exists()  # a rejected child never becomes a comparator
+    # an ACCEPTED (promotable) child is cached with its verdict and can be the next last-accepted comparator
+    code1, _ = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), out=tmp_path / "ok" / "r.json",
+                      margins=ok_m)
+    child_arm = tmp_path / "ok" / "child-arm"
+    assert code1 == 0 and json.loads((child_arm / "arm.json").read_text())["stages"]["g13"]["arm"]["promotion"][
+        "promotable"]
+    code2, rep2 = _gates(world, child_arm, dec.decide, KeywordDecider(gullibility=0.0), anchor_arm=cache, margins=ok_m)
+    assert rep2["verdicts"]["g13"]["accept"] and code2 == 0
+    # B3: with a candidate cache as last accepted, the anchor is REQUIRED
+    with pytest.raises(G.IdentityMismatch, match="anchor"):
+        _gates(world, child_arm, dec.decide, KeywordDecider(gullibility=0.0), margins=ok_m)
+    # a candidate cache without a promotable verdict is refused as a comparator
+    man = json.loads((child_arm / "arm.json").read_text())
+    for st in man["stages"].values():
+        st["arm"]["promotion"]["promotable"] = False
+    bad = tmp_path / "bad-arm"
+    import shutil
+
+    shutil.copytree(child_arm, bad)
+    (bad / "arm.json").write_text(json.dumps(man))
+    with pytest.raises(G.IdentityMismatch, match="promotable ACCEPT"):
+        _gates(world, bad, dec.decide, KeywordDecider(gullibility=0.0), anchor_arm=cache, margins=ok_m)
 
 
 def test_index_arm_from_the_served_decider_is_bitwise_the_untempered_arm(world):

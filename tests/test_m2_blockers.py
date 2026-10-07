@@ -601,7 +601,7 @@ def test_job_spec_is_capped_unsubmitted_and_margins_pending():
     assert params["hard_cap_usd"] <= 20.0
     worst = (params["build_timeout_minutes"] + 2 * params["max_duration_minutes"]) * params["batch_usd_per_min"]
     assert worst <= params["hard_cap_usd"]
-    assert MARGINS["approved"] and "6028384198" in MARGINS["status"] and "6028384198" in spec  # issue #36
+    assert "6028537932" in MARGINS["status"] and "6028537932" in spec  # issue #36: Codex contract
     assert params["margins_status"] == MARGINS["status"]
     assert "NOT SUBMITTED" in spec
     for k in ("m_steer", "m_cap", "m_ece"):

@@ -1,7 +1,8 @@
-"""LESSONS L-20 enforcing check: margins inside measured noise reject everything; size gates by simulation before
-adopting them (issue #36). Runs the unchanged-candidate (Delta = 0) pass-rate simulation of EVERY G12/G13 criterion at
-the configured margins (``train.promotion.MARGINS``) at small scale and requires >= 0.5 each; the design target is
->= 0.8 (``null_pass_floor``), re-checked on the first real runs by ``train.promotion.resizing``."""
+"""LESSONS L-20 enforcing check: size the evaluation by simulation; never loosen safety margins for power (issue #36,
+Codex 6028537932). For every G12/G13 criterion, simulate the frozen-set size an unchanged candidate needs to pass with
+probability >= 0.8 at the APPROVED margins, and require that the configured evaluation sizes meet it, or that the
+shortfall is recorded with a plan to expand the set (``train.margin_sim.SHORTFALLS``). The margins themselves are
+pinned to the contract here: low power never moves them."""
 
 import math
 
@@ -11,33 +12,45 @@ import pytest
 from train import margin_sim as M
 from train.promotion import MARGINS
 
-CRITERIA = {"g12_steer_d1a", "g13_steer_d1b", "g12_false_alarm", "g13_false_alarm", "g13_capability", "g13_ece",
-            "g13_retention_acc", "g13_retention_ece"}
+CONTRACT = {"m_cap": 1.0, "m_steer": 0.02, "m_ece": 0.01, "m_ret_acc": 0.01, "m_false_alarm": 0.01,
+            "m_refusal": 0.01, "fa_abs_cap": 0.01}
 
 
 @pytest.fixture(scope="module")
 def table():
-    return M.table(scale=0.25)
+    return M.sizing_table(scale=0.5)
 
 
-def test_every_criterion_passes_an_unchanged_candidate_at_the_configured_margins(table):
-    assert set(table) == CRITERIA
-    low = {k: v for k, v in table.items() if v < 0.5}
-    assert not low, f"margins inside measured noise reject unchanged candidates: {low} (LESSONS L-20)"
+def test_margins_are_the_codex_contract_and_never_loosened_for_power():
+    assert {k: MARGINS[k] for k in CONTRACT} == CONTRACT
 
 
-def test_the_originally_proposed_values_fail_the_same_simulation():
-    """As first proposed (#36): m_ret_acc 0.01, capability judged on the 2,008-row subset (SE 0.752) and ECE on the
-    subset (~5.5k fields). Each passes an unchanged candidate far less than half the time; the product was ~0.001."""
-    assert M.capability(1.0, se=0.752) < 0.5
-    assert M.retention_acc(0.01, n_sims=20) < 0.5
-    assert M.ece(0.01, n_fields=5500, n_clusters=1700, n_sims=6) < 0.5
+def test_every_configured_evaluation_meets_the_simulated_size_or_its_shortfall_is_recorded(table):
+    assert set(table) == set(M.EVAL_SIZES)
+    short = {c for c, r in table.items() if not r["meets"]}
+    assert short == set(M.SHORTFALLS), (
+        f"simulated shortfalls {sorted(short)} != recorded {sorted(M.SHORTFALLS)}: expand the evaluation or record the "
+        "shortfall with a plan (LESSONS L-20); never relax a margin")
+    for c in short:
+        r = table[c]
+        assert r["need"] > r["have"] and r["pass_at_need"] >= M.FLOOR  # confirmed by simulation at the required size
+        assert M.SHORTFALLS[c]["plan"] and "stays" in M.SHORTFALLS[c]["plan"]
+    for c, r in table.items():
+        if r["meets"]:
+            assert r["pass_at_have"] >= M.FLOOR
+
+
+def test_retention_size_is_a_parameter_and_the_required_n_is_reported(table):
+    r = table["g13_retention_acc"]
+    assert r["have"] == 1420 and r["need"] > 5000  # ~9k items at discordance 0.10 (assumption)
+    bigger = M.required_n("g13_retention_acc", scale=0.5, sizes={"g13_retention_acc": r["need"]})
+    assert bigger["meets"] and bigger["have"] == r["need"]
 
 
 def test_simulated_criteria_still_catch_a_regression_at_the_margin():
-    """Power side: a true regression AT the margin passes rarely (<= ~alpha/2 by construction)."""
+    """Power side: a true capability regression AT the margin passes rarely (<= ~alpha/2 by construction)."""
     rng = np.random.default_rng(0)
-    se = M.FULL_DEV_INDEX_SE
+    se = M.SUBSET_INDEX_SE * math.sqrt(M.SUBSET_ROWS / M.EVAL_SIZES["g13_capability"]["n"])
     d = rng.normal(-MARGINS["m_cap"], se, 4000)
     assert np.mean(d - 1.96 * se >= -MARGINS["m_cap"]) < 0.05
 

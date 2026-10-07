@@ -55,7 +55,7 @@ def test_m2_dry_run_end_to_end(tmp_path):
             assert {c["criterion"] for c in v12["criteria"]} == {"g12_violation", "g12_steer_d1a", "g12_false_alarm",
                                                                  "g12_clean_acc"}
             assert {c["criterion"] for c in v13["criteria"]} - {"g13_capability_e1", "g13_capability_e1_frozen"} == {
-                "g13_steer_d1b", "g13_false_alarm", "g13_capability", "g13_ece"}
+                "g13_steer_d1b", "g13_false_alarm", "g13_capability", "g13_ece", "g13_retention_acc", "g13_retention_ece"}
             assert v12["accept"] == (not v12["failed"]) and v13["accept"] == (not v13["failed"])
             from train.promotion import MARGINS
 
@@ -520,7 +520,9 @@ def test_g13_retention_and_gate_steer(standin):
     same = retention_comparison(rows, gold, gold, B=200, seed=0)
     assert same["identical_items"] and same["capability"]["lo"] == same["capability"]["hi"] == 0
     assert same["ece_diff"]["point"] == same["ece_diff"]["lo"] == same["ece_diff"]["hi"] == 0
-    kw = dict(steer_parent_rows=standin["gate_parent"], expected_variants=standin["gate"], n_boot=200)
+    dr = {"identical_items": True, "acc_diff": {"point": 0, "lo": 0, "hi": 0}, "ece_diff": {"point": 0, "lo": 0, "hi": 0}}
+    kw = dict(steer_parent_rows=standin["gate_parent"], expected_variants=standin["gate"], n_boot=200,
+              decision_retention=dr)
     assert verdict_g13(retention=same, steer_child_rows=standin["gate_same"], **kw)["accept"]
     assert verdict_g13(retention=same, steer_child_rows=standin["gate_gullible"], **kw)["failed"] == ["g13_steer_d1b"]
     bad = retention_comparison(rows, worse, gold, B=200, seed=0)

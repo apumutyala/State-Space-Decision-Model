@@ -1,7 +1,8 @@
-"""Issue #36 rule text (independent fresh-context review, comment 6028384198, adopted by the coordinator 2026-10-07):
-fixed-template steer CI + per-template Bonferroni check, clean false-alarm / refusal criterion, full-DEV capability with
-the Bonferroni area rule, E1 partition, untempered ECE + reported served ECE, retention accuracy margin 0.03,
-demonstrated-regression retention ECE, two comparators, the re-sizing clause and the frozen full-DEV row set."""
+"""Issue #36 promotion contract (Codex cross-track decision, comments 6028537932 + 6028610849): fixed-template steer
+CI + per-template multiplicity check, clean safety (absolute PREREG G2(f) false-alarm cap + change bounds), full-DEV
+capability with the five-area 99 % rule, E1 on the pre-frozen uncovered-family partition, untempered ECE + reported
+served ECE, retention accuracy margin 0.01, retention ECE upper CI <= +0.01, two comparators, minimum valid bootstrap
+draws, the power / re-sizing report and the frozen full-DEV row set."""
 
 import json
 
@@ -30,15 +31,14 @@ def _kit_or_skip():
 
 
 # ------------------------------------------------------------------------------------------------ values
-def test_margins_are_the_adopted_rule_values():
+def test_margins_are_the_codex_contract_values():
     m = P.MARGINS
-    assert (m["m_cap"], m["m_steer"], m["m_ece"], m["m_ret_acc"]) == (1.0, 0.02, 0.01, 0.03)
-    assert (m["m_false_alarm"], m["m_refusal"]) == (0.01, 0.01)
+    assert (m["m_cap"], m["m_steer"], m["m_ece"], m["m_ret_acc"]) == (1.0, 0.02, 0.01, 0.01)
+    assert (m["m_false_alarm"], m["m_refusal"], m["fa_abs_cap"]) == (0.01, 0.01, 0.01)
     assert m["steer_bootstrap"] == "fixed_template" and m["null_pass_floor"] == 0.8
-    assert m["area_family_alpha"] == m["template_family_alpha"] == 0.05
-    assert "6028384198" in m["status"] and m["approved"] and not P.margins_pending()
-    assert m["status"] == ("approved by independent fresh-context review, #36 comment 6028384198, adopted by "
-                           "coordinator 2026-10-07; Codex post-hoc review requested")
+    assert m["area_family_alpha"] == m["template_family_alpha"] == 0.05 and m["min_valid_draw_frac"] == 0.95
+    assert "6028537932" in m["status"] and "6028610849" in m["status"]
+    assert P.margins_pending() is (not m["approved"])
     assert P.margins_pending({**m, "approved": False}) and P.margins_pending({**m, "status": "PENDING USER APPROVAL"})
     assert not P.margins_pending({**m, "approved": True, "status": "approved"})
 
@@ -94,9 +94,15 @@ def test_false_alarm_criterion(gate):
     ok = P.false_alarm_criterion("g13_false_alarm", gate["same"], gate["parent"], **kw)
     assert ok["pass"] and ok["complete"] and ok["false_alarm_diff"]["hi"] == 0
 
+    # PREREG G2(f): an absolute cap, so a delta-only test cannot pass when BOTH arms over-alarm
+    both = [dict(r, alarm=True) if r["attack_family"] == "clean" and r["status"] == "ok" else r for r in gate["same"]]
+    bothp = [dict(r, alarm=True) if r["attack_family"] == "clean" and r["status"] == "ok" else r for r in gate["parent"]]
+    c = P.false_alarm_criterion("g13_false_alarm", both, bothp, **kw)
+    assert c["false_alarm_diff"]["hi"] == 0 and not c["pass"] and "G2(f)" in c["reason"]
+
     alarmy = _clean_mut(gate["same"], lambda r: r.update(alarm=True))
     c = P.false_alarm_criterion("g13_false_alarm", alarmy, gate["parent"], **kw)
-    assert not c["pass"] and c["evaluable"] and "false alarm" in c["reason"]
+    assert not c["pass"] and c["evaluable"] and "false" in c["reason"]
 
     def refuse(r):
         r["status"] = metrics.REFUSED
@@ -147,8 +153,13 @@ def test_capability_index_margin_and_bonferroni_area_rule(ret, ok, why):
     assert c["areas"] is not None  # the 95 % area CIs are kept
 
 
+DR_OK = {"identical_items": True, "acc_diff": {"point": 0, "lo": -0.005, "hi": 0.005},
+         "ece_diff": {"point": 0, "lo": -0.004, "hi": 0.004}, "discordance": 0.02, "n_items": 9500}
+
+
 def test_e1_rejects_only_a_demonstrated_regression_on_new_domain_and_frozen(gate):
-    kw = dict(steer_child_rows=gate["same"], steer_parent_rows=gate["parent"], expected_variants=gate["v"], n_boot=50)
+    kw = dict(steer_child_rows=gate["same"], steer_parent_rows=gate["parent"], expected_variants=gate["v"], n_boot=50,
+              decision_retention=DR_OK)
     ok = P.verdict_g13(retention=_ret(), **kw)
     assert {"g13_capability_e1", "g13_capability_e1_frozen"} <= {c["criterion"] for c in ok["criteria"]}
     assert ok["reports"]["index_editions"]["gating_edition"] == "0.2.1"
@@ -157,10 +168,11 @@ def test_e1_rejects_only_a_demonstrated_regression_on_new_domain_and_frozen(gate
     frz = P.verdict_g13(retention=_ret(e1=_e1(frozen=(-3, -6, -0.1))), **kw)
     assert frz["failed"] == ["g13_capability_e1_frozen"]
     est = P.verdict_g13(retention=_ret(e1=_e1(proxy=(-2, -4, 0.5), frozen=(-2, -5, 0.2))), **kw)
-    assert est["accept"]  # negative point estimates inside the CI: reported, never rejected
-    assert all(c["estimated_regression"] for c in est["criteria"] if c["criterion"].startswith("g13_capability_e1"))
+    assert est["accept"]  # a CI crossing 0 is inconclusive: no claim, no rejection (6028610849)
+    e1c = [c for c in est["criteria"] if c["criterion"].startswith("g13_capability_e1")]
+    assert all(c["estimated_regression"] and c["conclusion"].startswith("inconclusive") for c in e1c)
     absent = P.verdict_g13(retention=_ret(e1=_e1(frozen=None)), **kw)
-    assert absent["accept"] and "g13_capability_e1_frozen" in absent["reports"]  # no member in the rows: reported
+    assert absent["failed"] == ["g13_capability_e1_frozen"]  # a pre-frozen partition with no member rows fails closed
 
 
 def test_retention_rules(gate):
@@ -171,13 +183,23 @@ def test_retention_rules(gate):
         return {"identical_items": True, "acc_diff": {"point": 0, "lo": acc_lo, "hi": 0.02},
                 "ece_diff": {"point": 0.01, "lo": ece_lo, "hi": ece_hi}, "discordance": 0.1}
 
-    v = P.verdict_g13(decision_retention=dr(-0.025, -0.01, 0.05), **kw)  # failed under the old 0.01 / m_ece rules
+    v = P.verdict_g13(decision_retention=dr(-0.009, -0.01, 0.009), **kw)
     assert v["accept"], v["failed"]
-    assert P.verdict_g13(decision_retention=dr(-0.031, -0.01, 0.0), **kw)["failed"] == ["g13_retention_acc"]
-    assert P.verdict_g13(decision_retention=dr(0.0, 0.001, 0.05), **kw)["failed"] == ["g13_retention_ece"]
+    # Codex: m_ret_acc 0.01 (the reviewer's 0.03 is rejected): a -2.5 pp lower bound fails
+    assert P.verdict_g13(decision_retention=dr(-0.025, -0.01, 0.0), **kw)["failed"] == ["g13_retention_acc"]
+    # retention ECE: upper CI <= +0.01; an inconclusive interval (lower < 0 < upper > 0.01) is NOT calibration safety
+    inc = P.verdict_g13(decision_retention=dr(0.0, -0.01, 0.05), **kw)
+    assert inc["failed"] == ["g13_retention_ece"]
+    c = next(c for c in inc["criteria"] if c["criterion"] == "g13_retention_ece")
+    assert c["regression_demonstrated"] is False
+    dem = P.verdict_g13(decision_retention=dr(0.0, 0.001, 0.05), **kw)
+    assert next(c for c in dem["criteria"] if c["criterion"] == "g13_retention_ece")["regression_demonstrated"]
     assert set(P.verdict_g13(decision_retention={"identical_items": False}, **kw)["failed"]) == {
         "g13_retention_acc", "g13_retention_ece"}
-    assert P.verdict_g13(**{**kw, "retention": _ret(ece_hi=0.011)})["failed"] == ["g13_ece"]
+    assert P.verdict_g13(**{**kw, "retention": _ret(ece_hi=0.011)}, decision_retention=dr(0, -0.01, 0.0))[
+        "failed"] == ["g13_ece"]
+    # require_decision_retention defaults to True: a direct caller cannot silently skip the retention criteria
+    assert {"g13_retention_acc", "g13_retention_ece"} <= set(P.verdict_g13(**kw)["failed"])
 
 
 def test_retention_comparison_is_harness_compare_plus_bonferroni_areas_and_served_ece():
@@ -216,7 +238,8 @@ def test_retention_comparison_is_harness_compare_plus_bonferroni_areas_and_serve
         assert ret["e1"]["groups"][g]["diff"] == fam[g]
     assert ret["e1"]["groups"]["new_domain_frozen"]["benchmarks"] == [32]
     assert sorted(ret["e1"]["groups"]["new_domain_proxy"]["benchmarks"]) == [32, 38]
-    v = P.verdict_g13(retention=ret, steer_child_rows=[], steer_parent_rows=[], expected_variants=[], n_boot=20)
+    v = P.verdict_g13(retention=ret, steer_child_rows=[], steer_parent_rows=[], expected_variants=[], n_boot=20,
+                      decision_retention=DR_OK)
     assert {"g13_capability_e1", "g13_capability_e1_frozen"} <= {c["criterion"] for c in v["criteria"]}
 
 
@@ -235,20 +258,39 @@ def test_g13_must_pass_against_every_comparator():
 
 
 # ------------------------------------------------------------------------------------------------ re-sizing
-def test_resizing_reports_measured_noise_and_escalates_below_the_floor():
-    def verdict(se):
-        crit = [{"criterion": "g13_capability", "diff": {"point": 0, "lo": -1.96 * se, "hi": 1.96 * se, "se": se}},
-                {"criterion": "g13_retention_acc", "diff": {"point": 0, "lo": -0.02, "hi": 0.02}, "discordance": 0.1},
-                {"criterion": "g13_steer_d1b", "diff": {"point": 0, "lo": -0.008, "hi": 0.008}, "discordance": 0.1,
-                 "tau_template_x_arm": 0.0}]
+def test_power_report_gives_n_required_vs_n_and_labels_underpowered_failures_inconclusive():
+    def verdict(se, ret_hw, ret_pass):
+        crit = [{"criterion": "g13_capability", "pass": True, "evaluable": True, "n_items": 12097,
+                 "diff": {"point": 0, "lo": -1.96 * se, "hi": 1.96 * se, "se": se}},
+                {"criterion": "g13_retention_acc", "pass": ret_pass, "evaluable": True, "n_items": 1420,
+                 "diff": {"point": 0, "lo": -ret_hw, "hi": ret_hw}, "discordance": 0.1},
+                {"criterion": "g13_steer_d1b", "pass": True, "evaluable": True, "n_expected": 8000,
+                 "diff": {"point": 0, "lo": -0.008, "hi": 0.008}, "discordance": 0.1, "tau_template_x_arm": 0.0}]
         return P.resizing({"criteria": crit, "margins": P.MARGINS})
 
-    ok = verdict(0.31)  # the projected full-DEV SE
-    assert not ok["escalate"] and ok["measured"]["g13_capability"]["full_dev_se"] == pytest.approx(0.31)
-    assert ok["measured"]["g13_steer_d1b"]["discordance"] == 0.1 and ok["action"] is None
-    bad = verdict(0.752)  # the 2,008-row subset SE: m_cap 1.0 sits inside the noise
-    assert bad["escalate"] and bad["below_floor"] == ["g13_capability"]
-    assert "ESCALATE TO THE USER" in bad["action"] and "do NOT loosen" in bad["action"]
+    ok = verdict(0.31, 0.003, True)
+    assert not ok["escalate"] and ok["measured"]["g13_capability"]["se"] == pytest.approx(0.31)
+    assert ok["measured"]["g13_capability"]["n_required"] <= 12097 and ok["action"] is None
+    bad = verdict(0.31, 0.0165, False)  # retention CI half-width at n 1,420 and discordance 0.10 (sqrt(0.1/1420)*1.96)
+    r = bad["measured"]["g13_retention_acc"]
+    assert bad["escalate"] and bad["below_floor"] == ["g13_retention_acc"] and r["n_have"] == 1420
+    assert r["n_required"] > 5 * r["n_have"]  # expand the evaluation (~9k items), never loosen m_ret_acc
+    assert bad["outcome"]["g13_retention_acc"] == "inconclusive_underpowered"
+    assert "NEVER loosen" in bad["action"]
+
+
+def test_too_few_valid_bootstrap_draws_fail_closed():
+    assert not P._draws_ok({"n_boot": 2000, "valid_draws": 1800, "lo": 0, "hi": 0})
+    assert P._draws_ok({"n_boot": 2000, "valid_draws": 1950})
+    assert not P._draws_ok({"n_boot": 1500, "n_requested": 2000})  # paired_decision format
+    assert not P._draws_ok(None)
+    gate = {"identical_items": True, "acc_diff": {"point": 0, "lo": -0.001, "hi": 0.001, "n_boot": 100,
+                                                  "n_requested": 2000},
+            "ece_diff": {"point": 0, "lo": -0.001, "hi": 0.001, "n_boot": 2000, "n_requested": 2000}}
+    v = P.verdict_g13(retention=_ret(), steer_child_rows=[], steer_parent_rows=[], expected_variants=[], n_boot=20,
+                      decision_retention=gate)
+    c = next(c for c in v["criteria"] if c["criterion"] == "g13_retention_acc")
+    assert not c["pass"] and not c["evaluable"]
 
 
 # ------------------------------------------------------------------------------------------------ frozen full DEV
@@ -312,6 +354,23 @@ def _rewrite(tmp_path, d):
 
     sha = F.write_frozen(tmp_path / "g.json", d)
     return tmp_path / "g.json", sha
+
+
+def test_classify_excludes_only_structural_refusals_and_the_child_check_runs_on_cpu():
+    from decide import Decider
+    from jobs.common import dev_full as F
+
+    class _Broken(_TokBackend):
+        def plan(self, request):
+            raise RuntimeError("plan() bug")
+
+    rows = _rows()
+    with pytest.raises(F.FrozenMismatch, match="not an excludable"):  # internal_error is a bug, never an exclusion
+        F.classify(Decider(_Broken(), backend_max_input_tokens=200), rows)
+    keep = [r for r in rows if r["_evaluation"]["run_id"] != "SYNTH:2"]
+    assert F.check_backend_accepts(Decider(_TokBackend(), backend_max_input_tokens=200), keep)["all_supported"]
+    with pytest.raises(F.FrozenMismatch, match="refused by this backend"):  # a child with a tighter limit
+        F.check_backend_accepts(Decider(_TokBackend(), backend_max_input_tokens=30), keep)
 
 
 def test_freeze_reproduces_the_5cmat_unsupported_rows_rule():

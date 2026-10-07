@@ -67,8 +67,13 @@ class PlanOnly:
         raise _Reached()
 
 
+EXCLUDABLE_STATUSES = ("exhausted", "unsupported")  # allow-list: anything else is a bug, never an exclusion
+
+
 def classify(decider, rows: Iterable[dict], model: str = "ssdm-freeze") -> dict[str, dict[str, Any]]:
-    """run_id -> {"supported": bool, "status", "code", "message"} for every row, through ``decider``'s own limits."""
+    """run_id -> {"supported": bool, "status", "code", "message"} for every row, through ``decider``'s own limits.
+    Only ``EXCLUDABLE_STATUSES`` may be excluded; any other pre-forward outcome (``internal_error`` from a ``plan()``
+    bug, ``invalid_request``, ...) raises ``FrozenMismatch``."""
     from decide import Decider
 
     po = PlanOnly(decider.backend)
@@ -82,6 +87,9 @@ def classify(decider, rows: Iterable[dict], model: str = "ssdm-freeze") -> dict[
         err = ss.get("error") or {}
         if po.reached:
             out[r["_evaluation"]["run_id"]] = {"supported": True}
+        elif ss.get("status") not in EXCLUDABLE_STATUSES:
+            raise FrozenMismatch(f"row {r['_evaluation']['run_id']}: pre-forward outcome {ss.get('status')}/"
+                                 f"{err.get('code')} is not an excludable structural refusal (fix the bug)")
         else:
             out[r["_evaluation"]["run_id"]] = {"supported": False, "status": ss.get("status"), "code": err.get("code"),
                                                "message": err.get("message")}
@@ -110,6 +118,18 @@ def freeze(rows: list[dict], decider, planner: dict | None = None, expected_ids=
            "excluded": [{"run_id": i, **{k: cls[i][k] for k in ("status", "code", "message")}} for i in excl],
            "planner": planner or {"revision_id": decider.revision().get("revision_id")}}
     return out
+
+
+def check_backend_accepts(decider, rows: list[dict]) -> dict[str, Any]:
+    """$0 CPU plan-only check (tokenisation only, no forward): ``decider`` (e.g. the CHILD's backend) must accept
+    every row of the frozen expected set. A row the parent accepted but the child refuses would make G13 permanently
+    non-evaluable after a paid gate, so it is refused here, before scoring."""
+    cls = classify(decider, rows)
+    bad = sorted(i for i, c in cls.items() if not c["supported"])
+    if bad:
+        raise FrozenMismatch(f"{len(bad)} frozen expected rows are refused by this backend before any forward "
+                             f"(e.g. {bad[:3]}: {cls[bad[0]].get('code')})")
+    return {"n_rows": len(cls), "all_supported": True}
 
 
 def write_frozen(path: str | Path, frozen: dict) -> str:
