@@ -12,6 +12,7 @@ third_party/** -text
 
 # Original stopped-screen evidence must retain the recorded byte hashes.
 receipts/2026-10-07-L-fact-name-screen-run1/** -text whitespace=cr-at-eol
+receipts/2026-10-07-L-fact-name-screen-retry-prepared/README.md -text whitespace=cr-at-eol
 # receipts are byte-exact evidence (their own sha256 lists cover the bytes): never EOL-converted on checkout
 # (PR #74 review N1: a core.autocrlf=true checkout turned the tvuat MANIFEST.jsonl into CRLF)
 receipts/** -text
