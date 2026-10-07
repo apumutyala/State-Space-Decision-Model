@@ -36,6 +36,127 @@ from .evalcard import run_card
 from .guard import SplitGuard
 from .lineage import diff as lineage_diff
 from .lineage import lineage
+
+
+def _checkpoint_float(value: Any) -> bool:
+    return type(value) in (int, float) and np.isfinite(value)
+
+
+def _validate_optimizer_checkpoint(saved: Any, optimizer: Any) -> None:
+    """Preflight AdamW's positional state mapping before any model/checkpoint mutation."""
+    if not isinstance(saved, dict) or set(saved) != {"state", "param_groups"}:
+        raise ValueError("checkpoint optimizer state must contain exactly state and param_groups")
+    saved_groups, states = saved["param_groups"], saved["state"]
+    current_state = optimizer.state_dict()
+    groups = optimizer.param_groups
+    current_groups = current_state["param_groups"]
+    if (not isinstance(saved_groups, list) or len(saved_groups) != len(groups)
+            or len(current_groups) != len(groups) or not isinstance(states, dict)):
+        raise ValueError("checkpoint optimizer group/state structure differs")
+    id_to_param: dict[int, torch.nn.Parameter] = {}
+    id_to_group: dict[int, dict[str, Any]] = {}
+    all_ids: set[int] = set()
+    group_keys = set(current_groups[0]) if current_groups else set()
+    allowed_group_keys = {"params", "lr", "initial_lr", "betas", "eps", "weight_decay", "amsgrad",
+                          "maximize", "foreach", "capturable", "differentiable", "fused",
+                          "decoupled_weight_decay"}
+    if group_keys - allowed_group_keys:
+        raise ValueError("current optimizer uses unsupported parameter-group options")
+    for index, (saved_group, current_group) in enumerate(zip(saved_groups, groups)):
+        saved_ids = saved_group.get("params") if isinstance(saved_group, dict) else None
+        current_params = current_group.get("params")
+        if (not isinstance(saved_group, dict) or set(saved_group) != group_keys
+                or not isinstance(saved_ids, list) or not isinstance(current_params, list)
+                or len(saved_ids) != len(current_params)):
+            raise ValueError(f"checkpoint optimizer parameter group {index} differs")
+        if (type(saved_group.get("amsgrad")) is not bool or type(saved_group.get("maximize")) is not bool
+                or type(saved_group.get("capturable")) is not bool
+                or type(saved_group.get("differentiable")) is not bool
+                or ("decoupled_weight_decay" in saved_group
+                    and saved_group["decoupled_weight_decay"] is not True)
+                or any(saved_group.get(key) is not None and type(saved_group.get(key)) is not bool
+                       for key in ("foreach", "fused"))):
+            raise ValueError(f"checkpoint optimizer boolean options in group {index} are malformed")
+        if (not _checkpoint_float(saved_group.get("lr")) or saved_group["lr"] < 0
+                or not _checkpoint_float(saved_group.get("eps")) or saved_group["eps"] < 0
+                or not _checkpoint_float(saved_group.get("weight_decay")) or saved_group["weight_decay"] < 0
+                or ("initial_lr" in saved_group
+                    and (not _checkpoint_float(saved_group["initial_lr"]) or saved_group["initial_lr"] < 0))
+                or not isinstance(saved_group.get("betas"), (tuple, list)) or len(saved_group["betas"]) != 2
+                or any(not _checkpoint_float(beta) or not 0 <= beta < 1 for beta in saved_group["betas"])):
+            raise ValueError(f"checkpoint optimizer numeric options in group {index} are malformed")
+        for saved_id, param in zip(saved_ids, current_params):
+            if type(saved_id) is not int or saved_id in all_ids or not isinstance(param, torch.nn.Parameter):
+                raise ValueError("checkpoint optimizer parameter IDs are duplicated or malformed")
+            all_ids.add(saved_id)
+            id_to_param[saved_id] = param
+            id_to_group[saved_id] = saved_group
+    if any(type(param_id) is not int or param_id not in id_to_param for param_id in states):
+        raise ValueError("checkpoint optimizer has state for an unknown parameter ID")
+    for param_id, state in states.items():
+        expected_state = {"step", "exp_avg", "exp_avg_sq"}
+        if id_to_group[param_id].get("amsgrad"):
+            expected_state.add("max_exp_avg_sq")
+        if not isinstance(state, dict) or set(state) != expected_state:
+            raise ValueError("checkpoint optimizer parameter state is malformed")
+        param = id_to_param[param_id]
+        for name, value in state.items():
+            if name == "step":
+                if isinstance(value, torch.Tensor):
+                    if (value.ndim != 0 or value.is_complex() or value.dtype == torch.bool
+                            or not torch.isfinite(value).all() or float(value.item()) < 0
+                            or not float(value.item()).is_integer()):
+                        raise ValueError("checkpoint optimizer step is malformed")
+                elif (not _checkpoint_float(value) or value < 0 or not float(value).is_integer()):
+                    raise ValueError("checkpoint optimizer step is malformed")
+            elif (not isinstance(value, torch.Tensor) or tuple(value.shape) != tuple(param.shape)
+                  or value.dtype != param.dtype or value.layout != torch.strided
+                  or not torch.isfinite(value).all()):
+                raise ValueError(f"checkpoint optimizer {name} shape/dtype/value differs for parameter {param_id}")
+
+
+def _validate_scheduler_checkpoint(saved: Any, scheduler: Any, group_count: int) -> None:
+    if not isinstance(saved, dict) or set(saved) != set(scheduler.state_dict()):
+        raise ValueError("checkpoint scheduler structure differs")
+    for key in ("last_epoch", "_step_count"):
+        if key in saved and (type(saved[key]) is not int or saved[key] < -1):
+            raise ValueError(f"checkpoint scheduler {key} is malformed")
+    for key in ("base_lrs", "_last_lr"):
+        if key in saved and (not isinstance(saved[key], list) or len(saved[key]) != group_count
+                             or any(not _checkpoint_float(x) for x in saved[key])):
+            raise ValueError(f"checkpoint scheduler {key} is malformed")
+    if "lr_lambdas" in saved and (not isinstance(saved["lr_lambdas"], list)
+                                  or len(saved["lr_lambdas"]) != group_count
+                                  or any(value is not None for value in saved["lr_lambdas"])):
+        raise ValueError("checkpoint scheduler lambda state is unsupported")
+
+
+def _validate_rng_checkpoint(saved: Any) -> None:
+    if not isinstance(saved, dict) or set(saved) != {"torch", "python", "numpy", "cuda"}:
+        raise ValueError("checkpoint RNG state structure differs")
+    cpu_state = saved["torch"]
+    if not isinstance(cpu_state, torch.Tensor) or cpu_state.dtype != torch.uint8 or cpu_state.ndim != 1:
+        raise ValueError("checkpoint Torch CPU RNG state is malformed")
+    try:
+        torch.Generator(device="cpu").set_state(cpu_state)
+        random.Random().setstate(saved["python"])
+        np.random.RandomState().set_state(saved["numpy"])
+    except (TypeError, ValueError, RuntimeError) as exc:
+        raise ValueError(f"checkpoint CPU RNG state is malformed: {type(exc).__name__}") from None
+    cuda_states = saved["cuda"]
+    if cuda_states is not None:
+        if (not isinstance(cuda_states, list)
+                or any(not isinstance(s, torch.Tensor) or s.dtype != torch.uint8 or s.ndim != 1
+                       for s in cuda_states)
+                or (torch.cuda.is_available() and len(cuda_states) != torch.cuda.device_count())):
+            raise ValueError("checkpoint CUDA RNG state is malformed")
+        if torch.cuda.is_available():
+            try:
+                # Validate each device state on an independent generator before touching the process RNG.
+                for device, state in enumerate(cuda_states):
+                    torch.Generator(device=f"cuda:{device}").set_state(state)
+            except (TypeError, ValueError, RuntimeError) as exc:
+                raise ValueError(f"checkpoint CUDA RNG state is malformed: {type(exc).__name__}") from None
 from .lora import apply_lora, lora_parameters
 from .losses import LossConfig, decision_loss
 
@@ -358,6 +479,8 @@ class Trainer:
 
     def load(self, path: str | Path, strict_config: bool = True, strict_lineage: bool = True) -> None:
         st = torch.load(path, map_location="cpu", weights_only=False)
+        if not isinstance(st, dict):
+            raise ValueError("checkpoint root must be a dictionary")
         if strict_config and st["config_hash"] != self.cfg.hash():
             raise ValueError(f"checkpoint config {st['config_hash']} != current {self.cfg.hash()}")
         if strict_lineage:
@@ -365,13 +488,37 @@ class Trainer:
             if bad:
                 raise ValueError(f"checkpoint lineage differs from this run: {bad} "
                                  "(frozen backbone / tokenizer / layout / training data must match to resume)")
+        # Use the same duplicate-eliding parameter names as trainable_state(). Validate the entire resume payload
+        # before copying the first weight or restoring optimizer/scheduler/RNG state. The strict flags only govern
+        # config and data lineage; neither disables trainable-state integrity.
         params = dict(self.model.named_parameters())
-        missing = [n for n in st["trainable"] if n not in params]
-        if missing:
-            raise KeyError(f"checkpoint parameters not in model: {missing[:5]}")
+        expected = {name: param for name, param in params.items() if param.requires_grad}
+        saved = st.get("trainable")
+        if not isinstance(saved, dict):
+            raise ValueError("checkpoint trainable state must be a name-to-tensor dictionary")
+        missing = sorted(set(expected) - set(saved))
+        unexpected = sorted(set(saved) - set(expected))
+        if missing or unexpected:
+            raise ValueError(f"checkpoint trainable keys differ: missing={missing[:5]}, unexpected={unexpected[:5]}")
+        for name, param in expected.items():
+            tensor = saved[name]
+            if (not isinstance(tensor, torch.Tensor) or tensor.layout != torch.strided
+                    or tuple(tensor.shape) != tuple(param.shape) or tensor.dtype != param.dtype
+                    or not tensor.is_floating_point() or not torch.isfinite(tensor).all()):
+                raise ValueError(f"checkpoint trainable tensor shape/dtype/layout/value differs for {name}")
+
+        _validate_optimizer_checkpoint(st.get("optimizer"), self.opt)
+        _validate_scheduler_checkpoint(st.get("scheduler"), self.sched, len(self.opt.param_groups))
+        for key in ("step", "epoch", "cursor"):
+            if type(st.get(key)) is not int or st[key] < 0:
+                raise ValueError(f"checkpoint {key} counter is malformed")
+        if st["cursor"] > len(self.train_items) or not isinstance(st.get("history"), list):
+            raise ValueError("checkpoint cursor or history is malformed")
+        _validate_rng_checkpoint(st.get("rng"))
+
         with torch.no_grad():
-            for n, t in st["trainable"].items():
-                params[n].copy_(t)
+            for name, param in expected.items():
+                param.copy_(saved[name])
         self.opt.load_state_dict(st["optimizer"])
         self.sched.load_state_dict(st["scheduler"])
         self.step, self.epoch, self.cursor = st["step"], st["epoch"], st["cursor"]

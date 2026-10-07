@@ -1,0 +1,7 @@
+Command:
+py -3.12 -m pytest tests/test_m2_codex_fixes.py tests/test_m2_train.py tests/controlsafe/test_g16_train.py::test_resume_equals_uninterrupted_and_lineage_config_are_checked language_growth/tests/test_rwkv_decision_head.py -q
+
+Output:
+....................
+................................ [100%]
+53 passed in 59.61s
