@@ -40,20 +40,22 @@ prototype does not load checkpoints or depend on the separate FLA-to-native
 CPU conversion workstream, and no pretrained capability is claimed.
 
 After PR #71's strict CPU loader returns `plugin, parent, evidence`, use
-`encode = rwkv_cpu_parent_encoder(plugin)` from the same module. This wrapper
-delegates to that exact loaded World encoder and supplies `identity()` with
-its model/snapshot, full weight/config/tokenizer/implementation hashes and
-no-control-token encoding policy. It refuses missing pins or a different
-encoder contract; changing the source plugin later cannot replace the captured
-callable or identity. Pass `encode` into `rwkv_decision_backend`. This adds no
-loading or fallback path. Serving a trained artifact still requires PR #79's
-strict artifact, complete revision, calibration and runtime pins; a newly
-initialized head is not a reconstructed trained artifact.
+`rwkv_cpu_parent_identity(plugin, evidence)` and
+`rwkv_cpu_parent_encoder(plugin)` from this module when constructing the
+backend. The identity helper reconciles the loader's full filesystem snapshot
+path, revision alias, filename-keyed file hashes and implementation digest
+with the bridge's role-keyed pins; disagreement fails closed. The encoder
+wrapper delegates to that exact loaded World encoder and binds its model,
+snapshot, full weight/config/tokenizer/implementation hashes and no-control-
+token policy. Changing the source plugin later cannot replace its captured
+callable or identity.
 
-For the CPU loader, construct parent provenance from `plugin.model_id`,
-`plugin.snapshot` and `plugin.files` as `model_id`, `snapshot`, and
-`files_sha256`. The loader evidence's filesystem `snapshot` path is not the
-snapshot revision used by these identities.
+Bind serving through `rwkv_cpu_parent_decider(backend, plugin, calibration=...)`.
+It verifies backend/encoder provenance and applies the plugin's context limit
+(at most 2048 tokens); do not use an uncapped `Decider(backend)` for this CPU
+parent. This adds no loading or fallback path. Serving a trained artifact still
+requires PR #79's strict artifact, complete revision, calibration and runtime
+pins; a newly initialized head is not a reconstructed trained artifact.
 
 The native bridge tests run with `python -m pytest
 language_growth/tests/test_rwkv_decision_head.py -q`. They cover actual tiny

@@ -1,5 +1,6 @@
 """Native RWKV/head integration only; random tiny weights, CPU, no capability claim."""
 from copy import deepcopy
+import hashlib
 import json
 
 import pytest
@@ -7,7 +8,8 @@ import torch
 
 from heads import ByteEncoder
 from heads.backbone import tiny_backbone, tiny_hf_backbone
-from language_growth.rwkv_decision_head import rwkv_cpu_parent_encoder, rwkv_decision_backend
+from language_growth.rwkv_decision_head import (rwkv_cpu_parent_decider, rwkv_cpu_parent_encoder,
+                                                rwkv_cpu_parent_identity, rwkv_decision_backend)
 from train.data import items_from_records
 from train.guard import SplitGuard
 from train.trainer import TrainConfig, Trainer
@@ -48,6 +50,49 @@ def request():
                        "criteria": {"a": "A", "b": "B"}},
         "second": {"type": "choice", "instructions": "Which is smaller?",
                    "criteria": {"a": "A", "b": "B"}}}}
+
+
+def cpu_plugin_and_evidence(max_context=2048):
+    from decide.backends.hf_readout import ModelPlugin
+
+    files = {"weights": "a" * 64, "config": "b" * 64, "tokenizer": "c" * 64}
+    implementation = {"third_party/rwkv7_hf/modeling_rwkv7.py": "d" * 64}
+    files["code"] = hashlib.sha256(json.dumps(implementation, sort_keys=True).encode()).hexdigest()
+    plugin = ModelPlugin(family="rwkv7", model_id=SOURCE["model_id"], snapshot=SOURCE["snapshot_revision"],
+        encode=ByteEncoder(), forward=lambda *a: None,
+        untrusted_encoder_id="rwkv-world-greedy (no control tokens)", files=files,
+        max_context=max_context, dtype="float32", device="cpu")
+    evidence = {"snapshot": f"C:/cache/snapshots/{SOURCE['snapshot_revision']}",
+        "snapshot_revision": SOURCE["snapshot_revision"], "file_sha256": {
+            "model.safetensors": files["weights"], "config.json": files["config"],
+            "rwkv_vocab_v20230424.txt": files["tokenizer"]},
+        "implementation_sha256": implementation}
+    return plugin, evidence
+
+
+def test_rwkv_cpu_evidence_identity_helper_maps_loader_fields_and_rejects_mismatch():
+    plugin, evidence = cpu_plugin_and_evidence()
+    identity = rwkv_cpu_parent_identity(plugin, evidence)
+    assert identity == {"model_id": SOURCE["model_id"], "snapshot": SOURCE["snapshot_revision"],
+                        "files_sha256": plugin.files}
+    with pytest.raises(ValueError, match="snapshot path/revision"):
+        rwkv_cpu_parent_identity(plugin, {**evidence, "snapshot_revision": "other"})
+    bad_hashes = {**evidence["file_sha256"], "model.safetensors": "f" * 64}
+    with pytest.raises(ValueError, match="weights pin"):
+        rwkv_cpu_parent_identity(plugin, {**evidence, "file_sha256": bad_hashes})
+
+
+def test_rwkv_cpu_decider_binds_plugin_context_limit():
+    plugin, evidence = cpu_plugin_and_evidence(max_context=128)
+    backend = rwkv_decision_backend(tiny_hf_backbone("rwkv7", seed=31, hidden=16).model,
+        rwkv_cpu_parent_encoder(plugin), source_identity=rwkv_cpu_parent_identity(plugin, evidence))
+    decider = rwkv_cpu_parent_decider(backend, plugin)
+    assert decider.backend_max_input_tokens == 128
+    long_request = request()
+    long_request["state"] += " extra" * 500
+    response = decider.decide(long_request)
+    assert response["ssdm"]["status"] == "exhausted"
+    assert response["ssdm"]["error"]["code"] == "input_tokens_exceeded"
 
 
 def test_native_hidden_states_and_backend_shared_prefix():

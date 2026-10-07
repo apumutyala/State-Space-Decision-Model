@@ -11,6 +11,7 @@ head is random; construction or a finite forward does not qualify capability.
 from __future__ import annotations
 
 from copy import deepcopy
+import hashlib
 import json
 from typing import Any
 
@@ -57,6 +58,69 @@ def rwkv_cpu_parent_encoder(plugin) -> EncodeFn:
 
     encode.identity = lambda: deepcopy(identity)  # type: ignore[attr-defined]
     return encode
+
+
+def rwkv_cpu_parent_identity(plugin, evidence: dict[str, Any]) -> dict[str, Any]:
+    """Map PR #71 loader evidence into the native-parent identity schema.
+
+    The loader's ``snapshot`` is a filesystem path, ``snapshot_revision`` is
+    its cache directory name, and ``file_sha256`` is keyed by filenames. This
+    helper reconciles those aliases with the plugin's role-keyed pins and
+    rejects disagreement instead of asking callers to hand-map them.
+    """
+    rwkv_cpu_parent_encoder(plugin)  # validate the loader's model, tokenizer and role-keyed pins
+    if not isinstance(evidence, dict):
+        raise ValueError("loader evidence must be an object")
+    snapshot_path = evidence.get("snapshot")
+    snapshot_revision = evidence.get("snapshot_revision")
+    if (not isinstance(snapshot_path, str) or not snapshot_path
+            or not isinstance(snapshot_revision, str) or not snapshot_revision):
+        raise ValueError("loader evidence must identify snapshot path and revision")
+    path_name = snapshot_path.replace("\\", "/").rstrip("/").split("/")[-1]
+    if path_name != snapshot_revision or plugin.snapshot != snapshot_revision:
+        raise ValueError("loader snapshot path/revision does not match plugin snapshot")
+    file_hashes = evidence.get("file_sha256")
+    if not isinstance(file_hashes, dict):
+        raise ValueError("loader file_sha256 evidence must be an object")
+    role_to_file = {"weights": "model.safetensors", "config": "config.json",
+                    "tokenizer": "rwkv_vocab_v20230424.txt"}
+    plugin_files = dict(plugin.files)
+    for role, filename in role_to_file.items():
+        if file_hashes.get(filename) != plugin_files.get(role):
+            raise ValueError(f"loader {filename} hash does not match plugin {role} pin")
+    implementation = evidence.get("implementation_sha256")
+    if not isinstance(implementation, dict) or not implementation:
+        raise ValueError("loader implementation_sha256 evidence must be a nonempty object")
+    code_sha256 = hashlib.sha256(json.dumps(implementation, sort_keys=True).encode()).hexdigest()
+    if plugin_files.get("code") != code_sha256:
+        raise ValueError("loader implementation hash does not match plugin code pin")
+    return {"model_id": plugin.model_id, "snapshot": snapshot_revision,
+            "files_sha256": plugin_files}
+
+
+def rwkv_cpu_parent_decider(backend: DecisionModelBackend, plugin, calibration=None):
+    """Bind the plugin's verified context limit into the serving adapter.
+
+    PR #71's CPU plugin is bounded to 2048 input tokens. This helper verifies
+    the backend's parent/encoder lineage before constructing the Decider, so
+    the limit cannot be accidentally omitted by an ordinary ``Decider(backend)``.
+    """
+    from decide.adapter import Decider
+
+    encoder_identity = rwkv_cpu_parent_encoder(plugin).identity()
+    if getattr(backend.encode, "identity", None) is None or backend.encode.identity() != encoder_identity:
+        raise ValueError("backend encoder does not match the verified CPU plugin")
+    parent_identity = (backend.revision().get("backbone", {}).get("provenance", {})
+                       .get("track_l_parent"))
+    if (not isinstance(parent_identity, dict)
+            or parent_identity.get("model_id") != plugin.model_id
+            or parent_identity.get("snapshot") != plugin.snapshot
+            or parent_identity.get("files_sha256") != dict(plugin.files)):
+        raise ValueError("backend parent identity does not match the verified CPU plugin")
+    if (type(plugin.max_context) is not int or plugin.max_context <= 0 or plugin.max_context > 2048):
+        raise ValueError("CPU plugin max_context must be in 1..2048")
+    return Decider(backend, calibration=calibration,
+                   backend_max_input_tokens=plugin.max_context)
 
 
 def rwkv_decision_backend(parent, encode: EncodeFn, *, source_identity: dict[str, Any],
