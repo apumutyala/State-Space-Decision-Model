@@ -262,6 +262,9 @@ def test_p5_proxy_refuses_what_the_trainer_would_do_differently(toy):
         train_head_cached(m, cached, dataclasses.replace(cfg, fork_mode="recompute"), guard=G)
     with pytest.raises(ValueError, match="row_batch"):
         train_head_cached(m, cached, dataclasses.replace(cfg, row_batch=2), guard=G)
+    for weight in (0.1, -0.1, float("nan"), float("inf"), False):
+        with pytest.raises(ValueError, match="axis_loss_weight"):
+            train_head_cached(m, cached, dataclasses.replace(cfg, axis_loss_weight=weight), guard=G)
     with pytest.raises(ValueError, match="trust_gate"):
         train_head_cached(m, cached, dataclasses.replace(cfg, controlsafe={"trust_gate": True}), guard=G)
     with pytest.raises(ValueError, match="trust_gate"):

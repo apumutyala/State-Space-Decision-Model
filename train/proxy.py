@@ -6,7 +6,8 @@ forward, no backward through the backbone, no LoRA. On a 9B backbone the cache c
 training items (the parent-arm readout rate), and each head iteration then runs in seconds to minutes on one GPU or
 on CPU.
 
-Exactness (tested, ``tests/test_premortem_probes.py`` P5, fp32 AND bf16, integrator and fork heads): for LoRA rank 0,
+Exactness (tested, ``tests/test_premortem_probes.py`` P5, fp32 AND bf16, integrator and fork heads, with
+``axis_loss_weight == 0``): for LoRA rank 0,
 ``train_head_cached`` reproduces ``train.trainer.Trainer`` (``batch_size=1``) step for step, with the same data order,
 optimiser, scheduler, clipping and precision. Precision: with ``cfg.bf16`` the Trainer runs the model forward under bf16
 autocast (run_cell / m2_gates / cell_step pass ``bf16=cuda``); the proxy then caches the features AND runs the head
@@ -95,8 +96,9 @@ def train_head_cached(model, cached: list[CachedItem], cfg: TrainConfig, steps: 
     """Head-only training on cached features; the update rule of ``Trainer`` with ``batch_size == 1``.
 
     Refuses what the Trainer would do differently: ``batch_size != 1``, ``lora_rank != 0``, a missing guard under
-    ``cfg.require_guard`` (pass the ``SplitGuard`` the items were built with), and cached features whose precision
-    (``bf16``) or ``fork_mode`` differ from ``cfg``."""
+    ``cfg.require_guard`` (pass the ``SplitGuard`` the items were built with), nonzero or nonnumeric
+    ``axis_loss_weight`` (axis targets are not cached), and cached features whose precision (``bf16``) or
+    ``fork_mode`` differ from ``cfg``."""
     if cfg.batch_size != 1:
         raise ValueError("the proxy batches by gradient accumulation; use batch_size=1, grad_accum=N")
     if cfg.lora_rank:
@@ -104,6 +106,8 @@ def train_head_cached(model, cached: list[CachedItem], cfg: TrainConfig, steps: 
     if cfg.row_batch > 1:
         raise ValueError("the proxy replays the Trainer's per-row micro-batches; row_batch > 1 (batched rows, sorted by "
                          "length) is a different update order: use row_batch=1")
+    if type(cfg.axis_loss_weight) not in (int, float) or cfg.axis_loss_weight != 0:
+        raise ValueError("the cached proxy has no semantic-axis targets; axis_loss_weight must be 0")
     if (cfg.controlsafe or {}).get("trust_gate"):
         raise ValueError("controlsafe trust_gate (G15) backbones have no shared cached HeadInput; the proxy does not apply")
     if cfg.require_guard and guard is None:
