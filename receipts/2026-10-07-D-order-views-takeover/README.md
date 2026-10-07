@@ -55,3 +55,28 @@ labels. The same CPU-only command prefix with `tests/test_order_views.py --tb=sh
 Remaining limitation: distinct renders can still express the same meaning, and literal option-id references can
 invalidate reassignment. Training integration must establish appropriate record eligibility; this helper cannot
 prove semantic equivalence from arbitrary descriptions. There remains no trainer callsite or model execution.
+
+## Independent review follow-up: external literal option-id references
+
+The view builder now fails closed unless no target option id occurs outside the target criteria subtree in the
+resolved request. The predicate recursively scans keys and scalar values, covering structured state/instructions,
+other questions and their criteria, and request metadata. Record bookkeeping and labels are excluded because
+they do not enter the model request. Only the target criteria subtree is omitted from the request scan.
+
+Matching uses Unicode case folding with `(?<!\w)` / `(?!\w)` token boundaries and regex-escaped literal ids:
+`opt-1` matches `(OPT-1)` and `/opt-1/`, but not `opt-10`, `preopt-1`, `opt-1_suffix`, `éopt-1` or `opt-1é`.
+To avoid declaring arbitrary schema id syntax safe, ids must comprise Unicode word components joined by `-` or
+`.`; whitespace, other punctuation and combining-mark syntax reject the view outright. Word boundaries treat
+hyphens/dots as separators, so compound occurrences such as `pre-opt-1` conservatively count as references.
+Whole-word coincidences (`a` in `a cat`), metadata, and option ids reused in another question can also false-reject.
+Rejected records retain their ordinary base items; the builder does not modify input records or evaluation lists.
+
+The 25 added cases cover positive token-boundary behavior, nested/flat request references in six locations,
+case-folding and punctuation delimiters, request metadata, question ids, record-bookkeeping exclusion, unsupported
+id syntax, false rejects and unchanged default/evaluation items. The same CPU-only command prefix with
+`tests/test_order_views.py --tb=short` gave **57 passed; 1.43 s**. `git diff --check` passed. Source WIP hashes were
+verified unchanged again before this follow-up commit. No model/GPU work, spend or push occurred.
+
+This establishes absence of the specified literal references, not general semantic equivalence. Aliases,
+paraphrases, or references inside the excluded target criteria can still make reassignment invalid. Training
+integration must independently establish that descriptions define the answer semantics; no trainer is enabled.

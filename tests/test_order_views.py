@@ -129,6 +129,79 @@ def test_duplicate_descriptions_with_fixed_gold_do_not_create_contradictory_labe
     assert perm == [2, 1, 0]
 
 
+@pytest.mark.parametrize("shape", ["nested", "flat"])
+@pytest.mark.parametrize("location", ["state", "state_key", "instructions", "other_instructions",
+                                      "other_criteria", "other_option_id"])
+def test_external_option_id_references_reject_views_without_changing_eval(shape, location):
+    rec = record(shape)
+    req = record_request(rec)
+    if location == "state":
+        req["state"] = {"facts": ["Choose (OPT-1)."]}  # case-folded, punctuation-delimited, non-gold id
+    elif location == "state_key":
+        req["state"] = {"opt-1": "available"}
+    elif location == "instructions":
+        req["questions"]["choice"]["instructions"] = {"rule": "Return opt-1"}
+    elif location == "other_instructions":
+        req["questions"]["other"]["instructions"] = "Compare opt-1 with the answer."
+    elif location == "other_criteria":
+        req["questions"]["other"]["criteria"]["a"] = "Mention /opt-1/."
+    elif location == "other_option_id":
+        req["questions"]["other"]["criteria"]["opt-1"] = "another option"
+    if shape == "flat":
+        rec["state"] = req["state"]  # record_request returns a fresh top-level wrapper for this shape
+    rec["labels"] = {"choice": "opt-0"}
+    before = copy.deepcopy(rec)
+    train_items, eval_items = items(rec), items(rec)
+    eval_before = copy.deepcopy(eval_items)
+    assert reversed_record(rec, "choice") is None
+    assert attach(train_items, rec) == {"view": "reverse", "with_view": 0, "no_view": 1, "view_filtered": 0}
+    assert train_items == eval_items == eval_before
+    assert rec == before
+
+
+@pytest.mark.parametrize("text", ["opt-10", "preopt-1", "opt-1_suffix", "éopt-1", "opt-1é"])
+def test_identifier_substrings_do_not_count_as_token_references(text):
+    rec = record()
+    rec["request"]["state"] = text
+    view, perm = reversed_record(rec, "choice")
+    assert view["request"]["state"] == text
+    assert perm == [2, 1, 0]
+
+
+def test_only_target_criteria_and_record_bookkeeping_are_excluded_from_reference_scan():
+    rec = record()
+    rec["id"] = "opt-1"  # record id and labels are not request input
+    rec["metadata"] = {"note": "opt-1"}
+    rec["request"]["questions"]["choice"]["criteria"]["opt-0"] = "opt-1: a description"
+    view, _ = reversed_record(rec, "choice")
+    assert view is not None
+    # A question id is rendered input outside the excluded criteria subtree.
+    rec["request"]["questions"]["opt-1"] = rec["request"]["questions"].pop("other")
+    assert reversed_record(rec, "choice") is None
+
+
+def test_request_metadata_conservatively_rejects_even_when_not_rendered():
+    rec = record()
+    rec["request"]["metadata"] = {"note": "opt-1"}
+    assert reversed_record(rec, "choice") is None
+
+
+@pytest.mark.parametrize("oid", ["a+b", "two words", "a/b", "[a]", "é\u0301"])
+def test_unsupported_identifier_syntax_fails_closed(oid):
+    rec = record()
+    rec["request"]["questions"]["choice"]["criteria"] = {oid: "first", "safe-id": "second"}
+    rec["labels"]["choice"] = oid
+    assert reversed_record(rec, "choice") is None
+
+
+def test_common_word_id_false_reject_is_conservative():
+    rec = record()
+    rec["request"]["questions"]["choice"]["criteria"] = {"a": "first", "b": "second"}
+    rec["labels"]["choice"] = "a"
+    rec["request"]["state"] = "a cat"  # ordinary article, indistinguishable from an id mention by this predicate
+    assert reversed_record(rec, "choice") is None
+
+
 @pytest.mark.parametrize("layout", ["ordered", "symmetric"])
 def test_attachment_is_explicit_training_only_and_preserves_base_rows(layout):
     rec = record()
