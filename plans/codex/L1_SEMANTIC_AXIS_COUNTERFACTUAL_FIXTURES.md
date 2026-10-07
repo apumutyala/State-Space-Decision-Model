@@ -75,4 +75,8 @@ edits, but do not demonstrate learned recurrent mediation, calibrated
 ability, alignment, or internal interpretability. Discovery/validation are
 iterative synthetic development groups, not independent or heldout
 qualification. This unlocks no level promotion, paid run or model claim.
-Fresh exact-head review is required before push or PR creation.
+The first exact-head review found that one-shot answer-choice requests were
+not sufficiently tied to Track L's semantic-planner path. The fixture was
+revised to provide only task/evidence inputs and exercise `plan_checked_answer`,
+kernel and renderer with an input-derived scripted oracle. Fresh exact-head
+review of the revised schema is required before push or PR creation.

@@ -54,7 +54,7 @@ Reproduce to a fresh external directory (choose a new destination each run):
 python -m language_growth.semantic_axis_fixtures --output-dir ../ssdm-data/semantic-axis-reproduction-20261007
 python -m unittest language_growth.tests.test_semantic_axis_fixtures
 python -m unittest language_growth.tests.test_kernel language_growth.tests.test_kernel_adversarial language_growth.tests.test_decision_view language_growth.tests.test_planner
- git diff --check
+git diff --check
 ```
 
 `RECEIPT_DIR` is the read-only baseline used by tests. Generation requires a
@@ -69,7 +69,9 @@ counts and verification commands. The enclosing commit preserves the phase
 note at `plans/codex/L1_SEMANTIC_AXIS_COUNTERFACTUAL_FIXTURES.md` and every
 artifact. Earlier answer-choice fixture files are replaced by planner inputs;
 no prior training or other fixture cohort is changed. Fresh exact-head review
-is required before push or PR creation.
+at `2eefbaa99f995fa97afc3d1830e8dade5ed9b2ba` found no blockers; the revised
+planner-input scope is undergoing a second exact-head review. Track D review
+will be requested on the stacked PR before merge.
 
 These fixtures test factual counterfactual responsiveness and can support
 future semantic-state edits, but do not demonstrate learned recurrent
