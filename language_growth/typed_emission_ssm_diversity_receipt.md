@@ -10,9 +10,10 @@ from 13/180 to 38/180 comparison pairs.
 Overall whole-answer correctness rose from 519/1080 (48.06%) to 563/1080
 (52.13%), but its paired change **+4.07 points [−0.37, 8.89] is inconclusive**.
 Read accuracy was unchanged in aggregate; explanation accuracy declined
-13/360 observations. This supports a specific comparison-transfer benefit,
-not an overall qualification claim. The absolute comparison accuracy remains
-low. Scope is **iterative synthetic development only**, not official holdout,
+13/360 observations. This supports a specific comparison-scoring gain on
+these reused iterative-development questions, not a wording-transfer or
+overall qualification claim. The absolute comparison accuracy remains low.
+Scope is **iterative synthetic development only**, not official holdout,
 parent retention, or evidence about actual Track D parents.
 
 ## Exact intervention and frozen model
@@ -43,8 +44,12 @@ frozen in registration and the owned data-authoring module. No template search
 or new wording variant was introduced.
 
 The validation rows are **exactly unchanged** from PR #81: seed 9102,
-`development_validation`, 180 worlds/clusters, 360 original/paired members,
-disjoint names/ranges/templates. Comparisons retain original/value-swap
+`development_validation`, 180 worlds/clusters, 360 original/paired members.
+Names and numeric ranges are disjoint from training, but the template family
+is not: read/explain alternate wording reuses training strings, and comparison
+forms are near-paraphrases of templates written while validation forms were
+visible. Entity substitution makes exact question strings different; it does
+not establish wording independence. Comparisons retain original/value-swap
 members; read/explain retain the previous original/alternate-wording members.
 The complete validation-row digest is
 `5e22f0e800ea48eb4ed0b1042a72e6ee713210fdaac85b4f64ea963d2ea4957c`.
@@ -121,9 +126,10 @@ more false learned relations to the checker.
 
 Wrong complete targets decreased 561 → 517. Accepted wrong-target programs
 decreased 517 → 383: read 127 → 126, explain 103 → 116, compare 287 → 141.
-False-relation rejections increased **44 → 134**, all
+False-relation proposals rejected by the kernel increased **44 → 134**, all
 `unsupported_assertion`; the new condition includes 133 comparison questions
-and one read question whose wrong operation emitted a false comparison.
+and one read question that proposed a false comparison. None of those rejected
+proposals was rendered. Accepted wrong-target outputs are reported separately.
 
 Comparison operation selection improved 112/360 → 360/360; structure exactness
 improved 56/360 → 142/360. Of 142 correct structures, only 86 selected a valid
@@ -177,5 +183,5 @@ Local checkpoints, raw files, and source snapshots remain at
 `C:/Users/apumu/research/CHLabs/review-artifacts/l0-typed-emission-diversity-20261006/`.
 All checkpoint/dependency source hashes are in the machine receipt. Replay raw
 evidence with `python language_growth/receipts/typed_emission_diversity_20261006/verify_raw.py`.
-Do not overwrite the preserved run. No PR was opened and no second condition
-was fitted.
+Do not overwrite the preserved run. This receipt is preserved in PR #82; no
+second condition was fitted.
