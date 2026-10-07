@@ -158,14 +158,20 @@ def test_lessons_entries_name_an_enforcing_check():
         assert "**Check:**" in block and "**Status:**" in block, block.splitlines()[0]
 
 
-def test_coordination_has_no_superseded_spend_rule():
-    """L-18: the later 'Review sufficiency' user decision governs spend; the old blocking sentence must not return."""
+def test_coordination_requires_issue_level_user_spend_ok():
+    """L-18: a review never substitutes for the user's explicit spend authorization."""
     t = (ROOT / "COORDINATION.md").read_text(encoding="utf-8")
+    assert "Every paid job requires its own `spend` issue" in t
+    assert "Each paid rung needs the previous rung's merged receipt, a `spend` issue with the exact estimate and stop condition, an independent fresh-context adversarial review, and the user's explicit OK in that issue." in t
+    assert "the user's explicit OK in that issue after independent review" in t
+    assert "a reviewer's GO is not spend authorization" in t
     assert "Spend still needs the other agent's acknowledgement on a `spend` issue." not in t
-    assert "never applies to `main` or to spend approval" not in t
-    assert "requested but not blocking" in t
-    assert "stop condition, acknowledged by the other agent." not in t  # spend ladder item 2 (PR #93 review)
-    assert "reviewed per 'Review sufficiency' (the other agent's acknowledgement is requested but not blocking)" in t
+    assert "requested but not blocking" not in t
+    assert "reviewed per 'Review sufficiency' (the other agent's acknowledgement is requested but not blocking)" not in t
+    assert "stop condition, acknowledged by the other agent." not in t
+    assert "Do not impose the superseded fixed ≤$20 qualification ceiling." in t
+    cap_mentions = [line for line in t.splitlines() if "$20" in line]
+    assert len(cap_mentions) == 2 and all("superseded" in line for line in cap_mentions)
 
 
 def test_rate_guard_requires_an_executed_call():
