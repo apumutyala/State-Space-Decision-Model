@@ -1,0 +1,8 @@
+{"phase": "setup", "file": "phases/setup.tgz", "sha256": "e55295bf28b958d2ea1f57805d868703f5a6a6759df0ce7c18ebb2c47c0f3f53", "bytes": 2919, "ok": true, "t": "2026-10-07T00:11:39Z"}
+{"phase": "variant_baseline", "file": "phases/variant_baseline.tgz", "sha256": "9691552172ef5705ec16e05378014689652149a6d516eb40edf19ddd3cf33f67", "bytes": 7304, "ok": true, "t": "2026-10-07T00:15:56Z"}
+{"phase": "variant_ckpt_rows_lean", "file": "phases/variant_ckpt_rows_lean.tgz", "sha256": "21766a9e5c1be761a9788befc075651db70c9e68c61d75fdd31a8f571f3d5122", "bytes": 9693, "ok": true, "t": "2026-10-07T00:20:34Z"}
+{"phase": "variant_ckpt_rows", "file": "phases/variant_ckpt_rows.tgz", "sha256": "de2d6651b5b0093b1adada9753bbfd77f9090a57036304c5b90779495a40b92e", "bytes": 11961, "ok": true, "t": "2026-10-07T00:26:48Z"}
+{"phase": "variant_ckpt", "file": "phases/variant_ckpt.tgz", "sha256": "6ed42127414a019ea9350742004f36452fb092c0ca4d50c61d1f002e7bb4e09b", "bytes": 14291, "ok": true, "t": "2026-10-07T00:37:57Z"}
+{"phase": "decide", "file": "phases/decide.tgz", "sha256": "39b67154f5fe67461c23438dc6fc39660220cecf4de6ab6110f7e4e4590d79a0", "bytes": 15210, "ok": true, "t": "2026-10-07T00:37:57Z"}
+{"phase": "profile", "file": "phases/profile.tgz", "sha256": "9943380375ea543085b514233495f7b25482c2c2102883f151486e96c967c7cb", "bytes": 17669, "ok": true, "t": "2026-10-07T00:43:59Z"}
+{"phase": "final", "file": "phases/final.tgz", "sha256": "a8cf402d80fb5c1098e4b08d66a3a3c4f35af3ec6d6fee0fd7ea6929af2dd8da", "bytes": 17852, "ok": true, "t": "2026-10-07T00:43:59Z"}

@@ -1,0 +1,81 @@
+{
+ "_comment": "Q9-AF decision cell (jobs/q9af_cell/JOB_SPEC.md): the Clef-flash recipe analogue on the attention-free Qwen3.5-9B (frozen backbone + LoRA + fork head + LS-CE/Brier, m2 150k draw). Rule: jobs/q9af_cell/rule.py (pre-registered, 2d18afa). q9af pins are PENDING job-2xe5w (full-8 export): fill them with python -m jobs.q9af_cell.pin fill; run_cell refuses (exit 29) and the job refuses (exit 10) while they are null.",
+ "seed": 0,
+ "head": "fork",
+ "head_kwargs": {},
+ "head_from_proxy": null,
+ "head_from_proxy_note": "hook for the proxy loop's winning attention-free mixer head (train/proxy_rule.py verdict): set {head, head_kwargs, proxy_verdict_sha256} and resolve it into head/head_kwargs of a NEW committed config (jobs.q9af_cell.hooks.resolve); never resolved at run time",
+ "teacher": null,
+ "teacher_note": "KD hook (wired, PR #116): OFF here (null). The KD variant is q9af_cell_r64_kd.json (alpha 0.5, T 1, the pinned Clef-flash teacher); null keeps this cell's TrainConfig hash unchanged",
+ "layout": "ordered",
+ "template": "jrt-chatml-v1",
+ "loss_arm": "clef",
+ "lr_head": 0.001,
+ "lr_lora": 0.0001,
+ "batch_size": 1,
+ "grad_accum": 8,
+ "warmup_steps": 50,
+ "max_k": 16,
+ "t_ladder": [
+  1024,
+  2048,
+  4096
+ ],
+ "eval_max_t": 4096,
+ "n_train_records": 24000,
+ "n_eval_records": 0,
+ "min_train_items": 5000,
+ "max_steps": 2800,
+ "min_steps": 1000,
+ "max_minutes": 200,
+ "ckpt_every": 400,
+ "eval_every": 2800,
+ "act_ckpt": true,
+ "row_batch": 1,
+ "row_tokens": 0,
+ "tokenize_workers": 8,
+ "execution_note": "act_ckpt: heads/act_ckpt.py Qwen3.5 / Q9-AF block checkpointing with the cache fork (bit-identical loss and gradients on CPU, tests/test_q9af_act_ckpt.py). row_batch 1: the batched-row cache fork needs a state= backbone; for HF GDN caches right padding is NOT exact (conv tail + decay run over padding), so Q9-AF trains one row per call (jobs/q9af_cell/JOB_SPEC.md 'Row batching')",
+ "smoke": {
+  "rows": 2,
+  "max_k": 4,
+  "max_t": 512,
+  "lora_rank": 8,
+  "max_rel_feature_diff": 0.03,
+  "min_grad_cos": 0.99
+ },
+ "pass_rule": {
+  "window": 50,
+  "loss_drop_frac_min": 0.1,
+  "max_peak_gb": 76
+ },
+ "cohort_sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+ "require_guard_readiness": true,
+ "calibration_role": "calibration",
+ "parent": "q9af",
+ "train_set": {
+  "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+  "heldout_excluded": {
+   "ids": [
+    "m2:mmlu_aux:21118",
+    "m2:mmlu_aux:39640",
+    "m2:mmlu_aux:39643"
+   ],
+   "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+   "reason": "as jobs/q9_feature_cache/cache_config.json and PR #74: train.heldout finds a D1-B soft_framing fragment in these three MMLU aux_train records; excluded from the draw, fail-closed"
+  }
+ },
+ "q9af": {
+  "converted_sha256": null,
+  "export_json_sha256": null,
+  "base_repo": "Qwen/Qwen3.5-9B",
+  "base_revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+  "base_config_sha256": "d0883072e01861ed0b2d47be3c16c36a8e81c224c7ffaa310c6558fb3f932b05",
+  "converted_from": "PENDING: job-2xe5w (jobs/full8, rule be9eed8 + A1) gdn_converted.pt",
+  "hybrid": false,
+  "hybrid_note": "true ONLY to run a partial export (gdn_partial.pt) as a labelled hybrid: NOT attention-free, never promoted (rule HYBRID_REPORT)",
+  "snapshot_sha256_file": "jobs/m2_pilot/q9af_snapshot.sha256"
+ },
+ "lora_rank": 64,
+ "variant": "r64",
+ "variant_note": "E9 (techniques/10): LoRA rank single-factor pair r64 vs r256 on identical data, head, loss, steps"
+}

@@ -268,6 +268,9 @@ SPEC_BLOCK = {
     ("q9_feature_cache", "e5_train"): (3, {}, []),
     ("q9_feature_cache", "stock_dev"): (4, {}, []),
     ("q9_feature_cache", "stock_train"): (5, {}, []),
+    ("q9af_cell", "cell_r256"): (0, {}, []),
+    ("q9af_cell", "cell_r64"): (1, {}, []),
+    ("q9af_cell", "parent"): (2, {}, []),
     ("cell_step_profile", None): (0, {}, []),
     ("fla_rwkv7", None): (0, {}, []),
     ("fla_rwkv7", "truth_v2"): (1, {}, []),
@@ -516,7 +519,8 @@ def test_every_job_declares_its_image_pin_as_test_env():
     import re as _re
 
     def image_of(job, rel):
-        for spec in (launch.CONTEXT_RECIPES.get((job, lint.mode_of(rel))), launch.LEGACY_CONTEXT.get(job)):
+        own_ctx = json.loads((ROOT / rel).read_text(encoding="utf-8")).get("context") or {}
+        for spec in (launch.CONTEXT_RECIPES.get((job, lint.mode_of(rel))), launch.LEGACY_CONTEXT.get(job), own_ctx):
             if spec and "dockerfile" in spec:
                 return spec["dockerfile"]
         own = ROOT / "jobs" / job / "Dockerfile"

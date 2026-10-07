@@ -75,7 +75,7 @@ No softmax over positions, no KV cache that grows with length, fixed-size recurr
 | **E. Submission + independent re-run** | 6–7 | Full 0.2.1 run on an RTX PRO 6000 (official latency hardware), a different agent re-runs it, then PR to the Index | Score, ECE, latency, steer rate, risk-coverage reported together | $250 |
 | **F. Stretch: Q27-AF** | 7–9 | Same conversion on Qwen3.8-27B (16 attention layers) only if Q9-AF ≥ Clef-flash | Target > 61.98 (Clef) | $1,000 (from reserve + P2 if justified) |
 
-**Side paper ($0, CPU):** H-SLT-1 with the corrected learning coefficient, λ = r + (n−r)/2 for real diagonal modes and λ = n + r for complex conjugate-pair modes. Both were Monte-Carlo-checked by the reviewer, and no LLC-on-SSM paper was found. The modal truncation rule is corrected too (H2² cost is |c_i b_i|²/(1−|λ_i|²)). This uses the existing `chl-acquisition-gate` sampler benchmark; we log results and never gate on them.
+**Side paper ($0, CPU):** H-SLT-1 with the corrected learning coefficient: λ = r + (n−r)/2 for real diagonal modes and λ = n + r for complex conjugate-pair modes are the **local learning coefficient at a generic true parameter** (distinct poles), not the global RLCT; where pole-coincidence loci carry prior mass the global RLCT is lower (n=2, r=1: 5/4, not 3/2; erratum 2026-10-07, see reviews/02). Both were Monte-Carlo-checked by the reviewer, and no LLC-on-SSM paper was found. The modal truncation rule is corrected too (H2² cost is |c_i b_i|²/(1−|λ_i|²)). This uses the existing `chl-acquisition-gate` sampler benchmark; we log results and never gate on them.
 
 **Top risks:**
 - **Distillation is the hinge.** Q9-AF may lose retrieval. Mitigation: the RWKV7 arm runs in parallel, and the knowledge in that 13B model is real.
