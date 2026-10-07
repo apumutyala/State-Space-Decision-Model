@@ -65,6 +65,144 @@ def _posix(p) -> str:
     return f"/{m.group(1).lower()}/{m.group(2)}".replace("\\", "/") if (os.name == "nt" and m) else s
 
 
+def test_all_long_phase_timeouts_escalate_within_existing_reserve():
+    source = JOB.read_text()
+    timed = [line for line in source.splitlines() if not line.lstrip().startswith("#") and re.search(r"\btimeout\s", line)]
+    assert len(timed) == 10  # terminal, download, guard, heldout, two verify branches, parent loop, cell, evals, report
+    assert all("timeout --kill-after=30s " in line for line in timed)
+    assert "timeout --kill-after=30s $(cap cell)m python -m train.run_cell" in source
+    assert "timeout --kill-after=30s $(cap parent_$STAGE)m python" in source
+    assert "timeout --kill-after=30s $(cap evals)m python" in source
+    assert "timeout --kill-after=30s 60s bash -c" in source
+    assert 'exec python "$CODE/jobs/common/finalize.py"' in source
+    assert '[ "$final" -eq 0 ] || rm -f "$OUT/$MARKER"' in source
+    assert "124|137) fail 7 \"cell timeout\"" in source
+    params = json.loads((ROOT / "jobs/m2_first_cell/job_params.json").read_text())
+    assert params["phase_caps_minutes"] == {"setup": 25, "guard": 5, "heldout": 10,
+        "parent_g12": 85, "parent_index": 65, "cell": 230, "evals": 205, "report": 5}
+    assert sum(params["phase_caps_minutes"].values()) + params["reserve_minutes"] == params["max_duration_minutes"] == 637
+    # Seed verification and ordinary cache verification are mutually exclusive;
+    # the parent loop executes at most twice, giving nine phase graces in one run.
+    assert 9 * 30 / 60 + 3 * 15 / 60 + (60 + 30) / 60 == 6.75 < params["reserve_minutes"] == 7
+
+
+@pytest.mark.parametrize("resistant_finalizer", [False, True])
+def test_term_resistant_training_is_killed_and_real_finalizer_exports_partials(tmp_path, resistant_finalizer):
+    """Actual training block + finish/lib/finalize; synthetic child only, no data or model fixture."""
+    import tarfile
+
+    bash = _bash()
+    assert bash, "GNU timeout/Bash required for the owned-child exit proof"
+    work, out, ck, bin_dir = (tmp_path / name for name in ("work", "out", "ck", "bin"))
+    for path in (work / "out", work / "logs", out / "phases", ck / "cell", bin_dir):
+        path.mkdir(parents=True)
+    child = tmp_path / "training-child.sh"
+    child.write_text('''#!/usr/bin/env bash
+set -uo pipefail
+echo "$BASHPID" > "$WORK/logs/owned-training.pid"
+printf '{"synthetic":true,"complete":false}\\n' > "$WORK/out/cell.json"
+printf 'synthetic partial checkpoint\\n' > "$CK/cell/partial.bin"
+trap 'echo TERM >> "$WORK/logs/term-ignored"' TERM
+while :; do sleep 0.05 || true; done
+''', newline="\n")
+    finalizer_child = tmp_path / "finalizer-child.sh"
+    finalizer_child.write_text('''#!/usr/bin/env bash
+set -uo pipefail
+"$REAL_PYTHON" "$@"
+echo "$BASHPID" > "$WORK/logs/owned-finalizer.pid"
+trap 'echo TERM >> "$WORK/logs/finalizer-term-ignored"' TERM
+echo synthetic-untrusted-success > "$OUT/$MARKER"
+touch "$WORK/logs/finalizer-marker-written"
+while :; do sleep 0.05 || true; done
+''', newline="\n")
+    python_shim = bin_dir / "python"
+    python_shim.write_text('''#!/usr/bin/env bash
+if [ "${1:-}" = -m ] && [ "${2:-}" = train.run_cell ]; then exec bash "$TRAINING_CHILD"; fi
+if [ "${RESISTANT_FINALIZER:-0}" = 1 ] && [ "${1:-}" = "$CODE/jobs/common/finalize.py" ]; then
+  exec bash "$FINALIZER_CHILD" "$@"
+fi
+exec "$REAL_PYTHON" "$@"
+''', newline="\n")
+    timeout_shim = bin_dir / "timeout"
+    timeout_shim.write_text('''#!/usr/bin/env bash
+set -euo pipefail
+[ "$1" = --kill-after=30s ] || exit 94
+if [ "${RESISTANT_FINALIZER:-0}" = 1 ] && [ "$2" = 60s ]; then
+  shift 2; exec /usr/bin/timeout --kill-after=0.2s 5s "$@"
+fi
+case "$*" in
+  *"train.run_cell"*) shift 2; exec /usr/bin/timeout --kill-after=0.2s 2s "$@" ;;
+  *) exec /usr/bin/timeout "$@" ;;
+esac
+''', newline="\n")
+    curl_shim = bin_dir / "curl"
+    curl_shim.write_text("#!/usr/bin/env bash\nexit 0\n", newline="\n")  # metadata sampling only; no network
+    for path in (child, finalizer_child, python_shim, timeout_shim, curl_shim):
+        path.chmod(0o755)
+    source = JOB.read_text()
+    finish = source[source.index("finish() {"):source.index("\nnum() {")]
+    block = source[source.index('say "phase cell"'):source.index("# ------------------------------------------------------------------ child evals")]
+    script = tmp_path / "training-block.sh"
+    script.write_text('''set -Euo pipefail
+T0=$(date +%s)
+EXPORT_FAIL=0
+RC=""
+GATES="{}"
+MARKER=M2_FIRST_CELL_DONE
+VALIDATOR=jobs.m2_first_cell.summarize:valid_result
+. "$CODE/jobs/common/lib.sh"
+''' + finish + '\ntrap finish EXIT\n' + block + '\nRC=0\nexit 0\n', newline="\n")
+    env = {**os.environ, "CUDA_VISIBLE_DEVICES": "", "PYTHONUTF8": "1", "PYTHONDONTWRITEBYTECODE": "1",
+        "PATH": os.pathsep.join((str(bin_dir), str(Path(bash).parent), os.environ["PATH"])),
+        "CODE": _posix(ROOT), "WORK": _posix(work), "OUT": _posix(out), "CK": _posix(ck),
+        "RESULT": _posix(out / "result.json"), "PARAMS": _posix(ROOT / "jobs/m2_first_cell/job_params.json"),
+        "META": "http://127.0.0.1:9", "CELL": "unused", "SNAP": "unused", "RECORDS": "unused", "TRAIN_DIR": "unused",
+        "REAL_PYTHON": _posix(sys.executable), "TRAINING_CHILD": _posix(child),
+        "FINALIZER_CHILD": _posix(finalizer_child), "RESISTANT_FINALIZER": "1" if resistant_finalizer else "0"}
+    child_pid = None
+    try:
+        # File-backed logs prevent a regressed timeout's orphan from holding an
+        # inherited capture pipe open beyond this CPU test's own deadline.
+        with (tmp_path / "shell.log").open("w") as log:
+            result = subprocess.run([bash, "-c", 'export PATH="$1:$PATH"; exec "$BASH" "$2"',
+                "fixture", _posix(bin_dir), _posix(script)], cwd=ROOT, env=env, stdout=log, stderr=log, timeout=30)
+        assert result.returncode == (137 if resistant_finalizer else 7), (tmp_path / "shell.log").read_text()
+        assert (work / "logs/owned-training.pid").exists(), (tmp_path / "shell.log").read_text()
+        child_pid = int((work / "logs/owned-training.pid").read_text())
+        assert (work / "logs/term-ignored").is_file(), "training child must survive TERM before KILL"
+        check = subprocess.run([bash, "-c", 'kill -0 "$1" 2>/dev/null', "owned-training", str(child_pid)],
+            capture_output=True, timeout=5)
+        assert check.returncode != 0, "recorded owned child survived SIGKILL"
+        assert (ck / "cell/partial.bin").read_text() == "synthetic partial checkpoint\n"
+        assert (ck / "cell/cell.json").read_bytes() == (work / "out/cell.json").read_bytes()
+        receipt = json.loads((out / "result.json").read_text())
+        assert receipt["ok"] is False and receipt["exit_code"] == receipt["runner_rc"] == 7
+        assert receipt["gates"]["cell"] == 137 and receipt["exports_verified"] is True
+        assert not (out / "M2_FIRST_CELL_DONE").exists()
+        if resistant_finalizer:
+            assert (work / "logs/finalizer-marker-written").exists(), "finalizer must actually claim success first"
+            assert (work / "logs/finalizer-term-ignored").exists(), "finalizer must survive TERM"
+            finalizer_pid = int((work / "logs/owned-finalizer.pid").read_text())
+            check = subprocess.run([bash, "-c", 'kill -0 "$1" 2>/dev/null', "owned-finalizer", str(finalizer_pid)],
+                capture_output=True, timeout=5)
+            assert check.returncode != 0, "recorded owned finalizer survived SIGKILL"
+        manifest = [json.loads(line) for line in (out / "MANIFEST.jsonl").read_text().splitlines()]
+        assert [entry["phase"] for entry in manifest] == ["cell", "final"]
+        for entry in manifest:
+            archive = out / entry["file"]
+            assert entry["ok"] is True and hashlib.sha256(archive.read_bytes()).hexdigest() == entry["sha256"]
+            with tarfile.open(archive) as tar:
+                assert json.load(tar.extractfile("out/cell.json")) == {"synthetic": True, "complete": False}
+                assert "logs/term-ignored" in tar.getnames()
+    finally:
+        for role in ("training", "finalizer"):
+            pid_file = work / f"logs/owned-{role}.pid"
+            if pid_file.exists():
+                owned_pid = int(pid_file.read_text())
+                subprocess.run([bash, "-c", 'kill -KILL "$1" 2>/dev/null || true', "owned-child", str(owned_pid)],
+                    capture_output=True, timeout=5)
+
+
 def _link_tree(src: Path, dst: Path, names=None):
     dst.mkdir(parents=True, exist_ok=True)
     for f in (names or [p.name for p in src.iterdir() if p.is_file()]):
