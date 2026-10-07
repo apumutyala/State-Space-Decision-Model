@@ -1,0 +1,1378 @@
+{
+  "schema": "ssdm.rwkv-g1-code-label-tokenizer-proof.v1",
+  "status": "cpu_enablement_proved_no_model_measurement",
+  "base_commit": "ee0adb70029fc80c65ee6072c307873034052362",
+  "preregistration_commit": "1e473f5146fcadd6a34482435ae4be05698593d9",
+  "hardware": "local Windows CPU; tokenizer only",
+  "cost_usd": 0,
+  "model_loaded": false,
+  "model_forward_calls": 0,
+  "checkpoint_loaded": false,
+  "gpu_used": false,
+  "tokenizer_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\tokenizers\\RWKV--RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba\\tokenizer.json",
+  "tokenizer_sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+  "tokenizer_source_sha256": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+  "codebook_table_sha256": "7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466",
+  "request_sha256": "5cd4854ad8f28b4c129017a4e6f9d0de5a111eb717897823dc33d8e9dbdbf254",
+  "request_fingerprint_unchanged": true,
+  "non_template_segments_exact": true,
+  "split_provenance_segments_exact": true,
+  "provenance_mask_applied": false,
+  "v1_tail_unchanged": true,
+  "bos_inserted": false,
+  "default_changed": false,
+  "selected_count": 255,
+  "all_rendered_context_boundaries_exact": true,
+  "checks": [
+    {
+      "code": "A",
+      "token_id": 300,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "B",
+      "token_id": 301,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "C",
+      "token_id": 302,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "D",
+      "token_id": 303,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "E",
+      "token_id": 304,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "F",
+      "token_id": 305,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "G",
+      "token_id": 306,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "H",
+      "token_id": 307,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "I",
+      "token_id": 308,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "J",
+      "token_id": 309,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "K",
+      "token_id": 310,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "L",
+      "token_id": 311,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "M",
+      "token_id": 312,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "N",
+      "token_id": 313,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "O",
+      "token_id": 314,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "P",
+      "token_id": 315,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "Q",
+      "token_id": 316,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "R",
+      "token_id": 317,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "S",
+      "token_id": 318,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "T",
+      "token_id": 319,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "U",
+      "token_id": 320,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "V",
+      "token_id": 321,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "W",
+      "token_id": 322,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "X",
+      "token_id": 323,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "Y",
+      "token_id": 324,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "Z",
+      "token_id": 325,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AA",
+      "token_id": 3601,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AB",
+      "token_id": 3602,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AC",
+      "token_id": 3603,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AD",
+      "token_id": 3604,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AE",
+      "token_id": 3605,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AF",
+      "token_id": 3606,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AG",
+      "token_id": 3607,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AH",
+      "token_id": 3608,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AI",
+      "token_id": 3609,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AJ",
+      "token_id": 3610,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AK",
+      "token_id": 3611,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AL",
+      "token_id": 3612,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AM",
+      "token_id": 3613,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AN",
+      "token_id": 3614,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AO",
+      "token_id": 3615,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AP",
+      "token_id": 3616,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AQ",
+      "token_id": 3617,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AR",
+      "token_id": 3618,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AS",
+      "token_id": 3619,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AT",
+      "token_id": 3620,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AU",
+      "token_id": 3621,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AV",
+      "token_id": 3622,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AW",
+      "token_id": 3623,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AX",
+      "token_id": 3624,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "AZ",
+      "token_id": 3625,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BA",
+      "token_id": 3649,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BB",
+      "token_id": 3650,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BC",
+      "token_id": 3651,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BD",
+      "token_id": 3652,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BE",
+      "token_id": 3653,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BF",
+      "token_id": 3654,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BG",
+      "token_id": 3655,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BH",
+      "token_id": 3656,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BI",
+      "token_id": 3657,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BJ",
+      "token_id": 3658,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BL",
+      "token_id": 3659,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BM",
+      "token_id": 3660,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BN",
+      "token_id": 3661,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BO",
+      "token_id": 3662,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BP",
+      "token_id": 3663,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BR",
+      "token_id": 3664,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BS",
+      "token_id": 3665,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BT",
+      "token_id": 3666,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BU",
+      "token_id": 3667,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BV",
+      "token_id": 3668,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BW",
+      "token_id": 3669,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "BY",
+      "token_id": 3670,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CA",
+      "token_id": 3682,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CB",
+      "token_id": 3683,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CC",
+      "token_id": 3684,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CD",
+      "token_id": 3685,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CE",
+      "token_id": 3686,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CF",
+      "token_id": 3687,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CG",
+      "token_id": 3688,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CH",
+      "token_id": 3689,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CI",
+      "token_id": 3690,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CJ",
+      "token_id": 3691,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CK",
+      "token_id": 3692,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CL",
+      "token_id": 3693,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CM",
+      "token_id": 3694,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CN",
+      "token_id": 3695,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CO",
+      "token_id": 3696,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CP",
+      "token_id": 3697,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CR",
+      "token_id": 3698,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CS",
+      "token_id": 3699,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CT",
+      "token_id": 3700,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CU",
+      "token_id": 3701,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CV",
+      "token_id": 3702,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CW",
+      "token_id": 3703,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CX",
+      "token_id": 3704,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "CY",
+      "token_id": 3705,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DA",
+      "token_id": 3721,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DB",
+      "token_id": 3722,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DC",
+      "token_id": 3723,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DD",
+      "token_id": 3724,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DE",
+      "token_id": 3725,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DF",
+      "token_id": 3726,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DG",
+      "token_id": 3727,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DH",
+      "token_id": 3728,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DI",
+      "token_id": 3729,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DJ",
+      "token_id": 3730,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DK",
+      "token_id": 3731,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DL",
+      "token_id": 3732,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DM",
+      "token_id": 3733,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DN",
+      "token_id": 3734,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DO",
+      "token_id": 3735,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DP",
+      "token_id": 3736,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DR",
+      "token_id": 3737,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DS",
+      "token_id": 3738,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DT",
+      "token_id": 3739,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DU",
+      "token_id": 3740,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DV",
+      "token_id": 3741,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DW",
+      "token_id": 3742,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "DX",
+      "token_id": 3743,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EA",
+      "token_id": 3755,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EB",
+      "token_id": 3756,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EC",
+      "token_id": 3757,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "ED",
+      "token_id": 3758,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EE",
+      "token_id": 3759,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EF",
+      "token_id": 3760,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EG",
+      "token_id": 3761,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EH",
+      "token_id": 3762,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EL",
+      "token_id": 3763,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EM",
+      "token_id": 3764,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EN",
+      "token_id": 3765,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EO",
+      "token_id": 3766,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EP",
+      "token_id": 3767,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EQ",
+      "token_id": 3768,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "ER",
+      "token_id": 3769,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "ES",
+      "token_id": 3770,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "ET",
+      "token_id": 3771,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EU",
+      "token_id": 3772,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EV",
+      "token_id": 3773,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EW",
+      "token_id": 3774,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "EX",
+      "token_id": 3775,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FA",
+      "token_id": 3796,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FB",
+      "token_id": 3797,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FC",
+      "token_id": 3798,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FD",
+      "token_id": 3799,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FE",
+      "token_id": 3800,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FF",
+      "token_id": 3801,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FG",
+      "token_id": 3802,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FH",
+      "token_id": 3803,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FI",
+      "token_id": 3804,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FK",
+      "token_id": 3805,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FL",
+      "token_id": 3806,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FM",
+      "token_id": 3807,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FN",
+      "token_id": 3808,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FO",
+      "token_id": 3809,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FP",
+      "token_id": 3810,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FR",
+      "token_id": 3811,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FS",
+      "token_id": 3812,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FT",
+      "token_id": 3813,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FW",
+      "token_id": 3814,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FX",
+      "token_id": 3815,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "FY",
+      "token_id": 3816,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GA",
+      "token_id": 3825,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GB",
+      "token_id": 3826,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GC",
+      "token_id": 3827,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GD",
+      "token_id": 3828,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GE",
+      "token_id": 3829,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GF",
+      "token_id": 3830,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GG",
+      "token_id": 3831,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GH",
+      "token_id": 3832,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GI",
+      "token_id": 3833,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GL",
+      "token_id": 3834,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GM",
+      "token_id": 3835,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GN",
+      "token_id": 3836,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GO",
+      "token_id": 3837,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GP",
+      "token_id": 3838,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GR",
+      "token_id": 3839,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GS",
+      "token_id": 3840,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GT",
+      "token_id": 3841,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GU",
+      "token_id": 3842,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GV",
+      "token_id": 3843,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "GW",
+      "token_id": 3844,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HA",
+      "token_id": 3855,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HB",
+      "token_id": 3856,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HC",
+      "token_id": 3857,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HD",
+      "token_id": 3858,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HE",
+      "token_id": 3859,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HF",
+      "token_id": 3860,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HG",
+      "token_id": 3861,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HH",
+      "token_id": 3862,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HI",
+      "token_id": 3863,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HK",
+      "token_id": 3864,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HL",
+      "token_id": 3865,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HM",
+      "token_id": 3866,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HO",
+      "token_id": 3867,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HP",
+      "token_id": 3868,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HQ",
+      "token_id": 3869,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HR",
+      "token_id": 3870,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HS",
+      "token_id": 3871,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HT",
+      "token_id": 3872,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HU",
+      "token_id": 3873,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HV",
+      "token_id": 3874,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HW",
+      "token_id": 3875,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "HY",
+      "token_id": 3876,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IA",
+      "token_id": 3885,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IB",
+      "token_id": 3886,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IC",
+      "token_id": 3887,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "ID",
+      "token_id": 3888,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IE",
+      "token_id": 3889,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IF",
+      "token_id": 3890,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IG",
+      "token_id": 3891,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "II",
+      "token_id": 3892,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IK",
+      "token_id": 3893,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IL",
+      "token_id": 3894,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IM",
+      "token_id": 3895,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IN",
+      "token_id": 3896,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IO",
+      "token_id": 3897,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IP",
+      "token_id": 3898,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IQ",
+      "token_id": 3899,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IR",
+      "token_id": 3900,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IS",
+      "token_id": 3901,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IT",
+      "token_id": 3902,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IU",
+      "token_id": 3903,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IV",
+      "token_id": 3904,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "IX",
+      "token_id": 3905,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JA",
+      "token_id": 3921,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JC",
+      "token_id": 3922,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JD",
+      "token_id": 3923,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JE",
+      "token_id": 3924,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JJ",
+      "token_id": 3925,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JM",
+      "token_id": 3926,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JO",
+      "token_id": 3927,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JP",
+      "token_id": 3928,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JR",
+      "token_id": 3929,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JS",
+      "token_id": 3930,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "JU",
+      "token_id": 3931,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KA",
+      "token_id": 3938,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KB",
+      "token_id": 3939,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KC",
+      "token_id": 3940,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KD",
+      "token_id": 3941,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KE",
+      "token_id": 3942,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KG",
+      "token_id": 3943,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KH",
+      "token_id": 3944,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KK",
+      "token_id": 3945,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KL",
+      "token_id": 3946,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KM",
+      "token_id": 3947,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KN",
+      "token_id": 3948,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KO",
+      "token_id": 3949,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KP",
+      "token_id": 3950,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KR",
+      "token_id": 3951,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KS",
+      "token_id": 3952,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KT",
+      "token_id": 3953,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "KY",
+      "token_id": 3954,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "LA",
+      "token_id": 3966,
+      "whole_rendered_context_boundary": true
+    },
+    {
+      "code": "LB",
+      "token_id": 3967,
+      "whole_rendered_context_boundary": true
+    }
+  ],
+  "synthetic_plan": {
+    "inference_calls": 1,
+    "max_call_input_tokens": 11188,
+    "total_input_tokens": 11188,
+    "prompt_token_labels": {
+      "template": 6159,
+      "data": 5025,
+      "instruction": 4
+    }
+  },
+  "whole_string_token_count_diagnostic_only": 10156,
+  "revision": {
+    "revision_id": "rwkv7:tokenizer-proof-only-no-model@local;w=not-loaded;tok=1c0bc8e5f355;prompt=jrt-rwkv-g1-code-label-v1.91e9f45d;cfg=290dfb4f;adapter=0.2.0",
+    "backend": "rwkv_g1_code_label_experimental",
+    "family": "rwkv7",
+    "model_id": "tokenizer-proof-only-no-model",
+    "snapshot": null,
+    "files_sha256": {
+      "tokenizer": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+      "weights": "not-loaded"
+    },
+    "prompt_template": {
+      "id": "jrt-rwkv-g1-code-label-v1",
+      "sha256": "91e9f45d070df0c58c8c9e71426a2825142799298dba3be4555e5cff64165292"
+    },
+    "inference_config": {
+      "scoring": "log_probability(exact frozen answer token ID | segmented v1 prompt + trusted target code labels)",
+      "untrusted_encoding": "untrusted-split-special+cut-leaking-added-v1",
+      "rows": "one per question; grouped by length; unpadded",
+      "scoring_path": "one next-token forward per target question; no continuation token forwarded",
+      "max_batch_rows": 1,
+      "dtype": "not-loaded",
+      "device": "cpu",
+      "torch": "2.8.0+cu128",
+      "transformers": "5.17.0",
+      "kernel_stack": {},
+      "codebook_table_sha256": "7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466",
+      "codebook_component": {
+        "revision_id": "rwkv-g1-filtered-codebook-v1;tok=1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf;table=7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466;impl=bf6afe20bd71cd550222026675a0553dfcd3c1abadae6496db1118f9d9cd397e;renderer=blocked",
+        "backend": "rwkv_g1_filtered_codes_experimental",
+        "family": "rwkv7",
+        "model_id": null,
+        "snapshot": null,
+        "codebook_id": "rwkv-g1-filtered-codebook-v1",
+        "codebook_table_sha256": "7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466",
+        "tokenizer_sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+        "tokenizer_source_sha256": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+        "implementation_sha256": "bf6afe20bd71cd550222026675a0553dfcd3c1abadae6496db1118f9d9cd397e",
+        "codebook_file_sha256": "ea8384ef7d18893085b347896d93464f944a08d3442ab3381689b86d1783eea9",
+        "proof_context_sha256": "597cc204a1db6d8bbe9c4c2e3e2948084cd95695b6bec5598a0565c1e6d9c165",
+        "max_context": null,
+        "renderer_integration": "blocked",
+        "model_provenance": "not established by this component"
+      },
+      "request_transform": "trusted-target-code-insertion-v1",
+      "bos_change": false,
+      "tail_change": false,
+      "raw_request_text_change": false,
+      "source_sha256": {
+        "rwkv_g1_code_label.py": "eab5b0f01c8a655541e5c9ed4f3038ecdf656dd66b32abdecc0323a66ac72124",
+        "hf_readout.py": "b1061978802cc2a6d9cef78a18d170ecd0254cadb152a2360d0a9f720c47e368",
+        "prompt.py": "1f986ea74c79d5dd96c419c30873311ea9c722224da0159a3e1aa45bfe3f9c9a",
+        "schema.py": "754ee82285b32d7800d27e344d6e693bb98989472431d3f52657e2df9d865fd1",
+        "calibration.py": "02d9f0843abc31e72a2f5cb4c5a1797ebf5c7c4e439d7cd2cac6c7c87c59737f",
+        "provenance.py": "e21833349d51e8fff8af1cc79fe7cbe6d9dc860dd678aed2eed985905fd0ff34"
+      }
+    },
+    "inference_config_sha256": "290dfb4f21d12360ab62c0023fda91a3015c42a935d79dd45c36b158942984bc",
+    "adapter_version": "0.2.0",
+    "max_context": 25600,
+    "notes": {
+      "vendored_code": "ce3630b854cedbd673569f4600c6cf744bca9dba"
+    }
+  },
+  "qualification": "capability/calibration/safety/latency unmeasured"
+}
