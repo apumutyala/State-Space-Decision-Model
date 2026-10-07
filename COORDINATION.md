@@ -128,7 +128,7 @@ Commit as `Apuroop Mutyala <apumutyala@gmail.com>`, with no AI or co-author trai
    - **Prefixes:** each agent uses its own instance-name prefix, `ssdm-claude-` or `ssdm-codex-`. An agent only lists and terminates instances under its own prefix, and never terminates the other agent's instances.
    - **Billing:** continues until *terminate*; an OS shutdown doesn't stop it.
    - **Spend:** counts against the $5k ceiling, not the SF credits. It's logged in `LEDGER.md` with provider = lambda, and goes through the same `spend` issue and spend ladder.
-3. **Local:** the RTX 5070 Ti laptop (12 GB) handles all $0-rung smoke tests. Check `nvidia-smi` before starting, since workers share it.
+3. **Local:** the RTX 5070 Ti laptop (12 GB) handles CPU-only $0-rung smoke tests. Do not run GPU jobs on anyone's laptop; workers share the device.
 
 ## Stalled cross-review (user authorization, 2026-10-06)
 
