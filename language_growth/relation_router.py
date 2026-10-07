@@ -134,6 +134,17 @@ def _revision(backend):
     return revision
 
 
+def _snapshot_identity(identity):
+    """Normalize the parent bridge's accepted snapshot aliases, rejecting ambiguity."""
+    if not isinstance(identity, dict):
+        return None
+    snapshot = identity.get("snapshot", identity.get("snapshot_revision"))
+    if ("snapshot" in identity and "snapshot_revision" in identity
+            and identity["snapshot"] != identity["snapshot_revision"]):
+        return None
+    return snapshot if _text(snapshot) else None
+
+
 class RelationOnlyBackend:
     """One outer Decider serves a pinned head/stock composition, without edits."""
     name = "relation_only_stock_composition"
@@ -144,8 +155,13 @@ class RelationOnlyBackend:
         native_parent = (learned_revision.get("backbone", {}).get("provenance", {})
                          .get("track_l_parent"))
         if native_parent is not None:
-            expected = {k: stock_revision.get(k) for k in ("model_id", "snapshot", "files_sha256")}
-            if not isinstance(native_parent, dict) or any(native_parent.get(k) != v for k, v in expected.items()):
+            expected = {"model_id": stock_revision.get("model_id"),
+                        "snapshot": _snapshot_identity(stock_revision),
+                        "files_sha256": stock_revision.get("files_sha256")}
+            actual = {"model_id": native_parent.get("model_id") if isinstance(native_parent, dict) else None,
+                      "snapshot": _snapshot_identity(native_parent),
+                      "files_sha256": native_parent.get("files_sha256") if isinstance(native_parent, dict) else None}
+            if any(actual[k] != v for k, v in expected.items()):
                 raise ValueError("relation head parent does not match stock revision")
         elif learned_revision["model_id"] != stock_revision["model_id"]:
             raise ValueError("relation head model does not match stock revision")

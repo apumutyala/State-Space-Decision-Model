@@ -261,6 +261,16 @@ def test_mismatched_models_and_native_parent_revisions_refused():
     learned_revision = {"model_id": "internal-backbone-spec", "revision_id": "head",
                         "backbone": {"provenance": {"track_l_parent": parent}}}
     assert RelationOnlyBackend(Fake("head", learned_revision), stock).revision()["model_id"] == "hf-parent"
+    aliased_parent = {k: v for k, v in parent.items() if k != "snapshot"}
+    aliased_parent["snapshot_revision"] = parent["snapshot"]
+    aliased_revision = deepcopy(learned_revision)
+    aliased_revision["backbone"]["provenance"]["track_l_parent"] = aliased_parent
+    assert RelationOnlyBackend(Fake("head", aliased_revision), stock).revision()["model_id"] == "hf-parent"
+    conflicting_parent = {**aliased_parent, "snapshot": "other"}
+    conflicting_revision = deepcopy(learned_revision)
+    conflicting_revision["backbone"]["provenance"]["track_l_parent"] = conflicting_parent
+    with pytest.raises(ValueError, match="parent does not match"):
+        RelationOnlyBackend(Fake("head", conflicting_revision), stock)
     for key in ("model_id", "snapshot", "files_sha256"):
         broken = deepcopy(learned_revision)
         broken["backbone"]["provenance"]["track_l_parent"][key] = "wrong"
