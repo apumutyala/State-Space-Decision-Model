@@ -10,7 +10,9 @@
 #   slices/dev-rows.jsonl.gz     Index DEV rows (the job cuts the 2,008-row subset; TEST stays sealed)
 #   reference/<name>.results.jsonl  OPTIONAL, same subset rows: job-tkfaj stock readout, Clef-flash. Pin their sha256 in
 #                                job_params.json reference_results_sha256 to have the report compare against them.
-# No parent arm cache ships: the job scores the parent itself (phases parent_g12, parent_index).
+#   parent_arm_seed/             job-uhxb5's exported parent arm ($DATA/m2/parent-arm/job-uhxb5: arm.json + units-*.json),
+#                                pinned by job_params parent_arm_seed and checked by jobs.m2_first_cell.arm_seed (LESSONS
+#                                L-34): the job then skips phases parent_g12 / parent_index. Absent = the job scores the parent.
 set -euo pipefail
 SHA=$1; OUTD=$2; TKFAJ=${3:-}; CLEF=${4:-}
 DATA=${SSDM_DATA:-$HOME/research/CHLabs/ssdm-data}
@@ -31,6 +33,14 @@ cp "$B150/records.jsonl.gz" "$B150/sample-150000-seed20261006.manifest.jsonl.gz"
 cp "$DATA/suite-0.2/selected-rows.jsonl.gz" "$DATA/suite-0.2/added-rows.jsonl.gz" "$DATA/suite-0.2/excluded-questions.json" \
   "$OUTD/data/suite-0.2/"
 cp "$DATA/slices/dev-rows.jsonl.gz" "$OUTD/data/slices/"
+SEED=$DATA/m2/parent-arm/job-uhxb5
+if [ -f "$SEED/arm.json" ]; then
+  mkdir -p "$OUTD/data/parent_arm_seed"
+  cp "$SEED/arm.json" "$SEED/units-g12.json" "$SEED/units-index.json" "$OUTD/data/parent_arm_seed/"
+  ( cd "$OUTD/code/m1" && python -X utf8 -m jobs.m2_first_cell.arm_seed check --src "$OUTD/data/parent_arm_seed" \
+      --params jobs/m2_first_cell/job_params.json --cell jobs/m2_first_cell/m2_first_cell_rwkv7.json ) \
+    || { echo "parent arm seed != job_params pin / cell identity" >&2; exit 1; }
+fi
 ( cd "$OUTD/data" && sha256sum -c "$OUTD/code/m1/jobs/clef_baseline/data.sha256" )
 if [ -n "$TKFAJ" ] || [ -n "$CLEF" ]; then mkdir -p "$OUTD/data/reference"; fi
 [ -n "$TKFAJ" ] && cp "$TKFAJ" "$OUTD/data/reference/rwkv7_stock_tkfaj.results.jsonl"

@@ -71,6 +71,15 @@
  "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
  "margins_from": "train.promotion.MARGINS",
  "margins_status": "issue #36 margins approved in PR #102 (train.promotion.MARGINS); this cell runs G12 + the index measurement, not G13, so m2_gates exits 44 (partial) / 40 and it is never promotable; 43/44/45 are trained + measured outcomes",
+ "parent_arm_seed": {
+  "_note": "LESSONS L-34: a resubmitted job starts with an empty checkpoint slot; this pinned export of the parent arm ships as data/parent_arm_seed/ (context.data below) and jobs.m2_first_cell.arm_seed installs it into $CK/parent_arm (sha + parent/cohort/unit-spec identity checked; exit 10 otherwise), so parent_g12 + parent_index (~68 GPU min) are skipped. Rate reports are not installed: reprice records the factor as unmeasured and the setup preflight stands. Set arm_sha256 to null (and drop the three context.data entries) to score the parent in-job again.",
+  "source": "job-uhxb5 (agent-main 9c76c93), artifact art-sq6mp sha256 2937de5a5d832a7d899eb6cf74fb3f66d65e9333b3f43bdf7e6f55bcb76ae7c6, phases/final.tgz out/parent_arm/",
+  "arm_sha256": "f8a114f3050a82cafd9e45364aa7bee2ae5ef98b2d0516281b610c3f33482145",
+  "units_sha256": {
+   "g12": "c16c24db65124b78af782305a55d2092b8b4163459a9501714b314e4897ef395",
+   "index": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001"
+  }
+ },
  "reference_results_sha256": {
   "_note": "optional files shipped under /data/reference/ (same 2,008 subset rows); used only for the report's comparisons. null = not shipped / not used",
   "rwkv7_stock_tkfaj": null,
@@ -163,6 +172,21 @@
     "src": "suite-0.2/excluded-questions.json",
     "dest": "suite-0.2/excluded-questions.json",
     "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/parent-arm/job-uhxb5/arm.json",
+    "dest": "parent_arm_seed/arm.json",
+    "pin_json": ["jobs/m2_first_cell/job_params.json", "parent_arm_seed", "arm_sha256"]
+   },
+   {
+    "src": "m2/parent-arm/job-uhxb5/units-g12.json",
+    "dest": "parent_arm_seed/units-g12.json",
+    "pin_json": ["jobs/m2_first_cell/job_params.json", "parent_arm_seed", "units_sha256", "g12"]
+   },
+   {
+    "src": "m2/parent-arm/job-uhxb5/units-index.json",
+    "dest": "parent_arm_seed/units-index.json",
+    "pin_json": ["jobs/m2_first_cell/job_params.json", "parent_arm_seed", "units_sha256", "index"]
    }
   ],
   "manifest_files": [

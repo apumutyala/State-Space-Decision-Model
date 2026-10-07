@@ -314,3 +314,61 @@ def test_restart_reuses_the_parent_arm_and_resumes_the_cell(ctx, full_run):
     assert _exports_verified(r) == ["setup", "guard", "heldout", "cell", "evals", "final"]
     assert r["result"]["exit_code"] == 0 and list(r["result"]["gates"]) == PHASES
     assert (r["out"] / "M2_FIRST_CELL_DONE").exists()
+
+
+def _seeded(ctx, name: str, arm_dir: Path, pin: str) -> dict:
+    """Env overrides for a RESUBMIT that ships a parent arm seed. data: the ctx data dir (hard links) + data/parent_arm_seed/
+    holding what job_params context.data ships (arm.json and the two units files of an earlier run, not its rate
+    reports). code: this checkout's files (hard links) with ONLY job_params parent_arm_seed.arm_sha256 replaced by
+    ``pin`` -- the runner has no pin override (M2FC_* only relocate paths), and the tiny model's arm hash differs."""
+    t = ctx["t"] / name
+    src = ctx["t"] / "data"
+    for sub in src.iterdir():
+        if sub.is_dir():
+            _link_tree(sub, t / "data" / sub.name)
+    _link_tree(arm_dir, t / "data" / "parent_arm_seed", ["arm.json", "units-g12.json", "units-index.json"])
+    files = subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=ROOT, capture_output=True, text=True,
+                           check=True).stdout.splitlines()
+    code = t / "code"
+    for f in files:
+        if not (ROOT / f).is_file():
+            continue
+        (code / f).parent.mkdir(parents=True, exist_ok=True)
+        if f == "jobs/m2_first_cell/job_params.json":
+            p = json.loads((ROOT / f).read_text(encoding="utf-8"))
+            p["parent_arm_seed"]["arm_sha256"] = pin
+            (code / f).write_text(json.dumps(p, indent=1), encoding="utf-8", newline="\n")
+            continue
+        try:
+            os.link(ROOT / f, code / f)
+        except OSError:
+            shutil.copy2(ROOT / f, code / f)
+    return {"M2FC_DATA": _posix(t / "data"), "M2FC_CODE": _posix(code)}
+
+
+def test_resubmit_seeds_the_parent_arm_from_a_pinned_export(ctx, full_run):
+    """LESSONS L-34 (job-uhxb5): a RESUBMITTED job starts with an empty checkpoint slot. A pinned earlier export shipped
+    as data/parent_arm_seed/ is installed into $CK/parent_arm, both parent phases are skipped, the re-price records the
+    factor as unmeasured (no rate reports of another box), and the run still trains, evaluates and finalizes 0."""
+    arm = full_run["work"] / "ck" / "parent_arm"
+    pin = hashlib.sha256((arm / "arm.json").read_bytes()).hexdigest()
+    r = run_job(ctx, "seeded", **_seeded(ctx, "seeded-in", arm, pin))
+    assert r["rc"] == 0, r["tail"]
+    assert "parent g12: cached (seeded from data/parent_arm_seed)" in r["log"]
+    assert "parent index: cached (seeded from data/parent_arm_seed)" in r["log"]
+    assert "] phase parent_g12" not in r["log"] and "] phase parent_index" not in r["log"]
+    seed = json.loads((r["work"] / "out/arm-seed.json").read_text())
+    assert seed["seeded"] is True and seed["arm_sha256"] == pin
+    assert sorted(p.name for p in (r["work"] / "ck/parent_arm").iterdir()) == ["arm.json", "units-g12.json",
+                                                                               "units-index.json"]
+    assert json.loads((r["work"] / "out/reprice.json").read_text())["factor"] is None
+    assert _exports_verified(r) == ["setup", "guard", "heldout", "cell", "evals", "final"]
+    assert r["result"]["exit_code"] == 0 and list(r["result"]["gates"]) == PHASES
+    assert (r["out"] / "M2_FIRST_CELL_DONE").exists()
+
+
+def test_seed_against_another_pin_exits_10_before_any_gpu_phase(ctx, full_run):
+    r = run_job(ctx, "badseed", **_seeded(ctx, "badseed-in", full_run["work"] / "ck" / "parent_arm", "0" * 64))
+    assert r["result"]["exit_code"] == 10, r["tail"]
+    assert "parent arm seed refused" in r["log"]
+    assert "] phase parent_g12" not in r["log"] and "] phase cell" not in r["log"]

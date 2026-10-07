@@ -585,13 +585,19 @@ def test_launch_blocks_and_data_pins():
     assert dests == {"m2/records.jsonl.gz", "slices/dev-rows.jsonl.gz", "m2-150k/records.jsonl.gz",
                      "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
                      "m2-150k/sample-150000-seed20261006.content.jsonl.gz", "suite-0.2/selected-rows.jsonl.gz",
-                     "suite-0.2/added-rows.jsonl.gz", "suite-0.2/excluded-questions.json"}
-    from jobs.common.launch import pins
+                     "suite-0.2/added-rows.jsonl.gz", "suite-0.2/excluded-questions.json",
+                     "parent_arm_seed/arm.json", "parent_arm_seed/units-g12.json", "parent_arm_seed/units-index.json"}
+    from jobs.common.launch import data_pin, pins
 
-    for d in p["context"]["data"]:  # every shipped file has a pin line under its context path
+    files = {"jobs/m2_first_cell/job_params.json": ((ROOT / "jobs/m2_first_cell/job_params.json").read_bytes(), 0)}
+    for d in p["context"]["data"]:  # every shipped file has a pin: a line under its context path, or a job_params key
+        if "pin_json" in d:  # the L-34 parent arm seed: pinned by job_params parent_arm_seed
+            assert d["pin_json"][0] == "jobs/m2_first_cell/job_params.json" and len(data_pin(files, d)) == 64, d
+            continue
         assert d["dest"] in pins((ROOT / d["pin"]).read_text(encoding="utf-8")), d
     # the runner reads exactly these context paths (M2FC_DATA defaults to /data)
-    for rel in ("$DATA/m2-150k", "$DATA/m2/records.jsonl.gz", "$DATA/suite-0.2", "$DATA/slices/dev-rows.jsonl.gz"):
+    for rel in ("$DATA/m2-150k", "$DATA/m2/records.jsonl.gz", "$DATA/suite-0.2", "$DATA/slices/dev-rows.jsonl.gz",
+                "$DATA/parent_arm_seed"):
         assert rel in JOB, rel
 
 
@@ -653,7 +659,7 @@ def test_tvuat_receipt_bytes_survive_an_autocrlf_checkout(tmp_path):
         assert hashlib.sha256(got[f]).hexdigest() == h, f
 
 
-# ----------------------------------------------------------------------------- job-uhxb5: smoke OOM (L-33)
+# ----------------------------------------------------------------------------- job-uhxb5: smoke OOM (L-34)
 def _smoke_bytes(act_ckpt_flag: bool, monkeypatch):
     """Run train.run_cell.smoke_stage on a tiny RWKV7 (chunked_lean, like the cell) and return (smoke record,
     per-mode saved-for-backward bytes of build_head_input, per-mode act_ckpt state seen inside the call, backbone)."""
@@ -700,7 +706,7 @@ def _smoke_bytes(act_ckpt_flag: bool, monkeypatch):
 
 
 def test_smoke_runs_under_the_cells_activation_checkpointing(monkeypatch):
-    """job-uhxb5 (L-33): the cell trains with per-block activation checkpointing (act_ckpt, job-tvuat ADOPT), but the
+    """job-uhxb5 (L-34): the cell trains with per-block activation checkpointing (act_ckpt, job-tvuat ADOPT), but the
     pre-training smoke ran its cache-vs-recompute fork comparison WITHOUT it (the flag was applied only inside the
     Trainer). The recompute fork batches every (row, option) continuation through the 13.3B backbone with full
     activations kept: CUDA OOM at 77 GiB after 3 minutes, 71 minutes into the paid job. The smoke must run under the
@@ -724,3 +730,62 @@ def test_smoke_runs_under_the_cells_activation_checkpointing(monkeypatch):
     assert rec_on["act_ckpt"] is True and rec_off["act_ckpt"] is False
     assert not act_ckpt.is_enabled(bb_on.model)  # the Trainer applies its own flags afterwards
     assert bb_on.fork_mode == "cache" and not any("lora_" in n for n, _ in bb_on.model.named_parameters())
+
+# ----------------------------------------------------------------------------- parent arm seed for a resubmit (L-34)
+def _fake_arm(d, cell, wkv=None):
+    """A parent arm dir shaped like train.m2_gates.write_arm_cache output, for this cell."""
+    from train.m2_gates import ARM_SCHEMA, expected_parent_identity, unit_spec
+
+    d.mkdir(parents=True, exist_ok=True)
+    man = {"schema": ARM_SCHEMA, "stages": {}}
+    for st in ("g12", "index"):
+        text = json.dumps({"stage": st, "decision": {}}, sort_keys=True)
+        (d / f"units-{st}.json").write_text(text, encoding="utf-8", newline="\n")
+        man["stages"][st] = {"file": f"units-{st}.json", "sha256": hashlib.sha256(text.encode()).hexdigest(),
+                             "arm": {"parent": expected_parent_identity("rwkv7", wkv=wkv or cell.get("rwkv7_wkv"))},
+                             "units_identity": {"stage": st, "cohort_sha256": cell["cohort_sha256"],
+                                                "unit_spec": unit_spec(cell)}}
+    (d / "arm.json").write_text(json.dumps(man, indent=1, sort_keys=True), encoding="utf-8", newline="\n")
+    (d / "rate-parent-g12.json").write_text("{}", encoding="utf-8")
+    return hashlib.sha256((d / "arm.json").read_bytes()).hexdigest()
+
+
+def test_arm_seed_installs_only_a_pinned_matching_arm(tmp_path):
+    """job-uhxb5: a resubmit starts with an empty checkpoint slot; a pinned export of the parent arm is installed into
+    it (arm.json + units, NOT the earlier box's rate reports) and the runner's sha-verified cache then skips scoring."""
+    pytest.importorskip("torch")
+    from jobs.m2_first_cell.arm_seed import SeedError, check, seed
+
+    src = tmp_path / "seed"
+    pin = _fake_arm(src, CELL)
+    dst = tmp_path / "ck" / "parent_arm"
+    rec = seed(src, dst, pin, CELL)
+    assert rec["seeded"] and sorted(p.name for p in dst.iterdir()) == ["arm.json", "units-g12.json", "units-index.json"]
+    assert hashlib.sha256((dst / "arm.json").read_bytes()).hexdigest() == pin
+    assert seed(src, dst, pin, CELL)["seeded"] is False  # a restart's own cache is left as is
+    assert seed(tmp_path / "absent", tmp_path / "ck2", pin, CELL)["seeded"] is False  # nothing shipped
+    assert not (tmp_path / "ck2" / "arm.json").exists()
+    for bad_pin in (None, "0" * 64):  # a shipped seed without (or against) the pin is refused
+        with pytest.raises(SeedError):
+            seed(src, tmp_path / "ck3", bad_pin, CELL)
+    assert not (tmp_path / "ck3" / "arm.json").exists()
+    (src / "units-index.json").write_text("{}", encoding="utf-8")  # drifted units file
+    with pytest.raises(SeedError, match="units-index.json sha256"):
+        check(src, pin, CELL)
+    other = tmp_path / "other"  # an arm scored with another WKV implementation
+    with pytest.raises(SeedError, match="parent identity"):
+        check(other, _fake_arm(other, CELL, wkv="chunked"), CELL)
+    spec = tmp_path / "spec"
+    with pytest.raises(SeedError, match="unit spec"):
+        check(spec, _fake_arm(spec, {**CELL, "eval_max_t": 4096}), CELL)
+
+
+def test_arm_seed_pin_is_the_uhxb5_export():
+    """The pinned seed is job-uhxb5's exported parent arm (art-sq6mp, out/parent_arm/arm.json), whose two stages were
+    scored at agent-main 9c76c93 under this exact cell config."""
+    pin = PARAMS["parent_arm_seed"]
+    assert pin["arm_sha256"] == "f8a114f3050a82cafd9e45364aa7bee2ae5ef98b2d0516281b610c3f33482145"
+    assert pin["units_sha256"] == {"g12": "c16c24db65124b78af782305a55d2092b8b4163459a9501714b314e4897ef395",
+                                   "index": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001"}
+    assert "--src \"$DATA/parent_arm_seed\"" in JOB and "jobs.m2_first_cell.arm_seed seed" in JOB
+    assert JOB.index("arm_seed seed") < JOB.index("for STAGE in g12 index")

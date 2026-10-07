@@ -11,6 +11,7 @@
 #   45 underpowered are all MEASURED outcomes: reported, verdict "measured", not promotable unless 0, exit 0)
 #   4 TOK_S / CALL_S missing or not a number   5 setup   6 export verification   7 phase timeout
 #   9 report / arm / evals missing or invalid   10 snapshot / vendored code / records / train set / cohort / arm identity
+#      (incl. a shipped parent arm seed that fails its pin or identity: jobs.m2_first_cell.arm_seed)
 #   15 an eval phase projected (preflight at the env rates, or re-priced at the parent arm's measured speed BEFORE
 #      training) or measured (live rate guard) past its cap
 #   30 / 31 / 32 guard: kit-suite / content index / harness manifests   33 held-out D1-B fragment outside the pinned set
@@ -158,9 +159,16 @@ case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B frag
 # re-priced from that measured speed (jobs.m2_first_cell.reprice, exit 15). Cached in $CK across restarts.
 ARM=$CK/parent_arm
 mkdir -p "$ARM"
+# A RESUBMITTED job (empty checkpoint slot) seeds the cache from a pinned earlier export shipped as data/parent_arm_seed/
+# (job_params parent_arm_seed; LESSONS L-34). A restart's own cache is left as is; nothing shipped = score the parent.
+ARM_SRC=restart
+[ -f "$ARM/arm.json" ] || ARM_SRC="seeded from data/parent_arm_seed"
+python -X utf8 -m jobs.m2_first_cell.arm_seed seed --src "$DATA/parent_arm_seed" --dst "$ARM" --params "$PARAMS" \
+  --cell "$CELL" --out "$WORK/out/arm-seed.json" > "$WORK/logs/arm-seed.log" 2>&1; r=$?
+case $r in 0) ;; 10) fail 10 "parent arm seed refused: $(tail -1 "$WORK/logs/arm-seed.log")" ;; *) fail 5 "arm seed rc=$r" ;; esac
 for STAGE in g12 index; do
   if python -c "import json,sys,hashlib,pathlib; d=pathlib.Path(sys.argv[1]); e=json.load(open(d/'arm.json'))['stages'][sys.argv[2]]; sys.exit(0 if hashlib.sha256((d/e['file']).read_bytes()).hexdigest()==e['sha256'] else 1)" "$ARM" "$STAGE" 2>/dev/null; then
-    say "parent $STAGE: cached (restart)"; gate "parent_$STAGE" 0; continue
+    say "parent $STAGE: cached ($ARM_SRC)"; gate "parent_$STAGE" 0; continue
   fi
   say "phase parent_$STAGE"
   python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/parent-$STAGE.progress.jsonl" \

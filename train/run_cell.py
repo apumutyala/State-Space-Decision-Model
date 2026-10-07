@@ -352,7 +352,7 @@ def smoke_stage(bb, train_items, cfg: dict, cuda: bool, peak=lambda: 0.0) -> dic
     (``cfg["smoke"]``). Leaves the backbone as it found it (no LoRA, bridges zeroed, ``fork_mode`` "cache").
 
     Runs under the cell's per-block activation checkpointing (``cfg["act_ckpt"]``), exactly as training does (job-uhxb5,
-    LESSONS L-33): the recompute fork pushes every (row, option) continuation through the backbone in one batch, and
+    LESSONS L-34): the recompute fork pushes every (row, option) continuation through the backbone in one batch, and
     without checkpointing its activations do not fit beside 13.3B bf16 weights on 80 GB (CUDA OOM at 77 GiB). The
     checkpointed gradients equal the plain ones (tests/test_cell_perf.py), so the comparison is unchanged; it now also
     covers the checkpointed cache fork that training actually runs."""
