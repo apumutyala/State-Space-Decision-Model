@@ -50,6 +50,26 @@ def missing_inputs() -> list[str]:
             if not p.exists()]
 
 
+def kit_clone_dir() -> Path:
+    """The pinned Decision Index kit as a GIT CLONE for ``guard_ready --kit-dir`` (it checks the clone's commit, exit 30
+    otherwise). The kit may also be importable as an installed copy (the launcher's job-test env installs it with
+    ``uv --with <kit>``); that copy has no .git, so the clone (``harness.config.KIT_CLONE``, under SSDM_DATA) is
+    preferred. Raises ImportError when no git clone of the kit is available."""
+    import subprocess
+
+    from scripts.m2_e2e_dryrun import ensure_kit
+
+    info = ensure_kit()
+    from harness import config as hc
+
+    for c in (Path(hc.KIT_CLONE), Path(info["kit_path"]).parent):
+        if (c / "decision_index").is_dir():
+            r = subprocess.run(["git", "-C", str(c), "rev-parse", "HEAD"], capture_output=True, text=True)
+            if r.returncode == 0 and r.stdout.strip():
+                return c
+    raise ImportError("no git clone of the pinned Decision Index kit (guard_ready checks its commit); set SSDM_DI_KIT")
+
+
 def tiny_snapshot(d: Path) -> Path:
     """Random 2-layer RWKV7 (vocab 65,536 so the real tokenizer's ids are valid) + the vendored code + tokenizer."""
     import torch
@@ -131,9 +151,7 @@ def main(argv=None) -> int:
     cell = out / "cell_dryrun.json"
     cell.write_text(json.dumps(cfg, indent=1), encoding="utf-8")
     snap = tiny_snapshot(out / "tiny-rwkv7")
-    from scripts.m2_e2e_dryrun import ensure_kit
-
-    kit = Path(ensure_kit()["kit_path"]).parent
+    kit = kit_clone_dir()
     phases = []
     t0 = time.time()
 
