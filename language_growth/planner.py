@@ -30,6 +30,7 @@ _RESPONSE_ENVELOPE_KEYS = {
 }
 CANDIDATE_STYLES = ("record_ref", "entity_name")
 MAX_CANDIDATE_ENTITY_CHARS = 256
+CONJOIN_TWO_FACTS_PROFILE = "conjoin_two_facts"
 
 
 class PlannerFailure(Exception):
@@ -367,7 +368,8 @@ class _Session:
         return selected
 
     def _program(self, facts: list[dict[str, str]], operands: list[dict[str, str]],
-                 obligations: list[dict[str, Any]], *, feedback: str | None) -> dict[str, Any]:
+                 obligations: list[dict[str, Any]], *, feedback: str | None,
+                 development_profile: str | None = None) -> dict[str, Any]:
         registry = self.catalog["registries"][self.host["registry_ref"]]
         self.attempt_trace_start = len(self.trace)
         allowed_ops = set(registry["allowed_ops"])
@@ -380,6 +382,11 @@ class _Session:
             op_items.append(("compare", "Compare two selected typed values and assert the selected relation"))
         if obligations and "Ask" in allowed_ops:
             op_items.append(("ask", "Ask for a registered missing input"))
+        # Append only in the explicit development profile. Existing L0 choices
+        # and their IDs remain identical in the default profile.
+        if (development_profile == CONJOIN_TWO_FACTS_PROFILE and len(facts) >= 2
+                and {"ReadFact", "Assert", "Conjoin"} <= allowed_ops):
+            op_items.append(("conjoin_two_facts", "Conjoin assertions of two distinct selected facts"))
         op_options = {f"op{i:03d}": desc for i, (_, desc) in enumerate(op_items, 1)}
         op_binding = {f"op{i:03d}": kind for i, (kind, _) in enumerate(op_items, 1)}
         q = "Select the semantic operation for the user's task."
@@ -407,6 +414,24 @@ class _Session:
             if kind == "explain_read":
                 nodes.append({"id": "n3", "op": "ExplainDerivation", "speech_act": "n2"})
                 output = "n3"
+        elif kind == "conjoin_two_facts":
+            opts, binding = _as_options(facts, _fact_description, "f")
+            first = binding[self.choose("first_fact", "Select the first fact to assert.",
+                                        opts, repair=feedback is not None)]
+            # Offer the same complete syntactic domain for both slots. The
+            # checker is never queried to select or prune candidate answers.
+            second = binding[self.choose("second_fact", "Select a distinct second fact to assert.",
+                                         opts, repair=feedback is not None)]
+            if (first["record_ref"], first["field"]) == (second["record_ref"], second["field"]):
+                raise PlannerFailure("unsupported", "repeated_fact_binding")
+            nodes = [
+                {"id": "n1", "op": "ReadFact", "record_ref": first["record_ref"], "field": first["field"]},
+                {"id": "n2", "op": "Assert", "proposition": "n1"},
+                {"id": "n3", "op": "ReadFact", "record_ref": second["record_ref"], "field": second["field"]},
+                {"id": "n4", "op": "Assert", "proposition": "n3"},
+                {"id": "n5", "op": "Conjoin", "speech_acts": ["n2", "n4"]},
+            ]
+            output = "n5"
         elif kind == "compare":
             left = choose_operand("left")
             right = choose_operand("right")
@@ -443,18 +468,22 @@ def plan_checked_answer(task_input: str, host: dict[str, Any], catalog: dict[str
                         provider: Any, *, model: str, parent_revision: str,
                         expected_served_config: dict[str, Any],
                         allow_repair: bool = False,
-                        candidate_style: str = "record_ref") -> PlannerResult:
+                        candidate_style: str = "record_ref",
+                        development_profile: str | None = None) -> PlannerResult:
     """Run one bounded planning attempt, optionally one or more declared repairs.
 
     ``provider`` can be a callable or an object with ``decide(request)``. Oracle
     and replay providers are test tools; this function never claims learning.
-    ``candidate_style`` changes display descriptions only; it never chooses a
-    fact or changes the executable record_ref/field bindings.
+    ``development_profile="conjoin_two_facts"`` additionally offers a bounded
+    two-fact conjunction. This is a CPU contract prerequisite, not a learned
+    capability claim or an extension of the public task-relevance grammar.
     ``candidate_style`` changes display descriptions only; it never chooses a
     fact or changes the executable record_ref/field bindings.
     """
     session: _Session | None = None
     try:
+        if development_profile not in (None, CONJOIN_TWO_FACTS_PROFILE):
+            raise PlannerFailure("precondition_failed", "unsupported_development_profile")
         session = _Session(task_input, host, catalog, provider, model, parent_revision,
                            expected_served_config)
         facts, operands, obligations = _candidate_sets(host, catalog, task_input, candidate_style)
@@ -462,7 +491,8 @@ def plan_checked_answer(task_input: str, host: dict[str, Any], catalog: dict[str
         feedback = None
         last_program = None
         for attempt in range(max_repairs + 1):
-            program = session._program(facts, operands, obligations, feedback=feedback)
+            program = session._program(facts, operands, obligations, feedback=feedback,
+                                       development_profile=development_profile)
             last_program = program
             if len(program["nodes"]) > session.limits["max_program_nodes"]:
                 raise PlannerFailure("exhausted", "max_program_nodes")
