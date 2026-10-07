@@ -1,0 +1,214 @@
+{
+ "_comment": "DEV rows whose Clef encoding exceeds the shipped max_length 16,384 (job-sgihj S1 probes.json encodings.clef_would_truncate, art-8y6d8; Clef and Clef-flash share tokenizer.json sha 06b95093..., so the set is the same for both). IDs and token counts only. Sensitivity arm (JOB_SPEC 4c): re-score these rows at max_length 32,768; all fit (max 31,992).",
+ "source": "job-sgihj probes.json",
+ "max_length_shipped": 16384,
+ "max_length_sensitivity": 32768,
+ "n": 51,
+ "max_tokens": 31992,
+ "rows": [
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_499:chunk0",
+   "tokens": 21795
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_644:chunk0",
+   "tokens": 25316
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:autotools-food:webtools_food_query_0:chunk0",
+   "tokens": 21997
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:reversechain:reversechain_query_51:chunk0",
+   "tokens": 21331
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_200:chunk0",
+   "tokens": 18836
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_251:chunk0",
+   "tokens": 23042
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_641:chunk0",
+   "tokens": 18342
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_686:chunk0",
+   "tokens": 27550
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_90:chunk0",
+   "tokens": 16496
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_247:chunk0",
+   "tokens": 17302
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_292:chunk0",
+   "tokens": 20354
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_957:chunk0",
+   "tokens": 31992
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_97:chunk0",
+   "tokens": 31740
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:aops:aops_2009_AMC_12A_Problems/Problem_17:chunk0",
+   "tokens": 24617
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:aops:aops_2015_AMC_12A_Problems/Problem_22:chunk0",
+   "tokens": 17508
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:aops:aops_2022_AIME_I_Problems/Problem_11:chunk0",
+   "tokens": 25933
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:biology:29:chunk0",
+   "tokens": 20288
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:earth_science:4:chunk0",
+   "tokens": 17931
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:earth_science:93:chunk0",
+   "tokens": 18752
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:economics:26:chunk0",
+   "tokens": 17614
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:economics:79:chunk0",
+   "tokens": 23258
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:107:chunk0",
+   "tokens": 27996
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:110:chunk0",
+   "tokens": 22034
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:125:chunk0",
+   "tokens": 23844
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:130:chunk0",
+   "tokens": 23712
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:14:chunk0",
+   "tokens": 24710
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:17:chunk0",
+   "tokens": 18743
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:18:chunk0",
+   "tokens": 23527
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:29:chunk0",
+   "tokens": 26125
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:31:chunk0",
+   "tokens": 22669
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:48:chunk0",
+   "tokens": 27245
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:58:chunk0",
+   "tokens": 25599
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:61:chunk0",
+   "tokens": 27548
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:62:chunk0",
+   "tokens": 26788
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:63:chunk0",
+   "tokens": 23249
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:69:chunk0",
+   "tokens": 22315
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:83:chunk0",
+   "tokens": 27265
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:8:chunk0",
+   "tokens": 17498
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:96:chunk0",
+   "tokens": 30862
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:robotics:20:chunk0",
+   "tokens": 17672
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:robotics:62:chunk0",
+   "tokens": 18491
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:robotics:7:chunk0",
+   "tokens": 17112
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:robotics:84:chunk0",
+   "tokens": 20333
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:stackoverflow:104:chunk0",
+   "tokens": 23737
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:stackoverflow:30:chunk0",
+   "tokens": 31425
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:stackoverflow:56:chunk0",
+   "tokens": 20892
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:stackoverflow:87:chunk0",
+   "tokens": 29947
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:23:chunk0",
+   "tokens": 18162
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:theoremqa_questions:TheoremQA_panlu/gravitational_force1.json:chunk0",
+   "tokens": 18823
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:theoremqa_questions:TheoremQA_wenhuchen/t_test3.json:chunk0",
+   "tokens": 22333
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:theoremqa_questions:TheoremQA_xinyi/neural_networks.json:chunk0",
+   "tokens": 18144
+  }
+ ]
+}

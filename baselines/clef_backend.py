@@ -460,6 +460,16 @@ def load_clef(model_dir: str | Path, release: str = "clef-flash", *, encoding: s
 
     ``model_dir`` must be a directory (we never let the vendored loader call ``snapshot_download``).
     """
+    import os
+
+    standin = os.environ.get("CLEF_STANDIN")
+    if standin:  # CPU dry runs of jobs/clef_baseline/run_job.sh only (tests/clef/test_clef_job_sh.py)
+        if os.environ.get("CLEF_DRY_RUN") != "1":
+            raise JSMIntegrityError("CLEF_STANDIN is set outside a dry run (CLEF_DRY_RUN != 1): refusing a stand-in model")
+        mod, fn = standin.split(":")
+        import importlib
+
+        return getattr(importlib.import_module(mod), fn)(model_dir, release, encoding=encoding, max_length=max_length)
     import torch
 
     d = Path(model_dir)

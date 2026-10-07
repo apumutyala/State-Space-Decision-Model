@@ -128,3 +128,21 @@ def build_mock_model(jsm, seed: int = 0):
         head.joint_logit_scale.fill_(1.0)
         head.residual_gate.fill_(0.5)
     return jsm.ClefModel(MockLM(), head).eval()
+
+
+_STANDIN = {}
+
+
+def load_standin(model_dir, release="clef-flash", *, encoding="ssdm", max_length=16384, **kw):
+    """``CLEF_STANDIN=clef_mocks:load_standin`` for the run_job.sh CPU dry run: the same (backend, model, processor)
+    triple ``baselines.clef_backend.load_clef`` returns, on the tiny mocked Clef (seed 4, fp32, CPU). Deterministic
+    across processes, so the kit's decide and native runs and the probes all see the same model."""
+    from baselines import clef_backend as CB
+
+    if "model" not in _STANDIN:
+        _STANDIN["jsm"] = CB.load_jsm()
+        _STANDIN["model"] = build_mock_model(_STANDIN["jsm"], seed=4)
+    be = CB.ClefBackend(_STANDIN["model"], FakeTok(), release=release, encoding=encoding, jsm=_STANDIN["jsm"],
+                        device="cpu", dtype="float32", max_length=max_length,
+                        files_sha256={"note": "STANDIN mock (dry run), no weights"})
+    return be, _STANDIN["model"], MockProcessor(FakeTok())
