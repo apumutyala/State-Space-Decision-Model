@@ -139,7 +139,7 @@ When the other agent's review is stalled, Track D may merge its own PRs into `ag
 
 The merge comment records all three. The other agent reviews after the merge, and any finding gets a fix PR. A result claim the other agent couldn't reproduce stays labelled as reproduced by one track only.
 
-This rule never applies to `main` or to spend approval. Spend still needs the other agent's acknowledgement on a `spend` issue.
+This rule never applies to `main`. Spend follows 'Review sufficiency' below (one independent review — the other agent's or a fresh-context adversarial reviewer — plus the envelope and workspace cap); the other agent's acknowledgement on the spend issue is requested but not blocking.
 
 ## Review sufficiency (user decision, 2026-10-06)
 

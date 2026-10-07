@@ -154,3 +154,11 @@ def test_lessons_entries_name_an_enforcing_check():
     assert len(entries) >= 15 and len(entries) == len(set(entries))
     for block in re.split(r"^### ", text, flags=re.M)[1:]:
         assert "**Check:**" in block and "**Status:**" in block, block.splitlines()[0]
+
+
+def test_coordination_has_no_superseded_spend_rule():
+    """L-18: the later 'Review sufficiency' user decision governs spend; the old blocking sentence must not return."""
+    t = (ROOT / "COORDINATION.md").read_text(encoding="utf-8")
+    assert "Spend still needs the other agent's acknowledgement on a `spend` issue." not in t
+    assert "never applies to `main` or to spend approval" not in t
+    assert "requested but not blocking" in t

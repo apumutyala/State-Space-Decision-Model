@@ -149,3 +149,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: there was no branch-per-variant rule and no champion or candidate ledger.
 - **Check:** every variant goes on `stack/<family>/<variant>`. `CHAMPION.md` and `CANDIDATES.md` must exist, and every candidate row needs a branch and a receipt (`tests/test_jobs_lint.py::test_champion_and_candidates_ledgers`). The docs must carry the rule (`test_docs_carry_the_branch_rule_and_the_incident_rule`).
 - **Status:** ENFORCED (structure). The promotion rule itself (paired CI > 0 plus G12/G13 plus review) is a review item.
+
+### L-18 Contradictory coordination rules
+- Date: 2026-10-06 (found by the coordinator's pre-mortem).
+- Symptom: COORDINATION.md "Stalled cross-review" said "This rule never applies to `main` or to spend approval. Spend still needs the other agent's acknowledgement on a `spend` issue." The later user decision, "Review sufficiency", says one independent review is enough to launch spend. An agent could follow either rule.
+- Cost: none billed. The risk was a blocked launch or an unauthorized one, depending on which rule was read.
+- Root cause: a newer user decision was added as a new section, and the older sentence was never edited.
+- **Check:** the stale sentence was replaced so that the later user decision governs. `tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule` asserts that the old sentence is gone.
+- **Status:** PARTIAL. Only this sentence is checked. Spend-ladder item 2 ("acknowledged by the other agent") still reads as blocking and needs the same reconciliation. When a user decision supersedes a rule, edit the old rule in the same PR.
