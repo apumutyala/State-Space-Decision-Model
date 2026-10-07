@@ -28,7 +28,10 @@ def test_cell_config_is_the_specified_cell():
     assert CELL["require_guard_readiness"] and CELL["cohort_sha256"] == PARAMS["cohort_sha256"]
     assert CELL["train_set"]["pointer"] == PARAMS["train_set_pointer"]
     assert (ROOT / CELL["train_set"]["pointer"]).exists()
-    assert CELL["rwkv7_wkv"] == "chunked"  # the measured path; "fla" only after the gate's ADOPT + GPU_VERIFIED
+    # job-tvuat ADOPT (rule v1-A2): ckpt_rows_lean; "fla" only after the fla gate's ADOPT + GPU_VERIFIED
+    assert {k: CELL[k] for k in ("act_ckpt", "row_batch", "row_tokens", "rwkv7_wkv", "t_ladder")} == {
+        "act_ckpt": True, "row_batch": 8, "row_tokens": 8192, "rwkv7_wkv": "chunked_lean", "t_ladder": [512, 1024, 2048]}
+    assert CELL["row_batch"] == CELL["batch_size"] * CELL["grad_accum"]  # one step = one row group of 8
     assert f"{PARAMS['phase_caps_minutes']['cell']}-min cell phase" in CELL["max_minutes_note"]
     from heads.rwkv7_wkv import GPU_VERIFIED
 
@@ -40,7 +43,8 @@ def test_cell_config_is_the_specified_cell():
 def test_cost_worst_case_and_expected():
     from jobs.common.costs import cap_ok, expected_usd, schedule_ok, worst_case_usd
 
-    assert worst_case_usd(PARAMS) == round((20 + 2 * 637) * 0.0495, 2) == 64.05
+    assert worst_case_usd(PARAMS) == round((60 + 2 * 637) * 0.0495, 2) == 66.03
+    assert PARAMS["build_timeout_minutes"] >= 60  # launch lint L-09
     assert PARAMS["phase_caps_minutes"]["parent_index"] == 65
     assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 70.0 and schedule_ok(PARAMS)
     assert CELL["max_minutes"] == 190  # pre-registered
@@ -480,3 +484,50 @@ def test_no_literal_backslash_n_continuations_in_job_scripts():
     hits = [(str(p.relative_to(ROOT)), i + 1) for p in sorted((ROOT / "jobs").rglob("*.sh"))
             for i, line in enumerate(p.read_text(encoding="utf-8").splitlines()) if bad.search(line)]
     assert not hits, hits
+
+
+# ----------------------------------------------------------------------------- job-tvuat ADOPT wiring (PR #86 hook)
+def test_execution_flags_reach_the_trainer_and_both_arms_read_the_wkv():
+    pytest.importorskip("torch")
+    from train.run_cell import train_config
+    from train.trainer import with_execution
+
+    t = with_execution(train_config(CELL, 10), CELL)
+    assert (t.act_ckpt, t.row_batch, t.row_tokens) == (True, 8, 8192)
+    assert t.hash() == train_config(CELL, 10).hash()  # execution flags are not in the checkpoint identity
+    for f in ("train/run_cell.py", "train/m2_gates.py"):
+        assert "with_execution(train_config(cfg," in (ROOT / f).read_text(encoding="utf-8"), f
+    assert 'wkv=cfg.get("rwkv7_wkv")' in (ROOT / "train/run_cell.py").read_text(encoding="utf-8")
+    assert 'wkv=cfg.get("rwkv7_wkv")' in (ROOT / "jobs/m2_parent_arm/score_parent.py").read_text(encoding="utf-8")
+    from heads.rwkv7_wkv import LEAN
+
+    assert CELL["rwkv7_wkv"] in LEAN  # needs no GPU gate (CPU equivalence, tests/test_cell_perf.py)
+
+
+def test_training_reprice_from_the_measured_step():
+    step = PARAMS["measured_rates_reference"]["train_step_s"]
+    assert step == 8.25
+    steps = int(60 * CELL["max_minutes"] / step)
+    assert steps == 1381 or steps == 1382  # job-tvuat projection: 1,382 steps / 11,056 rows in 190 min
+    assert CELL["max_steps"] > steps and CELL["n_train_records"] * 0.9 > steps * CELL["row_batch"]  # < 1 epoch
+    assert 60 * CELL["max_minutes"] / CELL["min_steps"] >= 1.25 * step  # exit-26 floor tolerates a >= 25 % slower box
+
+
+def test_decision_rule_constants_pinned():
+    """job_params decision_rule = train/promotion.py: the provisional margins the report states (PENDING CODEX
+    APPROVAL #36) and the G12 clean-accuracy drop."""
+    from train import promotion
+
+    assert PARAMS["decision_rule"] == "train/promotion.py"
+    assert {k: promotion.MARGINS[k] for k in ("m_cap", "m_steer", "m_ece")} == {"m_cap": 1.0, "m_steer": 0.02,
+                                                                                 "m_ece": 0.01}
+    assert promotion.CLEAN_ACC_DROP == 0.01
+
+
+def test_registered_for_the_launch_lint():
+    from jobs.common import costs
+
+    assert costs.PARAMS["m2_first_cell"] == "jobs/m2_first_cell/job_params.json"
+    tree = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
+    assert "`jobs/m2_first_cell/` | $66.03 | $70 |" in tree
+    assert f"{costs.worst_case_usd(PARAMS):.2f}" in (ROOT / "jobs/m2_first_cell/JOB_SPEC.md").read_text(encoding="utf-8")

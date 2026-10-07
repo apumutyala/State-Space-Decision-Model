@@ -44,10 +44,12 @@ def _bash() -> str | None:
     """A POSIX bash with coreutils (Git Bash on Windows; never WSL's System32 / WindowsApps launcher)."""
     cands = []
     w = shutil.which("bash")
-    if w and not (os.name == "nt" and re.search(r"system32|windowsapps", w, re.I)):
+    # Git for Windows' bin\bash.exe is a launcher that puts /usr/bin FIRST on PATH, which shadows this test's PATH stubs
+    # (nvidia-smi, sha256sum) with the real tools; usr\bin\bash.exe keeps the caller's PATH order
+    if w and not (os.name == "nt" and re.search(r"system32|windowsapps|git[\\/]bin[\\/]bash", w, re.I)):
         cands.append(w)
     if os.name == "nt":
-        cands += [r"C:\Program Files\Git\bin\bash.exe", r"C:\Program Files\Git\usr\bin\bash.exe"]
+        cands += [r"C:\Program Files\Git\usr\bin\bash.exe"]
     for c in cands:
         if Path(c).exists():
             r = subprocess.run([c, "-c", "command -v sha256sum tar timeout stat"], capture_output=True, text=True)
@@ -198,7 +200,7 @@ def test_runner_executes_every_phase_end_to_end(full_run):
 def test_runner_setup_ran_every_identity_check(full_run):
     o = full_run["work"] / "out"
     env = json.loads((o / "env.json").read_text())
-    assert env["wkv"] == "chunked" and env["transformers"] == "5.17.0" and env["fla_gpu_verified"] is False
+    assert env["wkv"] == "chunked_lean" and env["transformers"] == "5.17.0" and env["fla_gpu_verified"] is False
     for f in ("records-verify.txt", "snapshot-verify.txt", "data-verify.txt"):
         t = (o / f).read_text()
         assert ": OK" in t and "FAILED" not in t, (f, t)

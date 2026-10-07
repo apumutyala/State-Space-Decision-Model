@@ -96,10 +96,10 @@ assert torch.cuda.is_available()
 import decision_index  # noqa: F401
 import third_party.rwkv7_hf as V
 import os
-from heads.rwkv7_wkv import FLA_NAMES, GPU_VERIFIED, VENDORED
+from heads.rwkv7_wkv import FLA_NAMES, GPU_VERIFIED, LEAN, VENDORED
 assert all(V.vendored_ok().values()), V.vendored_ok()
 wkv = json.load(open(os.environ["CELL_PATH"])).get("rwkv7_wkv") or "chunked"
-assert wkv in VENDORED + FLA_NAMES, wkv
+assert wkv in VENDORED + LEAN + FLA_NAMES, wkv
 assert wkv not in FLA_NAMES or GPU_VERIFIED, f"rwkv7_wkv={wkv} but fla is not GPU-verified (jobs/fla_rwkv7 ADOPT first)"
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
                   "transformers": transformers.__version__, "vendored_rwkv7": V.REVISION,

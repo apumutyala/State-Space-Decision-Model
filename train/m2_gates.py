@@ -585,10 +585,13 @@ def main(argv=None) -> int:
     train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]))
                    if len(x.row.ids) <= t_max]
     bb = load_parent_backbone(parent, a.model_dir, cfg, a.gdn_ckpt, device=a.device)
-    cuda = torch.cuda.is_available()
+    cuda = torch.cuda.is_available() and str(a.device).startswith("cuda")  # follows --device
     model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])
     model.to(bb.device)
-    tr = Trainer(model, train_config(cfg, cfg["max_steps"], a.ckpt_dir, cuda), train_items, guard=guard)
+    from train.trainer import with_execution  # same execution flags as training (not in the config hash)
+
+    tr = Trainer(model, with_execution(train_config(cfg, cfg["max_steps"], a.ckpt_dir, cuda), cfg), train_items,
+                 guard=guard)
     ckpt = Path(a.ckpt) if a.ckpt else Trainer.latest(a.ckpt_dir)
     if ckpt is None:
         print("no checkpoint", file=sys.stderr)

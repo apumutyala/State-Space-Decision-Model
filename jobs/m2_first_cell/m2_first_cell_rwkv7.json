@@ -57,8 +57,11 @@
    "reason": "train.heldout (D1-B, k=8) finds the 4-word fragment 'rather than relying on' of template soft_framing in these three MMLU aux_train records (natural text, no injection; the PR #44 build guard, word 6-grams, does not fire). Excluded from the draw, fail-closed: the heldout phase passes only if the full-set hits are exactly these ids (2026-10-06 local scan, 150,000 texts, 112 s)."
   }
  },
- "rwkv7_wkv": "chunked",
- "rwkv7_wkv_note": "the checkpoint's own pure-PyTorch chunked WKV (the measured 3.6-4.4k tok/s path; 'eager' is the tokenwise loop). Flip to 'fla' only after jobs/fla_rwkv7 (job-jn47u) returns ADOPT and heads.rwkv7_wkv.GPU_VERIFIED is set (select_wkv refuses otherwise; setup checks it), and re-measure TOK_S / CALL_S on the fla path. Both arms read it (child: run_cell / m2_gates; parent: score_parent).",
+ "rwkv7_wkv": "chunked_lean",
+ "act_ckpt": true,
+ "row_batch": 8,
+ "row_tokens": 8192,
+ "execution_note": "job-tvuat (jobs/cell_step_profile, rule v1-A2, PR #86 @54ee89d) ADOPT: chosen ckpt_rows_lean = per-block activation checkpointing keeping the cache fork, the step's 8 rows batched (<= 8,192 padded tokens per call), chunked_lean WKV (our pure-PyTorch rearrangement of the vendored chunked WKV, CPU-equivalence-tested; no GPU gate needed); measured median step 8.25 s, 0 OOMs, projection 1,382 steps / 11,056 rows in 190 min. Execution flags are not in the TrainConfig hash (same loss and gradients). rwkv7_wkv applies to both arms (child: run_cell / m2_gates; parent: score_parent). 'fla' only after jobs/fla_rwkv7 ADOPT + GPU_VERIFIED.",
  "max_minutes_note": "training wall-clock inside the 230-min cell phase: 230 - load/draw/tokenize ~10 - smoke+ladder ~10 - two dev cards ~10 - checkpoints/margin 10 = 190 (pre-registered); cumulative over restarts (train_clock in cell.json)",
  "min_steps_note": "exit 26 if the measured step time cannot reach 600 optimiser steps (4,800 rows) inside max_minutes: below that the cell is not a meaningful first measurement; re-price instead of spending the evals",
  "lora_rank_note": "M2_RUN_SPEC r=256 adds ~1.15B trainable params (~18 GB of fp32 weights + grads + Adam) on top of 26.5 GB bf16 weights and the un-checkpointed cache-fork activations; r=64 (the pilot's pre-registered rank) keeps the T=2048 ladder rung inside the 76 GB stop"

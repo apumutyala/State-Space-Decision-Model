@@ -346,11 +346,15 @@ def main(argv=None):
             tmp.write_text(json.dumps(cell, indent=1))
             os.replace(tmp, p)
 
+    # CUDA paths (bf16 autocast, peak memory) follow --device, not merely an installed CUDA build: a CPU run on a
+    # CUDA-capable host (CUDA_VISIBLE_DEVICES="" can still report is_available) must not autocast to a cuda device
+    on_cuda = torch.cuda.is_available() and str(a.device).startswith("cuda")
+
     def peak():
-        return torch.cuda.max_memory_allocated() / 1e9 if torch.cuda.is_available() else 0.0
+        return torch.cuda.max_memory_allocated() / 1e9 if on_cuda else 0.0
 
     def reset_peak():
-        if torch.cuda.is_available():
+        if on_cuda:
             torch.cuda.reset_peak_memory_stats()
             torch.cuda.empty_cache()
 
@@ -415,7 +419,7 @@ def main(argv=None):
         from controlsafe.trust_gate import wrap as trust_gate_wrap
 
         bb = trust_gate_wrap(bb, {**cfg["controlsafe"], "seed": cfg["seed"]})
-    cuda = torch.cuda.is_available()
+    cuda = on_cuda
     dev_type = "cuda" if cuda else "cpu"
     cell["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
     stages = ["smoke", "ladder", "train"] if a.stage == "all" else [a.stage]
@@ -466,7 +470,10 @@ def main(argv=None):
     def make_trainer(max_steps, ckpt_dir=None):
         model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])
         model.to(bb.device)
-        return Trainer(model, train_config(cfg, max_steps, ckpt_dir, cuda), train_items, eval_items, guard=guard)
+        from train.trainer import with_execution  # act_ckpt / row_batch / row_tokens of the cell (PR #86 hook)
+
+        return Trainer(model, with_execution(train_config(cfg, max_steps, ckpt_dir, cuda), cfg), train_items,
+                       eval_items, guard=guard)
 
     if "ladder" in stages and "ladder" not in cell:
         lad = {}

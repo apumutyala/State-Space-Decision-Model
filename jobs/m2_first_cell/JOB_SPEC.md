@@ -8,13 +8,14 @@ option-likelihood readout (24.9 [22.4, 27.8] on the 2,008-row Index DEV subset, 
 
 | Item | Value | Why |
 |---|---|---|
-| Parent | `RWKV/RWKV7-G1k-13.3B-20260930@ce3630b8`, vendored code, eager `chunked` WKV | fla is not GPU-verified (job-4idg4 timed out) |
+| Parent | `RWKV/RWKV7-G1k-13.3B-20260930@ce3630b8`, vendored code, `chunked_lean` WKV (both arms) | job-tvuat ADOPT (below); fla is not GPU-verified |
+| Execution | `act_ckpt` true, `row_batch` 8, `row_tokens` 8,192 (`train.trainer.with_execution`) | job-tvuat (`jobs/cell_step_profile`, rule v1-A2, PR #86 @54ee89d) ADOPT `ckpt_rows_lean`: median step 8.25 s, 0 OOMs. Same loss and gradients (not in the config hash) |
 | Head | final-state fork, `cache` mode | one prefix pass + K state copies: ~3x forward per step vs ~4x for the checkpointed integrator; it is the pilot's pre-registered entrant and its cache == recompute smoke (exit 21) is already built |
 | LoRA | r = 64 on `att.receptance/key/value/output`, `ffn.key/value` (288 M params) | r = 256 (M2_RUN_SPEC) adds 1.15 B params, ~72 GB estimated at T = 2,048 without checkpointing; r = 64 estimates 59 GB under the 76 GB stop |
 | Loss | Clef arm: LS-CE (0.1) + Brier, + RPS on score questions | as asked |
 | Data | PR #44 150k set (pointer `sample-150000-seed20261006`), 24,000 records drawn by `sha256(seed:id)`; injection augmentation is in the build (D1-A verbatim 8,049, training-only hijack 4,066, labels unchanged) | v2 is not merged |
 | Guards | content-index guard (`7cbe6c89…`, readiness file required), cohort v2 excluded by id + content + source item (build) and re-checked (`train.train_set`: 0 held-out records allowed, manifest-verified lines, content re-hash), D1-B held-out gate over all 150k | |
-| Steps | batch 1 x accumulation 8, warmup 50, `max_minutes` 190, `max_steps` 3,000, T ladder 512 / 1,024 / 2,048, K ≤ 16 | |
+| Steps | 8 rows per step (batch 1 x accumulation 8, run as one row group), warmup 50, `max_minutes` 190 (pre-registered), `max_steps` 3,000, T ladder 512 / 1,024 / 2,048, K ≤ 16 | |
 
 **Held-out finding (new).** `train.heldout` finds a D1-B `soft_framing` fragment ("rather than relying on") in three
 MMLU aux_train records of the 150k set (natural text; the build's 6-gram guard does not flag them). They are excluded
@@ -25,14 +26,17 @@ and every drawn record is re-scanned.
 
 job-tkfaj probe: prefill 3,757 tok/s at 2,048 tokens (4,407 at 8,192), small call 0.117 s, pack call 0.60 s.
 Training rows (2,000-record sample of the 150k set, real tokenizer): 0.91 kept rows per record, mean 619 tokens, K 3.4.
-Expected step ≈ 8 rows x (3 x 619 / 3,757 + ~0.4 s of call overhead) ≈ 7 s, so 190 min ≈ 1,600 steps ≈ 13k rows ≈ 8 M
-tokens. Not a measurement: the ladder and the 10-step check measure it.
+Training step (MEASURED, job-tvuat, the ADOPT config on the same RWKV7 + cell): median 8.25 s per 8-row step, so
+190 min = 1,382 steps = 11,056 rows (about 6.8 M tokens at the 619-token mean). The ladder and the 10-step check
+re-measure it on this box: exit 26 below 600 steps, i.e. a step slower than 19 s (2.3x tvuat's) stops training before
+the evals are spent. Scoring phases are priced at job-tkfaj's readout rates; `chunked_lean` is not slower there (same
+algebra, fewer launches), so those prices are conservative.
 
 ## Phases (`job_params.json`; H100 batch $0.0495/min)
 
 The parent arm runs BEFORE training (review fix 1): its live rate guard measures this box's scoring speed, and
 `jobs.m2_first_cell.reprice` re-prices the child evals at that measured speed. A slow box stops (exit 15) after
-~2 h of parent scoring instead of after training.
+the parent scoring instead of after training.
 
 | Phase | Cap | Expected | Content | Exit |
 |---|---|---|---|---|
@@ -45,7 +49,7 @@ The parent arm runs BEFORE training (review fix 1): its live rate guard measures
 | evals | 205 | 155 | child: temperature fit (cohort calibration), dev card, G12 (full steer set), Index DEV subset + order diagnostic | 15 / 10 / 9 / 7 |
 | report | 5 | 4 | `summarize` -> `first_cell_result.json` (finalize validator); final checkpoint copied to `/output/ckpt` | 9 |
 
-Schedule 630 + reserve 7 = 637 min. **Worst case** (20 build + 2 x 637) x $0.0495 = **$64.05** (cap $70).
+Schedule 630 + reserve 7 = 637 min. **Worst case** (60 build + 2 x 637) x $0.0495 = **$66.03** (cap $70; build_timeout 60 per the launch lint, L-09).
 **Expected ≈ $26.1** (528 min incl. build). A G12 reject is a measured outcome (exit 0, reported).
 
 Measured-rate stops: setup preflights at the env rates (exit 15); the parent arm's live weighted rate guard and the
@@ -86,9 +90,11 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 ## Before submit
 
 1. Independent fresh-context review; merge to `agent-main`.
-2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 60)`; credit expiry 2026-10-27.
+2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 70)` (hard cap $70; worst case $66.03); credit expiry 2026-10-27.
 3. Env: `TOK_S=3757 CALL_S=0.117` (job-tkfaj probe). No `M2FC_*` variable: those are the runner's test-only path
-   overrides (`tests/test_m2_first_cell_shell.py` executes the runner end to end under bash on CPU); run.log names any
+   overrides (`tests/test_m2_first_cell_shell.py` executes the runner end to end under bash on CPU; it needs the image's
+   transformers 5.17.0, e.g. `CUDA_VISIBLE_DEVICES= .venv-gpu/Scripts/python -X utf8 -m pytest tests/test_m2_first_cell_shell.py`,
+   and Git's usr/bin/bash, not the bin/bash launcher); run.log names any
    that are set.
 4. `build_context.sh <sha> <out> [<tkfaj results.jsonl> [<clef-flash results.jsonl>]]`; pin the optional files' sha256
    in `job_params.json` `reference_results_sha256` to include those comparisons.
