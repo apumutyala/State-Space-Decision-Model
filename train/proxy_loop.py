@@ -368,6 +368,36 @@ def report(results: str, split_subset: str, out_dir: Path, clef: str | None, sto
     return out
 
 
+def long_rows_report(results: dict[str, str], long_ids: list[str], split_subset: str, out_dir: Path, B: int,
+                     candidate: str = "candidate", clef: str = "clef_flash") -> dict:
+    """A3 report-only: the rows whose cached model input exceeds REFERENCE_MAX_INPUT_TOKENS (16,384; the cache allows
+    32,768). Per comparator (name -> results file): its status counts on those rows, its index over the split with and
+    without them, and the difference (= what those rows are worth to it); plus the candidate vs Clef-flash paired diff
+    without them. Never part of the verdict."""
+    from harness.jsonl import read_jsonl_strict
+
+    long_set = set(long_ids)
+    rep = {"max_input_tokens": R.REFERENCE_MAX_INPUT_TOKENS, "n": len(long_set), "ids": sorted(long_set)}
+    if not long_set:
+        return rep
+    short = subset_file(split_subset, lambda i, cat: i not in long_set, out_dir / "subset_not_long_rows.json")
+    per = {}
+    for name, path in results.items():
+        st: dict[str, int] = {}
+        for r in read_jsonl_strict(path):
+            if r.get("run_id") in long_set:
+                st[str(r.get("status"))] = st.get(str(r.get("status")), 0) + 1
+        st["missing"] = len(long_set) - sum(st.values())
+        p_all = score(path, split_subset, B)["slice_index"]["index"]["point"]
+        p_short = score(path, short, B)["slice_index"]["index"]["point"]
+        per[name] = {"status_on_long_rows": st, "index_all": p_all, "index_without_long_rows": p_short,
+                     "long_rows_worth": p_all - p_short}
+    rep["comparators"] = per
+    if candidate in results and clef in results:
+        rep["candidate_vs_clef_flash_without_long_rows"] = compare(results[candidate], results[clef], short, B)["diff"]
+    return rep
+
+
 # ----------------------------------------------------------------------------------------------- runs
 def run_recipe(recipe: dict, cache: str, dev_rows: str, out: Path, split: str, subset: str, seed: int,
                clef: str | None, stock: str | None, B: int, budget: dict = TRAIN, teacher=None) -> dict:
@@ -389,6 +419,7 @@ def run_recipe(recipe: dict, cache: str, dev_rows: str, out: Path, split: str, s
     res = d / "results.jsonl"
     counts = write_results(res, rows, reqs, predict(head, reqs), f"proxy-{recipe['id']}")
     counts.update(ids=len(ids), rows=len(rows), cached=len({r.rid for r in reqs} & set(ids)))
+    long_rows = sorted(r.rid for r in reqs if r.rid in rows and (r.max_tokens or 0) > R.REFERENCE_MAX_INPUT_TOKENS)
     if stock == "from-cache":  # the stock Q9 readout recomputed from this split's cached option log-likelihoods
         stock = str(d / "stock_from_cache.jsonl")
         write_results(stock, rows, reqs, stock_predictions(reqs), "stock-from-cache")
@@ -398,6 +429,7 @@ def run_recipe(recipe: dict, cache: str, dev_rows: str, out: Path, split: str, s
            "results_sha256": _sha(res), "counts": counts, "rule": R.RULE_VERSION, "amendments": list(R.AMENDMENTS),
            "budget": budget, "budget_sha256": budget_sha(budget), "cache_identity": cache_identity(cache, [arm]),
            "teacher": teacher.identity if kd else None,
+           "long_rows": {"max_input_tokens": R.REFERENCE_MAX_INPUT_TOKENS, "ids": long_rows},
            "code_identity": code_identity(), "score": report(str(res), _subset_path(subset), d, clef, stock, B)}
     (d / "receipt.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     if final.exists():
@@ -573,6 +605,12 @@ def holdout(out: Path, cache: str, dev_rows: str, clef: str, B: int, recipe: str
     v["counts"] = c
     v["vs_clef_flash"] = recs[0]["score"][R.VERDICT_EDITION].get("vs_clef_flash")
     v["domain_columns"] = {col: recs[0]["score"][R.VERDICT_EDITION][col] for col in R.DOMAIN_COLUMNS}
+    d0 = out / f"{chosen}_s{R.HOLDOUT_SEEDS[0]}_holdout"
+    comps = {"candidate": str(d0 / "results.jsonl"), "stock_from_cache": str(d0 / "stock_from_cache.jsonl"),
+             "clef_flash": clef}
+    if all(Path(x).exists() for x in comps.values()):  # A3 report-only
+        v["long_rows"] = long_rows_report(comps, list((recs[0].get("long_rows") or {}).get("ids") or []),
+                                          _subset_path(R.HOLDOUT_SUBSET), d0, B)
     v["select_summary_sha256"] = _sha(sp)
     v["holdout_attempt_sha256"] = _sha(attempt_p)
     _write_atomic(out / "verdict.json", v)
@@ -580,14 +618,43 @@ def holdout(out: Path, cache: str, dev_rows: str, clef: str, B: int, recipe: str
 
 
 def stock_check(out: Path, cache: str, dev_rows: str, stock: str | None, B: int) -> dict:
-    """A1(d): the stock readout recomputed from the cached option log-likelihoods on SELECT vs job-5cmat."""
+    """A1(d) as amended by A3: the stock readout recomputed from the cached option log-likelihoods on SELECT vs
+    job-5cmat (``--stock``, pinned by sha256), compared only on the rows job-5cmat answered "ok"."""
+    from harness.jsonl import read_jsonl_strict
+
+    if not stock:
+        raise OutOfOrder("stock-check needs --stock (job-5cmat's results; A3 masks its failed rows)")
+    if _sha(stock) != R.STOCK_REFERENCE_SHA256:
+        raise OutOfOrder(f"--stock sha256 {_sha(stock)[:12]} != the pinned reference {R.STOCK_REFERENCE_SHA256[:12]} (A3(b))")
     reqs = load_split(cache, "stock", "select")
-    ids = set(subset_ids(R.SELECT_SUBSET))
+    ids = subset_ids(R.SELECT_SUBSET)
+    sub = _subset_path(R.SELECT_SUBSET)
     res = out / "stock_from_cache_select.jsonl"
-    write_results(res, _dev_rows(dev_rows, ids), reqs, stock_predictions(reqs), "stock-from-cache")
-    point = score(str(res), _subset_path(R.SELECT_SUBSET), B)["slice_index"]["index"]["point"]
-    rep = {**R.stock_check(point), "vs_job_5cmat": compare(str(res), stock, _subset_path(R.SELECT_SUBSET), B) if stock else None,
-           "results_sha256": _sha(res)}
+    write_results(res, _dev_rows(dev_rows, set(ids)), reqs, stock_predictions(reqs), "stock-from-cache")
+    unmasked = score(str(res), sub, B)["slice_index"]["index"]["point"]
+    cached, ref = read_jsonl_strict(res), read_jsonl_strict(stock)
+
+    def masked_file(name: str, statuses=None) -> tuple[Path, list[str]]:
+        try:
+            rows, m = R.stock_check_mask(cached, ref, ids, statuses)
+        except ValueError as e:
+            raise OutOfOrder(str(e)) from e
+        path = out / name
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            for r in rows:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        return path, m
+
+    resm, masked = masked_file("stock_from_cache_select_masked.jsonl")
+    point = score(str(resm), sub, B)["slice_index"]["index"]["point"]
+    by_status = {}
+    for st in sorted({r.get("status") for r in ref} - {R.STOCK_CHECK_REFERENCE_OK}):  # A3(e): each group's share
+        pth, m = masked_file(f"stock_from_cache_select_masked_{st}.jsonl", (st,))
+        by_status[str(st)] = {"n": len(m), "point_only_this_masked": score(str(pth), sub, B)["slice_index"]["index"]["point"]}
+    rep = {**R.stock_check(point, unmasked_point=unmasked, masked_ids=masked, n_rows=len(ids),
+                           masked_problems=R.masked_row_problems(cached, masked), by_status=by_status),
+           "vs_job_5cmat": compare(str(resm), stock, sub, B), "vs_job_5cmat_unmasked": compare(str(res), stock, sub, B),
+           "results_sha256": _sha(resm), "unmasked_results_sha256": _sha(res), "reference_sha256": _sha(stock)}
     (out / "stock_check.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
     return rep
 
@@ -597,7 +664,8 @@ def require_stock_check(out: Path) -> None:
     if not p.exists():
         raise OutOfOrder("run `stock-check` first (A1(d))")
     if not json.loads(p.read_text(encoding="utf-8"))["ok"]:
-        raise OutOfOrder("stock-check failed (|delta| > STOCK_CHECK_TOL): the loop is no-measurement (A1(d))")
+        raise OutOfOrder("stock-check failed (|masked delta| > STOCK_CHECK_TOL or > 5% rows masked): the loop "
+                         "is no-measurement (A1(d), A3)")
 
 
 def _load_teacher(path: str):

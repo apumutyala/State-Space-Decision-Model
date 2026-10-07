@@ -86,12 +86,10 @@ def ctx(tmp_path_factory):
 
     if D.missing_inputs():
         pytest.skip(f"local private inputs absent: {D.missing_inputs()}")
-    from scripts.m2_e2e_dryrun import ensure_kit
-
-    try:
-        kit = Path(ensure_kit()["kit_path"]).parent
-    except ImportError:
-        pytest.skip("Decision Index kit not importable")
+    try:  # a git clone: guard_ready checks the kit's commit (an installed copy has no .git -> exit 30)
+        kit = D.kit_clone_dir()
+    except ImportError as e:
+        pytest.skip(f"Decision Index kit clone not available: {e}")
     t = tmp_path_factory.mktemp("m2fc-shell")
     data = t / "data"  # the build context's data/ layout (jobs/m2_first_cell/build_context.sh)
     _link_tree(D.RECORDS.parent, data / "m2", ["records.jsonl.gz"])
@@ -294,7 +292,7 @@ def test_sha256_manifests_are_lf_in_checkout_and_archive():
     build_context.sh's ``git archive`` would ship them CRLF to the box. .gitattributes pins *.sha256 to LF."""
     git = shutil.which("git")
     if not git or not (ROOT / ".git").exists():
-        pytest.skip("not a git checkout")
+        pytest.skip("needs a git checkout")
     files = subprocess.run([git, "ls-files", "*.sha256"], cwd=ROOT, capture_output=True, text=True).stdout.split()
     assert {"jobs/rwkv7/records.sha256", "jobs/rwkv7/snapshot.sha256", "jobs/clef_baseline/data.sha256"} <= set(files)
     for f in files:

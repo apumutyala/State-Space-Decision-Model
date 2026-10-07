@@ -86,7 +86,7 @@ class TrainConfig:
     controlsafe: dict = field(default_factory=dict)
     # ---- execution strategy (jobs/cell_step_profile; defaults = the original path). The same math, so they are left
     # out of the config hash (a checkpoint resumes under either setting); equivalence: tests/test_cell_perf.py.
-    #: per-block activation checkpointing of the RWKV-7 backbone that keeps the cache fork (heads/act_ckpt.py)
+    #: per-block activation checkpointing that keeps the cache fork (heads/act_ckpt.py: RWKV-7, Qwen3.5 / Q9-AF)
     act_ckpt: bool = False
     #: rows per backbone call within one optimiser step (1 = one call per micro-batch row, as before). > 1: the step's
     #: batch_size x grad_accum rows are sorted by length (longest first) and run in groups of up to row_batch rows, each
@@ -176,7 +176,7 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     from heads import act_ckpt
 
     if cfg.act_ckpt:
-        act_ckpt.enable_block_checkpointing(model.backbone.model)  # raises unless the backbone is the vendored RWKV-7
+        act_ckpt.enable_block_checkpointing(model.backbone.model)  # RWKV-7 or Qwen3.5 / Q9-AF; raises otherwise
     elif act_ckpt.is_enabled(model.backbone.model):  # a backbone reused across Trainers (run_cell ladder)
         act_ckpt.disable_block_checkpointing(model.backbone.model)
     if cfg.row_batch < 1:
