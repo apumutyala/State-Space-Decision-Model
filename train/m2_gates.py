@@ -782,8 +782,8 @@ def main(argv=None) -> int:
     from jobs.m2_pilot.guard_ready import GuardNotReady, load_ready_guard
     from train.cohort import Cohort, CohortLeak
     from train.evalcard import run_card
-    from train.run_cell import (attach_teacher, cell_items, load_cell_data, load_parent_backbone, parent_encoder,
-                                train_config)
+    from train.run_cell import (attach_order_views, attach_teacher, cell_items, load_cell_data, load_parent_backbone,
+                                parent_encoder, train_config)
     from train.trainer import Trainer, with_execution
 
     cell = json.loads(Path(a.cell).read_text(encoding="utf-8"))
@@ -812,6 +812,9 @@ def main(argv=None) -> int:
     train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]))
                    if len(x.row.ids) <= t_max]
     try:
+        order_views = attach_order_views(cfg, train_items, train_recs, enc, guard, t_max)
+        if order_views is not None and order_views["with_view"] == 0:
+            raise ValueError("no training item passed the order-view eligibility and T_max filters")
         attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)  # KD cells only; None otherwise
     except ValueError as e:
         print(f"teacher: {e}", file=sys.stderr)
