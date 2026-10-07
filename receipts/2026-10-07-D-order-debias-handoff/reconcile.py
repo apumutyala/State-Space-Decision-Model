@@ -29,6 +29,11 @@ def main():
     saved = json.loads((receipt / "analysis.json").read_text(encoding="utf-8"))
     rerun = json.loads(rerun_path.read_text(encoding="utf-8"))
     assert saved == rerun, "Original analysis did not reproduce exactly"
+    assert digest(rerun_path) == digest(receipt / "analysis.json"), "Raw re-score bytes changed"
+    # The original Windows script writes CRLF. Preserve those raw bytes outside
+    # git, and save the review copy as LF so git's whitespace check remains useful.
+    Path(output_path).with_name("recomputed.json").write_text(
+        rerun_path.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
     ix = json.loads(units_path.read_text(encoding="utf-8"))
     with gzip.open(rows_path, "rt", encoding="utf-8") as f:
         rows = [json.loads(line) for line in f]
@@ -91,7 +96,8 @@ def main():
         "input_files": {str(p): {"sha256": digest(p), "bytes": p.stat().st_size}
                         for p in (units_path, rows_path, receipt / "analysis.py",
                                   receipt / "analysis.json", receipt / "position_bias.json", rerun_path)},
-        "validation": {"analysis_exact_json_equality": True, "position_bias_exact_json_equality": True,
+        "validation": {"analysis_exact_json_equality": True, "raw_analysis_byte_equality": True,
+                       "position_bias_exact_json_equality": True,
                        "diagnostic_selection_and_schema": True, "counterexamples": True},
         "source_receipt_seed": 0, "source_receipt_bootstraps": 2000,
         "rows": len(rows), "diagnostic_rows": len(selected),
@@ -114,7 +120,7 @@ def main():
             "position_only": "requires explicit presentation independent of continuation IDs or balanced neutral controls",
             "status": "not implemented or launched"},
     }
-    Path(output_path).write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
+    Path(output_path).write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({k: out[k] for k in ("validation", "by_k", "forward_request_latency_all",
                                        "whole_index_stage_seconds_including_order_diag",
                                        "pricing_at_recorded_rate_not_new_launch_quote")}, indent=2))

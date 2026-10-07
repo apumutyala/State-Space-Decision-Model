@@ -25,13 +25,14 @@
       "sha256": "1b03e42e490f59107daf90a3a0d4aad62c60ff3db21d915207aea57a0117eeb1",
       "bytes": 2486
     },
-    "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\order-debias-handoff\\receipts\\2026-10-07-D-order-debias-handoff\\recomputed.json": {
+    "C:\\Users\\apumu\\research\\CHLabs\\review-artifacts\\order-debias-handoff-20261007\\recomputed-original-bytes.json": {
       "sha256": "347eca08ba18c1c6ae8891c4c1d2cdb535f92777a2f70e38fb72de4250d492d5",
       "bytes": 10663
     }
   },
   "validation": {
     "analysis_exact_json_equality": true,
+    "raw_analysis_byte_equality": true,
     "position_bias_exact_json_equality": true,
     "diagnostic_selection_and_schema": true,
     "counterexamples": true

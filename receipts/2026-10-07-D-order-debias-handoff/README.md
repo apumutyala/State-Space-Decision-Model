@@ -13,7 +13,7 @@ The negative calibration result reproduces exactly. Probability averaging remain
 
 ## Reproduced result
 
-`recomputed.json` is byte-identical to the saved `analysis.json` (SHA256 `347eca08ba18c1c6ae8891c4c1d2cdb535f92777a2f70e38fb72de4250d492d5`). `reconcile.py` also recomputes `position_bias.json`, verifies the exact diagnostic row/question selection and stored outcome schema, and checks the interpretation counterexamples below.
+The raw re-score output, preserved outside git as `recomputed-original-bytes.json` in the evidence directory below, is byte-identical to the saved `analysis.json` (SHA256 `347eca08ba18c1c6ae8891c4c1d2cdb535f92777a2f70e38fb72de4250d492d5`). The committed `recomputed.json` has the same parsed JSON with LF line endings. `reconcile.py` also recomputes `position_bias.json`, verifies the exact diagnostic row/question selection and stored outcome schema, and checks the interpretation counterexamples below.
 
 | Variant | Index (0.2.1 DEV subset) | Paired delta [95% CI] | Harness board-protocol ECE |
 |---|---:|---:|---:|
@@ -61,8 +61,8 @@ $orderPython='C:/Users/apumu/research/CHLabs/ssdm-wt/m0-harness/.venv/Scripts/py
 $orderOriginal='C:/Users/apumu/research/CHLabs/ssdm-wt/order-debias'
 $orderEvidence='C:/Users/apumu/research/CHLabs/review-artifacts/order-debias-handoff-20261007'
 $orderReceipt='C:/Users/apumu/research/CHLabs/ssdm-wt/order-debias-handoff/receipts/2026-10-07-D-order-debias-handoff'
-& $orderPython -X utf8 -I "$orderOriginal/receipts/2026-10-07-D-order-debias/analysis.py" $orderOriginal $orderEvidence "$orderEvidence/index-rows.jsonl.gz" "$orderReceipt/recomputed.json"
-& $orderPython -X utf8 -I "$orderReceipt/reconcile.py" $orderOriginal "$orderEvidence/units-index.json" "$orderEvidence/index-rows.jsonl.gz" "$orderReceipt/recomputed.json" "$orderReceipt/reconciliation.json"
+& $orderPython -X utf8 -I "$orderOriginal/receipts/2026-10-07-D-order-debias/analysis.py" $orderOriginal $orderEvidence "$orderEvidence/index-rows.jsonl.gz" "$orderEvidence/recomputed-original-bytes.json"
+& $orderPython -X utf8 -I "$orderReceipt/reconcile.py" $orderOriginal "$orderEvidence/units-index.json" "$orderEvidence/index-rows.jsonl.gz" "$orderEvidence/recomputed-original-bytes.json" "$orderReceipt/reconciliation.json"
 ```
 
 Both commands passed. `python -X utf8 -m pytest -q tests/test_jobs_lint.py` passed (70 tests, 3.25 s); `git diff --check` passed. The follow-up does not alter serving/training behavior; its executable checks are the exact receipt recomputation and raw diagnostic/schema assertions, rather than model tests.
