@@ -197,8 +197,9 @@ def main(argv=None) -> int:
               + shim + ["train.m2_gates", "--cell", str(work / "cell.json"), "--ckpt-dir", str(ck / "cell"),
                         "--model-dir", str(snap), "--records", str(RECORDS), "--train-dir", str(TRAIN_DIR),
                         "--guard-readiness", ready, "--parent-arm", str(arm), "--parent-arm-sha256", arm_sha,
+                        "--anchor-arm", str(arm), "--anchor-arm-sha256", arm_sha,
                         "--index-rows", str(rows), "--out", str(work / "report.json"), "--stage", "g12+index",
-                        "--progress-dir", str(logs), "--device", "cpu", "--n-boot", "200"], ok=(0, 40)):
+                        "--progress-dir", str(logs), "--device", "cpu", "--n-boot", "200"], ok=(0, 40, 43, 44, 45)):
         return finish(out, phases, t0, None)
     res = work / "first_cell_result.json"
     go("report", shim + ["jobs.m2_first_cell.summarize", "--cell", str(work / "cell.json"), "--report",
