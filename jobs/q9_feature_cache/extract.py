@@ -175,7 +175,7 @@ def chunk_size(cached_len: int, opt_chunk: int) -> int:
 
 @torch.no_grad()
 def extract_request(text, w_out: torch.Tensor, rows: Sequence[LayoutRow], opt_chunk: int = 32, bank_chunks: int = 0,
-                    pad_id: int = 0) -> tuple[list[dict], dict]:
+                    pad_id: int = 0, fork_dtype: torch.dtype = torch.bfloat16) -> tuple[list[dict], dict]:
     """Features of every row of ONE request (rows share the schema + state prefix). -> (per-question dicts, banks)."""
     dev = w_out.device
     seqs = [r.ids for r in rows]
@@ -191,7 +191,7 @@ def extract_request(text, w_out: torch.Tensor, rows: Sequence[LayoutRow], opt_ch
         ns = len(suf)
         conts = r.continuations
         k_all = len(conts)
-        fork = torch.empty((k_all, hp.shape[-1]), dtype=torch.bfloat16, device=dev)
+        fork = torch.empty((k_all, hp.shape[-1]), dtype=fork_dtype, device=dev)  # bf16 stored; fp32 for the self-check
         lm_lp = torch.empty(k_all, dtype=torch.float32, device=dev)
         hs = None
         two = two_stage(ns, k_all)
@@ -216,7 +216,7 @@ def extract_request(text, w_out: torch.Tensor, rows: Sequence[LayoutRow], opt_ch
             if hs is None:
                 hs = h[0, :ns]
             last = torch.tensor([off + len(x) - 1 for x in part], device=dev)
-            fork[c0:c0 + c] = h[torch.arange(c, device=dev), last].to(torch.bfloat16)
+            fork[c0:c0 + c] = h[torch.arange(c, device=dev), last].to(fork_dtype)
             # LM log-likelihood of each continuation: token t is predicted by the feature before it (position
             # off+t-1; for t = 0 in two-stage mode that is the suffix's last feature)
             kk = torch.tensor([j for j, x in enumerate(part) for _ in x], device=dev)
@@ -253,6 +253,207 @@ def extract_request(text, w_out: torch.Tensor, rows: Sequence[LayoutRow], opt_ch
             q["bank_key"] = key
         out.append(q)
     return out, banks
+
+
+@torch.no_grad()
+def plain_forward(text, w_out: torch.Tensor, row: LayoutRow, k: int) -> tuple[torch.Tensor, float, torch.Tensor]:
+    """A plain full-sequence forward over ``row.ids + continuation_k`` (no cache, no fork): (fork feature fp32 on CPU,
+    summed LM log-likelihood of the continuation, the row's own hidden states h[:T] fp32 on CPU)."""
+    dev = w_out.device
+    seq = row.ids + row.continuations[k]
+    h = text(input_ids=torch.tensor([seq], device=dev), use_cache=False).last_hidden_state[0]
+    lp = torch.log_softmax((h[len(row.ids) - 1: len(seq) - 1] @ w_out.T).float(), -1)
+    score = float(lp.gather(-1, torch.tensor(row.continuations[k], device=dev).unsqueeze(-1)).sum())
+    return h[-1].float().cpu(), score, h[: len(row.ids)].float().cpu()
+
+
+class fp32_weights:
+    """Context: every parameter and buffer of ``text`` in fp32, restored EXACTLY to its own dtype on exit (bf16 -> fp32
+    -> bf16 is lossless; parameters a bf16 load keeps in fp32 stay fp32), so production numerics are untouched."""
+
+    def __init__(self, text):
+        self.text = text
+
+    def __enter__(self):
+        self.dtypes = {n: t.dtype for n, t in list(self.text.named_parameters()) + list(self.text.named_buffers())}
+        try:
+            for _, t in list(self.text.named_parameters()) + list(self.text.named_buffers()):
+                if t.is_floating_point():
+                    t.data = t.data.float()
+        except BaseException:
+            self.__exit__()
+            raise
+        return self.text
+
+    def __exit__(self, *exc):
+        for n, t in list(self.text.named_parameters()) + list(self.text.named_buffers()):
+            t.data = t.data.to(self.dtypes[n])
+        return False
+
+
+class KernelSwapError(RuntimeError):
+    """The pure-torch reference kernels could not be put in place: the fp32 'truth' would not be IEEE fp32."""
+
+
+def _impl_of(f) -> str:
+    """Module of the implementation a transformers hub/fla kernel wrapper actually calls (its ``implementation``
+    closure variable; the function itself when it is not a wrapper)."""
+    import inspect
+
+    try:
+        impl = inspect.getclosurevars(f).nonlocals.get("implementation", f)
+    except TypeError:
+        impl = f
+    return f"{getattr(impl, '__module__', '?')}.{getattr(impl, '__name__', '?')}"
+
+
+class reference_kernels:
+    """Context: the Qwen3.5 GDN layers run their PURE-TORCH reference functions (the ``__wrapped__`` originals of
+    transformers' hub/fla kernel wrappers: chunk / recurrent gated delta rule, causal conv1d) and TF32 is off for
+    matmuls and cuDNN, so an fp32 forward is an IEEE fp32 truth on GPU as on CPU. fla's fp32 chunk kernel uses TF32
+    (``SOLVE_TRIL_DOT_PRECISION = 'tf32'``, fla 0.5.2), which would make the "truth" itself ~1e-3 noisy.
+
+    FAIL-CLOSED (review B1): every one of ``NAMES`` must exist, be a wrapper whose ``__wrapped__`` is defined in the
+    Qwen3.5 modeling module itself, and be swapped; otherwise ``KernelSwapError``. ``record`` names the implementation
+    each name resolved to before the swap (e.g. fla on the GPU image) and during it."""
+
+    NAMES = ("torch_chunk_gated_delta_rule", "torch_recurrent_gated_delta_rule", "causal_conv1d_fn",
+             "causal_conv1d_update")
+
+    def __enter__(self):
+        import transformers.models.qwen3_5.modeling_qwen3_5 as M
+
+        self.M, self.saved, self.record = M, {}, {}
+        for n in self.NAMES:
+            f = getattr(M, n, None)
+            ref = getattr(f, "__wrapped__", None)
+            if f is None or ref is None or getattr(ref, "__module__", None) != M.__name__:
+                for m, g in self.saved.items():
+                    setattr(M, m, g)
+                raise KernelSwapError(f"{n}: no pure-torch reference to swap in (got {f!r}, __wrapped__={ref!r})")
+            self.saved[n] = f
+            self.record[n] = {"production": _impl_of(f), "truth": f"{ref.__module__}.{ref.__name__}"}
+            setattr(M, n, ref)
+        if set(self.saved) != set(self.NAMES):
+            raise KernelSwapError(f"swapped {sorted(self.saved)} != {list(self.NAMES)}")
+        self.tf32 = (torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.allow_tf32)
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
+        return self
+
+    def __exit__(self, *exc):
+        for n, f in self.saved.items():
+            setattr(self.M, n, f)
+        torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.allow_tf32 = self.tf32
+        return False
+
+
+def _rel(a: torch.Tensor, b: torch.Tensor) -> float:
+    return float((a.float() - b.float()).norm() / b.float().norm().clamp_min(1e-6))
+
+
+def _free():
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+
+def check_keys(row: LayoutRow) -> list[int]:
+    """Options checked per row: {0, K//2, K-1} (review S1)."""
+    return sorted({0, row.n_options // 2, row.n_options - 1})
+
+
+@torch.no_grad()
+def selfcheck(text, w_out: torch.Tensor, requests, opt_chunk: int, sc: dict) -> tuple[bool, list[dict], dict]:
+    """Numerics gate of the cached-fork extractor against an fp32 TRUTH (LESSONS L-06 / L-28). -> (ok, records, info).
+
+    Every row of each request (its first two rows, which share the prefix) and options {0, K//2, K-1} of each row:
+      production   the cached-fork features in the run's dtype (``extract_request``) and a plain full-sequence forward
+                   in the same dtype (``plain_forward``): two equally valid computations whose difference is rounding
+      truth        a plain forward with every weight in fp32 and the pure-torch reference kernels, TF32 off
+                   (``fp32_weights`` + ``reference_kernels``, fail-closed; weights restored exactly afterwards), plus
+                   the cached-fork path under the same conditions with an fp32 fork feature (the LOGIC check)
+      fla fp32     the cached fork and the plain forward with fp32 weights but the PRODUCTION kernels (fla on GPU,
+                   TF32 inside): the only pass that runs fla's continuation kernel at fp32 precision (review S2)
+    Pass iff, for every checked row / option:
+      logic   rel(fork_cache_fp32, truth) <= logic_fork_max;  |lm_cache_fp32 - truth| <= logic_lm_per_token x n;
+              per row: rel(q_end / q_pre / e of the fp32 extraction, the same quantities from the plain fp32 hidden
+              states) <= feature_rel_max (they are stored in bf16: ~2e-3 floor)
+      cache   rel(fork_cache, truth) <= ratio x rel(fork_plain, truth) + fork_abs;
+              |lm_cache - truth| <= ratio x |lm_plain - truth| + lm_abs_per_token x n   (the LM half is in practice
+              floor-driven: on the exact path the LM ratio reached 2.3 on Qwen3.5-0.8B and passes on the floor)
+      fla     rel(fork_fla32, truth) <= fla_ratio x rel(fork_plain_fla32, truth) + fla_fork_abs. GATING only when
+              ``sc["fla_gate"]`` is true; on the first launch it is RECORD-ONLY (its noise on the 9B is unmeasured).
+    Every record carries its ratios and the bounds applied (review S3)."""
+    prod = []
+    for rows in requests:
+        rows = list(rows)[:2]
+        feats, _ = extract_request(text, w_out, rows, opt_chunk)
+        plains = {(i, k): plain_forward(text, w_out, r, k)[:2] for i, r in enumerate(rows) for k in check_keys(r)}
+        prod.append((rows, feats, plains))
+    _free()
+    out, info = [], {"bounds": {k: sc[k] for k in ("ratio", "fork_abs", "lm_abs_per_token", "logic_fork_max",
+                                                     "logic_lm_per_token", "feature_rel_max", "fla_ratio", "fla_fork_abs",
+                                                     "fla_gate")}}
+    with fp32_weights(text):
+        w32 = w_out.float()
+        fla = []
+        for rows, _, _ in prod:  # fla fp32 pass: production kernels, fp32 weights (record-only unless fla_gate)
+            f_fla, _ = extract_request(text, w32, rows, opt_chunk, fork_dtype=torch.float32)
+            fla.append((f_fla, {(i, k): plain_forward(text, w32, r, k)[:2] for i, r in enumerate(rows)
+                                for k in check_keys(r)}))
+        _free()
+        with reference_kernels() as rk:
+            info["kernels"] = rk.record
+            for (rows, f16s, plains), (f_fla, p_fla) in zip(prod, fla):
+                f32s, _ = extract_request(text, w32, rows, opt_chunk, fork_dtype=torch.float32)
+                for i, r in enumerate(rows):
+                    hrow = None
+                    for k in check_keys(r):
+                        tf, tl, h = plain_forward(text, w32, r, k)
+                        hrow = h if hrow is None else hrow
+                        pf, pl = plains[(i, k)]
+                        ff, fl = p_fla[(i, k)]
+                        n = len(r.continuations[k])
+                        f16, f32, fla32 = f16s[i], f32s[i], f_fla[i]
+                        rec = {"row": i, "k": k, "K": r.n_options, "n_cont": n, "T": len(r.ids),
+                               "fork_rel_cache_vs_plain": _rel(f16["fork"][k], pf),  # the v1 metric, for comparison
+                               "fork_rel_cache_vs_truth": _rel(f16["fork"][k], tf), "fork_rel_plain_vs_truth": _rel(pf, tf),
+                               "fork_rel_cache32_vs_truth": _rel(f32["fork"][k], tf),
+                               "fork_rel_fla32_vs_truth": _rel(fla32["fork"][k], tf),
+                               "fork_rel_plainfla32_vs_truth": _rel(ff, tf),
+                               "lm_cache_vs_truth": abs(float(f16["lm_lp"][k]) - tl), "lm_plain_vs_truth": abs(pl - tl),
+                               "lm_cache32_vs_truth": abs(float(f32["lm_lp"][k]) - tl),
+                               "lm_fla32_vs_truth": abs(float(fla32["lm_lp"][k]) - tl),
+                               "lm_plainfla32_vs_truth": abs(fl - tl)}
+                        rec["fork_ratio"] = rec["fork_rel_cache_vs_truth"] / max(rec["fork_rel_plain_vs_truth"], 1e-12)
+                        rec["lm_ratio"] = rec["lm_cache_vs_truth"] / max(rec["lm_plain_vs_truth"], 1e-12)
+                        rec["fla_fork_ratio"] = rec["fork_rel_fla32_vs_truth"] / max(rec["fork_rel_plainfla32_vs_truth"],
+                                                                                     1e-12)
+                        rec["bound_fork_cache"] = sc["ratio"] * rec["fork_rel_plain_vs_truth"] + sc["fork_abs"]
+                        rec["bound_lm_cache"] = sc["ratio"] * rec["lm_plain_vs_truth"] + sc["lm_abs_per_token"] * n
+                        rec["bound_fork_fla"] = sc["fla_ratio"] * rec["fork_rel_plainfla32_vs_truth"] + sc["fla_fork_abs"]
+                        rec["logic_ok"] = (rec["fork_rel_cache32_vs_truth"] <= sc["logic_fork_max"]
+                                           and rec["lm_cache32_vs_truth"] <= sc["logic_lm_per_token"] * n)
+                        rec["cache_ok"] = (rec["fork_rel_cache_vs_truth"] <= rec["bound_fork_cache"]
+                                           and rec["lm_cache_vs_truth"] <= rec["bound_lm_cache"])
+                        rec["fla_ok"] = rec["fork_rel_fla32_vs_truth"] <= rec["bound_fork_fla"]
+                        out.append(rec)
+                    # row features: q_end / q_pre / e of the fp32 extraction vs the plain fp32 hidden states
+                    f32 = f32s[i]
+                    e_ref = torch.stack([hrow[a:b].mean(0) for a, b in r.option_spans])
+                    feat = {"row": i, "k": None, "q_end_rel": _rel(f32["q_end"], hrow[len(r.ids) - 1]),
+                            "q_pre_rel": _rel(f32["q_pre"], hrow[r.field_span[0]:r.field_span[1]].mean(0)),
+                            "e_rel": _rel(f32["e"], e_ref), "bound_feature": sc["feature_rel_max"]}
+                    feat["logic_ok"] = max(feat["q_end_rel"], feat["q_pre_rel"], feat["e_rel"]) <= sc["feature_rel_max"]
+                    feat["cache_ok"] = feat["fla_ok"] = True
+                    out.append(feat)
+    del w32
+    _free()
+    gate_fla = bool(sc.get("fla_gate"))
+    info["fla_gating"] = gate_fla
+    info["fla_ok_all"] = all(r["fla_ok"] for r in out)
+    ok = bool(out) and all(r["logic_ok"] and r["cache_ok"] and (r["fla_ok"] or not gate_fla) for r in out)
+    return ok, out, info
 
 
 @torch.no_grad()

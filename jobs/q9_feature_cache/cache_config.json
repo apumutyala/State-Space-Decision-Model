@@ -32,15 +32,37 @@
   "holdout": "jobs/q9_feature_cache/dev_holdout.json"
  },
  "selfcheck": {
-  "max_fork_rel_diff": 0.03,
-  "max_lm_abs_diff": 0.15,
-  "rows": 3
+  "_comment": "v2 (LESSONS L-28): against an fp32 TRUTH (fp32 weights, pure-torch reference GDN/conv kernels, TF32 off), not bf16-vs-bf16 absolute bounds. logic: the cached fork in fp32 (fp32 fork feature) must equal the plain fp32 forward: logic_fork_max / logic_lm_per_token sit far below every injected fork bug measured on Qwen3.5-0.8B (CPU) and far above the exact path's fp32 floor. cache: the production (bf16) cached fork may be no further from the truth than ratio x the plain production forward + an absolute floor (0.8B measured cache/plain distance-to-truth ratio 0.86-1.10 for the fork feature). receipts/2026-10-07-D-q9-cache-fork-selfcheck/. v3 (PR #111 review): every row of each request's first two rows and options {0, K//2, K-1}; q_end / q_pre / e of the fp32 extraction vs the plain fp32 hidden states (feature_rel_max 5e-3; bf16 storage floor ~2e-3); an fla fp32 pass (production kernels, fp32 weights) RECORD-ONLY on the first launch (fla_gate false; bound fla_ratio x plain + fla_fork_abs, fla's TF32 noise on the 9B is unmeasured); per-record ratios and applied bounds in summary selfcheck records.",
+  "rows": 3,
+  "ratio": 1.5,
+  "fork_abs": 0.005,
+  "lm_abs_per_token": 0.02,
+  "logic_fork_max": 0.001,
+  "logic_lm_per_token": 0.001,
+  "feature_rel_max": 0.005,
+  "fla_ratio": 1.5,
+  "fla_fork_abs": 0.005,
+  "fla_gate": false
  },
  "arms": {
-  "stock": {"layers": [], "e5": false, "train_rows": 20000},
-  "conv1": {"layers": [23], "e5": false, "train_rows": 5000,
-            "gdn_sha256": "8a50c36ca010e54000d246f76f4ba93c4c0948fd2f4e3d0d35f4fcb06f0f0724",
-            "gdn_source": "job-5cmat artifact art-2bybh member gdn_converted.pt (layer 23, probe9b @ 24f164e)"},
-  "e5": {"layers": [], "e5": true, "train_rows": 5000}
+  "stock": {
+   "layers": [],
+   "e5": false,
+   "train_rows": 20000
+  },
+  "conv1": {
+   "layers": [
+    23
+   ],
+   "e5": false,
+   "train_rows": 5000,
+   "gdn_sha256": "8a50c36ca010e54000d246f76f4ba93c4c0948fd2f4e3d0d35f4fcb06f0f0724",
+   "gdn_source": "job-5cmat artifact art-2bybh member gdn_converted.pt (layer 23, probe9b @ 24f164e)"
+  },
+  "e5": {
+   "layers": [],
+   "e5": true,
+   "train_rows": 5000
+  }
  }
 }

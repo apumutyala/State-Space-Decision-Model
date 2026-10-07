@@ -94,7 +94,13 @@ Estimated output (`cache.estimate_bytes`, a bf16 upper bound from the same plan;
 2. **guard** (`*_train` parts): content index; exit 30/31/32.
 3. **heldout** (`*_train` parts): D1-B scan of the whole set; exit 33.
 4. **arm_<arm>**, under the rate guard:
-   - 2: numerics self-check. The part's first 3 requests are recomputed with plain full-sequence forwards; fork rel diff must be ≤ 0.03 and LM score abs diff ≤ 0.15 in bf16.
+   - 2: numerics self-check v3 (`extract.selfcheck`, LESSONS L-28). It covers every row of the part's first 3 requests (the first two rows of each, which share the prefix) and options {0, K//2, K-1}, compared against an fp32 truth. The truth uses fp32 weights and the pure-torch reference GDN and conv kernels with TF32 off. That swap fails closed: all 4 kernels must be swapped, and the implementation that actually ran is recorded. Weights are restored bit-exactly afterwards.
+     - **Logic:** the cached fork computed in fp32 must equal the plain fp32 forward: fork rel ≤ 1e-3, LM ≤ 1e-3 per continuation token. q_end / q_pre / e must equal the plain fp32 hidden states within 5e-3.
+     - **Cache:** the production bf16 cached fork may be no further from the truth than 1.5× the plain bf16 forward, plus 0.005 (fork) and 0.02 per token (LM).
+     - **fla fp32 pass:** the cached fork with fp32 weights and the production kernels (fla, TF32 inside), bound 1.5× the plain fla-fp32 forward + 5e-3. **On this first launch it is RECORD-ONLY (`fla_gate: false`)**, because fla's fp32 noise on the 9B is unmeasured. It becomes a gate once that receipt exists.
+     - Every record carries its ratios and the applied bounds (`summary_*.json` `selfcheck` / `selfcheck_info`).
+     - An OOM in the fp32 pass, or a kernel that cannot be swapped, exits 2 with a stated reason. `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` is set and the CUDA cache is emptied between passes.
+     - The v1 check compared two bf16 computations against unmeasured bounds (0.03 / 0.15). It rejected a correct path on the 9B (job-8vjve, job-b7d3n) and could not detect an off-by-one KV bug. Receipt: `receipts/2026-10-07-D-q9-cache-fork-selfcheck/`.
    - 10: data identity.
    - 15: too slow.
    - 16: output over 4.5 GiB (estimate before the model loads, or bytes written).

@@ -299,7 +299,7 @@ def main(argv=None) -> int:
     # ---------------------------------------------------------------- model + numerics self-check
     import torch
 
-    from .extract import ShardWriter, extract_request, lex_vocab, load, option_tokens, recompute_check, sha256_file
+    from .extract import ShardWriter, extract_request, lex_vocab, load, option_tokens, selfcheck, sha256_file
 
     try:
         text, w_out, prov = load(a.model_dir, a.device, a.dtype, a.gdn_ckpt, arm.get("gdn_sha256"), arm["layers"])
@@ -308,16 +308,23 @@ def main(argv=None) -> int:
     summary["provenance"] = prov
     torch.manual_seed(cfg["seed"])
     sc = cfg["selfcheck"]
-    checks = []
-    for u in [u for u in units[splits[0]] if u["rows"]][: sc["rows"]]:
-        if not u["rows"]:
-            continue
-        feats, _ = extract_request(text, w_out, u["rows"], cfg["opt_chunk"])
-        checks.append(recompute_check(text, w_out, u["rows"][0], feats[0], 0))
+    from .extract import KernelSwapError
+
+    try:
+        ok, checks, info = selfcheck(text, w_out, [u["rows"] for u in units[splits[0]] if u["rows"]][: sc["rows"]],
+                                     cfg["opt_chunk"], sc)
+    except torch.cuda.OutOfMemoryError as e:  # fail closed with a reason (review S4)
+        summary["selfcheck"] = []
+        return done(EXIT["numerics"], f"self-check OOM (fp32 truth pass): {str(e)[:300]}")
+    except KernelSwapError as e:  # the fp32 truth would not be IEEE fp32 (review B1)
+        summary["selfcheck"] = []
+        return done(EXIT["numerics"], f"self-check reference kernels: {e}")
     summary["selfcheck"] = checks
-    if not checks or any(c["fork_rel_diff"] > sc["max_fork_rel_diff"] or c["lm_abs_diff"] > sc["max_lm_abs_diff"]
-                         for c in checks):
-        return done(EXIT["numerics"], f"self-check failed: {checks}")
+    summary["selfcheck_info"] = info
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    if not ok:
+        bad = [r for r in checks if not (r["logic_ok"] and r["cache_ok"])]
+        return done(EXIT["numerics"], f"self-check failed on {len(bad)} of {len(checks)} records: {bad[:3]}")
     # ---------------------------------------------------------------- extraction
     rich_left = cfg["rich_rows"]
     timing = {}
