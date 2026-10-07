@@ -6,9 +6,13 @@ forward, no backward through the backbone, no LoRA. On a 9B backbone the cache c
 training items (the parent-arm readout rate), and each head iteration then runs in seconds to minutes on one GPU or
 on CPU.
 
-Exactness (tested, ``tests/test_premortem_probes.py``): for LoRA rank 0, ``train_head_cached`` reproduces
-``train.trainer.Trainer`` (``batch_size=1``) step for step, with the same data order, optimiser, scheduler and
-clipping. So every head-only recipe decision (loss arm, label smoothing, Brier/RPS weights, head type and width,
+Exactness (tested, ``tests/test_premortem_probes.py`` P5, fp32 AND bf16, integrator and fork heads): for LoRA rank 0,
+``train_head_cached`` reproduces ``train.trainer.Trainer`` (``batch_size=1``) step for step, with the same data order,
+optimiser, scheduler, clipping and precision. Precision: with ``cfg.bf16`` the Trainer runs the model forward under bf16
+autocast (run_cell / m2_gates / cell_step pass ``bf16=cuda``); the proxy then caches the features AND runs the head
+under the same autocast, so the cached inputs and the head update match it (without this, head parameters diverged by
+0.018-0.035 after 8 steps; independent review of PR #91). The cache records its precision and fork mode, and
+``train_head_cached`` refuses a config that does not match them, or that requires a guard it was not given. So every head-only recipe decision (loss arm, label smoothing, Brier/RPS weights, head type and width,
 learning rate, warmup, data mix and order, calibration) is evaluated EXACTLY, not approximately. What the proxy cannot
 see is the LoRA term; ``kendall_tau`` quantifies how well a recipe ranking under the proxy carries over to head + LoRA
 training (the transfer measurement in the same test file).
@@ -19,6 +23,7 @@ Not for the trust-gated (G15/G16) row heads: they have no shared ``HeadInput``.
 from __future__ import annotations
 
 import time
+from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -35,6 +40,15 @@ class CachedItem:
     x: HeadInput
     label: int
     qtype: str
+    bf16: bool = False  # features computed under bf16 autocast (== Trainer with cfg.bf16)
+    fork_mode: str | None = None  # backbone.fork_mode the features were computed with
+
+
+def _autocast(bf16: bool):
+    """The Trainer's autocast (train.trainer.Trainer._autocast), so cached features and head steps match it."""
+    if not bf16:
+        return nullcontext()
+    return torch.autocast(device_type="cuda" if torch.cuda.is_available() else "cpu", dtype=torch.bfloat16)
 
 
 def _to(x: HeadInput, dev) -> HeadInput:
@@ -46,14 +60,21 @@ def _to(x: HeadInput, dev) -> HeadInput:
 
 
 @torch.no_grad()
-def cache_items(model, items: Sequence, device: str = "cpu") -> list[CachedItem]:
-    """One frozen-backbone pass per item (B = 1, so no batch padding enters any feature)."""
+def cache_items(model, items: Sequence, device: str = "cpu", cfg: TrainConfig | None = None) -> list[CachedItem]:
+    """One frozen-backbone pass per item (B = 1, so no batch padding enters any feature). With ``cfg``, the backbone
+    uses ``cfg.fork_mode`` (as ``train.trainer.prepare_model`` sets it) and runs under bf16 autocast iff ``cfg.bf16``
+    (as ``Trainer`` does)."""
     if model.row_head:
         raise ValueError("row heads (G16) have no shared HeadInput; the proxy does not apply")
+    bf16 = bool(cfg and cfg.bf16)
+    if cfg is not None:
+        model.backbone.fork_mode = cfg.fork_mode
+    mode = getattr(model.backbone, "fork_mode", None)
     out = []
     for it in items:
-        x = build_head_input(model.backbone, [it.row], need_fork=model.head.needs_fork, pad_id=model.pad_id)
-        out.append(CachedItem(_to(x, device), it.label, it.row.qtype))
+        with _autocast(bf16):
+            x = build_head_input(model.backbone, [it.row], need_fork=model.head.needs_fork, pad_id=model.pad_id)
+        out.append(CachedItem(_to(x, device), it.label, it.row.qtype, bf16, mode))
     return out
 
 
@@ -67,12 +88,24 @@ def _lp(model, c: CachedItem) -> torch.Tensor:
     return model.typed(out.logits, [c.qtype], c.x.ks, c.x.e)
 
 
-def train_head_cached(model, cached: list[CachedItem], cfg: TrainConfig, steps: int | None = None) -> dict:
-    """Head-only training on cached features; the update rule of ``Trainer`` with ``batch_size == 1``."""
+def train_head_cached(model, cached: list[CachedItem], cfg: TrainConfig, steps: int | None = None,
+                      guard=None) -> dict:
+    """Head-only training on cached features; the update rule of ``Trainer`` with ``batch_size == 1``.
+
+    Refuses what the Trainer would do differently: ``batch_size != 1``, ``lora_rank != 0``, a missing guard under
+    ``cfg.require_guard`` (pass the ``SplitGuard`` the items were built with), and cached features whose precision
+    (``bf16``) or ``fork_mode`` differ from ``cfg``."""
     if cfg.batch_size != 1:
         raise ValueError("the proxy batches by gradient accumulation; use batch_size=1, grad_accum=N")
     if cfg.lora_rank:
         raise ValueError("the proxy has no backbone in the loop: lora_rank must be 0")
+    if cfg.require_guard and guard is None:
+        raise ValueError("TrainConfig.require_guard: pass the SplitGuard the cached items were built with "
+                         "(or SplitGuard.synthetic_only for synthetic toys), as Trainer requires")
+    bad = {(c.bf16, c.fork_mode) for c in cached} - {(bool(cfg.bf16), cfg.fork_mode)}
+    if bad:
+        raise ValueError(f"cached features were computed with (bf16, fork_mode) {sorted(bad, key=str)} but cfg has "
+                         f"({bool(cfg.bf16)}, {cfg.fork_mode!r}): re-cache with cache_items(..., cfg=cfg)")
     torch.manual_seed(cfg.seed)
     params = model.head_parameters()
     opt = torch.optim.AdamW([{"params": params, "lr": cfg.lr_head}], weight_decay=cfg.weight_decay)
@@ -90,7 +123,9 @@ def train_head_cached(model, cached: list[CachedItem], cfg: TrainConfig, steps: 
                 order = _order(cfg.seed, epoch, n)
             c = cached[order[cursor]]
             cursor += 1
-            lp = _lp(model, c).float()
+            with _autocast(cfg.bf16):
+                lp = _lp(model, c)
+            lp = lp.float()
             y = torch.tensor([c.label], device=lp.device)
             loss = decision_loss(lp, y, [c.qtype], cfg.loss) / cfg.grad_accum
             loss.backward()
@@ -106,7 +141,8 @@ def train_head_cached(model, cached: list[CachedItem], cfg: TrainConfig, steps: 
 def eval_cached(model, cached: list[CachedItem]) -> dict:
     nll, acc = 0.0, 0
     for c in cached:
-        lp = _lp(model, c)[0].float()
+        with _autocast(c.bf16):
+            lp = _lp(model, c)[0].float()
         nll -= float(lp[c.label])
         acc += int(int(lp.argmax()) == c.label)
     return {"nll": nll / len(cached), "acc": acc / len(cached)}

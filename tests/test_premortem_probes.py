@@ -216,20 +216,40 @@ def _fresh(head, seed, hidden=16):
     return DecisionModel(tiny_backbone(seed=seed, hidden=hidden, fork_mode="cache"), head, seed=seed)
 
 
-def test_p5_cached_feature_proxy_equals_trainer_at_lora_rank_0(toy):
+@pytest.mark.parametrize("head", ["integrator", "fork"])
+@pytest.mark.parametrize("bf16", [False, True])
+def test_p5_cached_feature_proxy_equals_trainer_at_lora_rank_0(toy, head, bf16):
+    """fp32 and bf16 (run_cell / m2_gates / cell_step pass bf16=cuda: the Trainer forward runs under bf16 autocast),
+    for a sequence head and the cache-fork head."""
     from train.proxy import cache_items, train_head_cached
 
-    cfg = TrainConfig(head="integrator", lora_rank=0, batch_size=1, grad_accum=4, max_steps=6, lr_head=3e-3,
-                      warmup_steps=2, loss=LossConfig(arm="clef"), seed=5)
-    a = _fresh("integrator", 5)
+    cfg = TrainConfig(head=head, lora_rank=0, batch_size=1, grad_accum=4, max_steps=8, lr_head=3e-3,
+                      warmup_steps=2, loss=LossConfig(arm="clef"), seed=5, bf16=bf16)
+    a = _fresh(head, 5)
     b = copy.deepcopy(a)
     Trainer(a, cfg, toy, guard=G).train()
     for p in b.backbone.parameters():
         p.requires_grad_(False)
-    train_head_cached(b, cache_items(b, toy), cfg)
+    train_head_cached(b, cache_items(b, toy, cfg=cfg), cfg, guard=G)
     pa, pb = dict(a.named_parameters()), dict(b.named_parameters())
     for n in [n for n in pa if not n.startswith("backbone.")]:
-        assert torch.allclose(pa[n], pb[n], atol=1e-5), n
+        assert torch.allclose(pa[n], pb[n], atol=1e-5), (n, float((pa[n] - pb[n]).abs().max()))
+
+
+def test_p5_proxy_refuses_what_the_trainer_would_do_differently(toy):
+    import dataclasses
+
+    from train.proxy import cache_items, train_head_cached
+
+    cfg = TrainConfig(head="fork", lora_rank=0, batch_size=1, grad_accum=2, max_steps=1, seed=5)
+    m = _fresh("fork", 5)
+    cached = cache_items(m, toy[:4], cfg=cfg)
+    with pytest.raises(ValueError, match="require_guard"):
+        train_head_cached(m, cached, cfg)
+    with pytest.raises(ValueError, match="bf16, fork_mode"):
+        train_head_cached(m, cached, dataclasses.replace(cfg, bf16=True), guard=G)
+    with pytest.raises(ValueError, match="bf16, fork_mode"):
+        train_head_cached(m, cached, dataclasses.replace(cfg, fork_mode="recompute"), guard=G)
 
 
 RECIPES = [  # (head, loss arm, lr_head)
@@ -252,7 +272,7 @@ def test_p6_proxy_recipe_ranking_transfers_to_head_plus_lora():
         tr_c, dv_c = cache_items(m, train), cache_items(m, dev)
         cfg0 = TrainConfig(head=head, lora_rank=0, batch_size=1, grad_accum=4, max_steps=steps, lr_head=lr,
                            loss=LossConfig(arm=arm), seed=0)
-        t_proxy += train_head_cached(m, tr_c, cfg0)["seconds"]
+        t_proxy += train_head_cached(m, tr_c, cfg0, guard=G)["seconds"]
         proxy.append(eval_cached(m, dv_c)["nll"])
         f = copy.deepcopy(base)
         cfg1 = TrainConfig(head=head, lora_rank=4, batch_size=1, grad_accum=4, max_steps=steps, lr_head=lr,
