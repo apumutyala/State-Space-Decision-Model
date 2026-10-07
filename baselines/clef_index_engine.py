@@ -45,6 +45,11 @@ class ClefIndexEngine(Engine):
         if self.path == "native":
             resp, meta = CB.native_systemone(self.backend.jsm, self.model, self.processor, request, self.max_length)
             return {"model": resp["model"], "answers": resp["answers"], "usage": resp["usage"]}, meta
+        if self.max_length > CB.CLEF_MAX_LENGTH:
+            # the 32k sensitivity arm (JOB_SPEC 4c): the adapter's DEFAULT_LIMITS cap max_input_tokens at Clef's shipped
+            # 16,384 whatever the backend allows, so raise it explicitly through the request's limits envelope. At the
+            # default max_length the request is unchanged (byte-identical to job-sgihj's decide path).
+            request["ssdm"] = {"limits": {"max_input_tokens": self.max_length}}
         resp = self.decider.decide(request)
         ss = resp["ssdm"]
         if ss["status"] in ("exhausted", "unsupported"):

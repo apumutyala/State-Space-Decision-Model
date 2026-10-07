@@ -128,13 +128,13 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Check:** `.gitattributes` adds `*.sha256 text eol=lf`. `test_gitattributes_pin_lf` and `test_git_archive_head_has_no_cr_even_with_autocrlf` (`tests/test_jobs_lint.py`). `launch.py` archives with `core.autocrlf=false` and refuses CR in shipped `*.sh/*.sha256/*.json/Dockerfile` (`tests/test_launch.py::test_refusals[crlf_sha256]`).
 - **Status:** ENFORCED. Existing Windows checkouts still hold CRLF working copies of the `*.sha256` files; blobs are LF and `git archive` is now LF.
 
-### L-15 Clef composite crash on a truncated native file
-- Date: 2026-10-06 (job-sgihj).
-- Symptom: the composite step crashed on a truncated JSONL line, and the run was scored locally.
-- Cost: $1.40 was spent; the result was recovered off-box.
-- Root cause: `jobs/clef_baseline/summarize.py` parses JSONL with no tolerance for a partial last line, and the composite silently falls back. This was a Track L blocking finding on PR #19, which merged as "review stalled" without that fix.
-- **Check:** none yet.
-- **Status:** OPEN (owner: Track D). Needed: a truncated-line test for `summarize.py` and a fail-closed composite, before any further Clef job.
+### L-15 Clef composite crash: U+2028 + `str.splitlines()` (first recorded as a "truncated native file")
+- Date: 2026-10-06 (job-sgihj). Corrected 2026-10-07 (PR #98), reproduced from the job's artifact art-8y6d8.
+- Symptom: `summarize.py composite` raised `JSONDecodeError: Unterminated string`. The runner exited 12, so S3 scoring, the S4 safety battery and S5 never ran, and the Index score was recomputed off-box.
+- Cost: $1.40 was spent; the Index number was recovered off-box (56.79 [55.40, 58.22]); the Clef-flash safety battery is still unmeasured.
+- Root cause: **no file was truncated.** Both results files were complete (12,104 / 115 rows, final newline). `summarize.py` split them with `str.splitlines()`, which also breaks on U+2028/U+2029, U+0085, \v, \f and \x1c-\x1e. The raw U+2028 inside row `25:GPQA-Diamond:GPQA-Diamond:test:4` of the **decide** file (the kit writes `ensure_ascii=False`) cut one record in two. The opposite, silent failure was latent too: the kit's `load_results` stops at a partial last line and scores the missing rows as unanswered. This was a Track L blocking finding on PR #19, which merged as "review stalled" without a fix.
+- **Check:** `harness/jsonl.py` splits on newlines only and raises on a truncated tail, a malformed line, a duplicate `run_id` or missing slice/subset rows. `harness score|compare|ece` and `jobs.common.dev_subset` exit 3 (before #95's `require_results`). The composite and the 32k substitution are fail-closed (exit 3/4), and `run_job.sh` maps them to 17. Tests: `tests/clef/test_results_strict.py` (U+2028 reproduction, every refusal, missing row -> exit 3 through both CLIs on the merged tree) and `tests/clef/test_clef_job_sh.py` (executes `run_job.sh`; a fault-injected truncated or dropped decide row must end in exit 17).
+- **Status:** ENFORCED.
 
 ### L-16 Merges without (re-)review
 - Date: 2026-10-05..06.

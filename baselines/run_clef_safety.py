@@ -140,8 +140,13 @@ def main(argv=None) -> int:
             arms["clef_native_encoding"] = rn
 
         gcg_path = out / "gcg_attacks.jsonl"
-        gcg_records = [json.loads(x) for x in gcg_path.read_text(encoding="utf-8").splitlines() if x.strip()] \
-            if gcg_path.exists() else []
+        # resume: a kill mid-append leaves a partial last line; cut it (kept as .truncated-tail) so that attack is
+        # redone and the next append starts on a fresh line. Split on "\n" only (harness/jsonl.py, job-sgihj).
+        from harness.jsonl import drop_truncated_tail, read_jsonl_strict
+
+        if drop_truncated_tail(gcg_path) is not None:
+            log("gcg_attacks.jsonl had a partial last line (killed mid-write); dropped, that attack is redone")
+        gcg_records = read_jsonl_strict(gcg_path) if gcg_path.exists() else []
         rows_gcg, eng = [], None
         if (a.gcg_steer or a.gcg_hijack) and not a.skip_gcg:
             from . import clef_gcg

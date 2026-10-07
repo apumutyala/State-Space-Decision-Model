@@ -139,8 +139,10 @@ def cmd_score(a, subset):
 
     ed = getattr(a, "edition", None)
     rows = _rows(subset, ed, not getattr(a, "omit_gsm8k03", False))
-    res = load_results(a.results)
-    score.require_results(rows, res, getattr(a, "allow_missing", False))
+    allow = getattr(a, "allow_missing", False) or getattr(a, "allow_partial", False)
+    # strict reader first (exit 3: truncated / malformed / duplicate / missing subset rows), then #95's slice check
+    res = load_results(a.results, subset["run_ids"], allow)
+    score.require_results(rows, res, allow)
     rep = bootstrap.replicate_skills([score.decompose(rows, res, edition=ed)], B=a.B, seed=a.seed)[0]
     return {"subset_ids_sha256": subset["ids_sha256"], "rows": len(rows), "slice_index": bootstrap.summarize_one(rep, edition=ed)}
 
@@ -151,8 +153,9 @@ def cmd_compare(a, subset):
 
     ed = getattr(a, "edition", None)
     rows = _rows(subset, ed, not getattr(a, "omit_gsm8k03", False))
-    allow = getattr(a, "allow_missing", False)
-    rc, rb = load_results(a.candidate), load_results(a.baseline)
+    allow = getattr(a, "allow_missing", False) or getattr(a, "allow_partial", False)
+    rc = load_results(a.candidate, subset["run_ids"], allow)
+    rb = load_results(a.baseline, subset["run_ids"], allow)
     score.require_results(rows, rc, allow, "candidate")
     score.require_results(rows, rb, allow, "baseline")
     c = score.decompose(rows, rc, edition=ed)
@@ -168,7 +171,8 @@ def cmd_ece(a, subset):
     from harness.cli import load_results
 
     return {"subset_ids_sha256": subset["ids_sha256"],
-            **calibration.report(calibration.fields(_rows(subset), load_results(a.results)))}
+            **calibration.report(calibration.fields(_rows(subset), load_results(a.results, subset["run_ids"],
+                                                                                 a.allow_partial)))}
 
 
 def cmd_rows(a, subset):
@@ -201,6 +205,8 @@ def main(argv=None):
             s.add_argument(x, required=True)
         s.add_argument("--B", type=int, default=2000)
         s.add_argument("--seed", type=int, default=0)
+        s.add_argument("--allow-partial", action="store_true",
+                       help="alias of --allow-missing: score a partial results file (missing subset rows = unanswered); default: exit 3")
         if name != "ece":
             s.add_argument("--edition", default=None, choices=["0.2.1", "0.3"], help="default: harness config.EDITION (0.2.1)")
             s.add_argument("--omit-gsm8k03", action="store_true", help="0.3: leave out the rebuilt GSM8K rows (old result files)")
@@ -223,7 +229,13 @@ def main(argv=None):
         print(json.dumps({k: out[k] for k in ("ids_sha256", "dev_manifest_sha256_uncompressed")} | {"rows": len(ids)}))
         return 0
     subset = load_subset(a.subset)
-    res = {"rows": cmd_rows, "score": cmd_score, "compare": cmd_compare, "ece": cmd_ece}[a.cmd](a, subset)
+    from harness.jsonl import EXIT_RESULTS, ResultsFileError
+
+    try:
+        res = {"rows": cmd_rows, "score": cmd_score, "compare": cmd_compare, "ece": cmd_ece}[a.cmd](a, subset)
+    except ResultsFileError as e:
+        print(f"dev_subset {a.cmd}: results file unusable: {e}", file=sys.stderr)
+        return EXIT_RESULTS
     print(json.dumps(res, indent=1))
     return 0
 

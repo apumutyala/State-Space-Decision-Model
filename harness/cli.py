@@ -3,6 +3,7 @@
   verify                         official hash check + per-catalog counts of the local suite
   slice   [--seed S]             build DEV/TEST manifests (IDs + hashes) and materialise DEV rows
   score   --results R [--slice dev] [--edition 0.2.1|0.3]        official point estimate + cluster-bootstrap CI
+          (results must cover every slice row: exit 3 on a truncated/malformed/partial file unless --allow-missing)
   compare --candidate A --baseline B [--slice dev] [--edition E]  paired CI for A - B
 
 --edition 0.3 scores the 0.3 *public* index (37 benchmarks; ForecastBench retired, WinoGrande under
@@ -85,10 +86,16 @@ def _load_slice_021(name):
     return slicing.select(index_rows(load_suite()), manifest)
 
 
-def load_results(path):
-    from decision_index.scoring.report import load_results as kit_load
+def load_results(path, expected_ids=None, allow_partial=False):
+    """Strict (harness/jsonl.py): a truncated, malformed or partial results file raises ResultsFileError
+    (CLI exit 3) instead of scoring the rows that happen to parse. ``expected_ids`` = the slice's run ids."""
+    from harness.jsonl import load_results as strict
 
-    return kit_load(path)
+    return strict(path, expected_ids, allow_partial=allow_partial)
+
+
+def _ids(rows):
+    return [r["_evaluation"]["run_id"] for r in rows]
 
 
 def cmd_verify(a):
@@ -123,8 +130,10 @@ def cmd_slice(a):
 
 def cmd_score(a):
     rows = load_slice(a.slice, a.edition, not a.omit_gsm8k03)
-    res = load_results(a.results)
-    score.require_results(rows, res, a.allow_missing)
+    allow = a.allow_missing or a.allow_partial
+    # strict reader first (harness/jsonl.py: exit 3 on truncated / malformed / duplicate / missing rows), then #95's check
+    res = load_results(a.results, _ids(rows), allow)
+    score.require_results(rows, res, allow)
     off = score.official(rows, res, edition=a.edition)
     benches = score.decompose(rows, res, edition=a.edition)
     rep = bootstrap.replicate_skills([benches], B=a.B, seed=a.seed)[0]
@@ -134,19 +143,20 @@ def cmd_score(a):
 
 def cmd_compare(a):
     rows = load_slice(a.slice, a.edition, not a.omit_gsm8k03)
-    rc, rb = load_results(a.candidate), load_results(a.baseline)
-    score.require_results(rows, rc, a.allow_missing, "candidate")
-    score.require_results(rows, rb, a.allow_missing, "baseline")
+    allow = a.allow_missing or a.allow_partial
+    rc, rb = load_results(a.candidate, _ids(rows), allow), load_results(a.baseline, _ids(rows), allow)
+    score.require_results(rows, rc, allow, "candidate")
+    score.require_results(rows, rb, allow, "baseline")
     c = score.decompose(rows, rc, edition=a.edition)
     b = score.decompose(rows, rb, edition=a.edition)
-    out = bootstrap.compare(c, b, B=a.B, seed=a.seed, allow_unaligned=a.allow_missing)
+    out = bootstrap.compare(c, b, B=a.B, seed=a.seed, allow_unaligned=allow)
     out["mde"] = mde.report(out["diff"]["index"]["se"], sum(len(x.clusters) for x in c.values()))
     print(json.dumps(out, indent=1))
 
 
 def cmd_ece(a):
     rows = load_slice(a.slice)
-    fl = calibration.fields(rows, load_results(a.results))
+    fl = calibration.fields(rows, load_results(a.results, _ids(rows), a.allow_partial or a.allow_missing))
     print(json.dumps(calibration.report(fl), indent=1))
 
 
@@ -191,6 +201,7 @@ def main(argv=None):
         s.add_argument("--edition", default=config.EDITION, choices=config.EDITIONS)
         s.add_argument("--omit-gsm8k03", action="store_true", help="0.3: leave out the rebuilt GSM8K rows (old result files)")
         s.add_argument("--allow-missing", action="store_true", help="score slice rows with no result as wrong instead of refusing")
+        s.add_argument("--allow-partial", action="store_true", help="alias of --allow-missing (also accepts a truncated last line)")
     s = sub.add_parser("compare")
     s.add_argument("--candidate", required=True)
     s.add_argument("--baseline", required=True)
@@ -200,6 +211,7 @@ def main(argv=None):
     s.add_argument("--edition", default=config.EDITION, choices=config.EDITIONS)
     s.add_argument("--omit-gsm8k03", action="store_true", help="0.3: leave out the rebuilt GSM8K rows (old result files)")
     s.add_argument("--allow-missing", action="store_true", help="score missing rows as wrong and allow unaligned pairing")
+    s.add_argument("--allow-partial", action="store_true", help="alias of --allow-missing (also accepts a truncated last line)")
     s = sub.add_parser("mde")
     s.add_argument("--se", type=float, required=True)
     s.add_argument("--clusters", type=int, required=True)
@@ -208,7 +220,13 @@ def main(argv=None):
     s = sub.add_parser("selfcheck")
     s.add_argument("--slice", default="dev", choices=["dev", "test"])
     a = p.parse_args(argv)
-    {"verify": cmd_verify, "slice": cmd_slice, "score": cmd_score, "compare": cmd_compare, "ece": cmd_ece, "mde": cmd_mde, "selfcheck": cmd_selfcheck}[a.cmd](a)
+    from harness.jsonl import EXIT_RESULTS, ResultsFileError
+
+    try:
+        {"verify": cmd_verify, "slice": cmd_slice, "score": cmd_score, "compare": cmd_compare, "ece": cmd_ece, "mde": cmd_mde, "selfcheck": cmd_selfcheck}[a.cmd](a)
+    except ResultsFileError as e:
+        print(f"harness {a.cmd}: results file unusable: {e}", file=sys.stderr)
+        sys.exit(EXIT_RESULTS)
 
 
 if __name__ == "__main__":
