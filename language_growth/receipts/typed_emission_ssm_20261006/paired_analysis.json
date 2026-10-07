@@ -1,0 +1,326 @@
+{
+  "bootstrap": {
+    "interval": "95% percentile; conditional on these seeds and reused development family",
+    "replicates": 2000,
+    "seed": 3197,
+    "unit": "task cluster; all three fixed seeds and both members remain together"
+  },
+  "failure_decomposition": {
+    "accepted_but_wrong_question": 96,
+    "accepted_but_wrong_question_by_kind": {
+      "compare": 90,
+      "explain": 0,
+      "read": 6
+    },
+    "comparison_count": 360,
+    "comparison_relation_correct_with_correct_structure": 246,
+    "comparison_structure_exact": 270,
+    "comparison_structure_wrong_kernel_accepted": 90,
+    "kernel_rejected": 24,
+    "rejection_reasons": {
+      "unsupported_assertion": 24
+    }
+  },
+  "family_provenance": "New generator seeds 9101/9102 and newly authored paired records for this run; reused development_train names/ranges/templates. No development_validation, audit, or held-out data, and no held-out generalization claim.",
+  "paired_statistics": {
+    "all": {
+      "kernel_accepted": {
+        "both_members": {
+          "ci95": [
+            0.9518518518518517,
+            0.9925925925925927
+          ],
+          "estimate": 0.974074074074074
+        },
+        "marginal": {
+          "ci95": [
+            0.9564814814814816,
+            0.9953703703703703
+          ],
+          "estimate": 0.9777777777777777
+        },
+        "partner_minus_original": {
+          "ci95": [
+            -0.0037037037037037034,
+            0.012962962962962964
+          ],
+          "estimate": 0.0037037037037037034
+        }
+      },
+      "seed_task_pairs": 540,
+      "target_exact": {
+        "both_members": {
+          "ci95": [
+            0.835185185185185,
+            0.9185185185185184
+          ],
+          "estimate": 0.8796296296296295
+        },
+        "marginal": {
+          "ci95": [
+            0.8453703703703704,
+            0.925925925925926
+          ],
+          "estimate": 0.8888888888888888
+        },
+        "partner_minus_original": {
+          "ci95": [
+            -0.009259259259259259,
+            0.018518518518518517
+          ],
+          "estimate": 0.0037037037037037043
+        }
+      },
+      "unique_task_clusters": 180,
+      "whole_answer_correct": {
+        "both_members": {
+          "ci95": [
+            0.835185185185185,
+            0.9185185185185184
+          ],
+          "estimate": 0.8796296296296295
+        },
+        "marginal": {
+          "ci95": [
+            0.8453703703703704,
+            0.925925925925926
+          ],
+          "estimate": 0.8888888888888888
+        },
+        "partner_minus_original": {
+          "ci95": [
+            -0.009259259259259259,
+            0.018518518518518517
+          ],
+          "estimate": 0.0037037037037037043
+        }
+      }
+    },
+    "compare": {
+      "kernel_accepted": {
+        "both_members": {
+          "ci95": [
+            0.8555555555555555,
+            0.9722222222222222
+          ],
+          "estimate": 0.9222222222222222
+        },
+        "marginal": {
+          "ci95": [
+            0.8722222222222222,
+            0.9805555555555556
+          ],
+          "estimate": 0.9333333333333333
+        },
+        "partner_minus_original": {
+          "ci95": [
+            -0.01111111111111111,
+            0.03888888888888889
+          ],
+          "estimate": 0.01111111111111111
+        }
+      },
+      "seed_task_pairs": 180,
+      "target_exact": {
+        "both_members": {
+          "ci95": [
+            0.5776388888888888,
+            0.7666666666666667
+          ],
+          "estimate": 0.6722222222222222
+        },
+        "marginal": {
+          "ci95": [
+            0.5888194444444443,
+            0.7777777777777778
+          ],
+          "estimate": 0.6833333333333333
+        },
+        "partner_minus_original": {
+          "ci95": [
+            -0.01111111111111111,
+            0.03888888888888889
+          ],
+          "estimate": 0.01111111111111111
+        }
+      },
+      "unique_task_clusters": 60,
+      "whole_answer_correct": {
+        "both_members": {
+          "ci95": [
+            0.5776388888888888,
+            0.7666666666666667
+          ],
+          "estimate": 0.6722222222222222
+        },
+        "marginal": {
+          "ci95": [
+            0.5888194444444443,
+            0.7777777777777778
+          ],
+          "estimate": 0.6833333333333333
+        },
+        "partner_minus_original": {
+          "ci95": [
+            -0.01111111111111111,
+            0.03888888888888889
+          ],
+          "estimate": 0.01111111111111111
+        }
+      }
+    },
+    "explain": {
+      "kernel_accepted": {
+        "both_members": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "marginal": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "partner_minus_original": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        }
+      },
+      "seed_task_pairs": 180,
+      "target_exact": {
+        "both_members": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "marginal": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "partner_minus_original": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        }
+      },
+      "unique_task_clusters": 60,
+      "whole_answer_correct": {
+        "both_members": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "marginal": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "partner_minus_original": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        }
+      }
+    },
+    "read": {
+      "kernel_accepted": {
+        "both_members": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "marginal": {
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "estimate": 1.0
+        },
+        "partner_minus_original": {
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "estimate": 0.0
+        }
+      },
+      "seed_task_pairs": 180,
+      "target_exact": {
+        "both_members": {
+          "ci95": [
+            0.9277777777777777,
+            0.9944444444444446
+          ],
+          "estimate": 0.9666666666666667
+        },
+        "marginal": {
+          "ci95": [
+            0.9638888888888889,
+            0.9972222222222222
+          ],
+          "estimate": 0.9833333333333333
+        },
+        "partner_minus_original": {
+          "ci95": [
+            -0.03333333333333333,
+            0.03333333333333333
+          ],
+          "estimate": 0.0
+        }
+      },
+      "unique_task_clusters": 60,
+      "whole_answer_correct": {
+        "both_members": {
+          "ci95": [
+            0.9277777777777777,
+            0.9944444444444446
+          ],
+          "estimate": 0.9666666666666667
+        },
+        "marginal": {
+          "ci95": [
+            0.9638888888888889,
+            0.9972222222222222
+          ],
+          "estimate": 0.9833333333333333
+        },
+        "partner_minus_original": {
+          "ci95": [
+            -0.03333333333333333,
+            0.03333333333333333
+          ],
+          "estimate": 0.0
+        }
+      }
+    }
+  },
+  "scope": "One condition; final step only; iterative synthetic development; no validation tuning; random initialization; no parent retention claim",
+  "source_hashes": {
+    "typed_emission_ssm.py": "93ae22e267186f5453f520a2bf30747e4cd097662068c066b8535d956ee5f2d6",
+    "typed_emission_ssm_analysis.py": "10839ede5c4a4b3e028902e09843c82b5b5b8d4640ca15a95ed49f58897cdeb3"
+  },
+  "source_receipt_sha256": "110c0576239a2bdfdb3f813baa2e3edc3a43b8f71824b69691f48f9964363c3e",
+  "whole_answer_definition": "Exact complete semantic target (including operand order and relation) AND accepted typed program AND checked rendering matching reference. Runtime also asserts equivalence of semantic exactness and accepted matching rendering in every observation."
+}
