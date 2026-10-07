@@ -107,6 +107,9 @@ def test_exact_boundary_and_all_later_calls_delegate():
 
 def test_cache_live_parity_no_label_or_arbitrary_meta_in_identity():
     import torch
+    assert os.environ["CUDA_VISIBLE_DEVICES"] == "-1"
+    assert not torch.cuda.is_available(), "registered CPU runtime requires CUDA unavailable"
+    assert torch.__version__ == runner.registration()["software"]["torch"]
     old = torch.get_num_threads(); torch.set_num_threads(2)
     try:
         model, item, identity = tiny()

@@ -13,8 +13,13 @@ head (secondary architecture/random-init control), fixed step-96 q_end head
 (treatment). Both head conditions delegate every later slot to stock readout.
 Training uses operation-only detached features and CE; no MSE/axis targets.
 
-Verification after review fixes: `7 passed in 6.86s` for
-`python -m pytest language_growth/tests/test_operation_cache.py -q`, with
+Runtime correction: preparation, tests and future execution use exactly
+`C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe`.
+The registration pins Torch `2.8.0+cu128`, Python and all package versions;
+CUDA is hidden and the synthetic suite asserts CUDA is unavailable.
+
+Verification: **7 passed in 3.58s** using:
+`C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_operation_cache.py -q`, with
 `CUDA_VISIBLE_DEVICES=-1`, `OMP_NUM_THREADS=2`, `MKL_NUM_THREADS=2`,
 `OPENBLAS_NUM_THREADS=2`, and offline model-library flags. Tests use only tiny
 random recurrent weights. Their 96 synthetic optimizer steps are fixture proof,

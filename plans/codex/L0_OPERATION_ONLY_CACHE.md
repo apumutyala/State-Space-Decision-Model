@@ -49,7 +49,12 @@ Weak fit diagnoses head learnability; strong operation fit without downstream
 gain diagnoses later stock slots. Neither outcome licenses capability claims.
 
 Preparation command (no weights):
-`python -m language_growth.rwkv_operation_cache --out <fresh-dir> --dry-run`
+`C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m language_growth.rwkv_operation_cache --out <fresh-dir> --dry-run`
+
+Use this exact existing interpreter for preparation, testing and execution.
+Its Torch wheel is `2.8.0+cu128`; execution is CPU only with
+`CUDA_VISIBLE_DEVICES=-1`, two CPU threads and CUDA availability required false.
+The registration pins interpreter, Python and package versions strictly.
 
 Future execution command (after tiny proofs, cross-review/dependency merges and fresh resource guard):
-`python -m language_growth.rwkv_operation_cache --out <fresh-dir> --execute`
+`C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m language_growth.rwkv_operation_cache --out <fresh-dir> --execute`

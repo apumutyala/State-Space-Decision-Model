@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import random
 import secrets
+import sys
 import time
 
 from language_growth.operation_cache import digest, operation_records
@@ -65,6 +66,8 @@ def registration():
                               for split, rows in records.items()},
         "counts": {"train_worlds": 24, "dev_worlds": 12, "train_rows": 24, "dev_rows": 12},
         "expected_parent": {"model_id": MODEL_ID, "snapshot": SNAPSHOT.name, "file_sha256": PINNED_HASHES},
+        "runtime": {"interpreter": str(Path(sys.executable).resolve()), "python": sys.version,
+                    "device": "cpu", "cuda_visible_devices": "-1", "cuda_available_required": False},
         "software": {name: importlib.metadata.version(name) for name in
                      ("torch", "transformers", "safetensors", "numpy", "psutil")},
         "source_sha256": {name: sha(ROOT/name) for name in sources},

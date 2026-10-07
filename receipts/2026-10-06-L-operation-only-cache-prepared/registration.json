@@ -121,15 +121,22 @@
     "frozen backbone",
     "cost_usd=0"
   ],
+  "runtime": {
+    "cuda_available_required": false,
+    "cuda_visible_devices": "-1",
+    "device": "cpu",
+    "interpreter": "C:\\Users\\apumu\\research\\CHLabs\\.venv-gpu\\Scripts\\python.exe",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]"
+  },
   "schema": "ssdm.operation-only-cache.v1",
   "scope": "prepared reused-development operation-only head diagnostic; no L0 qualification",
   "secondary": "paired trained-minus-zero-update; operation accuracy and downstream attribution; predeclared read/explain/compare paired CIs",
   "selection": "one seed, fixed checkpoint; no tuning; CE only; eight complete passes",
   "software": {
-    "numpy": "2.5.2",
+    "numpy": "2.2.6",
     "psutil": "7.2.2",
     "safetensors": "0.8.0",
-    "torch": "2.14.0+cpu",
+    "torch": "2.8.0+cu128",
     "transformers": "5.17.0"
   },
   "source_sha256": {
@@ -182,7 +189,7 @@
     "language_growth/rwkv_head_ce96_evaluation.py": "c3fda86c3822f0d1106e48c89fc103e8c2bfc9eba913f275601bdcc6c6a642a9",
     "language_growth/rwkv_head_fit_audit.py": "dbcc1d1bf26dad35b394f84d3cc76e346e05ca849d70dffdbbeea8f8f76d1663",
     "language_growth/rwkv_head_learning.py": "7af59a23b016771de66e75a182b5a8c97737b2ad7d64436a824cfb034fc0f3b7",
-    "language_growth/rwkv_operation_cache.py": "2bfb06f9313ebe25acb15fd36ff2e3e49009d481e41813a11ce3e8167f087edc",
+    "language_growth/rwkv_operation_cache.py": "6946942c656e9ea659443957382bf12cb6b6c24312297c40233f79855a173ebe",
     "language_growth/rwkv_qend_axes.py": "9df7d1b1bc7e862875f0ce669a910f78729ecd3625e857bbd3c80a114c21474e",
     "language_growth/tests/__init__.py": "94ec8b327f99819f5f33f3c062cbe6da74a2d776d5d01c0525035f5f73146a56",
     "language_growth/tests/test_decision_view.py": "ed2c64d30220c18c1b7ffd4cfbe7a4de61b9975c8c59c8cc47b21b8d0338d7b1",
@@ -193,7 +200,7 @@
     "language_growth/tests/test_kernel.py": "9a3bfffd48de6e5f4b87cc5e732c051551d65418906a527635c51403e9c563e4",
     "language_growth/tests/test_kernel_adversarial.py": "1095aa538571557960ce99170e6b3e24782a2112f5d1f1d007003ddf5ce36d03",
     "language_growth/tests/test_l0_qwen_cpu_probe.py": "27dc24f799ac0dba20f78ef83f36ba567022d0efe821fd9b5e9b64cf0ae7adb1",
-    "language_growth/tests/test_operation_cache.py": "d09040d656b174b55557dac8fe960b0aa0720ad516ecca3c8f90105eb09d9336",
+    "language_growth/tests/test_operation_cache.py": "8c785a640fe93c5537b7539384a9d40866f01cb94b73191928b77caea7969751",
     "language_growth/tests/test_paired_comparison.py": "308a77156042a08ab73bd1e5339e40ff616a84a04ce9cdaf4481310e46d54849",
     "language_growth/tests/test_parent_training_integration.py": "70ae25c6ae621b7bfc5e6f2d5994655b8dfa3f6c3f898b8f53b2ef321ceb9e4f",
     "language_growth/tests/test_planner.py": "9051f7067a72473d520e62a1f4e0148192e7f54599c4932048fa565328e404cd",
@@ -211,7 +218,7 @@
     "language_growth/tests/test_training_records.py": "141c814033f26b19b2b5d02064ea4196137770065568b5becaa17dc0c12f8112",
     "language_growth/training_records.py": "cdd26b7218bfb1ce19af817e96fa5001ec8969b00f93c8eb33934b97fdc832bb",
     "language_growth/types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1",
-    "plans/codex/L0_OPERATION_ONLY_CACHE.md": "4b3720097ce8f3e35a2c891225774b9acd7f23bf14154db84790c685cb4191c5",
+    "plans/codex/L0_OPERATION_ONLY_CACHE.md": "42fbe7dbc7167ecf70e64672b1d30c18c11e40fb0e5843e8b629e2c53c7a2300",
     "third_party/cloudflare_clef/joint_schema_model.py": "0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3",
     "third_party/rwkv7_hf/__init__.py": "2947c872c1873e6d43583d9b4a3d926dba3e9b27e740fcccb16ac678c3b13022",
     "third_party/rwkv7_hf/configuration_rwkv7.py": "14050c631e27d66cd2f52ca5ec53b62eef04e602c4f1fc4e3696c328bc8e200e",

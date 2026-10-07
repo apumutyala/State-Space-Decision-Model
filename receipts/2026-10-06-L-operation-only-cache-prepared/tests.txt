@@ -1,7 +1,12 @@
 CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
-python -m pytest language_growth/tests/test_operation_cache.py -q
+C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_operation_cache.py -q
 .......                                                                  [100%]
-7 passed in 6.86s
+7 passed in 3.58s
+
+Pinned interpreter: C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe
+Pinned torch: 2.8.0+cu128
+CUDA_VISIBLE_DEVICES=-1; torch.cuda.is_available() == False asserted by focused synthetic test.
+Default and --dry-run subprocesses used this same interpreter and matched the frozen registration exactly.
 
 Scope: tiny random CPU fixtures and stdlib no-load preparation only.
 Real checkpoint load/fit/inference: not run.
