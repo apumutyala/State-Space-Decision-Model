@@ -1,0 +1,116 @@
+{
+ "what": "proxy harness self-check on real data, $0 CPU (train/proxy_loop.py write_results + report with the kit scorer)",
+ "inputs_sha256": {
+  "clef_flash_full_dev_results (job-sgihj)": "463f21ff492fc792da4d40ecc501cffab0498d2458715f8effd3270614cbd0aa",
+  "stock_q9_select_results (job-5cmat I_stock)": "646b61490a37b3aa8887a57bb1a6797f8254c0136a63a0c3cf18d00f90497beb"
+ },
+ "rewrite_of_stock_through_write_results": {
+  "diff": {
+   "point": -0.025725010824594108,
+   "lo": -0.07954444136552752,
+   "hi": 0.0,
+   "se": 0.026002100940285638,
+   "p_le_zero": 1.0,
+   "excludes_zero": false
+  },
+  "candidate": {
+   "point": 38.24293702105121,
+   "lo": 34.94168806946227,
+   "hi": 41.37222954659098,
+   "se": 1.639749577646121
+  },
+  "baseline": {
+   "point": 38.268662031875806,
+   "lo": 34.96691686055704,
+   "hi": 41.395250376536815,
+   "se": 1.639692132650366
+  }
+ },
+ "B": 2000,
+ "seed": 0,
+ "stock_q9_select": {
+  "all": {
+   "point": 38.268662031875806,
+   "lo": 34.96691686055704,
+   "hi": 41.395250376536815,
+   "se": 1.639692132650366
+  },
+  "in_domain": {
+   "point": 48.29918521164715,
+   "lo": 43.01138323549592,
+   "hi": 53.73561965639133,
+   "se": 2.7813620051121037
+  },
+  "in_domain_vs_clef": {
+   "point": -20.509600842546227,
+   "lo": -26.493424284775692,
+   "hi": -13.497716851115994,
+   "se": 3.3761370897316625,
+   "p_le_zero": 1.0,
+   "excludes_zero": true
+  },
+  "new_domain": {
+   "point": 32.562059992412586,
+   "lo": 28.69107073371553,
+   "hi": 36.449720812015734,
+   "se": 1.982839319749246
+  },
+  "new_domain_vs_clef": {
+   "point": -16.91565565446065,
+   "lo": -21.616507903016405,
+   "hi": -12.699159814621245,
+   "se": 2.2875656507537117,
+   "p_le_zero": 1.0,
+   "excludes_zero": true
+  },
+  "vs_clef_flash": {
+   "point": -17.510856052424863,
+   "lo": -21.02232858703419,
+   "hi": -14.10781759257703,
+   "se": 1.798721348993487,
+   "p_le_zero": 1.0,
+   "excludes_zero": true
+  }
+ },
+ "clef_flash_select": {
+  "all": {
+   "point": 55.77951808430067,
+   "lo": 52.985603489986296,
+   "hi": 58.52248187224089,
+   "se": 1.4321914247626335
+  },
+  "in_domain": {
+   "point": 68.80878605419338,
+   "lo": 63.41233214998734,
+   "hi": 73.08025659195462,
+   "se": 2.499122131526807
+  },
+  "new_domain": {
+   "point": 49.477715646873236,
+   "lo": 46.01522128414467,
+   "hi": 53.47830785512109,
+   "se": 1.9076373831778752
+  }
+ },
+ "clef_flash_holdout": {
+  "all": {
+   "point": 55.44410177510236,
+   "lo": 52.85597789283318,
+   "hi": 57.924946874265224,
+   "se": 1.2827771805141748
+  },
+  "in_domain": {
+   "point": 64.29871691037377,
+   "lo": 59.190812505719116,
+   "hi": 68.82597003719896,
+   "se": 2.4350793697265667
+  },
+  "new_domain": {
+   "point": 50.84856111407795,
+   "lo": 47.58918560522342,
+   "hi": 53.8377260785161,
+   "se": 1.6281837077187908
+  }
+ },
+ "note": "stock results re-written from their own rounded (4 dp) probabilities through write_results/wire_answer reproduce job-5cmat to -0.03 points (rounding ties); IN/NEW domain = train/proxy_rule.IN_DOMAIN_CATALOG_IDS. Clef-flash on HOLDOUT uses its full-DEV job-sgihj rows (HOLDOUT is inside full DEV)."
+}
