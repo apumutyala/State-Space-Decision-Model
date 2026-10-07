@@ -185,11 +185,14 @@ def select(a) -> int:
     from train.cohort_v3 import cohort_v3, training_exclusion
 
     co3 = cohort_v3()
-    v3x = training_exclusion(man, content, co3)
+    from train.cohort_v3 import POINTERS, POOL_150K
+
+    pinned_150k = Path(scope["pointer"]).as_posix() == POINTERS[POOL_150K].relative_to(ROOT).as_posix()
+    v3x = training_exclusion(man, content, co3, pool=POOL_150K if pinned_150k and not a.allow_n_mismatch else None)
     ids = draw_ids(man, set(excl) | v3x["ids"], n, int(scope["draw"]["seed"]))
     want = set(ids)
     guard = load_guard(a.guard_readiness, a.guard_standin)
-    forbidden, frozen, drift, texts, got = [], [], [], [], set()
+    forbidden, frozen, drift, texts, got, drawn = [], [], [], [], set(), []
     for rec in stream_records(files["records"], want, man):
         got.add(rec["id"])
         ch = record_content_hash(rec)
@@ -205,6 +208,7 @@ def select(a) -> int:
         except FrozenFamilyError as e:
             frozen.append(str(e))
         texts.append((rec["id"], record_text(rec)))
+        drawn.append(rec)
     missing = sorted(want - got)
     if missing or drift:
         raise IdentityMismatch(f"{len(missing)} drawn ids missing from the records file, {len(drift)} drifted "
@@ -216,7 +220,7 @@ def select(a) -> int:
                             f"{len(rep['hits'])} carry a held-out D1-B fragment ({rep['hits'][:2]})")
     co.assert_training_ids(ids)
     co.assert_training_content(content[i] for i in ids)
-    co3.assert_draw_disjoint(ids, content)
+    co3.assert_draw_disjoint(ids, content, records=drawn)
     sel = {"ok": True, "scope": scope["_scope_sha256"], "scope_path": str(a.scope), "pointer": scope["pointer"],
            "pointer_sha256": ptr["_pointer_sha256"], "files_uncompressed_sha256": sha,
            "lines_manifest_verified": getattr(stream_records, "lines_read", None), "n_set": len(man),

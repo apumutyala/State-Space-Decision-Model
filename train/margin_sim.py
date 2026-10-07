@@ -30,10 +30,10 @@ FLOOR = 0.8
 HW_TARGET = 1.96 / (1.96 + NormalDist().inv_cdf(FLOOR))  # CI half-width / margin at which the null pass rate is 0.8
 SUBSET_INDEX_SE, SUBSET_ROWS = 0.738, 2008  # job-5cmat paired index SE on the 2,008-row subset (1,943 ok rows)
 
-#: Retention = cohort v3 (train/cohort_v3.py, sha256 0c0309b9...c32f): 39,672 records; MEASURED usable items (K <= 16,
-#: T <= 2,048, real template + tokenizer) 36,005 RWKV7 / 35,992 Qwen3.5, the smaller is used
+#: Retention = cohort v3 (train/cohort_v3.py, sha256 498efa61...76da): 39,872 records; MEASURED usable items (K <= 16,
+#: T <= 2,048, real template + tokenizer) 36,696 RWKV7 / 36,691 Qwen3.5, the smaller is used
 #: (receipts/2026-10-07-D-cohort-v3/measure.json). Cohort v2's 1,420 items were the recorded shortfall.
-RETENTION_V3 = "cohort v3 retention role: 39,672 records, 35,992 measured usable items (min over RWKV7 / Q9)"
+RETENTION_V3 = "cohort v3 retention role: 39,872 records, 36,691 measured usable items (min over RWKV7 / Q9)"
 
 #: Configured frozen evaluation sizes (what we HAVE). Cohort v2 header (train/cohorts/m2-dev-cohort-v2.jsonl.gz) and the
 #: frozen full DEV slice (12,104 rows minus the pre-declared unsupported ids; ~5.5k fields per 2,008 rows).
@@ -44,8 +44,8 @@ EVAL_SIZES = {
     "g13_false_alarm": {"n": 1000, "unit": "clean units", "source": "cohort v2 steer_gate"},
     "g13_capability": {"n": 12_097, "unit": "Index DEV rows", "source": "full DEV minus pre-declared unsupported"},
     "g13_ece": {"n": 33_000, "unit": "Index DEV scored fields", "source": "full DEV (5,515 fields / 2,008 rows)"},
-    "g13_retention_acc": {"n": 35_992, "unit": "retention decision items", "source": RETENTION_V3},
-    "g13_retention_ece": {"n": 35_992, "unit": "retention decision items", "source": RETENTION_V3},
+    "g13_retention_acc": {"n": 36_691, "unit": "retention decision items", "source": RETENTION_V3},
+    "g13_retention_ece": {"n": 36_691, "unit": "retention decision items", "source": RETENTION_V3},
 }
 
 #: Pinned simulated required n (max over scale 0.5 / 1.0 runs, rounded up), enforced by the gate through

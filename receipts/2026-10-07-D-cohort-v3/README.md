@@ -1,161 +1,155 @@
-# Receipt: m2 development cohort v3 (retention role expanded to 39,672 records / ~36k items)
+# Receipt: m2 development cohort v3 (rebuilt after the PR #105 review: text twins and passage near-duplicates excluded)
 
 **Result.**
 - `train/cohorts/m2-dev-cohort-v3.jsonl.gz` is frozen. The uncompressed sha256 is
-  **`0c0309b9ec96dec8907e5c421925924d70a4df0f87f9a3dae3dbd2e5701cc32f`**, pinned in `tests/test_cohort_v3.py`.
+  **`498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da`**, pinned in `tests/test_cohort_v3.py`.
+  - The first build was `0c0309b9…`. It is superseded by review B1 and the coordinator's stricter rule.
 - Every cohort v2 entry is unchanged and in order.
-- The G13 `retention` role grows from 1,670 to **39,672 records**: the 1,670 PR #16 records plus 38,002 records of the
-  PR #44 150k set.
-- Measured usable items are **36,005** (RWKV7-G1k) and **35,992** (Qwen3.5 / Q9). These items meet the pre-registered
-  unit spec K ≤ 16, T ≤ 2,048, with the real template and tokenizer.
-- This clears the ≥ 32,000 target, and so the ~30.7k items PR #102's `margin_sim` puts on retention ECE, plus ~9.3k
-  for accuracy.
+- The G13 `retention` role has **39,872 records**: the 1,670 PR #16 records plus 38,202 records of the PR #44 150k set.
+- Measured usable items (K ≤ 16, T ≤ 2,048, the real template and tokenizer):
+  - **36,696 on RWKV7-G1k** and **36,691 on Qwen3.5 / Q9**;
+  - this is ≥ `REQUIRED_N` 33,300 × 1.08 = 35,964 on both parents.
 - Margins are unchanged.
-- Billed $0. Everything ran on CPU locally.
+- Billed $0; everything ran on CPU locally.
+
+## What changed in the rebuild (review FIX-THEN-MERGE)
+
+**B1: a key-free text union key.** `train.cohort.record_text_keys` is the review normalizer:
+- NFKC, casefold, punctuation stripped, dict keys and option ids dropped;
+- `t:` = state + instructions + sorted option texts;
+- `s:` = state + sorted option texts, when longer than 40 chars.
+
+The key is applied in three places:
+- **Union key in `select_retention`.** A text twin of any reserve record, or of any PR #16 record, makes its group ineligible.
+- **Stored per new entry** as `text_keys`.
+- **Mirrored in the guards.** `Cohort.assert_draw_disjoint(..., records=)` and `training_exclusion(..., text_keys=)` both check it. `train_set.draw` and `clef_teacher` now pass the drawn records.
+
+All 196 review pairs (`review-b1-pairs.json`) are out of v3. That includes `m2:glaive_fc:100743` and `m2:factchange:renewal:1124:v0`.
+
+**Passage near-duplicates (coordinator decision).** A candidate group is ineligible when a member shares ≥ 50 % of its
+sampled word 13-gram STATE shingles with ONE record. That record can be:
+- among the first 60,000 of the seed-0 draw order; or
+- in the PR #16 20k sample (its records file is read, and every line is verified against the committed manifest).
+
+Sampling is consistent, keeping hashes ≡ 0 mod 8. 18,567 candidates were flagged: 13,036 against the reserve and 5,531 against PR #16. By source:
+
+| Source | Flagged |
+|---|---:|
+| glaive_fc | 4,595 |
+| mmlu_aux | 3,530 |
+| anli | 1,874 |
+| when2call | 1,680 |
+| synthetic_factchange | 1,296 |
+| boolq | 1,011 |
+| toolace | 932 |
+| others | 3,649 |
+
+Shingles are taken over the state only. A first trial over state + options flagged 35,930, because shared label sets (banking77/clinc150 intents) and tool catalogs dominated. That is a shared template, not a shared passage.
+
+**Non-blocking review items fixed:**
+- **(2)** `training_exclusion(pool=...)` raises `PoolMismatch` when a pinned 150k build lacks any v3 record.
+- **(3)** The cohort test floor is `REQUIRED_N` (33,300), plus the 1.08 headroom.
+- **(6)** `Cohort(path)` always verifies a committed cohort against its pin. Any other path needs `expected_sha256` or `allow_unpinned=True`.
+
+The selection was replenished with the same construction (whole groups, quotas, seed 20261006), and `n_new` was raised to 38,200.
+
+| Ineligible (of 150,000) | Records |
+|---|---:|
+| `draw_reserve`: groups touching the first 60,000 of the seed-0 order, now also via text twins | 69,542 |
+| `pr16_sample`: source item, content or key-free text shared with any PR #16 record | 26,744 |
+| `shingle_reserve` / `shingle_pr16` (group-level) | 14,843 / 6,109 |
+| `injected` | 13,168 |
+| `heldout_excluded` | 3 |
+| guard hits (SplitGuard + content index, frozen-9, D1-A/D1-B) | 0 |
+| cohort v2 | 0 |
+
+There were 53,077 eligible records in 52,929 groups. 38,202 were selected.
 
 ## Commands
 
 ```sh
-python -X utf8 -m train.cohort_v3 build --train-dir <ssdm-data>/m2/build/sample-150000-seed20261006   # 165-300 s
+python -X utf8 -m train.cohort_v3 build --train-dir <ssdm-data>/m2/build/sample-150000-seed20261006   # ~6 min
 python -X utf8 receipts/2026-10-07-D-cohort-v3/measure.py train/cohorts/m2-dev-cohort-v3.jsonl.gz \
-    receipts/2026-10-07-D-cohort-v3/measure.json --workers 20                                     # ~15 min, CPU
-COHORT_V3_REBUILD=1 python -X utf8 -m pytest -q tests/test_cohort_v3.py   # 13 passed (rebuild byte-identical) -> pytest-rebuild.txt
+    receipts/2026-10-07-D-cohort-v3/measure.json --workers 20                                     # ~15 min
+COHORT_V3_REBUILD=1 python -X utf8 -m pytest -q tests/test_cohort_v3.py -k rebuild               # pytest-rebuild.txt
+python -X utf8 -m train.margin_sim > receipts/2026-10-07-D-cohort-v3/margin_sim.json
 ```
 
-Environment: `uv run --with pytest --with torch --with numpy --with pyarrow --with transformers==5.17.0` on the CPU
-index, Python 3.12.13, Windows.
+## Disjointness evidence
 
-## Construction
+All of the following are recorded in the header and re-checked by the build (fail-closed) and by the tests:
 
-The v2 conventions are followed:
-- whole groups, assigned by stratified quotas;
-- largest-remainder quotas;
-- group order sha256(seed|version|role|key);
-- seed 20261006;
-- canonical JSONL, gzip mtime 0.
+| Against | How | Result |
+|---|---|---|
+| m2 training draws: first cell 24k, q9_feature_cache, teacher | Nothing from groups touching the 60k seed-0 reserve (id, content, item, key-free text), and no ≥ 50 % state-shingle overlap with any reserve record. The rebuild test checks that the 24k and 60k seed-0 draws are byte-identical with and without v3, and that `training_exclusion(150k, pool=…)` == exactly the 38,202 v3 ids | 0 |
+| PR #16 pilot draws | id / content / item / key-free text / passage vs all 20,000 PR #16 records | 0 |
+| Index DEV/TEST | SplitGuard (manifests + content index `7cbe6c89…`) over all 82,710 candidates | 0 |
+| D1-A / D1-B, frozen 9 families | injected records never eligible; template scans; `check_record` | 0 |
 
-Groups are the connected components of "same normalized content" OR "same source item" (`record_item_keys`). This
-covers:
-- injection suffixes;
-- multi-record parts;
-- both variants of a fact-change pair.
+## Composition delta (`measure.json` `composition_retention_role`; v3 first build → rebuild)
 
-All 368 fact-change records in the new set are whole pairs.
-
-Strata are source × word-length bin (5 bins). Sources nest in areas.
-
-| Ineligible (of 150,000) | Records | Why |
-|---|---:|---|
-| `draw_reserve` | 60,734 | groups with any member among the first 60,000 of the seed-0 draw order (`train.run_cell.split_ids`) |
-| `pr16_sample` | 17,910 | the group shares a source item or content with ANY PR #16 record (all m2 pilot draws come from PR #16) |
-| `injected` | 12,294 | D1-A verbatim and training-only hijack injections (`~inj:` ids) |
-| `heldout_excluded` | 3 | the pinned D1-B fragment records (PR #74 / teacher scope) |
-| guard hits (SplitGuard, frozen families, D1-A/D1-B scan) | 0 | `guard_excluded == {}` |
-| cohort v2 (id / content / item) | 0 | the 150k build already excluded v2 |
-
-Eligible: 72,204 records in 71,856 groups. Selected: 38,002, against a target of 38,000; whole groups overshoot by 2.
-
-## Disjointness evidence (all in the cohort header, and re-checked by tests)
-
-- **m2 training draws, used and planned.** These are the first cell (24,000, seed 0), the q9_feature_cache rows of
-  that draw, and the Clef teacher export.
-  - Every new id has a `split_ids` key above the reserve cutoff `669844ed…19bb`.
-  - The reserve prefix contains the pinned draw, `2bbbf180…556b`, which the build recomputes.
-  - With the 150k files present, the rebuild test checks that `training_exclusion(set)` equals exactly the 38,002 v3
-    pool ids, so no twin or item is left in the set.
-  - The same test checks that the seed-0 draws of 24,000 and of 60,000 are byte-identical with and without the v3
-    exclusion.
-- **PR #16 draws.** These are the m2 pilot's 3,000 draw and the rwkv7 pilot's 2,000 + 300. No new record shares a
-  source item or content with any of the 20,000 PR #16 records. Before this rule was added, a trial build overlapped
-  87 records of the m2 pilot draw and 38 of the legacy draw (negative evidence, scratch).
-- **Index DEV/TEST.** This guard is `train.guard.SplitGuard` over the harness DEV + TEST manifests:
-  - DEV manifest `26cd6bc0…`, TEST manifest `8de5aaed…`;
-  - the pinned content index `7cbe6c89…`, n = 24,150, via `data.build.content_guard`.
-  - It ran over every one of the 82,710 candidates and produced 0 hits.
-- **D1-A / D1-B.** `train.heldout.scan` ran over all candidates with the D1-B set (`7a81287e…`) and the D1-A set:
-  0 hits. Injected records are never eligible. The steer roles are unchanged.
-- **Frozen held-out families.** `harness.heldout.check_record` (heldout-draw-v1 `c3172003…`, 9 families) gave 0
-  `FrozenFamilyError`.
-- **Within the cohort.** No id, content hash or source item is shared between the new records and v2's
-  dev / calibration / retention.
-
-## Composition of the retention role (`measure.json` `composition_retention_role`)
-
-| | v2 (PR #16) | new (m2-150k) | all |
-|---|---:|---:|---:|
-| records | 1,670 | 38,002 | 39,672 |
-| usable items, RWKV7 / Q9 | 1,491 / 1,490 | 34,514 / 34,502 | **36,005 / 35,992** |
-| question types choice / noul / score | 1,936 / 155 / 157 | 44,982 / 2,433 / 3,502 | 46,918 / 2,588 / 3,659 |
-| length <64 / 64-255 / 256-1023 / 1024-4095 / ≥4096 words | 303 / 580 / 597 / 114 / 76 | 5,960 / 14,425 / 14,285 / 1,976 / 1,356 | 6,263 / 15,005 / 14,882 / 2,090 / 1,432 |
-
-Items by area (multi parts counted per part):
-
-| Area | Item parts | Share |
+| | first build (0c0309b9) | rebuild (498efa61) |
 |---|---:|---:|
-| knowledge | 11,493 | 26.2 % |
-| language | 11,401 | 26.0 % |
-| retrieval | 10,525 | 24.0 % |
-| tools | 7,632 | 17.4 % |
-| arts | 2,834 | 6.5 % |
+| records (v2 + new) | 1,670 + 38,002 = 39,672 | 1,670 + 38,202 = 39,872 |
+| usable items, RWKV7 / Q9 | 36,005 / 35,992 | **36,696 / 36,691** |
+| knowledge / language / retrieval / tools / arts (item parts) | 11,493 / 11,401 / 10,525 / 7,632 / 2,834 | 13,067 / 11,862 / 11,440 / 5,539 / 2,853 |
+| area share K / L / R / T / A | 26.2 / 26.0 / 24.0 / 17.4 / 6.5 % | 29.2 / 26.5 / 25.6 / 12.4 / 6.4 % |
+| choice / noul / score questions | 46,918 / 2,588 / 3,659 | 50,635 / 3,036 / 3,399 |
+| length <64 / 64-255 / 256-1023 / 1024-4095 / ≥4096 words | 6,263 / 15,005 / 14,882 / 2,090 / 1,432 | 6,775 / 13,249 / 15,276 / 2,701 / 1,871 |
 
-Arts has no v2 records: the PR #16 sample had no arts source. New records by source are in the cohort header
-(`composition_new`). mmlu_aux is the largest source at 8,922; 17 sources in total.
+New records by source, first build → rebuild:
 
-## Per-arm evaluation cost of the retention term (`measure.json` `cost`)
+| Source | First build | Rebuild |
+|---|---:|---:|
+| mmlu_aux | 8,922 | 10,075 |
+| glaive_fc | 4,291 | 2,469 |
+| nq | 2,503 | 3,310 |
+| hellaswag | 2,140 | 2,815 |
+| mixed | 2,397 | 2,760 |
+| boolq | 2,133 | 2,556 |
+| winogrande | 1,575 | 2,053 |
+| clinc150 | 2,152 | 1,760 |
+| toolace | 1,373 | 1,741 |
+| humicroedit_s2 | 1,266 | 1,642 |
+| gsm8k | 1,139 | 1,512 |
+| banking77 | 1,595 | 1,315 |
+| humicroedit_s1 | 1,568 | 1,211 |
+| anli | 2,370 | 1,183 |
+| when2call | 1,266 | 877 |
+| sst5 | 944 | 805 |
+| synthetic_factchange | 368 | 118 |
 
-The volume is exact: the decide prefix-fork plan over every record with at least one usable item. The rates are
-measured.
+**Tools drops** from 17.4 % to 12.4 % of item parts. Tool-catalog states and the synthetic fact-change generator repeat across records, so the stricter rule removes them.
 
-| Backbone | Positions | Calls | Minutes / arm | $ / arm |
+## Per-arm cost of the retention term (`measure.json` `cost`; exact fork plan × measured rates)
+
+| Backbone | Positions | Calls | Min / arm | $ / arm |
 |---|---:|---:|---:|---:|
-| RWKV7-G1k-13.3B, job-tkfaj (3,757 tok/s, 0.117 s/call) | 21,182,992 | 64,054 | 218.9 | 10.83 |
-| Q9 / Qwen3.5-9B, job-5cmat (22,144 tok/s, 0.0595 s/call) | 20,514,242 | 63,930 | 78.8 | 3.90 |
+| RWKV7-13.3B, job-tkfaj (3,757 tok/s, 0.117 s/call) | 22,877,944 | 63,741 | 225.8 | 11.18 |
+| Q9 / Qwen3.5-9B, job-5cmat (22,144 tok/s, 0.0595 s/call) | 22,106,052 | 63,583 | 79.7 | 3.94 |
 
-- **Conservative bound** (pack-call latency on every call): RWKV7 734.5 min / $36.36; Q9 267.9 min / $13.26.
-- **`VOLUME_TOKENS` upper-bound convention:** RWKV7 129.6 M tokens (575 min / $28.46); Q9 132.2 M tokens (99.5 min / $4.93).
-  - This method reproduces v2's 5,724,231 exactly.
-  - It over-counts, because records with no usable item are never forwarded.
+- **Conservative bound** (pack-call latency per call): RWKV7 738.9 min / $36.58; Q9 267.7 min / $13.25.
+- **`VOLUME_TOKENS` upper bound:** RWKV7 158.9 M (704.9 min / $34.89); Q9 162.1 M (122.0 min / $6.04).
+
+## margin_sim (`margin_sim.json`; margins unchanged)
+
+- Retention `EVAL_SIZES` = 36,691.
+- Both retention criteria pass with a simulated null pass rate of 1.0 at that size, and `SHORTFALLS` is empty.
+- The 1/sqrt(n) re-estimate is ~7.5k (accuracy) and ~7.9k (ECE); the `REQUIRED_N` pin (33,300) is kept.
+
+## job-8vjve (q9_feature_cache stock_train @ 06e9733; `job-8vjve-exclusions.json`, `job_8vjve_exclusions.py`)
+
+The job's rows were recomputed with the Qwen3.5 template + tokenizer and `keep_item`, in draw order:
+- **20,000 rows from 17,917 records.** The last record is at draw position 22,524. This matches `volume_plan.json`.
+- **The job's rows do overlap the records the rebuild removed.** Of the 10,056 records dropped from the first v3 build, 5,820 have a twin or passage neighbour in the job's rows: 2,253 key-free text twins and 3,567 passage-only.
+- **3,251 distinct job records are involved.** They are listed by draw position in the JSON; the first few are at positions 7, 14, 20, 21 and 22.
+- These are training-cache records. v3 now excludes their twins, so the job needs no change.
+- **The rebuilt v3 overlaps the job's rows 0 by id and 0 by key-free text.** By construction it also has no passage overlap with any reserve record.
+
+The earlier draw check (`q9-cache-draw-check.json`) still holds: the 24k draw is `2bbbf180…`.
 
 ## Limits
 
-- The jobs still pin v2. `score_parent.VOLUME_TOKENS` and the job caps are v2-sized. Switching a job to v3 requires
-  three things:
-  - `pool_dirs={"m2-150k": dir}` in `Cohort.load_role_records`;
-  - re-caching the parent arm;
-  - re-pricing the caps from the table above.
-
-  This is left for after PR #102 and PR #74, which own those files.
-- PR #74's `train.train_set.draw` refuses any set that contains a cohort-held-out record. Once a cell pins v3, it must
-  subtract `train.cohort_v3.training_exclusion(...)` from its pool and call `assert_draw_disjoint`. Both are already
-  done in `baselines.clef_teacher`. The 24k draw is unchanged by this.
-- The power inputs are still the `margin_sim` assumptions: synthetic ECE arms and discordance 0.10. The first real G13
-  run re-sizes from measured values.
-
-## Power re-check on top of PR #102 (`margin_sim.json`)
-
-`python -X utf8 -m train.margin_sim` was run with `EVAL_SIZES` retention = 35,992 measured items, the smaller of the
-two tokenizers. Both retention criteria now meet the 0.8 floor, with a simulated null pass rate of 1.0 at that size.
-`SHORTFALLS` is empty.
-
-The pinned `REQUIRED_N` is 9,300 for accuracy and 33,300 for ECE; it is the gate's exit-45 floor. 35,992 clears both,
-so the floor is met with ~8 % headroom over the ECE pin. The 1/sqrt(n) re-estimate from the simulated half-width at
-35,992 is ~7.5k (accuracy) and ~7.9k (ECE). That suggests the 33,300 ECE pin is conservative. The pin is left unchanged.
-
-Tests: `pytest.txt` holds the task command plus test_margin_sim / test_promotion_margins / test_m2_gates.
-`pytest-rebuild.txt` holds the opt-in byte-identical rebuild.
-
-## train.train_set.draw guard (after #101 merged) and the in-flight q9 cache job
-
-`train.train_set.draw` serves the m2 first cell, q9_feature_cache and the fla_rwkv7 train mix. It now:
-- removes cohort v3 from the pool before `split_ids`, by id, content and source item, whatever cohort the cell pins;
-- re-checks the draw with `assert_draw_disjoint`;
-- records `cohort_v3_excluded` in its identity.
-
-A cell pinning v3 itself may point at the 150k set. The test is `test_train_set_draw_excludes_cohort_v3_and_rechecks`.
-
-**job-8vjve** is the q9_feature_cache stock_train job at 06e9733. Its 24,000-record draw was recomputed with the
-06e9733 code (`q9-cache-draw-check.json`):
-- `drawn_ids_sha256` is `2bbbf180…`, equal to `volume_plan.json`.
-- The draw has **0 overlap with v3** by id, content and source item.
-- The guarded draw on this branch gives the same sha.
-- The guarded draw's pool is 111,995 = 149,997 − 38,002 excluded; the excluded set is exactly the v3 records.
+- **Jobs still pin v2.** Moving to v3 means four things: `pool_dirs`, `VOLUME_TOKENS`, re-sized caps and a re-cached parent arm.
+- **Power inputs** are `margin_sim` assumptions until the first real G13 run.
+- **Off-set draws.** Text-twin exclusion BEFORE a draw needs the set's text keys. Within the 150k set every twin of a v3 record is inside v3 (whole groups), so id exclusion covers it there. For any other set, the post-draw check `assert_draw_disjoint(records=…)` refuses a twin.

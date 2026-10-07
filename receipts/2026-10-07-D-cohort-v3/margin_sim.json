@@ -56,8 +56,8 @@
   },
   "g13_retention_acc": {
    "criterion": "g13_retention_acc",
-   "have": 35992,
-   "need": 7473,
+   "have": 36691,
+   "need": 7479,
    "need_basis": "estimate <= have",
    "pass_at_have": 1.0,
    "meets": true,
@@ -65,8 +65,8 @@
   },
   "g13_retention_ece": {
    "criterion": "g13_retention_ece",
-   "have": 35992,
-   "need": 7866,
+   "have": 36691,
+   "need": 7923,
    "need_basis": "estimate <= have",
    "pass_at_have": 1.0,
    "meets": true,

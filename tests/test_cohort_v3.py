@@ -6,6 +6,7 @@ local ssdm-data path exists) AND ``COHORT_V3_REBUILD=1`` (about 3 minutes, CPU).
 
 import gzip
 import hashlib
+import math
 import json
 import os
 from collections import Counter
@@ -18,7 +19,7 @@ from train.cohort import OUT, Cohort, CohortLeak, read_content_map, read_pr16_ma
 
 ROOT = Path(__file__).resolve().parents[1]
 #: sha256 of the uncompressed m2-dev-cohort-v3 text. Changing the cohort means changing this pin (and re-caching).
-V3_SHA256 = "0c0309b9ec96dec8907e5c421925924d70a4df0f87f9a3dae3dbd2e5701cc32f"
+V3_SHA256 = "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da"
 V2_SHA256 = "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2"
 RECEIPT = ROOT / "receipts" / "2026-10-07-D-cohort-v3"
 
@@ -46,6 +47,17 @@ def test_v3_is_frozen_and_pinned(v3):
         Cohort(V.OUT_V3, expected_sha256=V2_SHA256)
 
 
+def test_unpinned_cohort_paths_are_refused(tmp_path):
+    p = tmp_path / "copy.jsonl.gz"
+    p.write_bytes(V.OUT_V3.read_bytes())
+    with pytest.raises(ValueError, match="unpinned"):
+        Cohort(p)
+    assert Cohort(p, expected_sha256=V3_SHA256).sha256 == V3_SHA256
+    assert Cohort(p, allow_unpinned=True).sha256 == V3_SHA256
+    with pytest.raises(ValueError):
+        Cohort(p, expected_sha256=V2_SHA256)
+
+
 def test_every_v2_entry_is_unchanged_and_in_order(v3):
     v2l, v3l = _lines(OUT)[1:], _lines(V.OUT_V3)[1:]
     assert [x for x in v3l if '"pool":"m2-150k"' not in x] == v2l
@@ -61,8 +73,12 @@ def test_retention_is_at_least_32k_items_and_sized_as_recorded(v3, new):
     assert v3.header["n_actual"]["retention"] == len(v3.roles["retention"]) == 1670 + len(new)
     m = json.loads((RECEIPT / "measure.json").read_text(encoding="utf-8"))
     assert m["cohort_sha256"] == V3_SHA256
+    from train.margin_sim import REQUIRED_N
+
     for fam in ("rwkv7", "qwen3.5"):  # MEASURED usable items: K <= 16, T <= 2,048, the parent's template + tokenizer
-        assert m["families"][fam]["totals"]["all"]["items_kept"] >= 32_000
+        got = m["families"][fam]["totals"]["all"]["items_kept"]
+        assert got >= REQUIRED_N["g13_retention_ece"] and got >= REQUIRED_N["g13_retention_acc"]  # the gate floor
+        assert got >= math.ceil(1.08 * REQUIRED_N["g13_retention_ece"])  # coordinator headroom (35,964)
         assert m["families"][fam]["totals"]["all"]["refused"] == 0
 
 
@@ -86,6 +102,34 @@ def test_new_retention_is_outside_every_m2_training_draw(v3, new):
     assert not any("~inj:" in e["id"] for e in new)  # no D1-A / hijack-injected record
     reasons = sel["ineligible_records_by_reason"]
     assert reasons.get("cohort_v2", 0) == 0 and reasons["draw_reserve"] >= V.DRAW_RESERVE
+    assert v3.header["exclude_text_keys"] is True and all(e.get("text_keys") for e in new)
+    nd = v3.header["sources"]["retention_150k"]["near_duplicates"]
+    assert nd["n_candidates_flagged"] > 0 and set(nd["by_reference"]) <= {"shingle_reserve", "shingle_pr16"}
+    assert (V.SHINGLE_K, V.SHINGLE_FRAC) == (13, 0.5)
+
+
+def test_review_b1_text_twins_are_not_in_v3(new):
+    """PR #105 review B1: the 196 v3 (0c0309b9) records with a key-free text twin in the 24k draw are excluded now."""
+    pairs = json.loads((RECEIPT / "review-b1-pairs.json").read_text(encoding="utf-8"))["pairs_full_24k"]
+    assert len(pairs) == 196
+    ids = {e["id"] for e in new}
+    assert not ids & {a for a, _, _ in pairs} and not ids & {b for _, b, _ in pairs}
+    assert "m2:glaive_fc:100743" not in ids and "m2:factchange:renewal:1124:v0" not in ids
+
+
+def test_text_keys_ignore_keys_option_ids_and_shape():
+    from train.cohort import record_text_keys
+
+    a = {"id": "m2:x:1", "state": "Patient: BMI for 70 kg, 1.75 m?",
+         "questions": {"result": {"type": "choice", "instructions": "Pick the call.",
+                                  "criteria": {"A": "calculate_bmi", "B": "no_tool"}}}}
+    b = {"id": "m2:x:2", "state": {"conversation": "patient bmi for 70 kg 1 75 m"},
+         "questions": {"answer": {"type": "choice", "instructions": "Pick the call",
+                                  "criteria": {"no_tool": "No tool", "calculate_bmi": "Calculate BMI"}}}}
+    b["questions"]["answer"]["criteria"] = {"opt_1": "no_tool", "opt_2": "calculate_bmi"}
+    assert record_text_keys(a) == record_text_keys(b)
+    c = dict(b, state="patient bmi for 80 kg 1 75 m")
+    assert not record_text_keys(a) & record_text_keys(c)
 
 
 def test_new_retention_shares_nothing_with_the_pr16_sample(new):
@@ -148,6 +192,16 @@ def test_training_draw_guard_refuses_any_overlap(v3, new):
         v3.assert_draw_disjoint([f"m2:multi:{e['id']}+m2:sst5:999999"])
     with pytest.raises(CohortLeak, match="source item"):
         v3.assert_draw_disjoint([e["id"] + "~inj:d1a:x"])
+    twin = {"id": "m2:x:texttwin", "state": "s", "questions": {}}
+    from train import cohort as C
+
+    orig = C.record_text_keys
+    try:  # a drawn record whose key-free text equals a held-out record's
+        C.record_text_keys = lambda r: set(e["text_keys"]) if r is twin else orig(r)
+        with pytest.raises(CohortLeak, match="key-free text"):
+            v3.assert_draw_disjoint([twin["id"]], records=[twin])
+    finally:
+        C.record_text_keys = orig
 
 
 def test_training_exclusion_removes_v3_before_the_draw(v3, new):
@@ -159,6 +213,10 @@ def test_training_exclusion_removes_v3_before_the_draw(v3, new):
     content["m2:toy:twin"] = new[60]["content_sha256"]
     ex = V.training_exclusion(toy, content, v3)
     assert ex["ids"] == set(held) | {"m2:toy:twin"}
+    tk = {"m2:toy:7": set(new[70]["text_keys"])}  # key-free text twin
+    assert "m2:toy:7" in V.training_exclusion(toy, content, v3, text_keys=tk)["ids"]
+    with pytest.raises(V.PoolMismatch, match="lacks"):  # the pinned 150k build must hold every v3 pool record
+        V.training_exclusion(toy, content, v3, pool=V.POOL_150K)
     drawn = draw_ids(toy, ex["ids"], 400, 0)
     V.assert_draw_disjoint(drawn, content, v3)
     assert not set(drawn) & ex["ids"]
@@ -187,7 +245,7 @@ def test_rebuild_is_byte_identical_and_the_first_cell_draw_is_unchanged(v3):
     man = [r["id"] for r in V.read_manifest_rows(fs["manifest"])]
     content = read_content_map(fs["content_map"])
     pool = sorted(set(man) - set(V.HELDOUT_EXCLUDED_150K))
-    ex = V.training_exclusion(man, content, v3)
+    ex = V.training_exclusion(man, content, v3, pool=V.POOL_150K)
     assert ex["ids"] == set(v3.pool_ids(V.POOL_150K))  # whole groups: no twin / item left in the set
     before = split_ids(pool, 24_000, 0, 0)[0]
     after = split_ids(sorted(set(pool) - ex["ids"]), 24_000, 0, 0)[0]

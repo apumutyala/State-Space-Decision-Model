@@ -55,7 +55,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from train.cohort import (COHORTS, OUT, ROLES, SEED, STEER_ROLES, Cohort, CohortLeak, _h, _quotas, committed_sha256,
-                          read_content_map, record_item_keys, sha_file)
+                          read_content_map, record_item_keys, record_text_keys, record_texts, sha_file)
 
 ROOT = Path(__file__).resolve().parents[1]
 COHORT_V3 = "m2-dev-cohort-v3"
@@ -69,8 +69,13 @@ DRAW_SEED = 0
 #: Seed-0 draws of up to this many records are untouched by v3 (2.5 x the first cell's 24,000).
 DRAW_RESERVE = 60_000
 #: Records added to the retention role (sized so the MEASURED usable items, K <= 16 and T <= 2,048 tokens under BOTH
-#: parents' tokenizers, clear the ~30.7k retention-ECE requirement with margin; receipts/2026-10-07-D-cohort-v3).
-N_RETENTION_NEW = 38_000
+#: parents' tokenizers, clear REQUIRED_N 33,300 x 1.08 = 35,964 (coordinator); receipts/2026-10-07-D-cohort-v3).
+N_RETENTION_NEW = 38_200
+#: Passage-level near-duplicates (PR #105 review #4/#5, coordinator decision): a candidate group is ineligible when a
+#: member shares >= SHINGLE_FRAC of its sampled word 13-gram shingles with ONE record among the seed-0 reserve or the
+#: PR #16 sample (same passage, different question). Shingles are over the key-free STATE text (``record_texts``);
+#: a shingle is sampled when its 64-bit hash is 0 mod SHINGLE_MOD (consistent sampling, both sides).
+SHINGLE_K, SHINGLE_FRAC, SHINGLE_MOD = 13, 0.5, 8
 LENGTH_BINS = ((64, "<64"), (256, "64-255"), (1024, "256-1023"), (4096, "1024-4095"), (None, ">=4096"))
 #: Pinned: the drawn ids of the m2 first cell / teacher / q9-cache draw (n 24,000, seed 0).
 FIRST_CELL_DRAW = {"n": 24_000, "seed": 0,
@@ -270,10 +275,120 @@ def pr16_exclusion() -> tuple[set[str], set[str]]:
     return set().union(*(record_item_keys(i) for i in ids)), {cm[i] for i in ids}
 
 
+_WORD_IDS: dict[str, int] = {}
+_M64 = (1 << 64) - 1
+
+
+def _word_id(w: str) -> int:
+    v = _WORD_IDS.get(w)
+    if v is None:
+        v = int.from_bytes(hashlib.blake2b(w.encode("utf-8"), digest_size=8).digest(), "little")
+        _WORD_IDS[w] = v
+    return v
+
+
+def sampled_shingles(rec: dict):
+    """Sorted unique sampled 13-gram shingle hashes (uint64) of the record's key-free STATE text (the passage; options
+    and instructions are excluded so shared label sets / templates do not count as a shared passage)."""
+    import numpy as np
+
+    words = record_texts(rec)[0].split(" || ", 1)[0].split()
+    if len(words) < SHINGLE_K:
+        return np.zeros(0, dtype=np.uint64)
+    w = np.fromiter((_word_id(x) for x in words), dtype=np.uint64, count=len(words))
+    n = len(words) - SHINGLE_K + 1
+    h = np.zeros(n, dtype=np.uint64)
+    mult = np.uint64(0x100000001B3)
+    with np.errstate(over="ignore"):
+        for j in range(SHINGLE_K):
+            h = h * mult + w[j: j + n]
+        h ^= h >> np.uint64(29)
+        h *= np.uint64(0xBF58476D1CE4E5B9)
+        h ^= h >> np.uint64(32)
+    h = h[h % np.uint64(SHINGLE_MOD) == 0]
+    return np.unique(h)
+
+
+class ShingleIndex:
+    """Sampled shingles of the reference records (seed-0 reserve + PR #16): max overlap fraction of a candidate."""
+
+    def __init__(self) -> None:
+        self.h, self.r, self.names = [], [], []
+
+    def add(self, name: str, sh) -> None:
+        import numpy as np
+
+        if len(sh):
+            self.h.append(sh)
+            self.r.append(np.full(len(sh), len(self.names), dtype=np.int32))
+        self.names.append(name)
+
+    def freeze(self) -> "ShingleIndex":
+        import numpy as np
+
+        H = np.concatenate(self.h) if self.h else np.zeros(0, np.uint64)
+        R = np.concatenate(self.r) if self.r else np.zeros(0, np.int32)
+        o = np.argsort(H, kind="stable")
+        self.H, self.R = H[o], R[o]
+        self.h, self.r = [], []
+        return self
+
+    def best(self, sh) -> tuple[str | None, float]:
+        """(reference name, |S_c & S_r| / |S_c|) maximised over reference records; (None, 0) without shingles."""
+        import numpy as np
+
+        if not len(sh) or not len(self.H):
+            return None, 0.0
+        lo, hi = np.searchsorted(self.H, sh, "left"), np.searchsorted(self.H, sh, "right")
+        m = hi > lo
+        if not m.any():
+            return None, 0.0
+        idx = np.concatenate([self.R[a:b] for a, b in zip(lo[m], hi[m])])
+        refs, cnt = np.unique(idx, return_counts=True)
+        k = int(np.argmax(cnt))
+        return self.names[int(refs[k])], float(cnt[k]) / len(sh)
+
+
+def pr16_records_path() -> Path:
+    from data import config
+
+    return config.BUILD_DIR / "sample-20000-seed20261006" / "records.jsonl.gz"
+
+
+def read_pr16_texts(path: Path, index: "ShingleIndex") -> set[str]:
+    """Stream the PR #16 records (every line verified against the committed manifest): adds their sampled shingles
+    to ``index`` and returns their key-free text keys."""
+    from train.cohort import read_pr16_manifest
+
+    man = {r["id"]: r["sha256"] for r in read_pr16_manifest()}
+    keys: set[str] = set()
+    n = 0
+    with gzip.open(path, "rt", encoding="utf-8", newline="\n") as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            if not line:
+                continue
+            rec = json.loads(line)
+            if man.get(rec["id"]) != hashlib.sha256(line.encode("utf-8")).hexdigest():
+                raise PoolMismatch(f"PR #16 {rec['id']}: line sha256 does not match the committed manifest")
+            n += 1
+            keys |= record_text_keys(rec)
+            index.add("pr16:" + rec["id"], sampled_shingles(rec))
+    if n != len(man):
+        raise PoolMismatch(f"PR #16 records file has {n} lines, manifest {len(man)}")
+    return keys
+
+
 def select_retention(manifest: list[dict], content: dict[str, str], stats: dict[str, dict], n_new: int,
                      v2: Cohort, guard_bad: dict[str, list[str]], reserve: int = DRAW_RESERVE,
-                     seed: int = SEED, pr16: tuple[set[str], set[str]] | None = None) -> tuple[list[str], dict[str, Any]]:
-    """Pure selection (no I/O): returns (selected ids sorted, selection report)."""
+                     seed: int = SEED, pr16: tuple[set[str], ...] | None = None,
+                     text_keys: dict[str, set[str]] | None = None,
+                     near_dup: dict[str, str] | None = None) -> tuple[list[str], dict[str, Any]]:
+    """Pure selection (no I/O): returns (selected ids sorted, selection report). Groups = connected components of
+    same normalized content, same source item, or same key-free text (``text_keys``; PR #105 review B1).
+    ``near_dup``: id -> reason for candidates sharing a passage with a reference record (``ShingleIndex``)."""
+    text_keys = text_keys or {}
+    near_dup = near_dup or {}
     ids = [r["id"] for r in manifest]
     missing_ex = sorted(set(HELDOUT_EXCLUDED_150K) - set(ids))
     if missing_ex:
@@ -289,11 +404,13 @@ def select_retention(manifest: list[dict], content: dict[str, str], stats: dict[
         uf.union(i, "c:" + content[i])
         for k in record_item_keys(i):
             uf.union(i, "i:" + k)
+        for k in text_keys.get(i, ()):
+            uf.union(i, "x:" + k)
     groups: dict[str, list[str]] = defaultdict(list)
     for i in ids:
         groups[uf.find(i)].append(i)
     v2_ids, v2_c, v2_i = v2.held_out(), v2.held_out_content(), v2.held_out_items()
-    p16_i, p16_c = pr16 if pr16 is not None else (set(), set())
+    p16_i, p16_c, p16_t = (tuple(pr16) + (set(),))[:3] if pr16 is not None else (set(), set(), set())
     why: Counter = Counter()
     eligible: dict[str, list[str]] = {}
     for g, mem in groups.items():
@@ -309,8 +426,10 @@ def select_retention(manifest: list[dict], content: dict[str, str], stats: dict[
                 reasons.add("cohort_v2")
             if i in guard_bad:
                 reasons.add("guard")
-            if record_item_keys(i) & p16_i or content[i] in p16_c:
+            if record_item_keys(i) & p16_i or content[i] in p16_c or text_keys.get(i, set()) & p16_t:
                 reasons.add("pr16_sample")
+            if i in near_dup:
+                reasons.add(near_dup[i])
         for r in reasons:
             why[r] += len(mem)
         if not reasons:
@@ -345,8 +464,8 @@ def select_retention(manifest: list[dict], content: dict[str, str], stats: dict[
     return picked, rep
 
 
-def build_cohort_v3(train_dir: str | Path, n_new: int = N_RETENTION_NEW, guard=None, log=print
-                    ) -> tuple[str, dict, dict]:
+def build_cohort_v3(train_dir: str | Path, n_new: int = N_RETENTION_NEW, guard=None, log=print,
+                    pr16_records: str | Path | None = None) -> tuple[str, dict, dict]:
     """(canonical JSONL text, header, per-record stats of the selected records). Deterministic."""
     from data.build import AREA  # noqa: F401  (fail early if the data package is not importable)
 
@@ -362,7 +481,10 @@ def build_cohort_v3(train_dir: str | Path, n_new: int = N_RETENTION_NEW, guard=N
     pool = sorted(set(man) - set(HELDOUT_EXCLUDED_150K))
     cutoff = draw_key(sorted(pool, key=draw_key)[DRAW_RESERVE - 1])
     stats: dict[str, dict] = {}
+    tkeys: dict[str, set[str]] = {}
     cands: list[dict] = []
+    cand_sh: dict[str, Any] = {}
+    index = ShingleIndex()
     n_lines = 0
     with gzip.open(fs["records"], "rt", encoding="utf-8", newline="\n") as fh:
         for line in fh:
@@ -374,15 +496,30 @@ def build_cohort_v3(train_dir: str | Path, n_new: int = N_RETENTION_NEW, guard=N
             if man.get(rec["id"]) != hashlib.sha256(line.encode("utf-8")).hexdigest():
                 raise PoolMismatch(f"{rec['id']}: line sha256 does not match the manifest")
             stats[rec["id"]] = _record_stats(rec)
-            if draw_key(rec["id"]) > cutoff and "~inj:" not in rec["id"] and rec["id"] not in HELDOUT_EXCLUDED_150K:
+            tkeys[rec["id"]] = record_text_keys(rec)
+            k = draw_key(rec["id"])
+            if k <= cutoff and rec["id"] not in HELDOUT_EXCLUDED_150K:
+                index.add("reserve:" + rec["id"], sampled_shingles(rec))
+            if k > cutoff and "~inj:" not in rec["id"] and rec["id"] not in HELDOUT_EXCLUDED_150K:
                 cands.append(rec)
+                cand_sh[rec["id"]] = sampled_shingles(rec)
     if n_lines != len(man) or set(stats) != set(man):
         raise PoolMismatch(f"records file has {n_lines} lines / {len(stats)} ids, manifest {len(man)}")
     log(f"read {n_lines} records; guarding {len(cands)} candidates beyond the draw reserve")
     bad = scan_guards(cands, guard)
     del cands
-    p16 = pr16_exclusion()
-    picked, rep = select_retention(manifest, content, stats, n_new, v2, bad, pr16=p16)
+    p16_text = read_pr16_texts(Path(pr16_records) if pr16_records else pr16_records_path(), index)
+    index.freeze()
+    near: dict[str, str] = {}
+    near_ex: dict[str, list] = {}
+    for i in sorted(cand_sh):
+        ref, frac = index.best(cand_sh[i])
+        if ref is not None and frac >= SHINGLE_FRAC:
+            near[i] = "shingle_" + ref.split(":", 1)[0]
+            near_ex[i] = [ref.split(":", 1)[1], round(frac, 3)]
+    log(f"near-duplicate passages: {len(near)} candidates (>= {SHINGLE_FRAC} of sampled {SHINGLE_K}-gram shingles)")
+    p16 = pr16_exclusion() + (p16_text,)
+    picked, rep = select_retention(manifest, content, stats, n_new, v2, bad, pr16=p16, text_keys=tkeys, near_dup=near)
     # fail-closed re-checks on the selection itself
     sel = set(picked)
     assert all(draw_key(i) > rep["draw"]["reserve_cutoff_key"] for i in picked)
@@ -390,11 +527,17 @@ def build_cohort_v3(train_dir: str | Path, n_new: int = N_RETENTION_NEW, guard=N
     assert not sel & set(bad)
     v2.assert_draw_disjoint(picked, content)
     v2.assert_training_items(picked)
-    if any(record_item_keys(i) & p16[0] or content[i] in p16[1] for i in picked):
-        raise CohortLeak("a selected record shares a source item / content with the PR #16 sample")
+    if any(record_item_keys(i) & p16[0] or content[i] in p16[1] or tkeys[i] & p16[2] for i in picked):
+        raise CohortLeak("a selected record shares a source item / content / text with the PR #16 sample")
+    if sel & set(near):
+        raise CohortLeak("a selected record is a passage near-duplicate of a reserve / PR #16 record")
+    order_all = sorted(pool, key=draw_key)
+    reserve_text = set().union(*(tkeys[i] for i in order_all[:DRAW_RESERVE]))
+    if any(tkeys[i] & reserve_text for i in picked):
+        raise CohortLeak("a selected record has the key-free text of a reserve (training-draw) record")
     src = {r["id"]: r["source"] for r in manifest}
     new = [{"content_sha256": content[i], "id": i, "pool": POOL_150K, "role": "retention", "sha256": man[i],
-            "source": src[i]} for i in picked]
+            "source": src[i], "text_keys": sorted(tkeys[i])} for i in picked]
     header = json.loads(json.dumps(v2.header))
     v2_n = {r: len(v) for r, v in v2.roles.items()}
     header.update({
@@ -402,6 +545,7 @@ def build_cohort_v3(train_dir: str | Path, n_new: int = N_RETENTION_NEW, guard=N
         "extends": {"cohort": v2.header["cohort"], "sha256": v2.sha256,
                     "note": "every v2 entry unchanged and in order; retention += pool m2-150k records"},
         "exclude_source_items": True,
+        "exclude_text_keys": True,
         "sizes": {**v2.header["sizes"], "retention": v2.header["sizes"]["retention"] + n_new},
         "n_actual": {**v2_n, "retention": v2_n["retention"] + len(new)},
     })
@@ -410,18 +554,29 @@ def build_cohort_v3(train_dir: str | Path, n_new: int = N_RETENTION_NEW, guard=N
         "build": ptr.get("build"), "files_uncompressed_sha256": fs["files_uncompressed_sha256"],
         "n_records": len(man), "kind": "PR #44 150k m2 set (public TRAIN splits, cohort-v2 excluded at build)",
         "heldout_excluded": list(HELDOUT_EXCLUDED_150K), "n_new": len(new),
-        "assignment": "whole groups (normalized content OR source item), stratified source x word-length bin",
+        "assignment": "whole groups (normalized content OR source item OR key-free text), stratified source x "
+                      "word-length bin",
+        "text_keys": "train.cohort.record_text_keys (PR #105 review B1 normalizer): t = state + instructions + sorted "
+                     "option texts; s = state + sorted option texts (> 40 chars)",
+        "near_duplicates": {"rule": f">= {SHINGLE_FRAC} of the candidate's sampled word {SHINGLE_K}-gram STATE shingles "
+                                    f"(hash % {SHINGLE_MOD} == 0) shared with ONE record of the seed-0 reserve or the "
+                                    "PR #16 sample", "pr16_records": "sample-20000-seed20261006/records.jsonl.gz "
+                                    "(every line verified against the committed PR #16 manifest)",
+                            "n_candidates_flagged": len(near),
+                            "by_reference": dict(Counter(near.values())),
+                            "by_source": dict(sorted(Counter(stats[i]["source"] for i in near).items()))},
         "selection": rep, "guards": guard_identity(guard),
         "guard_excluded": {i: bad[i] for i in sorted(bad)},
         "composition_new": composition(picked, stats)}
     header["excluded"] = (header["excluded"] + "; retention_150k: m2 training draws (seed-0 reserve), injected "
                           "(D1-A / hijack) records, D1-A/D1-B fragments, frozen held-out families, cohort v2, any PR #16 source item / "
-                          "content (pilot draws)")
+                          "content / key-free text (pilot draws), passage near-duplicates of the reserve / PR #16")
     header["role_use"]["retention"] = "G13 decision retention (gates only); v2 records + pool m2-150k records"
     header["sizing"]["retention_v3"] = {
         "basis": "train/margin_sim.py (PR #102): unchanged candidate passes g13_retention_acc (m 0.01) with "
-                 "~9.3k items and g13_retention_ece (m 0.01) with ~30.7k items at P >= 0.8; v3 is sized so the "
-                 "MEASURED usable items (K <= 16, T <= 2,048, both parents' tokenizers) clear 32,000",
+                 "~9.3k items and g13_retention_ece (m 0.01) with ~30.7k items at P >= 0.8 (REQUIRED_N 9,300 / "
+                 "33,300); v3 is sized so the MEASURED usable items (K <= 16, T <= 2,048, both parents' tokenizers) "
+                 "clear 33,300 x 1.08 = 35,964 (coordinator)",
         "n_new_records": n_new}
     lines = [json.dumps({"header": header}, sort_keys=True, ensure_ascii=False, separators=(",", ":"))]
     for role in ROLES + STEER_ROLES:
@@ -447,21 +602,33 @@ def cohort_v3() -> Cohort:
     return Cohort(OUT_V3)
 
 
-def training_exclusion(manifest_ids: Iterable[str], content: dict[str, str], cohort: Cohort | None = None
-                       ) -> dict[str, Any]:
-    """Records of a training set a draw must leave out because cohort v3 holds them, their content or a source item
-    they render. Every m2 draw from the 150k set removes these from its pool BEFORE ``split_ids`` (then calls
-    ``assert_draw_disjoint``). Also refuses a set that lacks a v3 pool record (not the pinned build)."""
+def training_exclusion(manifest_ids: Iterable[str], content: dict[str, str], cohort: Cohort | None = None,
+                       pool: str | None = None, text_keys: dict[str, set[str]] | None = None) -> dict[str, Any]:
+    """Records of a training set a draw must leave out because cohort v3 holds them, their normalized content, a
+    source item they render or (given ``text_keys``: id -> ``record_text_keys``) their key-free text. Every m2 draw
+    from the 150k set removes these from its pool BEFORE ``split_ids``, then calls ``assert_draw_disjoint`` with the
+    drawn records (which re-checks the text keys). With ``pool`` (the set IS that pool's pinned build, e.g. the 150k
+    pointer), a set lacking any v3 record of that pool is refused (``PoolMismatch``): it is not the reviewed build.
+    Within the 150k set every key-free text twin of a v3 record is itself in v3 (whole groups), so id exclusion
+    already covers text twins there."""
     co = cohort if cohort is not None else cohort_v3()
     ids = list(manifest_ids)
-    held, held_c, held_i = co.held_out(), co.held_out_content(), co.held_out_items()
-    ex = {i for i in ids if i in held or content.get(i) in held_c or record_item_keys(i) & held_i}
+    if pool is not None:
+        lack = sorted(set(co.pool_ids(pool)) - set(ids))
+        if lack:
+            raise PoolMismatch(f"set lacks {len(lack)} cohort record(s) of pool {pool}, e.g. {lack[:3]}: not the "
+                               "pinned build")
+    held, held_c, held_i, held_t = co.held_out(), co.held_out_content(), co.held_out_items(), co.text_keys
+    tk = text_keys or {}
+    ex = {i for i in ids if i in held or content.get(i) in held_c or record_item_keys(i) & held_i
+          or tk.get(i, set()) & held_t}
     return {"ids": ex, "n": len(ex), "cohort": co.identity(),
-            "rule": "id OR normalized content OR source item held out by the cohort (train.cohort_v3)"}
+            "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)"}
 
 
-def assert_draw_disjoint(drawn_ids: Iterable[str], content: dict[str, str], cohort: Cohort | None = None) -> None:
-    (cohort if cohort is not None else cohort_v3()).assert_draw_disjoint(list(drawn_ids), content)
+def assert_draw_disjoint(drawn_ids: Iterable[str], content: dict[str, str], cohort: Cohort | None = None,
+                         records: Iterable[dict] | None = None) -> None:
+    (cohort if cohort is not None else cohort_v3()).assert_draw_disjoint(list(drawn_ids), content, records)
 
 
 def main(argv=None) -> int:
@@ -474,8 +641,9 @@ def main(argv=None) -> int:
         s.add_argument("--train-dir", required=True, help="dir with the 150k set's pointer-pinned files")
         s.add_argument("--n-new", type=int, default=N_RETENTION_NEW)
         s.add_argument("--stats-out", default=None, help="write the selected records' stats (receipt input)")
+        s.add_argument("--pr16-records", default=None, help="PR #16 records.jsonl.gz (default: ssdm-data build dir)")
     a = ap.parse_args(argv)
-    text, header, stats = build_cohort_v3(a.train_dir, a.n_new)
+    text, header, stats = build_cohort_v3(a.train_dir, a.n_new, pr16_records=a.pr16_records)
     if a.stats_out:
         Path(a.stats_out).write_text(json.dumps(stats, sort_keys=True), encoding="utf-8")
     sha = hashlib.sha256(text.encode()).hexdigest()

@@ -399,18 +399,78 @@ def record_item_keys(rec_id: str) -> set[str]:
     return {rid}
 
 
+def _flat(o: Any) -> list[str]:
+    if isinstance(o, str):
+        return [o]
+    if isinstance(o, dict):
+        return [x for k in sorted(o) for x in _flat(o[k])]
+    if isinstance(o, list):
+        return [x for v in o for x in _flat(v)]
+    return [str(o)]
+
+
+def _norm_text(s: str) -> str:
+    import re
+    import unicodedata
+
+    return " ".join(re.sub(r"[^\w]+", " ", unicodedata.normalize("NFKC", s).casefold()).split())
+
+
+def record_texts(rec: dict) -> tuple[str, str]:
+    """(full, item) KEY-FREE normalized texts of a record's request (the PR #105 review normalizer, verbatim):
+    NFKC + casefold, punctuation stripped, dict keys and option ids dropped. ``full`` = state + per-question
+    instructions + sorted option texts; ``item`` = state + sorted option texts (instructions dropped: they vary with
+    the augmentation's ``instr_variant``)."""
+    from train.guard import record_request
+
+    req = record_request(rec) or rec
+    qs = req.get("questions") or {}
+    q = _norm_text(" ".join(" ".join(_flat(v.get("instructions"))) + " "
+                            + " ".join(sorted(_norm_text(x) for x in _flat(v.get("criteria") or {})))
+                            for _, v in sorted(qs.items())))
+    st = _norm_text(" ".join(_flat(req.get("state"))))
+    opts = sorted(_norm_text(x) for v in qs.values() for x in _flat(v.get("criteria") or {}))
+    return st + " || " + q, st + " || " + " | ".join(opts)
+
+
+def record_text_keys(rec: dict) -> set[str]:
+    """Key-free text identity (``"t:"`` full text; ``"s:"`` state + options when that text is > 40 chars). Catches the
+    same decision rendered with another ``id_style`` / ``state_shape`` / instruction variant, or a synthetic generator
+    repeating a parameter tuple under a new id, which ``normalized_content_hash`` and ``record_item_keys`` miss."""
+    full, item = record_texts(rec)
+    keys = {"t:" + hashlib.sha256(full.encode("utf-8")).hexdigest()}
+    if len(item) > 40:
+        keys.add("s:" + hashlib.sha256(item.encode("utf-8")).hexdigest())
+    return keys
+
+
 class CohortLeak(ValueError):
     """A training id is in the frozen cohort (or a role was used outside its purpose)."""
 
 
 class Cohort:
-    def __init__(self, path: Path | None = None, expected_sha256: str | None = None) -> None:
+    def __init__(self, path: Path | None = None, expected_sha256: str | None = None,
+                 allow_unpinned: bool = False) -> None:
+        """A committed cohort (by path or by its pinned sha) is always verified against its .sha256 file; any other
+        path needs ``expected_sha256`` (or an explicit ``allow_unpinned=True``, tests only)."""
         path = Path(path) if path is not None else (committed_path(expected_sha256) or OUT)
+        committed = {p.resolve(): p for p in COHORTS.values()}
+        if path.resolve() in committed:
+            pinned = committed_sha256(path)
+            if pinned is None:
+                raise ValueError(f"committed cohort {path.name} has no .sha256 pin")
+            if expected_sha256 is not None and expected_sha256 != pinned:
+                raise ValueError(f"cohort {path.name} is pinned at {pinned}, not {expected_sha256}")
+            want: str | None = pinned
+        elif expected_sha256 is not None:
+            want = expected_sha256
+        elif allow_unpinned:
+            want = None
+        else:
+            raise ValueError(f"unpinned cohort path {path}: pass expected_sha256 (or allow_unpinned=True)")
         text = gzip.open(path, "rt", encoding="utf-8").read()
         self.path = path
         self.sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
-        committed = {p.resolve() for p in COHORTS.values()}
-        want = expected_sha256 or (committed_sha256(path) if path.resolve() in committed else None)
         if want is not None and want != self.sha256:
             raise ValueError(f"cohort sha256 {self.sha256} != committed {want}")
         lines = [json.loads(x) for x in text.split("\n") if x.strip()]  # "\n" only: U+2028 is not a line break
@@ -423,6 +483,8 @@ class Cohort:
         self.pools = {e["id"]: e.get("pool", PR16_POOL) for r in ROLES for e in self.roles[r]}
         #: v3+: training must also avoid every SOURCE ITEM a held-out record renders (``record_item_keys``)
         self.exclude_items = bool(self.header.get("exclude_source_items"))
+        #: v3+: key-free text identities of held-out records (``record_text_keys``), where the entry carries them
+        self.text_keys = {k for r in ROLES for e in self.roles[r] for k in e.get("text_keys", ())}
 
     def ids(self, role: str) -> list[str]:
         return [e["id"] for e in self.roles[role]]
@@ -449,10 +511,19 @@ class Cohort:
         if both:
             raise CohortLeak(f"{len(both)} training record(s) render a held-out source item, e.g. {both[:3]}")
 
-    def assert_draw_disjoint(self, record_ids: Iterable[str], content: dict[str, str] | None = None) -> None:
+    def assert_training_text(self, records: Iterable[dict]) -> None:
+        """No training record may equal a held-out record's key-free text (``record_text_keys``)."""
+        both = sorted(str(r.get("id")) for r in records if record_text_keys(r) & self.text_keys)
+        if both:
+            raise CohortLeak(f"{len(both)} training record(s) equal a held-out record's key-free text, e.g. {both[:3]}")
+
+    def assert_draw_disjoint(self, record_ids: Iterable[str], content: dict[str, str] | None = None,
+                             records: Iterable[dict] | None = None) -> None:
         """The training-draw guard: refuse any overlap with the held-out roles by id, by normalized content
-        (``content``: id -> content hash in the draw's own set) and, for cohorts that declare it (v3), by source
-        item."""
+        (``content``: id -> content hash in the draw's own set), for cohorts that declare it (v3) by source item, and,
+        given the drawn ``records``, by key-free text."""
+        if records is not None and self.text_keys:
+            self.assert_training_text(records)
         ids = list(record_ids)
         self.assert_training_ids(ids)
         if content is not None:

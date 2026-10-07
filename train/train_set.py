@@ -93,10 +93,11 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
         raise TrainSetMismatch("content-map ids != manifest ids")
     if len(man) != int(ptr["n_records"]):
         raise TrainSetMismatch(f"manifest has {len(man)} ids, pointer says {ptr['n_records']}")
-    from train.cohort_v3 import cohort_v3, training_exclusion
+    from train.cohort_v3 import POINTERS, POOL_150K, cohort_v3, training_exclusion
 
     co3 = cohort_v3()
-    v3x = training_exclusion(man, content, co3)
+    pinned_150k = ptr["_pointer_path"] == POINTERS[POOL_150K].relative_to(ROOT).as_posix()
+    v3x = training_exclusion(man, content, co3, pool=POOL_150K if pinned_150k else None)
     held, held_c = co.held_out(), co.held_out_content()
     by_id = sorted(i for i in man if i in held and i not in v3x["ids"])
     by_content = sorted(i for i in man if content[i] in held_c and i not in v3x["ids"])
@@ -125,7 +126,7 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
         raise TrainSetMismatch(f"{len(drift)} drawn record(s) differ in content from the content map, e.g. {drift[:3]}")
     co.assert_training_ids(tr)
     co.assert_training_content(content[i] for i in tr)
-    co3.assert_draw_disjoint(tr, content)
+    co3.assert_draw_disjoint(tr, content, records=[got[i] for i in tr])
     from train.heldout import record_text, scan
 
     rep = scan((i, record_text(got[i])) for i in tr)

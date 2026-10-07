@@ -81,8 +81,8 @@ and price it with the same `estimate`.
 
 ## Cohort v3 retention: per-arm G13 cost (measured volume × measured rates)
 
-Cohort v3 (`train/cohort_v3.py`, sha256 `0c0309b9…c32f`) expands the G13 `retention` role from 1,670 to 39,672
-records (36,005 usable items under RWKV7, 35,992 under Qwen3.5; issue #36 sizing, PR #102 `margin_sim`). This job
+Cohort v3 (`train/cohort_v3.py`, sha256 `498efa61…76da`) expands the G13 `retention` role from 1,670 to 39,872
+records (36,696 usable items under RWKV7, 36,691 under Qwen3.5; issue #36 sizing, PR #102 `margin_sim`). This job
 still pins cohort v2 (`VOLUME_COHORT_SHA256`); moving it to v3 is a follow-up once PR #102 lands (see the v3 PR).
 
 Volume is exact, not projected (`receipts/2026-10-07-D-cohort-v3/measure.py` → `measure.json`): it is the prefix-fork
@@ -91,13 +91,13 @@ record with at least one usable item. `arm_decision_fields` calls `decide` only 
 
 | Backbone (rates) | Positions | Calls | Minutes per arm | $ per arm | Conservative (pack call per call) |
 |---|---|---|---|---|---|
-| RWKV7-G1k-13.3B (job-tkfaj: 3,757 tok/s, 0.117 s/call) | 21.18 M | 64,054 | **218.9** | **$10.83** | 734.5 min / $36.36 (0.60 s/call) |
-| Qwen3.5-9B / Q9-AF (job-5cmat: 22,144 tok/s, 0.0595 s/call) | 20.51 M | 63,930 | **78.8** | **$3.90** | 267.9 min / $13.26 (0.2369 s/call) |
+| RWKV7-G1k-13.3B (job-tkfaj: 3,757 tok/s, 0.117 s/call) | 22.88 M | 63,741 | **225.8** | **$11.18** | 738.9 min / $36.58 (0.60 s/call) |
+| Qwen3.5-9B / Q9-AF (job-5cmat: 22,144 tok/s, 0.0595 s/call) | 22.11 M | 63,583 | **79.7** | **$3.94** | 267.7 min / $13.25 (0.2369 s/call) |
 
 - Time is `positions / tok_s + calls × call_s` (the `jobs.common.readout_cost.project` model). Dollars use H100 batch at $0.0495/min.
 - **Per gate:** the parent arm is paid once per parent (cached); each candidate child arm pays the same amount again.
 - **v2 share:** v2's 1,670 records are 8.6 min / $0.43 (RWKV7) and 3.1 min / $0.15 (Q9) of the totals above.
-- **Upper bound (the `VOLUME_TOKENS` convention):** prompt tokens of every question row, with no K/T filter. This reproduces v2's 5,724,231 exactly. For v3 it is 129.6 M (RWKV7: 575 min, $28.46) and 132.2 M (Q9: 99.5 min, $4.93). Records whose rows are all filtered out are never forwarded, so this bound over-counts.
-- **On RWKV7, calls dominate:** 64k × 0.117 s ≈ 125 min, against ≈ 94 min of prefill. Packing tails across records would cut this. That is not done here.
-- **Caps:** the 90-minute g13 phase above cannot hold RWKV7's 219 minutes. G13 with v3 needs its own job or phase, with caps re-sized from these numbers; Q9's 79 minutes fits only without the steer and Index terms.
+- **Upper bound (the `VOLUME_TOKENS` convention):** prompt tokens of every question row, with no K/T filter. This reproduces v2's 5,724,231 exactly. For v3 it is 158.9 M (RWKV7: 704.9 min, $34.89) and 162.1 M (Q9: 122.0 min, $6.04). Records whose rows are all filtered out are never forwarded, so this bound over-counts.
+- **On RWKV7, calls dominate:** 64k × 0.117 s ≈ 124 min, against ≈ 101 min of prefill. Packing tails across records would cut this. That is not done here.
+- **Caps:** the 90-minute g13 phase above cannot hold RWKV7's 226 minutes. G13 with v3 needs its own job or phase, with caps re-sized from these numbers; Q9's 80 minutes fits only without the steer and Index terms.
 - **Cost authority:** cost is pre-authorised (coordinator, cohort v3 task). The $20 hard cap of this draft still applies until its params are re-priced.

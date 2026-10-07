@@ -178,15 +178,15 @@ Every stop below exits and lands in the receipt:
 
 ## Cohort v3 retention cost (G13 child arm)
 
-Cohort v3 (`train/cohort_v3.py`, sha256 `0c0309b9…c32f`) grows the G13 retention role to 39,672 records: 36,005
-usable items on RWKV7 and 35,992 on Qwen3.5, sized for issue #36's retention ECE and accuracy margins. These are
+Cohort v3 (`train/cohort_v3.py`, sha256 `498efa61…76da`) grows the G13 retention role to 39,872 records: 36,696
+usable items on RWKV7 and 36,691 on Qwen3.5, sized for issue #36's retention ECE and accuracy margins. These are
 measured volumes at measured rates (`receipts/2026-10-07-D-cohort-v3/measure.json`). The retention term alone costs,
 per arm:
 
 | Backbone | Rate | Minutes | $ |
 |---|---|---|---|
-| RWKV7-13.3B | job-tkfaj | **218.9** | **$10.83** |
-| Q9 (Qwen3.5-9B) | job-5cmat | **78.8** | **$3.90** |
+| RWKV7-13.3B | job-tkfaj | **225.8** | **$11.18** |
+| Q9 (Qwen3.5-9B) | job-5cmat | **79.7** | **$3.94** |
 
 - These figures are per arm. They double when the parent arm is not cached. Pricing details are in `jobs/m2_parent_arm/JOB_SPEC.md`.
 - G13 on v3 cannot run inside this cell's 50-minute evals phase. It runs as its own gate job.
