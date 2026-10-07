@@ -13,16 +13,48 @@ from harness import config
 
 
 @lru_cache(maxsize=None)
-def spec():
-    return index02.spec(config.EDITION)
+def _spec(edition):
+    if edition == "0.3":
+        raw = config.INDEX_03_SPEC.read_bytes()
+        got = hashlib.sha256(raw).hexdigest()
+        if got != config.INDEX_03_SPEC_SHA256:
+            raise RuntimeError(f"vendored 0.3 index spec hash {got} != pinned {config.INDEX_03_SPEC_SHA256}")
+        return json.loads(raw.decode("utf-8"))
+    return index02.spec(edition)
 
 
-def index_ids():
-    return [n for a in spec()["areas"] for n in a["benchmarks"]]
+def spec(edition=None):
+    """Index spec (areas, weights, gold, chance, track_scored, ...) for an edition (default config.EDITION)."""
+    return _spec(config.edition_id(edition))
 
 
-def area_of():
-    return {n: a["id"] for a in spec()["areas"] for n in a["benchmarks"]}
+def index_ids(edition=None):
+    return [n for a in spec(edition)["areas"] for n in a["benchmarks"]]
+
+
+def area_of(edition=None):
+    return {n: a["id"] for a in spec(edition)["areas"] for n in a["benchmarks"]}
+
+
+def in_edition(row, edition=None):
+    """Does a suite row count in `edition`'s public index?
+
+    0.3 (kit PR #74 `editions.in_edition`): ForecastBench (48) is retired and GSM8K (30) counts only
+    through its rebuilt rows (run_id prefix `v0.3-gsm8k:`); the 0.2.1 GSM8K rows do not exist in 0.3."""
+    e = config.edition_id(edition)
+    ev = row["_evaluation"]
+    n = ev["catalog_id"]
+    if n in config.RETIRED[e]:
+        return False
+    prefix = config.REPLACED[e].get(n)
+    if prefix is not None and not str(ev["run_id"]).startswith(prefix):
+        return False
+    return n in set(index_ids(e))
+
+
+def edition_rows(rows, edition=None):
+    """Filter rows (e.g. a 0.2.1 DEV slice) down to the ones that count in `edition`."""
+    return [r for r in rows if in_edition(r, edition)]
 
 
 def load_suite(directory=None):
