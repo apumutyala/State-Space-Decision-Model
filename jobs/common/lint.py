@@ -256,23 +256,49 @@ def _same_literal(a: object, b: object) -> bool:
 
 
 @functools.lru_cache(maxsize=None)
-def _rule_test_tree(src: str, mod: str) -> tuple[dict[str, str], tuple[ast.expr, ...]]:
-    """Resolve explicit imports; only equality clauses required by an assertion can pin a constant."""
+def _rule_test_assertions(src: str) -> tuple[tuple[dict[str, str], ast.Compare], ...]:
+    """Snapshot bindings at direct assertions in pytest test functions/methods.
+
+    Helpers and nested functions cannot supply pins or imports. Reimports and writes invalidate old bindings;
+    conditional writes invalidate conservatively, and assertions inside conditional/loop blocks do not count.
+    """
     try:
         tree = ast.parse(src)
     except SyntaxError:
-        return {}, ()
-    bindings = {}
-    for n in ast.walk(tree):
+        return ()
+
+    def writes(n):
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            return {n.name}  # never descend into another scope
+        if isinstance(n, ast.Lambda):
+            return set()
+        if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)):
+            return {n.id}
+        if isinstance(n, ast.arg):
+            return {n.arg}
+        if isinstance(n, ast.Import):
+            return {a.asname or a.name.split(".")[0] for a in n.names}
+        if isinstance(n, ast.ImportFrom):
+            return {a.asname or a.name for a in n.names}
+        if isinstance(n, (ast.Attribute, ast.Subscript)) and isinstance(n.ctx, (ast.Store, ast.Del)):
+            # Changing an imported module's constant makes a subsequent equality vacuous.
+            return {x.id for x in ast.walk(n.value) if isinstance(x, ast.Name)}
+        return set().union(*(writes(child) for child in ast.iter_child_nodes(n)))
+
+    def update(n, bindings):
+        changed = writes(n)
+        if "*" in changed:
+            bindings.clear()
+        for name in changed:
+            bindings.pop(name, None)
         if isinstance(n, ast.Import):
             for alias in n.names:
-                if alias.name == mod:
-                    bindings[alias.asname or mod] = mod
+                name = alias.asname or alias.name.split(".")[0]
+                bindings[name] = alias.name if alias.asname else name
         elif isinstance(n, ast.ImportFrom) and not n.level:
             for alias in n.names:
-                full = f"{n.module}.{alias.name}"
-                if full == mod or (n.module == mod and alias.name != "*"):
-                    bindings[alias.asname or alias.name] = full
+                if alias.name != "*":
+                    bindings[alias.asname or alias.name] = f"{n.module}.{alias.name}"
 
     def required(expr):
         if isinstance(expr, ast.BoolOp) and isinstance(expr.op, ast.And):
@@ -281,13 +307,34 @@ def _rule_test_tree(src: str, mod: str) -> tuple[dict[str, str], tuple[ast.expr,
         elif isinstance(expr, ast.Compare):
             yield expr
 
-    assertions = tuple(part for n in ast.walk(tree) if isinstance(n, ast.Assert) for part in required(n.test))
-    return bindings, assertions
+    module_bindings = {}
+    for n in tree.body:
+        update(n, module_bindings)
+    functions = []
+    for n in tree.body:
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            functions.append(n)
+        elif isinstance(n, ast.ClassDef) and n.name.startswith("Test"):
+            functions.extend(m for m in n.body if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef)))
+    assertions = []
+    for fn in functions:
+        if not fn.name.startswith("test_"):
+            continue
+        bindings = module_bindings.copy()
+        # Python local names shadow module bindings throughout the function, including before their first write.
+        locals_ = writes(fn.args) | set().union(*(writes(n) for n in fn.body))
+        for name in locals_:
+            bindings.pop(name, None)
+        for n in fn.body:
+            if isinstance(n, (ast.Return, ast.Raise)):
+                break
+            if isinstance(n, ast.Assert):
+                assertions.extend((bindings.copy(), part) for part in required(n.test))
+            update(n, bindings)
+    return tuple(assertions)
 
 
 def pinned_rule_constants(src: str, mod: str, consts: dict[str, object]) -> set[str]:
-    bindings, assertions = _rule_test_tree(src, mod)
-
     def dotted(n):
         if isinstance(n, ast.Name):
             return n.id
@@ -296,13 +343,11 @@ def pinned_rule_constants(src: str, mod: str, consts: dict[str, object]) -> set[
             return f"{base}.{n.attr}" if base else None
         return None
 
-    def pins(ref, literal):
+    def pins(ref, literal, bindings):
         name = dotted(ref)
         if name:
-            resolved = bindings.get(name)
-            if resolved is None and "." in name:
-                base, attr = name.rsplit(".", 1)
-                resolved = f"{bindings.get(base, '')}.{attr}"
+            base, _, attr = name.partition(".")
+            resolved = bindings.get(base, "") + (f".{attr}" if attr else "")
             for constant, expected in consts.items():
                 if resolved == f"{mod}.{constant}":
                     try:
@@ -311,15 +356,15 @@ def pinned_rule_constants(src: str, mod: str, consts: dict[str, object]) -> set[
                         return set()
                     return {constant} if _same_literal(actual, expected) else set()
         if isinstance(ref, (ast.Tuple, ast.List)) and type(ref) is type(literal) and len(ref.elts) == len(literal.elts):
-            return set().union(*(pins(a, b) for a, b in zip(ref.elts, literal.elts)))
+            return set().union(*(pins(a, b, bindings) for a, b in zip(ref.elts, literal.elts)))
         return set()
 
     out = set()
-    for expr in assertions:
+    for bindings, expr in _rule_test_assertions(src):
         operands = [expr.left, *expr.comparators]
         for left, op, right in zip(operands, expr.ops, operands[1:]):
             if isinstance(op, ast.Eq):
-                out |= pins(left, right) | pins(right, left)
+                out |= pins(left, right, bindings) | pins(right, left, bindings)
     return out
 
 

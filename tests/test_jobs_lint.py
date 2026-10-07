@@ -134,9 +134,38 @@ def test_decision_rule_accepts_direct_and_tuple_equality_pins(tmp_path, source):
 
 def test_rule_pin_literals_preserve_container_types():
     consts = {"FLAGS": {"ok": True}, "LAYERS": (1, 2), "OPTIONAL": None}
-    src = NL.join(["import rule as R", "assert R.FLAGS == {'ok': 1}", "assert R.LAYERS == [1, 2]",
-                   "assert R.OPTIONAL == None"])
+    src = NL.join(["import rule as R", "def test_pins():", "    assert R.FLAGS == {'ok': 1}",
+                   "    assert R.LAYERS == [1, 2]", "    assert R.OPTIONAL == None"])
     assert lint.pinned_rule_constants(src, "rule", consts) == {"OPTIONAL"}
+
+
+@pytest.mark.parametrize("source", [
+    "import rule as R\nimport other as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    import other as R\n    assert R.MIN_GAIN == 0.5\n",
+    "from rule import MIN_GAIN\nfrom other import MIN_GAIN\ndef test_pins():\n    assert MIN_GAIN == 0.5\n",
+    "import rule as R\nR = other\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    R = other\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins(R):\n    assert R.MIN_GAIN == 0.5\n",  # fixture shadows import
+    "import other as R\ndef helper():\n    import rule as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "def helper():\n    import rule as R\n    assert R.MIN_GAIN == 0.5\ndef test_pins():\n    pass\n",
+    "import rule as R\ndef test_pins():\n    def helper():\n        assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n    R = other\n",  # local throughout
+    "import rule as R\ndef test_pins():\n    R.MIN_GAIN = 0.5\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    if condition:\n        import other as R\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_pins():\n    return\n    assert R.MIN_GAIN == 0.5\n",
+])
+def test_rule_pin_bindings_respect_test_scope_and_shadowing(source):
+    assert lint.pinned_rule_constants(source, "rule", {"MIN_GAIN": 0.5}) == set()
+
+
+@pytest.mark.parametrize("source", [
+    "import other as R\ndef test_pins():\n    import rule as R\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef helper():\n    import other as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\ndef test_other():\n    import other as R\ndef test_pins():\n    assert R.MIN_GAIN == 0.5\n",
+    "import rule as R\nclass TestRule:\n    def test_pins(self):\n        assert R.MIN_GAIN == 0.5\n",
+])
+def test_rule_pin_bindings_keep_module_and_test_local_imports_separate(source):
+    assert lint.pinned_rule_constants(source, "rule", {"MIN_GAIN": 0.5}) == {"MIN_GAIN"}
 
 
 def test_remaining_legacy_rule_constants_are_pinned():
