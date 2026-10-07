@@ -121,7 +121,10 @@ def parent_decider(parent: str, model_dir: str, gdn_ckpt: str | None, cfg: dict,
         from decide.backends.hf_readout import load_rwkv7_hf
 
         plug = load_rwkv7_hf(model_dir, device=device, wkv=cfg.get("rwkv7_wkv"))  # same WKV as the child
-        ident = {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION}
+        # the WKV implementation the stock readout actually ran (the model config after select_wkv): m2_gates refuses a
+        # cache scored with another one (a "chunked" cache against a chunked_lean child; PR #74 review N1)
+        ident = {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION,
+                 "wkv": str(plug.kernel_stack.get("wkv_implementation"))}
     elif parent == "q9af":
         from convert.readout import load_converted_plugin
         from heads.backbone import q9af_pin_check

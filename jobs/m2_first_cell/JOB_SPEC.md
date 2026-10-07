@@ -15,7 +15,7 @@ option-likelihood readout (24.9 [22.4, 27.8] on the 2,008-row Index DEV subset, 
 | Loss | Clef arm: LS-CE (0.1) + Brier, + RPS on score questions | as asked |
 | Data | PR #44 150k set (pointer `sample-150000-seed20261006`), 24,000 records drawn by `sha256(seed:id)`; injection augmentation is in the build (D1-A verbatim 8,049, training-only hijack 4,066, labels unchanged) | v2 is not merged |
 | Guards | content-index guard (`7cbe6c89…`, readiness file required), cohort v2 excluded by id + content + source item (build) and re-checked (`train.train_set`: 0 held-out records allowed, manifest-verified lines, content re-hash), D1-B held-out gate over all 150k | |
-| Steps | 8 rows per step (batch 1 x accumulation 8, run as one row group), warmup 50, `max_minutes` 190 (pre-registered), `max_steps` 3,000, T ladder 512 / 1,024 / 2,048, K ≤ 16 | |
+| Steps | 8 rows per optimiser step (batch 1 x accumulation 8), run in length-sorted groups of up to 8 rows and at most 8,192 padded tokens per call (a step whose longest row exceeds 1,024 tokens runs as 2 or more groups; same loss and gradient), warmup 50, `max_minutes` 190 (pre-registered), `max_steps` 3,000, T ladder 512 / 1,024 / 2,048, K ≤ 16 | |
 
 **Held-out finding (new).** `train.heldout` finds a D1-B `soft_framing` fragment ("rather than relying on") in three
 MMLU aux_train records of the 150k set (natural text; the build's 6-gram guard does not flag them). They are excluded
@@ -26,11 +26,13 @@ and every drawn record is re-scanned.
 
 job-tkfaj probe: prefill 3,757 tok/s at 2,048 tokens (4,407 at 8,192), small call 0.117 s, pack call 0.60 s.
 Training rows (2,000-record sample of the 150k set, real tokenizer): 0.91 kept rows per record, mean 619 tokens, K 3.4.
-Training step (MEASURED, job-tvuat, the ADOPT config on the same RWKV7 + cell): median 8.25 s per 8-row step, so
+Training step (MEASURED, job-tvuat, the ADOPT config on the same RWKV7 + cell; receipt `receipts/2026-10-07-D-cell-step-profile-tvuat/`, LEDGER row): median 8.25 s per 8-row step, so
 190 min = 1,382 steps = 11,056 rows (about 6.8 M tokens at the 619-token mean). The ladder and the 10-step check
 re-measure it on this box: exit 26 below 600 steps, i.e. a step slower than 19 s (2.3x tvuat's) stops training before
-the evals are spent. Scoring phases are priced at job-tkfaj's readout rates; `chunked_lean` is not slower there (same
-algebra, fewer launches), so those prices are conservative.
+the evals are spent. Scoring phases are priced at job-tkfaj's readout rates, measured on `chunked`. `chunked_lean` was profiled for
+training only, so its readout speed is UNMEASURED; the parent arm's live rate guard and the re-price measure it on
+this box before any training spend. The tkfaj reference (24.9) is on `chunked`: a comparison with the in-job
+`chunked_lean` parent arm crosses implementations (same algebra; labelled in the report).
 
 ## Phases (`job_params.json`; H100 batch $0.0495/min)
 

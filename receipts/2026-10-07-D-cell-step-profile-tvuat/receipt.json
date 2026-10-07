@@ -1,0 +1,67 @@
+{
+ "job": "job-tvuat",
+ "spec": "jobs/cell_step_profile (rule v1-A2, PR #86 @54ee89d)",
+ "label": "cell_step_profile v1-A2 (baseline / ckpt_rows_lean / ckpt_rows / ckpt) @54ee89d",
+ "status": "succeeded",
+ "exit_code": 0,
+ "verdict": "ADOPT",
+ "chosen": "ckpt_rows_lean",
+ "cell_config": {
+  "act_ckpt": true,
+  "row_batch": 8,
+  "row_tokens": 8192,
+  "rwkv7_wkv": "chunked_lean",
+  "t_ladder": [
+   512,
+   1024,
+   2048
+  ]
+ },
+ "projection": {
+  "median_step_s": 8.247520288998203,
+  "steps_190min": 1382,
+  "rows_190min": 11056
+ },
+ "chosen_variant": {
+  "oom_steps": [],
+  "peak_gb": 49.795909632,
+  "median_tok_s": 673.5646233653111,
+  "loss_rel_vs_probe": 0.00045572954709357946
+ },
+ "gates": {
+  "setup": 0,
+  "snapshot": 0,
+  "variant_baseline": 0,
+  "variant_ckpt": 0,
+  "variant_ckpt_rows": 0,
+  "variant_ckpt_rows_lean": 0,
+  "profile": 124
+ },
+ "gates_note": "profile (torch.profiler of the chosen variant vs baseline) hit its cap (124); it informs no decision (rule.py decides from the variant records)",
+ "billing": {
+  "billed_seconds": 1963,
+  "charged_usd": 1.6192,
+  "rate_usd_per_gpu_minute": 0.049491,
+  "chip": "h100 x1"
+ },
+ "image_digest": "sha256:d05ccf2ef54eabb7602b860da194a2ec694a2bcf88d62f53d159db74320e9c8a",
+ "artifact": {
+  "id": "art-bzip3",
+  "sha256": "5e519412bd40c18b680592a4455c28901de4009dac33fafff0719d08edd20589",
+  "size_bytes": 112640,
+  "extracted": "phases/final.tgz -> out/{decision,variant_*,env,CONTEXT_MANIFEST}.json; top-level MANIFEST.jsonl (only small JSONs committed)"
+ },
+ "submitted_at": "2026-10-06T23:50:27Z",
+ "finished_at": "2026-10-07T00:44:00Z",
+ "fetched_via": "get_job job-tvuat + get_artifact art-bzip3 (2026-10-07)",
+ "files_sha256": {
+  "CONTEXT_MANIFEST.json": "7909efd214f9657b01a9699dcf721333d9b3c41b30581f1fe2dd012f7f27d2a8",
+  "decision.json": "7900e4d0804b227b7c0dc34022fddab0f786c138407eadc6e3dfee12c8d45c30",
+  "env.json": "d9a65d90d20df4e2c8f5f978903bdf29470af4899320060d526d27288b4d420a",
+  "MANIFEST.jsonl": "f02aacd100321d3e418a050c7673f785faaa579023594f8bcfdd2358024d151c",
+  "variant_baseline.json": "b846ea39413275965a751aa35a43d99d667c912e3f5b32343b066371b1ddd1a6",
+  "variant_ckpt.json": "c043b8022777359015c379b4f6432efc097dd0a73fc1ba4371b629680d198d61",
+  "variant_ckpt_rows.json": "b4f36ea3889ef68ceee86789f859b24e231fbc64d1b2fbd4cb7e3cc6484dc89b",
+  "variant_ckpt_rows_lean.json": "b3919f65fdce2f0e727cca1950d953c1993ba20b9b60a5204908b64d1facedac"
+ }
+}

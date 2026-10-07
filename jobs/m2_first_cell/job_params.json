@@ -44,7 +44,7 @@
   "CALL_S": 0.117,
   "source": "job-tkfaj probe.json (prefill tok/s at 2,048; small_call_s)",
   "train_step_s": 8.25,
-  "train_step_source": "job-tvuat (jobs/cell_step_profile rule v1-A2, PR #86 @54ee89d): ADOPT ckpt_rows_lean, median step 8.25 s, 0 OOMs"
+  "train_step_source": "job-tvuat (jobs/cell_step_profile rule v1-A2, PR #86 @54ee89d): ADOPT ckpt_rows_lean, median step 8.25 s, 0 OOMs; receipt receipts/2026-10-07-D-cell-step-profile-tvuat/decision.json"
  },
  "parent": "rwkv7",
  "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",

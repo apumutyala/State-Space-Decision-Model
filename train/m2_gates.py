@@ -497,13 +497,15 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
     return code, report
 
 
-def expected_parent_identity(parent: str, provenance: dict | None = None) -> dict:
+def expected_parent_identity(parent: str, provenance: dict | None = None, wkv: str | None = None) -> dict:
     """What the parent arm cache must say about its parent: family AND repo@revision (and, for Q9-AF, the converted
-    checkpoint sha256), so a cache scored on another snapshot of the same family is refused."""
+    checkpoint sha256), so a cache scored on another snapshot of the same family is refused. For RWKV7 also the WKV
+    implementation (``wkv``: the cell's ``rwkv7_wkv``; None = the checkpoint's own "chunked"), so a cache scored with
+    another kernel is refused too."""
     if parent == "rwkv7":
         import third_party.rwkv7_hf as V
 
-        return {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION}
+        return {"parent": "rwkv7", "repo": V.REPO, "revision": V.REVISION, "wkv": str(wkv or "chunked")}
     if parent == "q9af":
         from heads.backbone import Q9AF_BASE_REPO, Q9AF_BASE_REVISION
 
@@ -627,7 +629,7 @@ def main(argv=None) -> int:
         index_rows = read_rows(a.index_rows)
     records_by_id = {r["id"]: r for rs in role_recs.values() for r in rs}
     prov = getattr(bb, "provenance", None) or {}
-    expect_parent = expected_parent_identity(parent, prov)
+    expect_parent = expected_parent_identity(parent, prov, cfg.get("rwkv7_wkv"))
     try:
         code, rep = _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_id, a, expect_parent,
                          index_rows, out, guard, backend, tr, bb, ft, card)

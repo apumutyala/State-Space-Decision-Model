@@ -31,7 +31,7 @@ def test_cell_config_is_the_specified_cell():
     # job-tvuat ADOPT (rule v1-A2): ckpt_rows_lean; "fla" only after the fla gate's ADOPT + GPU_VERIFIED
     assert {k: CELL[k] for k in ("act_ckpt", "row_batch", "row_tokens", "rwkv7_wkv", "t_ladder")} == {
         "act_ckpt": True, "row_batch": 8, "row_tokens": 8192, "rwkv7_wkv": "chunked_lean", "t_ladder": [512, 1024, 2048]}
-    assert CELL["row_batch"] == CELL["batch_size"] * CELL["grad_accum"]  # one step = one row group of 8
+    assert CELL["row_batch"] == CELL["batch_size"] * CELL["grad_accum"]  # 8 rows per optimiser step (grouped by row_tokens per call)
     assert f"{PARAMS['phase_caps_minutes']['cell']}-min cell phase" in CELL["max_minutes_note"]
     from heads.rwkv7_wkv import GPU_VERIFIED
 
@@ -582,3 +582,38 @@ def test_launch_blocks_and_data_pins():
     # the runner reads exactly these context paths (M2FC_DATA defaults to /data)
     for rel in ("$DATA/m2-150k", "$DATA/m2/records.jsonl.gz", "$DATA/suite-0.2", "$DATA/slices/dev-rows.jsonl.gz"):
         assert rel in JOB, rel
+
+
+def test_parent_arm_identity_carries_the_wkv_and_refuses_another(tmp_path):
+    """PR #74 review N1: a parent arm scored with "chunked" (e.g. an old cache) must not pass for a chunked_lean child."""
+    from train import m2_gates as G
+
+    exp = G.expected_parent_identity("rwkv7", wkv=CELL["rwkv7_wkv"])
+    assert exp["wkv"] == "chunked_lean" and G.expected_parent_identity("rwkv7")["wkv"] == "chunked"
+    ident = {"stage": "index", "id": "x"}
+    for name, wkv in (("lean", "chunked_lean"), ("old", "chunked")):
+        G.write_arm_cache(tmp_path / name, "index", {"stage": "index"}, ident,
+                          {"parent": {"parent": "rwkv7", "repo": exp["repo"], "revision": exp["revision"], "wkv": wkv}})
+    G.read_arm_cache(tmp_path / "lean", "index", ident, exp)
+    with pytest.raises(G.IdentityMismatch, match="wkv"):
+        G.read_arm_cache(tmp_path / "old", "index", ident, exp)
+    src = (ROOT / "jobs/m2_parent_arm/score_parent.py").read_text(encoding="utf-8")
+    assert '"wkv": str(plug.kernel_stack.get("wkv_implementation"))' in src
+    assert 'expected_parent_identity(parent, prov, cfg.get("rwkv7_wkv"))' in (ROOT / "train/m2_gates.py").read_text(
+        encoding="utf-8")
+
+
+def test_tvuat_receipt_backs_the_execution_config_and_the_repricing():
+    """PR #74 review N2: the job-tvuat decision the re-pricing rests on is committed, and the cell uses exactly it."""
+    rd = ROOT / "receipts/2026-10-07-D-cell-step-profile-tvuat"
+    d = json.loads((rd / "decision.json").read_text(encoding="utf-8"))
+    rec = json.loads((rd / "receipt.json").read_text(encoding="utf-8"))
+    assert d["verdict"] == rec["verdict"] == "ADOPT" and d["chosen"] == "ckpt_rows_lean" and rec["job"] == "job-tvuat"
+    assert {k: CELL[k] for k in d["cell_config"]} == d["cell_config"]
+    assert round(d["projection"]["median_step_s"], 2) == PARAMS["measured_rates_reference"]["train_step_s"]
+    assert d["projection"]["steps_190min"] == 1382 and d["variants"]["ckpt_rows_lean"]["oom_steps"] == []
+    for f, h in rec["files_sha256"].items():
+        assert hashlib.sha256((rd / f).read_bytes()).hexdigest() == h, f
+    assert "job-tvuat" in (ROOT / "LEDGER.md").read_text(encoding="utf-8")
+    assert "receipts/2026-10-07-D-cell-step-profile-tvuat" in (ROOT / "jobs/m2_first_cell/JOB_SPEC.md").read_text(
+        encoding="utf-8")
