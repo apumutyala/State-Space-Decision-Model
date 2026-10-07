@@ -168,11 +168,18 @@ def test_coordination_requires_bounded_autonomous_spend():
     assert "independent fresh-context adversarial review" in t
     assert "live provider preflight" in t
     assert "The user's standing authorization lets Codex submit SF jobs autonomously" in t
+    assert "shared $525 SF envelope" in t and "$250 System 1 allocation" in t
+    assert "planned `LEDGER.md` row" in t and "hard runtime/cost stop" in t
+    assert "set the workspace cap" in t and "`validate_job` to pass without `force`" in t
     assert "neither can enlarge the envelope or allocation" in t
     assert "Any spend beyond either limit" in t
     assert "use of Lambda" in t
+    assert "Other collaborators require the user's explicit OK" in t
+    assert "outward-facing/public action still requires the user's explicit authorization" in t
+    assert "Anything reaching `main` needs the user's approval." in t
     assert "independent fresh-context reviewer to approve the exact job and final launch bundle" in checklist
     assert "Refresh live credit balance and expiry, MTD, outstanding commitments and remaining track allocation" in checklist
+    assert "set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)" in checklist
     assert "validate_job`. It must pass without `force`" in checklist
     assert "Spend still needs the other agent's acknowledgement on a `spend` issue." not in t
     assert "stop condition, acknowledged by the other agent." not in t
