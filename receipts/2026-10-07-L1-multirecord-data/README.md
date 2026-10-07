@@ -2,8 +2,9 @@
 
 2026-10-07. Branch `codex/l1-multirecord-data`, exact starting commit
 `abf23a7354295a575f1b99cb1ad3ef77a0c2ac41` (`origin/agent-main` at creation).
-Source is the commit containing this receipt; exact generator/test file hashes
-below identify the implementation independently of the commit envelope.
+Source commit: `a3f7f5984b66048c08a080bf89026554bcbe7b4d`. Exact generator/test
+file hashes below identify the implementation independently of the commit
+envelope. Subsequent receipt/phase-note edits do not change generator or tests.
 Local Windows laptop, Python 3.12.13, standard-library CPU generation/checking,
 billed cost $0. No provider calls, model execution, weights, GPU, Index or
 sealed/held-out data. There are no predictions or performance measurements;
@@ -49,3 +50,8 @@ See `plans/codex/L1_MULTIRECORD_FIXTURE_PREP.md` for the fixture-only compatibil
 boundary: this schema cannot yet feed the merged training/export/evaluation
 paths. Checker-valid authored labels are not independent task adjudication,
 learned performance, causal fidelity or L1 proof. L0 gating remains in force.
+The normal-task fixtures do not cover or satisfy the required adversarial
+splicing, negation, stale-fact, unit-confusion, injected-authority or wrong-question
+gates, and do not establish a strong comparator, parent retention or
+causal-intervention fidelity. Independent review is recorded separately from
+authorship; cross-track review remains required before integration.

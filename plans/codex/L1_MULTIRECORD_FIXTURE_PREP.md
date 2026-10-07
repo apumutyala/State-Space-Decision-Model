@@ -58,3 +58,8 @@ coverage, split disjointness and canonical manifest hashes. The receipt is
 data foundation and later integration design, not paid compute, model loading,
 level promotion or an L1 claim. No Index, sealed/held-out corpus, weights,
 GPU or paid service is accessed.
+
+These normal-task fixtures do not cover or satisfy the required adversarial
+splicing, negation, stale-fact, unit-confusion, injected-authority or wrong-question
+gates. They establish neither a strong comparator result, parent retention nor
+causal-intervention fidelity. Those require separate evaluation evidence.
