@@ -1,0 +1,1266 @@
+{
+  "development_train": [
+    {
+      "id": "synthetic-development_train-9201-0",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:d7cfc7dd69a7454832624e5aa14aead5bf534cb157aac320e138d4d8c27c3821",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "65b77d3ce087cc84791464ea",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:d7cfc7dd69a7454832624e5aa14aead5bf534cb157aac320e138d4d8c27c3821\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"72.16\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":33,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"83.65\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":13,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Dovetail's warranty months in October 2026?\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-1",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:e1b86692c80f5baf2090a7eadf3d975d3bb502449de4b536340ed0fb89281697",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "7c3cb001596b2828e44b6470",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:e1b86692c80f5baf2090a7eadf3d975d3bb502449de4b536340ed0fb89281697\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"61.79\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":33,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"69.09\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":32,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Explain the checked warranty months fact for Ember.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-2",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:3d41ea367701faadbcb63a97d4dc5bc8ed7ed2ec6a6c0d67e599872a47f4d2b0",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "a9e6bf24827de934c79a959c",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:3d41ea367701faadbcb63a97d4dc5bc8ed7ed2ec6a6c0d67e599872a47f4d2b0\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"192.88\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":28,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"192.88\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":26,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"How do Cinder's and Ember's October price compare?\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-3",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:40d74fad0e84e41d09cec85ccca12ba92a2f1e50efd019dcf6b8df1b0092a590",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "16360001a31f5d8021106322",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:40d74fad0e84e41d09cec85ccca12ba92a2f1e50efd019dcf6b8df1b0092a590\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"184.71\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":31,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"167.95\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":36,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 price for Aster.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-4",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:b399c47a43cb6b980b3335c52a124da91a0cc4ebc025294e4b26bb6d332e3bdd",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "6322a8268b505ae1717acde5",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:b399c47a43cb6b980b3335c52a124da91a0cc4ebc025294e4b26bb6d332e3bdd\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"111.47\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":31,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"141.15\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":31,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Show the checked derivation for Bracken's price.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-5",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:bfda57f9c0945e7b3d564412a10f4fe927cfd196b00a807ec17047781c1bcdbb",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "5bfd185180ed0825566a467f",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:bfda57f9c0945e7b3d564412a10f4fe927cfd196b00a807ec17047781c1bcdbb\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"180.30\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":25,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"66.62\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":26,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"How do Bracken's and Dovetail's October price compare?\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-6",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:31db5011c2fc6e869fc7349b390bc975c293368a028a85ca61d1158966b5945f",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "1577cb1b156938bdcf70e190",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:31db5011c2fc6e869fc7349b390bc975c293368a028a85ca61d1158966b5945f\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"198.16\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":32,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"68.55\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":20,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 warranty months for Dovetail.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-7",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:0f4eea5ca83f7f994973e8348471e005603762d83df3dcba1e3829ff6bb2061f",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "fea447fc520ad15ed016efdc",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:0f4eea5ca83f7f994973e8348471e005603762d83df3dcba1e3829ff6bb2061f\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"59.21\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":24,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"117.00\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":32,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Explain the checked warranty months fact for Bracken.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-8",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:0fc72b34eb3d6919733eeefe3ff22a9375bc447e2b6c23916990908ffc4f5cb2",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "a749e6490d8e0944e049f7bc",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:0fc72b34eb3d6919733eeefe3ff22a9375bc447e2b6c23916990908ffc4f5cb2\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"79.97\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":29,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"68.04\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":20,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"How do Cinder's and Fallow's October warranty months compare?\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-9",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:a9022dcf1fcdc279e9731d1697902fddfea1e97a21dfdd51a133c8c7facd434f",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "84c1d7efc31e96aaaac50c51",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:a9022dcf1fcdc279e9731d1697902fddfea1e97a21dfdd51a133c8c7facd434f\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"173.90\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":16,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"186.10\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":25,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Dovetail's warranty months in October 2026?\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-10",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:321c2a1f9a5be8ac98ab50459b0dc76a3c75100a74105ba82e6c19afc63cb9c8",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "d7d236e70f61f49b7256ac05",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:321c2a1f9a5be8ac98ab50459b0dc76a3c75100a74105ba82e6c19afc63cb9c8\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"147.71\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":26,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"149.23\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":30,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Show the checked derivation for Bracken's price.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-11",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:0c84ddaf5bdcd22b76ed5777de3c25fa9e4cd25bf09615ab7820a2fb7bb739df",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "7b40d6b68e953bb4abb155ed",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:0c84ddaf5bdcd22b76ed5777de3c25fa9e4cd25bf09615ab7820a2fb7bb739df\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"196.85\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":23,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"54.78\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":23,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"How do Bracken's and Ember's October warranty months compare?\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-12",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:56977ec6187a31276c6ecbe7ad61c5e47bb22f28140b3c54ed881479650808bd",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "0fb0a09776a77c2d19c36514",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:56977ec6187a31276c6ecbe7ad61c5e47bb22f28140b3c54ed881479650808bd\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"141.38\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":26,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"81.17\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":2,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 price for Aster.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-13",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:48cc5ffab83c4833bb90b433ac82943aba09e674fa29906de98d74eb3d6b75c3",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "9681ff8c2aa2a0e38bea0358",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:48cc5ffab83c4833bb90b433ac82943aba09e674fa29906de98d74eb3d6b75c3\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"88.80\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":21,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"177.74\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":8,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Explain the checked warranty months fact for Dovetail.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-14",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:b06ea64e80c8d7f680398776053b8a17a8d691488fb96d752e7a9cdffedfbbbc",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "38c64f791c96c63022b805e7",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:b06ea64e80c8d7f680398776053b8a17a8d691488fb96d752e7a9cdffedfbbbc\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"193.64\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":2,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Bracken\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"101.61\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":16,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Compare the October price of Bracken and Dovetail.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-15",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:d260fb92a3299211cbf32808765d68c7c74087fde2501517d1103ca8f7d56042",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "6f48bdd8b9b226e732677aa2",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:d260fb92a3299211cbf32808765d68c7c74087fde2501517d1103ca8f7d56042\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.64\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":3,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"172.64\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":19,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 price for Ember.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-16",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:f104715ee0ad46494c0a04be8f887bbede42d04491f9ae4d47abd118eb490aca",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "d9733ae428dfdf98591dfb31",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:f104715ee0ad46494c0a04be8f887bbede42d04491f9ae4d47abd118eb490aca\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"71.82\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":26,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"71.82\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":25,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Show the checked derivation for Fallow's warranty months.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-17",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:56656e68786a748f0b7764d3961562de75698274a17b601b815d9661fc652129",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "468a5b0e9463d2908a246b26",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:56656e68786a748f0b7764d3961562de75698274a17b601b815d9661fc652129\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"130.91\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":36,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"76.94\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":26,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"How do Dovetail's and Aster's October price compare?\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-18",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:0123bfad56ffb1ac6e8261df921c761546b6676c959786544a9f79375ad201c1",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "df6600449a527f37a5df298c",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:0123bfad56ffb1ac6e8261df921c761546b6676c959786544a9f79375ad201c1\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"85.02\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"85.02\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":24,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"What is Fallow's price in October 2026?\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-19",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:22666709048d27776c7807b4d6e26a7a665cffc4f72b511578cc3655b967c7dc",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "756165dba0e75a8e7fd94d3d",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:22666709048d27776c7807b4d6e26a7a665cffc4f72b511578cc3655b967c7dc\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Cinder\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"156.49\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":33,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"156.49\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":3,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Show the checked derivation for Cinder's warranty months.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-20",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:786d048e357e3d639803b1823baf43ad0cb230f597c5109ffecd421fcbb745ae",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "b32ae98cb9a964c79c1b37b6",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:786d048e357e3d639803b1823baf43ad0cb230f597c5109ffecd421fcbb745ae\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"89.54\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":11,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"89.54\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":1,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Compare the October price of Aster and Ember.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-21",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:f39b885dafba1b114968c0a6ad32eab277189d65cde0f2e845de94268a58bb23",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "9ef5c78e16f950a70e30264d",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:f39b885dafba1b114968c0a6ad32eab277189d65cde0f2e845de94268a58bb23\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"144.59\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":26,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"144.59\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":23,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Give the October 2026 price for Ember.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-22",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:0686dc4c2a0057668e120d21e8064c7e065b9eedd7235f1cd80ee6940e31bd6d",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "c293b94b8b06d0c6f540ff8f",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:0686dc4c2a0057668e120d21e8064c7e065b9eedd7235f1cd80ee6940e31bd6d\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Aster\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"56.19\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":16,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Dovetail\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"159.36\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":30,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Show the checked derivation for Aster's price.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_train-9201-23",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:76155997662f68865c4e0be48382efef18ee64bd35833273d4c272112fa6a33c",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "26797488f5bf5471eb076a2d",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:76155997662f68865c4e0be48382efef18ee64bd35833273d4c272112fa6a33c\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Fallow\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"72.92\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":2,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Ember\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"72.92\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":14,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"How do Fallow's and Ember's October warranty months compare?\",\"unmet_obligations\":[]}"
+      }
+    }
+  ],
+  "development_validation": [
+    {
+      "id": "synthetic-development_validation-9202-0",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:354039954c0d46758b40178e13c07b497e2bfa481dbb6f124cb0a87fb3fc5554",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "aed043bcee13b38346af09e2",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:354039954c0d46758b40178e13c07b497e2bfa481dbb6f124cb0a87fb3fc5554\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Hearth\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"288.31\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":48,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Grove\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"287.27\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":49,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"State Grove's price for October 2026.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-1",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:a7716ac4bcdaa1b4c28908d4c77d8cafd4a20cf0bdd03c3b997c8d0730068358",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "f5f904424e637c755e153442",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:a7716ac4bcdaa1b4c28908d4c77d8cafd4a20cf0bdd03c3b997c8d0730068358\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Indigo\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"264.26\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":41,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Juniper\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"264.26\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":37,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Provide a checked derivation of Juniper's price.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-2",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:f6a483299a45484aa687ef93e122fc79d652f887c778fbaac172b71b4f49b837",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "8f5063a846c16403ccfbed3e",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:f6a483299a45484aa687ef93e122fc79d652f887c778fbaac172b71b4f49b837\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Kestrel\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"204.75\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":41,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Lumen\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"213.23\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":42,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"For October 2026, compare Kestrel's and Lumen's price.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-3",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:3fcd9b03f3c781ef88de058fa13b848ff42e3573a6d777e6b5989d81e541986e",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "723ad29a408d8b08141de4b6",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:3fcd9b03f3c781ef88de058fa13b848ff42e3573a6d777e6b5989d81e541986e\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Lumen\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"254.56\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":47,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Juniper\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"215.84\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":49,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"State Juniper's warranty months for October 2026.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-4",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:59f630c77f85000f9f93a10a155317674a1ce068ee76c5488c76236a91ba891c",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "0167af145e270438670f7c91",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:59f630c77f85000f9f93a10a155317674a1ce068ee76c5488c76236a91ba891c\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Hearth\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"225.15\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":55,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Kestrel\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"225.15\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":49,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Provide a checked derivation of Hearth's price.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-5",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:19fa41a88b465e1997f92fccb57aaccda8cca1f844d3efb3f448602546649484",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "36f2351e6ec78266047af793",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:19fa41a88b465e1997f92fccb57aaccda8cca1f844d3efb3f448602546649484\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Grove\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"240.28\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":37,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Indigo\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"274.20\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":44,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"For October 2026, compare Grove's and Indigo's warranty months.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-6",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:c649b6b5b41b78e53f30d672c7bcb0ede0f0a8cdd79d092b6accad06f216665f",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "a5b2960483432c188448fbc6",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:c649b6b5b41b78e53f30d672c7bcb0ede0f0a8cdd79d092b6accad06f216665f\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Indigo\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"288.70\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":59,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Hearth\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"237.83\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":50,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"State Indigo's warranty months for October 2026.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-7",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:ef4fe3c503a7b1dc15ebe547312001a79f13338e8e246c0d1bdf5ddebd624385",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "06e1bc5805dffbb1bb9b9382",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:ef4fe3c503a7b1dc15ebe547312001a79f13338e8e246c0d1bdf5ddebd624385\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Juniper\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"213.48\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":56,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Lumen\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"226.85\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":40,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Provide a checked derivation of Lumen's warranty months.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-8",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:0a1fbad274fcdc3371ac3fc1ab110f1a5af9e38b65203d5ff0e38df97bc81702",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "a91bd1135ea4aa05869a88a9",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:0a1fbad274fcdc3371ac3fc1ab110f1a5af9e38b65203d5ff0e38df97bc81702\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Indigo\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"235.76\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":52,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Juniper\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"235.76\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":54,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"For October 2026, compare Indigo's and Juniper's warranty months.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-9",
+      "labels": {
+        "slot-001-operation": "op001"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:cfe18313dc5c61ce5c78630671f97a2f33e18b7afbdd0691234a5af75cc1a01b",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "7732223ef4f868a167984905",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:cfe18313dc5c61ce5c78630671f97a2f33e18b7afbdd0691234a5af75cc1a01b\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Grove\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"257.38\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":55,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Lumen\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"214.12\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":37,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"State Grove's price for October 2026.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-10",
+      "labels": {
+        "slot-001-operation": "op002"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:862d4f1a20e0f33a6f3288d41439190f4c1cfa8edefd5403de0ef785446c7a54",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "db69e1cf3dc02290907fda5f",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:862d4f1a20e0f33a6f3288d41439190f4c1cfa8edefd5403de0ef785446c7a54\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Hearth\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"290.50\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":50,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Kestrel\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"290.50\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":57,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"Provide a checked derivation of Kestrel's price.\",\"unmet_obligations\":[]}"
+      }
+    },
+    {
+      "id": "synthetic-development_validation-9202-11",
+      "labels": {
+        "slot-001-operation": "op003"
+      },
+      "request": {
+        "model": "development-only",
+        "questions": {
+          "slot-001-operation": {
+            "criteria": {
+              "op001": "Assert one selected fact",
+              "op002": "Explain a checked assertion of one selected fact",
+              "op003": "Compare two selected typed values and assert the selected relation"
+            },
+            "instructions": "Select the semantic operation for the user's task.",
+            "type": "choice"
+          }
+        },
+        "ssdm": {
+          "audience": "public",
+          "context_ref": "synthetic-development-context-v1:c562fd8915ae60b132e12315b16a25e85d7bcc04eedefa004a6cdb9c4bd190e4",
+          "limits": {
+            "max_options_per_question": 16,
+            "max_program_nodes": 8,
+            "max_questions": 1
+          },
+          "parent_revision": "synthetic-no-model:v1",
+          "policy_ref": "synthetic-development-public-v1",
+          "registry_ref": "synthetic-development-registry-v1",
+          "request_id": "4672584e79cd597c8a190c71",
+          "schema": "ssdm.decide.v0.1"
+        },
+        "state": "{\"accepted_partial_program\":[],\"audience\":\"public\",\"context_ref\":\"synthetic-development-context-v1:c562fd8915ae60b132e12315b16a25e85d7bcc04eedefa004a6cdb9c4bd190e4\",\"policy_ref\":\"synthetic-development-public-v1\",\"proposed_slot_choices\":[],\"query_constants\":{},\"records\":[{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Indigo\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"200.94\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":54,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-1\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1},{\"audience\":\"public\",\"conflicts\":[],\"entity_ref\":\"Kestrel\",\"epistemic_class\":\"authoritative_structured_premise\",\"fields\":{\"price\":{\"quantity_kind\":\"price\",\"temporal_scope\":\"2026-10\",\"unit\":\"USD\",\"value\":\"211.64\",\"value_type\":\"decimal\"},\"warranty_months\":{\"quantity_kind\":\"warranty_months\",\"temporal_scope\":\"2026-10\",\"unit\":\"month\",\"value\":57,\"value_type\":\"integer\"}},\"freshness\":\"current\",\"record_ref\":\"development-record-2\",\"source\":{\"premise_admission\":\"accepted\"},\"source_ref\":\"synthetic-premises\",\"version\":1}],\"registry\":{\"ask_categories\":[],\"comparators\":[\"greater_than\",\"less_than\",\"equal\"],\"registered_fields\":[\"price\",\"warranty_months\"]},\"registry_ref\":\"synthetic-development-registry-v1\",\"schema\":\"ssdm.track_l_state.v0.1\",\"task_input\":\"For October 2026, compare Indigo's and Kestrel's warranty months.\",\"unmet_obligations\":[]}"
+      }
+    }
+  ]
+}

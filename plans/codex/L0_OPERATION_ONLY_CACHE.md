@@ -76,3 +76,8 @@ The registration pins interpreter, Python and package versions strictly.
 
 Future execution command (after tiny proofs, independent PR review and fresh resource guard):
 `C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m language_growth.rwkv_operation_cache --out <fresh-dir> --execute`
+
+
+## Run 1 outcome (2026-10-07)
+
+Run 1 completed under the prepared CPU-only guard and was independently remeasured from the raw predictions. The preregistered advancement condition failed: the trained head did not improve useful checked answers over stock, lost one kernel-accepted task, and development operation CE worsened versus the step-0 head. Fold this CE-only operation-head line; do not advance it to L0 qualification. See `receipts/2026-10-07-L0-operation-only-cache-run1/review_audit.md` for raw hashes, paired intervals, lineage and limitations. No GPU, Index, held-out data or spend was used.

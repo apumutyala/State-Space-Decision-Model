@@ -1,0 +1,150 @@
+{
+  "development_train": [
+    {
+      "label": 0,
+      "row_id": "synthetic-development_train-9201-0/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_train-9201-1/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_train-9201-2/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_train-9201-3/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_train-9201-4/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_train-9201-5/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_train-9201-6/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_train-9201-7/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_train-9201-8/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_train-9201-9/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_train-9201-10/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_train-9201-11/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_train-9201-12/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_train-9201-13/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_train-9201-14/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_train-9201-15/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_train-9201-16/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_train-9201-17/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_train-9201-18/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_train-9201-19/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_train-9201-20/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_train-9201-21/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_train-9201-22/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_train-9201-23/slot-001-operation"
+    }
+  ],
+  "development_validation": [
+    {
+      "label": 0,
+      "row_id": "synthetic-development_validation-9202-0/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_validation-9202-1/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_validation-9202-2/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_validation-9202-3/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_validation-9202-4/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_validation-9202-5/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_validation-9202-6/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_validation-9202-7/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_validation-9202-8/slot-001-operation"
+    },
+    {
+      "label": 0,
+      "row_id": "synthetic-development_validation-9202-9/slot-001-operation"
+    },
+    {
+      "label": 1,
+      "row_id": "synthetic-development_validation-9202-10/slot-001-operation"
+    },
+    {
+      "label": 2,
+      "row_id": "synthetic-development_validation-9202-11/slot-001-operation"
+    }
+  ]
+}
