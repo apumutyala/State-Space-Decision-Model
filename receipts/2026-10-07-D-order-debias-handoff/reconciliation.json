@@ -184,6 +184,37 @@
     "4": 0.25,
     "77": 0.487012987012987
   },
+  "recorded_passes": [
+    {
+      "condition": "forward",
+      "label_scheme": "original",
+      "rows": 2008,
+      "probabilities_saved": true,
+      "run_ids_sha256": "55fcb565e6fb6f3eb33ff16776a958e421e795c5fd8c2011708fdeb3c191f8b6"
+    },
+    {
+      "condition": "forward",
+      "label_scheme": "numeric-prefix/v1",
+      "rows": 160,
+      "probabilities_saved": false,
+      "run_ids_sha256": "5fbcacc90c49079c7f21f0bf52145f4582a848d50b4c7fcb598d190f96084d37"
+    },
+    {
+      "condition": "reversed",
+      "label_scheme": "numeric-prefix/v1",
+      "rows": 160,
+      "probabilities_saved": false,
+      "run_ids_sha256": "5fbcacc90c49079c7f21f0bf52145f4582a848d50b4c7fcb598d190f96084d37"
+    }
+  ],
+  "interpretation": {
+    "first_choice_statistic": "endpoint_excess_not_isolated_position_effect",
+    "probability_averaging_status": "unmeasured",
+    "matched_probability_pair_available": false,
+    "new_full_passes_for_symmetric_relabelled_pair": 2,
+    "index_stage_timer_scope": "index_plus_order_diagnostic",
+    "forward_latency_source": "index_results.total_wall_ms"
+  },
   "next_experiment": {
     "mixed_original_plus_reversed_relabelled": "one new full pass; tests a combined relabelling/order ensemble",
     "symmetric_relabelled_forward_plus_reversed": "two new full passes; save both probability maps",

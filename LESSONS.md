@@ -354,3 +354,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the test double matched the conceptual slot count but not the runtime container contract.
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
+
+### L-41 Two-order endpoint concentration and aggregate stage time were overinterpreted
+- Date: 2026-10-07 (PR #151 receipt, corrected by PR #155).
+- Symptom: the handoff described two-order endpoint excess as isolated position bias, proposed one reversed/relabelled pass as sufficient for matched averaging with original-ID forward outputs, and divided a stage timer including 320 diagnostic calls by the 2,008 forward rows.
+- Cost: $0; caught by independent CPU receipt review before any averaging implementation or new compute.
+- Root cause: endpoint coverage under reversal is incomplete for k>2; relabelling changes continuation IDs; the aggregate stage timer covers more requests than the forward result set. Small net endpoint excess also hides opposing first/last-following changes.
+- **Check:** `receipts/2026-10-07-D-order-debias-handoff/reconcile.py::validate_interpretation` holds this historical receipt's endpoint-statistic label, unmeasured-average status, matched-pass requirement and request-timer source. `matched_probability_pair_available` rejects mismatched label schemes, row sets/coverage, missing probabilities and duplicate order conditions at the metadata level; it is not a probability-content validator or serving gate. `tests/test_order_debias_handoff.py::test_invariant_original_endpoint_choice_has_positive_endpoint_excess` supplies an order-invariant four-option chooser with +0.25 endpoint excess. Mutation tests reject the old interpretation claims, a one-pass matched-average claim and stage time substituted for mean request latency.
+- **Status:** ENFORCED for this receipt's schema and interpretation. Probability averaging and two-pass latency remain unmeasured; serving/measurement code is unchanged.

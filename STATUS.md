@@ -1,6 +1,7 @@
 # Status
 
 ## Track D — SSM-Decision (owner: claude)
+- 2026-10-07 ($0 CPU audit, [PR #155](https://github.com/apumutyala/State-Space-Decision-Model/pull/155), correcting PR #151): order-debias calibration scores reproduce exactly; probability averaging remains **unmeasured**. Two-order endpoint excess does not isolate position bias, a matched relabelled average requires two new full probability passes, and the original stage timer includes extra diagnostic calls. Receipt: `receipts/2026-10-07-D-order-debias-handoff/`; L-41 and synthetic CPU tests enforce the correction. No model/GPU calls or spend.
 - 2026-10-06: plans reviewed (analysis/A, B). Next: m0 harness parity (Index 0.2.1 pinned, ≥10k-row stratified dev slice, Clef-flash reproduction).
 - 2026-10-06 (m0-b, PR #6): `decide/` adapter 0.2.0 aligned with interface 0.1 (envelope `ssdm.decide.v0.1`, fingerprint `ssdm.request_fingerprint.v0`, provenance experimental behind a flag), canonical untrusted encoder `decide/untrusted.py`, replay/oracle/HF-readout backends, replay fixture v0 (43 cases, Qwen3.5-0.8B CPU recording; 9B fixture comes with the paid m0 run). Qwen3.5-0.8B, RWKV7-0.1B, Mamba-3-187M loaded locally earlier (GPU smoke); further work CPU-only. Receipt: receipts/2026-10-06-D-m0-decide/.
 - 2026-10-06 (m0-c, PR claude/m0-steer-eval): safety_eval v0.1 + PREREG (steer headline) + Qwen3-0.6B pipeline smoke receipt (receipts/2026-10-06-D-m0-steer).

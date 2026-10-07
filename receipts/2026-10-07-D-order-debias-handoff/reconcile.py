@@ -23,6 +23,41 @@ def endpoint_excess(k, f_first, r_first):
     return (f_first + r_first) / 2 - 1 / k
 
 
+def matched_probability_pair_available(first, second):
+    """Metadata guard only; it does not validate or score probability contents."""
+    return (first["probabilities_saved"] and second["probabilities_saved"]
+            and {first["condition"], second["condition"]} == {"forward", "reversed"}
+            and first["label_scheme"] == second["label_scheme"]
+            and first["rows"] == second["rows"]
+            and first["run_ids_sha256"] == second["run_ids_sha256"])
+
+
+def validate_interpretation(receipt):
+    """Hold this historical receipt's claim scope; new measurements need a new receipt."""
+    if receipt["schema"] != "ssdm.order-debias-handoff.v1":
+        raise ValueError("unsupported receipt schema")
+    interpretation = receipt["interpretation"]
+    if interpretation["first_choice_statistic"] != "endpoint_excess_not_isolated_position_effect":
+        raise ValueError("two endpoint orders cannot isolate position sensitivity")
+    if interpretation["index_stage_timer_scope"] != "index_plus_order_diagnostic":
+        raise ValueError("the stage timer includes extra diagnostic requests")
+    if interpretation["forward_latency_source"] != "index_results.total_wall_ms":
+        raise ValueError("forward latency must come from request timers")
+    passes = receipt["recorded_passes"]
+    available = any(matched_probability_pair_available(a, b)
+                    for i, a in enumerate(passes) for b in passes[i + 1:])
+    if interpretation["matched_probability_pair_available"] != available or available:
+        raise ValueError("this receipt has no matched probability pair")
+    if (interpretation["probability_averaging_status"] != "unmeasured"
+            or interpretation["new_full_passes_for_symmetric_relabelled_pair"] != 2):
+        raise ValueError("matched averaging requires two new full relabelled passes")
+    timed = receipt["forward_request_latency_all"]
+    if not np.isclose(timed["mean_ms"], timed["sum_seconds"] * 1000 / timed["n"]):
+        raise ValueError("mean request latency disagrees with request timer sum")
+    if receipt["whole_index_stage_seconds_including_order_diag"] <= timed["sum_seconds"]:
+        raise ValueError("stage timer must retain the extra diagnostic work")
+
+
 def main():
     repo, units_path, rows_path, rerun_path, output_path = map(Path, sys.argv[1:])
     receipt = repo / "receipts/2026-10-07-D-order-debias"
@@ -87,6 +122,15 @@ def main():
     fixed_endpoint = {str(k): endpoint_excess(k, 1, 0) for k in (2, 3, 4, 77)}
     assert fixed_endpoint["77"] > 0.48
     assert endpoint_excess(2, 0.5, 0.5) == 0
+    def run_ids_sha256(ids):
+        return hashlib.sha256(json.dumps(sorted(ids), separators=(",", ":")).encode()).hexdigest()
+
+    diag_ids = [r["_evaluation"]["run_id"] for r in selected]
+    recorded_passes = [{"condition": "forward", "label_scheme": "original", "rows": len(rows),
+                        "probabilities_saved": True, "run_ids_sha256": run_ids_sha256(rows_by_id)}]
+    recorded_passes.extend({"condition": condition, "label_scheme": "numeric-prefix/v1", "rows": len(selected),
+                            "probabilities_saved": False, "run_ids_sha256": run_ids_sha256(diag_ids)}
+                           for condition in ("forward", "reversed"))
     out = {
         "schema": "ssdm.order-debias-handoff.v1",
         "source_head": "478aec24f19656243ec8e347bf1563acb188c5b8",
@@ -114,12 +158,21 @@ def main():
             "forward_request_wall_compute_usd": all_latency["sum_seconds"] / 60 * 0.0495,
             "note": "No setup/build/finalize/retry pricing and no new-order latency measurement; not a spend cap."},
         "counterexample_fixed_original_endpoint": fixed_endpoint,
+        "recorded_passes": recorded_passes,
+        "interpretation": {
+            "first_choice_statistic": "endpoint_excess_not_isolated_position_effect",
+            "probability_averaging_status": "unmeasured",
+            "matched_probability_pair_available": False,
+            "new_full_passes_for_symmetric_relabelled_pair": 2,
+            "index_stage_timer_scope": "index_plus_order_diagnostic",
+            "forward_latency_source": "index_results.total_wall_ms"},
         "next_experiment": {
             "mixed_original_plus_reversed_relabelled": "one new full pass; tests a combined relabelling/order ensemble",
             "symmetric_relabelled_forward_plus_reversed": "two new full passes; save both probability maps",
             "position_only": "requires explicit presentation independent of continuation IDs or balanced neutral controls",
             "status": "not implemented or launched"},
     }
+    validate_interpretation(out)
     Path(output_path).write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({k: out[k] for k in ("validation", "by_k", "forward_request_latency_all",
                                        "whole_index_stage_seconds_including_order_diag",
