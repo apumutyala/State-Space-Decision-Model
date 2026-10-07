@@ -1,8 +1,5 @@
 {
- "test_env": {
-  "transformers": "5.17.0",
-  "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"
- },
+ "test_env": {"transformers": "5.17.0", "with": ["flash-linear-attention==0.5.2", "fla-core==0.5.2"], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}], "image": "jobs/probe9b/Dockerfile"},
  "_comment": "jobs/q9_feature_cache part 'e5_train' (JOB_SPEC.md): the E5 short-code arm's first 5,000 training rows. One job = one part = one <= 4.5 GiB output artifact (review B1). Caps from the exact volume (volume_plan.json) at the MEASURED job-5cmat rates below; every cap >= 1.3 x its projection (jobs/q9_feature_cache/preflight.py, tests/test_q9_feature_cache_params.py).",
  "job": "q9-feature-cache-e5-train",
  "mode": "e5_train",

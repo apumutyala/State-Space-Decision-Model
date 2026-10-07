@@ -13,6 +13,10 @@ P5  Proxy loop exactness: head training on cached frozen-backbone features (trai
 P6  Proxy transfer: recipe ranking under the proxy vs under head + LoRA training (Kendall tau), and the speed-up.
     Results -> receipts/2026-10-06-D-premortem-probes/p6_proxy_transfer.json.
 Receipts are written with SSDM_WRITE_RECEIPTS=1 (how the committed ones were produced).
+
+Launch collection (LESSONS L-24): P1-P4 require transformers 5.17.0, the Q9-AF stack of jobs/full8/ (and
+jobs/probe9b/, jobs/q9_feature_cache/), so jobs.common.launch runs them in those jobs' test environments; P7 reads
+jobs/clef_baseline/summarize.py and runs under every job that collects this file.
 """
 
 from __future__ import annotations

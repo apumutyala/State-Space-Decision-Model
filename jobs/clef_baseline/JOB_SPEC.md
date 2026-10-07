@@ -405,6 +405,13 @@ I ran this locally on 2026-10-06 against the real files, with the production gua
 
 Both runs: cohort hits 0/0, guard refusals 0, held-out hits 0, template set `7a81287e...`.
 
+**Where the guard runs (since PR #103).** `jobs/clef_baseline/build_context.sh teacher` ran `guard_ready` and
+`clef_teacher select` locally on the files that ship, and recorded `teacher_select_local` in CONTEXT_MANIFEST. The launcher
+recipe (`jobs/common/launch.py` CONTEXT_RECIPES) **drops that local pre-submit check**. The context still pins every file
+(the pointer's and guard_pin's uncompressed sha256). The full guard now runs **only on the box**, as phase T0, before any
+download or GPU phase, and exits 20. The cost of a contaminated set is therefore one container start, not an export. Run
+`python -X utf8 -m baselines.clef_teacher select --guard-readiness ...` locally first if that start matters.
+
 **Export (`clef_teacher export`).**
 - Each record goes through the same `decide()` path as the Index readout: ssdm encoding, no truncation. Labels are
   never read into the request.

@@ -451,6 +451,11 @@ def test_job_test_command_uses_the_jobs_pin(tmp_path):
     for bad in (None, {}, {"image": "x"}):
         with pytest.raises(launch.LaunchError, match="test_env"):
             launch.job_test_command(code, bad, ["t.py"], tmp_path / "j.xml", None)
+    cmd = launch.job_test_command(code, {"transformers": "5.17.0", "with": ["fla-core==0.5.2"]}, ["t.py"],
+                                  tmp_path / "j.xml", kit)
+    assert "fla-core==0.5.2" in cmd  # the image's further pins (B2: the fla mirror test runs instead of skipping)
+    with pytest.raises(launch.LaunchError, match="no decision_index"):  # B1: never drop the kit silently
+        launch.job_test_command(code, {"transformers": "5.10.2"}, ["t.py"], tmp_path / "j.xml", tmp_path / "nokit")
 
 
 @pytest.mark.parametrize("pin, refused", [("5.10.2", True), ("5.17.0", True), ("4.0.0", False)])
@@ -469,13 +474,14 @@ def test_run_tests_refuses_when_the_jobs_own_pinned_tests_were_skipped(tmp_path,
         return R()
 
     monkeypatch.setattr(launch.subprocess, "run", fake_run)
+    env = {"transformers": pin, "allowed_skips": [{"reason": "private DEV rows not present", "why": "test fixture"}]}
     if refused:
         with pytest.raises(launch.LaunchError, match="require this job's pinned stack were skipped"):
-            launch.run_tests(code, "tiny", {"transformers": pin}, None)
+            launch.run_tests(code, "tiny", env, None)
     else:
-        r = launch.run_tests(code, "tiny", {"transformers": pin}, None)
+        r = launch.run_tests(code, "tiny", env, None)
         assert r["passed"] == 1 and r["skipped"] == 3 and len(r["skipped_other_pins"]) == 2
-        assert [x["test"] for x in r["skipped_other"]] == ["tests.d::test_needs_data"]
+        assert [x["test"] for x in r["skipped_allowed"]] == ["tests.d::test_needs_data"]
 
 
 def test_launch_refuses_a_job_without_test_env(tmp_path):
@@ -496,7 +502,8 @@ def test_requires_transformers_marker_skips_on_mismatch_and_runs_on_match(tmp_pa
     (tmp_path / "test_m.py").write_text(
         "import pytest\n"
         f"@pytest.mark.requires_transformers({have!r})\ndef test_match():\n    pass\n"
-        "@pytest.mark.requires_transformers('0.0.0')\ndef test_other():\n    pass\n", encoding="utf-8")
+        "@pytest.mark." + "requires_" + "transformers('0.0.0')\ndef test_other():\n    pass\n",  # split: not a pin
+        encoding="utf-8")
     r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={tmp_path / 'j.xml'}",
                         str(tmp_path / "test_m.py")], cwd=tmp_path, capture_output=True, text=True)
     s = launch.junit_summary(tmp_path / "j.xml")
@@ -536,3 +543,83 @@ def test_submit_args_refuses_a_non_schema_checks_value():
     assert lint.checks_problems(a["checks"]) == []
     for k, sub in launch.LEGACY_SUBMIT.items():  # every legacy table entry is valid too
         assert lint.checks_problems(sub["checks"]) == [], k
+
+
+
+# ----------------------------------------------------------------------------- PR #103 review B1: fail closed
+def _fake_tests(tmp_path, monkeypatch, junit_text, seen=None):
+    code = tmp_path / "stage" / "abc"
+    (code / "tests").mkdir(parents=True)
+    (code / "tests" / "test_x.py").write_text("# jobs/tiny/\n", encoding="utf-8")
+    monkeypatch.setattr(launch, "job_test_command", lambda *a, **k: ["fake"])
+
+    class R:
+        returncode, stdout, stderr = 0, "", ""
+
+    def fake_run(cmd, **kw):
+        if seen is not None:
+            seen.update(kw.get("env") or {})
+        if junit_text is not None:
+            (code.parent / "junit-tiny.xml").write_text(junit_text, encoding="utf-8")
+        return R()
+
+    monkeypatch.setattr(launch.subprocess, "run", fake_run)
+    return code
+
+
+def _junit(*cases):
+    return "<testsuites><testsuite>" + "".join(cases) + "</testsuite></testsuites>"
+
+
+PASS = '<testcase classname="t" name="ok"/>'
+SKIP_KIT = '<testcase classname="t" name="needs_kit"><skipped message="kit not installed"/></testcase>'
+SKIP_OTHER_PIN = '<testcase classname="t" name="q9"><skipped message="requires_transformers 5.17.0 (installed 5.10.2)"/></testcase>'
+
+
+def test_run_tests_refuses_a_skip_not_on_the_allowlist(tmp_path, monkeypatch):
+    code = _fake_tests(tmp_path, monkeypatch, _junit(PASS, SKIP_KIT, SKIP_OTHER_PIN))
+    with pytest.raises(launch.LaunchError, match="not on test_env.allowed_skips"):
+        launch.run_tests(code, "tiny", {"transformers": "5.10.2"}, None)
+    allow = {"transformers": "5.10.2", "allowed_skips": [{"reason": "kit not installed", "why": "x"}]}
+    r = launch.run_tests(code, "tiny", allow, None)
+    assert r["passed"] == 1 and r["skipped_other_pins"] == ["t::q9"]
+    unreasoned = {"transformers": "5.10.2", "allowed_skips": [{"reason": "kit not installed"}]}  # no "why"
+    with pytest.raises(launch.LaunchError, match="not on test_env.allowed_skips"):
+        launch.run_tests(code, "tiny", unreasoned, None)
+
+
+def test_run_tests_refuses_missing_junit_and_zero_passed(tmp_path, monkeypatch):
+    code = _fake_tests(tmp_path, monkeypatch, None)
+    with pytest.raises(launch.LaunchError, match="no junit"):
+        launch.run_tests(code, "tiny", {"transformers": None}, None)
+    code2 = _fake_tests(tmp_path / "b", monkeypatch, _junit(SKIP_OTHER_PIN))
+    with pytest.raises(launch.LaunchError, match="0 passed"):
+        launch.run_tests(code2, "tiny", {"transformers": "5.10.2"}, None)
+
+
+def test_run_tests_passes_the_launch_data_dir_as_SSDM_DATA(tmp_path, monkeypatch):
+    seen = {}
+    data = tmp_path / "data"
+    (data / "decision-index" / "decision_index").mkdir(parents=True)
+    code = _fake_tests(tmp_path, monkeypatch, _junit(PASS), seen)
+    monkeypatch.setenv("SSDM_DATA", "C:/somewhere/else")
+    launch.run_tests(code, "tiny", {"transformers": "5.10.2"}, data)
+    assert seen["SSDM_DATA"] == str(data)
+
+
+def test_run_tests_refuses_a_data_dir_without_the_kit(tmp_path, monkeypatch):
+    code = _fake_tests(tmp_path, monkeypatch, _junit(PASS))
+    monkeypatch.undo()  # the real job_test_command
+    monkeypatch.setattr(launch.shutil if hasattr(launch, "shutil") else shutil, "which", lambda x: "uv")
+    with pytest.raises(launch.LaunchError, match="no decision_index"):
+        launch.run_tests(code, "tiny", {"transformers": "5.10.2"}, tmp_path / "data-without-kit")
+
+
+def test_every_job_test_env_is_reasoned_and_matches_its_image():
+    import re as _re
+
+    for rel in lint.params_files(ROOT):
+        te = json.loads((ROOT / rel).read_text(encoding="utf-8"))["test_env"]
+        df = (ROOT / te["image"]).read_text(encoding="utf-8")
+        assert te["with"] == _re.findall(r'"((?:flash-linear-attention|fla-core)==[0-9.]+)"', df), rel
+        assert all(a.get("reason") and a.get("why") for a in te["allowed_skips"]), rel

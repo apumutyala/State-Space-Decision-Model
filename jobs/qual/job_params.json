@@ -1,5 +1,5 @@
 {
- "test_env": {"transformers": "5.17.0", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
+ "test_env": {"transformers": "5.17.0", "with": ["flash-linear-attention==0.5.2", "fla-core==0.5.2"], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}], "image": "jobs/qual/Dockerfile"},
  "_comment": "Single source of truth for the rung-2 qualification submit_job parameters and runner phase caps. tests/test_qual_job.py checks the cost arithmetic and the schedule against these values; jobs/qual/qual_job.sh reads the caps from here.",
  "chip": "h100",
  "max_duration_minutes": 180,

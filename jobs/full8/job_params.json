@@ -1,5 +1,5 @@
 {
- "test_env": {"transformers": "5.17.0", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
+ "test_env": {"transformers": "5.17.0", "with": ["flash-linear-attention==0.5.2", "fla-core==0.5.2"], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}], "image": "jobs/full8/Dockerfile"},
  "_comment": "Single source of truth for the full8 submit_job fields and runner phase caps (jobs/full8/JOB_SPEC.md). Priced from the MEASURED job-5cmat phase timings (`measured` below; issue #68) plus the job-4j3vu stage-2 rate on layer 3. jobs/full8/preflight.py projects every phase, checks cap >= 1.3 x projection, the pipeline deadline and the stop floors; tests/test_full8.py checks the cost arithmetic and the schedule; jobs/full8/full8_job.sh reads the caps from here.",
  "job": "full8",
  "chip": "h100",

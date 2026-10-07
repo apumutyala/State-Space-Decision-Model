@@ -269,7 +269,12 @@ def job_test_command(code: Path, test_env: dict | None, tests: list[str], junit:
            "--with", f"transformers=={pin}"]
     for d in TEST_DEPS:
         cmd += ["--with", d]
-    if kit_dir is not None and (kit_dir / "decision_index").is_dir():
+    for d in test_env.get("with", []):  # further image pins (fla 0.5.2), so their mirror tests run instead of skipping
+        cmd += ["--with", d]
+    if kit_dir is not None:
+        if not (kit_dir / "decision_index").is_dir():  # PR #103 review B1: never drop the kit silently
+            raise LaunchError(f"kit dir {kit_dir} has no decision_index package: the job's kit-dependent tests would "
+                              f"skip, untested (pass --data <SSDM_DATA with decision-index/>)")
         cmd += ["--with", str(kit_dir)]
     if (code / "harness" / "pyproject.toml").is_file():
         cmd += ["--with-editable", str(code / "harness")]
@@ -303,29 +308,57 @@ def required_skips(summary: dict, test_env: dict) -> list[dict]:
     return [s for s in summary["skips"] if f"{REQUIRES_REASON} {pin} " in s["reason"] + " "]
 
 
-def run_tests(code: Path, job: str, test_env: dict | None = None, kit_dir: Path | None = None) -> dict:
+def other_pin_skip(reason: str, test_env: dict) -> bool:
+    """A requires_transformers skip for a DIFFERENT pin (run by that pin's job instead; lint pinned_tests_uncovered)."""
+    pin = test_env.get("transformers")
+    return reason.startswith(REQUIRES_REASON + " ") and not (pin and reason.startswith(f"{REQUIRES_REASON} {pin} "))
+
+
+def disallowed_skips(summary: dict, test_env: dict) -> list[dict]:
+    """PR #103 review B1: every skip must be either another pin's test or on the job's explicit, reasoned allowlist
+    (test_env.allowed_skips: [{"reason": <substring of the skip reason>, "why": <why it may skip>}]). Anything else
+    (kit missing, private data missing, an importorskip) means untested code: refuse."""
+    allow = [a for a in test_env.get("allowed_skips", []) if isinstance(a, dict) and a.get("reason") and a.get("why")]
+    return [s for s in summary["skips"] if not other_pin_skip(s["reason"], test_env)
+            and not any(a["reason"] in s["reason"] for a in allow)]
+
+
+def run_tests(code: Path, job: str, test_env: dict | None = None, data_dir: Path | None = None) -> dict:
     tests = job_tests(code, job)
     if not tests:
         raise LaunchError(f"no CPU tests reference jobs/{job}/")
     junit = code.parent / f"junit-{job}.xml"
-    cmd = job_test_command(code, test_env, tests, junit, kit_dir)
+    if junit.exists():
+        junit.unlink()  # a stale file from an earlier run must never be read as this run's result
+    kit = data_dir / "decision-index" if data_dir is not None and isinstance(test_env, dict) \
+        and test_env.get("transformers") is not None else None
+    cmd = job_test_command(code, test_env, tests, junit, kit)
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUTF8": "1"}
+    if data_dir is not None:
+        env["SSDM_DATA"] = str(data_dir)  # B1: the private-data tests read the launch's own --data, not the caller's env
     r = subprocess.run(cmd, cwd=code, env=env, capture_output=True, text=True)
     tail = (r.stdout + r.stderr).strip().splitlines()[-3:]
     if r.returncode:
         raise LaunchError(f"job tests failed ({' '.join(tests)}):\n" + "\n".join(tail))
-    summ = junit_summary(junit) if junit.is_file() else {"passed": None, "failed": None, "skipped": None, "skips": []}
+    if not junit.is_file():
+        raise LaunchError("job tests wrote no junit xml: no evidence that any test ran")
+    summ = junit_summary(junit)
+    if not summ["passed"]:
+        raise LaunchError(f"job tests: 0 passed ({summ['skipped']} skipped): nothing was tested")
     req = required_skips(summ, test_env)
     if req:
         raise LaunchError(f"{len(req)} test(s) that require this job's pinned stack were skipped (the test environment "
                           f"does not match test_env {test_env}): {[s['test'] for s in req]}")
-    other = [s for s in summ["skips"] if REQUIRES_REASON in s["reason"]]
-    summary = (f"{summ['passed']} passed, {summ['failed']} failed, {summ['skipped']} skipped" if summ["passed"] is not None
-               else (tail[-1] if tail else ""))
+    bad = disallowed_skips(summ, test_env)
+    if bad:
+        raise LaunchError(f"{len(bad)} test(s) skipped for a reason not on test_env.allowed_skips (untested code): "
+                          f"{[(s['test'], s['reason']) for s in bad][:10]}")
+    other = [s for s in summ["skips"] if other_pin_skip(s["reason"], test_env)]
+    summary = f"{summ['passed']} passed, {summ['failed']} failed, {summ['skipped']} skipped"
     return {"files": tests, "summary": summary, "test_env": test_env,
             "passed": summ["passed"], "failed": summ["failed"], "skipped": summ["skipped"],
             "skipped_other_pins": [s["test"] for s in other],
-            "skipped_other": [s for s in summ["skips"] if REQUIRES_REASON not in s["reason"]]}
+            "skipped_allowed": [s for s in summ["skips"] if not other_pin_skip(s["reason"], test_env)]}
 
 
 def sha256(b: bytes) -> str:
@@ -474,8 +507,7 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
     stage(files, code)
     sha_lint = load_lint(code)
     lint_res = run_lint(code, rel, allow_waived, sha_lint)
-    tests = run_tests(code, job, p.get("test_env"), data_dir / "decision-index" if data_dir else None) \
-        if run_job_tests else {"skipped": True}
+    tests = run_tests(code, job, p.get("test_env"), data_dir) if run_job_tests else {"skipped": True}
     sub = p.get("submit") or LEGACY_SUBMIT.get((job, mode))
     spec = p.get("context") or LEGACY_CONTEXT.get(job)
     if (not spec or "unsupported" in spec) and (job, mode) in CONTEXT_RECIPES:

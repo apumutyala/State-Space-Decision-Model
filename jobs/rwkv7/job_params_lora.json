@@ -1,5 +1,5 @@
 {
- "test_env": {"transformers": "5.17.0", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
+ "test_env": {"transformers": "5.17.0", "with": [], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}, {"reason": "fla not installed here", "why": "this job's image pins no fla, so the fla source-mirror test has nothing to mirror"}], "image": "jobs/rwkv7/Dockerfile"},
  "_comment": "jobs/rwkv7 stage B (JOB=lora): LoRA m2 pilot cell with the cache fork head (train/run_cell.py, jobs/rwkv7/pilot_cell.json). depends_on stage A result.ok == true. Checked by tests/test_m1_next_jobs.py.",
  "job": "rwkv7-lora",
  "chip": "h100",

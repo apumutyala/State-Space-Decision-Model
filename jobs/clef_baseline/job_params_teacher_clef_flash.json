@@ -1,5 +1,5 @@
 {
- "test_env": {"transformers": "5.10.2", "image": "transformers pin of the job image's Dockerfile (jobs/common/launch.py runs the job tests under it)"},
+ "test_env": {"transformers": "5.10.2", "with": ["flash-linear-attention==0.5.2", "fla-core==0.5.2"], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}, {"reason": "CLEF_TEST_SGIHJ_DECIDE", "why": "job-sgihj's decide results (art-8y6d8) are a local reference, not launch data; the ROWS=overlength job ships them pinned"}], "image": "jobs/clef_baseline/Dockerfile"},
  "_comment": "Teacher export, Clef-flash, on the m2 first cell's 24,000-record TRAINING draw (jobs/clef_baseline/teacher_scope.json). guard = guard_ready (content index rebuild) + clef_teacher select (pointer, cohort, SplitGuard DEV/TEST, held-out D1-B), all on CPU before the download. Expected export: 42.9 + 0.5 load (price.py, job-sgihj per-row model x the draw's 45.2 M tokens). Never DEV/TEST rows.",
  "job": "clef-teacher-flash",
  "chip": "h100",
