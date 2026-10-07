@@ -318,7 +318,11 @@ def _main():
 
     # ------------------------------------------------------------------ full MMLU test set, stock vs final (jobs/full8 A1)
     # Never deadline-gated: the binding MMLU drop of the full-8 rule. Both arms, same code path (probes.core.mmlu_full).
-    if cfg.get("mmlu_full") and converted and "mmlu_full" not in R:
+    # A deadline can finish this phase with fewer than all layers attempted. Resume may accept more layers, so
+    # presence alone cannot identify the final model. Existing accepted layers are immutable on rejection/rollback.
+    final_modes = {str(j): "student" for j in converted}
+    cached_mmlu_modes = R["mmlu_full"].get("final", {}).get("modes") if "mmlu_full" in R else None
+    if cfg.get("mmlu_full") and converted and cached_mmlu_modes != final_modes:
         t0 = time.time()
         mf = {}
         for arm, modes in (("stock", {}), ("final", {j: "student" for j in converted})):
@@ -332,7 +336,8 @@ def _main():
         timed("mmlu_full", t0)
 
     # ------------------------------------------------------------------ throughput / memory
-    if "throughput" not in R and cfg.get("throughput"):
+    # Progressive conversion only appends accepted layers; a changed count therefore means a different model.
+    if cfg.get("throughput") and ("throughput" not in R or f"converted_{len(converted)}" not in R["throughput"]):
         t0 = time.time()
         tcfg = cfg["throughput"]
         res = {"stock": measure_throughput(model, {}, tcfg["lengths"], tcfg.get("reps", 3)),

@@ -354,3 +354,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the test double matched the conceptual slot count but not the runtime container contract.
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
+
+### L-42 Final-model measurements survived a deadline-shortened conversion
+- Date: 2026-10-07 (cross-track review of PR #94; synthetic CPU reproduction only).
+- Symptom: the pipeline stopped new layers at the deadline after seven attempts, then cached full MMLU and throughput for that model. Resume accepted the eighth layer but skipped both measurements because their result keys existed. The final MMLU modes still named seven converted layers, so the decision refused the completed conversion with missing valid MMLU evidence; throughput also described the earlier model.
+- Cost: $0; caught before a full8 model run or paid launch. This is distinct from the orphan per-layer probe incident in open PR #109 and the decision-audit fixes in #114. L-33 is reserved by open PR #141.
+- Root cause: final-measurement caches were checked for presence only, although a graceful deadline stop can persist them before progressive conversion finishes.
+- **Check:** `convert.pipeline` reuses full MMLU only when its final modes match the current converted layers and throughput only when it contains the current converted-count arm. `tests/test_full8_final_probe_resume.py::test_resume_final_measurements_follow_the_last_accepted_model` executes the production pipeline with scalar CPU stand-ins: deadline after seven attempts, resume the eighth, then resume the completed checkpoint. Acceptance must refresh both measurements; rejection/rollback and a completed resume must preserve matching caches. The accepted-eighth case failed before the fix.
+- **Status:** ENFORCED for these final-measurement resume caches; rule constants and verdict mappings are unchanged.
