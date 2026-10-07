@@ -60,7 +60,7 @@
       "path": "receipts/2026-10-06-L-operation-only-cache-prepared/registration.json",
       "previous_registration_sha256": "77867a9404cdf8870b653329468c6275211bcbbbd22cd998998f6806483612bf",
       "refresh_scope": "source_sha256 only; serialized inputs, targets, config, data and protocol are unchanged",
-      "refreshed_registration_sha256": "0fd70ee801b4e7f84258cdb323e854c7a08d21e9ffe616fc7bd0260ec98c8147",
+      "refreshed_registration_sha256": "b981fa8a625d6cc864efe96d0b4b62d2492ec696bbf5623447e0563d205752d9",
       "source_count": 124
     },
     {
@@ -68,7 +68,7 @@
       "path": "receipts/2026-10-07-L-fact-name-screen-retry-prepared/registration.json",
       "previous_registration_sha256": "6442e00c53ab2dd51e583e4cf7af2b500d30cd1734f9f5df0e54d7baeb6e84f9",
       "refresh_scope": "source_sha256 only; serialized inputs, targets, config, data and protocol are unchanged",
-      "refreshed_registration_sha256": "83393f9b8780c2c1cf56b659f5d3d5149b2f5081563748ff1b60a3d22a1375ae",
+      "refreshed_registration_sha256": "a4f4f1f59a4078179eaffd2793f05d50e010c7602b6a1b5d6480a1087ad6d5a5",
       "source_count": 86
     }
   ],

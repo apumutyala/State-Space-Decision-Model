@@ -48,9 +48,18 @@ def main(argv=None) -> int:
     ap.add_argument("--tok-s", type=float, required=True)
     ap.add_argument("--call-s", type=float, required=True)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--probe", default=None, type=Path,
+                    help="seeded parent arm (LESSONS L-34): score_parent --verify-cache output; its factor_estimate "
+                         "(a short re-score on THIS box) is used when no rate report exists")
     a = ap.parse_args(argv)
     p = json.loads(Path(a.params).read_text(encoding="utf-8"))
     f = factor(a.arm_dir, p, a.tok_s, a.call_s)
+    if f["factor"] is None and a.probe is not None and a.probe.is_file():
+        pr = (json.loads(a.probe.read_text(encoding="utf-8")).get("probe") or {})
+        if pr.get("factor_estimate"):
+            f = {"factor": float(pr["factor_estimate"]), "source": "seed probe (score_parent --verify-cache)",
+                 "rate_reports": f.get("reason"),
+                 "probe": {k: pr.get(k) for k in ("records", "seconds", "relative_speed", "factor_note")}}
     cap = p["phase_caps_minutes"]["evals"]
     rec = {**f, "cap_min": cap, "rule": "child evals projected at TOK_S/factor, CALL_S*factor must be <= 0.95 x cap"}
     if f["factor"] is None:

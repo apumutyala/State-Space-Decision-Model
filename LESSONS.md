@@ -155,12 +155,12 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Status:** ENFORCED (structure). The promotion rule itself (paired CI > 0 plus G12/G13 plus review) is a review item.
 
 ### L-18 Contradictory coordination rules
-- Date: 2026-10-06 (found by the coordinator's pre-mortem).
-- Symptom: COORDINATION.md "Stalled cross-review" said "This rule never applies to `main` or to spend approval. Spend still needs the other agent's acknowledgement on a `spend` issue." The later user decision, "Review sufficiency", says one independent review is enough to launch spend. An agent could follow either rule.
-- Cost: none billed. The risk was a blocked launch or an unauthorized one, depending on which rule was read.
-- Root cause: a newer user decision was added as a new section, and the older sentence was never edited.
-- **Check:** the stale sentence was replaced so that the later user decision governs. `tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule` asserts that the old sentence is gone.
-- **Status:** PARTIAL. Only this sentence is checked. Spend-ladder item 2 ("acknowledged by the other agent") still reads as blocking and needs the same reconciliation. When a user decision supersedes a rule, edit the old rule in the same PR.
+- Date: 2026-10-06; policy clarified 2026-10-07 after Codex took over both tracks.
+- Symptom: contradictory approval language both blocked jobs already within the user's approved envelope and risked treating reviewer approval as permission to exceed it.
+- Cost: none billed. The practical risk was an unnecessary training delay or an unbounded spend claim.
+- Root cause: the prior two-owner process did not separate the user's standing $525 SF / $250 Track D authorization from independent review of each exact job.
+- **Check:** `tests/test_jobs_lint.py::test_coordination_requires_bounded_autonomous_spend` requires a per-job issue, planned ledger row, exact estimate and stop condition, independent fresh-context review, live balance/expiry/MTD/workspace-cap preflight, and `validate_job` without force. It rejects a per-job user-OK gate inside the standing envelope, while preserving user authorization for exceeding either budget limit, collaborator spending, Lambda, and outward-facing actions.
+- **Status:** RESOLVED. Codex may spend autonomously only inside the standing envelope and allocation after all per-job proofs and preflights pass. Keep the coordination, checklist, issue template and enforcing test synchronized.
 
 ### L-19 The benchmark edition changed under us
 - Date: 2026-10-06 (Track D, found via research PR #92; fixed in PR #95).
@@ -355,7 +355,37 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
 - **Status:** ENFORCED.
 
-### L-35 Kernel-valid evidence can answer the wrong public task
+### L-35 The relation router rejected a valid native-parent snapshot alias
+- Date: 2026-10-07 (adversarial review of the L1 relation router).
+- Symptom: a native RWKV decision head whose pinned parent recorded `snapshot_revision` was refused against the same stock revision recorded as `snapshot`.
+- Cost: $0; found before loading or measuring a parent model.
+- Root cause: the composition router compared only one spelling even though the parent bridge accepts either alias.
+- **Check:** `language_growth/relation_router.py::_snapshot_identity` normalizes both spellings and rejects disagreement; `language_growth/tests/test_relation_router.py::test_mismatched_models_and_native_parent_revisions_refused` accepts an alias-only matching parent and rejects conflicting aliases.
+- **Status:** ENFORCED.
+
+### L-34 The pre-training smoke ran without the cell's activation checkpointing (job-uhxb5)
+
+- Restart safety: seed provenance is installed inside the atomically renamed parent cache. A process interruption after installation cannot remove the requirement to verify it; legacy installs without provenance are recognized by their exact pinned manifest. A shipped source alone does not reclassify an ordinary cache. Ordinary cached arms also receive full identity verification before training. Comparator arm/units are copied on every restart, with a copy failure stopping the job. Focused regressions cover interruption after rename, legacy marker loss, and the real shell cache block's success/failure paths without loading a model.
+- Date: 2026-10-07 (SF job-uhxb5, m2_first_cell from agent-main 9c76c93; artifact art-sq6mp).
+- Symptom: setup, guard, heldout, parent_g12 (41 min), parent_index (27 min) and reprice passed and exported. `phase cell` then died about 3 minutes in with "FAIL(20): cell unexpected rc=1". `logs/cell.log` shows `torch.OutOfMemoryError` (77.24 GiB allocated on the 79.18 GiB H100). The trace runs `train/run_cell.py:446` (smoke, `build_head_input(bb, rows, need_fork=True)`), `heads/features.py:183` (the RECOMPUTE fork: `backbone.features(fid, fm)` over every (row, option) continuation in one batch), then `heads/rwkv7_lean.py:101`.
+- Cost: $3.69, plus the 68 minutes of parent scoring that a resubmit would repeat.
+- Root cause: the cell trains with per-block activation checkpointing (`act_ckpt: true`, job-tvuat ADOPT; no-checkpoint baseline peaked at 83 GB), but `act_ckpt` was applied only inside `Trainer` (`train/trainer.py`, via `with_execution`). The smoke stage runs before any Trainer exists. It compares the cache fork with the recompute fork on 2 rows (T <= 512, K <= 4) next to 26 GB of bf16 weights. The recompute pass pushed up to 8 continuations of ~512 tokens through RWKV7-13.3B with every activation kept for backward. The tests missed it for three reasons:
+  - `tests/test_m2_first_cell.py` (dry run) and `tests/test_m2_first_cell_shell.py` run the smoke on CPU on a tiny RWKV7, where memory is not measured (`peak_gb` = 0).
+  - No test asserted that the smoke runs under the cell's execution flags. `test_execution_flags_reach_the_trainer_and_both_arms_read_the_wkv` checks the Trainer and the parent arm only.
+  - job-tvuat profiled the train step (and its ladder) only, never the smoke stage.
+- **Check:** `train/run_cell.py::smoke_stage` enables block checkpointing when the cell sets `act_ckpt` (both fork modes), frees the cache pass before the recompute pass, records `act_ckpt` in `cell.json` `smoke`, and restores the backbone. `tests/test_m2_first_cell.py::test_smoke_runs_under_the_cells_activation_checkpointing` asserts three things on a tiny RWKV7 with chunked_lean: `act_ckpt` is enabled inside both `build_head_input` calls; saved-for-backward bytes are under half of the unchecked run for each mode; and the smoke still passes and leaves the backbone unwrapped. The test fails on the pre-fix code.
+- Resubmit cost: the parent arm depends on the snapshot, WKV, cohort, unit spec and Index rows only. A restart keeps `$GMN_CHECKPOINT_DIR`, but a new job starts with an empty checkpoint slot. `jobs/m2_first_cell/arm_seed.py` installs job-uhxb5's exported arm (`job_params.json` `parent_arm_seed`, shipped as `data/parent_arm_seed/` by `context.data` / `build_context.sh`) into `$CK/parent_arm`. It checks the pinned arm.json sha256, the units file hashes and the parent / cohort / unit-spec identity, and exits 10 otherwise. The copy is atomic (temp dir, checked, renamed), so a failed check never becomes a cache a restart could reuse. Before any training, the runner's `seed_verify` (`score_parent --verify-cache`) recomputes the full units identity through `read_arm_cache`, checks the guard and the parent decider's revision on the new box, and re-scores `probe_records` (24) g12 dev records. The re-scored records must reproduce the cached units, and their speed gives the re-price factor (the earlier box's rate reports are not installed). Any mismatch exits 10 before the cell phase. The comparator units are kept in `out/parent_arm/`. The runner also exports `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, as every job-tvuat variant did (PR #147 review). Tests: `test_arm_seed_installs_only_a_pinned_matching_arm`, `test_arm_seed_is_atomic_a_failed_check_never_becomes_the_cache`, `test_seed_probe_comparison_rule`, `test_reprice_uses_the_seed_probe_only_without_rate_reports`, `test_runner_verifies_a_seed_before_training_and_sets_the_tvuat_allocator`, and in `tests/test_m2_first_cell_shell.py`: `test_resubmit_seeds_the_parent_arm_from_a_pinned_export`, `test_seed_against_another_pin_exits_10_before_any_gpu_phase`, `test_seed_with_other_units_identity_exits_10_before_training`.
+- **Status:** PARTIAL. The smoke now shares the Trainer's execution flags, but GPU memory of a non-train stage (smoke, ladder, cards) is still never measured before a paid run. A preflight that runs each pre-training stage at its real shape is a candidate check (a proposed LAUNCH_CHECKLIST row: profile every stage that runs before the profiled one).
+
+### L-37 Mutable receipt hashes could authorize changed relation validation truth
+- Date: 2026-10-07 (L1r0 relation-data review).
+- Symptom: changing a loaded conditional-validation target and its manifest hash together passed `L1RelationData._verify`, despite the independently pinned source fixtures remaining unchanged. Selected relation requests had the same gap.
+- Cost: $0; found before model execution, training or measurement. No affected learned result is known.
+- Root cause: `frozen=True` did not freeze nested dictionaries, and the verifier trusted mutable reporting hashes as its expectations.
+- **Check:** `L1RelationData._verify` derives fit/calibration relation selections from the complete constant-pinned world partitions and reloads validation records/targets from independently pinned raw fixture and manifest bytes. It compares both the data and reporting hashes against those derived expectations. `language_growth/tests/test_l1_relation_data.py::test_changed_target_and_matching_mutable_manifest_still_refused` and `test_changed_selected_records_and_matching_mutable_manifest_still_refused` reject paired data/hash edits; `test_source_rechecked_before_accepting_unchanged_validation_view` rejects later source drift while accepting exact relocated bytes.
+- **Status:** ENFORCED.
+
+### L-39 Kernel-valid evidence can answer the wrong public task
 - Date: 2026-10-07 (Track L public-output review).
 - Symptom: `public_answer` rechecked and rendered a kernel-accepted program but never compared its entity, field, order, scope or speech act with the user's task. A true fact about another entity or field could therefore be released as the answer.
 - Cost: $0; caught in CPU/code review before a model-backed public release.

@@ -65,6 +65,144 @@ def _posix(p) -> str:
     return f"/{m.group(1).lower()}/{m.group(2)}".replace("\\", "/") if (os.name == "nt" and m) else s
 
 
+def test_all_long_phase_timeouts_escalate_within_existing_reserve():
+    source = JOB.read_text()
+    timed = [line for line in source.splitlines() if not line.lstrip().startswith("#") and re.search(r"\btimeout\s", line)]
+    assert len(timed) == 10  # terminal, download, guard, heldout, two verify branches, parent loop, cell, evals, report
+    assert all("timeout --kill-after=30s " in line for line in timed)
+    assert "timeout --kill-after=30s $(cap cell)m python -m train.run_cell" in source
+    assert "timeout --kill-after=30s $(cap parent_$STAGE)m python" in source
+    assert "timeout --kill-after=30s $(cap evals)m python" in source
+    assert "timeout --kill-after=30s 60s bash -c" in source
+    assert 'exec python "$CODE/jobs/common/finalize.py"' in source
+    assert '[ "$final" -eq 0 ] || rm -f "$OUT/$MARKER"' in source
+    assert "124|137) fail 7 \"cell timeout\"" in source
+    params = json.loads((ROOT / "jobs/m2_first_cell/job_params.json").read_text())
+    assert params["phase_caps_minutes"] == {"setup": 25, "guard": 5, "heldout": 10,
+        "parent_g12": 85, "parent_index": 65, "cell": 230, "evals": 205, "report": 5}
+    assert sum(params["phase_caps_minutes"].values()) + params["reserve_minutes"] == params["max_duration_minutes"] == 637
+    # Seed verification and ordinary cache verification are mutually exclusive;
+    # the parent loop executes at most twice, giving nine phase graces in one run.
+    assert 9 * 30 / 60 + 3 * 15 / 60 + (60 + 30) / 60 == 6.75 < params["reserve_minutes"] == 7
+
+
+@pytest.mark.parametrize("resistant_finalizer", [False, True])
+def test_term_resistant_training_is_killed_and_real_finalizer_exports_partials(tmp_path, resistant_finalizer):
+    """Actual training block + finish/lib/finalize; synthetic child only, no data or model fixture."""
+    import tarfile
+
+    bash = _bash()
+    assert bash, "GNU timeout/Bash required for the owned-child exit proof"
+    work, out, ck, bin_dir = (tmp_path / name for name in ("work", "out", "ck", "bin"))
+    for path in (work / "out", work / "logs", out / "phases", ck / "cell", bin_dir):
+        path.mkdir(parents=True)
+    child = tmp_path / "training-child.sh"
+    child.write_text('''#!/usr/bin/env bash
+set -uo pipefail
+echo "$BASHPID" > "$WORK/logs/owned-training.pid"
+printf '{"synthetic":true,"complete":false}\\n' > "$WORK/out/cell.json"
+printf 'synthetic partial checkpoint\\n' > "$CK/cell/partial.bin"
+trap 'echo TERM >> "$WORK/logs/term-ignored"' TERM
+while :; do sleep 0.05 || true; done
+''', newline="\n")
+    finalizer_child = tmp_path / "finalizer-child.sh"
+    finalizer_child.write_text('''#!/usr/bin/env bash
+set -uo pipefail
+"$REAL_PYTHON" "$@"
+echo "$BASHPID" > "$WORK/logs/owned-finalizer.pid"
+trap 'echo TERM >> "$WORK/logs/finalizer-term-ignored"' TERM
+echo synthetic-untrusted-success > "$OUT/$MARKER"
+touch "$WORK/logs/finalizer-marker-written"
+while :; do sleep 0.05 || true; done
+''', newline="\n")
+    python_shim = bin_dir / "python"
+    python_shim.write_text('''#!/usr/bin/env bash
+if [ "${1:-}" = -m ] && [ "${2:-}" = train.run_cell ]; then exec bash "$TRAINING_CHILD"; fi
+if [ "${RESISTANT_FINALIZER:-0}" = 1 ] && [ "${1:-}" = "$CODE/jobs/common/finalize.py" ]; then
+  exec bash "$FINALIZER_CHILD" "$@"
+fi
+exec "$REAL_PYTHON" "$@"
+''', newline="\n")
+    timeout_shim = bin_dir / "timeout"
+    timeout_shim.write_text('''#!/usr/bin/env bash
+set -euo pipefail
+[ "$1" = --kill-after=30s ] || exit 94
+if [ "${RESISTANT_FINALIZER:-0}" = 1 ] && [ "$2" = 60s ]; then
+  shift 2; exec /usr/bin/timeout --kill-after=0.2s 5s "$@"
+fi
+case "$*" in
+  *"train.run_cell"*) shift 2; exec /usr/bin/timeout --kill-after=0.2s 2s "$@" ;;
+  *) exec /usr/bin/timeout "$@" ;;
+esac
+''', newline="\n")
+    curl_shim = bin_dir / "curl"
+    curl_shim.write_text("#!/usr/bin/env bash\nexit 0\n", newline="\n")  # metadata sampling only; no network
+    for path in (child, finalizer_child, python_shim, timeout_shim, curl_shim):
+        path.chmod(0o755)
+    source = JOB.read_text()
+    finish = source[source.index("finish() {"):source.index("\nnum() {")]
+    block = source[source.index('say "phase cell"'):source.index("# ------------------------------------------------------------------ child evals")]
+    script = tmp_path / "training-block.sh"
+    script.write_text('''set -Euo pipefail
+T0=$(date +%s)
+EXPORT_FAIL=0
+RC=""
+GATES="{}"
+MARKER=M2_FIRST_CELL_DONE
+VALIDATOR=jobs.m2_first_cell.summarize:valid_result
+. "$CODE/jobs/common/lib.sh"
+''' + finish + '\ntrap finish EXIT\n' + block + '\nRC=0\nexit 0\n', newline="\n")
+    env = {**os.environ, "CUDA_VISIBLE_DEVICES": "", "PYTHONUTF8": "1", "PYTHONDONTWRITEBYTECODE": "1",
+        "PATH": os.pathsep.join((str(bin_dir), str(Path(bash).parent), os.environ["PATH"])),
+        "CODE": _posix(ROOT), "WORK": _posix(work), "OUT": _posix(out), "CK": _posix(ck),
+        "RESULT": _posix(out / "result.json"), "PARAMS": _posix(ROOT / "jobs/m2_first_cell/job_params.json"),
+        "META": "http://127.0.0.1:9", "CELL": "unused", "SNAP": "unused", "RECORDS": "unused", "TRAIN_DIR": "unused",
+        "REAL_PYTHON": _posix(sys.executable), "TRAINING_CHILD": _posix(child),
+        "FINALIZER_CHILD": _posix(finalizer_child), "RESISTANT_FINALIZER": "1" if resistant_finalizer else "0"}
+    child_pid = None
+    try:
+        # File-backed logs prevent a regressed timeout's orphan from holding an
+        # inherited capture pipe open beyond this CPU test's own deadline.
+        with (tmp_path / "shell.log").open("w") as log:
+            result = subprocess.run([bash, "-c", 'export PATH="$1:$PATH"; exec "$BASH" "$2"',
+                "fixture", _posix(bin_dir), _posix(script)], cwd=ROOT, env=env, stdout=log, stderr=log, timeout=30)
+        assert result.returncode == (137 if resistant_finalizer else 7), (tmp_path / "shell.log").read_text()
+        assert (work / "logs/owned-training.pid").exists(), (tmp_path / "shell.log").read_text()
+        child_pid = int((work / "logs/owned-training.pid").read_text())
+        assert (work / "logs/term-ignored").is_file(), "training child must survive TERM before KILL"
+        check = subprocess.run([bash, "-c", 'kill -0 "$1" 2>/dev/null', "owned-training", str(child_pid)],
+            capture_output=True, timeout=5)
+        assert check.returncode != 0, "recorded owned child survived SIGKILL"
+        assert (ck / "cell/partial.bin").read_text() == "synthetic partial checkpoint\n"
+        assert (ck / "cell/cell.json").read_bytes() == (work / "out/cell.json").read_bytes()
+        receipt = json.loads((out / "result.json").read_text())
+        assert receipt["ok"] is False and receipt["exit_code"] == receipt["runner_rc"] == 7
+        assert receipt["gates"]["cell"] == 137 and receipt["exports_verified"] is True
+        assert not (out / "M2_FIRST_CELL_DONE").exists()
+        if resistant_finalizer:
+            assert (work / "logs/finalizer-marker-written").exists(), "finalizer must actually claim success first"
+            assert (work / "logs/finalizer-term-ignored").exists(), "finalizer must survive TERM"
+            finalizer_pid = int((work / "logs/owned-finalizer.pid").read_text())
+            check = subprocess.run([bash, "-c", 'kill -0 "$1" 2>/dev/null', "owned-finalizer", str(finalizer_pid)],
+                capture_output=True, timeout=5)
+            assert check.returncode != 0, "recorded owned finalizer survived SIGKILL"
+        manifest = [json.loads(line) for line in (out / "MANIFEST.jsonl").read_text().splitlines()]
+        assert [entry["phase"] for entry in manifest] == ["cell", "final"]
+        for entry in manifest:
+            archive = out / entry["file"]
+            assert entry["ok"] is True and hashlib.sha256(archive.read_bytes()).hexdigest() == entry["sha256"]
+            with tarfile.open(archive) as tar:
+                assert json.load(tar.extractfile("out/cell.json")) == {"synthetic": True, "complete": False}
+                assert "logs/term-ignored" in tar.getnames()
+    finally:
+        for role in ("training", "finalizer"):
+            pid_file = work / f"logs/owned-{role}.pid"
+            if pid_file.exists():
+                owned_pid = int(pid_file.read_text())
+                subprocess.run([bash, "-c", 'kill -KILL "$1" 2>/dev/null || true', "owned-child", str(owned_pid)],
+                    capture_output=True, timeout=5)
+
+
 def _link_tree(src: Path, dst: Path, names=None):
     dst.mkdir(parents=True, exist_ok=True)
     for f in (names or [p.name for p in src.iterdir() if p.is_file()]):
@@ -314,3 +452,185 @@ def test_restart_reuses_the_parent_arm_and_resumes_the_cell(ctx, full_run):
     assert _exports_verified(r) == ["setup", "guard", "heldout", "cell", "evals", "final"]
     assert r["result"]["exit_code"] == 0 and list(r["result"]["gates"]) == PHASES
     assert (r["out"] / "M2_FIRST_CELL_DONE").exists()
+
+
+def _seeded(ctx, name: str, arm_dir: Path, pin: str) -> dict:
+    """Env overrides for a RESUBMIT that ships a parent arm seed. data: the ctx data dir (hard links) + data/parent_arm_seed/
+    holding what job_params context.data ships (arm.json and the two units files of an earlier run, not its rate
+    reports). code: this checkout's files (hard links) with ONLY job_params parent_arm_seed.arm_sha256 replaced by
+    ``pin`` -- the runner has no pin override (M2FC_* only relocate paths), and the tiny model's arm hash differs."""
+    t = ctx["t"] / name
+    src = ctx["t"] / "data"
+    for sub in src.iterdir():
+        if sub.is_dir():
+            _link_tree(sub, t / "data" / sub.name)
+    _link_tree(arm_dir, t / "data" / "parent_arm_seed", ["arm.json", "units-g12.json", "units-index.json"])
+    files = subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=ROOT, capture_output=True, text=True,
+                           check=True).stdout.splitlines()
+    code = t / "code"
+    for f in files:
+        if not (ROOT / f).is_file():
+            continue
+        (code / f).parent.mkdir(parents=True, exist_ok=True)
+        if f == "jobs/m2_first_cell/job_params.json":
+            p = json.loads((ROOT / f).read_text(encoding="utf-8"))
+            p["parent_arm_seed"]["arm_sha256"] = pin
+            (code / f).write_text(json.dumps(p, indent=1), encoding="utf-8", newline="\n")
+            continue
+        try:
+            os.link(ROOT / f, code / f)
+        except OSError:
+            shutil.copy2(ROOT / f, code / f)
+    return {"M2FC_DATA": _posix(t / "data"), "M2FC_CODE": _posix(code)}
+
+
+def test_resubmit_seeds_the_parent_arm_from_a_pinned_export(ctx, full_run):
+    """LESSONS L-34 (job-uhxb5): a RESUBMITTED job starts with an empty checkpoint slot. A pinned earlier export shipped
+    as data/parent_arm_seed/ is installed into $CK/parent_arm, verified BEFORE training (seed_verify: units identity,
+    guard, revision, a re-score probe that reproduces the cached units), both parent phases are skipped, the re-price
+    uses the probe's factor, the comparator units are kept in out/parent_arm/, and the run finalizes 0."""
+    arm = full_run["work"] / "ck" / "parent_arm"
+    pin = hashlib.sha256((arm / "arm.json").read_bytes()).hexdigest()
+    r = run_job(ctx, "seeded", **_seeded(ctx, "seeded-in", arm, pin))
+    assert r["rc"] == 0, r["tail"]
+    assert "parent g12: cached (seeded from data/parent_arm_seed)" in r["log"]
+    assert "parent index: cached (seeded from data/parent_arm_seed)" in r["log"]
+    assert "] phase parent_g12" not in r["log"] and "] phase parent_index" not in r["log"]
+    assert r["log"].index("] phase seed_verify") < r["log"].index(SAYS["reprice"]) < r["log"].index(SAYS["cell"])
+    seed = json.loads((r["work"] / "out/arm-seed.json").read_text())
+    assert seed["seeded"] is True and seed["arm_sha256"] == pin
+    assert sorted(p.name for p in (r["work"] / "ck/parent_arm").iterdir()) == ["arm.json", "seed-provenance.json",
+                                                                               "units-g12.json", "units-index.json"]
+    ver = json.loads((r["work"] / "out/seed-verify.json").read_text())
+    assert ver["ok"] and set(ver["stages"]) == {"g12", "index"} and ver["probe"]["ok"]
+    assert ver["probe"]["records"] > 0 and ver["probe"]["n_flipped"] == 0 and ver["probe"]["factor_estimate"] > 0
+    rep = json.loads((r["work"] / "out/reprice.json").read_text())
+    assert rep["factor"] == ver["probe"]["factor_estimate"] and rep["source"].startswith("seed probe")
+    kept = r["work"] / "out/parent_arm"
+    assert hashlib.sha256((kept / "arm.json").read_bytes()).hexdigest() == pin and (kept / "units-g12.json").exists()
+    assert _exports_verified(r) == ["setup", "guard", "heldout", "cell", "evals", "final"]
+    assert r["result"]["exit_code"] == 0 and list(r["result"]["gates"]) == PHASES
+    assert (r["out"] / "M2_FIRST_CELL_DONE").exists()
+
+
+def test_seed_against_another_pin_exits_10_before_any_gpu_phase(ctx, full_run):
+    r = run_job(ctx, "badseed", **_seeded(ctx, "badseed-in", full_run["work"] / "ck" / "parent_arm", "0" * 64))
+    assert r["result"]["exit_code"] == 10, r["tail"]
+    assert "parent arm seed refused" in r["log"]
+    assert "] phase parent_g12" not in r["log"] and "] phase cell" not in r["log"]
+
+
+def test_seed_with_other_units_identity_exits_10_before_training(ctx, full_run):
+    """PR #147 review A (fail fast): a seed that passes its pin and the cheap arm_seed checks but whose units identity
+    differs from this job's (here: another dev item set) is refused by seed_verify (read_arm_cache) with exit 10
+    BEFORE the cell phase -- not by the evals after the training spend."""
+    arm = full_run["work"] / "ck" / "parent_arm"
+    bad = ctx["t"] / "arm-other-items"
+    _link_tree(arm, bad, ["units-g12.json", "units-index.json"])
+    man = json.loads((arm / "arm.json").read_text(encoding="utf-8"))
+    man["stages"]["g12"]["units_identity"]["items"]["dev"] = "0" * 64
+    (bad / "arm.json").write_text(json.dumps(man, indent=1, sort_keys=True), encoding="utf-8", newline="\n")
+    pin = hashlib.sha256((bad / "arm.json").read_bytes()).hexdigest()
+    r = run_job(ctx, "otherunits", **_seeded(ctx, "otherunits-in", bad, pin))
+    assert r["result"]["exit_code"] == 10, r["tail"]
+    assert "] phase seed_verify" in r["log"] and "seeded parent arm failed verification" in r["log"]
+    assert "units differ" in (r["work"] / "out/seed-verify.json").read_text(encoding="utf-8")
+    assert SAYS["cell"] not in r["log"] and SAYS["reprice"] not in r["log"]
+    assert (r["work"] / "out/parent_arm/arm.json").exists()  # the refused comparator is kept for the record
+
+
+@pytest.mark.parametrize("seeded,verify_rc,source_present", [
+    (False, 0, False), (True, 0, True), (True, 10, True), (False, 10, False),
+    (False, 0, True), (False, 10, True)])
+def test_cached_parent_block_preserves_artifacts_and_verifies_before_training(tmp_path, seeded, verify_rc,
+                                                                            source_present):
+    """Execute the real parent-cache/reprice block without the expensive model fixture. Only scoring/repricing
+    drivers are stood in; seed installation, restart classification, hashes, copies and shell control flow run.
+    The seeded case recreates the old interruption: arm installed, no shell-side or in-cache provenance marker."""
+    bash = _bash()
+    if not bash:
+        pytest.skip("no POSIX bash with coreutils")
+    from train.m2_gates import ARM_SCHEMA, expected_parent_identity, unit_spec
+
+    cell = json.loads((ROOT / "jobs/m2_first_cell/m2_first_cell_rwkv7.json").read_text())
+    ck, work, data = tmp_path / "ck", tmp_path / "work", tmp_path / "data"
+    arm = ck / "parent_arm"
+    arm.mkdir(parents=True)
+    for d in (work / "out", work / "logs", data):
+        d.mkdir(parents=True)
+    manifest = {"schema": ARM_SCHEMA, "stages": {}}
+    for st in ("g12", "index"):
+        f = arm / f"units-{st}.json"
+        f.write_text(json.dumps({"stage": st, "decision": {}}), encoding="utf-8", newline="\n")
+        manifest["stages"][st] = {"file": f.name, "sha256": hashlib.sha256(f.read_bytes()).hexdigest(),
+            "arm": {"parent": expected_parent_identity("rwkv7", wkv=cell["rwkv7_wkv"])},
+            "units_identity": {"stage": st, "cohort_sha256": cell["cohort_sha256"], "unit_spec": unit_spec(cell)}}
+    (arm / "arm.json").write_text(json.dumps(manifest), encoding="utf-8", newline="\n")
+    pin = hashlib.sha256((arm / "arm.json").read_bytes()).hexdigest()
+    if source_present:
+        source = data / "parent_arm_seed"
+        shutil.copytree(arm, source)
+        if not seeded:
+            # The shipment is another run's export; this job previously scored its own valid cache.
+            source_manifest = json.loads((source / "arm.json").read_text())
+            source_manifest["stages"]["g12"]["arm"]["revision"] = "earlier shipped run"
+            (source / "arm.json").write_text(json.dumps(source_manifest), encoding="utf-8", newline="\n")
+            pin = hashlib.sha256((source / "arm.json").read_bytes()).hexdigest()
+            assert pin != hashlib.sha256((arm / "arm.json").read_bytes()).hexdigest()
+    params = json.loads((ROOT / "jobs/m2_first_cell/job_params.json").read_text())
+    params["parent_arm_seed"]["arm_sha256"] = pin if source_present else None
+    param_path, cell_path = tmp_path / "params.json", tmp_path / "cell.json"
+    param_path.write_text(json.dumps(params))
+    cell_path.write_text(json.dumps(cell))
+    calls = tmp_path / "calls.jsonl"
+    shim = tmp_path / "python-shim.py"
+    shim.write_text('''import json, os, subprocess, sys
+from pathlib import Path
+a = sys.argv[1:]
+if "jobs.m2_parent_arm.score_parent" in a or "jobs.m2_first_cell.reprice" in a:
+    with open(os.environ["CACHE_TEST_CALLS"], "a") as f:
+        f.write(json.dumps(a) + "\\n")
+    verify = "--verify-cache" in a
+    if verify:
+        rc = int(os.environ["CACHE_TEST_VERIFY_RC"])
+        out = Path(a[a.index("--verify-out") + 1])
+        out.write_text(json.dumps({"ok": rc == 0, "probe": {"factor_estimate": 1.0}}))
+        if rc:
+            print("parent arm units differ from the child's", file=sys.stderr)
+        sys.exit(rc)
+    sys.exit(0)
+sys.exit(subprocess.call([sys.executable, *a]))
+''', encoding="utf-8", newline="\n")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    wrapper = bin_dir / "python"
+    wrapper.write_text(f"#!/bin/bash\nexec '{_posix(sys.executable)}' '{_posix(shim)}' \"$@\"\n",
+                       encoding="utf-8", newline="\n")
+    wrapper.chmod(0o755)
+    job = JOB.read_text(encoding="utf-8")
+    block = job[job.index("ARM=$CK/parent_arm"):job.index('say "phase cell"')]
+    script = tmp_path / "parent-block.sh"
+    script.write_text('''set -Euo pipefail
+say() { echo "$*"; }
+gate() { :; }
+cap() { echo 1; }
+fail() { echo "FAIL($1): $2"; exit "$1"; }
+export_phase() { :; }
+''' + block + '\necho TRAINING_REACHED\n', encoding="utf-8", newline="\n")
+    env = {**os.environ, "CUDA_VISIBLE_DEVICES": "", "PYTHONDONTWRITEBYTECODE": "1",
+           "PATH": os.pathsep.join([str(bin_dir), str(Path(bash).parent), os.environ["PATH"]]),
+           "CK": _posix(ck), "WORK": _posix(work), "DATA": _posix(data), "CELL": _posix(cell_path),
+           "PARAMS": _posix(param_path), "SNAP": "unused", "RECORDS": "unused", "TOK_S": "3757", "CALL_S": "0.117",
+           "CACHE_TEST_CALLS": str(calls), "CACHE_TEST_VERIFY_RC": str(verify_rc)}
+    r = subprocess.run([bash, _posix(script)], cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
+    assert r.returncode == verify_rc, r.stdout + r.stderr
+    invoked = [json.loads(line) for line in calls.read_text().splitlines()]
+    assert "--verify-cache" in invoked[0]
+    assert ("--probe-n" in invoked[0]) == seeded
+    assert ("TRAINING_REACHED" in r.stdout) == (verify_rc == 0)
+    assert len(invoked) == (2 if verify_rc == 0 else 1)  # verify, then reprice; scoring is always skipped
+    if verify_rc == 0:
+        assert "jobs.m2_first_cell.reprice" in invoked[1]
+        assert ("--probe" in invoked[1]) == seeded
+    for name in ("arm.json", "units-g12.json", "units-index.json"):
+        assert (work / "out/parent_arm" / name).read_bytes() == (arm / name).read_bytes()
