@@ -91,18 +91,24 @@ def _task_bindings(task_input: str, visible: dict[str, Any]) -> tuple[str, tuple
             ("Give the October 2026 {field} for {entity}.", True, "spaced"),
             ("State {entity}'s {field} for October 2026.", True, "spaced"),
             ("What is the recorded {field} for {entity} in October 2026?", True, "canonical"),
+            ("Retrieve the October 2026 {field} entry belonging to {entity}.", True, "spaced"),
+            ("Identify the recorded {field} associated with {entity} during October 2026.", True, "spaced"),
         ),
         "explain": (
             ("Explain the checked {field} fact for {entity}.", False, "spaced"),
             ("Show the checked derivation for {entity}'s {field}.", False, "spaced"),
             ("Provide a checked derivation of {entity}'s {field}.", False, "spaced"),
             ("Explain the recorded {field} for {entity} in October 2026.", True, "canonical"),
+            ("Explain the evidence supporting {entity}'s October 2026 {field} entry.", True, "spaced"),
+            ("Give an evidence-based explanation of the October 2026 {field} recorded for {entity}.", True, "spaced"),
         ),
         "compare": (
             ("Compare the October {field} of {left} and {right}.", True, "spaced"),
             ("How do {left}'s and {right}'s October {field} compare?", True, "spaced"),
             ("For October 2026, compare {left}'s and {right}'s {field}.", True, "spaced"),
             ("Compare {left}'s {field} with {right}'s {field} in October 2026, in that order.", True, "canonical"),
+            ("Taking {left} first and {right} second, compare their October 2026 {field} entries.", True, "spaced"),
+            ("In the order {left} then {right}, determine the relation between their recorded October 2026 {field}.", True, "spaced"),
         ),
     }
     unique_entities = sorted({name for names in entities.values() for name in names})
