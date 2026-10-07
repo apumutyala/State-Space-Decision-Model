@@ -18,31 +18,79 @@ from pathlib import Path
 WARMUP_ROWS = 10  # Index latency-v1 excludes 10 untimed warm-up rows
 
 
-def rows(path: Path):
-    if not path.exists():
+#: exit codes of this script (run_job.sh maps both to its exit 17, "results file unusable")
+EXIT_BAD_FILE = 3     # truncated tail / malformed line / duplicate run_id (harness.jsonl.ResultsFileError)
+EXIT_INCOMPLETE = 4   # a file is well-formed but misses rows it must have
+
+
+class Incomplete(Exception):
+    pass
+
+
+def rows(path: Path, required: bool = True):
+    """Strict JSONL (harness/jsonl.py): split on newline only, so U+2028 inside a JSON string (job-sgihj, GPQA-Diamond)
+    never cuts a record; a partial last line or an unparseable line raises instead of being skipped or crashing."""
+    from harness.jsonl import read_jsonl_strict
+
+    if not path.exists() and not required:
         return []
-    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+    return read_jsonl_strict(path)
 
 
 def sha(path: Path) -> str | None:
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
 
 
+def _unique(rs, path):
+    seen = set()
+    for r in rs:
+        if r["run_id"] in seen:
+            from harness.jsonl import ResultsFileError
+
+            raise ResultsFileError("duplicate", path, f"run_id {r['run_id']} twice")
+        seen.add(r["run_id"])
+    return seen
+
+
 def composite(a) -> int:
-    dec, nat = rows(Path(a.decide)), {r["run_id"]: r for r in rows(Path(a.native))}
-    out = [nat.get(r["run_id"], r) for r in dec]
-    p = Path(a.out)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text("".join(json.dumps(r) + "\n" for r in out), encoding="utf-8")
-    side = {"decide": a.decide, "decide_sha256": sha(Path(a.decide)), "native": a.native,
-            "native_sha256": sha(Path(a.native)), "replaced_run_ids": sorted(set(nat) & {r["run_id"] for r in dec}),
+    """Decide results with Clef's own systemone substituted on probes.native_arm_run_ids. Fail-closed: every input is
+    read strictly, the decide file must hold exactly the rows the probes enumerated (``encodings.rows``, when given)
+    and the native file must hold every native-arm id. Nothing is written unless all checks pass."""
+    dpath, npath = Path(a.decide), Path(a.native)
+    dec = rows(dpath)
+    nat_rows = rows(npath)
+    dec_ids = _unique(dec, dpath)
+    nat = {r["run_id"]: r for r in nat_rows}
+    _unique(nat_rows, npath)
+    probes = json.loads(Path(a.probes).read_text(encoding="utf-8")) if a.probes and Path(a.probes).exists() else None
+    if a.probes and probes is None:
+        raise Incomplete(f"--probes {a.probes} missing")
+    side = {"decide": a.decide, "decide_sha256": sha(dpath), "decide_rows": len(dec), "native": a.native,
+            "native_sha256": sha(npath), "native_rows": len(nat),
             "rule": "rows in probes.native_arm_run_ids use Clef's own systemone: ids differ, Clef truncates, ssdm encoder "
                     "refuses, >255 options, or the adapter rejects before scoring (validate_legacy / max_questions / max_options_per_question)"}
-    if a.probes and Path(a.probes).exists():
-        enc = json.loads(Path(a.probes).read_text(encoding="utf-8")).get("encodings", {})
+    if probes is not None:
+        enc = probes.get("encodings", {})
         side["categories"] = {k: (len(v) if isinstance(v, list) else v) for k, v in enc.items()}
-        missing = sorted(set(json.loads(Path(a.probes).read_text(encoding="utf-8"))["native_arm_run_ids"]) - set(nat))
-        side["native_rows_missing_from_native_run"] = missing  # must be [] (kit writes every row, incl. errors)
+        want_rows = enc.get("rows")
+        if isinstance(want_rows, int) and want_rows != len(dec):
+            raise Incomplete(f"decide results have {len(dec)} rows, probes enumerated {want_rows}: partial decide run")
+        need = set(probes["native_arm_run_ids"])
+        missing = sorted(need - set(nat))
+        side["native_rows_missing_from_native_run"] = missing
+        if missing:
+            raise Incomplete(f"{len(missing)} native-arm rows missing from {npath} (e.g. {missing[:3]}): partial native run")
+        stray = sorted(need - dec_ids)
+        if stray:
+            raise Incomplete(f"{len(stray)} native-arm ids are not in the decide results (e.g. {stray[:3]})")
+        replace = need
+    else:
+        replace = set(nat)
+    out = [nat[r["run_id"]] if r["run_id"] in replace else r for r in dec]
+    side["replaced_run_ids"] = sorted(replace & dec_ids)
+    p = Path(a.out)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text("".join(json.dumps(r) + "\n" for r in out), encoding="utf-8", newline="\n")
     (p.parent / "composite.provenance.json").write_text(json.dumps(side, indent=1), encoding="utf-8")
     return 0
 
@@ -82,7 +130,7 @@ def load(p: Path):
 def report(a) -> int:
     o = Path(a.out_dir)
     probes = load(o / "probes.json") or {}
-    res_dec = rows(o / "index" / "decide" / "results.jsonl")
+    res_dec = rows(o / "index" / "decide" / "results.jsonl", required=False)
     idx_dec = load(o / "index" / "score_decide.json")
     idx_nat = load(o / "index" / "score_native_composite.json")
     ece = load(o / "index" / "ece_decide.json")
@@ -128,7 +176,16 @@ def main(argv=None) -> int:
     r.add_argument("--release", required=True)
     r.add_argument("--job", required=True)
     a = ap.parse_args(argv)
-    return composite(a) if a.cmd == "composite" else report(a)
+    from harness.jsonl import ResultsFileError
+
+    try:
+        return composite(a) if a.cmd == "composite" else report(a)
+    except ResultsFileError as e:
+        print(f"summarize {a.cmd}: results file unusable: {e}", file=sys.stderr)
+        return EXIT_BAD_FILE
+    except Incomplete as e:
+        print(f"summarize {a.cmd}: incomplete inputs: {e}", file=sys.stderr)
+        return EXIT_INCOMPLETE
 
 
 if __name__ == "__main__":

@@ -91,7 +91,7 @@ class SplitGuard:
             p = Path(p)
             raw = gzip.open(p, "rt", encoding="utf-8").read() if p.suffix == ".gz" else p.read_text(encoding="utf-8")
             g.manifests[str(p)] = hashlib.sha256(raw.encode("utf-8")).hexdigest()
-            for line in raw.splitlines():
+            for line in raw.split("\n"):  # "\n" only: U+2028 inside a JSON string is not a line break
                 if not line.strip():
                     continue
                 e = json.loads(line)

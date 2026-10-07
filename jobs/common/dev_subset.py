@@ -128,7 +128,8 @@ def cmd_score(a, subset):
     from harness.cli import load_results
 
     rows = _rows(subset)
-    rep = bootstrap.replicate_skills([score.decompose(rows, load_results(a.results))], B=a.B, seed=a.seed)[0]
+    res = load_results(a.results, subset["run_ids"], a.allow_partial)
+    rep = bootstrap.replicate_skills([score.decompose(rows, res)], B=a.B, seed=a.seed)[0]
     return {"subset_ids_sha256": subset["ids_sha256"], "rows": len(rows), "slice_index": bootstrap.summarize_one(rep)}
 
 
@@ -137,8 +138,8 @@ def cmd_compare(a, subset):
     from harness.cli import load_results
 
     rows = _rows(subset)
-    c = score.decompose(rows, load_results(a.candidate))
-    b = score.decompose(rows, load_results(a.baseline))
+    c = score.decompose(rows, load_results(a.candidate, subset["run_ids"], a.allow_partial))
+    b = score.decompose(rows, load_results(a.baseline, subset["run_ids"], a.allow_partial))
     out = bootstrap.compare(c, b, B=a.B, seed=a.seed)
     out["mde"] = mde.report(out["diff"]["index"]["se"], sum(len(x.clusters) for x in c.values()))
     out["subset_ids_sha256"], out["rows"] = subset["ids_sha256"], len(rows)
@@ -150,7 +151,8 @@ def cmd_ece(a, subset):
     from harness.cli import load_results
 
     return {"subset_ids_sha256": subset["ids_sha256"],
-            **calibration.report(calibration.fields(_rows(subset), load_results(a.results)))}
+            **calibration.report(calibration.fields(_rows(subset), load_results(a.results, subset["run_ids"],
+                                                                                 a.allow_partial)))}
 
 
 def cmd_rows(a, subset):
@@ -183,6 +185,8 @@ def main(argv=None):
             s.add_argument(x, required=True)
         s.add_argument("--B", type=int, default=2000)
         s.add_argument("--seed", type=int, default=0)
+        s.add_argument("--allow-partial", action="store_true",
+                       help="score a partial results file (missing subset rows = unanswered); default: exit 3")
     for s in sub.choices.values():
         s.add_argument("--subset", default=str(SUBSET))
     a = p.parse_args(argv)
@@ -201,7 +205,13 @@ def main(argv=None):
         print(json.dumps({k: out[k] for k in ("ids_sha256", "dev_manifest_sha256_uncompressed")} | {"rows": len(ids)}))
         return 0
     subset = load_subset(a.subset)
-    res = {"rows": cmd_rows, "score": cmd_score, "compare": cmd_compare, "ece": cmd_ece}[a.cmd](a, subset)
+    from harness.jsonl import EXIT_RESULTS, ResultsFileError
+
+    try:
+        res = {"rows": cmd_rows, "score": cmd_score, "compare": cmd_compare, "ece": cmd_ece}[a.cmd](a, subset)
+    except ResultsFileError as e:
+        print(f"dev_subset {a.cmd}: results file unusable: {e}", file=sys.stderr)
+        return EXIT_RESULTS
     print(json.dumps(res, indent=1))
     return 0
 
