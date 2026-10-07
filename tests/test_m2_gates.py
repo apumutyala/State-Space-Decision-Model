@@ -91,8 +91,11 @@ def _cache_parent(world, out, decide, steer, stages=("g12", "g13"), spec=SPEC, i
 
 
 def _gates(world, cache, decide, steer, stages=("g12", "g13"), out=None, expect_parent=None,
-           parent_arm_sha256=None, **kw):
+           parent_arm_sha256=None, _no_pin=False, **kw):
     from train import m2_gates as G
+
+    if kw.get("anchor_arm") is not None and "anchor_arm_sha256" not in kw and not _no_pin:  # pin like m2_job.sh
+        kw["anchor_arm_sha256"] = hashlib.sha256((Path(kw["anchor_arm"]) / "arm.json").read_bytes()).hexdigest()
 
     return G.run_gates(stages=stages, cohort=world["cohort"], spec=SPEC, child_decide=decide, child_steer=steer,
                        child_identity={"revision_id": "child"}, items_by_role=_items(world, SPEC),
@@ -129,7 +132,12 @@ def test_identical_child_accepts_both_stages_but_is_not_promotable_with_pending_
             "g13_capability", "g13_ece", "g13_retention_acc", "g13_retention_ece"} <= crit
     assert rep["verdicts"]["g13"]["comparators"]["anchor"]["same_as"] == "last_accepted"
     approved = {**MARGINS, "approved": True, "status": "approved (test)"}
-    code2, rep2 = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), margins=approved)
+    # the toy retention role (6 records) is far below the simulated required n: INCONCLUSIVE-underpowered, exit 45
+    code3, rep3 = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), margins=approved)
+    assert code3 == G.EXIT["underpowered"] == 45 and rep3["promotion"]["promotable"] is False
+    assert set(rep3["promotion"]["underpowered"]["g13"]) == {"g13_retention_acc", "g13_retention_ece"}
+    powered = {**approved, "required_n": {}}  # test-only: no size requirement
+    code2, rep2 = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), margins=powered)
     assert code2 == 0 and rep2["promotion"]["promotable"] is True
     on_disk = json.loads((tmp_path / "report.json").read_text())
     assert G.valid_report(on_disk) and (tmp_path / "units-child-g13.json").exists()
@@ -559,7 +567,7 @@ def test_g13_needs_both_comparators_and_the_child_arm_is_reusable(world, parent_
 
     from train.promotion import MARGINS
 
-    ok_m = {**MARGINS, "approved": True, "status": "approved (test)"}
+    ok_m = {**MARGINS, "approved": True, "status": "approved (test)", "required_n": {}}
     anchor = tmp_path / "anchor"
     _cache_parent(world, anchor, informed, KeywordDecider(gullibility=0.0))
     code, rep = _gates(world, cache, dec.decide, KeywordDecider(gullibility=0.0), anchor_arm=anchor,
@@ -581,6 +589,17 @@ def test_g13_needs_both_comparators_and_the_child_arm_is_reusable(world, parent_
     # B3: with a candidate cache as last accepted, the anchor is REQUIRED
     with pytest.raises(G.IdentityMismatch, match="anchor"):
         _gates(world, child_arm, dec.decide, KeywordDecider(gullibility=0.0), margins=ok_m)
+    # the anchor's identity is verified inside run_gates: pinned sha required, never a candidate (unless champion),
+    # never a copy of the last-accepted candidate cache
+    with pytest.raises(G.IdentityMismatch, match="pinned"):
+        _gates(world, child_arm, dec.decide, KeywordDecider(gullibility=0.0), anchor_arm=cache, margins=ok_m,
+               anchor_arm_sha256=None, _no_pin=True)
+    import shutil
+
+    copy = tmp_path / "copy-of-child"
+    shutil.copytree(child_arm, copy)
+    with pytest.raises(G.IdentityMismatch, match="not a candidate|copy"):
+        _gates(world, child_arm, dec.decide, KeywordDecider(gullibility=0.0), anchor_arm=copy, margins=ok_m)
     # a candidate cache without a promotable verdict is refused as a comparator
     man = json.loads((child_arm / "arm.json").read_text())
     for st in man["stages"].values():

@@ -69,6 +69,9 @@ import numpy as np
 MARGINS = {"m_cap": 1.0, "m_steer": 0.02, "m_ece": 0.01, "m_ret_acc": 0.01, "m_false_alarm": 0.01, "m_refusal": 0.01,
            "fa_abs_cap": 0.01,            # PREREG G2(f): absolute clean false-alarm rate cap (child), besides the delta
            "min_valid_draw_frac": 0.95,   # a CI needs >= 95 % of its bootstrap draws valid (non-NaN)
+           # simulated frozen-set size for an unchanged candidate to pass >= 0.8 (train.margin_sim.REQUIRED_N; L-20):
+           # while the evaluated retention n is smaller, the criterion is INCONCLUSIVE-underpowered -> not promotable
+           "required_n": {"g13_retention_acc": 9300, "g13_retention_ece": 33300},
            "alpha": 0.05,                 # two-sided CI level 1 - alpha (each one-sided test at alpha / 2)
            "area_family_alpha": 0.05,     # Bonferroni over the k Index areas: level 1 - 0.05 / k (99 % at k = 5)
            "template_family_alpha": 0.05,  # Bonferroni over the k steer templates: level 1 - 0.05 / k
@@ -123,7 +126,7 @@ def _draws_ok(ci: dict | None, frac: float | None = None) -> bool:
     req = ci.get("n_requested", ci.get("n_boot"))
     got = ci.get("valid_draws", ci.get("n_valid", ci.get("n_boot")))
     if not isinstance(req, int) or not isinstance(got, int) or req <= 0:
-        return True  # CIs built without draw accounting (analytic / replicate_skills: no NaN draws possible)
+        return False  # a CI that carries no draw accounting cannot prove it has enough valid draws: fail closed
     return got >= frac * req
 
 
@@ -530,14 +533,15 @@ def capability_criterion(ret: dict, margins: dict) -> dict[str, Any]:
             f"index) >= -{m_cap}, and no area's paired CI at level {lvl} (Bonferroni) has upper bound < 0")
     areas = ((ret.get("diff") or {}).get("areas_bonferroni")) or {}
     bad = sorted(a for a, c in areas.items() if _finite(c.get("hi")) and c["hi"] < 0)
+    nan_areas = sorted(a for a, c in areas.items() if not _finite(c.get("lo"), c.get("hi")))
     detail = {"diff": cap or None, "areas": ((ret.get("diff") or {}).get("areas")) or None,
               "areas_bonferroni": areas or None, "regressed_areas": bad,
               "estimated_regression": bool(_finite(cap.get("point")) and cap["point"] < 0),
               "scope": "non-inferior within m_cap on the frozen full Index DEV slice (public 20 % of Index 0.3 only)"}
     if not ok:
         return _crit("g13_capability", rule, None, reason=ret.get("reason", "Index comparison not run"), **detail)
-    if not _finite(cap.get("lo")) or not areas:
-        return _crit("g13_capability", rule, None, reason="NaN CI / no area CIs", **detail)
+    if not _finite(cap.get("lo")) or not areas or nan_areas:
+        return _crit("g13_capability", rule, None, reason=f"NaN CI / no area CIs {nan_areas or ''}".strip(), **detail)
     passed = cap["lo"] >= -m_cap and not bad
     return _crit("g13_capability", rule, passed, reason=None if passed else (
         f"lower CI < -{m_cap}" if cap["lo"] < -m_cap else f"area regression demonstrated: {bad}"), **detail)
@@ -580,8 +584,10 @@ def verdict_g13(*, retention: dict[str, Any] | None, steer_child_rows: list[dict
                                            "improvement demonstrated" if _finite(d1.get("lo")) and d1["lo"] > 0 else
                                            "inconclusive (CI crosses 0): no claim"),
                                estimated_regression=bool(_finite(d1.get("point")) and d1["point"] < 0)))
-    else:
-        reports["g13_capability_e1"] = e1 or {"available": False, "reason": "E1 not computed"}
+    else:  # E1 absent (e1=None / not in the result): the retained E1 criteria cannot be evaluated -> FAILED
+        for name in ("g13_capability_e1", "g13_capability_e1_frozen"):
+            crits.append(_crit(name, "E1 (families-v1 / heldout-draw-v1): reject iff upper CI(Delta) < 0", None,
+                               reason="E1 not computed"))
     if ok:
         reports["index_editions"] = {"gating_edition": ret.get("edition"), "reported": ret.get("editions")}
     ed = ret.get("ece_diff") or {}
@@ -604,7 +610,28 @@ def verdict_g13(*, retention: dict[str, Any] | None, steer_child_rows: list[dict
                            diff=ec or None, n_items=dr.get("n_items"),
                            regression_demonstrated=bool(_finite(ec.get("lo")) and ec["lo"] > 0),
                            regression_point_estimate=bool(_finite(ec.get("point")) and ec["point"] > 0)))
-    return _result(crits, margins, "G13: gate (held-out D1-B; frozen full Index DEV; cohort retention)", reports)
+    out = _result(crits, margins, "G13: gate (held-out D1-B; frozen full Index DEV; cohort retention)", reports)
+    out["underpowered"] = underpowered(crits, margins)
+    for k in out["underpowered"]:
+        out["resizing"]["outcome"][k] = "inconclusive_underpowered"
+    return out
+
+
+def underpowered(crits: list[dict], margins: dict) -> list[str]:
+    """Criteria evaluated on a frozen set smaller than the simulated required n (``margins["required_n"]``,
+    ``train.margin_sim.REQUIRED_N``): INCONCLUSIVE-underpowered. A run with any is NOT promotable (exit 45) even if
+    every CI passes; the margin is never loosened, the evaluation is expanded (cohort v3)."""
+    req = margins.get("required_n", MARGINS["required_n"]) or {}
+    out = []
+    for c in crits:
+        need = req.get(c["criterion"])
+        if need is None:
+            continue
+        have = c.get("n_items")
+        if not isinstance(have, int) or have < need:
+            c["underpowered"] = {"n_have": have, "n_required": need}
+            out.append(c["criterion"])
+    return out
 
 
 def combine_comparators(verdicts: dict[str, dict]) -> dict[str, Any]:

@@ -39,6 +39,8 @@ must pass against BOTH; champion replacement passes the champion's arm as ``--pa
 
 Exit codes: 0 promotable (G12 and G13 accepted, approved margins) | 43 every stage accepted but the margins are
             PENDING approval | 44 every stage run accepted but not both G12 and G13 were run (not promotable) |
+            45 every stage accepted but a criterion was evaluated below its simulated required n (retention cohort
+            smaller than ``MARGINS["required_n"]``): INCONCLUSIVE-underpowered, not promotable |
             40 G12 rejected | 41 G13 rejected | 42 both rejected |
             10 identity / cache / cohort mismatch | 2 usage. The report is written in every case that got that far.
 """
@@ -57,7 +59,8 @@ from typing import Any, Callable, Iterable, Sequence
 STAGES = ("g12", "g13")
 ARM_SCHEMA = "ssdm.m2.arm.v1"
 REPORT_SCHEMA = "ssdm.m2.gates.v1"
-EXIT = {"accept": 0, "g12": 40, "g13": 41, "both": 42, "pending": 43, "partial": 44, "identity": 10, "usage": 2}
+EXIT = {"accept": 0, "g12": 40, "g13": 41, "both": 42, "pending": 43, "partial": 44, "underpowered": 45,
+        "identity": 10, "usage": 2}
 CANDIDATE_ROLE = "candidate"
 STAGE_ROLES = {"g12": ("dev",), "g13": ("retention",)}
 
@@ -291,7 +294,9 @@ def promotion_verdict(verdicts: dict[str, dict], margins: dict | None = None) ->
            if (v.get("resizing") or {}).get("escalate") or (v.get("resizing") or {}).get("escalate_any_comparator")}
     return {"verdict": "accept" if acc else "reject", "stages": sorted(verdicts), "failed": failed,
             "margins": {k: v for k, v in margins.items()}, "margins_pending_user_approval": pending,
-            "promotable": acc and not pending and set(verdicts) == set(STAGES),
+            "underpowered": {s: v.get("underpowered") for s, v in verdicts.items() if v.get("underpowered")},
+            "promotable": acc and not pending and set(verdicts) == set(STAGES)
+            and not any(v.get("underpowered") for v in verdicts.values()),
             "escalation": ({"stages": esc, "action": "ESCALATE TO THE USER (issue #36 re-sizing clause): a criterion's "
                             "projected unchanged-candidate pass rate is below the floor at the measured discordance / "
                             "tau / SE; do NOT loosen any margin after seeing data"} if esc else None),
@@ -313,6 +318,8 @@ def exit_code(verdicts: dict[str, dict], pending: bool | None = None) -> int:
             pending = margins_pending()
         if pending:
             return EXIT["pending"]
+        if any(v.get("underpowered") for v in verdicts.values()):
+            return EXIT["underpowered"]
         return EXIT["accept"] if set(verdicts) == set(STAGES) else EXIT["partial"]
     return EXIT["both"] if rej == {"g12", "g13"} else EXIT[rej.pop()]
 
@@ -358,7 +365,7 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
               expect_parent: dict | None = None, index_rows: list[dict] | None = None, n_boot: int = 2000,
               parent_arm_sha256: str | None = None, anchor_arm: str | Path | None = None,
               anchor_arm_sha256: str | None = None, index_frozen: dict | None = None,
-              child_index_decide=None, margins: dict | None = None,
+              child_index_decide=None, margins: dict | None = None, anchor_is_champion: bool = False,
               out: str | Path | None = None, extra: dict | None = None) -> tuple[int, dict]:
     """Score the child per stage, load the matching comparator units, apply the verdicts and the promotion rule.
 
@@ -389,7 +396,16 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
             raise IdentityMismatch("G13 needs the lineage anchor: --parent-arm is a candidate (child) cache, so "
                                    "--anchor-arm (m2 parent arm or champion) is required")
         if stage == "g13" and not same_anchor:
+            if not anchor_arm_sha256:
+                raise IdentityMismatch("--anchor-arm needs its pinned --anchor-arm-sha256")
             comps["anchor"] = read_arm_cache(anchor_arm, stage, ident, expect_parent, anchor_arm_sha256)
+            a_role = str((comps["anchor"][1].get("arm") or {}).get("role", ""))
+            if a_role.startswith(CANDIDATE_ROLE) and not anchor_is_champion:
+                raise IdentityMismatch("the anchor must be the m2 parent-arm cache (or the pinned champion with "
+                                       "--anchor-is-champion), not a candidate cache")
+            if comps["anchor"][1]["sha256"] == comps["last_accepted"][1]["sha256"] and str(
+                    (comps["last_accepted"][1].get("arm") or {}).get("role", "")).startswith(CANDIDATE_ROLE):
+                raise IdentityMismatch("the anchor is a copy of the last-accepted candidate cache (anti-creep)")
         child = score_stage(stage, child_decide, child_steer, items_by_role, records_by_id, variants,
                             index_rows if stage == "g13" else None,
                             child_index_decide if stage == "g13" else None)
@@ -468,6 +484,8 @@ def main(argv=None) -> int:
     ap.add_argument("--anchor-arm", default=None, help="the lineage anchor's arm cache (m2 parent arm or champion); "
                                                        "default: --parent-arm")
     ap.add_argument("--anchor-arm-sha256", default=None, help="pinned sha256 of <anchor-arm>/arm.json")
+    ap.add_argument("--anchor-is-champion", action="store_true",
+                    help="the anchor is the current champion's (accepted candidate) cache")
     ap.add_argument("--index-rows", default=None, help="the FULL Index DEV rows (needed for g13)")
     ap.add_argument("--index-frozen", default=None, help="jobs.common.dev_full frozen manifest (needed for g13)")
     ap.add_argument("--index-frozen-sha256", default=None, help="pinned sha256 of the frozen manifest file")
@@ -593,6 +611,7 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
                           expect_parent=expect_parent, index_rows=index_rows, n_boot=a.n_boot, out=out,
                           parent_arm_sha256=a.parent_arm_sha256, anchor_arm=a.anchor_arm,
                           anchor_arm_sha256=a.anchor_arm_sha256, index_frozen=index_frozen,
+                          anchor_is_champion=a.anchor_is_champion,
                           child_index_decide=decider.decide,
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),

@@ -13,6 +13,7 @@
 #   40 / 41 / 42  train.m2_gates: G12 / G13 / both REJECTED (report written and exported; promotion = reject)
 #   43  train.m2_gates: every stage accepted but the margins are PENDING approval (never an accept; issue #36)
 #   44  train.m2_gates: every stage run accepted but G12 and G13 were not both run (not promotable)
+#   45  train.m2_gates: every stage accepted but a criterion is INCONCLUSIVE-underpowered (not promotable)
 #   21-29 train.run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite, 24 memory, 25 data, 26 too slow,
 #         27 guard not ready, 28 cohort leak/mismatch, 29 q9af lineage / unpinned conversion)
 #   1 finalize failed
@@ -152,6 +153,7 @@ gate "evals" $r; export_phase evals
 case $r in 0) ;; 124) fail 7 "evals timeout" ;; 40|41|42) sample "$WORK/out/report.json" "report"; fail $r "promotion: reject" ;;
   43) sample "$WORK/out/report.json" "report"; fail 43 "promotion: every stage accepted but the margins are PENDING approval" ;;
   44) sample "$WORK/out/report.json" "report"; fail 44 "promotion: not every stage was run (not promotable)" ;;
+  45) sample "$WORK/out/report.json" "report"; fail 45 "promotion: INCONCLUSIVE-underpowered (retention n < simulated required n)" ;;
   10) fail 10 "evals identity (cohort / parent arm / checkpoint lineage)" ;; *) fail 9 "evals rc=$r" ;; esac
 sample "$WORK/out/report.json" "report"
 RC=0

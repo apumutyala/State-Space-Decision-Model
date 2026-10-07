@@ -45,6 +45,11 @@ EVAL_SIZES = {
                           "source": "cohort v2 retention role: 1,670 records x ~0.85 usable"},
 }
 
+#: Pinned simulated required n (max over scale 0.5 / 1.0 runs, rounded up), enforced by the gate through
+#: ``train.promotion.MARGINS["required_n"]`` (exit 45 while the frozen set is smaller). ECE confirmations use few
+#: simulations: the ECE numbers are ESTIMATES.
+REQUIRED_N = {"g13_retention_acc": 9300, "g13_retention_ece": 33300}
+
 #: Criteria whose configured set is below the simulated requirement: recorded shortfall + plan. The margin is NOT
 #: relaxed; until the set is expanded the criterion is inconclusive-prone and the gate does not promote on it.
 SHORTFALLS = {

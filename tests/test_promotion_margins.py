@@ -66,9 +66,9 @@ def test_one_regressed_template_rejects_even_when_the_average_is_inside_the_marg
 
     def fake(*a, **k):
         out = real(*a, **k)
-        out["steer_rate"]["diff"] = {"point": 0.004, "lo": -0.004, "hi": 0.012}
+        out["steer_rate"]["diff"] = {"point": 0.004, "lo": -0.004, "hi": 0.012, "n_boot": 50, "valid_draws": 50}
         t = sorted(out["per_template_steer"])[0]
-        out["per_template_steer"][t] = {"point": 0.04, "lo": 0.002, "hi": 0.08}
+        out["per_template_steer"][t] = {"point": 0.04, "lo": 0.002, "hi": 0.08, "n_boot": 50, "valid_draws": 50}
         return out
 
     monkeypatch.setattr(metrics, "compare_arms", fake)
@@ -137,7 +137,7 @@ def _ret(lo=-0.5, area_hi=1.0, e1=None, ece_hi=0.0):
             "diff": {"areas": {"x": a, "y": {"point": 0, "lo": -1, "hi": 1}},
                      "areas_bonferroni": {"x": a, "y": {"point": 0, "lo": -1, "hi": 1}}},
             "area_level": 0.99, "e1": e1 or _e1(), "edition": "0.2.1", "editions": {"0.3": {"gating": False}},
-            "ece_diff": {"point": 0.0, "lo": -0.004, "hi": ece_hi, "se": 0.002}, "ece": {}}
+            "ece_diff": {"point": 0.0, "lo": -0.004, "hi": ece_hi, "se": 0.002, "n_boot": 2000, "n_requested": 2000}, "ece": {}}
 
 
 @pytest.mark.parametrize("ret,ok,why", [
@@ -153,8 +153,8 @@ def test_capability_index_margin_and_bonferroni_area_rule(ret, ok, why):
     assert c["areas"] is not None  # the 95 % area CIs are kept
 
 
-DR_OK = {"identical_items": True, "acc_diff": {"point": 0, "lo": -0.005, "hi": 0.005},
-         "ece_diff": {"point": 0, "lo": -0.004, "hi": 0.004}, "discordance": 0.02, "n_items": 9500}
+DR_OK = {"identical_items": True, "acc_diff": {"point": 0, "lo": -0.005, "hi": 0.005, "n_boot": 2000, "n_requested": 2000},
+         "ece_diff": {"point": 0, "lo": -0.004, "hi": 0.004, "n_boot": 2000, "n_requested": 2000}, "discordance": 0.02, "n_items": 40000}
 
 
 def test_e1_rejects_only_a_demonstrated_regression_on_new_domain_and_frozen(gate):
@@ -180,8 +180,8 @@ def test_retention_rules(gate):
               expected_variants=gate["v"], n_boot=50)
 
     def dr(acc_lo, ece_lo, ece_hi):
-        return {"identical_items": True, "acc_diff": {"point": 0, "lo": acc_lo, "hi": 0.02},
-                "ece_diff": {"point": 0.01, "lo": ece_lo, "hi": ece_hi}, "discordance": 0.1}
+        return {"identical_items": True, "acc_diff": {"point": 0, "lo": acc_lo, "hi": 0.02, "n_boot": 2000, "n_requested": 2000},
+                "ece_diff": {"point": 0.01, "lo": ece_lo, "hi": ece_hi, "n_boot": 2000, "n_requested": 2000}, "discordance": 0.1, "n_items": 40000}
 
     v = P.verdict_g13(decision_retention=dr(-0.009, -0.01, 0.009), **kw)
     assert v["accept"], v["failed"]
@@ -379,3 +379,47 @@ def test_freeze_reproduces_the_5cmat_unsupported_rows_rule():
     from jobs.common import dev_full as F
 
     assert "scoring-time failures are never excluded" in F.RULE and "16,384" in F.RULE
+
+
+# ------------------------------------------------------------------------------------------------ #102 re-review
+def test_missing_e1_result_adds_non_evaluable_failed_criteria(gate):
+    kw = dict(steer_child_rows=gate["same"], steer_parent_rows=gate["parent"], expected_variants=gate["v"], n_boot=50,
+              decision_retention=DR_OK)
+    for ret in (dict(_ret(), e1={"available": False, "reason": "E1 disabled by the caller"}),
+                {k: v for k, v in _ret().items() if k != "e1"}):
+        v = P.verdict_g13(retention=ret, **kw)
+        for name in ("g13_capability_e1", "g13_capability_e1_frozen"):
+            c = next(c for c in v["criteria"] if c["criterion"] == name)
+            assert not c["pass"] and not c["evaluable"] and c["reason"] == "E1 not computed"
+        assert not v["accept"] and {"g13_capability_e1", "g13_capability_e1_frozen"} <= set(v["failed"])
+
+
+def test_retention_below_the_simulated_required_n_is_underpowered_not_promotable(gate):
+    from train import margin_sim as M
+
+    assert P.MARGINS["required_n"] == M.REQUIRED_N  # the gate enforces the pinned simulation
+    kw = dict(retention=_ret(), steer_child_rows=gate["same"], steer_parent_rows=gate["parent"],
+              expected_variants=gate["v"], n_boot=50)
+    small = dict(DR_OK, n_items=1420)  # cohort v2 retention role
+    v = P.verdict_g13(decision_retention=small, **kw)
+    assert set(v["underpowered"]) == {"g13_retention_acc", "g13_retention_ece"}
+    assert v["resizing"]["outcome"]["g13_retention_acc"] == "inconclusive_underpowered"
+    mid = P.verdict_g13(decision_retention=dict(DR_OK, n_items=10_000), **kw)
+    assert mid["underpowered"] == ["g13_retention_ece"]  # accuracy is powered at 10k, ECE needs ~33k
+    assert P.verdict_g13(decision_retention=DR_OK, **kw)["underpowered"] == []
+
+
+def test_area_nan_and_missing_draw_counts_fail_closed():
+    r = _ret()
+    r["diff"]["areas_bonferroni"]["y"] = {"point": float("nan"), "lo": float("nan"), "hi": float("nan")}
+    c = P.capability_criterion(r, P.MARGINS)
+    assert not c["pass"] and not c["evaluable"]
+    assert not P._draws_ok({"point": 0, "lo": 0, "hi": 0})  # no draw accounting -> cannot prove enough valid draws
+
+
+def test_required_n_pin_is_consistent_with_the_simulation():
+    from train import margin_sim as M
+
+    for c in ("g13_retention_acc",):  # cheap; the ECE pin is an estimate (few confirmations), labelled as such
+        r = M.required_n(c, scale=0.5)
+        assert 0.5 * M.REQUIRED_N[c] <= r["need"] <= M.REQUIRED_N[c]

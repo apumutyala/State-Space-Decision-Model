@@ -482,7 +482,7 @@ def test_steer_rule_decision_table(monkeypatch, standin, lo, hi, pt, ok, why):
 
     def fake(*a, **k):
         out = real(*a, **k)
-        out["steer_rate"]["diff"] = {"point": pt, "lo": lo, "hi": hi}
+        out["steer_rate"]["diff"] = {"point": pt, "lo": lo, "hi": hi, "n_boot": 50, "valid_draws": 50}
         return out
 
     monkeypatch.setattr(M, "compare_arms", fake)
@@ -520,7 +520,9 @@ def test_g13_retention_and_gate_steer(standin):
     same = retention_comparison(rows, gold, gold, B=200, seed=0)
     assert same["identical_items"] and same["capability"]["lo"] == same["capability"]["hi"] == 0
     assert same["ece_diff"]["point"] == same["ece_diff"]["lo"] == same["ece_diff"]["hi"] == 0
-    dr = {"identical_items": True, "acc_diff": {"point": 0, "lo": 0, "hi": 0}, "ece_diff": {"point": 0, "lo": 0, "hi": 0}}
+    cnt = {"n_boot": 200, "n_requested": 200}
+    dr = {"identical_items": True, "acc_diff": {"point": 0, "lo": 0, "hi": 0, **cnt},
+          "ece_diff": {"point": 0, "lo": 0, "hi": 0, **cnt}, "n_items": 40000}
     kw = dict(steer_parent_rows=standin["gate_parent"], expected_variants=standin["gate"], n_boot=200,
               decision_retention=dr)
     assert verdict_g13(retention=same, steer_child_rows=standin["gate_same"], **kw)["accept"]
