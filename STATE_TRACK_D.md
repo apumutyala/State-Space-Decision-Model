@@ -1,4 +1,4 @@
-# Track D state and handoff (2026-10-07 ~09:00Z)
+# Track D state and handoff (2026-10-07 ~11:45Z)
 
 This is the live state of Track D (attention-free decision model). Anyone resuming should read this file first, then CHAMPION.md, CANDIDATES.md, LESSONS.md, INDEX_0.3.md and PREMORTEM.md.
 
@@ -32,23 +32,18 @@ Clef beats Clef-flash on paired comparison by +6.36 [2.84, 9.40]. Index 0.3 lead
 - **job-sxv3u:** q9_feature_cache stock_dev at 401bc9a. Also done: stock_train job-wuw7g, art-mtqne.
   - Train cache is downloaded and verified at `C:\Users\apumu\q9cache\stock_train\x\cache`.
   - Teacher dir: `C:\Users\apumu\td\art\clef-flash-teacher\teacher`.
+- **job-uhxb5:** RWKV7-13.3B first cell (m2_first_cell @9c76c93, ctx-c25147e0, sha cd2ce411…). Submitted 10:05Z and running; worst case $31.53. Mission `m2-first-cell`.
 
 ### Next steps, in order
 
-1. **Proxy loop, when stock_dev lands (CPU, from worktree `ssdm-wt/q9fcl-run`, `train.proxy_loop`).** Pre-registered order:
-   1. stock-check: |Δ| ≤ 0.3 vs 38.27.
-   2. recipes R01–R17. R16/R17 are KD and need `--teacher-dir`.
-   3. select.
-   4. Single-shot holdout.
-   - GO if the attention-free recipe scores ≥ 50 on HOLDOUT; else escalate to the operator.
-   - Commit select_summary.json, holdout_attempt.json and verdict.json to `stack/q9/proxy-head`.
-2. **RWKV7 first cell (PR #74, merged 0140e21).** Build the launch package with `python -m jobs.common.launch m2_first_cell --sha 0140e21… --out C:\Users\apumu\m2fcl --data <ssdm-data>`, then submit. ~$26 expected.
-3. **Q9-AF cell (PR #121, in fix).**
-   - Pending: review B1 (re-price G13 retention at T=4096) and pre-data rule amendment A1 (no CONTINUE/PROMOTE after a G12 reject, an underpowered G13, or a failed training pass).
-   - Then review, merge, pin the export, run the parent job, then cell_r64 and cell_r256.
-   - cell_r64_kd needs its own dated rule amendment first.
+1. **Proxy loop (CPU, worktree `ssdm-wt/q9fcl-run`; A3 merged d7f1290 via PR #130).**
+   - Stock-check under A3 PASSED: masked Δ +0.047 vs 38.27 (`C:\Users\apumu\q9cache\q9fcl_logs\stock_check_A3.log`).
+   - R00–R08 done on SELECT (35.5–39.2; best R06 39.24). R09 crashed at 11:13Z: cache arm `e5` is missing from the stock_train cache. Under diagnosis. Don't edit recipes, rule or thresholds to work around it.
+   - Then select, then the single-shot HOLDOUT. GO ≥ 50.0, else escalate to the operator. Receipts go to `stack/q9/proxy-head`.
+2. **Q9-AF cell (PR #121, merged 05fcd3f; merge-resolution review said MERGE).** When job-2xe5w lands: `python -m jobs.q9af_cell.pin fill`, then the parent job, then cell_r64 and cell_r256. cell_r64_kd needs its own dated rule amendment first.
+3. **RWKV7 first cell (job-uhxb5, running from 9c76c93).** Poll it. Then the G13 gate job (~$50, cohort v3).
 4. **Clef 27B full DEV.** Run `price.py rederive` on job-d2u54's `env/rate_guard_index.json`, then build index_full.
-5. **Later.** The G13 gate job for the RWKV7 cell (~$50, cohort v3), the full-DEV paired candidate vs Clef/Clef-flash, then the full Index (TEST unseal).
+5. **Later.** The full-DEV paired candidate vs Clef/Clef-flash, then the full Index (TEST unseal).
 
 ## Process
 
