@@ -288,19 +288,19 @@ def main(argv=None) -> int:
     summary["preflight"] = {"tok_s": a.tok_s, "call_s": a.call_s, "cap_min": a.cap_min,
                             "elapsed_before_min": a.elapsed_before_min, "projected_min": total_w / 60}
     if a.cap_min is not None and a.tok_s:
-        proj = a.elapsed_before_min + (time.time() - t0) / 60 + total_w / 60
+        # + the measured one-time model load + numerics self-check (job-kxc5e: 300 s between the plan and the first unit)
+        proj = a.elapsed_before_min + (time.time() - t0) / 60 + cfg["selfcheck"]["allowance_min"] + total_w / 60
         summary["preflight"].update(projected_total_min=proj, ok=proj <= MARGIN * a.cap_min)
         if proj > MARGIN * a.cap_min:
             return done(EXIT["too_slow"], f"projected {proj:.1f} min > {MARGIN} x cap {a.cap_min}")
     if a.plan_only:
         return done(EXIT["ok"], "plan only")
-    if a.progress:
-        Path(a.progress + ".total.json").write_text(json.dumps({"total_weight": total_w}), encoding="utf-8")
     # ---------------------------------------------------------------- model + numerics self-check
     import torch
 
     from .extract import ShardWriter, extract_request, lex_vocab, load, option_tokens, selfcheck, sha256_file
 
+    t_model = time.time()
     try:
         text, w_out, prov = load(a.model_dir, a.device, a.dtype, a.gdn_ckpt, arm.get("gdn_sha256"), arm["layers"])
     except ValueError as e:
@@ -325,7 +325,21 @@ def main(argv=None) -> int:
     if not ok:
         bad = [r for r in checks if not (r["logic_ok"] and r["cache_ok"])]
         return done(EXIT["numerics"], f"self-check failed on {len(bad)} of {len(checks)} records: {bad[:3]}")
+    summary["selfcheck_minutes"] = (time.time() - t_model) / 60
+    summary["selfcheck_end_t"] = time.time()
+    # re-project with the MEASURED load + self-check time before any extraction spend (PR #117 review, item 2)
+    if a.cap_min is not None and a.tok_s:
+        proj = a.elapsed_before_min + (time.time() - t0) / 60 + total_w / 60
+        summary["preflight"].update(post_selfcheck_projected_min=proj)
+        if proj > MARGIN * a.cap_min:
+            return done(EXIT["too_slow"], f"after load + self-check: projected {proj:.1f} min > {MARGIN} x cap {a.cap_min}")
     # ---------------------------------------------------------------- extraction
+    # The live rate guard's clock starts when the total file appears, so it is written only NOW, after the one-time
+    # model load and fp32 self-check (LESSONS L-29: job-kxc5e wrote it before them, and the guard extrapolated their
+    # 300 s x 10 into a false exit 15 although extraction ran at 0.88 x the priced time).
+    if a.progress:
+        Path(a.progress + ".total.json").write_text(json.dumps({"total_weight": total_w, "after_selfcheck": True,
+                                                                "t": time.time()}), encoding="utf-8")
     rich_left = cfg["rich_rows"]
     timing = {}
     for split in splits:

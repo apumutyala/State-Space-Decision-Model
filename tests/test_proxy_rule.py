@@ -23,11 +23,11 @@ def test_constants_are_pinned():
     assert R.SELECT_IDS_SHA256 == "6e4cb8dfac94a40a6e014e05744ff775aebcdf99d7a572190034e6bc026095c3"
     assert not hasattr(R, "IN_DOMAIN_CATALOG_IDS")  # withdrawn by A1(a)
     assert R.CANDIDATE_FAMILIES == ("fork", "mixer")
-    assert [r["id"] for r in R.RECIPES] == [f"R{i:02d}" for i in range(16)]
+    assert [r["id"] for r in R.RECIPES] == [f"R{i:02d}" for i in range(18)]  # R16-R17: amendment A2
 
 
 def test_amendment_a1_constants_are_pinned():
-    assert R.AMENDMENTS == ("A1",)
+    assert R.AMENDMENTS[0] == "A1"
     assert R.FAMILIES_V1_SHA256 == "e0e4bd5f76ca928f2a05c3f52150592aed462b4018350346eb723e9b40096f46"
     assert R.DOMAIN_COLUMNS == ("in_domain", "new_domain", "new_domain_frozen")
     assert R.IN_DOMAIN == (1, 2, 3, 4, 5, 11, 12, 21, 25, 28, 29, 30, 36, 37, 39, 42, 45, 57, 62)
@@ -39,13 +39,42 @@ def test_amendment_a1_constants_are_pinned():
     assert R.VERDICT_EDITION == "0.2.1" and R.REPORT_EDITIONS == ("0.2.1", "0.3")
     assert R.STOCK_CHECK_TOL == 0.3
     assert R.GO_THRESHOLD == 50.0  # unchanged by A1
-    ctl = {r["id"]: r for r in R.RECIPES[14:]}
+    ctl = {r["id"]: r for r in R.RECIPES[14:16]}
     assert ctl["R14"]["family"] == "mixer" and ctl["R14"]["train_rows"] == 5000 and ctl["R14"]["arm"] == "stock"
     assert ctl["R15"]["family"] == "fork" and ctl["R15"]["train_rows"] == 5000
-    assert R.candidate_ids() == tuple(f"R{i:02d}" for i in range(1, 16))
+    assert set(R.candidate_ids()) >= {f"R{i:02d}" for i in range(1, 16)}
     assert R.stock_check(38.5)["ok"] and not R.stock_check(37.9)["ok"]
     assert R.domain_of(9) == ("new_domain", "new_domain_frozen") and R.domain_of(2) == ("in_domain",)
     assert R.domain_of(23) == ("new_domain",)
+
+
+def test_amendment_a2_constants_are_pinned():
+    """A2 (pre-data): two KD candidates on top of R01, the pinned Clef-flash teacher, nothing else changed."""
+    assert R.AMENDMENTS == ("A1", "A2")
+    assert R.RULE_VERSION == "proxy-rule-v1" and R.GO_THRESHOLD == 50.0  # same rule, same threshold
+    assert R.HOLDOUT_SEEDS == (0, 1, 2) and R.SELECT_SEEDS == (0,)
+    assert R.TRAIN_STEPS == 2000 and R.GRAD_ACCUM == 8
+    kd = {r["id"]: r for r in R.RECIPES[16:]}
+    assert list(kd) == ["R16", "R17"] == list(R.KD_RECIPES)
+    r01 = dict(R.RECIPES[1])
+    for rid, (alpha, t) in (("R16", (0.5, 1.0)), ("R17", (0.9, 2.0))):
+        r = dict(kd[rid])
+        assert r.pop("kd") == {"alpha": alpha, "temperature": t}
+        assert {k: v for k, v in r.items() if k not in ("id", "note")} == \
+            {k: v for k, v in r01.items() if k not in ("id", "note")}  # = R01 + KD, nothing else
+    assert R.KD_CONTROL == "R01"
+    assert R.candidate_ids() == tuple(f"R{i:02d}" for i in range(1, 18))
+    assert R.TEACHER == {
+        "job": "job-tnrwu", "artifact": "art-ggrs8", "release": "clef-flash", "repo": "Cloudflare/clef-flash",
+        "revision": "17f0b0ad64efb65d273590632833508766b2aae6",
+        "backend_revision": "clef:Cloudflare/clef-flash@17f0b0ad64ef;jsm=0e304cf7c650;"
+                            "enc=untrusted-split-special+cut-leaking-added-v1;cfg=05bdad56;adapter=0.2.0",
+        "sha256": "a88b4fe0f6a79a8fc48bdea51391524bd4f5da885705461a543becf81c81e7f7",
+        "drawn_ids_sha256": "2bbbf1808c0bdd6cf0ba3ecd236cf9a64110c5e429e22f8b8e9cd2df7507556b",
+        "rows": 24000, "status_counts": {"ok": 23458, "exhausted": 542}}
+    from train.cohort_v3 import FIRST_CELL_DRAW
+
+    assert R.TEACHER["drawn_ids_sha256"] == FIRST_CELL_DRAW["drawn_ids_sha256"]  # the stock_train cache's draw
 
 
 def test_a1_domain_columns_equal_harness_families_v1():

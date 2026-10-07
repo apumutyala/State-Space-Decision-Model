@@ -75,6 +75,34 @@ go threshold at 50.0 on HOLDOUT, with escalation to the user, unchanged." What A
   Unchanged: GO_THRESHOLD 50.0 on HOLDOUT; below it the verdict is "escalate" to the user; SELECT / HOLDOUT; the
   transfer rule.
 
+AMENDMENT A2 (2026-10-07, before any feature cache exists: the stock cache jobs job-kxc5e (stock_dev) and job-wuw7g
+(stock_train) were still BUILDING their images when this was committed; no proxy recipe has been trained or scored and
+no SELECT receipt exists anywhere). Adds knowledge distillation from Cloudflare Clef-flash (Apache-2.0 open weights;
+PLAN.md allows open-weight teachers; recipe per techniques/10) as two candidate recipes:
+  R16 = R01 + KD(alpha 0.5, T 1)        R17 = R01 + KD(alpha 0.9, T 2)
+  (a) Loss (``train/losses.py``): per training question WITH a teacher row,
+          alpha * T^2 * KL( teacher_T || student_T ) + (1 - alpha) * clef arm (LS-CE 0.1 + Brier + RPS on score qs),
+      where x_T renormalises p^(1/T) over the question's VALID options (Hinton scaling T^2 keeps gradient size
+      comparable across T); a question WITHOUT a teacher row (exhausted record, or not in the teacher file) takes the
+      clef arm only. Nothing else about R01 changes (family, arm, budget, seeds).
+  (b) Teacher data, pinned (``TEACHER``): job-tnrwu (clef_baseline teacher_clef_flash @5b478e3, mission
+      clef-baseline-safety-spec-s7), artifact art-ggrs8; teacher-clef-flash.jsonl sha256 ``TEACHER["sha256"]``, 24,000
+      rows = the m2 first cell's seed-0 TRAINING draw (drawn ids sha256 ``TEACHER["drawn_ids_sha256"]``, the same draw
+      the stock_train cache keeps its 20,000 rows from), 23,458 ok / 542 exhausted (> 16,384 tokens, no
+      probabilities). ``train/teacher.py`` refuses any other file, identity, draw, or a row whose record content hash
+      differs, and never maps a DEV / TEST / cohort row.
+  (c) Selection: R16 and R17 are attention-free candidates like any other, so SELECT must score R01-R17 before
+      ``choose``; HOLDOUT stays ONE shot for the one recipe chosen (unchanged). Disclosure: 17 candidates instead of 15
+      enlarges the SELECT winner's curse slightly; the verdict reads HOLDOUT, so it is unaffected.
+      ``KD_CONTROL``: R16 and R17 are compared against R01 (same arm, same data, same budget) and that paired diff is
+      reported next to them.
+  (d) Validity: A2 holds only because no proxy SELECT data exists at its commit. Every receipt records the amendments
+      it was trained under and ``select`` refuses receipts whose amendments differ from ``AMENDMENTS`` (no pre-A2
+      receipt can be mixed in). Had SELECT already run, KD would need a separately pre-registered rule version
+      (proxy-rule-v2) with a fresh HOLDOUT, never this one's.
+  Unchanged: GO_THRESHOLD 50.0 on HOLDOUT; below it the verdict is "escalate" to the user; splits, editions, budget,
+  seeds, the transfer rule.
+
 Proxy -> real transfer (``adopt_ranking``): the proxy ranking is adopted for the S2 cell recipe only if, over the
 recipes that have BOTH a proxy score and a real (head + LoRA) cell score, there are >= MIN_TRANSFER_RECIPES of them,
 Kendall tau-a >= TAU_MIN, and on the one real-cell calibration pair (the proxy's best and worst recipe) the real cells
@@ -108,7 +136,7 @@ BOOTSTRAP_SEED = 0
 SELECT_SEEDS = (0,)
 HOLDOUT_SEEDS = (0, 1, 2)
 #: --- amendment A1 ---
-AMENDMENTS = ("A1",)
+AMENDMENTS = ("A1", "A2")
 #: (a) families-v1 groups in the 0.2.1 DEV edition (harness/families.py members(group, "0.2.1") at families-v1.json
 #: sha256 FAMILIES_V1_SHA256 and heldout-draw-v1)
 FAMILIES_V1_SHA256 = "e0e4bd5f76ca928f2a05c3f52150592aed462b4018350346eb723e9b40096f46"
@@ -151,7 +179,29 @@ RECIPES = (
      "note": "R01 on the stock arm's first 5,000 rows (control for R09 / R10)"},
     {"id": "R15", "family": "fork", "arm": "stock", "loss": "clef", "train_rows": 5000,
      "note": "R11 on the stock arm's first 5,000 rows (control for R13)"},
+    # A2: knowledge distillation from Clef-flash (teacher TEACHER) on top of R01
+    {"id": "R16", "family": "mixer", "arm": "stock", "loss": "clef", "kd": {"alpha": 0.5, "temperature": 1.0},
+     "note": "R01 + KD from Clef-flash (alpha 0.5, T 1)"},
+    {"id": "R17", "family": "mixer", "arm": "stock", "loss": "clef", "kd": {"alpha": 0.9, "temperature": 2.0},
+     "note": "R01 + KD from Clef-flash (alpha 0.9, T 2)"},
 )
+#: --- amendment A2 ---
+#: the pinned teacher (job-tnrwu, artifact art-ggrs8): file sha256, identity fields, and the training draw it covers
+TEACHER = {
+    "job": "job-tnrwu",
+    "artifact": "art-ggrs8",
+    "release": "clef-flash",
+    "repo": "Cloudflare/clef-flash",
+    "revision": "17f0b0ad64efb65d273590632833508766b2aae6",
+    "backend_revision": "clef:Cloudflare/clef-flash@17f0b0ad64ef;jsm=0e304cf7c650;enc=untrusted-split-special+cut-leaking-added-v1;cfg=05bdad56;adapter=0.2.0",
+    "sha256": "a88b4fe0f6a79a8fc48bdea51391524bd4f5da885705461a543becf81c81e7f7",
+    "drawn_ids_sha256": "2bbbf1808c0bdd6cf0ba3ecd236cf9a64110c5e429e22f8b8e9cd2df7507556b",
+    "rows": 24000,
+    "status_counts": {"ok": 23458, "exhausted": 542},
+}
+#: KD recipes and the recipe each is compared against (same arm, data and budget)
+KD_RECIPES = ("R16", "R17")
+KD_CONTROL = "R01"
 #: recipes that must ALL have a SELECT score before ``choose`` may pick one (single-shot HOLDOUT; A1 / review B2)
 def candidate_ids(recipes=None) -> tuple:
     return tuple(r["id"] for r in (recipes or RECIPES) if r["family"] in ("fork", "mixer"))

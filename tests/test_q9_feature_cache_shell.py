@@ -133,6 +133,17 @@ def test_runner_dry_run_end_to_end_then_proxy_heads(tmp_path):
     assert sp["select"]["requests"] == 5 and sp["holdout"]["requests"] == 5 and "train" not in sp
     assert sp["select"]["lex_vocab_ok"] and not (out_dev / "cache" / "stock" / "train").exists()
     out_tr, res_tr = run_part("stock_train")
+    # L-29: the rate guard's weighted total is written only after the model load + self-check, before the first unit
+    for mode, out_p in (("stock_dev", out_dev), ("stock_train", out_tr)):
+        tot = json.loads((tmp_path / f"work_{mode}" / "logs" / "progress_stock.jsonl.total.json").read_text(encoding="utf-8"))
+        assert tot["after_selfcheck"] is True
+        first = min(json.loads(x)["t"] for f in (out_p / "cache" / "stock").glob("progress_*.jsonl")
+                    for x in f.read_text(encoding="utf-8").splitlines()[:1])
+        assert tot["t"] <= first
+        summ = json.loads(next((out_p / "cache" / "stock").glob("summary_*.json")).read_text(encoding="utf-8"))
+        assert summ["selfcheck_minutes"] > 0 and summ["selfcheck"]
+        assert tot["t"] >= summ["selfcheck_end_t"]  # the total postdates the end of the self-check (L-29)
+        assert summ["preflight"]["post_selfcheck_projected_min"] > 0  # re-projected after load + self-check
     assert res_tr["arms"]["stock"]["splits"]["train"]["questions"] == 16
     # the parts unpack into ONE cache directory (as the artifacts would be downloaded)
     out = tmp_path / "merged"

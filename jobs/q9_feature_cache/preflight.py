@@ -20,6 +20,18 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 #: tokenisation + draw + guard checks before the model loads, per arm (measured locally, see docstring)
 TOKENIZE_MIN = 14.2
+#: model load + the v3 fp32 numerics self-check, measured on the H100 (job-kxc5e, stock_dev: 300 s between the end of the
+#: plan and the first extracted unit, model load included); counted once per part. The projection ALSO adds
+#: ``model_load_s`` (0.7 min) beside it: a deliberate, conservative double count of the load (PR #117 review nit).
+SELFCHECK_MIN = 5.0
+#: rate_guard --setup-cap-min: tokenisation (TOKENIZE_MIN) + the model load + 3 x the measured load/self-check, so a slow
+#: or hung setup phase is stopped (exit 15) long before the arm's wall-clock cap
+
+
+def setup_cap_minutes(params: dict) -> int:
+    import math
+
+    return int(math.ceil(TOKENIZE_MIN + params["measured"]["model_load_s"] / 60 + 3 * SELFCHECK_MIN))
 #: phases other than the arms: projection = their expected_minutes (each from a receipt in job_params / JOB_SPEC)
 
 
@@ -38,8 +50,8 @@ def project(params: dict, volume: dict) -> dict:
         v = volume["arms"][arm]
         ext = sum(v[s]["positions"] / tok_s + v[s]["calls"] * call_s for s in params["splits"]) / 60
         out[f"arm_{arm}"] = {"extract_min": round(ext, 2), "tokenize_min": TOKENIZE_MIN,
-                             "load_min": round(m["model_load_s"] / 60, 2),
-                             "projected_min": round(ext + TOKENIZE_MIN + m["model_load_s"] / 60, 2)}
+                             "load_min": round(m["model_load_s"] / 60, 2), "selfcheck_min": SELFCHECK_MIN,
+                             "projected_min": round(ext + TOKENIZE_MIN + m["model_load_s"] / 60 + SELFCHECK_MIN, 2)}
     return out
 
 
@@ -59,6 +71,11 @@ def check(params: dict, volume: dict) -> dict:
     w = worst_case_usd(params)
     rows["worst_case"] = {"usd": w, "hard_cap_usd": params["hard_cap_usd"], "ok": w <= params["hard_cap_usd"]}
     rows["build_timeout"] = {"minutes": params["build_timeout_minutes"], "ok": params["build_timeout_minutes"] >= 60}
+    want = setup_cap_minutes(params)
+    for arm in params["arms"]:
+        cap = params["phase_caps_minutes"][f"arm_{arm}"]
+        rows[f"setup_cap_{arm}"] = {"setup_cap_minutes": params.get("setup_cap_minutes"), "derived": want, "arm_cap": cap,
+                                    "ok": params.get("setup_cap_minutes") == want and want < cap}
     # review B1: the whole job output is ONE tar artifact (max_artifact_bytes 5 GiB): this part's estimate must fit
     for arm in params["arms"]:
         gib = part_gib(volume["arms"][arm]["est_gib"], params["splits"])

@@ -1,0 +1,50 @@
+{
+ "cmd": [
+  "/usr/bin/python",
+  "-X",
+  "utf8",
+  "-m",
+  "jobs.q9_feature_cache.cache",
+  "run",
+  "--arm",
+  "stock",
+  "--config",
+  "jobs/q9_feature_cache/cache_config.json",
+  "--model-dir",
+  "/hfcache/models--Qwen--Qwen3.5-9B/snapshots/c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+  "--dev-rows",
+  "/data/slices/dev-rows.jsonl.gz",
+  "--out",
+  "/output/cache",
+  "--device",
+  "cuda",
+  "--dtype",
+  "bfloat16",
+  "--tok-s",
+  "22144",
+  "--call-s",
+  "0.0595",
+  "--cap-min",
+  "65",
+  "--progress",
+  "/tmp/q9-feature-cache/logs/progress_stock.jsonl",
+  "--splits",
+  "select,holdout"
+ ],
+ "cap_min": 65.0,
+ "checks": [
+  {
+   "elapsed_min": 12.750241788228353,
+   "units": 534,
+   "done_frac": 0.09686781443843807,
+   "projected_min": 87.33838009427684
+  }
+ ],
+ "mode": "weighted",
+ "scoring_started_min": 4.750095125039419,
+ "stopped": "534 units (9.7% of the weight) in 8.0 min of scoring -> 87 min > cap 65.0",
+ "exit": 15,
+ "units_done": 534,
+ "weight_done": 192.7488822254334,
+ "elapsed_min": 12.760630369186401
+}
