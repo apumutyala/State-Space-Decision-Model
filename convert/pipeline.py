@@ -110,7 +110,12 @@ def _main():
     a = ap.parse_args()
     cfg = json.load(open(a.config))
     os.makedirs(a.out, exist_ok=True)
-    ckpt_dir = cfg.get("ckpt_dir", os.path.join(data.DATA_ROOT, "ckpt", os.path.basename(a.out.rstrip("/\\"))))
+    # ckpt_dir may name an env var (jobs/full8: "${FULL8_CK}/gdn" = the platform checkpoint dir, so a restarted attempt
+    # resumes from the last finished layer); an unset var is refused instead of creating a literal "${...}" dir
+    ckpt_dir = os.path.expandvars(cfg.get("ckpt_dir", os.path.join(data.DATA_ROOT, "ckpt",
+                                                                   os.path.basename(a.out.rstrip("/\\")))))
+    if "${" in ckpt_dir or "$" in os.path.basename(ckpt_dir):
+        raise SystemExit(f"ckpt_dir {ckpt_dir!r}: unset environment variable")
     os.makedirs(ckpt_dir, exist_ok=True)
     R = _R = Results(os.path.join(a.out, "results.json"))
     if os.environ.get("DEADLINE_MINUTES"):  # the paid runner sets the remaining budget

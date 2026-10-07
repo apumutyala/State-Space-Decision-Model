@@ -1,0 +1,94 @@
+{
+ "_comment": "full8: all 8 attention layers of Qwen3.5-9B -> GDN (Q9-AF, jobs/full8/JOB_SPEC.md, issue #87). The probe9b recipe (configs/probe9b_h100.json as run in job-5cmat) with ONE change: progressive.max_layers 1 -> 8 (all layers, KL-importance order, enforced 511e8dd gate, rollback on reject). Same seed, data (wikitext-103 train, 40M tokens), stage 1 (400 steps), stage 2 (60-min wall-clock cap PER LAYER, lr 3e-4, all converted GDNs train), probes, gate, micro_batch 4, floors (50% of the slowest measured stage rate: stage 2 = layer 3 on job-4j3vu). ckpt_dir is the platform checkpoint dir (FULL8_CK = $GMN_CHECKPOINT_DIR) so a restarted attempt resumes at the last finished layer. The binding rule is jobs/full8/rule.json (pre-registered at be9eed8), not this file.",
+ "seed": 0,
+ "kernel": "fla",
+ "model_dir": "${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-9B/snapshots",
+ "ckpt_dir": "${FULL8_CK}/gdn",
+ "seq_len": 4096,
+ "batch": 8,
+ "micro_batch": 4,
+ "data": {
+  "train_max_tokens": 40000000
+ },
+ "vram_fraction": 0.95,
+ "controls": {
+  "swa_windows": [],
+  "swa_sinks": 4,
+  "zero": false
+ },
+ "probes": {
+  "ppl": [
+   [
+    1024,
+    64
+   ],
+   [
+    4096,
+    16
+   ]
+  ],
+  "niah_lengths": [
+   1024,
+   2048,
+   4096,
+   8192,
+   16384
+  ],
+  "niah_n_per": 8,
+  "mqar_pairs": [
+   8,
+   32,
+   64,
+   128
+  ],
+  "mqar_n_seq": 20,
+  "mmlu_k": 5
+ },
+ "calibrate_out_scale": true,
+ "init": "clone_neighbor",
+ "init_cmp": {
+  "steps": 0
+ },
+ "stage1": {
+  "steps": 400,
+  "lr": 0.001,
+  "eval_init": false,
+  "guard": {
+   "min_tok_s": 9476,
+   "check_after_steps": 50,
+   "max_peak_gb": 76,
+   "max_minutes": 25
+  }
+ },
+ "order": "kl",
+ "progressive": {
+  "max_layers": 8
+ },
+ "stage2": {
+  "steps": 1000000,
+  "lr": 0.0003,
+  "train_all_converted": true,
+  "guard": {
+   "min_tok_s": 2730,
+   "check_after_steps": 50,
+   "max_peak_gb": 76,
+   "max_minutes": 60
+  }
+ },
+ "gate": {
+  "n_windows": 32,
+  "max_step_delta_nll": 0.05,
+  "max_cum_delta_nll": 0.15,
+  "min_hidden_cos": 0.95,
+  "policy": "enforce"
+ },
+ "throughput": {
+  "lengths": [
+   4096,
+   8192,
+   16384,
+   32768
+  ],
+  "reps": 2
+ }
+}

@@ -1,6 +1,7 @@
 """Prefill throughput / peak memory (measured) and decode-state bytes (analytic) for a given swap configuration."""
 from __future__ import annotations
 
+import contextlib
 import statistics
 import time
 
@@ -74,10 +75,20 @@ def call_latency(model, modes, prefix_len=2048, tail=(64, 64), small_len=16, rep
         ts = sorted(ts[1:])
         return ts[len(ts) // 2]
 
-    with model.modes(modes):
+    # no_grad: a readout never builds a graph. The small call runs under the same autocast as the pack call: job-5cmat's
+    # converted arm (fp32 student GDN in a bf16 model) failed here with "mat1 and mat2 ... BFloat16 != float" outside it
+    ac = (torch.autocast(device_type="cuda", dtype=autocast_dtype) if dev.type == "cuda" and autocast_dtype is not None
+          else contextlib.nullcontext())
+    with model.modes(modes), torch.no_grad():
         _, st = ops.prefill(torch.randint(1, vocab, (1, prefix_len), generator=g).to(dev))
         tl = torch.randint(1, vocab, tail, generator=g).to(dev)
         pack = med(lambda: ops.extend(st, tl, tail[1]))
-        small = med(lambda: model.lm_head(model.hidden(tl[:1, :small_len])[:, -1:]))
+
+        def small_call():
+            with ac:
+                h = model.hidden(tl[:1, :small_len])[:, -1:]
+            return model.lm_head(h)
+
+        small = med(small_call)
     return {"pack_call_s": pack, "small_call_s": small, "prefix_len": prefix_len, "tail": list(tail),
             "small_len": small_len, "reps": reps}

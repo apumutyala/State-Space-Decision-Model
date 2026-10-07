@@ -15,16 +15,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 ENVELOPE_USD = 525.0
 #: October 2026 MTD actual SF spend (receipts): job-4j3vu 2.48, job-tkfaj 1.79, job-sgihj 1.40, job-c4zkm 0.74,
-#: job-mhc3h 0.56, job-4idg4 0.30, job-jucxx 0.25, job-jn47u 0.84, job-jbw22 0.07
-SPENT_USD = 8.43
+#: job-mhc3h 0.56, job-4idg4 0.30, job-jucxx 0.25, job-jn47u 0.84, job-jbw22 0.07, job-5cmat 5.01 (issue #68)
+SPENT_USD = 13.44
 #: PLAN.md spend lines
 LINES = {"joint_gate": 75.0, "system1": 250.0, "language": 100.0, "reserve": 100.0}
 PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_params_c_only.json", "probe9b": "jobs/probe9b/job_params.json",
           "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_lora": "jobs/rwkv7/job_params_lora.json",
-          "fla_rwkv7": "jobs/fla_rwkv7/job_params.json", "fla_rwkv7_truth_v2": "jobs/fla_rwkv7/job_params_truth_v2.json"}
+          "fla_rwkv7": "jobs/fla_rwkv7/job_params.json", "fla_rwkv7_truth_v2": "jobs/fla_rwkv7/job_params_truth_v2.json",
+          "full8": "jobs/full8/job_params.json"}
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here
 OTHER = {"clef_baseline_ABC": 47.52}  # jobs/clef_baseline/JOB_SPEC.md: per-job ceilings at $2.97/h
-FULL8_ESTIMATE = 150.0  # PLAN.md m1 full conversion (~$150); its own spec + spend issue after proceed-all-8
+FULL8_BUDGET = 150.0  # PLAN.md / DECISION_TREE branch A: ~$150 for the full conversion; priced in jobs/full8 (worst case)
 
 
 def load(name: str) -> dict:
@@ -107,7 +108,7 @@ QUAL_TO_NEXT = {
     "fold": ["rwkv7_readout", "rwkv7_lora"],
 }
 PROBE_TO_NEXT = {
-    "proceed-all-8": ["full8 (own spec, ~$150)"],
+    "proceed-all-8": ["full8 (jobs/full8, issue #87)"],
     "retrieval-fail": ["rwkv7_lora", "report cost-of-attention-freedom curve", "decision-needed: ship hybrid?"],
     "quality-fail": ["rwkv7_lora"],
 }
@@ -132,13 +133,35 @@ def next_jobs_after_probe(verdict: str | None, exit_code: int | None = 0) -> lis
     return list(PROBE_TO_NEXT[verdict])
 
 
+#: full-8 verdict (scripts/decide_full8.py, rule pre-registered at be9eed8) -> next jobs (jobs/full8/rule.json: verdicts)
+FULL8_TO_NEXT = {
+    "q9af-backbone": ["pin q9af.converted_sha256 (own reviewed PR)", "m2_parent_arm PARENT=q9af", "m2_pilot PARENT=q9af"],
+    "retrieval-fail": ["report cost-of-attention-freedom curve", "decision-needed: m2 backbone (Q9-AF / RWKV7 / hybrid)"],
+    "quality-fail": ["m2 on rwkv7"],
+    "partial-conversion": ["m2 on rwkv7", "report Q9-H<k> hybrid + curve", "decision-needed: ship hybrid?"],
+    "no-conversion": ["m2 on rwkv7"],
+}
+
+
+def next_jobs_after_full8(verdict: str | None, exit_code: int | None = 0) -> list[str]:
+    """Any non-zero exit is not a verdict. A preemption / crash / stop keeps every finished layer in the checkpoint dir
+    (and a salvage export): resubmit once from the reserve (resumes); a no-measurement decision (exit 9): diagnose."""
+    if exit_code not in (0, None):
+        if exit_code in (2, 7):
+            return ["resubmit once from reserve (resume from checkpoint)", "diagnose"]
+        return ["diagnose; at most one full8 re-run from reserve"]
+    if verdict not in FULL8_TO_NEXT:
+        return ["diagnose; at most one full8 re-run from reserve"]
+    return list(FULL8_TO_NEXT[verdict])
+
+
 def branch_ledger() -> dict:
     """Worst-case $ per branch through the tree, against the envelope and the PLAN lines."""
     w = {k: worst_case_usd(load(k)) for k in PARAMS}
     joint = w["qual"] + OTHER["clef_baseline_ABC"]
     branches = {
         "A: qual pass -> probe proceed -> full-8 (+rwkv7 readout comparator)":
-            {"m1": w["probe9b"] + FULL8_ESTIMATE + w["rwkv7_readout"]},
+            {"m1": w["probe9b"] + w["full8"] + w["rwkv7_readout"]},
         "B: qual pass/lean -> probe fail -> rwkv7 readout + lora": {"m1": w["probe9b"] + w["rwkv7_readout"] + w["rwkv7_lora"]},
         "C: qual fold -> rwkv7 readout + lora": {"m1": w["rwkv7_readout"] + w["rwkv7_lora"]},
     }
