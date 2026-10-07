@@ -28,6 +28,8 @@ _RESPONSE_ENVELOPE_KEYS = {
     "served_probabilities", "served_config", "proposed_evidence_refs", "state_handle",
     "diagnostics", "policy_conditioned_probabilities", "attribution",
 }
+CANDIDATE_STYLES = ("record_ref", "entity_name")
+MAX_CANDIDATE_ENTITY_CHARS = 256
 
 
 class PlannerFailure(Exception):
@@ -165,16 +167,27 @@ def _check_stages(env: dict[str, Any], request: dict[str, Any], qid: str,
     return served, stages
 
 
-def _candidate_sets(host: dict[str, Any], catalog: dict[str, Any], task_input: str) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, Any]]]:
+def _candidate_sets(host: dict[str, Any], catalog: dict[str, Any], task_input: str,
+                    candidate_style: str = "record_ref") -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, Any]]]:
     """Build syntactic choices from the visible snapshot, never from truth."""
+    if candidate_style not in CANDIDATE_STYLES:
+        raise ValueError("unsupported candidate style")
     state = json.loads(audience_state(task_input, host, catalog))
     registry = catalog["registries"][host["registry_ref"]]
     registered = set(registry["registered_fields"])
-    facts = [
-        {"record_ref": rec["record_ref"], "field": name}
-        for rec in state["records"] for name in sorted(rec["fields"])
-        if name in registered
-    ]
+    facts = []
+    for rec in state["records"]:
+        for name in sorted(rec["fields"]):
+            if name in registered:
+                fact = {"record_ref": rec["record_ref"], "field": name}
+                if candidate_style == "entity_name":
+                    # Display-only cue copied from the exact audience-visible snapshot;
+                    # executable bindings remain record_ref/field.
+                    entity_ref = rec["entity_ref"]
+                    if not isinstance(entity_ref, str) or not entity_ref or len(entity_ref) > MAX_CANDIDATE_ENTITY_CHARS:
+                        raise ValueError("candidate entity name exceeds the display limit")
+                    fact["entity_ref"] = entity_ref
+                facts.append(fact)
     # A value-shaped host constant is a Compare operand; Ask descriptors are not.
     operands = [dict(fact, kind="fact") for fact in facts]
     for ref, descriptor in sorted(host.get("query_constants", {}).items()):
@@ -189,6 +202,12 @@ def _candidate_sets(host: dict[str, Any], catalog: dict[str, Any], task_input: s
         if refs:
             obligations.append({"obligation_id": ob["obligation_id"], "category": ob["category"], "refs": refs})
     return facts, operands, obligations
+
+
+def _fact_description(item: dict[str, Any]) -> str:
+    if "entity_ref" not in item:
+        return f"Fact {item['record_ref']} field {item['field']}"
+    return f"Fact {item['entity_ref']} (record {item['record_ref']}) field {item['field']}"
 
 
 def _as_options(items: list[Any], describe: Callable[[Any], str], prefix: str) -> tuple[dict[str, str], dict[str, Any]]:
@@ -373,14 +392,15 @@ class _Session:
         def choose_operand(slot: str) -> dict[str, str]:
             opts, binding = _as_options(
                 operands,
-                lambda x: (f"Fact {x['record_ref']} field {x['field']}" if x["kind"] == "fact"
+                lambda x: (_fact_description(x) if x["kind"] == "fact"
                            else f"Host constant {x['constant_ref']}"), "v",
             )
             return binding[self.choose(slot, f"Select the {slot} typed operand.", opts, repair=feedback is not None)]
 
         if kind in ("read", "explain_read"):
-            opts, binding = _as_options(facts, lambda x: f"Fact {x['record_ref']} field {x['field']}", "f")
-            fact = binding[self.choose("fact", "Select the fact to assert.", opts, repair=feedback is not None)]
+            opts, binding = _as_options(facts, _fact_description, "f")
+            selected = binding[self.choose("fact", "Select the fact to assert.", opts, repair=feedback is not None)]
+            fact = {key: selected[key] for key in ("record_ref", "field")}
             nodes = [{"id": "n1", "op": "ReadFact", **fact},
                      {"id": "n2", "op": "Assert", "proposition": "n1"}]
             output = "n2"
@@ -422,17 +442,22 @@ class _Session:
 def plan_checked_answer(task_input: str, host: dict[str, Any], catalog: dict[str, Any],
                         provider: Any, *, model: str, parent_revision: str,
                         expected_served_config: dict[str, Any],
-                        allow_repair: bool = False) -> PlannerResult:
+                        allow_repair: bool = False,
+                        candidate_style: str = "record_ref") -> PlannerResult:
     """Run one bounded planning attempt, optionally one or more declared repairs.
 
     ``provider`` can be a callable or an object with ``decide(request)``. Oracle
     and replay providers are test tools; this function never claims learning.
+    ``candidate_style`` changes display descriptions only; it never chooses a
+    fact or changes the executable record_ref/field bindings.
+    ``candidate_style`` changes display descriptions only; it never chooses a
+    fact or changes the executable record_ref/field bindings.
     """
     session: _Session | None = None
     try:
         session = _Session(task_input, host, catalog, provider, model, parent_revision,
                            expected_served_config)
-        facts, operands, obligations = _candidate_sets(host, catalog, task_input)
+        facts, operands, obligations = _candidate_sets(host, catalog, task_input, candidate_style)
         max_repairs = session.limits["max_repair_attempts"] if allow_repair else 0
         feedback = None
         last_program = None

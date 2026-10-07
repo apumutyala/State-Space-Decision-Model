@@ -10,7 +10,7 @@ import json
 from typing import Any, Iterable
 
 from .kernel import check_program
-from .planner import PlannerResult, plan_checked_answer
+from .planner import CANDIDATE_STYLES, PlannerResult, plan_checked_answer
 from .realize import render_checked
 from .types import Comparison, Fact, SpeechAct
 
@@ -87,7 +87,8 @@ def _initial_task(example: dict[str, Any]) -> str:
 def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
                           model: str, parent_revision: str,
                           expected_served_config: dict[str, Any],
-                          allow_repair: bool = False) -> dict[str, Any]:
+                          allow_repair: bool = False,
+                          candidate_style: str = "record_ref") -> dict[str, Any]:
     """Run each task from scratch and retain every outcome in the denominator.
 
     A requested repair arm must authorize one complete retry of the longest
@@ -95,6 +96,8 @@ def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
     before calling the provider; never silently relabel one-shot access.
     """
     examples = list(examples)
+    if candidate_style not in CANDIDATE_STYLES:
+        raise ValueError("unsupported candidate style")
     if allow_repair:
         for example in examples:
             try:
@@ -123,6 +126,7 @@ def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
                 task_input, training["host"], training["catalog"], provider,
                 model=model, parent_revision=parent_revision,
                 expected_served_config=expected_served_config, allow_repair=allow_repair,
+                candidate_style=candidate_style,
             )
             correct = score_development_task(example, result)
             observations.append({
@@ -145,6 +149,7 @@ def run_development_tasks(examples: Iterable[dict[str, Any]], provider: Any, *,
             })
     return {
         "condition": "one_repair" if allow_repair else "one_shot",
+        "candidate_style": candidate_style,
         "source": "synthetic_development_nonlearned_unless_provider_proven_otherwise",
         "total": len(observations),
         "kernel_accepted": sum(row["kernel_accepted"] for row in observations),
