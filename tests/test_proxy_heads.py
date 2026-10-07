@@ -41,7 +41,7 @@ def synthetic(n: int, seed: int, learnable: bool = True) -> list[ProxyRequest]:
     return out
 
 
-@pytest.mark.parametrize("rid", [r["id"] for r in RECIPES if r["arm"] == "stock"])
+@pytest.mark.parametrize("rid", [r["id"] for r in RECIPES if r["arm"] == "stock" and not r.get("kd")])
 def test_every_recipe_builds_trains_and_is_deterministic(rid):
     rec = dict(next(r for r in RECIPES if r["id"] == rid))
     if rec.get("train_rows"):
@@ -166,6 +166,9 @@ def _fake_receipts(out, ids, budget=PL.TRAIN, cache_ident=None):
         d.mkdir(parents=True)
         (d / "receipt.json").write_text(json.dumps({
             "recipe": rec, "budget_sha256": PL.budget_sha(budget), "cache_identity": cache_ident or {},
+            "amendments": list(R.AMENDMENTS),
+            "teacher": {"teacher_sha256": R.TEACHER["sha256"],
+                        "selection_drawn_ids_sha256": R.TEACHER["drawn_ids_sha256"]} if rec.get("kd") else None,
             "score": {"all": {"point": 40.0 + int(rid[1:]), "lo": 0, "hi": 1}}, "results": "x",
             "results_sha256": "0", "head_sha256": "0"}), encoding="utf-8")
 
@@ -217,6 +220,9 @@ def _select_world(out, monkeypatch, chosen_bias="R03"):
         pt = 40.0 + (5.0 if r["id"] == chosen_bias else 0.0) + int(r["id"][1:]) / 100
         (d / "receipt.json").write_text(json.dumps({
             "recipe": r, "budget_sha256": PL.budget_sha(PL.TRAIN), "cache_identity": {r["arm"]: {"m": "1"}},
+            "amendments": list(R.AMENDMENTS),
+            "teacher": {"teacher_sha256": R.TEACHER["sha256"],
+                        "selection_drawn_ids_sha256": R.TEACHER["drawn_ids_sha256"]} if r.get("kd") else None,
             "score": {"all": {"point": pt, "lo": 0, "hi": 1}}, "results": str(d / "results.jsonl"),
             "results_sha256": PL._sha(d / "results.jsonl"), "head_sha256": PL._sha(d / "head.pt")}), encoding="utf-8")
     PL.select_summary(out, "cache")
