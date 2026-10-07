@@ -211,12 +211,15 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
     if any(isinstance(n, (ast.Assign, ast.AnnAssign)) and stores_subprocess(n.value)
            for n in ast.walk(tree)):
         return ()  # annotated/container module aliases can hide mutation; they are outside the proof contract
-    if any(isinstance(n, ast.Call) and any(isinstance(arg, ast.Name) and arg.id in imported_subprocess
+    if any(isinstance(n, ast.Call) and any(stores_subprocess(arg)
            for arg in [*n.args, *(kw.value for kw in n.keywords)]) for n in ast.walk(tree)):
         return ()  # setattr/monkeypatch or any unknown consumer can replace the module's methods
     def scope_nodes(scope):
         def walk(n):
-            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            if isinstance(n, ast.ClassDef):
+                yield n  # the class name binds in this scope, but its body has a separate namespace
+                return
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
                 return
             yield n
             for child in ast.iter_child_nodes(n):
@@ -284,7 +287,7 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
                     and isinstance(n.ctx, (ast.Store, ast.Del))}
         shadowed.update(a.asname or a.name.split(".")[0] for n in nodes if isinstance(n, ast.Import) for a in n.names)
         shadowed.update(a.asname or a.name for n in nodes if isinstance(n, ast.ImportFrom) for a in n.names)
-        shadowed.update(n.name for n in scope.body if isinstance(n, ast.ClassDef))
+        shadowed.update(n.name for n in nodes if isinstance(n, ast.ClassDef))
         if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
             shadowed.update(n.arg for n in ast.walk(scope.args) if isinstance(n, ast.arg))
         defs = [n for n in scope.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]

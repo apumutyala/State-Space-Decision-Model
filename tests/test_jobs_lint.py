@@ -181,6 +181,9 @@ def test_runner_execution_detector_preserves_nested_literal_invocation():
     'modules: dict = {"sp": subprocess}\nmodules["sp"].run = lambda *args, **kwargs: None\ndef test_run():\n    subprocess.run(["bash", runner])',
     'def helper():\n    subprocess.run(["bash", runner])\nclass helper:\n    pass\ndef test_run():\n    helper()',
     'def helper():\n    subprocess.run(["bash", runner])\ndef test_run():\n    class helper:\n        pass\n    helper()',
+    'replace([subprocess])\ndef test_run():\n    subprocess.run(["bash", runner])',
+    'replace(module={"sp": subprocess})\ndef test_run():\n    subprocess.run(["bash", runner])',
+    'def helper():\n    subprocess.run(["bash", runner])\ndef test_run():\n    if True:\n        class helper:\n            pass\n    helper()',
 ])
 def test_runner_execution_detector_requires_trusted_reachable_calls(body):
     src = NL.join(['import subprocess', 'runner = "jobs/x/x_job.sh"', body])
