@@ -1,0 +1,41 @@
+{
+  "schema": "ssdm.l0h0_screen_registration_refresh.v1",
+  "refresh_reason": "agent-main integrated the L1 data and semantic-axis modules after the original L0h0 preparation; the frozen registration hashes the complete Python source trees, so the no-load gate correctly refused stale source identity.",
+  "source_merge_commit": "73810c6f563ccafa0095e17f3ab42f39e1b8b1bf",
+  "previous_registration_sha256": "a33e1e6ba1834732471acc067d6c4486d9e85316c0bbd3f26fb577e9dd8f2343",
+  "refreshed_registration_lf_sha256": "6442e00c53ab2dd51e583e4cf7af2b500d30cd1734f9f5df0e54d7baeb6e84f9",
+  "registration_source_count": {
+    "previous": 69,
+    "refreshed": 82
+  },
+  "preexisting_source_hash_change": [
+    "language_growth/training_records.py"
+  ],
+  "added_source_hashes": [
+    "language_growth/l1_world_training.py",
+    "language_growth/multirecord_calibration_split.py",
+    "language_growth/multirecord_data.py",
+    "language_growth/multirecord_eval.py",
+    "language_growth/multirecord_training.py",
+    "language_growth/semantic_axis_fixtures.py",
+    "language_growth/tests/test_l1_world_training.py",
+    "language_growth/tests/test_multirecord_calibration_split.py",
+    "language_growth/tests/test_multirecord_data.py",
+    "language_growth/tests/test_multirecord_distribution.py",
+    "language_growth/tests/test_multirecord_eval.py",
+    "language_growth/tests/test_multirecord_training.py",
+    "language_growth/tests/test_semantic_axis_fixtures.py"
+  ],
+  "visible_inputs_sha256": "7dcd53525fca971737fcd4e60a1b7ae9157977709dabd83be74e05de1e3736d6",
+  "evaluator_targets_sha256": "762274823fb2bf561419cf2c8435e9459dda27d7eba641f9c5b656bfed4065b5",
+  "protocol_changed": false,
+  "cohort_or_targets_changed": false,
+  "command": "python -m language_growth.rwkv_fact_name_screen --dry-run --out <fresh-directory>",
+  "result": "pass; same parsed registration and byte-identical inputs/targets as the refreshed prepared bundle",
+  "model_checkpoint_access": false,
+  "model_inference_or_training": false,
+  "gpu": false,
+  "index_or_heldout": false,
+  "cost_usd": 0,
+  "notes": "The checked-in registration was normalized from CRLF to LF to satisfy git diff --check; registration verification compares parsed JSON. The exact generated CLI output is CRLF on Windows, but its semantic registration and input/target bytes match the pinned prepared bundle."
+}

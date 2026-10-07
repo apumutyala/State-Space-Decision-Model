@@ -1,0 +1,1298 @@
+[
+  {
+    "field": "price",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-00",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:81a7d273e92387f6a02d3a828b4f1c6fc95f34068b26d520f056e249c60c5c51",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-00-0"
+  },
+  {
+    "field": "price",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-00",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:42850fdf507f5190a6d94948e11e0636c7353fb3d17b17790e115490d79e5217",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-00-1"
+  },
+  {
+    "field": "price",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-01",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:acc40a7b61d471983a7fddd7211dcadd071d9ec5d0decd01183da7ac9daf6d54",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-01-0"
+  },
+  {
+    "field": "price",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-01",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:d7e8bb4e8c2a74311eb1be61e1ab085c02148b2d986251bb5d6d9123f283ed1b",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-01-1"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-02",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:8c844f4e1007d9b738a8ec6e04c4f04514f850c03eeb49ffc3640104794ecce4",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-02-0"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-02",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:7f4b7fab5a3b76a0b3ad8e6a8f82356f2e2f290a7d50b00a05aaf27bac371754",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-02-1"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-03",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:d6da77e70f417e72b5c63fa5d7249c4c44f716adf14f95db30d3a6314aea5fcd",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-03-0"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-03",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:89f3b797b8506559fa0adc2c848e20f4f6c67cc15bc686231a91ad45d547e53c",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-03-1"
+  },
+  {
+    "field": "price",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-04",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:5fd25cfa79b6abd8f621eacf8306ecf526b32c79aa97a68d7ec8c42190c0a30d",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-04-0"
+  },
+  {
+    "field": "price",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-04",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:f30a0655cf8799aac037e585b34c37f6235270bf2af06b9757ea98abf340df4e",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-04-1"
+  },
+  {
+    "field": "price",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-05",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:94ab6fb4766b6d754ee1619e9ba03c89e80faddab9ef5e853f99ac0b94f9af6f",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-05-0"
+  },
+  {
+    "field": "price",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-05",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:655279d836ec7e71e60a96aff711b07aacb890092d10a7579f7c831489cd4e19",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-05-1"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-06",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:4cdf3dc2a5633ac6cbed692f93d9219909ec3a3b447347fab6461eef2ccaaec7",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-06-0"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-06",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:e917eb86d4d77002d3a6c6c1aeb18a494cc735b4e196a841be6f3c55d46eaec6",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-06-1"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-07",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:f1102a2355ad2177ca0252bdbf9f2c73bf3b825e22f3b814f13347090d755374",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-07-0"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "read",
+    "pair_id": "binding-screen-20261007-07",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:0d2792ec86a1e553ed0d6067ce8e5f39868b14b0d44c67f6ee56bc7d06a939a1",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-07-1"
+  },
+  {
+    "field": "price",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-08",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:fe224fa8d19dadf5d761c7b4bbbbae15e08b3392e03088dfc3525e9465d7396c",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-08-0"
+  },
+  {
+    "field": "price",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-08",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:23a7a5cb1919f9e140d41b34db28c0a479b75262cc6de2645c8531218fed009f",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-08-1"
+  },
+  {
+    "field": "price",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-09",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:864e0f7c8324ab134a07c168e4896f8bde131d40b57dbaa9bf7c810183faa3fc",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-09-0"
+  },
+  {
+    "field": "price",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-09",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:b87f85b509deaa6b36f0bb0becd2192fe45d47876e945e2f9d32d1385a409aa3",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-09-1"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-10",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:961b3da22164ea16165aa641b8f8f83898809cef1ff5fa797e1997ed6e85e488",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-10-0"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-10",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:0a4a8d2969c562a9df70947de2b1e1aa75f843062b4652dacce9b8e14a7dd335",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-10-1"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-11",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:55ebf86a96ffa29b8a5834574c5b4af007b6d1b734b356c5bd0c6f06ee80e2e1",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-11-0"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-11",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:0414123217dd4eb2f244a166b5748a346bf8b99157a8acb35894aa5dbb107f31",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-11-1"
+  },
+  {
+    "field": "price",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-12",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:5403861b3937ae77fd401ce5573696bd08978a2cc50809ef5be4d44bba2ec96c",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-12-0"
+  },
+  {
+    "field": "price",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-12",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:bd77e038bc3d91bf6e532c8c3f5ba6aa2244eb723f19bab07afebdc84d0b5fbb",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-12-1"
+  },
+  {
+    "field": "price",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-13",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:d14abc3993d0f77ca26d06909e896e214b025a25cd1eda131e5e7e7bca0b7c47",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-13-0"
+  },
+  {
+    "field": "price",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-13",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:98613e66969d3f3a1959d55a5c62683d82842dfc0faaa6b671e9d222d1a4ce25",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "price",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-13-1"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-14",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:1205c695c7710761e74b7971e60b808cab3ba24541aec6dcc27d37dca61d70ce",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-14-0"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-14",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:0350019cd4be2c3c9bcfc49270369d1e878ef8af4816bc9c8810cb7fcc8d2214",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-1",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-1",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-14-1"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-15",
+    "pair_member": 0,
+    "program": {
+      "context_ref": "binding-screen-context:dc6463ae2a2c22385be433f0bc4ab63b69ca81e9f023857b256bfd48305fad4f",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-15-0"
+  },
+  {
+    "field": "warranty_months",
+    "kind": "explain",
+    "pair_id": "binding-screen-20261007-15",
+    "pair_member": 1,
+    "program": {
+      "context_ref": "binding-screen-context:e303b12cb3416f790ff64406fb5e9576bf58cada9c8b0c32c0c6d327757e4f25",
+      "nodes": [
+        {
+          "field": "warranty_months",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "binding-screen-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        },
+        {
+          "id": "n3",
+          "op": "ExplainDerivation",
+          "speech_act": "n2"
+        }
+      ],
+      "outputs": [
+        "n3"
+      ],
+      "policy_ref": "binding-screen-public-v1",
+      "registry_ref": "binding-screen-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "target_record_ref": "binding-screen-record-2",
+    "targets": [
+      {
+        "field": "warranty_months",
+        "record_ref": "binding-screen-record-2",
+        "slot": "fact"
+      }
+    ],
+    "task_id": "binding-screen-20261007-15-1"
+  }
+]
