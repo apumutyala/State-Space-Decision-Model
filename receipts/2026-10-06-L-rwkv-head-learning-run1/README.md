@@ -12,7 +12,7 @@ The independent LM-readout baseline was unchanged, including all served probabil
 
 The run made 24 updates × batch size 2 = 48 slot exposures, or 75% of the 64-slot training corpus; it did not complete one full epoch. Mean training losses over steps 1–8, 9–16, and 17–24 were 64.323, 4.119, and 1.752. Fixed training-slot accuracy was not logged, so the current result cannot distinguish an incompletely fit mapping from transfer or free-running rollout failure.
 
-This result does not falsify semantic-program learning in general. It falsifies the claim that this exact 24-step, 24-world recipe improved these 12 held-apart synthetic worlds. Before another training recipe, the next proposed $0 diagnostic is one teacher-forced pass over the saved head checkpoint on all 64 training slots and 32 validation slots. That would measure fit versus transfer without optimizer steps; it is proposed, not yet preregistered or run.
+This result does not falsify semantic-program learning in general. It shows no observed benefit for this exact 24-step, 24-world recipe on these 12 held-apart synthetic worlds; its interval is wide, so the population effect remains unresolved. The next proposed $0 diagnostic is one teacher-forced pass over the saved head checkpoint on all 64 training slots and 32 validation slots. That would measure fit versus transfer without optimizer steps; it is proposed, not yet preregistered or run.
 
 ## Reproduction and scope
 
