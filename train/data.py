@@ -32,6 +32,7 @@ class Item:
     id: str
     row: LayoutRow
     label: int
+    axis_target: tuple[float, ...] | None = None  # training-only; never copied into LayoutRow/HeadInput
 
 
 def items_from_records(records: Iterable[dict[str, Any]], encode: EncodeFn, layout: str = "ordered",

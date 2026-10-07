@@ -81,10 +81,13 @@ class TrainConfig:
     #: with row_batch > 1: max padded tokens per call (rows x longest row of the group); 0 = no limit. A row longer
     #: than the budget runs alone. Bounds the per-call activation memory (jobs/cell_step_profile JOB_SPEC, A1).
     row_tokens: int = 0
+    axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
 
     def to_json(self) -> dict:
         d = asdict(self)
         d["loss"] = asdict(self.loss)
+        if d["axis_loss_weight"] == 0.0:
+            d.pop("axis_loss_weight")  # preserve legacy config identities
         for k in self.EXECUTION:  # at their defaults the execution fields are left out: old records stay identical
             if d[k] == getattr(TrainConfig, k):
                 d.pop(k)
@@ -236,11 +239,27 @@ class Trainer:
     def _row_loss(self, batch: list[Item], weight: float) -> float:
         with self._autocast():
             fw = self.model([i.row for i in batch])
-        lp = fw.log_probs.float()
-        y = torch.tensor([i.label for i in batch], device=lp.device)
-        loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss) * weight
+        loss = self._supervised_loss(fw, batch) * weight
         loss.backward()
         return float(loss.detach())
+
+    def _supervised_loss(self, fw, batch: list[Item]) -> torch.Tensor:
+        lp = fw.log_probs.float()
+        y = torch.tensor([i.label for i in batch], device=lp.device)
+        loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss)
+        weight = self.cfg.axis_loss_weight
+        if not isinstance(weight, (int, float)) or not 0 <= weight < float("inf"):
+            raise ValueError("axis_loss_weight must be finite and nonnegative")
+        if weight:
+            z = fw.head.semantic_axes
+            if (z is None or z.shape != (len(batch), 6)
+                    or any(i.axis_target is None or len(i.axis_target) != 6 for i in batch)):
+                raise ValueError("axis supervision requires a [B,6] head port and six targets per Item")
+            targets = torch.tensor([i.axis_target for i in batch], device=z.device, dtype=z.dtype)
+            if not torch.isfinite(targets).all() or not torch.isfinite(z).all():
+                raise ValueError("axis targets and port must be finite")
+            loss = loss + weight * torch.nn.functional.mse_loss(z, targets)
+        return loss
 
     def train_step(self) -> float:
         self.model.train()
@@ -258,9 +277,7 @@ class Trainer:
             batch = self._next_batch()
             with self._autocast():
                 fw = self.model([i.row for i in batch])
-            lp = fw.log_probs.float()
-            y = torch.tensor([i.label for i in batch], device=lp.device)
-            loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss) / self.cfg.grad_accum
+            loss = self._supervised_loss(fw, batch) / self.cfg.grad_accum
             loss.backward()
             total += float(loss.detach())
         return self._finish_step(total)
