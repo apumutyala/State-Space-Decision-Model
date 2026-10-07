@@ -285,6 +285,26 @@ def test_active_reservation_jobs_are_added_to_workspace_cap(tmp_path):
     assert result["cost"]["set_workspace_cap_increment_usd"] == 16
 
 
+@pytest.mark.parametrize("names,parents,expected_cap", [
+    (["tiny"], ["tiny"], None),  # one occurrence cannot cover parent and child
+    (["tiny", "tiny"], ["tiny"], 8),
+    (["parent", "tiny"], ["parent", "parent"], None),
+    (["parent", "parent", "tiny"], ["parent", "parent"], 16),
+])
+def test_chained_job_counts_each_parent_and_child_instance(tmp_path, names, parents, expected_cap):
+    p = params(workspace_cap_jobs=names, workspace_cap_parent_jobs=parents,
+        submit={**params()["submit"],
+        "depends_on": {"job": "parent-id", "require": "result.ok == true"}})
+    repo, data, sha = make_repo(tmp_path, p=p)
+    if expected_cap is None:
+        with pytest.raises(launch.LaunchError, match="workspace_cap_jobs"):
+            run(repo, data, sha, tmp_path / "o", run_job_tests=False)
+    else:
+        result = run(repo, data, sha, tmp_path / "o", run_job_tests=False)
+        assert result["cost"]["workspace_cap_jobs"] == names
+        assert result["cost"]["set_workspace_cap_increment_usd"] == expected_cap
+
+
 @pytest.mark.parametrize("case,match", [
     ("build_timeout", "build_timeout"),                       # L-09, new jobs cannot be waived
     ("backslash_n", "no_backslash_n"),                        # L-10

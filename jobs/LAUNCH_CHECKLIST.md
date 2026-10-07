@@ -71,7 +71,8 @@ The coordinator then works through `submit.json` in this order:
 3. Add every other active reservation with a repeated `--active-reservation-job <costs.PARAMS job key>`. Then run
    `set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)`. The increment includes the configured
    `workspace_cap_jobs` plus these active reservations; a chained job must declare its `workspace_cap_parent_jobs`
-   and include them in `workspace_cap_jobs`, or launch is refused. Repeated job keys count separate active instances.
+   and include every parent instance plus a separate launched-child instance in `workspace_cap_jobs`, or launch is
+   refused. Repeated job keys count separate active instances, including when parent and child use the same recipe.
    For RWKV7 stage B, it covers both `rwkv7_readout` and `rwkv7_lora`, not only the child. The operator must reconcile
    this list against the live workspace before submitting.
 4. Paste the calls from `submit.json`.

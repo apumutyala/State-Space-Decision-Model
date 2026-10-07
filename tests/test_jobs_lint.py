@@ -195,3 +195,11 @@ def test_new_job_must_declare_decision_rule(tmp_path):
     assert lint.chk_decision_rule({"decision_rule": None, "no_verdict_reason": "throughput only"}, **kw)[0]
     # the legacy fallbacks never apply to a non-legacy params file
     assert not lint.chk_decision_rule({}, **{**kw, "job": "m2_parent_arm", "rel": "jobs/m2_parent_arm/job_params_x.json"})[0]
+
+
+def test_coordination_candidate_tip_exception_replaces_blanket_paid_merge_rule():
+    policy = " ".join((ROOT / "COORDINATION.md").read_text(encoding="utf-8").split())
+    assert "Also merge before any paid run" not in policy
+    assert "Before a paid champion/integration run, merge its exact code to `agent-main`." in policy
+    assert ("A reviewed pre-promotion measurement may instead use the exact pushed "
+            "`stack/<family>/<variant>` tip through `--candidate-branch`;") in policy

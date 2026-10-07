@@ -70,7 +70,10 @@ Merge when either of these is true:
 1. **Milestone:** a gate in `PLAN.md` passes or fails, with its receipt.
 2. **Unblock:** the other track needs the change (new interface version, harness fix, checkpoint pointer).
 
-Also merge before any paid run, so the exact code that ran is in shared history.
+Before a paid champion/integration run, merge its exact code to `agent-main`.
+A reviewed pre-promotion measurement may instead use the exact pushed
+`stack/<family>/<variant>` tip through `--candidate-branch`; keep that code on
+the candidate branch until promotion.
 
 ## When `agent-main` goes to `main`
 

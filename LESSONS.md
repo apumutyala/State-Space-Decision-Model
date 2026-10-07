@@ -199,3 +199,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: launcher pricing used one-job worst case and ignored simultaneous reservations.
 - **Check:** chained jobs list required parents in `workspace_cap_parent_jobs` and all fixed concurrent cost keys in `workspace_cap_jobs`; repeated `--active-reservation-job` keys count separate instances. Tests cover child-only refusal, parent+child, and repeated active reservations.
 - **Status:** ENFORCED.
+
+### L-38 Parent and child reservations shared one cost-key occurrence
+- Date: 2026-10-07 (PR #100 independent follow-up review).
+- Symptom: a parent and child using the same $3.96 recipe passed with one `workspace_cap_jobs` occurrence and a $4 ceiling instead of $8. Repeated declared parents also passed with only one parent occurrence. The candidate-tip launch path still contradicted the blanket instruction to merge before every paid run.
+- Cost: $0; reproduced on CPU before launch.
+- Root cause: parent and child checks used set membership independently, so one occurrence satisfied multiple instances; the policy update left its superseded sentence in place.
+- **Check:** `workspace_cap_increment` checks parent multiplicity and requires a remaining launched-child occurrence. `tests/test_launch.py::test_chained_job_counts_each_parent_and_child_instance` rejects under-reserved same-recipe and repeated-parent lists and checks their correctly priced alternatives. `tests/test_jobs_lint.py::test_coordination_candidate_tip_exception_replaces_blanket_paid_merge_rule` preserves the reviewed exact candidate-tip exception while champion/integration runs still require merged code.
+- **Status:** ENFORCED.
