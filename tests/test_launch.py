@@ -294,10 +294,12 @@ def test_submit_args_equal_the_job_spec_field_by_field(rel):
     # this file's own mode, plus legacy modes that run on the base params (probe9b lean: no job_params_lean.json)
     keys = [k for k in launch.LEGACY_SUBMIT if k[0] == job and (
         k[1] == mode or (mode is None and k[1] and not (ROOT / f"jobs/{job}/job_params_{k[1]}.json").exists()))]
-    assert keys, f"{rel}: no LEGACY_SUBMIT entry"
+    if p.get("submit"):  # a new job carries its own submit block (launch.py); checked against its JOB_SPEC block 0
+        keys = [(job, mode)]
+    assert keys, f"{rel}: no LEGACY_SUBMIT entry and no submit block"
     text = (ROOT / f"jobs/{job}/JOB_SPEC.md").read_text(encoding="utf-8")
     for key in keys:
-        idx, over, evidence = SPEC_BLOCK[key]
+        idx, over, evidence = SPEC_BLOCK.get(key, (0, {}, [])) if p.get("submit") else SPEC_BLOCK[key]
         for e in evidence:
             assert e in text, f"{key}: override evidence {e!r} not in JOB_SPEC"
         want = dict(spec_blocks(job)[idx])
@@ -307,7 +309,7 @@ def test_submit_args_equal_the_job_spec_field_by_field(rel):
         if marker:
             want["checks"] = json.loads(json.dumps(want["checks"]).replace(
                 want["checks"]["success"]["check"]["all_of"][0]["path"], f"/output/{marker}"))
-        got = launch.submit_args(job, key[1], p, launch.LEGACY_SUBMIT[key], "c" * 64)
+        got = launch.submit_args(job, key[1], p, p.get("submit") or launch.LEGACY_SUBMIT[key], "c" * 64)
         assert want.pop("idempotency_key").split("<")[0] == got["idempotency_key"][:-12], key
         want.pop("context_id", None)
         label = want.pop("label", None)

@@ -1,0 +1,41 @@
+{
+ "bytes_per_token_per_layer_per_d": {
+  "q9af": 287.189453125,
+  "rwkv7": 297.5
+ },
+ "caveats": [
+  "CPU path: torch_chunk_gated_delta_rule fallback (GPU uses fla chunk kernels, which save less)",
+  "tiny head dims (8) vs real (128): state-size terms are under-weighted",
+  "K=4 continuations; the fork's K state copies add K x state bytes per layer independent of T"
+ ],
+ "lengths": [
+  128,
+  512
+ ],
+ "projection_9b": {
+  "anchor_rwkv7_mb_per_token_layer": 1.0,
+  "headroom_gb": {
+   "q9af": 58.841312885284424,
+   "rwkv7": 45.208465576171875
+  },
+  "max_T_no_ckpt": {
+   "q9af": 1950.5218334884062,
+   "rwkv7": 758.9093237704918
+  },
+  "q9af_gb_per_1k_tokens": 30.890966386554624,
+  "q9af_mb_per_token_layer": 0.965342699579832,
+  "rwkv7_gb_per_1k_tokens": 61.0
+ },
+ "ratio_q9af_over_rwkv7": 0.965342699579832,
+ "raw_saved_bytes": {
+  "q9af": [
+   24744008,
+   52975880
+  ],
+  "rwkv7": [
+   5403264,
+   20025984
+  ]
+ },
+ "tiny_hidden": 64
+}
