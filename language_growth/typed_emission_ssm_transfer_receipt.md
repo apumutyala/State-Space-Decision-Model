@@ -164,4 +164,4 @@ the one condition in a new directory, set `CUDA_VISIBLE_DEVICES=-1`,
 `OMP_NUM_THREADS=2`, `MKL_NUM_THREADS=2`, then invoke
 `python -m language_growth.typed_emission_ssm_transfer prepare --out NEW_DIR`
 and `python -m language_growth.typed_emission_ssm_transfer run --out NEW_DIR`.
-Do not rerun into the preserved directory. No PR was opened for this condition.
+Do not rerun into the preserved directory. The fold is recorded in PR #81.
