@@ -208,3 +208,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the earlier recipe's guard was retained without adding the longer fit and complete reporting costs.
 - **Check:** `language_growth/tests/test_rwkv_head_ce96.py::test_measured_operational_budget_and_exact_watchdog_boundary` recomputes the projection from preserved CPU timestamps, pins the 1200-second ceiling and proves its exact stop boundary. The registration freezes those timing-evidence hashes; full trainer-config parity still permits only the scientific `max_steps` change.
 - **Status:** ENFORCED for this fixed workload. All 96 updates and reporting passes remain; only the operational ceiling increases.
+
+### L-L0-04 A late reporting stop must preserve a partial result
+- Date: 2026-10-06 (96-update CPU attempt).
+- Symptom: the 3 GiB running-memory guard stopped the worker at 839.938s after all 96 updates and free-running outputs, but after only 95 of 96 final teacher-forced row results; the clean final receipt was never written.
+- Cost: $0 billed; one bounded local CPU attempt. Existing raw files and both head checkpoints are preserved.
+- Root cause: the final report was written only after the whole reporting pass, so a late guard stop left completed measurements without a consolidated receipt.
+- **Check:** `language_growth/tests/test_rwkv_head_partial_recovery.py::test_95_of_96_recovery_blocks_model_imports_preserves_files_and_counts_missing_failure` reconstructs all frozen identities from JSON, counts the missing row as failed, nulls incomplete full-split CE, preserves file hashes and forbids model-runtime imports. The parent invokes recovery only after timeout/memory stop and retains its original stop code; malformed/duplicate identities reject.
+- **Status:** ENFORCED by the JSON-only partial-recovery helper and parent stop hook. Recovery performs no retry or model call and never labels a stopped attempt a clean success.

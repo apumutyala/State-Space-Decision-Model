@@ -1,0 +1,113 @@
+{
+  "checkpoints_hashed_without_deserialization": [
+    {
+      "path": "checkpoint-after/ckpt-step0000096.pt",
+      "sha256": "5b10920d1b5cb3ef07b329c71fb6653e93a22f6fa916a859b6386c9a284cece9",
+      "size_bytes": 781369
+    },
+    {
+      "path": "checkpoint-before/ckpt-step0000000.pt",
+      "sha256": "cfa66690ecb7ba059505f6dde50aa85b81580633d406fb76574046dac56c1d5b",
+      "size_bytes": 533543
+    }
+  ],
+  "clean_success": false,
+  "copied_evidence_sha256": {
+    "after.json": "8a28a215b862f0c418c4a7232ccfb9b8a6d1e946c92770c234537cd2aaf10fde",
+    "before.json": "618c645ac7f2aa6c762bc3c62c84f707801e1e23541a0204f10c0fb25d60223a",
+    "raw.jsonl": "30ad89f918937b1b2e33b5f88842cf458d56707b17c230e177a8df27d6834929",
+    "teacher-after-raw.jsonl": "b54336dcee2494d5a333631f74926b9a0396ea7fb5aca99ecccfbb70c34be92d",
+    "teacher-before-raw.jsonl": "6af3e75de9d0ef46a93ea0fc43b6b085c96c67fcc5b6c873e9483718b528e96d",
+    "teacher-before.json": "33c57a3fc8efbe50cb42381a772c68dbba377179494086156af85b659dedf422"
+  },
+  "executed_source_commit": "ce1dcfb7d3bb65a5e6997624b17507ede3f0df2e",
+  "external_artifacts_count": 16,
+  "external_artifacts_rehashed_unchanged": true,
+  "final_teacher_missing_rows": [
+    {
+      "qid": "slot-004-relation",
+      "split": "development_validation",
+      "task_id": "synthetic-development_validation-9202-11"
+    }
+  ],
+  "historical_source_recovery_source_raw_git_blobs_verified": 103,
+  "kernel_after": 10,
+  "kernel_before": 12,
+  "lint": {
+    "diff_check_exit_code": 0,
+    "existing_legacy_waivers_retained": true,
+    "jobs.common.lint_exit_code": 0
+  },
+  "model_rerun_or_missing_row_retry": false,
+  "partial_receipt_sha256": "4ca61e2f9f631f811cb493bb41b4e742a4301f97a0d7b7b57c89955925ad8c4c",
+  "recovery_source_sha256": {
+    "language_growth/rwkv_head_ce96_evaluation.py": "c3fda86c3822f0d1106e48c89fc103e8c2bfc9eba913f275601bdcc6c6a642a9",
+    "language_growth/rwkv_head_fit_audit.py": "dbcc1d1bf26dad35b394f84d3cc76e346e05ca849d70dffdbbeea8f8f76d1663",
+    "language_growth/training_records.py": "cdd26b7218bfb1ce19af817e96fa5001ec8969b00f93c8eb33934b97fdc832bb"
+  },
+  "schema": "ssdm.rwkv-head-ce96-partial-verification.v1",
+  "scope": "Pure-JSON partial recovery and tiny CPU/guard verification; no campaign model load, fit or retry during recovery.",
+  "status": "partial_watchdog_stop",
+  "stop": {
+    "at_utc": "2026-10-07T03:24:29.211578+00:00",
+    "elapsed_seconds": 839.9379999999946,
+    "event": "launcher_stopped",
+    "exit_code": 125,
+    "minimum_available_bytes": 3215503360,
+    "reason": "memory_guard"
+  },
+  "teacher_full_split_summary": {
+    "development_train": {
+      "accuracy_all": 0.359375,
+      "ce": 1.9049174077917996,
+      "ce_coverage": 1.0,
+      "ce_on_successful_rows": 1.9049174077917996,
+      "correct": 23,
+      "kind": "all",
+      "n": 64,
+      "n_failed": 0,
+      "n_ok": 64,
+      "qtype": "all",
+      "slot": "all",
+      "split": "development_train"
+    },
+    "development_validation": {
+      "accuracy_all": 0.3125,
+      "ce": null,
+      "ce_coverage": 0.96875,
+      "ce_on_successful_rows": 2.1804732412340178,
+      "correct": 10,
+      "kind": "all",
+      "n": 32,
+      "n_failed": 1,
+      "n_ok": 31,
+      "qtype": "all",
+      "slot": "all",
+      "split": "development_validation"
+    }
+  },
+  "tests": {
+    "command": [
+      "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "pytest",
+      "language_growth/tests/test_rwkv_head_partial_recovery.py",
+      "language_growth/tests/test_rwkv_head_ce96.py",
+      "language_growth/tests/test_rwkv_head_learning.py",
+      "language_growth/tests/test_rwkv_head_fit_audit.py",
+      "language_growth/tests/test_rwkv_decision_head.py",
+      "language_growth/tests/test_rwkv_cpu_encoder_identity.py",
+      "language_growth/tests/test_rwkv7_cpu_parent.py",
+      "tests/test_jobs_lint.py",
+      "-q"
+    ],
+    "elapsed_seconds": 261.65,
+    "exit_code": 0,
+    "passed": 121
+  },
+  "torch_import_blocked_during_actual_recovery": true,
+  "useful_after": 1,
+  "useful_before": 2
+}

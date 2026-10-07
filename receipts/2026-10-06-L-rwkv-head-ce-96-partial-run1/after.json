@@ -1,0 +1,748 @@
+[
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:354039954c0d46758b40178e13c07b497e2bfa481dbb6f124cb0a87fb3fc5554",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Assert one selected fact",
+        "matches_reference_slot": true,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-2 field price",
+        "matches_reference_slot": false,
+        "selected": "f001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-0",
+    "text": "At \"2026-10\", \"Price\" for \"Hearth\" has value 288.31 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:a7716ac4bcdaa1b4c28908d4c77d8cafd4a20cf0bdd03c3b997c8d0730068358",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Explain a checked assertion of one selected fact",
+        "matches_reference_slot": false,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-2 field price",
+        "matches_reference_slot": false,
+        "selected": "f001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-1",
+    "text": "At \"2026-10\", \"Price\" for \"Indigo\" has value 264.26 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [
+      "left",
+      "relation",
+      "right"
+    ],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:f6a483299a45484aa687ef93e122fc79d652f887c778fbaac172b71b4f49b837",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-2"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Compare two selected typed values and assert the selected relation",
+        "matches_reference_slot": false,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": null,
+        "matches_reference_slot": false,
+        "selected": "f003",
+        "selected_description": "Fact development-record-2 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-2",
+    "text": "At \"2026-10\", \"Price\" for \"Lumen\" has value 213.23 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:3fcd9b03f3c781ef88de058fa13b848ff42e3573a6d777e6b5989d81e541986e",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Assert one selected fact",
+        "matches_reference_slot": true,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-2 field warranty_months",
+        "matches_reference_slot": false,
+        "selected": "f001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-3",
+    "text": "At \"2026-10\", \"Price\" for \"Lumen\" has value 254.56 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:59f630c77f85000f9f93a10a155317674a1ce068ee76c5488c76236a91ba891c",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Explain a checked assertion of one selected fact",
+        "matches_reference_slot": false,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-1 field price",
+        "matches_reference_slot": true,
+        "selected": "f001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-4",
+    "text": "At \"2026-10\", \"Price\" for \"Hearth\" has value 225.15 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [
+      "left",
+      "relation",
+      "right"
+    ],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:19fa41a88b465e1997f92fccb57aaccda8cca1f844d3efb3f448602546649484",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Compare two selected typed values and assert the selected relation",
+        "matches_reference_slot": false,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": null,
+        "matches_reference_slot": false,
+        "selected": "f001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-5",
+    "text": "At \"2026-10\", \"Price\" for \"Grove\" has value 240.28 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:c649b6b5b41b78e53f30d672c7bcb0ede0f0a8cdd79d092b6accad06f216665f",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Assert one selected fact",
+        "matches_reference_slot": true,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-1 field warranty_months",
+        "matches_reference_slot": false,
+        "selected": "f001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-6",
+    "text": "At \"2026-10\", \"Price\" for \"Indigo\" has value 288.70 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:ef4fe3c503a7b1dc15ebe547312001a79f13338e8e246c0d1bdf5ddebd624385",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Explain a checked assertion of one selected fact",
+        "matches_reference_slot": false,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-2 field warranty_months",
+        "matches_reference_slot": false,
+        "selected": "f001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-7",
+    "text": "At \"2026-10\", \"Price\" for \"Juniper\" has value 213.48 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 4,
+    "kernel_accepted": false,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:0a1fbad274fcdc3371ac3fc1ab110f1a5af9e38b65203d5ff0e38df97bc81702",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "field": "price",
+          "id": "n2",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n3",
+          "left": {
+            "node": "n1",
+            "project": "object"
+          },
+          "op": "Compare",
+          "relation": "greater_than",
+          "right": {
+            "node": "n2",
+            "project": "object"
+          }
+        },
+        {
+          "id": "n4",
+          "op": "Assert",
+          "proposition": "n3"
+        }
+      ],
+      "outputs": [
+        "n4"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 4,
+    "reason": "unsupported_assertion",
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Compare two selected typed values and assert the selected relation",
+        "matches_reference_slot": true,
+        "selected": "op003",
+        "selected_description": "Compare two selected typed values and assert the selected relation",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-1 field warranty_months",
+        "matches_reference_slot": false,
+        "selected": "v001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "left"
+      },
+      {
+        "expected_description": "Fact development-record-2 field warranty_months",
+        "matches_reference_slot": false,
+        "selected": "v001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "right"
+      },
+      {
+        "expected_description": "Relation less_than",
+        "matches_reference_slot": false,
+        "selected": "r001",
+        "selected_description": "Relation greater_than",
+        "slot": "relation"
+      }
+    ],
+    "status": "kernel_rejected",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-8",
+    "text": null
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:cfe18313dc5c61ce5c78630671f97a2f33e18b7afbdd0691234a5af75cc1a01b",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Assert one selected fact",
+        "matches_reference_slot": true,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-1 field price",
+        "matches_reference_slot": true,
+        "selected": "f001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": true,
+    "task_id": "synthetic-development_validation-9202-9",
+    "text": "At \"2026-10\", \"Price\" for \"Grove\" has value 257.38 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 2,
+    "kernel_accepted": true,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:862d4f1a20e0f33a6f3288d41439190f4c1cfa8edefd5403de0ef785446c7a54",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n2",
+          "op": "Assert",
+          "proposition": "n1"
+        }
+      ],
+      "outputs": [
+        "n2"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 2,
+    "reason": null,
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Explain a checked assertion of one selected fact",
+        "matches_reference_slot": false,
+        "selected": "op001",
+        "selected_description": "Assert one selected fact",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-2 field price",
+        "matches_reference_slot": false,
+        "selected": "f001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "fact"
+      }
+    ],
+    "status": "accepted",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-10",
+    "text": "At \"2026-10\", \"Price\" for \"Hearth\" has value 290.50 \"USD\"."
+  },
+  {
+    "effective_budget": {
+      "max_proposal_calls": 4,
+      "max_repair_attempts": 0,
+      "max_repair_calls": 0
+    },
+    "forward_calls": 4,
+    "kernel_accepted": false,
+    "missing_reference_slots": [],
+    "program": {
+      "context_ref": "synthetic-development-context-v1:c562fd8915ae60b132e12315b16a25e85d7bcc04eedefa004a6cdb9c4bd190e4",
+      "nodes": [
+        {
+          "field": "price",
+          "id": "n1",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "field": "price",
+          "id": "n2",
+          "op": "ReadFact",
+          "record_ref": "development-record-1"
+        },
+        {
+          "id": "n3",
+          "left": {
+            "node": "n1",
+            "project": "object"
+          },
+          "op": "Compare",
+          "relation": "greater_than",
+          "right": {
+            "node": "n2",
+            "project": "object"
+          }
+        },
+        {
+          "id": "n4",
+          "op": "Assert",
+          "proposition": "n3"
+        }
+      ],
+      "outputs": [
+        "n4"
+      ],
+      "policy_ref": "synthetic-development-public-v1",
+      "registry_ref": "synthetic-development-registry-v1",
+      "schema": "ssdm.semantic_program.v0.1",
+      "style": "plain"
+    },
+    "provider_calls": 4,
+    "reason": "unsupported_assertion",
+    "repair_requests": 0,
+    "slot_attribution": [
+      {
+        "expected_description": "Compare two selected typed values and assert the selected relation",
+        "matches_reference_slot": true,
+        "selected": "op003",
+        "selected_description": "Compare two selected typed values and assert the selected relation",
+        "slot": "operation"
+      },
+      {
+        "expected_description": "Fact development-record-1 field warranty_months",
+        "matches_reference_slot": false,
+        "selected": "v001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "left"
+      },
+      {
+        "expected_description": "Fact development-record-2 field warranty_months",
+        "matches_reference_slot": false,
+        "selected": "v001",
+        "selected_description": "Fact development-record-1 field price",
+        "slot": "right"
+      },
+      {
+        "expected_description": "Relation less_than",
+        "matches_reference_slot": false,
+        "selected": "r001",
+        "selected_description": "Relation greater_than",
+        "slot": "relation"
+      }
+    ],
+    "status": "kernel_rejected",
+    "task_correct": false,
+    "task_id": "synthetic-development_validation-9202-11",
+    "text": null
+  }
+]

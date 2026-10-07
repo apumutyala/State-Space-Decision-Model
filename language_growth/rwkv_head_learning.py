@@ -182,12 +182,28 @@ def launch(out):
     try:
         send.send_bytes(secret)
         send.close()
-        return supervise(handle, raw, available=lambda: psutil.virtual_memory().available)
+        return recover_stopped_run(out, supervise(handle, raw, available=lambda: psutil.virtual_memory().available))
     finally:
         send.close()
         if handle.poll() is None:
             handle.kill()
             handle.wait()
+
+
+def recover_stopped_run(out, result):
+    """Parent-only evidence recovery after the owned worker is terminal."""
+    if result in (124, 125):
+        from language_growth.rwkv_head_ce96_evaluation import recover_partial
+        try:
+            recover_partial(out)
+        except Exception as exc:
+            # Preserve the stop code and existing raw evidence even on recovery failure.
+            try:
+                with (Path(out) / "partial_recovery_error.json").open("x", encoding="utf-8") as stream:
+                    json.dump({"exception_type": type(exc).__name__, "message": str(exc)}, stream)
+            except FileExistsError:
+                pass
+    return result
 
 
 class _ProcessHandle:
