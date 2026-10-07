@@ -54,7 +54,7 @@ discordant pairs: 2,483 items only stock got right, against 768 only the hybrid 
 
 Both rejections came from the cosine floor alone. L27's step dNLL of 0.0419 was inside its 0.05 bound, and both
 cumulative values were inside 0.15. Each later step got fewer training tokens (33.8M down to 18.7–20.5M). Hidden_cos
-fell steadily with each step, by about 0.005–0.009 per layer. The last two layers were measured on a model that
+fell with each step, by about 0.005–0.009 per layer through L3, then 0.023 at L27. The last two layers were measured on a model that
 already had 6 converted layers.
 
 ## Curve: attention layers kept vs quality
