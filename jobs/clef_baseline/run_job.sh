@@ -91,13 +91,13 @@ stage() { echo "== $(date -u +%FT%TZ) $*" | tee -a "$OUT/stages.log"; hb; \
 fail() { echo "{\"ok\": false, \"exit\": $1, \"stage\": \"$2\", \"release\": \"$RELEASE\", \"job\": \"$JOB\", \"rows\": \"$ROWS\", \"dry_run\": $([ "$DRY" = 1 ] && echo true || echo false)}" > "${GMN_RESULT_PATH:-$OUT/result.json}"; exit "$1"; }
 # scoring / composite exit 3 or 4 = a results file the strict reader refused (harness/jsonl.py) -> 17
 score_rc() { case "$1" in 0) ;; 3|4) fail 17 "$2" ;; *) fail 13 "$2" ;; esac; }
-# rate-guarded run: guarded <phase> <cap-min> <results> <total> <check-after-min> <fail-code> -- cmd...
+# rate-guarded run: guarded <phase> <cap-min> <results path under $OUT> <total> <check-after-min> <fail-code> -- cmd...
 guarded() {
-  local phase=$1 capm=$2 res=$3 total=$4 after=$5 code=$6; shift 7
+  local phase=$1 capm=$2 rel=$3 total=$4 after=$5 code=$6; shift 7
   # the guard execs its child without a shell: give it this shell's python by absolute path (on Windows dry runs a bare
   # "python" can resolve to the interpreter's own directory instead of PATH)
   [ "$1" = "python" ] && set -- "$(command -v python)" "${@:2}"
-  python -X utf8 -m jobs.common.rate_guard run --results "$res" --total "$total" --cap-min "$capm" \
+  python -X utf8 -m jobs.common.rate_guard run --results "$OUT/$rel" --total "$total" --cap-min "$capm" \
       --check-after-min "$after" --exclude-startup --report "$OUT/env/rate_guard_${phase}.json" -- "$@"
   local rc=$?
   case $rc in 0) ;; 15|124) fail 18 "${phase}_rate_guard" ;; *) fail "$code" "$phase" ;; esac
@@ -138,7 +138,7 @@ if [ "$DRY" = "1" ]; then
 else
   # fla #640 (jobs/common/fla_guard.py): refuse the image (exit 5) unless torch 2.13 / triton >= 3.7.1 with fla's Triton
   # backward pinned and a tiny gated fwd+bwd runs on this GPU. Before the weights download and every GPU phase.
-  python -I "$APP/jobs/common/fla_guard.py" --out "$OUT/env/fla_guard.json" > "$OUT/env/fla_guard.log" 2>&1 || fail 5 fla_guard
+python -I /app/jobs/common/fla_guard.py --out "$OUT/env/fla_guard.json" > "$OUT/env/fla_guard.log" 2>&1 || fail 5 fla_guard
   stage "S0b download $REPO@$REV"
   SNAP=$(python - <<EOF
 from huggingface_hub import snapshot_download
@@ -175,7 +175,7 @@ if [ "$JOB" = "A" ] || [ "$JOB" = "I" ]; then
   rc=$?; case $rc in 0) ;; 15) fail 18 index_preflight ;; *) fail 13 index_preflight ;; esac
   stage "S2 Index DEV ($ROWS: $N_ROWS rows), decide path, batch 1, sequential; live rate guard"
   AFTER=$([ "$ROWS" = subset ] && echo 3 || echo 8)
-  guarded index "$CAPI" "$OUT/index/decide/results.jsonl" "$N_ROWS" "$AFTER" 12 -- \
+  guarded index "$CAPI" index/decide/results.jsonl "$N_ROWS" "$AFTER" 12 -- \
     python -X utf8 -m decision_index run --engine baselines.clef_index_engine:ClefIndexEngine \
       --option model_dir="$SNAP" --option release="$RELEASE" --option path=decide "${DEVOPT[@]}" \
       --rows "$ROWS_FILE" --out "$OUT/index/decide"
@@ -233,7 +233,7 @@ elif [ "$JOB" = "B" ]; then
 elif [ "$JOB" = "T" ]; then
   stage "T1 teacher export ($N_SEL training records, decide path, batch 1; live rate guard)"
   DT=(); [ "$DRY" = "1" ] && DT=(--dtype float32 --no-verify)
-  guarded export "$(cap export 230)" "$TEACH/teacher-${RELEASE}.jsonl" "$N_SEL" 8 19 -- \
+  guarded export "$(cap export 230)" "teacher/teacher-${RELEASE}.jsonl" "$N_SEL" 8 19 -- \
     python -X utf8 -m baselines.clef_teacher export --model-dir "$SNAP" --release "$RELEASE" \
       --train-dir "$DATA/m2-150k" --out "$TEACH" "${DEVARG[@]}" "${DT[@]}"
 fi
