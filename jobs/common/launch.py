@@ -1,9 +1,11 @@
 """One command from a merged SHA to the exact submit_job arguments (CPU only; never submits anything).
 
-    python -m jobs.common.launch <job> [--mode M] --sha <merged sha> --out <dir> [--data <dir>] [--allow-waived]
+    python -m jobs.common.launch <job> --sha <sha> --review-url <PR URL> --out <dir>
+      [--mode M] [--candidate-branch stack/<family>/<variant>] [--data <dir>] [--allow-waived]
 
 Steps (each refuses with a non-zero exit; jobs/LAUNCH_CHECKLIST.md):
-  1. `git fetch origin agent-main`; the SHA must be an ancestor of origin/agent-main.
+  1. A champion SHA must be merged to origin/agent-main. A candidate SHA must be the exact pushed tip of its
+     `stack/<family>/<variant>` branch. Both paths record the independent-review PR URL.
   2. `git -c core.autocrlf=false archive <sha>` -> code/m1 (in memory, plus a staged copy under <out>/stage).
   3. The sha's own jobs/common/lint.py on the staged tree (waived failures only with --allow-waived, recorded in submit.json).
   4. The job's CPU tests on the staged tree (every tests/ file naming jobs/<job>/ or jobs.<job>, + test_jobs_lint).
@@ -24,6 +26,7 @@ import io
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import tarfile
@@ -116,6 +119,67 @@ def resolve_merged(root: Path, sha: str, fetch: bool = True) -> str:
     if r.returncode != 0:
         raise LaunchError(f"{sha} is not merged into origin/agent-main (merge the PR first; launch only merged code)")
     return full
+
+
+def resolve_candidate(root: Path, sha: str, branch: str, fetch: bool = True) -> str:
+    """Resolve only the exact tip of a pushed stack/<family>/<variant> branch."""
+    if (not isinstance(branch, str)
+            or re.fullmatch(r"stack/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+", branch) is None):
+        raise LaunchError("candidate branch must be stack/<family>/<variant>")
+    if fetch:
+        ref = f"+refs/heads/{branch}:refs/remotes/origin/{branch}"
+        git(root, "fetch", "-q", "origin", ref)
+    full = git(root, "rev-parse", "--verify", f"{sha}^{{commit}}")
+    remote_tip = git(root, "rev-parse", "--verify", f"refs/remotes/origin/{branch}^{{commit}}")
+    if full != remote_tip:
+        raise LaunchError(f"candidate SHA must equal the exact pushed tip of origin/{branch}")
+    return full
+
+
+def validate_review_url(review_url: str | None) -> str:
+    if (not isinstance(review_url, str)
+            or re.fullmatch(r"https://github\.com/[^/\s]+/[^/\s]+/pull/\d+(?:#\S+)?", review_url) is None):
+        raise LaunchError("an independent review URL (https://github.com/<owner>/<repo>/pull/<number>) is required")
+    return review_url
+
+
+def workspace_cap_increment(costs, p: dict, sub: dict, params_path: str, worst: float,
+                            active_reservation_jobs: list[str] | None = None) -> tuple[int, list[str]]:
+    """Reserve the simultaneous worst case for every configured active/chained job."""
+    active_reservation_jobs = [] if active_reservation_jobs is None else active_reservation_jobs
+    if not isinstance(active_reservation_jobs, list) or any(not isinstance(name, str) for name in active_reservation_jobs):
+        raise LaunchError("active reservation jobs must be cost-table job names")
+    names = p.get("workspace_cap_jobs")
+    if names is None:
+        if sub.get("depends_on"):
+            raise LaunchError(f"{params_path}: chained job must declare workspace_cap_jobs for the combined cap")
+        names = [key for key, value in costs.PARAMS.items() if value == params_path]
+        if not names:
+            if active_reservation_jobs:
+                raise LaunchError(f"{params_path}: cannot price active reservations without a cost-table job key")
+            return math.ceil(worst), []
+        names = names[:1]
+    if not isinstance(names, list) or not names or any(not isinstance(name, str) for name in names):
+        raise LaunchError(f"{params_path}: workspace_cap_jobs must be a non-empty job-name list")
+    if sub.get("depends_on"):
+        parents = p.get("workspace_cap_parent_jobs")
+        if not isinstance(parents, list) or not parents or any(not isinstance(name, str) for name in parents):
+            raise LaunchError(f"{params_path}: chained job must declare workspace_cap_parent_jobs")
+        if not set(parents).issubset(names):
+            raise LaunchError(f"{params_path}: workspace_cap_jobs must include all workspace_cap_parent_jobs")
+    # Preserve duplicates: two active instances of the same job reserve two
+    # worst-case costs, whether declared in params or supplied on the CLI.
+    names = [*names, *active_reservation_jobs]
+    unknown = sorted(set(names) - set(costs.PARAMS))
+    if unknown:
+        raise LaunchError(f"{params_path}: unknown workspace_cap_jobs entries: {unknown}")
+    current = [key for key, value in costs.PARAMS.items() if value == params_path]
+    if current and not set(current).intersection(names):
+        raise LaunchError(f"{params_path}: workspace_cap_jobs must include the launched job {current}")
+    increment = costs.concurrent_cap_usd(names)
+    if increment < math.ceil(worst):
+        raise LaunchError(f"{params_path}: combined workspace cap is below this job's worst-case ceiling")
+    return increment, list(names)
 
 
 def archive(root: Path, sha: str) -> dict[str, tuple[bytes, int]]:
@@ -313,9 +377,13 @@ def submit_args(job: str, mode: str | None, p: dict, sub: dict, ctx_sha: str) ->
 
 
 def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | None = None, fetch: bool = True,
-           data_dir: Path | None = None, allow_waived: bool = False, run_job_tests: bool = True, level: int = 19) -> dict:
+           data_dir: Path | None = None, allow_waived: bool = False, run_job_tests: bool = True, level: int = 19,
+           review_url: str | None = None, candidate_branch: str | None = None,
+           active_reservation_jobs: list[str] | None = None) -> dict:
+    review_url = validate_review_url(review_url)
     root = Path(root or git(Path.cwd(), "rev-parse", "--show-toplevel"))
-    full = resolve_merged(root, sha, fetch)
+    full = (resolve_candidate(root, sha, candidate_branch, fetch) if candidate_branch
+            else resolve_merged(root, sha, fetch))
     files = archive(root, full)
     rel = params_rel(files, job, mode)
     p = json.loads(files[rel][0])
@@ -344,11 +412,16 @@ def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | 
     (out / "CONTEXT_MANIFEST.json").write_bytes(ctx["CONTEXT_MANIFEST.json"][0])
     costs = sha_lint.load_costs(code)
     worst = costs.worst_case_usd(p)
+    cap_increment, cap_jobs = workspace_cap_increment(costs, p, sub, rel, worst, active_reservation_jobs)
     receipt = {
         "job": job, "mode": mode, "sha": full, "params": rel,
+        "source": {"kind": "candidate_branch" if candidate_branch else "agent-main",
+                   "branch": candidate_branch or "agent-main"},
+        "review_url": review_url,
         "context": {"file": str(out / f"{name}.tar.zst"), "sha256": ctx_sha, "size_bytes": size},
         "cost": {"worst_case_usd": worst, "hard_cap_usd": p.get("hard_cap_usd"),
-                 "set_workspace_cap_increment_usd": math.ceil(worst)},
+                 "workspace_cap_jobs": cap_jobs,
+                 "set_workspace_cap_increment_usd": cap_increment},
         "lint": lint_res, "tests": tests,
         "calls": [
             {"tool": "open_mission", "args": {"name": p["mission"] if "mission" in p else sub["mission"]}},
@@ -369,6 +442,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--mode")
     ap.add_argument("--sha", required=True)
     ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--review-url", help="independent review PR link; recorded in submit.json")
+    ap.add_argument("--candidate-branch", help="exact pushed stack/<family>/<variant> tip to measure before promotion")
+    ap.add_argument("--active-reservation-job", action="append", default=[],
+                    help="additional cost-table job that can still bill concurrently; repeat for each")
     ap.add_argument("--data", type=Path, default=Path(os.environ.get("SSDM_DATA",
                                                                      Path.home() / "research/CHLabs/ssdm-data")))
     ap.add_argument("--repo", type=Path)
@@ -377,7 +454,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--level", type=int, default=19)
     a = ap.parse_args(argv)
     try:
-        r = launch(a.job, a.sha, a.out, a.mode, a.repo, not a.no_fetch, a.data, a.allow_waived, True, a.level)
+        r = launch(a.job, a.sha, a.out, mode=a.mode, root=a.repo, fetch=not a.no_fetch, data_dir=a.data,
+                   allow_waived=a.allow_waived, run_job_tests=True, level=a.level,
+                   review_url=a.review_url, candidate_branch=a.candidate_branch,
+                   active_reservation_jobs=a.active_reservation_job)
     except LaunchError as e:
         print(f"REFUSED: {e}", file=sys.stderr)
         return 1

@@ -31,7 +31,9 @@ You are joining a repo run by two owning agents: **Claude = Track D** (decision 
 **Before any paid job / before any PR**
 - Read `LESSONS.md` (failure classes already paid for) and follow `jobs/LAUNCH_CHECKLIST.md`.
   - `tests/test_jobs_lint.py` must pass.
-  - Launch only through `python -m jobs.common.launch` and its `submit.json`.
+  - Launch only through `python -m jobs.common.launch` and its `submit.json`; use a merged champion SHA or the exact
+    pushed `stack/<family>/<variant>` tip with its candidate-branch flag and independent-review PR URL. Include all
+    other simultaneously billable jobs with repeated `--active-reservation-job` flags.
 - Every incident appends a `LESSONS.md` entry and an enforcing check in the same PR.
 - Variants go on `stack/<family>/<variant>`. `agent-main` holds only `CHAMPION.md`'s best candidate plus infra. Every measured variant is a row in `CANDIDATES.md`.
 

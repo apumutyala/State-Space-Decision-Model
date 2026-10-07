@@ -144,8 +144,8 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
   - Blocker fixes merged in the same minute with no re-review: #43, #59, #42 (B3), #73 and #86.
 - Cost: L-15 is a direct consequence; the other unfixed findings are listed in PRs #33 and #40.
 - Root cause: the review rules ("stalled", "one review suffices", "lean") had no mechanical gate.
-- **Check:** `launch.py` refuses any sha not merged into `origin/agent-main`. COORDINATION.md "Before any paid job / before any PR" requires the review link in the launch receipt.
-- **Status:** PARTIAL. Review presence is not machine-checked (that needs the GitHub API). Next step: a merge-time check that the PR has a review comment, or a `reviews/` file, newer than its last commit.
+- **Check:** `launch.py` requires either a merged `origin/agent-main` SHA or the exact pushed `stack/<family>/<variant>` tip, and records a GitHub review URL in the launch receipt.
+- **Status:** PARTIAL. The review URL is required but its approval/head state is not machine-checked (that needs the GitHub API). Review sufficiency remains a coordinator gate.
 
 ### L-17 Variants and champion mixed on the integration branch
 - Date: 2026-10-06 (operator directive).
@@ -183,3 +183,19 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Status:** PARTIAL.
   - The harness side is ENFORCED: edition-flagged, 0.2.1 kept as the default for receipt reproducibility, mixed editions refused.
   - The "verify the live board before each plan" step is a procedure, not an automated check. Owner: Track D. Candidate check: a launch-checklist row comparing the live `v03.json` sha256 with `harness/config.BOARD_V03_SHA256`.
+
+### L-20 Candidate branches could not be measured before promotion
+- Date: 2026-10-07 (cross-review of PR #93).
+- Symptom: the new `stack/<family>/<variant>` policy requires measuring candidates before promotion, while the launcher accepted only SHAs merged into `agent-main`.
+- Cost: caught during review before a paid launch.
+- Root cause: the launcher modeled only champion/integration runs and had no exact candidate-tip path.
+- **Check:** `resolve_candidate` requires the exact pushed stack-branch tip and a review URL; `tests/test_launch.py::test_candidate_branch_launches_exact_pushed_stack_tip_without_agent_main_merge` and candidate-refusal tests.
+- **Status:** ENFORCED.
+
+### L-21 Chained jobs under-reserved workspace cap
+- Date: 2026-10-07 (cross-review of PR #93).
+- Symptom: a child launch's workspace-cap increment covered only its own ceiling while its parent could still be queued or running.
+- Cost: caught during review before a paid launch.
+- Root cause: launcher pricing used one-job worst case and ignored simultaneous reservations.
+- **Check:** chained jobs list required parents in `workspace_cap_parent_jobs` and all fixed concurrent cost keys in `workspace_cap_jobs`; repeated `--active-reservation-job` keys count separate instances. Tests cover child-only refusal, parent+child, and repeated active reservations.
+- **Status:** ENFORCED.

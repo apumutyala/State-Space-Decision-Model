@@ -33,14 +33,23 @@ Each item below is enforced by `tests/test_jobs_lint.py`, which runs every check
 - A stale waiver fails the test, so the list only shrinks.
 - New jobs cannot be waived.
 
-## Launch (coordinator, after merge and an independent review)
+## Launch (coordinator, after an independent review)
 
 ```
-python -m jobs.common.launch <job> [--mode M] --sha <merged sha> --out <dir> [--data $SSDM_DATA] [--allow-waived]
+python -m jobs.common.launch <job> --sha <sha> --review-url <PR URL> --out <dir> \
+  [--mode M] [--candidate-branch stack/<family>/<variant>] [--active-reservation-job JOB] \
+  [--data $SSDM_DATA] [--allow-waived]
 ```
+
+Champion/integration runs use a SHA merged into `origin/agent-main`. Candidate runs may use the exact pushed tip of a
+`stack/<family>/<variant>` branch before promotion; the launcher records that source branch and the independent-review
+PR URL. The candidate branch tip must equal `--sha`. Do not merge candidate code into `agent-main` merely to measure it.
 
 The command does the following. Each step refuses on failure.
-1. Fetches origin and checks that the sha is an ancestor of `origin/agent-main`.
+1. Fetches origin and checks either that the SHA is an ancestor of `origin/agent-main`, or that it exactly equals the
+   pushed tip of the supplied `stack/<family>/<variant>` candidate branch. A GitHub PR review URL is required and
+   recorded in `submit.json` for both paths. The launcher validates its URL shape only; the coordinator must verify
+   the independent review is for this exact head before proceeding.
 2. Runs `git -c core.autocrlf=false archive <sha>` and stages the result in a fresh `<dir>/stage/`. Symlinks or other non-regular members, an unknown `--mode`, or a reused `--out` are refused.
 3. Runs **the sha's own** `jobs/common/lint.py`, loaded from the staged tree (not the caller's checkout). Waived failures are allowed only with `--allow-waived`; they are recorded in `submit.json` and must be justified in the launch receipt.
 4. Runs the job's CPU tests on the staged tree: every `tests/` file naming `jobs/<job>/` or `jobs.<job>`, plus `test_jobs_lint.py`.
@@ -59,7 +68,12 @@ The command does the following. Each step refuses on failure.
 The coordinator then works through `submit.json` in this order:
 1. Add a planned `LEDGER.md` row.
 2. Get the `spend` issue reviewed per COORDINATION 'Review sufficiency'. The other agent's acknowledgement is requested but not blocking.
-3. Run `set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)`.
+3. Add every other active reservation with a repeated `--active-reservation-job <costs.PARAMS job key>`. Then run
+   `set_workspace_cap(MTD + cost.set_workspace_cap_increment_usd)`. The increment includes the configured
+   `workspace_cap_jobs` plus these active reservations; a chained job must declare its `workspace_cap_parent_jobs`
+   and include them in `workspace_cap_jobs`, or launch is refused. Repeated job keys count separate active instances.
+   For RWKV7 stage B, it covers both `rwkv7_readout` and `rwkv7_lora`, not only the child. The operator must reconcile
+   this list against the live workspace before submitting.
 4. Paste the calls from `submit.json`.
 5. Run `validate_job`. It must pass without `force`.
 6. Run `submit_job`.
@@ -68,6 +82,8 @@ Fields for new jobs go in `job_params.json`. Legacy jobs use tables in `launch.p
 - `"submit": {"command", "env", "key", "checks", ["label", "clock_lock", "depends_on"]}`; platform fields (chip, chip_count, mission, build_timeout, max_duration, max_restarts, resume, queue_ttl, hf_cache, model) are required in job_params: launch.py has **no defaults**, and its output must equal the JOB_SPEC submit block field by field (`test_submit_args_equal_the_job_spec_field_by_field`)
 - `"context": {"dockerfile", ["cmd_rewrite"], "data": [{"src", "dest", "pin"}]}`
 - `"decision_rule": "<path.py>"`, or `null` + `"no_verdict_reason"`
+- `"workspace_cap_jobs": ["<costs.PARAMS job key>", ...]` when multiple jobs can bill against the workspace concurrently
+- `"workspace_cap_parent_jobs": ["<costs.PARAMS parent job key>", ...]` for any submit block with `depends_on`
 
 `m2_pilot` and `m2_parent_arm` still use their own `build_context.sh`, because they need the parent-arm cache and a `guard_ready` dry run.
 

@@ -16,6 +16,7 @@ import pytest
 
 from jobs.common import costs, dev_subset
 from jobs.common import finalize as fin
+from jobs.common.launch import LEGACY_SUBMIT, workspace_cap_increment
 from jobs.common.readout_engine import map_response
 from scripts import decide_9b, decide_probe9b, decide_rwkv7
 
@@ -516,8 +517,15 @@ def test_dev_subset_records_which_manifest_bytes_are_hashed():
 
 def test_chained_and_concurrent_workspace_caps():
     assert costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"]) == 36
+    assert costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_readout"]) == 33
     assert costs.concurrent_cap_usd(["probe9b", "rwkv7_readout"]) == 45
     assert costs.concurrent_cap_usd(["rwkv7_lora"]) == 20
+    lora = json.loads((ROOT / "jobs/rwkv7/job_params_lora.json").read_text(encoding="utf-8"))
+    assert lora["workspace_cap_jobs"] == ["rwkv7_readout", "rwkv7_lora"]
+    assert lora["workspace_cap_parent_jobs"] == ["rwkv7_readout"]
+    increment, jobs = workspace_cap_increment(costs, lora, LEGACY_SUBMIT[("rwkv7", "lora")],
+        costs.PARAMS["rwkv7_lora"], costs.worst_case_usd(lora))
+    assert (increment, jobs) == (36, ["rwkv7_readout", "rwkv7_lora"])
     spec = (ROOT / "jobs/rwkv7/JOB_SPEC.md").read_text(encoding="utf-8")
     assert "MTD + 36" in spec and "depends_on" in spec
     assert "MTD + 45" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
