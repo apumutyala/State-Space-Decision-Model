@@ -6,6 +6,7 @@ backslash-n / control-character checks; CHAMPION.md + CANDIDATES.md structure. C
 """
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -195,3 +196,42 @@ def test_new_job_must_declare_decision_rule(tmp_path):
     assert lint.chk_decision_rule({"decision_rule": None, "no_verdict_reason": "throughput only"}, **kw)[0]
     # the legacy fallbacks never apply to a non-legacy params file
     assert not lint.chk_decision_rule({}, **{**kw, "job": "m2_parent_arm", "rel": "jobs/m2_parent_arm/job_params_x.json"})[0]
+
+
+# ----------------------------------------------------------------------------- L-25: submit checks schema
+GOOD_CHECKS = {"success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/Q9_CACHE_DONE"},
+                                                {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+               "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 600,
+                          "grace_period_s": 1800, "fail_threshold": 2, "on_fail": "kill"}}
+
+
+@pytest.mark.parametrize("bad, why", [
+    (["result.ok == true"], "must be an object"),  # what launch.py emitted for q9_feature_cache
+    ({"health": GOOD_CHECKS["health"]}, "checks.success: required"),
+    ({"success": {"check": {"type": "result_ok"}}}, "not a platform check type"),
+    ({"success": {"check": {"type": "file_exists", "path": "output/x"}}}, "absolute path"),
+    ({"success": {"check": {"all_of": []}}}, "non-empty list"),
+    ({"success": {"check": {"all_of": ["result.ok == true"]}}}, "must be an object"),
+    ({"success": GOOD_CHECKS["success"], "health": {"check": {"type": "heartbeat", "path": "/o/h"}}}, "interval_s"),
+    ({"success": GOOD_CHECKS["success"], "health": dict(GOOD_CHECKS["health"], on_fail="restart")}, "on_fail"),
+    ({"success": GOOD_CHECKS["success"], "require": "result.ok == true"}, "unknown key"),
+])
+def test_checks_schema_refuses_non_platform_values(bad, why):
+    probs = lint.checks_problems(bad)
+    assert probs and any(why in x for x in probs), probs
+
+
+def test_checks_schema_accepts_the_platform_shapes():
+    assert lint.checks_problems(GOOD_CHECKS) == []
+    assert lint.checks_problems({"success": {"check": {"type": "file_exists", "path": "/output/x"}}}) == []
+    assert lint.checks_problems({"success": {"check": {"any_of": [GOOD_CHECKS["success"]["check"],
+                                                                  {"type": "exec", "cmd": "true"}]}}}) == []
+
+
+def test_every_submit_block_has_valid_checks_and_q9_carries_the_submitted_block():
+    for rel in lint.params_files(ROOT):
+        p = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+        ok, msg = lint.chk_submit_checks(p)
+        assert ok, f"{rel}: {msg}"
+    for rel in sorted((ROOT / "jobs/q9_feature_cache").glob("job_params_*.json")):
+        assert json.loads(rel.read_text(encoding="utf-8"))["submit"]["checks"] == GOOD_CHECKS, rel.name

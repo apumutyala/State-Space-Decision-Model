@@ -440,6 +440,9 @@ def submit_args(job: str, mode: str | None, p: dict, sub: dict, ctx_sha: str) ->
     missing = [k for k in REQUIRED_FIELDS if k not in p and k not in sub] + [k for k in REQUIRED_SUBMIT if k not in sub]
     if missing:
         raise LaunchError(f"{job}/{mode}: submit fields not stated (no defaults): {missing}")
+    bad = lint.checks_problems(sub["checks"])
+    if bad:
+        raise LaunchError(f"{job}/{mode}: submit checks are not the platform CheckSpec schema (L-25): {bad}")
     field = {k: (p[k] if k in p else sub[k]) for k in REQUIRED_FIELDS}
     if not field["mission"]:
         raise LaunchError(f"{job}/{mode}: empty mission")

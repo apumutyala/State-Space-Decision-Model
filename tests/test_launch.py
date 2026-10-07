@@ -262,6 +262,12 @@ def spec_blocks(job: str) -> list[dict]:
 
 #: (job, mode) -> (block index, overrides stated in the JOB_SPEC prose, evidence strings that prose must contain)
 SPEC_BLOCK = {
+    ("q9_feature_cache", "conv1_dev"): (0, {}, []),
+    ("q9_feature_cache", "conv1_train"): (1, {}, []),
+    ("q9_feature_cache", "e5_dev"): (2, {}, []),
+    ("q9_feature_cache", "e5_train"): (3, {}, []),
+    ("q9_feature_cache", "stock_dev"): (4, {}, []),
+    ("q9_feature_cache", "stock_train"): (5, {}, []),
     ("cell_step_profile", None): (0, {}, []),
     ("fla_rwkv7", None): (0, {}, []),
     ("fla_rwkv7", "truth_v2"): (1, {}, []),
@@ -518,3 +524,15 @@ def test_every_job_declares_its_image_pin_as_test_env():
         df = (ROOT / image_of(job, rel)).read_text(encoding="utf-8")
         pin = _re.search(r'"transformers==([0-9.]+)"', df).group(1)
         assert p["test_env"]["transformers"] == pin, rel
+
+
+def test_submit_args_refuses_a_non_schema_checks_value():
+    """L-25: launch.py emitted "checks": ["result.ok == true"] for q9_feature_cache; it must refuse instead."""
+    p = params()
+    sub = dict(p["submit"], checks=["result.ok == true"])
+    with pytest.raises(launch.LaunchError, match="CheckSpec schema"):
+        launch.submit_args("tiny", None, p, sub, "0" * 64)
+    a = launch.submit_args("tiny", None, p, p["submit"], "0" * 64)
+    assert lint.checks_problems(a["checks"]) == []
+    for k, sub in launch.LEGACY_SUBMIT.items():  # every legacy table entry is valid too
+        assert lint.checks_problems(sub["checks"]) == [], k

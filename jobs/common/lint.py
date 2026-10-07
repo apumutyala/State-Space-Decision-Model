@@ -94,7 +94,63 @@ WAIVERS: dict[str, dict[str, str]] = {
 }
 
 CHECKS = ("build_timeout", "schedule", "worst_case_stated", "registered", "shell_test", "decision_rule",
-          "rate_guard", "no_backslash_n")
+          "rate_guard", "no_backslash_n", "submit_checks")
+
+#: L-25: submit_job's `checks` is {"success": {"check": CheckSpec}, "health": {"check": CheckSpec, "interval_s": N,
+#: "on_fail": record|kill|reschedule, ...}} (platform manual, llms.txt "checks"). A CheckSpec is {"type": <one of these>,
+#: ...} or {"all_of"|"any_of": [CheckSpec, ...]}.
+PLATFORM_CHECK_TYPES = frozenset({"file_exists", "file_grows", "file_size", "jsonl_field", "jsonl_rate", "heartbeat",
+                                  "gpu_util", "gemm_sane", "http", "tensor_changed", "exec"})
+HEALTH_ON_FAIL = frozenset({"record", "kill", "reschedule"})
+HEALTH_KEYS = frozenset({"check", "interval_s", "grace_period_s", "fail_threshold", "on_fail"})
+
+
+def check_spec_problems(spec, where: str = "check") -> list[str]:
+    if not isinstance(spec, dict):
+        return [f"{where}: a CheckSpec must be an object, got {type(spec).__name__} {spec!r}"]
+    combos = [k for k in ("all_of", "any_of") if k in spec]
+    if combos:
+        if len(combos) > 1 or len(spec) != 1:
+            return [f"{where}: a combinator object holds exactly one of all_of / any_of, got keys {sorted(spec)}"]
+        items = spec[combos[0]]
+        if not isinstance(items, list) or not items:
+            return [f"{where}.{combos[0]}: must be a non-empty list"]
+        return [x for i, c in enumerate(items) for x in check_spec_problems(c, f"{where}.{combos[0]}[{i}]")]
+    t = spec.get("type")
+    if t not in PLATFORM_CHECK_TYPES:
+        return [f"{where}.type: {t!r} is not a platform check type {sorted(PLATFORM_CHECK_TYPES)}"]
+    if t in ("file_exists", "file_grows", "file_size", "heartbeat", "jsonl_field", "jsonl_rate") and \
+            not str(spec.get("path", "")).startswith("/"):
+        return [f"{where}.path: {t} needs an absolute path, got {spec.get('path')!r}"]
+    return []
+
+
+def checks_problems(checks) -> list[str]:
+    """Why a submit_job `checks` value is not the platform schema ([] = valid). A success check is required."""
+    if not isinstance(checks, dict):
+        return [f"checks must be an object {{success, health}}, got {type(checks).__name__} {checks!r}"]
+    out = [f"checks: unknown key {k!r}" for k in checks if k not in ("success", "health")]
+    succ = checks.get("success")
+    if not isinstance(succ, dict) or "check" not in succ:
+        out.append("checks.success: required, as {\"check\": CheckSpec}")
+    else:
+        out += [f"checks.success: unknown key {k!r}" for k in succ if k != "check"]
+        out += check_spec_problems(succ["check"], "checks.success.check")
+    if "health" in checks:
+        h = checks["health"]
+        if not isinstance(h, dict) or "check" not in h:
+            out.append("checks.health: must be {\"check\": CheckSpec, \"interval_s\": N, \"on_fail\": ...}")
+        else:
+            out += [f"checks.health: unknown key {k!r}" for k in h if k not in HEALTH_KEYS]
+            out += check_spec_problems(h["check"], "checks.health.check")
+            if not isinstance(h.get("interval_s"), int) or h["interval_s"] <= 0:
+                out.append("checks.health.interval_s: required positive integer")
+            if h.get("on_fail") not in HEALTH_ON_FAIL:
+                out.append(f"checks.health.on_fail: one of {sorted(HEALTH_ON_FAIL)}, got {h.get('on_fail')!r}")
+            for k in ("grace_period_s", "fail_threshold"):
+                if k in h and (not isinstance(h[k], int) or h[k] < 0):
+                    out.append(f"checks.health.{k}: non-negative integer")
+    return out
 
 
 # ----------------------------------------------------------------------------- discovery
@@ -287,6 +343,16 @@ def backslash_n_hits(root: Path, sub: str = "jobs") -> list[str]:
             if BACKSLASH_N.search(line):
                 hits.append(f"{f.relative_to(root).as_posix()}:{i}")
     return hits
+
+
+def chk_submit_checks(p: dict, **_) -> tuple[bool, str]:
+    """L-25: a submit block's checks must be the platform's CheckSpec schema (legacy jobs without a submit block get
+    theirs from launch.py's LEGACY_SUBMIT, which launch.submit_args validates the same way)."""
+    sub = p.get("submit")
+    if not sub:
+        return True, "no submit block (legacy table in launch.py; validated at submit_args)"
+    bad = checks_problems(sub.get("checks"))
+    return not bad, f"submit.checks: {bad or 'valid'}"
 
 
 def lint_params(rel: str, root: Path = ROOT, costs=None, tests=None) -> dict[str, tuple[bool, str]]:
