@@ -320,7 +320,9 @@ def run_tests(code: Path, job: str, test_env: dict | None = None, kit_dir: Path 
         raise LaunchError(f"{len(req)} test(s) that require this job's pinned stack were skipped (the test environment "
                           f"does not match test_env {test_env}): {[s['test'] for s in req]}")
     other = [s for s in summ["skips"] if REQUIRES_REASON in s["reason"]]
-    return {"files": tests, "summary": tail[-1] if tail else "", "test_env": test_env,
+    summary = (f"{summ['passed']} passed, {summ['failed']} failed, {summ['skipped']} skipped" if summ["passed"] is not None
+               else (tail[-1] if tail else ""))
+    return {"files": tests, "summary": summary, "test_env": test_env,
             "passed": summ["passed"], "failed": summ["failed"], "skipped": summ["skipped"],
             "skipped_other_pins": [s["test"] for s in other],
             "skipped_other": [s for s in summ["skips"] if REQUIRES_REASON not in s["reason"]]}
