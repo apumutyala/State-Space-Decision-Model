@@ -1,0 +1,13 @@
+Captured preparation test results:
+13 passed in 16.13s (targeted qend head/runner suite).
+133 passed in 71.48s (head/trainer/native bridge/repository-lint compatibility).
+
+Targeted command:
+python -X utf8 -m pytest language_growth/tests/test_qend_axes.py language_growth/tests/test_rwkv_qend_axes_runner.py -q
+
+Compatibility command:
+python -X utf8 -m pytest tests/test_heads.py tests/test_m2_train.py language_growth/tests/test_rwkv_decision_head.py language_growth/tests/test_rwkv_cpu_encoder_identity.py tests/test_jobs_lint.py -q
+
+Repository lint: python -X utf8 -m jobs.common.lint (exit0, existing waivers retained).
+Diff check: passed.
+Existing local CPU, CUDA hidden/offline, two threads. Tiny/random fixtures only; no real parent load or fit.

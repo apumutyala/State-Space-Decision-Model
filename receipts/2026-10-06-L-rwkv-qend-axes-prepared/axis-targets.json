@@ -1,0 +1,774 @@
+{
+  "development_train": {
+    "synthetic-development_train-9201-0/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-0/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-1/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-1/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-10/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-10/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-11/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-11/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-11/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-11/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-12/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-12/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-13/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-13/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-14/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-14/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-14/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-14/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "synthetic-development_train-9201-15/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-15/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-16/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-16/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-17/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-17/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-17/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-17/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "synthetic-development_train-9201-18/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-18/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-19/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-19/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-2/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-2/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-2/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-2/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-20/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-20/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-20/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-20/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-21/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-21/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-22/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-22/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-23/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-23/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-23/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-23/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "synthetic-development_train-9201-3/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-3/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-4/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-4/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-5/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-5/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-5/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-5/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "synthetic-development_train-9201-6/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-6/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-7/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-7/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-8/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-8/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-8/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-8/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "synthetic-development_train-9201-9/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_train-9201-9/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ]
+  },
+  "development_validation": {
+    "synthetic-development_validation-9202-0/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-0/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-1/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-1/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-10/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-10/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-11/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-11/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-11/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-11/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "synthetic-development_validation-9202-2/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-2/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-2/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-2/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "synthetic-development_validation-9202-3/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-3/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-4/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-4/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-5/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-5/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-5/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-5/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "synthetic-development_validation-9202-6/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-6/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-7/slot-001-operation": [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-7/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-8/slot-001-operation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-8/slot-002-left": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-8/slot-003-right": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-8/slot-004-relation": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "synthetic-development_validation-9202-9/slot-001-operation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "synthetic-development_validation-9202-9/slot-002-fact": [
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      -1.0,
+      0.0
+    ]
+  }
+}

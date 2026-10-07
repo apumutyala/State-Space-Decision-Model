@@ -15,6 +15,8 @@ third_party/** -text
 # Preserve the original dry-run registration bytes as historical evidence.
 receipts/2026-10-06-L-rwkv-head-learning-prepared/registration.json -text -diff
 plans/codex/L0_RWKV_HEAD_CE_96.md text eol=lf
+plans/codex/L0_RWKV_QEND_AXES.md text eol=lf
+receipts/2026-10-06-L-rwkv-qend-axes-prepared/tests.txt text eol=lf
 receipts/2026-10-06-L-rwkv-head-ce-96-prepared/tests.txt text eol=lf
 receipts/2026-10-06-L-rwkv-head-ce-96-prepared-v2/tests.txt text eol=lf
 # Preserve the stopped run's copied raw evidence byte-for-byte.
