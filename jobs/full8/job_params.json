@@ -91,5 +91,50 @@
  "decision_rule": "scripts/decide_full8.py",
  "rule_amendments": [
   "2cb8cbc (Amendment A1, 2026-10-07, after independent review, before any run)"
- ]
+ ],
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field).",
+  "command": "bash /opt/ssdm/m1/jobs/full8/full8_job.sh",
+  "env": {},
+  "key": "m1-full8",
+  "clock_lock": true,
+  "label": "full8: all 8 attention layers -> GDN (Q9-AF), rule be9eed8, 5cmat-priced",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/FULL8_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "jobs/full8/build_context.sh as a launch.py recipe: the full8 Dockerfile + code + the PRIVATE DEV rows (sha256 pinned).",
+  "dockerfile": "jobs/full8/Dockerfile",
+  "data": [
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   }
+  ]
+ }
 }

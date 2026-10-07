@@ -26,7 +26,8 @@ from decision_index.scoring.index import chance_baselines, score_panel
 from decision_index.scoring.metrics import random_ndcg_baseline, score_query, semantic_label
 from decision_index.scoring.report import benchmark_summary
 
-from harness.suite import RowSuite, spec
+from harness import config
+from harness.suite import RowSuite, edition_rows, spec
 
 HEADLINE_40 = "iSarcasmEval-A-En"
 FIELD_ACC = {3, 28, 29, 32, 45}
@@ -38,10 +39,18 @@ CONSERVATIVE = {11, 37, 41}
 # ----------------------------------------------------------------------------- official
 
 
-def official(rows, results):
-    """Unrounded per-benchmark values and index exactly as `index02.index_entry` builds them."""
-    s = spec()
-    suite = RowSuite(rows)
+def official(rows, results, edition=None):
+    """Unrounded per-benchmark values and index exactly as `index02.index_entry` builds them.
+
+    edition="0.3": rows that do not count in 0.3 are dropped (`suite.in_edition`); row-level scoring
+    runs through the installed kit exactly as for 0.2.1 (the 0.3 public suite only replaces GSM8K
+    rows and drops ForecastBench), aggregation uses the 0.3 spec. A benchmark with no rows (e.g.
+    GSM8K before its rebuilt rows are run) scores 0, as on the board; `index_entry` is then None."""
+    edition = config.edition_id(edition)
+    s = spec(edition)
+    if edition != "0.2.1":
+        rows = edition_rows(rows, edition)
+    suite = RowSuite(rows)  # row-level machinery: the 0.2.1 kit edition (same row files)
     added_ids = {int(n) for n in s["added"]}
     base, extra = [], collections.defaultdict(list)
     for r in rows:
@@ -54,12 +63,17 @@ def official(rows, results):
     native = {b["catalog_id"]: b for b in summary["benchmarks"]}
     native.update(added_reports)
     values = {}
+    present = {r["_evaluation"]["catalog_id"] for r in rows}
     for a in s["areas"]:
         for n in a["benchmarks"]:
-            values[n] = index02.benchmark_value(n, s, scored.get(n), native.get(n))
+            if n in s["track_scored"] and n not in present:
+                values[n] = dict(raw=0.0, skill=0.0, coverage=0.0, random=None, rule="missing")
+            else:
+                values[n] = index02.benchmark_value(n, s, scored.get(n), native.get(n))
     scores, areas = index02.aggregate(values, s)
-    entry = index02.index_entry(suite, results, summary, added_reports, s)
-    return {"values": values, "scores": scores, "areas": areas, "index_entry": entry}
+    complete = all(n in present for a in s["areas"] for n in a["benchmarks"])
+    entry = index02.index_entry(suite, results, summary, added_reports, s) if (edition == "0.2.1" or complete) else None
+    return {"edition": edition, "values": values, "scores": scores, "areas": areas, "index_entry": entry}
 
 
 # ----------------------------------------------------------------------------- helpers
@@ -102,8 +116,9 @@ class Bench:
     receipt can ship (spec, S) without any item text and be recomputed exactly. A bare
     callable is still accepted for tests."""
 
-    def __init__(self, n, clusters, stats, spec, kind=None):
+    def __init__(self, n, clusters, stats, spec, kind=None, edition=None):
         self.n = n
+        self.edition = config.edition_id(edition)
         self.clusters = clusters
         self.S = np.asarray(stats, dtype=np.float64).reshape(len(clusters), -1)
         if callable(spec):
@@ -121,7 +136,7 @@ class Bench:
                 order.append(c)
         S = np.zeros((len(order), self.S.shape[1]))
         np.add.at(S, np.array([index[cluster_of(g)] for g in self.clusters], dtype=int), self.S)
-        return Bench(self.n, order, S, self.spec if self.spec is not None else self.fn, self.kind)
+        return Bench(self.n, order, S, self.spec if self.spec is not None else self.fn, self.kind, self.edition)
 
     def value(self, T=None):
         """T: (B, d) summed statistics; default = plain sum (the point estimate)."""
@@ -445,11 +460,17 @@ def _added_bench(n, rows, results, chance):
     return Bench(n, clusters, S, {"kind": "added", "f1": bool(f1), "chance": chance})
 
 
-def decompose(rows, results, clusters="case"):
+def decompose(rows, results, clusters="case", edition=None):
     """{catalog_id: Bench} for every index benchmark present in `rows`.
 
-    clusters="case" (default): bootstrap clusters are source cases; "group": kit group ids."""
-    s = spec()
+    clusters="case" (default): bootstrap clusters are source cases; "group": kit group ids.
+    edition="0.3": rows that do not count in 0.3 are dropped first (ForecastBench; 0.2.1 GSM8K rows),
+    so a 0.2.1 DEV slice scores as its 0.3 public-index restriction. Per-benchmark value functions
+    are unchanged between the editions; only the panel/area membership and weights differ."""
+    edition = config.edition_id(edition)
+    s = spec(edition)
+    if edition != "0.2.1":
+        rows = edition_rows(rows, edition)
     baselines = chance_baselines()
     by = collections.defaultdict(list)
     for r in rows:
@@ -467,6 +488,8 @@ def decompose(rows, results, clusters="case"):
             else:
                 chance = s["chance"][str(n)]["chance"] if str(n) in s["chance"] else 0.0
                 out[n] = _display_bench(n, rs, results, chance)
+    for b in out.values():
+        b.edition = edition
     if clusters == "case":
         from harness.cases import case_ids
 
@@ -474,18 +497,45 @@ def decompose(rows, results, clusters="case"):
         out = {n: b.collapse(lambda g, n=n: ids[(n, g)]) for n, b in out.items()}
     elif clusters != "group":
         raise ValueError(clusters)
+    for n, b in out.items():  # which of this benchmark's rows the system has ANY result for (pairing check)
+        b.result_rows = frozenset(r["_evaluation"]["run_id"] for r in by[n] if r["_evaluation"]["run_id"] in results)
+        b.n_rows = len(by[n])
     return out
+
+
+def missing_results(rows, results):
+    """{catalog_id: n_rows} of slice rows with no entry at all in a results file (scored as wrong if kept)."""
+    out = collections.Counter(r["_evaluation"]["catalog_id"] for r in rows if r["_evaluation"]["run_id"] not in results)
+    return dict(sorted(out.items()))
+
+
+def require_results(rows, results, allow_missing=False, what="results"):
+    """Refuse to score slice rows the results file never saw, unless explicitly allowed. Under 0.3 the usual cause
+    is an old result file without the rebuilt GSM8K twins: use --omit-gsm8k03 (or --allow-missing to score them 0)."""
+    miss = missing_results(rows, results)
+    if miss and not allow_missing:
+        raise SystemExit(f"{what}: {sum(miss.values())} slice rows have no result (by catalog: {miss}). "
+                         "Old file without the 0.3 GSM8K twins? pass --omit-gsm8k03; to score missing rows as wrong pass --allow-missing.")
+    return miss
+
+
+def edition_of(benches):
+    """The edition a {n: Bench} dict was decomposed under (all benches must agree)."""
+    eds = {getattr(b, "edition", config.EDITION) for b in benches.values()}
+    if len(eds) > 1:
+        raise ValueError(f"benches mix editions {sorted(eds)}")
+    return eds.pop() if eds else config.EDITION
 
 
 # ----------------------------------------------------------------------------- aggregation
 
 
-def weights(present=None, renormalize=True):
-    """Effective weight of each index benchmark in the 0.2.1 index.
+def weights(present=None, renormalize=True, edition=None):
+    """Effective weight of each index benchmark in the edition's (public) index.
 
     renormalize=False reproduces the board (a missing benchmark keeps its weight and scores 0);
     renormalize=True spreads a missing benchmark's weight over its area (dev-slice index)."""
-    s = spec()
+    s = spec(edition)
     aw = index02.area_weights(s)
     out = {}
     for a in s["areas"]:
@@ -498,9 +548,9 @@ def weights(present=None, renormalize=True):
     return out
 
 
-def index_from_skills(skills, renormalize=True):
+def index_from_skills(skills, renormalize=True, edition=None):
     """skills: {n: array(B)} -> array(B) index on the 0-100 scale."""
-    w = weights(set(skills), renormalize)
+    w = weights(set(skills), renormalize, edition)
     total = None
     for n, wn in w.items():
         term = wn * np.asarray(skills.get(n, 0.0))
@@ -508,10 +558,15 @@ def index_from_skills(skills, renormalize=True):
     return 100 * total
 
 
-def point(benches, renormalize=True):
+def point(benches, renormalize=True, edition=None):
+    have = edition_of(benches)
+    if edition is not None and config.edition_id(edition) != have:
+        raise ValueError(f"point(edition={edition!r}) but the benches were decomposed under {have}")
+    edition = have
     vals = {n: b.value() for n, b in benches.items()}
     skills = {n: v[1] for n, v in vals.items()}
     return {
+        "edition": edition,
         "per_benchmark": {n: {"raw": float(v[0][0]), "skill": float(v[1][0])} for n, v in vals.items()},
-        "index": float(index_from_skills(skills, renormalize)[0]),
+        "index": float(index_from_skills(skills, renormalize, edition)[0]),
     }

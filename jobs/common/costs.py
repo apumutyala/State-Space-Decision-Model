@@ -15,13 +15,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 ENVELOPE_USD = 525.0
 #: October 2026 MTD actual SF spend (receipts): job-4j3vu 2.48, job-tkfaj 1.79, job-sgihj 1.40, job-c4zkm 0.74,
-#: job-mhc3h 0.56, job-4idg4 0.30, job-jucxx 0.25, job-jn47u 0.84, job-jbw22 0.07, job-5cmat 5.01 (issue #68)
-SPENT_USD = 13.44
+#: job-mhc3h 0.56, job-4idg4 0.30, job-jucxx 0.25, job-jn47u 0.84, job-jbw22 0.07, job-mden7 1.06, job-5cmat 5.01
+#: (LEDGER: 14.49 per get_usage) + job-tvuat 1.62 (get_job receipt: charged_usd_micros 1,619,200, 1,963 billed s)
+SPENT_USD = 16.11
 #: PLAN.md spend lines
 LINES = {"joint_gate": 75.0, "system1": 250.0, "language": 100.0, "reserve": 100.0}
 PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_params_c_only.json", "probe9b": "jobs/probe9b/job_params.json",
           "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_lora": "jobs/rwkv7/job_params_lora.json",
           "fla_rwkv7": "jobs/fla_rwkv7/job_params.json", "fla_rwkv7_truth_v2": "jobs/fla_rwkv7/job_params_truth_v2.json",
+          "cell_step_profile": "jobs/cell_step_profile/job_params.json",
           "full8": "jobs/full8/job_params.json"}
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here
 OTHER = {"clef_baseline_ABC": 47.52}  # jobs/clef_baseline/JOB_SPEC.md: per-job ceilings at $2.97/h

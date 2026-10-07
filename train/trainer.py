@@ -69,20 +69,62 @@ class TrainConfig:
     # optional controlsafe arm (G15 trust gate): {"trust_gate": true, "bridge_rank": 8, "readout": "decision",
     # "trust_policy": "state"}. Empty = off; an empty dict is left out of the config hash (old hashes unchanged).
     controlsafe: dict = field(default_factory=dict)
+    # ---- execution strategy (jobs/cell_step_profile; defaults = the original path). The same math, so they are left
+    # out of the config hash (a checkpoint resumes under either setting); equivalence: tests/test_cell_perf.py.
+    #: per-block activation checkpointing of the RWKV-7 backbone that keeps the cache fork (heads/act_ckpt.py)
+    act_ckpt: bool = False
+    #: rows per backbone call within one optimiser step (1 = one call per micro-batch row, as before). > 1: the step's
+    #: batch_size x grad_accum rows are sorted by length (longest first) and run in groups of up to row_batch rows, each
+    #: group in ONE prefix call + ONE continuation call (heads.backbone.fork_features_rows); every group's loss is
+    #: weighted by its share of the step's rows, so the step's gradient is the same sum over rows.
+    row_batch: int = 1
+    #: with row_batch > 1: max padded tokens per call (rows x longest row of the group); 0 = no limit. A row longer
+    #: than the budget runs alone. Bounds the per-call activation memory (jobs/cell_step_profile JOB_SPEC, A1).
+    row_tokens: int = 0
 
     def to_json(self) -> dict:
         d = asdict(self)
         d["loss"] = asdict(self.loss)
+        for k in self.EXECUTION:  # at their defaults the execution fields are left out: old records stay identical
+            if d[k] == getattr(TrainConfig, k):
+                d.pop(k)
         return d
 
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
+    #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens")
 
     def hash(self) -> str:
-        d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL}
+        d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
         if not d.get("controlsafe"):
             d.pop("controlsafe", None)
         return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
+    """``cfg`` with the execution-strategy keys of a cell config (``act_ckpt``, ``row_batch``, ``row_tokens``; absent =
+    the original path). For ``train.run_cell.train_config`` callers: ``with_execution(train_config(cell, ...), cell)``."""
+    import dataclasses
+
+    return dataclasses.replace(cfg, act_ckpt=bool(cell.get("act_ckpt", False)), row_batch=int(cell.get("row_batch", 1)),
+                               row_tokens=int(cell.get("row_tokens", 0)))
+
+
+def row_groups(lengths: list[int], row_batch: int, row_tokens: int = 0) -> list[list[int]]:
+    """Indices of the step's rows grouped for ``row_batch`` > 1: sorted by length, longest first (stable), filled
+    greedily while a group has <= ``row_batch`` rows and, if ``row_tokens`` > 0, (rows x its longest row) <=
+    ``row_tokens`` padded tokens. Every row lands in exactly one group."""
+    order = sorted(range(len(lengths)), key=lambda i: -lengths[i])
+    groups: list[list[int]] = []
+    for i in order:
+        g = groups[-1] if groups else None
+        if g is not None and len(g) < row_batch and (
+                not row_tokens or (len(g) + 1) * lengths[g[0]] <= row_tokens):
+            g.append(i)
+        else:
+            groups.append([i])
+    return groups
 
 
 def lora_init_seed(seed: int) -> int:
@@ -113,6 +155,15 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     model.backbone.fork_mode = cfg.fork_mode
     if cfg.grad_checkpointing:
         model.backbone.enable_gradient_checkpointing()
+    from heads import act_ckpt
+
+    if cfg.act_ckpt:
+        act_ckpt.enable_block_checkpointing(model.backbone.model)  # raises unless the backbone is the vendored RWKV-7
+    elif act_ckpt.is_enabled(model.backbone.model):  # a backbone reused across Trainers (run_cell ladder)
+        act_ckpt.disable_block_checkpointing(model.backbone.model)
+    if cfg.row_batch < 1:
+        raise ValueError(f"row_batch must be >= 1, got {cfg.row_batch}")
+    model.backbone.batch_rows = cfg.row_batch > 1
     return replaced
 
 
@@ -182,10 +233,27 @@ class Trainer:
         dev = "cuda" if torch.cuda.is_available() else "cpu"
         return torch.autocast(device_type=dev, dtype=torch.bfloat16)
 
+    def _row_loss(self, batch: list[Item], weight: float) -> float:
+        with self._autocast():
+            fw = self.model([i.row for i in batch])
+        lp = fw.log_probs.float()
+        y = torch.tensor([i.label for i in batch], device=lp.device)
+        loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss) * weight
+        loss.backward()
+        return float(loss.detach())
+
     def train_step(self) -> float:
         self.model.train()
         self.opt.zero_grad(set_to_none=True)
         total = 0.0
+        if self.cfg.row_batch > 1:
+            # the same rows as the micro-batch loop below (same _next_batch calls, so epoch roll-over is unchanged); the
+            # step loss sum_m mean(m) / grad_accum = sum_rows / (batch_size x grad_accum) = sum_g mean(g) x |g| / n
+            rows = [it for _ in range(self.cfg.grad_accum) for it in self._next_batch()]
+            n = len(rows)
+            for g in row_groups([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens):
+                total += self._row_loss([rows[j] for j in g], len(g) / n)
+            return self._finish_step(total)
         for _ in range(self.cfg.grad_accum):
             batch = self._next_batch()
             with self._autocast():
@@ -195,6 +263,9 @@ class Trainer:
             loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss) / self.cfg.grad_accum
             loss.backward()
             total += float(loss.detach())
+        return self._finish_step(total)
+
+    def _finish_step(self, total: float) -> float:
         params = [p for g in self.opt.param_groups for p in g["params"]]
         torch.nn.utils.clip_grad_norm_(params, self.cfg.max_grad_norm)
         self.opt.step()

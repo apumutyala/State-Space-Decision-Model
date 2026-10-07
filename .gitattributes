@@ -1,8 +1,11 @@
+# LF for everything a job ships or a shell reads (LESSONS.md L-14: CRLF *.sha256 broke sha256sum -c).
+# Enforced by tests/test_jobs_lint.py (git check-attr + `git -c core.autocrlf=true archive HEAD` has no CR).
 *.sh text eol=lf
 *.py text eol=lf
 *.json text eol=lf
+*.sha256 text eol=lf
 Dockerfile text eol=lf
-fixtures/replay/** -text
 
+# byte-exact vendored code and fixtures
+fixtures/replay/** -text
 third_party/** -text
-*.sh text eol=lf

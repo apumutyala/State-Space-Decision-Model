@@ -123,7 +123,7 @@ On an `_ONLY` verdict, enable fla only on the path that passed.
 ```
 open_mission("m2-fla-rwkv7-kernel")
 jobs/fla_rwkv7/build_context.sh <sha> <dir>  -> create_context(<dir>.tar.zst) -> context_id
-submit_job(chip="h100", chip_count=1, mission="m2-fla-rwkv7-kernel", context_id=<id>, dockerfile_path="Dockerfile",
+submit_job(chip="h100", chip_count=1, mission="m2-fla-rwkv7-kernel", idempotency_key="m2-fla-rwkv7-gate-<context_sha256[:12]>", context_id=<id>, dockerfile_path="Dockerfile",
   build_timeout_minutes=18, command="bash /opt/ssdm/m1/jobs/fla_rwkv7/fla_job.sh", max_duration_minutes=31,
   max_restarts=0, resume="none", queue_ttl_minutes=1440, hf_cache=true,
   model="RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
@@ -390,7 +390,7 @@ Marker `/output/FLA_RWKV7_TRUTH_V2_DONE` (finalize.py, only on exit 0).
 
 ```
 jobs/fla_rwkv7/build_context.sh <sha> <dir>  -> create_context(<dir>.tar.zst) -> context_id
-submit_job(chip="h100", chip_count=1, mission="m2-fla-rwkv7-kernel", context_id=<id>, dockerfile_path="Dockerfile",
+submit_job(chip="h100", chip_count=1, mission="m2-fla-rwkv7-kernel", idempotency_key="m2-fla-rwkv7-truth-v2-<context_sha256[:12]>", context_id=<id>, dockerfile_path="Dockerfile",
   build_timeout_minutes=18, command="bash /opt/ssdm/m1/jobs/fla_rwkv7/fla_job.sh truth_v2", max_duration_minutes=49,
   max_restarts=0, resume="none", queue_ttl_minutes=1440, hf_cache=true,
   model="RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",

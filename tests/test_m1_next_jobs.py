@@ -51,7 +51,7 @@ def test_probe_cap_is_the_planned_40_and_rate_matches_plan():
 
 def test_branch_ledger_fits_the_envelope_and_lines():
     led = costs.branch_ledger()
-    assert led["spent"] == 13.44 and led["envelope"] == 525.0
+    assert led["spent"] == 16.11 and led["envelope"] == 525.0
     assert led["joint_gate_fits"]
     for b in led["branches"].values():
         assert b["fits_envelope"] and b["system1_left_for_m2"] > 0

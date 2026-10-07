@@ -16,6 +16,7 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $19.30 | $20 | ~$7.72 |
 | fla_rwkv7 (fla chunk_rwkv7 gate, v1 rule; ran as job-jn47u) | `jobs/fla_rwkv7/` | $3.96 | $4.50 | ~$1.09 |
 | fla_rwkv7 truth_v2 (RULE v2 + A1: fp64-truth numerics, m2 cell train speed; `fla_job.sh truth_v2`) | `jobs/fla_rwkv7/job_params_truth_v2.json` | $5.74 | $6 | ~$1.19 |
+| cell_step_profile (m2 cell train step: baseline / ckpt_rows_lean / ckpt_rows / ckpt; pre-registered rule v1-A2) | `jobs/cell_step_profile/` | $8.22 | $8.50 | ~$1.59 |
 | full8 (all 8 layers -> GDN, Q9-AF; priced from job-5cmat's measured phases; rule pre-registered at be9eed8; issue #87) | `jobs/full8/` | $84.65 | $85 | ~$27.87 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
@@ -62,7 +63,7 @@ recorded decision, not an automatic one.
 | exit 2 / 7 (crash, preemption, timeout) | finished layers are kept (checkpoint dir + salvage export): one resubmission from the reserve resumes |
 | any other non-zero exit (incl. 9 = no-measurement) | diagnose; at most one re-run from the reserve |
 
-## The $525 envelope (October MTD actual spend $13.44 as of 2026-10-06 incl. job-5cmat $5.01, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)
+## The $525 envelope (October MTD actual spend $16.11 as of 2026-10-07 incl. job-mden7 $1.06, job-5cmat $5.01 and job-tvuat $1.62, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)
 
 | Line (PLAN.md) | Budget | Worst case committed by this tree |
 |---|---|---|
@@ -72,6 +73,6 @@ recorded decision, not an automatic one.
 | System 1, branch C: qual folds | $250 | rwkv7 A + B = $35.64 -> $214.36 left for m2 |
 | Language / Reserve | $100 / $100 | untouched; re-runs come from the reserve |
 
-Worst-case envelope total, including the $13.44 MTD spend, is at most $208.97 (branch A), so every branch fits $525 with the Language and Reserve
+Worst-case envelope total, including the $16.11 MTD spend, is at most $211.64 (branch A), so every branch fits $525 with the Language and Reserve
 lines intact. Branch A now leaves System 1 ~$70 above the cache-fork m2 plan (it left ~$4 at the old ~$150 full-8
 estimate); the full-8 worst case already counts a 60-min build and two full attempts.

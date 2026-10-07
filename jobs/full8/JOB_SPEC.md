@@ -397,7 +397,7 @@ the budget. That worst case is conservative: a resumed attempt does not repeat f
 attempt costs only the remaining work. Branch A now leaves $120.80 of System 1 for m2. A1's full-MMLU arms add
 5.5 projected minutes (+$0.30 expected, +$0.50 worst case).
 
-**Hard cap: `set_workspace_cap(MTD + 85)`.** MTD is $13.44 including 5cmat. Then re-run `validate_job` and require
+**Hard cap: `set_workspace_cap(MTD + 85)`.** MTD is $16.11 (2026-10-07: LEDGER's $14.49 plus job-tvuat $1.62 from its get_job receipt). Then re-run `validate_job` and require
 scope = workspace cap and `verdict: pass`.
 
 ## `submit_job` fields (do not submit until #87 is approved and independently reviewed)
