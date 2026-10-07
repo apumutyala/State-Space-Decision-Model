@@ -93,6 +93,43 @@ def test_degenerate_or_id_only_choices_never_relabel(criteria, gold):
 
 
 @pytest.mark.parametrize("layout", ["ordered", "symmetric"])
+@pytest.mark.parametrize("descriptions", [["same", "same"], ["same", "middle", "same"],
+    [{"x": 1, "y": 2}, {"y": 2, "x": 1}], ["same", "same", "unique", "last"]])
+def test_duplicate_rendered_descriptions_cannot_move_gold(layout, descriptions):
+    rec = record(k=len(descriptions), gold=0)
+    rec["request"]["questions"]["choice"]["criteria"] = {
+        f"opt-{i}": desc for i, desc in enumerate(descriptions)}
+    rec["labels"] = {"choice": "opt-0"}
+    before = copy.deepcopy(rec)
+    base_items = items(rec, layout)
+    assert reversed_record(rec, "choice") is None
+    assert attach(base_items, rec, layout) == {
+        "view": "reverse", "with_view": 0, "no_view": 1, "view_filtered": 0}
+    assert base_items[0].view is None and base_items[0].view_perm is None
+    assert rec == before
+    if len(descriptions) <= 3:
+        # The old construction makes byte-identical model inputs with different labels in both layouts.
+        unsafe = copy.deepcopy(rec)
+        unsafe["request"]["questions"]["choice"]["criteria"] = {
+            f"opt-{i}": desc for i, desc in enumerate(reversed(descriptions))}
+        unsafe["labels"]["choice"] = f"opt-{len(descriptions) - 1}"
+        other = items(unsafe, layout)[0]
+        assert base_items[0].row.ids == other.row.ids
+        assert base_items[0].row.option_seqs == other.row.option_seqs
+        assert base_items[0].row.continuations == other.row.continuations
+        assert base_items[0].label != other.label
+
+
+def test_duplicate_descriptions_with_fixed_gold_do_not_create_contradictory_labels():
+    rec = record(k=3, gold=1)
+    rec["request"]["questions"]["choice"]["criteria"] = {
+        "opt-0": "same", "opt-1": "middle", "opt-2": "same"}
+    view, perm = reversed_record(rec, "choice")
+    assert view["labels"]["choice"] == rec["labels"]["choice"]
+    assert perm == [2, 1, 0]
+
+
+@pytest.mark.parametrize("layout", ["ordered", "symmetric"])
 def test_attachment_is_explicit_training_only_and_preserves_base_rows(layout):
     rec = record()
     train_items, eval_items = items(rec, layout), items(rec, layout)

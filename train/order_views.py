@@ -15,6 +15,7 @@ that the cell's K / T filter would drop leaves its base item single-view.
 
 Attachment is explicit: callers must supply only the training list. The ordinary item builder never attaches views.
 Choices whose descriptions are None use the ids themselves as content; swapping None cannot preserve their labels.
+Reversals with duplicate rendered descriptions are also skipped when they would move gold to another option id.
 The caller must also ensure answer semantics follow descriptions: references to particular option ids in the state
 or instructions can make reassignment invalid even when descriptions are present.
 """
@@ -23,7 +24,7 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from decide.schema import canonical_options
+from decide.schema import canonical_json, canonical_options
 
 #: The only view construction this module implements. Cell configuration / trainer integration are separate work.
 VIEW = "reverse"
@@ -52,13 +53,19 @@ def reversed_record(rec: dict[str, Any], qid: str) -> tuple[dict[str, Any], list
     if gold not in ids:
         return None
     perm = list(reversed(range(k)))  # view index j shows base index perm[j]
+    gold_index = ids.index(gold)
+    view_gold_index = perm.index(gold_index)
+    # Descriptions are rendered inside a canonical JSON option object. Repeated rendered descriptions cannot
+    # identify which option's gold should move, and a palindromic reversal can leave the entire prompt unchanged.
+    if view_gold_index != gold_index and len({canonical_json(t) for t in texts}) != k:
+        return None
     view = copy.deepcopy(rec)
     if "request" in view and view["request"] is not None:
         new_q = view["request"]["questions"][qid]
     else:
         new_q = view["questions"][qid]
     new_q["criteria"] = {ids[j]: copy.deepcopy(texts[perm[j]]) for j in range(k)}
-    view["labels"][qid] = ids[perm.index(ids.index(gold))]
+    view["labels"][qid] = ids[view_gold_index]
     view["id"] = f"{rec.get('id', '?')}#rev:{qid}"
     return view, perm
 

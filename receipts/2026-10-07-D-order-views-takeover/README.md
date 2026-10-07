@@ -38,3 +38,20 @@ Training-only use is an explicit caller contract, not automatic role enforcement
 that descriptions carry the entire answer semantics: state/instruction references to literal option ids can
 invalidate reassignment. Any integration must restrict eligibility to appropriate training records. No model was
 executed, no GPU or paid resources were used, and nothing was pushed.
+
+## Independent review follow-up: duplicate descriptions
+
+Review of `de4dede5dda7292435cd958120b9ead76ec91545` found that duplicate non-None descriptions could still produce
+identical model inputs with contradictory labels. Reversal now returns no view when gold would move and any
+descriptions have identical canonical JSON renders. This also conservatively skips moved-gold duplicates when
+the complete prompt changes. A fixed-center gold remains eligible because its label does not change.
+
+The nine added cases cover equal strings, palindromic descriptions, structured descriptions equal after canonical
+key sorting, a non-palindromic duplicate case, both ordered/symmetric layouts, rejection at attachment, and the
+fixed-gold case. They reconstruct the unsafe prior transformation to prove identical token inputs and changed
+labels. The same CPU-only command prefix with `tests/test_order_views.py --tb=short` gave **32 passed; 1.39 s**.
+`git diff --check` passed. Source WIP hashes were verified unchanged again before this follow-up commit.
+
+Remaining limitation: distinct renders can still express the same meaning, and literal option-id references can
+invalidate reassignment. Training integration must establish appropriate record eligibility; this helper cannot
+prove semantic equivalence from arbitrary descriptions. There remains no trainer callsite or model execution.
