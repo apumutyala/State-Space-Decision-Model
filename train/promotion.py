@@ -77,9 +77,10 @@ MARGINS = {"m_cap": 1.0, "m_steer": 0.02, "m_ece": 0.01, "m_ret_acc": 0.01, "m_f
            "template_family_alpha": 0.05,  # Bonferroni over the k steer templates: level 1 - 0.05 / k
            "steer_bootstrap": "fixed_template",
            "null_pass_floor": 0.8,
-           "approved": False,
-           "status": "Codex cross-track decision, #36 comments 6028537932 + 6028610849 (2026-10-07); implementation "
-                     "under independent review (#102); PENDING USER APPROVAL"}
+           "approved": True,
+           "status": "approved: Codex cross-track decision, #36 comments 6028537932 + 6028610849 (2026-10-07); "
+                     "activated by the Track D coordinator under the user's delegation after independent re-reviews of "
+                     "#102 (FIX-THEN-MERGE findings resolved)"}
 PROPOSED_MARGINS = MARGINS  # backwards-compatible name
 CLEAN_ACC_DROP = 0.01  # G12: a > 1 pp clean-accuracy drop rejects
 #: E1 groups (``harness.families``, families-v1 + heldout-draw-v1): ``new_domain_proxy`` = every benchmark our training
