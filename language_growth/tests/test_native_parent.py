@@ -222,6 +222,36 @@ class NativeParentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "configuration changed"):
             parent.planner_kwargs()
 
+    def test_live_backbone_config_and_capture_drift_reject_before_use(self):
+        from types import SimpleNamespace
+        from heads.rwkv7_wkv import select_wkv
+        from language_growth.native_parent import load_native_parent
+
+        loaded = self._loader(self.path, artifact_sha256=self.pin.artifact_sha256)
+        parent = load_native_parent(self.path, lambda *a, **k: loaded, pin=self.pin)
+        backbone = loaded.backend.model.backbone
+        # The tiny model does not otherwise use WKV; this exercises the same
+        # public config switch that changes the RWKV-7 inference path.
+        backbone.model.config = SimpleNamespace(**vars(backbone.model.config),
+                                                wkv_implementation="tokenwise")
+        select_wkv(backbone.model, "chunked")
+        with self.assertRaisesRegex(ValueError, "configuration changed"):
+            parent.planner_kwargs()
+        with self.assertRaisesRegex(ValueError, "configuration changed"):
+            parent.decide({})
+
+        loaded = self._loader(self.path, artifact_sha256=self.pin.artifact_sha256)
+        parent = load_native_parent(self.path, lambda *a, **k: loaded, pin=self.pin)
+        loaded.backend.model.backbone.capture = "changed-capture"
+        with self.assertRaisesRegex(ValueError, "configuration changed"):
+            parent.planner_kwargs()
+
+        loaded = self._loader(self.path, artifact_sha256=self.pin.artifact_sha256)
+        parent = load_native_parent(self.path, lambda *a, **k: loaded, pin=self.pin)
+        loaded.backend.model.backbone.layer = 0
+        with self.assertRaisesRegex(ValueError, "configuration changed"):
+            parent.planner_kwargs()
+
 
 if __name__ == "__main__":
     unittest.main()
