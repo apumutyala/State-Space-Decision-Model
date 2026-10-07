@@ -4,7 +4,7 @@
     "trained": "fixed 96-update checkpoint; operation-only composition",
     "zero_update": "same initial q_end checkpoint; operation-only composition (secondary)"
   },
-  "base_commit": "20eb450",
+  "base_commit": "20eb4504811debacb8c29ddd24e286be9ed692a0",
   "cache_contract": {
     "features": [
       "q_end",
@@ -21,6 +21,7 @@
     "axis_loss_weight": 0,
     "batch_size": 2,
     "bootstrap_samples": 2000,
+    "bootstrap_seed": 9203,
     "head": "qend_axes",
     "loss": "ce_only",
     "lr": 0.001,
@@ -46,6 +47,7 @@
     "adoption": false,
     "complete_12_worlds_required": true,
     "direct_equality_required": true,
+    "read_non_regression_required": true,
     "strict_useful_gain_required": true,
     "strong_train_operation_fit": 0.8
   },
@@ -121,7 +123,7 @@
   ],
   "schema": "ssdm.operation-only-cache.v1",
   "scope": "prepared reused-development operation-only head diagnostic; no L0 qualification",
-  "secondary": "paired trained-minus-zero-update; operation accuracy and downstream attribution",
+  "secondary": "paired trained-minus-zero-update; operation accuracy and downstream attribution; predeclared read/explain/compare paired CIs",
   "selection": "one seed, fixed checkpoint; no tuning; CE only; eight complete passes",
   "software": {
     "numpy": "2.5.2",
@@ -180,7 +182,7 @@
     "language_growth/rwkv_head_ce96_evaluation.py": "c3fda86c3822f0d1106e48c89fc103e8c2bfc9eba913f275601bdcc6c6a642a9",
     "language_growth/rwkv_head_fit_audit.py": "dbcc1d1bf26dad35b394f84d3cc76e346e05ca849d70dffdbbeea8f8f76d1663",
     "language_growth/rwkv_head_learning.py": "7af59a23b016771de66e75a182b5a8c97737b2ad7d64436a824cfb034fc0f3b7",
-    "language_growth/rwkv_operation_cache.py": "a032284ea85209a32ad55ff3fa989a7152426d3eae4cb8c2bede423156e791c8",
+    "language_growth/rwkv_operation_cache.py": "2bfb06f9313ebe25acb15fd36ff2e3e49009d481e41813a11ce3e8167f087edc",
     "language_growth/rwkv_qend_axes.py": "9df7d1b1bc7e862875f0ce669a910f78729ecd3625e857bbd3c80a114c21474e",
     "language_growth/tests/__init__.py": "94ec8b327f99819f5f33f3c062cbe6da74a2d776d5d01c0525035f5f73146a56",
     "language_growth/tests/test_decision_view.py": "ed2c64d30220c18c1b7ffd4cfbe7a4de61b9975c8c59c8cc47b21b8d0338d7b1",
@@ -191,7 +193,7 @@
     "language_growth/tests/test_kernel.py": "9a3bfffd48de6e5f4b87cc5e732c051551d65418906a527635c51403e9c563e4",
     "language_growth/tests/test_kernel_adversarial.py": "1095aa538571557960ce99170e6b3e24782a2112f5d1f1d007003ddf5ce36d03",
     "language_growth/tests/test_l0_qwen_cpu_probe.py": "27dc24f799ac0dba20f78ef83f36ba567022d0efe821fd9b5e9b64cf0ae7adb1",
-    "language_growth/tests/test_operation_cache.py": "a9b4b4951df8cda49e42cf87c3cdb15f1f0eabbfb25c2add62392e29d6987240",
+    "language_growth/tests/test_operation_cache.py": "d09040d656b174b55557dac8fe960b0aa0720ad516ecca3c8f90105eb09d9336",
     "language_growth/tests/test_paired_comparison.py": "308a77156042a08ab73bd1e5339e40ff616a84a04ce9cdaf4481310e46d54849",
     "language_growth/tests/test_parent_training_integration.py": "70ae25c6ae621b7bfc5e6f2d5994655b8dfa3f6c3f898b8f53b2ef321ceb9e4f",
     "language_growth/tests/test_planner.py": "9051f7067a72473d520e62a1f4e0148192e7f54599c4932048fa565328e404cd",
@@ -209,7 +211,7 @@
     "language_growth/tests/test_training_records.py": "141c814033f26b19b2b5d02064ea4196137770065568b5becaa17dc0c12f8112",
     "language_growth/training_records.py": "cdd26b7218bfb1ce19af817e96fa5001ec8969b00f93c8eb33934b97fdc832bb",
     "language_growth/types.py": "d60061150e4d63b8fb14da2cfc469d99fcf6b952abd93a572de2f7810d5019d1",
-    "plans/codex/L0_OPERATION_ONLY_CACHE.md": "8b4e6f93ead111061c027b7f41fb8b919262fed1a75cae5e5ad2516b83ded539",
+    "plans/codex/L0_OPERATION_ONLY_CACHE.md": "4b3720097ce8f3e35a2c891225774b9acd7f23bf14154db84790c685cb4191c5",
     "third_party/cloudflare_clef/joint_schema_model.py": "0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3",
     "third_party/rwkv7_hf/__init__.py": "2947c872c1873e6d43583d9b4a3d926dba3e9b27e740fcccb16ac678c3b13022",
     "third_party/rwkv7_hf/configuration_rwkv7.py": "14050c631e27d66cd2f52ca5ec53b62eef04e602c4f1fc4e3696c328bc8e200e",

@@ -137,7 +137,7 @@ def test_checkpoint_lineage_exact_96_updates_and_frozen_backbone(tmp_path):
         for i in range(24):
             copied = deepcopy(entry); copied["identity"]["row_id"] = f"tiny-{i}"
             copied["key"] = cache.digest(copied["identity"]); entries.append(copied)
-        lin = runner.lineage(entries, identity["parent"], identity["encoder"], identity["template"])
+        lin = runner.lineage(entries, identity["parent"], identity["encoder"], identity["template"], [0]*24)
         opt = torch.optim.AdamW(model.head_parameters(), lr=.001, weight_decay=0.)
         before = state_digest(model.backbone)
         runner.save_checkpoint(tmp_path/"initial.pt", model, opt, 0, lin)
@@ -157,6 +157,9 @@ def test_checkpoint_lineage_exact_96_updates_and_frozen_backbone(tmp_path):
             runner.restore_checkpoint(tmp_path/"trained.pt", model, opt, {**lin,"parent":{}}, 96)
         with pytest.raises(ValueError, match="lineage"):
             runner.restore_checkpoint(tmp_path/"trained.pt", model, opt, lin, 0)
+        changed_targets = runner.lineage(entries, identity["parent"], identity["encoder"], identity["template"], [1]+[0]*23)
+        with pytest.raises(ValueError, match="lineage"):
+            runner.restore_checkpoint(tmp_path/"trained.pt", model, opt, changed_targets, 96)
     finally: torch.set_num_threads(old)
 
 
@@ -179,4 +182,10 @@ def test_pairing_keeps_all_failures_and_refuses_missing_worlds():
     rows = [{"task_id": str(i), "task_correct": False, "kernel_accepted": False} for i in range(12)]
     trained = deepcopy(rows); trained[0].update(task_correct=True, kernel_accepted=True)
     assert runner.paired(trained, rows)["task_correct"]["estimate"] == pytest.approx(1/12)
+    assert runner.paired(trained, rows)["task_correct"]["seed"] == 9203
     with pytest.raises(ValueError): runner.paired(trained[:-1], rows)
+    examples = [{"task_id": str(i), "training_only": {"kind": ("read", "explain", "compare")[i//4]}} for i in range(12)]
+    grouped = runner.paired_by_kind(trained, rows, examples)
+    assert grouped["read"]["task_correct"]["estimate"] == .25
+    assert grouped["compare"]["task_correct"]["estimate"] == 0
+    assert all(grouped[k][m]["n_worlds"] == 4 for k in grouped for m in grouped[k])

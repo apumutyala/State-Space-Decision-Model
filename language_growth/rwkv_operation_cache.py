@@ -25,7 +25,7 @@ CONFIG = {"seed": 20261006, "steps": 96, "passes": 8, "batch_size": 2,
           "head": "qend_axes", "loss": "ce_only", "axis_loss_weight": 0,
           "optimizer": "AdamW", "lr": .001, "weight_decay": 0., "max_grad_norm": 1.,
           "threads": 2, "min_start_bytes": 12*1024**3, "min_running_bytes": 3*1024**3,
-          "timeout_seconds": 1200, "bootstrap_samples": 2000}
+          "timeout_seconds": 1200, "bootstrap_seed": 9203, "bootstrap_samples": 2000}
 SCOPE = "prepared reused-development operation-only head diagnostic; no L0 qualification"
 
 
@@ -58,7 +58,7 @@ def registration():
         for folder in ("language_growth", "heads", "train", "decide", "third_party")
         for p in (ROOT / folder).rglob("*.py")) + [PLAN]
     return {"schema": "ssdm.operation-only-cache.v1", "status": "prepared_not_run",
-        "base_commit": "20eb450", "scope": SCOPE, "config": CONFIG,
+        "base_commit": "20eb4504811debacb8c29ddd24e286be9ed692a0", "scope": SCOPE, "config": CONFIG,
         "corpus_sha256": CORPUS_SHA,
         "operation_records_sha256": {split: digest(rows) for split, rows in records.items()},
         "operation_row_ids": {split: [r["id"]+"/slot-001-operation" for r in rows]
@@ -75,12 +75,13 @@ def registration():
                  "zero_update": "same initial q_end checkpoint; operation-only composition (secondary)",
                  "trained": "fixed 96-update checkpoint; operation-only composition"},
         "primary": "paired trained-minus-stock useful answer and acceptance, all 12 dev worlds",
-        "secondary": "paired trained-minus-zero-update; operation accuracy and downstream attribution",
+        "secondary": "paired trained-minus-zero-update; operation accuracy and downstream attribution; predeclared read/explain/compare paired CIs",
         "selection": "one seed, fixed checkpoint; no tuning; CE only; eight complete passes",
         "report": ["train/dev operation accuracy", "fit CE", "useful answers", "kernel acceptance",
                    "downstream slots", "all failures/wrong-task/false-relation", "cluster paired CI",
                    "parent direct accuracy and exact equality", "frozen backbone", "cost_usd=0"],
         "decision": {"strong_train_operation_fit": .8, "strict_useful_gain_required": True,
+                     "read_non_regression_required": True,
                      "direct_equality_required": True, "complete_12_worlds_required": True,
                      "adoption": False},
         "execution_dependencies": "tiny-model proofs, cross-review/dependency merges, fresh >=12 GiB guard; no Index/heldout or paid spend",
@@ -109,9 +110,13 @@ def budget_check(started, available):
         raise MemoryError("3 GiB running guard")
 
 
-def lineage(entries, parent, encoder, template):
+def lineage(entries, parent, encoder, template, targets):
+    if len(entries) != len(targets):
+        raise ValueError("one target per cache row required")
     return {"config": CONFIG, "parent": parent, "encoder": encoder, "template": template,
-            "cache_keys": [e["key"] for e in entries], "corpus_sha256": CORPUS_SHA}
+            "cache_keys": [e["key"] for e in entries], "corpus_sha256": CORPUS_SHA,
+            "targets_sha256": digest([{"row_id": e["identity"]["row_id"], "label": label}
+                                      for e, label in zip(entries, targets)])}
 
 
 def train_state(model):
@@ -183,13 +188,37 @@ def fit_report(model, entries, labels):
             "ce": sum(r["ce"] for r in rows)/len(rows)}
 
 
-def paired(current, baseline):
-    from language_growth.rwkv_head_learning import bootstrap
+def bootstrap(before, after, *, seed, samples):
+    if not before or len(before) != len(after):
+        raise ValueError("paired worlds required")
+    delta = [int(b)-int(a) for a, b in zip(before, after)]
+    rng = random.Random(seed)
+    draws = sorted(sum(rng.choice(delta) for _ in delta)/len(delta) for _ in range(samples))
+    return {"n_worlds": len(delta), "estimate": sum(delta)/len(delta),
+            "ci95": [draws[int(.025*samples)], draws[int(.975*samples)]],
+            "unit": "independent generated world/task", "method": "paired percentile bootstrap",
+            "seed": seed, "samples": samples}
+
+
+def paired(current, baseline, *, expected_worlds=12):
     a, b = {r["task_id"]: r for r in current}, {r["task_id"]: r for r in baseline}
-    if len(a) != 12 or set(a) != set(b):
-        raise ValueError("complete paired 12 worlds required")
-    return {metric: bootstrap([b[k][metric] for k in sorted(a)], [a[k][metric] for k in sorted(a)])
+    if len(a) != expected_worlds or len(current) != len(a) or len(baseline) != len(b) or set(a) != set(b):
+        raise ValueError("complete paired worlds required")
+    return {metric: bootstrap([b[k][metric] for k in sorted(a)], [a[k][metric] for k in sorted(a)],
+                              seed=CONFIG["bootstrap_seed"], samples=CONFIG["bootstrap_samples"])
             for metric in ("task_correct", "kernel_accepted")}
+
+
+def paired_by_kind(current, baseline, examples):
+    # Kinds are evaluator-only and never reach the serving router or cache key.
+    groups = {kind: {e["task_id"] for e in examples if e["training_only"]["kind"] == kind}
+              for kind in ("read", "explain", "compare")}
+    if any(len(ids) != 4 for ids in groups.values()):
+        raise ValueError("predeclared four worlds per kind required")
+    paired(current, baseline)
+    return {kind: paired([r for r in current if r["task_id"] in ids],
+                         [r for r in baseline if r["task_id"] in ids], expected_worlds=4)
+            for kind, ids in groups.items()}
 
 
 def downstream(rows):
@@ -256,8 +285,9 @@ def run(out):
                 torch.testing.assert_close(cached, live, rtol=1e-5, atol=1e-6)
             caches[split].append(entry)
             labels[split].append(item.label)
-    identity = lineage(caches["development_train"], parent_id, encode.identity(), backend.template.identity())
-    torch.save({"schema": "operation-feature-cache-v1", "lineage": identity, "splits": caches}, out/"features.pt")
+    identity = lineage(caches["development_train"], parent_id, encode.identity(), backend.template.identity(), labels["development_train"])
+    feature_identity = {k: v for k, v in identity.items() if k != "targets_sha256"}
+    torch.save({"schema": "operation-feature-cache-v1", "lineage": feature_identity, "splits": caches}, out/"features.pt")
     write(out/"targets.json", {s: [{"row_id": i.id, "label": i.label} for i in group] for s, group in items.items()})
     opt = torch.optim.AdamW(model.head_parameters(), lr=CONFIG["lr"], weight_decay=0.)
     save_checkpoint(out/"initial-head.pt", model, opt, 0, identity)
@@ -317,6 +347,8 @@ def run(out):
         raise ValueError("parent direct-path/backbone drift")
     comparison = {"trained_minus_stock": paired(treatment, baseline),
                   "trained_minus_zero_update": paired(treatment, zero)}
+    kind_comparison = {"trained_minus_stock": paired_by_kind(treatment, baseline, data["development_validation"]),
+                       "trained_minus_zero_update": paired_by_kind(treatment, zero, data["development_validation"])}
     write(out/"receipt.json", {"schema": "ssdm.operation-only-cache-result.v1", "status": "complete",
         "registration_sha256": sha(out/"registration.json"), "lineage": identity,
         "features_sha256": sha(out/"features.pt"), "initial_head_sha256": sha(out/"initial-head.pt"),
@@ -324,10 +356,13 @@ def run(out):
         "stock": baseline, "zero_update": zero, "trained": treatment,
         "fit_before": zero_fit, "fit_after": trained_fit, "history": history, "orders": orders,
         "downstream": {"stock": downstream(baseline), "zero_update": downstream(zero), "trained": downstream(treatment)},
-        "paired": comparison, "direct_before": before_direct, "direct_after": after_direct,
+        "paired": comparison, "paired_by_kind": kind_comparison,
+        "direct_before": before_direct, "direct_after": after_direct,
         "direct_equal": True, "frozen_backbone": True, "cost_usd": 0, "adopted": False,
         "eligible_for_review": trained_fit["development_train"]["accuracy"] >= .8 and
-            comparison["trained_minus_stock"]["task_correct"]["estimate"] > 0,
+            comparison["trained_minus_stock"]["task_correct"]["estimate"] > 0 and
+            kind_comparison["trained_minus_stock"]["read"]["task_correct"]["estimate"] >= 0 and
+            kind_comparison["trained_minus_stock"]["read"]["kernel_accepted"]["estimate"] >= 0,
         "elapsed_seconds": time.monotonic()-started})
 
 

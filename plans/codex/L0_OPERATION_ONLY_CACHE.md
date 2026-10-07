@@ -23,16 +23,19 @@ checkpoint (treatment). Step-0 and trained heads share initialization and
 optimizer recipe. Train-minus-stock is primary; train-minus-step0 is secondary.
 No selection or tuning. Compose the
 head only at the initial operation protocol boundary (empty prefix and exact
-slot shape); all other calls use unchanged HFReadoutBackend. Evaluate both
+slot shape); all other calls use unchanged HFReadoutBackend. Evaluate all arms
 through the normal Decider/planner, checked kernel and renderer on all 12 dev
 worlds. Retain failures, wrong-task answers and false relations in denominators.
 
 Exit proof: synthetic CPU tests cover cache/live parity, label exclusion,
 boundary/delegation, lineage/checkpoint, backbone immutability and launch guards.
 Future execution must report train/dev operation accuracy, useful answers,
-downstream slots, kernel acceptance, clustered paired CI, stock-parent direct
+downstream slots, kernel acceptance, clustered paired CI (seed 9203, 2000 draws),
+aggregate and predeclared read/explain/compare CIs, read non-regression, stock-parent direct
 retention/equality and cost $0. Freeze source, parent and encoder identities and
-reject drift. CPU/offline only, two threads, >=12 GiB start and >=3 GiB running
+reject drift. Checkpoint lineage additionally binds a separate target hash;
+feature identities and feature-cache metadata exclude that target hash.
+CPU/offline only, two threads, >=12 GiB start and >=3 GiB running
 memory, <=1200 seconds, authenticated owned child and cleanup on timeout.
 
 Decision for this implementation task: prepare and dry-run only now. Do not load
