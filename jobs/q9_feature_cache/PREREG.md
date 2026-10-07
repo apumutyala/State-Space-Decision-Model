@@ -92,12 +92,24 @@ The coordinator requested this after the independent review of PR #101 (REQUEST-
 
 **Disclosure.** This amendment is written after a data-bearing step. The A1(d) stock-check ran on the cached SELECT split and FAILED: the cached stock readout scored 39.04 against job-5cmat's 38.27, Δ = +0.772 > 0.3. No recipe has been trained or scored, and no select_summary, HOLDOUT attempt or HOLDOUT score exists. A3 changes a validity check of the cache, not the go/no-go rule.
 
-**Why.** All 2,008 SELECT ids match between the cache and the reference. The reference, job-5cmat, answered 58 rows with status `error` and 7 with `unsupported`; the kit scores those as wrong. The `error` rows are the documented POP909 OOM, fixed in #102. The cache answers all 65 rows. Of the 8,185 questions both sides answered, the choice differs on 51, which is bf16 noise. With the 65 rows masked, Δ = +0.047.
+**Why the check failed** (decomposition recomputed by the independent review of PR #130; every variant rescored with the kit). All 2,008 SELECT ids match. job-5cmat did not answer 65 rows, which the kit scores as wrong; the cache answers all 65:
+
+| Reference rows not answered | Cause | Δ with only these masked | Share of the gap |
+|---|---|---|---|
+| 7 `unsupported` (3 ToolRet + 4 BRIGHT) | longest model input 17,126–28,497 tokens, over the reference's `max_input_tokens` 16,384 (no truncation); the cache's cap is 32,768. An **input-limit policy difference, not a bug** | +0.105 | ≈ +0.67 |
+| 58 `error` (POP909, backend_error) | believed to be the GPU OOM root-caused in #102; the fix is **not yet confirmed on GPU** (L-21 stays partial) | **+0.714 (would still FAIL)** | ≈ +0.06 |
+| all 65 (A3) | | **+0.047** (paired vs job-5cmat +0.048, CI −0.79…+0.72) | |
+
+Masking only the bug rows (`error`) was a plausible alternative, and it fails. The `unsupported` rows are masked as well because the reference has no answer on them: comparing an answer to a non-answer measures the serving protocol (the input cap), not feature fidelity, which is what A1(d) tests. The masking criterion is the reference's own row status, never the cache's score. The cache's answers on the 65 rows sit at chance level like the rows around them; they are not favourable (POP909 2/58; BRIGHT 3.1%, the same as its ok rows).
+
+**Not validated by this check:** rows whose model input is 16,384–32,768 tokens. The reference cannot answer them, so no stock-check can. On SELECT these are exactly the 7 `unsupported` rows; on HOLDOUT there are 10. The HOLDOUT report states them (below).
 
 | Item | Rule after A3 (`train/proxy_rule.py`, pinned in `tests/test_proxy_rule.py`) |
 |---|---|
 | (a) Rule | The stock-check compares the cached readout to the reference **only on rows the reference answered with status `ok`**. Any other status (`error`, `unsupported`, …) is masked from both sides: the cached results carry the reference's own row for that id, so it counts identically in the cached index and in 38.27. Δ therefore measures only the rows the reference answered. The tolerance is **unchanged: \|Δ\| ≤ 0.3** |
-| (b) Reference | Pinned to job-5cmat's stock results file, sha256 `646b6149…7beb`. It must hold exactly the SELECT ids, with none missing, extra or duplicated, or the check refuses to run |
+| (b) Pins | The reference is job-5cmat's stock results file, sha256 `646b6149…7beb`, holding exactly the SELECT ids (none missing, extra or duplicated). The masked set is pinned too: 65 ids, sha256 `d3465d44…6629` (listed in the receipt's `masked_ids.json`). Any other set fails closed |
 | (c) Failure cap | The check **fails closed** if more than **5%** of SELECT rows are masked |
-| (d) Reporting | `stock_check.json` reports the masked Δ (decisive), the unmasked Δ, the masked-row count, fraction and ids, and both paired comparisons with job-5cmat |
+| (d) Masked rows must be valid | Every masked id's **cached** row must be status `ok` with well-formed answers (choice: finite, non-negative probabilities summing to 1 within 0.01, with the choice among them; noul: finite in [0, 1]). Otherwise the check **fails closed**, so masking cannot hide a cache crash, NaN or unanswerable row |
+| (e) Reporting | `stock_check.json` reports the masked Δ (decisive), the unmasked Δ, the masked count, fraction, ids and their sha256, the counts per reference status and each group's contribution (unmasked point − point with only that group masked), any masked-row problems, and both paired comparisons with job-5cmat |
+| Report only | Every receipt lists its rows whose cached model input exceeds 16,384 tokens. The HOLDOUT verdict reports how many there are and how the chosen head, the stock readout and Clef-flash scored them: status on those rows, index with and without them, and the head-vs-Clef-flash paired difference without them. Never part of the verdict |
 | Unchanged | GO = 50.0 on HOLDOUT; below it, **escalate to the user**; STOCK_CHECK_TOL 0.3; the 38.27 reference; splits, editions, budget, seeds, recipes R01–R17, the teacher, the transfer rule; HOLDOUT is single-shot. A3 is added to `AMENDMENTS`, so receipts and select_summary record it |

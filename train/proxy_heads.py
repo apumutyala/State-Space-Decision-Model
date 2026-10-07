@@ -69,6 +69,8 @@ class ProxyRequest:
     banks: dict[str, torch.Tensor] = field(default_factory=dict)
     catalog_id: int | None = None
     skipped: dict = field(default_factory=dict)
+    #: longest cached row's model input (tokens; the record's per-question ``T``), None for records without it
+    max_tokens: int | None = None
 
 
 def from_record(rec: dict, lex_table: dict | None = None) -> ProxyRequest:
@@ -87,8 +89,9 @@ def from_record(rec: dict, lex_table: dict | None = None) -> ProxyRequest:
     qs = [ProxyQuestion(q["qid"], q["qtype"], list(q["option_ids"]), q["fork"], q["e"], lex(q), q["q_pre"],
                         q["q_end"], q["lm_lp"].float(), q["lm_ntok"].float(), q["key_class"], q.get("bank_key"),
                         int(q.get("label", -1))) for q in rec["questions"]]
+    ts = [int(q["T"]) for q in rec["questions"] if "T" in q]
     return ProxyRequest(rec["rid"], rec["split"], qs, dict(rec.get("banks") or {}), rec.get("catalog_id"),
-                        dict(rec.get("skipped") or {}))
+                        dict(rec.get("skipped") or {}), max(ts) if ts else None)
 
 
 def _f(x: torch.Tensor) -> torch.Tensor:

@@ -455,8 +455,11 @@ def test_a3_stock_check_wiring_masks_reference_failures(tmp_path, monkeypatch):
     monkeypatch.setattr(PL, "stock_predictions", lambda reqs: {})
     monkeypatch.setattr(PL, "_dev_rows", lambda path, want: {})
 
+    cached_status = {"r3": "ok"}
+
     def fake_write(path, dev_rows, reqs, preds, model):
-        Path(path).write_text("".join(json.dumps({"run_id": i, "status": "ok"}) + "\n" for i in ids), encoding="utf-8")
+        Path(path).write_text("".join(json.dumps({"run_id": i, "status": cached_status.get(i, "ok"), "response": {
+            "answers": {"q": {"type": "noul", "noul": 0.5}}}}) + "\n" for i in ids), encoding="utf-8")
 
     def fake_score(path, subset, B):  # index = 38.27 + 0.4 * (cached-ok rows the reference did not answer)
         rows = [json.loads(x) for x in Path(path).read_text(encoding="utf-8").splitlines()]
@@ -472,9 +475,15 @@ def test_a3_stock_check_wiring_masks_reference_failures(tmp_path, monkeypatch):
     with pytest.raises(PL.OutOfOrder, match="pinned reference"):
         PL.stock_check(out, "c", "d", str(ref), 10)
     monkeypatch.setattr(R, "STOCK_REFERENCE_SHA256", PL._sha(ref))
+    monkeypatch.setattr(R, "STOCK_CHECK_MASKED_N", 1)
+    monkeypatch.setattr(R, "STOCK_CHECK_MASKED_IDS_SHA256", R.masked_ids_sha256(["r3"]))
     rep = PL.stock_check(out, "c", "d", str(ref), 10)
     assert rep["ok"] and abs(rep["delta"]) < 1e-9 and abs(rep["unmasked_delta"] - 0.4) < 1e-9
-    assert rep["masked"] == {"n": 1, "n_rows": 40, "frac": 1 / 40, "max_frac": 0.05, "ids": ["r3"]}
+    assert rep["masked"] == {"n": 1, "n_rows": 40, "frac": 1 / 40, "max_frac": 0.05,
+                             "ids_sha256": R.masked_ids_sha256(["r3"]), "ids": ["r3"]}
+    assert rep["masked_ids_pinned_ok"] and rep["masked_rows_valid"] and rep["masked_problems"] == []
+    assert rep["by_reference_status"] == {"error": {"n": 1, "point_only_this_masked": 38.27,
+                                                    "contribution": rep["unmasked_point"] - 38.27}}
     assert rep["vs_job_5cmat"]["candidate"].endswith("stock_from_cache_select_masked.jsonl")
     assert rep["vs_job_5cmat_unmasked"]["candidate"].endswith("stock_from_cache_select.jsonl")
     assert json.loads((out / "stock_check.json").read_text(encoding="utf-8")) == rep
@@ -484,5 +493,54 @@ def test_a3_stock_check_wiring_masks_reference_failures(tmp_path, monkeypatch):
     monkeypatch.setattr(R, "STOCK_REFERENCE_SHA256", PL._sha(ref))
     rep = PL.stock_check(out, "c", "d", str(ref), 10)
     assert not rep["ok"] and rep["within_tol"] and not rep["mask_cap_ok"]
+    # A3(d): a masked row whose CACHED answer is broken fails closed, although the masked delta is 0
+    ref.write_text("".join(json.dumps({"run_id": i, "status": "error" if i == "r3" else "ok"}) + "\n" for i in ids),
+                   encoding="utf-8")
+    monkeypatch.setattr(R, "STOCK_REFERENCE_SHA256", PL._sha(ref))
+    cached_status["r3"] = "error"
+    rep = PL.stock_check(out, "c", "d", str(ref), 10)
+    assert not rep["ok"] and not rep["masked_rows_valid"] and rep["masked_problems"]
     with pytest.raises(PL.OutOfOrder, match="stock-check failed"):
         PL.require_stock_check(out)
+
+
+def test_from_record_keeps_the_longest_model_input():
+    q = {"qid": "q", "qtype": "choice", "option_ids": ["A", "B"], "fork": None, "e": None, "lex": None, "q_pre": None,
+         "q_end": None, "lm_lp": PL.torch.zeros(2), "lm_ntok": PL.torch.ones(2), "key_class": "letter", "T": 17000}
+    from train.proxy_heads import from_record
+
+    r = from_record({"rid": "x", "split": "holdout", "questions": [q, {**q, "qid": "q2", "T": 900}]})
+    assert r.max_tokens == 17000
+    q.pop("T")
+    assert from_record({"rid": "x", "split": "holdout", "questions": [q]}).max_tokens is None
+
+
+def test_a3_long_rows_report(tmp_path, monkeypatch):
+    """Report-only: how many HOLDOUT rows exceed 16,384 model tokens and what each comparator scored on them."""
+    ids = [f"r{i}" for i in range(6)]
+    long_ids = ["r1", "r4"]
+    files = {}
+    for name, bad in (("candidate", set()), ("stock_from_cache", set()), ("clef_flash", {"r4"})):
+        f = tmp_path / f"{name}.jsonl"
+        f.write_text("".join(json.dumps({"run_id": i, "status": "unsupported" if i in bad else "ok"}) + "\n"
+                             for i in ids), encoding="utf-8")
+        files[name] = str(f)
+    sub = tmp_path / "sub.json"
+    sub.write_text(json.dumps({"run_ids": ids}), encoding="utf-8")
+    monkeypatch.setattr(PL, "subset_file", lambda base, keep, out: json.dumps([i for i in ids if keep(i, 1)]))
+    worth = {"candidate": 1.0, "stock_from_cache": 0.5, "clef_flash": 0.25}
+
+    def fake_score(path, subset, B):
+        name = Path(path).stem
+        return {"slice_index": {"index": {"point": 40.0 + (worth[name] if subset == str(sub) else 0.0)}}}
+
+    monkeypatch.setattr(PL, "score", fake_score)
+    monkeypatch.setattr(PL, "compare", lambda c, b, s, B: {"diff": {"pair": [Path(c).stem, Path(b).stem], "subset": s}})
+    rep = PL.long_rows_report(files, long_ids, str(sub), tmp_path, 10)
+    assert rep["n"] == 2 and rep["ids"] == long_ids and rep["max_input_tokens"] == 16384
+    c = rep["comparators"]
+    assert c["candidate"]["long_rows_worth"] == 1.0 and c["stock_from_cache"]["long_rows_worth"] == 0.5
+    assert c["clef_flash"]["status_on_long_rows"] == {"ok": 1, "unsupported": 1, "missing": 0}
+    d = rep["candidate_vs_clef_flash_without_long_rows"]
+    assert d["pair"] == ["candidate", "clef_flash"] and json.loads(d["subset"]) == ["r0", "r2", "r3", "r5"]
+    assert PL.long_rows_report(files, [], str(sub), tmp_path, 10) == {"max_input_tokens": 16384, "n": 0, "ids": []}
