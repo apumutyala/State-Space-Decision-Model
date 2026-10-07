@@ -11,4 +11,4 @@ fixtures/replay/** -text
 third_party/** -text
 
 # Original stopped-screen evidence must retain the recorded byte hashes.
-receipts/2026-10-07-L-fact-name-screen-run1/** -text
+receipts/2026-10-07-L-fact-name-screen-run1/** -text whitespace=cr-at-eol
