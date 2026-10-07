@@ -583,7 +583,7 @@ def _one(kind, head, arm, out, P, items, guard, enc, cohort, dev_rows, steer_var
                                              units["parent"]["index_results"], B=nb, seed=0)
         v13 = promotion.verdict_g13(retention=ret, steer_child_rows=units["child"]["gate_rows"],
                                     steer_parent_rows=units["parent"]["gate_rows"], expected_variants=gate_variants,
-                                    n_boot=nb)
+                                    n_boot=nb, decision_retention=dec)  # dry run: dev items stand in for retention
         # self-comparison: a checkpoint vs itself has zero difference everywhere; it may only fail on
         # criteria that are not evaluable (e.g. no clean-correct units on a random model), never on a CI
         self12 = promotion.verdict_g12(decision=promotion.paired_decision(fields["parent"], fields["parent"],
@@ -600,7 +600,12 @@ def _one(kind, head, arm, out, P, items, guard, enc, cohort, dev_rows, steer_var
         rec["verdict_g12"], rec["verdict_g13"] = brief(v12), brief(v13)
         rec["verdict_g12_self"] = {"accept": self12["accept"], "failed": self12["failed"],
                                    "failed_evaluable": [c["criterion"] for c in self12["criteria"]
-                                                        if not c["pass"] and c["evaluable"]]}
+                                                        if not c["pass"] and c["evaluable"]
+                                                        and "G2(f)" not in str(c.get("reason"))],
+                                   # an absolute level (PREREG G2(f) false-alarm cap) can fail a self-comparison of
+                                   # a random model; that is not a CI failure
+                                   "failed_absolute_cap": [c["criterion"] for c in self12["criteria"]
+                                                           if "G2(f)" in str(c.get("reason"))]}
         rec["g12_accept"], rec["g13_accept"] = v12["accept"], v13["accept"]
         (rdir / "verdict.json").write_text(json.dumps({"g12": v12, "g13": v13, "retention": ret}, indent=1,
                                                       default=float), encoding="utf-8")

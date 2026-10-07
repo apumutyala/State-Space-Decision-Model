@@ -1,0 +1,137 @@
+{
+  "revisions": {
+    "v1": {
+      "revision_id": "rwkv7:synthetic-scripted-no-model@local;w=not-loaded;tok=1c0bc8e5f355;prompt=jrt-rwkv-g1-code-label-v1.91e9f45d;cfg=0de5b123;adapter=0.2.0",
+      "backend": "rwkv_g1_code_label_experimental",
+      "family": "rwkv7",
+      "model_id": "synthetic-scripted-no-model",
+      "snapshot": null,
+      "files_sha256": {
+        "tokenizer": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+        "weights": "not-loaded"
+      },
+      "prompt_template": {
+        "id": "jrt-rwkv-g1-code-label-v1",
+        "sha256": "91e9f45d070df0c58c8c9e71426a2825142799298dba3be4555e5cff64165292"
+      },
+      "inference_config": {
+        "scoring": "log_probability(exact frozen answer token ID | segmented v1 prompt + trusted target code labels)",
+        "untrusted_encoding": "untrusted-split-special+cut-leaking-added-v1",
+        "rows": "one per question; grouped by length; unpadded",
+        "scoring_path": "one next-token forward per target question; no continuation token forwarded",
+        "max_batch_rows": 1,
+        "dtype": "float32",
+        "device": "cpu",
+        "torch": "2.8.0+cu128",
+        "transformers": "5.17.0",
+        "kernel_stack": {},
+        "codebook_table_sha256": "7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466",
+        "codebook_component": {
+          "revision_id": "rwkv-g1-filtered-codebook-v1;tok=1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf;table=7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466;impl=bf6afe20bd71cd550222026675a0553dfcd3c1abadae6496db1118f9d9cd397e;renderer=blocked",
+          "backend": "rwkv_g1_filtered_codes_experimental",
+          "family": "rwkv7",
+          "model_id": null,
+          "snapshot": null,
+          "codebook_id": "rwkv-g1-filtered-codebook-v1",
+          "codebook_table_sha256": "7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466",
+          "tokenizer_sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+          "tokenizer_source_sha256": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+          "implementation_sha256": "bf6afe20bd71cd550222026675a0553dfcd3c1abadae6496db1118f9d9cd397e",
+          "codebook_file_sha256": "ea8384ef7d18893085b347896d93464f944a08d3442ab3381689b86d1783eea9",
+          "proof_context_sha256": "597cc204a1db6d8bbe9c4c2e3e2948084cd95695b6bec5598a0565c1e6d9c165",
+          "max_context": null,
+          "renderer_integration": "blocked",
+          "model_provenance": "not established by this component"
+        },
+        "request_transform": "trusted-target-code-insertion-v1",
+        "bos_change": false,
+        "tail_change": false,
+        "raw_request_text_change": false,
+        "source_sha256": {
+          "rwkv_g1_code_label.py": "eab5b0f01c8a655541e5c9ed4f3038ecdf656dd66b32abdecc0323a66ac72124",
+          "hf_readout.py": "b1061978802cc2a6d9cef78a18d170ecd0254cadb152a2360d0a9f720c47e368",
+          "prompt.py": "1f986ea74c79d5dd96c419c30873311ea9c722224da0159a3e1aa45bfe3f9c9a",
+          "schema.py": "754ee82285b32d7800d27e344d6e693bb98989472431d3f52657e2df9d865fd1",
+          "calibration.py": "02d9f0843abc31e72a2f5cb4c5a1797ebf5c7c4e439d7cd2cac6c7c87c59737f",
+          "provenance.py": "e21833349d51e8fff8af1cc79fe7cbe6d9dc860dd678aed2eed985905fd0ff34"
+        }
+      },
+      "inference_config_sha256": "0de5b123d9c1ec826cce973621d98ff9b2f9928aa42a2477157dd0934e2d8185",
+      "adapter_version": "0.2.0",
+      "max_context": 25600,
+      "notes": {
+        "vendored_code": "ce3630b854cedbd673569f4600c6cf744bca9dba"
+      }
+    },
+    "v2": {
+      "revision_id": "rwkv7:synthetic-scripted-no-model@local;w=not-loaded;tok=1c0bc8e5f355;prompt=jrt-rwkv-g1-code-label-v2.b33e11d3;cfg=97e3b7fa;adapter=0.2.0",
+      "backend": "rwkv_g1_code_label_v2_experimental",
+      "family": "rwkv7",
+      "model_id": "synthetic-scripted-no-model",
+      "snapshot": null,
+      "files_sha256": {
+        "tokenizer": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+        "weights": "not-loaded"
+      },
+      "prompt_template": {
+        "id": "jrt-rwkv-g1-code-label-v2",
+        "sha256": "b33e11d3dc899c8d95e17f8afb3f7c5318495d80ecfb5bb2e02427bc29f1ceed"
+      },
+      "inference_config": {
+        "scoring": "exact one-token code log probability; identical v2 prompts under fork/recompute",
+        "untrusted_encoding": "untrusted-split-special+cut-leaking-added-v1",
+        "rows": "one single-token continuation per supplied option; bounded packed question tails",
+        "scoring_path": "existing RWKV prefix-fork scorer",
+        "max_batch_rows": 1,
+        "dtype": "float32",
+        "device": "cpu",
+        "torch": "2.8.0+cu128",
+        "transformers": "5.17.0",
+        "kernel_stack": {},
+        "codebook_table_sha256": "7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466",
+        "codebook_component": {
+          "revision_id": "rwkv-g1-filtered-codebook-v1;tok=1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf;table=7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466;impl=bf6afe20bd71cd550222026675a0553dfcd3c1abadae6496db1118f9d9cd397e;renderer=blocked",
+          "backend": "rwkv_g1_filtered_codes_experimental",
+          "family": "rwkv7",
+          "model_id": null,
+          "snapshot": null,
+          "codebook_id": "rwkv-g1-filtered-codebook-v1",
+          "codebook_table_sha256": "7226adf44b9529726b2f44e66b60257c92a50126a3f30131caad6ab0be231466",
+          "tokenizer_sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+          "tokenizer_source_sha256": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+          "implementation_sha256": "bf6afe20bd71cd550222026675a0553dfcd3c1abadae6496db1118f9d9cd397e",
+          "codebook_file_sha256": "ea8384ef7d18893085b347896d93464f944a08d3442ab3381689b86d1783eea9",
+          "proof_context_sha256": "597cc204a1db6d8bbe9c4c2e3e2948084cd95695b6bec5598a0565c1e6d9c165",
+          "max_context": null,
+          "renderer_integration": "blocked",
+          "model_provenance": "not established by this component"
+        },
+        "request_transform": "trusted-all-field-code-insertion-v2",
+        "bos_change": false,
+        "tail_change": false,
+        "raw_request_text_change": false,
+        "source_sha256": {
+          "rwkv_g1_code_label.py": "eab5b0f01c8a655541e5c9ed4f3038ecdf656dd66b32abdecc0323a66ac72124",
+          "hf_readout.py": "b1061978802cc2a6d9cef78a18d170ecd0254cadb152a2360d0a9f720c47e368",
+          "prompt.py": "1f986ea74c79d5dd96c419c30873311ea9c722224da0159a3e1aa45bfe3f9c9a",
+          "schema.py": "754ee82285b32d7800d27e344d6e693bb98989472431d3f52657e2df9d865fd1",
+          "calibration.py": "02d9f0843abc31e72a2f5cb4c5a1797ebf5c7c4e439d7cd2cac6c7c87c59737f",
+          "provenance.py": "e21833349d51e8fff8af1cc79fe7cbe6d9dc860dd678aed2eed985905fd0ff34",
+          "rwkv_g1_code_label_v2.py": "7174f196263894f98564faaabae96fb3c42f37395cab8c4850c16b9ca7bd9988",
+          "state_fork.py": "beb7cfbe26631eaa9437dab637bd7b18014dc940b0b7e07c9e2ea24e99e69d84"
+        },
+        "fork_max_rows": 4,
+        "fork_token_budget": 4096,
+        "fork_state_token_budget": null,
+        "full_output_finite_check": true
+      },
+      "inference_config_sha256": "97e3b7fa97b3db4b418bf04098d3ac874620fa6c0377f3eefa5cd14dae60d7ff",
+      "adapter_version": "0.2.0",
+      "max_context": 25600,
+      "notes": {
+        "vendored_code": "ce3630b854cedbd673569f4600c6cf744bca9dba"
+      }
+    }
+  },
+  "synthetic": true
+}

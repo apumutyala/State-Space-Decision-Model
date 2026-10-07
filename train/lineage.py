@@ -86,6 +86,7 @@ def backbone_identity(backbone, full: bool = False) -> dict[str, Any]:
         "weights_digest": weights_digest(m, full=full),
         "weights_digest_mode": "full" if full else "sampled",
         **({"provenance": backbone.provenance} if getattr(backbone, "provenance", None) else {}),
+        **({"controlsafe": backbone.controlsafe} if getattr(backbone, "controlsafe", None) else {}),
     }
 
 
@@ -93,7 +94,16 @@ def items_identity(items: Sequence) -> dict[str, Any]:
     h = hashlib.sha256()
     for it in items:
         r = it.row
-        h.update(_h([it.id, it.label, r.ids, r.option_ids, r.continuations, r.option_seqs, r.qtype]).encode())
+        value = [it.id, it.label, r.ids, r.option_ids, r.continuations, r.option_seqs, r.qtype]
+        axes = getattr(it, "axis_target", None)
+        if axes is not None:
+            value.append({"axis_target": list(axes)})  # opt-in sidecar identity; legacy digests unchanged
+        view = getattr(it, "view", None)
+        if view is not None:  # order-consistency view (train.order_views): opt-in, legacy digests unchanged
+            v = view.row
+            value.append({"view": [view.id, view.label, v.ids, v.option_ids, v.continuations, v.option_seqs, v.qtype,
+                                   list(it.view_perm)]})
+        h.update(_h(value).encode())
     return {"n": len(items), "sha256": h.hexdigest(), "order_fn": ORDER_FN}
 
 

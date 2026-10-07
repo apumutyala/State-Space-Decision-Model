@@ -183,6 +183,37 @@ class GDN(nn.Module):
         out = self.out_proj(o)
         return (out, S) if return_state else out
 
+    def step(self, x, state=None):
+        """Continue from ``state`` = (conv_tail [B, conv_dim, K-1] of pre-conv inputs, S [B, H, Dk, Dv]) or None
+        (fresh sequence). Returns (out, new_state). ``step`` over consecutive chunks equals ``forward`` over their
+        concatenation (the causal conv sees the real left context instead of zero padding)."""
+        B, T, _ = x.shape
+        K = self.conv_kernel_size
+        pre = self.in_proj_qkv(x).transpose(1, 2)  # [B, C, T]
+        if state is None:
+            tail = pre.new_zeros(B, self.conv_dim, K - 1)
+            S0 = None
+        else:
+            tail, S0 = state
+        full = torch.cat([tail.to(pre.dtype), pre], -1)
+        qkv = F.silu(F.conv1d(full, self.conv1d.weight.to(pre.dtype), None, groups=self.conv_dim)).transpose(1, 2)
+        q, k, v = torch.split(qkv, [self.key_dim, self.key_dim, self.value_dim], -1)
+        q = q.reshape(B, T, self.nk, self.dk)
+        k = k.reshape(B, T, self.nk, self.dk)
+        v = v.reshape(B, T, self.nv, self.dv)
+        z = self.in_proj_z(x).reshape(B, T, self.nv, self.dv)
+        beta = self.in_proj_b(x).sigmoid()
+        g = -self.A_log.float().exp() * F.softplus(self.in_proj_a(x).float() + self.dt_bias)
+        if self.nv // self.nk > 1:
+            r = self.nv // self.nk
+            q, k = q.repeat_interleave(r, 2), k.repeat_interleave(r, 2)
+        kern = self.kernel
+        if kern == "fla" and not (x.is_cuda and fla_available()):
+            kern = "chunk"
+        o, S = KERNELS[kern](q, k, v, g, beta, initial_state=S0)
+        o = self.norm(o.reshape(-1, self.dv), z.reshape(-1, self.dv)).reshape(B, T, -1)
+        return self.out_proj(o), (full[..., -(K - 1):].detach(), S)
+
     def state_bytes(self, dtype_bytes=4):
         """Fixed decode-state size (recurrent matrix + conv tail) per sequence."""
         return (self.nv * self.dk * self.dv + self.conv_dim * (self.conv_kernel_size - 1)) * dtype_bytes

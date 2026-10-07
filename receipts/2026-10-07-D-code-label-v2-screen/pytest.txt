@@ -1,0 +1,18 @@
+........................................................................ [ 41%]
+.F...................................................................... [ 83%]
+.............................                                            [100%]
+================================== FAILURES ===================================
+_______________ test_coordination_has_no_superseded_spend_rule ________________
+
+    def test_coordination_has_no_superseded_spend_rule():
+        """L-18: the later 'Review sufficiency' user decision governs spend; the old blocking sentence must not return."""
+        t = (ROOT / "COORDINATION.md").read_text(encoding="utf-8")
+        assert "Spend still needs the other agent's acknowledgement on a `spend` issue." not in t
+        assert "never applies to `main` or to spend approval" not in t
+>       assert "requested but not blocking" in t
+E       AssertionError: assert 'requested but not blocking' in '# Coordination protocol\n\nCodex owns the two gated SSDM stages under the userâ€™s 2026-10-07 takeover direction. Fresh...* Each contributor commits under their own name and email; nobody commits as another person. The repo stays private.\n'
+
+tests\test_jobs_lint.py:166: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule
+1 failed, 172 passed in 13.44s

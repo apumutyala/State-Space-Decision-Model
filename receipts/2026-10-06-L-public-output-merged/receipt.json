@@ -1,0 +1,40 @@
+{
+  "source_sha": "0943bdf29b38e1cd1d8bed894ff7c785ee564db4",
+  "merged_agent_main_sha": "3afc4f54c4239d889eef39ef5fde0d7f45915076",
+  "planner_dependency": {
+    "pr": 13,
+    "commit": "e19c3086163ca6d4df70ef294a85f1f1f6c024eb",
+    "status": "not yet merged into agent-main; exact untracked files used for this CPU proof",
+    "files_sha256": {
+      "language_growth/parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+      "language_growth/planner.py": "a4061d28f2a87fbf726eedf9c04affe83373ac0f75cb39c37d829872d3a701f3"
+    },
+    "verification_raw_output": "dependency.txt"
+  },
+  "merged_dependency_sources": {
+    "kernel": "d52c8e0e3ec0294b43e11a06355017416a92bd50",
+    "renderer": "0375b7bce671a665828a683755e887d3aecd4ca7"
+  },
+  "check": {
+    "command": "python -m unittest language_growth.tests.test_public_output -v",
+    "exit_code": 0,
+    "raw_output": "tests.txt",
+    "result": "5 tests passed"
+  },
+  "sha256_bytes": {
+    "dependency.txt": "f86ca7c04952a11ea2039edd58c04ecddcb260d33676c87020afcf154e4f7d080",
+    "tests.txt": "8b155c0dc4ff66c6ccbef9921a9d519c742645371637576ae4d0dde223e17c1"
+  },
+  "seed": "scripted synthetic provider selections; no learned model",
+  "hardware": "Windows 11, AMD64 CPU, Python 3.12.13",
+  "billed_cost_usd": 0,
+  "scope": "Callable public-output boundary on merged kernel/renderer and exact PR #13 planner dependency. No network authentication, timing-side-channel, learned-capability, GPU, Index or paid-run claim. Re-run from clean merged source after PR #13 lands before claiming the L0f gate.",
+  "additional_current_base_check": {
+    "source_sha": "553bdf135c4d0f5f0120e7429ea9fa237b46453a",
+    "agent_main_sha": "db53bddf9faabcd10bd3505d0c096c0d321057ca",
+    "composition": "fresh git archive source plus planner/parent_bridge paths from e19c308; no other overlays",
+    "command": "python -m unittest language_growth.tests.test_public_output -v",
+    "exit": 0,
+    "raw_output": "current-base-tests.txt"
+  }
+}

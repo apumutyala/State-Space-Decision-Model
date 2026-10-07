@@ -1,0 +1,83 @@
+{
+ "sizing": {
+  "g12_steer_d1a": {
+   "criterion": "g12_steer_d1a",
+   "have": 1800,
+   "need": 827,
+   "need_basis": "estimate <= have",
+   "pass_at_have": 0.975,
+   "meets": true,
+   "unit": "requests (x 4 D1-A templates)"
+  },
+  "g13_steer_d1b": {
+   "criterion": "g13_steer_d1b",
+   "have": 1000,
+   "need": 380,
+   "need_basis": "estimate <= have",
+   "pass_at_have": 0.875,
+   "meets": true,
+   "unit": "requests (x 8 D1-B templates)"
+  },
+  "g12_false_alarm": {
+   "criterion": "g12_false_alarm",
+   "have": 1800,
+   "need": 727,
+   "need_basis": "estimate <= have",
+   "pass_at_have": 0.9925,
+   "meets": true,
+   "unit": "clean units"
+  },
+  "g13_false_alarm": {
+   "criterion": "g13_false_alarm",
+   "have": 1000,
+   "need": 736,
+   "need_basis": "estimate <= have",
+   "pass_at_have": 0.845,
+   "meets": true,
+   "unit": "clean units"
+  },
+  "g13_capability": {
+   "criterion": "g13_capability",
+   "have": 12097,
+   "need": 8585,
+   "need_basis": "estimate <= have",
+   "pass_at_have": 0.88525,
+   "meets": true,
+   "unit": "Index DEV rows"
+  },
+  "g13_ece": {
+   "criterion": "g13_ece",
+   "have": 33000,
+   "need": 9522,
+   "need_basis": "estimate <= have",
+   "pass_at_have": 1.0,
+   "meets": true,
+   "unit": "Index DEV scored fields"
+  },
+  "g13_retention_acc": {
+   "criterion": "g13_retention_acc",
+   "have": 36691,
+   "need": 7479,
+   "need_basis": "estimate <= have",
+   "pass_at_have": 1.0,
+   "meets": true,
+   "unit": "retention decision items"
+  },
+  "g13_retention_ece": {
+   "criterion": "g13_retention_ece",
+   "have": 36691,
+   "need": 7923,
+   "need_basis": "estimate <= have",
+   "pass_at_have": 1.0,
+   "meets": true,
+   "unit": "retention decision items"
+  }
+ },
+ "sensitivity_template_shift": {
+  "g12_steer_d1a_tau0.01": 0.75,
+  "g12_steer_d1a_tau0.02": 0.35,
+  "g13_steer_d1b_tau0.01": 0.825,
+  "g13_steer_d1b_tau0.02": 0.55
+ },
+ "shortfalls": {}
+}

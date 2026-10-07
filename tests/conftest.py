@@ -47,3 +47,8 @@ def shuffled(request, seed):
 @pytest.fixture
 def request_dict():
     return base_request()
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "shell_runner: executes a jobs/*.sh runner under bash on CPU (minutes; "
+                                       "deselect with -m 'not shell_runner')")

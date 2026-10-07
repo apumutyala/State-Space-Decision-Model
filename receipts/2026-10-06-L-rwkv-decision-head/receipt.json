@@ -1,0 +1,42 @@
+{
+  "scope": "Native RWKV7 / merged DecisionModel integration prototype; no capability qualification",
+  "base_commit": "0f4b8ad",
+  "model": "tiny native vendored RWKV7, random seed 31, width 16, 2 layers, CPU FP32",
+  "implementation": "language_growth/rwkv_decision_head.py",
+  "track_d_changes": false,
+  "unmerged_runtime_dependencies": false,
+  "validation": {
+    "command": "../.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_rwkv_decision_head.py language_growth/tests/test_parent_training_integration.py -q",
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "HF_HUB_OFFLINE": "1",
+      "TRANSFORMERS_OFFLINE": "1",
+      "HF_DATASETS_OFFLINE": "1"
+    },
+    "result": "10 passed in 4.62s",
+    "proofs": [
+      "HiddenStateBackbone features exactly equal native RWKV hidden_states[-1]",
+      "Snapshot backend shared-prefix scores agree with plain scores within 2e-5",
+      "Integrator, snapshot, Head B, and final-state fork head gradients are nonzero with frozen native parent",
+      "Merged Trainer head-only optimizer step changes head tensors and leaves every parent state tensor exactly unchanged",
+      "Trainable-only checkpoint reload against the identical random parent reproduces every model tensor and output exactly",
+      "Merged Decider and free-running L planner receive actual native-head responses for one synthetic development comparison",
+      "CausalLM vocabulary head is excluded and cannot execute",
+      "Caller source identity is copied into parent lineage; non-native, unidentified, non-CPU/FP32 and attention-using inputs are refused"
+    ]
+  },
+  "cached_0_1b_smoke": {
+    "executed": false,
+    "reason": "Coordinator directed no duplicate loader. PR #71's cached CPU forward is a separate read-only reference; this branch consumes an already strictly loaded native parent. No unmerged loader was imported and no duplicate checkpoint conversion was added."
+  },
+  "restrictions": {
+    "gpu_training": false,
+    "paid_calls": false,
+    "network": false,
+    "index_or_heldout_access": false,
+    "teacher_api": false,
+    "checkpoint_files_modified": false,
+    "snapshot_code_executed": false
+  },
+  "next_step": "After separate loader review, hand the verified cached native parent and identified RWKV encoder into rwkv_decision_backend; perform a bounded synthetic head-only training experiment under its own resource approval."
+}

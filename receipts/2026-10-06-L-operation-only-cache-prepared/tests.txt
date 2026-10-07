@@ -1,0 +1,28 @@
+Integration base: 018585548104dfbcb9d65a22214ec51405529711
+Command: C:\Users\apumu\research\CHLabs\.venv-gpu\Scripts\python.exe -m pytest language_growth/tests/test_operation_cache.py -q -p no:cacheprovider
+Environment: {"CUDA_VISIBLE_DEVICES": "-1", "HF_DATASETS_OFFLINE": "1", "HF_HUB_OFFLINE": "1", "MKL_NUM_THREADS": "2", "OMP_NUM_THREADS": "2", "OPENBLAS_NUM_THREADS": "2", "PYTHONDONTWRITEBYTECODE": "1", "TRANSFORMERS_OFFLINE": "1"}
+
+........                                                                 [100%]
+8 passed in 14.69s
+
+Exit code: 0
+
+After matching the pinned plan source to Windows checkout CRLF:
+Command: C:\Users\apumu\research\CHLabs\.venv-gpu\Scripts\python.exe -m pytest language_growth/tests/test_operation_cache.py -q -p no:cacheprovider -k default_and_dry_run
+.                                                                        [100%]
+1 passed, 7 deselected in 1.99s
+Exit code: 0
+
+PR112 allowlist regression: before fix, qend_axes tiny-native bridge case failed with ValueError (1 failed, 21 deselected in 6.79s).
+After adding qend_axes to validated head allowlist and refreshing source registration:
+Command: C:\Users\apumu\research\CHLabs\.venv-gpu\Scripts\python.exe -m pytest language_growth/tests/test_rwkv_decision_head.py language_growth/tests/test_operation_cache.py -q -p no:cacheprovider
+..............................                                           [100%]
+30 passed in 9.02s
+Exit code: 0
+
+PR112 attribution regression: before fix, scripted wrong Compare followed by missing left incorrectly credited None==None (1 failed, 8 deselected in 0.23s).
+After both review fixes and refreshed source registration:
+Command: C:\Users\apumu\research\CHLabs\.venv-gpu\Scripts\python.exe -m pytest language_growth/tests/test_rwkv_decision_head.py language_growth/tests/test_operation_cache.py -q -p no:cacheprovider
+...............................                                          [100%]
+31 passed in 5.82s
+Exit code: 0

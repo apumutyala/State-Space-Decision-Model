@@ -128,3 +128,64 @@ def test_pair_partner_logged_as_dropped():
     assert log.add("fc", "b", clean, partner_dropped=True) is False
     c = log.to_json()["by_source"]["fc"]
     assert c["dropped"] == 2 and c.get("kept", 0) == 0 and c["dropped_pair_partner"] == 1
+
+
+# ---- 150k build additions (Track D m2-data-150k)
+def test_150k_mix_shares_and_areas():
+    from ssdm_data import build as B
+    assert sum(B.COUNTS_150K.values()) == 150000
+    assert abs(sum(B.SHARES_150K.values()) - 1.0) < 1e-9
+    singles = [k for k in B.COUNTS_150K if k not in ("multi", "factchange")]
+    assert set(singles) <= set(C.LOADERS) and all(k in B.AREA for k in singles)
+    assert set(B.AREA.values()) == set(B.INDEX_AREA_WEIGHTS)
+
+
+def test_item_keys():
+    from ssdm_data.build import item_keys
+    assert item_keys("m2:anli:abc") == {"m2:anli:abc"}
+    assert item_keys("m2:banking77:7~inj:d1a:urgency") == {"m2:banking77:7"}
+    assert item_keys("m2:multi:m2:anli:x+m2:gsm8k:3") == {"m2:anli:x", "m2:gsm8k:3"}
+    assert item_keys("m2:factchange:stock:12:v1") == item_keys("m2:factchange:stock:12:v0") == {"m2:factchange:stock:12"}
+
+
+def test_exclusion_reasons():
+    from ssdm_data.build import Exclusion
+    ex = Exclusion({"m2:anli:a"}, {"c" * 64}, {"m2:anli:a", "m2:gsm8k:3", "m2:factchange:stock:1"}, {})
+    assert ex.reason({"id": "m2:anli:a"}, None) == "id"
+    assert ex.reason({"id": "m2:sst5:9"}, "c" * 64) == "content"
+    assert ex.reason({"id": "m2:gsm8k:3~inj:d1a:urgency"}, "d" * 64) == "item"
+    assert ex.reason({"id": "m2:multi:m2:sst5:1+m2:gsm8k:3"}, "d" * 64) == "item"
+    assert ex.reason({"id": "m2:factchange:stock:1:v1"}, "d" * 64) == "item"
+    assert ex.reason({"id": "m2:sst5:2"}, "d" * 64) is None
+
+
+def test_build_with_exclusion_skips_held_items(tmp_path):
+    if not all(_fetched(s) for s in ("sst5", "boolq")):
+        pytest.skip("sources not fetched")
+    from ssdm_data import build as B
+    first = [b["id"] for b in itertools.islice(C.sst5(B.config.SEED), 5)]
+    ex = B.Exclusion(set(first[:2]), set(), set(first[:2]) | {first[2]}, {"note": "test"})
+    shares = {"sst5": 0.5, "boolq": 0.3, "factchange": 0.2}
+    res = B.build_sample(n_target=40, out=str(tmp_path / "o"), fingerprint=_toy_fp(), sources=shares,
+                         log=lambda *a: None, allow_test_fingerprint=True, exclusion=ex, dedup_factchange=True,
+                         keep_records=False)
+    s = res["summary"]
+    assert s["n_kept"] == 40 and res["records"] == []
+    ids = {json.loads(x)["id"] for x in res["manifest_lines"]}
+    assert not ids & set(first[:3]) and first[3] in ids
+    assert s["cohort_exclusion"]["skipped_by_bucket"]["sst5"] == {"id": 2, "item": 1}
+    assert len(res["content_lines"]) == 40
+
+
+def test_glaive_and_humicroedit_parsers():
+    assert C._humi_edit("France joined <Isis/> today", "twins") == ("France joined Isis today", "France joined twins today")
+    assert C._humi_edit("no slot here", "x") is None
+    assert C._humi_edit("<a/> and <b/>", "x") is None
+    for sid in ("glaive_fc", "humicroedit_s1", "humicroedit_s2"):
+        if not _fetched(sid):
+            continue
+        for b in itertools.islice(C.LOADERS[sid](1), 200):
+            assert b["gold"] in (b["options"] if isinstance(b["options"], dict) else range(len(b["options"])))
+            if sid == "glaive_fc":
+                assert "<|endoftext|>" not in b["fields"]["dialogue"][0]["content"]
+                assert "ASSISTANT:" not in b["fields"]["dialogue"][0]["content"]

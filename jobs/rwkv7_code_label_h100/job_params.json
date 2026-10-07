@@ -1,0 +1,70 @@
+{
+  "test_env": {"transformers": "5.17.0", "with": [], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages an archive without .git; checkout-only LF tests run before merge"}], "image": "jobs/rwkv7/Dockerfile"},
+  "job": "rwkv7-code-label-h100-qualification",
+  "runner": "jobs/rwkv7_code_label_h100/qualification_job.sh",
+  "decision_rule": "jobs/rwkv7_code_label_screen/rule.py",
+  "launch_enabled": false,
+  "spend_authorization": {"issue": null, "approved_max_usd": null},
+  "chip": "h100",
+  "chip_count": 1,
+  "build_timeout_minutes": 60,
+  "max_duration_minutes": 710,
+  "max_restarts": 0,
+  "assumed_restart_floor": 1,
+  "queue_ttl_minutes": 1440,
+  "resume": "none",
+  "hf_cache": true,
+  "batch_usd_per_min": 0.0495,
+  "published_build_usd_per_min": 0.01,
+  "hard_cap_usd": 73.26,
+  "budget_line": "system1",
+  "approved_track_allocation_usd": 250.0,
+  "reserve_minutes": 10,
+  "phase_caps_minutes": {"setup": 20, "probe": 50, "screen": 620, "audit": 5, "export": 5},
+  "cap_multipliers": {"setup": 1.5, "probe": 1.5, "screen": 1.3, "audit": 1.5, "export": 1.5},
+  "expected_minutes": {"build": 15, "setup": 12, "probe": 30.23326242722105, "screen": 474.98451036468225, "audit": 2, "export": 2},
+  "planning_basis": {
+    "volume": "receipts/2026-10-07-D-code-label-v2-fork/dev-volume.json",
+    "normalization_reference": "jobs/common/readout_cost.py: job-mhc3h fitted 5360 positions/s + 0.098 s/call; not the new hard-budget basis",
+    "positions_per_second": 3757.39821244465,
+    "call_seconds": 0.5997345447540283,
+    "small_call_seconds": 0.11704301834106445,
+    "historical_probe": "receipts/2026-10-07-D-code-label-h100-package/historical-probe.json",
+    "historical_probe_sha256": "546c0cd099a43822f46b691e68cb2c40faa2cb7aa48bd7882ac7e2b4da082d11",
+    "historical_probe_source_commit": "8a97036a545fa2e837637e4cac739f0ddd4aafa9",
+    "historical_probe_source_sha256": "0f1afebb0b65e8197a4bc095f6a0254fd81806148bcf41d912ffc524e9dd91dc",
+    "rate_provenance_status": "inherited stress planning estimate from old 64x64 tails, not current-v2 max-four-row packs; actual on-card probe and live guard are authoritative",
+    "setup_build": "jobs/rwkv7/job_params_readout.json: 12 setup + 15 build expected minutes",
+    "probe": "three complete passes over deterministic real-shape maxima (9.41108747574035 conservative planning minutes/pass) + 2 load/parity minutes",
+    "audit_export": "bounded CPU operations, 2 min planning allowance each; measured at qualification and hard-stopped",
+    "caps": "round each phase expected time times cap_multipliers upward to 5 minutes; add 10 minute terminal reserve",
+    "pricing_source": "https://autoresearch.sfcompute.com/",
+    "pricing_checked_utc_date": "2026-10-07",
+    "cost_policy": "repository conservative build-at-GPU-rate plus two full attempts; no fixed qualification-dollar ceiling"
+  },
+  "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+  "model_bytes": 26540800536,
+  "mission": "track-d-rwkv7-code-label-v2-qualification",
+  "submit": {
+    "command": "bash /opt/ssdm/m1/jobs/rwkv7_code_label_h100/qualification_job.sh --batch",
+    "env": {"PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1", "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"},
+    "key": "track-d-rwkv7-code-label-h100-qualification",
+    "checks": {
+      "success": {"check": {"all_of": [
+        {"type": "file_exists", "path": "/output/RWKV7_CODE_LABEL_QUALIFICATION_COMPLETE"},
+        {"type": "file_exists", "path": "/output/qualification.tgz"},
+        {"type": "file_exists", "path": "/output/receipt.json"},
+        {"type": "file_exists", "path": "/output/SHA256SUMS.json"}
+      ]}},
+      "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"},
+        "interval_s": 600, "grace_period_s": 3600, "fail_threshold": 2, "on_fail": "kill"}
+    }
+  },
+  "context": {
+    "dockerfile": "jobs/rwkv7/Dockerfile",
+    "cmd_rewrite": ["jobs/rwkv7/rwkv7_job.sh", "jobs/rwkv7_code_label_h100/qualification_job.sh"],
+    "manifest_files": ["jobs/rwkv7/snapshot.sha256", "jobs/common/dev_subset_m1.json", "jobs/rwkv7_code_label_screen/rule.py", "receipts/2026-10-07-D-code-label-v2-fork/dev-volume.json"],
+    "data": [{"src": "qualification/index-rows.jsonl.gz", "src_env": "SSDM_CODE_LABEL_DEV_ROWS", "dest": "index-rows.jsonl.gz",
+      "pin_sha256": "406d40e6891690fad48fb82252c44b89a5337c603ff79e03ceb11fffc4eb28f2"}]
+  }
+}

@@ -14,7 +14,7 @@ RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
 WORK=/tmp/qual
 META=${GMN_METADATA_URL:-http://169.254.42.1}
 mkdir -p "$OUT/phases" "$WORK/out" "$WORK/logs"
-export SSDM_DATA_ROOT=$WORK/data PYTHONUNBUFFERED=1
+export SSDM_DATA_ROOT=$WORK/data PYTHONUNBUFFERED=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p "$SSDM_DATA_ROOT"
 # org HF cache (hf_cache: true) when mounted; code expects $SSDM_DATA_ROOT/hf/<hub layout>
 if [ -n "${HF_HUB_CACHE:-}" ] && [ -d "${HF_HUB_CACHE}" ]; then ln -sfn "$HF_HUB_CACHE" "$SSDM_DATA_ROOT/hf"; else mkdir -p "$SSDM_DATA_ROOT/hf"; fi
@@ -57,7 +57,12 @@ finish() {
 trap finish EXIT
 fail() { RC=$1; say "FAIL($1): $2"; exit "$1"; }
 ( while true; do date -u +%FT%TZ > "$OUT/heartbeat"; sleep 60; done ) & HB_PID=$!
-cap() { python -c "import json,sys;print(json.load(open('/opt/ssdm/m1/jobs/qual/job_params.json'))['phase_caps_minutes'][sys.argv[1]])" "$1"; }
+# QUAL_MODE=full (default): phases A, B, C, D.  QUAL_MODE=c_only: A and B already PASSED on job-c4zkm (receipts in
+# jobs/qual/job_params_c_only.json), so only the CPU gates of A run (no GPU test, no 0.8B phase), then C and D.
+QUAL_MODE=${QUAL_MODE:-full}
+case $QUAL_MODE in full) PARAMS=/opt/ssdm/m1/jobs/qual/job_params.json ;; c_only) PARAMS=/opt/ssdm/m1/jobs/qual/job_params_c_only.json ;;
+  *) RC=5; echo "unknown QUAL_MODE=$QUAL_MODE"; exit 5 ;; esac
+cap() { python -c "import json,sys;print(json.load(open(sys.argv[2]))['phase_caps_minutes'][sys.argv[1]])" "$1" "$PARAMS"; }
 
 # ------------------------------------------------------------------ setup (fail fast: exit 5)
 say "setup"
@@ -71,8 +76,12 @@ assert got == pins, got
 assert torch.cuda.is_available()
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0), **got}))
 EOF
+# fla #640 guard: Hopper + Triton < 3.7.1 (or a non-Triton fla backward) -> exit 5 here, before any GPU phase.
+python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
 cd /opt/ssdm/m1
-CAP_A=$(cap A_per_test) && CAP_B=$(cap B) && CAP_CW=$(cap C_weight_wait) && CAP_C=$(cap C) || fail 5 "job_params"
+CAP_A=$(cap A_per_test) && CAP_CW=$(cap C_weight_wait) && CAP_C=$(cap C) || fail 5 "job_params"
+if [ "$QUAL_MODE" = full ]; then CAP_B=$(cap B) || fail 5 "job_params"; fi
+say "mode $QUAL_MODE params $PARAMS"
 python -I scripts/sf_fetch.py --stage first > "$WORK/logs/fetch_first.log" 2>&1 || fail 5 "fetch first"
 ls "$SSDM_DATA_ROOT"/FAILED_* > /dev/null 2>&1 && fail 5 "fetch first: $(cat "$SSDM_DATA_ROOT"/FAILED_*)"
 ( python -I scripts/sf_fetch.py --stage rest > "$WORK/logs/fetch_rest.log" 2>&1 ) &   # 9B in the background
@@ -81,7 +90,9 @@ export_phase setup
 # ------------------------------------------------------------------ A: numerics gates (exit 2)
 say "phase A"
 mkdir -p "$WORK/out/tests"
-for t in test_gdn test_init_shapes test_progressive_resume test_guard test_qual_job; do
+A_TESTS="test_gdn test_init_shapes test_progressive_resume test_guard test_qual_job test_microbatch test_memmodel"
+[ "$QUAL_MODE" = c_only ] && A_TESTS="test_progressive_resume test_guard test_qual_job test_microbatch test_memmodel"
+for t in $A_TESTS; do
   timeout ${CAP_A}m python -m tests.$t > "$WORK/out/tests/$t.json" 2> "$WORK/logs/$t.err"; r=$?
   gate "A:$t" $r
   say "A $t rc=$r"
@@ -90,12 +101,16 @@ done
 export_phase A
 
 # ------------------------------------------------------------------ B: 0.8B throughput/memory/numerics
+if [ "$QUAL_MODE" = full ]; then
 say "phase B"
 timeout ${CAP_B}m python -m convert.qual --config configs/qual_h100.json --model 0p8b --out "$WORK/out" \
   > "$WORK/logs/qual_0p8b.log" 2>&1; r=$?
 gate "B:qual_0p8b" $r
 export_phase B
 case $r in 0) ;; 2|3|4) fail $r "qual 0p8b stop" ;; 124) fail 7 "qual 0p8b timeout" ;; *) fail 2 "qual 0p8b crashed rc=$r" ;; esac
+else
+say "phase B skipped (c_only: passed on job-c4zkm)"
+fi
 
 # ------------------------------------------------------------------ C: 9B throughput/memory probe
 say "phase C"

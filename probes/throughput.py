@@ -1,6 +1,7 @@
 """Prefill throughput / peak memory (measured) and decode-state bytes (analytic) for a given swap configuration."""
 from __future__ import annotations
 
+import contextlib
 import statistics
 import time
 
@@ -46,3 +47,48 @@ def measure(model, modes, lengths, reps=3):
                 out[str(L)] = {"oom": True, "state": state_bytes(model, modes, L)}
                 torch.cuda.empty_cache()
     return out
+
+
+@torch.no_grad()
+def call_latency(model, modes, prefix_len=2048, tail=(64, 64), small_len=16, reps=6, autocast_dtype=torch.bfloat16):
+    """Per-call cost of the prefix-fork readout on THIS model (jobs/common/readout_cost.py: wall = positions / tok_s +
+    calls x call_s). Same shapes as jobs/rwkv7/probe_rwkv7.py: ``pack_call_s`` = one packed [64, 64] continuation from
+    a 2k-token state through ``convert.model.ConvertedStateOps`` (the path both probe9b Index arms run), ``small_call_s``
+    = a 16-token plain forward. Median of reps-1 after a warm-up. Before this, the probe9b readout preflight had to
+    borrow the RWKV7 fitted 0.098 s/call (PERF_AUDIT)."""
+    from convert.model import ConvertedStateOps
+
+    dev = next(model.lm.parameters()).device
+    sync = torch.cuda.synchronize if dev.type == "cuda" else (lambda: None)
+    g = torch.Generator().manual_seed(0)
+    vocab = model.cfg.vocab_size
+    ops = ConvertedStateOps(model, autocast_dtype=autocast_dtype if dev.type == "cuda" else None)
+
+    def med(fn):
+        ts = []
+        for _ in range(reps):
+            sync()
+            t = time.perf_counter()
+            fn()
+            sync()
+            ts.append(time.perf_counter() - t)
+        ts = sorted(ts[1:])
+        return ts[len(ts) // 2]
+
+    # no_grad: a readout never builds a graph. The small call runs under the same autocast as the pack call: job-5cmat's
+    # converted arm (fp32 student GDN in a bf16 model) failed here with "mat1 and mat2 ... BFloat16 != float" outside it
+    ac = (torch.autocast(device_type="cuda", dtype=autocast_dtype) if dev.type == "cuda" and autocast_dtype is not None
+          else contextlib.nullcontext())
+    with model.modes(modes), torch.no_grad():
+        _, st = ops.prefill(torch.randint(1, vocab, (1, prefix_len), generator=g).to(dev))
+        tl = torch.randint(1, vocab, tail, generator=g).to(dev)
+        pack = med(lambda: ops.extend(st, tl, tail[1]))
+
+        def small_call():
+            with ac:
+                h = model.hidden(tl[:1, :small_len])[:, -1:]
+            return model.lm_head(h)
+
+        small = med(small_call)
+    return {"pack_call_s": pack, "small_call_s": small, "prefix_len": prefix_len, "tail": list(tail),
+            "small_len": small_len, "reps": reps}

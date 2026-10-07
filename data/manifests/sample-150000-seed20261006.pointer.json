@@ -1,0 +1,12 @@
+{
+ "build": "sample-150000-seed20261006 (python -X utf8 -I -m ssdm_data build --n 150000 --mix 150k)",
+ "location": "ssdm-data/m2/build/sample-150000-seed20261006/ (outside git; deterministic, a rebuild reproduces it)",
+ "records_uncompressed_sha256": "82fb395d889c473d9fbc4877b51c792438e94b53cddd54e4cf825d4603baa166",
+ "manifest": "sample-150000-seed20261006.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "0be33669fa077d2a2abe29ecd159aea1a27c7cc9daaf910b584755410da4d961",
+ "content_map": "sample-150000-seed20261006.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "d4ffd9073e0490e409a757508b2821f8108a3a9e36b2531ec3c97a94b2bc0898",
+ "n_records": 150000,
+ "excludes_cohort": "m2-dev-cohort-v2 be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "receipt": "receipts/2026-10-06-D-m2-data-150k/"
+}

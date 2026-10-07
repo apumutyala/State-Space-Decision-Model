@@ -1,0 +1,26 @@
+{
+ "id": "heldout-draw-v1",
+ "decided": "2026-10-07 by the coordinator under the operator's delegation (operator may override)",
+ "committed_before_any_generation": "yes: committed before any E6 generator data or held-out-generator work exists on any branch",
+ "families": "families-v1",
+ "edition": "0.3",
+ "pool_rule": "every 0.3 public benchmark whose families-v1 tier is 'none' (zero coverage in the 150k mix); ForecastBench (48) is retired and not in the pool",
+ "pool": [9, 20, 22, 23, 31, 32, 33, 38, 40, 41, 43, 44, 50, 56, 58, 59, 61, 64],
+ "seed": 20261007,
+ "procedure": "key(n) = sha256(f'heldout-draw-v1:{seed}:{n}') as hex, for each catalog id n in the pool; sort the pool by key ascending; the first 9 are FROZEN, the other 9 are GENERATABLE. No benchmark is forced in or out; the draw is the draw.",
+ "frozen": [9, 20, 22, 31, 32, 33, 44, 58, 64],
+ "generatable": [23, 38, 40, 41, 43, 50, 56, 59, 61],
+ "frozen_rule": "No training data, distillation set or generator may ever target a FROZEN benchmark or its task family (families-v1 'family'). harness.heldout.check_record / check_generator refuse them. Generatable benchmarks may receive generated training data (PR #92 E6); once they do, they move to tier same_family in a new families-vN.",
+ "aliases": {
+  "9": ["home appliances", "home_appliance", "device_state"],
+  "20": ["bpomp", "poem_preference"],
+  "22": ["pop909", "chord"],
+  "31": ["chessbench", "chess"],
+  "32": ["musr", "narrative_multistep"],
+  "33": ["sata", "select_all"],
+  "44": ["cladder", "causal_query", "causal_graph"],
+  "58": ["bbh", "big_bench_hard", "bigbench_hard"],
+  "64": ["new yorker", "newyorker", "caption_contest", "caption_matching"]
+ },
+ "second_proxy_planned": "An independent second new-domain proxy: a frozen set of held-out task GENERATORS (3-5 decision formats absent from both the Index and our data), defined and committed before use, never trained on. Not built yet."
+}

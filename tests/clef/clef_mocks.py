@@ -62,6 +62,33 @@ class _Out:
         self.last_hidden_state = h
 
 
+#: perturbation of the mocked "fast kernel" relative to the reference (tests flip it to simulate a bad kernel)
+FAST_KERNEL_ERROR = {"scale": 1e-4}
+
+
+def torch_chunk_gated_delta_rule(x):
+    """Reference path (named like transformers' Qwen3.5 torch fallback; looked up by module name)."""
+    return torch.tanh(x)
+
+
+def fast_chunk_gated_delta_rule(x):
+    """Stand-in for fla's kernel: the reference plus a small, deterministic numeric difference."""
+    return torch.tanh(x) + FAST_KERNEL_ERROR["scale"] * torch.cos(3 * x)
+
+
+class MockGDN(torch.nn.Module):
+    """Has the two attributes ``reference_gdn_path`` switches, like Qwen3_5GatedDeltaNet."""
+
+    def __init__(self):
+        super().__init__()
+        self.proj = torch.nn.Linear(HIDDEN, HIDDEN)
+        self.chunk_gated_delta_rule = fast_chunk_gated_delta_rule
+        self.causal_conv1d_fn = object()  # "kernel present"; the switch sets it to None
+
+    def forward(self, x):
+        return x + self.chunk_gated_delta_rule(self.proj(x))
+
+
 class MockText(torch.nn.Module):
     """Embedding + one causal-ish mixing layer; accepts input_ids or inputs_embeds like HF."""
 
@@ -69,6 +96,7 @@ class MockText(torch.nn.Module):
         super().__init__()
         self.embed_tokens = torch.nn.Embedding(VOCAB, HIDDEN)
         self.mix = torch.nn.Linear(HIDDEN, HIDDEN)
+        self.gdn = MockGDN()
 
     def get_input_embeddings(self):
         return self.embed_tokens
@@ -76,7 +104,7 @@ class MockText(torch.nn.Module):
     def forward(self, input_ids=None, attention_mask=None, inputs_embeds=None, use_cache=False, return_dict=True, **kw):
         x = self.embed_tokens(input_ids) if inputs_embeds is None else inputs_embeds
         csum = torch.cumsum(x, dim=1) / torch.arange(1, x.shape[1] + 1, device=x.device).view(1, -1, 1)
-        return _Out(torch.tanh(self.mix(csum)) + x)
+        return _Out(self.gdn(torch.tanh(self.mix(csum)) + x))
 
 
 class MockLM(torch.nn.Module):
@@ -100,3 +128,21 @@ def build_mock_model(jsm, seed: int = 0):
         head.joint_logit_scale.fill_(1.0)
         head.residual_gate.fill_(0.5)
     return jsm.ClefModel(MockLM(), head).eval()
+
+
+_STANDIN = {}
+
+
+def load_standin(model_dir, release="clef-flash", *, encoding="ssdm", max_length=16384, **kw):
+    """``CLEF_STANDIN=clef_mocks:load_standin`` for the run_job.sh CPU dry run: the same (backend, model, processor)
+    triple ``baselines.clef_backend.load_clef`` returns, on the tiny mocked Clef (seed 4, fp32, CPU). Deterministic
+    across processes, so the kit's decide and native runs and the probes all see the same model."""
+    from baselines import clef_backend as CB
+
+    if "model" not in _STANDIN:
+        _STANDIN["jsm"] = CB.load_jsm()
+        _STANDIN["model"] = build_mock_model(_STANDIN["jsm"], seed=4)
+    be = CB.ClefBackend(_STANDIN["model"], FakeTok(), release=release, encoding=encoding, jsm=_STANDIN["jsm"],
+                        device="cpu", dtype="float32", max_length=max_length,
+                        files_sha256={"note": "STANDIN mock (dry run), no weights"})
+    return be, _STANDIN["model"], MockProcessor(FakeTok())

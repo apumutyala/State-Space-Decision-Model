@@ -1,0 +1,282 @@
+#!/usr/bin/env bash
+# jobs/m2_first_cell: the first TRAINED attention-free decision model (RWKV7-G1k-13.3B + LoRA r64 + cache-fork head,
+# Clef loss arm, PR #44 150k injection-augmented set), measured against its own stock readout on the 2,008-row Index
+# DEV subset and the G12 development cohort. SF Compute batch job (chip h100). DRAFT, NOT SUBMITTED.
+# Spec: jobs/m2_first_cell/JOB_SPEC.md. Caps: jobs/m2_first_cell/job_params.json. Config: m2_first_cell_rwkv7.json.
+# Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
+# Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
+#        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
+#        child evals (g12 + index) -> report.
+# Exit codes: 0 measured + result valid + exports verified (m2_gates 0 / 40 G12 reject / 43 pending / 44 partial /
+#   45 underpowered are all MEASURED outcomes: reported, verdict "measured", not promotable unless 0, exit 0)
+#   4 TOK_S / CALL_S missing or not a number   5 setup   6 export verification   7 phase timeout
+#   9 report / arm / evals missing or invalid   10 snapshot / vendored code / records / train set / cohort / arm identity
+#      (incl. a shipped parent arm seed that fails its pin or identity: jobs.m2_first_cell.arm_seed)
+#   15 an eval phase projected (preflight at the env rates, or re-priced at the parent arm's measured speed BEFORE
+#      training) or measured (live rate guard) past its cap
+#   30 / 31 / 32 guard: kit-suite / content index / harness manifests   33 held-out D1-B fragment outside the pinned set
+#   20 train.run_cell unexpected code   21-29 train.run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite,
+#   24 memory, 25 data, 26 too slow for min_steps, 27 guard not ready, 28 cohort / train-set leak or mismatch,
+#   35 head config)
+#   1 finalize failed
+# Path overrides (TEST-ONLY; a paid run sets none of them, and every default below IS the paid-run path). They exist
+# so tests/test_m2_first_cell_shell.py can EXECUTE this script end to end on CPU with a tiny stand-in model; they only
+# relocate inputs/outputs, no check is skipped or relaxed (every sha256 / identity / rate / cap guard still runs on
+# whatever the paths hold). Any M2FC_* variable that is set is logged at the top of run.log.
+#   M2FC_CODE              code root                       (default /opt/ssdm/m1, the image's COPY code/m1)
+#   M2FC_CONTEXT_MANIFEST  build-context manifest          (default /opt/ssdm/CONTEXT_MANIFEST.json)
+#   M2FC_KIT_DIR           Decision Index kit clone        (default /opt/decision-index)
+#   M2FC_DATA              data root (records, 150k set, suite, DEV rows, references; also SSDM_DATA)  (default /data)
+#   M2FC_WORK              scratch dir                     (default /tmp/m2-first-cell)
+#   M2FC_CELL              cell config (absolute, or relative to CODE, the working dir)  (default jobs/m2_first_cell/m2_first_cell_rwkv7.json)
+# Already overridable by the platform contract: GMN_OUTPUT_DIR, GMN_RESULT_PATH, GMN_CHECKPOINT_DIR, GMN_METADATA_URL;
+# the snapshot download honours the standard HF_HUB_CACHE / HF_HOME / HF_HUB_OFFLINE. nvidia-smi, the CUDA asserts,
+# the snapshot sha256 pins and the TOK_S / CALL_S rates have NO override here (the test stubs them from outside).
+set -Euo pipefail
+MAIN_PID=$$
+CODE=${M2FC_CODE:-/opt/ssdm/m1}
+CONTEXT_MANIFEST=${M2FC_CONTEXT_MANIFEST:-/opt/ssdm/CONTEXT_MANIFEST.json}
+KIT_DIR=${M2FC_KIT_DIR:-/opt/decision-index}
+DATA=${M2FC_DATA:-/data}
+CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
+PARAMS=$CODE/jobs/m2_first_cell/job_params.json
+TRAIN_DIR=$DATA/m2-150k
+RECORDS=$DATA/m2/records.jsonl.gz
+OUT=${GMN_OUTPUT_DIR:-/output}
+RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
+WORK=${M2FC_WORK:-/tmp/m2-first-cell}
+CK=${GMN_CHECKPOINT_DIR:-$WORK/ck}
+META=${GMN_METADATA_URL:-http://169.254.42.1}
+HB_EVERY_S=60 STALL_S=1200  # fixed in paid runs (not env-overridable)
+WATCH_EXTRA=$WORK
+mkdir -p "$OUT/phases" "$WORK/out" "$WORK/logs" "$CK"
+export SSDM_DATA=$DATA PYTHONUNBUFFERED=1 PYTHONUTF8=1 SSDM_PROGRESS_BEAT=$WORK/logs/beat
+# the allocator every job-tvuat variant ran with (jobs/cell_step_profile/cell_step_job.sh, rule.ALLOC_CONF): without it
+# fragmentation can OOM a ladder rung the profile fit, and the ladder's OOM catch would silently lower T_max (PR #147)
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+HF_DIR=${HF_HUB_CACHE:-${HF_HOME:-$HOME/.cache/huggingface}}
+mkdir -p "$HF_DIR"
+T0=$(date +%s)
+EXPORT_FAIL=0
+RC=""
+GATES="{}"
+exec > >(tee -a "$WORK/logs/run.log") 2>&1
+cd "$CODE"
+# shellcheck source=../common/lib.sh
+. "$CODE/jobs/common/lib.sh"
+# shellcheck source=../clef_baseline/watchdog.sh
+. "$CODE/jobs/clef_baseline/watchdog.sh"
+MARKER=M2_FIRST_CELL_DONE
+VALIDATOR=jobs.m2_first_cell.summarize:valid_result
+OVERRIDES=$(env | grep -o '^M2FC_[A-Z0-9_]*' | sort | tr '\n' ' ' || true)
+[ -z "$OVERRIDES" ] || say "TEST OVERRIDES SET (never in a paid run): $OVERRIDES"
+finish() {
+  local rc=${RC:-$?}
+  trap - EXIT
+  kill "${WD_PID:-}" 2> /dev/null || true
+  rm -f "$OUT/$MARKER"
+  # Terminal export and result validation share 60s + 30s KILL grace from the
+  # existing seven-minute reserve. Export failure still reaches finalize (exit 6).
+  export -f export_phase sample say
+  export CODE OUT WORK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR
+  export FINISH_RC=$rc
+  timeout --kill-after=30s 60s bash -c '
+    export_phase final
+    exec python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
+      "$WORK/out/first_cell_result.json" "$OUT" "$MARKER" "$VALIDATOR"
+  '
+  local final=$?
+  [ "$final" -eq 0 ] || rm -f "$OUT/$MARKER"
+  say "EXIT $final (runner rc $rc)"
+  exit "$final"
+}
+fail() { RC=$1; say "FAIL($1): $2"; exit "$1"; }
+num() { case "$1" in *[!0-9.]*|"") return 1 ;; esac; }
+hb
+watchdog & WD_PID=$!
+trap finish EXIT
+[ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
+num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
+[ -n "${CALL_S:-}" ] || fail 4 "CALL_S (a MEASURED per-call latency, s) is not set"
+num "$CALL_S" || fail 4 "CALL_S=$CALL_S is not a number"
+
+# ------------------------------------------------------------------ setup: identities + eval preflights (exit 5 / 10 / 15)
+say "setup"
+cp "$CONTEXT_MANIFEST" "$WORK/out/" || fail 5 "no context manifest"
+nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
+CELL_PATH=$CELL python - > "$WORK/out/env.json" <<'EOF' || fail 5 "env pins / WKV selection"
+import json, torch, transformers
+assert transformers.__version__ == "5.17.0", transformers.__version__
+assert torch.cuda.is_available()
+import decision_index  # noqa: F401
+import third_party.rwkv7_hf as V
+import os
+from heads.rwkv7_wkv import FLA_NAMES, GPU_VERIFIED, LEAN, VENDORED
+assert all(V.vendored_ok().values()), V.vendored_ok()
+wkv = json.load(open(os.environ["CELL_PATH"])).get("rwkv7_wkv") or "chunked"
+assert wkv in VENDORED + LEAN + FLA_NAMES, wkv
+assert wkv not in FLA_NAMES or GPU_VERIFIED, f"rwkv7_wkv={wkv} but fla is not GPU-verified (jobs/fla_rwkv7 ADOPT first)"
+print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
+                  "transformers": transformers.__version__, "vendored_rwkv7": V.REVISION,
+                  "wkv": wkv, "fla_gpu_verified": GPU_VERIFIED}))
+EOF
+python -I "$CODE/jobs/common/fla_guard.py" --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
+( cd "$DATA" && sha256sum -c "$CODE/jobs/rwkv7/records.sha256" ) > "$WORK/out/records-verify.txt" 2>&1 || fail 10 "PR #16 records sha256"
+python -X utf8 -m train.train_set verify --config "$CELL" --train-dir "$TRAIN_DIR" --out "$WORK/out/train-set-verify.json" \
+  > "$WORK/logs/train-set.log" 2>&1 || fail 10 "150k train set != pointer"
+python -X utf8 -m train.cohort verify > "$WORK/out/cohort-verify.json" 2>&1 || fail 10 "cohort does not rebuild to its committed sha256"
+CAP_SETUP=$(cap setup) || fail 5 "job_params"
+SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))'); r=$?
+case $r in 0) ;; 124|137) fail 7 "download timeout" ;; *) fail 10 "download" ;; esac
+( cd "$SNAP" && sha256sum -c "$CODE/jobs/rwkv7/snapshot.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "snapshot sha256"
+python -c "import sys, third_party.rwkv7_hf as V; V.verify_snapshot_code(sys.argv[1])" "$SNAP" || fail 10 "vendored code != snapshot code"
+( cd "$DATA" && sha256sum -c "$CODE/jobs/clef_baseline/data.sha256" ) > "$WORK/out/data-verify.txt" 2>&1 || fail 10 "DEV rows sha256"
+python -X utf8 -m jobs.common.dev_subset rows --rows "$DATA/slices/dev-rows.jsonl.gz" --out "$WORK/index-rows.jsonl.gz" \
+  --subset jobs/common/dev_subset_m1.json > "$WORK/out/index-subset.json" || fail 10 "DEV subset rows"
+REFS=()
+for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used only if pinned AND present
+  PIN=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['reference_results_sha256'].get(sys.argv[2]) or '')" "$PARAMS" "$NAME")
+  F=$DATA/reference/$NAME.results.jsonl
+  if [ -n "$PIN" ]; then
+    [ -f "$F" ] && [ "$(sha256sum "$F" | cut -d' ' -f1)" = "$PIN" ] || fail 10 "reference $NAME missing or sha256 != pin"
+    REFS+=(--reference "$NAME=$F")
+  fi
+done
+python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag" || fail 5 "drivers not importable"
+FIX_P=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['parent'])" "$PARAMS") || fail 5 "job_params"
+FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['child'])" "$PARAMS") || fail 5 "job_params"
+# every eval phase is priced HERE from the measured rates, before the paid training phase
+for P in "g12 parent parent_g12 $FIX_P" "index parent parent_index $FIX_P" "g12,index child evals $FIX_C"; do
+  set -- $P
+  python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \
+    --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
+done
+gate "setup" 0
+export_phase setup
+
+# ------------------------------------------------------------------ guard readiness (exit 30 / 31 / 32): before ANY training
+say "phase guard"
+timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_ready --suite-dir "$DATA/suite-0.2" --kit-dir "$KIT_DIR" \
+  --out-dir "$WORK/out/guard" > "$WORK/logs/guard.log" 2>&1; r=$?
+gate "guard" $r; export_phase guard
+case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
+
+# ------------------------------------------------------------------ held-out D1-B over the WHOLE training set (exit 33)
+say "phase heldout (hits must equal the pinned exclusions)"
+timeout --kill-after=30s $(cap heldout)m python -X utf8 -m train.train_set heldout --config "$CELL" --train-dir "$TRAIN_DIR" \
+  --out "$WORK/out/heldout.json" > "$WORK/logs/heldout.log" 2>&1; r=$?
+gate "heldout" $r; export_phase heldout
+case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment outside the pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
+
+# ------------------------------------------------------------------ parent arm (stock readout) BEFORE training (review fix 1)
+# Its live weighted rate guard measures this box's scoring speed before any training spend; then the child evals are
+# re-priced from that measured speed (jobs.m2_first_cell.reprice, exit 15). Cached in $CK across restarts.
+ARM=$CK/parent_arm
+# A RESUBMITTED job (empty checkpoint slot) seeds the cache from a pinned earlier export shipped as data/parent_arm_seed/
+# (job_params parent_arm_seed; LESSONS L-34): installed atomically (temp dir, checked, renamed), then verified BEFORE
+# any training (seed_verify: full units identity via read_arm_cache, guard, the parent's revision on this box and a
+# short re-score probe whose speed feeds the re-price). A restart's own cache is left as is (a seeded one is
+# re-verified using provenance inside the atomic cache install); nothing shipped = score the parent.
+python -X utf8 -m jobs.m2_first_cell.arm_seed seed --src "$DATA/parent_arm_seed" --dst "$ARM" --params "$PARAMS" \
+  --cell "$CELL" --out "$WORK/out/arm-seed.json" > "$WORK/logs/arm-seed.log" 2>&1; r=$?
+case $r in 0) ;; 10) fail 10 "parent arm seed refused: $(tail -1 "$WORK/logs/arm-seed.log")" ;; *) fail 5 "arm seed rc=$r" ;; esac
+mkdir -p "$ARM"
+ARM_SRC=restart
+PROBE=()
+if python -c "import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get('verify_seed') else 1)" "$WORK/out/arm-seed.json"; then
+  ARM_SRC="seeded from data/parent_arm_seed"
+  SEED_SHA=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['parent_arm_seed']['arm_sha256'])" "$PARAMS") \
+    || fail 5 "job_params parent_arm_seed"
+  PROBE_N=$(python -c "import json,sys; print(int(json.load(open(sys.argv[1]))['parent_arm_seed']['probe_records']))" "$PARAMS") \
+    || fail 5 "job_params parent_arm_seed"
+  say "phase seed_verify (seeded parent arm: units identity, guard, revision + $PROBE_N-record re-score on this box)"
+  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent rwkv7 \
+    --model-dir "$SNAP" --cell-config "$CELL" --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" \
+    --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$ARM" --arm-sha256 "$SEED_SHA" --probe-n "$PROBE_N" \
+    --tok-s "$TOK_S" --call-s "$CALL_S" --verify-out "$WORK/out/seed-verify.json" > "$WORK/logs/seed-verify.log" 2>&1; r=$?
+  mkdir -p "$WORK/out/parent_arm"; cp "$ARM"/*.json "$WORK/out/parent_arm/" 2>/dev/null || true  # comparator units
+  case $r in 0) ;; 124|137) fail 7 "seed_verify timeout" ;;
+    10) fail 10 "seeded parent arm failed verification: $(tail -1 "$WORK/logs/seed-verify.log")" ;;
+    *) fail 5 "seed_verify rc=$r" ;; esac
+  PROBE=(--probe "$WORK/out/seed-verify.json")
+fi
+for STAGE in g12 index; do
+  if python -c "import json,sys,hashlib,pathlib; d=pathlib.Path(sys.argv[1]); e=json.load(open(d/'arm.json'))['stages'][sys.argv[2]]; sys.exit(0 if hashlib.sha256((d/e['file']).read_bytes()).hexdigest()==e['sha256'] else 1)" "$ARM" "$STAGE" 2>/dev/null; then
+    say "parent $STAGE: cached ($ARM_SRC)"; gate "parent_$STAGE" 0; continue
+  fi
+  say "phase parent_$STAGE"
+  python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/parent-$STAGE.progress.jsonl" \
+    --cap-min "$(cap parent_$STAGE)" --report "$ARM/rate-parent-$STAGE.json" -- \
+    timeout --kill-after=30s $(cap parent_$STAGE)m python -X utf8 -m jobs.m2_parent_arm.score_parent --parent rwkv7 --model-dir "$SNAP" --cell-config "$CELL" \
+    --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" \
+    --out-dir "$ARM" --stage "$STAGE" --progress "$WORK/logs/parent-$STAGE.progress.jsonl" \
+    > "$WORK/logs/parent-$STAGE.log" 2>&1; r=$?
+  gate "parent_$STAGE" $r
+  mkdir -p "$WORK/out/parent_arm"; cp "$ARM"/*.json "$WORK/out/parent_arm/" 2>/dev/null || true
+  export_phase "parent_$STAGE"
+  case $r in 0) ;; 124|137) fail 7 "parent $STAGE timeout" ;; 15) fail 15 "parent $STAGE: live rate past its cap" ;;
+    10) fail 10 "parent $STAGE identity" ;; *) fail 9 "parent $STAGE rc=$r" ;; esac
+done
+ARM_SHA=$(sha256sum "$ARM/arm.json" | cut -d' ' -f1)
+# Preserve the comparator even when every stage came from the checkpoint cache, including ordinary restarts.
+mkdir -p "$WORK/out/parent_arm" && cp "$ARM"/*.json "$WORK/out/parent_arm/" || fail 6 "parent arm export copy"
+if [ ${#PROBE[@]} -eq 0 ]; then
+  # A cache from this job also needs full identity validation BEFORE training, not just per-file hashes.
+  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent rwkv7 \
+    --model-dir "$SNAP" --cell-config "$CELL" --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" \
+    --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$ARM" --arm-sha256 "$ARM_SHA" \
+    --verify-out "$WORK/out/parent-cache-verify.json" > "$WORK/logs/parent-cache-verify.log" 2>&1; r=$?
+  case $r in 0) ;; 124|137) fail 7 "parent cache verification timeout" ;;
+    10) fail 10 "parent cache failed verification: $(tail -1 "$WORK/logs/parent-cache-verify.log")" ;;
+    *) fail 5 "parent cache verification rc=$r" ;; esac
+fi
+say "re-price the child evals from the measured parent scoring speed"
+python -X utf8 -m jobs.m2_first_cell.reprice --arm-dir "$ARM" --params "$PARAMS" --tok-s "$TOK_S" --call-s "$CALL_S" \
+  --out "$WORK/out/reprice.json" "${PROBE[@]}" > "$WORK/logs/reprice.log" 2>&1; r=$?
+gate "reprice" $r
+case $r in 0) ;; 15) fail 15 "child evals re-priced past their cap at the box's measured speed (before training)" ;;
+  *) fail 5 "reprice rc=$r" ;; esac
+
+# ------------------------------------------------------------------ cell: smoke -> ladder -> train (resumable; exit 26 = too slow)
+say "phase cell"
+mkdir -p "$CK/cell"
+[ -f "$CK/cell/cell.json" ] && cp "$CK/cell/cell.json" "$WORK/out/cell.json"
+timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" --records "$RECORDS" \
+  --train-dir "$TRAIN_DIR" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
+  --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
+cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
+gate "cell" $r; export_phase cell
+case $r in 0) ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+
+# ------------------------------------------------------------------ child evals: temperature fit, dev card, G12 + Index DEV subset
+say "phase evals (calibration fit; dev card; G12 dev + steer_dev; Index DEV subset + readout diagnostics)"
+python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress.jsonl" --cap-min "$(cap evals)" \
+  --report "$WORK/out/rate-evals.json" -- \
+  timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" \
+  --records "$RECORDS" --train-dir "$TRAIN_DIR" --guard-readiness "$WORK/out/guard/readiness.json" \
+  --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --anchor-arm "$ARM" --anchor-arm-sha256 "$ARM_SHA" \
+  --index-rows "$WORK/index-rows.jsonl.gz" \
+  --out "$WORK/out/report.json" --stage g12+index --progress-dir "$WORK/logs" > "$WORK/logs/evals.log" 2>&1; r=$?
+gate "evals" $r; export_phase evals
+# Trained + measured (the report is written; the checkpoint and every eval export follow), m2_gates (PR #102, Codex
+# #36): 0 promotable | 40 G12 rejected | 43 margins pending | 44 partial (this cell runs G12 + the index measurement,
+# not G13, so an accepting run is 44) | 45 underpowered. 43 / 44 / 45 are NOT promotable; summarize records why.
+# The anchor (lineage comparator) is the in-job parent arm itself, pinned by the same sha256.
+case $r in 0|40|43|44|45) ;; 124|137) fail 7 "evals timeout" ;; 15) fail 15 "evals: live rate past the cap" ;;
+  10) fail 10 "evals identity (cohort / parent arm / checkpoint lineage)" ;; *) fail 9 "evals rc=$r" ;; esac
+
+# ------------------------------------------------------------------ report: result + checkpoint export
+say "phase report"
+timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.summarize --cell "$WORK/out/cell.json" \
+  --report "$WORK/out/report.json" --parent-arm "$ARM" --index-rows "$WORK/index-rows.jsonl.gz" --params "$PARAMS" \
+  --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$WORK/out/first_cell_result.json" "${REFS[@]}" \
+  > "$WORK/logs/report.log" 2>&1; r=$?
+gate "report" $r
+[ $r -eq 0 ] || fail 9 "first-cell result missing or invalid (rc=$r)"
+LATEST=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$CK/cell/latest.json") || fail 9 "no checkpoint"
+mkdir -p "$OUT/ckpt"
+cp "$CK/cell/$LATEST" "$CK/cell/latest.json" "$OUT/ckpt/" && ( cd "$OUT/ckpt" && sha256sum "$LATEST" > "$LATEST.sha256" ) \
+  || EXPORT_FAIL=1
+sample "$WORK/out/first_cell_result.json" "first-cell"
+RC=0
+exit 0

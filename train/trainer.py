@@ -37,7 +37,22 @@ from .guard import SplitGuard
 from .lineage import diff as lineage_diff
 from .lineage import lineage
 from .lora import apply_lora, lora_parameters
-from .losses import LossConfig, decision_loss
+from .losses import LossConfig, add_order_consistency, aligned_order_js, decision_loss
+
+
+def teacher_tensor(batch, lp: torch.Tensor) -> torch.Tensor:
+    """[B, K] teacher probabilities (``Item.teacher``, in ``row.option_ids`` order; ``train.teacher.attach``), zero on
+    padded options; a row without a teacher is all NaN (``decision_loss`` falls back to the arm for it)."""
+    t = torch.full(lp.shape, float("nan"), dtype=lp.dtype, device=lp.device)
+    for b, it in enumerate(batch):
+        tp = getattr(it, "teacher", None)
+        if tp is None:
+            continue
+        if len(tp) != it.row.n_options:
+            raise ValueError(f"{it.id}: teacher has {len(tp)} options, row has {it.row.n_options}")
+        t[b] = 0.0
+        t[b, : len(tp)] = torch.tensor(tp, dtype=lp.dtype, device=lp.device)
+    return t
 
 
 @dataclass
@@ -66,18 +81,100 @@ class TrainConfig:
     ckpt_every: int = 0
     eval_every: int = 0
     require_guard: bool = True  # refuse to train without a SplitGuard (GOAL.md integrity rule)
+    # optional controlsafe arm (G15 trust gate): {"trust_gate": true, "bridge_rank": 8, "readout": "decision",
+    # "trust_policy": "state"}. Empty = off; an empty dict is left out of the config hash (old hashes unchanged).
+    controlsafe: dict = field(default_factory=dict)
+    # ---- execution strategy (jobs/cell_step_profile; defaults = the original path). The same math, so they are left
+    # out of the config hash (a checkpoint resumes under either setting); equivalence: tests/test_cell_perf.py.
+    #: per-block activation checkpointing that keeps the cache fork (heads/act_ckpt.py: RWKV-7, Qwen3.5 / Q9-AF)
+    act_ckpt: bool = False
+    #: rows per backbone call within one optimiser step (1 = one call per micro-batch row, as before). > 1: the step's
+    #: batch_size x grad_accum rows are sorted by length (longest first) and run in groups of up to row_batch rows, each
+    #: group in ONE prefix call + ONE continuation call (heads.backbone.fork_features_rows); every group's loss is
+    #: weighted by its share of the step's rows, so the step's gradient is the same sum over rows.
+    row_batch: int = 1
+    #: with row_batch > 1: max padded tokens per call (rows x longest row of the group); 0 = no limit. A row longer
+    #: than the budget runs alone. Bounds the per-call activation memory (jobs/cell_step_profile JOB_SPEC, A1).
+    row_tokens: int = 0
+    axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
 
     def to_json(self) -> dict:
         d = asdict(self)
-        d["loss"] = asdict(self.loss)
+        d["loss"] = self.loss.identity()  # optional KD/order-consistency fields only when enabled (old hashes unchanged)
+        if d["axis_loss_weight"] == 0.0:
+            d.pop("axis_loss_weight")  # preserve legacy config identities
+        for k in self.EXECUTION:  # at their defaults the execution fields are left out: old records stay identical
+            if d[k] == getattr(TrainConfig, k):
+                d.pop(k)
         return d
 
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
+    #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens")
 
     def hash(self) -> str:
-        d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL}
+        d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
+        if not d.get("controlsafe"):
+            d.pop("controlsafe", None)
         return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
+    """``cfg`` with the execution-strategy keys of a cell config (``act_ckpt``, ``row_batch``, ``row_tokens``; absent =
+    the original path). For ``train.run_cell.train_config`` callers: ``with_execution(train_config(cell, ...), cell)``."""
+    import dataclasses
+
+    return dataclasses.replace(cfg, act_ckpt=bool(cell.get("act_ckpt", False)), row_batch=int(cell.get("row_batch", 1)),
+                               row_tokens=int(cell.get("row_tokens", 0)))
+
+
+def row_groups(lengths: list[int], row_batch: int, row_tokens: int = 0) -> list[list[int]]:
+    """Indices of the step's rows grouped for ``row_batch`` > 1: sorted by length, longest first (stable), filled
+    greedily while a group has <= ``row_batch`` rows and, if ``row_tokens`` > 0, (rows x its longest row) <=
+    ``row_tokens`` padded tokens. Every row lands in exactly one group."""
+    order = sorted(range(len(lengths)), key=lambda i: -lengths[i])
+    groups: list[list[int]] = []
+    for i in order:
+        g = groups[-1] if groups else None
+        if g is not None and len(g) < row_batch and (
+                not row_tokens or (len(g) + 1) * lengths[g[0]] <= row_tokens):
+            g.append(i)
+        else:
+            groups.append([i])
+    return groups
+
+
+def row_groups_with_views(base_lengths: list[int], view_lengths: list[int], row_batch: int,
+                          row_tokens: int = 0) -> list[list[int]]:
+    """Group base/view rows under the total padded-token budget for their separate forward calls.
+
+    ``view_lengths[i] == 0`` means row i has no paired view. A group consumes
+    ``n_base * max(base_lengths) + n_views * max(view_lengths for paired rows)`` padded tokens while both
+    autograd graphs are live. This avoids undercounting when the longest base and view belong to different rows.
+    """
+    if len(base_lengths) != len(view_lengths):
+        raise ValueError("base_lengths and view_lengths must have the same length")
+    if row_batch < 1 or row_tokens < 0:
+        raise ValueError("row_batch must be positive and row_tokens nonnegative")
+    if any(type(x) is not int or x < 1 for x in base_lengths) or any(type(x) is not int or x < 0 for x in view_lengths):
+        raise ValueError("base lengths must be positive integers and view lengths nonnegative integers")
+
+    def padded(group: list[int]) -> int:
+        base_tokens = len(group) * max(base_lengths[i] for i in group)
+        paired = [i for i in group if view_lengths[i] > 0]
+        view_tokens = len(paired) * max((view_lengths[i] for i in paired), default=0)
+        return base_tokens + view_tokens
+
+    order = sorted(range(len(base_lengths)), key=lambda i: -max(base_lengths[i], view_lengths[i]))
+    groups: list[list[int]] = []
+    for i in order:
+        group = groups[-1] if groups else None
+        if group is not None and len(group) < row_batch and (not row_tokens or padded(group + [i]) <= row_tokens):
+            group.append(i)
+        else:
+            groups.append([i])
+    return groups
 
 
 def lora_init_seed(seed: int) -> int:
@@ -100,9 +197,23 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     else:
         for p in model.backbone.parameters():
             p.requires_grad_(False)
+    if cfg.controlsafe.get("trust_gate") and not getattr(model.backbone, "wants_trust", False):
+        raise ValueError("cfg.controlsafe.trust_gate is set but the backbone is not a controlsafe "
+                         "TrustGatedBackbone: wrap it with controlsafe.trust_gate.wrap(...) before DecisionModel")
+    for p in getattr(model.backbone, "trainable_bridge_parameters", lambda: [])():
+        p.requires_grad_(True)  # P -> D bridges train with the LoRA group (named lora_A / lora_B)
     model.backbone.fork_mode = cfg.fork_mode
     if cfg.grad_checkpointing:
         model.backbone.enable_gradient_checkpointing()
+    from heads import act_ckpt
+
+    if cfg.act_ckpt:
+        act_ckpt.enable_block_checkpointing(model.backbone.model)  # RWKV-7 or Qwen3.5 / Q9-AF; raises otherwise
+    elif act_ckpt.is_enabled(model.backbone.model):  # a backbone reused across Trainers (run_cell ladder)
+        act_ckpt.disable_block_checkpointing(model.backbone.model)
+    if cfg.row_batch < 1:
+        raise ValueError(f"row_batch must be >= 1, got {cfg.row_batch}")
+    model.backbone.batch_rows = cfg.row_batch > 1
     return replaced
 
 
@@ -120,6 +231,38 @@ class Trainer:
         # Seed the ambient RNGs FIRST, before any initialisation below. Head init (DecisionModel)
         # and LoRA init (explicit generator) are already independent of the ambient state; this
         # makes everything after construction (dropout, data order helpers) a function of cfg.seed.
+        if cfg.loss.kd and not any(getattr(i, "teacher", None) is not None for i in train_items):
+            raise ValueError("loss.kd_alpha > 0 but no training item carries a teacher distribution: call "
+                             "train.teacher.attach(items, load_teacher(...)) first (a KD run without a teacher is the "
+                             "clef arm under another name)")
+        if cfg.loss.order_consistency_weight > 0:
+            if cfg.loss.kd:
+                raise ValueError("order-consistency arm currently requires KD off; view-teacher semantics are not registered")
+            if cfg.axis_loss_weight != 0.0:
+                raise ValueError("order-consistency arm currently requires axis_loss_weight=0; view-axis semantics are not registered")
+            paired = [i for i in train_items if getattr(i, "view", None) is not None]
+            if not paired:
+                raise ValueError("order_consistency_weight > 0 but no training items carry eligible views")
+            if any(getattr(i, "view", None) is not None or getattr(i, "view_perm", None) is not None
+                   for i in (eval_items or [])):
+                raise ValueError("order-consistency views are training-only; eval_items must not contain views")
+            for item in train_items:
+                view, perm = getattr(item, "view", None), getattr(item, "view_perm", None)
+                if (view is None) != (perm is None):
+                    raise ValueError(f"{item.id}: view and view_perm must either both be present or both be absent")
+                if view is None:
+                    continue
+                k = len(item.row.option_ids)
+                if (item.row.qtype != "choice" or view.row.qtype != "choice" or k < 2
+                        or view.view is not None or view.view_perm is not None):
+                    raise ValueError(f"{item.id}: malformed or nested order-consistency view")
+                if tuple(item.row.option_ids) != tuple(view.row.option_ids) or len(perm) != k:
+                    raise ValueError(f"{item.id}: view must preserve the canonical option-ID domain")
+                if sorted(perm) != list(range(k)) or perm[view.label] != item.label:
+                    raise ValueError(f"{item.id}: view label/permutation does not preserve the gold option content")
+        elif any(getattr(i, "view", None) is not None or getattr(i, "view_perm", None) is not None
+                 for i in (eval_items or [])):
+            raise ValueError("eval_items must not contain order-consistency views")
         self._seed_all(cfg.seed)
         self.guard = guard
         self.model, self.cfg = model, cfg
@@ -169,22 +312,82 @@ class Trainer:
     def _autocast(self):
         if not self.cfg.bf16:
             return nullcontext()
-        dev = "cuda" if torch.cuda.is_available() else "cpu"
+        dev = "cuda" if torch.cuda.is_available() and torch.cuda.device_count() > 0 else "cpu"
         return torch.autocast(device_type=dev, dtype=torch.bfloat16)
+
+    def _row_loss(self, batch: list[Item], weight: float) -> float:
+        with self._autocast():
+            fw = self.model([i.row for i in batch])
+        loss = self._supervised_loss(fw, batch) * weight
+        loss.backward()
+        return float(loss.detach())
+
+    def _supervised_loss(self, fw, batch: list[Item]) -> torch.Tensor:
+        lp = fw.log_probs.float()
+        y = torch.tensor([i.label for i in batch], device=lp.device)
+        teacher = teacher_tensor(batch, lp) if self.cfg.loss.kd else None
+        loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss, teacher)
+        weight_order = self.cfg.loss.order_consistency_weight
+        if weight_order:
+            paired = [(i, item) for i, item in enumerate(batch) if getattr(item, "view", None) is not None]
+            if paired:
+                with self._autocast():
+                    view_fw = self.model([item.view.row for _, item in paired])
+                view_lp = view_fw.log_probs.float()
+                view_y = torch.tensor([item.view.label for _, item in paired], device=view_lp.device)
+                view_supervised = decision_loss(
+                    view_lp, view_y, [item.view.row.qtype for _, item in paired], self.cfg.loss
+                )
+                js = []
+                for j, (base_i, item) in enumerate(paired):
+                    k = len(item.row.option_ids)
+                    js.append(aligned_order_js(lp[base_i, :k], view_lp[j, :k], tuple(item.view_perm)))
+                # Express extra-view terms per base row. _row_loss weights micro-batches by base-row count;
+                # normalising each group by base rows makes gradients invariant to row_batch/group composition.
+                loss = add_order_consistency(loss, view_supervised, torch.stack(js).mean(),
+                                             len(batch), len(paired), weight_order)
+        weight = self.cfg.axis_loss_weight
+        if type(weight) not in (int, float) or not 0 <= weight < float("inf"):
+            raise ValueError("axis_loss_weight must be finite and nonnegative")
+        if weight:
+            z = fw.head.semantic_axes
+            if (z is None or z.shape != (len(batch), 6)
+                    or any(i.axis_target is None or len(i.axis_target) != 6 for i in batch)):
+                raise ValueError("axis supervision requires a [B,6] head port and six targets per Item")
+            targets = torch.tensor([i.axis_target for i in batch], device=z.device, dtype=z.dtype)
+            if not torch.isfinite(targets).all() or not torch.isfinite(z).all():
+                raise ValueError("axis targets and port must be finite")
+            loss = loss + weight * torch.nn.functional.mse_loss(z, targets)
+        return loss
 
     def train_step(self) -> float:
         self.model.train()
         self.opt.zero_grad(set_to_none=True)
         total = 0.0
+        if self.cfg.row_batch > 1:
+            # the same rows as the micro-batch loop below (same _next_batch calls, so epoch roll-over is unchanged); the
+            # step loss sum_m mean(m) / grad_accum = sum_rows / (batch_size x grad_accum) = sum_g mean(g) x |g| / n
+            rows = [it for _ in range(self.cfg.grad_accum) for it in self._next_batch()]
+            n = len(rows)
+            if self.cfg.loss.order_consistency_weight:
+                base_lengths = [len(it.row.ids) for it in rows]
+                view_lengths = [len(it.view.row.ids) if it.view is not None else 0 for it in rows]
+                groups = row_groups_with_views(base_lengths, view_lengths, self.cfg.row_batch, self.cfg.row_tokens)
+            else:
+                groups = row_groups([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens)
+            for g in groups:
+                total += self._row_loss([rows[j] for j in g], len(g) / n)
+            return self._finish_step(total)
         for _ in range(self.cfg.grad_accum):
             batch = self._next_batch()
             with self._autocast():
                 fw = self.model([i.row for i in batch])
-            lp = fw.log_probs.float()
-            y = torch.tensor([i.label for i in batch], device=lp.device)
-            loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss) / self.cfg.grad_accum
+            loss = self._supervised_loss(fw, batch) / self.cfg.grad_accum
             loss.backward()
             total += float(loss.detach())
+        return self._finish_step(total)
+
+    def _finish_step(self, total: float) -> float:
         params = [p for g in self.opt.param_groups for p in g["params"]]
         torch.nn.utils.clip_grad_norm_(params, self.cfg.max_grad_norm)
         self.opt.step()

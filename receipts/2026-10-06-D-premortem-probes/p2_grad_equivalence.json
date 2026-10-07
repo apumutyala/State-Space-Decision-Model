@@ -1,0 +1,8 @@
+{
+ "converted_layer": [
+  3
+ ],
+ "max_rel_err": 9.397256690135691e-06,
+ "n_lora_tensors": 48,
+ "status": "pass"
+}

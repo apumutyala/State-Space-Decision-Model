@@ -3,6 +3,7 @@
 python -I scripts/sf_fetch.py --stage first   # Qwen3.5-0.8B + wikitext + MMLU (needed by phase A/0/1)
 python -I scripts/sf_fetch.py --stage rest    # RWKV7-0.1B, Mamba-3-187M + tokenizer, Qwen3.5-9B (background)
 python -I scripts/sf_fetch.py --stage probe9b # wikitext + MMLU + Qwen3.5-9B (jobs/probe9b)
+python -I scripts/sf_fetch.py --stage q9      # Qwen3.5-9B only (jobs/q9_feature_cache)
 The paid job runs this inside its container (jobs/qual/qual_job.sh).
 
 Writes $SSDM_DATA_ROOT/paths.env (shell `export NAME=path` lines) and DONE_<stage> markers.
@@ -41,6 +42,10 @@ ITEMS = {
         ("WIKITEXT_DIR", "Salesforce/wikitext", "dataset", ["wikitext-103-raw-v1/*", "wikitext-2-raw-v1/*"],
          "b08601e04326c79dfdd32d625aee71d232d685c3"),
         ("MMLU_DIR", "cais/mmlu", "dataset", ["all/test-*", "all/dev-*"], "c30699e8356da336a370243923dbaf21066bb9fe"),
+        ("Q9B_DIR", "Qwen/Qwen3.5-9B", "model", ["*.json", "*.safetensors", "*.txt", "*.jinja"],
+         "c202236235762e1c871ad0ccb60c8ee5ba337b9a"),
+    ],
+    "q9": [
         ("Q9B_DIR", "Qwen/Qwen3.5-9B", "model", ["*.json", "*.safetensors", "*.txt", "*.jinja"],
          "c202236235762e1c871ad0ccb60c8ee5ba337b9a"),
     ],

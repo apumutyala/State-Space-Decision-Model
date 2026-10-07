@@ -36,6 +36,7 @@ from ..provenance import validate_provenance
 from ..schema import canonical_json, canonical_options, sha256_text
 from ..untrusted import UNTRUSTED_ENCODER_ID, ControlTokenError, UntrustedEncoder
 from .base import BackendUnsupported, Plan, ScoreResult
+from .state_fork import KV_STATE_TOKEN_BUDGET, HFCacheStateOps, RWKV7StateOps
 
 
 def sha256_file(path: Path, chunk: int = 1 << 24) -> str:
@@ -68,6 +69,12 @@ class ModelPlugin:
     special_ids: frozenset[int] = frozenset()
     #: identity of the untrusted-text encoder (decide.untrusted); part of the revision hash
     untrusted_encoder_id: str = UNTRUSTED_ENCODER_ID
+    #: optional prefill/extend/select over the model's recurrent state + KV cache (decide.backends.state_fork):
+    #: when present the backend reads the shared prompt prefix once and forks per question and option
+    state_ops: Any = None
+    #: prefix-fork packs copy the prefix state once per row; for a KV-cache model that is rows x |prefix| x KV bytes.
+    #: Cap rows x |prefix| per pack (``state_fork.KV_STATE_TOKEN_BUDGET``); None = uncapped (|prefix|-independent state)
+    fork_state_token_budget: int | None = None
 
 
 def _pkg_versions(*names: str) -> dict[str, Any]:
@@ -85,10 +92,20 @@ def _pkg_versions(*names: str) -> dict[str, Any]:
 class HFReadoutBackend:
     name = "hf_readout"
 
-    def __init__(self, plugin: ModelPlugin, template: str | Template, max_batch_rows: int = 16) -> None:
+    def __init__(self, plugin: ModelPlugin, template: str | Template, max_batch_rows: int = 16,
+                 fork: bool | None = None, fork_max_rows: int = 256, fork_token_budget: int = 4096) -> None:
         self.plugin = plugin
         self.template = TEMPLATES[template] if isinstance(template, str) else template
         self.max_batch_rows = max_batch_rows
+        #: segment -> ids memo. Encoding is a pure function of (text, trusted) for a fixed plugin, and every question
+        #: of a request re-encodes the same schema + state segments (and plan() then score() repeats it): a
+        #: 17-question 4.5k-token row was 34 Python tokenisations of the state. Ids are identical, only CPU time moves.
+        self._enc_memo: dict[tuple[str, bool], list[int]] = {}
+        #: prefix-fork scoring (decide.backends.state_fork) when the plugin exposes state ops; default on if available
+        self.fork = (plugin.state_ops is not None) if fork is None else bool(fork)
+        self.fork_max_rows, self.fork_token_budget = fork_max_rows, fork_token_budget
+        if self.fork and plugin.state_ops is None:
+            raise ValueError("fork=True needs a plugin with state_ops")
         self._revision = self._build_revision()
 
     # ----------------------------------------------------------------- identity
@@ -105,7 +122,13 @@ class HFReadoutBackend:
             "scoring": "sum_logprob(' ' + option_id + terminator)",
             "untrusted_encoding": self.plugin.untrusted_encoder_id,
             "rows": "one per question; grouped by length; unpadded",
+            # different call structure -> different float rounding -> different revision id
+            "scoring_path": (f"prefix-fork(shared prefix once; packed tails, <= {self.fork_max_rows} rows / "
+                             f"{self.fork_token_budget} positions per call)") if self.fork
+            else "recompute(prompt + continuation per option)",
             "max_batch_rows": self.max_batch_rows,
+            **({"fork_state_token_budget": self.plugin.fork_state_token_budget}
+               if self.fork and self.plugin.fork_state_token_budget is not None else {}),
             "dtype": self.plugin.dtype,
             "device": self.plugin.device,
             "torch": torch.__version__,
@@ -146,10 +169,16 @@ class HFReadoutBackend:
         Untrusted segments go through decide.untrusted and fail closed on control ids."""
         ids: list[int] = []
         for k, (text, trusted) in enumerate(segments):
-            try:
-                seg_ids = self.plugin.encode(text, trusted)
-            except ControlTokenError as exc:
-                raise BackendUnsupported(exc.code, str(exc)) from exc
+            key = (text, bool(trusted))
+            seg_ids = self._enc_memo.get(key)
+            if seg_ids is None:
+                try:
+                    seg_ids = self.plugin.encode(text, trusted)
+                except ControlTokenError as exc:
+                    raise BackendUnsupported(exc.code, str(exc)) from exc
+                if len(self._enc_memo) > 4096:  # bounded: plan + score of a few requests
+                    self._enc_memo.clear()
+                self._enc_memo[key] = seg_ids
             if not trusted and self.plugin.special_ids and any(i in self.plugin.special_ids for i in seg_ids):
                 raise BackendUnsupported(
                     "control_tokens_in_input", "request text encoded to control/special token ids; refused"
@@ -195,19 +224,35 @@ class HFReadoutBackend:
                     chunks.append(g[i : i + self.max_batch_rows])
         return chunks
 
+    def _use_fork(self, rows: list[dict[str, Any]]) -> bool:
+        from .state_fork import common_prefix_len
+
+        if not self.fork:
+            return False
+        prompts = {r["qid"]: r["prompt"] for r in rows}
+        return common_prefix_len(list(prompts.values())) >= 1
+
     def plan(self, request: dict[str, Any]) -> Plan:
         label_counts: dict[str, int] = {}
         rows = self._rows(request, label_counts)
-        chunks = self._chunks(rows)
         lengths = [len(r["prompt"]) + len(r["cont"]) for r in rows]
+        if self._use_fork(rows):
+            from .state_fork import fork_plan
+
+            _, calls = fork_plan(rows, self.fork_max_rows, self.fork_token_budget, self.plugin.fork_state_token_budget)
+            n_calls, total = len(calls), sum(c.tokens for c in calls)
+        else:
+            chunks = self._chunks(rows)
+            n_calls, total = len(chunks), sum(lengths)
         per_q: dict[str, dict[str, Any]] = {}
         for r in rows:
             d = per_q.setdefault(r["qid"], {"prompt_tokens": len(r["prompt"]), "options": 0})
             d["options"] += 1
         return Plan(
-            inference_calls=len(chunks),
+            inference_calls=n_calls,
+            # the context the model conditions on is still prompt + continuation, whichever path computes it
             max_call_input_tokens=max(lengths),
-            total_input_tokens=sum(lengths),
+            total_input_tokens=total,
             per_question=per_q,
             prompt_token_labels=label_counts,
         )
@@ -217,6 +262,14 @@ class HFReadoutBackend:
         import torch
 
         rows = self._rows(request)
+        if self._use_fork(rows):
+            from .state_fork import fork_score
+
+            logits, n_calls, total_tokens, call_ms = fork_score(rows, self.plugin.state_ops, self.fork_max_rows,
+                                                                self.plugin.device, check_deadline,
+                                                                self.fork_token_budget,
+                                                                self.plugin.fork_state_token_budget)
+            return self._result(rows, logits, n_calls, total_tokens, call_ms)
         chunks = self._chunks(rows)
         logits: dict[str, dict[str, float]] = {qid: {} for qid in request["questions"]}
         call_ms = []
@@ -240,13 +293,17 @@ class HFReadoutBackend:
             call_ms.append(round((time.perf_counter() - t0) * 1000.0, 3))
             for r, lp in zip(chunk, seq_lp):
                 logits[r["qid"]][r["option"]] = lp
+        return self._result(rows, logits, len(chunks), total_tokens, call_ms)
+
+    def _result(self, rows, logits, n_calls, total_tokens, call_ms) -> ScoreResult:
         return ScoreResult(
             logits=logits,
-            inference_calls=len(chunks),
+            inference_calls=n_calls,
             total_input_tokens=total_tokens,
             extras={
                 "call_latency_ms": call_ms,
                 "rows": len(rows),
+                "scoring_path": "prefix-fork" if self._use_fork(rows) else "recompute",
                 # diagnostic only: sum-logprob carries a token-length prior over option ids
                 "continuation_tokens": {
                     qid: {r["option"]: len(r["cont"]) for r in rows if r["qid"] == qid} for qid in logits
@@ -322,6 +379,8 @@ def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloa
         dtype=dtype,
         device=device,
         kernel_stack=_pkg_versions("flash-linear-attention", "fla-core", "causal-conv1d", "triton", "triton-windows"),
+        state_ops=HFCacheStateOps(model),
+        fork_state_token_budget=KV_STATE_TOKEN_BUDGET if "full_attention" in layer_types or not layer_types else None,
         notes={
             "model_class": type(model).__name__,
             "layer_types": {t: layer_types.count(t) for t in sorted(set(layer_types))},
@@ -376,7 +435,8 @@ def load_rwkv7(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat
 RWKV7_G1K_TRAINED_CTX = 25600
 
 
-def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None) -> ModelPlugin:
+def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None,
+                  wkv: str | None = None) -> ModelPlugin:
     """RWKV7-G1k (``RWKV/RWKV7-G1k-*-20260930``): the repo's bundled HF code, vendored and sha-pinned in
     ``third_party/rwkv7_hf`` (no ``trust_remote_code``). ``load_rwkv7`` above cannot read these repos: they ship
     ``tokenizer.json`` (no ``rwkv_vocab_v20230424.txt``) and are not the ``fla`` class.
@@ -394,6 +454,10 @@ def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfl
     tok = Rwkv7Tokenizer.from_pretrained(str(model_dir))
     special = frozenset(int(i) for i in tok.all_special_ids) | {0}
     model = Rwkv7ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), device_map={"": device}).eval()
+    if wkv is not None:  # heads/rwkv7_wkv.py ("fla" refuses until GPU-verified); None keeps the checkpoint's "chunked"
+        from heads.rwkv7_wkv import select_wkv
+
+        select_wkv(model, wkv)
 
     def encode(text: str, trusted: bool = True) -> list[int]:
         ids = tok(text, add_special_tokens=False).input_ids
@@ -422,6 +486,7 @@ def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfl
         dtype=dtype,
         device=device,
         kernel_stack={**_pkg_versions("transformers", "torch"), "wkv_implementation": model.config.wkv_implementation},
+        state_ops=RWKV7StateOps(model),
         notes={"model_class": type(model).__name__, "trained_ctx": RWKV7_G1K_TRAINED_CTX, "attention_free": True,
                "vendored_code": V.REVISION},
     )

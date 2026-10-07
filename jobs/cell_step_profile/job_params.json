@@ -1,0 +1,38 @@
+{
+ "test_env": {"transformers": "5.17.0", "with": [], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}, {"reason": "fla not installed here", "why": "this job's image pins no fla, so the fla source-mirror test has nothing to mirror"}], "image": "jobs/rwkv7/Dockerfile"},
+ "_comment": "jobs/cell_step_profile (JOB_SPEC.md 'Phases, caps, cost'): command `bash /opt/ssdm/m1/jobs/cell_step_profile/cell_step_job.sh`, jobs/rwkv7 image. A2: expected_minutes from the GPU basis (fwd + recompute + bwd 0.9 ms per PADDED token, the top of the reviewer's 0.7-0.9 ms from job-mden7's 227-265 us/token chunked prefill; the mix pads 200,731 tokens for 124,586 real under the 8,192 budget), taking the CPU-launch projection (11.3 us x aten ops, calibrated on job-mden7) where it is larger (ckpt; baseline = mden7's measured 221 s of steps); + load 0.5 min, probe, ladder. Every cap >= 1.5x expected (tests/test_cell_step_rule.py). build_timeout 60. Spec only, NOT submitted.",
+ "job": "cell-step-profile",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 53,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 8.5,
+ "reserve_minutes": 1,
+ "phase_caps_minutes": {
+  "setup": 3,
+  "download_wait": 1,
+  "baseline": 8,
+  "ckpt_rows_lean": 8,
+  "ckpt_rows": 8,
+  "ckpt": 18,
+  "profile": 6
+ },
+ "expected_minutes": {
+  "setup": 2.0,
+  "download_wait": 0.4,
+  "baseline": 4.6,
+  "ckpt_rows_lean": 5.0,
+  "ckpt_rows": 5.0,
+  "ckpt": 11.7,
+  "profile": 3.5
+ },
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "model_bytes": 26540800536,
+ "mission": "m2-cell-step-profile"
+}

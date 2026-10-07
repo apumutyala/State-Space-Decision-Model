@@ -1,0 +1,185 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "flash-linear-attention==0.5.2",
+   "fla-core==0.5.2"
+  ],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"
+   },
+   {
+    "reason": "Decision Index kit",
+    "why": "the CPU dry run needs the pinned kit clone (harness scoring); the image ships the kit and setup imports it"
+   }
+  ],
+  "image": "jobs/probe9b/Dockerfile"
+ },
+ "runner": "jobs/q9af_cell/q9af_cell_job.sh",
+ "decision_rule": "jobs/q9af_cell/rule.py",
+ "rule_commit": "2d18afa",
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "margin_min_frac": 0.3,
+ "measured": {
+  "_comment": "job-5cmat (probe9b one-layer 9B, art-2bybh; same image stack and 9B revision; jobs/full8/job_params.json measured). Scoring = positions / prefill_tok_s_min + calls x call_s_fitted (jobs.common.readout_cost model). Training step = jobs/q9af_cell/price.py (MFU anchored below stage 1's measured 0.316; per-call floor = small_call_s per pass).",
+  "source_job": "job-5cmat",
+  "artifact": "art-2bybh",
+  "prefill_tok_s_min": 22144,
+  "call_s_fitted": 0.0595,
+  "small_call_s": 0.0493,
+  "stage1_mfu": 0.316,
+  "model_load_s": 43
+ },
+ "mission": "q9af-cell",
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "status": "DRAFT, NOT SUBMITTED: blocked on the job-2xe5w export pin (jobs.q9af_cell.pin fill), merge + independent review, spend issue",
+ "_comment": "jobs/q9af_cell mode parent (JOB_SPEC.md): the Q9-AF PARENT ARM, scored once and shared by both rank variants (the unit identity is rank-independent: tests/test_q9af_cell.py). Stock decision readout of the converted model on cohort v3 (dev + G13 retention from the 150k pool) + steer_dev / steer_gate + the FULL DEV slice (frozen here, before any arm is scored). Its parent_arm/ output is the comparator AND the lineage anchor of every Q9-AF cell (train.m2_gates --parent-arm / --anchor-arm).",
+ "job": "q9af-cell-parent",
+ "mode": "parent",
+ "cell_config": "jobs/q9af_cell/q9af_cell_r64.json",
+ "resume": "none",
+ "max_duration_minutes": 355,
+ "hard_cap_usd": 40.0,
+ "phase_caps_minutes": {
+  "setup": 25,
+  "guard": 5,
+  "parent_g12": 30,
+  "parent_g13": 280,
+  "report": 5
+ },
+ "reserve_minutes": 10,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 4,
+  "guard": 1,
+  "parent_g12": 18.6,
+  "parent_g13": 214.2,
+  "report": 1
+ },
+ "expected_minutes_sources": {
+  "setup": "job-5cmat setup 2.4 min + weight fetch (hf_cache) + sha checks; q9_feature_cache expected 4",
+  "guard": "q9_feature_cache expected 1",
+  "report": "one JSON summary",
+  "parent_g12/parent_g13": "price.arm_minutes (job-5cmat rates x committed volumes; cohort v3 retention measured in receipts/2026-10-07-D-cohort-v3/measure.json)"
+ },
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/q9af_cell/q9af_cell_job.sh",
+  "key": "q9af-cell-parent",
+  "env": {
+   "Q9AFC_MODE": "parent"
+  },
+  "label": "q9af_cell parent arm: Q9-AF stock readout, cohort v3 + full DEV (rule 2d18afa)",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/Q9AF_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/probe9b/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/probe9b/probe_job.sh",
+   "jobs/q9af_cell/q9af_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "gdn/gdn_converted.pt",
+    "src_env": "Q9AF_GDN_PT",
+    "dest": "gdn/gdn_converted.pt",
+    "pin": "jobs/q9af_cell/gdn.sha256"
+   },
+   {
+    "src": "gdn/export.json",
+    "src_env": "Q9AF_EXPORT_JSON",
+    "dest": "gdn/export.json",
+    "pin": "jobs/q9af_cell/gdn.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+    "dest": "m2-150k/records.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.manifest.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.content.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/q9_feature_cache/data_train.sha256"
+   }
+  ],
+  "manifest_files": [
+   "jobs/q9af_cell/q9af_cell_job.sh",
+   "jobs/q9af_cell/q9af_cell_r64.json",
+   "jobs/q9af_cell/q9af_cell_r256.json",
+   "jobs/q9af_cell/rule.py",
+   "jobs/q9af_cell/price.py",
+   "jobs/q9af_cell/gdn.sha256",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/sample-150000-seed20261006.pointer.json",
+   "train/cohorts/m2-dev-cohort-v3.sha256"
+  ]
+ },
+ "_repriced": "PR #121 review B1 (2026-10-07): G13 retention re-measured at the cells' T <= 4,096 (receipts/2026-10-07-D-q9af-cell-v3-retention-t4096/: 97.7 M positions / 86,452 calls = 159.3 min per arm, was 79.7 at T <= 2,048); caps raised to >= 1.3 x the new projection; max_duration <= 720 kept"
+}
