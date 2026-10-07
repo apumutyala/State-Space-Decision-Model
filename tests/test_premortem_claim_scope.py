@@ -1,4 +1,4 @@
-"""Guard PR #91 claim scope and retained-cache/transfer assumptions (LESSONS L-25/L-39)."""
+"""Guard PR #91 claim scope and retained-cache/transfer assumptions (LESSONS L-39/L-40)."""
 
 import re
 import unittest
