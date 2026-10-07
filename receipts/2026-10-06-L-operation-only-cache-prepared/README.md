@@ -18,7 +18,7 @@ Runtime correction: preparation, tests and future execution use exactly
 The registration pins Torch `2.8.0+cu128`, Python and all package versions;
 CUDA is hidden and the synthetic suite asserts CUDA is unavailable.
 
-Verification: **7 passed in 3.58s** using:
+Full synthetic verification before the start-floor-only update: **7 passed in 3.58s** using:
 `C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_operation_cache.py -q`, with
 `CUDA_VISIBLE_DEVICES=-1`, `OMP_NUM_THREADS=2`, `MKL_NUM_THREADS=2`,
 `OPENBLAS_NUM_THREADS=2`, and offline model-library flags. Tests use only tiny
@@ -35,7 +35,21 @@ Default and explicit dry-run preparation both passed an audit hook rejecting
 Torch/Transformers/Safetensors imports and checkpoint/snapshot file access.
 No real checkpoint load, real fit/inference, GPU, heldout/Index, spend or PR.
 
-Execution dependencies: tiny-model proofs, cross-review/dependency merges,
-fresh >=12 GiB start and >=3 GiB runtime guards, owned CPU child, <=1200s.
+After the start-floor-only update, focused preparation/no-load guard verification
+passed: **2 passed, 5 deselected in 1.10s**, selecting
+`default_and_dry_run or guards_and_owned_worker` from the same test file and
+interpreter. Model/data/seed/statistics remain unchanged; no fixture fitting or
+feature inference was repeated for this update.
+
+Execution dependencies: tiny-model proofs, #71/#85/#110 cross-review/dependency
+gates, fresh >=6 GiB start and >=3 GiB runtime guards, two threads, owned CPU
+child, <=1200s.
+The 6 GiB start floor follows #71 same-parent CPU run2: available memory was
+7,554,498,560 B at start and 6,093,643,776 B at minimum, with a 6 GiB start
+requirement. The operation cache adds approximately 442,368 B; the parent is
+shared, feature extraction uses one row, and stock readout is capped at two
+rows/2048 tokens. Repeated longer sequences, high-water memory and unrelated
+host processes remain risks, so the 3 GiB running guard and owned-child limits
+remain necessary. The start floor does not establish full-run completion.
 The standing goal authorizes gated CPU work; this receipt grants no paid/GPU
 authority. Review the plan at `plans/codex/L0_OPERATION_ONLY_CACHE.md`.

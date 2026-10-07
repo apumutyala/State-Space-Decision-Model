@@ -35,13 +35,22 @@ aggregate and predeclared read/explain/compare CIs, read non-regression, stock-p
 retention/equality and cost $0. Freeze source, parent and encoder identities and
 reject drift. Checkpoint lineage additionally binds a separate target hash;
 feature identities and feature-cache metadata exclude that target hash.
-CPU/offline only, two threads, >=12 GiB start and >=3 GiB running
+CPU/offline only, two threads, >=6 GiB start and >=3 GiB running
 memory, <=1200 seconds, authenticated owned child and cleanup on timeout.
+
+The 6 GiB start floor follows #71's measured same-parent CPU run2: start
+available memory 7,554,498,560 B, minimum 6,093,643,776 B, with a 6 GiB start
+requirement. The additional detached operation cache is approximately 442,368 B;
+the parent is shared and feature extraction retains the one-row path, with stock
+readout capped at two rows and 2048 tokens. Repeated longer sequences, high-water
+memory and unrelated host processes remain risks; keep the 3 GiB running guard,
+two threads, owned child and 1200s cap. This is a measured start floor, not a
+promise that the complete three-arm run fits or completes.
 
 Decision for this implementation task: prepare and dry-run only now. Do not load
 real weights, fit, infer, use GPU, access heldout/Index, spend, or open a PR.
 The standing goal authorizes CPU work once tiny-model proofs, cross-review and
-dependency merges are complete and a fresh >=12 GiB start guard passes. This
+the #71/#85/#110 dependency gates are complete and a fresh >=6 GiB start guard passes. This
 plan grants no paid/GPU authority. A future completed run is
 eligible for review only with strong operation fit, strict useful-answer gain,
 no direct-path regression, complete paired evidence and unchanged backbone.

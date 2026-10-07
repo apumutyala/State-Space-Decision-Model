@@ -25,7 +25,7 @@ CORPUS_SHA = "cf70a3e1abd8a8e5b1c2a7efe93ff0f2c0392982b1ef33dec11d60bd81143466"
 CONFIG = {"seed": 20261006, "steps": 96, "passes": 8, "batch_size": 2,
           "head": "qend_axes", "loss": "ce_only", "axis_loss_weight": 0,
           "optimizer": "AdamW", "lr": .001, "weight_decay": 0., "max_grad_norm": 1.,
-          "threads": 2, "min_start_bytes": 12*1024**3, "min_running_bytes": 3*1024**3,
+          "threads": 2, "min_start_bytes": 6*1024**3, "min_running_bytes": 3*1024**3,
           "timeout_seconds": 1200, "bootstrap_seed": 9203, "bootstrap_samples": 2000}
 SCOPE = "prepared reused-development operation-only head diagnostic; no L0 qualification"
 
@@ -68,6 +68,11 @@ def registration():
         "expected_parent": {"model_id": MODEL_ID, "snapshot": SNAPSHOT.name, "file_sha256": PINNED_HASHES},
         "runtime": {"interpreter": str(Path(sys.executable).resolve()), "python": sys.version,
                     "device": "cpu", "cuda_visible_devices": "-1", "cuda_available_required": False},
+        "memory_basis": {"reference": "PR71 same-parent CPU run2", "required_start_bytes": 6*1024**3,
+            "observed_start_available_bytes": 7554498560, "observed_minimum_available_bytes": 6093643776,
+            "estimated_additional_operation_cache_bytes": 442368,
+            "shared_parent": True, "feature_rows_per_call": 1, "stock_max_batch_rows": 2, "max_context": 2048,
+            "residual_risk": "repeated longer sequence/high-water and unrelated host processes; retain runtime guard and owned-child cap"},
         "software": {name: importlib.metadata.version(name) for name in
                      ("torch", "transformers", "safetensors", "numpy", "psutil")},
         "source_sha256": {name: sha(ROOT/name) for name in sources},
@@ -87,7 +92,7 @@ def registration():
                      "read_non_regression_required": True,
                      "direct_equality_required": True, "complete_12_worlds_required": True,
                      "adoption": False},
-        "execution_dependencies": "tiny-model proofs, cross-review/dependency merges, fresh >=12 GiB guard; no Index/heldout or paid spend",
+        "execution_dependencies": "tiny-model proofs, PR71/PR85/PR110 cross-review/dependency gates, fresh >=6 GiB start guard; no Index/heldout or paid spend",
         "preparation_scope": "This implementation task prepares/dry-runs only; the standing goal authorizes gated CPU work. No paid/GPU authority."}
 
 
@@ -240,7 +245,7 @@ def run(out):
     from language_growth import rwkv_head_learning as guard
     guard.assert_environment()
     if psutil.virtual_memory().available < CONFIG["min_start_bytes"]:
-        raise MemoryError("12 GiB start guard before Torch/checkpoint load")
+        raise MemoryError("6 GiB start guard before Torch/checkpoint load")
     frozen = json.loads((out/"registration.json").read_text())
     verify_frozen(frozen)
     if registration() != frozen:
@@ -387,7 +392,7 @@ def launch(out):
     from language_growth.l0_qwen_cpu_probe import _offline_env
     preparation(out)
     if psutil.virtual_memory().available < CONFIG["min_start_bytes"]:
-        write(out/"failure.json", {"status": "refused", "reason": "12 GiB start guard", "cost_usd": 0})
+        write(out/"failure.json", {"status": "refused", "reason": "6 GiB start guard", "cost_usd": 0})
         return 125
     context = multiprocessing.get_context("spawn")
     receive, send = context.Pipe(duplex=False)

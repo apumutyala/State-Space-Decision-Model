@@ -170,7 +170,9 @@ def test_guards_and_owned_worker_refuse_before_loading(monkeypatch, tmp_path):
     import psutil
     from language_growth import rwkv_head_learning as guard
     monkeypatch.setattr(runner, "preparation", lambda out: out.mkdir())
-    monkeypatch.setattr(psutil, "virtual_memory", lambda: SimpleNamespace(available=12*1024**3-1))
+    assert runner.CONFIG["min_start_bytes"] == 6*1024**3
+    assert runner.CONFIG["min_running_bytes"] == 3*1024**3
+    monkeypatch.setattr(psutil, "virtual_memory", lambda: SimpleNamespace(available=6*1024**3-1))
     assert runner.launch(tmp_path/"refused") == 125
     monkeypatch.setattr(guard, "assert_environment", lambda: None)
     with pytest.raises(MemoryError, match="start guard"): runner.run(tmp_path)

@@ -1,4 +1,11 @@
 CUDA_VISIBLE_DEVICES=-1 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+Latest verification after measured start-floor update:
+C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_operation_cache.py -q -k 'default_and_dry_run or guards_and_owned_worker'
+..                                                                       [100%]
+2 passed, 5 deselected in 1.10s
+Verified 6 GiB start refusal before Torch/checkpoint load, 3 GiB runtime and 1200s cap; default/dry-run strict frozen equality with no Torch/checkpoint/snapshot access.
+
+Prior full synthetic suite before start-floor-only update:
 C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_operation_cache.py -q
 .......                                                                  [100%]
 7 passed in 3.58s
