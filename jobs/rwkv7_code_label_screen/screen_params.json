@@ -1,0 +1,19 @@
+{
+  "schema": "ssdm.rwkv7-code-label-screen.params.v1",
+  "decision_rule": "jobs/rwkv7_code_label_screen/rule.py",
+  "execution": "cpu-only-dry-run-and-artifact-audit",
+  "launch_enabled": false,
+  "arms": ["rwkv7-hf-code-label-v1", "rwkv7-hf-code-label-v2"],
+  "cohort": "jobs/common/dev_subset_m1.json",
+  "rows": 2008,
+  "minimum_ok_rows_per_arm_and_paired": 2000,
+  "edition": "0.2.1",
+  "calibration": "uncalibrated_identity",
+  "full_denominator": true,
+  "allow_partial": false,
+  "bootstrap_replicates": 2000,
+  "bootstrap_seed": 20261007,
+  "confidence_level": 0.95,
+  "cost_usd": 0,
+  "paid_registration_pending": ["production kernel parity", "real-shape peak memory", "both positions and calls pricing", "rate guard", "job_params and costs/decision-tree registration", "merged proof", "acknowledged spend issue"]
+}

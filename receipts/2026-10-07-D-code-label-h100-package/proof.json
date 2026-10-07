@@ -1,0 +1,40 @@
+{
+  "schema": "ssdm.rwkv7-code-label-h100-package-proof.v1",
+  "source_base_commit": "e50f9770af27e9255ea33415faac155464b3b9d4",
+  "source_files_sha256": {
+    "jobs/rwkv7_code_label_h100/__init__.py": "fa05ba10b41447ffd7189ae4d3eb7256f1d88e50445073c9f147b3a9b45f6f39",
+    "jobs/rwkv7_code_label_h100/job_params.json": "b32cdee6f1afc9b20de0dcfca79dbebb9a668f399859e41b0d7b6d0bc084ee19",
+    "jobs/rwkv7_code_label_h100/JOB_SPEC.md": "5b03a0316329f826a22356a6f8bb2e824b95f0eabb8c4f56ce2603e27ca6f4d6",
+    "jobs/rwkv7_code_label_h100/preflight.py": "21e730772421a03f92eccee93327beb8c95f6e5a080041cbee516574266bbc50",
+    "jobs/rwkv7_code_label_h100/qualification_job.sh": "1764ac5903c894b4b6da2d0599ba92edc0eddbb7056cfe3b631dc992cd045c71",
+    "jobs/rwkv7_code_label_h100/runner.py": "d5e49daa48c25ded098a2a7607bc0cdcb2451de184c40b72db1280727fe01e91",
+    "tests/test_rwkv7_code_label_h100.py": "9247485af3d3c71d6d2976f305e9bb262ae15358603cfdf7ec07cd229127034a",
+    "jobs/common/costs.py": "df3d24efa3539bef8373578c0a8ef118371583c8f9bef5a0fe7a58bdb8e2a974",
+    "jobs/DECISION_TREE.md": "5a57c691d5f4968d9f779511b281beba3e29f7efc2dfa12177f74581ec7d5fef"
+  },
+  "proof_files_sha256": {
+    "cpu-proof/report.json": "3a3ded03efbdeafeca20c1db4023bd7c4437f4a9319e31bd1a26f8a19c956ec2",
+    "cpu-proof/synthetic.identities.json": "f611d475995380d274c7db20e92538f066504fd37bceff74177aa5856ed2bf25",
+    "cpu-proof/synthetic.rows.jsonl": "089c384e6c4565e66d0b18e4870793eda715bd155fe04836082ff713c7417eda",
+    "cpu-proof/v1.predictions.jsonl": "15ac53c24ddb7b90765db1d56aaa069294e10d0e0c93b55a3b31937d2006da5b",
+    "cpu-proof/v2.predictions.jsonl": "bec0fb585fab17999c412df47c37231007b7a9bb4cbedf849c823cf4510fcaff"
+  },
+  "tests": {
+    "package_screen_lint_passed": 257,
+    "launcher_passed": 66,
+    "total_passed": 323
+  },
+  "launch_enabled": false,
+  "gpu_used": false,
+  "model_loaded": false,
+  "private_dev_item_text_or_gold_read": false,
+  "test_opened": false,
+  "training": false,
+  "cost_usd": 0,
+  "hard_cap_usd": 73.26,
+  "published_two_attempt_max_usd": 70.89,
+  "workspace_increment_usd": 74,
+  "production_h100_rate_memory_parity": "pending",
+  "spend_issue": "not created",
+  "spend_authorized": false
+}

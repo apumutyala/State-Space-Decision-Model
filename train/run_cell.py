@@ -204,6 +204,53 @@ def kd_fields(cfg: dict) -> dict:
     return {"kd_alpha": float(t["alpha"]), "kd_temperature": float(t["temperature"])}
 
 
+def order_consistency_fields(cfg: dict) -> dict:
+    """The single pre-registered order-consistency arm; absent means the legacy objective unchanged."""
+    arm = cfg.get("order_consistency")
+    if arm is None:
+        return {}
+    if not isinstance(arm, dict) or set(arm) != {"view", "weight"} or arm.get("view") != "reverse":
+        raise ValueError("order_consistency must be exactly {'view': 'reverse', 'weight': 0.25}")
+    weight = arm.get("weight")
+    if type(weight) not in (int, float) or float(weight) != 0.25:
+        raise ValueError("the pre-registered order-consistency weight is fixed at 0.25")
+    if cfg.get("teacher"):
+        raise ValueError("order-consistency arm requires teacher/KD off")
+    if float(cfg.get("axis_loss_weight", 0.0)) != 0.0:
+        raise ValueError("order-consistency arm requires axis_loss_weight=0")
+    return {"order_consistency_weight": 0.25}
+
+
+def attach_order_views(cfg: dict, train_items: list, train_records: dict, enc, guard, max_t: int) -> dict | None:
+    """Attach opt-in reversed views to the filtered training list only; evaluation data is never passed here."""
+    if not order_consistency_fields(cfg):
+        return None
+    from train.order_views import attach_views
+
+    return attach_views(
+        train_items, train_records, enc, layout=cfg["layout"], template=cfg["template"], guard=guard,
+        keep=lambda row: keep_item(row, cfg["max_k"], max_t),
+    )
+
+
+def restrict_order_views_to_tmax(cfg: dict, train_items: list, max_t: int) -> dict | None:
+    """Drop over-rung views, preserving their eligible base rows and matching gate reconstruction at T_max."""
+    if not order_consistency_fields(cfg):
+        return None
+    retained = dropped = 0
+    for item in train_items:
+        view = getattr(item, "view", None)
+        if view is None:
+            continue
+        if len(view.row.ids) > max_t:
+            item.view = None
+            item.view_perm = None
+            dropped += 1
+        else:
+            retained += 1
+    return {"t_max": max_t, "retained": retained, "dropped_for_length": dropped}
+
+
 def attach_teacher(cfg: dict, items: list, teacher_dir, train_ids, expected: dict | None = None,
                    contamination: bool = True) -> dict | None:
     """KD cells (``cfg["teacher"]``): load the PINNED teacher (``train.teacher.load_teacher``: identity, file sha256,
@@ -241,7 +288,7 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
 
     return TrainConfig(head=cfg["head"], head_kwargs=cfg.get("head_kwargs") or {}, layout=cfg["layout"],
                        fork_mode="cache", lora_rank=cfg["lora_rank"],
-                       loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg)),
+                       loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg), **order_consistency_fields(cfg)),
                        lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
                        warmup_steps=int(cfg.get("warmup_steps") or 0),
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
@@ -347,6 +394,69 @@ def _checkpoint_post():
         print(f"checkpoint declare: {e!r}", flush=True)
 
 
+def smoke_stage(bb, train_items, cfg: dict, cuda: bool, peak=lambda: 0.0) -> dict:
+    """Cache-fork smoke: features and LoRA gradients of the cache fork equal the recompute fork on a few short rows
+    (``cfg["smoke"]``). Leaves the backbone as it found it (no LoRA, bridges zeroed, ``fork_mode`` "cache").
+
+    Runs under the cell's per-block activation checkpointing (``cfg["act_ckpt"]``), exactly as training does (job-uhxb5,
+    LESSONS L-34): the recompute fork pushes every (row, option) continuation through the backbone in one batch, and
+    without checkpointing its activations do not fit beside 13.3B bf16 weights on 80 GB (CUDA OOM at 77 GiB). The
+    checkpointed gradients equal the plain ones (tests/test_cell_perf.py), so the comparison is unchanged; it now also
+    covers the checkpointed cache fork that training actually runs."""
+    import torch
+
+    from heads import act_ckpt
+    from heads.features import build_head_input
+    from train.lora import apply_lora, remove_lora
+
+    use_ckpt = bool(cfg.get("act_ckpt"))
+    was_ckpt = act_ckpt.is_enabled(bb.model)
+    if use_ckpt:
+        act_ckpt.enable_block_checkpointing(bb.model)  # raises for an unsupported backbone, as the Trainer would
+    dev_type = "cuda" if cuda else "cpu"
+    sm = cfg["smoke"]
+    rows = [x.row for x in train_items if x.row.n_options <= sm["max_k"] and len(x.row.ids) <= sm["max_t"]][: sm["rows"]]
+    mods = apply_lora(bb.model, bb.spec.lora_groups, rank=sm["lora_rank"], generator=torch.Generator().manual_seed(5))
+    for n, p in bb.model.named_parameters():
+        if n.endswith("lora_B"):
+            with torch.no_grad():
+                p.normal_(0.0, 0.02)
+    # trust-gated backbone: the P -> D bridges live outside bb.model; randomise them too so the smoke exercises
+    # the bridge injection on the cache fork (prefix / continuation alignment), and re-zero them afterwards
+    bridges_b = [p for n, p in getattr(bb, "bridges", torch.nn.Module()).named_parameters() if n.endswith("lora_B")]
+    with torch.no_grad():
+        for p in bridges_b:
+            p.normal_(0.0, 0.02)
+    res = {}
+    for mode in ("cache", "recompute"):
+        bb.fork_mode = mode
+        bb.model.zero_grad(set_to_none=True)
+        with torch.autocast(dev_type, dtype=torch.bfloat16, enabled=cuda):
+            x = build_head_input(bb, rows, need_fork=True)
+        x.fork.float().pow(2).mean().backward()
+        g = torch.cat([p.grad.flatten().float() for n, p in bb.model.named_parameters() if n.endswith("lora_A")])
+        res[mode] = (x.fork.detach().float(), g)
+        del x, g  # the cache pass's tensors are not kept alive through the recompute pass
+    fa, fb = res["cache"][0], res["recompute"][0]
+    rel = float((fa - fb).abs().max() / fb.abs().max().clamp_min(1e-12))
+    cos = float(torch.nn.functional.cosine_similarity(res["cache"][1], res["recompute"][1], dim=0))
+    ok = rel <= sm["max_rel_feature_diff"] and cos >= sm["min_grad_cos"]
+    out = {"rows": len(rows), "rel_feature_diff": rel, "grad_cos": cos, "pass": ok, "peak_gb": peak(),
+           "lora_modules": {k: len(v) for k, v in mods.items()}, "pass_rule": sm, "act_ckpt": use_ckpt}
+    del res
+    bb.model.zero_grad(set_to_none=True)
+    remove_lora(bb.model)  # training starts from the pre-registered LoRA init, not the smoke one
+    with torch.no_grad():
+        for p in bridges_b:  # bridges back to their zero init (remove_lora does not touch them)
+            p.zero_()
+        for p in getattr(bb, "bridges", torch.nn.Module()).parameters():
+            p.grad = None
+    bb.fork_mode = "cache"
+    if use_ckpt and not was_ckpt:  # the Trainer applies (or removes) its own execution flags afterwards
+        act_ckpt.disable_block_checkpointing(bb.model)
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
@@ -370,10 +480,9 @@ def main(argv=None):
     import torch
 
     from heads.backbone import LineageError
-    from heads.features import build_head_input
     from heads.model import DecisionModel
     from train.guard import SplitGuard
-    from train.lora import apply_lora, remove_lora
+    from train.lora import remove_lora
     from train.trainer import Trainer
 
     cfg = json.load(open(a.config))
@@ -409,6 +518,7 @@ def main(argv=None):
     parent = cfg.get("parent", "rwkv7")
     try:
         validate_head(cfg)
+        order_consistency_fields(cfg)
         if parent == "q9af" or cfg.get("teacher") or cfg.get("head_from_proxy"):
             from jobs.q9af_cell import hooks  # typed KD-teacher / proxy-head hooks (fail closed until wired)
 
@@ -458,6 +568,13 @@ def main(argv=None):
     train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap)
     eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap)
     try:
+        order_views = attach_order_views(cfg, train_items, train_recs, enc, guard, t_cap)
+        if order_views is not None and order_views["with_view"] == 0:
+            raise ValueError("no training item passed the order-view eligibility and K/T filters")
+    except ValueError as e:
+        print(f"order-consistency views: {e}", flush=True)
+        return EXIT["config"]
+    try:
         kd_cov = attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)
     except ValueError as e:  # TeacherIdentityError / TeacherContamination subclass ValueError
         print(f"teacher: {e}", flush=True)
@@ -466,7 +583,8 @@ def main(argv=None):
                     "n_train_records": len(tr_ids), "tokenize_s": round(time.time() - t_tok, 1),
                     "n_train_items": len(train_items), "n_eval_items": len(eval_items),
                     "guard_manifests": guard.manifests, "guard": guard.identity(), "max_k": cfg["max_k"],
-                    **cohort_ident, **({"teacher": kd_cov} if kd_cov else {})}
+                    **cohort_ident, **({"teacher": kd_cov} if kd_cov else {}),
+                    **({"order_consistency_views": order_views} if order_views else {})}
     save()
     if len(train_items) < cfg["min_train_items"]:
         print(f"too few items {len(train_items)}", flush=True)
@@ -478,51 +596,14 @@ def main(argv=None):
 
         bb = trust_gate_wrap(bb, {**cfg["controlsafe"], "seed": cfg["seed"]})
     cuda = on_cuda
-    dev_type = "cuda" if cuda else "cpu"
     cell["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
     stages = ["smoke", "ladder", "train"] if a.stage == "all" else [a.stage]
 
     if "smoke" in stages and "smoke" not in cell:
-        sm = cfg["smoke"]
-        rows = [x.row for x in train_items if x.row.n_options <= sm["max_k"] and len(x.row.ids) <= sm["max_t"]][: sm["rows"]]
-        mods = apply_lora(bb.model, bb.spec.lora_groups, rank=sm["lora_rank"], generator=torch.Generator().manual_seed(5))
-        for n, p in bb.model.named_parameters():
-            if n.endswith("lora_B"):
-                with torch.no_grad():
-                    p.normal_(0.0, 0.02)
-        # trust-gated backbone: the P -> D bridges live outside bb.model; randomise them too so the smoke exercises
-        # the bridge injection on the cache fork (prefix / continuation alignment), and re-zero them afterwards
-        bridges_b = [p for n, p in getattr(bb, "bridges", torch.nn.Module()).named_parameters() if n.endswith("lora_B")]
-        with torch.no_grad():
-            for p in bridges_b:
-                p.normal_(0.0, 0.02)
-        res = {}
-        for mode in ("cache", "recompute"):
-            bb.fork_mode = mode
-            bb.model.zero_grad(set_to_none=True)
-            with torch.autocast(dev_type, dtype=torch.bfloat16, enabled=cuda):
-                x = build_head_input(bb, rows, need_fork=True)
-            x.fork.float().pow(2).mean().backward()
-            g = torch.cat([p.grad.flatten().float() for n, p in bb.model.named_parameters() if n.endswith("lora_A")])
-            res[mode] = (x.fork.detach().float(), g)
-        fa, fb = res["cache"][0], res["recompute"][0]
-        rel = float((fa - fb).abs().max() / fb.abs().max().clamp_min(1e-12))
-        cos = float(torch.nn.functional.cosine_similarity(res["cache"][1], res["recompute"][1], dim=0))
-        ok = rel <= sm["max_rel_feature_diff"] and cos >= sm["min_grad_cos"]
-        cell["smoke"] = {"rows": len(rows), "rel_feature_diff": rel, "grad_cos": cos, "pass": ok, "peak_gb": peak(),
-                         "lora_modules": {k: len(v) for k, v in mods.items()}, "pass_rule": sm}
+        cell["smoke"] = smoke_stage(bb, train_items, cfg, cuda, peak)
         save()
-        del res
-        bb.model.zero_grad(set_to_none=True)
-        remove_lora(bb.model)  # training starts from the pre-registered LoRA init, not the smoke one
-        with torch.no_grad():
-            for p in bridges_b:  # bridges back to their zero init (remove_lora does not touch them)
-                p.zero_()
-            for p in getattr(bb, "bridges", torch.nn.Module()).parameters():
-                p.grad = None
-        bb.fork_mode = "cache"
         reset_peak()
-        if not ok:
+        if not cell["smoke"]["pass"]:
             return EXIT["fork_mismatch"]
 
     def make_trainer(max_steps, ckpt_dir=None):
@@ -535,8 +616,15 @@ def main(argv=None):
 
     if "ladder" in stages and "ladder" not in cell:
         lad = {}
+        order_active = bool(order_consistency_fields(cfg))
+        def item_context_len(item):
+            base_len = len(item.row.ids)
+            view_len = len(item.view.row.ids) if order_active and getattr(item, "view", None) is not None else 0
+            return max(base_len, view_len)
+
         for T in cfg["t_ladder"]:
-            its = sorted((x for x in train_items if len(x.row.ids) <= T), key=lambda x: (-x.row.n_options, -len(x.row.ids)))
+            its = sorted((x for x in train_items if item_context_len(x) <= T),
+                         key=lambda x: (-x.row.n_options, -item_context_len(x)))
             if not its:
                 continue
             reset_peak()
@@ -549,7 +637,10 @@ def main(argv=None):
                 if cuda:
                     torch.cuda.synchronize()
                 lad[str(T)] = {"ok": math.isfinite(loss), "peak_gb": peak(), "step_s": time.time() - t0,
-                               "row_len": len(its[0].row.ids), "k": its[0].row.n_options}
+                               "row_len": len(its[0].row.ids),
+                               **({"view_row_len": len(its[0].view.row.ids) if its[0].view is not None else None,
+                                   "effective_row_len": item_context_len(its[0])} if order_active else {}),
+                               "k": its[0].row.n_options}
             except torch.OutOfMemoryError as e:
                 lad[str(T)] = {"ok": False, "oom": str(e)[:200], "peak_gb": peak()}
             finally:
@@ -573,6 +664,13 @@ def main(argv=None):
     if "train" in stages:
         t_max = cell["ladder"]["T_max"]
         train_items[:] = [x for x in train_items if len(x.row.ids) <= t_max]
+        view_t_max = restrict_order_views_to_tmax(cfg, train_items, t_max)
+        if view_t_max is not None:
+            cell["data"]["order_consistency_t_max"] = view_t_max
+            save()
+            if view_t_max["retained"] == 0:
+                print("order-consistency views: no paired item fits measured T_max", flush=True)
+                return EXIT["config"]
         eval_items[:] = [x for x in eval_items if len(x.row.ids) <= t_max]
         reset_peak()
         tr = make_trainer(cfg["max_steps"], a.ckpt_dir)
