@@ -60,7 +60,16 @@ def _run(env, timeout=1500):
 
 
 def _result(tmp_path, tag):
-    return json.loads((tmp_path / "out" / tag / "result.json").read_text(encoding="utf-8"))
+    """The full report (report.json) when the job got that far; result.json (compact, < 32 KiB: job-ftpnf) otherwise."""
+    d = tmp_path / "out" / tag
+    res = d / "result.json"
+    assert res.stat().st_size < 32 * 1024, "the platform refuses a result file over 32 KiB"
+    full = d / "report.json"
+    r = json.loads((full if full.exists() else res).read_text(encoding="utf-8"))
+    if full.exists():
+        c = json.loads(res.read_text(encoding="utf-8"))
+        assert c["ok"] == r["ok"] and c["full_report"] == "report.json"
+    return r
 
 
 # ----------------------------------------------------------------------------- teacher export (no private data)
