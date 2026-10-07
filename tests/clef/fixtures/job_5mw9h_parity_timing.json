@@ -1,0 +1,328 @@
+{
+ "_comment": "job-5mw9h (Clef 27B, I-subset, 2026-10-07, art-pwd94) S1 parity decide timing: run ids, wall ms, input tokens only. The preflight stopped the job (exit 18) on this sample; rows 0-2 are warm-up, 4 later rows are one-time compile spikes (LESSONS L-26).",
+ "job": "job-5mw9h",
+ "artifact": "art-pwd94",
+ "release": "clef",
+ "parity_timing": [
+  {
+   "run_id": "11:ContractNLI:ContractNLI:test:99",
+   "ms": 34722.056,
+   "tokens": 3658
+  },
+  {
+   "run_id": "12:ANLI:ANLI:test_r1:ead42195-05f4-40c2-b103-257b332e33d1",
+   "ms": 2771.565,
+   "tokens": 256
+  },
+  {
+   "run_id": "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_103-43-1",
+   "ms": 12404.025,
+   "tokens": 2620
+  },
+  {
+   "run_id": "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_169-69-0",
+   "ms": 230.537,
+   "tokens": 1485
+  },
+  {
+   "run_id": "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_27-7-0",
+   "ms": 205.208,
+   "tokens": 478
+  },
+  {
+   "run_id": "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_835-178-10",
+   "ms": 221.629,
+   "tokens": 1070
+  },
+  {
+   "run_id": "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_897-185-7",
+   "ms": 215.979,
+   "tokens": 1429
+  },
+  {
+   "run_id": "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_25",
+   "ms": 199.839,
+   "tokens": 353
+  },
+  {
+   "run_id": "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_298",
+   "ms": 203.556,
+   "tokens": 316
+  },
+  {
+   "run_id": "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_380",
+   "ms": 197.963,
+   "tokens": 416
+  },
+  {
+   "run_id": "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 1 rhyming EOL word:792",
+   "ms": 189.902,
+   "tokens": 250
+  },
+  {
+   "run_id": "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 1 nonrhyming word:9057",
+   "ms": 191.266,
+   "tokens": 239
+  },
+  {
+   "run_id": "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 3 rhyming words:4635",
+   "ms": 155.015,
+   "tokens": 250
+  },
+  {
+   "run_id": "21:Humicroedit:Humicroedit:test:11819-8025",
+   "ms": 214.976,
+   "tokens": 159
+  },
+  {
+   "run_id": "21:Humicroedit:Humicroedit:test:1523-4167",
+   "ms": 186.812,
+   "tokens": 146
+  },
+  {
+   "run_id": "21:Humicroedit:Humicroedit:test:3993-739",
+   "ms": 107.762,
+   "tokens": 157
+  },
+  {
+   "run_id": "22:POP909-chord-pitch-class:POP909:504:beat-34",
+   "ms": 11541.651,
+   "tokens": 6171
+  },
+  {
+   "run_id": "22:POP909-chord-pitch-class:POP909:607:beat-230",
+   "ms": 722.136,
+   "tokens": 6435
+  },
+  {
+   "run_id": "22:POP909-chord-pitch-class:POP909:723:beat-222",
+   "ms": 717.49,
+   "tokens": 6503
+  },
+  {
+   "run_id": "23:CFColor-preference:cfcolor:210:479:2636",
+   "ms": 112.47,
+   "tokens": 519
+  },
+  {
+   "run_id": "23:CFColor-preference:cfcolor:41:4986:5759",
+   "ms": 105.702,
+   "tokens": 529
+  },
+  {
+   "run_id": "28:WinoGrande:WinoGrande:validation:1002",
+   "ms": 102.415,
+   "tokens": 148
+  },
+  {
+   "run_id": "28:WinoGrande:WinoGrande:validation:1196",
+   "ms": 95.366,
+   "tokens": 151
+  },
+  {
+   "run_id": "28:WinoGrande:WinoGrande:validation:684",
+   "ms": 95.206,
+   "tokens": 156
+  },
+  {
+   "run_id": "28:WinoGrande:WinoGrande:validation:702",
+   "ms": 85.593,
+   "tokens": 151
+  },
+  {
+   "run_id": "29:HellaSwag:HellaSwag:validation:1436:21284",
+   "ms": 113.271,
+   "tokens": 220
+  },
+  {
+   "run_id": "29:HellaSwag:HellaSwag:validation:2109:32441",
+   "ms": 97.69,
+   "tokens": 246
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_733:chunk0",
+   "ms": 11814.529,
+   "tokens": 7399
+  },
+  {
+   "run_id": "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_3:chunk0",
+   "ms": 14712.002,
+   "tokens": 10595
+  },
+  {
+   "run_id": "30:GSM8K-10choice:GSM8K-10:test:498",
+   "ms": 180.159,
+   "tokens": 377
+  },
+  {
+   "run_id": "30:GSM8K-10choice:GSM8K-10:test:916",
+   "ms": 170.325,
+   "tokens": 418
+  },
+  {
+   "run_id": "33:SATA-Bench:SATA-Bench:test:566",
+   "ms": 158.388,
+   "tokens": 1049
+  },
+  {
+   "run_id": "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:79:chunk0",
+   "ms": 11933.748,
+   "tokens": 8771
+  },
+  {
+   "run_id": "37:Amazon-ESCI:Amazon-ESCI:test:2078895",
+   "ms": 100.918,
+   "tokens": 305
+  },
+  {
+   "run_id": "38:ACOS-category-sentiment:ACOS:category-sentiment:Restaurant-ACOS:rest16_quad_test:line-200:group-1",
+   "ms": 668.343,
+   "tokens": 5592
+  },
+  {
+   "run_id": "39:FinEntity-entity-given:FinEntity:entity-given:0378",
+   "ms": 95.27,
+   "tokens": 374
+  },
+  {
+   "run_id": "3:API-Bank-tool-selection:API-Bank-tool-selection:ImageCaption-level-1-1:api-3",
+   "ms": 722.616,
+   "tokens": 6522
+  },
+  {
+   "run_id": "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyReminder-level-1-2:api-6",
+   "ms": 712.917,
+   "tokens": 6623
+  },
+  {
+   "run_id": "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:394",
+   "ms": 112.345,
+   "tokens": 494
+  },
+  {
+   "run_id": "41:VAST:VAST:test:15890",
+   "ms": 96.323,
+   "tokens": 252
+  },
+  {
+   "run_id": "41:VAST:VAST:test:22645",
+   "ms": 102.111,
+   "tokens": 333
+  },
+  {
+   "run_id": "41:VAST:VAST:test:7450",
+   "ms": 83.832,
+   "tokens": 374
+  },
+  {
+   "run_id": "42:NLI4CT-2024:NLI4CT-2024:test:9367129d-51e0-4d62-b2df-35749e117157",
+   "ms": 97.995,
+   "tokens": 432
+  },
+  {
+   "run_id": "42:NLI4CT-2024:NLI4CT-2024:test:974d4228-3dd6-42ab-b4e6-1b3f8e9ecdc5",
+   "ms": 92.623,
+   "tokens": 330
+  },
+  {
+   "run_id": "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_463",
+   "ms": 97.819,
+   "tokens": 278
+  },
+  {
+   "run_id": "44:CLadder:CLadder:balanced:12947",
+   "ms": 80.456,
+   "tokens": 239
+  },
+  {
+   "run_id": "44:CLadder:CLadder:balanced:7599",
+   "ms": 92.547,
+   "tokens": 248
+  },
+  {
+   "run_id": "48:ForecastBench-binary:ForecastBench:2026-08-30_resolution_set:384",
+   "ms": 123.404,
+   "tokens": 796
+  },
+  {
+   "run_id": "4:BANKING77:BANKING77:test:323",
+   "ms": 242.112,
+   "tokens": 1867
+  },
+  {
+   "run_id": "50:Habermas-consensus:Habermas-consensus:15f431a20c2476ffd18bc2cbd9cb1806",
+   "ms": 175.293,
+   "tokens": 1312
+  },
+  {
+   "run_id": "50:Habermas-consensus:Habermas-consensus:58e75a6fd0896a2289d70707c7b266aa",
+   "ms": 136.1,
+   "tokens": 1005
+  },
+  {
+   "run_id": "5:CLINC150+OOS:CLINC150+OOS:test:2100",
+   "ms": 416.153,
+   "tokens": 3392
+  },
+  {
+   "run_id": "5:CLINC150+OOS:CLINC150+OOS:test:2544",
+   "ms": 400.07,
+   "tokens": 3393
+  },
+  {
+   "run_id": "9:Home-Appliance:home-appliance:test:kestrel:06",
+   "ms": 385.404,
+   "tokens": 3197
+  },
+  {
+   "run_id": "calibration-v1:56:cross_domain_legit_0275",
+   "ms": 150.334,
+   "tokens": 1086
+  },
+  {
+   "run_id": "calibration-v1:56:phish_0007",
+   "ms": 173.214,
+   "tokens": 1254
+  },
+  {
+   "run_id": "calibration-v1:56:phish_0236",
+   "ms": 157.968,
+   "tokens": 1229
+  },
+  {
+   "run_id": "candidates-v3:57:4313",
+   "ms": 93.173,
+   "tokens": 370
+  },
+  {
+   "run_id": "candidates-v3:61:b62c7c6c-9a14-46f2-97be-1a2ef3a101e2",
+   "ms": 93.616,
+   "tokens": 274
+  },
+  {
+   "run_id": "candidates-v3:62:0500165c-55a4-4e43-81c2-4d1509918a24",
+   "ms": 108.138,
+   "tokens": 696
+  },
+  {
+   "run_id": "candidates-v3:62:77821b1c-2320-4070-95dd-f8e274536495",
+   "ms": 91.642,
+   "tokens": 501
+  },
+  {
+   "run_id": "candidates-v3:62:8d938342-df3d-48cb-8947-b3b9fd2b73fd",
+   "ms": 133.441,
+   "tokens": 929
+  },
+  {
+   "run_id": "candidates-v3:62:db6d500f-b265-4860-afb4-25ff392e5235",
+   "ms": 98.125,
+   "tokens": 549
+  },
+  {
+   "run_id": "candidates-v3:62:ed82e40c-d0ac-46a3-a138-80ccef3763de",
+   "ms": 116.337,
+   "tokens": 783
+  }
+ ]
+}

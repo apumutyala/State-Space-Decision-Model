@@ -164,3 +164,20 @@ def test_teacher_scope_matches_m2_first_cell_draw():
     got = draw_ids(ids, s["heldout_excluded"]["ids"], 10, 0)
     assert got == split_ids(sorted(set(ids) - set(s["heldout_excluded"]["ids"])), 10, 0, 0)[0]
     assert not set(got) & set(s["heldout_excluded"]["ids"])
+
+
+def test_preflight_excludes_one_time_compile_spikes_job_5mw9h():
+    """L-26: job-5mw9h stopped at index_preflight (exit 18): 4 of 61 parity rows were 11.5-14.7 s Triton compiles for
+    new sequence-length shapes, which the mean-based rate extrapolated to the whole subset (34.0 min > 95% of 27)."""
+    f = ROOT / "tests/clef/fixtures/job_5mw9h_parity_timing.json"
+    probes = json.loads(f.read_text(encoding="utf-8"))
+    r = P.preflight(probes, "dev_subset", 27)
+    assert r["ok"] and len(r["compile_spikes"]) == 4 and all(x["ms"] > 11000 for x in r["compile_spikes"])
+    assert 2.4 < r["speed_vs_flash_sgihj"] < 2.7 and r["projected_min"] < 0.95 * 27
+    assert 0.8 < r["warmup_min_charged_once"] < 0.9  # the spikes' time is still charged, once
+    # a uniformly slow box is still stopped: no row is a spike when every row is slow
+    slow = {"release": "clef", "parity_timing": [dict(x, ms=x["ms"] * 1.0) for x in probes["parity_timing"][:3]] +
+            [dict(x, ms=12.0 * (P.SGIHJ["row_ms_intercept"] + P.SGIHJ["row_ms_per_token"] * x["tokens"]))
+             for x in probes["parity_timing"][3:]]}
+    s = P.preflight(slow, "dev_subset", 27)
+    assert not s["ok"] and s["compile_spikes"] == []

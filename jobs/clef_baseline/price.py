@@ -152,6 +152,7 @@ def check_params(p: dict) -> dict:
 
 
 PREFLIGHT_WARMUP_ROWS = 3  # the first decide calls after load include compile/allocator warm-up
+COMPILE_SPIKE_FACTOR = 4.0  # a parity row > 4x the median per-model-ms ratio is a one-time compile (L-26)
 PREFLIGHT_MARGIN = 0.95    # same rule as jobs/common/rate_guard.py: stop if the projection is past 95 % of the cap
 EXIT_TOO_SLOW = 15         # rate_guard's code; run_job.sh maps it to 18
 
@@ -164,13 +165,22 @@ def preflight(probes: dict, volume: str, cap_min: float) -> dict:
     t = [x for x in probes.get("parity_timing") or [] if x.get("tokens")][PREFLIGHT_WARMUP_ROWS:]
     if not t:
         return {"ok": True, "measured": False, "note": "no parity timing (old probes file); live guard only"}
-    meas = sum(x["ms"] for x in t)
-    model = sum(SGIHJ["row_ms_intercept"] + SGIHJ["row_ms_per_token"] * x["tokens"] for x in t)
-    s = meas / model
+    model = [SGIHJ["row_ms_intercept"] + SGIHJ["row_ms_per_token"] * x["tokens"] for x in t]
+    ratio = sorted(x["ms"] / m for x, m in zip(t, model))
+    med = ratio[len(ratio) // 2]
+    # L-26: rows far slower than the median are one-time Triton compile / autotune for a new sequence-length shape
+    # (job-5mw9h: 4 of 61 parity rows took 11.5-14.7 s, the rest ~0.2-0.7 s). They are not the steady-state rate:
+    # exclude them from the rate and charge their time ONCE as fixed warm-up (the kit run may recompile).
+    keep = [(x, m) for x, m in zip(t, model) if x["ms"] / m <= COMPILE_SPIKE_FACTOR * med]
+    spikes = [x for x, m in zip(t, model) if x["ms"] / m > COMPILE_SPIKE_FACTOR * med]
+    s = sum(x["ms"] for x, _ in keep) / sum(m for _, m in keep)
+    warm = sum(x["ms"] for x in spikes) / 60000.0
     v = VOLUMES[volume]
-    proj = s * decide_minutes("clef-flash", v["rows"], v["tokens"]) + load_minutes(probes.get("release", "clef"))
+    proj = s * decide_minutes("clef-flash", v["rows"], v["tokens"]) + load_minutes(probes.get("release", "clef")) + warm
     return {"ok": proj <= PREFLIGHT_MARGIN * cap_min, "measured": True, "n_rows": len(t),
-            "speed_vs_flash_sgihj": round(s, 3), "projected_min": round(proj, 1), "cap_min": cap_min,
+            "speed_vs_flash_sgihj": round(s, 3), "median_row_ratio": round(med, 3),
+            "compile_spikes": [{"run_id": x.get("run_id"), "ms": x["ms"], "tokens": x["tokens"]} for x in spikes],
+            "warmup_min_charged_once": round(warm, 2), "projected_min": round(proj, 1), "cap_min": cap_min,
             "volume": volume, "flops_ratio_prediction": round(flops_ratio(), 3)}
 
 
