@@ -200,6 +200,12 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
     if any(isinstance(n, ast.Attribute) and isinstance(n.ctx, (ast.Store, ast.Del))
            and isinstance(n.value, ast.Name) and n.value.id in imported_subprocess for n in ast.walk(tree)):
         return ()  # even a helper's rebind changes the shared module for every import alias
+    if any(isinstance(n, ast.Assign) and isinstance(n.value, ast.Name) and n.value.id in imported_subprocess
+           for n in ast.walk(tree)):
+        return ()  # module aliases can hide attribute mutation; they are outside the proof contract
+    if any(isinstance(n, ast.Call) and any(isinstance(arg, ast.Name) and arg.id in imported_subprocess
+           for arg in [*n.args, *(kw.value for kw in n.keywords)]) for n in ast.walk(tree)):
+        return ()  # setattr/monkeypatch or any unknown consumer can replace the module's methods
     def scope_nodes(scope):
         def walk(n):
             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
@@ -265,8 +271,11 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
 
     module_binds, module_subprocess, _ = scope_bindings(tree, {}, set())
     def visible_helpers(scope, inherited):
-        shadowed = {n.id for n in scope_nodes(scope) if isinstance(n, ast.Name)
+        nodes = scope_nodes(scope)
+        shadowed = {n.id for n in nodes if isinstance(n, ast.Name)
                     and isinstance(n.ctx, (ast.Store, ast.Del))}
+        shadowed.update(a.asname or a.name.split(".")[0] for n in nodes if isinstance(n, ast.Import) for a in n.names)
+        shadowed.update(a.asname or a.name for n in nodes if isinstance(n, ast.ImportFrom) for a in n.names)
         if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
             shadowed.update(n.arg for n in ast.walk(scope.args) if isinstance(n, ast.arg))
         defs = [n for n in scope.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
@@ -323,7 +332,7 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
                                              t) for t in tokens[1:end]):
                 return []
             tokens = tokens[end + 1:]
-        if tokens[:1] != ["exec"] or any(t in {";", "&&", "||", "&", "|", "<", ">", "(", ")"} for t in tokens):
+        if tokens[:1] != ["exec"] or any(re.search(r"[;&|<>()]", t) for t in tokens):
             return []
         return [ast.Constant(value=arg) for arg in tokens[1:]]
 

@@ -171,6 +171,11 @@ def test_runner_execution_detector_preserves_nested_literal_invocation():
     'def test_run():\n    subprocess.run(["bash", "-c", "export X=1 #; exec bash jobs/x/x_job.sh"])',
     'def test_run():\n    subprocess.run(["bash", "-c", "export X=$(exit 0); exec bash jobs/x/x_job.sh"])',
     'def test_run():\n    subprocess.run(["bash", "-c", "export X=${UNSET:?error}; exec bash jobs/x/x_job.sh"])',
+    'sp = subprocess\nsp.run = lambda *args, **kwargs: None\ndef test_run():\n    subprocess.run(["bash", runner])',
+    'setattr(subprocess, "run", lambda *args, **kwargs: None)\ndef test_run():\n    subprocess.run(["bash", runner])',
+    'def helper():\n    subprocess.run(["bash", runner])\ndef test_run():\n    from other import helper\n    helper()',
+    'def helper():\n    subprocess.run(["bash", runner])\ndef test_run():\n    import other as helper\n    helper()',
+    'def test_run():\n    subprocess.run(["bash", "-c", "exec bash jobs/x/x_job.sh ;&"])',
 ])
 def test_runner_execution_detector_requires_trusted_reachable_calls(body):
     src = NL.join(['import subprocess', 'runner = "jobs/x/x_job.sh"', body])
@@ -188,6 +193,13 @@ def test_runner_execution_detector_preserves_full8_export_exec():
                    '''    cmd = [BASH, "-c", 'export PATH="$FULL8_DRYRUN_PATH_PREFIX:$PATH"; exec bash jobs/full8/full8_job.sh']''',
                    '    subprocess.run(cmd)', 'def test_full8():', '    dry_run()'])
     assert lint.executes_runner(src, "jobs/full8/full8_job.sh")
+
+
+def test_runner_execution_detector_preserves_cache_nested_invocation():
+    src = NL.join(['import subprocess, shutil', 'BASH = shutil.which("bash")', 'def test_cache():',
+                   '    def run_part():', '        cmd = [BASH, "jobs/q9_feature_cache/cache_job.sh"]',
+                   '        subprocess.run(cmd)', '    run_part()'])
+    assert lint.executes_runner(src, "jobs/q9_feature_cache/cache_job.sh")
 
 
 def test_rule_constants_are_literal_module_level():
