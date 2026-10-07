@@ -15,11 +15,15 @@ job parts (e.g. stock select+holdout and stock train) unpack into one cache dire
 with any unanswerable question is written with status "error" and scores zero, as the stock readout's errored rows do.
 Verdict edition 0.2.1; every score is also reported under 0.3 (A1(c)).
 
+KD recipes (amendment A2: R16, R17) need ``--teacher-dir`` (the pinned Clef-flash export, ``train.teacher``), and the
+arm's training cache must be the teacher's draw (its summary's train_identity.drawn_ids_sha256). Their receipts carry
+the teacher identity and the KD coverage; ``select`` refuses receipts trained under other amendments.
+
 Single-shot HOLDOUT (review B2, re-review N1 / N2):
   * the choice is RE-DERIVED: ``chosen == proxy_rule.choose(rows)`` over select_summary's rows, and every row's
     ``results_sha256`` / ``head_sha256`` must equal its SELECT receipt AND the files on disk; select_summary records a
     code identity (sha256 of the proxy loop's own modules) that must still match the code that runs the holdout;
-  * select_summary must cover EVERY candidate (R01-R15) trained with one budget and one cache identity (which must still
+  * select_summary must cover EVERY candidate (R01-R17 under A2) trained with one budget and one cache identity (which must still
     match the cache on disk); ``--recipe`` other than the choice is refused;
   * every input (``--dev-rows`` and ``--clef`` are REQUIRED) is validated BEFORE any training or directory creation: the
     dev-rows file holds every HOLDOUT id, the Clef-flash results cover every HOLDOUT id, the cached HOLDOUT split exists;
@@ -36,6 +40,7 @@ Procedure (once-only record): commit select_summary.json, holdout_attempt.json a
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import gzip
 import hashlib
 import json
@@ -74,7 +79,8 @@ def budget_sha(budget: dict) -> str:
 
 #: the modules whose code decides a proxy score (re-review N1: the holdout must run the code SELECT ran)
 CODE_FILES = ("train/proxy_loop.py", "train/proxy_heads.py", "train/proxy_rule.py", "train/losses.py",
-              "heads/heads.py", "heads/typed.py", "jobs/q9_feature_cache/extract.py")
+              "heads/heads.py", "heads/typed.py", "jobs/q9_feature_cache/extract.py",
+              "train/teacher.py")
 
 
 def code_identity() -> dict:
@@ -144,14 +150,56 @@ def _order(seed: int, epoch: int, n: int) -> list[int]:
     return torch.randperm(n, generator=g).tolist()
 
 
-def train_head(recipe: dict, train: list[ProxyRequest], seed: int, budget: dict = TRAIN) -> tuple[torch.nn.Module, dict]:
+def loss_config(recipe: dict) -> LossConfig:
+    """The recipe's loss; A2 KD recipes add ``kd`` = {alpha, temperature} on top of their arm."""
+    cfg = LOSSES[recipe["loss"]]
+    kd = recipe.get("kd")
+    if kd:
+        cfg = dataclasses.replace(cfg, kd_alpha=float(kd["alpha"]), kd_temperature=float(kd["temperature"]))
+    return cfg
+
+
+def teacher_table(train: list[ProxyRequest], teacher) -> tuple[dict, dict]:
+    """(rid, qid) -> teacher probabilities in the cached option order (None = no teacher: clef-arm fallback), and the
+    coverage counts. A cached question whose option set differs from the teacher's is refused (train.teacher)."""
+    tab, hit, n = {}, 0, 0
+    for r in train:
+        for q in r.questions:
+            tp = teacher.probs(r.rid, q.qid, q.option_ids)
+            tab[(r.rid, q.qid)] = tp
+            n += 1
+            hit += tp is not None
+    return tab, {"questions": n, "with_teacher": hit, "fallback": n - hit}
+
+
+def check_cache_draw(cache: str | Path, arm: str, teacher) -> dict:
+    """The arm's training part must be the teacher's draw (summary train_identity.drawn_ids_sha256)."""
+    want = teacher.identity["selection_drawn_ids_sha256"]
+    seen = []
+    for s in sorted((Path(cache) / arm).glob("summary_*.json")):
+        ti = json.loads(s.read_text(encoding="utf-8")).get("train_identity") or {}
+        if ti.get("drawn_ids_sha256"):
+            seen.append(ti["drawn_ids_sha256"])
+    if not seen or set(seen) != {want}:
+        raise OutOfOrder(f"{arm}: cache training draw {sorted(set(seen)) or 'unknown'} != the teacher's draw {want[:12]}")
+    return {"drawn_ids_sha256": want}
+
+
+def train_head(recipe: dict, train: list[ProxyRequest], seed: int, budget: dict = TRAIN,
+               teacher=None) -> tuple[torch.nn.Module, dict]:
     """Exactly budget["steps"] optimiser steps of budget["grad_accum"] requests (A1(b)); the data cycles in seeded
-    per-epoch permutations. ``recipe["train_rows"]`` restricts training to the first N rows (matched-data controls)."""
+    per-epoch permutations. ``recipe["train_rows"]`` restricts training to the first N rows (matched-data controls).
+    A KD recipe (``recipe["kd"]``, A2) needs ``teacher`` (``train.teacher.TeacherSet``); other recipes ignore it."""
     if recipe.get("train_rows"):
         train = first_rows(train, int(recipe["train_rows"]))
     torch.manual_seed(seed)
     head = make_proxy_head(recipe, d_model_of(train), seed)
-    loss_cfg = LOSSES[recipe["loss"]]
+    loss_cfg = loss_config(recipe)
+    tab, kd_cov = None, None
+    if loss_cfg.kd:
+        if teacher is None:
+            raise OutOfOrder(f"{recipe['id']}: a KD recipe needs the pinned teacher (--teacher-dir)")
+        tab, kd_cov = teacher_table(train, teacher)
     params = [p for p in head.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(params, lr=budget["lr"][recipe["family"]], weight_decay=budget["weight_decay"])
     warm = budget["warmup_steps"]
@@ -170,7 +218,8 @@ def train_head(recipe: dict, train: list[ProxyRequest], seed: int, budget: dict 
             req = train[order[cursor]]
             cursor += 1
             lps = head(req)
-            loss = sum(decision_loss(lp.unsqueeze(0).float(), torch.tensor([q.label]), [q.qtype], loss_cfg)
+            loss = sum(decision_loss(lp.unsqueeze(0).float(), torch.tensor([q.label]), [q.qtype], loss_cfg,
+                                     _teacher_row(tab, req, q) if tab is not None else None)
                        for lp, q in zip(lps, req.questions)) / max(len(lps), 1)
             (loss / acc).backward()
             total += float(loss.detach())
@@ -179,9 +228,19 @@ def train_head(recipe: dict, train: list[ProxyRequest], seed: int, budget: dict 
         sched.step()
         hist.append(total / acc)
     head.eval()
-    return head, {"steps": len(hist), "epochs_seen": epoch + cursor / max(len(train), 1), "loss_first": hist[:5],
-                  "loss_last": hist[-5:], "seconds": time.perf_counter() - t0, "train_requests": len(train),
-                  "train_questions": sum(len(r.questions) for r in train)}
+    info = {"steps": len(hist), "epochs_seen": epoch + cursor / max(len(train), 1), "loss_first": hist[:5],
+            "loss_last": hist[-5:], "seconds": time.perf_counter() - t0, "train_requests": len(train),
+            "train_questions": sum(len(r.questions) for r in train)}
+    if kd_cov is not None:
+        info["kd"] = {"alpha": loss_cfg.kd_alpha, "temperature": loss_cfg.kd_temperature, **kd_cov}
+    return head, info
+
+
+def _teacher_row(tab: dict, req: ProxyRequest, q) -> torch.Tensor:
+    tp = tab.get((req.rid, q.qid))
+    if tp is None:
+        return torch.full((1, q.k), float("nan"))
+    return torch.tensor([tp], dtype=torch.float32)
 
 
 @torch.no_grad()
@@ -311,10 +370,15 @@ def report(results: str, split_subset: str, out_dir: Path, clef: str | None, sto
 
 # ----------------------------------------------------------------------------------------------- runs
 def run_recipe(recipe: dict, cache: str, dev_rows: str, out: Path, split: str, subset: str, seed: int,
-               clef: str | None, stock: str | None, B: int, budget: dict = TRAIN) -> dict:
+               clef: str | None, stock: str | None, B: int, budget: dict = TRAIN, teacher=None) -> dict:
     arm = recipe["arm"]
+    kd = bool(recipe.get("kd"))
+    if kd:
+        if teacher is None:
+            raise OutOfOrder(f"{recipe['id']}: a KD recipe needs the pinned teacher (--teacher-dir)")
+        check_cache_draw(cache, arm, teacher)
     train = load_split(cache, arm, "train")
-    head, tr = train_head(recipe, train, seed, budget)
+    head, tr = train_head(recipe, train, seed, budget, teacher if kd else None)
     reqs = load_split(cache, arm, split)
     ids = subset_ids(subset)
     rows = _dev_rows(dev_rows, set(ids))
@@ -333,6 +397,7 @@ def run_recipe(recipe: dict, cache: str, dev_rows: str, out: Path, split: str, s
            "train": tr, "train_fit": nll(head, train[: min(len(train), 2000)]), "results": str(final / "results.jsonl"),
            "results_sha256": _sha(res), "counts": counts, "rule": R.RULE_VERSION, "amendments": list(R.AMENDMENTS),
            "budget": budget, "budget_sha256": budget_sha(budget), "cache_identity": cache_identity(cache, [arm]),
+           "teacher": teacher.identity if kd else None,
            "code_identity": code_identity(), "score": report(str(res), _subset_path(subset), d, clef, stock, B)}
     (d / "receipt.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     if final.exists():
@@ -355,6 +420,14 @@ def select_summary(out: Path, cache: str, budget: dict = TRAIN, clef: str | None
     missing = [i for i in R.candidate_ids() if i not in recs]
     if missing:
         raise OutOfOrder(f"SELECT receipts missing for candidate recipes {missing}: every candidate must be scored")
+    stale = sorted(i for i, x in recs.items() if tuple(x.get("amendments") or ()) != tuple(R.AMENDMENTS))
+    if stale:  # A2(d): no receipt trained under another amendment set can be mixed in
+        raise OutOfOrder(f"receipts {stale} were trained under amendments != {list(R.AMENDMENTS)}")
+    for i in R.KD_RECIPES:
+        t = (recs[i].get("teacher") or {}) if i in recs else {}
+        if (t.get("teacher_sha256") != R.TEACHER["sha256"]
+                or t.get("selection_drawn_ids_sha256") != R.TEACHER["drawn_ids_sha256"]):
+            raise OutOfOrder(f"{i}: receipt teacher identity != the pinned teacher (A2)")
     bs = {x["budget_sha256"] for x in recs.values()}
     if bs != {budget_sha(budget)}:
         raise OutOfOrder(f"receipts were trained with budgets {sorted(bs)} != the pre-registered {budget_sha(budget)}")
@@ -371,6 +444,10 @@ def select_summary(out: Path, cache: str, budget: dict = TRAIN, clef: str | None
     for i, ctl in MATCHED_CONTROLS.items():
         if i in recs and ctl in recs:
             controls[f"{i}-{ctl}"] = compare(recs[i]["results"], recs[ctl]["results"], _subset_path(R.SELECT_SUBSET), B)["diff"]
+    for i in R.KD_RECIPES:  # A2(c): each KD recipe against its no-KD control
+        if i in recs and R.KD_CONTROL in recs:
+            controls[f"{i}-{R.KD_CONTROL}"] = compare(recs[i]["results"], recs[R.KD_CONTROL]["results"],
+                                                      _subset_path(R.SELECT_SUBSET), B)["diff"]
     doc = {"chosen": chosen, "rows": rows, "candidates": list(R.candidate_ids()), "budget_sha256": budget_sha(budget),
            "code_identity": code_identity(),
            "cache_identity": ident, "matched_controls": controls, "rule": R.RULE_VERSION,
@@ -442,7 +519,7 @@ def _write_atomic(p: Path, obj: dict) -> None:
 
 
 def holdout(out: Path, cache: str, dev_rows: str, clef: str, B: int, recipe: str | None = None,
-            budget: dict = TRAIN) -> dict:
+            budget: dict = TRAIN, teacher=None) -> dict:
     """The single-shot HOLDOUT run (review B2, re-review N1 / N2; see the module docstring)."""
     if (out / "verdict.json").exists():
         raise OutOfOrder("verdict.json exists: HOLDOUT is scored once")
@@ -464,6 +541,11 @@ def holdout(out: Path, cache: str, dev_rows: str, clef: str, B: int, recipe: str
     if cache_identity(cache, [arm])[arm] != summ["cache_identity"].get(arm):
         raise OutOfOrder(f"the cache on disk ({arm}) differs from the one SELECT was run on")
     inputs = _validate_inputs(cache, dev_rows, clef, arm)
+    if recipes[chosen].get("kd"):  # A2: refused BEFORE the attempt is bound (no shot without the pinned teacher)
+        if teacher is None:
+            raise OutOfOrder(f"the chosen recipe {chosen} is a KD recipe: pass the pinned teacher (--teacher-dir)")
+        check_cache_draw(cache, arm, teacher)
+        inputs["teacher"] = teacher.identity
     attempt = {"chosen": chosen, "select_summary_sha256": _sha(sp), "inputs": inputs, "code_identity": code_identity(),
                "seeds": list(R.HOLDOUT_SEEDS), "budget_sha256": budget_sha(budget), "rule": R.RULE_VERSION}
     if attempt_p.exists():  # resume after a crash: the SAME attempt only (no re-choice, no changed input)
@@ -482,7 +564,7 @@ def holdout(out: Path, cache: str, dev_rows: str, clef: str, B: int, recipe: str
         f = out / f"{chosen}_s{s}_holdout" / "receipt.json"
         recs.append(json.loads(f.read_text(encoding="utf-8")) if f.exists() else
                     run_recipe(recipes[chosen], cache, dev_rows, out, "holdout", R.HOLDOUT_SUBSET, s, clef, "from-cache", B,
-                               budget))
+                               budget, teacher))
     c = recs[0]["counts"]
     complete = c["cached"] == c["ids"] == c["rows"]
     v = R.verdict(chosen, recs[0]["score"]["all"]["point"], holdout_complete=complete)
@@ -518,6 +600,15 @@ def require_stock_check(out: Path) -> None:
         raise OutOfOrder("stock-check failed (|delta| > STOCK_CHECK_TOL): the loop is no-measurement (A1(d))")
 
 
+def _load_teacher(path: str):
+    from .teacher import TeacherIdentityError, load_teacher
+
+    try:
+        return load_teacher(path)
+    except TeacherIdentityError as e:
+        raise OutOfOrder(f"teacher refused: {e}") from e
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="train.proxy_loop")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -533,6 +624,8 @@ def main(argv=None) -> int:
             s.add_argument("--only", default=None, help="exploratory: receipts only, never select_summary.json")
         if name == "holdout":
             s.add_argument("--recipe", default=None, help="must equal select_summary's choice (checked)")
+        if name in ("recipes", "holdout"):
+            s.add_argument("--teacher-dir", default=None, help="the pinned Clef-flash export (KD recipes, A2)")
     a = ap.parse_args(argv)
     out = Path(a.out)
     if a.cmd == "holdout" and not out.is_dir():  # holdout never creates its output directory (re-review N2)
@@ -548,19 +641,23 @@ def main(argv=None) -> int:
         if a.cmd == "select":
             print(json.dumps(select_summary(out, a.cache, clef=a.clef, B=a.B), indent=1))
             return 0
+        teacher = _load_teacher(a.teacher_dir) if getattr(a, "teacher_dir", None) else None
         if a.cmd == "recipes":
             require_stock_check(out)
             recipes = {r["id"]: dict(r) for r in R.RECIPES}
             ids = a.only.split(",") if a.only else list(recipes)
+            need = [i for i in ids if recipes[i].get("kd")]
+            if need and teacher is None:
+                raise OutOfOrder(f"KD recipes {need} need --teacher-dir (the pinned teacher, A2)")
             for rid in ids:
                 rec = run_recipe(recipes[rid], a.cache, a.dev_rows, out, "select", R.SELECT_SUBSET, R.SELECT_SEEDS[0],
-                                 a.clef, a.stock, a.B)
+                                 a.clef, a.stock, a.B, teacher=teacher)
                 print(json.dumps({"id": rid, "select": rec["score"]["all"]}), flush=True)
             if not a.only:
                 print(json.dumps(select_summary(out, a.cache, clef=a.clef, B=a.B), indent=1))
             return 0
         require_stock_check(out)
-        print(json.dumps(holdout(out, a.cache, a.dev_rows, a.clef, a.B, a.recipe), indent=1))
+        print(json.dumps(holdout(out, a.cache, a.dev_rows, a.clef, a.B, a.recipe, teacher=teacher), indent=1))
         return 0
     except OutOfOrder as e:
         print(f"refused: {e}", file=sys.stderr)

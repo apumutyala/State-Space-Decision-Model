@@ -1,0 +1,121 @@
+{
+ "what": "Clef-flash teacher export (job-tnrwu, artifact art-ggrs8) verified against the q9-cache / m2 first-cell seed-0 training draw, CPU, $0",
+ "teacher": {
+  "identity": {
+   "release": "clef-flash",
+   "repo": "Cloudflare/clef-flash",
+   "revision": "17f0b0ad64efb65d273590632833508766b2aae6",
+   "backend_revision": "clef:Cloudflare/clef-flash@17f0b0ad64ef;jsm=0e304cf7c650;enc=untrusted-split-special+cut-leaking-added-v1;cfg=05bdad56;adapter=0.2.0",
+   "rows": 24000,
+   "status_counts": {
+    "ok": 23458,
+    "exhausted": 542
+   },
+   "selection_drawn_ids_sha256": "2bbbf1808c0bdd6cf0ba3ecd236cf9a64110c5e429e22f8b8e9cd2df7507556b",
+   "teacher_sha256": "a88b4fe0f6a79a8fc48bdea51391524bd4f5da885705461a543becf81c81e7f7"
+  },
+  "rows": 24000,
+  "status_counts": {
+   "ok": 23458,
+   "exhausted": 542
+  },
+  "questions_with_probs": 30727,
+  "contamination": {
+   "dev_test_manifests": {
+    "harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+    "harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+   },
+   "dev_test_id_hits": 0,
+   "cohort_v2": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "cohort_v3": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+   "cohort_hits": 0
+  }
+ },
+ "teacher_files_sha256": {
+  "selected-ids.txt": "1c7dda1ed312428ba031812e4377a137f01c87eba35abf835de21d60cb8f7b40",
+  "selection.json": "fa666ceca6b0c7cc027bfc87a5458d1a0f2fb5674d813ce231abd276df647ed6",
+  "teacher-clef-flash.identity.json": "f0394421e4de6c9ed4613b35b8aed60499158d05bc394bdff1a58c4f229b4075",
+  "teacher-clef-flash.jsonl": "a88b4fe0f6a79a8fc48bdea51391524bd4f5da885705461a543becf81c81e7f7"
+ },
+ "draw": {
+  "recomputed_with": "train.train_set.draw + jobs/q9_feature_cache/cache_config.json (this tree)",
+  "drawn_ids_sha256": "2bbbf1808c0bdd6cf0ba3ecd236cf9a64110c5e429e22f8b8e9cd2df7507556b",
+  "n_drawn": 24000,
+  "order_equals_teacher_selected_ids": true,
+  "files_uncompressed_sha256": {
+   "records": "82fb395d889c473d9fbc4877b51c792438e94b53cddd54e4cf825d4603baa166",
+   "manifest": "0be33669fa077d2a2abe29ecd159aea1a27c7cc9daaf910b584755410da4d961",
+   "content_map": "d4ffd9073e0490e409a757508b2821f8108a3a9e36b2531ec3c97a94b2bc0898"
+  },
+  "cohort_v3_excluded": {
+   "n": 38202,
+   "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+   "cohort": {
+    "cohort": "m2-dev-cohort-v3",
+    "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+    "n": {
+     "dev": 835,
+     "calibration": 1000,
+     "retention": 39872,
+     "steer_dev": 1800,
+     "steer_gate": 1000
+    }
+   },
+   "drawn_overlap": 0
+  }
+ },
+ "records": {
+  "records_checked": 24000,
+  "guard": true,
+  "frozen_check": true,
+  "guard_identity": {
+   "manifests": {
+    "harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+    "harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+   },
+   "n_ids": 47249,
+   "n_hashes": 48415,
+   "note": "",
+   "pin": {
+    "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+    "n_hashes": 24150,
+    "n_rows": 24265,
+    "builder": "train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)"
+   }
+  },
+  "content_index": {
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n": 24150
+  },
+  "frozen_families": [
+   9,
+   20,
+   22,
+   31,
+   32,
+   33,
+   44,
+   58,
+   64
+  ],
+  "frozen_family_hits": 0,
+  "guard_hits": 0
+ },
+ "items": {
+  "items": 31269,
+  "with_teacher": 30727,
+  "fallback": 542,
+  "qtypes": {
+   "choice": 27839,
+   "score": 1968,
+   "noul": 1462
+  },
+  "teacher_argmax_equals_label": 0.8773066033130471,
+  "n_items_with_teacher": 30727
+ },
+ "fallback_records": {
+  "n": 542,
+  "ids_sha256": "0bee25564433afb1ff6bfd1ed63872336aa1c18e4f0e7d698d1eda5aed77ea0a"
+ },
+ "secs": 131.5
+}
