@@ -1,6 +1,6 @@
 # Prepared follow-up to the incomplete L0h0 screen
 
-Base: PR #120 final head `96f5bd0c7298690d90e36918d5ca73cb302d447a`.
+Follow-up PR #122. Base: PR #120 final head `96f5bd0c7298690d90e36918d5ca73cb302d447a`.
 Preparation only; no parent/checkpoint load, inference, GPU, Index/heldout,
 paid compute or retry. Cost: $0.
 
