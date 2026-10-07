@@ -84,7 +84,8 @@ def test_no_backslash_n_continuation_in_any_job_shell():
 def test_runner_execution_detector():
     runner = "jobs/x/x_job.sh"
     direct = 'import subprocess\nsubprocess.run(["bash", str(ROOT / "jobs/x/x_job.sh")])\n'
-    split = 'import subprocess\nsubprocess.run([BASH, str(ROOT / "jobs" / "x" / "x_job.sh")])\n'
+    split = ('import subprocess, shutil\nBASH = shutil.which("bash")\n'
+             'subprocess.run([BASH, str(ROOT / "jobs" / "x" / "x_job.sh")])\n')
     via_name = 'import subprocess\np = ROOT / "jobs/x/x_job.sh"\nsubprocess.run(["bash", str(p)], check=True)\n'
     snippet = ('import subprocess\nlines = open("jobs/x/x_job.sh").read().splitlines()[:3]\n'
                'subprocess.run(["bash", "-c", "echo hi"])\n')
@@ -124,6 +125,37 @@ def test_runner_execution_detector_rejects_non_shell_bindings():
     src = NL.join(['import subprocess', 'BASH = "cat"',
                    f'subprocess.run([BASH, "{runner}"], check=True)'])
     assert not lint.executes_runner(src, runner)
+
+
+@pytest.mark.parametrize("body", [
+    'subprocess.run(["bash", runner], executable="cat")',
+    'subprocess.run(["bash", runner], -1, "cat")',
+    'subprocess.run(["bash", runner], **options)',
+    'runner = "other.sh"\nsubprocess.run(["bash", runner])',
+    'cmd = ["bash", runner]\ncmd[0] = "cat"\nsubprocess.run(cmd)',
+    'cmd = ["bash", runner]\ncmd.insert(1, "-n")\nsubprocess.run(cmd)',
+    'cmd = ["bash", runner]\ncmd += ["-n"]\nsubprocess.run(cmd)',
+    'cmd = ["bash", runner]\nalias = cmd\nalias[0] = "cat"\nsubprocess.run(cmd)',
+    'cmd = ["bash", runner]\nchange(cmd)\nsubprocess.run(cmd)',
+    'cmd = ["bash", runner]\ndef change():\n    cmd[0] = "cat"\nchange()\nsubprocess.run(cmd)',
+    'subprocess.run(cmd)\ncmd = ["bash", runner]',
+    'def helper():\n    runner = "jobs/x/x_job.sh"\nrunner = "other.sh"\nsubprocess.run(["bash", runner])',
+    'def test_shadow(runner):\n    subprocess.run(["bash", runner])',
+    'def test_shadow():\n    runner = "other.sh"\n    subprocess.run(["bash", runner])',
+    'def test_shadow():\n    subprocess.run(["bash", runner])\n    runner = "other.sh"',
+    'def test_shadow(BASH):\n    subprocess.run([BASH, runner])',
+    'def test_unreachable():\n    return\n    subprocess.run(["bash", runner])',
+])
+def test_runner_execution_detector_rejects_overrides_mutation_and_shadowing(body):
+    src = NL.join(['import subprocess', 'runner = "jobs/x/x_job.sh"', body])
+    assert not lint.executes_runner(src, "jobs/x/x_job.sh")
+
+
+def test_runner_execution_detector_preserves_nested_literal_invocation():
+    src = NL.join(['import subprocess', 'def test_outer():', '    def run_part():',
+                   '        cmd = ["bash", "jobs/x/x_job.sh"]', '        subprocess.run(cmd)',
+                   '    run_part()'])
+    assert lint.executes_runner(src, "jobs/x/x_job.sh")
 
 
 def test_rule_constants_are_literal_module_level():

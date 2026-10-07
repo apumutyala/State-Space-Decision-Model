@@ -195,20 +195,78 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
         tree = ast.parse(src)
     except SyntaxError:
         return ()
-    binds: dict[str, list[ast.AST]] = {}
-    subprocess_names = {"subprocess"}
-    for n in ast.walk(tree):
-        if isinstance(n, ast.Import):
-            subprocess_names.update(a.asname or a.name for a in n.names if a.name == "subprocess")
-        if isinstance(n, ast.Assign):
-            for t in n.targets:
-                for nm in ast.walk(t):
-                    if isinstance(nm, ast.Name):
-                        binds.setdefault(nm.id, []).append(n.value)
-        elif isinstance(n, (ast.For, ast.comprehension)):
-            for nm in ast.walk(n.target):
-                if isinstance(nm, ast.Name):
-                    binds.setdefault(nm.id, []).append(n.iter)
+    def scope_nodes(scope):
+        def walk(n):
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+                return
+            yield n
+            for child in ast.iter_child_nodes(n):
+                yield from walk(child)
+        out = []
+        for stmt in scope.body:
+            out.extend(walk(stmt))
+            if isinstance(stmt, (ast.Return, ast.Raise)):
+                break
+        return out
+
+    def scope_bindings(scope, inherited, inherited_subprocess):
+        """Only single assignments are proof. Mutation/aliasing of argv lists fails closed."""
+        nodes = scope_nodes(scope)
+        writes: dict[str, int] = {}
+        for n in nodes:
+            if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)):
+                writes[n.id] = writes.get(n.id, 0) + 1
+        if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for n in ast.walk(scope.args):
+                if isinstance(n, ast.arg):
+                    writes[n.arg] = writes.get(n.arg, 0) + 1
+        imports = {a.asname or a.name.split(".")[0]: a.name
+                   for n in nodes if isinstance(n, ast.Import) for a in n.names}
+        shadowed = set(writes) | set(imports)
+        shadowed.update(a.asname or a.name for n in nodes if isinstance(n, ast.ImportFrom) for a in n.names)
+        shadowed.update(n.name for n in scope.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)))
+        bindings = {name: value for name, value in inherited.items() if name not in shadowed}
+        subprocess_aliases = (inherited_subprocess - shadowed) | {name for name, mod in imports.items()
+                                                               if mod == "subprocess" and name not in writes}
+        for n in scope.body:
+            if isinstance(n, ast.Assign) and len(n.targets) == 1 and isinstance(n.targets[0], ast.Name):
+                name = n.targets[0].id
+                if writes.get(name) == 1:
+                    bindings[name] = [n.value]
+        mutable = {name for name, values in bindings.items() if isinstance(values[0], ast.List)}
+        invalid = {name for name, count in writes.items() if count > 1}
+        for n in scope.body:
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                invalid.update(x.id for x in ast.walk(n) if isinstance(x, ast.Name) and x.id in mutable)
+        for n in nodes:
+            if isinstance(n, (ast.Subscript, ast.Attribute)) and isinstance(n.ctx, (ast.Store, ast.Del)):
+                invalid.update(x.id for x in ast.walk(n.value) if isinstance(x, ast.Name))
+            if isinstance(n, ast.Assign) and isinstance(n.value, ast.Name) and n.value.id in mutable:
+                invalid.add(n.value.id)  # another reference could mutate the same list
+            if isinstance(n, ast.Call) and not (isinstance(n.func, ast.Attribute)
+                    and isinstance(n.func.value, ast.Name) and n.func.value.id in subprocess_aliases
+                    and n.func.attr in _SUBPROC):
+                invalid.update(x.id for x in ast.walk(n) if isinstance(x, ast.Name) and x.id in mutable)
+        # Invalidate derived paths too: a literal inside an expression with an ambiguous binding is not proof.
+        while True:
+            derived = {name for name, values in bindings.items()
+                       if any(isinstance(x, ast.Name) and x.id in invalid for x in ast.walk(values[0]))}
+            if derived <= invalid:
+                break
+            invalid |= derived
+        return {name: value for name, value in bindings.items() if name not in invalid}, subprocess_aliases, nodes
+
+    module_binds, module_subprocess, module_nodes = scope_bindings(tree, {}, set())
+    scopes = [(n, module_binds, module_subprocess) for n in tree.body
+              if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    scopes += [(m, module_binds, module_subprocess) for n in tree.body if isinstance(n, ast.ClassDef) for m in n.body
+               if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    calls = [(n, module_binds, module_subprocess) for n in module_nodes if isinstance(n, ast.Call)]
+    for scope, inherited, inherited_aliases in scopes:
+        local_binds, aliases, nodes = scope_bindings(scope, inherited, inherited_aliases)
+        calls += [(n, local_binds, aliases) for n in nodes if isinstance(n, ast.Call)]
+        scopes += [(n, local_binds, aliases) for n in scope.body
+                   if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
 
     def texts(expr):
         out = [ast.get_source_segment(src, expr) or ast.unparse(expr)]
@@ -226,12 +284,14 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
                     yield value.elts
 
     out = []
-    for n in ast.walk(tree):
+    for n, available_binds, subprocess_names in calls:
+        binds = {name: values for name, values in available_binds.items()
+                 if values[0].lineno < n.lineno}
         if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in _SUBPROC
                 and isinstance(n.func.value, ast.Name) and n.func.value.id in subprocess_names):
             continue
-        if any(k.arg == "shell" and not (isinstance(k.value, ast.Constant) and k.value.value is False)
-               for k in n.keywords):
+        if len(n.args) > 1 or any(k.arg in {"executable", None} or (k.arg == "shell"
+                and not (isinstance(k.value, ast.Constant) and k.value.value is False)) for k in n.keywords):
             continue
         args = n.args[0] if n.args else next((k.value for k in n.keywords if k.arg == "args"), None)
         commands = list(argv_lists(args))
@@ -241,7 +301,7 @@ def _subprocess_texts(src: str) -> tuple[tuple[str, ...], ...]:
             first = texts(argv[0])
             # A direct executable path is also valid (its path is checked by executes_runner).
             executable = first[1:] if isinstance(argv[0], ast.Name) and binds.get(argv[0].id) else first
-            shell = any(re.search(r"\bbash(?:\.exe)?\b|\bBASH\b", t) for t in executable)
+            shell = any(re.search(r"\bbash(?:\.exe)?\b", t) for t in executable)
             if not shell:
                 out.append(first)
                 continue
