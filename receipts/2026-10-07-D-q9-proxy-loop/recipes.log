@@ -6,3 +6,30 @@
 {"id": "R05", "select": {"point": 37.42756147347888, "lo": 34.51146736397888, "hi": 40.551253345328014, "se": 1.5052284713185176}}
 {"id": "R06", "select": {"point": 39.241054442993914, "lo": 36.088190782498785, "hi": 42.20552961804667, "se": 1.5316619806524516}}
 {"id": "R07", "select": {"point": 37.068378203004656, "lo": 33.99177770454834, "hi": 40.01467261332991, "se": 1.5338130327294333}}
+{"id": "R08", "select": {"point": 35.70379195688079, "lo": 32.669462734378506, "hi": 38.72209886403498, "se": 1.492311530391953}}
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\apumu\research\CHLabs\ssdm-wt\q9fcl-run\train\proxy_loop.py", line 736, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "C:\Users\apumu\research\CHLabs\ssdm-wt\q9fcl-run\train\proxy_loop.py", line 721, in main
+    rec = run_recipe(recipes[rid], a.cache, a.dev_rows, out, "select", R.SELECT_SUBSET, R.SELECT_SEEDS[0],
+                     a.clef, a.stock, a.B, teacher=teacher)
+  File "C:\Users\apumu\research\CHLabs\ssdm-wt\q9fcl-run\train\proxy_loop.py", line 410, in run_recipe
+    train = load_split(cache, arm, "train")
+  File "C:\Users\apumu\research\CHLabs\ssdm-wt\q9fcl-run\train\proxy_loop.py", line 108, in load_split
+    return [from_record(r, table) for r in load_shards(Path(cache) / arm / split, verify)]
+                                           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\apumu\research\CHLabs\ssdm-wt\q9fcl-run\jobs\q9_feature_cache\extract.py", line 535, in load_shards
+    for line in (d / "MANIFEST.jsonl").read_text(encoding="utf-8").splitlines():
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\apumu\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\pathlib\__init__.py", line 787, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\apumu\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\pathlib\__init__.py", line 771, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\apumu\\q9cache\\stock_train\\x\\cache\\e5\\train\\MANIFEST.jsonl'
+exit 1
+Wed Oct  7 11:13:39 UTC 2026
