@@ -30,6 +30,8 @@
 - Public-output wrapper is ready for cross-review on the merged typed planner and bridge: public audience required before planning, returned program rechecked/released, and ordinary failures projected to one fixed status without traces or reasons. Derived proof steps use kernel ordinals. CPU-only callable-boundary proof; no network-authentication or learned capability claim.
 - L0e runtime fixture replay checks the merged kernel and renderer and saves per-attempt outputs. Authored task labels remain annotations; provider calls are zero. The original receipt predates merged ordinal derivations; the refreshed merged-source receipt is in `receipts/2026-10-06-L-runtime-evaluation-merged`.
 
+- Operation-only q_end cached CPU diagnostic is prepared on merged #71/#85/#110 dependencies, with the frozen 24/12 development corpus, CE-only 96-update recipe and 6 GiB start / 3 GiB runtime / 1200-second owned-child guards. Focused synthetic CPU checks cover cache parity, lineage, delegation and resource limits; no real-parent execution, learned result, paid spend or level qualification is claimed. Plan: `plans/codex/L0_OPERATION_ONLY_CACHE.md`; prepared receipt: `receipts/2026-10-06-L-operation-only-cache-prepared`.
+
 ## Open decisions for the user
 - SF Compute credit expiry date.
 - (done) private repo + agent-main created 2026-10-06.
