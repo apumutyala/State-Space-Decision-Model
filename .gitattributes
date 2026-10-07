@@ -9,3 +9,4 @@ Dockerfile text eol=lf
 # byte-exact vendored code and fixtures
 fixtures/replay/** -text
 third_party/** -text
+receipts/2026-10-07-L-semantic-slot-conditional-diagnostic/raw/*.jsonl -text

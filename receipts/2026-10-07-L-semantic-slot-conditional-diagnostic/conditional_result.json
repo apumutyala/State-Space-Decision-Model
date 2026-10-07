@@ -1,0 +1,3630 @@
+{
+  "bootstrap_draws": 2000,
+  "bootstrap_seed": 9203,
+  "command": "python -X utf8 analyze.py",
+  "definitions": {
+    "cluster": "world_id; training seed and repeated family rows are averaged within world before bootstrap",
+    "gold_operation_conditional_exact_probability": "posterior probability of the exact target binding conditional on the gold operation",
+    "hierarchical_exact": "operation marginal argmax, then top binding candidate within that selected operation",
+    "operation_marginal_correct": "argmax of candidate probability summed over all bindings of each allowed operation",
+    "oracle_gold_operation_pointer_exact": "top candidate after restricting to the gold operation; not served performance"
+  },
+  "family_world_pairs": 360,
+  "interpretation": "saved-posterior offline oracle diagnostic; no model inference or training",
+  "numpy_version": "2.2.6",
+  "raw_sha256": {
+    "seed-20261006-beta-0-endpoints.jsonl": "96d442d44d17392a1a15f7530125d9bfe9623fa21dd158e30a5ea1e54d3841ff",
+    "seed-20261006-beta-005-endpoints.jsonl": "2f07d2817a8af957e4367e35762146f3d165b2cd12d45f948025f4468be2478b",
+    "seed-20261016-beta-0-endpoints.jsonl": "b38cbccbbf5c615f1421bb5da314733315596319c10aa37615146645bb372d31",
+    "seed-20261016-beta-005-endpoints.jsonl": "9c4ed2fb556d02aae3b0b76e47bd76a03a6933aa22d47142b42318f9efbc2611",
+    "seed-20261026-beta-0-endpoints.jsonl": "a7000d49034a4ca32f10f2352110e33e032dbec078b77a443df62b8f50a92109",
+    "seed-20261026-beta-005-endpoints.jsonl": "dce123c24cf4dbc7fd8d22659f641641df86eb83c45468e0b8cb3075352e8fb0"
+  },
+  "results": {
+    "new_disjoint": {
+      "beta0": {
+        "by_gold_operation": {
+          "compare": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.4910364656950032,
+            "gold_operation_mass": 0.8887839808022668,
+            "hierarchical_exact": 0.45555555555555555,
+            "joint_map_exact": 0.45555555555555555,
+            "left_conditional_correct": 0.46111111111111114,
+            "operation_marginal_correct": 0.9888888888888889,
+            "oracle_gold_operation_pointer_exact": 0.46111111111111114,
+            "right_conditional_correct": 0.46111111111111114,
+            "saved_map_exact": 0.45555555555555555
+          },
+          "explain": {
+            "field_conditional_correct": 0.9388888888888889,
+            "gold_operation_conditional_exact_probability": 0.5038659299160149,
+            "gold_operation_mass": 0.7030113473977787,
+            "hierarchical_exact": 0.4388888888888889,
+            "joint_map_exact": 0.4444444444444444,
+            "left_conditional_correct": 0.6333333333333333,
+            "operation_marginal_correct": 0.7444444444444445,
+            "oracle_gold_operation_pointer_exact": 0.5833333333333334,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.4444444444444444
+          },
+          "read": {
+            "field_conditional_correct": 0.8944444444444445,
+            "gold_operation_conditional_exact_probability": 0.47542407495101385,
+            "gold_operation_mass": 0.996886278400415,
+            "hierarchical_exact": 0.45555555555555555,
+            "joint_map_exact": 0.45555555555555555,
+            "left_conditional_correct": 0.5111111111111111,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.45555555555555555,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.45555555555555555
+          }
+        },
+        "by_gold_operation_ci95": {
+          "compare": {
+            "field_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.466334881455114,
+                0.5150622184100206
+              ],
+              "draws": 2000,
+              "mean": 0.4910364656950032,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.8770638876436648,
+                0.8995766066863956
+              ],
+              "draws": 2000,
+              "mean": 0.8887839808022667,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.3666666666666666,
+                0.5444444444444445
+              ],
+              "draws": 2000,
+              "mean": 0.45555555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.3722222222222222,
+                0.5444444444444444
+              ],
+              "draws": 2000,
+              "mean": 0.45555555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.3777777777777777,
+                0.5499999999999999
+              ],
+              "draws": 2000,
+              "mean": 0.46111111111111114,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.9722222222222221,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 0.9888888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.3722222222222222,
+                0.5500000000000002
+              ],
+              "draws": 2000,
+              "mean": 0.46111111111111114,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                0.3722222222222222,
+                0.55
+              ],
+              "draws": 2000,
+              "mean": 0.46111111111111114,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.3666666666666666,
+                0.538888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.45555555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "explain": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.8944444444444444,
+                0.9722222222222222
+              ],
+              "draws": 2000,
+              "mean": 0.9388888888888888,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.47913540713656566,
+                0.5283937924148951
+              ],
+              "draws": 2000,
+              "mean": 0.5038659299160149,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.6613192594106098,
+                0.7425462975242507
+              ],
+              "draws": 2000,
+              "mean": 0.7030113473977788,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.3722222222222223,
+                0.511111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.43888888888888883,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.3777777777777777,
+                0.5111111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.4444444444444444,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.5555555555555556,
+                0.711111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.6333333333333333,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.6833333333333332,
+                0.8
+              ],
+              "draws": 2000,
+              "mean": 0.7444444444444444,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.5055555555555556,
+                0.6611111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.5833333333333335,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.37777777777777766,
+                0.5111111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.4444444444444444,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "read": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.85,
+                0.9333333333333333
+              ],
+              "draws": 2000,
+              "mean": 0.8944444444444443,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.4353416267568357,
+                0.5179545282612512
+              ],
+              "draws": 2000,
+              "mean": 0.4754240749510139,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.9967886425696905,
+                0.9969752563813881
+              ],
+              "draws": 2000,
+              "mean": 0.9968862784004149,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.35555555555555546,
+                0.5666666666666667
+              ],
+              "draws": 2000,
+              "mean": 0.4555555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.3555555555555555,
+                0.5611111111111112
+              ],
+              "draws": 2000,
+              "mean": 0.4555555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.3944444444444445,
+                0.6222222222222222
+              ],
+              "draws": 2000,
+              "mean": 0.5111111111111112,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.3499999999999999,
+                0.5611111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.4555555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.3555555555555555,
+                0.5666666666666665
+              ],
+              "draws": 2000,
+              "mean": 0.4555555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          }
+        },
+        "by_seed": {
+          "20261006": {
+            "field_conditional_correct": 0.8833333333333333,
+            "gold_operation_conditional_exact_probability": 0.48025638762667644,
+            "gold_operation_mass": 0.9628585126944088,
+            "hierarchical_exact": 0.5277777777777778,
+            "joint_map_exact": 0.5277777777777778,
+            "left_conditional_correct": 0.5944444444444444,
+            "operation_marginal_correct": 0.9944444444444445,
+            "oracle_gold_operation_pointer_exact": 0.5277777777777778,
+            "right_conditional_correct": 0.8555555555555555,
+            "saved_map_exact": 0.5277777777777778
+          },
+          "20261016": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.5075078666915058,
+            "gold_operation_mass": 0.8696403837165312,
+            "hierarchical_exact": 0.4777777777777778,
+            "joint_map_exact": 0.4777777777777778,
+            "left_conditional_correct": 0.5388888888888889,
+            "operation_marginal_correct": 0.9111111111111111,
+            "oracle_gold_operation_pointer_exact": 0.5388888888888889,
+            "right_conditional_correct": 0.7888888888888889,
+            "saved_map_exact": 0.4777777777777778
+          },
+          "20261026": {
+            "field_conditional_correct": 0.95,
+            "gold_operation_conditional_exact_probability": 0.4825622162438496,
+            "gold_operation_mass": 0.7561827101895204,
+            "hierarchical_exact": 0.34444444444444444,
+            "joint_map_exact": 0.35,
+            "left_conditional_correct": 0.4722222222222222,
+            "operation_marginal_correct": 0.8277777777777777,
+            "oracle_gold_operation_pointer_exact": 0.43333333333333335,
+            "right_conditional_correct": 0.8166666666666667,
+            "saved_map_exact": 0.35
+          }
+        },
+        "n_rows": 540,
+        "overall": {
+          "field_conditional_correct": 0.9444444444444444,
+          "gold_operation_conditional_exact_probability": 0.4901088235206773,
+          "gold_operation_mass": 0.8628938688668202,
+          "hierarchical_exact": 0.45,
+          "joint_map_exact": 0.45185185185185184,
+          "left_conditional_correct": 0.5351851851851852,
+          "operation_marginal_correct": 0.9111111111111111,
+          "oracle_gold_operation_pointer_exact": 0.5,
+          "right_conditional_correct": 0.8203703703703704,
+          "saved_map_exact": 0.45185185185185184
+        },
+        "overall_ci95": {
+          "field_conditional_correct": {
+            "ci95": [
+              0.9240740740740742,
+              0.9629629629629629
+            ],
+            "draws": 2000,
+            "mean": 0.9444444444444444,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9210
+          },
+          "gold_operation_conditional_exact_probability": {
+            "ci95": [
+              0.471552349072979,
+              0.5087603362604958
+            ],
+            "draws": 2000,
+            "mean": 0.49010882352067725,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9206
+          },
+          "gold_operation_mass": {
+            "ci95": [
+              0.8406123242714445,
+              0.885842340476151
+            ],
+            "draws": 2000,
+            "mean": 0.8628938688668203,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9204
+          },
+          "hierarchical_exact": {
+            "ci95": [
+              0.39814814814814825,
+              0.5018518518518518
+            ],
+            "draws": 2000,
+            "mean": 0.45,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9207
+          },
+          "joint_map_exact": {
+            "ci95": [
+              0.4018518518518519,
+              0.5037037037037037
+            ],
+            "draws": 2000,
+            "mean": 0.4518518518518519,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9208
+          },
+          "left_conditional_correct": {
+            "ci95": [
+              0.47962962962962963,
+              0.5851851851851853
+            ],
+            "draws": 2000,
+            "mean": 0.5351851851851851,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9211
+          },
+          "operation_marginal_correct": {
+            "ci95": [
+              0.8833333333333333,
+              0.9370370370370371
+            ],
+            "draws": 2000,
+            "mean": 0.9111111111111111,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9203
+          },
+          "oracle_gold_operation_pointer_exact": {
+            "ci95": [
+              0.4444444444444444,
+              0.5518518518518518
+            ],
+            "draws": 2000,
+            "mean": 0.5,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9205
+          },
+          "right_conditional_correct": {
+            "ci95": [
+              0.7722222222222223,
+              0.8666666666666667
+            ],
+            "draws": 2000,
+            "mean": 0.8203703703703703,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9212
+          },
+          "saved_map_exact": {
+            "ci95": [
+              0.4,
+              0.5055555555555555
+            ],
+            "draws": 2000,
+            "mean": 0.4518518518518519,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9209
+          }
+        }
+      },
+      "beta005": {
+        "by_gold_operation": {
+          "compare": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.49189303816786434,
+            "gold_operation_mass": 0.7705059197823781,
+            "hierarchical_exact": 0.39444444444444443,
+            "joint_map_exact": 0.37222222222222223,
+            "left_conditional_correct": 0.4722222222222222,
+            "operation_marginal_correct": 0.8777777777777778,
+            "oracle_gold_operation_pointer_exact": 0.4722222222222222,
+            "right_conditional_correct": 0.4722222222222222,
+            "saved_map_exact": 0.37222222222222223
+          },
+          "explain": {
+            "field_conditional_correct": 0.9555555555555556,
+            "gold_operation_conditional_exact_probability": 0.47513133269204744,
+            "gold_operation_mass": 0.6684705256859945,
+            "hierarchical_exact": 0.3111111111111111,
+            "joint_map_exact": 0.3111111111111111,
+            "left_conditional_correct": 0.4888888888888889,
+            "operation_marginal_correct": 0.75,
+            "oracle_gold_operation_pointer_exact": 0.45555555555555555,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.3111111111111111
+          },
+          "read": {
+            "field_conditional_correct": 0.9833333333333333,
+            "gold_operation_conditional_exact_probability": 0.5031753949004092,
+            "gold_operation_mass": 0.8655111020412328,
+            "hierarchical_exact": 0.5222222222222223,
+            "joint_map_exact": 0.5222222222222223,
+            "left_conditional_correct": 0.5722222222222222,
+            "operation_marginal_correct": 0.9388888888888889,
+            "oracle_gold_operation_pointer_exact": 0.5666666666666667,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.5222222222222223
+          }
+        },
+        "by_gold_operation_ci95": {
+          "compare": {
+            "field_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.4792215386935857,
+                0.5050068574935156
+              ],
+              "draws": 2000,
+              "mean": 0.49189303816786434,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.7467741133560392,
+                0.7935813661323966
+              ],
+              "draws": 2000,
+              "mean": 0.770505919782378,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.32777777777777767,
+                0.4666666666666666
+              ],
+              "draws": 2000,
+              "mean": 0.39444444444444443,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.30555555555555547,
+                0.4444444444444444
+              ],
+              "draws": 2000,
+              "mean": 0.3722222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.40555555555555556,
+                0.538888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.4722222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.8388888888888887,
+                0.9166666666666666
+              ],
+              "draws": 2000,
+              "mean": 0.8777777777777777,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.40555555555555556,
+                0.5388888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.4722222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                0.4055555555555555,
+                0.5388888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.4722222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.30555555555555547,
+                0.43888888888888894
+              ],
+              "draws": 2000,
+              "mean": 0.3722222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "explain": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.9111111111111112,
+                0.9888888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.9555555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.4510876154638838,
+                0.4995637769803942
+              ],
+              "draws": 2000,
+              "mean": 0.47513133269204744,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.6236163609733227,
+                0.7124935108765277
+              ],
+              "draws": 2000,
+              "mean": 0.6684705256859946,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.24444444444444444,
+                0.3777777777777777
+              ],
+              "draws": 2000,
+              "mean": 0.31111111111111106,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.24444444444444446,
+                0.3777777777777778
+              ],
+              "draws": 2000,
+              "mean": 0.31111111111111106,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.4,
+                0.5777777777777777
+              ],
+              "draws": 2000,
+              "mean": 0.4888888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.6722222222222223,
+                0.8222222222222222
+              ],
+              "draws": 2000,
+              "mean": 0.75,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.3666666666666666,
+                0.5499999999999999
+              ],
+              "draws": 2000,
+              "mean": 0.4555555555555556,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.24444444444444444,
+                0.37777777777777766
+              ],
+              "draws": 2000,
+              "mean": 0.31111111111111106,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "read": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.961111111111111,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 0.9833333333333333,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.4814118285423852,
+                0.5247487599566527
+              ],
+              "draws": 2000,
+              "mean": 0.5031753949004092,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.8336216804306686,
+                0.8936641461772119
+              ],
+              "draws": 2000,
+              "mean": 0.8655111020412327,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.44999999999999996,
+                0.5999999999999998
+              ],
+              "draws": 2000,
+              "mean": 0.5222222222222223,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.45,
+                0.5944444444444447
+              ],
+              "draws": 2000,
+              "mean": 0.5222222222222223,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.5055555555555554,
+                0.6388888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.5722222222222223,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.9055555555555554,
+                0.9666666666666667
+              ],
+              "draws": 2000,
+              "mean": 0.9388888888888888,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.49444444444444446,
+                0.6388888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.5666666666666667,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.45,
+                0.5944444444444446
+              ],
+              "draws": 2000,
+              "mean": 0.5222222222222223,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          }
+        },
+        "by_seed": {
+          "20261006": {
+            "field_conditional_correct": 0.9722222222222222,
+            "gold_operation_conditional_exact_probability": 0.4799442299171202,
+            "gold_operation_mass": 0.8189468095491268,
+            "hierarchical_exact": 0.42777777777777776,
+            "joint_map_exact": 0.42777777777777776,
+            "left_conditional_correct": 0.4888888888888889,
+            "operation_marginal_correct": 0.9166666666666666,
+            "oracle_gold_operation_pointer_exact": 0.4722222222222222,
+            "right_conditional_correct": 0.8277777777777777,
+            "saved_map_exact": 0.42777777777777776
+          },
+          "20261016": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.5014495974333083,
+            "gold_operation_mass": 0.709150289637162,
+            "hierarchical_exact": 0.37777777777777777,
+            "joint_map_exact": 0.35555555555555557,
+            "left_conditional_correct": 0.5166666666666667,
+            "operation_marginal_correct": 0.7722222222222223,
+            "oracle_gold_operation_pointer_exact": 0.5166666666666667,
+            "right_conditional_correct": 0.8333333333333334,
+            "saved_map_exact": 0.35555555555555557
+          },
+          "20261026": {
+            "field_conditional_correct": 0.9666666666666667,
+            "gold_operation_conditional_exact_probability": 0.48880593840989256,
+            "gold_operation_mass": 0.7763904483233168,
+            "hierarchical_exact": 0.4222222222222222,
+            "joint_map_exact": 0.4222222222222222,
+            "left_conditional_correct": 0.5277777777777778,
+            "operation_marginal_correct": 0.8777777777777778,
+            "oracle_gold_operation_pointer_exact": 0.5055555555555555,
+            "right_conditional_correct": 0.8111111111111111,
+            "saved_map_exact": 0.4222222222222222
+          }
+        },
+        "n_rows": 540,
+        "overall": {
+          "field_conditional_correct": 0.9796296296296296,
+          "gold_operation_conditional_exact_probability": 0.4900665885867737,
+          "gold_operation_mass": 0.7681625158365352,
+          "hierarchical_exact": 0.40925925925925927,
+          "joint_map_exact": 0.40185185185185185,
+          "left_conditional_correct": 0.5111111111111111,
+          "operation_marginal_correct": 0.8555555555555555,
+          "oracle_gold_operation_pointer_exact": 0.4981481481481482,
+          "right_conditional_correct": 0.8240740740740741,
+          "saved_map_exact": 0.40185185185185185
+        },
+        "overall_ci95": {
+          "field_conditional_correct": {
+            "ci95": [
+              0.9666666666666667,
+              0.9925925925925926
+            ],
+            "draws": 2000,
+            "mean": 0.9796296296296295,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9210
+          },
+          "gold_operation_conditional_exact_probability": {
+            "ci95": [
+              0.4778846332185079,
+              0.5019115767153468
+            ],
+            "draws": 2000,
+            "mean": 0.49006658858677365,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9206
+          },
+          "gold_operation_mass": {
+            "ci95": [
+              0.7442959381406864,
+              0.7906943851596149
+            ],
+            "draws": 2000,
+            "mean": 0.7681625158365352,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9204
+          },
+          "hierarchical_exact": {
+            "ci95": [
+              0.36666666666666664,
+              0.4518518518518519
+            ],
+            "draws": 2000,
+            "mean": 0.40925925925925927,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9207
+          },
+          "joint_map_exact": {
+            "ci95": [
+              0.3592592592592592,
+              0.44259259259259254
+            ],
+            "draws": 2000,
+            "mean": 0.4018518518518519,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9208
+          },
+          "left_conditional_correct": {
+            "ci95": [
+              0.46481481481481485,
+              0.5537037037037038
+            ],
+            "draws": 2000,
+            "mean": 0.5111111111111111,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9211
+          },
+          "operation_marginal_correct": {
+            "ci95": [
+              0.8222222222222222,
+              0.8870370370370372
+            ],
+            "draws": 2000,
+            "mean": 0.8555555555555555,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9203
+          },
+          "oracle_gold_operation_pointer_exact": {
+            "ci95": [
+              0.45370370370370366,
+              0.5444444444444444
+            ],
+            "draws": 2000,
+            "mean": 0.4981481481481481,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9205
+          },
+          "right_conditional_correct": {
+            "ci95": [
+              0.7833333333333333,
+              0.8666666666666667
+            ],
+            "draws": 2000,
+            "mean": 0.824074074074074,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9212
+          },
+          "saved_map_exact": {
+            "ci95": [
+              0.3611111111111111,
+              0.44629629629629625
+            ],
+            "draws": 2000,
+            "mean": 0.4018518518518519,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9209
+          }
+        }
+      },
+      "beta005_minus_beta0": {
+        "field_conditional_correct": {
+          "ci95": [
+            0.020370370370370372,
+            0.05185185185185186
+          ],
+          "draws": 2000,
+          "estimate": 0.03518518518518519,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9210
+        },
+        "gold_operation_conditional_exact_probability": {
+          "ci95": [
+            -0.014869000921977172,
+            0.015032105221388623
+          ],
+          "draws": 2000,
+          "estimate": -4.2234933903621356e-05,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9206
+        },
+        "gold_operation_mass": {
+          "ci95": [
+            -0.11444940900738677,
+            -0.07524682624563347
+          ],
+          "draws": 2000,
+          "estimate": -0.09473135303028497,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9204
+        },
+        "hierarchical_exact": {
+          "ci95": [
+            -0.0888888888888889,
+            0.009259259259259252
+          ],
+          "draws": 2000,
+          "estimate": -0.04074074074074075,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9207
+        },
+        "joint_map_exact": {
+          "ci95": [
+            -0.10185185185185186,
+            -0.0018518518518518573
+          ],
+          "draws": 2000,
+          "estimate": -0.05,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9208
+        },
+        "left_conditional_correct": {
+          "ci95": [
+            -0.07777777777777779,
+            0.03148148148148148
+          ],
+          "draws": 2000,
+          "estimate": -0.024074074074074088,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9211
+        },
+        "operation_marginal_correct": {
+          "ci95": [
+            -0.08333333333333333,
+            -0.027777777777777776
+          ],
+          "draws": 2000,
+          "estimate": -0.05555555555555555,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9203
+        },
+        "oracle_gold_operation_pointer_exact": {
+          "ci95": [
+            -0.05185185185185186,
+            0.05
+          ],
+          "draws": 2000,
+          "estimate": -0.0018518518518518602,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9205
+        },
+        "right_conditional_correct": {
+          "ci95": [
+            -0.029629629629629634,
+            0.03333333333333333
+          ],
+          "draws": 2000,
+          "estimate": 0.0037037037037037017,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9212
+        },
+        "saved_map_exact": {
+          "ci95": [
+            -0.1,
+            0.0018518518518518445
+          ],
+          "draws": 2000,
+          "estimate": -0.05,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9209
+        }
+      }
+    },
+    "old_failing": {
+      "beta0": {
+        "by_gold_operation": {
+          "compare": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.48722961105355705,
+            "gold_operation_mass": 0.9625353783839068,
+            "hierarchical_exact": 0.4388888888888889,
+            "joint_map_exact": 0.4388888888888889,
+            "left_conditional_correct": 0.4388888888888889,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.4388888888888889,
+            "right_conditional_correct": 0.4388888888888889,
+            "saved_map_exact": 0.4388888888888889
+          },
+          "explain": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.5176069503480983,
+            "gold_operation_mass": 0.9394857837766609,
+            "hierarchical_exact": 0.5111111111111111,
+            "joint_map_exact": 0.5111111111111111,
+            "left_conditional_correct": 0.5166666666666667,
+            "operation_marginal_correct": 0.9944444444444445,
+            "oracle_gold_operation_pointer_exact": 0.5166666666666667,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.5111111111111111
+          },
+          "read": {
+            "field_conditional_correct": 0.9888888888888889,
+            "gold_operation_conditional_exact_probability": 0.5153328500926894,
+            "gold_operation_mass": 0.997640732035272,
+            "hierarchical_exact": 0.5333333333333333,
+            "joint_map_exact": 0.5333333333333333,
+            "left_conditional_correct": 0.5388888888888889,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.5333333333333333,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.5333333333333333
+          }
+        },
+        "by_gold_operation_ci95": {
+          "compare": {
+            "field_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.4628295961639734,
+                0.5114041337239301
+              ],
+              "draws": 2000,
+              "mean": 0.48722961105355705,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.9530965846955896,
+                0.9709482717216467
+              ],
+              "draws": 2000,
+              "mean": 0.9625353783839067,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.3444444444444444,
+                0.5333333333333333
+              ],
+              "draws": 2000,
+              "mean": 0.4388888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.3499999999999999,
+                0.5333333333333333
+              ],
+              "draws": 2000,
+              "mean": 0.4388888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.3444444444444444,
+                0.5388888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.4388888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.3444444444444444,
+                0.5388888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.4388888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                0.3444444444444444,
+                0.538888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.4388888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.33888888888888885,
+                0.5388888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.4388888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "explain": {
+            "field_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.48788646455515067,
+                0.5480453469081872
+              ],
+              "draws": 2000,
+              "mean": 0.5176069503480984,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.9228766641720895,
+                0.9529081091479801
+              ],
+              "draws": 2000,
+              "mean": 0.9394857837766609,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.4166666666666667,
+                0.611111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.5111111111111111,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.4111111111111111,
+                0.6111111111111112
+              ],
+              "draws": 2000,
+              "mean": 0.5111111111111111,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.41666666666666663,
+                0.6166666666666667
+              ],
+              "draws": 2000,
+              "mean": 0.5166666666666665,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.9833333333333332,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 0.9944444444444446,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.41666666666666663,
+                0.6166666666666668
+              ],
+              "draws": 2000,
+              "mean": 0.5166666666666665,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.40555555555555556,
+                0.6166666666666667
+              ],
+              "draws": 2000,
+              "mean": 0.5111111111111111,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "read": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.9722222222222221,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 0.9888888888888888,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.47979250400084633,
+                0.5531001486265755
+              ],
+              "draws": 2000,
+              "mean": 0.5153328500926894,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.9975734558360881,
+                0.9977027172060279
+              ],
+              "draws": 2000,
+              "mean": 0.9976407320352721,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.42777777777777776,
+                0.6388888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.5333333333333333,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.4333333333333333,
+                0.638888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.5333333333333333,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.4333333333333333,
+                0.638888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.538888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.42777777777777776,
+                0.6388888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.5333333333333333,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.4333333333333333,
+                0.638888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.5333333333333333,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          }
+        },
+        "by_seed": {
+          "20261006": {
+            "field_conditional_correct": 0.9888888888888889,
+            "gold_operation_conditional_exact_probability": 0.49856405956515604,
+            "gold_operation_mass": 0.9402182957336199,
+            "hierarchical_exact": 0.49444444444444446,
+            "joint_map_exact": 0.49444444444444446,
+            "left_conditional_correct": 0.5055555555555555,
+            "operation_marginal_correct": 0.9944444444444445,
+            "oracle_gold_operation_pointer_exact": 0.5,
+            "right_conditional_correct": 0.8388888888888889,
+            "saved_map_exact": 0.49444444444444446
+          },
+          "20261016": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.5051462935510826,
+            "gold_operation_mass": 0.9683334177535433,
+            "hierarchical_exact": 0.5055555555555555,
+            "joint_map_exact": 0.5055555555555555,
+            "left_conditional_correct": 0.5055555555555555,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.5055555555555555,
+            "right_conditional_correct": 0.8,
+            "saved_map_exact": 0.5055555555555555
+          },
+          "20261026": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.516459058378106,
+            "gold_operation_mass": 0.9911101807086766,
+            "hierarchical_exact": 0.48333333333333334,
+            "joint_map_exact": 0.48333333333333334,
+            "left_conditional_correct": 0.48333333333333334,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.48333333333333334,
+            "right_conditional_correct": 0.8,
+            "saved_map_exact": 0.48333333333333334
+          }
+        },
+        "n_rows": 540,
+        "overall": {
+          "field_conditional_correct": 0.9962962962962963,
+          "gold_operation_conditional_exact_probability": 0.5067231371647816,
+          "gold_operation_mass": 0.9665539647319464,
+          "hierarchical_exact": 0.49444444444444446,
+          "joint_map_exact": 0.49444444444444446,
+          "left_conditional_correct": 0.4981481481481482,
+          "operation_marginal_correct": 0.9981481481481481,
+          "oracle_gold_operation_pointer_exact": 0.4962962962962963,
+          "right_conditional_correct": 0.812962962962963,
+          "saved_map_exact": 0.49444444444444446
+        },
+        "overall_ci95": {
+          "field_conditional_correct": {
+            "ci95": [
+              0.9907407407407406,
+              1.0
+            ],
+            "draws": 2000,
+            "mean": 0.9962962962962962,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9210
+          },
+          "gold_operation_conditional_exact_probability": {
+            "ci95": [
+              0.489068597721884,
+              0.5250736230755293
+            ],
+            "draws": 2000,
+            "mean": 0.5067231371647816,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9206
+          },
+          "gold_operation_mass": {
+            "ci95": [
+              0.9592844644766021,
+              0.9733337388911688
+            ],
+            "draws": 2000,
+            "mean": 0.9665539647319465,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9204
+          },
+          "hierarchical_exact": {
+            "ci95": [
+              0.437037037037037,
+              0.5537037037037037
+            ],
+            "draws": 2000,
+            "mean": 0.49444444444444446,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9207
+          },
+          "joint_map_exact": {
+            "ci95": [
+              0.4388888888888889,
+              0.5555555555555556
+            ],
+            "draws": 2000,
+            "mean": 0.49444444444444446,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9208
+          },
+          "left_conditional_correct": {
+            "ci95": [
+              0.4388888888888889,
+              0.5555555555555556
+            ],
+            "draws": 2000,
+            "mean": 0.4981481481481481,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9211
+          },
+          "operation_marginal_correct": {
+            "ci95": [
+              0.9944444444444445,
+              1.0
+            ],
+            "draws": 2000,
+            "mean": 0.9981481481481482,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9203
+          },
+          "oracle_gold_operation_pointer_exact": {
+            "ci95": [
+              0.44259259259259254,
+              0.5537037037037037
+            ],
+            "draws": 2000,
+            "mean": 0.4962962962962963,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9205
+          },
+          "right_conditional_correct": {
+            "ci95": [
+              0.7611111111111111,
+              0.8629629629629628
+            ],
+            "draws": 2000,
+            "mean": 0.8129629629629629,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9212
+          },
+          "saved_map_exact": {
+            "ci95": [
+              0.437037037037037,
+              0.5518518518518518
+            ],
+            "draws": 2000,
+            "mean": 0.49444444444444446,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9209
+          }
+        }
+      },
+      "beta005": {
+        "by_gold_operation": {
+          "compare": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.4938107236741333,
+            "gold_operation_mass": 0.9332221708977815,
+            "hierarchical_exact": 0.4222222222222222,
+            "joint_map_exact": 0.4222222222222222,
+            "left_conditional_correct": 0.4222222222222222,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.4222222222222222,
+            "right_conditional_correct": 0.4222222222222222,
+            "saved_map_exact": 0.4222222222222222
+          },
+          "explain": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.5061702275240262,
+            "gold_operation_mass": 0.9431626817961741,
+            "hierarchical_exact": 0.5055555555555555,
+            "joint_map_exact": 0.5055555555555555,
+            "left_conditional_correct": 0.5055555555555555,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.5055555555555555,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.5055555555555555
+          },
+          "read": {
+            "field_conditional_correct": 0.9111111111111111,
+            "gold_operation_conditional_exact_probability": 0.46903843156674907,
+            "gold_operation_mass": 0.9969364590141292,
+            "hierarchical_exact": 0.5,
+            "joint_map_exact": 0.5,
+            "left_conditional_correct": 0.5611111111111111,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.5,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.5
+          }
+        },
+        "by_gold_operation_ci95": {
+          "compare": {
+            "field_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.4833397340463258,
+                0.5039931973819513
+              ],
+              "draws": 2000,
+              "mean": 0.4938107236741333,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.9221260068694797,
+                0.9436916288880688
+              ],
+              "draws": 2000,
+              "mean": 0.9332221708977815,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.3555555555555555,
+                0.4944444444444444
+              ],
+              "draws": 2000,
+              "mean": 0.4222222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.3555555555555555,
+                0.49444444444444435
+              ],
+              "draws": 2000,
+              "mean": 0.4222222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.3555555555555555,
+                0.4888888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.4222222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.35555555555555546,
+                0.4888888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.4222222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                0.3499999999999999,
+                0.48888888888888893
+              ],
+              "draws": 2000,
+              "mean": 0.4222222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.35555555555555546,
+                0.4888888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.4222222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "explain": {
+            "field_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.48231835034176535,
+                0.5323595772823247
+              ],
+              "draws": 2000,
+              "mean": 0.5061702275240262,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.9334087869213817,
+                0.951851812466556
+              ],
+              "draws": 2000,
+              "mean": 0.9431626817961742,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.4166666666666667,
+                0.6
+              ],
+              "draws": 2000,
+              "mean": 0.5055555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.4111111111111111,
+                0.6
+              ],
+              "draws": 2000,
+              "mean": 0.5055555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.4111111111111111,
+                0.6
+              ],
+              "draws": 2000,
+              "mean": 0.5055555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.4111111111111111,
+                0.6055555555555556
+              ],
+              "draws": 2000,
+              "mean": 0.5055555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.4111111111111111,
+                0.6055555555555555
+              ],
+              "draws": 2000,
+              "mean": 0.5055555555555555,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "read": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.8722222222222221,
+                0.95
+              ],
+              "draws": 2000,
+              "mean": 0.9111111111111111,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.4392207826444599,
+                0.4978951321843113
+              ],
+              "draws": 2000,
+              "mean": 0.469038431566749,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.996640580295045,
+                0.9971797582684505
+              ],
+              "draws": 2000,
+              "mean": 0.9969364590141291,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.41666666666666663,
+                0.5888888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.5,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.4166666666666666,
+                0.588888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.5,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.4777777777777778,
+                0.6388888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.5611111111111111,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.4111111111111111,
+                0.5888888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.5,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.4222222222222222,
+                0.5833333333333334
+              ],
+              "draws": 2000,
+              "mean": 0.5,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          }
+        },
+        "by_seed": {
+          "20261006": {
+            "field_conditional_correct": 0.9111111111111111,
+            "gold_operation_conditional_exact_probability": 0.45700108559947067,
+            "gold_operation_mass": 0.9089989475663768,
+            "hierarchical_exact": 0.43333333333333335,
+            "joint_map_exact": 0.43333333333333335,
+            "left_conditional_correct": 0.49444444444444446,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.43333333333333335,
+            "right_conditional_correct": 0.8166666666666667,
+            "saved_map_exact": 0.43333333333333335
+          },
+          "20261016": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.5015436997778937,
+            "gold_operation_mass": 0.9775764996153965,
+            "hierarchical_exact": 0.49444444444444446,
+            "joint_map_exact": 0.49444444444444446,
+            "left_conditional_correct": 0.49444444444444446,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.49444444444444446,
+            "right_conditional_correct": 0.8055555555555556,
+            "saved_map_exact": 0.49444444444444446
+          },
+          "20261026": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.5104745973875444,
+            "gold_operation_mass": 0.9867458645263115,
+            "hierarchical_exact": 0.5,
+            "joint_map_exact": 0.5,
+            "left_conditional_correct": 0.5,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.5,
+            "right_conditional_correct": 0.8,
+            "saved_map_exact": 0.5
+          }
+        },
+        "n_rows": 540,
+        "overall": {
+          "field_conditional_correct": 0.9703703703703703,
+          "gold_operation_conditional_exact_probability": 0.4896731275883029,
+          "gold_operation_mass": 0.9577737705693616,
+          "hierarchical_exact": 0.4759259259259259,
+          "joint_map_exact": 0.4759259259259259,
+          "left_conditional_correct": 0.4962962962962963,
+          "operation_marginal_correct": 1.0,
+          "oracle_gold_operation_pointer_exact": 0.4759259259259259,
+          "right_conditional_correct": 0.8074074074074075,
+          "saved_map_exact": 0.4759259259259259
+        },
+        "overall_ci95": {
+          "field_conditional_correct": {
+            "ci95": [
+              0.9537037037037038,
+              0.9833333333333333
+            ],
+            "draws": 2000,
+            "mean": 0.9703703703703704,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9210
+          },
+          "gold_operation_conditional_exact_probability": {
+            "ci95": [
+              0.4760122235113409,
+              0.5027002451653273
+            ],
+            "draws": 2000,
+            "mean": 0.4896731275883029,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9206
+          },
+          "gold_operation_mass": {
+            "ci95": [
+              0.9510357108905333,
+              0.9642324315396172
+            ],
+            "draws": 2000,
+            "mean": 0.9577737705693615,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9204
+          },
+          "hierarchical_exact": {
+            "ci95": [
+              0.42592592592592604,
+              0.524074074074074
+            ],
+            "draws": 2000,
+            "mean": 0.47592592592592586,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9207
+          },
+          "joint_map_exact": {
+            "ci95": [
+              0.4296296296296297,
+              0.524074074074074
+            ],
+            "draws": 2000,
+            "mean": 0.47592592592592586,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9208
+          },
+          "left_conditional_correct": {
+            "ci95": [
+              0.45,
+              0.5425925925925925
+            ],
+            "draws": 2000,
+            "mean": 0.4962962962962963,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9211
+          },
+          "operation_marginal_correct": {
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "draws": 2000,
+            "mean": 1.0,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9203
+          },
+          "oracle_gold_operation_pointer_exact": {
+            "ci95": [
+              0.42777777777777776,
+              0.5259259259259259
+            ],
+            "draws": 2000,
+            "mean": 0.47592592592592586,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9205
+          },
+          "right_conditional_correct": {
+            "ci95": [
+              0.7611111111111111,
+              0.8518518518518519
+            ],
+            "draws": 2000,
+            "mean": 0.8074074074074075,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9212
+          },
+          "saved_map_exact": {
+            "ci95": [
+              0.42777777777777776,
+              0.524074074074074
+            ],
+            "draws": 2000,
+            "mean": 0.47592592592592586,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9209
+          }
+        }
+      },
+      "beta005_minus_beta0": {
+        "field_conditional_correct": {
+          "ci95": [
+            -0.04259259259259259,
+            -0.012962962962962964
+          ],
+          "draws": 2000,
+          "estimate": -0.02592592592592593,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9210
+        },
+        "gold_operation_conditional_exact_probability": {
+          "ci95": [
+            -0.03279999414824111,
+            -0.0030096744072747204
+          ],
+          "draws": 2000,
+          "estimate": -0.0170500095764787,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9206
+        },
+        "gold_operation_mass": {
+          "ci95": [
+            -0.013160274832895197,
+            -0.004201518444573552
+          ],
+          "draws": 2000,
+          "estimate": -0.008780194162585004,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9204
+        },
+        "hierarchical_exact": {
+          "ci95": [
+            -0.06666666666666668,
+            0.03148148148148147
+          ],
+          "draws": 2000,
+          "estimate": -0.01851851851851852,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9207
+        },
+        "joint_map_exact": {
+          "ci95": [
+            -0.06666666666666668,
+            0.029629629629629627
+          ],
+          "draws": 2000,
+          "estimate": -0.01851851851851852,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9208
+        },
+        "left_conditional_correct": {
+          "ci95": [
+            -0.05,
+            0.04444444444444444
+          ],
+          "draws": 2000,
+          "estimate": -0.0018518518518518604,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9211
+        },
+        "operation_marginal_correct": {
+          "ci95": [
+            0.0,
+            0.005555555555555556
+          ],
+          "draws": 2000,
+          "estimate": 0.0018518518518518521,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9203
+        },
+        "oracle_gold_operation_pointer_exact": {
+          "ci95": [
+            -0.07037037037037037,
+            0.029629629629629617
+          ],
+          "draws": 2000,
+          "estimate": -0.020370370370370375,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9205
+        },
+        "right_conditional_correct": {
+          "ci95": [
+            -0.035185185185185194,
+            0.024074074074074067
+          ],
+          "draws": 2000,
+          "estimate": -0.005555555555555559,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9212
+        },
+        "saved_map_exact": {
+          "ci95": [
+            -0.06481481481481483,
+            0.033333333333333326
+          ],
+          "draws": 2000,
+          "estimate": -0.01851851851851852,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9209
+        }
+      }
+    },
+    "pooled": {
+      "beta0": {
+        "by_gold_operation": {
+          "compare": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.4891330383742801,
+            "gold_operation_mass": 0.9256596795930869,
+            "hierarchical_exact": 0.44722222222222224,
+            "joint_map_exact": 0.44722222222222224,
+            "left_conditional_correct": 0.45,
+            "operation_marginal_correct": 0.9944444444444445,
+            "oracle_gold_operation_pointer_exact": 0.45,
+            "right_conditional_correct": 0.45,
+            "saved_map_exact": 0.44722222222222224
+          },
+          "explain": {
+            "field_conditional_correct": 0.9694444444444444,
+            "gold_operation_conditional_exact_probability": 0.5107364401320565,
+            "gold_operation_mass": 0.8212485655872198,
+            "hierarchical_exact": 0.475,
+            "joint_map_exact": 0.4777777777777778,
+            "left_conditional_correct": 0.575,
+            "operation_marginal_correct": 0.8694444444444445,
+            "oracle_gold_operation_pointer_exact": 0.55,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.4777777777777778
+          },
+          "read": {
+            "field_conditional_correct": 0.9416666666666667,
+            "gold_operation_conditional_exact_probability": 0.4953784625218516,
+            "gold_operation_mass": 0.9972635052178435,
+            "hierarchical_exact": 0.49444444444444446,
+            "joint_map_exact": 0.49444444444444446,
+            "left_conditional_correct": 0.525,
+            "operation_marginal_correct": 1.0,
+            "oracle_gold_operation_pointer_exact": 0.49444444444444446,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.49444444444444446
+          }
+        },
+        "by_gold_operation_ci95": {
+          "compare": {
+            "field_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.4646284540737965,
+                0.5134022897911024
+              ],
+              "draws": 2000,
+              "mean": 0.4891330383742801,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.9178159719229858,
+                0.9328088460607361
+              ],
+              "draws": 2000,
+              "mean": 0.925659679593087,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.3611111111111111,
+                0.5361111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.44722222222222213,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.36666666666666664,
+                0.5333333333333333
+              ],
+              "draws": 2000,
+              "mean": 0.44722222222222213,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.3666666666666666,
+                0.5361111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.44999999999999996,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.9861111111111112,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 0.9944444444444444,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.3666666666666666,
+                0.5388888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.44999999999999996,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                0.3638888888888889,
+                0.5388888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.44999999999999996,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.361111111111111,
+                0.5305555555555556
+              ],
+              "draws": 2000,
+              "mean": 0.44722222222222213,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "explain": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.9472222222222223,
+                0.9861111111111112
+              ],
+              "draws": 2000,
+              "mean": 0.9694444444444446,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.4873708020814796,
+                0.5350113200724983
+              ],
+              "draws": 2000,
+              "mean": 0.5107364401320567,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.7951510574646402,
+                0.8443523200284132
+              ],
+              "draws": 2000,
+              "mean": 0.8212485655872199,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.4083333333333333,
+                0.5416666666666666
+              ],
+              "draws": 2000,
+              "mean": 0.47500000000000003,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.40555555555555556,
+                0.5444444444444445
+              ],
+              "draws": 2000,
+              "mean": 0.4777777777777778,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.5111111111111112,
+                0.6416666666666668
+              ],
+              "draws": 2000,
+              "mean": 0.575,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.8361111111111111,
+                0.9
+              ],
+              "draws": 2000,
+              "mean": 0.8694444444444444,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.4777777777777778,
+                0.6222222222222221
+              ],
+              "draws": 2000,
+              "mean": 0.55,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.40833333333333327,
+                0.55
+              ],
+              "draws": 2000,
+              "mean": 0.4777777777777778,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "read": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.9166666666666667,
+                0.9638888888888889
+              ],
+              "draws": 2000,
+              "mean": 0.9416666666666667,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.457562391538348,
+                0.5347656119828017
+              ],
+              "draws": 2000,
+              "mean": 0.49537846252185164,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.9971817758289551,
+                0.9973379364854709
+              ],
+              "draws": 2000,
+              "mean": 0.9972635052178436,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.3944444444444445,
+                0.6
+              ],
+              "draws": 2000,
+              "mean": 0.49444444444444446,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.39999999999999997,
+                0.5972222222222221
+              ],
+              "draws": 2000,
+              "mean": 0.49444444444444446,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.4194444444444444,
+                0.6305555555555556
+              ],
+              "draws": 2000,
+              "mean": 0.525,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.3944444444444443,
+                0.5944444444444446
+              ],
+              "draws": 2000,
+              "mean": 0.49444444444444446,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.39722222222222225,
+                0.6000000000000001
+              ],
+              "draws": 2000,
+              "mean": 0.49444444444444446,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          }
+        },
+        "by_seed": {
+          "20261006": {
+            "field_conditional_correct": 0.9361111111111111,
+            "gold_operation_conditional_exact_probability": 0.48941022359591624,
+            "gold_operation_mass": 0.9515384042140145,
+            "hierarchical_exact": 0.5111111111111111,
+            "joint_map_exact": 0.5111111111111111,
+            "left_conditional_correct": 0.55,
+            "operation_marginal_correct": 0.9944444444444445,
+            "oracle_gold_operation_pointer_exact": 0.5138888888888888,
+            "right_conditional_correct": 0.8472222222222222,
+            "saved_map_exact": 0.5111111111111111
+          },
+          "20261016": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.5063270801212942,
+            "gold_operation_mass": 0.9189869007350372,
+            "hierarchical_exact": 0.49166666666666664,
+            "joint_map_exact": 0.49166666666666664,
+            "left_conditional_correct": 0.5222222222222223,
+            "operation_marginal_correct": 0.9555555555555556,
+            "oracle_gold_operation_pointer_exact": 0.5222222222222223,
+            "right_conditional_correct": 0.7944444444444444,
+            "saved_map_exact": 0.49166666666666664
+          },
+          "20261026": {
+            "field_conditional_correct": 0.975,
+            "gold_operation_conditional_exact_probability": 0.49951063731097783,
+            "gold_operation_mass": 0.8736464454490985,
+            "hierarchical_exact": 0.41388888888888886,
+            "joint_map_exact": 0.4166666666666667,
+            "left_conditional_correct": 0.4777777777777778,
+            "operation_marginal_correct": 0.9138888888888889,
+            "oracle_gold_operation_pointer_exact": 0.4583333333333333,
+            "right_conditional_correct": 0.8083333333333333,
+            "saved_map_exact": 0.4166666666666667
+          }
+        },
+        "n_rows": 1080,
+        "overall": {
+          "field_conditional_correct": 0.9703703703703703,
+          "gold_operation_conditional_exact_probability": 0.4984159803427295,
+          "gold_operation_mass": 0.9147239167993834,
+          "hierarchical_exact": 0.4722222222222222,
+          "joint_map_exact": 0.47314814814814815,
+          "left_conditional_correct": 0.5166666666666667,
+          "operation_marginal_correct": 0.9546296296296296,
+          "oracle_gold_operation_pointer_exact": 0.4981481481481482,
+          "right_conditional_correct": 0.8166666666666667,
+          "saved_map_exact": 0.47314814814814815
+        },
+        "overall_ci95": {
+          "field_conditional_correct": {
+            "ci95": [
+              0.9592592592592594,
+              0.9805555555555555
+            ],
+            "draws": 2000,
+            "mean": 0.9703703703703704,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9210
+          },
+          "gold_operation_conditional_exact_probability": {
+            "ci95": [
+              0.48089978571764724,
+              0.5161264097882412
+            ],
+            "draws": 2000,
+            "mean": 0.4984159803427294,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9206
+          },
+          "gold_operation_mass": {
+            "ci95": [
+              0.9010769532729491,
+              0.9285704667850838
+            ],
+            "draws": 2000,
+            "mean": 0.9147239167993833,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9204
+          },
+          "hierarchical_exact": {
+            "ci95": [
+              0.4222222222222222,
+              0.5231481481481481
+            ],
+            "draws": 2000,
+            "mean": 0.4722222222222222,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9207
+          },
+          "joint_map_exact": {
+            "ci95": [
+              0.425,
+              0.5240740740740741
+            ],
+            "draws": 2000,
+            "mean": 0.47314814814814815,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9208
+          },
+          "left_conditional_correct": {
+            "ci95": [
+              0.4657407407407408,
+              0.5648148148148148
+            ],
+            "draws": 2000,
+            "mean": 0.5166666666666667,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9211
+          },
+          "operation_marginal_correct": {
+            "ci95": [
+              0.9398148148148148,
+              0.9685185185185186
+            ],
+            "draws": 2000,
+            "mean": 0.9546296296296297,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9203
+          },
+          "oracle_gold_operation_pointer_exact": {
+            "ci95": [
+              0.4481481481481481,
+              0.5490740740740742
+            ],
+            "draws": 2000,
+            "mean": 0.4981481481481481,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9205
+          },
+          "right_conditional_correct": {
+            "ci95": [
+              0.7675925925925925,
+              0.8629629629629628
+            ],
+            "draws": 2000,
+            "mean": 0.8166666666666667,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9212
+          },
+          "saved_map_exact": {
+            "ci95": [
+              0.4231481481481481,
+              0.524074074074074
+            ],
+            "draws": 2000,
+            "mean": 0.47314814814814815,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9209
+          }
+        }
+      },
+      "beta005": {
+        "by_gold_operation": {
+          "compare": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.49285188092099885,
+            "gold_operation_mass": 0.8518640453400799,
+            "hierarchical_exact": 0.4083333333333333,
+            "joint_map_exact": 0.3972222222222222,
+            "left_conditional_correct": 0.44722222222222224,
+            "operation_marginal_correct": 0.9388888888888889,
+            "oracle_gold_operation_pointer_exact": 0.44722222222222224,
+            "right_conditional_correct": 0.44722222222222224,
+            "saved_map_exact": 0.3972222222222222
+          },
+          "explain": {
+            "field_conditional_correct": 0.9777777777777777,
+            "gold_operation_conditional_exact_probability": 0.4906507801080368,
+            "gold_operation_mass": 0.8058166037410842,
+            "hierarchical_exact": 0.4083333333333333,
+            "joint_map_exact": 0.4083333333333333,
+            "left_conditional_correct": 0.49722222222222223,
+            "operation_marginal_correct": 0.875,
+            "oracle_gold_operation_pointer_exact": 0.48055555555555557,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.4083333333333333
+          },
+          "read": {
+            "field_conditional_correct": 0.9472222222222222,
+            "gold_operation_conditional_exact_probability": 0.4861069132335792,
+            "gold_operation_mass": 0.931223780527681,
+            "hierarchical_exact": 0.5111111111111111,
+            "joint_map_exact": 0.5111111111111111,
+            "left_conditional_correct": 0.5666666666666667,
+            "operation_marginal_correct": 0.9694444444444444,
+            "oracle_gold_operation_pointer_exact": 0.5333333333333333,
+            "right_conditional_correct": 1.0,
+            "saved_map_exact": 0.5111111111111111
+          }
+        },
+        "by_gold_operation_ci95": {
+          "compare": {
+            "field_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.48199596999041855,
+                0.5042274567694368
+              ],
+              "draws": 2000,
+              "mean": 0.4928518809209989,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.8379394190043514,
+                0.8647134278590607
+              ],
+              "draws": 2000,
+              "mean": 0.8518640453400798,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.3444444444444444,
+                0.4694444444444444
+              ],
+              "draws": 2000,
+              "mean": 0.4083333333333333,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.3416666666666666,
+                0.4611111111111111
+              ],
+              "draws": 2000,
+              "mean": 0.3972222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.3888888888888889,
+                0.5027777777777778
+              ],
+              "draws": 2000,
+              "mean": 0.44722222222222224,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.9194444444444444,
+                0.9583333333333335
+              ],
+              "draws": 2000,
+              "mean": 0.938888888888889,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.3888888888888889,
+                0.5055555555555555
+              ],
+              "draws": 2000,
+              "mean": 0.44722222222222224,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                0.3833333333333332,
+                0.5055555555555554
+              ],
+              "draws": 2000,
+              "mean": 0.44722222222222224,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.33888888888888885,
+                0.45833333333333326
+              ],
+              "draws": 2000,
+              "mean": 0.3972222222222222,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "explain": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.9555555555555556,
+                0.9944444444444446
+              ],
+              "draws": 2000,
+              "mean": 0.9777777777777779,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.46745142362189934,
+                0.5152908897773073
+              ],
+              "draws": 2000,
+              "mean": 0.4906507801080369,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.7797489523040139,
+                0.8308562815050089
+              ],
+              "draws": 2000,
+              "mean": 0.8058166037410843,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.3361111111111111,
+                0.4833333333333333
+              ],
+              "draws": 2000,
+              "mean": 0.40833333333333327,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.3333333333333333,
+                0.48611111111111105
+              ],
+              "draws": 2000,
+              "mean": 0.40833333333333327,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.4083333333333333,
+                0.5833333333333334
+              ],
+              "draws": 2000,
+              "mean": 0.4972222222222221,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.8361111111111111,
+                0.9111111111111112
+              ],
+              "draws": 2000,
+              "mean": 0.875,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.3888888888888889,
+                0.5722222222222224
+              ],
+              "draws": 2000,
+              "mean": 0.48055555555555546,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.3305555555555555,
+                0.48611111111111105
+              ],
+              "draws": 2000,
+              "mean": 0.40833333333333327,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          },
+          "read": {
+            "field_conditional_correct": {
+              "ci95": [
+                0.9222222222222223,
+                0.9722222222222221
+              ],
+              "draws": 2000,
+              "mean": 0.9472222222222223,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9310
+            },
+            "gold_operation_conditional_exact_probability": {
+              "ci95": [
+                0.46062831616793937,
+                0.5102852531204649
+              ],
+              "draws": 2000,
+              "mean": 0.48610691323357913,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9306
+            },
+            "gold_operation_mass": {
+              "ci95": [
+                0.9151709256547949,
+                0.9453715976578728
+              ],
+              "draws": 2000,
+              "mean": 0.9312237805276808,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9304
+            },
+            "hierarchical_exact": {
+              "ci95": [
+                0.43611111111111106,
+                0.5916666666666667
+              ],
+              "draws": 2000,
+              "mean": 0.5111111111111112,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9307
+            },
+            "joint_map_exact": {
+              "ci95": [
+                0.4361111111111111,
+                0.5916666666666666
+              ],
+              "draws": 2000,
+              "mean": 0.5111111111111112,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9308
+            },
+            "left_conditional_correct": {
+              "ci95": [
+                0.4972222222222222,
+                0.6333333333333332
+              ],
+              "draws": 2000,
+              "mean": 0.5666666666666667,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9311
+            },
+            "operation_marginal_correct": {
+              "ci95": [
+                0.9527777777777778,
+                0.9833333333333335
+              ],
+              "draws": 2000,
+              "mean": 0.9694444444444446,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9303
+            },
+            "oracle_gold_operation_pointer_exact": {
+              "ci95": [
+                0.4611111111111111,
+                0.6055555555555555
+              ],
+              "draws": 2000,
+              "mean": 0.5333333333333333,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9305
+            },
+            "right_conditional_correct": {
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "draws": 2000,
+              "mean": 1.0,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9312
+            },
+            "saved_map_exact": {
+              "ci95": [
+                0.43888888888888883,
+                0.5888888888888888
+              ],
+              "draws": 2000,
+              "mean": 0.5111111111111112,
+              "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+              "n_world_clusters": 60,
+              "seed": 9309
+            }
+          }
+        },
+        "by_seed": {
+          "20261006": {
+            "field_conditional_correct": 0.9416666666666667,
+            "gold_operation_conditional_exact_probability": 0.4684726577582954,
+            "gold_operation_mass": 0.8639728785577517,
+            "hierarchical_exact": 0.4305555555555556,
+            "joint_map_exact": 0.4305555555555556,
+            "left_conditional_correct": 0.49166666666666664,
+            "operation_marginal_correct": 0.9583333333333334,
+            "oracle_gold_operation_pointer_exact": 0.4527777777777778,
+            "right_conditional_correct": 0.8222222222222222,
+            "saved_map_exact": 0.4305555555555556
+          },
+          "20261016": {
+            "field_conditional_correct": 1.0,
+            "gold_operation_conditional_exact_probability": 0.501496648605601,
+            "gold_operation_mass": 0.8433633946262792,
+            "hierarchical_exact": 0.4361111111111111,
+            "joint_map_exact": 0.425,
+            "left_conditional_correct": 0.5055555555555555,
+            "operation_marginal_correct": 0.8861111111111111,
+            "oracle_gold_operation_pointer_exact": 0.5055555555555555,
+            "right_conditional_correct": 0.8194444444444444,
+            "saved_map_exact": 0.425
+          },
+          "20261026": {
+            "field_conditional_correct": 0.9833333333333333,
+            "gold_operation_conditional_exact_probability": 0.4996402678987185,
+            "gold_operation_mass": 0.8815681564248141,
+            "hierarchical_exact": 0.46111111111111114,
+            "joint_map_exact": 0.46111111111111114,
+            "left_conditional_correct": 0.5138888888888888,
+            "operation_marginal_correct": 0.9388888888888889,
+            "oracle_gold_operation_pointer_exact": 0.5027777777777778,
+            "right_conditional_correct": 0.8055555555555556,
+            "saved_map_exact": 0.46111111111111114
+          }
+        },
+        "n_rows": 1080,
+        "overall": {
+          "field_conditional_correct": 0.975,
+          "gold_operation_conditional_exact_probability": 0.48986985808753825,
+          "gold_operation_mass": 0.8629681432029483,
+          "hierarchical_exact": 0.4425925925925926,
+          "joint_map_exact": 0.4388888888888889,
+          "left_conditional_correct": 0.5037037037037037,
+          "operation_marginal_correct": 0.9277777777777778,
+          "oracle_gold_operation_pointer_exact": 0.48703703703703705,
+          "right_conditional_correct": 0.8157407407407408,
+          "saved_map_exact": 0.4388888888888889
+        },
+        "overall_ci95": {
+          "field_conditional_correct": {
+            "ci95": [
+              0.9638888888888889,
+              0.9842592592592594
+            ],
+            "draws": 2000,
+            "mean": 0.975,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9210
+          },
+          "gold_operation_conditional_exact_probability": {
+            "ci95": [
+              0.4778046803736104,
+              0.5014678830167437
+            ],
+            "draws": 2000,
+            "mean": 0.48986985808753836,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9206
+          },
+          "gold_operation_mass": {
+            "ci95": [
+              0.8490140897333895,
+              0.8762984337616495
+            ],
+            "draws": 2000,
+            "mean": 0.8629681432029485,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9204
+          },
+          "hierarchical_exact": {
+            "ci95": [
+              0.4,
+              0.4851851851851852
+            ],
+            "draws": 2000,
+            "mean": 0.4425925925925926,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9207
+          },
+          "joint_map_exact": {
+            "ci95": [
+              0.39629629629629637,
+              0.4796296296296297
+            ],
+            "draws": 2000,
+            "mean": 0.4388888888888889,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9208
+          },
+          "left_conditional_correct": {
+            "ci95": [
+              0.46018518518518514,
+              0.5444444444444444
+            ],
+            "draws": 2000,
+            "mean": 0.5037037037037038,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9211
+          },
+          "operation_marginal_correct": {
+            "ci95": [
+              0.9111111111111111,
+              0.9435185185185184
+            ],
+            "draws": 2000,
+            "mean": 0.9277777777777778,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9203
+          },
+          "oracle_gold_operation_pointer_exact": {
+            "ci95": [
+              0.4444444444444444,
+              0.5314814814814816
+            ],
+            "draws": 2000,
+            "mean": 0.487037037037037,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9205
+          },
+          "right_conditional_correct": {
+            "ci95": [
+              0.7731481481481483,
+              0.8583333333333333
+            ],
+            "draws": 2000,
+            "mean": 0.8157407407407407,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9212
+          },
+          "saved_map_exact": {
+            "ci95": [
+              0.3981481481481481,
+              0.4796296296296297
+            ],
+            "draws": 2000,
+            "mean": 0.4388888888888889,
+            "method": "world-cluster percentile bootstrap; seed replicates averaged within world",
+            "n_world_clusters": 180,
+            "seed": 9209
+          }
+        }
+      },
+      "beta005_minus_beta0": {
+        "field_conditional_correct": {
+          "ci95": [
+            -0.002777777777777781,
+            0.012962962962962959
+          ],
+          "draws": 2000,
+          "estimate": 0.004629629629629628,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9210
+        },
+        "gold_operation_conditional_exact_probability": {
+          "ci95": [
+            -0.021820111624933164,
+            0.0044133119534870095
+          ],
+          "draws": 2000,
+          "estimate": -0.008546122255191153,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9206
+        },
+        "gold_operation_mass": {
+          "ci95": [
+            -0.06215998998788873,
+            -0.04151039233615443
+          ],
+          "draws": 2000,
+          "estimate": -0.05175577359643498,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9204
+        },
+        "hierarchical_exact": {
+          "ci95": [
+            -0.07314814814814816,
+            0.013888888888888885
+          ],
+          "draws": 2000,
+          "estimate": -0.029629629629629634,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9207
+        },
+        "joint_map_exact": {
+          "ci95": [
+            -0.0787037037037037,
+            0.009259259259259257
+          ],
+          "draws": 2000,
+          "estimate": -0.03425925925925927,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9208
+        },
+        "left_conditional_correct": {
+          "ci95": [
+            -0.058333333333333334,
+            0.03055555555555555
+          ],
+          "draws": 2000,
+          "estimate": -0.012962962962962966,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9211
+        },
+        "operation_marginal_correct": {
+          "ci95": [
+            -0.04074074074074074,
+            -0.01296296296296296
+          ],
+          "draws": 2000,
+          "estimate": -0.02685185185185185,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9203
+        },
+        "oracle_gold_operation_pointer_exact": {
+          "ci95": [
+            -0.054629629629629646,
+            0.03148148148148148
+          ],
+          "draws": 2000,
+          "estimate": -0.011111111111111117,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9205
+        },
+        "right_conditional_correct": {
+          "ci95": [
+            -0.029629629629629634,
+            0.025925925925925932
+          ],
+          "draws": 2000,
+          "estimate": -0.0009259259259259244,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9212
+        },
+        "saved_map_exact": {
+          "ci95": [
+            -0.07777777777777778,
+            0.010185185185185179
+          ],
+          "draws": 2000,
+          "estimate": -0.03425925925925927,
+          "method": "paired percentile bootstrap over world_id; seed/family observations averaged within world",
+          "n_world_clusters": 180,
+          "seed": 9209
+        }
+      }
+    }
+  },
+  "rows": 2160,
+  "runtime": {
+    "cost_usd": 0,
+    "cuda_visible_devices": "-1",
+    "device": "CPU-only",
+    "model_inference": false,
+    "model_loaded": false,
+    "numpy": "2.2.6",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]",
+    "training": false
+  },
+  "schema": "ssdm.semantic_slot_conditional_binding_diagnostic.v1",
+  "source_freeze_sha256": "d1ad9f39f532c74dfde8d1f13ec0556768376bfa66d581f21c8359fff4483617",
+  "source_model_run_commit": "bd0c591",
+  "source_receipt_gzip_sha256": "21bbfd30507a883887945c4244ca7b758d89ba16a374cc7a11276eb496c80069",
+  "source_receipt_sha256": "ae74b5753885331b66e189386cc9c51b427faf8e9122ae6bd3c2e8a407b9489e",
+  "underlying_world_clusters": 180
+}
