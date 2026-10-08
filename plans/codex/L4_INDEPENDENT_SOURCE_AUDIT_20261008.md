@@ -263,6 +263,24 @@ is the missing estimate-to-reference-to-primary-study/inventory crosswalk,
 with the publisher-hosted supplement listed but access-denied. No numeric
 emissions values were transcribed or imported.
 
+### 8 October 2026 — exact S1 repository and metadata trace
+
+Follow-up checks found no separate legitimate deposit of the publisher's exact
+S1 file. The [NLR Research Hub record](https://research-hub.nlr.gov/en/publications/life-cycle-greenhouse-gas-emissions-of-utility-scale-wind-power-s-4/)
+lists the article DOI as its access-to-document link and exposes no S1
+attachment. The [DOE OSTI record 1040937](https://www.osti.gov/biblio/1040937)
+and its [official record API](https://www.osti.gov/api/v1/records/1040937)
+identify the article/report number but expose no full text or supplement
+relation. The [Crossref DOI record](https://api.crossref.org/works/10.1111%2Fj.1530-9290.2012.00464.x)
+has an empty `relation` object and article-only links; the [DataCite related-DOI
+query](https://api.datacite.org/dois?query=relatedIdentifiers.relatedIdentifier%3A10.1111%2Fj.1530-9290.2012.00464.x)
+returns zero records. Wiley lists `JIEC_464_sm_suppmat.pdf`, but both its
+[supplement download route](https://onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2Fj.1530-9290.2012.00464.x&file=JIEC_464_sm_suppmat.pdf)
+and [supplement-info route](https://onlinelibrary.wiley.com/doi/suppl/10.1111/j.1530-9290.2012.00464.x/supinfo)
+return HTTP 403. Thus S1 Table S3 remains unavailable and cannot be joined to
+primary studies or shared-inventory families; no additional source-world is
+admitted. No emissions values were transcribed or imported.
+
 ## Safe expansion rule
 
 An added L4 module must retain its own source, population, year, boundary,
