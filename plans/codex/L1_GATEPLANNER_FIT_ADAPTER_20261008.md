@@ -26,13 +26,15 @@ only earlier gold choices form each diagnostic teacher-forced prefix.
 
 ## Artifact
 
-The frozen local export is
-`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-gate-training-fit-20261008-v2`.
-It contains 3,072 JSONL rows (16,579,126 bytes). SHA-256 values:
+The current frozen local export is
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-gate-training-fit-20261008-v3`.
+It contains 3,072 JSONL rows (16,579,126 bytes). Version 2 is preserved; v3
+adds target-description frequencies to the manifest, while the JSONL and gzip
+record bytes remain identical. SHA-256 values:
 
 - `training_records.jsonl`: `02345dfb60c92742e137d96aa9e34576d04a77181dfc4aa0ac5d308730cb4ccd`
 - `training_records.jsonl.gz`: `d767627b781596f5f1e2882f2ed2e0b69587c055b3522117d165332af2d859ef`
-- `manifest.json`: `18467f793fee2b9016e8c2ffaaaa7ae672986634ae1f646b5ca36fcf6d12f691`
+- `manifest.json`: `0c08fd0da13a175f6a66107e728ee27eff9a69c6d7ff115a072be18938f694c5`
 
 Reproduce to a new output directory with:
 
@@ -74,3 +76,23 @@ did not load Torch, model weights, validation or held-out inputs. Its first
 discovery search was broader than its assigned code-file allowlist; the
 auditor reported that deviation, then restricted census reads to the fit
 artifact and exact encoder/tokenizer sources.
+
+## Fit-only target distribution
+
+The v3 manifest pins the exact offered-description counts by slot under
+`target_counts_by_slot` (SHA-256
+`137789a613387eddc8edc6c55cc651091f1b80255a2e54298e74d0187344bd3c`). Across
+the 24 fit worlds, operation targets are ReadFact 192, ExplainDerivation 192,
+and Compare 576 (20/20/60%); comparison relations total equal 96, greater-than
+240, and less-than 240 across both fields, or 48/120/120 per field. Fact targets
+are split 192/192 across price and warranty; each operand side is 288/288.
+Record positions 1–4 each receive 96 fact, 144 left-operand and 144
+right-operand targets.
+
+Entity-count differences are proportional to the number of fit worlds in
+which each entity is present: conditional on presence, each entity gets two
+fact targets per field and three targets per field on each comparison side.
+This audit gives no evidence to reweight classes. Preserve the exhaustive
+source task mix for the first model run; consider a bounded reweighting
+ablation only if a measured development failure justifies it. Option IDs are
+local to each slot and must not be pooled across slots.

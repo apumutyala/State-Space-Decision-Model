@@ -15,6 +15,7 @@ from language_growth.l1_gate_training import (
     export_l1_fit_training,
     generate_l1_fit_training_records,
 )
+from language_growth.gate_suites import digest
 from language_growth.multirecord_calibration_split import split_multirecord_training
 from language_growth.multirecord_data import TASKS_PER_WORLD
 
@@ -45,6 +46,14 @@ class L1GateTrainingTests(unittest.TestCase):
             "right-operand": 576,
             "semantic-operation": 960,
         })
+        target_counts = manifest["target_counts_by_slot"]
+        self.assertEqual(target_counts["semantic-operation"], {
+            "Compare": 576, "ExplainDerivation": 192, "ReadFact": 192})
+        self.assertEqual(target_counts["comparison-relation"], {
+            "equal": 96, "greater_than": 240, "less_than": 240})
+        self.assertTrue(all(sum(target_counts[slot].values()) == count
+                            for slot, count in manifest["slot_counts"].items()))
+        self.assertEqual(manifest["target_counts_sha256"], digest(target_counts))
         self.assertFalse(manifest["validation_or_heldout_generated"])
 
         tasks = defaultdict(list)

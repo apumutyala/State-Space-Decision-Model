@@ -102,6 +102,8 @@ def _fit_coverage(fit_tasks: list[dict[str, Any]]) -> dict[str, Any]:
     global_relation_counts: dict[str, Counter[str]] = {
         "price": Counter(), "warranty_months": Counter(),
     }
+
+
     for task in fit_tasks:
         by_world.setdefault(task["world_id"], []).append(task)
         gold = task["training_only"]
@@ -180,6 +182,24 @@ def _fit_coverage(fit_tasks: list[dict[str, Any]]) -> dict[str, Any]:
         "comparison_relations_per_field_in_fit": expected_global_relations,
         "source_kind_counts": dict(sorted(kind_counts.items())),
     }
+
+
+def _target_counts(rows: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+    """Count the labeled semantic option descriptions outside model requests."""
+    counts: dict[str, Counter[str]] = {}
+    for row in rows:
+        labels = row.get("labels")
+        request = row.get("request")
+        if not isinstance(labels, dict) or len(labels) != 1 or not isinstance(request, dict):
+            raise ValueError("each GatePlanner slot row must have one separate label and request")
+        qid, option_id = next(iter(labels.items()))
+        question = request.get("questions", {}).get(qid)
+        description = question.get("criteria", {}).get(option_id) if isinstance(question, dict) else None
+        slot = row.get("metadata", {}).get("slot")
+        if not isinstance(slot, str) or not isinstance(description, str):
+            raise ValueError("training target must map to one offered semantic description")
+        counts.setdefault(slot, Counter())[description] += 1
+    return {slot: dict(sorted(values.items())) for slot, values in sorted(counts.items())}
 
 
 def generate_l1_fit_training_records(*, model: str = "gate-training",
@@ -266,6 +286,14 @@ def generate_l1_fit_training_records(*, model: str = "gate-training",
             or any(row["metadata"]["source_world_id"] not in fit_worlds for row in rows)
             or any("source_world_id" in repr(row["request"]) for row in rows)):
         raise ValueError("training export identity or request-isolation check failed")
+    target_counts = _target_counts(rows)
+    if {slot: sum(values.values()) for slot, values in target_counts.items()} != dict(slot_counts):
+        raise ValueError("semantic target frequencies do not cover every exported slot row")
+    if (target_counts.get("semantic-operation") != {
+            "Compare": 576, "ExplainDerivation": 192, "ReadFact": 192}
+            or target_counts.get("comparison-relation") != {
+                "equal": 96, "greater_than": 240, "less_than": 240}):
+        raise ValueError("semantic operation/relation targets differ from the pinned source distribution")
 
     source_file_hashes = {
         name: _sha((Path(__file__).with_name(name)).read_bytes())
@@ -290,6 +318,8 @@ def generate_l1_fit_training_records(*, model: str = "gate-training",
         "worlds": len(world_ids),
         "tasks_per_world": TASKS_PER_WORLD,
         "slot_counts": dict(sorted(slot_counts.items())),
+        "target_counts_by_slot": target_counts,
+        "target_counts_sha256": digest(target_counts),
         "source_task_count": len(source_task_ids),
         "source_kind_counts": dict(sorted(kind_counts.items())),
         "source_coverage": coverage,
