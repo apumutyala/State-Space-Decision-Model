@@ -119,8 +119,9 @@ def _compiled_block_forward(cls, backend: str):
         import torch._dynamo.config as dcfg
 
         dcfg.allow_unspec_int_on_nn_module = True  # one graph for every layer_id, not 61 recompiles
-        dcfg.cache_size_limit = max(dcfg.cache_size_limit, 64)
-        dcfg.recompile_limit = max(getattr(dcfg, "recompile_limit", 8), 64)
+        for k in ("recompile_limit", "cache_size_limit"):  # name differs across torch versions
+            if hasattr(dcfg, k):
+                setattr(dcfg, k, max(getattr(dcfg, k), 64))
         _COMPILED[key] = torch.compile(cls.forward, dynamic=True, backend=backend)
     return _COMPILED[key]
 
