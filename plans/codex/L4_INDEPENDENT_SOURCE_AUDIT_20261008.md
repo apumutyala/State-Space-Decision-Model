@@ -72,30 +72,31 @@ the recovery target to S1 Table S3 joined to Table 1 and the primary papers;
 the accessible copy does not include S1 itself.
 
 Table 1 and the bibliography yield 44 pure onshore author/year references.
-The following accounting is only a bibliographic audit queue:
+The following accounting is a candidate audit queue, not a verified
+independence partition:
 
-| References | Proposed handling | Count effect |
+| References | Evidence and handling | Count effect |
 | --- | --- | ---: |
-| White & Kulcinski 1998; White & Kulcinski 2000; White 2006 | Explicit updates and repeated Buffalo Ridge/Glenmore systems; one provisional family | 3→1 |
-| Dones et al. 2005; Dones et al. 2007; Jungbluth et al. 2005 | Repeated European 0.8-MW system and Ecoinvent v2.0; provisional inventory family | 3→1 |
-| Pacca & Horvath 2002; Pacca 2003 | Shared lead author, repeated 0.6-MW system, thesis variants; provisional family | 2→1 |
-| Vestas Wind Systems 2006a; 2006b | Same manufacturer and related declarations, different turbine models; provisional family | 2→1 |
+| White & Kulcinski 1998; White & Kulcinski 2000; White 2006 | Explicit update lineage and repeated Buffalo Ridge/Glenmore systems; one candidate family. [White 2006 publisher record](https://link.springer.com/article/10.1007/s11053-007-9024-y) | 3→1 |
+| Dones et al. 2005; Dones et al. 2007; Jungbluth et al. 2005 | Jungbluth and Dones 2007 document the same ecoinvent/Burger & Bauer foreground; Dones 2005 is ecoinvent-based with a matching 800-kW case, so joining all three is conservative. [Jungbluth](https://esu-services.ch/fileadmin/download/jungbluth-2004-PV-wind.pdf); [Dones 2007](https://ecolo.org/documents/documents_in_english/Life-cycle-analysis-PSI-05.pdf); [Dones 2005](https://bravenewclimate.com/files/expolwp6.pdf) | 3→1 |
+| Pacca & Horvath 2002; Pacca 2003; Schleisner 2000 | Thesis chapter overlaps the article; thesis also sources its Utah turbine from Schleisner. Merge as a shared-foreground-input block, not identical complete LCIs. [Pacca & Horvath](https://doi.org/10.1021/es0155884); [Pacca thesis](https://rael.berkeley.edu/old_drupal/sites/default/files/old-site-files/diss/Sergio_Pacca_2003.pdf) | 3→1 |
+| Vestas Wind Systems 2006a; 2006b | V82 report explicitly uses earlier V80/V90 LCAs as a basis; shared-model lineage, though not proven identical inventories. Only lineage was inspected; no Vestas measurements were imported. [Vestas V82 report](https://www.vestas.com/content/dam/vestas-com/global/en/sustainability/reports-and-ratings/lcas/LCA%20V82165%20MW%20onshore2007.pdf.coredownload.inline.pdf) | 2→1 |
 | Berry et al. 1998; European Commission 1995 | Overlapping Welsh sites, different capacity assumptions; provisional family | 2→1 |
-| Jacobson 2009; WEC 2004; van de Vate 1996 | Set aside from a primary-study candidate count pending inspection; only Jacobson is explicitly titled a review | 37→34 |
 
-The first, explicitly documented update family reduces 44 to 42; applying all
-four additional provisional merges gives 37. Setting aside the three
-synthesis/compilation-risk references yields 34 candidate families. The 32
-remaining singleton references are Ardente et al. 2008; Chataignere & Le
-Boulch 2003; Crawford 2009; Enel 2004; Frischknecht 1998; Hartmann 1997;
-Hondo 2005; Jacobson 2009; Khan 2005; Krewitt 1997; Kuemmel & Sørensen 1997;
-Lee & Tzeng 2008; Lenzen & Wachsmann 2004; Liberman & LaPuma 2003; Martínez
-et al. 2009; McCulloch et al. 2000; Nadal 1995; Pehnt 2006; Proops et al. 1996;
-Rule et al. 2009; Rydh et al. 2004; Schleisner 2000; SECDA 1994; Spitzley &
-Keoleian 2004; Tremeac & Meunier 2009; Uchiyama 1996; van de Vate 1996;
-Vattenfall 2003; Voorspools et al. 2000; Waters et al. 1997; WEC 2004; and
-Wibberly 2001. This count makes 20 plausible as a candidate-audit target, not
-as 20 independent or qualified worlds.
+Starting at 44, these five blocks reduce the candidate count to 36. Jacobson
+2009, WEC 2004, and van de Vate 1996 are then set aside as synthesis or
+compilation risks, leaving **33 candidate families**. Only Jacobson is
+explicitly titled a review; WEC and van de Vate need inspection before
+excluding them from a primary-source count. The 28 other singleton references
+are Ardente et al. 2008; Chataignere & Le Boulch 2003; Crawford 2009; Enel
+2004; Frischknecht 1998; Hartmann 1997; Hondo 2005; Khan 2005; Krewitt 1997;
+Kuemmel & Sørensen 1997; Lee & Tzeng 2008; Lenzen & Wachsmann 2004; Liberman &
+LaPuma 2003; Martínez et al. 2009; McCulloch et al. 2000; Nadal 1995; Pehnt
+2006; Proops et al. 1996; Rule et al. 2009; Rydh et al. 2004; SECDA 1994;
+Spitzley & Keoleian 2004; Tremeac & Meunier 2009; Uchiyama 1996; Vattenfall
+2003; Voorspools et al. 2000; Waters et al. 1997; and Wibberly 2001. This
+count makes 20 plausible as a candidate-audit target, not 20 independent or
+qualified worlds; broader ExternE/Ecoinvent overlaps may reduce it further.
 
 The paper's p. 16 “Clustering Bias” discussion says author/study clustering and
 common Ecoinvent data were not quantified, while the analysis treats all 126
