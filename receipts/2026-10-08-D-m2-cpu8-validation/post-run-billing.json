@@ -1,0 +1,108 @@
+{
+  "auto_topup": {
+    "enabled": false,
+    "note": "No automatic top-up rule. The rule charges the card on file, and no card is on file. buy_credits(amount_usd) answers with a payment link, and one payment adds credit and saves the card. After that, set_auto_topup(threshold_usd, amount_usd) turns the rule on"
+  },
+  "balance": {
+    "at_zero": false,
+    "available_usd": 467.013684,
+    "available_usd_micros": 467013684,
+    "burn_rate_usd_per_hour": 0.0,
+    "ever_funded": true,
+    "note": "Compute runs against this balance and stops at zero with every disk kept. No card is on file, so buy_credits(amount_usd) answers with a payment link.",
+    "runway_minutes": null,
+    "unsettled_usd": 57.986316
+  },
+  "billing_portal": "https://autoresearch.sfcompute.com/billing",
+  "credit_expiries": [
+    {
+      "expires_at": "2026-10-27T06:53:54.878914+00:00",
+      "usd": 500.0,
+      "usd_micros": 500000000
+    },
+    {
+      "expires_at": null,
+      "usd": 25.0,
+      "usd_micros": 25000000
+    }
+  ],
+  "credit_grants": [
+    {
+      "amount_usd": 500.0,
+      "expires_at": "2026-10-27T06:53:54.878914+00:00",
+      "granted_at": "2026-10-06T06:53:54.906736+00:00",
+      "kind": "promo_signup_bonus",
+      "remaining_usd": 500.0,
+      "state": "active"
+    },
+    {
+      "amount_usd": 25.0,
+      "expires_at": null,
+      "granted_at": "2026-10-06T06:53:53.661777+00:00",
+      "kind": "top_up",
+      "remaining_usd": 25.0,
+      "state": "active"
+    }
+  ],
+  "credits_usd": 525.0,
+  "credits_usd_micros": 525000000,
+  "dunning_state": "active",
+  "members": [
+    {
+      "email": "apumutyala@gmail.com",
+      "mtd_usd": 57.982162,
+      "mtd_usd_micros": 57982162,
+      "object": "member_spend",
+      "role": "admin"
+    }
+  ],
+  "month": "2026-10",
+  "notices": [
+    "Automatic top-up is off for apumutyala@gmail.com, and no card is on file. Running work stops when the balance reaches zero. To add credit, call buy_credits(amount_usd). It answers with a payment link for a person to open. One payment adds the credit and saves the card."
+  ],
+  "object": "billing",
+  "org": {
+    "id": "f979ff45-d56a-4144-8565-298cac7dae9a",
+    "name": "apumutyala@gmail.com",
+    "object": "org",
+    "your_role": "admin"
+  },
+  "org_mtd_usd": 57.982162,
+  "org_mtd_usd_micros": 57982162,
+  "payment": {
+    "collection_method": "prepaid_only",
+    "payment_method_ok": false,
+    "payment_method_unverified": false,
+    "prepaid": true
+  },
+  "snapshot_storage": {
+    "free_gib": 250,
+    "mtd_usd": 0.0,
+    "note": "customer-created snapshots only; nodes' own disks (parked or demoted) are free, and your org's first 250 GiB of snapshots never charge (oldest first). delete_snapshot ends the charge.",
+    "rates": [
+      {
+        "gpu_model": "cpu-2",
+        "per_gib_month_usd": 0.1
+      },
+      {
+        "gpu_model": "cpu-8",
+        "per_gib_month_usd": 0.1
+      },
+      {
+        "gpu_model": "h100",
+        "per_gib_month_usd": 0.1
+      }
+    ],
+    "stored_bytes": 0
+  },
+  "storage": {
+    "active_bytes": 2148618290,
+    "mtd_usd": 0.0,
+    "mtd_usd_micros": 0
+  },
+  "workspace": "default",
+  "workspace_cap_usd": 200.0,
+  "workspace_cap_usd_micros": 200000000,
+  "your_mtd_usd": 57.982162,
+  "your_mtd_usd_micros": 57982162
+}
