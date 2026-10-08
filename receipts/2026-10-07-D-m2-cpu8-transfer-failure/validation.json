@@ -1,0 +1,20 @@
+{
+  "base_commit": "a6b0755",
+  "date": "2026-10-07",
+  "command": "wsl -d bi-ubuntu -- bash -lc 'cd /mnt/c/Users/apumu/research/CHLabs/ssdm-wt/m2-cpu8-transfer-recovery && python3 -m unittest discover -s tests -p test_m2_cpu8_controller.py -v'",
+  "tests": 9,
+  "passed": 9,
+  "failed": 0,
+  "runtime_seconds": 6.235,
+  "scope": "stdlib fake-AUTOR and static checks only",
+  "provider_calls": false,
+  "network": false,
+  "models_constructed": false,
+  "index_or_heldout_access": false,
+  "new_spend_usd": 0,
+  "sha256": {
+    "scripts/supervise_m2_cpu8.sh": "0993e00261e6a9e5091a0ab9e0baf738f7497af011434fa35a7b72a56de5b13a",
+    "scripts/m2_cpu8_json.py": "458fae6b06859d1b29a8b690b163e18b9468a611bcb3652a26e672e5f21b68f7",
+    "tests/test_m2_cpu8_controller.py": "d6ba479d187bf6f3f5b236aa122100ae45afdae37627b7e2559f2d63f0a5caa0"
+  }
+}
