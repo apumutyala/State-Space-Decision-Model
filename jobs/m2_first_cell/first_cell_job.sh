@@ -22,7 +22,11 @@
 #   30 / 31 / 32 guard: kit-suite / content index / harness manifests   33 held-out D1-B fragment outside the pinned set
 #   20 train.run_cell unexpected code   21-29 train.run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite,
 #   24 memory, 25 data, 26 too slow for min_steps, 27 guard not ready, 28 cohort / train-set leak or mismatch,
-#   35 head config)
+#   35 head config, 36 fla requested but a training step fell back to "chunked" or no training call ran fla)
+# fla: ONLY when the cell config sets "rwkv7_wkv" to an fla name, setup installs fla-core 0.5.2 by wheel hash, no deps
+#   (jobs/fla_rwkv7/requirements-fla.txt, as jobs/perf_step_gate v2), checks torch 2.13.0 / triton 3.7.1 / fla 0.5.2 and
+#   the chunk_rwkv7 import, then the #640 guard (fla_guard.py) must see the installed fla: any failure is exit 5. run_cell
+#   trains under heads.rwkv7_wkv.strict and records fla calls vs fallbacks in cell.json "fla". Other cells: unchanged.
 #   1 finalize failed
 # Path overrides (TEST-ONLY; a paid run sets none of them, and every default below IS the paid-run path). They exist
 # so tests/test_m2_first_cell_shell.py can EXECUTE this script end to end on CPU with a tiny stand-in model; they only
@@ -145,6 +149,20 @@ num "$CALL_S" || fail 4 "CALL_S=$CALL_S is not a number"
 say "setup"
 cp "$CONTEXT_MANIFEST" "$WORK/out/" || fail 5 "no context manifest"
 nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
+WKV=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("rwkv7_wkv") or "chunked")' "$CELL")   || fail 5 "cell config rwkv7_wkv"
+case "$WKV" in
+  fla|fla_safe_gate)  # fla-core is not in the rwkv7 image: the exact 0.5.2 wheel by hash, no deps (perf_step_gate v2)
+    say "rwkv7_wkv=$WKV: install fla-core 0.5.2 by hash"
+    pip install --no-cache-dir --no-deps --require-hashes -r "$CODE/jobs/fla_rwkv7/requirements-fla.txt"       > "$WORK/logs/pip-fla.log" 2>&1 || fail 5 "fla-core install: $(tail -1 "$WORK/logs/pip-fla.log")"
+    python - > "$WORK/out/fla-versions.json" 2> "$WORK/logs/fla-versions.log" <<'EOF' || fail 5 "fla version pins: $(tail -1 "$WORK/logs/fla-versions.log")"
+import json, torch, triton, fla
+assert torch.__version__.split("+")[0] == "2.13.0", torch.__version__
+assert triton.__version__ == "3.7.1" and fla.__version__ == "0.5.2", (triton.__version__, fla.__version__)
+from fla.ops.rwkv7 import chunk_rwkv7  # noqa: F401
+print(json.dumps({"torch": torch.__version__, "triton": triton.__version__, "fla": fla.__version__}))
+EOF
+    ;;
+esac
 CELL_PATH=$CELL python - > "$WORK/out/env.json" <<'EOF' || fail 5 "env pins / WKV selection"
 import json, torch, transformers
 assert transformers.__version__ == "5.17.0", transformers.__version__
@@ -152,16 +170,19 @@ assert torch.cuda.is_available()
 import decision_index  # noqa: F401
 import third_party.rwkv7_hf as V
 import os
-from heads.rwkv7_wkv import FLA_NAMES, GPU_VERIFIED, LEAN, VENDORED
+from heads.rwkv7_wkv import FLA_NAMES, GPU_VERIFIED, GPU_VERIFIED_NAMES, LEAN, VENDORED
 assert all(V.vendored_ok().values()), V.vendored_ok()
 wkv = json.load(open(os.environ["CELL_PATH"])).get("rwkv7_wkv") or "chunked"
 assert wkv in VENDORED + LEAN + FLA_NAMES, wkv
-assert wkv not in FLA_NAMES or GPU_VERIFIED, f"rwkv7_wkv={wkv} but fla is not GPU-verified (jobs/fla_rwkv7 ADOPT first)"
+assert wkv not in FLA_NAMES or (GPU_VERIFIED and wkv in GPU_VERIFIED_NAMES), f"rwkv7_wkv={wkv} is not GPU-verified"
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
                   "transformers": transformers.__version__, "vendored_rwkv7": V.REVISION,
-                  "wkv": wkv, "fla_gpu_verified": GPU_VERIFIED}))
+                  "wkv": wkv, "fla_gpu_verified": (wkv in GPU_VERIFIED_NAMES) if wkv in FLA_NAMES else None}))
 EOF
 python -I "$CODE/jobs/common/fla_guard.py" --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
+case "$WKV" in fla|fla_safe_gate)  # the guard must have checked the installed fla (not the "not installed" no-op)
+  python -I -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("fla_installed") else 1)' "$WORK/out/fla_guard.json"     || fail 5 "fla #640 guard did not see fla-core installed" ;;
+esac
 ( cd "$DATA" && sha256sum -c "$CODE/jobs/rwkv7/records.sha256" ) > "$WORK/out/records-verify.txt" 2>&1 || fail 10 "PR #16 records sha256"
 python -X utf8 -m train.train_set verify --config "$CELL" --train-dir "$TRAIN_DIR" --out "$WORK/out/train-set-verify.json" \
   > "$WORK/logs/train-set.log" 2>&1 || fail 10 "150k train set != pointer"
@@ -293,7 +314,7 @@ timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" 
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
-case $r in 0) ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+case $r in 0) ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
 
 # ------------------------------------------------------------------ child evals: temperature fit, dev card, G12 + Index DEV subset
 say "phase evals (calibration fit; dev card; G12 dev + steer_dev; Index DEV subset + readout diagnostics)"

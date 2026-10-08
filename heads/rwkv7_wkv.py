@@ -2,11 +2,11 @@
 code through the model's own ``RWKV7_WKV_FUNCTIONS`` hook. The vendored files are not modified (sha-pinned).
 
     from heads.rwkv7_wkv import select_wkv
-    select_wkv(model, "fla")          # refuses until GPU_VERIFIED (jobs/fla_rwkv7 gate); allow_unverified=True for the gate
+    select_wkv(model, "fla")          # GPU-verified (job-9bs8w); fla_safe_gate refuses unless allow_unverified=True
     select_wkv(model, None)           # no-op: the checkpoint's own "chunked"
 
-Default OFF. ``GPU_VERIFIED`` is flipped by the coordinator only after ``jobs/fla_rwkv7`` returns ``ADOPT`` under its
-pre-registered rule (``jobs/fla_rwkv7/JOB_SPEC.md``).
+Default OFF (a cell selects it with ``"rwkv7_wkv": "fla"``). ``GPU_VERIFIED`` was flipped by the coordinator after
+SF job-9bs8w (``jobs/perf_step_gate`` rule v2) ADOPTed ``fast_fla``; ``GPU_VERIFIED_NAMES`` lists the names it covers.
 
 Mapping (checked against fla-core 0.5.2 ``fla/ops/generalized_delta_rule/dplr/naive.py``, wheel sha256
 5e830c85bad3d0d34677f98ac7074d08687a3756f0f0499d95ceb96eb6920761). The vendored recurrence keeps S as (value, key):
@@ -44,8 +44,12 @@ VENDORED = ("eager", "chunked")
 #: against the vendored function (tests/test_cell_perf.py), so it needs no GPU gate; default off
 LEAN = ("chunked_lean",)
 FLA_CORE_PIN = "0.5.2"
-#: flipped ONLY by the coordinator after jobs/fla_rwkv7 returns ADOPT (receipt path in jobs/fla_rwkv7/JOB_SPEC.md)
-GPU_VERIFIED = False
+#: flipped ONLY by the coordinator after a GPU gate returns ADOPT. Receipt: SF job-9bs8w, jobs/perf_step_gate rule v2
+#: (stack/rwkv7/perf-gate-fla @3501b56) ADOPTed fast_fla = d1_fast + rwkv7_wkv "fla": 3.88 s/step vs 5.65 (fast, 1.46x)
+#: and 7.94 (greedy, 2.05x), LoRA-grad cos 0.998, loss_rel 3.2e-4, peak 62.6 GB, fla calls > 0, zero fallbacks.
+#: Only plain "fla" was measured: "fla_safe_gate" stays gated (GPU_VERIFIED_NAMES).
+GPU_VERIFIED = True
+GPU_VERIFIED_NAMES = frozenset({FLA})
 #: fp32 activations: fla warns "ChunkDeltaRuleFunction does not support float32 on some platforms"; the model runs
 #: bf16, so fp32 falls back to "chunked" unless the gate measured it (the harness calls the kernel with allow_fp32)
 ALLOW_FP32 = False
@@ -53,6 +57,30 @@ ALLOW_FP32 = False
 FALLBACKS: Counter = Counter()
 CALLS: Counter = Counter()
 _WARNED: set[str] = set()
+#: set by a caller that requested fla and must not silently run "chunked" (train.run_cell around its training steps):
+#: a fallback is still counted, then raises FlaFallback instead of running the vendored path
+STRICT = False
+
+
+class FlaFallback(RuntimeError):
+    """An fla WKV call would have fallen back to "chunked" while STRICT was set."""
+
+
+class strict:
+    """``with strict(): ...`` -- fla fallbacks raise FlaFallback inside the block (re-entrant; restores the old value)."""
+
+    def __init__(self, on: bool = True):
+        self.on = on
+
+    def __enter__(self):
+        global STRICT
+        self._old, STRICT = STRICT, (STRICT or self.on)
+        return self
+
+    def __exit__(self, *exc):
+        global STRICT
+        STRICT = self._old
+        return False
 
 
 class WkvName(str):
@@ -85,6 +113,8 @@ def _import_chunk():
 
 def _note_fallback(reason: str) -> None:
     FALLBACKS[reason] += 1
+    if STRICT:
+        raise FlaFallback(f"fla RWKV7 WKV would fall back to 'chunked' ({reason}); refused (strict)")
     if reason not in _WARNED:
         _WARNED.add(reason)
         warnings.warn(f"fla RWKV7 WKV fell back to the vendored 'chunked' path ({reason})", RuntimeWarning, stacklevel=3)
@@ -194,7 +224,7 @@ def select_wkv(model_or_config, name: str | None, *, allow_unverified: bool = Fa
         rwkv7_lean.register()
         value = WkvName(name)
     elif name in FLA_NAMES:
-        if not (GPU_VERIFIED or allow_unverified):
+        if not ((GPU_VERIFIED and name in GPU_VERIFIED_NAMES) or allow_unverified):
             raise RuntimeError(f"wkv={name!r} is not GPU-verified yet (jobs/fla_rwkv7 gate); "
                                "pass allow_unverified=True only inside that gate")
         register()
@@ -208,5 +238,5 @@ def select_wkv(model_or_config, name: str | None, *, allow_unverified: bool = Fa
 
 def provenance() -> dict:
     """For kernel_stack / receipts: which path actually ran, and how often it fell back."""
-    return {"fla_core_pin": FLA_CORE_PIN, "gpu_verified": GPU_VERIFIED, "calls": dict(CALLS),
-            "fallbacks": dict(FALLBACKS)}
+    return {"fla_core_pin": FLA_CORE_PIN, "gpu_verified": GPU_VERIFIED,
+            "gpu_verified_names": sorted(GPU_VERIFIED_NAMES), "calls": dict(CALLS), "fallbacks": dict(FALLBACKS)}
