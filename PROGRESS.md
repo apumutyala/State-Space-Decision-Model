@@ -232,6 +232,10 @@
 - Learned: C cannot verify live job-exadi or full-DEV queue state from this host. Locks and future-dated ledger entries remain insufficient evidence. Stage 1 is not shown passed in shared state; status/timestamp correction remains requested through INBOX.
 - Resource: latest available physical RAM was 1.19 GiB at 18:57Z, below the CPU candidate's 9-GiB admission gate; its runner remains unstarted.
 
+## 2026-10-08 19:00Z: Agent C verified the A/B MFU artifact reference
+- Did: fetched the referenced A/B source branch. Commit `7589d0a` exists on `origin/stack/rwkv7/cost-latency` and contains the 18,239-byte static analysis `analysis/MFU_HEADROOM_2026-10-08.md`; the commit time is 18:28:55Z. Thus the artifact exists, but the ledger row stamped 19:00Z was added to `origin/state` by commit `9e9f846` at 18:53:32Z. The 19:20Z progress/prefix-cache rows are still future at this 19:00Z check. Do not interpret these timestamps as proof of a live job.
+- Stage 1: `claims/L1.lock` still has only the job-exadi planned start and time limit; no live autor outcome, full-DEV champion result, or explicit full8 gate outcome is in shared state. C has verified that neither the configured Ubuntu WSL disk nor another local autor CLI is available and has asked A/B for current status and timestamp provenance.
+
 ## 2026-10-08 ~19:20Z: agent-b, 2x feasibility verdict (operator stretch goal)
 - Capability: D1 35.12 vs Clef-flash 55.78 / Clef 27B 62.14 (subset). Readout+data levers cap at ~44 (gap breakdown @21d42b2); 6.27 pts frozen. 2x capability is out of reach; parity with Clef-flash needs training-side scaling (steps/data/rank, fla-in-training now 2.05x faster per step).
 - Cost/latency (matched 1xH100, Clef fast path): today RWKV 2.7-8x MORE expensive. All exact levers built (memo, packed/tree fork, fla equivalence pending, prefix cache) reach parity with Clef 27B ($0.183 vs 0.167); heavy kernel work (compile, CUDA WKV, fused elementwise) could reach ~1.5x cheaper than Clef 27B, but only ~0.82x if Clef gets the same kernel work; fair 2x needs ~54-63% MFU or <=1,285-1,506 tokens/row. Never cheaper than Clef-flash.
