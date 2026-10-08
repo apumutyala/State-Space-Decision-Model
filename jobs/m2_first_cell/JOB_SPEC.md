@@ -223,3 +223,12 @@ with the clock 190 -> 380 min (as D7 `d7_t380`) and `max_steps` 3,000 -> 4,500 (
 Mode `d10w_v3w_b100k` (D10w; `job_params_d10w_v3w_b100k.json`, `m2_first_cell_rwkv7_d10w_v3w_b100k.json`): `d10_v2f_b100k` with only
 template `jrt-rwkv-g1-v3w` (layout `g1v2`, r1_format_commit 0290fa8; parent arm in-job via `G1V3Backend(mode='words')`). Caps and
 schedule are D10's: **Worst case** (60 + 2 x 669) x $0.0495 = **$69.20** (cap $70).
+
+Mode `d11_scale` (D11, the scaled cell; `job_params_d11_scale.json`, `m2_first_cell_rwkv7_d11_scale.json`): `d10w_v3w_b100k` with
+lora_rank 64 -> 256 (alpha = rank, scale 1, as D5 `d5_r256`), max_minutes 190 -> 780 and max_steps 3,000 -> 9,000 (the clock binds),
+cont_plan single -> per_group and row_options 160 -> 128 (execution-only). Memory: r256 adds ~13.8 GB fp32 LoRA + grads + Adam;
+single-cont peaks 63 GB at T 2,048 on r64 -> 76.8 GB > the 76 GB stop, so per_group (~54 GB on r64 -> ~67.8 GB); the K > 16 worst call
+(D8 sizing ~61 GB at 160 options) -> ~72 GB at 128 options + r256. Step ~6.4-8.5 s -> ~5,500-7,300 steps / ~44k-58k items (~30-40 %
+of the ~145k v3w items of the 100k draw). Cell cap = 780 + 42 tokenize + 10 smoke/ladder + 10 dev cards + 30 checkpoints/margin = 872;
+schedule 669 - 262 + 872 = 1,279 min. **Worst case** (60 + 2 x 1,279) x $0.0495 = **$129.59** (cap $135); the platform quotes
+$0.063/min x 1,279 = $80.58. Expected 1,170 min ≈ $57.92.
