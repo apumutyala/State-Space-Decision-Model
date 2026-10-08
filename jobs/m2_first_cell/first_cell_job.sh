@@ -19,6 +19,11 @@
 #   in params "readouts", control = the cell's training template first; live rate guard; per-row resume from
 #   $CK/readout_ab), optional parent_ab (params "readout_ab_parent_arm": the stock families), report
 #   (readout_ab report -> readout_ab_result.json).
+#   Params with "eval_only": "hijack" + a "checkpoint" block (mode hijack_eval, BOARD H1) are an EVAL-ONLY run of a SAVED checkpoint: no
+#   heldout / parent g12+index / reprice / cell phase. Setup + guard as usual, then phase checkpoint (the artifact tar
+#   from the URL in $<checkpoint.url_env>, sha256-pinned; the cell.json shipped at $DATA/checkpoint/cell.json, pinned,
+#   config == $CELL), parent_hijack (stock readout, live rate guard), evals (m2_gates --stage hijack: exit 46 =
+#   measured), report (jobs.m2_first_cell.hijack_eval -> hijack_eval_result.json). JOB_SPEC "Mode hijack_eval".
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -51,6 +56,8 @@
 #   M2FC_DATA              data root (records, 150k set, suite, DEV rows, references; also SSDM_DATA)  (default /data)
 #   M2FC_WORK              scratch dir                     (default /tmp/m2-first-cell)
 #   M2FC_CELL              cell config (absolute, or relative to CODE, the working dir)  (default jobs/m2_first_cell/m2_first_cell_rwkv7.json)
+#   M2FC_PARAMS            a non-base MODE's job params (absolute)  (default $CODE/jobs/m2_first_cell/job_params_<MODE>.json;
+#                          the eval-only shell test pins its tiny checkpoint here)
 # Already overridable by the platform contract: GMN_OUTPUT_DIR, GMN_RESULT_PATH, GMN_CHECKPOINT_DIR, GMN_METADATA_URL;
 # the snapshot download honours the standard HF_HUB_CACHE / HF_HOME / HF_HUB_OFFLINE. nvidia-smi, the CUDA asserts,
 # the snapshot sha256 pins and the TOK_S / CALL_S rates have NO override here (the test stubs them from outside).
@@ -66,7 +73,7 @@ if [ "$MODE" = base ]; then
   PARAMS=$CODE/jobs/m2_first_cell/job_params.json
 else  # generic: the mode's two files; resolved and checked once the log and finalize trap exist (below)
   CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_$MODE.json}
-  PARAMS=$CODE/jobs/m2_first_cell/job_params_$MODE.json
+  PARAMS=${M2FC_PARAMS:-$CODE/jobs/m2_first_cell/job_params_$MODE.json}
 fi
 TRAIN_DIR=$DATA/m2-150k
 TEACHER_ARGS=()
@@ -149,8 +156,8 @@ td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
 ev = p.get("eval_only", "none")
-if ev not in ("none", "fulldev", "readout_ab"):
-    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev or readout_ab")
+if ev not in ("none", "fulldev", "readout_ab", "hijack"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev, readout_ab or hijack")
 if ev != "none":
     sys.path.insert(0, ".")
     from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
@@ -171,6 +178,7 @@ EOF
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
   [ "$EVAL_ONLY" = readout_ab ] && VALIDATOR=jobs.m2_first_cell.readout_ab:valid_result DECISION=$WORK/out/readout_ab_result.json
+  [ "$EVAL_ONLY" = hijack ] && VALIDATOR=jobs.m2_first_cell.hijack_eval:valid_result DECISION=$WORK/out/hijack_eval_result.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
@@ -247,10 +255,17 @@ for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used 
     REFS+=(--reference "$NAME=$F")
   fi
 done
-python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.readout_ab, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
+python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.readout_ab, jobs.m2_first_cell.hijack_eval, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
 if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
+elif [ "$EVAL_ONLY" = hijack ]; then  # the hijack stage of both arms; the child without the temperature fit / dev card
+  FIX_P=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['parent'])" "$PARAMS") || fail 5 "job_params"
+  FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['child'])" "$PARAMS") || fail 5 "job_params"
+  for P in "hijack parent parent_hijack $FIX_P" "hijack child evals $FIX_C --no-child-extras"; do
+    set -- $P
+    python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \n      --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" ${5:-} > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
+  done
 elif [ "$EVAL_ONLY" = readout_ab ]; then  # subset rows x readouts x D1's measured child rows/min (+ readout length ratio)
   python -X utf8 -m jobs.m2_first_cell.readout_ab estimate --params "$PARAMS" > "$WORK/out/preflight-readout_ab.json" \
     || fail 15 "readout_ab projected past its cap at the measured D1 child rate (or readouts / control refused)"
@@ -283,7 +298,7 @@ fi
 for P in "${EVAL_PRICES[@]}"; do
   set -- $P
   python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \
-    --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
+    --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" ${5:-} > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
 done
 fi
 gate "setup" 0
@@ -296,7 +311,7 @@ timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_rea
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
 
-if [ "$EVAL_ONLY" != none ]; then  # -------------- eval-only: a SAVED checkpoint (fulldev: FULL DEV; readout_ab: subset)
+if [ "$EVAL_ONLY" = fulldev ] || [ "$EVAL_ONLY" = readout_ab ]; then  # ---- eval-only: a SAVED checkpoint (fulldev: FULL DEV; readout_ab: subset)
   say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"
   timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" \
     --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CK/cell" --work "$WORK/art" \
@@ -352,6 +367,59 @@ if [ "$EVAL_ONLY" != none ]; then  # -------------- eval-only: a SAVED checkpoin
   gate "report" $r
   [ $r -eq 0 ] || fail 9 "$EV_DIR result missing or invalid (rc=$r)"
   sample "$DECISION" "$EV_DIR"
+elif [ "$EVAL_ONLY" = hijack ]; then  # --------- eval-only: a SAVED checkpoint (mode hijack_eval, BOARD H1)
+  # ---------------------------------------------------------------- checkpoint: fetch + pin (exit 5 / 7 / 10)
+  CK_FILE=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["checkpoint"]["member"].rsplit("/",1)[1])' "$PARAMS") \
+    || fail 5 "job_params checkpoint block"
+  say "phase checkpoint ($CK_FILE; jobs.m2_first_cell.checkpoint_loader, every byte sha256-pinned)"
+  timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" \
+    --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CK/cell" --work "$WORK/art" \
+    --cell-out "$WORK/out/cell.json" --out "$WORK/out/checkpoint.json" > "$WORK/logs/checkpoint.log" 2>&1; r=$?
+  case $r in 0) ;; 124|137) fail 7 "checkpoint download timeout" ;; 10) fail 10 "checkpoint: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
+    *) fail 5 "checkpoint: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
+  gate "checkpoint" 0; export_phase checkpoint
+
+  # ---------------------------------------------------------------- parent arm: the hijack stage (live rate guard)
+  ARM=$CK/parent_arm_hijack
+  mkdir -p "$ARM"
+  if python -c "import json,sys,hashlib,pathlib; d=pathlib.Path(sys.argv[1]); e=json.load(open(d/'arm.json'))['stages']['hijack']; sys.exit(0 if hashlib.sha256((d/e['file']).read_bytes()).hexdigest()==e['sha256'] else 1)" "$ARM" 2>/dev/null; then
+    say "parent hijack: cached (restart)"; gate "parent_hijack" 0
+  else
+    say "phase parent_hijack"
+    python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/parent-hijack.progress.jsonl" \
+      --cap-min "$(cap parent_hijack)" --report "$ARM/rate-parent-hijack.json" -- \
+      timeout --kill-after=30s $(cap parent_hijack)m python -X utf8 -m jobs.m2_parent_arm.score_parent --parent rwkv7 --model-dir "$SNAP" --cell-config "$CELL" \
+      --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" \
+      --out-dir "$ARM" --stage hijack --progress "$WORK/logs/parent-hijack.progress.jsonl" \
+      > "$WORK/logs/parent-hijack.log" 2>&1; r=$?
+    gate "parent_hijack" $r
+    mkdir -p "$WORK/out/parent_arm_hijack"; cp "$ARM"/*.json "$WORK/out/parent_arm_hijack/" 2>/dev/null || true
+    export_phase parent_hijack
+    case $r in 0) ;; 124|137) fail 7 "parent hijack timeout" ;; 15) fail 15 "parent hijack: live rate past its cap" ;;
+      10) fail 10 "parent hijack identity" ;; *) fail 9 "parent hijack rc=$r" ;; esac
+  fi
+  ARM_SHA=$(sha256sum "$ARM/arm.json" | cut -d' ' -f1)
+  mkdir -p "$WORK/out/parent_arm_hijack" && cp "$ARM"/*.json "$WORK/out/parent_arm_hijack/" || fail 6 "parent arm export copy"
+
+  # ---------------------------------------------------------------- child: the saved checkpoint on the same units
+  say "phase evals (saved checkpoint; hijack stage: clean + 5 hijack + D1-A on the steer_dev hijack subset)"
+  python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress.jsonl" --cap-min "$(cap evals)" \
+    --report "$WORK/out/rate-evals.json" -- \
+    timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" \
+    --ckpt "$CK/cell/$CK_FILE" --model-dir "$SNAP" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
+    --guard-readiness "$WORK/out/guard/readiness.json" --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" \
+    --out "$WORK/out/report.json" --stage hijack --progress-dir "$WORK/logs" > "$WORK/logs/evals.log" 2>&1; r=$?
+  gate "evals" $r; export_phase evals
+  case $r in 46) ;; 124|137) fail 7 "evals timeout" ;; 15) fail 15 "evals: live rate past the cap" ;;
+    10) fail 10 "evals identity (cohort / parent arm / checkpoint lineage)" ;; *) fail 9 "evals rc=$r (46 = measured)" ;; esac
+
+  say "phase report"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.hijack_eval --cell "$WORK/out/cell.json" \
+    --report "$WORK/out/report.json" --parent-arm "$ARM" --params "$PARAMS" \
+    --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "hijack_eval result missing or invalid (rc=$r)"
+  sample "$DECISION" "hijack-eval"
   RC=0
   exit 0
 fi

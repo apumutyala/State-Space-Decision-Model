@@ -28,7 +28,8 @@ if os.environ.get("M2FC_STUB") == "1":
 
     _ROOT = Path(__file__).resolve().parents[2]
     _DEVICE = {"jobs.m2_parent_arm.score_parent", "train.run_cell", "train.m2_gates"}
-    _SHIM = _DEVICE | {"jobs.common.dev_subset", "jobs.m2_pilot.guard_ready", "jobs.m2_first_cell.summarize"}
+    _SHIM = _DEVICE | {"jobs.common.dev_subset", "jobs.m2_pilot.guard_ready", "jobs.m2_first_cell.summarize",
+                       "jobs.m2_first_cell.hijack_eval"}
 
     def _split(argv):
         i = 0

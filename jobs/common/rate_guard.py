@@ -81,10 +81,18 @@ def _rows(path: Path) -> int:
     return total
 
 
+def _resolve(cmd: list[str]) -> list[str]:
+    """Resolve argv[0] on PATH first. Windows CreateProcess searches System32 BEFORE PATH, so a bare ``timeout`` ran
+    TIMEOUT.EXE instead of coreutils in the CPU shell tests (Git Bash); on Linux this is the same binary exec finds."""
+    import shutil
+
+    return [shutil.which(cmd[0]) or cmd[0], *cmd[1:]] if cmd else cmd
+
+
 def run(cmd: list[str], results: Path, total: int, cap_min: float, check_after_min: float = CHECK_AFTER_MIN,
         poll_s: float = 15.0, report: Path | None = None, exclude_startup: bool = False) -> int:
     t0 = time.time()
-    child = subprocess.Popen(cmd, start_new_session=(os.name != "nt"))
+    child = subprocess.Popen(_resolve(cmd), start_new_session=(os.name != "nt"))
     rec = {"cmd": cmd, "total": total, "cap_min": cap_min, "checks": [], "exclude_startup": exclude_startup}
     startup_s = None
 
@@ -168,7 +176,7 @@ def run_weighted(cmd: list[str], progress: Path, cap_min: float, check_after_min
         except FileNotFoundError:
             pass
     t0 = time.time()
-    child = subprocess.Popen(cmd, start_new_session=(os.name != "nt"))
+    child = subprocess.Popen(_resolve(cmd), start_new_session=(os.name != "nt"))
     rec = {"cmd": cmd, "cap_min": cap_min, "checks": [], "mode": "weighted"}
     start = total = None
 
