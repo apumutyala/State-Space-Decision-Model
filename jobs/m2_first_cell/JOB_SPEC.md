@@ -54,6 +54,8 @@ the parent scoring instead of after training.
 Schedule 630 + reserve 7 = 637 min. **Worst case** (60 build + 2 x 637) x $0.0495 = **$66.03** (cap $70; build_timeout 60 per the launch lint, L-09).
 **Expected ≈ $26.1** (528 min incl. build). A G12 reject is a measured outcome (exit 0, reported).
 
+Mode `d7_t380` (D7; `first_cell_job.sh d7_t380`, `job_params_d7_t380.json`, `m2_first_cell_rwkv7_d7_t380.json`): D1 with ONE change, the training clock 190 -> 380 min = 380 x 60 / 8.25 = 2,763 steps ≈ 22.1k rows (≈ 1 epoch of the same 24k draw; max_steps 3,000 does not bind). Cell cap 380 + tokenize 10 + smoke/ladder 10 + dev cards 10 + checkpoints/margin 11 = 421; schedule 630 − 230 + 421 + 7 = 828 min. **Worst case** (60 + 2 x 828) x $0.0495 = **$84.94** (cap $90). Expected 528 − 220 + 411 = 719 min ≈ $35.59.
+
 Every bounded long command uses GNU `timeout --kill-after=30s` at its existing cap;
 parent/child scoring children retain the measured live rate guards outside that
 timeout. TERM-resistant work is killed after the grace, and both timeout statuses
