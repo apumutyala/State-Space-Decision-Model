@@ -25,7 +25,7 @@ Keep a worktree on the `state` branch (`git worktree add ../state state`), then 
 | File | Rule |
 |---|---|
 | `BOARD.md` | Top ~15 items: id, hypothesis, expected gain, cost, lane, owner. Rewritten each loop, never appended forever. |
-| `claims/<id>.lock` | Owner, start UTC, job id, time limit (3h, or 1.5× GPU wall-time). Claim = push the lock; remove it when done. If the push is rejected, pick another item. |
+| `claims/<id>.lock` | Owner, start UTC, job id, `time_limit` as an absolute UTC time (start + 3h, or + 1.5× GPU wall-time), never a duration. Claim = push the lock; remove it when done. If the push is rejected, pick another item. |
 | `results/ledger.tsv` | Append-only, one row per run: `utc  agent  job  sha  recipe  index  lo  hi  cost  status(keep/discard/crash/invalid)  receipt  note`. Corrections are new rows. |
 | `PROGRESS.md` | Rolling; each session adds 3–5 lines (did / learned / next). |
 | `DEAD_ENDS.md` | Falsified ideas with job ids, so nobody retries them. |

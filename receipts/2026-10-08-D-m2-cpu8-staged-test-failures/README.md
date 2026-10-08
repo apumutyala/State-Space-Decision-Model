@@ -42,11 +42,9 @@ uv run --no-project --index https://download.pytorch.org/whl/cpu \
 This command is documentation of the original full suite, not permission for a provider retry. Full staged qualification has not been rerun for the correction. Local verification uses synthetic CPU fixtures only, no model/data/provider calls, no submit.json and no training. In WSL `bi-ubuntu`, from this worktree:
 
 ```sh
-export GIT_DIR=/mnt/c/Users/apumu/research/CHLabs/State-Space-Decision-Model/.git/worktrees/m2-test-archive-fix
-export GIT_WORK_TREE=/mnt/c/Users/apumu/research/CHLabs/ssdm-wt/m2-test-archive-fix
 /root/ssdm-data/.venv/bin/python -m pytest -q tests/test_m2_first_cell_shell.py \
   -k 'owned_process or term_resistant or seeded_copy or cached_parent or long_phase or overrides or sha256'
 /root/ssdm-data/.venv/bin/python -m pytest -q tests/test_jobs_lint.py
 ```
 
-The explicit Git overrides are needed only to read the Windows-created worktree from WSL; temporary regression repositories remove those overrides. Local result: 16 focused tests and 71 launch-lint tests passed. Post-commit source-archive verification is recorded in `validation.json`.
+~~The explicit Git overrides are needed only to read the Windows-created worktree from WSL; temporary regression repositories remove those overrides.~~ *Correction 2026-10-08: the `GIT_DIR`/`GIT_WORK_TREE` exports were removed; inherited by the test's `git init <tmp>`, they re-initialised the real repo and wrote `core.worktree` into the shared `.git/config`. Never export them.* Local result: 16 focused tests and 71 launch-lint tests passed. Post-commit source-archive verification is recorded in `validation.json`.

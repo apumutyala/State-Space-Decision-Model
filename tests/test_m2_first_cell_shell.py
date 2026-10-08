@@ -584,6 +584,11 @@ def test_restart_reuses_the_parent_arm_and_resumes_the_cell(ctx, full_run):
     assert (r["out"] / "M2_FIRST_CELL_DONE").exists()
 
 
+def _no_git_env():
+    """Env for fixture git calls: never inherit GIT_DIR/GIT_WORK_TREE etc. (they redirect `git init` to the real repo)."""
+    return {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+
+
 def _source_files(root):
     """Use Git's tracked/unignored selection in a checkout, or staged archive bytes.
 
@@ -591,7 +596,7 @@ def _source_files(root):
     Archive fixtures can create Python/pytest caches before the seeded copy.
     """
     if (root / ".git").exists():
-        return subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=root,
+        return subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=root, env=_no_git_env(),
                               capture_output=True, text=True, check=True).stdout.splitlines()
     return sorted(p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()
                   and not set(p.relative_to(root).parts) & {".git", "__pycache__", ".pytest_cache"}
@@ -646,12 +651,12 @@ def test_seeded_copy_preserves_runner_and_tests_without_archive_git_dependency(t
     param = root / "jobs/m2_first_cell/job_params.json"
     param.write_text(json.dumps(params))
     if checkout:
-        subprocess.run(["git", "init", str(root)], check=True, capture_output=True)
-        subprocess.run(["git", "add", "."], cwd=root, check=True, capture_output=True)
+        subprocess.run(["git", "init", str(root)], check=True, capture_output=True, env=_no_git_env())
+        subprocess.run(["git", "add", "."], cwd=root, check=True, capture_output=True, env=_no_git_env())
         (root / "ignored.txt").write_text("must remain ignored")
     else:
         # An enclosing Git repository must not be mistaken for archive metadata.
-        subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+        subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True, env=_no_git_env())
         monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("archive copy invoked Git"))
     for cache in ("__pycache__/fixture.pyc", ".pytest_cache/v/cache/nodeids"):
         path = root / cache
