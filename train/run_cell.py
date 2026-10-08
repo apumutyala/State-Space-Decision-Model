@@ -627,12 +627,43 @@ def smoke_stage(bb, train_items, cfg: dict, cuda: bool, peak=lambda: 0.0) -> dic
     return out
 
 
+def train_wkv(cfg: dict) -> str | None:
+    """The WKV that TRAINING STEPS run: ``train_rwkv7_wkv`` (opt-in, execution-only), default the cell's ``rwkv7_wkv``.
+    Everything that scores (smoke, dev cards, parent arm, seed check, G12/Index) keeps ``rwkv7_wkv``, so a cell with
+    rwkv7_wkv "chunked_lean" + train_rwkv7_wkv "fla" has the same parent / unit identity as its chunked_lean base."""
+    return cfg.get("train_rwkv7_wkv") or cfg.get("rwkv7_wkv")
+
+
+class training_wkv:
+    """``with training_wkv(bb, cfg): tr.train_step()`` -- the backbone runs ``train_wkv(cfg)`` inside the block and is
+    restored to its scoring WKV (``rwkv7_wkv``) afterwards. A no-op unless train_rwkv7_wkv differs from rwkv7_wkv."""
+
+    def __init__(self, bb, cfg: dict):
+        self.bb, self.cfg, self._old = bb, cfg, None
+
+    def __enter__(self):
+        want = train_wkv(self.cfg)
+        if self.cfg.get("parent", "rwkv7") == "rwkv7" and want and want != (self.cfg.get("rwkv7_wkv") or "chunked"):
+            from heads.rwkv7_wkv import _configs, select_wkv
+
+            self._old = [(c, c.wkv_implementation) for c in _configs(self.bb.model)]
+            select_wkv(self.bb.model, want)
+        return self
+
+    def __exit__(self, *exc):
+        for c, v in self._old or ():
+            c.wkv_implementation = v
+        self._old = None
+        return False
+
+
 def fla_requested(cfg: dict) -> bool:
-    """The cell asked for an fla WKV ("rwkv7_wkv": "fla" / "fla_safe_gate"): training must then run fla, never a
-    silent "chunked" fallback (heads.rwkv7_wkv.strict around every training step; exit 36 on a fallback or no call)."""
+    """Training steps asked for an fla WKV (``train_wkv(cfg)`` "fla" / "fla_safe_gate"): training must then run fla,
+    never a silent "chunked" fallback (heads.rwkv7_wkv.strict around every training step; exit 36 on a fallback or no
+    call)."""
     from heads.rwkv7_wkv import FLA_NAMES
 
-    return cfg.get("parent", "rwkv7") == "rwkv7" and cfg.get("rwkv7_wkv") in FLA_NAMES
+    return cfg.get("parent", "rwkv7") == "rwkv7" and train_wkv(cfg) in FLA_NAMES
 
 
 def fla_record(cfg: dict) -> dict | None:
@@ -642,7 +673,8 @@ def fla_record(cfg: dict) -> dict | None:
     from heads import rwkv7_wkv as W
 
     p = W.provenance()
-    return {"requested": cfg["rwkv7_wkv"], "strict_training": True, **p,
+    split = {"scoring_wkv": cfg.get("rwkv7_wkv") or "chunked"} if cfg.get("train_rwkv7_wkv") else {}
+    return {"requested": train_wkv(cfg), **split, "strict_training": True, **p,
             "n_calls": sum(p["calls"].values()), "n_fallbacks": sum(p["fallbacks"].values())}
 
 
@@ -714,9 +746,14 @@ def _main(argv=None, ctx: dict | None = None):
     import contextlib
 
     if fla_requested(cfg):
-        from heads.rwkv7_wkv import strict as fla_strict
+        from heads.rwkv7_wkv import strict as _strict
     else:
-        fla_strict = contextlib.nullcontext
+        _strict = contextlib.nullcontext
+
+    @contextlib.contextmanager
+    def fla_strict():  # every training step: the training WKV (train_rwkv7_wkv) + the fla strict refusal
+        with training_wkv(bb, cfg), _strict():
+            yield
 
     # CUDA paths (bf16 autocast, peak memory) follow --device, not merely an installed CUDA build: a CPU run on a
     # CUDA-capable host (CUDA_VISIBLE_DEVICES="" can still report is_available) must not autocast to a cuda device
