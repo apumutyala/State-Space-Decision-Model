@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from decide.prompt import G1V2_ID, render_g1v2
-from heads.layout import ByteEncoder, _g1v2_code_table, build_row
+from heads.layout import G1_TRAIN_TEMPLATES, ByteEncoder, _g1v2_code_table, build_row
 
 REQ = {"model": "ssdm-m2", "state": {"note": "The customer\n\n\nlost the card yesterday.\n"},
        "questions": {"intent": {"type": "choice", "instructions": "Pick the intent.\n\nOne only.\n",
@@ -56,4 +56,4 @@ def test_d3_cell_config_uses_g1v2():
     d = Path(__file__).resolve().parents[1] / "jobs/m2_first_cell"
     for f in d.glob("m2_first_cell_rwkv7_d3_*.json"):
         cfg = json.loads(f.read_text(encoding="utf-8"))
-        assert cfg["template"] == G1V2_ID and cfg["layout"] == "g1v2", f.name
+        assert cfg["template"] in G1_TRAIN_TEMPLATES and cfg["layout"] == "g1v2", f.name

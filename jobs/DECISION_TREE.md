@@ -112,3 +112,5 @@ lines intact. Branch A leaves System 1 ~$70 above the cache-fork m2 plan before 
 estimate); the full-8 worst case already counts a 60-min build and two full attempts.
 
 D3 candidate `jobs/m2_first_cell/job_params_d3_r1_gold.json` (mode `d3_r1_gold`): D1 (11fb140, gold labels) trained and evaluated in the R1 readout format (C1 format v2 @46c0788: template `jrt-rwkv-g1-v2`, layout `g1v2`); the parent arm is scored in-job in the same format (no v1 seed). Caps unchanged: inherits the D1 $66.03 ceiling ($70 hard stop).
+
+D3 candidate `jobs/m2_first_cell/job_params_d3_v2f_gold.json` (mode `d3_v2f_gold`, preferred over `d3_r1_gold`): the same cell with template `jrt-rwkv-g1-v2f` (v2 + the dict-instruction fix, r3-catalog 0290fa8; v2 drops dict-valued instructions), layout `g1v2`; parent arm in-job via `G1V3Backend(mode="v2f")`. Caps unchanged: inherits the D1 $66.03 ceiling ($70 hard stop).
