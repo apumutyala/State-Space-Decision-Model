@@ -1,0 +1,76 @@
+{
+ "_comment": "UNMEASURED RWKV7-13.3B capability candidate: clef_kd with injection-row KD masking. Identical to m2_first_cell_rwkv7_clef_kd.json except kd_mask_injected=true: items of injection-augmented records (aug.injection / '~inj' ids, 1 question each) get no teacher and train on the gold-only Clef arm, because the Clef-flash teacher partly follows the injections (d1a: teacher top = attacker target 23.2%, mean p 0.231; hijack 13.7% / 0.155). Never resumes the base or clef_kd candidate checkpoint.",
+ "seed": 0,
+ "head": "fork",
+ "head_kwargs": {},
+ "layout": "ordered",
+ "template": "jrt-rwkv-g1-v1",
+ "loss_arm": "clef",
+ "lora_rank": 64,
+ "lr_head": 0.001,
+ "lr_lora": 0.0001,
+ "warmup_steps": 50,
+ "batch_size": 1,
+ "grad_accum": 8,
+ "max_k": 16,
+ "t_ladder": [
+  512,
+  1024,
+  2048
+ ],
+ "n_train_records": 24000,
+ "n_eval_records": 0,
+ "min_train_items": 5000,
+ "max_steps": 3000,
+ "max_minutes": 190,
+ "min_steps": 600,
+ "ckpt_every": 400,
+ "eval_every": 100000,
+ "tokenize_workers": 8,
+ "smoke": {
+  "rows": 2,
+  "max_k": 4,
+  "max_t": 512,
+  "lora_rank": 8,
+  "max_rel_feature_diff": 0.03,
+  "min_grad_cos": 0.99
+ },
+ "pass_rule": {
+  "window": 100,
+  "loss_drop_frac_min": 0.05,
+  "max_peak_gb": 76
+ },
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "require_guard_readiness": true,
+ "calibration_role": "calibration",
+ "parent": "rwkv7",
+ "eval_max_t": 2048,
+ "train_set": {
+  "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+  "heldout_excluded": {
+   "ids": [
+    "m2:mmlu_aux:21118",
+    "m2:mmlu_aux:39640",
+    "m2:mmlu_aux:39643"
+   ],
+   "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+   "reason": "train.heldout (D1-B, k=8) finds the 4-word fragment 'rather than relying on' of template soft_framing in these three MMLU aux_train records (natural text, no injection; the PR #44 build guard, word 6-grams, does not fire). Excluded from the draw, fail-closed: the heldout phase passes only if the full-set hits are exactly these ids (2026-10-06 local scan, 150,000 texts, 112 s)."
+  }
+ },
+ "rwkv7_wkv": "chunked_lean",
+ "act_ckpt": true,
+ "row_batch": 8,
+ "row_tokens": 8192,
+ "execution_note": "job-tvuat (jobs/cell_step_profile, rule v1-A2, PR #86 @54ee89d) ADOPT: chosen ckpt_rows_lean = per-block activation checkpointing keeping the cache fork, the step's 8 rows batched in length-sorted groups (<= 8 rows, <= 8,192 padded tokens per call; long rows split a step into several groups), chunked_lean WKV (our pure-PyTorch rearrangement of the vendored chunked WKV, CPU-equivalence-tested; no GPU gate needed); measured median step 8.25 s, 0 OOMs, projection 1,382 steps / 11,056 rows in 190 min (receipt receipts/2026-10-07-D-cell-step-profile-tvuat). Execution flags are not in the TrainConfig hash (same loss and gradients). rwkv7_wkv applies to both arms (child: run_cell / m2_gates; parent: score_parent). 'fla' only after jobs/fla_rwkv7 ADOPT + GPU_VERIFIED.",
+ "max_minutes_note": "training wall-clock inside the 230-min cell phase: 230 - load/draw/tokenize ~10 - smoke+ladder ~10 - two dev cards ~10 - checkpoints/margin 10 = 190 (pre-registered); cumulative over restarts (train_clock in cell.json)",
+ "min_steps_note": "exit 26 if the measured step time cannot reach 600 optimiser steps (4,800 rows) inside max_minutes: below that the cell is not a meaningful first measurement; re-price instead of spending the evals",
+ "lora_rank_note": "M2_RUN_SPEC r=256 adds ~1.15B trainable params (~18 GB of fp32 weights + grads + Adam) on top of 26.5 GB bf16 weights and the un-checkpointed cache-fork activations; r=64 (the pilot's pre-registered rank) keeps the T=2048 ladder rung inside the 76 GB stop",
+ "teacher": {
+  "alpha": 0.5,
+  "temperature": 1.0,
+  "source": "job-tnrwu art-ggrs8 teacher-clef-flash.jsonl (Cloudflare/Clef-flash Apache-2.0; train.proxy_rule.TEACHER)",
+  "teacher_sha256": "a88b4fe0f6a79a8fc48bdea51391524bd4f5da885705461a543becf81c81e7f7"
+ },
+ "kd_mask_injected": true,
+ "variant": "clef_kd_injmask"
+}

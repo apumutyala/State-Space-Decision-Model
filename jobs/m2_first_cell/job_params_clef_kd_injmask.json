@@ -1,0 +1,249 @@
+{
+ "_comment": "Single-factor Clef-flash soft-label KD successor to stock-initialized M2 fork training. Baseline budget/stops retained as ceilings; no performance or quality claim. Same stock-parent arm seed; separately evaluate against the current trained M2 candidate at a matched endpoint before any promotion claim. INJMASK variant: kd_mask_injected=true (injection-augmented rows train gold-only; no KD toward a teacher that partly follows injections).",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "job": "m2-first-cell-clef-kd-injmask",
+ "status": "UNMEASURED next candidate; not submitted. Requires independent review, merged proof, teacher artifact recovery, exact package validation and spend/live preflight.",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 637,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 70.0,
+ "phase_caps_minutes": {
+  "setup": 25,
+  "guard": 5,
+  "heldout": 10,
+  "parent_g12": 85,
+  "parent_index": 65,
+  "cell": 230,
+  "evals": 205,
+  "report": 5
+ },
+ "reserve_minutes": 7,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 15,
+  "guard": 3,
+  "heldout": 3,
+  "parent_g12": 65,
+  "parent_index": 48,
+  "cell": 220,
+  "evals": 155,
+  "report": 4
+ },
+ "evals_fixed_minutes": {
+  "parent": 3,
+  "child": 8
+ },
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (prefill tok/s at 2,048; small_call_s)",
+  "train_step_s": 8.25,
+  "train_step_source": "job-tvuat (jobs/cell_step_profile rule v1-A2, PR #86 @54ee89d): ADOPT ckpt_rows_lean, median step 8.25 s, 0 OOMs; receipt receipts/2026-10-07-D-cell-step-profile-tvuat/decision.json"
+ },
+ "parent": "rwkv7",
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_clef_kd_injmask.json",
+ "train_set_pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "margins_from": "train.promotion.MARGINS",
+ "margins_status": "issue #36 margins approved in PR #102 (train.promotion.MARGINS); this cell runs G12 + the index measurement, not G13, so m2_gates exits 44 (partial) / 40 and it is never promotable; 43/44/45 are trained + measured outcomes",
+ "parent_arm_seed": {
+  "_note": "LESSONS L-34: a resubmitted job starts with an empty checkpoint slot; this pinned export of the parent arm ships as data/parent_arm_seed/ (context.data below) and jobs.m2_first_cell.arm_seed installs it into $CK/parent_arm (sha + parent/cohort/unit-spec identity checked; exit 10 otherwise), so parent_g12 + parent_index (~68 GPU min) are skipped. Rate reports are not installed: reprice uses the seed_verify probe factor estimate measured on this box. Set arm_sha256 to null (and drop the three context.data entries) to score the parent in-job again.",
+  "source": "job-uhxb5 (agent-main 9c76c93), artifact art-sq6mp sha256 2937de5a5d832a7d899eb6cf74fb3f66d65e9333b3f43bdf7e6f55bcb76ae7c6, phases/final.tgz out/parent_arm/",
+  "arm_sha256": "f8a114f3050a82cafd9e45364aa7bee2ae5ef98b2d0516281b610c3f33482145",
+  "units_sha256": {
+   "g12": "c16c24db65124b78af782305a55d2092b8b4163459a9501714b314e4897ef395",
+   "index": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001"
+  },
+  "probe_records": 24,
+  "probe_note": "seed_verify (PR #147 review): before training, score_parent --verify-cache checks the full units identity (read_arm_cache), the guard and the parent decider's revision on this box, and re-scores probe_records g12 dev records (must reproduce the cached units within PROBE_MAX_ABS_DCONF / PROBE_MAX_FLIP_FRAC); their speed vs the cached run gives the re-price factor estimate. Runs under the parent_g12 cap (it replaces both parent phases)."
+ },
+ "reference_results_sha256": {
+  "_note": "optional files shipped under /data/reference/ (same 2,008 subset rows); used only for the report's comparisons. null = not shipped / not used",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": "train/promotion.py",
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh clef_kd_injmask",
+  "env": {
+   "TOK_S": "3757",
+   "CALL_S": "0.117"
+  },
+  "key": "m2-first-cell-clef-kd-injmask",
+  "clock_lock": true,
+  "label": "RWKV7-13.3B M2 fork + LoRA r64, Clef-flash KD alpha .5 T1, stock initialization, KD masked on injection rows",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "jobs/m2_first_cell/build_context.sh as a launch.py recipe: the rwkv7 image (CMD -> first_cell_job.sh) + code + PRIVATE data, each file sha256-pinned (raw bytes): PR #16 records (jobs/rwkv7/records.sha256), DEV rows (jobs/clef_baseline/data.sha256), the PR #44 150k set and the 0.2.1 suite files (jobs/m2_first_cell/data.sha256; the runner re-verifies the 150k set against its pointer and guard_ready the suite against guard_pin.json). Optional reference results are not shipped by launch.py (reference_results_sha256 null).",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+    "dest": "m2-150k/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.manifest.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.content.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/parent-arm/job-uhxb5/arm.json",
+    "dest": "parent_arm_seed/arm.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params.json",
+     "parent_arm_seed",
+     "arm_sha256"
+    ]
+   },
+   {
+    "src": "m2/parent-arm/job-uhxb5/units-g12.json",
+    "dest": "parent_arm_seed/units-g12.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params.json",
+     "parent_arm_seed",
+     "units_sha256",
+     "g12"
+    ]
+   },
+   {
+    "src": "m2/parent-arm/job-uhxb5/units-index.json",
+    "dest": "parent_arm_seed/units-index.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params.json",
+     "parent_arm_seed",
+     "units_sha256",
+     "index"
+    ]
+   },
+   {
+    "src": "teacher/selected-ids.txt",
+    "dest": "teacher/selected-ids.txt",
+    "src_env": "SSDM_KD_SELECTED_IDS_TXT",
+    "pin_sha256": "1c7dda1ed312428ba031812e4377a137f01c87eba35abf835de21d60cb8f7b40"
+   },
+   {
+    "src": "teacher/selection.json",
+    "dest": "teacher/selection.json",
+    "src_env": "SSDM_KD_SELECTION_JSON",
+    "pin_sha256": "fa666ceca6b0c7cc027bfc87a5458d1a0f2fb5674d813ce231abd276df647ed6"
+   },
+   {
+    "src": "teacher/teacher-clef-flash.identity.json",
+    "dest": "teacher/teacher-clef-flash.identity.json",
+    "src_env": "SSDM_KD_TEACHER_CLEF_FLASH_IDENTITY_JSON",
+    "pin_sha256": "f0394421e4de6c9ed4613b35b8aed60499158d05bc394bdff1a58c4f229b4075"
+   },
+   {
+    "src": "teacher/teacher-clef-flash.jsonl",
+    "dest": "teacher/teacher-clef-flash.jsonl",
+    "src_env": "SSDM_KD_TEACHER_CLEF_FLASH_JSONL",
+    "pin_sha256": "a88b4fe0f6a79a8fc48bdea51391524bd4f5da885705461a543becf81c81e7f7"
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/sample-150000-seed20261006.pointer.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "jobs/rwkv7/snapshot.sha256",
+   "jobs/m2_first_cell/data.sha256",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_clef_kd_injmask.json",
+   "train/teacher.py",
+   "train/proxy_rule.py",
+   "train/losses.py",
+   "receipts/2026-10-07-D-teacher-distill/teacher_verify.json"
+  ]
+ },
+ "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates).",
+ "mode": "clef_kd_injmask"
+}

@@ -150,7 +150,7 @@ def _items(n_steps=2):
     return [Item(x.id, x.row, i % x.row.n_options) for i, x in enumerate(rows)]
 
 
-def _trainer(items, wkv="chunked", **flags):
+def _trainer(items, wkv="chunked", loss=None, **flags):
     from heads.model import DecisionModel
     from train.guard import SplitGuard
     from train.losses import LossConfig
@@ -159,7 +159,7 @@ def _trainer(items, wkv="chunked", **flags):
     bb = tiny_hf_backbone("rwkv7", seed=0, fork_mode="cache")
     select_wkv(bb.model, wkv)
     model = DecisionModel(bb, "fork", {}, pad_id=0, seed=0)
-    cfg = TrainConfig(head="fork", fork_mode="cache", lora_rank=4, loss=LossConfig(arm="clef"), batch_size=1,
+    cfg = TrainConfig(head="fork", fork_mode="cache", lora_rank=4, loss=loss or LossConfig(arm="clef"), batch_size=1,
                       grad_accum=8, max_steps=2, seed=0, **flags)
     tr = Trainer(model, cfg, items, [], guard=SplitGuard.synthetic_only("cell_perf equivalence"))
     tr._order = lambda epoch: list(range(len(items)))
@@ -559,3 +559,37 @@ def test_long_catalog_step_with_all_fast_flags_and_option_cap_equals_one_row_per
     base = _step_grads(_trainer(items))
     _compare(_step_grads(_trainer(items, row_batch=8, row_tokens=8192, row_options=160, act_ckpt=True,
                                   row_plan="min_cost", cont_plan="single")), base, 2e-5)
+
+
+def _kd_items(n_steps=2):
+    """_items with a Clef-flash-style teacher on most rows; every 4th row has none (the kd_mask_injected / no-teacher
+    fallback: gold-only arm loss), so a step mixes KD and fallback rows across the groups."""
+    items = _items(n_steps)
+    for i, it in enumerate(items):
+        if i % 4 == 3:
+            it.teacher = None
+            continue
+        p = torch.rand(it.row.n_options, generator=torch.Generator().manual_seed(100 + i)) + 0.05
+        it.teacher = (p / p.sum()).tolist()
+    return items
+
+
+@pytest.mark.parametrize("flags", [dict(row_plan="min_cost", cont_plan="single"),
+                                   dict(row_plan="min_cost", cont_plan="single", compile_blocks=True)])
+def test_kd_step_with_the_fast_flags_equals_per_group_and_one_row_per_call(flags, monkeypatch):
+    """d2_kd_injmask_fast: KD is a per-row term (decision_loss mixes KD / arm per row, then means), so the one
+    continuation call of cont_plan single must give the per_group step's loss and gradients with KD on and a mix of
+    teacher / masked rows; compile_blocks under aot_eager (no CPU inductor toolchain)."""
+    import train.trainer as TT
+    from train.losses import LossConfig
+
+    monkeypatch.setattr(TT, "COMPILE_BACKEND", "aot_eager")
+    kd = LossConfig(arm="clef", kd_alpha=0.5, kd_temperature=1.0)
+    lean = dict(wkv="chunked_lean", act_ckpt=True, row_batch=8, row_tokens=400)
+    items = _kd_items()
+    one_row = _step_grads(_trainer(items, loss=kd))
+    per_group = _step_grads(_trainer(items, loss=kd, row_plan="min_cost", cont_plan="per_group", **lean))
+    no_kd = _step_grads(_trainer(items, **lean))
+    assert abs(per_group[0] - no_kd[0]) > 1e-4 * abs(no_kd[0])  # KD really changes the step (not vacuous)
+    _compare(per_group, one_row, 2e-5)
+    _compare(_step_grads(_trainer(items, loss=kd, **lean, **flags)), per_group, 2e-5)

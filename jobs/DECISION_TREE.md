@@ -48,6 +48,7 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | q9_feature_cache e5_train (proxy head loop, PREMORTEM blocker #1; E5 short-code, first 5,000 training rows; one <= 4.5 GiB artifact; rule `train/proxy_rule.py`) | `jobs/q9_feature_cache/job_params_e5_train.json` | $12.87 | $30 | ~$2.82 |
 | m2_first_cell (first trained cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k set; job-tvuat ADOPT execution config; PR #74) | `jobs/m2_first_cell/` | $66.03 | $70 | ~$26.14 |
 | m2_first_cell d1_fast (D1 base cell + the job-2amiy perf_step_gate step fixes: row_plan min_cost, cont_plan single, compile_blocks; 1.40x step, same caps, ~40 % more rows in the same 190-min clock; template for future cells) | `jobs/m2_first_cell/job_params_d1_fast.json` | $66.03 | $70 | ~$26.14 |
+| m2_first_cell d2_kd_injmask_fast (D2 rerun after job-zhv3f worker_lost: clef_kd_injmask cell = Clef-flash KD alpha 0.5 T 1, KD masked on the 1,905 injection-row items, + the d1_fast flags row_plan min_cost, cont_plan single, compile_blocks; same caps and teacher pins) | `jobs/m2_first_cell/job_params_d2_kd_injmask_fast.json` | $66.03 | $70 | ~$26.14 |
 | q9af_cell parent (the Q9-AF PARENT ARM once: stock readout of the converted model on cohort v3 + full DEV; shared comparator + lineage anchor of both cells; rule `jobs/q9af_cell/rule.py` 2d18afa; blocked on the job-2xe5w export pin; G13 re-priced at T <= 4,096) | `jobs/q9af_cell/job_params_parent.json` | $38.12 | $40 | ~$12.56 |
 | q9af_cell cell_r64 (first Q9-AF decision cell: LoRA r64 + fork head, clef arm, 150k draw, act_ckpt, G12/G13 vs the parent arm; `depends_on` parent; E9 pair) | `jobs/q9af_cell/job_params_cell_r64.json` | $74.25 | $75 | ~$23.15 |
 | q9af_cell cell_r256 (same cell, LoRA r256; E9 pair) | `jobs/q9af_cell/job_params_cell_r256.json` | $74.25 | $75 | ~$23.15 |
@@ -111,3 +112,16 @@ recorded decision, not an automatic one.
 Worst-case envelope total, including the $16.11 MTD spend, the Clef-27B Index line and both optional teachers, is at most $280.15 (branch A), so every branch fits $525 with the Language and Reserve
 lines intact. Branch A leaves System 1 ~$70 above the cache-fork m2 plan before the optional teachers (it left ~$4 at the old ~$150 full-8
 estimate); the full-8 worst case already counts a 60-min build and two full attempts.
+
+
+Next unmeasured RWKV7 capability candidate: `jobs/m2_first_cell/job_params_clef_kd.json`
+(mode `clef_kd`), stock-initialized fork/r64 on the same 24k draw, alpha 0.5 / T 1
+Clef-flash KD. Inherits the baseline $66.03 conservative ceiling ($70 hard stop);
+not an active commitment or authorization. Independent review, exact-mode CPU
+qualification, merged proof, acknowledged spend issue and live preflight precede launch.
+
+Injection-masked KD successor: `jobs/m2_first_cell/job_params_clef_kd_injmask.json`
+(mode `clef_kd_injmask`), identical to `clef_kd` except `kd_mask_injected: true`: the 1,905
+injection-augmented records of the 24k draw (d1a / hijack; 6.1% of items) train on the gold-only
+Clef arm, since the Clef-flash teacher partly follows injections (d1a top = attacker target
+23.2%). Same $66.03 ceiling ($70 hard stop); not an active commitment or authorization.
