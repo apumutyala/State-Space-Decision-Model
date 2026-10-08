@@ -108,3 +108,5 @@ recorded decision, not an automatic one.
 Worst-case envelope total, including the $16.11 MTD spend, the Clef-27B Index line and both optional teachers, is at most $280.15 (branch A), so every branch fits $525 with the Language and Reserve
 lines intact. Branch A leaves System 1 ~$70 above the cache-fork m2 plan before the optional teachers (it left ~$4 at the old ~$150 full-8
 estimate); the full-8 worst case already counts a 60-min build and two full attempts.
+
+D6 probe `jobs/m2_first_cell/job_params_d6_order_perm.json` (mode `d6_order_perm`): D1 (job-c7pq2) with the integrated default-off order_consistency arm enabled ({view: reverse, weight: 0.25}; train-only reversed-option views + JS consistency), nothing else changed; inherits the D1 $66.03 ceiling ($70 hard stop).
