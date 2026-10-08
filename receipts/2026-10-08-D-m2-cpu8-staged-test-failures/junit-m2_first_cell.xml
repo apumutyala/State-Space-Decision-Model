@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="4" tests="152" time="1302.787" timestamp="2026-10-08T03:39:50.451472+00:00" hostname="c86587167410"><testcase classname="tests.test_jobs_lint" name="test_discovers_every_params_file" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/cell_step_profile/job_params.json]" time="0.095" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/clef_baseline/job_params_index_full.json]" time="0.068" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/clef_baseline/job_params_index_subset.json]" time="0.005" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/clef_baseline/job_params_overlength_flash.json]" time="0.005" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/clef_baseline/job_params_teacher_clef.json]" time="0.005" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/clef_baseline/job_params_teacher_clef_flash.json]" time="0.005" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/fla_rwkv7/job_params.json]" time="0.152" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/fla_rwkv7/job_params_truth_v2.json]" time="0.024" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/full8/job_params.json]" time="0.116" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/m2_first_cell/job_params.json]" time="0.177" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/m2_parent_arm/job_params.json]" time="0.109" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/m2_pilot/job_params.json]" time="0.022" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/probe9b/job_params.json]" time="0.040" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/q9_feature_cache/job_params_conv1_dev.json]" time="0.015" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/q9_feature_cache/job_params_conv1_train.json]" time="0.004" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/q9_feature_cache/job_params_e5_dev.json]" time="0.005" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/q9_feature_cache/job_params_e5_train.json]" time="0.005" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/q9_feature_cache/job_params_stock_dev.json]" time="0.005" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/q9_feature_cache/job_params_stock_train.json]" time="0.005" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/q9af_cell/job_params_cell_r256.json]" time="0.073" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/q9af_cell/job_params_cell_r64.json]" time="0.045" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/q9af_cell/job_params_parent.json]" time="0.042" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/qual/job_params.json]" time="0.021" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/qual/job_params_c_only.json]" time="0.019" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/rwkv7/job_params_lora.json]" time="0.019" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/rwkv7/job_params_readout.json]" time="0.017" /><testcase classname="tests.test_jobs_lint" name="test_params_file_passes_lint_or_is_waived[jobs/rwkv7_code_label_h100/job_params.json]" time="0.042" /><testcase classname="tests.test_jobs_lint" name="test_waivers_are_legacy_dated_and_not_stale" time="0.202" /><testcase classname="tests.test_jobs_lint" name="test_new_job_cannot_be_waived" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_build_timeout_and_schedule_rules" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_backslash_n_regex_fires_on_known_bad_and_not_on_good" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_no_backslash_n_continuation_in_any_job_shell" time="0.001" /><testcase classname="tests.test_jobs_lint" name="test_runner_execution_detector" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_rule_constants_are_literal_module_level" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_no_control_characters_in_sources" time="0.006" /><testcase classname="tests.test_jobs_lint" name="test_gitattributes_pin_lf" time="0.000"><skipped type="pytest.skip" message="needs a git checkout">/home/dev/m2-cpu8-validation/work/launch-output/stage/4247b340ddde/tests/test_jobs_lint.py:114: needs a git checkout</skipped></testcase><testcase classname="tests.test_jobs_lint" name="test_git_archive_head_has_no_cr_even_with_autocrlf" time="0.000"><skipped type="pytest.skip" message="needs a git checkout">/home/dev/m2-cpu8-validation/work/launch-output/stage/4247b340ddde/tests/test_jobs_lint.py:119: needs a git checkout</skipped></testcase><testcase classname="tests.test_jobs_lint" name="test_champion_and_candidates_ledgers" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_docs_carry_the_branch_rule_and_the_incident_rule" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_lessons_entries_name_an_enforcing_check" time="0.001" /><testcase classname="tests.test_jobs_lint" name="test_coordination_requires_bounded_autonomous_spend" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_rate_guard_requires_an_executed_call" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_new_job_must_declare_decision_rule" time="0.002" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad0-must be an object]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad1-checks.success: required]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad2-not a platform check type]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad3-absolute path]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad4-non-empty list]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad5-must be an object]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad6-interval_s]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad7-on_fail]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad8-unknown key]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad9-no meaning in a success check]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad10-takes only type, path]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad11-interval_s]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad12-fail_threshold]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad13-not a platform check type]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad14-needs max_bytes or min_bytes]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad15-needs `field`]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad16-heartbeat takes only type, path]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad17-needs `port`]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad18-needs `min_pct`]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad19-min_pct]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad20-needs `command`]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_refuses_non_platform_values[bad21-takes only `check`]" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_accepts_the_platform_shapes" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_every_submit_block_has_valid_checks_and_q9_carries_the_submitted_block" time="0.002" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_accepts_every_platform_type_in_its_phases" time="0.000" /><testcase classname="tests.test_jobs_lint" name="test_checks_schema_fuzz_never_raises_and_rejects_junk" time="0.016" /><testcase classname="tests.test_jobs_lint" name="test_every_pinned_test_runs_under_its_pin_in_some_launch" time="0.007" /><testcase classname="tests.test_m2_first_cell" name="test_cell_config_is_the_specified_cell" time="5.095" /><testcase classname="tests.test_m2_first_cell" name="test_cost_worst_case_and_expected" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_eval_preflights_pass_at_the_measured_rates_and_stop_when_slower[g12-parent-parent_g12]" time="0.003" /><testcase classname="tests.test_m2_first_cell" name="test_eval_preflights_pass_at_the_measured_rates_and_stop_when_slower[index-parent-parent_index]" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_eval_preflights_pass_at_the_measured_rates_and_stop_when_slower[g12,index-child-evals]" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_estimate_legacy_projection_unchanged_without_call_s" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_lora_rank_memory_estimate_leaves_headroom" time="0.005" /><testcase classname="tests.test_m2_first_cell" name="test_min_steps_feeds_the_measured_rate_stops" time="0.004" /><testcase classname="tests.test_m2_first_cell" name="test_train_config_hash_unchanged_for_cells_without_warmup" time="0.012" /><testcase classname="tests.test_m2_first_cell" name="test_train_set_draw_verifies_and_excludes" time="1.555" /><testcase classname="tests.test_m2_first_cell" name="test_train_set_refuses_tampering_and_cohort_records" time="0.899" /><testcase classname="tests.test_m2_first_cell" name="test_heldout_gate_passes_only_on_the_pinned_hits" time="0.003" /><testcase classname="tests.test_m2_first_cell" name="test_cell_pins_exactly_the_observed_heldout_hits" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_parallel_cell_items_equal_serial" time="1.908" /><testcase classname="tests.test_m2_first_cell" name="test_run_weighted_stops_a_slow_phase_and_passes_a_fast_one" time="3.407" /><testcase classname="tests.test_m2_first_cell" name="test_index_stage_never_enters_promotion_or_exit_code" time="0.011" /><testcase classname="tests.test_m2_first_cell" name="test_index_measurement_keeps_rows_both_arms_refuse_for_the_same_reason" time="2.092" /><testcase classname="tests.test_m2_first_cell" name="test_relabel_reverses_the_presented_order_and_maps_back" time="0.002" /><testcase classname="tests.test_m2_first_cell" name="test_order_diagnostic_detects_a_first_option_reader" time="0.024" /><testcase classname="tests.test_m2_first_cell" name="test_runner_orders_guards_before_training_and_prices_every_eval_first" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_rates_unset_give_exit_4[TOK_S]" time="0.002" /><testcase classname="tests.test_m2_first_cell" name="test_rates_unset_give_exit_4[CALL_S]" time="0.002" /><testcase classname="tests.test_m2_first_cell" name="test_summarize_validator_refuses_incomplete_results" time="0.002" /><testcase classname="tests.test_m2_first_cell" name="test_first_cell_dry_run_end_to_end" time="194.763" /><testcase classname="tests.test_m2_first_cell" name="test_training_budget_is_cumulative_over_restarts" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_reprice_stops_a_slow_box_before_training[1.0-0]" time="0.002" /><testcase classname="tests.test_m2_first_cell" name="test_reprice_stops_a_slow_box_before_training[1.25-0]" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_reprice_stops_a_slow_box_before_training[1.3-15]" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_reprice_without_reports_keeps_the_setup_preflight" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_index_lengths_file_matches_the_subset_and_cell" time="0.015" /><testcase classname="tests.test_m2_first_cell" name="test_group_bins_never_cut_a_group" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_no_literal_backslash_n_continuations_in_job_scripts" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_execution_flags_reach_the_trainer_and_both_arms_read_the_wkv" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_training_reprice_from_the_measured_step" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_decision_rule_constants_pinned" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_registered_for_the_launch_lint" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_evals_exit_43_is_a_measurement_not_a_crash[0-True]" time="0.002" /><testcase classname="tests.test_m2_first_cell" name="test_evals_exit_43_is_a_measurement_not_a_crash[40-True]" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_evals_exit_43_is_a_measurement_not_a_crash[43-True]" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_evals_exit_43_is_a_measurement_not_a_crash[44-True]" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_evals_exit_43_is_a_measurement_not_a_crash[45-True]" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_evals_exit_43_is_a_measurement_not_a_crash[41-False]" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_evals_exit_43_is_a_measurement_not_a_crash[10-False]" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_evals_exit_43_is_a_measurement_not_a_crash[2-False]" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_pending_partial_underpowered_are_valid_measured_results" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_launch_blocks_and_data_pins" time="0.004" /><testcase classname="tests.test_m2_first_cell" name="test_parent_arm_identity_carries_the_wkv_and_refuses_another" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_tvuat_receipt_backs_the_execution_config_and_the_repricing" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_tvuat_receipt_bytes_survive_an_autocrlf_checkout" time="0.001"><skipped type="pytest.skip" message="needs a git checkout">/home/dev/m2-cpu8-validation/work/launch-output/stage/4247b340ddde/tests/test_m2_first_cell.py:647: needs a git checkout</skipped></testcase><testcase classname="tests.test_m2_first_cell" name="test_smoke_runs_under_the_cells_activation_checkpointing" time="0.114" /><testcase classname="tests.test_m2_first_cell" name="test_arm_seed_installs_only_a_pinned_matching_arm" time="0.004" /><testcase classname="tests.test_m2_first_cell" name="test_arm_seed_pin_is_the_uhxb5_export" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_arm_seed_is_atomic_a_failed_check_never_becomes_the_cache" time="0.002" /><testcase classname="tests.test_m2_first_cell" name="test_seed_probe_comparison_rule" time="0.000" /><testcase classname="tests.test_m2_first_cell" name="test_seed_restart_after_install_before_result_keeps_atomic_provenance" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_seed_restart_recognizes_legacy_install_without_any_marker" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_shipped_seed_does_not_reclassify_an_ordinary_restart_cache" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_cache_verifier_refuses_full_item_guard_and_revision_mismatches" time="0.001" /><testcase classname="tests.test_m2_first_cell" name="test_reprice_uses_the_seed_probe_only_without_rate_reports" time="0.002" /><testcase classname="tests.test_m2_first_cell" name="test_runner_verifies_a_seed_before_training_and_sets_the_tvuat_allocator" time="0.000" /><testcase classname="tests.test_m2_first_cell_shell" name="test_all_long_phase_timeouts_escalate_within_existing_reserve" time="0.001" /><testcase classname="tests.test_m2_first_cell_shell" name="test_term_resistant_training_is_killed_and_real_finalizer_exports_partials[False]" time="2.321" /><testcase classname="tests.test_m2_first_cell_shell" name="test_term_resistant_training_is_killed_and_real_finalizer_exports_partials[True]" time="7.480"><failure message="AssertionError: recorded owned finalizer survived SIGKILL&#10;assert 0 != 0&#10; +  where 0 = CompletedProcess(args=['/usr/bin/bash', '-c', 'kill -0 &quot;$1&quot; 2&gt;/dev/null', 'owned-finalizer', '2115'], returncode=0, stdout=b'', stderr=b'').returncode">tmp_path = PosixPath('/tmp/pytest-of-dev/pytest-0/test_term_resistant_training_i1')
+resistant_finalizer = True
+
+    @pytest.mark.parametrize("resistant_finalizer", [False, True])
+    def test_term_resistant_training_is_killed_and_real_finalizer_exports_partials(tmp_path, resistant_finalizer):
+        """Actual training block + finish/lib/finalize; synthetic child only, no data or model fixture."""
+        import tarfile
+    
+        bash = _bash()
+        assert bash, "GNU timeout/Bash required for the owned-child exit proof"
+        work, out, ck, bin_dir = (tmp_path / name for name in ("work", "out", "ck", "bin"))
+        for path in (work / "out", work / "logs", out / "phases", ck / "cell", bin_dir):
+            path.mkdir(parents=True)
+        child = tmp_path / "training-child.sh"
+        child.write_text('''#!/usr/bin/env bash
+    set -uo pipefail
+    echo "$BASHPID" &gt; "$WORK/logs/owned-training.pid"
+    printf '{"synthetic":true,"complete":false}\\n' &gt; "$WORK/out/cell.json"
+    printf 'synthetic partial checkpoint\\n' &gt; "$CK/cell/partial.bin"
+    trap 'echo TERM &gt;&gt; "$WORK/logs/term-ignored"' TERM
+    while :; do sleep 0.05 || true; done
+    ''', newline="\n")
+        finalizer_child = tmp_path / "finalizer-child.sh"
+        finalizer_child.write_text('''#!/usr/bin/env bash
+    set -uo pipefail
+    "$REAL_PYTHON" "$@"
+    echo "$BASHPID" &gt; "$WORK/logs/owned-finalizer.pid"
+    trap 'echo TERM &gt;&gt; "$WORK/logs/finalizer-term-ignored"' TERM
+    echo synthetic-untrusted-success &gt; "$OUT/$MARKER"
+    touch "$WORK/logs/finalizer-marker-written"
+    while :; do sleep 0.05 || true; done
+    ''', newline="\n")
+        python_shim = bin_dir / "python"
+        python_shim.write_text('''#!/usr/bin/env bash
+    if [ "${1:-}" = -m ] &amp;&amp; [ "${2:-}" = train.run_cell ]; then exec bash "$TRAINING_CHILD"; fi
+    if [ "${RESISTANT_FINALIZER:-0}" = 1 ] &amp;&amp; [ "${1:-}" = "$CODE/jobs/common/finalize.py" ]; then
+      exec bash "$FINALIZER_CHILD" "$@"
+    fi
+    exec "$REAL_PYTHON" "$@"
+    ''', newline="\n")
+        timeout_shim = bin_dir / "timeout"
+        timeout_shim.write_text('''#!/usr/bin/env bash
+    set -euo pipefail
+    [ "$1" = --kill-after=30s ] || exit 94
+    if [ "${RESISTANT_FINALIZER:-0}" = 1 ] &amp;&amp; [ "$2" = 60s ]; then
+      shift 2; exec /usr/bin/timeout --kill-after=0.2s 5s "$@"
+    fi
+    case "$*" in
+      *"train.run_cell"*) shift 2; exec /usr/bin/timeout --kill-after=0.2s 2s "$@" ;;
+      *) exec /usr/bin/timeout "$@" ;;
+    esac
+    ''', newline="\n")
+        curl_shim = bin_dir / "curl"
+        curl_shim.write_text("#!/usr/bin/env bash\nexit 0\n", newline="\n")  # metadata sampling only; no network
+        for path in (child, finalizer_child, python_shim, timeout_shim, curl_shim):
+            path.chmod(0o755)
+        source = JOB.read_text()
+        finish = source[source.index("finish() {"):source.index("\nnum() {")]
+        block = source[source.index('say "phase cell"'):source.index("# ------------------------------------------------------------------ child evals")]
+        script = tmp_path / "training-block.sh"
+        script.write_text('''set -Euo pipefail
+    T0=$(date +%s)
+    EXPORT_FAIL=0
+    RC=""
+    GATES="{}"
+    MARKER=M2_FIRST_CELL_DONE
+    VALIDATOR=jobs.m2_first_cell.summarize:valid_result
+    . "$CODE/jobs/common/lib.sh"
+    ''' + finish + '\ntrap finish EXIT\n' + block + '\nRC=0\nexit 0\n', newline="\n")
+        env = {**os.environ, "CUDA_VISIBLE_DEVICES": "", "PYTHONUTF8": "1", "PYTHONDONTWRITEBYTECODE": "1",
+            "PATH": os.pathsep.join((str(bin_dir), str(Path(bash).parent), os.environ["PATH"])),
+            "CODE": _posix(ROOT), "WORK": _posix(work), "OUT": _posix(out), "CK": _posix(ck),
+            "RESULT": _posix(out / "result.json"), "PARAMS": _posix(ROOT / "jobs/m2_first_cell/job_params.json"),
+            "META": "http://127.0.0.1:9", "CELL": "unused", "SNAP": "unused", "RECORDS": "unused", "TRAIN_DIR": "unused",
+            "REAL_PYTHON": _posix(sys.executable), "TRAINING_CHILD": _posix(child),
+            "FINALIZER_CHILD": _posix(finalizer_child), "RESISTANT_FINALIZER": "1" if resistant_finalizer else "0"}
+        child_pid = None
+        try:
+            # File-backed logs prevent a regressed timeout's orphan from holding an
+            # inherited capture pipe open beyond this CPU test's own deadline.
+            with (tmp_path / "shell.log").open("w") as log:
+                result = subprocess.run([bash, "-c", 'export PATH="$1:$PATH"; exec "$BASH" "$2"',
+                    "fixture", _posix(bin_dir), _posix(script)], cwd=ROOT, env=env, stdout=log, stderr=log, timeout=30)
+            assert result.returncode == (137 if resistant_finalizer else 7), (tmp_path / "shell.log").read_text()
+            assert (work / "logs/owned-training.pid").exists(), (tmp_path / "shell.log").read_text()
+            child_pid = int((work / "logs/owned-training.pid").read_text())
+            assert (work / "logs/term-ignored").is_file(), "training child must survive TERM before KILL"
+            check = subprocess.run([bash, "-c", 'kill -0 "$1" 2&gt;/dev/null', "owned-training", str(child_pid)],
+                capture_output=True, timeout=5)
+            assert check.returncode != 0, "recorded owned child survived SIGKILL"
+            assert (ck / "cell/partial.bin").read_text() == "synthetic partial checkpoint\n"
+            assert (ck / "cell/cell.json").read_bytes() == (work / "out/cell.json").read_bytes()
+            receipt = json.loads((out / "result.json").read_text())
+            assert receipt["ok"] is False and receipt["exit_code"] == receipt["runner_rc"] == 7
+            assert receipt["gates"]["cell"] == 137 and receipt["exports_verified"] is True
+            assert not (out / "M2_FIRST_CELL_DONE").exists()
+            if resistant_finalizer:
+                assert (work / "logs/finalizer-marker-written").exists(), "finalizer must actually claim success first"
+                assert (work / "logs/finalizer-term-ignored").exists(), "finalizer must survive TERM"
+                finalizer_pid = int((work / "logs/owned-finalizer.pid").read_text())
+                check = subprocess.run([bash, "-c", 'kill -0 "$1" 2&gt;/dev/null', "owned-finalizer", str(finalizer_pid)],
+                    capture_output=True, timeout=5)
+&gt;               assert check.returncode != 0, "recorded owned finalizer survived SIGKILL"
+E               AssertionError: recorded owned finalizer survived SIGKILL
+E               assert 0 != 0
+E                +  where 0 = CompletedProcess(args=['/usr/bin/bash', '-c', 'kill -0 "$1" 2&gt;/dev/null', 'owned-finalizer', '2115'], returncode=0, stdout=b'', stderr=b'').returncode
+
+tests/test_m2_first_cell_shell.py:188: AssertionError</failure></testcase><testcase classname="tests.test_m2_first_cell_shell" name="test_runner_executes_every_phase_end_to_end" time="240.151" /><testcase classname="tests.test_m2_first_cell_shell" name="test_runner_setup_ran_every_identity_check" time="0.001" /><testcase classname="tests.test_m2_first_cell_shell" name="test_runner_exports_the_checkpoint" time="0.002" /><testcase classname="tests.test_m2_first_cell_shell" name="test_slow_box_at_parent_g12_exits_15_before_training" time="180.015" /><testcase classname="tests.test_m2_first_cell_shell" name="test_reprice_failure_exits_15_before_training" time="180.016" /><testcase classname="tests.test_m2_first_cell_shell" name="test_underpowered_evals_exit_45_is_trained_measured_not_promotable" time="240.019" /><testcase classname="tests.test_m2_first_cell_shell" name="test_overrides_default_to_the_paid_run_paths" time="0.001" /><testcase classname="tests.test_m2_first_cell_shell" name="test_sha256_manifests_are_lf_in_checkout_and_archive" time="0.000"><skipped type="pytest.skip" message="needs a git checkout">/home/dev/m2-cpu8-validation/work/launch-output/stage/4247b340ddde/tests/test_m2_first_cell_shell.py:433: needs a git checkout</skipped></testcase><testcase classname="tests.test_m2_first_cell_shell" name="test_restart_reuses_the_parent_arm_and_resumes_the_cell" time="240.019" /><testcase classname="tests.test_m2_first_cell_shell" name="test_resubmit_seeds_the_parent_arm_from_a_pinned_export" time="0.002"><failure message="subprocess.CalledProcessError: Command '['git', 'ls-files', '-co', '--exclude-standard']' returned non-zero exit status 128.">ctx = {'bash': '/usr/bin/bash', 't': PosixPath('/tmp/pytest-of-dev/pytest-0/m2fc-shell0'), 'env': {'CUDA_VISIBLE_DEVICES': '...FRONTEND': 'noninteractive', 'HF_HUB_CACHE': '/tmp/pytest-of-dev/pytest-0/m2fc-shell0/hf', 'HF_HUB_OFFLINE': '1', ...}}
+full_run = {'rc': 0, 'stdout': '[2026-10-08T03:43:31Z +0m] TEST OVERRIDES SET (never in a paid run): M2FC_CELL M2FC_CODE M2FC_CON...l.tgz', 'sha256': '38c37b0d1d0c8eac79177b05f39aebf24ed4a9ce727036c8b9e51ed24cb58ca4', 'bytes': 922837, ...}, ...], ...}
+
+    def test_resubmit_seeds_the_parent_arm_from_a_pinned_export(ctx, full_run):
+        """LESSONS L-34 (job-uhxb5): a RESUBMITTED job starts with an empty checkpoint slot. A pinned earlier export shipped
+        as data/parent_arm_seed/ is installed into $CK/parent_arm, verified BEFORE training (seed_verify: units identity,
+        guard, revision, a re-score probe that reproduces the cached units), both parent phases are skipped, the re-price
+        uses the probe's factor, the comparator units are kept in out/parent_arm/, and the run finalizes 0."""
+        arm = full_run["work"] / "ck" / "parent_arm"
+        pin = hashlib.sha256((arm / "arm.json").read_bytes()).hexdigest()
+&gt;       r = run_job(ctx, "seeded", **_seeded(ctx, "seeded-in", arm, pin))
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_m2_first_cell_shell.py:494: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_m2_first_cell_shell.py:468: in _seeded
+    files = subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=ROOT, capture_output=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['git', 'ls-files', '-co', '--exclude-standard'],)
+kwargs = {'cwd': PosixPath('/home/dev/m2-cpu8-validation/work/launch-output/stage/4247b340ddde'), 'text': True, 'stdout': -1, 'stderr': -1}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['git', 'ls-files', '-co', '--exclude-standard']' returned non-zero exit status 128.
+
+/usr/lib/python3.12/subprocess.py:571: CalledProcessError</failure></testcase><testcase classname="tests.test_m2_first_cell_shell" name="test_seed_against_another_pin_exits_10_before_any_gpu_phase" time="0.001"><failure message="subprocess.CalledProcessError: Command '['git', 'ls-files', '-co', '--exclude-standard']' returned non-zero exit status 128.">ctx = {'bash': '/usr/bin/bash', 't': PosixPath('/tmp/pytest-of-dev/pytest-0/m2fc-shell0'), 'env': {'CUDA_VISIBLE_DEVICES': '...FRONTEND': 'noninteractive', 'HF_HUB_CACHE': '/tmp/pytest-of-dev/pytest-0/m2fc-shell0/hf', 'HF_HUB_OFFLINE': '1', ...}}
+full_run = {'rc': 0, 'stdout': '[2026-10-08T03:43:31Z +0m] TEST OVERRIDES SET (never in a paid run): M2FC_CELL M2FC_CODE M2FC_CON...l.tgz', 'sha256': '38c37b0d1d0c8eac79177b05f39aebf24ed4a9ce727036c8b9e51ed24cb58ca4', 'bytes': 922837, ...}, ...], ...}
+
+    def test_seed_against_another_pin_exits_10_before_any_gpu_phase(ctx, full_run):
+&gt;       r = run_job(ctx, "badseed", **_seeded(ctx, "badseed-in", full_run["work"] / "ck" / "parent_arm", "0" * 64))
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_m2_first_cell_shell.py:517: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_m2_first_cell_shell.py:468: in _seeded
+    files = subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=ROOT, capture_output=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['git', 'ls-files', '-co', '--exclude-standard'],)
+kwargs = {'cwd': PosixPath('/home/dev/m2-cpu8-validation/work/launch-output/stage/4247b340ddde'), 'text': True, 'stdout': -1, 'stderr': -1}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['git', 'ls-files', '-co', '--exclude-standard']' returned non-zero exit status 128.
+
+/usr/lib/python3.12/subprocess.py:571: CalledProcessError</failure></testcase><testcase classname="tests.test_m2_first_cell_shell" name="test_seed_with_other_units_identity_exits_10_before_training" time="0.002"><failure message="subprocess.CalledProcessError: Command '['git', 'ls-files', '-co', '--exclude-standard']' returned non-zero exit status 128.">ctx = {'bash': '/usr/bin/bash', 't': PosixPath('/tmp/pytest-of-dev/pytest-0/m2fc-shell0'), 'env': {'CUDA_VISIBLE_DEVICES': '...FRONTEND': 'noninteractive', 'HF_HUB_CACHE': '/tmp/pytest-of-dev/pytest-0/m2fc-shell0/hf', 'HF_HUB_OFFLINE': '1', ...}}
+full_run = {'rc': 0, 'stdout': '[2026-10-08T03:43:31Z +0m] TEST OVERRIDES SET (never in a paid run): M2FC_CELL M2FC_CODE M2FC_CON...l.tgz', 'sha256': '38c37b0d1d0c8eac79177b05f39aebf24ed4a9ce727036c8b9e51ed24cb58ca4', 'bytes': 922837, ...}, ...], ...}
+
+    def test_seed_with_other_units_identity_exits_10_before_training(ctx, full_run):
+        """PR #147 review A (fail fast): a seed that passes its pin and the cheap arm_seed checks but whose units identity
+        differs from this job's (here: another dev item set) is refused by seed_verify (read_arm_cache) with exit 10
+        BEFORE the cell phase -- not by the evals after the training spend."""
+        arm = full_run["work"] / "ck" / "parent_arm"
+        bad = ctx["t"] / "arm-other-items"
+        _link_tree(arm, bad, ["units-g12.json", "units-index.json"])
+        man = json.loads((arm / "arm.json").read_text(encoding="utf-8"))
+        man["stages"]["g12"]["units_identity"]["items"]["dev"] = "0" * 64
+        (bad / "arm.json").write_text(json.dumps(man, indent=1, sort_keys=True), encoding="utf-8", newline="\n")
+        pin = hashlib.sha256((bad / "arm.json").read_bytes()).hexdigest()
+&gt;       r = run_job(ctx, "otherunits", **_seeded(ctx, "otherunits-in", bad, pin))
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_m2_first_cell_shell.py:534: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_m2_first_cell_shell.py:468: in _seeded
+    files = subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=ROOT, capture_output=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['git', 'ls-files', '-co', '--exclude-standard'],)
+kwargs = {'cwd': PosixPath('/home/dev/m2-cpu8-validation/work/launch-output/stage/4247b340ddde'), 'text': True, 'stdout': -1, 'stderr': -1}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output &amp; stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+&gt;               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['git', 'ls-files', '-co', '--exclude-standard']' returned non-zero exit status 128.
+
+/usr/lib/python3.12/subprocess.py:571: CalledProcessError</failure></testcase><testcase classname="tests.test_m2_first_cell_shell" name="test_cached_parent_block_preserves_artifacts_and_verifies_before_training[False-0-False]" time="0.185" /><testcase classname="tests.test_m2_first_cell_shell" name="test_cached_parent_block_preserves_artifacts_and_verifies_before_training[True-0-True]" time="0.259" /><testcase classname="tests.test_m2_first_cell_shell" name="test_cached_parent_block_preserves_artifacts_and_verifies_before_training[True-10-True]" time="0.173" /><testcase classname="tests.test_m2_first_cell_shell" name="test_cached_parent_block_preserves_artifacts_and_verifies_before_training[False-10-False]" time="0.168" /><testcase classname="tests.test_m2_first_cell_shell" name="test_cached_parent_block_preserves_artifacts_and_verifies_before_training[False-0-True]" time="0.185" /><testcase classname="tests.test_m2_first_cell_shell" name="test_cached_parent_block_preserves_artifacts_and_verifies_before_training[False-10-True]" time="0.168" /></testsuite></testsuites>

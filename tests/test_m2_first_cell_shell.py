@@ -65,6 +65,96 @@ def _posix(p) -> str:
     return f"/{m.group(1).lower()}/{m.group(2)}".replace("\\", "/") if (os.name == "nt" and m) else s
 
 
+def _owned_process_alive(bash, pid_file):
+    """A killed Linux child can remain as a zombie until its subreaper waits.
+
+    Compare /proc start ticks as well as PID so reuse cannot fail the exit proof
+    or make fixture cleanup signal an unrelated process. Other Bash platforms
+    retain the previous conservative kill -0 check when /proc is unavailable.
+    """
+    pid = int(pid_file.read_text())
+    start_file = pid_file.with_suffix(".start")
+    start = start_file.read_text().strip() if start_file.exists() else None
+    check = subprocess.run([bash, "-c", '''
+if [ -r "/proc/$1/stat" ]; then
+  cat "/proc/$1/stat" 2>/dev/null || { kill -0 "$1" 2>/dev/null && echo UNKNOWN; }
+elif kill -0 "$1" 2>/dev/null; then echo UNKNOWN; fi
+''', "owned-process", str(pid)], capture_output=True, text=True, timeout=5)
+    assert check.returncode in (0, 1), check.stderr
+    stat = check.stdout.strip()
+    if not stat:
+        return False
+    if stat == "UNKNOWN":
+        return True  # Never accept an uninspectable live PID as proof of exit.
+    fields = stat.rsplit(") ", 1)[1].split()  # comm may itself contain spaces or ')'.
+    assert len(fields) >= 20, stat
+    assert start is not None, "owned child did not record its available /proc start identity"
+    if fields[19] != start:
+        return False
+    return fields[0] not in ("Z", "X")
+
+
+# Run in each synthetic child, before it can receive TERM. /proc field 22 is
+# starttime; after removing pid/comm it is field 20. Keep .pid numeric for logs.
+_RECORD_START = '''
+if [ -r "/proc/$BASHPID/stat" ]; then
+  read -r proc_stat < "/proc/$BASHPID/stat"
+  proc_fields=(${proc_stat##*) })
+  printf '%s\\n' "${proc_fields[19]}" > "${PID_FILE%.pid}.start"
+fi
+'''
+
+
+def test_owned_process_proof_rejects_live_owner_but_accepts_reused_pid(tmp_path):
+    bash = _bash()
+    if not bash or not Path(f"/proc/{os.getpid()}/stat").exists():
+        pytest.skip("Linux /proc required for process identity regression")
+    pid_file = tmp_path / "owned.pid"
+    pid_file.write_text(str(os.getpid()))
+    start = Path(f"/proc/{os.getpid()}/stat").read_text().rsplit(") ", 1)[1].split()[19]
+    pid_file.with_suffix(".start").write_text(start)
+    assert _owned_process_alive(bash, pid_file), "a live owned process must fail the SIGKILL exit proof"
+    pid_file.with_suffix(".start").write_text(str(int(start) + 1))
+    assert not _owned_process_alive(bash, pid_file), "PID reuse is a different process, never a cleanup target"
+
+
+def test_owned_process_proof_accepts_unreaped_zombie_and_missing_pid(tmp_path):
+    import time
+
+    bash = _bash()
+    if not bash or not hasattr(os, "fork") or not Path("/proc/self/stat").exists():
+        pytest.skip("Linux fork and /proc required for real zombie regression")
+    pid = os.fork()
+    if pid == 0:
+        os._exit(0)
+    try:
+        stat_path = Path(f"/proc/{pid}/stat")
+        deadline = time.monotonic() + 5
+        while True:
+            fields = stat_path.read_text().rsplit(") ", 1)[1].split()
+            if fields[0] == "Z":
+                break
+            assert time.monotonic() < deadline, "synthetic child did not become a zombie"
+            time.sleep(0.01)
+        pid_file = tmp_path / "owned.pid"
+        pid_file.write_text(str(pid))
+        pid_file.with_suffix(".start").write_text(fields[19])
+        assert subprocess.run([bash, "-c", 'kill -0 "$1"', "zombie", str(pid)],
+                              capture_output=True, timeout=5).returncode == 0
+        assert not _owned_process_alive(bash, pid_file), "a zombie cannot execute after SIGKILL"
+    finally:
+        os.waitpid(pid, 0)
+    assert not _owned_process_alive(bash, pid_file), "a reaped PID is also gone"
+
+
+def test_owned_process_proof_fails_closed_when_live_pid_cannot_be_inspected(tmp_path, monkeypatch):
+    pid_file = tmp_path / "owned.pid"
+    pid_file.write_text("123")
+    pid_file.with_suffix(".start").write_text("456")
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, "UNKNOWN\n", ""))
+    assert _owned_process_alive("bash", pid_file)
+
+
 def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     source = JOB.read_text()
     timed = [line for line in source.splitlines() if not line.lstrip().startswith("#") and re.search(r"\btimeout\s", line)]
@@ -99,7 +189,9 @@ def test_term_resistant_training_is_killed_and_real_finalizer_exports_partials(t
     child = tmp_path / "training-child.sh"
     child.write_text('''#!/usr/bin/env bash
 set -uo pipefail
-echo "$BASHPID" > "$WORK/logs/owned-training.pid"
+PID_FILE="$WORK/logs/owned-training.pid"
+echo "$BASHPID" > "$PID_FILE"
+''' + _RECORD_START + '''
 printf '{"synthetic":true,"complete":false}\\n' > "$WORK/out/cell.json"
 printf 'synthetic partial checkpoint\\n' > "$CK/cell/partial.bin"
 trap 'echo TERM >> "$WORK/logs/term-ignored"' TERM
@@ -109,7 +201,9 @@ while :; do sleep 0.05 || true; done
     finalizer_child.write_text('''#!/usr/bin/env bash
 set -uo pipefail
 "$REAL_PYTHON" "$@"
-echo "$BASHPID" > "$WORK/logs/owned-finalizer.pid"
+PID_FILE="$WORK/logs/owned-finalizer.pid"
+echo "$BASHPID" > "$PID_FILE"
+''' + _RECORD_START + '''
 trap 'echo TERM >> "$WORK/logs/finalizer-term-ignored"' TERM
 echo synthetic-untrusted-success > "$OUT/$MARKER"
 touch "$WORK/logs/finalizer-marker-written"
@@ -170,9 +264,7 @@ VALIDATOR=jobs.m2_first_cell.summarize:valid_result
         assert (work / "logs/owned-training.pid").exists(), (tmp_path / "shell.log").read_text()
         child_pid = int((work / "logs/owned-training.pid").read_text())
         assert (work / "logs/term-ignored").is_file(), "training child must survive TERM before KILL"
-        check = subprocess.run([bash, "-c", 'kill -0 "$1" 2>/dev/null', "owned-training", str(child_pid)],
-            capture_output=True, timeout=5)
-        assert check.returncode != 0, "recorded owned child survived SIGKILL"
+        assert not _owned_process_alive(bash, work / "logs/owned-training.pid"), "owned child survived SIGKILL"
         assert (ck / "cell/partial.bin").read_text() == "synthetic partial checkpoint\n"
         assert (ck / "cell/cell.json").read_bytes() == (work / "out/cell.json").read_bytes()
         receipt = json.loads((out / "result.json").read_text())
@@ -182,10 +274,7 @@ VALIDATOR=jobs.m2_first_cell.summarize:valid_result
         if resistant_finalizer:
             assert (work / "logs/finalizer-marker-written").exists(), "finalizer must actually claim success first"
             assert (work / "logs/finalizer-term-ignored").exists(), "finalizer must survive TERM"
-            finalizer_pid = int((work / "logs/owned-finalizer.pid").read_text())
-            check = subprocess.run([bash, "-c", 'kill -0 "$1" 2>/dev/null', "owned-finalizer", str(finalizer_pid)],
-                capture_output=True, timeout=5)
-            assert check.returncode != 0, "recorded owned finalizer survived SIGKILL"
+            assert not _owned_process_alive(bash, work / "logs/owned-finalizer.pid"), "owned finalizer survived SIGKILL"
         manifest = [json.loads(line) for line in (out / "MANIFEST.jsonl").read_text().splitlines()]
         assert [entry["phase"] for entry in manifest] == ["cell", "final"]
         for entry in manifest:
@@ -197,7 +286,7 @@ VALIDATOR=jobs.m2_first_cell.summarize:valid_result
     finally:
         for role in ("training", "finalizer"):
             pid_file = work / f"logs/owned-{role}.pid"
-            if pid_file.exists():
+            if pid_file.exists() and _owned_process_alive(bash, pid_file):
                 owned_pid = int(pid_file.read_text())
                 subprocess.run([bash, "-c", 'kill -KILL "$1" 2>/dev/null || true', "owned-child", str(owned_pid)],
                     capture_output=True, timeout=5)
@@ -431,7 +520,9 @@ def test_sha256_manifests_are_lf_in_checkout_and_archive():
     git = shutil.which("git")
     if not git or not (ROOT / ".git").exists():
         pytest.skip("needs a git checkout")
-    files = subprocess.run([git, "ls-files", "*.sha256"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+    # Historical receipts are byte-exact (-text), including original CRLF
+    # checksum lists. This check covers operational manifests shipped by jobs.
+    files = subprocess.run([git, "ls-files", "jobs/*.sha256"], cwd=ROOT, capture_output=True, text=True).stdout.split()
     assert {"jobs/rwkv7/records.sha256", "jobs/rwkv7/snapshot.sha256", "jobs/clef_baseline/data.sha256"} <= set(files)
     for f in files:
         attr = subprocess.run([git, "check-attr", "eol", "--", f], cwd=ROOT, capture_output=True, text=True).stdout
@@ -454,6 +545,20 @@ def test_restart_reuses_the_parent_arm_and_resumes_the_cell(ctx, full_run):
     assert (r["out"] / "M2_FIRST_CELL_DONE").exists()
 
 
+def _source_files(root):
+    """Use Git's tracked/unignored selection in a checkout, or staged archive bytes.
+
+    Do not let Git walk to an enclosing repository when root is a source archive.
+    Archive fixtures can create Python/pytest caches before the seeded copy.
+    """
+    if (root / ".git").exists():
+        return subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=root,
+                              capture_output=True, text=True, check=True).stdout.splitlines()
+    return sorted(p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()
+                  and not set(p.relative_to(root).parts) & {".git", "__pycache__", ".pytest_cache"}
+                  and p.suffix != ".pyc")
+
+
 def _seeded(ctx, name: str, arm_dir: Path, pin: str) -> dict:
     """Env overrides for a RESUBMIT that ships a parent arm seed. data: the ctx data dir (hard links) + data/parent_arm_seed/
     holding what job_params context.data ships (arm.json and the two units files of an earlier run, not its rate
@@ -465,8 +570,7 @@ def _seeded(ctx, name: str, arm_dir: Path, pin: str) -> dict:
         if sub.is_dir():
             _link_tree(sub, t / "data" / sub.name)
     _link_tree(arm_dir, t / "data" / "parent_arm_seed", ["arm.json", "units-g12.json", "units-index.json"])
-    files = subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=ROOT, capture_output=True, text=True,
-                           check=True).stdout.splitlines()
+    files = _source_files(ROOT)
     code = t / "code"
     for f in files:
         if not (ROOT / f).is_file():
@@ -482,6 +586,53 @@ def _seeded(ctx, name: str, arm_dir: Path, pin: str) -> dict:
         except OSError:
             shutil.copy2(ROOT / f, code / f)
     return {"M2FC_DATA": _posix(t / "data"), "M2FC_CODE": _posix(code)}
+
+
+@pytest.mark.parametrize("checkout", [False, True], ids=["source-archive", "git-checkout"])
+def test_seeded_copy_preserves_runner_and_tests_without_archive_git_dependency(tmp_path, monkeypatch, checkout):
+    # WSL may need these overrides for the outer Windows-created worktree.
+    # Fixture Git commands must own only the temporary repository below.
+    monkeypatch.delenv("GIT_DIR", raising=False)
+    monkeypatch.delenv("GIT_WORK_TREE", raising=False)
+    root = tmp_path / "stage" / "source-sha"
+    root.mkdir(parents=True)
+    originals = {"jobs/m2_first_cell/first_cell_job.sh": b"runner source\n",
+                 "tests/test_m2_first_cell_shell.py": b"original test/source guard\n",
+                 ".gitignore": b"ignored.txt\n__pycache__/\n.pytest_cache/\n"}
+    params = {"parent_arm_seed": {"arm_sha256": "original"}, "unchanged": True}
+    for name, content in originals.items():
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+    param = root / "jobs/m2_first_cell/job_params.json"
+    param.write_text(json.dumps(params))
+    if checkout:
+        subprocess.run(["git", "init", str(root)], check=True, capture_output=True)
+        subprocess.run(["git", "add", "."], cwd=root, check=True, capture_output=True)
+        (root / "ignored.txt").write_text("must remain ignored")
+    else:
+        # An enclosing Git repository must not be mistaken for archive metadata.
+        subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+        monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("archive copy invoked Git"))
+    for cache in ("__pycache__/fixture.pyc", ".pytest_cache/v/cache/nodeids"):
+        path = root / cache
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("transient")
+    fixture = tmp_path / "fixture"
+    (fixture / "data").mkdir(parents=True)
+    arm = tmp_path / "arm"
+    arm.mkdir()
+    for name in ("arm.json", "units-g12.json", "units-index.json"):
+        (arm / name).write_text("synthetic seed")
+    monkeypatch.setattr(sys.modules[__name__], "ROOT", root)
+    _seeded({"t": fixture}, "seeded", arm, "new-pin")
+    copy = fixture / "seeded/code"
+    for name, content in originals.items():
+        assert (copy / name).read_bytes() == (root / name).read_bytes() == content
+    assert json.loads((copy / "jobs/m2_first_cell/job_params.json").read_text()) == {
+        **params, "parent_arm_seed": {"arm_sha256": "new-pin"}}
+    assert json.loads(param.read_text()) == params, "hardlinked source parameters must never be mutated"
+    assert not any((copy / name).exists() for name in (".git", "ignored.txt", "__pycache__", ".pytest_cache"))
 
 
 def test_resubmit_seeds_the_parent_arm_from_a_pinned_export(ctx, full_run):
