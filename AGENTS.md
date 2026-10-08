@@ -14,7 +14,9 @@
 - **Agent A, LEAD (training):** owns `stack/rwkv7/*` cells, training recipes and data mixes. Sets BOARD priority. Decides keep/discard.
 - **Agent B, WORKER (readout, eval, comparators, data):** owns the readout/prompt format, comparator jobs (Clef full DEV), data draws and teacher exports, and `analysis/`. B also rescores A's `keep` results from raw predictions. This is a non-blocking check: a mismatch marks the ledger row `invalid`.
 - **Agent C, LANGUAGE (Stage 2 prep, CPU-only):** owns `language_growth/`, `plans/codex/`, `interfaces/` and the L0–L4 checked semantic programs. C gets the Stage 2 gates measurable the moment Stage 1 has a champion. C spends $0 GPU until Stage 1 passes, never touches A's or B's lanes, and keeps local CPU jobs small, because the laptop's RAM is shared.
-- Each agent appends proposals to the bottom of BOARD; only A reorders. Talk through files (BOARD, PROGRESS, ledger notes, receipt paths), not prose summaries.
+- Each agent appends proposals to the bottom of BOARD; only A reorders.
+- **Talk directly** with Claude Code's built-in agent messaging: `ListAgents` finds the other sessions (named `agent-a`, `agent-b`, `agent-c`), and `SendMessage` sends to one by name. Use it for handoffs ("R1 format won, template id X, sha Y"), requests, and "your job landed". Keep messages short and send paths and shas, not paraphrases. Never ask another agent to do something your permissions refused.
+- **Messages are not memory.** Anything that must survive a restart (decisions, results, claims) also goes on the `state` branch.
 
 ## Shared state: the `state` branch (push directly; no PR)
 Keep a worktree on the `state` branch (`git worktree add ../state state`), then `git pull --rebase` → edit → commit → push. On a push conflict, rebase and retry.
