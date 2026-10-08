@@ -304,6 +304,32 @@ is unresolved. The batch does not establish whether 20 compatible independent
 groups exist. No model or held-out data were accessed or changed; no emissions
 values were transcribed or imported.
 
+### Fifth primary-source batch — 8 October 2026
+
+Five remaining land-based wind references were checked for primary-source
+access, functional unit and boundary, directly verified species/GWP,
+uncertainty statistic, and model/inventory overlap. Bibliographic records
+identify a source but do not substitute for unrecovered source text. No
+emissions values were transcribed or imported.
+
+| Study | Primary-source access and verified evidence | L4 disposition |
+| --- | --- | --- |
+| Nadal 1995 | The cited item is G. Nadal, *Life cycle direct and indirect pollution associated with PV and wind energy systems*, ISES Solar World Congress, Fundación Bariloche, Harare, cited as one page (p. 39). The proceedings page was not recovered; functional unit, boundary, species/GWP, uncertainty statistic, and inventory lineage are unverified. The [official IPCC bibliography](https://www.ipcc.ch/site/assets/uploads/2018/03/srren_report_ru-1.pdf) confirms citation identity only. | Access/scope no-go; no group admitted. |
+| Proops et al. 1996 | The publisher record identifies *The lifetime pollution implications of various types of electricity generation: An input-output analysis* ([DOI](https://doi.org/10.1016/0301-4215(95)00154-9)); direct full-text fetch returned 403. Publisher-level abstract metadata describes UK economy-wide input-output analysis over construction, operation, and decommissioning, and pollutants CO2, SO2, and NOx. A complete GHG vector/GWP horizon, electric-kWh functional unit, uncertainty statistic, and wind-specific inventory crosswalk could not be verified from accessible publisher text. No shared wind inventory was established; method similarity alone is not evidence of one. | Fails verified full-GHG scope; no group admitted. |
+| SECDA 1994 | The cited report is *Levelized Cost and Full Fuel-Cycle Environmental Impacts of Saskatchewan’s Electric Supply Options*, SECDA publication T800-94-004, 205 pp.; a citation variant gives T800-94-P-004. The exact report was not recovered, so its wind functional unit/boundary, species/GWP, uncertainty statistic, and inventory lineage remain unknown. The [official IPCC bibliography](https://www.ipcc.ch/site/assets/uploads/2018/03/srren_report_ru-1.pdf) identifies the T800-94-004 report. A [SaskPower-hosted 1994 nuclear-option assessment](https://www.saskpower.com/-/media/SaskPower/Our-Power-Future/Our-Electricity/Nuclear-Studies/Report-SupplyOptions-Nuclear-TechAssessment-1994.ashx) is a different report (G800-94-P-006) and is not a substitute. | Access/scope no-go; no group admitted. |
+| Uchiyama 1996/1997 | The cited paper is *Life Cycle Analysis of Photovoltaic Cell and Wind Power Plants*, prepared for the IAEA advisory-group meeting of 21–24 October 1996, pp. 111–122. The original paper/proceedings were not recovered. Wind functional unit/boundary, directly verified species/GWP, uncertainty statistic, and inventory overlap remain unknown. The [official NREL proceedings bibliography](https://docs.nrel.gov/docs/fy15osti/63197-3.pdf) confirms the citation only. | Access/scope no-go; no group admitted. |
+| Waters et al. 1997 | The cited paper is *Life-cycle assessment of wind energy: A case study based on Baix Ebre Windfarm, Spain*, in the BWEA19 proceedings, pp. 231–238. The exact paper was not recovered; source-specific functional unit/boundary, species/GWP, uncertainty statistic, and inventory lineage remain unknown. The [official IPCC bibliography](https://www.ipcc.ch/site/assets/uploads/2018/03/srren_report_ru-1.pdf) confirms the citation only; author-list variants across bibliographic records remain unresolved. | Access/scope no-go; no group admitted. |
+
+This batch adds **zero independent common-scope groups**. Proops is pollutant-
+only on the accessible publisher evidence; for the other four, source access
+does not establish the required scope or independence. Recovering the original
+Nadal proceedings page, the SECDA report and appendices (including resolution
+of its publication-code variant), the IAEA meeting paper, and the BWEA19 paper
+is the strongest next evidence. For Proops, full text is needed to verify the
+functional unit, input-output data vintage, uncertainty, and any inventory
+overlap; the currently verified pollutant set does not meet full-GHG scope.
+No model or held-out data was accessed or changed.
+
 ## Safe expansion rule
 
 An added L4 module must retain its own source, population, year, boundary,
