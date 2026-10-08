@@ -362,3 +362,52 @@ def test_under_bf16_autocast_the_variants_stay_inside_bf16_noise():
     lv, gv = _dev(var, base)
     assert lv <= 1e-6 and gv < noise[1], (lv, gv, noise)
     assert _dev(var, f32)[1] <= 1.25 * noise[1] and _dev(var, f32)[0] <= 1.25 * noise[0] + 1e-7
+
+
+def test_row_groups_option_cap():
+    """``row_options`` bounds the forked state copies per call (sum of K); a row over the cap runs alone; the cap
+    never binds on K <= 16 steps when it is >= 8 x 16 (the D1 grouping is unchanged)."""
+    from train.trainer import row_groups
+
+    lens = [1900, 1800, 900, 800, 700, 600, 500, 400]
+    ks = [151, 2, 4, 255, 77, 3, 2, 4]
+    gs = row_groups(lens, 8, 8192, ks, 160)
+    assert sorted(i for g in gs for i in g) == list(range(8))
+    assert all(sum(ks[i] for i in g) <= 160 or len(g) == 1 for g in gs)
+    assert [3] in gs  # K = 255 alone
+    d1_ks = [16, 10, 8, 16, 4, 16, 2, 16]
+    assert row_groups(lens, 8, 8192, d1_ks, 160) == row_groups(lens, 8, 8192)
+    with pytest.raises(ValueError, match="option count"):
+        row_groups(lens, 8, 8192, None, 160)
+
+
+LONG_SHAPES = [_shape(700, [3] * 151), _shape(70, [1, 2]), _shape(900, [2] * 255), _shape(96, [4, 1, 1]),
+               _shape(400, [2] * 77), _shape(65, [1, 1, 2, 2, 3]), _shape(180, [6, 2]), _shape(88, [2, 2, 2], "score")]
+
+
+def _long_items():
+    from jobs.fla_rwkv7 import train_mix as TM
+    from train.data import Item
+
+    rows = TM.rows_from_shapes(LONG_SHAPES, vocab=260, seed=0)
+    return [Item(x.id, x.row, (7 * i) % x.row.n_options) for i, x in enumerate(rows)]
+
+
+def test_long_catalog_step_with_option_cap_equals_one_row_per_call():
+    """D8 (train_max_k 255): a step with K = 77 / 151 / 255 rows trains (finite loss, head and LoRA gradients) and the
+    option-capped grouping equals one row per call, as row_tokens does."""
+    items = _long_items()
+    base = _step_grads(_trainer(items))
+    assert torch.isfinite(torch.tensor(base[0]))
+    _compare(_step_grads(_trainer(items, row_batch=8, row_tokens=8192, row_options=160, act_ckpt=True)), base, 2e-5)
+
+
+def test_row_options_is_execution_only():
+    from train.trainer import TrainConfig, with_execution
+
+    cfg = TrainConfig()
+    assert dataclasses.replace(cfg, row_options=160).hash() == cfg.hash()
+    assert "row_options" not in cfg.to_json()
+    assert with_execution(cfg, {"row_batch": 8, "row_options": 160}).row_options == 160
+    with pytest.raises(ValueError, match="row_options"):
+        _trainer(_items(1), row_batch=8, row_options=-1)

@@ -46,6 +46,8 @@ case "$MODE" in
         PARAMS=$CODE/jobs/m2_first_cell/job_params_d5_lr2x.json ;;
   d7_t380) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_d7_t380.json}
         PARAMS=$CODE/jobs/m2_first_cell/job_params_d7_t380.json ;;
+  d8_maxk) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_d8_maxk.json}
+        PARAMS=$CODE/jobs/m2_first_cell/job_params_d8_maxk.json ;;
   *) echo "unknown first-cell mode: $MODE" >&2; exit 5 ;;
 esac
 TRAIN_DIR=$DATA/m2-150k

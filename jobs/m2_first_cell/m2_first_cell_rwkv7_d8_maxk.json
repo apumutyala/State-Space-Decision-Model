@@ -1,0 +1,73 @@
+{
+ "_comment": "d8_maxk: ONE change vs the D1 cell (job-c7pq2, source 11fb140, m2_first_cell_rwkv7.json): the TRAINING K cap train_max_k 255 (D1 trains only K <= 16; max_k 16 stays the eval / unit-spec cap, so G12, the Index DEV subset, the in-run dev cards and the seeded parent arm are unchanged). Census of the seed-0 24k draw (31,269 question items, same build_row/guard path): at the T <= 2,048 ladder cap D1 keeps 21,348 items; D8 keeps 21,820 (+472, all K = 77: 451 BANKING77 + 21 multi, T 1,742-2,034, continuations <= 3 tokens). K = 32/64/128/151/255 items (NQ, CLINC150) are all > 2,048 tokens and stay out at this T. Execution guard row_options 160 (forked state copies per call; not in the TrainConfig hash, same gradients, never binds on K <= 16 steps since 8 x 16 = 128): each copy is a 64 MB fp32 RWKV-7 state, and without it the 2,048 ladder rung (8 worst rows = K 77) would put 4 x 77 = 308 copies in one call (~73.6 GB est. vs the 76 GB stop). Everything else identical (seed-0 24k draw, fork head, gold labels, Clef arm, lr_lora 1e-4, lr_head 1e-3, warmup, max_steps 3000, max_minutes 190, seeded stock parent arm). First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md; DRAFT, NOT SUBMITTED). RWKV7-G1k-13.3B parent, LoRA r=64 + cache-fork head, Clef loss arm (LS-CE 0.1 + Brier + RPS on score questions), trained on the PR #44 150k set (injection-augmented at build: D1-A verbatim + training-only hijack, labels unchanged) with the content-index guard and the cohort-v2 exclusion (by id, content and source item at build; re-checked by train.train_set). Eval = cohort dev (G12) + the 2,008-row Index DEV subset; parent arm scored in the same job.",
+ "seed": 0,
+ "head": "fork",
+ "head_kwargs": {},
+ "layout": "ordered",
+ "template": "jrt-rwkv-g1-v1",
+ "loss_arm": "clef",
+ "lora_rank": 64,
+ "lr_head": 0.001,
+ "lr_lora": 0.0001,
+ "warmup_steps": 50,
+ "batch_size": 1,
+ "grad_accum": 8,
+ "max_k": 16,
+ "t_ladder": [
+  512,
+  1024,
+  2048
+ ],
+ "n_train_records": 24000,
+ "n_eval_records": 0,
+ "min_train_items": 5000,
+ "max_steps": 3000,
+ "max_minutes": 190,
+ "min_steps": 600,
+ "ckpt_every": 400,
+ "eval_every": 100000,
+ "tokenize_workers": 8,
+ "smoke": {
+  "rows": 2,
+  "max_k": 4,
+  "max_t": 512,
+  "lora_rank": 8,
+  "max_rel_feature_diff": 0.03,
+  "min_grad_cos": 0.99
+ },
+ "pass_rule": {
+  "window": 100,
+  "loss_drop_frac_min": 0.05,
+  "max_peak_gb": 76
+ },
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "require_guard_readiness": true,
+ "calibration_role": "calibration",
+ "parent": "rwkv7",
+ "eval_max_t": 2048,
+ "train_set": {
+  "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+  "heldout_excluded": {
+   "ids": [
+    "m2:mmlu_aux:21118",
+    "m2:mmlu_aux:39640",
+    "m2:mmlu_aux:39643"
+   ],
+   "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+   "reason": "train.heldout (D1-B, k=8) finds the 4-word fragment 'rather than relying on' of template soft_framing in these three MMLU aux_train records (natural text, no injection; the PR #44 build guard, word 6-grams, does not fire). Excluded from the draw, fail-closed: the heldout phase passes only if the full-set hits are exactly these ids (2026-10-06 local scan, 150,000 texts, 112 s)."
+  }
+ },
+ "rwkv7_wkv": "chunked_lean",
+ "act_ckpt": true,
+ "row_batch": 8,
+ "row_tokens": 8192,
+ "execution_note": "job-tvuat (jobs/cell_step_profile, rule v1-A2, PR #86 @54ee89d) ADOPT: chosen ckpt_rows_lean = per-block activation checkpointing keeping the cache fork, the step's 8 rows batched in length-sorted groups (<= 8 rows, <= 8,192 padded tokens per call; long rows split a step into several groups), chunked_lean WKV (our pure-PyTorch rearrangement of the vendored chunked WKV, CPU-equivalence-tested; no GPU gate needed); measured median step 8.25 s, 0 OOMs, projection 1,382 steps / 11,056 rows in 190 min (receipt receipts/2026-10-07-D-cell-step-profile-tvuat). Execution flags are not in the TrainConfig hash (same loss and gradients). rwkv7_wkv applies to both arms (child: run_cell / m2_gates; parent: score_parent). 'fla' only after jobs/fla_rwkv7 ADOPT + GPU_VERIFIED.",
+ "max_minutes_note": "training wall-clock inside the 230-min cell phase: 230 - load/draw/tokenize ~10 - smoke+ladder ~10 - two dev cards ~10 - checkpoints/margin 10 = 190 (pre-registered); cumulative over restarts (train_clock in cell.json)",
+ "min_steps_note": "exit 26 if the measured step time cannot reach 600 optimiser steps (4,800 rows) inside max_minutes: below that the cell is not a meaningful first measurement; re-price instead of spending the evals",
+ "lora_rank_note": "M2_RUN_SPEC r=256 adds ~1.15B trainable params (~18 GB of fp32 weights + grads + Adam) on top of 26.5 GB bf16 weights and the un-checkpointed cache-fork activations; r=64 (the pilot's pre-registered rank) keeps the T=2048 ladder rung inside the 76 GB stop",
+ "train_max_k": 255,
+ "row_options": 160,
+ "train_max_k_note": "D8: K cap of the training items only (train.run_cell.train_max_k; cell_items default, also used by the m2_gates lineage rebuild); max_k 16 remains the eval cap (train.m2_gates.unit_spec, run_cell eval_items). 255 = the largest K in the 24k draw.",
+ "row_options_note": "execution guard (train.trainer.row_groups): <= 160 forked continuations per backbone call; a row with K > 160 runs alone. Worst call = 8,192 prefix tokens + 160 copies ~= 53.8 GB (tvuat ladder 1,024 rung: 8,192 tok + 80 copies x 16-token conts) + 80 x <= 87 MB ~= 61 GB < 76 GB stop.",
+ "variant": "d8_maxk"
+}

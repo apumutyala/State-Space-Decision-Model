@@ -56,6 +56,8 @@ Schedule 630 + reserve 7 = 637 min. **Worst case** (60 build + 2 x 637) x $0.049
 
 Mode `d7_t380` (D7; `first_cell_job.sh d7_t380`, `job_params_d7_t380.json`, `m2_first_cell_rwkv7_d7_t380.json`): D1 with ONE change, the training clock 190 -> 380 min = 380 x 60 / 8.25 = 2,763 steps ≈ 22.1k rows (≈ 1 epoch of the same 24k draw; max_steps 3,000 does not bind). Cell cap 380 + tokenize 10 + smoke/ladder 10 + dev cards 10 + checkpoints/margin 11 = 421; schedule 630 − 230 + 421 + 7 = 828 min. **Worst case** (60 + 2 x 828) x $0.0495 = **$84.94** (cap $90). Expected 528 − 220 + 411 = 719 min ≈ $35.59.
 
+Mode `d8_maxk` (D8; `first_cell_job.sh d8_maxk`, `job_params_d8_maxk.json`, `m2_first_cell_rwkv7_d8_maxk.json`): D1 with ONE change, the training K cap `train_max_k` 16 -> 255 (`train.run_cell.train_max_k`; `max_k` 16 stays the eval / unit-spec cap). Census of the seed-0 24k draw at T <= 2,048: 21,348 -> 21,820 items (+472, all K = 77). Execution guard `row_options` 160 (<= 160 forked RWKV-7 state copies of 64 MB per call; not in the config hash, never binds on K <= 16 steps): worst call ~61 GB vs the 76 GB stop. Clock 190 min unchanged (clock-bound; ~+4.6 % tokens per row = ~4.5 % fewer steps). Caps unchanged: **Worst case** (60 + 2 x 637) x $0.0495 = **$66.03** (cap $70). Expected ≈ $26.1, as D1.
+
 Every bounded long command uses GNU `timeout --kill-after=30s` at its existing cap;
 parent/child scoring children retain the measured live rate guards outside that
 timeout. TERM-resistant work is killed after the grace, and both timeout statuses
