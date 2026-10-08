@@ -8,10 +8,12 @@ wrapper freezes it. It loads no training data and starts no training.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import gzip
 import hashlib
 import json
 from pathlib import Path
 from typing import Any
+import zlib
 
 
 def _is_sha256(value: Any) -> bool:
@@ -29,6 +31,15 @@ class TrainableQualifiedParent:
     lora_modules: tuple[str, ...]
     trainable_parameter_names: tuple[str, ...]
     identity: dict
+
+
+@dataclass(frozen=True)
+class PinnedSplitGuard:
+    """Manifest-derived hash guard loaded from an independently pinned artifact."""
+
+    guard: Any
+    artifact_sha256: str
+    fingerprint_sha256: str
 
 
 def split_guard_fingerprint(guard: Any) -> str:
@@ -55,6 +66,72 @@ def split_guard_fingerprint(guard: Any) -> str:
     raw = json.dumps(payload, sort_keys=True, separators=(",", ":"),
                      ensure_ascii=False, allow_nan=False).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
+
+
+def _json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate guard artifact member {key!r}")
+        result[key] = value
+    return result
+
+
+def load_pinned_split_guard(path: str | Path, *, artifact_sha256: str,
+                            expected_fingerprint_sha256: str) -> PinnedSplitGuard:
+    """Load hash-only DEV/TEST guard metadata without reading either manifest or row text.
+
+    The artifact schema carries manifest identities and the complete ID/payload/
+    content-hash sets. Its byte pin and the separately supplied fingerprint
+    must both match before the resulting guard can reach the Trainer.
+    """
+    if not _is_sha256(artifact_sha256) or not _is_sha256(expected_fingerprint_sha256):
+        raise ValueError("guard artifact and fingerprint pins must be lowercase SHA-256 values")
+    raw = Path(path).resolve(strict=True).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != artifact_sha256:
+        raise ValueError("SplitGuard artifact byte hash mismatch")
+    try:
+        payload_bytes = gzip.decompress(raw) if str(path).endswith(".gz") else raw
+        payload = json.loads(payload_bytes, object_pairs_hook=_json_object,
+                             parse_constant=lambda _: (_ for _ in ()).throw(ValueError("nonfinite JSON")))
+    except (OSError, EOFError, UnicodeDecodeError, ValueError, zlib.error) as exc:
+        raise ValueError("SplitGuard artifact is malformed") from exc
+    required = {"schema", "manifests", "ids", "hashes", "content_hashes", "content_index", "note"}
+    if not isinstance(payload, dict) or set(payload) != required or payload["schema"] != "ssdm.agent_c.split_guard_pin.v1":
+        raise ValueError("unsupported SplitGuard artifact schema")
+    manifests = payload["manifests"]
+    if (not isinstance(manifests, dict) or not any("dev-manifest" in str(p) for p in manifests)
+            or not any("test-manifest" in str(p) for p in manifests)
+            or any(not isinstance(p, str) or not _is_sha256(sha) for p, sha in manifests.items())):
+        raise ValueError("SplitGuard artifact must pin DEV and TEST manifests")
+    for name in ("ids", "hashes", "content_hashes"):
+        values = payload[name]
+        if (not isinstance(values, list) or any(not isinstance(value, str) for value in values)
+                or values != sorted(set(values))):
+            raise ValueError(f"SplitGuard {name} must be sorted unique strings")
+        if not values:
+            raise ValueError(f"SplitGuard {name} must be nonempty")
+    if any(not _is_sha256(value) for name in ("hashes", "content_hashes") for value in payload[name]):
+        raise ValueError("SplitGuard payload/content hashes must be lowercase SHA-256 values")
+    content_index = payload["content_index"]
+    canonical_content_hashes = ("\n".join(payload["content_hashes"]) + "\n").encode("ascii")
+    if (not isinstance(content_index, dict) or set(content_index) != {"path", "sha256", "n"}
+            or not isinstance(content_index["path"], str) or not content_index["path"]
+            or not _is_sha256(content_index["sha256"])
+            or type(content_index["n"]) is not int or content_index["n"] != len(payload["content_hashes"])
+            or content_index["n"] < 1
+            or hashlib.sha256(canonical_content_hashes).hexdigest() != content_index["sha256"]):
+        raise ValueError("SplitGuard content index identity is invalid")
+    if not isinstance(payload["note"], str) or not payload["note"] or payload["note"].startswith("synthetic-only"):
+        raise ValueError("SplitGuard artifact must have non-synthetic provenance")
+    from train.guard import SplitGuard
+
+    guard = SplitGuard(ids=set(payload["ids"]), hashes=set(payload["hashes"]),
+                       manifests=manifests, note=payload["note"],
+                       content_hashes=set(payload["content_hashes"]), content_index=content_index)
+    if split_guard_fingerprint(guard) != expected_fingerprint_sha256:
+        raise ValueError("SplitGuard contents differ from the independent fingerprint pin")
+    return PinnedSplitGuard(guard, artifact_sha256, expected_fingerprint_sha256)
 
 
 def load_qualified_trainable_parent(
@@ -108,7 +185,7 @@ def load_qualified_trainable_parent(
 
 def build_prepared_language_trainer(parent: TrainableQualifiedParent, *, config: Any,
                                     train_items: list, diagnostic_items: list,
-                                    guard: Any, expected_guard_sha256: str):
+                                    pinned_guard: PinnedSplitGuard):
     """Bind fit-only items to the exact restored model without reinjecting LoRA.
 
     The child may change operational budgets, but its TrainConfig hash and
@@ -118,8 +195,9 @@ def build_prepared_language_trainer(parent: TrainableQualifiedParent, *, config:
     expected guard fingerprint must come from a reviewed external pin, not be
     computed from an untrusted guard in the same invocation.
     """
-    if guard is None or getattr(config, "require_guard", None) is not True:
+    if not isinstance(pinned_guard, PinnedSplitGuard) or getattr(config, "require_guard", None) is not True:
         raise ValueError("fit-only language training requires an explicit guarded TrainConfig")
+    guard = pinned_guard.guard
     if not train_items or not diagnostic_items:
         raise ValueError("fit-only language training requires nonempty train and diagnostic rows")
     from train.guard import SplitGuard
@@ -141,9 +219,9 @@ def build_prepared_language_trainer(parent: TrainableQualifiedParent, *, config:
     if (not isinstance(content_index, dict) or type(content_index.get("n")) is not int
             or content_index["n"] < 1 or not _is_sha256(content_index.get("sha256"))):
         raise ValueError("SplitGuard must include a pinned nonempty content index")
-    if (not _is_sha256(expected_guard_sha256)
-            or split_guard_fingerprint(guard) != expected_guard_sha256):
-        raise ValueError("SplitGuard contents differ from the externally pinned guard fingerprint")
+    if (not _is_sha256(pinned_guard.artifact_sha256) or not _is_sha256(pinned_guard.fingerprint_sha256)
+            or split_guard_fingerprint(guard) != pinned_guard.fingerprint_sha256):
+        raise ValueError("SplitGuard contents differ from the pinned guard artifact/fingerprint")
     if config.hash() != parent.config.hash():
         raise ValueError("child TrainConfig must preserve the qualified parent's training identity")
     for field in parent.config.EXECUTION:

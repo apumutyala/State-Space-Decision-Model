@@ -3,6 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import ModuleType, SimpleNamespace
 import hashlib
+import json
 import sys
 import unittest
 from unittest.mock import patch
@@ -10,6 +11,7 @@ from unittest.mock import patch
 from language_growth.trainable_parent import (
     TrainableQualifiedParent,
     build_prepared_language_trainer,
+    load_pinned_split_guard,
     load_qualified_trainable_parent,
     split_guard_fingerprint,
 )
@@ -123,40 +125,70 @@ class TrainableParentTests(unittest.TestCase):
         trainer_module.Trainer = PreparedTrainer
         from train.guard import SplitGuard
 
-        guard = SplitGuard(ids={"dev-id", "test-id"}, hashes={"dev-payload", "test-payload"},
-                           manifests={"/manifests/dev-manifest.jsonl.gz": "a" * 64,
-                                      "/manifests/test-manifest.jsonl.gz": "b" * 64},
-                           content_hashes={"c" * 64},
-                           content_index={"path": "content-index.gz", "sha256": "d" * 64, "n": 1})
-        guard_sha = split_guard_fingerprint(guard)
+        guard_payload = {"schema": "ssdm.agent_c.split_guard_pin.v1",
+                         "manifests": {"/manifests/dev-manifest.jsonl.gz": "a" * 64,
+                                       "/manifests/test-manifest.jsonl.gz": "b" * 64},
+                         "ids": ["dev-id", "test-id"],
+                         "hashes": ["c" * 64, "d" * 64],
+                         "content_hashes": ["e" * 64],
+                         "content_index": {"path": "content-index.gz",
+                                           "sha256": hashlib.sha256(("e" * 64 + "\n").encode("ascii")).hexdigest(),
+                                           "n": 1},
+                         "note": "A/B precomputed hash-only DEV/TEST guard v1"}
+        raw_guard = json.dumps(guard_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        with TemporaryDirectory() as guard_dir:
+            guard_path = Path(guard_dir) / "split-guard.json"
+            guard_path.write_bytes(raw_guard)
+            artifact_sha = hashlib.sha256(raw_guard).hexdigest()
+            from train.guard import SplitGuard
+            fixture_guard = SplitGuard(ids=set(guard_payload["ids"]), hashes=set(guard_payload["hashes"]),
+                                       manifests=guard_payload["manifests"], note=guard_payload["note"],
+                                       content_hashes=set(guard_payload["content_hashes"]),
+                                       content_index=guard_payload["content_index"])
+            guard_sha = split_guard_fingerprint(fixture_guard)
+            pinned_guard = load_pinned_split_guard(
+                guard_path, artifact_sha256=artifact_sha, expected_fingerprint_sha256=guard_sha)
+            bad_payload = dict(guard_payload)
+            bad_payload["content_index"] = {**guard_payload["content_index"], "sha256": "f" * 64}
+            bad_raw = json.dumps(bad_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            bad_path = Path(guard_dir) / "bad-split-guard.json"
+            bad_path.write_bytes(bad_raw)
+            with self.assertRaisesRegex(ValueError, "content index identity"):
+                load_pinned_split_guard(bad_path, artifact_sha256=hashlib.sha256(bad_raw).hexdigest(),
+                                        expected_fingerprint_sha256=guard_sha)
         with patch.dict(sys.modules, {"train.trainer": trainer_module}):
             trainer = build_prepared_language_trainer(
                 parent, config=FakeConfig(), train_items=["train"], diagnostic_items=["diagnostic"],
-                guard=guard, expected_guard_sha256=guard_sha)
+                pinned_guard=pinned_guard)
             self.assertTrue(trainer.prepared)
             self.assertIs(trainer.model, model)
-            self.assertIs(trainer.guard, guard)
+            self.assertIs(trainer.guard, pinned_guard.guard)
             self.assertEqual(trainer.lora_modules, ["backbone.block"])
             with self.assertRaisesRegex(ValueError, "execution setting row_batch"):
                 build_prepared_language_trainer(
                     parent, config=FakeConfig(row_batch=1), train_items=["train"],
-                    diagnostic_items=["diagnostic"], guard=guard, expected_guard_sha256=guard_sha)
+                    diagnostic_items=["diagnostic"], pinned_guard=pinned_guard)
             with self.assertRaisesRegex(ValueError, "DEV/TEST manifests"):
                 build_prepared_language_trainer(
                     parent, config=FakeConfig(), train_items=["train"],
-                    diagnostic_items=["diagnostic"], guard=SplitGuard.synthetic_only("test-only"),
-                    expected_guard_sha256="0" * 64)
+                    diagnostic_items=["diagnostic"],
+                    pinned_guard=type(pinned_guard)(SplitGuard.synthetic_only("test-only"),
+                                                    artifact_sha, guard_sha))
         with self.assertRaisesRegex(ValueError, "TrainConfig"):
             build_prepared_language_trainer(
                 parent, config=FakeConfig("different"), train_items=["train"],
-                diagnostic_items=["diagnostic"], guard=guard, expected_guard_sha256=guard_sha)
-        altered = SplitGuard(ids=set(guard.ids) | {"extra-dev-id"}, hashes=set(guard.hashes),
-                             manifests=dict(guard.manifests), content_hashes=set(guard.content_hashes),
-                             content_index=dict(guard.content_index))
-        with self.assertRaisesRegex(ValueError, "externally pinned"):
+                diagnostic_items=["diagnostic"], pinned_guard=pinned_guard)
+        altered = SplitGuard(ids=set(pinned_guard.guard.ids) | {"extra-dev-id"},
+                             hashes=set(pinned_guard.guard.hashes),
+                             manifests=dict(pinned_guard.guard.manifests),
+                             note=pinned_guard.guard.note,
+                             content_hashes=set(pinned_guard.guard.content_hashes),
+                             content_index=dict(pinned_guard.guard.content_index))
+        tampered_guard = type(pinned_guard)(altered, artifact_sha, guard_sha)
+        with self.assertRaisesRegex(ValueError, "pinned guard"):
             build_prepared_language_trainer(
                 parent, config=FakeConfig(), train_items=["train"], diagnostic_items=["diagnostic"],
-                guard=altered, expected_guard_sha256=guard_sha)
+                pinned_guard=tampered_guard)
 
 
 if __name__ == "__main__":
