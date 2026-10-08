@@ -3,6 +3,7 @@
 # Clef loss arm, PR #44 150k injection-augmented set), measured against its own stock readout on the 2,008-row Index
 # DEV subset and the G12 development cohort. SF Compute batch job (chip h100). DRAFT, NOT SUBMITTED.
 # Spec: jobs/m2_first_cell/JOB_SPEC.md. Caps: jobs/m2_first_cell/job_params.json. Config: m2_first_cell_rwkv7.json.
+# Optional explicit mode clef_kd selects job_params_clef_kd.json and m2_first_cell_rwkv7_clef_kd.json.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -38,8 +39,14 @@ CODE=${M2FC_CODE:-/opt/ssdm/m1}
 CONTEXT_MANIFEST=${M2FC_CONTEXT_MANIFEST:-/opt/ssdm/CONTEXT_MANIFEST.json}
 KIT_DIR=${M2FC_KIT_DIR:-/opt/decision-index}
 DATA=${M2FC_DATA:-/data}
-CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
-PARAMS=$CODE/jobs/m2_first_cell/job_params.json
+MODE=${1:-base}
+case "$MODE" in
+  base) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
+        PARAMS=$CODE/jobs/m2_first_cell/job_params.json ;;
+  clef_kd) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_clef_kd.json}
+           PARAMS=$CODE/jobs/m2_first_cell/job_params_clef_kd.json ;;
+  *) echo "unknown first-cell mode: $MODE" >&2; exit 5 ;;
+esac
 TRAIN_DIR=$DATA/m2-150k
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
@@ -124,6 +131,14 @@ python -I "$CODE/jobs/common/fla_guard.py" --out "$WORK/out/fla_guard.json" > "$
 ( cd "$DATA" && sha256sum -c "$CODE/jobs/rwkv7/records.sha256" ) > "$WORK/out/records-verify.txt" 2>&1 || fail 10 "PR #16 records sha256"
 python -X utf8 -m train.train_set verify --config "$CELL" --train-dir "$TRAIN_DIR" --out "$WORK/out/train-set-verify.json" \
   > "$WORK/logs/train-set.log" 2>&1 || fail 10 "150k train set != pointer"
+TEACHER_ARGS=()
+if [ "$MODE" = clef_kd ]; then
+  # Context pins all four teacher files; verify semantic identity before loading weights. run_cell and m2_gates
+  # also enforce the pinned teacher identity, training draw and content mapping.
+  python -X utf8 -c 'import json,sys; from jobs.q9af_cell.hooks import kd_arm; from train.teacher import load_teacher; c=json.load(open(sys.argv[1])); assert kd_arm(c) is not None; print(json.dumps(load_teacher(sys.argv[2]).summary()))' \
+    "$CELL" "$DATA/teacher" > "$WORK/out/teacher-verify.json" 2>&1 || fail 10 "Clef KD teacher identity / contamination"
+  TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
+fi
 python -X utf8 -m train.cohort verify > "$WORK/out/cohort-verify.json" 2>&1 || fail 10 "cohort does not rebuild to its committed sha256"
 CAP_SETUP=$(cap setup) || fail 5 "job_params"
 SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))'); r=$?
@@ -242,7 +257,7 @@ say "phase cell"
 mkdir -p "$CK/cell"
 [ -f "$CK/cell/cell.json" ] && cp "$CK/cell/cell.json" "$WORK/out/cell.json"
 timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" --records "$RECORDS" \
-  --train-dir "$TRAIN_DIR" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
+  --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
@@ -253,7 +268,7 @@ say "phase evals (calibration fit; dev card; G12 dev + steer_dev; Index DEV subs
 python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress.jsonl" --cap-min "$(cap evals)" \
   --report "$WORK/out/rate-evals.json" -- \
   timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" \
-  --records "$RECORDS" --train-dir "$TRAIN_DIR" --guard-readiness "$WORK/out/guard/readiness.json" \
+  --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" \
   --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --anchor-arm "$ARM" --anchor-arm-sha256 "$ARM_SHA" \
   --index-rows "$WORK/index-rows.jsonl.gz" \
   --out "$WORK/out/report.json" --stage g12+index --progress-dir "$WORK/logs" > "$WORK/logs/evals.log" 2>&1; r=$?
