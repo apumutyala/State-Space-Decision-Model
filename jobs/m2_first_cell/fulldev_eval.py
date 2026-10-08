@@ -197,9 +197,12 @@ def plan_rows(decider, rows: list[dict], max_input_tokens: int) -> dict[str, Any
 
 
 # ------------------------------------------------------------------------------------------------ GPU: arms
-def load_child(a):
+def load_child(a, temperature: bool = True):
     """The served + arm deciders of a saved checkpoint, built exactly as ``train.m2_gates.main`` builds them
-    (cohort, guard, training items for the lineage check, ``Trainer.load``, the cohort temperature fit)."""
+    (cohort, guard, training items for the lineage check, ``Trainer.load``, the cohort temperature fit).
+    ``temperature=False`` (the proxy screen, ``jobs.m2_first_cell.screen``): no cohort role records, no temperature
+    fit; the decider is the UNTEMPERED arm decider ``train.m2_gates`` scores the Index stage with (identity
+    calibration, like the parent arm), returned with tempered=False."""
     import torch
 
     from decide import Decider
@@ -223,7 +226,8 @@ def load_child(a):
     pools = G.pool_dirs_arg(a.pool_dir)
     train_recs, recs, tr_ids, _, _ = load_cell_data(cfg, a.records, a.train_dir, cohort)
     cohort.assert_training_ids(tr_ids)
-    role_recs = {role: G.role_records(cohort, a.records, role, recs, pools) for role in ("dev", "calibration", "retention")}
+    role_recs = ({role: G.role_records(cohort, a.records, role, recs, pools) for role in ("dev", "calibration", "retention")}
+                 if temperature else None)
     t_max = cell["ladder"]["T_max"]
     train_items = [x for x in cell_items(train_recs, tr_ids, cfg, enc, guard, max(cfg["t_ladder"]))
                    if len(x.row.ids) <= t_max]
@@ -239,6 +243,15 @@ def load_child(a):
     if ckpt is None:
         raise ValueError("no checkpoint")
     tr.load(ckpt)  # config hash + lineage (backbone digest/provenance, tokenizer, layout, training items)
+    if not temperature:
+        backend = DecisionModelBackend(model, enc, template=cfg["template"], layout=cfg["layout"],
+                                       checkpoint={"path": ckpt.name, "step": tr.step,
+                                                   "sha256": hashlib.sha256(ckpt.read_bytes()).hexdigest()})
+        decider = Decider(backend)
+        return decider, False, {"arm": "child", "arm_decider": decider.revision(), "checkpoint": backend.checkpoint,
+                                "lineage": tr.lineage, "cell_config": cfg,
+                                "index_arm": "untempered arm decider (identity calibration), as train.m2_gates "
+                                             "scores the Index stage; no temperature fit"}
     items_by_role = {r: G.decision_items(role_recs[r], enc, spec, guard) for r in role_recs}
     ft = G.fit_child_temperature(model, items_by_role["calibration"],
                                  {"eval": items_by_role["dev"], "retention": items_by_role["retention"],

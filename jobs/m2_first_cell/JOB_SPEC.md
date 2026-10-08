@@ -283,3 +283,31 @@ unchanged; g13 refuses a proxy. Mode `fulldev_eval` takes the same value (`--row
 160 diagnostic rows), i.e. -41.6 min = -$2.06 batch / -$2.62 quoted per cell; the evals phase 178 -> ~136 min (the
 G12 stage, 82 min, and the 18 min fit + card are untouched). The preflight / reprice still price the full subset
 (an upper bound). A SCREEN: a winner gets the full subset + full DEV.
+
+## Params `"stage": "screen"`: train, then screen on proxy600 (no G12, no temperature fit, no card)
+
+The default is `"stage": "gates"`, and that path is unchanged. For any training mode (not `eval_only`), the evals and
+report phases are replaced by `jobs.m2_first_cell.screen`:
+- **score:** the child's untempered arm decider runs on the 644 proxy600 rows at the trained input cap. A $0 plan check
+  confirms the child refuses exactly the rows the parent refused.
+- **report:** writes `screen.json`, validated by `screen:valid_result`. It holds the child, parent and reference proxy
+  Index with 95% CIs, and both paired differences (child-parent, child-reference), from `harness.score.decompose` and
+  `bootstrap.compare`. The verdict is **DROP if child-reference < -2.5** (point estimate), else **PROMOTE** to the full
+  subset and full DEV.
+
+Reference: `screen_reference` gives an artifact id plus a sha chain: `artifact_sha256` → `member` (+`member_sha256`) →
+`inner_member` (+`units_sha256`). The default is D1, art-bm3e6 `./phases/final.tgz` `out/units-child-index.json`.
+- It is found in setup, before training: either the shipped `$DATA/<shipped>` file with the pinned sha, or the
+  downloaded artifact from `$<url_env>`.
+- It must cover every proxy row, or setup fails with exit 10.
+
+Mode params need these changes:
+- `"stage": "screen"`.
+- In `phase_caps_minutes`, replace `"evals"` with `"screen": 60`.
+- An explicit `screen_reference` block.
+- A `context.data` entry `{"src": "m2/screen_reference/art-bm3e6/units-child-index.json", "dest":
+  "screen_reference/units-child-index.json", "pin_json": [<params>, "screen_reference", "units_sha256"]}`.
+
+The parent arm phase and its seed are unchanged. Expected eval time is about 41 min: 26.0 min of child proxy scoring
+(D1 measured), plus 15 min budgeted for load and lineage, plus about 2 min of report. That is about $2.03 batch or
+$2.58 quoted, against the gates path's 178 min.

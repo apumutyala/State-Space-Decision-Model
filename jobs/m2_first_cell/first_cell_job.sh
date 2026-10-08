@@ -60,6 +60,7 @@ fi
 TRAIN_DIR=$DATA/m2-150k
 TEACHER_ARGS=()
 EVAL_ONLY=none
+STAGE=gates
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -146,14 +147,18 @@ if ev != "none":
         checkpoint_block(p)
     except CheckpointError as e:
         sys.exit(f"mode {mode}: {e}")
-print(td, 1 if c.get("teacher") else 0, ev)
+st = p.get("stage", "gates")
+if st not in ("gates", "screen") or (st == "screen" and ev != "none"):
+    sys.exit(f"mode {mode}: stage {st!r} must be gates or screen (screen = a training mode's evals, not eval_only)")
+print(td, 1 if c.get("teacher") else 0, ev, st)
 EOF
   ) || fail 5 "$MODE_ENV"
-  read -r TRAIN_SUB TEACHER EVAL_ONLY <<< "$MODE_ENV"
+  read -r TRAIN_SUB TEACHER EVAL_ONLY STAGE <<< "$MODE_ENV"
   TRAIN_DIR=$DATA/$TRAIN_SUB
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
+  [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
@@ -227,7 +232,18 @@ esac
 FIX_P=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['parent'])" "$PARAMS") || fail 5 "job_params"
 FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['child'])" "$PARAMS") || fail 5 "job_params"
 # every eval phase is priced HERE from the measured rates, before the paid training phase
-for P in "g12 parent parent_g12 $FIX_P" "index parent parent_index $FIX_P" "g12,index child evals $FIX_C"; do
+EVAL_PRICES=("g12 parent parent_g12 $FIX_P" "index parent parent_index $FIX_P" "g12,index child evals $FIX_C")
+if [ "$STAGE" = screen ]; then  # params "stage": "screen": the child evals are ONE proxy600 Index pass (no G12 / fit / card)
+  EVAL_PRICES=("${EVAL_PRICES[@]:0:2}")
+  python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index-proxy.json" || fail 10 "index proxy600 identity"
+  python -X utf8 -m jobs.m2_first_cell.screen estimate --params "$PARAMS" > "$WORK/out/preflight-screen.json" \
+    || fail 15 "screen projected past its cap at D1's measured proxy rate"
+  # the reference cell's child predictions (sha-pinned artifact chain), checked to cover every proxy row BEFORE training
+  python -X utf8 -m jobs.m2_first_cell.screen reference --params "$PARAMS" --data "$DATA" --work "$WORK/reference" \
+    --out "$WORK/out/screen-reference.json" > "$WORK/logs/screen-reference.log" 2>&1 \
+    || fail 10 "screen reference: $(tail -1 "$WORK/logs/screen-reference.log")"
+fi
+for P in "${EVAL_PRICES[@]}"; do
   set -- $P
   python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \
     --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
@@ -352,12 +368,16 @@ if [ ${#PROBE[@]} -eq 0 ]; then
     10) fail 10 "parent cache failed verification: $(tail -1 "$WORK/logs/parent-cache-verify.log")" ;;
     *) fail 5 "parent cache verification rc=$r" ;; esac
 fi
+if [ "$STAGE" = screen ]; then
+  say "stage screen: child evals priced in setup (D1 measured proxy rate); no re-price"
+else
 say "re-price the child evals from the measured parent scoring speed"
 python -X utf8 -m jobs.m2_first_cell.reprice --arm-dir "$ARM" --params "$PARAMS" --tok-s "$TOK_S" --call-s "$CALL_S" \
   --out "$WORK/out/reprice.json" "${PROBE[@]}" > "$WORK/logs/reprice.log" 2>&1; r=$?
 gate "reprice" $r
 case $r in 0) ;; 15) fail 15 "child evals re-priced past their cap at the box's measured speed (before training)" ;;
   *) fail 5 "reprice rc=$r" ;; esac
+fi
 
 # ------------------------------------------------------------------ cell: smoke -> ladder -> train (resumable; exit 26 = too slow)
 say "phase cell"
@@ -370,6 +390,18 @@ cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
 case $r in 0) ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
 
+# ------------------------------------------------------------------ stage screen: ONE proxy600 Index pass, then screen.json
+if [ "$STAGE" = screen ]; then
+  say "phase screen (child untempered arm on the 644 proxy600 rows; paired vs the parent arm and the reference cell)"
+  python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-screen.jsonl" --cap-min "$(cap screen)"     --report "$WORK/out/rate-screen.json" --     timeout --kill-after=30s $(cap screen)m python -X utf8 -m jobs.m2_first_cell.screen score --cell "$WORK/out/cell.json"     --ckpt-dir "$CK/cell" --model-dir "$SNAP" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}"     --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" --resume-dir "$CK/screen"     --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --out-dir "$WORK/out/screen"     --progress "$WORK/logs/progress-screen.jsonl" > "$WORK/logs/screen.log" 2>&1; r=$?
+  gate "screen" $r; export_phase screen
+  case $r in 0) ;; 124|137) fail 7 "screen timeout" ;; 15) fail 15 "screen: live rate past the cap" ;;
+    10) fail 10 "screen identity (proxy / parent arm / checkpoint lineage / plan check)" ;; *) fail 9 "screen rc=$r" ;; esac
+  say "phase report (screen.json)"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.screen report --params "$PARAMS"     --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$WORK/out/screen" --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA"     --reference "$WORK/out/screen-reference.json" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION"     > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "screen result missing or invalid (rc=$r): $(tail -1 "$WORK/logs/report.log")"
+else
 # ------------------------------------------------------------------ child evals: temperature fit, dev card, G12 + Index DEV subset
 say "phase evals (calibration fit; dev card; G12 dev + steer_dev; Index DEV subset + readout diagnostics)"
 python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress.jsonl" --cap-min "$(cap evals)" \
@@ -395,6 +427,7 @@ timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.sum
   > "$WORK/logs/report.log" 2>&1; r=$?
 gate "report" $r
 [ $r -eq 0 ] || fail 9 "first-cell result missing or invalid (rc=$r)"
+fi
 LATEST=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$CK/cell/latest.json") || fail 9 "no checkpoint"
 mkdir -p "$OUT/ckpt"
 cp "$CK/cell/$LATEST" "$CK/cell/latest.json" "$OUT/ckpt/" && ( cd "$OUT/ckpt" && sha256sum "$LATEST" > "$LATEST.sha256" ) \
