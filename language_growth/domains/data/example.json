@@ -1,0 +1,10 @@
+{
+  "status": "authored_development_example_not_evaluation_data",
+  "task": "Among the technologies in this module, which has the lowest median lifecycle emissions in IPCC AR5 (2014)?",
+  "proposal": {
+    "schema": "ssdm.energy_program.v0.1",
+    "module_ref": "ipcc-ar5-2014-lifecycle-subset-v1",
+    "op": "LowestMedian",
+    "record_ref": "wind-onshore-ar5"
+  }
+}
