@@ -31,3 +31,15 @@
 Exclusion check of the Clef-flash KD teacher export (24,000 rows of the 150k seed-0 draw): frozen families,
 check_generator, cohort v2/v3 disjointness, SplitGuard, D1-B all clean; the stricter Index item-text check flags 186 rows
 (When2Call 137, MMLU-aux 28, multi 7, other 14) and one key-free full-text match (m2:mmlu_aux:94003).
+
+## b1-draw100k
+
+- Files: `ssdm-data/m2/build/b1-draw100k/` (same format; pointer `data/manifests/b1-draw100k.pointer.json`, n 100,000).
+  Raw gz sha256: records c377b24e5348d5745d686e88c8b38e688ebb4b197c5352aaaab6dd401aa8c2a6, manifest
+  64a10a6c171b7339015b036284019266c1c818a21ebcce982aa1b76b0e854467, content 720d70adf45888d805abe31ffe39eb033a0f17f735ad7fdba0af06cc66a3acf6.
+- Builder `data/b1.py` @ d5f4cbb (adds the Index content / key-free-text rejection to the builder's filter after the first
+  100k build failed `b1_check` on 3 MMLU-aux rows; that build was discarded).
+- Mix: tools 45.5%, intent 13.2%, facts 11.9%, language 15%, procedural 6.6%, other retrieval 4.8%, arts 3%; backfill
+  glaive_native +7,499, mmlu_aux +496 (pools exhausted: API-Bank <=2,048 tokens, NQ, When2Call, fact-change, GSM8K).
+  K<=16 90,235 / K>16 9,765; tokens p50 508 / p95 1,891 / max 2,048.
+- `exclusion-check.json`: PASS over all 100,000 rows.
