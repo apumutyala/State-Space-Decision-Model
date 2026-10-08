@@ -1,5 +1,5 @@
 owner: A (lead)
-job: job-zpyis
-start_utc: 2026-10-08T10:50Z
-time_limit: 2026-10-09T01:00Z
-item: D7 (max_minutes 380, stack/rwkv7/d7-t380 e6d40a1)
+job: job-8cd26
+start_utc: 2026-10-08T17:18Z
+time_limit: 2026-10-09T08:00Z
+item: d7_t380 e6d40a1 (resubmit; was zpyis)

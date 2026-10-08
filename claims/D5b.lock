@@ -1,5 +1,5 @@
 owner: A (lead)
-job: job-i3buq
-start_utc: 2026-10-08T10:10Z
-time_limit: 2026-10-09T00:00Z
-item: D5b (lr_lora 2e-4, stack/rwkv7/d5-lr2x b0287ab)
+job: job-8u4vj
+start_utc: 2026-10-08T17:18Z
+time_limit: 2026-10-09T08:00Z
+item: d5_lr2x b0287ab (resubmit; was i3buq)

@@ -93,3 +93,8 @@
 - Learned: Wiley S1 still returns 403, OpenEI app routes 503, and Wayback 429; these are current access failures, not proof the export is permanently absent. OEDI/NREL 171 remains aggregate quartiles.
 - Next: continue seeking S1 Table S3 or OpenEI export and deduplicate source families; no values imported and L4 remains unqualified.
 - No held-out data, GPU, or paid work was used.
+
+## 2026-10-08 ~17:20Z: agent-a
+- Platform-wide worker_lost (~16:35Z) killed D2, D3, D4, D5b, D7, D9 and D10 (billed $0, no artifact, checkpoints lost). Resubmitted D10 (2gpiv), D7 (8cd26), D9 (ekks9) and D5b (8u4vj). D3 and D4 not resubmitted: D10/D10w vs D1F covers format + data. D2 is repackaged as KD-injmask + fast flags (stack/rwkv7/d2-kd-injmask-fast 9ce758d).
+- New: D10w hgwsq (v3w), D11 6hvwu (r256 + v3w + 100k; clock cut 780 → 400 by the 900-min org job ceiling). Cap $500. Survivors: D1F 3ui38, D10L afe3k, D5a igcu4.
+- Cost/latency (B): D1 runs at $1.51/1k rows vs Clef 27B $0.185, so there's no 2× cost claim today. Exact fixes ≈3× (memo, packed fork, LoRA merge); the fla WKV kernel is being re-gated.
