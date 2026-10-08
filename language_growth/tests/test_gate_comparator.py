@@ -58,19 +58,23 @@ class ComparatorProtocolTests(unittest.TestCase):
 
     def test_extensions_match_permitted_host_definitions_without_truth_filtering(self):
         item = task()
+        typed = lambda value: {"value": value, "value_type": "decimal", "unit": "USD", "temporal_scope": "2026-10"}
         item["host"]["assumptions"] = {
-            "sale": {"record_ref": "a-v1", "field": "price", "value": {"value": "0.01"}},
-            "secret": {"record_ref": "secret-v1", "field": "password", "value": "SECRET"}}
+            "sale": {"record_ref": "a-v1", "field": "price", "value": typed("0.01")},
+            "secret": {"record_ref": "secret-v1", "field": "password", "value": typed("12345.67")}}
         item["host"]["workflows"] = {
             "public-action": {"audience": "public", "status": "current", "steps": {
                 "step": {"action_ref": "describe", "after": [], "preconditions": [
-                    {"record_ref": "a-v1", "field": "price", "expected": {"value": "999.99"}}]}}},
+                    {"record_ref": "a-v1", "field": "price", "expected": typed("999.99")}]}}},
             "private-action": {"audience": "private", "status": "current", "steps": {}}}
         context = gate_task_context(item)
         self.assertEqual(set(context["assumptions"]), {"sale"})
         self.assertEqual(set(context["workflows"]), {"public-action"})
         self.assertIn("999.99", json.dumps(context))  # false precondition stays offered
-        self.assertNotIn("SECRET", comparator_prompt(item))
+        self.assertNotIn("12345.67", comparator_prompt(item))
+        item["host"]["assumptions"]["sale"]["evaluator_only"] = "GOLD_SECRET"
+        with self.assertRaises(ComparatorError):
+            comparator_prompt(item)
 
     def test_energy_scope_is_shared_without_duplicate_unedited_values(self):
         from language_growth.domains.energy import load_energy_module, energy_environment

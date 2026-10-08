@@ -50,7 +50,7 @@ def gate_task_context(task: dict[str, Any]) -> dict[str, Any]:
         raise ComparatorError("only the fixed label-free answer format is accepted")
     # The suite exports audience-filtered evidence. Reconstruct it independently
     # here so private/source-only fields cannot accidentally reach a comparator.
-    from .parent_bridge import audience_state
+    from .parent_bridge import audience_state, _typed_field
     context = json.loads(audience_state(task["task_input"], task["host"], task["catalog"]))
     if context["audience"] != "public":
         raise ComparatorError("gate suites require public evidence")
@@ -62,14 +62,18 @@ def gate_task_context(task: dict[str, Any]) -> dict[str, Any]:
         raise ComparatorError("invalid host extension definitions")
     context["assumptions"] = {}
     for ref, value in assumptions.items():
-        if not isinstance(ref, str) or not isinstance(value, dict):
+        if (not isinstance(ref, str) or not ref or not isinstance(value, dict)
+                or set(value) != {"record_ref", "field", "value"}
+                or not isinstance(value["record_ref"], str) or not isinstance(value["field"], str)):
             raise ComparatorError("invalid assumption")
+        _typed_field(value["value"], constant=False)
         record = visible.get(value.get("record_ref"))
         if record is not None and value.get("field") in record["fields"]:
             context["assumptions"][ref] = value
     context["workflows"] = {}
     for ref, workflow in workflows.items():
-        if not isinstance(ref, str) or not isinstance(workflow, dict):
+        if (not isinstance(ref, str) or not ref or not isinstance(workflow, dict)
+                or set(workflow) != {"audience", "status", "steps"}):
             raise ComparatorError("invalid workflow")
         if workflow.get("audience") != "public" or workflow.get("status") != "current":
             continue
@@ -77,12 +81,21 @@ def gate_task_context(task: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(steps, dict):
             raise ComparatorError("invalid workflow steps")
         permitted = True
-        for step in steps.values():
-            if not isinstance(step, dict) or not isinstance(step.get("preconditions"), list):
+        for step_ref, step in steps.items():
+            if (not isinstance(step_ref, str) or not step_ref or not isinstance(step, dict)
+                    or set(step) != {"action_ref", "after", "preconditions"}
+                    or not isinstance(step["action_ref"], str) or not step["action_ref"]
+                    or not isinstance(step["after"], list)
+                    or any(not isinstance(dep, str) for dep in step["after"])
+                    or not isinstance(step["preconditions"], list)):
                 raise ComparatorError("invalid workflow preconditions")
             for precondition in step["preconditions"]:
-                if not isinstance(precondition, dict):
+                if (not isinstance(precondition, dict)
+                        or set(precondition) != {"record_ref", "field", "expected"}
+                        or not isinstance(precondition["record_ref"], str)
+                        or not isinstance(precondition["field"], str)):
                     raise ComparatorError("invalid workflow precondition")
+                _typed_field(precondition["expected"], constant=False)
                 record = visible.get(precondition.get("record_ref"))
                 if record is None or precondition.get("field") not in record["fields"]:
                     permitted = False
