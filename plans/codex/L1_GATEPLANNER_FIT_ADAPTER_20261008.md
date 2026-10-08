@@ -96,3 +96,30 @@ This audit gives no evidence to reweight classes. Preserve the exhaustive
 source task mix for the first model run; consider a bounded reweighting
 ablation only if a measured development failure justifies it. Option IDs are
 local to each slot and must not be pooled across slots.
+
+## Fit-only cell preflight
+
+`language_growth.l1_fit_cell_preflight` is a dependency-free preflight for the
+next model cell. It verifies the exact v3 fit export against its pinned RWKV7
+tokenizer census, checks every `(task, slot)` identity and the complete 40-task
+world structure, and partitions whole fit worlds into 18 training and 6
+diagnostic worlds. The diagnostic worlds remain part of `development_train`;
+they are not development validation, language-heldout, promotion, or
+qualification evidence. The plan fixes the row limits at T=2,048 and K=8.
+
+Reproduce the current preflight with:
+
+```powershell
+python -B -X utf8 -m language_growth.l1_fit_cell_preflight --fit-dir C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-gate-training-fit-20261008-v3 --census-dir C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-fit-token-census-rwkv7-20261008 --out C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-fit-cell-preflight-20261008-v5/plan.json
+```
+
+The frozen plan is at
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-fit-cell-preflight-20261008-v5/plan.json`
+(SHA-256 `50d52a25b149a68aea3f3ce9bf9551d0e84088dc7783afa3d837393dd331b1ce`; preflight source SHA-256 `3fb77f0ff451c0babb161339b053469213161b2385ca340489cb61861287ba3a`).
+It records 2,304 training rows and 768 diagnostic rows and has status
+`preflight_only_not_authorized_to_train`; the parent checkpoint and Stage 1
+report pins remain empty. The generic `train.run_cell` path is not a fit-only
+runner as currently configured: its default split guard loads DEV and TEST
+manifests. A future cell needs a reviewed C-specific runner or explicit
+fit-only guard path, a qualified RWKV7 parent, an A-ordered run, and suitable
+resources. No model/Torch, non-fit split, or GPU was read or loaded here.
