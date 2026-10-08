@@ -232,3 +232,5 @@ single-cont peaks 63 GB at T 2,048 on r64 -> 76.8 GB > the 76 GB stop, so per_gr
 of the ~145k v3w items of the 100k draw). Cell cap = 780 + 42 tokenize + 10 smoke/ladder + 10 dev cards + 30 checkpoints/margin = 872;
 schedule 669 - 262 + 872 = 1,279 min. **Worst case** (60 + 2 x 1,279) x $0.0495 = **$129.59** (cap $135); the platform quotes
 $0.063/min x 1,279 = $80.58. Expected 1,170 min ≈ $57.92.
+
+D11 clock cut (2026-10-08): org job ceiling is 900 min, so `d11_scale` trains 400 min (cell cap 492, max_duration 899). Worst case = (60 + 2 x 899) x 0.0495 = $91.97 (hard cap $95); platform quote $0.063 x 899 = $56.64.
