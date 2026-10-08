@@ -116,6 +116,26 @@ referring readers to the 2012 review for earlier studies. It does not supply
 the 2012 Table S3 values or complete the estimate-to-inventory crosswalk, and
 is not an independent replacement for that review.
 
+## Primary-source feasibility screen
+
+Five candidate singleton sources were checked for whether their original
+reporting can enter a common, complete lifecycle GHG/kWh cohort without
+inventing omitted phases or gases:
+
+| Study | Boundary/data finding | L4 disposition |
+| --- | --- | --- |
+| McCulloch et al. 2000, *Life-Cycle Value Assessment of a Wind Turbine* ([publisher PDF](https://www.pembina.org/reports/windlcva.pdf)) | Reports CO2-equivalent per 1,000-kWh functional unit, but omits manufacturing-process energy and decommissioning. | No-go for a complete upstream/ongoing/downstream boundary without imputation. |
+| Crawford 2009, DOI 10.1016/j.rser.2009.07.008 ([paper mirror](https://www.windland.ch/doku_wind/klima/Life%20Cycle%20Emissions%20from%20Wind%20-%20Crawford%202009.pdf)) | Tables 7–8 report embodied emissions per turbine; decommissioning/recycling are excluded. GHG is estimated with a single energy-to-emissions factor, not a gas-resolved GWP inventory. | No-go; reported primary-energy equivalents cannot be used as electric kWh. |
+| Rydh et al. 2004, report NEI-SE-544 ([PNNL-hosted report](https://tethys.pnnl.gov/sites/default/files/publications/Rydhetal2004.pdf)) | Reports numerical gCO2/kWh_electric and covers production through disposal, but reports CO2, not a complete CO2-equivalent inventory including CH4/N2O. | No-go for full GHG; scope is useful only as a separate CO2 fact. |
+| Martínez et al. 2009, DOI 10.1007/s11367-008-0033-9 ([paper](https://www.researchgate.net/publication/240139630_Life-cycle_assessment_of_a_2MW_rated_power_wind_turbine_CML_method)) | Reports GWP100 per kWh with manufacturing, transport, maintenance and end-of-life, but excludes grid connection/substation. Explicit Ecoinvent 1.3 background. | Conditional for its own historical scope; a shared Ecoinvent family and the omitted grid assets prevent counting it as an independent, same-boundary world. |
+| Spitzley & Keoleian 2004, CSS04-05R ([institutional record](https://css.umich.edu/publications/research-publications/life-cycle-environmental-and-economic-assessment-willow-biomass)) | The institution says the report is unavailable pending correction; its linked article is about willow biomass, not the wind report. | Access no-go; do not substitute the linked article. |
+
+This five-source screen yields **zero unconditionally admissible common-scope
+groups and one conditional historical-scope candidate**. It does not show that
+20 groups are impossible in the remaining references; their source boundaries,
+values and background-inventory overlap still need review. No values from this
+screen were transcribed or imported.
+
 Smallest next step: recover the old OpenEI land-based wind export or the paper's
 study-level supplemental table, then join each estimate to its primary study
 and shared background inventory family. Count only the surviving groups after
