@@ -14,6 +14,11 @@
 #   12,104 rows, or params "rows": "smoke" = the pre-declared 250-row fulldev_smoke_rows.json; live rate guard, per-row
 #   resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
 #   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
+#   Params with "eval_only": "readout_ab" (mode readout_ab_*) are the same eval-only shape on the 2,008-row Index DEV
+#   subset: phase checkpoint, readout_ab (jobs.m2_first_cell.readout_ab score --arm child: ONE model load, every readout
+#   in params "readouts", control = the cell's training template first; live rate guard; per-row resume from
+#   $CK/readout_ab), optional parent_ab (params "readout_ab_parent_arm": the stock families), report
+#   (readout_ab report -> readout_ab_result.json).
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -144,8 +149,8 @@ td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
 ev = p.get("eval_only", "none")
-if ev not in ("none", "fulldev"):
-    sys.exit(f"mode {mode}: eval_only {ev!r} must be none or fulldev")
+if ev not in ("none", "fulldev", "readout_ab"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev or readout_ab")
 if ev != "none":
     sys.path.insert(0, ".")
     from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
@@ -165,6 +170,7 @@ EOF
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
+  [ "$EVAL_ONLY" = readout_ab ] && VALIDATOR=jobs.m2_first_cell.readout_ab:valid_result DECISION=$WORK/out/readout_ab_result.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
@@ -241,10 +247,13 @@ for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used 
     REFS+=(--reference "$NAME=$F")
   fi
 done
-python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
+python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.readout_ab, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
 if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
+elif [ "$EVAL_ONLY" = readout_ab ]; then  # subset rows x readouts x D1's measured child rows/min (+ readout length ratio)
+  python -X utf8 -m jobs.m2_first_cell.readout_ab estimate --params "$PARAMS" > "$WORK/out/preflight-readout_ab.json" \
+    || fail 15 "readout_ab projected past its cap at the measured D1 child rate (or readouts / control refused)"
 else
 # params "rows" (base / training modes): "subset" (default) = the child's Index stage on all 2,008 subset rows; "proxy600"
 # = a SCREEN on the pre-declared 644-row proxy (jobs/common/dev_proxy600.json, ids sha pinned in jobs.common.dev_proxy;
@@ -287,7 +296,7 @@ timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_rea
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
 
-if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a SAVED checkpoint on the FULL Index DEV
+if [ "$EVAL_ONLY" != none ]; then  # -------------- eval-only: a SAVED checkpoint (fulldev: FULL DEV; readout_ab: subset)
   say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"
   timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" \
     --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CK/cell" --work "$WORK/art" \
@@ -296,33 +305,53 @@ if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a
   case $r in 0) ;; 124|137) fail 7 "checkpoint timeout" ;; 10) fail 10 "checkpoint identity: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
     *) fail 5 "checkpoint rc=$r: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
   CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
-  read -r MAXIN FD_PARENT ROWS_SEL <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(int(p['max_input_tokens']), 1 if p.get('fulldev_parent_arm') else 0, p.get('rows', 'full'))" "$PARAMS")" \
-    || fail 5 "job_params max_input_tokens / fulldev_parent_arm / rows"
+  REPORT_ARGS=()
+  if [ "$EVAL_ONLY" = fulldev ]; then
+    read -r MAXIN FD_PARENT ROWS_SEL READOUT <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(int(p['max_input_tokens']), 1 if p.get('fulldev_parent_arm') else 0, p.get('rows', 'full'), p.get('readout') or 'training')" "$PARAMS")" \
+      || fail 5 "job_params max_input_tokens / fulldev_parent_arm / rows / readout"
+    DRIVER=jobs.m2_first_cell.fulldev_eval PH_CHILD=fulldev PH_PARENT=parent_full EV_DIR=fulldev
+    EV_ROWS=$DATA/slices/dev-rows.jsonl.gz EV_ARGS=(--max-input-tokens "$MAXIN" --rows-select "$ROWS_SEL") CHILD_EXTRA=()
+    [ "$READOUT" != training ] && CHILD_EXTRA=(--readout "$READOUT")  # child only; the parent arm keeps its stock readout
+    EV_WHAT="DEV rows: $ROWS_SEL, max_input_tokens $MAXIN, child readout $READOUT"
+  else
+    read -r RO FD_PARENT ALLOW_UNMATCHED <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(','.join(p['readouts']), 1 if p.get('readout_ab_parent_arm') else 0, 1 if p.get('allow_unmatched_control') else 0)" "$PARAMS")" \
+      || fail 5 "job_params readouts / readout_ab_parent_arm"
+    DRIVER=jobs.m2_first_cell.readout_ab PH_CHILD=readout_ab PH_PARENT=parent_ab EV_DIR=readout_ab
+    EV_ROWS=$WORK/index-rows.jsonl.gz EV_ARGS=(--readouts "$RO") CHILD_EXTRA=()
+    [ "$ALLOW_UNMATCHED" = 1 ] && CHILD_EXTRA=(--allow-unmatched-control)
+    EV_WHAT="2,008-row DEV subset, readouts $RO, one model load"
+    REF=$DATA/reference/d3_child_index.results.jsonl
+    PIN=$(python -c "import json,sys; print((json.load(open(sys.argv[1])).get('reference_results_sha256') or {}).get('d3_child_index') or '')" "$PARAMS")
+    if [ -n "$PIN" ]; then  # the D3 job's own in-job child index arm: the control must reproduce it
+      [ -f "$REF" ] && [ "$(sha256sum "$REF" | cut -d' ' -f1)" = "$PIN" ] || fail 10 "reference d3_child_index missing or sha256 != pin"
+      REPORT_ARGS=(--reference "$REF")
+    fi
+  fi
   FD_ARMS=(child); [ "$FD_PARENT" = 1 ] && FD_ARMS+=(parent)
   for ARMNAME in "${FD_ARMS[@]}"; do
-    PH=fulldev; [ "$ARMNAME" = parent ] && PH=parent_full
+    PH=$PH_CHILD; [ "$ARMNAME" = parent ] && PH=$PH_PARENT
     if [ "$ARMNAME" = child ]; then
       ARGS=(--cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR"
-            "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json")
+            "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" "${CHILD_EXTRA[@]}")
     else
       ARGS=(--cell-config "$CELL")
     fi
-    say "phase $PH ($ARMNAME arm, DEV rows: $ROWS_SEL, max_input_tokens $MAXIN; resumes from $CK/fulldev)"
+    say "phase $PH ($ARMNAME arm, $EV_WHAT; resumes from $CK/$EV_DIR)"
     python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)" \
       --report "$WORK/out/rate-$PH.json" -- \
-      timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval score --arm "$ARMNAME" "${ARGS[@]}" \
-      --model-dir "$SNAP" --rows "$DATA/slices/dev-rows.jsonl.gz" --max-input-tokens "$MAXIN" --rows-select "$ROWS_SEL" --resume-dir "$CK/fulldev" \
-      --out-dir "$WORK/out/fulldev" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
+      timeout --kill-after=30s $(cap $PH)m python -X utf8 -m "$DRIVER" score --arm "$ARMNAME" "${ARGS[@]}" \
+      --model-dir "$SNAP" --rows "$EV_ROWS" "${EV_ARGS[@]}" --resume-dir "$CK/$EV_DIR" \
+      --out-dir "$WORK/out/$EV_DIR" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
     gate "$PH" $r; export_phase "$PH"
     case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
       10) fail 10 "$PH identity (rows / checkpoint lineage / cohort)" ;; *) fail 9 "$PH rc=$r" ;; esac
   done
   say "phase report"
-  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval report --out-dir "$WORK/out/fulldev" \
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m "$DRIVER" report --out-dir "$WORK/out/$EV_DIR" "${REPORT_ARGS[@]}" \
     --params "$PARAMS" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" > "$WORK/logs/report.log" 2>&1; r=$?
   gate "report" $r
-  [ $r -eq 0 ] || fail 9 "fulldev_eval result missing or invalid (rc=$r)"
-  sample "$DECISION" "fulldev-eval"
+  [ $r -eq 0 ] || fail 9 "$EV_DIR result missing or invalid (rc=$r)"
+  sample "$DECISION" "$EV_DIR"
   RC=0
   exit 0
 fi

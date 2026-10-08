@@ -45,6 +45,47 @@ def decide_readout(work_out):
     return d
 
 
+def decide_readout_g1v2(work_out):
+    """C1 (jrt-rwkv-g1-v2): the subset Index score with CI and ECE only (no probe, no steer smoke in this mode)."""
+    score = _load(os.path.join(work_out, "index", "score.json")) or {}
+    ece = _load(os.path.join(work_out, "index", "ece.json"))
+    idx = (score.get("slice_index") or {}).get("index") or {}
+    d = {"template": "jrt-rwkv-g1-v2", "index": idx, "index_rows": score.get("rows"), "ece_present": ece is not None}
+    ok = all(_num(idx.get(k)) for k in ("point", "lo", "hi")) and ece is not None
+    d["verdict"] = "readout-measured" if ok else "no-measurement"
+    return d
+
+
+def valid_readout_g1v2(d):
+    return valid_readout(d)
+
+
+G1V3_VARIANTS = ("v2", "v2f", "v3", "v3w", "v3r", "v3p", "v1", "v3c")
+
+
+def decide_readout_g1v3(work_out):
+    """R3 (jrt-rwkv-g1-v3 family): per-variant subset Index score with CI and ECE (index/<variant>/score.json, ece.json).
+    Measured when every variant has both; no pass/fail on quality (the comparison is recorded in CANDIDATES.md)."""
+    d = {"template_family": "jrt-rwkv-g1-v3", "variants": {}}
+    ok = True
+    for v in G1V3_VARIANTS:
+        score = _load(os.path.join(work_out, "index", v, "score.json")) or {}
+        ece = _load(os.path.join(work_out, "index", v, "ece.json"))
+        idx = (score.get("slice_index") or {}).get("index") or {}
+        d["variants"][v] = {"index": idx, "index_rows": score.get("rows"), "ece_present": ece is not None}
+        ok = ok and all(_num(idx.get(k)) for k in ("point", "lo", "hi")) and ece is not None
+    d["verdict"] = "readout-measured" if ok else "no-measurement"
+    return d
+
+
+def valid_readout_g1v3(d):
+    """The g1v3 decision has no top-level index: it is valid when measured and EVERY variant has a finite index point
+    (job-fgu2c exited 9 because this delegated to valid_readout, which requires d["index"]["point"])."""
+    vs = d.get("variants") if isinstance(d, dict) else None
+    return (isinstance(vs, dict) and d.get("verdict") in READOUT_VERDICTS and set(vs) == set(G1V3_VARIANTS)
+            and all(_num(((v or {}).get("index") or {}).get("point")) for v in vs.values()))
+
+
 def decide_lora(cell):
     tr = (cell or {}).get("train") or {}
     v = tr.get("verdict") or {}
@@ -69,6 +110,16 @@ def valid_lora(d):
 
 
 def main(kind, src, out):
+    if kind == "readout_g1v3":
+        d = decide_readout_g1v3(src)
+        json.dump(d, open(out, "w"), indent=1)
+        print(json.dumps({"verdict": d["verdict"]}))
+        return 0 if valid_readout_g1v3(d) else 9
+    if kind == "readout_g1v2":
+        d = decide_readout_g1v2(src)
+        json.dump(d, open(out, "w"), indent=1)
+        print(json.dumps({"verdict": d["verdict"]}))
+        return 0 if valid_readout_g1v2(d) else 9
     d = decide_readout(src) if kind == "readout" else decide_lora(_load(src))
     json.dump(d, open(out, "w"), indent=1)
     print(json.dumps({"verdict": d["verdict"]}))
