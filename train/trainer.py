@@ -37,7 +37,7 @@ from .guard import SplitGuard
 from .lineage import diff as lineage_diff
 from .lineage import lineage
 from .lora import apply_lora, lora_parameters
-from .losses import LossConfig, add_order_consistency, aligned_order_js, decision_loss
+from .losses import LossConfig, add_order_consistency, aligned_order_js, decision_loss, rlcd_loss
 
 
 def teacher_tensor(batch, lp: torch.Tensor) -> torch.Tensor:
@@ -250,6 +250,11 @@ def row_groups_with_views(base_lengths: list[int], view_lengths: list[int], row_
 COMPILE_BACKEND = os.environ.get("SSDM_COMPILE_BACKEND", "inductor")
 
 
+def record_of(item_id: str) -> str:
+    """Record id of an item id ``<record id>/<question id>`` (``train.data.items_from_records``)."""
+    return item_id.rsplit("/", 1)[0]
+
+
 def lora_init_seed(seed: int) -> int:
     return seed * 1_000_003 + 17
 
@@ -371,6 +376,17 @@ class Trainer:
         self.history: list[dict[str, Any]] = []
         self.cards: list[dict[str, Any]] = []
         self.lineage = lineage(model.backbone, train_items)
+        # RLCD (loss arm "rlcd"): the frozen reference = the trainable tensors at set_reference() (the init checkpoint);
+        # p(gold) cache per item id for the record-exact term's questions outside the current group
+        self.ref_state: dict[str, torch.Tensor] | None = None
+        self._pgold: dict[str, float] = {}
+        self._record_qs: dict[str, list[str]] = {}
+        self._rlcd_order: tuple[int, list[int]] | None = None
+        if cfg.loss.arm == "rlcd":
+            if cfg.loss.kd or cfg.loss.order_consistency_weight or cfg.axis_loss_weight:
+                raise ValueError("arm 'rlcd' runs without KD / order-consistency / axis terms")
+            for it in train_items:
+                self._record_qs.setdefault(record_of(it.id), []).append(it.id)
 
     # ------------------------------------------------------------------ data order
     @staticmethod
@@ -381,6 +397,17 @@ class Trainer:
 
     def _order(self, epoch: int) -> list[int]:
         g = torch.Generator().manual_seed(self.cfg.seed * 100_003 + epoch)
+        if self.cfg.loss.arm == "rlcd":
+            # record-contiguous: records in a seeded random order, each record's questions adjacent, so a record's
+            # questions mostly share a step (the record-exact term sees them jointly). Cached per epoch.
+            if self._rlcd_order is None or self._rlcd_order[0] != epoch:
+                recs: dict[str, list[int]] = {}
+                for i, it in enumerate(self.train_items):
+                    recs.setdefault(record_of(it.id), []).append(i)
+                keys = list(recs)
+                self._rlcd_order = (epoch, [i for r in torch.randperm(len(keys), generator=g).tolist()
+                                            for i in recs[keys[r]]])
+            return self._rlcd_order[1]
         return torch.randperm(len(self.train_items), generator=g).tolist()
 
     def _next_batch(self) -> list[Item]:
@@ -404,16 +431,53 @@ class Trainer:
         dev = "cuda" if torch.cuda.is_available() and torch.cuda.device_count() > 0 else "cpu"
         return torch.autocast(device_type=dev, dtype=torch.bfloat16)
 
+    def set_reference(self) -> None:
+        """RLCD: freeze the CURRENT trainable tensors (call right after installing the init checkpoint, before any
+        resume) as the KL reference p_ref."""
+        self.ref_state = {n: p.detach().clone() for n, p in self.model.named_parameters() if p.requires_grad}
+
+    def _ref_log_probs(self, batch: list[Item]) -> torch.Tensor | None:
+        """p_ref log-probs of ``batch``: the same forward with the reference tensors swapped in (no grad)."""
+        if self.cfg.loss.arm != "rlcd":
+            return None
+        if self.ref_state is None:
+            raise ValueError("arm 'rlcd' needs Trainer.set_reference() (the init checkpoint) before training")
+        params = {n: p for n, p in self.model.named_parameters() if p.requires_grad}
+        if set(params) != set(self.ref_state):
+            raise ValueError("RLCD reference tensors do not match the trainable parameters")
+        live = {n: p.data for n, p in params.items()}
+        try:
+            for n, p in params.items():
+                p.data = self.ref_state[n]
+            with torch.no_grad(), self._autocast():
+                lp = self.model([i.row for i in batch]).log_probs.float()
+        finally:
+            for n, p in params.items():
+                p.data = live[n]
+        return lp.detach()
+
     def _row_loss(self, batch: list[Item], weight: float) -> float:
+        ref_lp = self._ref_log_probs(batch)
         with self._autocast():
             fw = self.model([i.row for i in batch])
-        loss = self._supervised_loss(fw, batch) * weight
+        loss = self._supervised_loss(fw, batch, ref_lp) * weight
         loss.backward()
         return float(loss.detach())
 
-    def _supervised_loss(self, fw, batch: list[Item]) -> torch.Tensor:
+    def _supervised_loss(self, fw, batch: list[Item], ref_lp: torch.Tensor | None = None) -> torch.Tensor:
         lp = fw.log_probs.float()
         y = torch.tensor([i.label for i in batch], device=lp.device)
+        if self.cfg.loss.arm == "rlcd":
+            if ref_lp is None:
+                raise ValueError("arm 'rlcd' needs the reference log-probs")
+            rids = [record_of(i.id) for i in batch]
+            here = {i.id for i in batch}
+            other = torch.tensor([float(np.prod([self._pgold.get(q, 1.0) for q in self._record_qs.get(r, [])
+                                                 if q not in here])) for r in rids], device=lp.device)
+            loss = rlcd_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss, ref_lp, rids, other)
+            pg = lp.detach().gather(1, y.unsqueeze(1)).squeeze(1).exp().tolist()
+            self._pgold.update({i.id: v for i, v in zip(batch, pg)})
+            return loss
         teacher = teacher_tensor(batch, lp) if self.cfg.loss.kd else None
         loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss, teacher)
         weight_order = self.cfg.loss.order_consistency_weight
@@ -479,9 +543,10 @@ class Trainer:
             return self._finish_step(total)
         for _ in range(self.cfg.grad_accum):
             batch = self._next_batch()
+            ref_lp = self._ref_log_probs(batch)
             with self._autocast():
                 fw = self.model([i.row for i in batch])
-            loss = self._supervised_loss(fw, batch) / self.cfg.grad_accum
+            loss = self._supervised_loss(fw, batch, ref_lp) / self.cfg.grad_accum
             loss.backward()
             total += float(loss.detach())
         return self._finish_step(total)

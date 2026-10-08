@@ -59,6 +59,7 @@ else  # generic: the mode's two files; resolved and checked once the log and fin
 fi
 TRAIN_DIR=$DATA/m2-150k
 TEACHER_ARGS=()
+INIT_ARGS=()
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -134,13 +135,15 @@ if not override and p.get("cell_config", cell) != cell:
 td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
-print(td, 1 if c.get("teacher") else 0)
+print(td, 1 if c.get("teacher") else 0, 1 if c.get("init_from") else 0)
 EOF
   ) || fail 5 "$MODE_ENV"
-  read -r TRAIN_SUB TEACHER <<< "$MODE_ENV"
+  read -r TRAIN_SUB TEACHER INIT <<< "$MODE_ENV"
   TRAIN_DIR=$DATA/$TRAIN_SUB
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
-  say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}"
+  # second-stage cells (config init_from, e.g. d14_rlcd): the pinned init tensors; run_cell checks sha256 + metadata
+  [ "$INIT" = 1 ] && INIT_ARGS=(--init-file "$DATA/init/trainable.safetensors")
+  say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, init ${INIT_ARGS[*]:-none}"
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
@@ -317,7 +320,7 @@ say "phase cell"
 mkdir -p "$CK/cell"
 [ -f "$CK/cell/cell.json" ] && cp "$CK/cell/cell.json" "$WORK/out/cell.json"
 timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" --records "$RECORDS" \
-  --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
+  --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" "${INIT_ARGS[@]}" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell

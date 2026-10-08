@@ -187,6 +187,12 @@ def summarize(a) -> dict:
                  "worst_case_usd": worst_case_usd(params), "hard_cap_usd": params["hard_cap_usd"]},
         "verdict": "measured",
     }
+    if params.get("start_point"):  # second-stage cells (d14_rlcd): the init checkpoint's own measured Index, copied
+        sp = params["start_point"]
+        child = ((vi.get("scores") or {}).get("child") or {}).get("index") or {}
+        out["start_point"] = {**sp, "child_minus_start_point": (round(child["point"] - sp["index"]["point"], 4)
+                                                                if "point" in child else None),
+                              "note": "unpaired point difference vs the init cell's Index from its own job"}
     if a.reference:
         refs = dict(x.split("=", 1) for x in a.reference)
         out["references"] = references(refs, rows, child_idx["index_results"], par_idx["index_results"], a.n_boot)

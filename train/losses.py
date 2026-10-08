@@ -149,13 +149,24 @@ class LossConfig:
     kd_temperature: float = 1.0
     #: opt-in content-aligned distribution consistency for eligible option-permuted training views
     order_consistency_weight: float = 0.0
+    #: arm "rlcd" only (``rlcd_loss``): KL(p || p_ref) weight, Brier weight, record-exact bonus weight. At the defaults
+    #: these fields are left out of the identity (old hashes unchanged).
+    rlcd_beta: float = 0.0
+    rlcd_brier: float = 0.0
+    rlcd_record: float = 0.0
 
     #: field -> default; left out of config identities at these values (old hashes unchanged)
     KD_DEFAULTS = {"kd_alpha": 0.0, "kd_temperature": 1.0}
 
     def __post_init__(self):
-        if self.arm not in ("ce", "clef"):
+        if self.arm not in ("ce", "clef", "rlcd"):
             raise ValueError(self.arm)
+        for k in ("rlcd_beta", "rlcd_brier", "rlcd_record"):
+            v = getattr(self, k)
+            if type(v) not in (int, float) or not 0.0 <= v < float("inf"):
+                raise ValueError(f"{k} must be finite and nonnegative, got {v!r}")
+            if v and self.arm != "rlcd":
+                raise ValueError(f"{k} is set but arm is {self.arm!r} (rlcd fields need arm 'rlcd')")
         if type(self.kd_alpha) not in (int, float) or not 0.0 <= self.kd_alpha <= 1.0:
             raise ValueError(f"kd_alpha must be in [0, 1], got {self.kd_alpha!r}")
         if type(self.kd_temperature) not in (int, float) or not 0.0 < self.kd_temperature < float("inf"):
@@ -178,13 +189,76 @@ class LossConfig:
                 d.pop(k)
         if d["order_consistency_weight"] == 0.0:
             d.pop("order_consistency_weight")
+        for k in ("rlcd_beta", "rlcd_brier", "rlcd_record"):
+            if d[k] == 0.0:
+                d.pop(k)
         return d
 
     @property
     def effective_rps_weight(self) -> float:
         if self.rps_weight is not None:
             return self.rps_weight
-        return 0.0 if self.arm == "ce" else 1.0
+        return 0.0 if self.arm in ("ce", "rlcd") else 1.0
+
+
+def option_rewards(lp: torch.Tensor, y: torch.Tensor, qtypes: list[str]) -> torch.Tensor:
+    """[B, K] reward of choosing each option: 1 for gold, 0 otherwise; on ordinal (``score``) questions partial credit
+    ``1 - |k - gold| / (K - 1)`` over the K valid levels (index order = level order, as ``rps``). 0 on padding."""
+    m = _valid(lp)
+    k = m.sum(-1, keepdim=True).to(lp.dtype)
+    idx = torch.arange(lp.shape[1], device=lp.device).unsqueeze(0).to(lp.dtype)
+    dist = (idx - y.unsqueeze(1).to(lp.dtype)).abs()
+    ordinal = torch.tensor([q == "score" for q in qtypes], device=lp.device).unsqueeze(1)
+    partial = (1.0 - dist / (k - 1).clamp_min(1.0)).clamp_min(0.0)
+    exact = (dist == 0).to(lp.dtype)
+    return torch.where(ordinal, partial, exact) * m
+
+
+def kl_to_ref(lp: torch.Tensor, ref_lp: torch.Tensor) -> torch.Tensor:
+    """Per row KL(p || p_ref) over the valid options (both ``-inf`` on the same padding)."""
+    m = _valid(lp)
+    if not bool((m == _valid(ref_lp)).all()):
+        raise ValueError("reference and policy log-probs disagree on the valid options")
+    diff = torch.where(m, lp - ref_lp, torch.zeros_like(lp))
+    return (lp.exp() * diff).sum(-1)
+
+
+def record_terms(p_gold: torch.Tensor, record_ids: list[str], other: torch.Tensor) -> torch.Tensor:
+    """Per row share of ``1 - P(record exact)``: per record present in the batch, ``P = prod_{rows of it here} p_gold
+    x other`` (``other`` [B]: detached product of the record's questions NOT in this batch, 1 if none), the record's
+    ``1 - P`` split evenly over its rows here (so the batch sum counts each record once)."""
+    out = torch.zeros_like(p_gold)
+    groups: dict[str, list[int]] = {}
+    for i, r in enumerate(record_ids):
+        groups.setdefault(r, []).append(i)
+    for rows in groups.values():
+        ix = torch.tensor(rows, device=p_gold.device)
+        prod = p_gold.index_select(0, ix).prod() * other[rows[0]]
+        out = out.index_add(0, ix, ((1.0 - prod) / len(rows)).expand(len(rows)))
+    return out
+
+
+def rlcd_loss(lp: torch.Tensor, y: torch.Tensor, qtypes: list[str], cfg: "LossConfig", ref_lp: torch.Tensor,
+              record_ids: list[str] | None = None, record_other: torch.Tensor | None = None) -> torch.Tensor:
+    """RLCD (Clef "Reinforcement Learning for Calibrated Decisions", our no-sampling form): per row
+    ``(1 - E_p[reward]) + rlcd_record x record share + rlcd_beta x KL(p || p_ref) + rlcd_brier x Brier``, mean over rows.
+    The expectation is exact (the output IS a distribution over the options), so no sampling / no variance. ``1 - R``
+    instead of ``-R``: the same gradient, a nonnegative loss (the pilot pass rule compares loss windows)."""
+    if ref_lp is None or ref_lp.shape != lp.shape:
+        raise ValueError("rlcd needs the reference log-probs with the policy's shape")
+    p = lp.exp() * _valid(lp)
+    r = option_rewards(lp, y, qtypes)
+    per = 1.0 - (p * r).sum(-1)
+    if cfg.rlcd_record:
+        if record_ids is None or len(record_ids) != lp.shape[0]:
+            raise ValueError("rlcd_record > 0 needs one record id per row")
+        other = torch.ones_like(per) if record_other is None else record_other.to(per.dtype).detach()
+        per = per + cfg.rlcd_record * record_terms(p.gather(1, y.unsqueeze(1)).squeeze(1), record_ids, other)
+    if cfg.rlcd_beta:
+        per = per + cfg.rlcd_beta * kl_to_ref(lp, ref_lp.detach())
+    if cfg.rlcd_brier:
+        per = per + cfg.rlcd_brier * brier(lp, y)
+    return per.mean()
 
 
 def arm_loss(lp: torch.Tensor, y: torch.Tensor, qtypes: list[str], cfg: LossConfig) -> torch.Tensor:
@@ -206,6 +280,8 @@ def decision_loss(lp: torch.Tensor, y: torch.Tensor, qtypes: list[str], cfg: Los
     order, or NaN in every position for a row without a teacher (that row falls back to the arm alone). KD without a
     ``teacher`` tensor is refused (a silent no-teacher run would look like a KD run); a ``teacher`` without KD is
     refused too."""
+    if cfg.arm == "rlcd":
+        raise ValueError("arm 'rlcd' is scored by rlcd_loss (it needs the reference distribution)")
     per = arm_loss(lp, y, qtypes, cfg)
     if not cfg.kd:
         if teacher is not None:

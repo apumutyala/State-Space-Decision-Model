@@ -362,6 +362,21 @@ def kd_fields(cfg: dict) -> dict:
     return {"kd_alpha": float(t["alpha"]), "kd_temperature": float(t["temperature"])}
 
 
+def rlcd_fields(cfg: dict) -> dict:
+    """``LossConfig`` RLCD weights from the cell's ``rlcd`` block ({beta, brier, record}); loss_arm must be "rlcd".
+    No block = {} (every other cell's loss config and hash unchanged)."""
+    r = cfg.get("rlcd")
+    if cfg.get("loss_arm") != "rlcd":
+        if r:
+            raise ValueError("an rlcd block needs loss_arm 'rlcd'")
+        return {}
+    if not isinstance(r, dict) or set(r) != {"beta", "brier", "record"}:
+        raise ValueError("loss_arm 'rlcd' needs rlcd = {beta, brier, record}")
+    if not cfg.get("init_from"):
+        raise ValueError("loss_arm 'rlcd' is a second stage: the cell needs an init_from block (the reference)")
+    return {"rlcd_beta": float(r["beta"]), "rlcd_brier": float(r["brier"]), "rlcd_record": float(r["record"])}
+
+
 def order_consistency_fields(cfg: dict) -> dict:
     """The single pre-registered order-consistency arm; absent means the legacy objective unchanged."""
     arm = cfg.get("order_consistency")
@@ -446,7 +461,8 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
 
     return TrainConfig(head=cfg["head"], head_kwargs=cfg.get("head_kwargs") or {}, layout=cfg["layout"],
                        fork_mode="cache", lora_rank=cfg["lora_rank"],
-                       loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg), **order_consistency_fields(cfg)),
+                       loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg), **order_consistency_fields(cfg),
+                                       **rlcd_fields(cfg)),
                        lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
                        warmup_steps=int(cfg.get("warmup_steps") or 0),
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
@@ -700,6 +716,8 @@ def _main(argv=None, ctx: dict | None = None):
     ap.add_argument("--device", default="cuda", help="cuda (paid runs); cpu only for the tiny-model dry run")
     ap.add_argument("--teacher-dir", default=None, help="KD cells (config 'teacher'): the pinned teacher export "
                     "(train.teacher.load_teacher); refused for a cell without a teacher block")
+    ap.add_argument("--init-file", default=None, help="cells with an init_from block (RLCD second stage): the pinned "
+                    "safetensors of the parent cell's trainable tensors (train.rlcd); refused without the block")
     a = ap.parse_args(argv)
 
     import torch
@@ -849,13 +867,34 @@ def _main(argv=None, ctx: dict | None = None):
         if not cell["smoke"]["pass"]:
             return EXIT["fork_mismatch"]
 
+    init_tensors = None
+    if cfg.get("init_from") or a.init_file:
+        if not (cfg.get("init_from") and a.init_file):
+            print("init: init_from block and --init-file go together", flush=True)
+            return EXIT["config"]
+        from train.rlcd import load_init
+
+        try:
+            init_tensors = load_init(a.init_file, cfg["init_from"])
+        except ValueError as e:
+            print(f"init: {e}", flush=True)
+            return EXIT["config"]
+        cell["init_from"] = {**cfg["init_from"], "n_tensors": len(init_tensors)}
+        save()
+
     def make_trainer(max_steps, ckpt_dir=None):
         model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])
         model.to(bb.device)
         from train.trainer import with_execution  # act_ckpt / row_batch / row_tokens of the cell (PR #86 hook)
 
-        return Trainer(model, with_execution(train_config(cfg, max_steps, ckpt_dir, cuda), cfg), train_items,
-                       eval_items, guard=guard)
+        tr = Trainer(model, with_execution(train_config(cfg, max_steps, ckpt_dir, cuda), cfg), train_items,
+                     eval_items, guard=guard)
+        if init_tensors is not None:  # RLCD: the parent cell's LoRA + head, frozen as p_ref (before any resume)
+            from train.rlcd import apply_init
+
+            apply_init(tr.model, init_tensors)
+            tr.set_reference()
+        return tr
 
     if "ladder" in stages and "ladder" not in cell:
         lad = {}
