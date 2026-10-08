@@ -8,7 +8,7 @@
 #   job_params_<MODE>.json, both required (exit 5 if missing or if the params' own "mode" / "cell_config" disagree).
 #   Optional params "train_dir" (relative to $DATA, default m2-150k) moves the training set. A cell config with a
 #   "teacher" (KD) block verifies $DATA/teacher before any training and passes --teacher-dir to run_cell / m2_gates.
-#   Params with a "checkpoint" block (mode hijack_eval, BOARD H1) are an EVAL-ONLY run of a SAVED checkpoint: no
+#   Params with "eval_only": "hijack" + a "checkpoint" block (mode hijack_eval, BOARD H1) are an EVAL-ONLY run of a SAVED checkpoint: no
 #   heldout / parent g12+index / reprice / cell phase. Setup + guard as usual, then phase checkpoint (the artifact tar
 #   from the URL in $<checkpoint.url_env>, sha256-pinned; the cell.json shipped at $DATA/checkpoint/cell.json, pinned,
 #   config == $CELL), parent_hijack (stock readout, live rate guard), evals (m2_gates --stage hijack: exit 46 =
@@ -137,7 +137,9 @@ if not override and p.get("cell_config", cell) != cell:
 td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
-ck = p.get("checkpoint")
+ck = p.get("checkpoint") if p.get("eval_only") == "hijack" else None  # other eval_only modes (fulldev) branch elsewhere
+if p.get("eval_only") == "hijack" and ck is None:
+    sys.exit(f"mode {mode}: eval_only hijack needs a checkpoint block")
 if ck is not None:
     need = ("artifact", "artifact_sha256", "member", "ckpt_sha256", "latest_json_sha256", "cell_json_sha256", "url_env")
     miss = [k for k in need if not isinstance(ck.get(k), str) or not ck[k]]

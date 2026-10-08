@@ -164,11 +164,12 @@ def test_mode_files_and_runner_wiring():
     base = json.loads((ROOT / "jobs/m2_first_cell/m2_first_cell_rwkv7.json").read_text(encoding="utf-8"))
     mode = json.loads((ROOT / "jobs/m2_first_cell/m2_first_cell_rwkv7_hijack_eval.json").read_text(encoding="utf-8"))
     assert mode == base and p["mode"] == "hijack_eval" and p["decision_rule"] is None
+    assert p["eval_only"] == "hijack"  # fulldev_eval uses eval_only "fulldev"; only "hijack" takes this branch
     assert p["submit"]["command"].endswith("first_cell_job.sh hijack_eval") and "CKPT_URL" in p["submit"]["env"]
     assert set(p["phase_caps_minutes"]) == {"setup", "guard", "checkpoint", "parent_hijack", "evals", "report"}
     assert any(d["dest"] == "checkpoint/cell.json" for d in p["context"]["data"])
     assert not any(d["dest"].startswith("parent_arm_seed/") for d in p["context"]["data"])
     sh = (ROOT / "jobs/m2_first_cell/first_cell_job.sh").read_text(encoding="utf-8")
     for s in ("jobs.m2_first_cell.checkpoint_loader install", "--stage hijack", "jobs.m2_first_cell.hijack_eval",
-              "case $r in 46) ;;", "VALIDATOR=jobs.m2_first_cell.hijack_eval:valid_result"):
+              "case $r in 46) ;;", 'p.get("eval_only") == "hijack"', "VALIDATOR=jobs.m2_first_cell.hijack_eval:valid_result"):
         assert s in sh, s

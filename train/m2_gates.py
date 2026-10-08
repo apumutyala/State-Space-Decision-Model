@@ -966,7 +966,7 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
                           child_index_decide=decider.decide,
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),
-                                 "serving_bundle": export_serving_bundle(decider),
+                                 "serving_bundle": (export_serving_bundle(decider) if ft is not None else None),
                                  "temperature": ({**ft.identity(), "disjointness": ft.disjointness,
                                                   "proof_sha256": ft.proof_sha256, "fit_report": ft.fit_report}
                                                  if ft is not None else {"fit": False, "reason": "hijack-only "

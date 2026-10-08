@@ -17,6 +17,7 @@
  },
  "job": "m2-first-cell-hijack-eval",
  "status": "draft: not submitted; BOARD H1 hijack + steer add-on on D1 (job-c7pq2)",
+ "eval_only": "hijack",
  "chip": "h100",
  "chip_count": 1,
  "max_duration_minutes": 117,
