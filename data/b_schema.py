@@ -762,8 +762,8 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
         ss = r.get("aug", {}).get("schema_synth", {})
         src = "P3:extra" if ss.get("pool") == "P3" else r["source"]
         elig[src].append((r["id"], ss.get("root") or sorted(root_items(r))[0], ss.get("variant", 0)))
-    if n_cand != len(lens) or set(lens) - set(x for v in elig.values() for x, _, _ in v) - set():
-        pass
+    if n_cand != len(lens):
+        raise SystemExit(f"token check covers {len(lens)} ids, candidates file has {n_cand}: run every shard")
     tot = sum(meta["v3_mix"].values())
     n_synth = meta["n_synth_target"]
     quota = {s: round(n_synth * c / tot) for s, c in meta["v3_mix"].items()}
