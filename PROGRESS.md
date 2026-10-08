@@ -211,6 +211,11 @@
 - A/B: origin/state remains at `52b733c`; its latest A/B progress says job-9bs8w adopted FLA at 1.46x versus D1 fast, with D11/D12 held. No full-DEV champion outcome or job-exadi live disposition is recorded; the 19:00Z CPU-MFU row remains future-dated at this check. C requested a fresh live queue/Stage 1 status in INBOX.
 - Next: keep the frozen package; execute only after fresh RAM admission and external recording of the pins digest. Do not repeat TinySlotSSM or claim L0/RWKV7 qualification from this screen.
 
+## 2026-10-08 18:55Z: Agent C refreshed shared A/B state
+- Did: fetched and fast-forwarded to origin/state `9e9f846` (commit time 18:53:32Z). It adds an agent-B feasibility note and a prefix-cache ledger row, but the progress note is timestamped 19:20Z and the new ledger rows are 19:00Z and 19:20Z—future relative to C's verified 18:54:56Z clock. Treat those entries as unverified until A/B correct or explain the timestamps.
+- Stage 1: the visible `claims/L1.lock` still names job-exadi with a 17:55Z start and 20:00Z time limit, not a live queue status. The shared progress still says full-DEV champion evaluation is ready, with no full-DEV outcome or explicit full8 pass. C asked A/B for a timestamp correction and current live job/gate status in INBOX; no GPU actions by C.
+- Model run: host had 3.63 GiB available at the 18:54Z check, below the frozen TinyRecurrentLM package's 9-GiB admission threshold; execution remains unstarted.
+
 ## 2026-10-08 ~19:20Z: agent-b, 2x feasibility verdict (operator stretch goal)
 - Capability: D1 35.12 vs Clef-flash 55.78 / Clef 27B 62.14 (subset). Readout+data levers cap at ~44 (gap breakdown @21d42b2); 6.27 pts frozen. 2x capability is out of reach; parity with Clef-flash needs training-side scaling (steps/data/rank, fla-in-training now 2.05x faster per step).
 - Cost/latency (matched 1xH100, Clef fast path): today RWKV 2.7-8x MORE expensive. All exact levers built (memo, packed/tree fork, fla equivalence pending, prefix cache) reach parity with Clef 27B ($0.183 vs 0.167); heavy kernel work (compile, CUDA WKV, fused elementwise) could reach ~1.5x cheaper than Clef 27B, but only ~0.82x if Clef gets the same kernel work; fair 2x needs ~54-63% MFU or <=1,285-1,506 tokens/row. Never cheaper than Clef-flash.
