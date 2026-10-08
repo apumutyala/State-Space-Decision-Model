@@ -171,7 +171,7 @@ def main(args: list[str]) -> None:
                     "workload_completion_verified": completed == "true",
                     "elapsed_seconds": int(elapsed), "max_retries": 0,
                     "import_outcome": imported, "hard_cap_usd": 3.0,
-                    "max_exposure_including_original_incident_usd": 2.525580,
+                    "max_exposure_including_original_incident_usd": 2.525600,
                     "transfer_events": load(events_path) if Path(events_path).exists() else []})
     else:
         raise ValueError("unknown local gate")
