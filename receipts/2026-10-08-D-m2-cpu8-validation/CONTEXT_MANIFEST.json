@@ -1,0 +1,31 @@
+{
+ "job": "m2_first_cell",
+ "m1_sha": "11fb140ce64802222d8abe796267e22e14fe4959",
+ "branch_commit": "11fb140ce64802222d8abe796267e22e14fe4959",
+ "builder": "jobs.common.launch",
+ "params": "jobs/m2_first_cell/job_params.json",
+ "dockerfile_sha256": "836b8bf074dee99c600a37a32359d116c594f436233425432a290bb2f682526c",
+ "files_sha256": {
+  "data/manifests/sample-150000-seed20261006.pointer.json": "c65c10450fe9edef801dce6bbf24f091c1014263fd66ceb5412af23fc08ddc09",
+  "jobs/m2_first_cell/data.sha256": "d86fa9ab30920e5748c6074afc2536a0fc9a639e5a8cb330ebf701a8f019a7ce",
+  "jobs/m2_first_cell/first_cell_job.sh": "b93ede46d3828b7f591c0d01c20938f2cc3d6fc87f5b3082c83bd0b723e9f2f8",
+  "jobs/m2_first_cell/job_params.json": "1d8584d81517df739ae98e6103585d3bae5533c1348a0bfa1606d4aff79021b3",
+  "jobs/m2_first_cell/m2_first_cell_rwkv7.json": "60c6e45253164bc40a052964c3f6de674b473fa886aa6ad15dfe27c3846f8ec2",
+  "jobs/m2_pilot/guard_pin.json": "dec1809c397efc12ea9c4a4329ddf5d8bfe8a3ce0fc14baf77b51d038267f7f0",
+  "jobs/rwkv7/snapshot.sha256": "aec230e7aaab26c4a876b0cff125288f8e100eb98d01f91966e40299cccd205f",
+  "train/cohorts/m2-dev-cohort-v2.jsonl.gz": "292cbf5bd3af28192c4efaa62f3de29f9626955e1f7ed60c45fee100184be715"
+ },
+ "data_sha256": {
+  "data/m2-150k/records.jsonl.gz": "3f42bf07f673ff1b1d54c240ddac0bb6abf296f0433f8d8c69240c439d699522",
+  "data/m2-150k/sample-150000-seed20261006.content.jsonl.gz": "6daa654c3e625a12674e3cf5ad2fa0b62c018d0dbdb64df56ff47b33b14cf491",
+  "data/m2-150k/sample-150000-seed20261006.manifest.jsonl.gz": "d4888c99703becfadf8e9b9239e8d270cc47dd58a61e670e715a948e8021aadb",
+  "data/m2/records.jsonl.gz": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
+  "data/parent_arm_seed/arm.json": "f8a114f3050a82cafd9e45364aa7bee2ae5ef98b2d0516281b610c3f33482145",
+  "data/parent_arm_seed/units-g12.json": "c16c24db65124b78af782305a55d2092b8b4163459a9501714b314e4897ef395",
+  "data/parent_arm_seed/units-index.json": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001",
+  "data/slices/dev-rows.jsonl.gz": "d1202ab84de3ddf74e53aff6b1fc6bba4f33352dfe03e9814a68bcbf2f235c84",
+  "data/suite-0.2/added-rows.jsonl.gz": "921e245c4ec2f1ea37f9f82d206fe4ac3ac4104e75b3f92521606e5973934b18",
+  "data/suite-0.2/excluded-questions.json": "331df32d4b719c7db43214d0e5d85859d39c3b2eb7d0b3812214cce150155e81",
+  "data/suite-0.2/selected-rows.jsonl.gz": "5510346a750e116184d810dff8abe8b3e2b1ff03e5e9e43516caaf00ce6dd55b"
+ }
+}

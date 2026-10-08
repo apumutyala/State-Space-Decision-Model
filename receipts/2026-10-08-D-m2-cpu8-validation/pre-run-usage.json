@@ -1,0 +1,340 @@
+{
+  "builds": {
+    "billed_minutes": 197,
+    "free_minutes": 300,
+    "object": "build_usage",
+    "usd": 1.873162,
+    "usd_micros": 1873162
+  },
+  "items": [
+    {
+      "chip": "cpu-8",
+      "minutes": 0.62,
+      "name": "ssdm-codex-m2cpu8-20261007",
+      "object": "node_usage",
+      "usd": 0.0048,
+      "usd_micros": 4800
+    },
+    {
+      "chip": "cpu-8",
+      "minutes": 22.3,
+      "name": "ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32",
+      "object": "node_usage",
+      "usd": 0.1792,
+      "usd_micros": 179200
+    },
+    {
+      "chip": "cpu-8",
+      "minutes": 0.2,
+      "name": "ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6",
+      "object": "node_usage",
+      "usd": 0.0016,
+      "usd_micros": 1600
+    }
+  ],
+  "jobs": {
+    "attempt_count": 23,
+    "batches": [
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 532.17,
+        "job_count": 1,
+        "label": "full8: all 8 attention layers -> GDN (Q9-AF), rule be9eed8+A1 @53b4cf7 (max_duration 720: org ceiling)",
+        "object": "batch_usage",
+        "usd": 26.3417,
+        "usd_micros": 26341700
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 101.15,
+        "job_count": 1,
+        "label": "probe9b: one-layer Q9-AF conversion probe (full, job-4j3vu rates) @24f164e",
+        "object": "batch_usage",
+        "usd": 5.0061,
+        "usd_micros": 5006100
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 74.47,
+        "job_count": 1,
+        "label": "m2 first cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k; tvuat ADOPT exec @9c76c93",
+        "object": "batch_usage",
+        "usd": 3.6861,
+        "usd_micros": 3686100
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 50.07,
+        "job_count": 1,
+        "label": "m1 qual C-only (9B, memory fix) @3b4169a, build timeout 60",
+        "object": "batch_usage",
+        "usd": 2.4783,
+        "usd_micros": 2478300
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 44.73,
+        "job_count": 1,
+        "label": "q9_feature_cache/stock_train @ ctx 5f9e4fc9d818 (selfcheck v3) @bcbb1ea",
+        "object": "batch_usage",
+        "usd": 2.2143,
+        "usd_micros": 2214300
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 42.4,
+        "job_count": 1,
+        "label": "q9_feature_cache/stock_dev @ ctx 009f7f5e241a (setup cap, post-selfcheck clock) @401bc9a",
+        "object": "batch_usage",
+        "usd": 2.0988,
+        "usd_micros": 2098800
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 36.12,
+        "job_count": 1,
+        "label": "rwkv7 stage A v2: state-fork readout + steer smoke @8a97036",
+        "object": "batch_usage",
+        "usd": 1.7875,
+        "usd_micros": 1787500
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 35.6,
+        "job_count": 1,
+        "label": "clef_baseline/teacher_clef_flash @ ctx 165b18aa8ea8 (24k training draw) @5b478e3",
+        "object": "batch_usage",
+        "usd": 1.7622,
+        "usd_micros": 1762200
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 32.72,
+        "job_count": 1,
+        "label": "cell_step_profile v1-A2 (baseline / ckpt_rows_lean / ckpt_rows / ckpt) @54ee89d",
+        "object": "batch_usage",
+        "usd": 1.6192,
+        "usd_micros": 1619200
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 28.2,
+        "job_count": 1,
+        "label": "clef-flash: Index DEV + ECE + latency + safety_eval (no GCG) @194f994",
+        "object": "batch_usage",
+        "usd": 1.3959,
+        "usd_micros": 1395900
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 21.93,
+        "job_count": 1,
+        "label": "clef_baseline/index_subset @ ctx 79c8a50237e3 (Clef 27B, 2,008 DEV subset, #106 preflight) @6fef642",
+        "object": "batch_usage",
+        "usd": 1.0857,
+        "usd_micros": 1085700
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 21.38,
+        "job_count": 1,
+        "label": "fla RWKV7 truth_v2 (fp64 truth + cell train speed, rule v2+A1) @0f4b8ad",
+        "object": "batch_usage",
+        "usd": 1.0582,
+        "usd_micros": 1058200
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 16.97,
+        "job_count": 1,
+        "label": "fla RWKV7 kernel equivalence + throughput v3 (warmup cap 13) @4733f78",
+        "object": "batch_usage",
+        "usd": 0.8393,
+        "usd_micros": 839300
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 15.05,
+        "job_count": 1,
+        "label": "m1 H100 hardware qualification v2 (torch 2.13/triton 3.7.1) @1e830ff",
+        "object": "batch_usage",
+        "usd": 0.7447,
+        "usd_micros": 744700
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 14.93,
+        "job_count": 1,
+        "label": "q9_feature_cache/stock_dev @ ctx 70e9e6f27b8b (selfcheck v3) @bcbb1ea",
+        "object": "batch_usage",
+        "usd": 0.7392,
+        "usd_micros": 739200
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 11.42,
+        "job_count": 1,
+        "label": "rwkv7 stage A: readout + steer smoke @1e830ff",
+        "object": "batch_usage",
+        "usd": 0.5643,
+        "usd_micros": 564300
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 9.72,
+        "job_count": 1,
+        "label": "q9_feature_cache/stock_train @ ctx dff503cf541c @06e9733",
+        "object": "batch_usage",
+        "usd": 0.4807,
+        "usd_micros": 480700
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 8.75,
+        "job_count": 1,
+        "label": "q9_feature_cache/stock_dev @ ctx ae61e99e4edf @06e9733",
+        "object": "batch_usage",
+        "usd": 0.4323,
+        "usd_micros": 432300
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 7.7,
+        "job_count": 1,
+        "label": "clef_baseline/index_subset @ ctx 1c844639f10c (Clef 27B, 2,008 DEV subset) @5b478e3",
+        "object": "batch_usage",
+        "usd": 0.3806,
+        "usd_micros": 380600
+      },
+      {
+        "attempt_count": 1,
+        "gpu_minutes": 6.57,
+        "job_count": 1,
+        "label": "clef_baseline/overlength_flash @ ctx 86e53966df05 (51 rows at 32k) @5b478e3",
+        "object": "batch_usage",
+        "usd": 0.3245,
+        "usd_micros": 324500
+      },
+      {
+        "attempt_count": 3,
+        "gpu_minutes": 12.55,
+        "job_count": 3,
+        "labels": 3,
+        "object": "batch_usage_remainder",
+        "usd": 0.6204,
+        "usd_micros": 620400
+      }
+    ],
+    "gpu_minutes": 1124.58,
+    "job_count": 23,
+    "object": "job_usage_summary",
+    "top_jobs": [
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 532.17,
+        "job_id": "job-2xe5w",
+        "label": "full8: all 8 attention layers -> GDN (Q9-AF), rule be9eed8+A1 @53b4cf7 (max_duration 720: org ceiling)",
+        "object": "job_usage",
+        "usd": 26.3417,
+        "usd_micros": 26341700
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 101.15,
+        "job_id": "job-5cmat",
+        "label": "probe9b: one-layer Q9-AF conversion probe (full, job-4j3vu rates) @24f164e",
+        "object": "job_usage",
+        "usd": 5.0061,
+        "usd_micros": 5006100
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 74.47,
+        "job_id": "job-uhxb5",
+        "label": "m2 first cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k; tvuat ADOPT exec @9c76c93",
+        "object": "job_usage",
+        "usd": 3.6861,
+        "usd_micros": 3686100
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 50.07,
+        "job_id": "job-4j3vu",
+        "label": "m1 qual C-only (9B, memory fix) @3b4169a, build timeout 60",
+        "object": "job_usage",
+        "usd": 2.4783,
+        "usd_micros": 2478300
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 44.73,
+        "job_id": "job-wuw7g",
+        "label": "q9_feature_cache/stock_train @ ctx 5f9e4fc9d818 (selfcheck v3) @bcbb1ea",
+        "object": "job_usage",
+        "usd": 2.2143,
+        "usd_micros": 2214300
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 42.4,
+        "job_id": "job-sxv3u",
+        "label": "q9_feature_cache/stock_dev @ ctx 009f7f5e241a (setup cap, post-selfcheck clock) @401bc9a",
+        "object": "job_usage",
+        "usd": 2.0988,
+        "usd_micros": 2098800
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 36.12,
+        "job_id": "job-tkfaj",
+        "label": "rwkv7 stage A v2: state-fork readout + steer smoke @8a97036",
+        "object": "job_usage",
+        "usd": 1.7875,
+        "usd_micros": 1787500
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 35.6,
+        "job_id": "job-tnrwu",
+        "label": "clef_baseline/teacher_clef_flash @ ctx 165b18aa8ea8 (24k training draw) @5b478e3",
+        "object": "job_usage",
+        "usd": 1.7622,
+        "usd_micros": 1762200
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 32.72,
+        "job_id": "job-tvuat",
+        "label": "cell_step_profile v1-A2 (baseline / ckpt_rows_lean / ckpt_rows / ckpt) @54ee89d",
+        "object": "job_usage",
+        "usd": 1.6192,
+        "usd_micros": 1619200
+      },
+      {
+        "attempt_count": 1,
+        "chip": "h100",
+        "gpu_minutes": 28.2,
+        "job_id": "job-sgihj",
+        "label": "clef-flash: Index DEV + ECE + latency + safety_eval (no GCG) @194f994",
+        "object": "job_usage",
+        "usd": 1.3959,
+        "usd_micros": 1395900
+      }
+    ],
+    "usd": 55.66,
+    "usd_micros": 55660000
+  },
+  "month": "2026-10",
+  "object": "list",
+  "total_usd": 57.718762,
+  "total_usd_micros": 57718762
+}

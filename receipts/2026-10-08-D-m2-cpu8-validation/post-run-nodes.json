@@ -1,0 +1,66 @@
+{
+  "items": [
+    {
+      "chip": "cpu-8",
+      "clock_lock": false,
+      "created_at": "2026-10-08T02:10:11.689350+00:00",
+      "created_by": "you",
+      "id": "f92fef84-7458-4966-8b02-55a89d74523b",
+      "mission": "auto-2026-10-08-b181bc96",
+      "name": "ssdm-codex-m2cpu8-20261007",
+      "object": "node",
+      "profiling": false,
+      "scratch_gib": null,
+      "state": "stopped (disk snapshotted)",
+      "yours": true
+    },
+    {
+      "chip": "cpu-8",
+      "clock_lock": false,
+      "created_at": "2026-10-08T02:57:43.823643+00:00",
+      "created_by": "you",
+      "id": "a6deba85-60b6-47df-b648-3208db96e49c",
+      "mission": "auto-2026-10-08-b181bc96",
+      "name": "ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6",
+      "object": "node",
+      "profiling": false,
+      "scratch_gib": null,
+      "state": "stopped (disk snapshotted)",
+      "yours": true
+    },
+    {
+      "chip": "cpu-8",
+      "clock_lock": false,
+      "created_at": "2026-10-08T03:31:16.680312+00:00",
+      "created_by": "you",
+      "id": "200499d1-62a7-4e31-94cd-42d6d6707e39",
+      "mission": "auto-2026-10-08-b181bc96",
+      "name": "ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32",
+      "object": "node",
+      "profiling": false,
+      "scratch_gib": null,
+      "state": "stopped (disk snapshotted)",
+      "yours": true
+    },
+    {
+      "chip": "cpu-8",
+      "clock_lock": false,
+      "created_at": "2026-10-08T05:08:41.125518+00:00",
+      "created_by": "you",
+      "id": "ba0ebac6-b214-430f-9217-dd9d47fdd4ed",
+      "mission": "auto-2026-10-08-b181bc96",
+      "name": "ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2",
+      "object": "node",
+      "profiling": false,
+      "region": "us-west-2",
+      "scratch_gib": null,
+      "state": "stopped (disk intact)",
+      "yours": true
+    }
+  ],
+  "notices": [
+    "ticket tkt-eb4gx is resolved - get_ticket(\"tkt-eb4gx\") for the outcome."
+  ],
+  "object": "list",
+  "workspace": "default"
+}

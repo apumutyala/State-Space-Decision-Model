@@ -1,0 +1,147 @@
+{
+ "job": "m2_first_cell",
+ "mode": null,
+ "sha": "11fb140ce64802222d8abe796267e22e14fe4959",
+ "params": "jobs/m2_first_cell/job_params.json",
+ "context": {
+  "file": "/home/dev/m2-cpu8-validation/work/launch-output/m2_first_cell-11fb140ce648.tar.zst",
+  "sha256": "be4c1d3893358067c82962c077e5d7eadfaf74a27c3a0dd2b66d34e94953e6b7",
+  "size_bytes": 469179636
+ },
+ "cost": {
+  "worst_case_usd": 66.03,
+  "hard_cap_usd": 70.0,
+  "set_workspace_cap_increment_usd": 67
+ },
+ "lint": {
+  "waived": {}
+ },
+ "tests": {
+  "files": [
+   "tests/test_jobs_lint.py",
+   "tests/test_m2_first_cell.py",
+   "tests/test_m2_first_cell_shell.py"
+  ],
+  "summary": "153 passed, 0 failed, 4 skipped",
+  "test_env": {
+   "transformers": "5.17.0",
+   "with": [],
+   "allowed_skips": [
+    {
+     "reason": "needs a git checkout",
+     "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+    },
+    {
+     "reason": "SSDM_RWKV7_TOKDIR",
+     "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+    }
+   ],
+   "image": "jobs/rwkv7/Dockerfile"
+  },
+  "passed": 153,
+  "failed": 0,
+  "skipped": 4,
+  "skipped_other_pins": [],
+  "skipped_allowed": [
+   {
+    "test": "tests.test_jobs_lint::test_gitattributes_pin_lf",
+    "reason": "needs a git checkout"
+   },
+   {
+    "test": "tests.test_jobs_lint::test_git_archive_head_has_no_cr_even_with_autocrlf",
+    "reason": "needs a git checkout"
+   },
+   {
+    "test": "tests.test_m2_first_cell::test_tvuat_receipt_bytes_survive_an_autocrlf_checkout",
+    "reason": "needs a git checkout"
+   },
+   {
+    "test": "tests.test_m2_first_cell_shell::test_sha256_manifests_are_lf_in_checkout_and_archive",
+    "reason": "needs a git checkout"
+   }
+  ]
+ },
+ "calls": [
+  {
+   "tool": "open_mission",
+   "args": {
+    "name": "m2-first-cell"
+   }
+  },
+  {
+   "tool": "create_context",
+   "args": {
+    "sha256": "be4c1d3893358067c82962c077e5d7eadfaf74a27c3a0dd2b66d34e94953e6b7",
+    "size_bytes": 469179636
+   }
+  },
+  {
+   "tool": "upload",
+   "args": {
+    "file": "/home/dev/m2-cpu8-validation/work/launch-output/m2_first_cell-11fb140ce648.tar.zst",
+    "how": "curl -T <file> '<put url>'"
+   }
+  },
+  {
+   "tool": "finalize_context",
+   "args": {
+    "context_id": "<from create_context>"
+   }
+  },
+  {
+   "tool": "validate_job",
+   "args": "submit_job args minus context_id/idempotency_key/mission; must pass the cost-cap preflight without force"
+  },
+  {
+   "tool": "submit_job",
+   "args": {
+    "chip": "h100",
+    "chip_count": 1,
+    "mission": "m2-first-cell",
+    "idempotency_key": "m2-first-cell-be4c1d389335",
+    "label": "m2 first cell: RWKV7-13.3B LoRA r64 + cache-fork head, Clef arm, 150k; tvuat ADOPT exec",
+    "context_id": "<from create_context>",
+    "dockerfile_path": "Dockerfile",
+    "build_timeout_minutes": 60,
+    "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh",
+    "env": {
+     "TOK_S": "3757",
+     "CALL_S": "0.117"
+    },
+    "max_duration_minutes": 637,
+    "max_restarts": 0,
+    "resume": "checkpoint",
+    "queue_ttl_minutes": 1440,
+    "hf_cache": true,
+    "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+    "checks": {
+     "success": {
+      "check": {
+       "all_of": [
+        {
+         "type": "file_exists",
+         "path": "/output/M2_FIRST_CELL_DONE"
+        },
+        {
+         "type": "file_exists",
+         "path": "/output/MANIFEST.jsonl"
+        }
+       ]
+      }
+     },
+     "health": {
+      "check": {
+       "type": "heartbeat",
+       "path": "/output/heartbeat"
+      },
+      "interval_s": 600,
+      "grace_period_s": 1800,
+      "fail_threshold": 2,
+      "on_fail": "kill"
+     }
+    },
+    "clock_lock": true
+   }
+  }
+ ]
+}

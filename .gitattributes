@@ -19,3 +19,10 @@ receipts/** -text
 # The failed CPU-8 package's original checksum list is preserved byte-for-byte.
 receipts/2026-10-07-D-m2-cpu8-transfer-failure/package.sha256 -text whitespace=cr-at-eol
 receipts/2026-10-08-D-cpu8-wake-sequence-failure/package.sha256 -text whitespace=cr-at-eol
+
+# Preserve raw CPU-8 receipt bytes; keep authored text/checksum files LF-stable.
+receipts/2026-10-08-D-m2-cpu8-validation/*.json -text whitespace=cr-at-eol
+receipts/2026-10-08-D-m2-cpu8-validation/*.xml -text whitespace=cr-at-eol
+receipts/2026-10-08-D-m2-cpu8-validation/*.log -text whitespace=cr-at-eol
+receipts/2026-10-08-D-m2-cpu8-validation/README.md text eol=lf
+receipts/2026-10-08-D-m2-cpu8-validation/SHA256SUMS.txt text eol=lf
