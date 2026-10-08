@@ -1,0 +1,42 @@
+{
+ "test_env": {"transformers": "5.17.0", "with": [], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}, {"reason": "fla not installed here", "why": "this job's image pins no fla, so the fla source-mirror test has nothing to mirror"}], "image": "jobs/rwkv7/Dockerfile"},
+ "_comment": "jobs/rwkv7 JOB=readout_g1v3 (R3): stock RWKV7-G1k-13.3B on the 2,008-row Index DEV subset under eight readout variants in ONE process (one model load, jobs.rwkv7.readout_variants), in priority order v2 (control, byte-identical to job-zhyvg 27.31 [24.53, 30.03]), v2f (v2 + dict-instruction fix), v3 (fix + v3 code table + code key), v3w (v3 + word ids by own first token), v3r (v3 + own top-m re-read), v3p (v3 + presentation permutation), v1 (jrt-rwkv-g1-v1, for a later CPU-side v1+v3 ensemble), v3c (v3 + contextual calibration). Index cap = 21 min (job-zhyvg v2) x 8 x 1.3 = 218 -> 220. Worst case (60 + 2 x 282) x 0.0495 = $30.89.",
+ "job": "rwkv7-readout-g1v3",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only: the eight subset Index scores with CI are recorded in CANDIDATES.md next to job-zhyvg; no pass/fail gate",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 282,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 31.0,
+ "reserve_minutes": 10,
+ "phase_caps_minutes": {"setup": 20, "index": 220, "score": 32},
+ "expected_minutes": {"build": 15, "setup": 12, "index": 185, "score": 5},
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "model_bytes": 26540800536,
+ "dev_subset": "jobs/common/dev_subset_m1.json",
+ "mission": "track-d-rwkv7-r3-catalog",
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/rwkv7/rwkv7_job.sh",
+  "env": {"JOB": "readout_g1v3", "PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1", "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"},
+  "key": "track-d-rwkv7-readout-g1v3",
+  "label": "rwkv7 R3: stock readout, v2/v2f/v3/v3w/v3r/v3p/v1/v3c, Index DEV subset, one model load",
+  "checks": {
+   "success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/RWKV7_READOUT_G1V3_DONE"},
+                                    {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+   "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 600, "grace_period_s": 1800,
+              "fail_threshold": 2, "on_fail": "kill"}
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "manifest_files": ["jobs/rwkv7/snapshot.sha256", "jobs/common/dev_subset_m1.json", "jobs/clef_baseline/data.sha256"],
+  "data": [{"src": "slices/dev-rows.jsonl.gz", "dest": "slices/dev-rows.jsonl.gz", "pin": "jobs/clef_baseline/data.sha256"}]
+ }
+}

@@ -29,6 +29,8 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | probe9b (one-layer 9B conversion probe; re-priced from the job-4j3vu measured rates, issue #68) | `jobs/probe9b/` | $28.21 | $40 | ~$6.58 |
 | rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $16.34 | $20 | ~$4.70 |
 | rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $19.30 | $20 | ~$7.72 |
+| rwkv7 C1 (stock readout through the vendor-compliant jrt-rwkv-g1-v2 template, DEV subset only) | `jobs/rwkv7/job_params_readout_g1v2.json` `JOB=readout_g1v2` | $14.36 | $15 | ~$2.50 |
+| rwkv7 R3 (stock readout, v2 / v2f / v3 / v3w / v3r / v3p / v1 / v3c in one process, DEV subset only) | `jobs/rwkv7/job_params_readout_g1v3.json` `JOB=readout_g1v3` | $30.89 | $31 | ~$10.74 |
 | fla_rwkv7 (fla chunk_rwkv7 gate, v1 rule; ran as job-jn47u) | `jobs/fla_rwkv7/` | $3.96 | $4.50 | ~$1.09 |
 | fla_rwkv7 truth_v2 (RULE v2 + A1: fp64-truth numerics, m2 cell train speed; `fla_job.sh truth_v2`) | `jobs/fla_rwkv7/job_params_truth_v2.json` | $5.74 | $6 | ~$1.19 |
 | cell_step_profile (m2 cell train step: baseline / ckpt_rows_lean / ckpt_rows / ckpt; pre-registered rule v1-A2) | `jobs/cell_step_profile/` | $8.22 | $8.50 | ~$1.59 |
@@ -114,3 +116,11 @@ recorded decision, not an automatic one.
 Worst-case envelope total, including the $16.11 MTD spend, the Clef-27B Index line and both optional teachers, is at most $280.15 (branch A), so every branch fits $525 with the Language and Reserve
 lines intact. Branch A leaves System 1 ~$70 above the cache-fork m2 plan before the optional teachers (it left ~$4 at the old ~$150 full-8
 estimate); the full-8 worst case already counts a 60-min build and two full attempts.
+
+D3 candidate `jobs/m2_first_cell/job_params_d3_r1_gold.json` (mode `d3_r1_gold`): D1 (11fb140, gold labels) trained and evaluated in the R1 readout format (C1 format v2 @46c0788: template `jrt-rwkv-g1-v2`, layout `g1v2`); the parent arm is scored in-job in the same format (no v1 seed). Caps unchanged: inherits the D1 $66.03 ceiling ($70 hard stop).
+
+D3 candidate `jobs/m2_first_cell/job_params_d3_v2f_gold.json` (mode `d3_v2f_gold`, preferred over `d3_r1_gold`): the same cell with template `jrt-rwkv-g1-v2f` (v2 + the dict-instruction fix, r3-catalog 0290fa8; v2 drops dict-valued instructions), layout `g1v2`; parent arm in-job via `G1V3Backend(mode="v2f")`. Caps unchanged: inherits the D1 $66.03 ceiling ($70 hard stop).
+
+D3 fast candidate `jobs/m2_first_cell/job_params_d3_v2f_fast.json` (mode `d3_v2f_fast`): `d3_v2f_gold` unchanged except the cell gains exactly the flags `d1_fast` adds over D1 (`row_plan` min_cost, `cont_plan` single, `compile_blocks` true; job-2amiy 1.40x step, execution-only, not in the TrainConfig hash); `d3_v2f_gold` itself stays as D3 ran it (job-93fpy @30d5239). Caps unchanged: inherits the D1 $66.03 ceiling ($70 hard stop).
+
+D3 v3w candidate `jobs/m2_first_cell/job_params_d3_v3w_fast.json` (mode `d3_v3w_fast`): `d3_v2f_fast` with only template `jrt-rwkv-g1-v3w` (layout `g1v2`; the best stock readout, r3-catalog 0290fa8: v3 codes + code key for k>=9 + word-like option ids scored by the first token of " <id>"; stock 31.07 vs v2f 29.10); train ids and gold target token == the v3w readout's (`scripts/check_g1v2_train_equivalence.py --template jrt-rwkv-g1-v3w`); parent arm in-job via `G1V3Backend(mode="words")`. Caps unchanged: inherits the D1 $66.03 ceiling ($70 hard stop).
