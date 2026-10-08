@@ -46,10 +46,10 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Sequence
 
 import bisect
-import re
 
+from decide.prompt import _G1_BLANK_LINES as _G1_BLANK  # the readout's own blank-line rule (render_g1v2)
 from decide.prompt import (G1V2_ID, G1V2_SYSTEM_PROMPT, G1V2_TEMPLATE, SYSTEM_PROMPT, TEMPLATES, Template, _instr,
-                           continuation_segments, g1_clean, render_g1v2)
+                           build_prompt_g1v2, continuation_segments, render_g1v2)
 from decide.provenance import field_strings, instructions_path, state_path
 from decide.schema import canonical_options, canonical_question_ids, render
 
@@ -325,7 +325,6 @@ def build_row(
 
 
 # ------------------------------------------------------------------------------------------------ g1v2 (D3 / R1)
-_G1_BLANK = re.compile(r"\n(?:[ \t\r\f\v]*\n)+")  # == decide.prompt._G1_BLANK_LINES
 _CODE_TABLE: list[str] | None = None
 _CODE_TOKENS: list[int] | None = None
 
@@ -340,56 +339,51 @@ def _g1v2_code_table() -> list[str]:
     return _CODE_TABLE
 
 
-def _g1_text(value: Any) -> str:
-    return g1_clean(value if isinstance(value, str) else render(value))
-
-
-def _g1v2_options(q: dict[str, Any], codes: list[str] | None, otag_of, ftag: str) -> list[tuple]:
-    seg: list[tuple] = []
-    for j, (oid, desc) in enumerate(canonical_options(q)):
-        otag = otag_of(j)
-        seg.append(("\n" + (f"{codes[j]}. " if codes is not None else "- "), True, ftag, None))
-        seg.append((g1_clean(oid), False, otag, ID_PATH))
-        if desc is not None:
-            seg += [(": ", True, otag, None), (_g1_text(desc), False, otag, ID_PATH)]
-    return seg
-
-
 def _g1v2_segments_paths(request: dict[str, Any], qid: str, code_table: list[str]) -> list[tuple]:
-    """``decide.prompt.build_prompt_g1v2`` as (text, trusted, tag, path) segments (same text, same order)."""
+    """``decide.prompt.build_prompt_g1v2`` (the v2 READOUT's own segments, reused, not re-implemented) tagged as
+    (text, trusted, tag, path). Tags: "field" (target field in the schema), "option:<j>" (its option j id +
+    description), "state", "reread", "reread_instr"; paths as the ordered layout's (provenance / ID_PATH / None)."""
     questions = request["questions"]
     order = canonical_question_ids(questions)
-
-    def codes_for(k: str) -> list[str] | None:
-        n = len(canonical_options(questions[k]))
-        return code_table[:n] if n <= len(code_table) else None
-
-    def instr(k: str, tag: str) -> tuple:
-        v = questions[k].get("instructions")
-        text = _g1_text(v) if isinstance(v, str) and v != "" else g1_clean(k)
-        return (text, False, tag, _instr_path(k, questions[k]))
-
-    seg: list[tuple] = [(G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT) + "SCHEMA FIELDS:\n", True, "", None)]
-    for i, k in enumerate(order, start=1):
-        target = k == qid
-        ftag = "field" if target else ""
-        if i > 1:
-            seg.append(("\n", True, "", None))
-        seg += [(f"FIELD {i}\nID: ", True, ftag, None), (g1_clean(k), False, ftag, ID_PATH),
-                (f"\nTYPE: {questions[k]['type']}\nINSTRUCTION: ", True, ftag, None), instr(k, ftag),
-                ("\nOPTIONS:", True, ftag, None)]
-        seg += _g1v2_options(questions[k], codes_for(k), (lambda j: f"option:{j}") if target else (lambda j: ""), ftag)
-        seg.append(("\nEND FIELD", True, ftag, None))
-    q = questions[qid]
-    coded = codes_for(qid) is not None
-    seg += [("\nEND SCHEMA\nSTATE:\n", True, "", None), (_g1_text(request["state"]), False, "state", state_path()),
-            (f"\nEND STATE\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", True, "reread", None),
-            (g1_clean(qid), False, "reread", ID_PATH), (f"\nTYPE: {q['type']}\nINSTRUCTION: ", True, "reread", None),
-            instr(qid, "reread_instr"), ("\nOPTIONS:", True, "reread", None)]
-    seg += _g1v2_options(q, codes_for(qid), lambda j: "reread", "reread")
-    seg.append(("\nReply with exactly one option " + ("code." if coded else "id.") + G1V2_TEMPLATE.tail, True,
-                "reread", None))
-    return [s for s in seg if s[0]]
+    out: list[tuple] = []
+    field: str | None = None  # the field being walked (schema), qid in the re-read
+    phase, opt_j, expect = "schema", -1, None  # expect: the kind of the next data segment
+    for text, label in build_prompt_g1v2(request, qid, code_table):
+        target = phase == "schema" and field == qid
+        if label == "template":
+            tag = ""
+            if phase == "schema" and text.startswith("FIELD ") and "\nID: " in text:
+                field, opt_j, expect = order[int(text[6:text.index("\n")]) - 1], -1, "qid"
+                tag = "field" if field == qid else ""
+            elif text.startswith("\nEND SCHEMA"):
+                phase, field, expect = "state", None, "state"
+            elif text.startswith("\nEND STATE"):
+                phase, field, opt_j, expect, tag = "reread", qid, -1, "qid", "reread"
+            else:
+                if text.startswith("\nTYPE: "):
+                    expect = "instr"
+                elif text == ": ":
+                    expect = "desc"
+                elif text.startswith("\n") and (text.endswith(". ") or text == "\n- "):
+                    opt_j, expect = opt_j + 1, "oid"
+                tag = ("reread" if phase == "reread" else
+                       f"option:{opt_j}" if target and text == ": " else
+                       "field" if target and text != "\n" else "")
+            out.append((text, True, tag, None))
+            continue
+        if expect == "state":
+            out.append((text, False, "state", state_path()))
+        elif expect == "qid":
+            out.append((text, False, "reread" if phase == "reread" else ("field" if target else ""), ID_PATH))
+        elif expect == "instr":
+            out.append((text, False, "reread_instr" if phase == "reread" else ("field" if target else ""),
+                        _instr_path(field, questions[field])))
+        elif expect in ("oid", "desc"):
+            out.append((text, False, "reread" if phase == "reread" else (f"option:{opt_j}" if target else ""),
+                        ID_PATH))
+        else:
+            raise ValueError(f"g1v2 layout: unexpected request segment {text[:40]!r} in the v2 prompt")
+    return out
 
 
 def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Template,
