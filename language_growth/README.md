@@ -28,6 +28,19 @@ using planner text. This adds public typed-program expressibility; learned
 composition, strong-comparator usefulness, parent decision retention and
 neural semantic interventions remain unmeasured.
 
+The optional `realization_production="l3_fact_pair_coordination_v1"` argument
+to `public_answer` selects one finite L3 primitive after the same task and
+release checks. It renders exactly one checked Conjoin of two factual Assert
+acts as `At <scope>, <fact clause>, and <fact clause>.` The scope must be
+identical; typed literals stay quoted or exactly numeric, clause order stays
+unchanged, and the checked program's source and authority bindings are retained
+and revalidated. The renderer neither infers a relation between the facts nor
+adds a causal connective. Unknown production IDs and other speech-act shapes
+fail closed without falling back to plain text. The default remains `plain`.
+This is a deterministic licensed-discourse primitive only, not learned fluent
+capability, L3 qualification, or an unrestricted natural-language guarantee.
+Focused checks: `python -m unittest language_growth.tests.test_licensed_realizer -v`.
+
 `language_growth.rwkv_decision_head.rwkv_decision_backend` is a CPU FP32
 prototype for growing a decision head from an already strictly loaded native
 RWKV-7 parent. It uses the merged `HiddenStateBackbone`, `DecisionModel`, and

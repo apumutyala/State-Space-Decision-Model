@@ -13,6 +13,16 @@ from .kernel import validate_release
 from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, SpeechAct
 
 
+PLAIN_PRODUCTION = "plain"
+L3_FACT_PAIR_COORDINATION = "l3_fact_pair_coordination_v1"
+LICENSED_PRODUCTIONS = frozenset({PLAIN_PRODUCTION, L3_FACT_PAIR_COORDINATION})
+
+
+def is_licensed_production(production: object) -> bool:
+    """Whole-production IDs only; caller text never becomes a connective."""
+    return type(production) is str and production in LICENSED_PRODUCTIONS
+
+
 def _quoted(value: str) -> str:
     if not isinstance(value, str):
         raise ValueError("invalid checked value")
@@ -96,16 +106,43 @@ def _speech(act: SpeechAct) -> str:
     raise ValueError("invalid checked speech act")
 
 
-def render_checked(result: CheckResult, host: dict, catalog: dict) -> str:
+def _coordinated_fact_pair(outputs: tuple[SpeechAct, ...]) -> str:
+    """One L3 primitive: share an identical scope across two factual clauses."""
+    if len(outputs) != 1 or outputs[0].kind != "conjoin":
+        raise ValueError("unsupported production shape")
+    acts = outputs[0].content
+    if (not isinstance(acts, tuple) or len(acts) != 2
+            or any(not isinstance(act, SpeechAct) or act.kind != "assert"
+                   or not isinstance(act.content, Fact) for act in acts)):
+        raise ValueError("unsupported production shape")
+    left, right = (act.content for act in acts)
+    if left.interval != right.interval:
+        raise ValueError("unsupported production scope")
+    return (
+        f"At {_quoted(left.interval)}, {_subject(left)} has value {_operand_value(left)}, "
+        f"and {_subject(right)} has value {_operand_value(right)}."
+    )
+
+
+def render_checked(result: CheckResult, host: dict, catalog: dict, *,
+                   production: str = PLAIN_PRODUCTION) -> str:
     """Render only a currently authorized accepted kernel result.
 
     ``validate_release`` rejects forged, stale, revoked and rejected objects.
     Nothing in this function reads the proposal, model state, or raw evidence.
     The output medium is plain text; downstream HTML/Markdown must escape it.
+    The optional finite production changes wording only, never the checked
+    program, proposition order, source dependencies or authority. An unsupported
+    production or speech-act shape has no fallback. This is an L3 primitive,
+    not learned fluent language capability.
     """
     checked = validate_release(result, host, catalog)
     if not isinstance(checked, CheckResult) or checked.status != "accepted" or checked.style != "plain":
         raise ValueError("release denied")
     if not checked.outputs:
         raise ValueError("release denied")
+    if not is_licensed_production(production):
+        raise ValueError("unsupported production")
+    if production == L3_FACT_PAIR_COORDINATION:
+        return _coordinated_fact_pair(checked.outputs)
     return "\n".join(_speech(act) for act in checked.outputs)
