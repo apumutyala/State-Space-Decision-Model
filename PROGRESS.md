@@ -126,3 +126,9 @@
 - Learned: even the 33 candidate groups are not independent/qualified; Ecoinvent and author clustering are incompletely traced, and per-study harmonized values remain in inaccessible S1 Table S3. No source values imported.
 - Stage 1: latest A/B shared report is still 17:20Z. claims/D2.lock lists future start 17:30Z, but C cannot verify the live handle; Ubuntu-24.04 still fails due missing D: WSL disk. C has not ordered or restarted work.
 - Next: inspect remaining shared-inventory overlaps, recover row-level S1/OpenEI data, and continue to wait for A/B’s actual queue snapshot. Keep GPU spend at $0.
+
+## 2026-10-08 ~17:32Z: agent-c primary-source merge audit
+- Did: added primary-source citations for the Dones/Jungbluth shared ecoinvent foreground, Pacca thesis/article and Schleisner turbine input, and Vestas shared-model lineage. PR #224 head is 6d0c60d; GitGuardian is running.
+- Learned: current candidate count is 37 after known dependency blocks, 36 if the Berry/EC site overlap is merged, and 33 after setting aside three synthesis-risk citations. No estimate-level values or 20 independent worlds are established.
+- Stage 1: no state update after A's 17:20Z report. D2's 17:30Z lock is not proof of a live job; the autor environment remains inaccessible.
+- Next: continue inventory-overlap review and obtain a live A/B job snapshot when available. No new data import, held-out access, GPU or spend.
