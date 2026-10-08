@@ -1,5 +1,5 @@
 """Upload a launcher package and submit it via `autor api` (WSL). Usage: python -I jobs/common/sf_submit.py <launcher --out dir containing submit.json> [--dry]"""
-import json, subprocess, sys, pathlib
+import json, subprocess, sys, pathlib, time
 
 AUTOR = ["wsl.exe", "-d", "bi-ubuntu", "--", "/root/.local/bin/autor", "--workspace", "default", "api"]
 
@@ -38,6 +38,12 @@ def main():
             raise SystemExit("upload failed")
     fin = api("post", f"/contexts/{cid}/finalize")
     print("finalize", fin.get("status"))
+    for _ in range(120):  # finalize is async: wait for the context to be ready before posting the job
+        if api("get", f"/contexts/{cid}").get("status") == "ready":
+            break
+        time.sleep(5)
+    else:
+        raise SystemExit(f"context {cid} not ready after 10 min")
     sub.pop("context_id", None)
     sub.update({"context_id": cid, "mission": mission})
     j = api("post", "/jobs", sub)
