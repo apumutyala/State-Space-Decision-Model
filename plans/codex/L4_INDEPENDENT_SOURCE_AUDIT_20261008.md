@@ -13,8 +13,8 @@ An independent source audit found several bounded retrieval candidates, but no
 single comparable collection with 20 independent study groups:
 
 - [NREL geothermal systematic review](https://docs.nrel.gov/docs/fy17osti/68474.pdf),
-  Table A-6, includes 29 screened rows. Some rows reuse the same author/year
-  study for multiple cases; report rows must be grouped by the underlying study,
+  Table A-6 summarizes estimates from 29 screened studies. Some studies have
+  multiple rows/cases with the same author/year; report rows must be grouped by the underlying study,
   and shared-inventory dependence remains. Do not count 29 rows as 29 worlds.
 - [NREL 2024 utility-scale PV LCA](https://www.nrel.gov/docs/fy24osti/87372.pdf),
   Table B6, describes six supply-chain/EOL cases in one study. Its caption says
