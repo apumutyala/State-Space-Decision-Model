@@ -971,19 +971,25 @@ def test_train_max_k_lifts_training_cap_only():
 def test_d10_is_d3_v2f_fast_on_the_b1_100k_draw():
     """d10_v2f_b100k = d3_v2f_fast with only the training set (B1 100k-v2 draw, empty heldout exclusions) and the D8
     training-K lift changed; _t380 adds only the 380-min clock and max_steps 4,500 (operational). Eval (max_k 16,
-    eval_max_t 2,048), T ladder (<= 2,048), format, flags and parent-arm handling are d3_v2f_fast's."""
+    eval_max_t 2,048), T ladder (<= 2,048), flags and parent-arm handling are d3_v2f_fast's. The readout format
+    (template / layout / r1_format_commit) is the cell JSON's own swap point: a v3w D10 changes only those keys, in
+    both cell JSONs together (data, flags, caps and job params unchanged)."""
     d = ROOT / "jobs/m2_first_cell"
     load = lambda n: json.loads((d / n).read_text(encoding="utf-8"))
     d3 = load("m2_first_cell_rwkv7_d3_v2f_fast.json")
     notes = lambda c: {k for k in c if k.endswith("_note") or k.startswith("_")}
     changed = {"n_train_records": 100000, "train_max_k": 255, "row_options": 160}
+    FORMAT = {"template", "layout", "r1_format_commit"}
+    fmt = {m: {k: load(f"m2_first_cell_rwkv7_{m}.json").get(k) for k in FORMAT}
+           for m in ("d10_v2f_b100k", "d10_v2f_b100k_t380")}
+    assert fmt["d10_v2f_b100k"] == fmt["d10_v2f_b100k_t380"] and fmt["d10_v2f_b100k"]["layout"] == "g1v2"
     for mode, extra in (("d10_v2f_b100k", {}), ("d10_v2f_b100k_t380", {"max_minutes": 380, "max_steps": 4500})):
         c = load(f"m2_first_cell_rwkv7_{mode}.json")
         want = {**changed, **extra, "variant": mode}
         assert {k: c[k] for k in want} == want
         assert c["train_set"]["pointer"] == "data/manifests/b1-draw100k-v2.pointer.json"
         assert c["train_set"]["heldout_excluded"]["ids"] == []
-        skip = set(want) | {"train_set"} | notes(c) | notes(d3)
+        skip = set(want) | {"train_set"} | FORMAT | notes(c) | notes(d3)
         assert {k: v for k, v in c.items() if k not in skip} == {k: v for k, v in d3.items() if k not in skip}
         assert c["max_k"] == 16 and c["eval_max_t"] == 2048 and max(c["t_ladder"]) == 2048
         p = load(f"job_params_{mode}.json")
