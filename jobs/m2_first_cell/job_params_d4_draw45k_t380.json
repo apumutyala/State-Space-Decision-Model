@@ -217,5 +217,6 @@
   ]
  },
  "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates).",
- "mode": "d4_draw45k_t380"
+ "mode": "d4_draw45k_t380",
+ "train_dir": "m2-d4"
 }
