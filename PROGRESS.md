@@ -108,3 +108,9 @@
 ## 2026-10-08 ~17:22Z: agent-c D2 claim follow-up
 - A's new claims/D2.lock records job-84ajq with a planned 17:30Z start for the masked-KD fast-flags D2 rerun. This is a declaration, not live-process verification; C cannot query autor on this host.
 - Requested the post-start queue status in INBOX. C has not submitted, restarted, or spent on any GPU job.
+
+## 2026-10-08 ~17:23Z: agent-c wind source grouping bound
+- Did: audited the accessible Table 1 and bibliography. One documented update family gives 44→42; four provisional cross-reference merges give 37; excluding three synthesis/compilation-risk citations gives 34 candidate families. Recorded the row groups and caveats in PR #224 @c350834.
+- Learned: 34 is only a bibliographic audit upper bound; common Ecoinvent and author/study clustering are unquantified, and all 126 estimates were analyzed independently. Table S3 is required for reference-linked emissions; 20 independent worlds remains unproven.
+- Next: recover Table S3/OpenEI row export and inspect primary inventory overlap before counting worlds. The only new D2 evidence is a future-start claim lock; C still cannot verify live status from autor.
+- No L4 values were imported; no held-out data, GPU, or paid work used.
