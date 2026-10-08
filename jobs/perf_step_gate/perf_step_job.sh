@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# jobs/perf_step_gate: the m2 cell's train step (job-tvuat ADOPT config) under four pre-registered execution variants,
-# run in the order greedy (baseline), min_cost, min_cost_single, min_cost_single_compile (rule.py), one H100 SF batch job
-# on the jobs/rwkv7 image (no extra packages). Spec + rule: jobs/perf_step_gate/JOB_SPEC.md, rule.py. NOT submitted here.
-#   setup (pins, CPU equivalence tests, snapshot) -> greedy -> rate guard -> 3 variants (own process each) -> decide
+# jobs/perf_step_gate RULE v2: the m2 cell's train step under four pre-registered execution variants, run in the order
+# greedy (numerics reference), fast (= d1_fast, speed reference), fast_fla, fast_fla_nocompile (rule.py), one H100 SF
+# batch job on the jobs/rwkv7 image + fla-core 0.5.2 installed at setup by wheel hash (jobs/fla_rwkv7/requirements-fla.txt,
+# as jobs/fla_rwkv7/fla_job.sh). Spec + rule: jobs/perf_step_gate/JOB_SPEC.md, rule.py. NOT submitted here.
+#   setup (pins, fla install + #640 guard, CPU equivalence tests, snapshot) -> greedy -> rate guard -> 3 variants -> decide
 # Exit codes: 0 measured + decided + exports verified   5 setup   6 export failed   9 decision missing/invalid
 #   10 snapshot / vendored code mismatch or download failed   15 rate guard (box > 1.5x job-tvuat's step time)
 #   1 finalize failed. A variant that crashes or times out is recorded in the gates and cannot qualify (a verdict).
@@ -63,6 +64,8 @@ if [ "$DRY" = 1 ]; then
 else
   cp /opt/ssdm/CONTEXT_MANIFEST.json "$WORK/out/" || fail 5 "no context manifest"
   nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
+  # fla-core is not in the rwkv7 image: install the exact 0.5.2 wheel by hash, no deps (torch/triton/einops are pinned)
+  pip install --no-cache-dir --no-deps --require-hashes -r "$CODE/jobs/fla_rwkv7/requirements-fla.txt"     > "$WORK/logs/pip-fla.log" 2>&1 || fail 5 "fla-core install"
   ( timeout $(( $(cap setup) + $(cap download_wait) ))m python - > "$WORK/snap_path" 2> "$WORK/logs/download.log" <<'EOF'
 from huggingface_hub import snapshot_download
 print(snapshot_download("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))
@@ -77,12 +80,17 @@ assert all(V.vendored_ok().values()), V.vendored_ok()
 if os.environ["DRY"] != "1":
     assert torch.__version__.split("+")[0] == "2.13.0", torch.__version__
     assert torch.cuda.is_available()
-    import triton
-    print(json.dumps({"triton": triton.__version__}), file=__import__("sys").stderr)
+    import triton, fla
+    assert triton.__version__ == "3.7.1" and fla.__version__ == "0.5.2", (triton.__version__, fla.__version__)
+    from fla.ops.rwkv7 import chunk_rwkv7  # noqa: F401
+    print(json.dumps({"triton": triton.__version__, "fla": fla.__version__}), file=__import__("sys").stderr)
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "transformers": transformers.__version__,
                   "vendored_rwkv7": V.REVISION, "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
                   "PYTORCH_CUDA_ALLOC_CONF": os.environ.get("PYTORCH_CUDA_ALLOC_CONF")}))
 EOF
+if [ "$DRY" != 1 ]; then  # fla #640 guard: Hopper + Triton < 3.7.1 (or a non-Triton fla backward) -> exit 5 here
+  python -I "$CODE/jobs/common/fla_guard.py" --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1     || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
+fi
 CUDA_VISIBLE_DEVICES="" SSDM_COMPILE_BACKEND=aot_eager timeout $(cap setup)m python -X utf8 -m pytest -q -p no:cacheprovider \
   tests/test_cell_perf.py tests/test_perf_step_gate_rule.py > "$WORK/out/equivalence_tests.txt" 2>&1 \
   || fail 5 "CPU equivalence tests: $(tail -1 "$WORK/out/equivalence_tests.txt")"
@@ -117,7 +125,7 @@ run_variant greedy
 python -m jobs.perf_step_gate.preflight --out "$WORK/out" > "$WORK/logs/preflight.log" 2>&1 \
   || fail 15 "rate guard: $(cat "$WORK/logs/preflight.log")"
 say "rate guard: $(cat "$WORK/logs/preflight.log")"
-for V in min_cost min_cost_single min_cost_single_compile; do
+for V in fast fast_fla fast_fla_nocompile; do
   run_variant "$V"
 done
 

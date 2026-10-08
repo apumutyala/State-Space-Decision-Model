@@ -274,3 +274,15 @@ injection-augmented records train gold-only) + the `d1_fast` execution flags `ro
 then means), and the single-continuation path calls `_supervised_loss` on the step's rows in order, so each row's
 teacher row stays aligned with its log-probs; a CPU tiny-model KD step with these flags matches `per_group` within
 tolerance. Teacher files, pins, caps and data are `clef_kd_injmask`'s: **Worst case** **$66.03** (cap $70).
+
+fla in cells (any mode whose cell config sets `"rwkv7_wkv": "fla"`; defaults unchanged, every committed config keeps its
+own WKV). Adopted from SF job-9bs8w (`jobs/perf_step_gate` rule v2, stack/rwkv7/perf-gate-fla @3501b56): `fast_fla`
+(d1_fast flags + fla) 3.88 s/step vs `fast` 5.65 (1.46x) and `greedy` 7.94 (2.05x), LoRA-grad cos 0.998, loss_rel
+3.2e-4, peak 62.6 GB; `heads.rwkv7_wkv.GPU_VERIFIED` is now True for plain `fla` only (`fla_safe_gate` stays gated).
+Setup then (exit 5 on any failure): installs fla-core 0.5.2 by wheel hash with `--no-deps --require-hashes`
+(`jobs/fla_rwkv7/requirements-fla.txt`, exactly as perf_step_gate v2), checks torch 2.13.0 / triton 3.7.1 / fla 0.5.2 and
+the `chunk_rwkv7` import (`out/fla-versions.json`), and requires the #640 guard (`out/fla_guard.json`) to have run on
+the installed fla. `train.run_cell` runs every ladder and training step under `heads.rwkv7_wkv.strict()`: a fallback
+to "chunked" raises and the cell stops with exit 36 (also when training ran but no call went to fla). `cell.json`
+`"fla"` records the requested name, fla calls and fallbacks (process totals; smoke and eval cards are not strict, so a
+fallback there is counted, not fatal). The parent arm and child evals use the same cell `rwkv7_wkv` (identity).
