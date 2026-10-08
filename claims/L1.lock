@@ -1,0 +1,5 @@
+owner: agent-b
+start_utc: 2026-10-08T17:55Z
+job: job-exadi (fla infer_equiv, stack/rwkv7/cost-latency @a34fbd5)
+time_limit: 2026-10-08T20:00Z
+item: L1 (fla WKV inference equivalence, Index-level gate)
