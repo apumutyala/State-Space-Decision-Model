@@ -13,10 +13,10 @@ import weakref
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, Fact, SpeechAct
+from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, Fact, PlanContent, PlanStep, SpeechAct
 
 _SCHEMA = "ssdm.semantic_program.v0.1"
-_OPS = {"ReadFact", "Compare", "Assert", "Conjoin", "ExplainDerivation", "Ask", "Hypothesize"}
+_OPS = {"ReadFact", "Compare", "Assert", "Conjoin", "ExplainDerivation", "Ask", "Hypothesize", "Plan"}
 _REASONS = {"unknown_reference", "stale_context", "stale_policy", "type_unit_mismatch", "unsupported_assertion", "forbidden_dependency", "invalid_graph", "conflict", "exceeded_limit", "scope_mismatch", "unsupported_operation", "unsupported_field"}
 _MINTED: weakref.WeakSet[CheckResult] = weakref.WeakSet()
 _NODE_KEYS = {
@@ -24,6 +24,7 @@ _NODE_KEYS = {
     "Compare": {"id", "op", "left", "right", "relation"},
     "Assert": {"id", "op", "proposition"},
     "Hypothesize": {"id", "op", "proposition"},
+    "Plan": {"id", "op", "workflow_ref", "step_refs"},
     "Conjoin": {"id", "op", "speech_acts"},
     "ExplainDerivation": {"id", "op", "speech_act"},
     "Ask": {"id", "op", "category", "obligation_ref", "references"},
@@ -114,6 +115,8 @@ def _environment(host: Any, catalog: Any) -> tuple[dict[str, Any], dict[str, Any
         _fail("invalid_graph")
     _dict(h.get("query_constants")); _sequence(h.get("unmet_obligations")); _dict(h.get("limits"))
     if len(_dict(h.get("assumptions", {}))) > 128:
+        _fail("exceeded_limit")
+    if len(_dict(h.get("workflows", {}))) > 32:
         _fail("exceeded_limit")
     if type(h["limits"].get("max_program_nodes")) is not int or not 1 <= h["limits"]["max_program_nodes"] <= 1024:
         _fail("invalid_graph")
@@ -260,7 +263,66 @@ def _compare(left: Fact | ConstantValue | AssumptionValue, right: Fact | Constan
     return Comparison(left, right, relation, left.interval)
 
 
+def _plan(node: dict[str, Any], host: dict[str, Any], by_ref: dict[str, Any], snapshot: dict[str, Any], policy: dict[str, Any], registry: dict[str, Any], catalog: dict[str, Any]) -> PlanContent:
+    # A proposed predecessor never establishes an effect or a new factual premise.
+    if "ReadFact" not in registry["allowed_ops"]:
+        _fail("unsupported_operation")
+    workflow_ref = _name(node["workflow_ref"])
+    workflows = host.get("workflows", {})
+    if workflow_ref not in workflows:
+        _fail("unknown_reference")
+    workflow = _dict(workflows[workflow_ref])
+    _keys(workflow, {"audience", "status", "steps"})
+    if workflow["audience"] != host["audience"]:
+        _fail("forbidden_dependency")
+    if workflow["status"] != "current":
+        _fail("stale_policy")
+    registered = _dict(workflow["steps"])
+    selected = _sequence(node["step_refs"])
+    if not selected or len(selected) > 32 or not registered or len(registered) > 32:
+        _fail("exceeded_limit")
+    if any(not isinstance(ref, str) for ref in selected) or len(selected) != len(set(selected)):
+        _fail("invalid_graph")
+    checked: list[PlanStep] = []
+    earlier: set[str] = set()
+    for ref in selected:
+        _name(ref)
+        if ref not in registered:
+            _fail("unknown_reference")
+        step = _dict(registered[ref])
+        _keys(step, {"action_ref", "preconditions", "after"})
+        action_ref = _name(step["action_ref"])
+        after = _sequence(step["after"])
+        if (len(after) > 32 or any(not isinstance(dep, str) for dep in after)
+                or len(after) != len(set(after)) or any(dep not in earlier for dep in after)):
+            _fail("invalid_graph")
+        preconditions = _sequence(step["preconditions"])
+        if not 1 <= len(preconditions) <= 8:
+            _fail("exceeded_limit")
+        premises: list[Fact] = []
+        for condition in preconditions:
+            condition = _dict(condition)
+            _keys(condition, {"record_ref", "field", "expected"})
+            record_ref, field = _name(condition["record_ref"]), _name(condition["field"])
+            fact = _read(record_ref, field, by_ref, snapshot, policy, registry, catalog)
+            expected = _field_shape(condition["expected"])
+            original = _field_shape(by_ref[record_ref]["fields"][field])
+            if expected["temporal_scope"] != fact.interval:
+                _fail("scope_mismatch")
+            if (expected["value_type"] != original["value_type"] or expected["unit"] != fact.unit
+                    or expected.get("quantity_kind", field) != fact.quantity_kind):
+                _fail("type_unit_mismatch")
+            if _numeric_or_typed(expected) != fact.object:
+                _fail("unsupported_assertion")
+            premises.append(fact)
+        checked.append(PlanStep(ref, action_ref, tuple(premises), tuple(after)))
+        earlier.add(ref)
+    return PlanContent(workflow_ref, tuple(checked))
+
+
 def _deps(value: Any) -> tuple[str, ...]:
+    if isinstance(value, PlanContent):
+        return _deps(tuple(fact for step in value.steps for fact in step.preconditions))
     if isinstance(value, AssumptionValue):
         return _deps(value.premise)
     if isinstance(value, ConditionalContent):
@@ -341,6 +403,9 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
                 _fail("invalid_graph")
             content = ConditionalContent(assumptions[0], conclusion)
             value = SpeechAct("hypothesize", content, _deps(content), (ordinals[target], ordinal))
+        elif op == "Plan":
+            content = _plan(n, h, by_ref, snapshot, policy, registry, catalog)
+            value = SpeechAct("plan", content, _deps(content), (ordinal,))
         elif op == "Conjoin":
             refs = _sequence(n["speech_acts"])
             if len(refs) < 2 or len(refs) != len(set(refs)) or any(ref not in prior or not isinstance(prior[ref], SpeechAct) or prior[ref].kind not in ("assert", "conjoin") for ref in refs):
@@ -384,6 +449,7 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
         "sources": catalog["sources"],
         "query_constants": h["query_constants"],
         "assumptions": h.get("assumptions", {}),
+        "workflows": h.get("workflows", {}),
         "unmet_obligations": h["unmet_obligations"],
     }
     binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")).hexdigest()
