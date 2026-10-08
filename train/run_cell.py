@@ -89,15 +89,151 @@ def host_provenance(r: dict) -> dict | None:
     return {"provenance": {"schema": PROVENANCE_SCHEMA, "default_trust": "data", "segments": segs}} if segs else None
 
 
-def to_train_record(r: dict) -> dict:
+def to_train_record(r: dict, *, development: bool = False) -> dict:
     """m2 sample record (data/build.py: state/questions/labels at top level) -> train.data record format.
     Carries ``host_provenance`` under ``request["ssdm"]`` (read only by the trust gate's provenance policy;
-    content hashes, guards and token ids are unchanged)."""
+    content hashes, guards and token ids are unchanged). Nested requests and grouped records are development-only:
+    the external ``train_set.draw`` caller uses the default, so its manifest/cohort path fails closed on these shapes.
+    Nested envelopes retain their metadata (including group identity and guard markers), and requests verbatim."""
+    if not development and ("request" in r or "group_id" in r):
+        raise ValueError("nested/grouped records require a matching manifest/group guard; development loader only")
+    if "request" in r:
+        if "state" in r or "questions" in r:
+            raise ValueError("nested record also carries top-level state/questions")
+        return dict(r)
     req = {"model": "m2", "state": r["state"], "questions": r["questions"]}
     prov = host_provenance(r)
     if prov:
         req["ssdm"] = prov
-    return {"id": r["id"], "request": req, "labels": r["labels"]}
+    rec = {"id": r["id"], "request": req, "labels": r["labels"]}
+    if "group_id" in r:
+        # The new grouped-flat path must retain every envelope sidecar the SplitGuard may inspect.
+        # Keep the historical ungrouped conversion exact.
+        rec.update({k: v for k, v in r.items() if k not in ("state", "questions", "id", "labels")})
+    return rec
+
+
+def _json_record(pairs: list) -> dict:
+    """Reject repeated JSON members rather than silently dropping a question, label or identity."""
+    out = {}
+    for key, value in pairs:
+        if key in out:
+            raise ValueError(f"duplicate JSON member {key!r}")
+        out[key] = value
+    return out
+
+
+def _cell_records(records_path: str, *, development: bool) -> dict:
+    """Validate every row before splitting/tokenizing; storage keys never replace the task's ``id``."""
+    from decide.schema import RequestRejected, canonical_options, validate_legacy
+
+    recs, pairs, groups = {}, set(), {}
+    new_development_path = False
+    with gzip.open(records_path, "rt", encoding="utf-8") as f:
+        for line in f:
+            r = json.loads(line, object_pairs_hook=_json_record)
+            if not isinstance(r, dict) or not isinstance(r.get("id"), str) or not r["id"]:
+                raise ValueError("record id must be a non-empty string")
+            nested = "request" in r
+            new_development_path |= nested or "group_id" in r
+            if not nested and ("state" not in r or "questions" not in r):
+                raise ValueError(f"{r['id']}: missing state/questions")
+            if not isinstance(r.get("labels"), dict):
+                raise ValueError(f"{r['id']}: labels must exactly match questions")
+            rec = to_train_record(r, development=development)
+            req, labels = rec["request"], rec.get("labels")
+            try:
+                validate_legacy(req)
+            except RequestRejected as e:
+                raise ValueError(f"{r['id']}: {e}") from e
+            questions = req["questions"]
+            if not isinstance(labels, dict) or set(labels) != set(questions):
+                raise ValueError(f"{r['id']}: labels must exactly match questions")
+            group = rec.get("group_id")
+            if "group_id" in rec and (not isinstance(group, str) or not group):
+                raise ValueError(f"{r['id']}: group_id must be a non-empty string")
+            if r["id"] in groups and groups[r["id"]] != group:
+                raise ValueError(f"{r['id']}: conflicting group identity")
+            groups[r["id"]] = group
+            # A one-question nested row is a slot. Legacy and complete multi-question records retain their id key.
+            key = f"{r['id']}/{next(iter(questions))}" if nested and len(questions) == 1 else r["id"]
+            if key in recs:
+                raise ValueError(f"duplicate row key {key!r}")
+            for qid, q in questions.items():
+                pair = (r["id"], qid)
+                if pair in pairs:
+                    raise ValueError(f"duplicate task/question pair {pair!r}")
+                gold = str(labels[qid]).lower() if q["type"] == "noul" else str(labels[qid])
+                if gold not in {oid for oid, _ in canonical_options(q)}:
+                    raise ValueError(f"{r['id']}/{qid}: label is not among the question's options")
+                pairs.add(pair)
+            recs[key] = rec
+    if development and new_development_path:
+        _check_development_item_ids(recs)
+    return recs
+
+
+def _check_development_item_ids(recs: dict) -> None:
+    """Check expanded identities for every row of a new path, including flat rows mixed with nested slots.
+
+    Item/calibration consumers recover the task by the final slash. Storage-key uniqueness alone cannot exclude
+    ``task``/``slot/answer`` aliasing ``task/slot``/``answer``. Pure legacy files do not enter this new guard."""
+    seen = set()
+    for rec in recs.values():
+        for qid in rec["request"]["questions"]:
+            item_id = f"{rec['id']}/{qid}"
+            if item_id in seen:
+                raise ValueError(f"duplicate expanded Item id {item_id!r}")
+            seen.add(item_id)
+    for rec in recs.values():
+        if any("/" in qid for qid in rec["request"]["questions"]):
+            raise ValueError(f"{rec['id']}: development question ids cannot contain '/' (task calibration identity)")
+
+
+def _development_split(recs: dict, cfg: dict) -> tuple[list[str], list[str], dict]:
+    """Select whole worlds when present, otherwise whole tasks, then expand every selected storage row key.
+
+    Counts name split units (worlds/tasks), not slot rows. Legacy ungrouped inputs retain the exact id split/order
+    and identity. Tagged units prevent a world id from aliasing an unrelated ungrouped task id in mixed inputs."""
+    if all(k == r["id"] and "group_id" not in r for k, r in recs.items()):
+        return cohort_split(sorted(recs), cfg, recs)
+    grouped = any("group_id" in r for r in recs.values())
+    units = {}
+    for key, rec in sorted(recs.items()):
+        unit = ("world", rec["group_id"]) if "group_id" in rec else ("task", rec["id"])
+        # All-ungrouped multislot draws use exactly the legacy sha256(seed:task_id) ranking.
+        split_key = json.dumps(unit, separators=(",", ":")) if grouped else rec["id"]
+        units.setdefault(split_key, []).append(key)
+    tr, ev = split_ids(sorted(units), cfg["n_train_records"], cfg["n_eval_records"], cfg["seed"])
+    return ([key for unit in tr for key in units[unit]], [key for unit in ev for key in units[unit]],
+            {"cohort": None, "split_unit": "world/task" if grouped else "task",
+             "n_split_units": len(units), "n_rows": len(recs)})
+
+
+def _check_train_set_rows(cfg: dict, train_dir: str) -> None:
+    """Streaming shape/identity preflight before ``draw`` can build its record-id dictionary.
+
+    This adds no admission authority: ``draw`` still verifies the pointer, manifests, content and held-out guards.
+    Check the whole set, including undrawn rows; neither repeated ids nor grouped/nested slots have a supported
+    record-level manifest contract yet. Keep only ids in memory, never a second full copy of the training set."""
+    from train.train_set import TrainSetMismatch, files, read_pointer
+
+    seen = set()
+    path = files(train_dir, read_pointer(cfg["train_set"]["pointer"]))["records"]
+    if not path.exists():
+        raise TrainSetMismatch(f"training-set records file missing: {path}")
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            r = json.loads(line, object_pairs_hook=_json_record)
+            if not isinstance(r, dict) or not isinstance(r.get("id"), str) or not r["id"]:
+                raise ValueError("train_set record id must be a non-empty string")
+            if "request" in r or "group_id" in r:
+                raise ValueError("nested/grouped train_set records require a matching manifest/group guard")
+            if r["id"] in seen:
+                raise ValueError(f"duplicate train_set row key {r['id']!r}")
+            seen.add(r["id"])
 
 
 def split_ids(ids: list[str], n_train: int, n_eval: int, seed: int) -> tuple[list[str], list[str]]:
@@ -112,6 +248,9 @@ def cohort_split(record_ids: list[str], cfg: dict, records: dict | None = None) 
     never trained on) and eval ids are the cohort's ``dev`` role. With ``records`` (id -> record), every pool record's
     content is re-hashed and must equal the committed content map. Without a cohort: the legacy pilot split
     (``split_ids``). Raises ``train.cohort.CohortLeak`` / ``ValueError`` on any overlap, drift or cohort mismatch."""
+    if cfg.get("cohort_sha256") and records is not None and any(
+            r is not None and ("group_id" in r or k != r["id"]) for k, r in records.items()):
+        raise ValueError("grouped/multislot records require a matching manifest/group guard for protected cohorts")
     if not cfg.get("cohort_sha256"):
         tr, ev = split_ids(record_ids, cfg["n_train_records"], cfg["n_eval_records"], cfg["seed"])
         return tr, ev, {"cohort": None}
@@ -173,17 +312,22 @@ def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, c
     Without ``cfg["train_set"]``: the PR #16 sample at ``records_path`` provides both (``cohort_split``). With it: train
     records come from the pointer-pinned external set in ``train_dir`` (``train.train_set.draw``: cohort excluded by id
     and content, manifest-verified, content re-hashed) and eval records (the cohort ``dev`` role) from ``records_path``.
-    Raises ``ValueError`` (``CohortLeak`` / ``TrainSetMismatch`` subclass it) on any identity problem."""
-    with gzip.open(records_path, "rt", encoding="utf-8") as f:
-        recs = {r["id"]: to_train_record(r) for r in map(json.loads, f)}
+    In unprotected development mode, nested slots use distinct storage keys while retaining task Item identities;
+    whole world/task split units are expanded to every row. Grouped/nested protected paths fail closed pending a
+    matching manifest/group guard. Raises ``ValueError`` (``CohortLeak`` / ``TrainSetMismatch`` subclass it) on any
+    identity problem."""
+    protected = bool(cfg.get("train_set") or cfg.get("cohort_sha256"))
+    recs = _cell_records(records_path, development=not protected)
     if not cfg.get("train_set"):
-        tr_ids, ev_ids, ident = cohort_split(sorted(recs), cfg, recs)
+        tr_ids, ev_ids, ident = (cohort_split(sorted(recs), cfg, recs) if protected
+                               else _development_split(recs, cfg))
         return recs, recs, tr_ids, ev_ids, ident
     if not train_dir:
         raise ValueError("the cell config names a train_set: pass --train-dir with its pinned files")
     from train.cohort import Cohort
     from train.train_set import draw
 
+    _check_train_set_rows(cfg, train_dir)
     co = cohort if cohort is not None else Cohort(expected_sha256=cfg["cohort_sha256"])
     train_recs, tr_ids, tident = draw(cfg, train_dir, co)
     ev_ids = co.ids("dev")

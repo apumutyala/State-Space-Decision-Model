@@ -108,13 +108,21 @@ def reversed_record(rec: dict[str, Any], qid: str) -> tuple[dict[str, Any], list
 def attach_views(items: list, records: dict[str, dict], enc, layout: str, template: str, guard, keep) -> dict:
     """Attach ``view`` / ``view_perm`` to every eligible item in place; ``keep(row) -> bool`` is the cell's K / T
     filter. Returns counts for cell.json. The view row goes through ``items_from_records`` (same guard check, same
-    encoder, same template and layout) as its base."""
+    encoder, same template and layout) as its base. Match full Item identities rather than record storage keys:
+    development slots share task ids but use separate task/question storage keys."""
     from train.data import items_from_records
 
+    by_item = {}
+    for rec in records.values():
+        for qid in rec["labels"]:
+            item_id = f"{rec['id']}/{qid}"
+            if item_id in by_item:
+                raise ValueError(f"duplicate expanded Item id {item_id!r} in order-view records")
+            by_item[item_id] = (rec, qid)
     n_view = n_none = n_drop = 0
     for it in items:
-        rid, qid = it.id.rsplit("/", 1)
-        got = reversed_record(records[rid], qid)
+        rec, qid = by_item[it.id]
+        got = reversed_record(rec, qid)
         if got is None:
             n_none += 1
             continue
