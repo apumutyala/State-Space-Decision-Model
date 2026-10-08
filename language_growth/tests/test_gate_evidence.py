@@ -171,6 +171,8 @@ class EvidenceTests(unittest.TestCase):
         manifest = {"scope":"public-synthetic-protocol","label_provenance":"authored_test_only"}
         parent = FakeParent([])
         parent.identity = lambda: {"artifact_sha256":"f"*64,"parent_revision":"scripted"}
+        authorized_parent = {"artifact_sha256":"b"*64,"revision_id":"qualified-baseline"}
+        authorized_child = {"artifact_sha256":"f"*64,"revision_id":"scripted"}
         kwargs = dict(review_entry=entry, comparator_artifact=Path("unused"), decision_authorization=Path("unused"),
                       decision_parent=Path("unused"),decision_candidate=Path("unused"),decision_scoring_rows=Path("unused"),
                       intervention_adapter=__name__+":fake_intervention_adapter",intervention_registration=Path("unused"),candidate_sha256="f"*64,draws=100)
@@ -178,7 +180,10 @@ class EvidenceTests(unittest.TestCase):
         with patch("language_growth.gate_evidence.load_prepared_suite",return_value=(manifest,tasks,refs)), \
              patch("language_growth.gate_evidence.read_pinned",return_value=comparator), \
              patch("language_growth.gates.run_tasks",return_value=rows) as runner, \
-             patch("language_growth.gate_decision_retention.decision_index_retention",return_value={"passed":False}):
+             patch("language_growth.gate_decision_retention.authorized_decision_identities",
+                   return_value=(authorized_parent,authorized_child)), \
+             patch("language_growth.gate_decision_retention.decision_index_retention",
+                   return_value={"passed":False}) as retention:
             with self.assertRaisesRegex(ValueError,"complete operational"):
                 evaluate_prepared_level(Path("unused"),"L0",parent,**kwargs)
             runner.assert_not_called()
@@ -191,6 +196,30 @@ class EvidenceTests(unittest.TestCase):
                 self.assertTrue((out/"candidate.json").exists())
                 self.assertFalse(report["passed"])
                 self.assertEqual(report["gates"]["semantic_intervention"]["status"],"unmeasured")
+                retention.assert_called_once()
+                self.assertEqual(retention.call_args.kwargs["qualified_parent_identity"], authorized_parent)
+                self.assertEqual(retention.call_args.kwargs["candidate_identity"], parent.identity())
+                calls_before = runner.call_count
+                with patch("language_growth.gate_decision_retention.authorized_decision_identities",
+                           return_value=(authorized_parent,{"artifact_sha256":"0"*64,"revision_id":"wrong-child"})):
+                    with self.assertRaisesRegex(ValueError,"authorized child identity"):
+                        evaluate_prepared_level(Path("unused"),"L0",parent,**kwargs)
+                with patch("language_growth.gate_decision_retention.authorized_decision_identities",
+                           return_value=(authorized_parent,{"artifact_sha256":"f"*64,"revision_id":"wrong-revision"})):
+                    with self.assertRaisesRegex(ValueError,"authorized child identity"):
+                        evaluate_prepared_level(Path("unused"),"L0",parent,**kwargs)
+                wrong_file_pin = {**kwargs,"candidate_sha256":"0"*64}
+                with self.assertRaisesRegex(ValueError,"authorized child identity"):
+                    evaluate_prepared_level(Path("unused"),"L0",parent,**wrong_file_pin)
+                with patch("language_growth.gate_decision_retention.authorized_decision_identities",
+                           return_value=(authorized_child,authorized_child)):
+                    with self.assertRaisesRegex(ValueError,"distinct baseline"):
+                        evaluate_prepared_level(Path("unused"),"L0",parent,**kwargs)
+                with patch("language_growth.gate_decision_retention.decision_index_retention",
+                           side_effect=ValueError("bad authorized prediction export")):
+                    with self.assertRaisesRegex(ValueError,"prediction export"):
+                        evaluate_prepared_level(Path("unused"),"L0",parent,**kwargs)
+                self.assertEqual(runner.call_count,calls_before)
 
 
 if __name__ == "__main__":

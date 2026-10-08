@@ -88,6 +88,25 @@ def _identity(value):
     return {"artifact_sha256": _sha(sha), "revision_id": revision}
 
 
+def decision_identity(value):
+    """Canonical exact checkpoint/revision identity used by retention pins."""
+    return _identity(value)
+
+
+def authorized_decision_identities(authorization, authorization_sha256):
+    """Read only the separately pinned baseline/candidate identities.
+
+    Full cohort, source-case, prediction and metric validation remains in
+    ``decision_index_retention``. This metadata-only helper lets the language
+    evaluator keep the qualified baseline distinct from its loaded candidate.
+    """
+    auth = _json(_read(authorization, authorization_sha256))
+    if (not isinstance(auth, dict) or auth.get("schema") != SCHEMA or auth.get("split") != "DEV"
+            or auth.get("purpose") != "language_parent_decision_regression"):
+        raise ValueError("separately authorized DEV Index metadata required")
+    return (_identity(auth.get("parent_identity")), _identity(auth.get("candidate_identity")))
+
+
 def _records(text):
     # Existing harness exports may use a run_id-keyed object instead of JSONL.
     try:

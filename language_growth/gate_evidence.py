@@ -247,7 +247,7 @@ def evaluate_prepared_level(directory: Path, level: str, parent, *, review_entry
                             intervention_adapter: str, intervention_registration: Path,
                             candidate_sha256: str, draws: int = 2000, evidence_out: Path | None = None) -> dict:
     from .gates import run_tasks, score_comparator, compare_usefulness, _callable, sha_file
-    from .gate_decision_retention import decision_index_retention
+    from .gate_decision_retention import authorized_decision_identities, decision_identity, decision_index_retention
     manifest, tasks, refs = load_prepared_suite(directory, level, manifest_sha256=review_entry["manifest_sha256"])
     comparator = read_pinned(comparator_artifact, review_entry["comparator_artifact_sha256"])
     if comparator.get("schema") != "ssdm.language_comparator.v1" or digest(comparator["identity"]) != review_entry["comparator_identity_sha256"]:
@@ -280,9 +280,18 @@ def evaluate_prepared_level(directory: Path, level: str, parent, *, review_entry
         raise ValueError("intervention adapter source identity mismatch")
     # All metadata/artifact checks precede any parent inference or labels handed
     # to the planner. Only input tasks enter run_tasks/adapter model calls.
+    qualified_parent_identity, authorized_candidate_identity = authorized_decision_identities(
+        decision_authorization, review_entry["decision_authorization_sha256"])
+    candidate_identity = parent.identity()
+    if (decision_identity(candidate_identity) != authorized_candidate_identity
+            or authorized_candidate_identity["artifact_sha256"] != candidate_sha256):
+        raise ValueError("loaded language candidate differs from the authorized child identity")
+    if qualified_parent_identity == authorized_candidate_identity:
+        raise ValueError("parent-retention authorization must name distinct baseline and language-child identities")
     regression = decision_index_retention(decision_authorization, review_entry["decision_authorization_sha256"],
                     decision_scoring_rows, decision_parent, decision_candidate,
-                    qualified_parent_identity=parent.identity(), candidate_identity=parent.identity(), draws=draws)
+                    qualified_parent_identity=qualified_parent_identity,
+                    candidate_identity=candidate_identity, draws=draws)
     rows = run_tasks(tasks, refs, parent, allow_heldout=True)
     if evidence_out is not None:
         from .gate_suites import canonical
