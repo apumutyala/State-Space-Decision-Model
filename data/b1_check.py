@@ -6,9 +6,10 @@ Checks, per row of ``<draw dir>/records.jsonl.gz`` (lines verified against the m
      multi / fact-change keys), ``train.cohort.record_content_hash``, ``record_text_keys`` (key-free text);
   2. the Index rows themselves (0.2.1 suite selected + added rows = every DEV and TEST row of all 44 catalogs; the
      DEV slice ``slices/dev-rows.jsonl.gz``; the 0.3 GSM8K DEV rows): normalized content hash, key-free text keys,
-     and text segments: each ITEM string of a row (state / instructions / option text outside tool catalogs and
-     background passages) is normalized and looked up among every Index line (newline split, >= 8 chars) and every
-     Index sentence segment (>= 30 chars); hits in context fields (tool schemas, background passages, retrieval
+     and text segments: each ITEM string of a row (state / instructions outside tool catalogs and background
+     passages; our own instruction templates skipped) is normalized and every line of it looked up among every Index
+     line (newline split, >= 8 chars), and every sentence segment (>= 30 chars, option texts included) among the
+     Index segments; hits in context fields (tool schemas, background passages, retrieval
      candidates) are reported, as the 150k receipt does, but do not fail;
   3. ``train.guard.SplitGuard`` (harness DEV/TEST manifests + pinned content index), ``harness.heldout.check_record``
      (FROZEN held-out families), ``train.heldout`` D1-B fragments (must be 0: the D4 pin is empty);
@@ -119,6 +120,7 @@ def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None) ->
     from train.heldout import record_text, scan
     from train.train_set import read_pointer, verify_files
     from data.build import content_guard
+    from data.b1 import dedup_keys
     from train.guard import ForbiddenRow
 
     ptr = read_pointer(pointer)
@@ -137,6 +139,8 @@ def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None) ->
     held_items = set().union(*(item_keys(i) for i in held_ids)) | v3.held_out_items()
     held_t = set(v3.text_keys or ())
     idx = build_index(data)
+    from data.augment import INSTR
+    templates = {norm(t) for v in INSTR.values() for t in v}  # our own instruction templates (not Index text)
     guard, _ = content_guard()
     fails: dict[str, list] = collections.defaultdict(list)
     ctx_hits = collections.Counter()
@@ -172,10 +176,13 @@ def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None) ->
                 fails["index_text"].append(rid)
             for path, s, ctx in item_fields(r):
                 hit = None
-                ns = norm(s)
-                if len(ns) >= 8 and h(ns) in idx["lines"]:
-                    hit = "line"
-                elif any(h(sg) in idx["segs"] for sg in segments(s)):
+                if not path.endswith("/option"):  # option texts: label sets are shared by design; segments only
+                    for ln in s.split("\n"):
+                        nl = norm(ln)
+                        if len(nl) >= 8 and nl not in templates and h(nl) in idx["lines"]:
+                            hit = "line"
+                            break
+                if hit is None and any(h(sg) in idx["segs"] for sg in segments(s) if sg not in templates):
                     hit = "segment"
                 if hit:
                     if ctx:
@@ -198,7 +205,7 @@ def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None) ->
             if ch in seen_c:
                 fails["dup_content"].append((rid, seen_c[ch]))
             seen_c[ch] = rid
-            for k in tk:
+            for k in dedup_keys(r):
                 if k in seen_t:
                     fails["dup_text"].append((rid, seen_t[k]))
                 seen_t[k] = rid

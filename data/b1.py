@@ -110,6 +110,8 @@ WEIGHTS_100K = {
     "mmlu_aux": 14000,                                                                       # facts 14,000
     "humicroedit_s1": 1500, "humicroedit_s2": 1500,                                          # arts 3,000
 }
+#: families that absorb any shortfall (in order): tools first, then fact knowledge
+BACKFILL = ("glaive_native", "mmlu_aux", "anli")
 DRAWS = {"b1-d4-draw45k": WEIGHTS_45K, "b1-draw100k": WEIGHTS_100K}
 
 
@@ -412,6 +414,18 @@ def exclusion_sets() -> dict[str, Any]:
             "identity": {"v2": v2.identity(), "v3": v3.identity(), "heldout_150k_dropped": list(HELDOUT_150K)}}
 
 
+def dedup_keys(rec: dict) -> set[str]:
+    """Within-draw near-duplicate keys: ``record_text_keys`` minus the state+options ``s:`` key of an EMPTY-state row
+    (``placement: instructions`` rows), whose ``s:`` text is only the option list and would collide across items."""
+    from train.cohort import record_text_keys
+    from heads.layout import is_empty_state
+
+    keys = record_text_keys(rec)
+    if is_empty_state(rec["state"]):
+        keys = {k for k in keys if not k.startswith("s:")}
+    return keys
+
+
 class Filter:
     """Per-row acceptance: structure, D1 templates, cohort exclusions, global dedup (source item, normalized content,
     key-free text), SplitGuard, frozen held-out families, the Index fingerprint (derived/external rows) and the D4
@@ -462,7 +476,7 @@ class Filter:
             return "cohort_text"
         if items & self.seen_items:
             return "dup_item"
-        if ch in self.seen_content or tk & self.seen_text:
+        if ch in self.seen_content or dedup_keys(rec) & self.seen_text:
             return "dup_text"
         try:
             self.guard.check(rec)
@@ -488,7 +502,7 @@ class Filter:
         from train.cohort import record_content_hash, record_text_keys
         self.seen_items |= self.item_keys(rec)
         self.seen_content.add(record_content_hash(rec))
-        self.seen_text |= record_text_keys(rec)
+        self.seen_text |= dedup_keys(rec)
 
     def accept(self, rec: dict, fam: str, fingerprint: bool = False) -> bool:
         why = self.why_not(rec, fingerprint)
@@ -594,14 +608,14 @@ def _external(families_dir: Path | None) -> dict[str, list[dict]]:
 def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_dir: Path | None = None,
            families_dir: Path | None = None, external_quotas: dict[str, int] | None = None, log=print) -> dict:
     """Per-family selection in seeded order; returns each family's accepted rows IN ORDER, so any draw whose quotas
-    are <= ``quotas`` is the per-family prefix (the 45k is a subset of the 100k)."""
+    are <= ``quotas`` is the per-family prefix. A family whose pool runs out is topped up from ``BACKFILL``."""
     build_dir = Path(build_dir or config.BUILD_DIR)
     idx, nat_ident = native_index(build_dir)
     ex = exclusion_sets()
     cands = candidates(idx, ex, seed)
     want: set[str] = set()
     for f, ids in cands.items():
-        want.update(ids[: int(quotas.get(f, 0) * 2.5) + 1000])
+        want.update(ids[: int(quotas.get(f, 0) * 4) + 3000])
     log(f"native ids {len(idx)}; loading {len(want)} candidate lines", flush=True)
     lines = _load_lines(idx, want)
     flt = Filter(tokdir, ex)
@@ -634,6 +648,46 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
                 got.append(r)
         chosen[fam] = got
         log(f"  {fam}: {len(got)}/{q}  {dict(flt.reasons[fam])}", flush=True)
+    cursor: dict[str, int] = collections.defaultdict(int)
+    labels: dict[str, collections.Counter] = collections.defaultdict(collections.Counter)
+
+    def fill(fam: str, quota: int, got: list[dict]) -> list[dict]:
+        """Accept rows of ``fam`` in seeded order from its cursor until ``quota`` (resumable for backfill)."""
+        kind = FAMILIES[fam][1]
+        ids = cands.get(fam, [])
+        while len(got) < quota and cursor[fam] < len(ids):
+            rid = ids[cursor[fam]]
+            cursor[fam] += 1
+            if rid not in lines:
+                flt.reasons[fam]["not_loaded"] += 1
+                continue
+            base = json.loads(lines[rid])
+            inj = bool(base.get("aug", {}).get("injection"))
+            if kind == "k16":
+                rec = intent_k16_view_keep_ids(base, seed) if inj else intent_k16_view(base, seed)
+            elif kind == "catalog":
+                rec = None if inj else glaive_catalog_view(base, donors, _catalog_k(rid, seed), seed, "cat16")
+            elif kind == "catalog_long":
+                rec = None if inj else glaive_catalog_view(base, short_donors, _catalog_k(rid, seed, True), seed,
+                                                           "catlong", char_budget=LONG_VIEW_CHARS, min_k=17)
+            elif fam.endswith("_full"):
+                rec = base if inj else rebalance(base, seed, styles=("letters", "digits"))
+            else:
+                rec = base if inj else rebalance(base, seed)
+            if rec is None:
+                flt.reasons[fam]["no_view"] += 1
+                continue
+            if fam == "boolq":  # noul has a fixed true/false axis: balance the gold label itself
+                lab = str(next(iter(rec["labels"].values()))).lower()
+                if labels[fam][lab] >= (quota + 1) // 2:
+                    flt.reasons[fam]["label_balance"] += 1
+                    continue
+            if flt.accept(rec, fam):
+                got.append(rec)
+                if fam == "boolq":
+                    labels[fam][str(next(iter(rec["labels"].values()))).lower()] += 1
+        return got
+
     for fam in order:
         quota, kind = quotas.get(fam, 0), FAMILIES[fam][1]
         got: list[dict] = []
@@ -663,43 +717,24 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
                     if whys[0] is None:  # roll back the first variant's claim
                         from train.cohort import record_content_hash, record_text_keys
                         flt.seen_content.discard(record_content_hash(recs[0]))
-                        flt.seen_text -= record_text_keys(recs[0])
+                        flt.seen_text -= dedup_keys(recs[0])
                         flt.seen_items -= flt.item_keys(recs[0])
         else:
-            labels = collections.Counter()
-            for rid in cands.get(fam, []):
-                if len(got) >= quota:
-                    break
-                if rid not in lines:
-                    continue
-                base = json.loads(lines[rid])
-                inj = bool(base.get("aug", {}).get("injection"))
-                if kind == "k16":
-                    rec = intent_k16_view_keep_ids(base, seed) if inj else intent_k16_view(base, seed)
-                elif kind == "catalog":
-                    rec = None if inj else glaive_catalog_view(base, donors, _catalog_k(rid, seed), seed, "cat16")
-                elif kind == "catalog_long":
-                    rec = None if inj else glaive_catalog_view(base, short_donors, _catalog_k(rid, seed, True), seed,
-                                                               "catlong", char_budget=LONG_VIEW_CHARS, min_k=17)
-                elif fam.endswith("_full"):
-                    rec = base if inj else rebalance(base, seed, styles=("letters", "digits"))
-                else:
-                    rec = base if inj else rebalance(base, seed)
-                if rec is None:
-                    flt.reasons[fam]["no_view"] += 1
-                    continue
-                if fam == "boolq":  # noul has a fixed true/false axis: balance the gold label itself
-                    lab = next(iter(rec["labels"].values()))
-                    if labels[lab] >= (quota + 1) // 2:
-                        flt.reasons[fam]["label_balance"] += 1
-                        continue
-                if flt.accept(rec, fam):
-                    got.append(rec)
-                    if fam == "boolq":
-                        labels[next(iter(rec["labels"].values()))] += 1
+            got = fill(fam, quota, got)
         chosen[fam] = got
         log(f"  {fam}: {len(got)}/{quota}  {dict(flt.reasons[fam])}", flush=True)
-    return {"chosen": chosen, "native": nat_ident, "exclusion": ex["identity"],
+    # backfill: a family whose pool runs out (e.g. GSM8K after cohort v3) is topped up from the tools / facts pools
+    deficit = sum(quotas.values()) - sum(len(chosen[f]) for f in order)
+    backfilled = {}
+    for fam in BACKFILL:
+        if deficit <= 0:
+            break
+        before = len(chosen[fam])
+        chosen[fam] = fill(fam, before + deficit, chosen[fam])
+        backfilled[fam] = len(chosen[fam]) - before
+        deficit -= backfilled[fam]
+        log(f"  backfill {fam}: +{backfilled[fam]}", flush=True)
+    return {"chosen": chosen, "native": nat_ident, "exclusion": ex["identity"], "backfilled": backfilled,
             "filter_reasons": {f: dict(v) for f, v in flt.reasons.items()}, "guard": flt.guard_identity,
             "fingerprint": {k: flt.fp.meta.get(k) for k in ("version", "npz_sha256", "arrays_sha256", "rows")},
             "encoder": flt.enc.identity() if hasattr(flt.enc, "identity") else None,
@@ -845,9 +880,10 @@ def main(argv=None) -> int:
     report = {"builder": {"commit": builder, "data/b1.py sha256": builder_sha256}, "seed": sel["seed"],
               "native": sel["native"], "exclusion": sel["exclusion"], "guard": sel["guard"],
               "fingerprint": sel["fingerprint"], "encoder": sel["encoder"], "cell_filter": sel["cell_filter"],
-              "families_dir": sel["families_dir"], "filter_reasons_over_selection": sel["filter_reasons"], "draws": {}}
+              "families_dir": sel["families_dir"], "backfilled": sel["backfilled"],
+              "filter_reasons_over_selection": sel["filter_reasons"], "draws": {}}
     for name, q in draws.items():
-        rows = [r for f in q for r in sel["chosen"].get(f, [])[: q[f]]]
+        rows = [r for f in q for r in sel["chosen"].get(f, [])[: q[f] + sel["backfilled"].get(f, 0)]]
         s = write_draw(name, rows, sel, q, config.BUILD_DIR, builder, Path(a.receipt.replace("\\", "/")))
         s["builder_sha256"] = builder_sha256
         report["draws"][name] = s
