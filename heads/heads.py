@@ -23,6 +23,8 @@ Heads
 (a) ``integrator``  z_k = b(e_k, q) + sum_t m_t * delta(h_t, e_k, q). lambda = 1 (no decay,
     no normalisation). Returns per-token attribution that sums to the logit exactly.
 (b) ``fork``        z_k = g(f_k), f_k = backbone feature after prefix + continuation_k.
+    ``fork_evidence`` adds a zero-initialised, query/option-conditioned evidence
+    increment to (b), using the existing prefix features and no additional forks.
 (c) ``snapshot``    evidence split into at most S chunks (S fixed); per-chunk partial sums
     of the integrator increments plus a chunk-boundary readout, aggregated by sum / max /
     gated unnormalised sum (an independent sigmoid per slot, no normalisation across slots).
@@ -202,6 +204,75 @@ class FinalStateFork(DecisionHead):
         # backbone cost of the fork (K continuations) is priced in train/estimate.py
         return {"flops": 2 * K * self.n_params(), "accumulator_scalars": 0, "attention_free": True, "streaming_implemented": False,
                 "backbone_fork_rows": K}
+
+
+class ForkEvidenceResidual(FinalStateFork):
+    """Final-state fork plus additive access to evidence-token features.
+
+    Each evidence token books a signed, option/query-conditioned increment with
+    an independent sigmoid gate. There is no normalisation or competition over
+    positions. A deterministic sqrt(evidence length) scale reduces sum scaling;
+    correlated distractors can still cause length drift.
+    Attribution is accounting only: h and q_end already mix preceding evidence.
+
+    The parent norm/mlp keys are unchanged and the residual readout starts at
+    zero. Extra initialisation restores RNG state, so DecisionModel also gives
+    the typed output exactly the same initial parameters as the fork baseline.
+    This preserves initial scores, not safety or calibration after training.
+    """
+
+    name = "fork_evidence"
+
+    def __init__(self, d_model: int, hidden: int = 256, channels: int = 32, t_chunk: int = 128) -> None:
+        if channels < 1 or t_chunk < 1:
+            raise ValueError("channels and t_chunk must be positive")
+        super().__init__(d_model, hidden)
+        self.C, self.t_chunk = channels, t_chunk
+        cuda = list(range(torch.cuda.device_count())) if torch.cuda.is_available() else []
+        with torch.random.fork_rng(devices=cuda):
+            self.evidence_norm = nn.LayerNorm(d_model)
+            self.option_norm = nn.LayerNorm(d_model)
+            self.query_norm = nn.LayerNorm(d_model)
+            self.token_projection = nn.Linear(d_model, channels)
+            self.option_projection = nn.Linear(d_model, channels, bias=False)
+            self.query_projection = nn.Linear(d_model, channels, bias=False)
+            self.booking_gate = nn.Linear(channels, 1)
+            self.evidence_readout = nn.Linear(channels, 1, bias=False)
+            nn.init.constant_(self.booking_gate.bias, -2.0)
+            nn.init.zeros_(self.evidence_readout.weight)
+
+    def forward(self, x: HeadInput, return_attribution: bool = False) -> HeadOutput:
+        parent = super().forward(x).logits
+        context = self.option_projection(self.option_norm(x.e))
+        context = context + self.query_projection(self.query_norm(x.q_end)).unsqueeze(1)
+        scale = x.evidence_len.clamp_min(1).to(x.h.dtype).sqrt().view(-1, 1, 1)
+        acc = torch.zeros_like(parent)
+        attr = [] if return_attribution else None
+        for t0 in range(0, x.h.shape[1], self.t_chunk):
+            t1 = min(x.h.shape[1], t0 + self.t_chunk)
+            token = self.token_projection(self.evidence_norm(x.h[:, t0:t1]))
+            joint = F.silu(token.unsqueeze(2) * context.unsqueeze(1))
+            gate = torch.sigmoid(self.booking_gate(joint)).squeeze(-1)
+            delta = gate * self.evidence_readout(joint).squeeze(-1) / math.sqrt(self.C)
+            valid = x.evidence_mask[:, t0:t1, None] & x.option_mask[:, None, :]
+            delta = delta.masked_fill(~valid, 0.0) / scale
+            acc = acc + delta.sum(1)
+            if attr is not None:
+                attr.append(delta)
+        # Keep the parent's output precision: otherwise fp32 length scaling
+        # promotes bf16 logits and changes typed probabilities even at zero.
+        # Attribution books the pre-cast increment, up to this final rounding.
+        logits = (parent + acc).to(parent.dtype)
+        return HeadOutput(_masked(logits, x.option_mask), bias=parent,
+                          attribution=torch.cat(attr, 1) if attr is not None else None)
+
+    def cost(self, T: int, K: int) -> dict:
+        d = self.token_projection.in_features
+        parent_params = sum(p.numel() for module in (self.norm, self.mlp) for p in module.parameters())
+        return {"flops": 2 * K * parent_params + 2 * (T + K + 1) * d * self.C + 8 * T * K * self.C,
+                "accumulator_scalars": K, "attention_free": True, "streaming_implemented": False,
+                "backbone_fork_rows": K,
+                "scope": "existing full prefix features; autograd retains token-option interactions"}
 
 
 # ---------------------------------------------------------------- (c) bounded-S snapshot fork
@@ -399,6 +470,7 @@ HEADS = {
     "qend_axes": QEndSemanticAxes,
     "integrator": IntegratorBank,
     "fork": FinalStateFork,
+    "fork_evidence": ForkEvidenceResidual,
     "snapshot": SnapshotFork,
     "head_b": HeadB,
     "clef_control": ClefCrossAttentionControl,
