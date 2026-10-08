@@ -222,7 +222,8 @@ class Decider:
             limits["_source"]["max_input_tokens"] = "backend_context_limit"
         return limits
 
-    def _restriction(self, env: dict[str, Any], request: dict[str, Any]) -> dict[str, list[str]] | None:
+    @staticmethod
+    def _restriction(env: dict[str, Any], request: dict[str, Any]) -> dict[str, list[str]] | None:
         restriction = env.get("policy_restriction")
         if restriction is None:
             return None
@@ -569,6 +570,82 @@ class Decider:
 
 
 _DEFAULT: Decider | None = None
+
+
+def select_actions(request: dict[str, Any], response: dict[str, Any]) -> dict[str, Any]:
+    """Host action boundary for choice questions; never reads legacy ``answers``.
+
+    Require an explicit host restriction for every action (allow all IDs explicitly
+    for an unrestricted action). Bind the response to the current request and policy,
+    then use only a valid conditioned stage. Any failure defers the entire request.
+    This checks transport/policy consistency, not model correctness or a certificate.
+    """
+    def defer(code: str) -> dict[str, Any]:
+        return {"status": "unsupported", "error": code, "action": "defer", "actions": {}, "answers": {},
+                "abstention": {"abstained": True, "reason": code, "mechanism": "policy_action_boundary"}}
+
+    def distribution(probs: Any, ids: set[str]) -> bool:
+        return (isinstance(probs, dict) and set(probs) == ids
+                and all(isinstance(p, (int, float)) and not isinstance(p, bool)
+                        and math.isfinite(p) and p >= 0 for p in probs.values())
+                and abs(sum(probs.values()) - 1.0) <= 1e-9)
+
+    try:
+        validate_legacy(request)
+        env = request.get("ssdm") or {}
+        restriction = Decider._restriction(env, request)
+        questions = request["questions"]
+        if not restriction or set(restriction) != set(questions):
+            return defer("policy_conditioned_unavailable")
+        if any(q["type"] != "choice" for q in questions.values()):
+            return defer("action_type_unsupported")
+        ss = response.get("ssdm")
+        if (not isinstance(ss, dict) or ss.get("schema") != versions.ENVELOPE_SCHEMA
+                or ss.get("status") != "ok" or response.get("error") is not None):
+            return defer("decision_unavailable")
+        abstention = ss.get("abstention")
+        if not isinstance(abstention, dict) or abstention.get("abstained") is not False:
+            return defer("decision_abstained")
+        diag = ss.get("diagnostics") or {}
+        algorithm = (versions.FINGERPRINT_ALGORITHM if env.get("provenance") is None
+                     else versions.FINGERPRINT_ALGORITHM_PROVENANCE)
+        if (response.get("model") != request["model"] or ss.get("request_id") != env.get("request_id")
+                or diag.get("request_fingerprint_algorithm") != algorithm
+                or diag.get("request_fingerprint") != request_fingerprint(request)
+                or any(diag.get(k) != env.get(k) for k in ("context_ref", "policy_ref", "registry_ref", "audience"))
+                or (env.get("parent_revision") is not None
+                    and diag.get("revision_id") != env["parent_revision"])):
+            return defer("stale_decision")
+        pcp, served = ss.get("policy_conditioned_probabilities"), ss.get("served_probabilities")
+        if not isinstance(pcp, dict) or not isinstance(served, dict):
+            return defer("policy_conditioned_unavailable")
+        answers, actions = {}, {}
+        for qid, q in questions.items():
+            stage = pcp.get(qid)
+            if not isinstance(stage, dict) or stage.get("status") != "ok":
+                return defer("policy_conditioned_unavailable")
+            allowed = restriction[qid]
+            expected_id = sha256_text(canonical_json({"policy_ref": env.get("policy_ref"),
+                                                      "question": qid, "allowed": allowed}))
+            if stage.get("restriction_id") != expected_id or stage.get("allowed") != allowed:
+                return defer("stale_policy_conditioned")
+            ids = {o for o, _ in canonical_options(q)}
+            probs, base = stage.get("probabilities"), served.get(qid)
+            if not distribution(probs, ids) or not distribution(base, ids):
+                return defer("invalid_policy_conditioned")
+            mass = sum(base[o] for o in allowed)
+            if mass <= 0:
+                return defer("policy_conditioned_unavailable")
+            if any(probs[o] != 0.0 for o in ids - set(allowed)) or any(
+                    abs(probs[o] - base[o] / mass) > 1e-9 for o in allowed):
+                return defer("invalid_policy_conditioned")
+            best = max(allowed, key=lambda o: probs[o])  # allowed is sorted; ties use smallest ID
+            actions[qid] = best
+            answers[qid] = {"type": "choice", "choice": best, "probabilities": dict(probs)}
+        return {"status": "ok", "error": None, "action": "execute", "actions": actions, "answers": answers,
+                "abstention": {"abstained": False, "reason": None, "mechanism": "policy_action_boundary"}}
+    except (KeyError, TypeError, ValueError, OverflowError, AttributeError, RequestRejected):
+        return defer("invalid_action_response")
 
 
 def set_default_backend(backend: Backend, **kwargs: Any) -> Decider:

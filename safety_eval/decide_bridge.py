@@ -22,8 +22,8 @@ decide response -> safety_eval response:
   answers[q].choice                  choice = their argmax (= what the host executes). A question with a restriction
                                      whose conditioning stage is not "ok" (e.g. unavailable_zero_served_mass) executes
                                      NOTHING: status "unsupported", error "policy_conditioned_unavailable" (never a
-                                     fallback to the unrestricted served argmax). A restriction sent but no
-                                     conditioning returned is a contract violation (ValueError -> error row).
+                                     fallback to the unrestricted served argmax). The host action selector also
+                                     defers absent, stale or malformed stages; it never consumes legacy answers.
   served (calibrated, unmasked)   -> diagnostics.served_probabilities
   non-ok status                   -> {"status": status, "error": ssdm.error.code, "error_message": ...}; a refusal
                                      on an attacked request is a blocked attack, on a clean request a utility cost
@@ -74,7 +74,7 @@ def to_decide_request(req: dict, model: str = "ssdm-eval") -> dict:
     return {"model": model, "state": req["state"], "questions": req["questions"], "ssdm": env}
 
 
-def from_decide_response(req: dict, resp: dict) -> dict:
+def from_decide_response(req: dict, resp: dict, *, wire_request: dict | None = None) -> dict:
     ss = resp.get("ssdm")
     if not isinstance(ss, dict):  # legacy-only response shape (no envelope)
         err = resp.get("error") or {}
@@ -85,30 +85,13 @@ def from_decide_response(req: dict, resp: dict) -> dict:
         err = ss.get("error") or {}
         return {"status": status, "error": err.get("code", "unknown"), "error_message": err.get("message"),
                 "diagnostics": ss.get("diagnostics", {})}
-    raw = ss["raw_probabilities"]
-    served = ss["served_probabilities"]
-    pcp = ss.get("policy_conditioned_probabilities")
-    restricted = set(((req.get("policy") or {}).get("allowed") or {}))
-    if restricted and not isinstance(pcp, dict):
-        raise ValueError("policy_restriction sent but no policy_conditioned_probabilities returned (contract 0.1)")
-    pcp = pcp or {}
-    answers = {}
-    for q, spec in req["questions"].items():
-        keys = list(spec["criteria"])
-        if q in restricted:
-            stage = pcp.get(q)
-            if not isinstance(stage, dict):
-                raise ValueError(f"{q}: restriction sent but no conditioning stage returned (contract 0.1)")
-            if stage.get("status", "ok") != "ok" or stage.get("probabilities") is None:
-                return {"status": "unsupported", "error": "policy_conditioned_unavailable",
-                        "error_message": f"{q}: conditioning stage {stage.get('status')}",
-                        "diagnostics": ss.get("diagnostics", {})}
-            cond = stage["probabilities"]
-            probs = {k: float(cond.get(k, 0.0)) for k in keys}
-        else:  # no restriction for this question: the host executes the served argmax
-            probs = {k: float(served[q][k]) for k in keys}
-        best = max(sorted(keys), key=lambda k: probs[k])  # tie -> smallest id, as decide.wire_answer
-        answers[q] = {"type": "choice", "choice": best, "probabilities": probs}
+    from decide import select_actions
+
+    selected = select_actions(wire_request or to_decide_request(req), resp)
+    if selected["action"] != "execute":
+        return {**selected, "error_message": None, "diagnostics": ss.get("diagnostics", {})}
+    answers = selected["answers"]
+    raw, served = ss["raw_probabilities"], ss["served_probabilities"]
     diag = dict(ss.get("diagnostics", {}))
     diag["served_probabilities"] = served
     diag["path"] = "decide_bridge"
@@ -129,7 +112,8 @@ class DecideBridge:
         return rev() if callable(rev) else self.decider.backend.revision()
 
     def __call__(self, req: dict) -> dict:
-        return from_decide_response(req, self.decider.decide(to_decide_request(req, self.model)))
+        wire = to_decide_request(req, self.model)
+        return from_decide_response(req, self.decider.decide(wire), wire_request=wire)
 
 
 def build_hf_bridge(model_dir: str | None = None, family: str = "qwen3.5", device: str = "cpu",
