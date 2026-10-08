@@ -23,6 +23,7 @@ spoofing is prevented.
 from __future__ import annotations
 
 import json
+import re as _re
 from dataclasses import dataclass
 from typing import Any
 
@@ -195,3 +196,98 @@ def canary_sha256(template: Template) -> str:
         parts += [f"{t}\x1e{int(tr)}" for t, tr in build_prompt_segments(template, CANARY_REQUEST, qid)]
     parts += [f"{t}\x1e{int(tr)}" for t, tr in continuation_segments(template, "x")]
     return sha256_text("\x1f".join(parts))
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# jrt-rwkv-g1-v2: the vendor-compliant RWKV7 G1 readout (C1, research-notes/RWKV7_GAP_LEVERS.md F1-F5). Opt-in only
+# (decide.backends.rwkv_g1_v2 / readout family ``rwkv7-hf-g1-v2``); jrt-rwkv-g1-v1 stays the default everywhere.
+#   F1  no "\n\n" inside the system or user turn: template text uses "\n", request text has \n{2,} collapsed to "\n"
+#       (BlinkDL: "\n\n" is the chat-round separator in G1 pretraining)
+#   F2  token 0 first (BlinkDL rwkv_mmlu_eval.py: [0] + encode(prompt)); added by the backend, not here
+#   F3  G1k no-think generation prefix "Assistant: <think></think>\n" (chat_template.jinja), then "ANSWER:"
+#   F4  every option is listed as "<CODE>. <option id>: <description>" with a single-token code (A..Z, AA.. from the
+#       frozen filtered codebook); the answer is the one code token. Questions with more options than the codebook
+#       fall back to "- <option id>: <description>" lines and multi-token option-id scoring
+#   F5  the whole prompt string is tokenized at once (the backend), not segment by segment
+# The JRT order (schema + options -> state -> question re-read) is kept; the re-read now repeats the coded options.
+# ----------------------------------------------------------------------------------------------------------------
+
+G1V2_ID = "jrt-rwkv-g1-v2"
+G1V2_SYSTEM_PROMPT = (
+    "Read the schema, then the state, then the question. Answer with the code of exactly one of the "
+    "question's options."
+)
+G1V2_TEMPLATE = Template(
+    id=G1V2_ID,
+    head="System: {system}\n\nUser: ",
+    tail="\n\nAssistant: <think></think>\nANSWER:",
+    terminator="\n",  # fallback (multi-token id) continuations only
+)
+_G1_BLANK_LINES = _re.compile(r"\n(?:[ \t\r\f\v]*\n)+")
+
+
+def g1_clean(text: str) -> str:
+    """Collapse every run of blank lines to a single newline (vendor rule: no "\n\n" inside a turn)."""
+    return _G1_BLANK_LINES.sub("\n", text)
+
+
+def _g1_text(value: Any) -> str:
+    return g1_clean(value if isinstance(value, str) else render(value))
+
+
+def g1v2_option_lines(q: dict[str, Any], codes: list[str] | None) -> list[Labelled]:
+    seg: list[Labelled] = []
+    for j, (oid, desc) in enumerate(canonical_options(q)):
+        seg.append(("\n" + (f"{codes[j]}. " if codes is not None else "- "), "template"))
+        seg.append((g1_clean(oid), "data"))
+        if desc is not None:
+            seg += [(": ", "template"), (_g1_text(desc), "data")]
+    return seg
+
+
+def build_prompt_g1v2(request: dict[str, Any], qid: str, code_table: list[str]) -> list[Labelled]:
+    """jrt-rwkv-g1-v2 prompt for one question as (text, label) segments (labels are informational: the backend
+    tokenizes the joined string once and fails closed on control ids). A field whose option count exceeds the code
+    table is rendered without codes (fallback)."""
+    questions = request["questions"]
+    order = canonical_question_ids(questions)
+
+    def codes_for(k: str) -> list[str] | None:
+        n = len(canonical_options(questions[k]))
+        return code_table[:n] if n <= len(code_table) else None
+
+    def instr(k: str) -> list[Labelled]:
+        v = questions[k].get("instructions")
+        return [(_g1_text(v) if isinstance(v, str) and v != "" else g1_clean(k), "data")]
+
+    seg: list[Labelled] = [(G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT) + "SCHEMA FIELDS:\n", "template")]
+    for i, k in enumerate(order, start=1):
+        if i > 1:
+            seg.append(("\n", "template"))
+        seg += [(f"FIELD {i}\nID: ", "template"), (g1_clean(k), "data"),
+                (f"\nTYPE: {questions[k]['type']}\nINSTRUCTION: ", "template")]
+        seg += instr(k)
+        seg.append(("\nOPTIONS:", "template"))
+        seg += g1v2_option_lines(questions[k], codes_for(k))
+        seg.append(("\nEND FIELD", "template"))
+    seg.append(("\nEND SCHEMA\nSTATE:\n", "template"))
+    state = request["state"]
+    seg.append((_g1_text(state), "data"))
+    q = questions[qid]
+    coded = codes_for(qid) is not None
+    seg += [(f"\nEND STATE\nQUESTION (re-read FIELD {order.index(qid) + 1}):\nID: ", "template"), (g1_clean(qid), "data"),
+            (f"\nTYPE: {q['type']}\nINSTRUCTION: ", "template")]
+    seg += instr(qid)
+    seg.append(("\nOPTIONS:", "template"))
+    seg += g1v2_option_lines(q, codes_for(qid))
+    seg.append(("\nReply with exactly one option " + ("code." if coded else "id.") + G1V2_TEMPLATE.tail, "template"))
+    return [(t, lab) for t, lab in seg if t]
+
+
+def render_g1v2(request: dict[str, Any], qid: str, code_table: list[str]) -> str:
+    """The jrt-rwkv-g1-v2 prompt string. Blank lines are collapsed once more over the joined user turn, so a request
+    string that ends or starts with a newline cannot form "\n\n" with the adjacent template newline."""
+    text = "".join(t for t, _ in build_prompt_g1v2(request, qid, code_table))
+    head = G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT)
+    body = text[len(head):len(text) - len(G1V2_TEMPLATE.tail)]
+    return head + g1_clean(body) + G1V2_TEMPLATE.tail
