@@ -146,3 +146,25 @@ token 0 first, the G1k no-think tail `Assistant: <think></think>
 frozen filtered codebook) read from one next-token distribution per question, and whole-string tokenization. The live
 rate guard (`jobs.common.rate_guard run`) stops a slow box. Schedule 105 + reserve 10 = 115. Worst case
 (60 + 2 x 115) x 0.0495 = **$14.36**; expected ~$2.50; hard cap $15.
+
+## R3: `JOB=readout_g1v3` (v3 readout family, `jobs/rwkv7/job_params_readout_g1v3.json`)
+
+Stage A's Index phase only, run as eight readout variants over the same DEV subset rows in ONE process
+(`jobs.rwkv7.readout_variants`: one unmodified kit run per variant, the RWKV7 plugin cached so the model loads once),
+in priority order (a cut-short run keeps the first ones; every variant with complete results is scored):
+
+| variant | family | change |
+|---|---|---|
+| v2 | `rwkv7-hf-g1-v2` | control, byte-identical to job-zhyvg (27.31 [24.53, 30.03]) |
+| v2f | `rwkv7-hf-g1-v2f` | v2 + instruction fix only: dict-valued instructions (ToolRet {candidate, task}, BRIGHT) rendered as canonical JSON as in v1, instead of the question id |
+| v3 | `rwkv7-hf-g1-v3` | v2f + v3 code table (A..Z, then single-token two-letter codes minus English words/abbreviations; `decide/data/rwkv_g1_v3_codes.json`) + code key (question restated, then one `CODE = label` line per option, for k >= 9) |
+| v3w | `rwkv7-hf-g1-v3w` | v3 + word option ids (non-opaque, first token unique) listed as `- id: desc` and scored by their own first token |
+| v3r | `rwkv7-hf-g1-v3r` | v3 + top-m re-read: the model's OWN first-pass top 2-3 codes re-listed after the first answer context, second pass from the same prefix state; p = p1 outside the shortlist, p1(S) x p2(.\|S) inside |
+| v3p | `rwkv7-hf-g1-v3p` | v3 + deterministic per-question presentation permutation (sha256 of question id, type, option ids), codes mapped back to option ids |
+| v1 | `rwkv7-hf` | the jrt-rwkv-g1-v1 readout (job-tkfaj / uhxb5), for a pre-declared CPU-side arithmetic-mean ensemble v1 + v3 on identical rows |
+| v3c | `rwkv7-hf-g1-v3c` | v3 + contextual calibration (Zhao et al. 2021; content-free "N/A" / "" / "[MASK]" state + instructions, k <= 16) |
+
+Nothing is fitted on any rows. Outputs: `index/<variant>/{results.jsonl, score.json, ece.json}`; the live rate guard
+watches all results files (total 8 x rows). Index cap = 21 min (job-zhyvg v2, measured) x 8 x 1.3 = 218 -> 220.
+Schedule 20 + 220 + 32 + reserve 10 = 282. Worst case (60 + 2 x 282) x 0.0495 = **$30.89**; expected ~$10.74;
+hard cap $31.
