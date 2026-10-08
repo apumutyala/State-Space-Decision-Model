@@ -16,7 +16,7 @@ Loss map (research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md, measured): Clef-flash-an
 | D4 | A | 45k draw re-aimed: tools > procedural knowledge > BANKING77/CLINC > retrieval; uniform gold positions | +3–6 | ~$30–60 | mode on stack/rwkv7/d4-draw45k; waiting on B1 |
 | B1 | B | 45k/100k draw (re-aimed as in D4), exclusions vs TEST/held-out/cohort v3 | enables D4 | ~$0–5 | B: stack/rwkv7/b1-draw |
 | D5 | A | D5b LR 2x: running job-i3buq. D5a r256 (90be840): packaged, on hold | ≤ +1–2 | ≤$40 each | D5b running |
-| R2 | B | Clef 27B full-DEV comparator + analysis/paired_vs_clef.py | final claim | ~$10–20 | B: job-jxevr |
+| R2 | B | Clef 27B full-DEV comparator + analysis/paired_vs_clef.py | needed for the final claim | $7.66 | DONE: job-zfexa 61.89 [60.28,63.28] full DEV 32k (ref GDN); vs Clef-flash +4.54 [3.20,5.90]; R2b Clef-flash ref-GDN job-t5yg2 running |
 | H1 | B | Hijack measurement for the champion. G12 builds no hijack variants, so hijack is unmeasured; Done needs it | required for the final claim | ~$2–5 | B: proposed |
 | Q1 | — | Parked: Q9 proxy loop; Q9-AF option (b) | — | — | parked (#140 stall trigger) |
 
