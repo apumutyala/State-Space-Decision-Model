@@ -356,6 +356,28 @@ unspecified GWP horizon keep it at **zero common-scope admission**. No
 emissions values were transcribed or imported, and no held-out data were
 accessed.
 
+### 8 October 2026 — Kuemmel and Sørensen 1997 primary-text recovery
+
+The original [Roskilde archive scan](https://thiele.ruc.dk/imfufatekster/pdf/334.pdf)
+of *Life-Cycle Analysis of the Total Danish Energy System* (Text 334) was
+visually inspected. The source describes a whole-Danish-system model with
+current and future scenarios, not an independent wind-farm LCA. Its wind
+electricity chain is expressed per kWh and draws on earlier TEMIS and European
+Commission work, plus a separate German wind-regime study (printed pp. 41–44,
+49–51, 62–68). The report discusses CO2, CH4 and N2O using GWP100/IPCC 1996
+(pp. 49–51). It excludes energy used to produce wind turbines/equipment on
+printed p. 41; imported-material treatment follows the stated system-boundary
+assumptions. Scenario and wind-regime ranges are not confidence intervals, and
+no report-specific statistical interval for its wind result was identified.
+The 1997 report is related to the earlier annual report from the same Danish
+system-analysis project, so do not count them as separate families. This
+source remains **unadmitted**: the system-wide/scenario basis, inherited wind
+inputs, and turbine/equipment boundary omission do not establish a distinct
+independent full-scope common-group result. The inspected local scan is
+SHA-256 `068E64726AD202B9E3EBA8B47132865CC983B846C65577E3A69FC0CEF63AE59D`.
+No emissions values were transcribed or imported, and no held-out data were
+accessed.
+
 ## Safe expansion rule
 
 An added L4 module must retain its own source, population, year, boundary,
