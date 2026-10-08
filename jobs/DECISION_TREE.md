@@ -110,3 +110,5 @@ lines intact. Branch A leaves System 1 ~$70 above the cache-fork m2 plan before 
 estimate); the full-8 worst case already counts a 60-min build and two full attempts.
 
 D5 probe `jobs/m2_first_cell/job_params_d5_lr2x.json` (mode `d5_lr2x`): D1 (job-c7pq2) with lr_lora 0.0001 -> 0.0002, nothing else changed; inherits the D1 $66.03 ceiling ($70 hard stop).
+
+D7 probe `jobs/m2_first_cell/job_params_d7_t380.json` (mode `d7_t380`): D1 (job-c7pq2) with the training clock max_minutes 190 -> 380 (~2,763 steps / 22,109 rows at 8.25 s, ~1 epoch of the same 24k draw; max_steps 3,000 unchanged), cell cap 230 -> 421, schedule 637 -> 828 min; worst (60 + 2 x 828) x 0.0495 = $84.94 ($90 hard stop), expected ~719 min ≈ $35.59.
