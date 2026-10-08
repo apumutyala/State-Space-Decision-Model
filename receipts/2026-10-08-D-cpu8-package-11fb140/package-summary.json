@@ -1,0 +1,51 @@
+{
+  "source_sha": "11fb140ce64802222d8abe796267e22e14fe4959",
+  "files": [
+    {
+      "name": "agent-main-11fb140.bundle",
+      "sha256": "f5ca0afa4380a66ee40598591a9f2c0efd3f508d87b5d8d418f90c9cd4348d55",
+      "bytes": 26346294
+    },
+    {
+      "name": "decision-index-87d4650.bundle",
+      "sha256": "46a9e0ecfff272cc8ffb4d39c0bbe79a320a1bbd455f6ee06b2b20065d73263a",
+      "bytes": 1044541
+    },
+    {
+      "name": "m2_first_cell-4247b340ddde.tar.zst",
+      "sha256": "6902a600f541c518db35cd37d80cfa04968441ff2672ad2b98fc3d6a07acc27b",
+      "bytes": 469087698
+    },
+    {
+      "name": "package-manifest.json",
+      "sha256": "4cd83d308309efda0cca767f503b70614ed8dd2a8e945739298d7565da9bb2fc",
+      "bytes": 6377
+    },
+    {
+      "name": "run_deadline.py",
+      "sha256": "ac4b06f61e22c9cb5f4de0e8d61180d502ff31bd96c3277a200b4970ce153702",
+      "bytes": 5723
+    },
+    {
+      "name": "run_m2_cpu8_tests.sh",
+      "sha256": "b0a46f5ab20ec5634b4fed1b4d9dc6666d991060c21256aeb59f2ab87130754b",
+      "bytes": 5186
+    },
+    {
+      "name": "tokenizer_config.json",
+      "sha256": "2b5e075c2c16780061ae272c9f0b52ff620ddd8e87fdf7fa82fc425661667329",
+      "bytes": 531
+    },
+    {
+      "name": "tokenizer.json",
+      "sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+      "bytes": 1580973
+    },
+    {
+      "name": "package.sha256",
+      "sha256": "410dbca12ff3aecf3ecdf613deab023ec470d0e26cd1d010e2afea39d49ffa14",
+      "bytes": 715
+    }
+  ],
+  "bytes": 498078038
+}
