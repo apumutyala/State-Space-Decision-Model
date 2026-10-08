@@ -217,3 +217,10 @@ to "chunked" raises and the cell stops with exit 36 (also when training ran but 
 fallback there is counted, not fatal). The parent arm and child evals use the same cell `rwkv7_wkv` (identity).
 
 Mode `d1_fla` (D1fla; `job_params_d1_fla.json`, `m2_first_cell_rwkv7_d1_fla.json`): `d1_fast` with only `"rwkv7_wkv": "fla"` (job-9bs8w ADOPT, 1.46x step; fla setup and strict training above). Same clock, caps and schedule as `d1_fast`.
+
+Mode `d14_rlcd` (D14; `job_params_d14_rlcd.json`, `m2_first_cell_rwkv7_d14_rlcd.json`): RLCD second stage from D1
+(job-c7pq2, art-bm3e6). `d1_fla` with loss arm `rlcd` (`train.losses.rlcd_loss`: 1 - E_p[reward] with ordinal partial
+credit, record-exact proxy 0.25, KL(p || p_D1) 0.1, Brier 0.5), D1's trainable tensors as init and KL reference
+(`init_from`, data `init/trainable.safetensors`, sha256-pinned, `train.rlcd`), LRs 2e-4 / 2e-5, warmup 20, 120-min
+clock, cell cap 160. Schedule 560 + reserve 7 = 567 min. **Worst case** (60 build + 2 x 567) x $0.0495 = **$59.10**
+(cap $70). The report adds `start_point` = D1's own Index (35.12 [32.12, 37.95]).
