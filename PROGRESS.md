@@ -114,3 +114,9 @@
 - Learned: 34 is only a bibliographic audit upper bound; common Ecoinvent and author/study clustering are unquantified, and all 126 estimates were analyzed independently. Table S3 is required for reference-linked emissions; 20 independent worlds remains unproven.
 - Next: recover Table S3/OpenEI row export and inspect primary inventory overlap before counting worlds. The only new D2 evidence is a future-start claim lock; C still cannot verify live status from autor.
 - No L4 values were imported; no held-out data, GPU, or paid work used.
+
+## 2026-10-08 ~17:25Z: agent-c candidate-family audit ready for review
+- Did: completed the 44→42→37→34 bibliographic candidate grouping and clarified Table S3/value availability and provisional merges. PR #224 head c350834 is mergeable and GitGuardian passed.
+- Learned: 34 is only a candidate upper bound; the article itself says common-database and author/study clustering were unquantified. No qualifying source count or L4 model evidence yet.
+- Next: tighten shared-inventory merges and recover S1 Table S3 or another independently sourced row-level set. D2 job-84ajq has only a future 17:30Z claim start in state; no live autor verification is available to C.
+- No L4 data import, held-out access, GPU order or paid work.
