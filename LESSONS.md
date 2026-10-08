@@ -409,18 +409,34 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Check:** `_check_development_item_ids` validates globally unique expanded Item ids and slash-free qids for every row whenever any input is grouped/nested, before split. `tests/test_m2_multislot_loader.py::test_flat_nested_expanded_item_collision_refuses_before_split` covers both row orders and grouping modes; `test_every_row_on_new_development_path_requires_slash_free_qids` covers flat/multi-question rows; `test_pure_legacy_slash_qids_retain_exact_existing_behavior` preserves the legacy boundary.
 - **Status:** ENFORCED for the new development loader paths; pure legacy behavior remains unchanged.
 
-### L-42 Grouped flat conversion stripped protected-data guard sidecars
-- Date: 2026-10-07 (Track D adversarial review of Issue #178 / PR #179).
-- Symptom: a synthetic grouped flat row carrying `_evaluation` was refused by `SplitGuard.check` before conversion but accepted as a training Item after loading. The new grouped-flat conversion kept the world id while dropping the other envelope metadata used by the guard.
+### L-42 A direct node chunk upload failed before the CPU-8 suite and skipped its receipt
+- Date: 2026-10-07 (Issue #171).
+- Symptom: the first 26,208,694-byte agent-main bundle transfer announced seven parts of at most 4 MiB, then only `error: request failed`. No file completed and no test ran. The owned CPU-8 was stopped after 37 seconds with its disk intact.
+- Cost: $0.004958, recorded as the exact available-balance decrease; no model or H100 work ran. Receipt and all frozen source/package hashes: `receipts/2026-10-07-D-m2-cpu8-transfer-failure/`.
+- Root cause: likely the direct node chunk-upload path; the generic error does not establish a size limit. The controller's terminal receipt was below the failing upload command, so its early exit skipped accounting.
+- **Check:** `scripts/supervise_m2_cpu8.sh` stages only the nine hash-pinned files through private storage before creating a fresh owned node, then imports and checks remote hashes before the unchanged 145m/8610s test command. An EXIT trap records phase/current file/return code/node/stop result on every operational exit. Import failure has unknown remote outcome and stops the node without running tests. `tests/test_m2_cpu8_controller.py::ControllerTests` runs only a fake AUTOR and covers upload failure/no create, import failure/stop, exact successful command order, rate refusal, failed stop and workload failure/export without retries; `StaticTests::test_large_direct_node_copy_cannot_recur` rejects the direct node copy path.
+- **Status:** ENFORCED locally; revised transfer has not run against the provider and requires fresh exact-package review and live spend/free-storage preflight.
+
+### L-43 A remote checksum list must be checked against an independent pin
+- Date: 2026-10-08 (adversarial review of PR #181; caught before retry).
+- Symptom: remote verification ran `sha256sum -c package.sha256`, which trusts the imported checksum list. A modified list containing a valid subset could pass while omitting the pinned runner and other package files.
+- Cost: $0; caught before any package upload, node creation or validation retry.
+- Root cause: the package list was pinned and verified locally, but its identity was not rechecked at the remote import boundary before it selected which files to verify.
+- **Check:** `scripts/supervise_m2_cpu8.sh` now verifies remote `package.sha256` against the independently compiled `LIST_SHA` before using that list on payloads. `tests/test_m2_cpu8_controller.py::StaticTests::test_pinned_checksum_list_is_verified_before_payload_list` demonstrates that the prior subset-only check passes while the pinned-list check rejects it; `ControllerTests::test_remote_hash_list_failure_stops_before_workload` requires a failed remote gate to stop the owned node and skip workload registration.
+- **Status:** ENFORCED in the local controller; provider execution remains pending review and live preflight.
+
+### L-44 Grouped flat conversion stripped protected-data guard sidecars
+- Date: 2026-10-08 (Track D adversarial review of Issue #178 / PR #179).
+- Symptom: a synthetic grouped flat row carrying `_evaluation` was refused by `SplitGuard.check` before conversion but accepted as a training Item after loading. The new grouped-flat conversion kept the world id while dropping other envelope metadata used by the guard.
 - Cost: $0; reproduced with synthetic rows and ByteEncoder only, before model execution or paid work.
 - Root cause: the new grouped-flat path reused the legacy field whitelist, which discarded `_evaluation`, `source`, `run_id`, `row_sha256` and `payload_sha256`.
-- **Check:** `to_train_record` preserves every grouped-flat envelope sidecar while moving state/questions into the request. `test_grouped_flat_guard_metadata_survives_and_is_enforced` checks each of the five markers survives loading and is still refused by the Item conversion guard. Pure ungrouped legacy conversion remains exact.
+- **Check:** `to_train_record` preserves every grouped-flat envelope sidecar while moving state/questions into the request. `test_grouped_flat_guard_metadata_survives_and_is_enforced` checks each marker survives loading and is refused by the Item conversion guard. Pure ungrouped legacy conversion remains exact.
 - **Status:** ENFORCED for grouped-flat development ingestion.
 
-### L-43 Multislot storage keys were incompatible with order-view lookup
-- Date: 2026-10-07 (Track D adversarial review of Issue #178 / PR #179).
-- Symptom: enabling the existing order-consistency arm on a nested one-slot development row raised `KeyError('task')` before training, because the record was stored as `task/q0`.
+### L-45 Multislot storage keys were incompatible with order-view lookup
+- Date: 2026-10-08 (Track D adversarial review of Issue #178 / PR #179).
+- Symptom: enabling the existing order-consistency arm on a nested one-slot development row raised `KeyError('task')` before training because the record was stored as `task/q0`.
 - Cost: $0; reproduced with synthetic rows and ByteEncoder only, before model execution or paid work.
 - Root cause: `attach_views` recovered the task id from an Item and assumed it was the storage key; several distinct slot requests can now share that task id.
-- **Check:** `attach_views` indexes source requests by their complete expanded Item identity and rejects ambiguous identities. `test_multislot_order_views_match_each_request_without_task_key_aliasing` combines two slots and a complete record under one task, and checks each reversed view uses its own request/prefix and inverse gold mapping without mutating the sources.
+- **Check:** `attach_views` indexes source requests by their complete expanded Item identity and rejects ambiguous identities. `test_multislot_order_views_match_each_request_without_task_key_aliasing` combines two slots and a complete record under one task and checks each reversed view uses its own request/prefix and inverse gold mapping without mutating the sources.
 - **Status:** ENFORCED for legacy records and development multislot records.

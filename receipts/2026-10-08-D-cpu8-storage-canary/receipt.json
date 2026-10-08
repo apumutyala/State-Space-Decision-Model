@@ -1,0 +1,37 @@
+{
+  "schema": "ssdm.cpu8_storage_canary.v1",
+  "observed_at_utc": "2026-10-08T02:33:52.913191Z",
+  "workspace": "default",
+  "cli": "autor 0.28.0",
+  "bucket": "ssdm-cpu8-canary-20261008",
+  "bucket_id": "384e2dd3-5158-4415-847d-b6a4ce74bc40",
+  "bucket_created_at_utc": "2026-10-08T02:33:31.836823Z",
+  "bucket_deleted_at_utc": "2026-10-08T02:33:52.913191Z",
+  "synthetic_input": {
+    "utf8_text": "ssdm-cpu8-storage-canary-v1\n",
+    "bytes": 28,
+    "sha256": "a598f009d319f1d7ad723b591b50503a4b588ee8582fb329c80b8ee2bf1c98e1"
+  },
+  "storage_object": {
+    "key": "canary-v1/ssdm-cpu8-storage-canary.txt",
+    "listed_bytes": 28,
+    "upload_reported_bytes": 28,
+    "download_reported_bytes": 28,
+    "download_sha256": "a598f009d319f1d7ad723b591b50503a4b588ee8582fb329c80b8ee2bf1c98e1",
+    "cmp_exit_code": 0,
+    "deleted": true
+  },
+  "cleanup": {
+    "bucket_deleted": true,
+    "objects_at_bucket_delete": 0,
+    "post_cleanup_bucket_list_empty": true,
+    "storage_mtd_usd": 0.0,
+    "storage_active_bytes": 0,
+    "available_usd_after": 467.462038
+  },
+  "limits": [
+    "Only 28-byte synthetic storage cp upload/download was tested.",
+    "No multipart transfer, large package, node-side import, node creation/wake, model, Index/held-out data, or training was tested.",
+    "No compute/storage charge occurred."
+  ]
+}
