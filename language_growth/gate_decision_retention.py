@@ -13,7 +13,9 @@ Authorization schema ``ssdm.language_authorized_dev_index.v1`` contains:
 pins ``draws``, ``seed`` and ``confidence=0.95``; passing requires >=2000 draws.
 Identities contain exactly
 ``artifact_sha256`` and ``revision_id``. Cohort contains ``scope`` (full_dev or
-dev_subset), ``expected_rows``, ``complete_groups``, ``complete_source_cases``
+dev_subset), ``expected_rows``, ``benchmark_rows`` (catalog ID string to row
+count), ``unavailable_benchmarks`` (reviewed absent board slots),
+``complete_groups``, ``complete_source_cases``
 and ``minimum_cases_per_benchmark`` (at least 20). Each item contains exactly
 ``run_id``, ``request_sha256``, ``scoring_row_sha256`` and ``source_case_id``.
 Scoring rows are approved ordinary kit rows without state/task text: only
@@ -211,6 +213,20 @@ def decision_index_retention(authorization, authorization_sha256, scoring_rows,
     from harness import score, bootstrap
     from harness.suite import index_ids, in_edition
     edition = auth["edition"]
+    census = {}
+    for row in rows:
+        key = str(row["_evaluation"]["catalog_id"])
+        census[key] = census.get(key, 0) + 1
+    expected_census = cohort.get("benchmark_rows")
+    if (not isinstance(expected_census, dict) or expected_census != census
+            or any(type(n) is not int or n < 1 for n in expected_census.values())):
+        raise ValueError("authorized DEV benchmark census mismatch")
+    unavailable = cohort.get("unavailable_benchmarks")
+    if (not isinstance(unavailable, list) or any(type(n) is not int for n in unavailable)
+            or len(set(unavailable)) != len(unavailable)
+            or set(unavailable) - set(index_ids(edition))
+            or set(unavailable) & {int(n) for n in census}):
+        raise ValueError("invalid reviewed unavailable benchmark inventory")
     if any(not in_edition(row, edition) for row in rows):
         raise ValueError("scoring row is outside authorized Index edition")
     systems, errors = [], {}
@@ -226,7 +242,8 @@ def decision_index_retention(authorization, authorization_sha256, scoring_rows,
     parent, candidate = systems
     cases = {str(n): len(bench.clusters) for n, bench in candidate.items()}
     missing = sorted(set(index_ids(edition)) - set(candidate))
-    complete = (cohort["scope"] == "full_dev" and draws >= 2000 and set(candidate) == set(index_ids(edition))
+    complete = (cohort["scope"] == "full_dev" and draws >= 2000
+                and set(candidate) | set(unavailable) == set(index_ids(edition))
                 and all(n >= cohort["minimum_cases_per_benchmark"] for n in cases.values()))
     # The frozen bootstrap's area summary assumes at least one vector-valued
     # contribution per area. Supply explicit zero contributions for missing
@@ -246,6 +263,7 @@ def decision_index_retention(authorization, authorization_sha256, scoring_rows,
             "renormalize_missing_benchmarks": False, "paired": paired, "n_items": len(rows),
             "source_cases_per_benchmark": cases, "error_rows": errors,
             "missing_benchmarks": missing,
+            "authorized_benchmark_rows": expected_census, "reviewed_unavailable_benchmarks": unavailable,
             "parent_identity": parent_id, "candidate_identity": candidate_id,
             "authorization_sha256": authorization_sha256, "scoring_rows_sha256": auth["scoring_rows_sha256"],
             "parent_predictions_sha256": auth["parent_predictions_sha256"],

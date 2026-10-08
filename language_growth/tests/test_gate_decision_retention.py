@@ -38,6 +38,7 @@ class RetentionTests(unittest.TestCase):
                 "parent_predictions_sha256": publish(paths["parent"], parent, lines=True),
                 "candidate_predictions_sha256": publish(paths["child"], child, lines=True),
                 "cohort": {"scope": "dev_subset", "expected_rows": 20, "complete_groups": True,
+                           "benchmark_rows": {"3": 20}, "unavailable_benchmarks": [],
                            "complete_source_cases": True, "minimum_cases_per_benchmark": 20}, "items": items}
         return paths, auth, rows, parent, child
 
