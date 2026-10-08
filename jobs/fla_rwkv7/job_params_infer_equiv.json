@@ -1,12 +1,12 @@
 {
  "test_env": {"transformers": "5.17.0", "with": [], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}, {"reason": "fla not installed here", "why": "this job's image pins no fla, so the fla source-mirror test has nothing to mirror"}], "image": "jobs/rwkv7/Dockerfile"},
- "_comment": "jobs/fla_rwkv7 mode infer_equiv (analysis/FLA_WKV_NUMERICS_2026-10-08.md Recommendation (a); JOB_SPEC.md 'Mode infer_equiv'): INFERENCE-ONLY Index-level equivalence of fla chunk_rwkv7 vs the production chunked WKV. Stock RWKV7-G1k-13.3B, readout family rwkv7-hf-g1-v2 (template jrt-rwkv-g1-v2, = job-zhyvg's stock readout), the 2,008-row DEV subset, both WKV paths in ONE process interleaved per row (rule fla-infer-equiv-v1, jobs/fla_rwkv7/infer_equiv.py). Expected: chunked ~20.3 min (job-zhyvg 98.7 rows/min), fla ~8-10 min, load 1.5, fla fwd warmup ~3.5 (job-jucxx ~70 s per specialisation, 4 shapes, some shared). The score phase's budget is whatever is left of max_duration - reserve - report (earlier phases' unused caps carry over); a slow box stops on the measured rate (exit 15), a deadline stop is INCONCLUSIVE. Worst case (60 + 1 x 40) x 0.0495 = $4.95: max_restarts 0 and assumed_restart_floor 0 (one attempt; the validation is not worth a second paid attempt, and the floor of 1 would make the lint-required 60-min build exceed the $5 ceiling). Spec only, NOT submitted.",
+ "_comment": "jobs/fla_rwkv7 mode infer_equiv (analysis/FLA_WKV_NUMERICS_2026-10-08.md Recommendation (a); JOB_SPEC.md 'Mode infer_equiv'): INFERENCE-ONLY Index-level equivalence of fla chunk_rwkv7 vs the production chunked WKV. Stock RWKV7-G1k-13.3B, readout family rwkv7-hf-g1-v2 (template jrt-rwkv-g1-v2, = job-zhyvg's stock readout), the 2,008-row DEV subset, both WKV paths in ONE process interleaved per row (rule fla-infer-equiv-v1, jobs/fla_rwkv7/infer_equiv.py; unchanged). RESIZED after job-exadi (exit 15, art-fjpsv): measured on 398 rows / 16.6% of the weight, chunked 99.1 rows/min, fla 191.6 rows/min, rate-guard projection 37.0 min of scoring for both arms (+0.75 min load); setup 2 min, warmup 1.3 min (one 71 s compile). Score cap 49 >= 37 x 1.3 = 48.1 (the guard stops when the projection passes 95% of the cap, i.e. > 46.6 min). Caps 2+5+1+49+2 + reserve 1 = 60. Worst case (60 + 1 x 60) x 0.0495 = $5.94: max_restarts 0 and assumed_restart_floor 0 (one attempt; the floor of 1 would be $8.91, above the $7 ceiling). New idempotency key (-v2). Spec only, NOT submitted.",
  "job": "fla-rwkv7-infer-equiv",
  "mode": "infer_equiv",
  "decision_rule": "jobs/fla_rwkv7/infer_equiv.py",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 40,
+ "max_duration_minutes": 60,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 0,
@@ -14,21 +14,21 @@
  "resume": "none",
  "hf_cache": true,
  "batch_usd_per_min": 0.0495,
- "hard_cap_usd": 5.0,
+ "hard_cap_usd": 7.0,
  "reserve_minutes": 1,
  "phase_caps_minutes": {
   "setup": 2,
   "warmup": 5,
   "download_wait": 1,
-  "score": 30,
-  "report": 1
+  "score": 49,
+  "report": 2
  },
  "expected_minutes": {
   "build": 15,
   "setup": 1.5,
-  "warmup": 3.5,
+  "warmup": 1.5,
   "download_wait": 0.5,
-  "score": 31,
+  "score": 38,
   "report": 0.5
  },
  "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
@@ -38,7 +38,7 @@
  "submit": {
   "command": "bash /opt/ssdm/m1/jobs/fla_rwkv7/fla_job.sh infer_equiv",
   "env": {"PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1", "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"},
-  "key": "m2-fla-rwkv7-infer-equiv",
+  "key": "m2-fla-rwkv7-infer-equiv-v2",
   "label": "fla_rwkv7 infer_equiv: fla vs chunked WKV, stock G1k-13.3B g1-v2 readout, DEV subset, interleaved",
   "checks": {
    "success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/FLA_RWKV7_INFER_EQUIV_DONE"},

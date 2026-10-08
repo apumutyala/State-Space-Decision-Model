@@ -196,7 +196,9 @@ def test_job_params_cost_schedule_and_lint():
     from jobs.common import costs, lint
 
     p = json.loads(PARAMS.read_text(encoding="utf-8"))
-    assert p["max_duration_minutes"] == 40 and costs.worst_case_usd(p) <= 5.0 <= p["hard_cap_usd"] + 1e-9
+    # job-exadi (exit 15): measured 37.0 min of interleaved scoring -> score cap >= 1.3 x that, worst case <= $7
+    assert p["max_duration_minutes"] == 60 and costs.worst_case_usd(p) <= 7.0 and p["hard_cap_usd"] <= 7.0
+    assert p["phase_caps_minutes"]["score"] >= 1.3 * 37.0 and p["submit"]["key"] == "m2-fla-rwkv7-infer-equiv-v2"
     assert sum(p["phase_caps_minutes"].values()) + p["reserve_minutes"] == p["max_duration_minutes"]
     assert p["chip"] == "h100" and p["max_restarts"] == 0 and p["decision_rule"] == "jobs/fla_rwkv7/infer_equiv.py"
     assert p["submit"]["command"] == "bash /opt/ssdm/m1/jobs/fla_rwkv7/fla_job.sh infer_equiv"

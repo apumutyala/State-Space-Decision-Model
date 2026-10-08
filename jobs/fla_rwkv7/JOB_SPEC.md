@@ -437,13 +437,29 @@ only this mode of `fla_job.sh` exports it. No training path, loader default or c
 | setup | 2 | pins, fla 0.5.2 by hash, fla #640 guard, kit import, DEV rows sha256, subset rows; snapshot download + `sha256sum -c` + vendored-code check start in the background | 5 / 10 |
 | warmup | 5 | fla fwd compile + autotune, variant `fla`, bf16, shapes (B, T) = (1, 2048), (1, 1000), (1, 1), (8, 1000) | 7 / 30 |
 | download_wait | 1 | wait for the background snapshot job | 10 |
-| score | 30 | load + both paths interleaved under `rate_guard run-weighted` (check after 6 min); budget = time left before max_duration − reserve − report, so unused earlier caps carry over; the scorer stops before its deadline | 15 / 7 / 36 |
-| report | 1 | `dev_subset compare` (a failure gives INCONCLUSIVE), `infer_equiv decide` -> `decision_infer.json` | 9 |
+| score | 49 | load + both paths interleaved under `rate_guard run-weighted` (check after 6 min); budget = time left before max_duration − reserve − report, so unused earlier caps carry over; the scorer stops before its deadline | 15 / 7 / 36 |
+| report | 2 | `dev_subset compare` (a failure gives INCONCLUSIVE), `infer_equiv decide` -> `decision_infer.json` | 9 |
 
-Caps 39 + reserve 1 = 40 = `max_duration_minutes`. Expected: chunked ~20.3 min (job-zhyvg: 98.7 rows/min), fla ~8–10,
-load 1.5, warmup ~3.5, setup 1.5. That is ~37 run minutes, ~$2.57 with a 15-minute build. **Worst case
-(60 + 1 x 40) x 0.0495 = $4.95**: `max_restarts` 0 and `assumed_restart_floor` 0 (one attempt). The lint requires a
-60-minute build (L-09), and with the usual floor of 1 the worst case would be $6.93, above the $5 ceiling. Hard cap $5.
+Caps 59 + reserve 1 = 60 = `max_duration_minutes`.
+
+**Resized after job-exadi** (exit 15 at score, artifact art-fjpsv, $0.64). The rule did not change; only the time
+budget did. Measured over 398 rows (16.6% of the request weight):
+- chunked ran at 99.1 rows/min, matching job-zhyvg's 98.7;
+- fla ran at 191.6 rows/min;
+- the rate guard projected 37.0 min of scoring for both paths, plus 0.75 min of load;
+- setup took 2 min and warmup 1.3 min (one 71 s compile; the other shapes reused it).
+
+The score cap is 49, at least 37 × 1.3 = 48.1. The guard stops when its projection passes 95% of the cap, which is 46.6 min.
+Expected: ~42 run minutes, ~$2.82 with a 15-minute build. **Worst case (60 + 1 x 60) x 0.0495 = $5.94**: `max_restarts` 0
+and `assumed_restart_floor` 0 (one attempt). The lint requires a 60-minute build (L-09), and with the usual floor of 1 the
+worst case would be $8.91, above the $7 ceiling. Hard cap $7. Idempotency key `m2-fla-rwkv7-infer-equiv-v2`.
+
+**job-exadi partial preview (398 of 2,008 rows; NOT a verdict, and not gating):**
+- argmax agreement 0.9871 (840 / 851 questions); 11 flips, 0 of them with a reference margin > 0.05;
+- flips by length: <2k 4 / 492, 2–8k 6 / 320, >=8k 1 / 39;
+- max |dp| 0.043, p99 |dp| 0.035;
+- all values finite, 0 fla fallbacks, 0 status mismatches;
+- rows/min ratio (fla / chunked) 1.93.
 
 Exit codes: 0 decided (any verdict) | 5 setup | 6 export | 7 timeout | 9 decision invalid | 10 snapshot / DEV rows /
 vendored code | 15 measured rate too slow | 30 warmup crashed | 36 score crashed | 1 finalize. Marker
