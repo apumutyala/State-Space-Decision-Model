@@ -7,6 +7,7 @@ mkdir -p "$OUT"
 OUT=$(realpath "$OUT")
 PHASE=arguments CURRENT_FILE=none NODE_ID=none NODE_STATE=not_created
 NODE=none OWNED=0 STOPPED=0 STOP_ATTEMPTS=0 STOP_RESULT=not_needed RUN_RC=not_run EXPORT_RC=not_run IMPORT_OUTCOME=not_started
+COMMAND_ID=none LOG_RC=not_run COMPLETION_VERIFIED=false
 START=$SECONDS
 STAGE=""
 AUTOR="${AUTOR:-/root/.local/bin/autor}"
@@ -43,7 +44,8 @@ on_exit() {
     (( STOPPED == 1 )) || rc=70
   fi
   python3 "$JSON_HELPER" receipt "$OUT/controller.json" "$PHASE" "$CURRENT_FILE" "$rc" \
-    "$NODE" "$NODE_ID" "$NODE_STATE" "$STOP_RESULT" "$RUN_RC" "$EXPORT_RC" "$((SECONDS - START))" "$IMPORT_OUTCOME"
+    "$NODE" "$NODE_ID" "$NODE_STATE" "$STOP_RESULT" "$RUN_RC" "$EXPORT_RC" "$((SECONDS - START))" "$IMPORT_OUTCOME" \
+    "$COMMAND_ID" "$LOG_RC" "$COMPLETION_VERIFIED"
   local receipt_rc=$?
   rm -f -- "$OUT/node.tmp.json" "$OUT/node.checked.txt" "$OUT/transfer.stdout.tmp" "$OUT/transfer.stderr.tmp"
   [[ -z "$STAGE" ]] || rm -f -- "$STAGE"/*
@@ -128,16 +130,21 @@ IMPORT_OUTCOME=completed
 PHASE=remote_hash CURRENT_FILE=package.sha256
 setup_bounded "${AUTOR_CMD[@]}" run "$NODE" -- bash -lc "cd '$REMOTE/input' && printf '%s  package.sha256\\n' '$LIST_SHA' | sha256sum -c - && sha256sum -c package.sha256" > /dev/null
 python3 "$JSON_HELPER" verified "$OUT/staging.json"
-PHASE=park
-stop_node
 PHASE=register_run
-# Registration wakes the parked node. Preserve the frozen server and subreaper deadlines.
-STOPPED=0 STOP_ATTEMPTS=0 NODE_STATE=wake_requested
-bounded 120 "${AUTOR_CMD[@]}" run "$NODE" -d --on-wake --max-duration 145m --max-wait 10m -- \
-  bash -lc "cd '$REMOTE/input' && exec python3 ./run_deadline.py --seconds 8610 --kill-grace-seconds 30 -- bash ./run_m2_cpu8_tests.sh" > /dev/null
+# Launch on the running, hash-verified node. --on-wake only registers; it never wakes.
+# Sync run is capped at 300s. Detach, retain its exact id, and follow that command.
+# The pinned subreaper bounds remote work even if this local controller disappears;
+# the 175m controller and provider's 15m idle-stop fallback remain independent bounds.
+bounded 120 "${AUTOR_CMD[@]}" run "$NODE" -d --json --max-wait 10m -- \
+  bash -lc "cd '$REMOTE/input' && exec python3 ./run_deadline.py --seconds 8610 --kill-grace-seconds 30 -- bash ./run_m2_cpu8_tests.sh" > "$OUT/command.json"
+COMMAND_ID=$(python3 "$JSON_HELPER" command "$OUT/command.json")
 PHASE=workload
-RUN_RC=0
-bounded 8700 "${AUTOR_CMD[@]}" logs "$NODE" -f > "$OUT/remote.log" 2>&1 || RUN_RC=$?
+RUN_RC=unverified LOG_RC=0
+bounded 8700 "${AUTOR_CMD[@]}" logs "$NODE" "$COMMAND_ID" -f > "$OUT/remote.log" 2>&1 || LOG_RC=$?
+# CLI rc0 alone also describes pending_wake / empty logs. Require the pinned
+# runner's post-JUnit report for success before exporting anything.
+RUN_RC=$(python3 "$JSON_HELPER" completion "$OUT/remote.log" "$LOG_RC") || { RUN_RC=unverified; exit 65; }
+[[ "$RUN_RC" != 0 ]] || COMPLETION_VERIFIED=true
 PHASE=export CURRENT_FILE=launch-output
 EXPORT_RC=0
 EXPORT_PHASE=export
