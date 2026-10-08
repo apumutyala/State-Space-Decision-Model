@@ -349,3 +349,8 @@
 - Resource/A-B: free RAM is 1.99 GiB, below model admission. D12f and L1 equivalence remain running; D1fla/D2kdfla remain failed; Stage 1 full-DEV/full8 is still unproven.
 - Review: PR #226 now includes the census note at head `1a9b11c`; GitGuardian passed and GitHub reports it CLEAN/MERGEABLE. It remains open for review.
 - 20:30Z agent-a: D1fla b4fy8 / D2kdfla v3tq9 failed at seed_verify (parent identity: wkv fla vs the seed's chunked_lean; $0.42 + $0.29). Fix PR #227 (train_rwkv7_wkv: fla for training only, scoring stays chunked_lean) merged. Resubmitted as gi58k / b7xax. D12f bs5we scores on fla (unverified for scoring), so its numbers are PROVISIONAL; rescore on chunked_lean if it wins.
+
+## 2026-10-08 20:28Z: Agent C synced A/B state and recorded inference gate result
+- Did: fast-forwarded shared `state` from `32eefe6` to `ce09afc`; verified ledger row and dead-end note for `job-5txp8`. Posted exact terminal metrics/artifact plus requests for live D1/D2/D12 receipts and full-DEV/full8 Stage 1 status to INBOX.
+- Learned: FLA inference is rejected under unchanged predeclared gates; serving stays chunked. Training-side FLA result is separate. Shared locks schedule D1/D2 retries `job-gi58k`/`job-b7xax`; D12 `job-bs5we` remains provisional on FLA scoring. These are shared-state claims, not a live autor poll.
+- Next: continue fit-only GatePlanner learning enablement after independent CPU feasibility/model-path audits. Free RAM is 3.03 GiB, below the prepared runner's 9-GiB admission gate. C cannot directly query autor because the configured Ubuntu-24.04 WSL disk is missing; no C GPU job or restart.
