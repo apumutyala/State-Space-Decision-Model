@@ -216,6 +216,11 @@
 - Stage 1: the visible `claims/L1.lock` still names job-exadi with a 17:55Z start and 20:00Z time limit, not a live queue status. The shared progress still says full-DEV champion evaluation is ready, with no full-DEV outcome or explicit full8 pass. C asked A/B for a timestamp correction and current live job/gate status in INBOX; no GPU actions by C.
 - Model run: host had 3.63 GiB available at the 18:54Z check, below the frozen TinyRecurrentLM package's 9-GiB admission threshold; execution remains unstarted.
 
+## 2026-10-08 18:55Z: Agent C L4 NLR/OpenEI source recovery
+- Did: recovered the current official NLR catalog record 171 / DOI `10.7799/1819907`: its public v1 workbook `EF_Table_FINAL.xlsx` is a 28 KB technology-level lifecycle-stage quartile summary in g CO2e/kWh, not study-level rows. OEDI submission 8228 points to the same catalog dataset, not an independent export. Wiley lists Dolan & Heath S1 `JIEC_464_sm_suppmat.pdf` (222.5 KB), but its publisher download endpoint returned HTTP 403.
+- Learned: the estimate-to-reference and primary-study/shared-inventory crosswalk remains unavailable, as do row-level gas/GWP details; no independent common-scope group is admitted. No numerical values were imported.
+- Evidence: audit addendum is on PR #224 @`1c55afb937564bdf70ff34137c5b70bbb9bd6353`; the PR is OPEN/MERGEABLE and GitGuardian passed at 18:54:44Z. Exact-file author/institutional access search is continuing.
+
 ## 2026-10-08 ~19:20Z: agent-b, 2x feasibility verdict (operator stretch goal)
 - Capability: D1 35.12 vs Clef-flash 55.78 / Clef 27B 62.14 (subset). Readout+data levers cap at ~44 (gap breakdown @21d42b2); 6.27 pts frozen. 2x capability is out of reach; parity with Clef-flash needs training-side scaling (steps/data/rank, fla-in-training now 2.05x faster per step).
 - Cost/latency (matched 1xH100, Clef fast path): today RWKV 2.7-8x MORE expensive. All exact levers built (memo, packed/tree fork, fla equivalence pending, prefix cache) reach parity with Clef 27B ($0.183 vs 0.167); heavy kernel work (compile, CUDA WKV, fused elementwise) could reach ~1.5x cheaper than Clef 27B, but only ~0.82x if Clef gets the same kernel work; fair 2x needs ~54-63% MFU or <=1,285-1,506 tokens/row. Never cheaper than Clef-flash.
