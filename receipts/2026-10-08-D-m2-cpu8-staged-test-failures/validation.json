@@ -28,5 +28,20 @@
     "skipped": 1,
     "deselected": 10,
     "skip_reason": "needs a git checkout (operational LF manifest test)"
+  },
+  "independent_review_followup": {
+    "base_sha": "33ef7cee7b345589108209a3f30abd2c4f7a9f02",
+    "issue": "UNKNOWN must fail exit proof but never grant cleanup permission",
+    "semantics": "cleanup signals only verified same live PID/starttime; unknown/reused/zombie/missing/malformed identity sends no signal",
+    "focused_passed": 16,
+    "focused_deselected": 10,
+    "launch_lint_passed": 71,
+    "provider_calls": false,
+    "cost_usd": 0,
+    "junit": {
+      "file": "junit-pid-review-focused.xml",
+      "bytes": 2687,
+      "sha256": "93329d2cabe91278cd3ca3b791660af1c9c0e0566ea7cc7c968ae23cab73673c"
+    }
   }
 }

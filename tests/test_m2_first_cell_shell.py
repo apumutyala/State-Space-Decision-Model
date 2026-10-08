@@ -65,12 +65,11 @@ def _posix(p) -> str:
     return f"/{m.group(1).lower()}/{m.group(2)}".replace("\\", "/") if (os.name == "nt" and m) else s
 
 
-def _owned_process_alive(bash, pid_file):
+def _owned_process_state(bash, pid_file):
     """A killed Linux child can remain as a zombie until its subreaper waits.
 
-    Compare /proc start ticks as well as PID so reuse cannot fail the exit proof
-    or make fixture cleanup signal an unrelated process. Other Bash platforms
-    retain the previous conservative kill -0 check when /proc is unavailable.
+    Separate identity/state from the exit proof and cleanup permissions. An
+    unknown identity fails the exit proof but never authorizes a signal.
     """
     pid = int(pid_file.read_text())
     start_file = pid_file.with_suffix(".start")
@@ -83,15 +82,29 @@ elif kill -0 "$1" 2>/dev/null; then echo UNKNOWN; fi
     assert check.returncode in (0, 1), check.stderr
     stat = check.stdout.strip()
     if not stat:
-        return False
+        return "gone"
     if stat == "UNKNOWN":
-        return True  # Never accept an uninspectable live PID as proof of exit.
-    fields = stat.rsplit(") ", 1)[1].split()  # comm may itself contain spaces or ')'.
-    assert len(fields) >= 20, stat
-    assert start is not None, "owned child did not record its available /proc start identity"
+        return "unknown"
+    # comm may itself contain spaces or ')'. Missing/malformed identity cannot
+    # authorize cleanup, including Bash platforms without Linux /proc fields.
+    fields = stat.rsplit(") ", 1)[-1].split()
+    if len(fields) < 20 or start is None or not start.isdigit() or not fields[19].isdigit():
+        return "unknown"
     if fields[19] != start:
-        return False
-    return fields[0] not in ("Z", "X")
+        return "reused"
+    if fields[0] in ("Z", "X", "x"):
+        return "zombie"
+    return "live_owned" if fields[0] in ("R", "S", "D", "T", "t", "K", "W", "P", "I") else "unknown"
+
+
+def _owned_process_alive(bash, pid_file):
+    return _owned_process_state(bash, pid_file) in ("live_owned", "unknown")
+
+
+def _kill_owned_process_if_live(bash, pid_file):
+    if _owned_process_state(bash, pid_file) == "live_owned":
+        subprocess.run([bash, "-c", 'kill -KILL "$1" 2>/dev/null || true',
+                        "owned-child", str(int(pid_file.read_text()))], capture_output=True, timeout=5)
 
 
 # Run in each synthetic child, before it can receive TERM. /proc field 22 is
@@ -151,8 +164,36 @@ def test_owned_process_proof_fails_closed_when_live_pid_cannot_be_inspected(tmp_
     pid_file = tmp_path / "owned.pid"
     pid_file.write_text("123")
     pid_file.with_suffix(".start").write_text("456")
-    monkeypatch.setattr(subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, "UNKNOWN\n", ""))
+    observation, signals = {"stat": "UNKNOWN\n"}, []
+
+    def run(args, **kwargs):
+        if args[2].startswith("kill -KILL"):
+            signals.append(args)
+            return subprocess.CompletedProcess(args, 0, "", "")
+        return subprocess.CompletedProcess(args, 0, observation["stat"], "")
+
+    monkeypatch.setattr(subprocess, "run", run)
     assert _owned_process_alive("bash", pid_file)
+    _kill_owned_process_if_live("bash", pid_file)
+    assert signals == [], "unknown live state must fail proof without authorizing cleanup"
+    for stat in ("malformed", "123 (fixture) " + " ".join(["?", *(["0"] * 18), "456"])):
+        observation["stat"] = stat
+        assert _owned_process_alive("bash", pid_file), "malformed state must fail closed"
+        _kill_owned_process_if_live("bash", pid_file)
+        assert signals == [], "malformed state must never authorize cleanup"
+    for state, start in (("S", "789"), ("Z", "456")):
+        observation["stat"] = "123 (fixture) " + " ".join([state, *(["0"] * 18), start])
+        assert not _owned_process_alive("bash", pid_file)
+        _kill_owned_process_if_live("bash", pid_file)
+        assert signals == [], "reused/zombie identity must never authorize cleanup"
+    observation["stat"] = "123 (fixture) " + " ".join(["S", *(["0"] * 18), "456"])
+    assert _owned_process_alive("bash", pid_file)
+    _kill_owned_process_if_live("bash", pid_file)
+    assert len(signals) == 1 and signals[0][-1] == "123", "verified same live owner must be cleaned up"
+    pid_file.with_suffix(".start").unlink()
+    assert _owned_process_alive("bash", pid_file), "missing recorded identity must fail closed"
+    _kill_owned_process_if_live("bash", pid_file)
+    assert len(signals) == 1, "missing identity must never authorize cleanup"
 
 
 def test_all_long_phase_timeouts_escalate_within_existing_reserve():
@@ -286,10 +327,8 @@ VALIDATOR=jobs.m2_first_cell.summarize:valid_result
     finally:
         for role in ("training", "finalizer"):
             pid_file = work / f"logs/owned-{role}.pid"
-            if pid_file.exists() and _owned_process_alive(bash, pid_file):
-                owned_pid = int(pid_file.read_text())
-                subprocess.run([bash, "-c", 'kill -KILL "$1" 2>/dev/null || true', "owned-child", str(owned_pid)],
-                    capture_output=True, timeout=5)
+            if pid_file.exists():
+                _kill_owned_process_if_live(bash, pid_file)
 
 
 def _link_tree(src: Path, dst: Path, names=None):
