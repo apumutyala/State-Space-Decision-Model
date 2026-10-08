@@ -75,8 +75,36 @@ class ContrastRealizerTests(unittest.TestCase):
         data["program"]["nodes"][2]["relation"] = "less_than"
         self.assertIn('has value -2 "USD"', render(data))
 
-    def test_equality_constants_and_non_numeric_facts_have_no_fallback(self):
-        for mode in ("equal", "constant", "string", "boolean"):
+    def test_checked_numeric_equality_preserves_values_order_and_provenance(self):
+        for value, value_type, rendered in (("100.00", "decimal", "100.00"), (-2, "integer", "-2")):
+            with self.subTest(value_type=value_type):
+                data = fixture()
+                for rec in data["catalog"]["records"]:
+                    rec["fields"]["price"].update(value=value, value_type=value_type)
+                compare = data["program"]["nodes"][2]
+                compare["relation"] = "equal"
+                for reversed_operands in (False, True):
+                    if reversed_operands:
+                        compare["left"], compare["right"] = compare["right"], compare["left"]
+                    checked = check_program(data["program"], data["host"], data["catalog"])
+                    self.assertEqual(checked.status, "accepted")
+                    before = deepcopy(checked.to_dict())
+                    first, second = ("beta", "alpha") if reversed_operands else ("alpha", "beta")
+                    self.assertEqual(render_checked(checked, data["host"], data["catalog"],
+                                                    production=L3_FACT_COMPARISON_CONTRAST),
+                                     f'At "2026-10", "Price" for "{first}" has value {rendered} "USD". '
+                                     f'Likewise, at "2026-10", "Price" for "{second}" has value '
+                                     f'{rendered} "USD", which is equal to the first value.')
+                    self.assertEqual(checked.to_dict(), before)
+                    self.assertEqual(set(checked.dependencies), {"a-v1", "b-v1"})
+                # Equality must still be established by the checker.
+                data["catalog"]["records"][1]["fields"]["price"]["value"] = 3
+                data["catalog"]["records"][1]["fields"]["price"]["value_type"] = "integer"
+                with self.assertRaises(ValueError):
+                    render(data)
+
+    def test_constants_and_non_numeric_facts_have_no_fallback(self):
+        for mode in ("constant", "string", "boolean"):
             with self.subTest(mode=mode):
                 data = fixture()
                 compare = data["program"]["nodes"][2]
@@ -89,8 +117,8 @@ class ContrastRealizerTests(unittest.TestCase):
                     compare["relation"] = "equal"
                     for rec in data["catalog"]["records"]:
                         field = rec["fields"]["price"]
-                        field["value"] = {"equal": "100.00", "string": "same", "boolean": True}[mode]
-                        field["value_type"] = {"equal": "decimal", "string": "string", "boolean": "boolean"}[mode]
+                        field["value"] = {"string": "same", "boolean": True}[mode]
+                        field["value_type"] = {"string": "string", "boolean": "boolean"}[mode]
                 checked = check_program(data["program"], data["host"], data["catalog"])
                 self.assertEqual(checked.status, "accepted")
                 self.assertTrue(render_checked(checked, data["host"], data["catalog"]))
@@ -154,7 +182,7 @@ class ContrastRealizerTests(unittest.TestCase):
         ):
             self.assertEqual(answer(data, ScriptedProvider(selectors)), {"status": "unavailable"})
 
-    def test_public_path_discards_unchecked_prose_and_equal_comparison(self):
+    def test_public_path_discards_unchecked_prose_and_renders_checked_equality(self):
         data = fixture()
         with patch.object(boundary, "plan_checked_answer", return_value=PlannerResult(
                 "accepted", "because alpha caused beta's price", data["program"])):
@@ -163,7 +191,20 @@ class ContrastRealizerTests(unittest.TestCase):
         data["program"]["nodes"][2]["relation"] = "equal"
         with patch.object(boundary, "plan_checked_answer", return_value=PlannerResult(
                 "accepted", "unlicensed contrast", data["program"])):
-            self.assertEqual(answer(data, object()), {"status": "unavailable"})
+            self.assertEqual(answer(data, object()), {"status": "ok", "text":
+                             'At "2026-10", "Price" for "alpha" has value 100.00 "USD". '
+                             'Likewise, at "2026-10", "Price" for "beta" has value '
+                             '100.00 "USD", which is equal to the first value.'})
+
+    def test_l3_32_world_train_suite_keeps_every_checked_equality(self):
+        from language_growth.gate_suites import build_suite
+        tasks, references = build_suite("L3", "development_train", worlds=32, seed=20261008)
+        self.assertEqual(len(tasks), 64)
+        self.assertEqual(len(references), 64)
+        equalities = [ref for ref in references if ref["kind"] == "compare"
+                      and ref["program"]["nodes"][2]["relation"] == "equal"]
+        self.assertGreater(len(equalities), 0)
+        self.assertTrue(all("which is equal to the first value." in ref["text"] for ref in equalities))
 
     def test_literals_remain_quoted_when_they_contain_discourse_or_instructions(self):
         data = fixture()
