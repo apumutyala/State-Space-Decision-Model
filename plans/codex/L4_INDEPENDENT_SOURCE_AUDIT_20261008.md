@@ -231,6 +231,38 @@ whose boundary, functional unit, lifecycle statistic and uncertainty label
 match. Keep the current AR5 table grouped as one report-world until that trace
 meets the source-world floor.
 
+### 8 October 2026 — NLR/OEDI and publisher supplement recovery check
+
+The current [NLR catalog record 171](https://data.nlr.gov/submissions/171),
+DOI [10.7799/1819907](https://doi.org/10.7799/1819907), is marked Public. Its
+data-resource history exposes one version (v1, dated 2021-08-23): a 28 KB
+`EF_Table_FINAL.xlsx` described as technology-level quartile estimates by
+lifecycle phase, in g CO2e/kWh. The listed phases are one-time upstream,
+ongoing combustion, ongoing non-combustion, one-time downstream, and total.
+The catalog page was last updated 2026-05-22, but its resource history does not
+show a newer study-level file. [OEDI submission 8228](https://data.openei.org/submissions/8228)
+has the same dataset title, authors, description and date, and its citation
+points back to NLR record 171; it is a mirror/catalog representation of that
+summary record, not an independent or row-level export.
+
+Wiley's [Dolan and Heath article record](https://onlinelibrary.wiley.com/doi/10.1111/j.1530-9290.2012.00464.x)
+lists Supporting Information S1, filename `JIEC_464_sm_suppmat.pdf` (222.5 KB),
+described as containing GHG emissions by lifecycle and harmonization stage.
+The article identifies electricity-normalized GHG results and reports
+harmonization to gross system boundaries and selected parameters. The [NREL
+wind factsheet](https://www.nrel.gov/docs/fy13osti/57131.pdf) confirms a
+land-based subgroup and its reference/estimate counts. However, the listed
+supplement's publisher download endpoint
+([Wiley downloadSupplement](https://onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2Fj.1530-9290.2012.00464.x&file=JIEC_464_sm_suppmat.pdf))
+returns HTTP 403. Accordingly, S1 Table S3's rows remain unavailable for
+joining to the article's author/year and study-characteristics table and then
+to primary studies and shared inventory families. Gas-vector/GWP details and
+dependence cannot be verified for those rows from the accessible catalog
+metadata. No source-world can be admitted on this evidence; the exact blocker
+is the missing estimate-to-reference-to-primary-study/inventory crosswalk,
+with the publisher-hosted supplement listed but access-denied. No numeric
+emissions values were transcribed or imported.
+
 ## Safe expansion rule
 
 An added L4 module must retain its own source, population, year, boundary,
