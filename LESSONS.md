@@ -408,3 +408,19 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: slash-free qids were enforced only on nested rows; storage-key and task/question-pair uniqueness did not imply unique expanded Item identities.
 - **Check:** `_check_development_item_ids` validates globally unique expanded Item ids and slash-free qids for every row whenever any input is grouped/nested, before split. `tests/test_m2_multislot_loader.py::test_flat_nested_expanded_item_collision_refuses_before_split` covers both row orders and grouping modes; `test_every_row_on_new_development_path_requires_slash_free_qids` covers flat/multi-question rows; `test_pure_legacy_slash_qids_retain_exact_existing_behavior` preserves the legacy boundary.
 - **Status:** ENFORCED for the new development loader paths; pure legacy behavior remains unchanged.
+
+### L-42 Grouped flat conversion stripped protected-data guard sidecars
+- Date: 2026-10-07 (Track D adversarial review of Issue #178 / PR #179).
+- Symptom: a synthetic grouped flat row carrying `_evaluation` was refused by `SplitGuard.check` before conversion but accepted as a training Item after loading. The new grouped-flat conversion kept the world id while dropping the other envelope metadata used by the guard.
+- Cost: $0; reproduced with synthetic rows and ByteEncoder only, before model execution or paid work.
+- Root cause: the new grouped-flat path reused the legacy field whitelist, which discarded `_evaluation`, `source`, `run_id`, `row_sha256` and `payload_sha256`.
+- **Check:** `to_train_record` preserves every grouped-flat envelope sidecar while moving state/questions into the request. `test_grouped_flat_guard_metadata_survives_and_is_enforced` checks each of the five markers survives loading and is still refused by the Item conversion guard. Pure ungrouped legacy conversion remains exact.
+- **Status:** ENFORCED for grouped-flat development ingestion.
+
+### L-43 Multislot storage keys were incompatible with order-view lookup
+- Date: 2026-10-07 (Track D adversarial review of Issue #178 / PR #179).
+- Symptom: enabling the existing order-consistency arm on a nested one-slot development row raised `KeyError('task')` before training, because the record was stored as `task/q0`.
+- Cost: $0; reproduced with synthetic rows and ByteEncoder only, before model execution or paid work.
+- Root cause: `attach_views` recovered the task id from an Item and assumed it was the storage key; several distinct slot requests can now share that task id.
+- **Check:** `attach_views` indexes source requests by their complete expanded Item identity and rejects ambiguous identities. `test_multislot_order_views_match_each_request_without_task_key_aliasing` combines two slots and a complete record under one task, and checks each reversed view uses its own request/prefix and inverse gold mapping without mutating the sources.
+- **Status:** ENFORCED for legacy records and development multislot records.

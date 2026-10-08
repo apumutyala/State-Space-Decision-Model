@@ -68,3 +68,22 @@ before collection in the documented receipt command; its enforcing test covers t
 and model-training module. It does not control arbitrary shell commands. The external train-set stream overhead
 was not measured against private training data. Protected grouped manifests remain unsupported. No learned result
 or permission to run models is established by this receipt.
+
+## Track D review corrections (2026-10-07)
+
+Base reviewed head: `c8601527c107313b833f4bb922474150522f47bf`. The commit containing this addendum preserves
+grouped-flat envelope sidecars checked by SplitGuard and resolves order-view source records by full Item identity.
+L-42/L-43 document both synthetic failures. Five marker cases and a mixed slot/complete-record case enforce the
+fixes; ordinary legacy conversion remains covered by the existing exact-output test. Fresh independent review of
+the corrections remains required. No model, provider call, private data or paid compute was used.
+
+The exact allowlisted command above now reports **133 passed in 9.97 s**, exit 0 (the prior 127 tests plus six new
+regression cases). The additional inspected synthetic order-view module and focused regressions ran with:
+
+```powershell
+C:/Users/apumu/research/CHLabs/.venv-auth/Scripts/python.exe -m pytest -q tests/test_m2_multislot_loader.py::test_grouped_flat_guard_metadata_survives_and_is_enforced tests/test_m2_multislot_loader.py::test_multislot_order_views_match_each_request_without_task_key_aliasing tests/test_order_views.py
+```
+
+Result: **63 passed in 1.42 s**, exit 0. The first focused attempt exposed option-id references in the synthetic
+multi-question fixture (62 passed, one failed); giving each question distinct option ids made that fixture eligible
+under the existing conservative view policy. No policy was relaxed. Hardware remained local CPU, cost $0.

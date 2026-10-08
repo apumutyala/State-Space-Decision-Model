@@ -107,7 +107,9 @@ def to_train_record(r: dict, *, development: bool = False) -> dict:
         req["ssdm"] = prov
     rec = {"id": r["id"], "request": req, "labels": r["labels"]}
     if "group_id" in r:
-        rec["group_id"] = r["group_id"]
+        # The new grouped-flat path must retain every envelope sidecar the SplitGuard may inspect.
+        # Keep the historical ungrouped conversion exact.
+        rec.update({k: v for k, v in r.items() if k not in ("state", "questions", "id", "labels")})
     return rec
 
 

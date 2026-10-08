@@ -357,3 +357,60 @@ def test_nested_guard_metadata_survives_and_is_enforced(tmp_path):
     with pytest.raises(ForbiddenRow):
         cell_items(recs, tr, {"layout": "ordered", "template": TOY_TEMPLATE, "max_k": 2},
                    ByteEncoder(), SplitGuard.synthetic_only("synthetic guard test"), 4096)
+
+
+@pytest.mark.parametrize("marker", ["_evaluation", "source", "run_id", "row_sha256", "payload_sha256"])
+def test_grouped_flat_guard_metadata_survives_and_is_enforced(tmp_path, marker):
+    from heads.layout import ByteEncoder
+    from train.data import TOY_TEMPLATE
+    from train.guard import ForbiddenRow, SplitGuard
+    from train.run_cell import cell_items
+
+    r = {**flat(), "group_id": "synthetic-world", "metadata": {"lineage": "preserve"}}
+    r[marker] = {"synthetic_guard_marker": True} if marker == "_evaluation" else "decision-index-synthetic"
+    guard = SplitGuard(ids={"decision-index-synthetic"}, hashes={"decision-index-synthetic"})
+    with pytest.raises(ForbiddenRow):
+        guard.check(r)
+    recs, _, tr, _, _ = load_cell_data({**CFG, "n_train_records": 1, "n_eval_records": 0},
+                                      write_rows(tmp_path, [r]))
+    assert recs["task"][marker] == r[marker]
+    assert recs["task"]["metadata"] == r["metadata"]
+    with pytest.raises(ForbiddenRow):
+        cell_items(recs, tr, {"layout": "ordered", "template": TOY_TEMPLATE, "max_k": 2},
+                   ByteEncoder(), guard, 4096)
+
+
+def test_multislot_order_views_match_each_request_without_task_key_aliasing(tmp_path):
+    from copy import deepcopy
+
+    from heads.layout import ByteEncoder
+    from train.data import TOY_TEMPLATE, items_from_records
+    from train.guard import SplitGuard
+    from train.order_views import reversed_record
+    from train.run_cell import attach_order_views, cell_items
+
+    # A complete record shares the task id with two slots: task-only lookup could select the wrong request.
+    rows = [slot(qid="q0"), slot(qid="q1"), {**flat(qids=("q2", "q3")), "group_id": "world"}]
+    for index, r in enumerate(rows):
+        req = r.get("request", r)
+        req["state"] = f"distinct prefix {index}"
+        for qid, question in req["questions"].items():
+            question["criteria"] = {f"{qid}-opt-0": f"first value {qid}", f"{qid}-opt-1": f"second value {qid}"}
+            r["labels"][qid] = f"{qid}-opt-0"
+    cfg = {**CFG, "n_train_records": 1, "n_eval_records": 0, "layout": "ordered",
+           "template": TOY_TEMPLATE, "max_k": 2, "order_consistency": {"view": "reverse", "weight": 0.25}}
+    recs, _, tr, _, _ = load_cell_data(cfg, write_rows(tmp_path, rows))
+    before = deepcopy(recs)
+    enc, guard = ByteEncoder(), SplitGuard.synthetic_only("multislot order-view regression")
+    items = cell_items(recs, tr, cfg, enc, guard, 4096)
+    report = attach_order_views(cfg, items, recs, enc, guard, 4096)
+    assert report == {"view": "reverse", "with_view": 4, "no_view": 0, "view_filtered": 0}
+    for item in items:
+        qid = item.id.rsplit("/", 1)[1]
+        rec = next(r for r in recs.values() if qid in r["labels"])
+        expected, _ = reversed_record(rec, qid)
+        expected_item = next(i for i in items_from_records([expected], enc, template=TOY_TEMPLATE, guard=guard)
+                             if i.id.endswith(f"/{qid}"))
+        assert item.view.row.ids == expected_item.row.ids
+        assert item.label == 0 and item.view.label == 1 and item.view_perm == (1, 0)
+    assert recs == before
