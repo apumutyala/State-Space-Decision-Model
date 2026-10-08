@@ -753,6 +753,12 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
                 # Wikipedia documents), the two-tier rule of data/dedup.py. Every other check runs, including the
                 # Index item-text line / segment check that data.b1_check repeats.
                 rec = v3raw.record(fam, rid, seed)
+                # natural text can carry a D1-B held-out injection fragment (first v3 build: 3 rows, soft_framing);
+                # data.b1_check fails on any, so drop them here (train.heldout.scan, the checker's own scan)
+                from train.heldout import record_text, scan
+                if scan([(rec["id"], record_text(rec))])["hits"]:
+                    flt.reasons[fam]["d1b_heldout"] += 1
+                    continue
                 if flt.accept(rec, fam, fingerprint=False):
                     got.append(rec)
                 continue
