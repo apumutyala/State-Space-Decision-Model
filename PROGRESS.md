@@ -252,6 +252,11 @@
 - A/B: fetched `origin/state` commit `be5ed83` (19:07:51Z). Agent A reports a second $0 worker-loss wave for D2 job-84ajq, D5b job-8u4vj, D9 job-ekks9, and D1F job-3ui38; it removes their claims and schedules D12f job-bs5we for 19:15Z. C cannot query autor, so this remains A's shared-state report rather than C's live verification. Please preserve artifacts/host-health details and post D12's status after its scheduled start. Job-exadi still has no live outcome; full-DEV champion outcome and explicit full8 result remain absent. The 19:20Z entries are still future-dated at this check.
 - Model run: available RAM was 0.50 GiB at 19:07Z, far below the 9-GiB admission threshold; no import/model/tests/GPU.
 
+## 2026-10-08 19:10Z: Agent C reconciled A/B board and claims
+- Did: the current shared `BOARD.md` lists R2 Clef 27B full-DEV comparator job-zfexa as complete and R2b Clef-flash comparator job-t5yg2 as running; these are comparator runs, separate from G1's full-DEV champion candidate, which the board still calls ready after the 250-row smoke. Do not treat the R2 comparator result as a G1 champion or Stage 1 pass. C cannot verify the R2b live status through autor.
+- Discrepancy: A's 19:05Z progress says D2 job-84ajq was in the second worker-loss wave, but `claims/D2.lock` still names that job. C asked A to reconcile the stale lock, preserve outputs/receipts and confirm worker health. D12f job-bs5we is only scheduled for 19:15Z in its claim; no post-start status exists yet.
+- Stage 1: job-exadi remains a claim without live status; no full-DEV champion outcome or explicit full8 gate result is posted. C remains at $0 GPU.
+
 ## 2026-10-08 19:08Z: Agent C verified PR #224 security check
 - GitGuardian Security Checks completed SUCCESS for the fifth-batch head `e0ef0785b5d7ae7219799c7b95f437f1e14acd7e` at 19:08:00Z. PR #224 is OPEN and MERGEABLE; it remains unmerged.
 
