@@ -85,10 +85,10 @@ WAIVERS: dict[str, dict[str, str]] = {
         "build_timeout": _B, "shell_test": _T,
         "schedule": "2026-10-06: caps sum 130 + reserve 8 < 140 (slack, not overrun); historical (job-4j3vu)",
         "rate_guard": "2026-10-06: MFU/tok-s floors in-step (exit 3), no jobs.common.rate_guard; historical"},
-    "jobs/rwkv7/job_params_lora.json": {"build_timeout": _B, "shell_test": _T,
+    "jobs/rwkv7/job_params_lora.json": {"build_timeout": _B,
                                         "decision_rule": "2026-10-06: stage A is a measurement (no threshold); the stage B pass rule lives in "
                              "train.run_cell / jobs/rwkv7/pilot_cell.json, not pinned constants in scripts/decide_rwkv7.py"},
-    "jobs/rwkv7/job_params_readout.json": {"build_timeout": _B, "shell_test": _T,
+    "jobs/rwkv7/job_params_readout.json": {"build_timeout": _B,
                                            "decision_rule": "2026-10-06: stage A is a measurement (no threshold); the stage B pass rule lives in "
                              "train.run_cell / jobs/rwkv7/pilot_cell.json, not pinned constants in scripts/decide_rwkv7.py"},
 }

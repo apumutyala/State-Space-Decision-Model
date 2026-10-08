@@ -147,7 +147,22 @@ def parent_decider(parent: str, model_dir: str, gdn_ckpt: str | None, cfg: dict,
                  "converted_sha256": prov["converted_sha256"], "converted_layers": layers}
     else:
         raise ValueError(parent)
-    dec = Decider(HFReadoutBackend(plug, cfg["template"]), backend_max_input_tokens=plug.max_context)
+    if cfg.get("layout") == "g1v2":  # D3 / R1: the parent's stock readout in the C1 v2 format (rwkv7 only)
+        from decide.backends.rwkv_g1_v2 import G1V2Backend
+        from decide.prompt import G1V2_ID
+        from decide.prompt_g1v3 import G1V2F_ID
+
+        if parent != "rwkv7" or cfg["template"] not in (G1V2_ID, G1V2F_ID):
+            raise ValueError(f"layout g1v2 needs parent rwkv7 and template {G1V2_ID} or {G1V2F_ID}")
+        if cfg["template"] == G1V2F_ID:  # v2 + the dict-instruction fix: the R3 readout's v2f mode
+            from decide.backends.rwkv_g1_v3 import G1V3Backend
+
+            backend = G1V3Backend(plug, mode="v2f")
+        else:
+            backend = G1V2Backend(plug)
+    else:
+        backend = HFReadoutBackend(plug, cfg["template"])
+    dec = Decider(backend, backend_max_input_tokens=plug.max_context)
     return dec, {"parent": ident, "revision": dec.revision()["revision_id"], "calibration": "uncalibrated_identity"}
 
 
