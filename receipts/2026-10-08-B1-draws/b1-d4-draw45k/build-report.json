@@ -1,0 +1,861 @@
+{
+ "builder": {
+  "commit": "45208f3f46f5ffcb6f4758cf3af8f295e3456530",
+  "data/b1.py sha256": "2123cf97088d2e38ac19fffe0fbe409e87a04ffd2017b2a2a4c41e057ef0f511"
+ },
+ "seed": 20261008,
+ "native": {
+  "parent": {
+   "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+   "pointer_sha256": "c65c10450fe9edef801dce6bbf24f091c1014263fd66ceb5412af23fc08ddc09",
+   "files_uncompressed_sha256": {
+    "records": "82fb395d889c473d9fbc4877b51c792438e94b53cddd54e4cf825d4603baa166",
+    "manifest": "0be33669fa077d2a2abe29ecd159aea1a27c7cc9daaf910b584755410da4d961",
+    "content_map": "d4ffd9073e0490e409a757508b2821f8108a3a9e36b2531ec3c97a94b2bc0898"
+   }
+  },
+  "supplement": {
+   "dir": "b1-supplement-seed20261006",
+   "records_uncompressed_sha256": "7441393d9b08dc686147c40ffc742cc5f0ecca913fd4fdb03e8e8c4d7aa9a751",
+   "counts_asked": {
+    "glaive_fc": 45000,
+    "banking77": 10003,
+    "clinc150": 15100,
+    "gsm8k": 7473
+   },
+   "n_kept": 72953,
+   "ids_shared_with_150k_byte_identical": 36500
+  },
+  "n_native_ids": 186453
+ },
+ "exclusion": {
+  "v2": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "v3": {
+   "cohort": "m2-dev-cohort-v3",
+   "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 39872,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "heldout_150k_dropped": [
+   "m2:mmlu_aux:21118",
+   "m2:mmlu_aux:39640",
+   "m2:mmlu_aux:39643"
+  ]
+ },
+ "guard": {
+  "manifests": {
+   "harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+  },
+  "n_ids": 47249,
+  "n_hashes": 48415,
+  "note": "",
+  "content_index": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\index-content-hashes-v1.txt.gz",
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n": 24150
+  },
+  "pin": {
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n_hashes": 24150,
+   "n_rows": 24265,
+   "builder": "train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)"
+  }
+ },
+ "fingerprint": {
+  "version": "ssdm-dedup-v3",
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+  "rows": 155390
+ },
+ "encoder": {
+  "kind": "rwkv7-hf-trie",
+  "vocab_sha256": "99807d0e55a45d3053ffbdafbf169d955a02f8e06cb6613dda38c536203d7fdc",
+  "untrusted": "fail-closed on special ids"
+ },
+ "cell_filter": {
+  "max_k": 255,
+  "max_t": 2048,
+  "template": "jrt-rwkv-g1-v1",
+  "layout": "ordered"
+ },
+ "families_dir": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\b1-families",
+ "families_files_gz_sha256": {
+  "api_bank.jsonl.gz": "57242564b8ffdca9fccb078cad8baf8d4ac0308168e289638b30fe4153cfbfc5",
+  "bfcl.jsonl.gz": "3e12e2ff09cf4697d4b6ac48be5eb67d1564c635d1e1b8921b2d51583b58124a",
+  "cruxeval.jsonl.gz": "ae9e45c687daefaab0f9a70c11ee5ceb88f637890fe1b1579360f74c045d6081"
+ },
+ "backfilled": {
+  "glaive_native": 2955
+ },
+ "index_item_text_examples": {
+  "ext:api_bank": [
+   [
+    "m2:b1fam_apibank:lv1-1058",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1059",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-3161",
+    "state/dialogue/[]/text",
+    "Sure, please provide the date for the journal entry. The format should be YYYY-MM-DD."
+   ],
+   [
+    "m2:b1fam_apibank:lv1-835",
+    "state/dialogue/[]/text",
+    "Great! Can you help me book an appointment with Dr. Zhang on March 15th at 4 pm? My name is Emily and my phone number is"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-536",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. Could you please provide me with your fitness account username and password?"
+   ]
+  ],
+  "glaive_native": [
+   [
+    "m2:glaive_fc:36373",
+    "state/messages/[]/content",
+    "I'm looking for some music to listen to. Can you help me find something?"
+   ],
+   [
+    "m2:glaive_fc:61048",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:54775",
+    "state/dialogue/[]/content",
+    "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:91868",
+    "state/conversation/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:100632",
+    "state/conversation/[]/content",
+    "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+   ]
+  ],
+  "glaive_catalog16": [
+   [
+    "m2:glaive_fc:63774~view:cat16",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:21816~view:cat16",
+    "state/dialogue/[]/content",
+    "I am looking for a new laptop. Can you help me find some options?"
+   ]
+  ],
+  "glaive_catalog_long": [
+   [
+    "m2:glaive_fc:24933~view:catlong",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:49249~view:catlong",
+    "state/dialogue/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:62328~view:catlong",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:86459~view:catlong",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving some Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:109384~view:catlong",
+    "state/messages/[]/content",
+    "Hi, I am looking for a job in the field of data science in New York. Can you help me find some options?"
+   ]
+  ],
+  "toolace": [
+   [
+    "m2:toolace:10019",
+    "state/messages/[]/content",
+    "I need to know the away goalkeeper jersey details for two football matches. The match IDs are 101 and 202. Can you provi"
+   ],
+   [
+    "m2:toolace:4013~inj:d1a:system_note",
+    "state/dialogue/[]/content",
+    "I'm interested in seeing the standings for the Premier League for the 2022, 2023, and 2024 seasons. Can you retrieve thi"
+   ],
+   [
+    "m2:toolace:4200",
+    "state/dialogue/[]/content",
+    "I need some information for my research on technology trends. Could you help me with the following:\n1. Retrieve informat"
+   ],
+   [
+    "m2:toolace:7645",
+    "state/messages/[]/content",
+    "Role definition:\n Inquirer: A user who raises an inquiry.\n Response assistant: Communicates with the inquirer and provid"
+   ],
+   [
+    "m2:toolace:5581",
+    "state/conversation/[]/content",
+    "Role definition:\n Inquirer: A user who raises an inquiry.\n Response assistant: Communicates with the inquirer and provid"
+   ]
+  ],
+  "when2call": [
+   [
+    "m2:when2call:452",
+    "q/label/option",
+    "To provide you with the quote, I need the quote ID. Could you please provide me with the ID?"
+   ],
+   [
+    "m2:when2call:4916",
+    "q/label/option",
+    "I apologize, but I'm unable to perform that task. The Real-Time Product Search API doesn't support retrieving specific p"
+   ],
+   [
+    "m2:when2call:12836~inj:d1a:urgency",
+    "q/label/option",
+    "To accurately assess the risk, I need to know the client's height in inches. Could you please provide that information?"
+   ],
+   [
+    "m2:when2call:8704",
+    "q/decision/option",
+    "To provide you with the head-to-head statistics, I'll need the ID of the match. Could you please provide me with that in"
+   ],
+   [
+    "m2:when2call:10482",
+    "q/field_1/option",
+    "To provide you with the standard deviation, I'll need a list of numbers. Could you please provide me with that?"
+   ]
+  ],
+  "gsm8k": [
+   [
+    "m2:gsm8k:528~inj:d1a:authority",
+    "q/output/instructions",
+    "What is the final answer?\nProblem: James buys 3 dirt bikes for $150 each and 4 off-road vehicles for $300 each.  It also"
+   ],
+   [
+    "m2:gsm8k:6523",
+    "state/word_problem",
+    "John buys dinner plates and silverware.  The silverware cost $20.  The dinner plates cost 50% as much as the silverware."
+   ],
+   [
+    "m2:gsm8k:294~inj:hijack:admin_header",
+    "state/problem",
+    "Phillip's mother asked him to go to the supermarket to buy some things and gave him $95, so he spent $14 on oranges, $25"
+   ],
+   [
+    "m2:gsm8k:1218",
+    "state",
+    "John needs to replace his shoes so he decides to buy a $150 pair of Nikes and a $120 pair of work boots.  Tax is 10%.  H"
+   ],
+   [
+    "m2:gsm8k:7122",
+    "state/question",
+    "Mark bought 2 pounds of tomatoes for $5 per pound and 5 pounds of apples, at $6 per pound. How much did he spend in tota"
+   ]
+  ],
+  "banking77_k16": [
+   [
+    "m2:banking77:6419~view:k16",
+    "q/answer/instructions",
+    "Route this banking request to the matching intent.\nUtterance: Hi, I checked my transactions and saw that I was charged t"
+   ],
+   [
+    "m2:banking77:7388~inj:d1a:authority~view:k16",
+    "state/request_text",
+    "My salary is received in the form of GBP. Is it necessary to configure this? If so, where is this done?"
+   ],
+   [
+    "m2:banking77:8770~inj:hijack:operator_override~view:k16",
+    "state/content",
+    "Hello I have a UK account.  Can you please check if everything is alright with it?  I made a transfer a couple hours ago"
+   ],
+   [
+    "m2:banking77:2812~view:k16",
+    "q/field_1/instructions",
+    "Route this banking request to the matching intent.\nUtterance: Hi, I sent my landlord my rent money a few days ago and wh"
+   ]
+  ],
+  "banking77_full": [
+   [
+    "m2:banking77:6100",
+    "state/message",
+    "I double checked that I have the correct account details already, they're right for sure. Transfer is still pending sinc"
+   ],
+   [
+    "m2:banking77:2129",
+    "q/result/instructions",
+    "Route this banking request to the matching intent.\nUtterance: Help! I need to cancel a transaction."
+   ],
+   [
+    "m2:banking77:4948",
+    "state/utterance",
+    "The ATM keeps declining my card! I tried two different ATMs already can you please check if everything is alright with m"
+   ],
+   [
+    "m2:banking77:4466",
+    "state/request_text",
+    "I think someone else is using my card."
+   ],
+   [
+    "m2:banking77:9427",
+    "q/answer/instructions",
+    "Route this banking request to the matching intent.\nCustomer message: Why are you charging fees on cash withdrawals? I we"
+   ]
+  ],
+  "anli": [
+   [
+    "m2:anli:3669a594-42b2-4098-ab27-2c48f93d9d02",
+    "state/premise",
+    "Breakfast Creek Hotel is a heritage-listed hotel at 2 Kingsford Smith Drive, Albion, City of Brisbane, Queensland, Austr"
+   ],
+   [
+    "m2:anli:a5f2cf5f-6d12-4aa3-be82-650a69df6a3e~inj:d1a:fake_correction",
+    "state/evidence",
+    "Robert Cortez Scott (born April 30, 1947) is the U.S. Representative for Virginia 's 3 congressional district , serving "
+   ]
+  ],
+  "hellaswag": [
+   [
+    "m2:hellaswag:15556",
+    "state/story_so_far",
+    "[header] How to make a chocolate zombie bunny [title] Assemble the supplies needed. [step] These are listed below under "
+   ],
+   [
+    "m2:hellaswag:2057~inj:d1a:system_note",
+    "state/prefix",
+    "A man is talking from behind a bar. he"
+   ]
+  ],
+  "boolq": [
+   [
+    "m2:boolq:2608",
+    "q/q1/instructions",
+    "Read the passage: is the statement in the question true?\nSource text: Chard was first described in 1753 by Carl von Linn"
+   ]
+  ],
+  "mmlu_aux": [
+   [
+    "m2:mmlu_aux:63261",
+    "q/output/instructions",
+    "Answer the multiple-choice question.\nItem: Paracutin was born in Mexico in February, 1943. At the end of one week Paracu"
+   ],
+   [
+    "m2:mmlu_aux:61379~inj:d1a:urgency",
+    "state/prompt",
+    "If you want to keep healthy, you should have good habits. What is a habit? It is something we do very often. We don't ev"
+   ],
+   [
+    "m2:mmlu_aux:22176",
+    "state/item",
+    "You want to know about my staying in America, right? Well, to tell you the truth,it is really an eye-opening experience "
+   ],
+   [
+    "m2:mmlu_aux:89102",
+    "state/question",
+    "Penguins live together, but each pair has a little piece of ground of their own. When a penguin wants to walk through it"
+   ],
+   [
+    "m2:mmlu_aux:62401",
+    "state/item",
+    "While I was waiting outside my wife's office building for her to get out of work, I saw a beggar coming my way from acro"
+   ]
+  ]
+ },
+ "index_boilerplate": {
+  "rule": "shared by >= 20 distinct Index rows",
+  "lines": 6593,
+  "segments": 7890
+ },
+ "filter_reasons_over_selection": {
+  "ext:api_bank": {
+   "len_prefilter": 685,
+   "k_or_t_filter": 987,
+   "kept": 604,
+   "index_item_text": 8
+  },
+  "ext:bfcl": {
+   "kept": 2286,
+   "k_or_t_filter": 114
+  },
+  "ext:cruxeval": {
+   "kept": 2400
+  },
+  "factchange": {
+   "kept": 500,
+   "dup_text": 164
+  },
+  "glaive_native": {
+   "kept": 6455,
+   "dup_text": 884,
+   "k_or_t_filter": 104,
+   "cohort_text": 26,
+   "index_item_text": 7,
+   "len_prefilter": 13
+  },
+  "glaive_catalog16": {
+   "kept": 2000,
+   "no_view": 220,
+   "index_item_text": 2,
+   "len_prefilter": 19,
+   "k_or_t_filter": 41
+  },
+  "glaive_catalog_long": {
+   "kept": 3000,
+   "no_view": 516,
+   "k_or_t_filter": 72,
+   "index_item_text": 6
+  },
+  "toolace": {
+   "kept": 2000,
+   "len_prefilter": 25,
+   "k_or_t_filter": 25,
+   "index_item_text": 5
+  },
+  "when2call": {
+   "kept": 2000,
+   "index_item_text": 337,
+   "k_or_t_filter": 21,
+   "len_prefilter": 8
+  },
+  "gsm8k": {
+   "kept": 4238,
+   "index_item_text": 20,
+   "k_or_t_filter": 72,
+   "len_prefilter": 6
+  },
+  "banking77_k16": {
+   "kept": 3000,
+   "k_or_t_filter": 63,
+   "len_prefilter": 3,
+   "index_item_text": 4
+  },
+  "clinc150_k16": {
+   "kept": 4500,
+   "k_or_t_filter": 57,
+   "len_prefilter": 5
+  },
+  "banking77_full": {
+   "kept": 2000,
+   "k_or_t_filter": 280,
+   "len_prefilter": 23,
+   "index_item_text": 6,
+   "dup_text": 1
+  },
+  "anli": {
+   "kept": 1500,
+   "k_or_t_filter": 12,
+   "dup_text": 6,
+   "index_item_text": 2,
+   "len_prefilter": 1
+  },
+  "hellaswag": {
+   "kept": 1100,
+   "k_or_t_filter": 10,
+   "len_prefilter": 2,
+   "index_item_text": 2
+  },
+  "winogrande": {
+   "kept": 1200,
+   "k_or_t_filter": 13,
+   "len_prefilter": 2
+  },
+  "sst5": {
+   "kept": 700,
+   "k_or_t_filter": 6
+  },
+  "nq": {
+   "len_prefilter": 4816,
+   "k_or_t_filter": 1057,
+   "kept": 817
+  },
+  "boolq": {
+   "kept": 1700,
+   "len_prefilter": 4,
+   "k_or_t_filter": 28,
+   "index_item_text": 1,
+   "label_balance": 580
+  },
+  "mmlu_aux": {
+   "kept": 2000,
+   "k_or_t_filter": 22,
+   "index_item_text": 13,
+   "len_prefilter": 10
+  },
+  "humicroedit_s1": {
+   "kept": 500,
+   "k_or_t_filter": 4
+  },
+  "humicroedit_s2": {
+   "kept": 500,
+   "k_or_t_filter": 6,
+   "len_prefilter": 1
+  }
+ },
+ "draws": {
+  "b1-d4-draw45k": {
+   "build": "b1-d4-draw45k",
+   "n_records": 45000,
+   "quotas": {
+    "ext:api_bank": 2284,
+    "ext:bfcl": 2400,
+    "glaive_native": 3500,
+    "glaive_catalog16": 2000,
+    "glaive_catalog_long": 3000,
+    "toolace": 2000,
+    "when2call": 2000,
+    "factchange": 500,
+    "ext:cruxeval": 2400,
+    "gsm8k": 4500,
+    "banking77_k16": 3000,
+    "clinc150_k16": 4500,
+    "banking77_full": 2000,
+    "anli": 1500,
+    "hellaswag": 1100,
+    "winogrande": 1200,
+    "sst5": 700,
+    "nq": 1716,
+    "boolq": 1700,
+    "mmlu_aux": 2000,
+    "humicroedit_s1": 500,
+    "humicroedit_s2": 500
+   },
+   "by_family": {
+    "anli": 1500,
+    "banking77_full": 2000,
+    "banking77_k16": 3000,
+    "boolq": 1700,
+    "clinc150_k16": 4500,
+    "ext:api_bank": 604,
+    "ext:bfcl": 2286,
+    "ext:cruxeval": 2400,
+    "factchange": 500,
+    "glaive_catalog16": 2000,
+    "glaive_catalog_long": 3000,
+    "glaive_native": 6455,
+    "gsm8k": 4238,
+    "hellaswag": 1100,
+    "humicroedit_s1": 500,
+    "humicroedit_s2": 500,
+    "mmlu_aux": 2000,
+    "nq": 817,
+    "sst5": 700,
+    "toolace": 2000,
+    "when2call": 2000,
+    "winogrande": 1200
+   },
+   "shortfall": {
+    "ext:api_bank": 1680,
+    "ext:bfcl": 114,
+    "gsm8k": 262,
+    "nq": 899
+   },
+   "by_group_share": {
+    "arts": 0.0222,
+    "intent_views": 0.2111,
+    "knowledge_facts": 0.0444,
+    "knowledge_procedural": 0.1475,
+    "language": 0.1,
+    "retrieval_other": 0.0559,
+    "tools": 0.4188
+   },
+   "by_group": {
+    "arts": 1000,
+    "intent_views": 9500,
+    "knowledge_facts": 2000,
+    "knowledge_procedural": 6638,
+    "language": 4500,
+    "retrieval_other": 2517,
+    "tools": 18845
+   },
+   "by_index_area": {
+    "arts": 1000,
+    "knowledge": 8638,
+    "language": 4500,
+    "retrieval": 12017,
+    "tools": 18845
+   },
+   "by_source": {
+    "anli": 1500,
+    "b1fam_apibank": 604,
+    "b1fam_bfcl_synth": 2286,
+    "b1fam_cruxeval_synth": 2400,
+    "banking77": 5000,
+    "boolq": 1700,
+    "clinc150": 4500,
+    "glaive_fc": 11455,
+    "gsm8k": 4238,
+    "hellaswag": 1100,
+    "humicroedit_s1": 500,
+    "humicroedit_s2": 500,
+    "mmlu_aux": 2000,
+    "nq": 817,
+    "sst5": 700,
+    "synthetic_factchange": 500,
+    "toolace": 2000,
+    "when2call": 2000,
+    "winogrande": 1200
+   },
+   "rows_by_max_k": {
+    "k<=16": 40000,
+    "k>16": 5000
+   },
+   "rendered_tokens": {
+    "p50": 509,
+    "p95": 1876,
+    "p99": 2006,
+    "max": 2048,
+    "n_over_2048": 0,
+    "bins": {
+     "<=512": 22821,
+     "513-1024": 12105,
+     "1025-1536": 3612,
+     "1537-2048": 6462
+    }
+   },
+   "rows_by_max_k_by_family": {
+    "anli": {
+     "k<=16": 1500
+    },
+    "banking77_full": {
+     "k>16": 2000
+    },
+    "banking77_k16": {
+     "k<=16": 3000
+    },
+    "boolq": {
+     "k<=16": 1700
+    },
+    "clinc150_k16": {
+     "k<=16": 4500
+    },
+    "ext:api_bank": {
+     "k<=16": 604
+    },
+    "ext:bfcl": {
+     "k<=16": 2286
+    },
+    "ext:cruxeval": {
+     "k<=16": 2400
+    },
+    "factchange": {
+     "k<=16": 500
+    },
+    "glaive_catalog16": {
+     "k<=16": 2000
+    },
+    "glaive_catalog_long": {
+     "k>16": 3000
+    },
+    "glaive_native": {
+     "k<=16": 6455
+    },
+    "gsm8k": {
+     "k<=16": 4238
+    },
+    "hellaswag": {
+     "k<=16": 1100
+    },
+    "humicroedit_s1": {
+     "k<=16": 500
+    },
+    "humicroedit_s2": {
+     "k<=16": 500
+    },
+    "mmlu_aux": {
+     "k<=16": 2000
+    },
+    "nq": {
+     "k<=16": 817
+    },
+    "sst5": {
+     "k<=16": 700
+    },
+    "toolace": {
+     "k<=16": 2000
+    },
+    "when2call": {
+     "k<=16": 2000
+    },
+    "winogrande": {
+     "k<=16": 1200
+    }
+   },
+   "gold_position_uniformity_by_k": {
+    "2": {
+     "n": 19086,
+     "max_dev_from_uniform_pct": 9.0
+    },
+    "3": {
+     "n": 4059,
+     "max_dev_from_uniform_pct": 0.44
+    },
+    "4": {
+     "n": 8005,
+     "max_dev_from_uniform_pct": 1.21
+    },
+    "5": {
+     "n": 601,
+     "max_dev_from_uniform_pct": 1.86
+    },
+    "6": {
+     "n": 721,
+     "max_dev_from_uniform_pct": 2.33
+    },
+    "7": {
+     "n": 563,
+     "max_dev_from_uniform_pct": 1.7
+    },
+    "8": {
+     "n": 963,
+     "max_dev_from_uniform_pct": 1.08
+    },
+    "9": {
+     "n": 185,
+     "max_dev_from_uniform_pct": 3.0
+    },
+    "10": {
+     "n": 2287,
+     "max_dev_from_uniform_pct": 0.99
+    },
+    "11": {
+     "n": 164,
+     "max_dev_from_uniform_pct": 2.49
+    },
+    "12": {
+     "n": 161,
+     "max_dev_from_uniform_pct": 2.85
+    },
+    "13": {
+     "n": 158,
+     "max_dev_from_uniform_pct": 3.7
+    },
+    "14": {
+     "n": 161,
+     "max_dev_from_uniform_pct": 3.42
+    },
+    "15": {
+     "n": 164,
+     "max_dev_from_uniform_pct": 4.23
+    },
+    "16": {
+     "n": 7649,
+     "max_dev_from_uniform_pct": 0.38
+    },
+    "17": {
+     "n": 225,
+     "max_dev_from_uniform_pct": 4.55
+    },
+    "18": {
+     "n": 185,
+     "max_dev_from_uniform_pct": 4.47
+    },
+    "19": {
+     "n": 209,
+     "max_dev_from_uniform_pct": 2.39
+    },
+    "20": {
+     "n": 218,
+     "max_dev_from_uniform_pct": 2.8
+    },
+    "21": {
+     "n": 267,
+     "max_dev_from_uniform_pct": 2.51
+    },
+    "22": {
+     "n": 444,
+     "max_dev_from_uniform_pct": 2.44
+    },
+    "23": {
+     "n": 616,
+     "max_dev_from_uniform_pct": 1.33
+    },
+    "24": {
+     "n": 533,
+     "max_dev_from_uniform_pct": 2.48
+    },
+    "25": {
+     "n": 255,
+     "max_dev_from_uniform_pct": 3.06
+    },
+    "26": {
+     "n": 45,
+     "max_dev_from_uniform_pct": 9.49
+    },
+    "27": {
+     "n": 2,
+     "max_dev_from_uniform_pct": 46.3
+    },
+    "28": {
+     "n": 1,
+     "max_dev_from_uniform_pct": 96.43
+    },
+    "77": {
+     "n": 2000,
+     "max_dev_from_uniform_pct": 0.55
+    }
+   },
+   "noul_gold_labels": {
+    "false": 897,
+    "true": 897
+   },
+   "injected_rows": 3893,
+   "views": {
+    "k16": 7500,
+    "catlong": 3000,
+    "cat16": 2000
+   },
+   "uncompressed_sha256": {
+    "records": "ce10d0803caa118eee07c78ec35509eafd44a6c5b7633881d12a415bf8c4242b",
+    "manifest": "75662634dc092a7d417d9dadcfb9e4e077ebb72b3db2a0e35e5fed0a8997bc03",
+    "content_map": "0cb91ea060052267cb86b089c934c525ad5d0cb0f64609a2613ab4dc9e48dea0"
+   },
+   "gz_sha256": {
+    "records.jsonl.gz": "40715647b9131fca52dff2d9080351825c60000ad07c58b7edb45f1c9e05f7a4",
+    "b1-d4-draw45k.manifest.jsonl.gz": "f9eab59dc29d11c20aaff5f84bf4a8fec2b09de4a6dda2647a23502305562f4c",
+    "b1-d4-draw45k.content.jsonl.gz": "4473b3079b2eab86c0553bf95e72c995b9199b43cbd1463fdf04b75f855e5305"
+   },
+   "pointer": {
+    "build": "b1-d4-draw45k (python -X utf8 -I -m data.b1 draw; BOARD B1)",
+    "location": "ssdm-data/m2/build/b1-d4-draw45k/ (outside git; deterministic, a rebuild reproduces it)",
+    "records_uncompressed_sha256": "ce10d0803caa118eee07c78ec35509eafd44a6c5b7633881d12a415bf8c4242b",
+    "manifest": "b1-d4-draw45k.manifest.jsonl.gz",
+    "manifest_uncompressed_sha256": "75662634dc092a7d417d9dadcfb9e4e077ebb72b3db2a0e35e5fed0a8997bc03",
+    "content_map": "b1-d4-draw45k.content.jsonl.gz",
+    "content_map_uncompressed_sha256": "0cb91ea060052267cb86b089c934c525ad5d0cb0f64609a2613ab4dc9e48dea0",
+    "n_records": 45000,
+    "excludes_cohort": "m2-dev-cohort-v2 be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2 and m2-dev-cohort-v3 498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da (id, content, source item, key-free text)",
+    "builder": {
+     "module": "data/b1.py",
+     "commit": "45208f3f46f5ffcb6f4758cf3af8f295e3456530"
+    },
+    "receipt": "receipts/2026-10-08-B1-draws/b1-d4-draw45k/"
+   },
+   "builder_sha256": "2123cf97088d2e38ac19fffe0fbe409e87a04ffd2017b2a2a4c41e057ef0f511"
+  }
+ }
+}

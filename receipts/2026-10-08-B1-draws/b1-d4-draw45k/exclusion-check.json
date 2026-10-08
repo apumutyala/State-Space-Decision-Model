@@ -1,0 +1,84 @@
+{
+ "draw": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\b1-d4-draw45k",
+ "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b1-draw\\data\\manifests\\b1-d4-draw45k.pointer.json",
+ "n_rows": 45000,
+ "index_rows_indexed": 155390,
+ "index_lines": 518406,
+ "index_segments": 742394,
+ "index_boilerplate_excluded": {
+  "rule": "shared by >= 20 distinct Index rows",
+  "lines": 6593,
+  "segments": 7890
+ },
+ "cohorts": {
+  "v2": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "v3": {
+   "cohort": "m2-dev-cohort-v3",
+   "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 39872,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  }
+ },
+ "d1b_templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+ "generators_checked": [
+  "anli/nli",
+  "b1fam_apibank/API-Bank-tool-selection",
+  "b1fam_bfcl_synth/BFCL-tool-selection",
+  "b1fam_cruxeval_synth/CRUXEval-output-choice",
+  "banking77/intent_banking",
+  "boolq/yesno_passage",
+  "clinc150/intent_general",
+  "glaive_fc/tool_select",
+  "gsm8k/math_mcq",
+  "hellaswag/continuation",
+  "humicroedit_s1/humor_score",
+  "humicroedit_s2/humor_pair",
+  "mmlu_aux/mcq",
+  "nq/retrieval",
+  "sst5/sentiment_score",
+  "synthetic_factchange/factchange_delivery",
+  "synthetic_factchange/factchange_renewal",
+  "synthetic_factchange/factchange_schedule",
+  "synthetic_factchange/factchange_spend_limit",
+  "synthetic_factchange/factchange_stock",
+  "toolace/tool_multi",
+  "toolace/tool_select",
+  "when2call/response_select",
+  "winogrande/fill_blank"
+ ],
+ "context_overlap_reported_not_failed": {
+  "anli:segment": 2,
+  "b1fam_apibank:segment": 49,
+  "b1fam_apibank:line": 17,
+  "boolq:segment": 1,
+  "glaive_fc:line": 1309,
+  "glaive_fc:segment": 1429,
+  "gsm8k:segment": 9,
+  "humicroedit_s1:segment": 1,
+  "humicroedit_s2:segment": 2,
+  "mmlu_aux:segment": 1,
+  "nq:segment": 21,
+  "toolace:segment": 285,
+  "toolace:line": 66,
+  "when2call:segment": 277,
+  "when2call:line": 521,
+  "winogrande:segment": 3
+ },
+ "failures": {},
+ "pass": true
+}
