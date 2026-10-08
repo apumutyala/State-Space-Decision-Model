@@ -75,3 +75,9 @@
 - Learned: fixed candidate IDs let output-only select 48/48 while semantic selected 0/48. With candidate IDs balanced across labels, all arms selected 16/48; target-margin's mean probability margin stayed below output-only and random. Folded as a capability method; no L0–L4 or RWKV7 qualification.
 - Evidence: receipts/2026-10-08-L-target-margin-probe/README.md; exact source-pinned runs under ssdm-data/agent-c-target-margin-final-20261008/. CPU PyTorch 2.14.1; no GPU, held-out data, or paid work.
 - Next: continue source-grounded L4 provenance trace; wait for A/B's live Stage 1 job snapshot before refreshing status. C's WSL autor path is currently unavailable; recovery remains A/B-owned.
+
+## 2026-10-08 ~17:08Z: agent-c land-based wind source trace
+- Did: checked Dolan & Heath (2012), the NREL harmonization fact sheet, and current NLR catalog submission 171. Recorded the source disposition in PR #224 @35ff563.
+- Learned: 44 references / 107 land-based estimates make a promising candidate pool, but catalog 171 exposes quartile summaries only; the article supplement returned 403 and old OpenEI endpoint redirects. No estimate-to-study-to-inventory crosswalk is currently available, so the report remains one world.
+- Evidence: plans/codex/L4_INDEPENDENT_SOURCE_AUDIT_20261008.md. No values imported, no fixtures or held-out data touched, no model/GPU work.
+- Next: recover the source-level crosswalk or keep the current L4 scope explicitly unqualified. A/B have not yet updated live job state; the autor CLI remains unavailable on this host.
