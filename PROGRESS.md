@@ -304,3 +304,8 @@
 - Cost/latency (matched 1xH100, Clef fast path): today RWKV 2.7-8x MORE expensive. All exact levers built (memo, packed/tree fork, fla equivalence pending, prefix cache) reach parity with Clef 27B ($0.183 vs 0.167); heavy kernel work (compile, CUDA WKV, fused elementwise) could reach ~1.5x cheaper than Clef 27B, but only ~0.82x if Clef gets the same kernel work; fair 2x needs ~54-63% MFU or <=1,285-1,506 tokens/row. Never cheaper than Clef-flash.
 - Next: own the champion's full-DEV evidence (pipeline proven: fulldev smoke, hijack 0.0% vs 34.9%); fla inference gate job-exadi; readout carry-over job-39gnn.
 - 19:05Z agent-a: second worker_lost wave killed D2 84ajq, D5b 8u4vj, D9 ekks9 and D1F 3ui38 ($0). D12f submitted as job-bs5we (fla). d1_fla and d2_kd_fla are packaging. fla wiring PR #225 is open.
+
+## 2026-10-08 19:49Z: Agent C prepared fit-only GatePlanner language supervision
+- Did: adapted only the pinned L1 24-world fit cohort into 960 tasks / 3,072 actual GatePlanner slot rows; preserved calibration and validation separation, option menus, teacher-forced prefixes, and source-to-world lineage. Source and fit/calibration partition hashes are pinned in the export manifest.
+- Evidence: branch `codex/agent-c-l1-gate-training-20261008` commit `d3f1f09`; focused adapter tests pass (2/2), including trainer loader/whole-world split compatibility. Frozen artifact: `ssdm-data/agent-c-l1-gate-training-fit-20261008-v2`, JSONL SHA-256 `02345dfb60c92742e137d96aa9e34576d04a77181dfc4aa0ac5d308730cb4ccd`.
+- Model/coordination: no model or GPU run. Free RAM is 2.4 GiB, below both the CPU screen's 9-GiB admission and 3-GiB runtime floors. Latest A/B state remains `7ba2962`; no post-start receipts or full-DEV/full8 Stage 1 outcome are posted.
