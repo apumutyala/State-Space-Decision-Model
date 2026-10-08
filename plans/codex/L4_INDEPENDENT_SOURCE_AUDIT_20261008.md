@@ -54,11 +54,12 @@ The current [NLR catalog submission 171](https://data.nlr.gov/submissions/171)
 does not expose those 107 source estimates: its 28 KB workbook is described as
 quartile estimates by lifecycle stage and technology. The paper lists
 Supporting Information S1 as further detail on screening and harmonization,
-but the publisher's download returned HTTP 403 during this audit. The old
-OpenEI LCA endpoint cited by the NREL fact sheet now redirects to the NREL
-project page. The current [OEDI submission 8228](https://data.openei.org/submissions/8228)
-is the same NREL quartile-summary dataset, not the old study-level export. I
-did not find an accessible, machine-readable
+but its exact `JIEC_464_sm_suppmat.pdf` (222.5 KB) download returned HTTP 403.
+The modern and legacy OpenEI LCA app routes returned HTTP 503; Wayback queries
+returned HTTP 429, which does not establish that the files were never
+archived. The current [OEDI submission 8228](https://data.openei.org/submissions/8228)
+is the same NREL quartile-summary dataset, not the old study-level export.
+Thus far I did not find an accessible, machine-readable
 estimate-to-reference-to-inventory crosswalk. Therefore the 44-reference
 count cannot yet be used as 44 independent worlds, and no wind data was
 imported into L4.
@@ -69,6 +70,13 @@ characteristics. The paper states that Supporting Information Table S3 contains
 individual estimates by publication for each harmonization step. This narrows
 the recovery target to S1 Table S3 joined to Table 1 and the primary papers;
 the accessible copy does not include S1 itself.
+
+The [DOE Wind Vision 2015 Appendix J](https://www.energy.gov/documents/windvisionstudyfinalappendixbook-web150pdf)
+adds a partial bibliography: Table J-2 lists study characteristics for later
+wind-LCA updates to Dolan and Heath, while explicitly referring readers to the
+2012 review for earlier studies. It does not supply the 2012 Table S3 values
+or complete the estimate-to-inventory crosswalk, and is not an independent
+replacement for that review.
 
 Smallest next step: recover the old OpenEI land-based wind export or the paper's
 study-level supplemental table, then join each estimate to its primary study
