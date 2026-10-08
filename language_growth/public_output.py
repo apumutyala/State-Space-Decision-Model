@@ -1,4 +1,4 @@
-"""Narrow public text projection for the L0 semantic planner.
+"""Narrow public text projection for the checked semantic planner.
 
 The caller supplies trusted host authority and evidence. This callable does not
 provide network authentication or a timing-side-channel guarantee.
@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from .kernel import check_program
-from .planner import plan_checked_answer
+from .planner import CONJOIN_TWO_FACTS_PROFILE, plan_checked_answer
 from .realize import render_checked
 from .task_relevance import build_task_contract, task_contract_matches
 
@@ -27,6 +27,7 @@ def public_answer(task_input: str, host: dict[str, Any], catalog: dict[str, Any]
         planned = plan_checked_answer(
             task_input, host, catalog, provider, model=model,
             parent_revision=parent_revision, expected_served_config=expected_served_config,
+            development_profile=(CONJOIN_TWO_FACTS_PROFILE if contract.kind == "conjoin" else None),
         )
         if planned.status != "accepted" or planned.program is None:
             return {"status": "unavailable"}

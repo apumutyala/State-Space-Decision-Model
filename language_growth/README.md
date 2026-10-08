@@ -16,6 +16,18 @@ The fixture host, ontology and coarse temporal scopes are trusted inputs. Genera
 
 The kernel-only tests are authored boundary tests, not independent audit labels or evidence of alignment, model capability or causal interpretation. No model weights, GPU or paid service is used.
 
+The public boundary also accepts the exact two-fact form
+`State alpha's price and beta's warranty_months for October 2026.` using visible
+entity names and canonical registered field names. The facts must be distinct
+and scoped to October 2026; two fields of the same entity are supported. Only
+for this form does `public_answer` offer the conjunction planner profile. The
+provider still selects the operation and both facts from the full visible
+candidate domain. Release requires exactly the two requested checked
+assertions, in either order, and rerenders the revalidated program rather than
+using planner text. This adds public typed-program expressibility; learned
+composition, strong-comparator usefulness, parent decision retention and
+neural semantic interventions remain unmeasured.
+
 `language_growth.rwkv_decision_head.rwkv_decision_backend` is a CPU FP32
 prototype for growing a decision head from an already strictly loaded native
 RWKV-7 parent. It uses the merged `HiddenStateBackbone`, `DecisionModel`, and
