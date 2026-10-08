@@ -1,14 +1,24 @@
-"""PRE-REGISTERED decision rule of jobs/perf_step_gate (JOB_SPEC.md). Pure; CPU-tested (tests/test_perf_step_gate.py pins
-every constant). Do not edit after seeing GPU numbers.
+"""PRE-REGISTERED decision rule of jobs/perf_step_gate (JOB_SPEC.md), RULE v2. Pure; CPU-tested
+(tests/test_perf_step_gate_rule.py pins every constant). Do not edit after seeing GPU numbers.
+
+v2 (stack/rwkv7/perf-gate-fla): does fla ``chunk_rwkv7`` speed up TRAINING? Variants: ``greedy`` (the numerics
+reference, as v1), ``fast`` (= the d1_fast flags, the v1 winner and the new SPEED baseline), ``fast_fla`` (the same with
+rwkv7_wkv "fla") and ``fast_fla_nocompile`` (fla without compile_blocks: the hedge in case compile + fla conflict on
+GPU, and the attribution of the compile gain under fla). Numerics vs greedy: loss_rel <= 5e-3 and LoRA-grad cosine >=
+0.995 (v1 measured a GPU reduction-order floor of ~0.998 for exact regroupings, job-2amiy; 0.995 leaves headroom for
+bf16 kernel noise). An fla variant must also really have run fla: >= 1 fla call and zero fallbacks to "chunked" (the
+CPU dry run, where fla cannot run, is exempt). v1 (job-2amiy, $1.02) is in git history at 953f3ac.
 
 Input: one record per variant (``variant_<name>.json`` from ``jobs.perf_step_gate.gate``):
     {"variant", "flags", "alloc_conf", "complete",
      "grad": {"loss": float, "finite": bool, "file": str} | {"error": str},   # one un-applied step on GRAD_STEP's rows
      "steps": [{"i", "timed", "s", "peak_gb", "loss", "finite", "oom", "skipped"}, ...],
-     "ladder": {"2048": {"ok", "oom", "peak_gb", "s"}, ...}}
+     "ladder": {"2048": {"ok", "oom", "peak_gb", "s"}, ...},
+     "env": {"dryrun", ...}, "fla": {"calls": {"fla": n}, "fallbacks": {reason: n}, ...}}   # heads.rwkv7_wkv.provenance()
 plus, per non-baseline variant, ``grad_cos`` = cosine(its LoRA gradient, the baseline's) computed by the decide phase.
 Output (``decision.json``): verdict ADOPT (the fastest qualifying variant, which may be the baseline itself) |
-INCONCLUSIVE (the baseline's own record is unusable), with s/step for every variant.
+INCONCLUSIVE (the baseline's own record is unusable), with s/step, speedup vs greedy and vs ``fast`` and rows in
+190 min for every variant, and ``fla_speeds_training`` (a qualifying fla variant beats a qualifying ``fast``).
 """
 from __future__ import annotations
 
@@ -17,15 +27,18 @@ import statistics
 
 # ----------------------------------------------------------------------------- PRE-REGISTERED (do not tune on GPU data)
 #: run order; each in its own process. "greedy" = job-tvuat's ADOPT config (ckpt_rows_lean), the baseline.
-VARIANTS = ("greedy", "min_cost", "min_cost_single", "min_cost_single_compile")
-BASELINE = "greedy"
+VARIANTS = ("greedy", "fast", "fast_fla", "fast_fla_nocompile")
+BASELINE = "greedy"  # the numerics reference (loss, LoRA gradient)
+SPEED_BASELINE = "fast"  # the speed reference (= d1_fast); speedups are reported against it
 _LEAN = {"act_ckpt": True, "row_batch": 8, "row_tokens": 8192, "rwkv7_wkv": "chunked_lean"}
+_FAST = {**_LEAN, "row_plan": "min_cost", "cont_plan": "single", "compile_blocks": True}
 FLAGS = {
     "greedy": {**_LEAN, "row_plan": "greedy", "cont_plan": "per_group", "compile_blocks": False},
-    "min_cost": {**_LEAN, "row_plan": "min_cost", "cont_plan": "per_group", "compile_blocks": False},
-    "min_cost_single": {**_LEAN, "row_plan": "min_cost", "cont_plan": "single", "compile_blocks": False},
-    "min_cost_single_compile": {**_LEAN, "row_plan": "min_cost", "cont_plan": "single", "compile_blocks": True},
+    "fast": dict(_FAST),
+    "fast_fla": {**_FAST, "rwkv7_wkv": "fla"},
+    "fast_fla_nocompile": {**_FAST, "rwkv7_wkv": "fla", "compile_blocks": False},
 }
+FLA_VARIANTS = tuple(v for v in VARIANTS if FLAGS[v]["rwkv7_wkv"] == "fla")
 #: compile warm-up: the compiled variant compiles on its first shapes; every variant gets the same warm-up steps
 WARMUP_STEPS = 3
 TIMED_STEPS = 20
@@ -40,13 +53,13 @@ GRAD_STEP = 6
 GRAD_B_SEED = 20261008
 GRAD_B_SCALE = 1e-3
 LOSS_REL_MAX = 5e-3
-GRAD_COS_MIN = 0.999
+GRAD_COS_MIN = 0.995
 LADDER = (1024, 2048)  # synthetic rows, K = 10 (continuations of 16 tokens), row_batch copies per step
 LADDER_K = 10
 LADDER_CONT_LEN = 16
 CELL_MINUTES = 190
 ALLOC_CONF = "expandable_segments:True"
-RULE_ID = "perf_step_gate v1"
+RULE_ID = "perf_step_gate v2"
 VERDICTS = ("ADOPT", "INCONCLUSIVE")
 
 
@@ -79,6 +92,10 @@ def summarize(rec: dict | None) -> dict:
         reasons.append(f"PYTORCH_CUDA_ALLOC_CONF {rec.get('alloc_conf')!r} != {ALLOC_CONF!r}")
     if rec.get("flags") != FLAGS.get(rec.get("variant")):
         reasons.append(f"flags {rec.get('flags')} != pre-registered {FLAGS.get(rec.get('variant'))}")
+    if rec.get("variant") in FLA_VARIANTS and not (rec.get("env") or {}).get("dryrun"):
+        fla = rec.get("fla") or {}
+        if fla.get("fallbacks") or not (fla.get("calls") or {}).get("fla", 0) > 0:
+            reasons.append(f"fla did not really run: calls {fla.get('calls')}, fallbacks {fla.get('fallbacks')}")
     g = rec.get("grad") or {}
     gl = g.get("loss") if g.get("finite") and isinstance(g.get("loss"), (int, float)) else None
     if gl is None:
@@ -98,7 +115,7 @@ def decide(records: dict[str, dict | None], grad_cos: dict[str, float | None]) -
     summ = {v: summarize(records.get(v)) for v in VARIANTS}
     base = summ[BASELINE]
     out = {"rule": RULE_ID, "variants": summ, "max_peak_gb": MAX_PEAK_GB, "loss_rel_max": LOSS_REL_MAX,
-           "grad_cos_min": GRAD_COS_MIN}
+           "grad_cos_min": GRAD_COS_MIN, "speed_baseline": SPEED_BASELINE}
     if not base["present"] or base["reasons"]:
         for v in VARIANTS:
             summ[v].pop("_timed", None)
@@ -128,13 +145,18 @@ def decide(records: dict[str, dict | None], grad_cos: dict[str, float | None]) -
         else:
             summ[v]["matched_median_step_s"] = summ[v].get("median_step_s")
     b = summ[BASELINE]["matched_median_step_s"]
+    f = summ[SPEED_BASELINE]["matched_median_step_s"]
     for v in VARIANTS:
         m = summ[v]["matched_median_step_s"]
         summ[v]["speedup_vs_baseline"] = (b / m) if (b and m) else None
+        summ[v]["speedup_vs_fast"] = (f / m) if (f and m) else None
         summ[v]["rows_190min"] = math.floor(CELL_MINUTES * 60 / m) * ROWS_PER_STEP if m else None
     best = sorted(ok, key=lambda v: (summ[v]["matched_median_step_s"], VARIANTS.index(v)))[0]
     out.update(verdict="ADOPT", chosen=best, matched_steps=matched, cell_config=dict(FLAGS[best]),
-               speedup_vs_baseline=summ[best]["speedup_vs_baseline"])
+               speedup_vs_baseline=summ[best]["speedup_vs_baseline"],
+               speedup_vs_fast=summ[best]["speedup_vs_fast"],
+               fla_speeds_training=any(summ[v]["qualifies"] and (summ[v]["speedup_vs_fast"] or 0) > 1.0
+                                       for v in FLA_VARIANTS) if summ[SPEED_BASELINE]["qualifies"] else None)
     return out
 
 

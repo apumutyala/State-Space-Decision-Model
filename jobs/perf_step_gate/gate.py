@@ -1,5 +1,8 @@
-"""jobs/perf_step_gate: the m2 cell's train step (job-tvuat's ADOPT config) under four pre-registered execution variants
-(rule.py): greedy row groups (baseline) / min_cost groups / + one continuation call per step / + compiled block bodies.
+"""jobs/perf_step_gate: the m2 cell's train step under four pre-registered execution variants (rule.py, RULE v2):
+greedy (job-tvuat's ADOPT config, the numerics reference) / fast (= d1_fast: min_cost + single cont + compile_blocks,
+the speed reference) / fast_fla (fast with rwkv7_wkv "fla") / fast_fla_nocompile (fla without compile_blocks).
+fla variants select the unverified fla WKV (``allow_unverified=True``: this job IS a gate) and record
+``heads.rwkv7_wkv.provenance()`` (fla calls, fallbacks to "chunked") in the variant record.
 
     python -m jobs.perf_step_gate.gate variant --name V --out DIR --grads GDIR --model-dir SNAP --deadline-s S
     python -m jobs.perf_step_gate.gate decide  --out DIR --grads GDIR      # rule.decide -> DIR/decision.json
@@ -59,7 +62,7 @@ def load_backbone(model_dir: str, wkv: str):
         from heads.backbone import load_rwkv7_hf_backbone
 
         bb = load_rwkv7_hf_backbone(model_dir, device=DEVICE, fork_mode="cache", wkv=None)
-    select_wkv(bb.model, wkv)
+    select_wkv(bb.model, wkv, allow_unverified=True)  # fla is GPU-unverified for training: this job is its gate
     return bb
 
 
@@ -218,6 +221,9 @@ def phase_variant(out: Path, gdir: Path, name: str, model_dir: str, deadline_s: 
         rec.d["steps"].append(r)
         rec.flush()
     rec.d["dynamo_after_steps"] = dynamo_stats()
+    from heads import rwkv7_wkv as W
+
+    rec.d["fla"] = W.provenance()  # rule v2: an fla variant needs fla calls > 0 and no fallback to "chunked"
     rec.d["steps_s"] = round(time.perf_counter() - t_start, 1)
     rec.flush()
 
@@ -273,7 +279,9 @@ def phase_decide(out: Path, gdir: Path) -> int:
     (out / "decision.json").write_text(json.dumps(d, indent=1), encoding="utf-8")
     print(json.dumps({"verdict": d["verdict"], "chosen": d.get("chosen"),
                       "s_per_step": {v: d["variants"][v].get("matched_median_step_s") for v in R.VARIANTS},
-                      "grad_cos": cos}))
+                      "speedup_vs_fast": {v: d["variants"][v].get("speedup_vs_fast") for v in R.VARIANTS},
+                      "rows_190min": {v: d["variants"][v].get("rows_190min") for v in R.VARIANTS},
+                      "fla_speeds_training": d.get("fla_speeds_training"), "grad_cos": cos}))
     return 0 if R.valid_decision(d) else 9
 
 
