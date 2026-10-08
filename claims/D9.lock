@@ -1,0 +1,5 @@
+owner: A (lead)
+job: job-mcng6
+start_utc: 2026-10-08T14:05Z
+time_limit: 2026-10-09T02:00Z
+item: D9 d9_t4096 (d1_fast + T4096 rung + train_max_k 255; stack/rwkv7/d9-t4096 d0bb665)
