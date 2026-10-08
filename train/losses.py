@@ -82,6 +82,62 @@ def kd_kl(lp: torch.Tensor, teacher: torch.Tensor, temperature: float = 1.0) -> 
     return temperature ** 2 * (pt * diff).sum(-1)
 
 
+def aligned_order_js(base_lp: torch.Tensor, view_lp: torch.Tensor, view_to_base: tuple[int, ...]) -> torch.Tensor:
+    """Jensen–Shannon divergence over option content shared by a base/view pair.
+
+    ``view_to_base[j]`` is the base option index whose content appears at view index ``j``. The view
+    distribution is inverse-permuted before comparison. Inputs are one-dimensional log-probabilities
+    over exactly the valid options (no padding); malformed maps or unnormalised distributions fail closed.
+    The returned divergence is in nats and bounded by ``ln(2)``.
+    """
+    if not isinstance(base_lp, torch.Tensor) or not isinstance(view_lp, torch.Tensor):
+        raise TypeError("base_lp and view_lp must be tensors")
+    if base_lp.ndim != 1 or view_lp.ndim != 1 or base_lp.shape != view_lp.shape:
+        raise ValueError("base_lp and view_lp must be same-shape 1D log-probability tensors")
+    if not base_lp.is_floating_point() or not view_lp.is_floating_point():
+        raise TypeError("log-probabilities must use a floating dtype")
+    k = base_lp.numel()
+    if k < 2 or len(view_to_base) != k or sorted(view_to_base) != list(range(k)):
+        raise ValueError("view_to_base must be a permutation of all K >= 2 valid options")
+    if base_lp.device != view_lp.device:
+        raise ValueError("base_lp and view_lp must share a device")
+    if not bool(torch.isfinite(base_lp).all()) or not bool(torch.isfinite(view_lp).all()):
+        raise ValueError("all valid option log-probabilities must be finite")
+    tol = 1e-4 if base_lp.dtype in (torch.float16, torch.bfloat16, torch.float32) else 1e-8
+    if not bool(torch.isclose(torch.logsumexp(base_lp, 0), base_lp.new_zeros(()), atol=tol, rtol=0)):
+        raise ValueError("base_lp must be normalized log-probabilities")
+    if not bool(torch.isclose(torch.logsumexp(view_lp, 0), view_lp.new_zeros(()), atol=tol, rtol=0)):
+        raise ValueError("view_lp must be normalized log-probabilities")
+
+    # Map each base-content index to the view slot carrying that same content.
+    inverse = torch.argsort(torch.as_tensor(view_to_base, dtype=torch.long, device=view_lp.device))
+    aligned_view = view_lp.index_select(0, inverse).float()
+    base = base_lp.float()
+    log_mid = torch.logaddexp(base, aligned_view) - 0.6931471805599453
+    p, q = base.exp(), aligned_view.exp()
+    # Both inputs are finite on valid options, so every term is well-defined even for underflowed mass.
+    return (0.5 * ((p * (base - log_mid)).sum() + (q * (aligned_view - log_mid)).sum())).clamp_min(0.0)
+
+
+def add_order_consistency(base_mean: torch.Tensor, view_mean: torch.Tensor, js_mean: torch.Tensor,
+                          n_base: int, n_paired: int, weight: float) -> torch.Tensor:
+    """Add paired-view terms per original base row, invariant to row-batch grouping.
+
+    ``base_mean`` averages all base rows in a group; ``view_mean`` and ``js_mean`` average paired
+    rows only. Since trainer micro-batches are weighted by base-row count, scale extra terms by
+    ``n_paired / n_base`` so regrouping cannot change the full-step objective.
+    """
+    if type(n_base) is not int or n_base < 1 or type(n_paired) is not int or not 0 <= n_paired <= n_base:
+        raise ValueError("n_base must be positive and n_paired must be in [0, n_base]")
+    if type(weight) not in (int, float) or not 0.0 <= weight < float("inf"):
+        raise ValueError("weight must be finite and nonnegative")
+    if n_paired == 0:
+        return base_mean
+    if base_mean.ndim != 0 or view_mean.ndim != 0 or js_mean.ndim != 0:
+        raise ValueError("base_mean, view_mean and js_mean must be scalar means")
+    return base_mean + (n_paired / n_base) * (view_mean + weight * js_mean)
+
+
 @dataclass(frozen=True)
 class LossConfig:
     arm: str = "ce"  # "ce" | "clef"
@@ -91,6 +147,8 @@ class LossConfig:
     #: knowledge distillation (default off; at the defaults these fields are left out of TrainConfig's hash)
     kd_alpha: float = 0.0
     kd_temperature: float = 1.0
+    #: opt-in content-aligned distribution consistency for eligible option-permuted training views
+    order_consistency_weight: float = 0.0
 
     #: field -> default; left out of config identities at these values (old hashes unchanged)
     KD_DEFAULTS = {"kd_alpha": 0.0, "kd_temperature": 1.0}
@@ -102,6 +160,9 @@ class LossConfig:
             raise ValueError(f"kd_alpha must be in [0, 1], got {self.kd_alpha!r}")
         if type(self.kd_temperature) not in (int, float) or not 0.0 < self.kd_temperature < float("inf"):
             raise ValueError(f"kd_temperature must be finite and > 0, got {self.kd_temperature!r}")
+        if (type(self.order_consistency_weight) not in (int, float)
+                or not 0.0 <= self.order_consistency_weight < float("inf")):
+            raise ValueError(f"order_consistency_weight must be finite and nonnegative, got {self.order_consistency_weight!r}")
 
     @property
     def kd(self) -> bool:
@@ -115,6 +176,8 @@ class LossConfig:
         for k, v in self.KD_DEFAULTS.items():
             if d[k] == v:
                 d.pop(k)
+        if d["order_consistency_weight"] == 0.0:
+            d.pop("order_consistency_weight")
         return d
 
     @property

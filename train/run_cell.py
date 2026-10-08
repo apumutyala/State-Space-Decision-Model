@@ -89,15 +89,151 @@ def host_provenance(r: dict) -> dict | None:
     return {"provenance": {"schema": PROVENANCE_SCHEMA, "default_trust": "data", "segments": segs}} if segs else None
 
 
-def to_train_record(r: dict) -> dict:
+def to_train_record(r: dict, *, development: bool = False) -> dict:
     """m2 sample record (data/build.py: state/questions/labels at top level) -> train.data record format.
     Carries ``host_provenance`` under ``request["ssdm"]`` (read only by the trust gate's provenance policy;
-    content hashes, guards and token ids are unchanged)."""
+    content hashes, guards and token ids are unchanged). Nested requests and grouped records are development-only:
+    the external ``train_set.draw`` caller uses the default, so its manifest/cohort path fails closed on these shapes.
+    Nested envelopes retain their metadata (including group identity and guard markers), and requests verbatim."""
+    if not development and ("request" in r or "group_id" in r):
+        raise ValueError("nested/grouped records require a matching manifest/group guard; development loader only")
+    if "request" in r:
+        if "state" in r or "questions" in r:
+            raise ValueError("nested record also carries top-level state/questions")
+        return dict(r)
     req = {"model": "m2", "state": r["state"], "questions": r["questions"]}
     prov = host_provenance(r)
     if prov:
         req["ssdm"] = prov
-    return {"id": r["id"], "request": req, "labels": r["labels"]}
+    rec = {"id": r["id"], "request": req, "labels": r["labels"]}
+    if "group_id" in r:
+        # The new grouped-flat path must retain every envelope sidecar the SplitGuard may inspect.
+        # Keep the historical ungrouped conversion exact.
+        rec.update({k: v for k, v in r.items() if k not in ("state", "questions", "id", "labels")})
+    return rec
+
+
+def _json_record(pairs: list) -> dict:
+    """Reject repeated JSON members rather than silently dropping a question, label or identity."""
+    out = {}
+    for key, value in pairs:
+        if key in out:
+            raise ValueError(f"duplicate JSON member {key!r}")
+        out[key] = value
+    return out
+
+
+def _cell_records(records_path: str, *, development: bool) -> dict:
+    """Validate every row before splitting/tokenizing; storage keys never replace the task's ``id``."""
+    from decide.schema import RequestRejected, canonical_options, validate_legacy
+
+    recs, pairs, groups = {}, set(), {}
+    new_development_path = False
+    with gzip.open(records_path, "rt", encoding="utf-8") as f:
+        for line in f:
+            r = json.loads(line, object_pairs_hook=_json_record)
+            if not isinstance(r, dict) or not isinstance(r.get("id"), str) or not r["id"]:
+                raise ValueError("record id must be a non-empty string")
+            nested = "request" in r
+            new_development_path |= nested or "group_id" in r
+            if not nested and ("state" not in r or "questions" not in r):
+                raise ValueError(f"{r['id']}: missing state/questions")
+            if not isinstance(r.get("labels"), dict):
+                raise ValueError(f"{r['id']}: labels must exactly match questions")
+            rec = to_train_record(r, development=development)
+            req, labels = rec["request"], rec.get("labels")
+            try:
+                validate_legacy(req)
+            except RequestRejected as e:
+                raise ValueError(f"{r['id']}: {e}") from e
+            questions = req["questions"]
+            if not isinstance(labels, dict) or set(labels) != set(questions):
+                raise ValueError(f"{r['id']}: labels must exactly match questions")
+            group = rec.get("group_id")
+            if "group_id" in rec and (not isinstance(group, str) or not group):
+                raise ValueError(f"{r['id']}: group_id must be a non-empty string")
+            if r["id"] in groups and groups[r["id"]] != group:
+                raise ValueError(f"{r['id']}: conflicting group identity")
+            groups[r["id"]] = group
+            # A one-question nested row is a slot. Legacy and complete multi-question records retain their id key.
+            key = f"{r['id']}/{next(iter(questions))}" if nested and len(questions) == 1 else r["id"]
+            if key in recs:
+                raise ValueError(f"duplicate row key {key!r}")
+            for qid, q in questions.items():
+                pair = (r["id"], qid)
+                if pair in pairs:
+                    raise ValueError(f"duplicate task/question pair {pair!r}")
+                gold = str(labels[qid]).lower() if q["type"] == "noul" else str(labels[qid])
+                if gold not in {oid for oid, _ in canonical_options(q)}:
+                    raise ValueError(f"{r['id']}/{qid}: label is not among the question's options")
+                pairs.add(pair)
+            recs[key] = rec
+    if development and new_development_path:
+        _check_development_item_ids(recs)
+    return recs
+
+
+def _check_development_item_ids(recs: dict) -> None:
+    """Check expanded identities for every row of a new path, including flat rows mixed with nested slots.
+
+    Item/calibration consumers recover the task by the final slash. Storage-key uniqueness alone cannot exclude
+    ``task``/``slot/answer`` aliasing ``task/slot``/``answer``. Pure legacy files do not enter this new guard."""
+    seen = set()
+    for rec in recs.values():
+        for qid in rec["request"]["questions"]:
+            item_id = f"{rec['id']}/{qid}"
+            if item_id in seen:
+                raise ValueError(f"duplicate expanded Item id {item_id!r}")
+            seen.add(item_id)
+    for rec in recs.values():
+        if any("/" in qid for qid in rec["request"]["questions"]):
+            raise ValueError(f"{rec['id']}: development question ids cannot contain '/' (task calibration identity)")
+
+
+def _development_split(recs: dict, cfg: dict) -> tuple[list[str], list[str], dict]:
+    """Select whole worlds when present, otherwise whole tasks, then expand every selected storage row key.
+
+    Counts name split units (worlds/tasks), not slot rows. Legacy ungrouped inputs retain the exact id split/order
+    and identity. Tagged units prevent a world id from aliasing an unrelated ungrouped task id in mixed inputs."""
+    if all(k == r["id"] and "group_id" not in r for k, r in recs.items()):
+        return cohort_split(sorted(recs), cfg, recs)
+    grouped = any("group_id" in r for r in recs.values())
+    units = {}
+    for key, rec in sorted(recs.items()):
+        unit = ("world", rec["group_id"]) if "group_id" in rec else ("task", rec["id"])
+        # All-ungrouped multislot draws use exactly the legacy sha256(seed:task_id) ranking.
+        split_key = json.dumps(unit, separators=(",", ":")) if grouped else rec["id"]
+        units.setdefault(split_key, []).append(key)
+    tr, ev = split_ids(sorted(units), cfg["n_train_records"], cfg["n_eval_records"], cfg["seed"])
+    return ([key for unit in tr for key in units[unit]], [key for unit in ev for key in units[unit]],
+            {"cohort": None, "split_unit": "world/task" if grouped else "task",
+             "n_split_units": len(units), "n_rows": len(recs)})
+
+
+def _check_train_set_rows(cfg: dict, train_dir: str) -> None:
+    """Streaming shape/identity preflight before ``draw`` can build its record-id dictionary.
+
+    This adds no admission authority: ``draw`` still verifies the pointer, manifests, content and held-out guards.
+    Check the whole set, including undrawn rows; neither repeated ids nor grouped/nested slots have a supported
+    record-level manifest contract yet. Keep only ids in memory, never a second full copy of the training set."""
+    from train.train_set import TrainSetMismatch, files, read_pointer
+
+    seen = set()
+    path = files(train_dir, read_pointer(cfg["train_set"]["pointer"]))["records"]
+    if not path.exists():
+        raise TrainSetMismatch(f"training-set records file missing: {path}")
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            r = json.loads(line, object_pairs_hook=_json_record)
+            if not isinstance(r, dict) or not isinstance(r.get("id"), str) or not r["id"]:
+                raise ValueError("train_set record id must be a non-empty string")
+            if "request" in r or "group_id" in r:
+                raise ValueError("nested/grouped train_set records require a matching manifest/group guard")
+            if r["id"] in seen:
+                raise ValueError(f"duplicate train_set row key {r['id']!r}")
+            seen.add(r["id"])
 
 
 def split_ids(ids: list[str], n_train: int, n_eval: int, seed: int) -> tuple[list[str], list[str]]:
@@ -112,6 +248,9 @@ def cohort_split(record_ids: list[str], cfg: dict, records: dict | None = None) 
     never trained on) and eval ids are the cohort's ``dev`` role. With ``records`` (id -> record), every pool record's
     content is re-hashed and must equal the committed content map. Without a cohort: the legacy pilot split
     (``split_ids``). Raises ``train.cohort.CohortLeak`` / ``ValueError`` on any overlap, drift or cohort mismatch."""
+    if cfg.get("cohort_sha256") and records is not None and any(
+            r is not None and ("group_id" in r or k != r["id"]) for k, r in records.items()):
+        raise ValueError("grouped/multislot records require a matching manifest/group guard for protected cohorts")
     if not cfg.get("cohort_sha256"):
         tr, ev = split_ids(record_ids, cfg["n_train_records"], cfg["n_eval_records"], cfg["seed"])
         return tr, ev, {"cohort": None}
@@ -173,17 +312,22 @@ def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, c
     Without ``cfg["train_set"]``: the PR #16 sample at ``records_path`` provides both (``cohort_split``). With it: train
     records come from the pointer-pinned external set in ``train_dir`` (``train.train_set.draw``: cohort excluded by id
     and content, manifest-verified, content re-hashed) and eval records (the cohort ``dev`` role) from ``records_path``.
-    Raises ``ValueError`` (``CohortLeak`` / ``TrainSetMismatch`` subclass it) on any identity problem."""
-    with gzip.open(records_path, "rt", encoding="utf-8") as f:
-        recs = {r["id"]: to_train_record(r) for r in map(json.loads, f)}
+    In unprotected development mode, nested slots use distinct storage keys while retaining task Item identities;
+    whole world/task split units are expanded to every row. Grouped/nested protected paths fail closed pending a
+    matching manifest/group guard. Raises ``ValueError`` (``CohortLeak`` / ``TrainSetMismatch`` subclass it) on any
+    identity problem."""
+    protected = bool(cfg.get("train_set") or cfg.get("cohort_sha256"))
+    recs = _cell_records(records_path, development=not protected)
     if not cfg.get("train_set"):
-        tr_ids, ev_ids, ident = cohort_split(sorted(recs), cfg, recs)
+        tr_ids, ev_ids, ident = (cohort_split(sorted(recs), cfg, recs) if protected
+                               else _development_split(recs, cfg))
         return recs, recs, tr_ids, ev_ids, ident
     if not train_dir:
         raise ValueError("the cell config names a train_set: pass --train-dir with its pinned files")
     from train.cohort import Cohort
     from train.train_set import draw
 
+    _check_train_set_rows(cfg, train_dir)
     co = cohort if cohort is not None else Cohort(expected_sha256=cfg["cohort_sha256"])
     train_recs, tr_ids, tident = draw(cfg, train_dir, co)
     ev_ids = co.ids("dev")
@@ -202,6 +346,53 @@ def kd_fields(cfg: dict) -> dict:
     if not t:
         return {}
     return {"kd_alpha": float(t["alpha"]), "kd_temperature": float(t["temperature"])}
+
+
+def order_consistency_fields(cfg: dict) -> dict:
+    """The single pre-registered order-consistency arm; absent means the legacy objective unchanged."""
+    arm = cfg.get("order_consistency")
+    if arm is None:
+        return {}
+    if not isinstance(arm, dict) or set(arm) != {"view", "weight"} or arm.get("view") != "reverse":
+        raise ValueError("order_consistency must be exactly {'view': 'reverse', 'weight': 0.25}")
+    weight = arm.get("weight")
+    if type(weight) not in (int, float) or float(weight) != 0.25:
+        raise ValueError("the pre-registered order-consistency weight is fixed at 0.25")
+    if cfg.get("teacher"):
+        raise ValueError("order-consistency arm requires teacher/KD off")
+    if float(cfg.get("axis_loss_weight", 0.0)) != 0.0:
+        raise ValueError("order-consistency arm requires axis_loss_weight=0")
+    return {"order_consistency_weight": 0.25}
+
+
+def attach_order_views(cfg: dict, train_items: list, train_records: dict, enc, guard, max_t: int) -> dict | None:
+    """Attach opt-in reversed views to the filtered training list only; evaluation data is never passed here."""
+    if not order_consistency_fields(cfg):
+        return None
+    from train.order_views import attach_views
+
+    return attach_views(
+        train_items, train_records, enc, layout=cfg["layout"], template=cfg["template"], guard=guard,
+        keep=lambda row: keep_item(row, cfg["max_k"], max_t),
+    )
+
+
+def restrict_order_views_to_tmax(cfg: dict, train_items: list, max_t: int) -> dict | None:
+    """Drop over-rung views, preserving their eligible base rows and matching gate reconstruction at T_max."""
+    if not order_consistency_fields(cfg):
+        return None
+    retained = dropped = 0
+    for item in train_items:
+        view = getattr(item, "view", None)
+        if view is None:
+            continue
+        if len(view.row.ids) > max_t:
+            item.view = None
+            item.view_perm = None
+            dropped += 1
+        else:
+            retained += 1
+    return {"t_max": max_t, "retained": retained, "dropped_for_length": dropped}
 
 
 def attach_teacher(cfg: dict, items: list, teacher_dir, train_ids, expected: dict | None = None,
@@ -241,7 +432,7 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
 
     return TrainConfig(head=cfg["head"], head_kwargs=cfg.get("head_kwargs") or {}, layout=cfg["layout"],
                        fork_mode="cache", lora_rank=cfg["lora_rank"],
-                       loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg)),
+                       loss=LossConfig(arm=cfg["loss_arm"], **kd_fields(cfg), **order_consistency_fields(cfg)),
                        lr_head=cfg["lr_head"], lr_lora=cfg["lr_lora"], batch_size=cfg["batch_size"],
                        warmup_steps=int(cfg.get("warmup_steps") or 0),
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
@@ -347,6 +538,69 @@ def _checkpoint_post():
         print(f"checkpoint declare: {e!r}", flush=True)
 
 
+def smoke_stage(bb, train_items, cfg: dict, cuda: bool, peak=lambda: 0.0) -> dict:
+    """Cache-fork smoke: features and LoRA gradients of the cache fork equal the recompute fork on a few short rows
+    (``cfg["smoke"]``). Leaves the backbone as it found it (no LoRA, bridges zeroed, ``fork_mode`` "cache").
+
+    Runs under the cell's per-block activation checkpointing (``cfg["act_ckpt"]``), exactly as training does (job-uhxb5,
+    LESSONS L-34): the recompute fork pushes every (row, option) continuation through the backbone in one batch, and
+    without checkpointing its activations do not fit beside 13.3B bf16 weights on 80 GB (CUDA OOM at 77 GiB). The
+    checkpointed gradients equal the plain ones (tests/test_cell_perf.py), so the comparison is unchanged; it now also
+    covers the checkpointed cache fork that training actually runs."""
+    import torch
+
+    from heads import act_ckpt
+    from heads.features import build_head_input
+    from train.lora import apply_lora, remove_lora
+
+    use_ckpt = bool(cfg.get("act_ckpt"))
+    was_ckpt = act_ckpt.is_enabled(bb.model)
+    if use_ckpt:
+        act_ckpt.enable_block_checkpointing(bb.model)  # raises for an unsupported backbone, as the Trainer would
+    dev_type = "cuda" if cuda else "cpu"
+    sm = cfg["smoke"]
+    rows = [x.row for x in train_items if x.row.n_options <= sm["max_k"] and len(x.row.ids) <= sm["max_t"]][: sm["rows"]]
+    mods = apply_lora(bb.model, bb.spec.lora_groups, rank=sm["lora_rank"], generator=torch.Generator().manual_seed(5))
+    for n, p in bb.model.named_parameters():
+        if n.endswith("lora_B"):
+            with torch.no_grad():
+                p.normal_(0.0, 0.02)
+    # trust-gated backbone: the P -> D bridges live outside bb.model; randomise them too so the smoke exercises
+    # the bridge injection on the cache fork (prefix / continuation alignment), and re-zero them afterwards
+    bridges_b = [p for n, p in getattr(bb, "bridges", torch.nn.Module()).named_parameters() if n.endswith("lora_B")]
+    with torch.no_grad():
+        for p in bridges_b:
+            p.normal_(0.0, 0.02)
+    res = {}
+    for mode in ("cache", "recompute"):
+        bb.fork_mode = mode
+        bb.model.zero_grad(set_to_none=True)
+        with torch.autocast(dev_type, dtype=torch.bfloat16, enabled=cuda):
+            x = build_head_input(bb, rows, need_fork=True)
+        x.fork.float().pow(2).mean().backward()
+        g = torch.cat([p.grad.flatten().float() for n, p in bb.model.named_parameters() if n.endswith("lora_A")])
+        res[mode] = (x.fork.detach().float(), g)
+        del x, g  # the cache pass's tensors are not kept alive through the recompute pass
+    fa, fb = res["cache"][0], res["recompute"][0]
+    rel = float((fa - fb).abs().max() / fb.abs().max().clamp_min(1e-12))
+    cos = float(torch.nn.functional.cosine_similarity(res["cache"][1], res["recompute"][1], dim=0))
+    ok = rel <= sm["max_rel_feature_diff"] and cos >= sm["min_grad_cos"]
+    out = {"rows": len(rows), "rel_feature_diff": rel, "grad_cos": cos, "pass": ok, "peak_gb": peak(),
+           "lora_modules": {k: len(v) for k, v in mods.items()}, "pass_rule": sm, "act_ckpt": use_ckpt}
+    del res
+    bb.model.zero_grad(set_to_none=True)
+    remove_lora(bb.model)  # training starts from the pre-registered LoRA init, not the smoke one
+    with torch.no_grad():
+        for p in bridges_b:  # bridges back to their zero init (remove_lora does not touch them)
+            p.zero_()
+        for p in getattr(bb, "bridges", torch.nn.Module()).parameters():
+            p.grad = None
+    bb.fork_mode = "cache"
+    if use_ckpt and not was_ckpt:  # the Trainer applies (or removes) its own execution flags afterwards
+        act_ckpt.disable_block_checkpointing(bb.model)
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
@@ -370,10 +624,9 @@ def main(argv=None):
     import torch
 
     from heads.backbone import LineageError
-    from heads.features import build_head_input
     from heads.model import DecisionModel
     from train.guard import SplitGuard
-    from train.lora import apply_lora, remove_lora
+    from train.lora import remove_lora
     from train.trainer import Trainer
 
     cfg = json.load(open(a.config))
@@ -409,6 +662,7 @@ def main(argv=None):
     parent = cfg.get("parent", "rwkv7")
     try:
         validate_head(cfg)
+        order_consistency_fields(cfg)
         if parent == "q9af" or cfg.get("teacher") or cfg.get("head_from_proxy"):
             from jobs.q9af_cell import hooks  # typed KD-teacher / proxy-head hooks (fail closed until wired)
 
@@ -458,6 +712,13 @@ def main(argv=None):
     train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap)
     eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap)
     try:
+        order_views = attach_order_views(cfg, train_items, train_recs, enc, guard, t_cap)
+        if order_views is not None and order_views["with_view"] == 0:
+            raise ValueError("no training item passed the order-view eligibility and K/T filters")
+    except ValueError as e:
+        print(f"order-consistency views: {e}", flush=True)
+        return EXIT["config"]
+    try:
         kd_cov = attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)
     except ValueError as e:  # TeacherIdentityError / TeacherContamination subclass ValueError
         print(f"teacher: {e}", flush=True)
@@ -466,7 +727,8 @@ def main(argv=None):
                     "n_train_records": len(tr_ids), "tokenize_s": round(time.time() - t_tok, 1),
                     "n_train_items": len(train_items), "n_eval_items": len(eval_items),
                     "guard_manifests": guard.manifests, "guard": guard.identity(), "max_k": cfg["max_k"],
-                    **cohort_ident, **({"teacher": kd_cov} if kd_cov else {})}
+                    **cohort_ident, **({"teacher": kd_cov} if kd_cov else {}),
+                    **({"order_consistency_views": order_views} if order_views else {})}
     save()
     if len(train_items) < cfg["min_train_items"]:
         print(f"too few items {len(train_items)}", flush=True)
@@ -478,51 +740,14 @@ def main(argv=None):
 
         bb = trust_gate_wrap(bb, {**cfg["controlsafe"], "seed": cfg["seed"]})
     cuda = on_cuda
-    dev_type = "cuda" if cuda else "cpu"
     cell["weights_gb"] = torch.cuda.memory_allocated() / 1e9 if cuda else None
     stages = ["smoke", "ladder", "train"] if a.stage == "all" else [a.stage]
 
     if "smoke" in stages and "smoke" not in cell:
-        sm = cfg["smoke"]
-        rows = [x.row for x in train_items if x.row.n_options <= sm["max_k"] and len(x.row.ids) <= sm["max_t"]][: sm["rows"]]
-        mods = apply_lora(bb.model, bb.spec.lora_groups, rank=sm["lora_rank"], generator=torch.Generator().manual_seed(5))
-        for n, p in bb.model.named_parameters():
-            if n.endswith("lora_B"):
-                with torch.no_grad():
-                    p.normal_(0.0, 0.02)
-        # trust-gated backbone: the P -> D bridges live outside bb.model; randomise them too so the smoke exercises
-        # the bridge injection on the cache fork (prefix / continuation alignment), and re-zero them afterwards
-        bridges_b = [p for n, p in getattr(bb, "bridges", torch.nn.Module()).named_parameters() if n.endswith("lora_B")]
-        with torch.no_grad():
-            for p in bridges_b:
-                p.normal_(0.0, 0.02)
-        res = {}
-        for mode in ("cache", "recompute"):
-            bb.fork_mode = mode
-            bb.model.zero_grad(set_to_none=True)
-            with torch.autocast(dev_type, dtype=torch.bfloat16, enabled=cuda):
-                x = build_head_input(bb, rows, need_fork=True)
-            x.fork.float().pow(2).mean().backward()
-            g = torch.cat([p.grad.flatten().float() for n, p in bb.model.named_parameters() if n.endswith("lora_A")])
-            res[mode] = (x.fork.detach().float(), g)
-        fa, fb = res["cache"][0], res["recompute"][0]
-        rel = float((fa - fb).abs().max() / fb.abs().max().clamp_min(1e-12))
-        cos = float(torch.nn.functional.cosine_similarity(res["cache"][1], res["recompute"][1], dim=0))
-        ok = rel <= sm["max_rel_feature_diff"] and cos >= sm["min_grad_cos"]
-        cell["smoke"] = {"rows": len(rows), "rel_feature_diff": rel, "grad_cos": cos, "pass": ok, "peak_gb": peak(),
-                         "lora_modules": {k: len(v) for k, v in mods.items()}, "pass_rule": sm}
+        cell["smoke"] = smoke_stage(bb, train_items, cfg, cuda, peak)
         save()
-        del res
-        bb.model.zero_grad(set_to_none=True)
-        remove_lora(bb.model)  # training starts from the pre-registered LoRA init, not the smoke one
-        with torch.no_grad():
-            for p in bridges_b:  # bridges back to their zero init (remove_lora does not touch them)
-                p.zero_()
-            for p in getattr(bb, "bridges", torch.nn.Module()).parameters():
-                p.grad = None
-        bb.fork_mode = "cache"
         reset_peak()
-        if not ok:
+        if not cell["smoke"]["pass"]:
             return EXIT["fork_mismatch"]
 
     def make_trainer(max_steps, ckpt_dir=None):
@@ -535,8 +760,15 @@ def main(argv=None):
 
     if "ladder" in stages and "ladder" not in cell:
         lad = {}
+        order_active = bool(order_consistency_fields(cfg))
+        def item_context_len(item):
+            base_len = len(item.row.ids)
+            view_len = len(item.view.row.ids) if order_active and getattr(item, "view", None) is not None else 0
+            return max(base_len, view_len)
+
         for T in cfg["t_ladder"]:
-            its = sorted((x for x in train_items if len(x.row.ids) <= T), key=lambda x: (-x.row.n_options, -len(x.row.ids)))
+            its = sorted((x for x in train_items if item_context_len(x) <= T),
+                         key=lambda x: (-x.row.n_options, -item_context_len(x)))
             if not its:
                 continue
             reset_peak()
@@ -549,7 +781,10 @@ def main(argv=None):
                 if cuda:
                     torch.cuda.synchronize()
                 lad[str(T)] = {"ok": math.isfinite(loss), "peak_gb": peak(), "step_s": time.time() - t0,
-                               "row_len": len(its[0].row.ids), "k": its[0].row.n_options}
+                               "row_len": len(its[0].row.ids),
+                               **({"view_row_len": len(its[0].view.row.ids) if its[0].view is not None else None,
+                                   "effective_row_len": item_context_len(its[0])} if order_active else {}),
+                               "k": its[0].row.n_options}
             except torch.OutOfMemoryError as e:
                 lad[str(T)] = {"ok": False, "oom": str(e)[:200], "peak_gb": peak()}
             finally:
@@ -573,6 +808,13 @@ def main(argv=None):
     if "train" in stages:
         t_max = cell["ladder"]["T_max"]
         train_items[:] = [x for x in train_items if len(x.row.ids) <= t_max]
+        view_t_max = restrict_order_views_to_tmax(cfg, train_items, t_max)
+        if view_t_max is not None:
+            cell["data"]["order_consistency_t_max"] = view_t_max
+            save()
+            if view_t_max["retained"] == 0:
+                print("order-consistency views: no paired item fits measured T_max", flush=True)
+                return EXIT["config"]
         eval_items[:] = [x for x in eval_items if len(x.row.ids) <= t_max]
         reset_peak()
         tr = make_trainer(cfg["max_steps"], a.ckpt_dir)

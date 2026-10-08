@@ -1,0 +1,22 @@
+{
+  "schema": "ssdm.energy_knowledge.v0.1",
+  "module_ref": "ipcc-ar5-2014-lifecycle-subset-v1",
+  "assessment_year": 2014,
+  "temporal_scope": "IPCC-AR5-2014/Table-A.III.2",
+  "unit": "gCO2eq/kWh",
+  "boundary": "lifecycle_including_albedo_effect",
+  "uncertainty": "reported_minimum_median_maximum_not_confidence_interval",
+  "source": {
+    "source_ref": "ipcc-ar5-wgiii-annex-iii",
+    "title": "IPCC AR5 WGIII (2014), Annex III",
+    "url": "https://archive.ipcc.ch/pdf/assessment-report/ar5/wg3/ipcc_wg3_ar5_annex-iii.pdf",
+    "table": "Table A.III.2"
+  },
+  "rows": [
+    {"record_ref": "coal-pc-ar5", "technology": "Coal - PC", "lifecycle_minimum": "740", "lifecycle_median": "820", "lifecycle_maximum": "910"},
+    {"record_ref": "gas-combined-cycle-ar5", "technology": "Gas - Combined Cycle", "lifecycle_minimum": "410", "lifecycle_median": "490", "lifecycle_maximum": "650"},
+    {"record_ref": "nuclear-ar5", "technology": "Nuclear", "lifecycle_minimum": "3.7", "lifecycle_median": "12", "lifecycle_maximum": "110"},
+    {"record_ref": "solar-pv-utility-ar5", "technology": "Solar PV - utility", "lifecycle_minimum": "18", "lifecycle_median": "48", "lifecycle_maximum": "180"},
+    {"record_ref": "wind-onshore-ar5", "technology": "Wind onshore", "lifecycle_minimum": "7.0", "lifecycle_median": "11", "lifecycle_maximum": "56"}
+  ]
+}

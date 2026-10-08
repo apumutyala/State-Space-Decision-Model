@@ -1,0 +1,112 @@
+{
+  "files": [
+    {
+      "name": "agent-main-5aac22.bundle",
+      "sha256": "6b2e03f3bc4fac8cc6fb1226cb7ed65078ac9323d0c9adbbf89e4c8d15de5ff1",
+      "bytes": 26208694
+    },
+    {
+      "name": "decision-index-87d4650.bundle",
+      "sha256": "46a9e0ecfff272cc8ffb4d39c0bbe79a320a1bbd455f6ee06b2b20065d73263a",
+      "bytes": 1044541
+    },
+    {
+      "name": "m2_first_cell-4247b340ddde.tar.zst",
+      "sha256": "6902a600f541c518db35cd37d80cfa04968441ff2672ad2b98fc3d6a07acc27b",
+      "bytes": 469087698
+    },
+    {
+      "name": "package-manifest.json",
+      "sha256": "a7b37eaa21d7d44c52c14f08468bd0d1efa114ac32027166e4e59bfd8ce9e17d",
+      "bytes": 4219
+    },
+    {
+      "name": "run_deadline.py",
+      "sha256": "ac4b06f61e22c9cb5f4de0e8d61180d502ff31bd96c3277a200b4970ce153702",
+      "bytes": 5723
+    },
+    {
+      "name": "run_m2_cpu8_tests.sh",
+      "sha256": "08f75eccb4dab82365831df5be8c2ce043f0478c35778d4dd40e4fd4fff61c74",
+      "bytes": 5185
+    },
+    {
+      "name": "tokenizer_config.json",
+      "sha256": "2b5e075c2c16780061ae272c9f0b52ff620ddd8e87fdf7fa82fc425661667329",
+      "bytes": 531
+    },
+    {
+      "name": "tokenizer.json",
+      "sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+      "bytes": 1580973
+    },
+    {
+      "name": "package.sha256",
+      "sha256": "9bd53612a49a9d367bcf19c35459d6cdbc2642aaf39b2d4ea3e210134928719a",
+      "bytes": 722
+    }
+  ],
+  "bytes": 497938286,
+  "storage_verified": true,
+  "storage_free_tier_bytes_per_month": 100000000000,
+  "storage_cost_usd": 0,
+  "live_preflight_free_bytes": 99502061714,
+  "storage_cost_note": "Fits the live free allowance supplied by the spend preflight.",
+  "uploaded_objects": [
+    {
+      "key": "ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32/input/agent-main-5aac22.bundle",
+      "name": "agent-main-5aac22.bundle",
+      "sha256": "6b2e03f3bc4fac8cc6fb1226cb7ed65078ac9323d0c9adbbf89e4c8d15de5ff1",
+      "bytes": 26208694
+    },
+    {
+      "key": "ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32/input/decision-index-87d4650.bundle",
+      "name": "decision-index-87d4650.bundle",
+      "sha256": "46a9e0ecfff272cc8ffb4d39c0bbe79a320a1bbd455f6ee06b2b20065d73263a",
+      "bytes": 1044541
+    },
+    {
+      "key": "ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32/input/m2_first_cell-4247b340ddde.tar.zst",
+      "name": "m2_first_cell-4247b340ddde.tar.zst",
+      "sha256": "6902a600f541c518db35cd37d80cfa04968441ff2672ad2b98fc3d6a07acc27b",
+      "bytes": 469087698
+    },
+    {
+      "key": "ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32/input/package-manifest.json",
+      "name": "package-manifest.json",
+      "sha256": "a7b37eaa21d7d44c52c14f08468bd0d1efa114ac32027166e4e59bfd8ce9e17d",
+      "bytes": 4219
+    },
+    {
+      "key": "ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32/input/run_deadline.py",
+      "name": "run_deadline.py",
+      "sha256": "ac4b06f61e22c9cb5f4de0e8d61180d502ff31bd96c3277a200b4970ce153702",
+      "bytes": 5723
+    },
+    {
+      "key": "ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32/input/run_m2_cpu8_tests.sh",
+      "name": "run_m2_cpu8_tests.sh",
+      "sha256": "08f75eccb4dab82365831df5be8c2ce043f0478c35778d4dd40e4fd4fff61c74",
+      "bytes": 5185
+    },
+    {
+      "key": "ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32/input/tokenizer_config.json",
+      "name": "tokenizer_config.json",
+      "sha256": "2b5e075c2c16780061ae272c9f0b52ff620ddd8e87fdf7fa82fc425661667329",
+      "bytes": 531
+    },
+    {
+      "key": "ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32/input/tokenizer.json",
+      "name": "tokenizer.json",
+      "sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+      "bytes": 1580973
+    },
+    {
+      "key": "ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32/input/package.sha256",
+      "name": "package.sha256",
+      "sha256": "9bd53612a49a9d367bcf19c35459d6cdbc2642aaf39b2d4ea3e210134928719a",
+      "bytes": 722
+    }
+  ],
+  "verification": "import completed and remote sha256sum -c package.sha256 passed"
+}

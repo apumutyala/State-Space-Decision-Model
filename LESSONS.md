@@ -155,12 +155,12 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - **Status:** ENFORCED (structure). The promotion rule itself (paired CI > 0 plus G12/G13 plus review) is a review item.
 
 ### L-18 Contradictory coordination rules
-- Date: 2026-10-06 (found by the coordinator's pre-mortem).
-- Symptom: COORDINATION.md "Stalled cross-review" said "This rule never applies to `main` or to spend approval. Spend still needs the other agent's acknowledgement on a `spend` issue." The later user decision, "Review sufficiency", says one independent review is enough to launch spend. An agent could follow either rule.
-- Cost: none billed. The risk was a blocked launch or an unauthorized one, depending on which rule was read.
-- Root cause: a newer user decision was added as a new section, and the older sentence was never edited.
-- **Check:** the stale sentence was replaced so that the later user decision governs. `tests/test_jobs_lint.py::test_coordination_has_no_superseded_spend_rule` asserts that the old sentence is gone.
-- **Status:** PARTIAL. Only this sentence is checked. Spend-ladder item 2 ("acknowledged by the other agent") still reads as blocking and needs the same reconciliation. When a user decision supersedes a rule, edit the old rule in the same PR.
+- Date: 2026-10-06; policy clarified 2026-10-07 after Codex took over both tracks.
+- Symptom: contradictory approval language both blocked jobs already within the user's approved envelope and risked treating reviewer approval as permission to exceed it.
+- Cost: none billed. The practical risk was an unnecessary training delay or an unbounded spend claim.
+- Root cause: the prior two-owner process did not separate the user's standing $525 SF / $250 Track D authorization from independent review of each exact job.
+- **Check:** `tests/test_jobs_lint.py::test_coordination_requires_bounded_autonomous_spend` requires a per-job issue, planned ledger row, exact estimate and stop condition, independent fresh-context review, live balance/expiry/MTD/workspace-cap preflight, and `validate_job` without force. It rejects a per-job user-OK gate inside the standing envelope, while preserving user authorization for exceeding either budget limit, collaborator spending, Lambda, and outward-facing actions.
+- **Status:** RESOLVED. Codex may spend autonomously only inside the standing envelope and allocation after all per-job proofs and preflights pass. Keep the coordination, checklist, issue template and enforcing test synchronized.
 
 ### L-19 The benchmark edition changed under us
 - Date: 2026-10-06 (Track D, found via research PR #92; fixed in PR #95).
@@ -353,4 +353,114 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Cost: $0; caught before any pretrained model/checkpoint was loaded or measured.
 - Root cause: the test double matched the conceptual slot count but not the runtime container contract.
 - **Check:** `language_growth/tests/test_semantic_state_intervention.py` uses the installed dictionary layout; `_state_slots` and `_state_manifest` canonicalize numeric slot keys and reject missing/extra keys. The test suite must fail if the wrapper reverts to list-only assumptions.
+- **Status:** ENFORCED.
+
+### L-35 The relation router rejected a valid native-parent snapshot alias
+- Date: 2026-10-07 (adversarial review of the L1 relation router).
+- Symptom: a native RWKV decision head whose pinned parent recorded `snapshot_revision` was refused against the same stock revision recorded as `snapshot`.
+- Cost: $0; found before loading or measuring a parent model.
+- Root cause: the composition router compared only one spelling even though the parent bridge accepts either alias.
+- **Check:** `language_growth/relation_router.py::_snapshot_identity` normalizes both spellings and rejects disagreement; `language_growth/tests/test_relation_router.py::test_mismatched_models_and_native_parent_revisions_refused` accepts an alias-only matching parent and rejects conflicting aliases.
+- **Status:** ENFORCED.
+
+### L-34 The pre-training smoke ran without the cell's activation checkpointing (job-uhxb5)
+
+- Restart safety: seed provenance is installed inside the atomically renamed parent cache. A process interruption after installation cannot remove the requirement to verify it; legacy installs without provenance are recognized by their exact pinned manifest. A shipped source alone does not reclassify an ordinary cache. Ordinary cached arms also receive full identity verification before training. Comparator arm/units are copied on every restart, with a copy failure stopping the job. Focused regressions cover interruption after rename, legacy marker loss, and the real shell cache block's success/failure paths without loading a model.
+- Date: 2026-10-07 (SF job-uhxb5, m2_first_cell from agent-main 9c76c93; artifact art-sq6mp).
+- Symptom: setup, guard, heldout, parent_g12 (41 min), parent_index (27 min) and reprice passed and exported. `phase cell` then died about 3 minutes in with "FAIL(20): cell unexpected rc=1". `logs/cell.log` shows `torch.OutOfMemoryError` (77.24 GiB allocated on the 79.18 GiB H100). The trace runs `train/run_cell.py:446` (smoke, `build_head_input(bb, rows, need_fork=True)`), `heads/features.py:183` (the RECOMPUTE fork: `backbone.features(fid, fm)` over every (row, option) continuation in one batch), then `heads/rwkv7_lean.py:101`.
+- Cost: $3.69, plus the 68 minutes of parent scoring that a resubmit would repeat.
+- Root cause: the cell trains with per-block activation checkpointing (`act_ckpt: true`, job-tvuat ADOPT; no-checkpoint baseline peaked at 83 GB), but `act_ckpt` was applied only inside `Trainer` (`train/trainer.py`, via `with_execution`). The smoke stage runs before any Trainer exists. It compares the cache fork with the recompute fork on 2 rows (T <= 512, K <= 4) next to 26 GB of bf16 weights. The recompute pass pushed up to 8 continuations of ~512 tokens through RWKV7-13.3B with every activation kept for backward. The tests missed it for three reasons:
+  - `tests/test_m2_first_cell.py` (dry run) and `tests/test_m2_first_cell_shell.py` run the smoke on CPU on a tiny RWKV7, where memory is not measured (`peak_gb` = 0).
+  - No test asserted that the smoke runs under the cell's execution flags. `test_execution_flags_reach_the_trainer_and_both_arms_read_the_wkv` checks the Trainer and the parent arm only.
+  - job-tvuat profiled the train step (and its ladder) only, never the smoke stage.
+- **Check:** `train/run_cell.py::smoke_stage` enables block checkpointing when the cell sets `act_ckpt` (both fork modes), frees the cache pass before the recompute pass, records `act_ckpt` in `cell.json` `smoke`, and restores the backbone. `tests/test_m2_first_cell.py::test_smoke_runs_under_the_cells_activation_checkpointing` asserts three things on a tiny RWKV7 with chunked_lean: `act_ckpt` is enabled inside both `build_head_input` calls; saved-for-backward bytes are under half of the unchecked run for each mode; and the smoke still passes and leaves the backbone unwrapped. The test fails on the pre-fix code.
+- Resubmit cost: the parent arm depends on the snapshot, WKV, cohort, unit spec and Index rows only. A restart keeps `$GMN_CHECKPOINT_DIR`, but a new job starts with an empty checkpoint slot. `jobs/m2_first_cell/arm_seed.py` installs job-uhxb5's exported arm (`job_params.json` `parent_arm_seed`, shipped as `data/parent_arm_seed/` by `context.data` / `build_context.sh`) into `$CK/parent_arm`. It checks the pinned arm.json sha256, the units file hashes and the parent / cohort / unit-spec identity, and exits 10 otherwise. The copy is atomic (temp dir, checked, renamed), so a failed check never becomes a cache a restart could reuse. Before any training, the runner's `seed_verify` (`score_parent --verify-cache`) recomputes the full units identity through `read_arm_cache`, checks the guard and the parent decider's revision on the new box, and re-scores `probe_records` (24) g12 dev records. The re-scored records must reproduce the cached units, and their speed gives the re-price factor (the earlier box's rate reports are not installed). Any mismatch exits 10 before the cell phase. The comparator units are kept in `out/parent_arm/`. The runner also exports `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, as every job-tvuat variant did (PR #147 review). Tests: `test_arm_seed_installs_only_a_pinned_matching_arm`, `test_arm_seed_is_atomic_a_failed_check_never_becomes_the_cache`, `test_seed_probe_comparison_rule`, `test_reprice_uses_the_seed_probe_only_without_rate_reports`, `test_runner_verifies_a_seed_before_training_and_sets_the_tvuat_allocator`, and in `tests/test_m2_first_cell_shell.py`: `test_resubmit_seeds_the_parent_arm_from_a_pinned_export`, `test_seed_against_another_pin_exits_10_before_any_gpu_phase`, `test_seed_with_other_units_identity_exits_10_before_training`.
+- **Status:** PARTIAL. The smoke now shares the Trainer's execution flags, but GPU memory of a non-train stage (smoke, ladder, cards) is still never measured before a paid run. A preflight that runs each pre-training stage at its real shape is a candidate check (a proposed LAUNCH_CHECKLIST row: profile every stage that runs before the profiled one).
+
+### L-37 Mutable receipt hashes could authorize changed relation validation truth
+- Date: 2026-10-07 (L1r0 relation-data review).
+- Symptom: changing a loaded conditional-validation target and its manifest hash together passed `L1RelationData._verify`, despite the independently pinned source fixtures remaining unchanged. Selected relation requests had the same gap.
+- Cost: $0; found before model execution, training or measurement. No affected learned result is known.
+- Root cause: `frozen=True` did not freeze nested dictionaries, and the verifier trusted mutable reporting hashes as its expectations.
+- **Check:** `L1RelationData._verify` derives fit/calibration relation selections from the complete constant-pinned world partitions and reloads validation records/targets from independently pinned raw fixture and manifest bytes. It compares both the data and reporting hashes against those derived expectations. `language_growth/tests/test_l1_relation_data.py::test_changed_target_and_matching_mutable_manifest_still_refused` and `test_changed_selected_records_and_matching_mutable_manifest_still_refused` reject paired data/hash edits; `test_source_rechecked_before_accepting_unchanged_validation_view` rejects later source drift while accepting exact relocated bytes.
+- **Status:** ENFORCED.
+
+### L-39 Kernel-valid evidence can answer the wrong public task
+- Date: 2026-10-07 (Track L public-output review).
+- Symptom: `public_answer` rechecked and rendered a kernel-accepted program but never compared its entity, field, order, scope or speech act with the user's task. A true fact about another entity or field could therefore be released as the answer.
+- Cost: $0; caught in CPU/code review before a model-backed public release.
+- Root cause: evidence-relative kernel soundness was being used as if it established task relevance.
+- **Check:** `language_growth/task_relevance.py` builds a bounded exact-grammar contract from `audience_state` before provider calls, then verifies the final checked speech-act and ordered host-resolved operands against a fresh exact task/state hash before public rendering. `language_growth/tests/test_public_output.py::test_kernel_valid_wrong_entity_or_field_is_not_released` checks kernel-valid mismatches; `language_growth/tests/test_task_relevance.py::test_every_development_template_has_an_exact_kernel_bound_contract` covers all fixed train/validation templates. Unsupported wording fails before provider use.
+- **Status:** ENFORCED for `public_answer` and the enumerated grammar only. This does not establish relevance for arbitrary natural language or for other direct renderer/library callers.
+
+### L-40 A broad pytest module exceeded a no-model loader task's test scope
+- Date: 2026-10-07 (Issue #178 loader preparation).
+- Symptom: a verification command selected all of `tests/controlsafe/test_trust_policy.py`; after its text-only tests it can instantiate tiny random backbones and run CPU forwards, outside the task's no-model authorization. Captured output ended at 44 progress dots without a terminal summary; the owned pytest launcher/child PIDs 52316 and 59992 were subsequently verified absent. Model execution cannot be excluded or claimed absent.
+- Cost: no paid job; accidental local CPU test work. No production checkpoint, GPU or network was requested. The exact command and evidence limits are retained in `receipts/2026-10-07-D-m2-multislot-loader/README.md`.
+- Root cause: selecting a relevant module instead of inspecting and selecting only its no-model test nodes; the initial tool wrapper also discarded the running-session identifier.
+- **Check:** the receipt command calls `guard_no_model_nodes` before pytest collection; `tests/test_m2_multislot_loader.py::test_no_model_receipt_guard_refuses_broad_modules_before_collection` rejects the broad controlsafe module, model-training module, broad directories and unallowlisted options. Only inspected exact legacy nodes and the focused loader/lint modules are admitted.
+- **Status:** ENFORCED for the documented receipt command only; arbitrary shell commands are outside this narrow guard.
+
+### L-41 Distinct storage keys can alias the same expanded training Item id
+- Date: 2026-10-07 (Issue #178 independent review).
+- Symptom: flat task `task` / question `slot/answer` and nested task `task/slot` / question `answer` both emitted Item id `task/slot/answer`; calibration recovered the wrong task for the flat row. Both grouped and ungrouped mixed inputs were affected.
+- Cost: $0; found in synthetic review before any model use for this correction.
+- Root cause: slash-free qids were enforced only on nested rows; storage-key and task/question-pair uniqueness did not imply unique expanded Item identities.
+- **Check:** `_check_development_item_ids` validates globally unique expanded Item ids and slash-free qids for every row whenever any input is grouped/nested, before split. `tests/test_m2_multislot_loader.py::test_flat_nested_expanded_item_collision_refuses_before_split` covers both row orders and grouping modes; `test_every_row_on_new_development_path_requires_slash_free_qids` covers flat/multi-question rows; `test_pure_legacy_slash_qids_retain_exact_existing_behavior` preserves the legacy boundary.
+- **Status:** ENFORCED for the new development loader paths; pure legacy behavior remains unchanged.
+
+### L-42 A direct node chunk upload failed before the CPU-8 suite and skipped its receipt
+- Date: 2026-10-07 (Issue #171).
+- Symptom: the first 26,208,694-byte agent-main bundle transfer announced seven parts of at most 4 MiB, then only `error: request failed`. No file completed and no test ran. The owned CPU-8 was stopped after 37 seconds with its disk intact.
+- Cost: the immediate available-balance decrease was $0.004958; later `autor usage --json` reconciliation reports $0.004800 actual node usage. No model or H100 work ran. Receipt and all frozen source/package hashes: `receipts/2026-10-07-D-m2-cpu8-transfer-failure/`; metered reconciliation: `receipts/2026-10-08-D-cpu8-wake-sequence-failure/usage-reconciliation.json`.
+- Root cause: likely the direct node chunk-upload path; the generic error does not establish a size limit. The controller's terminal receipt was below the failing upload command, so its early exit skipped accounting.
+- **Check:** `scripts/supervise_m2_cpu8.sh` stages only the nine hash-pinned files through private storage before creating a fresh owned node, then imports and checks remote hashes before the unchanged 145m/8610s test command. An EXIT trap records phase/current file/return code/node/stop result on every operational exit. Import failure has unknown remote outcome and stops the node without running tests. `tests/test_m2_cpu8_controller.py::ControllerTests` runs only a fake AUTOR and covers upload failure/no create, import failure/stop, exact successful command order, rate refusal, failed stop and workload failure/export without retries; `StaticTests::test_large_direct_node_copy_cannot_recur` rejects the direct node copy path.
+- **Status:** ENFORCED locally; revised transfer has not run against the provider and requires fresh exact-package review and live spend/free-storage preflight.
+
+### L-43 A remote checksum list must be checked against an independent pin
+- Date: 2026-10-08 (adversarial review of PR #181; caught before retry).
+- Symptom: remote verification ran `sha256sum -c package.sha256`, which trusts the imported checksum list. A modified list containing a valid subset could pass while omitting the pinned runner and other package files.
+- Cost: $0; caught before any package upload, node creation or validation retry.
+- Root cause: the package list was pinned and verified locally, but its identity was not rechecked at the remote import boundary before it selected which files to verify.
+- **Check:** `scripts/supervise_m2_cpu8.sh` now verifies remote `package.sha256` against the independently compiled `LIST_SHA` before using that list on payloads. `tests/test_m2_cpu8_controller.py::StaticTests::test_pinned_checksum_list_is_verified_before_payload_list` demonstrates that the prior subset-only check passes while the pinned-list check rejects it; `ControllerTests::test_remote_hash_list_failure_stops_before_workload` requires a failed remote gate to stop the owned node and skip workload registration.
+- **Status:** ENFORCED in the local controller; provider execution remains pending review and live preflight.
+
+### L-44 Grouped flat conversion stripped protected-data guard sidecars
+- Date: 2026-10-08 (Track D adversarial review of Issue #178 / PR #179).
+- Symptom: a synthetic grouped flat row carrying `_evaluation` was refused by `SplitGuard.check` before conversion but accepted as a training Item after loading. The new grouped-flat conversion kept the world id while dropping other envelope metadata used by the guard.
+- Cost: $0; reproduced with synthetic rows and ByteEncoder only, before model execution or paid work.
+- Root cause: the new grouped-flat path reused the legacy field whitelist, which discarded `_evaluation`, `source`, `run_id`, `row_sha256` and `payload_sha256`.
+- **Check:** `to_train_record` preserves every grouped-flat envelope sidecar while moving state/questions into the request. `test_grouped_flat_guard_metadata_survives_and_is_enforced` checks each marker survives loading and is refused by the Item conversion guard. Pure ungrouped legacy conversion remains exact.
+- **Status:** ENFORCED for grouped-flat development ingestion.
+
+### L-45 Multislot storage keys were incompatible with order-view lookup
+- Date: 2026-10-08 (Track D adversarial review of Issue #178 / PR #179).
+- Symptom: enabling the existing order-consistency arm on a nested one-slot development row raised `KeyError('task')` before training because the record was stored as `task/q0`.
+- Cost: $0; reproduced with synthetic rows and ByteEncoder only, before model execution or paid work.
+- Root cause: `attach_views` recovered the task id from an Item and assumed it was the storage key; several distinct slot requests can now share that task id.
+- **Check:** `attach_views` indexes source requests by their complete expanded Item identity and rejects ambiguous identities. `test_multislot_order_views_match_each_request_without_task_key_aliasing` combines two slots and a complete record under one task and checks each reversed view uses its own request/prefix and inverse gold mapping without mutating the sources.
+- **Status:** ENFORCED for legacy records and development multislot records.
+
+### L-46 Registering an on-wake command does not wake the node or prove workload success
+- Date: 2026-10-08 (Issue #171 second CPU-8 attempt).
+- Symptom: all nine private-storage imports and both remote hash gates passed, then the controller stopped the node and registered `cmd-ymzbk` with `--on-wake`. `autor logs -f` returned zero with only `cmd-ymzbk pending_wake`; the controller incorrectly recorded `workload_rc=0`. Export refused because the node remained stopped. The pending command was canceled before it ran; no tests, JUnit, submit artifact or model execution occurred.
+- Cost: `autor usage --json` later reported $0.001600 for this node; the immediate available-balance delta was $0.001742. Together with the first node's reconciled $0.004800 charge, Issue #171 actual CPU-8 spend is $0.006400. Node stopped; storage MTD $0 with 497,938,286 active free-tier bytes. Receipt: `receipts/2026-10-08-D-cpu8-wake-sequence-failure/`.
+- Root cause: confusing boot-command registration with execution, trusting log-follow rc0 without the runner's completion evidence, and using an unspecified newest-command log selector. Synchronous `autor run` has a 300-second ceiling, so it cannot replace the long detached command.
+- **Check:** `scripts/supervise_m2_cpu8.sh` launches a detached direct command while the hash-verified node remains running, strictly validates and retains its command ID, then follows only that ID. `m2_cpu8_json.py` refuses pending-wake registration/logs and requires the frozen runner's exact-source post-JUnit JSON, nonempty context hash/size, unskipped tests and no H100 submission before accepting rc0. Export precedes stop. `ControllerTests::test_pending_wake_and_empty_logs_rc0_never_claim_workload_or_export_success` enforces nonzero exit, no workload/export success, stopped node and zero retries for the incident; `test_rc0_requires_the_exact_runner_post_junit_report` rejects missing/incorrect evidence. `test_successful_order_and_frozen_deadlines` enforces exact-ID following, launch/export/stop order, the pinned 8610s subreaper plus 30s cleanup grace and 175m controller.
+- **Status:** ENFORCED by local fake-AUTOR tests only; no provider retry. The `--on-wake`-only 145m server limit is removed in this fallback design; remote subreaper, local follow/controller deadlines and provider's 15m idle-stop fallback remain. Any next attempt needs fresh exact-command review, reconciled spend issue and live preflight.
+
+### L-47 Staged tests must own archive bytes and identify processes beyond kill -0
+- Date: 2026-10-08 (Issue #171 first completed CPU-8 staged suite).
+- Symptom: frozen `4247b340` ran 152 tests (144 passed, 4 failed, 4 skipped). Three seeded-parent fixtures called `git ls-files` inside a source archive without `.git`; the resistant-finalizer test saw PID 2115 respond to `kill -0` after SIGKILL. No state/start identity was captured for that remote PID, so its precise cause remains unproven.
+- Cost: node metered $0.156400; provisional balance decrease $0.179180. Cumulative CPU-8 metered charges $0.162800, with $0.022780 unsettled extra. Local correction/verification $0; no provider/model/data calls. Original exported failure JUnit and metadata: `receipts/2026-10-08-D-m2-cpu8-staged-test-failures/`. Node stopped; no submit.json/H100 request or campaign training.
+- Root cause: fixture construction assumed a working tree even though the launcher tests the exact archive; a PID existence probe cannot distinguish executable state from a zombie awaiting the subreaper, or identify PID reuse.
+- **Check:** `_source_files` retains Git tracked/unignored selection only when archive-root `.git` exists; otherwise it enumerates staged files without caches or enclosing Git metadata. Checkout/archive regressions preserve runner and test bytes and alter only copied seed parameters. Each synthetic owned child records /proc start ticks. Explicit process states distinguish verified live owner, gone/zombie, reused and unknown. Unknown state fails the exit proof but never authorizes a signal; cleanup signals only a verified same live PID/starttime. The regression records signal attempts and requires unknown/reused/zombie/missing identity to send none, while the verified live owner sends one. Real-zombie/live/reused/reaped/unknown regressions enforce the distinction. Independent review found and corrected the initial boolean conflation of unknown liveness with cleanup permission. Operational `jobs/*.sha256` LF checks exclude intentionally byte-exact receipt checksum lists.
+- **Status:** ENFORCED locally by 16 focused synthetic CPU tests and 71 launch-lint checks. Production runner, source assertions, decision/data guards, reserve and timeout caps unchanged; full staged suite qualification remains pending. The receipt documents the exact original suite command without rerunning it.
+
+### L-48 Conditional values and recorded baselines need distinct realization
+- Date: 2026-10-08 (L2 registered-assumption fresh review, issue #205).
+- Symptom: comparing an assumed 99.90 price with the same slot's recorded 199.90 price rendered both operands as the same field without marking their different epistemic roles.
+- Cost: one review round; $0 compute.
+- Root cause: the typed assumption survived checking, but the renderer discarded its hypothetical label when naming an operand. Its bounded premise read also needed an explicit operation-permission rule.
+- **Check:** `language_growth/tests/test_hypothesis.py::HypothesisTests.test_same_slot_counterfactual_labels_hypothetical_and_recorded_baseline` requires distinct hypothetical/recorded-baseline labels and continued Assert refusal. `test_assumption_requires_opt_in_and_preserves_types` refuses implicit premise reads without ReadFact permission.
 - **Status:** ENFORCED.

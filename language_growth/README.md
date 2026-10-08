@@ -2,6 +2,17 @@
 
 This CPU-only package checks a compact typed semantic program against host-supplied fixture evidence. It is not a trained language model. The current kernel supports ReadFact, exact Compare, Assert, Conjoin, ExplainDerivation and Ask, with bounded rejection reasons and release-time policy/evidence revalidation.
 
+An explicitly opted-in host registry can also enable `ExactDifference` for
+left-minus-right over integer/decimal Facts or host constants with identical
+units, quantity kinds and scopes. Arithmetic is exact under any ambient
+Decimal precision, with fixed 256-digit coefficient and 64-place scale
+ceilings. Results can be asserted and deterministically rendered; conversions,
+division and arithmetic chaining are unsupported. The public planner is not
+extended by this slice. See the
+[operation contract](../plans/codex/L1_EXACT_DIFFERENCE.md) and authored fixture
+`fixtures/language_growth/exact_difference.json`; these do not establish
+learned capability or L1 qualification.
+
 Run kernel tests with:
 
 ```text
@@ -15,6 +26,47 @@ The kernel checks every node, including unused ones; keeps subject/field/unit/ti
 The fixture host, ontology and coarse temporal scopes are trusted inputs. General interval overlap, explicit supersession, arbitrary inference, natural-language premise truth and task relevance are outside the implementation. Acceptance of a true but irrelevant statement is deliberately distinct from task correctness. Exact errors are internal diagnostics; public failure rendering must not disclose hidden reference existence or source values.
 
 The kernel-only tests are authored boundary tests, not independent audit labels or evidence of alignment, model capability or causal interpretation. No model weights, GPU or paid service is used.
+
+The public boundary also accepts the exact two-fact form
+`State alpha's price and beta's warranty_months for October 2026.` using visible
+entity names and canonical registered field names. The facts must be distinct
+and scoped to October 2026; two fields of the same entity are supported. Only
+for this form does `public_answer` offer the conjunction planner profile. The
+provider still selects the operation and both facts from the full visible
+candidate domain. Release requires exactly the two requested checked
+assertions, in either order, and rerenders the revalidated program rather than
+using planner text. This adds public typed-program expressibility; learned
+composition, strong-comparator usefulness, parent decision retention and
+neural semantic interventions remain unmeasured.
+
+The optional `realization_production="l3_fact_pair_coordination_v1"` argument
+to `public_answer` selects one finite L3 primitive after the same task and
+release checks. It renders exactly one checked Conjoin of two factual Assert
+acts as `At <scope>, <fact clause>, and <fact clause>.` The scope must be
+identical; typed literals stay quoted or exactly numeric, clause order stays
+unchanged, and the checked program's source and authority bindings are retained
+and revalidated. The renderer neither infers a relation between the facts nor
+adds a causal connective. Unknown production IDs and other speech-act shapes
+fail closed without falling back to plain text. The default remains `plain`.
+This is a deterministic licensed-discourse primitive only, not learned fluent
+capability, L3 qualification, or an unrestricted natural-language guarantee.
+Focused checks: `python -m unittest language_growth.tests.test_licensed_realizer -v`.
+
+The optional `realization_production="l3_fact_comparison_contrast_v1"` expands
+one checked Assert(Comparison) into two sentences: `At <scope>, <left fact>.
+In contrast, at <scope>, <right fact>, which is <inverse relation> the first
+value.` Both operands must be numeric facts about distinct subjects, with the
+same field, predicate, unit, quantity kind and scope. Only a checked strict
+inequality licenses this quantitative contrast. Operand order and exact values
+are retained; the second sentence describes the right value against the left,
+so its relation is the inverse of the checked comparison. Equality, constants,
+bare facts, explanations and multiple outputs fail closed. The existing public
+comparison task forms can select this production after the same relevance and
+release checks. The small authored fixture is
+`fixtures/language_growth_l3_contrast/fact_comparison.json`; run it and the
+counterexamples with `python -m unittest language_growth.tests.test_contrast_realizer -v`.
+This adds deterministic discourse expressibility, with no learned L3, causal,
+temporal, strong-comparator or parent-retention claim.
 
 `language_growth.rwkv_decision_head.rwkv_decision_backend` is a CPU FP32
 prototype for growing a decision head from an already strictly loaded native

@@ -1,0 +1,73 @@
+{
+  "base_commit": "3e781d772b52f42ea548059a9ab43c58e51ffb11",
+  "checkpoint_loaded": false,
+  "claim": "scripted public-boundary responsiveness/invariance for one synthetic semantic-axis world through the bounded exact task grammar; no learned causal mediation or capability claim",
+  "commands": [
+    {
+      "command": "$env:CUDA_VISIBLE_DEVICES='-1'; & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_public_output.py language_growth/tests/test_task_relevance.py -q",
+      "result": "16 passed in 0.30s"
+    },
+    {
+      "command": "$env:CUDA_VISIBLE_DEVICES='-1'; & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests tests/test_jobs_lint.py -q",
+      "result": "373 passed in 55.73s"
+    }
+  ],
+  "cost_usd": 0,
+  "fixture": {
+    "axis_group_count": 2,
+    "input_count": 36,
+    "input_sha256": "d3afe7a0178007713f4600bfdb11c93b4aeb6399b7f86af52b6a536607f4a20a",
+    "manifest_sha256": "240bbac483fcae9b2e2cb7496877913953450850a04b0de5460bb0ba5c07f8d3",
+    "scorer_sha256": "127c25da3fd948e2c8106dc57900699a5af40c6aa3a108ba6d300d788b2ef3a7",
+    "seed": 1707,
+    "split": "semantic_axis_discovery",
+    "variant_count": 6,
+    "world_count": 1
+  },
+  "gpu_used": false,
+  "index_or_heldout_access": false,
+  "model_loaded": false,
+  "paid_compute_used": false,
+  "provider": "InputOracle scripted from task_input and audience-visible state only; no target labels or authored programs passed as provider data",
+  "raw_predictions": "none; no learned model/provider run; scripted boundary outputs exist only as test assertions",
+  "registration_refresh": {
+    "fact_name_screen": {
+      "changed_sources": [
+        "language_growth/tests/test_task_relevance.py"
+      ],
+      "previous_sha256": "9e48c15c4fd683b75abcc5baa62b18eb6bcdecb7b8b386f08eb35fc9a535921e",
+      "refreshed_sha256": "92a93e1314391f9714fc7b3b8e1dd591bf687be91286ee417a1b55611c0bd86d",
+      "source_count": 86
+    },
+    "inputs_targets_configuration_protocol_unchanged": true,
+    "non_source_fields_unchanged": true,
+    "operation_only": {
+      "changed_sources": [
+        "language_growth/tests/test_task_relevance.py"
+      ],
+      "previous_sha256": "bb3bf0615378f7f002aab39b33b72db84c06fad4b9823e4293365889041dfe31",
+      "refreshed_sha256": "a47e84fcb521cb0424485689f343e372669377c315515fdc1370d98a0739f473",
+      "source_count": 124
+    },
+    "reason": "task_relevance.py and its axis-form tests changed the source hashes pinned by the existing prepared CPU screen runners"
+  },
+  "runtime": {
+    "cuda_visible_devices": "-1",
+    "gpu_used": false,
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13",
+    "system": "Windows-11-10.0.26200-SP0",
+    "torch_distribution": "2.8.0+cu128"
+  },
+  "schema": "ssdm.l0_public_axis_contract_cpu_receipt.v1",
+  "seeds": [
+    1707
+  ],
+  "source_sha256": {
+    "STATUS.md": "c22d1a1f35d1e4fce39d39c5840d895d7eb132f2aec28cd2b232ec12e456e519",
+    "language_growth/task_relevance.py": "e918508da22ce8922c8546e1a45e239ae9d57b5a188b1387d576f8a120fd032a",
+    "language_growth/tests/test_task_relevance.py": "0012224b6a9811f36bb0af03e724d9c19acc4d23d32508242c4bc89dfcdc743e",
+    "plans/codex/L0_PUBLIC_AXIS_CONTRACT.md": "7f70e853c45451f728c39d7c91d1bee31d454c25510a7f1cf4c5685699658c70"
+  },
+  "tested_commit": "e2108b2"
+}

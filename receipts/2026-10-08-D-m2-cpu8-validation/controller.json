@@ -1,0 +1,107 @@
+{
+  "schema": "ssdm.m2_cpu8_controller.v1",
+  "issue": 188,
+  "phase": "complete",
+  "current_file": "none",
+  "rc": 0,
+  "node_name": "ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2",
+  "node_id": "ba0ebac6-b214-430f-9217-dd9d47fdd4ed",
+  "node_state": "stopped",
+  "stop_result": "stopped",
+  "workload_rc": "0",
+  "export_rc": "0",
+  "workload_command_id": "cmd-xgjgs",
+  "log_follow_rc": "0",
+  "workload_completion_verified": true,
+  "elapsed_seconds": 2532,
+  "max_retries": 0,
+  "import_outcome": "completed",
+  "hard_cap_usd": 3.0,
+  "max_exposure_including_original_incident_usd": 2.5256,
+  "transfer_events": [
+    {
+      "phase": "storage_upload",
+      "current_file": "agent-main-11fb140.bundle",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/agent-main-11fb140.bundle (25.1 MiB)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "decision-index-87d4650.bundle",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/decision-index-87d4650.bundle (1044541 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "m2_first_cell-4247b340ddde.tar.zst",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/m2_first_cell-4247b340ddde.tar.zst (447.4 MiB)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "package-manifest.json",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/package-manifest.json (6377 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "run_deadline.py",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/run_deadline.py (5723 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "run_m2_cpu8_tests.sh",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/run_m2_cpu8_tests.sh (5186 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "tokenizer_config.json",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/tokenizer_config.json (531 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "tokenizer.json",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/tokenizer.json (1.5 MiB)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "package.sha256",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/package.sha256 (715 B)\n"
+    },
+    {
+      "phase": "storage_import",
+      "current_file": "package_directory",
+      "rc": 0,
+      "stdout": "{\n  \"bytes_transferred\": 498078038,\n  \"connection\": \"storage/ssdm-m2cpu8-validation-20261008\",\n  \"dest_path\": \"/home/dev/m2-cpu8-validation/input\",\n  \"files\": 9,\n  \"files_done\": 9,\n  \"files_total\": 9,\n  \"finished_at\": \"2026-10-08T05:11:23.874338+00:00\",\n  \"import_id\": \"imp-6mwne\",\n  \"object\": \"import\",\n  \"source\": \"s3://ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/input/\",\n  \"started_at\": \"2026-10-08T05:11:15.371292+00:00\",\n  \"status\": \"complete\",\n  \"total_bytes\": 498078038\n}\n",
+      "stderr": "imp-6mwne running\u2026 0.0 GiB (0/9 files)\nimp-6mwne complete\n"
+    },
+    {
+      "phase": "export",
+      "current_file": "launch-output",
+      "rc": 0,
+      "stdout": "{\n  \"bytes_transferred\": 562452480,\n  \"connection\": \"storage/ssdm-m2cpu8-validation-20261008\",\n  \"dest\": \"s3://ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-ae1d800871324d77960377a94e1532c2/launch-output.tar\",\n  \"export_id\": \"exp-p7ff3\",\n  \"finished_at\": \"2026-10-08T05:44:27.676946+00:00\",\n  \"object\": \"export\",\n  \"source\": \"/home/dev/m2-cpu8-validation/work/launch-output\",\n  \"started_at\": \"2026-10-08T05:44:15.203266+00:00\",\n  \"status\": \"complete\",\n  \"total_bytes\": 562452480\n}\n",
+      "stderr": "exp-p7ff3 running\u2026 0.0 GiB\nexp-p7ff3 complete\n"
+    },
+    {
+      "phase": "download",
+      "current_file": "launch-output",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "downloaded /mnt/c/Users/apumu/research/CHLabs/ssdm-data/receipts/m2-cpu8-validation-20261008-run4/launch-output.tar (536.4 MiB)\n"
+    }
+  ]
+}

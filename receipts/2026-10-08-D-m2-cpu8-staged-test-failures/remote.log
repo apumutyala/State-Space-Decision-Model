@@ -1,0 +1,23 @@
+agent-main-5aac22.bundle: OK
+decision-index-87d4650.bundle: OK
+m2_first_cell-4247b340ddde.tar.zst: OK
+package-manifest.json: OK
+run_deadline.py: OK
+run_m2_cpu8_tests.sh: OK
+tokenizer_config.json: OK
+tokenizer.json: OK
+Using CPython 3.12.3 interpreter at: /usr/bin/python3
+Creating virtual environment at: /home/dev/m2-cpu8-validation/work/outer-venv
+Activate with: source /home/dev/m2-cpu8-validation/work/outer-venv/bin/activate
+Using Python 3.12.3 environment at: /home/dev/m2-cpu8-validation/work/outer-venv
+Resolved 1 package in 228ms
+Downloading zstandard (5.3MiB)
+ Downloaded zstandard
+Prepared 1 package in 79ms
+Installed 1 package in 0.56ms
+ + zstandard==0.25.0
+REFUSED: job tests failed (tests/test_jobs_lint.py tests/test_m2_first_cell.py tests/test_m2_first_cell_shell.py):
+      Built decision-index @ file:///home/dev/m2-cpu8-validation/work/SSDM_DATA/decision-index
+ Downloaded torch
+Installed 41 packages in 67ms
+cmd-zk3da exited (exit 1)

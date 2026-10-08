@@ -72,10 +72,15 @@ def weights_digest(module: torch.nn.Module, full: bool = False, sample: int = 40
     return h.hexdigest()
 
 
-def backbone_identity(backbone, full: bool = False) -> dict[str, Any]:
+def backbone_config_identity(backbone) -> dict[str, Any]:
+    """Return the inexpensive, live portion of a backbone identity.
+
+    This deliberately excludes weight hashing so serving boundaries can detect
+    configuration drift (for example a WKV implementation switch) on each use.
+    """
     m = backbone.model
     cfg = getattr(m, "config", None)
-    return {
+    ident = {
         "spec": getattr(backbone.spec, "name", None),
         "class": type(m).__name__,
         "config_sha256": _h(_config_dict(m)),
@@ -83,10 +88,20 @@ def backbone_identity(backbone, full: bool = False) -> dict[str, Any]:
         "commit_hash": getattr(cfg, "_commit_hash", None),
         "capture": backbone.capture,
         "layer": backbone.layer,
+    }
+    if getattr(backbone, "provenance", None):
+        ident["provenance"] = backbone.provenance
+    if getattr(backbone, "controlsafe", None):
+        ident["controlsafe"] = backbone.controlsafe
+    return ident
+
+
+def backbone_identity(backbone, full: bool = False) -> dict[str, Any]:
+    m = backbone.model
+    return {
+        **backbone_config_identity(backbone),
         "weights_digest": weights_digest(m, full=full),
         "weights_digest_mode": "full" if full else "sampled",
-        **({"provenance": backbone.provenance} if getattr(backbone, "provenance", None) else {}),
-        **({"controlsafe": backbone.controlsafe} if getattr(backbone, "controlsafe", None) else {}),
     }
 
 
@@ -98,6 +113,11 @@ def items_identity(items: Sequence) -> dict[str, Any]:
         axes = getattr(it, "axis_target", None)
         if axes is not None:
             value.append({"axis_target": list(axes)})  # opt-in sidecar identity; legacy digests unchanged
+        view = getattr(it, "view", None)
+        if view is not None:  # order-consistency view (train.order_views): opt-in, legacy digests unchanged
+            v = view.row
+            value.append({"view": [view.id, view.label, v.ids, v.option_ids, v.continuations, v.option_seqs, v.qtype,
+                                   list(it.view_perm)]})
         h.update(_h(value).encode())
     return {"n": len(items), "sha256": h.hexdigest(), "order_fn": ORDER_FN}
 

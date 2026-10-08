@@ -1,0 +1,14 @@
+{
+  "language_growth/tests/test_licensed_realizer.py": "91548f0caa76e7dd94ed16c1f3c040de6413377a2c30a6686527e0b6c8ffc9b6",
+  "language_growth/tests/test_conjoin_planner.py": "ffa4e96647cbf30bb13735d51a766a5336084b5c6b52ec937c792461acfa767d",
+  "language_growth/tests/test_planner.py": "9051f7067a72473d520e62a1f4e0148192e7f54599c4932048fa565328e404cd",
+  "language_growth/tests/test_realize.py": "1552bafadacd3c7e9cc8c7784b01fa4526eec60deb522be6e648c83dbb6fa109",
+  "language_growth/tests/test_public_output.py": "5ccbcf6c7a55a04404de001a56ba5f58ef9e275cfc37aba1b9207d1b1c356f50",
+  "language_growth/tests/test_public_conjoin.py": "b093fc8bb3bb025254d75c2a136c05a961277864138e6d7292d362ce067f6bb3",
+  "fixtures/language_growth/catalog.json": "c97f785c4a1ecc7b0b73dcb7c7ca8b1287640e468505628b3acd2ccec352ab35",
+  "fixtures/language_growth/cases/01_supported_read.json": "b7f03cc5c1f43f20fd9679d1cd46a2bf00bb444cfbdf6cd9589f8762a311bd5d",
+  "fixtures/language_growth/cases/02_supported_exact_comparison.json": "bbee9935ae7b009c513a7806e1f6bf67920e579a128d8570a62ee175b432f99d",
+  "fixtures/language_growth/cases/03_false_comparison.json": "9e126c3e8e1eaaee023ab44fb41976f58d3743448ff69133e64abcc482006995",
+  "fixtures/language_growth/cases/13_source_role_injection.json": "0618ad98490697370f3f4af1d8203af6675f1f9ed88ba35cbb2e82fcbfc749bd",
+  "fixtures/language_growth/cases/16_necessary_ask.json": "20c56b8a9299e29026734e3fc36dc313b18b8ba607da7de47bb3891f03c4864e"
+}

@@ -5,6 +5,8 @@ families
   ``q9af-probe``  ``convert.readout.load_converted_plugin``; options ``gdn_ckpt``, ``converted`` (comma list; empty =
                   the stock model through the same code path, the paired baseline arm of jobs/probe9b)
   ``rwkv7-hf``    ``decide.backends.hf_readout.load_rwkv7_hf`` (RWKV7-G1k, vendored bundled code)
+  ``rwkv7-hf-code-label-v1`` same plugin, explicit G1CodeLabelBackend (frozen filtered codes)
+  ``rwkv7-hf-code-label-v2`` same plugin, all-field labels and bounded prefix-fork scorer
   ``qwen3.5``     ``decide.backends.hf_readout.load_qwen35`` (stock transformers path)
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
@@ -12,9 +14,39 @@ rules), any other non-ok status raises.
 """
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
 from typing import Any
 
-TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-hf": "jrt-rwkv-g1-v1"}
+CODE_LABEL_FAMILY = "rwkv7-hf-code-label-v1"
+CODE_LABEL_V2_FAMILY = "rwkv7-hf-code-label-v2"
+TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-hf": "jrt-rwkv-g1-v1",
+             CODE_LABEL_FAMILY: "jrt-rwkv-g1-code-label-v1", CODE_LABEL_V2_FAMILY: "jrt-rwkv-g1-code-label-v2"}
+
+
+def _sha256_file(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def _load_code_label_decode(model_dir):
+    """Recreate only the reviewed local tokenizer's decoder; never use remote code.
+
+    Validate this inexpensive prerequisite before the model/plugin is loaded.
+    The backend separately binds/proves the actual plugin encoder and code table.
+    """
+    import third_party.rwkv7_hf as V
+    from decide.backends.rwkv_g1_filtered_codes import TOKENIZER_SHA256, TOKENIZER_SOURCE_SHA256
+
+    vocab = Path(model_dir) / "tokenizer.json"
+    source = V.HERE / "tokenization_rwkv7.py"
+    if (_sha256_file(vocab) != TOKENIZER_SHA256
+            or _sha256_file(source) != TOKENIZER_SOURCE_SHA256
+            or V.CODE_SHA256["tokenization_rwkv7.py"] != TOKENIZER_SOURCE_SHA256):
+        raise ValueError("code-label engine requires the pinned G1k vocabulary and reviewed tokenizer source")
+    from third_party.rwkv7_hf.tokenization_rwkv7 import Rwkv7Tokenizer
+
+    tokenizer = Rwkv7Tokenizer(tokenizer_file=str(vocab))
+    return tokenizer.decode
 
 
 def build_plugin(family: str, options: dict[str, Any]):
@@ -26,7 +58,7 @@ def build_plugin(family: str, options: dict[str, Any]):
                                      options.get("converted", ""), device=dev, dtype=dt)
     from decide.backends import hf_readout as H
 
-    if family == "rwkv7-hf":
+    if family in ("rwkv7-hf", CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY):
         return H.load_rwkv7_hf(options["model_dir"], device=dev, dtype=dt)
     if family == "qwen3.5":
         return H.load_qwen35(options["model_dir"], device=dev, dtype=dt)
@@ -62,8 +94,18 @@ class ReadoutIndexEngine(Engine):
         from decide.backends.hf_readout import HFReadoutBackend
 
         self.family = options.get("family", "q9af-probe")
+        decode = _load_code_label_decode(options["model_dir"]) if self.family in (CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY) else None
         plug = build_plugin(self.family, options)
-        self.backend = HFReadoutBackend(plug, TEMPLATES[self.family], max_batch_rows=int(options.get("max_batch_rows", 4)))
+        if self.family == CODE_LABEL_V2_FAMILY:
+            from decide.backends.rwkv_g1_code_label_v2 import G1CodeLabelV2Backend
+
+            self.backend = G1CodeLabelV2Backend(plug, tokenizer_decode=decode)
+        elif self.family == CODE_LABEL_FAMILY:
+            from decide.backends.rwkv_g1_code_label import G1CodeLabelBackend
+
+            self.backend = G1CodeLabelBackend(plug, tokenizer_decode=decode)
+        else:
+            self.backend = HFReadoutBackend(plug, TEMPLATES[self.family], max_batch_rows=int(options.get("max_batch_rows", 4)))
         self.decider = Decider(self.backend, enable_v0_1_deltas=True, backend_max_input_tokens=plug.max_context)
         rev = self.backend.revision()
         self.provenance = {"family": self.family, "model_id": plug.model_id, "backend_revision": rev["revision_id"],

@@ -62,20 +62,20 @@ class _Fake:
 
 
 def _ok_resp(req, pcp):
-    keys = list(req["questions"][data.QKEY]["criteria"])
-    u = {k: 1.0 / len(keys) for k in keys}
-    ss = {"status": "ok", "raw_probabilities": {data.QKEY: u}, "served_probabilities": {data.QKEY: u}}
-    if pcp is not None:
-        ss["policy_conditioned_probabilities"] = pcp
-    return {"model": "x", "answers": {}, "ssdm": ss}
+    resp = Decider(OracleBackend()).decide(to_decide_request(req))
+    if pcp is None:
+        del resp["ssdm"]["policy_conditioned_probabilities"]
+    else:
+        resp["ssdm"]["policy_conditioned_probabilities"] = pcp
+    return resp
 
 
 def test_bridge_never_falls_back_to_unrestricted_served(reqs):
     req = data.strip_meta(reqs[0])
-    # restriction sent, no conditioning returned: contract violation -> error row (not a silent served argmax)
+    # restriction sent, no conditioning returned: explicit deferral (never a served/legacy argmax)
     rows = metrics.run(DecideBridge(_Fake(_ok_resp(req, None))), [reqs[0] | {"_meta": dict(reqs[0]["_meta"],
                        variant="clean", attack_family="clean", template="clean")}])
-    assert rows[0]["status"] == "error" and "policy_conditioned" in rows[0]["error"]
+    assert rows[0]["status"] == "unsupported" and rows[0]["error"] == "policy_conditioned_unavailable"
     # zero allowed served mass: nothing executes -> unsupported with an explicit code
     stage = {data.QKEY: {"status": "unavailable_zero_served_mass", "probabilities": None}}
     r = DecideBridge(_Fake(_ok_resp(req, stage)))(req)

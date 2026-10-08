@@ -1,0 +1,103 @@
+{
+  "base_commit": "054f583",
+  "checkpoint_loaded": false,
+  "claim": "scripted public-boundary coverage for exact L1 four-record read/explain/ordered-compare templates; not learned L1 capability, exact-sum support, calibration, or causal mediation",
+  "cohorts": [
+    {
+      "choice_format": "production",
+      "records_per_world": 4,
+      "sample_sha256": "abc42fd0cf9f396126a768d022c8cd32f41531cdc79226eb39b2cacb4829c8ea",
+      "seed": 1707,
+      "split": "l1_development_train",
+      "task_count": 40,
+      "worlds": 1
+    },
+    {
+      "choice_format": "production",
+      "records_per_world": 4,
+      "sample_sha256": "94085b1ab96a10990c8a4e013141807c0cf492c5b2fa8dd8ef38c8dfe7df80f4",
+      "seed": 1707,
+      "split": "l1_development_validation",
+      "task_count": 40,
+      "worlds": 1
+    },
+    {
+      "choice_format": "production",
+      "records_per_world": 4,
+      "sample_sha256": "69c08f4f550f87ecef8fda4e0643beceaad0d3d7463d1c7df797954129777f51",
+      "seed": 1707,
+      "split": "l1_multiworld_development_train",
+      "task_count": 40,
+      "worlds": 1
+    },
+    {
+      "choice_format": "production",
+      "records_per_world": 4,
+      "sample_sha256": "da6b3ea997454e0e5ba80ebbdb52771bb23d2a842f3600a7cbc0acd2d3516fed",
+      "seed": 1707,
+      "split": "l1_multiworld_development_validation",
+      "task_count": 40,
+      "worlds": 1
+    }
+  ],
+  "commands": [
+    {
+      "command": "$env:CUDA_VISIBLE_DEVICES='-1'; & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_task_relevance.py -q -k l1",
+      "result": "2 passed"
+    },
+    {
+      "command": "$env:CUDA_VISIBLE_DEVICES='-1'; & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests tests/test_jobs_lint.py -q",
+      "result": "375 passed in 53.85s"
+    }
+  ],
+  "cost_usd": 0,
+  "gpu_used": false,
+  "index_or_heldout_access": false,
+  "model_loaded": false,
+  "paid_compute_used": false,
+  "provider": "MultirecordInputOracle chooses only from exact task text and audience-visible records; evaluator-only targets/programs are used for assertions outside provider requests",
+  "raw_predictions": "none; no learned model/provider run; scripted outputs are asserted in tests",
+  "registration_refresh": [
+    {
+      "changed_sources": [
+        "language_growth/task_relevance.py",
+        "language_growth/tests/test_task_relevance.py"
+      ],
+      "name": "operation-only",
+      "non_source_fields_unchanged": true,
+      "path": "receipts/2026-10-06-L-operation-only-cache-prepared/registration.json",
+      "previous_sha256": "a47e84fcb521cb0424485689f343e372669377c315515fdc1370d98a0739f473",
+      "refreshed_sha256": "35d537cc8a4d5236bc0003fdda9343ce65c840c52722c113d49f6914df5c98d3",
+      "source_count": 124
+    },
+    {
+      "changed_sources": [
+        "language_growth/task_relevance.py",
+        "language_growth/tests/test_task_relevance.py"
+      ],
+      "name": "fact-name-screen",
+      "non_source_fields_unchanged": true,
+      "path": "receipts/2026-10-07-L-fact-name-screen-retry-prepared/registration.json",
+      "previous_sha256": "92a93e1314391f9714fc7b3b8e1dd591bf687be91286ee417a1b55611c0bd86d",
+      "refreshed_sha256": "6b2379e8c2c878977fe887b3236a62c4cdeb7bc3cdb0cd5e17ec5e76867980b1",
+      "source_count": 86
+    }
+  ],
+  "runtime": {
+    "cuda_visible_devices": "-1",
+    "gpu_used": false,
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13",
+    "system": "Windows-11-10.0.26200-SP0",
+    "torch_distribution": "2.8.0+cu128"
+  },
+  "schema": "ssdm.l1_public_multirecord_contract_cpu_receipt.v1",
+  "source_sha256": {
+    "STATUS.md": "934cebff3878231067fd42ee20456f931a8ac3f8dded65126d5dc20a47f2da1e",
+    "language_growth/task_relevance.py": "8489990a30dcf7e6efa1fe2c4bbfb35da59af4adee847d364c3f464288c2d440",
+    "language_growth/tests/test_task_relevance.py": "180660ddbcb6206764a98f6700e42f0f81f52a61a2599216e2974bbfb8f812fe",
+    "plans/codex/L1_PUBLIC_TASK_CONTRACT.md": "ecfc98eed2b4e3235f5345baf783885722b87e3fa8fbd25a93e08dc622455f10"
+  },
+  "tested_commit": "7cf20e6",
+  "total_scripted_tasks": 160
+}

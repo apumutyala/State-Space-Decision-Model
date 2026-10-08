@@ -1,0 +1,6 @@
+{
+  "command_id": "cmd-xgjgs",
+  "log_path": "~/.givemeanode/commands/cmd-xgjgs.log",
+  "note": "running detached; poll get_command(node, command_id) for output and the exit code; the log also lives at log_path on the node (any later run_command can tail it). The process dies with the container, exactly like a tmux session: files survive, processes don't.",
+  "object": "command"
+}

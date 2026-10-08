@@ -1,0 +1,27 @@
+{
+  "schema": "ssdm.cpu8_selected_launch_outputs.v1",
+  "archive": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\receipts\\m2-cpu8-validation-20261008-run4\\launch-output.tar",
+  "archive_sha256": "7154ced963f52ab35e05bd91b7c0cf0674dd16f5a9d7ec54ba4751288e9f8fae",
+  "extracted": {
+    "submit.json": {
+      "output": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\receipts\\m2-cpu8-validation-20261008-run4\\submit.json",
+      "bytes": 3754,
+      "sha256": "b46ce5ddf99001c42e1ea6194052cca5af84777fab5e3530c2d223dc0e030744"
+    },
+    "stage/junit-m2_first_cell.xml": {
+      "output": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\receipts\\m2-cpu8-validation-20261008-run4\\junit-m2_first_cell.xml",
+      "bytes": 21630,
+      "sha256": "31c258aad742cbf1b1b9c2f5ff24527c0abe890b89d4f6366ed472c9bf9a27e3"
+    },
+    "m2_first_cell-11fb140ce648.tar.zst": {
+      "output": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\prepared-contexts\\m2-first-cell-11fb140-be4c1d3893358067\\m2_first_cell-11fb140ce648.tar.zst",
+      "bytes": 469179636,
+      "sha256": "be4c1d3893358067c82962c077e5d7eadfaf74a27c3a0dd2b66d34e94953e6b7"
+    },
+    "CONTEXT_MANIFEST.json": {
+      "output": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\receipts\\m2-cpu8-validation-20261008-run4\\CONTEXT_MANIFEST.json",
+      "bytes": 2462,
+      "sha256": "a8fc589b6c5397b149953868096da1a8e66b8b65d74bee94e772000ec95da1da"
+    }
+  }
+}

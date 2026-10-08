@@ -1,0 +1,35 @@
+{
+  "schema": "ssdm.cpu8_storage_canary_large.v1",
+  "observed_at_utc": "2026-10-08T02:36:21.987568Z",
+  "workspace": "default",
+  "cli": "autor 0.28.0",
+  "bucket": "ssdm-cpu8-canary-large-20261008",
+  "bucket_created_at_utc": "2026-10-08T02:36:01.166804Z",
+  "storage_object": {
+    "key": "canary-25m/payload.bin",
+    "synthetic": true,
+    "bytes": 26208694,
+    "upload_reported_size": "25.0 MiB",
+    "upload_wall_seconds_approx": 18.5,
+    "listed_bytes": 26208694,
+    "download_reported_size": "25.0 MiB",
+    "downloaded_bytes": 26208694,
+    "source_sha256": "58453843f8da445f5f57c02df17223a992c807a4bc9d3c972d426b93372db33b",
+    "download_sha256": "58453843f8da445f5f57c02df17223a992c807a4bc9d3c972d426b93372db33b",
+    "sha256_match": true
+  },
+  "cleanup": {
+    "object_deleted": true,
+    "bucket_deleted": true,
+    "post_cleanup_bucket_list_empty": true,
+    "storage_mtd_usd": 0.0,
+    "storage_active_bytes": 0,
+    "available_usd_after": 467.462038,
+    "active_compute_nodes": 0
+  },
+  "limits": [
+    "Synthetic 26,208,694-byte object only; no real package contents were uploaded.",
+    "Storage cp round-trip only; node-side autor import and staged CPU validation remain untested.",
+    "No node creation/wake, model, Index/held-out data, training, or compute/storage charge occurred."
+  ]
+}
