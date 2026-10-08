@@ -136,3 +136,13 @@ Stage B differs in: `idempotency_key "m1-rwkv7-lora-<sha12>"`, `env {"JOB": "lor
 
 Exports, verification and the local CPU recompute follow `jobs/probe9b/JOB_SPEC.md` (`dev_subset score` / `ece`
 reproduce `index/score.json` / `ece.json`; `safety_eval` summary from `predictions.jsonl`).
+
+## C1: `JOB=readout_g1v2` (vendor-compliant readout, `jobs/rwkv7/job_params_readout_g1v2.json`)
+
+Stage A's Index phase only (no probe, no steer smoke), with the readout family `rwkv7-hf-g1-v2`
+(`decide.backends.rwkv_g1_v2.G1V2Backend`, template `jrt-rwkv-g1-v2`): no blank lines inside the system/user turn,
+token 0 first, the G1k no-think tail `Assistant: <think></think>
+`, single-token option codes (A..Z, AA.. from the
+frozen filtered codebook) read from one next-token distribution per question, and whole-string tokenization. The live
+rate guard (`jobs.common.rate_guard run`) stops a slow box. Schedule 105 + reserve 10 = 115. Worst case
+(60 + 2 x 115) x 0.0495 = **$14.36**; expected ~$2.50; hard cap $15.
