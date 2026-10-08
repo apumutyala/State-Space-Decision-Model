@@ -123,15 +123,19 @@ def comparator_prompt(task: dict[str, Any]) -> str:
             ensure_ascii=False, allow_nan=False))
 
 
-def generate_observations(tasks: list[dict[str, Any]], generate: Callable[[str], dict[str, Any]],
-                          *, identity: dict[str, Any]) -> dict[str, Any]:
-    """Run one deterministic, unassisted response per input; errors remain rows."""
-    if not tasks:
+def _validated_prompts(tasks: list[dict[str, Any]]) -> list[str]:
+    if not isinstance(tasks, list) or not tasks or any(not isinstance(task, dict) for task in tasks):
         raise ComparatorError("empty comparator suite")
     ids = [task.get("task_id") for task in tasks]
     if any(not isinstance(i, str) or not i for i in ids) or len(set(ids)) != len(ids):
         raise ComparatorError("task IDs must be nonempty and unique")
-    prompts = [comparator_prompt(task) for task in tasks]  # validate before any model call
+    return [comparator_prompt(task) for task in tasks]
+
+
+def generate_observations(tasks: list[dict[str, Any]], generate: Callable[[str], dict[str, Any]],
+                          *, identity: dict[str, Any]) -> dict[str, Any]:
+    """Run one deterministic, unassisted response per input; errors remain rows."""
+    prompts = _validated_prompts(tasks)
     observations = []
     for task, prompt in zip(tasks, prompts):
         row = {"task_id": task["task_id"], "input_sha256": canonical_input_sha256(task)}
@@ -193,8 +197,7 @@ def run_comparator(tasks: list[dict[str, Any]], *, model_path: Path, model_id: s
         raise ComparatorError("unsupported dtype")
     if device != "cpu" and not device.startswith("cuda"):
         raise ComparatorError("explicit cpu or cuda device required")
-    for task in tasks:
-        comparator_prompt(task)
+    _validated_prompts(tasks)  # reject empty/duplicate cohorts before touching weights
     identity = local_model_identity(model_path, model_id=model_id, revision=revision)
     identity["stage1_parent"] = qualified_parent.identity()
     identity["decoding"] = {"do_sample": False, "num_beams": 1,

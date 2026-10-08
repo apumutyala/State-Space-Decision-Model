@@ -1,6 +1,10 @@
-# L0 semantic boundary
+# Checked language growth, L0–L4
 
-This CPU-only package checks a compact typed semantic program against host-supplied fixture evidence. It is not a trained language model. The current kernel supports ReadFact, exact Compare, Assert, Conjoin, ExplainDerivation and Ask, with bounded rejection reasons and release-time policy/evidence revalidation.
+This package checks compact typed semantic programs against host-supplied evidence. It is not a trained language model. The kernel supports ReadFact, exact Compare, ExactDifference, Assert, Conjoin, ExplainDerivation, Hypothesize, Plan and Ask, with bounded rejection reasons and release-time policy/evidence revalidation. Licensed contrast and scoped historical electricity knowledge extend the checked surface; no learned level is qualified.
+
+Use `python -m language_growth.gates --parent CHECKPOINT` for a no-load readiness report. Missing comparator, retention, joint soundness and neural intervention evidence remains unmeasured. Read [the gate guide](GATES.md) for suite preparation and execution, and [qualified parent admission](QUALIFIED_PARENT.md) for the independently pinned Stage 1 report, qualification and original snapshot required to load a native M2 checkpoint. A ledger `keep` alone is insufficient.
+
+The [older PR triage](../plans/codex/LANGUAGE_PR_TRIAGE_20261008.md) records merged dependencies, historical folds and operator closure candidates without deleting evidence.
 
 An explicitly opted-in host registry can also enable `ExactDifference` for
 left-minus-right over integer/decimal Facts or host constants with identical
