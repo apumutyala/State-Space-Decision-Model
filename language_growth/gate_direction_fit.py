@@ -15,6 +15,11 @@ random fallback, calibration refit or parent mutation. Zero contrasts fail.
 Separate development_validation pairs measure four native edit arms without
 changing the fit. This is slot-level development evidence, not a language gate.
 
+Optional ``target_slots=["comparison-relation"]`` binds a finite declared
+planner-slot scope to v2 evidence/artifact/registration; omitted scope retains
+legacy v1 all-slot application. Both discovery and validation must cover every
+declared slot. No tasks or calls are selected based on labels or model behavior.
+
 ``write_direction_fit(result, out)`` writes the exact intervention adapter .pt
 schema, fitting evidence and machine registration to a fresh directory. The
 CLI uses the existing qualified-parent loader and local pinned snapshot only.
@@ -29,14 +34,15 @@ import math
 from pathlib import Path
 
 from .gate_interventions import (
-    ARMS, BOUNDARY, DIRECTION_SCHEMA, OUTPUT_CONTROL, SCHEMA, SCOPE, _ArmProvider,
+    ARMS, BOUNDARY, DIRECTION_SCHEMA, DIRECTION_SCHEMA_V2, OUTPUT_CONTROL, SCHEMA, SCHEMA_V2, SCOPE, TARGET_SLOTS, _ArmProvider,
     _OWNER, _native, _parent_state_sha, _sha, _tensor_sha, native_capture_identity,
-    registration_sha256,
+    registration_sha256, question_slot, validate_target_slots,
 )
 from .parent_bridge import DECISION_SCHEMA, FINGERPRINT_ALGORITHM, decision_request, legacy_request_fingerprint
 from .qualified_parent import file_sha256
 
 FIT_SCHEMA = "ssdm.native_fork_direction_fit.v1"
+FIT_SCHEMA_V2 = "ssdm.native_fork_direction_fit.v2"
 METHOD = "unit_mean_paired_candidate_mean_hidden_and_centered_raw_logits.v1"
 _PAIR_KEYS = {"pair_id", "world_id", "split", "concept", "source", "effect", "source_target", "effect_target"}
 _SPEC_KEYS = {"task_input", "host", "catalog", "question_id", "question", "options"}
@@ -190,7 +196,7 @@ def _cosine(left, right):
     return float(left @ right.double() / denominator) if denominator > 1e-12 else None
 
 
-def _validate(row, parent, capture_identity, direction, outputs, scale, random, protocol_sha):
+def _validate(row, parent, capture_identity, direction, outputs, scale, random, protocol_sha, target_slots=None):
     """Use exact native edit hooks and served outputs; labels stay outside provider."""
     import torch
     pair, requests, options, _ = row
@@ -201,8 +207,11 @@ def _validate(row, parent, capture_identity, direction, outputs, scale, random, 
     record["arms"] = {}
     head = _native(parent)._loaded.backend.model.head
     for arm in ARMS:
-        provider = _ArmProvider(parent, arm, {"scale": scale, "registration_sha256": protocol_sha,
-                                            "capture_identity_sha256": _sha(capture_identity)},
+        registration = {"scale": scale, "registration_sha256": protocol_sha,
+                        "capture_identity_sha256": _sha(capture_identity)}
+        if target_slots is not None:
+            registration["target_slots"] = target_slots
+        provider = _ArmProvider(parent, arm, registration,
                                 capture_identity, direction, random, outputs)
         handles = [head.register_forward_pre_hook(provider.pre_hook), head.register_forward_hook(provider.post_hook)]
         try:
@@ -225,7 +234,7 @@ def _validate(row, parent, capture_identity, direction, outputs, scale, random, 
 
 
 def fit_native_directions(parent, discovery_pairs: list[dict], *, validation_pairs: list[dict],
-                          scale: float, random_seed: int) -> dict:
+                          scale: float, random_seed: int, target_slots: list[str] | None = None) -> dict:
     """Fit train-only native axes; separate validation never changes estimator/settings.
 
     Accept NativeParent for small synthetic CPU tests or an admitted
@@ -240,6 +249,12 @@ def fit_native_directions(parent, discovery_pairs: list[dict], *, validation_pai
     capture_identity = native_capture_identity(parent)
     train = _validate_pairs(discovery_pairs, "development_train", parent)
     validation = _validate_pairs(validation_pairs, "development_validation", parent)
+    if target_slots is not None:
+        target_slots = validate_target_slots(target_slots)
+        for cohort in (train, validation):
+            observed_slots = {question_slot(row[0][side]["question_id"]) for row in cohort for side in ("source", "effect")}
+            if observed_slots != set(target_slots):
+                raise ValueError("discovery and validation must cover exactly the declared target slots")
     train_worlds = sorted({row[0]["world_id"] for row in train})
     validation_worlds = sorted({row[0]["world_id"] for row in validation})
     if (set(train_worlds) & set(validation_worlds)
@@ -269,6 +284,8 @@ def fit_native_directions(parent, discovery_pairs: list[dict], *, validation_pai
             "validation_protocol": "native source request; semantic/sham/random/output_only edits toward effect concept",
             "scope": "slot-level synthetic development; no semantic efficacy or language qualification claim",
             "state_unchanged_sha256_before": before, "discovery": [], "validation": []}
+        if target_slots is not None:
+            evidence.update(schema=FIT_SCHEMA_V2, target_slots=target_slots)
         d = capture_identity["hidden_dimension"]
         hidden_sum = torch.zeros(d, dtype=torch.float64)
         output_sums = {k: torch.zeros(k, dtype=torch.float64) for k in counts}
@@ -290,10 +307,11 @@ def fit_native_directions(parent, discovery_pairs: list[dict], *, validation_pai
         random = (random * (direction.double().norm() / random.norm())).float()
         protocol_sha = _sha({"method": METHOD, "pairs": evidence["discovery_pairs_sha256"],
                              "scale": scale, "random_seed": random_seed,
+                             "target_slots": target_slots,
                              "direction": _tensor_sha(direction), "outputs": {str(k): _tensor_sha(v) for k, v in outputs.items()}})
         evidence["validation_protocol_sha256"] = protocol_sha
         for row in validation:
-            evidence["validation"].append(_validate(row, parent, capture_identity, direction, outputs, scale, random, protocol_sha))
+            evidence["validation"].append(_validate(row, parent, capture_identity, direction, outputs, scale, random, protocol_sha, target_slots))
         parent.planner_kwargs()
         after = _parent_state_sha(native._loaded.backend.model)
         if before != after:
@@ -308,6 +326,8 @@ def fit_native_directions(parent, discovery_pairs: list[dict], *, validation_pai
             "discovery_pairs_sha256": evidence["discovery_pairs_sha256"],
             "output_only_fit_evidence_sha256": _sha(evidence), "direction": direction,
             "output_only_directions": {str(k): value for k, value in outputs.items()}}
+        if target_slots is not None:
+            artifact.update(schema=DIRECTION_SCHEMA_V2, target_slots=target_slots)
         return {"artifact": artifact, "evidence": evidence,
                 "source_pairs": {"discovery": deepcopy(discovery_pairs), "validation": deepcopy(validation_pairs)}}
     finally:
@@ -325,6 +345,16 @@ def write_direction_fit(result: dict, out: str | Path) -> dict:
         "capture_identity_sha256": _sha(capture), "capture_boundary": BOUNDARY,
         "source_split": "discovery_train_only", "discovery_world_ids": discovery_worlds,
         "discovery_pairs_sha256": _sha(sources["discovery"]), "output_only_fit_evidence_sha256": _sha(evidence)}
+    targeted = artifact.get("schema") == DIRECTION_SCHEMA_V2
+    if targeted:
+        slots = validate_target_slots(evidence.get("target_slots"))
+        if (evidence.get("schema") != FIT_SCHEMA_V2
+                or any({question_slot(pair[side]["question_id"]) for pair in cohort for side in ("source", "effect")} != set(slots)
+                       for cohort in sources.values())):
+            raise ValueError("fitting applicability evidence identity changed")
+        expected_lineage.update(schema=DIRECTION_SCHEMA_V2, target_slots=slots)
+    elif evidence.get("schema") != FIT_SCHEMA or "target_slots" in evidence:
+        raise ValueError("fitting applicability evidence identity changed")
     if (artifact["output_only_fit_evidence_sha256"] != _sha(evidence)
             or set(artifact) != set(expected_lineage) | {"direction", "output_only_directions"}
             or any(artifact[key] != value for key, value in expected_lineage.items())
@@ -341,12 +371,14 @@ def write_direction_fit(result: dict, out: str | Path) -> dict:
     out.mkdir(parents=True, exist_ok=False)
     path = out / "directions.pt"
     torch.save(artifact, path)
-    p = {"schema": SCHEMA, "parent_revision": artifact["parent_revision"],
+    p = {"schema": SCHEMA_V2 if targeted else SCHEMA, "parent_revision": artifact["parent_revision"],
          "capture_identity_sha256": artifact["capture_identity_sha256"], "capture_boundary": BOUNDARY,
          "scope": SCOPE, "discovery_world_ids": artifact["discovery_world_ids"],
          "discovery_pairs_sha256": artifact["discovery_pairs_sha256"],
          "directions": {"path": str(path), "sha256": file_sha256(path)},
          "scale": evidence["scale"], "random_seed": evidence["random_seed"], "output_control": OUTPUT_CONTROL}
+    if targeted:
+        p["target_slots"] = artifact["target_slots"]
     p["registration_sha256"] = registration_sha256(p)
     for name, value in (("fit-evidence.json", evidence), ("registration.json", p), ("source-pairs.json", sources)):
         (out / name).write_text(json.dumps(value, sort_keys=True, indent=2, allow_nan=False) + "\n", encoding="utf-8")
@@ -380,7 +412,7 @@ def development_relation_pairs(examples: list[dict]) -> list[dict]:
             # generated model_inputs or any target/proposal history to build it.
             task = f"Compare the October {left['field'].replace('_', ' ')} of {records[left['record_ref']]['entity_ref']} and {records[right['record_ref']]['entity_ref']}."
             return {"task_input": task, "host": deepcopy(training["host"]), "catalog": deepcopy(training["catalog"]),
-                    "question_id": "relation", "question": "Select the comparison relation for the original task.",
+                    "question_id": "slot-004-comparison-relation", "question": "Select the comparison relation for the original task.",
                     "options": {"r001": "greater_than", "r002": "less_than", "r003": "equal"}}
         pairs.append({"pair_id": example["task_id"] + "-less-to-greater", "world_id": example["task_id"],
                       "split": example["development_split"], "concept": "less_than_to_greater_than",
@@ -395,6 +427,7 @@ def main(argv=None) -> int:
         p.add_argument("--" + name, required=True)
     p.add_argument("--scale", required=True, type=float)
     p.add_argument("--random-seed", required=True, type=int)
+    p.add_argument("--target-slots", nargs="+", choices=sorted(TARGET_SLOTS), help="explicit native edit slots; omit for legacy all-slot protocol")
     p.add_argument("--device", default="cpu")
     p.add_argument("--dtype", default="bfloat16", choices=("float32", "bfloat16"))
     args = p.parse_args(argv)
@@ -412,7 +445,8 @@ def main(argv=None) -> int:
     parent = load_qualified_parent(args.parent, report=args.parent_report, report_sha256=args.parent_report_sha256,
         qualification=args.parent_qualification, qualification_sha256=args.parent_qualification_sha256,
         snapshot=args.parent_snapshot, device=args.device, dtype=args.dtype)
-    result = fit_native_directions(parent, discovery, validation_pairs=validation, scale=args.scale, random_seed=args.random_seed)
+    result = fit_native_directions(parent, discovery, validation_pairs=validation, scale=args.scale,
+                                   random_seed=args.random_seed, target_slots=args.target_slots)
     registration = write_direction_fit(result, args.out)
     print(json.dumps({"status": "development_fitted_no_qualification", "registration": registration,
                       "validation_effect_target_selected": result["evidence"]["validation_effect_target_selected"]}, sort_keys=True))

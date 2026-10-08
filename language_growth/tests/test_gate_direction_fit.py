@@ -15,7 +15,8 @@ from language_growth.gate_direction_fit import (
     METHOD, _request, development_relation_pairs, fit_native_directions, write_direction_fit,
 )
 from language_growth.gate_interventions import (
-    DIRECTION_SCHEMA, _OWNER, _parent_state_sha, _registration, _sha,
+    DIRECTION_SCHEMA, DIRECTION_SCHEMA_V2, SCHEMA_V2, _OWNER, _parent_state_sha, _registration, _sha,
+    capture_is_targeted, question_slot, registration_sha256, run_native_interventions,
 )
 from language_growth.native_parent import LoadedNativeParent, NativeParent, NativeParentPin
 from language_growth.tests.test_gate_interventions import FakeStateBackbone
@@ -287,3 +288,134 @@ def test_native_forward_followed_by_stale_response_identity_fails(tmp_path, fiel
     assert not parent._loaded.backend.model.head._forward_pre_hooks
     assert _OWNER.acquire(blocking=False)
     _OWNER.release()
+
+
+def compare_parent_and_task(tmp_path, train, validation):
+    """Fit a tiny actual head's last layer to choose Compare on one synthetic task."""
+    from language_growth.gate_answer_format import answer_format
+    from language_growth.gate_planner import plan_gate_task
+    parent = trained_parent(tmp_path, train)
+    spec = validation[0]["source"]
+    task = {"task_id": "synthetic-evaluation", "world_id": "synthetic-evaluation-world", "level": "L0",
+            "split": "development_validation", "task_input": spec["task_input"], "host": deepcopy(spec["host"]),
+            "catalog": deepcopy(spec["catalog"]), "answer_format": answer_format()}
+    requests = []
+    decide = parent.decide
+    def observe(request):
+        requests.append(deepcopy(request))
+        return decide(request)
+    parent.decide = observe
+    plan_gate_task(task, parent)
+    parent.decide = decide
+    request = requests[0]
+    model, backend = parent._loaded.backend.model, parent._loaded.backend
+    captures = []
+    handle = model.head.register_forward_pre_hook(lambda _head, args: captures.append(args[0]))
+    try:
+        with torch.no_grad():
+            model(backend._rows(request), shared_prefix=True)
+    finally:
+        handle.remove()
+    with torch.no_grad():
+        fork = model.head.norm(captures[0].fork)
+        inputs = torch.cat([fork, fork - fork.mean(1, keepdim=True)], -1)
+        hidden = model.head.mlp[1](model.head.mlp[0](inputs))[0].double()
+        design = torch.cat([hidden, torch.ones(hidden.shape[0], 1)], 1)
+        # Supervised last-layer least squares for this TEST fixture only.
+        target = torch.tensor([-1., 1., -1.], dtype=torch.float64)
+        solution = torch.linalg.lstsq(design, target, driver="gelsd").solution.float()
+        model.head.mlp[2].weight.copy_(solution[:-1].view(1, -1))
+        model.head.mlp[2].bias.copy_(solution[-1:])
+        assert model(backend._rows(request), shared_prefix=True).log_probs.argmax(1).item() == 1
+    fresh = DecisionModelBackend(model, backend.encode, checkpoint=backend.checkpoint, shared_prefix=True)
+    loaded = LoadedNativeParent(fresh, parent._loaded.calibration, 32768)
+    decider = Decider(fresh, calibration=loaded.calibration, backend_max_input_tokens=32768)
+    pin = NativeParentPin("a" * 64, deepcopy(decider.revision()), loaded.calibration.to_dict(), deepcopy(parent._pin.runtime))
+    return NativeParent(loaded, pin), task
+
+
+def test_targeted_fitted_K3_runs_full_native_planner_and_untargeted_fact_K4_is_unchanged(tmp_path):
+    train, validation = pairs()
+    parent, task = compare_parent_and_task(tmp_path, train, validation)
+    fitted = fit_native_directions(parent, train, validation_pairs=validation, scale=.02, random_seed=17,
+                                   target_slots=["comparison-relation"])
+    assert fitted["artifact"]["schema"] == DIRECTION_SCHEMA_V2
+    registration = write_direction_fit(fitted, tmp_path / "targeted")
+    assert registration["schema"] == SCHEMA_V2
+    assert registration["target_slots"] == fitted["evidence"]["target_slots"] == ["comparison-relation"]
+    assert set(fitted["artifact"]["output_only_directions"]) == {"3"}
+    before = _parent_state_sha(parent._loaded.backend.model)
+    result = run_native_interventions([task], parent, registration)
+    assert result["instrumentation_valid"] and result["targeted_cohort_valid"]
+    assert result["targeted_capture_counts"] == {arm: 1 for arm in result["arms"]}
+    assert _parent_state_sha(parent._loaded.backend.model) == before
+    for arm, records in result["provenance"][0]["captures"].items():
+        assert len(records) == 4
+        assert [question_slot(record["question_id"]) for record in records] == ["semantic-operation", "left-operand", "right-operand", "comparison-relation"]
+        assert [record["targeted"] for record in records] == [False, False, False, True]
+        assert [record["capture"]["shape"][1] for record in records] == [3, 4, 4, 3]
+        for record in records[:3]:
+            capture = record["capture"]
+            assert capture["hidden_before_sha256"] == capture["hidden_after_sha256"]
+            assert capture["logits_before_sha256"] == capture["logits_after_sha256"]
+            assert capture["hidden_delta_l2"] == capture["matched_delta_l2"] == capture["output_delta_l2"] == 0
+        capture = records[-1]["capture"]
+        if arm in ("semantic", "random"):
+            assert capture["hidden_delta_l2"] > 0
+        if arm == "output_only":
+            assert capture["output_delta_l2"] > 0
+    # Every ordinary free-running result remains present, including rejections.
+    assert all(len(rows) == 1 for rows in result["arms"].values())
+    assert result["provenance"][0]["target_slots"] == ["comparison-relation"]
+
+
+def test_missing_targeted_control_and_zero_target_cohort_cannot_qualify(tmp_path):
+    train, validation = pairs()
+    parent, task = compare_parent_and_task(tmp_path, train, validation)
+    result = fit_native_directions(parent, train, validation_pairs=validation, scale=.02, random_seed=17,
+                                   target_slots=["comparison-relation"])
+    registration = write_direction_fit(result, tmp_path / "targeted")
+    artifact_path = tmp_path / "targeted/directions.pt"
+    artifact = torch.load(artifact_path, weights_only=True)
+    artifact["output_only_directions"] = {"2": torch.tensor([-1., 1.])}
+    torch.save(artifact, artifact_path)
+    from language_growth.qualified_parent import file_sha256
+    registration["directions"]["sha256"] = file_sha256(artifact_path)
+    registration["registration_sha256"] = registration_sha256(registration)
+    failed = run_native_interventions([task], parent, registration)
+    assert not failed["instrumentation_valid"] and not failed["targeted_cohort_valid"]
+    assert all(rows[0].status == "runner_error" for rows in failed["arms"].values())
+    # Explicitly change scope to a known slot absent from every L0 trajectory.
+    artifact["target_slots"] = registration["target_slots"] = ["energy-record"]
+    torch.save(artifact, artifact_path)
+    registration["directions"]["sha256"] = file_sha256(artifact_path)
+    registration["registration_sha256"] = registration_sha256(registration)
+    untargeted = run_native_interventions([task], parent, registration)
+    assert not untargeted["instrumentation_valid"] and not untargeted["targeted_cohort_valid"]
+    assert untargeted["targeted_capture_counts"] == {arm: 0 for arm in untargeted["arms"]}
+    assert all(len(rows) == 1 for rows in untargeted["arms"].values())
+    assert all(not record["targeted"] for records in untargeted["provenance"][0]["captures"].values() for record in records)
+
+
+def test_target_scope_binding_and_fixed_slot_parser_reject_unfitted_or_forged_applicability(tmp_path):
+    train, validation = pairs()
+    parent = trained_parent(tmp_path, train)
+    assert question_slot("slot-004-comparison-relation") == "comparison-relation"
+    assert question_slot("slot-000-comparison-relation") is None
+    assert question_slot("slot-004-arbitrary-nlp-selector") is None
+    assert capture_is_targeted("legacy-question", None)
+    with pytest.raises(ValueError, match="known GatePlanner"):
+        capture_is_targeted("arbitrary-selector", ["comparison-relation"])
+    for slots in ([], ["comparison-relation", "comparison-relation"], ["comparison-relation", "fact"], ["task-is-a-comparison"]):
+        with pytest.raises(ValueError):
+            fit_native_directions(parent, train, validation_pairs=validation, scale=.02, random_seed=17, target_slots=slots)
+    fitted = fit_native_directions(parent, train, validation_pairs=validation, scale=.02, random_seed=17,
+                                   target_slots=["comparison-relation"])
+    registration = write_direction_fit(fitted, tmp_path / "targeted")
+    registration["target_slots"] = ["fact"]
+    registration["registration_sha256"] = registration_sha256(registration)
+    with pytest.raises(ValueError, match="applicability differs"):
+        _registration(registration, parent, [{"world_id": "unseen-world"}])
+    fitted["artifact"]["target_slots"] = ["fact"]
+    with pytest.raises(ValueError, match="evidence identity changed"):
+        write_direction_fit(fitted, tmp_path / "forged-scope")

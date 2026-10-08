@@ -13,6 +13,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import re
 import threading
 from typing import Any
 
@@ -22,6 +23,8 @@ from .qualified_parent import QualifiedParent, file_sha256
 
 SCHEMA = "ssdm.language_intervention_preregistration.v1"
 DIRECTION_SCHEMA = "ssdm.native_fork_direction.v1"
+SCHEMA_V2 = "ssdm.language_intervention_preregistration.v2"
+DIRECTION_SCHEMA_V2 = "ssdm.native_fork_direction.v2"
 BOUNDARY = "native_fork_prehead.v1"
 SCOPE = "final_hidden_semantic_axis_only"
 OUTPUT_CONTROL = "fitted_candidate_count_logit_direction.v1"
@@ -30,6 +33,31 @@ NORM_TOLERANCE = 1e-4
 _OWNER = threading.Lock()
 _TASK_KEYS = {"task_id", "world_id", "level", "split", "task_input", "host", "catalog",
               "planner_profile", "production", "answer_format", "energy_module"}
+TARGET_SLOTS = frozenset({"semantic-operation", "fact", "left-operand", "right-operand", "comparison-relation",
+                         "first-fact", "second-fact", "assumption", "workflow", "plan-step", "licensed-production",
+                         "energy-operation", "energy-record"})
+
+
+def question_slot(question_id: str) -> str | None:
+    """Read only the fixed GatePlanner slot suffix; never inspect model/task text."""
+    match = re.fullmatch(r"slot-([0-9]{3})-([a-z][a-z-]*)", question_id) if isinstance(question_id, str) else None
+    return match[2] if match and int(match[1]) > 0 and match[2] in TARGET_SLOTS else None
+
+
+def validate_target_slots(value) -> list[str]:
+    if (not isinstance(value, list) or not value or any(not isinstance(slot, str) or slot not in TARGET_SLOTS for slot in value)
+            or len(value) != len(set(value))):
+        raise ValueError("nonempty unique explicit GatePlanner target slots required")
+    return list(value)
+
+
+def capture_is_targeted(question_id: str, target_slots: list[str] | None) -> bool:
+    if target_slots is None:
+        return True  # exact legacy all-slot behavior, including legacy planner IDs
+    slot = question_slot(question_id)
+    if slot is None:
+        raise ValueError("targeted intervention requires a known GatePlanner question slot")
+    return slot in target_slots
 
 
 def _sha(value: Any) -> str:
@@ -110,12 +138,17 @@ def _registration(preregistration, parent, tasks):
     p = deepcopy(preregistration)
     keys = {"schema", "parent_revision", "registration_sha256", "capture_identity_sha256", "capture_boundary",
             "scope", "discovery_world_ids", "discovery_pairs_sha256", "directions", "scale", "random_seed", "output_control"}
+    targeted = isinstance(p, dict) and p.get("schema") == SCHEMA_V2
+    if targeted:
+        keys.add("target_slots")
     if not isinstance(p, dict) or set(p) != keys:
         raise ValueError("incomplete native intervention preregistration")
     if p["registration_sha256"] != registration_sha256(p):
         raise ValueError("intervention registration identity mismatch")
     capture = native_capture_identity(parent)
-    if (p["schema"] != SCHEMA or p["parent_revision"] != capture["parent_revision"]
+    if targeted:
+        validate_target_slots(p["target_slots"])
+    if (p["schema"] not in (SCHEMA, SCHEMA_V2) or p["parent_revision"] != capture["parent_revision"]
             or p["capture_boundary"] != BOUNDARY or p["scope"] != SCOPE
             or p["capture_identity_sha256"] != _sha(capture) or p["output_control"] != OUTPUT_CONTROL):
         raise ValueError("intervention registration does not match the native capture point/control")
@@ -140,8 +173,13 @@ def _registration(preregistration, parent, tasks):
     expected_keys = {"schema", "parent_revision", "capture_identity_sha256", "capture_boundary", "source_split",
                      "discovery_world_ids", "discovery_pairs_sha256", "output_only_fit_evidence_sha256",
                      "direction", "output_only_directions"}
-    if not isinstance(data, dict) or set(data) != expected_keys or data["schema"] != DIRECTION_SCHEMA:
+    if targeted:
+        expected_keys.add("target_slots")
+    if (not isinstance(data, dict) or set(data) != expected_keys
+            or data["schema"] != (DIRECTION_SCHEMA_V2 if targeted else DIRECTION_SCHEMA)):
         raise ValueError("incomplete native direction artifact")
+    if targeted and data["target_slots"] != p["target_slots"]:
+        raise ValueError("direction applicability differs from preregistration")
     if (data["source_split"] != "discovery_train_only"
             or any(data[key] != p[key] for key in ("parent_revision", "capture_identity_sha256", "capture_boundary",
                                                   "discovery_world_ids", "discovery_pairs_sha256"))):
@@ -189,8 +227,9 @@ class _ArmProvider:
         if question.get("type") != "choice":
             raise ValueError("native intervention requires choice questions")
         options = [oid for oid, _ in canonical_options(question)]
+        targeted = capture_is_targeted(qid, self.registration.get("target_slots"))
         self.current = {"question_id": qid, "option_ids": options, "request_sha256": _sha(request),
-                        "head_calls": 0, "capture": None, "status": "attempted"}
+                        "head_calls": 0, "capture": None, "status": "attempted", "targeted": targeted}
         self.records.append(self.current)
         try:
             response = self.parent.decide(request)
@@ -222,16 +261,17 @@ class _ArmProvider:
             if (x.fork is None or tuple(x.fork.shape) != (1, k, d) or x.ks != [k]
                     or not bool(x.option_mask.all()) or not bool(torch.isfinite(x.fork).all())):
                 raise ValueError("native capture does not cover the complete registered candidate domain")
-            if k not in self.outputs:
+            targeted = self.current["targeted"]
+            if targeted and k not in self.outputs:
                 raise ValueError("discovery artifact lacks a fitted output-only direction for this candidate count")
             original = x.fork
-            wanted_norm = float(self.semantic.double().norm()) * float(self.registration["scale"]) * math.sqrt(k)
+            wanted_norm = float(self.semantic.double().norm()) * float(self.registration["scale"]) * math.sqrt(k) if targeted else 0.0
             edited = original
-            if self.arm in {"semantic", "random"}:
+            if targeted and self.arm in {"semantic", "random"}:
                 direction = self.semantic if self.arm == "semantic" else self.random
                 edited = original + direction.to(device=original.device, dtype=original.dtype).view(1, 1, d) * self.registration["scale"]
             actual_norm = float((edited - original).double().norm())
-            if self.arm in {"semantic", "random"} and not math.isclose(actual_norm, wanted_norm, rel_tol=NORM_TOLERANCE, abs_tol=1e-12):
+            if targeted and self.arm in {"semantic", "random"} and not math.isclose(actual_norm, wanted_norm, rel_tol=NORM_TOLERANCE, abs_tol=1e-12):
                 raise ValueError("realized hidden edit is not norm matched")
             self.current["head_calls"] += 1
             self.current["capture"] = {"hidden_before_sha256": _tensor_sha(original),
@@ -253,7 +293,7 @@ class _ArmProvider:
             before, after = result.logits, result.logits
             if tuple(before.shape) != (1, len(self.current["option_ids"])) or not bool(torch.isfinite(before).all()):
                 raise ValueError("native head logits do not cover the complete candidate domain")
-            if self.arm == "output_only":
+            if self.current["targeted"] and self.arm == "output_only":
                 direction = self.outputs[before.shape[1]].double()
                 delta = direction * (capture["matched_delta_l2"] / direction.norm())
                 after = before + delta.to(device=before.device, dtype=before.dtype).unsqueeze(0)
@@ -335,8 +375,20 @@ def run_native_interventions(tasks: list[dict], parent, preregistration: dict) -
                                    for record in traces[arm][i]) for arm in ARMS),
                        "captures": {arm: traces[arm][i] for arm in ARMS}}
                       for i, task in enumerate(tasks)]
-        return {"arms": arms, "provenance": provenance,
-                "instrumentation_valid": all(row["instrumentation_valid"] for row in provenance)}
+        if p["schema"] == SCHEMA_V2:
+            for row in provenance:
+                row["target_slots"] = list(p["target_slots"])
+        result = {"arms": arms, "provenance": provenance,
+                  "instrumentation_valid": all(row["instrumentation_valid"] for row in provenance)}
+        if p["schema"] == SCHEMA:
+            return result
+        targeted_counts = {arm: sum(record["targeted"] and record["head_calls"] == 1
+                                   and record["status"] == "ok" and record["capture"] is not None
+                                   for task_trace in traces[arm] for record in task_trace) for arm in ARMS}
+        targeted_cohort_valid = all(count > 0 for count in targeted_counts.values())
+        result.update(targeted_capture_counts=targeted_counts, targeted_cohort_valid=targeted_cohort_valid,
+                      instrumentation_valid=result["instrumentation_valid"] and targeted_cohort_valid)
+        return result
     finally:
         for handle in handles:
             handle.remove()
