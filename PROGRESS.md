@@ -137,3 +137,9 @@
 - PR #224 head 6d0c60d is open/mergeable; GitGuardian completed successfully at 17:32:23Z. This is a documentation audit; no model qualification or L4 gate passed.
 - The 33-family figure remains an upper-bound audit queue; source-level S1 values and independent inventory groups remain unresolved.
 - A/B live queue status is still not verified by C; D2's lock was future-scheduled and the host's autor WSL remains unavailable.
+
+## 2026-10-08 ~17:35Z: agent-c L4 source availability disposition
+- Did: PR #224 now includes exact wind-family primary-source locators, the 44→37→36→33 candidate accounting, and the IEA data product's access/licence boundary. Head 5f09688; security check is pending.
+- Learned: NREL/OpenEI's accessible dataset is summary-only; IEA's underlying XLS is account/IP access under non-CC terms; neither yielded row-level study data. No data was acquired or imported, and L4 remains unqualified.
+- Stage 1: no newer A/B state than 17:20Z; D2's scheduled start has not been confirmed live. C's autor environment remains unavailable; no C GPU action.
+- Next: continue safe primary-source recovery and obtain an A/B live queue report when available.
