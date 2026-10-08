@@ -13,5 +13,3 @@ Targets (DEV 2,008 subset): Clef-flash 55.78 · Clef 62.14. Current best attenti
 | D5 | A | LoRA r256 vs r64; LR/epoch sweep on the kept parent | +1–4 | ~$15–31 each | queued |
 | B1 | B | 45k+ training draw + intent views, excluding TEST / held-out / cohort v3; teacher export for it if KD wins | enables D4 | ~$5 GPU | queued |
 | Q1 | — | Parked: Q9 proxy loop (best SELECT 39.24 < 50); Q9-AF option (b) | — | — | parked (#140 stall trigger) |
-| L1 | C | Land checked L0–L4 modules; prepare executable paired language, retention, soundness and intervention gates for the Stage 1 champion | Stage 2 measurement readiness | $0 CPU | agent-c: active, three bounded workers; no GPU |
-| L2 | C → A/B | Champion handoff: preserve serving bundle, exact base/tokenizer/runtime/calibration hashes, Stage 1 qualification evidence and matched DEV parent predictions | enables strict loading and same-item retention | $0 prep | proposal; consume first keep diagnostically, qualify only after Stage 1 gates pass |
