@@ -33,7 +33,7 @@ from .gate_interventions import (
     _OWNER, _native, _parent_state_sha, _sha, _tensor_sha, native_capture_identity,
     registration_sha256,
 )
-from .parent_bridge import decision_request
+from .parent_bridge import DECISION_SCHEMA, FINGERPRINT_ALGORITHM, decision_request, legacy_request_fingerprint
 from .qualified_parent import file_sha256
 
 FIT_SCHEMA = "ssdm.native_fork_direction_fit.v1"
@@ -114,6 +114,31 @@ class _Capture:
         self.logits = result.logits.detach().cpu().clone()[0]
 
 
+def _response_probabilities(response, request, parent):
+    """The ordinary planner's response identity/statelessness and stage checks."""
+    from .planner import _RESPONSE_ENVELOPE_KEYS, _check_stages
+    if not isinstance(response, dict) or not isinstance(response.get("ssdm"), dict):
+        raise ValueError("native fitting response identity mismatch")
+    env = response["ssdm"]
+    diagnostics = env.get("diagnostics")
+    if (set(env) - _RESPONSE_ENVELOPE_KEYS or env.get("schema") != DECISION_SCHEMA
+            or env.get("status") != "ok" or env.get("request_id") != request["ssdm"]["request_id"]
+            or not isinstance(diagnostics, dict)
+            or diagnostics.get("revision_id") != parent.planner_kwargs()["parent_revision"]
+            or diagnostics.get("request_fingerprint") != legacy_request_fingerprint(request)
+            or diagnostics.get("request_fingerprint_algorithm") != FINGERPRINT_ALGORITHM
+            or not isinstance(diagnostics.get("provenance"), dict)
+            or diagnostics["provenance"].get("supplied") is not False
+            or diagnostics["provenance"].get("applied") is not False
+            or diagnostics.get("state_handle_in") is not None or diagnostics.get("state_reuse") is not False
+            or env.get("state_handle") is not None):
+        raise ValueError("native fitting response identity mismatch")
+    qid = next(iter(request["questions"]))
+    probabilities, _ = _check_stages(env, request, qid, request["questions"][qid]["criteria"],
+                                     parent.planner_kwargs()["expected_served_config"])
+    return probabilities
+
+
 def _capture(parent, request, options, d):
     import torch
     head = _native(parent)._loaded.backend.model.head
@@ -125,10 +150,7 @@ def _capture(parent, request, options, d):
         env = response.get("ssdm", {})
         if env.get("status") != "ok" or capture.calls != 1 or capture.logits is None:
             raise ValueError("native discovery provider failed; no fitted fallback is permitted")
-        from .planner import _check_stages
-        qid = next(iter(request["questions"]))
-        _check_stages(env, request, qid, request["questions"][qid]["criteria"],
-                      parent.planner_kwargs()["expected_served_config"])
+        _response_probabilities(response, request, parent)
         record = {"request_sha256": _sha(request),
                   "request_fingerprint": env.get("diagnostics", {}).get("request_fingerprint"),
                   "option_ids": options, "hidden_shape": list(capture.features.shape),
@@ -187,10 +209,7 @@ def _validate(row, parent, capture_identity, direction, outputs, scale, random, 
             with torch.inference_mode():
                 response = provider.decide(deepcopy(requests["source"]))
             env = response.get("ssdm", {})
-            from .planner import _check_stages
-            qid = pair["source"]["question_id"]
-            probabilities, _ = _check_stages(env, requests["source"], qid, pair["source"]["options"],
-                                             parent.planner_kwargs()["expected_served_config"])
+            probabilities = _response_probabilities(response, requests["source"], parent)
             if env.get("status") != "ok" or len(provider.records) != 1 or provider.records[0]["head_calls"] != 1:
                 raise ValueError("native development validation arm failed")
             predicted = min(options, key=lambda oid: (-probabilities[oid], oid))
@@ -300,7 +319,20 @@ def write_direction_fit(result: dict, out: str | Path) -> dict:
     import torch
     out = Path(out).resolve()
     artifact, evidence, sources = result["artifact"], result["evidence"], result["source_pairs"]
+    capture = evidence["capture_identity"]
+    discovery_worlds = sorted({pair["world_id"] for pair in sources["discovery"]})
+    expected_lineage = {"schema": DIRECTION_SCHEMA, "parent_revision": capture["parent_revision"],
+        "capture_identity_sha256": _sha(capture), "capture_boundary": BOUNDARY,
+        "source_split": "discovery_train_only", "discovery_world_ids": discovery_worlds,
+        "discovery_pairs_sha256": _sha(sources["discovery"]), "output_only_fit_evidence_sha256": _sha(evidence)}
     if (artifact["output_only_fit_evidence_sha256"] != _sha(evidence)
+            or set(artifact) != set(expected_lineage) | {"direction", "output_only_directions"}
+            or any(artifact[key] != value for key, value in expected_lineage.items())
+            or evidence["capture_identity_sha256"] != _sha(capture)
+            or evidence["discovery_world_ids"] != discovery_worlds
+            or any(pair["split"] != "development_train" for pair in sources["discovery"])
+            or any(pair["split"] != "development_validation" for pair in sources["validation"])
+            or set(discovery_worlds) & {pair["world_id"] for pair in sources["validation"]}
             or evidence["semantic_direction_sha256"] != _tensor_sha(artifact["direction"])
             or evidence["output_only_directions_sha256"] != {k: _tensor_sha(value) for k, value in artifact["output_only_directions"].items()}
             or evidence["discovery_pairs_sha256"] != _sha(sources["discovery"])

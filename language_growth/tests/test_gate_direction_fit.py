@@ -248,3 +248,42 @@ def test_pair_helper_ignores_teacher_forced_requests_and_rejects_nondev():
     examples[0]["development_split"] = "language_heldout"
     with pytest.raises(ValueError, match="only synthetic development"):
         development_relation_pairs(examples)
+
+
+@pytest.mark.parametrize("field", ["discovery_world_ids", "discovery_pairs_sha256", "parent_revision",
+                                  "capture_identity_sha256", "capture_boundary", "source_split", "schema"])
+def test_writer_rejects_metadata_only_lineage_forgery_before_creating_output(tmp_path, field):
+    train, validation = pairs()
+    parent = trained_parent(tmp_path, train)
+    result = fit_native_directions(parent, train, validation_pairs=validation, scale=.02, random_seed=17)
+    result["artifact"][field] = ["forged-unrelated-world"] if field == "discovery_world_ids" else "forged"
+    with pytest.raises(ValueError, match="evidence identity changed"):
+        write_direction_fit(result, tmp_path / "forged")
+    assert not (tmp_path / "forged").exists()
+
+
+@pytest.mark.parametrize("field", ["schema", "request_id", "revision_id", "request_fingerprint",
+                                  "request_fingerprint_algorithm", "provenance", "state_reuse"])
+@pytest.mark.parametrize("phase", ["discovery", "validation"])
+def test_native_forward_followed_by_stale_response_identity_fails(tmp_path, field, phase):
+    train, validation = pairs()
+    parent = trained_parent(tmp_path, train)
+    original = parent.decide
+    calls = 0
+    def altered(request):
+        nonlocal calls
+        response = original(request)
+        calls += 1
+        # Four discovery captures, then two ordinary validation captures;
+        # corrupt the first intervention validation arm for the second phase.
+        if (phase == "discovery" and calls == 1) or (phase == "validation" and calls == 7):
+            owner = response["ssdm"] if field in ("schema", "request_id") else response["ssdm"]["diagnostics"]
+            owner[field] = True if field == "state_reuse" else "stale"
+        return response
+    parent.decide = altered
+    with pytest.raises(ValueError, match="response identity mismatch"):
+        fit_native_directions(parent, train, validation_pairs=validation, scale=.02, random_seed=17)
+    assert not parent._loaded.backend.model.head._forward_hooks
+    assert not parent._loaded.backend.model.head._forward_pre_hooks
+    assert _OWNER.acquire(blocking=False)
+    _OWNER.release()
