@@ -269,3 +269,17 @@ Caps 25 / 5 / 15 / 70 / 25 / 10 + 7 = 157 min. Expected: child 12.7 scoring + 30
 through `DecisionModelBackend.score`; none of the three is on that path, so the full-run estimate stays 421 min.
 (They also could not be switched on here: the loader requires the cell config to EQUAL the checkpoint's cell.json.)
 The measured gap that does matter: D1's child scores at 1.037 s / 1k tokens vs 0.373 for the stock parent (2.8x).
+
+### Mode `latency_ab`: D1 base vs fast inference path on the 250 smoke rows (DRAFT, NOT SUBMITTED)
+
+`job_params_latency_ab.json` = fulldev_smoke without the parent arm, with `"child_variants": ["base", "fast"]`. ONE
+child load (checkpoint loader, `Trainer.load` lineage, temperature fit, plan), then `fulldev_eval score --variants
+base,fast`: the 250 pre-declared rows through the served decider exactly as job-c7pq2 scored them (`base`), then through
+a new `DecisionModelBackend(..., inference="fast")` over the same model (`heads.infer_opt`: `memo_encode` +
+`packed_fork` + `merge_lora`; the merge rewrites weights in place, so `fast` runs second). `fulldev_eval ab-compare`
+then compares the two `child.results.jsonl` row by row: status, per-question decision flips, max |dp| of the untempered
+probabilities (`outputs_match` at dp <= 0.02, zero flips), and wall time (`latency()`: ok rows, first 10 dropped).
+Why: D1 scores at 2.78x its parent; the profile (analysis/COST_LATENCY_2026-10-08.md) puts it on per-question
+tokenisation and per-question backbone calls, not on the WKV kernel. Caps 25 / 5 / 15 / 70 / 10 + 7 = 132 min.
+Preflight prices BOTH variants at the base rate: 2 x 12.7 + 30 = 55.3 <= 0.95 x 70. Expected run ~66 min = **$3.27**
+billed + build ~15 min = ~$4.0. Worst case (60 + 2 x 132) x 0.0495 = **$16.04**; quoted max 132 x 0.063 = $8.32.
