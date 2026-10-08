@@ -151,8 +151,18 @@ WEIGHTS_100K_V3 = {**WEIGHTS_100K_V2, "mmlu_aux": WEIGHTS_100K_V2["mmlu_aux"] - 
                    "winogrande": WEIGHTS_100K_V2["winogrande"] + 1500, **V3_NEW}
 assert sum(WEIGHTS_100K_V3.values()) == sum(WEIGHTS_100K.values())
 BACKFILL = ("glaive_native", "mmlu_aux", "anli")
+# B-1 v2 (bschema-draw300k-v2, coordinator 2026-10-08): a BASE POOL for data.b_schema, not a training draw by itself.
+# The guard / low-positive families at natural base rates (every remaining ACOS / NLI4CT / Habermas item, more VAST /
+# RAGTruth / HoVer / MNLI / member / claim views) and the tool-choice + procedural external families from a larger
+# B1-families build (scripts/b1_families_more.py: BFCL / CRUXEval synthetic, all API-Bank train rows). No backfill: a
+# short pool stays short (data.b_schema re-plans the mix from what exists). Items already in b1-draw100k-v3 come back
+# as extra bases of the same source item (data.b_schema caps rows per item at 8).
+POOL_V2X = {"acos": 4400, "nli4ct": 1700, "vast": 8000, "ragtruth": 10000, "hover": 12000, "habermas": 1184,
+            "mnli": 15000, "clinc150_member": 9000, "banking77_member": 3500, "anli_claim": 6000,
+            "ext:api_bank": 2284, "ext:bfcl": 10000, "ext:cruxeval": 12000}
 DRAWS = {"b1-d4-draw45k": WEIGHTS_45K, "b1-draw100k": WEIGHTS_100K, "b1-draw100k-v2": WEIGHTS_100K_V2,
-         "b1-draw100k-v3": WEIGHTS_100K_V3}
+         "b1-draw100k-v3": WEIGHTS_100K_V3, "b1-pool-v2x": POOL_V2X}
+NO_BACKFILL = {"b1-pool-v2x"}
 
 
 def digest(text: str) -> str:
@@ -677,7 +687,8 @@ def _external(families_dir: Path | None) -> tuple[dict[str, list[dict]], dict[st
 
 
 def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_dir: Path | None = None,
-           families_dir: Path | None = None, external_quotas: dict[str, int] | None = None, log=print) -> dict:
+           families_dir: Path | None = None, external_quotas: dict[str, int] | None = None, log=print,
+           backfill: bool = True) -> dict:
     """Per-family selection in seeded order; returns each family's accepted rows IN ORDER, so any draw whose quotas
     are <= ``quotas`` is the per-family prefix. A family whose pool runs out is topped up from ``BACKFILL``."""
     build_dir = Path(build_dir or config.BUILD_DIR)
@@ -840,7 +851,7 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
     deficit += sum((external_quotas or {}).values()) - sum(len(chosen.get(f, [])) for f in (external_quotas or {}))
     backfilled = {}
     for fam in BACKFILL:
-        if deficit <= 0:
+        if deficit <= 0 or not backfill:
             break
         before = len(chosen[fam])
         chosen[fam] = fill(fam, before + deficit, chosen[fam])
@@ -1014,7 +1025,8 @@ def main(argv=None) -> int:
                                                          if any(f.startswith("ext:") for f in big) else None)
     sel = select(a.tokdir, {f: v for f, v in big.items() if not f.startswith("ext:")},
                  families_dir=fdir,
-                 external_quotas={f: v for f, v in big.items() if f.startswith("ext:")})
+                 external_quotas={f: v for f, v in big.items() if f.startswith("ext:")},
+                 backfill=not (set(a.draws) & NO_BACKFILL))
     rd = Path(a.receipt)
     rd.mkdir(parents=True, exist_ok=True)
     report = {"builder": {"commit": builder, "data/b1.py sha256": builder_sha256}, "seed": sel["seed"],

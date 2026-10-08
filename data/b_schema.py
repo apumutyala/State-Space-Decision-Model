@@ -100,6 +100,34 @@ NEST_WRAPS = ("input", "record", "case", "payload", "data")
 TEXT_LAYOUTS = ("colon", "bracket", "tag", "markdown")
 
 
+#: v2 mix (coordinator 2026-10-08, Agent A's change): row weights by mix key ``source/family`` (fact-change pairs by
+#: source), normalised to the synthetic share of the draw. glaive capped near 15 % (never receives spill); weight moved
+#: to tool CHOICE (When2Call, ToolACE, API-Bank train, BFCL-synthetic), CRUXEval-style procedural items (executed
+#: answers) and the NLI / low-positive guard families at natural base rates.
+MIX_V2 = {
+    "glaive_fc/tool_select": 45000,
+    "when2call/response_select": 24000, "toolace/tool_select": 16000, "toolace/tool_multi": 6000,
+    "b1fam_apibank/API-Bank-tool-selection": 9000, "b1fam_bfcl_synth/BFCL-tool-selection": 22000,
+    "b1fam_cruxeval_synth/CRUXEval-output-choice": 29720, "gsm8k/math_mcq": 12000,
+    "anli/nli": 9000, "anli/claim_verification": 9000, "mnli/nli": 12000, "hover/claim_verification": 10000,
+    "ragtruth/hallucination_detection": 10000, "acos/acos_category_sentiment": 9000,
+    "nli4ct/clinical_trial_nli": 5000, "vast/stance": 8000,
+    "clinc150/intent_membership": 9000, "banking77/intent_membership": 4000,
+    "clinc150/intent_general": 14000, "banking77/intent_banking": 10000,
+    "mmlu_aux/mcq": 5000, "mmlu_aux/answer_verification": 2000, "boolq/yesno_passage": 3000,
+    "hellaswag/continuation": 3000, "winogrande/fill_blank": 3000, "sst5/sentiment_score": 2000,
+    "humicroedit_s1/humor_score": 1500, "humicroedit_s2/humor_pair": 1500, "synthetic_factchange": 3000,
+    "habermas/consensus_selection": 3000, "nq/retrieval": 280,
+}
+NO_SPILL_V2 = {"glaive_fc/tool_select"}
+
+
+def mix_key(rec: dict, mode: str) -> str:
+    if mode == "v1" or rec["source"] == "synthetic_factchange":
+        return rec["source"]
+    return f"{rec['source']}/{rec['family']}"
+
+
 def sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -577,7 +605,8 @@ def p1_files() -> tuple[Path, dict]:
 
 
 def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_pointer: str | None,
-               extra_quota: int, log=print, limit: int | None = None) -> dict:
+               extra_quota: int, log=print, limit: int | None = None, mix: str = "v1",
+               base_pool: str | None = None, base_pointer: str | None = None) -> dict:
     """P1 + P2 bases -> variants (checked) -> ``work/candidates.jsonl.gz`` + ``work/candidates.meta.json``."""
     from .b1 import exclusion_sets, native_index, item_key
 
@@ -591,13 +620,15 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
     log("checker ready", chk.index["n_rows"], "index rows")
     # ---- pass 0: P1 roots, per-source counts, intent inventories
     p1_roots: set[str] = set()
+    p1_ids: set[str] = set()
     src_items: collections.Counter = collections.Counter()
     inventories: dict[str, set[str]] = collections.defaultdict(set)
     for line in read_gz(p1_dir / "records.jsonl.gz"):
         r = json.loads(line)
         its = root_items(r)
         p1_roots |= its
-        src_items[r["source"]] += 1
+        p1_ids.add(r["id"])
+        src_items[mix_key(r, mix)] += 1
         from train.cohort import record_content_hash
         from .b1 import dedup_keys
         chk.content.add(h64(record_content_hash(r)))
@@ -607,7 +638,8 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
             q = next(iter(r["questions"].values()))
             if q["type"] == "choice":
                 inventories[r["source"]] |= {str(d) for d in q["criteria"].values() if isinstance(d, str)}
-    v3_mix = dict(src_items)
+    v3_mix = dict(src_items)  # v1 weights (the v3 draw's own mix); v2 uses MIX_V2
+    weights = dict(v3_mix) if mix == "v1" else dict(MIX_V2)
     # ---- pass 1: P2 eligibility (150k + supplement natives whose item is new), same checks as the variants
     idx, nat_ident = native_index(config.BUILD_DIR)
     p2_ok: dict[str, str] = {}
@@ -624,7 +656,7 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
             its = root_items(r)
             if limit and len(p2_ok) >= limit:
                 break
-            if r["source"] not in v3_mix:  # e.g. 'mixed' multi-item rows: multi-question records are Agent C's
+            if mix_key(r, mix) not in weights:  # e.g. 'mixed' multi-item rows: multi-question records are Agent C's
                 chk.reasons["P2:" + r["source"]]["source_not_in_mix"] += 1
                 continue
             if its & seen_items or r["id"] in ex["ids"]:
@@ -633,18 +665,40 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
             if chk.accept(r, "P2:" + r["source"], h64(sorted(its)[0])):
                 seen_items |= its
                 p2_ok[r["id"]] = src_file
-                src_items[r["source"]] += 1
+                src_items[mix_key(r, mix)] += 1
                 if r["source"] in INTENT_SOURCES and len(r["questions"]) == 1:
                     q = next(iter(r["questions"].values()))
                     if q["type"] == "choice":
                         inventories[r["source"]] |= {str(d) for d in q["criteria"].values() if isinstance(d, str)}
     log("P2 eligible", len(p2_ok))
+    # ---- pass 1b: P4 base pool (a pointer-pinned B1-format draw, e.g. b1-pool-v2x): new items, or more rows of items
+    # P1 already has (another view of the same source item; the select stage caps rows per item at MAX_REUSE)
+    p4_ok: set[str] = set()
+    p4_ident = None
+    if base_pool:
+        from train.train_set import read_pointer, verify_files
+        ptr4 = read_pointer(base_pointer)
+        p4_ident = {"dir": base_pool, "pointer": base_pointer, "pointer_sha256": ptr4["_pointer_sha256"],
+                    "files": verify_files(base_pool, ptr4)}
+        for line in read_gz(Path(base_pool) / "records.jsonl.gz"):
+            r = json.loads(line)
+            key = mix_key(r, mix)
+            if r["id"] in p1_ids or r["id"] in p2_ok:
+                chk.reasons["P4:" + key]["same_record_in_p1_p2"] += 1
+                continue
+            if key not in weights:
+                chk.reasons["P4:" + key]["not_in_mix"] += 1
+                continue
+            if chk.accept(r, "P4:" + key, h64(sorted(root_items(r))[0])):
+                p4_ok.add(r["id"])
+                src_items[key] += 1
+        log("P4 eligible", len(p4_ok))
     # ---- plan: per-source targets from the v3 mix, scaled to n minus the extra pool's quota
     n_synth = n - (extra_quota if extra_pool else 0)
-    tot = sum(v3_mix.values())
-    target = {s: n_synth * c / tot for s, c in v3_mix.items()}
+    tot = sum(weights.values())
+    target = {s: n_synth * c / tot for s, c in weights.items()}
     #: expected variants per item of each source (fractional; each item gets floor or floor+1 by a hash of its root)
-    per_item = {s: min(float(MAX_REUSE), SLACK * target[s] / src_items[s]) for s in target}
+    per_item = {s: min(float(MAX_REUSE), SLACK * target[s] / src_items[s]) for s in target if src_items.get(s)}
     inv = {s: sorted(v) for s, v in inventories.items()}
     # ---- pass 2: variants
     n_out = collections.Counter()
@@ -652,7 +706,7 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
     t0 = __import__("time").time()
     with gzip.open(out_path, "wt", encoding="utf-8") as out:
         def emit(base: dict, origin: str):
-            s = base["source"]
+            s = mix_key(base, mix)
             its = root_items(base)
             ih = h64(sorted(its)[0])
             r_s = per_item.get(s, 0.0)
@@ -691,6 +745,14 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
                     k += 1
                     if k % 10000 == 0:
                         log(f"P2 {k} bases, {sum(n_out.values())} candidates")
+        if base_pool:
+            for line in read_gz(Path(base_pool) / "records.jsonl.gz"):
+                r = json.loads(line)
+                if r["id"] in p4_ok:
+                    emit(r, "P4")
+                    k += 1
+                    if k % 10000 == 0:
+                        log(f"P4 {k} bases, {sum(n_out.values())} candidates")
         extra_ident = None
         if extra_pool:
             from train.train_set import read_pointer, verify_files
@@ -712,6 +774,8 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
     meta = {"seed": seed, "n_target": n, "n_synth_target": n_synth, "max_reuse": MAX_REUSE, "slack": SLACK,
             "p1": p1_ident, "p2": {"native": nat_ident, "eligible": len(p2_ok)}, "p3": extra_ident,
             "extra_quota": extra_quota if extra_pool else 0,
+            "mix": mix, "weights": weights, "no_spill": sorted(NO_SPILL_V2) if mix == "v2" else [],
+            "p4": {"pool": p4_ident, "eligible": len(p4_ok)},
             "v3_mix": v3_mix, "items_per_source": dict(src_items), "target_per_source": target,
             "variants_per_item": per_item, "candidates_per_source": dict(n_out), "ops": dict(ops_count),
             "checker": {"reasons": {k: dict(v) for k, v in chk.reasons.items()},
@@ -760,13 +824,15 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
             drop["continuation_over_16"] += 1
             continue
         ss = r.get("aug", {}).get("schema_synth", {})
-        src = "P3:extra" if ss.get("pool") == "P3" else r["source"]
+        src = "P3:extra" if ss.get("pool") == "P3" else mix_key(r, meta.get("mix", "v1"))
         elig[src].append((r["id"], ss.get("root") or sorted(root_items(r))[0], ss.get("variant", 0)))
     if n_cand != len(lens):
         raise SystemExit(f"token check covers {len(lens)} ids, candidates file has {n_cand}: run every shard")
-    tot = sum(meta["v3_mix"].values())
+    weights = meta.get("weights") or meta["v3_mix"]
+    no_spill = set(meta.get("no_spill") or [])
+    tot = sum(weights.values())
     n_synth = meta["n_synth_target"]
-    quota = {s: round(n_synth * c / tot) for s, c in meta["v3_mix"].items()}
+    quota = {s: round(n_synth * c / tot) for s, c in weights.items()}
     if meta.get("extra_quota"):
         quota["P3:extra"] = meta["extra_quota"]
     # sources that cannot fill their quota spill to the others in proportion
@@ -776,7 +842,8 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
         if short <= 0:
             break
         quota = {s: min(quota[s], avail[s]) for s in quota}
-        room = {s: avail[s] - quota[s] for s in quota if avail[s] > quota[s] and s != "P3:extra"}
+        room = {s: avail[s] - quota[s] for s in quota
+                if avail[s] > quota[s] and s != "P3:extra" and s not in no_spill}
         rt = sum(room.values())
         for s in room:
             quota[s] += min(room[s], math.floor(short * room[s] / rt) + 1)
@@ -785,7 +852,7 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
         if diff == 0:
             break
         step = 1 if diff > 0 else -1
-        if step < 0 and quota[s] >= avail[s]:
+        if step < 0 and (quota[s] >= avail[s] or s in no_spill):
             continue
         quota[s] -= step
         diff -= step
@@ -954,6 +1021,9 @@ def main(argv=None) -> int:
     ap.add_argument("--extra-pointer", default=None)
     ap.add_argument("--extra-quota", type=int, default=0)
     ap.add_argument("--receipt", default=None)
+    ap.add_argument("--mix", choices=("v1", "v2"), default="v1")
+    ap.add_argument("--base-pool", default=None, help="P4: a pointer-pinned B1-format draw dir used as more bases")
+    ap.add_argument("--base-pointer", default=None)
     ap.add_argument("--smoke", type=int, default=None, help="limit P1 / P2 bases (smoke runs; never for a draw)")
     a = ap.parse_args(argv)
     build = a.build or f"bschema-draw{a.n // 1000}k-v1"
@@ -962,7 +1032,8 @@ def main(argv=None) -> int:
         if a.extra_pool and not a.extra_pointer:
             raise SystemExit("--extra-pool needs --extra-pointer")
         meta = candidates(a.n, a.seed, work, a.extra_pool, a.extra_pointer, a.extra_quota,
-                          log=lambda *x: print(*x, flush=True), limit=a.smoke)
+                          log=lambda *x: print(*x, flush=True), limit=a.smoke, mix=a.mix,
+                          base_pool=a.base_pool, base_pointer=a.base_pointer)
         print(json.dumps({k: meta[k] for k in ("candidates_per_source", "ops")}, indent=1))
         return 0
     rep = select(a.n, work, build, log=lambda *x: print(*x, flush=True))
