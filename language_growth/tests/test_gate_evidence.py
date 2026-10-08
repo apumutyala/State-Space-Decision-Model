@@ -1,0 +1,93 @@
+"""Public synthetic protocol tests, never a real heldout/model evaluation."""
+from copy import deepcopy
+import hashlib
+from pathlib import Path
+import tempfile
+import unittest
+
+from language_growth.gate_evidence import load_review, load_prepared_suite, run_registered_interventions
+from language_growth.gate_suites import build_suite, canonical, digest, SUITE_SCHEMA
+from language_growth.gates import sha_file
+from language_growth.planner import PlannerResult
+from language_growth.tests.test_language_gates import FakeParent
+
+
+def fake_intervention_adapter(tasks, parent, prereg):
+    """All arms fail identically: protocol shape alone cannot qualify effects."""
+    return {"arms": {name: [PlannerResult("error", None, None, "fake_no_model") for _ in tasks]
+                     for name in ("semantic", "sham", "random", "output_only")},
+            "provenance": [{"task_id": task["task_id"], "input_sha256": digest(task),
+                            "parent_revision": prereg["parent_revision"],
+                            "registration_sha256": prereg["registration_sha256"],
+                            "capture_identity_sha256": prereg["capture_identity_sha256"],
+                            "arms": ["semantic", "sham", "random", "output_only"],
+                            "state_unchanged_sha256_before": "a"*64, "state_unchanged_sha256_after": "a"*64}
+                           for task in tasks]}
+
+
+class EvidenceTests(unittest.TestCase):
+    def test_review_requires_independent_audit_and_exact_level_pins(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "review.json"
+            path.write_bytes(canonical({"schema": "ssdm.language_gate_review.v1"}))
+            with self.assertRaises(ValueError):
+                load_review(path, sha_file(path), parent_sha256="a"*64, levels=["L0"])
+
+    def test_prepared_suite_hashes_before_labels_and_joint_strata_required(self):
+        tasks, refs = build_suite("L0", "development_validation", worlds=1)
+        # Temporary DEV-derived protocol fixtures are deliberately not a real
+        # heldout generator draw or model evaluation.
+        for task, ref in zip(tasks, refs):
+            task["split"] = "language_heldout"
+            ref["input_sha256"] = digest(task)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            input_bytes = b"".join(canonical(t)+b"\n" for t in tasks)
+            ref_bytes = b"".join(canonical(r)+b"\n" for r in refs)
+            (root/"inputs.jsonl").write_bytes(input_bytes)
+            (root/"evaluator.jsonl").write_bytes(ref_bytes)
+            manifest = {"schema": SUITE_SCHEMA, "level": "L0", "split": "language_heldout", "worlds": 1,
+                        "tasks": 2, "training_allowed": False, "scope": "synthetic_protocol_only",
+                        "inputs_sha256": hashlib.sha256(input_bytes).hexdigest(), "evaluator_sha256": hashlib.sha256(ref_bytes).hexdigest()}
+            (root/"manifest.json").write_bytes(canonical(manifest))
+            with self.assertRaisesRegex(ValueError, "strata"):
+                load_prepared_suite(root, "L0", manifest_sha256=sha_file(root/"manifest.json"))
+            refs[0]["stratum"] = "usefulness"
+            refs[1]["stratum"] = "joint_adversarial"
+            ref_bytes = b"".join(canonical(r)+b"\n" for r in refs)
+            (root/"evaluator.jsonl").write_bytes(ref_bytes)
+            manifest["evaluator_sha256"] = hashlib.sha256(ref_bytes).hexdigest()
+            (root/"manifest.json").write_bytes(canonical(manifest))
+            loaded = load_prepared_suite(root, "L0", manifest_sha256=sha_file(root/"manifest.json"))
+            self.assertEqual(len(loaded[1]), 2)
+            (root/"evaluator.jsonl").write_text("untrusted changed labels")
+            with self.assertRaisesRegex(ValueError, "hash mismatch"):
+                load_prepared_suite(root, "L0", manifest_sha256=sha_file(root/"manifest.json"))
+
+    def test_source_pinned_raw_adapter_ties_never_pass_and_overlap_rejects(self):
+        tasks, refs = build_suite("L0", "development_validation", worlds=2)
+        parent = FakeParent([])
+        prereg = {"schema": "ssdm.language_intervention_preregistration.v1",
+                  "parent_revision": parent.planner_kwargs()["parent_revision"],
+                  "discovery_world_ids": ["separate-public-discovery-world"],
+                  "capture_identity_sha256": "b"*64, "capture_boundary": "native_fork_prehead.v1",
+                  "scope": "final_hidden_semantic_axis_only", "output_control": "fitted_candidate_count_logit_direction.v1"}
+        prereg["registration_sha256"] = digest(prereg)
+        with tempfile.TemporaryDirectory() as tmp:
+            registration = Path(tmp)/"registration.json"
+            registration.write_bytes(canonical(prereg))
+            kwargs = {"adapter": __name__+":fake_intervention_adapter", "adapter_source_sha256": sha_file(Path(__file__)),
+                      "registration": registration, "registration_sha256": sha_file(registration), "draws":100}
+            report = run_registered_interventions(tasks, refs, parent, **kwargs)
+            self.assertFalse(report["passed"])
+            self.assertFalse(report["criterion_observed"])
+            prereg["discovery_world_ids"] = [tasks[0]["world_id"]]
+            prereg["registration_sha256"] = digest({k:v for k,v in prereg.items() if k != "registration_sha256"})
+            registration.write_bytes(canonical(prereg))
+            kwargs["registration_sha256"] = sha_file(registration)
+            with self.assertRaisesRegex(ValueError, "overlap"):
+                run_registered_interventions(tasks, refs, parent, **kwargs)
+
+
+if __name__ == "__main__":
+    unittest.main()

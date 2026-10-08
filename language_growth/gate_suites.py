@@ -31,15 +31,9 @@ SCOPE = {
     "L3": "licensed_coordination_and_quantitative_contrast",
     "L4": "scoped_historical_electricity_knowledge",
 }
-ANSWER_FORMAT = {"type": "JSON object only", "keys": ["claims", "explanations"],
-                 "claim_types": {
-                     "fact": {"kind": "fact", "entity": "ENTITY", "field": "FIELD", "value": 0, "unit": "UNIT", "scope": "SCOPE"},
-                     "comparison": {"kind": "comparison", "left": {"entity": "ENTITY", "field": "FIELD", "value": 0, "unit": "UNIT"},
-                                    "right": {"entity": "ENTITY", "field": "FIELD", "value": 0, "unit": "UNIT"}, "relation": "less_than|equal|greater_than", "scope": "SCOPE"},
-                     "exact_difference": {"kind": "exact_difference", "left": "typed operand object", "right": "typed operand object", "value": 0, "unit": "UNIT", "scope": "SCOPE"},
-                     "hypothesis": {"kind": "hypothesis", "assumption_ref": "HOST_ASSUMPTION_ID", "premise": {"entity": "ENTITY", "field": "FIELD", "value": 0, "unit": "UNIT"}, "alternate_value": 0, "right": {"entity": "ENTITY", "field": "FIELD", "value": 0, "unit": "UNIT"}, "relation": "less_than|equal|greater_than", "scope": "SCOPE"},
-                     "plan": {"kind": "plan", "workflow_ref": "WORKFLOW_ID", "steps": [{"step_ref": "STEP_ID", "action_ref": "ACTION_ID", "after": ["PRIOR_STEP_ID"], "preconditions": [{"kind": "fact", "entity": "ENTITY", "field": "FIELD", "value": 0, "unit": "UNIT", "scope": "SCOPE"}]}]}},
-                 "rules": "Return {claims:[claim objects],explanations:integer}. Include all and only requested claims. Claims may appear in any order; plan step order matters. Inverse comparisons and equivalent exact numeric strings are accepted. explanations counts requested checked derivation explanations, otherwise 0. A hypothesis keeps its alternate value conditional, never factual; a plan proposes actions without claiming execution."}
+from .gate_answer_format import answer_format
+
+ANSWER_FORMAT = answer_format()
 
 
 def canonical(value: Any) -> bytes:
@@ -153,6 +147,17 @@ def build_suite(level: str, split: str, *, worlds: int = 4, seed: int = 20261008
         offset = 1000 * (domain + 1)
         warranties = tuple(offset + rng.randrange(1, 200) for _ in range(4))
         prices = tuple(100 * offset + rng.randrange(1, 20000) for _ in range(4))
+        old_refs = [f"development-record-{j}" for j in range(1, 5)]
+        new_refs = rng.sample(old_refs, len(old_refs))
+        ref_map = dict(zip(old_refs, new_refs))
+        def relabel(value):
+            if isinstance(value, str):
+                return ref_map.get(value, value)
+            if isinstance(value, list):
+                return [relabel(item) for item in value]
+            if isinstance(value, dict):
+                return {key: relabel(item) for key, item in value.items()}
+            return value
         host = _host()
         catalog = _catalog(names[:2], warranties[:2], prices[:2])
         extra = _catalog(names[2:], warranties[2:], prices[2:])["records"]
@@ -236,15 +241,17 @@ def build_suite(level: str, split: str, *, worlds: int = 4, seed: int = 20261008
                         "planner_profile": "conjoin_two_facts" if kind == "conjoin" else None,
                         "answer_format": ANSWER_FORMAT,
                         "production": ("l3_fact_pair_coordination_v1" if kind == "conjoin" else "l3_fact_comparison_contrast_v1") if level == "L3" else "plain"}
-                program = _program(host, nodes)
-                checked = check_program(program, host, current)
+                task = relabel(task)
+                rng.shuffle(task["catalog"]["records"])
+                program = relabel(_program(host, nodes))
+                checked = check_program(program, task["host"], task["catalog"])
                 if checked.status != "accepted":
                     raise ValueError(f"generated reference failed: {checked.reason}")
                 inputs.append(task)
                 references.append({"task_id": task_id, "world_id": world_id,
                                    "input_sha256": digest(task), "kind": kind, "variant": variant,
                                    "program": program, "meaning": answer_meaning(checked.outputs),
-                                   "text": render_checked(checked, host, current, production=task["production"]),
+                                   "text": render_checked(checked, task["host"], task["catalog"], production=task["production"]),
                                    "label_provenance": "synthetic_checker_valid_not_independent_audit"})
     return inputs, references
 
@@ -286,7 +293,7 @@ def export_suite(out: Path, level: str, split: str, *, worlds: int, seed: int) -
     input_bytes = b"".join(canonical(row) + b"\n" for row in tasks)
     reference_bytes = b"".join(canonical(row) + b"\n" for row in refs)
     manifest = {"schema": SUITE_SCHEMA, "level": level, "split": split, "seed": seed,
-                "worlds": worlds, "tasks": len(tasks), "scope": SCOPE[level],
+                "worlds": len({task["world_id"] for task in tasks}), "tasks": len(tasks), "scope": SCOPE[level],
                 "inputs_sha256": hashlib.sha256(input_bytes).hexdigest(),
                 "evaluator_sha256": hashlib.sha256(reference_bytes).hexdigest(),
                 "promotion_eligible": False,

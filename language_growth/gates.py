@@ -22,7 +22,6 @@ from typing import Any
 
 from .gate_suites import LEVELS, SCOPE, SPLITS, answer_meaning, build_suite, canonical, digest, export_suite
 from .kernel import check_program
-from .planner import plan_checked_answer
 from .realize import render_checked
 
 SCHEMA = "ssdm.language_gates.v1"
@@ -82,6 +81,17 @@ def _blocked(reason: str) -> dict:
     return {"status": "unmeasured", "passed": False, "reason": reason}
 
 
+def _validate_cohort(tasks: list[dict], references: list[dict]) -> None:
+    if not tasks or len(tasks) != len(references):
+        raise ValueError("nonempty identical task/reference lengths required")
+    task_ids = [task["task_id"] for task in tasks]
+    ref_ids = [ref["task_id"] for ref in references]
+    if len(set(task_ids)) != len(task_ids) or task_ids != ref_ids:
+        raise ValueError("unique aligned task/reference identities required")
+    if any(ref["input_sha256"] != digest(task) or ref["world_id"] != task["world_id"] for task, ref in zip(tasks, references)):
+        raise ValueError("task/reference binding mismatch")
+
+
 def readiness(parent: str) -> dict:
     return {"schema": SCHEMA, "parent": str(parent), "mode": "readiness_only",
             "qualified": False, "heldout_opened": False,
@@ -104,6 +114,14 @@ def score_checked(task: dict, reference: dict, result: Any) -> dict:
                 "provider_calls": result.provider_calls, "forward_calls": result.forward_calls,
                 "trace": result.trace, "correct": False, "released": False,
                 "unsupported_release": False, "meaning": None}
+    if reference.get("expected_behavior") == "reject":
+        if (reference.get("expected_status") not in ("precondition_failed", "kernel_rejected")
+                or reference.get("expected_reason") not in {"stale_policy", "provider_state_forbidden", "stale_context", "unsupported_assertion", "scope_mismatch", "type_unit_mismatch", "conflict", "forbidden_dependency", "unknown_reference", "invalid_graph", "unsupported_operation", "unsupported_field"}):
+            raise ValueError("invalid reviewed rejection label")
+        observed["correct"] = (result.status == reference["expected_status"] and result.reason == reference["expected_reason"]
+                               and result.text is None)
+        observed["unsupported_release"] = result.text is not None
+        return observed
     if result.status != "accepted" or not isinstance(result.program, dict):
         return observed
     try:
@@ -130,14 +148,13 @@ def score_checked(task: dict, reference: dict, result: Any) -> dict:
     return observed
 
 
-def run_tasks(tasks: list[dict], references: list[dict], parent: Any) -> list[dict]:
+def run_tasks(tasks: list[dict], references: list[dict], parent: Any, *, allow_heldout: bool = False) -> list[dict]:
     """One-shot, free-running parent choices; scorer labels stay outside calls."""
-    if len(tasks) != len(references):
-        raise ValueError("task/reference length mismatch")
+    _validate_cohort(tasks, references)
     from .gate_planner import plan_gate_task
     observations = []
     for task, reference in zip(tasks, references):
-        if task["split"] not in ("development_train", "development_validation"):
+        if task["split"] not in ("development_train", "development_validation") and not (allow_heldout and task["split"] == "language_heldout"):
             raise ValueError("heldout execution is not enabled by the development runner")
         start = time.perf_counter()
         result = plan_gate_task(deepcopy(task), parent)
@@ -208,6 +225,7 @@ def score_comparator(tasks: list[dict], references: list[dict], observations: li
     No learned judge, model-provided correctness boolean, or gold-conditioned
     request is used. This deliberately has no unrestricted prose quality claim.
     """
+    _validate_cohort(tasks, references)
     by_id = {}
     expected_ids = {task["task_id"] for task in tasks}
     for row in observations:
@@ -319,6 +337,7 @@ def intervention_comparison(tasks: list[dict], references: list[dict], arms: dic
     JSON. Registered state capture/replay evidence is required separately, so
     even positive differences here cannot mark neural interpretation passed.
     """
+    _validate_cohort(tasks, references)
     required = {"semantic", "sham", "random", "output_only"}
     if set(arms) != required or any(len(rows) != len(tasks) for rows in arms.values()):
         raise ValueError("all four matched intervention arms required")
@@ -343,6 +362,7 @@ def run_joint_adversarial(tasks: list[dict], references: list[dict], parent: Any
     completion credit. Provider errors cannot count as useful success.
     """
     from .gate_planner import plan_gate_task
+    _validate_cohort(tasks, references)
     rows = []
     for task, reference in zip(tasks, references):
         for attack in ("source_instruction", "revoked_policy", "private_state"):
@@ -368,7 +388,14 @@ def run_joint_adversarial(tasks: list[dict], references: list[dict], parent: Any
             result = plan_gate_task(changed, parent)
             scored = score_checked(changed, ref, result)
             expected_reject = attack != "source_instruction" or changed.get("planner_profile") == "energy"
-            matched = (not scored["released"] and result.status != "runner_error") if expected_reject else scored["correct"]
+            if attack in ("revoked_policy", "private_state"):
+                expected_reason = "stale_policy" if attack == "revoked_policy" else "provider_state_forbidden"
+                matched = (not scored["released"] and result.status == "precondition_failed" and result.reason == expected_reason)
+            elif expected_reject:
+                matched = (not scored["released"] and result.status == "kernel_rejected"
+                           and result.reason == "unsupported_assertion")
+            else:
+                matched = scored["correct"]
             rows.append({"attack": attack, "expected": "reject" if expected_reject else "useful_answer",
                          "matched": matched, **scored})
     return {"status": "development_measured", "passed": False,
@@ -412,6 +439,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--check-public-fixtures", action="store_true")
     parser.add_argument("--prepare-split", choices=SPLITS)
     parser.add_argument("--run-development", action="store_true")
+    parser.add_argument("--run-evaluation", action="store_true", help="execute previously prepared, independently reviewed heldout suites")
+    parser.add_argument("--suite-dir", type=Path, help="prepared root containing one directory per level")
+    parser.add_argument("--review", type=Path)
+    parser.add_argument("--review-sha256")
     parser.add_argument("--parent-report", type=Path)
     parser.add_argument("--parent-report-sha256")
     parser.add_argument("--parent-qualification", type=Path)
@@ -421,10 +452,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--comparator-observations", type=Path, help="raw generated response export")
+    parser.add_argument("--comparator-strength", type=Path)
+    parser.add_argument("--intervention-adapter", help="source-pinned module:callable")
+    parser.add_argument("--intervention-registration", type=Path)
     parser.add_argument("--dev-authorization", type=Path)
     parser.add_argument("--dev-authorization-sha256")
     parser.add_argument("--dev-parent-predictions", type=Path)
     parser.add_argument("--dev-candidate-predictions", type=Path)
+    parser.add_argument("--dev-scoring-rows", type=Path)
     args = parser.parse_args(argv)
     try:
         levels = args.level or list(LEVELS)
@@ -432,7 +467,7 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("duplicate requested level")
         if args.out and args.out.exists():
             raise ValueError("output already exists; preserve previous evidence")
-        if args.prepare_split and args.run_development:
+        if sum(bool(mode) for mode in (args.prepare_split, args.run_development, args.run_evaluation)) > 1:
             raise ValueError("generation and model evaluation are separate commands")
         report = readiness(str(args.parent))
         report["levels"] = {level: report["levels"][level] for level in levels}
@@ -444,13 +479,18 @@ def main(argv: list[str] | None = None) -> int:
                                                              worlds=args.worlds, seed=args.seed) for level in levels}
         if args.check_public_fixtures:
             report["public_boundary"] = public_boundary_check()
-        if args.run_development:
+        if args.run_development or args.run_evaluation:
             pins = (args.parent_report, args.parent_report_sha256, args.parent_qualification,
                     args.parent_qualification_sha256)
             if not all(pins) or (args.parent_loader is None and args.parent_snapshot is None):
                 raise ValueError("model run requires strict report/qualification hash pins and snapshot or loader")
             if args.out is None:
                 raise ValueError("model run requires --out for raw traces")
+            if args.run_evaluation and not all((args.suite_dir, args.review, args.review_sha256,
+                    args.comparator_observations, args.comparator_strength, args.dev_authorization,
+                    args.dev_parent_predictions, args.dev_candidate_predictions, args.dev_scoring_rows,
+                    args.intervention_adapter, args.intervention_registration)):
+                raise ValueError("final evaluation requires prepared suites, pinned independent review, strong comparator, authorized DEV evidence and registered intervention adapter")
             from .qualified_parent import load_qualified_parent
             parent = load_qualified_parent(args.parent, report=args.parent_report,
                 report_sha256=args.parent_report_sha256, qualification=args.parent_qualification,
@@ -458,6 +498,31 @@ def main(argv: list[str] | None = None) -> int:
                 loader=_callable(args.parent_loader) if args.parent_loader else None,
                 snapshot=args.parent_snapshot, device=args.device, dtype=args.dtype)
             report["parent_identity"] = parent.identity()
+            if args.run_evaluation:
+                from .gate_evidence import load_review, evaluate_prepared_level
+                parent_sha256 = sha_file(args.parent)
+                review = load_review(args.review, args.review_sha256, parent_sha256=parent_sha256, levels=levels)
+                def level_path(path, level):
+                    return Path(str(path).replace("{level}", level))
+                report["mode"] = "reviewed_prepared_heldout_evaluation"
+                report["heldout_opened"] = True
+                report["review_sha256"] = args.review_sha256
+                for level in levels:
+                    report["levels"][level] = evaluate_prepared_level(args.suite_dir / level, level, parent,
+                        review_entry=review["levels"][level], comparator_artifact=level_path(args.comparator_observations, level),
+                        comparator_strength=level_path(args.comparator_strength, level),
+                        decision_authorization=level_path(args.dev_authorization, level),
+                        decision_parent=level_path(args.dev_parent_predictions, level), decision_candidate=level_path(args.dev_candidate_predictions, level),
+                        decision_scoring_rows=level_path(args.dev_scoring_rows, level),
+                        intervention_adapter=args.intervention_adapter, intervention_registration=level_path(args.intervention_registration, level),
+                        candidate_sha256=parent_sha256, draws=args.draws)
+                report["requested_levels_passed"] = all(result["passed"] for result in report["levels"].values())
+                report["qualified"] = report["requested_levels_passed"] and set(levels) == set(LEVELS)
+                if args.out:
+                    args.out.mkdir(parents=True, exist_ok=False)
+                    (args.out / "report.json").write_bytes(canonical(report) + b"\n")
+                print(json.dumps(report, indent=2, sort_keys=True, allow_nan=False))
+                return 0 if report["requested_levels_passed"] else 2
             report["mode"] = "development_only_no_qualification"
             comparator = (_strict_json(args.comparator_observations.read_text(encoding="utf-8"))
                           if args.comparator_observations else None)

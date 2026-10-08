@@ -7,6 +7,7 @@ evaluation planner, not a replacement public task parser or unrestricted agent.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from typing import Any
 
 from .kernel import check_program
@@ -19,11 +20,20 @@ def plan_gate_task(task: dict, parent: Any) -> PlannerResult:
     session = None
     program = None
     try:
-        host, catalog = task["host"], task["catalog"]
+        from .gate_comparator import gate_task_context
+        context = gate_task_context(task)
+        host, catalog = deepcopy(task["host"]), task["catalog"]
+        host["assumptions"] = context["assumptions"]
+        host["workflows"] = context["workflows"]
         session = _Session(task["task_input"], host, catalog, parent, **parent.planner_kwargs())
+        extension_context = {key: context[key] for key in ("assumptions", "workflows", "energy_interpretation") if key in context}
         def choose(slot, items, describe):
             options, bindings = _as_options(items, describe, "v")
-            oid = session.choose(slot, f"Select {slot} for the original task.", options, repair=False)
+            # Identical host definitions are visible to both model arms from
+            # their first call. Keep user's task_input unchanged; pin this
+            # supplemental data in the ordinary fingerprinted question text.
+            question = f"Select {slot} for the original task. Host-declared data: " + json.dumps(extension_context, sort_keys=True, ensure_ascii=True)
+            oid = session.choose(slot, question, options, repair=False)
             return bindings[oid]
         if task.get("planner_profile") == "energy":
             from .domains.energy import PROGRAM_SCHEMA, MODULE_REF, check_energy_program, public_energy_answer
@@ -104,6 +114,10 @@ def plan_gate_task(task: dict, parent: Any) -> PlannerResult:
         status, reason = exc.status, exc.reason
     except (ValueError, TypeError, KeyError):
         status, reason = "runner_error", "module_boundary_failed"
+    except Exception:
+        # Failed provider calls remain failed denominator entries; never fall
+        # back to an oracle or leak raw exception/prompt content into answers.
+        status, reason = "runner_error", "provider_execution_failed"
     return PlannerResult(status, None, program, reason,
                          session.provider_calls if session else 0, session.repair_requests if session else 0,
                          session.forward_calls if session else 0, session.trace if session else [])

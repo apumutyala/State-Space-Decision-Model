@@ -9,11 +9,13 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from language_growth.gate_suites import LEVELS, build_suite, canonical, digest, export_suite
 from language_growth.gate_planner import plan_gate_task
 from language_growth.gates import (readiness, paired_ci, score_checked, score_comparator,
                                   normalized_answer, intervention_comparison, decision_regression, main)
+from language_growth.gates import run_joint_adversarial
 from language_growth.planner import PlannerResult
 from language_growth.tests.test_planner import ScriptedProvider, EXPECTED_CONFIG, REVISION
 
@@ -72,12 +74,14 @@ class GateTests(unittest.TestCase):
             tasks, refs = self.suite(level)
             for task, ref in zip(tasks, refs):
                 kind = ref["kind"]
-                fact1 = "development-record-1) field warranty_months"
-                fact2 = "development-record-2) field warranty_months"
+                reads = [node for node in ref["program"].get("nodes", []) if node["op"] == "ReadFact"]
+                def description(node): return f"{node['record_ref']}) field {node['field']}"
+                fact1 = description(reads[0]) if reads else None
+                fact2 = description(reads[1]) if len(reads)>1 else fact1
                 if kind == "read": selectors = ["ReadFact", fact1]
                 elif kind == "compare": selectors = ["Compare", fact1, fact2, ref["program"]["nodes"][2]["relation"]]
                 elif kind == "difference": selectors = ["ExactDifference", fact1, fact2]
-                elif kind == "conjoin": selectors = ["Conjoin", fact1, "development-record-2) field price"]
+                elif kind == "conjoin": selectors = ["Conjoin", fact1, fact2]
                 elif kind == "hypothesis": selectors = ["Hypothesize", "Assumption alternate-warranty", fact2, "greater_than"]
                 elif kind == "plan": selectors = ["Plan", "Workflow catalog-review", "Step inspect:", "Step draft:"]
                 else: selectors = [kind, f"record {ref['program']['record_ref']}"]
@@ -96,18 +100,44 @@ class GateTests(unittest.TestCase):
     def test_wrong_task_and_altered_surface_fail(self):
         tasks, refs = self.suite()
         task, ref = tasks[0], refs[0]
-        result = plan_gate_task(task, FakeParent(["ReadFact", "development-record-2) field warranty_months"]))
+        wanted = ref["program"]["nodes"][0]["record_ref"]
+        wrong = next(r["record_ref"] for r in task["catalog"]["records"] if r["record_ref"] != wanted)
+        result = plan_gate_task(task, FakeParent(["ReadFact", f"{wrong}) field warranty_months"]))
         self.assertEqual(result.status, "accepted")
         self.assertFalse(score_checked(task, ref, result)["correct"])
         result.text += " Unsupported claim."
         self.assertTrue(score_checked(task, ref, result)["unsupported_release"])
+
+    def test_call_option_node_budgets_and_missing_registry_mapping_fail_closed(self):
+        tasks, refs = self.suite()
+        task, ref = deepcopy(tasks[0]), deepcopy(refs[0])
+        wanted = ref["program"]["nodes"][0]["record_ref"]
+        selectors = ["ReadFact", f"{wanted}) field warranty_months"]
+        task["host"]["limits"]["max_proposal_calls"] = 1
+        result = plan_gate_task(task, FakeParent(selectors))
+        self.assertEqual((result.status,result.reason,result.provider_calls), ("exhausted","max_proposal_calls",1))
+        task = deepcopy(tasks[0])
+        task["host"]["limits"]["max_options_per_question"] = 1
+        result = plan_gate_task(task, FakeParent(selectors))
+        self.assertEqual(result.provider_calls, 0)
+        self.assertNotEqual(result.status,"accepted")
+        task = deepcopy(tasks[0])
+        task["host"]["limits"]["max_program_nodes"] = 1
+        result = plan_gate_task(task, FakeParent(selectors))
+        self.assertEqual((result.status,result.reason), ("kernel_rejected","exceeded_limit"))
+        task = deepcopy(tasks[0])
+        del task["catalog"]["registries"][task["host"]["registry_ref"]]["field_predicates"]["warranty_months"]
+        result = plan_gate_task(task, FakeParent(selectors))
+        self.assertNotEqual(result.status,"accepted")
+        self.assertIsNone(result.text)
 
     def test_all_false_relations_remain_offered(self):
         tasks, refs = self.suite()
         task, ref = tasks[1], refs[1]
         true_relation = ref["program"]["nodes"][2]["relation"]
         false_relation = "less_than" if true_relation != "less_than" else "greater_than"
-        parent = FakeParent(["Compare", "development-record-1) field warranty_months", "development-record-2) field warranty_months", false_relation])
+        left,right=ref["program"]["nodes"][:2]
+        parent = FakeParent(["Compare", f"{left['record_ref']}) field warranty_months", f"{right['record_ref']}) field warranty_months", false_relation])
         result = plan_gate_task(task, parent)
         self.assertEqual(result.status, "kernel_rejected")
         offered = next(iter(parent.requests[-1]["questions"].values()))["criteria"]
@@ -140,6 +170,23 @@ class GateTests(unittest.TestCase):
         self.assertEqual(ci["n_worlds"], 2)
         self.assertFalse(ci["minimum_worlds_met"])
         with self.assertRaises(ValueError): paired_ci(rows + rows[:1], "a", "b", draws=100)
+
+    def test_incomplete_references_never_truncate_denominator(self):
+        tasks, refs = self.suite()
+        with self.assertRaises(ValueError): score_comparator(tasks, refs[:1], [])
+        with self.assertRaises(ValueError): run_joint_adversarial(tasks, refs[:1], None)
+        with self.assertRaises(ValueError): intervention_comparison(tasks, refs[:1], {}, draws=100)
+
+    def test_joint_adversarial_requires_specific_rejection_not_provider_failure(self):
+        tasks, refs = self.suite()
+        wanted = refs[0]["program"]["nodes"][0]["record_ref"]
+        report = run_joint_adversarial(tasks[:1], refs[:1], FakeParent(["ReadFact", f"{wanted}) field warranty_months"]))
+        self.assertTrue(report["criterion_observed"], report)
+        failed = PlannerResult("provider_error", None, None, "backend_error")
+        with patch("language_growth.gate_planner.plan_gate_task", return_value=failed):
+            report = run_joint_adversarial(tasks[:1], refs[:1], None)
+        self.assertFalse(report["criterion_observed"])
+        self.assertTrue(all(not row["matched"] for row in report["observations"]))
 
     def test_interventions_cannot_pass_from_correct_booleans(self):
         tasks, refs = self.suite()
