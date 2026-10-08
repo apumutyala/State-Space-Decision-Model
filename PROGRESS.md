@@ -53,3 +53,9 @@
 - Verified live A/B status: D1 remains keep35.12; full-DEV Clef refs61.89/57.29. Six later D jobs terminal worker_lost at15:40:31Z; notification pushed to INBOX, recovery remains A/B-owned.
 - Doing: native train-only semantic/output-control direction fitter and supervised slots for actual L0–L4 planner operations, in independent CPU-only worktrees; coordinator checking D1 metadata compatibility.
 - Scope: no real parent load, no GPU/paid work, no TEST/heldout/cohort data; all language qualification gates still pending Stage1.
+
+## 2026-10-08: agent-c native language prerequisites merged
+- Landed #223 @3358ab4: actual GatePlanner train-only slot export, native paired hidden/logit fitting, v2 registered target-slot applicability, checkpoint-header handoff, and profile0.1.6 checked equality.
+- Verified106focused CPUtests/15.16s. Export1124records/322tasks/33worlds; all64L3tasks retained, including equalityworld20 that previously crashed. RealD development loader/Item conversion passed.
+- Tiny native fitting evidence:0/1effecttarget in everyarm, both archivedproofs; parentbytes unchanged. This is mechanics, notsemanticgain/qualification. Rawproofs+datahashes preserved under ssdm-data and receipts/2026-10-08-L-learning-prerequisites/.
+- Next: address L4's one-source evidence limit with genuine independent grounded contexts, not pseudo-replicated worlds; retain heldout separation. Stage1notpassed; C remains$0GPU. A/B queue now has replacement D10/fast jobs building and H1running.
