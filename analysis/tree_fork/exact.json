@@ -1,0 +1,16 @@
+{
+ "requests": 200,
+ "questions": 606,
+ "max_abs_logprob_diff": {
+  "packed": 4.76837158203125e-07,
+  "grouped": 2.384185791015625e-07
+ },
+ "argmax_identical": {
+  "packed": 606,
+  "grouped": 606
+ },
+ "prompt_tokens_mean": 16577.23,
+ "prompt_tokens_max": 635648,
+ "pass": true,
+ "seconds": 25.50391674041748
+}

@@ -19,6 +19,14 @@ inference=...)``, default off = byte-identical to before):
                  per wrapped Linear (366 on RWKV7-13.3B). Exact in exact arithmetic (fp32 test: 1e-6); in bf16 the
                  merged weight is rounded once, so logits move at bf16 resolution: GPU-checked by the A/B
                  (jobs/m2_first_cell mode ``latency_ab``), never assumed.
+``tree_fork``    the packed tails ``suffix_q + continuation_k`` re-read each question's re-read suffix once PER OPTION
+                 (jrt-rwkv-g1-v1 D1 on the DEV subset: 40 % of its tokens). RWKV-7 is recurrent, so the state after
+                 prefix + suffix_q is the same for every option of q: ``heads.prefix_features.tree_prefix_features``
+                 reads the prefix once, every suffix once (masked right-padded packs leave each row's state at its own
+                 last token) and only the continuations per option, from copies of the question state: a prefix ->
+                 question -> option tree. Exact up to float rounding (fp32 test: 1e-5). Supersedes ``packed_fork``
+                 where ``tree_supported`` (vendored RWKV-7); other backbones fall back to the packed path. Presets
+                 ``exact_tree`` (memo + tree) and ``tree`` (memo + tree + merge_lora).
 """
 
 from __future__ import annotations
@@ -28,8 +36,9 @@ from typing import Any, Callable
 import torch
 from torch import nn
 
-OPTS = ("memo_encode", "packed_fork", "merge_lora")
-PRESETS = {"base": (), "exact": ("memo_encode", "packed_fork"), "fast": ("memo_encode", "packed_fork", "merge_lora")}
+OPTS = ("memo_encode", "packed_fork", "merge_lora", "tree_fork")
+PRESETS = {"base": (), "exact": ("memo_encode", "packed_fork"), "fast": ("memo_encode", "packed_fork", "merge_lora"),
+           "exact_tree": ("memo_encode", "tree_fork"), "tree": ("memo_encode", "tree_fork", "merge_lora")}
 
 
 def parse(spec: str | dict | None) -> dict[str, bool]:

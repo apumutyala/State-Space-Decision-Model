@@ -98,8 +98,10 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
     """``shared_prefix=True`` (evaluation only, no grad): rows of the same request read their common schema + state
     prefix once (``heads.prefix_features``); equal to the plain path up to float rounding (tests/test_perf_paths.py).
     ``prefix_mode="packed"`` (``heads.infer_opt`` ``packed_fork``): the same features with every (question, option)
-    tail packed into a few calls instead of one call per suffix length and per question (tests/test_infer_opt.py)."""
-    if prefix_mode not in ("grouped", "packed"):
+    tail packed into a few calls instead of one call per suffix length and per question (tests/test_infer_opt.py).
+    ``prefix_mode="tree"`` (``tree_fork``): the same features reading the prefix, each question suffix and each option
+    continuation once (``heads.prefix_features.tree_prefix_features``; tests/test_tree_fork.py)."""
+    if prefix_mode not in ("grouped", "packed", "tree"):
         raise ValueError(f"prefix_mode {prefix_mode!r}")
     from . import prefix_features as PF
 
@@ -117,7 +119,8 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
     # go through the labelled path below exactly as before (PF.supported also refuses ``wants_trust``).
     use_prefix = (shared_prefix and not gated and not torch.is_grad_enabled() and PF.supported(backbone))
     if use_prefix:
-        fn = PF.packed_prefix_features if prefix_mode == "packed" else PF.shared_prefix_features
+        fn = {"packed": PF.packed_prefix_features, "tree": PF.tree_prefix_features,
+              "grouped": PF.shared_prefix_features}[prefix_mode]
         h, pre_fork = fn(backbone, rows, need_fork, pad_id)
     elif (cache_fork and not gated and len(rows) > 1 and getattr(backbone, "batch_rows", False)
           and backbone.can_fork_rows()):  # TrainConfig.row_batch: all rows in one prefix call + one continuation call

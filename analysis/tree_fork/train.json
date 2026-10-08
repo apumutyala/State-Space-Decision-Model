@@ -1,0 +1,14 @@
+{
+ "groups": 1.67,
+ "prefix_tokens": 4894.465,
+ "prefix_positions": 6967.6,
+ "shared_tokens": 4628.605,
+ "shared_positions": 6701.74,
+ "extra_calls": 1.56,
+ "cont_tokens": 103.025,
+ "same_record_pairs": 0.0,
+ "steps": 200,
+ "saved_positions_per_step": 265.8600000000006,
+ "saved_share_of_step_positions": 0.03760063643595871,
+ "question_reread_per_option_in_training": 0
+}

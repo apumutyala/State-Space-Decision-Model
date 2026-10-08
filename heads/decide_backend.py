@@ -133,7 +133,8 @@ class DecisionModelBackend:
                 # all questions of the request in one pass, reading the shared schema + state prefix once
                 # (heads.prefix_features; was one full-prompt forward per question, B=1)
                 check_deadline()
-                mode = "packed" if self.inference.get("packed_fork") else "grouped"
+                mode = ("tree" if self.inference.get("tree_fork") else
+                        "packed" if self.inference.get("packed_fork") else "grouped")
                 lps = list(self.model(rows, shared_prefix=self.shared_prefix, prefix_mode=mode).log_probs.float().cpu())
             else:
                 # controlsafe trust-gated backbone: per-row calls exactly as before (its protected stream is bitwise

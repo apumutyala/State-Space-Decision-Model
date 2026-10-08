@@ -115,6 +115,12 @@ class TrainConfig:
     #: group of long catalogs (K = 77..255) can hold thousands of copies at once; a row whose K alone is over the cap
     #: runs alone. Grouping only: the same rows, losses and gradients (tests/test_cell_perf.py).
     row_options: int = 0
+    #: with row_batch > 1: each prefix call reads its rows' longest common token prefix ONCE (one B=1 call) and
+    #: continues every row's own suffix from copies of that state in one masked, right-padded call
+    #: (``HiddenStateBackbone.share_prefix``). Same features, loss and gradients up to float rounding
+    #: (tests/test_tree_fork.py); only the shared tokens are saved (on the D1 draw: the template head, ~41 tokens per
+    #: row past the first, since rows of one record almost never share a step).
+    share_prefix: bool = False
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
 
     def to_json(self) -> dict:
@@ -130,7 +136,8 @@ class TrainConfig:
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
-    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options")
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options",
+                 "share_prefix")
 
     def hash(self) -> str:
         d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
@@ -148,7 +155,8 @@ def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
                                row_tokens=int(cell.get("row_tokens", 0)), row_plan=str(cell.get("row_plan", "greedy")),
                                cont_plan=str(cell.get("cont_plan", "per_group")),
                                compile_blocks=bool(cell.get("compile_blocks", False)),
-                               row_options=int(cell.get("row_options", 0)))
+                               row_options=int(cell.get("row_options", 0)),
+                               share_prefix=bool(cell.get("share_prefix", False)))
 
 
 #: fixed cost of one group (prefix + continuation call, forward + recompute + backward) in padded-token equivalents:
@@ -303,6 +311,7 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     if cfg.row_options and cfg.loss.order_consistency_weight:
         raise ValueError("row_options is not implemented for order-consistency views (row_groups_with_views)")
     model.backbone.batch_rows = cfg.row_batch > 1
+    model.backbone.share_prefix = bool(cfg.share_prefix)
     return replaced
 
 

@@ -193,3 +193,140 @@ def packed_prefix_features(backbone, rows: Sequence, need_fork: bool, pad_id: in
                 parts = fork_parts[i]
                 per_fork[i] = torch.stack([parts[k] for k in range(len(rows[i].continuations))])
     return _assemble(rows, per_h, per_fork, need_fork)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# tree fork (``heads.infer_opt`` ``tree_fork``): prefix -> question -> option, each level read ONCE
+# ---------------------------------------------------------------------------------------------------------------------
+def tree_supported(backbone) -> bool:
+    """The tree needs each row's state at the end of its OWN suffix out of a right-padded call: a recurrent model that
+    takes ``state=`` and a right-padding ``attention_mask`` and holds the state exactly on padding (the vendored
+    RWKV-7: decay 1, k = v = kk = 0 on pads, token shift from the last real token; ``HiddenStateBackbone.can_fork_rows``).
+    Anything else falls back to the packed path (same result, more tokens)."""
+    return supported(backbone) and backbone.can_fork_rows()
+
+
+def pack_order(lengths: Sequence[int], max_rows: int = PACK_MAX_ROWS, max_tokens: int = PACK_MAX_TOKENS):
+    """Indices into ``lengths`` cut into right-padded packs, longest first (stable): a pack holds <= ``max_rows`` rows
+    and (rows x its longest length) <= ``max_tokens`` (a longer single row runs alone). The packed path's rule."""
+    order = sorted(range(len(lengths)), key=lambda t: (-lengths[t], t))
+    packs: list[list[int]] = []
+    cur: list[int] = []
+    for t in order:
+        if cur and (len(cur) >= max_rows or lengths[cur[0]] * (len(cur) + 1) > max_tokens):
+            packs.append(cur)
+            cur = []
+        cur.append(t)
+    if cur:
+        packs.append(cur)
+    return packs
+
+
+def tree_plan(rows_ids: Sequence[Sequence[int]], conts: Sequence[Sequence[Sequence[int]]] | None,
+              max_rows: int = PACK_MAX_ROWS, max_tokens: int = PACK_MAX_TOKENS) -> dict:
+    """Token accounting of ``tree_prefix_features`` for ONE request group (no model): ``tokens`` = real tokens read,
+    ``positions`` = tokens incl. right padding (what the device computes), ``calls`` = backbone calls. ``conts=None``
+    = no fork. Same packing as the executor (``pack_order``)."""
+    L = common_prefix_len([list(r) for r in rows_ids])
+    suf = [len(r) - L for r in rows_ids]
+    tok, pos, calls = L, L, 1
+    for pack in pack_order(suf, max_rows, max_tokens):
+        tok += sum(suf[i] for i in pack)
+        pos += suf[pack[0]] * len(pack)
+        calls += 1
+        if conts is not None:
+            flat = [len(c) for i in pack for c in conts[i]]
+            for cp in pack_order(flat, max_rows, max_tokens):
+                tok += sum(flat[j] for j in cp)
+                pos += flat[cp[0]] * len(cp)
+                calls += 1
+    return {"tokens": tok, "positions": pos, "calls": calls, "prefix": L}
+
+
+def packed_plan(rows_ids: Sequence[Sequence[int]], conts: Sequence[Sequence[Sequence[int]]] | None,
+                max_rows: int = PACK_MAX_ROWS, max_tokens: int = PACK_MAX_TOKENS) -> dict:
+    """Token accounting of ``packed_prefix_features`` for ONE request group (no model): every (question, option)
+    tail ``suffix_q + continuation_k`` re-reads the question suffix once per option."""
+    L = common_prefix_len([list(r) for r in rows_ids])
+    tails = []
+    for r, cs in zip(rows_ids, conts if conts is not None else [None] * len(rows_ids)):
+        s = len(r) - L
+        tails += [s + len(c) for c in cs] if cs is not None else [s]
+    tok, pos, calls = L + sum(tails), L, 1
+    for pack in pack_order(tails, max_rows, max_tokens):
+        pos += tails[pack[0]] * len(pack)
+        calls += 1
+    return {"tokens": tok, "positions": pos, "calls": calls, "prefix": L}
+
+
+def _run_masked(backbone, ids: torch.Tensor, mask: torch.Tensor, state: Any):
+    """-> (features [B, t, D], state after each row's LAST REAL token) for a right-padded call (vendored RWKV-7)."""
+    out = backbone.model(input_ids=ids, attention_mask=mask.long(), state=state, use_cache=True,
+                         output_hidden_states=True)
+    if out.state is None:
+        raise RuntimeError("backbone returned no state for the tree fork")
+    return backbone._pick(out), out.state
+
+
+def _select(st, idx: torch.Tensor):
+    """A NEW cache holding batch rows ``idx`` of ``st`` (repeats allowed); ``st`` is left untouched."""
+    from decide.backends.state_fork import cache_batch_map
+
+    c = _clone(st)
+    cache_batch_map(c, lambda t: t.index_select(0, idx.to(t.device)))
+    return c
+
+
+@torch.no_grad()
+def tree_prefix_features(backbone, rows: Sequence, need_fork: bool, pad_id: int = 0,
+                         max_rows: int = PACK_MAX_ROWS, max_tokens: int = PACK_MAX_TOKENS):
+    """Same contract and result as ``shared_prefix_features`` / ``packed_prefix_features`` (up to float rounding),
+    reading every token of the prefix tree once. Per request group:
+
+    1. one call over the common prefix P (template head + schema + state);
+    2. every question suffix ``S_q`` (the re-read, ending at the answer position) in right-padded, MASKED packs from
+       copies of P's state. The masked recurrence leaves each row's state at the end of its OWN suffix, so one call
+       yields both the suffix features and the per-question states (the grouped path needed one call per distinct
+       suffix length; the packed path re-read ``S_q`` once per option);
+    3. every option continuation ``C_k`` of the pack's questions, from copies of its question's state
+       (``index_select`` on the batch axis), right-padded (causal; only positions <= a continuation's last real token
+       are read; the state after the call is dropped).
+
+    Tokens read: |P| + sum_q |S_q| + sum_{q,k} |C_k| instead of the packed path's |P| + sum_{q,k} (|S_q| + |C_k|)
+    (``tree_plan`` / ``packed_plan`` count both without a model). Backbones without the masked-state property
+    (``tree_supported``) take ``packed_prefix_features``."""
+    from .backbone import pad_batch
+
+    if not tree_supported(backbone):
+        return packed_prefix_features(backbone, rows, need_fork, pad_id, max_rows, max_tokens)
+    dev = backbone.device
+    B = len(rows)
+    per_h: list[torch.Tensor | None] = [None] * B
+    per_fork: list[torch.Tensor | None] = [None] * B
+    groups: dict[tuple, list[int]] = {}
+    for i, r in enumerate(rows):
+        groups.setdefault(_group_key(r), []).append(i)
+    for idx in groups.values():
+        L = common_prefix_len([rows[i].ids for i in idx])  # capped: every row keeps >= 1 own token
+        hp, sp = _run(backbone, torch.tensor([rows[idx[0]].ids[:L]], dtype=torch.long, device=dev), None)
+        sufs = [list(rows[i].ids[L:]) for i in idx]
+        for pack in pack_order([len(s) for s in sufs], max_rows, max_tokens):
+            sid, sm = pad_batch([sufs[j] for j in pack], pad_id, device=dev)
+            hs, ss = _run_masked(backbone, sid, sm, _select(sp, torch.zeros(len(pack), dtype=torch.long)))
+            for b, j in enumerate(pack):
+                per_h[idx[j]] = torch.cat([hp[0], hs[b, : len(sufs[j])]], 0)
+            if not need_fork:
+                continue
+            flat = [(b, k, list(c)) for b, j in enumerate(pack) for k, c in enumerate(rows[idx[j]].continuations)]
+            parts: dict[int, dict[int, torch.Tensor]] = {}
+            for cp in pack_order([len(f[2]) for f in flat], max_rows, max_tokens):
+                cid, _ = pad_batch([flat[t][2] for t in cp], pad_id, device=dev)
+                sc = _select(ss, torch.tensor([flat[t][0] for t in cp], dtype=torch.long))
+                hc, _ = _run(backbone, cid, sc)  # right padding: only positions <= last are read
+                for r_, t in enumerate(cp):
+                    b, k, c = flat[t]
+                    parts.setdefault(b, {})[k] = hc[r_, len(c) - 1]
+            for b, j in enumerate(pack):
+                i = idx[j]
+                per_fork[i] = torch.stack([parts[b][k] for k in range(len(rows[i].continuations))])
+    return _assemble(rows, per_h, per_fork, need_fork)

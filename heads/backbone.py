@@ -203,6 +203,10 @@ class HiddenStateBackbone(nn.Module):
         #: once; ``train.trainer`` ``cont_plan="single"``): one prefix call per sub-group, then ONE continuation call
         #: for all rows. None = one prefix call for all rows.
         self.prefix_groups: list[list[int]] | None = None
+        #: ``fork_features_rows``: read each prefix call's longest common token prefix once (B=1) and continue the
+        #: rows' own suffixes from copies of its state in one masked call (``TrainConfig.share_prefix``; execution
+        #: only: same features and gradients up to float rounding, tests/test_tree_fork.py). Off = as before.
+        self.share_prefix = False
         self._captured: torch.Tensor | None = None
         self._hook = None
         if capture != "hidden_states":
@@ -379,15 +383,9 @@ class HiddenStateBackbone(nn.Module):
         t_max = max(len(p) for p in prefixes)
         hs, caches = [], []
         for g in groups:  # one prefix call per sub-group (its own right padding); states joined below
-            ids, mask = pad_batch([prefixes[i] for i in g], self.pad_id, device=dev)
-            self._captured = None
-            out = m(input_ids=ids, attention_mask=mask.long(), **base)
-            if out.state is None:
-                raise RuntimeError("backbone returned no state for the cache fork")
-            hp = self._pick(out)
-            hp = hp * mask.unsqueeze(-1).to(hp.dtype)  # zeros on padding, as the per-row path's F.pad
+            hp, state = self._rows_prefix([prefixes[i] for i in g], base)
             hs.append(torch.nn.functional.pad(hp, (0, 0, 0, t_max - hp.shape[1])))
-            caches.append(out.state)
+            caches.append(state)
         cache = caches[0]
         if len(caches) > 1:  # join the sub-groups' states along the batch axis (concatenation order = groups order)
             for li, layer in enumerate(cache.layers):
@@ -406,6 +404,46 @@ class HiddenStateBackbone(nn.Module):
         out = m(input_ids=cids, state=cache, **base)
         f = self._pick(out)[torch.arange(len(flat), device=dev), last]
         return h, list(f.split(ks))
+
+    def _rows_prefix(self, rows: Sequence[Sequence[int]], base: dict[str, Any]):
+        """One sub-group's prefix features ``[B, T, D]`` (zeros on right padding) and the state after each row's own
+        last token. With ``share_prefix`` and a common prefix of L > 0 tokens: ONE B=1 call over it, its state
+        copied B times (``batch_select_indices``: new tensors, autograd intact), then the B suffixes in one masked,
+        right-padded call from those copies: the same features and states as the plain masked call (the masked
+        recurrence holds each row's state exactly on padding), reading L x (B - 1) fewer tokens."""
+        m = self.model
+        dev = self.device
+        L = _shared_len(rows) if self.share_prefix else 0
+        if L <= 0:
+            ids, mask = pad_batch(rows, self.pad_id, device=dev)
+            self._captured = None
+            out = m(input_ids=ids, attention_mask=mask.long(), **base)
+            if out.state is None:
+                raise RuntimeError("backbone returned no state for the cache fork")
+            hp = self._pick(out)
+            return hp * mask.unsqueeze(-1).to(hp.dtype), out.state  # zeros on padding, as the per-row path's F.pad
+        self._captured = None
+        out = m(input_ids=torch.tensor([list(rows[0][:L])], dtype=torch.long, device=dev), **base)
+        if out.state is None:
+            raise RuntimeError("backbone returned no state for the cache fork")
+        h0 = self._pick(out)
+        state = out.state
+        state.batch_select_indices(torch.zeros(len(rows), dtype=torch.long, device=dev))
+        ids, mask = pad_batch([list(r[L:]) for r in rows], self.pad_id, device=dev)
+        self._captured = None
+        out = m(input_ids=ids, attention_mask=mask.long(), state=state, **base)
+        if out.state is None:
+            raise RuntimeError("backbone returned no state for the cache fork")
+        hs = self._pick(out)
+        hs = hs * mask.unsqueeze(-1).to(hs.dtype)
+        return torch.cat([h0.expand(len(rows), -1, -1), hs], 1), out.state
+
+
+def _shared_len(prefixes: Sequence[Sequence[int]]) -> int:
+    """Longest common token prefix of the rows, capped so every row keeps >= 1 own token."""
+    from decide.backends.state_fork import common_prefix_len
+
+    return common_prefix_len([list(p) for p in prefixes]) if len(prefixes) > 1 else 0
 
 
 def fla_installed() -> bool:

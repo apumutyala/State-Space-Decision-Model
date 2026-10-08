@@ -1,0 +1,112 @@
+{
+ "template": "jrt-rwkv-g1-v1",
+ "full_dev": {
+  "requests": 12104,
+  "refused": 0,
+  "packed_tokens": {
+   "mean": 3138.566589557171,
+   "median": 774.0,
+   "p95": 16937.85,
+   "max": 99656.0
+  },
+  "packed_positions": {
+   "mean": 3336.8044448116325,
+   "median": 774.0,
+   "p95": 18174.10000000003,
+   "max": 104862.0
+  },
+  "packed_calls": {
+   "mean": 2.307501652346332,
+   "median": 2.0,
+   "p95": 4.0,
+   "max": 14.0
+  },
+  "tree_tokens": {
+   "mean": 2501.3944150693987,
+   "median": 746.5,
+   "p95": 11754.0,
+   "max": 66852.0
+  },
+  "tree_positions": {
+   "mean": 2676.9647224058162,
+   "median": 746.5,
+   "p95": 13935.000000000015,
+   "max": 71526.0
+  },
+  "tree_calls": {
+   "mean": 3.3261731658955718,
+   "median": 3.0,
+   "p95": 5.0,
+   "max": 15.0
+  },
+  "longest_question_row_mean": 1869.708113020489,
+  "tree_over_packed_positions": 0.8022540027984573,
+  "packed_repeat_share_of_positions": 0.19774599720154273
+ },
+ "subset_common": {
+  "requests": 2000,
+  "packed_tokens": {
+   "mean": 2876.0055,
+   "median": 785.0,
+   "p95": 15457.05,
+   "max": 37748.0
+  },
+  "packed_positions": {
+   "mean": 3060.4875,
+   "median": 785.0,
+   "p95": 17245.6,
+   "max": 42813.0
+  },
+  "packed_calls": {
+   "mean": 2.2795,
+   "median": 2.0,
+   "p95": 4.0,
+   "max": 5.0
+  },
+  "tree_tokens": {
+   "mean": 2321.9375,
+   "median": 739.0,
+   "p95": 10726.05,
+   "max": 25525.0
+  },
+  "tree_positions": {
+   "mean": 2482.299,
+   "median": 739.0,
+   "p95": 12014.599999999999,
+   "max": 31317.0
+  },
+  "tree_calls": {
+   "mean": 3.2995,
+   "median": 3.0,
+   "p95": 5.0,
+   "max": 7.0
+  },
+  "longest_question_row_mean": 1761.6335,
+  "tree_over_packed_positions": 0.8110796074154852,
+  "packed_repeat_share_of_positions": 0.18892039258451476
+ },
+ "price": {
+  "tokens_per_row": {
+   "throughput_model_g1v1": 2958.2765,
+   "heads_packed": 3060.4875,
+   "heads_tree": 2482.299,
+   "g1v2_stock": 1829.5895
+  },
+  "usd_per_1k_T1": {
+   "D1 + exact fixes, chunked_lean": {
+    "model_as_published": 0.45479337404874093,
+    "packed (heads path)": 0.47050687667599556,
+    "tree": 0.3816185328206526
+   },
+   "D1 + exact fixes + fla": {
+    "model_as_published": 0.217968962035639,
+    "packed (heads path)": 0.22549997733411592,
+    "tree": 0.18289843308835557
+   },
+   "Clef 27B (fast fla GDN)": 0.1671976148607922,
+   "Clef-flash (fast fla GDN)": 0.060830282150515336,
+   "stock g1-v2 + fla (reference)": 0.13480610222415104
+  },
+  "tokens_for_2x_vs_clef27b_at_equal_mfu": 1505.828965695559
+ }
+}
