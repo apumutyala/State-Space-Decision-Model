@@ -35,6 +35,7 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
           "m2_first_cell": "jobs/m2_first_cell/job_params.json",
           "m2_first_cell_clef_kd": "jobs/m2_first_cell/job_params_clef_kd.json",
           "m2_first_cell_clef_kd_injmask": "jobs/m2_first_cell/job_params_clef_kd_injmask.json",
+          "m2_first_cell_d3_r1_kd": "jobs/m2_first_cell/job_params_d3_r1_kd.json",
           **{f"q9_feature_cache_{p}": f"jobs/q9_feature_cache/job_params_{p}.json"
              for p in ("stock_dev", "stock_train", "conv1_dev", "conv1_train", "e5_dev", "e5_train")},
           **{f"q9af_cell_{p}": f"jobs/q9af_cell/job_params_{p}.json" for p in ("parent", "cell_r64", "cell_r256")}}

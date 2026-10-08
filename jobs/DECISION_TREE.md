@@ -122,3 +122,5 @@ Injection-masked KD successor: `jobs/m2_first_cell/job_params_clef_kd_injmask.js
 injection-augmented records of the 24k draw (d1a / hijack; 6.1% of items) train on the gold-only
 Clef arm, since the Clef-flash teacher partly follows injections (d1a top = attacker target
 23.2%). Same $66.03 ceiling ($70 hard stop); not an active commitment or authorization.
+
+D3 candidate `jobs/m2_first_cell/job_params_d3_r1_kd.json` (mode `d3_r1_kd`): D2 KD with injected-row KD masking (clef_kd_injmask @ f7db434) trained and evaluated in the R1 readout format (C1 format v2 @46c0788: template `jrt-rwkv-g1-v2`, layout `g1v2`); the parent arm is scored in-job in the same format (no v1 seed). Caps otherwise as clef_kd_injmask.

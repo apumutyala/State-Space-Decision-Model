@@ -485,6 +485,15 @@ class RwkvSegmentEncoder:
             self._ident = {"kind": "rwkv7-hf-trie", "vocab_sha256": vocab, "untrusted": "fail-closed on special ids"}
         return dict(self._ident)
 
+    #: heads.layout g1v2: code continuations must be the frozen single code tokens of this tokenizer
+    is_rwkv7_g1 = True
+
+    def token_bytes(self, i: int) -> bytes:
+        """Raw bytes of one token id (heads.layout g1v2 maps whole-string tokens back to character spans)."""
+        if i == 0:
+            return b""
+        return self.tok._token_bytes[self.tok.decoder[i]]
+
     def __call__(self, text: str, trusted: bool = True) -> list[int]:
         from decide.untrusted import ControlTokenError
 

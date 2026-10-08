@@ -48,6 +48,8 @@ case "$MODE" in
            PARAMS=$CODE/jobs/m2_first_cell/job_params_clef_kd.json ;;
   clef_kd_injmask) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_clef_kd_injmask.json}
                    PARAMS=$CODE/jobs/m2_first_cell/job_params_clef_kd_injmask.json ;;
+  d3_r1_kd) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_d3_r1_kd.json}
+            PARAMS=$CODE/jobs/m2_first_cell/job_params_d3_r1_kd.json ;;
   *) echo "unknown first-cell mode: $MODE" >&2; exit 5 ;;
 esac
 TRAIN_DIR=$DATA/m2-150k
