@@ -3,6 +3,11 @@
 # Clef loss arm, PR #44 150k injection-augmented set), measured against its own stock readout on the 2,008-row Index
 # DEV subset and the G12 development cohort. SF Compute batch job (chip h100). DRAFT, NOT SUBMITTED.
 # Spec: jobs/m2_first_cell/JOB_SPEC.md. Caps: jobs/m2_first_cell/job_params.json. Config: m2_first_cell_rwkv7.json.
+# Usage: first_cell_job.sh [MODE]. MODE base (default) = the files above, exactly as before modes existed. Any other
+#   MODE (lowercase [a-z0-9_]) is generic, no per-mode code here: config m2_first_cell_rwkv7_<MODE>.json, caps
+#   job_params_<MODE>.json, both required (exit 5 if missing or if the params' own "mode" / "cell_config" disagree).
+#   Optional params "train_dir" (relative to $DATA, default m2-150k) moves the training set. A cell config with a
+#   "teacher" (KD) block verifies $DATA/teacher before any training and passes --teacher-dir to run_cell / m2_gates.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -38,9 +43,16 @@ CODE=${M2FC_CODE:-/opt/ssdm/m1}
 CONTEXT_MANIFEST=${M2FC_CONTEXT_MANIFEST:-/opt/ssdm/CONTEXT_MANIFEST.json}
 KIT_DIR=${M2FC_KIT_DIR:-/opt/decision-index}
 DATA=${M2FC_DATA:-/data}
-CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
-PARAMS=$CODE/jobs/m2_first_cell/job_params.json
+MODE=${1:-base}
+if [ "$MODE" = base ]; then
+  CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
+  PARAMS=$CODE/jobs/m2_first_cell/job_params.json
+else  # generic: the mode's two files; resolved and checked once the log and finalize trap exist (below)
+  CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_$MODE.json}
+  PARAMS=$CODE/jobs/m2_first_cell/job_params_$MODE.json
+fi
 TRAIN_DIR=$DATA/m2-150k
+TEACHER_ARGS=()
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -95,6 +107,35 @@ num() { case "$1" in *[!0-9.]*|"") return 1 ;; esac; }
 hb
 watchdog & WD_PID=$!
 trap finish EXIT
+if [ "$MODE" != base ]; then
+  case "$MODE" in ""|*[!a-z0-9_]*) fail 5 "first-cell mode '$MODE' is not [a-z0-9_]+" ;; esac
+  MODE_ENV=$(python -I - "$MODE" "$CELL" "$PARAMS" "${M2FC_CELL:-}" 2>&1 <<'EOF'
+import json, re, sys
+mode, cell, params, override = sys.argv[1:5]
+def load(f, what):
+    try:
+        with open(f, encoding="utf-8") as fh:
+            return json.load(fh)
+    except OSError:
+        sys.exit(f"mode {mode}: no {what} {f}")
+    except ValueError as e:
+        sys.exit(f"mode {mode}: {what} {f} is not JSON ({e})")
+p, c = load(params, "job params"), load(cell, "cell config")
+if p.get("mode", mode) != mode:
+    sys.exit(f"mode {mode}: {params} says mode {p['mode']!r}")
+if not override and p.get("cell_config", cell) != cell:
+    sys.exit(f"mode {mode}: {params} cell_config {p['cell_config']!r} != {cell}")
+td = p.get("train_dir", "m2-150k")
+if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
+    sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
+print(td, 1 if c.get("teacher") else 0)
+EOF
+  ) || fail 5 "$MODE_ENV"
+  read -r TRAIN_SUB TEACHER <<< "$MODE_ENV"
+  TRAIN_DIR=$DATA/$TRAIN_SUB
+  [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
+  say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}"
+fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
 [ -n "${CALL_S:-}" ] || fail 4 "CALL_S (a MEASURED per-call latency, s) is not set"
@@ -124,6 +165,12 @@ python -I "$CODE/jobs/common/fla_guard.py" --out "$WORK/out/fla_guard.json" > "$
 ( cd "$DATA" && sha256sum -c "$CODE/jobs/rwkv7/records.sha256" ) > "$WORK/out/records-verify.txt" 2>&1 || fail 10 "PR #16 records sha256"
 python -X utf8 -m train.train_set verify --config "$CELL" --train-dir "$TRAIN_DIR" --out "$WORK/out/train-set-verify.json" \
   > "$WORK/logs/train-set.log" 2>&1 || fail 10 "150k train set != pointer"
+if [ ${#TEACHER_ARGS[@]} -gt 0 ]; then
+  # KD arm (the cell config's "teacher" block): the context pins the teacher files; verify semantic identity before
+  # loading weights. run_cell and m2_gates also enforce the pinned teacher identity, training draw and content mapping.
+  python -X utf8 -c 'import json,sys; from jobs.q9af_cell.hooks import kd_arm; from train.teacher import load_teacher; c=json.load(open(sys.argv[1])); assert kd_arm(c) is not None; print(json.dumps(load_teacher(sys.argv[2]).summary()))' \
+    "$CELL" "$DATA/teacher" > "$WORK/out/teacher-verify.json" 2>&1 || fail 10 "Clef KD teacher identity / contamination"
+fi
 python -X utf8 -m train.cohort verify > "$WORK/out/cohort-verify.json" 2>&1 || fail 10 "cohort does not rebuild to its committed sha256"
 CAP_SETUP=$(cap setup) || fail 5 "job_params"
 SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))'); r=$?
@@ -242,7 +289,7 @@ say "phase cell"
 mkdir -p "$CK/cell"
 [ -f "$CK/cell/cell.json" ] && cp "$CK/cell/cell.json" "$WORK/out/cell.json"
 timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" --records "$RECORDS" \
-  --train-dir "$TRAIN_DIR" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
+  --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
@@ -253,7 +300,7 @@ say "phase evals (calibration fit; dev card; G12 dev + steer_dev; Index DEV subs
 python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress.jsonl" --cap-min "$(cap evals)" \
   --report "$WORK/out/rate-evals.json" -- \
   timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" \
-  --records "$RECORDS" --train-dir "$TRAIN_DIR" --guard-readiness "$WORK/out/guard/readiness.json" \
+  --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" \
   --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --anchor-arm "$ARM" --anchor-arm-sha256 "$ARM_SHA" \
   --index-rows "$WORK/index-rows.jsonl.gz" \
   --out "$WORK/out/report.json" --stage g12+index --progress-dir "$WORK/logs" > "$WORK/logs/evals.log" 2>&1; r=$?
