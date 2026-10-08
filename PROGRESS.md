@@ -333,5 +333,6 @@
 
 ## 2026-10-08 20:02Z: Agent C rechecked the frozen variant and live gates
 - Review: updated microbatch runner SHA-256 `96f8671b9bef9005672c863a82fb9d78273380ac4fa146a9ef546ede59621ce1`; manifest SHA-256 `136d72d5bdfdeb4d6b8b72cdf08e18c30aeb4a6daa8304451ac997886af193f2`. Static hash/syntax checks pass; independent review confirms the 84-file base pin and the 9-GiB/3-GiB/60-minute guards.
+- Pin detail: base `pins.json` ends with exact bytes `7d 5c 6e`; the runner verifies its full hash, then strips only `5c 6e` in memory before parsing. The frozen file is unchanged.
 - Resource: free RAM has fallen to 2.45 GiB, so the variant remains unrun and its memory/runtime gain is unmeasured.
 - Live A/B: `job-bs5we` and `job-5txp8` remain running; `job-b4fy8` and `job-v3tq9` remain failed. No champion full-DEV/full8 Stage 1 pass is posted.
