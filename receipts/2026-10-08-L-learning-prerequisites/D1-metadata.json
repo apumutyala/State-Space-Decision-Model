@@ -1,0 +1,44 @@
+{
+  "actual_frozen_backbone_lineage": {
+    "capture": "hidden_states",
+    "class": "Rwkv7Model",
+    "commit_hash": "ce3630b854cedbd673569f4600c6cf744bca9dba",
+    "config_sha256": "c01bc735fcbb4198c9e6b3c1a5b2efe231f84f96e58168c298506430a453fa33",
+    "layer": -1,
+    "name_or_path": "/hfcache/models--RWKV--RWKV7-G1k-13.3B-20260930/snapshots/ce3630b854cedbd673569f4600c6cf744bca9dba",
+    "spec": "rwkv7-13.3b",
+    "weights_digest": "f7a1d07d167b3342fbfe0f522d500c04d7de64c4d56fc5de51c19b96b59d5dc7",
+    "weights_digest_mode": "sampled"
+  },
+  "cell_json_sha256": "dca234df8fa821d38d723a440589779f3ec50222228f94f9c75116871360a21c",
+  "checkpoint_pins": {
+    "artifact": "art-bm3e6",
+    "artifact_sha256": "a405907eb85f3b6bc25f287ef37066dcd192b0b2897e4ec45f336a6fe3580a18",
+    "cell_json_sha256": "dca234df8fa821d38d723a440589779f3ec50222228f94f9c75116871360a21c",
+    "ckpt_sha256": "43414f022ccfe2eb7d770957ae851f5450839457d5a41e9f7fb661b3f81cfd32",
+    "job": "job-c7pq2",
+    "latest_json_sha256": "b7aab73095aa8009cd23eb0a5f80cc0d27aca06a71dc5ce354d9a6c8389517d4",
+    "member": "./ckpt/ckpt-step0001439.pt",
+    "url_env": "CKPT_URL"
+  },
+  "checks": {
+    "explicit_chunked_lean": true,
+    "fork_head": true,
+    "lora_rank64": true,
+    "native_rwkv7_spec": true,
+    "ordered_original_template": true,
+    "saved_cell_hash_matches_B_checkpoint_pin": true
+  },
+  "heldout_data_read": false,
+  "missing_for_strict_admission": [
+    "complete saved Trainer header (now exportable with language_growth.checkpoint_metadata)",
+    "exact M2 serving/calibration/runtime export",
+    "original snapshot inventory",
+    "passing Stage1 full-DEV matched Clef comparisons and floors"
+  ],
+  "model_loaded": false,
+  "scope": "D1 metadata compatibility only; no checkpoint reconstruction/qualification",
+  "serving_bundle_in_cell": false,
+  "stage1_qualified": false,
+  "train_steps": 1439
+}

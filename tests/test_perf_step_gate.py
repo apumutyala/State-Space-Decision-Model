@@ -55,8 +55,12 @@ def test_runner_dry_run_end_to_end(tmp_path):
         assert rec["complete"] and rec["flags"] == R.FLAGS[v] and rec["active"] == R.FLAGS[v]
         assert len(rec["steps"]) == R.N_STEPS and all("loss" in s for s in rec["steps"])
         assert [int(t) for t in rec["ladder"]] == list(R.LADDER)
-    comp = json.loads((work / "out" / "variant_min_cost_single_compile.json").read_text(encoding="utf-8"))
-    assert comp["dynamo_after_steps"]["stats"].get("unique_graphs", 0) > 0  # the compiled path really ran
+    for v in ("fast", "fast_fla"):  # the compiled path really ran (with the fla WKV registered under compile too)
+        comp = json.loads((work / "out" / f"variant_{v}.json").read_text(encoding="utf-8"))
+        assert comp["dynamo_after_steps"]["stats"].get("unique_graphs", 0) > 0, v
+    for v in R.FLA_VARIANTS:  # CPU: fla cannot run, every WKV call took the clean fallback (the GPU rule refuses that)
+        rec = json.loads((work / "out" / f"variant_{v}.json").read_text(encoding="utf-8"))
+        assert rec["active"]["rwkv7_wkv"] == "fla" and rec["fla"]["fallbacks"] and not rec["fla"]["calls"], rec["fla"]
     assert json.loads((work / "out" / "preflight.json").read_text())["ok"]
     man = [json.loads(x) for x in (out / "MANIFEST.jsonl").read_text().splitlines()]
     assert all(m["ok"] for m in man) and {m["phase"] for m in man} >= {"setup", "decide", "final"}

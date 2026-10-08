@@ -1,4 +1,4 @@
-# L0–L4 gate runner
+# L0â€“L4 gate runner
 
 `python -m language_growth.gates --parent <checkpoint>` reports missing evidence
 without loading weights or opening heldout data. Exit 2 means unqualified.
@@ -68,6 +68,14 @@ intervals preserve source-world clusters. Invalid neural instrumentation,
 missing fitted controls or incomplete native captures cannot pass, even when
 raw differences look positive. Discovery and evaluation worlds must be disjoint.
 The direction registration is executable frozen data, not an approval document.
+
+For a direction discovered at selected semantic slots, use the v2 native
+registration and explicit `target_slots`; see [learning prerequisites](LEARNING_PREREQUISITES.md).
+The evaluator independently checks fixed slot applicability, unchanged captures
+outside that scope and at least one valid targeted capture in every arm. All
+tasks remain in paired denominators. A relation-only K=3 fit therefore need not
+invent controls for unedited operation/fact slots. It supplies no evidence of
+control over semantic slots outside its registered scope.
 
 DEV exports contain only separately hash-authorized scorer metadata/predictions;
 no original dataset, TEST, D1-B or retention holdout loader is called. The
