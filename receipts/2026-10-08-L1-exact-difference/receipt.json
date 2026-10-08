@@ -1,0 +1,30 @@
+{
+  "schema": "ssdm.authored_semantic_operation_receipt.v0.1.2",
+  "source_commit": "4831bcd23fec833c213b6291498ef7a118dc08f9",
+  "base_commit": "5fec2b2686a10d83387c0613326de35d3d2653c4",
+  "interface_issue": "https://github.com/apumutyala/State-Space-Decision-Model/issues/201",
+  "command": "python -m unittest language_growth.tests.test_exact_difference language_growth.tests.test_kernel language_growth.tests.test_realize -v",
+  "working_directory": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\l1-exact-difference-20261008",
+  "recorded_execution": {
+    "exit_code": 0,
+    "tests_run": 29,
+    "outcome": "OK",
+    "capture": "Recorded from the successful focused command output at source commit 4831bcd; not rerun to create this receipt."
+  },
+  "data": {
+    "path": "fixtures/language_growth/exact_difference.json",
+    "sha256": "3796ccad1b82c9540c753161ec50911dabe497b3d76a057d040d7a1d150c8843",
+    "split": "authored_synthetic_contract_examples_not_model_evaluation"
+  },
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.13 (main, Jul 18 2026, 17:08:38) [MSC v.1944 64 bit (AMD64)]",
+    "hardware": "shared local Windows laptop, CPU only",
+    "billed_usd": 0
+  },
+  "seeds": "N/A: deterministic typed-program contract checks; no sampling or model",
+  "runs_median_spread": "N/A: correctness verification, no performance measurement",
+  "raw_predictions": "N/A: no model predictions; focused tests check authored fixture outputs",
+  "independent_review": "Coordinator reported fresh-context nonauthor approval of exact source HEAD 4831bcd after Decimal capitalization fix and profile 0.1.2 contract review.",
+  "boundary": "Opt-in ExactDifference only; same unit, quantity kind and scope; 256 coefficient digits and 64 fractional places; no conversions, division, chaining, public planner extension, learned claim, training, heldout access, GPU or paid compute."
+}
