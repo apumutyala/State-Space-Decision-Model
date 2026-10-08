@@ -106,6 +106,8 @@ def to_train_record(r: dict, *, development: bool = False) -> dict:
     if prov:
         req["ssdm"] = prov
     rec = {"id": r["id"], "request": req, "labels": r["labels"]}
+    if "intent16_lineage" in r:
+        rec["intent16_lineage"] = r["intent16_lineage"]  # training sidecar; never in model request
     if "group_id" in r:
         # The new grouped-flat path must retain every envelope sidecar the SplitGuard may inspect.
         # Keep the historical ungrouped conversion exact.
@@ -437,7 +439,8 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
                        warmup_steps=int(cfg.get("warmup_steps") or 0),
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
                        seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
-                       eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {})
+                       eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {},
+                       data_schedule=cfg.get("data_schedule") or {})
 
 
 def validate_head(cfg: dict) -> None:
@@ -776,6 +779,7 @@ def main(argv=None):
             try:
                 tr = make_trainer(1)
                 tr.train_items = its[: cfg["batch_size"] * cfg["grad_accum"]]  # the worst rows (max K, then max T)
+                tr.data_schedule = None  # the memory ladder must use these worst rows, not training mixture indices
                 t0 = time.time()
                 loss = tr.train_step()
                 if cuda:

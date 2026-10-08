@@ -56,7 +56,21 @@ def items_from_records(records: Iterable[dict[str, Any]], encode: EncodeFn, layo
 
         content_sha = normalized_content_hash(req["state"], req["questions"])
         for qid, gold in sorted(rec["labels"].items()):
-            row = build_row(req, qid, encode, template=template, layout=layout)
+            side = rec.get("intent16_lineage")
+            rendered_order = None
+            if side is not None:
+                from train.intent16 import VERSION
+
+                if side.get("version") != VERSION or side.get("role") not in ("baseline", "intent"):
+                    raise ValueError("unknown intent16 training lineage")
+                if side["role"] == "intent":
+                    if side.get("question") != qid:
+                        raise ValueError("intent16 view question drift")
+                    rendered_order = side["rendered_option_ids"]
+            row = build_row(req, qid, encode, template=template, layout=layout,
+                            rendered_option_ids=rendered_order)
+            if side is not None:
+                row.meta["intent16_lineage"] = side
             row.meta["encoder"] = encoder_identity(encode)
             row.meta["content_sha256"] = content_sha  # normalized record content (train.cohort): disjointness proofs
             gold = str(gold).lower() if row.qtype == "noul" else str(gold)

@@ -110,6 +110,8 @@ def items_identity(items: Sequence) -> dict[str, Any]:
     for it in items:
         r = it.row
         value = [it.id, it.label, r.ids, r.option_ids, r.continuations, r.option_seqs, r.qtype]
+        if "intent16_lineage" in r.meta:
+            value.append({"intent16_lineage": r.meta["intent16_lineage"]})
         axes = getattr(it, "axis_target", None)
         if axes is not None:
             value.append({"axis_target": list(axes)})  # opt-in sidecar identity; legacy digests unchanged
@@ -119,7 +121,9 @@ def items_identity(items: Sequence) -> dict[str, Any]:
             value.append({"view": [view.id, view.label, v.ids, v.option_ids, v.continuations, v.option_seqs, v.qtype,
                                    list(it.view_perm)]})
         h.update(_h(value).encode())
-    return {"n": len(items), "sha256": h.hexdigest(), "order_fn": ORDER_FN}
+    scheduled = any("intent16_lineage" in it.row.meta for it in items)
+    return {"n": len(items), "sha256": h.hexdigest(),
+            "order_fn": "intent16-v1: global cursor; 7 baseline + alternating intent; hash cycles" if scheduled else ORDER_FN}
 
 
 def layout_identity(items: Sequence) -> dict[str, Any]:

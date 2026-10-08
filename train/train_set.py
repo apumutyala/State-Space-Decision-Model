@@ -84,6 +84,12 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
     from train.run_cell import split_ids, to_train_record
 
     ptr = read_pointer(cfg["train_set"]["pointer"])
+    if "derivation" in ptr:
+        from train.intent16 import draw_derived
+
+        return draw_derived(cfg, train_dir, ptr, cohort=cohort)
+    if cfg.get("data_schedule"):
+        raise TrainSetMismatch("a data schedule requires its verified derived training pointer")
     fs = files(train_dir, ptr)
     sha = verify_files(train_dir, ptr) if verify else {}
     co = cohort if cohort is not None else Cohort(expected_sha256=cfg["cohort_sha256"])

@@ -40,7 +40,8 @@ from decide.provenance import field_strings, instructions_path, state_path
 from decide.schema import canonical_options, canonical_question_ids, render
 
 LAYOUTS = ("ordered", "symmetric")
-#: bump on any change to tagged_segments / option_segments / build_row token accounting
+#: bump on default tagged_segments / option_segments / build_row token-accounting changes.
+#: The opt-in intent16 rendering has its own version in the training lineage sidecar.
 LAYOUT_VERSION = "m2-layout-v2"  # v2: empty-state rows use the re-read instruction as evidence
 
 #: encode(text, trusted) -> token ids.
@@ -59,7 +60,8 @@ def _instr_path(qid: str, q: dict[str, Any]) -> str:
     return instructions_path(qid) if isinstance(instr, str) and instr != "" else ID_PATH
 
 
-def _field(index: int, qid: str, q: dict[str, Any], target: bool, with_options: bool) -> list[tuple]:
+def _field(index: int, qid: str, q: dict[str, Any], target: bool, with_options: bool,
+           rendered_option_ids: Sequence[str] | None = None) -> list[tuple]:
     ftag = "field" if target else ""
     seg: list[tuple] = [
         (f"FIELD {index}\nID: ", True, ftag, None),
@@ -69,11 +71,15 @@ def _field(index: int, qid: str, q: dict[str, Any], target: bool, with_options: 
     ]
     if with_options:
         seg.append(("\nALLOWED OPTIONS:", True, ftag, None))
-        for j, (oid, desc) in enumerate(canonical_options(q), start=1):
+        opts = canonical_options(q)
+        order = list(range(len(opts))) if rendered_option_ids is None else [
+            [oid for oid, _ in opts].index(oid) for oid in rendered_option_ids]
+        for j, option_index in enumerate(order, start=1):
+            oid, desc = opts[option_index]
             sem = {"option_id": oid}
             if desc is not None:
                 sem["description"] = desc
-            otag = f"option:{j - 1}" if target else ""
+            otag = f"option:{option_index}" if target else ""
             seg += [(f"\nOPTION {j}: ", True, ftag, None), (render(sem), False, otag, ID_PATH)]
     else:
         n = len(canonical_options(q))
@@ -116,19 +122,26 @@ def declared_instruction_paths(request: dict[str, Any]) -> list[str]:
     return sorted(out)
 
 
-def _tagged_segments_paths(template: Template, request: dict[str, Any], qid: str, layout: str) -> list[tuple]:
+def _tagged_segments_paths(template: Template, request: dict[str, Any], qid: str, layout: str,
+                           rendered_option_ids: Sequence[str] | None = None) -> list[tuple]:
     if layout not in LAYOUTS:
         raise ValueError(f"layout must be one of {LAYOUTS}")
     with_options = layout == "ordered"
     questions = request["questions"]
     order = canonical_question_ids(questions)
     q = questions[qid]
+    if rendered_option_ids is not None:
+        ids = [oid for oid, _ in canonical_options(q)]
+        if q["type"] != "choice" or sorted(rendered_option_ids) != sorted(ids):
+            raise ValueError("training rendered_option_ids must permute the full choice domain")
     seg: list[tuple] = [(template.head.format(system=SYSTEM_PROMPT) + "SCHEMA FIELDS:\n", True, "", None)]
     for i, k in enumerate(order, start=1):
         if i > 1:
             seg.append(("\n", True, "", None))
-        seg += _field(i, k, questions[k], k == qid, with_options)
-    ids_text = ", ".join(o for o, _ in canonical_options(q)) if with_options else "(the separately given options)"
+        seg += _field(i, k, questions[k], k == qid, with_options,
+                      rendered_option_ids if k == qid else None)
+    rendered_ids = rendered_option_ids if rendered_option_ids is not None else [o for o, _ in canonical_options(q)]
+    ids_text = ", ".join(rendered_ids) if with_options else "(the separately given options)"
     seg += [
         ("\nEND SCHEMA\n\nSTATE:\n", True, "", None),
         (render(request["state"]), False, "state", state_path()),
@@ -222,6 +235,7 @@ def build_row(
     layout: str = "ordered",
     option_order: Sequence[int] | None = None,
     empty_state: str = "reread_instructions",
+    rendered_option_ids: Sequence[str] | None = None,
 ) -> LayoutRow:
     """Tokenise one question row and record spans.
 
@@ -236,9 +250,15 @@ def build_row(
     ``option_order`` permutes the option axis (a test hook for equivariance): row k
     of every per-option field is canonical option ``option_order[k]``. The shared
     prefix is unaffected (ordered layout keeps canonical rendering).
+
+    ``rendered_option_ids`` is an explicit training-only permutation of the target
+    choice's displayed options. IDs, the canonical option axis and their span
+    alignment remain unchanged. Default serving and evaluation rendering is canonical.
     """
     tpl = TEMPLATES[template] if isinstance(template, str) else template
-    segs4 = _tagged_segments_paths(tpl, request, qid, layout)
+    # Training-only intent views may permute rendering while preserving option IDs
+    # and the canonical option axis (including literal injection references).
+    segs4 = _tagged_segments_paths(tpl, request, qid, layout, rendered_option_ids)
     q = request["questions"][qid]
     opts = canonical_options(q)
     ids: list[int] = []

@@ -97,12 +97,15 @@ class TrainConfig:
     #: than the budget runs alone. Bounds the per-call activation memory (jobs/cell_step_profile JOB_SPEC, A1).
     row_tokens: int = 0
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
+    data_schedule: dict = field(default_factory=dict)  # opt-in training mixture; part of checkpoint config identity
 
     def to_json(self) -> dict:
         d = asdict(self)
         d["loss"] = self.loss.identity()  # optional KD/order-consistency fields only when enabled (old hashes unchanged)
         if d["axis_loss_weight"] == 0.0:
             d.pop("axis_loss_weight")  # preserve legacy config identities
+        if not d["data_schedule"]:
+            d.pop("data_schedule")
         for k in self.EXECUTION:  # at their defaults the execution fields are left out: old records stay identical
             if d[k] == getattr(TrainConfig, k):
                 d.pop(k)
@@ -267,6 +270,19 @@ class Trainer:
         self.guard = guard
         self.model, self.cfg = model, cfg
         self.train_items, self.eval_items = train_items, eval_items or []
+        self.data_schedule = None
+        if any("intent16_lineage" in i.row.meta for i in self.eval_items):
+            raise ValueError("intent16 views are training-only")
+        if not cfg.data_schedule and any("intent16_lineage" in i.row.meta for i in train_items):
+            raise ValueError("intent16 data requires its declared training schedule")
+        if cfg.data_schedule:
+            from train.intent16 import SCHEDULE, Schedule
+
+            if cfg.data_schedule != SCHEDULE or cfg.batch_size != 1 or cfg.grad_accum != 8:
+                raise ValueError("intent16 requires the declared schedule with batch 1 x accumulation 8")
+            if cfg.loss.kd or cfg.loss.order_consistency_weight:
+                raise ValueError("intent16 does not support KD/order-consistency payloads")
+            self.data_schedule = Schedule(train_items, cfg.seed)
         self.lora_modules = [] if prepared else prepare_model(model, cfg)
         groups = [{"params": model.head_parameters(), "lr": cfg.lr_head}]
         lora = lora_parameters(model.backbone)
@@ -296,6 +312,10 @@ class Trainer:
 
     def _next_batch(self) -> list[Item]:
         bs = self.cfg.batch_size
+        if self.data_schedule is not None:
+            indices = self.data_schedule.take(self.cursor, bs)
+            self.cursor += bs  # global row cursor, saved/resumed verbatim; epoch stays zero
+            return [self.train_items[i] for i in indices]
         order = self._order(self.epoch)
         if self.cursor + bs > len(order):
             self.epoch += 1

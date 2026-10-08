@@ -1,0 +1,19 @@
+{
+ "build": "sample-24000-seed0-intent16-v1",
+ "location": "ssdm-data/m2/build/sample-24000-seed0-intent16-v1/",
+ "n_records": 24000,
+ "manifest": "sample-24000-seed0-intent16-v1.manifest.jsonl.gz",
+ "content_map": "sample-24000-seed0-intent16-v1.content.jsonl.gz",
+ "derivation": {
+  "version": "intent16-v1",
+  "seed": 0,
+  "parent_config": "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+  "parent_config_sha256": "60c6e45253164bc40a052964c3f6de674b473fa886aa6ad15dfe27c3846f8ec2",
+  "parent_pointer_sha256": "c65c10450fe9edef801dce6bbf24f091c1014263fd66ceb5412af23fc08ddc09",
+  "parent_directory": "sample-150000-seed20261006",
+  "parent_drawn_ids_sha256": "2bbbf1808c0bdd6cf0ba3ecd236cf9a64110c5e429e22f8b8e9cd2df7507556b"
+ },
+ "records_uncompressed_sha256": "5d8d4ac9deb01b12e50fc2d1c9ea38d3798261763c5f40f36499e390e8103c47",
+ "manifest_uncompressed_sha256": "7041b2cbd0ed95a0a462c6aacf8633e6d851b2bfb071298ce7354448c3c2f6ab",
+ "content_map_uncompressed_sha256": "3b6ed08e7ab92673de32f1797e66b7e9f9f2d37da498c2e642f5bb9640b05b28"
+}
