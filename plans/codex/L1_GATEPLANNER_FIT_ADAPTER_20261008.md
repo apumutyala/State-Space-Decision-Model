@@ -161,3 +161,37 @@ remains `preflight_only_not_authorized_to_train`, with no Stage 1 parent, guard
 pin or A order. The generated addendum is checker-valid train supervision,
 not independent label audit or learned-capability evidence; free-running L1
 usefulness and parent-retention gates remain unmeasured.
+
+## Balanced ExactDifference fit addendum
+
+The 24-task ExactDifference addendum above remains preserved, but its narrow
+field/sign coverage would leave the L1 semantic-operation target badly
+underrepresented. A separate development-train-only exporter now enumerates
+all ordered pairs of distinct records across `price` and `warranty_months` in
+24 fresh multi-record worlds. The 576 tasks produce 1,728 GatePlanner rows;
+each field has 120 positive, 120 negative and 48 tie differences. The values
+are synthetic and checker-valid, including decimal USD and integer months;
+this does not establish learned arithmetic.
+
+The frozen fit artifact is
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-exactdifference-fit-supplement-20261008-v2`:
+JSONL SHA-256
+`0cdac25e223b20bffa076bbc9c749455cbae4b23f367fea83eb7d05ee3e8b345`, gzip
+SHA-256 `bee5faefa8a9551b68da4811744dbc1d70d9fd16f612fe8895af6d7af7a63fb1`,
+and manifest SHA-256
+`407ba9f16c6768e7519cc38d9c85a8c221e786fe4f1a3b764b70d6a5bc6d93f9`. Its
+exact RWKV7 census reports 1,120–1,404 prompt tokens, at most 1,408 including
+continuation, K<=8 and continuation length 4; no Torch or model was loaded.
+Every reference passed the checker and actual GatePlanner teacher-forced
+replay. Operand targets are balanced over all eight choices in both slots.
+
+The separately frozen combined plan is
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-combined-difference-preflight-20261008-v2`
+(SHA-256 `9f420d057a7cb3a00703793ac1f1f1a65cf5ae7ea5d9a6d8d701db985101fb8f`).
+With the unchanged base cohort it binds 4,800 rows / 1,536 tasks / 48 worlds;
+each source retains an 18/6 whole-world train/diagnostic split, totaling
+3,600/1,200 rows. Semantic-operation targets are 576 Compare, 576
+ExactDifference, 192 ReadFact and 192 ExplainDerivation. Every row remains
+teacher-forced `development_train` data. The plan remains
+`preflight_only_not_authorized_to_train`: Stage 1, A's order, the external
+hash-only SplitGuard pins and isolated resources are still required.
