@@ -10,9 +10,12 @@ Loss map (research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md, measured): Clef-flash-an
 | R1 | B | C1 readout format v2 (single-token codes etc.); rescore stock parent | +2–6 | ~$2 | B: job-zhyvg |
 | R3 | B | Long-catalog binding + label-prior readout: single-token codes, catalog repeated next to the answer slot for k>16, fit-free contextual calibration (basis: >16 options 31% vs 59%) | +3–7 (B est.) | ~$3–6 | B: designing; rescore after R1 |
 | D3 | A | D1 gold recipe on the fixed v2f format (train=readout; parent scored with v2f in-job) | compounding | ≤$40 | running: job-93fpy from 30d5239 (PR #220, awaiting operator merge) |
-| D6 | A | D1 + order-consistency loss (reverse view, 0.25). The data is already option-shuffled, so the remaining skew is a label prior | +0–2 | ≤$40 | packaged ab72921; HOLD until D1 shows the prior collapse persists |
 | D7 | A | D1 with 2× train clock (380 min ≈ 1 epoch of 24k); D1 is time-bound at ~11k rows | +2–5 | ≤$52 | running: job-zpyis |
 | D8 | A | train_max_k 16→255 (+ row_options 160 memory guard; eval unchanged) | small: at T≤2048 only +472 items (K=77) | ≤$66 | packaged e8c9436; HOLD standalone; fold into D4. The real >16 gap needs a T=4096 rung (+66% tokens per row), which is a separate probe once throughput fixes land |
+| D10 | A | v2f + fast flags + train_max_k + B1 100k v2 (190 / 380 min) | compounding | ≤$42 / ≤$54 | running: job-chqb6 (190), job-afe3k (380) |
+| D1F | A | d1_fast: D1 recipe + 1.40× flags (independent re-measure of D1, more rows) | +0–3 | ≤$40 | running: job-3ui38 |
+| D10w | A | D10 on v3w readout (best stock readout, +1.97 vs v2f) | +1–2 over D10 | ≤$42 | packaging |
+| D6 | A | order-consistency loss | ~0: training already fixed the label prior (D1 analysis) | — | DROPPED |
 | D9 | A | d1_fast flags + T=4096 ladder rung + train_max_k 255: long rows and K=77/151 catalogs train (+4,737 items, ~10.2k rows at 190 min) | +2–4 | ≤$40 | running: job-mcng6 |
 | D4 | A | 45k draw re-aimed: tools > procedural knowledge > BANKING77/CLINC > retrieval; uniform gold positions | +3–6 | ~$30–60 | mode on stack/rwkv7/d4-draw45k; waiting on B1 |
 | B1 | B | 45k/100k draw (re-aimed as in D4), exclusions vs TEST/held-out/cohort v3 | enables D4 | ~$0–5 | B: stack/rwkv7/b1-draw |
