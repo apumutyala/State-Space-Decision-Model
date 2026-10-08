@@ -1,5 +1,5 @@
 {
- "_comment": "D1fla mode d1_fla (DRAFT, NOT SUBMITTED): d1_fast with ONLY \"rwkv7_wkv\" changed from \"chunked_lean\" to \"fla\" (fla-core 0.5.2 installed at setup by hash, strict training; SF job-9bs8w perf_step_gate v2 ADOPTed fast_fla = d1_fast + fla: 3.88 vs 5.65 s/step, 1.46x, grad cos 0.998, loss_rel 3.2e-4, peak 62.6 GB). Same clock (~1.46x rows). d1_fast's comment follows. d1_fast (DRAFT, NOT SUBMITTED): the D1 base cell with the perf_step_gate step fixes (see perf_note); the rest of this comment is D1's. First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md; DRAFT, NOT SUBMITTED). RWKV7-G1k-13.3B parent, LoRA r=64 + cache-fork head, Clef loss arm (LS-CE 0.1 + Brier + RPS on score questions), trained on the PR #44 150k set (injection-augmented at build: D1-A verbatim + training-only hijack, labels unchanged) with the content-index guard and the cohort-v2 exclusion (by id, content and source item at build; re-checked by train.train_set). Eval = cohort dev (G12) + the 2,008-row Index DEV subset; parent arm scored in the same job.",
+ "_comment": "D1fla mode d1_fla (DRAFT, NOT SUBMITTED): d1_fast with ONLY \"train_rwkv7_wkv\": \"fla\" added (training steps run fla; rwkv7_wkv stays \"chunked_lean\" so every scoring path -- parent arm, seed check, child evals, dev cards -- keeps the D1 identity and the pinned parent arm seed is accepted; job-b4fy8 failed seed_verify with rwkv7_wkv fla) (fla-core 0.5.2 installed at setup by hash, strict training; SF job-9bs8w perf_step_gate v2 ADOPTed fast_fla = d1_fast + fla: 3.88 vs 5.65 s/step, 1.46x, grad cos 0.998, loss_rel 3.2e-4, peak 62.6 GB). Same clock (~1.46x rows). d1_fast's comment follows. d1_fast (DRAFT, NOT SUBMITTED): the D1 base cell with the perf_step_gate step fixes (see perf_note); the rest of this comment is D1's. First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md; DRAFT, NOT SUBMITTED). RWKV7-G1k-13.3B parent, LoRA r=64 + cache-fork head, Clef loss arm (LS-CE 0.1 + Brier + RPS on score questions), trained on the PR #44 150k set (injection-augmented at build: D1-A verbatim + training-only hijack, labels unchanged) with the content-index guard and the cohort-v2 exclusion (by id, content and source item at build; re-checked by train.train_set). Eval = cohort dev (G12) + the 2,008-row Index DEV subset; parent arm scored in the same job.",
  "seed": 0,
  "head": "fork",
  "head_kwargs": {},
@@ -57,7 +57,8 @@
    "reason": "train.heldout (D1-B, k=8) finds the 4-word fragment 'rather than relying on' of template soft_framing in these three MMLU aux_train records (natural text, no injection; the PR #44 build guard, word 6-grams, does not fire). Excluded from the draw, fail-closed: the heldout phase passes only if the full-set hits are exactly these ids (2026-10-06 local scan, 150,000 texts, 112 s)."
   }
  },
- "rwkv7_wkv": "fla",
+ "rwkv7_wkv": "chunked_lean",
+ "train_rwkv7_wkv": "fla",
  "act_ckpt": true,
  "row_batch": 8,
  "row_tokens": 8192,
