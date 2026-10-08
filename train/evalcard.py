@@ -38,14 +38,37 @@ def _try_import(name: str):
 
 
 @torch.no_grad()
+def _chunks(model, items, batch_size: int):
+    """Fixed chunks of ``batch_size`` items; for a joint_record head, chunks of WHOLE records (consecutive items of a
+    record, ids ``<record>/<qid>``) up to ``batch_size`` rows, so the record mixer sees every question of a record."""
+    if not getattr(getattr(model, "head", None), "needs_record", False):
+        for s in range(0, len(items), batch_size):
+            yield items[s : s + batch_size]
+        return
+    recs: list[list] = []
+    for it in items:
+        key = it.id.rsplit("/", 1)[0]
+        if recs and recs[-1][0].id.rsplit("/", 1)[0] == key:
+            recs[-1].append(it)
+        else:
+            recs.append([it])
+    cur: list = []
+    for r in recs:
+        if cur and len(cur) + len(r) > batch_size:
+            yield cur
+            cur = []
+        cur += r
+    if cur:
+        yield cur
+
+
 def predict(model, items, batch_size: int = 8, certs: list | None = None
             ) -> tuple[torch.Tensor, list[int], list[int], list[int]]:
     """``certs`` (a list): for a G16 head, each item's certificate fields are appended (no recompute)."""
     model.eval()
     lps, labels, ev, ks = [], [], [], []
     kmax = max(i.row.n_options for i in items)
-    for s in range(0, len(items), batch_size):
-        chunk = items[s : s + batch_size]
+    for chunk in _chunks(model, items, batch_size):
         lp = model([i.row for i in chunk], shared_prefix=True).log_probs.detach().float().cpu()
         if certs is not None and hasattr(model.head, "certificate"):
             certs += [model.head.certificate(j) for j in range(len(chunk))]

@@ -15,6 +15,62 @@ from .layout import EncodeFn, LayoutRow, build_row
 from .typed import TypedOutput, to_wire
 
 
+def record_key(row: LayoutRow):
+    """Rows of one request share the token prefix template head + schema of ALL fields + state. ``meta["record"]``
+    (when a caller sets it) wins; else that prefix (``meta["prefix_end"]``, set by ``build_row``; older rows: the state
+    span end for state evidence) or the original state span (re-read evidence,
+    ``meta["untrusted_spans"]``); a row with neither is its own record."""
+    if row.meta.get("record") is not None:
+        return ("record", row.meta["record"])
+    if row.meta.get("prefix_end") is not None:
+        return ("prefix", tuple(row.ids[: row.meta["prefix_end"]]))
+    if row.meta.get("evidence", "state") == "state":
+        return ("prefix", tuple(row.ids[: row.state_span[1]]))
+    us = row.meta.get("untrusted_spans") or []
+    if us:
+        return ("prefix", tuple(row.ids[: us[0][1]]))
+    return ("row", id(row))
+
+
+def record_groups(rows: Sequence[LayoutRow]) -> list[list[int]]:
+    """Row indices grouped by record (first-appearance order), each group in SCHEMA order (field position)."""
+    groups: dict[Any, list[int]] = {}
+    for i, r in enumerate(rows):
+        groups.setdefault(record_key(r), []).append(i)
+    return [sorted(g, key=lambda i: (rows[i].field_span[0], i)) for g in groups.values()]
+
+
+def _input_embedding(backbone) -> nn.Module:
+    m = backbone.model
+    get = getattr(m, "get_input_embeddings", None)
+    emb = get() if callable(get) else None
+    if emb is None:
+        emb = next((x for x in m.modules() if isinstance(x, nn.Embedding)), None)
+    if emb is None:
+        raise ValueError("joint_record lexical prior: the backbone has no input embedding table")
+    return emb
+
+
+@torch.no_grad()
+def lexical_vectors(backbone, rows: Sequence[LayoutRow], kmax: int) -> torch.Tensor:
+    """[B, K, D] frozen input-embedding mean over each option's text (ordered layout: the option's schema span; else
+    the option-id tokens of its continuation). Zero on padded options. No gradient (the table is frozen)."""
+    emb = _input_embedding(backbone)
+    dev = emb.weight.device
+    out = torch.zeros((len(rows), kmax, emb.weight.shape[1]), dtype=torch.float32, device=dev)
+    for i, r in enumerate(rows):
+        for k in range(r.n_options):
+            if r.layout == "ordered" and r.option_spans:
+                a, b = r.option_spans[k]
+                toks = r.ids[a:b]
+            else:
+                sp = (r.meta.get("cont_spans") or [[]] * r.n_options)[k]
+                toks = [t for (a, b, _p) in sp for t in r.continuations[k][a:b]] or r.continuations[k]
+            if toks:
+                out[i, k] = emb(torch.tensor(toks, dtype=torch.long, device=dev)).float().mean(0)
+    return out
+
+
 @dataclass
 class Forward:
     log_probs: torch.Tensor  # [B, K]
@@ -69,6 +125,9 @@ class DecisionModel(nn.Module):
             return Forward(torch.log_softmax(out.logits, -1), out, None)
         x = build_head_input(self.backbone, rows, need_fork=self.head.needs_fork, pad_id=self.pad_id,
                              shared_prefix=shared_prefix)
+        if getattr(self.head, "needs_record", False):  # joint_record head: lexical vectors + record groups
+            x.lex = lexical_vectors(self.backbone, rows, x.e.shape[1])
+            x.groups = record_groups(rows)
         out = self.head(x, return_attribution=return_attribution)
         lp = self.typed(out.logits, [r.qtype for r in rows], x.ks, x.e)
         return Forward(lp, out, x)

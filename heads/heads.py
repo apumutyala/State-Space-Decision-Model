@@ -395,7 +395,106 @@ class ClefCrossAttentionControl(DecisionHead):
                 "attention_free": False, "note": "keys/values grow with T: softmax over positions"}
 
 
+# ---------------------------------------------------------------- (f) joint record head (attention-free)
+class JointRecordHead(DecisionHead):
+    """Attention-free JOINT scoring of all questions of a record (Clef's "option-specific evidence routing, joint
+    cross-field mixing, schema-bound scoring, lexical prior", without softmax attention).
+
+    z[i,k] = base_fork(i,k) + lex_scale * cos(Lo lex[i,k], Lq q_end[i]) + w . GELU(A v[i,k] + C c[i] + v[i,k] * c[i])
+
+    * ``base`` is exactly ``FinalStateFork`` (built first in the head's seeded RNG, so its init equals the D1 fork
+      head's); ``lex_scale`` and ``w`` start at 0, so at init the joint head IS the fork head.
+    * v[i,k] = option evidence (projected fork feature + lexical vector); field token x_i = MLP(masked mean / max of
+      v[i,:], q_end[i]); payload token p = projection of the mean state feature of the record.
+    * record mixer: a bidirectional gated linear recurrence (s = a * s + (1 - a) * u, independent sigmoid gates, no
+      normalisation across fields) over the record's field tokens in SCHEMA order (``groups``), both scans started
+      from tanh(p). c[i] = the EXCLUSIVE forward and backward states at field i (what the OTHER fields + payload say),
+      so a single-question record is scored from its own options + the payload only (no other row can leak in).
+    O(Q * W) state per record; no softmax over positions, options or fields."""
+
+    name = "joint_record"
+    needs_fork = True
+    needs_record = True
+
+    def __init__(self, d_model: int, hidden: int = 256, width: int = 128) -> None:
+        super().__init__()
+        self.base = FinalStateFork(d_model, hidden)
+        # the joint parameters draw from their OWN RNG stream (seeded from the ambient one without advancing it), so
+        # the ambient RNG after this head equals that after a plain fork head: base AND typed outputs init as in D1
+        # (torch.initial_seed() = the seed DecisionModel set for this head; deterministic per cfg.seed)
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed((torch.initial_seed() + 0x4A4F494E) % (2**63))
+            self._build_joint(d_model, width)
+
+    def _build_joint(self, d_model: int, width: int) -> None:
+        self.W = width
+        self.n_f, self.n_l, self.n_q, self.n_p = (nn.LayerNorm(d_model) for _ in range(4))
+        self.opt = nn.Linear(d_model, width)
+        self.lex_v = nn.Linear(d_model, width, bias=False)
+        self.qv = nn.Linear(d_model, width)
+        self.field = nn.Sequential(nn.Linear(3 * width, width), nn.GELU(), nn.Linear(width, width))
+        self.pay = nn.Linear(d_model, width)
+        self.gate_f, self.in_f = nn.Linear(width, width), nn.Linear(width, width)
+        self.gate_b, self.in_b = nn.Linear(width, width), nn.Linear(width, width)
+        nn.init.constant_(self.gate_f.bias, 1.0)
+        nn.init.constant_(self.gate_b.bias, 1.0)
+        self.ctx = nn.Linear(2 * width, width)
+        self.A = nn.Linear(width, width)
+        self.w = nn.Parameter(torch.zeros(width))
+        self.lex_o, self.lex_q = nn.Linear(d_model, width, bias=False), nn.Linear(d_model, width, bias=False)
+        self.lex_scale = nn.Parameter(torch.zeros(()))
+
+    def _scan(self, toks: torch.Tensor, s0: torch.Tensor, gate: nn.Linear, inp: nn.Linear) -> torch.Tensor:
+        """Exclusive states: out[j] = state after s0 and toks[:j] (toks [n, W], s0 [W]) -> [n, W]."""
+        a, u = torch.sigmoid(gate(toks)), torch.tanh(inp(toks))
+        s, out = s0, []
+        for j in range(toks.shape[0]):
+            out.append(s)
+            s = a[j] * s + (1 - a[j]) * u[j]
+        return torch.stack(out)
+
+    def forward(self, x: HeadInput, return_attribution: bool = False) -> HeadOutput:
+        if x.fork is None:
+            raise ValueError("JointRecordHead needs fork features")
+        bsz, kmax = x.option_mask.shape
+        z0 = self.base(x).logits  # [B, K], -inf on padded options
+        m = x.option_mask.unsqueeze(-1)
+        v = self.opt(self.n_f(x.fork))
+        if x.lex is not None:
+            v = v + self.lex_v(self.n_l(x.lex))
+        mean = (v * m).sum(1) / m.sum(1).clamp_min(1)
+        vmax = v.masked_fill(~m, -1e4).max(1).values
+        q = self.n_q(x.q_end)
+        tok = self.field(torch.cat([mean, vmax, self.qv(q)], -1))  # [B, W]
+        evm = x.evidence_mask.unsqueeze(-1).to(x.h.dtype)
+        pay = self.pay(self.n_p((x.h * evm).sum(1) / evm.sum(1).clamp_min(1)))  # [B, W]
+        groups = x.groups if x.groups is not None else [[i] for i in range(bsz)]
+        c = tok.new_zeros((bsz, 2 * self.W))
+        parts, idx = [], []
+        for g in groups:
+            gi = torch.tensor(g, dtype=torch.long, device=tok.device)
+            s0 = torch.tanh(pay[g[0]])
+            fwd = self._scan(tok[gi], s0, self.gate_f, self.in_f)
+            bwd = self._scan(tok[gi].flip(0), s0, self.gate_b, self.in_b).flip(0)
+            parts.append(torch.cat([fwd, bwd], -1))
+            idx.append(gi)
+        c = c.index_copy(0, torch.cat(idx), torch.cat(parts).to(c.dtype))
+        cw = self.ctx(c).unsqueeze(1)  # [B, 1, W]
+        delta = F.gelu(self.A(v) + cw + v * cw) @ self.w  # [B, K]
+        z = z0 + delta
+        if x.lex is not None:
+            lo = F.normalize(self.lex_o(self.n_l(x.lex)), dim=-1)
+            lq = F.normalize(self.lex_q(q), dim=-1).unsqueeze(-1)
+            z = z + self.lex_scale * (lo @ lq).squeeze(-1)
+        return HeadOutput(_masked(z, x.option_mask))
+
+    def cost(self, T: int, K: int) -> dict:
+        return {"flops": 2 * K * self.n_params(), "accumulator_scalars": 2 * self.W, "attention_free": True,
+                "streaming_implemented": False, "backbone_fork_rows": K}
+
+
 HEADS = {
+    "joint_record": JointRecordHead,
     "qend_axes": QEndSemanticAxes,
     "integrator": IntegratorBank,
     "fork": FinalStateFork,

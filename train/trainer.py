@@ -40,6 +40,11 @@ from .lora import apply_lora, lora_parameters
 from .losses import LossConfig, add_order_consistency, aligned_order_js, decision_loss
 
 
+def item_record(it) -> str:
+    """The record an Item came from (``train.data.items_from_records`` ids are ``<record id>/<qid>``)."""
+    return it.id.rsplit("/", 1)[0]
+
+
 def teacher_tensor(batch, lp: torch.Tensor) -> torch.Tensor:
     """[B, K] teacher probabilities (``Item.teacher``, in ``row.option_ids`` order; ``train.teacher.attach``), zero on
     padded options; a row without a teacher is all NaN (``decision_loss`` falls back to the arm for it)."""
@@ -381,7 +386,41 @@ class Trainer:
 
     def _order(self, epoch: int) -> list[int]:
         g = torch.Generator().manual_seed(self.cfg.seed * 100_003 + epoch)
+        if self.joint:  # joint_record head: shuffle RECORDS; a record's rows stay contiguous, in their item order
+            recs: dict[str, list[int]] = {}
+            for i, it in enumerate(self.train_items):
+                recs.setdefault(item_record(it), []).append(i)
+            groups = list(recs.values())
+            return [i for r in torch.randperm(len(groups), generator=g).tolist() for i in groups[r]]
         return torch.randperm(len(self.train_items), generator=g).tolist()
+
+    @property
+    def joint(self) -> bool:
+        return bool(getattr(self.model.head, "needs_record", False))
+
+    def _next_record_rows(self, n: int) -> list[Item]:
+        """joint_record head: up to ``n`` rows made of WHOLE records (record-contiguous order); a record that does not
+        fit ends the step, and a record longer than ``n`` alone is cut (its rest opens the next step). Same epoch /
+        cursor state as ``_next_batch``, so checkpoint resume is unchanged."""
+        rows: list[Item] = []
+        order = self._order(self.epoch)
+        while len(rows) < n:
+            if self.cursor >= len(order):
+                if rows:
+                    break
+                self.epoch += 1
+                self.cursor = 0
+                order = self._order(self.epoch)
+            key = item_record(self.train_items[order[self.cursor]])
+            end = self.cursor
+            while end < len(order) and item_record(self.train_items[order[end]]) == key:
+                end += 1
+            if rows and len(rows) + (end - self.cursor) > n:
+                break
+            end = min(end, self.cursor + n - len(rows))
+            rows += [self.train_items[i] for i in order[self.cursor:end]]
+            self.cursor = end
+        return rows
 
     def _next_batch(self) -> list[Item]:
         bs = self.cfg.batch_size
@@ -453,6 +492,23 @@ class Trainer:
         self.model.train()
         self.opt.zero_grad(set_to_none=True)
         total = 0.0
+        if self.joint:
+            # joint_record head: the step's rows (whole records) go through ONE forward so the record mixer sees every
+            # question of a record together; with row_batch > 1 the length groups still bound each prefix call
+            # (cont_plan "single" mechanics: one continuation call, one backward of the step-mean loss).
+            rows = self._next_record_rows(self.cfg.batch_size * self.cfg.grad_accum)
+            groups = None
+            if self.cfg.row_batch > 1:
+                plan = {"greedy": row_groups, "min_cost": row_groups_min_cost}[self.cfg.row_plan]
+                groups = plan([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens,
+                              [it.row.n_options for it in rows], self.cfg.row_options)
+            if groups is not None and len(groups) > 1:
+                self.model.backbone.prefix_groups = groups
+            try:
+                total += self._row_loss(rows, 1.0)
+            finally:
+                self.model.backbone.prefix_groups = None
+            return self._finish_step(total)
         if self.cfg.row_batch > 1:
             # the same rows as the micro-batch loop below (same _next_batch calls, so epoch roll-over is unchanged); the
             # step loss sum_m mean(m) / grad_accum = sum_rows / (batch_size x grad_accum) = sum_g mean(g) x |g| / n
