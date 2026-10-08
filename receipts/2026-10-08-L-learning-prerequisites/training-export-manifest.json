@@ -1,0 +1,53 @@
+{
+  "checker_filtered_candidates": false,
+  "diagnostic_teacher_forced": true,
+  "free_running": false,
+  "levels": [
+    "L0",
+    "L1",
+    "L2",
+    "L3",
+    "L4"
+  ],
+  "limitations": [
+    "Synthetic checker-valid supervision is not independent audit or learned capability.",
+    "L4 shares one fixed public source-world; train contains ReadTechnology only.",
+    "Earlier target choices are diagnostic teacher forcing; evaluate free-running separately."
+  ],
+  "manifest_file_sha256": "d4d5c8e9f01203a22d7c48af29b78764f072e397b1e91dbb2c59a9f99c42f054",
+  "output_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\agent-c-gate-training-20261008-w32",
+  "promotion_eligible": false,
+  "records": 1124,
+  "requested_worlds": 32,
+  "schema": "ssdm.gate_training_export.v1",
+  "seed": 20261008,
+  "slot_counts": {
+    "assumption": 32,
+    "comparison-relation": 128,
+    "energy-operation": 2,
+    "energy-record": 2,
+    "fact": 64,
+    "first-fact": 64,
+    "left-operand": 128,
+    "licensed-production": 64,
+    "plan-step": 64,
+    "right-operand": 160,
+    "second-fact": 64,
+    "semantic-operation": 320,
+    "workflow": 32
+  },
+  "source": "language_growth.gate_suites.build_suite/development_train",
+  "source_sha256": {
+    "gate_planner.py": "6fb4dbb2943d718c8ffe5ec3b9913a9dd9873533b5657436411cb5f635bded46",
+    "gate_suites.py": "b584409e5edb227b59e686698a224d6b880f9f6f58a7c6b5868ff04d81fcd7ef",
+    "gate_training.py": "0ffbb0af00f75d8a462ad1bbb2129faf0b3c11ae8996d2e1d6577274bd0b09fb",
+    "parent_bridge.py": "b751af9a4003c2175303ca9301169aac79676e01ba15826a8f6cab66436d0d9f",
+    "planner.py": "b1d0aff1545ab5b4b5749d93f30f36a779c8baae89785f8b765d3c69c0fb09dd"
+  },
+  "split": "development_train",
+  "tasks": 322,
+  "training_records_gzip_sha256": "d89d9497c3c1f920d6f9d11a6847936af1fdad417c334e79482080221aabb3ab",
+  "training_records_sha256": "ea67dea7a328fc96e0bf09173b5ab8c16c0272b60edc54a8365dfffb01b2c7d9",
+  "validation_or_heldout_generated": false,
+  "worlds": 33
+}
