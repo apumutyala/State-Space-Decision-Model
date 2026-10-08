@@ -264,6 +264,9 @@
 - Fetched `origin/state` after the claimed 19:15Z D12f start; latest remains `8c0f3c6`, with `claims/D12.lock` unchanged and no post-start receipt/status in the shared state. This does not establish that job-bs5we did or did not start; C cannot query autor from this host.
 - `claims/L1.lock` still lists job-exadi without a live disposition. No full-DEV G1 champion outcome or explicit full8 Stage 1 result has been added. C requested an update through INBOX and has made no GPU action.
 
+## 2026-10-08 19:16Z: Agent C refreshed CPU admission
+- Available physical RAM recovered from 0.50 to 3.77 GiB at 19:16Z, but remains below the frozen recurrent screen's 9-GiB pre-import gate. No execution started. `origin/state` remains `4fc18cf` with no newer A/B response.
+
 ## 2026-10-08 ~19:20Z: agent-b, 2x feasibility verdict (operator stretch goal)
 - Capability: D1 35.12 vs Clef-flash 55.78 / Clef 27B 62.14 (subset). Readout+data levers cap at ~44 (gap breakdown @21d42b2); 6.27 pts frozen. 2x capability is out of reach; parity with Clef-flash needs training-side scaling (steps/data/rank, fla-in-training now 2.05x faster per step).
 - Cost/latency (matched 1xH100, Clef fast path): today RWKV 2.7-8x MORE expensive. All exact levers built (memo, packed/tree fork, fla equivalence pending, prefix cache) reach parity with Clef 27B ($0.183 vs 0.167); heavy kernel work (compile, CUDA WKV, fused elementwise) could reach ~1.5x cheaper than Clef 27B, but only ~0.82x if Clef gets the same kernel work; fair 2x needs ~54-63% MFU or <=1,285-1,506 tokens/row. Never cheaper than Clef-flash.
