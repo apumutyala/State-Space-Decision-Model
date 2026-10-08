@@ -77,6 +77,35 @@ def direction(wrapper, *, path=(0, 0), values=None, edit_id="assert-explain-v1")
 
 
 class SemanticStateInterventionTests(unittest.TestCase):
+    def test_preregistered_context_set_reuses_one_direction_and_rejects_unknown_context(self):
+        model = FakeRWKVModel()
+        wrapper = RWKV7SemanticStateIntervention(
+            state_ops=RWKV7StateOps(model),
+            parent_identity={"model_id": "parent-v1", "snapshot": "pinned-test-snapshot"},
+            tokenizer_identity={"tokenizer": "tiny-test", "revision": "t1"},
+            implementation_sha256="1" * 64,
+            backend_identity="rwkv7-test-backend:v1",
+            template_id="schema-state-question-v1",
+            context_refs=["ctx-b", "ctx-a"],
+            registrations=[],
+        )
+        reg = direction(wrapper)
+        wrapper.register(reg)
+        for context in ("ctx-a", "ctx-b"):
+            capture = wrapper.capture([1, 2], context_ref=context)
+            edited = wrapper.apply_registered_edit(capture, edit_id=reg.edit_id, sign=1)
+            self.assertEqual(wrapper.replay(edited, [3]).logits.shape, (1, 1, 3))
+            self.assertEqual(capture.context_ref, context)
+        retained = wrapper.capture([1, 2], context_ref="ctx-a")
+        wrapper._context_refs = frozenset({"ctx-a", "ctx-b", "ctx-injected"})
+        with self.assertRaisesRegex(InterventionError, "runtime identity"):
+            wrapper.capture([1], context_ref="ctx-injected")
+        with self.assertRaisesRegex(InterventionError, "runtime identity"):
+            wrapper.replay(retained, [2])
+        wrapper._context_refs = frozenset({"ctx-a", "ctx-b"})
+        with self.assertRaisesRegex(InterventionError, "context"):
+            wrapper.capture([1], context_ref="ctx-unregistered")
+
     def test_sham_replay_is_deterministic_and_does_not_mutate_capture(self):
         wrapper, _model = protocol()
         capture = wrapper.capture([2, 3, 4], context_ref="ctx-test-v1")

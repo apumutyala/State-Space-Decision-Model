@@ -1,0 +1,238 @@
+{
+  "schema": "ssdm.exact_difference.authored_fixture.v0.1.2",
+  "label_provenance": "authored_synthetic_contract_examples_not_model_evaluation",
+  "catalog": {
+    "schema": "ssdm.language_fixture_catalog.v0",
+    "status": "synthetic_design_data_not_empirical_labels",
+    "sources": {
+      "fixture-host-catalog": {
+        "owner": "fixture_host",
+        "trust": "accepted_structured_premises_except_explicit_belief_record",
+        "real_world_truth_claim": false
+      }
+    },
+    "entities": [
+      "atlas",
+      "boreal",
+      "cedar"
+    ],
+    "records": [
+      {
+        "record_ref": "atlas-v1",
+        "version": 1,
+        "entity_ref": "atlas",
+        "source_ref": "fixture-host-catalog",
+        "audience": "public",
+        "epistemic_class": "authoritative_structured_premise",
+        "freshness": "valid_in_declared_snapshots",
+        "conflicts": [],
+        "fields": {
+          "price": {
+            "value": "199.90",
+            "value_type": "decimal",
+            "unit": "USD",
+            "temporal_scope": "2026-10"
+          }
+        }
+      },
+      {
+        "record_ref": "boreal-v1",
+        "version": 1,
+        "entity_ref": "boreal",
+        "source_ref": "fixture-host-catalog",
+        "audience": "public",
+        "epistemic_class": "authoritative_structured_premise",
+        "freshness": "valid_in_declared_snapshots",
+        "conflicts": [],
+        "fields": {
+          "price": {
+            "value": "149.90",
+            "value_type": "decimal",
+            "unit": "USD",
+            "temporal_scope": "2026-10"
+          }
+        }
+      }
+    ],
+    "snapshots": {
+      "catalog-public-r7": {
+        "audience": "public",
+        "record_refs": [
+          "atlas-v1",
+          "boreal-v1"
+        ]
+      }
+    },
+    "policies": {
+      "public-read-r3": {
+        "audience": "public",
+        "status": "current",
+        "forbidden_audiences": [
+          "private"
+        ]
+      }
+    },
+    "registries": {
+      "exact-difference-v0.1.2": {
+        "allowed_ops": [
+          "ReadFact",
+          "ExactDifference",
+          "Assert",
+          "Conjoin",
+          "ExplainDerivation"
+        ],
+        "registered_fields": [
+          "price"
+        ],
+        "comparators": [
+          "greater_than",
+          "less_than",
+          "equal"
+        ],
+        "ask_categories": [
+          "missing_required_record",
+          "missing_catalog_field"
+        ],
+        "numeric_representation": "integers_or_decimal_strings; never binary floating point",
+        "closed_world_relations": [],
+        "currency_conversions": [],
+        "time_scope_compatibility": "exact_equality_only_in_this_fixture_pack",
+        "style_ids": [
+          "plain"
+        ],
+        "field_predicates": {
+          "price": "Price"
+        }
+      }
+    },
+    "semantics_pending_review": [
+      "Fixture evidence storage and registry shapes are local packaging conventions, not a certified wire implementation.",
+      "Programs use ssdm.semantic_program.v0.1: ReadFact returns a subject-bound Fact, Assert projects its proposition, Compare consumes explicit object projections.",
+      "The opt-in ExactDifference extension subtracts exact numeric values with identical units, quantity kinds and scopes, bounded to 256 coefficient digits and 64 fractional places.",
+      "Exact reason-code precedence for multiply-invalid programs remains unresolved."
+    ]
+  },
+  "host": {
+    "context_ref": "catalog-public-r7",
+    "policy_ref": "public-read-r3",
+    "registry_ref": "exact-difference-v0.1.2",
+    "audience": "public",
+    "query_constants": {
+      "euro-baseline": {
+        "value": "149.90",
+        "value_type": "decimal",
+        "unit": "EUR",
+        "temporal_scope": "2026-10",
+        "quantity_kind": "price"
+      }
+    },
+    "unmet_obligations": [],
+    "formal_task_obligation": null,
+    "limits": {
+      "max_program_nodes": 8,
+      "max_repair_calls": 1,
+      "max_proposal_calls": 4
+    },
+    "provider": {
+      "input_context_ref": "catalog-public-r7",
+      "state_handle": null,
+      "state_history_context_refs": []
+    },
+    "answerable_from_permitted_snapshot": true
+  },
+  "cases": [
+    {
+      "case_id": "difference_same_unit",
+      "proposal": {
+        "schema": "ssdm.semantic_program.v0.1",
+        "context_ref": "catalog-public-r7",
+        "policy_ref": "public-read-r3",
+        "registry_ref": "exact-difference-v0.1.2",
+        "nodes": [
+          {
+            "id": "n1",
+            "op": "ReadFact",
+            "record_ref": "atlas-v1",
+            "field": "price"
+          },
+          {
+            "id": "n2",
+            "op": "ReadFact",
+            "record_ref": "boreal-v1",
+            "field": "price"
+          },
+          {
+            "id": "n3",
+            "op": "ExactDifference",
+            "left": {
+              "node": "n1",
+              "project": "object"
+            },
+            "right": {
+              "node": "n2",
+              "project": "object"
+            }
+          },
+          {
+            "id": "n4",
+            "op": "Assert",
+            "proposition": "n3"
+          }
+        ],
+        "outputs": [
+          "n4"
+        ],
+        "style": "plain"
+      },
+      "expected_status": "accepted",
+      "expected_reason": null,
+      "expected_value": "50.00",
+      "expected_render": "At \"2026-10\", the value of \"Price\" for \"atlas\" (199.90 \"USD\") minus the value of \"Price\" for \"boreal\" (149.90 \"USD\") is 50.00 \"USD\"."
+    },
+    {
+      "case_id": "difference_currency_mismatch",
+      "proposal": {
+        "schema": "ssdm.semantic_program.v0.1",
+        "context_ref": "catalog-public-r7",
+        "policy_ref": "public-read-r3",
+        "registry_ref": "exact-difference-v0.1.2",
+        "nodes": [
+          {
+            "id": "n1",
+            "op": "ReadFact",
+            "record_ref": "atlas-v1",
+            "field": "price"
+          },
+          {
+            "id": "n2",
+            "op": "ReadFact",
+            "record_ref": "boreal-v1",
+            "field": "price"
+          },
+          {
+            "id": "n3",
+            "op": "ExactDifference",
+            "left": {
+              "node": "n1",
+              "project": "object"
+            },
+            "right": {
+              "constant_ref": "euro-baseline"
+            }
+          },
+          {
+            "id": "n4",
+            "op": "Assert",
+            "proposition": "n3"
+          }
+        ],
+        "outputs": [
+          "n4"
+        ],
+        "style": "plain"
+      },
+      "expected_status": "rejected",
+      "expected_reason": "type_unit_mismatch"
+    }
+  ]
+}

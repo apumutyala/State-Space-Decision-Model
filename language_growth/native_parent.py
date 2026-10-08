@@ -1,8 +1,8 @@
 """Bind a strictly reconstructed Track D parent to the existing L planner.
 
 This consumes the merged M2 serving bundle v1, not a checkpoint reconstruction
-implementation. PR #144's strict Trainer loading is still an open dependency
-for a Trainer-based D loader; no default or permissive loader is supplied here.
+implementation. qualified_parent supplies Stage 1 admission and strict native
+reconstruction separately, without relying on Trainer.load or open PR #144.
 The supplied loader owns architecture/tokenizer reconstruction and strict state
 loading. L verifies the checkpoint bytes and the independently supplied serving
 pins; it never substitutes stock weights or invents calibration defaults.

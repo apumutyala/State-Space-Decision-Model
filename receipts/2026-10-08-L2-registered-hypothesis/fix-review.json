@@ -1,0 +1,26 @@
+{
+  "code_commit": "95a6d4f2ccfed0f20eed344fa02d4d2768847ab5",
+  "interface_issue": "https://github.com/apumutyala/State-Space-Decision-Model/issues/205",
+  "scope": "fix-specific review evidence: role-labelled conditional realization and bounded premise read permission",
+  "billed_cost_usd": 0,
+  "model_calls": 0,
+  "data": "existing authored illustrative fixture; same-slot mutation only",
+  "checks": [
+    {
+      "command": "py -3 -m unittest language_growth.tests.test_hypothesis language_growth.tests.test_kernel language_growth.tests.test_kernel_adversarial language_growth.tests.test_realize",
+      "passed": 37
+    },
+    {
+      "command": "py -3 -m pytest tests/test_jobs_lint.py tests/test_no_kill_by_name.py -q",
+      "passed": 74
+    }
+  ],
+  "same_slot_counterfactual": {
+    "status": "accepted",
+    "released_text": "If at \"2026-10\", hypothetical \"Price\" for \"atlas\" had value 99.90 \"USD\", then at \"2026-10\", the value of hypothetical \"Price\" for \"atlas\" (99.90 \"USD\") is less than the value of recorded baseline \"Price\" for \"atlas\" (199.90 \"USD\").",
+    "assert_status": "rejected",
+    "assert_reason": "unsupported_assertion"
+  },
+  "permission_rule": "Assumption resolution independently requires ReadFact and Hypothesize in allowed_ops, even without an explicit ReadFact node.",
+  "independent_fix_review": "pending; no canonical profile bump or PR"
+}

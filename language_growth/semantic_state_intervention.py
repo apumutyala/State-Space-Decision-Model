@@ -243,11 +243,17 @@ class Replay:
 
 
 class RWKV7SemanticStateIntervention:
-    """Experimental RWKV-7 wrapper; registration and runtime identity are fixed at construction."""
+    """Experimental RWKV-7 wrapper; registration and runtime identity are fixed at construction.
+
+    A single ``context_ref`` preserves the original API. ``context_refs`` permits a direction to be preregistered
+    against a fixed set of source contexts; each capture still carries its exact member context.
+    """
 
     def __init__(self, *, state_ops, parent_identity: dict[str, Any], tokenizer_identity: dict[str, Any],
                  implementation_sha256: str, backend_identity: str, template_id: str,
-                 context_ref: str, registrations: list[RegisteredStateDirection]):
+                 context_ref: str | None = None, context_refs: list[str] | None = None,
+                 capture_identity: dict[str, Any] | None = None,
+                 registrations: list[RegisteredStateDirection]):
         from decide.backends.state_fork import RWKV7StateOps
 
         if type(state_ops) is not RWKV7StateOps:
@@ -258,9 +264,20 @@ class RWKV7SemanticStateIntervention:
             raise InterventionError("tokenizer identity is required")
         if (not isinstance(implementation_sha256, str) or len(implementation_sha256) != 64
                 or not isinstance(backend_identity, str) or not backend_identity
-                or not isinstance(template_id, str) or not template_id
-                or not isinstance(context_ref, str) or not context_ref):
+                or not isinstance(template_id, str) or not template_id):
             raise InterventionError("implementation/backend/template/context identity required")
+        if context_refs is None:
+            if not isinstance(context_ref, str) or not context_ref:
+                raise InterventionError("implementation/backend/template/context identity required")
+            context_identity = {"context_ref": context_ref}
+            self._context_refs = frozenset((context_ref,))
+        else:
+            if (context_ref is not None or not isinstance(context_refs, list) or not context_refs
+                    or any(not isinstance(ref, str) or not ref for ref in context_refs)
+                    or len(set(context_refs)) != len(context_refs)):
+                raise InterventionError("context_refs must be a nonempty unique list; omit context_ref")
+            context_identity = {"context_refs": sorted(context_refs)}
+            self._context_refs = frozenset(context_refs)
         self._state_ops = state_ops
         self._state_ops_id = id(state_ops)
         self._model_object_id = id(state_ops.model)
@@ -271,11 +288,18 @@ class RWKV7SemanticStateIntervention:
             "implementation_sha256": implementation_sha256,
             "backend_identity": backend_identity,
             "template_id": template_id,
-            "context_ref": context_ref,
             "capture_boundary": "caller_supplied_exact_prefix_layout_not_verified",
             "parent_weights_sha256": _model_weights_sha256(state_ops.model),
             "model_implementation": self._model_impl_identity,
         }
+        if capture_identity is not None:
+            if not isinstance(capture_identity, dict) or not capture_identity:
+                raise InterventionError("capture identity must be a nonempty object")
+            try:
+                self._runtime_identity["capture_identity"] = json.loads(_canonical(capture_identity))
+            except (TypeError, ValueError):
+                raise InterventionError("capture identity must be canonical JSON") from None
+        self._runtime_identity.update(context_identity)
         self.runtime_identity_sha256 = _sha(_canonical(self._runtime_identity))
         self._registrations = {}
         self._sealed = False
@@ -285,6 +309,27 @@ class RWKV7SemanticStateIntervention:
     @property
     def state_ops(self):
         return self._state_ops
+
+    def verify_runtime_identity(self) -> None:
+        context_ref = self._runtime_identity.get("context_ref")
+        context_refs = self._runtime_identity.get("context_refs")
+        pinned_contexts = ({context_ref} if isinstance(context_ref, str) and context_ref
+                           else set(context_refs) if isinstance(context_refs, list) else set())
+        if (self._runtime_identity_hash() != self.runtime_identity_sha256
+                or not pinned_contexts or self._context_refs != frozenset(pinned_contexts)):
+            raise InterventionError("registered runtime identity changed")
+
+    def verify_registered_edit(self, edit_id: str, expected_sha256: str | None = None) -> RegisteredStateDirection:
+        """Check the full registered direction before a caller starts any model forward."""
+        self.verify_runtime_identity()
+        registration = self._registrations.get(edit_id)
+        if (registration is None or registration.runtime_identity_sha256 != self.runtime_identity_sha256
+                or (expected_sha256 is not None and registration.direction_sha256 != expected_sha256)
+                or _registration_digest(registration.edit_id, registration.runtime_identity_sha256,
+                    registration.discovery_cohort_sha256, registration.validation_cohort_sha256,
+                    registration.scale, registration.tensors) != registration.direction_sha256):
+            raise InterventionError("unknown or mutated edit registration")
+        return registration
 
     def verify_parent_unchanged(self) -> None:
         if (self._state_ops is None or id(self._state_ops) != self._state_ops_id
@@ -312,13 +357,12 @@ class RWKV7SemanticStateIntervention:
         import torch
         from decide.backends.state_fork import _deepcopy_cache
 
-        if self._runtime_identity_hash() != self.runtime_identity_sha256:
-            raise InterventionError("registered runtime identity changed")
+        self.verify_runtime_identity()
         self.verify_parent_unchanged()
         if (not isinstance(prefix_ids, list) or not prefix_ids
                 or any(type(token) is not int or token < 0 for token in prefix_ids)):
             raise InterventionError("nonempty integer prefix token IDs required")
-        if context_ref != self._runtime_identity["context_ref"]:
+        if context_ref not in self._context_refs:
             raise InterventionError("capture context does not match the registered runtime")
         self._sealed = True
         ids = torch.tensor([prefix_ids], dtype=torch.long, device="cpu")
@@ -340,12 +384,7 @@ class RWKV7SemanticStateIntervention:
         self._check_capture(capture)
         if type(sign) is not int or sign not in (-1, 1):
             raise InterventionError("registered intervention sign must be -1 or +1")
-        registration = self._registrations.get(edit_id)
-        if (registration is None or registration.runtime_identity_sha256 != self.runtime_identity_sha256
-                or _registration_digest(registration.edit_id, registration.runtime_identity_sha256,
-                    registration.discovery_cohort_sha256, registration.validation_cohort_sha256,
-                    registration.scale, registration.tensors) != registration.direction_sha256):
-            raise InterventionError("unknown or mutated registered edit")
+        registration = self.verify_registered_edit(edit_id)
         slots = _state_slots(capture._state)
         edited = _deepcopy_cache(capture._state, [getattr(capture._state, "config", None)])
         edited_slots = _state_slots(edited)
@@ -415,10 +454,11 @@ class RWKV7SemanticStateIntervention:
         if (not isinstance(capture, StateCapture)
                 or self._runtime_identity_hash() != self.runtime_identity_sha256
                 or capture.runtime_identity_sha256 != self.runtime_identity_sha256
-                or capture.context_ref != self._runtime_identity["context_ref"]
+                or capture.context_ref not in self._context_refs
                 or type(capture.prefix_length) is not int or capture.prefix_length < 1
                 or not isinstance(capture.prefix_sha256, str) or len(capture.prefix_sha256) != 64):
             raise InterventionError("capture lineage mismatch")
+        self.verify_runtime_identity()
         manifest, state_sha = _state_manifest(capture._state)
         capture_sha = _capture_digest(capture.runtime_identity_sha256, capture.prefix_sha256,
                                       capture.prefix_length, capture.context_ref, capture.state_sha256)

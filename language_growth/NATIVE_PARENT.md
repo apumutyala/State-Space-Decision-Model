@@ -1,8 +1,10 @@
 # Native M2 parent contract
 
 This successor to PR #79 consumes the merged [M2 serving bundle v1](../interfaces/M2_SERVING_BUNDLE_V1.md)
-from interface issue #185 / PR #186. It adds no checkpoint reconstruction path,
-model qualification or language result.
+from interface issue #185 / PR #186. The low-level bridge binds reconstructed
+models; [qualified parent admission](QUALIFIED_PARENT.md) now supplies strict
+Stage 1 admission and native RWKV7 reconstruction above this bridge. Neither
+module supplies a qualified artifact or a language result.
 
 ```python
 pin = NativeParentPin.from_m2_report(reviewed_gate_report)
@@ -43,17 +45,9 @@ identity, and return `LoadedNativeParent` with the exported calibration and runt
 values. Exceptions propagate; there is no stock model, random-state, default
 temperature or permissive-load fallback.
 
-Real artifact integration has two outstanding dependencies:
-
-- [PR #144](https://github.com/apumutyala/State-Space-Decision-Model/pull/144)
-  is **open**, not merged. A D loader that relies on `Trainer.load` requires its
-  strict checkpoint validation or an independently reviewed equivalent.
-- Track D still must publish the reviewed exact M2 reconstruction callable and
-  an approved artifact/report pair. The serving exporter supplies metadata only.
-
-This bridge can be reviewed against merged `agent-main` independently because it
-does not call `Trainer.load` or supply a production loader. It must not be described
-as real-parent enablement until those dependencies and the D qualification gates
-pass. The current validation is limited to metadata-only stubs and scripted CPU
-planner checks. Historical tiny-model receipts are retained as historical proof;
-the changed legacy neural tests were not rerun under this task's no-model limit.
+The built-in `rwkv7_m2_loader` restores the complete saved head/typed/LoRA
+state independently of `Trainer.load`, so it does not depend on open PR #144.
+Track D must still supply the exact qualified artifact/report, reviewed Stage 1
+attestation and original snapshot/runtime pins. Full-model load and score parity
+remain unmeasured; metadata, tiny-tensor and scripted planner tests do not
+establish those results.

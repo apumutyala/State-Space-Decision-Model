@@ -1,0 +1,43 @@
+{
+  "code_commit": "f6015d42764a616bb6d436acf0c7ad49350150b0",
+  "base_commit": "5fec2b2686a10d83387c0613326de35d3d2653c4",
+  "interface_issue": "https://github.com/apumutyala/State-Space-Decision-Model/issues/205",
+  "scope": "authored illustrative kernel-to-renderer conditional semantics; no learned gate claim",
+  "data_split": "two standalone authored development illustrations; no held-out data",
+  "hardware": "Windows-11-10.0.26200-SP0",
+  "billed_cost_usd": 0,
+  "model_calls": 0,
+  "seed": null,
+  "runs": 1,
+  "timing_statistics": null,
+  "checks": [
+    {
+      "command": "py -3 -m unittest language_growth.tests.test_hypothesis language_growth.tests.test_kernel language_growth.tests.test_kernel_adversarial language_growth.tests.test_realize",
+      "passed": 36
+    },
+    {
+      "command": "py -3 -m pytest tests/test_jobs_lint.py tests/test_no_kill_by_name.py -q",
+      "passed": 74
+    }
+  ],
+  "observations": [
+    {
+      "fixture": "fixtures/language_growth/hypothesis/inline_model_fact.json",
+      "sha256": "da46c61cbc50448bbe45e6cf357ef01ccc12fa9d281ef50066b9f45f16c1cd03",
+      "status": "rejected",
+      "reason": "unsupported_field",
+      "speech_act_kinds": [],
+      "released_text": null
+    },
+    {
+      "fixture": "fixtures/language_growth/hypothesis/registered_assumption.json",
+      "sha256": "a2092795ba57a282635a7eba2f2e131faa564dad264deedf749bdb5682e1ad5a",
+      "status": "accepted",
+      "reason": null,
+      "speech_act_kinds": [
+        "hypothesize"
+      ],
+      "released_text": "If at \"2026-10\", \"Price\" for \"atlas\" had value 99.90 \"USD\", then at \"2026-10\", the value of \"Price\" for \"atlas\" (99.90 \"USD\") is less than the value of \"Price\" for \"boreal\" (149.90 \"USD\")."
+    }
+  ]
+}
