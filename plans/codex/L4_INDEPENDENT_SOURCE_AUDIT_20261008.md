@@ -378,6 +378,33 @@ SHA-256 `068E64726AD202B9E3EBA8B47132865CC983B846C65577E3A69FC0CEF63AE59D`.
 No emissions values were transcribed or imported, and no held-out data were
 accessed.
 
+### 8 October 2026 — Wibberley / ACARP C9058 access and lineage check
+
+The [official ACARP abstract](https://acarp.com.au/abstracts.aspx?repId=C9058)
+identifies Louis Wibberley's *Coal in a Sustainable Society* (C9058, 2001)
+and says the project includes LCA case studies across electricity-generation
+technologies, including renewable technologies. The exact official retrieval
+route is the abstract's **Get Report** link to the
+[C9058 order page](https://acarp.com.au/yourorder.aspx?id=C9058). ACARP states
+that levy contributors may download reports free, while Australian researchers,
+service providers and educational institutions may obtain them for a fee;
+international or unconnected requests are fulfilled only for specified safety,
+environment and mine-site greenhouse-response categories. C9058 is listed under
+Technical Market Support/Future Technologies, so the original is not publicly
+downloadable by a general international or unconnected requester.
+
+The abstract does not expose wind-specific methods. A secondary [IEA Clean Coal
+Centre report](https://pulse.vgbe.energy/storedFile/8d5bf72e-a3dc-4d2c-8a18-e497632eb93e)
+describes the broader CISS framework as using 1 GJ of electricity as functional
+unit and broad boundaries up to the first common product, with stated
+decommissioning, repair and maintenance exclusions (pp. 49–50); this is not
+primary evidence for the C9058 wind case. Wind-specific standalone status,
+gas/GWP treatment, uncertainty and detailed inventory lineage therefore remain
+unverified. C9058 is part of the same CISS source family and its abstract says
+it builds on C8049; do not treat this compilation as an independent
+common-scope group. No emissions values were inspected, transcribed or
+imported, and no held-out data were accessed.
+
 ## Safe expansion rule
 
 An added L4 module must retain its own source, population, year, boundary,
