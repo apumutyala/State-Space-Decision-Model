@@ -71,6 +71,43 @@ individual estimates by publication for each harmonization step. This narrows
 the recovery target to S1 Table S3 joined to Table 1 and the primary papers;
 the accessible copy does not include S1 itself.
 
+Table 1 and the bibliography yield 44 pure onshore author/year references.
+The following accounting is only a bibliographic audit queue:
+
+| References | Proposed handling | Count effect |
+| --- | --- | ---: |
+| White & Kulcinski 1998; White & Kulcinski 2000; White 2006 | Explicit updates and repeated Buffalo Ridge/Glenmore systems; one provisional family | 3→1 |
+| Dones et al. 2005; Dones et al. 2007; Jungbluth et al. 2005 | Repeated European 0.8-MW system and Ecoinvent v2.0; provisional inventory family | 3→1 |
+| Pacca & Horvath 2002; Pacca 2003 | Shared lead author, repeated 0.6-MW system, thesis variants; provisional family | 2→1 |
+| Vestas Wind Systems 2006a; 2006b | Same manufacturer and related declarations, different turbine models; provisional family | 2→1 |
+| Berry et al. 1998; European Commission 1995 | Overlapping Welsh sites, different capacity assumptions; provisional family | 2→1 |
+| Jacobson 2009; WEC 2004; van de Vate 1996 | Set aside from a primary-study candidate count pending inspection; only Jacobson is explicitly titled a review | 37→34 |
+
+The first, explicitly documented update family reduces 44 to 42; applying all
+four additional provisional merges gives 37. Setting aside the three
+synthesis/compilation-risk references yields 34 candidate families. The 32
+remaining singleton references are Ardente et al. 2008; Chataignere & Le
+Boulch 2003; Crawford 2009; Enel 2004; Frischknecht 1998; Hartmann 1997;
+Hondo 2005; Jacobson 2009; Khan 2005; Krewitt 1997; Kuemmel & Sørensen 1997;
+Lee & Tzeng 2008; Lenzen & Wachsmann 2004; Liberman & LaPuma 2003; Martínez
+et al. 2009; McCulloch et al. 2000; Nadal 1995; Pehnt 2006; Proops et al. 1996;
+Rule et al. 2009; Rydh et al. 2004; Schleisner 2000; SECDA 1994; Spitzley &
+Keoleian 2004; Tremeac & Meunier 2009; Uchiyama 1996; van de Vate 1996;
+Vattenfall 2003; Voorspools et al. 2000; Waters et al. 1997; WEC 2004; and
+Wibberly 2001. This count makes 20 plausible as a candidate-audit target, not
+as 20 independent or qualified worlds.
+
+The paper's p. 16 “Clustering Bias” discussion says author/study clustering and
+common Ecoinvent data were not quantified, while the analysis treats all 126
+estimates independently. It also notes shared median additions for missing
+lifecycle stages (pp. 10–11). Its Table 2 gives aggregate statistics; Figure 3
+shows ordinal trajectories without per-study numeric labels. The article says
+S1 Table S3 contains the per-publication values for each harmonization step.
+Thus the body does not provide reference-linked values for the 107 land-based
+estimates. Recovering S1 would enable that join, but the candidate families
+must still be deduplicated against shared inventories before they count toward
+L4's 20-group floor.
+
 The [DOE Wind Vision 2015 Appendix J](https://www.energy.gov/documents/windvisionstudyfinalappendixbook-web150pdf)
 adds a partial bibliography: Table J-2 lists study characteristics for later
 wind-LCA updates to Dolan and Heath, while explicitly referring readers to the
