@@ -433,3 +433,23 @@ def test_under_bf16_autocast_the_variants_stay_inside_bf16_noise():
     lv, gv = _dev(var, base)
     assert lv <= 1e-6 and gv < noise[1], (lv, gv, noise)
     assert _dev(var, f32)[1] <= 1.25 * noise[1] and _dev(var, f32)[0] <= 1.25 * noise[0] + 1e-7
+
+
+def test_compile_blocks_equals_eager_blocks_and_restores_the_wkv_registry(monkeypatch):
+    """compile_blocks under the aot_eager backend (no CPU toolchain for inductor): the compiled block bodies, with the
+    WKV loop forced eager, give the eager step's loss and gradients; the registry entry is restored on disable."""
+    import train.trainer as TT
+
+    monkeypatch.setattr(TT, "COMPILE_BACKEND", "aot_eager")
+    items = _items()
+    flags = dict(wkv="chunked_lean", act_ckpt=True, row_batch=8, row_tokens=400, row_plan="min_cost",
+                 cont_plan="single")
+    base = _step_grads(_trainer(items, **flags))
+    tr = _trainer(items, compile_blocks=True, **flags)
+    assert act_ckpt.compile_backend_of(tr.model.backbone.model) == "aot_eager"
+    assert getattr(M.RWKV7_WKV_FUNCTIONS["chunked_lean"], "_ssdm_eager_wkv", False)
+    _compare(_step_grads(tr), base, 2e-5)
+    act_ckpt.disable_block_checkpointing(tr.model.backbone.model)
+    assert M.RWKV7_WKV_FUNCTIONS["chunked_lean"] is L.rwkv7_parallel_lean
+    with pytest.raises(ValueError, match="compile_blocks needs act_ckpt"):
+        _trainer(_items(1), compile_blocks=True)

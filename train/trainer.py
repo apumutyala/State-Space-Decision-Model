@@ -106,6 +106,10 @@ class TrainConfig:
     #: all the step's rows and ONE backward of the step-mean loss. Same loss and gradient up to float summation order;
     #: every group's checkpointed block inputs stay alive until the backward (more memory: the ladder decides).
     cont_plan: str = "per_group"
+    #: with act_ckpt (RWKV-7): run each checkpointed block body through one shared torch.compile (dynamic shapes; the
+    #: WKV chunk loop stays eager via torch.compiler.disable): heads.act_ckpt ``compile_backend``. Kernel fusion changes
+    #: float rounding (not the math): gated on GPU by the probe-loss / gradient-cosine rule (jobs/perf_step_gate).
+    compile_blocks: bool = False
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
 
     def to_json(self) -> dict:
@@ -121,7 +125,7 @@ class TrainConfig:
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
-    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan")
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks")
 
     def hash(self) -> str:
         d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
@@ -137,7 +141,8 @@ def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
 
     return dataclasses.replace(cfg, act_ckpt=bool(cell.get("act_ckpt", False)), row_batch=int(cell.get("row_batch", 1)),
                                row_tokens=int(cell.get("row_tokens", 0)), row_plan=str(cell.get("row_plan", "greedy")),
-                               cont_plan=str(cell.get("cont_plan", "per_group")))
+                               cont_plan=str(cell.get("cont_plan", "per_group")),
+                               compile_blocks=bool(cell.get("compile_blocks", False)))
 
 
 #: fixed cost of one group (prefix + continuation call, forward + recompute + backward) in padded-token equivalents:
@@ -217,6 +222,10 @@ def row_groups_with_views(base_lengths: list[int], view_lengths: list[int], row_
     return groups
 
 
+#: torch.compile backend for ``TrainConfig.compile_blocks`` (tests set "aot_eager": no C++/Triton toolchain on CPU)
+COMPILE_BACKEND = os.environ.get("SSDM_COMPILE_BACKEND", "inductor")
+
+
 def lora_init_seed(seed: int) -> int:
     return seed * 1_000_003 + 17
 
@@ -247,8 +256,14 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
         model.backbone.enable_gradient_checkpointing()
     from heads import act_ckpt
 
+    if cfg.compile_blocks and not cfg.act_ckpt:
+        raise ValueError("compile_blocks needs act_ckpt (the compiled region is the checkpointed block body)")
+    backend = COMPILE_BACKEND if cfg.compile_blocks else None
+    if act_ckpt.is_enabled(model.backbone.model) and act_ckpt.compile_backend_of(model.backbone.model) != backend:
+        act_ckpt.disable_block_checkpointing(model.backbone.model)  # reused backbone, other compile setting
     if cfg.act_ckpt:
-        act_ckpt.enable_block_checkpointing(model.backbone.model)  # RWKV-7 or Qwen3.5 / Q9-AF; raises otherwise
+        # RWKV-7 or Qwen3.5 / Q9-AF; raises otherwise
+        act_ckpt.enable_block_checkpointing(model.backbone.model, compile_backend=backend)
     elif act_ckpt.is_enabled(model.backbone.model):  # a backbone reused across Trainers (run_cell ladder)
         act_ckpt.disable_block_checkpointing(model.backbone.model)
     if cfg.row_batch < 1:
