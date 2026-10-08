@@ -158,6 +158,30 @@ end-of-life boundaries, primary-source access and inventory crosswalks remain
 the blockers. No numerical values were transcribed or imported, no repository
 data was changed, and no held-out, model, GPU or paid resource was used.
 
+### Third primary-source batch
+
+The next five references were screened for original-source access, electric-kWh
+normalization, gas/GWP interpretation, phase boundary and inventory lineage.
+Unknown fields below remain unknown; review summaries do not replace the
+unrecovered originals.
+
+| Study | Availability, scope and dependency evidence | L4 disposition |
+| --- | --- | --- |
+| Chataignere & Le Boulch 2003, *Wind Turbine (WT) Systems*, EDF R&D/ECLIPSE, 110 pp. | The exact report was not recovered; its former [project download page](https://www.eclipse-eu.org/pubres_guide.html) now serves unrelated content. The [official IPCC bibliography](https://www.ipcc-wg3.de/report/IPCC_SRREN_Annex_II.pdf) establishes the report identity, not its functional unit, complete gases/GWP or phase coverage. Ardente 2008, pp. 206, 209, and Tremeac & Meunier's manuscript section 2.1 explicitly reuse its manufacturing, operation or disposal inputs. | Access no-go. It is a dependency root to trace, not a new verified independent world. |
+| Tremeac & Meunier 2009, DOI 10.1016/j.rser.2009.01.001 ([author-uploaded manuscript](https://www.researchgate.net/publication/240423604_Life_cycle_analysis_of_45_MW_and_250_W_wind_turbines)) | Manuscript sections 1.1–2.1, pp. 4–8, define one produced electric kWh, construction/operation/decommissioning, and Impact 2002+ with IPCC 2001 **500-year GWP**, not GWP100. Tables 2/4 report climate impact/intensity, but the complete gas vector was not recovered. The 4.5-MW inputs explicitly reuse ECLIPSE and Vestas; operation and decommissioning also use assumed energy relationships. | Conditional retrieval of the original modeled scope only. Preserve its CO2-labelled intensity versus CO2-equivalent climate category; do not relabel the aggregate as GWP100 or count turbine/transport scenarios as independent sources. |
+| Pehnt 2006, DOI 10.1016/j.renene.2005.03.002 ([original-paper text mirror](https://www.scribd.com/document/175926226/Pehnt-Dynamic-LCA); [publisher](https://www.sciencedirect.com/science/article/pii/S0960148105000662)) | Section 2.1, pp. 57–58, defines one electric kWh at the plant under modeled German 2010 conditions; production, operation/maintenance and recycling/disposal are included. Distribution and lorry-road utilization are outside the boundary; closed-loop recycling is assumed. Table 1, p. 58, declares CO2/CH4/N2O GWP100; Table 3, p. 60, has species-resolved totals. It is explicitly streamlined, with other technology-specific substances screened. IFEU/Umberto background and Hartmann's 2001 thesis [2] supply inputs. | Conditional for the declared streamlined historical scope; species-level recharacterization is a possible next check after verifying table alignment and required-gas coverage. Shared inputs and the modeled reference prevent automatic independent/common-scope admission. |
+| Vattenfall 2003, *Certified Environmental Product Declaration of Electricity from Vattenfall AB's Swedish Windpower Plants* | The exact 2003 EPD was not recovered; the historical [registry 044 route](https://www.environdec.com/reg/044/) was inaccessible. The report is identified in the official IPCC bibliography, but original electric-kWh definition, gases/GWP, lifecycle inclusions and background inventory could not be verified. Later Vattenfall declarations are different versions/populations. | Access no-go. Do not substitute a later declaration or count constituent turbines/sites as verified source groups. |
+| Voorspools et al. 2000, DOI 10.1016/S0306-2619(00)00016-7 ([institutional original abstract](https://www.mech.kuleuven.be/en/tme/research/energy_environment/pdf/2000P41_abstract)) | The one-page KU Leuven abstract was recovered; the full pp. 307–330 article was not. It reports electric-kWh-normalized emissions and describes process-chain/IO methods for construction, maintenance and demolition. It does not establish the gas set, GWP horizon/vintage, detailed stage boundary or inventory lineage. The two methods concern the same underlying investment systems. | Access/scope no-go pending the full article and inventory crosswalk; the abstract's GHG wording is not evidence of a complete compatible gas inventory. |
+
+This batch adds **zero admitted independent common-scope groups**. Pehnt is a
+conditional candidate for a clearly bounded, species-resolved historical module;
+Tremeac & Meunier supports conditional retrieval under its distinct 500-year
+interpretation. Neither establishes a 20-source cohort. Original-report access,
+required-gas and boundary matching, table verification and shared-inventory
+crosswalks remain the limits. No numerical emissions values were transcribed or
+imported, no repository data was changed, and no held-out, GPU or paid resource
+was accessed. No tests were run for this documentation-only update.
+
 Smallest next step: recover the old OpenEI land-based wind export or the paper's
 study-level supplemental table, then join each estimate to its primary study
 and shared background inventory family. Count only the surviving groups after
