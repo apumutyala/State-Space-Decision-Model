@@ -38,8 +38,14 @@ CODE=${M2FC_CODE:-/opt/ssdm/m1}
 CONTEXT_MANIFEST=${M2FC_CONTEXT_MANIFEST:-/opt/ssdm/CONTEXT_MANIFEST.json}
 KIT_DIR=${M2FC_KIT_DIR:-/opt/decision-index}
 DATA=${M2FC_DATA:-/data}
-CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
-PARAMS=$CODE/jobs/m2_first_cell/job_params.json
+MODE=${1:-base}
+case "$MODE" in
+  base) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
+        PARAMS=$CODE/jobs/m2_first_cell/job_params.json ;;
+  d5_r256) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_d5_r256.json}
+        PARAMS=$CODE/jobs/m2_first_cell/job_params_d5_r256.json ;;
+  *) echo "unknown first-cell mode: $MODE" >&2; exit 5 ;;
+esac
 TRAIN_DIR=$DATA/m2-150k
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
