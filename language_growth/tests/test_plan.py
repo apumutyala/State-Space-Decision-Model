@@ -28,10 +28,12 @@ class PlanTests(unittest.TestCase):
         self.assertEqual([step["status"] for step in content["steps"]], ["proposed", "proposed"])
         self.assertEqual(result.dependencies, ("atlas-v1",))
         self.assertEqual(render_checked(result, host, catalog),
-            'Proposed plan for workflow "repair-request"; no actions executed.\n'
+            'Proposed selected steps for workflow "repair-request"; selection may be incomplete; no actions executed.\n'
             'Proposed step 1 ("inspect"): if at "2026-10", recorded "IsRepairable" for "atlas" has value true, propose action "inspect-atlas-repair-options"; execution requires separate authorization and precondition recheck.\n'
             'Proposed step 2 ("draft-request") after proposed steps ["inspect"]: if at "2026-10", recorded "WarrantyMonths" for "atlas" has value 24 "month", propose action "draft-atlas-repair-request"; execution requires separate authorization and precondition recheck.')
         self.assertEqual((host, catalog, proposal), before)
+        proposal["nodes"][0]["step_refs"] = ["inspect"]
+        self.assertIn("selection may be incomplete", render_checked(check_program(proposal, host, catalog), host, catalog))
 
     def test_model_cannot_supply_action_authority_effect_or_completion(self):
         for key, value in (("action_ref", "send-request"), ("authority", "granted"),

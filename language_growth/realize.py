@@ -97,7 +97,7 @@ def _speech(act: SpeechAct) -> str:
     if act.kind == "plan":
         if not isinstance(act.content, PlanContent) or not act.content.steps:
             raise ValueError("invalid checked plan")
-        lines = [f"Proposed plan for workflow {_quoted(act.content.workflow_ref)}; no actions executed."]
+        lines = [f"Proposed selected steps for workflow {_quoted(act.content.workflow_ref)}; selection may be incomplete; no actions executed."]
         for index, step in enumerate(act.content.steps, 1):
             conditions = " and ".join(
                 f"at {_quoted(fact.interval)}, recorded {_subject(fact)} has value {_operand_value(fact)}"

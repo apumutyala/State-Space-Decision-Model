@@ -49,7 +49,8 @@ Symbolic action references name host-registered proposals; they are not
 capabilities. `Assert` and factual `Conjoin` cannot consume plans.
 `ExplainDerivation` preserves plan status in its rendering.
 
-Rendering starts `Proposed plan` and renders each step as `Proposed step ...
+Rendering starts `Proposed selected steps` and explicitly says `selection may
+be incomplete`. It renders each step as `Proposed step ...
 if [recorded premises], propose action [quoted host label]`. Each step says
 execution requires separate authorization and precondition recheck. It quotes
 all labels as data using the existing controlled plain-text rendering.
