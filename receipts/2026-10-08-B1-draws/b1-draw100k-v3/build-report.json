@@ -1,0 +1,1343 @@
+{
+ "builder": {
+  "commit": "2df52cc52083f3d3309b279d123fb13064cbf7fd",
+  "data/b1.py sha256": "df40139d1bccee6c9acb945824401f17b7329dc79059014a414c3017ee9575e2"
+ },
+ "seed": 20261008,
+ "native": {
+  "parent": {
+   "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+   "pointer_sha256": "c65c10450fe9edef801dce6bbf24f091c1014263fd66ceb5412af23fc08ddc09",
+   "files_uncompressed_sha256": {
+    "records": "82fb395d889c473d9fbc4877b51c792438e94b53cddd54e4cf825d4603baa166",
+    "manifest": "0be33669fa077d2a2abe29ecd159aea1a27c7cc9daaf910b584755410da4d961",
+    "content_map": "d4ffd9073e0490e409a757508b2821f8108a3a9e36b2531ec3c97a94b2bc0898"
+   }
+  },
+  "supplement": {
+   "dir": "b1-supplement-seed20261006",
+   "records_uncompressed_sha256": "7441393d9b08dc686147c40ffc742cc5f0ecca913fd4fdb03e8e8c4d7aa9a751",
+   "counts_asked": {
+    "glaive_fc": 45000,
+    "banking77": 10003,
+    "clinc150": 15100,
+    "gsm8k": 7473
+   },
+   "n_kept": 72953,
+   "ids_shared_with_150k_byte_identical": 36500
+  },
+  "n_native_ids": 186453
+ },
+ "exclusion": {
+  "v2": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "v3": {
+   "cohort": "m2-dev-cohort-v3",
+   "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 39872,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "heldout_150k_dropped": [
+   "m2:mmlu_aux:21118",
+   "m2:mmlu_aux:39640",
+   "m2:mmlu_aux:39643"
+  ]
+ },
+ "guard": {
+  "manifests": {
+   "harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+  },
+  "n_ids": 47249,
+  "n_hashes": 48415,
+  "note": "",
+  "content_index": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\index-content-hashes-v1.txt.gz",
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n": 24150
+  },
+  "pin": {
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n_hashes": 24150,
+   "n_rows": 24265,
+   "builder": "train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)"
+  }
+ },
+ "fingerprint": {
+  "version": "ssdm-dedup-v3",
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+  "rows": 155390
+ },
+ "encoder": {
+  "kind": "rwkv7-hf-trie",
+  "vocab_sha256": "99807d0e55a45d3053ffbdafbf169d955a02f8e06cb6613dda38c536203d7fdc",
+  "untrusted": "fail-closed on special ids"
+ },
+ "cell_filter": {
+  "max_k": 255,
+  "max_t": 2048,
+  "template": "jrt-rwkv-g1-v1",
+  "layout": "ordered"
+ },
+ "families_dir": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\b1-families",
+ "families_files_gz_sha256": {
+  "api_bank.jsonl.gz": "57242564b8ffdca9fccb078cad8baf8d4ac0308168e289638b30fe4153cfbfc5",
+  "bfcl.jsonl.gz": "3e12e2ff09cf4697d4b6ac48be5eb67d1564c635d1e1b8921b2d51583b58124a",
+  "cruxeval.jsonl.gz": "ae9e45c687daefaab0f9a70c11ee5ceb88f637890fe1b1579360f74c045d6081"
+ },
+ "backfilled": {
+  "glaive_native": 7415
+ },
+ "index_item_text_examples": {
+  "ext:api_bank": [
+   [
+    "m2:b1fam_apibank:lv1-1058",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1059",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-3161",
+    "state/dialogue/[]/text",
+    "Sure, please provide the date for the journal entry. The format should be YYYY-MM-DD."
+   ],
+   [
+    "m2:b1fam_apibank:lv1-835",
+    "state/dialogue/[]/text",
+    "Great! Can you help me book an appointment with Dr. Zhang on March 15th at 4 pm? My name is Emily and my phone number is"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-536",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. Could you please provide me with your fitness account username and password?"
+   ]
+  ],
+  "glaive_native": [
+   [
+    "m2:glaive_fc:36373",
+    "state/messages/[]/content",
+    "I'm looking for some music to listen to. Can you help me find something?"
+   ],
+   [
+    "m2:glaive_fc:61048",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:54775",
+    "state/dialogue/[]/content",
+    "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:91868",
+    "state/conversation/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:100632",
+    "state/conversation/[]/content",
+    "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+   ]
+  ],
+  "glaive_catalog16": [
+   [
+    "m2:glaive_fc:63774~view:cat16",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:21816~view:cat16",
+    "state/dialogue/[]/content",
+    "I am looking for a new laptop. Can you help me find some options?"
+   ],
+   [
+    "m2:glaive_fc:17210~view:cat16",
+    "state/messages/[]/content",
+    "I'm looking for some music to listen to. Can you help me find something?"
+   ],
+   [
+    "m2:glaive_fc:26860~view:cat16",
+    "state/conversation/[]/content",
+    "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:7647~view:cat16",
+    "state/conversation/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ]
+  ],
+  "glaive_catalog_long": [
+   [
+    "m2:glaive_fc:24933~view:catlong",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:49249~view:catlong",
+    "state/dialogue/[]/content",
+    "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:62328~view:catlong",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:86459~view:catlong",
+    "state/messages/[]/content",
+    "I'm in New York and I'm craving some Italian food. Can you find a restaurant for me?"
+   ],
+   [
+    "m2:glaive_fc:109384~view:catlong",
+    "state/messages/[]/content",
+    "Hi, I am looking for a job in the field of data science in New York. Can you help me find some options?"
+   ]
+  ],
+  "toolace": [
+   [
+    "m2:toolace:10019",
+    "state/messages/[]/content",
+    "I need to know the away goalkeeper jersey details for two football matches. The match IDs are 101 and 202. Can you provi"
+   ],
+   [
+    "m2:toolace:4013~inj:d1a:system_note",
+    "state/dialogue/[]/content",
+    "I'm interested in seeing the standings for the Premier League for the 2022, 2023, and 2024 seasons. Can you retrieve thi"
+   ],
+   [
+    "m2:toolace:4200",
+    "state/dialogue/[]/content",
+    "I need some information for my research on technology trends. Could you help me with the following:\n1. Retrieve informat"
+   ],
+   [
+    "m2:toolace:7645",
+    "state/messages/[]/content",
+    "Role definition:\n Inquirer: A user who raises an inquiry.\n Response assistant: Communicates with the inquirer and provid"
+   ],
+   [
+    "m2:toolace:5581",
+    "state/conversation/[]/content",
+    "Role definition:\n Inquirer: A user who raises an inquiry.\n Response assistant: Communicates with the inquirer and provid"
+   ]
+  ],
+  "when2call": [
+   [
+    "m2:when2call:452",
+    "q/label/option",
+    "To provide you with the quote, I need the quote ID. Could you please provide me with the ID?"
+   ],
+   [
+    "m2:when2call:4916",
+    "q/label/option",
+    "I apologize, but I'm unable to perform that task. The Real-Time Product Search API doesn't support retrieving specific p"
+   ],
+   [
+    "m2:when2call:12836~inj:d1a:urgency",
+    "q/label/option",
+    "To accurately assess the risk, I need to know the client's height in inches. Could you please provide that information?"
+   ],
+   [
+    "m2:when2call:8704",
+    "q/decision/option",
+    "To provide you with the head-to-head statistics, I'll need the ID of the match. Could you please provide me with that in"
+   ],
+   [
+    "m2:when2call:10482",
+    "q/field_1/option",
+    "To provide you with the standard deviation, I'll need a list of numbers. Could you please provide me with that?"
+   ]
+  ],
+  "gsm8k": [
+   [
+    "m2:gsm8k:528~inj:d1a:authority",
+    "q/output/instructions",
+    "What is the final answer?\nProblem: James buys 3 dirt bikes for $150 each and 4 off-road vehicles for $300 each.  It also"
+   ],
+   [
+    "m2:gsm8k:6523",
+    "state/word_problem",
+    "John buys dinner plates and silverware.  The silverware cost $20.  The dinner plates cost 50% as much as the silverware."
+   ],
+   [
+    "m2:gsm8k:294~inj:hijack:admin_header",
+    "state/problem",
+    "Phillip's mother asked him to go to the supermarket to buy some things and gave him $95, so he spent $14 on oranges, $25"
+   ],
+   [
+    "m2:gsm8k:1218",
+    "state",
+    "John needs to replace his shoes so he decides to buy a $150 pair of Nikes and a $120 pair of work boots.  Tax is 10%.  H"
+   ],
+   [
+    "m2:gsm8k:7122",
+    "state/question",
+    "Mark bought 2 pounds of tomatoes for $5 per pound and 5 pounds of apples, at $6 per pound. How much did he spend in tota"
+   ]
+  ],
+  "banking77_k16": [
+   [
+    "m2:banking77:6419~view:k16",
+    "q/answer/instructions",
+    "Route this banking request to the matching intent.\nUtterance: Hi, I checked my transactions and saw that I was charged t"
+   ],
+   [
+    "m2:banking77:7388~inj:d1a:authority~view:k16",
+    "state/request_text",
+    "My salary is received in the form of GBP. Is it necessary to configure this? If so, where is this done?"
+   ],
+   [
+    "m2:banking77:8770~inj:hijack:operator_override~view:k16",
+    "state/content",
+    "Hello I have a UK account.  Can you please check if everything is alright with it?  I made a transfer a couple hours ago"
+   ],
+   [
+    "m2:banking77:2812~view:k16",
+    "q/field_1/instructions",
+    "Route this banking request to the matching intent.\nUtterance: Hi, I sent my landlord my rent money a few days ago and wh"
+   ],
+   [
+    "m2:banking77:2132~view:k16",
+    "state/request_text",
+    "I need to cancel a transaction."
+   ]
+  ],
+  "banking77_full": [
+   [
+    "m2:banking77:6100",
+    "state/message",
+    "I double checked that I have the correct account details already, they're right for sure. Transfer is still pending sinc"
+   ],
+   [
+    "m2:banking77:2129",
+    "q/result/instructions",
+    "Route this banking request to the matching intent.\nUtterance: Help! I need to cancel a transaction."
+   ],
+   [
+    "m2:banking77:4948",
+    "state/utterance",
+    "The ATM keeps declining my card! I tried two different ATMs already can you please check if everything is alright with m"
+   ],
+   [
+    "m2:banking77:4466",
+    "state/request_text",
+    "I think someone else is using my card."
+   ],
+   [
+    "m2:banking77:9427",
+    "q/answer/instructions",
+    "Route this banking request to the matching intent.\nCustomer message: Why are you charging fees on cash withdrawals? I we"
+   ]
+  ],
+  "anli": [
+   [
+    "m2:anli:3669a594-42b2-4098-ab27-2c48f93d9d02",
+    "state/premise",
+    "Breakfast Creek Hotel is a heritage-listed hotel at 2 Kingsford Smith Drive, Albion, City of Brisbane, Queensland, Austr"
+   ]
+  ],
+  "hellaswag": [
+   [
+    "m2:hellaswag:15556",
+    "state/story_so_far",
+    "[header] How to make a chocolate zombie bunny [title] Assemble the supplies needed. [step] These are listed below under "
+   ],
+   [
+    "m2:hellaswag:2057~inj:d1a:system_note",
+    "state/prefix",
+    "A man is talking from behind a bar. he"
+   ],
+   [
+    "m2:hellaswag:22767",
+    "q/answer/option",
+    "If you don't have your own lavender, purchase lavender buds from a specialty grocery store. [title] Preheat the oven to "
+   ],
+   [
+    "m2:hellaswag:12787",
+    "state/context",
+    "We see an opening title screen. A group of men play foosball outdoors. the men"
+   ],
+   [
+    "m2:hellaswag:7612",
+    "state/story_so_far",
+    "We see an opening title screen. We see people standing in the rain and a jetski on a truck. we"
+   ]
+  ],
+  "boolq": [
+   [
+    "m2:boolq:2608",
+    "q/q1/instructions",
+    "Read the passage: is the statement in the question true?\nSource text: Chard was first described in 1753 by Carl von Linn"
+   ]
+  ],
+  "mmlu_aux": [
+   [
+    "m2:mmlu_aux:63261",
+    "q/output/instructions",
+    "Answer the multiple-choice question.\nItem: Paracutin was born in Mexico in February, 1943. At the end of one week Paracu"
+   ],
+   [
+    "m2:mmlu_aux:61379~inj:d1a:urgency",
+    "state/prompt",
+    "If you want to keep healthy, you should have good habits. What is a habit? It is something we do very often. We don't ev"
+   ],
+   [
+    "m2:mmlu_aux:22176",
+    "state/item",
+    "You want to know about my staying in America, right? Well, to tell you the truth,it is really an eye-opening experience "
+   ],
+   [
+    "m2:mmlu_aux:89102",
+    "state/question",
+    "Penguins live together, but each pair has a little piece of ground of their own. When a penguin wants to walk through it"
+   ],
+   [
+    "m2:mmlu_aux:62401",
+    "state/item",
+    "While I was waiting outside my wife's office building for her to get out of work, I saw a beggar coming my way from acro"
+   ]
+  ],
+  "banking77_member": [
+   [
+    "m2:banking77:6100~view:member",
+    "state/message",
+    "I double checked that I have the correct account details already, they're right for sure. Transfer is still pending sinc"
+   ],
+   [
+    "m2:banking77:4466~view:member",
+    "state/message",
+    "I think someone else is using my card."
+   ],
+   [
+    "m2:banking77:4948~view:member",
+    "state/message",
+    "The ATM keeps declining my card! I tried two different ATMs already can you please check if everything is alright with m"
+   ],
+   [
+    "m2:banking77:9427~view:member",
+    "state/message",
+    "Why are you charging fees on cash withdrawals? I went to withdraw some money earlier today after buying groceries. There"
+   ],
+   [
+    "m2:banking77:2132~view:member",
+    "state/message",
+    "I need to cancel a transaction."
+   ]
+  ],
+  "anli_claim": [
+   [
+    "m2:anli:3669a594-42b2-4098-ab27-2c48f93d9d02~view:claim",
+    "state/evidence/[]/text",
+    "Breakfast Creek Hotel is a heritage-listed hotel at 2 Kingsford Smith Drive, Albion, City of Brisbane, Queensland, Austr"
+   ]
+  ],
+  "mmlu_verify": [
+   [
+    "m2:mmlu_aux:63261~view:verify",
+    "state/question",
+    "Paracutin was born in Mexico in February, 1943. At the end of one week Paracutin was 500 feet high, and it is now over 9"
+   ],
+   [
+    "m2:mmlu_aux:61380~view:verify",
+    "state/question",
+    "If you want to keep healthy, you should have good habits. What is a habit? It is something we do very often. We don't ev"
+   ],
+   [
+    "m2:mmlu_aux:70057~view:verify",
+    "state/question",
+    "Television has taken the place of schools as the main educator  in America. There are several reasons for this. First, t"
+   ],
+   [
+    "m2:mmlu_aux:91259~view:verify",
+    "state/question",
+    "There are four seasons in a year. They are spring, summer. autumn and winter. Spring is a beautiful season. In spring, t"
+   ],
+   [
+    "m2:mmlu_aux:78863~view:verify",
+    "state/question",
+    "Barack Obama, a black man, is the president of the United States now. He was born on August 4th, 1961, in Hawaii and has"
+   ]
+  ],
+  "nli4ct": [
+   [
+    "m2:nli4ct:f6a7e279-b923-45e3-8ad5-e81e17c0a682~view:v3",
+    "state/primary_trial/text/[]",
+    "  Percentage of Subjects Able to Complete > 85% of the Planned Dose on Schedule"
+   ],
+   [
+    "m2:nli4ct:3e1037fd-cc1e-4229-892f-95d0987d9a68~view:v3",
+    "state/primary_trial/text/[]",
+    "  Overall Number of Participants Analyzed: 30"
+   ],
+   [
+    "m2:nli4ct:3058d104-172e-41be-b641-9f0f9cb172be~view:v3",
+    "state/primary_trial/text/[]",
+    "  Overall Number of Participants Analyzed: 30"
+   ],
+   [
+    "m2:nli4ct:a5d5e6da-f3cd-49c7-92a7-f789468c4c4c~view:v3",
+    "state/primary_trial/text/[]",
+    "  Percentage of Subjects Able to Complete > 85% of the Planned Dose on Schedule"
+   ],
+   [
+    "m2:nli4ct:4c038972-20a9-4031-a1cd-ba00e9dd0908~view:v3",
+    "state/secondary_trial/text/[]",
+    "  Overall Number of Participants Analyzed: 30"
+   ]
+  ],
+  "ragtruth": [
+   [
+    "m2:ragtruth:3378~view:v3",
+    "state/prompt",
+    "Summarize the following news within 137 words:\nWhen 65 cases of 20-year-old Pappy Van Winkle -- one of the rarest and mo"
+   ],
+   [
+    "m2:ragtruth:5011~view:v3",
+    "state/prompt",
+    "Summarize the following news within 73 words:\n'Young and the Restless' Spoilers: Is Courtney Hope Leaving 'Y&R'? The Soa"
+   ],
+   [
+    "m2:ragtruth:5538~view:v3",
+    "state/prompt",
+    "Summarize the following news within 88 words:\n'Bold and the Beautiful' Spoilers: Katie Learns Eric's Secret, Will Spill "
+   ],
+   [
+    "m2:ragtruth:1611~view:v3",
+    "state/prompt",
+    "Summarize the following news within 103 words:\nObock, Djibouti (CNN)Amina Ali Qassim is sitting with her youngest grandc"
+   ],
+   [
+    "m2:ragtruth:10273~view:v3",
+    "state/response",
+    "Blenders In the Grass is a local business located at 315 Meigs Rd, Ste J in Santa Barbara, CA. It falls under the catego"
+   ]
+  ],
+  "hover": [
+   [
+    "m2:hover:954b0c41-995b-4170-a446-1587d1c0e886~view:v3",
+    "state/evidence/[]/text",
+    "Russell James Liberman (September 12, 1945 - September 9, 1977) was a United States drag racer from Pennsylvania, known "
+   ],
+   [
+    "m2:hover:1ee0e7e0-62b7-4599-a7c7-7a21d4b2cd6d~view:v3",
+    "state/evidence/[]/text",
+    "The Ferrari 360 is a two-seater sports car built by Ferrari from 1999 to 2005. It succeeded the Ferrari F355 and was rep"
+   ],
+   [
+    "m2:hover:83804d2c-0be8-440a-bf49-f06616e5f185~view:v3",
+    "state/evidence/[]/text",
+    "Christopher Walken (born Ronald Walken; March 31, 1943) is an American stage and film lead and character actor who has a"
+   ],
+   [
+    "m2:hover:1c953e72-7582-4738-9998-1df006e85acd~view:v3",
+    "state/evidence/[]/text",
+    "\"Snakes on a Plane (Bring It)\", also referred to as \"Bring It (Snakes on a Plane)\", is the debut single by Cobra Starshi"
+   ],
+   [
+    "m2:hover:76b717b7-12e6-4aea-a1ee-f6569bbda337~view:v3",
+    "state/evidence/[]/text",
+    "Hariharan Pillai Happy Aanu (English translation: \"Hariharan Pillai is happy\") is a 2003 Malayalam film by Viswanath sta"
+   ]
+  ],
+  "habermas": [
+   [
+    "m2:habermas:0c2e4296148a1cfac5354398fa98e429~view:v3",
+    "q/consensus/option",
+    "In general, the current electoral system is good.  However, there are some areas that need to be addressed.  Firstly, th"
+   ],
+   [
+    "m2:habermas:bf841c68a68912d0cff3d9804232682e~view:v3",
+    "q/consensus/option",
+    "In principle, yes, more public ownership of utility companies is a good thing. The issue, however, is how this can be do"
+   ],
+   [
+    "m2:habermas:3b5f74e5fc4b8cc9b67bf5f8f5356533~view:v3",
+    "q/consensus/option",
+    "\u201cThe movement of people across borders should be as free as possible, however, the movement of dangerous people across b"
+   ],
+   [
+    "m2:habermas:e4e7f4e206549f95a5c41022af32a4f0~view:v3",
+    "q/consensus/option",
+    "The NHS is a vital part of our society. The health and wellbeing of the nation should be a priority of the government. T"
+   ],
+   [
+    "m2:habermas:c30a0a0582c9ea0e56dee364960cb91a~view:v3",
+    "q/consensus/option",
+    "In general, the group was opposed to fracking. All agreed that it was not a sustainable form of energy. There was an arg"
+   ]
+  ]
+ },
+ "index_boilerplate": {
+  "rule": "shared by >= 20 distinct Index rows",
+  "lines": 6593,
+  "segments": 7890
+ },
+ "lowrate_raw": {
+  "dump_manifest_sha256": "4e87c957f029c6feb7ec03b6ab4b7224c0d811569ea3a1de52fa6cb690277502",
+  "dump": {
+   "inputs": {
+    "anli/plain_text/train_r1-00000-of-00001.parquet": "de2d038ae67f1fb1872073490b9e7685e9114d5f278ddd4631905fe0a4ecbcff",
+    "anli/plain_text/train_r2-00000-of-00001.parquet": "209f4a15bf77224c62ffbde5f150fda928a7e2f5175366f4cacc3c7588aab13d",
+    "anli/plain_text/train_r3-00000-of-00001.parquet": "c1d3f614d673888ac56b9ab62324e21583c98a11c4fef84e938d0f8fc414b29a",
+    "mmlu_aux/auxiliary_train/train-00000-of-00001.parquet": "ae6662576ef989fed82a9289da1b89e950499c320f6849b052ec344dfcb709eb"
+   },
+   "outputs": {
+    "anli.jsonl.gz": {
+     "sha256": "b5d0382a6c48a7aca9bdc3157fc5d9c94d0be765843db069a51758ba4ed70e3d",
+     "rows": 162865
+    },
+    "mmlu_aux.jsonl.gz": {
+     "sha256": "79c9423dc386d43946385f18850f23e69493d481e3d8449a9c5a811c17b70c1a",
+     "rows": 99842
+    }
+   }
+  }
+ },
+ "v3_raw": {
+  "convert_manifest_sha256": "0b55e8f6cbb2866b35653cf88ff5160e8408e9e51d59b975645294673eebb7c5",
+  "overlap_sha256": "649b62fdf521cdc40c6b6a8bbce8f5f6afc20fad4bed3269dc1e220733524aa0",
+  "convert": {
+   "inputs": {
+    "acos/Laptop-ACOS/laptop_quad_train.tsv": "75572e18961f15d6624c037cf4ccc8964744b59a6be4249132229a4dbd967320",
+    "acos/Restaurant-ACOS/rest16_quad_train.tsv": "91ced9328d5992d3715ec70d7cc08a6ccd9dea79136ffdd70556fe54b217edda",
+    "nli4ct/training_data.zip": "ed3d9819cfebd2d1d5d70fd786323c904b341470f8dc173af39946f70a0e5b9f",
+    "vast/vast_train.csv": "b2f0d69a73231b8ef22f10e4df7d759cf228505ce5252506068da6aa7fe42109",
+    "ragtruth/response.jsonl": "e4c2e4ac24fff676d8984cc61c35d791612fadc58015335d97dd632375e18073",
+    "ragtruth/source_info.jsonl": "0dffc26ea9f3c1c3d7c7e8336b56ef1646e3cec876edffcca3c9c624d12d578b",
+    "hover/hover_train_release_v1.1.json": "1f1cd57abd616fa00c70bdc575ce77c16fc6cf1a6cffd5ff87c208030a336bb6",
+    "hover/wiki_wo_links.db": "c37ee397916ec0bffacfe8902db454a5cda88a7a188409217b2e15231fe5ee2f",
+    "habermas/hm_all_candidate_comparisons.parquet": "7cf8d5ce3fce8853b36f0ffe1158424f7813867e422e313db4df0a5f9e03e4a4",
+    "mnli/data/train-00000-of-00001.parquet": "1c1de03640b168e410aabfca19e7cc2f3dfcd7f0e126e935674e56fb102c4529"
+   },
+   "outputs": {
+    "acos.jsonl.gz": {
+     "sha256": "fba70a7606d6d8bde4104284fad6bde736b6e5c8914504c5a41b725e3ac43e6e",
+     "rows": 4464
+    },
+    "nli4ct.jsonl.gz": {
+     "sha256": "adb87c317465ae6a259c4118c69ab7ca5c67fdf439cf8fbd46137f6cfcc2bc71",
+     "rows": 1700
+    },
+    "vast.jsonl.gz": {
+     "sha256": "d8cc835bee0e585237393e9498cf5ea136f19bc2c3c26bb078fc7f8d304f6abd",
+     "rows": 13477
+    },
+    "ragtruth.jsonl.gz": {
+     "sha256": "8833b3c984fffe0893cb11e9b1b83198d207a06a68a8ff4afe7ac15323ff3de6",
+     "rows": 15062
+    },
+    "hover.jsonl.gz": {
+     "sha256": "5cac50a7d5ab979235209a397e729dc7cd986cd30eb2c605767e942ef4ea7875",
+     "rows": 17000
+    },
+    "habermas.jsonl.gz": {
+     "sha256": "c0231ebb7e793c2048b1fe1365ecac75622b1e6f508adf3dcd02d144f68547d0",
+     "rows": 1184
+    },
+    "mnli.jsonl.gz": {
+     "sha256": "338c72774228c663454e01f0a87362ba7348b358fe3cb781192cbf90eddca41a",
+     "rows": 40000
+    }
+   },
+   "notes": {
+    "habermas": {
+     "rounds_train": 1708,
+     "kept": 1184,
+     "no_initial_complete_panel": 344,
+     "tie": 180,
+     "inconsistent": 0
+    },
+    "mnli": "seeded subset of 40000 train pairs (sha256 order, seed 20261008)"
+   }
+  },
+  "excluded": {}
+ },
+ "filter_reasons_over_selection": {
+  "ext:api_bank": {
+   "len_prefilter": 685,
+   "k_or_t_filter": 987,
+   "kept": 604,
+   "index_item_text": 8
+  },
+  "ext:bfcl": {
+   "kept": 2286,
+   "k_or_t_filter": 114
+  },
+  "ext:cruxeval": {
+   "kept": 2400
+  },
+  "factchange": {
+   "kept": 1986,
+   "dup_text": 896
+  },
+  "glaive_native": {
+   "kept": 11915,
+   "dup_text": 2280,
+   "k_or_t_filter": 189,
+   "cohort_text": 60,
+   "index_item_text": 13,
+   "len_prefilter": 25
+  },
+  "glaive_catalog16": {
+   "kept": 8000,
+   "no_view": 979,
+   "index_item_text": 13,
+   "len_prefilter": 97,
+   "k_or_t_filter": 156
+  },
+  "glaive_catalog_long": {
+   "kept": 7602,
+   "no_view": 1293,
+   "k_or_t_filter": 221,
+   "index_item_text": 14
+  },
+  "toolace": {
+   "kept": 4126,
+   "len_prefilter": 43,
+   "k_or_t_filter": 71,
+   "index_item_text": 14,
+   "dup_text": 5
+  },
+  "when2call": {
+   "kept": 3867,
+   "index_item_text": 694,
+   "k_or_t_filter": 46,
+   "len_prefilter": 16
+  },
+  "gsm8k": {
+   "kept": 4238,
+   "index_item_text": 20,
+   "k_or_t_filter": 72,
+   "len_prefilter": 6
+  },
+  "banking77_k16": {
+   "kept": 4000,
+   "k_or_t_filter": 81,
+   "len_prefilter": 6,
+   "index_item_text": 5
+  },
+  "clinc150_k16": {
+   "kept": 7000,
+   "k_or_t_filter": 81,
+   "len_prefilter": 10
+  },
+  "banking77_full": {
+   "kept": 2163,
+   "k_or_t_filter": 296,
+   "len_prefilter": 24,
+   "index_item_text": 6,
+   "dup_text": 1
+  },
+  "anli": {
+   "kept": 1000,
+   "k_or_t_filter": 8,
+   "dup_text": 5,
+   "index_item_text": 1
+  },
+  "hellaswag": {
+   "kept": 4000,
+   "k_or_t_filter": 56,
+   "len_prefilter": 7,
+   "index_item_text": 10
+  },
+  "winogrande": {
+   "kept": 4950,
+   "k_or_t_filter": 59,
+   "len_prefilter": 9
+  },
+  "sst5": {
+   "kept": 2000,
+   "k_or_t_filter": 20
+  },
+  "nq": {
+   "len_prefilter": 4816,
+   "k_or_t_filter": 1057,
+   "kept": 817
+  },
+  "boolq": {
+   "kept": 4000,
+   "len_prefilter": 9,
+   "k_or_t_filter": 57,
+   "index_item_text": 1,
+   "label_balance": 1236
+  },
+  "mmlu_aux": {
+   "kept": 2916,
+   "k_or_t_filter": 36,
+   "index_item_text": 15,
+   "len_prefilter": 12,
+   "index_text": 1
+  },
+  "humicroedit_s1": {
+   "kept": 1500,
+   "k_or_t_filter": 11,
+   "dup_text": 1,
+   "len_prefilter": 1
+  },
+  "humicroedit_s2": {
+   "kept": 1500,
+   "k_or_t_filter": 20,
+   "len_prefilter": 2
+  },
+  "clinc150_member": {
+   "kept": 3000,
+   "dup_item": 5956,
+   "no_view": 1256,
+   "dup_text": 1
+  },
+  "banking77_member": {
+   "dup_item": 5579,
+   "kept": 275,
+   "no_view": 833,
+   "index_item_text": 9
+  },
+  "anli_claim": {
+   "kept": 3000,
+   "dup_item": 388,
+   "no_view": 434,
+   "index_item_text": 1
+  },
+  "mmlu_verify": {
+   "dup_item": 446,
+   "no_view": 585,
+   "kept": 3000,
+   "index_item_text": 18,
+   "dup_text": 1
+  },
+  "acos": {
+   "kept": 1000,
+   "dup_text": 3
+  },
+  "nli4ct": {
+   "kept": 855,
+   "index_item_text": 7,
+   "dup_text": 772,
+   "k_or_t_filter": 25,
+   "index_text": 19,
+   "len_prefilter": 1
+  },
+  "vast": {
+   "kept": 1300,
+   "d1b_heldout": 1
+  },
+  "ragtruth": {
+   "kept": 1400,
+   "index_item_text": 331,
+   "k_or_t_filter": 35,
+   "len_prefilter": 2,
+   "d1b_heldout": 1
+  },
+  "hover": {
+   "kept": 1400,
+   "index_item_text": 204
+  },
+  "habermas": {
+   "kept": 600,
+   "index_item_text": 22,
+   "d1b_heldout": 1
+  },
+  "mnli": {
+   "kept": 1300
+  }
+ },
+ "draws": {
+  "b1-draw100k-v3": {
+   "build": "b1-draw100k-v3",
+   "n_records": 100000,
+   "quotas": {
+    "ext:api_bank": 2284,
+    "ext:bfcl": 2400,
+    "glaive_native": 4500,
+    "glaive_catalog16": 8000,
+    "glaive_catalog_long": 8000,
+    "toolace": 4200,
+    "when2call": 4500,
+    "factchange": 2800,
+    "ext:cruxeval": 2400,
+    "gsm8k": 4500,
+    "banking77_k16": 4000,
+    "clinc150_k16": 7000,
+    "banking77_full": 2500,
+    "anli": 1000,
+    "hellaswag": 4000,
+    "winogrande": 5000,
+    "sst5": 2000,
+    "nq": 2500,
+    "boolq": 4000,
+    "mmlu_aux": 2916,
+    "humicroedit_s1": 1500,
+    "humicroedit_s2": 1500,
+    "clinc150_member": 3000,
+    "banking77_member": 1500,
+    "anli_claim": 3000,
+    "mmlu_verify": 3000,
+    "acos": 1000,
+    "nli4ct": 1000,
+    "vast": 1300,
+    "ragtruth": 1400,
+    "hover": 1400,
+    "habermas": 600,
+    "mnli": 1300
+   },
+   "by_family": {
+    "acos": 1000,
+    "anli": 1000,
+    "anli_claim": 3000,
+    "banking77_full": 2163,
+    "banking77_k16": 4000,
+    "banking77_member": 275,
+    "boolq": 4000,
+    "clinc150_k16": 7000,
+    "clinc150_member": 3000,
+    "ext:api_bank": 604,
+    "ext:bfcl": 2286,
+    "ext:cruxeval": 2400,
+    "factchange": 1986,
+    "glaive_catalog16": 8000,
+    "glaive_catalog_long": 7602,
+    "glaive_native": 11915,
+    "gsm8k": 4238,
+    "habermas": 600,
+    "hellaswag": 4000,
+    "hover": 1400,
+    "humicroedit_s1": 1500,
+    "humicroedit_s2": 1500,
+    "mmlu_aux": 2916,
+    "mmlu_verify": 3000,
+    "mnli": 1300,
+    "nli4ct": 855,
+    "nq": 817,
+    "ragtruth": 1400,
+    "sst5": 2000,
+    "toolace": 4126,
+    "vast": 1300,
+    "when2call": 3867,
+    "winogrande": 4950
+   },
+   "shortfall": {
+    "ext:api_bank": 1680,
+    "ext:bfcl": 114,
+    "glaive_catalog_long": 398,
+    "toolace": 74,
+    "when2call": 633,
+    "factchange": 814,
+    "gsm8k": 262,
+    "banking77_full": 337,
+    "winogrande": 50,
+    "nq": 1683,
+    "banking77_member": 1225,
+    "nli4ct": 145
+   },
+   "by_group_share": {
+    "arts": 0.036,
+    "intent_views": 0.1644,
+    "knowledge_facts": 0.0592,
+    "knowledge_procedural": 0.0664,
+    "language": 0.2081,
+    "retrieval_other": 0.0622,
+    "tools": 0.4039
+   },
+   "by_group": {
+    "arts": 3600,
+    "intent_views": 16438,
+    "knowledge_facts": 5916,
+    "knowledge_procedural": 6638,
+    "language": 20805,
+    "retrieval_other": 6217,
+    "tools": 40386
+   },
+   "by_index_area": {
+    "arts": 3600,
+    "knowledge": 12554,
+    "language": 20805,
+    "retrieval": 22655,
+    "tools": 40386
+   },
+   "by_source": {
+    "acos": 1000,
+    "anli": 4000,
+    "b1fam_apibank": 604,
+    "b1fam_bfcl_synth": 2286,
+    "b1fam_cruxeval_synth": 2400,
+    "banking77": 6438,
+    "boolq": 4000,
+    "clinc150": 10000,
+    "glaive_fc": 27517,
+    "gsm8k": 4238,
+    "habermas": 600,
+    "hellaswag": 4000,
+    "hover": 1400,
+    "humicroedit_s1": 1500,
+    "humicroedit_s2": 1500,
+    "mmlu_aux": 5916,
+    "mnli": 1300,
+    "nli4ct": 855,
+    "nq": 817,
+    "ragtruth": 1400,
+    "sst5": 2000,
+    "synthetic_factchange": 1986,
+    "toolace": 4126,
+    "vast": 1300,
+    "when2call": 3867,
+    "winogrande": 4950
+   },
+   "rows_by_max_k": {
+    "k<=16": 90235,
+    "k>16": 9765
+   },
+   "rendered_tokens": {
+    "p50": 532,
+    "p95": 1891,
+    "p99": 2007,
+    "max": 2048,
+    "n_over_2048": 0,
+    "bins": {
+     "<=512": 47962,
+     "513-1024": 26861,
+     "1025-1536": 11642,
+     "1537-2048": 13535
+    }
+   },
+   "rows_by_max_k_by_family": {
+    "acos": {
+     "k<=16": 1000
+    },
+    "anli": {
+     "k<=16": 1000
+    },
+    "anli_claim": {
+     "k<=16": 3000
+    },
+    "banking77_full": {
+     "k>16": 2163
+    },
+    "banking77_k16": {
+     "k<=16": 4000
+    },
+    "banking77_member": {
+     "k<=16": 275
+    },
+    "boolq": {
+     "k<=16": 4000
+    },
+    "clinc150_k16": {
+     "k<=16": 7000
+    },
+    "clinc150_member": {
+     "k<=16": 3000
+    },
+    "ext:api_bank": {
+     "k<=16": 604
+    },
+    "ext:bfcl": {
+     "k<=16": 2286
+    },
+    "ext:cruxeval": {
+     "k<=16": 2400
+    },
+    "factchange": {
+     "k<=16": 1986
+    },
+    "glaive_catalog16": {
+     "k<=16": 8000
+    },
+    "glaive_catalog_long": {
+     "k>16": 7602
+    },
+    "glaive_native": {
+     "k<=16": 11915
+    },
+    "gsm8k": {
+     "k<=16": 4238
+    },
+    "habermas": {
+     "k<=16": 600
+    },
+    "hellaswag": {
+     "k<=16": 4000
+    },
+    "hover": {
+     "k<=16": 1400
+    },
+    "humicroedit_s1": {
+     "k<=16": 1500
+    },
+    "humicroedit_s2": {
+     "k<=16": 1500
+    },
+    "mmlu_aux": {
+     "k<=16": 2916
+    },
+    "mmlu_verify": {
+     "k<=16": 3000
+    },
+    "mnli": {
+     "k<=16": 1300
+    },
+    "nli4ct": {
+     "k<=16": 855
+    },
+    "nq": {
+     "k<=16": 817
+    },
+    "ragtruth": {
+     "k<=16": 1400
+    },
+    "sst5": {
+     "k<=16": 2000
+    },
+    "toolace": {
+     "k<=16": 4126
+    },
+    "vast": {
+     "k<=16": 1300
+    },
+    "when2call": {
+     "k<=16": 3867
+    },
+    "winogrande": {
+     "k<=16": 4950
+    }
+   },
+   "gold_position_uniformity_by_k": {
+    "2": {
+     "n": 98848,
+     "max_dev_from_uniform_pct": 27.3
+    },
+    "3": {
+     "n": 7182,
+     "max_dev_from_uniform_pct": 2.85
+    },
+    "4": {
+     "n": 14903,
+     "max_dev_from_uniform_pct": 0.67
+    },
+    "5": {
+     "n": 1366,
+     "max_dev_from_uniform_pct": 1.3
+    },
+    "6": {
+     "n": 1507,
+     "max_dev_from_uniform_pct": 1.21
+    },
+    "7": {
+     "n": 1320,
+     "max_dev_from_uniform_pct": 2.23
+    },
+    "8": {
+     "n": 1438,
+     "max_dev_from_uniform_pct": 0.96
+    },
+    "9": {
+     "n": 616,
+     "max_dev_from_uniform_pct": 2.53
+    },
+    "10": {
+     "n": 2747,
+     "max_dev_from_uniform_pct": 0.78
+    },
+    "11": {
+     "n": 627,
+     "max_dev_from_uniform_pct": 2.23
+    },
+    "12": {
+     "n": 627,
+     "max_dev_from_uniform_pct": 2.59
+    },
+    "13": {
+     "n": 629,
+     "max_dev_from_uniform_pct": 4.55
+    },
+    "14": {
+     "n": 633,
+     "max_dev_from_uniform_pct": 2.18
+    },
+    "15": {
+     "n": 608,
+     "max_dev_from_uniform_pct": 2.23
+    },
+    "16": {
+     "n": 11581,
+     "max_dev_from_uniform_pct": 0.4
+    },
+    "17": {
+     "n": 550,
+     "max_dev_from_uniform_pct": 3.39
+    },
+    "18": {
+     "n": 497,
+     "max_dev_from_uniform_pct": 1.93
+    },
+    "19": {
+     "n": 534,
+     "max_dev_from_uniform_pct": 1.33
+    },
+    "20": {
+     "n": 510,
+     "max_dev_from_uniform_pct": 1.67
+    },
+    "21": {
+     "n": 674,
+     "max_dev_from_uniform_pct": 1.5
+    },
+    "22": {
+     "n": 1002,
+     "max_dev_from_uniform_pct": 1.45
+    },
+    "23": {
+     "n": 1577,
+     "max_dev_from_uniform_pct": 0.73
+    },
+    "24": {
+     "n": 1432,
+     "max_dev_from_uniform_pct": 1.14
+    },
+    "25": {
+     "n": 724,
+     "max_dev_from_uniform_pct": 1.39
+    },
+    "26": {
+     "n": 98,
+     "max_dev_from_uniform_pct": 5.34
+    },
+    "27": {
+     "n": 4,
+     "max_dev_from_uniform_pct": 21.3
+    },
+    "77": {
+     "n": 2163,
+     "max_dev_from_uniform_pct": 0.5
+    }
+   },
+   "noul_gold_labels": {
+    "true": 2820,
+    "false": 3040
+   },
+   "lowrate_gold_labels_by_family": {
+    "acos": {
+     "no": 9635,
+     "_records_with_no_positive": 880,
+     "_records": 1000,
+     "yes": 134
+    },
+    "anli_claim": {
+     "NOT_SUPPORTED": 2018,
+     "_records_with_no_positive": 2018,
+     "_records": 3000,
+     "SUPPORTED": 982
+    },
+    "banking77_member": {
+     "no": 3092,
+     "yes": 208,
+     "_records": 275,
+     "_records_with_no_positive": 67
+    },
+    "clinc150_member": {
+     "no": 34080,
+     "yes": 1920,
+     "_records": 3000,
+     "_records_with_no_positive": 1080
+    },
+    "habermas": {
+     "option_1": 148,
+     "_records_with_no_positive": 600,
+     "_records": 600,
+     "option_3": 142,
+     "option_0": 167,
+     "option_2": 143
+    },
+    "hover": {
+     "SUPPORTED": 874,
+     "_records": 1400,
+     "NOT_SUPPORTED": 526,
+     "_records_with_no_positive": 526
+    },
+    "mmlu_verify": {
+     "yes": 3000,
+     "no": 9000,
+     "_records": 3000
+    },
+    "mnli": {
+     "not_entailment": 873,
+     "_records_with_no_positive": 873,
+     "_records": 1300,
+     "entailment": 427
+    },
+    "nli4ct": {
+     "Contradiction": 434,
+     "_records_with_no_positive": 434,
+     "_records": 855,
+     "Entailment": 421
+    },
+    "ragtruth": {
+     "true": 590,
+     "_records": 1400,
+     "false": 810,
+     "_records_with_no_positive": 810
+    },
+    "vast": {
+     "B": 505,
+     "_records_with_no_positive": 1300,
+     "_records": 1300,
+     "A": 560,
+     "C": 235
+    }
+   },
+   "injected_rows": 6776,
+   "views": {
+    "v3": 7855,
+    "claim": 3000,
+    "k16": 11000,
+    "member": 3275,
+    "cat16": 8000,
+    "catlong": 7602,
+    "verify": 3000
+   },
+   "uncompressed_sha256": {
+    "records": "d73e12be11655ef8f102c637c6a4985362aa7b42c4a46a698f0db9249ba7ed28",
+    "manifest": "3c996698b31b5638e84ec4ce11dedad2fb6c7f828a4c0f4f03d77fa32c105f6d",
+    "content_map": "4edeb12ca23e09544c6017e561fbe8b9a06c44ab192ec15c398c7da8cdcb9c47"
+   },
+   "gz_sha256": {
+    "records.jsonl.gz": "e41d08d3ee2c5e79578415731a036e2b16dc58e92bbcc57137ad32a2965afed2",
+    "b1-draw100k-v3.manifest.jsonl.gz": "41d3c7c2c37ac24d3641c1ae8b8b311d549c0be895efd2af277cb0a2c7fdd99c",
+    "b1-draw100k-v3.content.jsonl.gz": "b39acdac9951a6c2782f89eae90178d7e135495bf2d6bfe48960c4fa9b7c3ce2"
+   },
+   "pointer": {
+    "build": "b1-draw100k-v3 (python -X utf8 -I -m data.b1 draw; BOARD B1)",
+    "location": "ssdm-data/m2/build/b1-draw100k-v3/ (outside git; deterministic, a rebuild reproduces it)",
+    "records_uncompressed_sha256": "d73e12be11655ef8f102c637c6a4985362aa7b42c4a46a698f0db9249ba7ed28",
+    "manifest": "b1-draw100k-v3.manifest.jsonl.gz",
+    "manifest_uncompressed_sha256": "3c996698b31b5638e84ec4ce11dedad2fb6c7f828a4c0f4f03d77fa32c105f6d",
+    "content_map": "b1-draw100k-v3.content.jsonl.gz",
+    "content_map_uncompressed_sha256": "4edeb12ca23e09544c6017e561fbe8b9a06c44ab192ec15c398c7da8cdcb9c47",
+    "n_records": 100000,
+    "excludes_cohort": "m2-dev-cohort-v2 be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2 and m2-dev-cohort-v3 498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da (id, content, source item, key-free text)",
+    "builder": {
+     "module": "data/b1.py",
+     "commit": "2df52cc52083f3d3309b279d123fb13064cbf7fd"
+    },
+    "receipt": "receipts/2026-10-08-B1-draws/b1-draw100k-v3/"
+   },
+   "builder_sha256": "df40139d1bccee6c9acb945824401f17b7329dc79059014a414c3017ee9575e2"
+  }
+ }
+}

@@ -1,0 +1,54 @@
+{
+ "inputs": {
+  "acos/Laptop-ACOS/laptop_quad_train.tsv": "75572e18961f15d6624c037cf4ccc8964744b59a6be4249132229a4dbd967320",
+  "acos/Restaurant-ACOS/rest16_quad_train.tsv": "91ced9328d5992d3715ec70d7cc08a6ccd9dea79136ffdd70556fe54b217edda",
+  "nli4ct/training_data.zip": "ed3d9819cfebd2d1d5d70fd786323c904b341470f8dc173af39946f70a0e5b9f",
+  "vast/vast_train.csv": "b2f0d69a73231b8ef22f10e4df7d759cf228505ce5252506068da6aa7fe42109",
+  "ragtruth/response.jsonl": "e4c2e4ac24fff676d8984cc61c35d791612fadc58015335d97dd632375e18073",
+  "ragtruth/source_info.jsonl": "0dffc26ea9f3c1c3d7c7e8336b56ef1646e3cec876edffcca3c9c624d12d578b",
+  "hover/hover_train_release_v1.1.json": "1f1cd57abd616fa00c70bdc575ce77c16fc6cf1a6cffd5ff87c208030a336bb6",
+  "hover/wiki_wo_links.db": "c37ee397916ec0bffacfe8902db454a5cda88a7a188409217b2e15231fe5ee2f",
+  "habermas/hm_all_candidate_comparisons.parquet": "7cf8d5ce3fce8853b36f0ffe1158424f7813867e422e313db4df0a5f9e03e4a4",
+  "mnli/data/train-00000-of-00001.parquet": "1c1de03640b168e410aabfca19e7cc2f3dfcd7f0e126e935674e56fb102c4529"
+ },
+ "outputs": {
+  "acos.jsonl.gz": {
+   "sha256": "fba70a7606d6d8bde4104284fad6bde736b6e5c8914504c5a41b725e3ac43e6e",
+   "rows": 4464
+  },
+  "nli4ct.jsonl.gz": {
+   "sha256": "adb87c317465ae6a259c4118c69ab7ca5c67fdf439cf8fbd46137f6cfcc2bc71",
+   "rows": 1700
+  },
+  "vast.jsonl.gz": {
+   "sha256": "d8cc835bee0e585237393e9498cf5ea136f19bc2c3c26bb078fc7f8d304f6abd",
+   "rows": 13477
+  },
+  "ragtruth.jsonl.gz": {
+   "sha256": "8833b3c984fffe0893cb11e9b1b83198d207a06a68a8ff4afe7ac15323ff3de6",
+   "rows": 15062
+  },
+  "hover.jsonl.gz": {
+   "sha256": "5cac50a7d5ab979235209a397e729dc7cd986cd30eb2c605767e942ef4ea7875",
+   "rows": 17000
+  },
+  "habermas.jsonl.gz": {
+   "sha256": "c0231ebb7e793c2048b1fe1365ecac75622b1e6f508adf3dcd02d144f68547d0",
+   "rows": 1184
+  },
+  "mnli.jsonl.gz": {
+   "sha256": "338c72774228c663454e01f0a87362ba7348b358fe3cb781192cbf90eddca41a",
+   "rows": 40000
+  }
+ },
+ "notes": {
+  "habermas": {
+   "rounds_train": 1708,
+   "kept": 1184,
+   "no_initial_complete_panel": 344,
+   "tie": 180,
+   "inconsistent": 0
+  },
+  "mnli": "seeded subset of 40000 train pairs (sha256 order, seed 20261008)"
+ }
+}
