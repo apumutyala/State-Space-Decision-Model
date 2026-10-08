@@ -13,8 +13,10 @@
   },
   "data": {
     "path": "fixtures/language_growth/exact_difference.json",
-    "sha256": "3796ccad1b82c9540c753161ec50911dabe497b3d76a057d040d7a1d150c8843",
-    "split": "authored_synthetic_contract_examples_not_model_evaluation"
+    "sha256": "6324332ee9df3c2f27d239125055db4f2f47b52761669b599e237c2dffab894c",
+    "split": "authored_synthetic_contract_examples_not_model_evaluation",
+    "sha256_working_tree_at_check": "3796ccad1b82c9540c753161ec50911dabe497b3d76a057d040d7a1d150c8843",
+    "hash_note": "Primary hash uses committed LF bytes; working-tree hash preserves Windows CRLF bytes read by the test (JSON text decoding normalizes newlines)."
   },
   "environment": {
     "platform": "Windows-11-10.0.26200-SP0",
