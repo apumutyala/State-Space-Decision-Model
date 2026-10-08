@@ -309,7 +309,7 @@
 - Did: adapted only the pinned L1 24-world fit cohort into 960 tasks / 3,072 actual GatePlanner slot rows; preserved calibration and validation separation, option menus, teacher-forced prefixes, and source-to-world lineage. Source and fit/calibration partition hashes are pinned in the export manifest.
 - Evidence: branch `codex/agent-c-l1-gate-training-20261008` commit `d3f1f09`; focused adapter tests pass (2/2), including trainer loader/whole-world split compatibility. Frozen artifact: `ssdm-data/agent-c-l1-gate-training-fit-20261008-v2`, JSONL SHA-256 `02345dfb60c92742e137d96aa9e34576d04a77181dfc4aa0ac5d308730cb4ccd`.
 - Model/coordination: no model or GPU run. Free RAM is 2.4 GiB, below both the CPU screen's 9-GiB admission and 3-GiB runtime floors. Latest A/B state remains `7ba2962`; no post-start receipts or full-DEV/full8 Stage 1 outcome are posted.
-- Review: independent exact-tree audit found no blockers; draft PR #226 targets `agent-main`, is CLEAN/MERGEABLE, and GitGuardian passed at 19:50:29Z. The initial default-branch conflict was resolved by setting the PR base to the campaign's `agent-main`.
+- Review: independent exact-tree audit found no blockers; PR #226 targets `agent-main`, is ready for review and CLEAN/MERGEABLE, and GitGuardian passed at 19:50:29Z. The initial default-branch conflict was resolved by setting the PR base to the campaign's `agent-main`.
 
 ## 2026-10-08 19:53Z: Agent C polled live autor after A/B status changed
 - Did: queried `job get` and non-following logs for the exact A/B handles. D12f `job-bs5we`, D2kdfla `job-v3tq9`, and L1 inference-equivalence `job-5txp8` are running; `job-5txp8` reached the interleaved 2,008-row score phase. G1 `job-46yeb` is a succeeded 250-row smoke only.
