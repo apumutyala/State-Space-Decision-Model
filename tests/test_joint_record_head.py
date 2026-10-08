@@ -150,3 +150,13 @@ def test_trainer_steps_on_whole_records_and_learns():
     last = sum(x["loss"] for x in h[-8:]) / 8
     assert last < 0.85 * first, (first, last)  # toy: fork head 2.08 -> 2.05; joint 2.14 -> 1.55
     assert float(m.head.w.abs().sum()) > 0 and float(m.head.lex_scale.abs()) > 0
+
+
+def test_records_with_an_identical_prefix_stay_separate_groups():
+    # two DIFFERENT records with the same schema + state (same token prefix) must not merge into one joint group
+    r1, r2 = toy_records(1, seed=0)[0], toy_records(1, seed=0)[0]
+    r2 = {**r2, "id": r2["id"] + "-twin", "labels": dict(r2["labels"])}
+    items = items_from_records([r1, r2], ENC, template=TOY_TEMPLATE)
+    rows = [it.row for it in items]
+    assert rows[0].ids[: rows[0].meta["prefix_end"]] == rows[2].ids[: rows[2].meta["prefix_end"]]
+    assert record_groups(rows) == [[0, 1], [2, 3]]

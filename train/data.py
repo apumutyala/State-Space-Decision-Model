@@ -59,6 +59,7 @@ def items_from_records(records: Iterable[dict[str, Any]], encode: EncodeFn, layo
             row = build_row(req, qid, encode, template=template, layout=layout)
             row.meta["encoder"] = encoder_identity(encode)
             row.meta["content_sha256"] = content_sha  # normalized record content (train.cohort): disjointness proofs
+            row.meta["record"] = rec["id"]  # heads.model.record_key: two records with one schema+state stay apart
             gold = str(gold).lower() if row.qtype == "noul" else str(gold)
             if gold not in row.option_ids:
                 raise ValueError(f"{rec['id']}/{qid}: gold {gold!r} not among options {row.option_ids}")
