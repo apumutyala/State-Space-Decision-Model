@@ -193,3 +193,11 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
    that are set.
 4. `build_context.sh <sha> <out> [<tkfaj results.jsonl> [<clef-flash results.jsonl>]]`; pin the optional files' sha256
    in `job_params.json` `reference_results_sha256` to include those comparisons.
+
+Mode `d4_draw45k` (BOARD D4; `first_cell_job.sh d4_draw45k`, `job_params_d4_draw45k.json`, `m2_first_cell_rwkv7_d4_draw45k.json`;
+generic runner, `train_dir` `m2-d4`): D1 (job-c7pq2 @11fb140) on Agent B's B1 45k weighted draw (stack/rwkv7/b1-draw @79536b9;
+pointer `data/manifests/b1-d4-draw45k.pointer.json`, raw gz pins `data_d4_draw45k.sha256`), D1's 190-min clock (mix-only), plus
+D8's training-K lift `train_max_k` 255 and execution guard `row_options` 160 (stack/rwkv7/d8-maxk @e8c9436), so B1's >16-option
+rows (all <= 2,048 tokens) train; eval `max_k` 16, G12 / Index units and the seeded parent arm unchanged. Cell cap 240 (tokenize
+19 for 45k rows); schedule 630 - 230 + 240 + 7 = 647 min. **Worst case** (60 + 2 x 647) x $0.0495 = **$67.02** (cap $75).
+Expected 537 min ≈ $26.58. UNMEASURED; the time cap binds, K > 16 rows cost more fork work per row than D1's.

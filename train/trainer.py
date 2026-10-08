@@ -96,6 +96,11 @@ class TrainConfig:
     #: with row_batch > 1: max padded tokens per call (rows x longest row of the group); 0 = no limit. A row longer
     #: than the budget runs alone. Bounds the per-call activation memory (jobs/cell_step_profile JOB_SPEC, A1).
     row_tokens: int = 0
+    #: with row_batch > 1: max forked continuations per call (sum of the group's option counts K); 0 = no limit. Each
+    #: continuation carries its own copy of the recurrent state (RWKV-7 13.3B: 61 x 64 x 64 x 64 fp32 = 64 MB), so a
+    #: group of long catalogs (K = 77..255) can hold thousands of copies at once; a row whose K alone is over the cap
+    #: runs alone. Grouping only: the same rows, losses and gradients (tests/test_cell_perf.py).
+    row_options: int = 0
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
 
     def to_json(self) -> dict:
@@ -111,7 +116,7 @@ class TrainConfig:
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
-    EXECUTION = ("act_ckpt", "row_batch", "row_tokens")
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_options")
 
     def hash(self) -> str:
         d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
@@ -126,19 +131,24 @@ def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
     import dataclasses
 
     return dataclasses.replace(cfg, act_ckpt=bool(cell.get("act_ckpt", False)), row_batch=int(cell.get("row_batch", 1)),
-                               row_tokens=int(cell.get("row_tokens", 0)))
+                               row_tokens=int(cell.get("row_tokens", 0)), row_options=int(cell.get("row_options", 0)))
 
 
-def row_groups(lengths: list[int], row_batch: int, row_tokens: int = 0) -> list[list[int]]:
+def row_groups(lengths: list[int], row_batch: int, row_tokens: int = 0, options: list[int] | None = None,
+               row_options: int = 0) -> list[list[int]]:
     """Indices of the step's rows grouped for ``row_batch`` > 1: sorted by length, longest first (stable), filled
     greedily while a group has <= ``row_batch`` rows and, if ``row_tokens`` > 0, (rows x its longest row) <=
-    ``row_tokens`` padded tokens. Every row lands in exactly one group."""
+    ``row_tokens`` padded tokens and, if ``row_options`` > 0, the sum of its rows' ``options`` (K, one forked state
+    copy each) <= ``row_options``. Every row lands in exactly one group."""
+    if row_options and (options is None or len(options) != len(lengths)):
+        raise ValueError("row_options needs one option count per row")
     order = sorted(range(len(lengths)), key=lambda i: -lengths[i])
     groups: list[list[int]] = []
     for i in order:
         g = groups[-1] if groups else None
         if g is not None and len(g) < row_batch and (
-                not row_tokens or (len(g) + 1) * lengths[g[0]] <= row_tokens):
+                not row_tokens or (len(g) + 1) * lengths[g[0]] <= row_tokens) and (
+                not row_options or sum(options[j] for j in g) + options[i] <= row_options):
             g.append(i)
         else:
             groups.append([i])
@@ -213,6 +223,10 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
         act_ckpt.disable_block_checkpointing(model.backbone.model)
     if cfg.row_batch < 1:
         raise ValueError(f"row_batch must be >= 1, got {cfg.row_batch}")
+    if cfg.row_options < 0:
+        raise ValueError(f"row_options must be >= 0, got {cfg.row_options}")
+    if cfg.row_options and cfg.loss.order_consistency_weight:
+        raise ValueError("row_options is not implemented for order-consistency views (row_groups_with_views)")
     model.backbone.batch_rows = cfg.row_batch > 1
     return replaced
 
@@ -374,7 +388,8 @@ class Trainer:
                 view_lengths = [len(it.view.row.ids) if it.view is not None else 0 for it in rows]
                 groups = row_groups_with_views(base_lengths, view_lengths, self.cfg.row_batch, self.cfg.row_tokens)
             else:
-                groups = row_groups([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens)
+                groups = row_groups([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens,
+                                    [it.row.n_options for it in rows], self.cfg.row_options)
             for g in groups:
                 total += self._row_loss([rows[j] for j in g], len(g) / n)
             return self._finish_step(total)
