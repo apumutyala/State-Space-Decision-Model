@@ -67,6 +67,15 @@ and shared background inventory family. Count only the surviving groups after
 checking that the L4 boundary, functional unit, statistic, and uncertainty
 labels match. Until then, keep the harmonization report as one source-world.
 
+A newer [IEA 2024 wind review](https://iea.blob.core.windows.net/assets/3ff59090-1420-4e74-9069-a90602e56bf3/IEAupstreamlifecycleemissionfactors_2024.pdf#page=22)
+starts from roughly 120 onshore-wind studies and retains about 50 estimates.
+It harmonizes GWP, included gases, capacity factor, and lifetime, but the
+report exposes only aggregate min/quartile/median/max results in [Annex III](https://iea.blob.core.windows.net/assets/3ff59090-1420-4e74-9069-a90602e56bf3/IEAupstreamlifecycleemissionfactors_2024.pdf#page=49).
+Its references section identifies source frameworks and data products rather
+than mapping each retained estimate to a primary LCA and shared inventory.
+Thus the roughly 50 values remain one IEA review-world for L4, not 50
+independent groups; the row-level crosswalk is still the next required input.
+
 ## IPCC underlying-study trace
 
 [IPCC AR5 Annex III, Table A.III.2](https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf#page=7)
