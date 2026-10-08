@@ -41,6 +41,22 @@ This is a deterministic licensed-discourse primitive only, not learned fluent
 capability, L3 qualification, or an unrestricted natural-language guarantee.
 Focused checks: `python -m unittest language_growth.tests.test_licensed_realizer -v`.
 
+The optional `realization_production="l3_fact_comparison_contrast_v1"` expands
+one checked Assert(Comparison) into two sentences: `At <scope>, <left fact>.
+In contrast, at <scope>, <right fact>, which is <inverse relation> the first
+value.` Both operands must be numeric facts about distinct subjects, with the
+same field, predicate, unit, quantity kind and scope. Only a checked strict
+inequality licenses this quantitative contrast. Operand order and exact values
+are retained; the second sentence describes the right value against the left,
+so its relation is the inverse of the checked comparison. Equality, constants,
+bare facts, explanations and multiple outputs fail closed. The existing public
+comparison task forms can select this production after the same relevance and
+release checks. The small authored fixture is
+`fixtures/language_growth_l3_contrast/fact_comparison.json`; run it and the
+counterexamples with `python -m unittest language_growth.tests.test_contrast_realizer -v`.
+This adds deterministic discourse expressibility, with no learned L3, causal,
+temporal, strong-comparator or parent-retention claim.
+
 `language_growth.rwkv_decision_head.rwkv_decision_backend` is a CPU FP32
 prototype for growing a decision head from an already strictly loaded native
 RWKV-7 parent. It uses the merged `HiddenStateBackbone`, `DecisionModel`, and

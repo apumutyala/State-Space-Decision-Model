@@ -15,7 +15,10 @@ from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, Spe
 
 PLAIN_PRODUCTION = "plain"
 L3_FACT_PAIR_COORDINATION = "l3_fact_pair_coordination_v1"
-LICENSED_PRODUCTIONS = frozenset({PLAIN_PRODUCTION, L3_FACT_PAIR_COORDINATION})
+L3_FACT_COMPARISON_CONTRAST = "l3_fact_comparison_contrast_v1"
+LICENSED_PRODUCTIONS = frozenset({
+    PLAIN_PRODUCTION, L3_FACT_PAIR_COORDINATION, L3_FACT_COMPARISON_CONTRAST,
+})
 
 
 def is_licensed_production(production: object) -> bool:
@@ -124,6 +127,38 @@ def _coordinated_fact_pair(outputs: tuple[SpeechAct, ...]) -> str:
     )
 
 
+def _contrasted_fact_comparison(outputs: tuple[SpeechAct, ...]) -> str:
+    """Expand an unequal checked comparison into a two-sentence discourse.
+
+    The second sentence refers back to the first value. The connective adds
+    only quantitative contrast licensed by Compare, never cause or chronology.
+    """
+    if (len(outputs) != 1 or outputs[0].kind != "assert"
+            or not isinstance(outputs[0].content, Comparison)):
+        raise ValueError("unsupported production shape")
+    comparison = outputs[0].content
+    left, right = comparison.left, comparison.right
+    if not isinstance(left, Fact) or not isinstance(right, Fact):
+        raise ValueError("unsupported production operands")
+    if (left.subject == right.subject or left.predicate != right.predicate
+            or left.field != right.field or left.unit != right.unit
+            or left.quantity_kind != right.quantity_kind
+            or left.interval != right.interval or left.interval != comparison.interval):
+        raise ValueError("unsupported production scope")
+    if (type(left.object) not in (int, Decimal)
+            or type(right.object) not in (int, Decimal)):
+        raise ValueError("unsupported production operands")
+    # Compare relates left to right; this clause describes right versus left.
+    inverse = {"greater_than": "less than", "less_than": "greater than"}
+    if comparison.relation not in inverse:
+        raise ValueError("unsupported production relation")
+    return (
+        f"{_assertion(left)} In contrast, at {_quoted(right.interval)}, "
+        f"{_subject(right)} has value {_operand_value(right)}, "
+        f"which is {inverse[comparison.relation]} the first value."
+    )
+
+
 def render_checked(result: CheckResult, host: dict, catalog: dict, *,
                    production: str = PLAIN_PRODUCTION) -> str:
     """Render only a currently authorized accepted kernel result.
@@ -145,4 +180,6 @@ def render_checked(result: CheckResult, host: dict, catalog: dict, *,
         raise ValueError("unsupported production")
     if production == L3_FACT_PAIR_COORDINATION:
         return _coordinated_fact_pair(checked.outputs)
+    if production == L3_FACT_COMPARISON_CONTRAST:
+        return _contrasted_fact_comparison(checked.outputs)
     return "\n".join(_speech(act) for act in checked.outputs)
