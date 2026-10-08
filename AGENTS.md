@@ -13,6 +13,7 @@
 ## Lanes (two agents, one decision-maker)
 - **Agent A, LEAD (training):** owns `stack/rwkv7/*` cells, training recipes and data mixes. Sets BOARD priority. Decides keep/discard.
 - **Agent B, WORKER (readout, eval, comparators, data):** owns the readout/prompt format, comparator jobs (Clef full DEV), data draws and teacher exports, and `analysis/`. B also rescores A's `keep` results from raw predictions. This is a non-blocking check: a mismatch marks the ledger row `invalid`.
+- **Agent C, LANGUAGE (Stage 2 prep, CPU-only):** owns `language_growth/`, `plans/codex/`, `interfaces/` and the L0–L4 checked semantic programs. C gets the Stage 2 gates measurable the moment Stage 1 has a champion. C spends $0 GPU until Stage 1 passes, never touches A's or B's lanes, and keeps local CPU jobs small, because the laptop's RAM is shared.
 - Each agent appends proposals to the bottom of BOARD; only A reorders. Talk through files (BOARD, PROGRESS, ledger notes, receipt paths), not prose summaries.
 
 ## Shared state: the `state` branch (push directly; no PR)
@@ -52,8 +53,8 @@ Hypothesis with expected gain → variant config on a `stack/rwkv7/<variant>` br
 ## Done
 Done means: full-DEV paired CI > 0 vs both Clef models, with ECE, steer/hijack, latency and cost reported, B's independent rescore, and the result merged to agent-main. A good DEV-subset run is not done. If the budget runs out first, deliver a gap-attribution writeup plus a funding request. Never pause for lack of ideas: reread the ledger, combine near-misses, try one bolder change, search the literature.
 
-## Not now
-Stage 2 language work (L0–L4, `language_growth/`, `plans/codex/`) waits until Stage 1 passes. Process docs (COORDINATION.md, GOAL.md) are background, not instructions on top of this file.
+## Stage 2 timing
+Only Agent C works on language (L0–L4), and only CPU work until Stage 1 passes; then C's gates run on the champion. A and B never pick up language work. Process docs (COORDINATION.md, GOAL.md) are background, not instructions on top of this file.
 
 ## Self-evolving
 When a rule or check cost time without catching a real problem, delete or simplify it in your next PR (one line why). When a real failure costs >30 min or happens twice, prevent it in this order: a check in the launcher or a script, then a skill step, then (last resort) one line here. Keep this file at 100 lines or fewer.
