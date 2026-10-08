@@ -13,3 +13,4 @@ Targets (DEV 2,008 subset): Clef-flash 55.78 · Clef 62.14. Current best attenti
 | D5 | A | LoRA r256 vs r64; LR/epoch sweep on the kept parent | +1–4 | ~$15–31 each | queued |
 | B1 | B | 45k+ training draw + intent views, excluding TEST / held-out / cohort v3; teacher export for it if KD wins | enables D4 | ~$5 GPU | queued |
 | Q1 | — | Parked: Q9 proxy loop (best SELECT 39.24 < 50); Q9-AF option (b) | — | — | parked (#140 stall trigger) |
+| R3 | B | (proposed by B) Long-catalog binding + label-prior fix in readout: single-token codes with the catalog repeated next to the answer slot for k>16; content-free contextual calibration (fit-free) against the B/A/SUPPORTED prior collapse. Basis: A's loss breakdown (>16 options 31% vs Clef-flash 59%, +7.2 Index; API-Bank +3.5) | +3–7 | ~$3–6 | B, design starting; rescore on DEV subset after R1 lands |
