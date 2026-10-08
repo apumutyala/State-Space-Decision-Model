@@ -7,6 +7,9 @@ families
   ``rwkv7-hf``    ``decide.backends.hf_readout.load_rwkv7_hf`` (RWKV7-G1k, vendored bundled code)
   ``rwkv7-hf-code-label-v1`` same plugin, explicit G1CodeLabelBackend (frozen filtered codes)
   ``rwkv7-hf-code-label-v2`` same plugin, all-field labels and bounded prefix-fork scorer
+  ``rwkv7-hf-g1-v2`` same plugin, ``decide.backends.rwkv_g1_v2.G1V2Backend`` (vendor-compliant jrt-rwkv-g1-v2: no
+                  blank lines in the turn, token 0 first, G1k no-think tail, single-token option codes, whole-string
+                  tokenization)
   ``qwen3.5``     ``decide.backends.hf_readout.load_qwen35`` (stock transformers path)
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
@@ -20,8 +23,10 @@ from typing import Any
 
 CODE_LABEL_FAMILY = "rwkv7-hf-code-label-v1"
 CODE_LABEL_V2_FAMILY = "rwkv7-hf-code-label-v2"
+G1V2_FAMILY = "rwkv7-hf-g1-v2"
 TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-hf": "jrt-rwkv-g1-v1",
-             CODE_LABEL_FAMILY: "jrt-rwkv-g1-code-label-v1", CODE_LABEL_V2_FAMILY: "jrt-rwkv-g1-code-label-v2"}
+             CODE_LABEL_FAMILY: "jrt-rwkv-g1-code-label-v1", CODE_LABEL_V2_FAMILY: "jrt-rwkv-g1-code-label-v2",
+             G1V2_FAMILY: "jrt-rwkv-g1-v2"}
 
 
 def _sha256_file(path):
@@ -58,7 +63,7 @@ def build_plugin(family: str, options: dict[str, Any]):
                                      options.get("converted", ""), device=dev, dtype=dt)
     from decide.backends import hf_readout as H
 
-    if family in ("rwkv7-hf", CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY):
+    if family in ("rwkv7-hf", CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY, G1V2_FAMILY):
         return H.load_rwkv7_hf(options["model_dir"], device=dev, dtype=dt)
     if family == "qwen3.5":
         return H.load_qwen35(options["model_dir"], device=dev, dtype=dt)
@@ -96,7 +101,11 @@ class ReadoutIndexEngine(Engine):
         self.family = options.get("family", "q9af-probe")
         decode = _load_code_label_decode(options["model_dir"]) if self.family in (CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY) else None
         plug = build_plugin(self.family, options)
-        if self.family == CODE_LABEL_V2_FAMILY:
+        if self.family == G1V2_FAMILY:
+            from decide.backends.rwkv_g1_v2 import G1V2Backend
+
+            self.backend = G1V2Backend(plug)
+        elif self.family == CODE_LABEL_V2_FAMILY:
             from decide.backends.rwkv_g1_code_label_v2 import G1CodeLabelV2Backend
 
             self.backend = G1CodeLabelV2Backend(plug, tokenizer_decode=decode)
