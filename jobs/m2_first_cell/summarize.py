@@ -156,6 +156,15 @@ def summarize(a) -> dict:
     child_idx = _load(Path(a.report).with_name("units-child-index.json"))
     par_g12 = _load(Path(a.parent_arm) / "units-g12.json")
     par_idx = _load(Path(a.parent_arm) / "units-index.json")
+    proxy = (rep.get("stages", {}).get("index") or {}).get("index_proxy")
+    if proxy:  # params rows "proxy600": the child scored a pre-declared proxy; every pairing here uses those rows only
+        from jobs.common.dev_subset import ids_sha256
+
+        pids = set(child_idx["index_results"])
+        if ids_sha256(pids) != proxy["ids_sha256"]:
+            raise SystemExit("child index results do not cover exactly the report's index proxy rows")
+        rows = [r for r in rows if r["_evaluation"]["run_id"] in pids]
+        par_idx = dict(par_idx, index_results={k: v for k, v in par_idx["index_results"].items() if k in pids})
     cohort = Cohort(expected_sha256=cell["config"]["cohort_sha256"])
     vi = rep["verdicts"]["index"]
     usd = params["batch_usd_per_min"]
@@ -166,7 +175,7 @@ def summarize(a) -> dict:
         | {"train_set": cell["config"]["train_set"]["pointer"]},
         "training": training(cell),
         "index_dev_subset": {
-            "rows": len(rows), "child": (vi.get("scores") or {}).get("child"),
+            "rows": len(rows), "index_proxy": proxy or None, "child": (vi.get("scores") or {}).get("child"),
             "parent_stock_readout": (vi.get("scores") or {}).get("parent"),
             "child_minus_parent": (vi.get("scores") or {}).get("diff"),
             "criteria_informational": vi.get("criteria"),

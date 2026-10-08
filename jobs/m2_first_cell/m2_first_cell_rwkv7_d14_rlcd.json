@@ -73,9 +73,10 @@
  "rlcd": {
   "beta": 0.1,
   "brier": 0.5,
-  "record": 0.25
+  "record": 0.25,
+  "adjacent_credit": 0.5
  },
- "rlcd_note": "per row loss = (1 - E_p[reward]) + record x share of (1 - prod p(gold) over the record's questions) + beta x KL(p || p_D1) + brier x Brier (train.losses.rlcd_loss). reward = 1 for gold; on score questions 1 - |k - gold| / (K - 1). The expectation is exact (the head outputs a distribution over options), so no sampling. p_D1 = the same forward with D1's tensors swapped in (no grad; ~+1 forward per step). Record term: data order is record-contiguous; a record's questions outside the current row group enter through a detached p(gold) cache. Weights are pre-registered guesses (Clef publishes none): beta 0.1 keeps the policy near D1, brier 0.5 keeps calibration (the reward term alone is improper and sharpens).",
+ "rlcd_note": "per row loss (train.losses.rlcd_loss, PROPER form v2 after review B 2026-10-08) = -log p(gold) + [score questions] RPS + record x share of -log prod p(gold) over the record's questions (a log-product = mean log score) + beta x KL(p || p_D1) + brier x Brier. Every scoring term is strictly proper, so with p_D1 calibrated the fixed point is p = p_D1 (v1's 1 - E_p[reward] term was linear in p, improper: it sharpened toward proj(2q)). Partial credit on score questions is ADJACENT-ONLY (adjacent_credit 0.5 at |k - gold| = 1, else 0), pre-registered here; it is the logged expected-reward bookkeeping, the ordinal structure is trained through RPS. p_D1 = the same forward with D1's tensors swapped in (no grad; ~+1 forward per step). Record term: data order is record-contiguous; a record's questions outside the current row group enter through a detached p(gold) cache (a constant in the log-product). Weights are pre-registered guesses (Clef publishes none): beta 0.1 keeps the policy near D1, brier 0.5.",
  "init_from": {
   "file": "init/trainable.safetensors",
   "sha256": "c50732d2e52ddfc7ae935668c461dd2685f3cdb06c74c3c73331788fe7095773",

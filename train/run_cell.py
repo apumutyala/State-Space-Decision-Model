@@ -363,18 +363,19 @@ def kd_fields(cfg: dict) -> dict:
 
 
 def rlcd_fields(cfg: dict) -> dict:
-    """``LossConfig`` RLCD weights from the cell's ``rlcd`` block ({beta, brier, record}); loss_arm must be "rlcd".
+    """``LossConfig`` RLCD weights from the cell's ``rlcd`` block ({beta, brier, record, adjacent_credit}); loss_arm must be "rlcd".
     No block = {} (every other cell's loss config and hash unchanged)."""
     r = cfg.get("rlcd")
     if cfg.get("loss_arm") != "rlcd":
         if r:
             raise ValueError("an rlcd block needs loss_arm 'rlcd'")
         return {}
-    if not isinstance(r, dict) or set(r) != {"beta", "brier", "record"}:
-        raise ValueError("loss_arm 'rlcd' needs rlcd = {beta, brier, record}")
+    if not isinstance(r, dict) or set(r) != {"beta", "brier", "record", "adjacent_credit"}:
+        raise ValueError("loss_arm 'rlcd' needs rlcd = {beta, brier, record, adjacent_credit}")
     if not cfg.get("init_from"):
         raise ValueError("loss_arm 'rlcd' is a second stage: the cell needs an init_from block (the reference)")
-    return {"rlcd_beta": float(r["beta"]), "rlcd_brier": float(r["brier"]), "rlcd_record": float(r["record"])}
+    return {"rlcd_beta": float(r["beta"]), "rlcd_brier": float(r["brier"]), "rlcd_record": float(r["record"]),
+            "rlcd_adjacent_credit": float(r["adjacent_credit"])}
 
 
 def order_consistency_fields(cfg: dict) -> dict:

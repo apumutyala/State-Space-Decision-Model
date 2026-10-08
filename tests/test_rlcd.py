@@ -40,14 +40,41 @@ def test_rewards_kl_record_by_hand():
     y = torch.tensor([0, 1])
     r = option_rewards(lp, y, ["choice", "score"])
     assert torch.allclose(r[0], torch.tensor([1.0, 0.0, 0.0, 0.0]))
-    assert torch.allclose(r[1], torch.tensor([2 / 3, 1.0, 2 / 3, 1 / 3]))  # K = 4 levels, gold 1
+    assert torch.allclose(r[1], torch.tensor([0.5, 1.0, 0.5, 0.0]))  # adjacent-only credit 0.5, gold 1
     assert torch.allclose(kl_to_ref(lp, lp.clone()), torch.zeros(2))
     pg = torch.tensor([0.5, 0.8, 0.9])
     t = record_terms(pg, ["a", "a", "b"], torch.tensor([1.0, 1.0, 0.5]))
-    assert torch.allclose(t, torch.tensor([0.3, 0.3, 0.55]))  # a: (1 - .4) / 2 each; b: 1 - .9 x .5
+    la = -(math.log(0.5) + math.log(0.8)) / 2  # a: -log prod / n, split over its 2 rows
+    lb = -(math.log(0.9) + math.log(0.5))
+    assert torch.allclose(t, torch.tensor([la / 2, la / 2, lb]))
     loss = rlcd_loss(lp, y, ["choice", "score"], LossConfig(arm="rlcd"), lp.clone())
-    expect = ((1 - 0.6) + (1 - (0.2 * 2 / 3 + 0.3 + 0.4 * 2 / 3 + 0.1 / 3))) / 2
+    rps1 = ((0.2 - 0) ** 2 + (0.5 - 1) ** 2 + (0.9 - 1) ** 2) / 3  # K = 4 levels, gold 1
+    expect = (-math.log(0.6) + (-math.log(0.3) + rps1)) / 2
     assert abs(float(loss) - expect) < 1e-5
+
+
+def _fit(q, qtype, cfg, ref=None, steps=3000):
+    K = q.numel()
+    z = torch.zeros(K, requires_grad=True)
+    ref_lp = (ref if ref is not None else q).log().unsqueeze(0).expand(K, K)
+    opt = torch.optim.Adam([z], lr=0.05)
+    ys = torch.arange(K)
+    for _ in range(steps):
+        lp = torch.log_softmax(z, -1).unsqueeze(0).expand(K, K)
+        per = torch.stack([rlcd_loss(lp[i:i + 1], ys[i:i + 1], [qtype], cfg, ref_lp[i:i + 1], ["r"]) for i in range(K)])
+        loss = (per * q).sum()
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+    return torch.softmax(z, -1).detach()
+
+
+@pytest.mark.parametrize("qtype", ["choice", "score"])
+def test_proper_fixed_point_on_calibrated_reference(qtype):
+    # p_ref = q = (0.7, 0.3) calibrated: the D14 objective's optimum stays at q (v1 drifted to proj(2q))
+    q = torch.tensor([0.7, 0.3])
+    p = _fit(q, qtype, RL)
+    assert (p - q).abs().max() < 0.01, p.tolist()
 
 
 def test_old_identities_unchanged_and_rlcd_fields_guarded():
@@ -157,7 +184,7 @@ def test_d14_cell_config_is_d1_fla_plus_rlcd():
                        "rlcd_note"}, changed
     from train.run_cell import rlcd_fields, train_config
 
-    assert rlcd_fields(d14) == {"rlcd_beta": 0.1, "rlcd_brier": 0.5, "rlcd_record": 0.25}
+    assert rlcd_fields(d14) == {"rlcd_beta": 0.1, "rlcd_brier": 0.5, "rlcd_record": 0.25, "rlcd_adjacent_credit": 0.5}
     assert train_config(d14, 10).loss.arm == "rlcd"
     params = json.loads((ROOT / "jobs/m2_first_cell/job_params_d14_rlcd.json").read_text(encoding="utf-8"))
     assert params["mode"] == "d14_rlcd" and params["init_checkpoint"]["sha256"] == d14["init_from"]["sha256"]

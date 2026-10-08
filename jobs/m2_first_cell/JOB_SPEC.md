@@ -219,8 +219,130 @@ fallback there is counted, not fatal). The parent arm and child evals use the sa
 Mode `d1_fla` (D1fla; `job_params_d1_fla.json`, `m2_first_cell_rwkv7_d1_fla.json`): `d1_fast` with only `"rwkv7_wkv": "fla"` (job-9bs8w ADOPT, 1.46x step; fla setup and strict training above). Same clock, caps and schedule as `d1_fast`.
 
 Mode `d14_rlcd` (D14; `job_params_d14_rlcd.json`, `m2_first_cell_rwkv7_d14_rlcd.json`): RLCD second stage from D1
-(job-c7pq2, art-bm3e6). `d1_fla` with loss arm `rlcd` (`train.losses.rlcd_loss`: 1 - E_p[reward] with ordinal partial
-credit, record-exact proxy 0.25, KL(p || p_D1) 0.1, Brier 0.5), D1's trainable tensors as init and KL reference
+(job-c7pq2, art-bm3e6). `d1_fla` with loss arm `rlcd` (`train.losses.rlcd_loss`, PROPER form v2 after review B:
+-log p(gold) + RPS on score questions, record log-product -log prod p(gold) 0.25, KL(p || p_D1) 0.1, Brier 0.5; the
+adjacent-only partial credit 0.5 (`rlcd.adjacent_credit`) is logged expected-reward bookkeeping, not optimised), D1's trainable tensors as init and KL reference
 (`init_from`, data `init/trainable.safetensors`, sha256-pinned, `train.rlcd`), LRs 2e-4 / 2e-5, warmup 20, 120-min
 clock, cell cap 160. Schedule 560 + reserve 7 = 567 min. **Worst case** (60 build + 2 x 567) x $0.0495 = **$59.10**
 (cap $70). The report adds `start_point` = D1's own Index (35.12 [32.12, 37.95]).
+
+Mode `d14_rlcd_screen` (`job_params_d14_rlcd_screen.json`, `m2_first_cell_rwkv7_d14_rlcd_screen.json` = a byte copy of the d14_rlcd cell
+config): `d14_rlcd` with `"stage": "screen"` (see "Params `"stage": "screen"`" below): the 205-min evals cap becomes
+`"screen": 60` (expected ~41), `screen_reference` = D1 art-bm3e6 (shipped `screen_reference/units-child-index.json`,
+pinned by `units_sha256`). Schedule 415 + reserve 7 = 422 min. **Worst case** (60 build + 2 x 422) x $0.0495 =
+**$44.75** (cap $70).
+## Mode `fulldev_eval`: a saved checkpoint on the FULL Index DEV (DRAFT, NOT SUBMITTED)
+
+**Question.** What does a trained cell score on all 12,104 DEV rows, on exactly the comparators' footing (Clef 27B
+job-zfexa art-p93d4 61.89 [60.28, 63.28]; Clef-flash job-t5yg2 art-7pyk2 57.29 [55.88, 58.67])? Files:
+`job_params_fulldev_eval.json`, `m2_first_cell_rwkv7_fulldev_eval.json` (= the D1 base cell), driver
+`fulldev_eval.py`, lengths `fulldev_lengths_rwkv7.json`, landing `analysis/land_fulldev.py`.
+
+**Same as the comparators.** Rows: `data/slices/dev-rows.jsonl.gz`, pinned by `jobs/clef_baseline/data.sha256` (the
+file `harness.cli.load_slice("dev")` reads). Edition 0.2.1. Scorer: `python -X utf8 -m harness score|ece|compare
+--slice dev --edition 0.2.1` (frozen). Latency: the Clef row's definition (ok rows, first 10 dropped, median and
+nearest-rank p95 of the per-row `total_wall_ms`, H100, batch 1).
+
+**Over-length rows.** Clef's shipped max_length is 16,384; the comparators re-read the 51 rows over it
+(`jobs/clef_baseline/overlength_rows.json`) at 32,768 with no truncation and substituted them. RWKV7 has no positional
+limit, so the candidate reads every row in full: the adapter's 16,384 default is raised through the request's
+`ssdm.limits.max_input_tokens` (the Clef 32k arm's own mechanism) to 65,536, above the longest full-DEV row (47,509
+RWKV7 tokens; 68 rows exceed 16,384 in RWKV7 tokens: the 51 plus 17 more). A $0 plan-only pass over all rows runs
+before any forward (`plan-child.json`); a row still refused scores as the kit scores it (no credit) and is listed.
+The report gives both `full` (12,104 rows, headline, paired with the 32k-substituted comparator files) and
+`excl_overlength51` (12,053 rows).
+
+**Child arm** = the in-job Index arm of `train.m2_gates` stage `index`: `Trainer.load` (config hash + lineage), the
+cohort temperature fit, served decider, `index_predict(..., untempered_from_raw=True)`: `child.results.jsonl` holds
+the untempered answers (the arm D1's 35.12 subset number used), `child.results_served.jsonl` the tempered ones (served
+ECE). **Parent arm** (optional, `"fulldev_parent_arm": true`; also add `phase_caps_minutes.parent_full: 185` and
++185 to `max_duration_minutes`): the stock readout on the same rows and cap, for the paired child − parent Δ.
+
+**Phases.** setup 25 / guard 5 / checkpoint 15 (`checkpoint_loader install`, shared with `hijack_eval`) / fulldev
+550 (live weighted rate guard; per-row resume from `$CK/fulldev`) / report 10 / reserve 7 = 612 min.
+**Sizing** (D1 job-c7pq2 art-bm3e6, `units-child-index.json`): 2,000 ok subset rows in 3,680 s of decide wall
+(32.8 rows/min; 1.037 s per 1k plan tokens). Full DEV = 22,630,947 plan tokens → 391 min scoring + 30 fixed = 421
+(368 min by row count); a 25 % slower box still fits (519 ≤ 0.95 × 550). Expected 443 run min = **$21.93** billed
+($0.0495) / **$27.91** quoted ($0.063), + build ~15 min. Worst case (60 + 2 × 612) × 0.0495 = **$63.56**; quoted max
+612 × 0.063 = $38.56. Parent arm adds ~141 min (0.373 s / 1k tokens) ≈ $7.
+
+**Submitting (the signed URL never goes into git).** Package from a pushed sha
+(`python -m jobs.common.launch m2_first_cell --mode fulldev_eval --sha <sha> --out <dir> --data <ssdm-data>`), mint
+the artifact link (`get_artifact art-bm3e6`, valid ~7 days), put it into the PACKAGED `<dir>/submit.json`
+`calls[submit_job].args.env.CKPT_URL` (replacing the `<...>` placeholder; that file is outside the repo), then
+`python -I jobs/common/sf_submit.py <dir>`. The job refuses anything but `https://` and checks the tar's sha256
+against the pin before reading two members.
+
+**Landing.** Extract the job's last phase tgz, then `python -I -X utf8 analysis/land_fulldev.py --art <dir> --job
+<id> --artifact <art>`: `analysis.paired_vs_clef` in `full` and `full_excl51` row modes against the two pinned
+comparator files; `beats_both` per mode, ECE, and a re-check of the job's own score.
+
+### Mode `hijack_eval`: hijack + D1-A steer on a saved checkpoint (DRAFT, NOT SUBMITTED)
+
+`job_params_hijack_eval.json` (BOARD H1): eval-only, no training. Loads D1 (job-c7pq2 art-bm3e6) through the shared
+`checkpoint_loader install`, then `train.m2_gates --stage hijack` (45 steer_dev clusters x 8 requests x (clean + 5
+hijack + 4 D1-A) = 3,600 units per arm), paired child - parent via `safety_eval.metrics.compare_arms`. Caps 15 / 5 /
+10 / 25 / 50 / 5 + 7 = 117 min. Expected ~72 run min = $3.56 (+ build ~15 min = $4.31); quoted one attempt $7.37.
+**Worst case** (60 + 2 x 117) x 0.0495 = **$14.55** (cap $15). Full derivation in the params file's `_comment`.
+
+### Mode `fulldev_smoke`: the same pipeline on 250 pre-declared rows, both arms (DRAFT, NOT SUBMITTED)
+
+`job_params_fulldev_smoke.json` = fulldev_eval with `"rows": "smoke"` and `"fulldev_parent_arm": true`. Rows:
+`fulldev_smoke_rows.json` (`fulldev_eval smoke-build`; DEV manifest + RWKV7 row lengths only, rebuilt byte for byte
+by the tests): whole kit groups; the longest DEV row (47,509 tokens) plus 11 more of the 68 rows over 16,384 at
+evenly spaced length ranks (8 of the comparators' 51, 4 RWKV7-only), then one whole group per track in
+sha256(seed:catalog:group) order, round-robin over the 83 tracks that have short groups, to 250 rows (732,499
+tokens). The report scores the subset in process with the frozen functions (`harness.score.decompose`,
+`harness.bootstrap`, `harness.calibration`; the CLI scores whole slices only) and says so. `land_fulldev.py`
+detects a smoke results file and lands it in the `fulldev_smoke` row mode of `paired_vs_clef`, labelled a SUBSET.
+Caps 25 / 5 / 15 / 70 / 25 / 10 + 7 = 157 min. Expected: child 12.7 scoring + 30 fixed, parent 4.6 + 5; run 73 min
+= **$3.61** billed / $4.60 quoted, + build ~15 min ($4.36). Worst case $18.51.
+
+**d1_fast's throughput flags do not apply to scoring.** `row_plan` / `cont_plan` regroup rows inside a TRAINING step
+(`train.trainer`), and `compile_blocks` compiles the block body inside the activation checkpoint, which
+`heads/act_ckpt` bypasses under `no_grad` (evaluation runs the plain block). Scoring is one request at a time
+through `DecisionModelBackend.score`; none of the three is on that path, so the full-run estimate stays 421 min.
+(They also could not be switched on here: the loader requires the cell config to EQUAL the checkpoint's cell.json.)
+The measured gap that does matter: D1's child scores at 1.037 s / 1k tokens vs 0.373 for the stock parent (2.8x).
+
+## Params `"rows": "proxy600"`: screen a cell on the pre-declared 644-row Index proxy
+
+`jobs/common/dev_proxy600.json` (ids sha `7d42c398…85e6`, pinned in `jobs.common.dev_proxy.PROXIES`): a stratified
+subset of the 2,008-row m1 subset (all 38 benchmarks x length bins, whole source cases, allocation by Index weight,
+min 6 rows per benchmark, seed `proxy-v1`), chosen by leave-one-system-out over 15 scored systems
+(`analysis/proxy_validate.py`, receipt `receipts/2026-10-08-B-dev-proxy600/`). Base / training modes: `"rows":
+"proxy600"` makes `train.m2_gates --index-proxy proxy600` score the child's Index stage on the proxy rows only; the
+parent arm stays verified on the full subset (unchanged identity / seed pins) and is paired on the proxy rows. G12 is
+unchanged; g13 refuses a proxy. Mode `fulldev_eval` takes the same value (`--rows-select proxy600`). Measured on D1
+(job-c7pq2): the Index stage drops from 71.2 min (61.3 rows + 9.9 order diagnostic) to ~29.6 (26.0 + 3.7; 55 of the
+160 diagnostic rows), i.e. -41.6 min = -$2.06 batch / -$2.62 quoted per cell; the evals phase 178 -> ~136 min (the
+G12 stage, 82 min, and the 18 min fit + card are untouched). The preflight / reprice still price the full subset
+(an upper bound). A SCREEN: a winner gets the full subset + full DEV.
+
+## Params `"stage": "screen"`: train, then screen on proxy600 (no G12, no temperature fit, no card)
+
+The default is `"stage": "gates"`, and that path is unchanged. For any training mode (not `eval_only`), the evals and
+report phases are replaced by `jobs.m2_first_cell.screen`:
+- **score:** the child's untempered arm decider runs on the 644 proxy600 rows at the trained input cap. A $0 plan check
+  confirms the child refuses exactly the rows the parent refused.
+- **report:** writes `screen.json`, validated by `screen:valid_result`. It holds the child, parent and reference proxy
+  Index with 95% CIs, and both paired differences (child-parent, child-reference), from `harness.score.decompose` and
+  `bootstrap.compare`. The verdict is **DROP if child-reference < -2.5** (point estimate), else **PROMOTE** to the full
+  subset and full DEV.
+
+Reference: `screen_reference` gives an artifact id plus a sha chain: `artifact_sha256` → `member` (+`member_sha256`) →
+`inner_member` (+`units_sha256`). The default is D1, art-bm3e6 `./phases/final.tgz` `out/units-child-index.json`.
+- It is found in setup, before training: either the shipped `$DATA/<shipped>` file with the pinned sha, or the
+  downloaded artifact from `$<url_env>`.
+- It must cover every proxy row, or setup fails with exit 10.
+
+Mode params need these changes:
+- `"stage": "screen"`.
+- In `phase_caps_minutes`, replace `"evals"` with `"screen": 60`.
+- An explicit `screen_reference` block.
+- A `context.data` entry `{"src": "m2/screen_reference/art-bm3e6/units-child-index.json", "dest":
+  "screen_reference/units-child-index.json", "pin_json": [<params>, "screen_reference", "units_sha256"]}`.
+
+The parent arm phase and its seed are unchanged. Expected eval time is about 41 min: 26.0 min of child proxy scoring
+(D1 measured), plus 15 min budgeted for load and lineage, plus about 2 min of report. That is about $2.03 batch or
+$2.58 quoted, against the gates path's 178 min.

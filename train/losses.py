@@ -154,6 +154,8 @@ class LossConfig:
     rlcd_beta: float = 0.0
     rlcd_brier: float = 0.0
     rlcd_record: float = 0.0
+    #: adjacent-only partial credit on score questions (expected_reward bookkeeping); in the identity only for arm rlcd
+    rlcd_adjacent_credit: float = 0.5
 
     #: field -> default; left out of config identities at these values (old hashes unchanged)
     KD_DEFAULTS = {"kd_alpha": 0.0, "kd_temperature": 1.0}
@@ -167,6 +169,8 @@ class LossConfig:
                 raise ValueError(f"{k} must be finite and nonnegative, got {v!r}")
             if v and self.arm != "rlcd":
                 raise ValueError(f"{k} is set but arm is {self.arm!r} (rlcd fields need arm 'rlcd')")
+        if type(self.rlcd_adjacent_credit) not in (int, float) or not 0.0 <= self.rlcd_adjacent_credit <= 1.0:
+            raise ValueError(f"rlcd_adjacent_credit must be in [0, 1], got {self.rlcd_adjacent_credit!r}")
         if type(self.kd_alpha) not in (int, float) or not 0.0 <= self.kd_alpha <= 1.0:
             raise ValueError(f"kd_alpha must be in [0, 1], got {self.kd_alpha!r}")
         if type(self.kd_temperature) not in (int, float) or not 0.0 < self.kd_temperature < float("inf"):
@@ -192,6 +196,10 @@ class LossConfig:
         for k in ("rlcd_beta", "rlcd_brier", "rlcd_record"):
             if d[k] == 0.0:
                 d.pop(k)
+        if self.arm != "rlcd":
+            d.pop("rlcd_adjacent_credit")
+        else:
+            d["rlcd_form"] = "proper-v2"  # log + RPS + record log-product (+ KL, Brier); v1 was 1 - E_p[reward]
         return d
 
     @property
@@ -201,17 +209,22 @@ class LossConfig:
         return 0.0 if self.arm in ("ce", "rlcd") else 1.0
 
 
-def option_rewards(lp: torch.Tensor, y: torch.Tensor, qtypes: list[str]) -> torch.Tensor:
-    """[B, K] reward of choosing each option: 1 for gold, 0 otherwise; on ordinal (``score``) questions partial credit
-    ``1 - |k - gold| / (K - 1)`` over the K valid levels (index order = level order, as ``rps``). 0 on padding."""
+def option_rewards(lp: torch.Tensor, y: torch.Tensor, qtypes: list[str], adjacent_credit: float = 0.5) -> torch.Tensor:
+    """[B, K] reward of choosing each option (bookkeeping: the logged expected reward, NOT the training loss, which is
+    proper; see ``rlcd_loss``): 1 for gold, 0 otherwise; on ordinal (``score``) questions ADJACENT-ONLY partial credit:
+    ``adjacent_credit`` (pre-registered, cell rlcd.adjacent_credit) for |k - gold| == 1, else 0. 0 on padding."""
     m = _valid(lp)
-    k = m.sum(-1, keepdim=True).to(lp.dtype)
     idx = torch.arange(lp.shape[1], device=lp.device).unsqueeze(0).to(lp.dtype)
     dist = (idx - y.unsqueeze(1).to(lp.dtype)).abs()
     ordinal = torch.tensor([q == "score" for q in qtypes], device=lp.device).unsqueeze(1)
-    partial = (1.0 - dist / (k - 1).clamp_min(1.0)).clamp_min(0.0)
     exact = (dist == 0).to(lp.dtype)
+    partial = exact + adjacent_credit * (dist == 1).to(lp.dtype)
     return torch.where(ordinal, partial, exact) * m
+
+
+def expected_reward(lp: torch.Tensor, y: torch.Tensor, qtypes: list[str], adjacent_credit: float = 0.5) -> torch.Tensor:
+    """Per row E_p[reward] (adjacent-only partial credit): for logging only, never optimised (linear in p = improper)."""
+    return (lp.exp() * _valid(lp) * option_rewards(lp, y, qtypes, adjacent_credit)).sum(-1)
 
 
 def kl_to_ref(lp: torch.Tensor, ref_lp: torch.Tensor) -> torch.Tensor:
@@ -224,31 +237,36 @@ def kl_to_ref(lp: torch.Tensor, ref_lp: torch.Tensor) -> torch.Tensor:
 
 
 def record_terms(p_gold: torch.Tensor, record_ids: list[str], other: torch.Tensor) -> torch.Tensor:
-    """Per row share of ``1 - P(record exact)``: per record present in the batch, ``P = prod_{rows of it here} p_gold
-    x other`` (``other`` [B]: detached product of the record's questions NOT in this batch, 1 if none), the record's
-    ``1 - P`` split evenly over its rows here (so the batch sum counts each record once)."""
+    """Per row share of the PROPER record term ``-log P(record exact) / n`` (a log-product = the mean log score over
+    the record's questions): per record present in the batch, ``-(sum_{rows of it here} log p_gold + log other) / n``
+    with ``other`` [B] the detached product of the record's questions NOT in this batch (1 if none; a constant, no
+    gradient) and n = its rows here, split evenly over those rows (so the batch sum counts each record once)."""
     out = torch.zeros_like(p_gold)
     groups: dict[str, list[int]] = {}
     for i, r in enumerate(record_ids):
         groups.setdefault(r, []).append(i)
+    lpg = p_gold.clamp_min(1e-30).log()
     for rows in groups.values():
         ix = torch.tensor(rows, device=p_gold.device)
-        prod = p_gold.index_select(0, ix).prod() * other[rows[0]]
-        out = out.index_add(0, ix, ((1.0 - prod) / len(rows)).expand(len(rows)))
+        n = len(rows)
+        tot = -(lpg.index_select(0, ix).sum() + other[rows[0]].clamp_min(1e-30).log()) / n
+        out = out.index_add(0, ix, (tot / n).expand(n))
     return out
 
 
 def rlcd_loss(lp: torch.Tensor, y: torch.Tensor, qtypes: list[str], cfg: "LossConfig", ref_lp: torch.Tensor,
               record_ids: list[str] | None = None, record_other: torch.Tensor | None = None) -> torch.Tensor:
-    """RLCD (Clef "Reinforcement Learning for Calibrated Decisions", our no-sampling form): per row
-    ``(1 - E_p[reward]) + rlcd_record x record share + rlcd_beta x KL(p || p_ref) + rlcd_brier x Brier``, mean over rows.
-    The expectation is exact (the output IS a distribution over the options), so no sampling / no variance. ``1 - R``
-    instead of ``-R``: the same gradient, a nonnegative loss (the pilot pass rule compares loss windows)."""
+    """RLCD second stage, PROPER form v2 (review B, 2026-10-08): per row
+    ``-log p_gold + [score] RPS + rlcd_record x record share (-log P(record exact) / n) + rlcd_beta x KL(p || p_ref)
+    + rlcd_brier x Brier``, mean over rows. Every scoring term is strictly proper, so with p_ref = q the optimum is
+    p = q (no sharpening); v1's ``1 - E_p[reward]`` term was linear in p (improper: with Brier 0.5 its optimum drifted
+    to proj(2q)). The adjacent-only partial credit (cfg.rlcd_adjacent_credit) is bookkeeping (``expected_reward``);
+    the ordinal structure of score questions is trained through RPS (proper)."""
     if ref_lp is None or ref_lp.shape != lp.shape:
         raise ValueError("rlcd needs the reference log-probs with the policy's shape")
     p = lp.exp() * _valid(lp)
-    r = option_rewards(lp, y, qtypes)
-    per = 1.0 - (p * r).sum(-1)
+    ordinal = torch.tensor([q == "score" for q in qtypes], dtype=lp.dtype, device=lp.device)
+    per = nll(lp, y) + ordinal * rps(lp, y)
     if cfg.rlcd_record:
         if record_ids is None or len(record_ids) != lp.shape[0]:
             raise ValueError("rlcd_record > 0 needs one record id per row")
