@@ -115,6 +115,12 @@ class TrainConfig:
     #: group of long catalogs (K = 77..255) can hold thousands of copies at once; a row whose K alone is over the cap
     #: runs alone. Grouping only: the same rows, losses and gradients (tests/test_cell_perf.py).
     row_options: int = 0
+    #: with cont_plan "single": max summed padded prefix tokens of the step's groups (sum over groups of rows x longest
+    #: row) for which the step takes the single path; above it the step runs per group. Every group's checkpointed
+    #: block inputs stay alive until the single backward (job-2amiy: 63 GB at 2 x 8,192 padded tokens), so this bounds
+    #: that memory once rows reach T = 4,096 (8 rows = 32,768 tokens). 0 = no limit (d1_fast behaviour unchanged).
+    #: Grouping only: the same rows, losses and gradients (tests/test_cell_perf.py).
+    single_tokens: int = 0
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
 
     def to_json(self) -> dict:
@@ -130,7 +136,8 @@ class TrainConfig:
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
-    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options")
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options",
+                 "single_tokens")
 
     def hash(self) -> str:
         d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
@@ -148,7 +155,8 @@ def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
                                row_tokens=int(cell.get("row_tokens", 0)), row_plan=str(cell.get("row_plan", "greedy")),
                                cont_plan=str(cell.get("cont_plan", "per_group")),
                                compile_blocks=bool(cell.get("compile_blocks", False)),
-                               row_options=int(cell.get("row_options", 0)))
+                               row_options=int(cell.get("row_options", 0)),
+                               single_tokens=int(cell.get("single_tokens", 0)))
 
 
 #: fixed cost of one group (prefix + continuation call, forward + recompute + backward) in padded-token equivalents:
@@ -191,6 +199,18 @@ def single_cont_fits(options: list[int], row_options: int = 0) -> bool:
     once. With ``row_options`` > 0 that sum must stay within the cap; otherwise the step falls back to the per-group
     path (one continuation call per ``row_options``-capped group). No cap = always fits (D1 behaviour unchanged)."""
     return not row_options or sum(options) <= row_options
+
+
+def padded_tokens(lengths: list[int], groups: list[list[int]]) -> int:
+    """Summed padded prefix tokens of a step's groups: each group is padded to its longest row."""
+    return sum(len(g) * max(lengths[i] for i in g) for g in groups)
+
+
+def single_tokens_fit(lengths: list[int], groups: list[list[int]], single_tokens: int = 0) -> bool:
+    """``cont_plan="single"`` keeps every group's checkpointed block inputs until ONE backward: with ``single_tokens``
+    > 0 the step's summed padded tokens must stay within it, otherwise the step takes the per-group path. No cap =
+    always fits (d1_fast behaviour unchanged)."""
+    return not single_tokens or padded_tokens(lengths, groups) <= single_tokens
 
 
 def row_groups(lengths: list[int], row_batch: int, row_tokens: int = 0, options: list[int] | None = None,
@@ -300,6 +320,8 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
         raise ValueError("cont_plan='single' is not implemented for the order-consistency arm (views)")
     if cfg.row_options < 0:
         raise ValueError(f"row_options must be >= 0, got {cfg.row_options}")
+    if cfg.single_tokens < 0:
+        raise ValueError(f"single_tokens must be >= 0, got {cfg.single_tokens}")
     if cfg.row_options and cfg.loss.order_consistency_weight:
         raise ValueError("row_options is not implemented for order-consistency views (row_groups_with_views)")
     model.backbone.batch_rows = cfg.row_batch > 1
@@ -467,7 +489,8 @@ class Trainer:
                 groups = plan([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens,
                               [it.row.n_options for it in rows], self.cfg.row_options)
             if self.cfg.cont_plan == "single" and len(groups) > 1 and single_cont_fits(
-                    [it.row.n_options for it in rows], self.cfg.row_options):
+                    [it.row.n_options for it in rows], self.cfg.row_options) and single_tokens_fit(
+                    [len(it.row.ids) for it in rows], groups, self.cfg.single_tokens):
                 self.model.backbone.prefix_groups = groups
                 try:
                     total += self._row_loss(rows, 1.0)

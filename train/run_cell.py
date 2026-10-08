@@ -287,6 +287,13 @@ def train_max_k(cfg: dict) -> int:
     return k
 
 
+def eval_t_cap(cfg: dict) -> int:
+    """T cap of the in-run dev-card items: ``eval_max_t`` (the m2_gates unit-spec cap) when set, never above the
+    training ladder's top rung; without it the top rung (the original behaviour)."""
+    t_cap = max(cfg["t_ladder"])
+    return min(t_cap, int(cfg.get("eval_max_t") or t_cap))
+
+
 def cell_items(recs: dict, ids, cfg: dict, enc, guard, max_t: int, workers: int | None = None,
                max_k: int | None = None) -> list:
     """Guarded rows of ``ids`` kept by the cell's K / T filter (``keep_item``). ``train.m2_gates`` rebuilds the
@@ -725,7 +732,9 @@ def main(argv=None):
     t_cap = max(cfg["t_ladder"])
     t_tok = time.time()
     train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap)
-    eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap, max_k=cfg["max_k"])  # eval cap unchanged
+    # eval cap unchanged: K <= max_k and T <= eval_max_t (the m2_gates unit spec), so a longer training ladder (D9:
+    # 4,096) leaves the in-run dev cards as they were
+    eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, eval_t_cap(cfg), max_k=cfg["max_k"])
     try:
         order_views = attach_order_views(cfg, train_items, train_recs, enc, guard, t_cap)
         if order_views is not None and order_views["with_view"] == 0:

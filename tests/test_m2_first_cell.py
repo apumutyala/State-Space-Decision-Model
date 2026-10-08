@@ -966,3 +966,41 @@ def test_train_max_k_lifts_training_cap_only():
     assert unit_spec(lifted)["max_k"] == 1
     with pytest.raises(ValueError, match="train_max_k"):
         train_max_k({**base, "max_k": 16, "train_max_k": 8})
+
+
+def test_in_run_dev_cards_keep_the_eval_t_cap():
+    """D9: a longer training ladder (top rung 4,096) leaves the in-run dev-card items at ``eval_max_t`` (the m2_gates
+    unit-spec cap); a cell without eval_max_t, or with it at the top rung, is unchanged."""
+    from train.run_cell import eval_t_cap
+
+    assert eval_t_cap({"t_ladder": [512, 2048]}) == 2048
+    assert eval_t_cap({"t_ladder": [512, 2048], "eval_max_t": 2048}) == 2048
+    assert eval_t_cap({"t_ladder": [512, 2048, 4096], "eval_max_t": 2048}) == 2048
+    assert eval_t_cap({"t_ladder": [512, 1024], "eval_max_t": 4096}) == 1024
+    src = (ROOT / "train/run_cell.py").read_text(encoding="utf-8")
+    assert "cell_items(eval_recs, ev_ids, cfg, enc, guard, eval_t_cap(cfg), max_k=cfg[\"max_k\"])" in src
+
+
+def test_d9_is_d1_fast_plus_the_4096_rung_and_long_catalogs():
+    """d9_t4096 = d1_fast with the training length ladder reaching 4,096 and train_max_k 255 (row_options 160), plus
+    the gradient-neutral single_tokens 16,384 guard; eval (max_k 16, eval_max_t 2,048), data, clock and caps are
+    d1_fast's."""
+    d = ROOT / "jobs/m2_first_cell"
+    fast = json.loads((d / "m2_first_cell_rwkv7_d1_fast.json").read_text(encoding="utf-8"))
+    d9 = json.loads((d / "m2_first_cell_rwkv7_d9_t4096.json").read_text(encoding="utf-8"))
+    changed = {"t_ladder": [512, 1024, 2048, 4096], "train_max_k": 255, "row_options": 160, "single_tokens": 16384,
+               "variant": "d9_t4096"}
+    notes = {k for k in d9 if k.endswith("_note") or k.startswith("_")} | {k for k in fast if k.endswith("_note")
+                                                                           or k.startswith("_")}
+    assert {k: d9[k] for k in changed} == changed
+    assert {k: v for k, v in d9.items() if k not in changed and k not in notes} == \
+        {k: v for k, v in fast.items() if k not in changed and k not in notes}
+    assert d9["max_k"] == 16 and d9["eval_max_t"] == 2048 and d9["max_minutes"] == 190
+    pf = json.loads((d / "job_params_d1_fast.json").read_text(encoding="utf-8"))
+    p9 = json.loads((d / "job_params_d9_t4096.json").read_text(encoding="utf-8"))
+    for k in ("max_duration_minutes", "build_timeout_minutes", "max_restarts", "assumed_restart_floor",
+              "batch_usd_per_min", "hard_cap_usd", "phase_caps_minutes", "train_set_pointer", "parent_arm_seed"):
+        assert p9[k] == pf[k], k
+    assert p9["cell_config"] == "jobs/m2_first_cell/m2_first_cell_rwkv7_d9_t4096.json" and p9["mode"] == "d9_t4096"
+    assert p9["submit"]["command"].endswith("first_cell_job.sh d9_t4096")
+    assert "jobs/m2_first_cell/m2_first_cell_rwkv7_d9_t4096.json" in p9["context"]["manifest_files"]

@@ -203,3 +203,14 @@ gradient cosine 0.998 for every variant including pure regrouping (the GPU reduc
 D1's: **Worst case** **$66.03** (cap $70), expected ~$26.14; the same 190-min clock trains ~40 % more rows (time cap
 binds). The template future cells copy. With `row_options` set (D8), `cont_plan` `single` runs a step as one
 continuation call only when the step's summed K fits the cap; otherwise that step takes the per-group path.
+
+Mode `d9_t4096` (`job_params_d9_t4096.json`, `m2_first_cell_rwkv7_d9_t4096.json`): d1_fast + long rows, one change (length).
+The training ladder reaches T = 4,096 (`t_ladder` 512/1,024/2,048/4,096), the training K cap is 255 (`train_max_k`,
+`row_options` 160, as D8), and `single_tokens` 16,384 (execution-only, same gradients) sends a step whose summed padded
+prefix tokens exceed 16,384 down the per-group path: uncapped single at 8 x 4,096 rows is ~85.4 GB (job-2amiy ladder: single
+63.0 GB at 2 x 8,192 tokens / 80 copies, +1.10 MB per retained token, +0.092 GB per forked copy) vs the 76 GB stop; capped
+<= 70.3 GB (single) / <= 61.3 GB (per group). Eval unchanged: `max_k` 16, `eval_max_t` 2,048 (G12, Index, the parent arm and
+the in-run dev cards via `train.run_cell.eval_t_cap`). Seed-0 24k draw census (real tokenizer): 21,348 -> 26,085 training
+items (+2,407 K <= 16 at T 2,049-4,096; +1,003 K = 77; +1,327 K = 151 at T 3,073-4,096), mean T 604.5 -> 1,049.4.
+Expected ~8.9 s/step, ~1,280 steps / ~10,200 rows in the 190-min clock (d1_fast ~16,200). Caps and worst case are
+d1_fast's: **$66.03** (cap $70).

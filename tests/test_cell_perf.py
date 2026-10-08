@@ -559,3 +559,33 @@ def test_long_catalog_step_with_all_fast_flags_and_option_cap_equals_one_row_per
     base = _step_grads(_trainer(items))
     _compare(_step_grads(_trainer(items, row_batch=8, row_tokens=8192, row_options=160, act_ckpt=True,
                                   row_plan="min_cost", cont_plan="single")), base, 2e-5)
+
+
+def test_single_cont_falls_back_to_per_group_when_the_token_cap_binds():
+    """D9 (T = 4,096): cont_plan single keeps every group's checkpointed block inputs until ONE backward, so with
+    single_tokens set it runs only when the step's summed padded tokens fit; otherwise the step runs per group. Same
+    loss and gradients either way; 0 = no cap (d1_fast unchanged); execution-only (not in the config hash)."""
+    from train.trainer import TrainConfig, padded_tokens, row_groups_min_cost, single_tokens_fit, with_execution
+
+    items = _items(1)
+    lengths = [len(it.row.ids) for it in items[:8]]
+    groups = row_groups_min_cost(lengths, 8, 400, [it.row.n_options for it in items[:8]], 0)
+    pad = padded_tokens(lengths, groups)
+    assert len(groups) > 1 and pad == sum(len(g) * max(lengths[i] for i in g) for g in groups)
+    assert single_tokens_fit(lengths, groups, 0) and single_tokens_fit(lengths, groups, pad)
+    assert not single_tokens_fit(lengths, groups, pad - 1)
+    base = _step_grads(_trainer(items))
+    flags = dict(row_batch=8, row_tokens=400, act_ckpt=True, row_plan="min_cost", cont_plan="single")
+    n_fit, fit = _cont_calls(_trainer(items, single_tokens=pad, **flags))
+    assert n_fit == 1
+    _compare(fit, base, 2e-5)
+    n_bind, bind = _cont_calls(_trainer(items, single_tokens=pad - 1, **flags))
+    n_pg, _ = _cont_calls(_trainer(items, **{**flags, "cont_plan": "per_group"}))
+    assert n_bind == n_pg == len(groups) > 1
+    _compare(bind, base, 2e-5)
+    cfg = TrainConfig()
+    assert dataclasses.replace(cfg, single_tokens=16384).hash() == cfg.hash()
+    assert "single_tokens" not in cfg.to_json()
+    assert with_execution(cfg, {"row_batch": 8, "single_tokens": 16384}).single_tokens == 16384
+    with pytest.raises(ValueError, match="single_tokens"):
+        _trainer(items, row_batch=8, single_tokens=-1)
