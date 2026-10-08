@@ -50,7 +50,8 @@ import bisect
 from decide.prompt import _G1_BLANK_LINES as _G1_BLANK  # the readout's own blank-line rule (render_g1v2)
 from decide.prompt import (G1V2_ID, G1V2_SYSTEM_PROMPT, G1V2_TEMPLATE, SYSTEM_PROMPT, TEMPLATES, Template, _instr,
                            build_prompt_g1v2, continuation_segments, render_g1v2)
-from decide.prompt_g1v3 import G1V2F_ID, build_prompt_g1v3, render_g1v3
+from decide.prompt_g1v3 import (CATALOG_CHARS_LADDER, G1V2F_ID, G1V3W_ID, build_prompt_g1v3, load_v3_codes,
+                                 render_g1v3, wants_catalog, word_ids_ok)
 from decide.provenance import field_strings, instructions_path, state_path
 from decide.schema import canonical_options, canonical_question_ids, render
 
@@ -98,22 +99,54 @@ def _field(index: int, qid: str, q: dict[str, Any], target: bool, with_options: 
     return seg
 
 
-def _v2f_segments(request: dict[str, Any], qid: str, table: list[str]):
+def _v2_segments(request: dict[str, Any], qid: str, table: list[str], ctx: dict | None = None):
+    return build_prompt_g1v2(request, qid, table)
+
+
+def _v2_render(request: dict[str, Any], qid: str, table: list[str], ctx: dict | None = None) -> str:
+    return render_g1v2(request, qid, table)
+
+
+def _v2f_segments(request: dict[str, Any], qid: str, table: list[str], ctx: dict | None = None):
     return build_prompt_g1v3(request, qid, table, None, False, True)  # v2f: no code key, no permutation, fixed instr
 
 
-def _v2f_render(request: dict[str, Any], qid: str, table: list[str]) -> str:
+def _v2f_render(request: dict[str, Any], qid: str, table: list[str], ctx: dict | None = None) -> str:
     return render_g1v3(request, qid, table, None, False, True)
 
 
-#: layout "g1v2" training templates -> the READOUT's own (segments, render) functions. Every entry uses v2's frozen
-#: code table and v2's head/tail, and its readout reads the next token after "ANSWER:" at the last prompt position.
+def _v3w_segments(request: dict[str, Any], qid: str, table: list[str], ctx: dict | None = None):
+    """v3w = the readout G1V3Backend(mode="words"): v3 code table, code key at the label width the readout's budget
+    ladder picked (``ctx["catalog_chars"]``), word-id questions (``ctx["words"]``) listed as "- id: desc"."""
+    return build_prompt_g1v3(request, qid, table, ctx["catalog_chars"], False, True, ctx["words"])
+
+
+def _v3w_render(request: dict[str, Any], qid: str, table: list[str], ctx: dict | None = None) -> str:
+    return render_g1v3(request, qid, table, ctx["catalog_chars"], False, True, ctx["words"])
+
+
+#: layout "g1v2" training templates -> the READOUT's own (segments, render) functions. Every entry uses v2's head/tail,
+#: and its readout reads the next token after "ANSWER:" at the last prompt position.
 #:   jrt-rwkv-g1-v2   decide.prompt.build_prompt_g1v2 / render_g1v2            (readout rwkv7-hf-g1-v2, job-zhyvg)
 #:   jrt-rwkv-g1-v2f  decide.prompt_g1v3 v2f = v2 + the dict-instruction fix   (readout rwkv7-hf-g1-v2f, G1V3Backend v2f)
-G1_TRAIN_RENDERERS = {G1V2_ID: (build_prompt_g1v2, render_g1v2), G1V2F_ID: (_v2f_segments, _v2f_render)}
+#:   jrt-rwkv-g1-v3w  decide.prompt_g1v3 v3w = v3 code table + code key + word ids (readout rwkv7-hf-g1-v3w,
+#:                    G1V3Backend mode "words"); the target of a word-id question is the first token of " <id>"
+G1_TRAIN_RENDERERS = {G1V2_ID: (_v2_segments, _v2_render), G1V2F_ID: (_v2f_segments, _v2f_render),
+                      G1V3W_ID: (_v3w_segments, _v3w_render)}
 G1_TRAIN_TEMPLATES = {G1V2_ID: G1V2_TEMPLATE,
-                      G1V2F_ID: Template(id=G1V2F_ID, head=G1V2_TEMPLATE.head, tail=G1V2_TEMPLATE.tail,
-                                         terminator=G1V2_TEMPLATE.terminator)}
+                      **{t: Template(id=t, head=G1V2_TEMPLATE.head, tail=G1V2_TEMPLATE.tail,
+                                     terminator=G1V2_TEMPLATE.terminator) for t in (G1V2F_ID, G1V3W_ID)}}
+#: the v3w readout's "ANSWER:" context (decide.backends.rwkv_g1_v3.ANSWER_CTX; first-token and code proofs)
+V3W_ANSWER_CTX = "User: Choose.\n\nAssistant: <think></think>\nANSWER:"
+
+
+def v3w_budget() -> int:
+    """The v3w readout's token budget for the catalog-label ladder: G1V3Backend's default
+    min(plugin.max_context, DEFAULT_LIMITS max_input_tokens) - 1 with the RWKV7-G1k plugin's max_context."""
+    from decide.adapter import DEFAULT_LIMITS
+    from decide.backends.hf_readout import RWKV7_G1K_TRAINED_CTX
+
+    return min(RWKV7_G1K_TRAINED_CTX, DEFAULT_LIMITS["max_input_tokens"]) - 1
 
 
 def resolve_template(template: Template | str) -> Template:
@@ -163,6 +196,8 @@ def _tagged_segments_paths(template: Template, request: dict[str, Any], qid: str
     if layout not in LAYOUTS:
         raise ValueError(f"layout must be one of {LAYOUTS}")
     if layout == G1V2_LAYOUT:
+        if template.id == G1V3W_ID:
+            raise ValueError(f"template {G1V3W_ID!r} needs the tokenizer (word ids, budget ladder): use build_row")
         return _g1v2_segments_paths(request, qid, _g1v2_code_table(), template.id)
     with_options = layout == "ordered"
     questions = request["questions"]
@@ -359,8 +394,54 @@ def _g1v2_code_table() -> list[str]:
     return _CODE_TABLE
 
 
+_V3_TABLE: list[str] | None = None
+_V3_TOKENS: list[int] | None = None
+
+
+def _v3_code_table() -> list[str]:
+    """The v3 code table (decide/data/rwkv_g1_v3_codes.json, sha-checked), as the v3w readout uses it."""
+    global _V3_TABLE, _V3_TOKENS
+    if _V3_TABLE is None:
+        entries, _ = load_v3_codes()
+        _V3_TABLE, _V3_TOKENS = [e["code"] for e in entries], [e["token_id"] for e in entries]
+    return _V3_TABLE
+
+
+def v3w_first_token(encode: EncodeFn, oid: str) -> int | None:
+    """G1V3Backend.first_token: the token right after "ANSWER:" in the whole-string tokenization of
+    ANSWER_CTX + " " + oid (None if that tokenization does not extend the context's, or the token is id 0)."""
+    base = list(encode(V3W_ANSWER_CTX, True))
+    ids = list(encode(V3W_ANSWER_CTX + " " + oid, True))
+    n = len(base)
+    return ids[n] if len(ids) > n and ids[:n] == base and ids[n] != 0 else None
+
+
+def v3w_context(request: dict[str, Any], qid: str, encode: EncodeFn, table: list[str],
+                budget: int | None = None) -> dict:
+    """The readout's per-request choices for template v3w (G1V3Backend.word_qids + ._render): the word-id questions
+    (non-opaque ids whose first answer tokens are unique) and, for a coded catalog question, the longest label width
+    on CATALOG_CHARS_LADDER whose [0] + whole-string prompt fits the budget (None = no code key)."""
+    memo: dict[str, int | None] = {}
+
+    def first(o: str) -> int | None:
+        if o not in memo:
+            memo[o] = v3w_first_token(encode, o)
+        return memo[o]
+
+    qs = request["questions"]
+    words = frozenset(k for k in canonical_question_ids(qs) if word_ids_ok(qs[k], first))
+    budget = v3w_budget() if budget is None else budget
+    n_used = None
+    if qid not in words and wants_catalog(qs[qid], table):
+        for n in CATALOG_CHARS_LADDER:
+            n_used = n
+            if 1 + len(encode(render_g1v3(request, qid, table, n, False, True, words), True)) <= budget:
+                break
+    return {"words": words, "catalog_chars": n_used, "first_token": first}
+
+
 def _g1v2_segments_paths(request: dict[str, Any], qid: str, code_table: list[str],
-                         template_id: str = G1V2_ID) -> list[tuple]:
+                         template_id: str = G1V2_ID, ctx: dict | None = None) -> list[tuple]:
     """``decide.prompt.build_prompt_g1v2`` (the v2 READOUT's own segments, reused, not re-implemented) tagged as
     (text, trusted, tag, path). Tags: "field" (target field in the schema), "option:<j>" (its option j id +
     description), "state", "reread", "reread_instr"; paths as the ordered layout's (provenance / ID_PATH / None)."""
@@ -371,7 +452,7 @@ def _g1v2_segments_paths(request: dict[str, Any], qid: str, code_table: list[str
     phase, opt_j, expect = "schema", -1, None  # expect: the kind of the next data segment
     if template_id not in G1_TRAIN_RENDERERS:
         raise ValueError(f"layout {G1V2_LAYOUT!r} needs one of the templates {sorted(G1_TRAIN_RENDERERS)}, got {template_id!r}")
-    for text, label in G1_TRAIN_RENDERERS[template_id][0](request, qid, code_table):
+    for text, label in G1_TRAIN_RENDERERS[template_id][0](request, qid, code_table, ctx):
         target = phase == "schema" and field == qid
         if label == "template":
             tag = ""
@@ -394,7 +475,10 @@ def _g1v2_segments_paths(request: dict[str, Any], qid: str, code_table: list[str
                        "field" if target and text != "\n" else "")
             out.append((text, True, tag, None))
             continue
-        if expect == "state":
+        if phase == "reread" and text.startswith("\nQUESTION AGAIN: "):  # v3* code key (one data segment)
+            # restated instruction + one "<code> = <label>" line per option: request text, gated as data (ID_PATH)
+            out.append((text, False, "reread", ID_PATH))
+        elif expect == "state":
             out.append((text, False, "state", state_path()))
         elif expect == "qid":
             out.append((text, False, "reread" if phase == "reread" else ("field" if target else ""), ID_PATH))
@@ -418,8 +502,10 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
     token_bytes = getattr(encode, "token_bytes", None)
     if not callable(token_bytes):
         raise ValueError(f"layout {G1V2_LAYOUT!r} needs an encoder with token_bytes(id) (whole-string spans)")
-    table = _g1v2_code_table()
-    segs = _g1v2_segments_paths(request, qid, table, tpl.id)
+    v3w = tpl.id == G1V3W_ID
+    table = _v3_code_table() if v3w else _g1v2_code_table()
+    ctx = v3w_context(request, qid, encode, table) if v3w else None
+    segs = _g1v2_segments_paths(request, qid, table, tpl.id, ctx)
     raw = "".join(t for t, *_ in segs)
     bounds, n = [], 0
     for t, *_ in segs:
@@ -444,7 +530,7 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
     keep_lo = [0] + [b for _, b in dels]
     keep_hi = [a for a, _ in dels] + [len(raw)]
     text = "".join(raw[p:q] for p, q in zip(keep_lo, keep_hi))
-    if text != G1_TRAIN_RENDERERS[tpl.id][1](request, qid, table):
+    if text != G1_TRAIN_RENDERERS[tpl.id][1](request, qid, table, ctx):
         raise ValueError(f"g1v2 layout text differs from the {tpl.id} readout's render")
     body_ids = list(encode(text, True))  # F5: the whole prompt string at once
     if 0 in body_ids:
@@ -495,12 +581,17 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
         raise ValueError("option_order must be a permutation of range(n_options)")
     if q["type"] == "score" and perm != sorted(perm):
         raise ValueError("score levels are ordinal; their order is part of the question and cannot be permuted")
-    coded = len(opts) <= len(table)
-    if coded:  # F4: the answer is ONE code token after "ANSWER:" (" A", " B", ...)
+    words = v3w and qid in ctx["words"]
+    coded = words or len(opts) <= len(table)
+    if words:  # v3w word ids: the answer is the (unique) first token of " <id>" after "ANSWER:", the readout's read
+        conts = [[ctx["first_token"](opts[k][0])] for k in perm]
+        cont_spans: list = [[(0, 1, ID_PATH)] for _ in perm]
+    elif coded:  # F4: the answer is ONE code token after "ANSWER:" (" A", " B", ...)
         conts = [list(encode(" " + table[k], True)) for k in perm]
-        if getattr(encode, "is_rwkv7_g1", False) and conts != [[_CODE_TOKENS[k]] for k in perm]:
+        frozen = _V3_TOKENS if v3w else _CODE_TOKENS
+        if getattr(encode, "is_rwkv7_g1", False) and conts != [[frozen[k]] for k in perm]:
             raise ValueError("g1v2 code continuations are not the frozen single code tokens")
-        cont_spans: list = [[] for _ in perm]
+        cont_spans = [[] for _ in perm]
     else:  # fallback (k > codebook): multi-token " <option id>\n", as decide.backends.rwkv_g1_v2
         conts = [list(encode(" " + opts[k][0] + G1V2_TEMPLATE.terminator, True)) for k in perm]
         cont_spans = [[(0, len(c), ID_PATH)] for c in conts]
@@ -510,7 +601,8 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
         continuations=conts, layout=G1V2_LAYOUT,
         meta={"template": tpl.id, "perm": perm, "evidence": evidence, "untrusted_spans": untrusted_spans,
               "caller_spans": caller_spans, "field_spans": field_spans, "cont_spans": cont_spans,
-              "option_seq_spans": [], "trusted_paths": declared_instruction_paths(request), "bos": 0, "coded": coded},
+              "option_seq_spans": [], "trusted_paths": declared_instruction_paths(request), "bos": 0, "coded": coded,
+              "words": words, "catalog_chars": ctx["catalog_chars"] if v3w else None},
     )
 
 
