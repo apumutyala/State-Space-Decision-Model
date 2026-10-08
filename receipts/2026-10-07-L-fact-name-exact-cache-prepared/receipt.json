@@ -1,0 +1,83 @@
+{
+  "base_commit": "a6b0755a3b81de7948edd71425e663a52fe9557d",
+  "changed_registration_fields": [
+    "source_sha256",
+    "direct_retention",
+    "measurement_amendment",
+    "planned_forwards",
+    "planned_model_scored_requests",
+    "planned_operation_cache_hits",
+    "request_count_basis",
+    "secondary"
+  ],
+  "cost_usd": 0,
+  "implementation_source": "containing Git commit; no parent execution",
+  "operation_equality_evidence": "all 32 members: identical initial-operation requests excluding only request_id; one successful finite-score evaluation plus deterministic exact-logit cache replay through the same adapter; weaker than two independent forwards, not temporal retention",
+  "projection": {
+    "all_compare_proxy_seconds": 1563.2578,
+    "cached_nominal_seconds": 691.9244530909091,
+    "kind": "arithmetic proxy from preserved run1 only; no new timing or capability evidence",
+    "limitations": "longer fact prompts and final checks unmeasured; Compare paths may exceed 1200s; no peak-memory reduction",
+    "mean_batch_2_seconds": 3.872005181818182,
+    "mean_singleton_seconds": 1.998568,
+    "previous_nominal_seconds": 879.782794909091,
+    "projected_saved_seconds": 187.85834181818183,
+    "startup_seconds": 8.449448,
+    "timing_source": "receipts/2026-10-07-L-fact-name-screen-run1/raw.jsonl",
+    "timing_source_sha256": "36f40dde9915c9b134d3ab17e5b78d737c738af7a1ebcfaab464ef4590f801e3"
+  },
+  "registration_after_sha256": "a4415b5e4a22357e8fe3dec2c92ea5d5ee2f2f764a24306e0ea4930e1e1e95fa",
+  "registration_before_sha256": "92a93e1314391f9714fc7b3b8e1dd591bf687be91286ee417a1b55611c0bd86d",
+  "remaining_gates": [
+    "fresh-context independent review before merge",
+    "execution clearance and 9GiB admission",
+    "owned CPU child: 3GiB runtime floor and 1200s cap",
+    "complete fixed 16 worlds and all existing safety/statistical/state/replay-equality gates"
+  ],
+  "schema": "ssdm.l0h0-exact-operation-cache-preparation.v1",
+  "source_map_refresh": {
+    "added_existing_base_files": [
+      "decide/backends/rwkv_g1_code_label.py",
+      "decide/backends/rwkv_g1_code_label_v2.py",
+      "decide/backends/rwkv_g1_filtered_codes.py",
+      "language_growth/l1_relation_data.py",
+      "language_growth/relation_router.py",
+      "language_growth/tests/test_l1_relation_data.py",
+      "language_growth/tests/test_relation_router.py"
+    ],
+    "changed_files": [
+      "language_growth/rwkv_fact_name_screen.py",
+      "language_growth/tests/test_rwkv_fact_name_screen.py",
+      "plans/codex/L0H0_PARENT_BINDING_SCREEN.md",
+      "plans/codex/L0_RWKV_FACT_NAME_SCREEN.md"
+    ],
+    "removed_files": []
+  },
+  "status": "prepared_not_run",
+  "unchanged_fields": [
+    "config",
+    "counts",
+    "visible_inputs_sha256",
+    "evaluator_targets_sha256",
+    "examples_sha256",
+    "expected_parent",
+    "primary",
+    "decision",
+    "execution",
+    "state_retention"
+  ],
+  "validation": {
+    "audited_cache_proof": "runtime imports and checkpoint reads rejected; fixed fake scores only",
+    "checkpoint_loaded": false,
+    "command": "& C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -B -m pytest -q -p no:cacheprovider language_growth/tests/test_rwkv_fact_name_screen.py language_growth/tests/test_fact_binding_screen.py language_growth/tests/test_fact_candidate_style.py tests/test_jobs_lint.py tests/test_no_kill_by_name.py",
+    "elapsed_seconds": 15.41,
+    "git_diff_check": "passed after preserving Windows plan checkout line endings and LF registration bytes",
+    "model_inference": false,
+    "passed": 115,
+    "post_line_ending_preflight": {
+      "command": "& C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -B -m pytest -q -p no:cacheprovider language_growth/tests/test_rwkv_fact_name_screen.py -k preflight_and_default",
+      "elapsed_seconds": 0.71,
+      "passed": 1
+    }
+  }
+}

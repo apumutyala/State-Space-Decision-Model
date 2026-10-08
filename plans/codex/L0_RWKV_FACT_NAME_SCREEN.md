@@ -40,7 +40,21 @@ bookends. Instead require exact paired initial-operation request and decision
 equality across arms for all 32 members, already observed within the screen.
 Compare inputs after removing request IDs and require equal answers,
 raw/served probabilities, calibration and status, excluding volatile latency.
-All paired initial responses must be `ok`; equal errors do not pass. Retain
+The further prepared amendment caches only successful, finite, complete stock
+initial-operation scores within this one run, using the full canonical request
+after removing only `ssdm.request_id`, plus the fixed backend revision. No other
+field is omitted. A maximum of 32 entries is retained; misses and every other
+slot use the existing stock backend. The ordinary Decider serves every logical
+request, recalibrating the exact cached logits and generating fresh request
+identity. Cache hits record zero new forwards/tokens and identify their source
+request and work explicitly. Exceptions, nonfinite scores and adapter failures
+are not cached. Every raw logical request/response and observation remains.
+
+Initial-operation equality now means an exactly matching request and
+deterministic exact-score replay through the same adapter. It is weaker than
+two independently executed forwards: equality on a hit is by construction and
+does not test repeated inference or temporal response stability. All paired
+initial responses must be `ok`; equal errors do not pass. Retain
 separate pre/post hashes of every parent parameter and registered buffer,
 including the LM head. This narrow change removes repeated measurement, while
 preserving all 16 worlds, 32 members per arm, primary paired estimates,
@@ -59,13 +73,24 @@ this host-available change does not isolate model RSS. The unchanged protocol
 projected 1,255.5 seconds for 192 requests/384 forwards before longer fact
 prompts and final checks, exceeding the cap; max_batch_rows=1 also projected
 over cap. Removing the bookends leaves nominally 128 requests/256 forwards
-(879.78 seconds by the request-type calculation below), not a measured
-completion prediction. Longer prompts and final checks remain uncertain. The runtime
+(879.78 seconds by the request-type calculation below). Exact operation-score
+reuse retains 128 logical requests and nominally needs 96 scored requests/192
+forwards, projecting 691.92 seconds. These are not measured completion
+predictions. Longer prompts and final checks remain uncertain. The runtime
 floor and 1,200-second cap remain binding. Terminal stops write an incomplete
 receipt without metrics or eligibility; partial outputs remain preserved.
 No automatic retry is supplied.
 
 Using the 11 completed responses' `diagnostics.backend.call_latency_ms`, mean batch-2 cost is 3.872005 s and singleton cost is 1.998568 s; startup is 8.449448 s (first request timestamp minus supervisor start). Original projection: `128*(3.872005+1.998568) + 64*(2*3.872005) + 8.449448 = 1255.50 s`. Revised projection: `64*(3.872005+1.998568) + 64*(2*3.872005) + 8.449448 = 879.78 s`. Operation requests use one batch-2 and one singleton forward; four-option fact requests are projected as two batch-2 forwards. The latter is an unmeasured proxy from operation prompts, before longer fact prompts and final checks; it is not completion or efficacy evidence.
+
+The exact-cache proxy is `32*(3.872005181818182+1.998568) +
+64*(2*3.872005181818182) + 8.449448 = 691.924453 s`, a projected saving of
+187.858342 seconds. The model still selects the operation. If it selects Compare,
+left/right/relation requests remain free-running; an all-Compare proxy is
+`32*(3.872005181818182+1.998568) + 128*(2*3.872005181818182) +
+64*(3.872005181818182+1.998568) + 8.449448 = 1563.2578 s` before longer
+prompts and final checks. Such paths may exceed the unchanged 1200-second cap.
+No operation is forced, and timeout preserves an incomplete result.
 
 Default and `--dry-run` generate the fixed registration, visible inputs and
 evaluator targets without importing Torch/Transformers/Safetensors or opening
@@ -84,7 +109,7 @@ with `--execute` and use a fresh output directory. Run eligibility follows
 members useful, zero previously successful worlds lost, improved exact fact
 binding, zero operation member regressions and a strictly positive paired
 useful-answer CI lower bound. Complete paired evidence, read/explain usefulness
-and acceptance non-regression, unchanged direct decisions and full parent state
+and acceptance non-regression, same-request deterministic operation replay equality and full parent state
 are also required. Eligibility requests review only; the runner never adopts a change.
 
 Focused verification uses scripted providers and tiny random CPU tensors only:
