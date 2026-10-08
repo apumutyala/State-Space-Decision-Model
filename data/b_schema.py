@@ -90,6 +90,12 @@ QNAMES = ("decision", "answer", "label", "choice", "result", "output", "verdict"
           "response", "classification", "outcome", "pick")
 YESNO_PAIRS = (("yes", "no"), ("true", "false"), ("Y", "N"), ("1", "0"), ("correct", "incorrect"))
 NOUL_TRUE_WORDS = frozenset(y.casefold() for y, _ in YESNO_PAIRS)
+#: v2 (review of v1, research-notes/B1_SCHEMA_REVIEW.md item 1): choice -> noul only for genuinely boolean id pairs.
+#: v1 also switched ("1", "0") and ("Y", "N"), which turned two-way digit-id CHOICES (glaive tool pairs, WinoGrande,
+#: Humicroedit-s2, NQ) into fake true/false questions (3,343 questions) and fed true/SUPPORTED over-calling.
+BOOLEAN_PAIRS_V2 = (("yes", "no"), ("true", "false"), ("correct", "incorrect"))
+SCHEMA_VERSION = {"v1": 1, "v2": 2}
+GEN = {"version": 1}  # set by candidates(): 1 reproduces v1 byte for byte, 2 applies every review fix
 PREFIXES = ("Task: ", "Instruction: ", "Decision: ", "Q: ", "Please decide. ", "[decision] ", "Read the state, then: ")
 SUFFIX_CHOICE = (" Choose exactly one option.", "\nAnswer with one option.", " Select the single best option.",
                  " Use only the information given.", " Base the decision on the state and the listed options.")
@@ -104,22 +110,31 @@ TEXT_LAYOUTS = ("colon", "bracket", "tag", "markdown")
 #: source), normalised to the synthetic share of the draw. glaive capped near 15 % (never receives spill); weight moved
 #: to tool CHOICE (When2Call, ToolACE, API-Bank train, BFCL-synthetic), CRUXEval-style procedural items (executed
 #: answers) and the NLI / low-positive guard families at natural base rates.
-MIX_V2 = {
-    "glaive_fc/tool_select": 45000,
-    "when2call/response_select": 24000, "toolace/tool_select": 16000, "toolace/tool_multi": 6000,
-    "b1fam_apibank/API-Bank-tool-selection": 9000, "b1fam_bfcl_synth/BFCL-tool-selection": 22000,
-    "b1fam_cruxeval_synth/CRUXEval-output-choice": 29720, "gsm8k/math_mcq": 12000,
-    "anli/nli": 9000, "anli/claim_verification": 9000, "mnli/nli": 12000, "hover/claim_verification": 10000,
-    "ragtruth/hallucination_detection": 10000, "acos/acos_category_sentiment": 9000,
-    "nli4ct/clinical_trial_nli": 5000, "vast/stance": 8000,
-    "clinc150/intent_membership": 9000, "banking77/intent_membership": 4000,
+MIX_V2 = {  # weights (rows at n_synth = 250k); review of v1 (B1_SCHEMA_REVIEW.md item 2) applied
+    # tools: glaive 27.7 % -> ~12 %; tool CHOICE up (When2Call / ToolACE / every usable API-Bank train dialogue / BFCL)
+    "glaive_fc/tool_select": 30000,
+    "when2call/response_select": 8000, "toolace/tool_select": 6500, "toolace/tool_multi": 2500,
+    "b1fam_apibank/API-Bank-tool-selection": 4000, "b1fam_bfcl_synth/BFCL-tool-selection": 24000,
+    # procedural: CRUXEval-style executed items up a lot; GSM8K cut (D1 already beats flash there)
+    "b1fam_cruxeval_synth/CRUXEval-output-choice": 30000, "gsm8k/math_mcq": 4500,
+    # NLI / low-positive guard families at natural base rates; regression families (NLI4CT / Habermas / VAST / ACOS)
+    # raised by NEW items; ANLI cut
+    "anli/nli": 2000, "anli/claim_verification": 2500, "mnli/nli": 15000, "hover/claim_verification": 12000,
+    "ragtruth/hallucination_detection": 12000, "acos/acos_category_sentiment": 8000,
+    "nli4ct/clinical_trial_nli": 3000, "vast/stance": 8000, "habermas/consensus_selection": 2400,
+    "clinc150/intent_membership": 12000, "banking77/intent_membership": 5000,
+    # intent catalogs
     "clinc150/intent_general": 14000, "banking77/intent_banking": 10000,
+    # other
     "mmlu_aux/mcq": 5000, "mmlu_aux/answer_verification": 2000, "boolq/yesno_passage": 3000,
     "hellaswag/continuation": 3000, "winogrande/fill_blank": 3000, "sst5/sentiment_score": 2000,
     "humicroedit_s1/humor_score": 1500, "humicroedit_s2/humor_pair": 1500, "synthetic_factchange": 3000,
-    "habermas/consensus_selection": 3000, "nq/retrieval": 280,
+    "nq/retrieval": 280,
 }
 NO_SPILL_V2 = {"glaive_fc/tool_select"}
+#: review item 5: above ~60k trained rows, more variants of the same item stop paying; v2 gives a key with fewer than
+#: V2_SMALL_ITEMS unique items at most V2_SMALL_MAX variants per item (others V2_MAX), selected fewest-first
+V2_SMALL_ITEMS, V2_SMALL_MAX, V2_MAX = 10000, 2, 3
 
 
 def mix_key(rec: dict, mode: str) -> str:
@@ -166,11 +181,18 @@ def _letters(i: int) -> str:
 # --------------------------------------------------------------------------------------------- transformations
 
 
-def ids_referenced(rec: dict, ids: list[str]) -> bool:
+def ids_referenced(rec: dict, ids: list[str], qcrit: dict | None = None) -> bool:
     """True when the record's text names the option ids (re-styling them would break the text)."""
     text = "\n".join(all_strings(rec["state"])) + "\n" + "\n".join(
         q["instructions"] for q in rec["questions"].values() if isinstance(q.get("instructions"), str))
     short = [i for i in ids if len(i) <= 2]
+    if GEN["version"] >= 2 and qcrit is not None:
+        opt_text = "\n".join(str(d) for d in qcrit.values() if d is not None)
+        if AGGREGATE.search(opt_text):
+            return True
+        if short and re.search(r"(?<![\w])(" + "|".join(re.escape(i) for i in short) + r")\s*(?:,|and|or|&)\s*("
+                               + "|".join(re.escape(i) for i in short) + r")(?![\w])", opt_text):
+            return True
     if len(short) >= 2:
         pat = re.compile(r"(?:^|[\s(\[])(" + "|".join(re.escape(i) for i in short) + r")[.):\]]", re.M)
         if len(set(pat.findall(text))) >= 2:
@@ -186,10 +208,10 @@ def new_ids(style: str, k: int, rng: random.Random, old: list[str]) -> list[str]
         return [_letters(i) for i in range(k)]
     if style == "letters_lower":
         return [_letters(i).lower() for i in range(k)]
-    if style == "digits":
-        return [str(i) for i in range(k)]
-    if style == "digits1":
-        return [str(i + 1) for i in range(k)]
+    if style in ("digits", "digits1"):
+        start = 0 if style == "digits" else 1
+        w = len(str(k - 1 + start)) if (GEN["version"] >= 2 and k > 10) else 0
+        return [str(i + start).zfill(w) for i in range(k)]
     if style == "option_k":
         return [f"option_{i}" for i in range(k)]
     if style == "opaque":
@@ -275,7 +297,7 @@ def switch_type(q: dict, gold: str, rng: random.Random) -> tuple[dict, str] | No
     if q["type"] != "choice" or not isinstance(crit, dict) or len(crit) != 2:
         return None
     low = {str(o).casefold(): o for o in crit}
-    for y, n in YESNO_PAIRS:
+    for y, n in (YESNO_PAIRS if GEN["version"] == 1 else BOOLEAN_PAIRS_V2):
         if set(low) == {y.casefold(), n.casefold()}:
             dy, dn = crit[low[y.casefold()]], crit[low[n.casefold()]]
             nq = {"type": "noul", "instructions": q.get("instructions")}
@@ -422,6 +444,38 @@ def rename_questions(qids: list[str], rng: random.Random) -> dict[str, str]:
     return out
 
 
+def dedupe_options(q: dict, gold: str) -> dict:
+    """v2 (review item 4): drop options whose text exactly duplicates another's (a duplicate of the gold's text made
+    the gold ambiguous); the gold itself is always kept."""
+    crit = q["criteria"]
+    seen = {_norm_opt(crit[gold])} if crit.get(gold) is not None else set()
+    out = {}
+    for o, d in crit.items():
+        if o == gold:
+            out[o] = d
+            continue
+        k = _norm_opt(d)
+        if d is not None and k in seen:
+            continue
+        seen.add(k)
+        out[o] = d
+    return {**q, "criteria": out} if len(out) >= 2 else q
+
+
+def _norm_opt(d: Any) -> str:
+    return " ".join(str(d).casefold().split())
+
+
+def keys_named(rec: dict) -> bool:
+    """v2 (review item 4): an instruction names a top-level state key ("For record_1: ..."): renaming / restructuring
+    the state would leave the instruction pointing at a key that no longer exists."""
+    st = rec["state"]
+    if not isinstance(st, dict):
+        return False
+    text = "\n".join(q["instructions"] for q in rec["questions"].values() if isinstance(q.get("instructions"), str))
+    return any(len(k) >= 3 and re.search(r"(?<![\w])" + re.escape(k) + r"(?![\w])", text) for k in st)
+
+
 def variant(base: dict, j: int, seed: int, inventories: dict[str, list[str]], salt: int = 0) -> dict:
     rng = random.Random(f"bschema:{seed}:{base['id']}:{j}:{salt}")
     r = copy.deepcopy(base)
@@ -440,15 +494,20 @@ def variant(base: dict, j: int, seed: int, inventories: dict[str, list[str]], sa
                     ops.append(op)
             r["questions"][qid] = q
             continue
+        if GEN["version"] >= 2 and q["type"] == "choice":
+            k0 = len(q["criteria"])
+            q = dedupe_options(q, gold)
+            if len(q["criteria"]) < k0:
+                ops.append("dedupe_options")
         ids = [str(o) for o in q["criteria"]] if q["type"] == "choice" else []
-        refd = ids_referenced(r, ids) if ids else False
+        refd = ids_referenced(r, ids, q.get("criteria") if q["type"] == "choice" else None) if ids else False
         if q["type"] in ("noul", "choice") and not refd and rng.random() < 0.3:
             sw = switch_type(q, gold, rng)
             if sw:
                 q, gold = sw
                 ops.append(f"type_to_{q['type']}")
                 ids = [str(o) for o in q.get("criteria") or {}] if q["type"] == "choice" else []
-                refd = ids_referenced(r, ids) if ids else False
+                refd = ids_referenced(r, ids, q.get("criteria") if q["type"] == "choice" else None) if ids else False
         if q["type"] == "choice" and not refd:
             if not multi and r["source"] in INTENT_SOURCES and inventories.get(r["source"]) and rng.random() < 0.35:
                 e = expand(q, inventories[r["source"]], rng)
@@ -483,7 +542,7 @@ def variant(base: dict, j: int, seed: int, inventories: dict[str, list[str]], sa
         r["questions"] = {ren[k]: v for k, v in r["questions"].items()}
         r["labels"] = {ren[k]: v for k, v in r["labels"].items()}
         ops.append("qid_rename")
-    if not restricted and rng.random() < 0.8:
+    if not restricted and rng.random() < 0.8 and not (GEN["version"] >= 2 and keys_named(r)):
         st, op = transform_state(r["state"], rng)
         if op:
             r["state"] = st
@@ -610,6 +669,7 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
     """P1 + P2 bases -> variants (checked) -> ``work/candidates.jsonl.gz`` + ``work/candidates.meta.json``."""
     from .b1 import exclusion_sets, native_index, item_key
 
+    GEN["version"] = SCHEMA_VERSION[mix]
     work.mkdir(parents=True, exist_ok=True)
     out_path = work / "candidates.jsonl.gz"
     if out_path.exists():
@@ -699,6 +759,8 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
     target = {s: n_synth * c / tot for s, c in weights.items()}
     #: expected variants per item of each source (fractional; each item gets floor or floor+1 by a hash of its root)
     per_item = {s: min(float(MAX_REUSE), SLACK * target[s] / src_items[s]) for s in target if src_items.get(s)}
+    if mix == "v2":  # review item 5: new items over more variants; small families get at most 2 variants per item
+        per_item = {s: min(v, SLACK * (V2_SMALL_MAX if src_items[s] < V2_SMALL_ITEMS else V2_MAX)) for s, v in per_item.items()}
     inv = {s: sorted(v) for s, v in inventories.items()}
     # ---- pass 2: variants
     n_out = collections.Counter()

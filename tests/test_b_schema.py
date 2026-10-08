@@ -112,3 +112,62 @@ def test_referenced_ids_are_not_restyled():
         (qid, q), = v["questions"].items()
         assert set(q["criteria"]) <= set(base["questions"]["q1"]["criteria"])
         assert json.dumps(v["state"]).count("option_2") >= 1
+
+
+# ---------------------------------------------------------------- v2 (review of v1, B1_SCHEMA_REVIEW.md)
+import pytest
+
+from data import b_schema as BS
+
+
+@pytest.fixture
+def v2():
+    BS.GEN["version"] = 2
+    yield
+    BS.GEN["version"] = 1
+
+
+def test_v2_digit_two_way_choice_never_becomes_noul(v2):
+    base = _choice(k=2, gold=1)
+    base["questions"]["q1"]["criteria"] = {"0": "Megan", "1": "Sarah"}
+    base["labels"]["q1"] = "1"
+    for j in range(80):
+        v = variant(base, j, 4, {})
+        (qid, q), = v["questions"].items()
+        assert q["type"] == "choice" and q["criteria"][v["labels"][qid]] == "Sarah"
+
+
+def test_v2_option_text_naming_ids_blocks_restyle(v2):
+    base = _choice(k=4, gold=3)
+    base["questions"]["q1"]["criteria"] = {"A": "red", "B": "blue", "C": "green", "D": "A and C"}
+    base["labels"]["q1"] = "D"
+    for j in range(30):
+        v = variant(base, j, 2, {})
+        (qid, q), = v["questions"].items()
+        assert set(q["criteria"]) == {"A", "B", "C", "D"} and v["labels"][qid] == "D"
+
+
+def test_v2_digit_ids_zero_padded_over_10(v2):
+    import random
+    assert BS.new_ids("digits", 12, random.Random(0), []) == [f"{i:02d}" for i in range(12)]
+    assert BS.new_ids("digits1", 9, random.Random(0), []) == [str(i) for i in range(1, 10)]
+
+
+def test_v2_duplicate_gold_text_deduped(v2):
+    base = _choice(k=4, gold=1)
+    base["questions"]["q1"]["criteria"]["option_2"] = "answer text 1"
+    for j in range(20):
+        v = variant(base, j, 6, {})
+        (qid, q), = v["questions"].items()
+        if q["type"] == "choice":
+            assert [d for d in q["criteria"].values()].count("answer text 1") == 1
+            assert q["criteria"][v["labels"][qid]] == "answer text 1"
+
+
+def test_v2_state_keys_named_in_instructions_kept(v2):
+    base = _choice()
+    base["state"] = {"record_1": "first thing", "record_2": "second thing"}
+    base["questions"]["q1"]["instructions"] = "For record_1: choose the best answer."
+    for j in range(30):
+        v = variant(base, j, 8, {})
+        assert v["state"] == base["state"]
