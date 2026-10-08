@@ -103,7 +103,7 @@ def _load_checkpoint(path: Path):
     import torch
     reconstruct = np._core.multiarray._reconstruct if hasattr(np, "_core") else np.core.multiarray._reconstruct
     with torch.serialization.safe_globals([reconstruct, np.ndarray, np.dtype, type(np.dtype("uint32"))]):
-        return torch.load(path, map_location="cpu", weights_only=True)
+        return torch.load(path, map_location="cpu", weights_only=True, mmap=True)
 
 
 def restore_trainables(model, state: dict, q: dict, cfg, lora_modules: list, *, step: int | None = None) -> None:
@@ -174,8 +174,11 @@ def native_rwkv7_loader(snapshot: str | Path, qualification: dict, pin: NativePa
                 raise ValueError(f"checkpoint {key} pin mismatch")
         if type(state.get("step")) is not int or state["step"] != pin.revision["checkpoint"]["step"]:
             raise ValueError("checkpoint step differs from serving revision")
-        lm = Rwkv7ForCausalLM.from_pretrained(str(local), dtype=getattr(torch, dtype),
-                                             device_map={"": device}, local_files_only=True)
+        lm, loading = Rwkv7ForCausalLM.from_pretrained(
+            str(local), dtype=getattr(torch, dtype), device_map={"": device},
+            local_files_only=True, output_loading_info=True)
+        if any(loading.get(key) for key in ("missing_keys", "unexpected_keys", "mismatched_keys", "error_msgs")):
+            raise ValueError("pretrained RWKV7 snapshot did not load its complete exact state")
         from heads.rwkv7_wkv import select_wkv
         select_wkv(lm, q["rwkv7_wkv"])
         backbone = HiddenStateBackbone(lm.rwkv7, spec=BACKBONES["rwkv7-13.3b"],

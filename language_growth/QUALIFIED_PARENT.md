@@ -60,8 +60,9 @@ uses vendored RWKV7 classes and `local_files_only=True`, restores exactly the
 saved head/typed/LoRA key set, shape and dtype, rejects nonfinite tensors before
 copying any parameter, and checks frozen-backbone lineage. It uses the restricted
 PyTorch weights-only reader with the inert NumPy RNG types needed by current
-Trainer checkpoints. There is no optimizer/data/evaluation loading or unsafe
-pickle fallback. Trust-gated/G16 reconstruction is explicitly unsupported until
+Trainer checkpoints, memory-mapping tensor storage so unused optimizer moments
+are not eagerly materialized. There is no optimizer restoration, training or
+evaluation data access, or unsafe pickle fallback. Trust-gated/G16 reconstruction is explicitly unsupported until
 a reviewed loader supplies that architecture. FLA selection retains its existing
 GPU verification gate. A different path-sensitive backbone identity, dtype,
 runtime or implementation requires matching qualification; no silent migration.
