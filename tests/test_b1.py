@@ -67,5 +67,5 @@ def test_catalog_view_adds_distinct_tools_and_keeps_gold():
 
 def test_draw_quotas_sum_and_nest():
     assert sum(b1.WEIGHTS_45K.values()) == 45000 and sum(b1.WEIGHTS_100K.values()) == 100000
-    assert set(b1.WEIGHTS_45K) == set(b1.WEIGHTS_100K) == set(b1.FAMILIES)
-    assert all(b1.WEIGHTS_45K[f] <= b1.WEIGHTS_100K[f] for f in b1.FAMILIES)
+    assert set(b1.WEIGHTS_45K) == set(b1.WEIGHTS_100K) == set(b1.FAMILIES) | set(b1.EXT_GROUP)
+    assert all(b1.WEIGHTS_45K[f] <= b1.WEIGHTS_100K[f] for f in b1.WEIGHTS_45K)

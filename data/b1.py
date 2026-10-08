@@ -90,24 +90,30 @@ GROUP_AREA = {"tools": "tools", "knowledge_procedural": "knowledge", "knowledge_
 # the 150k set) and never fit the T<=2048 rung, so they are not drawn (no clinc150_full family) until a cell trains at
 # T>=4096-8192. Full BANKING77 catalogs (77 options) fit at ~1,750 tokens with letters/digits ids, so *_full rows use
 # those two id styles.
+#: external families (the B1-families build, stack/rwkv7/b1-families @a4bc718: API-Bank official train split, BFCL-
+#: and CRUXEval-shaped synthetic rows; MuSR / SATA / CLadder refused there as FROZEN). Keys are ``ext:<file stem>``.
+EXT_GROUP = {"ext:api_bank": "tools", "ext:bfcl": "tools", "ext:cruxeval": "knowledge_procedural"}
+FAMILIES_DIR = "b1-families"
 WEIGHTS_45K = {
-    "glaive_native": 5500, "glaive_catalog16": 3000, "glaive_catalog_long": 3000, "toolace": 2500,
-    "when2call": 2500, "factchange": 500,                                                    # tools 17,000
-    "gsm8k": 4500,                                                                           # procedural 4,500
-    "banking77_k16": 3500, "clinc150_k16": 5000, "banking77_full": 2000,                     # intent 10,500
-    "anli": 1800, "hellaswag": 1300, "winogrande": 1200, "sst5": 700,                        # language 5,000
-    "nq": 2000, "boolq": 2000,                                                               # retrieval 4,000
-    "mmlu_aux": 3000,                                                                        # facts 3,000
+    "ext:api_bank": 2284, "ext:bfcl": 2400,                                                  # tools (external) 4,684
+    "glaive_native": 3500, "glaive_catalog16": 2000, "glaive_catalog_long": 3000, "toolace": 2000,
+    "when2call": 2000, "factchange": 500,                                                    # tools 17,684
+    "ext:cruxeval": 2400, "gsm8k": 4500,                                                     # procedural 6,900
+    "banking77_k16": 3000, "clinc150_k16": 4500, "banking77_full": 2000,                     # intent 9,500
+    "anli": 1500, "hellaswag": 1100, "winogrande": 1200, "sst5": 700,                        # language 4,500
+    "nq": 1716, "boolq": 1700,                                                               # retrieval 3,416
+    "mmlu_aux": 2000,                                                                        # facts 2,000
     "humicroedit_s1": 500, "humicroedit_s2": 500,                                            # arts 1,000
 }
 WEIGHTS_100K = {
-    "glaive_native": 14000, "glaive_catalog16": 8000, "glaive_catalog_long": 8000, "toolace": 4200,
-    "when2call": 4500, "factchange": 2800,                                                   # tools 41,500
-    "gsm8k": 4500,                                                                           # procedural 4,500
+    "ext:api_bank": 2284, "ext:bfcl": 2400,                                                  # tools (external) 4,684
+    "glaive_native": 9500, "glaive_catalog16": 8000, "glaive_catalog_long": 8000, "toolace": 4200,
+    "when2call": 4500, "factchange": 2800,                                                   # tools 41,684
+    "ext:cruxeval": 2400, "gsm8k": 4500,                                                     # procedural 6,900
     "banking77_k16": 4000, "clinc150_k16": 7000, "banking77_full": 2500,                     # intent 13,500
     "anli": 5500, "hellaswag": 4000, "winogrande": 3500, "sst5": 2000,                       # language 15,000
     "nq": 4500, "boolq": 4000,                                                               # retrieval 8,500
-    "mmlu_aux": 14000,                                                                       # facts 14,000
+    "mmlu_aux": 11416,                                                                       # facts 11,416
     "humicroedit_s1": 1500, "humicroedit_s2": 1500,                                          # arts 3,000
 }
 #: families that absorb any shortfall (in order): tools first, then fact knowledge
@@ -445,10 +451,18 @@ class Filter:
         self.fp = Fingerprint.load(config.FINGERPRINT)
         self.fp.assert_production()
         self.ex, self.max_k, self.max_t, self.template = ex, max_k, max_t, template
+        from . import b1_check
+        self.b1c = b1_check
+        self.index = b1_check.build_index(config.DATA_ROOT)  # every DEV / TEST Index row, for the item-text check
+        self.templates = b1_check.instruction_templates()
         self.seen_items: set[str] = set()
         self.seen_content: set[str] = set()
         self.seen_text: set[str] = set()
         self.reasons: dict[str, collections.Counter] = collections.defaultdict(collections.Counter)
+        #: id -> longest rendered item (tokens, cell template + RWKV7 tokenizer) of every row that passed the K/T filter
+        self.row_tokens: dict[str, int] = {}
+        self.hit_examples: dict[str, list] = collections.defaultdict(list)
+        self.last_hit = None
 
     @staticmethod
     def item_keys(rec: dict) -> set[str]:
@@ -488,6 +502,10 @@ class Filter:
             return "frozen_family"
         if fingerprint and any(self.fp.check(rec["state"], rec["questions"]).values()):
             return "fingerprint"
+        hits = [x for x in self.b1c.item_hits(rec, self.index, self.templates) if not x[3]]
+        if hits:
+            self.last_hit = (rec["id"], hits[0][1], hits[0][2][:120])
+            return "index_item_text"
         if len(canonical({"s": rec["state"], "q": rec["questions"]})) > 6 * self.max_t:  # >6 chars/token never seen
             return "len_prefilter"
         try:
@@ -496,6 +514,7 @@ class Filter:
             return "layout"
         if not its or not all(keep_item(x.row, self.max_k, self.max_t) for x in its):
             return "k_or_t_filter"
+        self.row_tokens[rec["id"]] = max(len(x.row.ids) for x in its)
         return None
 
     def claim(self, rec: dict) -> None:
@@ -507,6 +526,8 @@ class Filter:
     def accept(self, rec: dict, fam: str, fingerprint: bool = False) -> bool:
         why = self.why_not(rec, fingerprint)
         self.reasons[fam][why or "kept"] += 1
+        if why == "index_item_text" and len(self.hit_examples[fam]) < 5:
+            self.hit_examples[fam].append(self.last_hit)
         if why is None:
             self.claim(rec)
         return why is None
@@ -595,14 +616,17 @@ def intent_k16_view_keep_ids(rec: dict, seed: int) -> dict | None:
     return out
 
 
-def _external(families_dir: Path | None) -> dict[str, list[dict]]:
-    """Merge hook: ``<families_dir>/records.jsonl.gz`` (ssdm-train-v0, one ``family`` per row); grouped by family."""
+def _external(families_dir: Path | None) -> tuple[dict[str, list[dict]], dict[str, str]]:
+    """Merge hook: every ``<families_dir>/<stem>.jsonl.gz`` (ssdm-train-v0) becomes family ``ext:<stem>``; returns
+    (rows by family, raw-gz sha256 by file)."""
     if families_dir is None:
-        return {}
-    out: dict[str, list[dict]] = collections.defaultdict(list)
-    for r in _read_jsonl_gz(Path(families_dir) / "records.jsonl.gz"):
-        out[f"ext:{r['family']}"].append(r)
-    return out
+        return {}, {}
+    out: dict[str, list[dict]] = {}
+    shas = {}
+    for p in sorted(Path(families_dir).glob("*.jsonl.gz")):
+        out["ext:" + p.name[: -len(".jsonl.gz")]] = _read_jsonl_gz(p)
+        shas[p.name] = hashlib.sha256(p.read_bytes()).hexdigest()
+    return out, shas
 
 
 def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_dir: Path | None = None,
@@ -637,14 +661,18 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
              "gsm8k", "banking77_k16", "clinc150_k16", "banking77_full", "anli", "hellaswag", "winogrande", "sst5", "nq", "boolq", "mmlu_aux", "humicroedit_s1",
              "humicroedit_s2"]
     assert sorted(order) == sorted(FAMILIES)
-    ext = _external(families_dir)
+    ext, ext_shas = _external(families_dir)
+    missing = sorted(set(external_quotas or {}) - set(ext))
+    if missing:
+        raise ValueError(f"external families {missing} not found in {families_dir}")
     for fam, rows in sorted(ext.items()):  # external families first: they are the scarce ones
         q = (external_quotas or {}).get(fam, 0)
         got = []
         for r in sorted(rows, key=lambda r: _order_key(seed, fam, r["id"])):
             if len(got) >= q:
                 break
-            if flt.accept(r, fam, fingerprint=True):
+            # the B1-families build ran the item/context-tiered fingerprint itself; everything else runs here
+            if flt.accept(r, fam):
                 got.append(r)
         chosen[fam] = got
         log(f"  {fam}: {len(got)}/{q}  {dict(flt.reasons[fam])}", flush=True)
@@ -725,6 +753,7 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
         log(f"  {fam}: {len(got)}/{quota}  {dict(flt.reasons[fam])}", flush=True)
     # backfill: a family whose pool runs out (e.g. GSM8K after cohort v3) is topped up from the tools / facts pools
     deficit = sum(quotas.values()) - sum(len(chosen[f]) for f in order)
+    deficit += sum((external_quotas or {}).values()) - sum(len(chosen.get(f, [])) for f in (external_quotas or {}))
     backfilled = {}
     for fam in BACKFILL:
         if deficit <= 0:
@@ -739,7 +768,9 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
             "fingerprint": {k: flt.fp.meta.get(k) for k in ("version", "npz_sha256", "arrays_sha256", "rows")},
             "encoder": flt.enc.identity() if hasattr(flt.enc, "identity") else None,
             "cell_filter": {"max_k": flt.max_k, "max_t": flt.max_t, "template": flt.template, "layout": "ordered"},
-            "seed": seed, "families_dir": str(families_dir) if families_dir else None}
+            "seed": seed, "families_dir": str(families_dir) if families_dir else None,
+            "families_files_gz_sha256": ext_shas, "row_tokens": flt.row_tokens,
+            "index_item_text_examples": dict(flt.hit_examples), "index_boilerplate": flt.index["boilerplate"]}
 
 
 # ------------------------------------------------------------------ write
@@ -799,8 +830,10 @@ def write_draw(name: str, rows: list[dict], sel: dict, quotas: dict[str, int], o
             fam_of[r["id"]] = f
     by_fam = collections.Counter(fam_of[i] for i in ids)
     by_src = collections.Counter(r["source"] for r in rows)
-    by_area = collections.Counter(GROUP_AREA.get(FAMILIES.get(fam_of[i], ("external",))[0], "external") for i in ids)
-    by_group = collections.Counter(FAMILIES.get(fam_of[i], ("external",))[0] for i in ids)
+    def group_of(f):
+        return EXT_GROUP.get(f) or FAMILIES[f][0]
+    by_area = collections.Counter(GROUP_AREA[group_of(fam_of[i])] for i in ids)
+    by_group = collections.Counter(group_of(fam_of[i]) for i in ids)
     pos = collections.defaultdict(collections.Counter)
     for r in rows:
         for p, k in gold_position(r):
@@ -816,6 +849,15 @@ def write_draw(name: str, rows: list[dict], sel: dict, quotas: dict[str, int], o
     k16_fam = collections.defaultdict(collections.Counter)
     for r in rows:
         k16_fam[fam_of[r["id"]]]["k<=16" if kmax(r) <= 16 else "k>16"] += 1
+    toks = sorted(sel["row_tokens"][i] for i in ids)
+    def pct(q):
+        return toks[min(len(toks) - 1, int(q * len(toks)))]
+    token_hist = {"p50": pct(0.5), "p95": pct(0.95), "p99": pct(0.99), "max": toks[-1], "n_over_2048": sum(t > 2048 for t in toks),
+                  "bins": dict(collections.Counter("<=512" if t <= 512 else "513-1024" if t <= 1024 else
+                                                   "1025-1536" if t <= 1536 else "1537-2048" if t <= 2048 else ">2048"
+                                                   for t in toks))}
+    if token_hist["n_over_2048"]:
+        raise AssertionError("a row over 2,048 tokens reached the draw")
     noul = collections.Counter()
     for r in rows:
         for qid, q in r["questions"].items():
@@ -826,6 +868,7 @@ def write_draw(name: str, rows: list[dict], sel: dict, quotas: dict[str, int], o
                "by_group_share": {g: round(v / len(rows), 4) for g, v in sorted(by_group.items())},
                "by_group": dict(sorted(by_group.items())), "by_index_area": dict(sorted(by_area.items())),
                "by_source": dict(sorted(by_src.items())), "rows_by_max_k": dict(k16),
+               "rendered_tokens": token_hist,
                "rows_by_max_k_by_family": {f: dict(v) for f, v in sorted(k16_fam.items())},
                "gold_position_uniformity_by_k": dict(sorted(chi.items())), "noul_gold_labels": dict(noul),
                "injected_rows": sum(bool(r.get("aug", {}).get("injection")) for r in rows),
@@ -872,15 +915,19 @@ def main(argv=None) -> int:
         draws[n + a.suffix] = q
     fams = sorted({f for q in draws.values() for f in q})
     big = {f: max(q.get(f, 0) for q in draws.values()) for f in fams}
+    fdir = Path(a.families_dir) if a.families_dir else (config.BUILD_DIR / FAMILIES_DIR
+                                                         if any(f.startswith("ext:") for f in big) else None)
     sel = select(a.tokdir, {f: v for f, v in big.items() if not f.startswith("ext:")},
-                 families_dir=Path(a.families_dir) if a.families_dir else None,
+                 families_dir=fdir,
                  external_quotas={f: v for f, v in big.items() if f.startswith("ext:")})
     rd = Path(a.receipt)
     rd.mkdir(parents=True, exist_ok=True)
     report = {"builder": {"commit": builder, "data/b1.py sha256": builder_sha256}, "seed": sel["seed"],
               "native": sel["native"], "exclusion": sel["exclusion"], "guard": sel["guard"],
               "fingerprint": sel["fingerprint"], "encoder": sel["encoder"], "cell_filter": sel["cell_filter"],
-              "families_dir": sel["families_dir"], "backfilled": sel["backfilled"],
+              "families_dir": sel["families_dir"], "families_files_gz_sha256": sel["families_files_gz_sha256"],
+              "backfilled": sel["backfilled"], "index_item_text_examples": sel["index_item_text_examples"],
+              "index_boilerplate": sel["index_boilerplate"],
               "filter_reasons_over_selection": sel["filter_reasons"], "draws": {}}
     for name, q in draws.items():
         rows = [r for f in q for r in sel["chosen"].get(f, [])[: q[f] + sel["backfilled"].get(f, 0)]]
