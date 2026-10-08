@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 
 from .kernel import validate_release
-from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, SpeechAct
+from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, ExactDifference, Fact, PlanContent, SpeechAct, decimal_text
 
 
 PLAIN_PRODUCTION = "plain"
@@ -40,7 +40,7 @@ def _value(value: str | int | bool | Decimal) -> str:
     if isinstance(value, Decimal):
         if not value.is_finite():
             raise ValueError("invalid checked value")
-        return str(value)
+        return decimal_text(value)
     if isinstance(value, str):
         return _quoted(value)
     raise ValueError("invalid checked value")
@@ -50,15 +50,20 @@ def _unit(unit: str | None) -> str:
     return "" if unit is None else " " + _quoted(unit)
 
 
-def _subject(item: Fact | ConstantValue) -> str:
+def _subject(item: Fact | ConstantValue | AssumptionValue, *, recorded_baseline: bool = False) -> str:
+    if isinstance(item, AssumptionValue):
+        return "hypothetical " + _subject(item.premise)
     if isinstance(item, Fact):
-        return f"{_quoted(item.predicate)} for {_quoted(item.subject)}"
+        prefix = "recorded baseline " if recorded_baseline else ""
+        return f"{prefix}{_quoted(item.predicate)} for {_quoted(item.subject)}"
     if isinstance(item, ConstantValue):
         return f"constant {_quoted(item.constant_ref)}"
     raise ValueError("invalid checked operand")
 
 
-def _operand_value(item: Fact | ConstantValue) -> str:
+def _operand_value(item: Fact | ConstantValue | AssumptionValue) -> str:
+    if isinstance(item, AssumptionValue):
+        return f"{_value(item.value)}{_unit(item.unit)}"
     if isinstance(item, Fact):
         return f"{_value(item.object)}{_unit(item.unit)}"
     if isinstance(item, ConstantValue):
@@ -66,17 +71,24 @@ def _operand_value(item: Fact | ConstantValue) -> str:
     raise ValueError("invalid checked operand")
 
 
-def _assertion(content: Fact | Comparison) -> str:
+def _assertion(content: Fact | Comparison | ExactDifference) -> str:
     if isinstance(content, Fact):
         return f"At {_quoted(content.interval)}, {_subject(content)} has value {_operand_value(content)}."
+    if isinstance(content, ExactDifference):
+        return (
+            f"At {_quoted(content.interval)}, the value of {_subject(content.left)} "
+            f"({_operand_value(content.left)}) minus the value of {_subject(content.right)} "
+            f"({_operand_value(content.right)}) is {_value(content.value)}{_unit(content.unit)}."
+        )
     if isinstance(content, Comparison):
         relations = {"greater_than": "greater than", "less_than": "less than", "equal": "equal to"}
         if content.relation not in relations:
             raise ValueError("invalid checked relation")
+        conditional = any(isinstance(item, AssumptionValue) for item in (content.left, content.right))
         return (
-            f"At {_quoted(content.interval)}, the value of {_subject(content.left)} "
+            f"At {_quoted(content.interval)}, the value of {_subject(content.left, recorded_baseline=conditional)} "
             f"({_operand_value(content.left)}) is {relations[content.relation]} "
-            f"the value of {_subject(content.right)} ({_operand_value(content.right)})."
+            f"the value of {_subject(content.right, recorded_baseline=conditional)} ({_operand_value(content.right)})."
         )
     raise ValueError("invalid checked assertion")
 
@@ -86,6 +98,13 @@ def _speech(act: SpeechAct) -> str:
         raise ValueError("invalid checked speech act")
     if act.kind == "assert":
         return _assertion(act.content)
+    if act.kind == "hypothesize":
+        if not isinstance(act.content, ConditionalContent):
+            raise ValueError("invalid checked hypothesis")
+        assumption = act.content.assumption
+        conclusion = _assertion(act.content.conclusion)
+        return (f"If at {_quoted(assumption.interval)}, {_subject(assumption)} had value "
+                f"{_operand_value(assumption)}, then {conclusion[0].lower()}{conclusion[1:]}")
     if act.kind == "ask":
         if not isinstance(act.content, AskContent):
             raise ValueError("invalid checked ask")
@@ -94,6 +113,19 @@ def _speech(act: SpeechAct) -> str:
             f"Please provide {_quoted(act.content.category)} for obligation "
             f"{_quoted(act.content.obligation_ref)}; references: [{refs}]."
         )
+    if act.kind == "plan":
+        if not isinstance(act.content, PlanContent) or not act.content.steps:
+            raise ValueError("invalid checked plan")
+        lines = [f"Proposed selected steps for workflow {_quoted(act.content.workflow_ref)}; selection may be incomplete; no actions executed."]
+        for index, step in enumerate(act.content.steps, 1):
+            conditions = " and ".join(
+                f"at {_quoted(fact.interval)}, recorded {_subject(fact)} has value {_operand_value(fact)}"
+                for fact in step.preconditions)
+            ordering = (" after proposed steps [" + ", ".join(_quoted(ref) for ref in step.after) + "]"
+                        if step.after else "")
+            lines.append(f"Proposed step {index} ({_quoted(step.step_ref)}){ordering}: "
+                         f"if {conditions}, propose action {_quoted(step.action_ref)}; execution requires separate authorization and precondition recheck.")
+        return "\n".join(lines)
     if act.kind == "conjoin":
         if not isinstance(act.content, tuple) or not act.content:
             raise ValueError("invalid checked conjunction")

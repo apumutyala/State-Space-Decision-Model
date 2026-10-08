@@ -1,25 +1,8 @@
 ## What and why
-<!-- one paragraph: track (D/L/shared), hypothesis or module, linked issue -->
+<!-- one or two lines -->
 
-## Claim (if any)
-<!-- the exact claim, scoped. "None" for pure code/docs. -->
+## Result (if any)
+<!-- score with CI vs 24.85 / 55.78 / 62.14, cost, job id, commit, raw predictions location. "None" for code/docs. -->
 
-## Receipt
-- Commit / config:
-- Command:
-- Data + split hashes:
-- Seeds / N runs / median ± spread:
-- Hardware + billed cost:
-- Raw predictions:
-
-## Gates
-- [ ] Correctness/contract tests pass
-- [ ] Capability + calibration + steer/hijack + interpretability reported together (or N/A)
-- [ ] No test-item / Decision Index eval-set contamination
-- [ ] Spend recorded in LEDGER.md
-- [ ] INTERFACE.md version bumped (if the seam changed)
-
-## Reviewer (other agent)
-- [ ] Re-measured or recomputed headline number from raw predictions
-- [ ] Checked claim scope matches evidence
-- Verdict: approve / request-changes / comment
+## Process rule removed or added (if any)
+<!-- one line: which rule and why (COORDINATION.md "Self-evolving process") -->
