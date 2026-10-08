@@ -1,4 +1,18 @@
 {
+ "acos/Laptop-ACOS/laptop_quad_train.tsv": {
+  "sha256": "75572e18961f15d6624c037cf4ccc8964744b59a6be4249132229a4dbd967320",
+  "bytes": 359454,
+  "url": "https://raw.githubusercontent.com/NUSTM/ACOS/45d179a3dcc6a3dedd848d81b16f2552454805fe/data/Laptop-ACOS/laptop_quad_train.tsv",
+  "revision": "45d179a3dcc6a3dedd848d81b16f2552454805fe",
+  "license": "none stated in NUSTM/ACOS (no LICENSE file; research release, ACL 2021); no clause forbids training"
+ },
+ "acos/Restaurant-ACOS/rest16_quad_train.tsv": {
+  "sha256": "91ced9328d5992d3715ec70d7cc08a6ccd9dea79136ffdd70556fe54b217edda",
+  "bytes": 179810,
+  "url": "https://raw.githubusercontent.com/NUSTM/ACOS/45d179a3dcc6a3dedd848d81b16f2552454805fe/data/Restaurant-ACOS/rest16_quad_train.tsv",
+  "revision": "45d179a3dcc6a3dedd848d81b16f2552454805fe",
+  "license": "none stated in NUSTM/ACOS (no LICENSE file; research release, ACL 2021); no clause forbids training"
+ },
  "anli/plain_text/train_r1-00000-of-00001.parquet": {
   "sha256": "de2d038ae67f1fb1872073490b9e7685e9114d5f278ddd4631905fe0a4ecbcff",
   "bytes": 3140120,
@@ -55,12 +69,33 @@
   "revision": "740312add88f781978c0658806c59bc2815b9866",
   "license": "MIT"
  },
+ "habermas/hm_all_candidate_comparisons.parquet": {
+  "sha256": "7cf8d5ce3fce8853b36f0ffe1158424f7813867e422e313db4df0a5f9e03e4a4",
+  "bytes": 396838276,
+  "url": "https://storage.googleapis.com/habermas_machine/datasets/hm_all_candidate_comparisons.parquet",
+  "revision": "7923b71966c14136077c78d7841bc9e1a182dfe0",
+  "license": "CC-BY-4.0 (data; google-deepmind/habermas_machine README @7923b71); code Apache-2.0"
+ },
  "hellaswag/data/train-00000-of-00001.parquet": {
   "sha256": "cacb12587faa63d7f723a72d61d12bfa94b140446f5a6a0a2e1c6906ab88bf02",
   "bytes": 24365524,
   "url": "https://huggingface.co/datasets/Rowan/hellaswag/resolve/218ec52e09a7e7462a5400043bb9a69a41d06b76/data/train-00000-of-00001.parquet",
   "revision": "218ec52e09a7e7462a5400043bb9a69a41d06b76",
   "license": "MIT"
+ },
+ "hover/hover_train_release_v1.1.json": {
+  "sha256": "1f1cd57abd616fa00c70bdc575ce77c16fc6cf1a6cffd5ff87c208030a336bb6",
+  "bytes": 9205582,
+  "url": "https://raw.githubusercontent.com/hover-nlp/hover/39b84697f196308f398a251a7aea9b82ae0f0562/data/hover/hover_train_release_v1.1.json",
+  "revision": "39b84697f196308f398a251a7aea9b82ae0f0562",
+  "license": "CC-BY-SA-4.0 (data, hover-nlp.github.io); code MIT; wiki_wo_links.db = the official HoVer Wikipedia dump (download_data.sh), read only for the supporting-fact documents"
+ },
+ "hover/wiki_wo_links.db": {
+  "sha256": "c37ee397916ec0bffacfe8902db454a5cda88a7a188409217b2e15231fe5ee2f",
+  "bytes": 2156273664,
+  "url": "https://nlp.cs.unc.edu/data/hover/wiki_wo_links.db",
+  "revision": "39b84697f196308f398a251a7aea9b82ae0f0562",
+  "license": "CC-BY-SA-4.0 (data, hover-nlp.github.io); code MIT; wiki_wo_links.db = the official HoVer Wikipedia dump (download_data.sh), read only for the supporting-fact documents"
  },
  "humicroedit_s1/subtask-1/train-00000-of-00001.parquet": {
   "sha256": "a5230f6004932f51d1d6120553aef5df1ce6d0d1e763cb1534ef6f8cd86db5eb",
@@ -83,12 +118,40 @@
   "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
   "license": "MIT (constituents: ARC, OBQA, RACE, MCTest; see SOURCES.md)"
  },
+ "mnli/data/train-00000-of-00001.parquet": {
+  "sha256": "1c1de03640b168e410aabfca19e7cc2f3dfcd7f0e126e935674e56fb102c4529",
+  "bytes": 213961663,
+  "url": "https://huggingface.co/datasets/nyu-mll/multi_nli/resolve/da70db2af9d09693783c3320c4249840212ee221/data/train-00000-of-00001.parquet",
+  "revision": "da70db2af9d09693783c3320c4249840212ee221",
+  "license": "HF card: cc-by-3.0 / cc-by-sa-3.0 / mit / other (OANC + fiction genres; see MultiNLI paper)"
+ },
+ "nli4ct/training_data.zip": {
+  "sha256": "ed3d9819cfebd2d1d5d70fd786323c904b341470f8dc173af39946f70a0e5b9f",
+  "bytes": 2323461,
+  "url": "https://raw.githubusercontent.com/ai-systems/Task-2-SemEval-2024/7f32fa6c7db43e577f22e9fc6c28eef1cc6d223e/training_data.zip",
+  "revision": "7f32fa6c7db43e577f22e9fc6c28eef1cc6d223e",
+  "license": "none stated in the repo (SemEval-2024 Task 2 research release); trials are public ClinicalTrials.gov records"
+ },
  "nq/pair/train-00000-of-00001.parquet": {
   "sha256": "8cfb5e5a7cb1cd09dbb035a581aa42ce5db5852acb3e70f070d89d7035887de9",
   "bytes": 43995757,
   "url": "https://huggingface.co/datasets/sentence-transformers/natural-questions/resolve/f9e894e1081e206e577b4eaa9ee6de2b06ae6f17/pair/train-00000-of-00001.parquet",
   "revision": "f9e894e1081e206e577b4eaa9ee6de2b06ae6f17",
   "license": "HF card: none stated; upstream Natural Questions CC-BY-SA-3.0"
+ },
+ "ragtruth/response.jsonl": {
+  "sha256": "e4c2e4ac24fff676d8984cc61c35d791612fadc58015335d97dd632375e18073",
+  "bytes": 21458735,
+  "url": "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/c103204b9ce28d6bbad859304bf30de72b8ed8fe/dataset/response.jsonl",
+  "revision": "c103204b9ce28d6bbad859304bf30de72b8ed8fe",
+  "license": "MIT"
+ },
+ "ragtruth/source_info.jsonl": {
+  "sha256": "0dffc26ea9f3c1c3d7c7e8336b56ef1646e3cec876edffcca3c9c624d12d578b",
+  "bytes": 15117971,
+  "url": "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/c103204b9ce28d6bbad859304bf30de72b8ed8fe/dataset/source_info.jsonl",
+  "revision": "c103204b9ce28d6bbad859304bf30de72b8ed8fe",
+  "license": "MIT"
  },
  "sst5/train.jsonl": {
   "sha256": "46bde4fb5abc93ffbadfa9a9f67de17c08a2f535cfb5756c59188d070434f433",
@@ -103,6 +166,13 @@
   "url": "https://huggingface.co/datasets/Team-ACE/ToolACE/resolve/6bda777c88d21e5a204703c1ee45597a8fa4f734/data.json",
   "revision": "6bda777c88d21e5a204703c1ee45597a8fa4f734",
   "license": "Apache-2.0"
+ },
+ "vast/vast_train.csv": {
+  "sha256": "b2f0d69a73231b8ef22f10e4df7d759cf228505ce5252506068da6aa7fe42109",
+  "bytes": 30142407,
+  "url": "https://raw.githubusercontent.com/emilyallaway/zero-shot-stance/e7c4775182b184730f350995f8260579c9e066fe/data/VAST/vast_train.csv",
+  "revision": "e7c4775182b184730f350995f8260579c9e066fe",
+  "license": "none stated in the repo (research release, ACL 2020; NYT comments)"
  },
  "when2call/train/when2call_train_sft.jsonl": {
   "sha256": "3eb20258557513579995ff55c09fcc33fabf2cd2004dea49dc3a0ba9880e631c",

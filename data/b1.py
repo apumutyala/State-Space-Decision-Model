@@ -77,9 +77,19 @@ FAMILIES: dict[str, tuple[str, str, str]] = {
     "banking77_member": ("intent_views", "member", "banking77"),
     "anli_claim": ("language", "claim", "anli"),
     "mmlu_verify": ("knowledge_facts", "verify", "mmlu_aux"),
+    # v3 (data/b1_v3.py): official TRAIN splits of seven new sources in the eval presentation of the matching family
+    "acos": ("language", "v3", "acos"),
+    "nli4ct": ("language", "v3", "nli4ct"),
+    "vast": ("language", "v3", "vast"),
+    "ragtruth": ("language", "v3", "ragtruth"),
+    "mnli": ("language", "v3", "mnli"),
+    "hover": ("retrieval_other", "v3", "hover"),
+    "habermas": ("arts", "v3", "habermas"),
 }
 #: view kinds built from raw source rows by data.b1_lowrate (no native line needed; Index fingerprint runs per row)
 LOWRATE_KINDS = ("member", "claim", "verify")
+#: rows built from the v3 conversion of newly fetched train splits (data.b1_v3; Index fingerprint runs per row)
+V3_KINDS = ("v3",)
 #: Index area of each family group (for the per-area report)
 GROUP_AREA = {"tools": "tools", "knowledge_procedural": "knowledge", "knowledge_facts": "knowledge",
               "intent_views": "retrieval", "retrieval_other": "retrieval", "language": "language", "arts": "arts"}
@@ -130,8 +140,19 @@ WEIGHTS_100K = {
 WEIGHTS_100K_V2 = {**WEIGHTS_100K, "glaive_native": 4500, "mmlu_aux": 8416, "anli": 3000,
                    "clinc150_member": 3000, "banking77_member": 1500, "anli_claim": 3000, "mmlu_verify": 3000}
 assert sum(WEIGHTS_100K_V2.values()) == sum(WEIGHTS_100K.values())
+# v3 (coordinator 2026-10-08): 100k v2 + ACOS / NLI4CT / VAST / RAGTruth / HoVer / Habermas (eval presentation) and
+# MNLI (generic binary NLI, entailment the minority) at natural base rates, plus +1,500 WinoGrande (volume). The 9,500
+# rows come from the backfill families, not from tool families: mmlu_aux -5,500, anli -2,000, and 2,000 fewer
+# glaive_native BACKFILL rows (nq's quota 4,500 -> 2,500: its pool yields 817 either way, so the deficit the backfill
+# covers shrinks by 2,000). Tools stay >= 40% (v2 42.2% -> ~40.2%).
+V3_NEW = {"acos": 1000, "nli4ct": 1000, "vast": 1300, "ragtruth": 1400, "hover": 1400, "habermas": 600, "mnli": 1300}
+WEIGHTS_100K_V3 = {**WEIGHTS_100K_V2, "mmlu_aux": WEIGHTS_100K_V2["mmlu_aux"] - 5500,
+                   "anli": WEIGHTS_100K_V2["anli"] - 2000, "nq": WEIGHTS_100K_V2["nq"] - 2000,
+                   "winogrande": WEIGHTS_100K_V2["winogrande"] + 1500, **V3_NEW}
+assert sum(WEIGHTS_100K_V3.values()) == sum(WEIGHTS_100K.values())
 BACKFILL = ("glaive_native", "mmlu_aux", "anli")
-DRAWS = {"b1-d4-draw45k": WEIGHTS_45K, "b1-draw100k": WEIGHTS_100K, "b1-draw100k-v2": WEIGHTS_100K_V2}
+DRAWS = {"b1-d4-draw45k": WEIGHTS_45K, "b1-draw100k": WEIGHTS_100K, "b1-draw100k-v2": WEIGHTS_100K_V2,
+         "b1-draw100k-v3": WEIGHTS_100K_V3}
 
 
 def digest(text: str) -> str:
@@ -593,6 +614,11 @@ def candidates(idx: dict, ex: dict, seed: int) -> dict[str, list[str]]:
     return out
 
 
+def v3_candidates(v3raw, seed: int) -> dict[str, list[str]]:
+    """Seeded candidate order of the v3 families (rows of data.b1_v3.Raw, overlap drops already removed)."""
+    return {f: v3raw.order(f, seed) for f, (_, kind, _) in FAMILIES.items() if kind in V3_KINDS}
+
+
 def _load_lines(idx: dict, want: set[str]) -> dict[str, str]:
     by_src: dict[str, set[str]] = collections.defaultdict(set)
     for rid in want:
@@ -668,6 +694,11 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
         raw_want = {r for f, (_, kind, _) in FAMILIES.items() if kind in ("claim", "verify")
                     for r in cands.get(f, [])[: int(quotas.get(f, 0) * 4) + 3000]}
         raw = Raw(build_dir, want=raw_want)
+    v3raw = None
+    if any(quotas.get(f, 0) for f, (_, kind, _) in FAMILIES.items() if kind in V3_KINDS):
+        from .b1_v3 import Raw as V3Raw
+        v3raw = V3Raw(build_dir, fams=tuple(f for f, (_, kind, _) in FAMILIES.items() if kind in V3_KINDS))
+        cands.update(v3_candidates(v3raw, seed))
     log(f"native ids {len(idx)}; loading {len(want)} candidate lines", flush=True)
     lines = _load_lines(idx, want)
     flt = Filter(tokdir, ex)
@@ -687,7 +718,8 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
     chosen: dict[str, list[dict]] = {}
     order = ["factchange", "glaive_native", "glaive_catalog16", "glaive_catalog_long", "toolace", "when2call",
              "gsm8k", "banking77_k16", "clinc150_k16", "banking77_full", "anli", "hellaswag", "winogrande", "sst5", "nq", "boolq", "mmlu_aux", "humicroedit_s1",
-             "humicroedit_s2", "clinc150_member", "banking77_member", "anli_claim", "mmlu_verify"]
+             "humicroedit_s2", "clinc150_member", "banking77_member", "anli_claim", "mmlu_verify",
+             "acos", "nli4ct", "vast", "ragtruth", "hover", "habermas", "mnli"]
     assert sorted(order) == sorted(FAMILIES)
     ext, ext_shas = _external(families_dir)
     missing = sorted(set(external_quotas or {}) - set(ext))
@@ -714,6 +746,16 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
         while len(got) < quota and cursor[fam] < len(ids):
             rid = ids[cursor[fam]]
             cursor[fam] += 1
+            if kind in V3_KINDS:
+                # the Index fingerprint already ran per row on the ITEM tier (data.b1_v3.overlap: every catalog; hits
+                # dropped in v3raw); here the full-record fingerprint is off because it fires on shared CONTEXT /
+                # template text by design (RAGTruth prompt templates "within N words", NLI4CT trial sections, HoVer
+                # Wikipedia documents), the two-tier rule of data/dedup.py. Every other check runs, including the
+                # Index item-text line / segment check that data.b1_check repeats.
+                rec = v3raw.record(fam, rid, seed)
+                if flt.accept(rec, fam, fingerprint=False):
+                    got.append(rec)
+                continue
             if kind in LOWRATE_KINDS:
                 from .b1_lowrate import VIEWS
                 rec = VIEWS[kind](raw, rid, seed)
@@ -807,7 +849,8 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
             "seed": seed, "families_dir": str(families_dir) if families_dir else None,
             "families_files_gz_sha256": ext_shas, "row_tokens": flt.row_tokens,
             "index_item_text_examples": dict(flt.hit_examples), "index_boilerplate": flt.index["boilerplate"],
-            "lowrate_raw": raw.ident if raw is not None else None}
+            "lowrate_raw": raw.ident if raw is not None else None,
+            "v3_raw": v3raw.ident if v3raw is not None else None}
 
 
 # ------------------------------------------------------------------ write
@@ -897,10 +940,10 @@ def write_draw(name: str, rows: list[dict], sel: dict, quotas: dict[str, int], o
         raise AssertionError("a row over 2,048 tokens reached the draw")
     lowrate = collections.defaultdict(collections.Counter)  # v2 views: gold label rates at the natural base rate
     for r in rows:
-        if r.get("aug", {}).get("b1_view", {}).get("kind") in LOWRATE_KINDS:
+        if r.get("aug", {}).get("b1_view", {}).get("kind") in LOWRATE_KINDS + V3_KINDS:
             for qid in r["questions"]:
                 lowrate[fam_of[r["id"]]][str(r["labels"][qid])] += 1
-            if not any(str(v) in ("yes", "SUPPORTED") for v in r["labels"].values()):
+            if not any(str(v) in ("yes", "SUPPORTED", "true", "Entailment", "entailment") for v in r["labels"].values()):
                 lowrate[fam_of[r["id"]]]["_records_with_no_positive"] += 1
             lowrate[fam_of[r["id"]]]["_records"] += 1
     noul = collections.Counter()
@@ -973,7 +1016,7 @@ def main(argv=None) -> int:
               "fingerprint": sel["fingerprint"], "encoder": sel["encoder"], "cell_filter": sel["cell_filter"],
               "families_dir": sel["families_dir"], "families_files_gz_sha256": sel["families_files_gz_sha256"],
               "backfilled": sel["backfilled"], "index_item_text_examples": sel["index_item_text_examples"],
-              "index_boilerplate": sel["index_boilerplate"], "lowrate_raw": sel["lowrate_raw"],
+              "index_boilerplate": sel["index_boilerplate"], "lowrate_raw": sel["lowrate_raw"], "v3_raw": sel["v3_raw"],
               "filter_reasons_over_selection": sel["filter_reasons"], "draws": {}}
     for name, q in draws.items():
         rows = [r for f in q for r in sel["chosen"].get(f, [])[: q[f] + sel["backfilled"].get(f, 0)]]

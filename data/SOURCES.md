@@ -32,18 +32,18 @@ Legend:
 | 12 | ANLI (L) | test r1–r3 | `facebook/anli` train r1–r3, **fetched** | 162,865 | **CC-BY-NC-4.0** | Premises recur across splits. The guard dropped 24.7% of ANLI train items drawn (premise shared with Index rows). Non-commercial licence; flag before any product use. |
 | 28 | WinoGrande (L) | xl validation 1,267 | `allenai/winogrande` winogrande_xl train, **fetched** | 40,398 | Apache-2.0 per the `allenai/winogrande` GitHub LICENSE; the HF card states none | Twin sentences: the `edit` matcher (≤1 token edit for 5–9 tokens, ≤2 from 10) catches one-word twins; MinHash alone did not. |
 | 29 | HellaSwag (L) | validation 10,042 | `Rowan/hellaswag` train, **fetched** | 39,905 | MIT | Same ActivityNet/WikiHow sources as validation. Endings are item-tier for the guard. |
-| 38 | ACOS (L) | test reviews (400-review subset scored) | Laptop-ACOS and Restaurant-ACOS train/dev | ~4.4k train sentences | see repo (verify) | Dedup against the full 1,399 test reviews, not only the subset. The guard does this. |
+| 38 | ACOS (L) | test reviews (400-review subset scored) | `NUSTM/ACOS` @ `45d179a` Laptop + Restaurant `*_quad_train.tsv`, **fetched** (v3) | 2,934 + 1,530 reviews | none stated in the repo (research release) | Dedup against the full 1,399 test reviews. Index groups of 64 questions render to ~9.7k tokens, so v3 rows carry a 10-question slice of the same inventory (`data/b1_v3.py`). |
 | 39 | FinEntity (L) | all 979 docs | **None** | — | ODC-BY (verify) | |
 | 40 | iSarcasmEval (L) | 5 test tasks | official train (En ~3.5k, Ar ~3.1k) | ~6.6k | research (verify) | Multilingual: Unicode-aware normalisation in the guard (fix found while testing: v1 dropped non-Latin text). |
-| 41 | VAST (L) | test 3,006 | official train | ~13.5k | research (verify) | |
-| 42 | NLI4CT (L) | 2024 test 5,500 | 2023/2024 train and dev | ~1.9k | research (verify) | Trial evidence is shared across splits. The statement is the item. |
-| 59 | RAGTruth (L) | 2,700 rows | official train split | ~15k responses | MIT | Check that response IDs don't overlap the Index rows' source responses. |
+| 41 | VAST (L) | test 3,006 | `emilyallaway/zero-shot-stance` @ `e7c4775` `vast_train.csv`, **fetched** (v3) | 13,477 rows / 1,845 posts | none stated in the repo (research release) | One row per post in the draw (posts carry several topics). |
+| 42 | NLI4CT (L) | 2024 test 5,500 | `ai-systems/Task-2-SemEval-2024` @ `7f32fa6` `training_data.zip` (train.json only; dev.json never read), **fetched** (v3) | 1,700 statements | none stated in the repo (research release) | Trial evidence is shared across splits (the zip is the Index's own trial archive, sha ed3d9819...). The statement is the item; rows whose trial text hits the fingerprint are dropped by the draw filter. |
+| 59 | RAGTruth (L) | 2,700 rows | `ParticleMedia/RAGTruth` @ `c103204` `response.jsonl` split=train + `source_info.jsonl`, **fetched** (v3) | 15,062 responses (truncated skipped) | MIT | train/test source_ids are disjoint (checked). |
 | 4 | BANKING77 (R) | test 3,080 | PolyAI train.csv, **fetched** | 10,003 | CC-BY-4.0 | Jet v6.2 / Lumma-Fev were penalised for exact test duplicates. The guard drops exact, one-word-edit (`edit`) and appended-text (`contain`) duplicates: 13.4% of the BANKING77 draw, some of them templated siblings (receipt). |
 | 5 | CLINC150+OOS (R) | test + oos_test 5,500 | `data_full.json` train + oos_train only, **fetched** | 15,100 | CC-BY-3.0 | The file contains all splits. The loader reads only `train`/`oos_train` (tested). |
 | 36 | BRIGHT (R) | 220 answerable queries | **None** (test-only benchmark) | — | CC-BY-4.0 | Its document corpus overlaps StackExchange/Wikipedia text. Logged as context overlap. |
 | 37 | Amazon ESCI (R) | 5,000 test pairs | `shopping_queries_dataset` split=train | ~1.4M pairs | Apache-2.0 | Queries recur across splits with different products. Dedup on (query, product). |
 | 56 | PhishNChips (R) | 2,000 rows | **None** known | — | see card | Proxy: public phishing corpora (licences vary). Not used yet. |
-| 61 | HoVer (R) | 4,000 rows | official train | ~18k claims | CC-BY-SA-4.0 | Built from HotpotQA/Wikipedia. Wikipedia passages (e.g. NQ) hit HoVer evidence as context overlap (logged). |
+| 61 | HoVer (R) | 4,000 rows (dev) | `hover-nlp/hover` @ `39b8469` `hover_train_release_v1.1.json` + official `wiki_wo_links.db` (evidence documents), **fetched** (v3) | 17,000 of 18,171 claims (1,171 with a missing document skipped) | CC-BY-SA-4.0 | Built from HotpotQA/Wikipedia: shared evidence documents are dropped by the draw filter; shared hpqa_ids are reported. |
 | 1 | BFCL (T) | 1,694 cases | **None** | — | Apache-2.0 | Proxies: ToolACE (**fetched**), Glaive FC v2 (Apache-2.0, **fetched** for the 150k build), xLAM-60k (CC-BY-4.0, gated). |
 | 2 | ToolRet (T) | 685 answerable queries | ToolRet training release (verify ID/licence) | — | verify | ToolRet's tool corpus overlaps RapidAPI tool docs in When2Call/ToolACE. Logged as context overlap (tool schemas carry no ToolRet label). |
 | 3 | API-Bank (T) | 508 decision points | API-Bank training dialogues (DAMO-ConvAI) | ~6k | MIT | Same 53-tool catalog: catalog text is context, dialogues are items. |
@@ -54,7 +54,7 @@ Legend:
 | 22 | POP909-CL (A) | 2,000 beats over 907 songs | **None** disjoint (909 songs total) | — | MIT (verify) | Symbolic chord data from other corpora is the only option. |
 | 23 | cfcolor (A) | 5,000 held-out pairs | original train-rating history | — | see release | The Index state already carries user history. Training on other users' ratings is allowed. Dedup on palettes. |
 | 48 | ForecastBench (A) | 10,139 forecasts resolving 2026-07-01..09-18 | question sets resolved **before 2026-07-01** | — | CC-BY-SA-4.0 (verify) | **Leakage:** any text or teacher with knowledge after the forecast date leaks outcomes (see TEACHERS.md cutoffs). |
-| 50 | Habermas Machine (A) | evaluation cohorts | training cohorts of the released data | — | CC-BY-4.0 (verify) | Questions recur across cohorts. The guard drops shared question text. |
+| 50 | Habermas Machine (A) | EVAL_* cohorts (IID/OOD test questions) | `hm_all_candidate_comparisons.parquet` (the Index's own source file, sha 7cf8d5ce...) TRAINING_DATA_V1-V4 rows with question.split TRAIN only, **fetched** (v3) | 1,184 rounds (initial iteration, complete human panel; 180 tied rounds skipped) | CC-BY-4.0 | Questions are split by question id; shared question text is checked. |
 | 64 | New Yorker (A) | matching test 528 | `jmhessel/newyorker_caption_contest` matching train | ~2.3k | CC-BY-4.0 | Contests (cartoons) are shared across task configs. Dedup on contest ID as well as text. |
 
 Display-only rows (MMLU, ARC-E/C, SimpleBench, RouterBench, SGD) are in the guard too. **RouterBench is never a train source**, because it embeds other benchmarks' items.
@@ -67,7 +67,7 @@ Display-only rows (MMLU, ARC-E/C, SimpleBench, RouterBench, SGD) are in the guar
 | BoolQ (`google/boolq` train) | passage + yes/no question → `noul` | 9,427 | CC-BY-SA-3.0 | **fetched** |
 | Natural Questions pairs (`sentence-transformers/natural-questions`) | query + 1 gold + up to 254 negatives → 8–255-option `choice`, or per-candidate yes/no | 100,231 | HF card states none; upstream Natural Questions is CC-BY-SA-3.0 | **fetched** |
 | ToolACE (`Team-ACE/ToolACE`) | tool catalog + dialogue → single-tool `choice` (+ none) or per-tool yes/no | 11,300 dialogues | Apache-2.0 | **fetched** |
-| MNLI / SNLI | NLI `choice` | 393k / 550k | mixed (OANC, CC-BY-SA) / CC-BY-SA-4.0 | not fetched |
+| MultiNLI (`nyu-mll/multi_nli` @ `da70db2` train), **fetched** (v3); SNLI not fetched | binary NLI `choice` (entailment vs not: entailment ~1/3) | 392,702 (40,000 seeded subset converted) | HF card: cc-by-3.0 / cc-by-sa-3.0 / mit / other | **fetched** (v3) |
 | CommonsenseQA, OpenBookQA, PIQA, SciQ | MCQ | 9.7k / 5k / 16k / 11.7k | MIT / Apache-2.0 / AFL-3.0 / CC-BY-NC-3.0 | not fetched |
 | AG News, DBpedia-14, TweetEval, GoEmotions | classification (4–28 labels) | 120k / 560k / ~50k / 43k | research / CC-BY-SA / mixed / Apache-2.0 | not fetched |
 | MS MARCO passage | retrieval up to 255 candidates | 500k queries | **non-commercial** | not fetched (licence) |

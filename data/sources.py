@@ -20,6 +20,7 @@ from . import config
 MAX_BYTES = 250 * 1024 * 1024
 
 HF = "https://huggingface.co/datasets/{repo}/resolve/{rev}/{path}"
+GH = "https://raw.githubusercontent.com"
 
 # id -> (kind, url-or-repo, revision, [files], license, index_overlap_note)
 REGISTRY: dict[str, dict] = {
@@ -76,12 +77,56 @@ REGISTRY: dict[str, dict] = {
                        "files": ["subtask-2/train.parquet"],
                        "license": "unspecified on HF; SemEval-2020 T7 research release (verify)",
                        "index": "Humicroedit (21): Index uses subtask-2 test; headlines recur across subtasks"},
+    # ---- added for b1-draw100k-v3 (2026-10-08; operator-approved official TRAIN splits). Each source lives in its
+    # own directory under SOURCES_DIR/dl-2026-10-08/<name>/ ("dir"); "urls" maps each file to its pinned URL. Data
+    # only: nothing there is executed; zip / sqlite / parquet are read as data by data/b1_v3.py (python -I).
+    "acos": {"dir": "dl-2026-10-08/acos", "rev": "45d179a3dcc6a3dedd848d81b16f2552454805fe",
+             "urls": {f: f"{GH}/NUSTM/ACOS/45d179a3dcc6a3dedd848d81b16f2552454805fe/data/{f}"
+                      for f in ("Laptop-ACOS/laptop_quad_train.tsv", "Restaurant-ACOS/rest16_quad_train.tsv")},
+             "license": "none stated in NUSTM/ACOS (no LICENSE file; research release, ACL 2021); no clause forbids training",
+             "index": "ACOS (38): Index uses laptop_quad_test + rest16_quad_test (1,399 reviews) at the same commit"},
+    "nli4ct": {"dir": "dl-2026-10-08/nli4ct", "rev": "7f32fa6c7db43e577f22e9fc6c28eef1cc6d223e",
+               "urls": {"training_data.zip": f"{GH}/ai-systems/Task-2-SemEval-2024/7f32fa6c7db43e577f22e9fc6c28eef1cc6d223e/training_data.zip"},
+               "license": "none stated in the repo (SemEval-2024 Task 2 research release); trials are public ClinicalTrials.gov records",
+               "index": "NLI4CT (42): Index uses test.json (5,500) at the same commit; this zip = train.json + dev.json + the "
+                        "shared CT corpus (Index trial_archive_sha256); only train.json statements are read"},
+    "vast": {"dir": "dl-2026-10-08/vast", "rev": "e7c4775182b184730f350995f8260579c9e066fe",
+             "urls": {"vast_train.csv": f"{GH}/emilyallaway/zero-shot-stance/e7c4775182b184730f350995f8260579c9e066fe/data/VAST/vast_train.csv"},
+             "license": "none stated in the repo (research release, ACL 2020; NYT comments)",
+             "index": "VAST (41): Index uses vast_test.csv (3,006)"},
+    "ragtruth": {"dir": "dl-2026-10-08/ragtruth", "rev": "c103204b9ce28d6bbad859304bf30de72b8ed8fe",
+                 "urls": {f: f"{GH}/ParticleMedia/RAGTruth/c103204b9ce28d6bbad859304bf30de72b8ed8fe/dataset/{f}"
+                          for f in ("response.jsonl", "source_info.jsonl")},
+                 "license": "MIT",
+                 "index": "RAGTruth (59): Index uses the 2,700 split=test responses; response.jsonl holds both splits and "
+                          "only split=train rows are read (source_ids of the two splits are disjoint)"},
+    "hover": {"dir": "dl-2026-10-08/hover", "rev": "39b84697f196308f398a251a7aea9b82ae0f0562", "max_bytes": 2_300_000_000,
+              "urls": {"hover_train_release_v1.1.json": f"{GH}/hover-nlp/hover/39b84697f196308f398a251a7aea9b82ae0f0562/data/hover/hover_train_release_v1.1.json",
+                       "wiki_wo_links.db": "https://nlp.cs.unc.edu/data/hover/wiki_wo_links.db"},
+              "license": "CC-BY-SA-4.0 (data, hover-nlp.github.io); code MIT; wiki_wo_links.db = the official HoVer "
+                         "Wikipedia dump (download_data.sh), read only for the supporting-fact documents",
+              "index": "HoVer (61): Index uses 4,000 labelled dev claims (test labels are not public)"},
+    "habermas": {"dir": "dl-2026-10-08/habermas", "rev": "7923b71966c14136077c78d7841bc9e1a182dfe0", "max_bytes": 450_000_000,
+                 "urls": {"hm_all_candidate_comparisons.parquet": "https://storage.googleapis.com/habermas_machine/datasets/hm_all_candidate_comparisons.parquet"},
+                 "license": "CC-BY-4.0 (data; google-deepmind/habermas_machine README @7923b71); code Apache-2.0",
+                 "index": "Habermas Machine (50): Index uses EVAL_* cohorts (question.split IID_TEST / OOD_TEST) of this same "
+                          "file (Index source_sha256 7cf8d5ce...); only TRAINING_DATA_V1-V4 rows with question.split TRAIN are read"},
+    "mnli": {"repo": "nyu-mll/multi_nli", "rev": "da70db2af9d09693783c3320c4249840212ee221", "dir": "dl-2026-10-08/mnli",
+             "files": ["data/train-00000-of-00001.parquet"],
+             "license": "HF card: cc-by-3.0 / cc-by-sa-3.0 / mit / other (OANC + fiction genres; see MultiNLI paper)",
+             "index": "none (MNLI is not an Index catalog; generic NLI source; fingerprint-checked against every Index row)"},
 }
 
 LOCK = config.MANIFEST_DIR / "sources.lock.json"
 
 
+def files(src: dict) -> list[str]:
+    return list(src.get("urls") or src["files"])
+
+
 def _url(src: dict, f: str) -> str:
+    if "urls" in src:
+        return src["urls"][f]
     if "repo" in src:
         return HF.format(repo=src["repo"], rev=src["rev"], path=f)
     return src["url"]
@@ -100,14 +145,15 @@ def _read_lock() -> dict:
 
 
 def local_path(sid: str, f: str) -> Path:
-    return config.SOURCES_DIR / sid / Path(f).name
+    return config.SOURCES_DIR / REGISTRY.get(sid, {}).get("dir", sid) / Path(f).name
 
 
 def fetch(sid: str) -> dict:
     src = REGISTRY[sid]
     lock = _read_lock()
     out = {}
-    for f in src["files"]:
+    cap = src.get("max_bytes", MAX_BYTES)
+    for f in files(src):
         dest = local_path(sid, f)
         dest.parent.mkdir(parents=True, exist_ok=True)
         key = f"{sid}/{f}"
@@ -116,15 +162,15 @@ def fetch(sid: str) -> dict:
             req = urllib.request.Request(url, headers={"User-Agent": "ssdm-data/0.1"})
             with urllib.request.urlopen(req, timeout=120) as r:
                 n = int(r.headers.get("Content-Length") or 0)
-                if n > MAX_BYTES:
-                    raise RuntimeError(f"{key}: {n} bytes exceeds the light-build cap {MAX_BYTES}")
+                if n > cap:
+                    raise RuntimeError(f"{key}: {n} bytes exceeds the cap {cap}")
                 tmp = dest.with_suffix(dest.suffix + ".part")
                 with open(tmp, "wb") as fh:
                     got = 0
                     for blk in iter(lambda: r.read(1 << 20), b""):
                         got += len(blk)
-                        if got > MAX_BYTES:
-                            raise RuntimeError(f"{key}: exceeded {MAX_BYTES} bytes")
+                        if got > cap:
+                            raise RuntimeError(f"{key}: exceeded {cap} bytes")
                         fh.write(blk)
                 tmp.replace(dest)
         sha = _sha256(dest)
