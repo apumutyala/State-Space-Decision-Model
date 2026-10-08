@@ -193,3 +193,13 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
    that are set.
 4. `build_context.sh <sha> <out> [<tkfaj results.jsonl> [<clef-flash results.jsonl>]]`; pin the optional files' sha256
    in `job_params.json` `reference_results_sha256` to include those comparisons.
+
+Mode `d1_fast` (`first_cell_job.sh d1_fast`, `job_params_d1_fast.json`, `m2_first_cell_rwkv7_d1_fast.json`; generic runner,
+default `train_dir` `m2-150k`): the D1 base cell plus the GPU-gated step fixes of stack/rwkv7/perf-step @953f3ac
+(job-2amiy, rule `perf_step_gate` v1): `row_plan` `min_cost` (6.58 s/step, 1.20x), `cont_plan` `single` (6.11, 1.29x,
+peak 63 GB), `compile_blocks` (5.63, 1.40x, peak 63 GB) vs greedy 7.89 on the same box; loss within 1.9e-4 relative,
+gradient cosine 0.998 for every variant including pure regrouping (the GPU reduction-order floor; Agent A overrode the
+0.999 bar on that evidence). Execution-only (not in the TrainConfig hash). Data, caps, schedule and cap arithmetic are
+D1's: **Worst case** **$66.03** (cap $70), expected ~$26.14; the same 190-min clock trains ~40 % more rows (time cap
+binds). The template future cells copy. With `row_options` set (D8), `cont_plan` `single` runs a step as one
+continuation call only when the step's summed K fits the cap; otherwise that step takes the per-group path.

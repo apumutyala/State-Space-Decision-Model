@@ -1,0 +1,115 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"
+   },
+   {
+    "reason": "fla not installed here",
+    "why": "this job's image pins no fla, so the fla source-mirror test has nothing to mirror"
+   },
+   {
+    "reason": "no bash",
+    "why": "the shell dry run needs bash; it runs wherever bash exists (the launch host and CI)"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "_comment": "jobs/perf_step_gate (JOB_SPEC.md): the m2 cell train step under greedy / min_cost / min_cost_single / min_cost_single_compile (rule.py), jobs/rwkv7 image. Expected minutes from job-tvuat (ckpt_rows_lean: 13 s load, 23 steps in 197 s, ladder ~20 s for 1024 + 2048) plus a 1-step gradient probe; the compiled variant adds an unmeasured inductor compile (assumed <= 8 min, capped 22). Caps >= 1.5x expected. Restart floor 1 as every m2 job (costs.attempts). Spec only, NOT submitted by this branch.",
+ "job": "perf-step-gate",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 55,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 8.5,
+ "reserve_minutes": 2,
+ "phase_caps_minutes": {
+  "setup": 6,
+  "download_wait": 2,
+  "greedy": 7,
+  "min_cost": 7,
+  "min_cost_single": 7,
+  "min_cost_single_compile": 22,
+  "decide": 2
+ },
+ "expected_minutes": {
+  "setup": 2.5,
+  "download_wait": 0.5,
+  "greedy": 4.5,
+  "min_cost": 4.3,
+  "min_cost_single": 4.0,
+  "min_cost_single_compile": 12.0,
+  "decide": 1.0
+ },
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "model_bytes": 26540800536,
+ "mission": "m2-perf-step-gate",
+ "decision_rule": "jobs/perf_step_gate/rule.py",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py).",
+  "command": "bash /opt/ssdm/m1/jobs/perf_step_gate/perf_step_job.sh",
+  "env": {},
+  "key": "m2-perf-step-gate",
+  "clock_lock": true,
+  "label": "perf_step_gate v1: greedy / min_cost / +single-cont / +compile (m2 cell step, tvuat mix)",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/PERF_STEP_GATE_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 300,
+    "grace_period_s": 900,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "the rwkv7 image with CMD -> perf_step_job.sh; code only, no data (row shapes from jobs/fla_rwkv7/train_mix_v2.json, synthetic ids)",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/perf_step_gate/perf_step_job.sh"
+  ],
+  "data": [],
+  "manifest_files": [
+   "jobs/perf_step_gate/rule.py",
+   "jobs/perf_step_gate/gate.py",
+   "jobs/perf_step_gate/preflight.py",
+   "jobs/fla_rwkv7/train_mix_v2.json",
+   "jobs/rwkv7/snapshot.sha256",
+   "heads/act_ckpt.py",
+   "heads/backbone.py",
+   "heads/rwkv7_lean.py",
+   "train/trainer.py"
+  ]
+ }
+}
