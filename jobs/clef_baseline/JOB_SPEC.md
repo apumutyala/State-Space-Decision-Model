@@ -175,6 +175,7 @@ Three measurements then replace the assumption:
 |---|---|---|---|---|---|---|
 | I-subset-27b (`job_params_index_subset.json`) | build 20; setup 10/15; probes 8/11; index 19/27; sens 3/5; native 4/6; score 3/4; report 1/2; reserve 3 | 73 | **$3.37** | $3.61 | **$10.20** | $10.50 |
 | I-full-27b (`job_params_index_full.json`) | build 20; setup 10/15; probes 12/16; index 104/141; sens 11/15; native 5/7; score 4/6; report 1/2; reserve 5 | 207 | **$8.27** | $10.25 | **$23.46** | $24 |
+| I-full-27b, GDN=reference (`job_params_index_full_reference.json`, section 4d; replaces job-jxevr) | build 20; setup 10/15; probes 12/16; index 180/250; sens 32/45; native 20/27; score 4/6; report 1/2; reserve 5 | 366 | **$13.81** | $18.12 | **$39.20** | $40 |
 | Clef-flash over-length arm (`job_params_overlength_flash.json`, `ROWS=overlength`) | build 20; setup 4/10; sens 3/5; score 2/3; report 1/2; reserve 3 | 23 | **$1.49** | $1.14 | **$5.25** | $6 |
 
 How the jobs fit together:
@@ -239,6 +240,10 @@ them fit in 32,768. Clef and Clef-flash share the tokenizer, so the set is the s
   32k-arm number.
 - **Teacher export (section 11).** It uses the same no-truncation decide path. About 550 of the 24k training records
   are `exhausted` and carry no probabilities, and the identity file reports that count.
+
+## 4d. GDN path for the Index phases: `CLEF_GDN_PATH=fast|reference` (job-jxevr, art-g7mqf)
+
+job-jxevr (I-full-27b @598cdba) stopped at S1 with exit 11. Parity against Cloudflare's `systemone` passed (max |dp| 5.0e-5, 64 rows), but `kernel_path` measured max |dp| **0.027** against the pre-registered 0.02 (16 rows, 48/48 GDN layers switched, no argmax flips; art-g7mqf `probes.json`). The Clef 27B subset draws had already been close to that bar: 0.0151 (job-d2u54) and 0.0164 (job-5mw9h). No tolerance is changed. Instead, `CLEF_GDN_PATH=reference` (params `job_params_index_full_reference.json`, launch mode `index_full_reference`) runs every Index phase on transformers' torch reference GDN, which is the arm `kernel_path` compares against. That covers S2 decide, the S2c 32k arm and the S2b native arm, through engine option `gdn_path=reference` (`clef_backend.reference_gdn_path`, held for the process; `FusedRMSNormGated` stays as in the probe). S1 is unchanged: parity gates, and `kernel_path` still runs and is reported with per-row dp and fast/reference timings. Under reference, `s1_ok` = parity ok AND every Index phase's `environment.json` shows `gdn_path=reference` with all found GDN layers on it. `report` fails (exit 17) otherwise. `result.json` records `gdn_path` and, per phase, the layer counts, `kernel_stack` and backend revision. If the reference 32k arm runs out of memory, the 51 rows are re-run on the fast path and labelled (`env/sens_gdn_path.json`, `result.gdn.sens`). The reference attempt is kept as `decide_32k_reference_oom/`. Caps are job-d2u54's measured fast rate x a conservative 4x (index 180 min expected, cap 250). The S1 preflight gates on the reference arm's own measured rate (`kernel_path.per_row.ref_ms`). The default `fast` leaves every command line byte-identical to before.
 
 ## 5. Exact `submit_job` fields (do not submit until the spend issue is approved)
 

@@ -48,6 +48,11 @@ ROWS="${ROWS:-full}"
 DRY="${CLEF_DRY_RUN:-0}"
 APP="${CLEF_APP:-/app}"
 DATA="${CLEF_DATA:-/data}"
+# CLEF_GDN_PATH (JOB_SPEC 4d): fast (default; fla / causal-conv1d kernels, unchanged) | reference (every Index phase --
+# S2 decide, S2c 32k arm, S2b native -- on transformers' torch reference GDN, the arm kernel_path compares against;
+# kernel_path still runs and is reported, the parity gate still gates; JOB=I subset/full only)
+GDN_PATH="${CLEF_GDN_PATH:-fast}"
+case "$GDN_PATH" in fast|reference) ;; *) echo "CLEF_GDN_PATH must be fast or reference"; exit 2 ;; esac
 case "$RELEASE" in
   clef-flash) REPO=Cloudflare/clef-flash; REV=17f0b0ad64efb65d273590632833508766b2aae6 ;;
   clef)       REPO=Cloudflare/clef;       REV=2f3de3dd85f379784083b0814d997ab627200f0c ;;
@@ -58,6 +63,8 @@ case "$JOB" in A|B|T) ;; I) case "$ROWS" in subset|full|overlength) ;; *) echo "
 # ROWS=overlength (Clef-flash only): the 51-row max_length-32768 sensitivity arm substituted into job-sgihj's decide
 # results. The Clef-27B jobs run the same arm in-job (phase sens) on their own results.
 [ "$ROWS" = "overlength" ] && [ "$RELEASE" != "clef-flash" ] && { echo "ROWS=overlength is the Clef-flash arm"; exit 2; }
+[ "$GDN_PATH" = "reference" ] && { [ "$JOB" != "I" ] || [ "$ROWS" = "overlength" ]; } && { echo "CLEF_GDN_PATH=reference is for JOB=I subset/full"; exit 2; }
+GDNOPT=(); [ "$GDN_PATH" = "reference" ] && GDNOPT=(--option gdn_path=reference)  # fast: the command lines are unchanged
 if [ "$DRY" = "1" ]; then
   [ -n "${CLEF_STANDIN:-}" ] || { echo "CLEF_DRY_RUN=1 needs CLEF_STANDIN"; exit 2; }
   DEVOPT=(--option device=cpu --option dtype=float32); DEVARG=(--device cpu)
@@ -84,7 +91,8 @@ mkdir -p "$HF_DIR"
 # job parameters (phase caps for the rate guard); JOB_PARAMS overrides, else the file for this job/release
 case "$JOB$ROWS" in
   Isubset) PFILE=jobs/clef_baseline/job_params_index_subset.json ;;
-  Ifull)   PFILE=jobs/clef_baseline/job_params_index_full.json ;;
+  Ifull)   PFILE=jobs/clef_baseline/job_params_index_full.json
+           [ "$GDN_PATH" = "reference" ] && PFILE=jobs/clef_baseline/job_params_index_full_reference.json ;;
   Ioverlength) PFILE=jobs/clef_baseline/job_params_overlength_flash.json ;;
   T*)      PFILE=jobs/clef_baseline/job_params_teacher_${RELEASE//-/_}.json ;;
   *)       PFILE="" ;;
@@ -212,10 +220,10 @@ EOF
   else
   N_ROWS=$(python -c "import gzip,sys; print(sum(1 for x in gzip.open(sys.argv[1],'rt',encoding='utf-8') if x.strip()))" "$ROWS_FILE")
   GRAD=(); [ "$JOB" = "A" ] && GRAD=(--grad-probe)
-  stage "S1 probes (parity, kernel_path, encodings, G8, G2b${GRAD:+, memory}) on $N_ROWS rows"
+  stage "S1 probes (parity, kernel_path, encodings, G8, G2b${GRAD:+, memory}) on $N_ROWS rows (gdn_path=$GDN_PATH)"
   timeout "$(cap probes 30)m" python -X utf8 -m baselines.clef_probes --model-dir "$SNAP" --release "$RELEASE" \
       --dev-rows "$ROWS_FILE" --out "$OUT/probes.json" --n-parity "${CLEF_N_PARITY:-64}" "${GRAD[@]}" "${DEVARG[@]}" \
-      > "$OUT/probes.log" 2>&1
+      --gdn-path "$GDN_PATH" > "$OUT/probes.log" 2>&1
   rc=$?; case $rc in 0) ;; 11) fail 11 probes ;; 124) fail 18 probes_timeout ;; *) fail 10 probes ;; esac
 
   CAPI=$(cap index "$([ "$RELEASE" = clef ] && echo 141 || echo 60)")
@@ -224,20 +232,36 @@ EOF
   ADV=(); [ "$DRY" = "1" ] && ADV=(--advisory)
   VOL=dev_full; [ "$ROWS" = subset ] && VOL=dev_subset
   python -X utf8 -m jobs.clef_baseline.price preflight --probes "$OUT/probes.json" --volume "$VOL" \
-      --cap-min "$CAPI" --out "$OUT/env/preflight_index.json" "${ADV[@]}" > "$OUT/env/preflight_index.log" 2>&1
+      --cap-min "$CAPI" --out "$OUT/env/preflight_index.json" --gdn-path "$GDN_PATH" "${ADV[@]}" \
+      > "$OUT/env/preflight_index.log" 2>&1
   rc=$?; case $rc in 0) ;; 15) fail 18 index_preflight ;; *) fail 13 index_preflight ;; esac
   stage "S2 Index DEV ($ROWS: $N_ROWS rows), decide path, batch 1, sequential; live rate guard"
   AFTER=$([ "$ROWS" = subset ] && echo 3 || echo 8)
   guarded index "$CAPI" index/decide/results.jsonl "$N_ROWS" "$AFTER" 12 -- \
     python -X utf8 -m decision_index run --engine baselines.clef_index_engine:ClefIndexEngine \
-      --option model_dir="$SNAP" --option release="$RELEASE" --option path=decide "${DEVOPT[@]}" \
+      --option model_dir="$SNAP" --option release="$RELEASE" --option path=decide "${DEVOPT[@]}" "${GDNOPT[@]}" \
       --rows "$ROWS_FILE" --out "$OUT/index/decide"
   if [ "$N_SENS" -gt 0 ]; then
     stage "S2c over-length sensitivity: $N_SENS rows at max_length $SENS_MAX (decide path; declared, JOB_SPEC 4c)"
+    SENS_GDN="$GDN_PATH"
     timeout "$(cap sens 15)m" python -X utf8 -m decision_index run --engine baselines.clef_index_engine:ClefIndexEngine \
         --option model_dir="$SNAP" --option release="$RELEASE" --option path=decide --option max_length="$SENS_MAX" \
-        "${DEVOPT[@]}" --rows "$OUT/index/overlength-rows.jsonl.gz" --out "$IDX/decide_32k" > "$IDX/decide_32k.log" 2>&1
-    rc=$?; case $rc in 0) ;; 124) fail 18 sens_timeout ;; *) fail 12 sens ;; esac
+        "${DEVOPT[@]}" "${GDNOPT[@]}" --rows "$OUT/index/overlength-rows.jsonl.gz" --out "$IDX/decide_32k" > "$IDX/decide_32k.log" 2>&1
+    rc=$?
+    if [ "$rc" != 0 ] && [ "$rc" != 124 ] && [ "$GDN_PATH" = "reference" ] && grep -qi "out of memory" "$IDX/decide_32k.log"; then
+      # JOB_SPEC 4d: the 32k arm only, re-run on the FAST path and LABELLED (env/sens_gdn_path.json -> result.json
+      # gdn.sens). The reference attempt is kept as evidence (moved, never deleted); the 16k Index stays on the reference.
+      mv "$IDX/decide_32k" "$IDX/decide_32k_reference_oom"; mv "$IDX/decide_32k.log" "$IDX/decide_32k_reference_oom.log"
+      SENS_GDN=fast
+      stage "S2c 32k arm: reference GDN out of memory; re-running the $N_SENS rows on the FAST path (labelled)"
+      timeout "$(cap sens 15)m" python -X utf8 -m decision_index run --engine baselines.clef_index_engine:ClefIndexEngine \
+          --option model_dir="$SNAP" --option release="$RELEASE" --option path=decide --option max_length="$SENS_MAX" \
+          "${DEVOPT[@]}" --rows "$OUT/index/overlength-rows.jsonl.gz" --out "$IDX/decide_32k" > "$IDX/decide_32k.log" 2>&1
+      rc=$?
+    fi
+    FB=null; [ "$SENS_GDN" != "$GDN_PATH" ] && FB='"reference out of memory at 32k"'
+    echo "{\"gdn_path_requested\": \"$GDN_PATH\", \"gdn_path\": \"$SENS_GDN\", \"fallback\": $FB}" > "$OUT/env/sens_gdn_path.json"
+    case $rc in 0) ;; 124) fail 18 sens_timeout ;; *) fail 12 sens ;; esac
   fi
   python -X utf8 - "$OUT/probes.json" "$ROWS_FILE" "$OUT/index/native-rows.jsonl.gz" <<'EOF' || fail 12 index_native_rows
 import gzip, json, sys
@@ -252,7 +276,7 @@ EOF
   N_NAT=$(python -c "import gzip,sys; print(sum(1 for x in gzip.open(sys.argv[1],'rt',encoding='utf-8') if x.strip()))" "$OUT/index/native-rows.jsonl.gz")
   stage "S2b Index DEV, Clef native systemone on differing/truncated rows + parity sample ($N_NAT rows)"
   timeout "$(cap native 15)m" python -X utf8 -m decision_index run --engine baselines.clef_index_engine:ClefIndexEngine \
-      --option model_dir="$SNAP" --option release="$RELEASE" --option path=native --option verify=false "${DEVOPT[@]}" \
+      --option model_dir="$SNAP" --option release="$RELEASE" --option path=native --option verify=false "${DEVOPT[@]}" "${GDNOPT[@]}" \
       --rows "$OUT/index/native-rows.jsonl.gz" --out "$OUT/index/native" > "$OUT/index/native.log" 2>&1
   rc=$?; case $rc in 0) ;; 124) fail 18 index_native_timeout ;; *) fail 12 index_native ;; esac
   if [ "$DRY" = "1" ]; then  # fault injection, dry run only: a partial write / a lost row must end in exit 17
@@ -312,7 +336,7 @@ fi
 
 stage "S5 report"
 python -X utf8 jobs/clef_baseline/summarize.py report --out-dir "$OUT" --release "$RELEASE" --job "$JOB" \
-    --rows "$ROWS" --dry-run "$DRY" > "$OUT/result.json"
+    --rows "$ROWS" --dry-run "$DRY" --gdn-path "$GDN_PATH" > "$OUT/result.json"
 rc=$?; case $rc in 0) ;; 3|4) fail 17 report ;; *) fail 16 report ;; esac
 cp "$OUT/result.json" "${GMN_RESULT_PATH:-$OUT/result.json}" 2>/dev/null || true
 ( cd "$OUT" && find . -type f ! -name SHA256SUMS ! -name heartbeat ! -name watchdog.log -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )

@@ -15,6 +15,7 @@ SPEC = (ROOT / "jobs/clef_baseline/JOB_SPEC.md").read_text(encoding="utf-8")
 TREE = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
 RUNNER = (ROOT / "jobs/clef_baseline/run_job.sh").read_text(encoding="utf-8")
 NAMES = {"clef_index_subset": "job_params_index_subset.json", "clef_index_full": "job_params_index_full.json",
+         "clef_index_full_reference": "job_params_index_full_reference.json",
          "clef_teacher_flash": "job_params_teacher_clef_flash.json", "clef_teacher_clef": "job_params_teacher_clef.json",
          "clef_overlength_flash": "job_params_overlength_flash.json"}
 
@@ -221,3 +222,29 @@ def test_preflight_zero_median_fails_closed():
     rows = [{"run_id": str(i), "ms": 0.0 if i < 40 else 500.0, "tokens": 1000} for i in range(64)]
     r = P.preflight({"release": "clef", "parity_timing": rows}, "dev_subset", 27)
     assert r["ok"] is False and "median" in r["note"]
+
+
+# ----------------------------------------------------------------------------- GDN=reference (JOB_SPEC 4d, job-jxevr)
+def test_reference_caps_cover_4x_the_measured_fast_rate_and_the_rederive_rule():
+    full, ref = costs.load("clef_index_full"), costs.load("clef_index_full_reference")
+    assert ref["env"]["CLEF_GDN_PATH"] == "reference" and ref["submit"]["env"] == ref["env"]
+    assert P.REFERENCE_SLOWDOWN_FLOOR == 4.0
+    proj_fast = 46.2  # price.rederive on job-d2u54's rate_guard_index.json (2.373x Clef-flash), startup included
+    proj = P.REFERENCE_SLOWDOWN_FLOOR * proj_fast
+    assert ref["expected_minutes"]["index"] >= 0.97 * proj
+    assert ref["phase_caps_minutes"]["index"] >= max(1.3 * proj, 1.28 * proj / 0.95) * 0.97  # rederive's rule
+    for ph in ("sens", "native"):  # the other reference phases: caps >= 4x the fast params' expected minutes
+        assert ref["phase_caps_minutes"][ph] >= 4 * full["expected_minutes"][ph]
+    assert ref["max_duration_minutes"] == sum(ref["phase_caps_minutes"].values()) + ref["reserve_minutes"]
+
+
+def test_reference_preflight_uses_the_reference_arms_own_timing():
+    # art-g7mqf-shaped probes: no per_row timing -> live guard only, never a multiplier on compile-spiked fast timing
+    assert P.preflight({"parity_timing": [{"ms": 35000, "tokens": 4590}] * 8}, "dev_full", 250, "reference")["measured"] is False
+    rows = [{"run_id": f"r{i}", "tokens": 1000, "fast_ms": 100.0, "ref_ms": 400.0} for i in range(16)]
+    r = P.preflight({"kernel_path": {"per_row": rows}, "release": "clef"}, "dev_full", 250, "reference")
+    assert r["measured"] and r["n_rows"] == 15 and r["ref_over_fast"] == 4.0
+    s = 400.0 / (P.SGIHJ["row_ms_intercept"] + P.SGIHJ["row_ms_per_token"] * 1000)
+    assert abs(r["speed_vs_flash_sgihj"] - round(s, 3)) < 1e-9 and r["ok"] == (r["projected_min"] <= 0.95 * 250)
+    slow = [{**x, "ref_ms": 4000.0} for x in rows]
+    assert P.preflight({"kernel_path": {"per_row": slow}}, "dev_full", 250, "reference")["ok"] is False

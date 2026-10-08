@@ -159,11 +159,40 @@ PREFLIGHT_MARGIN = 0.95    # same rule as jobs/common/rate_guard.py: stop if the
 EXIT_TOO_SLOW = 15         # rate_guard's code; run_job.sh maps it to 18
 
 
-def preflight(probes: dict, volume: str, cap_min: float) -> dict:
-    """Measured-rate preflight before the Index phase. The S1 parity sample runs real DEV rows through the same
+#: gdn_path=reference (JOB_SPEC 4d): planning slowdown of the torch reference GDN over the fast kernels, end to end
+#: per decide row. No measurement existed when the caps were set (art-g7mqf logs no per-arm times), so the caps of
+#: job_params_index_full_reference.json are sized on this conservative factor x job-d2u54's measured fast rate.
+REFERENCE_SLOWDOWN_FLOOR = 4.0
+
+
+def reference_preflight(probes: dict, volume: str, cap_min: float) -> dict:
+    """The reference path's OWN rate, measured in S1: the kernel_path arms time the torch-reference decide per row
+    (``per_row.ref_ms``, rows <= 2,048 tokens, after the parity pass compiled the fast path's shapes). s = sum ref_ms /
+    the job-sgihj Clef-flash model's ms for those rows (first row dropped as warm-up). The fast-path parity timing is
+    NOT used: it carries one-time Triton compiles (art-g7mqf: 3-4 rows of 12-35 s) that a multiplier would inflate."""
+    rows = [x for x in ((probes.get("kernel_path") or {}).get("per_row") or []) if x.get("ref_ms") and x.get("tokens")]
+    rows = rows[1:]
+    if not rows:
+        return {"ok": True, "measured": False, "gdn_path": "reference",
+                "note": "no kernel_path per-row timing; live rate guard only (caps sized on the 4x floor)"}
+    model = sum(SGIHJ["row_ms_intercept"] + SGIHJ["row_ms_per_token"] * x["tokens"] for x in rows)
+    s = sum(x["ref_ms"] for x in rows) / model
+    fast = sum(x["fast_ms"] for x in rows if x.get("fast_ms"))
+    v = VOLUMES[volume]
+    proj = s * decide_minutes("clef-flash", v["rows"], v["tokens"]) + load_minutes(probes.get("release", "clef"))
+    return {"ok": proj <= PREFLIGHT_MARGIN * cap_min, "measured": True, "gdn_path": "reference", "n_rows": len(rows),
+            "speed_vs_flash_sgihj": round(s, 3), "ref_over_fast": round(sum(x["ref_ms"] for x in rows) / fast, 3)
+            if fast else None, "projected_min": round(proj, 1), "cap_min": cap_min, "volume": volume,
+            "planning_floor": REFERENCE_SLOWDOWN_FLOOR}
+
+
+def preflight(probes: dict, volume: str, cap_min: float, gdn_path: str = "fast") -> dict:
+    """gdn_path=reference: ``reference_preflight`` (the reference arm's own measured rate). Fast path: Measured-rate preflight before the Index phase. The S1 parity sample runs real DEV rows through the same
     decide path on THIS box; s = measured ms / the job-sgihj Clef-flash model's ms for those same rows (token counts
     from the run). Projected phase minutes = s x the Clef-flash projection for the job's volume + load. For Clef this
     replaces the FLOPs-ratio assumption with a measurement before the long phase starts."""
+    if gdn_path == "reference":
+        return reference_preflight(probes, volume, cap_min)
     t = [x for x in probes.get("parity_timing") or [] if x.get("tokens")][PREFLIGHT_WARMUP_ROWS:]
     if not t:
         return {"ok": True, "measured": False, "note": "no parity timing (old probes file); live guard only"}
@@ -193,7 +222,7 @@ def preflight(probes: dict, volume: str, cap_min: float) -> dict:
             "slow_rows_unconfirmed": sum(1 for i, h in enumerate(hi) if h and i not in sset),
             "too_many_spikes": too_many, "warmup_min_charged_once": round(warm, 2),
             "projected_min": round(proj, 1), "cap_min": cap_min, "volume": volume,
-            "flops_ratio_prediction": round(flops_ratio(), 3)}
+            "flops_ratio_prediction": round(flops_ratio(), 3), "gdn_path": "fast"}
 
 
 def main(argv=None) -> int:
@@ -208,8 +237,9 @@ def main(argv=None) -> int:
         ap.add_argument("--cap-min", type=float, required=True)
         ap.add_argument("--out", required=True)
         ap.add_argument("--advisory", action="store_true", help="record only (CPU dry run: a stand-in's rate is meaningless)")
+        ap.add_argument("--gdn-path", choices=("fast", "reference"), default="fast")
         a = ap.parse_args(argv)
-        r = preflight(json.loads(Path(a.probes).read_text(encoding="utf-8")), a.volume, a.cap_min)
+        r = preflight(json.loads(Path(a.probes).read_text(encoding="utf-8")), a.volume, a.cap_min, a.gdn_path)
         r["advisory"] = a.advisory
         Path(a.out).write_text(json.dumps(r, indent=1), encoding="utf-8")
         print(json.dumps(r))

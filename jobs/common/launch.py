@@ -145,6 +145,7 @@ _CLEF_TEACHER = {**_CLEF_IMAGE, "data": _CLEF_TEACHER_DATA, "manifest_files": ["
 CONTEXT_RECIPES: dict[tuple[str, str | None], dict] = {
     ("clef_baseline", "index_subset"): _CLEF_INDEX,
     ("clef_baseline", "index_full"): _CLEF_INDEX,
+    ("clef_baseline", "index_full_reference"): _CLEF_INDEX,  # CLEF_GDN_PATH=reference (JOB_SPEC 4d)
     ("clef_baseline", "overlength_flash"): _CLEF_INDEX,
     ("clef_baseline", "teacher_clef_flash"): _CLEF_TEACHER,
     ("clef_baseline", "teacher_clef"): _CLEF_TEACHER,

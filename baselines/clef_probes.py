@@ -46,26 +46,36 @@ def kernel_path_check(decider, model, rows, release, max_tokens=KERNEL_MAX_TOKEN
     kernels in bf16 never agree bit-for-bit on every probability; exact equality means the switch did not
     reach the forward), plus the tolerance and argmax rules.
     """
-    picked, worst, flips = [], 0.0, []
+    picked, worst, flips, per_row = [], 0.0, [], []
     found = already_ref = switched = 0
     for r in rows:
         if len(picked) >= n:
             break
         req = {"model": release, "state": r["state"], "questions": r["questions"]}
+        t0 = time.perf_counter()
         fast = decider.decide(req)["ssdm"]
+        t_fast = time.perf_counter() - t0
         if fast["status"] != "ok" or fast["diagnostics"]["input_counts"]["max_call_input_tokens"] > max_tokens:
             continue
         ctx = CB.reference_gdn_path(model)
         with ctx:
+            t0 = time.perf_counter()
             ref = decider.decide(req)["ssdm"]
+            t_ref = time.perf_counter() - t0
         found, already_ref, switched = ctx.n_found, ctx.n_already_reference, ctx.n_switched
         picked.append(r["_evaluation"]["run_id"])
+        row_dp = 0.0
         for qid, pf in fast["raw_probabilities"].items():
             pr = ref["raw_probabilities"][qid]
-            worst = max(worst, max(abs(pf[k] - pr[k]) for k in pf))
+            row_dp = max(row_dp, max(abs(pf[k] - pr[k]) for k in pf))
+            worst = max(worst, row_dp)
             top = sorted(pf.values())
             if len(top) > 1 and top[-1] - top[-2] > KERNEL_MARGIN and max(pf, key=pf.get) != max(pr, key=pr.get):
                 flips.append([r["_evaluation"]["run_id"], qid])
+        # report only (JOB_SPEC 4d): where the drift sits, and the reference path's measured slowdown on this box
+        per_row.append({"run_id": r["_evaluation"]["run_id"],
+                        "tokens": fast["diagnostics"]["input_counts"]["max_call_input_tokens"],
+                        "max_abs_dp": row_dp, "fast_ms": round(1000 * t_fast, 2), "ref_ms": round(1000 * t_ref, 2)})
     reasons = []
     if not picked:
         reasons.append("no eligible row")
@@ -80,7 +90,7 @@ def kernel_path_check(decider, model, rows, release, max_tokens=KERNEL_MAX_TOKEN
     return {"n": len(picked), "run_ids": picked, "gdn_layers_found": found,
             "gdn_layers_already_reference": already_ref, "gdn_layers_switched": switched,
             "max_abs_dp": worst, "argmax_flips": flips, "tol": KERNEL_TOL, "margin": KERNEL_MARGIN,
-            "fail_reasons": reasons, "ok": not reasons}
+            "fail_reasons": reasons, "ok": not reasons, "per_row": per_row}
 
 
 def read_rows(path: str):
@@ -102,6 +112,9 @@ def main(argv=None) -> int:
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--no-verify", action="store_true")
     ap.add_argument("--grad-probe", action="store_true", help="one GCG-lite gradient step at HP_GATE size (memory)")
+    ap.add_argument("--gdn-path", choices=("fast", "reference"), default="fast",
+                    help="the GDN path the Index phases will run (JOB_SPEC 4d): reference = kernel_path is still run "
+                         "and reported but does not gate (the decide runs on the reference it compares against)")
     a = ap.parse_args(argv)
     try:
         backend, model, processor = CB.load_clef(a.model_dir, a.release, device=a.device, verify=not a.no_verify)
@@ -111,7 +124,8 @@ def main(argv=None) -> int:
     jsm, tok = backend.jsm, processor.tokenizer
     native_enc = CB.ClefEncoder(tok, jsm, "clef_native")
     decider = CB.build_decider(backend)
-    out: dict = {"release": a.release, "revision": backend.revision(), "files_sha256": backend.files_sha256}
+    out: dict = {"release": a.release, "revision": backend.revision(), "files_sha256": backend.files_sha256,
+                 "gdn_path": a.gdn_path, "kernel_path_gating": a.gdn_path == "fast"}
 
     # 2. encodings over every DEV row (tokenizer only). The native arm must cover EVERY row where the decide
     #    path does not run the same forward Clef would: ids differ, Clef truncates, our encoder refuses, or the
@@ -252,7 +266,16 @@ def main(argv=None) -> int:
     Path(a.out).write_text(json.dumps(out, indent=1, default=str), encoding="utf-8")
     print(json.dumps({"parity": out["parity"], "kernel_path_ok": out["kernel_path"]["ok"],
                       "native_arm_rows": len(native_rows), "g8": {k: v["decide_status"] for k, v in g8.items()}}), flush=True)
-    return 0 if out["parity"]["ok"] and out["kernel_path"]["ok"] else 11
+    return s1_exit(out["parity"]["ok"], out["kernel_path"]["ok"], a.gdn_path)
+
+
+def s1_exit(parity_ok: bool, kernel_path_ok: bool, gdn_path: str = "fast") -> int:
+    """Exit 11 unless the S1 gates pass. The parity gate (decide vs Cloudflare's systemone) always gates. kernel_path
+    (fast kernels vs the torch reference) gates the fast path only: under gdn_path=reference the Index runs ON the
+    reference, and summarize.report requires every Index phase's environment.json to show it (s1_ok)."""
+    if gdn_path not in ("fast", "reference"):
+        raise ValueError(gdn_path)
+    return 0 if parity_ok and (kernel_path_ok or gdn_path == "reference") else 11
 
 
 if __name__ == "__main__":
