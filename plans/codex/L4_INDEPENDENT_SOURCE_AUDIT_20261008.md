@@ -63,6 +63,13 @@ estimate-to-reference-to-inventory crosswalk. Therefore the 44-reference
 count cannot yet be used as 44 independent worlds, and no wind data was
 imported into L4.
 
+An [accessible NY DPS-hosted copy of the article](https://documents.dps.ny.gov/public/Common/ViewDoc.aspx?DocRefId=%7B309B2270-5EF1-4DE1-9B56-A4A1D1A6F4C9%7D&DocTitle=Avian_25_Dolan+Heath_2012_LC+GHG+emissions+of+utility-scale+wind+power)
+exposes Table 1's author/year, onshore/offshore classification, and study
+characteristics. The paper states that Supporting Information Table S3 contains
+individual estimates by publication for each harmonization step. This narrows
+the recovery target to S1 Table S3 joined to Table 1 and the primary papers;
+the accessible copy does not include S1 itself.
+
 Smallest next step: recover the old OpenEI land-based wind export or the paper's
 study-level supplemental table, then join each estimate to its primary study
 and shared background inventory family. Count only the surviving groups after
