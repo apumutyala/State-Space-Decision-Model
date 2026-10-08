@@ -203,7 +203,11 @@ def preflight(fit_dir: Path, census_dir: Path, *, diagnostic_worlds: int = 6) ->
         raise PreflightError("pinned compressed and plain fit exports differ")
     if (manifest.get("training_records_sha256") != _sha(fit["training_records.jsonl"])
             or manifest.get("training_records_gzip_sha256") != _sha(fit["training_records.jsonl.gz"])
-            or manifest.get("records") != 3072 or summary.get("aggregate", {}).get("rows") != 3072
+            or manifest.get("split") != "development_train" or manifest.get("records") != 3072
+            or summary.get("tokenizer_revision") != TOKENIZER_REVISION
+            or summary.get("template") != ROW_TEMPLATE or summary.get("layout") != LAYOUT
+            or summary.get("model_loaded") is not False or summary.get("torch_imported") is not False
+            or summary.get("aggregate", {}).get("rows") != 3072
             or summary.get("aggregate", {}).get("prompt_tokens", {}).get("max", MAX_TOKENS + 1) > MAX_TOKENS
             or summary.get("aggregate", {}).get("max_options") != MAX_OPTIONS
             or summary.get("aggregate", {}).get("longest_prompt_plus_continuation_tokens", {}).get(
