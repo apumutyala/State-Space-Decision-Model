@@ -38,6 +38,35 @@ single comparable collection with 20 independent study groups:
   Country/year rows and successive releases do not establish independent
   studies. JRC notes the three measures must not be mixed.
 
+## Land-based wind candidate follow-up
+
+[Dolan & Heath (2012)](https://onlinelibrary.wiley.com/doi/10.1111/j.1530-9290.2012.00464.x)
+report 49 references and 126 estimates across onshore and offshore wind; the
+[NREL harmonization fact sheet](https://www.nrel.gov/docs/fy13osti/57131.pdf)
+breaks this out as 44 references and 107 estimates for land-based wind. The
+paper says the reported values are harmonized to consistent gross system
+boundaries and selected performance parameters, so this is a promising
+single-technology source pool to investigate. The 44 references are candidate
+groups only: estimates can repeat within a reference, and references can
+share inventories or model inputs.
+
+The current [NLR catalog submission 171](https://data.nlr.gov/submissions/171)
+does not expose those 107 source estimates: its 28 KB workbook is described as
+quartile estimates by lifecycle stage and technology. The paper lists
+Supporting Information S1 as further detail on screening and harmonization,
+but the publisher's download returned HTTP 403 during this audit. The old
+OpenEI LCA endpoint cited by the NREL fact sheet now redirects to the NREL
+project page. I did not find an accessible, machine-readable
+estimate-to-reference-to-inventory crosswalk. Therefore the 44-reference
+count cannot yet be used as 44 independent worlds, and no wind data was
+imported into L4.
+
+Smallest next step: recover the old OpenEI land-based wind export or the paper's
+study-level supplemental table, then join each estimate to its primary study
+and shared background inventory family. Count only the surviving groups after
+checking that the L4 boundary, functional unit, statistic, and uncertainty
+labels match. Until then, keep the harmonization report as one source-world.
+
 ## IPCC underlying-study trace
 
 [IPCC AR5 Annex III, Table A.III.2](https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf#page=7)
