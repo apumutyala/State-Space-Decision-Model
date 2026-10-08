@@ -400,3 +400,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: selecting a relevant module instead of inspecting and selecting only its no-model test nodes; the initial tool wrapper also discarded the running-session identifier.
 - **Check:** the receipt command calls `guard_no_model_nodes` before pytest collection; `tests/test_m2_multislot_loader.py::test_no_model_receipt_guard_refuses_broad_modules_before_collection` rejects the broad controlsafe module, model-training module, broad directories and unallowlisted options. Only inspected exact legacy nodes and the focused loader/lint modules are admitted.
 - **Status:** ENFORCED for the documented receipt command only; arbitrary shell commands are outside this narrow guard.
+
+### L-41 Distinct storage keys can alias the same expanded training Item id
+- Date: 2026-10-07 (Issue #178 independent review).
+- Symptom: flat task `task` / question `slot/answer` and nested task `task/slot` / question `answer` both emitted Item id `task/slot/answer`; calibration recovered the wrong task for the flat row. Both grouped and ungrouped mixed inputs were affected.
+- Cost: $0; found in synthetic review before any model use for this correction.
+- Root cause: slash-free qids were enforced only on nested rows; storage-key and task/question-pair uniqueness did not imply unique expanded Item identities.
+- **Check:** `_check_development_item_ids` validates globally unique expanded Item ids and slash-free qids for every row whenever any input is grouped/nested, before split. `tests/test_m2_multislot_loader.py::test_flat_nested_expanded_item_collision_refuses_before_split` covers both row orders and grouping modes; `test_every_row_on_new_development_path_requires_slash_free_qids` covers flat/multi-question rows; `test_pure_legacy_slash_qids_retain_exact_existing_behavior` preserves the legacy boundary.
+- **Status:** ENFORCED for the new development loader paths; pure legacy behavior remains unchanged.

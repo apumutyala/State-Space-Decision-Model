@@ -9,8 +9,9 @@ row receives storage key `task_id/qid`; its record id stays `task_id`, so the ex
 `Item.id=task_id/qid` and record calibration groups every task's slots together. Complete multi-question records
 retain their record-id storage key. Reject storage-key collisions, repeated task/question pairs, invalid gold
 options, missing or mismatched labels/questions, repeated JSON members, ambiguous flat/nested envelopes and
-inconsistent task/world identities before splitting or tokenization. Nested question ids containing `/` refuse
-because existing calibration uses the final slash to recover task identity.
+inconsistent task/world identities before splitting or tokenization. Whenever any input row is nested or grouped,
+all rows must have slash-free question ids and globally unique expanded Item ids, because existing calibration uses
+the final slash to recover task identity. Pure legacy files retain their historical handling of question ids.
 
 In development mode (neither `train_set` nor `cohort_sha256`), split complete worlds when `group_id` is present and
 complete tasks otherwise, then expand all selected storage keys. Configured `n_train_records`/`n_eval_records`

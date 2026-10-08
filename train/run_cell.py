@@ -126,12 +126,14 @@ def _cell_records(records_path: str, *, development: bool) -> dict:
     from decide.schema import RequestRejected, canonical_options, validate_legacy
 
     recs, pairs, groups = {}, set(), {}
+    new_development_path = False
     with gzip.open(records_path, "rt", encoding="utf-8") as f:
         for line in f:
             r = json.loads(line, object_pairs_hook=_json_record)
             if not isinstance(r, dict) or not isinstance(r.get("id"), str) or not r["id"]:
                 raise ValueError("record id must be a non-empty string")
             nested = "request" in r
+            new_development_path |= nested or "group_id" in r
             if not nested and ("state" not in r or "questions" not in r):
                 raise ValueError(f"{r['id']}: missing state/questions")
             if not isinstance(r.get("labels"), dict):
@@ -145,8 +147,6 @@ def _cell_records(records_path: str, *, development: bool) -> dict:
             questions = req["questions"]
             if not isinstance(labels, dict) or set(labels) != set(questions):
                 raise ValueError(f"{r['id']}: labels must exactly match questions")
-            if nested and any("/" in qid for qid in questions):
-                raise ValueError(f"{r['id']}: nested question ids cannot contain '/' (task calibration identity)")
             group = rec.get("group_id")
             if "group_id" in rec and (not isinstance(group, str) or not group):
                 raise ValueError(f"{r['id']}: group_id must be a non-empty string")
@@ -166,7 +166,26 @@ def _cell_records(records_path: str, *, development: bool) -> dict:
                     raise ValueError(f"{r['id']}/{qid}: label is not among the question's options")
                 pairs.add(pair)
             recs[key] = rec
+    if development and new_development_path:
+        _check_development_item_ids(recs)
     return recs
+
+
+def _check_development_item_ids(recs: dict) -> None:
+    """Check expanded identities for every row of a new path, including flat rows mixed with nested slots.
+
+    Item/calibration consumers recover the task by the final slash. Storage-key uniqueness alone cannot exclude
+    ``task``/``slot/answer`` aliasing ``task/slot``/``answer``. Pure legacy files do not enter this new guard."""
+    seen = set()
+    for rec in recs.values():
+        for qid in rec["request"]["questions"]:
+            item_id = f"{rec['id']}/{qid}"
+            if item_id in seen:
+                raise ValueError(f"duplicate expanded Item id {item_id!r}")
+            seen.add(item_id)
+    for rec in recs.values():
+        if any("/" in qid for qid in rec["request"]["questions"]):
+            raise ValueError(f"{rec['id']}: development question ids cannot contain '/' (task calibration identity)")
 
 
 def _development_split(recs: dict, cfg: dict) -> tuple[list[str], list[str], dict]:

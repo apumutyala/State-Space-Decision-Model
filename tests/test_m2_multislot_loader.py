@@ -155,6 +155,54 @@ def test_duplicates_and_task_world_conflicts_refuse(tmp_path, rows, message):
         load_cell_data(CFG, write_rows(tmp_path, rows))
 
 
+@pytest.mark.parametrize("grouped", [False, True])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_flat_nested_expanded_item_collision_refuses_before_split(tmp_path, monkeypatch, grouped, reverse):
+    import train.run_cell as rc
+
+    flat_row = flat("task", ("slot/answer",))
+    nested_row = slot("task/slot", "answer", "world-nested")
+    if grouped:
+        flat_row["group_id"] = "world-flat"
+    else:
+        del nested_row["group_id"]
+    rows = [flat_row, nested_row]
+    if reverse:
+        rows.reverse()
+    assert {f"{r['id']}/{qid}" for r in rows for qid in r["labels"]} == {"task/slot/answer"}
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("ambiguous Item identities reached split")
+
+    monkeypatch.setattr(rc, "split_ids", forbidden)
+    with pytest.raises(ValueError, match="duplicate expanded Item id"):
+        load_cell_data(CFG, write_rows(tmp_path, rows))
+
+
+@pytest.mark.parametrize("shape", ["grouped_flat", "mixed_flat_nested", "nested_multi_question"])
+def test_every_row_on_new_development_path_requires_slash_free_qids(tmp_path, shape):
+    flat_row = flat("task", ("slot/answer",))
+    if shape == "grouped_flat":
+        rows = [{**flat_row, "group_id": "world"}]
+    elif shape == "mixed_flat_nested":
+        rows = [flat_row, slot("other-task")]
+    else:
+        # Nested multi-question storage keeps the task id, so detect the new path from raw input shape.
+        r = flat("task", ("slot/answer", "second"))
+        rows = [{"id": r["id"], "request": {"model": "m2", "state": r["state"],
+                                                "questions": r["questions"]}, "labels": r["labels"]}]
+    with pytest.raises(ValueError, match="development question ids cannot contain"):
+        load_cell_data(CFG, write_rows(tmp_path, rows))
+
+
+def test_pure_legacy_slash_qids_retain_exact_existing_behavior(tmp_path):
+    rows = [flat("task", ("slot/answer",)), flat("task/slot", ("answer",))]
+    recs, _, tr, ev, ident = load_cell_data(CFG, write_rows(tmp_path, rows))
+    assert recs == {r["id"]: to_train_record(r) for r in rows}
+    assert (tr, ev) == split_ids(sorted(recs), 2, 1, CFG["seed"])
+    assert ident == {"cohort": None}
+
+
 @pytest.mark.parametrize("kind", ["missing_labels", "missing_question", "extra_label", "missing_state",
                                     "invalid_gold", "empty_group", "missing_id", "slash_qid", "ambiguous_shape"])
 def test_malformed_rows_refuse_before_training(tmp_path, kind):

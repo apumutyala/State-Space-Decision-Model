@@ -20,13 +20,21 @@ requested test node before pytest collection. From the worktree, the exact comma
 C:/Users/apumu/research/CHLabs/.venv-auth/Scripts/python.exe -c "import runpy,pytest; suite=runpy.run_path('tests/test_m2_multislot_loader.py'); raise SystemExit(pytest.main(['-q', *suite['guard_no_model_nodes'](suite['NO_MODEL_NODES'])]))"
 ```
 
-Result: **119 passed in 9.89 s**, exit 0. This includes the focused loader module, exact legacy helper/draw/parallel
+Result after review correction: **127 passed in 9.38 s**, exit 0. This includes the focused loader module, exact legacy helper/draw/parallel
 Item/provenance nodes and 71 repository launch/text lint tests. No model factory or inference test node is in the
 gated allowlist. `git diff --check` passed; staged documentation lint: 71 passed in 1.98 s. Earlier focused run:
-43 passed in 7.83 s. The final regression also confirms the external preflight preserves draw guard exceptions and
+43 passed in 7.83 s; initial gated implementation: 119 passed in 9.89 s. The final regression also confirms the external preflight preserves draw guard exceptions and
 the existing missing-record-file error class. No paid work, production
 checkpoint, Index/held-out item read, GPU, network, push or PR was requested or needed for this proposal. The
 accidental command below prevents a blanket claim that the entire preparation involved no model execution.
+
+Review correction (L-41): grouped flat `{id: "task", qid: "slot/answer"}` and nested
+`{id: "task/slot", qid: "answer"}` could emit the same `Item.id="task/slot/answer"` despite distinct storage keys.
+The same ambiguity affected ungrouped mixed input. Before splitting, any development file containing a nested or
+grouped row now checks globally unique expanded Item ids and slash-free qids for every row, including flat rows.
+The exact collision refuses in both row orders and both grouped/ungrouped modes. Separate cases cover flat-row
+slash qids, nested multi-question inputs and unchanged pure legacy handling. The correction's tests and command
+are no-model; no model/GPU/network/spend action was taken in this follow-up.
 
 Incident L-40: an earlier command selected the whole controlsafe module instead of its three text-only nodes:
 
