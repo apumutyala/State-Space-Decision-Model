@@ -324,3 +324,9 @@
 - Did: re-polled autor after D2kdfla `job-v3tq9` transitioned. It failed at 19:54:08Z, exit 10, with the same `g12` `chunked_lean` versus required `fla` identity mismatch as D1fla `job-b4fy8`; both failed before the required completion marker.
 - Live state: D12f `job-bs5we` and L1 equivalence `job-5txp8` still report running. The last D12f log is still at `parent_g12` from 19:26:15Z, so C asked A to verify its heartbeat/seed and preserve both failed receipts before any retry.
 - C has not restarted or stopped A/B jobs and has used/spent no GPU. The laptop remains under the 3-GiB CPU runtime floor.
+
+## 2026-10-08 20:00Z: Agent C prepared a memory-reduced relation runner
+- Did: froze a separate one-world-row, gradient-checkpointed runner that accumulates six row losses, then performs the same one clip and one Adam update for each unchanged scheduled step. It reuses the frozen base package in place; the 9-GiB admission, 3-GiB runtime and 60-minute guards remain unchanged.
+- Evidence: `ssdm-data/agent-c-native-recurrent-relation-microbatch-20261008-v1`; runner SHA-256 `92f635b3f6dd1616fc6091412adf5ecdb8ddf3788b19afcff661838b97ef5022`, variant manifest SHA-256 `7b4c77e54526f7716d5647e3d8b490424110ecb5f6ad4eefd60335f2d3389b9`. Static hashes/syntax passed and independent GPT-6.1 Sol review cleared the settled artifact. The original base `pins.json` literal `\\n` suffix is normalized only in memory after exact file-hash verification; base bytes stay unchanged.
+- Limitation: no model/torch/training run; numerical equivalence, peak memory and runtime remain unmeasured. Current free RAM is 3.43 GiB, below admission. The original CPU screen remains unrun.
+- Live A/B update: D12f `job-bs5we` passed `parent_g12` and is in `parent_index`; `job-5txp8` still scores. D1fla and D2kdfla both failed before completion on the same `g12` WKV identity mismatch. C requested receipt preservation and claim reconciliation through INBOX.
