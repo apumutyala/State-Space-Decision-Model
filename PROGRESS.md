@@ -181,3 +181,10 @@
 - Status: no torch import, checkpoint load, training, tests or inference. Host free RAM is 2.36 GiB at this check, below the 3 GiB floor; output directory remains fresh. No GPU used or spent.
 - A/B shared update at 18:20Z reports job-9bs8w adopting FLA for training-step speed (1.46x vs D1 fast) and D12/D11 held at the current balance cap. This is not Stage 1 qualification. The 250-row job-46yeb smoke remains the latest full-DEV pipeline evidence; C has asked for job-exadi's live status, full-DEV champion handle/outcome and Stage 1 full8 result.
 - Next: run the matched CPU objective only when physical RAM passes 3 GiB; if initial original-validation logits do not reproduce, abort and preserve evidence. Treat any result as synthetic conditional learning, not RWKV7/L0 qualification.
+
+## 2026-10-08 ~18:28Z: Agent C matched CPU run1 resource abort
+- Did: started the matched TinySlotSSM CE vs CE+inversion-JS development run when memory admission passed. CUDA was hidden. The original 100 teacher-forced relation requests reproduced all raw logits/argmaxes at the specified tolerance (26 equal/31 greater/43 less) before training. The CE arm completed 394/400 updates.
+- Learned: run1 aborted before final CE evaluation or the JS arm when free physical RAM briefly fell to 3,213,934,592 bytes, 7,290,880 bytes below the 3 GiB floor. No final checkpoint or training metric exists; classify as aborted/no result. Current partial evidence is under ssdm-data/agent-c-tiny-ssm-inversion-train-20261008-v1/run1; partial_manifest SHA 3574f2f021dc27a4d30afe24c5be4fb3a6c379815ea0ef22050707092a457b9b. The exact original run pins are preserved as run1/pins_used.json.
+- Prepared a separate future run2 command in the README with updated pins; no retry has started. Latest host free RAM is 2.95 GiB, still below admission.
+- A/B shared state remains at 18:20Z: no job-exadi live status, no full-DEV champion result, and no Stage 1 full8 qualification posted. Earlier INBOX requests remain pending.
+- Continue only after fresh RAM admission; any recovery uses a new output directory and preserves run1. No GPU/held-out data or qualification claim.
