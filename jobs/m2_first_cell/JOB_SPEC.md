@@ -194,10 +194,10 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 4. `build_context.sh <sha> <out> [<tkfaj results.jsonl> [<clef-flash results.jsonl>]]`; pin the optional files' sha256
    in `job_params.json` `reference_results_sha256` to include those comparisons.
 
-## Mode `d4_draw45k` (BOARD D4). DRAFT, NOT SUBMITTED; data pending B1
+## Modes `d4_draw45k`, `d4_draw45k_t380`, `d4_draw45k_t780` (BOARD D4). DRAFT, NOT SUBMITTED; data pending B1
 
-`first_cell_job.sh d4_draw45k` selects `job_params_d4_draw45k.json` and `m2_first_cell_rwkv7_d4_draw45k.json`. Versus D1
-(job-c7pq2 @11fb140) only the training set and the clock change:
+`first_cell_job.sh <mode>` selects `job_params_<mode>.json` and `m2_first_cell_rwkv7_<mode>.json`. Versus D1
+(job-c7pq2 @11fb140) only the training set, the training clock and the caps that depend on it change.
 
 - **Data.** Agent B's B1 set (branch `stack/rwkv7/b1-draw`), a pointer-pinned build in the 150k set's format
   (`records.jsonl.gz` + manifest + content map, uncompressed sha256 in `data/manifests/b1-d4-draw45k.pointer.json`, raw gz
@@ -208,9 +208,15 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 - **Weights** (target shares, re-aimed by `research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md`; B1's build summary is
   authoritative): tools 0.30, procedural knowledge 0.28, BANKING77/CLINC150 ≤16-option views 0.15, language 0.11,
   other retrieval 0.08, fact knowledge 0.06, arts 0.02.
-- **Clock.** One pass: 45,000 / 8 = 5,625 steps x 8.25 s = 773.4 min → `max_minutes` 780, `max_steps` 5,700. Cell cap 840
-  (780 + tokenize 19 + smoke/ladder 10 + dev cards 10 + checkpoints/margin 21). D1 trained only 11,056 of its 24,000 rows.
+- **Clock.** D1 is time-bound: 190 min / 8.25 s per 8-row step = 1,382 steps = 11,056 rows, 46% of its 24k draw. Every
+  cell cap adds 19 min of tokenize for 45k rows (D1's 10 x 45/24), 10 smoke/ladder, 10 dev cards and checkpoint margin.
 
-Schedule 630 − 230 + 840 = 1,240 + reserve 7 = 1,247 min. **Worst case** (60 build + 2 x 1,247) x $0.0495 = **$126.42**
-(cap $130). **Expected ≈ $56.33** (1,138 min incl. build; less when the seeded parent arm skips the parent phases).
-The placeholder pins fail closed until B1 commits the pointer and the gz sha256 lines.
+| Mode | max_minutes | Steps / rows at 8.25 s | Effect vs D1 | Cell cap | Schedule | Worst case | Cap | Expected |
+|---|---|---|---|---|---|---|---|---|
+| `d4_draw45k` | 190 | 1,382 / 11,056 | mix only | 240 | 647 | (60 + 2 x 647) x 0.0495 = $67.02 | $75 | 537 min ≈ $26.58 |
+| `d4_draw45k_t380` | 380 | 2,763 / 22,104 (≈ 1 epoch of 24k) | mix + 2x rows | 430 | 837 | (60 + 2 x 837) x 0.0495 = $85.83 | $90 | 728 min ≈ $36.04 |
+| `d4_draw45k_t780` | 780 (max_steps 5,700) | 5,625 / 45,000 (one pass) | mix + 4x rows | 840 | 1,247 | (60 + 2 x 1,247) x 0.0495 = $126.42 | $130 | 1,138 min ≈ $56.33 |
+
+Schedule = D1's 630 − 230 + cell cap + reserve 7. Expected = D1's 528 − 220 + (cell cap − 10); less when the seeded parent arm
+skips the parent phases. K=16 intent views raise per-row fork work (unmeasured), so rows trained may be lower; the time cap
+binds, not the cost. The placeholder pins fail closed until B1 commits the pointer and the gz sha256 lines.

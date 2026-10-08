@@ -1,5 +1,5 @@
 {
- "_comment": "DRAFT, NOT SUBMITTED. D4 = D1 (job_params.json, job-c7pq2 @11fb140) with only the training set (B1 45k weighted draw, pinned by jobs/m2_first_cell/data_d4_draw45k.sha256 + the B1 pointer), the cell clock and the dependent caps changed. Schedule: D1 630 - cell 230 + cell 840 = 1,240 + reserve 7 = 1,247 min. Worst case = (60 + 2 x 1,247) x 0.0495 = $126.42 (cap $130). Expected = D1 528 - cell 220 + cell 830 = 1,138 min = $56.33 (less when the seeded parent arm skips the parent phases, as on c7pq2).",
+ "_comment": "DRAFT, NOT SUBMITTED. D4 mode d4_draw45k: D1 (job_params.json, job-c7pq2 @11fb140) with only the training set (B1 45k weighted draw, pinned by jobs/m2_first_cell/data_d4_draw45k.sha256 + the B1 pointer), the training clock (190 min) and the dependent caps changed. Schedule: D1 630 - cell 230 + cell 240 = 640 + reserve 7 = 647 min. Worst case = (60 + 2 x 647) x 0.0495 = $67.02 (cap $75). Expected = D1 528 - cell 220 + cell 229 = 537 min = $26.58 (less when the seeded parent arm skips the parent phases, as on c7pq2).",
  "test_env": {
   "transformers": "5.17.0",
   "with": [],
@@ -19,7 +19,7 @@
  "status": "draft: not submitted; data pending B1 (stack/rwkv7/b1-draw); UNMEASURED",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 1247,
+ "max_duration_minutes": 647,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -27,14 +27,14 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.0495,
- "hard_cap_usd": 130.0,
+ "hard_cap_usd": 75.0,
  "phase_caps_minutes": {
   "setup": 25,
   "guard": 5,
   "heldout": 10,
   "parent_g12": 85,
   "parent_index": 65,
-  "cell": 840,
+  "cell": 240,
   "evals": 205,
   "report": 5
  },
@@ -46,7 +46,7 @@
   "heldout": 3,
   "parent_g12": 65,
   "parent_index": 48,
-  "cell": 830,
+  "cell": 229,
   "evals": 155,
   "report": 4
  },
@@ -99,7 +99,7 @@
   },
   "key": "m2-first-cell-d4-draw45k",
   "clock_lock": true,
-  "label": "D4: m2 first cell (RWKV7-13.3B LoRA r64 + fork head, Clef arm) on the B1 45k weighted draw",
+  "label": "D4 d4_draw45k: m2 first cell (RWKV7-13.3B LoRA r64 + fork head, Clef arm) on the B1 45k weighted draw, 190-min clock",
   "checks": {
    "success": {
     "check": {

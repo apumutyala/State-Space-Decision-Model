@@ -1,0 +1,74 @@
+{
+ "_comment": "D4 (BOARD): the D1 cell (m2_first_cell_rwkv7.json, job-c7pq2 @11fb140) with ONLY the training set changed to Agent B's B1 45k weighted draw (stack/rwkv7/b1-draw; pointer data/manifests/b1-d4-draw45k.pointer.json) and the training clock scaled to one pass over it. Same parent, fork head, LoRA r64, Clef arm, LRs, warmup, batch, K<=16, T ladder, execution flags, cohort v2 pin and v3 exclusion. UNMEASURED; not submitted; launchable only once B1 commits the pointer and the data pin.",
+ "seed": 0,
+ "head": "fork",
+ "head_kwargs": {},
+ "layout": "ordered",
+ "template": "jrt-rwkv-g1-v1",
+ "loss_arm": "clef",
+ "lora_rank": 64,
+ "lr_head": 0.001,
+ "lr_lora": 0.0001,
+ "warmup_steps": 50,
+ "batch_size": 1,
+ "grad_accum": 8,
+ "max_k": 16,
+ "t_ladder": [
+  512,
+  1024,
+  2048
+ ],
+ "n_train_records": 45000,
+ "n_eval_records": 0,
+ "min_train_items": 5000,
+ "max_steps": 5700,
+ "max_minutes": 780,
+ "min_steps": 600,
+ "ckpt_every": 400,
+ "eval_every": 100000,
+ "tokenize_workers": 8,
+ "smoke": {
+  "rows": 2,
+  "max_k": 4,
+  "max_t": 512,
+  "lora_rank": 8,
+  "max_rel_feature_diff": 0.03,
+  "min_grad_cos": 0.99
+ },
+ "pass_rule": {
+  "window": 100,
+  "loss_drop_frac_min": 0.05,
+  "max_peak_gb": 76
+ },
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "require_guard_readiness": true,
+ "calibration_role": "calibration",
+ "parent": "rwkv7",
+ "eval_max_t": 2048,
+ "train_set": {
+  "pointer": "data/manifests/b1-d4-draw45k.pointer.json",
+  "heldout_excluded": {
+   "ids": [],
+   "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+   "reason": "B1 must drop the three D1-B soft_framing hits of the 150k set (m2:mmlu_aux:21118/39640/39643) at build, so the pinned list is empty and the heldout phase passes only if the whole B1 set has 0 train.heldout hits (exit 33 otherwise)."
+  }
+ },
+ "rwkv7_wkv": "chunked_lean",
+ "act_ckpt": true,
+ "row_batch": 8,
+ "row_tokens": 8192,
+ "execution_note": "job-tvuat (jobs/cell_step_profile, rule v1-A2, PR #86 @54ee89d) ADOPT: chosen ckpt_rows_lean = per-block activation checkpointing keeping the cache fork, the step's 8 rows batched in length-sorted groups (<= 8 rows, <= 8,192 padded tokens per call; long rows split a step into several groups), chunked_lean WKV (our pure-PyTorch rearrangement of the vendored chunked WKV, CPU-equivalence-tested; no GPU gate needed); measured median step 8.25 s, 0 OOMs, projection 1,382 steps / 11,056 rows in 190 min (receipt receipts/2026-10-07-D-cell-step-profile-tvuat). Execution flags are not in the TrainConfig hash (same loss and gradients). rwkv7_wkv applies to both arms (child: run_cell / m2_gates; parent: score_parent). 'fla' only after jobs/fla_rwkv7 ADOPT + GPU_VERIFIED.",
+ "max_minutes_note": "ONE-PASS variant: 45,000 / 8 = 5,625 steps x 8.25 s = 773.4 min -> 780; max_steps 5,700 >= 5,625. K=16 intent views raise fork work per row (unmeasured), so the time cap is the binding stop. Cell phase 780 + tokenize 19 + smoke+ladder 10 + dev cards 10 + checkpoints/margin 21 (14 ckpts at 400) = 840.",
+ "min_steps_note": "unchanged from D1 (600 steps = 4,800 rows): the exit-26 floor for a meaningful measurement",
+ "lora_rank_note": "M2_RUN_SPEC r=256 adds ~1.15B trainable params (~18 GB of fp32 weights + grads + Adam) on top of 26.5 GB bf16 weights and the un-checkpointed cache-fork activations; r=64 (the pilot's pre-registered rank) keeps the T=2048 ladder rung inside the 76 GB stop",
+ "area_weights_target": {
+  "_note": "Re-aimed 2026-10-08 per research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md (Clef-flash transplant headroom: knowledge +9.5, of which +7.1 procedural (CRUXEval, MuSR, CLadder, GSM8K, SATA); tools +9.3; k>16 catalogs (API-Bank, BANKING77, CLINC) +7.2; arts +3.4, mostly ForecastBench). Target shares of the 45k; B1's build-summary is authoritative and the trainer does NOT reweight: it draws n_train_records = the whole B1 set in sha256(seed:id) order, so any time-capped prefix keeps B1's mix.",
+  "tools": 0.3,
+  "knowledge_procedural": 0.28,
+  "intent_k16_views": 0.15,
+  "language": 0.11,
+  "retrieval_other": 0.08,
+  "knowledge_facts": 0.06,
+  "arts": 0.02
+ }
+}
