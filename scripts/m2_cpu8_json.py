@@ -111,9 +111,16 @@ def main(args: list[str]) -> None:
     elif mode == "command":
         command = load(args[0])
         # Unknown provider response shapes fail closed. Never select "newest".
-        identifier = command["id"]
-        require(isinstance(identifier, str) and re.fullmatch(r"cmd-[a-z0-9]+", identifier) is not None)
-        require(command["status"] in ("running", "completed", "complete", "exited"))
+        require(isinstance(command, dict))
+        identifiers = [command[key] for key in ("command_id", "id") if key in command]
+        require(bool(identifiers))
+        identifier = identifiers[0]
+        require(all(value == identifier for value in identifiers))
+        require(isinstance(identifier, str) and re.fullmatch(r"cmd[-_][a-z0-9]+", identifier) is not None)
+        # Detached run guarantees command_id/log_path, but no status. If a
+        # response does supply status, pending/unknown states still refuse.
+        if "status" in command:
+            require(command["status"] in ("running", "completed", "complete", "exited"))
         print(identifier)
     elif mode == "completion":
         path, rc = args

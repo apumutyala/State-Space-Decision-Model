@@ -50,9 +50,10 @@ elif a[0] == "import":
     if scenario == "import_timeout": sys.exit(124)
     print("import complete")
 elif a[0] == "logs":
-    assert a[2:] == ["cmd-fake1", "-f"], a
+    command_id = "cmd-fake1" if scenario == "registration_legacy_id" else "cmd_fake1"
+    assert a[2:] == [command_id, "-f"], a
     if scenario == "logs_pending_wake":
-        print("cmd-fake1 pending_wake")
+        print("cmd_fake1 pending_wake")
         sys.exit(0)
     if scenario == "empty_logs": sys.exit(0)
     if scenario == "workload_failure": sys.exit(34)
@@ -80,9 +81,14 @@ elif a[0] == "run":
     if "run_deadline.py" in a[-1]:
         assert state.read_text() == "running", "workload must launch on running node"
         assert "-d" in a and "--json" in a and "--on-wake" not in a, a
-        registration = {"id": "cmd-fake1", "status": "pending_wake" if scenario == "registration_pending_wake" else "running"}
-        if scenario == "registration_missing_id": del registration["id"]
-        if scenario == "registration_bad_id": registration["id"] = "cmd-fake1 --other-command"
+        registration = {"command_id": "cmd_fake1", "log_path": "/tmp/command.log"}
+        if scenario == "registration_with_status": registration["status"] = "running"
+        if scenario == "registration_pending_wake": registration["status"] = "pending_wake"
+        if scenario == "registration_legacy_id": registration = {"id": "cmd-fake1", "status": "running"}
+        if scenario == "registration_matching_ids": registration["id"] = registration["command_id"]
+        if scenario == "registration_conflicting_ids": registration["id"] = "cmd-other1"
+        if scenario == "registration_missing_id": del registration["command_id"]
+        if scenario == "registration_bad_id": registration["command_id"] = "cmd_fake1 --other-command"
         if scenario == "registration_unknown_status": registration["status"] = "unknown"
         print(json.dumps(registration))
 else:
@@ -185,7 +191,7 @@ class ControllerTests(unittest.TestCase):
         self.assertIn("--json", run)
         self.assertIn("--seconds 8610 --kill-grace-seconds 30 -- bash ./run_m2_cpu8_tests.sh", run[-1])
         self.assertFalse(any("--on-wake" in c for c in calls))
-        self.assertEqual(receipt["workload_command_id"], "cmd-fake1")
+        self.assertEqual(receipt["workload_command_id"], "cmd_fake1")
         self.assertEqual(receipt["workload_rc"], "0")
         self.assertTrue(receipt["workload_completion_verified"])
         source = (ROOT / "scripts/supervise_m2_cpu8.sh").read_text()
@@ -223,7 +229,8 @@ class ControllerTests(unittest.TestCase):
                 self.assertEqual(receipt["stop_result"], "stopped")
 
     def test_unknown_registration_refuses_without_following_newest_command(self):
-        for scenario in ("registration_missing_id", "registration_bad_id", "registration_unknown_status"):
+        for scenario in ("registration_missing_id", "registration_bad_id", "registration_unknown_status",
+                         "registration_conflicting_ids"):
             with self.subTest(scenario=scenario):
                 result, receipt, calls, _ = self.attempt(scenario)
                 self.assertEqual(result.returncode, 65, result.stderr)
@@ -232,6 +239,16 @@ class ControllerTests(unittest.TestCase):
                 self.assertFalse(receipt["workload_completion_verified"])
                 self.assertFalse(any(c[0] in ("logs", "export") for c in calls))
                 self.assertEqual(receipt["stop_result"], "stopped")
+
+    def test_documented_command_id_and_optional_status_preserve_exact_selector(self):
+        for scenario in ("registration_with_status", "registration_legacy_id", "registration_matching_ids"):
+            with self.subTest(scenario=scenario):
+                result, receipt, calls, _ = self.attempt(scenario)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                expected = "cmd-fake1" if scenario == "registration_legacy_id" else "cmd_fake1"
+                self.assertEqual(receipt["workload_command_id"], expected)
+                self.assertEqual(next(c[2] for c in calls if c[0] == "logs"), expected)
+                self.assertTrue(receipt["workload_completion_verified"])
 
     def test_original_runner_zero_root_counts_require_recursive_launcher_passes(self):
         result, receipt, _, _ = self.attempt("junit_wrapper")
