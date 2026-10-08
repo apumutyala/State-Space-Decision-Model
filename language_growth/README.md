@@ -2,6 +2,17 @@
 
 This CPU-only package checks a compact typed semantic program against host-supplied fixture evidence. It is not a trained language model. The current kernel supports ReadFact, exact Compare, Assert, Conjoin, ExplainDerivation and Ask, with bounded rejection reasons and release-time policy/evidence revalidation.
 
+An explicitly opted-in host registry can also enable `ExactDifference` for
+left-minus-right over integer/decimal Facts or host constants with identical
+units, quantity kinds and scopes. Arithmetic is exact under any ambient
+Decimal precision, with fixed 256-digit coefficient and 64-place scale
+ceilings. Results can be asserted and deterministically rendered; conversions,
+division and arithmetic chaining are unsupported. The public planner is not
+extended by this slice. See the
+[operation contract](../plans/codex/L1_EXACT_DIFFERENCE.md) and authored fixture
+`fixtures/language_growth/exact_difference.json`; these do not establish
+learned capability or L1 qualification.
+
 Run kernel tests with:
 
 ```text

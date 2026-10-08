@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 
 from .kernel import validate_release
-from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, Fact, SpeechAct
+from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, ExactDifference, Fact, SpeechAct, decimal_text
 
 
 def _quoted(value: str) -> str:
@@ -27,7 +27,7 @@ def _value(value: str | int | bool | Decimal) -> str:
     if isinstance(value, Decimal):
         if not value.is_finite():
             raise ValueError("invalid checked value")
-        return str(value)
+        return decimal_text(value)
     if isinstance(value, str):
         return _quoted(value)
     raise ValueError("invalid checked value")
@@ -58,9 +58,15 @@ def _operand_value(item: Fact | ConstantValue | AssumptionValue) -> str:
     raise ValueError("invalid checked operand")
 
 
-def _assertion(content: Fact | Comparison) -> str:
+def _assertion(content: Fact | Comparison | ExactDifference) -> str:
     if isinstance(content, Fact):
         return f"At {_quoted(content.interval)}, {_subject(content)} has value {_operand_value(content)}."
+    if isinstance(content, ExactDifference):
+        return (
+            f"At {_quoted(content.interval)}, the value of {_subject(content.left)} "
+            f"({_operand_value(content.left)}) minus the value of {_subject(content.right)} "
+            f"({_operand_value(content.right)}) is {_value(content.value)}{_unit(content.unit)}."
+        )
     if isinstance(content, Comparison):
         relations = {"greater_than": "greater than", "less_than": "less than", "equal": "equal to"}
         if content.relation not in relations:

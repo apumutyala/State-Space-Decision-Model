@@ -1,0 +1,1 @@
+Authored exact-difference contract verification at source `4831bcd`. See `receipt.json` for the exact focused command, fixture hash, reported approval and capability boundary. No model, performance, usefulness or L1 qualification result is claimed.

@@ -155,12 +155,12 @@ def test_refuses_reused_out_dir(tmp_path):
         run(repo, data, sha, tmp_path / "o", run_job_tests=False)
 
 
-def test_refuses_unmerged_sha(tmp_path):
+def test_refuses_unpushed_sha(tmp_path):
     repo, data, sha = make_repo(tmp_path)
     (repo / "x.txt").write_text("x")
     g(repo, "add", "x.txt")
     g(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "unmerged")
-    with pytest.raises(launch.LaunchError, match="not merged"):
+    with pytest.raises(launch.LaunchError, match="not pushed"):
         run(repo, data, g(repo, "rev-parse", "HEAD"), tmp_path / "o")
 
 

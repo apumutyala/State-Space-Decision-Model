@@ -1,8 +1,8 @@
 # Registered hypothetical comparison slice
 
 Interface issue: [#205](https://github.com/apumutyala/State-Space-Decision-Model/issues/205).
-Draft opt-in profile for fresh-context review. Canonical version bump follows
-the independent review and the separate L1 ExactDifference profile landing.
+Opt-in canonical profile 0.1.3, following the L1 ExactDifference profile 0.1.2.
+The D transport and semantic program envelopes remain v0.1.
 
 The host may register one alternate value for an existing visible authoritative
 record/field. Registration describes a hypothesis, never accepted factual truth:
@@ -43,7 +43,8 @@ constant. The resulting `SpeechAct.kind` is `hypothesize`, and its immutable
 assumption's normalized representation explicitly says
 `epistemic_class: "hypothesis"` and retains its original premise separately.
 `Assert` refuses any assumption-dependent comparison with
-`unsupported_assertion`. The existing conjunction only accepts factual
+`unsupported_assertion`. ExactDifference refuses assumption operands with the
+same code, keeping arithmetic assertions factual. The existing conjunction only accepts factual
 assert/conjoin acts. An explanation may wrap a conditional act while preserving
 its conditional rendering.
 
