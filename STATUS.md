@@ -64,6 +64,8 @@
 
 - Operation-only q_end cached CPU diagnostic is prepared on merged #71/#85/#110 dependencies, with the frozen 24/12 development corpus, CE-only 96-update recipe and 6 GiB start / 3 GiB runtime / 1200-second owned-child guards. Focused synthetic CPU checks cover cache parity, lineage, delegation and resource limits; no real-parent execution, learned result, paid spend or level qualification is claimed. Plan: `plans/codex/L0_OPERATION_ONLY_CACHE.md`; prepared receipt: `receipts/2026-10-06-L-operation-only-cache-prepared`.
 
+- 2026-10-07 ($0 tokenizer-only shape preflight): a deterministic uniform-position sample of the fit-only ExactSum export found 0/256 rows within the M2 pilot T<=2,048 filter and 76/256 within K<=16; sample T ranged 3,280–4,467 and K 2–36. This shows the existing pilot filter is unsuitable for this L1 export, not full-corpus retention or model feasibility. Independent remeasurement approved. No weights/model/GPU/training. Receipt: `receipts/2026-10-07-L1-exact-sum-shape-profile/`.
+
 ## Open decisions for the user
 - SF Compute credit expiry date.
 - (done) private repo + agent-main created 2026-10-06.
