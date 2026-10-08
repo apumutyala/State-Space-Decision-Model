@@ -64,6 +64,30 @@ class ExactDifferenceTests(unittest.TestCase):
             self.assertEqual(str(result.outputs[0].content.value), "123456789012345678901234567889.99")
             self.assertIn("123456789012345678901234567889.99", render_checked(result, self.host, self.catalog))
 
+    def test_decimal_serialization_and_release_ignore_ambient_capitals(self):
+        self.constants("0.0000001", "0.0000000")
+        with localcontext() as context:
+            context.capitals = 0
+            result = self.check()
+            serialized = result.to_dict()
+            rendered = render_checked(result, self.host, self.catalog)
+            self.assertEqual(serialized["outputs"][0]["content"]["value"], "1E-7")
+            self.assertIn('is 1E-7 "USD".', rendered)
+            context.capitals = 1
+            self.assertEqual(result.to_dict(), serialized)
+            self.assertEqual(render_checked(result, self.host, self.catalog), rendered)
+            self.assertEqual(self.check().to_dict(), serialized)
+        self.catalog["records"][0]["fields"]["price"]["value"] = "0.0000001"
+        self.program = copy.deepcopy(self.fixture["cases"][0]["proposal"])
+        with localcontext() as context:
+            context.capitals = 0
+            result = self.check()
+            serialized = result.to_dict()
+            rendered = render_checked(result, self.host, self.catalog)
+            context.capitals = 1
+            self.assertEqual(result.to_dict(), serialized)
+            self.assertEqual(render_checked(result, self.host, self.catalog), rendered)
+
     def test_integer_mixed_fact_constant_and_zero_values(self):
         self.constants(3, 8, "integer", "integer")
         self.assertEqual(self.check().outputs[0].content.value, -5)

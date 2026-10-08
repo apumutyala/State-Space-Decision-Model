@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from typing import Any
+
+
+def decimal_text(value: Decimal) -> str:
+    """Canonical exact text, independent of ambient exponent capitalization."""
+    with localcontext() as context:
+        context.capitals = 1
+        return str(value)
 
 
 def _json_value(value: Any) -> Any:
     if isinstance(value, Decimal):
-        return str(value)
+        return decimal_text(value)
     if isinstance(value, tuple):
         return [_json_value(part) for part in value]
     if hasattr(value, "to_dict"):

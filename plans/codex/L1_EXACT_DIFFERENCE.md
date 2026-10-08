@@ -3,7 +3,7 @@
 Interface proposal: [#201](https://github.com/apumutyala/State-Space-Decision-Model/issues/201).
 Base: `agent-main@5fec2b2`. This is a $0 authored semantic-operation slice,
 not model training or evidence of L1 qualification. Canonical profile 0.1.2
-is proposed for this extension, subject to independent scoped review.
+documents this extension; independent scoped review is required before merge.
 
 The host must opt in by including `ExactDifference` in its registry's
 `allowed_ops` and pinning that registry through `registry_ref`. Existing
@@ -34,6 +34,8 @@ reject with `exceeded_limit`, even if oversized intermediates would cancel.
 Decimal inputs produce a Decimal with the larger operand scale; two integer
 inputs produce an integer. Zero has a canonical nonnegative sign. These
 fixed ceilings cannot be enlarged by the proposal or host limits.
+Exact decimal serialization and rendering use uppercase `E` when scientific
+notation is needed, independent of ambient `Decimal` exponent capitalization.
 
 Scope mismatch uses `scope_mismatch`; nonnumeric values, mismatched units or
 quantity kinds use `type_unit_mismatch`. Unknown keys use

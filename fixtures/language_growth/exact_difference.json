@@ -108,7 +108,7 @@
     "semantics_pending_review": [
       "Fixture evidence storage and registry shapes are local packaging conventions, not a certified wire implementation.",
       "Programs use ssdm.semantic_program.v0.1: ReadFact returns a subject-bound Fact, Assert projects its proposition, Compare consumes explicit object projections.",
-      "No new arithmetic operation is added. Compare uses exact integers or decimal values and requires equal units/time scopes.",
+      "The opt-in ExactDifference extension subtracts exact numeric values with identical units, quantity kinds and scopes, bounded to 256 coefficient digits and 64 fractional places.",
       "Exact reason-code precedence for multiply-invalid programs remains unresolved."
     ]
   },

@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 
 from .kernel import validate_release
-from .types import AskContent, CheckResult, Comparison, ConstantValue, ExactDifference, Fact, SpeechAct
+from .types import AskContent, CheckResult, Comparison, ConstantValue, ExactDifference, Fact, SpeechAct, decimal_text
 
 
 def _quoted(value: str) -> str:
@@ -27,7 +27,7 @@ def _value(value: str | int | bool | Decimal) -> str:
     if isinstance(value, Decimal):
         if not value.is_finite():
             raise ValueError("invalid checked value")
-        return str(value)
+        return decimal_text(value)
     if isinstance(value, str):
         return _quoted(value)
     raise ValueError("invalid checked value")
