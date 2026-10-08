@@ -38,6 +38,35 @@ single comparable collection with 20 independent study groups:
   Country/year rows and successive releases do not establish independent
   studies. JRC notes the three measures must not be mixed.
 
+## IPCC underlying-study trace
+
+[IPCC AR5 Annex III, Table A.III.2](https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf#page=7)
+lists 17 technology entries. Footnote i sends readers to [Annex II,
+A.II.9.3](https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-ii.pdf#page=26)
+for the underlying literature and methods. The bibliography names studies for
+each category, for example:
+
+| Category | References named in Annex II | Qualification issue |
+| --- | --- | --- |
+| Coal/gas, including CCS | Burnham (2012), Singh (2011a/b), Corsten (2013), NETL (2010a–e), Hertwich (2013) | Totals combine common component inventories and Monte Carlo assumptions. |
+| Nuclear | Lenzen (2008); Warner & Heath (2012) | Only a few cited studies for this technology group. |
+| CSP / PV / wind | Viebahn, Burkhardt, Whitaker, Hsu, Kim, Arvesen & Hertwich, Dolan & Heath | Studies may share reviews, background inventories, or harmonization inputs. |
+| Ocean / hydro | Parker, Walker & Howell, Douglas, Woollcombe-Adams, Kelly, Kumar, Raadal, Moreau, Kemenes, Barros | Table rows do not map one-to-one to a single source estimate. |
+| Biomass/geothermal | Multiple references and methodology discussions | Annex II does not fully attribute every table statistic to independent source records. |
+
+These citations identify literature families; they do not establish a complete
+row-to-observation crosswalk or 20 independent, like-for-like source groups.
+Annex II also describes shared harmonization/background data and separately
+assessed inputs. Thus, the existence of more than 20 bibliography entries is
+not itself enough to qualify L4.
+
+The next evidence-backed step is to recover the original NREL/OpenEI study-level
+records cited around Annex II p.1306, link each eligible observation to its
+primary study and shared inventory family, then count only distinct families
+whose boundary, functional unit, lifecycle statistic and uncertainty label
+match. Keep the current AR5 table grouped as one report-world until that trace
+meets the source-world floor.
+
 ## Safe expansion rule
 
 An added L4 module must retain its own source, population, year, boundary,
