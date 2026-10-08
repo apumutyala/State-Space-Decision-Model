@@ -43,3 +43,26 @@ check_generator, cohort v2/v3 disjointness, SplitGuard, D1-B all clean; the stri
   glaive_native +7,499, mmlu_aux +496 (pools exhausted: API-Bank <=2,048 tokens, NQ, When2Call, fact-change, GSM8K).
   K<=16 90,235 / K>16 9,765; tokens p50 508 / p95 1,891 / max 2,048.
 - `exclusion-check.json`: PASS over all 100,000 rows.
+
+## b1-draw100k-v2 (low-positive-rate yes/no + minority-support views)
+
+- Why: D1 over-called majority-positive labels on families missing from its draw (ACOS yes 25% vs gold 0.5%, RAGTruth
+  true 91% vs 35%, NLI4CT Entailment 64% vs 33.5%). v2 = the 100k with 10,500 quota moved from glaive_native / mmlu_aux /
+  anli to views of ALLOWED, sha-locked train sources (no download), in eval layouts, at natural base rates
+  (`data/b1_lowrate.py`, `WEIGHTS_100K_V2`):
+  - clinc150_member 3,000 / banking77_member 275 (BANKING77 pool exhausted after its k16/full rows): ACOS-style
+    12 yes/no "intent expressed?" questions per message; yes 5.3% / 6.3% of questions; 36% / 24% of records all-no.
+  - anli_claim 3,000: HoVer-style SUPPORTED / NOT_SUPPORTED (neutral + contradiction = not supported): 33.2% supported.
+  - mmlu_verify 3,000: one yes/no per candidate answer: 25% yes.
+  - shortfall (banking77_member and the v1 exhausted pools) backfilled by glaive_native (+9,220; final 13,720).
+- Files: `ssdm-data/m2/build/b1-draw100k-v2/`, pointer `data/manifests/b1-draw100k-v2.pointer.json`; raw gz sha256
+  records faee5885d0f1c74c9f98562f82b13f087a6142a04b3a55204bd51b4bb2df70d9, manifest
+  ae30c2ee9b71281dfdff6139be85925df0bed3131ea62f3bb02986d2d45f6e69, content 101ebfa9552e7f409f3d68dc76609980a65ab9ad84b8403e7c2c7252bb1f1c8b.
+  ANLI / MMLU-aux raw rows: `ssdm-data/m2/build/b1-lowrate-src/` (dump of the locked parquet, sha-pinned in
+  `dump-manifest.json`; identity in build-report `lowrate_raw`).
+- Builder `data/b1.py` + `data/b1_lowrate.py` @ f4cfd23. Tokens p50 532 / p95 1,891 / max 2,048 (0 over).
+- Every view row ran the Index fingerprint (ngram13 / exact / minhash / edit / contain) as well as the v1 filter;
+  view text audited against the native item (9,275 views, 0 mismatches).
+- REFUSED: a Home appliances (catalog 9, `device_state_record`) handling / membership generator. It is FROZEN in
+  heldout-draw-v1, and `check_generator` refuses both specs (`generator-specs.json`).
+- `exclusion-check.json`: PASS over all 100,000 rows (generators incl. anli/claim_verification, clinc150+banking77/intent_membership, mmlu_aux/answer_verification).
