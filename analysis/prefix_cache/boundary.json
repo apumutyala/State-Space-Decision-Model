@@ -1,0 +1,947 @@
+{
+ "prefix_stability": {
+  "v2/v3 head ... 'SCHEMA FIELDS:\\n'": {
+   "rows": 844,
+   "stable": 844,
+   "examples": []
+  },
+  "v2/v3 head ... 'FIELD 1\\nID: '": {
+   "rows": 844,
+   "stable": 0,
+   "examples": [
+    {
+     "rid": "11:ContractNLI:ContractNLI:test:11",
+     "first_diff_token": 42,
+     "len_pre": 43,
+     "text_at_boundary": "ELD 1\nID: nda-1\nTYPE"
+    },
+    {
+     "rid": "11:ContractNLI:ContractNLI:test:117",
+     "first_diff_token": 42,
+     "len_pre": 43,
+     "text_at_boundary": "ELD 1\nID: nda-1\nTYPE"
+    },
+    {
+     "rid": "11:ContractNLI:ContractNLI:test:129",
+     "first_diff_token": 42,
+     "len_pre": 43,
+     "text_at_boundary": "ELD 1\nID: nda-1\nTYPE"
+    }
+   ]
+  },
+  "g1v1 head ... 'SCHEMA FIELDS:\\n'": {
+   "rows": 844,
+   "stable": 844,
+   "examples": []
+  },
+  "clef system ... 'STATE:\\n'": {
+   "rows": 844,
+   "stable": 844,
+   "examples": []
+  }
+ },
+ "family_preamble_continuation_stability": {
+  "g1v1": {
+   "families": 43,
+   "roundtrip_exact": 1,
+   "backoff_max": 4817,
+   "backoff_mean": 235.0,
+   "backoff_zero_families": 0,
+   "per_family": {
+    "ContractNLI": {
+     "lcp_tokens": 2368,
+     "roundtrip_exact": false,
+     "backoff_tokens": 2327
+    },
+    "ANLI": {
+     "lcp_tokens": 68,
+     "roundtrip_exact": false,
+     "backoff_tokens": 27
+    },
+    "BFCL-tool-selection": {
+     "lcp_tokens": 44,
+     "roundtrip_exact": false,
+     "backoff_tokens": 3
+    },
+    "BPoMP-original-limerick": {
+     "lcp_tokens": 96,
+     "roundtrip_exact": false,
+     "backoff_tokens": 55
+    },
+    "Humicroedit": {
+     "lcp_tokens": 75,
+     "roundtrip_exact": false,
+     "backoff_tokens": 34
+    },
+    "POP909-chord-pitch-class": {
+     "lcp_tokens": 4858,
+     "roundtrip_exact": false,
+     "backoff_tokens": 4817
+    },
+    "CFColor-preference": {
+     "lcp_tokens": 86,
+     "roundtrip_exact": false,
+     "backoff_tokens": 45
+    },
+    "GPQA-Diamond": {
+     "lcp_tokens": 53,
+     "roundtrip_exact": false,
+     "backoff_tokens": 12
+    },
+    "WinoGrande": {
+     "lcp_tokens": 62,
+     "roundtrip_exact": false,
+     "backoff_tokens": 21
+    },
+    "HellaSwag": {
+     "lcp_tokens": 61,
+     "roundtrip_exact": false,
+     "backoff_tokens": 20
+    },
+    "ToolRet-retrieval": {
+     "lcp_tokens": 60,
+     "roundtrip_exact": false,
+     "backoff_tokens": 19
+    },
+    "GSM8K-10": {
+     "lcp_tokens": 95,
+     "roundtrip_exact": false,
+     "backoff_tokens": 54
+    },
+    "GSM8K-4": {
+     "lcp_tokens": 95,
+     "roundtrip_exact": false,
+     "backoff_tokens": 54
+    },
+    "ChessBench-legal-move": {
+     "lcp_tokens": 107,
+     "roundtrip_exact": false,
+     "backoff_tokens": 66
+    },
+    "MuSR": {
+     "lcp_tokens": 54,
+     "roundtrip_exact": false,
+     "backoff_tokens": 13
+    },
+    "SATA-Bench": {
+     "lcp_tokens": 57,
+     "roundtrip_exact": false,
+     "backoff_tokens": 16
+    },
+    "BRIGHT-retrieval": {
+     "lcp_tokens": 58,
+     "roundtrip_exact": false,
+     "backoff_tokens": 17
+    },
+    "Amazon-ESCI": {
+     "lcp_tokens": 198,
+     "roundtrip_exact": false,
+     "backoff_tokens": 157
+    },
+    "ACOS-category-sentiment": {
+     "lcp_tokens": 42,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "FinEntity-entity-given": {
+     "lcp_tokens": 47,
+     "roundtrip_exact": false,
+     "backoff_tokens": 6
+    },
+    "API-Bank-tool-selection": {
+     "lcp_tokens": 101,
+     "roundtrip_exact": false,
+     "backoff_tokens": 60
+    },
+    "iSarcasmEval-A-Ar": {
+     "lcp_tokens": 114,
+     "roundtrip_exact": false,
+     "backoff_tokens": 73
+    },
+    "iSarcasmEval-A-En": {
+     "lcp_tokens": 114,
+     "roundtrip_exact": false,
+     "backoff_tokens": 73
+    },
+    "iSarcasmEval-B-En": {
+     "lcp_tokens": 488,
+     "roundtrip_exact": false,
+     "backoff_tokens": 447
+    },
+    "iSarcasmEval-C-Ar": {
+     "lcp_tokens": 78,
+     "roundtrip_exact": false,
+     "backoff_tokens": 37
+    },
+    "iSarcasmEval-C-En": {
+     "lcp_tokens": 78,
+     "roundtrip_exact": false,
+     "backoff_tokens": 37
+    },
+    "VAST": {
+     "lcp_tokens": 56,
+     "roundtrip_exact": false,
+     "backoff_tokens": 15
+    },
+    "NLI4CT-2024": {
+     "lcp_tokens": 64,
+     "roundtrip_exact": false,
+     "backoff_tokens": 23
+    },
+    "CRUXEval-output-choice": {
+     "lcp_tokens": 87,
+     "roundtrip_exact": false,
+     "backoff_tokens": 46
+    },
+    "CLadder": {
+     "lcp_tokens": 79,
+     "roundtrip_exact": false,
+     "backoff_tokens": 38
+    },
+    "HLE-text-MC": {
+     "lcp_tokens": 54,
+     "roundtrip_exact": false,
+     "backoff_tokens": 13
+    },
+    "ForecastBench-binary": {
+     "lcp_tokens": 58,
+     "roundtrip_exact": false,
+     "backoff_tokens": 17
+    },
+    "BANKING77": {
+     "lcp_tokens": 65,
+     "roundtrip_exact": false,
+     "backoff_tokens": 24
+    },
+    "Habermas-consensus": {
+     "lcp_tokens": 107,
+     "roundtrip_exact": false,
+     "backoff_tokens": 66
+    },
+    "CLINC150+OOS": {
+     "lcp_tokens": 73,
+     "roundtrip_exact": false,
+     "backoff_tokens": 32
+    },
+    "Home-Appliance": {
+     "lcp_tokens": 44,
+     "roundtrip_exact": false,
+     "backoff_tokens": 3
+    },
+    "PhishNChips phishing decisions": {
+     "lcp_tokens": 1036,
+     "roundtrip_exact": false,
+     "backoff_tokens": 995
+    },
+    "MMLU-Pro": {
+     "lcp_tokens": 74,
+     "roundtrip_exact": false,
+     "backoff_tokens": 33
+    },
+    "BBH fixed-option tasks": {
+     "lcp_tokens": 74,
+     "roundtrip_exact": false,
+     "backoff_tokens": 33
+    },
+    "RAGTruth response-level hallucination": {
+     "lcp_tokens": 149,
+     "roundtrip_exact": false,
+     "backoff_tokens": 108
+    },
+    "HoVer claim verification": {
+     "lcp_tokens": 132,
+     "roundtrip_exact": false,
+     "backoff_tokens": 91
+    },
+    "When2Call MCQ": {
+     "lcp_tokens": 84,
+     "roundtrip_exact": false,
+     "backoff_tokens": 43
+    },
+    "New Yorker caption matching": {
+     "lcp_tokens": 75,
+     "roundtrip_exact": false,
+     "backoff_tokens": 34
+    }
+   }
+  },
+  "v2f": {
+   "families": 43,
+   "roundtrip_exact": 43,
+   "backoff_max": 1,
+   "backoff_mean": 0.9767441860465116,
+   "backoff_zero_families": 1,
+   "per_family": {
+    "ContractNLI": {
+     "lcp_tokens": 1792,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ANLI": {
+     "lcp_tokens": 68,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BFCL-tool-selection": {
+     "lcp_tokens": 45,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BPoMP-original-limerick": {
+     "lcp_tokens": 92,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "Humicroedit": {
+     "lcp_tokens": 71,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "POP909-chord-pitch-class": {
+     "lcp_tokens": 3532,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CFColor-preference": {
+     "lcp_tokens": 80,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "GPQA-Diamond": {
+     "lcp_tokens": 53,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "WinoGrande": {
+     "lcp_tokens": 62,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "HellaSwag": {
+     "lcp_tokens": 61,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ToolRet-retrieval": {
+     "lcp_tokens": 60,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "GSM8K-10": {
+     "lcp_tokens": 91,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "GSM8K-4": {
+     "lcp_tokens": 91,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ChessBench-legal-move": {
+     "lcp_tokens": 97,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "MuSR": {
+     "lcp_tokens": 54,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "SATA-Bench": {
+     "lcp_tokens": 57,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BRIGHT-retrieval": {
+     "lcp_tokens": 58,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "Amazon-ESCI": {
+     "lcp_tokens": 155,
+     "roundtrip_exact": true,
+     "backoff_tokens": 0
+    },
+    "ACOS-category-sentiment": {
+     "lcp_tokens": 43,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "FinEntity-entity-given": {
+     "lcp_tokens": 48,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "API-Bank-tool-selection": {
+     "lcp_tokens": 97,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-A-Ar": {
+     "lcp_tokens": 90,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-A-En": {
+     "lcp_tokens": 89,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-B-En": {
+     "lcp_tokens": 336,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-C-Ar": {
+     "lcp_tokens": 74,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-C-En": {
+     "lcp_tokens": 74,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "VAST": {
+     "lcp_tokens": 56,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "NLI4CT-2024": {
+     "lcp_tokens": 64,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CRUXEval-output-choice": {
+     "lcp_tokens": 83,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CLadder": {
+     "lcp_tokens": 79,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "HLE-text-MC": {
+     "lcp_tokens": 54,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ForecastBench-binary": {
+     "lcp_tokens": 58,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BANKING77": {
+     "lcp_tokens": 65,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "Habermas-consensus": {
+     "lcp_tokens": 102,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CLINC150+OOS": {
+     "lcp_tokens": 73,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "Home-Appliance": {
+     "lcp_tokens": 45,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "PhishNChips phishing decisions": {
+     "lcp_tokens": 814,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "MMLU-Pro": {
+     "lcp_tokens": 68,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BBH fixed-option tasks": {
+     "lcp_tokens": 66,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "RAGTruth response-level hallucination": {
+     "lcp_tokens": 126,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "HoVer claim verification": {
+     "lcp_tokens": 108,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "When2Call MCQ": {
+     "lcp_tokens": 78,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "New Yorker caption matching": {
+     "lcp_tokens": 69,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    }
+   }
+  },
+  "v3w": {
+   "families": 43,
+   "roundtrip_exact": 43,
+   "backoff_max": 1,
+   "backoff_mean": 0.9767441860465116,
+   "backoff_zero_families": 1,
+   "per_family": {
+    "ContractNLI": {
+     "lcp_tokens": 1741,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ANLI": {
+     "lcp_tokens": 68,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BFCL-tool-selection": {
+     "lcp_tokens": 45,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BPoMP-original-limerick": {
+     "lcp_tokens": 92,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "Humicroedit": {
+     "lcp_tokens": 71,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "POP909-chord-pitch-class": {
+     "lcp_tokens": 3532,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CFColor-preference": {
+     "lcp_tokens": 79,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "GPQA-Diamond": {
+     "lcp_tokens": 53,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "WinoGrande": {
+     "lcp_tokens": 62,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "HellaSwag": {
+     "lcp_tokens": 61,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ToolRet-retrieval": {
+     "lcp_tokens": 60,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "GSM8K-10": {
+     "lcp_tokens": 91,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "GSM8K-4": {
+     "lcp_tokens": 91,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ChessBench-legal-move": {
+     "lcp_tokens": 95,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "MuSR": {
+     "lcp_tokens": 54,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "SATA-Bench": {
+     "lcp_tokens": 57,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BRIGHT-retrieval": {
+     "lcp_tokens": 58,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "Amazon-ESCI": {
+     "lcp_tokens": 151,
+     "roundtrip_exact": true,
+     "backoff_tokens": 0
+    },
+    "ACOS-category-sentiment": {
+     "lcp_tokens": 43,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "FinEntity-entity-given": {
+     "lcp_tokens": 48,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "API-Bank-tool-selection": {
+     "lcp_tokens": 97,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-A-Ar": {
+     "lcp_tokens": 88,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-A-En": {
+     "lcp_tokens": 87,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-B-En": {
+     "lcp_tokens": 324,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-C-Ar": {
+     "lcp_tokens": 74,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-C-En": {
+     "lcp_tokens": 74,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "VAST": {
+     "lcp_tokens": 56,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "NLI4CT-2024": {
+     "lcp_tokens": 64,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CRUXEval-output-choice": {
+     "lcp_tokens": 83,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CLadder": {
+     "lcp_tokens": 79,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "HLE-text-MC": {
+     "lcp_tokens": 54,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ForecastBench-binary": {
+     "lcp_tokens": 58,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BANKING77": {
+     "lcp_tokens": 65,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "Habermas-consensus": {
+     "lcp_tokens": 102,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CLINC150+OOS": {
+     "lcp_tokens": 73,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "Home-Appliance": {
+     "lcp_tokens": 45,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "PhishNChips phishing decisions": {
+     "lcp_tokens": 796,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "MMLU-Pro": {
+     "lcp_tokens": 67,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BBH fixed-option tasks": {
+     "lcp_tokens": 64,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "RAGTruth response-level hallucination": {
+     "lcp_tokens": 124,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "HoVer claim verification": {
+     "lcp_tokens": 106,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "When2Call MCQ": {
+     "lcp_tokens": 77,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "New Yorker caption matching": {
+     "lcp_tokens": 68,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    }
+   }
+  },
+  "clef": {
+   "families": 43,
+   "roundtrip_exact": 29,
+   "backoff_max": 61,
+   "backoff_mean": 11.976744186046512,
+   "backoff_zero_families": 1,
+   "per_family": {
+    "ContractNLI": {
+     "lcp_tokens": 36,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ANLI": {
+     "lcp_tokens": 76,
+     "roundtrip_exact": false,
+     "backoff_tokens": 33
+    },
+    "BFCL-tool-selection": {
+     "lcp_tokens": 42,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BPoMP-original-limerick": {
+     "lcp_tokens": 117,
+     "roundtrip_exact": false,
+     "backoff_tokens": 61
+    },
+    "Humicroedit": {
+     "lcp_tokens": 81,
+     "roundtrip_exact": false,
+     "backoff_tokens": 46
+    },
+    "POP909-chord-pitch-class": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CFColor-preference": {
+     "lcp_tokens": 42,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "GPQA-Diamond": {
+     "lcp_tokens": 60,
+     "roundtrip_exact": false,
+     "backoff_tokens": 25
+    },
+    "WinoGrande": {
+     "lcp_tokens": 70,
+     "roundtrip_exact": false,
+     "backoff_tokens": 27
+    },
+    "HellaSwag": {
+     "lcp_tokens": 69,
+     "roundtrip_exact": false,
+     "backoff_tokens": 26
+    },
+    "ToolRet-retrieval": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "GSM8K-10": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "GSM8K-4": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ChessBench-legal-move": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "MuSR": {
+     "lcp_tokens": 62,
+     "roundtrip_exact": false,
+     "backoff_tokens": 19
+    },
+    "SATA-Bench": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BRIGHT-retrieval": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "Amazon-ESCI": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "ACOS-category-sentiment": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "FinEntity-entity-given": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "API-Bank-tool-selection": {
+     "lcp_tokens": 5219,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-A-Ar": {
+     "lcp_tokens": 36,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-A-En": {
+     "lcp_tokens": 36,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-B-En": {
+     "lcp_tokens": 36,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "iSarcasmEval-C-Ar": {
+     "lcp_tokens": 85,
+     "roundtrip_exact": false,
+     "backoff_tokens": 50
+    },
+    "iSarcasmEval-C-En": {
+     "lcp_tokens": 85,
+     "roundtrip_exact": false,
+     "backoff_tokens": 50
+    },
+    "VAST": {
+     "lcp_tokens": 64,
+     "roundtrip_exact": false,
+     "backoff_tokens": 21
+    },
+    "NLI4CT-2024": {
+     "lcp_tokens": 45,
+     "roundtrip_exact": true,
+     "backoff_tokens": 0
+    },
+    "CRUXEval-output-choice": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CLadder": {
+     "lcp_tokens": 85,
+     "roundtrip_exact": false,
+     "backoff_tokens": 42
+    },
+    "HLE-text-MC": {
+     "lcp_tokens": 62,
+     "roundtrip_exact": false,
+     "backoff_tokens": 19
+    },
+    "ForecastBench-binary": {
+     "lcp_tokens": 37,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BANKING77": {
+     "lcp_tokens": 73,
+     "roundtrip_exact": false,
+     "backoff_tokens": 30
+    },
+    "Habermas-consensus": {
+     "lcp_tokens": 41,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "CLINC150+OOS": {
+     "lcp_tokens": 81,
+     "roundtrip_exact": false,
+     "backoff_tokens": 38
+    },
+    "Home-Appliance": {
+     "lcp_tokens": 40,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "PhishNChips phishing decisions": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "MMLU-Pro": {
+     "lcp_tokens": 36,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "BBH fixed-option tasks": {
+     "lcp_tokens": 36,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "RAGTruth response-level hallucination": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "HoVer claim verification": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "When2Call MCQ": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    },
+    "New Yorker caption matching": {
+     "lcp_tokens": 39,
+     "roundtrip_exact": true,
+     "backoff_tokens": 1
+    }
+   }
+  }
+ },
+ "n_continuations": 404,
+ "preamble_tokens": {
+  "g1v1 head": 36,
+  "v2/v3 head (+[0])": 38,
+  "clef head": 36
+ }
+}

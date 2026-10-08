@@ -1,0 +1,3867 @@
+{
+ "arms": {
+  "g1v1": {
+   "global_lcp_tokens": 42,
+   "full_dev": {
+    "rows": 12104,
+    "computed_mean": 2676.9647224058162,
+    "prefix_mean": 1813.8184897554527,
+    "glob": {
+     "mean_tokens": 42.0,
+     "median_tokens": 42.0,
+     "share_of_computed": 0.015689411088784973,
+     "share_of_prefix": 0.023155569444913218,
+     "mean_row_share": 0.06500292615784271
+    },
+    "fam_lcp": {
+     "mean_tokens": 272.94720753469926,
+     "median_tokens": 75.0,
+     "share_of_computed": 0.101961451060662,
+     "share_of_prefix": 0.1504820956872588,
+     "mean_row_share": 0.16937201312880504
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 243.37871777924653,
+     "median_tokens": 64.0,
+     "share_of_computed": 0.09091592270238046,
+     "share_of_prefix": 0.13418030478455426,
+     "mean_row_share": 0.12609170387473032
+    },
+    "radix_any": {
+     "mean_tokens": 556.7775115664243,
+     "median_tokens": 109.0,
+     "share_of_computed": 0.2079883634275324,
+     "share_of_prefix": 0.30696429367719785,
+     "mean_row_share": 0.25824332630430435
+    },
+    "radix_amort": {
+     "mean_tokens": 527.4368803701256,
+     "median_tokens": 92.0,
+     "share_of_computed": 0.1970279533217429,
+     "share_of_prefix": 0.29078812645759117,
+     "mean_row_share": 0.2385464545146097
+    }
+   },
+   "subset_2008": {
+    "rows": 2008,
+    "computed_mean": 2647.5527888446213,
+    "prefix_mean": 1795.21812749004,
+    "glob": {
+     "mean_tokens": 42.0,
+     "median_tokens": 42.0,
+     "share_of_computed": 0.01586370635439854,
+     "share_of_prefix": 0.023395485683247716,
+     "mean_row_share": 0.06460514839646843
+    },
+    "fam_lcp": {
+     "mean_tokens": 274.34760956175296,
+     "median_tokens": 75.0,
+     "share_of_computed": 0.10362309326473407,
+     "share_of_prefix": 0.152821323136553,
+     "mean_row_share": 0.16950431816990097
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 244.78087649402391,
+     "median_tokens": 64.0,
+     "share_of_computed": 0.09245552252079742,
+     "share_of_prefix": 0.13635160694163723,
+     "mean_row_share": 0.12641493196239023
+    },
+    "radix_any": {
+     "mean_tokens": 566.8311752988047,
+     "median_tokens": 109.0,
+     "share_of_computed": 0.21409626946330576,
+     "share_of_prefix": 0.31574501539337296,
+     "mean_row_share": 0.25742529760573385
+    },
+    "radix_amort": {
+     "mean_tokens": 540.3700199203187,
+     "median_tokens": 92.0,
+     "share_of_computed": 0.204101698065153,
+     "share_of_prefix": 0.30100521582624046,
+     "mean_row_share": 0.23851219460343878
+    }
+   },
+   "common_2000": {
+    "rows": 2000,
+    "computed_mean": 2482.299,
+    "prefix_mean": 1722.9195,
+    "glob": {
+     "mean_tokens": 42.0,
+     "median_tokens": 42.0,
+     "share_of_computed": 0.016919798944446257,
+     "share_of_prefix": 0.02437722714264944,
+     "mean_row_share": 0.06485962730441731
+    },
+    "fam_lcp": {
+     "mean_tokens": 275.21,
+     "median_tokens": 75.0,
+     "share_of_computed": 0.1108689968452632,
+     "share_of_prefix": 0.15973468290306075,
+     "mean_row_share": 0.17017681372779497
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 245.76,
+     "median_tokens": 64.0,
+     "share_of_computed": 0.09900499496635981,
+     "share_of_prefix": 0.142641603394703,
+     "mean_row_share": 0.12692059169023978
+    },
+    "radix_any": {
+     "mean_tokens": 567.1685,
+     "median_tokens": 110.0,
+     "share_of_computed": 0.22848516637198016,
+     "share_of_prefix": 0.32919036553942305,
+     "mean_row_share": 0.2584031267307387
+    },
+    "radix_amort": {
+     "mean_tokens": 540.6015,
+     "median_tokens": 93.0,
+     "share_of_computed": 0.21778258783490628,
+     "share_of_prefix": 0.31377060855135713,
+     "mean_row_share": 0.23941437131643448
+    }
+   },
+   "families_full_dev": [
+    {
+     "family": "When2Call MCQ",
+     "rows": 1066,
+     "family_lcp_tokens": 84,
+     "computed_mean": 1012.0919324577861,
+     "fam_lcp_share": 0.08299641298000723,
+     "radix_amort_mean": 159.85365853658536,
+     "radix_amort_share": 0.15794381262223212
+    },
+    {
+     "family": "BFCL-tool-selection",
+     "rows": 761,
+     "family_lcp_tokens": 44,
+     "computed_mean": 1403.2851511169513,
+     "fam_lcp_share": 0.031354995786122296,
+     "radix_amort_mean": 309.76215505913274,
+     "radix_amort_share": 0.22074070605861973
+    },
+    {
+     "family": "HoVer claim verification",
+     "rows": 461,
+     "family_lcp_tokens": 132,
+     "computed_mean": 584.709327548807,
+     "fam_lcp_share": 0.2257531969831312,
+     "radix_amort_mean": 139.05639913232105,
+     "radix_amort_share": 0.23782141412942262
+    },
+    {
+     "family": "Amazon-ESCI",
+     "rows": 460,
+     "family_lcp_tokens": 198,
+     "computed_mean": 645.1739130434783,
+     "fam_lcp_share": 0.30689399555226093,
+     "radix_amort_mean": 200.38478260869564,
+     "radix_amort_share": 0.3105903362760294
+    },
+    {
+     "family": "BANKING77",
+     "rows": 460,
+     "family_lcp_tokens": 65,
+     "computed_mean": 2589.404347826087,
+     "fam_lcp_share": 0.025102298161571487,
+     "radix_amort_mean": 66.91956521739131,
+     "radix_amort_share": 0.025843613521995153
+    },
+    {
+     "family": "CLINC150+OOS",
+     "rows": 460,
+     "family_lcp_tokens": 73,
+     "computed_mean": 4524.234782608695,
+     "fam_lcp_share": 0.016135325310838056,
+     "radix_amort_mean": 74.6304347826087,
+     "radix_amort_share": 0.01649570333296815
+    },
+    {
+     "family": "PhishNChips phishing decisions",
+     "rows": 460,
+     "family_lcp_tokens": 1036,
+     "computed_mean": 2333.5108695652175,
+     "fam_lcp_share": 0.4439662199615247,
+     "radix_amort_mean": 1042.6304347826087,
+     "radix_amort_share": 0.4468076186749766
+    },
+    {
+     "family": "ForecastBench-binary",
+     "rows": 389,
+     "family_lcp_tokens": 58,
+     "computed_mean": 935.974293059126,
+     "fam_lcp_share": 0.06196751388377727,
+     "radix_amort_mean": 480.0539845758355,
+     "radix_amort_share": 0.5128922750718221
+    },
+    {
+     "family": "BPoMP-original-limerick",
+     "rows": 366,
+     "family_lcp_tokens": 96,
+     "computed_mean": 344.6967213114754,
+     "fam_lcp_share": 0.27850569519415974,
+     "radix_amort_mean": 145.45901639344262,
+     "radix_amort_share": 0.4219912966970252
+    },
+    {
+     "family": "CFColor-preference",
+     "rows": 361,
+     "family_lcp_tokens": 86,
+     "computed_mean": 589.0332409972299,
+     "fam_lcp_share": 0.14600194694343988,
+     "radix_amort_mean": 89.6786703601108,
+     "radix_amort_share": 0.15224721478924572
+    },
+    {
+     "family": "Habermas-consensus",
+     "rows": 361,
+     "family_lcp_tokens": 107,
+     "computed_mean": 1100.7617728531857,
+     "fam_lcp_share": 0.09720541050644857,
+     "radix_amort_mean": 110.49030470914127,
+     "radix_amort_share": 0.10037621893677257
+    },
+    {
+     "family": "Humicroedit",
+     "rows": 360,
+     "family_lcp_tokens": 75,
+     "computed_mean": 227.9611111111111,
+     "fam_lcp_share": 0.32900348499987814,
+     "radix_amort_mean": 77.49166666666666,
+     "radix_amort_share": 0.33993371189042965
+    },
+    {
+     "family": "POP909-chord-pitch-class",
+     "rows": 360,
+     "family_lcp_tokens": 4858,
+     "computed_mean": 7524.863888888889,
+     "fam_lcp_share": 0.6455930727429179,
+     "radix_amort_mean": 4854.083333333333,
+     "radix_amort_share": 0.6450725760635759
+    },
+    {
+     "family": "ToolRet-retrieval",
+     "rows": 308,
+     "family_lcp_tokens": 60,
+     "computed_mean": 24592.574675324675,
+     "fam_lcp_share": 0.002439760813665512,
+     "radix_amort_mean": 329.9253246753247,
+     "radix_amort_share": 0.01341564797631214
+    },
+    {
+     "family": "NLI4CT-2024",
+     "rows": 304,
+     "family_lcp_tokens": 64,
+     "computed_mean": 835.2697368421053,
+     "fam_lcp_share": 0.07662195477351312,
+     "radix_amort_mean": 70.90789473684211,
+     "radix_amort_share": 0.08489221099392727
+    },
+    {
+     "family": "RAGTruth response-level hallucination",
+     "rows": 270,
+     "family_lcp_tokens": 149,
+     "computed_mean": 1016.437037037037,
+     "fam_lcp_share": 0.14659048674017447,
+     "radix_amort_mean": 674.5148148148148,
+     "radix_amort_share": 0.6636070806520963
+    },
+    {
+     "family": "ChessBench-legal-move",
+     "rows": 262,
+     "family_lcp_tokens": 107,
+     "computed_mean": 1514.2404580152672,
+     "fam_lcp_share": 0.07066248919292921,
+     "radix_amort_mean": 200.74045801526717,
+     "radix_amort_share": 0.13256841537464933
+    },
+    {
+     "family": "MuSR",
+     "rows": 262,
+     "family_lcp_tokens": 54,
+     "computed_mean": 2069.4007633587785,
+     "fam_lcp_share": 0.026094510525044128,
+     "radix_amort_mean": 171.54961832061068,
+     "radix_amort_share": 0.08289820964508293
+    },
+    {
+     "family": "SATA-Bench",
+     "rows": 262,
+     "family_lcp_tokens": 57,
+     "computed_mean": 2382.610687022901,
+     "fam_lcp_share": 0.023923337669244718,
+     "radix_amort_mean": 105.73664122137404,
+     "radix_amort_share": 0.044378480209661605
+    },
+    {
+     "family": "ACOS-category-sentiment",
+     "rows": 262,
+     "family_lcp_tokens": 42,
+     "computed_mean": 17020.90458015267,
+     "fam_lcp_share": 0.0024675539306515093,
+     "radix_amort_mean": 8696.015267175573,
+     "radix_amort_share": 0.5109020631791575
+    },
+    {
+     "family": "CLadder",
+     "rows": 262,
+     "family_lcp_tokens": 79,
+     "computed_mean": 431.21374045801525,
+     "fam_lcp_share": 0.18320380959124785,
+     "radix_amort_mean": 125.44656488549619,
+     "radix_amort_share": 0.2909150454070704
+    },
+    {
+     "family": "MMLU-Pro",
+     "rows": 262,
+     "family_lcp_tokens": 74,
+     "computed_mean": 474.50763358778624,
+     "fam_lcp_share": 0.15595112651925258,
+     "radix_amort_mean": 75.88167938931298,
+     "radix_amort_share": 0.15991666733697443
+    },
+    {
+     "family": "BBH fixed-option tasks",
+     "rows": 262,
+     "family_lcp_tokens": 74,
+     "computed_mean": 370.74045801526717,
+     "fam_lcp_share": 0.19960055181501843,
+     "radix_amort_mean": 117.01526717557252,
+     "radix_amort_share": 0.3156258364733255
+    },
+    {
+     "family": "ANLI",
+     "rows": 261,
+     "family_lcp_tokens": 68,
+     "computed_mean": 413.65900383141764,
+     "fam_lcp_share": 0.16438660677071273,
+     "radix_amort_mean": 68.97318007662835,
+     "radix_amort_share": 0.1667392210438568
+    },
+    {
+     "family": "WinoGrande",
+     "rows": 261,
+     "family_lcp_tokens": 62,
+     "computed_mean": 234.98467432950193,
+     "fam_lcp_share": 0.2638469941791264,
+     "radix_amort_mean": 63.383141762452105,
+     "radix_amort_share": 0.2697330876718136
+    },
+    {
+     "family": "HellaSwag",
+     "rows": 261,
+     "family_lcp_tokens": 61,
+     "computed_mean": 454.66283524904213,
+     "fam_lcp_share": 0.13416535346810823,
+     "radix_amort_mean": 65.20689655172414,
+     "radix_amort_share": 0.1434181364659088
+    },
+    {
+     "family": "FinEntity-entity-given",
+     "rows": 261,
+     "family_lcp_tokens": 47,
+     "computed_mean": 661.1034482758621,
+     "fam_lcp_share": 0.07109326100563322,
+     "radix_amort_mean": 56.59770114942529,
+     "radix_amort_share": 0.08561096042840254
+    },
+    {
+     "family": "VAST",
+     "rows": 261,
+     "family_lcp_tokens": 56,
+     "computed_mean": 466.49808429118775,
+     "fam_lcp_share": 0.12004336541936332,
+     "radix_amort_mean": 62.50574712643678,
+     "radix_amort_share": 0.13398929005552088
+    },
+    {
+     "family": "CRUXEval-output-choice",
+     "rows": 256,
+     "family_lcp_tokens": 87,
+     "computed_mean": 355.42578125,
+     "fam_lcp_share": 0.24477684115662332,
+     "radix_amort_mean": 93.3984375,
+     "radix_amort_share": 0.26277901724384267
+    },
+    {
+     "family": "New Yorker caption matching",
+     "rows": 237,
+     "family_lcp_tokens": 75,
+     "computed_mean": 387.9451476793249,
+     "fam_lcp_share": 0.19332629999021134,
+     "radix_amort_mean": 79.042194092827,
+     "radix_amort_share": 0.20374579902765844
+    },
+    {
+     "family": "API-Bank-tool-selection",
+     "rows": 228,
+     "family_lcp_tokens": 101,
+     "computed_mean": 7570.929824561404,
+     "fam_lcp_share": 0.013340501410056473,
+     "radix_amort_mean": 116.6798245614035,
+     "radix_amort_share": 0.015411558060262825
+    },
+    {
+     "family": "HLE-text-MC",
+     "rows": 225,
+     "family_lcp_tokens": 54,
+     "computed_mean": 815.5911111111111,
+     "fam_lcp_share": 0.06620964753580226,
+     "radix_amort_mean": 57.34222222222222,
+     "radix_amort_share": 0.07030756152320335
+    },
+    {
+     "family": "GSM8K-10",
+     "rows": 131,
+     "family_lcp_tokens": 95,
+     "computed_mean": 528.3358778625955,
+     "fam_lcp_share": 0.1798098595619257,
+     "radix_amort_mean": 101.43511450381679,
+     "radix_amort_share": 0.19198982835346473
+    },
+    {
+     "family": "GSM8K-4",
+     "rows": 131,
+     "family_lcp_tokens": 95,
+     "computed_mean": 369.14503816793894,
+     "fam_lcp_share": 0.2573514206542868,
+     "radix_amort_mean": 103.80916030534351,
+     "radix_amort_share": 0.28121510401588157
+    },
+    {
+     "family": "BRIGHT-retrieval",
+     "rows": 99,
+     "family_lcp_tokens": 58,
+     "computed_mean": 34572.89898989899,
+     "fam_lcp_share": 0.0016776145968246863,
+     "radix_amort_mean": 79.41414141414141,
+     "radix_amort_share": 0.002297005566045922
+    },
+    {
+     "family": "GPQA-Diamond",
+     "rows": 87,
+     "family_lcp_tokens": 53,
+     "computed_mean": 525.2873563218391,
+     "fam_lcp_share": 0.10089715536105033,
+     "radix_amort_mean": 54.5632183908046,
+     "radix_amort_share": 0.10387308533916849
+    },
+    {
+     "family": "iSarcasmEval-A-Ar",
+     "rows": 82,
+     "family_lcp_tokens": 114,
+     "computed_mean": 213.9878048780488,
+     "fam_lcp_share": 0.5327406394255428,
+     "radix_amort_mean": 114.60975609756098,
+     "radix_amort_share": 0.5355901293668434
+    },
+    {
+     "family": "iSarcasmEval-A-En",
+     "rows": 82,
+     "family_lcp_tokens": 114,
+     "computed_mean": 215.76829268292684,
+     "fam_lcp_share": 0.5283445430396202,
+     "radix_amort_mean": 114.45121951219512,
+     "radix_amort_share": 0.5304357655569999
+    },
+    {
+     "family": "iSarcasmEval-B-En",
+     "rows": 82,
+     "family_lcp_tokens": 488,
+     "computed_mean": 961.0243902439024,
+     "fam_lcp_share": 0.5077914826658545,
+     "radix_amort_mean": 483.2073170731707,
+     "radix_amort_share": 0.5028044261712603
+    },
+    {
+     "family": "ContractNLI",
+     "rows": 55,
+     "family_lcp_tokens": 2368,
+     "computed_mean": 6693.527272727273,
+     "fam_lcp_share": 0.35377460993524273,
+     "radix_amort_mean": 2377.490909090909,
+     "radix_amort_share": 0.3551925333565127
+    },
+    {
+     "family": "Home-Appliance",
+     "rows": 39,
+     "family_lcp_tokens": 44,
+     "computed_mean": 6231.076923076923,
+     "fam_lcp_share": 0.007061379684953829,
+     "radix_amort_mean": 44.61538461538461,
+     "radix_amort_share": 0.007160140239988149
+    },
+    {
+     "family": "iSarcasmEval-C-Ar",
+     "rows": 12,
+     "family_lcp_tokens": 78,
+     "computed_mean": 244.41666666666666,
+     "fam_lcp_share": 0.319127173542448,
+     "radix_amort_mean": 78.16666666666667,
+     "radix_amort_share": 0.3198090692124105
+    },
+    {
+     "family": "iSarcasmEval-C-En",
+     "rows": 12,
+     "family_lcp_tokens": 78,
+     "computed_mean": 245.41666666666666,
+     "fam_lcp_share": 0.31782682512733446,
+     "radix_amort_mean": 76.16666666666667,
+     "radix_amort_share": 0.3103565365025467
+    }
+   ],
+   "families_subset": [
+    {
+     "family": "When2Call MCQ",
+     "rows": 176,
+     "family_lcp_tokens": 84,
+     "computed_mean": 1002.0909090909091,
+     "fam_lcp_share": 0.08382473010977048,
+     "radix_amort_mean": 153.77272727272728,
+     "radix_amort_share": 0.15345187335571078
+    },
+    {
+     "family": "BFCL-tool-selection",
+     "rows": 126,
+     "family_lcp_tokens": 44,
+     "computed_mean": 1481.015873015873,
+     "fam_lcp_share": 0.02970933722026923,
+     "radix_amort_mean": 291.93650793650795,
+     "radix_amort_share": 0.19711909457257995
+    },
+    {
+     "family": "Amazon-ESCI",
+     "rows": 76,
+     "family_lcp_tokens": 198,
+     "computed_mean": 632.1842105263158,
+     "fam_lcp_share": 0.31319985014361235,
+     "radix_amort_mean": 200.75,
+     "radix_amort_share": 0.31754984806227365
+    },
+    {
+     "family": "BANKING77",
+     "rows": 76,
+     "family_lcp_tokens": 65,
+     "computed_mean": 2589.9736842105262,
+     "fam_lcp_share": 0.025096780093274672,
+     "radix_amort_mean": 67.07894736842105,
+     "radix_amort_share": 0.02589947063067091
+    },
+    {
+     "family": "CLINC150+OOS",
+     "rows": 76,
+     "family_lcp_tokens": 73,
+     "computed_mean": 4524.684210526316,
+     "fam_lcp_share": 0.01613372262094476,
+     "radix_amort_mean": 74.6842105263158,
+     "radix_amort_share": 0.016505949819120846
+    },
+    {
+     "family": "PhishNChips phishing decisions",
+     "rows": 76,
+     "family_lcp_tokens": 1036,
+     "computed_mean": 2335.407894736842,
+     "fam_lcp_share": 0.44360559126941645,
+     "radix_amort_mean": 1032.342105263158,
+     "radix_amort_share": 0.4420393146694762
+    },
+    {
+     "family": "HoVer claim verification",
+     "rows": 76,
+     "family_lcp_tokens": 132,
+     "computed_mean": 586.4605263157895,
+     "fam_lcp_share": 0.22507908729891635,
+     "radix_amort_mean": 137.8421052631579,
+     "radix_amort_share": 0.23504072154539948
+    },
+    {
+     "family": "ForecastBench-binary",
+     "rows": 64,
+     "family_lcp_tokens": 58,
+     "computed_mean": 938.046875,
+     "fam_lcp_share": 0.061830598817356544,
+     "radix_amort_mean": 483.28125,
+     "radix_amort_share": 0.5151994669775964
+    },
+    {
+     "family": "BPoMP-original-limerick",
+     "rows": 61,
+     "family_lcp_tokens": 96,
+     "computed_mean": 341.55737704918033,
+     "fam_lcp_share": 0.2810655147588193,
+     "radix_amort_mean": 145.45901639344262,
+     "radix_amort_share": 0.42586993040556753
+    },
+    {
+     "family": "CFColor-preference",
+     "rows": 60,
+     "family_lcp_tokens": 86,
+     "computed_mean": 588.8333333333334,
+     "fam_lcp_share": 0.1460515142938013,
+     "radix_amort_mean": 89.7,
+     "radix_amort_share": 0.1523351259552788
+    },
+    {
+     "family": "Habermas-consensus",
+     "rows": 60,
+     "family_lcp_tokens": 107,
+     "computed_mean": 1112.7333333333333,
+     "fam_lcp_share": 0.09615960697381823,
+     "radix_amort_mean": 109.98333333333333,
+     "radix_amort_share": 0.09884069258882032
+    },
+    {
+     "family": "Humicroedit",
+     "rows": 59,
+     "family_lcp_tokens": 75,
+     "computed_mean": 228.5593220338983,
+     "fam_lcp_share": 0.3281423804226919,
+     "radix_amort_mean": 78.10169491525424,
+     "radix_amort_share": 0.34171301446051167
+    },
+    {
+     "family": "POP909-chord-pitch-class",
+     "rows": 59,
+     "family_lcp_tokens": 4858,
+     "computed_mean": 7430.9152542372885,
+     "fam_lcp_share": 0.6537552688721421,
+     "radix_amort_mean": 4874.576271186441,
+     "radix_amort_share": 0.6559859861686405
+    },
+    {
+     "family": "ToolRet-retrieval",
+     "rows": 51,
+     "family_lcp_tokens": 60,
+     "computed_mean": 23420.843137254902,
+     "fam_lcp_share": 0.0025618206675300952,
+     "radix_amort_mean": 379.70588235294116,
+     "radix_amort_share": 0.016212306283241926
+    },
+    {
+     "family": "NLI4CT-2024",
+     "rows": 50,
+     "family_lcp_tokens": 64,
+     "computed_mean": 818.0,
+     "fam_lcp_share": 0.07823960880195599,
+     "radix_amort_mean": 74.72,
+     "radix_amort_share": 0.09134474327628361
+    },
+    {
+     "family": "ACOS-category-sentiment",
+     "rows": 45,
+     "family_lcp_tokens": 42,
+     "computed_mean": 16989.244444444445,
+     "fam_lcp_share": 0.0024721523159750743,
+     "radix_amort_mean": 8907.466666666667,
+     "radix_amort_share": 0.5243003416540661
+    },
+    {
+     "family": "RAGTruth response-level hallucination",
+     "rows": 45,
+     "family_lcp_tokens": 149,
+     "computed_mean": 998.1111111111111,
+     "fam_lcp_share": 0.14928197706779472,
+     "radix_amort_mean": 667.4888888888889,
+     "radix_amort_share": 0.6687520872759657
+    },
+    {
+     "family": "ANLI",
+     "rows": 43,
+     "family_lcp_tokens": 68,
+     "computed_mean": 410.72093023255815,
+     "fam_lcp_share": 0.16556253892758055,
+     "radix_amort_mean": 68.48837209302326,
+     "radix_amort_share": 0.16675159956967328
+    },
+    {
+     "family": "WinoGrande",
+     "rows": 43,
+     "family_lcp_tokens": 62,
+     "computed_mean": 234.69767441860466,
+     "fam_lcp_share": 0.2641696393182719,
+     "radix_amort_mean": 63.18604651162791,
+     "radix_amort_share": 0.26922314704716604
+    },
+    {
+     "family": "HellaSwag",
+     "rows": 43,
+     "family_lcp_tokens": 61,
+     "computed_mean": 451.2325581395349,
+     "fam_lcp_share": 0.1351852806267072,
+     "radix_amort_mean": 64.97674418604652,
+     "radix_amort_share": 0.1439983507704994
+    },
+    {
+     "family": "ChessBench-legal-move",
+     "rows": 43,
+     "family_lcp_tokens": 107,
+     "computed_mean": 1470.5348837209303,
+     "fam_lcp_share": 0.07276263976088435,
+     "radix_amort_mean": 216.69767441860466,
+     "radix_amort_share": 0.1473597646798349
+    },
+    {
+     "family": "MuSR",
+     "rows": 43,
+     "family_lcp_tokens": 54,
+     "computed_mean": 2240.767441860465,
+     "fam_lcp_share": 0.024098886386516246,
+     "radix_amort_mean": 175.4418604651163,
+     "radix_amort_share": 0.07829543449607174
+    },
+    {
+     "family": "SATA-Bench",
+     "rows": 43,
+     "family_lcp_tokens": 57,
+     "computed_mean": 2684.720930232558,
+     "fam_lcp_share": 0.021231256983966114,
+     "radix_amort_mean": 110.06976744186046,
+     "radix_amort_share": 0.040998588047781157
+    },
+    {
+     "family": "FinEntity-entity-given",
+     "rows": 43,
+     "family_lcp_tokens": 47,
+     "computed_mean": 668.046511627907,
+     "fam_lcp_share": 0.07035438278911091,
+     "radix_amort_mean": 57.51162790697674,
+     "radix_amort_share": 0.08608925711898628
+    },
+    {
+     "family": "VAST",
+     "rows": 43,
+     "family_lcp_tokens": 56,
+     "computed_mean": 464.7906976744186,
+     "fam_lcp_share": 0.12048433903732612,
+     "radix_amort_mean": 59.27906976744186,
+     "radix_amort_share": 0.12753927749424598
+    },
+    {
+     "family": "CLadder",
+     "rows": 43,
+     "family_lcp_tokens": 79,
+     "computed_mean": 430.2325581395349,
+     "fam_lcp_share": 0.18362162162162163,
+     "radix_amort_mean": 120.13953488372093,
+     "radix_amort_share": 0.27924324324324323
+    },
+    {
+     "family": "MMLU-Pro",
+     "rows": 43,
+     "family_lcp_tokens": 74,
+     "computed_mean": 463.48837209302326,
+     "fam_lcp_share": 0.1596588058203713,
+     "radix_amort_mean": 74.46511627906976,
+     "radix_amort_share": 0.1606623181133969
+    },
+    {
+     "family": "BBH fixed-option tasks",
+     "rows": 43,
+     "family_lcp_tokens": 74,
+     "computed_mean": 395.69767441860466,
+     "fam_lcp_share": 0.18701146047605055,
+     "radix_amort_mean": 129.25581395348837,
+     "radix_amort_share": 0.3266529532765207
+    },
+    {
+     "family": "CRUXEval-output-choice",
+     "rows": 42,
+     "family_lcp_tokens": 87,
+     "computed_mean": 359.26190476190476,
+     "fam_lcp_share": 0.24216316521969647,
+     "radix_amort_mean": 92.57142857142857,
+     "radix_amort_share": 0.2576711511697263
+    },
+    {
+     "family": "New Yorker caption matching",
+     "rows": 39,
+     "family_lcp_tokens": 75,
+     "computed_mean": 384.5897435897436,
+     "fam_lcp_share": 0.19501300086672446,
+     "radix_amort_mean": 79.97435897435898,
+     "radix_amort_share": 0.2079471964797653
+    },
+    {
+     "family": "API-Bank-tool-selection",
+     "rows": 38,
+     "family_lcp_tokens": 101,
+     "computed_mean": 7590.973684210527,
+     "fam_lcp_share": 0.013305276003009113,
+     "radix_amort_mean": 114.6842105263158,
+     "radix_amort_share": 0.015107971032077571
+    },
+    {
+     "family": "HLE-text-MC",
+     "rows": 37,
+     "family_lcp_tokens": 54,
+     "computed_mean": 661.1081081081081,
+     "fam_lcp_share": 0.08168104329340584,
+     "radix_amort_mean": 55.4054054054054,
+     "radix_amort_share": 0.08380687625199297
+    },
+    {
+     "family": "GSM8K-10",
+     "rows": 22,
+     "family_lcp_tokens": 95,
+     "computed_mean": 524.6363636363636,
+     "fam_lcp_share": 0.18107780280713914,
+     "radix_amort_mean": 102.0,
+     "radix_amort_share": 0.19442037775082308
+    },
+    {
+     "family": "GSM8K-4",
+     "rows": 22,
+     "family_lcp_tokens": 95,
+     "computed_mean": 366.09090909090907,
+     "fam_lcp_share": 0.25949838589520735,
+     "radix_amort_mean": 106.04545454545455,
+     "radix_amort_share": 0.2896697293270425
+    },
+    {
+     "family": "iSarcasmEval-A-En",
+     "rows": 18,
+     "family_lcp_tokens": 114,
+     "computed_mean": 215.11111111111111,
+     "fam_lcp_share": 0.5299586776859504,
+     "radix_amort_mean": 119.0,
+     "radix_amort_share": 0.5532024793388429
+    },
+    {
+     "family": "BRIGHT-retrieval",
+     "rows": 16,
+     "family_lcp_tokens": 58,
+     "computed_mean": 31084.8125,
+     "fam_lcp_share": 0.0018658629515619564,
+     "radix_amort_mean": 58.6875,
+     "radix_amort_share": 0.0018879798615481435
+    },
+    {
+     "family": "GPQA-Diamond",
+     "rows": 14,
+     "family_lcp_tokens": 53,
+     "computed_mean": 490.5,
+     "fam_lcp_share": 0.10805300713557595,
+     "radix_amort_mean": 53.142857142857146,
+     "radix_amort_share": 0.10834425513324596
+    },
+    {
+     "family": "iSarcasmEval-B-En",
+     "rows": 14,
+     "family_lcp_tokens": 488,
+     "computed_mean": 959.2142857142857,
+     "fam_lcp_share": 0.5087497207535929,
+     "radix_amort_mean": 488.42857142857144,
+     "radix_amort_share": 0.5091965150048403
+    },
+    {
+     "family": "ContractNLI",
+     "rows": 12,
+     "family_lcp_tokens": 2368,
+     "computed_mean": 6232.083333333333,
+     "fam_lcp_share": 0.3799692451694859,
+     "radix_amort_mean": 2395.8333333333335,
+     "radix_amort_share": 0.3844353814267567
+    },
+    {
+     "family": "Home-Appliance",
+     "rows": 12,
+     "family_lcp_tokens": 44,
+     "computed_mean": 6223.0,
+     "fam_lcp_share": 0.007070544753334405,
+     "radix_amort_mean": 44.583333333333336,
+     "radix_amort_share": 0.007164283036049065
+    },
+    {
+     "family": "iSarcasmEval-A-Ar",
+     "rows": 9,
+     "family_lcp_tokens": 114,
+     "computed_mean": 212.77777777777777,
+     "fam_lcp_share": 0.5357702349869452,
+     "radix_amort_mean": 114.77777777777777,
+     "radix_amort_share": 0.5394255874673629
+    },
+    {
+     "family": "iSarcasmEval-C-Ar",
+     "rows": 3,
+     "family_lcp_tokens": 78,
+     "computed_mean": 249.0,
+     "fam_lcp_share": 0.3132530120481928,
+     "radix_amort_mean": 78.0,
+     "radix_amort_share": 0.3132530120481928
+    },
+    {
+     "family": "iSarcasmEval-C-En",
+     "rows": 1,
+     "family_lcp_tokens": 78,
+     "computed_mean": 229.0,
+     "fam_lcp_share": 0.3406113537117904,
+     "radix_amort_mean": 78.0,
+     "radix_amort_share": 0.3406113537117904
+    }
+   ]
+  },
+  "v2f": {
+   "global_lcp_tokens": 43,
+   "full_dev": {
+    "rows": 12104,
+    "computed_mean": 2416.2404163912756,
+    "prefix_mean": 1760.439606741573,
+    "glob": {
+     "mean_tokens": 43.0,
+     "median_tokens": 43.0,
+     "share_of_computed": 0.017796242339254358,
+     "share_of_prefix": 0.02442571721025376,
+     "mean_row_share": 0.06922683470359851
+    },
+    "fam_lcp": {
+     "mean_tokens": 216.15325512227363,
+     "median_tokens": 73.0,
+     "share_of_computed": 0.089458504897085,
+     "share_of_prefix": 0.12278368101610443,
+     "mean_row_share": 0.15441492583804803
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 185.79775280898878,
+     "median_tokens": 64.0,
+     "share_of_computed": 0.07689539151343351,
+     "share_of_prefix": 0.1055405434514649,
+     "mean_row_share": 0.10912391479623232
+    },
+    "radix_any": {
+     "mean_tokens": 459.03924322538006,
+     "median_tokens": 99.0,
+     "share_of_computed": 0.18998078175969274,
+     "share_of_prefix": 0.2607526219402797,
+     "mean_row_share": 0.23432509184639758
+    },
+    "radix_amort": {
+     "mean_tokens": 432.9130865829478,
+     "median_tokens": 88.0,
+     "share_of_computed": 0.17916805117824985,
+     "share_of_prefix": 0.24591192161612055,
+     "mean_row_share": 0.21675283204895104
+    }
+   },
+   "subset_2008": {
+    "rows": 2008,
+    "computed_mean": 2378.3217131474103,
+    "prefix_mean": 1737.0821713147411,
+    "glob": {
+     "mean_tokens": 43.0,
+     "median_tokens": 43.0,
+     "share_of_computed": 0.01807997621276177,
+     "share_of_prefix": 0.02475415424214198,
+     "mean_row_share": 0.06879974541311629
+    },
+    "fam_lcp": {
+     "mean_tokens": 217.23256972111554,
+     "median_tokens": 73.0,
+     "share_of_computed": 0.09133859751616004,
+     "share_of_prefix": 0.12505601249519432,
+     "mean_row_share": 0.15438519382216193
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 186.86852589641435,
+     "median_tokens": 64.0,
+     "share_of_computed": 0.07857159309583786,
+     "share_of_prefix": 0.10757610030329172,
+     "mean_row_share": 0.10922227398651725
+    },
+    "radix_any": {
+     "mean_tokens": 467.69472111553785,
+     "median_tokens": 99.0,
+     "share_of_computed": 0.19664905657216683,
+     "share_of_prefix": 0.26924156429603724,
+     "mean_row_share": 0.2335557117439579
+    },
+    "radix_amort": {
+     "mean_tokens": 444.0249003984064,
+     "median_tokens": 88.0,
+     "share_of_computed": 0.1866967357459791,
+     "share_of_prefix": 0.25561536911195076,
+     "mean_row_share": 0.21675159638952823
+    }
+   },
+   "common_2000": {
+    "rows": 2000,
+    "computed_mean": 2234.4435,
+    "prefix_mean": 1667.743,
+    "glob": {
+     "mean_tokens": 43.0,
+     "median_tokens": 43.0,
+     "share_of_computed": 0.019244165269786416,
+     "share_of_prefix": 0.025783349113142732,
+     "mean_row_share": 0.06907022286092013
+    },
+    "fam_lcp": {
+     "mean_tokens": 217.8665,
+     "median_tokens": 73.0,
+     "share_of_computed": 0.09750369611046329,
+     "share_of_prefix": 0.13063553557112817,
+     "mean_row_share": 0.1549962735580845
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 187.616,
+     "median_tokens": 64.0,
+     "share_of_computed": 0.08396542584316856,
+     "share_of_prefix": 0.11249694947003225,
+     "mean_row_share": 0.10965916308246332
+    },
+    "radix_any": {
+     "mean_tokens": 467.6605,
+     "median_tokens": 99.0,
+     "share_of_computed": 0.20929618493374302,
+     "share_of_prefix": 0.28041520785876484,
+     "mean_row_share": 0.23442973237670706
+    },
+    "radix_amort": {
+     "mean_tokens": 443.896,
+     "median_tokens": 88.0,
+     "share_of_computed": 0.19866065085109558,
+     "share_of_prefix": 0.2661657101843629,
+     "mean_row_share": 0.21755840056085968
+    }
+   },
+   "families_full_dev": [
+    {
+     "family": "When2Call MCQ",
+     "rows": 1066,
+     "family_lcp_tokens": 78,
+     "computed_mean": 1094.253283302064,
+     "fam_lcp_share": 0.07128148591395951,
+     "radix_amort_mean": 141.2842401500938,
+     "radix_amort_share": 0.12911475095029978
+    },
+    {
+     "family": "BFCL-tool-selection",
+     "rows": 761,
+     "family_lcp_tokens": 45,
+     "computed_mean": 1339.8160315374507,
+     "fam_lcp_share": 0.033586700666928204,
+     "radix_amort_mean": 265.6149802890933,
+     "radix_amort_share": 0.19824735190270695
+    },
+    {
+     "family": "HoVer claim verification",
+     "rows": 461,
+     "family_lcp_tokens": 108,
+     "computed_mean": 559.709327548807,
+     "fam_lcp_share": 0.19295729887685736,
+     "radix_amort_mean": 115.11062906724511,
+     "radix_amort_share": 0.20566144497066188
+    },
+    {
+     "family": "Amazon-ESCI",
+     "rows": 460,
+     "family_lcp_tokens": 155,
+     "computed_mean": 644.1739130434783,
+     "fam_lcp_share": 0.2406182505399568,
+     "radix_amort_mean": 157.47826086956522,
+     "radix_amort_share": 0.24446544276457882
+    },
+    {
+     "family": "BANKING77",
+     "rows": 460,
+     "family_lcp_tokens": 65,
+     "computed_mean": 2188.404347826087,
+     "fam_lcp_share": 0.02970200642516982,
+     "radix_amort_mean": 66.91956521739131,
+     "radix_amort_share": 0.030579159323946573
+    },
+    {
+     "family": "CLINC150+OOS",
+     "rows": 460,
+     "family_lcp_tokens": 73,
+     "computed_mean": 3020.2347826086957,
+     "fam_lcp_share": 0.024170306368350287,
+     "radix_amort_mean": 74.6304347826087,
+     "radix_amort_share": 0.024710143467107367
+    },
+    {
+     "family": "PhishNChips phishing decisions",
+     "rows": 460,
+     "family_lcp_tokens": 814,
+     "computed_mean": 1905.5108695652175,
+     "fam_lcp_share": 0.42718202924013304,
+     "radix_amort_mean": 821.1152173913043,
+     "radix_amort_share": 0.4309160501292019
+    },
+    {
+     "family": "ForecastBench-binary",
+     "rows": 389,
+     "family_lcp_tokens": 58,
+     "computed_mean": 923.974293059126,
+     "fam_lcp_share": 0.06277230918186219,
+     "radix_amort_mean": 457.172236503856,
+     "radix_amort_share": 0.49478891343419784
+    },
+    {
+     "family": "BPoMP-original-limerick",
+     "rows": 366,
+     "family_lcp_tokens": 92,
+     "computed_mean": 393.26229508196724,
+     "fam_lcp_share": 0.2339405560882071,
+     "radix_amort_mean": 140.19398907103826,
+     "radix_amort_share": 0.356489780038073
+    },
+    {
+     "family": "CFColor-preference",
+     "rows": 361,
+     "family_lcp_tokens": 80,
+     "computed_mean": 621.6731301939058,
+     "fam_lcp_share": 0.12868498912772253,
+     "radix_amort_mean": 83.09972299168975,
+     "radix_amort_share": 0.13367108687127938
+    },
+    {
+     "family": "Habermas-consensus",
+     "rows": 361,
+     "family_lcp_tokens": 102,
+     "computed_mean": 1447.5540166204987,
+     "fam_lcp_share": 0.0704636917371361,
+     "radix_amort_mean": 105.42659279778394,
+     "radix_amort_share": 0.07283085231176098
+    },
+    {
+     "family": "Humicroedit",
+     "rows": 360,
+     "family_lcp_tokens": 71,
+     "computed_mean": 223.36111111111111,
+     "fam_lcp_share": 0.31787091157816194,
+     "radix_amort_mean": 73.13333333333334,
+     "radix_amort_share": 0.3274219624424823
+    },
+    {
+     "family": "POP909-chord-pitch-class",
+     "rows": 360,
+     "family_lcp_tokens": 3532,
+     "computed_mean": 8477.863888888889,
+     "fam_lcp_share": 0.4166143790806843,
+     "radix_amort_mean": 3531.7694444444446,
+     "radix_amort_share": 0.416587184075129
+    },
+    {
+     "family": "ToolRet-retrieval",
+     "rows": 308,
+     "family_lcp_tokens": 60,
+     "computed_mean": 19851.633116883117,
+     "fam_lcp_share": 0.00302242136184615,
+     "radix_amort_mean": 309.3538961038961,
+     "radix_amort_share": 0.0155832970659125
+    },
+    {
+     "family": "NLI4CT-2024",
+     "rows": 304,
+     "family_lcp_tokens": 64,
+     "computed_mean": 818.2631578947369,
+     "fam_lcp_share": 0.07821444651701293,
+     "radix_amort_mean": 70.90789473684211,
+     "radix_amort_share": 0.08665658969576125
+    },
+    {
+     "family": "RAGTruth response-level hallucination",
+     "rows": 270,
+     "family_lcp_tokens": 126,
+     "computed_mean": 1015.437037037037,
+     "fam_lcp_share": 0.12408450293250853,
+     "radix_amort_mean": 651.6962962962963,
+     "radix_amort_share": 0.6417889761022438
+    },
+    {
+     "family": "ChessBench-legal-move",
+     "rows": 262,
+     "family_lcp_tokens": 97,
+     "computed_mean": 1576.6564885496184,
+     "fam_lcp_share": 0.061522595888487575,
+     "radix_amort_mean": 164.32442748091603,
+     "radix_amort_share": 0.10422335408778843
+    },
+    {
+     "family": "MuSR",
+     "rows": 262,
+     "family_lcp_tokens": 54,
+     "computed_mean": 2048.053435114504,
+     "fam_lcp_share": 0.026366499562049235,
+     "radix_amort_mean": 171.49236641221373,
+     "radix_amort_share": 0.08373432229448928
+    },
+    {
+     "family": "SATA-Bench",
+     "rows": 262,
+     "family_lcp_tokens": 57,
+     "computed_mean": 2067.3702290076335,
+     "fam_lcp_share": 0.027571258984106003,
+     "radix_amort_mean": 97.91603053435115,
+     "radix_amort_share": 0.0473626006413724
+    },
+    {
+     "family": "ACOS-category-sentiment",
+     "rows": 262,
+     "family_lcp_tokens": 43,
+     "computed_mean": 15834.835877862595,
+     "fam_lcp_share": 0.002715531776373813,
+     "radix_amort_mean": 7256.041984732825,
+     "radix_amort_share": 0.45823285070336034
+    },
+    {
+     "family": "CLadder",
+     "rows": 262,
+     "family_lcp_tokens": 79,
+     "computed_mean": 403.21374045801525,
+     "fam_lcp_share": 0.19592586281971186,
+     "radix_amort_mean": 123.33969465648855,
+     "radix_amort_share": 0.30589159614547246
+    },
+    {
+     "family": "MMLU-Pro",
+     "rows": 262,
+     "family_lcp_tokens": 68,
+     "computed_mean": 470.55725190839695,
+     "fam_lcp_share": 0.14450951446230714,
+     "radix_amort_mean": 69.57633587786259,
+     "radix_amort_share": 0.14785944876141655
+    },
+    {
+     "family": "BBH fixed-option tasks",
+     "rows": 262,
+     "family_lcp_tokens": 66,
+     "computed_mean": 321.7328244274809,
+     "fam_lcp_share": 0.20513915581180156,
+     "radix_amort_mean": 94.0381679389313,
+     "radix_amort_share": 0.29228652098607255
+    },
+    {
+     "family": "ANLI",
+     "rows": 261,
+     "family_lcp_tokens": 68,
+     "computed_mean": 376.4750957854406,
+     "fam_lcp_share": 0.1806228373702422,
+     "radix_amort_mean": 68.97318007662835,
+     "radix_amort_share": 0.18320781599837166
+    },
+    {
+     "family": "WinoGrande",
+     "rows": 261,
+     "family_lcp_tokens": 62,
+     "computed_mean": 206.13793103448276,
+     "fam_lcp_share": 0.3007694881231181,
+     "radix_amort_mean": 63.383141762452105,
+     "radix_amort_share": 0.30747927586335083
+    },
+    {
+     "family": "HellaSwag",
+     "rows": 261,
+     "family_lcp_tokens": 61,
+     "computed_mean": 531.6934865900383,
+     "fam_lcp_share": 0.11472775487850576,
+     "radix_amort_mean": 65.20689655172414,
+     "radix_amort_share": 0.12264001383564407
+    },
+    {
+     "family": "FinEntity-entity-given",
+     "rows": 261,
+     "family_lcp_tokens": 48,
+     "computed_mean": 574.0268199233717,
+     "fam_lcp_share": 0.0836197862782921,
+     "radix_amort_mean": 56.45977011494253,
+     "radix_amort_share": 0.09835737313193745
+    },
+    {
+     "family": "VAST",
+     "rows": 261,
+     "family_lcp_tokens": 56,
+     "computed_mean": 430.49808429118775,
+     "fam_lcp_share": 0.1300818796724813,
+     "radix_amort_mean": 62.160919540229884,
+     "radix_amort_share": 0.1443930224279103
+    },
+    {
+     "family": "CRUXEval-output-choice",
+     "rows": 256,
+     "family_lcp_tokens": 83,
+     "computed_mean": 335.08203125,
+     "fam_lcp_share": 0.24770053974656392,
+     "radix_amort_mean": 86.84375,
+     "radix_amort_share": 0.25917161142910433
+    },
+    {
+     "family": "New Yorker caption matching",
+     "rows": 237,
+     "family_lcp_tokens": 69,
+     "computed_mean": 387.7974683544304,
+     "fam_lcp_share": 0.17792792792792791,
+     "radix_amort_mean": 71.70886075949367,
+     "radix_amort_share": 0.18491317404360882
+    },
+    {
+     "family": "API-Bank-tool-selection",
+     "rows": 228,
+     "family_lcp_tokens": 97,
+     "computed_mean": 7116.929824561404,
+     "fam_lcp_share": 0.013629472594382065,
+     "radix_amort_mean": 104.77631578947368,
+     "radix_amort_share": 0.014722122933947961
+    },
+    {
+     "family": "HLE-text-MC",
+     "rows": 225,
+     "family_lcp_tokens": 54,
+     "computed_mean": 860.0177777777777,
+     "fam_lcp_share": 0.06278939970233173,
+     "radix_amort_mean": 57.32,
+     "radix_amort_share": 0.06664978501736399
+    },
+    {
+     "family": "GSM8K-10",
+     "rows": 131,
+     "family_lcp_tokens": 91,
+     "computed_mean": 421.55725190839695,
+     "fam_lcp_share": 0.2158662900188324,
+     "radix_amort_mean": 93.9618320610687,
+     "radix_amort_share": 0.2228922207735767
+    },
+    {
+     "family": "GSM8K-4",
+     "rows": 131,
+     "family_lcp_tokens": 91,
+     "computed_mean": 319.17557251908397,
+     "fam_lcp_share": 0.28510953793169425,
+     "radix_amort_mean": 95.22137404580153,
+     "radix_amort_share": 0.29833540610351095
+    },
+    {
+     "family": "BRIGHT-retrieval",
+     "rows": 99,
+     "family_lcp_tokens": 58,
+     "computed_mean": 29819.565656565657,
+     "fam_lcp_share": 0.0019450316838276814,
+     "radix_amort_mean": 78.66666666666667,
+     "radix_amort_share": 0.002638088950478924
+    },
+    {
+     "family": "GPQA-Diamond",
+     "rows": 87,
+     "family_lcp_tokens": 53,
+     "computed_mean": 542.5747126436781,
+     "fam_lcp_share": 0.0976823997966274,
+     "radix_amort_mean": 54.57471264367816,
+     "radix_amort_share": 0.10058469621218541
+    },
+    {
+     "family": "iSarcasmEval-A-Ar",
+     "rows": 82,
+     "family_lcp_tokens": 90,
+     "computed_mean": 183.9878048780488,
+     "fam_lcp_share": 0.48916285543845694,
+     "radix_amort_mean": 90.60975609756098,
+     "radix_amort_share": 0.49247696692516735
+    },
+    {
+     "family": "iSarcasmEval-A-En",
+     "rows": 82,
+     "family_lcp_tokens": 89,
+     "computed_mean": 185.7560975609756,
+     "fam_lcp_share": 0.4791228991596639,
+     "radix_amort_mean": 90.71951219512195,
+     "radix_amort_share": 0.4883797268907563
+    },
+    {
+     "family": "iSarcasmEval-B-En",
+     "rows": 82,
+     "family_lcp_tokens": 336,
+     "computed_mean": 758.0121951219512,
+     "fam_lcp_share": 0.4432646363241469,
+     "radix_amort_mean": 333.0731707317073,
+     "radix_amort_share": 0.4394034461122641
+    },
+    {
+     "family": "ContractNLI",
+     "rows": 55,
+     "family_lcp_tokens": 1792,
+     "computed_mean": 6095.527272727273,
+     "fam_lcp_share": 0.29398605236626557,
+     "radix_amort_mean": 1811.9636363636364,
+     "radix_amort_share": 0.2972611810746479
+    },
+    {
+     "family": "Home-Appliance",
+     "rows": 39,
+     "family_lcp_tokens": 45,
+     "computed_mean": 4690.846153846154,
+     "fam_lcp_share": 0.009593151965366262,
+     "radix_amort_mean": 45.61538461538461,
+     "radix_amort_share": 0.009724340368311442
+    },
+    {
+     "family": "iSarcasmEval-C-Ar",
+     "rows": 12,
+     "family_lcp_tokens": 74,
+     "computed_mean": 251.0,
+     "fam_lcp_share": 0.2948207171314741,
+     "radix_amort_mean": 74.16666666666667,
+     "radix_amort_share": 0.2954847277556441
+    },
+    {
+     "family": "iSarcasmEval-C-En",
+     "rows": 12,
+     "family_lcp_tokens": 74,
+     "computed_mean": 252.16666666666666,
+     "fam_lcp_share": 0.29345670852610706,
+     "radix_amort_mean": 72.5,
+     "radix_amort_share": 0.28750826173165894
+    }
+   ],
+   "families_subset": [
+    {
+     "family": "When2Call MCQ",
+     "rows": 176,
+     "family_lcp_tokens": 78,
+     "computed_mean": 1086.8977272727273,
+     "fam_lcp_share": 0.07176388177360503,
+     "radix_amort_mean": 136.07386363636363,
+     "radix_amort_share": 0.12519472644202118
+    },
+    {
+     "family": "BFCL-tool-selection",
+     "rows": 126,
+     "family_lcp_tokens": 45,
+     "computed_mean": 1410.888888888889,
+     "fam_lcp_share": 0.03189478658056387,
+     "radix_amort_mean": 250.77777777777777,
+     "radix_amort_share": 0.17774452669711766
+    },
+    {
+     "family": "Amazon-ESCI",
+     "rows": 76,
+     "family_lcp_tokens": 155,
+     "computed_mean": 631.1842105263158,
+     "fam_lcp_share": 0.2455701480091724,
+     "radix_amort_mean": 157.75,
+     "radix_amort_share": 0.24992703773191577
+    },
+    {
+     "family": "BANKING77",
+     "rows": 76,
+     "family_lcp_tokens": 65,
+     "computed_mean": 2188.9736842105262,
+     "fam_lcp_share": 0.029694281145934767,
+     "radix_amort_mean": 67.07894736842105,
+     "radix_amort_share": 0.030644017263557782
+    },
+    {
+     "family": "CLINC150+OOS",
+     "rows": 76,
+     "family_lcp_tokens": 73,
+     "computed_mean": 3020.684210526316,
+     "fam_lcp_share": 0.02416671022598575,
+     "radix_amort_mean": 74.6842105263158,
+     "radix_amort_share": 0.024724269510219016
+    },
+    {
+     "family": "PhishNChips phishing decisions",
+     "rows": 76,
+     "family_lcp_tokens": 814,
+     "computed_mean": 1907.407894736842,
+     "fam_lcp_share": 0.4267571725198844,
+     "radix_amort_mean": 813.2763157894736,
+     "radix_amort_share": 0.42637776536081623
+    },
+    {
+     "family": "HoVer claim verification",
+     "rows": 76,
+     "family_lcp_tokens": 108,
+     "computed_mean": 561.4605263157895,
+     "fam_lcp_share": 0.19235546389819783,
+     "radix_amort_mean": 113.84210526315789,
+     "radix_amort_share": 0.20276065712076116
+    },
+    {
+     "family": "ForecastBench-binary",
+     "rows": 64,
+     "family_lcp_tokens": 58,
+     "computed_mean": 926.046875,
+     "fam_lcp_share": 0.06263181871867987,
+     "radix_amort_mean": 460.28125,
+     "radix_amort_share": 0.4970388243035753
+    },
+    {
+     "family": "BPoMP-original-limerick",
+     "rows": 61,
+     "family_lcp_tokens": 92,
+     "computed_mean": 388.88524590163934,
+     "fam_lcp_share": 0.2365736447179833,
+     "radix_amort_mean": 142.47540983606558,
+     "radix_amort_share": 0.36636877160441783
+    },
+    {
+     "family": "CFColor-preference",
+     "rows": 60,
+     "family_lcp_tokens": 80,
+     "computed_mean": 621.5333333333333,
+     "fam_lcp_share": 0.1287139332832779,
+     "radix_amort_mean": 83.06666666666666,
+     "radix_amort_share": 0.13364796739247023
+    },
+    {
+     "family": "Habermas-consensus",
+     "rows": 60,
+     "family_lcp_tokens": 102,
+     "computed_mean": 1462.9166666666667,
+     "fam_lcp_share": 0.06972372543434918,
+     "radix_amort_mean": 105.1,
+     "radix_amort_share": 0.0718427798348049
+    },
+    {
+     "family": "Humicroedit",
+     "rows": 59,
+     "family_lcp_tokens": 71,
+     "computed_mean": 224.40677966101694,
+     "fam_lcp_share": 0.31638972809667676,
+     "radix_amort_mean": 73.61016949152543,
+     "radix_amort_share": 0.32802114803625376
+    },
+    {
+     "family": "POP909-chord-pitch-class",
+     "rows": 59,
+     "family_lcp_tokens": 3532,
+     "computed_mean": 8383.915254237289,
+     "fam_lcp_share": 0.42128288429620075,
+     "radix_amort_mean": 3548.576271186441,
+     "radix_amort_share": 0.42326003586366956
+    },
+    {
+     "family": "ToolRet-retrieval",
+     "rows": 51,
+     "family_lcp_tokens": 60,
+     "computed_mean": 18693.352941176472,
+     "fam_lcp_share": 0.003209697061239132,
+     "radix_amort_mean": 360.1372549019608,
+     "radix_amort_share": 0.01926552481169253
+    },
+    {
+     "family": "NLI4CT-2024",
+     "rows": 50,
+     "family_lcp_tokens": 64,
+     "computed_mean": 801.0,
+     "fam_lcp_share": 0.07990012484394507,
+     "radix_amort_mean": 74.72,
+     "radix_amort_share": 0.09328339575530586
+    },
+    {
+     "family": "ACOS-category-sentiment",
+     "rows": 45,
+     "family_lcp_tokens": 43,
+     "computed_mean": 15805.644444444444,
+     "fam_lcp_share": 0.002720547090069089,
+     "radix_amort_mean": 7432.133333333333,
+     "radix_amort_share": 0.47022020262803443
+    },
+    {
+     "family": "RAGTruth response-level hallucination",
+     "rows": 45,
+     "family_lcp_tokens": 126,
+     "computed_mean": 997.1111111111111,
+     "fam_lcp_share": 0.12636505460218408,
+     "radix_amort_mean": 645.0666666666667,
+     "radix_amort_share": 0.6469355917093826
+    },
+    {
+     "family": "ANLI",
+     "rows": 43,
+     "family_lcp_tokens": 68,
+     "computed_mean": 373.5813953488372,
+     "fam_lcp_share": 0.18202191235059761,
+     "radix_amort_mean": 68.48837209302326,
+     "radix_amort_share": 0.18332918326693226
+    },
+    {
+     "family": "WinoGrande",
+     "rows": 43,
+     "family_lcp_tokens": 62,
+     "computed_mean": 205.72093023255815,
+     "fam_lcp_share": 0.30137915442007684,
+     "radix_amort_mean": 63.18604651162791,
+     "radix_amort_share": 0.3071444720777753
+    },
+    {
+     "family": "HellaSwag",
+     "rows": 43,
+     "family_lcp_tokens": 61,
+     "computed_mean": 524.7906976744187,
+     "fam_lcp_share": 0.11623681644952584,
+     "radix_amort_mean": 64.97674418604652,
+     "radix_amort_share": 0.12381458831870956
+    },
+    {
+     "family": "ChessBench-legal-move",
+     "rows": 43,
+     "family_lcp_tokens": 97,
+     "computed_mean": 1529.2558139534883,
+     "fam_lcp_share": 0.0634295446941817,
+     "radix_amort_mean": 175.34883720930233,
+     "radix_amort_share": 0.11466285470969312
+    },
+    {
+     "family": "MuSR",
+     "rows": 43,
+     "family_lcp_tokens": 54,
+     "computed_mean": 2213.1627906976746,
+     "fam_lcp_share": 0.024399470399092113,
+     "radix_amort_mean": 175.41860465116278,
+     "radix_amort_share": 0.07926150095622386
+    },
+    {
+     "family": "SATA-Bench",
+     "rows": 43,
+     "family_lcp_tokens": 57,
+     "computed_mean": 2335.0,
+     "fam_lcp_share": 0.024411134903640257,
+     "radix_amort_mean": 101.34883720930233,
+     "radix_amort_share": 0.04340421293760271
+    },
+    {
+     "family": "FinEntity-entity-given",
+     "rows": 43,
+     "family_lcp_tokens": 48,
+     "computed_mean": 579.0697674418604,
+     "fam_lcp_share": 0.08289156626506024,
+     "radix_amort_mean": 56.81395348837209,
+     "radix_amort_share": 0.09811244979919678
+    },
+    {
+     "family": "VAST",
+     "rows": 43,
+     "family_lcp_tokens": 56,
+     "computed_mean": 428.7906976744186,
+     "fam_lcp_share": 0.13059984813971146,
+     "radix_amort_mean": 59.27906976744186,
+     "radix_amort_share": 0.13824709838377264
+    },
+    {
+     "family": "CLadder",
+     "rows": 43,
+     "family_lcp_tokens": 79,
+     "computed_mean": 402.2325581395349,
+     "fam_lcp_share": 0.19640379278445882,
+     "radix_amort_mean": 118.46511627906976,
+     "radix_amort_share": 0.29451896392229415
+    },
+    {
+     "family": "MMLU-Pro",
+     "rows": 43,
+     "family_lcp_tokens": 68,
+     "computed_mean": 455.13953488372096,
+     "fam_lcp_share": 0.1494047314904706,
+     "radix_amort_mean": 68.51162790697674,
+     "radix_amort_share": 0.15052884369730724
+    },
+    {
+     "family": "BBH fixed-option tasks",
+     "rows": 43,
+     "family_lcp_tokens": 66,
+     "computed_mean": 340.8139534883721,
+     "fam_lcp_share": 0.19365404298874103,
+     "radix_amort_mean": 102.93023255813954,
+     "radix_amort_share": 0.3020129648584101
+    },
+    {
+     "family": "CRUXEval-output-choice",
+     "rows": 42,
+     "family_lcp_tokens": 83,
+     "computed_mean": 339.92857142857144,
+     "fam_lcp_share": 0.2441689430552637,
+     "radix_amort_mean": 86.11904761904762,
+     "radix_amort_share": 0.2533445401695034
+    },
+    {
+     "family": "New Yorker caption matching",
+     "rows": 39,
+     "family_lcp_tokens": 69,
+     "computed_mean": 382.56410256410254,
+     "fam_lcp_share": 0.18036193029490616,
+     "radix_amort_mean": 71.76923076923077,
+     "radix_amort_share": 0.1876005361930295
+    },
+    {
+     "family": "API-Bank-tool-selection",
+     "rows": 38,
+     "family_lcp_tokens": 97,
+     "computed_mean": 7136.973684210527,
+     "fam_lcp_share": 0.013591194852602274,
+     "radix_amort_mean": 103.57894736842105,
+     "radix_amort_share": 0.014513006766099444
+    },
+    {
+     "family": "HLE-text-MC",
+     "rows": 37,
+     "family_lcp_tokens": 54,
+     "computed_mean": 715.1351351351351,
+     "fam_lcp_share": 0.07551020408163266,
+     "radix_amort_mean": 55.4054054054054,
+     "radix_amort_share": 0.07747543461829176
+    },
+    {
+     "family": "GSM8K-10",
+     "rows": 22,
+     "family_lcp_tokens": 91,
+     "computed_mean": 416.59090909090907,
+     "fam_lcp_share": 0.21843971631205675,
+     "radix_amort_mean": 93.5,
+     "radix_amort_share": 0.22444080741953082
+    },
+    {
+     "family": "GSM8K-4",
+     "rows": 22,
+     "family_lcp_tokens": 91,
+     "computed_mean": 315.5,
+     "fam_lcp_share": 0.2884310618066561,
+     "radix_amort_mean": 96.18181818181819,
+     "radix_amort_share": 0.3048552081832589
+    },
+    {
+     "family": "iSarcasmEval-A-En",
+     "rows": 18,
+     "family_lcp_tokens": 89,
+     "computed_mean": 185.11111111111111,
+     "fam_lcp_share": 0.4807923169267707,
+     "radix_amort_mean": 94.88888888888889,
+     "radix_amort_share": 0.5126050420168067
+    },
+    {
+     "family": "BRIGHT-retrieval",
+     "rows": 16,
+     "family_lcp_tokens": 58,
+     "computed_mean": 25997.25,
+     "fam_lcp_share": 0.0022310052024733383,
+     "radix_amort_mean": 58.6875,
+     "radix_amort_share": 0.0022574503072440356
+    },
+    {
+     "family": "GPQA-Diamond",
+     "rows": 14,
+     "family_lcp_tokens": 53,
+     "computed_mean": 478.42857142857144,
+     "fam_lcp_share": 0.11077933711555689,
+     "radix_amort_mean": 53.214285714285715,
+     "radix_amort_share": 0.11122723200955509
+    },
+    {
+     "family": "iSarcasmEval-B-En",
+     "rows": 14,
+     "family_lcp_tokens": 336,
+     "computed_mean": 756.2142857142857,
+     "fam_lcp_share": 0.4443185038254463,
+     "radix_amort_mean": 336.42857142857144,
+     "radix_amort_share": 0.44488523661093793
+    },
+    {
+     "family": "ContractNLI",
+     "rows": 12,
+     "family_lcp_tokens": 1792,
+     "computed_mean": 5634.083333333333,
+     "fam_lcp_share": 0.31806416305521457,
+     "radix_amort_mean": 1867.8333333333333,
+     "radix_amort_share": 0.3315239095386709
+    },
+    {
+     "family": "Home-Appliance",
+     "rows": 12,
+     "family_lcp_tokens": 45,
+     "computed_mean": 4676.666666666667,
+     "fam_lcp_share": 0.00962223806129722,
+     "radix_amort_mean": 45.583333333333336,
+     "radix_amort_share": 0.009746970776906628
+    },
+    {
+     "family": "iSarcasmEval-A-Ar",
+     "rows": 9,
+     "family_lcp_tokens": 90,
+     "computed_mean": 182.77777777777777,
+     "fam_lcp_share": 0.49240121580547114,
+     "radix_amort_mean": 90.77777777777777,
+     "radix_amort_share": 0.4966565349544073
+    },
+    {
+     "family": "iSarcasmEval-C-Ar",
+     "rows": 3,
+     "family_lcp_tokens": 74,
+     "computed_mean": 261.3333333333333,
+     "fam_lcp_share": 0.28316326530612246,
+     "radix_amort_mean": 74.0,
+     "radix_amort_share": 0.28316326530612246
+    },
+    {
+     "family": "iSarcasmEval-C-En",
+     "rows": 1,
+     "family_lcp_tokens": 74,
+     "computed_mean": 220.0,
+     "fam_lcp_share": 0.33636363636363636,
+     "radix_amort_mean": 74.0,
+     "radix_amort_share": 0.33636363636363636
+    }
+   ]
+  },
+  "v3w": {
+   "global_lcp_tokens": 43,
+   "full_dev": {
+    "rows": 12104,
+    "computed_mean": 2583.465135492399,
+    "prefix_mean": 1933.6756444150694,
+    "glob": {
+     "mean_tokens": 43.0,
+     "median_tokens": 43.0,
+     "share_of_computed": 0.016644312094347018,
+     "share_of_prefix": 0.022237442005433834,
+     "mean_row_share": 0.06931572401780377
+    },
+    "fam_lcp": {
+     "mean_tokens": 214.61054196959682,
+     "median_tokens": 73.0,
+     "share_of_computed": 0.08307081021578905,
+     "share_of_prefix": 0.11098580187915426,
+     "mean_row_share": 0.14972219864192354
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 185.50693985459353,
+     "median_tokens": 64.0,
+     "share_of_computed": 0.07180547447923526,
+     "share_of_prefix": 0.09593487945632617,
+     "mean_row_share": 0.10566521459339552
+    },
+    "radix_any": {
+     "mean_tokens": 454.3753304692664,
+     "median_tokens": 99.0,
+     "share_of_computed": 0.17587825135587287,
+     "share_of_prefix": 0.2349801176746545,
+     "mean_row_share": 0.22920773142710743
+    },
+    "radix_amort": {
+     "mean_tokens": 428.4852115003305,
+     "median_tokens": 87.0,
+     "share_of_computed": 0.16585678111683233,
+     "share_of_prefix": 0.22159104746336392,
+     "mean_row_share": 0.21176715890719425
+    }
+   },
+   "subset_2008": {
+    "rows": 2008,
+    "computed_mean": 2543.741533864542,
+    "prefix_mean": 1908.2729083665338,
+    "glob": {
+     "mean_tokens": 43.0,
+     "median_tokens": 43.0,
+     "share_of_computed": 0.01690423316502321,
+     "share_of_prefix": 0.022533464585423293,
+     "mean_row_share": 0.06885696144122748
+    },
+    "fam_lcp": {
+     "mean_tokens": 215.62001992031873,
+     "median_tokens": 73.0,
+     "share_of_computed": 0.08476490911116319,
+     "share_of_prefix": 0.11299223448332016,
+     "mean_row_share": 0.14961650124484585
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 186.48605577689244,
+     "median_tokens": 64.0,
+     "share_of_computed": 0.07331171555530495,
+     "share_of_prefix": 0.0977250449656716,
+     "mean_row_share": 0.10568495893120845
+    },
+    "radix_any": {
+     "mean_tokens": 462.8914342629482,
+     "median_tokens": 99.0,
+     "share_of_computed": 0.1819726682528579,
+     "share_of_prefix": 0.24257087769441715,
+     "mean_row_share": 0.22824500752826357
+    },
+    "radix_amort": {
+     "mean_tokens": 439.4322709163347,
+     "median_tokens": 87.0,
+     "share_of_computed": 0.17275036204198532,
+     "share_of_prefix": 0.23027747707872934,
+     "mean_row_share": 0.2115926307008531
+    }
+   },
+   "common_2000": {
+    "rows": 2000,
+    "computed_mean": 2401.037,
+    "prefix_mean": 1839.8745,
+    "glob": {
+     "mean_tokens": 43.0,
+     "median_tokens": 43.0,
+     "share_of_computed": 0.017908928517136553,
+     "share_of_prefix": 0.023371159282875,
+     "mean_row_share": 0.06912765030539708
+    },
+    "fam_lcp": {
+     "mean_tokens": 216.2475,
+     "median_tokens": 73.0,
+     "share_of_computed": 0.09006420975603457,
+     "share_of_prefix": 0.11753383179124445,
+     "mean_row_share": 0.1502084823094466
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 187.232,
+     "median_tokens": 64.0,
+     "share_of_computed": 0.07797963963070956,
+     "share_of_prefix": 0.10176346267095936,
+     "mean_row_share": 0.10610769876693328
+    },
+    "radix_any": {
+     "mean_tokens": 462.84,
+     "median_tokens": 99.0,
+     "share_of_computed": 0.19276670871794147,
+     "share_of_prefix": 0.2515606363368806,
+     "mean_row_share": 0.22909760379104444
+    },
+    "radix_amort": {
+     "mean_tokens": 439.287,
+     "median_tokens": 87.5,
+     "share_of_computed": 0.18295719724435733,
+     "share_of_prefix": 0.23875921971851885,
+     "mean_row_share": 0.21237861745632433
+    }
+   },
+   "families_full_dev": [
+    {
+     "family": "When2Call MCQ",
+     "rows": 1066,
+     "family_lcp_tokens": 77,
+     "computed_mean": 1086.253283302064,
+     "fam_lcp_share": 0.07088586168957793,
+     "radix_amort_mean": 139.2110694183865,
+     "radix_amort_share": 0.1281570988629867
+    },
+    {
+     "family": "BFCL-tool-selection",
+     "rows": 761,
+     "family_lcp_tokens": 45,
+     "computed_mean": 1328.3942181340342,
+     "fam_lcp_share": 0.033875486196567835,
+     "radix_amort_mean": 261.8094612352168,
+     "radix_amort_share": 0.19708717311565443
+    },
+    {
+     "family": "HoVer claim verification",
+     "rows": 461,
+     "family_lcp_tokens": 106,
+     "computed_mean": 555.709327548807,
+     "fam_lcp_share": 0.19074720316025326,
+     "radix_amort_mean": 113.11496746203905,
+     "radix_amort_share": 0.203550600744783
+    },
+    {
+     "family": "Amazon-ESCI",
+     "rows": 460,
+     "family_lcp_tokens": 151,
+     "computed_mean": 636.1739130434783,
+     "fam_lcp_share": 0.23735647895024603,
+     "radix_amort_mean": 153.48695652173913,
+     "radix_amort_share": 0.2412657189721159
+    },
+    {
+     "family": "BANKING77",
+     "rows": 460,
+     "family_lcp_tokens": 65,
+     "computed_mean": 2930.6065217391306,
+     "fam_lcp_share": 0.022179709052659376,
+     "radix_amort_mean": 66.91956521739131,
+     "radix_amort_share": 0.022834715176187747
+    },
+    {
+     "family": "CLINC150+OOS",
+     "rows": 460,
+     "family_lcp_tokens": 73,
+     "computed_mean": 3828.3521739130433,
+     "fam_lcp_share": 0.01906825618014789,
+     "radix_amort_mean": 74.6304347826087,
+     "radix_amort_share": 0.019494140400967155
+    },
+    {
+     "family": "PhishNChips phishing decisions",
+     "rows": 460,
+     "family_lcp_tokens": 796,
+     "computed_mean": 1869.5108695652175,
+     "fam_lcp_share": 0.42577981918079016,
+     "radix_amort_mean": 803.1543478260869,
+     "radix_amort_share": 0.4296066746126341
+    },
+    {
+     "family": "ForecastBench-binary",
+     "rows": 389,
+     "family_lcp_tokens": 58,
+     "computed_mean": 919.974293059126,
+     "fam_lcp_share": 0.06304523989158074,
+     "radix_amort_mean": 455.18251928020567,
+     "radix_amort_share": 0.4947774331461145
+    },
+    {
+     "family": "BPoMP-original-limerick",
+     "rows": 366,
+     "family_lcp_tokens": 92,
+     "computed_mean": 393.26229508196724,
+     "fam_lcp_share": 0.2339405560882071,
+     "radix_amort_mean": 140.19398907103826,
+     "radix_amort_share": 0.356489780038073
+    },
+    {
+     "family": "CFColor-preference",
+     "rows": 361,
+     "family_lcp_tokens": 79,
+     "computed_mean": 617.6731301939058,
+     "fam_lcp_share": 0.1278993631715849,
+     "radix_amort_mean": 82.03601108033241,
+     "radix_amort_share": 0.13281460220647592
+    },
+    {
+     "family": "Habermas-consensus",
+     "rows": 361,
+     "family_lcp_tokens": 102,
+     "computed_mean": 1447.5540166204987,
+     "fam_lcp_share": 0.0704636917371361,
+     "radix_amort_mean": 105.42659279778394,
+     "radix_amort_share": 0.07283085231176098
+    },
+    {
+     "family": "Humicroedit",
+     "rows": 360,
+     "family_lcp_tokens": 71,
+     "computed_mean": 223.36111111111111,
+     "fam_lcp_share": 0.31787091157816194,
+     "radix_amort_mean": 73.13333333333334,
+     "radix_amort_share": 0.3274219624424823
+    },
+    {
+     "family": "POP909-chord-pitch-class",
+     "rows": 360,
+     "family_lcp_tokens": 3532,
+     "computed_mean": 11918.863888888889,
+     "fam_lcp_share": 0.296336969104298,
+     "radix_amort_mean": 3531.7694444444446,
+     "radix_amort_share": 0.296317625351596
+    },
+    {
+     "family": "ToolRet-retrieval",
+     "rows": 308,
+     "family_lcp_tokens": 60,
+     "computed_mean": 19723.646103896102,
+     "fam_lcp_share": 0.003042033895961453,
+     "radix_amort_mean": 307.70454545454544,
+     "radix_amort_share": 0.015600794286902316
+    },
+    {
+     "family": "NLI4CT-2024",
+     "rows": 304,
+     "family_lcp_tokens": 64,
+     "computed_mean": 814.2631578947369,
+     "fam_lcp_share": 0.07859866847650443,
+     "radix_amort_mean": 70.90789473684211,
+     "radix_amort_share": 0.08708228298106134
+    },
+    {
+     "family": "RAGTruth response-level hallucination",
+     "rows": 270,
+     "family_lcp_tokens": 124,
+     "computed_mean": 1011.437037037037,
+     "fam_lcp_share": 0.12259784391844387,
+     "radix_amort_mean": 649.6962962962963,
+     "radix_amort_share": 0.6423497187719709
+    },
+    {
+     "family": "ChessBench-legal-move",
+     "rows": 262,
+     "family_lcp_tokens": 95,
+     "computed_mean": 2238.1832061068703,
+     "fam_lcp_share": 0.042445140210503336,
+     "radix_amort_mean": 164.28625954198472,
+     "radix_amort_share": 0.0734016139044072
+    },
+    {
+     "family": "MuSR",
+     "rows": 262,
+     "family_lcp_tokens": 54,
+     "computed_mean": 2042.320610687023,
+     "fam_lcp_share": 0.02644051071973208,
+     "radix_amort_mean": 171.49236641221373,
+     "radix_amort_share": 0.08396936578656221
+    },
+    {
+     "family": "SATA-Bench",
+     "rows": 262,
+     "family_lcp_tokens": 57,
+     "computed_mean": 2030.851145038168,
+     "fam_lcp_share": 0.028067049689616094,
+     "radix_amort_mean": 97.29007633587786,
+     "radix_amort_share": 0.04790605976887065
+    },
+    {
+     "family": "ACOS-category-sentiment",
+     "rows": 262,
+     "family_lcp_tokens": 43,
+     "computed_mean": 15598.087786259543,
+     "fam_lcp_share": 0.002756748172547085,
+     "radix_amort_mean": 7140.736641221374,
+     "radix_amort_share": 0.45779564386807053
+    },
+    {
+     "family": "CLadder",
+     "rows": 262,
+     "family_lcp_tokens": 79,
+     "computed_mean": 399.21374045801525,
+     "fam_lcp_share": 0.19788898024743293,
+     "radix_amort_mean": 122.9885496183206,
+     "radix_amort_share": 0.30807694514025663
+    },
+    {
+     "family": "MMLU-Pro",
+     "rows": 262,
+     "family_lcp_tokens": 67,
+     "computed_mean": 451.7175572519084,
+     "fam_lcp_share": 0.14832277144064215,
+     "radix_amort_mean": 68.5,
+     "radix_amort_share": 0.1516434305027461
+    },
+    {
+     "family": "BBH fixed-option tasks",
+     "rows": 262,
+     "family_lcp_tokens": 64,
+     "computed_mean": 330.1679389312977,
+     "fam_lcp_share": 0.19384074724868214,
+     "radix_amort_mean": 93.53053435114504,
+     "radix_amort_share": 0.28328169795616387
+    },
+    {
+     "family": "ANLI",
+     "rows": 261,
+     "family_lcp_tokens": 68,
+     "computed_mean": 370.4750957854406,
+     "fam_lcp_share": 0.1835481001923594,
+     "radix_amort_mean": 68.97318007662835,
+     "radix_amort_share": 0.18617494363662687
+    },
+    {
+     "family": "WinoGrande",
+     "rows": 261,
+     "family_lcp_tokens": 62,
+     "computed_mean": 202.13793103448276,
+     "fam_lcp_share": 0.3067212555441829,
+     "radix_amort_mean": 63.383141762452105,
+     "radix_amort_share": 0.3135638197050684
+    },
+    {
+     "family": "HellaSwag",
+     "rows": 261,
+     "family_lcp_tokens": 61,
+     "computed_mean": 523.6934865900383,
+     "fam_lcp_share": 0.11648034883380644,
+     "radix_amort_mean": 65.20689655172414,
+     "radix_amort_share": 0.1245134763395862
+    },
+    {
+     "family": "FinEntity-entity-given",
+     "rows": 261,
+     "family_lcp_tokens": 48,
+     "computed_mean": 561.1532567049809,
+     "fam_lcp_share": 0.08553812960446808,
+     "radix_amort_mean": 56.35632183908046,
+     "radix_amort_share": 0.1004294658646329
+    },
+    {
+     "family": "VAST",
+     "rows": 261,
+     "family_lcp_tokens": 56,
+     "computed_mean": 424.49808429118775,
+     "fam_lcp_share": 0.13192050111016843,
+     "radix_amort_mean": 62.0919540229885,
+     "radix_amort_share": 0.14627145874325326
+    },
+    {
+     "family": "CRUXEval-output-choice",
+     "rows": 256,
+     "family_lcp_tokens": 83,
+     "computed_mean": 337.5078125,
+     "fam_lcp_share": 0.24592023332793223,
+     "radix_amort_mean": 86.84375,
+     "radix_amort_share": 0.2573088585912363
+    },
+    {
+     "family": "New Yorker caption matching",
+     "rows": 237,
+     "family_lcp_tokens": 68,
+     "computed_mean": 377.7974683544304,
+     "fam_lcp_share": 0.17999061850834283,
+     "radix_amort_mean": 70.57805907172995,
+     "radix_amort_share": 0.18681453684469163
+    },
+    {
+     "family": "API-Bank-tool-selection",
+     "rows": 228,
+     "family_lcp_tokens": 97,
+     "computed_mean": 7459.929824561404,
+     "fam_lcp_share": 0.01300280328115593,
+     "radix_amort_mean": 104.77631578947368,
+     "radix_amort_share": 0.014045214667369054
+    },
+    {
+     "family": "HLE-text-MC",
+     "rows": 225,
+     "family_lcp_tokens": 54,
+     "computed_mean": 845.9822222222223,
+     "fam_lcp_share": 0.06383112857638196,
+     "radix_amort_mean": 57.315555555555555,
+     "radix_amort_share": 0.06775030733506351
+    },
+    {
+     "family": "GSM8K-10",
+     "rows": 131,
+     "family_lcp_tokens": 91,
+     "computed_mean": 508.77862595419845,
+     "fam_lcp_share": 0.17885971492873218,
+     "radix_amort_mean": 93.9618320610687,
+     "radix_amort_share": 0.18468117029257314
+    },
+    {
+     "family": "GSM8K-4",
+     "rows": 131,
+     "family_lcp_tokens": 91,
+     "computed_mean": 319.17557251908397,
+     "fam_lcp_share": 0.28510953793169425,
+     "radix_amort_mean": 95.22137404580153,
+     "radix_amort_share": 0.29833540610351095
+    },
+    {
+     "family": "BRIGHT-retrieval",
+     "rows": 99,
+     "family_lcp_tokens": 58,
+     "computed_mean": 29691.565656565657,
+     "fam_lcp_share": 0.001953416693173758,
+     "radix_amort_mean": 78.60606060606061,
+     "radix_amort_share": 0.0026474205340087397
+    },
+    {
+     "family": "GPQA-Diamond",
+     "rows": 87,
+     "family_lcp_tokens": 53,
+     "computed_mean": 534.5747126436781,
+     "fam_lcp_share": 0.09914423325019352,
+     "radix_amort_mean": 54.57471264367816,
+     "radix_amort_share": 0.10208996301711533
+    },
+    {
+     "family": "iSarcasmEval-A-Ar",
+     "rows": 82,
+     "family_lcp_tokens": 88,
+     "computed_mean": 179.9878048780488,
+     "fam_lcp_share": 0.4889220136865641,
+     "radix_amort_mean": 88.60975609756098,
+     "radix_amort_share": 0.4923097770851684
+    },
+    {
+     "family": "iSarcasmEval-A-En",
+     "rows": 82,
+     "family_lcp_tokens": 87,
+     "computed_mean": 181.7560975609756,
+     "fam_lcp_share": 0.4786634460547504,
+     "radix_amort_mean": 88.71951219512195,
+     "radix_amort_share": 0.48812399355877617
+    },
+    {
+     "family": "iSarcasmEval-B-En",
+     "rows": 82,
+     "family_lcp_tokens": 324,
+     "computed_mean": 734.0121951219512,
+     "fam_lcp_share": 0.441409559886358,
+     "radix_amort_mean": 321.219512195122,
+     "radix_amort_share": 0.43762149229925734
+    },
+    {
+     "family": "ContractNLI",
+     "rows": 55,
+     "family_lcp_tokens": 1741,
+     "computed_mean": 5993.527272727273,
+     "fam_lcp_share": 0.2904800330053027,
+     "radix_amort_mean": 1761.8909090909092,
+     "radix_amort_share": 0.2939656113868294
+    },
+    {
+     "family": "Home-Appliance",
+     "rows": 39,
+     "family_lcp_tokens": 45,
+     "computed_mean": 4851.25641025641,
+     "fam_lcp_share": 0.009275947547291476,
+     "radix_amort_mean": 45.61538461538461,
+     "radix_amort_share": 0.00940279811204076
+    },
+    {
+     "family": "iSarcasmEval-C-Ar",
+     "rows": 12,
+     "family_lcp_tokens": 74,
+     "computed_mean": 251.0,
+     "fam_lcp_share": 0.2948207171314741,
+     "radix_amort_mean": 74.16666666666667,
+     "radix_amort_share": 0.2954847277556441
+    },
+    {
+     "family": "iSarcasmEval-C-En",
+     "rows": 12,
+     "family_lcp_tokens": 74,
+     "computed_mean": 252.16666666666666,
+     "fam_lcp_share": 0.29345670852610706,
+     "radix_amort_mean": 72.5,
+     "radix_amort_share": 0.28750826173165894
+    }
+   ],
+   "families_subset": [
+    {
+     "family": "When2Call MCQ",
+     "rows": 176,
+     "family_lcp_tokens": 77,
+     "computed_mean": 1078.8977272727273,
+     "fam_lcp_share": 0.07136913727183679,
+     "radix_amort_mean": 134.0965909090909,
+     "radix_amort_share": 0.12429036369189934
+    },
+    {
+     "family": "BFCL-tool-selection",
+     "rows": 126,
+     "family_lcp_tokens": 45,
+     "computed_mean": 1398.6031746031747,
+     "fam_lcp_share": 0.03217495914290903,
+     "radix_amort_mean": 247.22222222222223,
+     "radix_amort_share": 0.1767636644270928
+    },
+    {
+     "family": "Amazon-ESCI",
+     "rows": 76,
+     "family_lcp_tokens": 151,
+     "computed_mean": 623.1842105263158,
+     "fam_lcp_share": 0.24230395675858282,
+     "radix_amort_mean": 153.75,
+     "radix_amort_share": 0.24671677716312657
+    },
+    {
+     "family": "BANKING77",
+     "rows": 76,
+     "family_lcp_tokens": 65,
+     "computed_mean": 2931.4605263157896,
+     "fam_lcp_share": 0.022173247572837323,
+     "radix_amort_mean": 67.07894736842105,
+     "radix_amort_share": 0.022882432414235765
+    },
+    {
+     "family": "CLINC150+OOS",
+     "rows": 76,
+     "family_lcp_tokens": 73,
+     "computed_mean": 3829.0263157894738,
+     "fam_lcp_share": 0.019064899005518787,
+     "radix_amort_mean": 74.6842105263158,
+     "radix_amort_share": 0.019504752479330322
+    },
+    {
+     "family": "PhishNChips phishing decisions",
+     "rows": 76,
+     "family_lcp_tokens": 796,
+     "computed_mean": 1871.407894736842,
+     "fam_lcp_share": 0.4253482109585381,
+     "radix_amort_mean": 795.5131578947369,
+     "radix_amort_share": 0.42508806344786854
+    },
+    {
+     "family": "HoVer claim verification",
+     "rows": 76,
+     "family_lcp_tokens": 106,
+     "computed_mean": 557.4605263157895,
+     "fam_lcp_share": 0.19014799254136475,
+     "radix_amort_mean": 111.84210526315789,
+     "radix_amort_share": 0.20062784714518375
+    },
+    {
+     "family": "ForecastBench-binary",
+     "rows": 64,
+     "family_lcp_tokens": 58,
+     "computed_mean": 922.046875,
+     "fam_lcp_share": 0.06290352646116826,
+     "radix_amort_mean": 458.28125,
+     "radix_amort_share": 0.49702597820745287
+    },
+    {
+     "family": "BPoMP-original-limerick",
+     "rows": 61,
+     "family_lcp_tokens": 92,
+     "computed_mean": 388.88524590163934,
+     "fam_lcp_share": 0.2365736447179833,
+     "radix_amort_mean": 142.47540983606558,
+     "radix_amort_share": 0.36636877160441783
+    },
+    {
+     "family": "CFColor-preference",
+     "rows": 60,
+     "family_lcp_tokens": 79,
+     "computed_mean": 617.5333333333333,
+     "fam_lcp_share": 0.1279283169599482,
+     "radix_amort_mean": 82.0,
+     "radix_amort_share": 0.1327863543128576
+    },
+    {
+     "family": "Habermas-consensus",
+     "rows": 60,
+     "family_lcp_tokens": 102,
+     "computed_mean": 1462.9166666666667,
+     "fam_lcp_share": 0.06972372543434918,
+     "radix_amort_mean": 105.1,
+     "radix_amort_share": 0.0718427798348049
+    },
+    {
+     "family": "Humicroedit",
+     "rows": 59,
+     "family_lcp_tokens": 71,
+     "computed_mean": 224.40677966101694,
+     "fam_lcp_share": 0.31638972809667676,
+     "radix_amort_mean": 73.61016949152543,
+     "radix_amort_share": 0.32802114803625376
+    },
+    {
+     "family": "POP909-chord-pitch-class",
+     "rows": 59,
+     "family_lcp_tokens": 3532,
+     "computed_mean": 11824.915254237289,
+     "fam_lcp_share": 0.29869135837860306,
+     "radix_amort_mean": 3548.576271186441,
+     "radix_amort_share": 0.30009316725672597
+    },
+    {
+     "family": "ToolRet-retrieval",
+     "rows": 51,
+     "family_lcp_tokens": 60,
+     "computed_mean": 18565.352941176472,
+     "fam_lcp_share": 0.0032318265206219047,
+     "radix_amort_mean": 358.5686274509804,
+     "radix_amort_share": 0.019313859994317898
+    },
+    {
+     "family": "NLI4CT-2024",
+     "rows": 50,
+     "family_lcp_tokens": 64,
+     "computed_mean": 797.0,
+     "fam_lcp_share": 0.08030112923462986,
+     "radix_amort_mean": 74.72,
+     "radix_amort_share": 0.09375156838143037
+    },
+    {
+     "family": "ACOS-category-sentiment",
+     "rows": 45,
+     "family_lcp_tokens": 43,
+     "computed_mean": 15569.377777777778,
+     "fam_lcp_share": 0.002761831629609119,
+     "radix_amort_mean": 7314.0,
+     "radix_amort_share": 0.4697682916037464
+    },
+    {
+     "family": "RAGTruth response-level hallucination",
+     "rows": 45,
+     "family_lcp_tokens": 124,
+     "computed_mean": 993.1111111111111,
+     "fam_lcp_share": 0.12486014768404564,
+     "radix_amort_mean": 643.0222222222222,
+     "radix_amort_share": 0.6474826583128217
+    },
+    {
+     "family": "ANLI",
+     "rows": 43,
+     "family_lcp_tokens": 68,
+     "computed_mean": 367.5813953488372,
+     "fam_lcp_share": 0.18499304061748703,
+     "radix_amort_mean": 68.48837209302326,
+     "radix_amort_share": 0.18632165000632672
+    },
+    {
+     "family": "WinoGrande",
+     "rows": 43,
+     "family_lcp_tokens": 62,
+     "computed_mean": 201.72093023255815,
+     "fam_lcp_share": 0.3073553147336869,
+     "radix_amort_mean": 63.18604651162791,
+     "radix_amort_share": 0.3132349550380447
+    },
+    {
+     "family": "HellaSwag",
+     "rows": 43,
+     "family_lcp_tokens": 61,
+     "computed_mean": 516.7906976744187,
+     "fam_lcp_share": 0.11803618036180362,
+     "radix_amort_mean": 64.97674418604652,
+     "radix_amort_share": 0.12573125731257312
+    },
+    {
+     "family": "ChessBench-legal-move",
+     "rows": 43,
+     "family_lcp_tokens": 95,
+     "computed_mean": 2169.4186046511627,
+     "fam_lcp_share": 0.043790534383877366,
+     "radix_amort_mean": 175.34883720930233,
+     "radix_amort_share": 0.0808275714209144
+    },
+    {
+     "family": "MuSR",
+     "rows": 43,
+     "family_lcp_tokens": 54,
+     "computed_mean": 2207.3953488372094,
+     "fam_lcp_share": 0.024463220885395816,
+     "radix_amort_mean": 175.41860465116278,
+     "radix_amort_share": 0.07946859394424662
+    },
+    {
+     "family": "SATA-Bench",
+     "rows": 43,
+     "family_lcp_tokens": 57,
+     "computed_mean": 2295.4651162790697,
+     "fam_lcp_share": 0.024831568816169394,
+     "radix_amort_mean": 100.65116279069767,
+     "radix_amort_share": 0.04384782939060838
+    },
+    {
+     "family": "FinEntity-entity-given",
+     "rows": 43,
+     "family_lcp_tokens": 48,
+     "computed_mean": 565.953488372093,
+     "fam_lcp_share": 0.08481262327416174,
+     "radix_amort_mean": 56.674418604651166,
+     "radix_amort_share": 0.10013971071663379
+    },
+    {
+     "family": "VAST",
+     "rows": 43,
+     "family_lcp_tokens": 56,
+     "computed_mean": 422.7906976744186,
+     "fam_lcp_share": 0.13245324532453245,
+     "radix_amort_mean": 59.27906976744186,
+     "radix_amort_share": 0.1402090209020902
+    },
+    {
+     "family": "CLadder",
+     "rows": 43,
+     "family_lcp_tokens": 79,
+     "computed_mean": 398.2325581395349,
+     "fam_lcp_share": 0.1983765475356225,
+     "radix_amort_mean": 118.18604651162791,
+     "radix_amort_share": 0.2967764540995095
+    },
+    {
+     "family": "MMLU-Pro",
+     "rows": 43,
+     "family_lcp_tokens": 67,
+     "computed_mean": 436.6279069767442,
+     "fam_lcp_share": 0.15344873501997336,
+     "radix_amort_mean": 67.51162790697674,
+     "radix_amort_share": 0.15462050599201066
+    },
+    {
+     "family": "BBH fixed-option tasks",
+     "rows": 43,
+     "family_lcp_tokens": 64,
+     "computed_mean": 353.90697674418607,
+     "fam_lcp_share": 0.18083848074648443,
+     "radix_amort_mean": 102.48837209302326,
+     "radix_amort_share": 0.2895912734919175
+    },
+    {
+     "family": "CRUXEval-output-choice",
+     "rows": 42,
+     "family_lcp_tokens": 83,
+     "computed_mean": 345.1190476190476,
+     "fam_lcp_share": 0.24049672300793376,
+     "radix_amort_mean": 86.11904761904762,
+     "radix_amort_share": 0.24953432218006208
+    },
+    {
+     "family": "New Yorker caption matching",
+     "rows": 39,
+     "family_lcp_tokens": 68,
+     "computed_mean": 372.56410256410254,
+     "fam_lcp_share": 0.1825189263592567,
+     "radix_amort_mean": 70.61538461538461,
+     "radix_amort_share": 0.18953888506538197
+    },
+    {
+     "family": "API-Bank-tool-selection",
+     "rows": 38,
+     "family_lcp_tokens": 97,
+     "computed_mean": 7479.973684210527,
+     "fam_lcp_share": 0.012967960061778996,
+     "radix_amort_mean": 103.57894736842105,
+     "radix_amort_share": 0.013847501574379308
+    },
+    {
+     "family": "HLE-text-MC",
+     "rows": 37,
+     "family_lcp_tokens": 54,
+     "computed_mean": 701.4054054054054,
+     "fam_lcp_share": 0.07698828606658446,
+     "radix_amort_mean": 55.4054054054054,
+     "radix_amort_share": 0.07899198520345253
+    },
+    {
+     "family": "GSM8K-10",
+     "rows": 22,
+     "family_lcp_tokens": 91,
+     "computed_mean": 502.54545454545456,
+     "fam_lcp_share": 0.1810781476121563,
+     "radix_amort_mean": 93.5,
+     "radix_amort_share": 0.18605282199710566
+    },
+    {
+     "family": "GSM8K-4",
+     "rows": 22,
+     "family_lcp_tokens": 91,
+     "computed_mean": 315.5,
+     "fam_lcp_share": 0.2884310618066561,
+     "radix_amort_mean": 96.18181818181819,
+     "radix_amort_share": 0.3048552081832589
+    },
+    {
+     "family": "iSarcasmEval-A-En",
+     "rows": 18,
+     "family_lcp_tokens": 87,
+     "computed_mean": 181.11111111111111,
+     "fam_lcp_share": 0.4803680981595092,
+     "radix_amort_mean": 92.77777777777777,
+     "radix_amort_share": 0.5122699386503068
+    },
+    {
+     "family": "BRIGHT-retrieval",
+     "rows": 16,
+     "family_lcp_tokens": 58,
+     "computed_mean": 25869.25,
+     "fam_lcp_share": 0.0022420441257477506,
+     "radix_amort_mean": 58.6875,
+     "radix_amort_share": 0.002268620079824502
+    },
+    {
+     "family": "GPQA-Diamond",
+     "rows": 14,
+     "family_lcp_tokens": 53,
+     "computed_mean": 470.42857142857144,
+     "fam_lcp_share": 0.11266322502277558,
+     "radix_amort_mean": 53.214285714285715,
+     "radix_amort_share": 0.11311873671424233
+    },
+    {
+     "family": "iSarcasmEval-B-En",
+     "rows": 14,
+     "family_lcp_tokens": 324,
+     "computed_mean": 732.2142857142857,
+     "fam_lcp_share": 0.4424934152765584,
+     "radix_amort_mean": 324.42857142857144,
+     "radix_amort_share": 0.4430787240269242
+    },
+    {
+     "family": "ContractNLI",
+     "rows": 12,
+     "family_lcp_tokens": 1741,
+     "computed_mean": 5532.083333333333,
+     "fam_lcp_share": 0.31470964826391506,
+     "radix_amort_mean": 1821.0833333333333,
+     "radix_amort_share": 0.32918581004745046
+    },
+    {
+     "family": "Home-Appliance",
+     "rows": 12,
+     "family_lcp_tokens": 45,
+     "computed_mean": 4837.166666666667,
+     "fam_lcp_share": 0.00930296661268649,
+     "radix_amort_mean": 45.583333333333336,
+     "radix_amort_share": 0.009423560624332425
+    },
+    {
+     "family": "iSarcasmEval-A-Ar",
+     "rows": 9,
+     "family_lcp_tokens": 88,
+     "computed_mean": 178.77777777777777,
+     "fam_lcp_share": 0.49223119950279676,
+     "radix_amort_mean": 88.77777777777777,
+     "radix_amort_share": 0.49658172778123055
+    },
+    {
+     "family": "iSarcasmEval-C-Ar",
+     "rows": 3,
+     "family_lcp_tokens": 74,
+     "computed_mean": 261.3333333333333,
+     "fam_lcp_share": 0.28316326530612246,
+     "radix_amort_mean": 74.0,
+     "radix_amort_share": 0.28316326530612246
+    },
+    {
+     "family": "iSarcasmEval-C-En",
+     "rows": 1,
+     "family_lcp_tokens": 74,
+     "computed_mean": 220.0,
+     "fam_lcp_share": 0.33636363636363636,
+     "radix_amort_mean": 74.0,
+     "radix_amort_share": 0.33636363636363636
+    }
+   ]
+  },
+  "clef": {
+   "global_lcp_tokens": 36,
+   "full_dev": {
+    "rows": 12104,
+    "computed_mean": 1632.9101949768672,
+    "prefix_mean": 1632.9101949768672,
+    "glob": {
+     "mean_tokens": 36.0,
+     "median_tokens": 36.0,
+     "share_of_computed": 0.022046527794818502,
+     "share_of_prefix": 0.022046527794818502,
+     "mean_row_share": 0.07719072428247865
+    },
+    "fam_lcp": {
+     "mean_tokens": 148.10880700594845,
+     "median_tokens": 39.0,
+     "share_of_computed": 0.09070235917539032,
+     "share_of_prefix": 0.09070235917539032,
+     "mean_row_share": 0.13536925490682694
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 113.3853271645737,
+     "median_tokens": 0.0,
+     "share_of_computed": 0.06943757685717676,
+     "share_of_prefix": 0.06943757685717676,
+     "mean_row_share": 0.06726526579693842
+    },
+    "radix_any": {
+     "mean_tokens": 244.74281229345672,
+     "median_tokens": 69.0,
+     "share_of_computed": 0.14988136705027058,
+     "share_of_prefix": 0.14988136705027058,
+     "mean_row_share": 0.2567950200762767
+    },
+    "radix_amort": {
+     "mean_tokens": 219.73942498347654,
+     "median_tokens": 61.0,
+     "share_of_computed": 0.1345692039032125,
+     "share_of_prefix": 0.1345692039032125,
+     "mean_row_share": 0.22936219742257075
+    }
+   },
+   "subset_2008": {
+    "rows": 2008,
+    "computed_mean": 1613.9113545816733,
+    "prefix_mean": 1613.9113545816733,
+    "glob": {
+     "mean_tokens": 36.0,
+     "median_tokens": 36.0,
+     "share_of_computed": 0.022306057825171706,
+     "share_of_prefix": 0.022306057825171706,
+     "mean_row_share": 0.0767155974500033
+    },
+    "fam_lcp": {
+     "mean_tokens": 148.50298804780877,
+     "median_tokens": 39.0,
+     "share_of_computed": 0.09201433996125569,
+     "share_of_prefix": 0.09201433996125569,
+     "mean_row_share": 0.1348141704516253
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 113.75298804780877,
+     "median_tokens": 0.0,
+     "share_of_computed": 0.07048279803279134,
+     "share_of_prefix": 0.07048279803279134,
+     "mean_row_share": 0.06707297491777511
+    },
+    "radix_any": {
+     "mean_tokens": 251.95717131474103,
+     "median_tokens": 69.0,
+     "share_of_computed": 0.1561158675781474,
+     "share_of_prefix": 0.1561158675781474,
+     "mean_row_share": 0.2556444580190429
+    },
+    "radix_amort": {
+     "mean_tokens": 227.46613545816734,
+     "median_tokens": 62.0,
+     "share_of_computed": 0.14094091029995057,
+     "share_of_prefix": 0.14094091029995057,
+     "mean_row_share": 0.23167725552750612
+    }
+   },
+   "common_2000": {
+    "rows": 2000,
+    "computed_mean": 1542.9455,
+    "prefix_mean": 1542.9455,
+    "glob": {
+     "mean_tokens": 36.0,
+     "median_tokens": 36.0,
+     "share_of_computed": 0.023331997144422793,
+     "share_of_prefix": 0.023331997144422793,
+     "mean_row_share": 0.07701457173015297
+    },
+    "fam_lcp": {
+     "mean_tokens": 148.941,
+     "median_tokens": 39.0,
+     "share_of_computed": 0.09653030518576321,
+     "share_of_prefix": 0.09653030518576321,
+     "mean_row_share": 0.1353448816813106
+    },
+    "fam_lcp_chunk": {
+     "mean_tokens": 114.208,
+     "median_tokens": 0.0,
+     "share_of_computed": 0.07401946471861773,
+     "share_of_prefix": 0.07401946471861773,
+     "mean_row_share": 0.0673412668174462
+    },
+    "radix_any": {
+     "mean_tokens": 252.8005,
+     "median_tokens": 69.0,
+     "share_of_computed": 0.16384279289190706,
+     "share_of_prefix": 0.16384279289190706,
+     "mean_row_share": 0.25665801453276604
+    },
+    "radix_amort": {
+     "mean_tokens": 228.2125,
+     "median_tokens": 62.0,
+     "share_of_computed": 0.1479070388422663,
+     "share_of_prefix": 0.1479070388422663,
+     "mean_row_share": 0.2325950071862388
+    }
+   },
+   "families_full_dev": [
+    {
+     "family": "When2Call MCQ",
+     "rows": 1066,
+     "family_lcp_tokens": 39,
+     "computed_mean": 882.484990619137,
+     "fam_lcp_share": 0.044193386193048155,
+     "radix_amort_mean": 132.10412757973734,
+     "radix_amort_share": 0.14969560840582144
+    },
+    {
+     "family": "BFCL-tool-selection",
+     "rows": 761,
+     "family_lcp_tokens": 42,
+     "computed_mean": 966.9014454664915,
+     "fam_lcp_share": 0.04343772594086533,
+     "radix_amort_mean": 46.16951379763469,
+     "radix_amort_share": 0.047749968742015626
+    },
+    {
+     "family": "HoVer claim verification",
+     "rows": 461,
+     "family_lcp_tokens": 39,
+     "computed_mean": 516.7396963123645,
+     "fam_lcp_share": 0.07547320300398376,
+     "radix_amort_mean": 46.386117136659436,
+     "radix_amort_share": 0.089766893210812
+    },
+    {
+     "family": "Amazon-ESCI",
+     "rows": 460,
+     "family_lcp_tokens": 39,
+     "computed_mean": 536.0782608695653,
+     "fam_lcp_share": 0.07275057178543042,
+     "radix_amort_mean": 41.76304347826087,
+     "radix_amort_share": 0.07790475109085306
+    },
+    {
+     "family": "BANKING77",
+     "rows": 460,
+     "family_lcp_tokens": 73,
+     "computed_mean": 1865.0891304347826,
+     "fam_lcp_share": 0.039140220597919904,
+     "radix_amort_mean": 74.91956521739131,
+     "radix_amort_share": 0.040169428900122504
+    },
+    {
+     "family": "CLINC150+OOS",
+     "rows": 460,
+     "family_lcp_tokens": 81,
+     "computed_mean": 3392.1239130434783,
+     "fam_lcp_share": 0.02387884466382163,
+     "radix_amort_mean": 82.63913043478261,
+     "radix_amort_share": 0.024362061219820593
+    },
+    {
+     "family": "PhishNChips phishing decisions",
+     "rows": 460,
+     "family_lcp_tokens": 39,
+     "computed_mean": 1138.9565217391305,
+     "fam_lcp_share": 0.0342418689876317,
+     "radix_amort_mean": 46.791304347826085,
+     "radix_amort_share": 0.04108260803176057
+    },
+    {
+     "family": "ForecastBench-binary",
+     "rows": 389,
+     "family_lcp_tokens": 37,
+     "computed_mean": 850.1516709511568,
+     "fam_lcp_share": 0.043521645918314894,
+     "radix_amort_mean": 362.8149100257069,
+     "radix_amort_share": 0.4267649202168674
+    },
+    {
+     "family": "BPoMP-original-limerick",
+     "rows": 366,
+     "family_lcp_tokens": 117,
+     "computed_mean": 246.92349726775956,
+     "fam_lcp_share": 0.4738309690840286,
+     "radix_amort_mean": 157.66120218579235,
+     "radix_amort_share": 0.6385022240909997
+    },
+    {
+     "family": "CFColor-preference",
+     "rows": 361,
+     "family_lcp_tokens": 42,
+     "computed_mean": 529.6260387811634,
+     "fam_lcp_share": 0.0793012369570334,
+     "radix_amort_mean": 365.8753462603878,
+     "radix_amort_share": 0.690818274536468
+    },
+    {
+     "family": "Habermas-consensus",
+     "rows": 361,
+     "family_lcp_tokens": 41,
+     "computed_mean": 969.5235457063712,
+     "fam_lcp_share": 0.042288813078931876,
+     "radix_amort_mean": 42.97506925207756,
+     "radix_amort_share": 0.04432596757695758
+    },
+    {
+     "family": "Humicroedit",
+     "rows": 360,
+     "family_lcp_tokens": 81,
+     "computed_mean": 158.7111111111111,
+     "fam_lcp_share": 0.5103612433492019,
+     "radix_amort_mean": 84.425,
+     "radix_amort_share": 0.5319413329599552
+    },
+    {
+     "family": "POP909-chord-pitch-class",
+     "rows": 360,
+     "family_lcp_tokens": 39,
+     "computed_mean": 6738.933333333333,
+     "fam_lcp_share": 0.005787266036167939,
+     "radix_amort_mean": 50.547222222222224,
+     "radix_amort_share": 0.007500774933058974
+    },
+    {
+     "family": "ToolRet-retrieval",
+     "rows": 308,
+     "family_lcp_tokens": 39,
+     "computed_mean": 10071.587662337663,
+     "fam_lcp_share": 0.0038722792580001154,
+     "radix_amort_mean": 179.9577922077922,
+     "radix_amort_share": 0.017867867335428937
+    },
+    {
+     "family": "NLI4CT-2024",
+     "rows": 304,
+     "family_lcp_tokens": 45,
+     "computed_mean": 737.1907894736842,
+     "fam_lcp_share": 0.06104254236834355,
+     "radix_amort_mean": 606.5657894736842,
+     "radix_amort_share": 0.8228070645141139
+    },
+    {
+     "family": "RAGTruth response-level hallucination",
+     "rows": 270,
+     "family_lcp_tokens": 39,
+     "computed_mean": 952.425925925926,
+     "fam_lcp_share": 0.04094806634131166,
+     "radix_amort_mean": 570.5148148148148,
+     "radix_amort_share": 0.5990122688650814
+    },
+    {
+     "family": "ChessBench-legal-move",
+     "rows": 262,
+     "family_lcp_tokens": 39,
+     "computed_mean": 1135.0076335877864,
+     "fam_lcp_share": 0.0343610023808563,
+     "radix_amort_mean": 48.538167938931295,
+     "radix_amort_share": 0.042764618054154394
+    },
+    {
+     "family": "MuSR",
+     "rows": 262,
+     "family_lcp_tokens": 62,
+     "computed_mean": 1052.7557251908397,
+     "fam_lcp_share": 0.05889305421612489,
+     "radix_amort_mean": 175.3587786259542,
+     "radix_amort_share": 0.1665711944659962
+    },
+    {
+     "family": "SATA-Bench",
+     "rows": 262,
+     "family_lcp_tokens": 39,
+     "computed_mean": 1501.1068702290077,
+     "fam_lcp_share": 0.02598082839634875,
+     "radix_amort_mean": 40.75190839694657,
+     "radix_amort_share": 0.027147906125251087
+    },
+    {
+     "family": "ACOS-category-sentiment",
+     "rows": 262,
+     "family_lcp_tokens": 39,
+     "computed_mean": 8477.702290076335,
+     "fam_lcp_share": 0.004600303085147477,
+     "radix_amort_mean": 72.79770992366412,
+     "radix_amort_share": 0.00858696229624367
+    },
+    {
+     "family": "CLadder",
+     "rows": 262,
+     "family_lcp_tokens": 85,
+     "computed_mean": 253.7290076335878,
+     "fam_lcp_share": 0.33500308377333515,
+     "radix_amort_mean": 117.0,
+     "radix_amort_share": 0.46112189178212015
+    },
+    {
+     "family": "MMLU-Pro",
+     "rows": 262,
+     "family_lcp_tokens": 36,
+     "computed_mean": 392.0,
+     "fam_lcp_share": 0.09183673469387756,
+     "radix_amort_mean": 42.47709923664122,
+     "radix_amort_share": 0.10835994703224801
+    },
+    {
+     "family": "BBH fixed-option tasks",
+     "rows": 262,
+     "family_lcp_tokens": 36,
+     "computed_mean": 291.8358778625954,
+     "fam_lcp_share": 0.12335700553223213,
+     "radix_amort_mean": 57.461832061068705,
+     "radix_amort_share": 0.1968977648735957
+    },
+    {
+     "family": "ANLI",
+     "rows": 261,
+     "family_lcp_tokens": 76,
+     "computed_mean": 253.11877394636016,
+     "fam_lcp_share": 0.30025429886170985,
+     "radix_amort_mean": 77.01532567049809,
+     "radix_amort_share": 0.30426556066844274
+    },
+    {
+     "family": "WinoGrande",
+     "rows": 261,
+     "family_lcp_tokens": 70,
+     "computed_mean": 151.4904214559387,
+     "fam_lcp_share": 0.4620754192063532,
+     "radix_amort_mean": 71.33333333333333,
+     "radix_amort_share": 0.4708768557626647
+    },
+    {
+     "family": "HellaSwag",
+     "rows": 261,
+     "family_lcp_tokens": 69,
+     "computed_mean": 327.8927203065134,
+     "fam_lcp_share": 0.2104346810002337,
+     "radix_amort_mean": 73.20689655172414,
+     "radix_amort_share": 0.22326478149100257
+    },
+    {
+     "family": "FinEntity-entity-given",
+     "rows": 261,
+     "family_lcp_tokens": 39,
+     "computed_mean": 413.455938697318,
+     "fam_lcp_share": 0.09432685892208466,
+     "radix_amort_mean": 44.22605363984675,
+     "radix_amort_share": 0.10696678775298392
+    },
+    {
+     "family": "VAST",
+     "rows": 261,
+     "family_lcp_tokens": 64,
+     "computed_mean": 272.8199233716475,
+     "fam_lcp_share": 0.23458697300789258,
+     "radix_amort_mean": 68.39463601532567,
+     "radix_amort_share": 0.250695166137685
+    },
+    {
+     "family": "CRUXEval-output-choice",
+     "rows": 256,
+     "family_lcp_tokens": 39,
+     "computed_mean": 262.1484375,
+     "fam_lcp_share": 0.1487706750111757,
+     "radix_amort_mean": 43.890625,
+     "radix_amort_share": 0.16742661302339443
+    },
+    {
+     "family": "New Yorker caption matching",
+     "rows": 237,
+     "family_lcp_tokens": 39,
+     "computed_mean": 299.40928270042195,
+     "fam_lcp_share": 0.1302564825253664,
+     "radix_amort_mean": 128.0379746835443,
+     "radix_amort_share": 0.42763528748590757
+    },
+    {
+     "family": "API-Bank-tool-selection",
+     "rows": 228,
+     "family_lcp_tokens": 5219,
+     "computed_mean": 6643.44298245614,
+     "fam_lcp_share": 0.7855866323805626,
+     "radix_amort_mean": 5251.473684210527,
+     "radix_amort_share": 0.7904747128978911
+    },
+    {
+     "family": "HLE-text-MC",
+     "rows": 225,
+     "family_lcp_tokens": 62,
+     "computed_mean": 539.8666666666667,
+     "fam_lcp_share": 0.1148431711533712,
+     "radix_amort_mean": 65.45777777777778,
+     "radix_amort_share": 0.12124804478472051
+    },
+    {
+     "family": "GSM8K-10",
+     "rows": 131,
+     "family_lcp_tokens": 39,
+     "computed_mean": 391.44274809160305,
+     "fam_lcp_share": 0.09963142806997016,
+     "radix_amort_mean": 39.458015267175576,
+     "radix_amort_share": 0.10080149768911251
+    },
+    {
+     "family": "GSM8K-4",
+     "rows": 131,
+     "family_lcp_tokens": 39,
+     "computed_mean": 271.99236641221376,
+     "fam_lcp_share": 0.14338637703123686,
+     "radix_amort_mean": 110.87022900763358,
+     "radix_amort_share": 0.4076225758468749
+    },
+    {
+     "family": "BRIGHT-retrieval",
+     "rows": 99,
+     "family_lcp_tokens": 39,
+     "computed_mean": 15076.535353535353,
+     "fam_lcp_share": 0.002586801216955641,
+     "radix_amort_mean": 41.81818181818182,
+     "radix_amort_share": 0.0027737262466191025
+    },
+    {
+     "family": "GPQA-Diamond",
+     "rows": 87,
+     "family_lcp_tokens": 60,
+     "computed_mean": 347.81609195402297,
+     "fam_lcp_share": 0.17250495703899538,
+     "radix_amort_mean": 61.44827586206897,
+     "radix_amort_share": 0.17666886979510907
+    },
+    {
+     "family": "iSarcasmEval-A-Ar",
+     "rows": 82,
+     "family_lcp_tokens": 36,
+     "computed_mean": 141.52439024390245,
+     "fam_lcp_share": 0.25437311503662213,
+     "radix_amort_mean": 36.28048780487805,
+     "radix_amort_share": 0.2563550193881947
+    },
+    {
+     "family": "iSarcasmEval-A-En",
+     "rows": 82,
+     "family_lcp_tokens": 36,
+     "computed_mean": 151.6219512195122,
+     "fam_lcp_share": 0.23743263894474384,
+     "radix_amort_mean": 66.6951219512195,
+     "radix_amort_share": 0.4398777447116545
+    },
+    {
+     "family": "iSarcasmEval-B-En",
+     "rows": 82,
+     "family_lcp_tokens": 36,
+     "computed_mean": 506.0365853658537,
+     "fam_lcp_share": 0.07114110133751055,
+     "radix_amort_mean": 42.109756097560975,
+     "radix_amort_share": 0.08321484516206772
+    },
+    {
+     "family": "ContractNLI",
+     "rows": 55,
+     "family_lcp_tokens": 36,
+     "computed_mean": 4544.672727272728,
+     "fam_lcp_share": 0.007921362474345587,
+     "radix_amort_mean": 129.03636363636363,
+     "radix_amort_share": 0.028392883575975067
+    },
+    {
+     "family": "Home-Appliance",
+     "rows": 39,
+     "family_lcp_tokens": 40,
+     "computed_mean": 3215.923076923077,
+     "fam_lcp_share": 0.012438108450737916,
+     "radix_amort_mean": 614.8717948717949,
+     "radix_amort_share": 0.19119605169788154
+    },
+    {
+     "family": "iSarcasmEval-C-Ar",
+     "rows": 12,
+     "family_lcp_tokens": 85,
+     "computed_mean": 153.58333333333334,
+     "fam_lcp_share": 0.5534454693434617,
+     "radix_amort_mean": 85.08333333333333,
+     "radix_amort_share": 0.5539880629408573
+    },
+    {
+     "family": "iSarcasmEval-C-En",
+     "rows": 12,
+     "family_lcp_tokens": 85,
+     "computed_mean": 173.66666666666666,
+     "fam_lcp_share": 0.4894433781190019,
+     "radix_amort_mean": 83.16666666666667,
+     "radix_amort_share": 0.47888675623800386
+    }
+   ],
+   "families_subset": [
+    {
+     "family": "When2Call MCQ",
+     "rows": 176,
+     "family_lcp_tokens": 39,
+     "computed_mean": 873.9602272727273,
+     "fam_lcp_share": 0.044624456334475385,
+     "radix_amort_mean": 139.10795454545453,
+     "radix_amort_share": 0.15916966265107238
+    },
+    {
+     "family": "BFCL-tool-selection",
+     "rows": 126,
+     "family_lcp_tokens": 42,
+     "computed_mean": 1012.1190476190476,
+     "fam_lcp_share": 0.041497094732880095,
+     "radix_amort_mean": 46.317460317460316,
+     "radix_amort_share": 0.04576285806143013
+    },
+    {
+     "family": "Amazon-ESCI",
+     "rows": 76,
+     "family_lcp_tokens": 39,
+     "computed_mean": 525.1578947368421,
+     "fam_lcp_share": 0.07426337943475646,
+     "radix_amort_mean": 41.81578947368421,
+     "radix_amort_share": 0.07962517538584887
+    },
+    {
+     "family": "BANKING77",
+     "rows": 76,
+     "family_lcp_tokens": 73,
+     "computed_mean": 1865.3026315789473,
+     "fam_lcp_share": 0.039135740637542944,
+     "radix_amort_mean": 75.22368421052632,
+     "radix_amort_share": 0.040327871165254686
+    },
+    {
+     "family": "CLINC150+OOS",
+     "rows": 76,
+     "family_lcp_tokens": 81,
+     "computed_mean": 3392.3026315789475,
+     "fam_lcp_share": 0.02387758664158408,
+     "radix_amort_mean": 82.38157894736842,
+     "radix_amort_share": 0.02428485541958381
+    },
+    {
+     "family": "PhishNChips phishing decisions",
+     "rows": 76,
+     "family_lcp_tokens": 39,
+     "computed_mean": 1140.7894736842106,
+     "fam_lcp_share": 0.034186851211072664,
+     "radix_amort_mean": 48.0,
+     "radix_amort_share": 0.042076124567474046
+    },
+    {
+     "family": "HoVer claim verification",
+     "rows": 76,
+     "family_lcp_tokens": 39,
+     "computed_mean": 517.0394736842105,
+     "fam_lcp_share": 0.07542944394961192,
+     "radix_amort_mean": 46.05263157894737,
+     "radix_amort_share": 0.08906985621580353
+    },
+    {
+     "family": "ForecastBench-binary",
+     "rows": 64,
+     "family_lcp_tokens": 37,
+     "computed_mean": 848.875,
+     "fam_lcp_share": 0.0435871005742895,
+     "radix_amort_mean": 363.8125,
+     "radix_amort_share": 0.428581946694154
+    },
+    {
+     "family": "BPoMP-original-limerick",
+     "rows": 61,
+     "family_lcp_tokens": 117,
+     "computed_mean": 245.13114754098362,
+     "fam_lcp_share": 0.4772955259814084,
+     "radix_amort_mean": 155.78688524590163,
+     "radix_amort_share": 0.6355246438841704
+    },
+    {
+     "family": "CFColor-preference",
+     "rows": 60,
+     "family_lcp_tokens": 42,
+     "computed_mean": 531.3333333333334,
+     "fam_lcp_share": 0.07904642409033877,
+     "radix_amort_mean": 386.1666666666667,
+     "radix_amort_share": 0.7267879548306148
+    },
+    {
+     "family": "Habermas-consensus",
+     "rows": 60,
+     "family_lcp_tokens": 41,
+     "computed_mean": 978.1833333333333,
+     "fam_lcp_share": 0.041914433218040247,
+     "radix_amort_mean": 43.3,
+     "radix_amort_share": 0.04426573069124738
+    },
+    {
+     "family": "Humicroedit",
+     "rows": 59,
+     "family_lcp_tokens": 81,
+     "computed_mean": 159.135593220339,
+     "fam_lcp_share": 0.5089998934923847,
+     "radix_amort_mean": 84.37288135593221,
+     "radix_amort_share": 0.530194908935989
+    },
+    {
+     "family": "POP909-chord-pitch-class",
+     "rows": 59,
+     "family_lcp_tokens": 39,
+     "computed_mean": 6624.593220338983,
+     "fam_lcp_share": 0.005887153928223287,
+     "radix_amort_mean": 59.79661016949152,
+     "radix_amort_share": 0.009026457652660476
+    },
+    {
+     "family": "ToolRet-retrieval",
+     "rows": 51,
+     "family_lcp_tokens": 39,
+     "computed_mean": 9446.019607843138,
+     "fam_lcp_share": 0.00412872316796991,
+     "radix_amort_mean": 239.6078431372549,
+     "radix_amort_share": 0.025366011620207286
+    },
+    {
+     "family": "NLI4CT-2024",
+     "rows": 50,
+     "family_lcp_tokens": 45,
+     "computed_mean": 713.92,
+     "fam_lcp_share": 0.06303227252353205,
+     "radix_amort_mean": 574.78,
+     "radix_amort_share": 0.8051042133572389
+    },
+    {
+     "family": "ACOS-category-sentiment",
+     "rows": 45,
+     "family_lcp_tokens": 39,
+     "computed_mean": 8464.977777777778,
+     "fam_lcp_share": 0.004607218237758713,
+     "radix_amort_mean": 76.28888888888889,
+     "radix_amort_share": 0.009012296416082997
+    },
+    {
+     "family": "RAGTruth response-level hallucination",
+     "rows": 45,
+     "family_lcp_tokens": 39,
+     "computed_mean": 931.7555555555556,
+     "fam_lcp_share": 0.0418564716544635,
+     "radix_amort_mean": 566.4444444444445,
+     "radix_amort_share": 0.6079324572491593
+    },
+    {
+     "family": "ANLI",
+     "rows": 43,
+     "family_lcp_tokens": 76,
+     "computed_mean": 251.7906976744186,
+     "fam_lcp_share": 0.3018379975985961,
+     "radix_amort_mean": 76.51162790697674,
+     "radix_amort_share": 0.3038699547427727
+    },
+    {
+     "family": "WinoGrande",
+     "rows": 43,
+     "family_lcp_tokens": 70,
+     "computed_mean": 151.51162790697674,
+     "fam_lcp_share": 0.4620107444359171,
+     "radix_amort_mean": 70.86046511627907,
+     "radix_amort_share": 0.4676899462778204
+    },
+    {
+     "family": "HellaSwag",
+     "rows": 43,
+     "family_lcp_tokens": 69,
+     "computed_mean": 324.6046511627907,
+     "fam_lcp_share": 0.21256627023928928,
+     "radix_amort_mean": 73.09302325581395,
+     "radix_amort_share": 0.22517552657973922
+    },
+    {
+     "family": "ChessBench-legal-move",
+     "rows": 43,
+     "family_lcp_tokens": 39,
+     "computed_mean": 1101.7674418604652,
+     "fam_lcp_share": 0.03539766970618034,
+     "radix_amort_mean": 49.48837209302326,
+     "radix_amort_share": 0.04491725768321513
+    },
+    {
+     "family": "MuSR",
+     "rows": 43,
+     "family_lcp_tokens": 62,
+     "computed_mean": 1133.0,
+     "fam_lcp_share": 0.05472197705207414,
+     "radix_amort_mean": 207.74418604651163,
+     "radix_amort_share": 0.18335762228288757
+    },
+    {
+     "family": "SATA-Bench",
+     "rows": 43,
+     "family_lcp_tokens": 39,
+     "computed_mean": 1698.3255813953488,
+     "fam_lcp_share": 0.022963794708878785,
+     "radix_amort_mean": 40.55813953488372,
+     "radix_amort_share": 0.02388125102700334
+    },
+    {
+     "family": "FinEntity-entity-given",
+     "rows": 43,
+     "family_lcp_tokens": 39,
+     "computed_mean": 416.69767441860466,
+     "fam_lcp_share": 0.09359303493693492,
+     "radix_amort_mean": 47.51162790697674,
+     "radix_amort_share": 0.11401942181046992
+    },
+    {
+     "family": "VAST",
+     "rows": 43,
+     "family_lcp_tokens": 64,
+     "computed_mean": 272.25581395348837,
+     "fam_lcp_share": 0.23507303322798326,
+     "radix_amort_mean": 66.74418604651163,
+     "radix_amort_share": 0.2451524728794738
+    },
+    {
+     "family": "CLadder",
+     "rows": 43,
+     "family_lcp_tokens": 85,
+     "computed_mean": 255.25581395348837,
+     "fam_lcp_share": 0.33299927113702626,
+     "radix_amort_mean": 115.13953488372093,
+     "radix_amort_share": 0.4510750728862974
+    },
+    {
+     "family": "MMLU-Pro",
+     "rows": 43,
+     "family_lcp_tokens": 36,
+     "computed_mean": 381.6744186046512,
+     "fam_lcp_share": 0.09432122836948574,
+     "radix_amort_mean": 37.16279069767442,
+     "radix_amort_share": 0.0973677796734097
+    },
+    {
+     "family": "BBH fixed-option tasks",
+     "rows": 43,
+     "family_lcp_tokens": 36,
+     "computed_mean": 314.3255813953488,
+     "fam_lcp_share": 0.11453092630955904,
+     "radix_amort_mean": 58.02325581395349,
+     "radix_amort_share": 0.18459603432968333
+    },
+    {
+     "family": "CRUXEval-output-choice",
+     "rows": 42,
+     "family_lcp_tokens": 39,
+     "computed_mean": 263.26190476190476,
+     "fam_lcp_share": 0.14814144885592836,
+     "radix_amort_mean": 44.54761904761905,
+     "radix_amort_share": 0.16921407253323686
+    },
+    {
+     "family": "New Yorker caption matching",
+     "rows": 39,
+     "family_lcp_tokens": 39,
+     "computed_mean": 296.1025641025641,
+     "fam_lcp_share": 0.13171111880845168,
+     "radix_amort_mean": 131.6153846153846,
+     "radix_amort_share": 0.44449255282299965
+    },
+    {
+     "family": "API-Bank-tool-selection",
+     "rows": 38,
+     "family_lcp_tokens": 5219,
+     "computed_mean": 6664.710526315789,
+     "fam_lcp_share": 0.7830797720910214,
+     "radix_amort_mean": 5275.710526315789,
+     "radix_amort_share": 0.7915888477803356
+    },
+    {
+     "family": "HLE-text-MC",
+     "rows": 37,
+     "family_lcp_tokens": 62,
+     "computed_mean": 464.05405405405406,
+     "fam_lcp_share": 0.1336051252184042,
+     "radix_amort_mean": 72.02702702702703,
+     "radix_amort_share": 0.15521258008153757
+    },
+    {
+     "family": "GSM8K-10",
+     "rows": 22,
+     "family_lcp_tokens": 39,
+     "computed_mean": 386.6363636363636,
+     "fam_lcp_share": 0.10086997413590407,
+     "radix_amort_mean": 39.27272727272727,
+     "radix_amort_share": 0.10157535857042088
+    },
+    {
+     "family": "GSM8K-4",
+     "rows": 22,
+     "family_lcp_tokens": 39,
+     "computed_mean": 268.8181818181818,
+     "fam_lcp_share": 0.14507947243828204,
+     "radix_amort_mean": 108.81818181818181,
+     "radix_amort_share": 0.404802164355766
+    },
+    {
+     "family": "iSarcasmEval-A-En",
+     "rows": 18,
+     "family_lcp_tokens": 36,
+     "computed_mean": 150.83333333333334,
+     "fam_lcp_share": 0.23867403314917127,
+     "radix_amort_mean": 68.83333333333333,
+     "radix_amort_share": 0.456353591160221
+    },
+    {
+     "family": "BRIGHT-retrieval",
+     "rows": 16,
+     "family_lcp_tokens": 39,
+     "computed_mean": 13226.1875,
+     "fam_lcp_share": 0.002948695533009796,
+     "radix_amort_mean": 41.8125,
+     "radix_amort_share": 0.003161341845486464
+    },
+    {
+     "family": "GPQA-Diamond",
+     "rows": 14,
+     "family_lcp_tokens": 60,
+     "computed_mean": 314.07142857142856,
+     "fam_lcp_share": 0.19103934500795997,
+     "radix_amort_mean": 60.92857142857143,
+     "radix_amort_share": 0.19399590629974983
+    },
+    {
+     "family": "iSarcasmEval-B-En",
+     "rows": 14,
+     "family_lcp_tokens": 36,
+     "computed_mean": 504.92857142857144,
+     "fam_lcp_share": 0.07129721318432593,
+     "radix_amort_mean": 36.714285714285715,
+     "radix_amort_share": 0.07271184043004668
+    },
+    {
+     "family": "ContractNLI",
+     "rows": 12,
+     "family_lcp_tokens": 36,
+     "computed_mean": 4080.5833333333335,
+     "fam_lcp_share": 0.008822268058079931,
+     "radix_amort_mean": 448.6666666666667,
+     "radix_amort_share": 0.10995160005718137
+    },
+    {
+     "family": "Home-Appliance",
+     "rows": 12,
+     "family_lcp_tokens": 40,
+     "computed_mean": 3204.4166666666665,
+     "fam_lcp_share": 0.012482771175200894,
+     "radix_amort_mean": 684.4166666666666,
+     "radix_amort_share": 0.21358541596234365
+    },
+    {
+     "family": "iSarcasmEval-A-Ar",
+     "rows": 9,
+     "family_lcp_tokens": 36,
+     "computed_mean": 140.77777777777777,
+     "fam_lcp_share": 0.2557221783741121,
+     "radix_amort_mean": 36.44444444444444,
+     "radix_amort_share": 0.25887924230465664
+    },
+    {
+     "family": "iSarcasmEval-C-Ar",
+     "rows": 3,
+     "family_lcp_tokens": 85,
+     "computed_mean": 155.33333333333334,
+     "fam_lcp_share": 0.5472103004291845,
+     "radix_amort_mean": 85.0,
+     "radix_amort_share": 0.5472103004291845
+    },
+    {
+     "family": "iSarcasmEval-C-En",
+     "rows": 1,
+     "family_lcp_tokens": 85,
+     "computed_mean": 158.0,
+     "fam_lcp_share": 0.5379746835443038,
+     "radix_amort_mean": 85.0,
+     "radix_amort_share": 0.5379746835443038
+    }
+   ]
+  }
+ },
+ "chunk": 64,
+ "common_rows_priced": 2000,
+ "common_rows_throughput_model": 2000,
+ "token_count_check": {
+  "clef": {
+   "ours_mean": 1542.9455,
+   "landed_mean": 1542.9455,
+   "exact_match_rows": 2000,
+   "rows": 2000
+  },
+  "v3w": {
+   "ours_mean": 2401.037,
+   "landed_mean": 2401.037,
+   "exact_match_rows": 2000,
+   "rows": 2000
+  },
+  "g1v1_tree_positions_mean": 2482.299
+ },
+ "price": {
+  "Clef 27B (fast fla GDN)": {
+   "no_cache": {
+    "T1_usd_per_1k": 0.1671976148607922,
+    "tokens": 1542.9455
+   },
+   "glob": {
+    "cached_tokens_mean": 36.0,
+    "flops_ratio": 0.9771189081205752,
+    "T1_usd_per_1k": 0.16337195087314174,
+    "flops_per_row_T": 75.34587339292672,
+    "attn_over_cached_prefix_T": 0.021331982942208
+   },
+   "fam_lcp": {
+    "cached_tokens_mean": 148.941,
+    "flops_ratio": 0.9040219587037401,
+    "T1_usd_per_1k": 0.15115031527704695,
+    "flops_per_row_T": 69.70935008916275,
+    "attn_over_cached_prefix_T": 0.08110576513843201
+   },
+   "radix_amort": {
+    "cached_tokens_mean": 228.2125,
+    "flops_ratio": 0.8533180148439307,
+    "T1_usd_per_1k": 0.14267273679965128,
+    "flops_per_row_T": 65.79955681545421,
+    "attn_over_cached_prefix_T": 0.093039775383552
+   }
+  },
+  "Clef-flash (fast fla GDN)": {
+   "no_cache": {
+    "T1_usd_per_1k": 0.060830282150515336,
+    "tokens": 1542.9455
+   },
+   "glob": {
+    "cached_tokens_mean": 36.0,
+    "flops_ratio": 0.9771946818356583,
+    "T1_usd_per_1k": 0.05944302821204615,
+    "flops_per_row_T": 21.50360206838989,
+    "attn_over_cached_prefix_T": 0.007110660980736
+   },
+   "fam_lcp": {
+    "cached_tokens_mean": 148.941,
+    "flops_ratio": 0.9041147655300567,
+    "T1_usd_per_1k": 0.054997556283640364,
+    "flops_per_row_T": 19.895446120923136,
+    "attn_over_cached_prefix_T": 0.027035255046144
+   },
+   "radix_amort": {
+    "cached_tokens_mean": 228.2125,
+    "flops_ratio": 0.8535238826307702,
+    "T1_usd_per_1k": 0.05192009860263309,
+    "flops_per_row_T": 18.782171320745984,
+    "attn_over_cached_prefix_T": 0.031013258461184
+   }
+  },
+  "rwkv": {
+   "g1v1": {
+    "chunked": {
+     "no_cache": 0.3816185328206526,
+     "glob": 0.37516162397185265,
+     "fam_lcp": 0.33930886890926576,
+     "fam_lcp_chunk": 0.34383639189967435,
+     "radix_amort": 0.2985086611772108
+    },
+    "fla": {
+     "no_cache": 0.18289843308835557,
+     "glob": 0.1798038283732463,
+     "fam_lcp": 0.16262066728727909,
+     "fam_lcp_chunk": 0.16479057464108784,
+     "radix_amort": 0.143066339019424
+    },
+    "tokens_mean": {
+     "no_cache": 2482.299,
+     "glob": 2440.299,
+     "fam_lcp": 2207.089,
+     "fam_lcp_chunk": 2236.539,
+     "radix_amort": 1941.6975
+    },
+    "flops_per_row_T": {
+     "no_cache": 63.556577704191746,
+     "glob": 62.48121318783974,
+     "fam_lcp": 56.510123691209984,
+     "fam_lcp_chunk": 57.26415904850919,
+     "radix_amort": 49.71506173784256
+    }
+   },
+   "v2f": {
+    "chunked": {
+     "no_cache": 0.49599253013783956,
+     "glob": 0.4864475679152875,
+     "fam_lcp": 0.44763142520621996,
+     "fam_lcp_chunk": 0.4543463061297854,
+     "radix_amort": 0.3974583312833748
+    },
+    "fla": {
+     "no_cache": 0.16463617597012326,
+     "glob": 0.16146789019036853,
+     "fam_lcp": 0.1485835402995436,
+     "fam_lcp_chunk": 0.15081242934560102,
+     "radix_amort": 0.13192944609826304
+    },
+    "tokens_mean": {
+     "no_cache": 2234.4435,
+     "glob": 2191.4435,
+     "fam_lcp": 2016.577,
+     "fam_lcp_chunk": 2046.8275,
+     "radix_amort": 1790.5475
+    },
+    "flops_per_row_T": {
+     "no_cache": 57.210506040318336,
+     "glob": 56.10953760691034,
+     "fam_lcp": 51.63227024503731,
+     "fam_lcp_chunk": 52.40680153793984,
+     "radix_amort": 45.845029674828154
+    }
+   },
+   "v3w": {
+    "chunked": {
+     "no_cache": 0.5329722665104614,
+     "glob": 0.5234273042879093,
+     "fam_lcp": 0.4849705405053141,
+     "fam_lcp_chunk": 0.4914112812348131,
+     "radix_amort": 0.4354611544207347
+    },
+    "fla": {
+     "no_cache": 0.17691096241313634,
+     "glob": 0.17374267663338167,
+     "fam_lcp": 0.1609776163862177,
+     "fam_lcp_chunk": 0.16311550931743793,
+     "radix_amort": 0.14454382856822706
+    },
+    "tokens_mean": {
+     "no_cache": 2401.037,
+     "glob": 2358.037,
+     "fam_lcp": 2184.7895,
+     "fam_lcp_chunk": 2213.805,
+     "radix_amort": 1961.75
+    },
+    "flops_per_row_T": {
+     "no_cache": 61.47595219638706,
+     "glob": 60.37498376297906,
+     "fam_lcp": 55.93916914281971,
+     "fam_lcp_chunk": 56.68207959815807,
+     "radix_amort": 50.228484284608
+    }
+   }
+  },
+  "two_x_vs_clef27b": {
+   "g1v1/no_cache": {
+    "clef27b_T1_usd": 0.1671976148607922,
+    "rwkv_fla_T1_usd": 0.18289843308835557,
+    "ratio_rwkv_over_clef_T1_fla": 1.0939057548197428,
+    "rwkv_tokens": 2482.299,
+    "rwkv_mfu_needed_for_2x": 0.6339316926882437,
+    "rwkv_fla_T1_mfu": 0.28975608268589137,
+    "clef_T1_mfu": 0.3845599201072768,
+    "equal_mfu_ratio": 0.8242300608334356
+   },
+   "g1v1/fam_lcp": {
+    "clef27b_T1_usd": 0.15115031527704695,
+    "rwkv_fla_T1_usd": 0.16262066728727909,
+    "ratio_rwkv_over_clef_T1_fla": 1.0758870531576985,
+    "rwkv_tokens": 2207.089,
+    "rwkv_mfu_needed_for_2x": 0.6234896358708842,
+    "rwkv_fla_T1_mfu": 0.28975608268589137,
+    "clef_T1_mfu": 0.3845599201072768,
+    "equal_mfu_ratio": 0.8106534291157483
+   },
+   "g1v1/radix_amort": {
+    "clef27b_T1_usd": 0.14267273679965128,
+    "rwkv_fla_T1_usd": 0.143066339019424,
+    "ratio_rwkv_over_clef_T1_fla": 1.002758776684332,
+    "rwkv_tokens": 1941.6975,
+    "rwkv_mfu_needed_for_2x": 0.5811109100218974,
+    "rwkv_fla_T1_mfu": 0.28975608268589137,
+    "clef_T1_mfu": 0.3845599201072768,
+    "equal_mfu_ratio": 0.755553139624887
+   },
+   "v2f/no_cache": {
+    "clef27b_T1_usd": 0.1671976148607922,
+    "rwkv_fla_T1_usd": 0.16463617597012326,
+    "ratio_rwkv_over_clef_T1_fla": 0.9846801708696526,
+    "rwkv_tokens": 2234.4435,
+    "rwkv_mfu_needed_for_2x": 0.5706341380193295,
+    "rwkv_fla_T1_mfu": 0.2897560826858914,
+    "clef_T1_mfu": 0.3845599201072768,
+    "equal_mfu_ratio": 0.7419313716574333
+   },
+   "v2f/fam_lcp": {
+    "clef27b_T1_usd": 0.15115031527704695,
+    "rwkv_fla_T1_usd": 0.1485835402995436,
+    "ratio_rwkv_over_clef_T1_fla": 0.9830183948157921,
+    "rwkv_tokens": 2016.577,
+    "rwkv_mfu_needed_for_2x": 0.5696711185799939,
+    "rwkv_fla_T1_mfu": 0.2897560826858914,
+    "clef_T1_mfu": 0.3845599201072768,
+    "equal_mfu_ratio": 0.7406792658229678
+   },
+   "v2f/radix_amort": {
+    "clef27b_T1_usd": 0.14267273679965128,
+    "rwkv_fla_T1_usd": 0.13192944609826304,
+    "ratio_rwkv_over_clef_T1_fla": 0.9246997643531956,
+    "rwkv_tokens": 1790.5475,
+    "rwkv_mfu_needed_for_2x": 0.5358747627590977,
+    "rwkv_fla_T1_mfu": 0.2897560826858914,
+    "clef_T1_mfu": 0.3845599201072768,
+    "equal_mfu_ratio": 0.6967376665379094
+   },
+   "v3w/no_cache": {
+    "clef27b_T1_usd": 0.1671976148607922,
+    "rwkv_fla_T1_usd": 0.17691096241313634,
+    "ratio_rwkv_over_clef_T1_fla": 1.0580950126617021,
+    "rwkv_tokens": 2401.037,
+    "rwkv_mfu_needed_for_2x": 0.613178931956667,
+    "rwkv_fla_T1_mfu": 0.2897560826858914,
+    "clef_T1_mfu": 0.3845599201072768,
+    "equal_mfu_ratio": 0.7972475808004312
+   },
+   "v3w/fam_lcp": {
+    "clef27b_T1_usd": 0.15115031527704695,
+    "rwkv_fla_T1_usd": 0.1609776163862177,
+    "ratio_rwkv_over_clef_T1_fla": 1.0650167423809738,
+    "rwkv_tokens": 2184.7895,
+    "rwkv_mfu_needed_for_2x": 0.6171901585344004,
+    "rwkv_fla_T1_mfu": 0.2897560826858914,
+    "clef_T1_mfu": 0.3845599201072768,
+    "equal_mfu_ratio": 0.8024629274447388
+   },
+   "v3w/radix_amort": {
+    "clef27b_T1_usd": 0.14267273679965128,
+    "rwkv_fla_T1_usd": 0.14454382856822706,
+    "ratio_rwkv_over_clef_T1_fla": 1.013114571224657,
+    "rwkv_tokens": 1961.75,
+    "rwkv_mfu_needed_for_2x": 0.5871122189401063,
+    "rwkv_fla_T1_mfu": 0.2897560826858914,
+    "clef_T1_mfu": 0.3845599201072768,
+    "equal_mfu_ratio": 0.7633559664464326
+   }
+  }
+ },
+ "usd_rate_per_min": 0.0495
+}
