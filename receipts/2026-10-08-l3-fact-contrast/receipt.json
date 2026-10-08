@@ -1,0 +1,35 @@
+{
+  "schema": "ssdm.validation_receipt.v1",
+  "code_commit": "7077fd46caf3612d45bb1c3b4f427a4a087fcaab",
+  "source_branch_commit": "c6dcb80",
+  "command": "python -m unittest language_growth.tests.test_contrast_realizer language_growth.tests.test_licensed_realizer language_growth.tests.test_realize language_growth.tests.test_public_output language_growth.tests.test_public_conjoin -v",
+  "data": {
+    "path": "fixtures/language_growth_l3_contrast/fact_comparison.json",
+    "sha256": "92d19010538c358504e7d54fe587de24708439c1d5b52bc05a2f8f01f239bc6b",
+    "split": "authored_development",
+    "held_out_used": false
+  },
+  "validation": {
+    "exit_code": 0,
+    "tests_passed": 40,
+    "runs": 1,
+    "seeds": null,
+    "median_spread": "not applicable: deterministic contract checks, no timing claim",
+    "log": "validation.txt",
+    "log_sha256": "15cb58c416cd49b85b03e944d7aba98287765592c3724e42d5c24b030d2a7b95"
+  },
+  "raw_output": {
+    "path": "realization.json",
+    "sha256": "1b42a5e84a490dbc6b69b74821d2bf47bbd24546f87acc708148c7d625338436"
+  },
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 26 Model 36 Stepping 0, AuthenticAMD",
+    "python": "3.12.13",
+    "device": "local CPU"
+  },
+  "billed_rate_usd": 0,
+  "cost_usd": 0,
+  "model_execution": false,
+  "boundary": "Deterministic two-sentence quantitative contrast of an accepted strict numeric fact Comparison only; no causal/chronological or learned language claim."
+}

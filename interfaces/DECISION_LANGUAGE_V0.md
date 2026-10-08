@@ -1,6 +1,6 @@
-# Decision to language interface version 0.1.4
+# Decision to language interface version 0.1.5
 
-8 October 2026. Version 0.1 was cross-reviewed and merged in PR #4. Patch profile 0.1.1 closed the model-authored node-ID prose channel: node identifiers have a restricted lexical form and released derivations contain kernel-assigned integer ordinals. Profile 0.1.2 adds the host-opted-in bounded `ExactDifference` operation and pins exact decimal exponent capitalization, under interface issue [#201](https://github.com/apumutyala/State-Space-Decision-Model/issues/201). The D request/response envelope remains `ssdm.decide.v0.1`, and semantic program syntax retains `ssdm.semantic_program.v0.1`; the host's versioned registry controls this operation extension. Profile 0.1.3 adds opt-in registered conditional hypotheses under issue #205. Profile 0.1.4 adds opt-in registered non-executing plans under issue #207. Planned provenance remains a separate 0.2 extension.
+8 October 2026. Version 0.1 was cross-reviewed and merged in PR #4. Patch profile 0.1.1 closed the model-authored node-ID prose channel: node identifiers have a restricted lexical form and released derivations contain kernel-assigned integer ordinals. Profile 0.1.2 adds the host-opted-in bounded `ExactDifference` operation and pins exact decimal exponent capitalization, under interface issue [#201](https://github.com/apumutyala/State-Space-Decision-Model/issues/201). The D request/response envelope remains `ssdm.decide.v0.1`, and semantic program syntax retains `ssdm.semantic_program.v0.1`; the host's versioned registry controls this operation extension. Profile 0.1.3 adds opt-in registered conditional hypotheses under issue #205. Profile 0.1.4 adds opt-in registered non-executing plans under issue #207. Profile 0.1.5 adds finite licensed whole-production realization. Planned provenance remains a separate 0.2 extension.
 
 ## Responsibilities
 
@@ -171,6 +171,13 @@ Permission and freshness checks apply to every speech act and destination-visibl
 Initially use deterministic templates. A later learned realizer chooses only among licensed productions or complete verified paraphrases. Token masks enforce the grammar, but the semantic checker supplies the meaning claim. Round-trip parsing checks implementation consistency; it is not an independent proof if its parser is learned or shares the same bug.
 
 No real external effect is executed in version zero. An eventual `ProposeEffect` extension requires an executor that rechecks current authority/preconditions atomically. A cached proof cannot authorize a later effect after revocation.
+
+
+### Licensed whole-production realization (profile 0.1.5)
+
+Profile 0.1.5 adds optional host-selected whole-production IDs to `render_checked` and `public_answer`; semantic programs and D transport retain v0.1. `plain` remains the default. `l3_fact_pair_coordination_v1` accepts exactly one checked Conjoin of two factual Assert acts with identical scope, sharing only that scope and preserving fact order and exact values. `l3_fact_comparison_contrast_v1` accepts exactly one factual Assert of a strict numeric comparison between distinct subjects with the same predicate, field, unit, quantity kind and scope; it renders the first fact then a quantitative contrast using the inverse checked relation for the second value.
+
+Only these finite production IDs are accepted. Equality, constants, assumptions, arithmetic, plans, incompatible shapes and unknown productions cannot enter either optional production; unsupported choices fail closed without fallback. All productions perform live release validation, quote host strings as data and add no causal or temporal inference. The public path still checks exact task relevance before releasing text. These authored productions establish renderer behavior only, not learned discourse capability or L3 qualification.
 
 ## Guarantee and its limits
 

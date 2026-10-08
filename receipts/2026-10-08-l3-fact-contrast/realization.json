@@ -1,0 +1,13 @@
+{
+  "fixture_id": "authored-development-l3-fact-contrast-v1",
+  "choices": [
+    "Compare two selected",
+    "a-v1 field price",
+    "b-v1 field price",
+    "Relation less_than"
+  ],
+  "public_answer": {
+    "status": "ok",
+    "text": "At \"2026-10\", \"Price\" for \"alpha\" has value 100.00 \"USD\". In contrast, at \"2026-10\", \"Price\" for \"beta\" has value 200.00 \"USD\", which is greater than the first value."
+  }
+}
