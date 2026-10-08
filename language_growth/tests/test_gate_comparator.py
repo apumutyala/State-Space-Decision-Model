@@ -10,6 +10,7 @@ from language_growth.gate_comparator import (
     generate_observations, local_model_identity,
 )
 from language_growth.tests.test_conjoin_planner import world
+from language_growth.gate_answer_format import answer_format
 
 
 def task():
@@ -17,7 +18,7 @@ def task():
     return {"task_id": "L0-validation-1", "world_id": "world-1", "level": "L0",
             "split": "development_validation", "task_input": "What is alpha's price?",
             "host": host, "catalog": catalog,
-            "answer_format": {"claims": [], "explanations": 0}}
+            "answer_format": answer_format()}
 
 
 class ComparatorProtocolTests(unittest.TestCase):
@@ -91,6 +92,13 @@ class ComparatorProtocolTests(unittest.TestCase):
         with self.assertRaises(ComparatorError):
             generate_observations([task(), bad], calls.append, identity={})
         self.assertEqual(calls, [])
+
+    def test_nested_answer_format_cannot_carry_gold_or_mutate_protocol(self):
+        item = task()
+        item["answer_format"]["expected_program"] = "GOLD_SECRET"
+        with self.assertRaises(ComparatorError):
+            comparator_prompt(item)
+        self.assertNotIn("expected_program", answer_format())
 
     def test_snapshot_identity_changes_with_weights_and_cannot_claim_strength(self):
         with tempfile.TemporaryDirectory() as directory:
