@@ -1,0 +1,5 @@
+owner: agent-b
+start_utc: 2026-10-08T17:20Z
+job: job-39gnn (readout_ab_d1: D1 checkpoint under v1 vs v3w, stack/rwkv7/ckpt-readout @5e16df6)
+time_limit: 2026-10-08T21:30Z
+item: RAB (readout carry-over to trained cell; gap lever #1)
