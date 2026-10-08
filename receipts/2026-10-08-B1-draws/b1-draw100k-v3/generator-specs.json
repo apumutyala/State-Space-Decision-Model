@@ -1,0 +1,49 @@
+{
+ "acos": {
+  "name": "b1v3_acos_presence",
+  "task_family": "acos_category_sentiment",
+  "targets": [
+   38
+  ]
+ },
+ "nli4ct": {
+  "name": "b1v3_nli4ct",
+  "task_family": "clinical_trial_nli",
+  "targets": [
+   42
+  ]
+ },
+ "vast": {
+  "name": "b1v3_vast",
+  "task_family": "stance",
+  "targets": [
+   41
+  ]
+ },
+ "ragtruth": {
+  "name": "b1v3_ragtruth",
+  "task_family": "hallucination_detection",
+  "targets": [
+   59
+  ]
+ },
+ "hover": {
+  "name": "b1v3_hover",
+  "task_family": "claim_verification",
+  "targets": [
+   61
+  ]
+ },
+ "habermas": {
+  "name": "b1v3_habermas",
+  "task_family": "consensus_selection",
+  "targets": [
+   50
+  ]
+ },
+ "mnli": {
+  "name": "b1v3_mnli",
+  "task_family": "nli",
+  "targets": []
+ }
+}

@@ -66,3 +66,30 @@ check_generator, cohort v2/v3 disjointness, SplitGuard, D1-B all clean; the stri
 - REFUSED: a Home appliances (catalog 9, `device_state_record`) handling / membership generator. It is FROZEN in
   heldout-draw-v1, and `check_generator` refuses both specs (`generator-specs.json`).
 - `exclusion-check.json`: PASS over all 100,000 rows (generators incl. anli/claim_verification, clinc150+banking77/intent_membership, mmlu_aux/answer_verification).
+
+## b1-draw100k-v3 (new official train splits in the eval presentation)
+
+- Why: v2 still had no row of ACOS / NLI4CT / VAST / RAGTruth / HoVer / Habermas in their Index presentation. v3 = v2 +
+  seven newly fetched official TRAIN splits (`data/b1_v3.py`; registered in `data/sources.py`, sha256 in
+  `sources.lock.json`, files under `ssdm-data/m2/sources/dl-2026-10-08/<name>/`, read as data with `python -I`) at natural
+  base rates, +1,450 WinoGrande (already-locked train; pool exhausted at 4,950). Rows come from the backfill families,
+  not the tool families: mmlu_aux 8,416 -> 2,916, anli 3,000 -> 1,000, glaive_native backfill 9,220 -> 7,415. Tools 40.4%.
+- Families (records; gold labels): ACOS 1,000 (10-question slices of the Index inventory, since a 64-question Index group
+  renders to ~9.7k tokens; yes 1.4% of questions, 88% of records all-no); NLI4CT 855 (Entailment 49%; 772 dropped as
+  same-trial-section twins, 145 short); VAST 1,300 (one per post; against 43% / favor 39% / neutral 18%); RAGTruth 1,400
+  (hallucinated 42%); HoVer 1,400 (SUPPORTED 62%); Habermas 600 (initial iteration, complete human panel, min summed rank,
+  ties skipped; option order seeded); MNLI 1,300 (binary, entailment 33%).
+- Overlap (`overlap.json`, item-tier text vs that family's Index eval rows: source id, normalized item text, Index
+  fingerprint v3 exact / ngram13 / minhash / edit / contain on every catalog): drop rate ACOS 1.1%, NLI4CT 1.2%, VAST 9.7%,
+  RAGTruth 29.0%, HoVer 1.8%, Habermas 10.8%, MNLI 0.9% (all other-catalog); none systemic (> 50%). Splits checked:
+  Index = ACOS test, NLI4CT 2024 test, VAST test, RAGTruth split=test (source ids disjoint from train), HoVer dev,
+  Habermas EVAL_* cohorts (question.split IID/OOD_TEST). The draw's full-record fingerprint is off for v3 rows (it fires
+  on shared context/template text: RAGTruth "within N words" prompts, trial sections, Wikipedia documents); all other
+  Filter checks ran, plus a D1-B scan (the first v3 build failed b1_check on 3 soft_framing fragments and was discarded,
+  moved to `ssdm-data/m2/scratch-moved/`).
+- Files: `ssdm-data/m2/build/b1-draw100k-v3/`, pointer `data/manifests/b1-draw100k-v3.pointer.json`; raw gz sha256
+  records e41d08d3ee2c5e79578415731a036e2b16dc58e92bbcc57137ad32a2965afed2, manifest
+  41d3c7c2c37ac24d3641c1ae8b8b311d549c0be895efd2af277cb0a2c7fdd99c, content b39acdac9951a6c2782f89eae90178d7e135495bf2d6bfe48960c4fa9b7c3ce2.
+  Builder `data/b1.py` + `data/b1_v3.py` @ 2df52cc. Tokens p50 532 / p95 1,891 / max 2,048 (0 over).
+- `exclusion-check.json`: PASS over all 100,000 rows (0 failures). `generator-specs.json`: check_generator passes for all
+  seven specs (targets 38/42/41/59/61/50; none frozen).

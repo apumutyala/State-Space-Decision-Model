@@ -1,0 +1,16 @@
+{
+ "build": "b1-draw100k-v3 (python -X utf8 -I -m data.b1 draw; BOARD B1)",
+ "location": "ssdm-data/m2/build/b1-draw100k-v3/ (outside git; deterministic, a rebuild reproduces it)",
+ "records_uncompressed_sha256": "d73e12be11655ef8f102c637c6a4985362aa7b42c4a46a698f0db9249ba7ed28",
+ "manifest": "b1-draw100k-v3.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "3c996698b31b5638e84ec4ce11dedad2fb6c7f828a4c0f4f03d77fa32c105f6d",
+ "content_map": "b1-draw100k-v3.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "4edeb12ca23e09544c6017e561fbe8b9a06c44ab192ec15c398c7da8cdcb9c47",
+ "n_records": 100000,
+ "excludes_cohort": "m2-dev-cohort-v2 be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2 and m2-dev-cohort-v3 498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da (id, content, source item, key-free text)",
+ "builder": {
+  "module": "data/b1.py",
+  "commit": "2df52cc52083f3d3309b279d123fb13064cbf7fd"
+ },
+ "receipt": "receipts/2026-10-08-B1-draws/b1-draw100k-v3/"
+}
