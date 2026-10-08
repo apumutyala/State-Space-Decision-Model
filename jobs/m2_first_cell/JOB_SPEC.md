@@ -332,6 +332,42 @@ The parent arm phase and its seed are unchanged. Expected eval time is about 41 
 (D1 measured), plus 15 min budgeted for load and lineage, plus about 2 min of report. That is about $2.03 batch or
 $2.58 quoted, against the gates path's 178 min.
 
+### Screen readout and reference presets (every arm under ONE readout)
+
+`"screen_readout"`:
+- Default `"native"`: the cell config's own template and layout, so existing params behave as before.
+- Or one of `v1` (jrt-rwkv-g1-v1, ordered), `v2f` or `v3w` (jrt-rwkv-g1-v3w, g1v2). The child is scored under that
+  readout over the same loaded model (as `readout_ab` does).
+- A template this code cannot render fails in setup with exit 5. The v3w templates live on the readout branches
+  (`claude/b-train-v3w-template`, `stack/rwkv7/ckpt-readout` and the d10w/d12 cells), not yet on agent-main.
+
+`"screen_reference"` takes a preset name or a full block. Every block carries a `readout_template`.
+- `d1_v1`: job-c7pq2 art-bm3e6, `units-child-index.json`, sha 545dbb94….
+- `d1_v3w`: job-39gnn art-zskmx (artifact sha dd017eb0…), member `./phases/final.tgz` (1ad5f899…), inner
+  `out/readout_ab/child.v3w.results.jsonl` (941af29e…). Score 38.67 [35.50, 41.73].
+- The default depends on the readout: v1 uses `d1_v1`, v3w uses `d1_v3w`.
+
+`"screen_parent"` is `"in_job"` or the preset `stock_v3w`:
+- `stock_v3w`: job-fgu2c art-ivu28 (aeef838b…), member `./phases/final.tgz` (6cde2da7…), inner
+  `out/index/v3w/results.jsonl` (a52a68eb…). Score 31.07. Its 8 refused rows are the same as the D1 + v3w child's.
+- The default is the in-job arm when its prompt template (from the arm revision `prompt=…`) is the screen's.
+  Otherwise it is the readout's preset, which is `stock_v3w` for v3w.
+
+Fail closed (exit 10):
+- A reference or parent whose `readout_template` is not the screen's.
+- An in-job parent arm whose prompt template is not the screen's.
+- A pinned file that misses any proxy row.
+
+Ship the staged copies through `context.data`:
+- `m2/screen_reference/art-zskmx/child.v3w.results.jsonl` to `screen_reference/art-zskmx/child.v3w.results.jsonl`.
+- `m2/screen_parent/art-ivu28/v3w.results.jsonl` to `screen_parent/art-ivu28/v3w.results.jsonl`.
+- Without them, the job downloads each artifact from `$REF_URL` / `$PARENT_URL` and checks the full sha chain.
+
+Reference point on the proxy: D1 + v3w child 37.71 against stock v3w parent 27.32, a difference of +10.39
+[5.58, 14.86].
+
+The 26 min child estimate is D1's v1 rate. The v3w prompts are longer, so the screen cap (60 min) keeps margin.
+
 ## Mode `d15_v3w_bschema300k`: first big-data cell (B bschema-draw300k-v1, stage screen)
 
 `job_params_d15_v3w_bschema300k.json` = `d3_v3w_fast` + fla training (`rwkv7_wkv` chunked_lean, `train_rwkv7_wkv` fla) + `train_max_k` 255 / `row_options` 160 + the 300k set (pointer `data/manifests/bschema-draw300k-v1.pointer.json`, train_dir `m2/build/bschema-draw300k-v1`, pinned by `data_d15_bschema300k.sha256`) + `"stage": "screen"`. Caps: setup 25 / guard 5 / heldout 10 / parent_g12 85 / parent_index 65 / cell 532 (377 train + 155 load/tokenize 300k/smoke/cards/ckpt) / screen 165 (300k lineage rebuild: screen_fixed_minutes 130 + 26 proxy scoring) / report 5 + reserve 7 = 899 = max_duration. Worst case = (60 + 2 x 899) x 0.0495 = **$91.97** (hard cap $95). Expected 833 min = $41.23.

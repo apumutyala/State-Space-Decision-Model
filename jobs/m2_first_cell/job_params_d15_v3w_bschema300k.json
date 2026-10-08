@@ -1,5 +1,5 @@
 {
- "_comment": "D15 mode d15_v3w_bschema300k (first big-data cell): d3_v3w_fast params with the cell config (m2_first_cell_rwkv7_d15_v3w_bschema300k.json: + train_rwkv7_wkv fla, train_max_k 255 / row_options 160, B's bschema-draw300k-v1 300k set, 377-min train clock), train_dir m2/build/bschema-draw300k-v1 (pinned by jobs/m2_first_cell/data_d15_bschema300k.sha256), stage screen (JOB_SPEC 'stage screen'; screen_reference = D1 art-bm3e6) and caps re-sized to the 900-min job ceiling. Schedule: setup 25 + guard 5 + heldout 10 + parent_g12 85 + parent_index 65 + cell 532 + screen 165 + report 5 + reserve 7 = 899 = max_duration. Cell 532 = 377 train + 155 overhead (D3's 40 incl. 10 tokenize for 24k + 115 more tokenize for 300k at 10 min / 24k). Screen 165: the screen rebuilds all 300k training items for the lineage check (train.m2_gates cell_items), so screen_fixed_minutes = D1's 15 + 115 = 130, + 25.97 D1 proxy child scoring = 156 <= 0.95 x 165. Parent arm scored in-job (v3w, no seed). Worst case = (60 + 2 x 899) x 0.0495 = $91.97 (hard cap 5, as D11's 899-min clock). d3_v3w_fast's comment follows. DRAFT, NOT SUBMITTED. Mode d3_v3w_fast: job_params_d3_v2f_fast.json with only the cell config changed (m2_first_cell_rwkv7_d3_v3w_fast.json = d3_v2f_fast with template jrt-rwkv-g1-v3w; parent arm in-job via G1V3Backend mode words). Caps, data, schedule and worst case are d3_v2f_fast's ($66.03). d3_v2f_fast's comment follows. DRAFT, NOT SUBMITTED. Mode d3_v2f_fast: job_params_d3_v2f_gold.json with only the cell config changed (m2_first_cell_rwkv7_d3_v2f_fast.json = d3_v2f_gold + the d1_fast flags row_plan min_cost, cont_plan single, compile_blocks; job-2amiy 1.40x step). Caps, data, schedule and worst case are d3_v2f_gold's ($66.03). d3_v2f_gold's comment follows. d3_v2f_gold: d3_r1_gold with template jrt-rwkv-g1-v2f (v2 + dict-instruction fix). d3_r1_gold: D3 on the R1 readout format (cell m2_first_cell_rwkv7_d3_v2f_gold.json). Changes vs job_params.json: cell config (template/layout = C1 format v2), the parent arm is scored in-job in the same format (parent_arm_seed arm_sha256 null, its three context.data entries dropped: the v1 seed's unit spec no longer matches), submit command/key/label. Caps and max_duration unchanged (they already priced parent_g12 + parent_index). DRAFT, NOT SUBMITTED. First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md). Phase order: setup, guard, heldout, parent_g12, parent_index (live rate guard measures the box BEFORE training; jobs.m2_first_cell.reprice re-prices the child evals), cell, evals, report. Caps sized so a box up to 25 % slower than job-tkfaj (prefill and per-call latency) completes every scoring phase (projection <= 95 % of the cap); slower boxes stop before training. Worst case = (build_timeout + attempts x max_duration) x batch rate with attempts = 1 + max(max_restarts, assumed_restart_floor) (jobs/common/costs.py) = (60 + 2 x 637) x 0.0495 = $66.03. build_timeout 60 per the launch lint (L-09: image publish timeouts). Expected minutes: scoring phases at the job-tkfaj probe rates (TOK_S 3,757 at 2,048 tokens, CALL_S 0.117); training at the job-tvuat ADOPT step time (median 8.25 s, ckpt_rows_lean).",
+ "_comment": "D15 mode d15_v3w_bschema300k (first big-data cell): d3_v3w_fast params with the cell config (m2_first_cell_rwkv7_d15_v3w_bschema300k.json: + train_rwkv7_wkv fla, train_max_k 255 / row_options 160, B's bschema-draw300k-v1 300k set, 377-min train clock), train_dir m2/build/bschema-draw300k-v1 (pinned by jobs/m2_first_cell/data_d15_bschema300k.sha256), stage screen (JOB_SPEC 'stage screen'; screen_readout v3w, screen_reference preset d1_v3w = job-39gnn art-zskmx v3w child 38.67, screen_parent preset stock_v3w = job-fgu2c art-ivu28 31.07, both shipped via context.data) and caps re-sized to the 900-min job ceiling. Schedule: setup 25 + guard 5 + heldout 10 + parent_g12 85 + parent_index 65 + cell 532 + screen 165 + report 5 + reserve 7 = 899 = max_duration. Cell 532 = 377 train + 155 overhead (D3's 40 incl. 10 tokenize for 24k + 115 more tokenize for 300k at 10 min / 24k). Screen 165: the screen rebuilds all 300k training items for the lineage check (train.m2_gates cell_items), so screen_fixed_minutes = D1's 15 + 115 = 130, + 25.97 D1 proxy child scoring = 156 <= 0.95 x 165. Parent = pinned stock_v3w preset (in-job parent arm phase unchanged). Worst case = (60 + 2 x 899) x 0.0495 = $91.97 (hard cap 5, as D11's 899-min clock). d3_v3w_fast's comment follows. DRAFT, NOT SUBMITTED. Mode d3_v3w_fast: job_params_d3_v2f_fast.json with only the cell config changed (m2_first_cell_rwkv7_d3_v3w_fast.json = d3_v2f_fast with template jrt-rwkv-g1-v3w; parent arm in-job via G1V3Backend mode words). Caps, data, schedule and worst case are d3_v2f_fast's ($66.03). d3_v2f_fast's comment follows. DRAFT, NOT SUBMITTED. Mode d3_v2f_fast: job_params_d3_v2f_gold.json with only the cell config changed (m2_first_cell_rwkv7_d3_v2f_fast.json = d3_v2f_gold + the d1_fast flags row_plan min_cost, cont_plan single, compile_blocks; job-2amiy 1.40x step). Caps, data, schedule and worst case are d3_v2f_gold's ($66.03). d3_v2f_gold's comment follows. d3_v2f_gold: d3_r1_gold with template jrt-rwkv-g1-v2f (v2 + dict-instruction fix). d3_r1_gold: D3 on the R1 readout format (cell m2_first_cell_rwkv7_d3_v2f_gold.json). Changes vs job_params.json: cell config (template/layout = C1 format v2), the parent arm is scored in-job in the same format (parent_arm_seed arm_sha256 null, its three context.data entries dropped: the v1 seed's unit spec no longer matches), submit command/key/label. Caps and max_duration unchanged (they already priced parent_g12 + parent_index). DRAFT, NOT SUBMITTED. First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md). Phase order: setup, guard, heldout, parent_g12, parent_index (live rate guard measures the box BEFORE training; jobs.m2_first_cell.reprice re-prices the child evals), cell, evals, report. Caps sized so a box up to 25 % slower than job-tkfaj (prefill and per-call latency) completes every scoring phase (projection <= 95 % of the cap); slower boxes stop before training. Worst case = (build_timeout + attempts x max_duration) x batch rate with attempts = 1 + max(max_restarts, assumed_restart_floor) (jobs/common/costs.py) = (60 + 2 x 637) x 0.0495 = $66.03. build_timeout 60 per the launch lint (L-09: image publish timeouts). Expected minutes: scoring phases at the job-tkfaj probe rates (TOK_S 3,757 at 2,048 tokens, CALL_S 0.117); training at the job-tvuat ADOPT step time (median 8.25 s, ckpt_rows_lean).",
  "test_env": {
   "transformers": "5.17.0",
   "with": [],
@@ -177,13 +177,14 @@
     "pin": "jobs/m2_first_cell/data_d15_bschema300k.sha256"
    },
    {
-    "src": "m2/screen_reference/art-bm3e6/units-child-index.json",
-    "dest": "screen_reference/units-child-index.json",
-    "pin_json": [
-     "jobs/m2_first_cell/job_params_d15_v3w_bschema300k.json",
-     "screen_reference",
-     "units_sha256"
-    ]
+    "src": "m2/screen_reference/art-zskmx/child.v3w.results.jsonl",
+    "dest": "screen_reference/art-zskmx/child.v3w.results.jsonl",
+    "pin_sha256": "941af29e4e6d427b300703d3a7d29bd959e8c16af82292eb04e87b73b4474f02"
+   },
+   {
+    "src": "m2/screen_parent/art-ivu28/v3w.results.jsonl",
+    "dest": "screen_parent/art-ivu28/v3w.results.jsonl",
+    "pin_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1"
    }
   ],
   "manifest_files": [
@@ -202,17 +203,8 @@
  "r1_format_commit": "46c078828830d9a192af716e57fdd1aca840124f",
  "stage": "screen",
  "screen_fixed_minutes": 130,
- "screen_reference": {
-  "_note": "D1 = job-c7pq2 (m2_first_cell base), artifact art-bm3e6; the child's Index units from the evals phase (phases/final.tgz out/units-child-index.json, == x_evals); jobs.m2_first_cell.screen DEFAULT_REFERENCE verbatim. Local copy sha256 verified 2026-10-08.",
-  "artifact": "art-bm3e6",
-  "job": "job-c7pq2",
-  "artifact_sha256": "a405907eb85f3b6bc25f287ef37066dcd192b0b2897e4ec45f336a6fe3580a18",
-  "member": "./phases/final.tgz",
-  "member_sha256": "c49988af37c60754de5abc5cff686ad7dcb1152a0848b341af53dfb02b3414e7",
-  "inner_member": "out/units-child-index.json",
-  "units_sha256": "545dbb946c16b2e9975d2bb7a19085edc9fc58b69b2d668d7ace153ded55a6b7",
-  "shipped": "screen_reference/units-child-index.json",
-  "url_env": "REF_URL"
- },
+ "screen_readout": "v3w",
+ "screen_reference": "d1_v3w",
+ "screen_parent": "stock_v3w",
  "train_dir": "m2/build/bschema-draw300k-v1"
 }
