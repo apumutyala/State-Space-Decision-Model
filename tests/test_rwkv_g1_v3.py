@@ -268,7 +268,7 @@ def test_variants_score_end_to_end_with_proper_distributions():
 def test_runner_and_driver_know_readout_g1v3():
     from jobs.rwkv7.readout_variants import DEFAULT_ORDER, VARIANTS, parse_variants
 
-    assert parse_variants(DEFAULT_ORDER) == ["v2", "v2f", "v3", "v3w", "v3r", "v3p", "v1", "v3c"] and VARIANTS["v1"] == "rwkv7-hf" and set(VARIANTS) == set(parse_variants(DEFAULT_ORDER))
+    assert parse_variants(DEFAULT_ORDER) == ["v2", "v2f", "v3", "v3w", "v3r", "v3p", "v1", "v3c"] and VARIANTS["v1"] == "rwkv7-hf" and set(VARIANTS) - set(parse_variants(DEFAULT_ORDER)) == {"v3j", "v3js"}
     with pytest.raises(SystemExit):
         parse_variants("v3,v3")
     if shutil.which("bash") is None:

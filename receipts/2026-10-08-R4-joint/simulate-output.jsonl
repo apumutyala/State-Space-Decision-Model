@@ -1,0 +1,6 @@
+{"file": "results.jsonl", "rows": 2008, "decode": "independent", "index": 27.3131, "delta": 0.0, "skill": {"1": 56.89, "9": 0.0, "33": 12.81}, "applied": 0, "changed": 0, "board_ece": 0.1073}
+{"file": "results.jsonl", "rows": 2008, "decode": "map", "index": 27.3131, "delta": 0.0, "skill": {"1": 56.89, "9": 0.0, "33": 12.81}, "applied": 124, "changed": 3, "board_ece": 0.1076}
+{"file": "results.jsonl", "rows": 2008, "decode": "card", "index": 26.9001, "delta": -0.413, "skill": {"1": 45.33, "9": 0.0, "33": 15.17}, "applied": 124, "changed": 53, "board_ece": 0.1111}
+{"file": "d1_results.jsonl", "rows": 2008, "decode": "independent", "index": 35.1183, "delta": 0.0, "skill": {"1": 92.64, "9": 0.0, "33": 38.73}, "applied": 0, "changed": 0, "board_ece": 0.0923}
+{"file": "d1_results.jsonl", "rows": 2008, "decode": "map", "index": 35.161, "delta": 0.0426, "skill": {"1": 93.69, "9": 0.0, "33": 38.73}, "applied": 124, "changed": 1, "board_ece": 0.0922}
+{"file": "d1_results.jsonl", "rows": 2008, "decode": "card", "index": 34.8365, "delta": -0.2818, "skill": {"1": 92.64, "9": 0.0, "33": 26.95}, "applied": 124, "changed": 31, "board_ece": 0.0953}

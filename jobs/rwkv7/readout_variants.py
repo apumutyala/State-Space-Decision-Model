@@ -20,7 +20,8 @@ from pathlib import Path
 
 ENGINE = "jobs.common.readout_engine:ReadoutIndexEngine"
 VARIANTS = {"v2": "rwkv7-hf-g1-v2", "v2f": "rwkv7-hf-g1-v2f", "v3": "rwkv7-hf-g1-v3", "v3w": "rwkv7-hf-g1-v3w",
-            "v3r": "rwkv7-hf-g1-v3r", "v3p": "rwkv7-hf-g1-v3p", "v1": "rwkv7-hf", "v3c": "rwkv7-hf-g1-v3c"}
+            "v3r": "rwkv7-hf-g1-v3r", "v3p": "rwkv7-hf-g1-v3p", "v1": "rwkv7-hf", "v3c": "rwkv7-hf-g1-v3c",
+            "v3j": "rwkv7-hf-g1-v3j", "v3js": "rwkv7-hf-g1-v3js"}  # R4 joint arms: opt-in, not in DEFAULT_ORDER
 #: run order = priority (coordinator 2026-10-08): v2 control (byte-identical to job-zhyvg), v2f (v2 + dict-instruction
 #: fix), v3 code key, v3w word ids, v3r re-read, v3p permutation, v1 (jrt-rwkv-g1-v1, for a later CPU-side
 #: pre-declared arithmetic-mean ensemble v1 + v3 on identical rows), v3c calibration

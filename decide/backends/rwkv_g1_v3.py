@@ -9,6 +9,8 @@ dict-valued instructions as canonical JSON, the v2 instruction fix; ``rwkv7-hf-g
   ``rwkv7-hf-g1-v3p``  mode "permute"    v3 + deterministic per-question presentation order (codes mapped back)
   ``rwkv7-hf-g1-v3r``  mode "reread"     v3 + a second answer slot over the model's own top-m first-pass codes
   ``rwkv7-hf-g1-v3c``  mode "calibrate"  v3 + contextual calibration
+  ``rwkv7-hf-g1-v3j``  mode "joint"      v3 + the joint candidate-block decode (``decide.joint``, score-only, R4 (b))
+  ``rwkv7-hf-g1-v3js`` mode "joint_seq"  v3j + sequential own-answer conditioning (R4 (a), extra model calls)
 Scoring is the v2 path: [0] + whole-string tokenization, the shared token prefix of every question prompt prefilled
 once, one single-token code read per question from packed tail extensions of that state.
 
@@ -32,6 +34,16 @@ prompt is the same v3 template with the state and every instruction replaced by 
 reported logit is log softmax_o(log p(code_o | prompt) - log p_cf(o)) (W = diag(p_cf)^-1, b = 0). Nothing is fitted:
 the prior depends only on the request's own label space, never on gold labels or other rows. Identical content-free
 prompts (same schema across rows) are served from an in-process memo, which changes cost, not values.
+
+v3j joint decode: the v3 logits of a request that is a candidate block (``decide.joint.candidate_block``: n >= 2 yes/no
+questions over one instruction stem) are replaced by the log max-marginals of the joint under #yes >= 1; every other
+request is returned with the v3 logits unchanged. No extra model call.
+
+v3js sequential conditioning: easy-first over the request's coded questions. The first pass is v3; questions are
+ordered by their first-pass max probability (ties by id); the first keeps its v3 logits, and question t is re-scored
+from the SAME prefilled prefix state with ``answers_so_far`` (the model's own argmax answers to questions 1..t-1 of
+this request; nothing else) inserted between END STATE and the re-read question. One extra prefill + one tail call per
+re-scored question. The v3j joint decode is applied afterwards.
 """
 from __future__ import annotations
 
@@ -43,10 +55,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 from ..adapter import DEFAULT_LIMITS
+from ..joint import JOINT_RULE_ID, joint_logits
 from ..prompt import CANARY_REQUEST, G1V2_SYSTEM_PROMPT, G1V2_TEMPLATE
 from ..prompt_g1v3 import (CALIBRATE_MAX_K, CATALOG_CHARS_LADDER, CATALOG_MIN_K, CONTENT_FREE_INPUTS, G1V3_ID,
-                           G1V3C_ID, G1V3P_ID, G1V3R_ID, REREAD_LABEL_CHARS, REREAD_MIN_K, RESTATE_CHARS, WORDLIKE,
-                           G1V2F_ID, G1V3W_ID, catalog_label, content_free_request, identity_order, load_v3_codes,
+                           G1V3C_ID, G1V3J_ID, G1V3JS_ID, G1V3P_ID, G1V3R_ID, REREAD_LABEL_CHARS, REREAD_MIN_K,
+                           RESTATE_CHARS, WORDLIKE, G1V2F_ID, G1V3W_ID, answers_so_far, catalog_label, content_free_request, identity_order, load_v3_codes,
                            presentation_order, question_codes, render_g1v3, reread_m, reread_suffix, wants_catalog,
                            word_ids_ok)
 from ..schema import canonical_json, canonical_options, canonical_question_ids, sha256_text
@@ -58,7 +71,9 @@ from .state_fork import PAD_ID, common_prefix_len
 
 CF_MEMO_MAX = 4096
 MODES = {"v2f": (G1V2F_ID, "rwkv_g1_v2f"), "words": (G1V3W_ID, "rwkv_g1_v3w"), "catalog": (G1V3_ID, "rwkv_g1_v3"), "permute": (G1V3P_ID, "rwkv_g1_v3p"), "reread": (G1V3R_ID, "rwkv_g1_v3r"),
-         "calibrate": (G1V3C_ID, "rwkv_g1_v3c")}
+         "calibrate": (G1V3C_ID, "rwkv_g1_v3c"), "joint": (G1V3J_ID, "rwkv_g1_v3j"),
+         "joint_seq": (G1V3JS_ID, "rwkv_g1_v3js")}
+JOINT_MODES = ("joint", "joint_seq")
 V3_CODES, V3_TABLE_SHA256 = load_v3_codes()
 V3_TABLE = [e["code"] for e in V3_CODES]
 ANSWER_CTX = "User: Choose.\n\nAssistant: <think></think>\nANSWER:"
@@ -85,7 +100,16 @@ def renderer_identity(mode: str) -> dict[str, str]:
                         if mode == "reread" else None),
              "calibration": ({"kind": "contextual (Zhao et al. 2021), diag(p_cf)^-1", "content_free": list(CONTENT_FREE_INPUTS),
                               "max_k": CALIBRATE_MAX_K} if mode == "calibrate" else None)}
+    if mode in JOINT_MODES:  # keys only for the R4 modes: every pre-R4 identity hash is unchanged
+        value["joint"] = {"rule": JOINT_RULE_ID, "decode": "map", "output": "log max-marginals"}
+        value["sequential"] = ({"order": "easy-first (first-pass max p, ties by id)", "block": "answers_so_far",
+                                "canary": _answers_canary()} if mode == "joint_seq" else None)
     return {"id": tid, "sha256": sha256_text(canonical_json(value))}
+
+
+def _answers_canary() -> str:
+    qids = canonical_question_ids(CANARY_REQUEST["questions"])
+    return answers_so_far(CANARY_REQUEST, [(q, canonical_options(CANARY_REQUEST["questions"][q])[0][0]) for q in qids])
 
 
 def _norm(d: dict[str, float]) -> dict[str, float]:
@@ -134,6 +158,8 @@ class G1V3Backend(G1V2Backend):
         self.reread = mode == "reread"
         self.permute = mode == "permute"
         self.words = mode == "words"
+        self.joint = mode in JOINT_MODES
+        self.sequential = mode == "joint_seq"
         self._first_tok: dict[str, int | None] = {}
         self.name = MODES[mode][1]
         limit = DEFAULT_LIMITS["max_input_tokens"]
@@ -175,6 +201,12 @@ class G1V3Backend(G1V2Backend):
             "source_sha256": {**config.get("source_sha256", {}),
                               **{p.name: sha256_file(p) for p in (here, here.parents[1] / "prompt_g1v3.py")}},
         })
+        if self.joint:  # keys only for the R4 modes
+            config["joint"] = (f"{JOINT_RULE_ID}: candidate block (n >= 2 yes/no questions, one instruction stem) -> "
+                               f"joint MAP under #yes >= 1, reported as log max-marginals; other requests unchanged")
+            config["sequential"] = ("easy-first own-answer conditioning: question t re-scored from the shared prefix "
+                                    "state with the model's own argmax answers to questions 1..t-1 between END STATE "
+                                    "and the re-read question") if self.sequential else None
         cfg_hash = sha256_text(canonical_json(config))
         tmpl = renderer_identity(self.mode)
         revision.update({
@@ -205,14 +237,15 @@ class G1V3Backend(G1V2Backend):
         return frozenset(k for k in canonical_question_ids(request["questions"])
                          if word_ids_ok(request["questions"][k], self.first_token))
 
-    def _render(self, request: dict[str, Any], qid: str, words: frozenset[str] = frozenset()):
-        """(text, token ids, label chars used; None = no block) of the longest-label v3 prompt within the budget."""
+    def _render(self, request: dict[str, Any], qid: str, words: frozenset[str] = frozenset(), block: str | None = None):
+        """(text, token ids, label chars used; None = no block) of the longest-label v3 prompt within the budget;
+        ``block`` = the v3js answers-so-far block (None: the v3 prompt)."""
         rq = request["questions"][qid]
         ladder = CATALOG_CHARS_LADDER if (self.mode != "v2f" and qid not in words
                                           and wants_catalog(rq, self.code_table)) else (None,)
         text, ids = "", []
         for n in ladder:
-            text = render_g1v3(request, qid, self.code_table, n, self.permute, True, words)
+            text = render_g1v3(request, qid, self.code_table, n, self.permute, True, words, block)
             ids = self._full(text)
             if len(ids) <= self.budget:
                 return text, ids, n
@@ -276,6 +309,22 @@ class G1V3Backend(G1V2Backend):
                     extra += worst - L
                 calls += max(1, -(-extra // self.pack_tokens), -(-len(qs) // self.pack_rows))
                 total += extra
+        if self.sequential:  # upper bound: every other coded question answered with its longest option label
+            qs = [q for q in self._questions(request) if q["coded"]]
+            if len(qs) >= 2:
+                worst = []
+                for q in qs:
+                    opts = dict(canonical_options(request["questions"][q["qid"]]))
+                    worst.append((q["qid"], max(sorted(opts), key=lambda o: len(catalog_label(o, opts[o], 64)))))
+                seq = [self._render(request, q["qid"], block=answers_so_far(request, [w for w in worst if w[0] != q["qid"]]))[1]
+                       for q in qs]
+                L = common_prefix_len([q["prompt"] for q in qs] + seq)
+                extra = 0
+                for ids in seq:
+                    longest = max(longest, len(ids) + 1)
+                    extra += len(ids) - L + 8
+                calls += len(qs)  # one prefill + one tail call per re-scored question (all but the first)
+                total += L + extra
         return Plan(inference_calls=calls, max_call_input_tokens=longest, total_input_tokens=total,
                     per_question=p.per_question, prompt_token_labels=p.prompt_token_labels, provenance_applied=False)
 
@@ -408,10 +457,74 @@ class G1V3Backend(G1V2Backend):
         self._cf_memo[key] = r.logits
         return r.logits, r.inference_calls, r.total_input_tokens, r.extras.get("call_latency_ms", [])
 
+    def _score_sequential(self, request: dict[str, Any], first: dict[str, dict[str, float]],
+                          check_deadline: Callable[[], None]):
+        """v3js: (logits, calls, tokens, call ms, diagnostics). ``first`` = this request's v3 logits."""
+        import torch
+
+        qs = [q for q in self._questions(request) if q["coded"]]
+        diag: dict[str, Any] = {"order": [], "skipped": {}, "first_pass_logits": {}}
+        if len(qs) < 2:
+            return first, 0, 0, [], diag
+        by_id = {q["qid"]: q for q in qs}
+
+        def pmax(lg):
+            m = max(lg.values())
+            return 1.0 / sum(math.exp(v - m) for v in lg.values())
+
+        def argmax(lg):
+            return max(sorted(lg), key=lambda o: lg[o])  # ties -> smallest id, as decide.schema
+
+        order = sorted(by_id, key=lambda k: (-pmax(first[k]), k))
+        diag["order"] = order
+        chosen = [(order[0], argmax(first[order[0]]))]
+        # the shared prefix ends where the answers block starts (every block opens with the same header)
+        probe = self._render(request, order[1], block=answers_so_far(request, chosen))[1]
+        L = common_prefix_len([q["prompt"] for q in qs] + [probe])
+        prefix = qs[0]["prompt"][:L]
+        ops, dev = self.plugin.state_ops, self.plugin.device
+        check_deadline()
+        t0 = time.perf_counter()
+        with torch.inference_mode():
+            _, state = ops.prefill(torch.tensor([prefix], dtype=torch.long, device=dev))
+        if dev.startswith("cuda"):
+            torch.cuda.synchronize()
+        ms, calls, total = [round((time.perf_counter() - t0) * 1000.0, 3)], 1, L
+        logits = dict(first)
+        for qid in order[1:]:
+            q = by_id[qid]
+            _, ids, _ = self._render(request, qid, block=answers_so_far(request, chosen))
+            if len(ids) > self.budget:
+                diag["skipped"][qid] = "over_budget"
+            elif ids[:L] != prefix or len(ids) <= L:
+                diag["skipped"][qid] = "prefix_mismatch"
+            else:
+                out, c, t, m = self._extend_coded(state, L, [(qid, ids, q["tokens"])], check_deadline)
+                calls, total, ms = calls + c, total + t, ms + m
+                diag["first_pass_logits"][qid] = first[qid]
+                logits[qid] = dict(zip(q["options"], out[qid]))
+                if not all(math.isfinite(v) for v in logits[qid].values()):
+                    raise BackendUnsupported("non_finite_logits", "nonfinite sequential logits")
+            chosen.append((qid, argmax(logits[qid])))
+        return logits, calls, total, ms, diag
+
     def score(self, request: dict[str, Any], check_deadline: Callable[[], None]) -> ScoreResult:
         if self.reread:
             return self._score_reread(request, check_deadline)
         res = super().score(request, check_deadline)
+        if self.joint:
+            extras = dict(res.extras)
+            logits, calls, total = res.logits, res.inference_calls, res.total_input_tokens
+            ms = list(extras.get("call_latency_ms", []))
+            if self.sequential:
+                logits, c, t, m, extras["sequential"] = self._score_sequential(request, logits, check_deadline)
+                calls, total, ms = calls + c, total + t, ms + m
+            joint, extras["joint"] = joint_logits(request, logits, "map")
+            if extras["joint"]["applied"]:
+                extras["independent_logits"] = {qid: logits[qid] for qid in extras["joint"]["changed"]}
+            extras.update({"call_latency_ms": ms,
+                           "scoring_path": "g1-v3js-prefix-fork" if self.sequential else "g1-v3j-prefix-fork"})
+            return ScoreResult(logits=joint, inference_calls=calls, total_input_tokens=total, extras=extras)
         qs = {q["qid"]: q for q in self._questions(request)}
         extras = dict(res.extras)
         extras["scoring_path"] = "g1-v3c-prefix-fork" if self.calibrate else "g1-v3-prefix-fork"

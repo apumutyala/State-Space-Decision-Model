@@ -60,6 +60,8 @@ G1V3R_ID = "jrt-rwkv-g1-v3r"
 G1V3W_ID = "jrt-rwkv-g1-v3w"
 G1V2F_ID = "jrt-rwkv-g1-v2f"
 G1V3C_ID = "jrt-rwkv-g1-v3c"
+G1V3J_ID = "jrt-rwkv-g1-v3j"
+G1V3JS_ID = "jrt-rwkv-g1-v3js"
 
 # ----------------------------------------------------------------------------------------------------- code table
 V3_CODES_PATH = Path(__file__).resolve().parent / "data/rwkv_g1_v3_codes.json"
@@ -227,9 +229,11 @@ def wants_catalog(q: dict[str, Any], table: list[str]) -> bool:
 
 def build_prompt_g1v3(request: dict[str, Any], qid: str, table: list[str], catalog_chars: int | None = 64,
                       permute: bool = False, fix_instr: bool = True,
-                      word_qids: frozenset[str] = frozenset()) -> list[Labelled]:
+                      word_qids: frozenset[str] = frozenset(), answers_block: str | None = None) -> list[Labelled]:
     """v2's layout (decide.prompt.build_prompt_g1v2) with a code table, the instruction fix, an optional
-    presentation order, v3w word-id questions (``word_qids``) and the code key for the asked question."""
+    presentation order, v3w word-id questions (``word_qids``) and the code key for the asked question.
+    ``answers_block`` (v3js only, from ``answers_so_far``) goes between END STATE and the re-read QUESTION; None or ""
+    renders the exact v3 segments."""
     questions = request["questions"]
     order_ids = canonical_question_ids(questions)
     orders = {k: (presentation_order(questions[k], k) if permute else identity_order(questions[k])) for k in order_ids}
@@ -252,8 +256,12 @@ def build_prompt_g1v3(request: dict[str, Any], qid: str, table: list[str], catal
     seg.append((_g1_text(request["state"]), "data"))
     q = questions[qid]
     coded = codes[qid] is not None or qid in word_qids
-    seg += [(f"\nEND STATE\nQUESTION (re-read FIELD {order_ids.index(qid) + 1}):\nID: ", "template"),
-            (g1_clean(qid), "data"), (f"\nTYPE: {q['type']}\nINSTRUCTION: ", "template")]
+    head_q = f"QUESTION (re-read FIELD {order_ids.index(qid) + 1}):\nID: "
+    if answers_block:  # v3js: the model's own earlier answers, between END STATE and the re-read question
+        seg += [("\nEND STATE\n", "template"), (answers_block, "data"), (head_q, "template")]
+    else:
+        seg.append(("\nEND STATE\n" + head_q, "template"))
+    seg += [(g1_clean(qid), "data"), (f"\nTYPE: {q['type']}\nINSTRUCTION: ", "template")]
     seg += instr(qid)
     seg.append(("\nOPTIONS:", "template"))
     seg += _option_lines(q, orders[qid], codes[qid])
@@ -265,9 +273,11 @@ def build_prompt_g1v3(request: dict[str, Any], qid: str, table: list[str], catal
 
 
 def render_g1v3(request: dict[str, Any], qid: str, table: list[str], catalog_chars: int | None = 64,
-                permute: bool = False, fix_instr: bool = True, word_qids: frozenset[str] = frozenset()) -> str:
+                permute: bool = False, fix_instr: bool = True, word_qids: frozenset[str] = frozenset(),
+                answers_block: str | None = None) -> str:
     """The v3 prompt string; blank lines are collapsed over the joined user turn exactly as in ``render_g1v2``."""
-    text = "".join(t for t, _ in build_prompt_g1v3(request, qid, table, catalog_chars, permute, fix_instr, word_qids))
+    text = "".join(t for t, _ in build_prompt_g1v3(request, qid, table, catalog_chars, permute, fix_instr, word_qids,
+                                                   answers_block))
     head = G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT)
     body = text[len(head):len(text) - len(G1V2_TEMPLATE.tail)]
     return head + g1_clean(body) + G1V2_TEMPLATE.tail
@@ -314,3 +324,21 @@ def content_free_request(request: dict[str, Any], filler: str) -> dict[str, Any]
         q["instructions"] = filler
         qs[k] = q
     return {**{k: v for k, v in request.items() if k not in ("state", "questions")}, "state": filler, "questions": qs}
+
+
+# ------------------------------------------------------------------------- v3js sequential (own-answer) conditioning
+ANSWER_LABEL_CHARS = 64
+ANSWERS_HEADER = "ANSWERS SO FAR (your own earlier answers in this request):"
+
+
+def answers_so_far(request: dict[str, Any], chosen: list[tuple[str, str]]) -> str:
+    """The block of this model's OWN earlier answers in this request, in the order they were made: one line per
+    (question id, chosen option id), labelled by its schema FIELD number. No answers -> "" (the exact v3 prompt)."""
+    if not chosen:
+        return ""
+    order_ids = canonical_question_ids(request["questions"])
+    lines = [ANSWERS_HEADER]
+    for qid, oid in chosen:
+        desc = dict(canonical_options(request["questions"][qid])).get(oid)
+        lines.append(f"FIELD {order_ids.index(qid) + 1} ({g1_clean(qid)}) = {catalog_label(oid, desc, ANSWER_LABEL_CHARS)}")
+    return g1_clean("\n".join(lines)) + "\n"

@@ -13,6 +13,8 @@ families
   ``rwkv7-hf-g1-v3`` same plugin, ``decide.backends.rwkv_g1_v3.G1V3Backend`` (R3: v2 + v3 code table + code key)
   ``rwkv7-hf-g1-v3p`` / ``-v3r`` / ``-v3c`` / ``-v3w`` G1V3Backend modes permute / reread / calibrate / words (one
                   change each on v3); ``rwkv7-hf-g1-v2f`` mode v2f (v2 + the dict-instruction fix only)
+  ``rwkv7-hf-g1-v3j`` / ``-v3js`` G1V3Backend modes joint / joint_seq (R4: v3 + joint candidate-block decode;
+                  + sequential own-answer conditioning)
   ``qwen3.5``     ``decide.backends.hf_readout.load_qwen35`` (stock transformers path)
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
@@ -30,7 +32,8 @@ G1V2_FAMILY = "rwkv7-hf-g1-v2"
 G1V3_FAMILY = "rwkv7-hf-g1-v3"
 G1V3C_FAMILY = "rwkv7-hf-g1-v3c"
 G1V3_MODES = {"rwkv7-hf-g1-v2f": "v2f", G1V3_FAMILY: "catalog", "rwkv7-hf-g1-v3w": "words",
-              "rwkv7-hf-g1-v3p": "permute", "rwkv7-hf-g1-v3r": "reread", G1V3C_FAMILY: "calibrate"}
+              "rwkv7-hf-g1-v3p": "permute", "rwkv7-hf-g1-v3r": "reread", G1V3C_FAMILY: "calibrate",
+              "rwkv7-hf-g1-v3j": "joint", "rwkv7-hf-g1-v3js": "joint_seq"}
 #: RWKV7 plugins loaded in this process, keyed by (model_dir, device, dtype): one process that runs several readout
 #: variants (jobs/rwkv7 JOB=readout_g1v3) loads the 26 GB model once. The plugin is read-only for every backend.
 _RWKV7_PLUGINS: dict[tuple[str, str, str], Any] = {}
@@ -38,7 +41,8 @@ TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-h
              CODE_LABEL_FAMILY: "jrt-rwkv-g1-code-label-v1", CODE_LABEL_V2_FAMILY: "jrt-rwkv-g1-code-label-v2",
              G1V2_FAMILY: "jrt-rwkv-g1-v2", G1V3_FAMILY: "jrt-rwkv-g1-v3", "rwkv7-hf-g1-v3p": "jrt-rwkv-g1-v3p",
              "rwkv7-hf-g1-v3r": "jrt-rwkv-g1-v3r", G1V3C_FAMILY: "jrt-rwkv-g1-v3c",
-             "rwkv7-hf-g1-v2f": "jrt-rwkv-g1-v2f", "rwkv7-hf-g1-v3w": "jrt-rwkv-g1-v3w"}
+             "rwkv7-hf-g1-v2f": "jrt-rwkv-g1-v2f", "rwkv7-hf-g1-v3w": "jrt-rwkv-g1-v3w",
+             "rwkv7-hf-g1-v3j": "jrt-rwkv-g1-v3j", "rwkv7-hf-g1-v3js": "jrt-rwkv-g1-v3js"}
 
 
 def _sha256_file(path):
