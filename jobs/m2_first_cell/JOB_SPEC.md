@@ -331,3 +331,7 @@ Mode params need these changes:
 The parent arm phase and its seed are unchanged. Expected eval time is about 41 min: 26.0 min of child proxy scoring
 (D1 measured), plus 15 min budgeted for load and lineage, plus about 2 min of report. That is about $2.03 batch or
 $2.58 quoted, against the gates path's 178 min.
+
+## Mode `d15_v3w_bschema300k`: first big-data cell (B bschema-draw300k-v1, stage screen)
+
+`job_params_d15_v3w_bschema300k.json` = `d3_v3w_fast` + fla training (`rwkv7_wkv` chunked_lean, `train_rwkv7_wkv` fla) + `train_max_k` 255 / `row_options` 160 + the 300k set (pointer `data/manifests/bschema-draw300k-v1.pointer.json`, train_dir `m2/build/bschema-draw300k-v1`, pinned by `data_d15_bschema300k.sha256`) + `"stage": "screen"`. Caps: setup 25 / guard 5 / heldout 10 / parent_g12 85 / parent_index 65 / cell 532 (377 train + 155 load/tokenize 300k/smoke/cards/ckpt) / screen 165 (300k lineage rebuild: screen_fixed_minutes 130 + 26 proxy scoring) / report 5 + reserve 7 = 899 = max_duration. Worst case = (60 + 2 x 899) x 0.0495 = **$91.97** (hard cap $95). Expected 833 min = $41.23.
