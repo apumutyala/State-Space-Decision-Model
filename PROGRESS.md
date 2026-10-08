@@ -372,3 +372,9 @@
 - Evidence: PR #226 head `07b203900d4be912121b20424860400a8559cb48`, OPEN/CLEAN, GitGuardian PASS. System focused tests: 10 passed; `.venv-gpu` Torch-backed parent/pin tests: 59 passed; compile/diff checks pass. No checkpoint weights or non-fit rows were read; no training/GPU.
 - A/B state: direct autor poll says D1 `job-gi58k` running in cell (last log 20:38Z), D2 `job-b7xax` queued on balance, D12 `job-bs5we` running by status but last log 20:19Z. No G1 full-DEV candidate/full8 Stage 1 evidence in newest 50 jobs; C requested D12 heartbeat, champion handle/result, and approved guard fingerprint through INBOX.
 - Next: await the missing external guard pin/Stage 1 proof while continuing CPU-only language preparation. No L1 training launch is authorized by this preflight.
+
+## 2026-10-08 20:58Z: Agent C added pinned hash-only split-guard ingestion
+- Did: added `load_pinned_split_guard` for the A/B-provided metadata-only guard artifact and bound its full in-memory IDs, payload hashes, content hashes, manifest digests, content-index identity and provenance note to a separate fingerprint. It validates the content-index digest from the canonical sorted content-hash lines and never opens the original manifest paths.
+- Evidence: code is on PR #226 @`f76b7514f99bbc06086f344dedaf103d4e85b254`; OPEN/CLEAN, GitGuardian PASS. Focused system tests: 10 pass; Torch-backed parent/pin regression suite: 59 pass; compile/diff checks pass. Test guard uses nonexistent manifest paths, confirming no raw DEV/TEST manifest access.
+- Limitation: A/B has not supplied the external guard artifact/byte pin/fingerprint, and no full-DEV/full8 Stage 1 qualification is present. The trainer stays fail-closed; no C training/GPU run.
+- Next: A/B can deliver the hash-only guard package under schema `ssdm.agent_c.split_guard_pin.v1`; after Stage 1 qualification and A's order, assemble the full runner and verify fit-world split/parent-retention gates.
