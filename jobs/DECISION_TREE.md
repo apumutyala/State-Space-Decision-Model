@@ -109,3 +109,5 @@ recorded decision, not an automatic one.
 Worst-case envelope total, including the $16.11 MTD spend, the Clef-27B Index line and both optional teachers, is at most $280.15 (branch A), so every branch fits $525 with the Language and Reserve
 lines intact. Branch A leaves System 1 ~$70 above the cache-fork m2 plan before the optional teachers (it left ~$4 at the old ~$150 full-8
 estimate); the full-8 worst case already counts a 60-min build and two full attempts.
+
+D3 candidate `jobs/m2_first_cell/job_params_d3_r1_gold.json` (mode `d3_r1_gold`): D1 (11fb140, gold labels) trained and evaluated in the R1 readout format (C1 format v2 @46c0788: template `jrt-rwkv-g1-v2`, layout `g1v2`); the parent arm is scored in-job in the same format (no v1 seed). Caps unchanged: inherits the D1 $66.03 ceiling ($70 hard stop).
