@@ -1,5 +1,0 @@
-owner: A (lead)
-job: job-2amiy
-start_utc: 2026-10-08T11:51Z
-time_limit: 2026-10-08T13:30Z
-item: PERF gate (min_cost / single-cont / compile; stack/rwkv7/perf-step 953f3ac)
