@@ -438,11 +438,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--draws", type=int, default=2000)
     parser.add_argument("--check-public-fixtures", action="store_true")
     parser.add_argument("--prepare-split", choices=SPLITS)
+    parser.add_argument("--prepare-evidence", action="store_true", help="write exact machine-readable artifact pins without model execution")
     parser.add_argument("--run-development", action="store_true")
-    parser.add_argument("--run-evaluation", action="store_true", help="execute previously prepared, independently reviewed heldout suites")
+    parser.add_argument("--run-evaluation", action="store_true", help="execute previously prepared, machine-pinned heldout suites")
     parser.add_argument("--suite-dir", type=Path, help="prepared root containing one directory per level")
-    parser.add_argument("--review", type=Path)
-    parser.add_argument("--review-sha256")
+    parser.add_argument("--evidence-manifest", "--review", dest="evidence_manifest", type=Path)
+    parser.add_argument("--evidence-manifest-sha256", "--review-sha256", dest="evidence_manifest_sha256")
+    parser.add_argument("--comparator-min-accuracy", type=float, help="optional preselected same-task comparator floor")
     parser.add_argument("--parent-report", type=Path)
     parser.add_argument("--parent-report-sha256")
     parser.add_argument("--parent-qualification", type=Path)
@@ -452,7 +454,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--comparator-observations", type=Path, help="raw generated response export")
-    parser.add_argument("--comparator-strength", type=Path)
     parser.add_argument("--intervention-adapter", help="source-pinned module:callable")
     parser.add_argument("--intervention-registration", type=Path)
     parser.add_argument("--dev-authorization", type=Path)
@@ -467,7 +468,7 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("duplicate requested level")
         if args.out and args.out.exists():
             raise ValueError("output already exists; preserve previous evidence")
-        if sum(bool(mode) for mode in (args.prepare_split, args.run_development, args.run_evaluation)) > 1:
+        if sum(bool(mode) for mode in (args.prepare_split, args.prepare_evidence, args.run_development, args.run_evaluation)) > 1:
             raise ValueError("generation and model evaluation are separate commands")
         report = readiness(str(args.parent))
         report["levels"] = {level: report["levels"][level] for level in levels}
@@ -477,6 +478,19 @@ def main(argv: list[str] | None = None) -> int:
             report["mode"] = "suite_preparation_only"
             report["prepared_suites"] = {level: export_suite(args.out / level, level, args.prepare_split,
                                                              worlds=args.worlds, seed=args.seed) for level in levels}
+        if args.prepare_evidence:
+            from .gate_evidence import prepare_evidence_manifest
+            if not all((args.out, args.suite_dir, args.comparator_observations, args.dev_authorization,
+                        args.intervention_adapter, args.intervention_registration)):
+                raise ValueError("evidence preparation requires suite/comparator/DEV/registered adapter artifact locations")
+            report = prepare_evidence_manifest(args.parent, levels=levels, suite_dir=args.suite_dir,
+                comparator_artifact=args.comparator_observations, decision_authorization=args.dev_authorization,
+                intervention_adapter=args.intervention_adapter, intervention_registration=args.intervention_registration,
+                comparator_min_accuracy=args.comparator_min_accuracy)
+            args.out.mkdir(parents=True, exist_ok=False)
+            (args.out / "evidence-manifest.json").write_bytes(canonical(report)+b"\n")
+            print(json.dumps(report, indent=2, sort_keys=True, allow_nan=False))
+            return 0
         if args.check_public_fixtures:
             report["public_boundary"] = public_boundary_check()
         if args.run_development or args.run_evaluation:
@@ -486,11 +500,11 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError("model run requires strict report/qualification hash pins and snapshot or loader")
             if args.out is None:
                 raise ValueError("model run requires --out for raw traces")
-            if args.run_evaluation and not all((args.suite_dir, args.review, args.review_sha256,
-                    args.comparator_observations, args.comparator_strength, args.dev_authorization,
+            if args.run_evaluation and not all((args.suite_dir, args.evidence_manifest, args.evidence_manifest_sha256,
+                    args.comparator_observations, args.dev_authorization,
                     args.dev_parent_predictions, args.dev_candidate_predictions, args.dev_scoring_rows,
                     args.intervention_adapter, args.intervention_registration)):
-                raise ValueError("final evaluation requires prepared suites, pinned independent review, strong comparator, authorized DEV evidence and registered intervention adapter")
+                raise ValueError("final evaluation requires prepared suites, machine-pinned evidence, selected strong comparator, authorized DEV evidence and registered intervention adapter")
             from .qualified_parent import load_qualified_parent
             parent = load_qualified_parent(args.parent, report=args.parent_report,
                 report_sha256=args.parent_report_sha256, qualification=args.parent_qualification,
@@ -499,28 +513,31 @@ def main(argv: list[str] | None = None) -> int:
                 snapshot=args.parent_snapshot, device=args.device, dtype=args.dtype)
             report["parent_identity"] = parent.identity()
             if args.run_evaluation:
-                from .gate_evidence import load_review, evaluate_prepared_level
+                from .gate_evidence import load_evidence_manifest, evaluate_prepared_level
                 parent_sha256 = sha_file(args.parent)
-                review = load_review(args.review, args.review_sha256, parent_sha256=parent_sha256, levels=levels)
+                review = load_evidence_manifest(args.evidence_manifest, args.evidence_manifest_sha256, parent_sha256=parent_sha256, levels=levels)
                 def level_path(path, level):
                     return Path(str(path).replace("{level}", level))
-                report["mode"] = "reviewed_prepared_heldout_evaluation"
+                report["mode"] = "prepared_heldout_evaluation"
                 report["heldout_opened"] = True
-                report["review_sha256"] = args.review_sha256
+                report["evidence_manifest_sha256"] = args.evidence_manifest_sha256
+                args.out.mkdir(parents=True, exist_ok=False)
                 for level in levels:
-                    report["levels"][level] = evaluate_prepared_level(args.suite_dir / level, level, parent,
-                        review_entry=review["levels"][level], comparator_artifact=level_path(args.comparator_observations, level),
-                        comparator_strength=level_path(args.comparator_strength, level),
-                        decision_authorization=level_path(args.dev_authorization, level),
-                        decision_parent=level_path(args.dev_parent_predictions, level), decision_candidate=level_path(args.dev_candidate_predictions, level),
-                        decision_scoring_rows=level_path(args.dev_scoring_rows, level),
-                        intervention_adapter=args.intervention_adapter, intervention_registration=level_path(args.intervention_registration, level),
-                        candidate_sha256=parent_sha256, draws=args.draws)
+                    try:
+                        report["levels"][level] = evaluate_prepared_level(args.suite_dir / level, level, parent,
+                            review_entry=review["levels"][level], comparator_artifact=level_path(args.comparator_observations, level),
+                            decision_authorization=level_path(args.dev_authorization, level),
+                            decision_parent=level_path(args.dev_parent_predictions, level), decision_candidate=level_path(args.dev_candidate_predictions, level),
+                            decision_scoring_rows=level_path(args.dev_scoring_rows, level),
+                            intervention_adapter=args.intervention_adapter, intervention_registration=level_path(args.intervention_registration, level),
+                            candidate_sha256=parent_sha256, draws=args.draws, evidence_out=args.out / level)
+                    except Exception as exc:
+                        report["levels"][level]["execution_error"] = {"status":"unmeasured", "error_type":type(exc).__name__,
+                                                                    "reason":"prepared evaluation failed; completed candidate artifacts preserved"}
+                    (args.out / "report.json").write_bytes(canonical(report)+b"\n")
                 report["requested_levels_passed"] = all(result["passed"] for result in report["levels"].values())
                 report["qualified"] = report["requested_levels_passed"] and set(levels) == set(LEVELS)
-                if args.out:
-                    args.out.mkdir(parents=True, exist_ok=False)
-                    (args.out / "report.json").write_bytes(canonical(report) + b"\n")
+                (args.out / "report.json").write_bytes(canonical(report) + b"\n")
                 print(json.dumps(report, indent=2, sort_keys=True, allow_nan=False))
                 return 0 if report["requested_levels_passed"] else 2
             report["mode"] = "development_only_no_qualification"
