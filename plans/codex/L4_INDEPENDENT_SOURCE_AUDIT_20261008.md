@@ -136,6 +136,28 @@ groups and one conditional historical-scope candidate**. It does not show that
 values and background-inventory overlap still need review. No values from this
 screen were transcribed or imported.
 
+### Second primary-source batch
+
+Five additional singleton references were screened against the same complete
+common-scope requirement; a reported lifecycle result alone does not establish
+complete phase/gas coverage or independent inventory provenance.
+
+| Study | Original-source evidence and dependencies | L4 disposition |
+| --- | --- | --- |
+| Ardente et al. 2008, DOI 10.1016/j.rser.2006.05.013 ([author-uploaded paper](https://www.researchgate.net/publication/222226993_Energy_performances_and_life_cycle_assessment_of_an_Italian_wind_farm)) | Table 5, p. 212, reports GWP per generated electric kWh. Sections 2.2–2.6, pp. 206–209, cover production through an end-of-life scenario, but p. 209 leaves roads, buildings and foundations in place. Manufacturing and disposal assumptions explicitly use ECLIPSE/Chataignere & Le Boulch; references 18–19, p. 217, also identify Jungbluth/Frischknecht background data. The complete gas vector and exact GWP vintage were not recovered. | Conditional for the original historical scenario only; no complete common-scope admission or independent inventory established. |
+| Frischknecht 1998, ETH dissertation 12599, ISBN 3-9520661-3-3 ([author-hosted thesis](https://esu-services.ch/fileadmin/download/frischknecht-1998-PHD.pdf)) | Section 9.3.10, pp. 148–149, and Table 9.11, p. 149, report selected lifecycle CO2/CH4 mass flows per TJ of electricity, not a complete gas inventory or phase-resolved GWP result. The table directs full documentation to Frischknecht et al. 1996a, Part XIII, *Windkraft*, p. 6 onward. | No-go from the thesis alone; missing gases/stages cannot be set to zero, and earlier inventory reuse is explicit. |
+| Hartmann 1997, *FENCH-analysis of electricity generation greenhouse gas emissions from solar and wind power in Germany* | The exact original paper was not recovered. The official [IPCC SRREN bibliography](https://www.ipcc-wg3.de/report/IPCC_SRREN_Annex_II.pdf) identifies the IAEA meeting in Vienna, 21–24 October 1996, pp. 77–87; no DOI was identified. | Access no-go; phase/gas coverage and shared inputs remain unverified. |
+| Hondo 2005, DOI 10.1016/j.energy.2004.07.020 ([original-paper text mirror](https://www.scribd.com/document/811846570/t7-Gas-Emmision-2005-SD-Hiroki-Hondo)) | Section 2.1, p. 2044, focuses on CO2/CH4; methane leakage is limited to fuels directly burned in generation. Table 9 is on **p. 2053, not p. 2052**, and reports wind CO2 per net electric kWh, separated into construction and operation. A wind-specific downstream contribution was not recovered. Earlier Hondo et al. reports [9–10] supply method/data; scenario variants share that model. | No-go for complete multi-gas lifecycle GHG; do not promote the selected-gas scope to full GHG. |
+| Lenzen & Wachsmann 2004, DOI 10.1016/S0306-2619(03)00105-3 ([publisher sections](https://www.sciencedirect.com/science/article/abs/pii/S0306261903001053); [author PDF](https://isa.org.usyd.edu.au/education/documents/ISA_Wind_turbine_LCA_2004.pdf)) | The original p. 119 abstract/introduction defines an energy/CO2 analysis; Table 1, p. 125, supplies annual electric output. The publisher's “Data sources” section explicitly adopts German E-40 technical/site/cost inputs from Pick & Wagner [23–24] and translates them into Brazil. Full PDF retrieval failed; complete phase/gas coverage was not verified. | No-go for full GHG on recovered evidence; country/manufacturing/site variants remain one shared foreground/model family. |
+
+This second batch yields **zero candidates meeting complete common-scope
+admission**. Ardente supports conditional retrieval of its own reported scenario,
+but cannot yet enter a re-harmonized independent cohort. The evidence does not
+prove that 20 groups are impossible elsewhere; unresolved gas/GWP coverage,
+end-of-life boundaries, primary-source access and inventory crosswalks remain
+the blockers. No numerical values were transcribed or imported, no repository
+data was changed, and no held-out, model, GPU or paid resource was used.
+
 Smallest next step: recover the old OpenEI land-based wind export or the paper's
 study-level supplemental table, then join each estimate to its primary study
 and shared background inventory family. Count only the surviving groups after
