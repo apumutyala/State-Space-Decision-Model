@@ -1,0 +1,99 @@
+{
+  "base_commit": "a6b0755a3b81de7948edd71425e663a52fe9557d",
+  "checkpoint_loaded": false,
+  "claim": "scripted public-boundary coverage for exact L1 four-record read/explain/ordered-compare templates; not learned L1 capability, exact-sum support, calibration, or causal mediation",
+  "cohorts": [
+    {
+      "sample_sha256": "abc42fd0cf9f396126a768d022c8cd32f41531cdc79226eb39b2cacb4829c8ea",
+      "split": "l1_development_train",
+      "task_count": 40
+    },
+    {
+      "sample_sha256": "94085b1ab96a10990c8a4e013141807c0cf492c5b2fa8dd8ef38c8dfe7df80f4",
+      "split": "l1_development_validation",
+      "task_count": 40
+    },
+    {
+      "sample_sha256": "69c08f4f550f87ecef8fda4e0643beceaad0d3d7463d1c7df797954129777f51",
+      "split": "l1_multiworld_development_train",
+      "task_count": 40
+    },
+    {
+      "sample_sha256": "da6b3ea997454e0e5ba80ebbdb52771bb23d2a842f3600a7cbc0acd2d3516fed",
+      "split": "l1_multiworld_development_validation",
+      "task_count": 40
+    }
+  ],
+  "commands": [
+    {
+      "command": "$env:CUDA_VISIBLE_DEVICES='-1'; & C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -m pytest language_growth/tests/test_task_relevance.py -q",
+      "exit_code": 0,
+      "result": "9 passed in 0.81s"
+    },
+    {
+      "command": "git diff --cached --check",
+      "exit_code": 0,
+      "result": "passed before implementation commit"
+    }
+  ],
+  "cost_usd": 0,
+  "excluded_changes_note": "The two prepared-run registration files are unchanged from agent-main; the original cpu-tests.json retains historical refresh claims only.",
+  "excluded_original_changes": [
+    {
+      "changed_sources": [
+        "language_growth/task_relevance.py",
+        "language_growth/tests/test_task_relevance.py"
+      ],
+      "name": "operation-only",
+      "non_source_fields_unchanged": true,
+      "path": "receipts/2026-10-06-L-operation-only-cache-prepared/registration.json",
+      "previous_sha256": "a47e84fcb521cb0424485689f343e372669377c315515fdc1370d98a0739f473",
+      "refreshed_sha256": "35d537cc8a4d5236bc0003fdda9343ce65c840c52722c113d49f6914df5c98d3",
+      "source_count": 124
+    },
+    {
+      "changed_sources": [
+        "language_growth/task_relevance.py",
+        "language_growth/tests/test_task_relevance.py"
+      ],
+      "name": "fact-name-screen",
+      "non_source_fields_unchanged": true,
+      "path": "receipts/2026-10-07-L-fact-name-screen-retry-prepared/registration.json",
+      "previous_sha256": "92a93e1314391f9714fc7b3b8e1dd591bf687be91286ee417a1b55611c0bd86d",
+      "refreshed_sha256": "6b2379e8c2c878977fe887b3236a62c4cdeb7bc3cdb0cd5e17ec5e76867980b1",
+      "source_count": 86
+    }
+  ],
+  "full_suite_rerun": false,
+  "gpu_used": false,
+  "historical_cpu_tests_preserved_verbatim": true,
+  "historical_review": "https://github.com/apumutyala/State-Space-Decision-Model/pull/148",
+  "historical_review_note": "Original exact-head review is historical evidence only; fresh exact-head review is required before merge.",
+  "implementation_and_tests_identical_to_original": true,
+  "index_or_heldout_access": false,
+  "model_loaded": false,
+  "no_github_test_workflow": true,
+  "original_commits": [
+    "7cf20e61fd80efc318f653a03e450715b69b5c9c",
+    "94d440f8b973495a93b960777063c94d77232523"
+  ],
+  "paid_compute_used": false,
+  "runtime": {
+    "cuda_visible_devices": "-1",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.13"
+  },
+  "schema": "ssdm.l1_public_multirecord_contract_agent_main_replay.v1",
+  "source_hash_encoding": "SHA-256 of git blob bytes (LF)",
+  "source_sha256": {
+    "STATUS.md": "44160faccbb32788549f9523c05733d3ec257eafcffcb747719ebcece9dc9395",
+    "language_growth/task_relevance.py": "8489990a30dcf7e6efa1fe2c4bbfb35da59af4adee847d364c3f464288c2d440",
+    "language_growth/tests/test_task_relevance.py": "180660ddbcb6206764a98f6700e42f0f81f52a61a2599216e2974bbfb8f812fe",
+    "plans/codex/L1_PUBLIC_TASK_CONTRACT.md": "ae6dc5df57dbea1b790f8dfdc2055142131bfb24772be1756584e5cb74de1391",
+    "receipts/2026-10-07-L1-public-task-contract/README.md": "2b336945bf4c765b4676286e1e732b7c16e4bb06a9b080e9d7922061eca226ac",
+    "receipts/2026-10-07-L1-public-task-contract/cpu-tests.json": "76adbc223f4d7dcef193779c752b70c0bda987cd466115c3062c90a5fb27b60f"
+  },
+  "tested_implementation_commit": "aadfe7841e43340b47d5d035361f47f51fde9c85",
+  "total_scripted_tasks": 160,
+  "verification": "Compared committed parser/test/original receipt blobs against 94d440f exactly; regenerated all four synthetic cohorts and reproduced their historical sample hashes."
+}
