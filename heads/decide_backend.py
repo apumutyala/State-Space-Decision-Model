@@ -52,17 +52,26 @@ class DecisionModelBackend:
 
     def __init__(self, model: DecisionModel, encode: EncodeFn, template: str | Template = "jrt-plain-v1",
                  layout: str = "ordered", checkpoint: dict[str, Any] | None = None, shared_prefix: bool = True,
-                 g16_certify_k: int | None = None) -> None:
+                 g16_certify_k: int | None = None, inference: str | dict | None = None) -> None:
+        """``inference``: opt-in speed options (``heads.infer_opt``: ``memo_encode``, ``packed_fork``, ``merge_lora``,
+        or a preset ``exact`` / ``fast``); None = exactly the previous path. The revision is computed BEFORE a LoRA
+        merge (it hashes the trained weights) and names the options, so a served run says which path produced it."""
+        from . import infer_opt
+
+        self.inference = infer_opt.parse(inference)
         self.model = model
         if getattr(model.head, "name", None) == "g16" and getattr(model.head, "gate", None) is not None:
             raise ValueError("decide backend: a G16 head with the learned P-gate is not servable (non-finite logits)")
         self.g16_certify_k = g16_certify_k
         self.shared_prefix = shared_prefix
-        self.encode = encode
+        self.encode = infer_opt.MemoEncoder(encode) if self.inference.get("memo_encode") else encode
         self.template = TEMPLATES[template] if isinstance(template, str) else template
         self.layout = layout
         self.checkpoint = checkpoint or {}
         self._revision: dict[str, Any] | None = None
+        if self.inference.get("merge_lora"):
+            self.revision()  # identity of the trained (unmerged) weights, + the options
+            self.n_lora_merged = infer_opt.merge_lora(self.model)
 
     def revision(self) -> dict[str, Any]:
         if self._revision is not None:
@@ -80,6 +89,8 @@ class DecisionModelBackend:
             "checkpoint": self.checkpoint,
             "adapter_version": versions.ADAPTER_VERSION,
         }
+        if self.inference:  # absent when off: the default path's revision id is unchanged
+            ident["inference"] = sorted(self.inference)
         h = hashlib.sha256(json.dumps(ident, sort_keys=True, default=str).encode()).hexdigest()
         self._revision = {"revision_id": f"{self.name}:{ident['head']}@{h[:12]}",
                           "model_id": ident["backbone"]["spec"], **ident}
@@ -122,7 +133,8 @@ class DecisionModelBackend:
                 # all questions of the request in one pass, reading the shared schema + state prefix once
                 # (heads.prefix_features; was one full-prompt forward per question, B=1)
                 check_deadline()
-                lps = list(self.model(rows, shared_prefix=self.shared_prefix).log_probs.float().cpu())
+                mode = "packed" if self.inference.get("packed_fork") else "grouped"
+                lps = list(self.model(rows, shared_prefix=self.shared_prefix, prefix_mode=mode).log_probs.float().cpu())
             else:
                 # controlsafe trust-gated backbone: per-row calls exactly as before (its protected stream is bitwise
                 # stable only for a fixed host batch shape, and it needs per-token trust labels on every call)

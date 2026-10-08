@@ -146,14 +146,19 @@ if ev != "none":
         checkpoint_block(p)
     except CheckpointError as e:
         sys.exit(f"mode {mode}: {e}")
-print(td, 1 if c.get("teacher") else 0, ev)
+cv = p.get("child_variants") or []
+if cv and (ev != "fulldev" or not isinstance(cv, list) or len(cv) != 2 or cv[0] != "base"
+           or not all(isinstance(v, str) and re.fullmatch(r"[a-z_+]+", v) for v in cv)):
+    sys.exit(f"mode {mode}: child_variants {cv!r} must be ['base', <heads.infer_opt preset>] with eval_only fulldev")
+print(td, 1 if c.get("teacher") else 0, ev, ",".join(cv) or "-")
 EOF
   ) || fail 5 "$MODE_ENV"
-  read -r TRAIN_SUB TEACHER EVAL_ONLY <<< "$MODE_ENV"
+  read -r TRAIN_SUB TEACHER EVAL_ONLY CHILD_VARIANTS <<< "$MODE_ENV"
   TRAIN_DIR=$DATA/$TRAIN_SUB
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
+  [ "$CHILD_VARIANTS" != - ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_ab DECISION=$WORK/out/latency_ab.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
@@ -243,6 +248,27 @@ if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a
   CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
   read -r MAXIN FD_PARENT ROWS_SEL <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(int(p['max_input_tokens']), 1 if p.get('fulldev_parent_arm') else 0, p.get('rows', 'full'))" "$PARAMS")" \
     || fail 5 "job_params max_input_tokens / fulldev_parent_arm / rows"
+  if [ "${CHILD_VARIANTS:--}" != - ]; then  # mode latency_ab: ONE loaded child, scored once per inference variant
+    say "phase fulldev (child latency A/B, variants $CHILD_VARIANTS, DEV rows: $ROWS_SEL; no rate guard, hard cap only)"
+    timeout --kill-after=30s $(cap fulldev)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval score --arm child \
+      --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR" \
+      "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" --variants "$CHILD_VARIANTS" \
+      --model-dir "$SNAP" --rows "$DATA/slices/dev-rows.jsonl.gz" --max-input-tokens "$MAXIN" --rows-select "$ROWS_SEL" \
+      --resume-dir "$CK/fulldev-ab" --out-dir "$WORK/out/fulldev-ab" --progress "$WORK/logs/progress-fulldev.jsonl" \
+      > "$WORK/logs/fulldev.log" 2>&1; r=$?
+    gate fulldev $r; export_phase fulldev
+    case $r in 0) ;; 124|137) fail 7 "fulldev timeout" ;; 10) fail 10 "fulldev identity" ;; *) fail 9 "fulldev rc=$r" ;; esac
+    CAND=${CHILD_VARIANTS#base,}
+    say "phase report (row-by-row A/B: base vs $CAND)"
+    timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval ab-compare \
+      --base "$WORK/out/fulldev-ab/base/child.results.jsonl" --candidate "$WORK/out/fulldev-ab/$CAND/child.results.jsonl" \
+      --out "$DECISION" > "$WORK/logs/report.log" 2>&1; r=$?
+    gate "report" $r
+    [ $r -eq 0 ] || fail 9 "latency_ab result missing or invalid (rc=$r)"
+    sample "$DECISION" "latency-ab"
+    RC=0
+    exit 0
+  fi
   FD_ARMS=(child); [ "$FD_PARENT" = 1 ] && FD_ARMS+=(parent)
   for ARMNAME in "${FD_ARMS[@]}"; do
     PH=fulldev; [ "$ARMNAME" = parent ] && PH=parent_full

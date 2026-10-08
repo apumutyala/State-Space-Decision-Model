@@ -60,7 +60,7 @@ class DecisionModel(nn.Module):
         return list(self.head.parameters()) + list(self.typed.parameters())
 
     def forward(self, rows: Sequence[LayoutRow], return_attribution: bool = False,
-                shared_prefix: bool = False) -> Forward:
+                shared_prefix: bool = False, prefix_mode: str = "grouped") -> Forward:
         if self.row_head:
             for r in rows:
                 if r.qtype == "noul" and r.n_options != 2:
@@ -68,7 +68,7 @@ class DecisionModel(nn.Module):
             out = self.head.forward_rows(rows)
             return Forward(torch.log_softmax(out.logits, -1), out, None)
         x = build_head_input(self.backbone, rows, need_fork=self.head.needs_fork, pad_id=self.pad_id,
-                             shared_prefix=shared_prefix)
+                             shared_prefix=shared_prefix, prefix_mode=prefix_mode)
         out = self.head(x, return_attribution=return_attribution)
         lp = self.typed(out.logits, [r.qtype for r in rows], x.ks, x.e)
         return Forward(lp, out, x)

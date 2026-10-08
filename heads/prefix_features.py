@@ -110,6 +110,10 @@ def shared_prefix_features(backbone, rows: Sequence, need_fork: bool, pad_id: in
                     hc, _ = _run(backbone, cid, sb)  # right padding: only positions <= last are read
                     last = torch.tensor([len(c) - 1 for c in conts], device=dev)
                     per_fork[i] = hc[torch.arange(k, device=dev), last]
+    return _assemble(rows, per_h, per_fork, need_fork)
+
+
+def _assemble(rows, per_h, per_fork, need_fork: bool):
     T = max(len(r.ids) for r in rows)
     h = torch.stack([torch.nn.functional.pad(x, (0, 0, 0, T - x.shape[0])) for x in per_h]).float()
     fork = None
@@ -117,3 +121,75 @@ def shared_prefix_features(backbone, rows: Sequence, need_fork: bool, pad_id: in
         kmax = max(r.n_options for r in rows)
         fork = torch.stack([torch.nn.functional.pad(f.float(), (0, 0, 0, kmax - f.shape[0])) for f in per_fork])
     return h, fork
+
+
+#: packed tails per call (``packed_prefix_features``): rows x padded width. Each row holds its own copy of the prefix
+#: state (RWKV7-13.3B: ~66 MB fp32), and the backbone returns every layer's hidden states for the call
+#: (62 x rows x width x 4,096 bf16 = 4.2 GB at 8,192 positions), so both are bounded.
+PACK_MAX_ROWS = 64
+PACK_MAX_TOKENS = 8192
+
+
+@torch.no_grad()
+def packed_prefix_features(backbone, rows: Sequence, need_fork: bool, pad_id: int = 0,
+                           max_rows: int = PACK_MAX_ROWS, max_tokens: int = PACK_MAX_TOKENS):
+    """Same contract and result as ``shared_prefix_features`` (up to float rounding), in fewer backbone calls.
+
+    Per request group: one call over the common prefix P, then EVERY tail in packed calls from copies of P's state,
+    where a tail is ``suffix_q + continuation_k`` for each (question q, option k) (or ``suffix_q`` alone without the
+    fork). Right padding is exact: the backbone is causal and only positions <= a tail's last real token are read;
+    the state after a pack is discarded. The suffix features of row q are read from its first tail's positions
+    ``[0, |suffix_q|)`` (identical in every tail of q: causal), its fork feature k at ``|suffix_q| + len(cont_k) - 1``.
+    The stock readout scores this way (``decide.backends.state_fork``); the grouped path made 1 + (distinct suffix
+    lengths) + (questions) calls per request instead."""
+    from decide.backends.state_fork import expand
+
+    dev = backbone.device
+    B = len(rows)
+    per_h: list[torch.Tensor | None] = [None] * B
+    per_fork: list[torch.Tensor | None] = [None] * B
+    groups: dict[tuple, list[int]] = {}
+    for i, r in enumerate(rows):
+        groups.setdefault(_group_key(r), []).append(i)
+    for idx in groups.values():
+        L = common_prefix_len([rows[i].ids for i in idx])  # capped: every row keeps >= 1 own token
+        hp, sp = _run(backbone, torch.tensor([rows[idx[0]].ids[:L]], dtype=torch.long, device=dev), None)
+        tails = []  # (row i, option k or -1, tail ids, suffix length)
+        for i in idx:
+            suf = list(rows[i].ids[L:])
+            if need_fork:
+                for k, c in enumerate(rows[i].continuations):
+                    tails.append((i, k, suf + list(c), len(suf)))
+            else:
+                tails.append((i, -1, suf, len(suf)))
+        order = sorted(range(len(tails)), key=lambda t: (-len(tails[t][2]), t))  # deterministic, longest first
+        packs: list[list[int]] = []
+        cur: list[int] = []
+        for t in order:
+            if cur and (len(cur) >= max_rows or len(tails[cur[0]][2]) * (len(cur) + 1) > max_tokens):
+                packs.append(cur)
+                cur = []
+            cur.append(t)
+        if cur:
+            packs.append(cur)
+        fork_parts: dict[int, dict[int, torch.Tensor]] = {}
+        for pack in packs:
+            W = len(tails[pack[0]][2])
+            ids = torch.full((len(pack), W), pad_id, dtype=torch.long, device=dev)
+            for b, t in enumerate(pack):
+                ids[b, : len(tails[t][2])] = torch.tensor(tails[t][2], dtype=torch.long, device=dev)
+            st = _clone(sp)
+            if len(pack) > 1:
+                expand(st, len(pack))
+            hc, _ = _run(backbone, ids, st)
+            for b, t in enumerate(pack):
+                i, k, tid, ls = tails[t]
+                if per_h[i] is None:
+                    per_h[i] = torch.cat([hp[0], hc[b, :ls]], 0)
+                if k >= 0:
+                    fork_parts.setdefault(i, {})[k] = hc[b, len(tid) - 1]
+        if need_fork:
+            for i in idx:
+                parts = fork_parts[i]
+                per_fork[i] = torch.stack([parts[k] for k in range(len(rows[i].continuations))])
+    return _assemble(rows, per_h, per_fork, need_fork)

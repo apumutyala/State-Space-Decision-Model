@@ -200,8 +200,9 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     source = JOB.read_text()
     timed = [line for line in source.splitlines() if not line.lstrip().startswith("#") and re.search(r"\btimeout\s", line)]
     # terminal, download, guard, heldout, two verify branches, parent loop, cell, evals, report; plus the eval-only
-    # fulldev branch (mode fulldev_eval): checkpoint, the arm loop, its report
-    assert len(timed) == 13
+    # fulldev branch (mode fulldev_eval): checkpoint, the arm loop, its report; plus mode latency_ab: its one
+    # two-variant scoring call and its ab-compare report
+    assert len(timed) == 15
     assert "timeout --kill-after=30s $(cap checkpoint)m python" in source
     assert "timeout --kill-after=30s $(cap $PH)m python" in source
     assert all("timeout --kill-after=30s " in line for line in timed)

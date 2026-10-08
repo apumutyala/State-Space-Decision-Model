@@ -302,17 +302,60 @@ def score(a) -> int:
     except (ValueError, KeyError, GuardNotReady, CohortLeak) as e:
         print(f"identity: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
-    out = Path(a.out_dir)
+    if getattr(a, "variants", None):  # latency A/B: ONE loaded child, scored once per inference variant
+        if a.arm != "child":
+            print("--variants needs --arm child", file=sys.stderr)
+            return 10
+        return score_variants(a, decider, tempered, ident, rows, ids)
+    return _score_into(a, decider, tempered, ident, rows, ids, Path(a.out_dir), Path(a.resume_dir), a.progress)
+
+
+def score_variants(a, decider, tempered, ident, rows, ids) -> int:
+    """``--variants base,fast``: the same rows through the same loaded checkpoint, once per ``heads.infer_opt``
+    preset, in the given order, into ``<out-dir>/<variant>/`` (resume ``<resume-dir>/<variant>/``). ``base`` is the
+    loaded decider itself; every other variant is a NEW ``DecisionModelBackend`` over the same model (+ the same served
+    calibration). A variant that merges LoRA changes the model in place, so it must come last."""
+    from decide import Decider
+    from heads import infer_opt
+    from heads.decide_backend import DecisionModelBackend
+
+    names = [v for v in a.variants.split(",") if v]
+    for v in names:
+        infer_opt.parse(v)  # unknown names fail before any scoring
+    merges = [i for i, v in enumerate(names) if infer_opt.parse(v).get("merge_lora")]
+    if merges and merges[0] != len(names) - 1:
+        print(f"variants {names}: a LoRA-merging variant must be last", file=sys.stderr)
+        return 10
+    be = decider.backend
+    for v in names:
+        if v == "base":
+            dv = decider
+        else:
+            nb = DecisionModelBackend(be.model, be.encode, template=be.template, layout=be.layout,
+                                      checkpoint=be.checkpoint, inference=v)
+            dv = Decider(nb, calibration=decider.calibration)
+        vid = {**ident, "inference_variant": v, "inference": infer_opt.describe(infer_opt.parse(v)),
+               "served_revision": dv.revision().get("revision_id")}
+        prog = None if not a.progress else str(Path(a.progress).with_name(f"{Path(a.progress).stem}-{v}.jsonl"))
+        rc = _score_into(a, dv, tempered, vid, rows, ids, Path(a.out_dir) / v, Path(a.resume_dir) / v, prog)
+        if rc:
+            return rc
+    return 0
+
+
+def _score_into(a, decider, tempered, ident, rows, ids, out: Path, resume_dir: Path, progress) -> int:
+    from train import m2_gates as G
+
     out.mkdir(parents=True, exist_ok=True)
     plan = plan_rows(decider, rows, a.max_input_tokens)
     (out / f"plan-{a.arm}.json").write_text(json.dumps(plan, indent=1), encoding="utf-8")
     (out / f"identity-{a.arm}.json").write_text(json.dumps(ident, indent=1, default=str), encoding="utf-8")
     print(json.dumps({k: plan[k] for k in ("n_rows", "n_refused", "n_over_16384", "max_row_tokens")}), flush=True)
-    resume = Path(a.resume_dir) / f"{a.arm}.partial.jsonl"
+    resume = resume_dir / f"{a.arm}.partial.jsonl"
     resume.parent.mkdir(parents=True, exist_ok=True)
     done = _read_partial(resume)
     todo = [r for r in rows if r["_evaluation"]["run_id"] not in done]
-    prog = G.Progress(a.progress)
+    prog = G.Progress(progress)
     prog.plan([G.unit_weight(r) for r in todo])
     decide = G.beat_wrap(prog.wrap(limited(decider.decide, a.max_input_tokens)))
     t0 = time.perf_counter()
@@ -528,7 +571,10 @@ def estimate(params: dict, lengths: dict | None = None) -> dict[str, Any]:
     m = params["measured_rates_reference"]
     keep = selected_ids(params.get("rows", "full"))
     toks = lengths["total_tokens"] if keep is None else sum(lengths["lengths"][i] for i in keep)
-    phases = {"fulldev": toks / 1000 * m["child_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["child"]}
+    # latency A/B (``child_variants``): every variant scores the rows; each is priced at the BASE rate (conservative:
+    # a candidate is expected faster, never assumed)
+    n_child = max(1, len(params.get("child_variants") or []))
+    phases = {"fulldev": n_child * toks / 1000 * m["child_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["child"]}
     if params.get("fulldev_parent_arm"):
         phases["parent_full"] = toks / 1000 * m["parent_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["parent"]
     caps = params["phase_caps_minutes"]
@@ -537,6 +583,69 @@ def estimate(params: dict, lengths: dict | None = None) -> dict[str, Any]:
            "caps": {k: caps[k] for k in phases}, "ok": all(v <= 0.95 * caps[k] for k, v in phases.items())}
     out["usd_batch_scoring"] = round(sum(phases.values()) * params["batch_usd_per_min"], 2)
     return out
+
+
+# ------------------------------------------------------------------------------------------------ CPU: latency A/B
+AB_SCHEMA = "ssdm.m2.latency_ab.v1"
+
+
+def _read_results(p: Path) -> dict[str, dict]:
+    with open(p, encoding="utf-8") as f:
+        return {r["run_id"]: r for r in (json.loads(x) for x in f if x.strip())}
+
+
+def _probs(ans: dict) -> dict[str, float] | None:
+    pr = ans.get("probabilities")
+    return {k: float(v) for k, v in pr.items()} if isinstance(pr, dict) and pr else None
+
+
+def ab_compare(base_p: Path, cand_p: Path, dp_tol: float = 0.02) -> dict[str, Any]:
+    """Row by row: status, every question's decision (argmax of the untempered probabilities) and max |dp|, and the
+    decide() wall time of the two variants on the SAME rows (latency(): ok rows, first 10 dropped)."""
+    a, b = _read_results(base_p), _read_results(cand_p)
+    ids = sorted(set(a) & set(b))
+    same_status = sum(a[i]["status"] == b[i]["status"] for i in ids)
+    nq = flips = 0
+    max_dp = 0.0
+    worst = None
+    for i in ids:
+        if a[i]["status"] != "ok" or b[i]["status"] != "ok":
+            continue
+        qa, qb = a[i]["response"]["answers"], b[i]["response"]["answers"]
+        for q, x in qa.items():
+            nq += 1
+            pa, pb = _probs(x), _probs(qb.get(q, {}))
+            if pa is None or pb is None:
+                flips += int(x != qb.get(q))
+                continue
+            if max(pa, key=pa.get) != max(pb, key=pb.get):
+                flips += 1
+            d = max(abs(pa[k] - pb.get(k, 0.0)) for k in pa)
+            if d > max_dp:
+                max_dp, worst = d, {"run_id": i, "qid": q}
+    both_ok = [i for i in ids if a[i]["status"] == "ok" and b[i]["status"] == "ok"]
+    la = latency([a[i] for i in both_ok])
+    lb = latency([b[i] for i in both_ok])
+    sa = sum(float(a[i]["total_wall_ms"]) for i in both_ok) / 1000
+    sb = sum(float(b[i]["total_wall_ms"]) for i in both_ok) / 1000
+    return {"schema": AB_SCHEMA, "rows_base": len(a), "rows_candidate": len(b), "rows_both": len(ids),
+            "same_status": same_status, "rows_both_ok": len(both_ok), "questions": nq, "decision_flips": flips,
+            "max_abs_dp": max_dp, "max_abs_dp_at": worst, "dp_tol": dp_tol,
+            "outputs_match": same_status == len(ids) and flips == 0 and max_dp <= dp_tol,
+            "latency_base": la, "latency_candidate": lb, "sum_row_s_base": sa, "sum_row_s_candidate": sb,
+            "speedup_sum": sa / sb if sb else None,
+            "speedup_median": (la["median_ms"] / lb["median_ms"]) if lb.get("median_ms") else None,
+            "usd_per_1k_rows_base": sa / 60 * 0.0495 / max(1, len(both_ok)) * 1000,
+            "usd_per_1k_rows_candidate": sb / 60 * 0.0495 / max(1, len(both_ok)) * 1000}
+
+
+def valid_ab(d: Any) -> bool:
+    """``jobs/common/finalize.py`` validator for mode latency_ab: both variants scored every selected row."""
+    try:
+        return (d["schema"] == AB_SCHEMA and d["rows_both"] > 0 and d["rows_both"] == d["rows_base"] == d["rows_candidate"]
+                and d["speedup_sum"] is not None)
+    except (KeyError, TypeError):
+        return False
 
 
 # ------------------------------------------------------------------------------------------------ CLI
@@ -562,10 +671,17 @@ def main(argv=None) -> int:
     s.add_argument("--out-dir", required=True)
     s.add_argument("--progress", default=None)
     s.add_argument("--device", default="cuda")
+    s.add_argument("--variants", default=None,
+                   help="child latency A/B: comma list of heads.infer_opt presets (e.g. base,fast), scored in order")
     b = sub.add_parser("smoke-build", help="(re)build fulldev_smoke_rows.json from the DEV manifest + row lengths")
     b.add_argument("--out", default=str(SMOKE))
     e = sub.add_parser("estimate")
     e.add_argument("--params", required=True)
+    c = sub.add_parser("ab-compare", help="latency A/B: base vs candidate child results on the same rows")
+    c.add_argument("--base", required=True)
+    c.add_argument("--candidate", required=True)
+    c.add_argument("--dp-tol", type=float, default=0.02)
+    c.add_argument("--out", required=True)
     r = sub.add_parser("report")
     r.add_argument("--out-dir", required=True)
     r.add_argument("--params", required=True)
@@ -585,6 +701,12 @@ def main(argv=None) -> int:
         Path(a.out).write_text(json.dumps(d, indent=0) + "\n", encoding="utf-8", newline="\n")
         print(json.dumps({k: v for k, v in d.items() if k not in ("run_ids", "_comment")}))
         return 0
+    if a.cmd == "ab-compare":
+        d = ab_compare(Path(a.base), Path(a.candidate), a.dp_tol)
+        Path(a.out).write_text(json.dumps(d, indent=1), encoding="utf-8")
+        print(json.dumps({k: d[k] for k in ("rows_both", "decision_flips", "max_abs_dp", "outputs_match", "speedup_sum",
+                                            "speedup_median")}))
+        return 0 if valid_ab(d) else 9
     if a.cmd == "estimate":
         try:
             est = estimate(json.loads(Path(a.params).read_text(encoding="utf-8")))
