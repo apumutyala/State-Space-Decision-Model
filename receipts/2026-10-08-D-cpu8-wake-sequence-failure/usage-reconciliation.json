@@ -1,8 +1,9 @@
 {
   "schema": "ssdm.cpu8_usage_reconciliation.v1",
-  "observed_at_utc": "2026-10-08T03:19:59Z",
+  "observed_at_utc": "2026-10-08T03:22:36Z",
   "workspace": "default",
   "command": "autor usage --json",
+  "source_json_path": "receipts/2026-10-08-D-cpu8-wake-sequence-failure/usage-source.json",
   "source_json_sha256": "d0831cc8b334a9246bf5977fdcdce243a6c6d79896f95f6c771086b505c73c51",
   "month": "2026-10",
   "reported_mtd_usd": "57.539562",
