@@ -1,0 +1,211 @@
+{
+  "heldout_opened": false,
+  "levels": {
+    "L0": {
+      "gates": {
+        "joint_adversarial": {
+          "passed": false,
+          "reason": "learned joint/adversarial evaluation missing",
+          "status": "unmeasured"
+        },
+        "parent_decision": {
+          "passed": false,
+          "reason": "authorized identical-item DEV predictions missing",
+          "status": "unmeasured"
+        },
+        "semantic_intervention": {
+          "passed": false,
+          "reason": "registered live neural edits and matched controls missing",
+          "status": "unmeasured"
+        },
+        "usefulness": {
+          "passed": false,
+          "reason": "same-task strong open-weight comparator predictions missing",
+          "status": "unmeasured"
+        }
+      },
+      "passed": false,
+      "scope": "single_fact_and_exact_comparison"
+    },
+    "L1": {
+      "gates": {
+        "joint_adversarial": {
+          "passed": false,
+          "reason": "learned joint/adversarial evaluation missing",
+          "status": "unmeasured"
+        },
+        "parent_decision": {
+          "passed": false,
+          "reason": "authorized identical-item DEV predictions missing",
+          "status": "unmeasured"
+        },
+        "semantic_intervention": {
+          "passed": false,
+          "reason": "registered live neural edits and matched controls missing",
+          "status": "unmeasured"
+        },
+        "usefulness": {
+          "passed": false,
+          "reason": "same-task strong open-weight comparator predictions missing",
+          "status": "unmeasured"
+        }
+      },
+      "passed": false,
+      "scope": "multi_record_selection_and_exact_difference"
+    },
+    "L2": {
+      "gates": {
+        "joint_adversarial": {
+          "passed": false,
+          "reason": "learned joint/adversarial evaluation missing",
+          "status": "unmeasured"
+        },
+        "parent_decision": {
+          "passed": false,
+          "reason": "authorized identical-item DEV predictions missing",
+          "status": "unmeasured"
+        },
+        "semantic_intervention": {
+          "passed": false,
+          "reason": "registered live neural edits and matched controls missing",
+          "status": "unmeasured"
+        },
+        "usefulness": {
+          "passed": false,
+          "reason": "same-task strong open-weight comparator predictions missing",
+          "status": "unmeasured"
+        }
+      },
+      "passed": false,
+      "scope": "conjunction_registered_hypothesis_and_registered_plan"
+    },
+    "L3": {
+      "gates": {
+        "joint_adversarial": {
+          "passed": false,
+          "reason": "learned joint/adversarial evaluation missing",
+          "status": "unmeasured"
+        },
+        "parent_decision": {
+          "passed": false,
+          "reason": "authorized identical-item DEV predictions missing",
+          "status": "unmeasured"
+        },
+        "semantic_intervention": {
+          "passed": false,
+          "reason": "registered live neural edits and matched controls missing",
+          "status": "unmeasured"
+        },
+        "usefulness": {
+          "passed": false,
+          "reason": "same-task strong open-weight comparator predictions missing",
+          "status": "unmeasured"
+        }
+      },
+      "passed": false,
+      "scope": "licensed_coordination_and_quantitative_contrast"
+    },
+    "L4": {
+      "gates": {
+        "joint_adversarial": {
+          "passed": false,
+          "reason": "learned joint/adversarial evaluation missing",
+          "status": "unmeasured"
+        },
+        "parent_decision": {
+          "passed": false,
+          "reason": "authorized identical-item DEV predictions missing",
+          "status": "unmeasured"
+        },
+        "semantic_intervention": {
+          "passed": false,
+          "reason": "registered live neural edits and matched controls missing",
+          "status": "unmeasured"
+        },
+        "usefulness": {
+          "passed": false,
+          "reason": "same-task strong open-weight comparator predictions missing",
+          "status": "unmeasured"
+        }
+      },
+      "passed": false,
+      "scope": "scoped_historical_electricity_knowledge"
+    }
+  },
+  "mode": "suite_preparation_only",
+  "parent": "PENDING_QUALIFIED_CHAMPION",
+  "prepared_suites": {
+    "L0": {
+      "evaluator_sha256": "9fd7ad5d3aeab0a53d18599276af98a41455b778f71e4cd1b03fd9d6b8f21250",
+      "inputs_sha256": "8f8cfc3d71ecb3273e77bd12a0310dadb38bee3a199c9b6df7b72641f4b5be4c",
+      "label_provenance": "synthetic_checker_valid_not_independent_audit",
+      "level": "L0",
+      "promotion_eligible": false,
+      "schema": "ssdm.language_gate_suite.v1",
+      "scope": "single_fact_and_exact_comparison",
+      "seed": 20261008,
+      "split": "development_validation",
+      "tasks": 16,
+      "training_allowed": false,
+      "worlds": 2
+    },
+    "L1": {
+      "evaluator_sha256": "4c6cb341ed20d40b91be35b346b689afb5d19142f2ae71bfa2402fb7fd6e5b04",
+      "inputs_sha256": "17f0fd64d2e88a6a4e5f5324629cbb32b1f2098c74bc28a13ef7118bcd3beaee",
+      "label_provenance": "synthetic_checker_valid_not_independent_audit",
+      "level": "L1",
+      "promotion_eligible": false,
+      "schema": "ssdm.language_gate_suite.v1",
+      "scope": "multi_record_selection_and_exact_difference",
+      "seed": 20261008,
+      "split": "development_validation",
+      "tasks": 24,
+      "training_allowed": false,
+      "worlds": 2
+    },
+    "L2": {
+      "evaluator_sha256": "de503851e2767bf1e53142502f3a5ea38dd8ab9fb057d3d2e1c3de9db1ccf3bd",
+      "inputs_sha256": "3a6d50e563b4e54f6885deb7156655841147e076b2ad6ef681562619bb7963c5",
+      "label_provenance": "synthetic_checker_valid_not_independent_audit",
+      "level": "L2",
+      "promotion_eligible": false,
+      "schema": "ssdm.language_gate_suite.v1",
+      "scope": "conjunction_registered_hypothesis_and_registered_plan",
+      "seed": 20261008,
+      "split": "development_validation",
+      "tasks": 24,
+      "training_allowed": false,
+      "worlds": 2
+    },
+    "L3": {
+      "evaluator_sha256": "569c1c7a869b170d12273a7936397fd8506c3a7cd0b22e28b9214ce667e7d6fa",
+      "inputs_sha256": "1385f4abf062d7fae2e6c8e5a6bce7c1c25feae9e5a5f8ecdb6ab268adb6bcf8",
+      "label_provenance": "synthetic_checker_valid_not_independent_audit",
+      "level": "L3",
+      "promotion_eligible": false,
+      "schema": "ssdm.language_gate_suite.v1",
+      "scope": "licensed_coordination_and_quantitative_contrast",
+      "seed": 20261008,
+      "split": "development_validation",
+      "tasks": 16,
+      "training_allowed": false,
+      "worlds": 2
+    },
+    "L4": {
+      "evaluator_sha256": "2ef708b2ecb02a9e283645adb1271608cd31baeef3d2824df156cbf9b897c783",
+      "inputs_sha256": "a7878d3b94c579ad81649a231530d1ab511745c53024442d7174bf6256a924fa",
+      "label_provenance": "synthetic_checker_valid_not_independent_audit",
+      "level": "L4",
+      "promotion_eligible": false,
+      "schema": "ssdm.language_gate_suite.v1",
+      "scope": "scoped_historical_electricity_knowledge",
+      "seed": 20261008,
+      "split": "development_validation",
+      "tasks": 12,
+      "training_allowed": false,
+      "worlds": 1
+    }
+  },
+  "qualified": false,
+  "schema": "ssdm.language_gates.v1"
+}
