@@ -123,3 +123,41 @@ runner as currently configured: its default split guard loads DEV and TEST
 manifests. A future cell needs a reviewed C-specific runner or explicit
 fit-only guard path, a qualified RWKV7 parent, an A-ordered run, and suitable
 resources. No model/Torch, non-fit split, or GPU was read or loaded here.
+
+## L1 ExactDifference fit supplement
+
+The pinned multirecord L1 source has only read, explanation and comparison
+tasks; the final GatePlanner L1 suite also tests `ExactDifference`. Preserve the
+original 3,072-row export unchanged and add a separate train-only slice using
+the existing GatePlanner generator:
+
+```powershell
+python -B -X utf8 -m language_growth.gate_training --levels L1 --split development_train --worlds 24 --seed 20261009 --model gate-training-l1-supplement --parent-revision training-only-l1-difference-v1 --out C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-gateplanner-exactdifference-supplement-20261008-v1
+```
+
+This yields 24 read, 24 compare and 24 exact-difference tasks across 24
+generated `development_train` worlds: 216 slot rows total. The source pins are
+the existing generator code hashes in its manifest; the JSONL SHA-256 is
+`dd22bc825d964654b896036d13b8de78b658ebb313867a4802f4f016a752688d`, gzip
+SHA-256 `5a875060c816b52caa1e3a212fa6fb035c3981f3c50976cc974b12f13561861c`,
+and manifest SHA-256
+`db6ee72c14173eca8aa62d397e90dda23f971f99d02d6276c1b49d68f98a2acd`. The
+exact RWKV7 tokenizer census uses the same tokenizer revision, ordered layout
+and template; max prompt is 1,476 tokens, max prompt-plus-continuation 1,480,
+K maxes at 8, and continuations are 4. Difference targets are 14 positive, 10
+negative and zero ties, all over `warranty_months`; this supplement does not
+support a tie-handling claim.
+
+`language_growth.l1_combined_fit_preflight` binds the original v3 cohort to this
+separate supplement and exact census without changing the base preflight. Its
+plan is
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-combined-fit-preflight-20261008-v3`
+(SHA-256 `1b0c52ec5addc5b451eedd5dde60b2e767053267642db4d0a2f3a9466e2f3f36`).
+It verifies the recorded world split against the actual row worlds and retains
+complete worlds, splitting each source 18 train / 6 diagnostic:
+2,466 training rows and 822 fit-only diagnostic rows across 48 worlds. The
+combined operation targets include 24 `ExactDifference` examples. Its status
+remains `preflight_only_not_authorized_to_train`, with no Stage 1 parent, guard
+pin or A order. The generated addendum is checker-valid train supervision,
+not independent label audit or learned-capability evidence; free-running L1
+usefulness and parent-retention gates remain unmeasured.
