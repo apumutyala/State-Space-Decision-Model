@@ -22,7 +22,8 @@ SPENT_USD = 16.11
 LINES = {"joint_gate": 75.0, "system1": 250.0, "language": 100.0, "reserve": 100.0}
 PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_params_c_only.json", "probe9b": "jobs/probe9b/job_params.json",
           "rwkv7_code_label_h100": "jobs/rwkv7_code_label_h100/job_params.json",
-          "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_lora": "jobs/rwkv7/job_params_lora.json",
+          "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_readout_g1v2": "jobs/rwkv7/job_params_readout_g1v2.json",
+          "rwkv7_lora": "jobs/rwkv7/job_params_lora.json",
           "fla_rwkv7": "jobs/fla_rwkv7/job_params.json", "fla_rwkv7_truth_v2": "jobs/fla_rwkv7/job_params_truth_v2.json",
           "cell_step_profile": "jobs/cell_step_profile/job_params.json",
           "clef_index_subset": "jobs/clef_baseline/job_params_index_subset.json",
