@@ -934,8 +934,9 @@ def main(argv=None) -> int:
         s = write_draw(name, rows, sel, q, config.BUILD_DIR, builder, Path(a.receipt.replace("\\", "/")))
         s["builder_sha256"] = builder_sha256
         report["draws"][name] = s
-        (root / "data" / "manifests" / f"{name}.pointer.json").write_text(json.dumps(s["pointer"], indent=1) + "\n",
-                                                                         encoding="utf-8")
+        # LF bytes: the committed pointer is LF (.gitattributes) and its sha256 is part of the training identity
+        (root / "data" / "manifests" / f"{name}.pointer.json").write_bytes(
+            (json.dumps(s["pointer"], indent=1) + "\n").encode("utf-8"))
         print(json.dumps({k: s[k] for k in ("build", "n_records", "by_group", "shortfall", "rows_by_max_k")}), flush=True)
     (rd / "build-report.json").write_text(json.dumps(report, indent=1) + "\n", encoding="utf-8")
     return 0
