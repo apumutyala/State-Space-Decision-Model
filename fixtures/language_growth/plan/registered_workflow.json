@@ -1,0 +1,55 @@
+{
+  "development_only": true,
+  "label_provenance": "authored_illustration_not_learned_evaluation",
+  "question": "Propose the registered Atlas repair-request workflow.",
+  "host": {
+    "context_ref": "repair-public-v1", "policy_ref": "public-read-v1",
+    "registry_ref": "plan-illustrative-v1", "audience": "public",
+    "query_constants": {}, "unmet_obligations": [],
+    "limits": {"max_program_nodes": 8},
+    "workflows": {
+      "repair-request": {
+        "audience": "public", "status": "current",
+        "steps": {
+          "inspect": {
+            "action_ref": "inspect-atlas-repair-options", "after": [],
+            "preconditions": [{"record_ref": "atlas-v1", "field": "repairable",
+              "expected": {"value": true, "value_type": "boolean", "unit": null, "temporal_scope": "2026-10"}}]
+          },
+          "draft-request": {
+            "action_ref": "draft-atlas-repair-request", "after": ["inspect"],
+            "preconditions": [{"record_ref": "atlas-v1", "field": "warranty_months",
+              "expected": {"value": 24, "value_type": "integer", "unit": "month", "temporal_scope": "2026-10"}}]
+          }
+        }
+      }
+    }
+  },
+  "catalog": {
+    "sources": {"fixture-host": {"premise_admission": "accepted", "real_world_truth_claim": false}},
+    "records": [{
+      "record_ref": "atlas-v1", "version": 1, "entity_ref": "atlas", "source_ref": "fixture-host",
+      "audience": "public", "epistemic_class": "authoritative_structured_premise",
+      "freshness": "valid_in_declared_snapshots", "conflicts": [],
+      "fields": {
+        "repairable": {"value": true, "value_type": "boolean", "unit": null, "temporal_scope": "2026-10"},
+        "warranty_months": {"value": 24, "value_type": "integer", "unit": "month", "temporal_scope": "2026-10"}
+      }
+    }],
+    "snapshots": {"repair-public-v1": {"audience": "public", "record_refs": ["atlas-v1"]}},
+    "policies": {"public-read-v1": {"audience": "public", "status": "current", "forbidden_audiences": ["private"]}},
+    "registries": {"plan-illustrative-v1": {
+      "allowed_ops": ["Plan", "ReadFact", "Assert", "Conjoin", "ExplainDerivation"],
+      "registered_fields": ["repairable", "warranty_months"],
+      "field_predicates": {"repairable": "IsRepairable", "warranty_months": "WarrantyMonths"},
+      "comparators": [], "ask_categories": [], "style_ids": ["plain"]
+    }}
+  },
+  "proposal": {
+    "schema": "ssdm.semantic_program.v0.1", "context_ref": "repair-public-v1",
+    "policy_ref": "public-read-v1", "registry_ref": "plan-illustrative-v1",
+    "nodes": [{"id": "n1", "op": "Plan", "workflow_ref": "repair-request", "step_refs": ["inspect", "draft-request"]}],
+    "outputs": ["n1"], "style": "plain"
+  },
+  "expected_status": "accepted"
+}

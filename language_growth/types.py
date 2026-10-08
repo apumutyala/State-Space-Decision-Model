@@ -123,9 +123,34 @@ class AskContent:
 
 
 @dataclass(frozen=True, slots=True)
+class PlanStep:
+    step_ref: str
+    action_ref: str
+    preconditions: tuple[Fact, ...]
+    after: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"step_ref": self.step_ref, "action_ref": self.action_ref,
+                "status": "proposed", "preconditions": _json_value(self.preconditions),
+                "after": list(self.after)}
+
+
+@dataclass(frozen=True, slots=True)
+class PlanContent:
+    """A conditional proposal; no action capability or execution state."""
+
+    workflow_ref: str
+    steps: tuple[PlanStep, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"epistemic_class": "plan", "execution": "none",
+                "workflow_ref": self.workflow_ref, "steps": _json_value(self.steps)}
+
+
+@dataclass(frozen=True, slots=True)
 class SpeechAct:
     kind: str
-    content: Fact | Comparison | ExactDifference | ConditionalContent | AskContent | tuple[SpeechAct, ...] | SpeechAct
+    content: Fact | Comparison | ExactDifference | ConditionalContent | AskContent | PlanContent | tuple[SpeechAct, ...] | SpeechAct
     dependencies: tuple[str, ...]
     derivation: tuple[int, ...]
 

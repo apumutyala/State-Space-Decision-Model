@@ -1,0 +1,32 @@
+{
+  "schema": "ssdm.authored_boundary_receipt.v1",
+  "date": "2026-10-08",
+  "source_commit": "c393c9e65756a783e4300764c91f3de45682f459",
+  "implementation_commit": "dcb87c85f047e94adef09fcb0e8070d07225d83c",
+  "base_commit": "f673ae3393bf69577edd31e77a1b81495082de06",
+  "branch": "codex/l2-registered-plan-20261008",
+  "command": "python -m unittest language_growth.tests.test_plan language_growth.tests.test_hypothesis -v",
+  "test_output": "focused-tests.txt",
+  "result": {"tests": 15, "failures": 0, "errors": 0},
+  "fixture": "fixtures/language_growth/plan/registered_workflow.json",
+  "fixture_sha256": "821f89bf6938357b7725cbcf5ee09e2107a3640d8b1d599356ec7c4c0764e512",
+  "data_and_split": "single authored development illustration; no evaluation or held-out split",
+  "seed": null,
+  "measurement_runs": null,
+  "median_and_spread": null,
+  "hardware": "local Windows CPU; no model execution",
+  "billed_cost_usd": 0,
+  "raw_predictions": null,
+  "interface_issue": "https://github.com/apumutyala/State-Space-Decision-Model/issues/207",
+  "dependencies": [
+    "Exact hypothesis branch head f673ae3393bf69577edd31e77a1b81495082de06 and interface issue #205",
+    "L1 ExactDifference #201 review/merge before canonical profile sequencing",
+    "Fresh nonauthor review and merge of Plan; canonical profile remains unchanged"
+  ],
+  "claim": "Checked non-executing program expressibility only; selected steps may be incomplete; no learned planning or safety qualification",
+  "limitations": [
+    "Trusted host workflow registration and fixture premise admission",
+    "No planner selection implementation, public grammar or training export",
+    "No action authority, effects, execution, goal coverage or workflow completion"
+  ]
+}

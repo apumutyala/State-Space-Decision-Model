@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 
 from .kernel import validate_release
-from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, ExactDifference, Fact, SpeechAct, decimal_text
+from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, ExactDifference, Fact, PlanContent, SpeechAct, decimal_text
 
 
 def _quoted(value: str) -> str:
@@ -100,6 +100,19 @@ def _speech(act: SpeechAct) -> str:
             f"Please provide {_quoted(act.content.category)} for obligation "
             f"{_quoted(act.content.obligation_ref)}; references: [{refs}]."
         )
+    if act.kind == "plan":
+        if not isinstance(act.content, PlanContent) or not act.content.steps:
+            raise ValueError("invalid checked plan")
+        lines = [f"Proposed selected steps for workflow {_quoted(act.content.workflow_ref)}; selection may be incomplete; no actions executed."]
+        for index, step in enumerate(act.content.steps, 1):
+            conditions = " and ".join(
+                f"at {_quoted(fact.interval)}, recorded {_subject(fact)} has value {_operand_value(fact)}"
+                for fact in step.preconditions)
+            ordering = (" after proposed steps [" + ", ".join(_quoted(ref) for ref in step.after) + "]"
+                        if step.after else "")
+            lines.append(f"Proposed step {index} ({_quoted(step.step_ref)}){ordering}: "
+                         f"if {conditions}, propose action {_quoted(step.action_ref)}; execution requires separate authorization and precondition recheck.")
+        return "\n".join(lines)
     if act.kind == "conjoin":
         if not isinstance(act.content, tuple) or not act.content:
             raise ValueError("invalid checked conjunction")
