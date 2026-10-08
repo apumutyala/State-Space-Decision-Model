@@ -45,7 +45,24 @@ class RetentionTests(unittest.TestCase):
     def run_fixture(self, paths, auth):
         sha = publish(paths["authorization"], auth)
         return decision_index_retention(paths["authorization"], sha, paths["rows"], paths["parent"], paths["child"],
-                                        qualified_parent_identity=auth["parent_identity"], candidate_identity=auth["candidate_identity"], draws=100)
+                                        qualified_parent_identity=auth["parent_identity"], candidate_identity=auth["candidate_identity"],
+                                        draws=auth["bootstrap"]["draws"])
+
+    def test_reviewed_full_census_can_pass_but_insufficient_independent_cases_cannot(self):
+        from harness.suite import index_ids
+        with tempfile.TemporaryDirectory() as directory:
+            paths, auth, *_ = self.fixture(Path(directory))
+            # Synthetic host attestation only: the unavailability list is part
+            # of the independently trusted census, never inferred by scorer.
+            auth["cohort"]["scope"] = "full_dev"
+            auth["bootstrap"]["draws"] = 2000
+            auth["cohort"]["unavailable_benchmarks"] = sorted(set(index_ids("0.2.1")) - {3})
+            self.assertTrue(self.run_fixture(paths, auth)["passed"])
+            for item in auth["items"]:
+                item["source_case_id"] = "single-linked-source"
+            report = self.run_fixture(paths, auth)
+            self.assertFalse(report["passed"])
+            self.assertEqual(report["source_cases_per_benchmark"], {"3": 1})
 
     def test_actual_index_weighted_pairing_and_incomplete_panel_cannot_pass(self):
         from harness.score import weights
