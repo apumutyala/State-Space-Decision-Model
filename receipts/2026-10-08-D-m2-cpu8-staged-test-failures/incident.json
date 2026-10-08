@@ -1,0 +1,54 @@
+{
+  "schema": "ssdm.cpu8_staged_test_failure.v1",
+  "issue": 171,
+  "source_sha": "4247b340dddecf620de6ff22751256f4127237cb",
+  "fix_base_sha": "cce4387aa60daa17d53b8214816197e40c301509",
+  "external_archive": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\receipts\\m2-cpu8-validation-20261008-run2\\launch-output.tar",
+  "archive_bytes": 92211200,
+  "archive_sha256": "cae3106eefb9ef98ecbb0415ec63622c53cd31fd2c196f11cc8a20df4431e1e8",
+  "junit_bytes": 45026,
+  "junit_sha256": "30b58207ec4fbd37a24ffed9f0c19b69fdf01a6cf9c3f91f7cddc9a1222ec87b",
+  "counts": {
+    "tests": 152,
+    "passed": 144,
+    "failed": 4,
+    "skipped": 4
+  },
+  "failures": [
+    {
+      "test": "test_term_resistant_training_is_killed_and_real_finalizer_exports_partials[True]",
+      "message": "AssertionError: recorded owned finalizer survived SIGKILL\nassert 0 != 0\n +  where 0 = CompletedProcess(args=['/usr/bin/bash', '-c', 'kill -0 \"$1\" 2>/dev/null', 'owned-finalizer', '2115'], returncode=0, stdout=b'', stderr=b'').returncode"
+    },
+    {
+      "test": "test_resubmit_seeds_the_parent_arm_from_a_pinned_export",
+      "message": "subprocess.CalledProcessError: Command '['git', 'ls-files', '-co', '--exclude-standard']' returned non-zero exit status 128."
+    },
+    {
+      "test": "test_seed_against_another_pin_exits_10_before_any_gpu_phase",
+      "message": "subprocess.CalledProcessError: Command '['git', 'ls-files', '-co', '--exclude-standard']' returned non-zero exit status 128."
+    },
+    {
+      "test": "test_seed_with_other_units_identity_exits_10_before_training",
+      "message": "subprocess.CalledProcessError: Command '['git', 'ls-files', '-co', '--exclude-standard']' returned non-zero exit status 128."
+    }
+  ],
+  "finalizer_process_state_observed": false,
+  "no_submit_json": true,
+  "h100_request_submitted": false,
+  "synthetic_cpu_model_tests_ran": true,
+  "node_metered_usd": 0.1564,
+  "provisional_balance_delta_usd": 0.17918,
+  "cumulative_metered_cpu8_usd": 0.1628,
+  "unsettled_extra_usd": 0.02278,
+  "cost_evidence": "Coordinator supplied metered node cost and provisional balance reconciliation; no new billing/provider call in this fix.",
+  "campaign_training": false,
+  "files_sha256": {
+    "command.json": "f6ba7c404999b17496171a78e302eb5ed1023bbdbee650efbd8fce0c5392be9b",
+    "controller.json": "444c67a614f9106dee34b8dd2760e6fb40b6661470fbde8743bf1dd20f9ec161",
+    "junit-m2_first_cell.xml": "30b58207ec4fbd37a24ffed9f0c19b69fdf01a6cf9c3f91f7cddc9a1222ec87b",
+    "package-manifest.json": "a7b37eaa21d7d44c52c14f08468bd0d1efa114ac32027166e4e59bfd8ce9e17d",
+    "remote.log": "476f2052081c0060bda5ac70df1896913eb6cfec88bd266dca6268dfc8a0bcaa",
+    "run_m2_cpu8_tests.sh": "08f75eccb4dab82365831df5be8c2ce043f0478c35778d4dd40e4fd4fff61c74",
+    "staging.json": "eb1e1fd1d6923ad30ab792856fbcbb108580af56dc4b69ee277a6ea077dee035"
+  }
+}
