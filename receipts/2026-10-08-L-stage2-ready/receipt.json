@@ -1,0 +1,72 @@
+{
+  "source_commit": "c0c5e8536b8d8479c8f863c40a07dca72a2b1e29",
+  "scope": "CPU implementation readiness, no learned qualification",
+  "commands": [
+    {
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "language_growth.gates",
+        "--parent",
+        "PENDING_QUALIFIED_CHAMPION",
+        "--check-public-fixtures",
+        "--out",
+        "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\agent-c\\receipts\\2026-10-08-L-stage2-ready\\readiness"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\apumu\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "language_growth.gates",
+        "--parent",
+        "PENDING_QUALIFIED_CHAMPION",
+        "--prepare-split",
+        "development_validation",
+        "--worlds",
+        "2",
+        "--out",
+        "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\agent-c-stage2-development-20261008-v1"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "focused_tests": {
+    "result": "104 passed in 16.92s",
+    "files": [
+      "test_language_gates.py",
+      "test_gate_evidence.py",
+      "test_gate_comparator.py",
+      "test_gate_decision_retention.py",
+      "test_gate_interventions.py",
+      "test_qualified_parent.py",
+      "test_native_parent_m2_bundle.py"
+    ],
+    "interpreter": "C:\\Users\\apumu\\research\\CHLabs\\.venv-gpu\\Scripts\\python.exe",
+    "command": [
+      "C:\\Users\\apumu\\research\\CHLabs\\.venv-gpu\\Scripts\\python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "pytest",
+      "language_growth/tests/test_language_gates.py",
+      "language_growth/tests/test_gate_evidence.py",
+      "language_growth/tests/test_gate_comparator.py",
+      "language_growth/tests/test_gate_decision_retention.py",
+      "language_growth/tests/test_gate_interventions.py",
+      "language_growth/tests/test_qualified_parent.py",
+      "language_growth/tests/test_native_parent_m2_bundle.py",
+      "-q"
+    ],
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "PYTHONPATH": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\decision-index",
+    "exit_code": 0
+  },
+  "gpu_used": false,
+  "cost_usd": 0,
+  "real_checkpoint_loaded": false,
+  "heldout_generated_or_evaluated": false
+}
