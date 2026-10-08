@@ -315,3 +315,7 @@
 - Did: queried `job get` and non-following logs for the exact A/B handles. D12f `job-bs5we`, D2kdfla `job-v3tq9`, and L1 inference-equivalence `job-5txp8` are running; `job-5txp8` reached the interleaved 2,008-row score phase. G1 `job-46yeb` is a succeeded 250-row smoke only.
 - Failure: D1fla `job-b4fy8` is terminal failed, attempt 2, exit 10 at 19:46:19Z: parent arm seed `g12` used `chunked_lean` where the run required `fla`; `M2_FIRST_CELL_DONE` was not produced. C requested artifact/receipt preservation and claim/BOARD reconciliation via INBOX.
 - Gate/resource: no champion full-DEV handle or explicit full8 pass/fail is posted. Physical free RAM is 1.11 GiB, so no C model work ran; C used/spent no GPU and did not restart A/B jobs.
+
+## 2026-10-08 19:55Z: Agent C verified the full-DEV queue directly
+- Did: parsed the live autor job list for full-DEV/champion labels. The only matching evaluation jobs are `job-46yeb` (succeeded 250-row pipeline smoke), `job-7f3n4` (failed 250-row smoke), and a failed Clef comparator; no champion full-DEV candidate is queued.
+- Stage 1: the shared BOARD's “champion run ready” remains a readiness note, not a launched run or pass. C continues to request the candidate handle and explicit full8 disposition through INBOX.
