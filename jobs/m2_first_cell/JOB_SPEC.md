@@ -193,3 +193,65 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
    that are set.
 4. `build_context.sh <sha> <out> [<tkfaj results.jsonl> [<clef-flash results.jsonl>]]`; pin the optional files' sha256
    in `job_params.json` `reference_results_sha256` to include those comparisons.
+
+
+## Next capability candidate: `clef_kd` (unmeasured; not submitted)
+
+`m2_first_cell_rwkv7_clef_kd.json` changes the current M2 cell only by adding
+Clef-flash soft-label KD at alpha 0.5 and temperature 1.0. It initializes from
+stock `RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba`,
+with a fresh seed-0 fork head, typed output and zero-init LoRA r64 updates. It
+never loads the current candidate's trained weights or optimizer state.
+
+For an item with teacher probabilities the objective is
+`0.5 * KL(teacher || student) + 0.5 * supervised_clef_loss`; an item without a
+teacher distribution keeps the full supervised loss. The pinned teacher is
+`job-tnrwu / art-ggrs8`, Apache-2.0 Clef-flash, probability-file SHA-256
+`a88b4fe0f6a79a8fc48bdea51391524bd4f5da885705461a543becf81c81e7f7`.
+The existing verification receipt records 23,458 ok and 542 exhausted records
+on the exact seed-0 24k draw. Actual coverage after the K/T filter is reported
+by `attach_teacher`; those record counts are not retained-item coverage.
+
+Head, data pointer, held-out/cohort exclusions, template, seed, supervised loss,
+learning rates, warmup, batch/accumulation, T ladder, WKV and checkpointing remain
+those of the current cell. The hard training endpoints remain 3,000 optimizer
+steps or 190 minutes, whichever comes first, with checkpoints every 400 steps.
+Compare trained candidates at a common preserved step (prefer 800 if both
+reach it) with identical filtered training IDs and T_max; differing final steps
+must be reported as a matched-budget comparison, not a matched-step ablation.
+The present runner exports only its latest checkpoint: preserve the current
+candidate's intermediate checkpoint through its owned checkpoint storage before
+relying on it as a fixed-step comparator, or rerun the control separately.
+
+The next context must contain all four teacher files, pinned to the existing
+`receipts/2026-10-07-D-teacher-distill/teacher_verify.json` receipt. Place them at
+`$SSDM_DATA/teacher/` or use the individual `SSDM_KD_*` source-file variables in
+`job_params_clef_kd.json`. Both training and evaluation reconstruction receive
+`--teacher-dir`; the existing loader checks identity, draw, probabilities,
+content and contamination before training. No new model/loss implementation is
+required. Default runner mode retains the original baseline behavior.
+
+Future preparation command after review and merge:
+
+```bash
+python -m jobs.common.launch m2_first_cell --mode clef_kd --sha <merged-sha> \
+  --data "$SSDM_DATA" --out <fresh-output-directory>
+```
+
+That command prepares a context and submit recipe; it does not submit. The paid
+command is `bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh clef_kd`.
+The existing phase stops and cost ceilings are retained: 637 runtime minutes,
+60 build minutes, zero requested restarts, $70 hard ceiling; the conservative
+cost function still assumes two attempts and quotes **$66.03**. These are
+ceilings inherited from the baseline, not a KD throughput measurement.
+
+KD ranks ahead of the evidence residual and intent16 data variants because it
+adds the already measured stronger teacher's soft task signal on precisely the
+same training draw, with no teacher execution or extra backbone forward pass.
+It cannot establish safety by imitation: keep G12, the later G13 gate, calibration,
+abstention/control and interpretability floors. Do not combine it with a new
+head or data draw in this first ablation. No current trained result supports a
+replacement or Clef-superiority claim. Independent review, exact-mode CPU
+qualification, merged proof, an acknowledged spend issue, remaining-allocation
+check and live provider preflight are required before any launch. No tests or
+hardware runs were performed while creating this candidate definition.
