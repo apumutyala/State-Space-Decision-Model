@@ -3,7 +3,7 @@
 Edits are at final continuation hidden features, before the trained fork head.
 This is a final-hidden-axis experiment, not recurrent-memory editing or proof
 of overall interpretability. Direction discovery/fitting and Stage 1 admission
-belong to independently reviewed, pinned inputs; no evaluator labels enter here.
+belong to pinned fitting/source inputs; no evaluator labels enter here.
 """
 from __future__ import annotations
 
@@ -271,8 +271,8 @@ class _ArmProvider:
 def run_native_interventions(tasks: list[dict], parent, preregistration: dict) -> dict:
     """Callback for gate_evidence: identical free-running planner, four native arms.
 
-    The gate runner supplies Stage 1 admission and independently reviews/pins
-    registration and discovery artifacts. Failed/unsupported tasks stay in all
+    The gate runner supplies Stage 1 admission and pins the machine registration
+    and discovery artifacts before evaluation. Failed/unsupported tasks stay in all
     arm denominators; missing controls never become an unedited success.
     """
     from .gate_planner import plan_gate_task

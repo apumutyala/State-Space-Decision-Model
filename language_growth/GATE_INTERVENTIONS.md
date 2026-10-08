@@ -4,8 +4,8 @@
 `gate_interventions.py` runs semantic, sham, random and output-only arms through
 the same `gate_planner.plan_gate_task` and pinned native `DecisionModelBackend`.
 It returns `arms: {arm: list[PlannerResult]}` in original task order and per-task
-`provenance`. The outer gate owns Stage 1 parent admission, review and evidence
-authentication. This callback accepts the low-level `NativeParent` as well as
+`provenance`. The outer gate owns Stage 1 parent admission and evidence/file
+bindings. This callback accepts the low-level `NativeParent` as well as
 the admitted `QualifiedParent` for synthetic integration tests.
 
 The exact intervention boundary is `native_fork_prehead.v1`: the actual native
@@ -38,8 +38,8 @@ The four arms are:
   hidden edit's total L2 norm. These are fitted logit bias controls, not an
   unrestricted state-conditioned readout. The semantic and output controls must
   share exactly the same discovery worlds and discovery-pair hash. Their
-  fitting evidence requires independent review; metadata alone cannot prove
-  the declared fitting procedure.
+  fitting/source evidence is hash pinned; metadata alone cannot prove the
+  declared fitting procedure.
 
 The callback receives no labels or target IDs. Its task inputs are the gate's
 label-free task shape; extra evaluator fields are rejected. Discovery worlds
@@ -54,7 +54,7 @@ The outer gate must refuse intervention qualification when any flag is false;
 failed control instrumentation cannot establish semantic superiority. Failures
 remain in the report and denominator even when this eligibility condition fails.
 
-Preregistration JSON has exactly:
+The frozen machine registration JSON has exactly:
 
 ```text
 schema: ssdm.language_intervention_preregistration.v1
@@ -63,7 +63,7 @@ capture_boundary: native_fork_prehead.v1
 scope: final_hidden_semantic_axis_only
 capture_identity_sha256: gate_suites.digest(native_capture_identity(parent))
 discovery_world_ids: nonempty unique list of train-only discovery worlds
-discovery_pairs_sha256: independently reviewed source-pair identity
+discovery_pairs_sha256: pinned source-pair identity
 directions: {path: absolute local artifact path, sha256: full file SHA-256}
 scale: fixed finite positive number
 random_seed: integer in [0, 2**63)
@@ -73,8 +73,8 @@ registration_sha256: registration_sha256(the full registration object)
 
 The registration digest excludes its own hash field and uses sorted compact
 JSON, ASCII escaping, finite numbers, UTF-8/ASCII bytes and SHA-256. The outer
-gate separately pins the full registration file SHA and independent review
-record. Keep the direction artifact immutable throughout loading.
+gate separately pins the full registration file SHA and source/fitting evidence
+manifest. Keep the direction artifact immutable throughout loading.
 
 The direction file is a restricted PyTorch weights-only artifact, at most
 16 MiB, with exactly these keys:
@@ -84,7 +84,7 @@ schema: ssdm.native_fork_direction.v1
 parent_revision, capture_identity_sha256, capture_boundary,
 discovery_world_ids, discovery_pairs_sha256: identical to registration
 source_split: discovery_train_only
-output_only_fit_evidence_sha256: reviewed fitting evidence identity
+output_only_fit_evidence_sha256: pinned fitting evidence identity
 direction: finite nonzero CPU float32 tensor of shape [D]
 output_only_directions: {"K": finite nonzero CPU float32 tensor of shape [K]}
 ```
@@ -100,12 +100,12 @@ persistent buffers, are streamed once before the entire matched run and once
 after; unchanged hashes are required and reused in per-task provenance. Per-call
 records bind exact requests, request fingerprints, candidate IDs, hidden/logit
 capture hashes, shapes, dtype and actual edit norms. Hooks have one owner and
-are removed on all exit paths. A separate independent reviewed source pin is
-still required by the outer gate; recorded traces are not self-authenticating.
+are removed on all exit paths. The outer gate pins the executing source file;
+recorded traces alone do not establish source or fitting provenance.
 
 Tiny fake-state CPU tests exercise the actual `DecisionModel`/`FinalStateFork`,
 native adapter, calibration and ordinary free-running L0 planner. They establish
 instrumentation and failure behavior only. The real qualified checkpoint,
-discovery-fitted direction/control artifact, independent review and authorized
-full-model run remain external prerequisites. No neural semantic success or
+discovery-fitted direction/control artifact with source/fitting evidence, and an
+authorized full-model run remain external prerequisites. No neural semantic success or
 L0–L4 qualification is established by these tests.
