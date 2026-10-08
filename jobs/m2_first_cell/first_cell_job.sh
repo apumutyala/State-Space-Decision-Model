@@ -3,6 +3,7 @@
 # Clef loss arm, PR #44 150k injection-augmented set), measured against its own stock readout on the 2,008-row Index
 # DEV subset and the G12 development cohort. SF Compute batch job (chip h100). DRAFT, NOT SUBMITTED.
 # Spec: jobs/m2_first_cell/JOB_SPEC.md. Caps: jobs/m2_first_cell/job_params.json. Config: m2_first_cell_rwkv7.json.
+# Optional mode d4_draw45k (BOARD D4) selects job_params_d4_draw45k.json, m2_first_cell_rwkv7_d4_draw45k.json and the B1 set at $DATA/m2-d4.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -38,9 +39,16 @@ CODE=${M2FC_CODE:-/opt/ssdm/m1}
 CONTEXT_MANIFEST=${M2FC_CONTEXT_MANIFEST:-/opt/ssdm/CONTEXT_MANIFEST.json}
 KIT_DIR=${M2FC_KIT_DIR:-/opt/decision-index}
 DATA=${M2FC_DATA:-/data}
-CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
-PARAMS=$CODE/jobs/m2_first_cell/job_params.json
-TRAIN_DIR=$DATA/m2-150k
+MODE=${1:-base}
+case "$MODE" in
+  base) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7.json}
+        PARAMS=$CODE/jobs/m2_first_cell/job_params.json
+        TRAIN_DIR=$DATA/m2-150k ;;
+  d4_draw45k) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_d4_draw45k.json}
+              PARAMS=$CODE/jobs/m2_first_cell/job_params_d4_draw45k.json
+              TRAIN_DIR=$DATA/m2-d4 ;;
+  *) echo "unknown first-cell mode: $MODE" >&2; exit 5 ;;
+esac
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
