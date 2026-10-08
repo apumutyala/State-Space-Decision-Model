@@ -130,6 +130,11 @@ Its references section identifies source frameworks and data products rather
 than mapping each retained estimate to a primary LCA and shared inventory.
 Thus the roughly 50 values remain one IEA review-world for L4, not 50
 independent groups; the row-level crosswalk is still the next required input.
+The associated [IEA 2024 database product](https://www.iea.org/data-and-statistics/data-product/life-cycle-upstream-emissions-factors-2024-2)
+lists its XLS as account/IP access under a non-CC licence and describes
+country-level factors weighted by national generation mix. That product does
+not provide a freely accessible study-level crosswalk here; no IEA data file
+was obtained or imported.
 
 ## IPCC underlying-study trace
 
