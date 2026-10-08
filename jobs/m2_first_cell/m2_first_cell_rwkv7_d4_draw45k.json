@@ -62,7 +62,7 @@
  "min_steps_note": "unchanged from D1 (600 steps = 4,800 rows): the exit-26 floor for a meaningful measurement",
  "lora_rank_note": "M2_RUN_SPEC r=256 adds ~1.15B trainable params (~18 GB of fp32 weights + grads + Adam) on top of 26.5 GB bf16 weights and the un-checkpointed cache-fork activations; r=64 (the pilot's pre-registered rank) keeps the T=2048 ladder rung inside the 76 GB stop",
  "area_weights_target": {
-  "_note": "Re-aimed 2026-10-08 per research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md (Clef-flash transplant headroom: knowledge +9.5, of which +7.1 procedural (CRUXEval, MuSR, CLadder, GSM8K, SATA); tools +9.3; k>16 catalogs (API-Bank, BANKING77, CLINC) +7.2; arts +3.4, mostly ForecastBench). Target shares of the 45k; B1's build-summary is authoritative and the trainer does NOT reweight: it draws n_train_records = the whole B1 set in sha256(seed:id) order, so any time-capped prefix keeps B1's mix.",
+  "_note": "Re-aimed 2026-10-08 per research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md (Clef-flash transplant headroom: knowledge +9.5, of which +7.1 procedural (CRUXEval, GSM8K are trainable; MuSR, CLadder, SATA are FROZEN in harness/manifests/heldout-draw-v1.json and must never be trained on, distilled or generated for); tools +9.3; k>16 catalogs (API-Bank, BANKING77, CLINC) +7.2; arts +3.4, mostly ForecastBench). Target shares of the 45k; B1's build-summary is authoritative and the trainer does NOT reweight: it draws n_train_records = the whole B1 set in sha256(seed:id) order, so any time-capped prefix keeps B1's mix.",
   "tools": 0.3,
   "knowledge_procedural": 0.28,
   "intent_k16_views": 0.15,
