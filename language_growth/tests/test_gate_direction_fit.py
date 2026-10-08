@@ -15,7 +15,7 @@ from language_growth.gate_direction_fit import (
     METHOD, _request, development_relation_pairs, fit_native_directions, write_direction_fit,
 )
 from language_growth.gate_interventions import (
-    DIRECTION_SCHEMA, DIRECTION_SCHEMA_V2, SCHEMA_V2, _OWNER, _parent_state_sha, _registration, _sha,
+    DIRECTION_SCHEMA, DIRECTION_SCHEMA_V2, SCHEMA_V2, _ArmProvider, _OWNER, _parent_state_sha, _registration, _sha,
     capture_is_targeted, question_slot, registration_sha256, run_native_interventions,
 )
 from language_growth.native_parent import LoadedNativeParent, NativeParent, NativeParentPin
@@ -419,3 +419,13 @@ def test_target_scope_binding_and_fixed_slot_parser_reject_unfitted_or_forged_ap
     fitted["artifact"]["target_slots"] = ["fact"]
     with pytest.raises(ValueError, match="evidence identity changed"):
         write_direction_fit(fitted, tmp_path / "forged-scope")
+
+
+def test_unknown_scoped_question_records_failure_before_provider_call():
+    parent = type("NeverCalled", (), {"decide": lambda *_: pytest.fail("unknown slot reached native provider")})()
+    provider = _ArmProvider(parent, "semantic", {"target_slots": ["comparison-relation"]}, {}, None, None, {})
+    with pytest.raises(ValueError, match="known GatePlanner"):
+        provider.decide({"questions": {"slot-004-unknown-slot": {"type": "choice", "criteria": {"v1": "one", "v2": "two"}}}})
+    assert provider.failed and len(provider.records) == 1
+    assert provider.records[0]["status"] == "attempted" and provider.records[0]["head_calls"] == 0
+    assert provider.current is None

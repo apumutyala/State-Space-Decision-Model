@@ -227,11 +227,11 @@ class _ArmProvider:
         if question.get("type") != "choice":
             raise ValueError("native intervention requires choice questions")
         options = [oid for oid, _ in canonical_options(question)]
-        targeted = capture_is_targeted(qid, self.registration.get("target_slots"))
         self.current = {"question_id": qid, "option_ids": options, "request_sha256": _sha(request),
-                        "head_calls": 0, "capture": None, "status": "attempted", "targeted": targeted}
+                        "head_calls": 0, "capture": None, "status": "attempted", "targeted": False}
         self.records.append(self.current)
         try:
+            self.current["targeted"] = capture_is_targeted(qid, self.registration.get("target_slots"))
             response = self.parent.decide(request)
             envelope = response.get("ssdm", {})
             self.current["status"] = envelope.get("status", "missing_status")
@@ -247,6 +247,9 @@ class _ArmProvider:
                 "capture_identity_sha256": self.registration["capture_identity_sha256"],
                 "capture_boundary": BOUNDARY, "scope": SCOPE}
             return response
+        except Exception:
+            self.failed = True
+            raise
         finally:
             self.current = None
 
