@@ -56,7 +56,9 @@ quartile estimates by lifecycle stage and technology. The paper lists
 Supporting Information S1 as further detail on screening and harmonization,
 but the publisher's download returned HTTP 403 during this audit. The old
 OpenEI LCA endpoint cited by the NREL fact sheet now redirects to the NREL
-project page. I did not find an accessible, machine-readable
+project page. The current [OEDI submission 8228](https://data.openei.org/submissions/8228)
+is the same NREL quartile-summary dataset, not the old study-level export. I
+did not find an accessible, machine-readable
 estimate-to-reference-to-inventory crosswalk. Therefore the 44-reference
 count cannot yet be used as 44 independent worlds, and no wind data was
 imported into L4.
