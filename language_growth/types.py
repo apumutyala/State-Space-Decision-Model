@@ -59,6 +59,19 @@ class Comparison:
 
 
 @dataclass(frozen=True, slots=True)
+class ExactDifference:
+    left: Fact | ConstantValue
+    right: Fact | ConstantValue
+    value: int | Decimal
+    unit: str | None
+    interval: str
+    quantity_kind: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {name: _json_value(getattr(self, name)) for name in self.__dataclass_fields__}
+
+
+@dataclass(frozen=True, slots=True)
 class AskContent:
     category: str
     obligation_ref: str
@@ -71,7 +84,7 @@ class AskContent:
 @dataclass(frozen=True, slots=True)
 class SpeechAct:
     kind: str
-    content: Fact | Comparison | AskContent | tuple[SpeechAct, ...] | SpeechAct
+    content: Fact | Comparison | ExactDifference | AskContent | tuple[SpeechAct, ...] | SpeechAct
     dependencies: tuple[str, ...]
     derivation: tuple[int, ...]
 
