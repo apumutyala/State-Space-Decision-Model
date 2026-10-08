@@ -24,7 +24,8 @@ from jobs.m2_first_cell import readout_ab as RA
 
 ROOT = Path(__file__).resolve().parents[1]
 D3 = ROOT / "jobs/m2_first_cell/job_params_readout_ab_d3.json"
-D1 = ROOT / "jobs/m2_first_cell/job_params_readout_ab_d1dry.json"
+D1DRY = ROOT / "jobs/m2_first_cell/job_params_readout_ab_d1dry.json"
+D1 = ROOT / "jobs/m2_first_cell/job_params_readout_ab_d1.json"
 V3 = [e["code"] for e in load_v3_codes()[0]]
 CAT = {f"opt{i:02d}": f"choice number {i}, a long catalog description that runs well past the label cut" for i in range(12)}  # k = 12 >= 9: v3 code key
 REQ = {"model": "ssdm-m2", "state": {"note": "The customer lost the card yesterday."},
@@ -148,18 +149,23 @@ def test_check_readouts_needs_the_training_template_first():
     with pytest.raises(ValueError):
         RA.check_readouts(d1, ["v2f", "v3w"])
     assert not RA.check_readouts(d1, ["v2f", "v3w"], allow_unmatched_control=True)["matched_control"]
+    assert RA.check_readouts(d1, ["v1", "v3w"])["matched_control"]  # D1's own v1 / ordered = its control
+    with pytest.raises(ValueError):
+        RA.check_readouts(d3, ["v1", "v3w"])
     with pytest.raises(ValueError):
         RA.parse_readouts("v2f")
     with pytest.raises(ValueError):
         RA.parse_readouts("v2f,v9")
 
 
-def test_estimate_prices_two_readouts_under_the_target_and_three_still_fit():
-    p = json.loads(D3.read_text(encoding="utf-8"))
+@pytest.mark.parametrize("f,ro", [(D3, ["v2f", "v3w"]), (D1, ["v1", "v3w"])])
+def test_estimate_prices_two_readouts_under_the_target_and_three_still_fit(f, ro):
+    p = json.loads(f.read_text(encoding="utf-8"))
     est = RA.estimate(p)
-    assert est["ok"] and est["readouts"] == ["v2f", "v3w"] and est["usd_batch_expected"] <= 8.0
+    assert est["ok"] and est["readouts"] == ro and est["usd_batch_expected"] <= 8.0
+    assert est["minutes"]["readout_ab"] == pytest.approx(p["expected_minutes"]["readout_ab"], abs=0.5)
     three = copy.deepcopy(p)
-    three["readouts"] = ["v2f", "v3w", "v3p"]
+    three["readouts"] = ro + ["v3p"]
     assert RA.estimate(three)["ok"]
     slow = copy.deepcopy(three)
     slow["measured_rates_reference"]["child_rows_per_min"] /= 1.2
@@ -170,14 +176,18 @@ def test_params_are_consistent_with_the_runner_and_the_shared_loader():
     from jobs.common.costs import schedule_minutes, worst_case_usd
     from jobs.m2_first_cell.checkpoint_loader import checkpoint_block
 
-    for f, cell in ((D3, "m2_first_cell_rwkv7_d3_v2f_gold.json"), (D1, "m2_first_cell_rwkv7.json")):
+    for f, cell in ((D3, "m2_first_cell_rwkv7_d3_v2f_gold.json"), (D1, "m2_first_cell_rwkv7.json"),
+                    (D1DRY, "m2_first_cell_rwkv7.json")):
         p = json.loads(f.read_text(encoding="utf-8"))
         assert p["eval_only"] == "readout_ab" and schedule_minutes(p) == p["max_duration_minutes"]
-        assert worst_case_usd(p) <= p["hard_cap_usd"] and p["readouts"][0] == "v2f"
+        assert worst_case_usd(p) <= p["hard_cap_usd"] and p["readouts"][1] == "v3w"
+        assert p.get("allow_unmatched_control", False) == (f == D1DRY)
         assert "<" in p["submit"]["env"]["CKPT_URL"]  # never a signed URL in git
         cfg = json.loads((ROOT / p["cell_config"]).read_text(encoding="utf-8"))
         assert cfg == json.loads((ROOT / "jobs/m2_first_cell" / cell).read_text(encoding="utf-8"))
-    assert checkpoint_block(json.loads(D1.read_text(encoding="utf-8")))["artifact"] == "art-bm3e6"
+    hij = json.loads((ROOT / "jobs/m2_first_cell/job_params_hijack_eval.json").read_text(encoding="utf-8"))
+    ck1 = checkpoint_block(json.loads(D1.read_text(encoding="utf-8")))
+    assert ck1["artifact"] == "art-bm3e6" and all(ck1[k] == hij["checkpoint"][k] for k in ck1 if not k.startswith("_"))
     with pytest.raises(Exception):  # D3 pins are placeholders until the artifact lands
         checkpoint_block(json.loads(D3.read_text(encoding="utf-8")))
     sh = (ROOT / "jobs/m2_first_cell/first_cell_job.sh").read_text(encoding="utf-8")
@@ -298,3 +308,48 @@ def test_fill_ckpt_pins_fills_a_block_the_loader_accepts(tmp_path, monkeypatch):
     tar2 = _tar(tmp_path / "x" if (tmp_path / "x").mkdir() is None else tmp_path, bad)
     with pytest.raises(SystemExit, match="config"):
         FP.main([str(tar2), "--params", str(params), "--artifact", "art-zz9yy"])
+
+
+def test_throughput_reports_latency_and_tokens_per_second():
+    res = [{"run_id": f"r{i}", "status": "ok", "total_wall_ms": 1000.0} for i in range(30)]
+    sp = RA.throughput(res, {f"r{i}": 500 for i in range(30)})
+    assert sp["rows"] == 20 and sp["tokens"] == 10_000 and sp["tokens_per_s"] == 500.0 and sp["rows_per_min"] == 60.0
+    assert sp["latency"]["median_ms"] == 1000.0 and sp["latency"]["n"] == 20
+
+
+def test_d1_control_is_the_ordered_v1_backend_and_v3w_rides_the_same_model(tmp_path, monkeypatch):
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("decision_index")
+    from decide import Decider
+    from heads.backbone import tiny_hf_backbone
+    from heads.decide_backend import DecisionModelBackend
+    from heads.model import DecisionModel
+    from jobs.m2_first_cell import fulldev_eval as F
+
+    torch.manual_seed(0)
+    model = DecisionModel(tiny_hf_backbone("rwkv7", seed=0, fork_mode="cache"), "fork")
+    base = Decider(DecisionModelBackend(model, WordEncoder(), template="jrt-rwkv-g1-v1", layout="ordered",
+                                        checkpoint={"path": "ckpt-step0001439.pt", "sha256": "a" * 64}))
+    monkeypatch.setattr(F, "load_child", lambda a: (base, True, {"arm": "child", "checkpoint": base.backend.checkpoint}))
+    monkeypatch.setattr(RA, "N_SUBSET", 3)
+    cell = tmp_path / "cell.json"
+    cell.write_text(json.dumps({"config": json.loads(
+        (ROOT / "jobs/m2_first_cell/m2_first_cell_rwkv7_readout_ab_d1.json").read_text(encoding="utf-8"))}))
+    rows = tmp_path / "rows.jsonl.gz"
+    with gzip.open(rows, "wt", encoding="utf-8") as f:
+        for r in _subset_rows():
+            f.write(json.dumps(r) + "\n")
+    out, ck = tmp_path / "out", tmp_path / "ck"
+    argv = ["score", "--arm", "child", "--readouts", "v1,v3w", "--cell", str(cell), "--ckpt-dir", str(ck),
+            "--model-dir", "x", "--records", "x", "--train-dir", "x", "--guard-readiness", "x", "--rows", str(rows),
+            "--resume-dir", str(ck), "--out-dir", str(out), "--device", "cpu"]
+    assert RA.main(argv) == 0
+    ident = json.loads((out / "identity-child.json").read_text())
+    assert ident["readout_control"]["matched_control"] and ident["readouts"]["v1"]["layout"] == "ordered"
+    assert ident["readouts"]["v3w"]["layout"] == "g1v2"
+    for r in ("v1", "v3w"):
+        plan = json.loads((out / f"plan-child-{r}.json").read_text())
+        assert all(isinstance(t, int) and t > 0 for t in plan["tokens"].values())
+    t1 = json.loads((out / "plan-child-v1.json").read_text())["tokens"]
+    tw = json.loads((out / "plan-child-v3w.json").read_text())["tokens"]
+    assert t1 != tw  # two different prompts, not the control twice

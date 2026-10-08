@@ -1,6 +1,9 @@
 """Mode ``readout_ab``: score a SAVED layout-g1v2 cell checkpoint (D3) on the 2,008-row Index DEV subset under TWO OR
 MORE readouts in ONE process (one model load, one lineage check, one temperature fit), each written and scored as its
-own results file. Default: ``v2f`` (the cell's own training template = the matched control), ``v3w`` (primary), ``v3p``.
+own results file. The first readout is the cell's own training template (the matched control): ``v1`` for D1
+(layout ordered), ``v2f`` for D3; then ``v3w`` (the R3 winner) and optionally more. ONE generic readout over every row
+per results file (never a per-family pick, which would be tuning on DEV). Each readout also reports decode throughput
+(plan tokens / decide wall s over ok rows) and per-row latency (the Clef latency row definition).
 
     # GPU (in the job): the child arm over every readout, then (optional) the stock parent under the same readouts
     python -X utf8 -m jobs.m2_first_cell.readout_ab score --arm child --readouts v2f,v3p --cell <out>/cell.json \
@@ -65,7 +68,10 @@ SCHEMA = "ssdm.m2.readout_ab.v1"
 N_SUBSET = 2_008
 ARMS = ("child", "parent")
 #: readout name -> layout-g1v2 template id (heads.layout G1_TRAIN_TEMPLATES / G1_EVAL_TEMPLATES)
-READOUTS = {"v2f": "jrt-rwkv-g1-v2f", "v3w": "jrt-rwkv-g1-v3w", "v3p": "jrt-rwkv-g1-v3p", "v2fp": "jrt-rwkv-g1-v2fp"}
+READOUTS = {"v1": "jrt-rwkv-g1-v1", "v2f": "jrt-rwkv-g1-v2f", "v3w": "jrt-rwkv-g1-v3w", "v3p": "jrt-rwkv-g1-v3p",
+            "v2fp": "jrt-rwkv-g1-v2fp"}
+#: readout name -> heads.layout layout (v1 = D1's own "ordered" JRT layout; the R3 readouts are layout g1v2)
+READOUT_LAYOUT = {"v1": "ordered", "v2f": "g1v2", "v3w": "g1v2", "v3p": "g1v2", "v2fp": "g1v2"}
 #: readout name -> stock decide.backends.rwkv_g1_v3.G1V3Backend mode (parent arm); v2fp has no stock family
 PARENT_MODES = {"v2f": "v2f", "v3w": "words", "v3p": "permute"}
 
@@ -78,17 +84,19 @@ def parse_readouts(spec: str | list[str]) -> list[str]:
     return out
 
 
-def check_readouts(cfg: dict, readouts: list[str], allow_unmatched_control: bool = False) -> dict[str, Any]:
-    """The first readout must be the cell's own training template (the matched control), on a layout-g1v2 cell.
-    ``allow_unmatched_control`` (plumbing dry runs on a non-g1v2 cell only) records the mismatch instead."""
-    from heads.layout import G1_TRAIN_TEMPLATES
+def is_native(cfg: dict, r: str) -> bool:
+    """Readout ``r`` is the cell's own training template AND layout (the control)."""
+    return READOUTS[r] == cfg.get("template") and READOUT_LAYOUT[r] == cfg.get("layout")
 
-    native = cfg.get("layout") == "g1v2" and cfg.get("template") in G1_TRAIN_TEMPLATES
-    matched = native and READOUTS[readouts[0]] == cfg["template"]
+
+def check_readouts(cfg: dict, readouts: list[str], allow_unmatched_control: bool = False) -> dict[str, Any]:
+    """The first readout must be the cell's own training template + layout (the matched control).
+    ``allow_unmatched_control`` (plumbing dry runs only) records the mismatch instead."""
+    matched = is_native(cfg, readouts[0])
     if not matched and not allow_unmatched_control:
-        raise ValueError(f"readout_ab needs a layout-g1v2 cell whose training template is the first readout "
-                         f"({readouts[0]} = {READOUTS[readouts[0]]}); cell: layout {cfg.get('layout')!r} template "
-                         f"{cfg.get('template')!r}")
+        raise ValueError(f"readout_ab needs the cell's training template as the first readout "
+                         f"({readouts[0]} = {READOUTS[readouts[0]]} / {READOUT_LAYOUT[readouts[0]]}); cell: layout "
+                         f"{cfg.get('layout')!r} template {cfg.get('template')!r}")
     return {"control": readouts[0], "control_template": READOUTS[readouts[0]], "cell_template": cfg.get("template"),
             "cell_layout": cfg.get("layout"), "matched_control": matched,
             "note": None if matched else "PLUMBING ONLY: the readouts are not this cell's training template"}
@@ -124,14 +132,15 @@ def child_deciders(a, readouts: list[str]) -> tuple[dict[str, Any], dict[str, An
     b0 = base.backend
     out = {}
     for r in readouts:
-        if READOUTS[r] == cfg["template"] and cfg.get("layout") == "g1v2":
+        if is_native(cfg, r):
             out[r] = base
         else:  # same model object, same encoder, same checkpoint record, same served calibration; another prompt
-            be = DecisionModelBackend(b0.model, b0.encode, template=READOUTS[r], layout="g1v2",
+            be = DecisionModelBackend(b0.model, b0.encode, template=READOUTS[r], layout=READOUT_LAYOUT[r],
                                       checkpoint=b0.checkpoint, shared_prefix=b0.shared_prefix)
             out[r] = Decider(be, calibration=base.calibration)
     ident = {**ident, "readout_control": ctl,
-             "readouts": {r: {"template": READOUTS[r], "served": d.revision()} for r, d in out.items()}}
+             "readouts": {r: {"template": READOUTS[r], "layout": READOUT_LAYOUT[r], "served": d.revision()}
+                          for r, d in out.items()}}
     return out, ident
 
 
@@ -158,9 +167,57 @@ def parent_deciders(a, readouts: list[str]) -> tuple[dict[str, Any], dict[str, A
 
 
 # ------------------------------------------------------------------------------------------------ GPU: scoring
+def plan_pass(decider, rows: list[dict], model: str = "ssdm-freeze") -> dict[str, dict[str, Any]]:
+    """``jobs.common.dev_full.classify`` (same PlanOnly decider, same excludable statuses) that also records each
+    row's planned input tokens (``Plan.total_input_tokens``, the throughput numerator)."""
+    from decide import Decider
+    from jobs.common.dev_full import EXCLUDABLE_STATUSES, FrozenMismatch, PlanOnly
+
+    class _Recording(PlanOnly):
+        def plan(self, request):
+            self.last = super().plan(request)
+            return self.last
+
+    po = _Recording(decider.backend)
+    d = Decider(po, enable_v0_1_deltas=getattr(decider, "enable_v0_1_deltas", False),
+                backend_max_input_tokens=getattr(decider, "backend_max_input_tokens", None))
+    out = {}
+    for r in rows:
+        po.reached, po.last = False, None
+        resp = d.decide({"model": model, "state": r["state"], "questions": r["questions"]})
+        ss = resp.get("ssdm") or {}
+        err = ss.get("error") or {}
+        rid = r["_evaluation"]["run_id"]
+        toks = getattr(po.last, "total_input_tokens", None)
+        if po.reached:
+            out[rid] = {"supported": True, "total_input_tokens": toks}
+        elif ss.get("status") not in EXCLUDABLE_STATUSES:
+            raise FrozenMismatch(f"row {rid}: pre-forward outcome {ss.get('status')}/{err.get('code')} is not an "
+                                 f"excludable structural refusal (fix the bug)")
+        else:
+            out[rid] = {"supported": False, "status": ss.get("status"), "code": err.get("code"),
+                        "message": err.get("message"), "total_input_tokens": toks}
+    return out
+
+
+def throughput(results: list[dict], tokens: dict[str, Any]) -> dict[str, Any]:
+    """Per-readout speed: per-row decide() latency (``fulldev_eval.latency``: ok rows, first 10 dropped, median /
+    nearest-rank p95) and decode throughput = planned input tokens / decide wall seconds over the same ok rows."""
+    from jobs.m2_first_cell.fulldev_eval import WARMUP_ROWS, latency
+
+    ok = [r for r in results if r.get("status") == "ok" and r.get("total_wall_ms") is not None][WARMUP_ROWS:]
+    tok = [tokens.get(r["run_id"]) for r in ok]
+    secs = sum(float(r["total_wall_ms"]) for r in ok) / 1000
+    known = sum(t for t in tok if isinstance(t, (int, float)))
+    return {"latency": latency(results), "rows": len(ok), "tokens": known, "wall_s": round(secs, 3),
+            "tokens_per_s": round(known / secs, 1) if secs > 0 and None not in tok else None,
+            "rows_per_min": round(len(ok) / secs * 60, 2) if secs > 0 else None,
+            "scope": "ok rows after the 10 warm-up rows; tokens = the readout's own plan (all question prompts)"}
+
+
 def score(a) -> int:
     from harness.suite import read_rows
-    from jobs.common.dev_full import FrozenMismatch, classify
+    from jobs.common.dev_full import FrozenMismatch
     from jobs.m2_pilot.guard_ready import GuardNotReady
     from train import m2_gates as G
     from train.cohort import CohortLeak
@@ -189,7 +246,7 @@ def score(a) -> int:
     todo: dict[str, list[dict]] = {}
     for r in readouts:  # $0 plan-only pass per readout (tokenisation, no forward): which rows each readout refuses
         try:
-            cls = classify(deciders[r], rows)
+            cls = plan_pass(deciders[r], rows)
         except FrozenMismatch as e:
             print(f"plan {r}: {e}", file=sys.stderr)
             return 10
@@ -197,6 +254,7 @@ def score(a) -> int:
         (out / f"plan-{a.arm}-{r}.json").write_text(json.dumps(
             {"readout": r, "n_rows": len(cls), "n_refused": len(refused),
              "refused": [{"run_id": i, **cls[i]} for i in refused],
+             "tokens": {i: c.get("total_input_tokens") for i, c in cls.items()},
              "rule": "decide.Decider default limits (16,384 input tokens, as the in-job index stage and job-fgu2c); "
                      "refused rows score as the kit scores them (not ok = no credit)"}, indent=1), encoding="utf-8")
         print(json.dumps({"arm": a.arm, "readout": r, "n_refused": len(refused)}), flush=True)
@@ -274,7 +332,7 @@ def report(a) -> dict:
             ece = _subset("ece", "--results", str(rp))
             (d / f"{arm}.{r}.score.json").write_text(json.dumps(sc, indent=1), encoding="utf-8")
             (d / f"{arm}.{r}.ece.json").write_text(json.dumps(ece, indent=1), encoding="utf-8")
-            ent = {"template": READOUTS[r], "results_sha256": _sha(rp), "status": _count(x.get("status") for x in res),
+            ent = {"template": READOUTS[r], "layout": READOUT_LAYOUT[r], "results_sha256": _sha(rp), "status": _count(x.get("status") for x in res),
                    "index": sc["slice_index"], "ece": {"board_protocol": (ece.get("board_protocol") or {}).get("ece"),
                                                        "overall_10bin": (ece.get("overall") or {}).get("ece_10bin")}}
             sp = d / f"{arm}.{r}.results_served.jsonl"
@@ -285,8 +343,9 @@ def report(a) -> dict:
                                      "overall_10bin": (se.get("overall") or {}).get("ece_10bin"),
                                      "calibrator": "the one temperature fitted on the training template"}
             pl = d / f"plan-{arm}-{r}.json"
-            if pl.is_file():
-                ent["n_refused_plan"] = json.loads(pl.read_text(encoding="utf-8")).get("n_refused")
+            plan = json.loads(pl.read_text(encoding="utf-8")) if pl.is_file() else {}
+            ent["n_refused_plan"] = plan.get("n_refused")
+            ent["speed"] = throughput(res, plan.get("tokens") or {})
             out["arms"][arm][r] = ent
         tm = d / f"timing-{arm}.json"
         if tm.is_file():
@@ -387,7 +446,7 @@ def ratios(rows_path: str, readouts: list[str], tokenizer_dir: str | None = None
     import gzip
 
     from decide.schema import canonical_question_ids
-    from heads.layout import _g1_prompt, _g1_spec, _g1_table, g1_word_qids
+    from heads.layout import _g1_prompt, _g1_spec, _g1_table, g1_word_qids, resolve_template, tagged_segments
 
     enc = None
     if tokenizer_dir:
@@ -400,8 +459,16 @@ def ratios(rows_path: str, readouts: list[str], tokenizer_dir: str | None = None
     tot = {}
     for r in readouts:
         tid = READOUTS[r]
-        table = _g1_table(_g1_spec(tid)["table"])[0]
         n = 0
+        if READOUT_LAYOUT[r] != "g1v2":  # v1: the ordered layout's own segments
+            tpl = resolve_template(tid)
+            for x in rows:
+                req = {"state": x["state"], "questions": x["questions"]}
+                for qid in canonical_question_ids(x["questions"]):
+                    n += sum(len(t) for t, _, _ in tagged_segments(tpl, req, qid, READOUT_LAYOUT[r]))
+            tot[r] = n
+            continue
+        table = _g1_table(_g1_spec(tid)["table"])[0]
         for x in rows:
             req = {"state": x["state"], "questions": x["questions"]}
             words = g1_word_qids(tid, req, enc) if enc is not None else frozenset()
@@ -438,7 +505,7 @@ def main(argv=None) -> int:
     e.add_argument("--params", required=True)
     q = sub.add_parser("ratios")
     q.add_argument("--rows", required=True)
-    q.add_argument("--readouts", default="v2f,v3w,v3p,v2fp")
+    q.add_argument("--readouts", default="v1,v2f,v3w,v3p,v2fp")
     q.add_argument("--tokenizer-dir", default=None)
     r = sub.add_parser("report")
     r.add_argument("--out-dir", required=True)

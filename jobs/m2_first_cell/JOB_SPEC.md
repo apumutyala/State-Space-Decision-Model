@@ -274,11 +274,20 @@ the stock readout's prompt and answer tokens (`check_readout_ab_equivalence.py`,
 never saw states after word tokens): measured, not assumed.
 
 **Phases.** setup 25 / guard 5 / checkpoint 15 / readout_ab 215 / report 10 / reserve 7 = 277 min. **Sizing**: D1's
-measured 32.8 child rows/min (job-c7pq2) x 2,008 rows per readout x the readout's prompt-length ratio (v3w 1.0023,
-v3p 1.0053) + 15 fixed = 137.6 min for v2f + v3w; expected ~158 run min = **$7.80** billed (+ build ~15 min = $8.54).
-v3p adds ~62 min (~$3.05; the 215 cap fits three readouts). d1_fast's flags are training-step execution flags and do
+measured 32.8 child rows/min (job-c7pq2, on v1 prompts) x 2,008 rows per readout x the readout's prompt-length ratio
+to v1 (v2f 0.8984, v3w 0.9004, v3p 0.9032) + 15 fixed = 125.1 min for v2f + v3w; expected ~145 run min = **$7.18**
+billed (+ build ~15 min = $7.93). A third readout adds ~55 min (~$2.74; the 215 cap fits three readouts). d1_fast's flags are training-step execution flags and do
 not apply to scoring. Worst case (60 + 2 x 277) x 0.0495 = **$30.39**; hard cap $32. `readout_ab_d1dry` = the same on
-D1 art-bm3e6 (`allow_unmatched_control`, plumbing only; package, never submit), same caps and worst case.
+D1 art-bm3e6 (`allow_unmatched_control`, plumbing only; superseded), same caps and worst case.
+
+**Mode `readout_ab_d1`** (priority, coordinator 2026-10-08): the same driver on D1 (job-c7pq2 art-bm3e6, pins =
+`job_params_hijack_eval.json`) with readouts `v1` (D1's own `jrt-rwkv-g1-v1` / layout `ordered` = the matched
+control; its in-job index arm scored 35.12) and `v3w` (layout g1v2 R3 renderer over the same model). One generic
+readout per results file (never a per-family pick: tuning on DEV). Per readout: Index + CI, ECE, paired v3w − v1,
+per-row latency (Clef row definition) and tokens/s (planned input tokens / decide wall over ok rows). Expected 131.3
+scoring min, ~151 run min = **$7.49** billed (+ build = $8.23); adding v2f -> $10.21. Worst case **$30.39**. Package:
+`python -m jobs.common.launch m2_first_cell --mode readout_ab_d1 --sha <sha> --out <dir> --data <ssdm-data>`, then
+`CKPT_URL` into the packaged submit.json env (as fulldev_eval).
 
 **Running it on D3.** Download the D3 artifact (`get_artifact`), then
 `python -I -X utf8 scripts/fill_ckpt_pins.py <tar | dir | job-93fpy> --params jobs/m2_first_cell/job_params_readout_ab_d3.json --artifact <art> --write`

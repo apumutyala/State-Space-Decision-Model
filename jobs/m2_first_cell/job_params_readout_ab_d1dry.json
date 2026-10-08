@@ -1,5 +1,5 @@
 {
- "_comment": "DRAFT, PLUMBING DRY RUN ONLY, NEVER SUBMIT. Mode readout_ab_d1dry = readout_ab_d3 on D1 (job-c7pq2 art-bm3e6, pins = job_params_hijack_eval.json): proves the checkpoint install, lineage load, both-readout scoring and report wiring package end to end. D1 was trained on layout ordered / jrt-rwkv-g1-v1, so neither v2f nor v3w is its training template (allow_unmatched_control: the result is labelled PLUMBING ONLY). Caps and worst case as readout_ab_d3: (60 + 2 x 277) x 0.0495 = $30.39.",
+ "_comment": "SUPERSEDED by readout_ab_d1 (D1 under its own v1 control + v3w). DRAFT, PLUMBING DRY RUN ONLY, NEVER SUBMIT. Mode readout_ab_d1dry = readout_ab_d3 on D1 (job-c7pq2 art-bm3e6, pins = job_params_hijack_eval.json): proves the checkpoint install, lineage load, both-readout scoring and report wiring package end to end. D1 was trained on layout ordered / jrt-rwkv-g1-v1, so neither v2f nor v3w is its training template (allow_unmatched_control: the result is labelled PLUMBING ONLY). Caps and worst case as readout_ab_d3: (60 + 2 x 277) x 0.0495 = $30.39. PRICING (readout_ab estimate, D1's measured 32.8 child rows/min x 2,008 rows x the readout's prompt-length ratio to v1 + 15 fixed): {'v2f': 55.0, 'v3w': 55.1} -> readout_ab 125.1 min, expected 145.1 run min = $7.18 billed ($0.0495/min), + build ~15 min = $7.93. A third readout (v3p) -> $9.92 (fits the 215 cap: True).",
  "test_env": {
   "transformers": "5.17.0",
   "with": [],
@@ -16,7 +16,7 @@
   "image": "jobs/rwkv7/Dockerfile"
  },
  "job": "m2-first-cell-readout-ab-d1dry",
- "status": "draft: plumbing dry run (package only, never submit); D1 job-c7pq2 art-bm3e6",
+ "status": "superseded by readout_ab_d1 (v1 control); plumbing dry run only, never submit",
  "chip": "h100",
  "chip_count": 1,
  "max_duration_minutes": 277,
@@ -41,7 +41,7 @@
   "setup": 10,
   "guard": 2,
   "checkpoint": 5,
-  "readout_ab": 138,
+  "readout_ab": 125,
   "report": 3
  },
  "evals_fixed_minutes": {
@@ -206,11 +206,12 @@
  ],
  "readout_ab_parent_arm": false,
  "readout_length_ratio": {
-  "v2f": 1.0,
-  "v3w": 1.0023,
-  "v3p": 1.0053,
-  "v2fp": 1.0,
-  "_source": "python -X utf8 -m jobs.m2_first_cell.readout_ab ratios --rows <2,008 subset> --tokenizer-dir <G1k>: rendered prompt chars over every question prompt, vs v2f (2026-10-08)"
+  "v1": 1.0,
+  "v2f": 0.8984,
+  "v3w": 0.9004,
+  "v3p": 0.9032,
+  "v2fp": 0.8984,
+  "_source": "python -X utf8 -m jobs.m2_first_cell.readout_ab ratios --rows <2,008 subset> --tokenizer-dir <G1k>: rendered prompt chars over every question prompt, relative to v1 (the format D1's measured 32.8 rows/min ran on; 2026-10-08)"
  },
  "allow_unmatched_control": true
 }

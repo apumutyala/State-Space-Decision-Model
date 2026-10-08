@@ -1,5 +1,5 @@
 {
- "_comment": "DRAFT, NOT SUBMITTED. Mode readout_ab_d3: an EVAL-ONLY run of the SAVED D3 checkpoint (job-93fpy, d3_v2f_gold: LoRA r64 + cache-fork head trained on the v2f template) on the 2,008-row Index DEV subset under several readouts in ONE process (jobs.m2_first_cell.readout_ab: one model load, one lineage check, one temperature fit): v2f = the training template (matched control) and v3w = the R3 winner on the stock parent (job-fgu2c 31.07, +1.97 [+0.17, +3.80] vs v2f). Add \"v3p\" to readouts for the secondary (+~62 min, +~$3.05 billed; the readout_ab cap 215 already fits three: 15 + 3 x 61.2 x ratio = 199 <= 0.95 x 215). Phases setup 25 / guard 5 / checkpoint 15 / readout_ab 215 / report 10 / reserve 7 = 277. Expected (two readouts at D1's measured 32.8 child rows/min): 15 fixed + 61.2 + 61.4 = 138 scoring min, ~158 run min = $7.80 billed ($0.0495), + build ~15 min = $8.54; worst case (60 + 2 x 277) x 0.0495 = $30.39. d1_fast's flags (row_plan, cont_plan, compile_blocks) are training-step execution flags (act_ckpt block body / step row grouping): scoring never runs them, so they do not apply. Parent arm (stock families, readout_ab_parent_arm true + phase_caps_minutes.parent_ab 55 and +55 to max_duration_minutes) is optional: job-fgu2c already measured the stock parent under every readout.",
+ "_comment": "DRAFT, NOT SUBMITTED. Mode readout_ab_d3: an EVAL-ONLY run of the SAVED D3 checkpoint (job-93fpy, d3_v2f_gold: LoRA r64 + cache-fork head trained on the v2f template) on the 2,008-row Index DEV subset under several readouts in ONE process (jobs.m2_first_cell.readout_ab: one model load, one lineage check, one temperature fit): v2f = the training template (matched control) and v3w = the R3 winner on the stock parent (job-fgu2c 31.07, +1.97 [+0.17, +3.80] vs v2f). Phases setup 25 / guard 5 / checkpoint 15 / readout_ab 215 / report 10 / reserve 7 = 277. Worst case (60 + 2 x 277) x 0.0495 = $30.39. d1_fast's flags (row_plan, cont_plan, compile_blocks) are training-step execution flags (act_ckpt block body / step row grouping): scoring never runs them, so they do not apply. Parent arm (stock families, readout_ab_parent_arm true + phase_caps_minutes.parent_ab 55 and +55 to max_duration_minutes) is optional: job-fgu2c already measured the stock parent under every readout. PRICING (readout_ab estimate, D1's measured 32.8 child rows/min x 2,008 rows x the readout's prompt-length ratio to v1 + 15 fixed): {'v2f': 55.0, 'v3w': 55.1} -> readout_ab 125.1 min, expected 145.1 run min = $7.18 billed ($0.0495/min), + build ~15 min = $7.93. A third readout (v3p) -> $9.92 (fits the 215 cap: True).",
  "test_env": {
   "transformers": "5.17.0",
   "with": [],
@@ -41,7 +41,7 @@
   "setup": 10,
   "guard": 2,
   "checkpoint": 5,
-  "readout_ab": 138,
+  "readout_ab": 125,
   "report": 3
  },
  "evals_fixed_minutes": {
@@ -206,10 +206,11 @@
  ],
  "readout_ab_parent_arm": false,
  "readout_length_ratio": {
-  "v2f": 1.0,
-  "v3w": 1.0023,
-  "v3p": 1.0053,
-  "v2fp": 1.0,
-  "_source": "python -X utf8 -m jobs.m2_first_cell.readout_ab ratios --rows <2,008 subset> --tokenizer-dir <G1k>: rendered prompt chars over every question prompt, vs v2f (2026-10-08)"
+  "v1": 1.0,
+  "v2f": 0.8984,
+  "v3w": 0.9004,
+  "v3p": 0.9032,
+  "v2fp": 0.8984,
+  "_source": "python -X utf8 -m jobs.m2_first_cell.readout_ab ratios --rows <2,008 subset> --tokenizer-dir <G1k>: rendered prompt chars over every question prompt, relative to v1 (the format D1's measured 32.8 rows/min ran on; 2026-10-08)"
  }
 }
