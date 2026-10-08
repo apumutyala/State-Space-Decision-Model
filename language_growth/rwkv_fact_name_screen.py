@@ -6,6 +6,7 @@ import contextlib
 from copy import deepcopy
 import importlib.metadata
 import json
+import math
 import multiprocessing
 import os
 from pathlib import Path
@@ -16,7 +17,7 @@ import sys
 import time
 
 from language_growth.fact_binding_screen import generate_binding_screen
-from language_growth.operation_cache import digest
+from language_growth.operation_cache import digest, initial_operation
 from language_growth.rwkv_operation_cache import (
     Capture, _ProcessHandle, assert_environment, authorize_worker, budget_check,
     sha, state_digest, supervise, write,
@@ -27,11 +28,117 @@ BASE_COMMIT = "96f5bd0c7298690d90e36918d5ca73cb302d447a"
 PLAN = "plans/codex/L0H0_PARENT_BINDING_SCREEN.md"
 RUNNER_PLAN = "plans/codex/L0_RWKV_FACT_NAME_SCREEN.md"
 PREPARED = ROOT / "receipts/2026-10-07-L-fact-name-screen-retry-prepared"
+OPERATION_EQUALITY_EVIDENCE = (
+    "all 32 members: identical initial-operation requests excluding only request_id; "
+    "one successful finite-score evaluation plus deterministic exact-logit cache replay "
+    "through the same adapter; weaker than two independent forwards, not temporal retention"
+)
 CONFIG = {"seed": 20261007, "worlds": 16, "members_per_world": 2,
           "styles": ["record_ref", "entity_name"], "threads": 2,
           "min_start_bytes": 9 * 1024**3, "min_running_bytes": 3 * 1024**3,
           "timeout_seconds": 1200, "max_batch_rows": 2, "max_context": 2048,
           "bootstrap_seed": 9203, "bootstrap_samples": 2000}
+
+
+class InitialOperationScoreMemo:
+    """Run-local, serial, bounded stock-score reuse; never caches served answers."""
+    name = "l0h0_exact_initial_operation_score_memo"
+    max_entries = 32
+
+    def __init__(self, backend, check=lambda: None):
+        self.backend, self.check = backend, check
+        self.stock_revision = deepcopy(backend.revision())
+        policy = {"route": "initial-operation-empty-prefix-only", "max_entries": 32,
+                  "key": "full-canonical-request-minus-request_id-and-fixed-backend-revision",
+                  "admission": "successful-adapter-response-and-finite-complete-stock-scores"}
+        self._revision = {**deepcopy(self.stock_revision), "operation_score_memo": policy,
+            "revision_id": self.stock_revision["revision_id"] + ";operation_memo=" + digest(policy)[:12]}
+        self.entries = {}
+        self.pending = None
+        self.hits = self.live_initial_scores = 0
+
+    def revision(self):
+        return deepcopy(self._revision)
+
+    def key(self, request):
+        if self.backend.revision() != self.stock_revision:
+            raise ValueError("fixed operation-cache backend revision drift")
+        if not initial_operation(request):
+            return None
+        content = deepcopy(request)
+        content["ssdm"].pop("request_id", None)
+        return digest({"request": content, "backend_revision": self.stock_revision})
+
+    def plan(self, request):
+        self.check()
+        key = self.key(request)
+        # Always retain live tokenization/context validation, including on hits.
+        plan = deepcopy(self.backend.plan(request))
+        if key in self.entries:
+            plan.inference_calls = plan.total_input_tokens = 0
+        return plan
+
+    def score(self, request, deadline):
+        self.check()
+        key = self.key(request)
+        if key in self.entries:
+            entry = self.entries[key]
+            result = deepcopy(entry["result"])
+            source = {"hit": True, "key": key, "source_request_id": entry["request_id"],
+                      "source_inference_calls": result.inference_calls,
+                      "source_total_input_tokens": result.total_input_tokens,
+                      "source_backend": result.extras}
+            result.inference_calls = result.total_input_tokens = 0
+            result.extras = {"operation_score_memo": source, "call_latency_ms": []}
+            self.hits += 1
+            # deadline() counts a model forward; a lookup starts none. Decider
+            # still checks its wall deadline after score(), and check() guards RAM/time.
+            self.check()
+            return result
+        if key is not None:
+            self.live_initial_scores += 1
+        result = self.backend.score(request, deadline)
+        self.check()
+        if key is not None and len(self.entries) < self.max_entries:
+            self.pending = (key, deepcopy(result))
+        return result
+
+    def finish(self, request, response):
+        pending, self.pending = self.pending, None
+        if pending is None or not isinstance(response, dict) or response.get("ssdm", {}).get("status") != "ok":
+            return
+        key, result = pending
+        if key != self.key(request) or len(self.entries) >= self.max_entries:
+            return
+        questions, logits = request["questions"], result.logits
+        if (not isinstance(logits, dict) or set(logits) != set(questions) or any(
+                not isinstance(logits[qid], dict) or set(logits[qid]) != set(q["criteria"])
+                or any(type(value) not in (int, float) or not math.isfinite(value)
+                       for value in logits[qid].values()) for qid, q in questions.items())):
+            return
+        self.entries[key] = {"result": result, "request_id": request["ssdm"].get("request_id")}
+
+    def accounting(self):
+        return {"entries": len(self.entries), "hits": self.hits,
+                "live_initial_score_attempts": self.live_initial_scores, "max_entries": self.max_entries}
+
+
+class SuccessfulMemoProvider:
+    """Admit scores only after the ordinary adapter successfully serves them."""
+    def __init__(self, decider, memo):
+        self.decider, self.memo = decider, memo
+
+    def revision(self):
+        return self.decider.revision()
+
+    def decide(self, request):
+        self.memo.pending = None
+        response = None
+        try:
+            response = self.decider.decide(request)
+            return response
+        finally:
+            self.memo.finish(request, response)
 
 
 def screen_data():
@@ -77,14 +184,16 @@ def registration():
                      ("torch", "transformers", "safetensors", "numpy", "psutil")},
         "source_sha256": {name: sha(ROOT / name) for name in sources},
         "order": "even world: record_ref then entity_name; odd world: reversed; both members per style",
-        "direct_retention": "all 32 members: exact paired initial-operation request and decision equality across arms, request IDs/latency excluded; no separate inference bookends",
-        "measurement_amendment": "after incomplete run1 memory_guard: remove 64 redundant pre/post direct requests; retain all paired initial operations and full-state pre/post hashes",
-        "planned_requests": 128, "planned_forwards": 256,
+        "direct_retention": OPERATION_EQUALITY_EVIDENCE,
+        "measurement_amendment": "remove direct bookends; memoize successful finite initial-operation scores only; preserve logical calls and full-state hashes; equality is deterministic replay, not independent repeated inference",
+        "planned_requests": 128, "planned_forwards": 192,
+        "planned_model_scored_requests": 96, "planned_operation_cache_hits": 32,
+        "request_count_basis": "nominal read/explain two-slot paths only; model-selected compare paths may exceed 1200 seconds",
         "start_guard_basis": "9 GiB operational reserve after resource abort; not a model-only RAM estimate",
         "state_retention": "separate pre/post hashes of all parent parameters and registered buffers, including LM head",
         "primary": "entity_name minus record_ref useful-answer accuracy, paired by world; all failures retained",
         "secondary": ["kernel acceptance", "read/explain useful answers", "both-member useful answers",
-                      "operation and fact selections", "direct operation decision equality"],
+                      "operation and fact selections", "same-request deterministic operation replay equality"],
         "selection": "one fixed display comparison; no tuning, training, parser correction or retries",
         "decision": "complete 16 worlds; >=2 both-member world gains and zero world losses; exact fact gain; zero operation losses; useful CI lower>0; exact paired initial-operation equality and unchanged full state; screening only",
         "execution": "explicit --execute only, offline owned CPU child; 9 GiB start reserve / 3 GiB run / 2 threads / 1200s cap",
@@ -296,9 +405,11 @@ def run(out):
             check()
             return result
 
-    provider = Decider(Bounded(), backend_max_input_tokens=CONFIG["max_context"])
+    memo = InitialOperationScoreMemo(Bounded(), check=check)
+    decider = Decider(memo, backend_max_input_tokens=CONFIG["max_context"])
+    provider = SuccessfulMemoProvider(decider, memo)
     revision = provider.revision()["revision_id"]
-    config = {"calibration": provider.calibration.identity(),
+    config = {"calibration": decider.calibration.identity(),
               "policy_masking": "none (served covers every supplied option)"}
     raw = out / "raw.jsonl"
     rows, order, operation_equal = evaluate_screen(examples, provider, model=plugin.model_id,
@@ -316,6 +427,8 @@ def run(out):
         "registration_sha256": sha(out / "registration.json"), "parent_evidence": evidence,
         "revision": revision, "summary": summary, "order": order,
         "arm_operation_equal": operation_equal,
+        "operation_equality_evidence": OPERATION_EQUALITY_EVIDENCE,
+        "operation_score_memo": memo.accounting(),
         "full_state_sha256_before": before_state, "full_state_sha256_after": after_state,
         "frozen_parent": frozen_parent, **gate, "adopted": False,
         "cost_usd": 0, "elapsed_seconds": time.monotonic() - started,

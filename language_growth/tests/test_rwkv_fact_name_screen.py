@@ -12,6 +12,198 @@ from language_growth import rwkv_fact_name_screen as runner
 from language_growth.tests.test_planner import EXPECTED_CONFIG, REVISION, ScriptedProvider
 
 
+class FiniteStockBackend:
+    """Protocol-only fake: returns fixed scores without tensors or model inference."""
+    name = "finite-stock-test"
+
+    def __init__(self):
+        self.calls = 0
+        self.requests = []
+        self.failure = None
+        self.identity = {"revision_id": "finite-stock-test:v1", "model_id": "scripted"}
+
+    def revision(self): return deepcopy(self.identity)
+
+    def plan(self, request):
+        from decide.backends.base import Plan
+        return Plan(inference_calls=2, max_call_input_tokens=8, total_input_tokens=30)
+
+    def score(self, request, deadline):
+        from decide.backends.base import ScoreResult
+        self.calls += 1
+        self.requests.append(deepcopy(request))
+        deadline()
+        if self.failure == "exception": raise RuntimeError("scripted score failure")
+        deadline()
+        logits = {qid: {oid: -float(i) for i, oid in enumerate(sorted(q["criteria"]))}
+                  for qid, q in request["questions"].items()}
+        if self.failure == "nonfinite":
+            next(iter(logits.values()))[next(iter(next(iter(logits.values()))))] = float("nan")
+        return ScoreResult(logits, 2, 30, extras={"call_latency_ms": [1., 2.]})
+
+
+def memo_provider():
+    from decide.adapter import Decider
+    stock = FiniteStockBackend()
+    memo = runner.InitialOperationScoreMemo(stock)
+    decider = Decider(memo)
+    return stock, memo, runner.SuccessfulMemoProvider(decider, memo), decider
+
+
+def initial_request(provider):
+    class Capture:
+        def decide(self, request):
+            self.request = request
+            raise RuntimeError("capture only")
+    from language_growth.planner import plan_checked_answer
+    example = runner.screen_data()[0]
+    capture = Capture()
+    plan_checked_answer(json.loads(example["model_inputs"][0]["state"])["task_input"],
+        example["training_only"]["host"], example["training_only"]["catalog"], capture,
+        model="scripted", parent_revision=provider.revision()["revision_id"],
+        expected_served_config=EXPECTED_CONFIG)
+    return capture.request
+
+
+def test_exact_initial_operation_hit_reuses_scores_through_adapter_with_fresh_identity_and_zero_work():
+    stock, memo, provider, _ = memo_provider()
+    request = initial_request(provider)
+    before = provider.decide(request)
+    changed_id = deepcopy(request)
+    changed_id["ssdm"]["request_id"] = "second-logical-call"
+    after = provider.decide(changed_id)
+    assert before["ssdm"]["status"] == after["ssdm"]["status"] == "ok"
+    assert runner.decision_fields(before) == runner.decision_fields(after)
+    assert after["ssdm"]["request_id"] == "second-logical-call"
+    assert stock.calls == 1 and memo.hits == 1 and len(memo.entries) == 1
+    assert before["ssdm"]["diagnostics"]["inference_calls"] == 2
+    assert after["ssdm"]["diagnostics"]["inference_calls"] == 0
+    assert after["usage"]["input_tokens"] == 0
+    assert after["ssdm"]["diagnostics"]["input_counts"]["max_call_input_tokens"] == 8
+    replay = after["ssdm"]["diagnostics"]["backend"]
+    assert replay["call_latency_ms"] == []
+    assert replay["operation_score_memo"]["source_request_id"] == request["ssdm"]["request_id"]
+    # Neither the caller nor a returned result can corrupt the saved exact scores.
+    before["ssdm"]["raw_probabilities"].clear()
+    after["ssdm"]["raw_probabilities"].clear()
+    assert provider.decide(changed_id)["ssdm"]["raw_probabilities"]
+
+
+def test_every_non_request_id_field_changes_exact_cache_identity_and_key_order_does_not():
+    stock, memo, provider, _ = memo_provider()
+    request = initial_request(provider)
+    key = memo.key(request)
+    assert memo.key(dict(reversed(list(request.items())))) == key
+    def leaves(value, path=()):
+        if isinstance(value, dict):
+            for name, child in value.items(): yield from leaves(child, path + (name,))
+        else: yield path, value
+    paths = list(leaves(request))
+    assert len(paths) > 12
+    for path, value in paths:
+        if path == ("ssdm", "request_id"): continue
+        changed, node = deepcopy(request), None
+        node = changed
+        for name in path[:-1]: node = node[name]
+        node[path[-1]] = value + " " if isinstance(value, str) else value + 1
+        assert memo.key(changed) != key, path
+    changed = deepcopy(request)
+    changed["ssdm"]["limits"]["deadline_ms"] = 10000
+    assert memo.key(changed) != key  # additional envelope fields are part of the key too
+    provider.decide(request)
+    changed = deepcopy(request)
+    changed["state"] += " "  # semantically equivalent JSON is still an exact-input miss
+    provider.decide(changed)
+    assert stock.calls == 2 and memo.hits == 0
+
+
+@pytest.mark.parametrize("failure", ["exception", "nonfinite", "adapter_rejection"])
+def test_failed_operation_is_never_cached_and_later_success_scores_live(failure):
+    stock, memo, provider, _ = memo_provider()
+    request = initial_request(provider)
+    if failure == "adapter_rejection":
+        original = provider.decider._success
+        provider.decider._success = lambda *args: {"ssdm": {"status": "error"}}
+    else:
+        stock.failure = failure
+    assert provider.decide(request)["ssdm"]["status"] != "ok"
+    assert not memo.entries and memo.pending is None
+    if failure == "adapter_rejection": provider.decider._success = original
+    stock.failure = None
+    assert provider.decide(request)["ssdm"]["status"] == "ok"
+    assert stock.calls == 2 and len(memo.entries) == 1 and memo.hits == 0
+
+
+def test_cache_is_bounded_to_32_and_other_slots_always_score_live():
+    stock, memo, provider, _ = memo_provider()
+    request = initial_request(provider)
+    for index in range(33):
+        changed = deepcopy(request)
+        state = json.loads(changed["state"])
+        state["task_input"] += f" no-load-cache-case-{index}"
+        changed["state"] = json.dumps(state)
+        assert provider.decide(changed)["ssdm"]["status"] == "ok"
+    assert len(memo.entries) == 32
+    provider.decide(changed)
+    assert stock.calls == 34 and memo.hits == 0  # no eviction or hidden 33rd entry
+    other = deepcopy(request)
+    other["questions"]["slot-002-fact"] = other["questions"].pop("slot-001-operation")
+    assert memo.key(other) is None
+    provider.decide(other)
+    provider.decide(other)
+    assert stock.calls == 36 and len(memo.entries) == 32
+    stock.identity["revision_id"] += ":drift"
+    with pytest.raises(ValueError, match="revision drift"): memo.key(request)
+
+
+def test_cached_screen_keeps_all_logical_calls_worlds_arms_failures_and_raw_traces(tmp_path):
+    stock, memo, provider, decider = memo_provider()
+    examples = runner.screen_data()
+    rows, order, equal = runner.evaluate_screen(examples, provider, model="scripted",
+        revision=provider.revision()["revision_id"], served_config={
+            "calibration": decider.calibration.identity(),
+            "policy_masking": "none (served covers every supplied option)"}, raw=tmp_path / "raw.jsonl")
+    assert equal and len(order) == 64
+    assert {s: len(values) for s, values in rows.items()} == {"record_ref": 32, "entity_name": 32}
+    assert stock.calls == 96 and memo.hits == 32 and len(memo.entries) == 32
+    assert sum(r["provider_calls"] for values in rows.values() for r in values) == 128
+    assert sum(r["forward_calls"] for values in rows.values() for r in values) == 192
+    events = [json.loads(line) for line in (tmp_path / "raw.jsonl").read_text().splitlines()]
+    requests = [e for e in events if e["event"] == "request"]
+    responses = [e for e in events if e["event"] == "response"]
+    assert len(requests) == len(responses) == 128
+    assert len({e["request"]["ssdm"]["request_id"] for e in requests}) == 128
+    assert sum(e["response"]["ssdm"]["diagnostics"]["inference_calls"] == 0 for e in responses) == 32
+    # Fixed fake chooses read even on explain tasks: valid wrong-task outcomes stay failures.
+    assert any(not r["task_correct"] for values in rows.values() for r in values)
+    summary = runner.paired_summary(rows, examples)
+    assert summary["all"]["task_correct"]["n_worlds"] == 16
+    assert summary["all"]["task_correct"]["n_members"] == 32
+    assert "weaker than two independent forwards" in runner.OPERATION_EQUALITY_EVIDENCE
+
+
+def test_cached_full_cohort_proof_never_imports_runtime_or_opens_checkpoints(tmp_path):
+    code = r'''
+import sys
+from pathlib import Path
+class Reject:
+    def find_spec(self, fullname, *args):
+        if fullname.split('.')[0] in ('torch', 'transformers', 'safetensors'):
+            raise AssertionError('runtime imported during cache protocol proof')
+sys.meta_path.insert(0, Reject())
+def audit(event, args):
+    if event == 'open':
+        path = str(args[0]).lower().replace('\\', '/')
+        if path.endswith(('.pt', '.safetensors')) or '/snapshots/' in path:
+            raise AssertionError('checkpoint accessed during cache protocol proof')
+sys.addaudithook(audit)
+from language_growth.tests.test_rwkv_fact_name_screen import test_cached_screen_keeps_all_logical_calls_worlds_arms_failures_and_raw_traces
+test_cached_screen_keeps_all_logical_calls_worlds_arms_failures_and_raw_traces(Path(sys.argv[1]))
+assert not any(name in sys.modules for name in ('torch', 'transformers', 'safetensors'))
+'''
+    subprocess.run([sys.executable, '-B', '-c', code, str(tmp_path)], cwd=runner.ROOT, check=True)
+
+
 def scripted_screen(examples, *, wrong_first_entity_fact=False):
     selectors = []
     groups = {}

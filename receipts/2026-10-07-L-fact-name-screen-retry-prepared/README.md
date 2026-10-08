@@ -77,3 +77,14 @@ registration hashes and unchanged-field comparison are recorded in
 `receipts/2026-10-07-L-public-task-relevance/registration-refresh.json`.
 This refresh only keeps the existing no-load dry-run guards truthful; neither
 screen was launched and no model or checkpoint was loaded.
+
+## Prepared exact initial-operation score reuse
+
+The current registration adds run-local exact initial-operation score reuse,
+with all logical calls preserved. The operation equality check is now exact
+request plus deterministic cached-score replay, weaker than two independent
+forwards; equality on hits is by construction. No retry has run. Full details,
+prior registration bytes, projection inputs and 115 passing checks are in
+`receipts/2026-10-07-L-fact-name-exact-cache-prepared/`. All cohort/statistical
+gates and 9 GiB/3 GiB/1200-second guards are unchanged. Compare paths may
+still exceed the cap; independent review and execution clearance remain.
