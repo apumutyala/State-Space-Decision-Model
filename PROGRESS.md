@@ -120,3 +120,9 @@
 - Learned: 34 is only a candidate upper bound; the article itself says common-database and author/study clustering were unquantified. No qualifying source count or L4 model evidence yet.
 - Next: tighten shared-inventory merges and recover S1 Table S3 or another independently sourced row-level set. D2 job-84ajq has only a future 17:30Z claim start in state; no live autor verification is available to C.
 - No L4 data import, held-out access, GPU order or paid work.
+
+## 2026-10-08 ~17:30Z: agent-c source-count refinement
+- Did: source audit now links direct papers for White/Dones/Jungbluth/Pacca/Schleisner/Vestas clusters; PR #224 head 3775314. The candidate upper bound is 44→36 after proposed dependency merges, then 33 after excluding three synthesis-risk citations.
+- Learned: even the 33 candidate groups are not independent/qualified; Ecoinvent and author clustering are incompletely traced, and per-study harmonized values remain in inaccessible S1 Table S3. No source values imported.
+- Stage 1: latest A/B shared report is still 17:20Z. claims/D2.lock lists future start 17:30Z, but C cannot verify the live handle; Ubuntu-24.04 still fails due missing D: WSL disk. C has not ordered or restarted work.
+- Next: inspect remaining shared-inventory overlaps, recover row-level S1/OpenEI data, and continue to wait for A/B’s actual queue snapshot. Keep GPU spend at $0.
