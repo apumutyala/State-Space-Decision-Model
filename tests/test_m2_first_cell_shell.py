@@ -200,8 +200,10 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     source = JOB.read_text()
     timed = [line for line in source.splitlines() if not line.lstrip().startswith("#") and re.search(r"\btimeout\s", line)]
     # terminal, download, guard, heldout, two verify branches, parent loop, cell, evals, report; plus the eval-only
-    # fulldev branch (mode fulldev_eval): checkpoint, the arm loop, its report
-    assert len(timed) == 13
+    # fulldev branch (mode fulldev_eval): checkpoint, the arm loop, its report; plus the stage-screen branch (replaces
+    # evals + report: screen score, its report; same number of graces per run)
+    assert len(timed) == 15
+    assert "timeout --kill-after=30s $(cap screen)m python -X utf8 -m jobs.m2_first_cell.screen score" in source
     assert "timeout --kill-after=30s $(cap checkpoint)m python" in source
     assert "timeout --kill-after=30s $(cap $PH)m python" in source
     assert all("timeout --kill-after=30s " in line for line in timed)
@@ -220,8 +222,9 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     # the parent loop executes at most twice, giving nine phase graces in one run.
     assert 9 * 30 / 60 + 3 * 15 / 60 + (60 + 30) / 60 == 6.75 < params["reserve_minutes"] == 7
     # fulldev_eval: download, guard, checkpoint, two arms, report graces + two rate guards + terminal export
-    fd = json.loads((ROOT / "jobs/m2_first_cell/job_params_fulldev_eval.json").read_text())
-    assert 6 * 30 / 60 + 2 * 15 / 60 + (60 + 30) / 60 == 5.0 < fd["reserve_minutes"] == 7
+    for mode in ("fulldev_eval", "fulldev_smoke"):
+        fd = json.loads((ROOT / f"jobs/m2_first_cell/job_params_{mode}.json").read_text())
+        assert 6 * 30 / 60 + 2 * 15 / 60 + (60 + 30) / 60 == 5.0 < fd["reserve_minutes"] == 7
 
 
 @pytest.mark.parametrize("resistant_finalizer", [False, True])
@@ -472,7 +475,7 @@ def test_runner_executes_every_phase_end_to_end(full_run):
 def test_runner_setup_ran_every_identity_check(full_run):
     o = full_run["work"] / "out"
     env = json.loads((o / "env.json").read_text())
-    assert env["wkv"] == "chunked_lean" and env["transformers"] == "5.17.0" and env["fla_gpu_verified"] is False
+    assert env["wkv"] == "chunked_lean" and env["transformers"] == "5.17.0" and env["fla_gpu_verified"] is None
     for f in ("records-verify.txt", "snapshot-verify.txt", "data-verify.txt"):
         t = (o / f).read_text()
         assert ": OK" in t and "FAILED" not in t, (f, t)

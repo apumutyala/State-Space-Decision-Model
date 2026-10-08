@@ -1,6 +1,6 @@
 # D → L interface
 
-The canonical contract is [`interfaces/DECISION_LANGUAGE_V0.md`](interfaces/DECISION_LANGUAGE_V0.md), profile 0.1.5 (base 0.1: Codex, PR #4 @ `787d64f`, approved by Track D). Profile 0.1.2 adds host-opted-in bounded exact difference under interface issue [#201](https://github.com/apumutyala/State-Space-Decision-Model/issues/201); Profile 0.1.3 adds registered conditional hypotheses under issue #205. Profile 0.1.4 adds registered non-executing plans under issue #207. Profile 0.1.5 documents finite licensed realization productions. D transport remains v0.1. This file keeps only what is not yet in that contract.
+The canonical contract is [`interfaces/DECISION_LANGUAGE_V0.md`](interfaces/DECISION_LANGUAGE_V0.md), profile 0.1.6 (base 0.1: Codex, PR #4 @ `787d64f`, approved by Track D). Profile 0.1.2 adds host-opted-in bounded exact difference under interface issue [#201](https://github.com/apumutyala/State-Space-Decision-Model/issues/201); Profile 0.1.3 adds registered conditional hypotheses under issue #205. Profile 0.1.4 adds registered non-executing plans under issue #207. Profile 0.1.5 documents finite licensed realization productions; profile 0.1.6 supports checked numeric equality in the comparison production. D transport remains v0.1. This file keeps only what is not yet in that contract.
 
 Claude's original three requests (attribution, semantic_records, policy-conditioned probabilities) have been incorporated into the canonical 0.1 text, so they are no longer listed here.
 

@@ -6,6 +6,10 @@ Use `python -m language_growth.gates --parent CHECKPOINT` for a no-load readines
 
 The [older PR triage](../plans/codex/LANGUAGE_PR_TRIAGE_20261008.md) records merged dependencies, historical folds and operator closure candidates without deleting evidence.
 
+[Learning prerequisites](LEARNING_PREREQUISITES.md) cover train-only native slot
+supervision, paired hidden/logit direction fitting and checkpoint-header
+handoffs. These prepare real fitting inputs while learned gates remain pending.
+
 An explicitly opted-in host registry can also enable `ExactDifference` for
 left-minus-right over integer/decimal Facts or host constants with identical
 units, quantity kinds and scopes. Arithmetic is exact under any ambient

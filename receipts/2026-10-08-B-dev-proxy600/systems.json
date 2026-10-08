@@ -1,0 +1,17 @@
+{
+ "stock_v1": "C:/Users/apumu/m2fc_uhxb5_out/x_cell/out/parent_arm/units-index.json",
+ "stock_v2": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/un/r1/out/index/stock/results.jsonl",
+ "r3_v1": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/un/r3f/out/index/v1/results.jsonl",
+ "r3_v2": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/un/r3f/out/index/v2/results.jsonl",
+ "r3_v2f": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/un/r3f/out/index/v2f/results.jsonl",
+ "r3_v3": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/un/r3f/out/index/v3/results.jsonl",
+ "r3_v3w": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/un/r3f/out/index/v3w/results.jsonl",
+ "r3_v3r": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/un/r3f/out/index/v3r/results.jsonl",
+ "r3_v3p": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/un/r3f/out/index/v3p/results.jsonl",
+ "r3_v3c": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/un/r3f/out/index/v3c/results.jsonl",
+ "d1_child": "C:/Users/apumu/rescore_c7pq2/dl/x_final/out/units-child-index.json",
+ "ens_arith": "C:/Users/apumu/AppData/Local/Temp/claude/ens-repro/ens-arith.jsonl",
+ "ens_geo": "C:/Users/apumu/AppData/Local/Temp/claude/ens-repro/ens-geo.jsonl",
+ "clef27b": "C:/Users/apumu/clef_d2u54_art/r/clef-index-subset/index/decide/results.jsonl",
+ "clef_flash": "C:/Users/apumu/research/CHLabs/review-artifacts/rwkv7-baseline-preserve-20261007/clef-flash-job-sgihj-results.jsonl"
+}

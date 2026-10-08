@@ -160,10 +160,10 @@ def _coordinated_fact_pair(outputs: tuple[SpeechAct, ...]) -> str:
 
 
 def _contrasted_fact_comparison(outputs: tuple[SpeechAct, ...]) -> str:
-    """Expand an unequal checked comparison into a two-sentence discourse.
+    """Expand a checked numeric comparison into a two-sentence discourse.
 
     The second sentence refers back to the first value. The connective adds
-    only quantitative contrast licensed by Compare, never cause or chronology.
+    only the quantitative relation licensed by Compare, never cause or chronology.
     """
     if (len(outputs) != 1 or outputs[0].kind != "assert"
             or not isinstance(outputs[0].content, Comparison)):
@@ -181,11 +181,12 @@ def _contrasted_fact_comparison(outputs: tuple[SpeechAct, ...]) -> str:
             or type(right.object) not in (int, Decimal)):
         raise ValueError("unsupported production operands")
     # Compare relates left to right; this clause describes right versus left.
-    inverse = {"greater_than": "less than", "less_than": "greater than"}
+    inverse = {"greater_than": "less than", "less_than": "greater than", "equal": "equal to"}
     if comparison.relation not in inverse:
         raise ValueError("unsupported production relation")
+    connective = "Likewise" if comparison.relation == "equal" else "In contrast"
     return (
-        f"{_assertion(left)} In contrast, at {_quoted(right.interval)}, "
+        f"{_assertion(left)} {connective}, at {_quoted(right.interval)}, "
         f"{_subject(right)} has value {_operand_value(right)}, "
         f"which is {inverse[comparison.relation]} the first value."
     )
