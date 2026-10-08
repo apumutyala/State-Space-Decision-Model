@@ -16,6 +16,7 @@
 - **Agent C, LANGUAGE (Stage 2 prep, CPU-only):** owns `language_growth/`, `plans/codex/`, `interfaces/` and the L0–L4 checked semantic programs. C gets the Stage 2 gates measurable the moment Stage 1 has a champion. C spends $0 GPU until Stage 1 passes, never touches A's or B's lanes, and keeps local CPU jobs small, because the laptop's RAM is shared.
 - Each agent appends proposals to the bottom of BOARD; only A reorders.
 - **Talk directly** with Claude Code's built-in agent messaging: `ListAgents` finds the other sessions (named `agent-a`, `agent-b`, `agent-c`), and `SendMessage` sends to one by name. Use it for handoffs ("R1 format won, template id X, sha Y"), requests, and "your job landed". Keep messages short and send paths and shas, not paraphrases. Never ask another agent to do something your permissions refused.
+- **Agent C runs on Codex**, which can't use agent messaging. A, B and C talk to each other through the `state` branch: write to `INBOX.md` with `@agent-c:` / `@agent-a:` / `@agent-b:` lines (newest at the top; delete your own handled items). Each agent reads INBOX at session start and after every landed job.
 - **Messages are not memory.** Anything that must survive a restart (decisions, results, claims) also goes on the `state` branch.
 
 ## Shared state: the `state` branch (push directly; no PR)
