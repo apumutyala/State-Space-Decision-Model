@@ -384,3 +384,10 @@
 - Evidence: branch head `f76b7514f99bbc06086f344dedaf103d4e85b254`; focused system tests 10/10, Torch-backed parent pin tests 59/59, py_compile/diff checks pass. PR #226 OPEN/CLEAN, GitGuardian PASS.
 - External dependency: the expected guard artifact/byte SHA/fingerprint and a Stage 1-qualified parent are still absent. INBOX specifies exact schema/fingerprint to A/B. No L1 training is authorized.
 - Live A/B last polled 20:53Z: D1 running, D2 queued on balance, D12 reported running with old log at 20:19Z; no G1 full-DEV candidate beyond 250-row smoke and no full8 result. Requested current heartbeat/gate proof. No C GPU work.
+
+## 2026-10-08 21:03Z: Agent C corrected parent-retention identity wiring
+- Did: added a hash-pinned authorization reader for distinct qualified-baseline and candidate identities. `evaluate_prepared_level` now matches the loaded candidate + checkpoint hash to the authorized child, rejects alias identities, then calls retention with the separate baseline and candidate identities before candidate inference.
+- Evidence: PR #226 head `73652634b4a8a06e09421020c30fc028de553390`, OPEN; GitGuardian is pending. Targeted gate evidence + identity tests pass (one Torch-dependent test skipped); py_compile and diff checks pass.
+- Validation limit: the full retention scorer tests could not run because `decision_index` is unavailable in system Python and `.venv-gpu`; no broad retention pass is claimed. Direct helper tests and evaluator wiring tests passed.
+- Live jobs: D1 running, D2 queued on balance, D12 status running with no log past 20:19Z. No full-DEV champion/full8 Stage 1 evidence. C spent no GPU.
+- Next: complete the prepared evaluation/test boundary with the approved artifact dependencies, then proceed to the exact C launcher only after Stage1/A-order/guard pins arrive.
