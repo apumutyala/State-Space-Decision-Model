@@ -1,9 +1,12 @@
-"""One command from a merged SHA to the exact submit_job arguments (CPU only; never submits anything).
+"""One command from a pushed SHA to the exact submit_job arguments (CPU only; never submits anything).
 
-    python -m jobs.common.launch <job> [--mode M] --sha <merged sha> --out <dir> [--data <dir>] [--allow-waived]
+    python -m jobs.common.launch <job> [--mode M] --sha <pushed sha> --out <dir> [--data <dir>] [--tests]
 
-Steps (each refuses with a non-zero exit; jobs/LAUNCH_CHECKLIST.md):
-  1. `git fetch origin agent-main`; the SHA must be an ancestor of origin/agent-main.
+Speed-first (operator 2026-10-08, COORDINATION.md): any SHA pushed to any origin branch may launch, merged or not, so
+the code that ran is always in shared history. The job's CPU test gate (step 4) is OFF by default; pass --tests to run it.
+
+Steps (each refuses with a non-zero exit):
+  1. `git fetch origin`; the SHA must be contained in some origin branch.
   2. `git -c core.autocrlf=false archive <sha>` -> code/m1 (in memory, plus a staged copy under <out>/stage).
   3. The sha's own jobs/common/lint.py on the staged tree (waived failures only with --allow-waived, recorded in submit.json).
   4. The job's CPU tests on the staged tree (every tests/ file naming jobs/<job>/ or jobs.<job>, + test_jobs_lint), in
@@ -159,14 +162,17 @@ def git(root: Path, *args: str, binary: bool = False) -> str | bytes:
     return r.stdout if binary else r.stdout.decode().strip()
 
 
-def resolve_merged(root: Path, sha: str, fetch: bool = True) -> str:
+def resolve_pushed(root: Path, sha: str, fetch: bool = True) -> str:
+    """The SHA must be on some origin branch (merged or not), so whatever runs is reproducible from shared history."""
     if fetch:
-        git(root, "fetch", "-q", "origin", "agent-main")
+        git(root, "fetch", "-q", "origin")
     full = git(root, "rev-parse", "--verify", f"{sha}^{{commit}}")
-    r = subprocess.run(["git", "-C", str(root), "merge-base", "--is-ancestor", full, "origin/agent-main"])
-    if r.returncode != 0:
-        raise LaunchError(f"{sha} is not merged into origin/agent-main (merge the PR first; launch only merged code)")
+    if not git(root, "branch", "-r", "--contains", full):
+        raise LaunchError(f"{sha} is not pushed to any origin branch (push it first; launch only shared code)")
     return full
+
+
+resolve_merged = resolve_pushed  # old name, kept for callers
 
 
 def archive(root: Path, sha: str) -> dict[str, tuple[bytes, int]]:
@@ -494,9 +500,9 @@ def submit_args(job: str, mode: str | None, p: dict, sub: dict, ctx_sha: str) ->
 
 
 def launch(job: str, sha: str, out: Path, mode: str | None = None, root: Path | None = None, fetch: bool = True,
-           data_dir: Path | None = None, allow_waived: bool = False, run_job_tests: bool = True, level: int = 19) -> dict:
+           data_dir: Path | None = None, allow_waived: bool = False, run_job_tests: bool = False, level: int = 19) -> dict:
     root = Path(root or git(Path.cwd(), "rev-parse", "--show-toplevel"))
-    full = resolve_merged(root, sha, fetch)
+    full = resolve_pushed(root, sha, fetch)
     files = archive(root, full)
     rel = params_rel(files, job, mode)
     p = json.loads(files[rel][0])
@@ -555,12 +561,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--data", type=Path, default=Path(os.environ.get("SSDM_DATA",
                                                                      Path.home() / "research/CHLabs/ssdm-data")))
     ap.add_argument("--repo", type=Path)
-    ap.add_argument("--no-fetch", action="store_true", help="tests only: trust the local origin/agent-main ref")
+    ap.add_argument("--no-fetch", action="store_true", help="tests only: trust the local origin refs")
+    ap.add_argument("--tests", action="store_true", help="also run the job's CPU test gate (off by default)")
     ap.add_argument("--allow-waived", action="store_true")
     ap.add_argument("--level", type=int, default=19)
     a = ap.parse_args(argv)
     try:
-        r = launch(a.job, a.sha, a.out, a.mode, a.repo, not a.no_fetch, a.data, a.allow_waived, True, a.level)
+        r = launch(a.job, a.sha, a.out, a.mode, a.repo, not a.no_fetch, a.data, a.allow_waived, a.tests, a.level)
     except LaunchError as e:
         print(f"REFUSED: {e}", file=sys.stderr)
         return 1
