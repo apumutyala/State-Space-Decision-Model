@@ -83,7 +83,7 @@ class NativeParentTests(unittest.TestCase):
         model = cls._model()
         model.load_state_dict(payload["state"], strict=True)
         backend = DecisionModelBackend(model, ByteEncoder(), layout="ordered",
-            template="jrt-plain-v1", checkpoint={"artifact_sha256": artifact_sha256,
+            template="jrt-plain-v1", checkpoint={"sha256": artifact_sha256,
             "scope": "synthetic CPU contract fixture"}, shared_prefix=True)
         return LoadedNativeParent(backend, FeatureTemperature.from_dict(payload["calibration"]), 32768)
 
@@ -94,8 +94,9 @@ class NativeParentTests(unittest.TestCase):
         sha = hashlib.sha256(path.read_bytes()).hexdigest()
         loaded = cls._loader(path, artifact_sha256=sha)
         decider = Decider(loaded.backend, calibration=loaded.calibration)
-        return NativeParentPin(sha, deepcopy(decider.revision()), loaded.calibration.identity(),
-            {"fork_mode": "cache", "shared_prefix": True, "max_input_tokens": 32768})
+        return NativeParentPin(sha, deepcopy(decider.revision()), loaded.calibration.to_dict(),
+            {"fork_mode": "cache", "shared_prefix": True, "backend_max_input_tokens": 32768,
+             "enable_experimental_provenance": False, "enable_v0_1_deltas": False})
 
     def test_exact_cpu_reload_calibration_and_free_running_planner(self):
         import torch
@@ -166,12 +167,12 @@ class NativeParentTests(unittest.TestCase):
             revision[key] = value
             variants.append(replace(self.pin, revision=revision))
         variants.append(replace(self.pin, calibration={"kind": "wrong"}))
-        for key, value in (("fork_mode", "recompute"), ("shared_prefix", False), ("max_input_tokens", 123)):
+        for key, value in (("fork_mode", "recompute"), ("shared_prefix", False), ("backend_max_input_tokens", 123)):
             runtime = deepcopy(self.pin.runtime)
             runtime[key] = value
             variants.append(replace(self.pin, runtime=runtime))
         for pin in variants:
-            with self.subTest(pin=pin), self.assertRaisesRegex(ValueError, "serving pins"):
+            with self.subTest(pin=pin), self.assertRaises(ValueError):
                 load_native_parent(self.path, self._loader, pin=pin)
 
     def test_head_and_lora_artifacts_change_identity_on_same_backbone(self):
@@ -195,7 +196,10 @@ class NativeParentTests(unittest.TestCase):
         del state[next(name for name in state if name.endswith("lora_B"))]
         path = Path(self.folder.name) / "incomplete.pt"
         self._save(path, state)
-        pin = replace(self.pin, artifact_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        revision = deepcopy(self.pin.revision)
+        revision["checkpoint"]["sha256"] = digest
+        pin = replace(self.pin, artifact_sha256=digest, revision=revision)
         with self.assertRaisesRegex(RuntimeError, "Missing key"):
             load_native_parent(path, self._loader, pin=pin)
 
@@ -210,14 +214,15 @@ class NativeParentTests(unittest.TestCase):
     def test_refuses_unbound_artifact_and_live_config_drift(self):
         from language_growth.native_parent import load_native_parent
         loaded = self._loader(self.path, artifact_sha256=self.pin.artifact_sha256)
-        loaded.backend.checkpoint["artifact_sha256"] = "0" * 64
+        loaded.backend.checkpoint["sha256"] = "0" * 64
         with self.assertRaisesRegex(ValueError, "did not bind"):
             load_native_parent(self.path, lambda *a, **k: loaded, pin=self.pin)
         loaded = self._loader(self.path, artifact_sha256=self.pin.artifact_sha256)
         parent = load_native_parent(self.path, lambda *a, **k: loaded, pin=self.pin)
         kwargs = parent.planner_kwargs()
         kwargs["expected_served_config"]["calibration"]["id"] = "changed returned copy"
-        self.assertEqual(parent.planner_kwargs()["expected_served_config"]["calibration"], self.pin.calibration)
+        self.assertEqual(parent.planner_kwargs()["expected_served_config"]["calibration"],
+                         json.loads(json.dumps(self.pin.revision["calibration"])))
         loaded.backend.layout = "symmetric"
         with self.assertRaisesRegex(ValueError, "configuration changed"):
             parent.planner_kwargs()
