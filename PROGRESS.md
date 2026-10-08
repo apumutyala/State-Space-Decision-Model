@@ -64,3 +64,8 @@
 - Did: checked official IPCC, NREL, NETL, EDF and JRC sources for evidence that can widen L4's independent development worlds without mixing boundaries/statistics.
 - Learned: no verified candidate collection reached 20 independent, comparable source groups. Reviewed NREL studies repeat underlying author/year families; NETL/JRC reports share inputs/boundaries; EDF is one fleet study. Details and primary URLs are plans/codex/L4_INDEPENDENT_SOURCE_AUDIT_20261008.md.
 - Next: preserve existing Stage 1 queue, seek individually attributable source cohorts for L4, and do not promote it from row/scenario replication. L0–L4 qualification still requires the real champion and four measured gates.
+
+## 2026-10-08: L4 primary-source disposition
+- Found: NREL geothermal's study rows repeat author/year families; NREL solar has a g/kg caption conflict and correlated EOL scenarios; NETL mixes noncomparable peaking/baseload; EDF is one fleet; JRC country-years share model inputs and a different boundary. Exact source inventory and citations are PR #224.
+- Did: kept all candidate values out of fixtures and evaluation suites; no benchmark/task denominator changed. #224 is an open private PR (read-only literature audit).
+- Next: add L4 facts only with source-specific boundaries and distinct originating groups. No audited source set currently meets the 20-group floor; do not infer qualification.
