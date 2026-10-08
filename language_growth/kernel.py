@@ -205,7 +205,7 @@ def _constant(ref: str, host: dict[str, Any]) -> ConstantValue:
 
 
 def _assumption(ref: str, host: dict[str, Any], by_ref: dict[str, Any], snapshot: dict[str, Any], policy: dict[str, Any], registry: dict[str, Any], catalog: dict[str, Any]) -> AssumptionValue:
-    if "Hypothesize" not in registry["allowed_ops"]:
+    if not {"Hypothesize", "ReadFact"} <= set(registry["allowed_ops"]):
         _fail("unsupported_operation")
     assumptions = host.get("assumptions", {})
     if ref not in assumptions:

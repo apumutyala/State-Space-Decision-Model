@@ -37,11 +37,12 @@ def _unit(unit: str | None) -> str:
     return "" if unit is None else " " + _quoted(unit)
 
 
-def _subject(item: Fact | ConstantValue | AssumptionValue) -> str:
+def _subject(item: Fact | ConstantValue | AssumptionValue, *, recorded_baseline: bool = False) -> str:
     if isinstance(item, AssumptionValue):
-        return _subject(item.premise)
+        return "hypothetical " + _subject(item.premise)
     if isinstance(item, Fact):
-        return f"{_quoted(item.predicate)} for {_quoted(item.subject)}"
+        prefix = "recorded baseline " if recorded_baseline else ""
+        return f"{prefix}{_quoted(item.predicate)} for {_quoted(item.subject)}"
     if isinstance(item, ConstantValue):
         return f"constant {_quoted(item.constant_ref)}"
     raise ValueError("invalid checked operand")
@@ -64,10 +65,11 @@ def _assertion(content: Fact | Comparison) -> str:
         relations = {"greater_than": "greater than", "less_than": "less than", "equal": "equal to"}
         if content.relation not in relations:
             raise ValueError("invalid checked relation")
+        conditional = any(isinstance(item, AssumptionValue) for item in (content.left, content.right))
         return (
-            f"At {_quoted(content.interval)}, the value of {_subject(content.left)} "
+            f"At {_quoted(content.interval)}, the value of {_subject(content.left, recorded_baseline=conditional)} "
             f"({_operand_value(content.left)}) is {relations[content.relation]} "
-            f"the value of {_subject(content.right)} ({_operand_value(content.right)})."
+            f"the value of {_subject(content.right, recorded_baseline=conditional)} ({_operand_value(content.right)})."
         )
     raise ValueError("invalid checked assertion")
 

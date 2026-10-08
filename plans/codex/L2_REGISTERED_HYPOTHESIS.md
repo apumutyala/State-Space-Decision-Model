@@ -22,7 +22,10 @@ No catalog record is replaced. A host with no `assumptions` behaves as before;
 at most 128 registrations are accepted. Registration is host authority and must
 never be inferred from model prose, caller task text or an extracted belief.
 
-An opted-in registry includes `Hypothesize` in `allowed_ops`. A proposal can use
+An opted-in registry includes both `Hypothesize` and `ReadFact` in `allowed_ops`.
+Resolving an assumption performs one bounded premise read of its registered
+record/field, so it independently requires `ReadFact` even if the program has
+no explicit read node. A proposal can use
 `{"assumption_ref":"atlas-sale"}` as one operand of the existing `Compare`.
 Inline values and extra keys refuse. Exact comparisons still require compatible
 types, units, scopes and quantity kinds, and a true relation under the assumption.
@@ -47,7 +50,11 @@ its conditional rendering.
 Release uses the existing process-local mint and live recheck. Its binding digest
 includes the full host assumption registry, so editing or revoking an assumption
 invalidates a cached release. The deterministic rendering starts `If` and keeps
-the conclusion inside that conditional sentence. Assumption reference strings
+the conclusion inside that conditional sentence. Comparison operands explicitly
+label the alternate value as hypothetical and a factual operand as the recorded
+baseline. This also permits comparing an alternate value with its own original
+slot without conflating those two roles or claiming external-world truth.
+Assumption reference strings
 are not rendered as prose. Existing unconditional factual reads still return the
 original values.
 

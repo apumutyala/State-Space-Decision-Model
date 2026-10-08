@@ -29,10 +29,20 @@ class HypothesisTests(unittest.TestCase):
         self.assertIsInstance(act.content, ConditionalContent)
         self.assertIsInstance(act.content.conclusion.left, AssumptionValue)
         text = render_checked(result, host, catalog)
-        self.assertEqual(text, 'If at "2026-10", "Price" for "atlas" had value 99.90 "USD", then at "2026-10", the value of "Price" for "atlas" (99.90 "USD") is less than the value of "Price" for "boreal" (149.90 "USD").')
+        self.assertEqual(text, 'If at "2026-10", hypothetical "Price" for "atlas" had value 99.90 "USD", then at "2026-10", the value of hypothetical "Price" for "atlas" (99.90 "USD") is less than the value of recorded baseline "Price" for "boreal" (149.90 "USD").')
         self.assertEqual(catalog, before)
         self.assertEqual(act.content.assumption.premise.to_dict()["object"], "199.90")
         self.assertEqual(act.to_dict()["content"]["assumption"]["epistemic_class"], "hypothesis")
+
+    def test_same_slot_counterfactual_labels_hypothetical_and_recorded_baseline(self):
+        host, catalog, proposal = fixture()
+        proposal["nodes"][0]["record_ref"] = "atlas-v1"
+        result = check_program(proposal, host, catalog)
+        self.assertEqual(result.status, "accepted")
+        text = render_checked(result, host, catalog)
+        self.assertEqual(text, 'If at "2026-10", hypothetical "Price" for "atlas" had value 99.90 "USD", then at "2026-10", the value of hypothetical "Price" for "atlas" (99.90 "USD") is less than the value of recorded baseline "Price" for "atlas" (199.90 "USD").')
+        proposal["nodes"][-1]["op"] = "Assert"
+        self.assertEqual(check_program(proposal, host, catalog).reason, "unsupported_assertion")
 
     def test_inline_model_fact_refuses(self):
         host, catalog, proposal = fixture("inline_model_fact")
@@ -60,9 +70,17 @@ class HypothesisTests(unittest.TestCase):
         self.assertEqual(check_program(proposal, host, catalog).reason, "unknown_reference")
 
     def test_assumption_requires_opt_in_and_preserves_types(self):
-        host, catalog, proposal = fixture()
-        catalog["registries"][host["registry_ref"]]["allowed_ops"].remove("Hypothesize")
-        self.assertEqual(check_program(proposal, host, catalog).reason, "unsupported_operation")
+        for operation in ("Hypothesize", "ReadFact"):
+            host, catalog, proposal = fixture()
+            catalog["registries"][host["registry_ref"]]["allowed_ops"].remove(operation)
+            # Remove the explicit read: the assumption's implicit premise read
+            # must independently require ReadFact permission.
+            proposal["nodes"] = proposal["nodes"][1:]
+            proposal["nodes"][0]["right"] = {"constant_ref": "threshold"}
+            host["query_constants"]["threshold"] = {
+                "value": "149.90", "value_type": "decimal", "unit": "USD",
+                "temporal_scope": "2026-10", "quantity_kind": "price"}
+            self.assertEqual(check_program(proposal, host, catalog).reason, "unsupported_operation")
         for key, value, reason in (("unit", "EUR", "type_unit_mismatch"),
                                    ("temporal_scope", "2026-09", "scope_mismatch"),
                                    ("quantity_kind", "shipping_cost", "type_unit_mismatch")):
