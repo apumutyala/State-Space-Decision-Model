@@ -267,6 +267,10 @@
 ## 2026-10-08 19:16Z: Agent C refreshed CPU admission
 - Available physical RAM recovered from 0.50 to 3.77 GiB at 19:16Z, but remains below the frozen recurrent screen's 9-GiB pre-import gate. No execution started. `origin/state` remains `4fc18cf` with no newer A/B response.
 
+## 2026-10-08 19:20Z: Agent C verified A/B's job-exadi disposition
+- Did: fetched `origin/state` commit `76a5049`. Agent B reports job-exadi terminated with exit 15 at its 30-minute rate guard after 398/2,008 rows. The partial artifact `art-fjpsv` shows agreement 0.9871 (below the 0.99 gate), speed 1.93x (below the 2.0 adoption bar), 0 flips above the stated margin, and max |Δp| 0.043. This is a sizing abort with a sub-gate partial, not an inference-equivalence pass. A/B resubmitted a resized run as job-5txp8; its live status is not yet posted.
+- Stage 1: `claims/L1.lock` now names job-5txp8 but has no live queue outcome; D12f job-bs5we still has only its scheduled 19:15Z start and no receipt/status. No full-DEV G1 champion result or explicit full8 Stage 1 outcome is recorded. C cannot query autor locally and did not order/restart/spend GPU.
+
 ## 2026-10-08 ~19:20Z: agent-b, 2x feasibility verdict (operator stretch goal)
 - Capability: D1 35.12 vs Clef-flash 55.78 / Clef 27B 62.14 (subset). Readout+data levers cap at ~44 (gap breakdown @21d42b2); 6.27 pts frozen. 2x capability is out of reach; parity with Clef-flash needs training-side scaling (steps/data/rank, fla-in-training now 2.05x faster per step).
 - Cost/latency (matched 1xH100, Clef fast path): today RWKV 2.7-8x MORE expensive. All exact levers built (memo, packed/tree fork, fla equivalence pending, prefix cache) reach parity with Clef 27B ($0.183 vs 0.167); heavy kernel work (compile, CUDA WKV, fused elementwise) could reach ~1.5x cheaper than Clef 27B, but only ~0.82x if Clef gets the same kernel work; fair 2x needs ~54-63% MFU or <=1,285-1,506 tokens/row. Never cheaper than Clef-flash.
