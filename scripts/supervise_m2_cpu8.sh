@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Local WSL controller for a freshly reviewed Issue #171 attempt. Never creates a bucket.
+# Local WSL controller for a freshly reviewed Issue #188 attempt. Never creates a bucket.
 # Usage: bash scripts/supervise_m2_cpu8.sh PACKAGE OUT WORKSPACE EXISTING_PRIVATE_BUCKET IMAGE
 set -Eeuo pipefail
 OUT="${2:-./cpu8-controller-failure}"

@@ -9,9 +9,9 @@ from pathlib import Path
 import sys
 import uuid
 
-MANIFEST_SHA = "a7b37eaa21d7d44c52c14f08468bd0d1efa114ac32027166e4e59bfd8ce9e17d"
-LIST_SHA = "9bd53612a49a9d367bcf19c35459d6cdbc2642aaf39b2d4ea3e210134928719a"
-FILES = ("agent-main-5aac22.bundle", "decision-index-87d4650.bundle",
+MANIFEST_SHA = "4cd83d308309efda0cca767f503b70614ed8dd2a8e945739298d7565da9bb2fc"
+LIST_SHA = "410dbca12ff3aecf3ecdf613deab023ec470d0e26cd1d010e2afea39d49ffa14"
+FILES = ("agent-main-11fb140.bundle", "decision-index-87d4650.bundle",
          "m2_first_cell-4247b340ddde.tar.zst", "package-manifest.json", "run_deadline.py",
          "run_m2_cpu8_tests.sh", "tokenizer.json", "tokenizer_config.json", "package.sha256")
 
@@ -142,7 +142,7 @@ def main(args: list[str]) -> None:
                     reports.append(report)
             require(len(reports) == 1)
             report = reports[0]
-            require(report["source_sha"] == "4247b340dddecf620de6ff22751256f4127237cb")
+            require(report["source_sha"] == "11fb140ce64802222d8abe796267e22e14fe4959")
             require(report["h100_request_submitted"] is False)
             tests = report["launcher_tests"]
             require(isinstance(tests, dict))
@@ -163,7 +163,7 @@ def main(args: list[str]) -> None:
     elif mode == "receipt":
         path, phase, file, rc, name, node_id, state, stop, run, export, elapsed, imported, command, log_rc, completed = args
         events_path = str(Path(path).parent / "transfer-events.json")
-        save(path, {"schema": "ssdm.m2_cpu8_controller.v1", "issue": 171,
+        save(path, {"schema": "ssdm.m2_cpu8_controller.v1", "issue": 188,
                     "phase": phase, "current_file": file, "rc": int(rc),
                     "node_name": name, "node_id": node_id, "node_state": state,
                     "stop_result": stop, "workload_rc": run, "export_rc": export,
@@ -171,7 +171,7 @@ def main(args: list[str]) -> None:
                     "workload_completion_verified": completed == "true",
                     "elapsed_seconds": int(elapsed), "max_retries": 0,
                     "import_outcome": imported, "hard_cap_usd": 3.0,
-                    "max_exposure_including_original_incident_usd": 2.346700,
+                    "max_exposure_including_original_incident_usd": 2.525580,
                     "transfer_events": load(events_path) if Path(events_path).exists() else []})
     else:
         raise ValueError("unknown local gate")

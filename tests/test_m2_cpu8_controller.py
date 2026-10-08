@@ -5,6 +5,7 @@ Run on WSL: python3 -m unittest discover -s tests -p test_m2_cpu8_controller.py 
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,9 +14,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-FILES = ("agent-main-5aac22.bundle", "decision-index-87d4650.bundle",
+FILES = ("agent-main-11fb140.bundle", "decision-index-87d4650.bundle",
          "m2_first_cell-4247b340ddde.tar.zst", "package-manifest.json", "run_deadline.py",
          "run_m2_cpu8_tests.sh", "tokenizer.json", "tokenizer_config.json")
 FAKE = r'''
@@ -57,11 +59,12 @@ elif a[0] == "logs":
         sys.exit(0)
     if scenario == "empty_logs": sys.exit(0)
     if scenario == "workload_failure": sys.exit(34)
-    report = {"source_sha": "4247b340dddecf620de6ff22751256f4127237cb",
+    report = {"source_sha": "11fb140ce64802222d8abe796267e22e14fe4959",
               "launcher_tests": {"skipped": 0, "passed": 71, "failed": 0},
               "junit_counts": {"tests": 71, "failures": 0, "errors": 0, "skipped": 0},
               "context_sha256": "a" * 64, "context_bytes": 1234, "h100_request_submitted": False}
     if scenario == "wrong_source": report["source_sha"] = "b" * 40
+    if scenario == "old_source": report["source_sha"] = "4247b340dddecf620de6ff22751256f4127237cb"
     if scenario == "no_junit": del report["junit_counts"]
     if scenario == "junit_failure": report["junit_counts"]["failures"] = 1
     if scenario == "all_skipped": report["junit_counts"]["skipped"] = 71
@@ -139,7 +142,7 @@ class ControllerTests(unittest.TestCase):
         result, receipt, calls, _ = self.attempt("upload_failure")
         self.assertEqual(result.returncode, 31)
         self.assertEqual(receipt["phase"], "storage_upload")
-        self.assertEqual(receipt["current_file"], "agent-main-5aac22.bundle")
+        self.assertEqual(receipt["current_file"], "agent-main-11fb140.bundle")
         self.assertEqual(receipt["node_state"], "not_created")
         self.assertEqual(receipt["stop_result"], "not_needed")
         self.assertEqual([c[:2] for c in calls], [["storage", "cp"]])
@@ -176,6 +179,8 @@ class ControllerTests(unittest.TestCase):
         result, receipt, calls, staging = self.attempt("success")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(receipt["phase"], "complete")
+        self.assertEqual(receipt["issue"], 188)
+        self.assertEqual(receipt["max_exposure_including_original_incident_usd"], 2.525580)
         self.assertEqual(receipt["stop_result"], "stopped")
         self.assertTrue(staging["storage_verified"])
         self.assertEqual(staging["storage_cost_usd"], 0)
@@ -217,7 +222,7 @@ class ControllerTests(unittest.TestCase):
                     self.assertEqual(receipt["workload_rc"], "unverified")
 
     def test_rc0_requires_the_exact_runner_post_junit_report(self):
-        for scenario in ("wrong_source", "no_junit", "junit_failure", "all_skipped",
+        for scenario in ("wrong_source", "old_source", "no_junit", "junit_failure", "all_skipped",
                          "skipped_launcher", "zero_passed", "launcher_failure", "bad_context",
                          "submitted", "duplicate_report"):
             with self.subTest(scenario=scenario):
@@ -291,6 +296,42 @@ class ControllerTests(unittest.TestCase):
 
 
 class StaticTests(unittest.TestCase):
+    def test_frozen_new_package_pins_accept_exact_metadata_and_refuse_old_or_mismatched_metadata(self):
+        receipt = ROOT / "receipts/2026-10-08-D-cpu8-package-11fb140"
+        spec = importlib.util.spec_from_file_location("package_pin_gate", ROOT / "scripts/m2_cpu8_json.py")
+        gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gate)
+        self.assertEqual(gate.sha(receipt / "package-manifest.json"), gate.MANIFEST_SHA)
+        self.assertEqual(gate.sha(receipt / "package.sha256"), gate.LIST_SHA)
+        hashes = {name: digest for digest, name in (line.split("  ") for line in
+                  (receipt / "package.sha256").read_text().splitlines())}
+        self.assertEqual(set(hashes) | {"package.sha256"}, set(gate.FILES))
+        actual_sha = gate.sha
+
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory)
+            for name in gate.FILES:
+                (package / name).write_text("synthetic payload; large artifacts verified separately")
+            # Exercise the real compiled manifest/list pins with their exact
+            # receipt bytes. Large payload hash results alone are synthetic.
+            def payload_sha(path):
+                return actual_sha(path) if path.name in ("package-manifest.json", "package.sha256") else hashes[path.name]
+
+            with patch.object(gate, "sha", side_effect=payload_sha), patch.dict(os.environ, {"CPU8_STORAGE_FREE_BYTES": "100000000000"}):
+                for name in ("package-manifest.json", "package.sha256"):
+                    shutil.copyfile(receipt / name, package / name)
+                gate.main(["package", str(package), str(package / "checked.json")])
+                self.assertEqual(len(json.loads((package / "checked.json").read_text())["files"]), 9)
+                prior = ROOT / "receipts/2026-10-08-D-cpu8-wake-sequence-failure"
+                for name in ("package-manifest.json", "package.sha256"):
+                    for bad in ((prior / name).read_bytes(), (receipt / name).read_bytes() + b"changed"):
+                        with self.subTest(name=name, old_package=bad == (prior / name).read_bytes()):
+                            (package / name).write_bytes(bad)
+                            with self.assertRaises(ValueError):
+                                gate.main(["package", str(package), str(package / "refused.json")])
+                            self.assertFalse((package / "refused.json").exists())
+                        shutil.copyfile(receipt / name, package / name)
+
     @unittest.skipUnless(sys.platform.startswith("linux"), "requires GNU sha256sum on WSL/Linux")
     def test_pinned_checksum_list_is_verified_before_payload_list(self):
         controller = (ROOT / "scripts/supervise_m2_cpu8.sh").read_text()
