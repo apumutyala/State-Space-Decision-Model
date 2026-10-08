@@ -270,7 +270,8 @@ def test_fork_features_rows_equal_per_row_fork():
 
 
 @pytest.mark.parametrize("flags", [dict(row_batch=8), dict(row_batch=3), dict(row_batch=8, act_ckpt=True),
-                                   dict(row_batch=8, row_tokens=400, act_ckpt=True)])
+                                   dict(row_batch=8, row_tokens=400, act_ckpt=True),
+                                   dict(row_batch=8, row_tokens=400, act_ckpt=True, row_plan="min_cost")])
 def test_row_batch_equals_one_row_per_call(flags):
     items = _items()
     base = _step_grads(_trainer(items))
@@ -302,6 +303,42 @@ def test_row_groups_budget_and_partition():
         assert all(len(x) * max(lens[i] for i in x) <= 8192 or len(x) == 1 for x in gs)
     assert [len(x) for x in row_groups([2048] * 8, 8, 8192)] == [4, 4]
     assert [len(x) for x in row_groups([1024] * 8, 8, 8192)] == [8]
+
+
+def test_row_groups_min_cost_partition_and_never_costlier_than_greedy():
+    import random
+
+    from train.trainer import GROUP_COST_TOKENS, row_groups, row_groups_min_cost
+
+    def cost(lens, gs):
+        return GROUP_COST_TOKENS * len(gs) + sum(len(x) * max(lens[i] for i in x) for x in gs)
+
+    # job-tvuat mix step 6: greedy pads three short rows to the 2,025-token row (10,352 padded tokens, 2 groups);
+    # min_cost runs that row alone and the other seven together (7,268 padded tokens, still 2 groups)
+    lens = [749, 563, 520, 2025, 706, 317, 248, 674]
+    assert row_groups_min_cost(lens, 8, 8192) == [[3], [0, 4, 7, 1, 2, 5, 6]]
+    assert row_groups_min_cost([1024] * 8, 8, 8192) == [list(range(8))]
+    assert row_groups_min_cost([9000, 10], 8, 8192) == [[0], [1]]
+    rng = random.Random(0)
+    for _ in range(300):
+        lens = [rng.randint(1, 2048) for _ in range(rng.randint(1, 12))]
+        rb, rt = rng.choice([(8, 8192), (3, 0), (8, 0), (4, 4096)])
+        gs = row_groups_min_cost(lens, rb, rt)
+        order = sorted(range(len(lens)), key=lambda i: -lens[i])
+        assert [i for x in gs for i in x] == order  # contiguous cuts of the same sorted order: every row once
+        assert all(len(x) <= rb and (not rt or len(x) == 1 or len(x) * lens[x[0]] <= rt) for x in gs)
+        assert cost(lens, gs) <= cost(lens, row_groups(lens, rb, rt))
+
+
+def test_row_plan_is_execution_only_and_validated():
+    from train.trainer import TrainConfig, with_execution
+
+    cfg = TrainConfig()
+    assert cfg.row_plan == "greedy" and "row_plan" not in cfg.to_json()
+    assert dataclasses.replace(cfg, row_plan="min_cost").hash() == cfg.hash()
+    assert with_execution(cfg, {"row_batch": 8, "row_plan": "min_cost"}).row_plan == "min_cost"
+    with pytest.raises(ValueError, match="row_plan"):
+        _trainer(_items(1), row_batch=8, row_plan="best")
 
 
 def test_row_batch_visits_the_same_rows_across_epoch_rollover():

@@ -96,6 +96,11 @@ class TrainConfig:
     #: with row_batch > 1: max padded tokens per call (rows x longest row of the group); 0 = no limit. A row longer
     #: than the budget runs alone. Bounds the per-call activation memory (jobs/cell_step_profile JOB_SPEC, A1).
     row_tokens: int = 0
+    #: with row_batch > 1: how the step's length-sorted rows are cut into groups. "greedy" = ``row_groups`` (fill from
+    #: the longest row). "min_cost" = ``row_groups_min_cost``: the contiguous cut of the same sorted order, under the
+    #: same row_batch / row_tokens caps, that minimises (groups x GROUP_COST_TOKENS + padded tokens). Same rows, same
+    #: per-group loss weights, so the same step gradient up to float summation order.
+    row_plan: str = "greedy"
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
 
     def to_json(self) -> dict:
@@ -111,7 +116,7 @@ class TrainConfig:
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
-    EXECUTION = ("act_ckpt", "row_batch", "row_tokens")
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan")
 
     def hash(self) -> str:
         d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
@@ -126,7 +131,36 @@ def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
     import dataclasses
 
     return dataclasses.replace(cfg, act_ckpt=bool(cell.get("act_ckpt", False)), row_batch=int(cell.get("row_batch", 1)),
-                               row_tokens=int(cell.get("row_tokens", 0)))
+                               row_tokens=int(cell.get("row_tokens", 0)), row_plan=str(cell.get("row_plan", "greedy")))
+
+
+#: fixed cost of one group (prefix + continuation call, forward + recompute + backward) in padded-token equivalents:
+#: job-tvuat ckpt_rows_lean fit over its 20 timed steps, step_s = 0.36 + 2.02 x groups + 0.462e-3 x padded tokens
+#: (r2 0.995), so 2.02 / 0.462e-3 ~ 4,400 tokens.
+GROUP_COST_TOKENS = 4400
+
+
+def row_groups_min_cost(lengths: list[int], row_batch: int, row_tokens: int = 0,
+                        group_cost: int = GROUP_COST_TOKENS) -> list[list[int]]:
+    """Like ``row_groups`` (same longest-first stable order, every group <= ``row_batch`` rows and, if ``row_tokens``
+    > 0, <= ``row_tokens`` padded tokens unless it is a single row), but the cut points minimise
+    ``group_cost x groups + padded tokens`` (exact dynamic programme over contiguous cuts of the sorted order)."""
+    order = sorted(range(len(lengths)), key=lambda i: -lengths[i])
+    n = len(order)
+    best, cut = [0] + [None] * n, [0] * (n + 1)
+    for j in range(1, n + 1):
+        for i in range(max(0, j - row_batch), j):
+            pad = (j - i) * lengths[order[i]]
+            if j - i > 1 and row_tokens and pad > row_tokens:
+                continue
+            c = best[i] + group_cost + pad
+            if best[j] is None or c < best[j]:
+                best[j], cut[j] = c, i
+    groups, j = [], n
+    while j:
+        groups.append(order[cut[j]:j])
+        j = cut[j]
+    return groups[::-1]
 
 
 def row_groups(lengths: list[int], row_batch: int, row_tokens: int = 0) -> list[list[int]]:
@@ -213,6 +247,8 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
         act_ckpt.disable_block_checkpointing(model.backbone.model)
     if cfg.row_batch < 1:
         raise ValueError(f"row_batch must be >= 1, got {cfg.row_batch}")
+    if cfg.row_plan not in ("greedy", "min_cost"):
+        raise ValueError(f"row_plan must be 'greedy' or 'min_cost', got {cfg.row_plan!r}")
     model.backbone.batch_rows = cfg.row_batch > 1
     return replaced
 
@@ -374,7 +410,8 @@ class Trainer:
                 view_lengths = [len(it.view.row.ids) if it.view is not None else 0 for it in rows]
                 groups = row_groups_with_views(base_lengths, view_lengths, self.cfg.row_batch, self.cfg.row_tokens)
             else:
-                groups = row_groups([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens)
+                plan = {"greedy": row_groups, "min_cost": row_groups_min_cost}[self.cfg.row_plan]
+                groups = plan([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens)
             for g in groups:
                 total += self._row_loss([rows[j] for j in g], len(g) / n)
             return self._finish_step(total)
