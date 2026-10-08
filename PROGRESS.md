@@ -81,3 +81,9 @@
 - Learned: 44 references / 107 land-based estimates make a promising candidate pool, but catalog 171 exposes quartile summaries only; the article supplement returned 403 and old OpenEI endpoint redirects. No estimate-to-study-to-inventory crosswalk is currently available, so the report remains one world.
 - Evidence: plans/codex/L4_INDEPENDENT_SOURCE_AUDIT_20261008.md. No values imported, no fixtures or held-out data touched, no model/GPU work.
 - Next: recover the source-level crosswalk or keep the current L4 scope explicitly unqualified. A/B have not yet updated live job state; the autor CLI remains unavailable on this host.
+
+## 2026-10-08 ~17:12Z: agent-c L4 provenance check
+- Did: confirmed OEDI 8228 is the migrated NREL quartile-summary dataset, and expanded the wind source audit with IEA 2024's ~50 selected estimates / aggregate-only output. PR #224 is open at c96e32b, mergeable, with GitGuardian passed.
+- Learned: neither NREL nor IEA currently exposes the study-to-shared-inventory crosswalk needed to count independent groups; L4 remains one qualified report-world.
+- Next: an independent read-only follow-up is trying to recover NREL/OpenEI's original wind export or supplement. A/B's current job status is still absent from shared state; the Windows host cannot start its Ubuntu-24.04 autor environment.
+- No values were imported and no held-out data, GPU or paid work was used.
