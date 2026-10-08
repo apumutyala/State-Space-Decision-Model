@@ -110,10 +110,10 @@ L4's 20-group floor.
 
 The [DOE Wind Vision 2015 Appendix J](https://www.energy.gov/documents/windvisionstudyfinalappendixbook-web150pdf)
 adds a partial bibliography: Table J-2 lists study characteristics for later
-wind-LCA updates to Dolan and Heath, while explicitly referring readers to the
-2012 review for earlier studies. It does not supply the 2012 Table S3 values
-or complete the estimate-to-inventory crosswalk, and is not an independent
-replacement for that review.
+wind-LCA updates to Dolan and Heath (citation IDs [4]–[10]), while explicitly
+referring readers to the 2012 review for earlier studies. It does not supply
+the 2012 Table S3 values or complete the estimate-to-inventory crosswalk, and
+is not an independent replacement for that review.
 
 Smallest next step: recover the old OpenEI land-based wind export or the paper's
 study-level supplemental table, then join each estimate to its primary study
