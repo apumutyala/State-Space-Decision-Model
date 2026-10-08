@@ -502,6 +502,10 @@ class Filter:
             return "frozen_family"
         if fingerprint and any(self.fp.check(rec["state"], rec["questions"]).values()):
             return "fingerprint"
+        if ch in self.index["content"]:
+            return "index_content"
+        if tk & self.index["text"]:
+            return "index_text"
         hits = [x for x in self.b1c.item_hits(rec, self.index, self.templates) if not x[3]]
         if hits:
             self.last_hit = (rec["id"], hits[0][1], hits[0][2][:120])
