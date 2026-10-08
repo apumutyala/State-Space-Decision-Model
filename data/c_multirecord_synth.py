@@ -472,6 +472,7 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
     if type(count) is not int or count < 1 or type(seed) is not int or seed < 0:
         raise ValueError("seed/count must be nonnegative/positive integers")
     check_generator(GENERATOR_SPEC)
+    print("C multirecord: held-out generator spec passed", file=sys.stderr, flush=True)
     out = Path(out)
     if out.exists():
         raise FileExistsError(f"refusing to overwrite existing build: {out}")
@@ -499,6 +500,7 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
     tokenizer, encoder = _load_encoder(tokenizer_dir)
     if "torch" in sys.modules:
         raise GenerationError("Torch import forbidden")
+    print(f"C multirecord: tokenizer loaded; generating {count} records", file=sys.stderr, flush=True)
 
     files = []
     streams = []
@@ -610,6 +612,8 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
                                            "max_effective_prompt_tokens": record_max,
                                            "serialized_record_tokens": serialized_record_tokens}) + b"\n")
             records_checked += 1
+            if records_checked % 1000 == 0:
+                print(f"C multirecord: checked {records_checked}/{count}", file=sys.stderr, flush=True)
     finally:
         for stream in streams:
             stream.close()
