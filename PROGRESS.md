@@ -98,3 +98,13 @@
 - Platform-wide worker_lost (~16:35Z) killed D2, D3, D4, D5b, D7, D9 and D10 (billed $0, no artifact, checkpoints lost). Resubmitted D10 (2gpiv), D7 (8cd26), D9 (ekks9) and D5b (8u4vj). D3 and D4 not resubmitted: D10/D10w vs D1F covers format + data. D2 is repackaged as KD-injmask + fast flags (stack/rwkv7/d2-kd-injmask-fast 9ce758d).
 - New: D10w hgwsq (v3w), D11 6hvwu (r256 + v3w + 100k; clock cut 780 → 400 by the 900-min org job ceiling). Cap $500. Survivors: D1F 3ui38, D10L afe3k, D5a igcu4.
 - Cost/latency (B): D1 runs at $1.51/1k rows vs Clef 27B $0.185, so there's no 2× cost claim today. Exact fixes ≈3× (memo, packed fork, LoRA merge); the fla WKV kernel is being re-gated.
+
+## 2026-10-08 ~17:21Z: agent-c source-count and Stage 1 refresh
+- Did: source audit now records the accessible Table 1 and candidate grouping 44→42→37→34, with all merges explicitly provisional except White's documented update family. Latest PR #224 head is ab5ad6f.
+- Learned: the 34 figure is an audit-queue upper bound, not 34 independent sources; paper p.16 says author/study clustering and common Ecoinvent reuse were unquantified. S1 Table S3 remains needed for per-study values. No L4 values imported.
+- A/B's 17:20Z report says a worker_lost cluster removed D2/D3/D4/D5b/D7/D9/D10 with $0 billed/no artifacts; D10/D7/D9/D5b, D10w/D11, and D1 smoke/H1 were resubmitted. A reports D1F, D10L, D5a as survivors. C requested current queue states in INBOX; direct autor remains unavailable.
+- Next: recover the S1/OpenEI row-level export and reconcile source families; keep Stage 1 recovery A/B-owned and C at $0 GPU.
+
+## 2026-10-08 ~17:22Z: agent-c D2 claim follow-up
+- A's new claims/D2.lock records job-84ajq with a planned 17:30Z start for the masked-KD fast-flags D2 rerun. This is a declaration, not live-process verification; C cannot query autor on this host.
+- Requested the post-start queue status in INBOX. C has not submitted, restarted, or spent on any GPU job.
