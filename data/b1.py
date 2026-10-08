@@ -49,7 +49,7 @@ VIEW_SEP = "~view:"
 # Family -> (area group, kind, source). kind: native = an existing guarded record (option order re-drawn so the gold's
 # canonical position is uniform; injected records keep their ids because the injected text names an option id);
 # k16 = 16-option intent shortlist view; catalog / catalog_long = Glaive tool-catalog expansion with opaque
-# (API-Bank-style) ids to K uniform in 4..16 / 17..40; *_full = the native full-catalog intent row (K 77 / 151, as the
+# (API-Bank-style) ids to K uniform in 4..16 / 17..32 (long: capped by a char budget so the row fits T<=2048); *_full = the native full-catalog intent row (K 77 / 151, as the
 # Index presents it); external = a row of the --families-dir build. Source items are split between the families of
 # one source by a fixed id hash (``_role``), so a view and a native row of the same item never co-occur.
 FAMILIES: dict[str, tuple[str, str, str]] = {
@@ -274,16 +274,33 @@ def intent_k16_view(rec: dict, seed: int) -> dict | None:
 NO_TOOL = "do not call a tool now (answer, ask for missing details, or decline)"
 
 
-def glaive_catalog_view(rec: dict, donors: list[dict], k: int, seed: int, tag: str) -> dict | None:
+def tool_field(state: Any) -> str | None:
+    """The state key holding the published tool list (the renderer renames ``tools`` to a synonym)."""
+    if not isinstance(state, dict):
+        return None
+    for key, v in state.items():
+        if isinstance(v, list) and v and all(isinstance(t, dict) and isinstance(t.get("name"), str) for t in v):
+            return key
+    return None
+
+
+#: char budget of a long-catalog view (measured: 6,400 chars put half the views over T=2,048; the K/T filter decides)
+LONG_VIEW_CHARS = 5600
+
+
+def glaive_catalog_view(rec: dict, donors: list[dict], k: int, seed: int, tag: str,
+                        char_budget: int | None = None, min_k: int | None = None) -> dict | None:
     """Glaive tool choice with the published catalog expanded to ``k`` options by tools of OTHER dialogues (names
     and descriptions distinct from every tool of this record), opaque ids (API-Bank-style), gold uniform."""
     sc = single_choice(rec)
     if sc is None or rec["source"] != "glaive_fc" or not isinstance(rec["state"], dict):
         return None
     qid, q = sc
-    tools = rec["state"].get("tools")
-    if not isinstance(tools, list) or not tools:
+    field = tool_field(rec["state"])
+    if field is None:
         return None
+    tools = rec["state"][field]
+    size = len(canonical({"s": rec["state"], "q": rec["questions"]}))
     names = {t.get("name") for t in tools}
     descs = {t.get("description") for t in tools}
     rng = random.Random(f"b1-cat:{seed}:{tag}:{rec['id']}")
@@ -297,20 +314,25 @@ def glaive_catalog_view(rec: dict, donors: list[dict], k: int, seed: int, tag: s
         t = donors[j]
         if t["name"] in seen or t.get("description") in descs:
             continue
+        if char_budget is not None and size + len(canonical(t)) + 40 > char_budget:
+            if min_k is not None and len(q["criteria"]) + len(extra) >= min_k:
+                break
+            continue
         seen.add(t["name"])
         extra.append(t)
+        size += len(canonical(t)) + 40
         if len(extra) >= need:
             break
-    if len(extra) < need:
+    if len(extra) < need and (min_k is None or len(q["criteria"]) + len(extra) < min_k):
         return None
     out = json.loads(json.dumps(rec))
     new_tools = tools + extra
     rng.shuffle(new_tools)
-    out["state"]["tools"] = new_tools
+    out["state"][field] = new_tools
     options = list(q["criteria"].items()) + [(f"x{i}", t["name"]) for i, t in enumerate(extra)]
     out2 = relabel_uniform(out, qid, options, rec["labels"][qid], rng, style="opaque")
     out2["id"] = rec["id"] + VIEW_SEP + tag
-    out2["aug"]["b1_view"] = {"kind": tag, "parent_id": rec["id"], "k": k}
+    out2["aug"]["b1_view"] = {"kind": tag, "parent_id": rec["id"], "k": len(options)}
     return out2
 
 
@@ -496,7 +518,7 @@ def _role(source: str, rid: str, seed: int) -> str | None:
 
 def _catalog_k(rid: str, seed: int, long: bool = False) -> int:
     h = int(digest(f"b1-k:{seed}:{rid}")[:8], 16)
-    return 17 + h % 24 if long else 4 + h % 13  # uniform in 17..40 / 4..16
+    return 17 + h % 16 if long else 4 + h % 13  # target uniform in 17..32 (capped by the char budget) / 4..16
 
 
 def candidates(idx: dict, ex: dict, seed: int) -> dict[str, list[str]]:
@@ -587,14 +609,15 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
     for rid in sorted(set().union(*(cands.get(f, []) for f in ("glaive_native", "glaive_catalog16",
                                                                    "glaive_catalog_long")))):
         if rid in lines:
-            for t in json.loads(lines[rid])["state"].get("tools", []):
+            st0 = json.loads(lines[rid])["state"]
+            for t in (st0.get(tool_field(st0)) or [] if tool_field(st0) else []):
                 if isinstance(t, dict) and t.get("name") and t["name"] not in names:
                     names.add(t["name"])
                     donors.append(t)
     donors.sort(key=lambda t: digest(f"b1-donor:{seed}:{t['name']}"))
     # long catalogs must fit the T<=2048 rung: draw their donors from the shorter half of the tool schemas
     short = sorted(donors, key=lambda t: (len(canonical(t)), digest(f"b1-donor:{seed}:{t['name']}")))
-    short_donors = sorted(short[: max(1, len(short) // 2)], key=lambda t: digest(f"b1-donor:{seed}:{t['name']}"))
+    short_donors = sorted(short[: max(1, len(short) // 4)], key=lambda t: digest(f"b1-donor:{seed}:{t['name']}"))
     chosen: dict[str, list[dict]] = {}
     order = ["factchange", "glaive_native", "glaive_catalog16", "glaive_catalog_long", "toolace", "when2call",
              "gsm8k", "banking77_k16", "clinc150_k16", "banking77_full", "anli", "hellaswag", "winogrande", "sst5", "nq", "boolq", "mmlu_aux", "humicroedit_s1",
@@ -657,7 +680,7 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
                     rec = None if inj else glaive_catalog_view(base, donors, _catalog_k(rid, seed), seed, "cat16")
                 elif kind == "catalog_long":
                     rec = None if inj else glaive_catalog_view(base, short_donors, _catalog_k(rid, seed, True), seed,
-                                                               "catlong")
+                                                               "catlong", char_budget=LONG_VIEW_CHARS, min_k=17)
                 elif fam.endswith("_full"):
                     rec = base if inj else rebalance(base, seed, styles=("letters", "digits"))
                 else:
