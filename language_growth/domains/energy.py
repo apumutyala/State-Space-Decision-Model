@@ -225,7 +225,7 @@ def public_energy_answer(task_input: str, proposal: dict, document: dict,
         domain = ", ".join(json.dumps(item["technology"], ensure_ascii=True) for item in module["rows"])
         finding = (f"{technology} has the unique lowest reported median among the listed technologies "
                    f"({domain}): " if proposal["op"] == "LowestMedian"
-                   else f"{technology}: ")
+                   else f"{technology}: reported median ")
         text = (f"IPCC AR5 (2014), Table A.III.2; lifecycle including albedo effect. "
                 f"{finding}{median} {UNIT}. Reported minimum {minimum}, maximum {maximum} {UNIT}; "
                 "these are literature summary statistics, not a confidence interval or a current plant estimate. "
