@@ -1,0 +1,36 @@
+{
+  "base_commit": "cce4387aa60daa17d53b8214816197e40c301509",
+  "command": "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -X utf8 -B -m pytest -q -p no:cacheprovider tests/test_m2_serving_export.py tests/test_jobs_lint.py",
+  "cost_usd": 0,
+  "data": "synthetic metadata strings and hashes only; no dataset or model weights",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "hardware": "local CPU, Python 3.12.13",
+  "interface_issue": "https://github.com/apumutyala/State-Space-Decision-Model/issues/185",
+  "no_gpu_or_provider_work": true,
+  "no_index_or_heldout_access": true,
+  "no_model_inference_or_training": true,
+  "no_model_weights_or_checkpoint_access": true,
+  "raw_predictions": null,
+  "remaining": "independent interface review before merge; strict D artifact loader (#144/#79), native runtime/sha convention reconciliation and calibration identity JSON normalization in the planner remain separate",
+  "result": {
+    "elapsed_seconds": 2.11,
+    "git_diff_check": "passed",
+    "passed": 77,
+    "runs": 1,
+    "spread": null
+  },
+  "schema": "ssdm.m2.serving_bundle_contract_receipt.v1",
+  "scope": "versioned additive artifact metadata, real FeatureTemperature JSON reconstruction/proof/identity checks, metadata-only gate report assembly; no strict weight loader or qualified-parent result",
+  "seeds": "not applicable; no stochastic model computation",
+  "source_commit": "d9de55d269ce816e27b2c1ddba959e3ff9862b88",
+  "source_sha256": {
+    "interfaces/M2_SERVING_BUNDLE_V1.md": "fd7ef31b4132e458683cc4a4344ede362e90c834205080743fa434306407513d",
+    "tests/test_m2_serving_export.py": "975221507c5494104d21149612760fafa4da8811a4be15d908d862eca6d2c005",
+    "train/m2_gates.py": "1bac45e356212bb3c53152c59598581cd777903915d8e6cdf4b9e2987b2bea44",
+    "train/serving_export.py": "a27ac9918b533304e74dcb404fdb5d895c718d3eec25eab232beda5f9d6411be"
+  },
+  "unchanged": "canonical decide envelope, training/scoring/calibration behavior, existing gate-report fields, promotion gates"
+}
