@@ -35,6 +35,11 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
           **{f"q9_feature_cache_{p}": f"jobs/q9_feature_cache/job_params_{p}.json"
              for p in ("stock_dev", "stock_train", "conv1_dev", "conv1_train", "e5_dev", "e5_train")},
           **{f"q9af_cell_{p}": f"jobs/q9af_cell/job_params_{p}.json" for p in ("parent", "cell_r64", "cell_r256")}}
+#: m2_first_cell modes (first_cell_job.sh <mode>) register by discovery as m2_first_cell_<mode>, so a new variant adds
+#: no line here: its job_params_<mode>.json is priced and capped like every entry above (the lint's DECISION_TREE.md
+#: registration and JOB_SPEC worst-case checks still apply).
+PARAMS.update({f"m2_first_cell_{f.stem[len('job_params_'):]}": f"jobs/m2_first_cell/{f.name}"
+               for f in sorted((ROOT / "jobs/m2_first_cell").glob("job_params_*.json"))})
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here. Clef baseline (JOB_SPEC):
 #: A ran as job-sgihj ($1.40, in SPENT_USD); C (27B, job A shape) is superseded for the Index by clef_index_subset +
 #: clef_index_full (PARAMS); B (Clef-flash GCG, $29.70 one-attempt ceiling) is still planned.
@@ -62,8 +67,21 @@ def worst_case_usd(p: dict) -> float:
 
 
 def single_attempt_usd(p: dict) -> float:
-    """What validate_job reports as max_cost_usd (one running attempt)."""
+    """One running attempt at the billed rate. This WAS validate_job's max_cost_usd (2026-10-06: qual 180 min -> $8.91);
+    from 2026-10-08 the platform quotes at QUOTE_USD_PER_MIN instead (quoted_max_cost_usd)."""
     return round(p["max_duration_minutes"] * p["batch_usd_per_min"], 2)
+
+
+#: The platform's quoted max_cost_usd on 2026-10-08 is max_duration x $0.063/min with the build excluded, exact to the
+#: cent for both live jobs: job-i3buq 637 min -> $40.13, job-zpyis 828 min -> $52.16 (build-inclusive at ~$0.058 fits
+#: neither: 888 x 0.0576 = $51.13). The last billed receipt is still $0.0495/min (job-2xe5w, 2026-10-07: 26,341,700
+#: micro-$ / 31,930 s), so batch_usd_per_min stays; re-check against the first charged receipt priced after 2026-10-08.
+QUOTE_USD_PER_MIN = 0.063
+
+
+def quoted_max_cost_usd(p: dict) -> float:
+    """What validate_job / submit_job quote as max_cost_usd (one attempt, build excluded); the workspace cap must clear it."""
+    return round(p["max_duration_minutes"] * QUOTE_USD_PER_MIN, 2)
 
 
 def expected_usd(p: dict) -> float | None:
@@ -204,6 +222,7 @@ def main():
     for k in PARAMS:
         p = load(k)
         rows[k] = {"worst_case_usd": worst_case_usd(p), "single_attempt_usd": single_attempt_usd(p),
+                   "quoted_max_cost_usd": quoted_max_cost_usd(p),
                    "expected_usd": expected_usd(p), "hard_cap_usd": p["hard_cap_usd"], "cap_ok": cap_ok(p),
                    "schedule_ok": schedule_ok(p)}
     print(json.dumps({"jobs": rows, "ledger": branch_ledger()}, indent=1))
