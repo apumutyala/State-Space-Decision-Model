@@ -55,3 +55,27 @@ names/shapes/dtypes. It reconstructs no model, restores no optimizer, validates
 no tensor values, and supplies no Stage 1 qualification. A/B can preserve this
 small artifact alongside the full serving/calibration/runtime export. D1's
 locally available `cell.json` alone is insufficient for strict admission.
+
+## Strict trainable-parent reconstruction
+
+`language_growth.trainable_parent.load_qualified_trainable_parent` is the
+training-side counterpart to `load_qualified_parent`. It validates the pinned
+Stage 1 report and qualification first, then uses the strict RWKV7 M2 loader to
+verify the exact checkpoint, snapshot inventory, backbone lineage, WKV
+implementation, LoRA inventory and trainable tensors. It returns the restored
+model before `NativeParent` switches it to inference mode and freezes it.
+
+The companion `build_prepared_language_trainer` binds already-prepared rows to
+that restored model with `Trainer(prepared=True)`, requires the child config
+hash and execution settings to match the parent, and preserves the LoRA module
+inventory in the next checkpoint. These helpers do not start training or
+authorize a run. A future L1 runner still needs the pinned fit-only preflight,
+a complete split guard whose full contents match an independently supplied
+fingerprint, world-disjoint items, resource and A-order gates, plus a receipt
+binding the child to this Stage 1 parent identity. The helper checks the
+guard's structure and exact fingerprint; the expected fingerprint must be
+provided from a separately reviewed A/B artifact, not computed from the same
+untrusted object. No such C guard pin or Stage 1 parent is present in the
+current preflight. The generic
+`train.run_cell.load_parent_backbone` loads stock snapshot weights and is not a
+substitute for this checkpoint-bound path.

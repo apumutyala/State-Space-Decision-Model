@@ -157,6 +157,58 @@ def _runtime(loaded: LoadedNativeParent) -> dict[str, Any]:
             "enable_v0_1_deltas": loaded.enable_v0_1_deltas}
 
 
+def _verify_loaded_native_parent(loaded: LoadedNativeParent, pin: NativeParentPin,
+                                 decider: Decider | None, *, validate_pin: bool) -> Decider:
+    if validate_pin:
+        pin = deepcopy(pin)
+        _validate_pin(pin)
+    if not isinstance(loaded, LoadedNativeParent) or not isinstance(loaded.backend, DecisionModelBackend):
+        raise TypeError("native parent loader must return LoadedNativeParent with DecisionModelBackend")
+    if not isinstance(loaded.calibration, FeatureTemperature):
+        raise TypeError("native parent loader must supply explicit supported calibration")
+    if _checkpoint_digest(loaded.backend.checkpoint) != pin.artifact_sha256:
+        raise ValueError("native parent loader did not bind the pinned artifact")
+    if decider is None:
+        decider = Decider(loaded.backend, calibration=loaded.calibration,
+                          backend_max_input_tokens=loaded.backend_max_input_tokens,
+                          enable_experimental_provenance=loaded.enable_experimental_provenance,
+                          enable_v0_1_deltas=loaded.enable_v0_1_deltas)
+    if (_json(decider.revision()) != _json(pin.revision)
+            or _json(decider.calibration.to_dict()) != _json(pin.calibration)
+            or _json(_runtime(loaded)) != _json(pin.runtime)
+            or decider.backend_max_input_tokens != pin.runtime["backend_max_input_tokens"]
+            or decider.enable_experimental_provenance != pin.runtime["enable_experimental_provenance"]
+            or decider.enable_v0_1_deltas != pin.runtime["enable_v0_1_deltas"]):
+        raise ValueError("native parent serving pins do not match loader result")
+    # revision() is cached by the backend. Check live configuration, capture
+    # point and layer as well as the exported revision identity.
+    backend = loaded.backend
+    revision = pin.revision
+    from train.lineage import backbone_config_identity
+
+    backbone_config = backbone_config_identity(backend.model.backbone)
+    pinned_backbone = revision["backbone"]
+    if (backend.layout != revision["layout"]
+            or _json(backend.template.identity()) != _json(revision["prompt_template"])
+            or _json(backend.encode.identity()) != _json(revision["encoder"])
+            or _json(backend.checkpoint) != _json(revision["checkpoint"])
+            or _json(backbone_config) != _json(
+                {key: pinned_backbone.get(key) for key in backbone_config})):
+        raise ValueError("native parent backend configuration changed")
+    return decider
+
+
+def validate_loaded_native_parent(loaded: LoadedNativeParent, pin: NativeParentPin,
+                                  decider: Decider | None = None) -> Decider:
+    """Validate the full serving identity without freezing the reconstructed model.
+
+    Shared by inference admission and the language-training initializer. The
+    caller may keep the returned model trainable; no ``eval`` or grad mutation
+    happens here.
+    """
+    return _verify_loaded_native_parent(loaded, pin, decider, validate_pin=True)
+
+
 class NativeParent:
     """Pinned inference provider plus the planner arguments derived from its pins."""
 
@@ -167,34 +219,15 @@ class NativeParent:
                                 backend_max_input_tokens=loaded.backend_max_input_tokens,
                                 enable_experimental_provenance=loaded.enable_experimental_provenance,
                                 enable_v0_1_deltas=loaded.enable_v0_1_deltas)
-        self._check_pins()
+        validate_loaded_native_parent(self._loaded, self._pin, decider=self._decider)
         loaded.backend.model.eval()
         loaded.backend.model.requires_grad_(False)
 
     def _check_pins(self) -> None:
-        backend = self._loaded.backend
-        if (_json(self._decider.revision()) != _json(self._pin.revision)
-                or _json(self._decider.calibration.to_dict()) != _json(self._pin.calibration)
-                or _json(_runtime(self._loaded)) != _json(self._pin.runtime)
-                or self._decider.backend_max_input_tokens != self._pin.runtime["backend_max_input_tokens"]
-                or self._decider.enable_experimental_provenance != self._pin.runtime["enable_experimental_provenance"]
-                or self._decider.enable_v0_1_deltas != self._pin.runtime["enable_v0_1_deltas"]):
-            raise ValueError("native parent serving pins do not match loader result")
-        # revision() is cached by the backend. Check the live configuration,
-        # capture point and layer too; do not rehash full backbone weights on
-        # each planner slot.
-        revision = self._pin.revision
-        from train.lineage import backbone_config_identity
-
-        backbone_config = backbone_config_identity(backend.model.backbone)
-        pinned_backbone = revision["backbone"]
-        if (backend.layout != revision["layout"]
-                or _json(backend.template.identity()) != _json(revision["prompt_template"])
-                or _json(backend.encode.identity()) != _json(revision["encoder"])
-                or _json(backend.checkpoint) != _json(revision["checkpoint"])
-                or _json(backbone_config) != _json(
-                    {key: pinned_backbone.get(key) for key in backbone_config})):
-            raise ValueError("native parent backend configuration changed")
+        # ``_pin`` is an owned deep copy validated at construction. Keep the
+        # same live-state checks without rebuilding its calibration object on
+        # every planner slot.
+        _verify_loaded_native_parent(self._loaded, self._pin, self._decider, validate_pin=False)
 
     def planner_kwargs(self) -> dict[str, Any]:
         self._check_pins()
