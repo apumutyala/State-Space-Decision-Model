@@ -399,3 +399,52 @@ submit_job(chip="h100", chip_count=1, mission="m2-fla-rwkv7-kernel", idempotency
           "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"},
                      "interval_s": 300, "grace_period_s": 600, "fail_threshold": 2, "on_fail": "kill"}})
 ```
+
+## Mode `infer_equiv` (`fla_job.sh infer_equiv`, `job_params_infer_equiv.json`). Spec only, NOT submitted
+
+**Why.** `analysis/FLA_WKV_NUMERICS_2026-10-08.md`, Recommendation (a): job-mden7's rejection came from a clause that
+no bf16 tensor-core kernel can pass (fla vs the fp32-input `chunked` path, per tensor). For INFERENCE, the question is
+whether fla changes decisions. This mode re-gates fla for the readout only, at the Index level. The training gate
+(rule v2) is unchanged and still decides training use.
+
+**Rule `fla-infer-equiv-v1`** (`jobs/fla_rwkv7/infer_equiv.py`; constants pinned by `tests/test_fla_infer_equiv.py`;
+committed before any run). The reference is the production `chunked` path. One process loads stock
+RWKV7-G1k-13.3B once and builds the production readout exactly as `ReadoutIndexEngine(family=rwkv7-hf-g1-v2)` does
+(`G1V2Backend`, template `jrt-rwkv-g1-v2`, the job-zhyvg stock readout). Every row of the 2,008-row DEV subset is scored
+through both WKV paths, **interleaved per row**: the WKV is switched on the one loaded model by config before each call,
+and the order alternates (even rows chunked first, odd rows fla first). **EQUIVALENT_FOR_INFERENCE** iff all hold:
+- argmax agreement >= `AGREE_MIN` = 0.99 of questions (raw T = 1 probabilities; a row whose status differs between the
+  two paths counts all its questions as disagreements);
+- zero flips where the reference top-1 minus top-2 margin > `MARGIN_FLIP` = 0.05 (status-mismatch questions count);
+- the paired ΔIndex (fla − chunked) 95% CI contains 0 with max(|lo|, |hi|) <= `CI_BOUND_MAX` = 0.5. It comes from
+  `python -m jobs.common.dev_subset compare`, which calls the frozen `harness.score.decompose` and
+  `harness.bootstrap.compare` (B = 2000, seed 0). Nothing is re-implemented;
+- every probability, wall time and CI value is finite;
+- zero fla fallbacks (`heads.rwkv7_wkv.FALLBACKS`), and fla was called on every ok fla row.
+
+Anything else on complete data is **NOT_EQUIVALENT**. **INCONCLUSIVE** means the measurement is incomplete: rows are
+missing (deadline or crash), there is no compare, or fla never ran. No verdict is given on a partial subset.
+
+**Reported, not gating:** max and p99 |dp|; flips by length bucket (<2k, 2–8k, >=8k tokens of the row's longest model
+call); rows/min for each path (sum of per-row `decide` wall time). **`adopt_for_inference`** = EQUIVALENT_FOR_INFERENCE
+and a rows/min ratio (fla / chunked) >= `SPEED_ADOPT` = 2.0. The optional D1 tail is not implemented.
+
+**GPU_VERIFIED.** It is not flipped. `select_arm` passes `allow_unverified=True` only when `SSDM_FLA_INFER_EQUIV=1`, and
+only this mode of `fla_job.sh` exports it. No training path, loader default or cell config changes.
+
+| Phase | Cap (min) | Content | Fail |
+|---|---|---|---|
+| setup | 2 | pins, fla 0.5.2 by hash, fla #640 guard, kit import, DEV rows sha256, subset rows; snapshot download + `sha256sum -c` + vendored-code check start in the background | 5 / 10 |
+| warmup | 5 | fla fwd compile + autotune, variant `fla`, bf16, shapes (B, T) = (1, 2048), (1, 1000), (1, 1), (8, 1000) | 7 / 30 |
+| download_wait | 1 | wait for the background snapshot job | 10 |
+| score | 30 | load + both paths interleaved under `rate_guard run-weighted` (check after 6 min); budget = time left before max_duration − reserve − report, so unused earlier caps carry over; the scorer stops before its deadline | 15 / 7 / 36 |
+| report | 1 | `dev_subset compare` (a failure gives INCONCLUSIVE), `infer_equiv decide` -> `decision_infer.json` | 9 |
+
+Caps 39 + reserve 1 = 40 = `max_duration_minutes`. Expected: chunked ~20.3 min (job-zhyvg: 98.7 rows/min), fla ~8–10,
+load 1.5, warmup ~3.5, setup 1.5. That is ~37 run minutes, ~$2.57 with a 15-minute build. **Worst case
+(60 + 1 x 40) x 0.0495 = $4.95**: `max_restarts` 0 and `assumed_restart_floor` 0 (one attempt). The lint requires a
+60-minute build (L-09), and with the usual floor of 1 the worst case would be $6.93, above the $5 ceiling. Hard cap $5.
+
+Exit codes: 0 decided (any verdict) | 5 setup | 6 export | 7 timeout | 9 decision invalid | 10 snapshot / DEV rows /
+vendored code | 15 measured rate too slow | 30 warmup crashed | 36 score crashed | 1 finalize. Marker
+`/output/FLA_RWKV7_INFER_EQUIV_DONE`.

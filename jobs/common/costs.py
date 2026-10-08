@@ -25,6 +25,7 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
           "rwkv7_readout": "jobs/rwkv7/job_params_readout.json", "rwkv7_readout_g1v2": "jobs/rwkv7/job_params_readout_g1v2.json",
           "rwkv7_lora": "jobs/rwkv7/job_params_lora.json",
           "fla_rwkv7": "jobs/fla_rwkv7/job_params.json", "fla_rwkv7_truth_v2": "jobs/fla_rwkv7/job_params_truth_v2.json",
+          "fla_rwkv7_infer_equiv": "jobs/fla_rwkv7/job_params_infer_equiv.json",
           "cell_step_profile": "jobs/cell_step_profile/job_params.json",
           "perf_step_gate": "jobs/perf_step_gate/job_params.json",
           "clef_index_subset": "jobs/clef_baseline/job_params_index_subset.json",

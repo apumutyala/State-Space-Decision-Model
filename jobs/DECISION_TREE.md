@@ -32,6 +32,7 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | rwkv7 C1 (stock readout through the vendor-compliant jrt-rwkv-g1-v2 template, DEV subset only) | `jobs/rwkv7/job_params_readout_g1v2.json` `JOB=readout_g1v2` | $14.36 | $15 | ~$2.50 |
 | fla_rwkv7 (fla chunk_rwkv7 gate, v1 rule; ran as job-jn47u) | `jobs/fla_rwkv7/` | $3.96 | $4.50 | ~$1.09 |
 | fla_rwkv7 truth_v2 (RULE v2 + A1: fp64-truth numerics, m2 cell train speed; `fla_job.sh truth_v2`) | `jobs/fla_rwkv7/job_params_truth_v2.json` | $5.74 | $6 | ~$1.19 |
+| fla_rwkv7 infer_equiv (INFERENCE-ONLY re-gate, rule fla-infer-equiv-v1: stock G1k-13.3B g1-v2 readout on the DEV subset, chunked vs fla interleaved per row in one process; `fla_job.sh infer_equiv`) | `jobs/fla_rwkv7/job_params_infer_equiv.json` | $4.95 (one attempt) | $5 | ~$2.57 |
 | cell_step_profile (m2 cell train step: baseline / ckpt_rows_lean / ckpt_rows / ckpt; pre-registered rule v1-A2) | `jobs/cell_step_profile/` | $8.22 | $8.50 | ~$1.59 |
 | perf_step_gate (m2 cell train step: greedy / min_cost / +single-cont / +compile_blocks; pre-registered rule v1; stack/rwkv7/perf-step) | `jobs/perf_step_gate/` | $8.42 | $8.50 | ~$1.43 |
 | full8 (all 8 layers -> GDN, Q9-AF; priced from job-5cmat's measured phases; rule pre-registered at be9eed8; issue #87) | `jobs/full8/` | $84.65 | $85 | ~$27.87 |
