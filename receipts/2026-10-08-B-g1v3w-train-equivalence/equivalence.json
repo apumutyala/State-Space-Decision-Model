@@ -1,0 +1,325 @@
+{
+ "template": "jrt-rwkv-g1-v3w",
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/sample-150000-seed20261006/records.jsonl.gz",
+ "n_records": 513,
+ "n_rows": 969,
+ "rows_by_k": {
+  "<=16": 869,
+  "17-255": 100,
+  ">255": 0
+ },
+ "families": {
+  "continuation": 24,
+  "factchange_delivery": 24,
+  "factchange_rating": 2,
+  "factchange_renewal": 24,
+  "factchange_schedule": 24,
+  "factchange_spend_limit": 24,
+  "factchange_stock": 12,
+  "fill_blank": 24,
+  "humor_pair": 24,
+  "humor_score": 12,
+  "intent_banking": 24,
+  "intent_general": 24,
+  "math_mcq": 24,
+  "mcq": 24,
+  "multi": 39,
+  "nli": 24,
+  "response_select": 24,
+  "retrieval": 72,
+  "sentiment_score": 12,
+  "tool_multi": 12,
+  "tool_select": 24,
+  "yesno_passage": 12,
+  "null": 4
+ },
+ "row_kinds": {
+  "word_id": 399,
+  "catalog_chars=None": 16,
+  "dict_instruction": 369,
+  "code": 447,
+  "code+key": 123,
+  "catalog_chars=64": 106,
+  "catalog_chars=24": 1
+ },
+ "gold_hist": {
+  "jrt-rwkv-g1-v3w": {
+   "position": {
+    "17-255": {
+     "0": 23,
+     "1": 16,
+     "2": 26,
+     "3": 19,
+     "4": 16
+    },
+    "2": {
+     "0": 466,
+     "1": 129
+    },
+    "3": {
+     "0": 25,
+     "1": 27,
+     "2": 14
+    },
+    "4": {
+     "0": 43,
+     "1": 26,
+     "2": 34,
+     "3": 34
+    },
+    "5-16": {
+     "0": 20,
+     "1": 18,
+     "2": 5,
+     "3": 15,
+     "4": 13
+    }
+   },
+   "gold_target_top": [
+    [
+     " A",
+     283
+    ],
+    [
+     " B",
+     135
+    ],
+    [
+     " no",
+     121
+    ],
+    [
+     " not",
+     84
+    ],
+    [
+     " C",
+     55
+    ],
+    [
+     " D",
+     48
+    ],
+    [
+     " true",
+     34
+    ],
+    [
+     " false",
+     21
+    ],
+    [
+     " yes",
+     18
+    ],
+    [
+     " call",
+     17
+    ],
+    [
+     " H",
+     8
+    ],
+    [
+     " G",
+     6
+    ],
+    [
+     " skip",
+     6
+    ],
+    [
+     " E",
+     5
+    ],
+    [
+     " I",
+     4
+    ],
+    [
+     " first",
+     4
+    ],
+    [
+     " relevant",
+     4
+    ],
+    [
+     " F",
+     4
+    ],
+    [
+     " R",
+     4
+    ],
+    [
+     " BA",
+     4
+    ],
+    [
+     " J",
+     3
+    ],
+    [
+     " contradiction",
+     3
+    ],
+    [
+     " DB",
+     3
+    ],
+    [
+     " BT",
+     3
+    ],
+    [
+     " BH",
+     3
+    ]
+   ],
+   "gold_target_distinct": 90
+  },
+  "jrt-rwkv-g1-v2f": {
+   "position": {
+    "17-255": {
+     "0": 23,
+     "1": 16,
+     "2": 26,
+     "3": 19,
+     "4": 16
+    },
+    "2": {
+     "0": 466,
+     "1": 129
+    },
+    "3": {
+     "0": 25,
+     "1": 27,
+     "2": 14
+    },
+    "4": {
+     "0": 43,
+     "1": 26,
+     "2": 34,
+     "3": 34
+    },
+    "5-16": {
+     "0": 20,
+     "1": 18,
+     "2": 5,
+     "3": 15,
+     "4": 13
+    }
+   },
+   "gold_target_top": [
+    [
+     " A",
+     546
+    ],
+    [
+     " B",
+     199
+    ],
+    [
+     " C",
+     57
+    ],
+    [
+     " D",
+     48
+    ],
+    [
+     " H",
+     7
+    ],
+    [
+     " G",
+     6
+    ],
+    [
+     " E",
+     5
+    ],
+    [
+     " I",
+     4
+    ],
+    [
+     " F",
+     4
+    ],
+    [
+     " R",
+     4
+    ],
+    [
+     " AQ",
+     4
+    ],
+    [
+     " J",
+     3
+    ],
+    [
+     " CL",
+     3
+    ],
+    [
+     " N",
+     3
+    ],
+    [
+     " BF",
+     3
+    ],
+    [
+     " AW",
+     3
+    ],
+    [
+     " K",
+     3
+    ],
+    [
+     " CC",
+     3
+    ],
+    [
+     " BA",
+     3
+    ],
+    [
+     " CF",
+     2
+    ],
+    [
+     " EH",
+     2
+    ],
+    [
+     " L",
+     2
+    ],
+    [
+     " AS",
+     2
+    ],
+    [
+     " AN",
+     2
+    ],
+    [
+     " BW",
+     2
+    ]
+   ],
+   "gold_target_distinct": 70
+  }
+ },
+ "refused_records": 0,
+ "mismatches": 0,
+ "mismatch_examples": [],
+ "span_sanity_failures": 0,
+ "rows_empty_state": 73,
+ "rows_final_blank_line_recollapse": 47
+}
