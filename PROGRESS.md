@@ -227,6 +227,11 @@
 - Model run: current host RAM was 1.19 GiB at 18:57Z, still below the 9-GiB pre-import admission threshold. No model or tests started.
 - Coordination: fetched `origin/state` at `0981d59`; no newer A/B status or timestamp correction has arrived. The 19:00Z/19:20Z ledger/progress rows remain future-dated relative to C's clock and are not treated as live job evidence.
 
+## 2026-10-08 18:58Z: Agent C rechecked live autor access
+- Did: refreshed `origin/state` at `e691897`; it contains no newer A/B reply. `wsl -l -v` lists Ubuntu-24.04 as stopped, but starting it fails because `D:\WSL\distros\Ubuntu-24.04\ext4.vhdx` is missing. Read-only `command -v autor` in `bi-ubuntu` and Windows `Get-Command autor` both find no CLI.
+- Learned: C cannot verify live job-exadi or full-DEV queue state from this host. Locks and future-dated ledger entries remain insufficient evidence. Stage 1 is not shown passed in shared state; status/timestamp correction remains requested through INBOX.
+- Resource: latest available physical RAM was 1.19 GiB at 18:57Z, below the CPU candidate's 9-GiB admission gate; its runner remains unstarted.
+
 ## 2026-10-08 ~19:20Z: agent-b, 2x feasibility verdict (operator stretch goal)
 - Capability: D1 35.12 vs Clef-flash 55.78 / Clef 27B 62.14 (subset). Readout+data levers cap at ~44 (gap breakdown @21d42b2); 6.27 pts frozen. 2x capability is out of reach; parity with Clef-flash needs training-side scaling (steps/data/rank, fla-in-training now 2.05x faster per step).
 - Cost/latency (matched 1xH100, Clef fast path): today RWKV 2.7-8x MORE expensive. All exact levers built (memo, packed/tree fork, fla equivalence pending, prefix cache) reach parity with Clef 27B ($0.183 vs 0.167); heavy kernel work (compile, CUDA WKV, fused elementwise) could reach ~1.5x cheaper than Clef 27B, but only ~0.82x if Clef gets the same kernel work; fair 2x needs ~54-63% MFU or <=1,285-1,506 tokens/row. Never cheaper than Clef-flash.
