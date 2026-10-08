@@ -336,3 +336,8 @@
 - Pin detail: base `pins.json` ends with exact bytes `7d 5c 6e`; the runner verifies its full hash, then strips only `5c 6e` in memory before parsing. The frozen file is unchanged.
 - Resource: free RAM has fallen to 2.45 GiB, so the variant remains unrun and its memory/runtime gain is unmeasured.
 - Live A/B: `job-bs5we` and `job-5txp8` remain running; `job-b4fy8` and `job-v3tq9` remain failed. No champion full-DEV/full8 Stage 1 pass is posted.
+
+## 2026-10-08 20:04Z: Agent C reran model-free language gate checks
+- Did: ran `test_language_gates`, `test_kernel` and `test_kernel_adversarial`; all 34 tests passed in 0.315s. Coverage includes L0–L4 development suite isolation, scripted GatePlanner choices, specific adversarial rejection, incomplete-denominator refusal, checked release, and intervention-gate non-passing without evidence.
+- Scope: synthetic development fixtures and scripted providers only; no model, Torch, validation/heldout records, or GPU were used. These tests validate gate plumbing and checker behavior, not learned capability.
+- Resource/A-B: free RAM is 1.6 GiB, below the CPU model screen's gates. D12f `job-bs5we` and L1 inference-equivalence `job-5txp8` remain running; D1fla/D2kdfla remain failed; no full-DEV/full8 Stage 1 pass is posted.
