@@ -1,0 +1,28 @@
+{
+  "schema": "ssdm.cpu8_final_cost_controller_tests.v1",
+  "exact_source_changes": {
+    "tests/test_m2_cpu8_controller.py": "success receipt expected cumulative exposure updated to 2.525600",
+    "scripts/m2_cpu8_json.py": "max_exposure_including_original_incident_usd updated from 2.525580 to 2.525600"
+  },
+  "controller_tests": {
+    "command": "python -m unittest discover -s tests -p test_m2_cpu8_controller.py -v",
+    "passed": 17,
+    "duration_seconds": 31.561,
+    "hardware": "WSL bi-ubuntu CPU",
+    "cost_usd": 0
+  },
+  "launch_lint": {
+    "command": "python -m pytest -q tests/test_jobs_lint.py",
+    "passed": 71,
+    "duration_seconds": 7.19,
+    "hardware": "WSL bi-ubuntu CPU",
+    "cost_usd": 0
+  },
+  "model_or_provider_calls": false,
+  "node_or_upload": false,
+  "source_base_commit": "574ff9896f6bf3e9ca25ce78ccccbcb2ec6224e4",
+  "source_file_sha256": {
+    "tests/test_m2_cpu8_controller.py": "22d3c2e189f9c993682948f987e438324a070bdf7de7a75539b50dc9883773d6",
+    "scripts/m2_cpu8_json.py": "06684ad47109c8a89781c5a0f93a2f11cecc59017c70ad1a57be0439dba78d0a"
+  }
+}

@@ -180,7 +180,7 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(receipt["phase"], "complete")
         self.assertEqual(receipt["issue"], 188)
-        self.assertEqual(receipt["max_exposure_including_original_incident_usd"], 2.525580)
+        self.assertEqual(receipt["max_exposure_including_original_incident_usd"], 2.525600)
         self.assertEqual(receipt["stop_result"], "stopped")
         self.assertTrue(staging["storage_verified"])
         self.assertEqual(staging["storage_cost_usd"], 0)
