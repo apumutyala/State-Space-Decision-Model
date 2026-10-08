@@ -1,0 +1,46 @@
+{
+ "allowed": {
+  "member": {
+   "name": "b1v2_intent_membership",
+   "task_family": "intent_membership",
+   "targets": [
+    4,
+    5
+   ]
+  },
+  "claim": {
+   "name": "b1v2_claim_verification",
+   "task_family": "claim_verification",
+   "targets": [
+    61,
+    42
+   ]
+  },
+  "verify": {
+   "name": "b1v2_answer_verification",
+   "task_family": "answer_verification",
+   "targets": [
+    57
+   ]
+  }
+ },
+ "refused": {
+  "home_appliance_handling": {
+   "spec": {
+    "name": "b1v2_home_appliance_handling",
+    "task_family": "device_handling",
+    "targets": [
+     9
+    ]
+   },
+   "error": "generator 'b1v2_home_appliance_handling' targets frozen held-out benchmark(s) [9]"
+  },
+  "device_membership": {
+   "spec": {
+    "name": "b1v2_device_membership",
+    "task_family": "device_state_record"
+   },
+   "error": "generator 'b1v2_device_membership' targets frozen held-out benchmark(s) [9]"
+  }
+ }
+}

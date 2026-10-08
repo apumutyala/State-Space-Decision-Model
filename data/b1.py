@@ -72,7 +72,14 @@ FAMILIES: dict[str, tuple[str, str, str]] = {
     "mmlu_aux": ("knowledge_facts", "native", "mmlu_aux"),
     "humicroedit_s1": ("arts", "native", "humicroedit_s1"),
     "humicroedit_s2": ("arts", "native", "humicroedit_s2"),
+    # v2 (data/b1_lowrate.py): low-positive-rate yes/no and minority-support views of allowed train sources
+    "clinc150_member": ("intent_views", "member", "clinc150"),
+    "banking77_member": ("intent_views", "member", "banking77"),
+    "anli_claim": ("language", "claim", "anli"),
+    "mmlu_verify": ("knowledge_facts", "verify", "mmlu_aux"),
 }
+#: view kinds built from raw source rows by data.b1_lowrate (no native line needed; Index fingerprint runs per row)
+LOWRATE_KINDS = ("member", "claim", "verify")
 #: Index area of each family group (for the per-area report)
 GROUP_AREA = {"tools": "tools", "knowledge_procedural": "knowledge", "knowledge_facts": "knowledge",
               "intent_views": "retrieval", "retrieval_other": "retrieval", "language": "language", "arts": "arts"}
@@ -117,8 +124,14 @@ WEIGHTS_100K = {
     "humicroedit_s1": 1500, "humicroedit_s2": 1500,                                          # arts 3,000
 }
 #: families that absorb any shortfall (in order): tools first, then fact knowledge
+# v2 (coordinator 2026-10-08, after D1 over-called majority-positive labels on ACOS / RAGTruth / NLI4CT and on
+# yes/no membership): the same 100k with 10,500 rows moved from glaive_native (-5,000), mmlu_aux (-3,000) and anli
+# (-2,500) to low-positive-rate yes/no and minority-support views at their natural base rates (data/b1_lowrate.py).
+WEIGHTS_100K_V2 = {**WEIGHTS_100K, "glaive_native": 4500, "mmlu_aux": 8416, "anli": 3000,
+                   "clinc150_member": 3000, "banking77_member": 1500, "anli_claim": 3000, "mmlu_verify": 3000}
+assert sum(WEIGHTS_100K_V2.values()) == sum(WEIGHTS_100K.values())
 BACKFILL = ("glaive_native", "mmlu_aux", "anli")
-DRAWS = {"b1-d4-draw45k": WEIGHTS_45K, "b1-draw100k": WEIGHTS_100K}
+DRAWS = {"b1-d4-draw45k": WEIGHTS_45K, "b1-draw100k": WEIGHTS_100K, "b1-draw100k-v2": WEIGHTS_100K_V2}
 
 
 def digest(text: str) -> str:
@@ -565,12 +578,16 @@ def candidates(idx: dict, ex: dict, seed: int) -> dict[str, list[str]]:
     by_src = {s: f for f, (_, kind, s) in FAMILIES.items() if kind == "native"
               and s not in ("glaive_fc", "banking77", "clinc150")}
     out: dict[str, list[str]] = collections.defaultdict(list)
+    low = {s: [f for f, (_, kind, s2) in FAMILIES.items() if kind in LOWRATE_KINDS and s2 == s]
+           for s in {s2 for _, kind, s2 in FAMILIES.values() if kind in LOWRATE_KINDS}}
     for rid, e in idx.items():
         if e["family"] == "multi" or rid in ex["ids"] or item_keys(rid) & ex["items"] or e["content"] in ex["content"]:
             continue
         fam = _role(e["source"], rid, seed) or by_src.get(e["source"])
         if fam:
             out[fam].append(rid)
+        for f in low.get(e["source"], ()):  # v2 views: every native item of the source, in their own seeded order;
+            out[f].append(rid)              # they draw after the native families, so those are unchanged
     for f in out:
         out[f].sort(key=lambda r: _order_key(seed, f, r))
     return out
@@ -643,7 +660,14 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
     cands = candidates(idx, ex, seed)
     want: set[str] = set()
     for f, ids in cands.items():
-        want.update(ids[: int(quotas.get(f, 0) * 4) + 3000])
+        if FAMILIES[f][1] not in LOWRATE_KINDS:
+            want.update(ids[: int(quotas.get(f, 0) * 4) + 3000])
+    raw = None
+    if any(quotas.get(f, 0) for f, (_, kind, _) in FAMILIES.items() if kind in LOWRATE_KINDS):
+        from .b1_lowrate import Raw
+        raw_want = {r for f, (_, kind, _) in FAMILIES.items() if kind in ("claim", "verify")
+                    for r in cands.get(f, [])[: int(quotas.get(f, 0) * 4) + 3000]}
+        raw = Raw(build_dir, want=raw_want)
     log(f"native ids {len(idx)}; loading {len(want)} candidate lines", flush=True)
     lines = _load_lines(idx, want)
     flt = Filter(tokdir, ex)
@@ -663,7 +687,7 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
     chosen: dict[str, list[dict]] = {}
     order = ["factchange", "glaive_native", "glaive_catalog16", "glaive_catalog_long", "toolace", "when2call",
              "gsm8k", "banking77_k16", "clinc150_k16", "banking77_full", "anli", "hellaswag", "winogrande", "sst5", "nq", "boolq", "mmlu_aux", "humicroedit_s1",
-             "humicroedit_s2"]
+             "humicroedit_s2", "clinc150_member", "banking77_member", "anli_claim", "mmlu_verify"]
     assert sorted(order) == sorted(FAMILIES)
     ext, ext_shas = _external(families_dir)
     missing = sorted(set(external_quotas or {}) - set(ext))
@@ -690,6 +714,14 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
         while len(got) < quota and cursor[fam] < len(ids):
             rid = ids[cursor[fam]]
             cursor[fam] += 1
+            if kind in LOWRATE_KINDS:
+                from .b1_lowrate import VIEWS
+                rec = VIEWS[kind](raw, rid, seed)
+                if rec is None:
+                    flt.reasons[fam]["no_view"] += 1
+                elif flt.accept(rec, fam, fingerprint=True):
+                    got.append(rec)
+                continue
             if rid not in lines:
                 flt.reasons[fam]["not_loaded"] += 1
                 continue
@@ -774,7 +806,8 @@ def select(tokdir: str, quotas: dict[str, int], seed: int = BUILD_SEED, build_di
             "cell_filter": {"max_k": flt.max_k, "max_t": flt.max_t, "template": flt.template, "layout": "ordered"},
             "seed": seed, "families_dir": str(families_dir) if families_dir else None,
             "families_files_gz_sha256": ext_shas, "row_tokens": flt.row_tokens,
-            "index_item_text_examples": dict(flt.hit_examples), "index_boilerplate": flt.index["boilerplate"]}
+            "index_item_text_examples": dict(flt.hit_examples), "index_boilerplate": flt.index["boilerplate"],
+            "lowrate_raw": raw.ident if raw is not None else None}
 
 
 # ------------------------------------------------------------------ write
@@ -862,6 +895,14 @@ def write_draw(name: str, rows: list[dict], sel: dict, quotas: dict[str, int], o
                                                    for t in toks))}
     if token_hist["n_over_2048"]:
         raise AssertionError("a row over 2,048 tokens reached the draw")
+    lowrate = collections.defaultdict(collections.Counter)  # v2 views: gold label rates at the natural base rate
+    for r in rows:
+        if r.get("aug", {}).get("b1_view", {}).get("kind") in LOWRATE_KINDS:
+            for qid in r["questions"]:
+                lowrate[fam_of[r["id"]]][str(r["labels"][qid])] += 1
+            if not any(str(v) in ("yes", "SUPPORTED") for v in r["labels"].values()):
+                lowrate[fam_of[r["id"]]]["_records_with_no_positive"] += 1
+            lowrate[fam_of[r["id"]]]["_records"] += 1
     noul = collections.Counter()
     for r in rows:
         for qid, q in r["questions"].items():
@@ -875,6 +916,7 @@ def write_draw(name: str, rows: list[dict], sel: dict, quotas: dict[str, int], o
                "rendered_tokens": token_hist,
                "rows_by_max_k_by_family": {f: dict(v) for f, v in sorted(k16_fam.items())},
                "gold_position_uniformity_by_k": dict(sorted(chi.items())), "noul_gold_labels": dict(noul),
+               "lowrate_gold_labels_by_family": {f: dict(v) for f, v in sorted(lowrate.items())},
                "injected_rows": sum(bool(r.get("aug", {}).get("injection")) for r in rows),
                "views": dict(collections.Counter(r["aug"]["b1_view"]["kind"] for r in rows if "b1_view" in r.get("aug", {}))),
                "uncompressed_sha256": usha, "gz_sha256": gsha, "pointer": pointer}
@@ -931,7 +973,7 @@ def main(argv=None) -> int:
               "fingerprint": sel["fingerprint"], "encoder": sel["encoder"], "cell_filter": sel["cell_filter"],
               "families_dir": sel["families_dir"], "families_files_gz_sha256": sel["families_files_gz_sha256"],
               "backfilled": sel["backfilled"], "index_item_text_examples": sel["index_item_text_examples"],
-              "index_boilerplate": sel["index_boilerplate"],
+              "index_boilerplate": sel["index_boilerplate"], "lowrate_raw": sel["lowrate_raw"],
               "filter_reasons_over_selection": sel["filter_reasons"], "draws": {}}
     for name, q in draws.items():
         rows = [r for f in q for r in sel["chosen"].get(f, [])[: q[f] + sel["backfilled"].get(f, 0)]]
