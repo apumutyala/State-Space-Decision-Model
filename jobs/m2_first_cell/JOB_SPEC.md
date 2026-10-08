@@ -223,3 +223,7 @@ with the clock 190 -> 380 min (as D7 `d7_t380`) and `max_steps` 3,000 -> 4,500 (
 Mode `d10w_v3w_b100k` (D10w; `job_params_d10w_v3w_b100k.json`, `m2_first_cell_rwkv7_d10w_v3w_b100k.json`): `d10_v2f_b100k` with only
 template `jrt-rwkv-g1-v3w` (layout `g1v2`, r1_format_commit 0290fa8; parent arm in-job via `G1V3Backend(mode='words')`). Caps and
 schedule are D10's: **Worst case** (60 + 2 x 669) x $0.0495 = **$69.20** (cap $70).
+
+Mode `d12_v3w_b100kv3` (D12; `job_params_d12_v3w_b100kv3.json`, `m2_first_cell_rwkv7_d12_v3w_b100kv3.json`): `d10w_v3w_b100k` with only
+the training set swapped to the B1 100k v3 draw (pointer `data/manifests/b1-draw100k-v3.pointer.json`, train_dir `m2-b100kv3`, pins
+`data_d12_b100kv3.sha256`). Caps and schedule are D10w's: **Worst case** (60 + 2 x 669) x $0.0495 = **$69.20** (cap $70).
