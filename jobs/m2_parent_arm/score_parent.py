@@ -65,15 +65,22 @@ VOLUME_CALLS = {"g12": {"dev_records": 2 * 835, "steer_dev_units": 9_000},
                         "index_dev_full": round(4_536 * 12_104 / 2_008)},
                 "index": {"index_dev_subset": 4_536, "order_diag": DIAG_CALLS}}
 CHILD_EXTRA_CALLS = {"calibration_fit": 2 * 1_000, "dev_card": 2 * 835}
+#: measurement stage ``hijack`` (BOARD H1, train.m2_gates.hijack_subset): 45 steer_dev clusters x HIJACK_PER_CLUSTER (8)
+#: requests x (clean + 5 hijack + 4 D1-A) = 3,600 units; tokens per unit = the steer_dev mean (5,378,738 / 9,000) x 1.1
+#: (the hijack templates append ~20-45 tokens to a ~600-token request). 1 call per unit. No decision records.
+HIJACK_UNITS = 45 * 8 * (1 + 5 + 4)
+VOLUME_TOKENS["hijack"] = {"steer_dev_hijack_units": round(HIJACK_UNITS * 5_378_738 / 9_000 * 1.1)}
+VOLUME_CALLS["hijack"] = {"steer_dev_hijack_units": HIJACK_UNITS}
 USD_PER_MIN = 0.0495  # SF H100 batch rate (jobs/DECISION_TREE.md)
 FIXED_MIN = 35  # build 15 + setup/download/verify 15 + finalize 5 (expected, rwkv7 stage-A measured shape)
 
 
 def estimate(tok_s: float, stages: Sequence[str] = ("g12", "g13"), fixed_min: float = FIXED_MIN,
-             mode: str = "parent", call_s: float = 0.0) -> dict[str, Any]:
+             mode: str = "parent", call_s: float = 0.0, child_extras: bool = True) -> dict[str, Any]:
     """Projected minutes / $ at a MEASURED prefill rate (no number here is a measurement of the model).
     ``mode="parent"``: the cached parent arm only. ``mode="child"``: the m2_pilot evals phase = the child's arm PLUS
-    the temperature fit over the calibration items and the dev eval card (``CHILD_EXTRA_TOKENS``).
+    the temperature fit over the calibration items and the dev eval card (``CHILD_EXTRA_TOKENS``);
+    ``child_extras=False`` drops them (a hijack-only measurement fits no temperature and writes no card).
     ``call_s`` (a MEASURED per-call latency; 0 keeps the legacy token-only projection) adds calls x call_s."""
     if not tok_s > 0:
         raise ValueError("tok_s must be a positive measured rate")
@@ -83,7 +90,7 @@ def estimate(tok_s: float, stages: Sequence[str] = ("g12", "g13"), fixed_min: fl
         raise ValueError("call_s must be >= 0")
     per = {s: sum(VOLUME_TOKENS[s].values()) for s in stages}
     calls = {s: sum(VOLUME_CALLS[s].values()) for s in stages}
-    if mode == "child":
+    if mode == "child" and child_extras:
         per.update(CHILD_EXTRA_TOKENS)
         calls.update(CHILD_EXTRA_CALLS)
     minutes = {s: n / tok_s / 60 + calls[s] * call_s / 60 for s, n in per.items()}
@@ -268,13 +275,16 @@ def main(argv=None) -> int:
                         help="non-scoring minutes to add (0 for a scoring phase inside a running job)")
         ap.add_argument("--mode", choices=["parent", "child"], default="parent",
                         help="child = the m2_pilot evals phase (arm + temperature fit + dev card)")
-        ap.add_argument("--stages", default="g12,g13", help="comma list of g12, g13, index")
+        ap.add_argument("--stages", default="g12,g13", help="comma list of g12, g13, index, hijack")
+        ap.add_argument("--no-child-extras", action="store_true", help="child mode without the temperature fit and "
+                        "dev card (a hijack-only measurement)")
         ap.add_argument("--call-s", type=float, default=0.0, help="MEASURED per-call latency (probe small_call_s)")
         a = ap.parse_args(argv[1:])
         stages = [s for s in a.stages.split(",") if s]
         if not stages or any(s not in VOLUME_TOKENS for s in stages):
             ap.error(f"--stages must name some of {sorted(VOLUME_TOKENS)}")
-        est = estimate(a.tok_s, stages=stages, fixed_min=a.fixed_min, mode=a.mode, call_s=a.call_s)
+        est = estimate(a.tok_s, stages=stages, fixed_min=a.fixed_min, mode=a.mode, call_s=a.call_s,
+                       child_extras=not a.no_child_extras)
         print(json.dumps(est, indent=1))
         return 15 if a.cap_min is not None and est["total_minutes"] > 0.95 * a.cap_min else 0
     ap = argparse.ArgumentParser(prog="python -X utf8 -m jobs.m2_parent_arm.score_parent")
@@ -289,7 +299,7 @@ def main(argv=None) -> int:
     ap.add_argument("--index-frozen", default=None, help="an already frozen set (with --index-frozen-sha256)")
     ap.add_argument("--index-frozen-sha256", default=None)
     ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--stage", choices=["g12", "g13", "index", "all"], default="all")
+    ap.add_argument("--stage", choices=["g12", "g13", "index", "hijack", "all"], default="all")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--pool-dir", action="append", default=None, metavar="NAME=DIR",
                     help="cohort pool outside the PR #16 file (cohort v3 retention: m2-150k=<dir>)")

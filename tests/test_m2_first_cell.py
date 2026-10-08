@@ -355,6 +355,10 @@ def test_order_diagnostic_detects_a_first_option_reader():
 
 # ----------------------------------------------------------------------------- runner static guarantees
 def test_runner_orders_guards_before_training_and_prices_every_eval_first():
+    # the training path only: the eval-only branch (mode hijack_eval, tests/test_m2_hijack_eval.py) has no training
+    JOB_FULL = globals()["JOB"]
+    a = JOB_FULL.index('if [ "$EVAL_ONLY" = 1 ]; then  #')
+    JOB = JOB_FULL[:a] + JOB_FULL[JOB_FULL.index("\nfi\n", a) + 4:]
     i = JOB.index
     train = i("python -m train.run_cell")
     for s in ("score_parent estimate", "jobs.m2_pilot.guard_ready", "train.train_set heldout", "train.train_set verify",
