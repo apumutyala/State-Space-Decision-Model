@@ -1,7 +1,8 @@
-"""Fail-closed task relevance for the bounded public L0 projection.
+"""Fail-closed task relevance for the bounded public semantic projection.
 
 This checks that a kernel-accepted program answers one of the exact supported
-read/explain/compare forms. It does not infer unrestricted natural language.
+read/explain/compare/two-fact conjunction forms. It does not infer unrestricted
+natural language.
 """
 
 from __future__ import annotations
@@ -26,7 +27,8 @@ class TaskContract:
     visible_state_sha256: str
     authority_sha256: str
     kind: str
-    # Ordered, host-resolved identities: (record_ref, field, temporal_scope).
+    # Host-resolved identities: (record_ref, field, temporal_scope).
+    # Comparison order matters; conjunction order does not.
     operands: tuple[tuple[str, str, str], ...]
 
 
@@ -84,7 +86,7 @@ def _task_bindings(task_input: str, visible: dict[str, Any]) -> tuple[str, tuple
 
     # Enumerate only fixed grammar productions. Names and fields are escaped by
     # equality-by-generation, so punctuation cannot add syntax or suffixes.
-    candidates: list[tuple[str, str, tuple[str, ...], bool]] = []
+    candidates: list[tuple[str, tuple[tuple[str, str], ...], bool]] = []
     templates = {
         "read": (
             ("What is {entity}'s {field} in October 2026?", True, "spaced"),
@@ -115,7 +117,7 @@ def _task_bindings(task_input: str, visible: dict[str, Any]) -> tuple[str, tuple
                     for entity in unique_entities:
                         rendered = form.format(entity=entity, field=display_field)
                         if rendered == task_input:
-                            candidates.append((kind, field, (entity,), has_explicit_month))
+                            candidates.append((kind, ((entity, field),), has_explicit_month))
                 else:
                     for left in unique_entities:
                         for right in unique_entities:
@@ -123,12 +125,28 @@ def _task_bindings(task_input: str, visible: dict[str, Any]) -> tuple[str, tuple
                                 continue
                             rendered = form.format(left=left, right=right, field=display_field)
                             if rendered == task_input:
-                                candidates.append((kind, field, (left, right), has_explicit_month))
+                                candidates.append((kind, ((left, field), (right, field)), has_explicit_month))
+    # One exact, canonical-field production. Resolve all possible clause
+    # bindings rather than choosing a split when names contain " and ".
+    prefix, suffix = "State ", " for October 2026."
+    if task_input.startswith(prefix) and task_input.endswith(suffix):
+        body = task_input[len(prefix):-len(suffix)]
+        clauses: dict[str, list[tuple[str, str]]] = {}
+        for entity in unique_entities:
+            for field in unique_fields:
+                clauses.setdefault(f"{entity}'s {field}", []).append((entity, field))
+        for clause, first_bindings in clauses.items():
+            separator = clause + " and "
+            if not body.startswith(separator):
+                continue
+            for first in first_bindings:
+                for second in clauses.get(body[len(separator):], []):
+                    candidates.append(("conjoin", (first, second), True))
     if len(candidates) != 1:
         raise ValueError("unsupported_or_ambiguous_task")
-    kind, field, named_entities, explicit_month = candidates[0]
+    kind, requested_facts, explicit_month = candidates[0]
     operands = []
-    for name in named_entities:
+    for name, field in requested_facts:
         matching_entities = [record for record in records
                              if isinstance(record.get("entity_ref"), str)
                              and record["entity_ref"] == name]
@@ -146,8 +164,10 @@ def _task_bindings(task_input: str, visible: dict[str, Any]) -> tuple[str, tuple
         if len(matches) != 1:
             raise ValueError("missing_or_ambiguous_binding")
         operands.append(matches[0])
-    if kind == "compare" and len({operand[2] for operand in operands}) != 1:
+    if kind in ("compare", "conjoin") and len({operand[2] for operand in operands}) != 1:
         raise ValueError("scope_mismatch")
+    if kind == "conjoin" and len(set(operands)) != 2:
+        raise ValueError("repeated_fact_binding")
     return kind, tuple(operands)
 
 
@@ -185,6 +205,14 @@ def _matches_speech(contract: TaskContract, outputs: tuple[SpeechAct, ...]) -> b
         if isinstance(act.content.left, ConstantValue) or isinstance(act.content.right, ConstantValue):
             return False
         return (_fact_binding(act.content.left), _fact_binding(act.content.right)) == contract.operands
+    if contract.kind == "conjoin":
+        if act.kind != "conjoin" or not isinstance(act.content, tuple) or len(act.content) != 2:
+            return False
+        if any(not isinstance(part, SpeechAct) or part.kind != "assert" for part in act.content):
+            return False
+        bindings = tuple(_fact_binding(part.content) for part in act.content)
+        return (None not in bindings and len(set(bindings)) == 2
+                and set(bindings) == set(contract.operands))
     return False
 
 
