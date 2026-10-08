@@ -1,6 +1,6 @@
-# Decision to language interface version 0.1.2
+# Decision to language interface version 0.1.3
 
-8 October 2026. Version 0.1 was cross-reviewed and merged in PR #4. Patch profile 0.1.1 closed the model-authored node-ID prose channel: node identifiers have a restricted lexical form and released derivations contain kernel-assigned integer ordinals. Profile 0.1.2 adds the host-opted-in bounded `ExactDifference` operation and pins exact decimal exponent capitalization, under interface issue [#201](https://github.com/apumutyala/State-Space-Decision-Model/issues/201). The D request/response envelope remains `ssdm.decide.v0.1`, and semantic program syntax retains `ssdm.semantic_program.v0.1`; the host's versioned registry controls this operation extension. Planned provenance remains a separate 0.2 extension.
+8 October 2026. Version 0.1 was cross-reviewed and merged in PR #4. Patch profile 0.1.1 closed the model-authored node-ID prose channel: node identifiers have a restricted lexical form and released derivations contain kernel-assigned integer ordinals. Profile 0.1.2 adds the host-opted-in bounded `ExactDifference` operation and pins exact decimal exponent capitalization, under interface issue [#201](https://github.com/apumutyala/State-Space-Decision-Model/issues/201). The D request/response envelope remains `ssdm.decide.v0.1`, and semantic program syntax retains `ssdm.semantic_program.v0.1`; the host's versioned registry controls this operation extension. Profile 0.1.3 adds opt-in registered conditional hypotheses under issue #205. Planned provenance remains a separate 0.2 extension.
 
 ## Responsibilities
 
@@ -137,6 +137,15 @@ Example model proposal, before kernel acceptance:
 ```
 
 The checker computes whether the proposed comparison is true. If false, it rejects that assertion; it does not silently replace it with the right answer and credit the model. Exact execution of a model-selected operation is intended; a host independently choosing the correct task program is not. The model gets no hidden evaluation label. Primary evaluation is one attempt. A separate bounded-repair condition may use at most one typed rejection reason and retry, with all added calls counted. Repair feedback is an information source even without hidden-label access: a failed binary comparison can reveal its opposite. Comparable arms and a trivial bounded enumerator therefore receive equivalent access; repaired and one-shot results are never pooled. The checker must not expose private values, the corrected answer, or hidden task labels through rejection details.
+
+
+### Opt-in registered hypotheses (profile 0.1.3)
+
+Profile 0.1.3 adds `Hypothesize` and host-owned `assumptions` under interface issue [#205](https://github.com/apumutyala/State-Space-Decision-Model/issues/205). The transport and program envelopes retain v0.1. A registry must explicitly allow both `Hypothesize` and `ReadFact`; existing registries remain closed. Up to 128 host registrations bind an assumption reference to an existing permitted authoritative `record_ref`, `field` and typed alternate `value`. Value type, unit, quantity kind and effective scope must match the original premise. Registration is not factual truth and may not be inferred from task text or model prose.
+
+A `Compare` operand may be `{"assumption_ref":"registered-id"}`. `{"id":"n4","op":"Hypothesize","proposition":"n3"}` accepts only a prior true checked comparison containing exactly one such assumption; the other operand is a fact or host constant. The immutable conditional content preserves the original premise and marks the alternate value `epistemic_class: "hypothesis"`. `Assert` rejects assumption-dependent comparisons, and `ExactDifference` rejects assumption operands with `unsupported_assertion`. Factual conjunction cannot carry conditional speech acts. `ExplainDerivation` may wrap them while retaining the conditional meaning.
+
+Rendering starts `If`, labels alternate values as hypothetical and factual operands as recorded baselines, and keeps the conclusion conditional. Assumption IDs are never prose. Live release binds and rechecks the entire assumption registry and original evidence; changes or revocations deny cached release. No catalog fact is changed. This bounded operation adds no implication logic, public planner selection, learned qualification or paid execution. Exact wire shapes, refusal cases and authored fixtures are specified in [L2_REGISTERED_HYPOTHESIS.md](../plans/codex/L2_REGISTERED_HYPOTHESIS.md).
 
 ## Kernel output and realization
 
