@@ -319,3 +319,8 @@
 ## 2026-10-08 19:55Z: Agent C verified the full-DEV queue directly
 - Did: parsed the live autor job list for full-DEV/champion labels. The only matching evaluation jobs are `job-46yeb` (succeeded 250-row pipeline smoke), `job-7f3n4` (failed 250-row smoke), and a failed Clef comparator; no champion full-DEV candidate is queued.
 - Stage 1: the shared BOARD's “champion run ready” remains a readiness note, not a launched run or pass. C continues to request the candidate handle and explicit full8 disposition through INBOX.
+
+## 2026-10-08 19:56Z: Agent C confirmed a second fla parent-seed failure
+- Did: re-polled autor after D2kdfla `job-v3tq9` transitioned. It failed at 19:54:08Z, exit 10, with the same `g12` `chunked_lean` versus required `fla` identity mismatch as D1fla `job-b4fy8`; both failed before the required completion marker.
+- Live state: D12f `job-bs5we` and L1 equivalence `job-5txp8` still report running. The last D12f log is still at `parent_g12` from 19:26:15Z, so C asked A to verify its heartbeat/seed and preserve both failed receipts before any retry.
+- C has not restarted or stopped A/B jobs and has used/spent no GPU. The laptop remains under the 3-GiB CPU runtime floor.
