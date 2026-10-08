@@ -124,3 +124,34 @@ def test_valid_result_requires_every_row_and_the_pinned_checkpoint():
     nan = _result()
     nan["arms"]["child"]["full"]["index"] = {"point": float("nan"), "lo": 0, "hi": 1}
     assert not F.valid_result(nan)
+
+
+# ------------------------------------------------------------------------------------------------ mode fulldev_smoke
+SMOKE_PARAMS = ROOT / "jobs" / "m2_first_cell" / "job_params_fulldev_smoke.json"
+
+
+def test_smoke_slice_is_pre_declared_reproducible_and_covers_long_rows_and_families():
+    from jobs.common.dev_subset import read_manifest
+
+    d = json.loads(F.SMOKE.read_text(encoding="utf-8"))
+    L = json.loads(F.LENGTHS.read_text(encoding="utf-8"))
+    assert F.build_smoke(read_manifest(), L["lengths"]) == d  # rebuilds byte for byte from manifest + lengths
+    ids = F.selected_ids("smoke")
+    assert len(ids) == d["n"] == 250 and d["n_tracks"] >= 80
+    assert sum(L["lengths"][i] > 16_384 for i in ids) >= 10 and d["max_tokens"] == L["max_tokens"] == 47_509
+    assert 0 < d["n_overlength51"] < sum(L["lengths"][i] > 16_384 for i in ids)  # the 51 AND RWKV7-only long rows
+
+
+def test_smoke_params_run_both_arms_cheaply():
+    from jobs.common.costs import expected_usd, schedule_minutes
+
+    p = json.loads(SMOKE_PARAMS.read_text(encoding="utf-8"))
+    assert p["mode"] == "fulldev_smoke" and p["eval_only"] == "fulldev" and p["rows"] == "smoke"
+    assert p["fulldev_parent_arm"] is True and "parent_full" in p["phase_caps_minutes"]
+    assert schedule_minutes(p) == p["max_duration_minutes"]
+    est = F.estimate(p)
+    assert est["ok"] and set(est["minutes"]) == {"fulldev", "parent_full"}
+    assert expected_usd(p) <= 5.0
+    smoke = _result(rows_mode="smoke", rows=250)
+    smoke["arms"]["child"]["status"] = {"ok": 249, "exhausted": 1}
+    assert F.valid_result(smoke) and not F.valid_result(_result(rows_mode="smoke"))

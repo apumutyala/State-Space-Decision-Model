@@ -60,6 +60,73 @@ def overlength_ids() -> set[str]:
     return {r["run_id"] for r in json.loads(OVERLENGTH.read_text(encoding="utf-8"))["rows"]}
 
 
+SMOKE = ROOT / "jobs" / "m2_first_cell" / "fulldev_smoke_rows.json"
+SMOKE_SEED = "fulldev-smoke-v1"
+ROW_MODES = ("full", "smoke")
+
+
+def ids_sha256(ids) -> str:
+    return hashlib.sha256("\n".join(sorted(ids)).encode()).hexdigest()
+
+
+def selected_ids(rows_mode: str) -> set[str] | None:
+    """None = every DEV row; ``smoke`` = the committed, pre-declared smoke slice (sha256 re-checked)."""
+    if rows_mode == "full":
+        return None
+    if rows_mode != "smoke":
+        raise ValueError(f"rows mode {rows_mode!r}: one of {ROW_MODES}")
+    d = json.loads(SMOKE.read_text(encoding="utf-8"))
+    if ids_sha256(d["run_ids"]) != d["ids_sha256"] or len(set(d["run_ids"])) != d["n"]:
+        raise ValueError("fulldev_smoke_rows.json run_ids do not match their ids_sha256 / n")
+    return set(d["run_ids"])
+
+
+def build_smoke(manifest: list[dict], lengths: dict[str, int], n_target: int = 250, n_long: int = 12,
+                seed: str = SMOKE_SEED) -> dict[str, Any]:
+    """The smoke slice, from the DEV manifest + committed RWKV7 row lengths only (no model output). Whole kit groups.
+      1. long rows: of the rows over 16,384 RWKV7 tokens, sorted by length (desc, then run_id), the longest plus
+         ``n_long - 1`` more at evenly spaced ranks (so it spans 16k-47.5k and mixes the 51 with RWKV7-only ones);
+      2. families: rounds over the tracks (sorted); each round adds, per track, its next whole group in
+         sha256(f"{seed}:{catalog_id}:{group_id}") order whose rows are all <= 16,384 tokens, until ``n_target``.
+    """
+    by_group: dict[tuple, list[dict]] = {}
+    for e in manifest:
+        by_group.setdefault((e["catalog_id"], str(e["group_id"])), []).append(e)
+    gkey = {e["run_id"]: (e["catalog_id"], str(e["group_id"])) for e in manifest}
+    long = sorted((rid for rid, n in lengths.items() if n > 16_384), key=lambda r: (-lengths[r], r))
+    picks = sorted({0} | {round(i * (len(long) - 1) / (n_long - 1)) for i in range(1, n_long)})
+    chosen: list[tuple] = []
+    for i in picks:
+        g = gkey[long[i]]
+        if g not in chosen:
+            chosen.append(g)
+
+    def n_rows():
+        return sum(len(by_group[g]) for g in chosen)
+
+    queues: dict[str, list[tuple]] = {}
+    for g, es in by_group.items():
+        if g in chosen or any(lengths[e["run_id"]] > 16_384 for e in es):
+            continue
+        queues.setdefault(es[0]["track"], []).append(g)
+    for t in queues:
+        queues[t].sort(key=lambda g: hashlib.sha256(f"{seed}:{g[0]}:{g[1]}".encode()).hexdigest())
+    while n_rows() < n_target and any(queues.values()):
+        for t in sorted(queues):
+            if queues[t] and n_rows() < n_target:
+                chosen.append(queues[t].pop(0))
+    ids = sorted(e["run_id"] for g in chosen for e in by_group[g])
+    ol = overlength_ids()
+    return {"_comment": "Pre-declared smoke slice of the Index DEV for mode fulldev_smoke (jobs.m2_first_cell."
+                        "fulldev_eval smoke-build; DEV manifest + RWKV7 row lengths only, never model output). Proves "
+                        "the fulldev_eval pipeline end to end; NOT a capability estimate.",
+            "seed": seed, "n_target": n_target, "n_long_target": n_long, "n": len(ids), "ids_sha256": ids_sha256(ids),
+            "n_tracks": len({by_group[g][0]["track"] for g in chosen}),
+            "n_over_16384": sum(lengths[i] > 16_384 for i in ids), "n_overlength51": len(ol & set(ids)),
+            "max_tokens": max(lengths[i] for i in ids), "total_tokens": sum(lengths[i] for i in ids),
+            "run_ids": ids}
+
+
 def limited(decide, max_input_tokens: int):
     """``decide`` with the adapter's input cap raised to ``max_input_tokens`` through the request envelope (the
     Clef 32k arm's mechanism, ``baselines.clef_index_engine``); every other default limit is unchanged."""
@@ -216,6 +283,17 @@ def score(a) -> int:
     if len(ids) != N_DEV or len(set(ids)) != N_DEV:
         print(f"rows: {len(set(ids))} unique of {len(ids)}, want the full DEV slice ({N_DEV})", file=sys.stderr)
         return 10
+    try:
+        keep = selected_ids(a.rows_select)
+    except ValueError as e:
+        print(f"rows: {e}", file=sys.stderr)
+        return 10
+    if keep is not None:
+        if not keep <= set(ids):
+            print(f"rows: {len(keep - set(ids))} {a.rows_select} ids are not DEV rows", file=sys.stderr)
+            return 10
+        rows = [r for r in rows if r["_evaluation"]["run_id"] in keep]
+        ids = [r["_evaluation"]["run_id"] for r in rows]
     from jobs.m2_pilot.guard_ready import GuardNotReady
     from train.cohort import CohortLeak
 
@@ -259,7 +337,7 @@ def score(a) -> int:
                     r["response"] = served
                 f.write(json.dumps(r, separators=(",", ":")) + "\n")
     (out / f"timing-{a.arm}.json").write_text(json.dumps(
-        {"seconds_this_attempt": secs, "rows_this_attempt": len(todo), "rows_resumed": N_DEV - len(todo),
+        {"seconds_this_attempt": secs, "rows_this_attempt": len(todo), "rows_resumed": len(ids) - len(todo),
          "sum_row_wall_s": sum(float(done[i].get("total_wall_ms") or 0) for i in ids) / 1000}, indent=1),
         encoding="utf-8")
     return 0
@@ -277,19 +355,50 @@ def _harness(cmd: str, *args: str) -> dict:
     return json.loads(p.stdout)
 
 
-def excl_overlength_score(results_path: Path, B: int = 2000, seed: int = 0) -> dict:
-    """Index over the DEV slice minus the 51 comparator over-length rows (same functions as ``harness score``)."""
-    from harness import bootstrap, cli, score as S
+def _subset(results_path: Path, keep: set[str] | None, drop: set[str]):
+    from harness import cli, score as S
 
-    ol = overlength_ids()
-    rows = [r for r in cli.load_slice("dev", EDITION) if r["_evaluation"]["run_id"] not in ol]
-    res = cli.load_results(str(results_path), cli._ids(rows), False)
-    res = {k: v for k, v in res.items() if k not in ol}
+    rows = [r for r in cli.load_slice("dev", EDITION) if (keep is None or r["_evaluation"]["run_id"] in keep)
+            and r["_evaluation"]["run_id"] not in drop]
+    want = set(cli._ids(rows))
+    res = {k: v for k, v in cli.load_results(str(results_path), None, False).items() if k in want}
     S.require_results(rows, res, False)
-    benches = S.decompose(rows, res, edition=EDITION)
-    rep = bootstrap.replicate_skills([benches], B=B, seed=seed)[0]
-    return {"edition": EDITION, "rows": len(rows), "excluded_run_ids": "jobs/clef_baseline/overlength_rows.json (51)",
-            "slice_index": bootstrap.summarize_one(rep, edition=EDITION)}
+    return rows, res
+
+
+def subset_score(results_path: Path, keep: set[str] | None = None, drop: set[str] = frozenset(), B: int = 2000,
+                 seed: int = 0) -> dict:
+    """Index over DEV rows restricted to ``keep`` minus ``drop`` with the same functions ``harness score`` calls
+    (decompose + case-cluster bootstrap); every kept row must have a result."""
+    from harness import bootstrap, score as S
+
+    rows, res = _subset(results_path, keep, drop)
+    rep = bootstrap.replicate_skills([S.decompose(rows, res, edition=EDITION)], B=B, seed=seed)[0]
+    return {"edition": EDITION, "rows": len(rows), "slice_index": bootstrap.summarize_one(rep, edition=EDITION)}
+
+
+def subset_ece(results_path: Path, keep: set[str] | None = None) -> dict:
+    from harness import calibration
+
+    rows, res = _subset(results_path, keep, set())
+    return calibration.report(calibration.fields(rows, res))
+
+
+def subset_compare(cand: Path, base: Path, keep: set[str] | None = None, B: int = 2000, seed: int = 0) -> dict:
+    from harness import bootstrap, score as S
+
+    rows, rc = _subset(cand, keep, set())
+    _, rb = _subset(base, keep, set())
+    c = bootstrap.compare(S.decompose(rows, rc, edition=EDITION), S.decompose(rows, rb, edition=EDITION), B=B,
+                          seed=seed)
+    return {"rows": len(rows), "candidate": c["candidate"], "baseline": c["baseline"], "diff": c["diff"]}
+
+
+def excl_overlength_score(results_path: Path, B: int = 2000, seed: int = 0, keep: set[str] | None = None) -> dict:
+    """Index over the (selected) DEV rows minus the 51 comparator over-length rows."""
+    out = subset_score(results_path, keep, overlength_ids(), B, seed)
+    out["excluded_run_ids"] = "jobs/clef_baseline/overlength_rows.json (51)"
+    return out
 
 
 def _sha(p: Path) -> str:
@@ -309,15 +418,26 @@ def report(a) -> dict:
     if "child" not in arms:
         raise SystemExit("no child.results.jsonl")
     ed = ("--slice", "dev", "--edition", EDITION)
-    out: dict[str, Any] = {"schema": SCHEMA, "edition": EDITION, "rows": N_DEV, "arms": {}}
+    mode = params.get("rows", "full")
+    keep = selected_ids(mode)
+    n = N_DEV if keep is None else len(keep)
+    out: dict[str, Any] = {"schema": SCHEMA, "edition": EDITION, "rows_mode": mode, "rows": n, "arms": {},
+                           "scorer": ("harness CLI (score / ece / compare --slice dev --edition 0.2.1)" if keep is None
+                                      else "SMOKE SUBSET: harness.score.decompose + harness.bootstrap + "
+                                           "harness.calibration in process on the pre-declared smoke rows (the CLI "
+                                           "scores whole slices only); a pipeline proof, not a capability estimate")}
     for arm in arms:
         rp = d / f"{arm}.results.jsonl"
         res = [json.loads(x) for x in rp.read_text(encoding="utf-8").splitlines() if x.strip()]
-        sc = _harness("score", "--results", str(rp), *ed)
-        ece = _harness("ece", "--results", str(rp), *ed)
+        if keep is None:
+            sc = _harness("score", "--results", str(rp), *ed)
+            ece = _harness("ece", "--results", str(rp), *ed)
+        else:
+            sc = {**subset_score(rp, keep), "official_index_missing_as_zero": None}
+            ece = subset_ece(rp, keep)
         (d / f"{arm}.score.json").write_text(json.dumps(sc, indent=1), encoding="utf-8")
         (d / f"{arm}.ece.json").write_text(json.dumps(ece, indent=1), encoding="utf-8")
-        ex = excl_overlength_score(rp)
+        ex = excl_overlength_score(rp, keep=keep)
         (d / f"{arm}.score_excl_overlength51.json").write_text(json.dumps(ex, indent=1), encoding="utf-8")
         ent = {"results_sha256": _sha(rp), "status": _count(r.get("status") for r in res),
                "full": sc["slice_index"], "official_index_missing_as_zero": sc["official_index_missing_as_zero"],
@@ -327,7 +447,7 @@ def report(a) -> dict:
                "latency": latency(res)}
         sp = d / f"{arm}.results_served.jsonl"
         if sp.is_file():  # the tempered (served) answers: same argmax, served calibration
-            se = _harness("ece", "--results", str(sp), *ed)
+            se = _harness("ece", "--results", str(sp), *ed) if keep is None else subset_ece(sp, keep)
             (d / f"{arm}.ece_served.json").write_text(json.dumps(se, indent=1), encoding="utf-8")
             ent["ece_served"] = {"board_protocol": (se.get("board_protocol") or {}).get("ece"),
                                  "overall_10bin": (se.get("overall") or {}).get("ece_10bin")}
@@ -341,8 +461,9 @@ def report(a) -> dict:
             ent["timing"] = json.loads(tm.read_text(encoding="utf-8"))
         out["arms"][arm] = ent
     if "parent" in arms:  # paired child - parent on identical rows (frozen bootstrap.compare)
-        cmp = _harness("compare", "--candidate", str(d / "child.results.jsonl"),
-                       "--baseline", str(d / "parent.results.jsonl"), *ed)
+        cmp = (_harness("compare", "--candidate", str(d / "child.results.jsonl"),
+                        "--baseline", str(d / "parent.results.jsonl"), *ed) if keep is None
+               else subset_compare(d / "child.results.jsonl", d / "parent.results.jsonl", keep))
         (d / "compare_child_vs_parent.json").write_text(json.dumps(cmp, indent=1), encoding="utf-8")
         out["child_minus_parent"] = cmp.get("diff", cmp)
     usd = params["batch_usd_per_min"]
@@ -357,8 +478,9 @@ def report(a) -> dict:
         out["checkpoint"]["loaded"] = json.loads(idf.read_text(encoding="utf-8")).get("checkpoint")
     out["overlength_treatment"] = ("every row read in full (no truncation; adapter cap raised to "
                                    f"{params.get('max_input_tokens', DEFAULT_MAX_INPUT_TOKENS)} via ssdm.limits, the "
-                                   "Clef 32k arm's mechanism); 'full' = 12,104 rows (pairs with the comparators' "
-                                   "32k-substituted files), 'excl_overlength51' = 12,053 rows")
+                                   "Clef 32k arm's mechanism); 'full' = every selected row (12,104 in mode full; "
+                                   "pairs with the comparators' 32k-substituted files), 'excl_overlength51' = the same "
+                                   "minus the 51 comparator over-length rows")
     out["verdict"] = "measured"
     return out
 
@@ -375,8 +497,10 @@ def valid_result(d: Any) -> bool:
     try:
         fin = lambda x: isinstance(x, (int, float)) and math.isfinite(x)  # noqa: E731
         c = d["arms"]["child"]
-        return (d.get("schema") == SCHEMA and d.get("verdict") == "measured" and d.get("rows") == N_DEV
-                and sum(c["status"].values()) == N_DEV
+        sel = selected_ids(d.get("rows_mode", "full"))
+        n = N_DEV if sel is None else len(sel)
+        return (d.get("schema") == SCHEMA and d.get("verdict") == "measured" and d.get("rows") == n
+                and sum(c["status"].values()) == n
                 and all(fin(c[k]["index"][f]) for k in ("full", "excl_overlength51") for f in ("point", "lo", "hi"))
                 and fin(c["latency"]["median_ms"]) and fin(c["latency"]["p95_ms"])
                 and bool(d["checkpoint"].get("ckpt_sha256"))
@@ -402,12 +526,13 @@ def estimate(params: dict, lengths: dict | None = None) -> dict[str, Any]:
     if params["max_input_tokens"] <= lengths["max_tokens"]:
         raise ValueError(f"max_input_tokens {params['max_input_tokens']} <= the longest DEV row {lengths['max_tokens']}")
     m = params["measured_rates_reference"]
-    toks = lengths["total_tokens"]
+    keep = selected_ids(params.get("rows", "full"))
+    toks = lengths["total_tokens"] if keep is None else sum(lengths["lengths"][i] for i in keep)
     phases = {"fulldev": toks / 1000 * m["child_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["child"]}
     if params.get("fulldev_parent_arm"):
         phases["parent_full"] = toks / 1000 * m["parent_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["parent"]
     caps = params["phase_caps_minutes"]
-    out = {"tokens": toks, "template": cfg["template"], "lengths_template": lengths["template"],
+    out = {"rows": params.get("rows", "full"), "tokens": toks, "template": cfg["template"], "lengths_template": lengths["template"],
            "minutes": {k: round(v, 1) for k, v in phases.items()},
            "caps": {k: caps[k] for k in phases}, "ok": all(v <= 0.95 * caps[k] for k, v in phases.items())}
     out["usd_batch_scoring"] = round(sum(phases.values()) * params["batch_usd_per_min"], 2)
@@ -432,10 +557,13 @@ def main(argv=None) -> int:
     s.add_argument("--guard-readiness")
     s.add_argument("--rows", required=True, help="the full DEV rows file (data/slices/dev-rows.jsonl.gz)")
     s.add_argument("--max-input-tokens", type=int, default=DEFAULT_MAX_INPUT_TOKENS)
+    s.add_argument("--rows-select", choices=ROW_MODES, default="full", help="full DEV, or the committed smoke slice")
     s.add_argument("--resume-dir", required=True, help="per-row append log (checkpoint dir): a restart resumes")
     s.add_argument("--out-dir", required=True)
     s.add_argument("--progress", default=None)
     s.add_argument("--device", default="cuda")
+    b = sub.add_parser("smoke-build", help="(re)build fulldev_smoke_rows.json from the DEV manifest + row lengths")
+    b.add_argument("--out", default=str(SMOKE))
     e = sub.add_parser("estimate")
     e.add_argument("--params", required=True)
     r = sub.add_parser("report")
@@ -450,6 +578,13 @@ def main(argv=None) -> int:
         if miss:
             ap.error(f"--arm {a.arm} needs {miss}")
         return score(a)
+    if a.cmd == "smoke-build":
+        from jobs.common.dev_subset import read_manifest
+
+        d = build_smoke(read_manifest(), json.loads(LENGTHS.read_text(encoding="utf-8"))["lengths"])
+        Path(a.out).write_text(json.dumps(d, indent=0) + "\n", encoding="utf-8", newline="\n")
+        print(json.dumps({k: v for k, v in d.items() if k not in ("run_ids", "_comment")}))
+        return 0
     if a.cmd == "estimate":
         try:
             est = estimate(json.loads(Path(a.params).read_text(encoding="utf-8")))

@@ -220,8 +220,9 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     # the parent loop executes at most twice, giving nine phase graces in one run.
     assert 9 * 30 / 60 + 3 * 15 / 60 + (60 + 30) / 60 == 6.75 < params["reserve_minutes"] == 7
     # fulldev_eval: download, guard, checkpoint, two arms, report graces + two rate guards + terminal export
-    fd = json.loads((ROOT / "jobs/m2_first_cell/job_params_fulldev_eval.json").read_text())
-    assert 6 * 30 / 60 + 2 * 15 / 60 + (60 + 30) / 60 == 5.0 < fd["reserve_minutes"] == 7
+    for mode in ("fulldev_eval", "fulldev_smoke"):
+        fd = json.loads((ROOT / f"jobs/m2_first_cell/job_params_{mode}.json").read_text())
+        assert 6 * 30 / 60 + 2 * 15 / 60 + (60 + 30) / 60 == 5.0 < fd["reserve_minutes"] == 7
 
 
 @pytest.mark.parametrize("resistant_finalizer", [False, True])

@@ -14,7 +14,8 @@ Two pairings, both through ``analysis.paired_vs_clef`` (frozen scorer + case-clu
 sets asserted identical):
   * ``full``        12,104 rows: the candidate read every row natively (no truncation), Clef at 32k. HEADLINE.
   * ``full_excl51`` 12,053 rows: the 51 rows Clef's shipped 16k cannot read left out on every side.
-``beats_both`` (paired CI lo > 0 vs each Clef) is reported for each. The job's own ``child.score.json`` point is
+``beats_both`` (paired CI lo > 0 vs each Clef) is reported for each. A results file of the 250-row smoke slice
+(mode ``fulldev_smoke``) is landed in the ``fulldev_smoke`` row mode only and labelled a SUBSET pipeline proof. The job's own ``child.score.json`` point is
 re-checked against the recomputed one (must agree to 1e-6). CPU only; the artifact is untrusted data (python -I).
 """
 from __future__ import annotations
@@ -38,6 +39,19 @@ CLEF_SHA = "f5ad788be191f7737dfadd1594cab7b02a428d847b0cfd9478660df8032ab09e"  #
 FLASH = HOME / "clef_t5yg2_land/dl/clef-flash-index-full/index/decide_32k_substituted/results.jsonl"
 FLASH_SHA = "2cb2e96114694b589a35c392099b2f67dc5ae0970e9939f8500f0bedf86649c5"  # job-t5yg2 art-7pyk2
 MODES = ("full", "full_excl51")
+SMOKE_MODES = ("fulldev_smoke",)  # mode fulldev_smoke: a 250-row pipeline proof, landed as a SUBSET
+
+
+def row_modes(candidate: str) -> tuple[str, ...]:
+    """Full-DEV pairings for a 12,104-row results file; the smoke pairing for the pre-declared smoke slice."""
+    with open(candidate, encoding="utf-8") as f:
+        n = sum(1 for x in f if x.strip())
+    sm = json.loads((ROOT / "jobs/m2_first_cell/fulldev_smoke_rows.json").read_text(encoding="utf-8"))
+    if n == sm["n"]:
+        return SMOKE_MODES
+    if n == 12_104:
+        return MODES
+    raise SystemExit(f"{candidate}: {n} rows is neither the full DEV (12,104) nor the smoke slice ({sm['n']})")
 
 
 def find_candidate(art: Path) -> Path:
@@ -57,16 +71,25 @@ def land(candidate: str, clef: str = str(CLEF), flash: str = str(FLASH), B: int 
         for p, want, name in ((clef, CLEF_SHA, "Clef 27B art-p93d4"), (flash, FLASH_SHA, "Clef-flash art-7pyk2")):
             if P._sha(p) != want:
                 raise SystemExit(f"{name}: {p} sha256 != the pinned comparator file")
-    out = {"job": job, "artifact": artifact, "candidate": str(Path(candidate).resolve()), "pairings": {}}
-    for mode in MODES:
+    modes = row_modes(candidate)
+    out = {"job": job, "artifact": artifact, "candidate": str(Path(candidate).resolve()), "modes": modes,
+           "pairings": {}}
+    for mode in modes:
         r = P.run(clef, flash, candidate, rows_mode=mode, B=B, seed=seed)
         out["pairings"][mode] = {"brief": P.brief(r), "table": P.table(r), "rows": r["rows"],
                                  "files": r["files"], "context": r["context"]}
     own = Path(candidate).with_name("child.score.json")
     if own.is_file():
         jp = json.loads(own.read_text(encoding="utf-8"))["slice_index"]["index"]["point"]
-        rp = out["pairings"]["full"]["brief"]["index"]["candidate"]["point"]
+        rp = out["pairings"][modes[0]]["brief"]["index"]["candidate"]["point"]
         out["job_score_check"] = {"job": jp, "recomputed": rp, "ok": abs(jp - rp) < 1e-6}
+    if modes == SMOKE_MODES:
+        f = out["pairings"]["fulldev_smoke"]["brief"]
+        out["ledger_note"] = (f"SMOKE SUBSET ({out['pairings']['fulldev_smoke']['rows']} pre-declared DEV rows; pipeline "
+                              f"proof, NOT a full-DEV result): {_ci(f['index']['candidate'])}; vs Clef "
+                              f"{_ci(f['diff_vs']['clef'])}, vs Clef-flash {_ci(f['diff_vs']['clef_flash'])}; board ECE "
+                              f"{f['board_ece']['candidate']:.4f}")
+        return out
     f = out["pairings"]["full"]["brief"]
     x = out["pairings"]["full_excl51"]["brief"]
     out["ledger_note"] = (f"full DEV 12,104 rows (native, no truncation): {_ci(f['index']['candidate'])}; "
@@ -95,7 +118,7 @@ def main(argv=None) -> int:
     out = land(cand, a.clef, a.clef_flash, a.B, a.seed, a.job, a.artifact, not a.no_pin_check)
     if a.out:
         Path(a.out).write_text(json.dumps(out, indent=1), encoding="utf-8")
-    for mode in MODES:
+    for mode in out["modes"]:
         print(f"## {mode}\n{out['pairings'][mode]['table']}\n")
     print(out["ledger_note"])
     if "job_score_check" in out:

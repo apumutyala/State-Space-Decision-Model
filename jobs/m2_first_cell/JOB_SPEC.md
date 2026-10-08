@@ -249,3 +249,23 @@ against the pin before reading two members.
 **Landing.** Extract the job's last phase tgz, then `python -I -X utf8 analysis/land_fulldev.py --art <dir> --job
 <id> --artifact <art>`: `analysis.paired_vs_clef` in `full` and `full_excl51` row modes against the two pinned
 comparator files; `beats_both` per mode, ECE, and a re-check of the job's own score.
+
+### Mode `fulldev_smoke`: the same pipeline on 250 pre-declared rows, both arms (DRAFT, NOT SUBMITTED)
+
+`job_params_fulldev_smoke.json` = fulldev_eval with `"rows": "smoke"` and `"fulldev_parent_arm": true`. Rows:
+`fulldev_smoke_rows.json` (`fulldev_eval smoke-build`; DEV manifest + RWKV7 row lengths only, rebuilt byte for byte
+by the tests): whole kit groups; the longest DEV row (47,509 tokens) plus 11 more of the 68 rows over 16,384 at
+evenly spaced length ranks (8 of the comparators' 51, 4 RWKV7-only), then one whole group per track in
+sha256(seed:catalog:group) order, round-robin over the 83 tracks that have short groups, to 250 rows (732,499
+tokens). The report scores the subset in process with the frozen functions (`harness.score.decompose`,
+`harness.bootstrap`, `harness.calibration`; the CLI scores whole slices only) and says so. `land_fulldev.py`
+detects a smoke results file and lands it in the `fulldev_smoke` row mode of `paired_vs_clef`, labelled a SUBSET.
+Caps 25 / 5 / 15 / 70 / 25 / 10 + 7 = 157 min. Expected: child 12.7 scoring + 30 fixed, parent 4.6 + 5; run 73 min
+= **$3.61** billed / $4.60 quoted, + build ~15 min ($4.36). Worst case $18.51.
+
+**d1_fast's throughput flags do not apply to scoring.** `row_plan` / `cont_plan` regroup rows inside a TRAINING step
+(`train.trainer`), and `compile_blocks` compiles the block body inside the activation checkpoint, which
+`heads/act_ckpt` bypasses under `no_grad` (evaluation runs the plain block). Scoring is one request at a time
+through `DecisionModelBackend.score`; none of the three is on that path, so the full-run estimate stays 421 min.
+(They also could not be switched on here: the loader requires the cell config to EQUAL the checkpoint's cell.json.)
+The measured gap that does matter: D1's child scores at 1.037 s / 1k tokens vs 0.373 for the stock parent (2.8x).

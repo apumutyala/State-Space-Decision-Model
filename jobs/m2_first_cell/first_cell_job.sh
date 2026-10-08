@@ -11,7 +11,8 @@
 #   Params with "eval_only": "fulldev" (mode fulldev_eval) are an EVAL-ONLY run of a SAVED checkpoint on the FULL Index
 #   DEV slice: setup + guard as usual, then phase checkpoint (jobs.m2_first_cell.checkpoint_loader: the artifact from
 #   $<checkpoint.url_env>, every byte sha256-pinned), fulldev (jobs.m2_first_cell.fulldev_eval score --arm child, all
-#   12,104 rows, live rate guard, per-row resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
+#   12,104 rows, or params "rows": "smoke" = the pre-declared 250-row fulldev_smoke_rows.json; live rate guard, per-row
+#   resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
 #   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
@@ -240,8 +241,8 @@ if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a
   case $r in 0) ;; 124|137) fail 7 "checkpoint timeout" ;; 10) fail 10 "checkpoint identity: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
     *) fail 5 "checkpoint rc=$r: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
   CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
-  read -r MAXIN FD_PARENT <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(int(p['max_input_tokens']), 1 if p.get('fulldev_parent_arm') else 0)" "$PARAMS")" \
-    || fail 5 "job_params max_input_tokens / fulldev_parent_arm"
+  read -r MAXIN FD_PARENT ROWS_SEL <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(int(p['max_input_tokens']), 1 if p.get('fulldev_parent_arm') else 0, p.get('rows', 'full'))" "$PARAMS")" \
+    || fail 5 "job_params max_input_tokens / fulldev_parent_arm / rows"
   FD_ARMS=(child); [ "$FD_PARENT" = 1 ] && FD_ARMS+=(parent)
   for ARMNAME in "${FD_ARMS[@]}"; do
     PH=fulldev; [ "$ARMNAME" = parent ] && PH=parent_full
@@ -251,11 +252,11 @@ if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a
     else
       ARGS=(--cell-config "$CELL")
     fi
-    say "phase $PH ($ARMNAME arm, all 12,104 DEV rows, max_input_tokens $MAXIN; resumes from $CK/fulldev)"
+    say "phase $PH ($ARMNAME arm, DEV rows: $ROWS_SEL, max_input_tokens $MAXIN; resumes from $CK/fulldev)"
     python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)" \
       --report "$WORK/out/rate-$PH.json" -- \
       timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval score --arm "$ARMNAME" "${ARGS[@]}" \
-      --model-dir "$SNAP" --rows "$DATA/slices/dev-rows.jsonl.gz" --max-input-tokens "$MAXIN" --resume-dir "$CK/fulldev" \
+      --model-dir "$SNAP" --rows "$DATA/slices/dev-rows.jsonl.gz" --max-input-tokens "$MAXIN" --rows-select "$ROWS_SEL" --resume-dir "$CK/fulldev" \
       --out-dir "$WORK/out/fulldev" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
     gate "$PH" $r; export_phase "$PH"
     case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
