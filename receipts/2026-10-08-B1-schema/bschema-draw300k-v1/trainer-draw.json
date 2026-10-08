@@ -1,0 +1,71 @@
+{
+ "trainer_root": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/trainer-9c3e435",
+ "cell": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/trainer-9c3e435/jobs/m2_first_cell/m2_first_cell_rwkv7_d3_v3w_fast.json",
+ "pointer": "C:/Users/apumu/research/CHLabs/ssdm-wt/b-schema-synth/data/manifests/bschema-draw300k-v1.pointer.json",
+ "draws": [
+  {
+   "n": 24000,
+   "n_drawn": 24000,
+   "identity": {
+    "train_set": "bschema-draw300k-v1 (python -X utf8 -I -m data.b_schema; BOARD B-1 schema-permutation synth)",
+    "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b-schema-synth\\data\\manifests\\bschema-draw300k-v1.pointer.json",
+    "pointer_sha256": "28c54c16acf8f33798c73eb202cdf213bfc97091b8a4162f7f8712aa564b2c06",
+    "files_uncompressed_sha256": {
+     "records": "9f4e27d35254eb3a4b0da87f7ff2113360e98d8db13b0379e1aabc32c1eac566",
+     "manifest": "4a0604c6bfc4f1c45d2fda60f8a5acfc5ba8263d342a534714e453f715759e7a",
+     "content_map": "0ef13137aa1e3c0dc22c34ea8b0ac314d3443e256018cafc9635fdfdcbd20bf7"
+    },
+    "n_pool": 300000,
+    "heldout_excluded": [],
+    "drawn_heldout_scan": {
+     "n_texts": 24000,
+     "hits": 0,
+     "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+    },
+    "held_out_in_set": {
+     "by_id": 0,
+     "by_content": 0
+    },
+    "n_drawn": 24000,
+    "draw_seed": 0,
+    "drawn_ids_sha256": "b1942e10d5507516248e644ccea411671791da9242c4747ed88ea2a2c1797e77",
+    "lines_manifest_verified": 300000,
+    "cohort": {
+     "cohort": "m2-dev-cohort-v2",
+     "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 1670,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "cohort_v3_excluded": {
+     "n": 0,
+     "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+     "cohort": {
+      "cohort": "m2-dev-cohort-v3",
+      "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+      "n": {
+       "dev": 835,
+       "calibration": 1000,
+       "retention": 39872,
+       "steer_dev": 1800,
+       "steer_gate": 1000
+      }
+     },
+     "drawn_overlap": 0
+    }
+   },
+   "first_ids": [
+    "m2:hellaswag:1907~view:bs2",
+    "m2:banking77:3567~view:k16-bs2",
+    "m2:glaive_fc:8853~view:cat16-bs0"
+   ],
+   "n_questions": 39248
+  }
+ ],
+ "heldout_gate_exit": 0,
+ "pass": true
+}

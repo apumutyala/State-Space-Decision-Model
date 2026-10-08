@@ -1,0 +1,113 @@
+{
+ "draw": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\bschema-draw300k-v1",
+ "pointer": "data\\manifests\\bschema-draw300k-v1.pointer.json",
+ "n_rows": 300000,
+ "index_rows_indexed": 155390,
+ "index_lines": 518406,
+ "index_segments": 742394,
+ "index_boilerplate_excluded": {
+  "rule": "shared by >= 20 distinct Index rows",
+  "lines": 6593,
+  "segments": 7890
+ },
+ "cohorts": {
+  "v2": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "v3": {
+   "cohort": "m2-dev-cohort-v3",
+   "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 39872,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  }
+ },
+ "d1b_templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+ "generators_checked": [
+  "acos/acos_category_sentiment",
+  "anli/claim_verification",
+  "anli/multi",
+  "anli/nli",
+  "b1fam_apibank/API-Bank-tool-selection",
+  "b1fam_bfcl_synth/BFCL-tool-selection",
+  "b1fam_cruxeval_synth/CRUXEval-output-choice",
+  "banking77/intent_banking",
+  "banking77/intent_membership",
+  "boolq/multi",
+  "boolq/yesno_passage",
+  "clinc150/intent_general",
+  "clinc150/intent_membership",
+  "glaive_fc/tool_select",
+  "gsm8k/math_mcq",
+  "habermas/consensus_selection",
+  "hellaswag/continuation",
+  "hellaswag/multi",
+  "hover/claim_verification",
+  "humicroedit_s1/humor_score",
+  "humicroedit_s2/humor_pair",
+  "mmlu_aux/answer_verification",
+  "mmlu_aux/mcq",
+  "mmlu_aux/multi",
+  "mnli/nli",
+  "nli4ct/clinical_trial_nli",
+  "nq/retrieval",
+  "ragtruth/hallucination_detection",
+  "sst5/multi",
+  "sst5/sentiment_score",
+  "synthetic_factchange/factchange_delivery",
+  "synthetic_factchange/factchange_rating",
+  "synthetic_factchange/factchange_renewal",
+  "synthetic_factchange/factchange_schedule",
+  "synthetic_factchange/factchange_spend_limit",
+  "synthetic_factchange/factchange_stock",
+  "toolace/tool_multi",
+  "toolace/tool_select",
+  "vast/stance",
+  "when2call/response_select",
+  "winogrande/fill_blank",
+  "winogrande/multi"
+ ],
+ "context_overlap_reported_not_failed": {
+  "anli:segment": 12,
+  "b1fam_apibank:segment": 147,
+  "b1fam_apibank:line": 54,
+  "boolq:segment": 10,
+  "clinc150:segment": 9,
+  "glaive_fc:line": 10099,
+  "glaive_fc:segment": 9122,
+  "gsm8k:segment": 25,
+  "hellaswag:segment": 7,
+  "humicroedit_s1:segment": 2,
+  "humicroedit_s2:segment": 2,
+  "mmlu_aux:segment": 8,
+  "nq:segment": 1,
+  "sst5:segment": 5,
+  "toolace:segment": 1910,
+  "toolace:line": 387,
+  "when2call:segment": 1592,
+  "when2call:line": 3068,
+  "winogrande:segment": 24
+ },
+ "max_item_reuse": 8,
+ "source_item_reuse": {
+  "items": 123274,
+  "max": 8,
+  "rows_sharing_item_frac": 0.912,
+  "within_item_text_key_collisions": 74542,
+  "cross_item_text_key_collisions": 0
+ },
+ "failures": {},
+ "pass": true
+}

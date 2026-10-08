@@ -1,0 +1,405 @@
+{
+ "frozen_catalogs": [
+  9,
+  20,
+  22,
+  31,
+  32,
+  33,
+  44,
+  58,
+  64
+ ],
+ "specs": [
+  {
+   "name": "b_schema_synth",
+   "task_family": "schema_permutation",
+   "targets": [
+    "schema_permutation",
+    "field_order",
+    "prompt_paraphrase",
+    "option_id_style"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/acos/acos_category_sentiment",
+   "task_family": "acos_category_sentiment",
+   "targets": [
+    "acos",
+    "acos_category_sentiment"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/anli/claim_verification",
+   "task_family": "claim_verification",
+   "targets": [
+    "anli",
+    "claim_verification"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/anli/multi",
+   "task_family": "multi",
+   "targets": [
+    "anli",
+    "multi"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/anli/nli",
+   "task_family": "nli",
+   "targets": [
+    "anli",
+    "nli"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/b1fam_apibank/API-Bank-tool-selection",
+   "task_family": "API-Bank-tool-selection",
+   "targets": [
+    "b1fam_apibank",
+    "API-Bank-tool-selection"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/b1fam_bfcl_synth/BFCL-tool-selection",
+   "task_family": "BFCL-tool-selection",
+   "targets": [
+    "b1fam_bfcl_synth",
+    "BFCL-tool-selection"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/b1fam_cruxeval_synth/CRUXEval-output-choice",
+   "task_family": "CRUXEval-output-choice",
+   "targets": [
+    "b1fam_cruxeval_synth",
+    "CRUXEval-output-choice"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/banking77/intent_banking",
+   "task_family": "intent_banking",
+   "targets": [
+    "banking77",
+    "intent_banking"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/banking77/intent_membership",
+   "task_family": "intent_membership",
+   "targets": [
+    "banking77",
+    "intent_membership"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/boolq/multi",
+   "task_family": "multi",
+   "targets": [
+    "boolq",
+    "multi"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/boolq/yesno_passage",
+   "task_family": "yesno_passage",
+   "targets": [
+    "boolq",
+    "yesno_passage"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/clinc150/intent_general",
+   "task_family": "intent_general",
+   "targets": [
+    "clinc150",
+    "intent_general"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/clinc150/intent_membership",
+   "task_family": "intent_membership",
+   "targets": [
+    "clinc150",
+    "intent_membership"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/glaive_fc/tool_select",
+   "task_family": "tool_select",
+   "targets": [
+    "glaive_fc",
+    "tool_select"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/gsm8k/math_mcq",
+   "task_family": "math_mcq",
+   "targets": [
+    "gsm8k",
+    "math_mcq"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/habermas/consensus_selection",
+   "task_family": "consensus_selection",
+   "targets": [
+    "habermas",
+    "consensus_selection"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/hellaswag/continuation",
+   "task_family": "continuation",
+   "targets": [
+    "hellaswag",
+    "continuation"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/hellaswag/multi",
+   "task_family": "multi",
+   "targets": [
+    "hellaswag",
+    "multi"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/hover/claim_verification",
+   "task_family": "claim_verification",
+   "targets": [
+    "hover",
+    "claim_verification"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/humicroedit_s1/humor_score",
+   "task_family": "humor_score",
+   "targets": [
+    "humicroedit_s1",
+    "humor_score"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/humicroedit_s2/humor_pair",
+   "task_family": "humor_pair",
+   "targets": [
+    "humicroedit_s2",
+    "humor_pair"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/mmlu_aux/answer_verification",
+   "task_family": "answer_verification",
+   "targets": [
+    "mmlu_aux",
+    "answer_verification"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/mmlu_aux/mcq",
+   "task_family": "mcq",
+   "targets": [
+    "mmlu_aux",
+    "mcq"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/mmlu_aux/multi",
+   "task_family": "multi",
+   "targets": [
+    "mmlu_aux",
+    "multi"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/mnli/nli",
+   "task_family": "nli",
+   "targets": [
+    "mnli",
+    "nli"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/nli4ct/clinical_trial_nli",
+   "task_family": "clinical_trial_nli",
+   "targets": [
+    "nli4ct",
+    "clinical_trial_nli"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/nq/retrieval",
+   "task_family": "retrieval",
+   "targets": [
+    "nq",
+    "retrieval"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/ragtruth/hallucination_detection",
+   "task_family": "hallucination_detection",
+   "targets": [
+    "ragtruth",
+    "hallucination_detection"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/sst5/multi",
+   "task_family": "multi",
+   "targets": [
+    "sst5",
+    "multi"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/sst5/sentiment_score",
+   "task_family": "sentiment_score",
+   "targets": [
+    "sst5",
+    "sentiment_score"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/synthetic_factchange/factchange_delivery",
+   "task_family": "factchange_delivery",
+   "targets": [
+    "synthetic_factchange",
+    "factchange_delivery"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/synthetic_factchange/factchange_rating",
+   "task_family": "factchange_rating",
+   "targets": [
+    "synthetic_factchange",
+    "factchange_rating"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/synthetic_factchange/factchange_renewal",
+   "task_family": "factchange_renewal",
+   "targets": [
+    "synthetic_factchange",
+    "factchange_renewal"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/synthetic_factchange/factchange_schedule",
+   "task_family": "factchange_schedule",
+   "targets": [
+    "synthetic_factchange",
+    "factchange_schedule"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/synthetic_factchange/factchange_spend_limit",
+   "task_family": "factchange_spend_limit",
+   "targets": [
+    "synthetic_factchange",
+    "factchange_spend_limit"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/synthetic_factchange/factchange_stock",
+   "task_family": "factchange_stock",
+   "targets": [
+    "synthetic_factchange",
+    "factchange_stock"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/toolace/tool_multi",
+   "task_family": "tool_multi",
+   "targets": [
+    "toolace",
+    "tool_multi"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/toolace/tool_select",
+   "task_family": "tool_select",
+   "targets": [
+    "toolace",
+    "tool_select"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/vast/stance",
+   "task_family": "stance",
+   "targets": [
+    "vast",
+    "stance"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/when2call/response_select",
+   "task_family": "response_select",
+   "targets": [
+    "when2call",
+    "response_select"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/winogrande/fill_blank",
+   "task_family": "fill_blank",
+   "targets": [
+    "winogrande",
+    "fill_blank"
+   ],
+   "pass": true
+  },
+  {
+   "name": "b_schema_synth/winogrande/multi",
+   "task_family": "multi",
+   "targets": [
+    "winogrande",
+    "multi"
+   ],
+   "pass": true
+  }
+ ],
+ "all_pass": true
+}

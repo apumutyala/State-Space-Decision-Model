@@ -1,0 +1,17 @@
+{
+ "build": "bschema-draw300k-v1 (python -X utf8 -I -m data.b_schema; BOARD B-1 schema-permutation synth)",
+ "location": "ssdm-data/m2/build/bschema-draw300k-v1/ (outside git; deterministic, a rebuild reproduces it)",
+ "records_uncompressed_sha256": "9f4e27d35254eb3a4b0da87f7ff2113360e98d8db13b0379e1aabc32c1eac566",
+ "manifest": "bschema-draw300k-v1.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "4a0604c6bfc4f1c45d2fda60f8a5acfc5ba8263d342a534714e453f715759e7a",
+ "content_map": "bschema-draw300k-v1.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "0ef13137aa1e3c0dc22c34ea8b0ac314d3443e256018cafc9635fdfdcbd20bf7",
+ "n_records": 300000,
+ "excludes_cohort": "m2-dev-cohort-v2 be6efe2b... and m2-dev-cohort-v3 498efa61... (id, content, source item, key-free text), Index DEV/TEST rows (content, key-free text, item text)",
+ "max_variants_per_source_item": 8,
+ "builder": {
+  "module": "data/b_schema.py",
+  "commit": "cb1bdbac014b3a8a59025386c436e11450a2d422"
+ },
+ "receipt": "receipts/2026-10-08-B1-schema/bschema-draw300k-v1/"
+}

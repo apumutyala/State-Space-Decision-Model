@@ -1,0 +1,53 @@
+{
+ "draw": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\b1-draw100k-v3\\records.jsonl.gz",
+ "n_rows": 100000,
+ "source_items": 99007,
+ "rows_sharing_a_source_item_frac": 0.0199,
+ "max_variants_per_item": 2,
+ "variants_per_item_hist": {
+  "1": 98014,
+  "2": 993
+ },
+ "keyfree_text_collisions": {
+  "keys": "data.b1.dedup_keys",
+  "within_item": 0,
+  "across_items": 0
+ },
+ "minhash_near_dup": {
+  "sample_rows": 30125,
+  "threshold_jaccard": 0.8,
+  "pairs_within_item": 11,
+  "pairs_across_items": 26195,
+  "rows_with_cross_item_near_dup_frac": 0.04697
+ },
+ "by_source": {
+  "glaive_fc": 27517,
+  "clinc150": 10000,
+  "banking77": 6438,
+  "mmlu_aux": 5916,
+  "winogrande": 4950,
+  "gsm8k": 4238,
+  "toolace": 4126,
+  "anli": 4000,
+  "boolq": 4000,
+  "hellaswag": 4000,
+  "when2call": 3867,
+  "b1fam_cruxeval_synth": 2400,
+  "b1fam_bfcl_synth": 2286,
+  "sst5": 2000,
+  "synthetic_factchange": 1986,
+  "humicroedit_s1": 1500,
+  "humicroedit_s2": 1500,
+  "hover": 1400,
+  "ragtruth": 1400,
+  "mnli": 1300,
+  "vast": 1300,
+  "acos": 1000,
+  "nli4ct": 855,
+  "nq": 817,
+  "b1fam_apibank": 604,
+  "habermas": 600
+ },
+ "ops_rows": {},
+ "ops_by_source": {}
+}
