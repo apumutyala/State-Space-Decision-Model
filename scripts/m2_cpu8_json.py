@@ -108,16 +108,63 @@ def main(args: list[str]) -> None:
         identifier = node["id"]
         require(isinstance(identifier, str) and bool(identifier) and not any(c.isspace() for c in identifier))
         print(identifier, "running")
+    elif mode == "command":
+        command = load(args[0])
+        # Unknown provider response shapes fail closed. Never select "newest".
+        identifier = command["id"]
+        require(isinstance(identifier, str) and re.fullmatch(r"cmd-[a-z0-9]+", identifier) is not None)
+        require(command["status"] in ("running", "completed", "complete", "exited"))
+        print(identifier)
+    elif mode == "completion":
+        path, rc = args
+        output = Path(path).read_text(encoding="utf-8", errors="strict")
+        require("pending_wake" not in output)
+        exit_code = int(rc)
+        require(0 <= exit_code <= 255)
+        if exit_code == 0:
+            # The frozen runner prints this only after launch, nonempty artifact
+            # checks and JUnit validation. CLI/log-follow success is insufficient.
+            reports = []
+            decoder = json.JSONDecoder()
+            for match in re.finditer(r"(?m)^\{", output):
+                try:
+                    report, _ = decoder.raw_decode(output[match.start():])
+                except ValueError:
+                    continue
+                if isinstance(report, dict) and "source_sha" in report and "junit_counts" in report:
+                    reports.append(report)
+            require(len(reports) == 1)
+            report = reports[0]
+            require(report["source_sha"] == "4247b340dddecf620de6ff22751256f4127237cb")
+            require(report["h100_request_submitted"] is False)
+            tests = report["launcher_tests"]
+            require(isinstance(tests, dict))
+            require(all(type(tests[key]) is int and tests[key] >= 0 for key in ("passed", "failed", "skipped")))
+            require(tests["passed"] > 0 and tests["failed"] == 0)
+            counts = report["junit_counts"]
+            require(isinstance(counts, dict))
+            require(all(type(counts[key]) is int and counts[key] >= 0 for key in ("tests", "failures", "errors", "skipped")))
+            require(counts["failures"] == counts["errors"] == 0)
+            # The frozen runner reads the root attributes. A pytest testsuites
+            # wrapper has none: all-zero counts then rely on launcher's recursive
+            # testcase counts above. Any populated root must agree with them.
+            require(all(value == 0 for value in counts.values()) or (
+                counts["tests"] == tests["passed"] + tests["skipped"] and counts["skipped"] == tests["skipped"]))
+            require(isinstance(report["context_sha256"], str) and re.fullmatch(r"[0-9a-f]{64}", report["context_sha256"]) is not None)
+            require(type(report["context_bytes"]) is int and report["context_bytes"] > 0)
+        print(exit_code)
     elif mode == "receipt":
-        path, phase, file, rc, name, node_id, state, stop, run, export, elapsed, imported = args
+        path, phase, file, rc, name, node_id, state, stop, run, export, elapsed, imported, command, log_rc, completed = args
         events_path = str(Path(path).parent / "transfer-events.json")
         save(path, {"schema": "ssdm.m2_cpu8_controller.v1", "issue": 171,
                     "phase": phase, "current_file": file, "rc": int(rc),
                     "node_name": name, "node_id": node_id, "node_state": state,
                     "stop_result": stop, "workload_rc": run, "export_rc": export,
+                    "workload_command_id": command, "log_follow_rc": log_rc,
+                    "workload_completion_verified": completed == "true",
                     "elapsed_seconds": int(elapsed), "max_retries": 0,
                     "import_outcome": imported, "hard_cap_usd": 3.0,
-                    "max_exposure_including_original_incident_usd": 2.344958,
+                    "max_exposure_including_original_incident_usd": 2.346700,
                     "transfer_events": load(events_path) if Path(events_path).exists() else []})
     else:
         raise ValueError("unknown local gate")

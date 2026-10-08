@@ -1,0 +1,97 @@
+{
+  "schema": "ssdm.m2_cpu8_controller.v1",
+  "issue": 171,
+  "phase": "export",
+  "current_file": "launch-output",
+  "rc": 1,
+  "node_name": "ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6",
+  "node_id": "a6deba85-60b6-47df-b648-3208db96e49c",
+  "node_state": "stopped",
+  "stop_result": "stopped",
+  "workload_rc": "0",
+  "export_rc": "1",
+  "elapsed_seconds": 340,
+  "max_retries": 0,
+  "import_outcome": "completed",
+  "hard_cap_usd": 3.0,
+  "max_exposure_including_original_incident_usd": 2.344958,
+  "transfer_events": [
+    {
+      "phase": "storage_upload",
+      "current_file": "agent-main-5aac22.bundle",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/agent-main-5aac22.bundle (25.0 MiB)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "decision-index-87d4650.bundle",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/decision-index-87d4650.bundle (1044541 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "m2_first_cell-4247b340ddde.tar.zst",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/m2_first_cell-4247b340ddde.tar.zst (447.4 MiB)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "package-manifest.json",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/package-manifest.json (4219 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "run_deadline.py",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/run_deadline.py (5723 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "run_m2_cpu8_tests.sh",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/run_m2_cpu8_tests.sh (5185 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "tokenizer_config.json",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/tokenizer_config.json (531 B)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "tokenizer.json",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/tokenizer.json (1.5 MiB)\n"
+    },
+    {
+      "phase": "storage_upload",
+      "current_file": "package.sha256",
+      "rc": 0,
+      "stdout": "",
+      "stderr": "uploaded ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/package.sha256 (722 B)\n"
+    },
+    {
+      "phase": "storage_import",
+      "current_file": "package_directory",
+      "rc": 0,
+      "stdout": "{\n  \"bytes_transferred\": 497938286,\n  \"connection\": \"storage/ssdm-m2cpu8-validation-20261008\",\n  \"dest_path\": \"/home/dev/m2-cpu8-validation/input\",\n  \"files\": 9,\n  \"files_done\": 9,\n  \"files_total\": 9,\n  \"finished_at\": \"2026-10-08T02:58:02.532726+00:00\",\n  \"import_id\": \"imp-jmiwx\",\n  \"object\": \"import\",\n  \"source\": \"s3://ssdm-m2cpu8-validation-20261008/m2-cpu8/ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6/input/\",\n  \"started_at\": \"2026-10-08T02:57:53.862992+00:00\",\n  \"status\": \"complete\",\n  \"total_bytes\": 497938286\n}\n",
+      "stderr": "imp-jmiwx running\u2026 0.0 GiB (0/9 files)\nimp-jmiwx complete\n"
+    },
+    {
+      "phase": "export",
+      "current_file": "launch-output",
+      "rc": 1,
+      "stdout": "",
+      "stderr": "error: ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6 is stopped - exporting would wake it, and this tool never wakes a node. run_command anything on it (that wakes it), then re-call export_data\n  (request-id req_39399fcd766f454b838590b7a8144d2e - quote it when reporting a problem)\n"
+    }
+  ]
+}
