@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from typing import Any
+
+
+def decimal_text(value: Decimal) -> str:
+    """Canonical exact text, independent of ambient exponent capitalization."""
+    with localcontext() as context:
+        context.capitals = 1
+        return str(value)
 
 
 def _json_value(value: Any) -> Any:
     if isinstance(value, Decimal):
-        return str(value)
+        return decimal_text(value)
     if isinstance(value, tuple):
         return [_json_value(part) for part in value]
     if hasattr(value, "to_dict"):
@@ -48,14 +55,61 @@ class ConstantValue:
 
 
 @dataclass(frozen=True, slots=True)
+class AssumptionValue:
+    """A host-declared alternate value, never an authoritative Fact."""
+
+    assumption_ref: str
+    premise: Fact
+    value: str | int | bool | Decimal
+
+    @property
+    def interval(self) -> str:
+        return self.premise.interval
+
+    @property
+    def unit(self) -> str | None:
+        return self.premise.unit
+
+    @property
+    def quantity_kind(self) -> str:
+        return self.premise.quantity_kind
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"epistemic_class": "hypothesis", "assumption_ref": self.assumption_ref,
+                "premise": self.premise.to_dict(), "value": _json_value(self.value)}
+
+
+@dataclass(frozen=True, slots=True)
 class Comparison:
-    left: Fact | ConstantValue
-    right: Fact | ConstantValue
+    left: Fact | ConstantValue | AssumptionValue
+    right: Fact | ConstantValue | AssumptionValue
     relation: str
     interval: str
 
     def to_dict(self) -> dict[str, Any]:
         return {"left": self.left.to_dict(), "right": self.right.to_dict(), "relation": self.relation, "interval": self.interval}
+
+
+@dataclass(frozen=True, slots=True)
+class ConditionalContent:
+    assumption: AssumptionValue
+    conclusion: Comparison
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"assumption": self.assumption.to_dict(), "conclusion": self.conclusion.to_dict()}
+
+
+@dataclass(frozen=True, slots=True)
+class ExactDifference:
+    left: Fact | ConstantValue
+    right: Fact | ConstantValue
+    value: int | Decimal
+    unit: str | None
+    interval: str
+    quantity_kind: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {name: _json_value(getattr(self, name)) for name in self.__dataclass_fields__}
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,9 +123,34 @@ class AskContent:
 
 
 @dataclass(frozen=True, slots=True)
+class PlanStep:
+    step_ref: str
+    action_ref: str
+    preconditions: tuple[Fact, ...]
+    after: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"step_ref": self.step_ref, "action_ref": self.action_ref,
+                "status": "proposed", "preconditions": _json_value(self.preconditions),
+                "after": list(self.after)}
+
+
+@dataclass(frozen=True, slots=True)
+class PlanContent:
+    """A conditional proposal; no action capability or execution state."""
+
+    workflow_ref: str
+    steps: tuple[PlanStep, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"epistemic_class": "plan", "execution": "none",
+                "workflow_ref": self.workflow_ref, "steps": _json_value(self.steps)}
+
+
+@dataclass(frozen=True, slots=True)
 class SpeechAct:
     kind: str
-    content: Fact | Comparison | AskContent | tuple[SpeechAct, ...] | SpeechAct
+    content: Fact | Comparison | ExactDifference | ConditionalContent | AskContent | PlanContent | tuple[SpeechAct, ...] | SpeechAct
     dependencies: tuple[str, ...]
     derivation: tuple[int, ...]
 

@@ -1,0 +1,20 @@
+test_model_cannot_supply_action_authority_effect_or_completion (language_growth.tests.test_plan.PlanTests.test_model_cannot_supply_action_authority_effect_or_completion) ... ok
+test_only_registered_ordered_steps_are_accepted (language_growth.tests.test_plan.PlanTests.test_only_registered_ordered_steps_are_accepted) ... ok
+test_plan_cannot_be_promoted_into_a_fact (language_growth.tests.test_plan.PlanTests.test_plan_cannot_be_promoted_into_a_fact) ... ok
+test_premises_use_existing_authority_and_exact_typed_preconditions (language_growth.tests.test_plan.PlanTests.test_premises_use_existing_authority_and_exact_typed_preconditions) ... ok
+test_registered_plan_is_conditional_and_has_no_effects (language_growth.tests.test_plan.PlanTests.test_registered_plan_is_conditional_and_has_no_effects) ... ok
+test_release_rechecks_workflow_registration_and_premises (language_growth.tests.test_plan.PlanTests.test_release_rechecks_workflow_registration_and_premises) ... ok
+test_assumption_cannot_escape_as_assertion (language_growth.tests.test_hypothesis.HypothesisTests.test_assumption_cannot_escape_as_assertion) ... ok
+test_assumption_requires_opt_in_and_preserves_types (language_growth.tests.test_hypothesis.HypothesisTests.test_assumption_requires_opt_in_and_preserves_types) ... ok
+test_factual_assertion_unchanged_with_assumption_registry (language_growth.tests.test_hypothesis.HypothesisTests.test_factual_assertion_unchanged_with_assumption_registry) ... ok
+test_false_conditional_conclusion_refuses (language_growth.tests.test_hypothesis.HypothesisTests.test_false_conditional_conclusion_refuses) ... ok
+test_inline_model_fact_refuses (language_growth.tests.test_hypothesis.HypothesisTests.test_inline_model_fact_refuses) ... ok
+test_live_assumption_change_or_revocation_denies_release (language_growth.tests.test_hypothesis.HypothesisTests.test_live_assumption_change_or_revocation_denies_release) ... ok
+test_registered_assumption_stays_conditional (language_growth.tests.test_hypothesis.HypothesisTests.test_registered_assumption_stays_conditional) ... ok
+test_same_slot_counterfactual_labels_hypothetical_and_recorded_baseline (language_growth.tests.test_hypothesis.HypothesisTests.test_same_slot_counterfactual_labels_hypothetical_and_recorded_baseline) ... ok
+test_unregistered_or_hidden_assumption_refuses (language_growth.tests.test_hypothesis.HypothesisTests.test_unregistered_or_hidden_assumption_refuses) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.013s
+
+OK

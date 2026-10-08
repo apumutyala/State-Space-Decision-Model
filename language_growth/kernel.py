@@ -13,20 +13,29 @@ import weakref
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, SpeechAct
+from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, ExactDifference, Fact, PlanContent, PlanStep, SpeechAct
 
 _SCHEMA = "ssdm.semantic_program.v0.1"
-_OPS = {"ReadFact", "Compare", "Assert", "Conjoin", "ExplainDerivation", "Ask"}
+_OPS = {"ReadFact", "Compare", "ExactDifference", "Assert", "Conjoin", "ExplainDerivation", "Ask", "Hypothesize", "Plan"}
 _REASONS = {"unknown_reference", "stale_context", "stale_policy", "type_unit_mismatch", "unsupported_assertion", "forbidden_dependency", "invalid_graph", "conflict", "exceeded_limit", "scope_mismatch", "unsupported_operation", "unsupported_field"}
 _MINTED: weakref.WeakSet[CheckResult] = weakref.WeakSet()
 _NODE_KEYS = {
     "ReadFact": {"id", "op", "record_ref", "field"},
     "Compare": {"id", "op", "left", "right", "relation"},
+    "ExactDifference": {"id", "op", "left", "right"},
     "Assert": {"id", "op", "proposition"},
+    "Hypothesize": {"id", "op", "proposition"},
+    "Plan": {"id", "op", "workflow_ref", "step_refs"},
     "Conjoin": {"id", "op", "speech_acts"},
     "ExplainDerivation": {"id", "op", "speech_act"},
     "Ask": {"id", "op", "category", "obligation_ref", "references"},
 }
+
+# Fixed ceiling for the optional exact-arithmetic extension. The host may deny
+# the operation through allowed_ops; proposals cannot enlarge these bounds.
+_ARITHMETIC_DIGITS = 256
+_ARITHMETIC_SCALE = 64
+_ARITHMETIC_MAGNITUDE = 10 ** _ARITHMETIC_DIGITS
 
 
 class _Reject(Exception):
@@ -112,6 +121,10 @@ def _environment(host: Any, catalog: Any) -> tuple[dict[str, Any], dict[str, Any
     if any(not isinstance(field, str) or not isinstance(predicate, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", predicate) for field, predicate in predicates.items()):
         _fail("invalid_graph")
     _dict(h.get("query_constants")); _sequence(h.get("unmet_obligations")); _dict(h.get("limits"))
+    if len(_dict(h.get("assumptions", {}))) > 128:
+        _fail("exceeded_limit")
+    if len(_dict(h.get("workflows", {}))) > 32:
+        _fail("exceeded_limit")
     if type(h["limits"].get("max_program_nodes")) is not int or not 1 <= h["limits"]["max_program_nodes"] <= 1024:
         _fail("invalid_graph")
     provider = _dict(h.get("provider", {}))
@@ -201,17 +214,40 @@ def _constant(ref: str, host: dict[str, Any]) -> ConstantValue:
     return ConstantValue(_numeric_or_typed(f), f["value_type"], f["unit"], f["temporal_scope"], _name(f["quantity_kind"]), ref)
 
 
-def _operand(value: Any, prior: dict[str, Any], host: dict[str, Any]) -> Fact | ConstantValue:
+def _assumption(ref: str, host: dict[str, Any], by_ref: dict[str, Any], snapshot: dict[str, Any], policy: dict[str, Any], registry: dict[str, Any], catalog: dict[str, Any]) -> AssumptionValue:
+    if not {"Hypothesize", "ReadFact"} <= set(registry["allowed_ops"]):
+        _fail("unsupported_operation")
+    assumptions = host.get("assumptions", {})
+    if ref not in assumptions:
+        _fail("unknown_reference")
+    raw = _dict(assumptions[ref])
+    _keys(raw, {"record_ref", "field", "value"})
+    record_ref, field = _name(raw["record_ref"]), _name(raw["field"])
+    premise = _read(record_ref, field, by_ref, snapshot, policy, registry, catalog)
+    alternate = _field_shape(raw["value"])
+    original = _field_shape(by_ref[record_ref]["fields"][field])
+    if alternate["temporal_scope"] != premise.interval:
+        _fail("scope_mismatch")
+    if (alternate["value_type"] != original["value_type"]
+            or alternate["unit"] != premise.unit
+            or alternate.get("quantity_kind", field) != premise.quantity_kind):
+        _fail("type_unit_mismatch")
+    return AssumptionValue(ref, premise, _numeric_or_typed(alternate))
+
+
+def _operand(value: Any, prior: dict[str, Any], host: dict[str, Any], by_ref: dict[str, Any], snapshot: dict[str, Any], policy: dict[str, Any], registry: dict[str, Any], catalog: dict[str, Any]) -> Fact | ConstantValue | AssumptionValue:
     v = _dict(value)
     if set(v) == {"constant_ref"}:
         return _constant(_name(v["constant_ref"]), host)
+    if set(v) == {"assumption_ref"}:
+        return _assumption(_name(v["assumption_ref"]), host, by_ref, snapshot, policy, registry, catalog)
     _keys(v, {"node", "project"})
     if v["project"] != "object" or v["node"] not in prior or not isinstance(prior[v["node"]], Fact):
         _fail("invalid_graph")
     return prior[v["node"]]
 
 
-def _compare(left: Fact | ConstantValue, right: Fact | ConstantValue, relation: str, registry: dict[str, Any]) -> Comparison:
+def _compare(left: Fact | ConstantValue | AssumptionValue, right: Fact | ConstantValue | AssumptionValue, relation: str, registry: dict[str, Any]) -> Comparison:
     if relation not in registry["comparators"] or relation not in {"greater_than", "less_than", "equal"}:
         _fail("unsupported_operation")
     lv, rv = (left.object if isinstance(left, Fact) else left.value), (right.object if isinstance(right, Fact) else right.value)
@@ -234,10 +270,120 @@ def _compare(left: Fact | ConstantValue, right: Fact | ConstantValue, relation: 
     return Comparison(left, right, relation, left.interval)
 
 
+def _plan(node: dict[str, Any], host: dict[str, Any], by_ref: dict[str, Any], snapshot: dict[str, Any], policy: dict[str, Any], registry: dict[str, Any], catalog: dict[str, Any]) -> PlanContent:
+    # A proposed predecessor never establishes an effect or a new factual premise.
+    if "ReadFact" not in registry["allowed_ops"]:
+        _fail("unsupported_operation")
+    workflow_ref = _name(node["workflow_ref"])
+    workflows = host.get("workflows", {})
+    if workflow_ref not in workflows:
+        _fail("unknown_reference")
+    workflow = _dict(workflows[workflow_ref])
+    _keys(workflow, {"audience", "status", "steps"})
+    if workflow["audience"] != host["audience"]:
+        _fail("forbidden_dependency")
+    if workflow["status"] != "current":
+        _fail("stale_policy")
+    registered = _dict(workflow["steps"])
+    selected = _sequence(node["step_refs"])
+    if not selected or len(selected) > 32 or not registered or len(registered) > 32:
+        _fail("exceeded_limit")
+    if any(not isinstance(ref, str) for ref in selected) or len(selected) != len(set(selected)):
+        _fail("invalid_graph")
+    checked: list[PlanStep] = []
+    earlier: set[str] = set()
+    for ref in selected:
+        _name(ref)
+        if ref not in registered:
+            _fail("unknown_reference")
+        step = _dict(registered[ref])
+        _keys(step, {"action_ref", "preconditions", "after"})
+        action_ref = _name(step["action_ref"])
+        after = _sequence(step["after"])
+        if (len(after) > 32 or any(not isinstance(dep, str) for dep in after)
+                or len(after) != len(set(after)) or any(dep not in earlier for dep in after)):
+            _fail("invalid_graph")
+        preconditions = _sequence(step["preconditions"])
+        if not 1 <= len(preconditions) <= 8:
+            _fail("exceeded_limit")
+        premises: list[Fact] = []
+        for condition in preconditions:
+            condition = _dict(condition)
+            _keys(condition, {"record_ref", "field", "expected"})
+            record_ref, field = _name(condition["record_ref"]), _name(condition["field"])
+            fact = _read(record_ref, field, by_ref, snapshot, policy, registry, catalog)
+            expected = _field_shape(condition["expected"])
+            original = _field_shape(by_ref[record_ref]["fields"][field])
+            if expected["temporal_scope"] != fact.interval:
+                _fail("scope_mismatch")
+            if (expected["value_type"] != original["value_type"] or expected["unit"] != fact.unit
+                    or expected.get("quantity_kind", field) != fact.quantity_kind):
+                _fail("type_unit_mismatch")
+            if _numeric_or_typed(expected) != fact.object:
+                _fail("unsupported_assertion")
+            premises.append(fact)
+        checked.append(PlanStep(ref, action_ref, tuple(premises), tuple(after)))
+        earlier.add(ref)
+    return PlanContent(workflow_ref, tuple(checked))
+
+
+def _coefficient(value: Any) -> tuple[int, int]:
+    """Bound work before exponent alignment; never use Decimal arithmetic."""
+    if type(value) is int:
+        if abs(value) >= _ARITHMETIC_MAGNITUDE:
+            _fail("exceeded_limit")
+        return value, 0
+    if not isinstance(value, Decimal) or not value.is_finite():
+        _fail("type_unit_mismatch")
+    sign, digits, exponent = value.as_tuple()
+    if len(digits) > _ARITHMETIC_DIGITS or not -_ARITHMETIC_SCALE <= exponent <= 0:
+        _fail("exceeded_limit")
+    coefficient = 0
+    for digit in digits:
+        coefficient = coefficient * 10 + digit
+    return (-coefficient if sign else coefficient), -exponent
+
+
+def _exact_difference(left: Fact | ConstantValue, right: Fact | ConstantValue) -> ExactDifference:
+    if not isinstance(left, (Fact, ConstantValue)) or not isinstance(right, (Fact, ConstantValue)):
+        _fail("unsupported_assertion")
+    _name(left.quantity_kind, "type_unit_mismatch")
+    _name(right.quantity_kind, "type_unit_mismatch")
+    if left.interval != right.interval:
+        _fail("scope_mismatch")
+    if left.unit != right.unit or left.quantity_kind != right.quantity_kind:
+        _fail("type_unit_mismatch")
+    lv = left.object if isinstance(left, Fact) else left.value
+    rv = right.object if isinstance(right, Fact) else right.value
+    lc, ls = _coefficient(lv)
+    rc, rs = _coefficient(rv)
+    scale = max(ls, rs)
+    # Powers are bounded by 64, and coefficients by 256 digits. Reject an
+    # oversized aligned intermediate even if subtraction would cancel it.
+    lc *= 10 ** (scale - ls)
+    rc *= 10 ** (scale - rs)
+    if abs(lc) >= _ARITHMETIC_MAGNITUDE or abs(rc) >= _ARITHMETIC_MAGNITUDE:
+        _fail("exceeded_limit")
+    coefficient = lc - rc
+    if abs(coefficient) >= _ARITHMETIC_MAGNITUDE:
+        _fail("exceeded_limit")
+    value: int | Decimal = coefficient
+    if isinstance(lv, Decimal) or isinstance(rv, Decimal):
+        digits = tuple(int(digit) for digit in str(abs(coefficient)))
+        value = Decimal((int(coefficient < 0), digits, -scale))
+    return ExactDifference(left, right, value, left.unit, left.interval, left.quantity_kind)
+
+
 def _deps(value: Any) -> tuple[str, ...]:
+    if isinstance(value, PlanContent):
+        return _deps(tuple(fact for step in value.steps for fact in step.preconditions))
+    if isinstance(value, AssumptionValue):
+        return _deps(value.premise)
+    if isinstance(value, ConditionalContent):
+        return _deps(value.conclusion)
     if isinstance(value, Fact):
         return (value.record_ref,)
-    if isinstance(value, Comparison):
+    if isinstance(value, (Comparison, ExactDifference)):
         return tuple(dict.fromkeys(_deps(value.left) + _deps(value.right)))
     if isinstance(value, SpeechAct):
         return value.dependencies
@@ -249,7 +395,7 @@ def _deps(value: Any) -> tuple[str, ...]:
 
 
 def _scopes(act: SpeechAct) -> set[str]:
-    if act.kind == "assert" and isinstance(act.content, (Fact, Comparison)):
+    if act.kind == "assert" and isinstance(act.content, (Fact, Comparison, ExactDifference)):
         return {act.content.interval}
     if act.kind == "conjoin" and isinstance(act.content, tuple):
         return set().union(*(_scopes(part) for part in act.content))
@@ -292,13 +438,30 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
         if op == "ReadFact":
             value = _read(_name(n["record_ref"]), _name(n["field"]), by_ref, snapshot, policy, registry, catalog)
         elif op == "Compare":
-            value = _compare(_operand(n["left"], prior, h), _operand(n["right"], prior, h), _name(n["relation"]), registry)
+            value = _compare(_operand(n["left"], prior, h, by_ref, snapshot, policy, registry, catalog), _operand(n["right"], prior, h, by_ref, snapshot, policy, registry, catalog), _name(n["relation"]), registry)
+        elif op == "ExactDifference":
+            value = _exact_difference(_operand(n["left"], prior, h, by_ref, snapshot, policy, registry, catalog), _operand(n["right"], prior, h, by_ref, snapshot, policy, registry, catalog))
         elif op == "Assert":
             target = n["proposition"]
-            if not isinstance(target, str) or target not in prior or not isinstance(prior[target], (Fact, Comparison)):
+            if not isinstance(target, str) or target not in prior or not isinstance(prior[target], (Fact, Comparison, ExactDifference)):
                 _fail("invalid_graph")
             content = prior[target]
+            if isinstance(content, Comparison) and any(isinstance(operand, AssumptionValue) for operand in (content.left, content.right)):
+                _fail("unsupported_assertion")
             value = SpeechAct("assert", content, _deps(content), (ordinals[target], ordinal))
+        elif op == "Hypothesize":
+            target = n["proposition"]
+            if not isinstance(target, str) or target not in prior or not isinstance(prior[target], Comparison):
+                _fail("invalid_graph")
+            conclusion = prior[target]
+            assumptions = [operand for operand in (conclusion.left, conclusion.right) if isinstance(operand, AssumptionValue)]
+            if len(assumptions) != 1:
+                _fail("invalid_graph")
+            content = ConditionalContent(assumptions[0], conclusion)
+            value = SpeechAct("hypothesize", content, _deps(content), (ordinals[target], ordinal))
+        elif op == "Plan":
+            content = _plan(n, h, by_ref, snapshot, policy, registry, catalog)
+            value = SpeechAct("plan", content, _deps(content), (ordinal,))
         elif op == "Conjoin":
             refs = _sequence(n["speech_acts"])
             if len(refs) < 2 or len(refs) != len(set(refs)) or any(ref not in prior or not isinstance(prior[ref], SpeechAct) or prior[ref].kind not in ("assert", "conjoin") for ref in refs):
@@ -341,6 +504,8 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
         "records": [by_ref[ref] for ref in snapshot["record_refs"]],
         "sources": catalog["sources"],
         "query_constants": h["query_constants"],
+        "assumptions": h.get("assumptions", {}),
+        "workflows": h.get("workflows", {}),
         "unmet_obligations": h["unmet_obligations"],
     }
     binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")).hexdigest()
