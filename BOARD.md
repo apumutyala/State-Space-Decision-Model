@@ -9,7 +9,7 @@ Loss map (research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md, measured): Clef-flash-an
 | D2 | A | D1 + Clef-flash KD (α .5, T 1), PR #200 | +1–3 over D1 | ≤$40 | running: job-zhv3f (09:41Z). Caveat: teacher follows injected instructions (d1a 23%); read its steer score accordingly |
 | R1 | B | C1 readout format v2 (single-token codes etc.); rescore stock parent | +2–6 | ~$2 | B: job-zhyvg |
 | R3 | B | Long-catalog binding + label-prior readout: single-token codes, catalog repeated next to the answer slot for k>16, fit-free contextual calibration (basis: >16 options 31% vs 59%) | +3–7 (B est.) | ~$3–6 | B: designing; rescore after R1 |
-| D3 | A | D1/D2 winner on the R1/R3 format; KD masked on injected rows (stack/rwkv7/kd-injmask) | compounding | ≤$31.5 | next, once D1/D2 and R1 land |
+| D3 | A | D1 gold recipe on the fixed v2f format (train=readout; parent scored with v2f in-job) | compounding | ≤$40 | running: job-93fpy from 30d5239 (PR #220, awaiting operator merge) |
 | D6 | A | D1 + order-consistency loss (reverse view, 0.25). The data is already option-shuffled, so the remaining skew is a label prior | +0–2 | ≤$40 | packaged ab72921; HOLD until D1 shows the prior collapse persists |
 | D7 | A | D1 with 2× train clock (380 min ≈ 1 epoch of 24k); D1 is time-bound at ~11k rows | +2–5 | ≤$52 | running: job-zpyis |
 | D8 | A | train_max_k 16→255 (+ row_options 160 memory guard; eval unchanged) | small: at T≤2048 only +472 items (K=77) | ≤$66 | packaged e8c9436; HOLD standalone; fold into D4. The real >16 gap needs a T=4096 rung (+66% tokens per row), which is a separate probe once throughput fixes land |
