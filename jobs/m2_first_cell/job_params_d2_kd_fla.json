@@ -16,7 +16,7 @@
   "image": "jobs/rwkv7/Dockerfile"
  },
  "job": "m2-first-cell-d2-kd-fla",
- "status": "draft: not submitted; D2kdfla = d2_kd_injmask_fast + rwkv7_wkv \"fla\" (job-9bs8w ADOPT, 1.46x step)",
+ "status": "draft: not submitted; D2kdfla = d2_kd_injmask_fast + train_rwkv7_wkv \"fla\" (training steps only; rwkv7_wkv stays chunked_lean for all scoring and the parent arm seed identity; job-b4fy8 seed_verify fix) (job-9bs8w ADOPT, 1.46x step)",
  "chip": "h100",
  "chip_count": 1,
  "max_duration_minutes": 637,
