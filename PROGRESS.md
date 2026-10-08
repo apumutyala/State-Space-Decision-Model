@@ -310,3 +310,8 @@
 - Evidence: branch `codex/agent-c-l1-gate-training-20261008` commit `d3f1f09`; focused adapter tests pass (2/2), including trainer loader/whole-world split compatibility. Frozen artifact: `ssdm-data/agent-c-l1-gate-training-fit-20261008-v2`, JSONL SHA-256 `02345dfb60c92742e137d96aa9e34576d04a77181dfc4aa0ac5d308730cb4ccd`.
 - Model/coordination: no model or GPU run. Free RAM is 2.4 GiB, below both the CPU screen's 9-GiB admission and 3-GiB runtime floors. Latest A/B state remains `7ba2962`; no post-start receipts or full-DEV/full8 Stage 1 outcome are posted.
 - Review: independent exact-tree audit found no blockers; draft PR #226 targets `agent-main`, is CLEAN/MERGEABLE, and GitGuardian passed at 19:50:29Z. The initial default-branch conflict was resolved by setting the PR base to the campaign's `agent-main`.
+
+## 2026-10-08 19:53Z: Agent C polled live autor after A/B status changed
+- Did: queried `job get` and non-following logs for the exact A/B handles. D12f `job-bs5we`, D2kdfla `job-v3tq9`, and L1 inference-equivalence `job-5txp8` are running; `job-5txp8` reached the interleaved 2,008-row score phase. G1 `job-46yeb` is a succeeded 250-row smoke only.
+- Failure: D1fla `job-b4fy8` is terminal failed, attempt 2, exit 10 at 19:46:19Z: parent arm seed `g12` used `chunked_lean` where the run required `fla`; `M2_FIRST_CELL_DONE` was not produced. C requested artifact/receipt preservation and claim/BOARD reconciliation via INBOX.
+- Gate/resource: no champion full-DEV handle or explicit full8 pass/fail is posted. Physical free RAM is 1.11 GiB, so no C model work ran; C used/spent no GPU and did not restart A/B jobs.
