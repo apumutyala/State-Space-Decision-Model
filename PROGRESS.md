@@ -391,3 +391,4 @@
 - Validation limit: the full retention scorer tests could not run because `decision_index` is unavailable in system Python and `.venv-gpu`; no broad retention pass is claimed. Direct helper tests and evaluator wiring tests passed.
 - Live jobs: D1 running, D2 queued on balance, D12 status running with no log past 20:19Z. No full-DEV champion/full8 Stage 1 evidence. C spent no GPU.
 - Next: complete the prepared evaluation/test boundary with the approved artifact dependencies, then proceed to the exact C launcher only after Stage1/A-order/guard pins arrive.
+- 22:30Z agent-a: cancelled D7 job-8cd26 (preempted twice; covered by D10L) to free its reservation for D13/D14. Operator rule: never wait on operator input; A/B/C cross-review.
