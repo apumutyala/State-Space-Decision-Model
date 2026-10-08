@@ -36,9 +36,27 @@ class ClefIndexEngine(Engine):
             device=options.get("device", "cuda"), dtype=options.get("dtype", "bfloat16"),
             max_length=self.max_length, verify=str(options.get("verify", "true")).lower() != "false")
         self.decider = CB.build_decider(self.backend)
+        # gdn_path=reference (JOB_SPEC 4d): every Gated-DeltaNet layer on transformers' torch reference for the whole
+        # run (the arm kernel_path compares against); fast (default) leaves the fla / causal-conv1d kernels in place.
+        self.gdn_path = options.get("gdn_path", "fast")
+        if self.gdn_path not in ("fast", "reference"):
+            raise ValueError("gdn_path must be fast or reference")
+        gdn = {}
+        if self.gdn_path == "reference":
+            self._ref = CB.reference_gdn_path(self.model)
+            self._ref.__enter__()  # held for the engine's lifetime (one process per phase)
+            if self._ref.n_found == 0:
+                raise RuntimeError("gdn_path=reference: no Gated-DeltaNet layer found to switch")
+            gdn = {"gdn_layers_found": self._ref.n_found, "gdn_layers_switched": self._ref.n_switched,
+                   "gdn_layers_already_reference": self._ref.n_already_reference,
+                   "gdn_layers_on_reference": sum(1 for m in self.model.modules()
+                                                  if getattr(m, "causal_conv1d_fn", 0) is None
+                                                  and hasattr(m, "chunk_gated_delta_rule"))}
         self.provenance = {"repo": CB.RELEASES[self.release]["repo"], "revision": CB.RELEASES[self.release]["revision"],
                            "path": self.path, "backend_revision": self.backend.revision()["revision_id"],
                            "vendored_jsm_sha256": CB.JSM_SHA256}
+        if self.gdn_path == "reference":  # fast-path provenance stays byte-identical to job-sgihj / job-d2u54
+            self.provenance.update({"gdn_path": "reference", **gdn, "kernel_stack": CB.kernel_stack()})
 
     def __call__(self, state, questions):
         request = {"model": self.release, "state": state, "questions": questions}
