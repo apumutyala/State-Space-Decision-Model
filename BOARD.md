@@ -12,6 +12,7 @@ Loss map (research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md, measured): Clef-flash-an
 | D3 | A | D1/D2 winner on the R1/R3 format; KD masked on injected rows (stack/rwkv7/kd-injmask) | compounding | ≤$31.5 | next, once D1/D2 and R1 land |
 | D6 | A | D1 + order-consistency loss (reverse view, 0.25). The data is already option-shuffled, so the remaining skew is a label prior | +0–2 | ≤$40 | packaged ab72921; HOLD until D1 shows the prior collapse persists |
 | D7 | A | D1 with 2× train clock (380 min ≈ 1 epoch of 24k); D1 is time-bound at ~11k rows | +2–5 | ≤$52 | running: job-zpyis |
+| D8 | A | train_max_k 16→255 (+ row_options 160 memory guard; eval unchanged) | small: at T≤2048 only +472 items (K=77) | ≤$66 | packaged e8c9436; HOLD standalone; fold into D4. The real >16 gap needs a T=4096 rung (+66% tokens per row), which is a separate probe once throughput fixes land |
 | D4 | A | 45k draw re-aimed: tools > procedural knowledge > BANKING77/CLINC > retrieval; uniform gold positions | +3–6 | ~$30–60 | mode on stack/rwkv7/d4-draw45k; waiting on B1 |
 | B1 | B | 45k/100k draw (re-aimed as in D4), exclusions vs TEST/held-out/cohort v3 | enables D4 | ~$0–5 | B: stack/rwkv7/b1-draw |
 | D5 | A | D5b LR 2x: running job-i3buq. D5a r256 (90be840): packaged, on hold | ≤ +1–2 | ≤$40 each | D5b running |
