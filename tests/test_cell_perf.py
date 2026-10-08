@@ -257,6 +257,37 @@ def test_act_ckpt_refuses_non_rwkv7_backbones():
         act_ckpt.enable_block_checkpointing(tiny_backbone().model)
 
 
+def test_fork_features_rows_with_prefix_groups_equal_one_prefix_call():
+    bb = tiny_hf_backbone("rwkv7", seed=1, fork_mode="cache")
+    rows = [it.row for it in _items(1)[:5]]
+    args = ([r.ids for r in rows], [r.continuations for r in rows])
+    h, forks = bb.fork_features_rows(*args)
+    bb.prefix_groups = [[2, 0], [4], [1, 3]]
+    hg, fg = bb.fork_features_rows(*args)
+    assert hg.shape == h.shape and rel(hg, h) <= 1e-5
+    assert all(rel(a, b) <= 1e-5 for a, b in zip(fg, forks))
+    bb.prefix_groups = [[0, 1], [1, 2, 3, 4]]
+    with pytest.raises(ValueError, match="exactly once"):
+        bb.fork_features_rows(*args)
+
+
+def test_cont_plan_single_runs_one_continuation_call_per_step():
+    items = _items(1)
+    calls = {}
+    for plan in ("per_group", "single"):
+        tr = _trainer(items, row_batch=8, row_tokens=400, act_ckpt=True, cont_plan=plan)
+        m, n = tr.model.backbone.model, [0]
+        h = m.register_forward_pre_hook(lambda mod, a, k: n.__setitem__(0, n[0] + (k.get("state") is not None)),
+                                        with_kwargs=True)
+        tr.train_step()
+        h.remove()
+        calls[plan] = n[0]
+        assert tr.model.backbone.prefix_groups is None
+    assert calls["single"] == 1 < calls["per_group"]
+    with pytest.raises(ValueError, match="cont_plan"):
+        _trainer(items, row_batch=8, cont_plan="one")
+
+
 def test_fork_features_rows_equal_per_row_fork():
     bb = tiny_hf_backbone("rwkv7", seed=1, fork_mode="cache")
     rows = [it.row for it in _items(1)[:5]]
@@ -270,7 +301,11 @@ def test_fork_features_rows_equal_per_row_fork():
 
 
 @pytest.mark.parametrize("flags", [dict(row_batch=8), dict(row_batch=3), dict(row_batch=8, act_ckpt=True),
-                                   dict(row_batch=8, row_tokens=400, act_ckpt=True)])
+                                   dict(row_batch=8, row_tokens=400, act_ckpt=True),
+                                   dict(row_batch=8, row_tokens=400, act_ckpt=True, row_plan="min_cost"),
+                                   dict(row_batch=8, row_tokens=400, act_ckpt=True, cont_plan="single"),
+                                   dict(row_batch=8, row_tokens=400, act_ckpt=True, row_plan="min_cost",
+                                        cont_plan="single")])
 def test_row_batch_equals_one_row_per_call(flags):
     items = _items()
     base = _step_grads(_trainer(items))
@@ -302,6 +337,42 @@ def test_row_groups_budget_and_partition():
         assert all(len(x) * max(lens[i] for i in x) <= 8192 or len(x) == 1 for x in gs)
     assert [len(x) for x in row_groups([2048] * 8, 8, 8192)] == [4, 4]
     assert [len(x) for x in row_groups([1024] * 8, 8, 8192)] == [8]
+
+
+def test_row_groups_min_cost_partition_and_never_costlier_than_greedy():
+    import random
+
+    from train.trainer import GROUP_COST_TOKENS, row_groups, row_groups_min_cost
+
+    def cost(lens, gs):
+        return GROUP_COST_TOKENS * len(gs) + sum(len(x) * max(lens[i] for i in x) for x in gs)
+
+    # job-tvuat mix step 6: greedy pads three short rows to the 2,025-token row (10,352 padded tokens, 2 groups);
+    # min_cost runs that row alone and the other seven together (7,268 padded tokens, still 2 groups)
+    lens = [749, 563, 520, 2025, 706, 317, 248, 674]
+    assert row_groups_min_cost(lens, 8, 8192) == [[3], [0, 4, 7, 1, 2, 5, 6]]
+    assert row_groups_min_cost([1024] * 8, 8, 8192) == [list(range(8))]
+    assert row_groups_min_cost([9000, 10], 8, 8192) == [[0], [1]]
+    rng = random.Random(0)
+    for _ in range(300):
+        lens = [rng.randint(1, 2048) for _ in range(rng.randint(1, 12))]
+        rb, rt = rng.choice([(8, 8192), (3, 0), (8, 0), (4, 4096)])
+        gs = row_groups_min_cost(lens, rb, rt)
+        order = sorted(range(len(lens)), key=lambda i: -lens[i])
+        assert [i for x in gs for i in x] == order  # contiguous cuts of the same sorted order: every row once
+        assert all(len(x) <= rb and (not rt or len(x) == 1 or len(x) * lens[x[0]] <= rt) for x in gs)
+        assert cost(lens, gs) <= cost(lens, row_groups(lens, rb, rt))
+
+
+def test_row_plan_is_execution_only_and_validated():
+    from train.trainer import TrainConfig, with_execution
+
+    cfg = TrainConfig()
+    assert cfg.row_plan == "greedy" and "row_plan" not in cfg.to_json()
+    assert dataclasses.replace(cfg, row_plan="min_cost").hash() == cfg.hash()
+    assert with_execution(cfg, {"row_batch": 8, "row_plan": "min_cost"}).row_plan == "min_cost"
+    with pytest.raises(ValueError, match="row_plan"):
+        _trainer(_items(1), row_batch=8, row_plan="best")
 
 
 def test_row_batch_visits_the_same_rows_across_epoch_rollover():
@@ -362,3 +433,129 @@ def test_under_bf16_autocast_the_variants_stay_inside_bf16_noise():
     lv, gv = _dev(var, base)
     assert lv <= 1e-6 and gv < noise[1], (lv, gv, noise)
     assert _dev(var, f32)[1] <= 1.25 * noise[1] and _dev(var, f32)[0] <= 1.25 * noise[0] + 1e-7
+
+
+def test_compile_blocks_equals_eager_blocks_and_restores_the_wkv_registry(monkeypatch):
+    """compile_blocks under the aot_eager backend (no CPU toolchain for inductor): the compiled block bodies, with the
+    WKV loop forced eager, give the eager step's loss and gradients; the registry entry is restored on disable."""
+    import train.trainer as TT
+
+    monkeypatch.setattr(TT, "COMPILE_BACKEND", "aot_eager")
+    items = _items()
+    flags = dict(wkv="chunked_lean", act_ckpt=True, row_batch=8, row_tokens=400, row_plan="min_cost",
+                 cont_plan="single")
+    base = _step_grads(_trainer(items, **flags))
+    tr = _trainer(items, compile_blocks=True, **flags)
+    assert act_ckpt.compile_backend_of(tr.model.backbone.model) == "aot_eager"
+    assert getattr(M.RWKV7_WKV_FUNCTIONS["chunked_lean"], "_ssdm_eager_wkv", False)
+    _compare(_step_grads(tr), base, 2e-5)
+    act_ckpt.disable_block_checkpointing(tr.model.backbone.model)
+    assert M.RWKV7_WKV_FUNCTIONS["chunked_lean"] is L.rwkv7_parallel_lean
+    with pytest.raises(ValueError, match="compile_blocks needs act_ckpt"):
+        _trainer(_items(1), compile_blocks=True)
+
+
+def test_row_groups_option_cap():
+    """``row_options`` bounds the forked state copies per call (sum of K); a row over the cap runs alone; the cap
+    never binds on K <= 16 steps when it is >= 8 x 16 (the D1 grouping is unchanged)."""
+    from train.trainer import row_groups
+
+    lens = [1900, 1800, 900, 800, 700, 600, 500, 400]
+    ks = [151, 2, 4, 255, 77, 3, 2, 4]
+    gs = row_groups(lens, 8, 8192, ks, 160)
+    assert sorted(i for g in gs for i in g) == list(range(8))
+    assert all(sum(ks[i] for i in g) <= 160 or len(g) == 1 for g in gs)
+    assert [3] in gs  # K = 255 alone
+    d1_ks = [16, 10, 8, 16, 4, 16, 2, 16]
+    assert row_groups(lens, 8, 8192, d1_ks, 160) == row_groups(lens, 8, 8192)
+    with pytest.raises(ValueError, match="option count"):
+        row_groups(lens, 8, 8192, None, 160)
+
+
+LONG_SHAPES = [_shape(700, [3] * 151), _shape(70, [1, 2]), _shape(900, [2] * 255), _shape(96, [4, 1, 1]),
+               _shape(400, [2] * 77), _shape(65, [1, 1, 2, 2, 3]), _shape(180, [6, 2]), _shape(88, [2, 2, 2], "score")]
+
+
+def _long_items():
+    from jobs.fla_rwkv7 import train_mix as TM
+    from train.data import Item
+
+    rows = TM.rows_from_shapes(LONG_SHAPES, vocab=260, seed=0)
+    return [Item(x.id, x.row, (7 * i) % x.row.n_options) for i, x in enumerate(rows)]
+
+
+def test_long_catalog_step_with_option_cap_equals_one_row_per_call():
+    """D8 (train_max_k 255): a step with K = 77 / 151 / 255 rows trains (finite loss, head and LoRA gradients) and the
+    option-capped grouping equals one row per call, as row_tokens does."""
+    items = _long_items()
+    base = _step_grads(_trainer(items))
+    assert torch.isfinite(torch.tensor(base[0]))
+    _compare(_step_grads(_trainer(items, row_batch=8, row_tokens=8192, row_options=160, act_ckpt=True)), base, 2e-5)
+
+
+def test_row_options_is_execution_only():
+    from train.trainer import TrainConfig, with_execution
+
+    cfg = TrainConfig()
+    assert dataclasses.replace(cfg, row_options=160).hash() == cfg.hash()
+    assert "row_options" not in cfg.to_json()
+    assert with_execution(cfg, {"row_batch": 8, "row_options": 160}).row_options == 160
+    with pytest.raises(ValueError, match="row_options"):
+        _trainer(_items(1), row_batch=8, row_options=-1)
+
+
+def test_min_cost_honours_the_option_cap_and_is_unchanged_when_it_does_not_bind():
+    """``row_options`` is a hard constraint of the min_cost programme (as of the greedy fill): every multi-row group
+    has summed K <= cap, a row over the cap runs alone, and a non-binding cap (D1: 8 x 16 = 128 <= 160) changes nothing."""
+    from train.trainer import row_groups_min_cost
+
+    lens = [1900, 1800, 900, 800, 700, 600, 500, 400]
+    ks = [151, 2, 4, 255, 77, 3, 2, 4]
+    gs = row_groups_min_cost(lens, 8, 8192, ks, 160)
+    assert sorted(i for g in gs for i in g) == list(range(8))
+    assert all(sum(ks[i] for i in g) <= 160 or len(g) == 1 for g in gs)
+    assert [3] in gs
+    d1_ks = [16, 10, 8, 16, 4, 16, 2, 16]
+    assert row_groups_min_cost(lens, 8, 8192, d1_ks, 160) == row_groups_min_cost(lens, 8, 8192)
+    with pytest.raises(ValueError, match="option count"):
+        row_groups_min_cost(lens, 8, 8192, None, 160)
+
+
+def _cont_calls(tr):
+    m, n = tr.model.backbone.model, [0]
+    h = m.register_forward_pre_hook(lambda mod, a, k: n.__setitem__(0, n[0] + (k.get("state") is not None)),
+                                    with_kwargs=True)
+    try:
+        out = _step_grads(tr)
+    finally:
+        h.remove()
+    return n[0], out
+
+
+def test_single_cont_falls_back_to_per_group_when_the_option_cap_binds():
+    """cont_plan single forks sum(K) state copies in ONE call, so with row_options set it runs only when the step's
+    summed K fits the cap; otherwise the step takes the per-group path over the option-capped groups. Same loss and
+    gradients either way."""
+    from train.trainer import single_cont_fits
+
+    items = _items(1)
+    ks = [it.row.n_options for it in items[:8]]
+    assert sum(ks) == 24 and single_cont_fits(ks, 0) and single_cont_fits(ks, 24) and not single_cont_fits(ks, 23)
+    base = _step_grads(_trainer(items))
+    flags = dict(row_batch=8, row_tokens=400, act_ckpt=True, row_plan="min_cost", cont_plan="single")
+    n_fit, fit = _cont_calls(_trainer(items, row_options=24, **flags))
+    assert n_fit == 1
+    _compare(fit, base, 2e-5)
+    n_bind, bind = _cont_calls(_trainer(items, row_options=10, **flags))
+    n_pg, _ = _cont_calls(_trainer(items, row_options=10, **{**flags, "cont_plan": "per_group"}))
+    assert n_bind == n_pg > 1
+    _compare(bind, base, 2e-5)
+
+
+def test_long_catalog_step_with_all_fast_flags_and_option_cap_equals_one_row_per_call():
+    """D8 rows (K 77 / 151 / 255) under the d1_fast plan (min_cost + single) and row_options 160: the cap binds, so
+    the step runs per group, and loss and gradients equal one row per call."""
+    items = _long_items()
+    base = _step_grads(_trainer(items))
+    _compare(_step_grads(_trainer(items, row_batch=8, row_tokens=8192, row_options=160, act_ckpt=True,
+                                  row_plan="min_cost", cont_plan="single")), base, 2e-5)

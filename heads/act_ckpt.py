@@ -105,12 +105,49 @@ def _blocks(model):
 
 
 # ------------------------------------------------------------------------------------------------ RWKV-7
-def _wrap(block):
+#: ``compile_blocks`` (TrainConfig, execution-only): one ``torch.compile``d copy of the block's class forward, shared by
+#: every block (the module is an input; ``layer_id`` is read as an unspecialised int), dynamic shapes. The WKV
+#: function is called through ``torch.compiler.disable`` (``_disabled_wkv``), so its chunk loop stays eager and the
+#: compiled regions are the per-block code around it: token shift + mixing + projections + LoRA + gates, and
+#: ln_x + bonus + output + FFN + residuals. Runs INSIDE the per-block checkpoint (the replay calls it again).
+_COMPILED: dict = {}
+
+
+def _compiled_block_forward(cls, backend: str):
+    key = (cls, backend)
+    if key not in _COMPILED:
+        import torch._dynamo.config as dcfg
+
+        dcfg.allow_unspec_int_on_nn_module = True  # one graph for every layer_id, not 61 recompiles
+        for k in ("recompile_limit", "cache_size_limit"):  # name differs across torch versions
+            if hasattr(dcfg, k):
+                setattr(dcfg, k, max(getattr(dcfg, k), 64))
+        _COMPILED[key] = torch.compile(cls.forward, dynamic=True, backend=backend)
+    return _COMPILED[key]
+
+
+def _disabled_wkv(fn):
+    if getattr(fn, "_ssdm_eager_wkv", False):
+        return fn
+    wrapped = torch.compiler.disable(fn)
+    wrapped._ssdm_eager_wkv = True
+    wrapped._ssdm_orig = fn
+    return wrapped
+
+
+def _wrap(block, compile_backend: str | None = None):
     orig = block.forward  # the bound class method
+    if compile_backend:
+        cf = _compiled_block_forward(type(block), compile_backend)
+        orig = lambda *a: cf(block, *a)  # noqa: E731
+        from third_party.rwkv7_hf import modeling_rwkv7 as M
+
+        name = block.config.wkv_implementation
+        M.RWKV7_WKV_FUNCTIONS[name] = _disabled_wkv(M.RWKV7_WKV_FUNCTIONS[name])
 
     def forward(hidden_states, v_first, state, keep=None, cu_seq_lens=None):
         if not torch.is_grad_enabled():
-            return orig(hidden_states, v_first, state, keep, cu_seq_lens)
+            return type(block).forward(block, hidden_states, v_first, state, keep, cu_seq_lens)
         has_state = state is not None
         att, ffn, wkv = state.read(block.layer_id) if has_state else (None, None, None)
 
@@ -261,16 +298,21 @@ def _wrap_hf(layer, idx: int):
 
 
 # ------------------------------------------------------------------------------------------------ public API
-def enable_block_checkpointing(model) -> int:
-    """Idempotent. Returns the number of checkpointed blocks."""
+def enable_block_checkpointing(model, compile_backend: str | None = None) -> int:
+    """Idempotent. Returns the number of checkpointed blocks. ``compile_backend`` (RWKV-7 only; e.g. "inductor"):
+    the checkpointed block body runs through one shared ``torch.compile`` (``TrainConfig.compile_blocks``)."""
     kind = _kind(model)
+    if compile_backend and kind != "rwkv7":
+        raise ValueError("compile_blocks supports the vendored RWKV-7 only")
     blocks = _blocks(model)
     n = 0
     for i, block in enumerate(blocks):
+        if block.__dict__.get(_ATTR, compile_backend or True) != (compile_backend or True):
+            raise ValueError("block checkpointing is already enabled with another compile_backend: disable it first")
         if _ATTR not in block.__dict__:
-            block.__dict__[_ATTR] = True
+            block.__dict__[_ATTR] = compile_backend or True
             block.__dict__[_KIND] = kind
-            block.forward = _wrap(block) if kind == "rwkv7" else _wrap_hf(block, i)
+            block.forward = _wrap(block, compile_backend) if kind == "rwkv7" else _wrap_hf(block, i)
         n += 1
     return n
 
@@ -282,7 +324,25 @@ def disable_block_checkpointing(model) -> int:
             block.__dict__.pop(_KIND, None)
             del block.forward
             n += 1
+            cfg = getattr(block, "config", None)
+            if cfg is not None and hasattr(cfg, "wkv_implementation"):  # undo _disabled_wkv (compile_blocks)
+                from third_party.rwkv7_hf import modeling_rwkv7 as M
+
+                fn = M.RWKV7_WKV_FUNCTIONS.get(cfg.wkv_implementation)
+                if getattr(fn, "_ssdm_eager_wkv", False):
+                    M.RWKV7_WKV_FUNCTIONS[cfg.wkv_implementation] = fn._ssdm_orig
     return n
+
+
+def compile_backend_of(model) -> str | None:
+    """The ``compile_backend`` block checkpointing was enabled with (None = plain eager blocks or not enabled)."""
+    try:
+        v = {b.__dict__.get(_ATTR) for b in _blocks(model)}
+    except ValueError:
+        return None
+    v.discard(True)
+    v.discard(None)
+    return v.pop() if len(v) == 1 else None
 
 
 def is_enabled(model) -> bool:

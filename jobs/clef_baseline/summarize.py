@@ -163,9 +163,36 @@ def load(p: Path):
         return None
 
 
+def gdn_block(o: Path, requested: str) -> dict:
+    """JOB_SPEC 4d: which GDN path each Index phase ACTUALLY ran, from its environment.json (the engine's provenance:
+    gdn_path, layer counts, kernel_stack, backend revision). ``decide_used_reference`` = every phase that ran
+    (decide, decide_32k unless it fell back, native) reports gdn_path=reference with all found layers on it."""
+    phases = {}
+    for ph in ("decide", "decide_32k", "native"):
+        env = load(o / "index" / ph / "environment.json")
+        if env is None:
+            continue
+        ms = env.get("model_source") or {}
+        phases[ph] = {k: ms.get(k, "fast" if k == "gdn_path" else None) for k in
+                      ("gdn_path", "gdn_layers_found", "gdn_layers_switched", "gdn_layers_on_reference",
+                       "backend_revision", "kernel_stack")}
+    sens = load(o / "env" / "sens_gdn_path.json")
+
+    def on_ref(ph):
+        x = phases.get(ph) or {}
+        return x.get("gdn_path") == "reference" and (x.get("gdn_layers_found") or 0) > 0 and             x.get("gdn_layers_on_reference") == x.get("gdn_layers_found")
+
+    need = [ph for ph in ("decide", "native") if ph in phases] + (
+        ["decide_32k"] if "decide_32k" in phases and not (sens or {}).get("fallback") else [])
+    return {"requested": requested, "phases": phases, "sens": sens,
+            "decide_used_reference": "decide" in phases and all(on_ref(ph) for ph in need)}
+
+
 def report(a) -> int:
     o = Path(a.out_dir)
     probes = load(o / "probes.json") or {}
+    gdn_req = getattr(a, "gdn_path", "fast") or "fast"
+    gdn = gdn_block(o, gdn_req)
     res_dec = rows(o / "index" / "decide" / "results.jsonl", required=False)
     idx_dec = load(o / "index" / "score_decide.json")
     idx_nat = load(o / "index" / "score_native_composite.json")
@@ -187,7 +214,11 @@ def report(a) -> int:
         "kernel_path": {k: (probes.get("kernel_path") or {}).get(k) for k in
                         ("n", "gdn_layers_found", "gdn_layers_already_reference", "gdn_layers_switched",
                          "max_abs_dp", "argmax_flips", "fail_reasons")},
-        "s1_ok": (probes.get("parity") or {}).get("ok") is True and (probes.get("kernel_path") or {}).get("ok") is True,
+        # fast path: parity AND kernel_path. gdn_path=reference (JOB_SPEC 4d): parity AND every Index phase ran on the
+        # torch reference GDN (kernel_path is still measured and reported above; it does not gate the reference run)
+        "s1_ok": (probes.get("parity") or {}).get("ok") is True and (
+            (probes.get("kernel_path") or {}).get("ok") is True if gdn_req == "fast" else gdn["decide_used_reference"]),
+        "gdn_path": gdn_req, "gdn_decide_used_reference": gdn["decide_used_reference"], "gdn": gdn,
         # headline Clef number = the native composite: Clef's own systemone (silent truncation at its shipped
         # 16,384) on the rows our decide path scores exhausted; decide and the 32k sensitivity arm alongside (4c)
         "headline": {"metric": "index_dev_native_composite", "edition": "0.2.1", "value": idx_nat,
@@ -230,6 +261,8 @@ def report(a) -> int:
         raise Incomplete("RELEASE=clef index job without the paired Clef - Clef-flash comparison")
     if a.job == "T" and teach is None:
         raise Incomplete("job T without teacher identity")
+    if gdn_req == "reference" and a.job == "I" and not gdn["decide_used_reference"]:
+        raise Incomplete(f"CLEF_GDN_PATH=reference but an Index phase did not run on the reference GDN: {gdn['phases']}")
     # job-ftpnf: the platform refuses a $GMN_RESULT_PATH file over 32 KiB ("result_error: exceeds 32 KiB") and then
     # keeps no result for depends_on / get_job. The full report goes to report.json next to it; result.json is compact.
     Path(a.out_dir, "report.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
@@ -259,11 +292,13 @@ def compact_result(result: dict) -> dict:
     out = _slim(result)
     out["full_report"] = "report.json"
     if len(json.dumps(out, indent=1, default=str).encode()) > RESULT_MAX_BYTES:
-        keep = ("ok", "release", "job", "rows", "dry_run", "s1_ok", "parity_ok", "kernel_path_ok", "headline",
+        keep = ("ok", "release", "job", "rows", "dry_run", "s1_ok", "parity_ok", "kernel_path_ok", "gdn_path",
+                "gdn_decide_used_reference", "headline",
                 "index_dev_decide", "index_dev_native_composite", "paired_compare", "full_report")
         out = {k: out.get(k) for k in keep} | {"truncated": "result.json over 31 KiB; see report.json"}
         if len(json.dumps(out, indent=1, default=str).encode()) > RESULT_MAX_BYTES:  # PR #106 review: re-check
-            out = {k: out.get(k) for k in ("ok", "release", "job", "rows", "dry_run", "s1_ok", "parity_ok",
+            out = {k: out.get(k) for k in ("ok", "release", "job", "rows", "dry_run", "s1_ok", "parity_ok", "gdn_path",
+                                           "gdn_decide_used_reference",
                                            "kernel_path_ok", "paired_compare", "full_report")} | {
                 "truncated": "result.json over 31 KiB even when trimmed; see report.json"}
             out = {k: (v if len(json.dumps(v, default=str)) <= 512 else "see report.json") for k, v in out.items()}
@@ -290,6 +325,7 @@ def main(argv=None) -> int:
     r.add_argument("--job", required=True)
     r.add_argument("--rows", default="full")
     r.add_argument("--dry-run", default="0")
+    r.add_argument("--gdn-path", default="fast", choices=("fast", "reference"))
     a = ap.parse_args(argv)
     from harness.jsonl import ResultsFileError
 

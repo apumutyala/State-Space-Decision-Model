@@ -277,16 +277,29 @@ def cohort_split(record_ids: list[str], cfg: dict, records: dict | None = None) 
     return tr, ev, {"cohort": co.identity()}
 
 
-def cell_items(recs: dict, ids, cfg: dict, enc, guard, max_t: int, workers: int | None = None) -> list:
+def train_max_k(cfg: dict) -> int:
+    """K cap of the TRAINING items: ``cfg["train_max_k"]`` when set (D8: long catalogs train), else ``cfg["max_k"]``.
+    ``cfg["max_k"]`` stays the eval / unit-spec cap (``train.m2_gates.unit_spec``, the cohort dev card), so lifting the
+    training cap leaves every evaluation unit set, and the seeded parent arm, unchanged."""
+    k = int(cfg.get("train_max_k") or cfg["max_k"])
+    if k < int(cfg["max_k"]):
+        raise ValueError(f"train_max_k {k} < max_k {cfg['max_k']}")
+    return k
+
+
+def cell_items(recs: dict, ids, cfg: dict, enc, guard, max_t: int, workers: int | None = None,
+               max_k: int | None = None) -> list:
     """Guarded rows of ``ids`` kept by the cell's K / T filter (``keep_item``). ``train.m2_gates`` rebuilds the
     training items with this exact function, so a trained checkpoint's lineage (data hash) can be re-verified.
+    ``max_k`` defaults to the TRAINING cap (``train_max_k``); eval items pass ``cfg["max_k"]`` explicitly.
     ``workers`` (default ``cfg["tokenize_workers"]``, else 1) tokenizes contiguous chunks in worker processes; the
     output is the same list in the same order as the serial path (``tests/test_m2_first_cell.py``)."""
+    max_k = train_max_k(cfg) if max_k is None else int(max_k)
     ids = list(ids)
     workers = int(workers if workers is not None else (cfg.get("tokenize_workers") or 1))
     workers = max(1, min(workers, os.cpu_count() or 1))
     if workers == 1 or len(ids) < 4 * workers:
-        return _items_chunk([recs[i] for i in ids], cfg, enc, guard, max_t)
+        return _items_chunk([recs[i] for i in ids], cfg, enc, guard, max_t, max_k)
     import multiprocessing
     from concurrent.futures import ProcessPoolExecutor
 
@@ -295,15 +308,16 @@ def cell_items(recs: dict, ids, cfg: dict, enc, guard, max_t: int, workers: int 
     # spawn on every platform: never fork a process that may hold CUDA / torch threads (same path the CPU tests run)
     with ProcessPoolExecutor(workers, mp_context=multiprocessing.get_context("spawn")) as ex:
         parts = list(ex.map(_items_chunk, chunks, [cfg] * len(chunks), [enc] * len(chunks), [guard] * len(chunks),
-                            [max_t] * len(chunks)))
+                            [max_t] * len(chunks), [max_k] * len(chunks)))
     return [x for p in parts for x in p]
 
 
-def _items_chunk(records: list, cfg: dict, enc, guard, max_t: int) -> list:
+def _items_chunk(records: list, cfg: dict, enc, guard, max_t: int, max_k: int | None = None) -> list:
     from train.data import items_from_records
 
+    max_k = cfg["max_k"] if max_k is None else max_k
     its = items_from_records(records, enc, layout=cfg["layout"], template=cfg["template"], guard=guard)
-    return [x for x in its if keep_item(x.row, cfg["max_k"], max_t)]
+    return [x for x in its if keep_item(x.row, max_k, max_t)]
 
 
 def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, cohort=None):
@@ -373,7 +387,7 @@ def attach_order_views(cfg: dict, train_items: list, train_records: dict, enc, g
 
     return attach_views(
         train_items, train_records, enc, layout=cfg["layout"], template=cfg["template"], guard=guard,
-        keep=lambda row: keep_item(row, cfg["max_k"], max_t),
+        keep=lambda row: keep_item(row, train_max_k(cfg), max_t),
     )
 
 
@@ -672,6 +686,7 @@ def main(argv=None):
     try:
         validate_head(cfg)
         order_consistency_fields(cfg)
+        train_max_k(cfg)
         if parent == "q9af" or cfg.get("teacher") or cfg.get("head_from_proxy"):
             from jobs.q9af_cell import hooks  # typed KD-teacher / proxy-head hooks (fail closed until wired)
 
@@ -719,7 +734,7 @@ def main(argv=None):
     t_cap = max(cfg["t_ladder"])
     t_tok = time.time()
     train_items = cell_items(train_recs, tr_ids, cfg, enc, guard, t_cap)
-    eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap)
+    eval_items = cell_items(eval_recs, ev_ids, cfg, enc, guard, t_cap, max_k=cfg["max_k"])  # eval cap unchanged
     try:
         order_views = attach_order_views(cfg, train_items, train_recs, enc, guard, t_cap)
         if order_views is not None and order_views["with_view"] == 0:
@@ -736,6 +751,7 @@ def main(argv=None):
                     "n_train_records": len(tr_ids), "tokenize_s": round(time.time() - t_tok, 1),
                     "n_train_items": len(train_items), "n_eval_items": len(eval_items),
                     "guard_manifests": guard.manifests, "guard": guard.identity(), "max_k": cfg["max_k"],
+                    **({"train_max_k": train_max_k(cfg)} if cfg.get("train_max_k") else {}),
                     **cohort_ident, **({"teacher": kd_cov} if kd_cov else {}),
                     **({"order_consistency_views": order_views} if order_views else {})}
     save()

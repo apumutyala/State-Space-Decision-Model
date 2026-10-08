@@ -222,6 +222,36 @@ def test_index_subset_dry_run_end_to_end(tmp_path):
     assert res["paired_compare"] == "absent"  # dry run without the job-sgihj reference: flagged, not silently skipped
 
 
+def test_index_subset_dry_run_reference_gdn_path(tmp_path):
+    """JOB_SPEC 4d: CLEF_GDN_PATH=reference end to end. Every Index phase's environment.json says gdn_path=reference
+    with all GDN layers on it; s1_ok = parity AND that; kernel_path still measured and reported (per_row timings)."""
+    data = _need_kit_and_dev()
+    env = _env(tmp_path, data, RELEASE="clef", JOB="I", ROWS="subset", CLEF_SUBSET=_sh(_standin_subset(tmp_path)),
+               CLEF_N_PARITY="2", CLEF_OVERLENGTH=_sh(_standin_overlength(tmp_path)), CLEF_GDN_PATH="reference")
+    p = _run(env)
+    assert p.returncode == 0, p.stdout[-3000:] + p.stderr[-3000:]
+    res = _result(tmp_path, "clef-index-subset")
+    assert res["ok"] and res["gdn_path"] == "reference" and res["gdn_decide_used_reference"] is True
+    assert res["s1_ok"] is True and res["parity_ok"] is True
+    ph = res["gdn"]["phases"]
+    assert set(ph) == {"decide", "decide_32k", "native"}
+    assert all(v["gdn_path"] == "reference" and v["gdn_layers_on_reference"] == v["gdn_layers_found"] >= 1
+               for v in ph.values())
+    assert res["gdn"]["sens"]["gdn_path"] == "reference" and res["gdn"]["sens"]["fallback"] is None
+    probes = json.loads((tmp_path / "out/clef-index-subset/probes.json").read_text(encoding="utf-8"))
+    assert probes["gdn_path"] == "reference" and probes["kernel_path_gating"] is False
+    assert probes["kernel_path"]["per_row"] and "ref_ms" in probes["kernel_path"]["per_row"][0]
+    pre = json.loads((tmp_path / "out/clef-index-subset/env/preflight_index.json").read_text(encoding="utf-8"))
+    assert pre["gdn_path"] == "reference"
+
+
+def test_runner_refuses_reference_gdn_path_outside_index_jobs(tmp_path):
+    env = _env(tmp_path, tmp_path, RELEASE="clef-flash", JOB="I", ROWS="overlength", CLEF_GDN_PATH="reference")
+    assert _run(env, timeout=120).returncode == 2
+    env = _env(tmp_path, tmp_path, RELEASE="clef", JOB="I", ROWS="full", CLEF_GDN_PATH="bogus")
+    assert _run(env, timeout=120).returncode == 2
+
+
 @pytest.mark.parametrize("fault", ["truncate_decide", "drop_decide_row"])
 def test_index_subset_dry_run_truncated_results_exit_17(tmp_path, fault):
     data = _need_kit_and_dev()

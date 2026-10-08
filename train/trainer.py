@@ -96,6 +96,25 @@ class TrainConfig:
     #: with row_batch > 1: max padded tokens per call (rows x longest row of the group); 0 = no limit. A row longer
     #: than the budget runs alone. Bounds the per-call activation memory (jobs/cell_step_profile JOB_SPEC, A1).
     row_tokens: int = 0
+    #: with row_batch > 1: how the step's length-sorted rows are cut into groups. "greedy" = ``row_groups`` (fill from
+    #: the longest row). "min_cost" = ``row_groups_min_cost``: the contiguous cut of the same sorted order, under the
+    #: same row_batch / row_tokens caps, that minimises (groups x GROUP_COST_TOKENS + padded tokens). Same rows, same
+    #: per-group loss weights, so the same step gradient up to float summation order.
+    row_plan: str = "greedy"
+    #: with row_batch > 1: "per_group" = one prefix + one continuation call + one backward per group (as before);
+    #: "single" = the groups' prefix calls (same groups, same padding), their states joined, ONE continuation call for
+    #: all the step's rows and ONE backward of the step-mean loss. Same loss and gradient up to float summation order;
+    #: every group's checkpointed block inputs stay alive until the backward (more memory: the ladder decides).
+    cont_plan: str = "per_group"
+    #: with act_ckpt (RWKV-7): run each checkpointed block body through one shared torch.compile (dynamic shapes; the
+    #: WKV chunk loop stays eager via torch.compiler.disable): heads.act_ckpt ``compile_backend``. Kernel fusion changes
+    #: float rounding (not the math): gated on GPU by the probe-loss / gradient-cosine rule (jobs/perf_step_gate).
+    compile_blocks: bool = False
+    #: with row_batch > 1: max forked continuations per call (sum of the group's option counts K); 0 = no limit. Each
+    #: continuation carries its own copy of the recurrent state (RWKV-7 13.3B: 61 x 64 x 64 x 64 fp32 = 64 MB), so a
+    #: group of long catalogs (K = 77..255) can hold thousands of copies at once; a row whose K alone is over the cap
+    #: runs alone. Grouping only: the same rows, losses and gradients (tests/test_cell_perf.py).
+    row_options: int = 0
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
 
     def to_json(self) -> dict:
@@ -111,7 +130,7 @@ class TrainConfig:
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
-    EXECUTION = ("act_ckpt", "row_batch", "row_tokens")
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options")
 
     def hash(self) -> str:
         d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
@@ -126,19 +145,69 @@ def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
     import dataclasses
 
     return dataclasses.replace(cfg, act_ckpt=bool(cell.get("act_ckpt", False)), row_batch=int(cell.get("row_batch", 1)),
-                               row_tokens=int(cell.get("row_tokens", 0)))
+                               row_tokens=int(cell.get("row_tokens", 0)), row_plan=str(cell.get("row_plan", "greedy")),
+                               cont_plan=str(cell.get("cont_plan", "per_group")),
+                               compile_blocks=bool(cell.get("compile_blocks", False)),
+                               row_options=int(cell.get("row_options", 0)))
 
 
-def row_groups(lengths: list[int], row_batch: int, row_tokens: int = 0) -> list[list[int]]:
+#: fixed cost of one group (prefix + continuation call, forward + recompute + backward) in padded-token equivalents:
+#: job-tvuat ckpt_rows_lean fit over its 20 timed steps, step_s = 0.36 + 2.02 x groups + 0.462e-3 x padded tokens
+#: (r2 0.995), so 2.02 / 0.462e-3 ~ 4,400 tokens.
+GROUP_COST_TOKENS = 4400
+
+
+def row_groups_min_cost(lengths: list[int], row_batch: int, row_tokens: int = 0, options: list[int] | None = None,
+                        row_options: int = 0, group_cost: int = GROUP_COST_TOKENS) -> list[list[int]]:
+    """Like ``row_groups`` (same longest-first stable order, every group <= ``row_batch`` rows and, if ``row_tokens``
+    > 0, <= ``row_tokens`` padded tokens and, if ``row_options`` > 0, <= ``row_options`` summed option counts K,
+    unless it is a single row), but the cut points minimise ``group_cost x groups + padded tokens`` (exact dynamic
+    programme over contiguous cuts of the sorted order). The caps are hard constraints of the programme, so
+    ``row_options`` composes with the cost model exactly as with the greedy fill."""
+    if row_options and (options is None or len(options) != len(lengths)):
+        raise ValueError("row_options needs one option count per row")
+    order = sorted(range(len(lengths)), key=lambda i: -lengths[i])
+    n = len(order)
+    best, cut = [0] + [None] * n, [0] * (n + 1)
+    for j in range(1, n + 1):
+        for i in range(max(0, j - row_batch), j):
+            pad = (j - i) * lengths[order[i]]
+            if j - i > 1 and row_tokens and pad > row_tokens:
+                continue
+            if j - i > 1 and row_options and sum(options[order[x]] for x in range(i, j)) > row_options:
+                continue
+            c = best[i] + group_cost + pad
+            if best[j] is None or c < best[j]:
+                best[j], cut[j] = c, i
+    groups, j = [], n
+    while j:
+        groups.append(order[cut[j]:j])
+        j = cut[j]
+    return groups[::-1]
+
+
+def single_cont_fits(options: list[int], row_options: int = 0) -> bool:
+    """``cont_plan="single"`` forks ONE continuation call over every row of the step: sum(K) recurrent-state copies at
+    once. With ``row_options`` > 0 that sum must stay within the cap; otherwise the step falls back to the per-group
+    path (one continuation call per ``row_options``-capped group). No cap = always fits (D1 behaviour unchanged)."""
+    return not row_options or sum(options) <= row_options
+
+
+def row_groups(lengths: list[int], row_batch: int, row_tokens: int = 0, options: list[int] | None = None,
+               row_options: int = 0) -> list[list[int]]:
     """Indices of the step's rows grouped for ``row_batch`` > 1: sorted by length, longest first (stable), filled
     greedily while a group has <= ``row_batch`` rows and, if ``row_tokens`` > 0, (rows x its longest row) <=
-    ``row_tokens`` padded tokens. Every row lands in exactly one group."""
+    ``row_tokens`` padded tokens and, if ``row_options`` > 0, the sum of its rows' ``options`` (K, one forked state
+    copy each) <= ``row_options``. Every row lands in exactly one group."""
+    if row_options and (options is None or len(options) != len(lengths)):
+        raise ValueError("row_options needs one option count per row")
     order = sorted(range(len(lengths)), key=lambda i: -lengths[i])
     groups: list[list[int]] = []
     for i in order:
         g = groups[-1] if groups else None
         if g is not None and len(g) < row_batch and (
-                not row_tokens or (len(g) + 1) * lengths[g[0]] <= row_tokens):
+                not row_tokens or (len(g) + 1) * lengths[g[0]] <= row_tokens) and (
+                not row_options or sum(options[j] for j in g) + options[i] <= row_options):
             g.append(i)
         else:
             groups.append([i])
@@ -177,6 +246,10 @@ def row_groups_with_views(base_lengths: list[int], view_lengths: list[int], row_
     return groups
 
 
+#: torch.compile backend for ``TrainConfig.compile_blocks`` (tests set "aot_eager": no C++/Triton toolchain on CPU)
+COMPILE_BACKEND = os.environ.get("SSDM_COMPILE_BACKEND", "inductor")
+
+
 def lora_init_seed(seed: int) -> int:
     return seed * 1_000_003 + 17
 
@@ -207,12 +280,28 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
         model.backbone.enable_gradient_checkpointing()
     from heads import act_ckpt
 
+    if cfg.compile_blocks and not cfg.act_ckpt:
+        raise ValueError("compile_blocks needs act_ckpt (the compiled region is the checkpointed block body)")
+    backend = COMPILE_BACKEND if cfg.compile_blocks else None
+    if act_ckpt.is_enabled(model.backbone.model) and act_ckpt.compile_backend_of(model.backbone.model) != backend:
+        act_ckpt.disable_block_checkpointing(model.backbone.model)  # reused backbone, other compile setting
     if cfg.act_ckpt:
-        act_ckpt.enable_block_checkpointing(model.backbone.model)  # RWKV-7 or Qwen3.5 / Q9-AF; raises otherwise
+        # RWKV-7 or Qwen3.5 / Q9-AF; raises otherwise
+        act_ckpt.enable_block_checkpointing(model.backbone.model, compile_backend=backend)
     elif act_ckpt.is_enabled(model.backbone.model):  # a backbone reused across Trainers (run_cell ladder)
         act_ckpt.disable_block_checkpointing(model.backbone.model)
     if cfg.row_batch < 1:
         raise ValueError(f"row_batch must be >= 1, got {cfg.row_batch}")
+    if cfg.row_plan not in ("greedy", "min_cost"):
+        raise ValueError(f"row_plan must be 'greedy' or 'min_cost', got {cfg.row_plan!r}")
+    if cfg.cont_plan not in ("per_group", "single"):
+        raise ValueError(f"cont_plan must be 'per_group' or 'single', got {cfg.cont_plan!r}")
+    if cfg.cont_plan == "single" and cfg.loss.order_consistency_weight:
+        raise ValueError("cont_plan='single' is not implemented for the order-consistency arm (views)")
+    if cfg.row_options < 0:
+        raise ValueError(f"row_options must be >= 0, got {cfg.row_options}")
+    if cfg.row_options and cfg.loss.order_consistency_weight:
+        raise ValueError("row_options is not implemented for order-consistency views (row_groups_with_views)")
     model.backbone.batch_rows = cfg.row_batch > 1
     return replaced
 
@@ -374,7 +463,17 @@ class Trainer:
                 view_lengths = [len(it.view.row.ids) if it.view is not None else 0 for it in rows]
                 groups = row_groups_with_views(base_lengths, view_lengths, self.cfg.row_batch, self.cfg.row_tokens)
             else:
-                groups = row_groups([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens)
+                plan = {"greedy": row_groups, "min_cost": row_groups_min_cost}[self.cfg.row_plan]
+                groups = plan([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens,
+                              [it.row.n_options for it in rows], self.cfg.row_options)
+            if self.cfg.cont_plan == "single" and len(groups) > 1 and single_cont_fits(
+                    [it.row.n_options for it in rows], self.cfg.row_options):
+                self.model.backbone.prefix_groups = groups
+                try:
+                    total += self._row_loss(rows, 1.0)
+                finally:
+                    self.model.backbone.prefix_groups = None
+                return self._finish_step(total)
             for g in groups:
                 total += self._row_loss([rows[j] for j in g], len(g) / n)
             return self._finish_step(total)
