@@ -347,3 +347,4 @@
 - Result: prompts are 1,092–1,406 tokens; prompt+continuation max is 1,410; all 3,072 rows fit under 2,048 and none under 1,024. Options max at 8 and continuations are 4. The D1fast config ladder includes 2,048 but `min_train_items=5000` exceeds this cohort's size; a future C training run needs a separately reviewed config.
 - Scope: fit artifact and tokenizer/layout/trainer code only for the census; no Torch/model/heldout/GPU. The audit agent disclosed its initial discovery search exceeded its assigned code-file allowlist, but opened no validation/heldout inputs or weights; the census itself used the fit artifact and exact tokenizer path.
 - Resource/A-B: free RAM is 1.99 GiB, below model admission. D12f and L1 equivalence remain running; D1fla/D2kdfla remain failed; Stage 1 full-DEV/full8 is still unproven.
+- Review: PR #226 now includes the census note at head `1a9b11c`; GitGuardian passed and GitHub reports it CLEAN/MERGEABLE. It remains open for review.
