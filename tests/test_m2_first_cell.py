@@ -942,3 +942,27 @@ def test_runner_verifies_a_seed_before_training_and_sets_the_tvuat_allocator():
     assert JOB.index("arm_seed seed") < v < JOB.index("-m jobs.m2_first_cell.reprice") < JOB.index('say "phase cell"')
     assert '--probe-n "$PROBE_N"' in JOB and '"${PROBE[@]}"' in JOB and PARAMS["parent_arm_seed"]["probe_records"] >= 8
     assert 'cp "$ARM"/*.json "$WORK/out/parent_arm/"' in JOB[v:JOB.index('say "phase cell"')]  # comparator units kept
+
+
+def test_train_max_k_lifts_training_cap_only():
+    """D8: ``train_max_k`` widens the TRAINING K filter (and the m2_gates lineage rebuild, which calls cell_items with
+    the default cap); ``max_k`` stays the eval / unit-spec cap."""
+    pytest.importorskip("torch")
+    from heads.layout import ByteEncoder
+    from train.data import TOY_TEMPLATE, toy_records
+    from train.guard import SplitGuard
+    from train.m2_gates import unit_spec
+    from train.run_cell import cell_items, train_max_k
+
+    recs = {r["id"]: r for r in toy_records(24, seed=3)}
+    g = SplitGuard.synthetic_only("t")
+    base = {"layout": "ordered", "template": TOY_TEMPLATE, "max_k": 1, "t_ladder": [2048]}
+    lifted = {**base, "train_max_k": 255}
+    assert train_max_k(base) == 1 and train_max_k(lifted) == 255
+    assert cell_items(recs, sorted(recs), base, ByteEncoder(), g, 2048, workers=1) == []
+    tr = cell_items(recs, sorted(recs), lifted, ByteEncoder(), g, 2048, workers=1)
+    assert len(tr) == 48
+    assert cell_items(recs, sorted(recs), lifted, ByteEncoder(), g, 2048, workers=1, max_k=lifted["max_k"]) == []
+    assert unit_spec(lifted)["max_k"] == 1
+    with pytest.raises(ValueError, match="train_max_k"):
+        train_max_k({**base, "max_k": 16, "train_max_k": 8})
