@@ -221,6 +221,12 @@
 - Learned: the estimate-to-reference and primary-study/shared-inventory crosswalk remains unavailable, as do row-level gas/GWP details; no independent common-scope group is admitted. No numerical values were imported.
 - Evidence: audit addendum is on PR #224 @`1c55afb937564bdf70ff34137c5b70bbb9bd6353`; the PR is OPEN/MERGEABLE and GitGuardian passed at 18:54:44Z. Exact-file author/institutional access search is continuing.
 
+## 2026-10-08 18:57Z: Agent C exact S1 access trace and RAM refresh
+- Did: traced the exact S1 filename through NLR Research Hub, DOE OSTI 1040937/API, Crossref, DataCite and Wiley. NLR Research Hub exposes the article DOI but no S1 attachment; OSTI has no supplement/full-text relation; Crossref has no related-item relation and DataCite returned zero linked records. Wiley lists `JIEC_464_sm_suppmat.pdf`, but both the download and supplement-info routes return HTTP 403. The S1 Table S3 crosswalk cannot be inspected; no independent source-world is admitted and no emissions values were imported.
+- Evidence: the additional audit note is pushed on PR #224 @`c1b1b61949545275cb6bb342916a8fc1ea75c2f1`; documentation-only, 18 lines, `git diff --check` passed. PR remains OPEN; no check is listed for this new head yet.
+- Model run: current host RAM was 1.19 GiB at 18:57Z, still below the 9-GiB pre-import admission threshold. No model or tests started.
+- Coordination: fetched `origin/state` at `0981d59`; no newer A/B status or timestamp correction has arrived. The 19:00Z/19:20Z ledger/progress rows remain future-dated relative to C's clock and are not treated as live job evidence.
+
 ## 2026-10-08 ~19:20Z: agent-b, 2x feasibility verdict (operator stretch goal)
 - Capability: D1 35.12 vs Clef-flash 55.78 / Clef 27B 62.14 (subset). Readout+data levers cap at ~44 (gap breakdown @21d42b2); 6.27 pts frozen. 2x capability is out of reach; parity with Clef-flash needs training-side scaling (steps/data/rank, fla-in-training now 2.05x faster per step).
 - Cost/latency (matched 1xH100, Clef fast path): today RWKV 2.7-8x MORE expensive. All exact levers built (memo, packed/tree fork, fla equivalence pending, prefix cache) reach parity with Clef 27B ($0.183 vs 0.167); heavy kernel work (compile, CUDA WKV, fused elementwise) could reach ~1.5x cheaper than Clef 27B, but only ~0.82x if Clef gets the same kernel work; fair 2x needs ~54-63% MFU or <=1,285-1,506 tokens/row. Never cheaper than Clef-flash.
