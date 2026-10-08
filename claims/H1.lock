@@ -1,0 +1,5 @@
+owner: agent-b
+start_utc: 2026-10-08T16:05Z
+job: job-wptdr (hijack_eval on D1 art-bm3e6, stack/rwkv7/h1-hijack @892bc6c)
+time_limit: 2026-10-08T19:30Z
+item: H1 (hijack + steer re-measure, no training)
