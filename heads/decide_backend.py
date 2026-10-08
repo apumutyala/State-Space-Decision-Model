@@ -50,6 +50,12 @@ from .model import DecisionModel
 def _template_identity(template: Template) -> dict[str, str]:
     from decide.prompt import G1V2_ID
 
+    from decide.prompt_g1v3 import G1V2F_ID
+
+    if template.id == G1V2F_ID:  # v2f: the fixed-instruction v2 renderer's identity (decide.backends.rwkv_g1_v3)
+        from decide.backends.rwkv_g1_v3 import renderer_identity as v3_identity
+
+        return v3_identity("v2f")
     if template.id == G1V2_ID:  # D3 / R1: the C1 v2 renderer identity (head, tail, system, bos, codebook, canary)
         from decide.backends.rwkv_g1_v2 import renderer_identity
 

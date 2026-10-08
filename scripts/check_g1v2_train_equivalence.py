@@ -1,9 +1,10 @@
 """Train/eval equivalence of the jrt-rwkv-g1-v2 template on real m2 training records (CPU, tokenizer only, no model).
 
 For every (record, question) row:
-  train side   = train.data.items_from_records(..., template="jrt-rwkv-g1-v2", layout="g1v2") with the cell's own encoder
+  train side   = train.data.items_from_records(..., template=<--template>, layout="g1v2") with the cell's own encoder
                  (train.run_cell.parent_encoder("rwkv7", <tokenizer dir>))
-  readout side = decide.backends.rwkv_g1_v2.G1V2Backend._questions (the readout's own prompt + code-token code),
+  readout side = the template's readout backend's own _questions: jrt-rwkv-g1-v2 -> rwkv_g1_v2.G1V2Backend,
+                 jrt-rwkv-g1-v2f -> rwkv_g1_v3.G1V3Backend(mode="v2f") (the readout's own prompt + code-token code),
                  on a model-free plugin whose encode is the readout plugin's (hf_readout.load_rwkv7_hf) encode body
 and it asserts
   ids     : row.ids == the readout's prompt ids ([0] + whole-string tokens)
@@ -112,6 +113,7 @@ def main() -> int:
     ap.add_argument("--n-large", type=int, default=80)
     ap.add_argument("--n-multi", type=int, default=30)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--template", default="jrt-rwkv-g1-v2f", choices=["jrt-rwkv-g1-v2", "jrt-rwkv-g1-v2f"])
     a = ap.parse_args()
 
     from decide.backends.rwkv_g1_v2 import BOS_ID, G1V2Backend
@@ -133,10 +135,19 @@ def main() -> int:
             raise ControlTokenError("untrusted text encodes to an RWKV special token (<|endoftext|>)")
         return ids
 
-    ro = G1V2Backend.__new__(G1V2Backend)  # the readout's own _questions, without loading a model
+    if a.template == "jrt-rwkv-g1-v2f":
+        from decide.backends.rwkv_g1_v3 import ANSWER_CTX, G1V3Backend
+
+        ro = G1V3Backend.__new__(G1V3Backend)  # the readout's own _questions, without loading a model
+        ro.mode, ro.permute, ro.words, ro.calibrate, ro.reread = "v2f", False, False, False, False
+        ro._first_tok, ro.budget = {}, 10 ** 9
+        ro._ctx_ids = readout_encode(ANSWER_CTX, True)
+    else:
+        ro = G1V2Backend.__new__(G1V2Backend)
     ro.plugin = SimpleNamespace(encode=readout_encode)
     ro.codes = load_frozen_table()
     ro.code_table = [c.code for c in ro.codes]
+    ro.code_token = {c.code: c.token_id for c in ro.codes}
     ro._full_memo = {}
     ctx = "User: Choose.\n\nAssistant: <think></think>\nANSWER:"  # the backend's own F4 proof, same tokenizer
     base = readout_encode(ctx, True)
@@ -149,7 +160,7 @@ def main() -> int:
     for rec in records:
         req = record_request(rec)
         try:
-            items = items_from_records([rec], enc, layout="g1v2", template="jrt-rwkv-g1-v2")
+            items = items_from_records([rec], enc, layout="g1v2", template=a.template)
         except ControlTokenError:
             refused += 1
             continue
@@ -187,7 +198,7 @@ def main() -> int:
             fa, fb = r.field_span
             if not (0 < a0 < b0 <= len(r.ids)) or "FIELD" not in tok.decode(r.ids[fa:fb]):
                 span_bad += 1
-    res = {"records": a.records, "n_records": len(records), "n_rows": n_rows, "rows_by_k": by_k,
+    res = {"template": a.template, "records": a.records, "n_records": len(records), "n_rows": n_rows, "rows_by_k": by_k,
            "refused_records": refused, "mismatches": len(mism), "mismatch_examples": mism[:10],
            "span_sanity_failures": span_bad,
            "rows_empty_state": empty_state, "rows_final_blank_line_recollapse": recollapsed}

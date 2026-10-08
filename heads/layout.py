@@ -50,6 +50,7 @@ import bisect
 from decide.prompt import _G1_BLANK_LINES as _G1_BLANK  # the readout's own blank-line rule (render_g1v2)
 from decide.prompt import (G1V2_ID, G1V2_SYSTEM_PROMPT, G1V2_TEMPLATE, SYSTEM_PROMPT, TEMPLATES, Template, _instr,
                            build_prompt_g1v2, continuation_segments, render_g1v2)
+from decide.prompt_g1v3 import G1V2F_ID, build_prompt_g1v3, render_g1v3
 from decide.provenance import field_strings, instructions_path, state_path
 from decide.schema import canonical_options, canonical_question_ids, render
 
@@ -97,12 +98,31 @@ def _field(index: int, qid: str, q: dict[str, Any], target: bool, with_options: 
     return seg
 
 
+def _v2f_segments(request: dict[str, Any], qid: str, table: list[str]):
+    return build_prompt_g1v3(request, qid, table, None, False, True)  # v2f: no code key, no permutation, fixed instr
+
+
+def _v2f_render(request: dict[str, Any], qid: str, table: list[str]) -> str:
+    return render_g1v3(request, qid, table, None, False, True)
+
+
+#: layout "g1v2" training templates -> the READOUT's own (segments, render) functions. Every entry uses v2's frozen
+#: code table and v2's head/tail, and its readout reads the next token after "ANSWER:" at the last prompt position.
+#:   jrt-rwkv-g1-v2   decide.prompt.build_prompt_g1v2 / render_g1v2            (readout rwkv7-hf-g1-v2, job-zhyvg)
+#:   jrt-rwkv-g1-v2f  decide.prompt_g1v3 v2f = v2 + the dict-instruction fix   (readout rwkv7-hf-g1-v2f, G1V3Backend v2f)
+G1_TRAIN_RENDERERS = {G1V2_ID: (build_prompt_g1v2, render_g1v2), G1V2F_ID: (_v2f_segments, _v2f_render)}
+G1_TRAIN_TEMPLATES = {G1V2_ID: G1V2_TEMPLATE,
+                      G1V2F_ID: Template(id=G1V2F_ID, head=G1V2_TEMPLATE.head, tail=G1V2_TEMPLATE.tail,
+                                         terminator=G1V2_TEMPLATE.terminator)}
+
+
 def resolve_template(template: Template | str) -> Template:
-    """A template by id; ``jrt-rwkv-g1-v2`` (the D3 / C1 v2 format) is resolved here, not registered in
-    ``decide.prompt.TEMPLATES`` (its identity is ``decide.backends.rwkv_g1_v2.renderer_identity``)."""
+    """A template by id; the layout-``g1v2`` templates (``G1_TRAIN_TEMPLATES``: jrt-rwkv-g1-v2, jrt-rwkv-g1-v2f) are
+    resolved here, not registered in ``decide.prompt.TEMPLATES`` (their identities are their readouts' renderer
+    identities, ``heads.decide_backend._template_identity``)."""
     if isinstance(template, Template):
         return template
-    return G1V2_TEMPLATE if template == G1V2_ID else TEMPLATES[template]
+    return G1_TRAIN_TEMPLATES.get(template) or TEMPLATES[template]
 
 
 def tagged_segments(template: Template, request: dict[str, Any], qid: str, layout: str) -> list[TaggedSegment]:
@@ -143,7 +163,7 @@ def _tagged_segments_paths(template: Template, request: dict[str, Any], qid: str
     if layout not in LAYOUTS:
         raise ValueError(f"layout must be one of {LAYOUTS}")
     if layout == G1V2_LAYOUT:
-        return _g1v2_segments_paths(request, qid, _g1v2_code_table())
+        return _g1v2_segments_paths(request, qid, _g1v2_code_table(), template.id)
     with_options = layout == "ordered"
     questions = request["questions"]
     order = canonical_question_ids(questions)
@@ -339,7 +359,8 @@ def _g1v2_code_table() -> list[str]:
     return _CODE_TABLE
 
 
-def _g1v2_segments_paths(request: dict[str, Any], qid: str, code_table: list[str]) -> list[tuple]:
+def _g1v2_segments_paths(request: dict[str, Any], qid: str, code_table: list[str],
+                         template_id: str = G1V2_ID) -> list[tuple]:
     """``decide.prompt.build_prompt_g1v2`` (the v2 READOUT's own segments, reused, not re-implemented) tagged as
     (text, trusted, tag, path). Tags: "field" (target field in the schema), "option:<j>" (its option j id +
     description), "state", "reread", "reread_instr"; paths as the ordered layout's (provenance / ID_PATH / None)."""
@@ -348,7 +369,9 @@ def _g1v2_segments_paths(request: dict[str, Any], qid: str, code_table: list[str
     out: list[tuple] = []
     field: str | None = None  # the field being walked (schema), qid in the re-read
     phase, opt_j, expect = "schema", -1, None  # expect: the kind of the next data segment
-    for text, label in build_prompt_g1v2(request, qid, code_table):
+    if template_id not in G1_TRAIN_RENDERERS:
+        raise ValueError(f"layout {G1V2_LAYOUT!r} needs one of the templates {sorted(G1_TRAIN_RENDERERS)}, got {template_id!r}")
+    for text, label in G1_TRAIN_RENDERERS[template_id][0](request, qid, code_table):
         target = phase == "schema" and field == qid
         if label == "template":
             tag = ""
@@ -390,13 +413,13 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
                     option_order: Sequence[int] | None, empty_state: str) -> LayoutRow:
     from decide.untrusted import ControlTokenError
 
-    if tpl.id != G1V2_ID:
-        raise ValueError(f"layout {G1V2_LAYOUT!r} needs template {G1V2_ID!r}, got {tpl.id!r}")
+    if tpl.id not in G1_TRAIN_RENDERERS:
+        raise ValueError(f"layout {G1V2_LAYOUT!r} needs one of the templates {sorted(G1_TRAIN_RENDERERS)}, got {tpl.id!r}")
     token_bytes = getattr(encode, "token_bytes", None)
     if not callable(token_bytes):
         raise ValueError(f"layout {G1V2_LAYOUT!r} needs an encoder with token_bytes(id) (whole-string spans)")
     table = _g1v2_code_table()
-    segs = _g1v2_segments_paths(request, qid, table)
+    segs = _g1v2_segments_paths(request, qid, table, tpl.id)
     raw = "".join(t for t, *_ in segs)
     bounds, n = [], 0
     for t, *_ in segs:
@@ -421,8 +444,8 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
     keep_lo = [0] + [b for _, b in dels]
     keep_hi = [a for a, _ in dels] + [len(raw)]
     text = "".join(raw[p:q] for p, q in zip(keep_lo, keep_hi))
-    if text != render_g1v2(request, qid, table):
-        raise ValueError("g1v2 layout text differs from decide.prompt.render_g1v2")
+    if text != G1_TRAIN_RENDERERS[tpl.id][1](request, qid, table):
+        raise ValueError(f"g1v2 layout text differs from the {tpl.id} readout's render")
     body_ids = list(encode(text, True))  # F5: the whole prompt string at once
     if 0 in body_ids:
         raise ControlTokenError("request text encoded to the control id 0 (<|endoftext|>); refused")
