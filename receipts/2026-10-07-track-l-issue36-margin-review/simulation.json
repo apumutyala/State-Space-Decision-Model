@@ -1,0 +1,162 @@
+{
+  "seed": 20261006,
+  "n_trials": 200000,
+  "billed_usd": 0,
+  "method": "Gaussian estimator with known SE and two-sided normal 95% CI; sensitivity only",
+  "capability_subset_assumed_se_0.752": [
+    {
+      "delta": 0.0,
+      "se": 0.752,
+      "margin": 1.0,
+      "kind": "ni_higher_better",
+      "p_pass": 0.26352,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": -1.0,
+      "se": 0.752,
+      "margin": 1.0,
+      "kind": "ni_higher_better",
+      "p_pass": 0.025185,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": -2.0,
+      "se": 0.752,
+      "margin": 1.0,
+      "kind": "ni_higher_better",
+      "p_pass": 0.0005,
+      "mc_se_max": 0.001118033988749895
+    }
+  ],
+  "capability_full_dev_projected_se_0.31": [
+    {
+      "delta": 0.0,
+      "se": 0.31,
+      "margin": 1.0,
+      "kind": "ni_higher_better",
+      "p_pass": 0.89641,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": -1.0,
+      "se": 0.31,
+      "margin": 1.0,
+      "kind": "ni_higher_better",
+      "p_pass": 0.025185,
+      "mc_se_max": 0.001118033988749895
+    }
+  ],
+  "retention_accuracy_assumed_discordance_0.1_n1420": [
+    {
+      "delta": 0.0,
+      "se": 0.008391813582966891,
+      "margin": 0.01,
+      "kind": "ni_higher_better",
+      "p_pass": 0.22038,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": -0.01,
+      "se": 0.008391813582966891,
+      "margin": 0.01,
+      "kind": "ni_higher_better",
+      "p_pass": 0.025185,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": 0.0,
+      "se": 0.008391813582966891,
+      "margin": 0.03,
+      "kind": "ni_higher_better",
+      "p_pass": 0.94685,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": -0.03,
+      "se": 0.008391813582966891,
+      "margin": 0.03,
+      "kind": "ni_higher_better",
+      "p_pass": 0.025185,
+      "mc_se_max": 0.001118033988749895
+    }
+  ],
+  "retention_ece_assumed_halfwidth_0.026": [
+    {
+      "delta": 0.0,
+      "se": 0.013265549880041005,
+      "margin": 0.01,
+      "kind": "ni_lower_better",
+      "p_pass": 0.11483,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": 0.0,
+      "se": 0.013265549880041005,
+      "margin": 0.01,
+      "kind": "no_demonstrated_increase",
+      "p_pass": 0.974815,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": 0.01,
+      "se": 0.013265549880041005,
+      "margin": 0.01,
+      "kind": "ni_lower_better",
+      "p_pass": 0.02506,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": 0.01,
+      "se": 0.013265549880041005,
+      "margin": 0.01,
+      "kind": "no_demonstrated_increase",
+      "p_pass": 0.885935,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": 0.02,
+      "se": 0.013265549880041005,
+      "margin": 0.01,
+      "kind": "ni_lower_better",
+      "p_pass": 0.003525,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": 0.02,
+      "se": 0.013265549880041005,
+      "margin": 0.01,
+      "kind": "no_demonstrated_increase",
+      "p_pass": 0.675755,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": 0.03,
+      "se": 0.013265549880041005,
+      "margin": 0.01,
+      "kind": "ni_lower_better",
+      "p_pass": 0.000315,
+      "mc_se_max": 0.001118033988749895
+    },
+    {
+      "delta": 0.03,
+      "se": 0.013265549880041005,
+      "margin": 0.01,
+      "kind": "no_demonstrated_increase",
+      "p_pass": 0.384315,
+      "mc_se_max": 0.001118033988749895
+    }
+  ],
+  "retention_accuracy_n80pct_at_disc_0.1_margin_0.01": 7849,
+  "alarm_delta_counterexample": {
+    "parent_false_alarm": 0.1,
+    "child_false_alarm": 0.1,
+    "delta_ci": [
+      0.0,
+      0.0
+    ],
+    "delta_gate_passes": true,
+    "absolute_1pct_rule_passes": false
+  },
+  "source_sha256": "c217afa09a33ca575b959b63c10d24ec96211bb7a7db22841e7a36be16b2ed8e"
+}
