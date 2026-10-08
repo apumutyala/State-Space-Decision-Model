@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from typing import Any
+
+
+def decimal_text(value: Decimal) -> str:
+    """Canonical exact text, independent of ambient exponent capitalization."""
+    with localcontext() as context:
+        context.capitals = 1
+        return str(value)
 
 
 def _json_value(value: Any) -> Any:
     if isinstance(value, Decimal):
-        return str(value)
+        return decimal_text(value)
     if isinstance(value, tuple):
         return [_json_value(part) for part in value]
     if hasattr(value, "to_dict"):
@@ -59,6 +66,19 @@ class Comparison:
 
 
 @dataclass(frozen=True, slots=True)
+class ExactDifference:
+    left: Fact | ConstantValue
+    right: Fact | ConstantValue
+    value: int | Decimal
+    unit: str | None
+    interval: str
+    quantity_kind: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {name: _json_value(getattr(self, name)) for name in self.__dataclass_fields__}
+
+
+@dataclass(frozen=True, slots=True)
 class AskContent:
     category: str
     obligation_ref: str
@@ -71,7 +91,7 @@ class AskContent:
 @dataclass(frozen=True, slots=True)
 class SpeechAct:
     kind: str
-    content: Fact | Comparison | AskContent | tuple[SpeechAct, ...] | SpeechAct
+    content: Fact | Comparison | ExactDifference | AskContent | tuple[SpeechAct, ...] | SpeechAct
     dependencies: tuple[str, ...]
     derivation: tuple[int, ...]
 

@@ -13,20 +13,27 @@ import weakref
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, SpeechAct
+from .types import AskContent, CheckResult, Comparison, ConstantValue, ExactDifference, Fact, SpeechAct
 
 _SCHEMA = "ssdm.semantic_program.v0.1"
-_OPS = {"ReadFact", "Compare", "Assert", "Conjoin", "ExplainDerivation", "Ask"}
+_OPS = {"ReadFact", "Compare", "ExactDifference", "Assert", "Conjoin", "ExplainDerivation", "Ask"}
 _REASONS = {"unknown_reference", "stale_context", "stale_policy", "type_unit_mismatch", "unsupported_assertion", "forbidden_dependency", "invalid_graph", "conflict", "exceeded_limit", "scope_mismatch", "unsupported_operation", "unsupported_field"}
 _MINTED: weakref.WeakSet[CheckResult] = weakref.WeakSet()
 _NODE_KEYS = {
     "ReadFact": {"id", "op", "record_ref", "field"},
     "Compare": {"id", "op", "left", "right", "relation"},
+    "ExactDifference": {"id", "op", "left", "right"},
     "Assert": {"id", "op", "proposition"},
     "Conjoin": {"id", "op", "speech_acts"},
     "ExplainDerivation": {"id", "op", "speech_act"},
     "Ask": {"id", "op", "category", "obligation_ref", "references"},
 }
+
+# Fixed ceiling for the optional exact-arithmetic extension. The host may deny
+# the operation through allowed_ops; proposals cannot enlarge these bounds.
+_ARITHMETIC_DIGITS = 256
+_ARITHMETIC_SCALE = 64
+_ARITHMETIC_MAGNITUDE = 10 ** _ARITHMETIC_DIGITS
 
 
 class _Reject(Exception):
@@ -234,10 +241,55 @@ def _compare(left: Fact | ConstantValue, right: Fact | ConstantValue, relation: 
     return Comparison(left, right, relation, left.interval)
 
 
+def _coefficient(value: Any) -> tuple[int, int]:
+    """Bound work before exponent alignment; never use Decimal arithmetic."""
+    if type(value) is int:
+        if abs(value) >= _ARITHMETIC_MAGNITUDE:
+            _fail("exceeded_limit")
+        return value, 0
+    if not isinstance(value, Decimal) or not value.is_finite():
+        _fail("type_unit_mismatch")
+    sign, digits, exponent = value.as_tuple()
+    if len(digits) > _ARITHMETIC_DIGITS or not -_ARITHMETIC_SCALE <= exponent <= 0:
+        _fail("exceeded_limit")
+    coefficient = 0
+    for digit in digits:
+        coefficient = coefficient * 10 + digit
+    return (-coefficient if sign else coefficient), -exponent
+
+
+def _exact_difference(left: Fact | ConstantValue, right: Fact | ConstantValue) -> ExactDifference:
+    _name(left.quantity_kind, "type_unit_mismatch")
+    _name(right.quantity_kind, "type_unit_mismatch")
+    if left.interval != right.interval:
+        _fail("scope_mismatch")
+    if left.unit != right.unit or left.quantity_kind != right.quantity_kind:
+        _fail("type_unit_mismatch")
+    lv = left.object if isinstance(left, Fact) else left.value
+    rv = right.object if isinstance(right, Fact) else right.value
+    lc, ls = _coefficient(lv)
+    rc, rs = _coefficient(rv)
+    scale = max(ls, rs)
+    # Powers are bounded by 64, and coefficients by 256 digits. Reject an
+    # oversized aligned intermediate even if subtraction would cancel it.
+    lc *= 10 ** (scale - ls)
+    rc *= 10 ** (scale - rs)
+    if abs(lc) >= _ARITHMETIC_MAGNITUDE or abs(rc) >= _ARITHMETIC_MAGNITUDE:
+        _fail("exceeded_limit")
+    coefficient = lc - rc
+    if abs(coefficient) >= _ARITHMETIC_MAGNITUDE:
+        _fail("exceeded_limit")
+    value: int | Decimal = coefficient
+    if isinstance(lv, Decimal) or isinstance(rv, Decimal):
+        digits = tuple(int(digit) for digit in str(abs(coefficient)))
+        value = Decimal((int(coefficient < 0), digits, -scale))
+    return ExactDifference(left, right, value, left.unit, left.interval, left.quantity_kind)
+
+
 def _deps(value: Any) -> tuple[str, ...]:
     if isinstance(value, Fact):
         return (value.record_ref,)
-    if isinstance(value, Comparison):
+    if isinstance(value, (Comparison, ExactDifference)):
         return tuple(dict.fromkeys(_deps(value.left) + _deps(value.right)))
     if isinstance(value, SpeechAct):
         return value.dependencies
@@ -249,7 +301,7 @@ def _deps(value: Any) -> tuple[str, ...]:
 
 
 def _scopes(act: SpeechAct) -> set[str]:
-    if act.kind == "assert" and isinstance(act.content, (Fact, Comparison)):
+    if act.kind == "assert" and isinstance(act.content, (Fact, Comparison, ExactDifference)):
         return {act.content.interval}
     if act.kind == "conjoin" and isinstance(act.content, tuple):
         return set().union(*(_scopes(part) for part in act.content))
@@ -293,9 +345,11 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
             value = _read(_name(n["record_ref"]), _name(n["field"]), by_ref, snapshot, policy, registry, catalog)
         elif op == "Compare":
             value = _compare(_operand(n["left"], prior, h), _operand(n["right"], prior, h), _name(n["relation"]), registry)
+        elif op == "ExactDifference":
+            value = _exact_difference(_operand(n["left"], prior, h), _operand(n["right"], prior, h))
         elif op == "Assert":
             target = n["proposition"]
-            if not isinstance(target, str) or target not in prior or not isinstance(prior[target], (Fact, Comparison)):
+            if not isinstance(target, str) or target not in prior or not isinstance(prior[target], (Fact, Comparison, ExactDifference)):
                 _fail("invalid_graph")
             content = prior[target]
             value = SpeechAct("assert", content, _deps(content), (ordinals[target], ordinal))
