@@ -6,6 +6,7 @@ with the real 65,536 vocabulary, CPU fp32).
 """
 from __future__ import annotations
 
+import json
 import math
 import os
 import shutil
@@ -400,3 +401,23 @@ def test_every_request_field_reaches_every_fixed_prompt():
     assert len(per) > 20
     for name in ("v2f", "v3", "v3p", "v3w"):
         assert not res[name], (name, {f: sorted(set(v)) for f, v in res[name].items()})
+
+
+def test_g1v3_decision_validator_needs_every_variant_index_not_a_top_level_one(tmp_path):
+    """job-fgu2c exited 9: valid_readout_g1v3 delegated to valid_readout (top-level index.point), which the per-variant
+    g1v3 decision never has."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("decide_rwkv7", Path(__file__).resolve().parents[1] / "scripts/decide_rwkv7.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    for v in m.G1V3_VARIANTS:
+        (tmp_path / "index" / v).mkdir(parents=True)
+        (tmp_path / "index" / v / "score.json").write_text(json.dumps(
+            {"rows": 2008, "slice_index": {"index": {"point": 30.0, "lo": 28.0, "hi": 32.0}}}))
+        (tmp_path / "index" / v / "ece.json").write_text("{}")
+    d = m.decide_readout_g1v3(str(tmp_path))
+    assert d["verdict"] == "readout-measured" and m.valid_readout_g1v3(d) and not m.valid_readout(d)
+    d["variants"]["v3w"]["index"] = {"point": None}
+    assert not m.valid_readout_g1v3(d)
+    assert m.main("readout_g1v3", str(tmp_path), str(tmp_path / "decision.json")) == 0

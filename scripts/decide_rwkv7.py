@@ -79,7 +79,11 @@ def decide_readout_g1v3(work_out):
 
 
 def valid_readout_g1v3(d):
-    return valid_readout(d)
+    """The g1v3 decision has no top-level index: it is valid when measured and EVERY variant has a finite index point
+    (job-fgu2c exited 9 because this delegated to valid_readout, which requires d["index"]["point"])."""
+    vs = d.get("variants") if isinstance(d, dict) else None
+    return (isinstance(vs, dict) and d.get("verdict") in READOUT_VERDICTS and set(vs) == set(G1V3_VARIANTS)
+            and all(_num(((v or {}).get("index") or {}).get("point")) for v in vs.values()))
 
 
 def decide_lora(cell):
