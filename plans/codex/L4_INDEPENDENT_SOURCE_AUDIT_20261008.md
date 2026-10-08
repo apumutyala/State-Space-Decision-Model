@@ -330,6 +330,32 @@ functional unit, input-output data vintage, uncertainty, and any inventory
 overlap; the currently verified pollutant set does not meet full-GHG scope.
 No model or held-out data was accessed or changed.
 
+### 8 October 2026 — Liberman 2003 primary-text recovery
+
+The original thesis is publicly retrievable through the DTIC Minsky route:
+the [AFIT Scholar record](https://scholar.afit.edu/etd/4227/) identifies the
+thesis and accession, the [DTIC Minsky record](https://dtic.minsky.ai/index/ADA415268)
+identifies the matching technical report, and the [DTIC PDF endpoint](https://api-dtic.minsky.ai/api/v1/document/ADA415268/pdf)
+serves its full text. The [Library of Congress technical-reports guide](https://guides.loc.gov/technical-reports/databases)
+lists Minsky among DTIC's discovery tools. AFIT's direct file route and legacy
+DTIC PDF routes returned 403, but this DTIC-hosted route resolved the access
+block.
+
+The thesis reports results per kWh. Its scope includes raw-material production,
+component manufacture and assembly, engineering/design, business management,
+transportation, construction, and operation/maintenance/repair. It expressly
+excludes grid connection and turbine decommissioning/recycling; no recycling
+credit is applied (thesis pp. 41–42). Its CO2-equivalent definition includes
+CH4 and N2O, but no GWP horizon is stated in the thesis text located (table-key
+definition, p. 104). The Monte Carlo method generates location-level emissions
+intensity distributions and analyzes their variability, while reported
+summaries use medians; no explicit emissions confidence or coverage interval
+was found (methods pp. 40–41, 51; results pp. 137–141). Thus the full text
+confirms a distinct primary study, but its omitted end-of-life phases and
+unspecified GWP horizon keep it at **zero common-scope admission**. No
+emissions values were transcribed or imported, and no held-out data were
+accessed.
+
 ## Safe expansion rule
 
 An added L4 module must retain its own source, population, year, boundary,
