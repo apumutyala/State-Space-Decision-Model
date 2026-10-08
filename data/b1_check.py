@@ -173,7 +173,10 @@ def item_hits(rec: dict, idx: dict, templates: set[str]) -> list[tuple[str, str,
     return out
 
 
-def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None) -> dict:
+def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None, max_item_reuse: int = 1) -> dict:
+    """``max_item_reuse`` > 1 (schema-permutation draws, data/b_schema.py): a source item may back up to that many rows,
+    and key-free-text near-duplicates are allowed only between rows of the SAME source item (they are its permutations);
+    near-duplicates across different items and exact content duplicates still fail."""
     from data.build import item_keys
     from train.cohort import Cohort, record_content_hash, record_text_keys
     from train.cohort_v3 import _ensure_kit, cohort_v3
@@ -207,6 +210,8 @@ def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None) ->
     seen_c_by_id: dict[str, str] = {}
     texts = []
     n = 0
+    cross_item_dups = within_item_dups = 0
+    d1b_hits, d1b_n = [], 0
     with gzip.open(draw_dir / "records.jsonl.gz", "rt", encoding="utf-8") as fh:
         for line in fh:
             line = line.rstrip("\n")
@@ -257,10 +262,19 @@ def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None) ->
             seen_c[ch] = rid
             seen_c_by_id[rid] = ch
             for k in dedup_keys(r):
-                if k in seen_t:
-                    fails["dup_text"].append((rid, seen_t[k]))
-                seen_t[k] = rid
+                if k in seen_t and not (max_item_reuse > 1 and seen_t[k][1] & items):
+                    fails["dup_text"].append((rid, seen_t[k][0]))
+                    if max_item_reuse > 1:
+                        cross_item_dups += 1
+                elif k in seen_t:
+                    within_item_dups += 1
+                seen_t.setdefault(k, (rid, frozenset(items)))
             texts.append((rid, record_text(r)))
+            if len(texts) >= 20000:  # D1-B scan in chunks: bounded RAM on 300k-row draws (same hits as one call)
+                d1b_part = scan(texts)
+                d1b_hits += d1b_part["hits"]
+                d1b_n += d1b_part["n_texts"]
+                texts = []
     # harness.heldout.check_generator over every (source, family) generator of the draw, and the cohorts' own
     # assert_draw_disjoint over all ids (by id, content and, for v3, source item)
     from harness.heldout import check_generator
@@ -276,10 +290,13 @@ def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None) ->
             co.assert_draw_disjoint(list(content_map), content_map)
         except Exception as e:
             fails[f"assert_draw_disjoint_{name}"].append(str(e)[:300])
-    multi_item = [k for k, v in seen_item.items() if v > (2 if k.startswith("m2:factchange:") else 1)]
+    cap = max_item_reuse * (2 if max_item_reuse == 1 else 1)
+    multi_item = [k for k, v in seen_item.items() if v > (cap if k.startswith("m2:factchange:") else max_item_reuse)]
     if multi_item:
         fails["dup_source_item"] = multi_item
     d1b = scan(texts)
+    d1b["hits"] = d1b_hits + d1b["hits"]
+    d1b["n_texts"] += d1b_n
     if d1b["hits"]:
         fails["d1b_heldout"] = d1b["hits"]
     if n != ptr["n_records"] or n != len(man):
@@ -289,6 +306,11 @@ def check(draw_dir: Path, pointer: Path, data: Path, out: Path | None = None) ->
            "index_boilerplate_excluded": idx["boilerplate"],
            "cohorts": {"v2": v2.identity(), "v3": v3.identity()},
            "d1b_templates_sha256": d1b["templates_sha256"], "generators_checked": [f"{a}/{b}" for a, b in gens], "context_overlap_reported_not_failed": dict(ctx_hits),
+           "max_item_reuse": max_item_reuse,
+           "source_item_reuse": {"items": len(seen_item), "max": max(seen_item.values()) if seen_item else 0,
+                                 "rows_sharing_item_frac": round(sum(v for v in seen_item.values() if v > 1) / max(1, n), 4),
+                                 "within_item_text_key_collisions": within_item_dups,
+                                 "cross_item_text_key_collisions": cross_item_dups},
            "failures": {k: {"n": len(v), "examples": v[:5]} for k, v in fails.items()},
            "pass": not fails}
     if out:
@@ -304,8 +326,9 @@ def main(argv=None) -> int:
     ap.add_argument("--pointer", required=True)
     ap.add_argument("--data", default=r"C:\Users\apumu\research\CHLabs\ssdm-data")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--max-item-reuse", type=int, default=1)
     a = ap.parse_args(argv)
-    rep = check(Path(a.draw_dir), Path(a.pointer), Path(a.data), Path(a.out) if a.out else None)
+    rep = check(Path(a.draw_dir), Path(a.pointer), Path(a.data), Path(a.out) if a.out else None, a.max_item_reuse)
     print(json.dumps({k: rep[k] for k in ("n_rows", "pass", "failures", "context_overlap_reported_not_failed")},
                      indent=1, ensure_ascii=False))
     if not rep["pass"]:
