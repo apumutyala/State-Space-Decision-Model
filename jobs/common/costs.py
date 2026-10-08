@@ -28,6 +28,7 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
           "clef_index_subset": "jobs/clef_baseline/job_params_index_subset.json",
           "clef_index_full": "jobs/clef_baseline/job_params_index_full.json",
           "clef_index_full_reference": "jobs/clef_baseline/job_params_index_full_reference.json",
+          "clef_index_full_reference_flash": "jobs/clef_baseline/job_params_index_full_reference_flash.json",
           "clef_teacher_flash": "jobs/clef_baseline/job_params_teacher_clef_flash.json",
           "clef_teacher_clef": "jobs/clef_baseline/job_params_teacher_clef.json",
           "clef_overlength_flash": "jobs/clef_baseline/job_params_overlength_flash.json",

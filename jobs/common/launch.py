@@ -138,6 +138,8 @@ _CLEF_TEACHER_DATA = [
 ]
 _CLEF_INDEX = {**_CLEF_IMAGE, "data": [_DEV, _CLEF_REF],
                "manifest_files": ["jobs/clef_baseline/overlength_rows.json", "jobs/common/dev_subset_m1.json"]}
+#: Clef-flash RELEASE=clef-flash ROWS=full: runs on its own decide results; job-sgihj's reference is not read, so not shipped
+_CLEF_INDEX_FLASH = {**_CLEF_INDEX, "data": [_DEV]}
 _CLEF_TEACHER = {**_CLEF_IMAGE, "data": _CLEF_TEACHER_DATA, "manifest_files": ["jobs/clef_baseline/teacher_scope.json",
                                                                               _PTR, _GPIN]}
 #: (job, mode) -> context recipe. Takes precedence over a job_params "context" block that says "unsupported" (the
@@ -146,6 +148,7 @@ CONTEXT_RECIPES: dict[tuple[str, str | None], dict] = {
     ("clef_baseline", "index_subset"): _CLEF_INDEX,
     ("clef_baseline", "index_full"): _CLEF_INDEX,
     ("clef_baseline", "index_full_reference"): _CLEF_INDEX,  # CLEF_GDN_PATH=reference (JOB_SPEC 4d)
+    ("clef_baseline", "index_full_reference_flash"): _CLEF_INDEX_FLASH,  # Clef-flash, CLEF_GDN_PATH=reference (JOB_SPEC 4d)
     ("clef_baseline", "overlength_flash"): _CLEF_INDEX,
     ("clef_baseline", "teacher_clef_flash"): _CLEF_TEACHER,
     ("clef_baseline", "teacher_clef"): _CLEF_TEACHER,

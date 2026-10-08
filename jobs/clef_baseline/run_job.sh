@@ -92,7 +92,8 @@ mkdir -p "$HF_DIR"
 case "$JOB$ROWS" in
   Isubset) PFILE=jobs/clef_baseline/job_params_index_subset.json ;;
   Ifull)   PFILE=jobs/clef_baseline/job_params_index_full.json
-           [ "$GDN_PATH" = "reference" ] && PFILE=jobs/clef_baseline/job_params_index_full_reference.json ;;
+           [ "$GDN_PATH" = "reference" ] && PFILE=jobs/clef_baseline/job_params_index_full_reference.json
+           [ "$GDN_PATH" = "reference" ] && [ "$RELEASE" = "clef-flash" ] && PFILE=jobs/clef_baseline/job_params_index_full_reference_flash.json ;;
   Ioverlength) PFILE=jobs/clef_baseline/job_params_overlength_flash.json ;;
   T*)      PFILE=jobs/clef_baseline/job_params_teacher_${RELEASE//-/_}.json ;;
   *)       PFILE="" ;;

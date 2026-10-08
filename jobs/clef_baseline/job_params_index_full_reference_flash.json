@@ -1,0 +1,130 @@
+{
+ "test_env": {
+  "transformers": "5.10.2",
+  "with": [
+   "flash-linear-attention==0.5.2",
+   "fla-core==0.5.2"
+  ],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"
+   },
+   {
+    "reason": "CLEF_TEST_SGIHJ_DECIDE",
+    "why": "job-sgihj's decide results (art-8y6d8) are a local reference, not launch data; the ROWS=overlength job ships them pinned"
+   }
+  ],
+  "image": "jobs/clef_baseline/Dockerfile"
+ },
+ "_comment": "Clef-flash Index on the full 12,104-row DEV slice with every Index phase (S2 decide, S2c 32k arm on the 51 over-length rows, S2b native) on transformers' torch reference GDN (CLEF_GDN_PATH=reference, JOB_SPEC 4d). Optional: removes the fast/reference asymmetry vs the Clef-27B reference re-run (job-zfexa). Same 32k handling as job-ftpnf (overlength_rows.json, SENS_MAX 32768, summarize.py substitute, edition 0.2.1) but substituted into THIS job's own reference decide results instead of job-sgihj's fast ones (ROWS=overlength cannot run on the reference: the runner refuses it, and its 12,053 other rows would stay fast). Caps: job-sgihj's measured fast Clef-flash index phase (19.48 min) x the 4x reference slowdown floor = 78 min expected; index cap 109 = 1.40x (rederive rule >= max(1.3x, 1.28x/0.95)). sens: 4x job-ftpnf's expected 3 = cap 12; native: 4x job-sgihj's 0.63 min. DEV only.",
+ "job": "clef-flash-index-full",
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "batch_usd_per_min": 0.0495,
+ "clock_lock": true,
+ "runner": "jobs/clef_baseline/run_job.sh",
+ "decision_rule": null,
+ "no_verdict_reason": "baseline measurement of a frozen external checkpoint (Clef 27B) on the Index DEV slice: numbers are reported with CIs, nothing is promoted or selected, so there is no verdict; stop conditions are in JOB_SPEC 4b",
+ "mission": "clef-baseline-safety-spec-s7",
+ "pricing": "jobs/clef_baseline/price.py: job-sgihj measured Clef-flash fast rates (index 19.48 min, native 0.63 min), job-ftpnf's 32k arm params; GDN=reference: x4 planning slowdown (price.REFERENCE_SLOWDOWN_FLOOR)",
+ "max_duration_minutes": 158,
+ "hf_cache": true,
+ "hard_cap_usd": 20.0,
+ "reserve_minutes": 5,
+ "phase_caps_minutes": {
+  "setup": 10,
+  "probes": 9,
+  "index": 109,
+  "sens": 12,
+  "native": 5,
+  "score": 6,
+  "report": 2
+ },
+ "expected_minutes": {
+  "build": 20,
+  "setup": 4,
+  "probes": 6,
+  "index": 78,
+  "sens": 9,
+  "native": 3,
+  "score": 4,
+  "report": 1
+ },
+ "model": "Cloudflare/clef-flash@17f0b0ad64efb65d273590632833508766b2aae6",
+ "env": {
+  "RELEASE": "clef-flash",
+  "JOB": "I",
+  "ROWS": "full",
+  "CLEF_GDN_PATH": "reference"
+ },
+ "submit": {
+  "command": "/app/jobs/clef_baseline/run_job.sh",
+  "key": "clef-flash-index-full-refgdn",
+  "env": {
+   "RELEASE": "clef-flash",
+   "JOB": "I",
+   "ROWS": "full",
+   "CLEF_GDN_PATH": "reference"
+  },
+  "clock_lock": true,
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/clef-flash-index-full/result.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-flash-index-full/index/decide/results.jsonl"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-flash-index-full/index/score_decide.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-flash-index-full/index/ece_decide.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-flash-index-full/index/decide_32k/results.jsonl"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-flash-index-full/index/score_decide_32k_substituted.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-flash-index-full/SHA256SUMS"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/clef-flash-index-full/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "unsupported": "the Clef image copies app/ (not code/m1/) and ships job-specific pinned data: build with python -m jobs.common.launch clef_baseline --mode index_full_reference_flash (recipe _CLEF_INDEX_FLASH: the DEV rows only; job-sgihj's decide results are not read by this job)"
+ }
+}

@@ -16,6 +16,7 @@ TREE = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
 RUNNER = (ROOT / "jobs/clef_baseline/run_job.sh").read_text(encoding="utf-8")
 NAMES = {"clef_index_subset": "job_params_index_subset.json", "clef_index_full": "job_params_index_full.json",
          "clef_index_full_reference": "job_params_index_full_reference.json",
+         "clef_index_full_reference_flash": "job_params_index_full_reference_flash.json",
          "clef_teacher_flash": "job_params_teacher_clef_flash.json", "clef_teacher_clef": "job_params_teacher_clef.json",
          "clef_overlength_flash": "job_params_overlength_flash.json"}
 
@@ -236,6 +237,20 @@ def test_reference_caps_cover_4x_the_measured_fast_rate_and_the_rederive_rule():
     for ph in ("sens", "native"):  # the other reference phases: caps >= 4x the fast params' expected minutes
         assert ref["phase_caps_minutes"][ph] >= 4 * full["expected_minutes"][ph]
     assert ref["max_duration_minutes"] == sum(ref["phase_caps_minutes"].values()) + ref["reserve_minutes"]
+
+
+def test_reference_flash_caps_cover_4x_job_sgihjs_measured_fast_rate():
+    p, ol = costs.load("clef_index_full_reference_flash"), costs.load("clef_overlength_flash")
+    want = {"RELEASE": "clef-flash", "JOB": "I", "ROWS": "full", "CLEF_GDN_PATH": "reference"}
+    assert p["env"] == want and p["submit"]["env"] == want and p["model"] == ol["model"] and p["hf_cache"] == ol["hf_cache"]
+    proj = P.REFERENCE_SLOWDOWN_FLOOR * P.SGIHJ["stage_minutes"]["index_decide_full"]  # 4 x 19.48 (load included)
+    assert p["expected_minutes"]["index"] >= 0.99 * proj
+    assert p["phase_caps_minutes"]["index"] >= max(1.3 * proj, 1.28 * proj / 0.95)  # rederive's rule
+    assert p["phase_caps_minutes"]["sens"] >= 4 * ol["expected_minutes"]["sens"]
+    assert p["phase_caps_minutes"]["native"] >= 4 * P.SGIHJ["stage_minutes"]["index_native_115_rows"]
+    assert "job_params_index_full_reference_flash.json" in RUNNER
+    paths = {c["path"] for c in p["submit"]["checks"]["success"]["check"]["all_of"]}
+    assert "/output/clef-flash-index-full/index/score_decide_32k_substituted.json" in paths
 
 
 def test_reference_preflight_uses_the_reference_arms_own_timing():

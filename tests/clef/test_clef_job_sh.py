@@ -245,6 +245,22 @@ def test_index_subset_dry_run_reference_gdn_path(tmp_path):
     assert pre["gdn_path"] == "reference"
 
 
+def test_index_dry_run_reference_gdn_path_clef_flash(tmp_path):
+    """JOB_SPEC 4d, Clef-flash on the reference (launch mode index_full_reference_flash runs ROWS=full; the subset is the
+    CPU-sized stand-in for the same code path): every Index phase on the reference, the 32k arm substituted into this
+    job's own decide results (the job-sgihj reference is not needed, and no paired compare runs for Clef-flash)."""
+    data = _need_kit_and_dev()
+    env = _env(tmp_path, data, RELEASE="clef-flash", JOB="I", ROWS="subset", CLEF_SUBSET=_sh(_standin_subset(tmp_path)),
+               CLEF_N_PARITY="2", CLEF_OVERLENGTH=_sh(_standin_overlength(tmp_path)), CLEF_GDN_PATH="reference")
+    p = _run(env)
+    assert p.returncode == 0, p.stdout[-3000:] + p.stderr[-3000:]
+    res = _result(tmp_path, "clef-flash-index-subset")
+    assert res["ok"] and res["gdn_path"] == "reference" and res["s1_ok"] is True
+    assert all(v["gdn_path"] == "reference" and v["gdn_layers_on_reference"] == v["gdn_layers_found"] >= 1
+               for v in res["gdn"]["phases"].values())
+    assert res["sensitivity_32k"]["provenance"]["substituted_run_ids"] == ["11:ContractNLI:ContractNLI:test:11"]
+
+
 def test_runner_refuses_reference_gdn_path_outside_index_jobs(tmp_path):
     env = _env(tmp_path, tmp_path, RELEASE="clef-flash", JOB="I", ROWS="overlength", CLEF_GDN_PATH="reference")
     assert _run(env, timeout=120).returncode == 2
