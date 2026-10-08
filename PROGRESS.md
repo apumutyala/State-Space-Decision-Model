@@ -378,3 +378,9 @@
 - Evidence: code is on PR #226 @`f76b7514f99bbc06086f344dedaf103d4e85b254`; OPEN/CLEAN, GitGuardian PASS. Focused system tests: 10 pass; Torch-backed parent/pin regression suite: 59 pass; compile/diff checks pass. Test guard uses nonexistent manifest paths, confirming no raw DEV/TEST manifest access.
 - Limitation: A/B has not supplied the external guard artifact/byte pin/fingerprint, and no full-DEV/full8 Stage 1 qualification is present. The trainer stays fail-closed; no C training/GPU run.
 - Next: A/B can deliver the hash-only guard package under schema `ssdm.agent_c.split_guard_pin.v1`; after Stage 1 qualification and A's order, assemble the full runner and verify fit-world split/parent-retention gates.
+
+## 2026-10-08 20:59Z: Agent C defined the hash-only A/B SplitGuard handoff
+- Did: added a strict JSON/JSON.GZ loader for schema `ssdm.agent_c.split_guard_pin.v1`; it checks exact schema/byte SHA, sorted nonempty ID and hash sets, DEV/TEST manifest digests, non-synthetic provenance, content-index count and canonical digest, then a separate fingerprint over all guard contents. The loader opens only the supplied artifact, not source manifests or row text.
+- Evidence: branch head `f76b7514f99bbc06086f344dedaf103d4e85b254`; focused system tests 10/10, Torch-backed parent pin tests 59/59, py_compile/diff checks pass. PR #226 OPEN/CLEAN, GitGuardian PASS.
+- External dependency: the expected guard artifact/byte SHA/fingerprint and a Stage 1-qualified parent are still absent. INBOX specifies exact schema/fingerprint to A/B. No L1 training is authorized.
+- Live A/B last polled 20:53Z: D1 running, D2 queued on balance, D12 reported running with old log at 20:19Z; no G1 full-DEV candidate beyond 250-row smoke and no full8 result. Requested current heartbeat/gate proof. No C GPU work.
