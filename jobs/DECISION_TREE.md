@@ -115,3 +115,9 @@ Next unmeasured RWKV7 capability candidate: `jobs/m2_first_cell/job_params_clef_
 Clef-flash KD. Inherits the baseline $66.03 conservative ceiling ($70 hard stop);
 not an active commitment or authorization. Independent review, exact-mode CPU
 qualification, merged proof, acknowledged spend issue and live preflight precede launch.
+
+Injection-masked KD successor: `jobs/m2_first_cell/job_params_clef_kd_injmask.json`
+(mode `clef_kd_injmask`), identical to `clef_kd` except `kd_mask_injected: true`: the 1,905
+injection-augmented records of the 24k draw (d1a / hijack; 6.1% of items) train on the gold-only
+Clef arm, since the Clef-flash teacher partly follows injections (d1a top = attacker target
+23.2%). Same $66.03 ceiling ($70 hard stop); not an active commitment or authorization.

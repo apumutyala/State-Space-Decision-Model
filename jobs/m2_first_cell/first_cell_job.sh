@@ -3,7 +3,8 @@
 # Clef loss arm, PR #44 150k injection-augmented set), measured against its own stock readout on the 2,008-row Index
 # DEV subset and the G12 development cohort. SF Compute batch job (chip h100). DRAFT, NOT SUBMITTED.
 # Spec: jobs/m2_first_cell/JOB_SPEC.md. Caps: jobs/m2_first_cell/job_params.json. Config: m2_first_cell_rwkv7.json.
-# Optional explicit mode clef_kd selects job_params_clef_kd.json and m2_first_cell_rwkv7_clef_kd.json.
+# Optional explicit mode clef_kd selects job_params_clef_kd.json and m2_first_cell_rwkv7_clef_kd.json; clef_kd_injmask
+# selects job_params_clef_kd_injmask.json and m2_first_cell_rwkv7_clef_kd_injmask.json (same KD, injection rows gold-only).
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -45,6 +46,8 @@ case "$MODE" in
         PARAMS=$CODE/jobs/m2_first_cell/job_params.json ;;
   clef_kd) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_clef_kd.json}
            PARAMS=$CODE/jobs/m2_first_cell/job_params_clef_kd.json ;;
+  clef_kd_injmask) CELL=${M2FC_CELL:-jobs/m2_first_cell/m2_first_cell_rwkv7_clef_kd_injmask.json}
+                   PARAMS=$CODE/jobs/m2_first_cell/job_params_clef_kd_injmask.json ;;
   *) echo "unknown first-cell mode: $MODE" >&2; exit 5 ;;
 esac
 TRAIN_DIR=$DATA/m2-150k
@@ -132,7 +135,7 @@ python -I "$CODE/jobs/common/fla_guard.py" --out "$WORK/out/fla_guard.json" > "$
 python -X utf8 -m train.train_set verify --config "$CELL" --train-dir "$TRAIN_DIR" --out "$WORK/out/train-set-verify.json" \
   > "$WORK/logs/train-set.log" 2>&1 || fail 10 "150k train set != pointer"
 TEACHER_ARGS=()
-if [ "$MODE" = clef_kd ]; then
+if [ "$MODE" = clef_kd ] || [ "$MODE" = clef_kd_injmask ]; then
   # Context pins all four teacher files; verify semantic identity before loading weights. run_cell and m2_gates
   # also enforce the pinned teacher identity, training draw and content mapping.
   python -X utf8 -c 'import json,sys; from jobs.q9af_cell.hooks import kd_arm; from train.teacher import load_teacher; c=json.load(open(sys.argv[1])); assert kd_arm(c) is not None; print(json.dumps(load_teacher(sys.argv[2]).summary()))' \

@@ -396,20 +396,29 @@ def restrict_order_views_to_tmax(cfg: dict, train_items: list, max_t: int) -> di
 
 
 def attach_teacher(cfg: dict, items: list, teacher_dir, train_ids, expected: dict | None = None,
-                   contamination: bool = True) -> dict | None:
+                   contamination: bool = True, records: list | None = None) -> dict | None:
     """KD cells (``cfg["teacher"]``): load the PINNED teacher (``train.teacher.load_teacher``: identity, file sha256,
     draw, contamination), require the cell's training draw to BE the teacher's draw and its file sha256 to be the one
     the config names, and attach per-item teacher probabilities (``train.teacher.attach``). None for a non-KD cell.
     Raises ValueError (``TeacherIdentityError`` subclasses it) on any mismatch; ``expected`` / ``contamination`` are for
-    tests on synthetic teachers only."""
+    tests on synthetic teachers only.
+
+    ``cfg["kd_mask_injected"]`` (bool, default false = the original clef_kd behaviour): items of injection-augmented
+    records (``train.teacher.injected_record_ids`` over ``records`` + ``train_ids``) train on the gold-only arm loss;
+    the masked count is reported, and a mask that masks nothing is refused (it would look like a masked run)."""
     t = cfg.get("teacher")
+    mask = cfg.get("kd_mask_injected", False)
+    if not isinstance(mask, bool):
+        raise ValueError(f"kd_mask_injected must be true/false, got {mask!r}")
+    if mask and not t:
+        raise ValueError("kd_mask_injected is set but the cell config has no teacher block")
     if not t:
         if teacher_dir:
             raise ValueError("--teacher-dir given but the cell config has no teacher block")
         return None
     if not teacher_dir:
         raise ValueError("the cell config sets 'teacher' (KD): pass --teacher-dir with the pinned teacher export")
-    from train.teacher import attach, ids_sha256, load_teacher, pinned
+    from train.teacher import attach, ids_sha256, injected_record_ids, load_teacher, pinned
 
     exp = dict(expected) if expected is not None else pinned()
     if t.get("teacher_sha256") != exp["sha256"]:
@@ -418,9 +427,12 @@ def attach_teacher(cfg: dict, items: list, teacher_dir, train_ids, expected: dic
     if ids_sha256(list(train_ids)) != exp["drawn_ids_sha256"]:
         raise ValueError("the cell's training draw is not the teacher's draw (drawn ids sha256 differ)")
     ts = load_teacher(teacher_dir, exp, contamination=contamination)
-    cov = attach(items, ts)
+    cov = attach(items, ts, mask_injected=mask,
+                 injected_ids=injected_record_ids(records, train_ids) if mask else None)
     if not cov["with_teacher"]:
         raise ValueError("no training item received a teacher distribution")
+    if mask and not cov["masked_injected"]:
+        raise ValueError("kd_mask_injected is set but no training item is an injection-augmented row")
     return {**cov, "teacher_sha256": exp["sha256"], "drawn_ids_sha256": exp["drawn_ids_sha256"],
             "alpha": float(t["alpha"]), "temperature": float(t["temperature"])}
 
@@ -719,7 +731,7 @@ def main(argv=None):
         print(f"order-consistency views: {e}", flush=True)
         return EXIT["config"]
     try:
-        kd_cov = attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)
+        kd_cov = attach_teacher(cfg, train_items, a.teacher_dir, tr_ids, records=train_recs)
     except ValueError as e:  # TeacherIdentityError / TeacherContamination subclass ValueError
         print(f"teacher: {e}", flush=True)
         return EXIT["config"]

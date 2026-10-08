@@ -815,7 +815,7 @@ def main(argv=None) -> int:
         order_views = attach_order_views(cfg, train_items, train_recs, enc, guard, t_max)
         if order_views is not None and order_views["with_view"] == 0:
             raise ValueError("no training item passed the order-view eligibility and T_max filters")
-        attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)  # KD cells only; None otherwise
+        attach_teacher(cfg, train_items, a.teacher_dir, tr_ids, records=train_recs)  # KD cells only; None otherwise
     except ValueError as e:
         print(f"teacher: {e}", file=sys.stderr)
         return EXIT["identity"]

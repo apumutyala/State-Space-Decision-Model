@@ -254,15 +254,44 @@ def verify_records(teacher: TeacherSet, records: Iterable[dict], guard=None, fro
     return {"records_checked": len(seen), "guard": guard is not None, "frozen_check": frozen_check is not None}
 
 
-def attach(items: list, teacher: TeacherSet) -> dict[str, Any]:
+INJECTION_ID_MARKER = "~inj"  # PR #44 injection-augmented record ids: "<base id>~inj:<family>:<template>"
+
+
+def injected_record_ids(records: Iterable[dict] | None = None, ids: Iterable[str] = ()) -> set[str]:
+    """Record ids of injection-augmented training rows: ``aug.injection`` set on the record, OR the id carries the
+    ``~inj`` marker (the 150k set carries both on the same 12,115 rows; the union is the robust choice)."""
+    out = {str(i) for i in ids if INJECTION_ID_MARKER in str(i)}
+    for rec in records or ():
+        rid = str(rec.get("id"))
+        if (rec.get("aug") or {}).get("injection") or INJECTION_ID_MARKER in rid:
+            out.add(rid)
+    return out
+
+
+def attach(items: list, teacher: TeacherSet, mask_injected: bool = False,
+           injected_ids: set[str] | None = None) -> dict[str, Any]:
     """Set ``Item.teacher`` (row.option_ids order) on every training item that has a teacher distribution; the rest
     keep ``None`` (clef-arm fallback). Item ids are ``<record id>/<question id>``; the record's content hash
-    (``row.meta['content_sha256']``, set by ``items_from_records``) must equal the teacher row's."""
-    n = hit = 0
+    (``row.meta['content_sha256']``, set by ``items_from_records``) must equal the teacher row's.
+
+    ``mask_injected`` (cell config ``kd_mask_injected``): items of injection-augmented records (``injected_ids``, plus
+    any record id with the ``~inj`` marker) get ``teacher = None`` and so the gold-only arm loss (the all-NaN path of
+    ``train.losses.decision_loss``). The Clef-flash teacher partly follows the injections (d1a top answer = attacker
+    target 23.2%, hijack 13.7%), so distilling it on those rows would train the student toward following them."""
+    inj = set(injected_ids or ())
+    n = hit = masked = masked_had = 0
     for it in items:
         rid, qid = it.id.rsplit("/", 1)
         tp = teacher.probs(rid, qid, it.row.option_ids, it.row.meta.get("content_sha256"))
+        if mask_injected and (rid in inj or INJECTION_ID_MARKER in rid):
+            masked += 1
+            masked_had += tp is not None
+            tp = None
         it.teacher = tp
         n += 1
         hit += tp is not None
-    return {"items": n, "with_teacher": hit, "fallback": n - hit}
+    cov = {"items": n, "with_teacher": hit, "fallback": n - hit}
+    if mask_injected:
+        cov.update({"mask_injected": True, "masked_injected": masked, "masked_injected_had_teacher": masked_had,
+                    "fallback_unmasked": n - hit - masked})
+    return cov
