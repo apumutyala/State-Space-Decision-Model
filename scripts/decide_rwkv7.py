@@ -60,6 +60,28 @@ def valid_readout_g1v2(d):
     return valid_readout(d)
 
 
+G1V3_VARIANTS = ("v2", "v3", "v3r", "v3p", "v3c")
+
+
+def decide_readout_g1v3(work_out):
+    """R3 (jrt-rwkv-g1-v3 family): per-variant subset Index score with CI and ECE (index/<variant>/score.json, ece.json).
+    Measured when every variant has both; no pass/fail on quality (the comparison is recorded in CANDIDATES.md)."""
+    d = {"template_family": "jrt-rwkv-g1-v3", "variants": {}}
+    ok = True
+    for v in G1V3_VARIANTS:
+        score = _load(os.path.join(work_out, "index", v, "score.json")) or {}
+        ece = _load(os.path.join(work_out, "index", v, "ece.json"))
+        idx = (score.get("slice_index") or {}).get("index") or {}
+        d["variants"][v] = {"index": idx, "index_rows": score.get("rows"), "ece_present": ece is not None}
+        ok = ok and all(_num(idx.get(k)) for k in ("point", "lo", "hi")) and ece is not None
+    d["verdict"] = "readout-measured" if ok else "no-measurement"
+    return d
+
+
+def valid_readout_g1v3(d):
+    return valid_readout(d)
+
+
 def decide_lora(cell):
     tr = (cell or {}).get("train") or {}
     v = tr.get("verdict") or {}
@@ -84,6 +106,11 @@ def valid_lora(d):
 
 
 def main(kind, src, out):
+    if kind == "readout_g1v3":
+        d = decide_readout_g1v3(src)
+        json.dump(d, open(out, "w"), indent=1)
+        print(json.dumps({"verdict": d["verdict"]}))
+        return 0 if valid_readout_g1v3(d) else 9
     if kind == "readout_g1v2":
         d = decide_readout_g1v2(src)
         json.dump(d, open(out, "w"), indent=1)

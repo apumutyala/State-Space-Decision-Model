@@ -146,3 +146,22 @@ token 0 first, the G1k no-think tail `Assistant: <think></think>
 frozen filtered codebook) read from one next-token distribution per question, and whole-string tokenization. The live
 rate guard (`jobs.common.rate_guard run`) stops a slow box. Schedule 105 + reserve 10 = 115. Worst case
 (60 + 2 x 115) x 0.0495 = **$14.36**; expected ~$2.50; hard cap $15.
+
+## R3: `JOB=readout_g1v3` (v3 readout family, `jobs/rwkv7/job_params_readout_g1v3.json`)
+
+Stage A's Index phase only, run as five readout variants over the same DEV subset rows in ONE process
+(`jobs.rwkv7.readout_variants`: one unmodified kit run per variant, the RWKV7 plugin cached so the model loads once),
+in priority order (a cut-short run keeps the first ones; every variant with complete results is scored):
+
+| variant | family | change (one per arm, on top of the previous column's base) |
+|---|---|---|
+| v2 | `rwkv7-hf-g1-v2` | control (job-zhyvg 27.31 [24.53, 30.03]) |
+| v3 | `rwkv7-hf-g1-v3` | v2 + v3 code table (A..Z, then single-token two-letter codes minus English words/abbreviations; `decide/data/rwkv_g1_v3_codes.json`) + code key (question restated, then one `CODE = label` line per option, for k >= 9) |
+| v3r | `rwkv7-hf-g1-v3r` | v3 + top-m re-read: the model's OWN first-pass top 2-3 codes re-listed after the first answer context, second pass from the same prefix state; p = p1 outside the shortlist, p1(S) x p2(.\|S) inside |
+| v3p | `rwkv7-hf-g1-v3p` | v3 + deterministic per-question presentation permutation (sha256 of question id, type, option ids), codes mapped back to option ids |
+| v3c | `rwkv7-hf-g1-v3c` | v3 + contextual calibration (Zhao et al. 2021; content-free "N/A" / "" / "[MASK]" state + instructions, k <= 16) |
+
+Nothing is fitted on any rows. Outputs: `index/<variant>/{results.jsonl, score.json, ece.json}`; the live rate guard
+watches all five results files (total 5 x rows). Schedule 20 + 200 + 30 + reserve 10 = 260. Worst case
+(60 + 2 x 260) x 0.0495 = **$28.71**; expected ~$7.28 (index ~115 min: ~20 min per single-pass variant, v3r/v3c ~+30%);
+hard cap $29.

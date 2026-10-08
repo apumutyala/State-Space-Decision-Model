@@ -10,6 +10,8 @@ families
   ``rwkv7-hf-g1-v2`` same plugin, ``decide.backends.rwkv_g1_v2.G1V2Backend`` (vendor-compliant jrt-rwkv-g1-v2: no
                   blank lines in the turn, token 0 first, G1k no-think tail, single-token option codes, whole-string
                   tokenization)
+  ``rwkv7-hf-g1-v3`` same plugin, ``decide.backends.rwkv_g1_v3.G1V3Backend`` (R3: v2 + v3 code table + code key)
+  ``rwkv7-hf-g1-v3p`` / ``-v3r`` / ``-v3c`` G1V3Backend modes permute / reread / calibrate (one change each on v3)
   ``qwen3.5``     ``decide.backends.hf_readout.load_qwen35`` (stock transformers path)
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
@@ -24,9 +26,16 @@ from typing import Any
 CODE_LABEL_FAMILY = "rwkv7-hf-code-label-v1"
 CODE_LABEL_V2_FAMILY = "rwkv7-hf-code-label-v2"
 G1V2_FAMILY = "rwkv7-hf-g1-v2"
+G1V3_FAMILY = "rwkv7-hf-g1-v3"
+G1V3C_FAMILY = "rwkv7-hf-g1-v3c"
+G1V3_MODES = {G1V3_FAMILY: "catalog", "rwkv7-hf-g1-v3p": "permute", "rwkv7-hf-g1-v3r": "reread", G1V3C_FAMILY: "calibrate"}
+#: RWKV7 plugins loaded in this process, keyed by (model_dir, device, dtype): one process that runs several readout
+#: variants (jobs/rwkv7 JOB=readout_g1v3) loads the 26 GB model once. The plugin is read-only for every backend.
+_RWKV7_PLUGINS: dict[tuple[str, str, str], Any] = {}
 TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-hf": "jrt-rwkv-g1-v1",
              CODE_LABEL_FAMILY: "jrt-rwkv-g1-code-label-v1", CODE_LABEL_V2_FAMILY: "jrt-rwkv-g1-code-label-v2",
-             G1V2_FAMILY: "jrt-rwkv-g1-v2"}
+             G1V2_FAMILY: "jrt-rwkv-g1-v2", G1V3_FAMILY: "jrt-rwkv-g1-v3", "rwkv7-hf-g1-v3p": "jrt-rwkv-g1-v3p",
+             "rwkv7-hf-g1-v3r": "jrt-rwkv-g1-v3r", G1V3C_FAMILY: "jrt-rwkv-g1-v3c"}
 
 
 def _sha256_file(path):
@@ -63,8 +72,11 @@ def build_plugin(family: str, options: dict[str, Any]):
                                      options.get("converted", ""), device=dev, dtype=dt)
     from decide.backends import hf_readout as H
 
-    if family in ("rwkv7-hf", CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY, G1V2_FAMILY):
-        return H.load_rwkv7_hf(options["model_dir"], device=dev, dtype=dt)
+    if family in ("rwkv7-hf", CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY, G1V2_FAMILY, *G1V3_MODES):
+        key = (str(options["model_dir"]), dev, dt)
+        if key not in _RWKV7_PLUGINS:
+            _RWKV7_PLUGINS[key] = H.load_rwkv7_hf(options["model_dir"], device=dev, dtype=dt)
+        return _RWKV7_PLUGINS[key]
     if family == "qwen3.5":
         return H.load_qwen35(options["model_dir"], device=dev, dtype=dt)
     raise ValueError(f"unknown family {family!r}; known: {sorted(TEMPLATES)}")
@@ -101,7 +113,11 @@ class ReadoutIndexEngine(Engine):
         self.family = options.get("family", "q9af-probe")
         decode = _load_code_label_decode(options["model_dir"]) if self.family in (CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY) else None
         plug = build_plugin(self.family, options)
-        if self.family == G1V2_FAMILY:
+        if self.family in G1V3_MODES:
+            from decide.backends.rwkv_g1_v3 import G1V3Backend
+
+            self.backend = G1V3Backend(plug, mode=G1V3_MODES[self.family])
+        elif self.family == G1V2_FAMILY:
             from decide.backends.rwkv_g1_v2 import G1V2Backend
 
             self.backend = G1V2Backend(plug)
