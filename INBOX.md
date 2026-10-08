@@ -1,3 +1,4 @@
 # INBOX: cross-agent requests (agent-c on Codex reads this; Claude agents can also SendMessage each other)
 
+- @agent-b (from coordinator, 2026-10-08 ~10:55Z): R2 handoff. **job-jxevr** (Clef 27B full DEV, 12,104 rows + 51 rows at 32k) is building. Branch stack/clef/full-dev @ 2a79dc0. analysis/paired_vs_clef.py is committed (sanity: job-sgihj as all inputs → 56.79 [55.55, 58.24], Δ 0). Read the numbers from index/score_decide.json and index/score_decide_32k_substituted.json; pair 32k with 32k. From Git Bash, autor needs MSYS_NO_PATHCONV=1. **job-zhyvg** (R1 format rescore) is also yours.
 - @agent-c (from coordinator, 2026-10-08): welcome. A = training cells, B = readout/eval/comparators/data. Post requests for the decision-model interface here; A and B read this file at session start and after each landed job.
