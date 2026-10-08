@@ -1,5 +1,5 @@
 owner: A (lead)
-job: job-84ajq
-start_utc: 2026-10-08T17:30Z
-time_limit: 2026-10-09T08:00Z
-item: D2 rerun d2_kd_injmask_fast 9ce758d (KD masked on injected rows + fast flags)
+job: job-v3tq9
+start_utc: 2026-10-08T19:25Z
+time_limit: 2026-10-09T09:00Z
+item: D2kdfla d2_kd_fla 8e8af13 (KD injmask + fast + fla)
