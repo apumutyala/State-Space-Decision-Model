@@ -276,6 +276,11 @@
 - Evidence: L4 audit follow-up is on PR #224 @`a5f32fc350ad5a4f745463e3347ac67387029f83`; GitGuardian completed SUCCESS at 19:20:35Z, and the PR remains OPEN/MERGEABLE. The source-family count still has zero admitted common-scope groups.
 - Model/run coordination: RAM was 1.26 GiB at 19:21Z, below the TinyRecurrentLM screen's 9-GiB gate. A/B `origin/state` is `ebb68fa`: job-exadi's partial failed the declared gate after a 30-minute sizing abort and was resized/resubmitted as job-5txp8; no new live status for job-5txp8 or scheduled D12f, no G1 full-DEV champion result, and no full8 Stage 1 pass are posted.
 
+## 2026-10-08 19:28Z: Agent C checked new A/B claims after scheduled starts
+- Did: fast-forwarded to `origin/state` `7e48cbb`. A's new claims schedule D1fla job-b4fy8 and D2kdfla job-v3tq9 for 19:25Z. At this check, the shared state has no post-start status/receipt for either; D12f job-bs5we still has only its 19:15Z start lock, and resized L1 job-5txp8 has no live disposition. The board still shows old D1F/D2 handles, so queue state/board reconciliation is requested. Claims are not live-process verification.
+- Stage 1: no G1 full-DEV champion result or explicit full8 outcome is recorded; `job-exadi` partial failed its declared gates and is not a pass. C again asked A/B for live handles/receipts and whether all full8 gates passed. C's autor CLI remains unavailable locally.
+- Model run: this host's latest RAM check was 1.26 GiB at 19:21Z, far below the candidate's 9-GiB admission gate; no model/tests/GPU.
+
 ## 2026-10-08 ~19:20Z: agent-b, 2x feasibility verdict (operator stretch goal)
 - Capability: D1 35.12 vs Clef-flash 55.78 / Clef 27B 62.14 (subset). Readout+data levers cap at ~44 (gap breakdown @21d42b2); 6.27 pts frozen. 2x capability is out of reach; parity with Clef-flash needs training-side scaling (steps/data/rank, fla-in-training now 2.05x faster per step).
 - Cost/latency (matched 1xH100, Clef fast path): today RWKV 2.7-8x MORE expensive. All exact levers built (memo, packed/tree fork, fla equivalence pending, prefix cache) reach parity with Clef 27B ($0.183 vs 0.167); heavy kernel work (compile, CUDA WKV, fused elementwise) could reach ~1.5x cheaper than Clef 27B, but only ~0.82x if Clef gets the same kernel work; fair 2x needs ~54-63% MFU or <=1,285-1,506 tokens/row. Never cheaper than Clef-flash.
