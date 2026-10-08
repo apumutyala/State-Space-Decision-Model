@@ -23,10 +23,12 @@
 #   20 train.run_cell unexpected code   21-29 train.run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite,
 #   24 memory, 25 data, 26 too slow for min_steps, 27 guard not ready, 28 cohort / train-set leak or mismatch,
 #   35 head config, 36 fla requested but a training step fell back to "chunked" or no training call ran fla)
-# fla: ONLY when the cell config sets "rwkv7_wkv" to an fla name, setup installs fla-core 0.5.2 by wheel hash, no deps
+# fla: ONLY when the cell config sets "rwkv7_wkv" or "train_rwkv7_wkv" to an fla name, setup installs fla-core 0.5.2 by wheel hash, no deps
 #   (jobs/fla_rwkv7/requirements-fla.txt, as jobs/perf_step_gate v2), checks torch 2.13.0 / triton 3.7.1 / fla 0.5.2 and
 #   the chunk_rwkv7 import, then the #640 guard (fla_guard.py) must see the installed fla: any failure is exit 5. run_cell
 #   trains under heads.rwkv7_wkv.strict and records fla calls vs fallbacks in cell.json "fla". Other cells: unchanged.
+#   "train_rwkv7_wkv" (default = rwkv7_wkv) selects the WKV for TRAINING STEPS only; everything that scores (parent arm,
+#   seed check, child evals / G12 / Index, dev cards, smoke) uses "rwkv7_wkv" (identity unchanged).
 #   1 finalize failed
 # Path overrides (TEST-ONLY; a paid run sets none of them, and every default below IS the paid-run path). They exist
 # so tests/test_m2_first_cell_shell.py can EXECUTE this script end to end on CPU with a tiny stand-in model; they only
@@ -149,7 +151,8 @@ num "$CALL_S" || fail 4 "CALL_S=$CALL_S is not a number"
 say "setup"
 cp "$CONTEXT_MANIFEST" "$WORK/out/" || fail 5 "no context manifest"
 nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
-WKV=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("rwkv7_wkv") or "chunked")' "$CELL")   || fail 5 "cell config rwkv7_wkv"
+# WKV = the fla name if EITHER rwkv7_wkv (scoring) or train_rwkv7_wkv (training steps only) is fla, else rwkv7_wkv
+WKV=$(python -I -c 'import json,sys; c=json.load(open(sys.argv[1])); s=c.get("rwkv7_wkv") or "chunked"; t=c.get("train_rwkv7_wkv") or s; print(t if t.startswith("fla") else s)' "$CELL")   || fail 5 "cell config rwkv7_wkv"
 case "$WKV" in
   fla|fla_safe_gate)  # fla-core is not in the rwkv7 image: the exact 0.5.2 wheel by hash, no deps (perf_step_gate v2)
     say "rwkv7_wkv=$WKV: install fla-core 0.5.2 by hash"
@@ -172,12 +175,16 @@ import third_party.rwkv7_hf as V
 import os
 from heads.rwkv7_wkv import FLA_NAMES, GPU_VERIFIED, GPU_VERIFIED_NAMES, LEAN, VENDORED
 assert all(V.vendored_ok().values()), V.vendored_ok()
-wkv = json.load(open(os.environ["CELL_PATH"])).get("rwkv7_wkv") or "chunked"
-assert wkv in VENDORED + LEAN + FLA_NAMES, wkv
-assert wkv not in FLA_NAMES or (GPU_VERIFIED and wkv in GPU_VERIFIED_NAMES), f"rwkv7_wkv={wkv} is not GPU-verified"
+c = json.load(open(os.environ["CELL_PATH"]))
+wkv = c.get("rwkv7_wkv") or "chunked"
+train_wkv = c.get("train_rwkv7_wkv") or wkv  # training steps only (scoring uses rwkv7_wkv)
+for w in (wkv, train_wkv):
+    assert w in VENDORED + LEAN + FLA_NAMES, w
+    assert w not in FLA_NAMES or (GPU_VERIFIED and w in GPU_VERIFIED_NAMES), f"wkv={w} is not GPU-verified"
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
                   "transformers": transformers.__version__, "vendored_rwkv7": V.REVISION,
-                  "wkv": wkv, "fla_gpu_verified": (wkv in GPU_VERIFIED_NAMES) if wkv in FLA_NAMES else None}))
+                  "wkv": wkv, "fla_gpu_verified": (wkv in GPU_VERIFIED_NAMES) if wkv in FLA_NAMES else None,
+                  **({"train_wkv": train_wkv} if train_wkv != wkv else {})}))
 EOF
 python -I "$CODE/jobs/common/fla_guard.py" --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
 case "$WKV" in fla|fla_safe_gate)  # the guard must have checked the installed fla (not the "not installed" no-op)
