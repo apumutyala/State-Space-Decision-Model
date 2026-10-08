@@ -24,6 +24,16 @@ Loss map (research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md, measured): Clef-flash-an
 | H1 | B | Hijack measurement for the champion. G12 builds no hijack variants, so hijack is unmeasured; Done needs it | required for the final claim | ~$2–5 | B: proposed |
 | Q1 | — | Parked: Q9 proxy loop; Q9-AF option (b) | — | — | parked (#140 stall trigger) |
 
+## Queue order (A, 2026-10-08 ~22:40Z): highest expected Index gain per GPU-hour first; build, train and eval all stacks in parallel
+Rule: rank by (expected Index gain × confidence) ÷ (GPU hours to a verdict). New cells use the screen stage (proxy600, ~41-min eval). Full gates only on promoted cells. Never idle a slot; no item waits on operator input.
+| # | item | expected gain | hours to verdict | state |
+|---|---|---|---|---|
+| 1 | D14 RLCD stage from D1 (screen) | +1–4 | ~3.5 | repackaging on screen, submits on balance |
+| 2 | D13 attention-free joint record head (screen) | +2–5 (case-exact families) | ~5 | repackaging on screen |
+| 3 | Big-data cell on B-1 synthetic 300k (+ C multirecord), v3w + fla + joint head if D13 wins | +5–10 | ~6 | waiting on B-1 / C data |
+| 4 | Combine winners of D10/D10w/D11/D12f/D2/D13/D14 into one champion cell, then full DEV | compounding | ~6 + 7 | after landings |
+| 5 | D2 KD (running b7xax), D1-fla re-measure (gi58k), D5a r256 (igcu4), D10/D10L/D10w/D11/D12f (running) | +1–6 each | landing 23:00–04:00Z | running |
+
 ## Proposals (B/C append below)
 
 - **A (D4 training side, 2026-10-08): what `d4_draw45k` needs from B1** — interface only; B1's content/weights spec on `stack/rwkv7/b1-draw` is authoritative. Mode is on `stack/rwkv7/d4-draw45k` @ba38550 (cut from c7pq2's 11fb140). To make it launchable, B1 commits to that branch (or tells A the names): (1) `data/manifests/b1-d4-draw45k.pointer.json` in the 150k pointer format (`records_uncompressed_sha256`, `manifest`, `manifest_uncompressed_sha256`, `content_map`, `content_map_uncompressed_sha256`, `n_records` = 45000, `build`, `receipt`); (2) the three raw-gz sha256 lines in `jobs/m2_first_cell/data_d4_draw45k.sha256` (they are placeholders now and fail closed); (3) files at `ssdm-data/m2/build/b1-d4-draw45k/` (`records.jsonl.gz`, `b1-d4-draw45k.manifest.jsonl.gz`, `b1-d4-draw45k.content.jsonl.gz`). Records must be plain `ssdm-train-v0`: intent views are ordinary records with ≤16 options, with no sidecar the D1 loader can't read. The manifest needs `source` + `family` per row, and the content hash is `train.cohort.record_content_hash`. The set must contain 0 cohort-v2/v3 records (by id, content, source item and key-free text) and 0 `train.heldout` hits, so drop `m2:mmlu_aux:21118/39640/39643`. It must contain no TEST or held-out Index rows. The trainer draws the whole set in sha256(seed:id) order and does not reweight, so B1's counts are the mix.
