@@ -239,3 +239,8 @@ the installed fla. `train.run_cell` runs every ladder and training step under `h
 to "chunked" raises and the cell stops with exit 36 (also when training ran but no call went to fla). `cell.json`
 `"fla"` records the requested name, fla calls and fallbacks (process totals; smoke and eval cards are not strict, so a
 fallback there is counted, not fatal). The parent arm and child evals use the same cell `rwkv7_wkv` (identity).
+
+Mode `d12f_v3w_b100kv3_fla` (D12f; `job_params_d12f_v3w_b100kv3_fla.json`, `m2_first_cell_rwkv7_d12f_v3w_b100kv3_fla.json`):
+`d12_v3w_b100kv3` with only `"rwkv7_wkv": "fla"` (job-9bs8w ADOPT, 1.46x step vs d1_fast; fla setup and strict training
+above). Same 190-min clock, so ~1.46x more training rows. Caps and schedule are D12's: **Worst case** (60 + 2 x 669) x
+$0.0495 = **$69.20** (cap $70).
