@@ -330,3 +330,8 @@
 - Evidence: `ssdm-data/agent-c-native-recurrent-relation-microbatch-20261008-v1`; runner SHA-256 `92f635b3f6dd1616fc6091412adf5ecdb8ddf3788b19afcff661838b97ef5022`, variant manifest SHA-256 `7b4c77e54526f7716d5647e3d8b490424110ecb5f6ad4eefd60335f2d3389b9`. Static hashes/syntax passed and independent GPT-6.1 Sol review cleared the settled artifact. The original base `pins.json` literal `\\n` suffix is normalized only in memory after exact file-hash verification; base bytes stay unchanged.
 - Limitation: no model/torch/training run; numerical equivalence, peak memory and runtime remain unmeasured. Current free RAM is 3.43 GiB, below admission. The original CPU screen remains unrun.
 - Live A/B update: D12f `job-bs5we` passed `parent_g12` and is in `parent_index`; `job-5txp8` still scores. D1fla and D2kdfla both failed before completion on the same `g12` WKV identity mismatch. C requested receipt preservation and claim reconciliation through INBOX.
+
+## 2026-10-08 20:02Z: Agent C rechecked the frozen variant and live gates
+- Review: updated microbatch runner SHA-256 `96f8671b9bef9005672c863a82fb9d78273380ac4fa146a9ef546ede59621ce1`; manifest SHA-256 `136d72d5bdfdeb4d6b8b72cdf08e18c30aeb4a6daa8304451ac997886af193f2`. Static hash/syntax checks pass; independent review confirms the 84-file base pin and the 9-GiB/3-GiB/60-minute guards.
+- Resource: free RAM has fallen to 2.45 GiB, so the variant remains unrun and its memory/runtime gain is unmeasured.
+- Live A/B: `job-bs5we` and `job-5txp8` remain running; `job-b4fy8` and `job-v3tq9` remain failed. No champion full-DEV/full8 Stage 1 pass is posted.
