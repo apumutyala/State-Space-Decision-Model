@@ -26,6 +26,17 @@ v3 changes against v2:
      ``catalog_chars`` down (CATALOG_CHARS_LADDER) when the prompt would exceed the context budget and drops the block
      as the last resort.
 
+Instruction fix (every v3* variant, and v2f = v2 + this fix only): v2's ``instr()`` renders a question's instruction
+only when it is a string, so a dict-valued instruction (ToolRet {candidate, task}, BRIGHT) was replaced by the
+question id and the candidate document never reached the model. Here a non-string instruction is rendered as
+canonical JSON exactly as v1 does (``decide.schema.render``), blank lines still collapsed; None / "" still fall back
+to the question id. ``fix_instr=False`` reproduces v2 byte for byte (the job-zhyvg control).
+
+v3w: when a question's option ids are words (not opaque ids like "option_3" / "12") and the first token of
+" <id>" after "ANSWER:" is unique among its options, the options are listed as "- <id>: <description>" (no letter
+code, so never "A. A: ...") and each option is scored by the first token of its own id. Otherwise letters, as v3.
+Generic rule only (``word_ids_ok``), no per-family switch.
+
 v3p: the same prompt with each question's options PRESENTED in a deterministic pseudo-random order
 (``presentation_order``): code A goes to the option at presentation position 0, and so on. Only the code
 assignment and listing order change; the backend maps every code back to its option id, so the output is keyed by
@@ -46,6 +57,8 @@ from .schema import canonical_options, canonical_question_ids
 G1V3_ID = "jrt-rwkv-g1-v3"
 G1V3P_ID = "jrt-rwkv-g1-v3p"
 G1V3R_ID = "jrt-rwkv-g1-v3r"
+G1V3W_ID = "jrt-rwkv-g1-v3w"
+G1V2F_ID = "jrt-rwkv-g1-v2f"
 G1V3C_ID = "jrt-rwkv-g1-v3c"
 
 # ----------------------------------------------------------------------------------------------------- code table
@@ -147,6 +160,29 @@ def _g1_text(value: Any) -> str:
     return g1_clean(value if isinstance(value, str) else render(value))
 
 
+def instruction_text(q: dict[str, Any], qid: str, fix: bool = True) -> str:
+    """The rendered instruction. fix=True: any non-empty value (dict/list as canonical JSON, as v1); fix=False: v2's
+    behaviour (only a non-empty string, else the question id)."""
+    v = q.get("instructions")
+    if fix:
+        return g1_clean(qid) if v is None or v == "" else _g1_text(v)
+    return _g1_text(v) if isinstance(v, str) and v != "" else g1_clean(qid)
+
+
+def is_opaque_id(oid: str) -> bool:
+    return bool(_OPAQUE_ID.fullmatch(oid.strip()))
+
+
+def word_ids_ok(q: dict[str, Any], first_token) -> bool:
+    """v3w rule: every option id is non-opaque and the first answer token of " <id>" (``first_token(id)``) is unique
+    among the question's options."""
+    oids = [o for o, _ in canonical_options(q)]
+    if len(oids) < 2 or any(is_opaque_id(o) or not o.strip() for o in oids):
+        return False
+    toks = [first_token(o) for o in oids]
+    return None not in toks and len(set(toks)) == len(toks)
+
+
 def question_codes(q: dict[str, Any], order: list[int], table: list[str]) -> list[str] | None:
     """Code of each CANONICAL option (code table position = presentation position); None when k > len(table)."""
     k = len(canonical_options(q))
@@ -159,6 +195,7 @@ def question_codes(q: dict[str, Any], order: list[int], table: list[str]) -> lis
 
 
 def _option_lines(q: dict[str, Any], order: list[int], codes: list[str] | None) -> list[Labelled]:
+    """codes None = "- <id>: <desc>" lines (v2's fallback for k > table, and v3w word ids)."""
     opts = canonical_options(q)
     seg: list[Labelled] = []
     for j in order:
@@ -171,8 +208,7 @@ def _option_lines(q: dict[str, Any], order: list[int], codes: list[str] | None) 
 
 
 def _restated(q: dict[str, Any], qid: str) -> str:
-    v = q.get("instructions")
-    text = g1_clean(v if isinstance(v, str) and v != "" else qid)
+    text = instruction_text(q, qid, True)
     return text if len(text) <= RESTATE_CHARS else "..." + text[-RESTATE_CHARS:]
 
 
@@ -190,17 +226,17 @@ def wants_catalog(q: dict[str, Any], table: list[str]) -> bool:
 
 
 def build_prompt_g1v3(request: dict[str, Any], qid: str, table: list[str], catalog_chars: int | None = 64,
-                      permute: bool = False) -> list[Labelled]:
-    """v2's layout (decide.prompt.build_prompt_g1v2) with the v3 code table, an optional presentation order and the
-    code key for the asked question."""
+                      permute: bool = False, fix_instr: bool = True,
+                      word_qids: frozenset[str] = frozenset()) -> list[Labelled]:
+    """v2's layout (decide.prompt.build_prompt_g1v2) with a code table, the instruction fix, an optional
+    presentation order, v3w word-id questions (``word_qids``) and the code key for the asked question."""
     questions = request["questions"]
     order_ids = canonical_question_ids(questions)
     orders = {k: (presentation_order(questions[k], k) if permute else identity_order(questions[k])) for k in order_ids}
-    codes = {k: question_codes(questions[k], orders[k], table) for k in order_ids}
+    codes = {k: (None if k in word_qids else question_codes(questions[k], orders[k], table)) for k in order_ids}
 
     def instr(k: str) -> list[Labelled]:
-        v = questions[k].get("instructions")
-        return [(_g1_text(v) if isinstance(v, str) and v != "" else g1_clean(k), "data")]
+        return [(instruction_text(questions[k], k, fix_instr), "data")]
 
     seg: list[Labelled] = [(G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT) + "SCHEMA FIELDS:\n", "template")]
     for i, k in enumerate(order_ids, start=1):
@@ -215,22 +251,23 @@ def build_prompt_g1v3(request: dict[str, Any], qid: str, table: list[str], catal
     seg.append(("\nEND SCHEMA\nSTATE:\n", "template"))
     seg.append((_g1_text(request["state"]), "data"))
     q = questions[qid]
-    coded = codes[qid] is not None
+    coded = codes[qid] is not None or qid in word_qids
     seg += [(f"\nEND STATE\nQUESTION (re-read FIELD {order_ids.index(qid) + 1}):\nID: ", "template"),
             (g1_clean(qid), "data"), (f"\nTYPE: {q['type']}\nINSTRUCTION: ", "template")]
     seg += instr(qid)
     seg.append(("\nOPTIONS:", "template"))
     seg += _option_lines(q, orders[qid], codes[qid])
-    if catalog_chars is not None and wants_catalog(q, table):
+    if catalog_chars is not None and codes[qid] is not None and wants_catalog(q, table):
         seg.append((catalog_block(q, qid, orders[qid], codes[qid], catalog_chars), "data"))
-    seg.append(("\nReply with exactly one option " + ("code." if coded else "id.") + G1V2_TEMPLATE.tail, "template"))
+    reply = "id." if qid in word_qids or not coded else "code."
+    seg.append(("\nReply with exactly one option " + reply + G1V2_TEMPLATE.tail, "template"))
     return [(t, lab) for t, lab in seg if t]
 
 
 def render_g1v3(request: dict[str, Any], qid: str, table: list[str], catalog_chars: int | None = 64,
-                permute: bool = False) -> str:
+                permute: bool = False, fix_instr: bool = True, word_qids: frozenset[str] = frozenset()) -> str:
     """The v3 prompt string; blank lines are collapsed over the joined user turn exactly as in ``render_g1v2``."""
-    text = "".join(t for t, _ in build_prompt_g1v3(request, qid, table, catalog_chars, permute))
+    text = "".join(t for t, _ in build_prompt_g1v3(request, qid, table, catalog_chars, permute, fix_instr, word_qids))
     head = G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT)
     body = text[len(head):len(text) - len(G1V2_TEMPLATE.tail)]
     return head + g1_clean(body) + G1V2_TEMPLATE.tail

@@ -60,7 +60,7 @@ def valid_readout_g1v2(d):
     return valid_readout(d)
 
 
-G1V3_VARIANTS = ("v2", "v3", "v3r", "v3p", "v3c")
+G1V3_VARIANTS = ("v2", "v2f", "v3", "v3w", "v3r", "v3p", "v1", "v3c")
 
 
 def decide_readout_g1v3(work_out):

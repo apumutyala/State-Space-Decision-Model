@@ -47,7 +47,29 @@ def user_turn(s):
 
 def test_v3_without_block_is_v2_byte_for_byte():
     t2 = v2_table()
-    for req in (CANARY_REQUEST, catalog_req(30), catalog_req(5)):
+    for req in (CANARY_REQUEST, catalog_req(30), catalog_req(5), dict_instr_req()):
+        for qid in canonical_question_ids(req["questions"]):
+            assert render_g1v3(req, qid, t2, None, fix_instr=False) == render_g1v2(req, qid, t2)
+
+
+def dict_instr_req():
+    return {"model": "m", "state": "",
+            "questions": {"doc_0": {"type": "choice", "instructions": {"candidate": "def add(a, b):\n\n    return a+b",
+                                                                       "task": "Is this tool relevant to: sum two ints?"},
+                                    "criteria": {"no": None, "yes": None}}}}
+
+
+def test_v2f_fix_renders_dict_instructions_and_changes_nothing_else():
+    from decide.schema import render
+
+    t2 = v2_table()
+    req = dict_instr_req()
+    buggy, fixed = render_g1v2(req, "doc_0", t2), render_g1v3(req, "doc_0", t2, None)
+    assert "def add(a, b)" not in buggy and "INSTRUCTION: doc_0" in buggy  # the v2 bug (job-zhyvg)
+    # v1's serializer: canonical JSON (newlines inside the document are JSON-escaped, so no blank line can form)
+    assert "INSTRUCTION: " + render(req["questions"]["doc_0"]["instructions"]) in fixed
+    assert '"candidate":"def add(a, b):\\n\\n    return a+b"' in fixed and "\n\n" not in user_turn(fixed)
+    for req in (CANARY_REQUEST, catalog_req(30)):  # string instructions: v2f == v2
         for qid in canonical_question_ids(req["questions"]):
             assert render_g1v3(req, qid, t2, None) == render_g1v2(req, qid, t2)
 
@@ -184,7 +206,7 @@ def test_variants_score_end_to_end_with_proper_distributions():
     req = catalog_req(12)
     req["questions"]["pick"] = {"type": "choice", "instructions": "Pick one.", "criteria": {"x": "ex", "y": "why", "z": None, "w": "dub"}}
     out = {}
-    for mode in ("catalog", "permute", "reread", "calibrate"):
+    for mode in ("catalog", "permute", "reread", "calibrate", "v2f", "words"):
         be = G1V3Backend(plug, mode=mode)
         res = be.score(req, lambda: None)
         out[mode] = (be, res)
@@ -229,12 +251,24 @@ def test_variants_score_end_to_end_with_proper_distributions():
     qp = next(x for x in bp._questions(req) if x["qid"] == "tool")
     order = presentation_order(req["questions"]["tool"], "tool")
     assert qp["codes"][order[0]] == "A"
+    # v3w: word ids (pick: w/x/y/z, flag: true/false) scored by their own first token; option_N ids keep letters
+    bw = out["words"][0]
+    qw = {x["qid"]: x for x in bw._questions(req)}
+    assert qw["pick"]["words"] and qw["flag"]["words"] and not qw["tool"]["words"]
+    assert qw["pick"]["tokens"] == [bw.first_token(o) for o in qw["pick"]["options"]]
+    for x in qw.values():  # the proxy first token is the real next token after the actual prompt
+        if x["words"]:
+            for o, t in zip(x["options"], x["tokens"]):
+                assert bw.plugin.encode(x["text"] + " " + o, True)[len(x["prompt"]) - 1] == t
+    # v2f: the v2 prompt (v2 code table, no code key) when instructions are strings
+    b2 = out["v2f"][0]
+    assert [x["text"] for x in b2._questions(req)] == [render_g1v2(req, q, v2_table()) for q in canonical_question_ids(req["questions"])]
 
 
 def test_runner_and_driver_know_readout_g1v3():
     from jobs.rwkv7.readout_variants import DEFAULT_ORDER, VARIANTS, parse_variants
 
-    assert parse_variants(DEFAULT_ORDER) == ["v2", "v3", "v3r", "v3p", "v3c"] and set(VARIANTS) == set(parse_variants(DEFAULT_ORDER))
+    assert parse_variants(DEFAULT_ORDER) == ["v2", "v2f", "v3", "v3w", "v3r", "v3p", "v1", "v3c"] and VARIANTS["v1"] == "rwkv7-hf" and set(VARIANTS) == set(parse_variants(DEFAULT_ORDER))
     with pytest.raises(SystemExit):
         parse_variants("v3,v3")
     if shutil.which("bash") is None:
@@ -253,3 +287,116 @@ def test_rate_guard_counts_several_results_files(tmp_path):
     b.write_text("3\n")
     assert _rows(a) == 2 and _rows(f"{a},{b}") == 3 and _rows(f"{a},{tmp_path / 'none'}") == 2
     assert _rows(str(tmp_path / "*.jsonl")) == 3 and _rows(str(tmp_path / "v*" / "results.jsonl")) == 0
+
+
+# ------------------------------------------------------------------------------------------------- v3w word ids
+def test_word_ids_rule_and_rendering():
+    from decide.prompt_g1v3 import word_ids_ok
+
+    ft = lambda o: o.lower()[:3]  # noqa: E731  (stand-in first-token function)
+    sent = {"type": "choice", "instructions": "Sentiment?", "criteria": {"Negative": None, "Neutral": None, "Positive": None}}
+    assert word_ids_ok(sent, ft)
+    assert not word_ids_ok({"type": "choice", "criteria": {"option_0": "a", "option_1": "b"}}, ft)  # opaque
+    assert not word_ids_ok({"type": "choice", "criteria": {"Negation": None, "Negative": None}}, ft)  # same first token
+    wino = {"type": "choice", "instructions": "Fill the blank.", "criteria": {"A": "Emily", "B": "Samantha"}}
+    assert word_ids_ok(wino, ft)
+    req = {"model": "m", "state": "s", "questions": {"q": wino, "s": sent}}
+    s = render_g1v3(req, "q", v3_table(), word_qids=frozenset({"q", "s"}))
+    assert "\n- A: Emily" in s and "A. A" not in s and "\n- Negative" in s and "exactly one option id." in s
+    assert "CODE KEY" not in render_g1v3(catalog_req(12), "tool", v3_table(), word_qids=frozenset({"tool"}))
+
+
+@needs_tok
+def test_word_first_tokens_on_common_label_sets():
+    enc = _enc()
+    from decide.prompt_g1v3 import word_ids_ok
+
+    ctx = "User: Choose.\n\nAssistant: <think></think>\nANSWER:"
+    base = enc(ctx)
+
+    def ft(o):
+        ids = enc(ctx + " " + o)
+        return ids[len(base)] if ids[: len(base)] == base and len(ids) > len(base) else None
+
+    for ids in (["yes", "no"], ["true", "false"], ["SUPPORTED", "NOT_SUPPORTED"], ["Entailment", "Contradiction", "NotMentioned"],
+                ["Negative", "Neutral", "Positive"], ["A", "B", "C", "D"]):
+        assert word_ids_ok({"type": "choice", "criteria": {i: None for i in ids}}, ft), ids
+
+
+# ------------------------------------------------------------------------------- field coverage over the DEV rows
+DEV_ROWS = Path(os.environ.get("SSDM_DATA", ROOT.parent.parent / "ssdm-data")) / "slices" / "dev-rows.jsonl.gz"
+
+
+def field_texts(req):
+    """(field name, text that must appear in the prompt) for every request field: state, every instruction, every
+    option id and description. Non-strings are rendered as canonical JSON (v1's serializer); blank lines collapsed."""
+    from decide.prompt import g1_clean
+    from decide.schema import render
+
+    def txt(v):
+        return g1_clean(v if isinstance(v, str) else render(v)).strip()
+
+    out = []
+    if req["state"] not in (None, ""):
+        out.append(("state", txt(req["state"])))
+    for k in canonical_question_ids(req["questions"]):
+        q = req["questions"][k]
+        if q.get("instructions") not in (None, ""):
+            out.append((f"{k}.instructions", txt(q["instructions"])))
+        for oid, desc in canonical_options(q):
+            out.append((f"{k}.option_id", txt(oid)))
+            if desc is not None:
+                out.append((f"{k}.option_desc", txt(desc)))
+    return [(n, t) for n, t in out if t]
+
+
+def coverage(rows, renderers):
+    """{renderer: {family: [missing field names]}} over ``rows`` (one prompt per row: the schema lists every field)."""
+    import collections
+
+    miss = {r: collections.defaultdict(list) for r in renderers}
+    for row in rows:
+        req = {"model": "m", "state": row["state"], "questions": row["questions"]}
+        qid = canonical_question_ids(req["questions"])[0]
+        for name, fn in renderers.items():
+            s = fn(req, qid)
+            for field, t in field_texts(req):
+                if t not in s:
+                    miss[name][row["family"]].append(field)
+    return {r: dict(m) for r, m in miss.items()}
+
+
+def dev_renderers():
+    from decide.prompt_g1v3 import word_ids_ok
+
+    t2, t3 = v2_table(), v3_table()
+    words = lambda req: frozenset(k for k in req["questions"] if word_ids_ok(req["questions"][k], lambda o: o))  # noqa: E731
+    return {"v2": lambda r, q: render_g1v2(r, q, t2), "v2f": lambda r, q: render_g1v3(r, q, t2, None),
+            "v3": lambda r, q: render_g1v3(r, q, t3), "v3p": lambda r, q: render_g1v3(r, q, t3, permute=True),
+            "v3w": lambda r, q: render_g1v3(r, q, t3, word_qids=words(r))}
+
+
+@pytest.mark.skipif(not DEV_ROWS.exists(), reason="DEV rows absent (SSDM_DATA/slices/dev-rows.jsonl.gz)")
+def test_every_request_field_reaches_every_fixed_prompt():
+    """A sample of rows from EVERY family (all rows with SSDM_FULL_COVERAGE=1): no field of the request may be missing
+    from the v2f / v3 / v3p / v3w prompt. The v2 control is known to drop dict-valued instructions (reported only)."""
+    import collections
+    import gzip
+    import json
+
+    full = os.environ.get("SSDM_FULL_COVERAGE") == "1"
+    per, rows = collections.Counter(), []
+    with gzip.open(DEV_ROWS, "rt", encoding="utf-8") as f:
+        for line in f:
+            r = json.loads(line)
+            if full or per[r["family"]] < 3:
+                per[r["family"]] += 1
+                rows.append(r)
+    res = coverage(rows, dev_renderers())
+    report = os.environ.get("SSDM_COVERAGE_REPORT")
+    if report:
+        Path(report).write_text(json.dumps({"rows": len(rows), "families": len(per), "missing": {
+            r: {fam: dict(collections.Counter(v)) for fam, v in m.items()} for r, m in res.items()}}, indent=1))
+    assert len(per) > 20
+    for name in ("v2f", "v3", "v3p", "v3w"):
+        assert not res[name], (name, {f: sorted(set(v)) for f, v in res[name].items()})

@@ -2,10 +2,10 @@
 # jobs/rwkv7: the pre-registered fallback parent RWKV7-G1k-13.3B, run inside an SF Compute batch job (chip h100).
 # Spec: jobs/rwkv7/JOB_SPEC.md. Env: JOB=readout (stage A) | lora (stage B; submitted with depends_on stage A)
 #   | readout_g1v2 (C1: stock readout through the vendor-compliant jrt-rwkv-g1-v2 template; Index DEV subset only)
-#   | readout_g1v3 (R3: stock readout under v2, v3 (code key), v3r (re-read), v3p (permutation), v3c (calibration); one load).
+#   | readout_g1v3 (R3: stock readout under v2, v2f, v3, v3w, v3r, v3p, v1, v3c in one process; one model load).
 #   readout: verify snapshot -> memory/prefill probe -> Index DEV subset (stock readout) -> score/ECE -> steer smoke
 #   readout_g1v2: verify snapshot -> Index DEV subset (family rwkv7-hf-g1-v2, live rate guard) -> score/ECE
-#   readout_g1v3: verify snapshot -> Index DEV subset x {v2, v3, v3r, v3p, v3c} in one process
+#   readout_g1v3: verify snapshot -> Index DEV subset x {v2, v2f, v3, v3w, v3r, v3p, v1, v3c} in one process
 #                 (jobs.rwkv7.readout_variants, live rate guard over all variants) -> score/ECE per variant (index/<variant>/score.json, ece.json)
 #   lora:    verify snapshot -> train.run_cell smoke (cache fork == recompute) -> T ladder -> LoRA pilot (resumable)
 # Exit codes: 0 measured + decided + exports verified   2 bad JOB   5 setup   6 export verification   7 phase timeout
@@ -93,7 +93,7 @@ export_phase setup
 if [ "$JOB" = readout_g1v3 ]; then
   CAP_I=$(cap index) && CAP_SC=$(cap score) || fail 5 "job_params"
   SUBSET=jobs/common/dev_subset_m1.json
-  VARIANTS="v2 v3 v3r v3p v3c"   # priority order: a cut-short run keeps the control and the highest-value arms
+  VARIANTS="v2 v2f v3 v3w v3r v3p v1 v3c"   # priority order: a cut-short run keeps the control and the highest-value arms
   python -X utf8 -m jobs.common.dev_subset rows --rows /data/slices/dev-rows.jsonl.gz --out "$WORK/subset-rows.jsonl.gz" \
     --subset "$SUBSET" > "$WORK/out/index/subset-rows.json" || fail 10 "subset rows"
   NROWS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['rows'])" "$WORK/out/index/subset-rows.json")
@@ -107,7 +107,7 @@ if [ "$JOB" = readout_g1v3 ]; then
 
   # score every variant whose results are complete, also after a stopped index phase (a cut-short run keeps its arms)
   say "phase score (per complete variant)"
-  SC1=$(( CAP_SC / 10 ))   # the score phase cap covers 5 variants x (score + ece)
+  SC1=$(( CAP_SC / 16 ))   # the score phase cap covers 8 variants x (score + ece)
   for v in $VARIANTS; do
     n=$(python -c "import sys;print(sum(1 for _ in open(sys.argv[1],'rb')))" "$WORK/out/index/$v/results.jsonl" 2>/dev/null || echo 0)
     [ "$n" -ge "$NROWS" ] || { say "variant $v incomplete ($n / $NROWS rows): not scored"; continue; }

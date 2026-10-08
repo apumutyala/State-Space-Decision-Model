@@ -1,7 +1,7 @@
 """jobs/rwkv7 JOB=readout_g1v3 (R3): several readout variants over the same rows in ONE process (one model load).
 
     python -X utf8 -m jobs.rwkv7.readout_variants --model-dir SNAP --rows ROWS.jsonl.gz --out-root DIR \
-        --variants v2,v3,v3r,v3p,v3c
+        --variants v2,v2f,v3,v3w,v3r,v3p,v1,v3c
 
 Each variant is an unmodified Decision Index kit run (``decision_index.runner.run``, the code behind
 ``python -m decision_index run``) of ``jobs.common.readout_engine:ReadoutIndexEngine`` with its own readout family,
@@ -19,10 +19,12 @@ import time
 from pathlib import Path
 
 ENGINE = "jobs.common.readout_engine:ReadoutIndexEngine"
-VARIANTS = {"v2": "rwkv7-hf-g1-v2", "v3": "rwkv7-hf-g1-v3", "v3r": "rwkv7-hf-g1-v3r", "v3p": "rwkv7-hf-g1-v3p",
-            "v3c": "rwkv7-hf-g1-v3c"}
-#: run order = priority (coordinator 2026-10-08): v2 control, v3 catalog, v3r re-read, v3p permutation, v3c calibration
-DEFAULT_ORDER = "v2,v3,v3r,v3p,v3c"
+VARIANTS = {"v2": "rwkv7-hf-g1-v2", "v2f": "rwkv7-hf-g1-v2f", "v3": "rwkv7-hf-g1-v3", "v3w": "rwkv7-hf-g1-v3w",
+            "v3r": "rwkv7-hf-g1-v3r", "v3p": "rwkv7-hf-g1-v3p", "v1": "rwkv7-hf", "v3c": "rwkv7-hf-g1-v3c"}
+#: run order = priority (coordinator 2026-10-08): v2 control (byte-identical to job-zhyvg), v2f (v2 + dict-instruction
+#: fix), v3 code key, v3w word ids, v3r re-read, v3p permutation, v1 (jrt-rwkv-g1-v1, for a later CPU-side
+#: pre-declared arithmetic-mean ensemble v1 + v3 on identical rows), v3c calibration
+DEFAULT_ORDER = "v2,v2f,v3,v3w,v3r,v3p,v1,v3c"
 
 
 def parse_variants(spec: str) -> list[str]:

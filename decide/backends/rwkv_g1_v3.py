@@ -1,7 +1,10 @@
 """jrt-rwkv-g1-v3 / -v3r / -v3c readout backends (R3): v2 + long-catalog binding, optionally + a top-m re-read or
 contextual calibration.
 
-Opt-in readout families, one change each on top of v3 so every gain is attributable:
+Opt-in readout families, one change each on top of v3 so every gain is attributable (every mode renders
+dict-valued instructions as canonical JSON, the v2 instruction fix; ``rwkv7-hf-g1-v2f`` = v2 + that fix only):
+  ``rwkv7-hf-g1-v2f``  mode "v2f"        v2 (frozen v2 code table, no code key) + the instruction fix
+  ``rwkv7-hf-g1-v3w``  mode "words"      v3 + word option ids scored by their own unique first token
   ``rwkv7-hf-g1-v3``   mode "catalog"    v2 + the v3 code table + the code key (``decide.prompt_g1v3.render_g1v3``)
   ``rwkv7-hf-g1-v3p``  mode "permute"    v3 + deterministic per-question presentation order (codes mapped back)
   ``rwkv7-hf-g1-v3r``  mode "reread"     v3 + a second answer slot over the model's own top-m first-pass codes
@@ -43,29 +46,37 @@ from ..adapter import DEFAULT_LIMITS
 from ..prompt import CANARY_REQUEST, G1V2_SYSTEM_PROMPT, G1V2_TEMPLATE
 from ..prompt_g1v3 import (CALIBRATE_MAX_K, CATALOG_CHARS_LADDER, CATALOG_MIN_K, CONTENT_FREE_INPUTS, G1V3_ID,
                            G1V3C_ID, G1V3P_ID, G1V3R_ID, REREAD_LABEL_CHARS, REREAD_MIN_K, RESTATE_CHARS, WORDLIKE,
-                           content_free_request, identity_order, load_v3_codes, presentation_order, question_codes,
-                           render_g1v3, reread_m, reread_suffix, wants_catalog)
+                           G1V2F_ID, G1V3W_ID, catalog_label, content_free_request, identity_order, load_v3_codes,
+                           presentation_order, question_codes, render_g1v3, reread_m, reread_suffix, wants_catalog,
+                           word_ids_ok)
 from ..schema import canonical_json, canonical_options, canonical_question_ids, sha256_text
 from .base import BackendUnsupported, Plan, ScoreResult
 from .hf_readout import sha256_file
-from .rwkv_g1_filtered_codes import TokenCode
+from .rwkv_g1_filtered_codes import TABLE_SHA256 as V2_TABLE_SHA256, TokenCode, load_frozen_table
 from .rwkv_g1_v2 import BOS_ID, G1V2Backend
 from .state_fork import PAD_ID, common_prefix_len
 
 CF_MEMO_MAX = 4096
-MODES = {"catalog": (G1V3_ID, "rwkv_g1_v3"), "permute": (G1V3P_ID, "rwkv_g1_v3p"), "reread": (G1V3R_ID, "rwkv_g1_v3r"),
+MODES = {"v2f": (G1V2F_ID, "rwkv_g1_v2f"), "words": (G1V3W_ID, "rwkv_g1_v3w"), "catalog": (G1V3_ID, "rwkv_g1_v3"), "permute": (G1V3P_ID, "rwkv_g1_v3p"), "reread": (G1V3R_ID, "rwkv_g1_v3r"),
          "calibrate": (G1V3C_ID, "rwkv_g1_v3c")}
 V3_CODES, V3_TABLE_SHA256 = load_v3_codes()
 V3_TABLE = [e["code"] for e in V3_CODES]
+ANSWER_CTX = "User: Choose.\n\nAssistant: <think></think>\nANSWER:"
+
+
+def _table(mode: str) -> list[str]:
+    return [c.code for c in load_frozen_table()] if mode == "v2f" else V3_TABLE
 
 
 def renderer_identity(mode: str) -> dict[str, str]:
-    table = V3_TABLE
+    table = _table(mode)
     tid = MODES[mode][0]
-    canary = {qid: render_g1v3(CANARY_REQUEST, qid, table, permute=mode == "permute")
+    canary = {qid: render_g1v3(CANARY_REQUEST, qid, table, None if mode == "v2f" else 64, permute=mode == "permute")
               for qid in canonical_question_ids(CANARY_REQUEST["questions"])}
     value = {"id": tid, "head": G1V2_TEMPLATE.head, "tail": G1V2_TEMPLATE.tail, "system": G1V2_SYSTEM_PROMPT,
-             "bos": BOS_ID, "v3_code_table_sha256": V3_TABLE_SHA256, "wordlike_excluded": sorted(WORDLIKE),
+             "bos": BOS_ID, "code_table_sha256": V2_TABLE_SHA256 if mode == "v2f" else V3_TABLE_SHA256,
+             "wordlike_excluded": None if mode == "v2f" else sorted(WORDLIKE), "instruction_fix": True,
+             "word_ids": "non-opaque ids, unique first token after ANSWER:" if mode == "words" else None,
              "canary": canary, "permute": mode == "permute",
              "catalog": {"min_k": CATALOG_MIN_K, "chars_ladder": list(CATALOG_CHARS_LADDER), "restate_chars": RESTATE_CHARS},
              "reread": ({"min_k": REREAD_MIN_K, "m": "2 if k == 3 else 3", "label_chars": REREAD_LABEL_CHARS,
@@ -122,6 +133,8 @@ class G1V3Backend(G1V2Backend):
         self.calibrate = mode == "calibrate"
         self.reread = mode == "reread"
         self.permute = mode == "permute"
+        self.words = mode == "words"
+        self._first_tok: dict[str, int | None] = {}
         self.name = MODES[mode][1]
         limit = DEFAULT_LIMITS["max_input_tokens"]
         ctx = plugin.max_context or limit
@@ -129,12 +142,13 @@ class G1V3Backend(G1V2Backend):
         self._cf_memo: dict[str, dict[str, dict[str, float]]] = {}
         self.cf_stats = {"memo_hits": 0, "memo_misses": 0}
         super().__init__(plugin, **kw)
-        # the v3 code table replaces v2's frozen one (v2's init proved its own table; prove this one the same way)
-        self.codes = tuple(TokenCode(code=e["code"], token_id=e["token_id"], source_ordinal=i) for i, e in enumerate(V3_CODES))
-        self.code_table = list(V3_TABLE)
+        if mode != "v2f":  # the v3 code table replaces v2's frozen one (proved below as v2's init proved its own)
+            self.codes = tuple(TokenCode(code=e["code"], token_id=e["token_id"], source_ordinal=i)
+                               for i, e in enumerate(V3_CODES))
+            self.code_table = list(V3_TABLE)
         self.code_token = {c.code: c.token_id for c in self.codes}
-        ctx = "User: Choose.\n\nAssistant: <think></think>\nANSWER:"
-        base = plugin.encode(ctx, True)
+        ctx = ANSWER_CTX
+        self._ctx_ids = base = plugin.encode(ctx, True)
         for c in self.codes:
             if plugin.encode(ctx + " " + c.code, True) != base + [c.token_id]:
                 raise ValueError(f"v3 code {c.code!r} is not one token after the v2 tail")
@@ -145,10 +159,14 @@ class G1V3Backend(G1V2Backend):
         here = Path(__file__)
         config.update({
             "template_variant": MODES[self.mode][0],
-            "codebook_table_sha256": None, "v3_code_table_sha256": V3_TABLE_SHA256,
+            "codebook_table_sha256": V2_TABLE_SHA256 if self.mode == "v2f" else None,
+            "v3_code_table_sha256": None if self.mode == "v2f" else V3_TABLE_SHA256,
+            "instruction_fix": "non-string instructions as canonical JSON (v1's render)",
+            "word_ids": "first token of ' <id>' when ids are non-opaque and first tokens unique" if self.words else None,
             "presentation": "sha256(question id, type, option ids) order; codes mapped back" if self.permute else "canonical",
-            "catalog": f"code key for coded k >= {CATALOG_MIN_K}; label chars ladder {list(CATALOG_CHARS_LADDER)} "
-                       f"under a {self.budget}-token budget",
+            "catalog": None if self.mode == "v2f" else (
+                f"code key for coded k >= {CATALOG_MIN_K}; label chars ladder {list(CATALOG_CHARS_LADDER)} "
+                f"under a {self.budget}-token budget"),
             "reread": (f"k >= {REREAD_MIN_K}: model's own first-pass top-m (m = 2 if k == 3 else 3) re-listed after "
                        f"the first answer context, second pass from the same prefix state, p = p1 outside S, "
                        f"p1(S) * p2(.|S) inside") if self.reread else None,
@@ -173,12 +191,28 @@ class G1V3Backend(G1V2Backend):
         return copy.deepcopy(self._revision)
 
     # ---------------------------------------------------------------- prompts
-    def _render(self, request: dict[str, Any], qid: str) -> tuple[str, list[int], int | None]:
+    def first_token(self, oid: str) -> int | None:
+        """The answer token of " <oid>" right after "ANSWER:" (None if the tokenization does not extend the context)."""
+        if oid not in self._first_tok:
+            ids = self.plugin.encode(ANSWER_CTX + " " + oid, True)
+            n = len(self._ctx_ids)
+            self._first_tok[oid] = ids[n] if len(ids) > n and ids[:n] == self._ctx_ids and ids[n] != BOS_ID else None
+        return self._first_tok[oid]
+
+    def word_qids(self, request: dict[str, Any]) -> frozenset[str]:
+        if not self.words:
+            return frozenset()
+        return frozenset(k for k in canonical_question_ids(request["questions"])
+                         if word_ids_ok(request["questions"][k], self.first_token))
+
+    def _render(self, request: dict[str, Any], qid: str, words: frozenset[str] = frozenset()):
         """(text, token ids, label chars used; None = no block) of the longest-label v3 prompt within the budget."""
-        ladder = CATALOG_CHARS_LADDER if wants_catalog(request["questions"][qid], self.code_table) else (None,)
+        rq = request["questions"][qid]
+        ladder = CATALOG_CHARS_LADDER if (self.mode != "v2f" and qid not in words
+                                          and wants_catalog(rq, self.code_table)) else (None,)
         text, ids = "", []
         for n in ladder:
-            text = render_g1v3(request, qid, self.code_table, n, self.permute)
+            text = render_g1v3(request, qid, self.code_table, n, self.permute, True, words)
             ids = self._full(text)
             if len(ids) <= self.budget:
                 return text, ids, n
@@ -186,8 +220,9 @@ class G1V3Backend(G1V2Backend):
 
     def _questions(self, request: dict[str, Any], label_counts: dict[str, int] | None = None):
         out = []
+        words = self.word_qids(request)
         for qid in canonical_question_ids(request["questions"]):
-            text, prompt, n = self._render(request, qid)
+            text, prompt, n = self._render(request, qid, words)
             if label_counts is not None:
                 label_counts["total"] = label_counts.get("total", 0) + len(prompt)
             rq = request["questions"][qid]
@@ -195,8 +230,12 @@ class G1V3Backend(G1V2Backend):
             coded = len(opts) <= len(self.codes)
             order = presentation_order(rq, qid) if self.permute else identity_order(rq)
             q = {"qid": qid, "text": text, "prompt": prompt, "options": opts, "coded": coded, "catalog_chars": n,
-                 "catalog_wanted": wants_catalog(rq, self.code_table)}
-            if coded:
+                 "catalog_wanted": self.mode != "v2f" and qid not in words and wants_catalog(rq, self.code_table),
+                 "words": qid in words}
+            if qid in words:  # v3w: each option scored by the (unique) first token of its own id
+                q["coded"], q["codes"] = True, None
+                q["tokens"] = [self.first_token(o) for o in opts]
+            elif coded:
                 # codes[j] = the code shown for CANONICAL option j, so every score maps back to its option id
                 q["codes"] = question_codes(rq, order, self.code_table)
                 q["tokens"] = [self.code_token[c] for c in q["codes"]]
@@ -230,10 +269,11 @@ class G1V3Backend(G1V2Backend):
                 for q in qs:
                     m = reread_m(len(q["options"]))
                     rq = request["questions"][q["qid"]]
-                    worst = max((self._full(q["text"] + reread_suffix(rq, list(range(i, i + m)), q["codes"]))
-                                 for i in range(len(q["options"]) - m + 1)), key=len)
-                    longest = max(longest, len(worst) + 1)
-                    extra += len(worst) - L
+                    opts = canonical_options(rq)  # the m longest labels bound the suffix (+8 tokens slack)
+                    longest_m = sorted(range(len(opts)), key=lambda j: -len(catalog_label(*opts[j], REREAD_LABEL_CHARS)))[:m]
+                    worst = len(self._full(q["text"] + reread_suffix(rq, longest_m, q["codes"]))) + 8
+                    longest = max(longest, worst + 1)
+                    extra += worst - L
                 calls += max(1, -(-extra // self.pack_tokens), -(-len(qs) // self.pack_rows))
                 total += extra
         return Plan(inference_calls=calls, max_call_input_tokens=longest, total_input_tokens=total,
