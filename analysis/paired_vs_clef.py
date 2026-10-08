@@ -5,6 +5,9 @@
 
 Inputs are per-row decide results files (the kit's results.jsonl).
   * --rows full   (default): the 12,104-row DEV slice (``harness.cli.load_slice("dev")``).
+  * --rows full_excl51: the DEV slice minus the 51 over-length rows (``jobs/clef_baseline/overlength_rows.json``),
+    12,053 rows; full-DEV results files are restricted to them (the 51 dropped rows are reported). The
+    over-length-fair companion of --rows full for a candidate that reads every row natively (mode fulldev_eval).
   * --rows subset: the pre-registered 2,008-row m1 DEV subset (``jobs/common/dev_subset_m1.json``), so a candidate
     scored only on the subset (stock RWKV7, the R1 rescore) can be paired with Clef now. A full-DEV results file
     (e.g. job-sgihj) is accepted on the subset and restricted to the subset ids; the dropped rows are reported.
@@ -65,6 +68,10 @@ def slice_rows(mode: str, edition: str | None, gsm8k03: bool):
     """(rows, meta) for the DEV slice or the m1 DEV subset; both via the repo's own loaders."""
     if mode == "full":
         return cli.load_slice("dev", edition, gsm8k03), {"slice": "dev"}
+    if mode == "full_excl51":
+        ol = overlength_ids()
+        rows = [r for r in cli.load_slice("dev", edition, gsm8k03) if r["_evaluation"]["run_id"] not in ol]
+        return rows, {"slice": "dev minus the 51 over-length rows", "excluded": "jobs/clef_baseline/overlength_rows.json"}
     if mode == "subset":
         from jobs.common import dev_subset
 
@@ -199,7 +206,7 @@ def main(argv=None) -> int:
     ap.add_argument("--candidate", help="omit for Clef 27B vs Clef-flash")
     ap.add_argument("--clef", required=True)
     ap.add_argument("--clef-flash", required=True)
-    ap.add_argument("--rows", choices=("full", "subset"), default="full")
+    ap.add_argument("--rows", choices=("full", "full_excl51", "subset"), default="full")
     ap.add_argument("--context", choices=("16k", "32k"))
     ap.add_argument("--allow-mixed-context", action="store_true")
     ap.add_argument("--edition", default=config.EDITION, choices=config.EDITIONS)

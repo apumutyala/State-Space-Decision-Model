@@ -8,6 +8,11 @@
 #   job_params_<MODE>.json, both required (exit 5 if missing or if the params' own "mode" / "cell_config" disagree).
 #   Optional params "train_dir" (relative to $DATA, default m2-150k) moves the training set. A cell config with a
 #   "teacher" (KD) block verifies $DATA/teacher before any training and passes --teacher-dir to run_cell / m2_gates.
+#   Params with "eval_only": "fulldev" (mode fulldev_eval) are an EVAL-ONLY run of a SAVED checkpoint on the FULL Index
+#   DEV slice: setup + guard as usual, then phase checkpoint (jobs.m2_first_cell.checkpoint_loader: the artifact from
+#   $<checkpoint.url_env>, every byte sha256-pinned), fulldev (jobs.m2_first_cell.fulldev_eval score --arm child, all
+#   12,104 rows, live rate guard, per-row resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
+#   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -53,6 +58,7 @@ else  # generic: the mode's two files; resolved and checked once the log and fin
 fi
 TRAIN_DIR=$DATA/m2-150k
 TEACHER_ARGS=()
+EVAL_ONLY=none
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -80,6 +86,7 @@ cd "$CODE"
 . "$CODE/jobs/clef_baseline/watchdog.sh"
 MARKER=M2_FIRST_CELL_DONE
 VALIDATOR=jobs.m2_first_cell.summarize:valid_result
+DECISION=$WORK/out/first_cell_result.json
 OVERRIDES=$(env | grep -o '^M2FC_[A-Z0-9_]*' | sort | tr '\n' ' ' || true)
 [ -z "$OVERRIDES" ] || say "TEST OVERRIDES SET (never in a paid run): $OVERRIDES"
 finish() {
@@ -90,12 +97,12 @@ finish() {
   # Terminal export and result validation share 60s + 30s KILL grace from the
   # existing seven-minute reserve. Export failure still reaches finalize (exit 6).
   export -f export_phase sample say
-  export CODE OUT WORK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR
+  export CODE OUT WORK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR DECISION
   export FINISH_RC=$rc
   timeout --kill-after=30s 60s bash -c '
     export_phase final
     exec python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
-      "$WORK/out/first_cell_result.json" "$OUT" "$MARKER" "$VALIDATOR"
+      "$DECISION" "$OUT" "$MARKER" "$VALIDATOR"
   '
   local final=$?
   [ "$final" -eq 0 ] || rm -f "$OUT/$MARKER"
@@ -128,13 +135,24 @@ if not override and p.get("cell_config", cell) != cell:
 td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
-print(td, 1 if c.get("teacher") else 0)
+ev = p.get("eval_only", "none")
+if ev not in ("none", "fulldev"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none or fulldev")
+if ev != "none":
+    sys.path.insert(0, ".")
+    from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
+    try:
+        checkpoint_block(p)
+    except CheckpointError as e:
+        sys.exit(f"mode {mode}: {e}")
+print(td, 1 if c.get("teacher") else 0, ev)
 EOF
   ) || fail 5 "$MODE_ENV"
-  read -r TRAIN_SUB TEACHER <<< "$MODE_ENV"
+  read -r TRAIN_SUB TEACHER EVAL_ONLY <<< "$MODE_ENV"
   TRAIN_DIR=$DATA/$TRAIN_SUB
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
-  say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}"
+  say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
+  [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
@@ -189,7 +207,11 @@ for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used 
     REFS+=(--reference "$NAME=$F")
   fi
 done
-python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag" || fail 5 "drivers not importable"
+python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
+if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
+  python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
+    || fail 15 "fulldev projected past its cap at the measured D1 child rate"
+else
 FIX_P=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['parent'])" "$PARAMS") || fail 5 "job_params"
 FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['child'])" "$PARAMS") || fail 5 "job_params"
 # every eval phase is priced HERE from the measured rates, before the paid training phase
@@ -198,6 +220,7 @@ for P in "g12 parent parent_g12 $FIX_P" "index parent parent_index $FIX_P" "g12,
   python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \
     --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
 done
+fi
 gate "setup" 0
 export_phase setup
 
@@ -207,6 +230,46 @@ timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_rea
   --out-dir "$WORK/out/guard" > "$WORK/logs/guard.log" 2>&1; r=$?
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
+
+if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a SAVED checkpoint on the FULL Index DEV
+  say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"
+  timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" \
+    --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CK/cell" --work "$WORK/art" \
+    --cell-out "$WORK/out/cell.json" --out "$WORK/out/checkpoint.json" > "$WORK/logs/checkpoint.log" 2>&1; r=$?
+  gate "checkpoint" $r; export_phase checkpoint
+  case $r in 0) ;; 124|137) fail 7 "checkpoint timeout" ;; 10) fail 10 "checkpoint identity: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
+    *) fail 5 "checkpoint rc=$r: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
+  CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
+  read -r MAXIN FD_PARENT <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(int(p['max_input_tokens']), 1 if p.get('fulldev_parent_arm') else 0)" "$PARAMS")" \
+    || fail 5 "job_params max_input_tokens / fulldev_parent_arm"
+  FD_ARMS=(child); [ "$FD_PARENT" = 1 ] && FD_ARMS+=(parent)
+  for ARMNAME in "${FD_ARMS[@]}"; do
+    PH=fulldev; [ "$ARMNAME" = parent ] && PH=parent_full
+    if [ "$ARMNAME" = child ]; then
+      ARGS=(--cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR"
+            "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json")
+    else
+      ARGS=(--cell-config "$CELL")
+    fi
+    say "phase $PH ($ARMNAME arm, all 12,104 DEV rows, max_input_tokens $MAXIN; resumes from $CK/fulldev)"
+    python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)" \
+      --report "$WORK/out/rate-$PH.json" -- \
+      timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval score --arm "$ARMNAME" "${ARGS[@]}" \
+      --model-dir "$SNAP" --rows "$DATA/slices/dev-rows.jsonl.gz" --max-input-tokens "$MAXIN" --resume-dir "$CK/fulldev" \
+      --out-dir "$WORK/out/fulldev" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
+    gate "$PH" $r; export_phase "$PH"
+    case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
+      10) fail 10 "$PH identity (rows / checkpoint lineage / cohort)" ;; *) fail 9 "$PH rc=$r" ;; esac
+  done
+  say "phase report"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval report --out-dir "$WORK/out/fulldev" \
+    --params "$PARAMS" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "fulldev_eval result missing or invalid (rc=$r)"
+  sample "$DECISION" "fulldev-eval"
+  RC=0
+  exit 0
+fi
 
 # ------------------------------------------------------------------ held-out D1-B over the WHOLE training set (exit 33)
 say "phase heldout (hits must equal the pinned exclusions)"
@@ -324,6 +387,6 @@ LATEST=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])
 mkdir -p "$OUT/ckpt"
 cp "$CK/cell/$LATEST" "$CK/cell/latest.json" "$OUT/ckpt/" && ( cd "$OUT/ckpt" && sha256sum "$LATEST" > "$LATEST.sha256" ) \
   || EXPORT_FAIL=1
-sample "$WORK/out/first_cell_result.json" "first-cell"
+sample "$DECISION" "first-cell"
 RC=0
 exit 0
