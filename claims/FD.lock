@@ -1,0 +1,5 @@
+owner: agent-b
+start_utc: 2026-10-08T15:40Z
+job: job-7f3n4 (fulldev_smoke on D1 art-bm3e6, stack/rwkv7/fulldev-eval @745f492)
+time_limit: 2026-10-08T19:00Z
+item: FD (full-DEV eval pipeline smoke)
