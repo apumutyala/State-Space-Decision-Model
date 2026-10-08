@@ -360,3 +360,9 @@
 - Evidence: preflight plan `ssdm-data/agent-c-l1-fit-cell-preflight-20261008-v5/plan.json` SHA-256 `50d52a25b149a68aea3f3ce9bf9551d0e84088dc7783afa3d837393dd331b1ce`; it records 2,304/768 rows and explicitly leaves training unauthorized, with no parent or Stage 1 pins. It reads only the pinned fit export and tokenizer census.
 - Validation: 7 focused preflight+adapter tests pass; `py_compile`, `git diff --check`, exact artifact preflight pass. Independent review found no remaining blocker. PR #226 updated to head `13741341b63656e05b589a13ace8448fb10b5bb7`, OPEN/CLEAN, GitGuardian PASS.
 - Next: actual GatePlanner learning still needs a dedicated fit-only training runner, a qualified parent/Stage 1 proof, A's order, and adequate isolated resources; latest RAM audit was 1.82 GiB, below the existing 9-GiB CPU runner gate. No training or GPU spend.
+
+## 2026-10-08 20:39Z: Agent C refreshed live A/B jobs
+- Did: recovered direct `autor` access through `bi-ubuntu` and polled the exact D1/D2/D12 and L1 equivalence handles plus the newest 50 jobs. Posted the live snapshot and full-DEV/full8 gap in INBOX.
+- Live: `job-gi58k` running in `phase cell` as of 20:38Z; `job-b7xax` queued first on prepaid balance; `job-bs5we` is still marked running but has no log past 20:19Z (`phase cell`), with its last sample at 20:18Z and health poll at 20:13Z. `job-5txp8` succeeded as a job but failed the predeclared numerical adoption gate. No G1 full-DEV candidate appears in the newest 50; only 250-row smoke `job-46yeb`.
+- Learned: the active D1 retry has passed guard/heldout and seeded-parent verification and reached the cell; D2 has not started. Stage 1 full-DEV/full8 remains unproven. No C GPU job/restart/spend.
+- Next: continue C fit-only language prerequisites; re-poll D12 after meaningful time or new state, and watch for authoritative full-DEV/full8 evidence.
