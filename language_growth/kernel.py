@@ -13,16 +13,17 @@ import weakref
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, SpeechAct
+from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, Fact, SpeechAct
 
 _SCHEMA = "ssdm.semantic_program.v0.1"
-_OPS = {"ReadFact", "Compare", "Assert", "Conjoin", "ExplainDerivation", "Ask"}
+_OPS = {"ReadFact", "Compare", "Assert", "Conjoin", "ExplainDerivation", "Ask", "Hypothesize"}
 _REASONS = {"unknown_reference", "stale_context", "stale_policy", "type_unit_mismatch", "unsupported_assertion", "forbidden_dependency", "invalid_graph", "conflict", "exceeded_limit", "scope_mismatch", "unsupported_operation", "unsupported_field"}
 _MINTED: weakref.WeakSet[CheckResult] = weakref.WeakSet()
 _NODE_KEYS = {
     "ReadFact": {"id", "op", "record_ref", "field"},
     "Compare": {"id", "op", "left", "right", "relation"},
     "Assert": {"id", "op", "proposition"},
+    "Hypothesize": {"id", "op", "proposition"},
     "Conjoin": {"id", "op", "speech_acts"},
     "ExplainDerivation": {"id", "op", "speech_act"},
     "Ask": {"id", "op", "category", "obligation_ref", "references"},
@@ -112,6 +113,8 @@ def _environment(host: Any, catalog: Any) -> tuple[dict[str, Any], dict[str, Any
     if any(not isinstance(field, str) or not isinstance(predicate, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", predicate) for field, predicate in predicates.items()):
         _fail("invalid_graph")
     _dict(h.get("query_constants")); _sequence(h.get("unmet_obligations")); _dict(h.get("limits"))
+    if len(_dict(h.get("assumptions", {}))) > 128:
+        _fail("exceeded_limit")
     if type(h["limits"].get("max_program_nodes")) is not int or not 1 <= h["limits"]["max_program_nodes"] <= 1024:
         _fail("invalid_graph")
     provider = _dict(h.get("provider", {}))
@@ -201,17 +204,40 @@ def _constant(ref: str, host: dict[str, Any]) -> ConstantValue:
     return ConstantValue(_numeric_or_typed(f), f["value_type"], f["unit"], f["temporal_scope"], _name(f["quantity_kind"]), ref)
 
 
-def _operand(value: Any, prior: dict[str, Any], host: dict[str, Any]) -> Fact | ConstantValue:
+def _assumption(ref: str, host: dict[str, Any], by_ref: dict[str, Any], snapshot: dict[str, Any], policy: dict[str, Any], registry: dict[str, Any], catalog: dict[str, Any]) -> AssumptionValue:
+    if "Hypothesize" not in registry["allowed_ops"]:
+        _fail("unsupported_operation")
+    assumptions = host.get("assumptions", {})
+    if ref not in assumptions:
+        _fail("unknown_reference")
+    raw = _dict(assumptions[ref])
+    _keys(raw, {"record_ref", "field", "value"})
+    record_ref, field = _name(raw["record_ref"]), _name(raw["field"])
+    premise = _read(record_ref, field, by_ref, snapshot, policy, registry, catalog)
+    alternate = _field_shape(raw["value"])
+    original = _field_shape(by_ref[record_ref]["fields"][field])
+    if alternate["temporal_scope"] != premise.interval:
+        _fail("scope_mismatch")
+    if (alternate["value_type"] != original["value_type"]
+            or alternate["unit"] != premise.unit
+            or alternate.get("quantity_kind", field) != premise.quantity_kind):
+        _fail("type_unit_mismatch")
+    return AssumptionValue(ref, premise, _numeric_or_typed(alternate))
+
+
+def _operand(value: Any, prior: dict[str, Any], host: dict[str, Any], by_ref: dict[str, Any], snapshot: dict[str, Any], policy: dict[str, Any], registry: dict[str, Any], catalog: dict[str, Any]) -> Fact | ConstantValue | AssumptionValue:
     v = _dict(value)
     if set(v) == {"constant_ref"}:
         return _constant(_name(v["constant_ref"]), host)
+    if set(v) == {"assumption_ref"}:
+        return _assumption(_name(v["assumption_ref"]), host, by_ref, snapshot, policy, registry, catalog)
     _keys(v, {"node", "project"})
     if v["project"] != "object" or v["node"] not in prior or not isinstance(prior[v["node"]], Fact):
         _fail("invalid_graph")
     return prior[v["node"]]
 
 
-def _compare(left: Fact | ConstantValue, right: Fact | ConstantValue, relation: str, registry: dict[str, Any]) -> Comparison:
+def _compare(left: Fact | ConstantValue | AssumptionValue, right: Fact | ConstantValue | AssumptionValue, relation: str, registry: dict[str, Any]) -> Comparison:
     if relation not in registry["comparators"] or relation not in {"greater_than", "less_than", "equal"}:
         _fail("unsupported_operation")
     lv, rv = (left.object if isinstance(left, Fact) else left.value), (right.object if isinstance(right, Fact) else right.value)
@@ -235,6 +261,10 @@ def _compare(left: Fact | ConstantValue, right: Fact | ConstantValue, relation: 
 
 
 def _deps(value: Any) -> tuple[str, ...]:
+    if isinstance(value, AssumptionValue):
+        return _deps(value.premise)
+    if isinstance(value, ConditionalContent):
+        return _deps(value.conclusion)
     if isinstance(value, Fact):
         return (value.record_ref,)
     if isinstance(value, Comparison):
@@ -292,13 +322,25 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
         if op == "ReadFact":
             value = _read(_name(n["record_ref"]), _name(n["field"]), by_ref, snapshot, policy, registry, catalog)
         elif op == "Compare":
-            value = _compare(_operand(n["left"], prior, h), _operand(n["right"], prior, h), _name(n["relation"]), registry)
+            value = _compare(_operand(n["left"], prior, h, by_ref, snapshot, policy, registry, catalog), _operand(n["right"], prior, h, by_ref, snapshot, policy, registry, catalog), _name(n["relation"]), registry)
         elif op == "Assert":
             target = n["proposition"]
             if not isinstance(target, str) or target not in prior or not isinstance(prior[target], (Fact, Comparison)):
                 _fail("invalid_graph")
             content = prior[target]
+            if isinstance(content, Comparison) and any(isinstance(operand, AssumptionValue) for operand in (content.left, content.right)):
+                _fail("unsupported_assertion")
             value = SpeechAct("assert", content, _deps(content), (ordinals[target], ordinal))
+        elif op == "Hypothesize":
+            target = n["proposition"]
+            if not isinstance(target, str) or target not in prior or not isinstance(prior[target], Comparison):
+                _fail("invalid_graph")
+            conclusion = prior[target]
+            assumptions = [operand for operand in (conclusion.left, conclusion.right) if isinstance(operand, AssumptionValue)]
+            if len(assumptions) != 1:
+                _fail("invalid_graph")
+            content = ConditionalContent(assumptions[0], conclusion)
+            value = SpeechAct("hypothesize", content, _deps(content), (ordinals[target], ordinal))
         elif op == "Conjoin":
             refs = _sequence(n["speech_acts"])
             if len(refs) < 2 or len(refs) != len(set(refs)) or any(ref not in prior or not isinstance(prior[ref], SpeechAct) or prior[ref].kind not in ("assert", "conjoin") for ref in refs):
@@ -341,6 +383,7 @@ def _check(program: Any, host: Any, catalog: Any) -> CheckResult:
         "records": [by_ref[ref] for ref in snapshot["record_refs"]],
         "sources": catalog["sources"],
         "query_constants": h["query_constants"],
+        "assumptions": h.get("assumptions", {}),
         "unmet_obligations": h["unmet_obligations"],
     }
     binding_digest = hashlib.sha256(json.dumps(binding, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")).hexdigest()

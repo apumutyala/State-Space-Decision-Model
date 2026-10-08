@@ -48,14 +48,48 @@ class ConstantValue:
 
 
 @dataclass(frozen=True, slots=True)
+class AssumptionValue:
+    """A host-declared alternate value, never an authoritative Fact."""
+
+    assumption_ref: str
+    premise: Fact
+    value: str | int | bool | Decimal
+
+    @property
+    def interval(self) -> str:
+        return self.premise.interval
+
+    @property
+    def unit(self) -> str | None:
+        return self.premise.unit
+
+    @property
+    def quantity_kind(self) -> str:
+        return self.premise.quantity_kind
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"epistemic_class": "hypothesis", "assumption_ref": self.assumption_ref,
+                "premise": self.premise.to_dict(), "value": _json_value(self.value)}
+
+
+@dataclass(frozen=True, slots=True)
 class Comparison:
-    left: Fact | ConstantValue
-    right: Fact | ConstantValue
+    left: Fact | ConstantValue | AssumptionValue
+    right: Fact | ConstantValue | AssumptionValue
     relation: str
     interval: str
 
     def to_dict(self) -> dict[str, Any]:
         return {"left": self.left.to_dict(), "right": self.right.to_dict(), "relation": self.relation, "interval": self.interval}
+
+
+@dataclass(frozen=True, slots=True)
+class ConditionalContent:
+    assumption: AssumptionValue
+    conclusion: Comparison
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"assumption": self.assumption.to_dict(), "conclusion": self.conclusion.to_dict()}
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +105,7 @@ class AskContent:
 @dataclass(frozen=True, slots=True)
 class SpeechAct:
     kind: str
-    content: Fact | Comparison | AskContent | tuple[SpeechAct, ...] | SpeechAct
+    content: Fact | Comparison | ConditionalContent | AskContent | tuple[SpeechAct, ...] | SpeechAct
     dependencies: tuple[str, ...]
     derivation: tuple[int, ...]
 

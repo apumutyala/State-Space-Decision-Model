@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 
 from .kernel import validate_release
-from .types import AskContent, CheckResult, Comparison, ConstantValue, Fact, SpeechAct
+from .types import AssumptionValue, AskContent, CheckResult, Comparison, ConditionalContent, ConstantValue, Fact, SpeechAct
 
 
 def _quoted(value: str) -> str:
@@ -37,7 +37,9 @@ def _unit(unit: str | None) -> str:
     return "" if unit is None else " " + _quoted(unit)
 
 
-def _subject(item: Fact | ConstantValue) -> str:
+def _subject(item: Fact | ConstantValue | AssumptionValue) -> str:
+    if isinstance(item, AssumptionValue):
+        return _subject(item.premise)
     if isinstance(item, Fact):
         return f"{_quoted(item.predicate)} for {_quoted(item.subject)}"
     if isinstance(item, ConstantValue):
@@ -45,7 +47,9 @@ def _subject(item: Fact | ConstantValue) -> str:
     raise ValueError("invalid checked operand")
 
 
-def _operand_value(item: Fact | ConstantValue) -> str:
+def _operand_value(item: Fact | ConstantValue | AssumptionValue) -> str:
+    if isinstance(item, AssumptionValue):
+        return f"{_value(item.value)}{_unit(item.unit)}"
     if isinstance(item, Fact):
         return f"{_value(item.object)}{_unit(item.unit)}"
     if isinstance(item, ConstantValue):
@@ -73,6 +77,13 @@ def _speech(act: SpeechAct) -> str:
         raise ValueError("invalid checked speech act")
     if act.kind == "assert":
         return _assertion(act.content)
+    if act.kind == "hypothesize":
+        if not isinstance(act.content, ConditionalContent):
+            raise ValueError("invalid checked hypothesis")
+        assumption = act.content.assumption
+        conclusion = _assertion(act.content.conclusion)
+        return (f"If at {_quoted(assumption.interval)}, {_subject(assumption)} had value "
+                f"{_operand_value(assumption)}, then {conclusion[0].lower()}{conclusion[1:]}")
     if act.kind == "ask":
         if not isinstance(act.content, AskContent):
             raise ValueError("invalid checked ask")
