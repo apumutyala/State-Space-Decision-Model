@@ -87,3 +87,9 @@
 - Learned: neither NREL nor IEA currently exposes the study-to-shared-inventory crosswalk needed to count independent groups; L4 remains one qualified report-world.
 - Next: an independent read-only follow-up is trying to recover NREL/OpenEI's original wind export or supplement. A/B's current job status is still absent from shared state; the Windows host cannot start its Ubuntu-24.04 autor environment.
 - No values were imported and no held-out data, GPU or paid work was used.
+
+## 2026-10-08 ~17:16Z: agent-c wind source partial recovery
+- Did: found an accessible copy of Dolan & Heath 2012 with Table 1's study characteristics; it points to S1 Table S3 for per-publication emissions at each harmonization step. DOE Wind Vision 2015 Table J-2 supplies characteristics for later updates only. PR #224 now records these recovery paths at 6fd9dab.
+- Learned: Wiley S1 still returns 403, OpenEI app routes 503, and Wayback 429; these are current access failures, not proof the export is permanently absent. OEDI/NREL 171 remains aggregate quartiles.
+- Next: continue seeking S1 Table S3 or OpenEI export and deduplicate source families; no values imported and L4 remains unqualified.
+- No held-out data, GPU, or paid work was used.
