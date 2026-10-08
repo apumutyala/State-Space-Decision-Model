@@ -1,0 +1,203 @@
+{
+ "_comment": "DRAFT, NOT SUBMITTED. Mode fulldev_eval: an EVAL-ONLY run of a SAVED cell checkpoint on the FULL Index DEV slice (12,104 rows, edition 0.2.1; data/slices/dev-rows.jsonl.gz pinned by jobs/clef_baseline/data.sha256 = the comparators' file), no training. D1 = job-c7pq2 (artifact art-bm3e6, LoRA r64 + cache-fork head, 1,439 steps). Phases: setup, guard, checkpoint (shared loader jobs.m2_first_cell.checkpoint_loader: the artifact tar from $CKPT_URL = get_artifact art-bm3e6, sha256-pinned below), fulldev (fulldev_eval score --arm child: plan-only refusal pass, then every row through the served decider exactly as m2_gates stage index scores it; live rate guard; per-row resume from $CK/fulldev), optional parent_full (fulldev_parent_arm true: ALSO add phase_caps_minutes.parent_full 185 and max_duration_minutes +185), report (frozen scorer: results.jsonl, score.json, ece.json, latency, cost, full + 51-excluded). Over-length: every row read in full, max_input_tokens 65,536 > the longest row (47,509 RWKV7 tokens, fulldev_lengths_rwkv7.json). Expected minutes: full-DEV tokens 22,630,947 x D1's MEASURED child decide wall 1.037 s / 1k tokens (job-c7pq2 art-bm3e6 units-child-index.json: 2,000 ok subset rows in 3,680 s = 32.8 rows/min) = 391 min + 30 fixed (load + 150k lineage + temperature fit + plan pass; D1's evals phase spent ~25 min outside scoring) = 421; cap 550 holds a box 25 % slower (519 <= 0.95 x 550). Worst case = (60 + 2 x 612) x 0.0495 = $63.56 (costs.worst_case_usd); quoted 612 x 0.063 = $38.56; expected 443 run min = $21.93 billed / $27.91 at the quoted rate (+ build ~15 min). To evaluate another checkpoint (e.g. D3, template jrt-rwkv-g1-v2f): copy this file + the cell config to mode fulldev_eval_<x>, set the checkpoint block, readout_template and the cell config (= that run's cell.json config), and the data entry for its cell.json.",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "job": "m2-first-cell-fulldev-eval",
+ "status": "draft: not submitted; full-DEV score of D1 (job-c7pq2 art-bm3e6) for the paired vs-Clef claim",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 612,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 65.0,
+ "phase_caps_minutes": {
+  "setup": 25,
+  "guard": 5,
+  "checkpoint": 15,
+  "fulldev": 550,
+  "report": 10
+ },
+ "reserve_minutes": 7,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 10,
+  "guard": 2,
+  "checkpoint": 5,
+  "fulldev": 421,
+  "report": 5
+ },
+ "evals_fixed_minutes": {
+  "parent": 5,
+  "child": 30
+ },
+ "max_input_tokens": 65536,
+ "fulldev_parent_arm": false,
+ "readout_template": "jrt-rwkv-g1-v1",
+ "eval_only": "fulldev",
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (the runner requires them; fulldev pricing uses the rows below)",
+  "child_s_per_1k_tokens": 1.037,
+  "child_source": "job-c7pq2 art-bm3e6 x_evals/out/units-child-index.json: 2,000 ok rows, sum total_wall_ms 3,680.4 s over 3,523,267 plan tokens (fulldev_lengths_rwkv7.json) = 32.8 rows/min",
+  "parent_s_per_1k_tokens": 0.373,
+  "parent_source": "same artifact, out/parent_arm/units-index.json (job-uhxb5 seed): 1,315.7 s, 91.3 rows/min"
+ },
+ "parent": "rwkv7",
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval.json",
+ "train_set_pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "checkpoint": {
+  "_note": "job-c7pq2 (D1, m2_first_cell base @ 11fb140), artifact art-bm3e6 (tar of /output; agent-b B rescore downloaded the same sha a405907e). ckpt/latest.json + the .pt member hashed from the local download; cell.json = the run's out/cell.json (config == m2_first_cell_rwkv7.json). url_env: export CKPT_URL=<get_artifact art-bm3e6 presigned URL> into submit.json env at submit time (valid ~7 days; the object is kept ~30 days).",
+  "artifact": "art-bm3e6",
+  "job": "job-c7pq2",
+  "artifact_sha256": "a405907eb85f3b6bc25f287ef37066dcd192b0b2897e4ec45f336a6fe3580a18",
+  "member": "./ckpt/ckpt-step0001439.pt",
+  "ckpt_sha256": "43414f022ccfe2eb7d770957ae851f5450839457d5a41e9f7fb661b3f81cfd32",
+  "latest_json_sha256": "b7aab73095aa8009cd23eb0a5f80cc0d27aca06a71dc5ce354d9a6c8389517d4",
+  "cell_json_sha256": "dca234df8fa821d38d723a440589779f3ec50222228f94f9c75116871360a21c",
+  "url_env": "CKPT_URL"
+ },
+ "reference_results_sha256": {
+  "_note": "unused by this mode (the vs-Clef pairing lands locally: analysis/land_fulldev.py)",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only (full-DEV Index of a saved checkpoint); the vs-Clef paired CI is computed at landing (analysis/land_fulldev.py)",
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh fulldev_eval",
+  "env": {
+   "TOK_S": "3757",
+   "CALL_S": "0.117",
+   "CKPT_URL": "<get_artifact art-bm3e6 url: fill at submit>"
+  },
+  "key": "m2-first-cell-fulldev-eval",
+  "clock_lock": true,
+  "label": "fulldev_eval: D1 (job-c7pq2 art-bm3e6) on the full 12,104-row Index DEV, no training",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "as D1 (the rwkv7 image + code + PRIVATE data: records, DEV rows, the 150k set (the checkpoint's lineage check rebuilds its training items), the suite) minus the parent arm seed, plus the checkpoint's cell.json (pinned). The 3.5 GB checkpoint is NOT in the context (laptop RAM; launch.py builds the context in memory): the job fetches the artifact from $CKPT_URL and checks every byte (jobs.m2_first_cell.checkpoint_loader; the signed URL goes ONLY into submit.json env.CKPT_URL at submit time, never into git).",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+    "dest": "m2-150k/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.manifest.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.content.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/checkpoints/job-c7pq2/cell.json",
+    "dest": "checkpoint/cell.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_fulldev_eval.json",
+     "checkpoint",
+     "cell_json_sha256"
+    ]
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/sample-150000-seed20261006.pointer.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "jobs/rwkv7/snapshot.sha256",
+   "jobs/m2_first_cell/data.sha256",
+   "jobs/m2_first_cell/job_params_fulldev_eval.json",
+   "jobs/m2_first_cell/fulldev_lengths_rwkv7.json"
+  ]
+ },
+ "cohort_note": "no cohort role is scored; cohort v2 calibration is read for the temperature fit (as in D1's evals)",
+ "mode": "fulldev_eval"
+}
