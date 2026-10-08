@@ -1,0 +1,1029 @@
+{
+ "schema": "ssdm.rwkv-g1-v3-codes.v1",
+ "rule": "A..Z then AA..ZZ lexicographic minus decide.prompt_g1v3.WORDLIKE, kept when one token after \"ANSWER:\" (build_code_table); first 255",
+ "tokenizer_sha256": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+ "proof_context": "User: Choose.\n\nAssistant: <think></think>\nANSWER:",
+ "table_sha256": "29b33047b28bae5764cf9eb811ba69adfa94dd3c8c69279def6548cba2dc2309",
+ "codes": [
+  {
+   "code": "A",
+   "token_id": 300
+  },
+  {
+   "code": "B",
+   "token_id": 301
+  },
+  {
+   "code": "C",
+   "token_id": 302
+  },
+  {
+   "code": "D",
+   "token_id": 303
+  },
+  {
+   "code": "E",
+   "token_id": 304
+  },
+  {
+   "code": "F",
+   "token_id": 305
+  },
+  {
+   "code": "G",
+   "token_id": 306
+  },
+  {
+   "code": "H",
+   "token_id": 307
+  },
+  {
+   "code": "I",
+   "token_id": 308
+  },
+  {
+   "code": "J",
+   "token_id": 309
+  },
+  {
+   "code": "K",
+   "token_id": 310
+  },
+  {
+   "code": "L",
+   "token_id": 311
+  },
+  {
+   "code": "M",
+   "token_id": 312
+  },
+  {
+   "code": "N",
+   "token_id": 313
+  },
+  {
+   "code": "O",
+   "token_id": 314
+  },
+  {
+   "code": "P",
+   "token_id": 315
+  },
+  {
+   "code": "Q",
+   "token_id": 316
+  },
+  {
+   "code": "R",
+   "token_id": 317
+  },
+  {
+   "code": "S",
+   "token_id": 318
+  },
+  {
+   "code": "T",
+   "token_id": 319
+  },
+  {
+   "code": "U",
+   "token_id": 320
+  },
+  {
+   "code": "V",
+   "token_id": 321
+  },
+  {
+   "code": "W",
+   "token_id": 322
+  },
+  {
+   "code": "X",
+   "token_id": 323
+  },
+  {
+   "code": "Y",
+   "token_id": 324
+  },
+  {
+   "code": "Z",
+   "token_id": 325
+  },
+  {
+   "code": "AA",
+   "token_id": 3601
+  },
+  {
+   "code": "AB",
+   "token_id": 3602
+  },
+  {
+   "code": "AC",
+   "token_id": 3603
+  },
+  {
+   "code": "AE",
+   "token_id": 3605
+  },
+  {
+   "code": "AF",
+   "token_id": 3606
+  },
+  {
+   "code": "AG",
+   "token_id": 3607
+  },
+  {
+   "code": "AJ",
+   "token_id": 3610
+  },
+  {
+   "code": "AK",
+   "token_id": 3611
+  },
+  {
+   "code": "AL",
+   "token_id": 3612
+  },
+  {
+   "code": "AO",
+   "token_id": 3615
+  },
+  {
+   "code": "AP",
+   "token_id": 3616
+  },
+  {
+   "code": "AQ",
+   "token_id": 3617
+  },
+  {
+   "code": "AR",
+   "token_id": 3618
+  },
+  {
+   "code": "AU",
+   "token_id": 3621
+  },
+  {
+   "code": "AV",
+   "token_id": 3622
+  },
+  {
+   "code": "AZ",
+   "token_id": 3625
+  },
+  {
+   "code": "BA",
+   "token_id": 3649
+  },
+  {
+   "code": "BB",
+   "token_id": 3650
+  },
+  {
+   "code": "BC",
+   "token_id": 3651
+  },
+  {
+   "code": "BD",
+   "token_id": 3652
+  },
+  {
+   "code": "BF",
+   "token_id": 3654
+  },
+  {
+   "code": "BG",
+   "token_id": 3655
+  },
+  {
+   "code": "BH",
+   "token_id": 3656
+  },
+  {
+   "code": "BJ",
+   "token_id": 3658
+  },
+  {
+   "code": "BL",
+   "token_id": 3659
+  },
+  {
+   "code": "BM",
+   "token_id": 3660
+  },
+  {
+   "code": "BN",
+   "token_id": 3661
+  },
+  {
+   "code": "BP",
+   "token_id": 3663
+  },
+  {
+   "code": "BR",
+   "token_id": 3664
+  },
+  {
+   "code": "BS",
+   "token_id": 3665
+  },
+  {
+   "code": "BT",
+   "token_id": 3666
+  },
+  {
+   "code": "BU",
+   "token_id": 3667
+  },
+  {
+   "code": "BV",
+   "token_id": 3668
+  },
+  {
+   "code": "BW",
+   "token_id": 3669
+  },
+  {
+   "code": "CA",
+   "token_id": 3682
+  },
+  {
+   "code": "CB",
+   "token_id": 3683
+  },
+  {
+   "code": "CC",
+   "token_id": 3684
+  },
+  {
+   "code": "CD",
+   "token_id": 3685
+  },
+  {
+   "code": "CE",
+   "token_id": 3686
+  },
+  {
+   "code": "CF",
+   "token_id": 3687
+  },
+  {
+   "code": "CG",
+   "token_id": 3688
+  },
+  {
+   "code": "CH",
+   "token_id": 3689
+  },
+  {
+   "code": "CI",
+   "token_id": 3690
+  },
+  {
+   "code": "CJ",
+   "token_id": 3691
+  },
+  {
+   "code": "CK",
+   "token_id": 3692
+  },
+  {
+   "code": "CL",
+   "token_id": 3693
+  },
+  {
+   "code": "CM",
+   "token_id": 3694
+  },
+  {
+   "code": "CN",
+   "token_id": 3695
+  },
+  {
+   "code": "CO",
+   "token_id": 3696
+  },
+  {
+   "code": "CP",
+   "token_id": 3697
+  },
+  {
+   "code": "CR",
+   "token_id": 3698
+  },
+  {
+   "code": "CS",
+   "token_id": 3699
+  },
+  {
+   "code": "CT",
+   "token_id": 3700
+  },
+  {
+   "code": "CU",
+   "token_id": 3701
+  },
+  {
+   "code": "CV",
+   "token_id": 3702
+  },
+  {
+   "code": "CW",
+   "token_id": 3703
+  },
+  {
+   "code": "CX",
+   "token_id": 3704
+  },
+  {
+   "code": "CY",
+   "token_id": 3705
+  },
+  {
+   "code": "DB",
+   "token_id": 3722
+  },
+  {
+   "code": "DC",
+   "token_id": 3723
+  },
+  {
+   "code": "DD",
+   "token_id": 3724
+  },
+  {
+   "code": "DF",
+   "token_id": 3726
+  },
+  {
+   "code": "DG",
+   "token_id": 3727
+  },
+  {
+   "code": "DH",
+   "token_id": 3728
+  },
+  {
+   "code": "DI",
+   "token_id": 3729
+  },
+  {
+   "code": "DJ",
+   "token_id": 3730
+  },
+  {
+   "code": "DK",
+   "token_id": 3731
+  },
+  {
+   "code": "DL",
+   "token_id": 3732
+  },
+  {
+   "code": "DM",
+   "token_id": 3733
+  },
+  {
+   "code": "DN",
+   "token_id": 3734
+  },
+  {
+   "code": "DP",
+   "token_id": 3736
+  },
+  {
+   "code": "DR",
+   "token_id": 3737
+  },
+  {
+   "code": "DS",
+   "token_id": 3738
+  },
+  {
+   "code": "DT",
+   "token_id": 3739
+  },
+  {
+   "code": "DU",
+   "token_id": 3740
+  },
+  {
+   "code": "DV",
+   "token_id": 3741
+  },
+  {
+   "code": "DW",
+   "token_id": 3742
+  },
+  {
+   "code": "DX",
+   "token_id": 3743
+  },
+  {
+   "code": "EA",
+   "token_id": 3755
+  },
+  {
+   "code": "EB",
+   "token_id": 3756
+  },
+  {
+   "code": "EC",
+   "token_id": 3757
+  },
+  {
+   "code": "ED",
+   "token_id": 3758
+  },
+  {
+   "code": "EE",
+   "token_id": 3759
+  },
+  {
+   "code": "EF",
+   "token_id": 3760
+  },
+  {
+   "code": "EG",
+   "token_id": 3761
+  },
+  {
+   "code": "EO",
+   "token_id": 3766
+  },
+  {
+   "code": "EP",
+   "token_id": 3767
+  },
+  {
+   "code": "EQ",
+   "token_id": 3768
+  },
+  {
+   "code": "ET",
+   "token_id": 3771
+  },
+  {
+   "code": "EV",
+   "token_id": 3773
+  },
+  {
+   "code": "EW",
+   "token_id": 3774
+  },
+  {
+   "code": "FB",
+   "token_id": 3797
+  },
+  {
+   "code": "FC",
+   "token_id": 3798
+  },
+  {
+   "code": "FD",
+   "token_id": 3799
+  },
+  {
+   "code": "FE",
+   "token_id": 3800
+  },
+  {
+   "code": "FF",
+   "token_id": 3801
+  },
+  {
+   "code": "FG",
+   "token_id": 3802
+  },
+  {
+   "code": "FH",
+   "token_id": 3803
+  },
+  {
+   "code": "FI",
+   "token_id": 3804
+  },
+  {
+   "code": "FK",
+   "token_id": 3805
+  },
+  {
+   "code": "FL",
+   "token_id": 3806
+  },
+  {
+   "code": "FM",
+   "token_id": 3807
+  },
+  {
+   "code": "FN",
+   "token_id": 3808
+  },
+  {
+   "code": "FO",
+   "token_id": 3809
+  },
+  {
+   "code": "FP",
+   "token_id": 3810
+  },
+  {
+   "code": "FR",
+   "token_id": 3811
+  },
+  {
+   "code": "FS",
+   "token_id": 3812
+  },
+  {
+   "code": "FT",
+   "token_id": 3813
+  },
+  {
+   "code": "FW",
+   "token_id": 3814
+  },
+  {
+   "code": "FX",
+   "token_id": 3815
+  },
+  {
+   "code": "FY",
+   "token_id": 3816
+  },
+  {
+   "code": "GA",
+   "token_id": 3825
+  },
+  {
+   "code": "GB",
+   "token_id": 3826
+  },
+  {
+   "code": "GC",
+   "token_id": 3827
+  },
+  {
+   "code": "GD",
+   "token_id": 3828
+  },
+  {
+   "code": "GE",
+   "token_id": 3829
+  },
+  {
+   "code": "GF",
+   "token_id": 3830
+  },
+  {
+   "code": "GG",
+   "token_id": 3831
+  },
+  {
+   "code": "GH",
+   "token_id": 3832
+  },
+  {
+   "code": "GI",
+   "token_id": 3833
+  },
+  {
+   "code": "GL",
+   "token_id": 3834
+  },
+  {
+   "code": "GM",
+   "token_id": 3835
+  },
+  {
+   "code": "GN",
+   "token_id": 3836
+  },
+  {
+   "code": "GP",
+   "token_id": 3838
+  },
+  {
+   "code": "GR",
+   "token_id": 3839
+  },
+  {
+   "code": "GS",
+   "token_id": 3840
+  },
+  {
+   "code": "GT",
+   "token_id": 3841
+  },
+  {
+   "code": "GU",
+   "token_id": 3842
+  },
+  {
+   "code": "GV",
+   "token_id": 3843
+  },
+  {
+   "code": "GW",
+   "token_id": 3844
+  },
+  {
+   "code": "HB",
+   "token_id": 3856
+  },
+  {
+   "code": "HC",
+   "token_id": 3857
+  },
+  {
+   "code": "HD",
+   "token_id": 3858
+  },
+  {
+   "code": "HF",
+   "token_id": 3860
+  },
+  {
+   "code": "HG",
+   "token_id": 3861
+  },
+  {
+   "code": "HH",
+   "token_id": 3862
+  },
+  {
+   "code": "HK",
+   "token_id": 3864
+  },
+  {
+   "code": "HL",
+   "token_id": 3865
+  },
+  {
+   "code": "HP",
+   "token_id": 3868
+  },
+  {
+   "code": "HQ",
+   "token_id": 3869
+  },
+  {
+   "code": "HS",
+   "token_id": 3871
+  },
+  {
+   "code": "HT",
+   "token_id": 3872
+  },
+  {
+   "code": "HU",
+   "token_id": 3873
+  },
+  {
+   "code": "HV",
+   "token_id": 3874
+  },
+  {
+   "code": "HW",
+   "token_id": 3875
+  },
+  {
+   "code": "HY",
+   "token_id": 3876
+  },
+  {
+   "code": "IA",
+   "token_id": 3885
+  },
+  {
+   "code": "IB",
+   "token_id": 3886
+  },
+  {
+   "code": "IC",
+   "token_id": 3887
+  },
+  {
+   "code": "IE",
+   "token_id": 3889
+  },
+  {
+   "code": "IG",
+   "token_id": 3891
+  },
+  {
+   "code": "II",
+   "token_id": 3892
+  },
+  {
+   "code": "IK",
+   "token_id": 3893
+  },
+  {
+   "code": "IL",
+   "token_id": 3894
+  },
+  {
+   "code": "IM",
+   "token_id": 3895
+  },
+  {
+   "code": "IP",
+   "token_id": 3898
+  },
+  {
+   "code": "IQ",
+   "token_id": 3899
+  },
+  {
+   "code": "IR",
+   "token_id": 3900
+  },
+  {
+   "code": "IU",
+   "token_id": 3903
+  },
+  {
+   "code": "IV",
+   "token_id": 3904
+  },
+  {
+   "code": "IX",
+   "token_id": 3905
+  },
+  {
+   "code": "JA",
+   "token_id": 3921
+  },
+  {
+   "code": "JC",
+   "token_id": 3922
+  },
+  {
+   "code": "JD",
+   "token_id": 3923
+  },
+  {
+   "code": "JE",
+   "token_id": 3924
+  },
+  {
+   "code": "JJ",
+   "token_id": 3925
+  },
+  {
+   "code": "JM",
+   "token_id": 3926
+  },
+  {
+   "code": "JP",
+   "token_id": 3928
+  },
+  {
+   "code": "JR",
+   "token_id": 3929
+  },
+  {
+   "code": "JS",
+   "token_id": 3930
+  },
+  {
+   "code": "JU",
+   "token_id": 3931
+  },
+  {
+   "code": "KB",
+   "token_id": 3939
+  },
+  {
+   "code": "KC",
+   "token_id": 3940
+  },
+  {
+   "code": "KD",
+   "token_id": 3941
+  },
+  {
+   "code": "KE",
+   "token_id": 3942
+  },
+  {
+   "code": "KG",
+   "token_id": 3943
+  },
+  {
+   "code": "KH",
+   "token_id": 3944
+  },
+  {
+   "code": "KK",
+   "token_id": 3945
+  },
+  {
+   "code": "KL",
+   "token_id": 3946
+  },
+  {
+   "code": "KM",
+   "token_id": 3947
+  },
+  {
+   "code": "KN",
+   "token_id": 3948
+  },
+  {
+   "code": "KO",
+   "token_id": 3949
+  },
+  {
+   "code": "KP",
+   "token_id": 3950
+  },
+  {
+   "code": "KR",
+   "token_id": 3951
+  },
+  {
+   "code": "KS",
+   "token_id": 3952
+  },
+  {
+   "code": "KT",
+   "token_id": 3953
+  },
+  {
+   "code": "KY",
+   "token_id": 3954
+  },
+  {
+   "code": "LB",
+   "token_id": 3967
+  },
+  {
+   "code": "LC",
+   "token_id": 3968
+  },
+  {
+   "code": "LD",
+   "token_id": 3969
+  },
+  {
+   "code": "LE",
+   "token_id": 3970
+  },
+  {
+   "code": "LF",
+   "token_id": 3971
+  },
+  {
+   "code": "LG",
+   "token_id": 3972
+  },
+  {
+   "code": "LH",
+   "token_id": 3973
+  },
+  {
+   "code": "LL",
+   "token_id": 3975
+  },
+  {
+   "code": "LM",
+   "token_id": 3976
+  },
+  {
+   "code": "LN",
+   "token_id": 3977
+  },
+  {
+   "code": "LP",
+   "token_id": 3979
+  },
+  {
+   "code": "LR",
+   "token_id": 3980
+  },
+  {
+   "code": "LS",
+   "token_id": 3981
+  },
+  {
+   "code": "LT",
+   "token_id": 3982
+  },
+  {
+   "code": "LU",
+   "token_id": 3983
+  },
+  {
+   "code": "LV",
+   "token_id": 3984
+  },
+  {
+   "code": "LW",
+   "token_id": 3985
+  },
+  {
+   "code": "LX",
+   "token_id": 3986
+  },
+  {
+   "code": "MB",
+   "token_id": 3997
+  },
+  {
+   "code": "MC",
+   "token_id": 3998
+  },
+  {
+   "code": "MD",
+   "token_id": 3999
+  },
+  {
+   "code": "MF",
+   "token_id": 4001
+  },
+  {
+   "code": "MG",
+   "token_id": 4002
+  },
+  {
+   "code": "MH",
+   "token_id": 4003
+  },
+  {
+   "code": "MJ",
+   "token_id": 4005
+  },
+  {
+   "code": "MK",
+   "token_id": 4006
+  },
+  {
+   "code": "ML",
+   "token_id": 4007
+  },
+  {
+   "code": "MM",
+   "token_id": 4008
+  },
+  {
+   "code": "MN",
+   "token_id": 4009
+  },
+  {
+   "code": "MP",
+   "token_id": 4011
+  },
+  {
+   "code": "MQ",
+   "token_id": 4012
+  },
+  {
+   "code": "MR",
+   "token_id": 4013
+  },
+  {
+   "code": "MS",
+   "token_id": 4014
+  },
+  {
+   "code": "MT",
+   "token_id": 4015
+  },
+  {
+   "code": "MV",
+   "token_id": 4017
+  },
+  {
+   "code": "MW",
+   "token_id": 4018
+  },
+  {
+   "code": "MX",
+   "token_id": 4019
+  },
+  {
+   "code": "NB",
+   "token_id": 4037
+  },
+  {
+   "code": "NC",
+   "token_id": 4038
+  },
+  {
+   "code": "ND",
+   "token_id": 4039
+  },
+  {
+   "code": "NF",
+   "token_id": 4041
+  },
+  {
+   "code": "NG",
+   "token_id": 4042
+  }
+ ]
+}

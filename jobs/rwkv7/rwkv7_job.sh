@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # jobs/rwkv7: the pre-registered fallback parent RWKV7-G1k-13.3B, run inside an SF Compute batch job (chip h100).
-# Spec: jobs/rwkv7/JOB_SPEC.md. Env: JOB=readout (stage A) | lora (stage B; submitted with depends_on stage A).
+# Spec: jobs/rwkv7/JOB_SPEC.md. Env: JOB=readout (stage A) | lora (stage B; submitted with depends_on stage A)
+#   | readout_g1v2 (C1: stock readout through the vendor-compliant jrt-rwkv-g1-v2 template; Index DEV subset only)
+#   | readout_g1v3 (R3: stock readout under v2, v2f, v3, v3w, v3r, v3p, v1, v3c in one process; one model load).
 #   readout: verify snapshot -> memory/prefill probe -> Index DEV subset (stock readout) -> score/ECE -> steer smoke
+#   readout_g1v2: verify snapshot -> Index DEV subset (family rwkv7-hf-g1-v2, live rate guard) -> score/ECE
+#   readout_g1v3: verify snapshot -> Index DEV subset x {v2, v2f, v3, v3w, v3r, v3p, v1, v3c} in one process
+#                 (jobs.rwkv7.readout_variants, live rate guard over all variants) -> score/ECE per variant (index/<variant>/score.json, ece.json)
 #   lora:    verify snapshot -> train.run_cell smoke (cache fork == recompute) -> T ladder -> LoRA pilot (resumable)
 # Exit codes: 0 measured + decided + exports verified   2 bad JOB   5 setup   6 export verification   7 phase timeout
 #   9 decision missing/invalid   10 snapshot / vendored code / DEV rows / records identity mismatch, or download failed
@@ -15,7 +20,9 @@ set -Euo pipefail
 MAIN_PID=$$
 CODE=/opt/ssdm/m1
 JOB=${JOB:-readout}
-case "$JOB" in readout|lora) ;; *) echo "JOB must be readout or lora"; exit 2 ;; esac
+case "$JOB" in readout|lora|readout_g1v2|readout_g1v3) ;; *) echo "JOB must be readout, readout_g1v2, readout_g1v3 or lora"; exit 2 ;; esac
+FAMILY=rwkv7-hf
+[ "$JOB" = readout_g1v2 ] && FAMILY=rwkv7-hf-g1-v2
 PARAMS=$CODE/jobs/rwkv7/job_params_$JOB.json
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -83,12 +90,44 @@ python -c "import sys, third_party.rwkv7_hf as V; V.verify_snapshot_code(sys.arg
 gate "setup" 0
 export_phase setup
 
-if [ "$JOB" = readout ]; then
-  CAP_PR=$(cap probe) && CAP_I=$(cap index) && CAP_SC=$(cap score) && CAP_ST=$(cap steer) || fail 5 "job_params"
+if [ "$JOB" = readout_g1v3 ]; then
+  CAP_I=$(cap index) && CAP_SC=$(cap score) || fail 5 "job_params"
+  SUBSET=jobs/common/dev_subset_m1.json
+  VARIANTS="v2 v2f v3 v3w v3r v3p v1 v3c"   # priority order: a cut-short run keeps the control and the highest-value arms
+  python -X utf8 -m jobs.common.dev_subset rows --rows /data/slices/dev-rows.jsonl.gz --out "$WORK/subset-rows.jsonl.gz" \
+    --subset "$SUBSET" > "$WORK/out/index/subset-rows.json" || fail 10 "subset rows"
+  NROWS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['rows'])" "$WORK/out/index/subset-rows.json")
+  say "phase index (variants $VARIANTS, DEV subset, one model load; live rate guard over all variants)"
+  python -m jobs.common.rate_guard run --results "$WORK/out/index/v*/results.jsonl" --total $(( $(echo $VARIANTS | wc -w) * NROWS )) --exclude-startup \
+    --cap-min "$CAP_I" --report "$WORK/out/index/rate.json" -- \
+    python -X utf8 -m jobs.rwkv7.readout_variants --model-dir "$SNAP" --rows "$WORK/subset-rows.jsonl.gz" \
+    --out-root "$WORK/out/index" --variants "$(echo $VARIANTS | tr ' ' ',')" > "$WORK/logs/index.log" 2>&1; r=$?
+  gate "index" $r; export_phase index
+  RI=$r
+
+  # score every variant whose results are complete, also after a stopped index phase (a cut-short run keeps its arms)
+  say "phase score (per complete variant)"
+  SC1=$(( CAP_SC / 16 ))   # the score phase cap covers 8 variants x (score + ece)
+  for v in $VARIANTS; do
+    n=$(python -c "import sys;print(sum(1 for _ in open(sys.argv[1],'rb')))" "$WORK/out/index/$v/results.jsonl" 2>/dev/null || echo 0)
+    [ "$n" -ge "$NROWS" ] || { say "variant $v incomplete ($n / $NROWS rows): not scored"; continue; }
+    timeout ${SC1}m python -X utf8 -m jobs.common.dev_subset score --results "$WORK/out/index/$v/results.jsonl" \
+      --subset "$SUBSET" > "$WORK/out/index/$v/score.json" || fail 13 "score $v"
+    timeout ${SC1}m python -X utf8 -m jobs.common.dev_subset ece --results "$WORK/out/index/$v/results.jsonl" \
+      --subset "$SUBSET" > "$WORK/out/index/$v/ece.json" || fail 13 "ece $v"
+  done
+  gate "score" 0; export_phase score
+  case $RI in 0) ;; 124) fail 7 "index timeout" ;; 15) fail 15 "index: measured rate too slow" ;; *) fail 12 "index rc=$RI" ;; esac
+  python scripts/decide_rwkv7.py "$JOB" "$WORK/out" "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1 \
+    || fail 9 "decision"
+elif [ "$JOB" = readout ] || [ "$JOB" = readout_g1v2 ]; then
+  CAP_I=$(cap index) && CAP_SC=$(cap score) || fail 5 "job_params"
   SUBSET=jobs/common/dev_subset_m1.json
   python -X utf8 -m jobs.common.dev_subset rows --rows /data/slices/dev-rows.jsonl.gz --out "$WORK/subset-rows.jsonl.gz" \
     --subset "$SUBSET" > "$WORK/out/index/subset-rows.json" || fail 10 "subset rows"
 
+  if [ "$JOB" = readout ]; then
+  CAP_PR=$(cap probe) && CAP_ST=$(cap steer) || fail 5 "job_params"
   say "phase probe (memory / prefill)"
   timeout ${CAP_PR}m python -m jobs.rwkv7.probe_rwkv7 --model-dir "$SNAP" --out "$WORK/out/probe.json" \
     > "$WORK/logs/probe.log" 2>&1; r=$?
@@ -108,10 +147,14 @@ if [ "$JOB" = readout ]; then
     --path fork --cap-min "$CAP_I" --out "$WORK/out/index/preflight.json" > "$WORK/logs/preflight.log" 2>&1; r=$?
   gate "index:preflight" $r
   [ $r -eq 0 ] || fail $r "readout projected past its cap from the measured prefill rate"
+  else
+  NROWS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['rows'])" "$WORK/out/index/subset-rows.json")
+  say "phase index (family $FAMILY, DEV subset; live rate guard only)"
+  fi
   python -m jobs.common.rate_guard run --results "$WORK/out/index/stock/results.jsonl" --total "$NROWS" \
     --cap-min "$CAP_I" --report "$WORK/out/index/rate.json" -- \
     python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
-    --option family=rwkv7-hf --option model_dir="$SNAP" \
+    --option family="$FAMILY" --option model_dir="$SNAP" \
     --rows "$WORK/subset-rows.jsonl.gz" --out "$WORK/out/index/stock" > "$WORK/logs/index.log" 2>&1; r=$?
   gate "index" $r; export_phase index
   case $r in 0) ;; 124) fail 7 "index timeout" ;; 15) fail 15 "index: measured rate too slow" ;; *) fail 12 "index rc=$r" ;; esac
@@ -123,13 +166,15 @@ if [ "$JOB" = readout ]; then
     --subset "$SUBSET" > "$WORK/out/index/ece.json" || fail 13 "ece"
   gate "score" 0
 
+  if [ "$JOB" = readout ]; then
   say "phase steer smoke (safety_eval dev split, decide path, no D1-B)"
   timeout ${CAP_ST}m python -X utf8 -m safety_eval.run_smoke --backend decide --family rwkv7-hf --model "$SNAP" \
     --device cuda --n-route 40 --n-pay 24 --out "$WORK/out/steer" > "$WORK/logs/steer.log" 2>&1; r=$?
   gate "steer" $r; export_phase steer
   case $r in 0) ;; 124) fail 7 "steer timeout" ;; *) fail 14 "steer rc=$r" ;; esac
 
-  python scripts/decide_rwkv7.py readout "$WORK/out" "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1 \
+  fi
+  python scripts/decide_rwkv7.py "$JOB" "$WORK/out" "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1 \
     || fail 9 "decision"
 else
   CAP_T=$(( $(cap smoke) + $(cap ladder) + $(cap train) )) || fail 5 "job_params"

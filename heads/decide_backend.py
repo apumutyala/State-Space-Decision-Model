@@ -47,6 +47,26 @@ from .layout import EncodeFn, LayoutRow, build_row
 from .model import DecisionModel
 
 
+def _template_identity(template: Template) -> dict[str, str]:
+    from decide.prompt import G1V2_ID
+
+    from decide.prompt_g1v3 import G1V2F_ID, G1V3W_ID
+
+    if template.id == G1V3W_ID:  # v3w: the R3 words readout's identity (decide.backends.rwkv_g1_v3 mode "words")
+        from decide.backends.rwkv_g1_v3 import renderer_identity as v3_identity
+
+        return v3_identity("words")
+    if template.id == G1V2F_ID:  # v2f: the fixed-instruction v2 renderer's identity (decide.backends.rwkv_g1_v3)
+        from decide.backends.rwkv_g1_v3 import renderer_identity as v3_identity
+
+        return v3_identity("v2f")
+    if template.id == G1V2_ID:  # D3 / R1: the C1 v2 renderer identity (head, tail, system, bos, codebook, canary)
+        from decide.backends.rwkv_g1_v2 import renderer_identity
+
+        return renderer_identity()
+    return template.identity()
+
+
 class DecisionModelBackend:
     name = "decision_head"
 
@@ -59,7 +79,9 @@ class DecisionModelBackend:
         self.g16_certify_k = g16_certify_k
         self.shared_prefix = shared_prefix
         self.encode = encode
-        self.template = TEMPLATES[template] if isinstance(template, str) else template
+        from .layout import resolve_template
+
+        self.template = resolve_template(template)
         self.layout = layout
         self.checkpoint = checkpoint or {}
         self._revision: dict[str, Any] | None = None
@@ -75,7 +97,7 @@ class DecisionModelBackend:
             "head": type(self.model.head).__name__,
             "backbone": backbone_identity(self.model.backbone),
             "encoder": enc() if callable(enc) else {"kind": "unidentified"},
-            "prompt_template": self.template.identity(),
+            "prompt_template": _template_identity(self.template),
             "layout": self.layout,
             "checkpoint": self.checkpoint,
             "adapter_version": versions.ADAPTER_VERSION,
