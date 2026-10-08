@@ -215,3 +215,5 @@ the installed fla. `train.run_cell` runs every ladder and training step under `h
 to "chunked" raises and the cell stops with exit 36 (also when training ran but no call went to fla). `cell.json`
 `"fla"` records the requested name, fla calls and fallbacks (process totals; smoke and eval cards are not strict, so a
 fallback there is counted, not fatal). The parent arm and child evals use the same cell `rwkv7_wkv` (identity).
+
+Mode `d1_fla` (D1fla; `job_params_d1_fla.json`, `m2_first_cell_rwkv7_d1_fla.json`): `d1_fast` with only `"rwkv7_wkv": "fla"` (job-9bs8w ADOPT, 1.46x step; fla setup and strict training above). Same clock, caps and schedule as `d1_fast`.
