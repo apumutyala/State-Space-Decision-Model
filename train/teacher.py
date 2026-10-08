@@ -261,6 +261,8 @@ def injected_record_ids(records: Iterable[dict] | None = None, ids: Iterable[str
     """Record ids of injection-augmented training rows: ``aug.injection`` set on the record, OR the id carries the
     ``~inj`` marker (the 150k set carries both on the same 12,115 rows; the union is the robust choice)."""
     out = {str(i) for i in ids if INJECTION_ID_MARKER in str(i)}
+    if isinstance(records, dict):  # train_set.draw returns {record id: record}
+        records = records.values()
     for rec in records or ():
         rid = str(rec.get("id"))
         if (rec.get("aug") or {}).get("injection") or INJECTION_ID_MARKER in rid:
