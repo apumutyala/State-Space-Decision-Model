@@ -68,8 +68,16 @@ def _check_stages(env: dict[str, Any], request: dict[str, Any], qid: str,
                   options: dict[str, str], expected_config: dict[str, Any]) -> tuple[dict[str, float], dict[str, Any]]:
     ids = set(options)
     config = env.get("served_config")
+    # Native FeatureTemperature identities contain a tuple of feature names;
+    # the same response over JSON contains a list. Pins are already normalized
+    # by _Session, so compare calibration as wire JSON values in both paths.
+    try:
+        calibration = (json.loads(json.dumps(config.get("calibration"), allow_nan=False))
+                       if isinstance(config, dict) else None)
+    except (TypeError, ValueError, OverflowError):
+        calibration = None
     if (not isinstance(config, dict) or set(config) != {"calibration", "temperature_per_question", "policy_masking"}
-            or config["calibration"] != expected_config["calibration"]
+            or calibration != expected_config["calibration"]
             or config["policy_masking"] != expected_config["policy_masking"]
             or not isinstance(config["temperature_per_question"], dict)
             or set(config["temperature_per_question"]) != {qid}):
@@ -80,7 +88,6 @@ def _check_stages(env: dict[str, Any], request: dict[str, Any], qid: str,
             raise PlannerFailure("provider_error", "served_config_mismatch")
     except OverflowError:
         raise PlannerFailure("provider_error", "served_config_mismatch") from None
-    calibration = config["calibration"]
     if isinstance(calibration, dict) and calibration.get("kind") == "option_count_temperature":
         try:
             t0, t1, t_min = (calibration[k] for k in ("t0", "t1", "t_min"))

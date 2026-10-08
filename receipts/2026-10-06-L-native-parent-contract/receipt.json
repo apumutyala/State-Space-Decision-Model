@@ -1,0 +1,59 @@
+{
+  "source_sha": "950cebeced6735113482ea62dcdf0d004de3bb9d",
+  "base_sha": "4733f785e5284ea959d4d640fff884136487bd05",
+  "historical_provenance": "source_sha, base_sha and tests.txt preserve the original pre-rebase CPU proof; they are not the current integration base.",
+  "rebase_validation": {
+    "base_sha": "24f164e9cfff1abe8f7eecef68a1771d357ca465",
+    "code_source_sha": "d455b28a1adbcac0ca9c1a29400b1170b6d5bb7f",
+    "tested_head_sha": "32b0d9ab9d6e60a6a85af10e172e30718c4eb3ea",
+    "working_tree_change_at_test": "one-line Track L STATUS.md update only; implementation and test files committed",
+    "checks": ["git diff --check", "same focused 41-test command and environment below"],
+    "exit_code": 0,
+    "tests_passed": 41,
+    "raw_log": "tests-rebased.txt",
+    "tests_sha256_lf": "b03180c05aed67a9a566aff426a072e82da5218152bb44d9b34e02302447495d"
+  },
+  "scope": "Tested L loader contract on a tiny synthetic CPU cache-fork + LoRA model. No PR #74 artifact is loaded and no language capability is claimed.",
+  "command": [
+    "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe",
+    "-m", "unittest",
+    "language_growth.tests.test_native_parent",
+    "language_growth.tests.test_planner",
+    "language_growth.tests.test_public_output",
+    "language_growth.tests.test_free_running_dev",
+    "-v"
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2"
+  },
+  "hardware": "Windows-11-10.0.26200-SP0 AMD64 CPU; two torch threads; every fixture parameter asserted on CPU",
+  "software": {"python": "3.12.13", "torch": "2.8.0+cu128"},
+  "cost_usd": 0,
+  "exit_code": 0,
+  "tests_passed": 41,
+  "fixture": {
+    "architecture": "tiny recurrent hidden=8 layers=1, FinalStateFork, cache fork, rank-2 LoRA",
+    "model_lora_head_seed": 17,
+    "training": "one CPU AdamW step at lr=0.01 on a short synthetic two-option choice",
+    "reload": "full state_dict strict=True, every tensor compared exactly; missing LoRA key refuses",
+    "artifact_storage": "temporary test directory, deleted after tests; deliberately unrelated to the unstable PR #74 format",
+    "calibration": "non-identity FeatureTemperature over synthetic content hashes, with serving disjointness proof",
+    "planner_data": "generate_development_tasks(19, 1, choice_format='production', split='development_validation'); only initial task + host + catalog enter planner",
+    "proof": "free-running native head reaches kernel; native and JSON transport produce the same program; every served temperature equals evidence-token formula; no capability score"
+  },
+  "binding": {
+    "file": "language_growth/native_parent.py",
+    "function": "load_native_parent(artifact, loader, pin=NativeParentPin(...))",
+    "pins": "artifact SHA256; complete served Decider revision; explicit calibration identity; fork_mode, shared_prefix and max_input_tokens",
+    "loader_contract": "loader(Path, artifact_sha256=verified_sha) -> LoadedNativeParent(DecisionModelBackend, explicit calibration, max_input_tokens)",
+    "artifact_revision_field": "DecisionModelBackend.checkpoint['artifact_sha256'] must equal verified artifact hash",
+    "loader_responsibility": "strict key/shape reconstruction of head, typed and LoRA state plus frozen-backbone lineage and encoder validation; no fallback; inference-only after binding",
+    "remaining_D_detail": "A merged, public strict reconstruction callable for the final RWKV7-13.3B LoRA + cache-fork artifact, returning this backend/calibration/context-limit object and its independent serving pins. L does not import train/m2_gates.py from PR #74 or assume its private reconstruction is stable."
+  },
+  "planner_fix": "FeatureTemperature identity uses tuple feature names in native Python and list names in JSON. Normalize calibration to JSON values before comparison with the already JSON-normalized planner pin.",
+  "tests_sha256_lf": "125e9a840eb6836ad673e606d074c3842b9ffd379546bec40e75bd6738a8fff3"
+}

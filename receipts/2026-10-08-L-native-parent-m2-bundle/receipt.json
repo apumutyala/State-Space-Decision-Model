@@ -1,0 +1,78 @@
+{
+  "schema": "ssdm.native_parent_m2_bundle_contract.v1",
+  "source_commit": "b09d9b21e1f0a8108fa250931c5e04b66f36639d",
+  "integration_base": "11fb140ce64802222d8abe796267e22e14fe4959",
+  "serving_export_merge": "9029d24a437224881161adf4e79c1c004b91abfb",
+  "interface_issue": "https://github.com/apumutyala/State-Space-Decision-Model/issues/185",
+  "command": "C:/Users/apumu/research/CHLabs/.venv-gpu/Scripts/python.exe -X utf8 -B -m pytest -q -p no:cacheprovider language_growth/tests/test_native_parent_m2_bundle.py tests/test_m2_serving_export.py language_growth/tests/test_planner.py tests/test_jobs_lint.py",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1"
+  },
+  "result": {
+    "passed": 122,
+    "new_metadata_bridge_cases": 24,
+    "merged_serving_export_cases": 6,
+    "scripted_planner_cases": 21,
+    "launch_lint_cases": 71,
+    "elapsed_seconds": 7.03,
+    "exit_code": 0,
+    "runs": 1
+  },
+  "hardware": "local Windows CPU; metadata-only Python stubs, no tensor construction or neural computation",
+  "test_inputs": "synthetic metadata strings/hashes and existing public scripted language fixtures only; temporary plain-text artifact hash fixture",
+  "data_split_hashes": "not applicable; no campaign data/splits accessed",
+  "seeds": "not applicable; no stochastic computation",
+  "raw_predictions": null,
+  "cost_usd": 0,
+  "weights_or_model_execution": false,
+  "gpu_work": false,
+  "provider_calls": false,
+  "index_or_heldout_access": false,
+  "network_note": "GitHub fetch/PR metadata only; no model downloads or compute-provider APIs",
+  "calibration_contract": "full FeatureTemperature.from_dict().assert_servable() payload; canonical JSON served identity plus exact payload comparison, including changes below identity rounding precision",
+  "runtime_contract": "five v1 runtime pins; backend_max_input_tokens None preserved without inferred cap",
+  "artifact_contract": "checkpoint.sha256 is primary and must equal bundle artifact_sha256 and pre/post local file hashes; optional checkpoint.artifact_sha256 alias must agree",
+  "strict_loader_contract": "mandatory caller-supplied reviewed strict callable; exceptions propagate; no default Trainer loader or fallback",
+  "dependencies": [
+    {
+      "pr": 144,
+      "state_at_review": "OPEN",
+      "needed_for": "Trainer-based strict production reconstruction, or independently reviewed strict equivalent"
+    },
+    {
+      "needed_for": "Track D reviewed native M2 reconstruction callable plus approved artifact/report pair; exporter supplies metadata only"
+    },
+    {
+      "needed_for": "D decision/safety/promotion qualification before real-parent serving or learned-language claims"
+    }
+  ],
+  "legacy_neural_tests": {
+    "file": "language_growth/tests/test_native_parent.py",
+    "v1_fixture_fields_updated": true,
+    "rerun": false,
+    "reason": "current task forbids model construction/weights/inference; historical receipts retained without claiming current strict-weight remeasurement"
+  },
+  "full_staged_suite_rerun": false,
+  "qualified_parent": false,
+  "language_capability_claim": false,
+  "source_sha256": {
+    "language_growth/native_parent.py": "8bb68c4356939bf43ae68d3c386dabbb68f130e27e3ab28058c9637fe45b1945",
+    "language_growth/NATIVE_PARENT.md": "ca5939df7c5fdc4ee614ea46cef0af69eea6c891fad2d560ecd55d7059977c6c",
+    "language_growth/planner.py": "9a9bb93cec45f7df6734a5734cff93d1fc1d2ae59109c31f6dfb183a1670229e",
+    "language_growth/tests/test_native_parent_m2_bundle.py": "dc94121b1a28ce76e7a6701c2a9046cdb658b6502aa04d252234e49681252080",
+    "language_growth/tests/test_native_parent.py": "122ace1d362db84533d17be0f33424fc14c0e95f94e16990e1c54cd9a6fbb039",
+    "train/lineage.py": "f3162f24272922a6eb2b5aa75d41e068d58fc5d78cc52aff27ecb50415c68925"
+  },
+  "tests_stdout_sha256": "c17d0b1a63424022e80114edd5d32f301b6ecec68d7bc1c8577ae76236fc1b40",
+  "tests_stdout_normalization": "CRLF converted to LF only",
+  "supersedes_pr": "https://github.com/apumutyala/State-Space-Decision-Model/pull/79",
+  "branch": "codex/l0-native-parent-m2-bundle",
+  "history": "Clean successor from agent-main@11fb140; scoped diff only, no rebased feature ancestry",
+  "original_snapshot": {
+    "sha": "7a6c85a79e97b717ddf74c1e956df1ebd8c1fac4",
+    "recovery_branch": "backup/l-native-parent-bridge-7a6c85a"
+  }
+}
