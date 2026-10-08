@@ -269,3 +269,17 @@ Caps 25 / 5 / 15 / 70 / 25 / 10 + 7 = 157 min. Expected: child 12.7 scoring + 30
 through `DecisionModelBackend.score`; none of the three is on that path, so the full-run estimate stays 421 min.
 (They also could not be switched on here: the loader requires the cell config to EQUAL the checkpoint's cell.json.)
 The measured gap that does matter: D1's child scores at 1.037 s / 1k tokens vs 0.373 for the stock parent (2.8x).
+
+## Params `"rows": "proxy600"`: screen a cell on the pre-declared 644-row Index proxy
+
+`jobs/common/dev_proxy600.json` (ids sha `7d42c398…85e6`, pinned in `jobs.common.dev_proxy.PROXIES`): a stratified
+subset of the 2,008-row m1 subset (all 38 benchmarks x length bins, whole source cases, allocation by Index weight,
+min 6 rows per benchmark, seed `proxy-v1`), chosen by leave-one-system-out over 15 scored systems
+(`analysis/proxy_validate.py`, receipt `receipts/2026-10-08-B-dev-proxy600/`). Base / training modes: `"rows":
+"proxy600"` makes `train.m2_gates --index-proxy proxy600` score the child's Index stage on the proxy rows only; the
+parent arm stays verified on the full subset (unchanged identity / seed pins) and is paired on the proxy rows. G12 is
+unchanged; g13 refuses a proxy. Mode `fulldev_eval` takes the same value (`--rows-select proxy600`). Measured on D1
+(job-c7pq2): the Index stage drops from 71.2 min (61.3 rows + 9.9 order diagnostic) to ~29.6 (26.0 + 3.7; 55 of the
+160 diagnostic rows), i.e. -41.6 min = -$2.06 batch / -$2.62 quoted per cell; the evals phase 178 -> ~136 min (the
+G12 stage, 82 min, and the 18 min fit + card are untouched). The preflight / reprice still price the full subset
+(an upper bound). A SCREEN: a winner gets the full subset + full DEV.

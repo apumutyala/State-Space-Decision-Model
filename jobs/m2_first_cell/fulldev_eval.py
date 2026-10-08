@@ -62,7 +62,7 @@ def overlength_ids() -> set[str]:
 
 SMOKE = ROOT / "jobs" / "m2_first_cell" / "fulldev_smoke_rows.json"
 SMOKE_SEED = "fulldev-smoke-v1"
-ROW_MODES = ("full", "smoke")
+ROW_MODES = ("full", "smoke", "proxy600")  # proxy600: jobs/common/dev_proxy600.json (jobs.common.dev_proxy, pinned)
 
 
 def ids_sha256(ids) -> str:
@@ -70,9 +70,15 @@ def ids_sha256(ids) -> str:
 
 
 def selected_ids(rows_mode: str) -> set[str] | None:
-    """None = every DEV row; ``smoke`` = the committed, pre-declared smoke slice (sha256 re-checked)."""
+    """None = every DEV row; ``smoke`` = the committed, pre-declared smoke slice (sha256 re-checked); ``proxy600`` =
+    the pre-declared ~600-row screening proxy of the 2,008 m1 subset (``jobs.common.dev_proxy``: ids sha pinned there,
+    DEV manifest + base subset re-checked)."""
     if rows_mode == "full":
         return None
+    if rows_mode == "proxy600":
+        from jobs.common.dev_proxy import proxy_ids
+
+        return proxy_ids("proxy600")
     if rows_mode != "smoke":
         raise ValueError(f"rows mode {rows_mode!r}: one of {ROW_MODES}")
     d = json.loads(SMOKE.read_text(encoding="utf-8"))
@@ -423,9 +429,12 @@ def report(a) -> dict:
     n = N_DEV if keep is None else len(keep)
     out: dict[str, Any] = {"schema": SCHEMA, "edition": EDITION, "rows_mode": mode, "rows": n, "arms": {},
                            "scorer": ("harness CLI (score / ece / compare --slice dev --edition 0.2.1)" if keep is None
-                                      else "SMOKE SUBSET: harness.score.decompose + harness.bootstrap + "
-                                           "harness.calibration in process on the pre-declared smoke rows (the CLI "
-                                           "scores whole slices only); a pipeline proof, not a capability estimate")}
+                                      else f"{'SMOKE' if mode == 'smoke' else 'PROXY'} SUBSET ({mode}): harness.score."
+                                           "decompose + harness.bootstrap + harness.calibration in process on the "
+                                           "pre-declared rows (the CLI scores whole slices only); "
+                                           + ("a pipeline proof, not a capability estimate" if mode == "smoke" else
+                                              "a cell SCREEN (jobs/common/dev_proxy.py); winners get the full subset "
+                                              "+ full DEV"))}
     for arm in arms:
         rp = d / f"{arm}.results.jsonl"
         res = [json.loads(x) for x in rp.read_text(encoding="utf-8").splitlines() if x.strip()]
@@ -557,7 +566,7 @@ def main(argv=None) -> int:
     s.add_argument("--guard-readiness")
     s.add_argument("--rows", required=True, help="the full DEV rows file (data/slices/dev-rows.jsonl.gz)")
     s.add_argument("--max-input-tokens", type=int, default=DEFAULT_MAX_INPUT_TOKENS)
-    s.add_argument("--rows-select", choices=ROW_MODES, default="full", help="full DEV, or the committed smoke slice")
+    s.add_argument("--rows-select", choices=ROW_MODES, default="full", help="full DEV, the committed smoke slice, or the proxy600 screen")
     s.add_argument("--resume-dir", required=True, help="per-row append log (checkpoint dir): a restart resumes")
     s.add_argument("--out-dir", required=True)
     s.add_argument("--progress", default=None)

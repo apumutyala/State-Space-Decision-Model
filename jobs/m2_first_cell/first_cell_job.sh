@@ -213,6 +213,17 @@ if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committe
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
 else
+# params "rows" (base / training modes): "subset" (default) = the child's Index stage on all 2,008 subset rows; "proxy600"
+# = a SCREEN on the pre-declared 644-row proxy (jobs/common/dev_proxy600.json, ids sha pinned in jobs.common.dev_proxy;
+# the parent arm stays verified on the full subset and is paired on the proxy rows). Winners get the full subset.
+IXROWS=$(python -c "import json,sys; print(json.load(open(sys.argv[1])).get('rows', 'subset'))" "$PARAMS") || fail 5 "job_params rows"
+INDEX_PROXY=()
+case $IXROWS in
+  subset) ;;
+  proxy600) python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index-proxy.json" || fail 10 "index proxy600 identity"
+            INDEX_PROXY=(--index-proxy proxy600) ;;
+  *) fail 5 "job_params rows $IXROWS: subset or proxy600" ;;
+esac
 FIX_P=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['parent'])" "$PARAMS") || fail 5 "job_params"
 FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['child'])" "$PARAMS") || fail 5 "job_params"
 # every eval phase is priced HERE from the measured rates, before the paid training phase
@@ -366,7 +377,7 @@ python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/pro
   timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" \
   --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" \
   --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --anchor-arm "$ARM" --anchor-arm-sha256 "$ARM_SHA" \
-  --index-rows "$WORK/index-rows.jsonl.gz" \
+  --index-rows "$WORK/index-rows.jsonl.gz" "${INDEX_PROXY[@]}" \
   --out "$WORK/out/report.json" --stage g12+index --progress-dir "$WORK/logs" > "$WORK/logs/evals.log" 2>&1; r=$?
 gate "evals" $r; export_phase evals
 # Trained + measured (the report is written; the checkpoint and every eval export follow), m2_gates (PR #102, Codex
