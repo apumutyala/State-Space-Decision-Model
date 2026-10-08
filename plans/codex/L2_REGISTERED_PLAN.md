@@ -4,10 +4,9 @@ Draft interface [#207](https://github.com/apumutyala/State-Space-Decision-Model/
 Stack base: `codex/l2-registered-hypothesis-20261008` at
 `f673ae3393bf69577edd31e77a1b81495082de06`, whose registered hypothetical
 comparison contract is [#205](https://github.com/apumutyala/State-Space-Decision-Model/issues/205).
-Canonical profiles are unchanged. Their sequencing still depends on the L1
-ExactDifference contract [#201](https://github.com/apumutyala/State-Space-Decision-Model/issues/201),
-then reviewed/merged hypothesis and Plan profiles. This slice itself needs
-fresh nonauthor review before merge; it authorizes no model or paid job.
+Canonical profile 0.1.4 follows merged ExactDifference 0.1.2 (#204) and
+registered hypotheses 0.1.3 (#206). Transport and program envelopes remain
+v0.1. This slice authorizes no model or paid job.
 
 One terminal node selects ordered references from a host-owned workflow:
 

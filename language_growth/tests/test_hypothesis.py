@@ -56,6 +56,16 @@ class HypothesisTests(unittest.TestCase):
         result = check_program(proposal, host, catalog)
         self.assertEqual((result.status, result.reason), ("rejected", "unsupported_assertion"))
 
+    def test_assumption_cannot_escape_through_exact_difference(self):
+        host, catalog, proposal = fixture()
+        catalog["registries"][host["registry_ref"]]["allowed_ops"].append("ExactDifference")
+        proposal["nodes"][-2]["op"] = "ExactDifference"
+        proposal["nodes"][-2].pop("relation")
+        proposal["nodes"][-1]["op"] = "Assert"
+        result = check_program(proposal, host, catalog)
+        self.assertEqual((result.status, result.reason), ("rejected", "unsupported_assertion"))
+        self.assertEqual(result.outputs, ())
+
     def test_false_conditional_conclusion_refuses(self):
         host, catalog, proposal = fixture()
         proposal["nodes"][-2]["relation"] = "greater_than"
