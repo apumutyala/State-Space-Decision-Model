@@ -1,0 +1,63 @@
+{
+  "schema": "ssdm.cpu8_cost_reconciliation.v2",
+  "recorded_at_utc": "2026-10-08T04:51:32Z",
+  "workspace": "default",
+  "usage_command": "autor --workspace default usage --json --month 2026-10",
+  "usage_source": "receipts/2026-10-08-D-cpu8-final-cost-reconciliation/usage-source.json",
+  "usage_source_sha256": "6a8200fbb3de334d0847145d48a73b261f9ccfb3498eb91724f6ab986e0bab44",
+  "billing_command": "autor --workspace default billing show --json",
+  "billing_source_sha256_external": "21cc1effb69aba5665539d90390b2a9b0befbd09ea81b8fc0e2c70513ca83b9c",
+  "reported_mtd_usd": "57.718762",
+  "cpu8_nodes": [
+    {
+      "name": "ssdm-codex-m2cpu8-20261007",
+      "chip": "cpu-8",
+      "minutes": "0.62",
+      "usd": "0.0048",
+      "usd_micros": 4800
+    },
+    {
+      "name": "ssdm-codex-m2cpu8-5dccdd70694b4e01a5ca958e9c827d32",
+      "chip": "cpu-8",
+      "minutes": "22.3",
+      "usd": "0.1792",
+      "usd_micros": 179200
+    },
+    {
+      "name": "ssdm-codex-m2cpu8-6e85ca870bd14292841b172d188b81a6",
+      "chip": "cpu-8",
+      "minutes": "0.2",
+      "usd": "0.0016",
+      "usd_micros": 1600
+    }
+  ],
+  "combined_cpu8_usage_usd": "0.1856",
+  "prior_first_two_cpu8_nodes_usd": "0.006400",
+  "third_run_final_metered_usd": "0.179200",
+  "previous_third_run_provisional_delta_usd": "0.179180",
+  "previous_third_run_metered_snapshot_usd": "0.156400",
+  "previous_discrepancy_now_reflected_in_final_usage": "0.022800",
+  "unsettled_cpu8_usage_remaining_usd": "0.000000",
+  "available_balance_usd": "467.281238",
+  "workspace_cap_usd": "200.000000",
+  "current_workspace_mtd_headroom_usd": "142.281238",
+  "promo_credit_expiry_utc": "2026-10-27T06:53:54.878914Z",
+  "storage_mtd_usd": "0.000000",
+  "storage_active_bytes": 1088087772,
+  "storage_free_tier_gb_per_month": 100,
+  "package_bytes": 498078038,
+  "known_previous_export_bytes": 92211200,
+  "expected_storage_after_known_package_and_previous_export_bytes": 1678377010,
+  "remaining_free_tier_bytes_after_known_package_and_previous_export": 98321622990,
+  "next_attempt_incremental_max_usd": "2.340000",
+  "revised_cumulative_exposure_usd": "2.525600",
+  "proposed_hard_cap_usd": "3.000000",
+  "proposed_cap_headroom_usd": "0.474400",
+  "active_nodes": 0,
+  "active_jobs": 0,
+  "live_rate_check": "not yet obtained; controller must stop before import/workload unless locked node rate <= 0.012 USD/min",
+  "live_preflight_authorizes_node": false,
+  "node_or_upload_started": false,
+  "model_or_training_started": false,
+  "billing_source_path_external": "ssdm-data/receipts/2026-10-08-D-cpu8-final-cost-reconciliation/billing.json"
+}
