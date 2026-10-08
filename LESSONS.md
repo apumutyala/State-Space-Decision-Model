@@ -392,3 +392,19 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: evidence-relative kernel soundness was being used as if it established task relevance.
 - **Check:** `language_growth/task_relevance.py` builds a bounded exact-grammar contract from `audience_state` before provider calls, then verifies the final checked speech-act and ordered host-resolved operands against a fresh exact task/state hash before public rendering. `language_growth/tests/test_public_output.py::test_kernel_valid_wrong_entity_or_field_is_not_released` checks kernel-valid mismatches; `language_growth/tests/test_task_relevance.py::test_every_development_template_has_an_exact_kernel_bound_contract` covers all fixed train/validation templates. Unsupported wording fails before provider use.
 - **Status:** ENFORCED for `public_answer` and the enumerated grammar only. This does not establish relevance for arbitrary natural language or for other direct renderer/library callers.
+
+### L-42 A direct node chunk upload failed before the CPU-8 suite and skipped its receipt
+- Date: 2026-10-07 (Issue #171).
+- Symptom: the first 26,208,694-byte agent-main bundle transfer announced seven parts of at most 4 MiB, then only `error: request failed`. No file completed and no test ran. The owned CPU-8 was stopped after 37 seconds with its disk intact.
+- Cost: $0.004958, recorded as the exact available-balance decrease; no model or H100 work ran. Receipt and all frozen source/package hashes: `receipts/2026-10-07-D-m2-cpu8-transfer-failure/`.
+- Root cause: likely the direct node chunk-upload path; the generic error does not establish a size limit. The controller's terminal receipt was below the failing upload command, so its early exit skipped accounting.
+- **Check:** `scripts/supervise_m2_cpu8.sh` stages only the nine hash-pinned files through private storage before creating a fresh owned node, then imports and checks remote hashes before the unchanged 145m/8610s test command. An EXIT trap records phase/current file/return code/node/stop result on every operational exit. Import failure has unknown remote outcome and stops the node without running tests. `tests/test_m2_cpu8_controller.py::ControllerTests` runs only a fake AUTOR and covers upload failure/no create, import failure/stop, exact successful command order, rate refusal, failed stop and workload failure/export without retries; `StaticTests::test_large_direct_node_copy_cannot_recur` rejects the direct node copy path.
+- **Status:** ENFORCED locally; revised transfer has not run against the provider and requires fresh exact-package review and live spend/free-storage preflight.
+
+### L-43 A remote checksum list must be checked against an independent pin
+- Date: 2026-10-08 (adversarial review of PR #181; caught before retry).
+- Symptom: remote verification ran `sha256sum -c package.sha256`, which trusts the imported checksum list. A modified list containing a valid subset could pass while omitting the pinned runner and other package files.
+- Cost: $0; caught before any package upload, node creation or validation retry.
+- Root cause: the package list was pinned and verified locally, but its identity was not rechecked at the remote import boundary before it selected which files to verify.
+- **Check:** `scripts/supervise_m2_cpu8.sh` now verifies remote `package.sha256` against the independently compiled `LIST_SHA` before using that list on payloads. `tests/test_m2_cpu8_controller.py::StaticTests::test_pinned_checksum_list_is_verified_before_payload_list` demonstrates that the prior subset-only check passes while the pinned-list check rejects it; `ControllerTests::test_remote_hash_list_failure_stops_before_workload` requires a failed remote gate to stop the owned node and skip workload registration.
+- **Status:** ENFORCED in the local controller; provider execution remains pending review and live preflight.
