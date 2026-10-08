@@ -91,6 +91,7 @@ AUTOR_CMD=("$AUTOR" --workspace "$WORKSPACE")
 # A fresh unpredictable name/prefix prevents cleanup targeting the stopped incident node.
 NODE="ssdm-codex-m2cpu8-$(python3 -c 'import uuid; print(uuid.uuid4().hex)')"
 PREFIX="m2-cpu8/$NODE"
+LIST_SHA=$(python3 "$JSON_HELPER" list-sha)
 printf '%s\n' "$BUCKET/$PREFIX" > "$OUT/storage-prefix.txt"
 PHASE=package_verify CURRENT_FILE=package.sha256
 python3 "$JSON_HELPER" package "$PKG" "$OUT/staging.json"
@@ -125,7 +126,7 @@ setup_transfer "${AUTOR_CMD[@]}" import "$NODE" --connection "storage/$BUCKET" -
   --dest "$REMOTE/input" --wait --json
 IMPORT_OUTCOME=completed
 PHASE=remote_hash CURRENT_FILE=package.sha256
-setup_bounded "${AUTOR_CMD[@]}" run "$NODE" -- bash -lc "cd '$REMOTE/input' && sha256sum -c package.sha256" > /dev/null
+setup_bounded "${AUTOR_CMD[@]}" run "$NODE" -- bash -lc "cd '$REMOTE/input' && printf '%s  package.sha256\\n' '$LIST_SHA' | sha256sum -c - && sha256sum -c package.sha256" > /dev/null
 python3 "$JSON_HELPER" verified "$OUT/staging.json"
 PHASE=park
 stop_node

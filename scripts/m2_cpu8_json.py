@@ -66,6 +66,8 @@ def main(args: list[str]) -> None:
     elif mode == "names":
         for item in load(args[0])["files"]:
             print(item["name"])
+    elif mode == "list-sha":
+        print(LIST_SHA)
     elif mode == "uploaded":
         path, name, key = args
         staged = load(path)

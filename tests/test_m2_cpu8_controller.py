@@ -51,7 +51,7 @@ elif a[0] == "logs":
 elif a[0] == "export":
     if scenario == "export_failure": sys.exit(35)
 elif a[0] == "run":
-    pass
+    if scenario == "remote_hash_failure" and "sha256sum -c -" in a[-1]: sys.exit(41)
 else:
     raise RuntimeError("unexpected command: " + repr(a))
 '''
@@ -159,6 +159,15 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(calls[-1][:2], ["node", "stop"])
         self.assertFalse(any(c[0] == "import" for c in calls))
 
+    def test_remote_hash_list_failure_stops_before_workload(self):
+        result, receipt, calls, staging = self.attempt("remote_hash_failure")
+        self.assertEqual(result.returncode, 41)
+        self.assertEqual(receipt["phase"], "remote_hash")
+        self.assertEqual(receipt["node_state"], "stopped")
+        self.assertFalse(staging["storage_verified"])
+        self.assertEqual(calls[-1][:2], ["node", "stop"])
+        self.assertFalse(any(c[0] == "logs" or "--on-wake" in c for c in calls))
+
     def test_workload_failure_exports_stops_without_retry(self):
         result, receipt, calls, _ = self.attempt("workload_failure")
         self.assertEqual(result.returncode, 34)
@@ -177,6 +186,30 @@ class ControllerTests(unittest.TestCase):
 
 
 class StaticTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform.startswith("linux"), "requires GNU sha256sum on WSL/Linux")
+    def test_pinned_checksum_list_is_verified_before_payload_list(self):
+        controller = (ROOT / "scripts/supervise_m2_cpu8.sh").read_text()
+        helper = (ROOT / "scripts/m2_cpu8_json.py").read_text()
+        self.assertIn('LIST_SHA=$(python3 "$JSON_HELPER" list-sha)', controller)
+        self.assertIn("printf '%s  package.sha256\\\\n' '$LIST_SHA' | sha256sum -c -", controller)
+        self.assertLess(controller.index("sha256sum -c -"), controller.index("sha256sum -c package.sha256"))
+        self.assertIn('elif mode == "list-sha":\n        print(LIST_SHA)', helper)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            payload = root / "run_m2_cpu8_tests.sh"
+            payload.write_text("changed runner\n")
+            digest = hashlib.sha256(payload.read_bytes()).hexdigest()
+            (root / "package.sha256").write_text(digest + "  run_m2_cpu8_tests.sh\n")
+            old_check = subprocess.run(["sha256sum", "-c", "package.sha256"], cwd=root,
+                                       capture_output=True, text=True)
+            self.assertEqual(old_check.returncode, 0)
+            pinned = subprocess.check_output([sys.executable, str(ROOT / "scripts/m2_cpu8_json.py"),
+                                              "list-sha"], text=True).strip()
+            command = f"printf '%s  package.sha256\\n' '{pinned}' | sha256sum -c - && sha256sum -c package.sha256"
+            new_check = subprocess.run(["bash", "-lc", command], cwd=root, capture_output=True, text=True)
+            self.assertNotEqual(new_check.returncode, 0)
+
     def test_large_direct_node_copy_cannot_recur(self):
         source = (ROOT / "scripts/supervise_m2_cpu8.sh").read_text()
         self.assertNotIn('"${AUTOR_CMD[@]}" cp', source)
