@@ -888,6 +888,7 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
          guard, backend, tr, bb, ft, card, index_frozen=None):
     from safety_eval.decide_bridge import DecideBridge
     from train.lineage import backbone_identity
+    from train.serving_export import export_serving_bundle
 
     return run_gates(stages=stages, cohort=cohort, spec=spec, child_decide=arm_decider.decide,
                           child_steer=DecideBridge(arm_decider),
@@ -903,6 +904,7 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
                           child_index_decide=decider.decide,
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),
+                                 "serving_bundle": export_serving_bundle(decider),
                                  "temperature": {**ft.identity(), "disjointness": ft.disjointness,
                                                  "proof_sha256": ft.proof_sha256, "fit_report": ft.fit_report},
                                  "card": {k: card.get(k) for k in ("step", "n_items", "raw", "tempered")},
