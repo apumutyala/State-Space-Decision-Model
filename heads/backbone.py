@@ -199,6 +199,10 @@ class HiddenStateBackbone(nn.Module):
         #: cache fork over several rows in ONE prefix call + ONE continuation call (``fork_features_rows``); set by
         #: ``train.trainer.prepare_model`` from ``TrainConfig.row_batch > 1``. Off = one prefix call per row (as before).
         self.batch_rows = False
+        #: optional prefix sub-groups for the NEXT ``fork_features_rows`` call (lists of row indices covering every row
+        #: once; ``train.trainer`` ``cont_plan="single"``): one prefix call per sub-group, then ONE continuation call
+        #: for all rows. None = one prefix call for all rows.
+        self.prefix_groups: list[list[int]] | None = None
         self._captured: torch.Tensor | None = None
         self._hook = None
         if capture != "hidden_states":
@@ -368,17 +372,32 @@ class HiddenStateBackbone(nn.Module):
         """
         m = self.model
         dev = self.device
-        ids, mask = pad_batch(prefixes, self.pad_id, device=dev)
         base: dict[str, Any] = {"use_cache": True, "output_hidden_states": True}
-        self._captured = None
-        out = m(input_ids=ids, attention_mask=mask.long(), **base)
-        cache = out.state
-        if cache is None:
-            raise RuntimeError("backbone returned no state for the cache fork")
-        hp = self._pick(out)
-        h = hp * mask.unsqueeze(-1).to(hp.dtype)  # zeros on padding, as the per-row path's F.pad
+        groups = self.prefix_groups or [list(range(len(prefixes)))]
+        if sorted(i for g in groups for i in g) != list(range(len(prefixes))):
+            raise ValueError("prefix_groups must cover every row exactly once")
+        t_max = max(len(p) for p in prefixes)
+        hs, caches = [], []
+        for g in groups:  # one prefix call per sub-group (its own right padding); states joined below
+            ids, mask = pad_batch([prefixes[i] for i in g], self.pad_id, device=dev)
+            self._captured = None
+            out = m(input_ids=ids, attention_mask=mask.long(), **base)
+            if out.state is None:
+                raise RuntimeError("backbone returned no state for the cache fork")
+            hp = self._pick(out)
+            hp = hp * mask.unsqueeze(-1).to(hp.dtype)  # zeros on padding, as the per-row path's F.pad
+            hs.append(torch.nn.functional.pad(hp, (0, 0, 0, t_max - hp.shape[1])))
+            caches.append(out.state)
+        cache = caches[0]
+        if len(caches) > 1:  # join the sub-groups' states along the batch axis (concatenation order = groups order)
+            for li, layer in enumerate(cache.layers):
+                for slot in range(layer.number_of_states):
+                    layer.recurrent_states[slot] = torch.cat([c.layers[li].recurrent_states[slot] for c in caches])
+        pos = torch.empty(len(prefixes), dtype=torch.long)  # row i -> its position in the joined batch
+        pos[torch.tensor([i for g in groups for i in g])] = torch.arange(len(prefixes))
+        h = torch.cat(hs)[pos.to(dev)] if len(groups) > 1 or groups[0] != list(range(len(prefixes))) else hs[0]
         ks = [len(c) for c in conts]
-        rep = torch.repeat_interleave(torch.arange(len(ks)), torch.tensor(ks)).to(dev)
+        rep = torch.repeat_interleave(pos, torch.tensor(ks)).to(dev)
         cache.batch_select_indices(rep)  # sum(K_i) state copies
         flat = [list(c) for cs in conts for c in cs]
         cids, cmask = pad_batch(flat, self.pad_id, device=dev)

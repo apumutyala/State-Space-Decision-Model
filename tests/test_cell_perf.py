@@ -257,6 +257,37 @@ def test_act_ckpt_refuses_non_rwkv7_backbones():
         act_ckpt.enable_block_checkpointing(tiny_backbone().model)
 
 
+def test_fork_features_rows_with_prefix_groups_equal_one_prefix_call():
+    bb = tiny_hf_backbone("rwkv7", seed=1, fork_mode="cache")
+    rows = [it.row for it in _items(1)[:5]]
+    args = ([r.ids for r in rows], [r.continuations for r in rows])
+    h, forks = bb.fork_features_rows(*args)
+    bb.prefix_groups = [[2, 0], [4], [1, 3]]
+    hg, fg = bb.fork_features_rows(*args)
+    assert hg.shape == h.shape and rel(hg, h) <= 1e-5
+    assert all(rel(a, b) <= 1e-5 for a, b in zip(fg, forks))
+    bb.prefix_groups = [[0, 1], [1, 2, 3, 4]]
+    with pytest.raises(ValueError, match="exactly once"):
+        bb.fork_features_rows(*args)
+
+
+def test_cont_plan_single_runs_one_continuation_call_per_step():
+    items = _items(1)
+    calls = {}
+    for plan in ("per_group", "single"):
+        tr = _trainer(items, row_batch=8, row_tokens=400, act_ckpt=True, cont_plan=plan)
+        m, n = tr.model.backbone.model, [0]
+        h = m.register_forward_pre_hook(lambda mod, a, k: n.__setitem__(0, n[0] + (k.get("state") is not None)),
+                                        with_kwargs=True)
+        tr.train_step()
+        h.remove()
+        calls[plan] = n[0]
+        assert tr.model.backbone.prefix_groups is None
+    assert calls["single"] == 1 < calls["per_group"]
+    with pytest.raises(ValueError, match="cont_plan"):
+        _trainer(items, row_batch=8, cont_plan="one")
+
+
 def test_fork_features_rows_equal_per_row_fork():
     bb = tiny_hf_backbone("rwkv7", seed=1, fork_mode="cache")
     rows = [it.row for it in _items(1)[:5]]
@@ -271,7 +302,10 @@ def test_fork_features_rows_equal_per_row_fork():
 
 @pytest.mark.parametrize("flags", [dict(row_batch=8), dict(row_batch=3), dict(row_batch=8, act_ckpt=True),
                                    dict(row_batch=8, row_tokens=400, act_ckpt=True),
-                                   dict(row_batch=8, row_tokens=400, act_ckpt=True, row_plan="min_cost")])
+                                   dict(row_batch=8, row_tokens=400, act_ckpt=True, row_plan="min_cost"),
+                                   dict(row_batch=8, row_tokens=400, act_ckpt=True, cont_plan="single"),
+                                   dict(row_batch=8, row_tokens=400, act_ckpt=True, row_plan="min_cost",
+                                        cont_plan="single")])
 def test_row_batch_equals_one_row_per_call(flags):
     items = _items()
     base = _step_grads(_trainer(items))

@@ -101,6 +101,11 @@ class TrainConfig:
     #: same row_batch / row_tokens caps, that minimises (groups x GROUP_COST_TOKENS + padded tokens). Same rows, same
     #: per-group loss weights, so the same step gradient up to float summation order.
     row_plan: str = "greedy"
+    #: with row_batch > 1: "per_group" = one prefix + one continuation call + one backward per group (as before);
+    #: "single" = the groups' prefix calls (same groups, same padding), their states joined, ONE continuation call for
+    #: all the step's rows and ONE backward of the step-mean loss. Same loss and gradient up to float summation order;
+    #: every group's checkpointed block inputs stay alive until the backward (more memory: the ladder decides).
+    cont_plan: str = "per_group"
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
 
     def to_json(self) -> dict:
@@ -116,7 +121,7 @@ class TrainConfig:
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
-    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan")
+    EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan")
 
     def hash(self) -> str:
         d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
@@ -131,7 +136,8 @@ def with_execution(cfg: TrainConfig, cell: dict) -> TrainConfig:
     import dataclasses
 
     return dataclasses.replace(cfg, act_ckpt=bool(cell.get("act_ckpt", False)), row_batch=int(cell.get("row_batch", 1)),
-                               row_tokens=int(cell.get("row_tokens", 0)), row_plan=str(cell.get("row_plan", "greedy")))
+                               row_tokens=int(cell.get("row_tokens", 0)), row_plan=str(cell.get("row_plan", "greedy")),
+                               cont_plan=str(cell.get("cont_plan", "per_group")))
 
 
 #: fixed cost of one group (prefix + continuation call, forward + recompute + backward) in padded-token equivalents:
@@ -249,6 +255,10 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
         raise ValueError(f"row_batch must be >= 1, got {cfg.row_batch}")
     if cfg.row_plan not in ("greedy", "min_cost"):
         raise ValueError(f"row_plan must be 'greedy' or 'min_cost', got {cfg.row_plan!r}")
+    if cfg.cont_plan not in ("per_group", "single"):
+        raise ValueError(f"cont_plan must be 'per_group' or 'single', got {cfg.cont_plan!r}")
+    if cfg.cont_plan == "single" and cfg.loss.order_consistency_weight:
+        raise ValueError("cont_plan='single' is not implemented for the order-consistency arm (views)")
     model.backbone.batch_rows = cfg.row_batch > 1
     return replaced
 
@@ -412,6 +422,13 @@ class Trainer:
             else:
                 plan = {"greedy": row_groups, "min_cost": row_groups_min_cost}[self.cfg.row_plan]
                 groups = plan([len(it.row.ids) for it in rows], self.cfg.row_batch, self.cfg.row_tokens)
+            if self.cfg.cont_plan == "single" and len(groups) > 1:
+                self.model.backbone.prefix_groups = groups
+                try:
+                    total += self._row_loss(rows, 1.0)
+                finally:
+                    self.model.backbone.prefix_groups = None
+                return self._finish_step(total)
             for g in groups:
                 total += self._row_loss([rows[j] for j in g], len(g) / n)
             return self._finish_step(total)
