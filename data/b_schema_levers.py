@@ -106,9 +106,13 @@ def _record(src: str, src_id: str, tag: str, family: str, license_: str, state, 
             "aug": {"b1_view": {"kind": tag, "parent_id": base, "base_id": base}, "lever": lever}}
 
 
+#: source items held out by cohort v2 / v3 (data.b1.exclusion_sets): never generated (the P3 checker would refuse them)
+BLOCKED: set[str] = set()
+
+
 def _take(reuse: collections.Counter, src: str, src_id: str) -> bool:
     k = f"m2:{src}:{src_id}"
-    if reuse[k] >= MAX_REUSE:
+    if k in BLOCKED or reuse[k] >= MAX_REUSE:
         return False
     reuse[k] += 1
     return True
@@ -257,7 +261,7 @@ def apibank_long(reuse, prov, log=print) -> list[dict]:
             stats["k_fit_below_17"] += 1
             continue
         if not _take(reuse, "b1fam_apibank", f"lv1-{i}"):
-            stats["item_reuse_cap"] += 1
+            stats["held_out_or_reuse_cap"] += 1
             continue
         per_dlg[dkey] += 1
         k = rng.randint(max(17, kfit // 2), kfit)
@@ -340,7 +344,7 @@ def mmlu_k10(rows_path: Path, reuse, prov, n_target: int, log=print) -> list[dic
             stats["too_few_distractors"] += 1
             continue
         if not _take(reuse, "mmlu_aux", str(i)):
-            stats["item_reuse_cap"] += 1
+            stats["held_out_or_reuse_cap"] += 1
             continue
         rng = random.Random(f"{SEED}|k10|{i}")
         opts = ch + pool[:need]
@@ -373,7 +377,7 @@ def boolq_yesno(rows_path: Path, reuse, prov, log=print) -> list[dict]:
     yes = sum(bool(r["answer"]) for r in rows)
     for i, r in enumerate(rows):
         if not _take(reuse, "boolq", str(i)):
-            stats["item_reuse_cap"] += 1
+            stats["held_out_or_reuse_cap"] += 1
             continue
         rng = random.Random(f"{SEED}|yn|{i}")
         crit = {"yes": "Yes.", "no": "No."}
@@ -390,7 +394,8 @@ def boolq_yesno(rows_path: Path, reuse, prov, log=print) -> list[dict]:
     stats["yes"] = sum(1 for x in out if next(iter(x["labels"].values())) == "yes")
     prov["boolq_yesno"] = {"file": "boolq/train-00000-of-00001.parquet (google/boolq)", "sha256": BOOLQ_SHA,
                            "split": "train", "n_rows": len(rows), "train_yes_rate": round(yes / len(rows), 4),
-                           "rule": "every train item once as a {yes, no} choice; label = the train answer (natural rate)",
+                           "rule": "every train item not held out by cohort v2/v3 once as a {yes, no} choice; label = the train answer (natural rate)",
+                           "yes_rate_of_built_rows": round(stats["yes"] / max(1, stats["records"]), 4),
                            "built": dict(stats)}
     log("boolq_yesno", dict(stats))
     return out
@@ -431,7 +436,7 @@ def clinc_k151(reuse, prov, n_target: int, log=print) -> list[dict]:
             break
         t, l, split = rows[i]
         if not _take(reuse, "clinc150", str(i)):
-            stats["item_reuse_cap"] += 1
+            stats["held_out_or_reuse_cap"] += 1
             continue
         rng = random.Random(f"{SEED}|k151|{i}")
         q = {"type": "choice", "instructions": rng.choice(INTENT_INSTR["intent_general"]), "criteria": dict(opts)}
@@ -462,7 +467,7 @@ def banking_k77(reuse, prov, n_target: int, d16: dict, log=print) -> list[dict]:
         if len(out) >= n_target:
             break
         if not _take(reuse, "banking77", str(i)):
-            stats["item_reuse_cap"] += 1
+            stats["held_out_or_reuse_cap"] += 1
             continue
         rng = random.Random(f"{SEED}|k77|{i}")
         q = {"type": "choice", "instructions": rng.choice(INTENT_INSTR["intent_banking"]), "criteria": dict(opts)}
@@ -520,6 +525,8 @@ def main(argv=None) -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     srcd = Path(a.src_dir)
+    from .b1 import exclusion_sets
+    BLOCKED.update(exclusion_sets()["items"])
     ps = parent_stats(Path(a.parent))
     reuse = ps["reuse"]
     prov: dict = {}
