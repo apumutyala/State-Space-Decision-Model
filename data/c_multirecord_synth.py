@@ -634,7 +634,7 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
     if len(commit) != 40:
         raise GenerationError("could not pin generator source commit")
-    data_root = Path(data_root or out.parents[1]).resolve()
+    data_root = Path(data_root or out.parent).resolve()
     try:
         # Confirm the external build is inside its declared data root, while writing a
         # repo-relative location like the B1 pointer contract expects.
