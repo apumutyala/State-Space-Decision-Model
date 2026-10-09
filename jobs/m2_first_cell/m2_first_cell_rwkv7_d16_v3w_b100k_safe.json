@@ -18,7 +18,7 @@
   1024,
   2048
  ],
- "n_train_records": 94790,
+ "n_train_records": 94786,
  "n_eval_records": 0,
  "min_train_items": 5000,
  "max_steps": 4500,
@@ -75,23 +75,25 @@
    "note": "attack_guard v2 (agent-main 1e647e0) pin of the same 5,201 ids (D16's v1 pin has the v1 templates_sha256 930863...)"
   },
   "doc_clean": {
-   "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+   "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
    "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set",
-   "index_sha256": "2c821e291c944b4e28cb0e74a5dabc3f7bc436fdd7f410fb199661318448594f",
-   "allowlist_sha256": "8a0bf416f2920af62be1ced98e54ea006f8580859d1c7234bed8676703f2c111",
+   "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+   "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
    "n_records": 100000,
-   "n_excluded": 10,
-   "n_kept": 99990,
-   "excluded_ids_sha256": "34a8b818fefebf603cb219ab9b125160ce4fd31d7e385c647ace2debe6d78c54",
+   "n_excluded": 14,
+   "n_kept": 99986,
+   "excluded_ids_sha256": "e277b794d365c2a3bfdd0a4576840c0a8612ae42e2534666b075d66d1b44850d",
    "per_source_fail": {
+    "anli": 2,
     "glaive_fc": 2,
-    "mmlu_aux": 1,
+    "hellaswag": 1,
+    "mmlu_aux": 2,
     "when2call": 7
    },
    "draw": "b1-draw100k-v2",
    "source": "data/manifests/doc_clean/b1-draw100k-v2.json",
-   "source_sha256": "ebde6aa3fadae92cc3384b513703ca4cf0c09b1a18fa6d0db4a0642fa76b0351",
-   "note": "adopted doc_overlap_guard policy (claude/b-doc-overlap-gate 1f64368, PR #235; index-pin key 218affe1..., index_sha256 2c821e29...): the 10 ids in the spec's excluded_ids leave the pool"
+   "source_sha256": "56f4eb5a6fe7619f005c4a6c565ac064108a787a7933d12b6dabdbeae81d2d96",
+   "note": "doc_overlap_guard 85b5af1 policy (claude/b-doc-overlap-gate, PR #235: template/boilerplate exclusions only for I/O units, allowlist own_sources, R >= 3 covered; index-pin key 0eaf8930..., index_sha256 af096960..., allowlist 556296cc...): the 14 ids in the spec's excluded_ids leave the pool (1 also in attack_clean: m2:when2call:14977~inj:d1a:fake_correction). Supersedes the 10-id pin ebde6aa3 (index 2c821e29)."
   }
  },
  "rwkv7_wkv": "chunked_lean",
@@ -121,5 +123,5 @@
  "best_ckpt": true,
  "collapse_guard": true,
  "anti_collapse_note": "train/trainer.py TrainConfig anti-collapse fields; each absent key = the old behaviour. lr_schedule and collapse_* are in the config hash; with collapse_guard on, dev_card_every/rows/seed are too (they set the accuracy-trigger timing and the rollback target); best_ckpt is operational. Each dev card scores a 200-row hash-stratified sample over every cohort-dev source (dev_card_seed; ids + sha256 in cell.json dev_card_sample; G12 reports paired.dev_remainder without them). Budget it inside max_minutes.",
- "n_train_records_note": "the whole cleaned pool: 100,000 - 5,201 attack_clean (v2) - 10 doc_clean (1 in both: m2:when2call:14977~inj:d1a:fake_correction) = 94,790 (CPU train.train_set.draw 2026-10-09: n_pool 94,790, n_drawn 94,790, drawn_ids_sha256 307739e8..., 0 doc ids drawn); draw refuses n_train_records > pool (exit 28). q9af_v2_v3w's 93,013 is the same rule under the superseded 1,801-row doc_clean pin (doc-overlap-gate d0cebef)."
+ "n_train_records_note": "the whole cleaned pool: 100,000 - 5,201 attack_clean (v2) - 14 doc_clean (85b5af1 policy, index af096960; 1 in both: m2:when2call:14977~inj:d1a:fake_correction) = 94,786 (CPU train.train_set.draw 2026-10-09: n_pool 94,786, n_drawn 94,786, drawn_ids_sha256 87935ba5..., doc fails 14 == pinned e277b794..., 0 doc ids drawn, attack hits 5,201 == pinned, 0 drawn; heldout gate rc 0); draw refuses n_train_records > pool (exit 28). Was 94,790 under the superseded 10-id pin (index 2c821e29). q9af_v2_v3w's 93,013 is the same rule under the superseded 1,801-row doc_clean pin (doc-overlap-gate d0cebef)."
 }
