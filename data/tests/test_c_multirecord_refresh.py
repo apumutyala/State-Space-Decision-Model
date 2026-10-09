@@ -7,8 +7,8 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from data.c_multirecord_refresh import FAMILY, NAMES, V1, V2, refresh
-from data.c_multirecord_subset import _sha
+from data.c_multirecord_refresh import FAMILY, NAMES, V1, V2, c_only, refresh
+from data.c_multirecord_subset import _rank, _sha
 from data.c_multirecord_synth import canonical, make_record
 from train.cohort import record_content_hash
 
@@ -35,7 +35,7 @@ def package(root, name, records):
 
 
 class CMultirecordRefreshTests(unittest.TestCase):
-    def fixtures(self, root, b_change=None, c_change=None):
+    def fixtures(self, root, b_change=None, c_change=None, census_change=None):
         retained = {"id": "toy-retained", "source": "toy_train", "family": "toy_mcq",
                     "state": "Unique train-only fixture", "questions": {"q": {"type": "choice", "criteria": {"a": "one", "b": "two"}}}, "labels": {"q": "a"}}
         b = [retained, make_record(51, 0), make_record(51, 1)]
@@ -57,10 +57,24 @@ class CMultirecordRefreshTests(unittest.TestCase):
         c_summary, c_summary_pin = write_json(root / "c-summary.json", {"schema": "ssdm.c_multirecord_subset.v1", "pointer": cp,
             "pointer_sha256": cpin, "records": len(c), "record_bytes_preserved": True, "generator_spec_check_passed": True,
             "reused_token_bounds": {"source_token_limits": {"layout": "symmetric", "template": "jrt-rwkv-g1-v1", "max_tokens": 2048}}})
+        census = [{"id": record["id"], "v2f": 500, "v3w": 600} for record in c]
+        if census_change:
+            census_change(census)
+        census_path = root / "census.jsonl.gz"
+        census_path.write_bytes(gzip.compress(b"".join(canonical(row) + b"\n" for row in census), mtime=0))
+        census_summary, census_pin = write_json(root / "census-summary.json", {
+            "schema": "ssdm.c_multirecord_trainer_census.v1", "records": len(c), "source_pointer_sha256": cpin,
+            "source_records_sha256": cp["records_uncompressed_sha256"], "layout": "g1v2",
+            "length_scope": "prompt plus longest continuation", "lengths": {name: {"n": len(c)} for name in ("v2f", "v3w")},
+            "census_compressed_sha256": _sha(census_path.read_bytes()), "trainer_commit": "a" * 40})
         args = dict(b_source=bdir, b_pointer=bpath, b_pointer_sha256=bpin, b_report=b_report, b_report_sha256=b_report_pin,
                     b_exclusion=b_exclusion, b_exclusion_sha256=b_exclusion_pin, c_source=cdir, c_pointer=cpath, c_pointer_sha256=cpin,
-                    c_summary=c_summary, c_summary_sha256=c_summary_pin, quota=2, expected_records=len(b), seed=91, data_root=root)
+                    c_summary=c_summary, c_summary_sha256=c_summary_pin, c_census_summary=census_summary,
+                    c_census_summary_sha256=census_pin, quota=2, expected_records=len(b), seed=91, data_root=root)
         return args, bblobs, cblobs
+
+    def only_args(self, args):
+        return {key: value for key, value in args.items() if not key.startswith("b_") and key != "expected_records"}
 
     def test_refresh_preserves_all_non_c_record_and_sidecar_bytes_and_exact_quota(self):
         with TemporaryDirectory() as temp:
@@ -134,6 +148,87 @@ class CMultirecordRefreshTests(unittest.TestCase):
             self.assertEqual(calls[0], 2)
             self.assertFalse((root / "out/train_set/pointer.json").exists())
             self.assertFalse((root / "out/summary.json").exists())
+
+    def test_nli4ct_quarantine_refuses_before_any_record_read(self):
+        import data.c_multirecord_refresh as module
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            args, _, _ = self.fixtures(root)
+            path = Path(args["b_report"])
+            report = json.loads(path.read_bytes())
+            report["select"]["by_source"]["nli4ct"] = 1
+            _, args["b_report_sha256"] = write_json(path, report)
+            with patch.object(module, "_triples", side_effect=AssertionError("quarantine read record bytes")), \
+                 self.assertRaisesRegex(ValueError, "quarantined B mix"):
+                refresh(**args, out=root / "out")
+            self.assertFalse((root / "out").exists())
+
+    def test_known_quarantined_pointer_refuses_before_report_or_record_read(self):
+        import data.c_multirecord_refresh as module
+        self.assertIn("10206b05e976bd0a043653233abd95f77575c4ddaed6b1f309a1dc97be935895", module.QUARANTINED_B_POINTERS)
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            args, _, _ = self.fixtures(root)
+            # Once pointer bytes validate, deny even a missing/misleading report.
+            args["b_report"] = root / "must-not-open.json"
+            with patch.object(module, "QUARANTINED_B_POINTERS", {args["b_pointer_sha256"]}), \
+                 patch.object(module, "_triples", side_effect=AssertionError("quarantine read record bytes")), \
+                 self.assertRaisesRegex(ValueError, "quarantined B pointer"):
+                refresh(**args, out=root / "out")
+            self.assertFalse((root / "out").exists())
+
+    def test_c_only_selects_eligible_whole_records_and_never_reads_b(self):
+        import data.c_multirecord_refresh as module
+        rejected = set()
+        def overlength(rows):
+            lowest = sorted(rows, key=lambda row: _rank(91, "refresh-c", row["id"]))[:2]
+            lowest[0]["v3w"] = 2049
+            lowest[1]["v2f"] = 2049
+            rejected.update(row["id"] for row in lowest)
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            args, _, c = self.fixtures(root, census_change=overlength)
+            original = module._triples
+            def only_c(directory, pointer):
+                self.assertEqual(Path(directory), Path(args["c_source"]))
+                yield from original(directory, pointer)
+            with patch.object(module, "_triples", only_c):
+                result = c_only(**self.only_args(args), out=root / "out")
+            output = gzip.decompress((root / "out/train_set/records.jsonl.gz").read_bytes())
+            records = [json.loads(line) for line in output.splitlines()]
+            self.assertEqual(len(records), 2)
+            self.assertTrue(all(row["id"] not in rejected and len(row["questions"]) == 7 for row in records))
+            self.assertTrue(all(line in c["records"].splitlines(keepends=True) for line in output.splitlines(keepends=True)))
+            self.assertEqual((result["eligible_records"], result["excluded_records"]), (3, 2))
+            self.assertEqual(result["token_bounds"]["selected_max_effective_tokens"], {"v2f": 500, "v3w": 600})
+            self.assertFalse(result["b_inputs_read"])
+
+    def test_missing_duplicate_invalid_or_mismatched_census_fails_without_output(self):
+        changes = (lambda rows: rows.pop(), lambda rows: rows.__setitem__(1, dict(rows[0])),
+                   lambda rows: rows[0].__setitem__("id", "unknown-source-id"),
+                   lambda rows: rows[0].__setitem__("v3w", True),
+                   lambda rows: rows[0].__setitem__("error", "failed item"))
+        for change in changes:
+            with self.subTest(change=change), TemporaryDirectory() as temp:
+                root = Path(temp)
+                args, _, _ = self.fixtures(root, census_change=change)
+                with self.assertRaises(ValueError):
+                    c_only(**self.only_args(args), out=root / "out")
+                self.assertFalse((root / "out").exists())
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            args, _, _ = self.fixtures(root)
+            (root / "census.jsonl.gz").write_bytes(gzip.compress(b"{}\n"))
+            with self.assertRaisesRegex(ValueError, "compressed byte pin"):
+                c_only(**self.only_args(args), out=root / "out")
+
+    def test_c_only_capacity_failure_does_not_fill_with_overlength_records(self):
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            args, _, _ = self.fixtures(root, census_change=lambda rows: [row.__setitem__("v3w", 2049) for row in rows[:4]])
+            with self.assertRaisesRegex(ValueError, "1 eligible, 2 required"):
+                c_only(**self.only_args(args), out=root / "out")
+            self.assertFalse((root / "out").exists())
 
 
 if __name__ == "__main__":
