@@ -1,0 +1,42 @@
+{
+ "test_env": {"transformers": "5.17.0", "with": [], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"}, {"reason": "SSDM_RWKV7_TOKDIR", "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"}, {"reason": "fla not installed here", "why": "this job's image pins no fla, so the fla source-mirror test has nothing to mirror"}], "image": "jobs/rwkv7/Dockerfile"},
+ "_comment": "jobs/rwkv7 JOB=readout_g1v2 (C1): stock RWKV7-G1k-13.3B on the 2,008-row Index DEV subset through the vendor-compliant jrt-rwkv-g1-v2 template (family rwkv7-hf-g1-v2; research-notes RWKV7_GAP_LEVERS.md F1-F5). No probe, no steer smoke; the live rate guard stops a slow box. Compare with job-tkfaj 24.85 [22.35, 27.71] (jrt-rwkv-g1-v1). Worst case (60 + 2 x 115) x 0.0495 = $14.36.",
+ "job": "rwkv7-readout-g1v2",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only: the C1 subset Index score with CI is recorded in CANDIDATES.md next to job-tkfaj; no pass/fail gate",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 115,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 15.0,
+ "reserve_minutes": 10,
+ "phase_caps_minutes": {"setup": 20, "index": 80, "score": 5},
+ "expected_minutes": {"build": 15, "setup": 12, "index": 25, "score": 2},
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "model_bytes": 26540800536,
+ "dev_subset": "jobs/common/dev_subset_m1.json",
+ "mission": "track-d-rwkv7-c1-format",
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/rwkv7/rwkv7_job.sh",
+  "env": {"JOB": "readout_g1v2", "PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1", "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"},
+  "key": "track-d-rwkv7-readout-g1v2",
+  "label": "rwkv7 C1: stock readout, jrt-rwkv-g1-v2 vendor format, Index DEV subset",
+  "checks": {
+   "success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/RWKV7_READOUT_G1V2_DONE"},
+                                    {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+   "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 600, "grace_period_s": 1800,
+              "fail_threshold": 2, "on_fail": "kill"}
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "manifest_files": ["jobs/rwkv7/snapshot.sha256", "jobs/common/dev_subset_m1.json", "jobs/clef_baseline/data.sha256"],
+  "data": [{"src": "slices/dev-rows.jsonl.gz", "dest": "slices/dev-rows.jsonl.gz", "pin": "jobs/clef_baseline/data.sha256"}]
+ }
+}

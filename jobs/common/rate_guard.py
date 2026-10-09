@@ -65,11 +65,20 @@ def project(rows_done: int, elapsed_s: float, total: int, startup_s: float = 0.0
 
 
 def _rows(path: Path) -> int:
-    try:
-        with open(path, "rb") as f:
-            return sum(1 for _ in f)
-    except FileNotFoundError:
-        return 0
+    """Rows written so far. ``path`` may list several results files separated by commas, each possibly a glob
+    (jobs/rwkv7 JOB=readout_g1v3 runs its variants one after another in one process and watches
+    ``index/v*/results.jsonl``; --total is then the sum of their rows)."""
+    import glob
+
+    total = 0
+    for part in str(path).split(","):
+        for f in (sorted(glob.glob(part)) if any(ch in part for ch in "*?[") else [part]):
+            try:
+                with open(f, "rb") as fh:
+                    total += sum(1 for _ in fh)
+            except FileNotFoundError:
+                pass
+    return total
 
 
 def run(cmd: list[str], results: Path, total: int, cap_min: float, check_after_min: float = CHECK_AFTER_MIN,
@@ -231,7 +240,7 @@ def main(argv=None):
     p.add_argument("--cap-min", type=float, required=True)
     p.add_argument("--out", default=None)
     r = sub.add_parser("run")
-    r.add_argument("--results", required=True)
+    r.add_argument("--results", required=True, help="results.jsonl (or several, comma-separated)")
     r.add_argument("--total", type=int, required=True)
     r.add_argument("--cap-min", type=float, required=True)
     r.add_argument("--check-after-min", type=float, default=CHECK_AFTER_MIN)
