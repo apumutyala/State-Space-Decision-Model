@@ -862,7 +862,8 @@ def candidate_lines(work: Path, meta: dict) -> Iterator[str]:
         yield from read_gz(work / "candidates-extra.jsonl.gz")
 
 
-def append_extra(work: Path, extra_pool: str, extra_pointer: str, quota: int, log=print) -> dict:
+def append_extra(work: Path, extra_pool: str, extra_pointer: str, quota: int, log=print,
+                 limit: int | None = None) -> dict:
     """P3 after the fact: Agent C's pointer-pinned draw, checked against every candidate already built (exact content,
     key-free near-duplicates across items) plus all the per-row checks, written to ``candidates-extra.jsonl.gz``
     (unchanged records, ``aug.schema_synth.pool = "P3"``); the select stage then takes ``quota`` rows of it."""
@@ -894,6 +895,8 @@ def append_extra(work: Path, extra_pool: str, extra_pointer: str, quota: int, lo
     n = 0
     with gz_text(out_path) as out:
         for line in read_gz(Path(extra_pool) / "records.jsonl.gz"):
+            if limit and n >= limit:  # the pool's own (seeded) order; only what can be drawn is token-checked
+                break
             r = json.loads(line)
             its = root_items(r)
             if any(reuse[i] >= MAX_REUSE for i in its):
@@ -904,6 +907,7 @@ def append_extra(work: Path, extra_pool: str, extra_pointer: str, quota: int, lo
                 out.write(canonical(r) + "\n")
                 reuse.update(its)
                 n += 1
+    ident["limit"] = limit
     ident["n_candidates"] = n
     ident["reasons"] = {k: dict(v) for k, v in chk.reasons.items()}
     ident["candidates_extra_uncompressed_sha256"] = uncompressed_sha256(out_path)
@@ -1051,7 +1055,7 @@ def plan_items_v2(weights: dict, kstats: dict, avail: dict, n_records: int, log=
     return q, plan
 
 
-def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict:
+def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_quota: int | None = None) -> dict:
     """Candidates + token lengths -> the n-row draw (per-source targets, fewest-variants-first, reuse cap)."""
     from train.cohort import record_content_hash
     from train.train_set import uncompressed_sha256
@@ -1125,7 +1129,7 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
     if meta.get("extra_quota"):
         quota["P3:extra"] = meta["extra_quota"]
     elif meta.get("extra_appended"):
-        quota["P3:extra"] = meta["extra_appended"]["quota"]
+        quota["P3:extra"] = extra_quota if extra_quota is not None else meta["extra_appended"]["quota"]
         n_synth = n - quota["P3:extra"]
         quota.update({s: round(n_synth * c / tot) for s, c in weights.items()})
     # sources that cannot fill their quota spill to the others in proportion
@@ -1327,6 +1331,7 @@ def main(argv=None) -> int:
     ap.add_argument("--extra-pool", default=None, help="Agent C's draw dir (records.jsonl.gz + manifest + content)")
     ap.add_argument("--extra-pointer", default=None)
     ap.add_argument("--extra-quota", type=int, default=0)
+    ap.add_argument("--extra-limit", type=int, default=None, help="extra stage: accept at most this many P3 rows")
     ap.add_argument("--receipt", default=None)
     ap.add_argument("--mix", choices=("v1", "v2"), default="v1")
     ap.add_argument("--base-pool", default=None, help="P4: a pointer-pinned B1-format draw dir used as more bases")
@@ -1337,7 +1342,8 @@ def main(argv=None) -> int:
     work = Path(a.work) if a.work else config.BUILD_DIR / f"{build}-work"
     if a.stage == "extra":
         print(json.dumps(append_extra(work, a.extra_pool, a.extra_pointer, a.extra_quota,
-                                      log=lambda *x: print(*x, flush=True)), indent=1, default=str))
+                                      log=lambda *x: print(*x, flush=True), limit=a.extra_limit),
+                         indent=1, default=str))
         return 0
     if a.stage == "candidates":
         if a.extra_pool and not a.extra_pointer:
@@ -1347,7 +1353,8 @@ def main(argv=None) -> int:
                           base_pool=a.base_pool, base_pointer=a.base_pointer)
         print(json.dumps({k: meta[k] for k in ("candidates_per_source", "ops")}, indent=1))
         return 0
-    rep = select(a.n, work, build, log=lambda *x: print(*x, flush=True))
+    rep = select(a.n, work, build, log=lambda *x: print(*x, flush=True),
+                 extra_quota=a.extra_quota if a.extra_quota else None)
     commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
                             cwd=config.REPO_ROOT).stdout.strip()
     ptr = write_pointer(build, rep, commit)
