@@ -187,5 +187,33 @@
   "url": "https://huggingface.co/datasets/allenai/winogrande/resolve/01e74176c63542e6b0bcb004dcdea22d94fb67b5/winogrande_xl/train-00000-of-00001.parquet",
   "revision": "01e74176c63542e6b0bcb004dcdea22d94fb67b5",
   "license": "Apache-2.0 (allenai/winogrande GitHub LICENSE); HF card: none stated"
+ },
+ "esci/train-00000-of-00011.parquet": {
+  "sha256": "bd6e1217eef98968103d9731ae52e5e1e640b8af8810956ad144cb13481bf3b9",
+  "bytes": 115487965,
+  "url": "https://huggingface.co/datasets/tasksource/esci/resolve/8113b17a5d4099e20243282c926f1bc1a08a4d13/data/train-00000-of-00011-2d36455632bef8a2.parquet",
+  "revision": "8113b17a5d4099e20243282c926f1bc1a08a4d13",
+  "license": "Apache-2.0 (tasksource/esci HF card; upstream amazon-science/esci-data Apache-2.0)"
+ },
+ "phish_curated/CEAS_08.csv": {
+  "sha256": "22375e7d5f5a8229dbe987914ee9b3705656c590038662a7df6054629b376074",
+  "bytes": 67902056,
+  "url": "https://huggingface.co/datasets/kudzaiprichard/aura-phishing-email-corpus/resolve/539567cee21d03c83bd2fb1b142c18a80904eb72/CEAS_08.csv",
+  "revision": "539567cee21d03c83bd2fb1b142c18a80904eb72",
+  "license": "CC-BY-4.0 (Zenodo 10.5281/zenodo.8339691, Champa, Rabbi & Zibran 2024; mirror byte-identical, MD5 verified against the Zenodo API)"
+ },
+ "phish_curated/Nazario.csv": {
+  "sha256": "b8fbc4158fbdfaff1ed98584c43d72e283c6352d7ade4d457d34c1d79488d184",
+  "bytes": 7811841,
+  "url": "https://huggingface.co/datasets/kudzaiprichard/aura-phishing-email-corpus/resolve/539567cee21d03c83bd2fb1b142c18a80904eb72/Nazario.csv",
+  "revision": "539567cee21d03c83bd2fb1b142c18a80904eb72",
+  "license": "CC-BY-4.0 (Zenodo 10.5281/zenodo.8339691, Champa, Rabbi & Zibran 2024; mirror byte-identical, MD5 verified against the Zenodo API)"
+ },
+ "phish_curated/SpamAssasin.csv": {
+  "sha256": "3bfe8f8abff89f69a98456be50413c2fcb20a476141116dd84ee1507b980c00e",
+  "bytes": 14879195,
+  "url": "https://huggingface.co/datasets/kudzaiprichard/aura-phishing-email-corpus/resolve/539567cee21d03c83bd2fb1b142c18a80904eb72/SpamAssasin.csv",
+  "revision": "539567cee21d03c83bd2fb1b142c18a80904eb72",
+  "license": "CC-BY-4.0 (Zenodo 10.5281/zenodo.8339691, Champa, Rabbi & Zibran 2024; mirror byte-identical, MD5 verified against the Zenodo API)"
  }
 }

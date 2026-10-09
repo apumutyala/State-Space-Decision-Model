@@ -1,0 +1,179 @@
+{
+ "target_rule": {
+  "T": 3670,
+  "rule": "median row count of the parent's Index-presentation train-split families (a training-draw quantity; no eval rate or shape)",
+  "parent": "m2/build/bschema-draw-v3b/records.jsonl.gz",
+  "parent_rows": 253046,
+  "family_rows": {
+   "acos/acos_category_sentiment": 1314,
+   "vast/stance": 3670,
+   "habermas/consensus_selection": 2027,
+   "ragtruth/hallucination_detection": 16964,
+   "hover/claim_verification": 20240
+  }
+ },
+ "esci_relevance": {
+  "file": "dl-2026-10-09/esci/train-00000-of-00011.parquet",
+  "sha256": "bd6e1217eef98968103d9731ae52e5e1e640b8af8810956ad144cb13481bf3b9",
+  "repo": "tasksource/esci",
+  "revision": "8113b17a5d4099e20243282c926f1bc1a08a4d13",
+  "split": "train",
+  "export": "first occurrence per example_id; US locale; product_id and normalised query not in any Index ESCI row; state <= 4500 chars; first 9000 by sha256(seed|example_id) (seed 20261009); natural label rates",
+  "export_stats": {
+   "rows": 184353,
+   "eligible": 133603,
+   "eligible_I": 19537,
+   "eligible_E": 79058,
+   "eligible_S": 32087,
+   "eligible_C": 2921,
+   "not_us": 39040,
+   "dup_example_id": 9546,
+   "index_product": 1760,
+   "index_query": 161,
+   "state_over_chars": 243
+  },
+  "train_eligible_label_rate": {
+   "E": 0.5917,
+   "S": 0.2402,
+   "C": 0.0219,
+   "I": 0.1462
+  },
+  "n_target": 3670,
+  "n_generated_rule": "ceil(1.6 * target), trimmed to the target after the checks",
+  "rule": "uniform over eligible train pairs (sha256 order); natural train label rates; half Index presentation (ids E/S/C/I, question 'answer'), half schema view",
+  "built": {
+   "label_S": 1427,
+   "label_E": 3430,
+   "label_I": 873,
+   "label_C": 142,
+   "records": 5872
+  },
+  "token_check": {
+   "index_fingerprint": 1392,
+   "fit": 4479,
+   "over_2048": 1,
+   "kept_after_trim": 3670
+  },
+  "index_fingerprint_item_tier": {
+   "rule": "data.dedup.Fingerprint (production index-fp-v3, all Index rows) on the row's ITEM-tier texts; any matcher (exact / ngram13 / minhash / edit / contain) drops the row, as the parent builds",
+   "fingerprint": {
+    "version": "ssdm-dedup-v3",
+    "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+    "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+    "rows": 155390
+   },
+   "dropped": 1392,
+   "by_matcher": {
+    "ngram13": 570,
+    "exact": 995,
+    "minhash": 1146,
+    "contain": 357,
+    "edit": 483
+   }
+  },
+  "K_distribution": {
+   "4": 3670
+  }
+ },
+ "nli4ct_trial": {
+  "file": "dl-2026-10-08/nli4ct/training_data.zip:train.json (via ssdm-data/m2/build/b1-v3-src/nli4ct.jsonl.gz)",
+  "convert_manifest_sha256": "0b55e8f6cbb2866b35653cf88ff5160e8408e9e51d59b975645294673eebb7c5",
+  "overlap_sha256": "649b62fdf521cdc40c6b6a8bbce8f5f6afc20fad4bed3269dc1e220733524aa0",
+  "split": "train",
+  "n_train_after_overlap": 1679,
+  "train_label_rate": {
+   "Contradiction": 0.5009,
+   "Entailment": 0.4991
+  },
+  "index_trial_ids": 249,
+  "rule": "train statements whose primary and secondary trial are in no Index NLI4CT row (all 5,500 test statements' trial_ids); natural train label rate; views per item = 2 when 2 x eligible <= target (view 0 Index presentation, view 1 schema view with the statement in state), else 1; the P3 checker keeps one Index-presentation row per trial section (state + options text repeats across statements)",
+  "views_per_item": 2,
+  "n_target": 3670,
+  "n_target_rule": "min(T, views x eligible items): train availability caps the family",
+  "built": {
+   "index_trial": 251,
+   "eligible_items": 1428,
+   "label_Entailment": 1428,
+   "label_Contradiction": 1428,
+   "records": 2856
+  },
+  "token_check": {
+   "fit": 2808,
+   "over_2048": 48
+  },
+  "index_fingerprint_item_tier": {
+   "rule": "data.dedup.Fingerprint (production index-fp-v3, all Index rows) on the row's ITEM-tier texts; any matcher (exact / ngram13 / minhash / edit / contain) drops the row, as the parent builds",
+   "fingerprint": {
+    "version": "ssdm-dedup-v3",
+    "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+    "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+    "rows": 155390
+   },
+   "dropped": 0,
+   "by_matcher": {}
+  },
+  "K_distribution": {
+   "2": 2808
+  }
+ },
+ "phish_email": {
+  "files": {
+   "dl-2026-10-09/phish_curated/CEAS_08.csv": "22375e7d5f5a8229dbe987914ee9b3705656c590038662a7df6054629b376074",
+   "dl-2026-10-09/phish_curated/Nazario.csv": "b8fbc4158fbdfaff1ed98584c43d72e283c6352d7ade4d457d34c1d79488d184",
+   "dl-2026-10-09/phish_curated/SpamAssasin.csv": "3bfe8f8abff89f69a98456be50413c2fcb20a476141116dd84ee1507b980c00e"
+  },
+  "repo": "kudzaiprichard/aura-phishing-email-corpus",
+  "revision": "539567cee21d03c83bd2fb1b142c18a80904eb72",
+  "origin": "Zenodo 10.5281/zenodo.8339691 (byte-identical; MD5s match the Zenodo API)",
+  "license": "CC-BY-4.0 (Phishing Email Curated Datasets, Champa, Rabbi & Zibran 2024, Zenodo 10.5281/zenodo.8339691)",
+  "split": "corpus (no train/test split; not an Index source: PhishNChips Index rows are generated emails with links from a live phishing-URL database)",
+  "eligible_rule": "sender has an address; body (HTML reduced to text) 40-3,000 chars and shows an http(s) link; exact normalised-body duplicates dropped",
+  "n_eligible": 23584,
+  "eligible_phishing_rate": 0.5017,
+  "n_target": 3670,
+  "n_generated_rule": "ceil(1.6 * target), trimmed to the target after the checks",
+  "rule": "uniform over the eligible union (sha256 order): natural corpus rate; questions verdict / is_phishing / verdict_alt_click from the corpus label; half Index presentation, half schema view",
+  "built": {
+   "ceas_08_rows": 39154,
+   "eligible_ceas_08_1": 10862,
+   "body_len": 6259,
+   "no_link": 15494,
+   "eligible_ceas_08_0": 8661,
+   "no_sender_address": 1017,
+   "dup_body": 174,
+   "nazario_rows": 1565,
+   "eligible_nazario_1": 169,
+   "spamassasin_rows": 5809,
+   "eligible_spamassasin_0": 3092,
+   "eligible_spamassasin_1": 800,
+   "built_phishing": 2887,
+   "built_legitimate": 2985,
+   "records": 5872
+  },
+  "token_check": {
+   "fit": 5481,
+   "index_fingerprint": 391,
+   "kept_after_trim": 3670
+  },
+  "index_fingerprint_item_tier": {
+   "rule": "data.dedup.Fingerprint (production index-fp-v3, all Index rows) on the row's ITEM-tier texts; any matcher (exact / ngram13 / minhash / edit / contain) drops the row, as the parent builds",
+   "fingerprint": {
+    "version": "ssdm-dedup-v3",
+    "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+    "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+    "rows": 155390
+   },
+   "dropped": 391,
+   "by_matcher": {
+    "exact": 238,
+    "minhash": 348,
+    "contain": 22,
+    "edit": 121,
+    "ngram13": 1
+   }
+  },
+  "K_distribution": {
+   "2": 3670
+  }
+ }
+}

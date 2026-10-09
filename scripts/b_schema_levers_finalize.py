@@ -40,6 +40,13 @@ def item_probe(r: dict) -> tuple[dict, dict]:
         return {"question": st["question"]}, {"q": {"type": "choice", "criteria": dict(q["criteria"])}}
     if lv == "boolq_yesno":
         return {"passage": st["passage"], "question": st["question"]}, {}
+    # v4 families (data/b_schema_levers_v4.py): the item-tier texts, as data/b1_v3.item_payload
+    if lv == "esci_relevance":
+        return {"search_query": st["search_query"], "product": st["product"]}, {}
+    if lv == "nli4ct_trial":
+        return {"statement": r["aug"]["lever"]["item"]["statement"]}, {}
+    if lv == "phish_email":
+        return {"subject": st["subject"], "body": st["body"]}, {}
     raise SystemExit(f"no item probe for lever {lv}")
 
 
@@ -55,6 +62,8 @@ def main(argv=None) -> int:
     ap.add_argument("--k77-margin", type=int, default=0,
                     help="extra K77 rows kept for rows the P3 checker / doc gate drop later (final share >= D16's)")
     ap.add_argument("--no-fingerprint", action="store_true", help="never for a draw (debug only)")
+    ap.add_argument("--trim-to-target", action="store_true",
+                    help="v4: trim each lever with a target_provenance n_target to that many fitting rows")
     a = ap.parse_args(argv)
     w = Path(a.work)
     fp = None
@@ -122,6 +131,20 @@ def main(argv=None) -> int:
             "fingerprint": {k: fp.meta.get(k) for k in ("version", "npz_sha256", "arrays_sha256", "rows")} if fp else None,
             "dropped": st.get("index_fingerprint", 0), "by_matcher": dict(fp_hits[lv])}
         prov[lv]["K_distribution"] = dict(sorted(kdist[lv].items()))
+    # v4: families generated with a margin are trimmed to their stated target (sha256(id) order, label-blind)
+    by_lv = collections.defaultdict(list)
+    for x in rows:
+        by_lv[x[0]["aug"]["lever"]["lever"]].append(x)
+    rows = []
+    for lv, xs in by_lv.items():
+        tgt = (prov.get(lv) or {}).get("n_target") if lv != "banking_k77" else None
+        if a.trim_to_target and tgt is not None and len(xs) > tgt:
+            xs = sorted(xs, key=lambda x: hashlib.sha256(x[0]["id"].encode("utf-8")).hexdigest())[:tgt]
+            stats[lv]["kept_after_trim"] = tgt
+            prov[lv]["token_check"] = dict(stats[lv])
+            kdist[lv] = collections.Counter(len(next(iter(x[0]["questions"].values())).get("criteria") or {}) for x in xs)
+            prov[lv]["K_distribution"] = dict(sorted(kdist[lv].items()))
+        rows += xs
     rows.sort(key=lambda x: x[0]["id"])
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)

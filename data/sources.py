@@ -115,6 +115,22 @@ REGISTRY: dict[str, dict] = {
              "files": ["data/train-00000-of-00001.parquet"],
              "license": "HF card: cc-by-3.0 / cc-by-sa-3.0 / mit / other (OANC + fiction genres; see MultiNLI paper)",
              "index": "none (MNLI is not an Index catalog; generic NLI source; fingerprint-checked against every Index row)"},
+    # ---- added for bschema-draw-v4 (2026-10-09; data/b_schema_levers_v4.py). Own directories under dl-2026-10-09/.
+    "esci": {"dir": "dl-2026-10-09/esci", "rev": "8113b17a5d4099e20243282c926f1bc1a08a4d13",
+             "urls": {"train-00000-of-00011.parquet": "https://huggingface.co/datasets/tasksource/esci/resolve/"
+                      "8113b17a5d4099e20243282c926f1bc1a08a4d13/data/train-00000-of-00011-2d36455632bef8a2.parquet"},
+             "license": "Apache-2.0 (tasksource/esci HF card; upstream amazon-science/esci-data Apache-2.0)",
+             "index": "Amazon-ESCI (37): Index uses the 5,000 released TEST query-product pairs; this shard is the "
+                      "official train split (ESCI splits by query); pairs whose product_id or query is in any Index "
+                      "ESCI row are dropped (scripts/b_schema_v4_export.py)"},
+    "phish_curated": {"dir": "dl-2026-10-09/phish_curated", "rev": "539567cee21d03c83bd2fb1b142c18a80904eb72",
+                      "urls": {f: "https://huggingface.co/datasets/kudzaiprichard/aura-phishing-email-corpus/resolve/"
+                               f"539567cee21d03c83bd2fb1b142c18a80904eb72/{f}"
+                               for f in ("CEAS_08.csv", "Nazario.csv", "SpamAssasin.csv")},
+                      "license": "CC-BY-4.0 (Zenodo 10.5281/zenodo.8339691; the mirror is byte-identical, MD5s match "
+                                 "the Zenodo API)",
+                      "index": "none: PhishNChips (56) has no train split and its Index rows are generated emails "
+                               "(links from a live phishing-URL database); this public corpus has the same task shape"},
 }
 
 LOCK = config.MANIFEST_DIR / "sources.lock.json"

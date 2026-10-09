@@ -459,3 +459,35 @@ Gates (all PASS):
 - check_generator: 37 specs.
 - Trainer 9c3e435: draw at 24k, and heldout_gate with 0 hits.
 - Tokens: max 2,048 under v2f and v3w. Under v1 the same 7,942 C rows are over.
+
+# bschema-draw-v4 (2026-10-09): v3b + the Index families the gap attribution marks missing. READY for v2f/v3w
+Source of the family list: `analysis/gap_funding/attribution.json` (claude/b-gap-funding @5fc2b76), class "data" (7.11
+pts vs Clef-flash). v3b already carries CRUXEval (synthetic, 9.3% of items), HoVer, RAGTruth, ACOS, VAST and Habermas.
+v4 adds the three that v3b still lacks. Nothing is removed from v3b; parent lines are byte copies.
+
+| Family (Index #) | Source, split | Rows in draw | Items | Label rate (natural) |
+|---|---|---|---|---|
+| Amazon-ESCI (37) | tasksource/esci @8113b17 shard 0 = official ESCI `train`, US; product_id / query in no Index ESCI row | 3,649 | 3,649 | E 58.9 / S 24.5 / I 13.8 / C 2.9 |
+| NLI4CT-2024 (42) | `training_data.zip:train.json`; primary AND secondary trial in no Index NLI4CT row | 2,103 | 2,103 | Contradiction 50.0 |
+| PhishNChips shape (56) | Zenodo 8339691 (CC-BY-4.0) CEAS-08 + Nazario + SpamAssassin, emails showing an http(s) link | 3,670 | 11,010 | phishing 52.3 |
+
+- Target T = 3,670 per family = median rows of v3b's Index-presentation train-split families (acos 1,314, vast 3,670,
+  habermas 2,027, ragtruth 16,964, hover 20,240). A training-draw quantity; no eval rate or shape. NLI4CT is capped by
+  availability (1,428 trial-disjoint statements x 2 views, minus gate drops).
+- Presentation: half the rows in the Index presentation (Index ids, question names, instruction text), half schema
+  views (ids re-styled so the gold sits at a uniform canonical position). PhishNChips rows carry verdict, is_phishing
+  and verdict_alt_click; the unlabelled sig_* questions are not built.
+- Drops: item-tier Index fingerprint (ESCI 1,392, phish 391); >2,048 tokens (ESCI 1, NLI4CT 48); P3 checker (Index
+  item text 30, BBH-alias product id 1, cross-item state+options duplicates 654 NLI4CT Index-presentation rows: several
+  statements share one trial section); doc_overlap_guard 35 NLI4CT rows over three tries (`guard-7735be4-drop-pool-ids.txt`).
+- Caveat: the phishing corpus is spam-dominated (CEAS-08); real credential phishing with a visible link is ~170 rows.
+
+Gates (all PASS on the final 262,468 rows / 402,028 items):
+- doc_overlap_guard at origin/agent-main 7735be4 (index af096960, allowlist 556296cc): 0 fails (try3).
+- doc_check: 0 non-allowlisted hits. attack_filter: 0. attack_guard @7735be4: 0. b1_check: 0 failures.
+- harness.heldout check: 0 refused; check_generator: all (source, family) pairs plus the 3 new specs.
+- Trainer 9c3e435: draw at 24k and heldout_gate, 0 hits (pointer a4c505ac).
+- Tokens: new rows max 2,030 (v2f) / 2,026 (v3w) / 2,039 (v1); parent rows as v3b.
+- `family-checks.json`: gold-once 0 fails; item-tier fingerprint 0 hits; gold-position chi2 on the schema-view half
+  ESCI p 0.68, NLI4CT p 0.93, phish p 0.22 (the Index-presentation half uses semantic ids, so position = label).
+- `swap-report.json` records the pre-patch pointer sha; the committed pointer adds target_provenance / gate fields.

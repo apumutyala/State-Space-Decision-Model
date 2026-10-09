@@ -1,0 +1,191 @@
+{
+ "parent": "bschema-draw-v3b",
+ "parent_pointer_sha256": "0aac91c9adc49532c2a1c574369db1b7b7d780e6a3f8130575089cdc40a0e37e",
+ "parent_files": {
+  "records": "344fe5aa11eb8682c5f8323660af045b3d6a06c5f2229887ce8710ea54c9898f",
+  "manifest": "c6fb292e865b18ad9626374027beb2b0e886f6fa560c1f6b27a8f40fa50c6096",
+  "content_map": "881de8a7d3f293c00914d9060f5de5c94da601e6e6d2b87d5af425913a2456e7"
+ },
+ "n_parent": 253046,
+ "removed_from_parent": {},
+ "pool": {
+  "pointer_sha256": "6f2a034d2ef6fdd8db4434499d6a53808a39c80f917ab33c51b5157d316fab8c",
+  "files": {
+   "records": "91c82f53ae1a7dc1627fb3cacdbb4467b9085400e5dc7bd145563df075046812",
+   "manifest": "76d0dbad3c60ff86632927841bdf4e64314f8273d7d64771882b66bee65529b1",
+   "content_map": "cb79e66f8883abc97b31b5190cc0d5e62fa6b0e65b933874439da4f466912b52"
+  },
+  "n_rows": 10148,
+  "n_dropped_by_list": 35,
+  "n_added": 9422,
+  "added_by_source": {
+   "esci": 3649,
+   "nli4ct": 2103,
+   "phish_curated": 3670
+  },
+  "checker": {
+   "P3": {
+    "kept": 9422,
+    "index_item_text": 30,
+    "frozen_family": 1,
+    "dup_text_other_item": 654,
+    "dup_content": 6
+   }
+  },
+  "hit_examples": [
+   [
+    "m2:esci:train-1098521~view:v4s",
+    "state/product/bullet_point",
+    "ULTIMATE SKIN PROTECTION: Help fight free radicals and environmental damage with powerful 75,000 IU Vitamin E oil. Reap "
+   ],
+   [
+    "m2:esci:train-1144319~view:v4",
+    "state/product/bullet_point",
+    "New look and label, same great product! Includes 12 (11 ounce) ready to drink orgain organic nutrition creamy chocolate "
+   ],
+   [
+    "m2:esci:train-1497053~view:v4s",
+    "state/product/bullet_point",
+    "Daily vegetarian women\u2019s multivitamin with over 20 premium ingredients in a single capsule\nMade with vegetarian omega-3 "
+   ],
+   [
+    "m2:esci:train-1616239~view:v4s",
+    "state/product/bullet_point",
+    "\u3010HEAVY-DUTY CONSTRUCTION\u3011: Our outdoor swing is made of powder-coated steel frame\uff0cit can support up to 450 pounds at one"
+   ],
+   [
+    "m2:esci:train-168804~view:v4",
+    "state/product/bullet_point",
+    "POWERFUL PERFORMANCE: ONG NAMO quick pump, inflating efficiency is much higher than manual pump. Fast inflation/deflatio"
+   ],
+   [
+    "m2:esci:train-1974324~view:v4s",
+    "state/product/bullet_point",
+    "DEEP HYDRATION: The anti-aging properties in Golden Jojoba Oil is astonishing as its superior ability to lock in long la"
+   ],
+   [
+    "m2:esci:train-2192354~view:v4",
+    "state/product/bullet_point",
+    "Mid rise, boot cut leg opening\nFeaturing flexible non-binding waistband\n5 pocket denim with back pocket detail stitching"
+   ],
+   [
+    "m2:esci:train-2258498~view:v4",
+    "state/product/bullet_point",
+    "\u3010LED Creative Visual Effect\u3011Using a creative laser engraved optical acrylic plate, VSATEN Dinosaur night light looks lik"
+   ],
+   [
+    "m2:esci:train-23223~view:v4s",
+    "state/product/description",
+    "<b>Specification: </b> <br><br> Plastic, safe, 1 minute timers. Set of 10. Made of highly durable PVC and glass tubes\uff0cPe"
+   ],
+   [
+    "m2:esci:train-32141~view:v4",
+    "state/product/description",
+    "Specifications: <br/> Sewing buttons diameters: range from 0.7 to 3 cm/ 0.28 to 1.18 inches <br/> Color: Shell color<br/"
+   ]
+  ]
+ },
+ "n_records": 262468,
+ "n_items": 402028,
+ "rows_by_source": {
+  "b1fam_cruxeval_synth": 35997,
+  "glaive_fc": 33738,
+  "hover": 20240,
+  "mnli": 17548,
+  "ragtruth": 16964,
+  "banking77": 13971,
+  "synthetic_c_multirecord_v2": 13575,
+  "mmlu_aux": 13470,
+  "clinc150": 13022,
+  "boolq": 11173,
+  "b1fam_bfcl_synth": 8436,
+  "toolace": 7378,
+  "when2call": 6702,
+  "gsm8k": 6394,
+  "anli": 5751,
+  "winogrande": 4299,
+  "hellaswag": 4267,
+  "phish_curated": 3670,
+  "vast": 3670,
+  "esci": 3649,
+  "sst5": 3327,
+  "b1fam_apibank": 2981,
+  "humicroedit_s1": 2527,
+  "humicroedit_s2": 2156,
+  "nli4ct": 2103,
+  "synthetic_factchange": 2086,
+  "habermas": 2027,
+  "acos": 1314,
+  "nq": 33
+ },
+ "items_by_source": {
+  "synthetic_c_multirecord_v2": 95025,
+  "b1fam_cruxeval_synth": 35997,
+  "glaive_fc": 33738,
+  "b1fam_bfcl_synth": 27967,
+  "clinc150": 20722,
+  "hover": 20240,
+  "mnli": 17548,
+  "banking77": 17172,
+  "ragtruth": 16964,
+  "toolace": 15124,
+  "mmlu_aux": 14520,
+  "acos": 12800,
+  "boolq": 11173,
+  "phish_curated": 11010,
+  "when2call": 6702,
+  "gsm8k": 6394,
+  "anli": 5751,
+  "winogrande": 4299,
+  "hellaswag": 4267,
+  "vast": 3670,
+  "esci": 3649,
+  "sst5": 3327,
+  "b1fam_apibank": 2981,
+  "humicroedit_s1": 2527,
+  "humicroedit_s2": 2156,
+  "nli4ct": 2103,
+  "synthetic_factchange": 2086,
+  "habermas": 2027,
+  "nq": 89
+ },
+ "item_share_by_source": {
+  "synthetic_c_multirecord_v2": 0.2364,
+  "b1fam_cruxeval_synth": 0.0895,
+  "glaive_fc": 0.0839,
+  "b1fam_bfcl_synth": 0.0696,
+  "clinc150": 0.0515,
+  "hover": 0.0503,
+  "mnli": 0.0436,
+  "banking77": 0.0427,
+  "ragtruth": 0.0422,
+  "toolace": 0.0376,
+  "mmlu_aux": 0.0361,
+  "acos": 0.0318,
+  "boolq": 0.0278,
+  "phish_curated": 0.0274,
+  "when2call": 0.0167,
+  "gsm8k": 0.0159,
+  "anli": 0.0143,
+  "winogrande": 0.0107,
+  "hellaswag": 0.0106,
+  "vast": 0.0091,
+  "esci": 0.0091,
+  "sst5": 0.0083,
+  "b1fam_apibank": 0.0074,
+  "humicroedit_s1": 0.0063,
+  "humicroedit_s2": 0.0054,
+  "nli4ct": 0.0052,
+  "synthetic_factchange": 0.0052,
+  "habermas": 0.005,
+  "nq": 0.0002
+ },
+ "uncompressed_sha256": {
+  "records": "6c3eafe265dd39ff1c25b75cd16afa72af8c04be3e3006dbb27ce9bb1c29baf9",
+  "manifest": "6226a75a4676937d190ee9b588e5eca5b09b94d81b42e1b6290359c771d9380f",
+  "content": "2ea88fdd35db434d89d4a2512cd58b2b658a062e2fea44a44937b9b002cda5cc"
+ },
+ "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b-schema-v4\\data\\manifests\\bschema-draw-v4.pointer.json",
+ "pointer_sha256": "fe376e68e076702547fb93f5dde81a66b933c7b96d8fec8d46fd78837a87e66d",
+ "commit": "cddbe754f2470a377d2f6e59f12d0842ac50828a"
+}
