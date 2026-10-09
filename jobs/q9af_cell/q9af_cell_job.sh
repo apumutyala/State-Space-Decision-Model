@@ -183,7 +183,7 @@ else
     timeout "$(cap heldout)m" python -X utf8 -m train.train_set heldout --config "$CELL" --train-dir "$TRAIN_DIR" \
       --out "$WORK/out/heldout.json" > "$WORK/logs/heldout.log" 2>&1; r=$?
     gate "heldout" $r
-    case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B hits != pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
+    case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B or eval attack template hits != pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
     DATA_ARGS+=(--train-dir "$TRAIN_DIR")
   fi
 fi

@@ -20,6 +20,12 @@ What ``draw`` checks before any record reaches a trainer (any failure raises ``T
      cell pins, and the drawn ids are re-checked (``assert_draw_disjoint``). v3 holds nothing among the first 60,000 of
      the seed-0 order, so every seed-0 draw of up to 60,000 records (the first cell's 24,000, q9_feature_cache) is
      unchanged. Records v3 holds are the only cohort-held-out records allowed in the set (check 3).
+  7. ATTACK GUARD (``train.attack_guard``; operator rule: no training on safety test material). The whole set is scanned
+     for every EVAL attack template (official hijack, D1-A steer, D1-B steer, B's heldout_v1 battery; 6-gram or exact
+     fragment match after normalisation). Any hit refuses the set (``AttackGuardRefusal``) unless the cell pins the
+     cleaned version (``train_set.attack_clean`` = ``train.attack_guard.clean_spec``: rule, templates sha256, count and
+     sha256 of the excluded ids) and the hits equal it exactly; then those records leave the pool before the draw.
+     The drawn records are re-scanned and must have zero hits. The heldout gate (job exit 33) runs the same check.
 Evaluation records of v2 roles never come from this set: they stay in the PR #16 sample the cohort was built from.
 """
 from __future__ import annotations
@@ -36,6 +42,34 @@ RECORDS_NAME = "records.jsonl.gz"
 
 class TrainSetMismatch(ValueError):
     """The training-set files are not the ones the pointer pins (or contradict its build receipt)."""
+
+
+class AttackGuardRefusal(TrainSetMismatch):
+    """The training set carries an eval attack template outside a pinned ``attack_clean`` spec."""
+
+
+def attack_clean_pin(cfg: dict) -> dict | None:
+    return (cfg.get("train_set") or {}).get("attack_clean")
+
+
+def attack_exclusion(cfg: dict, records_path: str | Path) -> tuple[set[str], dict]:
+    """Scan the whole set; return (ids to exclude, scan summary). Raises ``AttackGuardRefusal`` unless the hits are
+    zero or exactly the pinned clean spec."""
+    from train.attack_guard import check_pinned, ids_sha256, scan_file
+
+    rep = scan_file(records_path)
+    pre = heldout_excluded(cfg) & set(rep["hit_ids"])  # pinned D1-B exclusions already leave the pool
+    if pre:
+        rep["hit_ids"] = [i for i in rep["hit_ids"] if i not in pre]
+        rep["n_hit"], rep["hit_ids_sha256"] = len(rep["hit_ids"]), ids_sha256(rep["hit_ids"])
+    ok, why = check_pinned(rep, attack_clean_pin(cfg))
+    summary = {"rule": rep["rule"], "templates_sha256": rep["templates_sha256"], "n_records": rep["n_records"],
+               "n_excluded": rep["n_hit"], "excluded_ids_sha256": rep["hit_ids_sha256"], "per_set": rep["per_set"],
+               "per_template": rep["per_template"], "n_heldout_excluded_overlap": len(pre),
+               "per_counts_include_heldout_excluded": True, "check": why}
+    if not ok:
+        raise AttackGuardRefusal(f"attack guard: {why} (per set {rep['per_set']})")
+    return set(rep["hit_ids"]), summary
 
 
 def read_pointer(pointer: str | Path) -> dict[str, Any]:
@@ -108,7 +142,8 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
     unknown = sorted(excluded - set(man))
     if unknown:
         raise TrainSetMismatch(f"heldout_excluded ids not in the set: {unknown[:3]}")
-    pool = sorted(set(man) - excluded - v3x["ids"])
+    attack_ids, attack = attack_exclusion(cfg, fs["records"])
+    pool = sorted(set(man) - excluded - v3x["ids"] - attack_ids)
     n = int(cfg["n_train_records"])
     if n > len(pool):
         raise TrainSetMismatch(f"n_train_records {n} > pool {len(pool)}")
@@ -132,6 +167,12 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
     rep = scan((i, record_text(got[i])) for i in tr)
     if rep["hits"]:
         raise TrainSetMismatch(f"{len(rep['hits'])} drawn record(s) carry a held-out D1-B fragment, e.g. {rep['hits'][:2]}")
+    from train.attack_guard import record_hits
+
+    drawn_attack = [i for i in tr if record_hits(got[i])]
+    if drawn_attack:
+        raise AttackGuardRefusal(f"{len(drawn_attack)} drawn record(s) carry an eval attack template, e.g. {drawn_attack[:3]}")
+    attack["drawn_hits"] = 0
     identity = {"train_set": ptr.get("build"), "pointer": ptr["_pointer_path"], "pointer_sha256": ptr["_pointer_sha256"],
                 "files_uncompressed_sha256": sha or "not re-verified (verify=False)", "n_pool": len(pool),
                 "heldout_excluded": sorted(excluded),
@@ -139,8 +180,21 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
                 "held_out_in_set": {"by_id": 0, "by_content": 0}, "n_drawn": len(tr), "draw_seed": cfg["seed"],
                 "drawn_ids_sha256": hashlib.sha256("\n".join(tr).encode()).hexdigest(),
                 "lines_manifest_verified": ident["lines_read"], "cohort": co.identity(),
-                "cohort_v3_excluded": {"n": v3x["n"], "rule": v3x["rule"], "cohort": v3x["cohort"], "drawn_overlap": 0}}
+                "cohort_v3_excluded": {"n": v3x["n"], "rule": v3x["rule"], "cohort": v3x["cohort"], "drawn_overlap": 0},
+                "attack_guard": attack}
     return {i: to_train_record(got[i]) for i in tr}, tr, identity
+
+
+def attack_clean_spec(cfg: dict, records_path: str | Path) -> dict:
+    """The ``train_set.attack_clean`` block to pin for this cell: every attack-guard hit outside the cell's pinned D1-B
+    exclusions (``python -X utf8 -m train.attack_guard clean-spec --records R --config CELL``)."""
+    from train.attack_guard import clean_spec, ids_sha256, scan_file
+
+    rep = scan_file(records_path)
+    pre = heldout_excluded(cfg)
+    rep["hit_ids"] = [i for i in rep["hit_ids"] if i not in pre]
+    rep["n_hit"], rep["hit_ids_sha256"] = len(rep["hit_ids"]), ids_sha256(rep["hit_ids"])
+    return clean_spec(rep) | {"hit_ids": rep["hit_ids"]}
 
 
 def heldout_excluded(cfg: dict) -> set[str]:
@@ -151,7 +205,9 @@ def heldout_excluded(cfg: dict) -> set[str]:
 
 def heldout_gate(cfg: dict, train_dir: str | Path, out: str | Path | None = None) -> int:
     """The job's held-out phase over the WHOLE training set: ``train.heldout`` hits must be exactly the pre-registered
-    exclusions (same template set). 0 = pass; 3 = any other hit, a missing pinned hit, or a template-set change."""
+    exclusions (same template set), AND ``train.attack_guard`` hits (every eval attack template) must be zero or exactly
+    the pinned ``attack_clean`` spec. 0 = pass; 3 = any other hit, a missing pinned hit, or a template-set change."""
+    from train.attack_guard import check_pinned, scan_file
     from train.heldout import scan_records
 
     ptr = read_pointer(cfg["train_set"]["pointer"])
@@ -160,12 +216,19 @@ def heldout_gate(cfg: dict, train_dir: str | Path, out: str | Path | None = None
     hit_ids = {h["id"] for h in rep["hits"]}
     rep["pinned_exclusions"] = sorted(heldout_excluded(cfg))
     rep["pinned_templates_sha256"] = pin.get("templates_sha256")
-    rep["pass"] = (hit_ids == heldout_excluded(cfg)
-                   and (not hit_ids or pin.get("templates_sha256") == rep["templates_sha256"]))
+    d1b_pass = (hit_ids == heldout_excluded(cfg)
+                and (not hit_ids or pin.get("templates_sha256") == rep["templates_sha256"]))
+    try:
+        _, asum = attack_exclusion(cfg, files(train_dir, ptr)["records"])
+        a_ok, a_why = True, asum["check"]
+    except AttackGuardRefusal as e:
+        asum, a_ok, a_why = {}, False, str(e)
+    rep["attack_guard"] = asum | {"pass": a_ok, "check": a_why}
+    rep["pass"] = d1b_pass and a_ok
     if out:
         Path(out).write_text(json.dumps(rep, indent=1), encoding="utf-8")
     print(json.dumps({k: rep[k] for k in ("n_texts", "pass", "templates_sha256", "pinned_exclusions")}
-                     | {"hits": sorted(hit_ids)}))
+                     | {"hits": sorted(hit_ids), "attack_guard": {"pass": a_ok, "check": a_why}}))
     return 0 if rep["pass"] else 3
 
 
