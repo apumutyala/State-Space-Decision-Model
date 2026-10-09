@@ -420,6 +420,13 @@ def development_relation_pairs(examples: list[dict]) -> list[dict]:
     return pairs
 
 
+def development_operation_pairs(*, split: str, worlds: int, seed: int,
+                                model: str = "gate-operation-fit",
+                                parent_revision: str = "operation-fit:v1") -> list[dict]:
+    from .gate_operation_pairs import development_operation_pairs as build
+    return build(split=split, worlds=worlds, seed=seed, model=model, parent_revision=parent_revision)
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     for name in ("parent", "parent-report", "parent-report-sha256", "parent-qualification",
