@@ -1,0 +1,5 @@
+owner: A (lead)
+job: job-w3c2e
+start_utc: 2026-10-09T05:35Z
+time_limit: 2026-10-09T16:00Z
+item: BB2 Q9-AF v2: all 8 Qwen3.5-9B attention layers -> GDN (stack/q9af/v2-full-gdn 00a7894; rule q9af-v2-rule-v1)
