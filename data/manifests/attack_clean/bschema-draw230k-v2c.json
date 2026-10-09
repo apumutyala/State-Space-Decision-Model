@@ -1,0 +1,14 @@
+{
+ "draw": "bschema-draw230k-v2c",
+ "excluded_ids_file": "ssdm-data/m2/attack-clean/bschema-draw230k-v2c.excluded_ids.txt.gz (outside git)",
+ "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+ "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+ "n_excluded": 0,
+ "n_kept": 229824,
+ "n_records": 229824,
+ "per_set": {},
+ "per_template": {},
+ "records_gz_sha256": "af52af7930c278c399130b7677586431b9cc9d091d2a98bc24de6a31ec9383ce",
+ "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+ "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21"
+}

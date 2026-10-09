@@ -183,7 +183,7 @@ else
     timeout "$(cap heldout)m" python -X utf8 -m train.train_set heldout --config "$CELL" --train-dir "$TRAIN_DIR" \
       --out "$WORK/out/heldout.json" > "$WORK/logs/heldout.log" 2>&1; r=$?
     gate "heldout" $r
-    case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B hits != pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
+    case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B or eval attack template hits != pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
     DATA_ARGS+=(--train-dir "$TRAIN_DIR")
   fi
 fi
@@ -254,7 +254,7 @@ timeout "$(cap cell)m" python -X utf8 -m train.run_cell --config "$CELL" --model
 cp "$WORK/out/cell/cell.json" "$CK/cell/cell.json" 2> /dev/null || true
 gate "cell" $TRAIN_RC
 export_phase cell
-case $TRAIN_RC in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35) fail $TRAIN_RC "cell stop: $(tail -1 "$WORK/logs/cell.log")" ;;
+case $TRAIN_RC in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35) fail $TRAIN_RC "cell stop: $(tail -1 "$WORK/logs/cell.log")" ;;
   *) fail 20 "cell unexpected rc=$TRAIN_RC" ;; esac
 
 # ------------------------------------------------------------------ evals: G12 + G13 vs the parent arm (lineage anchor)

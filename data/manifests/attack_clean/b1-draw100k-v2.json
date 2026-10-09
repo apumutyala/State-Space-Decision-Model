@@ -1,0 +1,21 @@
+{
+ "draw": "b1-draw100k-v2",
+ "excluded_ids_file": "ssdm-data/m2/attack-clean/b1-draw100k-v2.excluded_ids.txt.gz (outside git)",
+ "excluded_ids_sha256": "c6a667e5d38208ac739e65b66834f3b3a751919598cf7abeaece9b8c951257e8",
+ "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+ "n_excluded": 5201,
+ "n_kept": 94799,
+ "n_records": 100000,
+ "per_set": {
+  "d1a_steer": 5201
+ },
+ "per_template": {
+  "d1a_steer:authority": 1322,
+  "d1a_steer:fake_correction": 1283,
+  "d1a_steer:system_note": 1275,
+  "d1a_steer:urgency": 1321
+ },
+ "records_gz_sha256": "faee5885d0f1c74c9f98562f82b13f087a6142a04b3a55204bd51b4bb2df70d9",
+ "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+ "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21"
+}

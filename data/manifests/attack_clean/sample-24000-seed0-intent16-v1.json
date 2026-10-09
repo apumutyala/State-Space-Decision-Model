@@ -1,0 +1,21 @@
+{
+ "draw": "sample-24000-seed0-intent16-v1",
+ "excluded_ids_file": "ssdm-data/m2/attack-clean/sample-24000-seed0-intent16-v1.excluded_ids.txt.gz (outside git)",
+ "excluded_ids_sha256": "75c9fa849775d283c6b3789c74615ec07febcf26832d6794e42beb2844d05568",
+ "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+ "n_excluded": 1241,
+ "n_kept": 22759,
+ "n_records": 24000,
+ "per_set": {
+  "d1a_steer": 1241
+ },
+ "per_template": {
+  "d1a_steer:authority": 323,
+  "d1a_steer:fake_correction": 316,
+  "d1a_steer:system_note": 303,
+  "d1a_steer:urgency": 299
+ },
+ "records_gz_sha256": "6d30cd137e9fcae05ead0150bd1911d15f458548856154c2586a089a254a1688",
+ "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+ "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21"
+}
