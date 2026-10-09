@@ -1,0 +1,668 @@
+{
+ "battery": "heldout_v1",
+ "template_set_sha256": "690dc5e41c7edb836c19b97a018929b14000237f157c7a93045b228c4cbdd941",
+ "n_template_6grams": 113,
+ "short_segments": {
+  "worked examples case 1": "H10_fewshot",
+  "forwarded with handling instructions reply": "H11_prefix",
+  "source crm sync resolved option": "S03_tool_result",
+  "hint for automated agents": "S05_html_comment"
+ },
+ "files": [
+  {
+   "path": "agent-c-gate-training-20261008-w32/training_records.jsonl.gz",
+   "sha256": "d89d9497c3c1f920d6f9d11a6847936af1fdad417c334e79482080221aabb3ab",
+   "records": 1124,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "agent-c-l1-exactdifference-fit-supplement-20261008-v2/training_records.jsonl.gz",
+   "sha256": "bee5faefa8a9551b68da4811744dbc1d70d9fd16f612fe8895af6d7af7a63fb1",
+   "records": 1728,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "agent-c-l1-gate-training-fit-20261008-v1/training_records.jsonl.gz",
+   "sha256": "d767627b781596f5f1e2882f2ed2e0b69587c055b3522117d165332af2d859ef",
+   "records": 3072,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "agent-c-l1-gate-training-fit-20261008-v2/training_records.jsonl.gz",
+   "sha256": "d767627b781596f5f1e2882f2ed2e0b69587c055b3522117d165332af2d859ef",
+   "records": 3072,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "agent-c-l1-gate-training-fit-20261008-v3/training_records.jsonl.gz",
+   "sha256": "d767627b781596f5f1e2882f2ed2e0b69587c055b3522117d165332af2d859ef",
+   "records": 3072,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "agent-c-l1-gateplanner-exactdifference-supplement-20261008-v1/training_records.jsonl.gz",
+   "sha256": "5a875060c816b52caa1e3a212fa6fb035c3981f3c50976cc974b12f13561861c",
+   "records": 216,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "c-multirecord-13575-v2-allk-admitted/train_set/records.jsonl.gz",
+   "sha256": "4e01bc3fb06a12c04975e8f858a978021edd28a991534963ee4edef8ce79f865",
+   "records": 13575,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "c-multirecord-7k-v2-allk-quota/train_set/records.jsonl.gz",
+   "sha256": "486f424ade9c87867dd58a6dff5281d5e488a30cc60c24eca56962dac092fd0b",
+   "records": 7000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "c-multirecord-7k-v2-v3w-admitted/train_set/records.jsonl.gz",
+   "sha256": "e5b2527f6f14023d522555d0f9f6fdedc477ebe2a7178e8ca1f3cd65fe1bf317",
+   "records": 7000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "c-multirecord-highk-v2-compact-6575/train_set/records.jsonl.gz",
+   "sha256": "e1c1637494cedd9e1858a42456dce7231f110596802959e1c37f3698039c49f0",
+   "records": 6575,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "c-multirecord-synth-100k-v1/train_set/records.jsonl.gz",
+   "sha256": "aafa8857e8d0bf1185d224a534d0baf43b60cd4570a3d6825f32084cbb760cdb",
+   "records": 100000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "c-multirecord-synth-100k-v2/train_set/records.jsonl.gz",
+   "sha256": "cd0e8e56dc39d92a7ef34f14bd3122a44747ad59d01d5f9f20993d3b65d90ddf",
+   "records": 7818,
+   "truncated": "EOFError: Compressed file ended before the end-of-stream marker was reached",
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "c-multirecord-synth-100k-v2-cached/train_set/records.jsonl.gz",
+   "sha256": "e66a715b48e4c047b250890b2fe9bae882dfae8cafad4482b524f5ce45a97241",
+   "records": 100000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "c-multirecord-synth-20k-v2-balanced/train_set/records.jsonl.gz",
+   "sha256": "ec63cecbf2c8e02c7965a8f2381a39799a8c014deefdfd4c06d36ed477a4b9d5",
+   "records": 20000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "c-multirecord-synth-full100k-v2-compact/train_set/records.jsonl.gz",
+   "sha256": "34db0ea703597ba13fe962295d2e6026b970b8f4cf87aff85ce0eec0f32ec615",
+   "records": 100000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/b1-d4-draw45k/records.jsonl.gz",
+   "sha256": "40715647b9131fca52dff2d9080351825c60000ad07c58b7edb45f1c9e05f7a4",
+   "records": 45000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/b1-draw100k/records.jsonl.gz",
+   "sha256": "c377b24e5348d5745d686e88c8b38e688ebb4b197c5352aaaab6dd401aa8c2a6",
+   "records": 100000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/b1-draw100k-v2/records.jsonl.gz",
+   "sha256": "faee5885d0f1c74c9f98562f82b13f087a6142a04b3a55204bd51b4bb2df70d9",
+   "records": 100000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/b1-draw100k-v3/records.jsonl.gz",
+   "sha256": "e41d08d3ee2c5e79578415731a036e2b16dc58e92bbcc57137ad32a2965afed2",
+   "records": 100000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/b1-pool-v2x/records.jsonl.gz",
+   "sha256": "15a2bb10dcb78cba4cec71c31af5d14d327b7e07b555ad161e0fdb1be998bffb",
+   "records": 84183,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/b1-supplement-seed20261006/records.jsonl.gz",
+   "sha256": "4ddec882de175fd858878a041d7c2332453452af0292ccc04dc32822331f1cac",
+   "records": 72953,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/bschema-draw206k-v2/records.jsonl.gz",
+   "sha256": "45bdb6025f602a8060b53f4a7b1040d30ac3acf51871371595c3b79094e2eb90",
+   "records": 206544,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/bschema-draw230k-v2b/records.jsonl.gz",
+   "sha256": "cd804ac7a5c4f931a3cf34d08179f4b63ccd5f74326eda8bfe58b8d20c4a34c2",
+   "records": 229891,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/bschema-draw230k-v2c/records.jsonl.gz",
+   "sha256": "af52af7930c278c399130b7677586431b9cc9d091d2a98bc24de6a31ec9383ce",
+   "records": 229824,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/bschema-draw230k-v2d/records.jsonl.gz",
+   "sha256": "fd79eaaa605c83da1a58a55eb482030adbfee973de7981e2f44840586f5e08a6",
+   "records": 227946,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/bschema-draw230k-v2d-try1/records.jsonl.gz",
+   "sha256": "ca98de2d26ce41059ae99ba604b3520d998a0b0d306622f927f610f4fb77f816",
+   "records": 227950,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/bschema-draw230k-v2e/records.jsonl.gz",
+   "sha256": "032185b3d8684a44cf58268491cb9443e31ef98343d276721437129753891d68",
+   "records": 234521,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/bschema-draw300k-v1/records.jsonl.gz",
+   "sha256": "ad82171025a0b47763015cf9d8ac5e3d60b99e33e325266651de8fcb66723150",
+   "records": 300000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/bschema-levers-v3/records.jsonl.gz",
+   "sha256": "8ec4ed439dec23e8f131c614d34c8f5721622f74789fa09d67686069ea1a6f50",
+   "records": 20135,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/recheck-rebuild/records.jsonl.gz",
+   "sha256": "c8b10c0b3484f487605114992998e69d2b71fb901006b5e73c88718a9be42a0d",
+   "records": 20000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+   "sha256": "3f42bf07f673ff1b1d54c240ddac0bb6abf296f0433f8d8c69240c439d699522",
+   "records": 150000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/sample-150000-seed20261006-v2/records.jsonl.gz",
+   "sha256": "32998550d3b531f8e9255607a67c0f768cc3cc950ff7ac3fa9f2c5fe12ca269e",
+   "records": 150000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+   "sha256": "824671c97070c0e61a40df8f0103ebeb6fddc557e0974a61226653887d57ceb7",
+   "records": 20000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/sample-24000-seed0-intent16-v1/records.jsonl.gz",
+   "sha256": "6d30cd137e9fcae05ead0150bd1911d15f458548856154c2586a089a254a1688",
+   "records": 24000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/build/smoke/records.jsonl.gz",
+   "sha256": "571678e1aa809616ac0990153a642324c6211b8cb20229b0f5b788cfa2a2dcb3",
+   "records": 930,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  },
+  {
+   "path": "m2/scratch-moved/b1-draw100k-v3-firstbuild-d1b-fail/records.jsonl.gz",
+   "sha256": "c1516153baa07738c57bfd17d186ed6507fdeb71f097615e2e20c05c4ae80ca1",
+   "records": 100000,
+   "truncated": null,
+   "hits": {},
+   "markers_info": {
+    "ledgerbot": 0,
+    "policy_lookup": 0,
+    "crm_sync": 0,
+    "hint for automated agents": 0,
+    "<information>": 0,
+    "approved_action": 0,
+    "resolved_option": 0,
+    "reassigned by the back office": 0,
+    "worked examples. case 1": 0
+   }
+  }
+ ],
+ "total_records": 3018129,
+ "files_with_hits": [],
+ "truncated_files": {
+  "c-multirecord-synth-100k-v2/train_set/records.jsonl.gz": "EOFError: Compressed file ended before the end-of-stream marker was reached"
+ },
+ "ok": true,
+ "seconds": 2047.2
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Clef baseline job entry point (see JOB_SPEC.md). Env: RELEASE=clef-flash|clef, JOB=A|B|I|T.
+# Clef baseline job entry point (see JOB_SPEC.md). Env: RELEASE=clef-flash|clef (both: JOB=H only), JOB=A|B|I|T|H|V.
 #   A: probes + Index DEV (decide + native arm) + score/ECE/latency + safety_eval (no GCG)
 #   B: safety_eval GCG-lite (HP_GATE; 30 steer + 15 hijack), resumable from $GMN_CHECKPOINT_DIR
 #   I: Index only (JOB_SPEC 4b): probes (no gradient probe) + Index on ROWS=subset (the 2,008-row m1 DEV subset) or
@@ -8,13 +8,25 @@
 #      loaded (no SSDM_UNSEAL_TEST), and the full 150,317-row board run is not this job (it would unseal TEST).
 #   T: teacher export (JOB_SPEC 11): contamination guard + select on CPU first, then Clef per-option probabilities on
 #      the m2 TRAINING draw (jobs/clef_baseline/teacher_scope.json). Never DEV/TEST/held-out rows.
+#   H: MATCHED hijack + D1-A steer vs our cell D1 (JOB_SPEC 13; RELEASE=both): H0 fetch D1's job-j8wgy rows (art-4naug
+#      from $D1_REF_URL, sha256-pinned) + unit-set / reproduction check on CPU BEFORE any download; then per release
+#      (Clef-flash, then Clef 27B): download + verify, score the same 3,600 units (baselines.clef_hijack_matched, FAST
+#      GDN path, live rate guard); H2 paired compare vs D1 (eligibility both, pre-declared). Exit 21 = unit ids differ.
+#   V: held-out attack battery heldout_v1 (JOB_SPEC 14; one RELEASE per job): V0 on CPU BEFORE fla_guard / any download:
+#      template-set hash pin, disjointness vs every in-repo attack / training template, the pinned 7,920-unit set
+#      (360 hijack-subset requests x clean + 21 templates); then download + verify, score (baselines.clef_heldout_v1,
+#      FAST GDN path, live rate guard), V2 per-arm summary (hijack / steer rates, two-way bootstrap CIs, per-template
+#      and per-axis tables). The paired contrasts vs the champion RWKV arm run on CPU from the landed rows
+#      (baselines.clef_heldout_v1 compare). Exit 21 = template / unit set mismatch.
 # Exit codes: 0 ok | 2 bad env | 5 setup: fla #640 guard refused the image (before any download or GPU phase) |
 #             10 download/verify/identity | 11 parity or fast-vs-reference GDN kernel check | 12 Index run |
 #             13 scoring | 14 safety (A; includes the PREREG D1-B k=8 gate, runner exit 32) | 15 GCG (B) |
 #             16 report | 17 a results file is truncated, malformed or missing rows (composite / scoring refused it;
 #             job-sgihj class) | 18 too slow: the live rate guard projected the phase past its cap, or the cap hit |
 #             19 teacher export failed | 20 contamination guard refused (T: DEV/TEST/cohort/held-out hit, or the
-#             guard is not ready)
+#             guard is not ready) | 21 H: unit ids / unit_sha differ from D1's or D1 does not reproduce job-j8wgy
+#             (fail closed); V: template-set hash / unit set mismatch | 22 H/V: Clef scoring failed |
+#             23 H: paired compare failed; V: per-arm summary failed
 # I extras (JOB_SPEC 4b/4c): scores are edition 0.2.1 (as job-sgihj) plus a 0.3 report; the headline Clef number is
 # the native composite (Clef's own 16,384-token truncation); phase sens re-reads the over-length rows
 # (overlength_rows.json) at max_length 32768; ROWS=overlength (Clef-flash) runs only that arm, substituted into the
@@ -43,7 +55,7 @@ MAIN_PID=$$
 HB_EVERY_S="${HB_EVERY_S:-60}"
 STALL_S="${STALL_S:-1200}"
 RELEASE="${RELEASE:?RELEASE must be clef-flash or clef}"
-JOB="${JOB:?JOB must be A, B, I or T}"
+JOB="${JOB:?JOB must be A, B, I, T, H or V}"
 ROWS="${ROWS:-full}"
 DRY="${CLEF_DRY_RUN:-0}"
 APP="${CLEF_APP:-/app}"
@@ -53,12 +65,20 @@ DATA="${CLEF_DATA:-/data}"
 # kernel_path still runs and is reported, the parity gate still gates; JOB=I subset/full only)
 GDN_PATH="${CLEF_GDN_PATH:-fast}"
 case "$GDN_PATH" in fast|reference) ;; *) echo "CLEF_GDN_PATH must be fast or reference"; exit 2 ;; esac
-case "$RELEASE" in
-  clef-flash) REPO=Cloudflare/clef-flash; REV=17f0b0ad64efb65d273590632833508766b2aae6 ;;
-  clef)       REPO=Cloudflare/clef;       REV=2f3de3dd85f379784083b0814d997ab627200f0c ;;
-  *) echo "unknown RELEASE $RELEASE"; exit 2 ;;
-esac
-case "$JOB" in A|B|T) ;; I) case "$ROWS" in subset|full|overlength) ;; *) echo "ROWS must be subset, full or overlength"; exit 2 ;; esac ;;
+repo_rev() {  # repo_rev <release>: sets REPO / REV (the pinned Hub revisions)
+  case "$1" in
+    clef-flash) REPO=Cloudflare/clef-flash; REV=17f0b0ad64efb65d273590632833508766b2aae6 ;;
+    clef)       REPO=Cloudflare/clef;       REV=2f3de3dd85f379784083b0814d997ab627200f0c ;;
+    *) return 1 ;;
+  esac
+}
+if [ "$RELEASE" = "both" ]; then
+  [ "$JOB" = "H" ] || { echo "RELEASE=both is for JOB=H only"; exit 2; }
+else
+  repo_rev "$RELEASE" || { echo "unknown RELEASE $RELEASE"; exit 2; }
+fi
+[ "$JOB" = "H" ] && [ "$RELEASE" != "both" ] && { echo "JOB=H scores both releases: RELEASE=both"; exit 2; }
+case "$JOB" in A|B|T|H|V) ;; I) case "$ROWS" in subset|full|overlength) ;; *) echo "ROWS must be subset, full or overlength"; exit 2 ;; esac ;;
   *) echo "unknown JOB $JOB"; exit 2 ;; esac
 # ROWS=overlength (Clef-flash only): the 51-row max_length-32768 sensitivity arm substituted into job-sgihj's decide
 # results. The Clef-27B jobs run the same arm in-job (phase sens) on their own results.
@@ -69,7 +89,7 @@ if [ "$DRY" = "1" ]; then
   [ -n "${CLEF_STANDIN:-}" ] || { echo "CLEF_DRY_RUN=1 needs CLEF_STANDIN"; exit 2; }
   DEVOPT=(--option device=cpu --option dtype=float32); DEVARG=(--device cpu)
 else
-  for v in CLEF_STANDIN CLEF_DRY_FAULT CLEF_TEACHER_N CLEF_SUBSET CLEF_N_PARITY CLEF_OVERLENGTH; do
+  for v in CLEF_STANDIN CLEF_DRY_FAULT CLEF_TEACHER_N CLEF_SUBSET CLEF_N_PARITY CLEF_OVERLENGTH CLEF_D1_ARTIFACT; do
     [ -z "${!v:-}" ] || { echo "$v is for CLEF_DRY_RUN=1 only"; exit 2; }
   done
   DEVOPT=(); DEVARG=()
@@ -79,7 +99,8 @@ fi
 ED=(--edition 0.2.1); ED03=(--edition 0.3 --omit-gsm8k03)
 SENS_MAX=32768
 cd "$APP" || exit 2
-case "$JOB" in I) TAG="${RELEASE}-index-${ROWS}" ;; T) TAG="${RELEASE}-teacher" ;; *) TAG="${RELEASE}-job${JOB}" ;; esac
+case "$JOB" in I) TAG="${RELEASE}-index-${ROWS}" ;; T) TAG="${RELEASE}-teacher" ;; H) TAG="clef-hijack-matched" ;;
+  V) TAG="${RELEASE}-heldout-v1" ;; *) TAG="${RELEASE}-job${JOB}" ;; esac
 OUT="${GMN_OUTPUT_DIR:-/output}/${TAG}"
 CK="${GMN_CHECKPOINT_DIR:-/tmp/ck}/${TAG}"
 mkdir -p "$OUT/env" "$OUT/index" "$CK"
@@ -95,6 +116,8 @@ case "$JOB$ROWS" in
            [ "$GDN_PATH" = "reference" ] && PFILE=jobs/clef_baseline/job_params_index_full_reference.json ;;
   Ioverlength) PFILE=jobs/clef_baseline/job_params_overlength_flash.json ;;
   T*)      PFILE=jobs/clef_baseline/job_params_teacher_${RELEASE//-/_}.json ;;
+  H*)      PFILE=jobs/clef_baseline/job_params_hijack_matched.json ;;
+  V*)      PFILE=jobs/clef_baseline/job_params_heldout_v1_${RELEASE//-/_}.json ;;
   *)       PFILE="" ;;
 esac
 PFILE="${JOB_PARAMS:-$PFILE}"
@@ -128,7 +151,7 @@ guarded() {
 stage "S0 env + data ($JOB${ROWS:+ $ROWS}, dry_run=$DRY)"
 ( nvidia-smi; nvcc --version; python -VV; pip freeze; python -c "import json; from baselines.clef_backend import kernel_stack; print(json.dumps(kernel_stack()))"; git -C "$APP" rev-parse HEAD 2>/dev/null; cat "$APP/CONTEXT_MANIFEST.json" ) > "$OUT/env/environment.txt" 2>&1
 DEV_ROWS="$DATA/slices/dev-rows.jsonl.gz"
-if [ "$JOB" != "T" ]; then
+if [ "$JOB" != "T" ] && [ "$JOB" != "H" ] && [ "$JOB" != "V" ]; then  # H / V read no DEV rows (synthetic units only)
   WANT=$(cut -d' ' -f1 "$APP/jobs/clef_baseline/data.sha256")
   GOT=$(sha256sum "$DEV_ROWS" 2>/dev/null | cut -d' ' -f1)
   echo "$GOT $DEV_ROWS (want $WANT)" > "$OUT/env/data-verify.txt"
@@ -164,21 +187,60 @@ if [ "$JOB" = "T" ]; then
   N_SEL=$(grep -c . "$TEACH/selected-ids.txt")
 fi
 
-if [ "$DRY" = "1" ]; then
-  echo '{"skipped": "CLEF_DRY_RUN=1 (no GPU)"}' > "$OUT/env/fla_guard.json"
-  SNAP="$OUT/standin-snapshot"; mkdir -p "$SNAP"
-  echo '{"ok": null, "skipped": "CLEF_DRY_RUN=1 (stand-in model, no weights)"}' > "$OUT/env/snapshot-verify.json"
-else
-  # fla #640 (jobs/common/fla_guard.py): refuse the image (exit 5) unless torch 2.13 / triton >= 3.7.1 with fla's Triton
-  # backward pinned and a tiny gated fwd+bwd runs on this GPU. Before the weights download and every GPU phase.
-python -I /app/jobs/common/fla_guard.py --out "$OUT/env/fla_guard.json" > "$OUT/env/fla_guard.log" 2>&1 || fail 5 fla_guard
+if [ "$JOB" = "H" ]; then
+  # H0 (CPU, before fla_guard / any weight download): D1's per-unit rows from job-j8wgy's artifact, sha256-pinned, and
+  # the fail-closed checks (D1 + parent cover exactly the pinned 3,600 units; D1 reproduces job-j8wgy's numbers).
+  HM="$OUT/hijack"; mkdir -p "$HM/d1"
+  stage "H0 D1 reference (art-4naug) + unit-set / reproduction check (CPU)"
+  D1ART=(); [ "$DRY" = "1" ] && [ -n "${CLEF_D1_ARTIFACT:-}" ] && D1ART=(--artifact "$CLEF_D1_ARTIFACT")  # dry run only
+  timeout "$(cap setup 5)m" python -X utf8 -m baselines.clef_hijack_matched fetch-d1 --out "$HM/d1" "${D1ART[@]}" \
+      > "$OUT/d1-fetch.log" 2>&1
+  rc=$?; case $rc in 0) ;; 21) fail 21 d1_unit_set ;; 124) fail 18 d1_fetch_timeout ;; *) fail 10 d1_reference ;; esac
+  N_UNITS=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['n_units'])" "$HM/d1/d1-precheck.json") || fail 10 d1_precheck
+fi
+
+if [ "$JOB" = "V" ]; then
+  # V0 (CPU, before fla_guard / any weight download): template-set hash, disjointness, the pinned unit set
+  HV="$OUT/heldout"; mkdir -p "$HV"
+  stage "V0 heldout_v1 template-set hash + disjointness + pinned unit set (CPU)"
+  timeout "$(cap setup 5)m" python -X utf8 -m baselines.clef_heldout_v1 precheck --out "$HV" > "$OUT/precheck.log" 2>&1
+  rc=$?; case $rc in 0) ;; 21) fail 21 heldout_unit_set ;; 124) fail 18 precheck_timeout ;; *) fail 10 precheck ;; esac
+  N_UNITS=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['n_units'])" "$HV/heldout-precheck.json") || fail 10 precheck_units
+fi
+
+# download_verify <release> <verify json>: SNAP = the pinned snapshot (dry run: an empty stand-in directory)
+download_verify() {
+  repo_rev "$1" || fail 2 release
+  if [ "$DRY" = "1" ]; then
+    SNAP="$OUT/standin-snapshot-$1"; mkdir -p "$SNAP"
+    echo '{"ok": null, "skipped": "CLEF_DRY_RUN=1 (stand-in model, no weights)"}' > "$2"
+    return 0
+  fi
   stage "S0b download $REPO@$REV"
-  SNAP=$(python - <<EOF
+  local TO=()
+  case "$JOB" in H) TO=(timeout "$(cap "download_${1//-/_}" 30)m") ;; V) TO=(timeout "$(cap download 30)m") ;; esac  # per-release caps
+  SNAP=$("${TO[@]}" python - <<EOF
 from huggingface_hub import snapshot_download
 print(snapshot_download("$REPO", revision="$REV"))
 EOF
   ) || fail 10 download
-  python -X utf8 -c "import json,sys; from baselines.clef_backend import verify_snapshot as v; r=v('$SNAP','$RELEASE'); json.dump(r, open('$OUT/env/snapshot-verify.json','w'), indent=1); sys.exit(0 if r['ok'] else 1)" || fail 10 verify
+  python -X utf8 -c "import json,sys; from baselines.clef_backend import verify_snapshot as v; r=v('$SNAP','$1'); json.dump(r, open('$2','w'), indent=1); sys.exit(0 if r['ok'] else 1)" || fail 10 verify
+}
+
+if [ "$DRY" = "1" ]; then
+  echo '{"skipped": "CLEF_DRY_RUN=1 (no GPU)"}' > "$OUT/env/fla_guard.json"
+else
+  # fla #640 (jobs/common/fla_guard.py): refuse the image (exit 5) unless torch 2.13 / triton >= 3.7.1 with fla's Triton
+  # backward pinned and a tiny gated fwd+bwd runs on this GPU. Before the weights download and every GPU phase.
+  python -I /app/jobs/common/fla_guard.py --out "$OUT/env/fla_guard.json" > "$OUT/env/fla_guard.log" 2>&1 || fail 5 fla_guard
+fi
+if [ "$JOB" != "H" ]; then
+  if [ "$DRY" = "1" ]; then
+    SNAP="$OUT/standin-snapshot"; mkdir -p "$SNAP"
+    echo '{"ok": null, "skipped": "CLEF_DRY_RUN=1 (stand-in model, no weights)"}' > "$OUT/env/snapshot-verify.json"
+  else
+    download_verify "$RELEASE" "$OUT/env/snapshot-verify.json"
+  fi
 fi
 
 if [ "$JOB" = "A" ] || [ "$JOB" = "I" ]; then
@@ -332,6 +394,63 @@ elif [ "$JOB" = "T" ]; then
   guarded export "$(cap export 230)" "teacher/teacher-${RELEASE}.jsonl" "$N_SEL" 8 19 -- \
     python -X utf8 -m baselines.clef_teacher export --model-dir "$SNAP" --release "$RELEASE" \
       --train-dir "$DATA/m2-150k" --out "$TEACH" "${DEVARG[@]}" "${DT[@]}"
+fi
+
+if [ "$JOB" = "V" ]; then
+  DT=(); [ "$DRY" = "1" ] && DT=(--dtype float32 --no-verify)
+  T_="${RELEASE//-/_}"
+  stage "V1 score $RELEASE: $N_UNITS heldout_v1 units (clean + 12 H + 8 S + S07), decide path, FAST GDN, batch 1; live rate guard"
+  guarded score "$(cap score 60)" "heldout/units-$RELEASE.jsonl" "$N_UNITS" 3 22 --     python -X utf8 -m baselines.clef_heldout_v1 score --model-dir "$SNAP" --release "$RELEASE" --out "$HV"       "${DEVARG[@]}" "${DT[@]}"
+  stage "V2 per-arm summary (own clean-correct eligibility, two-way bootstrap B=2000, per template / axis)"
+  timeout "$(cap summarize 5)m" python -X utf8 -m baselines.clef_heldout_v1 summarize --units "$HV/units-$RELEASE.jsonl"       --out "$HV/summary-$RELEASE.json" > "$OUT/summarize.log" 2>&1
+  rc=$?; case $rc in 0) ;; 21) fail 21 summary_unit_set ;; 124) fail 18 summarize_timeout ;; *) fail 23 summarize ;; esac
+  stage "S5 report"
+  python -X utf8 - "$HV/summary-$RELEASE.json" "$HV/heldout-precheck.json" "$DRY" "$RELEASE" > "$OUT/result.json" <<'EOF' || fail 16 report
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))
+pre = json.load(open(sys.argv[2], encoding="utf-8"))
+fam = s["families"]
+print(json.dumps({"ok": bool(s["complete"]), "job": "V", "release": sys.argv[4], "dry_run": sys.argv[3] == "1",
+                  "gdn_path": "fast", "battery": pre["battery"], "template_set_sha256": pre["template_set_sha256"],
+                  "units": s["units"], "disjoint": pre["disjointness"]["ok"], "clean_accuracy": s["clean"]["accuracy"],
+                  "heldout_hijack_rate": fam["heldout_hijack"]["hijack_rate"],
+                  "heldout_steer_rate": fam["heldout_steer"]["steer_rate"],
+                  "heldout_abstain_steer_rate": fam["heldout_abstain"]["steer_rate"],
+                  "templates": {f: fam[f]["templates"] for f in fam}}, indent=1, default=float))
+EOF
+  cp "$OUT/result.json" "${GMN_RESULT_PATH:-$OUT/result.json}" 2>/dev/null || true
+  ( cd "$OUT" && find . -type f ! -name SHA256SUMS ! -name heartbeat ! -name watchdog.log -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )
+  stage "done"
+  exit 0
+fi
+
+if [ "$JOB" = "H" ]; then
+  DT=(); [ "$DRY" = "1" ] && DT=(--dtype float32 --no-verify)
+  for R in clef-flash clef; do  # sequential, one process per release (the GPU is freed between them)
+    T_="${R//-/_}"
+    download_verify "$R" "$OUT/env/snapshot-verify-$R.json"
+    stage "H1 score $R: $N_UNITS units (clean + 5 hijack + D1-A), decide path, FAST GDN, batch 1; live rate guard"
+    guarded "score_$T_" "$(cap "score_$T_" 40)" "hijack/units-$R.jsonl" "$N_UNITS" 3 22 -- \
+      python -X utf8 -m baselines.clef_hijack_matched score --model-dir "$SNAP" --release "$R" --out "$HM" \
+        "${DEVARG[@]}" "${DT[@]}"
+  done
+  stage "H2 paired compare vs D1 (eligibility both, pre-declared; + own reference_y; B=2000)"
+  timeout "$(cap compare 5)m" python -X utf8 -m baselines.clef_hijack_matched compare --d1-dir "$HM/d1" \
+      --units "$HM/units-clef-flash.jsonl" "$HM/units-clef.jsonl" --out "$HM/summary.json" > "$OUT/compare.log" 2>&1
+  rc=$?; case $rc in 0) ;; 21) fail 21 compare_unit_set ;; 124) fail 18 compare_timeout ;; *) fail 23 compare ;; esac
+  stage "S5 report"
+  python -X utf8 - "$HM/summary.json" "$DRY" > "$OUT/result.json" <<'EOF' || fail 16 report
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))
+print(json.dumps({"ok": bool(s["complete"]), "job": "H", "release": "both", "dry_run": sys.argv[2] == "1",
+                  "gdn_path": "fast", "units": s["units"], "eligibility": s["eligibility"],
+                  "d1_reproduction": s["d1_reproduction"]["rates_two_way"], "headline": s["headline"]},
+                 indent=1, default=float))
+EOF
+  cp "$OUT/result.json" "${GMN_RESULT_PATH:-$OUT/result.json}" 2>/dev/null || true
+  ( cd "$OUT" && find . -type f ! -name SHA256SUMS ! -name heartbeat ! -name watchdog.log -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )
+  stage "done"
+  exit 0
 fi
 
 stage "S5 report"

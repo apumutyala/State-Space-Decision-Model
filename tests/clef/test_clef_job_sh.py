@@ -147,7 +147,8 @@ def test_teacher_refuses_contaminated_set_before_any_download(tmp_path, kind):
         assert "frozen held-out family" in (out / "teacher-select.log").read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("var", ["CLEF_STANDIN", "CLEF_TEACHER_N", "CLEF_DRY_FAULT", "CLEF_OVERLENGTH"])
+@pytest.mark.parametrize("var", ["CLEF_STANDIN", "CLEF_TEACHER_N", "CLEF_DRY_FAULT", "CLEF_OVERLENGTH",
+                                 "CLEF_D1_ARTIFACT"])
 def test_runner_refuses_dry_run_overrides_in_production(tmp_path, var):
     env = _env(tmp_path, tmp_path, RELEASE="clef", JOB="T", CLEF_DRY_RUN="0", **{var: "x"})
     if var != "CLEF_STANDIN":
@@ -285,3 +286,50 @@ def test_overlength_flash_dry_run_on_the_sgihj_reference(tmp_path):
     assert sens["index_dev_decide_32k_substituted"]["slice_index"] and sens["reference_decide"]["slice_index"]
     assert abs(sens["reference_decide"]["slice_index"]["index"]["point"] - 56.79) < 0.01  # job-sgihj, edition 0.2.1
     assert sens["compare_32k_vs_16k"]["diff"]
+
+
+# ----------------------------------------------------------------------------- JOB=H (JOB_SPEC 13): matched hijack vs D1
+def test_hijack_matched_release_validation(tmp_path):
+    assert _run(_env(tmp_path, tmp_path, RELEASE="clef", JOB="H"), timeout=60).returncode == 2
+    assert _run(_env(tmp_path, tmp_path, RELEASE="both", JOB="A"), timeout=60).returncode == 2
+
+
+def test_hijack_matched_fails_closed_before_any_download(tmp_path):
+    """H0 runs before fla_guard and every weight download: an artifact that is not art-4naug (sha256 pin) ends the job
+    at exit 10 with nothing downloaded or scored."""
+    junk = tmp_path / "not-art-4naug.tar"
+    junk.write_bytes(b"not a tar")
+    env = _env(tmp_path, tmp_path, RELEASE="both", JOB="H", CLEF_D1_ARTIFACT=_sh(junk))
+    p = _run(env, timeout=300)
+    out = tmp_path / "out" / "clef-hijack-matched"
+    assert p.returncode == 10, p.stdout + p.stderr
+    r = json.loads((out / "result.json").read_text(encoding="utf-8"))
+    assert r["ok"] is False and r["stage"] == "d1_reference" and r["job"] == "H"
+    assert "sha256" in (out / "d1-fetch.log").read_text(encoding="utf-8")
+    assert not list(out.glob("standin-snapshot*")) and not (out / "env" / "fla_guard.json").exists()
+    assert not list((out / "hijack").glob("units-*.jsonl"))
+
+
+# ----------------------------------------------------------------------------- JOB=V (JOB_SPEC 14): heldout_v1
+def test_heldout_v1_release_validation(tmp_path):
+    """JOB=V scores ONE release per job (the two packages are separate): RELEASE=both is refused, as is an unknown one."""
+    assert _run(_env(tmp_path, tmp_path, RELEASE="both", JOB="V"), timeout=60).returncode == 2
+    assert _run(_env(tmp_path, tmp_path, RELEASE="clef-mini", JOB="V"), timeout=60).returncode == 2
+
+
+def test_heldout_v1_dry_run_end_to_end(tmp_path):
+    """The whole JOB=V runner on CPU with the mocked Clef: V0 (template-set hash, disjointness, pinned 7,920-unit set)
+    before any download, V1 scoring under the live rate guard, V2 summary, report and SHA256SUMS."""
+    pytest.importorskip("torch")
+    env = _env(tmp_path, tmp_path, RELEASE="clef-flash", JOB="V")
+    p = _run(env, timeout=3000)
+    out = tmp_path / "out" / "clef-flash-heldout-v1"
+    pre = json.loads((out / "heldout" / "heldout-precheck.json").read_text(encoding="utf-8"))
+    assert pre["n_units"] == 7920 and pre["disjointness"]["ok"]
+    stages = (out / "stages.log").read_text(encoding="utf-8")
+    assert stages.index("V0 heldout_v1") < stages.index("V1 score")
+    assert p.returncode == 0, p.stdout[-3000:] + p.stderr[-3000:]
+    r = json.loads((out / "result.json").read_text(encoding="utf-8"))
+    assert r["ok"] and r["job"] == "V" and r["dry_run"] and r["units"]["units_sha256"]
+    assert sum(1 for _ in (out / "heldout" / "units-clef-flash.jsonl").open(encoding="utf-8")) == 7920
+    assert (out / "SHA256SUMS").exists()
