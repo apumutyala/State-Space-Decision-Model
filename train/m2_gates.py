@@ -876,6 +876,8 @@ def main(argv=None) -> int:
     ap.add_argument("--teacher-dir", default=None, help="KD cells: the pinned teacher export (the training items are "
                     "rebuilt with their teacher distributions, as in training)")
     ap.add_argument("--progress-dir", default=None, help="live progress for jobs.common.rate_guard run-weighted")
+    ap.add_argument("--readout", default=None, help="stage hijack only: score the child under this eval readout "
+                    "(jobs.m2_first_cell.readout_switch, readout_ab's swap, e.g. v3w); default = the training template")
     a = ap.parse_args(argv)
     stages = {"all": list(STAGES), "g12+index": ["g12", "index"]}.get(a.stage, [a.stage])
     if "index" in stages and not a.index_rows:
@@ -896,6 +898,18 @@ def main(argv=None) -> int:
         except SystemExit as e:
             print(f"identity: index proxy: {e}", file=sys.stderr)
             return EXIT["identity"]
+    if a.readout not in (None, "", "training"):
+        from jobs.m2_first_cell.readout_switch import check
+
+        if a.stage != "hijack":
+            print("--readout is for the hijack measurement stage only (a promotion stage scores the training "
+                  "template)", file=sys.stderr)
+            return EXIT["usage"]
+        try:
+            check(a.readout)
+        except ValueError as e:
+            print(str(e), file=sys.stderr)
+            return EXIT["usage"]
     if a.anchor_arm and not a.anchor_arm_sha256:
         print("--anchor-arm needs --anchor-arm-sha256", file=sys.stderr)
         return EXIT["usage"]
@@ -971,6 +985,10 @@ def main(argv=None) -> int:
                                    checkpoint={"path": ckpt.name, "step": tr.step,
                                                "sha256": hashlib.sha256(ckpt.read_bytes()).hexdigest()})
     if measure_only:
+        from jobs.m2_first_cell import readout_switch as RS
+
+        backend = RS.switch_backend(backend, a.readout)  # params "readout" (mode hijack_eval); None = training template
+        a.readout_identity = RS.identity(cfg, a.readout, tempered=False)
         ft = card = None
         decider = Decider(backend)  # identity calibration: the arm IS what is scored (both arms untempered)
     else:
@@ -1038,6 +1056,7 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
                           index_proxy=getattr(a, "index_proxy_data", None),
                           child_index_decide=decider.decide,
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
+                                 "readout": getattr(a, "readout_identity", None),
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),
                                  "serving_bundle": (export_serving_bundle(decider) if ft is not None else None),
                                  "temperature": ({**ft.identity(), "disjointness": ft.disjointness,

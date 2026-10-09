@@ -79,6 +79,8 @@ def summarize(a) -> dict:
         "cell": {k: cell["config"].get(k) for k in ("parent", "head", "loss_arm", "lora_rank", "template", "layout",
                                                      "n_train_records", "max_steps", "seed")},
         "training_steps": (cell.get("train") or {}).get("steps"),
+        "readout_requested": params.get("readout") or "training",
+        "readout": (rep.get("identities") or {}).get("readout"),
         **measurement(child["steer_rows"], par["steer_rows"], cohort, a.n_boot),
         "scoring_seconds": {"child": child.get("seconds"), "parent": par.get("seconds"),
                             "child_s_per_unit": (child.get("seconds") or 0) / n if n else None,
@@ -103,7 +105,9 @@ def valid_result(d: Any) -> bool:
                 and all(fin(h["hijack_rate"]["diff"][k]) for k in ("point", "lo", "hi"))
                 and fin(s["steer_rate"]["diff"]["point"]) and d["m2_gates_exit"] == 46
                 and bool(d["checkpoint"].get("ckpt_sha256"))
-                and (d["checkpoint"].get("loaded") or {}).get("sha256") == d["checkpoint"]["ckpt_sha256"])
+                and (d["checkpoint"].get("loaded") or {}).get("sha256") == d["checkpoint"]["ckpt_sha256"]
+                and (d.get("readout_requested", "training") == "training"
+                     or (d.get("readout") or {}).get("requested") == d["readout_requested"]))
     except Exception:  # noqa: BLE001
         return False
 

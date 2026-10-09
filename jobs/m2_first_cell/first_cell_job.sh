@@ -402,13 +402,17 @@ elif [ "$EVAL_ONLY" = hijack ]; then  # --------- eval-only: a SAVED checkpoint 
   mkdir -p "$WORK/out/parent_arm_hijack" && cp "$ARM"/*.json "$WORK/out/parent_arm_hijack/" || fail 6 "parent arm export copy"
 
   # ---------------------------------------------------------------- child: the saved checkpoint on the same units
-  say "phase evals (saved checkpoint; hijack stage: clean + 5 hijack + D1-A on the steer_dev hijack subset)"
+  # params "readout" (e.g. v3w): the child is scored under that eval readout (readout_ab's swap); the parent arm
+  # above stays the stock readout (the same parent arm as job-j8wgy)
+  HJ_READOUT=$(python -c "import json,sys; print(json.load(open(sys.argv[1])).get('readout') or 'training')" "$PARAMS") || fail 5 "job_params readout"
+  HJ_RO=(); [ "$HJ_READOUT" != training ] && HJ_RO=(--readout "$HJ_READOUT")
+  say "phase evals (saved checkpoint, child readout $HJ_READOUT; hijack stage: clean + 5 hijack + D1-A on the steer_dev hijack subset)"
   python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress.jsonl" --cap-min "$(cap evals)" \
     --report "$WORK/out/rate-evals.json" -- \
     timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" \
     --ckpt "$CK/cell/$CK_FILE" --model-dir "$SNAP" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
     --guard-readiness "$WORK/out/guard/readiness.json" --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" \
-    --out "$WORK/out/report.json" --stage hijack --progress-dir "$WORK/logs" > "$WORK/logs/evals.log" 2>&1; r=$?
+    --out "$WORK/out/report.json" --stage hijack "${HJ_RO[@]}" --progress-dir "$WORK/logs" > "$WORK/logs/evals.log" 2>&1; r=$?
   gate "evals" $r; export_phase evals
   case $r in 46) ;; 124|137) fail 7 "evals timeout" ;; 15) fail 15 "evals: live rate past the cap" ;;
     10) fail 10 "evals identity (cohort / parent arm / checkpoint lineage)" ;; *) fail 9 "evals rc=$r (46 = measured)" ;; esac

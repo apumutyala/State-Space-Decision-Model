@@ -171,5 +171,5 @@ def test_mode_files_and_runner_wiring():
     assert not any(d["dest"].startswith("parent_arm_seed/") for d in p["context"]["data"])
     sh = (ROOT / "jobs/m2_first_cell/first_cell_job.sh").read_text(encoding="utf-8")
     for s in ("jobs.m2_first_cell.checkpoint_loader install", "--stage hijack", "jobs.m2_first_cell.hijack_eval",
-              "case $r in 46) ;;", 'p.get("eval_only") == "hijack"', "VALIDATOR=jobs.m2_first_cell.hijack_eval:valid_result"):
+              "case $r in 46) ;;", 'ev not in ("none", "fulldev", "readout_ab", "hijack")', "VALIDATOR=jobs.m2_first_cell.hijack_eval:valid_result"):
         assert s in sh, s

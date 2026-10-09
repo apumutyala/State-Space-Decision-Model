@@ -270,6 +270,28 @@ hijack + 4 D1-A) = 3,600 units per arm), paired child - parent via `safety_eval.
 10 / 25 / 50 / 5 + 7 = 117 min. Expected ~72 run min = $3.56 (+ build ~15 min = $4.31); quoted one attempt $7.37.
 **Worst case** (60 + 2 x 117) x 0.0495 = **$14.55** (cap $15). Full derivation in the params file's `_comment`.
 
+### Modes `fulldev_eval_champ` + `hijack_eval_champ`: the champion's final-claim evidence (DRAFT, NOT SUBMITTED)
+
+Champion = D1's saved checkpoint (job-c7pq2 art-bm3e6, `ckpt-step0001439.pt` sha `43414f02…`) scored with the **v3w**
+readout: 38.67 [35.50, 41.73] on the 2,008 subset (job-39gnn readout_ab_d1, independently reproduced). Both modes are
+byte copies of `fulldev_eval` / `hijack_eval` (same cell config, pins, data, caps) plus params `"readout": "v3w"`:
+- `fulldev_eval score --arm child --readout v3w` and `train.m2_gates --stage hijack --readout v3w` swap the backend
+  exactly as `readout_ab.child_deciders` does (`jobs/m2_first_cell/readout_switch.py`: same model object, encoder,
+  checkpoint record and `shared_prefix`; template `jrt-rwkv-g1-v3w`, layout `g1v2`), AFTER `Trainer.load` checks the
+  checkpoint on the cell's own template. The parent arm never takes `--readout` (fulldev: off; hijack: the stock arm, as
+  job-j8wgy). The result records `readout` (requested + loaded) and `valid_result` requires them equal.
+- Temperature: no per-readout refit yet (`readout_switch.REFIT_AVAILABLE = False`, TODO hook `refit_temperature`). The
+  served temperature is the v1 (training-template) fit, recorded as such (`readout.temperature_scope`, result
+  `calibration`). The Index and `ece.json` use the untempered answers (T = 1); `ece_served.json` is the v1-fit
+  temperature applied to v3w. hijack: both arms untempered.
+- Inference: the default path. `exact_tree` (stack/rwkv7/cost-latency @2dd4a5e) is not on agent-main (8 conflicting
+  files) and is left out. d1_fast's flags do not apply to scoring.
+- fulldev sizing: 22,630,947 v1 tokens x 0.9004 (v3w / v1 prompt length, `readout_ab_d1`) x 1.037 s / 1k = 352 + 30
+  fixed = 382 min (cap 550); expected run 404 min = **$20.00** billed (+ build: $20.74); worst case **$63.56** (cap $65).
+  hijack: as `hijack_eval`, expected ~72 min = $3.56; worst case **$14.55** (cap $15).
+- Landing: `analysis/land_fulldev.py` pairs `child.results.jsonl` (12,104 rows, every row read in full) with the
+  comparators' 32k-substituted files on the same 12,104 run_ids (`full`) and on the 12,053 without the 51 (`full_excl51`).
+
 ### Mode `fulldev_smoke`: the same pipeline on 250 pre-declared rows, both arms (DRAFT, NOT SUBMITTED)
 
 `job_params_fulldev_smoke.json` = fulldev_eval with `"rows": "smoke"` and `"fulldev_parent_arm": true`. Rows:

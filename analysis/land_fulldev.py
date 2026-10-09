@@ -75,7 +75,13 @@ def land(candidate: str, clef: str = str(CLEF), flash: str = str(FLASH), B: int 
     out = {"job": job, "artifact": artifact, "candidate": str(Path(candidate).resolve()), "modes": modes,
            "pairings": {}}
     for mode in modes:
-        r = P.run(clef, flash, candidate, rows_mode=mode, B=B, seed=seed)
+        # full-DEV pairings: both Clef references must be the 32k-substituted files (pair 32k with 32k), and every side
+        # must answer the same run_ids (P.run asserts identical sets); the count is checked here as well
+        r = P.run(clef, flash, candidate, rows_mode=mode, B=B, seed=seed,
+                  context=("32k" if mode in MODES else None))
+        want = {"full": 12_104, "full_excl51": 12_053}.get(mode)
+        if want is not None and r["rows"] != want:
+            raise SystemExit(f"{mode}: {r['rows']} rows paired, want {want}")
         out["pairings"][mode] = {"brief": P.brief(r), "table": P.table(r), "rows": r["rows"],
                                  "files": r["files"], "context": r["context"]}
     own = Path(candidate).with_name("child.score.json")
