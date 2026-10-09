@@ -175,6 +175,66 @@
     "src": "suite-0.2/excluded-questions.json",
     "dest": "suite-0.2/excluded-questions.json",
     "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "pin_sha256": "ee411d5c067934e5f6bd3e2919ca98ce1fbc48830140f478f06b1f47f96bbe55"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "pin_sha256": "02c60e18c646c91ebce8e26423ca8e75bf06e48584fd810f3ee8224a8f9989d3"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "pin_sha256": "ba2f466ab74e51e04f3a9111017e31089b951691b72a405d0e80ebc9e23c5044"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "pin_sha256": "ff1a0b35f1888b666f79029639618d0241046c9c235e23bc7402fc7fd55ef040"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "dest": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "pin_sha256": "51bce25703df08ceae16785ade19294b70b97a458d488b8296343310b3732651"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "pin_sha256": "c1eeccb3e574db7da3a8d1c3ac8f28311389282071df14606fdf94be2f68d752"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "pin_sha256": "2da265e7ce19d5733cecb9bc53f2ab520d955f2061959beed87ab53a73cb761a"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "pin_sha256": "f5b2fc433ed465334c087219e5323500303488aa85f5edef6fb2a48b132f5549"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "pin_sha256": "09f4da80c85152221cd854f64168ef28cd98e6b9b445101ae7cf27b9f0da49e0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "pin_sha256": "03cc2ef0b3c39d8c395b7cf5e9c8b554cfb520b22111dd425d5ca353b71458ad"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "pin_sha256": "294bb8ec9c9ca13a56e0fcd1f87043ca6514b279c35bf5aeab6f1ed72402fbf0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "pin_sha256": "806b6699f847e039018840b9cb5da57e94086addcd44416d02fedbc7a06848f0"
    }
   ],
   "manifest_files": [

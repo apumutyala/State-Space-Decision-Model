@@ -174,9 +174,10 @@ def test_mode_configs_are_d16_on_the_q9af_parent():
         assert CELL[k] == D16[k], k
     assert CELL["train_set"]["attack_clean"]["n_excluded"] == 5201 and CELL["train_max_k"] == 255
     dc = CELL["train_set"]["doc_clean"]
-    assert dc["n_excluded"] == 10 and dc["index_sha256"].startswith("2c821e29") and CELL["n_train_records"] == 94790
-    assert dc["source_sha256"].startswith("ebde6aa3")  # = D16 @5e08c3e's pin (adopted spec, PR #235)
-    idx = [x for x in PARAMS["context"]["data"] if x["dest"].startswith("m2/doc-overlap/218affe13e367d07/")]
+    assert dc["n_excluded"] == 14 and dc["index_sha256"].startswith("af096960") and CELL["n_train_records"] == 94786
+    assert dc["allowlist_sha256"].startswith("556296cc")  # the reviewed guard (agent-main PR #235)
+    assert dc["source_sha256"].startswith("56f4eb5a")  # = D16 @3e7142c's pin (reviewed spec, PR #235)
+    idx = [x for x in PARAMS["context"]["data"] if x["dest"].startswith("m2/doc-overlap/0eaf89305948075a/")]
     assert len(idx) == 12 and all(len(x["pin_sha256"]) == 64 for x in idx)
     q = CELL["q9af"]
     assert q["base_repo"] == "Qwen/Qwen3.5-9B" and q["hybrid"] is False

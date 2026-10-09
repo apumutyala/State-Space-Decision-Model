@@ -18,7 +18,7 @@
   1024,
   2048
  ],
- "n_train_records": 94790,
+ "n_train_records": 94786,
  "n_eval_records": 0,
  "min_train_items": 5000,
  "max_steps": 4500,
@@ -75,23 +75,25 @@
    "note": "attack_guard v2 (agent-main 1e647e0) pin of the same 5,201 ids (D16's v1 pin has the v1 templates_sha256 930863...)"
   },
   "doc_clean": {
-   "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+   "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
    "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set",
-   "index_sha256": "2c821e291c944b4e28cb0e74a5dabc3f7bc436fdd7f410fb199661318448594f",
-   "allowlist_sha256": "8a0bf416f2920af62be1ced98e54ea006f8580859d1c7234bed8676703f2c111",
+   "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+   "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
    "n_records": 100000,
-   "n_excluded": 10,
-   "n_kept": 99990,
-   "excluded_ids_sha256": "34a8b818fefebf603cb219ab9b125160ce4fd31d7e385c647ace2debe6d78c54",
+   "n_excluded": 14,
+   "n_kept": 99986,
+   "excluded_ids_sha256": "e277b794d365c2a3bfdd0a4576840c0a8612ae42e2534666b075d66d1b44850d",
    "per_source_fail": {
+    "anli": 2,
     "glaive_fc": 2,
-    "mmlu_aux": 1,
+    "hellaswag": 1,
+    "mmlu_aux": 2,
     "when2call": 7
    },
    "draw": "b1-draw100k-v2",
    "source": "data/manifests/doc_clean/b1-draw100k-v2.json",
-   "source_sha256": "ebde6aa3fadae92cc3384b513703ca4cf0c09b1a18fa6d0db4a0642fa76b0351",
-   "note": "adopted doc_overlap_guard policy (claude/b-doc-overlap-gate 1f64368, PR #235; index-pin key 218affe1..., index_sha256 2c821e29...): the 10 ids in the spec's excluded_ids leave the pool"
+   "source_sha256": "56f4eb5a6fe7619f005c4a6c565ac064108a787a7933d12b6dabdbeae81d2d96",
+   "note": "doc_overlap_guard 85b5af1 policy (claude/b-doc-overlap-gate, PR #235: template/boilerplate exclusions only for I/O units, allowlist own_sources, R >= 3 covered; index-pin key 0eaf8930..., index_sha256 af096960..., allowlist 556296cc...): the 14 ids in the spec's excluded_ids leave the pool (1 also in attack_clean: m2:when2call:14977~inj:d1a:fake_correction). Supersedes the 10-id pin ebde6aa3 (index 2c821e29)."
   }
  },
  "act_ckpt": true,
@@ -131,5 +133,5 @@
  "execution_note": "row_batch 1: one row per backbone call (8 rows / optimiser step via grad_accum 8); act_ckpt true (heads/act_ckpt.py covers Qwen3.5 decoders); the cache fork reads each row's prompt once and forks its K continuations. row_plan / cont_plan / row_options only act with row_batch > 1 (train/trainer.py). Step-time basis (jobs.q9af_cell.price, job-5cmat rates): ~3.1 s / 8-row step at r64 -> the 4,500 max_steps bind at ~233 min, inside the 380-min clock.",
  "v3w_note": "generic v3w (decide/v3w_generic.py, PINNED_SPEC_SHA256 'jrt-v3w-generic:qwen3.5' 2e4907ee...; 255 single-token codes after the Qwen answer prefix, word ids by unique first token, Qwen3.5 chat template with enable_thinking=False -> empty think block, budget 16,383). Bound to the snapshot's own tokenizer files on the box (run_cell / score_parent / m2_gates / screen): any other tokenizer or template fails closed.",
  "census_note": "CPU 2026-10-09 (scripts/check_q9af_v3w_equivalence.py, real Qwen3.5-9B tokenizer + chat template, 10,000 seeded B1 100k-v2 records): 15,510 items, 14,741 kept by the cell filter (train_max_k 255, T <= 2,048); K <= 16: 14,519, K 17-255: 991; T mean 861.3, p50 827, p90 1,516, p99 2,276, max 3,576; 769 (5.0 %) over 2,048 (RWKV7 v3w on its own tokenizer: 797 of a 10k sample), so the D16 ladder and caps stay. train == readout on 1,919 rows / 1,000 records (K<=16 1,602; K 17-255 317; word-id 1,038; dict instructions 408): 0 mismatches (receipts/2026-10-09-q9af-v2-v3w/check_q9af_v3w_equivalence.json).",
- "n_train_records_note": "the whole cleaned pool: 100,000 - 5,201 attack_clean (v2) - 10 doc_clean (1 in both: m2:when2call:14977~inj:d1a:fake_correction) = 94,790 (= D16's; union of the two pinned id lists counted on CPU 2026-10-09); train.train_set.draw refuses n_train_records > pool (exit 28). Re-pinned from the superseded 1,801-row doc_clean spec (doc-overlap-gate d0cebef, 93,013) to the adopted spec data/manifests/doc_clean/b1-draw100k-v2.json (PR #235 1f64368, sha256 ebde6aa3...)."
+ "n_train_records_note": "the whole cleaned pool: 100,000 - 5,201 attack_clean (v2) - 14 doc_clean (reviewed doc_overlap_guard, agent-main PR #235; index af096960, allowlist 556296cc; 1 in both: m2:when2call:14977~inj:d1a:fake_correction) = 94,786 (= D16's @3e7142c: CPU train.train_set.draw n_pool 94,786, n_drawn 94,786, doc fails 14 == pinned e277b794...); train.train_set.draw refuses n_train_records > pool (exit 28). Re-pinned from the superseded 10-id spec (ebde6aa3, index 2c821e29; 94,790) and before that the 1,801-row spec (doc-overlap-gate d0cebef, 93,013) to the reviewed spec data/manifests/doc_clean/b1-draw100k-v2.json (sha256 56f4eb5a...)."
 }

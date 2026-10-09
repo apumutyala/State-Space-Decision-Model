@@ -331,22 +331,29 @@ def _items_chunk(records: list, cfg: dict, enc, guard, max_t: int, max_k: int | 
 
 
 def _doc_overlap_train_ids(cfg: dict, recs: dict, tr_ids: list, ident):
-    """Doc-overlap guard (``train.doc_overlap_guard``, job exit 34) on a cell WITHOUT ``train_set``: the training rows
-    taken from ``--records`` must carry no Index eval document text, unless the cell pins ``doc_clean`` for exactly
-    those rows (they then leave the training ids). With ``train_set`` the same gate runs inside ``train_set.draw``.
+    """Doc-overlap guard (``train.doc_overlap_guard``, job exit 34) on a cell WITHOUT ``train_set``: the WHOLE
+    ``--records`` file must carry no Index eval document text, unless the cell pins ``doc_clean`` (the file's
+    ``python -m train.doc_overlap_guard clean-spec`` spec) for exactly its failing rows; they then leave the training
+    ids. With ``train_set`` the same gate runs inside ``train_set.draw``.
     Raises ``train.train_set.DocOverlapRefusal`` (a ValueError)."""
     from train.attack_guard import ids_sha256
     from train.doc_overlap_guard import DocOverlapError, check_pinned, scan
     from train.train_set import DocOverlapRefusal, doc_clean_pin
 
-    seen: set = set()
-    keys = [k for k in tr_ids if not (k in seen or seen.add(k))]
+    keys = sorted(recs)  # the WHOLE records file: the pin is the file's clean-spec, independent of the split
+
+    def source_of(k, r, req):
+        src = r.get("source") or (req.get("ssdm") or {}).get("source")
+        if not src:
+            parts = str(r.get("id") or k).split(":")
+            src = parts[1] if len(parts) > 2 and parts[0] == "m2" else None
+        return src
 
     def rows():  # storage key as id (unique even for multislot rows); state/questions from the request
         for k in keys:
             r = recs[k]
             req = r.get("request") if isinstance(r.get("request"), dict) else r
-            yield {"id": str(k), "source": r.get("source") or (req.get("ssdm") or {}).get("source"),
+            yield {"id": str(k), "source": source_of(k, r, req),
                    "state": req.get("state") if "state" in req else req,  # unknown shape: every leaf counts
                    "questions": req.get("questions") if "state" in req else None}
 
@@ -355,7 +362,7 @@ def _doc_overlap_train_ids(cfg: dict, recs: dict, tr_ids: list, ident):
     except DocOverlapError as e:
         raise DocOverlapRefusal(f"doc-overlap guard cannot run: {e}") from e
     if rep["n_records"] != len(keys):
-        raise DocOverlapRefusal(f"doc-overlap guard read {rep['n_records']} of {len(keys)} training rows")
+        raise DocOverlapRefusal(f"doc-overlap guard read {rep['n_records']} of {len(keys)} records")
     ok, why = check_pinned(rep, doc_clean_pin(cfg))
     if not ok:
         raise DocOverlapRefusal(f"doc-overlap guard: {why} (per source {rep['per_source_fail']})")
@@ -384,6 +391,8 @@ def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, c
     if not cfg.get("train_set"):
         tr_ids, ev_ids, ident = (cohort_split(sorted(recs), cfg, recs) if protected
                                else _development_split(recs, cfg))
+        # both gates scan the WHOLE records file and compare with their whole-file pins, so their order cannot change
+        # either pin; each then removes its pinned rows from the training ids
         tr_ids, aident = attack_guard_records(cfg, recs, tr_ids)
         # a clean file keeps its historical identity; pinned exclusions are recorded
         ident = {**ident, "attack_guard": aident} if aident["n_excluded"] else ident

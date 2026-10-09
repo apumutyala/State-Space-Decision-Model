@@ -195,15 +195,15 @@ def select(a) -> int:
 
     pinned_150k = Path(scope["pointer"]).as_posix() == POINTERS[POOL_150K].relative_to(ROOT).as_posix()
     v3x = training_exclusion(man, content, co3, pool=POOL_150K if pinned_150k and not a.allow_n_mismatch else None)
-    # the same whole-set exclusions train.train_set.draw applies (PR #233 review finding 3): eval attack templates
-    # (train.attack_guard, scope "attack_clean" pin) and Index eval document text (train.doc_overlap_guard, scope
-    # "doc_clean" pin); an unpinned hit refuses the selection (exit 20), so the teacher draw == the cell's draw
-    from train.train_set import (AttackGuardRefusal, DocOverlapRefusal, attack_exclusion, doc_exclusion)
+    # the same whole-set exclusions train.train_set.draw applies: eval attack templates (train.attack_guard, scope
+    # "attack_clean" pin) and Index eval document text (train.doc_overlap_guard, scope "doc_clean" pin); an unpinned
+    # hit refuses the selection (exit 20), so the teacher draw IS the cleaned training draw
+    from train.train_set import AttackGuardRefusal, DocOverlapRefusal, attack_exclusion, doc_exclusion
 
     try:
-        attack_ids, attack_sum = attack_exclusion({"train_set": {"attack_clean": scope.get("attack_clean"),
-                                                                "heldout_excluded": {"ids": list(excl)}}},
-                                                  files["records"])
+        attack_ids, attack = attack_exclusion({"train_set": {"heldout_excluded": scope["heldout_excluded"],
+                                                             "attack_clean": scope.get("attack_clean")}},
+                                              files["records"])
         doc_ids, doc_sum = doc_exclusion(scope.get("doc_clean"), files["records"], set(excl))
     except (AttackGuardRefusal, DocOverlapRefusal) as e:
         raise Contamination(str(e)) from e
@@ -237,7 +237,7 @@ def select(a) -> int:
     attack_drawn = [r["id"] for r in drawn if record_hits(r)]
     if attack_drawn:
         raise Contamination(f"{len(attack_drawn)} drawn record(s) carry an eval attack template, e.g. {attack_drawn[:3]}")
-    attack_sum["drawn_hits"] = 0
+    attack["drawn_hits"] = 0
     if forbidden or frozen or rep["hits"]:
         raise Contamination(f"{len(forbidden)} drawn record(s) refused by the DEV/TEST guard ({forbidden[:2]}), "
                             f"{len(frozen)} target a frozen held-out family ({frozen[:2]}), "
@@ -257,7 +257,7 @@ def select(a) -> int:
            "heldout_draw_v1_sha256": hconfig.HELDOUT_DRAW_V1_SHA256,
            "frozen_families": sorted(frozen_families()),
            "heldout_scan": {"n_texts": rep["n_texts"], "hits": 0, "templates_sha256": rep["templates_sha256"]},
-           "attack_guard": attack_sum, "doc_overlap_guard": doc_sum,
+           "attack_guard": attack, "doc_overlap_guard": doc_sum,
            "content_sha256": {i: content[i] for i in ids}, "secs": round(time.time() - t0, 1)}
     (out / "selected-ids.txt").write_text("".join(i + "\n" for i in ids), encoding="utf-8", newline="\n")
     (out / "selection.json").write_text(json.dumps(sel, indent=1), encoding="utf-8", newline="\n")

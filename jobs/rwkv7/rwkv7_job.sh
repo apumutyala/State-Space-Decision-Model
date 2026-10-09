@@ -188,7 +188,7 @@ else
     > "$WORK/logs/cell.log" 2>&1; r=$?
   cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
   gate "cell" $r; export_phase cell
-  case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|34) fail $r "cell stop" ;; *) fail 2 "cell rc=$r" ;; esac
+  case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26) fail $r "cell stop" ;; 34) fail 34 "cell: training rows overlap eval documents (train.doc_overlap_guard)" ;; *) fail 2 "cell rc=$r" ;; esac
   python scripts/decide_rwkv7.py lora "$WORK/out/cell.json" "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1 \
     || fail 9 "decision"
 fi

@@ -201,6 +201,19 @@ def index_predict(decide: Callable[[dict], dict], rows: Sequence[dict], model: s
             if untempered_from_raw:
                 raw = resp["ssdm"]["raw_probabilities"]
                 response = {"answers": {q: wire_answer(qq, raw[q]) for q, qq in r["questions"].items()}}
+                # readout rules (decide.readout_rules): the served answers carry them; the rebuilt untempered answers
+                # must too, re-applied on the raw (T = 1) probabilities, or the arm silently loses them. A decider
+                # whose revision says rules but whose response does not record them fails closed.
+                rules = ((resp["ssdm"].get("served_config") or {}).get("readout_rules"))
+                if rules is None and "+R:" in str((resp["ssdm"].get("diagnostics") or {}).get("revision_id")):
+                    raise ValueError("index_predict: readout-rules decider without a served_config.readout_rules record")
+                if rules is not None:
+                    from decide.readout_rules import RULES_ID, apply_rules
+
+                    if rules.get("id") != RULES_ID:
+                        raise ValueError(f"index_predict: unknown readout rules {rules.get('id')!r}; refusing to rebuild")
+                    out["readout_rules_untempered"] = apply_rules(
+                        {"state": r["state"], "questions": r["questions"]}, response["answers"], raw)
                 served = {"answers": resp["answers"]}
                 validate(r["questions"], served)
                 out["served_response"] = served

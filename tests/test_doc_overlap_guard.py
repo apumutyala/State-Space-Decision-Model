@@ -24,6 +24,7 @@ def _words(n, rng=RNG):
 TRIAL = _words(160)          # an eval NLI4CT premise (CTR section)
 TRIAL_B = _words(160)        # its secondary trial
 WIKI = _words(150)           # a Wikipedia paragraph used as HoVer evidence
+CLAIM = "the actor was born in a small town in ohio and later starred in a famous film released in 1990"  # 20 words
 TEMPLATE = "Read the passage below carefully and decide which of the listed options best answers the question asked"
 
 
@@ -32,7 +33,7 @@ def _eval_rows(n_filler=200):
              {"state": {"primary_trial": {"text": [TRIAL]}, "secondary_trial": {"text": [TRIAL_B]}},
               "questions": {"q": {"instructions": f"{TEMPLATE} statement: the drug helps", "criteria": {"e": "Entailment"}}}}),
             ("DEV", "HoVer:dev:1", "HoVer claim verification",
-             {"state": {"claim": "the actor was born in ohio and starred in a film in 1990",
+             {"state": {"claim": CLAIM,
                         "evidence": [{"text": WIKI}]}, "questions": {"q": {"instructions": TEMPLATE}}})]
     for i in range(n_filler):  # unrelated eval rows sharing the instruction template (boilerplate on both sides)
         rows.append(("HELDOUT", f"X:{i}", "Filler", {"state": {"doc": _words(40)}, "questions": {"q": {"instructions": TEMPLATE}}}))
@@ -96,8 +97,7 @@ def test_wikipedia_allowlisted_rows_pass_and_are_counted(idx):
 
 
 def test_allowlist_never_exempts_the_item_field(idx):
-    claim = "the actor was born in ohio and starred in a film in 1990"  # 13 words: one 13-gram, in unit S:claim
-    rep = DG.scan(_clean(300) + [_rec(1, {"passage": WIKI, "claim": claim}, "hover")], idx)
+    rep = DG.scan(_clean(300) + [_rec(1, {"passage": WIKI, "claim": CLAIM}, "hover")], idx)
     assert rep["fail_ids"] == ["m2:t:1"]
     assert rep["fails"][0]["best_unit"]["field"] == "S:claim" and rep["fails"][0]["best_unit"]["allowlist"] is None
 
@@ -278,3 +278,90 @@ def test_load_cell_data_without_train_set_cannot_bypass(idx, tmp_path):
     pinned = cfg | {"doc_clean": DG.clean_spec(rep)}
     _, _, tr, _, ident = load_cell_data(pinned, str(p))
     assert "m2:t:50" not in tr and len(tr) >= 29 and ident["doc_overlap_guard"]["n_excluded"] == 1
+
+
+def test_template_with_a_tool_name_slot_is_not_a_document():
+    """BFCL-style eval instructions = a long shared template + 'Candidate tool: <name>'; synthetic training rows that
+    reuse the template with the same tool name share only 1-3 distinctive grams of the unit: not a document copy."""
+    frame = ("Given the complete user conversation and the published function schemas in state mark each candidate "
+             "tool yes if it should be invoked to answer the request or no otherwise candidate tool")
+    rows = [("DEV", f"BFCL:{i}", "BFCL-tool-selection",
+             {"state": {"functions": [{"description": _words(30, random.Random(500 + i))}]},
+              "questions": {"q": {"instructions": f"{frame} {t}"}}})
+            for i, t in enumerate(["send email", "lock door", "calculate loan payment"] * 12)]
+    index = DG.build_index(None, DG.load_allowlist(), rows_factory=lambda: iter(rows), n_parts=1)
+    index.meta["index_sha256"] = "synthetic"
+    train = [_rec(i, {"functions": [{"description": _words(30, random.Random(900 + i))}]}, "b1fam_bfcl_synth",
+                  instr=f"{frame} {t}") for i, t in enumerate(["send email", "lock door", "calculate loan payment"] * 10)]
+    assert DG.scan(_clean(100) + train, index)["n_fail"] == 0
+    # copying an eval row's function catalog (the document) still fails
+    cat = rows[0][3]["state"]["functions"][0]["description"]
+    assert DG.scan(_clean(100) + [_rec(77, {"functions": [{"description": cat}]}, "b1fam_bfcl_synth")], index)["fail_ids"] == ["m2:t:77"]
+
+
+def test_eval_side_frame_is_template_even_in_a_small_draw(idx):
+    # TEMPLATE sits in 202 eval rows (>= 100): a row carrying it fails neither alone nor in a tiny draw
+    r = _rec(1, {"x": TEMPLATE + " " + TEMPLATE}, "hellaswag", instr="ok")
+    assert DG.scan([r], idx)["n_fail"] == 0
+
+
+def test_repeated_document_in_state_stays_gated():
+    """A state (document) unit that repeats across >= 100 eval rows and >= 10 training rows is NOT a template."""
+    doc = _words(60, random.Random(4242))
+    rows = [("TEST", f"N:{i}", "NLI4CT-2024", {"state": {"primary_trial": {"text": [doc]}}, "questions": {}})
+            for i in range(120)]
+    index = DG.build_index(None, DG.load_allowlist(), rows_factory=lambda: iter(rows), n_parts=1)
+    index.meta["index_sha256"] = "synthetic"
+    train = [_rec(i, {"t": [doc]}, "nli4ct") for i in range(20)]
+    assert len(DG.scan(_clean(100) + train, index)["fail_ids"]) == 20
+
+
+def test_allowlist_never_saves_the_eval_family_own_source():
+    prem = _words(80, random.Random(77))
+    rows = _eval_rows() + [("DEV", "ANLI:1", "ANLI", {"state": {}, "questions": {"q": {"instructions": prem}}})]
+    index = DG.build_index(None, DG.load_allowlist(), rows_factory=lambda: iter(rows), n_parts=1)
+    index.meta["index_sha256"] = "synthetic"
+    assert DG.scan(_clean(150) + [_rec(1, {"passage": prem}, "nq")], index)["n_fail"] == 0  # shared text: allowlisted
+    assert DG.scan(_clean(150) + [_rec(2, {"premise": prem}, "anli")], index)["fail_ids"] == ["m2:t:2"]  # own source
+
+
+def test_stateless_record_fails_closed(idx):
+    with pytest.raises(DG.DocOverlapError):
+        DG.scan([{"id": "m2:t:1", "source": "x", "questions": {}}], idx)
+
+
+def test_meta_counts_must_match_the_pin(idx):
+    DG.check_meta_vs_pin(idx, {"n_eval_rows": idx.n_rows, "n_units": idx.meta["n_units"], "n_grams": idx.meta["n_grams"]})
+    with pytest.raises(DG.DocOverlapError):
+        DG.check_meta_vs_pin(idx, {"n_eval_rows": idx.n_rows + 1})
+
+
+def test_every_job_params_ships_the_pinned_index():
+    """Every job_params that ships the doc-overlap eval-hash index ships exactly the committed index-pin's directory
+    (all 12 files, each with a pin_sha256; with the local cache present the pins equal the files and their .npy
+    aggregate equals the pin's index_sha256), so a stale index can't drift into a launch again."""
+    import glob
+    import hashlib
+
+    pin = json.loads((ROOT / "data/manifests/doc_overlap/index-pin.json").read_text(encoding="utf-8"))
+    key16 = pin["key"][:16]
+    names = set(DG.EvalIndex.ARRAYS) | {"meta"}
+    cache = DG.DEFAULT_CACHE / key16
+    n_files = 0
+    for f in glob.glob(str(ROOT / "jobs/**/job_params*.json"), recursive=True):
+        d = json.loads(Path(f).read_text(encoding="utf-8"))
+        items = [x for x in (d.get("context") or {}).get("data") or [] if "doc-overlap/" in str(x.get("dest", ""))]
+        if not items:
+            continue
+        n_files += 1
+        dirs = {x["dest"].rsplit("/", 1)[0] for x in items}
+        assert dirs == {f"m2/doc-overlap/{key16}"}, (f, dirs)
+        got = {x["dest"].rsplit("/", 1)[1].split(".")[0] for x in items}
+        assert got == names and all(x["src"] == x["dest"] and len(x.get("pin_sha256", "")) == 64 for x in items), f
+        if (cache / "meta.json").exists():
+            for x in items:
+                assert hashlib.sha256((DG.DEFAULT_CACHE.parent.parent / x["src"]).read_bytes()).hexdigest() == x["pin_sha256"], (f, x)
+            pins = {x["dest"].rsplit("/", 1)[1]: x["pin_sha256"] for x in items}
+            agg = hashlib.sha256("".join(pins[f"{k}.npy"] for k in DG.EvalIndex.ARRAYS).encode()).hexdigest()
+            assert agg == pin["index_sha256"], f
+    assert n_files >= 9

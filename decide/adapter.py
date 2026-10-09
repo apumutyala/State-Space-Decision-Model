@@ -133,8 +133,14 @@ class Decider:
         enable_v0_1_deltas: bool = False,
         backend_max_input_tokens: int | None = None,
         enable_experimental_provenance: bool = False,
+        readout_rules: bool = False,
     ) -> None:
         self.enable_experimental_provenance = enable_experimental_provenance
+        #: Opt-in parameter-free readout rules (``decide.readout_rules``, id ``ssdm.readout_rules.r1``): BFCL
+        #: exactly-one and SATA top-m on the served probabilities, with a 32,768-token default input cap (a
+        #: readout-family default, not the claim cap: claim arms set their cap per request, R3 = 65,536). Off by
+        #: default, so every existing readout's responses are byte-identical.
+        self.readout_rules = readout_rules
         self.backend = backend
         self.calibration = calibration or OptionCountTemperature()
         assert_servable = getattr(self.calibration, "assert_servable", None)
@@ -149,6 +155,11 @@ class Decider:
         is checked against this id, so a client pinned to one fitted temperature never silently gets another.
         The legacy ``OptionCountTemperature`` keeps the backend id (its identity is in ``served_config``)."""
         rev = self.backend.revision()
+        if self.readout_rules:
+            from .readout_rules import READOUT_RULES_CAP, RULES_ID
+
+            rev = {**rev, "revision_id": f"{rev['revision_id']}+R:{RULES_ID}",
+                   "readout_rules": {"id": RULES_ID, "max_input_tokens_default": READOUT_RULES_CAP}}
         if not getattr(self.calibration, "versioned_in_revision", False):
             return rev
         cal = self.calibration.identity()
@@ -194,6 +205,10 @@ class Decider:
         if unknown:
             raise RequestRejected("error", "invalid_request", f"unknown limit keys: {sorted(unknown)}")
         limits = dict(DEFAULT_LIMITS)
+        if self.readout_rules:
+            from .readout_rules import READOUT_RULES_CAP
+
+            limits["max_input_tokens"] = READOUT_RULES_CAP
         for k, v in given.items():
             if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v <= 0):
                 raise RequestRejected("error", "invalid_request", f"limits.{k} must be a positive integer")
@@ -215,6 +230,8 @@ class Decider:
         }
         if alias_used:
             limits["_source"]["max_questions"] = "request:max_choices_alias"
+        if self.readout_rules and "max_input_tokens" not in given:
+            limits["_source"]["max_input_tokens"] = "readout_rules_cap"
         if self.backend_max_input_tokens is not None and (
             limits["max_input_tokens"] is None or limits["max_input_tokens"] > self.backend_max_input_tokens
         ):
@@ -484,6 +501,11 @@ class Decider:
             entropy[qid] = -sum(p * math.log(p) for p in served[qid].values() if p > 0)
 
         answers = {qid: wire_answer(q, served[qid]) for qid, q in questions.items()}
+        rules_diag = None
+        if self.readout_rules:
+            from .readout_rules import apply_rules
+
+            rules_diag = apply_rules(request, answers, served)
         ssdm: dict[str, Any] = {
             "schema": versions.ENVELOPE_SCHEMA,
             "request_id": request_id,
@@ -496,6 +518,7 @@ class Decider:
                 "calibration": self.calibration.identity(),
                 "temperature_per_question": temps,
                 "policy_masking": "none (served covers every supplied option)",
+                **({"readout_rules": rules_diag} if rules_diag is not None else {}),
             },
             "proposed_evidence_refs": [],
             "state_handle": None,
