@@ -50,6 +50,13 @@ def main(argv):
     out = {"ok": code == 0, "exit_code": code, "runner_rc": rc, "gates": json.loads(gates),
            "exports_verified": ef == 0, "elapsed_min": int(mins), "decision": decision,
            "verdict": decision.get("verdict") if isinstance(decision, dict) else None}
+    sg = os.path.join(out_dir, "SIZE_GUARD.json")  # jobs/common/size_guard.py moved files out of the upload
+    if os.path.exists(sg):
+        try:
+            g = json.load(open(sg))
+            out["size_guard"] = {k: g.get(k) for k in ("fits", "ckpt_evicted", "evicted", "left_in_place")}
+        except Exception:  # noqa: BLE001
+            out["size_guard"] = "unreadable"
     json.dump(out, open(res, "w"), indent=1)
     if code == 0:
         open(pass_path, "w").write(json.dumps({"exit_code": 0}))
