@@ -78,6 +78,27 @@ From `job_params_<mode>.json` (`submit` + `context` blocks): chip h100 x 1, miss
 code / DEV rows / parent identity, or download failed | 12 Index kit run failed (incl. a failed fork self-check or a
 weight mismatch at load) | 13 scoring | 15 readout too slow by measurement | 1 finalize.
 
+## MODE `qrwkv6_32b_v3w`: readout-artifact check (two arms, same weights, same rows)
+job-6c27k (stock QRWKV6-32B, chatml readout `qrwkv6-chatml-nothink`) scored 13.56 [11.32, 19.36] on proxy600, far
+below stock RWKV7 v3w (27.32). Before the 32B line is dropped, this mode asks whether that was the readout: one job,
+one download, the same pinned snapshot and the same 644 rows, two `decision_index run` arms, frozen scorer for both.
+
+- **Arm a** = job-6c27k exactly (family `qrwkv6-chatml-nothink`, same options, same fork self-check). After scoring,
+  `summarize check-arm-a` asserts |index - 13.56| <= 0.01 on 644 rows (`screen.expect_arm_a_*`); otherwise the runner
+  exits **16** before arm b (a non-reproducing baseline makes the paired diff meaningless).
+- **Arm b** = family `qrwkv6-v3w-generic`: `decide.v3w_generic.make_v3w("qrwkv6-32b")` (the model's own chat template
+  read from the snapshot's tokenizer_config.json, which equals the CPU-checked tokenizer files byte for byte: 255
+  single-token codes, word ids by unique first token, whole-string tokenization with specials only where the format
+  puts them), scored by `decide.backends.v3w_generic_backend.V3WGenericBackend` (G1V2 path: shared prefix prefilled
+  once, packed tails <= 16 rows / 4,096 positions, one next-token read per question). The readout identity sha256
+  `793c4e5a...` is pinned in params and refused if different. Canary self-check: prefix fork == full recompute of each
+  question's whole prompt (`index/selfcheck_b.json`, tol 0.25 nat, same argmax).
+- **Score:** arm b slice index + ECE, paired vs stock RWKV7 v3w (art-ivu28, 27.32 on proxy600; 31.07 is the 2,008-row
+  subset number), and **paired b - a** (`compare_b_vs_a.json`) -> decision.json `arm_b`.
+- **Schedule:** setup 12 + index 20 + index_b 20 + score 5 + reserve 6 = 63 min (job-6c27k: setup 2, index 12,
+  score <1; billed $0.97). Worst case (60 + 2 x 63) x 0.0495 = **$9.21** (hard cap $10); platform quote 63 x $0.063 =
+  $3.97; expected ~36 min incl. a cached-image build ~ $1.78.
+
 ## Not screened here (and why)
 - `featherless-ai/QRWKV-72B` (79.3B, MMLU 77.5): 158.6 GB bf16; 8-bit (~79 GB) does not fit one H100 next to activations.
   Needs 2 x H100 (bf16/FP8 split) or 4-bit; a follow-up if a 32B conversion screens well.

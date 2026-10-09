@@ -19,6 +19,11 @@ families
                   (HFReadoutBackend, prefix fork, ``fork_max_rows`` default 16) under jrt-chatml-v1 (QwQ no-think tail)
                   or jrt-chatml-nothink-v1 (Qwen2.5-Instruct tail). Option ``selfcheck_out``: before the first row,
                   score the canary request by fork AND by recompute and refuse (raise) unless they agree.
+  ``qrwkv6-v3w-generic`` the same RWKV6-Qwen2 plug-in, scored by the v3w-generic readout
+                  (``decide.backends.v3w_generic_backend.V3WGenericBackend`` over ``decide.v3w_generic.make_v3w``: the
+                  model's own chat template, its own single-token code table, word ids, whole-string tokenization);
+                  options ``backbone_id`` (a ``decide.v3w_generic.BACKBONES`` key), ``v3w_sha256`` (the pinned readout
+                  identity: refused unless equal), ``selfcheck_out`` (canary: prefix fork == full recompute).
   ``rwkv07c-chatml-nothink`` ``decide.backends.rwkv07c.load_rwkv07c`` (OpenMOSE RWKV-Qwen3-30B-A3B, attention-free
                   RWKV hxa07c + Qwen3-MoE), same readout / options / self-check, jrt-chatml-nothink-v1.
 
@@ -50,6 +55,8 @@ TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-h
              "rwkv07c-chatml-nothink": "jrt-chatml-nothink-v1"}
 #: attention-free conversions scored by the stock LM-logit readout with the canary fork self-check (backbone scout)
 QRWKV6_FAMILIES = ("qrwkv6-chatml", "qrwkv6-chatml-nothink", "rwkv07c-chatml-nothink")
+#: the same attention-free plug-ins under the v3w-generic readout (backbone scout readout-artifact check)
+V3W_GENERIC_FAMILIES = {"qrwkv6-v3w-generic": "qrwkv6-chatml-nothink"}
 #: fork vs recompute on the canary request (bf16 on GPU): max |delta sum-logprob| allowed, and same argmax per question
 SELFCHECK_TOL = 0.25
 
@@ -100,7 +107,7 @@ def build_plugin(family: str, options: dict[str, Any]):
 
         cap = options.get("input_cap")
         return load_rwkv07c(options["model_dir"], options["repo"], device=dev, dtype=dt, input_cap=int(cap) if cap else None)
-    if family in QRWKV6_FAMILIES:
+    if family in QRWKV6_FAMILIES or family in V3W_GENERIC_FAMILIES:
         from decide.backends.rwkv6qwen2 import load_rwkv6qwen2
 
         cap = options.get("input_cap")
@@ -134,6 +141,40 @@ def fork_selfcheck(plug, template, fork_max_rows: int, tol: float = SELFCHECK_TO
     rep = {"max_abs_delta": max(deltas), "options": len(deltas), "same_argmax": same, "tol": tol,
            "ok": bool(max(deltas) <= tol and same), "logits": out}
     return rep
+
+
+def v3w_tokenizers_root(backbone_id: str, model_dir) -> Path:
+    """A tokenizers root holding the pinned snapshot under the registry's directory name (a symlink), so make_v3w
+    reads the snapshot's own tokenizer files and its identity (which names the directory) equals the CPU-pinned one."""
+    import tempfile
+
+    from decide.v3w_generic import BACKBONES
+
+    root = Path(tempfile.mkdtemp(prefix="v3w-tok-"))
+    (root / BACKBONES[backbone_id].tokenizer_dir).symlink_to(Path(model_dir).resolve(), target_is_directory=True)
+    return root
+
+
+def v3w_selfcheck(backend, tol: float = SELFCHECK_TOL) -> dict[str, Any]:
+    """The v3w-generic backend's prefix-fork scores on decide.prompt.CANARY_REQUEST vs a full recompute of every
+    question's whole prompt (one forward, the next-token read after "ANSWER:"); same tolerance as fork_selfcheck."""
+    import torch
+
+    from decide.prompt import CANARY_REQUEST
+
+    fork = backend.score(CANARY_REQUEST, lambda: None).logits
+    plug, rec = backend.plugin, {}
+    for q in backend.v3w.questions(CANARY_REQUEST):
+        if not q["coded"]:
+            continue
+        with torch.inference_mode():
+            lg = plug.forward(torch.tensor([q["prompt"]], dtype=torch.long, device=plug.device), 1)
+            lp = torch.log_softmax(lg[0, -1].float(), dim=-1)
+        rec[q["qid"]] = dict(zip(q["options"], lp.index_select(0, torch.tensor(q["tokens"], device=lp.device)).tolist()))
+    deltas = [abs(fork[q][o] - rec[q][o]) for q in rec for o in rec[q]]
+    same = all(max(fork[q], key=fork[q].get) == max(rec[q], key=rec[q].get) for q in rec)
+    return {"max_abs_delta": max(deltas), "options": len(deltas), "same_argmax": same, "tol": tol,
+            "ok": bool(deltas and max(deltas) <= tol and same), "logits": {"fork": fork, "recompute": rec}}
 
 
 def map_response(resp: dict[str, Any], unsupported_exc=ValueError):
@@ -183,6 +224,23 @@ class ReadoutIndexEngine(Engine):
             from decide.backends.rwkv_g1_code_label import G1CodeLabelBackend
 
             self.backend = G1CodeLabelBackend(plug, tokenizer_decode=decode)
+        elif self.family in V3W_GENERIC_FAMILIES:
+            import json
+
+            from decide.backends.v3w_generic_backend import V3WGenericBackend
+            from decide.v3w_generic import make_v3w
+
+            v3w = make_v3w(options["backbone_id"], tokenizers_root=v3w_tokenizers_root(options["backbone_id"],
+                                                                                 options["model_dir"]))
+            got = v3w.identity()["sha256"]
+            if options.get("v3w_sha256") and got != options["v3w_sha256"]:
+                raise RuntimeError(f"v3w-generic identity {got} != pinned {options['v3w_sha256']}")
+            self.backend = V3WGenericBackend(plug, v3w)
+            if options.get("selfcheck_out"):
+                rep = v3w_selfcheck(self.backend)
+                Path(options["selfcheck_out"]).write_text(json.dumps(rep, indent=1), encoding="utf-8")
+                if not rep["ok"]:
+                    raise RuntimeError(f"v3w fork != recompute on the canary: {json.dumps({k: rep[k] for k in ('max_abs_delta', 'same_argmax')})}")
         elif self.family in QRWKV6_FAMILIES:
             from decide.backends.rwkv6qwen2 import FORK_MAX_ROWS
 
