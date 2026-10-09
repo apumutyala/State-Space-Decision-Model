@@ -29,11 +29,16 @@ Rule (``RULE``): text is normalised exactly as ``train.attack_guard.normalise`` 
 homoglyphs folded, casefold, non-word runs -> one space); 13-grams (K) never cross a string leaf; each 13-gram is a
 64-bit hash. A training row FAILS when, after the exclusions below,
   (R) >= 50% of its own document 13-grams are eval 13-grams (and at least min(3, its grams) of them), or
-  (E) it covers >= 50% of some eval unit's 13-grams (and at least min(3, that unit's grams)), or
-  (U) the draw as a whole covers >= 50% of an eval unit and this row alone covers >= 25% of it (min(3, grams) too):
+  (E) it covers >= 50% of some eval unit's 13-grams (at least 3 of them; units with >= MIN_UNIT_GRAMS = 5 distinctive
+      grams, i.e. a document, not a template whose only free slot is a tool name), or
+  (U) the draw as a whole covers >= 50% of an eval unit and this row alone covers >= 25% of it (same minimums):
       the NLI4CT shape, where a premise = primary + secondary trial section and each half arrives in another row.
 Exclusions:
-  (a) BOILERPLATE: 13-grams in > 1% of eval rows AND > 1% of the scanned training rows (computed per draw, listed).
+  (a) BOILERPLATE: 13-grams in > 1% of eval rows AND > 1% of the scanned training rows (computed per draw, listed),
+      and REPEATED TEMPLATES: 13-grams in >= 10 eval rows AND >= 10 rows of the draw (per-family instruction
+      templates such as ACOS's per-category instructions or the BFCL / API-Bank / CRUXEval prompt frames our b1
+      families reproduce; counted, top 200 listed). A document reused across eval rows (an NLI4CT trial section sits
+      in a handful of rows) stays gated unless it also sits in >= 10 training rows.
   (b) ALLOWLIST (``data/manifests/doc_overlap/allowlist-v1.json``, reviewed): eval units that are a shared public
       reference corpus used by design (e.g. HoVer's Wikipedia evidence). Their 13-grams do not count for (R) unless
       they also occur in a non-allowlisted unit, and (E)/(U) skip them; every row the allowlist saves is counted per
@@ -74,14 +79,16 @@ K = 13
 THRESH = 0.5
 UNION_CONTRIB = 0.25
 MIN_COVERED = 3
+MIN_UNIT_GRAMS = 5  # (E)/(U) gate eval units with >= 5 distinctive 13-grams (>= 17 tokens beyond the templates)
 BOILER_FRAC = 0.01
+TEMPLATE_DF = 10  # repeated-template grams: in >= 10 eval rows AND >= 10 rows of the scanned draw
 POST_CAP = 256
 EXIT_HIT = 4   # job shells map 4 -> fail 34 (attack_guard: 3 -> 33)
 JOB_EXIT = 34
 RULE = ("doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units "
         "(DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the "
-        "draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams; boilerplate = eval df > 1% "
-        "AND train df > 1%; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)")
+        "draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% "
+        "AND train df > 1%, or both df >= 10 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)")
 PIN_PATH = ROOT / "data" / "manifests" / "doc_overlap" / "index-pin.json"
 ALLOWLIST_PATH = ROOT / "data" / "manifests" / "doc_overlap" / "allowlist-v1.json"
 DEFAULT_CACHE = Path(os.environ.get("SSDM_DATA", r"C:\Users\apumu\research\CHLabs\ssdm-data")) / "m2" / "doc-overlap"
@@ -486,6 +493,16 @@ def set_index_for_tests(idx: EvalIndex | None) -> None:
     get_index.cache_clear()
 
 
+def build_cached(key: str, ident: dict) -> EvalIndex:
+    """The ``build`` command: (re)build the cache dir for the CURRENT sources / rule / allowlist (ignores the pin; the
+    caller re-pins with --write-pin)."""
+    env = os.environ.get("SSDM_DOC_OVERLAP_INDEX")
+    d = Path(env) if env else DEFAULT_CACHE / key[:16]
+    if not (d / "meta.json").exists():
+        save_index(build_index(None, load_allowlist(), n_parts=4, rows_factory=iter_eval_rows), d, ident)
+    return load_index_dir(d, None)
+
+
 @lru_cache(maxsize=1)
 def get_index() -> EvalIndex:
     """The pinned eval index. With the suite on disk: key recomputed from the sources; the cache dir is built if
@@ -531,11 +548,12 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
     idx = idx or get_index()
     t0 = time.time()
     cand_thr = BOILER_FRAC * idx.n_rows
+    tdf = np.zeros(len(idx.h), np.uint32)  # train df of every eval gram with eval df >= min(TEMPLATE_DF, 1%)
+    track = min(TEMPLATE_DF, cand_thr)
     n = 0
     found: set[str] = set()
     per_source_rows: dict[str, int] = {}
     hits: list[tuple] = []
-    cand_df: dict[int, int] = {}
     for rec in records:
         if not isinstance(rec, dict) or "state" not in rec:
             continue
@@ -553,14 +571,15 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
         pos = idx.lookup(g)
         if not len(pos):
             continue
-        hi = pos[idx.df[pos] > cand_thr]
-        for p in hi.tolist():
-            cand_df[p] = cand_df.get(p, 0) + 1
+        tdf[pos[idx.df[pos] >= track]] += 1  # pos is unique per row
         hits.append((rid, src, len(g), pos.astype(np.int64)))
     if want is not None and found != want:
         raise DocOverlapError(f"{len(want - found)} requested id(s) not in the records, e.g. {sorted(want - found)[:3]}")
-    boiler = {p for p, c in cand_df.items() if c > BOILER_FRAC * max(n, 1)}
-    boiler_arr = np.array(sorted(boiler), np.int64)
+    edf = idx.df.astype(np.int64)
+    is_boiler = (edf > cand_thr) & (tdf > BOILER_FRAC * max(n, 1))
+    is_template = (edf >= TEMPLATE_DF) & (tdf >= TEMPLATE_DF) & ~is_boiler
+    boiler_arr = np.nonzero(is_boiler | is_template)[0].astype(np.int64)
+    del edf
     nunits = len(idx.u_row)
     den = idx.u_den.astype(np.int64)
     if len(boiler_arr):  # boilerplate grams leave every unit's denominator too
@@ -572,7 +591,7 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
         union_pos = union_pos[~np.isin(union_pos, boiler_arr)]
     ucov_cnt = np.bincount(idx.units_of(union_pos), minlength=nunits) if len(union_pos) else np.zeros(nunits, np.int64)
     ucov = np.where(den > 0, ucov_cnt / np.maximum(den, 1), 0.0)
-    union_units = (ucov >= THRESH) & (ucov_cnt >= np.minimum(MIN_COVERED, den)) & (den > 0)
+    union_units = (ucov >= THRESH) & (ucov_cnt >= MIN_COVERED) & (den >= MIN_UNIT_GRAMS)
     fails: list[dict] = []
     saved: dict[str, dict[str, int]] = {}
     for rid, src, ng, pos in hits:
@@ -588,7 +607,7 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
         r_cov_all = len(nb) / ng
         r_fail_all = r_cov_all >= THRESH and len(nb) >= min(MIN_COVERED, ng)
         d = den[uu] if len(uu) else np.empty(0, np.int64)
-        ok_min = uc >= np.minimum(MIN_COVERED, d)
+        ok_min = (uc >= MIN_COVERED) & (d >= MIN_UNIT_GRAMS)
         cov = np.where(d > 0, uc / np.maximum(d, 1), 0.0)
         e_mask = (cov >= THRESH) & ok_min
         u_mask = union_units[uu] & (cov >= UNION_CONTRIB) & ok_min if len(uu) else np.empty(0, bool)
@@ -642,7 +661,9 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
            "per_eval_family_fail": dict(sorted(per_eval_family.items())),
            "eval_rows_attributed_by_split": {k: len(v) for k, v in sorted(eval_units_hit.items())},
            "eval_rows_union_covered_by_split": dict(sorted(union_split.items())),
-           "allowlist_saved": saved, "boilerplate": _boiler_report(idx, boiler, cand_df),
+           "allowlist_saved": saved, "boilerplate": _boiler_report(idx, np.nonzero(is_boiler)[0], tdf),
+           "n_boilerplate": int(is_boiler.sum()), "n_template_grams": int(is_template.sum()),
+           "template_grams_top": _boiler_report(idx, np.nonzero(is_template)[0], tdf)[:200],
            "secs": round(time.time() - t0, 1)}
     if keep_ids:
         rep["fail_ids"] = fail_ids
@@ -657,10 +678,10 @@ def _allow_sha_safe() -> str | None:
         return None
 
 
-def _boiler_report(idx: EvalIndex, boiler: set[int], cand_df: dict[int, int]) -> list[dict]:
-    """Boilerplate grams by hash (text is never stored on the eval side), with eval and train df."""
-    return sorted(({"gram_hash": f"{int(idx.h[p]):016x}", "eval_df": int(idx.df[p]), "train_df": cand_df[p]}
-                   for p in boiler), key=lambda d: -d["train_df"])
+def _boiler_report(idx: EvalIndex, boiler: np.ndarray, tdf: np.ndarray) -> list[dict]:
+    """Excluded grams by hash (text is never stored on the eval side), with eval and train df."""
+    return sorted(({"gram_hash": f"{int(idx.h[p]):016x}", "eval_df": int(idx.df[p]), "train_df": int(tdf[p])}
+                   for p in boiler.tolist()), key=lambda d: -d["train_df"])
 
 
 def scan_file(path: str | Path, keep_ids: bool = True, ids_file: str | Path | None = None,
@@ -725,8 +746,8 @@ def main(argv=None) -> int:
     try:
         if a.cmd == "build":
             t0 = time.time()
-            idx = get_index()
-            key, _ = index_key()
+            key, ident = index_key()
+            idx = build_cached(key, ident)
             pin = pin_record(idx, key) | {"build_secs": round(time.time() - t0, 1)}
             if a.write_pin:
                 PIN_PATH.parent.mkdir(parents=True, exist_ok=True)

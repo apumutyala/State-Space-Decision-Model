@@ -24,6 +24,7 @@ def _words(n, rng=RNG):
 TRIAL = _words(160)          # an eval NLI4CT premise (CTR section)
 TRIAL_B = _words(160)        # its secondary trial
 WIKI = _words(150)           # a Wikipedia paragraph used as HoVer evidence
+CLAIM = "the actor was born in a small town in ohio and later starred in a famous film released in 1990"  # 20 words
 TEMPLATE = "Read the passage below carefully and decide which of the listed options best answers the question asked"
 
 
@@ -32,7 +33,7 @@ def _eval_rows(n_filler=200):
              {"state": {"primary_trial": {"text": [TRIAL]}, "secondary_trial": {"text": [TRIAL_B]}},
               "questions": {"q": {"instructions": f"{TEMPLATE} statement: the drug helps", "criteria": {"e": "Entailment"}}}}),
             ("DEV", "HoVer:dev:1", "HoVer claim verification",
-             {"state": {"claim": "the actor was born in ohio and starred in a film in 1990",
+             {"state": {"claim": CLAIM,
                         "evidence": [{"text": WIKI}]}, "questions": {"q": {"instructions": TEMPLATE}}})]
     for i in range(n_filler):  # unrelated eval rows sharing the instruction template (boilerplate on both sides)
         rows.append(("HELDOUT", f"X:{i}", "Filler", {"state": {"doc": _words(40)}, "questions": {"q": {"instructions": TEMPLATE}}}))
@@ -96,8 +97,7 @@ def test_wikipedia_allowlisted_rows_pass_and_are_counted(idx):
 
 
 def test_allowlist_never_exempts_the_item_field(idx):
-    claim = "the actor was born in ohio and starred in a film in 1990"  # 13 words: one 13-gram, in unit S:claim
-    rep = DG.scan(_clean(300) + [_rec(1, {"passage": WIKI, "claim": claim}, "hover")], idx)
+    rep = DG.scan(_clean(300) + [_rec(1, {"passage": WIKI, "claim": CLAIM}, "hover")], idx)
     assert rep["fail_ids"] == ["m2:t:1"]
     assert rep["fails"][0]["best_unit"]["field"] == "S:claim" and rep["fails"][0]["best_unit"]["allowlist"] is None
 
@@ -278,3 +278,22 @@ def test_load_cell_data_without_train_set_cannot_bypass(idx, tmp_path):
     pinned = cfg | {"doc_clean": DG.clean_spec(rep)}
     _, _, tr, _, ident = load_cell_data(pinned, str(p))
     assert "m2:t:50" not in tr and len(tr) >= 29 and ident["doc_overlap_guard"]["n_excluded"] == 1
+
+
+def test_template_with_a_tool_name_slot_is_not_a_document():
+    """BFCL-style eval instructions = a long shared template + 'Candidate tool: <name>'; synthetic training rows that
+    reuse the template with the same tool name share only 1-3 distinctive grams of the unit: not a document copy."""
+    frame = ("Given the complete user conversation and the published function schemas in state mark each candidate "
+             "tool yes if it should be invoked to answer the request or no otherwise candidate tool")
+    rows = [("DEV", f"BFCL:{i}", "BFCL-tool-selection",
+             {"state": {"functions": [{"description": _words(30, random.Random(500 + i))}]},
+              "questions": {"q": {"instructions": f"{frame} {t}"}}})
+            for i, t in enumerate(["send email", "lock door", "calculate loan payment"] * 12)]
+    index = DG.build_index(None, DG.load_allowlist(), rows_factory=lambda: iter(rows), n_parts=1)
+    index.meta["index_sha256"] = "synthetic"
+    train = [_rec(i, {"functions": [{"description": _words(30, random.Random(900 + i))}]}, "b1fam_bfcl_synth",
+                  instr=f"{frame} {t}") for i, t in enumerate(["send email", "lock door", "calculate loan payment"] * 10)]
+    assert DG.scan(_clean(100) + train, index)["n_fail"] == 0
+    # copying an eval row's function catalog (the document) still fails
+    cat = rows[0][3]["state"]["functions"][0]["description"]
+    assert DG.scan(_clean(100) + [_rec(77, {"functions": [{"description": cat}]}, "b1fam_bfcl_synth")], index)["fail_ids"] == ["m2:t:77"]

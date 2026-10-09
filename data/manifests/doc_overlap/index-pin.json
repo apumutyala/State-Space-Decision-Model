@@ -1,0 +1,16 @@
+{
+ "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+ "key": "bc1fcc57093a2a4a19625df33619ceafadb565c79db3ba98e10622448e0367e4",
+ "index_sha256": "d29da6215c87d4904e14aaf7ffb90eddf75afcc8848db2d2be34b757ac3d1df4",
+ "allowlist_sha256": "607c534c6afac3416786f4e9aab3c393bde26b06643b78060dfbd4821db611f1",
+ "n_eval_rows": 153397,
+ "rows_by_split": {
+  "TEST": 12423,
+  "DEV": 12366,
+  "HELDOUT": 128608
+ },
+ "n_units": 533041,
+ "n_grams": 9740238,
+ "n_postings": 22900889,
+ "build_secs": 559.8
+}
