@@ -12,7 +12,7 @@
   ],
   "workspace_root": "C:/Users/apumu/research/CHLabs/ssdm-wt",
   "reparse_points_in_targets": false,
-  "reported_logical_bytes": 474027655,
+  "reported_logical_bytes": 474027555,
   "reported_stored_bytes": 248260167,
   "scope": "storage accounting from compact.exe; global free space also changed independently",
   "tests_after_relief": 9
