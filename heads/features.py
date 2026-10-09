@@ -39,6 +39,11 @@ class HeadInput:
     option_mask: torch.Tensor
     fork: torch.Tensor | None = None
     ks: list[int] = field(default_factory=list)
+    #: joint_record head only (``heads.model.DecisionModel`` fills them when ``head.needs_record``): lexical option
+    #: vectors [B, K, D] (frozen input-embedding mean over the option's text) and the record groups (row indices of
+    #: each request, in schema order). None for every other head.
+    lex: torch.Tensor | None = None
+    groups: list[list[int]] | None = None
 
     @property
     def device(self) -> torch.device:
@@ -59,6 +64,7 @@ class HeadInput:
             h=self.h, token_mask=self.token_mask, evidence_mask=self.evidence_mask, q_pre=self.q_pre,
             q_end=self.q_end, e=self.e[:, perm], option_mask=self.option_mask[:, perm],
             fork=None if self.fork is None else self.fork[:, perm], ks=list(self.ks),
+            lex=None if self.lex is None else self.lex[:, perm], groups=self.groups,
         )
 
 

@@ -41,6 +41,36 @@ from .lora import apply_lora, lora_parameters
 from .losses import LossConfig, add_order_consistency, aligned_order_js, decision_loss
 
 
+def item_record(it) -> str:
+    """The record an Item came from (``train.data.items_from_records`` ids are ``<record id>/<qid>``)."""
+    return it.id.rsplit("/", 1)[0]
+
+
+def record_chunks(rows: list, row_options: int = 0) -> list[list]:
+    """joint_record step rows (record-contiguous) -> consecutive chunks of WHOLE records whose summed option count K
+    stays <= ``row_options`` (a record alone over the cap is its own chunk; bschema-draw230k-v2e's largest record sums
+    K = 92 < 160). ``row_options`` 0 or a step within the cap = one chunk (the D13 single-call step)."""
+    if not row_options or sum(it.row.n_options for it in rows) <= row_options:
+        return [rows] if rows else []
+    recs: list[list] = []
+    for it in rows:
+        if recs and item_record(recs[-1][0]) == item_record(it):
+            recs[-1].append(it)
+        else:
+            recs.append([it])
+    chunks: list[list] = []
+    k = 0
+    for r in recs:
+        rk = sum(it.row.n_options for it in r)
+        if chunks and k + rk <= row_options:
+            chunks[-1] += r
+            k += rk
+        else:
+            chunks.append(list(r))
+            k = rk
+    return chunks
+
+
 def teacher_tensor(batch, lp: torch.Tensor) -> torch.Tensor:
     """[B, K] teacher probabilities (``Item.teacher``, in ``row.option_ids`` order; ``train.teacher.attach``), zero on
     padded options; a row without a teacher is all NaN (``decision_loss`` falls back to the arm for it)."""
@@ -617,7 +647,56 @@ class Trainer:
 
     def _order(self, epoch: int) -> list[int]:
         g = torch.Generator().manual_seed(self.cfg.seed * 100_003 + epoch)
+        if self.joint:  # joint_record head: shuffle RECORDS; a record's rows stay contiguous, in their item order
+            # memoised per (train_items, epoch): the grouping walk over ~367k items cost ~0.4 s and ran every step
+            key = (id(self.train_items), len(self.train_items), epoch)
+            memo = getattr(self, "_record_order", None)
+            if memo is not None and memo[0] == key:
+                return memo[1]
+            recs: dict[str, list[int]] = {}
+            for i, it in enumerate(self.train_items):
+                recs.setdefault(item_record(it), []).append(i)
+            groups = list(recs.values())
+            order = [i for r in torch.randperm(len(groups), generator=g).tolist() for i in groups[r]]
+            self._record_order = (key, order)
+            return order
         return torch.randperm(len(self.train_items), generator=g).tolist()
+
+    @property
+    def joint(self) -> bool:
+        return bool(getattr(self.model.head, "needs_record", False))
+
+    #: joint_record head: a record longer than the step's ``n`` rows is still taken WHOLE (as its own step) up to
+    #: ``JOINT_RECORD_ROWS_FACTOR x n`` rows, so the record mixer trains on the same whole records it scores at serve
+    #: time (DecisionModelBackend: one forward per request); only a longer record is cut. bschema-draw230k-v2e: max
+    #: 12 questions per record (2,353 records with 9-12, sum of row tokens <= 16,594 ~= the 8 x 2,048 step envelope).
+    JOINT_RECORD_ROWS_FACTOR = 2
+
+    def _next_record_rows(self, n: int) -> list[Item]:
+        """joint_record head: up to ``n`` rows made of WHOLE records (record-contiguous order); a record that does not
+        fit ends the step; a record longer than ``n`` rows is its own step, whole up to ``JOINT_RECORD_ROWS_FACTOR x
+        n`` rows (a longer one is cut there; its rest opens the next step). Same epoch / cursor state as
+        ``_next_batch``, so checkpoint resume is unchanged."""
+        cap = self.JOINT_RECORD_ROWS_FACTOR * n
+        rows: list[Item] = []
+        order = self._order(self.epoch)
+        while len(rows) < n:
+            if self.cursor >= len(order):
+                if rows:
+                    break
+                self.epoch += 1
+                self.cursor = 0
+                order = self._order(self.epoch)
+            key = item_record(self.train_items[order[self.cursor]])
+            end = self.cursor
+            while end < len(order) and item_record(self.train_items[order[end]]) == key:
+                end += 1
+            if rows and len(rows) + (end - self.cursor) > n:
+                break
+            end = min(end, self.cursor + (cap if not rows else n - len(rows)))
+            rows += [self.train_items[i] for i in order[self.cursor:end]]
+            self.cursor = end
+        return rows
 
     def _next_batch(self) -> list[Item]:
         bs = self.cfg.batch_size
@@ -703,6 +782,28 @@ class Trainer:
         self.opt.zero_grad(set_to_none=True)
         self._step_uniform = 0.0
         total = 0.0
+        if self.joint:
+            # joint_record head: the step's rows (whole records) go through ONE forward so the record mixer sees every
+            # question of a record together; with row_batch > 1 the length groups still bound each prefix call
+            # (cont_plan "single" mechanics: one continuation call, one backward of the step-mean loss).
+            # row_options (> 0) bounds the forked continuation copies of ONE call: when the step's summed K exceeds it,
+            # the step runs as several record chunks (whole records, each <= row_options summed K unless one record
+            # alone exceeds it), one forward + backward each, weighted |chunk| / n, as the non-joint per-group path.
+            rows = self._next_record_rows(self.cfg.batch_size * self.cfg.grad_accum)
+            n = len(rows)
+            for chunk in record_chunks(rows, self.cfg.row_options):
+                groups = None
+                if self.cfg.row_batch > 1:
+                    plan = {"greedy": row_groups, "min_cost": row_groups_min_cost}[self.cfg.row_plan]
+                    groups = plan([len(it.row.ids) for it in chunk], self.cfg.row_batch, self.cfg.row_tokens,
+                                  [it.row.n_options for it in chunk], self.cfg.row_options)
+                if groups is not None and len(groups) > 1:
+                    self.model.backbone.prefix_groups = groups
+                try:
+                    total += self._row_loss(chunk, len(chunk) / n)
+                finally:
+                    self.model.backbone.prefix_groups = None
+            return self._finish_step(total)
         if self.cfg.row_batch > 1:
             # the same rows as the micro-batch loop below (same _next_batch calls, so epoch roll-over is unchanged); the
             # step loss sum_m mean(m) / grad_accum = sum_rows / (batch_size x grad_accum) = sum_g mean(g) x |g| / n

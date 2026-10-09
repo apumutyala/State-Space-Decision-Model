@@ -239,6 +239,12 @@ cell 531 (D16 455 - 32 + 99 tokenize scaled by items from v2d's 95 + 9 for the d
 child = 148.97 <= 0.95 x 157). Clock unchanged (380 min, max_steps 4,500). Schedule 25 + 5 + 15 + 85 + 65 + 531 + 157 + 5 + 7 = 895 min.
 **Worst case** (60 + 2 x 895) x $0.0495 = **$91.58** (cap $95). Expected 828 min ≈ $40.99.
 
+Mode `d18_v3w_v2e_joint` (D18; `job_params_d18_v3w_v2e_joint.json`, `m2_first_cell_rwkv7_d18_v3w_v2e_joint.json`): `d17_v3w_bschema230k_v2e` with ONLY
+`"head": "joint_record"` (heads.heads.JointRecordHead, from stack/rwkv7/d13-joint; zero-gated, so step 0 = the D17 fork head). Training steps take whole
+records (train.trainer: record-contiguous order, chunked by whole records when the summed K exceeds row_options 160, a record longer than the step kept whole
+up to 2 x 8 rows); the screen child scores each request in one forward (DecisionModelBackend). Caps, clock and schedule are D17's: 895 min.
+**Worst case** (60 + 2 x 895) x $0.0495 = **$91.58** (cap $95). Expected 828 min ≈ $40.99.
+
 fla in cells (any mode whose cell config sets `"rwkv7_wkv": "fla"`; defaults unchanged, every committed config keeps its
 own WKV). Adopted from SF job-9bs8w (`jobs/perf_step_gate` rule v2, stack/rwkv7/perf-gate-fla @3501b56): `fast_fla`
 (d1_fast flags + fla) 3.88 s/step vs `fast` 5.65 (1.46x) and `greedy` 7.94 (2.05x), LoRA-grad cos 0.998, loss_rel

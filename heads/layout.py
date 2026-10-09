@@ -340,6 +340,8 @@ def build_row(
                 spans[tag] = [start, len(ids)]
     # provenance-untrusted tokens (controlsafe trust gate): the rendered state, before any evidence-span move
     untrusted_spans = [tuple(spans["state"])] if "state" in spans and spans["state"][1] > spans["state"][0] else []
+    # end of the request-shared prefix (template head + schema of all fields + state): where the question re-read starts
+    prefix_end = spans["reread"][0] if "reread" in spans else (spans["state"][1] if "state" in spans else None)
     evidence = "state"
     no_state_tokens = "state" not in spans or spans["state"][1] <= spans["state"][0]
     if no_state_tokens or is_empty_state(request["state"]):
@@ -373,7 +375,7 @@ def build_row(
         option_seqs=option_seqs,
         continuations=conts,
         layout=layout,
-        meta={"template": tpl.id, "perm": perm, "evidence": evidence, "untrusted_spans": untrusted_spans,
+        meta={"template": tpl.id, "perm": perm, "evidence": evidence, "prefix_end": prefix_end, "untrusted_spans": untrusted_spans,
               "caller_spans": caller_spans, "field_spans": field_spans, "cont_spans": cont_spans,
               "option_seq_spans": opt_seq_spans, "trusted_paths": declared_instruction_paths(request)},
     )
