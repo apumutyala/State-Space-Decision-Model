@@ -73,7 +73,7 @@
  },
  "submit": {
   "command": "/app/jobs/clef_baseline/run_job.sh",
-  "key": "clef-heldout-v1-clef-flash",
+  "key": "clef-heldout-v1-clef-flash-r3",
   "env": {
    "RELEASE": "clef-flash",
    "JOB": "V"
