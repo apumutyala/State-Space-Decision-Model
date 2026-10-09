@@ -425,9 +425,21 @@ def build_report(rows: list[dict], prox: dict, child: dict, parent: dict, ref: d
         "rule": f"DROP if child - reference < -{DROP_MARGIN} Index points on the proxy (point), else PROMOTE to the "
                 "full subset + full DEV; every arm under the same readout; a screen, never a promotion",
         "verdict": verdict(vr["diff"]["point"]),
+        "warnings": collapse_warnings(rows, child, parent, ref),
         "cost": {"elapsed_min": elapsed_min, "runtime_usd": round(elapsed_min * usd, 2), "usd_per_min": usd,
                  "build_minutes_not_included": True},
         "measured": True}
+
+
+def collapse_warnings(rows: list[dict], child: dict, parent: dict, ref: dict) -> dict:
+    """NON-GATING per-family label-collapse warnings (``jobs.common.label_collapse``) on the proxy rows: the child's
+    at the top level, the parent's and the reference's beside it for comparison. Never changes the verdict."""
+    from jobs.common.label_collapse import safe_detect
+
+    out = safe_detect(rows, child)
+    out["parent"] = safe_detect(rows, parent)
+    out["reference"] = safe_detect(rows, ref)
+    return out
 
 
 def _count(xs) -> dict:

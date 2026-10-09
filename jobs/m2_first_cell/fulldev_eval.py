@@ -488,6 +488,7 @@ def report(a) -> dict:
         if tm.is_file():
             ent["timing"] = json.loads(tm.read_text(encoding="utf-8"))
         out["arms"][arm] = ent
+    out["warnings"] = collapse_warnings(d, arms, keep)
     if "parent" in arms:  # paired child - parent on identical rows (frozen bootstrap.compare)
         cmp = (_harness("compare", "--candidate", str(d / "child.results.jsonl"),
                         "--baseline", str(d / "parent.results.jsonl"), *ed) if keep is None
@@ -510,6 +511,26 @@ def report(a) -> dict:
                                    "pairs with the comparators' 32k-substituted files), 'excl_overlength51' = the same "
                                    "minus the 51 comparator over-length rows")
     out["verdict"] = "measured"
+    return out
+
+
+def collapse_warnings(d: Path, arms: list[str], keep: set[str] | None) -> dict:
+    """NON-GATING per-family label-collapse warnings (``jobs.common.label_collapse``) on the selected DEV rows: the
+    child's at the top level, every other arm's beside it. Never changes a score or the verdict."""
+    from jobs.common.label_collapse import safe_detect
+
+    try:
+        from harness import cli
+
+        rows = [r for r in cli.load_slice("dev", EDITION) if keep is None or r["_evaluation"]["run_id"] in keep]
+        res = {arm: {r["run_id"]: r for r in (json.loads(x) for x in (d / f"{arm}.results.jsonl").read_text(
+            encoding="utf-8").splitlines() if x.strip())} for arm in arms}
+    except Exception as e:  # noqa: BLE001 - a warning never breaks the report
+        return {"label_collapse": [], "label_collapse_count": None, "error": f"{type(e).__name__}: {e}", "gating": False}
+    out = safe_detect(rows, res["child"])
+    for arm in arms:
+        if arm != "child":
+            out[arm] = safe_detect(rows, res[arm])
     return out
 
 
