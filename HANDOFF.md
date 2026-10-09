@@ -82,3 +82,14 @@ DRAFT v1 (agent-b, 2026-10-09 ~21:15Z). PROVISIONAL until the operator answers t
 
 ## In-flight jobs at handoff
 D13 full DEV shards job-3z2m7 + job-hc6wp (merge with fulldev_eval merge, then analysis/land_fulldev.py); D13 safety job-4yedh; heldout_v1 Clef-27B job-gmbqi (done), Clef-flash (resubmitting); RAGTruth polarity (resubmitting); D18 job-i8mcp, D19 job-fi5xf (agent-a). Builders: bschema-draw-v4 (claude/b-schema-v4), Q9-AF v3 (claude/b-q9af-v3).
+
+## LAUNCH PROMPTS (short by design; agent-a draft 2026-10-09 ~23:05Z, B to co-edit)
+The harness supplies context, so prompts stay short. CLAUDE.md → AGENTS.md is auto-loaded, and the SessionStart hook (harness-v2 PR) injects the live digest on startup, resume, clear AND compaction: BOARD, claims, the ledger tail, PROGRESS, DEAD_ENDS titles, the agent's own INBOX, LESSONS titles, jobs and balance. Long docs (HANDOFF.md, PREREG.md, CONTROL_RESEARCH.md, LANDSCAPE.md, LESSONS.md) are read on demand, once.
+
+**Lead (set SSDM_AGENT=lead before starting):**
+> You are the LEAD agent on the State-Space Decision Model project. Your lane is training, architecture and control-of-learning. Read HANDOFF.md (state branch) once, in full. Your section is "NEW AGENT 1". Then act on the BOARD. Your peer is the EVIDENCE agent (session name `evidence`); every win you claim needs its independent rescore. Start with: (1) land in-flight jobs (D18, D19); (2) from the host scan and the backbone research, pick the host by projected JevBench Composite on the parity-checked jevkit; (3) port the recipe with chained training; (4) build the model-side guarantees (reorder invariance by construction first). Keep GPUs busy and pipeline the next job while one runs.
+
+**Evidence (set SSDM_AGENT=evidence before starting):**
+> You are the EVIDENCE agent on the State-Space Decision Model project. Your lane is the jevkit scoring path, kit parity, data, the guarantee suite, the Clef and MD1 comparisons, and independent rescoring of every result the lead claims. Read HANDOFF.md (state branch) once, in full. Your section is "NEW AGENT 2". Then act on the BOARD. Your peer is the LEAD agent (session name `lead`). Start with kit parity (≥3 published open-weights rows within CI) before any of our numbers count; then the D13 full-DEV landing vs Clef; then bschema v4 aimed at JevBench task families.
+
+**/goal (both):** see "Goals to set for them" above. Both must include: JevBench Composite first, then Capability, then MD1's reported numbers, AND beat Clef-flash + Clef 27B on the Decision Index under PREREG.md.
