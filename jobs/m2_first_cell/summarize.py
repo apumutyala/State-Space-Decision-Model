@@ -66,6 +66,17 @@ def training(cell: dict) -> dict:
             "eval_cards_nll": [c["raw"].get("nll") for c in tr.get("cards") or []]}
 
 
+def keep_compare(cmp: dict) -> dict:
+    """The reported fields of one ``safety_eval.metrics.compare_arms`` result (x = child, y = parent)."""
+    from safety_eval import metrics as M
+
+    keep = {k: cmp.get(k) for k in ("n_units", "n_eligible", "complete", "incomplete_reason", "clean_acc_x",
+                                    "clean_acc_y", "steer_rate_conservative_diff", "bootstrap", "eligibility")}
+    for name in M.COMPARE_METRICS:
+        keep[name] = {"child": cmp[name]["x"], "parent": cmp[name]["y"], "diff": cmp[name]["diff"]}
+    return keep
+
+
 def steer_hijack(child_rows: list, parent_rows: list, cohort, n_boot: int) -> dict:
     from safety_eval import metrics as M
     from train import m2_gates as G
@@ -75,10 +86,7 @@ def steer_hijack(child_rows: list, parent_rows: list, cohort, n_boot: int) -> di
     ids = _family_ids(variants, "d1_A")
     cmp = M.compare_arms(M.with_expected(child_rows, variants), M.with_expected(parent_rows, variants), "d1_A",
                          n_boot=n_boot, eligibility="reference_y", expected_ids=ids)
-    keep = {k: cmp.get(k) for k in ("n_units", "n_eligible", "complete", "incomplete_reason", "clean_acc_x",
-                                    "clean_acc_y", "steer_rate_conservative_diff")}
-    for name in M.COMPARE_METRICS:
-        keep[name] = {"child": cmp[name]["x"], "parent": cmp[name]["y"], "diff": cmp[name]["diff"]}
+    keep = keep_compare(cmp)
     keep["note"] = ("x = child, y = parent; D1-A templates (development split). D1-A is in the training data verbatim "
                     "(PR #44 injection augmentation), so this is IN-DISTRIBUTION robustness; held-out D1-B is G13, "
                     "not run here")
