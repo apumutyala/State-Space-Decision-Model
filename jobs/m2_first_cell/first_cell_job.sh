@@ -314,6 +314,9 @@ if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a
     if [ "$ARMNAME" = child ]; then
       ARGS=(--cell "$WORK/out/cell.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR"
             "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" --readout "$FD_READOUT")
+      # params "order_avg" (test-time order averaging screen, jobs.m2_first_cell.orderavg): "1,2,4" or absent
+      FD_OA=$(python -c "import json,sys; print(json.load(open(sys.argv[1])).get('order_avg') or '')" "$PARAMS") || fail 5 "job_params order_avg"
+      [ -n "$FD_OA" ] && ARGS+=(--order-avg "$FD_OA")
     else
       ARGS=(--cell-config "$CELL")
     fi

@@ -223,6 +223,21 @@ config): `d13_joint` with `"stage": "screen"` (see "Params `"stage": "screen"`" 
 `"screen": 60` (expected ~41), `screen_reference` = D1 art-bm3e6 (shipped `screen_reference/units-child-index.json`,
 pinned by `units_sha256`). Schedule 485 + reserve 7 = 492 min. **Worst case** (60 build + 2 x 492) x $0.0495 =
 **$51.68** (cap $70).
+## Mode `orderavg_d13_v3w`: test-time order averaging screen of D13 (DRAFT, NOT SUBMITTED)
+
+Mode `fulldev_eval` machinery (eval-only, the shared checkpoint_loader, D13 art-cr9a2 BEST step 1600, readout v3w
+untempered) on the pre-declared proxy600 rows (params `rows: proxy600`, 644 rows), with params `order_avg: "1,2,4"`:
+`fulldev_eval score --order-avg 1,2,4` scores THREE arms per row from shared forward passes
+(`jobs/m2_first_cell/orderavg.py`, `decide.debias.OrderAveragedBackend`): N=1 = the plain v3w prompt (the control; the
+41.07 [37.57, 45.22] screen), N=2 = + the reversed option order, N=4 = + two seeded cyclic shifts; each choice
+question's per-option probabilities are averaged over its distinct presentation orders (noul / score never reordered).
+Each arm's cost = its own passes' measured walls + its own adapter overhead; input tokens per arm are reported (the
+cost-axis multiplier vs Clef). Report `order_avg` in the result + `orderavg.json`: per-arm proxy600 Index, paired
+N - N=1 (`harness.bootstrap.compare`, B=2000, seed 0), cost multipliers, verdict by the pre-registered rule in
+`jobs/m2_first_cell/ORDERAVG_README.md`. Expected 119 scoring min (2.844 token-weighted passes per row x the screen's
+1.2513 s / 1k + 40 fixed). Quoted hold 190 min x $0.063 = $11.97; worst case (60 + 2 x 190) x 0.0495 = $21.78 (cap
+$22); expected ~$7.72 billed.
+
 ## Modes `fulldev_eval_d13` / `fulldev_eval_d13_v3w`: D13 on the FULL Index DEV (DRAFT, NOT SUBMITTED)
 
 Mode `fulldev_eval` (below) on D13 = job-hjwpq (d13_joint_safe_nofla, the attention-free joint_record head; proxy600

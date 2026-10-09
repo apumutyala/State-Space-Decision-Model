@@ -139,3 +139,171 @@ def run_debias_controls(decider, request: dict[str, Any], qid: str) -> dict[str,
             "prior_on_sorted_first": cf_first,
         },
     }
+
+
+
+# ------------------------------------------------------------------------------------- test-time order averaging
+# Test-time ORDER AVERAGING (opt-in; ``OrderAveragedBackend``). Every CHOICE question with >= 2 options is scored
+# under ``n`` presentation orders of its options and the per-option probabilities are averaged (arithmetic mean of
+# the per-order probabilities; the backend returns log(mean p), so an identity-calibration decider serves the mean
+# exactly). Everything is fixed in advance, nothing is fitted (no DEV fitting):
+#
+#   orders of a question (canonical option indices, in presentation order) = the first ``n`` DISTINCT of
+#     0   identity (the N = 1 prompt, byte-identical)
+#     1   reversed
+#     2+  cyclic shifts (option s first): s in 1 .. k-2 ranked by sha256(ORDER_AVG_SEED | qid | option ids | s)
+#         (seeded by the question's own id and option ids only: never gold, scores or other rows), then s = k-1 (its
+#         first option is the reversed order's first, so it comes last); duplicates skipped
+#   so k = 2 has 2 distinct orders (N = 2 and N = 4 are both identity + reversed) and k >= 3 has >= 4; with k >= 4 the
+#   four N = 4 orders put four DIFFERENT options first (a primacy bias averages out exactly when the options tie).
+# Presentation order = the order options are LISTED (schema field, re-read, code key) and, for coded questions, the
+# code each option gets (code table position = presentation position): it moves position AND label priors. Questions
+# that are not ``choice`` (noul; score is ordinal) are never reordered and keep the identity pass's logits unchanged,
+# as do choice questions with < 2 options. Pass v of a request presents every eligible question in its v-th order
+# (the others in identity order); a question with fewer than v + 1 distinct orders ignores pass v.
+# ``n = 1`` is the base backend exactly (same revision, same ScoreResult object), so default readouts are unchanged.
+
+import hashlib as _hashlib
+import math as _math
+import time as _time
+from dataclasses import replace as _replace
+
+ORDER_AVG_ID = "ssdm.order_avg.v1"
+ORDER_AVG_SEED = "ssdm.order_avg.v1/cyclic"
+ORDER_AVG_NS = (1, 2, 4)
+
+
+def order_eligible(q: dict[str, Any]) -> bool:
+    return q.get("type") == "choice" and len(q.get("criteria") or {}) >= 2
+
+
+def order_variants(q: dict[str, Any], qid: str, n: int) -> list[list[int]]:
+    """The first ``n`` distinct presentation orders of question ``qid`` (identity only when not eligible)."""
+    if n < 1:
+        raise ValueError("order averaging needs n >= 1")
+    k = len(canonical_options(q))
+    base = list(range(k))
+    if not order_eligible(q):
+        return [base]
+    oids = [o for o, _ in canonical_options(q)]
+    key = json.dumps([ORDER_AVG_SEED, qid, oids], ensure_ascii=True)
+    shifts = sorted(range(1, k - 1), key=lambda s: (_hashlib.sha256(f"{key}|{s}".encode("ascii")).hexdigest(), s))
+    shifts.append(k - 1)
+    out: list[list[int]] = []
+    for o in [base, base[::-1], *[base[s:] + base[:s] for s in shifts]]:
+        if o not in out:
+            out.append(o)
+        if len(out) == n:
+            break
+    return out
+
+
+def presentation_passes(request: dict[str, Any], n: int) -> list[dict[str, list[int]]]:
+    """Pass v -> {qid: order} of the eligible questions that have a (v+1)-th distinct order; pass 0 = {} (identity).
+    Trailing empty passes are dropped (no question needs them, so they cost nothing)."""
+    qs = request["questions"]
+    var = {k: order_variants(q, k, n) for k, q in qs.items() if order_eligible(q)}
+    passes: list[dict[str, list[int]]] = [{}]
+    passes += [{k: v[i] for k, v in var.items() if len(v) > i} for i in range(1, n)]
+    while len(passes) > 1 and not passes[-1]:
+        passes.pop()
+    return passes
+
+
+class OrderCache:
+    """Pass results shared by several ``OrderAveragedBackend`` in one process (one job scores N = 4, 2 and 1 from the
+    same forward passes: pass v of a request is the same computation in every arm). Key = (request hash, pass).
+    The caller clears it per row."""
+
+    def __init__(self) -> None:
+        self.d: dict[tuple[str, int], tuple[Any, float]] = {}
+        self.hits = 0
+
+    @staticmethod
+    def key(request: dict[str, Any]) -> str:
+        return _hashlib.sha256(json.dumps(request, sort_keys=True, default=str).encode()).hexdigest()
+
+    def clear(self) -> None:
+        self.d.clear()
+
+
+class OrderAveragedBackend:
+    """``decide`` backend wrapper: test-time order averaging over ``n`` presentation orders (n in ORDER_AVG_NS,
+    pre-registered). The wrapped backend must accept ``presentation=`` in ``plan`` / ``score``
+    (``heads.decide_backend.DecisionModelBackend``, template v3w). n = 1 returns the base backend's own result.
+    ``last_pass_ms`` = the measured wall of each pass of the last request (a cached pass keeps the wall measured when
+    it ran), so each arm's cost is the sum of its own passes."""
+
+    def __init__(self, base, n: int, cache: OrderCache | None = None) -> None:
+        if n not in ORDER_AVG_NS:
+            raise ValueError(f"order averaging n={n}: one of {ORDER_AVG_NS} (pre-registered)")
+        self.base, self.n, self.cache = base, n, cache
+        bname = getattr(base, "name", "backend")
+        self.name = bname if n == 1 else f"{bname}+oa{n}"
+        self.last_pass_ms: list[float] = []
+        self.last_fresh_ms = 0.0  # wall of the passes this call actually ran (not served from the cache)
+        self.last_input_tokens = 0  # model input tokens of every pass this arm needs (its own cost, cached or not)
+
+    def __getattr__(self, item):  # model / encode / template / checkpoint ... of the wrapped backend
+        if item in ("base", "n", "cache", "last_pass_ms", "last_fresh_ms", "last_input_tokens"):
+            raise AttributeError(item)
+        return getattr(self.base, item)
+
+    def revision(self) -> dict[str, Any]:
+        rev = self.base.revision()
+        if self.n == 1:
+            return rev
+        return {**rev, "revision_id": f"{rev['revision_id']}+OA:{ORDER_AVG_ID}:n{self.n}",
+                "order_avg": {"id": ORDER_AVG_ID, "n": self.n, "seed": ORDER_AVG_SEED, "combine": "mean_probability"}}
+
+    def _passes(self, request: dict[str, Any]) -> list[dict[str, list[int]]]:
+        return presentation_passes(request, self.n) if self.n > 1 else [{}]
+
+    def plan(self, request: dict[str, Any]):
+        passes = self._passes(request)
+        plans = [self.base.plan(request)] + [self.base.plan(request, presentation=p) for p in passes[1:]]
+        if len(plans) == 1:
+            return plans[0]
+        return _replace(plans[0], inference_calls=sum(p.inference_calls for p in plans),
+                        max_call_input_tokens=max(p.max_call_input_tokens for p in plans),
+                        total_input_tokens=sum(p.total_input_tokens for p in plans))
+
+    def _pass(self, request, v: int, pres: dict, check_deadline):
+        key = (OrderCache.key(request), v) if self.cache is not None else None
+        if key is not None and key in self.cache.d:
+            self.cache.hits += 1
+            return self.cache.d[key]
+        t = _time.perf_counter()
+        res = (self.base.score(request, check_deadline) if v == 0 else
+               self.base.score(request, check_deadline, presentation=pres))
+        out = (res, (_time.perf_counter() - t) * 1000)
+        self.last_fresh_ms += out[1]
+        if key is not None:
+            self.cache.d[key] = out
+        return out
+
+    def score(self, request: dict[str, Any], check_deadline):
+        passes = self._passes(request)
+        self.last_fresh_ms = 0.0
+        got = [self._pass(request, v, p, check_deadline) for v, p in enumerate(passes)]
+        self.last_pass_ms = [ms for _, ms in got]
+        self.last_input_tokens = sum(r.total_input_tokens for r, _ in got)
+        base = got[0][0]
+        if len(got) == 1:
+            return base
+        logits = dict(base.logits)
+        n_orders: dict[str, int] = {}
+        for qid in request["questions"]:
+            used = [0] + [v for v in range(1, len(passes)) if qid in passes[v]]
+            if len(used) == 1:
+                continue
+            opts = list(base.logits[qid])
+            mean = {o: sum(_math.exp(got[v][0].logits[qid][o]) for v in used) / len(used) for o in opts}
+            z = sum(mean.values())  # 1 up to float error when the base returns normalised log-probabilities
+            logits[qid] = {o: (_math.log(mean[o] / z) if mean[o] > 0 else -1e30) for o in opts}
+            n_orders[qid] = len(used)
+        extras = {**(base.extras or {}), "order_avg": {"id": ORDER_AVG_ID, "n": self.n, "passes": len(passes),
+                                                        "orders_per_question": n_orders,
+                                                        "pass_ms": list(self.last_pass_ms)}}
+        return _replace(base, logits=logits, inference_calls=sum(r.inference_calls for r, _ in got),
+                        total_input_tokens=sum(r.total_input_tokens for r, _ in got), extras=extras)

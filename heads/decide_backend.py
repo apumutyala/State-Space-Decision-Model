@@ -107,18 +107,21 @@ class DecisionModelBackend:
                           "model_id": ident["backbone"]["spec"], **ident}
         return self._revision
 
-    def _rows(self, request: dict[str, Any]) -> list[LayoutRow]:
+    def _rows(self, request: dict[str, Any], presentation: dict[str, list[int]] | None = None) -> list[LayoutRow]:
+        """``presentation``: test-time order averaging only (``decide.debias.OrderAveragedBackend``; v3w template):
+        the listed choice questions' options are PRESENTED in that order. None = the rows exactly as before."""
+        extra = {"presentation": presentation} if presentation else {}
         try:
             # G16: rows carry NO host allowed set (unvetoed logits); the veto is the adapter's conditioned stage
-            return [build_row(request, qid, self.encode, template=self.template, layout=self.layout)
+            return [build_row(request, qid, self.encode, template=self.template, layout=self.layout, **extra)
                     for qid in request["questions"]]
         except ControlTokenError as exc:  # before ValueError: it subclasses ValueError
             raise BackendUnsupported(exc.code, str(exc)) from exc
         except ValueError as exc:
             raise BackendUnsupported("tokenization_failed", str(exc)) from exc
 
-    def plan(self, request: dict[str, Any]) -> Plan:
-        rows = self._rows(request)
+    def plan(self, request: dict[str, Any], presentation: dict[str, list[int]] | None = None) -> Plan:
+        rows = self._rows(request, presentation)
         lens = [len(r.ids) for r in rows]
         return Plan(inference_calls=1 if self._one_pass() else len(rows), max_call_input_tokens=max(lens),
                     total_input_tokens=sum(lens))
@@ -130,8 +133,9 @@ class DecisionModelBackend:
         return not getattr(self.model.backbone, "wants_trust", False)
 
     @torch.no_grad()
-    def score(self, request: dict[str, Any], check_deadline: Callable[[], None]) -> ScoreResult:
-        rows = self._rows(request)
+    def score(self, request: dict[str, Any], check_deadline: Callable[[], None],
+              presentation: dict[str, list[int]] | None = None) -> ScoreResult:
+        rows = self._rows(request, presentation)
         was_training = self.model.training
         self.model.eval()
         logits: dict[str, dict[str, float]] = {}

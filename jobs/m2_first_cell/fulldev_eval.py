@@ -473,19 +473,43 @@ def score(a) -> int:
     except (ValueError, KeyError, GuardNotReady, CohortLeak) as e:
         print(f"identity: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
+    oa, ns = None, ()
+    if getattr(a, "order_avg", None):  # test-time order averaging screen (jobs.m2_first_cell.orderavg)
+        from jobs.m2_first_cell.orderavg import OrderAvgSet, parse_ns
+
+        try:
+            ns = parse_ns(a.order_avg)
+        except ValueError as e:
+            print(f"order averaging: {e}", file=sys.stderr)
+            return 10
+        if a.arm != "child" or tempered or (ident.get("readout") or {}).get("template") != "jrt-rwkv-g1-v3w":
+            print("order averaging: the child arm under the untempered v3w readout only", file=sys.stderr)
+            return 10
+        oa = OrderAvgSet(decider, ns)
+        ident = {**ident, "order_avg": oa.identity()}
     out = Path(a.out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    plan = plan_rows(decider, rows, a.max_input_tokens)
+    plan = plan_rows(oa.deciders[max(ns)] if oa else decider, rows, a.max_input_tokens)
     (out / f"plan-{a.arm}.json").write_text(json.dumps(plan, indent=1), encoding="utf-8")
     (out / f"identity-{a.arm}.json").write_text(json.dumps(ident, indent=1, default=str), encoding="utf-8")
     print(json.dumps({k: plan[k] for k in ("n_rows", "n_refused", "n_over_16384", "max_row_tokens")}), flush=True)
     resume = Path(a.resume_dir) / f"{a.arm}.partial.jsonl"
     resume.parent.mkdir(parents=True, exist_ok=True)
     done = _read_partial(resume)
+    if oa:  # a row is done once every arm's line is in (the N = 1 line, in the main log, is written last)
+        from jobs.m2_first_cell.orderavg import arm_file
+
+        oa_resume = {n: Path(a.resume_dir) / arm_file(a.arm, n, "partial") for n in ns if n != 1}
+        oa_done = {n: _read_partial(fp) for n, fp in oa_resume.items()}
+        done = {k: v for k, v in done.items() if all(k in oa_done[n] for n in oa_done)}
     todo = [r for r in rows if r["_evaluation"]["run_id"] not in done]
     prog = G.Progress(a.progress)
     prog.plan([G.unit_weight(r) for r in todo])
     decide = G.beat_wrap(prog.wrap(limited(decider.decide, a.max_input_tokens)))
+
+    def decide_oa_first(d):  # order averaging: progress + beat on the arm that runs the forward passes
+        return G.beat_wrap(prog.wrap(limited(d, a.max_input_tokens)))
+
     declare = checkpoint_declarer()
     low = disk_watch([resume.parent, out])
     declare(force=True)  # the slot now holds the rows so far
@@ -499,8 +523,17 @@ def score(a) -> int:
                     f.flush()
                     return stop_for_disk(resume.parent, declare, f"free bytes {bad} < {DISK_LOW_BYTES} before row "
                                          f"{r['_evaluation']['run_id']} ({n_done} of {len(ids)} rows done)")
-                res = G.index_predict(decide, [r], untempered_from_raw=tempered)
-                f.write(json.dumps(res[r["_evaluation"]["run_id"]], separators=(",", ":")) + "\n")
+                if oa:  # the largest arm runs every pass (progress-logged once per row); the others read the cache
+                    got = oa.score_row(r, lambda n, d: (decide_oa_first(d) if n == max(ns) else
+                                                        G.beat_wrap(limited(d, a.max_input_tokens))),
+                                       lambda dec, rr: G.index_predict(dec, rr, untempered_from_raw=False))
+                    for n, fp in oa_resume.items():
+                        with open(fp, "a", encoding="utf-8", newline="\n") as g:
+                            g.write(json.dumps(got[n], separators=(",", ":")) + "\n")
+                    f.write(json.dumps(got[1], separators=(",", ":")) + "\n")
+                else:
+                    res = G.index_predict(decide, [r], untempered_from_raw=tempered)
+                    f.write(json.dumps(res[r["_evaluation"]["run_id"]], separators=(",", ":")) + "\n")
                 f.flush()
                 n_done += 1
                 declare()
@@ -524,6 +557,15 @@ def score(a) -> int:
                 if key == "served_response" and r.get("status") == "ok":
                     r["response"] = served
                 f.write(json.dumps(r, separators=(",", ":")) + "\n")
+    if oa:
+        for n, fp in oa_resume.items():
+            got = _read_partial(fp)
+            if not set(ids) <= set(got):
+                print(f"order averaging n={n}: {len(set(ids) - set(got))} rows have no result", file=sys.stderr)
+                return 9
+            with open(out / arm_file(a.arm, n, "results"), "w", encoding="utf-8", newline="\n") as f:
+                for rid in ids:
+                    f.write(json.dumps(got[rid], separators=(",", ":")) + "\n")
     (out / f"timing-{a.arm}.json").write_text(json.dumps(
         {"seconds_this_attempt": secs, "rows_this_attempt": len(todo), "rows_resumed": len(ids) - len(todo),
          "sum_row_wall_s": sum(float(done[i].get("total_wall_ms") or 0) for i in ids) / 1000}, indent=1),
@@ -665,6 +707,11 @@ def report(a) -> dict:
                else subset_compare(d / "child.results.jsonl", d / "parent.results.jsonl", keep))
         (d / "compare_child_vs_parent.json").write_text(json.dumps(cmp, indent=1), encoding="utf-8")
         out["child_minus_parent"] = cmp.get("diff", cmp)
+    if params.get("order_avg"):  # test-time order averaging: per-arm Index, paired diff vs N = 1, cost per arm
+        from jobs.m2_first_cell.orderavg import orderavg_section
+
+        out["order_avg"] = orderavg_section(d, keep)
+        (d / "orderavg.json").write_text(json.dumps(out["order_avg"], indent=1), encoding="utf-8")
     usd = params["batch_usd_per_min"]
     out["cost"] = {"elapsed_min": a.elapsed_min, "runtime_usd_batch": round(a.elapsed_min * usd, 2),
                    "usd_per_min_batch": usd, "runtime_usd_quoted": round(a.elapsed_min * 0.063, 2),
@@ -733,6 +780,13 @@ def estimate(params: dict, lengths: dict | None = None) -> dict[str, Any]:
     keep = selected_ids(params.get("rows", "full"))
     toks = lengths["total_tokens"] if keep is None else sum(lengths["lengths"][i] for i in keep)
     toks = toks * ratio  # the lengths are v1/ordered tokens; another readout's prompts are this much longer / shorter
+    if params.get("order_avg"):  # order averaging: each row is read once per pass of the largest arm
+        from jobs.m2_first_cell.orderavg import parse_ns
+
+        r_oa = float(params["order_avg_token_ratio"]["ratio"])  # `python -m jobs.m2_first_cell.orderavg passes`
+        if not 1.0 <= r_oa <= max(parse_ns(params["order_avg"])):
+            raise ValueError(f"order_avg_token_ratio {r_oa} outside [1, {max(parse_ns(params['order_avg']))}]")
+        toks = toks * r_oa
     phases = {"fulldev": toks / 1000 * m["child_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["child"]}
     if params.get("fulldev_parent_arm"):
         phases["parent_full"] = toks / 1000 * m["parent_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["parent"]
@@ -770,6 +824,8 @@ def main(argv=None) -> int:
     s.add_argument("--device", default="cuda")
     s.add_argument("--readout", choices=READOUT_NAMES, default="native",
                    help="child: native (cell template + temperature fit) or another readout, untempered")
+    s.add_argument("--order-avg", default=None,
+                   help="test-time order averaging arms, exactly 1,2,4 (jobs.m2_first_cell.orderavg; child, v3w only)")
     b = sub.add_parser("smoke-build", help="(re)build fulldev_smoke_rows.json from the DEV manifest + row lengths")
     b.add_argument("--out", default=str(SMOKE))
     e = sub.add_parser("estimate")

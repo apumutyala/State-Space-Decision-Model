@@ -49,7 +49,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from .prompt import G1V2_SYSTEM_PROMPT, G1V2_TEMPLATE, Labelled, g1_clean, render
 from .schema import canonical_options, canonical_question_ids
@@ -127,6 +127,22 @@ def presentation_order(q: dict[str, Any], qid: str) -> list[int]:
 
 def identity_order(q: dict[str, Any]) -> list[int]:
     return list(range(len(canonical_options(q))))
+
+
+def _checked_orders(questions: dict[str, Any], orders: dict[str, Sequence[int]] | None) -> dict[str, list[int]]:
+    """``orders`` validated: CHOICE questions of this request only, each a permutation of its canonical options."""
+    if not orders:
+        return {}
+    out = {}
+    for k, o in orders.items():
+        q = questions.get(k)
+        if q is None or q.get("type") != "choice":
+            raise ValueError(f"presentation order for {k!r}: only choice questions of the request can be reordered")
+        o = [int(j) for j in o]
+        if sorted(o) != list(range(len(canonical_options(q)))):
+            raise ValueError(f"presentation order for {k!r} is not a permutation of its {len(q['criteria'])} options")
+        out[k] = o
+    return out
 
 
 # --------------------------------------------------------------------------------------------------------- prompt
@@ -227,12 +243,19 @@ def wants_catalog(q: dict[str, Any], table: list[str]) -> bool:
 
 def build_prompt_g1v3(request: dict[str, Any], qid: str, table: list[str], catalog_chars: int | None = 64,
                       permute: bool = False, fix_instr: bool = True,
-                      word_qids: frozenset[str] = frozenset()) -> list[Labelled]:
+                      word_qids: frozenset[str] = frozenset(),
+                      orders: dict[str, Sequence[int]] | None = None) -> list[Labelled]:
     """v2's layout (decide.prompt.build_prompt_g1v2) with a code table, the instruction fix, an optional
-    presentation order, v3w word-id questions (``word_qids``) and the code key for the asked question."""
+    presentation order, v3w word-id questions (``word_qids``) and the code key for the asked question.
+
+    ``orders`` (test-time order averaging, ``decide.debias.OrderAveragedBackend``): {qid: presentation order of that
+    question's canonical options} overriding ``permute`` / the identity order for the listed CHOICE questions only.
+    None (the default) = the prompt exactly as before."""
     questions = request["questions"]
     order_ids = canonical_question_ids(questions)
+    orders_in = orders
     orders = {k: (presentation_order(questions[k], k) if permute else identity_order(questions[k])) for k in order_ids}
+    orders.update(_checked_orders(questions, orders_in))
     codes = {k: (None if k in word_qids else question_codes(questions[k], orders[k], table)) for k in order_ids}
 
     def instr(k: str) -> list[Labelled]:
@@ -265,9 +288,11 @@ def build_prompt_g1v3(request: dict[str, Any], qid: str, table: list[str], catal
 
 
 def render_g1v3(request: dict[str, Any], qid: str, table: list[str], catalog_chars: int | None = 64,
-                permute: bool = False, fix_instr: bool = True, word_qids: frozenset[str] = frozenset()) -> str:
+                permute: bool = False, fix_instr: bool = True, word_qids: frozenset[str] = frozenset(),
+                orders: dict[str, Sequence[int]] | None = None) -> str:
     """The v3 prompt string; blank lines are collapsed over the joined user turn exactly as in ``render_g1v2``."""
-    text = "".join(t for t, _ in build_prompt_g1v3(request, qid, table, catalog_chars, permute, fix_instr, word_qids))
+    text = "".join(t for t, _ in build_prompt_g1v3(request, qid, table, catalog_chars, permute, fix_instr, word_qids,
+                                                   orders))
     head = G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT)
     body = text[len(head):len(text) - len(G1V2_TEMPLATE.tail)]
     return head + g1_clean(body) + G1V2_TEMPLATE.tail
