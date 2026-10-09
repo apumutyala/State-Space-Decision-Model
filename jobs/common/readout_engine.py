@@ -13,6 +13,12 @@ families
   ``rwkv7-hf-g1-v3`` same plugin, ``decide.backends.rwkv_g1_v3.G1V3Backend`` (R3: v2 + v3 code table + code key)
   ``rwkv7-hf-g1-v3p`` / ``-v3r`` / ``-v3c`` / ``-v3w`` G1V3Backend modes permute / reread / calibrate / words (one
                   change each on v3); ``rwkv7-hf-g1-v2f`` mode v2f (v2 + the dict-instruction fix only)
+  ``rwkv7-hf-g1-v3w-r`` v3w-r = v3w (mode words) + the opt-in parameter-free readout rules
+                  (``decide.readout_rules`` r1: BFCL exactly-one, SATA top-m) + a 32,768-token default input cap
+                  for the adapter and the v3 render budget (the plugin's 25,600 trained-ctx cap is not applied: RWKV
+                  is recurrent). 32k is a readout-family setting, not the claim cap (R3: RWKV arms read every row
+                  in full at 65,536, as fulldev_eval.py; Clef: 16,384 + the 51 over-length rows substituted at
+                  32,768)
   ``qwen3.5``     ``decide.backends.hf_readout.load_qwen35`` (stock transformers path)
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
@@ -31,6 +37,8 @@ G1V3_FAMILY = "rwkv7-hf-g1-v3"
 G1V3C_FAMILY = "rwkv7-hf-g1-v3c"
 G1V3_MODES = {"rwkv7-hf-g1-v2f": "v2f", G1V3_FAMILY: "catalog", "rwkv7-hf-g1-v3w": "words",
               "rwkv7-hf-g1-v3p": "permute", "rwkv7-hf-g1-v3r": "reread", G1V3C_FAMILY: "calibrate"}
+#: readout families served with ``Decider(readout_rules=True)`` (decide.readout_rules): family -> its base G1V3 family
+RULES_FAMILIES = {"rwkv7-hf-g1-v3w-r": "rwkv7-hf-g1-v3w"}
 #: RWKV7 plugins loaded in this process, keyed by (model_dir, device, dtype): one process that runs several readout
 #: variants (jobs/rwkv7 JOB=readout_g1v3) loads the 26 GB model once. The plugin is read-only for every backend.
 _RWKV7_PLUGINS: dict[tuple[str, str, str], Any] = {}
@@ -38,7 +46,8 @@ TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-h
              CODE_LABEL_FAMILY: "jrt-rwkv-g1-code-label-v1", CODE_LABEL_V2_FAMILY: "jrt-rwkv-g1-code-label-v2",
              G1V2_FAMILY: "jrt-rwkv-g1-v2", G1V3_FAMILY: "jrt-rwkv-g1-v3", "rwkv7-hf-g1-v3p": "jrt-rwkv-g1-v3p",
              "rwkv7-hf-g1-v3r": "jrt-rwkv-g1-v3r", G1V3C_FAMILY: "jrt-rwkv-g1-v3c",
-             "rwkv7-hf-g1-v2f": "jrt-rwkv-g1-v2f", "rwkv7-hf-g1-v3w": "jrt-rwkv-g1-v3w"}
+             "rwkv7-hf-g1-v2f": "jrt-rwkv-g1-v2f", "rwkv7-hf-g1-v3w": "jrt-rwkv-g1-v3w",
+             "rwkv7-hf-g1-v3w-r": "jrt-rwkv-g1-v3w"}
 
 
 def _sha256_file(path):
@@ -75,7 +84,7 @@ def build_plugin(family: str, options: dict[str, Any]):
                                      options.get("converted", ""), device=dev, dtype=dt)
     from decide.backends import hf_readout as H
 
-    if family in ("rwkv7-hf", CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY, G1V2_FAMILY, *G1V3_MODES):
+    if family in ("rwkv7-hf", CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY, G1V2_FAMILY, *G1V3_MODES, *RULES_FAMILIES):
         key = (str(options["model_dir"]), dev, dt)
         if key not in _RWKV7_PLUGINS:
             _RWKV7_PLUGINS[key] = H.load_rwkv7_hf(options["model_dir"], device=dev, dtype=dt)
@@ -116,7 +125,13 @@ class ReadoutIndexEngine(Engine):
         self.family = options.get("family", "q9af-probe")
         decode = _load_code_label_decode(options["model_dir"]) if self.family in (CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY) else None
         plug = build_plugin(self.family, options)
-        if self.family in G1V3_MODES:
+        rules = self.family in RULES_FAMILIES
+        if rules:
+            from decide.backends.rwkv_g1_v3 import G1V3Backend
+            from decide.readout_rules import READOUT_RULES_CAP
+
+            self.backend = G1V3Backend(plug, mode=G1V3_MODES[RULES_FAMILIES[self.family]], budget=READOUT_RULES_CAP)
+        elif self.family in G1V3_MODES:
             from decide.backends.rwkv_g1_v3 import G1V3Backend
 
             self.backend = G1V3Backend(plug, mode=G1V3_MODES[self.family])
@@ -134,8 +149,11 @@ class ReadoutIndexEngine(Engine):
             self.backend = G1CodeLabelBackend(plug, tokenizer_decode=decode)
         else:
             self.backend = HFReadoutBackend(plug, TEMPLATES[self.family], max_batch_rows=int(options.get("max_batch_rows", 4)))
-        self.decider = Decider(self.backend, enable_v0_1_deltas=True, backend_max_input_tokens=plug.max_context)
-        rev = self.backend.revision()
+        if rules:
+            self.decider = Decider(self.backend, enable_v0_1_deltas=True, readout_rules=True)
+        else:
+            self.decider = Decider(self.backend, enable_v0_1_deltas=True, backend_max_input_tokens=plug.max_context)
+        rev = self.decider.revision() if rules else self.backend.revision()
         self.provenance = {"family": self.family, "model_id": plug.model_id, "backend_revision": rev["revision_id"],
                            "notes": plug.notes}
 
