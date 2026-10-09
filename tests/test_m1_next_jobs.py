@@ -40,12 +40,7 @@ def test_worst_case_arithmetic_counts_build_and_a_retry():
 @pytest.mark.parametrize("name", list(costs.PARAMS))
 def test_every_job_fits_its_hard_cap_and_schedule(name):
     p = costs.load(name)
-    # a cap that now binds at the 2026-10-08 rate is allowed only as a dated lint waiver (launch refuses it unless
-    # --allow-waived): qual's $20 line was not raised (jobs/common/lint.py _P)
-    from jobs.common import lint
-
-    assert costs.cap_ok(p) or "worst_case_stated" in lint.WAIVERS.get(costs.PARAMS[name], {})
-    assert costs.schedule_ok(p)
+    assert costs.cap_ok(p) and costs.schedule_ok(p)
     if p.get("expected_minutes"):
         assert costs.expected_usd(p) < costs.worst_case_usd(p)
 

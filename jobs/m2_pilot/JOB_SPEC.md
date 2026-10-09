@@ -201,6 +201,6 @@ SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now b
 
 | Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
 |---|---|---|---|---|
-| `job_params.json` | $23.94 (was $18.81) | $20.00 (unchanged) **BINDS** | – | $11.34 (was $8.91) |
+| `job_params.json` | $23.94 (was $18.81) | $24.00 (re-authorised 2026-10-09 ($20 → $24)) | – | $11.34 (was $8.91) |
 
-`jobs/m2_pilot/job_params.json`: worst case $23.94 now exceeds the $20.00 hard cap. The cap is the authorised spend line in this spec's title, so it was NOT raised; the lint failure is waived (jobs/common/lint.py WAIVERS) until, before its next launch, either `max_duration_minutes` shrinks or the line is re-authorised.
+`jobs/m2_pilot/job_params.json`: worst case $23.94 exceeded the $20 line at the new rate; the line was re-authorised 2026-10-09 ($20 → $24) by the coordinator (agreed by A and B), so the hard cap is $24.00, the lint passes without a waiver and the launcher no longer needs `--allow-waived`.

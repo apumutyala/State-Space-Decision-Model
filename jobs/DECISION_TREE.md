@@ -22,11 +22,11 @@ numbers are computed by `python -m jobs.common.costs` and checked by `tests/test
 **Worst case** = (build_timeout + 2 attempts x max_duration) x $0.063/min (build counted as billable; one platform
 retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phase minutes x the same rate.
 
-**Re-priced 2026-10-09** (`jobs/common/rates.py`): the H100 list price rose $3.96 -> $5.04/h on 2026-10-08, so the billed batch rate is $0.063/min (was $0.0495; Fridays $0.05628). The worst-case, hard-cap and `~$` expected figures below are at $0.063; caps that bound were raised x 14/11 (the rate ratio), except the three $20 authorised lines (qual, m2_pilot, m2_parent_arm), which now bind and are waived until re-scoped. One-attempt and other prose figures inside the cells, and every actual / receipt figure, are as originally written (pre-2026-10-08 rate).
+**Re-priced 2026-10-09** (`jobs/common/rates.py`): the H100 list price rose $3.96 -> $5.04/h on 2026-10-08, so the billed batch rate is $0.063/min (was $0.0495; Fridays $0.05628). The worst-case, hard-cap and `~$` expected figures below are at $0.063; caps that bound were raised x 14/11 (the rate ratio), except the three $20 authorised lines (qual, m2_pilot, m2_parent_arm), which were re-authorised 2026-10-09 ($20 → $24) instead. One-attempt and other prose figures inside the cells, and every actual / receipt figure, are as originally written (pre-2026-10-08 rate).
 
 | Job | Spec | Worst case | Hard cap (workspace cap) | Expected |
 |---|---|---|---|---|
-| qual (rung-2 qualification, unchanged) | `jobs/qual/` | $23.94 | $20 (**binds**: worst > cap, waived, see JOB_SPEC) | <= $8.91 (one attempt, validate_job) |
+| qual (rung-2 qualification, unchanged) | `jobs/qual/` | $23.94 | $24 (re-authorised 2026-10-09 ($20 → $24)) | <= $8.91 (one attempt, validate_job) |
 | qual_c_only (phase-C re-run after the job-c4zkm 9B OOM; A and B passed there; env `QUAL_MODE=c_only`) | `jobs/qual/job_params_c_only.json` | $18.90 | $20 | <= $6.93 (one attempt; $7.92 with the 20-min build) |
 | probe9b (one-layer 9B conversion probe; re-priced from the job-4j3vu measured rates, issue #68) | `jobs/probe9b/` | $35.91 | $40 | ~$8.38 |
 | rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $20.79 | $25.46 | ~$5.99 |

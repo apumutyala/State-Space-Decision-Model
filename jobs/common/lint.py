@@ -56,8 +56,6 @@ _B = "2026-10-06: spec predates the >=60 min build rule (L-09); raise build_time
 _T = "2026-10-06: no test executes the runner in a subprocess (L-10); add a dry-run shell test before its next launch"
 _R = ("2026-10-06: measured-rate projection via `python -m jobs.m2_parent_arm.score_parent estimate` (exit 15), not "
       "jobs.common.rate_guard / a *.preflight module; route it through rate_guard before launch")
-_P = ("2026-10-09: re-priced at $0.063/min (L-49) the worst case is $23.94 > the $20 authorised line in the spec title; "
-      "cap NOT raised. Before the next launch shrink max_duration_minutes (<= 141 with build 20) or re-authorise the line")
 #: {params file: {check: dated reason}}. tests/test_jobs_lint.py fails if a waiver is stale (the check now passes),
 #: so this list only shrinks. launch.py refuses waived failures unless --allow-waived, which is recorded in submit.json.
 WAIVERS: dict[str, dict[str, str]] = {
@@ -71,18 +69,15 @@ WAIVERS: dict[str, dict[str, str]] = {
         "build_timeout": _B, "shell_test": _T,
         "rate_guard": "2026-10-06: fixed-size kernel gate, every phase capped from job-jucxx/jn47u measurements"},
     "jobs/m2_parent_arm/job_params.json": {
-        "worst_case_stated": _P,
         "build_timeout": _B, "shell_test": _T,
         "registered": "2026-10-06: DRAFT, blocked on PENDING margins; register in costs.PARAMS + DECISION_TREE first",
         "rate_guard": _R},
     "jobs/m2_pilot/job_params.json": {
-        "worst_case_stated": _P,
         "build_timeout": _B, "shell_test": _T,
         "registered": "2026-10-06: DRAFT, blocked on PENDING margins; register in costs.PARAMS + DECISION_TREE first",
         "rate_guard": _R},
     "jobs/probe9b/job_params.json": {"build_timeout": _B, "shell_test": _T},
     "jobs/qual/job_params.json": {
-        "worst_case_stated": _P,
         "build_timeout": _B, "shell_test": _T,
         "schedule": "2026-10-06: caps sum 169 + reserve 8 < 180 (slack, not overrun); historical (job-jbw22/c4zkm)",
         "rate_guard": "2026-10-06: MFU/tok-s floors in-step (exit 3), no jobs.common.rate_guard; historical"},

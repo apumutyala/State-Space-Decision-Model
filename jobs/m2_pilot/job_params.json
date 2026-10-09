@@ -13,7 +13,7 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.063,
- "hard_cap_usd": 20.0,
+ "hard_cap_usd": 24.0,
  "phase_caps_minutes": {
   "setup": 15,
   "guard": 5,
