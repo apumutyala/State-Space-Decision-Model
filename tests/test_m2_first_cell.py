@@ -789,7 +789,7 @@ def test_arm_seed_pin_is_the_uhxb5_export():
     assert pin["units_sha256"] == {"g12": "c16c24db65124b78af782305a55d2092b8b4163459a9501714b314e4897ef395",
                                    "index": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001"}
     assert "--src \"$DATA/parent_arm_seed\"" in JOB and "jobs.m2_first_cell.arm_seed seed" in JOB
-    assert JOB.index("arm_seed seed") < JOB.index("for STAGE in g12 index")
+    assert JOB.index("arm_seed seed") < JOB.index("for PSTAGE in g12 index")
 
 
 def test_arm_seed_is_atomic_a_failed_check_never_becomes_the_cache(tmp_path, monkeypatch):

@@ -366,22 +366,22 @@ if python -c "import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get('v
     *) fail 5 "seed_verify rc=$r" ;; esac
   PROBE=(--probe "$WORK/out/seed-verify.json")
 fi
-for STAGE in g12 index; do
-  if python -c "import json,sys,hashlib,pathlib; d=pathlib.Path(sys.argv[1]); e=json.load(open(d/'arm.json'))['stages'][sys.argv[2]]; sys.exit(0 if hashlib.sha256((d/e['file']).read_bytes()).hexdigest()==e['sha256'] else 1)" "$ARM" "$STAGE" 2>/dev/null; then
-    say "parent $STAGE: cached ($ARM_SRC)"; gate "parent_$STAGE" 0; continue
+for PSTAGE in g12 index; do
+  if python -c "import json,sys,hashlib,pathlib; d=pathlib.Path(sys.argv[1]); e=json.load(open(d/'arm.json'))['stages'][sys.argv[2]]; sys.exit(0 if hashlib.sha256((d/e['file']).read_bytes()).hexdigest()==e['sha256'] else 1)" "$ARM" "$PSTAGE" 2>/dev/null; then
+    say "parent $PSTAGE: cached ($ARM_SRC)"; gate "parent_$PSTAGE" 0; continue
   fi
-  say "phase parent_$STAGE"
-  python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/parent-$STAGE.progress.jsonl" \
-    --cap-min "$(cap parent_$STAGE)" --report "$ARM/rate-parent-$STAGE.json" -- \
-    timeout --kill-after=30s $(cap parent_$STAGE)m python -X utf8 -m jobs.m2_parent_arm.score_parent --parent rwkv7 --model-dir "$SNAP" --cell-config "$CELL" \
+  say "phase parent_$PSTAGE"
+  python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/parent-$PSTAGE.progress.jsonl" \
+    --cap-min "$(cap parent_$PSTAGE)" --report "$ARM/rate-parent-$PSTAGE.json" -- \
+    timeout --kill-after=30s $(cap parent_$PSTAGE)m python -X utf8 -m jobs.m2_parent_arm.score_parent --parent rwkv7 --model-dir "$SNAP" --cell-config "$CELL" \
     --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" \
-    --out-dir "$ARM" --stage "$STAGE" --progress "$WORK/logs/parent-$STAGE.progress.jsonl" \
-    > "$WORK/logs/parent-$STAGE.log" 2>&1; r=$?
-  gate "parent_$STAGE" $r
+    --out-dir "$ARM" --stage "$PSTAGE" --progress "$WORK/logs/parent-$PSTAGE.progress.jsonl" \
+    > "$WORK/logs/parent-$PSTAGE.log" 2>&1; r=$?
+  gate "parent_$PSTAGE" $r
   mkdir -p "$WORK/out/parent_arm"; cp "$ARM"/*.json "$WORK/out/parent_arm/" 2>/dev/null || true
-  export_phase "parent_$STAGE"
-  case $r in 0) ;; 124|137) fail 7 "parent $STAGE timeout" ;; 15) fail 15 "parent $STAGE: live rate past its cap" ;;
-    10) fail 10 "parent $STAGE identity" ;; *) fail 9 "parent $STAGE rc=$r" ;; esac
+  export_phase "parent_$PSTAGE"
+  case $r in 0) ;; 124|137) fail 7 "parent $PSTAGE timeout" ;; 15) fail 15 "parent $PSTAGE: live rate past its cap" ;;
+    10) fail 10 "parent $PSTAGE identity" ;; *) fail 9 "parent $PSTAGE rc=$r" ;; esac
 done
 ARM_SHA=$(sha256sum "$ARM/arm.json" | cut -d' ' -f1)
 # Preserve the comparator even when every stage came from the checkpoint cache, including ordinary restarts.
