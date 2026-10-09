@@ -297,3 +297,5 @@ Rows and unique items per family are in `build-report.json` under `by_key`. Dive
 - Audit:
   - exact key-free duplicates across items: 0;
   - MinHash cross-item near-duplicates: 3.1% of sampled rows.
+- Agent A's hard gate `train.attack_guard scan` (claude/attack-guard @ca9d482, templates sha 93086366...) passes on all
+  229,824 rows: 0 hits, exit 0 (`attack-guard-ca9d482.json`).
