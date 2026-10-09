@@ -37,7 +37,8 @@ Exclusions:
   (a) BOILERPLATE: 13-grams in > 1% of eval rows AND > 1% of the scanned training rows (computed per draw, listed),
       and REPEATED TEMPLATES: 13-grams in >= 10 eval rows AND >= 10 rows of the draw (per-family instruction
       templates such as ACOS's per-category instructions or the BFCL / API-Bank / CRUXEval prompt frames our b1
-      families reproduce; counted, top 200 listed). A document reused across eval rows (an NLI4CT trial section sits
+      families reproduce), plus every 13-gram in >= 100 eval rows whatever its training df (eval-side frames such as
+      the HellaSwag prompt or RouterBench's shared 5-shot exemplars; counted, top 200 listed). A document reused across eval rows (an NLI4CT trial section sits
       in a handful of rows) stays gated unless it also sits in >= 10 training rows.
   (b) ALLOWLIST (``data/manifests/doc_overlap/allowlist-v1.json``, reviewed): eval units that are a shared public
       reference corpus used by design (e.g. HoVer's Wikipedia evidence). Their 13-grams do not count for (R) unless
@@ -82,13 +83,14 @@ MIN_COVERED = 3
 MIN_UNIT_GRAMS = 5  # (E)/(U) gate eval units with >= 5 distinctive 13-grams (>= 17 tokens beyond the templates)
 BOILER_FRAC = 0.01
 TEMPLATE_DF = 10  # repeated-template grams: in >= 10 eval rows AND >= 10 rows of the scanned draw
+TEMPLATE_EVAL_DF = 100  # ... or in >= 100 eval rows whatever the draw (eval-side frames, few-shot exemplars)
 POST_CAP = 256
 EXIT_HIT = 4   # job shells map 4 -> fail 34 (attack_guard: 3 -> 33)
 JOB_EXIT = 34
 RULE = ("doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units "
         "(DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the "
         "draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% "
-        "AND train df > 1%, or both df >= 10 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)")
+        "AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)")
 PIN_PATH = ROOT / "data" / "manifests" / "doc_overlap" / "index-pin.json"
 ALLOWLIST_PATH = ROOT / "data" / "manifests" / "doc_overlap" / "allowlist-v1.json"
 DEFAULT_CACHE = Path(os.environ.get("SSDM_DATA", r"C:\Users\apumu\research\CHLabs\ssdm-data")) / "m2" / "doc-overlap"
@@ -577,7 +579,7 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
         raise DocOverlapError(f"{len(want - found)} requested id(s) not in the records, e.g. {sorted(want - found)[:3]}")
     edf = idx.df.astype(np.int64)
     is_boiler = (edf > cand_thr) & (tdf > BOILER_FRAC * max(n, 1))
-    is_template = (edf >= TEMPLATE_DF) & (tdf >= TEMPLATE_DF) & ~is_boiler
+    is_template = (((edf >= TEMPLATE_DF) & (tdf >= TEMPLATE_DF)) | (edf >= TEMPLATE_EVAL_DF)) & ~is_boiler
     boiler_arr = np.nonzero(is_boiler | is_template)[0].astype(np.int64)
     del edf
     nunits = len(idx.u_row)

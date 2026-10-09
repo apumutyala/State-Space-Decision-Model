@@ -1,0 +1,42 @@
+{
+ "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+ "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set",
+ "index_sha256": "2c821e291c944b4e28cb0e74a5dabc3f7bc436fdd7f410fb199661318448594f",
+ "allowlist_sha256": "8a0bf416f2920af62be1ced98e54ea006f8580859d1c7234bed8676703f2c111",
+ "n_records": 24000,
+ "n_excluded": 16,
+ "n_kept": 23984,
+ "excluded_ids_sha256": "25fdd637a25b2ff079b1e8da57432bfa2f2de4428291fe243e4da3523e4694ce",
+ "per_source_fail": {
+  "clinc150": 2,
+  "glaive_fc": 1,
+  "mmlu_aux": 1,
+  "nq": 11,
+  "when2call": 1
+ },
+ "draw": "sample-24000-seed0-intent16-v1",
+ "records_files": [
+  "m2/build/sample-24000-seed0-intent16-v1/records.jsonl.gz"
+ ],
+ "pin_as": "train_set.doc_clean (or a no-train_set cell's top-level doc_clean)",
+ "heldout_excluded_overlap": [],
+ "note": "no overlap with any committed cell's heldout_excluded ids",
+ "excluded_ids": [
+  "m2:clinc150:3186~view:intent16-v1",
+  "m2:clinc150:983~view:intent16-v1",
+  "m2:glaive_fc:12464",
+  "m2:mmlu_aux:57967",
+  "m2:nq:13203",
+  "m2:nq:16515",
+  "m2:nq:22291",
+  "m2:nq:38050",
+  "m2:nq:38429",
+  "m2:nq:3966",
+  "m2:nq:50563",
+  "m2:nq:53658~inj:d1a:fake_correction",
+  "m2:nq:63618",
+  "m2:nq:73228",
+  "m2:nq:85600~inj:d1a:urgency",
+  "m2:when2call:994"
+ ]
+}

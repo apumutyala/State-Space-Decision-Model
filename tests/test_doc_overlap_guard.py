@@ -297,3 +297,9 @@ def test_template_with_a_tool_name_slot_is_not_a_document():
     # copying an eval row's function catalog (the document) still fails
     cat = rows[0][3]["state"]["functions"][0]["description"]
     assert DG.scan(_clean(100) + [_rec(77, {"functions": [{"description": cat}]}, "b1fam_bfcl_synth")], index)["fail_ids"] == ["m2:t:77"]
+
+
+def test_eval_side_frame_is_template_even_in_a_small_draw(idx):
+    # TEMPLATE sits in 202 eval rows (>= 100): a row carrying it fails neither alone nor in a tiny draw
+    r = _rec(1, {"x": TEMPLATE + " " + TEMPLATE}, "hellaswag", instr="ok")
+    assert DG.scan([r], idx)["n_fail"] == 0

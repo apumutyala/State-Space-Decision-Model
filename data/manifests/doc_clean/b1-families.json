@@ -1,0 +1,21 @@
+{
+ "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+ "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set",
+ "index_sha256": "2c821e291c944b4e28cb0e74a5dabc3f7bc436fdd7f410fb199661318448594f",
+ "allowlist_sha256": "8a0bf416f2920af62be1ced98e54ea006f8580859d1c7234bed8676703f2c111",
+ "n_records": 7084,
+ "n_excluded": 0,
+ "n_kept": 7084,
+ "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+ "per_source_fail": {},
+ "draw": "b1-families",
+ "records_files": [
+  "m2/build/b1-families/api_bank.jsonl.gz",
+  "m2/build/b1-families/bfcl.jsonl.gz",
+  "m2/build/b1-families/cruxeval.jsonl.gz"
+ ],
+ "pin_as": "train_set.doc_clean (or a no-train_set cell's top-level doc_clean)",
+ "heldout_excluded_overlap": [],
+ "note": "no overlap with any committed cell's heldout_excluded ids",
+ "excluded_ids": []
+}

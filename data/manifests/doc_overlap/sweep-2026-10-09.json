@@ -1,37 +1,31 @@
 {
- "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
- "index_sha256": "d29da6215c87d4904e14aaf7ffb90eddf75afcc8848db2d2be34b757ac3d1df4",
- "allowlist_sha256": "607c534c6afac3416786f4e9aab3c393bde26b06643b78060dfbd4821db611f1",
- "note": "counts only; fail ids are recomputed by the rule (sha pinned)",
+ "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+ "index_sha256": "2c821e291c944b4e28cb0e74a5dabc3f7bc436fdd7f410fb199661318448594f",
+ "allowlist_sha256": "8a0bf416f2920af62be1ced98e54ea006f8580859d1c7234bed8676703f2c111",
+ "policy": "coordinator-adopted 2026-10-09: item units fail, context-corpus units allowlisted, eval df>=100 = template",
  "draws": {
   "d1-24k": {
    "files": [
     "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/sample-24000-seed0-intent16-v1/records.jsonl.gz"
    ],
    "n_records": 24000,
-   "n_fail": 17,
-   "fail_ids_sha256": "45f452dd6f84391ca20052327aa027a8f8e2d8850c6c14311500e360ab2b0210",
+   "n_fail": 16,
+   "fail_ids_sha256": "25fdd637a25b2ff079b1e8da57432bfa2f2de4428291fe243e4da3523e4694ce",
    "per_source_fail": {
     "clinc150": 2,
     "glaive_fc": 1,
-    "mmlu_aux": 2,
+    "mmlu_aux": 1,
     "nq": 11,
     "when2call": 1
    },
    "per_reason": {
     "E": 14,
-    "U": 16,
-    "R": 1
+    "U": 16
    },
    "per_eval_family_fail": {
-    "Amazon-ESCI": 16,
-    "RouterBench-5shot": 1
+    "Amazon-ESCI": 16
    },
    "eval_rows_attributed_by_split": {
-    "HELDOUT": 1,
-    "TEST": 1
-   },
-   "eval_rows_union_covered_by_split": {
     "TEST": 1
    },
    "allowlist_saved": {
@@ -52,208 +46,44 @@
      "humicroedit_s1": 1
     },
     "toolret-public-tool-corpus": {
-     "when2call": 26,
+     "when2call": 25,
      "toolace": 95
     }
    },
    "n_boilerplate": 0,
-   "n_template_grams": 87,
-   "secs": 46.6,
-   "wall_secs": 48
-  },
-  "b1-families": {
-   "files": [
-    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-families/api_bank.jsonl.gz",
-    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-families/bfcl.jsonl.gz",
-    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-families/cruxeval.jsonl.gz"
-   ],
-   "n_records": 7084,
-   "n_fail": 0,
-   "fail_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-   "per_source_fail": {},
-   "per_reason": {},
-   "per_eval_family_fail": {},
-   "eval_rows_attributed_by_split": {},
-   "eval_rows_union_covered_by_split": {},
-   "allowlist_saved": {},
-   "n_boilerplate": 32,
-   "n_template_grams": 39,
-   "secs": 6.6,
-   "wall_secs": 8
-  },
-  "b1-100k-v2": {
-   "files": [
-    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-draw100k-v2/records.jsonl.gz"
-   ],
-   "n_records": 100000,
-   "n_fail": 14,
-   "fail_ids_sha256": "8db8c5ae4fadffd7c4a5b271b73436fc7f3abd95e27423c99a96e0ef03ad7fe8",
-   "per_source_fail": {
-    "glaive_fc": 2,
-    "hellaswag": 1,
-    "mmlu_aux": 2,
-    "when2call": 7,
-    "winogrande": 2
-   },
-   "per_reason": {
-    "E": 10,
-    "U": 10,
-    "R": 4
-   },
-   "per_eval_family_fail": {
-    "Amazon-ESCI": 3,
-    "BFCL-tool-selection": 7,
-    "BRIGHT-retrieval": 2,
-    "None": 1,
-    "RouterBench-5shot": 1
-   },
-   "eval_rows_attributed_by_split": {
-    "?": 1,
-    "HELDOUT": 1,
-    "TEST": 3
-   },
-   "eval_rows_union_covered_by_split": {
-    "TEST": 2
-   },
-   "allowlist_saved": {
-    "anli-wikipedia-premise": {
-     "anli": 2,
-     "boolq": 1,
-     "clinc150": 1,
-     "glaive_fc": 3,
-     "gsm8k": 3,
-     "nq": 2
-    },
-    "hover-wikipedia-evidence": {
-     "boolq": 2,
-     "clinc150": 2,
-     "glaive_fc": 7,
-     "gsm8k": 5,
-     "hellaswag": 1,
-     "humicroedit_s2": 2,
-     "mmlu_aux": 2,
-     "nq": 7,
-     "winogrande": 2
-    },
-    "toolret-public-tool-corpus": {
-     "glaive_fc": 34,
-     "toolace": 392,
-     "when2call": 137
-    }
-   },
-   "n_boilerplate": 32,
-   "n_template_grams": 65,
-   "secs": 54.1,
-   "wall_secs": 56
-  },
-  "b1-100k-v3": {
-   "files": [
-    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-draw100k-v3/records.jsonl.gz"
-   ],
-   "n_records": 100000,
-   "n_fail": 69,
-   "fail_ids_sha256": "81538b6f64ceeda41dc38c5269ed421cea99b14113f7735c9cac163eb454b571",
-   "per_source_fail": {
-    "glaive_fc": 2,
-    "hellaswag": 1,
-    "mmlu_aux": 1,
-    "nli4ct": 56,
-    "when2call": 7,
-    "winogrande": 2
-   },
-   "per_reason": {
-    "E": 54,
-    "U": 56,
-    "R": 36
-   },
-   "per_eval_family_fail": {
-    "Amazon-ESCI": 3,
-    "BFCL-tool-selection": 7,
-    "BRIGHT-retrieval": 2,
-    "NLI4CT-2024": 56,
-    "None": 1
-   },
-   "eval_rows_attributed_by_split": {
-    "?": 1,
-    "DEV": 4,
-    "HELDOUT": 28,
-    "TEST": 6
-   },
-   "eval_rows_union_covered_by_split": {
-    "DEV": 85,
-    "HELDOUT": 464,
-    "TEST": 55
-   },
-   "allowlist_saved": {
-    "anli-wikipedia-premise": {
-     "anli": 1,
-     "boolq": 1,
-     "clinc150": 1,
-     "glaive_fc": 3,
-     "gsm8k": 3,
-     "hover": 7,
-     "nq": 2
-    },
-    "hover-wikipedia-evidence": {
-     "boolq": 2,
-     "clinc150": 2,
-     "glaive_fc": 7,
-     "gsm8k": 5,
-     "hellaswag": 1,
-     "humicroedit_s2": 2,
-     "nq": 7,
-     "winogrande": 3
-    },
-    "toolret-public-tool-corpus": {
-     "glaive_fc": 34,
-     "toolace": 392,
-     "when2call": 137
-    }
-   },
-   "n_boilerplate": 35,
-   "n_template_grams": 5161,
-   "secs": 65.7,
-   "wall_secs": 69
+   "n_template_grams": 22455,
+   "secs": 35.8
   },
   "pool150k-v1": {
    "files": [
     "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/sample-150000-seed20261006/records.jsonl.gz"
    ],
    "n_records": 150000,
-   "n_fail": 149,
-   "fail_ids_sha256": "d1bbcfbe3172d63f2abee43dc824365e8c55f711cc42acbded53b4da937b0b99",
+   "n_fail": 143,
+   "fail_ids_sha256": "d414e6127a255864595b7dbe260aacd96d01c3997cc6504654e85a278b30e6f9",
    "per_source_fail": {
     "anli": 3,
     "banking77": 2,
     "clinc150": 3,
     "glaive_fc": 3,
     "gsm8k": 1,
-    "hellaswag": 2,
-    "mmlu_aux": 6,
+    "hellaswag": 1,
+    "mmlu_aux": 3,
     "nq": 111,
     "sst5": 1,
     "when2call": 14,
-    "winogrande": 3
+    "winogrande": 1
    },
    "per_reason": {
-    "R": 6,
     "E": 115,
     "U": 143
    },
    "per_eval_family_fail": {
     "Amazon-ESCI": 113,
     "BFCL-tool-selection": 12,
-    "BRIGHT-retrieval": 2,
-    "HoVer claim verification": 18,
-    "None": 1,
-    "RouterBench-5shot": 3
+    "HoVer claim verification": 18
    },
    "eval_rows_attributed_by_split": {
-    "?": 1,
-    "HELDOUT": 2,
-    "TEST": 3
-   },
-   "eval_rows_union_covered_by_split": {
     "HELDOUT": 1,
     "TEST": 2
    },
@@ -287,56 +117,50 @@
      "glaive_fc": 2,
      "humicroedit_s1": 3
     },
+    "bright-retrieval-pool": {
+     "winogrande": 2
+    },
     "toolret-public-tool-corpus": {
      "toolace": 549,
      "when2call": 180
     }
    },
    "n_boilerplate": 0,
-   "n_template_grams": 678,
-   "secs": 331.2,
-   "wall_secs": 334
+   "n_template_grams": 23032,
+   "secs": 208.9
   },
   "pool150k-v2": {
    "files": [
     "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/sample-150000-seed20261006-v2/records.jsonl.gz"
    ],
    "n_records": 150000,
-   "n_fail": 150,
-   "fail_ids_sha256": "b4dee241475deb60052717ef264a37b75c0c625086dfe86b43e755ed1983e095",
+   "n_fail": 144,
+   "fail_ids_sha256": "ce6bb2011ab5f2a230cec1838bb743dd2634e26457bda066a1929baa53b68577",
    "per_source_fail": {
     "anli": 4,
     "banking77": 2,
     "clinc150": 3,
     "glaive_fc": 3,
     "gsm8k": 1,
-    "hellaswag": 2,
+    "hellaswag": 1,
     "humicroedit_s2": 1,
-    "mmlu_aux": 6,
+    "mmlu_aux": 3,
     "nq": 111,
     "sst5": 1,
     "when2call": 13,
-    "winogrande": 3
+    "winogrande": 1
    },
    "per_reason": {
-    "R": 7,
     "E": 116,
-    "U": 144
+    "U": 144,
+    "R": 1
    },
    "per_eval_family_fail": {
     "Amazon-ESCI": 115,
     "BFCL-tool-selection": 11,
-    "BRIGHT-retrieval": 2,
-    "HoVer claim verification": 18,
-    "None": 1,
-    "RouterBench-5shot": 3
+    "HoVer claim verification": 18
    },
    "eval_rows_attributed_by_split": {
-    "?": 1,
-    "HELDOUT": 2,
-    "TEST": 3
-   },
-   "eval_rows_union_covered_by_split": {
     "HELDOUT": 1,
     "TEST": 2
    },
@@ -371,55 +195,181 @@
      "humicroedit_s1": 3,
      "humicroedit_s2": 1
     },
+    "bright-retrieval-pool": {
+     "winogrande": 2
+    },
     "toolret-public-tool-corpus": {
      "toolace": 548,
      "when2call": 180
     }
    },
    "n_boilerplate": 0,
-   "n_template_grams": 678,
-   "secs": 350.0,
-   "wall_secs": 351
+   "n_template_grams": 23032,
+   "secs": 208.3
+  },
+  "b1-100k-v2": {
+   "files": [
+    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-draw100k-v2/records.jsonl.gz"
+   ],
+   "n_records": 100000,
+   "n_fail": 10,
+   "fail_ids_sha256": "34a8b818fefebf603cb219ab9b125160ce4fd31d7e385c647ace2debe6d78c54",
+   "per_source_fail": {
+    "glaive_fc": 2,
+    "mmlu_aux": 1,
+    "when2call": 7
+   },
+   "per_reason": {
+    "E": 10,
+    "U": 10
+   },
+   "per_eval_family_fail": {
+    "Amazon-ESCI": 3,
+    "BFCL-tool-selection": 7
+   },
+   "eval_rows_attributed_by_split": {
+    "TEST": 2
+   },
+   "allowlist_saved": {
+    "anli-wikipedia-premise": {
+     "anli": 2,
+     "boolq": 1,
+     "clinc150": 1,
+     "glaive_fc": 3,
+     "gsm8k": 3,
+     "nq": 2
+    },
+    "hover-wikipedia-evidence": {
+     "boolq": 2,
+     "clinc150": 2,
+     "glaive_fc": 7,
+     "gsm8k": 5,
+     "hellaswag": 1,
+     "humicroedit_s2": 2,
+     "mmlu_aux": 2,
+     "nq": 7,
+     "winogrande": 2
+    },
+    "toolret-public-tool-corpus": {
+     "glaive_fc": 34,
+     "toolace": 392,
+     "when2call": 136
+    },
+    "bright-retrieval-pool": {
+     "winogrande": 2
+    }
+   },
+   "n_boilerplate": 32,
+   "n_template_grams": 22367,
+   "secs": 54.7
+  },
+  "b1-100k-v3": {
+   "files": [
+    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-draw100k-v3/records.jsonl.gz"
+   ],
+   "n_records": 100000,
+   "n_fail": 66,
+   "fail_ids_sha256": "c1411a08d076e994c2227914292b9bf503319cb7e67cab884ada9ed64b2489ee",
+   "per_source_fail": {
+    "glaive_fc": 2,
+    "mmlu_aux": 1,
+    "nli4ct": 56,
+    "when2call": 7
+   },
+   "per_reason": {
+    "E": 54,
+    "U": 56,
+    "R": 33
+   },
+   "per_eval_family_fail": {
+    "Amazon-ESCI": 3,
+    "BFCL-tool-selection": 7,
+    "NLI4CT-2024": 56
+   },
+   "eval_rows_attributed_by_split": {
+    "DEV": 4,
+    "HELDOUT": 28,
+    "TEST": 5
+   },
+   "allowlist_saved": {
+    "anli-wikipedia-premise": {
+     "anli": 1,
+     "boolq": 1,
+     "clinc150": 1,
+     "glaive_fc": 3,
+     "gsm8k": 3,
+     "hover": 7,
+     "nq": 2
+    },
+    "hover-wikipedia-evidence": {
+     "boolq": 2,
+     "clinc150": 2,
+     "glaive_fc": 7,
+     "gsm8k": 5,
+     "hellaswag": 1,
+     "humicroedit_s2": 2,
+     "nq": 7,
+     "winogrande": 3
+    },
+    "toolret-public-tool-corpus": {
+     "glaive_fc": 34,
+     "toolace": 392,
+     "when2call": 136
+    },
+    "bright-retrieval-pool": {
+     "winogrande": 2
+    }
+   },
+   "n_boilerplate": 35,
+   "n_template_grams": 22744,
+   "secs": 64.5
+  },
+  "b1-families": {
+   "files": [
+    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-families/api_bank.jsonl.gz",
+    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-families/bfcl.jsonl.gz",
+    "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-families/cruxeval.jsonl.gz"
+   ],
+   "n_records": 7084,
+   "n_fail": 0,
+   "fail_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "per_source_fail": {},
+   "per_reason": {},
+   "per_eval_family_fail": {},
+   "eval_rows_attributed_by_split": {},
+   "allowlist_saved": {},
+   "n_boilerplate": 32,
+   "n_template_grams": 22350,
+   "secs": 21.6
   },
   "bschema300k-v1": {
    "files": [
     "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw300k-v1/records.jsonl.gz"
    ],
    "n_records": 300000,
-   "n_fail": 168,
-   "fail_ids_sha256": "7e465065388f6ecbbfc75e1927d87a6da537ca806e7e40b1e30112e1c7493880",
+   "n_fail": 157,
+   "fail_ids_sha256": "f768050907b8be2f6b6bf09e5103b47f6b37730f5704b7087b588765e81bf72a",
    "per_source_fail": {
     "glaive_fc": 15,
-    "hellaswag": 2,
-    "mmlu_aux": 3,
+    "mmlu_aux": 1,
     "nli4ct": 123,
     "sst5": 1,
-    "when2call": 17,
-    "winogrande": 7
+    "when2call": 17
    },
    "per_reason": {
     "E": 149,
     "U": 149,
-    "R": 66
+    "R": 55
    },
    "per_eval_family_fail": {
     "Amazon-ESCI": 17,
     "BFCL-tool-selection": 17,
-    "BRIGHT-retrieval": 7,
-    "NLI4CT-2024": 123,
-    "None": 2,
-    "RouterBench-5shot": 2
+    "NLI4CT-2024": 123
    },
    "eval_rows_attributed_by_split": {
-    "?": 1,
     "DEV": 4,
-    "HELDOUT": 25,
-    "TEST": 6
-   },
-   "eval_rows_union_covered_by_split": {
-    "DEV": 84,
-    "HELDOUT": 458,
-    "TEST": 55
+    "HELDOUT": 24,
+    "TEST": 5
    },
    "allowlist_saved": {
     "hover-wikipedia-evidence": {
@@ -447,52 +397,43 @@
      "glaive_fc": 74,
      "toolace": 1176,
      "when2call": 574
+    },
+    "bright-retrieval-pool": {
+     "winogrande": 7
     }
    },
    "n_boilerplate": 55,
-   "n_template_grams": 5887,
-   "secs": 155.7,
-   "wall_secs": 158
+   "n_template_grams": 23454,
+   "secs": 174.1
   },
   "bschema230k-v2c": {
    "files": [
     "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw230k-v2c/records.jsonl.gz"
    ],
    "n_records": 229824,
-   "n_fail": 117,
-   "fail_ids_sha256": "702869b3e694981a1f687af9bef4878efd01530d03e9c184f9565d8de213d4b9",
+   "n_fail": 113,
+   "fail_ids_sha256": "4523495c2cccd98bf9ee5d80d45e1f8fbe5cf554bb1bae31d95f77196946c1c4",
    "per_source_fail": {
     "glaive_fc": 5,
-    "hellaswag": 1,
-    "mmlu_aux": 2,
+    "mmlu_aux": 1,
     "nli4ct": 97,
     "sst5": 1,
-    "when2call": 9,
-    "winogrande": 2
+    "when2call": 9
    },
    "per_reason": {
     "E": 103,
     "U": 107,
-    "R": 45
+    "R": 41
    },
    "per_eval_family_fail": {
     "Amazon-ESCI": 7,
     "BFCL-tool-selection": 9,
-    "BRIGHT-retrieval": 2,
-    "NLI4CT-2024": 97,
-    "None": 1,
-    "RouterBench-5shot": 1
+    "NLI4CT-2024": 97
    },
    "eval_rows_attributed_by_split": {
-    "?": 1,
     "DEV": 5,
-    "HELDOUT": 26,
-    "TEST": 6
-   },
-   "eval_rows_union_covered_by_split": {
-    "DEV": 85,
-    "HELDOUT": 464,
-    "TEST": 55
+    "HELDOUT": 25,
+    "TEST": 5
    },
    "allowlist_saved": {
     "anli-wikipedia-premise": {
@@ -518,12 +459,14 @@
      "glaive_fc": 32,
      "toolace": 709,
      "when2call": 337
+    },
+    "bright-retrieval-pool": {
+     "winogrande": 2
     }
    },
    "n_boilerplate": 35,
-   "n_template_grams": 6072,
-   "secs": 103.5,
-   "wall_secs": 105
+   "n_template_grams": 23645,
+   "secs": 214.7
   }
  }
 }
