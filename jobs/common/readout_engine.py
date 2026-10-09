@@ -14,9 +14,11 @@ families
   ``rwkv7-hf-g1-v3p`` / ``-v3r`` / ``-v3c`` / ``-v3w`` G1V3Backend modes permute / reread / calibrate / words (one
                   change each on v3); ``rwkv7-hf-g1-v2f`` mode v2f (v2 + the dict-instruction fix only)
   ``rwkv7-hf-g1-v3w-r`` v3w-r = v3w (mode words) + the opt-in parameter-free readout rules
-                  (``decide.readout_rules`` r1: BFCL exactly-one, SATA top-m) + the 32,768-token input cap for the
-                  adapter and the v3 render budget (the plugin's 25,600 trained-ctx cap is not applied: RWKV is
-                  recurrent; the same cap every paired arm is scored at)
+                  (``decide.readout_rules`` r1: BFCL exactly-one, SATA top-m) + a 32,768-token default input cap
+                  for the adapter and the v3 render budget (the plugin's 25,600 trained-ctx cap is not applied: RWKV
+                  is recurrent). 32k is a readout-family setting, not the claim cap (R3: RWKV arms read every row
+                  in full at 65,536, as fulldev_eval.py; Clef: 16,384 + the 51 over-length rows substituted at
+                  32,768)
   ``qwen3.5``     ``decide.backends.hf_readout.load_qwen35`` (stock transformers path)
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index

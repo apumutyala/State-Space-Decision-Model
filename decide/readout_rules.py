@@ -21,9 +21,12 @@ No gold, no gold count, no row metadata (``id`` / ``metadata.category`` / ``_eva
     the m options with the highest p(yes) (ties: smallest question id), no for the rest. ``round`` is Python's
     (half to even), matching ``analysis/readout_levers_d13.py``.
 
-``READOUT_RULES_CAP`` is the input cap the rules readout serves under for every backend (32,768: the cap Clef's full-DEV
-reference was measured at), replacing the adapter default 16,384 (Clef's ``encode_record`` default; no Index/kit
-protocol requires it).
+``READOUT_RULES_CAP`` (32,768) is the default input cap of the rules readout family (v3w-r) for every backend, replacing
+the adapter default 16,384 (Clef's ``encode_record`` default; no Index/kit protocol requires it). It is a READOUT-FAMILY
+setting, not the claim cap. Claim arms (R3, BOARD state@7544c2c): RWKV arms read every row in full at 65,536 (> the
+longest DEV row, 47,509 tokens), as ``jobs/m2_first_cell/fulldev_eval.py`` ``DEFAULT_MAX_INPUT_TOKENS``, set per
+request via ``ssdm.limits.max_input_tokens`` (which overrides this default); Clef: 16,384 + the 51 over-length rows
+substituted at 32,768.
 """
 
 from __future__ import annotations

@@ -137,7 +137,8 @@ class Decider:
     ) -> None:
         self.enable_experimental_provenance = enable_experimental_provenance
         #: Opt-in parameter-free readout rules (``decide.readout_rules``, id ``ssdm.readout_rules.r1``): BFCL
-        #: exactly-one and SATA top-m on the served probabilities, served under the 32,768-token input cap. Off by
+        #: exactly-one and SATA top-m on the served probabilities, with a 32,768-token default input cap (a
+        #: readout-family default, not the claim cap: claim arms set their cap per request, R3 = 65,536). Off by
         #: default, so every existing readout's responses are byte-identical.
         self.readout_rules = readout_rules
         self.backend = backend

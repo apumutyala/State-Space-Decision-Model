@@ -268,3 +268,70 @@ def test_readout_engine_registry():
     assert not set(E.RULES_FAMILIES) & set(E.G1V3_MODES)  # existing families keep their construction path
     assert E.G1V3_MODES["rwkv7-hf-g1-v3w"] == "words" and E.TEMPLATES["rwkv7-hf-g1-v3w"] == "jrt-rwkv-g1-v3w"
     assert E.TEMPLATES["rwkv7-hf-g1-v3w-r"] == "jrt-rwkv-g1-v3w"
+
+
+# ----------------------------------------------------------------------------------------------- untempered rebuild
+def _kit_or_skip():
+    import sys
+
+    from harness import config as _config
+
+    try:
+        import decision_index  # noqa: F401
+    except ImportError:
+        sys.path.insert(1, str(_config.KIT_CLONE))
+    pytest.importorskip("decision_index.engines.base")
+
+
+def _sata_row():
+    return {**sata_request(4), "_evaluation": {"run_id": "33:SATA:test:x", "catalog_id": 33}}
+
+
+def test_index_predict_untempered_rebuild_reapplies_rules_on_raw():
+    """train.m2_gates.index_predict(untempered_from_raw=True) rebuilds answers from raw probabilities: the rules must be
+    re-applied there (on raw), giving exactly the identity-calibration rules decider's answers."""
+    _kit_or_skip()
+    from decide.calibration import OptionCountTemperature
+    from train import m2_gates as G
+
+    row = _sata_row()
+    be = FixedBackend(yes_logits({"option_0": 0.9, "option_1": 0.1, "option_2": 0.1, "option_3": 0.1}))
+    served = Decider(be, calibration=OptionCountTemperature(t0=3.0), readout_rules=True)  # tempered: sum 1.65 -> m 2
+    plain = Decider(be, readout_rules=True)  # raw: sum 1.2 -> m 1
+    a = G.index_predict(served.decide, [row], untempered_from_raw=True)["33:SATA:test:x"]
+    b = G.index_predict(plain.decide, [row])["33:SATA:test:x"]
+    assert a["response"] == b["response"]
+    assert {k for k, x in a["response"]["answers"].items() if x["choice"] == "yes"} == {"option_0"}
+    assert {k for k, x in a["served_response"]["answers"].items() if x["choice"] == "yes"} == {"option_0", "option_1"}
+    assert a["readout_rules_untempered"]["rule"] == "sata_top_m"
+    # without rules the rebuild is unchanged (no rules record, no re-application)
+    c = G.index_predict(Decider(be, calibration=OptionCountTemperature(t0=3.0)).decide, [row],
+                        untempered_from_raw=True)["33:SATA:test:x"]
+    assert "readout_rules_untempered" not in c
+
+
+def test_index_predict_fails_closed_when_rules_record_missing():
+    _kit_or_skip()
+    from train import m2_gates as G
+
+    row = _sata_row()
+    dec = Decider(FixedBackend(yes_logits({f"option_{j}": 0.3 for j in range(4)})), readout_rules=True)
+
+    def stripped(req):
+        resp = dec.decide(req)
+        resp["ssdm"]["served_config"].pop("readout_rules")
+        return resp
+
+    with pytest.raises(ValueError, match="readout-rules decider"):
+        G.index_predict(stripped, [row], untempered_from_raw=True)
+
+
+def test_claim_cap_set_per_request_overrides_rules_default():
+    """32k is the v3w-r family default, not the claim cap: a claim arm's per-request cap (R3: 65,536, every DEV row in
+    full; the longest is 47,509 tokens) overrides it."""
+    r = sata_request(2)
+    be = FixedBackend(yes_logits({"option_0": 0.6, "option_1": 0.3}), tokens=47_509)
+    assert Decider(be, readout_rules=True).decide(r)["ssdm"]["status"] == "exhausted"
+    resp = Decider(be, readout_rules=True).decide({**r, "ssdm": {"limits": {"max_input_tokens": 65_536}}})
+    assert resp["ssdm"]["status"] == "ok"
+    assert resp["ssdm"]["diagnostics"]["limits_applied"]["_source"]["max_input_tokens"] == "request"

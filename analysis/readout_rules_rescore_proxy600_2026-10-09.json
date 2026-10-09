@@ -1,98 +1,108 @@
 {
- "label": "DIAGNOSTIC (DEV rows; no fitting)",
  "rules": "ssdm.readout_rules.r1",
+ "measured": "R1 (BFCL exactly-one) + R2 (SATA top-m) only; R3 (input cap) not measured offline: input_tokens_exceeded rows need a GPU re-run",
  "edition": "0.2.1",
- "selection": {
-  "rows": "proxy600",
-  "ids_sha256": "7d42c398336e0934e4fba8d7d78bda07d0073967fc92a8af7b3a14253a9185e6"
- },
- "n_rows": 644,
  "scorer": "harness.score.decompose + bootstrap.compare (B=2000, seed 0)",
- "cap_note": "32,768 cap not applied offline: input_tokens_exceeded rows need a GPU re-run",
- "arms": {
+ "proxy600_ids_sha256": "7d42c398336e0934e4fba8d7d78bda07d0073967fc92a8af7b3a14253a9185e6",
+ "arm_files": {
   "d13": {
    "path": "C:/Users/apumu/d13_land/dl/x/final/out/screen/child.results.jsonl",
-   "sha256": "7611368e9684be308997ace07057a740c2ac55be2e4ab2cec6eb664d3a030236",
-   "index_before": 41.07,
-   "index_after": 41.441,
-   "after_minus_before": {
-    "point": 0.371,
-    "lo": 0.0,
-    "hi": 0.953,
-    "excludes_zero": false
-   },
-   "benchmarks_changed": {
-    "1": {
-     "point": 5.16,
-     "lo": 0.0,
-     "hi": 16.192,
-     "excludes_zero": null
-    },
-    "33": {
-     "point": 6.759,
-     "lo": 0.0,
-     "hi": 20.265,
-     "excludes_zero": null
-    }
-   },
-   "rules": {
-    "bfcl_exactly_one": {
-     "rows": 25,
-     "rows_changed": 2,
-     "fields_changed": 2
-    },
-    "sata_top_m": {
-     "rows": 15,
-     "rows_changed": 4,
-     "fields_changed": 4
-    }
-   },
-   "non_ok_rows": 6
+   "sha256": "7611368e9684be308997ace07057a740c2ac55be2e4ab2cec6eb664d3a030236"
   },
   "d1": {
    "path": "C:/Users/apumu/d13_land/work/ref.proxy600.results.jsonl",
-   "sha256": "257aa5d4e63494902df5a0a0074d4d3149e0114970ad701ad834433ef07e4605",
-   "index_before": 37.714,
-   "index_after": 37.876,
-   "after_minus_before": {
-    "point": 0.162,
-    "lo": -0.324,
-    "hi": 0.808,
-    "excludes_zero": false
-   },
-   "benchmarks_changed": {
-    "33": {
-     "point": 6.759,
-     "lo": -13.517,
-     "hi": 33.772,
-     "excludes_zero": null
-    }
-   },
-   "rules": {
-    "bfcl_exactly_one": {
-     "rows": 25,
-     "rows_changed": 0,
-     "fields_changed": 0
-    },
-    "sata_top_m": {
-     "rows": 15,
-     "rows_changed": 6,
-     "fields_changed": 6
-    }
-   },
-   "non_ok_rows": 6
+   "sha256": "257aa5d4e63494902df5a0a0074d4d3149e0114970ad701ad834433ef07e4605"
   }
  },
- "d13_minus_d1_before": {
-  "point": 3.356,
-  "lo": -1.469,
-  "hi": 7.063,
-  "excludes_zero": false
- },
- "d13_minus_d1_after": {
-  "point": 3.565,
-  "lo": -1.071,
-  "hi": 7.12,
-  "excludes_zero": false
+ "sections": {
+  "proxy600": {
+   "label": "diagnostic (R1+R2 only)",
+   "n_rows": 644,
+   "ids_sha256": "7d42c398336e0934e4fba8d7d78bda07d0073967fc92a8af7b3a14253a9185e6",
+   "arms": {
+    "d13": {
+     "index_before": 41.07,
+     "index_after": 41.441,
+     "after_minus_before": {
+      "point": 0.371,
+      "lo": 0.0,
+      "hi": 0.953,
+      "excludes_zero": false
+     },
+     "benchmarks_changed": {
+      "1": {
+       "point": 5.16,
+       "lo": 0.0,
+       "hi": 16.192,
+       "excludes_zero": null
+      },
+      "33": {
+       "point": 6.759,
+       "lo": 0.0,
+       "hi": 20.265,
+       "excludes_zero": null
+      }
+     },
+     "rules": {
+      "bfcl_exactly_one": {
+       "rows": 25,
+       "rows_changed": 2,
+       "fields_changed": 2
+      },
+      "sata_top_m": {
+       "rows": 15,
+       "rows_changed": 4,
+       "fields_changed": 4
+      }
+     },
+     "non_ok_rows": 6,
+     "rows_with_served_response": 0
+    },
+    "d1": {
+     "index_before": 37.714,
+     "index_after": 37.876,
+     "after_minus_before": {
+      "point": 0.162,
+      "lo": -0.324,
+      "hi": 0.808,
+      "excludes_zero": false
+     },
+     "benchmarks_changed": {
+      "33": {
+       "point": 6.759,
+       "lo": -13.517,
+       "hi": 33.772,
+       "excludes_zero": null
+      }
+     },
+     "rules": {
+      "bfcl_exactly_one": {
+       "rows": 25,
+       "rows_changed": 0,
+       "fields_changed": 0
+      },
+      "sata_top_m": {
+       "rows": 15,
+       "rows_changed": 6,
+       "fields_changed": 6
+      }
+     },
+     "non_ok_rows": 6,
+     "rows_with_served_response": 0
+    }
+   },
+   "d13_minus_d1_before": {
+    "point": 3.356,
+    "lo": -1.469,
+    "hi": 7.063,
+    "excludes_zero": false
+   },
+   "d13_minus_d1_after": {
+    "point": 3.565,
+    "lo": -1.071,
+    "hi": 7.12,
+    "excludes_zero": false
+   }
+  }
  }
 }
