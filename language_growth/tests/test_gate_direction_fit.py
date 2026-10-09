@@ -1,6 +1,7 @@
 """Real native head/capture/fitting on a tiny synthetic backbone; no RWKV claim."""
 from copy import deepcopy
 import json
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -16,8 +17,9 @@ from language_growth.gate_direction_fit import (
 )
 from language_growth.gate_interventions import (
     DIRECTION_SCHEMA, DIRECTION_SCHEMA_V2, SCHEMA_V2, _ArmProvider, _OWNER, _parent_state_sha, _registration, _sha,
-    capture_is_targeted, question_slot, registration_sha256, run_native_interventions,
+    capture_is_targeted, native_capture_identity, question_slot, registration_sha256, run_native_interventions,
 )
+from language_growth.language_child import LanguageChild, Runtime as LanguageChildRuntime
 from language_growth.native_parent import LoadedNativeParent, NativeParent, NativeParentPin
 from language_growth.tests.test_gate_interventions import FakeStateBackbone
 from language_growth.tests.test_native_parent_m2_bundle import fixture
@@ -367,6 +369,87 @@ def test_targeted_fitted_K3_runs_full_native_planner_and_untargeted_fact_K4_is_u
     # Every ordinary free-running result remains present, including rejections.
     assert all(len(rows) == 1 for rows in result["arms"].values())
     assert result["provenance"][0]["target_slots"] == ["comparison-relation"]
+
+
+def test_distinct_language_child_fits_writes_and_runs_own_native_registration(tmp_path, monkeypatch):
+    """Actual tiny child restore -> fit -> disk registration -> free-running arms."""
+    train, validation = pairs()
+    parent, task = compare_parent_and_task(tmp_path, train, validation)
+    parent_before = _parent_state_sha(parent._loaded.backend.model)
+    parent_fit = fit_native_directions(parent, train, validation_pairs=validation, scale=.02,
+                                       random_seed=17, target_slots=["comparison-relation"])
+    parent_registration = write_direction_fit(parent_fit, tmp_path / "parent-fit")
+
+    child_model = deepcopy(parent._loaded.backend.model)
+    for parameter in child_model.head_parameters():
+        parameter.requires_grad_(True)
+    names = tuple(sorted(name for name, parameter in child_model.named_parameters()
+                         if parameter.requires_grad))
+    child_state = {name: parameter.detach().clone() + .001
+                   for name, parameter in child_model.named_parameters() if parameter.requires_grad}
+    candidate = {"checkpoint_sha256": "c" * 64, "receipt_sha256": "d" * 64,
+                 "checkpoint_path": tmp_path / "tiny-child.pt", "step": 2,
+                 "receipt": {"plan_sha256": "e" * 64, "source_commit": "f" * 40},
+                 "lineage": {"data": {"n": 2, "scope": "synthetic-test-only"}}}
+    trainable = SimpleNamespace(model=child_model, encoder=parent._loaded.backend.encode,
+                                config=SimpleNamespace(layout=parent._loaded.backend.layout),
+                                trainable_parameter_names=names)
+    runtime = LanguageChildRuntime()
+    runtime.restore_child(trainable, {"trainable": child_state}, candidate)
+    restored = dict(child_model.named_parameters())
+    assert names and all(torch.equal(restored[name], child_state[name]) for name in names)
+    child_before = _parent_state_sha(child_model)
+    assert child_before != parent_before
+    native_child = runtime.native_parent(trainable, {}, candidate, SimpleNamespace(pin=parent._pin))
+    child = LanguageChild(native_child, candidate=candidate, stage1_identity={
+        "artifact_sha256": parent._pin.artifact_sha256,
+        "revision_id": parent.planner_kwargs()["parent_revision"]})
+    identity = child.identity()
+    assert identity["artifact_sha256"] != identity["stage1_parent"]["artifact_sha256"]
+    assert identity["candidate_revision"] != parent.planner_kwargs()["parent_revision"]
+    assert not identity["language_qualified"] and not identity["stage1_qualification_inherited"]
+
+    # A valid parent fit must fail before invoking the distinct child's provider.
+    with monkeypatch.context() as blocked:
+        blocked.setattr(child, "decide", lambda *_: pytest.fail("parent registration reached child forward"))
+        with pytest.raises(ValueError, match="native capture point/control"):
+            run_native_interventions([task], child, parent_registration)
+
+    fitted = fit_native_directions(child, train, validation_pairs=validation, scale=.02,
+                                   random_seed=17, target_slots=["comparison-relation"])
+    capture = native_capture_identity(child)
+    assert fitted["evidence"]["capture_identity"] == capture
+    assert fitted["evidence"]["state_unchanged_sha256_before"] == child_before
+    assert fitted["evidence"]["state_unchanged_sha256_after"] == child_before
+    registration = write_direction_fit(fitted, tmp_path / "child-fit")
+    registration = json.loads((tmp_path / "child-fit/registration.json").read_text())
+    assert registration["parent_revision"] == identity["candidate_revision"]
+    assert registration["capture_identity_sha256"] == _sha(capture)
+    assert registration["capture_identity_sha256"] != parent_registration["capture_identity_sha256"]
+    result = run_native_interventions([task], child, registration)
+    assert result["instrumentation_valid"] and result["targeted_cohort_valid"]
+    assert set(result["arms"]) == {"semantic", "sham", "random", "output_only"}
+    assert result["targeted_capture_counts"] == {arm: 1 for arm in result["arms"]}
+    assert all(len(rows) == 1 and rows[0].provider_calls == 4 for rows in result["arms"].values())
+    provenance = result["provenance"][0]
+    assert provenance["parent_revision"] == identity["candidate_revision"]
+    assert provenance["output_only_fit_evidence_sha256"] == _sha(fitted["evidence"])
+    assert provenance["state_unchanged_sha256_before"] == provenance["state_unchanged_sha256_after"] == child_before
+    for arm, records in provenance["captures"].items():
+        assert [record["targeted"] for record in records] == [False, False, False, True]
+        assert all(record["head_calls"] == 1 and record["status"] == "ok" for record in records)
+        targeted = records[-1]["capture"]
+        if arm in ("semantic", "random"):
+            assert targeted["hidden_delta_l2"] > 0 and targeted["output_delta_l2"] == 0
+        elif arm == "output_only":
+            assert targeted["hidden_delta_l2"] == 0 and targeted["output_delta_l2"] > 0
+        else:
+            assert targeted["hidden_delta_l2"] == targeted["output_delta_l2"] == 0
+    assert _parent_state_sha(parent._loaded.backend.model) == parent_before
+    assert _parent_state_sha(child_model) == child_before
+    assert not child_model.head._forward_hooks and not child_model.head._forward_pre_hooks
+    assert _OWNER.acquire(blocking=False)
+    _OWNER.release()
 
 
 def test_missing_targeted_control_and_zero_target_cohort_cannot_qualify(tmp_path):
