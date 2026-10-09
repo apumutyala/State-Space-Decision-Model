@@ -7,9 +7,9 @@ Reads index/score.json (proxy600 slice index), index/ece.json, index/compare_sto
 stock RWKV7-G1k v3w readout on the same 644 rows), index/selfcheck.json (fork == recompute canary) and
 index/rate.json, plus the per-row statuses of index/stock/results.jsonl. ``valid_screen`` is finalize.py's validator.
 
-Two-arm modes (params ``screen.arm_b``, MODE qrwkv6_32b_v3w): arm a is the stock screen above and must reproduce
-``screen.expect_arm_a_index`` within ``expect_arm_a_tol`` (``check_arm_a``; the runner exits 16 before arm b
-otherwise); arm b's outputs (index/score_b.json, ece_b.json, compare_b_stock_v3w.json, compare_b_vs_a.json,
+Two-arm modes (params ``screen.arm_b``, MODE qrwkv6_32b_v3w / qwen36_a3b): arm a is the stock screen above and must
+reproduce ``screen.expect_arm_a_index`` within ``expect_arm_a_tol`` when one is given (``check_arm_a``; the runner exits
+16 before arm b otherwise; without one, e.g. a first measurement, only the 644 rows are checked); arm b's outputs (index/score_b.json, ece_b.json, compare_b_stock_v3w.json, compare_b_vs_a.json,
 selfcheck_b.json, rate_b.json, v3w/results.jsonl) go to decision.json ``arm_b`` with the paired diff b - a [CI].
 """
 from __future__ import annotations
@@ -35,6 +35,10 @@ def _row_status(path: Path) -> dict:
 def check_arm_a(params: dict, score: dict) -> dict:
     s = params["screen"]
     got = score["slice_index"]["index"]["point"]
+    if s.get("expect_arm_a_index") is None:  # first measurement of this backbone (MODE qwen36_a3b): rows only
+        return {"index": got, "expected": None, "tol": None, "source": None, "rows": score["rows"],
+                "note": "no arm-a reproduction target (first measurement of this checkpoint); rows checked only",
+                "ok": bool(score["rows"] == 644)}
     want, tol = s["expect_arm_a_index"], s.get("expect_arm_a_tol", 0.01)
     return {"index": got, "expected": want, "tol": tol, "source": s.get("expect_arm_a_source"), "rows": score["rows"],
             "ok": bool(abs(got - want) <= tol and score["rows"] == 644)}
@@ -75,6 +79,8 @@ def build(params: dict, out: Path) -> dict:
     return {
         "schema": SCHEMA, "verdict": "measured", "mode": params["mode"], "repo": s["repo"], "revision": s["revision"],
         "family": s["family"], "rows": score["rows"], "subset_ids_sha256": score["subset_ids_sha256"],
+        **({"one_load_arms": True} if s.get("one_load_arms") else {}),
+        **({"readout_a": s["readout_a"]} if s.get("readout_a") else {}),
         "index": index, "areas": score["slice_index"].get("areas"),
         "vs_stock_rwkv7_v3w": {"baseline": "art-ivu28 v3w (job-fgu2c)", "baseline_proxy600": STOCK_V3W_PROXY600,
                                "diff": comp.get("diff", {}).get("index"), "mde": comp.get("mde")},

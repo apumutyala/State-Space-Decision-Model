@@ -113,6 +113,10 @@ Readout-artifact check before the 32B line is dropped: `jobs/backbone_screen/job
 job-6c27k's 13.56, exit 16 otherwise), arm b = v3w-generic; paired diff b - a [CI]. Worst case $9.21, expected ~$1.8.
 b - a CI above 0 and b within reach of 27.32: the 32B line stays open (QwQ / 72B screens re-run under v3w-generic);
 otherwise the drop stands.
+Parent-capability scout (not attention-free): `jobs/backbone_screen/job_params_qwen36_a3b.json` (mode `qwen36_a3b`,
+stock Qwen/Qwen3.6-35B-A3B hybrid MoE, one H100 bf16): m0 (as Qwen3.5-9B was read) and v3w-generic in one model load,
+paired b - a and each vs 27.32; Qwen3.5-9B pairing on CPU at landing. Worst case $11.88, quote $5.67, expected ~$2.5.
+Clearly above stock Qwen3.5-9B under the same readout: it is the parent to price an attention-free conversion of.
 
 ## The $525 envelope (October MTD actual spend $16.11 as of 2026-10-07 incl. job-mden7 $1.06, job-5cmat $5.01 and job-tvuat $1.62, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)
 

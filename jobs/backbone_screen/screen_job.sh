@@ -6,6 +6,10 @@
 #   | rwkv_qwen3_30b_a3b (OpenMOSE/RWKV-Qwen3-30B-A3B-Instruct-cxa07c)
 #   | qrwkv6_32b_v3w (readout-artifact check: QRWKV6-32B, arm a = the scout's chatml readout, asserted to reproduce
 #     job-6c27k's 13.56, then arm b = the v3w-generic readout on the same rows; paired diff b - a)
+#   | qwen36_a3b (STOCK Qwen/Qwen3.6-35B-A3B, hybrid 30 GDN + 10 attention layers, 256-expert MoE; NOT attention-free:
+#     a backbone-capability scout; no vendored code, stock transformers 5.17 qwen3_5_moe). One-load mode
+#     (screen.one_load_arms): arm a = the m0 readout of stock Qwen3.5-9B (job-5cmat) and arm b = v3w-generic run in ONE
+#     process (jobs/backbone_screen/arms.py); paired b - a and each arm vs stock RWKV7 v3w; no arm-a reproduction target
 #   setup: pins + fla guard -> DEV rows + parent sha256 -> pinned snapshot_download -> sha256 of every file -> vendored
 #          code == snapshot code -> proxy600 rows
 #   index: decision_index run (ReadoutIndexEngine, family from params; fork == recompute canary self-check before row
@@ -20,7 +24,7 @@ set -Euo pipefail
 MAIN_PID=$$  # jobs/clef_baseline/watchdog.sh beats only while this PID lives
 CODE=/opt/ssdm/m1
 MODE=${MODE:-}
-case "$MODE" in qrwkv6_32b|qrwkv_qwq32b|rwkv_qwen3_30b_a3b|qrwkv6_32b_v3w) ;; *) echo "MODE must be qrwkv6_32b, qrwkv_qwq32b, rwkv_qwen3_30b_a3b or qrwkv6_32b_v3w"; exit 2 ;; esac
+case "$MODE" in qrwkv6_32b|qrwkv_qwq32b|rwkv_qwen3_30b_a3b|qrwkv6_32b_v3w|qwen36_a3b) ;; *) echo "MODE must be qrwkv6_32b, qrwkv_qwq32b, rwkv_qwen3_30b_a3b, qrwkv6_32b_v3w or qwen36_a3b"; exit 2 ;; esac
 PARAMS=$CODE/jobs/backbone_screen/job_params_$MODE.json
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -79,8 +83,9 @@ import fla  # noqa: F401
 import importlib, os
 mod, _, fn = os.environ["KERNEL"].rpartition(".")
 getattr(importlib.import_module(mod), fn)  # the vendored model's recurrent kernel (fla 0.5.2)
-V = importlib.import_module(os.environ["PKG"])
-assert all(V.vendored_ok().values()), V.vendored_ok()
+if os.environ["PKG"]:  # vendored model code (attention-free conversions); "" = a stock transformers architecture
+    V = importlib.import_module(os.environ["PKG"])
+    assert all(V.vendored_ok().values()), V.vendored_ok()
 from importlib import metadata
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
                   "transformers": transformers.__version__, "fla": metadata.version("flash-linear-attention"),
@@ -103,8 +108,10 @@ say "snapshot $SNAP; verifying sha256 of every pinned file"
 ( cd "$SNAP" && xargs -P 8 -n 2 sh -c 'echo "$0  $1" | sha256sum -c -' < "$PIN" ) > "$WORK/out/snapshot-verify.txt" 2>&1 \
   || fail 10 "snapshot sha256"
 [ "$(grep -c ': OK$' "$WORK/out/snapshot-verify.txt")" -eq "$(grep -c . "$PIN")" ] || fail 10 "snapshot sha256 count"
-python -c "import importlib, os, sys; V = importlib.import_module(os.environ['PKG']); V.verify_snapshot_code(*([sys.argv[1], sys.argv[2]] if hasattr(V, 'REPOS') else [sys.argv[1]]))" "$SNAP" "$REPO" \
-  || fail 10 "vendored code != snapshot code"
+if [ -n "$PKG" ]; then
+  python -c "import importlib, os, sys; V = importlib.import_module(os.environ['PKG']); V.verify_snapshot_code(*([sys.argv[1], sys.argv[2]] if hasattr(V, 'REPOS') else [sys.argv[1]]))" "$SNAP" "$REPO" \
+    || fail 10 "vendored code != snapshot code"
+fi
 SUBSET=jobs/common/dev_proxy600.json
 python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index/proxy-check.json" || fail 10 "proxy600 identity"
 python -X utf8 -m jobs.common.dev_subset rows --rows /data/slices/dev-rows.jsonl.gz --out "$WORK/proxy-rows.jsonl.gz" \
@@ -115,15 +122,32 @@ export_phase setup
 
 # ------------------------------------------------------------------ index (exit 7 / 12 / 15)
 CAP_I=$(cap index) && CAP_SC=$(cap score) || fail 5 "job_params"
-say "phase index ($NROWS proxy600 rows, family $FAMILY, input cap $CAP_IN; canary fork self-check first; live rate guard)"
-python -m jobs.common.rate_guard run --results "$WORK/out/index/stock/results.jsonl" --total "$NROWS" --exclude-startup \
-  --cap-min "$CAP_I" --report "$WORK/out/index/rate.json" -- \
-  python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
-  --option family="$FAMILY" --option model_dir="$SNAP" --option repo="$REPO" --option input_cap="$CAP_IN" \
-  --option selfcheck_out="$WORK/out/index/selfcheck.json" \
-  --rows "$WORK/proxy-rows.jsonl.gz" --out "$WORK/out/index/stock" > "$WORK/logs/index.log" 2>&1; r=$?
+ONE_LOAD=$(python -c "import json,sys;print(int(bool(json.load(open(sys.argv[1]))['screen'].get('one_load_arms'))))" "$PARAMS") \
+  || fail 5 "job_params one_load_arms"
+if [ "$ONE_LOAD" = 1 ]; then
+  # both arms in ONE process (one checkpoint load): arm a -> index/stock, arm b -> index/v3w; rate guard over both
+  say "phase index (one load: arm a $FAMILY then arm b; $NROWS proxy600 rows each, input cap $CAP_IN; canary self-check per arm; live rate guard)"
+  python -m jobs.common.rate_guard run --results "$WORK/out/index/stock/results.jsonl,$WORK/out/index/v3w/results.jsonl" \
+    --total $(( 2 * NROWS )) --exclude-startup --cap-min "$CAP_I" --report "$WORK/out/index/rate.json" -- \
+    python -X utf8 -m jobs.backbone_screen.arms "$PARAMS" --model-dir "$SNAP" --repo "$REPO" \
+    --rows "$WORK/proxy-rows.jsonl.gz" --out-root "$WORK/out/index" --selfcheck-dir "$WORK/out/index" \
+    > "$WORK/logs/index.log" 2>&1; r=$?
+else
+  say "phase index ($NROWS proxy600 rows, family $FAMILY, input cap $CAP_IN; canary fork self-check first; live rate guard)"
+  python -m jobs.common.rate_guard run --results "$WORK/out/index/stock/results.jsonl" --total "$NROWS" --exclude-startup \
+    --cap-min "$CAP_I" --report "$WORK/out/index/rate.json" -- \
+    python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
+    --option family="$FAMILY" --option model_dir="$SNAP" --option repo="$REPO" --option input_cap="$CAP_IN" \
+    --option selfcheck_out="$WORK/out/index/selfcheck.json" \
+    --rows "$WORK/proxy-rows.jsonl.gz" --out "$WORK/out/index/stock" > "$WORK/logs/index.log" 2>&1; r=$?
+fi
 gate "index" $r; export_phase index
-case $r in 0) ;; 124) fail 7 "index timeout" ;; 15) fail 15 "index: measured rate too slow" ;; *) fail 12 "index rc=$r" ;; esac
+RI=$r
+NA=$(python -c "import sys;print(sum(1 for _ in open(sys.argv[1],'rb')))" "$WORK/out/index/stock/results.jsonl" 2>/dev/null || echo 0)
+# a one-load run cut short in arm b still scores a complete arm a (below) before it fails
+if [ "$RI" != 0 ] && { [ "$ONE_LOAD" != 1 ] || [ "$NA" -lt "$NROWS" ]; }; then
+  case $RI in 124) fail 7 "index timeout" ;; 15) fail 15 "index: measured rate too slow" ;; *) fail 12 "index rc=$RI" ;; esac
+fi
 
 # ------------------------------------------------------------------ score (exit 13)
 say "phase score (proxy600 slice index, ECE, paired vs stock RWKV7 v3w)"
@@ -135,19 +159,24 @@ timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset ece --results "$R" -
 timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset compare --candidate "$R" --baseline "$PARENT" --subset "$SUBSET" \
   > "$WORK/out/index/compare_stock_v3w.json" || fail 13 "compare"
 gate "score" 0; export_phase score
+if [ "$RI" != 0 ]; then  # one-load mode, arm a scored above, arm b incomplete
+  case $RI in 124) fail 7 "index timeout (arm a scored)" ;; 15) fail 15 "index: measured rate too slow (arm a scored)" ;; *) fail 12 "index rc=$RI (arm a scored)" ;; esac
+fi
 
 # ------------------------------------------------------------------ arm b (two-arm modes; exit 16 / 7 / 12 / 13 / 15)
 ARM_B=$(python -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1]))['screen'].get('arm_b') or ''))" "$PARAMS")
 if [ "$ARM_B" != '""' ]; then
   python -X utf8 -m jobs.backbone_screen.summarize check-arm-a "$PARAMS" "$WORK/out/index/score.json"     > "$WORK/out/index/arm_a_check.json" || fail 16 "arm a does not reproduce: $(cat "$WORK/out/index/arm_a_check.json")"
-  say "arm a reproduces: $(cat "$WORK/out/index/arm_a_check.json")"
+  say "arm a check: $(cat "$WORK/out/index/arm_a_check.json")"
   B=$(python -c "import json,sys;b=json.loads(sys.argv[1]);print(b['family'], b['backbone_id'], b['v3w_sha256'])" "$ARM_B")
   read -r FAMILY_B BB_B V3W_SHA <<< "$B"
+  if [ "$ONE_LOAD" != 1 ]; then  # one-load mode: arm b already ran in the index phase (index/v3w)
   CAP_IB=$(cap index_b) || fail 5 "job_params"
   say "phase index_b ($NROWS rows, family $FAMILY_B, backbone $BB_B, v3w $V3W_SHA; canary fork == recompute first)"
   python -m jobs.common.rate_guard run --results "$WORK/out/index/v3w/results.jsonl" --total "$NROWS" --exclude-startup     --cap-min "$CAP_IB" --report "$WORK/out/index/rate_b.json" --     python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine     --option family="$FAMILY_B" --option model_dir="$SNAP" --option repo="$REPO" --option input_cap="$CAP_IN"     --option backbone_id="$BB_B" --option v3w_sha256="$V3W_SHA"     --option selfcheck_out="$WORK/out/index/selfcheck_b.json"     --rows "$WORK/proxy-rows.jsonl.gz" --out "$WORK/out/index/v3w" > "$WORK/logs/index_b.log" 2>&1; r=$?
   gate "index_b" $r; export_phase index_b
   case $r in 0) ;; 124) fail 7 "index_b timeout" ;; 15) fail 15 "index_b: measured rate too slow" ;; *) fail 12 "index_b rc=$r" ;; esac
+  fi
   say "phase score_b (v3w arm: slice index, ECE, paired vs stock RWKV7 v3w, paired vs arm a)"
   RB=$WORK/out/index/v3w/results.jsonl
   timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset score --results "$RB" --subset "$SUBSET"     > "$WORK/out/index/score_b.json" || fail 13 "score_b"

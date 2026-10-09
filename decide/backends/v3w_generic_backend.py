@@ -29,7 +29,8 @@ PACK_TOKENS = 4096
 class V3WGenericBackend(G1V2Backend):
     name = "v3w_generic"
 
-    def __init__(self, plugin, v3w, pack_rows: int = PACK_ROWS, pack_tokens: int = PACK_TOKENS) -> None:
+    def __init__(self, plugin, v3w, pack_rows: int = PACK_ROWS, pack_tokens: int = PACK_TOKENS,
+                 state_budget: int | None = None) -> None:
         if plugin.state_ops is None:
             raise ValueError("v3w-generic needs a plug-in with state ops (prefix prefill + packed tails)")
         if v3w.is_legacy_rwkv:
@@ -38,6 +39,9 @@ class V3WGenericBackend(G1V2Backend):
         self.codes = v3w.codes  # len() bounds the coded path (G1V2Backend.plan / score read q["coded"] only)
         self.code_table = list(v3w.table)
         self.pack_rows, self.pack_tokens = pack_rows, pack_tokens
+        #: prefix tokens x rows per packed call (the plug-in's KV fork budget): a model that keeps attention layers copies
+        #: the prefix KV once per packed row; None (attention-free plug-ins) = the pack_rows / pack_tokens bounds only
+        self.state_budget = state_budget if state_budget is not None else plugin.fork_state_token_budget
         ident = v3w.identity()
         tmpl = Template(id=ident["id"], head=v3w.fmt.head, tail=v3w.fmt.tail, terminator="\n")
         self._v3w_identity = ident
@@ -56,6 +60,8 @@ class V3WGenericBackend(G1V2Backend):
             "tokenization": "whole prompt string (decide.v3w_generic HFEncoder; specials only where the format puts them)",
             "v3w_generic": self._v3w_identity,
             "codes": len(self.codes),
+            **({"state_budget": f"<= {self.state_budget} prefix tokens x rows per call"}
+               if self.state_budget is not None else {}),
             "source_sha256": {p.name: sha256_file(p) for p in (here, here.parents[1] / "v3w_generic.py",
                                                               here.parents[1] / "prompt_g1v3.py",
                                                               here.with_name("rwkv_g1_v2.py"),
@@ -75,6 +81,14 @@ class V3WGenericBackend(G1V2Backend):
 
     def revision(self) -> dict[str, Any]:
         return copy.deepcopy(self._revision)
+
+    def _calls(self, qs):
+        """G1V2Backend._calls, plus: rows per pack <= state_budget // prefix tokens (at least one row)."""
+        L, packs = super()._calls(qs)
+        if self.state_budget is None or L <= 0:
+            return L, packs
+        cap = max(1, self.state_budget // L)
+        return L, [p[i:i + cap] for p in packs for i in range(0, len(p), cap)]
 
     def _questions(self, request: dict[str, Any], label_counts: dict[str, int] | None = None):
         qs = self.v3w.questions(request)

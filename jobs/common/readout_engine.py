@@ -32,6 +32,14 @@ families
                   identity: refused unless equal), ``selfcheck_out`` (canary: prefix fork == full recompute).
   ``rwkv07c-chatml-nothink`` ``decide.backends.rwkv07c.load_rwkv07c`` (OpenMOSE RWKV-Qwen3-30B-A3B, attention-free
                   RWKV hxa07c + Qwen3-MoE), same readout / options / self-check, jrt-chatml-nothink-v1.
+  ``qwen3.6-moe-m0`` / ``qwen3.6-moe-v3w-generic`` stock Qwen3.6-35B-A3B (hybrid 30 GDN + 10 gated-attention layers,
+                  256-expert MoE) through ``hf_readout.load_qwen35(family="qwen3.6-moe")``; one plug-in per process
+                  (``_HF_PLUGINS``), so both arms of jobs/backbone_screen MODE=qwen36_a3b share one 65 GiB load.
+                  m0 = the stock Qwen3.5-9B readout of job-5cmat (jrt-chatml-v1: options-first JRT prompt, chat
+                  template with empty think block, sum log p(' ' + id + terminator), option-count temperature);
+                  v3w-generic = ``make_v3w(backbone_id)`` (as qrwkv6-v3w-generic). Options ``state_budget`` (prefix
+                  KV tokens x rows per packed call, default 131,072), ``fork_max_rows`` (m0, default 32),
+                  ``selfcheck_out`` (canary fork == recompute, both arms), ``backbone_id`` / ``v3w_sha256`` (v3w).
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
 rules), any other non-ok status raises.
@@ -68,6 +76,17 @@ QRWKV6_FAMILIES = ("qrwkv6-chatml", "qrwkv6-chatml-nothink", "rwkv07c-chatml-not
 V3W_GENERIC_FAMILIES = {"qrwkv6-v3w-generic": "qrwkv6-chatml-nothink"}
 #: fork vs recompute on the canary request (bf16 on GPU): max |delta sum-logprob| allowed, and same argmax per question
 SELFCHECK_TOL = 0.25
+#: stock Qwen3.6-35B-A3B arms (backbone scout): one transformers plug-in per process, keyed by (dir, device, dtype, budget)
+QWEN36_M0 = "qwen3.6-moe-m0"
+QWEN36_V3W = "qwen3.6-moe-v3w-generic"
+QWEN36_FAMILIES = (QWEN36_M0, QWEN36_V3W)
+TEMPLATES[QWEN36_M0] = "jrt-chatml-v1"
+#: 65 GiB of bf16 weights on an 80 GB H100 leave ~14 GiB: prefix KV copies (10 attention layers x 2 x 2 KV heads x 256
+#: x 2 B = 20 KiB / token) are capped at 131,072 token-rows (2.5 GiB); GDN states (30 x 32 x 128 x 128 fp32 = 63 MB /
+#: row) at fork_max_rows 32 (2 GiB); logits <= 4,096 positions x 248,320 x 2 B (2 GiB)
+QWEN36_STATE_BUDGET = 131_072
+QWEN36_FORK_MAX_ROWS = 32
+_HF_PLUGINS: dict[tuple[str, str, str, int], Any] = {}
 
 
 def _sha256_file(path):
@@ -111,6 +130,13 @@ def build_plugin(family: str, options: dict[str, Any]):
         return _RWKV7_PLUGINS[key]
     if family == "qwen3.5":
         return H.load_qwen35(options["model_dir"], device=dev, dtype=dt)
+    if family in QWEN36_FAMILIES:
+        budget = int(options.get("state_budget", QWEN36_STATE_BUDGET))
+        key = (str(options["model_dir"]), dev, dt, budget)
+        if key not in _HF_PLUGINS:
+            _HF_PLUGINS[key] = H.load_qwen35(options["model_dir"], device=dev, dtype=dt, family="qwen3.6-moe",
+                                             state_budget=budget)
+        return _HF_PLUGINS[key]
     if family == "rwkv07c-chatml-nothink":
         from decide.backends.rwkv07c import load_rwkv07c
 
@@ -239,7 +265,18 @@ class ReadoutIndexEngine(Engine):
             from decide.backends.rwkv_g1_code_label import G1CodeLabelBackend
 
             self.backend = G1CodeLabelBackend(plug, tokenizer_decode=decode)
-        elif self.family in V3W_GENERIC_FAMILIES:
+        elif self.family == QWEN36_M0:
+            import json
+
+            fmr = int(options.get("fork_max_rows", QWEN36_FORK_MAX_ROWS))
+            if options.get("selfcheck_out"):
+                rep = fork_selfcheck(plug, TEMPLATES[self.family], fmr)
+                Path(options["selfcheck_out"]).write_text(json.dumps(rep, indent=1), encoding="utf-8")
+                if not rep["ok"]:
+                    raise RuntimeError(f"fork != recompute on the canary: {json.dumps({k: rep[k] for k in ('max_abs_delta', 'same_argmax')})}")
+            self.backend = HFReadoutBackend(plug, TEMPLATES[self.family], max_batch_rows=int(options.get("max_batch_rows", 4)),
+                                            fork_max_rows=fmr)
+        elif self.family in V3W_GENERIC_FAMILIES or self.family == QWEN36_V3W:
             import json
 
             from decide.backends.v3w_generic_backend import V3WGenericBackend

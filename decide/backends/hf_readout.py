@@ -339,8 +339,13 @@ def _hash_files(model_dir: Path, patterns: list[str]) -> str:
 TRAINED_CTX_DEFAULT = 2048
 
 
-def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None) -> ModelPlugin:
-    """Qwen3.5-* via transformers (text-only causal LM view of the checkpoint)."""
+def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None,
+                family: str = "qwen3.5", state_budget: int | None = KV_STATE_TOKEN_BUDGET) -> ModelPlugin:
+    """Qwen3.5-* via transformers (text-only causal LM view of the checkpoint). Also the Qwen3.5/3.6 MoE checkpoints
+    (model_type ``qwen3_5_moe``: AutoModelForCausalLM -> Qwen3_5MoeForCausalLM, vision tower and MTP head skipped;
+    experts through transformers' default ``grouped_mm``). ``family`` names the plug-in in revision ids;
+    ``state_budget`` bounds the prefix-fork KV copies (prefix tokens x packed rows) when the model keeps attention
+    layers (default ``KV_STATE_TOKEN_BUDGET``; a 65 GiB MoE on one H100 needs a smaller one)."""
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -364,7 +369,7 @@ def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloa
         return model(input_ids=ids, logits_to_keep=n_last, use_cache=False).logits
 
     return ModelPlugin(
-        family="qwen3.5",
+        family=family,
         model_id=model_id or cfg.get("_name_or_path") or model_dir.name,
         snapshot=_snapshot_of(model_dir),
         encode=encode,
@@ -380,11 +385,14 @@ def load_qwen35(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloa
         device=device,
         kernel_stack=_pkg_versions("flash-linear-attention", "fla-core", "causal-conv1d", "triton", "triton-windows"),
         state_ops=HFCacheStateOps(model),
-        fork_state_token_budget=KV_STATE_TOKEN_BUDGET if "full_attention" in layer_types or not layer_types else None,
+        fork_state_token_budget=state_budget if "full_attention" in layer_types or not layer_types else None,
         notes={
             "model_class": type(model).__name__,
             "layer_types": {t: layer_types.count(t) for t in sorted(set(layer_types))},
             "attention_free": False,
+            # non-default plug-ins only, so the qwen3.5 revision ids (replay fixtures) stay byte-identical
+            **({} if family == "qwen3.5" else {"model_type": cfg.get("model_type"),
+                                               "experts_implementation": getattr(model.config, "_experts_implementation", None)}),
         },
     )
 
