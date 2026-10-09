@@ -414,9 +414,11 @@ def test_first_cell_dry_run_end_to_end(tmp_path):
     if missing_inputs():
         pytest.skip(f"local private inputs absent: {missing_inputs()}")
     env = {**os.environ, "PYTHONUTF8": "1"}
+    # 3600 s: the doc-overlap guard (PR #235) scans the whole 150k set in the heldout phase and again in the cell's
+    # draw (~12 min each on this laptop); measured 2,364 s on agent-main 7c13435 vs 1,416 s before it (f1d8b2d)
     r = subprocess.run([sys.executable, "-X", "utf8", str(ROOT / "scripts/m2_first_cell_dryrun.py"), "--out",
                         str(tmp_path / "dry"), "--role-n", "12", "--index-n", "24"], cwd=ROOT, env=env,
-                       capture_output=True, text=True, timeout=1500)
+                       capture_output=True, text=True, timeout=3600)
     rec = json.loads((tmp_path / "dry" / "receipt.json").read_text(encoding="utf-8"))
     assert r.returncode == 0 and rec["all_ok"] and rec["result_valid"], r.stdout[-3000:]
     res = rec["result"]
