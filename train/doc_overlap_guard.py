@@ -38,7 +38,9 @@ Exclusions:
       and REPEATED TEMPLATES: 13-grams in >= 10 eval rows AND >= 10 rows of the draw (per-family instruction
       templates such as ACOS's per-category instructions or the BFCL / API-Bank / CRUXEval prompt frames our b1
       families reproduce), plus every 13-gram in >= 100 eval rows whatever its training df (eval-side frames such as
-      the HellaSwag prompt or RouterBench's shared 5-shot exemplars; counted, top 200 listed). A document reused across eval rows (an NLI4CT trial section sits
+      the HellaSwag prompt or RouterBench's shared 5-shot exemplars; counted, top 200 listed).
+      Both exclusions (a) apply to INSTRUCTION / OPTION units only: a state (document) unit keeps every gram, so a
+      document that repeats across the draw stays gated however often it repeats. A document reused across eval rows (an NLI4CT trial section sits
       in a handful of rows) stays gated unless it also sits in >= 10 training rows.
   (b) ALLOWLIST (``data/manifests/doc_overlap/allowlist-v1.json``, reviewed): eval units that are a shared public
       reference corpus used by design (e.g. HoVer's Wikipedia evidence). Their 13-grams do not count for (R) unless
@@ -90,7 +92,9 @@ JOB_EXIT = 34
 RULE = ("doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units "
         "(DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the "
         "draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% "
-        "AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)")
+        "AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, "
+        "never from state units; allowlist entries never apply to rows of the eval family own source; R denominator "
+        "drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)")
 PIN_PATH = ROOT / "data" / "manifests" / "doc_overlap" / "index-pin.json"
 ALLOWLIST_PATH = ROOT / "data" / "manifests" / "doc_overlap" / "allowlist-v1.json"
 DEFAULT_CACHE = Path(os.environ.get("SSDM_DATA", r"C:\Users\apumu\research\CHLabs\ssdm-data")) / "m2" / "doc-overlap"
@@ -299,7 +303,7 @@ class EvalIndex:
     """Sorted unique eval 13-gram hashes with per-gram eval-row df, flags, allowlist entry and unit postings.
 
     h (uint64) sorted; df (uint16, clipped) eval rows holding the gram; fl (uint8) bit 1 = in a non-allowlisted unit, bit 2 = in
-    an allowlisted unit; ent (uint8) first allowlist entry (255 none); pstart (int32, -1 = more than POST_CAP units)
+    an allowlisted unit, bit 4 = in a non-allowlisted state (S:) unit; ent (uint8) first allowlist entry (255 none); pstart (int32, -1 = more than POST_CAP units)
     and pcnt (uint16) into post (int32 unit ids). Units: u_row (int32), u_field (int16 code), u_den (int32 grams with
     postings), u_allow (int16). meta: rows [[split, run_id, family]], fields [names], allowlist ids, counts."""
 
@@ -311,6 +315,11 @@ class EvalIndex:
         self.meta = meta
         self.n_rows = int(meta["n_rows"])
         self.split = np.array([r[0] for r in meta["rows"]]) if meta.get("rows") else np.array([])
+        fnames = meta.get("fields") or []
+        is_s = np.array([str(f).startswith("S") for f in fnames] or [False], bool)
+        self.u_is_state = is_s[np.asarray(self.u_field, np.int64)] if len(self.u_field) else np.empty(0, bool)
+        # per allowlist entry: training sources it never applies to (the eval family's own source)
+        self.own_sources = [set(x or []) for x in meta.get("allowlist_own_sources") or []]
 
     def lookup(self, g: np.ndarray) -> np.ndarray:
         """Index positions of the grams of g present in the index (others dropped)."""
@@ -381,7 +390,9 @@ def build_index(rows: Iterable[tuple[str, str, str | None, dict]], allow: dict, 
         order = np.lexsort((U, H))
         H, U = H[order], U[order]
         del order
-        parts.append(_finish_part(H, U, np.asarray(u_row, np.int32), np.asarray(u_allow, np.int16)))
+        names = sorted(fields, key=fields.get)
+        u_state = np.array([names[f].startswith("S") for f in u_field], bool)
+        parts.append(_finish_part(H, U, np.asarray(u_row, np.int32), np.asarray(u_allow, np.int16), u_state))
         del H, U
     # merge partitions (disjoint gram sets) into one sorted index
     h = np.concatenate([p["h"] for p in parts])
@@ -419,11 +430,13 @@ def build_index(rows: Iterable[tuple[str, str, str | None, dict]], allow: dict, 
     meta = {"rule": RULE, "k": K, "post_cap": POST_CAP, "n_rows": len(meta_rows), "rows": meta_rows,
             "rows_by_split": by_split, "fields": sorted(fields, key=fields.get), "n_units": len(u_row),
             "n_grams": int(len(out["h"])), "n_postings": int(len(post)),
-            "allowlist_ids": [e["id"] for e in allow["entries"]]}
+            "allowlist_ids": [e["id"] for e in allow["entries"]],
+            "allowlist_own_sources": [list(e.get("own_sources") or []) for e in allow["entries"]]}
     return EvalIndex(out, meta)
 
 
-def _finish_part(H: np.ndarray, U: np.ndarray, u_row: np.ndarray, u_allow: np.ndarray) -> dict[str, np.ndarray]:
+def _finish_part(H: np.ndarray, U: np.ndarray, u_row: np.ndarray, u_allow: np.ndarray,
+                 u_state: np.ndarray | None = None) -> dict[str, np.ndarray]:
     """(gram, unit) pairs sorted by (gram, unit) -> per-gram arrays + postings for grams in <= POST_CAP units."""
     if not len(H):
         z = np.empty(0)
@@ -436,7 +449,10 @@ def _finish_part(H: np.ndarray, U: np.ndarray, u_row: np.ndarray, u_allow: np.nd
     new_row = new | np.r_[True, rows[1:] != rows[:-1]]
     df = np.add.reduceat(new_row.astype(np.uint32), start)
     al = u_allow[U]
-    fl = (np.bitwise_or.reduceat(np.where(al < 0, 1, 2).astype(np.uint8), start)).astype(np.uint8)
+    bits = np.where(al < 0, 1, 2).astype(np.uint8)
+    if u_state is not None:  # bit 4: the gram sits in a non-allowlisted STATE (document) unit
+        bits |= np.where((al < 0) & u_state[U], 4, 0).astype(np.uint8)
+    fl = (np.bitwise_or.reduceat(bits, start)).astype(np.uint8)
     entv = np.where(al < 0, 255, al).astype(np.int16)
     ent = np.minimum.reduceat(entv, start).astype(np.uint8)
     small = ucnt <= POST_CAP
@@ -580,40 +596,70 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
     edf = idx.df.astype(np.int64)
     is_boiler = (edf > cand_thr) & (tdf > BOILER_FRAC * max(n, 1))
     is_template = (((edf >= TEMPLATE_DF) & (tdf >= TEMPLATE_DF)) | (edf >= TEMPLATE_EVAL_DF)) & ~is_boiler
-    boiler_arr = np.nonzero(is_boiler | is_template)[0].astype(np.int64)
+    # boilerplate / template exclusions apply to INSTRUCTION / OPTION units only, never to state (document) units:
+    # a document that repeats across the draw must stay gated (PR #235 review finding 2)
+    is_ex = is_boiler | is_template
+    boiler_arr = np.nonzero(is_ex)[0].astype(np.int64)
     del edf
     nunits = len(idx.u_row)
+    u_state = idx.u_is_state
     den = idx.u_den.astype(np.int64)
-    if len(boiler_arr):  # boilerplate grams leave every unit's denominator too
-        den = den - np.bincount(idx.units_of(boiler_arr), minlength=nunits)
+    if len(boiler_arr):
+        den = den - np.where(u_state, 0, np.bincount(idx.units_of(boiler_arr), minlength=nunits))
     allowed_u = idx.u_allow >= 0
-    # draw-union coverage of each unit (boilerplate excluded)
+    own = idx.own_sources
+
+    def unit_counts(p_: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Per-unit covered counts: every gram for state units, non-excluded grams for I/O units."""
+        if not len(p_):
+            return np.empty(0, np.int64), np.empty(0, np.int64)
+        ua = idx.units_of(p_)
+        ua = ua[u_state[ua]]
+        ub = idx.units_of(p_[~is_ex[p_]])
+        ub = ub[~u_state[ub]]
+        u = np.concatenate([ua, ub])
+        if not len(u):
+            return np.empty(0, np.int64), np.empty(0, np.int64)
+        return np.unique(u, return_counts=True)
+
     union_pos = np.unique(np.concatenate([h[3] for h in hits])) if hits else np.empty(0, np.int64)
-    if len(boiler_arr) and len(union_pos):
-        union_pos = union_pos[~np.isin(union_pos, boiler_arr)]
-    ucov_cnt = np.bincount(idx.units_of(union_pos), minlength=nunits) if len(union_pos) else np.zeros(nunits, np.int64)
+    uu0, uc0 = unit_counts(union_pos)
+    ucov_cnt = np.zeros(nunits, np.int64)
+    ucov_cnt[uu0] = uc0
     ucov = np.where(den > 0, ucov_cnt / np.maximum(den, 1), 0.0)
     union_units = (ucov >= THRESH) & (ucov_cnt >= MIN_COVERED) & (den >= MIN_UNIT_GRAMS)
     fails: list[dict] = []
     saved: dict[str, dict[str, int]] = {}
     for rid, src, ng, pos in hits:
-        nb = pos[~np.isin(pos, boiler_arr)] if len(boiler_arr) else pos
-        u = idx.units_of(nb)
-        if len(u):
-            uu, uc = np.unique(u, return_counts=True)
-        else:
-            uu, uc = np.empty(0, np.int32), np.empty(0, np.int64)
-        strict = nb[(idx.fl[nb] & 1) > 0]
-        r_cov = len(strict) / ng
-        r_fail = r_cov >= THRESH and len(strict) >= min(MIN_COVERED, ng)
-        r_cov_all = len(nb) / ng
-        r_fail_all = r_cov_all >= THRESH and len(nb) >= min(MIN_COVERED, ng)
+        off = [e for e, s_ in enumerate(own) if src in s_]  # allowlist entries that don't apply to this row
+        uu, uc = unit_counts(pos)
+        # rule R: excluded grams drop out (unless they sit in a state unit); allowlisted-only grams leave the
+        # denominator too (unless their entry doesn't apply to this row's source)
+        flp = idx.fl[pos]
+        kept = ~is_ex[pos] | ((flp & 4) > 0)
+        al_only = (flp & 1) == 0
+        if off:
+            al_only &= ~np.isin(idx.ent[pos], off)
+        strict = kept & ~al_only
+        n_strict = int(strict.sum())
+        # denominator: allowlisted-only grams leave it; template / boilerplate grams STAY (they are still the row's
+        # text: a row that is mostly a shared frame plus a tool-name slot is not a document copy)
+        ng_eff = max(ng - int((kept & al_only).sum()), 1)
+        r_cov = n_strict / ng_eff
+        r_fail = r_cov >= THRESH and n_strict >= MIN_COVERED  # >= 3 covered grams: a slot value is not a copy
+        ng_kept = max(ng - int((~kept).sum()), 1)
+        r_fail_all = int(kept.sum()) / ng_kept >= THRESH and int(kept.sum()) >= min(MIN_COVERED, ng_kept)
         d = den[uu] if len(uu) else np.empty(0, np.int64)
         ok_min = (uc >= MIN_COVERED) & (d >= MIN_UNIT_GRAMS)
         cov = np.where(d > 0, uc / np.maximum(d, 1), 0.0)
         e_mask = (cov >= THRESH) & ok_min
         u_mask = union_units[uu] & (cov >= UNION_CONTRIB) & ok_min if len(uu) else np.empty(0, bool)
-        al = allowed_u[uu] if len(uu) else np.empty(0, bool)
+        if len(uu):
+            al = allowed_u[uu]
+            if off:
+                al = al & ~np.isin(idx.u_allow[uu].astype(np.int64), off)
+        else:
+            al = np.empty(0, bool)
         e_fail = bool((e_mask & ~al).any())
         u_fail = bool((u_mask & ~al).any())
         reasons = "".join(c for c, f in (("R", r_fail), ("E", e_fail), ("U", u_fail)) if f)
@@ -630,9 +676,8 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
                 j = np.nonzero(e_mask & al)[0]
                 e = int(idx.u_allow[int(uu[j[np.argmax(cov[j])]])])
             else:
-                al_only = nb[(idx.fl[nb] & 1) == 0]
-                vals, cnts = np.unique(idx.ent[al_only], return_counts=True)
-                e = int(vals[np.argmax(cnts)])
+                vals, cnts = np.unique(idx.ent[pos[kept & al_only]], return_counts=True)
+                e = int(vals[np.argmax(cnts)]) if len(vals) else -1
             name = ent_ids[e] if 0 <= e < len(ent_ids) else "?"
             saved.setdefault(name, {})
             saved[name][src] = saved[name].get(src, 0) + 1

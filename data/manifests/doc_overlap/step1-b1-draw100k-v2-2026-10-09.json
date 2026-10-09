@@ -1,0 +1,62 @@
+{
+ "name": "b1-draw100k-v2",
+ "n_records": 100000,
+ "n_fail": 14,
+ "per_source_fail": {
+  "anli": 2,
+  "glaive_fc": 2,
+  "hellaswag": 1,
+  "mmlu_aux": 2,
+  "when2call": 7
+ },
+ "old_pinned": 10,
+ "new_vs_pins": [
+  {
+   "id": "m2:anli:5a53ca00-aa26-49f9-9711-519eaad75635",
+   "source": "anli",
+   "reasons": "EU",
+   "split": "HELDOUT",
+   "eval_family": "ANLI",
+   "unit": "I",
+   "eval_run_id": "12:ANLI:ANLI:test_r2:e91758ce-cd5c-4220-bf46-64bddd39a7cc",
+   "unit_coverage": 0.7083,
+   "row_coverage": 0.1496
+  },
+  {
+   "id": "m2:anli:6a33ed93-8193-4875-8c8d-99c4dc99c787",
+   "source": "anli",
+   "reasons": "EU",
+   "split": "HELDOUT",
+   "eval_family": "ANLI",
+   "unit": "I",
+   "eval_run_id": "12:ANLI:ANLI:test_r2:ae7b09eb-b613-41b2-bbfb-6eaf85308a3e",
+   "unit_coverage": 0.7286,
+   "row_coverage": 0.0667
+  },
+  {
+   "id": "m2:hellaswag:0",
+   "source": "hellaswag",
+   "reasons": "R",
+   "split": null,
+   "eval_family": null,
+   "unit": null,
+   "eval_run_id": null,
+   "unit_coverage": 0.0,
+   "row_coverage": 1.0
+  },
+  {
+   "id": "m2:mmlu_aux:1717",
+   "source": "mmlu_aux",
+   "reasons": "R",
+   "split": "HELDOUT",
+   "eval_family": "RouterBench-5shot",
+   "unit": "S:input_to_route",
+   "eval_run_id": "6:RouterBench-5shot:RouterBench-5shot:790",
+   "unit_coverage": 0.0106,
+   "row_coverage": 1.0
+  }
+ ],
+ "dropped_from_old": [],
+ "sha": "e277b794d365c2a3bfdd0a4576840c0a8612ae42e2534666b075d66d1b44850d",
+ "secs": 27.7
+}

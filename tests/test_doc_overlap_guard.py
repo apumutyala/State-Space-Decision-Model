@@ -303,3 +303,23 @@ def test_eval_side_frame_is_template_even_in_a_small_draw(idx):
     # TEMPLATE sits in 202 eval rows (>= 100): a row carrying it fails neither alone nor in a tiny draw
     r = _rec(1, {"x": TEMPLATE + " " + TEMPLATE}, "hellaswag", instr="ok")
     assert DG.scan([r], idx)["n_fail"] == 0
+
+
+def test_repeated_document_in_state_stays_gated():
+    """A state (document) unit that repeats across >= 100 eval rows and >= 10 training rows is NOT a template."""
+    doc = _words(60, random.Random(4242))
+    rows = [("TEST", f"N:{i}", "NLI4CT-2024", {"state": {"primary_trial": {"text": [doc]}}, "questions": {}})
+            for i in range(120)]
+    index = DG.build_index(None, DG.load_allowlist(), rows_factory=lambda: iter(rows), n_parts=1)
+    index.meta["index_sha256"] = "synthetic"
+    train = [_rec(i, {"t": [doc]}, "nli4ct") for i in range(20)]
+    assert len(DG.scan(_clean(100) + train, index)["fail_ids"]) == 20
+
+
+def test_allowlist_never_saves_the_eval_family_own_source():
+    prem = _words(80, random.Random(77))
+    rows = _eval_rows() + [("DEV", "ANLI:1", "ANLI", {"state": {}, "questions": {"q": {"instructions": prem}}})]
+    index = DG.build_index(None, DG.load_allowlist(), rows_factory=lambda: iter(rows), n_parts=1)
+    index.meta["index_sha256"] = "synthetic"
+    assert DG.scan(_clean(150) + [_rec(1, {"passage": prem}, "nq")], index)["n_fail"] == 0  # shared text: allowlisted
+    assert DG.scan(_clean(150) + [_rec(2, {"premise": prem}, "anli")], index)["fail_ids"] == ["m2:t:2"]  # own source
