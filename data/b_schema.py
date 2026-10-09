@@ -851,6 +851,67 @@ def candidates(n: int, seed: int, work: Path, extra_pool: str | None, extra_poin
     return meta
 
 
+def candidate_lines(work: Path, meta: dict) -> Iterator[str]:
+    """candidates.jsonl.gz, then (if appended) candidates-extra.jsonl.gz, each verified against the meta."""
+    yield from read_gz(work / "candidates.jsonl.gz")
+    ex = meta.get("extra_appended")
+    if ex:
+        from train.train_set import uncompressed_sha256
+        if uncompressed_sha256(work / "candidates-extra.jsonl.gz") != ex["candidates_extra_uncompressed_sha256"]:
+            raise SystemExit("candidates-extra drifted from the meta")
+        yield from read_gz(work / "candidates-extra.jsonl.gz")
+
+
+def append_extra(work: Path, extra_pool: str, extra_pointer: str, quota: int, log=print) -> dict:
+    """P3 after the fact: Agent C's pointer-pinned draw, checked against every candidate already built (exact content,
+    key-free near-duplicates across items) plus all the per-row checks, written to ``candidates-extra.jsonl.gz``
+    (unchanged records, ``aug.schema_synth.pool = "P3"``); the select stage then takes ``quota`` rows of it."""
+    from train.cohort import record_content_hash
+    from train.train_set import read_pointer, uncompressed_sha256, verify_files
+    from .b1 import dedup_keys, exclusion_sets
+
+    meta_p = work / "candidates.meta.json"
+    meta = json.loads(meta_p.read_text(encoding="utf-8"))
+    if uncompressed_sha256(work / "candidates.jsonl.gz") != meta["candidates_uncompressed_sha256"]:
+        raise SystemExit("candidates drifted from their meta")
+    out_path = work / "candidates-extra.jsonl.gz"
+    if out_path.exists() or meta.get("extra_appended"):
+        raise SystemExit("extra pool already appended (move the file to scratch first)")
+    ptr = read_pointer(extra_pointer)
+    ident = {"dir": extra_pool, "pointer": extra_pointer, "pointer_sha256": ptr["_pointer_sha256"],
+             "files": verify_files(extra_pool, ptr), "quota": quota}
+    GEN["version"] = SCHEMA_VERSION[meta.get("mix", "v1")]
+    chk = Checker(exclusion_sets())
+    p1_dir, _ = p1_files()
+    for path in (p1_dir / "records.jsonl.gz", work / "candidates.jsonl.gz"):
+        for line in read_gz(path):
+            r = json.loads(line)
+            ih = h64(sorted(root_items(r))[0])
+            chk.content.add(h64(record_content_hash(r)))
+            for kk in dedup_keys(r):
+                chk.text_owner.setdefault(h64(kk), ih)
+    reuse = collections.Counter()
+    n = 0
+    with gz_text(out_path) as out:
+        for line in read_gz(Path(extra_pool) / "records.jsonl.gz"):
+            r = json.loads(line)
+            its = root_items(r)
+            if any(reuse[i] >= MAX_REUSE for i in its):
+                chk.reasons["P3"]["item_reuse_cap"] += 1
+                continue
+            if chk.accept(r, "P3", h64(sorted(its)[0])):
+                r.setdefault("aug", {})["schema_synth"] = {"ops": ["extra_pool_passthrough"], "pool": "P3"}
+                out.write(canonical(r) + "\n")
+                reuse.update(its)
+                n += 1
+    ident["n_candidates"] = n
+    ident["reasons"] = {k: dict(v) for k, v in chk.reasons.items()}
+    ident["candidates_extra_uncompressed_sha256"] = uncompressed_sha256(out_path)
+    meta["extra_appended"] = ident
+    meta_p.write_text(json.dumps(meta, indent=1, default=str) + "\n", encoding="utf-8")
+    return ident
+
+
 def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict:
     """Candidates + token lengths -> the n-row draw (per-source targets, fewest-variants-first, reuse cap)."""
     from train.cohort import record_content_hash
@@ -869,7 +930,7 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
     drop = collections.Counter()
     tok = {"v2f": [], "v3w": []}
     n_cand = 0
-    for line in read_gz(work / "candidates.jsonl.gz"):
+    for line in candidate_lines(work, meta):
         r = json.loads(line)
         n_cand += 1
         e = lens.get(r["id"])
@@ -897,6 +958,10 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
     quota = {s: round(n_synth * c / tot) for s, c in weights.items()}
     if meta.get("extra_quota"):
         quota["P3:extra"] = meta["extra_quota"]
+    elif meta.get("extra_appended"):
+        quota["P3:extra"] = meta["extra_appended"]["quota"]
+        n_synth = n - quota["P3:extra"]
+        quota.update({s: round(n_synth * c / tot) for s, c in weights.items()})
     # sources that cannot fill their quota spill to the others in proportion
     avail = {s: len(elig.get(s, [])) for s in quota}
     for _ in range(5):
@@ -942,7 +1007,7 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
     out_dir.mkdir(parents=True, exist_ok=True)
     tmp = work / "chosen.unsorted.jsonl.gz"
     with gzip.open(tmp, "wt", encoding="utf-8") as fo:
-        for line in read_gz(work / "candidates.jsonl.gz"):
+        for line in candidate_lines(work, meta):
             rid = json.loads(line)["id"]
             if rid in chosen:
                 fo.write(line + "\n")
@@ -1074,7 +1139,7 @@ def main(argv=None) -> int:
     import argparse
     import subprocess
     ap = argparse.ArgumentParser(prog="data.b_schema")
-    ap.add_argument("stage", choices=("candidates", "select"))
+    ap.add_argument("stage", choices=("candidates", "extra", "select"))
     ap.add_argument("--n", type=int, default=300000)
     ap.add_argument("--seed", type=int, default=SEED)
     ap.add_argument("--build", default=None)
@@ -1090,6 +1155,10 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     build = a.build or f"bschema-draw{a.n // 1000}k-v1"
     work = Path(a.work) if a.work else config.BUILD_DIR / f"{build}-work"
+    if a.stage == "extra":
+        print(json.dumps(append_extra(work, a.extra_pool, a.extra_pointer, a.extra_quota,
+                                      log=lambda *x: print(*x, flush=True)), indent=1, default=str))
+        return 0
     if a.stage == "candidates":
         if a.extra_pool and not a.extra_pointer:
             raise SystemExit("--extra-pool needs --extra-pointer")
