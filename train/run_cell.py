@@ -451,7 +451,17 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
                        warmup_steps=int(cfg.get("warmup_steps") or 0),
                        grad_accum=cfg["grad_accum"], max_steps=max_steps, bf16=bf16, grad_checkpointing=False,
                        seed=cfg["seed"], ckpt_dir=ckpt_dir, ckpt_every=cfg["ckpt_every"],
-                       eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {})
+                       eval_every=cfg["eval_every"], controlsafe=cfg.get("controlsafe") or {},
+                       **anti_collapse_fields(cfg))
+
+
+#: cell config keys -> TrainConfig anti-collapse fields (research-notes/D10_DIVERGENCE.md); absent = old behaviour
+ANTI_COLLAPSE_KEYS = ("lr_schedule", "lr_min_frac", "dev_card_every", "dev_card_rows", "best_ckpt", "collapse_guard",
+                      "collapse_window", "collapse_loss_frac", "collapse_acc_frac", "collapse_max_events")
+
+
+def anti_collapse_fields(cfg: dict) -> dict:
+    return {k: cfg[k] for k in ANTI_COLLAPSE_KEYS if k in cfg}
 
 
 def validate_head(cfg: dict) -> None:
@@ -929,10 +939,21 @@ def _main(argv=None, ctx: dict | None = None):
         tr = make_trainer(cfg["max_steps"], a.ckpt_dir)
         keep = bool(cfg.get("pair"))  # paired cells write units-step*.json for train.g16_card.capability_cost
         resumed = tr.resume()
+        dev_out = out / "dev_cards"
+        n_events = len(tr.collapse_events)
+
+        def log_anti_collapse():  # every dev card and collapse event goes to cell.json as it happens
+            cell["dev_cards"], cell["collapse_events"] = tr.dev_cards, tr.collapse_events
+            cell["best"] = tr.best
+            save()
+
         if not resumed:
             tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items, 0, a.out,
                                                                                        keep_units=keep))
             tr.cards[-1].pop("units", None)
+            if tr.cfg.dev_card_every:  # step-0 dev card: the first best (the guard always has a rollback point)
+                tr.run_dev_card(eval_items, dev_out)
+                log_anti_collapse()
         t_start = time.time()
         # the max_minutes budget is cumulative over attempts: a restart resumes with what the checkpointed steps used
         used_before = train_seconds_used(cell, resumed)
@@ -950,6 +971,9 @@ def _main(argv=None, ctx: dict | None = None):
                 chk = too_slow(el / CHECK_AFTER_STEPS, (t_end - time.time()) / 60,
                                max(0, steps_needed(cfg["pass_rule"], cfg.get("min_steps")) - tr.step))
                 cell["train_rate_check"] = chk
+                if tr.cfg.lr_schedule == "cosine":  # horizon = min(max_steps, clock-projected final step); fixed once
+                    tr.set_horizon(tr.step + int(chk["affordable_steps"]))
+                    cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step}
                 save()
                 if chk["too_slow"]:
                     tr.save()
@@ -976,6 +1000,15 @@ def _main(argv=None, ctx: dict | None = None):
                                                                                            tr.step, a.out,
                                                                                            keep_units=keep))
                 tr.cards[-1].pop("units", None)
+            if tr.dev_card_due() and not tr.stopped:
+                tr.run_dev_card(eval_items, dev_out)
+                log_anti_collapse()
+            if len(tr.collapse_events) != n_events:
+                n_events = len(tr.collapse_events)
+                log_anti_collapse()
+                print(f"collapse_event {json.dumps(tr.collapse_events[-1], default=str)}", flush=True)
+            if tr.stopped:  # collapse guard: max events reached -> stop; scoring uses the best checkpoint
+                break
         if not tr.cards or tr.cards[-1]["step"] != tr.step:
             # paired cells (cfg["pair"]) keep per-item units for train.g16_card.capability_cost
             tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(
@@ -986,6 +1019,9 @@ def _main(argv=None, ctx: dict | None = None):
         _checkpoint_post()
         cell["train"] = {"steps": tr.step, "resumed": resumed, "T_max": t_max, "cards": tr.cards,
                          "lineage": tr.lineage, "verdict": pass_rule(tr.history, tr.cards, peak(), cfg["pass_rule"])}
+        if tr.anti_collapse_on():
+            cell["train"]["anti_collapse"] = tr.anti_collapse_state()
+            cell["dev_cards"], cell["collapse_events"], cell["best"] = tr.dev_cards, tr.collapse_events, tr.best
         save()
         if fla_requested(cfg) and tr.step > step0 and not cell["fla"]["n_calls"]:
             print("fla: requested but no training call ran fla", flush=True)
