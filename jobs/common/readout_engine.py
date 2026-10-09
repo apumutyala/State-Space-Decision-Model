@@ -14,6 +14,9 @@ families
   ``rwkv7-hf-g1-v3p`` / ``-v3r`` / ``-v3c`` / ``-v3w`` G1V3Backend modes permute / reread / calibrate / words (one
                   change each on v3); ``rwkv7-hf-g1-v2f`` mode v2f (v2 + the dict-instruction fix only)
   ``qwen3.5``     ``decide.backends.hf_readout.load_qwen35`` (stock transformers path)
+  ``q9af-probe-v3w`` the ``q9af-probe`` plugin (same options) scored by ``decide.backends.v3w_generic_backend`` with
+                  ``decide.v3w_generic.make_v3w(option v3w_backbone, default qwen3.5-9b; option tokenizers_root)``: the
+                  LM-logit v3w readout; option ``v3w_identity`` (sha256 prefix) refuses any other readout identity
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
 rules), any other non-ok status raises.
@@ -25,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 CODE_LABEL_FAMILY = "rwkv7-hf-code-label-v1"
+V3W_GENERIC_FAMILY = "q9af-probe-v3w"
 CODE_LABEL_V2_FAMILY = "rwkv7-hf-code-label-v2"
 G1V2_FAMILY = "rwkv7-hf-g1-v2"
 G1V3_FAMILY = "rwkv7-hf-g1-v3"
@@ -38,7 +42,8 @@ TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-h
              CODE_LABEL_FAMILY: "jrt-rwkv-g1-code-label-v1", CODE_LABEL_V2_FAMILY: "jrt-rwkv-g1-code-label-v2",
              G1V2_FAMILY: "jrt-rwkv-g1-v2", G1V3_FAMILY: "jrt-rwkv-g1-v3", "rwkv7-hf-g1-v3p": "jrt-rwkv-g1-v3p",
              "rwkv7-hf-g1-v3r": "jrt-rwkv-g1-v3r", G1V3C_FAMILY: "jrt-rwkv-g1-v3c",
-             "rwkv7-hf-g1-v2f": "jrt-rwkv-g1-v2f", "rwkv7-hf-g1-v3w": "jrt-rwkv-g1-v3w"}
+             "rwkv7-hf-g1-v2f": "jrt-rwkv-g1-v2f", "rwkv7-hf-g1-v3w": "jrt-rwkv-g1-v3w",
+             V3W_GENERIC_FAMILY: "jrt-v3w-generic"}
 
 
 def _sha256_file(path):
@@ -68,7 +73,7 @@ def _load_code_label_decode(model_dir):
 
 def build_plugin(family: str, options: dict[str, Any]):
     dev, dt = options.get("device", "cuda"), options.get("dtype", "bfloat16")
-    if family == "q9af-probe":
+    if family in ("q9af-probe", V3W_GENERIC_FAMILY):
         from convert.readout import load_converted_plugin
 
         return load_converted_plugin(options["model_dir"], options.get("gdn_ckpt") or None,
@@ -83,6 +88,19 @@ def build_plugin(family: str, options: dict[str, Any]):
     if family == "qwen3.5":
         return H.load_qwen35(options["model_dir"], device=dev, dtype=dt)
     raise ValueError(f"unknown family {family!r}; known: {sorted(TEMPLATES)}")
+
+
+def build_v3w_backend(plug, options: dict[str, Any]):
+    """V3WGenericBackend over ``plug`` with make_v3w's readout; ``v3w_identity`` pins the readout identity sha256."""
+    from decide.backends.v3w_generic_backend import V3WGenericBackend
+    from decide.v3w_generic import make_v3w
+
+    v = make_v3w(options.get("v3w_backbone", "qwen3.5-9b"), options.get("tokenizers_root") or None)
+    want = options.get("v3w_identity")
+    got = v.identity()["sha256"]
+    if want and not got.startswith(str(want)):
+        raise ValueError(f"v3w readout identity {got} != pinned {want}")
+    return V3WGenericBackend(plug, v)
 
 
 def map_response(resp: dict[str, Any], unsupported_exc=ValueError):
@@ -116,7 +134,9 @@ class ReadoutIndexEngine(Engine):
         self.family = options.get("family", "q9af-probe")
         decode = _load_code_label_decode(options["model_dir"]) if self.family in (CODE_LABEL_FAMILY, CODE_LABEL_V2_FAMILY) else None
         plug = build_plugin(self.family, options)
-        if self.family in G1V3_MODES:
+        if self.family == V3W_GENERIC_FAMILY:
+            self.backend = build_v3w_backend(plug, options)
+        elif self.family in G1V3_MODES:
             from decide.backends.rwkv_g1_v3 import G1V3Backend
 
             self.backend = G1V3Backend(plug, mode=G1V3_MODES[self.family])

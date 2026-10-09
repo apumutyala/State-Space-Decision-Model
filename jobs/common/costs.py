@@ -37,6 +37,7 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
           "full8": "jobs/full8/job_params.json",
           "q9af_v2": "jobs/q9af_v2/job_params.json",
           "q9af_v2_clean": "jobs/q9af_v2/job_params_clean.json",
+          "q9af_v3_A": "jobs/q9af_v3/job_params_A.json", "q9af_v3_B": "jobs/q9af_v3/job_params_B.json",
           "q9af_corpus_check": "jobs/q9af_corpus_check/job_params.json",
           "m2_first_cell": "jobs/m2_first_cell/job_params.json",
           **{f"q9_feature_cache_{p}": f"jobs/q9_feature_cache/job_params_{p}.json"

@@ -1,0 +1,176 @@
+{
+ "_comment": "Q9-AF v3 JOB B (runner q9af_v3_job.sh B): fetch the pinned stage-A artifact (+ v2's job-7ji99 export when pinned) -> 32k long-context KD (45 min) -> on-policy reverse-KL (40 min) -> final export -> proxy600 under the generic v3w readout (PR #236; identity 2e4907ee...): stock, v3, v2 -> the gate (rule.decide: PROMOTE iff CI lo of v3 - reference > 0; reference = v2 iff the v2 block below is pinned, else stock). The stageA / v2 blocks are filled by `python -m jobs.q9af_v3.artifact fill` (which also adds the URL placeholder to submit.env) in their own commit before B is packaged for real. Billing basis as job A.",
+ "v3_mode": "B",
+ "job": "q9af_v3",
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 0,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.084,
+ "reserve_minutes": 15,
+ "margin_min_frac": 0.3,
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "config": "configs/q9af_v3_h100.json",
+ "dev_proxy": "jobs/common/dev_proxy600.json",
+ "mission": "m1-q9af-v3",
+ "decision_rule": "jobs/q9af_v3/rule.py",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "flash-linear-attention==0.5.2",
+   "fla-core==0.5.2"
+  ],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout"
+   }
+  ],
+  "image": "jobs/q9af_v2/Dockerfile"
+ },
+ "max_duration_minutes": 219,
+ "hard_cap_usd": 24.0,
+ "phase_caps_minutes": {
+  "setup": 8,
+  "weights": 10,
+  "F": 15,
+  "P": 110,
+  "X": 8,
+  "L_stock": 15,
+  "L_v3": 15,
+  "L_v2": 15,
+  "S": 8
+ },
+ "expected_minutes": {
+  "build": 15,
+  "setup": 3,
+  "weights": 1,
+  "F": 4,
+  "P": 104,
+  "X": 4,
+  "L_stock": 8,
+  "L_v3": 8,
+  "L_v2": 8,
+  "S": 2
+ },
+ "measured": {
+  "_comment": "job-5cmat (art-2bybh) and job-2xe5w (art-ipnxz, receipts/2026-10-07-D-full8/result.json). stage1 rate = 5cmat stage 1 (all 8 layers aligned, the same shape as v2 stage 1). Stage 2 worst rate = 2xe5w step 7 (layer 3 + 6 more GDNs training: first student layer 3, the v2 shape) and the FLOP model at the 4j3vu layer-3 MFU. Peak = 2xe5w (7 GDNs attached, 7 training).",
+  "setup_min": 2.4,
+  "load_and_data_s": 63.53,
+  "stock_probes_s": 109.02,
+  "converted_probes_s": 57.42,
+  "throughput_s_per_arm": 33.64,
+  "stage1_steady_tok_s": 18297,
+  "stage2_steady_tok_s_layer3_7gdn": 5210,
+  "stage2_mfu_layer3": 0.341,
+  "stage2_mfu_layer23": 0.3428,
+  "stage2_steady_tok_s_layer23": 9459.6,
+  "stage2_steady_tok_s_layer3": 5461,
+  "peak_gb": 39.72,
+  "stock_prefill_tok_s_min": 22144.5,
+  "pack_call_s": 0.2406,
+  "small_call_s": 0.0756,
+  "weights_fetch_s": 20,
+  "S_min": 1.0,
+  "w3c2e_setup_min": 3.28,
+  "w3c2e_phase_D_min_dev13": 4.92
+ },
+ "estimates_not_measured": {
+  "_comment": "No receipt: 32k KD rate = 0.77 x the 2xe5w layer-3 stage-2 rate (teacher attention at 32k adds ~12% FLOP/token); on-policy step = 64 rollouts x 256 new tokens (cached student decode) + one reverse-KL step on ~64 x 1k tokens; artifact downloads ~4.3 GB.",
+  "fetch_min": 4.0,
+  "export_X_min": 3.0,
+  "lc_tok_s": 4000.0,
+  "op_step_s": 25.0,
+  "op_completion_tokens_per_rollout": 180.0,
+  "final_heldout_min": 1.5,
+  "long_eval_min": 1.5,
+  "gen_heldout_eval_min": 0.5,
+  "curve_eval_min_each": 0.5,
+  "teacher_cache_min": 1.5
+ },
+ "v3w_volume": "jobs/q9af_v3/readout_volume_v3w_proxy600.json",
+ "stageA": {
+  "_comment": "job A's /output artifact; filled by `artifact fill --which stageA` after job A ends",
+  "artifact": null,
+  "job": null,
+  "artifact_sha256": null,
+  "members": null,
+  "url_env": "STAGEA_URL"
+ },
+ "v2": {
+  "_comment": "job-7ji99's /output artifact (v2 clean); filled by `artifact fill --which v2` iff it exported an attention-free gdn_converted.pt. Pinned -> reference = v2; unpinned -> reference = stock (rule.expected_reference).",
+  "artifact": null,
+  "job": "job-7ji99",
+  "artifact_sha256": null,
+  "members": null,
+  "url_env": "V2_URL"
+ },
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py). env gets STAGEA_URL / V2_URL placeholders from `artifact fill`; sf_submit fills them from the shell at submit time.",
+  "command": "bash /opt/ssdm/m1/jobs/q9af_v3/q9af_v3_job.sh B",
+  "env": {},
+  "key": "m1-q9af-v3-b",
+  "clock_lock": true,
+  "label": "q9af_v3 B: 32k long-context + on-policy distillation of the stage-A Q9-AF, then the proxy600 gate under the generic v3w readout (v3 vs v2, else vs stock)",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/Q9AF3_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "the q9af_v2 image (CMD rewritten) + code + the PRIVATE DEV rows (proxy600 arms) + the Qwen3.5-9B tokenizer.json / tokenizer_config.json the v3w readout identity 2e4907ee... was built from (sha256 pinned). The 2 GB GDN artifacts are NOT in the context: the job streams them from the signed URLs and checks every byte (jobs.q9af_v3.artifact).",
+  "dockerfile": "jobs/q9af_v2/Dockerfile",
+  "cmd_rewrite": [
+   "CMD [\"bash\", \"/opt/ssdm/m1/jobs/q9af_v2/q9af_v2_job.sh\"]",
+   "CMD [\"bash\", \"/opt/ssdm/m1/jobs/q9af_v3/q9af_v3_job.sh\", \"B\"]"
+  ],
+  "data": [
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/q9af_v3/data_B.sha256"
+   },
+   {
+    "src": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer.json",
+    "dest": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer.json",
+    "pin": "jobs/q9af_v3/data_B.sha256"
+   },
+   {
+    "src": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer_config.json",
+    "dest": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer_config.json",
+    "pin": "jobs/q9af_v3/data_B.sha256"
+   }
+  ],
+  "manifest_files": [
+   "configs/q9af_v3_h100.json",
+   "jobs/q9af_v3/data_B.sha256",
+   "jobs/q9af_v3/readout_volume_v3w_proxy600.json"
+  ]
+ }
+}

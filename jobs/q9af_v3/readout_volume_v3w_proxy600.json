@@ -1,0 +1,4492 @@
+{
+ "family": "q9af-probe-v3w",
+ "template": "jrt-v3w-generic:qwen3.5",
+ "identity_sha256": "2e4907ee4302d9d196052fc04c5618e88fc8058446644715345eaad93a3a2543",
+ "rows": 639,
+ "refused": 5,
+ "totals": {
+  "fork": {
+   "tokens": 1810589,
+   "calls": 1401,
+   "positions": 1916506
+  }
+ },
+ "kv_fork_budget": 262144,
+ "limit": 16384,
+ "source": "scripts/check_clefflash_v3w.py over jobs/common/dev_proxy600.json run_ids (stock arm: KV fork budget applied; positions = padded packed positions)",
+ "per_row": {
+  "11:ContractNLI:ContractNLI:test:129": {
+   "fork": {
+    "tokens": 5661,
+    "calls": 2,
+    "positions": 5871
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:227": {
+   "fork": {
+    "tokens": 7888,
+    "calls": 2,
+    "positions": 8098
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:26": {
+   "fork": {
+    "tokens": 5372,
+    "calls": 2,
+    "positions": 5582
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:293": {
+   "fork": {
+    "tokens": 4004,
+    "calls": 2,
+    "positions": 4214
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:307": {
+   "fork": {
+    "tokens": 5579,
+    "calls": 2,
+    "positions": 5789
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:4": {
+   "fork": {
+    "tokens": 4176,
+    "calls": 2,
+    "positions": 4386
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:401": {
+   "fork": {
+    "tokens": 5559,
+    "calls": 2,
+    "positions": 5769
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:451": {
+   "fork": {
+    "tokens": 5215,
+    "calls": 2,
+    "positions": 5425
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:543": {
+   "fork": {
+    "tokens": 5084,
+    "calls": 2,
+    "positions": 5294
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:76": {
+   "fork": {
+    "tokens": 5302,
+    "calls": 2,
+    "positions": 5512
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:97": {
+   "fork": {
+    "tokens": 6297,
+    "calls": 2,
+    "positions": 6507
+   }
+  },
+  "11:ContractNLI:ContractNLI:test:99": {
+   "fork": {
+    "tokens": 5006,
+    "calls": 2,
+    "positions": 5216
+   }
+  },
+  "12:ANLI:ANLI:test_r1:3f96c783-12e0-4b71-a918-a318c2462081": {
+   "fork": {
+    "tokens": 390,
+    "calls": 2,
+    "positions": 390
+   }
+  },
+  "12:ANLI:ANLI:test_r1:44162876-d9d2-469c-b1a0-bd6a912486aa": {
+   "fork": {
+    "tokens": 512,
+    "calls": 2,
+    "positions": 512
+   }
+  },
+  "12:ANLI:ANLI:test_r1:725b7f20-3917-4c05-aa10-988859b3377e": {
+   "fork": {
+    "tokens": 426,
+    "calls": 2,
+    "positions": 426
+   }
+  },
+  "12:ANLI:ANLI:test_r1:76f7df9f-2ab3-4e43-9494-087cac152f19": {
+   "fork": {
+    "tokens": 374,
+    "calls": 2,
+    "positions": 374
+   }
+  },
+  "12:ANLI:ANLI:test_r1:96d6a043-e262-41e2-be31-38f586124121": {
+   "fork": {
+    "tokens": 372,
+    "calls": 2,
+    "positions": 372
+   }
+  },
+  "12:ANLI:ANLI:test_r1:ead42195-05f4-40c2-b103-257b332e33d1": {
+   "fork": {
+    "tokens": 378,
+    "calls": 2,
+    "positions": 378
+   }
+  },
+  "12:ANLI:ANLI:test_r2:494bbc4e-e5c5-428b-a299-f09f5419d338": {
+   "fork": {
+    "tokens": 358,
+    "calls": 2,
+    "positions": 358
+   }
+  },
+  "12:ANLI:ANLI:test_r2:58bfd4bc-5d65-46b3-8755-0fce6e470216": {
+   "fork": {
+    "tokens": 388,
+    "calls": 2,
+    "positions": 388
+   }
+  },
+  "12:ANLI:ANLI:test_r2:893669a5-b425-4182-b5fe-2d1075993cbb": {
+   "fork": {
+    "tokens": 386,
+    "calls": 2,
+    "positions": 386
+   }
+  },
+  "12:ANLI:ANLI:test_r2:aecd601b-f19a-4f72-8beb-e92b17ad7d98": {
+   "fork": {
+    "tokens": 454,
+    "calls": 2,
+    "positions": 454
+   }
+  },
+  "12:ANLI:ANLI:test_r2:b995029b-e6c8-4a00-8097-61b0ac9f67ea": {
+   "fork": {
+    "tokens": 412,
+    "calls": 2,
+    "positions": 412
+   }
+  },
+  "12:ANLI:ANLI:test_r3:2550effb-4089-48cc-b04c-9b491480a69a": {
+   "fork": {
+    "tokens": 330,
+    "calls": 2,
+    "positions": 330
+   }
+  },
+  "12:ANLI:ANLI:test_r3:75065351-2ad2-4df3-be08-66980194eafb": {
+   "fork": {
+    "tokens": 400,
+    "calls": 2,
+    "positions": 400
+   }
+  },
+  "12:ANLI:ANLI:test_r3:79804498-d2f8-4172-8bec-43a11cd5fd79": {
+   "fork": {
+    "tokens": 514,
+    "calls": 2,
+    "positions": 514
+   }
+  },
+  "12:ANLI:ANLI:test_r3:81213b6e-e998-4bde-aea1-79b894db3cb0": {
+   "fork": {
+    "tokens": 304,
+    "calls": 2,
+    "positions": 304
+   }
+  },
+  "12:ANLI:ANLI:test_r3:85967345-c7f2-4d4e-9962-5a07723ce313": {
+   "fork": {
+    "tokens": 310,
+    "calls": 2,
+    "positions": 310
+   }
+  },
+  "12:ANLI:ANLI:test_r3:9a6fc767-74e5-4576-b230-f026dff77624": {
+   "fork": {
+    "tokens": 318,
+    "calls": 2,
+    "positions": 318
+   }
+  },
+  "12:ANLI:ANLI:test_r3:c001cde8-c11a-457a-8493-e6d774cc2b71": {
+   "fork": {
+    "tokens": 310,
+    "calls": 2,
+    "positions": 310
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_149-58-3": {
+   "fork": {
+    "tokens": 2844,
+    "calls": 2,
+    "positions": 2858
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_161-63-0": {
+   "fork": {
+    "tokens": 1572,
+    "calls": 2,
+    "positions": 1574
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_168-68-0": {
+   "fork": {
+    "tokens": 1888,
+    "calls": 2,
+    "positions": 1908
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_169-69-0": {
+   "fork": {
+    "tokens": 1950,
+    "calls": 2,
+    "positions": 1970
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_217-93-0": {
+   "fork": {
+    "tokens": 9313,
+    "calls": 2,
+    "positions": 9507
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_29-9-0": {
+   "fork": {
+    "tokens": 1452,
+    "calls": 2,
+    "positions": 1476
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_403-139-7": {
+   "fork": {
+    "tokens": 1286,
+    "calls": 2,
+    "positions": 1290
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_511-149-8": {
+   "fork": {
+    "tokens": 2211,
+    "calls": 2,
+    "positions": 2219
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_535-151-11": {
+   "fork": {
+    "tokens": 868,
+    "calls": 2,
+    "positions": 872
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_563-155-3": {
+   "fork": {
+    "tokens": 2668,
+    "calls": 2,
+    "positions": 2684
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_677-163-2": {
+   "fork": {
+    "tokens": 1338,
+    "calls": 2,
+    "positions": 1344
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_730-167-1": {
+   "fork": {
+    "tokens": 1696,
+    "calls": 2,
+    "positions": 1700
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_771-171-4": {
+   "fork": {
+    "tokens": 1903,
+    "calls": 2,
+    "positions": 1907
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_835-178-10": {
+   "fork": {
+    "tokens": 1348,
+    "calls": 2,
+    "positions": 1356
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_89-39-0": {
+   "fork": {
+    "tokens": 1434,
+    "calls": 2,
+    "positions": 1438
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_908-187-0": {
+   "fork": {
+    "tokens": 2207,
+    "calls": 2,
+    "positions": 2220
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_simple:live_simple_124-80-0": {
+   "fork": {
+    "tokens": 415,
+    "calls": 2,
+    "positions": 415
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_simple:live_simple_250-132-0": {
+   "fork": {
+    "tokens": 462,
+    "calls": 2,
+    "positions": 462
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_simple:live_simple_59-28-0": {
+   "fork": {
+    "tokens": 580,
+    "calls": 2,
+    "positions": 580
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_141": {
+   "fork": {
+    "tokens": 375,
+    "calls": 2,
+    "positions": 375
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_143": {
+   "fork": {
+    "tokens": 397,
+    "calls": 2,
+    "positions": 397
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_220": {
+   "fork": {
+    "tokens": 477,
+    "calls": 2,
+    "positions": 477
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_349": {
+   "fork": {
+    "tokens": 411,
+    "calls": 2,
+    "positions": 411
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_355": {
+   "fork": {
+    "tokens": 424,
+    "calls": 2,
+    "positions": 424
+   }
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_70": {
+   "fork": {
+    "tokens": 456,
+    "calls": 2,
+    "positions": 456
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:corrupted rhyme:4635": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:corrupted rhyme:792": {
+   "fork": {
+    "tokens": 391,
+    "calls": 2,
+    "positions": 391
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:shuffled rhyming lines:2686": {
+   "fork": {
+    "tokens": 391,
+    "calls": 2,
+    "positions": 391
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:shuffled rhyming words:4448": {
+   "fork": {
+    "tokens": 399,
+    "calls": 2,
+    "positions": 399
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:shuffled rhyming words:503": {
+   "fork": {
+    "tokens": 391,
+    "calls": 2,
+    "positions": 391
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:shuffled rhyming words:5556": {
+   "fork": {
+    "tokens": 371,
+    "calls": 2,
+    "positions": 371
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 1 rhyming EOL word:4635": {
+   "fork": {
+    "tokens": 387,
+    "calls": 2,
+    "positions": 387
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 1 rhyming EOL word:792": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 1 word:4635": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 1 word:792": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 2 words:4635": {
+   "fork": {
+    "tokens": 385,
+    "calls": 2,
+    "positions": 385
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 2 words:792": {
+   "fork": {
+    "tokens": 387,
+    "calls": 2,
+    "positions": 387
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 3 words:4635": {
+   "fork": {
+    "tokens": 385,
+    "calls": 2,
+    "positions": 385
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 3 words:792": {
+   "fork": {
+    "tokens": 385,
+    "calls": 2,
+    "positions": 385
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 1 nonrhyming word:4635": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 1 nonrhyming word:792": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 2 nonrhyming words:4635": {
+   "fork": {
+    "tokens": 387,
+    "calls": 2,
+    "positions": 387
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 2 nonrhyming words:792": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 2 rhyming EOL words:4635": {
+   "fork": {
+    "tokens": 387,
+    "calls": 2,
+    "positions": 387
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 2 rhyming EOL words:792": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 3 nonrhyming words:4635": {
+   "fork": {
+    "tokens": 385,
+    "calls": 2,
+    "positions": 385
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 3 nonrhyming words:792": {
+   "fork": {
+    "tokens": 387,
+    "calls": 2,
+    "positions": 387
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 3 rhyming words:4635": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 3 rhyming words:792": {
+   "fork": {
+    "tokens": 389,
+    "calls": 2,
+    "positions": 389
+   }
+  },
+  "21:Humicroedit:Humicroedit:test:10777-9091": {
+   "fork": {
+    "tokens": 210,
+    "calls": 2,
+    "positions": 210
+   }
+  },
+  "21:Humicroedit:Humicroedit:test:11247-5350": {
+   "fork": {
+    "tokens": 194,
+    "calls": 2,
+    "positions": 194
+   }
+  },
+  "21:Humicroedit:Humicroedit:test:1523-4167": {
+   "fork": {
+    "tokens": 192,
+    "calls": 2,
+    "positions": 192
+   }
+  },
+  "21:Humicroedit:Humicroedit:test:333-12278": {
+   "fork": {
+    "tokens": 214,
+    "calls": 2,
+    "positions": 214
+   }
+  },
+  "21:Humicroedit:Humicroedit:test:5664-13338": {
+   "fork": {
+    "tokens": 260,
+    "calls": 2,
+    "positions": 260
+   }
+  },
+  "21:Humicroedit:Humicroedit:test:5765-10638": {
+   "fork": {
+    "tokens": 218,
+    "calls": 2,
+    "positions": 218
+   }
+  },
+  "21:Humicroedit:Humicroedit:test:6649-10042": {
+   "fork": {
+    "tokens": 204,
+    "calls": 2,
+    "positions": 204
+   }
+  },
+  "21:Humicroedit:Humicroedit:test:8724-991": {
+   "fork": {
+    "tokens": 208,
+    "calls": 2,
+    "positions": 208
+   }
+  },
+  "21:Humicroedit:Humicroedit:test:9471-4860": {
+   "fork": {
+    "tokens": 210,
+    "calls": 2,
+    "positions": 210
+   }
+  },
+  "22:POP909-chord-pitch-class:POP909:056:beat-122": {
+   "fork": {
+    "tokens": 13510,
+    "calls": 2,
+    "positions": 13510
+   }
+  },
+  "22:POP909-chord-pitch-class:POP909:195:beat-18": {
+   "fork": {
+    "tokens": 12246,
+    "calls": 2,
+    "positions": 12246
+   }
+  },
+  "22:POP909-chord-pitch-class:POP909:453:beat-50": {
+   "fork": {
+    "tokens": 12059,
+    "calls": 2,
+    "positions": 12059
+   }
+  },
+  "22:POP909-chord-pitch-class:POP909:607:beat-230": {
+   "fork": {
+    "tokens": 12049,
+    "calls": 2,
+    "positions": 12049
+   }
+  },
+  "22:POP909-chord-pitch-class:POP909:616:beat-114": {
+   "fork": {
+    "tokens": 11971,
+    "calls": 2,
+    "positions": 11971
+   }
+  },
+  "22:POP909-chord-pitch-class:POP909:723:beat-222": {
+   "fork": {
+    "tokens": 12117,
+    "calls": 2,
+    "positions": 12117
+   }
+  },
+  "22:POP909-chord-pitch-class:POP909:771:beat-14": {
+   "fork": {
+    "tokens": 11606,
+    "calls": 2,
+    "positions": 11606
+   }
+  },
+  "22:POP909-chord-pitch-class:POP909:771:beat-206": {
+   "fork": {
+    "tokens": 12071,
+    "calls": 2,
+    "positions": 12071
+   }
+  },
+  "22:POP909-chord-pitch-class:POP909:811:beat-130": {
+   "fork": {
+    "tokens": 12463,
+    "calls": 2,
+    "positions": 12463
+   }
+  },
+  "23:CFColor-preference:cfcolor:1001:6807:6118": {
+   "fork": {
+    "tokens": 632,
+    "calls": 2,
+    "positions": 632
+   }
+  },
+  "23:CFColor-preference:cfcolor:1020:10354:11615": {
+   "fork": {
+    "tokens": 627,
+    "calls": 2,
+    "positions": 627
+   }
+  },
+  "23:CFColor-preference:cfcolor:1020:12028:7859": {
+   "fork": {
+    "tokens": 635,
+    "calls": 2,
+    "positions": 635
+   }
+  },
+  "23:CFColor-preference:cfcolor:1020:12068:3866": {
+   "fork": {
+    "tokens": 637,
+    "calls": 2,
+    "positions": 637
+   }
+  },
+  "23:CFColor-preference:cfcolor:1020:8357:3135": {
+   "fork": {
+    "tokens": 629,
+    "calls": 2,
+    "positions": 629
+   }
+  },
+  "23:CFColor-preference:cfcolor:261:2132:1214": {
+   "fork": {
+    "tokens": 646,
+    "calls": 2,
+    "positions": 646
+   }
+  },
+  "23:CFColor-preference:cfcolor:261:2284:2527": {
+   "fork": {
+    "tokens": 640,
+    "calls": 2,
+    "positions": 640
+   }
+  },
+  "23:CFColor-preference:cfcolor:367:1833:1193": {
+   "fork": {
+    "tokens": 628,
+    "calls": 2,
+    "positions": 628
+   }
+  },
+  "23:CFColor-preference:cfcolor:611:13087:10852": {
+   "fork": {
+    "tokens": 612,
+    "calls": 2,
+    "positions": 612
+   }
+  },
+  "23:CFColor-preference:cfcolor:746:10082:5105": {
+   "fork": {
+    "tokens": 649,
+    "calls": 2,
+    "positions": 649
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:1": {
+   "fork": {
+    "tokens": 340,
+    "calls": 2,
+    "positions": 340
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:108": {
+   "fork": {
+    "tokens": 588,
+    "calls": 2,
+    "positions": 588
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:131": {
+   "fork": {
+    "tokens": 664,
+    "calls": 2,
+    "positions": 664
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:164": {
+   "fork": {
+    "tokens": 590,
+    "calls": 2,
+    "positions": 590
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:167": {
+   "fork": {
+    "tokens": 294,
+    "calls": 2,
+    "positions": 294
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:175": {
+   "fork": {
+    "tokens": 582,
+    "calls": 2,
+    "positions": 582
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:26": {
+   "fork": {
+    "tokens": 356,
+    "calls": 2,
+    "positions": 356
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:38": {
+   "fork": {
+    "tokens": 518,
+    "calls": 2,
+    "positions": 518
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:57": {
+   "fork": {
+    "tokens": 200,
+    "calls": 2,
+    "positions": 200
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:59": {
+   "fork": {
+    "tokens": 436,
+    "calls": 2,
+    "positions": 436
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:61": {
+   "fork": {
+    "tokens": 530,
+    "calls": 2,
+    "positions": 530
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:71": {
+   "fork": {
+    "tokens": 426,
+    "calls": 2,
+    "positions": 426
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:91": {
+   "fork": {
+    "tokens": 436,
+    "calls": 2,
+    "positions": 436
+   }
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:92": {
+   "fork": {
+    "tokens": 830,
+    "calls": 2,
+    "positions": 830
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:1049": {
+   "fork": {
+    "tokens": 206,
+    "calls": 2,
+    "positions": 206
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:1060": {
+   "fork": {
+    "tokens": 204,
+    "calls": 2,
+    "positions": 204
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:1080": {
+   "fork": {
+    "tokens": 192,
+    "calls": 2,
+    "positions": 192
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:1082": {
+   "fork": {
+    "tokens": 202,
+    "calls": 2,
+    "positions": 202
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:1110": {
+   "fork": {
+    "tokens": 202,
+    "calls": 2,
+    "positions": 202
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:1135": {
+   "fork": {
+    "tokens": 188,
+    "calls": 2,
+    "positions": 188
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:1257": {
+   "fork": {
+    "tokens": 194,
+    "calls": 2,
+    "positions": 194
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:199": {
+   "fork": {
+    "tokens": 190,
+    "calls": 2,
+    "positions": 190
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:305": {
+   "fork": {
+    "tokens": 186,
+    "calls": 2,
+    "positions": 186
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:392": {
+   "fork": {
+    "tokens": 192,
+    "calls": 2,
+    "positions": 192
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:41": {
+   "fork": {
+    "tokens": 188,
+    "calls": 2,
+    "positions": 188
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:639": {
+   "fork": {
+    "tokens": 190,
+    "calls": 2,
+    "positions": 190
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:684": {
+   "fork": {
+    "tokens": 206,
+    "calls": 2,
+    "positions": 206
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:702": {
+   "fork": {
+    "tokens": 196,
+    "calls": 2,
+    "positions": 196
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:746": {
+   "fork": {
+    "tokens": 210,
+    "calls": 2,
+    "positions": 210
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:808": {
+   "fork": {
+    "tokens": 194,
+    "calls": 2,
+    "positions": 194
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:810": {
+   "fork": {
+    "tokens": 196,
+    "calls": 2,
+    "positions": 196
+   }
+  },
+  "28:WinoGrande:WinoGrande:validation:954": {
+   "fork": {
+    "tokens": 192,
+    "calls": 2,
+    "positions": 192
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:1436:21284": {
+   "fork": {
+    "tokens": 300,
+    "calls": 2,
+    "positions": 300
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:1713:26438": {
+   "fork": {
+    "tokens": 268,
+    "calls": 2,
+    "positions": 268
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:2267:34783": {
+   "fork": {
+    "tokens": 356,
+    "calls": 2,
+    "positions": 356
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:2900:44374": {
+   "fork": {
+    "tokens": 360,
+    "calls": 2,
+    "positions": 360
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:3512:2098": {
+   "fork": {
+    "tokens": 620,
+    "calls": 2,
+    "positions": 620
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:379:5289": {
+   "fork": {
+    "tokens": 306,
+    "calls": 2,
+    "positions": 306
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:5092:13816": {
+   "fork": {
+    "tokens": 560,
+    "calls": 2,
+    "positions": 560
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:5628:17736": {
+   "fork": {
+    "tokens": 724,
+    "calls": 2,
+    "positions": 724
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:5658:18005": {
+   "fork": {
+    "tokens": 546,
+    "calls": 2,
+    "positions": 546
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:5696:18272": {
+   "fork": {
+    "tokens": 568,
+    "calls": 2,
+    "positions": 568
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:5946:20078": {
+   "fork": {
+    "tokens": 638,
+    "calls": 2,
+    "positions": 638
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:6383:23291": {
+   "fork": {
+    "tokens": 492,
+    "calls": 2,
+    "positions": 492
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:6410:23490": {
+   "fork": {
+    "tokens": 700,
+    "calls": 2,
+    "positions": 700
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:7535:31884": {
+   "fork": {
+    "tokens": 630,
+    "calls": 2,
+    "positions": 630
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:7900:34452": {
+   "fork": {
+    "tokens": 610,
+    "calls": 2,
+    "positions": 610
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:8734:40666": {
+   "fork": {
+    "tokens": 500,
+    "calls": 2,
+    "positions": 500
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:9666:47556": {
+   "fork": {
+    "tokens": 638,
+    "calls": 2,
+    "positions": 638
+   }
+  },
+  "29:HellaSwag:HellaSwag:validation:9806:48773": {
+   "fork": {
+    "tokens": 628,
+    "calls": 2,
+    "positions": 628
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apibank:apibank_query_9:chunk0": {
+   "fork": {
+    "tokens": 19376,
+    "calls": 5,
+    "positions": 21231
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_380:chunk0": {
+   "fork": {
+    "tokens": 13114,
+    "calls": 4,
+    "positions": 14878
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_459:chunk0": {
+   "fork": {
+    "tokens": 15407,
+    "calls": 4,
+    "positions": 18056
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_612:chunk0": {
+   "fork": {
+    "tokens": 14251,
+    "calls": 4,
+    "positions": 15384
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_678:chunk0": {
+   "fork": {
+    "tokens": 14655,
+    "calls": 4,
+    "positions": 16899
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_905:chunk0": {
+   "fork": {
+    "tokens": 15395,
+    "calls": 4,
+    "positions": 16689
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:t-eval-step:t_eval_step_query_1:chunk0": {
+   "fork": {
+    "tokens": 18916,
+    "calls": 5,
+    "positions": 21041
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:taskbench-daily:taskbench_daily_query_37:chunk0": {
+   "fork": {
+    "tokens": 15883,
+    "calls": 4,
+    "positions": 18031
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:taskbench-multimedia:taskbench_multimedia_query_3:chunk0": {
+   "fork": {
+    "tokens": 12002,
+    "calls": 3,
+    "positions": 12633
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:taskbench-multimedia:taskbench_multimedia_query_6:chunk0": {
+   "fork": {
+    "tokens": 12074,
+    "calls": 3,
+    "positions": 12582
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:tool-be-honest:tool_be_honest_query_107:chunk0": {
+   "fork": {
+    "tokens": 8969,
+    "calls": 3,
+    "positions": 10731
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_204:chunk0": {
+   "fork": {
+    "tokens": 20033,
+    "calls": 5,
+    "positions": 21949
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_439:chunk0": {
+   "fork": {
+    "tokens": 21657,
+    "calls": 5,
+    "positions": 23659
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_759:chunk0": {
+   "fork": {
+    "tokens": 21730,
+    "calls": 5,
+    "positions": 24150
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolalpaca:toolalpaca_query_7:chunk0": {
+   "fork": {
+    "tokens": 13136,
+    "calls": 4,
+    "positions": 15380
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_3:chunk0": {
+   "fork": {
+    "tokens": 19948,
+    "calls": 5,
+    "positions": 23128
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_51:chunk0": {
+   "fork": {
+    "tokens": 15545,
+    "calls": 4,
+    "positions": 17151
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_735:chunk0": {
+   "fork": {
+    "tokens": 22159,
+    "calls": 5,
+    "positions": 24210
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolink:toolink_query_281:chunk0": {
+   "fork": {
+    "tokens": 19772,
+    "calls": 5,
+    "positions": 22186
+   }
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toollens:toolLens_query_309:chunk0": {
+   "fork": {
+    "tokens": 18687,
+    "calls": 4,
+    "positions": 20320
+   }
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:1082": {
+   "fork": {
+    "tokens": 519,
+    "calls": 2,
+    "positions": 519
+   }
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:1106": {
+   "fork": {
+    "tokens": 505,
+    "calls": 2,
+    "positions": 505
+   }
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:1171": {
+   "fork": {
+    "tokens": 614,
+    "calls": 2,
+    "positions": 614
+   }
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:384": {
+   "fork": {
+    "tokens": 520,
+    "calls": 2,
+    "positions": 520
+   }
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:894": {
+   "fork": {
+    "tokens": 569,
+    "calls": 2,
+    "positions": 569
+   }
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:9": {
+   "fork": {
+    "tokens": 579,
+    "calls": 2,
+    "positions": 579
+   }
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:916": {
+   "fork": {
+    "tokens": 579,
+    "calls": 2,
+    "positions": 579
+   }
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:936": {
+   "fork": {
+    "tokens": 636,
+    "calls": 2,
+    "positions": 636
+   }
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:1082": {
+   "fork": {
+    "tokens": 317,
+    "calls": 2,
+    "positions": 317
+   }
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:1106": {
+   "fork": {
+    "tokens": 303,
+    "calls": 2,
+    "positions": 303
+   }
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:1171": {
+   "fork": {
+    "tokens": 347,
+    "calls": 2,
+    "positions": 347
+   }
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:384": {
+   "fork": {
+    "tokens": 299,
+    "calls": 2,
+    "positions": 299
+   }
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:894": {
+   "fork": {
+    "tokens": 348,
+    "calls": 2,
+    "positions": 348
+   }
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:9": {
+   "fork": {
+    "tokens": 334,
+    "calls": 2,
+    "positions": 334
+   }
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:916": {
+   "fork": {
+    "tokens": 362,
+    "calls": 2,
+    "positions": 362
+   }
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:936": {
+   "fork": {
+    "tokens": 391,
+    "calls": 2,
+    "positions": 391
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:3367f4edcd245dbe5d3efa0b183c2b0f1ca3dcc26b3fb9c5563237264374e6c6": {
+   "fork": {
+    "tokens": 2400,
+    "calls": 2,
+    "positions": 2400
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:38d2ef37e2932ec0a5d3656e3060e617692bcea542e5e2ac073a79bf2509f0f9": {
+   "fork": {
+    "tokens": 2277,
+    "calls": 2,
+    "positions": 2277
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:4995bd0755bd493740b9e616136c8cccaf04b306ec4af27b2272a12657d3be62": {
+   "fork": {
+    "tokens": 2524,
+    "calls": 2,
+    "positions": 2524
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:49b15c45c87085640a571172506dfb3ef548460d945bad5e24e18925126197be": {
+   "fork": {
+    "tokens": 2175,
+    "calls": 2,
+    "positions": 2175
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:5aa22e6fdbea70aba67a0856389b432dbd9d36de111d7d9aa7e209658e922d02": {
+   "fork": {
+    "tokens": 1660,
+    "calls": 2,
+    "positions": 1660
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:66af7f672ea16d51179d77b4160b47d9d1c7f67ec6433f06d565a2f3bec0294b": {
+   "fork": {
+    "tokens": 463,
+    "calls": 2,
+    "positions": 463
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:68e69349953ab0146a06628c7477bcd9bbc6302191e158d87b1ffc3dbfd3ded6": {
+   "fork": {
+    "tokens": 3433,
+    "calls": 2,
+    "positions": 3433
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:6bd4a737eb8893190c1c8bb21300d9db7abfb83465c7ed58c9bb320e5ea8b370": {
+   "fork": {
+    "tokens": 2450,
+    "calls": 2,
+    "positions": 2450
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:777d047952b499939479b85961b8a934bb502eeb3411720b128e1b33bab35b8f": {
+   "fork": {
+    "tokens": 2839,
+    "calls": 2,
+    "positions": 2839
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:9013c715e6d42379c925dd9ecab5f8e6d32ce32b6f1047cf55af388f75796201": {
+   "fork": {
+    "tokens": 2779,
+    "calls": 2,
+    "positions": 2779
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:ce42eaecad8acbd5a01dd4e262b002a21f59bb99cc58f36f00aea3748097146a": {
+   "fork": {
+    "tokens": 2579,
+    "calls": 2,
+    "positions": 2579
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:d2bc959517804815de1835e78bae61b509268ad7dde359b43ae6a1e339e9f24c": {
+   "fork": {
+    "tokens": 2128,
+    "calls": 2,
+    "positions": 2128
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:ec25feb899367ff7ae6e5371790960508f5f7fe4b9de2765bfaef22f851f87aa": {
+   "fork": {
+    "tokens": 1282,
+    "calls": 2,
+    "positions": 1282
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:f3996735dea1cf1597f329b95e7576dcc03b1a1b358a97e7516bc17a2169c982": {
+   "fork": {
+    "tokens": 2730,
+    "calls": 2,
+    "positions": 2730
+   }
+  },
+  "31:ChessBench-legal-move:ChessBench:test:f8b8739e48844bfde53c561298c0510d0be630af13ce3e98b6684a3fe67ba30f": {
+   "fork": {
+    "tokens": 2573,
+    "calls": 2,
+    "positions": 2573
+   }
+  },
+  "32:MuSR:MuSR:test:murder_mystery:107:0": {
+   "fork": {
+    "tokens": 2646,
+    "calls": 2,
+    "positions": 2646
+   }
+  },
+  "32:MuSR:MuSR:test:murder_mystery:189:0": {
+   "fork": {
+    "tokens": 2014,
+    "calls": 2,
+    "positions": 2014
+   }
+  },
+  "32:MuSR:MuSR:test:murder_mystery:220:0": {
+   "fork": {
+    "tokens": 3004,
+    "calls": 2,
+    "positions": 3004
+   }
+  },
+  "32:MuSR:MuSR:test:murder_mystery:61:0": {
+   "fork": {
+    "tokens": 2308,
+    "calls": 2,
+    "positions": 2308
+   }
+  },
+  "32:MuSR:MuSR:test:murder_mystery:65:0": {
+   "fork": {
+    "tokens": 2628,
+    "calls": 2,
+    "positions": 2628
+   }
+  },
+  "32:MuSR:MuSR:test:murder_mystery:67:0": {
+   "fork": {
+    "tokens": 2570,
+    "calls": 2,
+    "positions": 2570
+   }
+  },
+  "32:MuSR:MuSR:test:object_placements:23:2": {
+   "fork": {
+    "tokens": 2000,
+    "calls": 2,
+    "positions": 2000
+   }
+  },
+  "32:MuSR:MuSR:test:object_placements:31:0": {
+   "fork": {
+    "tokens": 2282,
+    "calls": 2,
+    "positions": 2282
+   }
+  },
+  "32:MuSR:MuSR:test:object_placements:37:3": {
+   "fork": {
+    "tokens": 2254,
+    "calls": 2,
+    "positions": 2254
+   }
+  },
+  "32:MuSR:MuSR:test:object_placements:39:2": {
+   "fork": {
+    "tokens": 1986,
+    "calls": 2,
+    "positions": 1986
+   }
+  },
+  "32:MuSR:MuSR:test:object_placements:6:2": {
+   "fork": {
+    "tokens": 2190,
+    "calls": 2,
+    "positions": 2190
+   }
+  },
+  "32:MuSR:MuSR:test:team_allocation:10:0": {
+   "fork": {
+    "tokens": 1508,
+    "calls": 2,
+    "positions": 1508
+   }
+  },
+  "32:MuSR:MuSR:test:team_allocation:157:0": {
+   "fork": {
+    "tokens": 1518,
+    "calls": 2,
+    "positions": 1518
+   }
+  },
+  "32:MuSR:MuSR:test:team_allocation:15:0": {
+   "fork": {
+    "tokens": 1586,
+    "calls": 2,
+    "positions": 1586
+   }
+  },
+  "32:MuSR:MuSR:test:team_allocation:189:0": {
+   "fork": {
+    "tokens": 1526,
+    "calls": 2,
+    "positions": 1526
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:1037": {
+   "fork": {
+    "tokens": 2904,
+    "calls": 2,
+    "positions": 3028
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:1084": {
+   "fork": {
+    "tokens": 2871,
+    "calls": 2,
+    "positions": 2980
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:1155": {
+   "fork": {
+    "tokens": 1762,
+    "calls": 2,
+    "positions": 1775
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:1188": {
+   "fork": {
+    "tokens": 1326,
+    "calls": 2,
+    "positions": 1340
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:1230": {
+   "fork": {
+    "tokens": 1719,
+    "calls": 2,
+    "positions": 1724
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:1505": {
+   "fork": {
+    "tokens": 4381,
+    "calls": 2,
+    "positions": 4428
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:1619": {
+   "fork": {
+    "tokens": 3202,
+    "calls": 2,
+    "positions": 3220
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:1640": {
+   "fork": {
+    "tokens": 5200,
+    "calls": 2,
+    "positions": 5240
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:293": {
+   "fork": {
+    "tokens": 992,
+    "calls": 2,
+    "positions": 1022
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:345": {
+   "fork": {
+    "tokens": 1501,
+    "calls": 2,
+    "positions": 1517
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:566": {
+   "fork": {
+    "tokens": 1516,
+    "calls": 2,
+    "positions": 1532
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:647": {
+   "fork": {
+    "tokens": 1035,
+    "calls": 2,
+    "positions": 1040
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:762": {
+   "fork": {
+    "tokens": 1244,
+    "calls": 2,
+    "positions": 1251
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:812": {
+   "fork": {
+    "tokens": 1082,
+    "calls": 2,
+    "positions": 1085
+   }
+  },
+  "33:SATA-Bench:SATA-Bench:test:893": {
+   "fork": {
+    "tokens": 2770,
+    "calls": 2,
+    "positions": 2894
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:earth_science:80:chunk0": {
+   "fork": {
+    "tokens": 14900,
+    "calls": 4,
+    "positions": 17411
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:economics:46:chunk0": {
+   "fork": {
+    "tokens": 22265,
+    "calls": 5,
+    "positions": 24972
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:economics:59:chunk0": {
+   "fork": {
+    "tokens": 20283,
+    "calls": 5,
+    "positions": 22889
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:economics:84:chunk0": {
+   "fork": {
+    "tokens": 12575,
+    "calls": 4,
+    "positions": 14006
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:pony:22:chunk0": {
+   "fork": {
+    "tokens": 15724,
+    "calls": 4,
+    "positions": 17385
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:pony:33:chunk0": {
+   "fork": {
+    "tokens": 15463,
+    "calls": 4,
+    "positions": 17514
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:31:chunk0": {
+   "fork": {
+    "tokens": 16488,
+    "calls": 4,
+    "positions": 18369
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:38:chunk0": {
+   "fork": {
+    "tokens": 19161,
+    "calls": 5,
+    "positions": 21429
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:55:chunk0": {
+   "fork": {
+    "tokens": 23911,
+    "calls": 6,
+    "positions": 26638
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:74:chunk0": {
+   "fork": {
+    "tokens": 16741,
+    "calls": 4,
+    "positions": 18890
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:79:chunk0": {
+   "fork": {
+    "tokens": 16181,
+    "calls": 4,
+    "positions": 18476
+   }
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:theoremqa_theorems:TheoremQA_elainewan/econ_micro_7.json:chunk0": {
+   "fork": {
+    "tokens": 25532,
+    "calls": 6,
+    "positions": 28217
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1121216": {
+   "fork": {
+    "tokens": 320,
+    "calls": 2,
+    "positions": 320
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1400115": {
+   "fork": {
+    "tokens": 1375,
+    "calls": 2,
+    "positions": 1375
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1405666": {
+   "fork": {
+    "tokens": 844,
+    "calls": 2,
+    "positions": 844
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1671039": {
+   "fork": {
+    "tokens": 1159,
+    "calls": 2,
+    "positions": 1159
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:19279": {
+   "fork": {
+    "tokens": 364,
+    "calls": 2,
+    "positions": 364
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1927988": {
+   "fork": {
+    "tokens": 363,
+    "calls": 2,
+    "positions": 363
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2019541": {
+   "fork": {
+    "tokens": 473,
+    "calls": 2,
+    "positions": 473
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2053036": {
+   "fork": {
+    "tokens": 396,
+    "calls": 2,
+    "positions": 396
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2078895": {
+   "fork": {
+    "tokens": 369,
+    "calls": 2,
+    "positions": 369
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:224685": {
+   "fork": {
+    "tokens": 610,
+    "calls": 2,
+    "positions": 610
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2341672": {
+   "fork": {
+    "tokens": 376,
+    "calls": 2,
+    "positions": 376
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2433221": {
+   "fork": {
+    "tokens": 299,
+    "calls": 2,
+    "positions": 299
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2476386": {
+   "fork": {
+    "tokens": 891,
+    "calls": 2,
+    "positions": 891
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:256667": {
+   "fork": {
+    "tokens": 405,
+    "calls": 2,
+    "positions": 405
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:260405": {
+   "fork": {
+    "tokens": 1165,
+    "calls": 2,
+    "positions": 1165
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:284326": {
+   "fork": {
+    "tokens": 452,
+    "calls": 2,
+    "positions": 452
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:597978": {
+   "fork": {
+    "tokens": 941,
+    "calls": 2,
+    "positions": 941
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:793759": {
+   "fork": {
+    "tokens": 422,
+    "calls": 2,
+    "positions": 422
+   }
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:82824": {
+   "fork": {
+    "tokens": 383,
+    "calls": 2,
+    "positions": 383
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-1": {
+   "fork": {
+    "tokens": 15957,
+    "calls": 4,
+    "positions": 16305
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-2": {
+   "fork": {
+    "tokens": 16383,
+    "calls": 4,
+    "positions": 16593
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-3": {
+   "fork": {
+    "tokens": 16085,
+    "calls": 4,
+    "positions": 16303
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-4": {
+   "fork": {
+    "tokens": 16301,
+    "calls": 4,
+    "positions": 16468
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-5": {
+   "fork": {
+    "tokens": 16091,
+    "calls": 4,
+    "positions": 16277
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-6": {
+   "fork": {
+    "tokens": 10646,
+    "calls": 3,
+    "positions": 10775
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-1": {
+   "fork": {
+    "tokens": 15941,
+    "calls": 4,
+    "positions": 16289
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-2": {
+   "fork": {
+    "tokens": 16367,
+    "calls": 4,
+    "positions": 16577
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-3": {
+   "fork": {
+    "tokens": 16069,
+    "calls": 4,
+    "positions": 16287
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-4": {
+   "fork": {
+    "tokens": 16285,
+    "calls": 4,
+    "positions": 16452
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-5": {
+   "fork": {
+    "tokens": 16075,
+    "calls": 4,
+    "positions": 16261
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-6": {
+   "fork": {
+    "tokens": 10630,
+    "calls": 3,
+    "positions": 10759
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-1": {
+   "fork": {
+    "tokens": 15964,
+    "calls": 4,
+    "positions": 16312
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-2": {
+   "fork": {
+    "tokens": 16390,
+    "calls": 4,
+    "positions": 16600
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-3": {
+   "fork": {
+    "tokens": 16092,
+    "calls": 4,
+    "positions": 16310
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-4": {
+   "fork": {
+    "tokens": 16308,
+    "calls": 4,
+    "positions": 16475
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-5": {
+   "fork": {
+    "tokens": 16098,
+    "calls": 4,
+    "positions": 16284
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-6": {
+   "fork": {
+    "tokens": 10653,
+    "calls": 3,
+    "positions": 10782
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Restaurant-ACOS:rest16_quad_test:line-200:group-1": {
+   "fork": {
+    "tokens": 9791,
+    "calls": 3,
+    "positions": 10102
+   }
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Restaurant-ACOS:rest16_quad_test:line-252:group-1": {
+   "fork": {
+    "tokens": 9789,
+    "calls": 3,
+    "positions": 10100
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0050": {
+   "fork": {
+    "tokens": 320,
+    "calls": 2,
+    "positions": 320
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0166": {
+   "fork": {
+    "tokens": 1227,
+    "calls": 2,
+    "positions": 1240
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0267": {
+   "fork": {
+    "tokens": 524,
+    "calls": 2,
+    "positions": 533
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0297": {
+   "fork": {
+    "tokens": 336,
+    "calls": 2,
+    "positions": 336
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0345": {
+   "fork": {
+    "tokens": 549,
+    "calls": 2,
+    "positions": 551
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0365": {
+   "fork": {
+    "tokens": 307,
+    "calls": 2,
+    "positions": 307
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0438": {
+   "fork": {
+    "tokens": 314,
+    "calls": 2,
+    "positions": 314
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0499": {
+   "fork": {
+    "tokens": 524,
+    "calls": 2,
+    "positions": 530
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0584": {
+   "fork": {
+    "tokens": 323,
+    "calls": 2,
+    "positions": 323
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0638": {
+   "fork": {
+    "tokens": 737,
+    "calls": 2,
+    "positions": 747
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0671": {
+   "fork": {
+    "tokens": 731,
+    "calls": 2,
+    "positions": 735
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0705": {
+   "fork": {
+    "tokens": 303,
+    "calls": 2,
+    "positions": 303
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0824": {
+   "fork": {
+    "tokens": 767,
+    "calls": 2,
+    "positions": 771
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0852": {
+   "fork": {
+    "tokens": 719,
+    "calls": 2,
+    "positions": 721
+   }
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0940": {
+   "fork": {
+    "tokens": 297,
+    "calls": 2,
+    "positions": 297
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AddAgenda-level-3-1:api-8": {
+   "fork": {
+    "tokens": 7207,
+    "calls": 2,
+    "positions": 7207
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AddAlarm-level-3-2:api-2": {
+   "fork": {
+    "tokens": 6805,
+    "calls": 2,
+    "positions": 6805
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AddMeeting-level-1-1:api-11": {
+   "fork": {
+    "tokens": 6966,
+    "calls": 2,
+    "positions": 6966
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AddReminder-level-1-3:api-5": {
+   "fork": {
+    "tokens": 6850,
+    "calls": 2,
+    "positions": 6850
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AppointmentRegistration-level-3-1:api-2": {
+   "fork": {
+    "tokens": 6785,
+    "calls": 2,
+    "positions": 6785
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:BookHotel-level-3-1:api-2": {
+   "fork": {
+    "tokens": 6803,
+    "calls": 2,
+    "positions": 6803
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:BookHotel-level-3-1:api-4": {
+   "fork": {
+    "tokens": 7037,
+    "calls": 2,
+    "positions": 7037
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:DeleteAccount-level-3-3:api-4": {
+   "fork": {
+    "tokens": 6974,
+    "calls": 2,
+    "positions": 6974
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:Dictionary-level-1-3:api-2": {
+   "fork": {
+    "tokens": 6784,
+    "calls": 2,
+    "positions": 6784
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:EmergencyKnowledge-ModifyRegistration-RecordHealthData-level-2-2:api-12": {
+   "fork": {
+    "tokens": 7336,
+    "calls": 2,
+    "positions": 7336
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:EmergencyKnowledge-ModifyRegistration-RecordHealthData-level-2-3:api-2": {
+   "fork": {
+    "tokens": 6794,
+    "calls": 2,
+    "positions": 6794
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:GetMeeting-level-1-2:api-6": {
+   "fork": {
+    "tokens": 6903,
+    "calls": 2,
+    "positions": 6903
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ImageCaption-level-1-1:api-3": {
+   "fork": {
+    "tokens": 6858,
+    "calls": 2,
+    "positions": 6858
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyAlarm-AddAgenda-GetUserToken-level-2-1:api-14": {
+   "fork": {
+    "tokens": 7271,
+    "calls": 2,
+    "positions": 7271
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyPassword-level-1-1:api-7": {
+   "fork": {
+    "tokens": 6983,
+    "calls": 2,
+    "positions": 6983
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyRegistration-EmergencyKnowledge-level-2-2:api-4": {
+   "fork": {
+    "tokens": 6833,
+    "calls": 2,
+    "positions": 6833
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyReminder-AddAgenda-DeleteAgenda-GetUserToken-level-2-2:api-15": {
+   "fork": {
+    "tokens": 7302,
+    "calls": 2,
+    "positions": 7302
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyReminder-AddAgenda-DeleteAgenda-GetUserToken-level-2-2:api-8": {
+   "fork": {
+    "tokens": 7031,
+    "calls": 2,
+    "positions": 7031
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyReminder-level-1-2:api-6": {
+   "fork": {
+    "tokens": 6959,
+    "calls": 2,
+    "positions": 6959
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:OpenBankAccount-QueryStock-QueryBalance-GetUserToken-level-2-1:api-17": {
+   "fork": {
+    "tokens": 7239,
+    "calls": 2,
+    "positions": 7239
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:OpenBankAccount-level-1-3:api-8": {
+   "fork": {
+    "tokens": 6903,
+    "calls": 2,
+    "positions": 6903
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:QueryHistoryToday-level-1-3:api-7": {
+   "fork": {
+    "tokens": 6903,
+    "calls": 2,
+    "positions": 6903
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:QueryStock-OpenBankAccount-QueryBalance-GetUserToken-level-2-2:api-14": {
+   "fork": {
+    "tokens": 7110,
+    "calls": 2,
+    "positions": 7110
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:SymptomSearch-AppointmentRegistration-level-2-1:api-11": {
+   "fork": {
+    "tokens": 7269,
+    "calls": 2,
+    "positions": 7269
+   }
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:SymptomSearch-AppointmentRegistration-level-2-1:api-4": {
+   "fork": {
+    "tokens": 6849,
+    "calls": 2,
+    "positions": 6849
+   }
+  },
+  "40:iSarcasmEval-A-Ar:iSarcasmEval-A-Ar:test:1091": {
+   "fork": {
+    "tokens": 166,
+    "calls": 2,
+    "positions": 166
+   }
+  },
+  "40:iSarcasmEval-A-Ar:iSarcasmEval-A-Ar:test:329": {
+   "fork": {
+    "tokens": 164,
+    "calls": 2,
+    "positions": 164
+   }
+  },
+  "40:iSarcasmEval-A-Ar:iSarcasmEval-A-Ar:test:576": {
+   "fork": {
+    "tokens": 174,
+    "calls": 2,
+    "positions": 174
+   }
+  },
+  "40:iSarcasmEval-A-Ar:iSarcasmEval-A-Ar:test:910": {
+   "fork": {
+    "tokens": 163,
+    "calls": 2,
+    "positions": 163
+   }
+  },
+  "40:iSarcasmEval-A-En:iSarcasmEval-A-En:test:329": {
+   "fork": {
+    "tokens": 209,
+    "calls": 2,
+    "positions": 209
+   }
+  },
+  "40:iSarcasmEval-A-En:iSarcasmEval-A-En:test:855": {
+   "fork": {
+    "tokens": 162,
+    "calls": 2,
+    "positions": 162
+   }
+  },
+  "40:iSarcasmEval-A-En:iSarcasmEval-A-En:test:859": {
+   "fork": {
+    "tokens": 171,
+    "calls": 2,
+    "positions": 171
+   }
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:19": {
+   "fork": {
+    "tokens": 686,
+    "calls": 2,
+    "positions": 690
+   }
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:301": {
+   "fork": {
+    "tokens": 747,
+    "calls": 2,
+    "positions": 751
+   }
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:329": {
+   "fork": {
+    "tokens": 697,
+    "calls": 2,
+    "positions": 701
+   }
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:394": {
+   "fork": {
+    "tokens": 689,
+    "calls": 2,
+    "positions": 693
+   }
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:831": {
+   "fork": {
+    "tokens": 706,
+    "calls": 2,
+    "positions": 710
+   }
+  },
+  "40:iSarcasmEval-C-Ar:iSarcasmEval-C-Ar:test:148": {
+   "fork": {
+    "tokens": 220,
+    "calls": 2,
+    "positions": 220
+   }
+  },
+  "40:iSarcasmEval-C-Ar:iSarcasmEval-C-Ar:test:65": {
+   "fork": {
+    "tokens": 206,
+    "calls": 2,
+    "positions": 206
+   }
+  },
+  "40:iSarcasmEval-C-En:iSarcasmEval-C-En:test:148": {
+   "fork": {
+    "tokens": 216,
+    "calls": 2,
+    "positions": 216
+   }
+  },
+  "41:VAST:VAST:test:11118": {
+   "fork": {
+    "tokens": 444,
+    "calls": 2,
+    "positions": 444
+   }
+  },
+  "41:VAST:VAST:test:13561": {
+   "fork": {
+    "tokens": 448,
+    "calls": 2,
+    "positions": 448
+   }
+  },
+  "41:VAST:VAST:test:15231": {
+   "fork": {
+    "tokens": 488,
+    "calls": 2,
+    "positions": 488
+   }
+  },
+  "41:VAST:VAST:test:15535": {
+   "fork": {
+    "tokens": 492,
+    "calls": 2,
+    "positions": 492
+   }
+  },
+  "41:VAST:VAST:test:15890": {
+   "fork": {
+    "tokens": 378,
+    "calls": 2,
+    "positions": 378
+   }
+  },
+  "41:VAST:VAST:test:17182": {
+   "fork": {
+    "tokens": 456,
+    "calls": 2,
+    "positions": 456
+   }
+  },
+  "41:VAST:VAST:test:17630": {
+   "fork": {
+    "tokens": 312,
+    "calls": 2,
+    "positions": 312
+   }
+  },
+  "41:VAST:VAST:test:22781": {
+   "fork": {
+    "tokens": 334,
+    "calls": 2,
+    "positions": 334
+   }
+  },
+  "41:VAST:VAST:test:22922": {
+   "fork": {
+    "tokens": 360,
+    "calls": 2,
+    "positions": 360
+   }
+  },
+  "41:VAST:VAST:test:22997": {
+   "fork": {
+    "tokens": 392,
+    "calls": 2,
+    "positions": 392
+   }
+  },
+  "41:VAST:VAST:test:3570": {
+   "fork": {
+    "tokens": 570,
+    "calls": 2,
+    "positions": 570
+   }
+  },
+  "41:VAST:VAST:test:5369": {
+   "fork": {
+    "tokens": 374,
+    "calls": 2,
+    "positions": 374
+   }
+  },
+  "41:VAST:VAST:test:595": {
+   "fork": {
+    "tokens": 334,
+    "calls": 2,
+    "positions": 334
+   }
+  },
+  "41:VAST:VAST:test:5983": {
+   "fork": {
+    "tokens": 450,
+    "calls": 2,
+    "positions": 450
+   }
+  },
+  "41:VAST:VAST:test:7264": {
+   "fork": {
+    "tokens": 286,
+    "calls": 2,
+    "positions": 286
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:00c165f5-4c14-4aab-a4a8-9b8010bd5858": {
+   "fork": {
+    "tokens": 1343,
+    "calls": 2,
+    "positions": 1343
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:06c2d2d2-93dc-44dd-a729-a11a4397db44": {
+   "fork": {
+    "tokens": 620,
+    "calls": 2,
+    "positions": 620
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:117c69b5-683c-45a6-b80d-5bc866f2faa1": {
+   "fork": {
+    "tokens": 2077,
+    "calls": 2,
+    "positions": 2077
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:1279b75a-606f-469e-a6e6-20d4eabd50ba": {
+   "fork": {
+    "tokens": 1341,
+    "calls": 2,
+    "positions": 1341
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:1f8bd45e-480f-4244-9515-e1249b5b842a": {
+   "fork": {
+    "tokens": 586,
+    "calls": 2,
+    "positions": 586
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:1ff9cfe0-06e6-4f99-961c-7854ba9e2c46": {
+   "fork": {
+    "tokens": 1387,
+    "calls": 2,
+    "positions": 1387
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:28061f9c-36e0-4f1f-9f51-1c01efd608a1": {
+   "fork": {
+    "tokens": 2111,
+    "calls": 2,
+    "positions": 2111
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:2e22a621-745f-422e-a66e-2a85f8ff1a25": {
+   "fork": {
+    "tokens": 528,
+    "calls": 2,
+    "positions": 528
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:3d081c7c-10e8-490f-8943-260f27175c56": {
+   "fork": {
+    "tokens": 1195,
+    "calls": 2,
+    "positions": 1195
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:3fd8d038-4c72-4f0f-b2d8-0e822f5b96a8": {
+   "fork": {
+    "tokens": 1665,
+    "calls": 2,
+    "positions": 1665
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:462f7871-9216-4b37-af39-1fb32b2bbf84": {
+   "fork": {
+    "tokens": 1127,
+    "calls": 2,
+    "positions": 1127
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:520f44e8-b74b-44a6-a7cf-496275847af1": {
+   "fork": {
+    "tokens": 289,
+    "calls": 2,
+    "positions": 289
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:936d7822-fd4b-42fc-abc5-d5ad838f148c": {
+   "fork": {
+    "tokens": 551,
+    "calls": 2,
+    "positions": 551
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:9a814107-778f-43ba-bd59-383ae14594ed": {
+   "fork": {
+    "tokens": 633,
+    "calls": 2,
+    "positions": 633
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:b12011c4-fa87-4249-97e3-635e6e6805a4": {
+   "fork": {
+    "tokens": 2123,
+    "calls": 2,
+    "positions": 2123
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:b2059651-24e7-4b6c-aeee-403ff32cf725": {
+   "fork": {
+    "tokens": 619,
+    "calls": 2,
+    "positions": 619
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:b358fb9c-1152-4e1a-88eb-743e965d58fc": {
+   "fork": {
+    "tokens": 1129,
+    "calls": 2,
+    "positions": 1129
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:c831a231-8b84-41ca-a825-d11060c44d64": {
+   "fork": {
+    "tokens": 553,
+    "calls": 2,
+    "positions": 553
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:c975a46b-6980-4cc4-886d-674f5f2c6773": {
+   "fork": {
+    "tokens": 530,
+    "calls": 2,
+    "positions": 530
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:cbf31ee8-3c01-46f5-9698-f44da41fd1fa": {
+   "fork": {
+    "tokens": 315,
+    "calls": 2,
+    "positions": 315
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:d9dff3a0-537b-4297-bc58-766d366ba5a0": {
+   "fork": {
+    "tokens": 590,
+    "calls": 2,
+    "positions": 590
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:e6fb96bc-d38b-484e-8d2a-fe14f943c599": {
+   "fork": {
+    "tokens": 1153,
+    "calls": 2,
+    "positions": 1153
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:ee74c3c1-33c4-4b0a-81bf-a2ed3ec7e161": {
+   "fork": {
+    "tokens": 668,
+    "calls": 2,
+    "positions": 668
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:f05705d7-3be3-4d1d-9dca-c59c130446a1": {
+   "fork": {
+    "tokens": 597,
+    "calls": 2,
+    "positions": 597
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:f37f99e0-a9eb-450f-850e-7bd96547bab1": {
+   "fork": {
+    "tokens": 676,
+    "calls": 2,
+    "positions": 676
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:f66e21d9-801f-4613-99da-c033734189e4": {
+   "fork": {
+    "tokens": 1333,
+    "calls": 2,
+    "positions": 1333
+   }
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:f8accdcd-5a92-4fff-9e6b-6a2d141b5ee4": {
+   "fork": {
+    "tokens": 1197,
+    "calls": 2,
+    "positions": 1197
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_157": {
+   "fork": {
+    "tokens": 298,
+    "calls": 2,
+    "positions": 298
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_16": {
+   "fork": {
+    "tokens": 250,
+    "calls": 2,
+    "positions": 250
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_195": {
+   "fork": {
+    "tokens": 363,
+    "calls": 2,
+    "positions": 363
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_238": {
+   "fork": {
+    "tokens": 306,
+    "calls": 2,
+    "positions": 306
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_301": {
+   "fork": {
+    "tokens": 390,
+    "calls": 2,
+    "positions": 390
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_38": {
+   "fork": {
+    "tokens": 334,
+    "calls": 2,
+    "positions": 334
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_385": {
+   "fork": {
+    "tokens": 398,
+    "calls": 2,
+    "positions": 398
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_5": {
+   "fork": {
+    "tokens": 891,
+    "calls": 2,
+    "positions": 891
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_521": {
+   "fork": {
+    "tokens": 818,
+    "calls": 2,
+    "positions": 818
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_536": {
+   "fork": {
+    "tokens": 266,
+    "calls": 2,
+    "positions": 266
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_634": {
+   "fork": {
+    "tokens": 291,
+    "calls": 2,
+    "positions": 291
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_658": {
+   "fork": {
+    "tokens": 319,
+    "calls": 2,
+    "positions": 319
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_714": {
+   "fork": {
+    "tokens": 259,
+    "calls": 2,
+    "positions": 259
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_731": {
+   "fork": {
+    "tokens": 305,
+    "calls": 2,
+    "positions": 305
+   }
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_758": {
+   "fork": {
+    "tokens": 234,
+    "calls": 2,
+    "positions": 234
+   }
+  },
+  "44:CLadder:CLadder:balanced:10455": {
+   "fork": {
+    "tokens": 530,
+    "calls": 2,
+    "positions": 530
+   }
+  },
+  "44:CLadder:CLadder:balanced:10673": {
+   "fork": {
+    "tokens": 362,
+    "calls": 2,
+    "positions": 362
+   }
+  },
+  "44:CLadder:CLadder:balanced:12346": {
+   "fork": {
+    "tokens": 360,
+    "calls": 2,
+    "positions": 360
+   }
+  },
+  "44:CLadder:CLadder:balanced:12454": {
+   "fork": {
+    "tokens": 356,
+    "calls": 2,
+    "positions": 356
+   }
+  },
+  "44:CLadder:CLadder:balanced:13931": {
+   "fork": {
+    "tokens": 344,
+    "calls": 2,
+    "positions": 344
+   }
+  },
+  "44:CLadder:CLadder:balanced:18293": {
+   "fork": {
+    "tokens": 462,
+    "calls": 2,
+    "positions": 462
+   }
+  },
+  "44:CLadder:CLadder:balanced:22548": {
+   "fork": {
+    "tokens": 336,
+    "calls": 2,
+    "positions": 336
+   }
+  },
+  "44:CLadder:CLadder:balanced:24002": {
+   "fork": {
+    "tokens": 356,
+    "calls": 2,
+    "positions": 356
+   }
+  },
+  "44:CLadder:CLadder:balanced:25994": {
+   "fork": {
+    "tokens": 368,
+    "calls": 2,
+    "positions": 368
+   }
+  },
+  "44:CLadder:CLadder:balanced:2730": {
+   "fork": {
+    "tokens": 332,
+    "calls": 2,
+    "positions": 332
+   }
+  },
+  "44:CLadder:CLadder:balanced:27717": {
+   "fork": {
+    "tokens": 502,
+    "calls": 2,
+    "positions": 502
+   }
+  },
+  "44:CLadder:CLadder:balanced:4174": {
+   "fork": {
+    "tokens": 360,
+    "calls": 2,
+    "positions": 360
+   }
+  },
+  "44:CLadder:CLadder:balanced:4509": {
+   "fork": {
+    "tokens": 324,
+    "calls": 2,
+    "positions": 324
+   }
+  },
+  "44:CLadder:CLadder:balanced:6283": {
+   "fork": {
+    "tokens": 322,
+    "calls": 2,
+    "positions": 322
+   }
+  },
+  "44:CLadder:CLadder:balanced:7039": {
+   "fork": {
+    "tokens": 340,
+    "calls": 2,
+    "positions": 340
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:66e90adfa5b0e84a801c7660": {
+   "fork": {
+    "tokens": 948,
+    "calls": 2,
+    "positions": 948
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:66eaeaa8afe364e4f477b777": {
+   "fork": {
+    "tokens": 586,
+    "calls": 2,
+    "positions": 586
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:66ee81afdec0afc28a74dc93": {
+   "fork": {
+    "tokens": 630,
+    "calls": 2,
+    "positions": 630
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:66fcc286eab6d512704d96af": {
+   "fork": {
+    "tokens": 1818,
+    "calls": 2,
+    "positions": 1818
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67008f17fc2c0a4040f1d352": {
+   "fork": {
+    "tokens": 1142,
+    "calls": 2,
+    "positions": 1142
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67038476397cc8defc4de8ff": {
+   "fork": {
+    "tokens": 312,
+    "calls": 2,
+    "positions": 312
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:6717dd24e8666ff79cdd82b0": {
+   "fork": {
+    "tokens": 1496,
+    "calls": 2,
+    "positions": 1496
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671a58056e1db673f77905cd": {
+   "fork": {
+    "tokens": 308,
+    "calls": 2,
+    "positions": 308
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671ab94ffad7ae30b89eff8f": {
+   "fork": {
+    "tokens": 424,
+    "calls": 2,
+    "positions": 424
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671dd6cd91a438f6811f5108": {
+   "fork": {
+    "tokens": 504,
+    "calls": 2,
+    "positions": 504
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671e3d672637abea9c147ba1": {
+   "fork": {
+    "tokens": 552,
+    "calls": 2,
+    "positions": 552
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671f33cb75523fe63c0a8b60": {
+   "fork": {
+    "tokens": 278,
+    "calls": 2,
+    "positions": 278
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67240e5786f4c71a70e0b499": {
+   "fork": {
+    "tokens": 402,
+    "calls": 2,
+    "positions": 402
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67241711454d2eee0ceef767": {
+   "fork": {
+    "tokens": 514,
+    "calls": 2,
+    "positions": 514
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67258c4124b290d28a9f8abe": {
+   "fork": {
+    "tokens": 406,
+    "calls": 2,
+    "positions": 406
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:672b2749f64de603265f9fc4": {
+   "fork": {
+    "tokens": 300,
+    "calls": 2,
+    "positions": 300
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:6736289810ec0a5f859365d0": {
+   "fork": {
+    "tokens": 322,
+    "calls": 2,
+    "positions": 322
+   }
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67672352c393c4ff629cb820": {
+   "fork": {
+    "tokens": 340,
+    "calls": 2,
+    "positions": 340
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2025-08-31_resolution_set:1247": {
+   "fork": {
+    "tokens": 899,
+    "calls": 2,
+    "positions": 899
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2025-08-31_resolution_set:2940": {
+   "fork": {
+    "tokens": 2648,
+    "calls": 2,
+    "positions": 2648
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2025-08-31_resolution_set:5992": {
+   "fork": {
+    "tokens": 603,
+    "calls": 2,
+    "positions": 603
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-01-18_resolution_set:1101": {
+   "fork": {
+    "tokens": 825,
+    "calls": 2,
+    "positions": 825
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-02-15_resolution_set:395": {
+   "fork": {
+    "tokens": 1378,
+    "calls": 2,
+    "positions": 1378
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-03-01_resolution_set:1170": {
+   "fork": {
+    "tokens": 721,
+    "calls": 2,
+    "positions": 721
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-04-12_resolution_set:124": {
+   "fork": {
+    "tokens": 895,
+    "calls": 2,
+    "positions": 895
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-04-12_resolution_set:252": {
+   "fork": {
+    "tokens": 1474,
+    "calls": 2,
+    "positions": 1474
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-04-26_resolution_set:300": {
+   "fork": {
+    "tokens": 1505,
+    "calls": 2,
+    "positions": 1505
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-05-24_resolution_set:309": {
+   "fork": {
+    "tokens": 1505,
+    "calls": 2,
+    "positions": 1505
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-06-07_resolution_set:298": {
+   "fork": {
+    "tokens": 1409,
+    "calls": 2,
+    "positions": 1409
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-06-07_resolution_set:299": {
+   "fork": {
+    "tokens": 1409,
+    "calls": 2,
+    "positions": 1409
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-06-21_resolution_set:333": {
+   "fork": {
+    "tokens": 515,
+    "calls": 2,
+    "positions": 515
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-06-21_resolution_set:93": {
+   "fork": {
+    "tokens": 908,
+    "calls": 2,
+    "positions": 908
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-08-02_resolution_set:4": {
+   "fork": {
+    "tokens": 914,
+    "calls": 2,
+    "positions": 914
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-08-16_resolution_set:151": {
+   "fork": {
+    "tokens": 1409,
+    "calls": 2,
+    "positions": 1409
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-08-16_resolution_set:152": {
+   "fork": {
+    "tokens": 1409,
+    "calls": 2,
+    "positions": 1409
+   }
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-08-30_resolution_set:429": {
+   "fork": {
+    "tokens": 597,
+    "calls": 2,
+    "positions": 597
+   }
+  },
+  "4:BANKING77:BANKING77:test:1003": {
+   "fork": {
+    "tokens": 2560,
+    "calls": 2,
+    "positions": 2560
+   }
+  },
+  "4:BANKING77:BANKING77:test:1016": {
+   "fork": {
+    "tokens": 2524,
+    "calls": 2,
+    "positions": 2524
+   }
+  },
+  "4:BANKING77:BANKING77:test:1052": {
+   "fork": {
+    "tokens": 2536,
+    "calls": 2,
+    "positions": 2536
+   }
+  },
+  "4:BANKING77:BANKING77:test:1167": {
+   "fork": {
+    "tokens": 2530,
+    "calls": 2,
+    "positions": 2530
+   }
+  },
+  "4:BANKING77:BANKING77:test:1217": {
+   "fork": {
+    "tokens": 2521,
+    "calls": 2,
+    "positions": 2521
+   }
+  },
+  "4:BANKING77:BANKING77:test:1333": {
+   "fork": {
+    "tokens": 2572,
+    "calls": 2,
+    "positions": 2572
+   }
+  },
+  "4:BANKING77:BANKING77:test:1359": {
+   "fork": {
+    "tokens": 2530,
+    "calls": 2,
+    "positions": 2530
+   }
+  },
+  "4:BANKING77:BANKING77:test:141": {
+   "fork": {
+    "tokens": 2563,
+    "calls": 2,
+    "positions": 2563
+   }
+  },
+  "4:BANKING77:BANKING77:test:1621": {
+   "fork": {
+    "tokens": 2548,
+    "calls": 2,
+    "positions": 2548
+   }
+  },
+  "4:BANKING77:BANKING77:test:1789": {
+   "fork": {
+    "tokens": 2536,
+    "calls": 2,
+    "positions": 2536
+   }
+  },
+  "4:BANKING77:BANKING77:test:2021": {
+   "fork": {
+    "tokens": 2527,
+    "calls": 2,
+    "positions": 2527
+   }
+  },
+  "4:BANKING77:BANKING77:test:2362": {
+   "fork": {
+    "tokens": 2530,
+    "calls": 2,
+    "positions": 2530
+   }
+  },
+  "4:BANKING77:BANKING77:test:269": {
+   "fork": {
+    "tokens": 2527,
+    "calls": 2,
+    "positions": 2527
+   }
+  },
+  "4:BANKING77:BANKING77:test:2714": {
+   "fork": {
+    "tokens": 2542,
+    "calls": 2,
+    "positions": 2542
+   }
+  },
+  "4:BANKING77:BANKING77:test:323": {
+   "fork": {
+    "tokens": 2542,
+    "calls": 2,
+    "positions": 2542
+   }
+  },
+  "4:BANKING77:BANKING77:test:365": {
+   "fork": {
+    "tokens": 2518,
+    "calls": 2,
+    "positions": 2518
+   }
+  },
+  "4:BANKING77:BANKING77:test:387": {
+   "fork": {
+    "tokens": 2521,
+    "calls": 2,
+    "positions": 2521
+   }
+  },
+  "4:BANKING77:BANKING77:test:444": {
+   "fork": {
+    "tokens": 2530,
+    "calls": 2,
+    "positions": 2530
+   }
+  },
+  "4:BANKING77:BANKING77:test:466": {
+   "fork": {
+    "tokens": 2542,
+    "calls": 2,
+    "positions": 2542
+   }
+  },
+  "4:BANKING77:BANKING77:test:527": {
+   "fork": {
+    "tokens": 2548,
+    "calls": 2,
+    "positions": 2548
+   }
+  },
+  "4:BANKING77:BANKING77:test:546": {
+   "fork": {
+    "tokens": 2560,
+    "calls": 2,
+    "positions": 2560
+   }
+  },
+  "4:BANKING77:BANKING77:test:678": {
+   "fork": {
+    "tokens": 2620,
+    "calls": 2,
+    "positions": 2620
+   }
+  },
+  "4:BANKING77:BANKING77:test:730": {
+   "fork": {
+    "tokens": 2518,
+    "calls": 2,
+    "positions": 2518
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:0772732e893342fe90bb7d2bf099e9ae": {
+   "fork": {
+    "tokens": 1340,
+    "calls": 2,
+    "positions": 1340
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:28eca037c6acacd4d4ddfdd8e2e171ce": {
+   "fork": {
+    "tokens": 1779,
+    "calls": 2,
+    "positions": 1779
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:35beeda67f0f1d788077a6665cc964be": {
+   "fork": {
+    "tokens": 971,
+    "calls": 2,
+    "positions": 971
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:42e4d897a2e7207c6115c9b2cd5ec080": {
+   "fork": {
+    "tokens": 1606,
+    "calls": 2,
+    "positions": 1606
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:58e75a6fd0896a2289d70707c7b266aa": {
+   "fork": {
+    "tokens": 1505,
+    "calls": 2,
+    "positions": 1505
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:8067be1fb4ddd9b3bd601d3af3099b19": {
+   "fork": {
+    "tokens": 1456,
+    "calls": 2,
+    "positions": 1456
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:a8e60d8d6a641fd12645e51299cab067": {
+   "fork": {
+    "tokens": 1015,
+    "calls": 2,
+    "positions": 1015
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:d12cb85126ea61cde3c34910c61617c6": {
+   "fork": {
+    "tokens": 1818,
+    "calls": 2,
+    "positions": 1818
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:e5610d83a2290d6c5708f84d059fbb89": {
+   "fork": {
+    "tokens": 1232,
+    "calls": 2,
+    "positions": 1232
+   }
+  },
+  "50:Habermas-consensus:Habermas-consensus:fb093c91cb698c1d409f268718fe2c00": {
+   "fork": {
+    "tokens": 1222,
+    "calls": 2,
+    "positions": 1222
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:613": {
+   "fork": {
+    "tokens": 4110,
+    "calls": 2,
+    "positions": 4110
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:666": {
+   "fork": {
+    "tokens": 4101,
+    "calls": 2,
+    "positions": 4101
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:854": {
+   "fork": {
+    "tokens": 4113,
+    "calls": 2,
+    "positions": 4113
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:879": {
+   "fork": {
+    "tokens": 4086,
+    "calls": 2,
+    "positions": 4086
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:912": {
+   "fork": {
+    "tokens": 4107,
+    "calls": 2,
+    "positions": 4107
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:1087": {
+   "fork": {
+    "tokens": 4116,
+    "calls": 2,
+    "positions": 4116
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:1280": {
+   "fork": {
+    "tokens": 4116,
+    "calls": 2,
+    "positions": 4116
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:1540": {
+   "fork": {
+    "tokens": 4104,
+    "calls": 2,
+    "positions": 4104
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:1864": {
+   "fork": {
+    "tokens": 4119,
+    "calls": 2,
+    "positions": 4119
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:2544": {
+   "fork": {
+    "tokens": 4107,
+    "calls": 2,
+    "positions": 4107
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:2891": {
+   "fork": {
+    "tokens": 4080,
+    "calls": 2,
+    "positions": 4080
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:3271": {
+   "fork": {
+    "tokens": 4092,
+    "calls": 2,
+    "positions": 4092
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:3382": {
+   "fork": {
+    "tokens": 4083,
+    "calls": 2,
+    "positions": 4083
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:3716": {
+   "fork": {
+    "tokens": 4113,
+    "calls": 2,
+    "positions": 4113
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4086": {
+   "fork": {
+    "tokens": 4110,
+    "calls": 2,
+    "positions": 4110
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4166": {
+   "fork": {
+    "tokens": 4104,
+    "calls": 2,
+    "positions": 4104
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4240": {
+   "fork": {
+    "tokens": 4122,
+    "calls": 2,
+    "positions": 4122
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4326": {
+   "fork": {
+    "tokens": 4098,
+    "calls": 2,
+    "positions": 4098
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4479": {
+   "fork": {
+    "tokens": 4119,
+    "calls": 2,
+    "positions": 4119
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:465": {
+   "fork": {
+    "tokens": 4116,
+    "calls": 2,
+    "positions": 4116
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:529": {
+   "fork": {
+    "tokens": 4092,
+    "calls": 2,
+    "positions": 4092
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:691": {
+   "fork": {
+    "tokens": 4122,
+    "calls": 2,
+    "positions": 4122
+   }
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:9": {
+   "fork": {
+    "tokens": 4104,
+    "calls": 2,
+    "positions": 4104
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:juniper:00": {
+   "fork": {
+    "tokens": 4715,
+    "calls": 3,
+    "positions": 7095
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:juniper:01": {
+   "fork": {
+    "tokens": 4884,
+    "calls": 3,
+    "positions": 7459
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:juniper:07": {
+   "fork": {
+    "tokens": 4864,
+    "calls": 3,
+    "positions": 7242
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:kestrel:06": {
+   "fork": {
+    "tokens": 4920,
+    "calls": 3,
+    "positions": 7292
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:kestrel:08": {
+   "fork": {
+    "tokens": 5121,
+    "calls": 3,
+    "positions": 7439
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:linden:03": {
+   "fork": {
+    "tokens": 4976,
+    "calls": 3,
+    "positions": 7427
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:maple:06": {
+   "fork": {
+    "tokens": 4886,
+    "calls": 3,
+    "positions": 7443
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:prairie:08": {
+   "fork": {
+    "tokens": 4794,
+    "calls": 3,
+    "positions": 7205
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:quartz:06": {
+   "fork": {
+    "tokens": 5084,
+    "calls": 3,
+    "positions": 7435
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:sequoia:08": {
+   "fork": {
+    "tokens": 5131,
+    "calls": 3,
+    "positions": 7502
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:sequoia:09": {
+   "fork": {
+    "tokens": 5088,
+    "calls": 3,
+    "positions": 7425
+   }
+  },
+  "9:Home-Appliance:home-appliance:test:violet:06": {
+   "fork": {
+    "tokens": 4663,
+    "calls": 3,
+    "positions": 7180
+   }
+  },
+  "calibration-v1:56:cross_domain_legit_0048": {
+   "fork": {
+    "tokens": 1713,
+    "calls": 2,
+    "positions": 1947
+   }
+  },
+  "calibration-v1:56:cross_domain_legit_0061": {
+   "fork": {
+    "tokens": 1697,
+    "calls": 2,
+    "positions": 1931
+   }
+  },
+  "calibration-v1:56:cross_domain_legit_0248": {
+   "fork": {
+    "tokens": 1712,
+    "calls": 2,
+    "positions": 1946
+   }
+  },
+  "calibration-v1:56:cross_domain_legit_0275": {
+   "fork": {
+    "tokens": 1700,
+    "calls": 2,
+    "positions": 1934
+   }
+  },
+  "calibration-v1:56:cross_domain_legit_0332": {
+   "fork": {
+    "tokens": 1711,
+    "calls": 2,
+    "positions": 1945
+   }
+  },
+  "calibration-v1:56:legit_0124": {
+   "fork": {
+    "tokens": 1729,
+    "calls": 2,
+    "positions": 1963
+   }
+  },
+  "calibration-v1:56:legit_0705": {
+   "fork": {
+    "tokens": 1762,
+    "calls": 2,
+    "positions": 1996
+   }
+  },
+  "calibration-v1:56:phish_0020": {
+   "fork": {
+    "tokens": 1786,
+    "calls": 2,
+    "positions": 2020
+   }
+  },
+  "calibration-v1:56:phish_0088": {
+   "fork": {
+    "tokens": 1878,
+    "calls": 2,
+    "positions": 2112
+   }
+  },
+  "calibration-v1:56:phish_0281": {
+   "fork": {
+    "tokens": 1818,
+    "calls": 2,
+    "positions": 2052
+   }
+  },
+  "calibration-v1:56:phish_0316": {
+   "fork": {
+    "tokens": 1757,
+    "calls": 2,
+    "positions": 1991
+   }
+  },
+  "calibration-v1:56:phish_0388": {
+   "fork": {
+    "tokens": 1743,
+    "calls": 2,
+    "positions": 1977
+   }
+  },
+  "calibration-v1:56:phish_0450": {
+   "fork": {
+    "tokens": 1750,
+    "calls": 2,
+    "positions": 1984
+   }
+  },
+  "calibration-v1:56:phish_0487": {
+   "fork": {
+    "tokens": 1754,
+    "calls": 2,
+    "positions": 1988
+   }
+  },
+  "calibration-v1:56:phish_0493": {
+   "fork": {
+    "tokens": 1739,
+    "calls": 2,
+    "positions": 1973
+   }
+  },
+  "calibration-v1:56:phish_0511": {
+   "fork": {
+    "tokens": 1718,
+    "calls": 2,
+    "positions": 1952
+   }
+  },
+  "calibration-v1:56:phish_0754": {
+   "fork": {
+    "tokens": 1787,
+    "calls": 2,
+    "positions": 2021
+   }
+  },
+  "calibration-v1:56:phish_0810": {
+   "fork": {
+    "tokens": 1720,
+    "calls": 2,
+    "positions": 1954
+   }
+  },
+  "calibration-v1:56:phish_0839": {
+   "fork": {
+    "tokens": 1708,
+    "calls": 2,
+    "positions": 1942
+   }
+  },
+  "candidates-v3:57:10000": {
+   "fork": {
+    "tokens": 432,
+    "calls": 2,
+    "positions": 432
+   }
+  },
+  "candidates-v3:57:10696": {
+   "fork": {
+    "tokens": 329,
+    "calls": 2,
+    "positions": 329
+   }
+  },
+  "candidates-v3:57:11144": {
+   "fork": {
+    "tokens": 201,
+    "calls": 2,
+    "positions": 201
+   }
+  },
+  "candidates-v3:57:11198": {
+   "fork": {
+    "tokens": 252,
+    "calls": 2,
+    "positions": 252
+   }
+  },
+  "candidates-v3:57:11296": {
+   "fork": {
+    "tokens": 1023,
+    "calls": 2,
+    "positions": 1023
+   }
+  },
+  "candidates-v3:57:11786": {
+   "fork": {
+    "tokens": 551,
+    "calls": 2,
+    "positions": 551
+   }
+  },
+  "candidates-v3:57:1598": {
+   "fork": {
+    "tokens": 614,
+    "calls": 2,
+    "positions": 614
+   }
+  },
+  "candidates-v3:57:2586": {
+   "fork": {
+    "tokens": 541,
+    "calls": 2,
+    "positions": 541
+   }
+  },
+  "candidates-v3:57:3197": {
+   "fork": {
+    "tokens": 464,
+    "calls": 2,
+    "positions": 464
+   }
+  },
+  "candidates-v3:57:3288": {
+   "fork": {
+    "tokens": 421,
+    "calls": 2,
+    "positions": 421
+   }
+  },
+  "candidates-v3:57:4396": {
+   "fork": {
+    "tokens": 361,
+    "calls": 2,
+    "positions": 361
+   }
+  },
+  "candidates-v3:57:5190": {
+   "fork": {
+    "tokens": 476,
+    "calls": 2,
+    "positions": 476
+   }
+  },
+  "candidates-v3:57:5478": {
+   "fork": {
+    "tokens": 483,
+    "calls": 2,
+    "positions": 483
+   }
+  },
+  "candidates-v3:57:5487": {
+   "fork": {
+    "tokens": 307,
+    "calls": 2,
+    "positions": 307
+   }
+  },
+  "candidates-v3:57:7477": {
+   "fork": {
+    "tokens": 513,
+    "calls": 2,
+    "positions": 513
+   }
+  },
+  "candidates-v3:57:7855": {
+   "fork": {
+    "tokens": 343,
+    "calls": 2,
+    "positions": 343
+   }
+  },
+  "candidates-v3:57:7944": {
+   "fork": {
+    "tokens": 402,
+    "calls": 2,
+    "positions": 402
+   }
+  },
+  "candidates-v3:57:9945": {
+   "fork": {
+    "tokens": 322,
+    "calls": 2,
+    "positions": 322
+   }
+  },
+  "candidates-v3:58:boolean_expressions:69": {
+   "fork": {
+    "tokens": 158,
+    "calls": 2,
+    "positions": 158
+   }
+  },
+  "candidates-v3:58:disambiguation_qa:149": {
+   "fork": {
+    "tokens": 246,
+    "calls": 2,
+    "positions": 246
+   }
+  },
+  "candidates-v3:58:disambiguation_qa:174": {
+   "fork": {
+    "tokens": 246,
+    "calls": 2,
+    "positions": 246
+   }
+  },
+  "candidates-v3:58:geometric_shapes:222": {
+   "fork": {
+    "tokens": 523,
+    "calls": 2,
+    "positions": 523
+   }
+  },
+  "candidates-v3:58:hyperbaton:104": {
+   "fork": {
+    "tokens": 230,
+    "calls": 2,
+    "positions": 230
+   }
+  },
+  "candidates-v3:58:logical_deduction_seven_objects:164": {
+   "fork": {
+    "tokens": 548,
+    "calls": 2,
+    "positions": 548
+   }
+  },
+  "candidates-v3:58:logical_deduction_three_objects:61": {
+   "fork": {
+    "tokens": 300,
+    "calls": 2,
+    "positions": 300
+   }
+  },
+  "candidates-v3:58:movie_recommendation:16": {
+   "fork": {
+    "tokens": 285,
+    "calls": 2,
+    "positions": 285
+   }
+  },
+  "candidates-v3:58:navigate:224": {
+   "fork": {
+    "tokens": 188,
+    "calls": 2,
+    "positions": 188
+   }
+  },
+  "candidates-v3:58:navigate:69": {
+   "fork": {
+    "tokens": 195,
+    "calls": 2,
+    "positions": 195
+   }
+  },
+  "candidates-v3:58:reasoning_about_colored_objects:128": {
+   "fork": {
+    "tokens": 663,
+    "calls": 2,
+    "positions": 663
+   }
+  },
+  "candidates-v3:58:reasoning_about_colored_objects:131": {
+   "fork": {
+    "tokens": 671,
+    "calls": 2,
+    "positions": 671
+   }
+  },
+  "candidates-v3:58:salient_translation_error_detection:162": {
+   "fork": {
+    "tokens": 512,
+    "calls": 2,
+    "positions": 512
+   }
+  },
+  "candidates-v3:58:salient_translation_error_detection:168": {
+   "fork": {
+    "tokens": 529,
+    "calls": 2,
+    "positions": 529
+   }
+  },
+  "candidates-v3:58:temporal_sequences:86": {
+   "fork": {
+    "tokens": 442,
+    "calls": 2,
+    "positions": 442
+   }
+  },
+  "candidates-v3:58:tracking_shuffled_objects_five_objects:203": {
+   "fork": {
+    "tokens": 388,
+    "calls": 2,
+    "positions": 388
+   }
+  },
+  "candidates-v3:58:tracking_shuffled_objects_seven_objects:85": {
+   "fork": {
+    "tokens": 441,
+    "calls": 2,
+    "positions": 441
+   }
+  },
+  "candidates-v3:58:web_of_lies:81": {
+   "fork": {
+    "tokens": 192,
+    "calls": 2,
+    "positions": 192
+   }
+  },
+  "candidates-v3:59:11520": {
+   "fork": {
+    "tokens": 1008,
+    "calls": 2,
+    "positions": 1008
+   }
+  },
+  "candidates-v3:59:15711": {
+   "fork": {
+    "tokens": 763,
+    "calls": 2,
+    "positions": 763
+   }
+  },
+  "candidates-v3:59:15726": {
+   "fork": {
+    "tokens": 710,
+    "calls": 2,
+    "positions": 710
+   }
+  },
+  "candidates-v3:59:15728": {
+   "fork": {
+    "tokens": 810,
+    "calls": 2,
+    "positions": 810
+   }
+  },
+  "candidates-v3:59:17102": {
+   "fork": {
+    "tokens": 856,
+    "calls": 2,
+    "positions": 856
+   }
+  },
+  "candidates-v3:59:17103": {
+   "fork": {
+    "tokens": 980,
+    "calls": 2,
+    "positions": 980
+   }
+  },
+  "candidates-v3:59:17105": {
+   "fork": {
+    "tokens": 1006,
+    "calls": 2,
+    "positions": 1006
+   }
+  },
+  "candidates-v3:59:17281": {
+   "fork": {
+    "tokens": 891,
+    "calls": 2,
+    "positions": 891
+   }
+  },
+  "candidates-v3:59:1747": {
+   "fork": {
+    "tokens": 668,
+    "calls": 2,
+    "positions": 668
+   }
+  },
+  "candidates-v3:59:17563": {
+   "fork": {
+    "tokens": 565,
+    "calls": 2,
+    "positions": 565
+   }
+  },
+  "candidates-v3:59:5732": {
+   "fork": {
+    "tokens": 1508,
+    "calls": 2,
+    "positions": 1508
+   }
+  },
+  "candidates-v3:59:6255": {
+   "fork": {
+    "tokens": 1101,
+    "calls": 2,
+    "positions": 1101
+   }
+  },
+  "candidates-v3:59:6256": {
+   "fork": {
+    "tokens": 1111,
+    "calls": 2,
+    "positions": 1111
+   }
+  },
+  "candidates-v3:59:6257": {
+   "fork": {
+    "tokens": 1066,
+    "calls": 2,
+    "positions": 1066
+   }
+  },
+  "candidates-v3:59:6414": {
+   "fork": {
+    "tokens": 1257,
+    "calls": 2,
+    "positions": 1257
+   }
+  },
+  "candidates-v3:61:01dd114f-d13a-4469-be20-7cc72cd014b5": {
+   "fork": {
+    "tokens": 780,
+    "calls": 2,
+    "positions": 780
+   }
+  },
+  "candidates-v3:61:09b80e87-87ad-4253-8d61-e3283e36610e": {
+   "fork": {
+    "tokens": 622,
+    "calls": 2,
+    "positions": 622
+   }
+  },
+  "candidates-v3:61:0d1c7a7d-f14a-452f-b042-7fc9b6b98b69": {
+   "fork": {
+    "tokens": 310,
+    "calls": 2,
+    "positions": 310
+   }
+  },
+  "candidates-v3:61:21a3f301-7fe0-429d-aa6e-596280d39453": {
+   "fork": {
+    "tokens": 692,
+    "calls": 2,
+    "positions": 692
+   }
+  },
+  "candidates-v3:61:2b052590-15c4-49f1-9dbd-8ac978d26c6c": {
+   "fork": {
+    "tokens": 673,
+    "calls": 2,
+    "positions": 673
+   }
+  },
+  "candidates-v3:61:2cb330ca-f244-4fbe-88ff-156b73e1bad6": {
+   "fork": {
+    "tokens": 570,
+    "calls": 2,
+    "positions": 570
+   }
+  },
+  "candidates-v3:61:3ba95872-9688-4b9c-bb30-808b65e98b88": {
+   "fork": {
+    "tokens": 381,
+    "calls": 2,
+    "positions": 381
+   }
+  },
+  "candidates-v3:61:4577ddfc-94d1-4ed8-a2bc-42c642a32b55": {
+   "fork": {
+    "tokens": 452,
+    "calls": 2,
+    "positions": 452
+   }
+  },
+  "candidates-v3:61:64b84e3f-8f61-4ca5-a307-4118b4bad436": {
+   "fork": {
+    "tokens": 479,
+    "calls": 2,
+    "positions": 479
+   }
+  },
+  "candidates-v3:61:76a6406c-c744-498d-a52e-a69d3843ce1a": {
+   "fork": {
+    "tokens": 485,
+    "calls": 2,
+    "positions": 485
+   }
+  },
+  "candidates-v3:61:794f7241-aa7a-4705-a2c3-7e096abedb84": {
+   "fork": {
+    "tokens": 663,
+    "calls": 2,
+    "positions": 663
+   }
+  },
+  "candidates-v3:61:a4c86ef5-cc00-490c-9522-24de5e70ee5b": {
+   "fork": {
+    "tokens": 395,
+    "calls": 2,
+    "positions": 395
+   }
+  },
+  "candidates-v3:61:b575f0d9-65ab-46ea-95d4-2554e1eb1caa": {
+   "fork": {
+    "tokens": 702,
+    "calls": 2,
+    "positions": 702
+   }
+  },
+  "candidates-v3:61:bb487095-792d-4691-babc-e1a80e4e47bc": {
+   "fork": {
+    "tokens": 338,
+    "calls": 2,
+    "positions": 338
+   }
+  },
+  "candidates-v3:61:bbb67294-0de2-426c-a54f-e3095713bdac": {
+   "fork": {
+    "tokens": 455,
+    "calls": 2,
+    "positions": 455
+   }
+  },
+  "candidates-v3:61:c54c9c9d-ccfc-4d8a-b288-1466aea0dc63": {
+   "fork": {
+    "tokens": 474,
+    "calls": 2,
+    "positions": 474
+   }
+  },
+  "candidates-v3:61:cd4ab30e-da6d-48d8-9694-4a3675af8cf4": {
+   "fork": {
+    "tokens": 454,
+    "calls": 2,
+    "positions": 454
+   }
+  },
+  "candidates-v3:61:d203af4d-dd7e-4cf6-ae7b-9be5ce34e587": {
+   "fork": {
+    "tokens": 445,
+    "calls": 2,
+    "positions": 445
+   }
+  },
+  "candidates-v3:61:e2ebe88b-c75a-4fef-b443-0d74a05c6555": {
+   "fork": {
+    "tokens": 394,
+    "calls": 2,
+    "positions": 394
+   }
+  },
+  "candidates-v3:61:ef435eca-b969-461c-a991-b6333dadb058": {
+   "fork": {
+    "tokens": 484,
+    "calls": 2,
+    "positions": 484
+   }
+  },
+  "candidates-v3:62:09291a48-ef9e-4337-9351-744b7fea7ddc": {
+   "fork": {
+    "tokens": 527,
+    "calls": 2,
+    "positions": 527
+   }
+  },
+  "candidates-v3:62:094de134-a4a5-4415-ab77-9ab0ee089f4c": {
+   "fork": {
+    "tokens": 1734,
+    "calls": 2,
+    "positions": 1734
+   }
+  },
+  "candidates-v3:62:13c47180-ce42-48d9-aaea-7eece6d1f16f": {
+   "fork": {
+    "tokens": 849,
+    "calls": 2,
+    "positions": 849
+   }
+  },
+  "candidates-v3:62:1dd07042-26ee-49aa-b962-e391bdba1492": {
+   "fork": {
+    "tokens": 1269,
+    "calls": 2,
+    "positions": 1269
+   }
+  },
+  "candidates-v3:62:1e3e6425-3e78-4965-a29f-b7f5a49afd59": {
+   "fork": {
+    "tokens": 455,
+    "calls": 2,
+    "positions": 455
+   }
+  },
+  "candidates-v3:62:21636506-9f22-40a8-82a3-8e9ecaa3bab7": {
+   "fork": {
+    "tokens": 968,
+    "calls": 2,
+    "positions": 968
+   }
+  },
+  "candidates-v3:62:38e0a751-3f46-42f6-9c74-9083e5b31b3b": {
+   "fork": {
+    "tokens": 753,
+    "calls": 2,
+    "positions": 753
+   }
+  },
+  "candidates-v3:62:6c6a36d0-f14c-4b1c-8238-44d60c170b75": {
+   "fork": {
+    "tokens": 1066,
+    "calls": 2,
+    "positions": 1066
+   }
+  },
+  "candidates-v3:62:72fd31bf-15a1-4906-9d72-d59e992b7a3c": {
+   "fork": {
+    "tokens": 743,
+    "calls": 2,
+    "positions": 743
+   }
+  },
+  "candidates-v3:62:76ccbb11-1a41-4a71-b782-2d586b100284": {
+   "fork": {
+    "tokens": 1446,
+    "calls": 2,
+    "positions": 1446
+   }
+  },
+  "candidates-v3:62:775aa39c-6575-4595-abd6-8363350cf881": {
+   "fork": {
+    "tokens": 1417,
+    "calls": 2,
+    "positions": 1417
+   }
+  },
+  "candidates-v3:62:78953d6f-db44-4bec-9c75-2335422de2b3": {
+   "fork": {
+    "tokens": 954,
+    "calls": 2,
+    "positions": 954
+   }
+  },
+  "candidates-v3:62:855e8a6c-d325-4f6e-849f-58a3896dccd9": {
+   "fork": {
+    "tokens": 499,
+    "calls": 2,
+    "positions": 499
+   }
+  },
+  "candidates-v3:62:a3273832-66c9-47f3-9e41-0795d2111784": {
+   "fork": {
+    "tokens": 960,
+    "calls": 2,
+    "positions": 960
+   }
+  },
+  "candidates-v3:62:a838ee03-9fb0-4618-8297-7e6a3a661eb9": {
+   "fork": {
+    "tokens": 962,
+    "calls": 2,
+    "positions": 962
+   }
+  },
+  "candidates-v3:62:b5906d3f-58f0-4176-8d46-94406a2433a5": {
+   "fork": {
+    "tokens": 626,
+    "calls": 2,
+    "positions": 626
+   }
+  },
+  "candidates-v3:62:c52d00b5-1e9d-401d-a66e-ee4d0aff3d51": {
+   "fork": {
+    "tokens": 1659,
+    "calls": 2,
+    "positions": 1659
+   }
+  },
+  "candidates-v3:62:cc31202e-3cc0-45aa-bfc0-97efca9bcf98": {
+   "fork": {
+    "tokens": 720,
+    "calls": 2,
+    "positions": 720
+   }
+  },
+  "candidates-v3:62:cdcfbcdf-da87-4f76-8ae4-4d8aa371b343": {
+   "fork": {
+    "tokens": 1054,
+    "calls": 2,
+    "positions": 1054
+   }
+  },
+  "candidates-v3:62:e784b9d4-5951-4d7d-a4e4-52db7a530d76": {
+   "fork": {
+    "tokens": 602,
+    "calls": 2,
+    "positions": 602
+   }
+  },
+  "candidates-v3:62:fc6954fb-e5f9-449c-966c-4e006045072c": {
+   "fork": {
+    "tokens": 1234,
+    "calls": 2,
+    "positions": 1234
+   }
+  },
+  "candidates-v3:64:03bc31b2e4c81843c72656160e732619": {
+   "fork": {
+    "tokens": 349,
+    "calls": 2,
+    "positions": 349
+   }
+  },
+  "candidates-v3:64:16cb5486594e1105c1e6d005aeaec2ec": {
+   "fork": {
+    "tokens": 331,
+    "calls": 2,
+    "positions": 331
+   }
+  },
+  "candidates-v3:64:33f896e64b84220704d279111d013661": {
+   "fork": {
+    "tokens": 411,
+    "calls": 2,
+    "positions": 411
+   }
+  },
+  "candidates-v3:64:446a14619337614cc781aa9430fd8b12": {
+   "fork": {
+    "tokens": 344,
+    "calls": 2,
+    "positions": 344
+   }
+  },
+  "candidates-v3:64:4c4363f00c7317f45baa93f285ba1c92": {
+   "fork": {
+    "tokens": 345,
+    "calls": 2,
+    "positions": 345
+   }
+  },
+  "candidates-v3:64:953f10087b6ca195835c12fbcc92e789": {
+   "fork": {
+    "tokens": 324,
+    "calls": 2,
+    "positions": 324
+   }
+  },
+  "candidates-v3:64:96481e210856e3046fe4a7188e2fb177": {
+   "fork": {
+    "tokens": 344,
+    "calls": 2,
+    "positions": 344
+   }
+  },
+  "candidates-v3:64:e9a625afa2ad7b7ccd9a27ae06bceb6f": {
+   "fork": {
+    "tokens": 375,
+    "calls": 2,
+    "positions": 375
+   }
+  }
+ }
+}

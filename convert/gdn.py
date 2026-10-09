@@ -42,6 +42,9 @@ def _l2n(x: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
 
 def gdr_recurrent(q, k, v, g, beta, initial_state=None, qk_l2norm=True):
     """Naive gated delta rule. q,k: [B,T,H,Dk]; v: [B,T,H,Dv]; g,beta: [B,T,H]. Returns o [B,T,H,Dv], S [B,H,Dk,Dv]."""
+    if torch.is_autocast_enabled(v.device.type):  # the reference stays fp32 under autocast (the v3 decode path)
+        with torch.autocast(device_type=v.device.type, enabled=False):
+            return gdr_recurrent(q, k, v, g, beta, initial_state, qk_l2norm)
     dt = v.dtype
     q, k, v, g, beta = (x.float() for x in (q, k, v, g, beta))
     if qk_l2norm:
