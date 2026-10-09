@@ -16,7 +16,7 @@ Pre-register on the state BOARD before results; paired CIs; readout parity; trai
 ## Operator decisions (2026-10-09, direct to agent-b)
 1. Architecture: BOTH TRACKS. Hybrid SSM (mostly state-space layers + a few attention layers) is the main line to win the benchmarks; strictly attention-free is a parallel research line (strongest guarantees).
 2. MD1: do NOT reproduce or re-run MD1. Targets are its REPORTED numbers plus JevBench and any public reference benchmark it cites.
-3. OPEN (one question left for the operator): which JevBench score is the primary target: the official Composite or Capability = mean(Intelligence, Calibration)? They favour different hosts (≤4B fast/cheap vs 31B accurate).
+3. DECIDED (operator, 2026-10-09, in agent-a's session): "We want to outperform both but start with the combined four axis score because we don't have a ton of compute". PRIMARY = the official Composite (leader H2O-Lightning-4B v1.1 72.5; API leader Sage 1.3.0 74.0); SECONDARY = Capability (Quyet-1.0-Large 81.7), pursued after. Host implication: small (≤ ~4B, ideally ≤ 2B for the price class), I ≈ 60+, C ≈ 90, minimal input tokens per decision.
 
 ## Target numbers (sources)
 - MD1 (Satya Nadella's launch post chart; footnotes: accuracy = mean over 36 benchmarks, 147,137 questions; latency = JevBench v1.6.1 adjusted p50 checked 2026-10-07, MD1's own measured via Foundry (asterisked, so not like for like); calibration 100 = perfect): accuracy 83.5%, p50 85 ms / p95 125 ms, calibration 92.2. Same chart: Quyet-1.0-Large 81.9% / 380 ms / 93.1 (JevBench #1 on 2026-10-08); Surogate Rune 26B-A4B 79.7 / 380 / 91.8; GPT-6 Luna Decisions 79.4 / 300 / 89.9; deck-31B 77.8 / 400 / 83.5; H2O-Lightning-4B v1.1 77.2 / 210 / 91.8; Strands-Decider 2B 54.8 (23 of 36); Jev 1.13.0 240 ms; GPT-6 Sol 3.01 s. Blog: robustness 1.3% average flips over 8 perturbations (0 on option-description paraphrase and option reverse/shuffle; NOT state paraphrase); safety 5,250 requests / 11 benchmarks (qualitative); $0.042 per M input tokens. The 36-benchmark list is not public.
@@ -40,7 +40,7 @@ DRAFT v1 (agent-a, 2026-10-09 ~21:00Z). PROVISIONAL until (i) the operator answe
 - Data levers (B): missing families ~7.1 pts, untrained formats ~4.3 pts; bschema v4 is being built.
 - Platform: SF Compute H100, ≤ 899 min per job. Chained multi-job training is being built (claude/chained-cells PR). Disk on the laptop is tight; delete own reproducible files.
 
-**Operator decisions:** see "Operator decisions" above (both tracks; MD1 = its reported numbers + JevBench + public reference benchmarks, no re-runs; Composite-vs-Capability pending).
+**Operator decisions:** see "Operator decisions" above (both tracks; MD1 = its reported numbers + JevBench + public reference benchmarks, no re-runs; Composite first, then Capability).
 
 **Control-of-learning program (your differentiator; start with what has guarantees).**
 1. Invariances by construction: an option-permutation-equivariant head gives 0 flips on option reorder/reverse/shuffle as a theorem, not a measurement. Paraphrase invariance via consistency regularisation, measured with MD1's 8 perturbation types.
