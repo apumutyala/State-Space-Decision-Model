@@ -754,7 +754,13 @@ class Trainer:
         if not f.exists():
             return None
         rec = json.loads(f.read_text(encoding="utf-8"))
-        return Path(ckpt_dir) / ((rec.get("best") or {}).get("path") or rec["path"])
+        p = Path(ckpt_dir) / ((rec.get("best") or {}).get("path") or rec["path"])
+        if not p.is_file():  # callers map None to their identity exit (no traceback, no silent fallback to the last)
+            import sys
+
+            print(f"scored checkpoint {p.name} named by latest.json is missing", file=sys.stderr)
+            return None
+        return p
 
     def load(self, path: str | Path, strict_config: bool = True, strict_lineage: bool = True) -> None:
         """Restore a ``.pt`` checkpoint (full: trainable + optimizer + scheduler + RNG), or an INFERENCE export
