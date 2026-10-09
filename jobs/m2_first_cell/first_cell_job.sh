@@ -176,6 +176,13 @@ num "$CALL_S" || fail 4 "CALL_S=$CALL_S is not a number"
 
 # ------------------------------------------------------------------ setup: identities + eval preflights (exit 5 / 10 / 15)
 say "setup"
+# parent = the cell config's "parent" (default rwkv7). q9af (the attention-free Qwen3.5-9B, mode q9af_v2_v3w): the 9B
+# snapshot (sha-pinned), the converted GDN export from $DATA/gdn (gdn_q9af_v2.sha256 + the config's q9af pin, filled at
+# launch by scripts/fill_conversion_pins.py), --parent q9af --gdn-ckpt for every scoring / training step. rwkv7: unchanged.
+PARENT=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("parent", "rwkv7"))' "$CELL") || fail 5 "cell config parent"
+GDN_ARGS=()
+case "$PARENT" in rwkv7) ;; q9af) GDN_ARGS=(--gdn-ckpt "$DATA/gdn/gdn_converted.pt") ;; *) fail 5 "cell parent $PARENT: rwkv7 or q9af" ;; esac
+[ "$PARENT" = q9af ] && [ "$EVAL_ONLY" != none ] && fail 5 "eval_only modes are rwkv7-only"
 cp "$CONTEXT_MANIFEST" "$WORK/out/" || fail 5 "no context manifest"
 nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
 # WKV = the fla name if EITHER rwkv7_wkv (scoring) or train_rwkv7_wkv (training steps only) is fla, else rwkv7_wkv
@@ -228,10 +235,28 @@ if [ ${#TEACHER_ARGS[@]} -gt 0 ]; then
 fi
 python -X utf8 -m train.cohort verify > "$WORK/out/cohort-verify.json" 2>&1 || fail 10 "cohort does not rebuild to its committed sha256"
 CAP_SETUP=$(cap setup) || fail 5 "job_params"
+if [ "$PARENT" = q9af ]; then
+  SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("Qwen/Qwen3.5-9B", revision="c202236235762e1c871ad0ccb60c8ee5ba337b9a"))'); r=$?
+  case $r in 0) ;; 124|137) fail 7 "download timeout" ;; *) fail 10 "download" ;; esac
+  ( cd "$SNAP" && sha256sum -c "$CODE/jobs/m2_first_cell/q9af_snapshot_v3w.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "q9af snapshot sha256"
+  # the converted export: sha256 pinned in the context (gdn_q9af_v2.sha256) AND in the cell config's q9af block
+  # (export.json ok / final / attention_free; a partial export refuses unless hybrid), before any weight is loaded
+  ( cd "$DATA" && sha256sum -c "$CODE/jobs/m2_first_cell/gdn_q9af_v2.sha256" ) > "$WORK/out/gdn-verify.txt" 2>&1 \
+    || fail 10 "converted GDN export sha256 (gdn_q9af_v2.sha256 PENDING until scripts/fill_conversion_pins.py)"
+  python -m jobs.q9af_cell.pin check --config "$CELL" --export-json "$DATA/gdn/export.json" --gdn "$DATA/gdn/gdn_converted.pt" \
+    --out "$WORK/out/label.json" > "$WORK/logs/pin.log" 2>&1 || fail 10 "export pin: $(tail -1 "$WORK/logs/pin.log")"
+  python -c "import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if d['attention_free'] else 1)" "$WORK/out/label.json" \
+    || fail 10 "export is not attention-free (q9af_v2_v3w never runs a hybrid)"
+  say "export: $(python -c "import json,sys; print(json.load(open(sys.argv[1]))['label'])" "$WORK/out/label.json")"
+  # the generic v3w spec on THIS snapshot's tokenizer files == the pinned identity (decide.v3w_generic.PINNED_SPEC_SHA256)
+  python -X utf8 -c 'import json,sys; from decide.v3w_generic import bind_template; c=json.load(open(sys.argv[1])); print(json.dumps(bind_template(c["template"], sys.argv[2]).identity()))' \
+    "$CELL" "$SNAP" > "$WORK/out/v3w-spec.json" 2> "$WORK/logs/v3w-spec.log" || fail 10 "v3w spec identity: $(tail -1 "$WORK/logs/v3w-spec.log")"
+else
 SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))'); r=$?
 case $r in 0) ;; 124|137) fail 7 "download timeout" ;; *) fail 10 "download" ;; esac
 ( cd "$SNAP" && sha256sum -c "$CODE/jobs/rwkv7/snapshot.sha256" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "snapshot sha256"
 python -c "import sys, third_party.rwkv7_hf as V; V.verify_snapshot_code(sys.argv[1])" "$SNAP" || fail 10 "vendored code != snapshot code"
+fi
 ( cd "$DATA" && sha256sum -c "$CODE/jobs/clef_baseline/data.sha256" ) > "$WORK/out/data-verify.txt" 2>&1 || fail 10 "DEV rows sha256"
 python -X utf8 -m jobs.common.dev_subset rows --rows "$DATA/slices/dev-rows.jsonl.gz" --out "$WORK/index-rows.jsonl.gz" \
   --subset jobs/common/dev_subset_m1.json > "$WORK/out/index-subset.json" || fail 10 "DEV subset rows"
@@ -359,7 +384,7 @@ if python -c "import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get('v
   PROBE_N=$(python -c "import json,sys; print(int(json.load(open(sys.argv[1]))['parent_arm_seed']['probe_records']))" "$PARAMS") \
     || fail 5 "job_params parent_arm_seed"
   say "phase seed_verify (seeded parent arm: units identity, guard, revision + $PROBE_N-record re-score on this box)"
-  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent rwkv7 \
+  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent "$PARENT" "${GDN_ARGS[@]}" \
     --model-dir "$SNAP" --cell-config "$CELL" --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" \
     --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$ARM" --arm-sha256 "$SEED_SHA" --probe-n "$PROBE_N" \
     --tok-s "$TOK_S" --call-s "$CALL_S" --verify-out "$WORK/out/seed-verify.json" > "$WORK/logs/seed-verify.log" 2>&1; r=$?
@@ -376,7 +401,7 @@ for PSTAGE in g12 index; do
   say "phase parent_$PSTAGE"
   python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/parent-$PSTAGE.progress.jsonl" \
     --cap-min "$(cap parent_$PSTAGE)" --report "$ARM/rate-parent-$PSTAGE.json" -- \
-    timeout --kill-after=30s $(cap parent_$PSTAGE)m python -X utf8 -m jobs.m2_parent_arm.score_parent --parent rwkv7 --model-dir "$SNAP" --cell-config "$CELL" \
+    timeout --kill-after=30s $(cap parent_$PSTAGE)m python -X utf8 -m jobs.m2_parent_arm.score_parent --parent "$PARENT" "${GDN_ARGS[@]}" --model-dir "$SNAP" --cell-config "$CELL" \
     --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" \
     --out-dir "$ARM" --stage "$PSTAGE" --progress "$WORK/logs/parent-$PSTAGE.progress.jsonl" \
     > "$WORK/logs/parent-$PSTAGE.log" 2>&1; r=$?
@@ -391,7 +416,7 @@ ARM_SHA=$(sha256sum "$ARM/arm.json" | cut -d' ' -f1)
 mkdir -p "$WORK/out/parent_arm" && cp "$ARM"/*.json "$WORK/out/parent_arm/" || fail 6 "parent arm export copy"
 if [ ${#PROBE[@]} -eq 0 ]; then
   # A cache from this job also needs full identity validation BEFORE training, not just per-file hashes.
-  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent rwkv7 \
+  timeout --kill-after=30s $(cap parent_g12)m python -X utf8 -m jobs.m2_parent_arm.score_parent --verify-cache --parent "$PARENT" "${GDN_ARGS[@]}" \
     --model-dir "$SNAP" --cell-config "$CELL" --records "$RECORDS" --guard-readiness "$WORK/out/guard/readiness.json" \
     --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$ARM" --arm-sha256 "$ARM_SHA" \
     --verify-out "$WORK/out/parent-cache-verify.json" > "$WORK/logs/parent-cache-verify.log" 2>&1; r=$?
@@ -414,7 +439,7 @@ fi
 say "phase cell"
 mkdir -p "$CK/cell"
 [ -f "$CK/cell/cell.json" ] && cp "$CK/cell/cell.json" "$WORK/out/cell.json"
-timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" --records "$RECORDS" \
+timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" "${GDN_ARGS[@]}" --records "$RECORDS" \
   --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
@@ -427,7 +452,7 @@ if [ "$STAGE" = screen ]; then
   python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-screen.jsonl" --cap-min "$(cap screen)" \
     --report "$WORK/out/rate-screen.json" -- \
     timeout --kill-after=30s $(cap screen)m python -X utf8 -m jobs.m2_first_cell.screen score --cell "$WORK/out/cell.json" \
-    --ckpt-dir "$CK/cell" --model-dir "$SNAP" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
+    --ckpt-dir "$CK/cell" --model-dir "$SNAP" "${GDN_ARGS[@]}" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
     --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" --resume-dir "$CK/screen" \
     --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --reference "$WORK/out/screen-reference.json" \
     --out-dir "$WORK/out/screen" --progress "$WORK/logs/progress-screen.jsonl" > "$WORK/logs/screen.log" 2>&1; r=$?
@@ -446,7 +471,7 @@ else
 say "phase evals (calibration fit; dev card; G12 dev + steer_dev; Index DEV subset + readout diagnostics)"
 python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress.jsonl" --cap-min "$(cap evals)" \
   --report "$WORK/out/rate-evals.json" -- \
-  timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" \
+  timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" "${GDN_ARGS[@]}" \
   --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" \
   --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --anchor-arm "$ARM" --anchor-arm-sha256 "$ARM_SHA" \
   --index-rows "$WORK/index-rows.jsonl.gz" "${INDEX_PROXY[@]}" \

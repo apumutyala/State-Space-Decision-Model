@@ -224,7 +224,7 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
     cohort = Cohort(expected_sha256=cfg["cohort_sha256"])
     guard = load_ready_guard(a.guard_readiness)
     parent = cfg.get("parent", "rwkv7")
-    enc = parent_encoder(parent, a.model_dir)
+    enc = parent_encoder(parent, a.model_dir, cfg)
     spec = G.unit_spec(cfg)
     pools = G.pool_dirs_arg(a.pool_dir)
     train_recs, recs, tr_ids, _, _ = load_cell_data(cfg, a.records, a.train_dir, cohort)
@@ -236,7 +236,7 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
                    if len(x.row.ids) <= t_max]
     attach_order_views(cfg, train_items, train_recs, enc, guard, t_max)
     attach_teacher(cfg, train_items, a.teacher_dir, tr_ids)
-    bb = load_parent_backbone(parent, a.model_dir, cfg, None, device=a.device)
+    bb = load_parent_backbone(parent, a.model_dir, cfg, getattr(a, "gdn_ckpt", None), device=a.device)
     cuda = torch.cuda.is_available() and str(a.device).startswith("cuda")
     model = DecisionModel(bb, cfg["head"], cfg.get("head_kwargs"), pad_id=0, seed=cfg["seed"])
     model.to(bb.device)

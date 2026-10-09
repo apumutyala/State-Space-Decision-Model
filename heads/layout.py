@@ -155,6 +155,13 @@ def resolve_template(template: Template | str) -> Template:
     identities, ``heads.decide_backend._template_identity``)."""
     if isinstance(template, Template):
         return template
+    from decide.v3w_generic import is_generic_template
+
+    if is_generic_template(template):  # generic v3w (decide.v3w_generic): the bound spec's chat format
+        from decide.backends.v3w_generic import spec_template
+        from decide.v3w_generic import spec_for_template
+
+        return spec_template(spec_for_template(template))
     return G1_TRAIN_TEMPLATES.get(template) or TEMPLATES[template]
 
 
@@ -318,6 +325,14 @@ def build_row(
     prefix is unaffected (ordered layout keeps canonical rendering).
     """
     tpl = resolve_template(template)
+    from decide.v3w_generic import is_generic_template
+
+    if is_generic_template(tpl):  # a trained generic-v3w cell: the spec's rows (ids == its readout's prompt ids)
+        if layout != G1V2_LAYOUT:
+            raise ValueError(f"template {tpl.id} needs layout {G1V2_LAYOUT!r}, got {layout!r}")
+        from decide.v3w_generic import spec_for_template
+
+        return build_row_v3w_generic(request, qid, spec_for_template(tpl.id), option_order, empty_state)
     if layout == G1V2_LAYOUT:
         return _build_row_g1v2(request, qid, encode, tpl, option_order, empty_state)
     segs4 = _tagged_segments_paths(tpl, request, qid, layout)

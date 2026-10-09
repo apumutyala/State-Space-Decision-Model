@@ -21,6 +21,12 @@ knobs (job_params, all optional; ``stage`` must be ``"screen"``):
   screen_reference  a REFERENCES preset name (d1_v1, d1_v3w) | a full block | absent = the readout's default preset
   screen_parent     "in_job" | a PARENTS preset name (stock_v3w) | a full block | absent = in_job when the in-job
                     arm's template is the screen's, else the readout's default preset
+  screen_reference_match  "exact" (default) | "family": the reference may be ANOTHER backbone scored under the same
+                    readout FAMILY (``readout_family``: jrt-rwkv-g1-v3w and every generic jrt-v3w-generic:<family> are
+                    "v3w"), e.g. a Q9-AF v2 cell (generic v3w on the Qwen tokenizer) screened against D1+v3w (RWKV7).
+                    The paired comparison is row-for-row on the same proxy rows either way; the parent is always
+                    exact (same weights, same template). Recorded in the report (``readout.reference_match``).
+For a cell whose template is a generic v3w template, ``screen_readout`` "v3w" means that template (layout g1v2).
 Verdict (pre-declared, ``analysis/proxy_validate.py``: the proxy's 90th-percentile paired-gap error on 1-5 point
 pairs is 2.5): DROP if child - reference < -2.5 Index points on the proxy (point estimate), else PROMOTE (to the full
 subset + full DEV). Both paired differences are recorded either way. A SCREEN, never a promotion.
@@ -95,6 +101,23 @@ PARENTS = {
         "units_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1",
         "shipped": "screen_parent/art-ivu28/v3w.results.jsonl", "url_env": "PARENT_URL"}}
 DEFAULT_REFERENCE_BY_TEMPLATE = {"jrt-rwkv-g1-v1": "d1_v1", "jrt-rwkv-g1-v3w": "d1_v3w"}
+REFERENCE_MATCH = ("exact", "family")
+
+
+def _is_generic(template) -> bool:
+    return isinstance(template, str) and template.startswith("jrt-v3w-generic:")
+
+
+def readout_family(template: str | None) -> str | None:
+    """The readout family of a prompt template: "v3w" for jrt-rwkv-g1-v3w and every generic jrt-v3w-generic:<family>
+    (the same v3w body, code key and word-id rule on another backbone's chat format and tokenizer), else the id."""
+    return "v3w" if template == "jrt-rwkv-g1-v3w" or _is_generic(template) else template
+
+
+def same_readout(a: str | None, b: str | None, match: str = "exact") -> bool:
+    if match not in REFERENCE_MATCH:
+        raise ScreenError(f"screen_reference_match {match!r}: one of {REFERENCE_MATCH}", 5)
+    return a == b if match == "exact" else (a is not None and readout_family(a) == readout_family(b))
 DEFAULT_PARENT_BY_TEMPLATE = {"jrt-rwkv-g1-v3w": "stock_v3w"}
 DEFAULT_REFERENCE = REFERENCES["d1_v1"]  # back-compat name
 REF_KEYS = ("artifact", "artifact_sha256", "member", "member_sha256", "inner_member", "units_sha256", "shipped",
@@ -119,17 +142,30 @@ def screen_readout(params: dict, cfg: dict) -> dict[str, Any]:
         tpl, lay = cfg.get("template"), cfg.get("layout", "ordered")
         if not tpl:
             raise ScreenError("cell config has no template", 5)
+    elif name == "v3w" and _is_generic(cfg.get("template")):  # the cell's own generic v3w template
+        tpl, lay = cfg["template"], "g1v2"
     elif name in SCREEN_READOUTS:
         tpl, lay = SCREEN_READOUTS[name]
     else:
         raise ScreenError(f"screen_readout {name!r}: native or one of {sorted(SCREEN_READOUTS)}", 5)
+    match = params.get("screen_reference_match", "exact")
+    if match not in REFERENCE_MATCH:
+        raise ScreenError(f"screen_reference_match {match!r}: one of {REFERENCE_MATCH}", 5)
     return {"name": name, "template": tpl, "layout": lay,
-            "native": tpl == cfg.get("template") and lay == cfg.get("layout", "ordered")}
+            "native": tpl == cfg.get("template") and lay == cfg.get("layout", "ordered"),
+            "reference_match": match, "family": readout_family(tpl)}
 
 
 def template_available(template: str) -> bool:
     """This code can render ``template`` for the trained head (``heads.layout.resolve_template`` where the readout
-    code is present, else ``decide.prompt.TEMPLATES``)."""
+    code is present, else ``decide.prompt.TEMPLATES``). A generic v3w template: registered in
+    ``decide.v3w_generic.TEMPLATE_BACKBONE`` with a pinned spec identity (bound to the snapshot when scored)."""
+    if _is_generic(template):
+        try:
+            from decide.v3w_generic import PINNED_SPEC_SHA256, TEMPLATE_BACKBONE
+        except ImportError:
+            return False
+        return template in TEMPLATE_BACKBONE and template in PINNED_SPEC_SHA256
     try:
         from heads.layout import resolve_template
     except ImportError:
@@ -145,7 +181,7 @@ def template_available(template: str) -> bool:
         return False
 
 
-def _block(spec, presets: dict, default_by_tpl: dict, template: str, what: str):
+def _block(spec, presets: dict, default_by_tpl: dict, template: str, what: str, match: str = "exact"):
     if spec is None:
         if template not in default_by_tpl:
             raise ScreenError(f"no default {what} for readout {template}: set {what} in job_params", 5)
@@ -167,14 +203,15 @@ def _block(spec, presets: dict, default_by_tpl: dict, template: str, what: str):
     if not re.fullmatch(r"[A-Z][A-Z0-9_]*", blk["url_env"]) or ".." in blk["shipped"].split("/") \
             or blk["shipped"].startswith("/"):
         raise ScreenError(f"{what} url_env / shipped malformed", 5)
-    if blk["readout_template"] != template:  # fair pairing: every arm under the screen's ONE readout
-        raise ScreenError(f"{what} {blk['artifact']} readout {blk['readout_template']} != the screen readout {template}")
+    if not same_readout(blk["readout_template"], template, match):  # fair pairing: every arm under ONE readout (family)
+        raise ScreenError(f"{what} {blk['artifact']} readout {blk['readout_template']} != the screen readout {template}"
+                          + (" (family)" if match == "family" else ""))
     return blk
 
 
 def reference_block(params: dict, template: str = "jrt-rwkv-g1-v1") -> dict:
     return _block(params.get("screen_reference"), REFERENCES, DEFAULT_REFERENCE_BY_TEMPLATE, template,
-                  "screen_reference")
+                  "screen_reference", params.get("screen_reference_match", "exact"))
 
 
 def parent_block(params: dict, template: str, in_job_template: str | None) -> dict | None:
@@ -192,7 +229,7 @@ def parent_block(params: dict, template: str, in_job_template: str | None) -> di
 
 def arm_template(arm_identity: dict) -> str | None:
     """The prompt template id in a parent arm's revision (``...;prompt=<template>.<hash>;...``)."""
-    m = re.search(r";prompt=([a-z0-9-]+)\.[0-9a-f]+;", str(arm_identity.get("revision", "")))
+    m = re.search(r";prompt=([A-Za-z0-9:._-]+?)\.[0-9a-f]{8};", str(arm_identity.get("revision", "")))
     return m.group(1) if m else None
 
 
@@ -444,7 +481,8 @@ def report(a) -> int:
         rec = json.loads(Path(a.reference).read_text(encoding="utf-8"))
         parent, pid = parent_predictions(rec, a.parent_arm, a.parent_arm_sha256)
         ref_ident = rec["reference"]
-        if ref_ident["readout_template"] != rec["readout"]["template"]:
+        if not same_readout(ref_ident["readout_template"], rec["readout"]["template"],
+                            rec["readout"].get("reference_match", "exact")):
             raise ScreenError("reference readout != the screen readout")
         ref = pinned_predictions(ref_ident)
         child = read_predictions(Path(a.out_dir) / "child.results.jsonl")
@@ -469,7 +507,8 @@ def valid_result(d: Any) -> bool:
                                                "child_minus_reference") for f in ("point", "lo", "hi"))
                 and sum(d["status"]["child"].values()) == d["proxy"]["rows"]
                 and d["verdict"] == verdict(d["child_minus_reference"]["point"])
-                and bool(tpl) and d["reference_identity"].get("readout_template") == tpl
+                and bool(tpl) and same_readout(d["reference_identity"].get("readout_template"), tpl,
+                                               (d.get("readout") or {}).get("reference_match", "exact"))
                 and (d.get("parent_identity") or {}).get("readout_template") == tpl)
     except Exception:  # noqa: BLE001
         return False
@@ -491,6 +530,7 @@ def main(argv=None) -> int:
               "--out-dir", "--parent-arm", "--parent-arm-sha256", "--reference"):
         s.add_argument(k, required=True)
     s.add_argument("--ckpt", default=None)
+    s.add_argument("--gdn-ckpt", default=None, help="parent q9af: the converted GDN export (pinned by the cell config)")
     s.add_argument("--train-dir", default=None)
     s.add_argument("--teacher-dir", default=None)
     s.add_argument("--pool-dir", action="append", default=None)

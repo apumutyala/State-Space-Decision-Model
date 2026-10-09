@@ -33,8 +33,17 @@ EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "da
 PARENTS = ("rwkv7", "q9af")
 
 
-def parent_encoder(parent: str, model_dir: str):
-    """The training-time segment encoder of each parent (the same one its decide backend serves with)."""
+def parent_encoder(parent: str, model_dir: str, cfg: dict | None = None):
+    """The training-time segment encoder of each parent (the same one its decide backend serves with). A cell whose
+    template is a generic v3w template (``decide.v3w_generic``) also binds that spec to ``model_dir``'s tokenizer files
+    (identity pinned; its rows are built from the spec, ids == the generic v3w readout's prompt ids)."""
+    if cfg is not None:
+        from decide.v3w_generic import bind_template, is_generic_template
+
+        if is_generic_template(cfg.get("template")):
+            if parent != "q9af":
+                raise ValueError(f"generic v3w template {cfg['template']} is wired for parent q9af only, got {parent!r}")
+            bind_template(cfg["template"], model_dir)
     if parent == "rwkv7":
         from third_party.rwkv7_hf.tokenization_rwkv7 import Rwkv7Tokenizer
 
@@ -879,7 +888,7 @@ def _main(argv=None, ctx: dict | None = None):
         except (LineageError, OSError) as e:
             print(f"q9af lineage: {e}", flush=True)
             return EXIT["lineage"]
-    enc = parent_encoder(parent, a.model_dir)
+    enc = parent_encoder(parent, a.model_dir, cfg)
     from train.g16_card import make_hook as g16_hook
 
     # G16 cells: certify on the safety_eval DEV requests ONCE, after the training loop and the final card (outside

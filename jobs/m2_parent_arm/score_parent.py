@@ -147,7 +147,16 @@ def parent_decider(parent: str, model_dir: str, gdn_ckpt: str | None, cfg: dict,
                  "converted_sha256": prov["converted_sha256"], "converted_layers": layers}
     else:
         raise ValueError(parent)
-    if cfg.get("layout") == "g1v2":  # D3 / R1: the parent's stock readout in the C1 v2 format (rwkv7 only)
+    from decide.v3w_generic import is_generic_template
+
+    if is_generic_template(cfg.get("template")):  # generic v3w (Q9-AF v2 cells): the spec bound to this snapshot
+        from decide.backends.v3w_generic import V3WGenericBackend
+        from decide.v3w_generic import bind_template
+
+        if parent != "q9af" or cfg.get("layout") != "g1v2":
+            raise ValueError(f"generic v3w template {cfg['template']} needs parent q9af and layout g1v2")
+        backend = V3WGenericBackend(plug, bind_template(cfg["template"], model_dir))
+    elif cfg.get("layout") == "g1v2":  # D3 / R1: the parent's stock readout in the C1 v2 format (rwkv7 only)
         from decide.backends.rwkv_g1_v2 import G1V2Backend
         from decide.prompt import G1V2_ID
         from decide.prompt_g1v3 import G1V2F_ID, G1V3W_ID
@@ -352,7 +361,7 @@ def main(argv=None) -> int:
     except (ValueError, KeyError, GuardNotReady) as e:
         print(f"identity: {e}", file=sys.stderr)
         return 10
-    enc = parent_encoder(a.parent, a.model_dir)
+    enc = parent_encoder(a.parent, a.model_dir, cfg)
     spec = G.unit_spec(cfg)
     recs = G._read_records(a.records)
     try:

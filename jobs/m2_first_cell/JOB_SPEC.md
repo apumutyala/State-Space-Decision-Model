@@ -230,6 +230,16 @@ the `d10_v2f_b100k_t380` clock (380 min, max_steps 4,500, cell cap 455); `"stage
 screen cap 85 (fixed 15 + 32 tokenize for 100k + 25.97 proxy child = 72.97 <= 0.95 x 85). Schedule 25 + 5 + 10 + 85 + 65 + 455 + 85 + 5 + 7 =
 742 min. **Worst case** (60 + 2 x 742) x $0.0495 = **$76.43** (cap $90). Expected 671 min ≈ $33.21.
 
+Mode `q9af_v2_v3w` (Q9-AF v2 first cell; `job_params_q9af_v2_v3w.json`, `m2_first_cell_rwkv7_q9af_v2_v3w.json`): D16 with the
+cell config's `"parent": "q9af"`. The runner reads the parent from the cell config: q9af fetches `Qwen/Qwen3.5-9B@c2022362`
+(`q9af_snapshot_v3w.sha256`, incl. chat_template.jinja), verifies the shipped export (`gdn_q9af_v2.sha256` + `jobs.q9af_cell.pin
+check`: ok / final / attention_free, never hybrid) and the generic v3w spec identity on the snapshot's own tokenizer files, and passes
+`--parent q9af --gdn-ckpt $DATA/gdn/gdn_converted.pt` to score_parent / run_cell / screen / m2_gates. Template `jrt-v3w-generic:qwen3.5`
+(`decide.v3w_generic`; readout `decide.backends.v3w_generic.V3WGenericBackend`, training rows `heads.layout.build_row` -> the spec's
+`train_row`). row_batch 1 (d1_fast row flags inert), compile_blocks false, image `jobs/probe9b/Dockerfile`. Screen: in-job parent,
+reference d1_v3w with `screen_reference_match: family`. Caps / schedule / **worst case $76.43** = D16's. Pins at launch:
+`python -X utf8 scripts/fill_conversion_pins.py --export-json export.json --gdn gdn_converted.pt --decision decision.json`.
+
 fla in cells (any mode whose cell config sets `"rwkv7_wkv": "fla"`; defaults unchanged, every committed config keeps its
 own WKV). Adopted from SF job-9bs8w (`jobs/perf_step_gate` rule v2, stack/rwkv7/perf-gate-fla @3501b56): `fast_fla`
 (d1_fast flags + fla) 3.88 s/step vs `fast` 5.65 (1.46x) and `greedy` 7.94 (2.05x), LoRA-grad cos 0.998, loss_rel

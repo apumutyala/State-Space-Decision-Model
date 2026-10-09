@@ -195,10 +195,11 @@ class HFEncoder:
     ``enc(text, trusted)`` -> ids without auto-added specials; untrusted text that yields a control (added-token) id
     is refused. ``encode_pieces`` gives ids + byte offsets (heads.layout maps tokens back to char spans)."""
 
-    def __init__(self, tok_dir: Path) -> None:
+    def __init__(self, tok_dir: Path, name: str | None = None) -> None:
         from tokenizers import Tokenizer
 
         self.dir = Path(tok_dir)
+        self.name = name or self.dir.name  # identity name: the pinned tokenizers-root dir name, wherever the files sit
         path = self.dir / "tokenizer.json"
         self.tok = Tokenizer.from_file(str(path))
         self.tokenizer_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -215,7 +216,7 @@ class HFEncoder:
         self.bos_id = self.tok.token_to_id(self.bos_token) if self.bos_token else None
 
     def identity(self) -> dict[str, Any]:
-        return {"kind": "hf-tokenizers-whole-string", "dir": self.dir.name, "tokenizer_sha256": self.tokenizer_sha256,
+        return {"kind": "hf-tokenizers-whole-string", "dir": self.name, "tokenizer_sha256": self.tokenizer_sha256,
                 "untrusted": "fail closed on added-token ids"}
 
     def __call__(self, text: str, trusted: bool = True) -> list[int]:
@@ -506,17 +507,20 @@ def _rwkv_encoder(tok_dir: Path):
 
 
 def make_v3w(backbone_id: str, tokenizers_root: str | Path | None = None, budget: int | None = None,
-             require_nospace: bool | None = None) -> V3W:
+             require_nospace: bool | None = None, tokenizer_dir: str | Path | None = None) -> V3W:
     """The v3w readout + training-row builder for ``backbone_id`` (a key of BACKBONES). ``budget``: the readout's
     prompt-token budget for the code-key ladder (default min(max_context, adapter max_input_tokens) - 1, as
     G1V3Backend). ``require_nospace`` (default False; the frozen RWKV table never uses it) also requires
     each code to be one token WITHOUT the leading space. Off by default: in Qwen-family BPE ":A" is one pretoken, so
     "ANSWER:A" re-tokenizes the colon and A..F would be dropped; the scored form is " <code>" (always proved), the
-    no-space form is recorded per code (``nospace_token_id``) and reported by scripts/check_v3w_generic.py."""
+    no-space form is recorded per code (``nospace_token_id``) and reported by scripts/check_v3w_generic.py.
+    ``tokenizer_dir``: read the tokenizer / chat-template files from this directory instead (e.g. the model's HF
+    snapshot on a GPU box); the identity keeps the pinned ``bb.tokenizer_dir`` name, so the same files give the same
+    identity sha256 anywhere (``spec_for_template`` checks it against ``PINNED_SPEC_SHA256``)."""
     from .adapter import DEFAULT_LIMITS
 
     bb = BACKBONES[backbone_id]
-    tok_dir = Path(tokenizers_root or DEFAULT_TOKENIZERS) / bb.tokenizer_dir
+    tok_dir = Path(tokenizer_dir) if tokenizer_dir else Path(tokenizers_root or DEFAULT_TOKENIZERS) / bb.tokenizer_dir
     if budget is None:
         budget = min(bb.max_context, DEFAULT_LIMITS["max_input_tokens"]) - 1
     if bb.fmt == "rwkv_g1":
@@ -524,10 +528,72 @@ def make_v3w(backbone_id: str, tokenizers_root: str | Path | None = None, budget
         entries, _ = load_v3_codes()
         codes = [{"code": e["code"], "token_id": e["token_id"]} for e in entries]
         return V3W(bb, RWKV_G1, enc, codes, budget, G1V3W_ID, frozenset({0}))
-    enc = HFEncoder(tok_dir)
+    enc = HFEncoder(tok_dir, name=bb.tokenizer_dir)
     if bb.fmt == "chat_template":
         fmt = format_from_chat_template(bb.family, tok_dir)
     else:
         fmt = plain_format(bb.family, (enc.bos_id,) if enc.add_bos and enc.bos_id is not None else ())
     codes = build_code_table(enc, fmt.answer_ctx, V3_MAX_K, bool(require_nospace), enc.control_ids)
     return V3W(bb, fmt, enc, codes, budget, f"{GENERIC_ID}:{bb.family}", enc.control_ids)
+
+
+# ------------------------------------------------------------------------------------- trained-cell template registry
+def template_id(backbone_id: str) -> str:
+    """The training / readout template id of a generic v3w backbone (``jrt-v3w-generic:<family>``)."""
+    bb = BACKBONES[backbone_id]
+    if bb.fmt == "rwkv_g1":
+        return G1V3W_ID
+    return f"{GENERIC_ID}:{bb.family}"
+
+
+def is_generic_template(template: Any) -> bool:
+    tid = getattr(template, "id", template)
+    return isinstance(tid, str) and tid.startswith(GENERIC_ID + ":")
+
+
+#: generic template id -> backbone id (trained cells name the template; the backbone follows from it)
+TEMPLATE_BACKBONE = {template_id(b): b for b, bb in BACKBONES.items() if bb.fmt != "rwkv_g1"}
+#: generic template id -> the sha256 of ``V3W.identity()`` built from the pinned tokenizer files (CPU, 2026-10-09,
+#: ``python -X utf8 scripts/check_q9af_v3w_equivalence.py --print-pins``). A trained cell's rows and its readout use the
+#: spec only when the files on this box give exactly this identity (tokenizer.json sha256, chat-template sha256, code
+#: table, budget, format): a different tokenizer revision fails closed instead of silently changing the prompt ids.
+PINNED_SPEC_SHA256: dict[str, str] = {
+    "jrt-v3w-generic:qwen3.5": "2e4907ee4302d9d196052fc04c5618e88fc8058446644715345eaad93a3a2543",
+}
+_SPECS: dict[str, V3W] = {}
+
+
+def bind_template(template: Any, tokenizer_dir: str | Path | None = None) -> V3W:
+    """Build (once per process) the spec of a generic template from ``tokenizer_dir`` (default: the local tokenizers
+    root) and check its identity against ``PINNED_SPEC_SHA256``. Later ``spec_for_template`` calls return it."""
+    tid = getattr(template, "id", template)
+    if tid not in TEMPLATE_BACKBONE:
+        raise KeyError(f"{tid!r} is not a generic v3w template ({sorted(TEMPLATE_BACKBONE)})")
+    spec = make_v3w(TEMPLATE_BACKBONE[tid], tokenizer_dir=tokenizer_dir)
+    got = spec.identity()["sha256"]
+    want = PINNED_SPEC_SHA256.get(tid)
+    if want is None:
+        raise ValueError(f"{tid}: no pinned spec identity (PINNED_SPEC_SHA256); refusing an unpinned readout")
+    if got != want:
+        raise ValueError(f"{tid}: spec identity {got[:16]} != pinned {want[:16]} (tokenizer / chat template / code "
+                         f"table files differ from the pinned ones in {tokenizer_dir or DEFAULT_TOKENIZERS})")
+    old = _SPECS.get(tid)
+    if old is not None and old.identity()["sha256"] != got:
+        raise ValueError(f"{tid}: already bound to another spec")
+    _SPECS[tid] = spec
+    if tokenizer_dir:  # spawned workers (run_cell tokenize_workers) re-bind from the same files
+        os.environ[_env_key(tid)] = str(Path(tokenizer_dir).resolve())
+    return spec
+
+
+def _env_key(tid: str) -> str:
+    return "SSDM_V3W_TOKDIR_" + "".join(c if c.isalnum() else "_" for c in tid.split(":", 1)[1]).upper()
+
+
+def spec_for_template(template: Any) -> V3W:
+    """The bound spec of a generic template. Unbound in this process: bound from the directory a parent process
+    bound (``SSDM_V3W_TOKDIR_<FAMILY>``, inherited by spawned workers), else from the local tokenizers root."""
+    tid = getattr(template, "id", template)
+    if tid in _SPECS:
+        return _SPECS[tid]
+    return bind_template(tid, os.environ.get(_env_key(tid)) if tid in TEMPLATE_BACKBONE else None)

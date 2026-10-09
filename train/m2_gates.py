@@ -867,7 +867,7 @@ def main(argv=None) -> int:
         print(f"identity: {e}", file=sys.stderr)
         return EXIT["identity"]
     parent = cfg.get("parent", "rwkv7")
-    enc = parent_encoder(parent, a.model_dir)
+    enc = parent_encoder(parent, a.model_dir, cfg)
     spec = unit_spec(cfg)
     try:
         pools = pool_dirs_arg(a.pool_dir)

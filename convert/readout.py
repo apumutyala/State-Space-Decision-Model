@@ -101,5 +101,7 @@ def load_converted_plugin(model_dir: str, gdn_ckpt: str | None, converted, devic
         fork_state_token_budget=fork_state_budget(model, layers),
         notes={"model_class": "convert.model.ConvertibleQwen", "converted_layers": layers,
                "attention_layers_kept": [i for i in model.attn_layers if i not in layers],
-               "attention_free": False, "path": "convert.readout (same code path for both arms)"},
+               # true only when EVERY attention layer runs as GDN (the label was hard-coded False; review 2026-10-09)
+               "attention_free": not [i for i in model.attn_layers if i not in layers],
+               "path": "convert.readout (same code path for both arms)"},
     )

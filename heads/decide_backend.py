@@ -51,7 +51,10 @@ def _template_identity(template: Template) -> dict[str, str]:
     from decide.prompt import G1V2_ID
 
     from decide.prompt_g1v3 import G1V2F_ID, G1V3W_ID
+    from decide.v3w_generic import is_generic_template, spec_for_template
 
+    if is_generic_template(template):  # generic v3w: the bound spec's identity (the parent readout's prompt identity)
+        return spec_for_template(template.id).identity()
     if template.id == G1V3W_ID:  # v3w: the R3 words readout's identity (decide.backends.rwkv_g1_v3 mode "words")
         from decide.backends.rwkv_g1_v3 import renderer_identity as v3_identity
 
