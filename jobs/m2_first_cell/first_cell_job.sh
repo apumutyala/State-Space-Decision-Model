@@ -14,6 +14,9 @@
 #   12,104 rows, or params "rows": "smoke" = the pre-declared 250-row fulldev_smoke_rows.json; live rate guard, per-row
 #   resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
 #   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
+#   Params with "chain" (train/chain.py; JOB_SPEC.md "Params chain") are one LINK of a training run spread over
+#   several jobs: cell = params cell_config (shared); link k >= 2 installs link k-1 (phase chain, exit 10); the cell
+#   trains to the job's deadline; an intermediate link (k < of) skips parent arm / evals and exports /output/chain.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -68,6 +71,11 @@ TRAIN_DIR=$DATA/m2-150k
 TEACHER_ARGS=()
 EVAL_ONLY=none
 STAGE=gates
+# train.chain (params "chain": one training run over several jobs): link K of N; an INTERMEDIATE link (K < N) runs the
+# guards, [K >= 2: installs link K-1], trains to the job's deadline and exports /output/chain; no parent arm / evals
+CHAIN_LINK=0 CHAIN_OF=0 INTERMEDIATE=0
+SIZE_CAP=4500000000
+CELL_TAIL_MIN=8  # chain links: minutes kept inside the cell phase after the training deadline (last step, card, save)
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -106,12 +114,12 @@ finish() {
   # Terminal export and result validation share 60s + 30s KILL grace from the
   # existing seven-minute reserve. Export failure still reaches finalize (exit 6).
   export -f export_phase sample say
-  export CODE OUT WORK CK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR DECISION
+  export CODE OUT WORK CK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR DECISION SIZE_CAP
   export FINISH_RC=$rc
   timeout --kill-after=30s 60s bash -c '
     export_phase final
     # results always upload: rename-only here (no time to copy GBs); the mid-run call below already made room
-    python "$CODE/jobs/common/size_guard.py" --out "$OUT" --evict-dir "$CK/evicted" --rename-only || say "SIZE GUARD FAILED: /output still over the upload cap (see $OUT/SIZE_GUARD.json)"
+    python "$CODE/jobs/common/size_guard.py" --out "$OUT" --evict-dir "$CK/evicted" --rename-only --cap-bytes "$SIZE_CAP" || say "SIZE GUARD FAILED: /output still over the upload cap (see $OUT/SIZE_GUARD.json)"
     exec python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
       "$DECISION" "$OUT" "$MARKER" "$VALIDATOR"
   '
@@ -138,7 +146,18 @@ def load(f, what):
         sys.exit(f"mode {mode}: no {what} {f}")
     except ValueError as e:
         sys.exit(f"mode {mode}: {what} {f} is not JSON ({e})")
-p, c = load(params, "job params"), load(cell, "cell config")
+p = load(params, "job params")
+ch = None
+if "chain" in p:  # train.chain link: the SHARED cell config of every link is the params' cell_config
+    sys.path.insert(0, ".")
+    from train.chain import ChainError, chain_block
+    try:
+        ch = chain_block(p)
+    except ChainError as e:
+        sys.exit(f"mode {mode}: {e}")
+    if not override:
+        cell = p["cell_config"]
+c = load(cell, "cell config")
 if p.get("mode", mode) != mode:
     sys.exit(f"mode {mode}: {params} says mode {p['mode']!r}")
 if not override and p.get("cell_config", cell) != cell:
@@ -159,15 +178,21 @@ if ev != "none":
 st = p.get("stage", "gates")
 if st not in ("gates", "screen") or (st == "screen" and ev != "none"):
     sys.exit(f"mode {mode}: stage {st!r} must be gates or screen (screen = a training mode's evals, not eval_only)")
-print(td, 1 if c.get("teacher") else 0, ev, st)
+print(td, 1 if c.get("teacher") else 0, ev, st, (ch or {}).get("link", 0), (ch or {}).get("of", 0), cell)
 EOF
   ) || fail 5 "$MODE_ENV"
-  read -r TRAIN_SUB TEACHER EVAL_ONLY STAGE <<< "$MODE_ENV"
+  read -r TRAIN_SUB TEACHER EVAL_ONLY STAGE CHAIN_LINK CHAIN_OF CELL <<< "$MODE_ENV"
   TRAIN_DIR=$DATA/$TRAIN_SUB
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
+  if [ "$CHAIN_LINK" -gt 0 ]; then
+    [ "$CHAIN_LINK" -lt "$CHAIN_OF" ] && INTERMEDIATE=1
+    say "chain link $CHAIN_LINK of $CHAIN_OF (train.chain; intermediate=$INTERMEDIATE: guards + train + export, no evals)"
+    # an intermediate link's result is its export record; /output holds the full resumable state (r64 ~4.7 GB)
+    [ "$INTERMEDIATE" = 1 ] && VALIDATOR=train.chain:valid_result DECISION=$WORK/out/chain_link.json SIZE_CAP=5200000000
+  fi
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
@@ -245,9 +270,15 @@ for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used 
   fi
 done
 python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
+if [ "$CHAIN_LINK" -gt 0 ]; then  # the chain block + (intermediate links) the export fits the 5 GiB job artifact
+  python -X utf8 -m train.chain check --params "$PARAMS" --cell-config "$CELL" --out "$WORK/out/chain-check.json" \
+    > "$WORK/logs/chain-check.log" 2>&1 || fail 5 "$(tail -1 "$WORK/logs/chain-check.log")"
+fi
 if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
+elif [ "$INTERMEDIATE" = 1 ]; then
+  say "chain link $CHAIN_LINK of $CHAIN_OF: no eval phase in this link, nothing to price"
 else
 # params "rows" (base / training modes): "subset" (default) = the child's Index stage on all 2,008 subset rows; "proxy600"
 # = a SCREEN on the pre-declared 644-row proxy (jobs/common/dev_proxy600.json, ids sha pinned in jobs.common.dev_proxy;
@@ -337,6 +368,23 @@ timeout --kill-after=30s $(cap heldout)m python -X utf8 -m train.train_set heldo
 gate "heldout" $r; export_phase heldout
 case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment or eval attack template (train.attack_guard) outside the pinned exclusions" ;; 4) fail 34 "Index eval document text (train.doc_overlap_guard) outside the pinned doc_clean spec" ;; *) fail 5 "heldout rc=$r" ;; esac
 
+# ------------------------------------------------------------------ chain links >= 2: install link K-1's state (exit 10)
+# train.chain install: the artifact from $<chain.from.url_env>, its sha256 and CHAIN.json's pinned; chain id, link order
+# and the carried cell.json config checked; a restart of this link keeps its own newer checkpoint (CHAIN_INSTALLED.json)
+if [ "$CHAIN_LINK" -ge 2 ]; then
+  say "phase chain (install link $((CHAIN_LINK - 1)) of $CHAIN_OF into $CK/cell)"
+  mkdir -p "$CK/cell" "$WORK/chain"
+  timeout --kill-after=30s $(cap chain)m python -X utf8 -m train.chain install --params "$PARAMS" --cell-config "$CELL" \
+    --ck-dir "$CK/cell" --work "$WORK/chain" --cell-out "$WORK/out/cell.json" --out "$WORK/out/chain-install.json" \
+    > "$WORK/logs/chain.log" 2>&1; r=$?
+  gate "chain" $r; export_phase chain
+  case $r in 0) ;; 124|137) fail 7 "chain install timeout" ;; 10) fail 10 "chain identity: $(tail -1 "$WORK/logs/chain.log")" ;;
+    *) fail 5 "chain install rc=$r: $(tail -1 "$WORK/logs/chain.log")" ;; esac
+fi
+
+if [ "$INTERMEDIATE" = 1 ]; then
+  say "chain link $CHAIN_LINK of $CHAIN_OF: no parent arm (its evals run in link $CHAIN_OF)"
+else
 # ------------------------------------------------------------------ parent arm (stock readout) BEFORE training (review fix 1)
 # Its live weighted rate guard measures this box's scoring speed before any training spend; then the child evals are
 # re-priced from that measured speed (jobs.m2_first_cell.reprice, exit 15). Cached in $CK across restarts.
@@ -409,17 +457,44 @@ gate "reprice" $r
 case $r in 0) ;; 15) fail 15 "child evals re-priced past their cap at the box's measured speed (before training)" ;;
   *) fail 5 "reprice rc=$r" ;; esac
 fi
+fi  # INTERMEDIATE
 
 # ------------------------------------------------------------------ cell: smoke -> ladder -> train (resumable; exit 26 = too slow)
 say "phase cell"
 mkdir -p "$CK/cell"
 [ -f "$CK/cell/cell.json" ] && cp "$CK/cell/cell.json" "$WORK/out/cell.json"
-timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" --records "$RECORDS" \
+CELL_MIN=$(cap cell)
+CHAIN_ARGS=()
+if [ "$CHAIN_LINK" -gt 0 ]; then
+  # a chain link trains until the JOB's deadline: max_duration - time used - the caps of the phases after the cell -
+  # reserve (every minute the earlier phases left), stopping CELL_TAIL_MIN early for the last step / card / save
+  CELL_MIN=$(python -X utf8 -m train.chain cell-minutes --params "$PARAMS" --elapsed-s "$(( $(date +%s) - T0 ))") \
+    || fail 5 "chain cell-minutes"
+  [ "$CELL_MIN" -gt "$CELL_TAIL_MIN" ] || fail 7 "chain link: no time left to train ($CELL_MIN min)"
+  CHAIN_ARGS=(--chain-link "$CHAIN_LINK" --chain-of "$CHAIN_OF" --train-deadline "$(( $(date +%s) + 60 * (CELL_MIN - CELL_TAIL_MIN) ))")
+  say "chain link $CHAIN_LINK of $CHAIN_OF: cell phase $CELL_MIN min (training stops $CELL_TAIL_MIN min before its end)"
+fi
+timeout --kill-after=30s ${CELL_MIN}m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" --records "$RECORDS" \
   --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --out "$WORK/out" --ckpt-dir "$CK/cell" --stage all \
-  --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
+  --guard-readiness "$WORK/out/guard/readiness.json" "${CHAIN_ARGS[@]}" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
 case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|34|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+
+# ------------------------------------------------------------------ intermediate chain link: export the resumable state, end
+if [ "$INTERMEDIATE" = 1 ]; then
+  say "phase chain_export (link $CHAIN_LINK of $CHAIN_OF: latest full checkpoint + best + cell.json -> $OUT/chain)"
+  timeout --kill-after=30s $(cap chain_export)m python -X utf8 -m train.chain export --params "$PARAMS" --cell-config "$CELL" \
+    --ck-dir "$CK/cell" --cell "$WORK/out/cell.json" --out-dir "$OUT/chain" --decision "$DECISION" \
+    > "$WORK/logs/chain-export.log" 2>&1; r=$?
+  gate "chain_export" $r; export_phase chain_export
+  case $r in 0) ;; 124|137) fail 7 "chain export timeout" ;; *) EXPORT_FAIL=1; fail 6 "chain export rc=$r: $(tail -1 "$WORK/logs/chain-export.log")" ;; esac
+  python -X utf8 jobs/common/size_guard.py --out "$OUT" --evict-dir "$CK/evicted" --cap-bytes "$SIZE_CAP" --reserve-final \
+    || { EXPORT_FAIL=1; say "SIZE GUARD FAILED: /output over the upload cap (see $OUT/SIZE_GUARD.json)"; }
+  sample "$DECISION" "chain-link"
+  RC=0
+  exit 0
+fi
 
 # ------------------------------------------------------------------ stage screen: ONE proxy600 Index pass, then screen.json
 if [ "$STAGE" = screen ]; then
