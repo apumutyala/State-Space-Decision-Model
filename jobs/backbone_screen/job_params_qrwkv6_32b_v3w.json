@@ -1,0 +1,131 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "safetensors",
+   "accelerate"
+  ],
+  "allowed_skips": [],
+  "image": "jobs/probe9b/Dockerfile"
+ },
+ "_comment": "jobs/backbone_screen MODE=qrwkv6_32b_v3w: readout-artifact check before the 32B line is dropped. The SAME pinned weights as job-6c27k (recursal/QRWKV6-32B-Instruct-Preview-v0.1@2da855ca, stock, attention-free: every layer RWKV6Attention) on the SAME 644 proxy600 rows, two arms in one job: (a) the scout's chatml readout (qrwkv6-chatml-nothink; must reproduce 13.56, asserted before arm b runs) and (b) the v3w-generic readout (decide.v3w_generic.make_v3w('qrwkv6-32b'): own chat template, 255 single-token codes, word ids, whole-string tokenization; identity pinned). Frozen scorer; paired diff b - a [CI] and each arm vs stock RWKV7 v3w (27.32 on proxy600). job-6c27k: setup 2 min, index 12 min, billed $0.97. Expected ~31 min run + ~5 min cached-image build ~ $1.78 billed (quoted max 63 x $0.063 = $3.97).",
+ "job": "backbone-screen-qrwkv6_32b_v3w",
+ "mode": "qrwkv6_32b_v3w",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only: the paired diff (v3w-generic - chatml) on the same weights says whether the 13.56 stock screen was a readout artifact; no pass/fail gate beyond the arm-a reproduction assert",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 63,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": false,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 10.0,
+ "reserve_minutes": 6,
+ "phase_caps_minutes": {
+  "setup": 12,
+  "index": 20,
+  "index_b": 20,
+  "score": 5
+ },
+ "expected_minutes": {
+  "build": 5,
+  "setup": 3,
+  "index": 13,
+  "index_b": 13,
+  "score": 2
+ },
+ "model": "recursal/QRWKV6-32B-Instruct-Preview-v0.1@2da855ca372cefab920716eca30f11ed65d6c708",
+ "model_bytes": 69488108726,
+ "dev_subset": "jobs/common/dev_proxy600.json",
+ "mission": "backbone-scout",
+ "screen": {
+  "repo": "recursal/QRWKV6-32B-Instruct-Preview-v0.1",
+  "revision": "2da855ca372cefab920716eca30f11ed65d6c708",
+  "family": "qrwkv6-chatml-nothink",
+  "snapshot_pin": "jobs/backbone_screen/snapshot_qrwkv6_32b.sha256",
+  "input_cap": 16384,
+  "parent_results": "screen_parent/art-ivu28/v3w.results.jsonl",
+  "parent_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1",
+  "code_pkg": "third_party.rwkv6qwen2_hf",
+  "kernel": "fla.ops.gla.fused_recurrent.fused_recurrent_gla",
+  "allow_patterns": [
+   "*.safetensors",
+   "*.json",
+   "*.py",
+   "merges.txt"
+  ],
+  "arm_b": {
+   "family": "qrwkv6-v3w-generic",
+   "backbone_id": "qrwkv6-32b",
+   "v3w_sha256": "793c4e5aacb40c4889cecad6f67dba7abf0f77deeb5fdfd126fb2bb49cdf858d"
+  },
+  "expect_arm_a_index": 13.56,
+  "expect_arm_a_tol": 0.01,
+  "expect_arm_a_source": "job-6c27k / art-6c27k (sha 55e8e3e), results/ledger.tsv on the state branch"
+ },
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/backbone_screen/screen_job.sh",
+  "env": {
+   "MODE": "qrwkv6_32b_v3w",
+   "PYTHONUNBUFFERED": "1",
+   "PYTHONUTF8": "1",
+   "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+  },
+  "key": "backbone-screen-qrwkv6_32b-v3w-check",
+  "label": "backbone scout readout check: QRWKV6-32B stock, chatml (13.56 repro) vs v3w-generic on proxy600, paired",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/BACKBONE_SCREEN_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 2400,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/probe9b/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/probe9b/probe_job.sh",
+   "jobs/backbone_screen/screen_job.sh"
+  ],
+  "manifest_files": [
+   "jobs/backbone_screen/snapshot_qrwkv6_32b.sha256",
+   "jobs/common/dev_proxy600.json",
+   "jobs/clef_baseline/data.sha256"
+  ],
+  "data": [
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/screen_parent/art-ivu28/v3w.results.jsonl",
+    "dest": "screen_parent/art-ivu28/v3w.results.jsonl",
+    "pin_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1"
+   }
+  ]
+ }
+}
