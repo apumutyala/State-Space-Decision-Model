@@ -117,13 +117,35 @@ def test_fitted_language_child_uses_its_native_pin_and_rejects_runtime_drift(tmp
 
 def test_fitted_language_child_runs_all_registered_intervention_arms(tmp_path, monkeypatch):
     parent, task, prereg, data, path, _plan = setup(tmp_path, monkeypatch)
+    import torch
+    child_model = deepcopy(parent._loaded.backend.model)
+    for parameter in child_model.backbone.parameters():
+        parameter.requires_grad_(False)
+    for parameter in child_model.head_parameters():
+        parameter.requires_grad_(True)
+    trainable_names = tuple(sorted(name for name, parameter in child_model.named_parameters()
+                                   if parameter.requires_grad))
+    parent_trainable = {name: parameter.detach().clone()
+                        for name, parameter in child_model.named_parameters() if parameter.requires_grad}
+    with torch.no_grad():
+        child_state = {name: parameter.detach().clone() + 0.001
+                       for name, parameter in child_model.named_parameters() if parameter.requires_grad}
     candidate = {"checkpoint_sha256": "c" * 64, "receipt_sha256": "d" * 64,
                  "checkpoint_path": tmp_path / "child.pt", "step": 4,
                  "receipt": {"plan_sha256": "e" * 64, "source_commit": "f" * 40},
                  "lineage": {"data": {"n": 4}}}
-    trainable_parent = SimpleNamespace(model=parent._loaded.backend.model,
+    trainable_parent = SimpleNamespace(model=child_model,
                                        encoder=parent._loaded.backend.encode,
-                                       config=SimpleNamespace(layout=parent._loaded.backend.layout))
+                                       config=SimpleNamespace(layout=parent._loaded.backend.layout),
+                                       trainable_parameter_names=trainable_names)
+    LanguageChildRuntime().restore_child(trainable_parent, {"trainable": child_state}, candidate)
+    with torch.no_grad():
+        loaded = dict(child_model.named_parameters())
+        copy_error = sum(float((loaded[name].detach() - child_state[name]).abs().sum())
+                         for name in trainable_names)
+        child_delta = sum(float((loaded[name].detach() - parent_trainable[name]).abs().sum())
+                          for name in trainable_names)
+    assert copy_error == 0 and child_delta > 0
     native_child = LanguageChildRuntime().native_parent(
         trainable_parent, {}, candidate, SimpleNamespace(pin=parent._pin))
     child = LanguageChild(native_child, stage1_identity={"artifact_sha256": "9" * 64}, candidate=candidate)
