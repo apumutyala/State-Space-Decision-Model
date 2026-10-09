@@ -472,8 +472,12 @@ LATEST=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])
 # ~2.3 GB, r64 ~0.6 GB). The full .pt (Adam + scheduler + RNG; ~14 GB at r256) stays in $CK: job-igcu4 copied it to
 # /output, went over the store's 5 GiB single-PUT cap, and lost the whole result.
 mkdir -p "$OUT/ckpt"
-python -X utf8 -m train.ckpt_export inference --ckpt "$CK/cell/$LATEST" --out-dir "$OUT/ckpt" > "$WORK/logs/ckpt-export.log" 2>&1 \
-  || { EXPORT_FAIL=1; say "checkpoint export failed: $(tail -1 "$WORK/logs/ckpt-export.log")"; }
+# best_ckpt cells (train/trainer.py, D10 anti-collapse): latest.json's "best" pointer names the SCORED checkpoint; it is
+# exported beside the last (inference export too, never the .pt) and the export's latest.json carries the same pointer
+BEST=$(python -c "import json,sys; print((json.load(open(sys.argv[1])).get('best') or {}).get('path') or '')" "$CK/cell/latest.json")
+BEST_ARGS=()
+[ -n "$BEST" ] && [ "$BEST" != "$LATEST" ] && BEST_ARGS=(--best "$CK/cell/$BEST")
+python -X utf8 -m train.ckpt_export inference --ckpt "$CK/cell/$LATEST" ${BEST_ARGS[@]+"${BEST_ARGS[@]}"} --out-dir "$OUT/ckpt" > "$WORK/logs/ckpt-export.log" 2>&1   || { EXPORT_FAIL=1; say "checkpoint export failed: $(tail -1 "$WORK/logs/ckpt-export.log")"; }
 # /output under the store's PUT cap with room for the final export: allow-listed evictions (superseded phase tarballs,
 # then the ckpt export as a unit) move to $CK/evicted (persisted; a cross-filesystem move is copy + sha256 verify)
 python -X utf8 jobs/common/size_guard.py --out "$OUT" --evict-dir "$CK/evicted" --reserve-final || { EXPORT_FAIL=1; say "SIZE GUARD FAILED: /output over the upload cap (see $OUT/SIZE_GUARD.json)"; }

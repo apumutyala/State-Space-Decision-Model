@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import random
 from contextlib import nullcontext
@@ -116,24 +117,58 @@ class TrainConfig:
     #: runs alone. Grouping only: the same rows, losses and gradients (tests/test_cell_perf.py).
     row_options: int = 0
     axis_loss_weight: float = 0.0  # opt-in MSE on HeadOutput.semantic_axes, targets live only on Item
+    # ---- anti-collapse (research-notes/D10_DIVERGENCE.md). Every default = the old behaviour; at their defaults these
+    # fields are left out of to_json / the hash, so old configs, records and checkpoints are byte-identical.
+    #: "constant" = warmup then constant LR (as before); "cosine" = warmup then cosine decay to lr_min_frac x LR at the
+    #: schedule horizon (max_steps, or the clock-projected final step set by ``set_horizon``; stored in the checkpoint)
+    lr_schedule: str = "constant"
+    lr_min_frac: float = 0.1
+    #: every N optimiser steps run the dev card on the eval items; 0 = off. ``dev_card_rows`` > 0: a hash-stratified
+    #: sample of that many rows (``dev_card_sample``: sources from the ``m2:<source>:...`` ids, sha256(seed, id) order
+    #: within each source, round-robin across sources); 0 = all eval items. ``dev_card_seed`` fixes the sample.
+    dev_card_every: int = 0
+    dev_card_rows: int = 0
+    dev_card_seed: int = 0
+    #: keep the best dev card's checkpoint (lowest NLL, tie -> higher accuracy); latest.json gets a ``best`` pointer and
+    #: scoring (``Trainer.scored``) loads it instead of the last checkpoint
+    best_ckpt: bool = False
+    #: collapse guard: 50-step mean loss > collapse_loss_frac x the uniform predictor's loss on the same rows, or a dev
+    #: card accuracy < collapse_acc_frac x the best card's -> reload the best ckpt, halve both LRs (max events, then stop).
+    #: The loss trigger arms only after one full window below the threshold (a fresh head starts at the uniform loss).
+    collapse_guard: bool = False
+    collapse_window: int = 50
+    collapse_loss_frac: float = 0.8
+    collapse_acc_frac: float = 0.6
+    collapse_max_events: int = 3
 
     def to_json(self) -> dict:
         d = asdict(self)
         d["loss"] = self.loss.identity()  # optional KD/order-consistency fields only when enabled (old hashes unchanged)
         if d["axis_loss_weight"] == 0.0:
             d.pop("axis_loss_weight")  # preserve legacy config identities
-        for k in self.EXECUTION:  # at their defaults the execution fields are left out: old records stay identical
+        for k in self.EXECUTION + self.ANTI_COLLAPSE:  # at their defaults these are left out: old records identical
             if d[k] == getattr(TrainConfig, k):
                 d.pop(k)
         return d
 
+    #: anti-collapse fields (left out at their defaults). The schedule and the guard change the trajectory, so when set
+    #: they are in the hash; dev_card_every / dev_card_rows / dev_card_seed / best_ckpt only observe, so they are
+    #: OPERATIONAL, EXCEPT with collapse_guard on: then the dev cards set the accuracy-trigger timing and the rollback
+    #: target (they change the trajectory), so the dev_card_* keys are in the hash (``GUARD_HASHED``).
+    ANTI_COLLAPSE = ("lr_schedule", "lr_min_frac", "dev_card_every", "dev_card_rows", "dev_card_seed", "best_ckpt",
+                     "collapse_guard", "collapse_window", "collapse_loss_frac", "collapse_acc_frac",
+                     "collapse_max_events")
     #: operational fields that may differ between a run and its resumption
-    OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard")
+    OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard", "dev_card_every",
+                   "dev_card_rows", "dev_card_seed", "best_ckpt")
+    #: operational dev-card keys that ARE hashed when collapse_guard is on
+    GUARD_HASHED = ("dev_card_every", "dev_card_rows", "dev_card_seed")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
     EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options")
 
     def hash(self) -> str:
-        d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
+        keep = self.GUARD_HASHED if self.collapse_guard else ()
+        d = {k: v for k, v in self.to_json().items() if k in keep or k not in self.OPERATIONAL + self.EXECUTION}
         if not d.get("controlsafe"):
             d.pop("controlsafe", None)
         return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
@@ -306,6 +341,64 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     return replaced
 
 
+def item_source(item_id: str) -> str:
+    """The cohort source of an item id ``m2:<source>:<record>/<qid>`` ("" for ids without one, e.g. toy rows)."""
+    parts = str(item_id).split(":")
+    return parts[1] if len(parts) >= 3 else ""
+
+
+def dev_card_sample(items: list[Item], rows: int, seed: int = 0) -> list[Item]:
+    """The dev-card rows (B1, PR #232 review): ``rows`` <= 0 or >= len(items) = every item (input order). Else a
+    deterministic hash-stratified sample: items grouped by ``item_source``, each source ordered by
+    sha256(f"{seed}:{id}") (ties by id), then taken round-robin over the sources (sorted by name) until ``rows`` are
+    chosen, so every source is represented (cohort dev ids are sorted by id, i.e. by source: a prefix covered 4 of
+    14). Independent of the input order."""
+    if rows <= 0 or rows >= len(items):
+        return list(items)
+    by: dict[str, list[tuple[str, str, Item]]] = {}
+    for it in items:
+        key = hashlib.sha256(f"{seed}:{it.id}".encode()).hexdigest()
+        by.setdefault(item_source(it.id), []).append((key, it.id, it))
+    queues = [sorted(by[s], key=lambda t: (t[0], t[1])) for s in sorted(by)]
+    out: list[Item] = []
+    r = 0
+    while len(out) < rows:
+        for q in queues:
+            if r < len(q) and len(out) < rows:
+                out.append(q[r][2])
+        r += 1
+    return out
+
+
+def dev_card_record(items: list[Item], rows: int, seed: int = 0) -> dict[str, Any]:
+    """cell.json record of the dev-card sample: the selected ids (selection order), their sha256, per-source counts."""
+    ids = [it.id for it in dev_card_sample(items, rows, seed)]
+    per: dict[str, int] = {}
+    for i in ids:
+        per[item_source(i)] = per.get(item_source(i), 0) + 1
+    return {"rows": rows, "seed": seed, "n": len(ids), "n_pool": len(items),
+            "design": "hash-stratified by source: sha256(seed:id) within source, round-robin across sources",
+            "per_source": dict(sorted(per.items())), "ids": ids,
+            "ids_sha256": hashlib.sha256("\n".join(ids).encode()).hexdigest()}
+
+
+def check_anti_collapse(cfg: TrainConfig) -> None:
+    if cfg.lr_schedule not in ("constant", "cosine"):
+        raise ValueError(f"lr_schedule must be 'constant' or 'cosine', got {cfg.lr_schedule!r}")
+    if not 0.0 <= cfg.lr_min_frac <= 1.0:
+        raise ValueError(f"lr_min_frac must be in [0, 1], got {cfg.lr_min_frac}")
+    if cfg.dev_card_every < 0 or cfg.dev_card_rows < 0:
+        raise ValueError("dev_card_every and dev_card_rows must be >= 0")
+    if type(cfg.dev_card_seed) is not int:
+        raise ValueError(f"dev_card_seed must be an int, got {cfg.dev_card_seed!r}")
+    if cfg.best_ckpt and not cfg.dev_card_every:
+        raise ValueError("best_ckpt needs dev_card_every > 0 (the best is chosen by dev card)")
+    if cfg.collapse_guard and not cfg.best_ckpt:
+        raise ValueError("collapse_guard needs best_ckpt (a collapse reloads the best checkpoint)")
+    if cfg.collapse_guard and (cfg.collapse_window < 1 or cfg.collapse_max_events < 0):
+        raise ValueError("collapse_window must be >= 1 and collapse_max_events >= 0")
+
+
 class Trainer:
     def __init__(self, model: DecisionModel, cfg: TrainConfig, train_items: list[Item],
                  eval_items: list[Item] | None = None, prepared: bool = False,
@@ -362,15 +455,158 @@ class Trainer:
         if lora:
             groups.append({"params": lora, "lr": cfg.lr_lora})
         self.opt = torch.optim.AdamW(groups, weight_decay=cfg.weight_decay)
-        warm = max(cfg.warmup_steps, 0)
-        self.sched = torch.optim.lr_scheduler.LambdaLR(
-            self.opt, lambda s: min(1.0, (s + 1) / warm) if warm else 1.0)
+        check_anti_collapse(cfg)
+        #: anti-collapse state (saved in the checkpoint; untouched at the defaults): the cosine horizon, the guard's LR
+        #: multiplier, the dev-card log, the best card and the collapse events
+        self.horizon = cfg.max_steps
+        self.horizon_fixed = False
+        self.lr_scale = 1.0
+        self.dev_cards: list[dict[str, Any]] = []
+        self.best: dict[str, Any] | None = None
+        self.collapse_events: list[dict[str, Any]] = []
+        self.stopped: str | None = None
+        self.guard_armed = False
+        self._guard_window: list[tuple[float, float]] = []  # (step loss, uniform-predictor loss) since the last reload
+        self._step_uniform = 0.0
+        self.sched = torch.optim.lr_scheduler.LambdaLR(self.opt, lambda s: self.lr_factor(s))
         self.step = 0
         self.epoch = 0
         self.cursor = 0
         self.history: list[dict[str, Any]] = []
         self.cards: list[dict[str, Any]] = []
         self.lineage = lineage(model.backbone, train_items)
+
+    # ------------------------------------------------------------------ LR schedule
+    def lr_factor(self, s: int) -> float:
+        """LambdaLR factor after ``s`` scheduler steps. "constant": ``min(1, (s+1)/warm)`` (the original lambda,
+        bit-identical); "cosine": the same warmup, then ``min_frac + (1 - min_frac)(1 + cos(pi p))/2`` with ``p`` the
+        fraction of the post-warmup span to ``self.horizon`` (clamped: min_frac after the horizon). Times the collapse
+        guard's ``lr_scale`` (1.0 unless the guard fired)."""
+        cfg = self.cfg
+        warm = max(cfg.warmup_steps, 0)
+        f = min(1.0, (s + 1) / warm) if warm else 1.0
+        if cfg.lr_schedule == "cosine" and s >= warm:
+            span = max(1, self.horizon - warm)
+            p = min(1.0, (s - warm) / span)
+            f = cfg.lr_min_frac + (1.0 - cfg.lr_min_frac) * 0.5 * (1.0 + math.cos(math.pi * p))
+        return f * self.lr_scale if self.lr_scale != 1.0 else f
+
+    def set_horizon(self, final_step: int) -> None:
+        """Cosine horizon = ``min(max_steps, final_step)`` (run_cell: the clock-projected final step from the in-training
+        rate check). Fixed once per run and stored in the checkpoint, so a resume keeps the same schedule."""
+        if self.horizon_fixed:
+            return
+        self.horizon = max(1, min(self.cfg.max_steps, int(final_step)))
+        self.horizon_fixed = True
+        self._apply_lr()
+
+    def _apply_lr(self) -> None:
+        """Set every group's LR for the current scheduler step (after a horizon / lr_scale change)."""
+        f = self.lr_factor(self.sched.last_epoch)
+        for g, base in zip(self.opt.param_groups, self.sched.base_lrs):
+            g["lr"] = base * f
+        self.sched._last_lr = [g["lr"] for g in self.opt.param_groups]
+
+    # ------------------------------------------------------------------ dev cards, best checkpoint, collapse guard
+    def dev_items(self, items: list[Item] | None = None) -> list[Item]:
+        its = self.eval_items if items is None else items
+        return dev_card_sample(its, self.cfg.dev_card_rows, self.cfg.dev_card_seed)
+
+    def dev_card_due(self) -> bool:
+        return bool(self.cfg.dev_card_every) and self.step % self.cfg.dev_card_every == 0
+
+    def run_dev_card(self, items: list[Item] | None = None, out_dir=None) -> dict[str, Any] | None:
+        """Run the dev card (``evalcard.run_card``) on the fixed dev set and pass it to ``consider_card``."""
+        its = self.dev_items(items)
+        if not its:
+            return None
+        card = run_card(self.model, its, self.step, out_dir)
+        card.pop("units", None)
+        self.consider_card(card)
+        return card
+
+    @staticmethod
+    def _card_key(card: dict) -> tuple[float, float]:
+        raw = card.get("raw") or {}
+        nll, acc = raw.get("nll", float("nan")), raw.get("accuracy", float("nan"))
+        return (nll if math.isfinite(nll) else float("inf"), -(acc if math.isfinite(acc) else -1.0))
+
+    def consider_card(self, card: dict) -> dict:
+        """Log a dev card; if it is the best so far (lowest NLL, tie -> higher accuracy) and ``best_ckpt``, save its
+        checkpoint as the best. With ``collapse_guard``, an accuracy below collapse_acc_frac x the best card's fires
+        the guard. Returns the log entry."""
+        raw = card.get("raw") or {}
+        entry = {"step": card["step"], "n_items": card.get("n_items"), "nll": raw.get("nll"),
+                 "accuracy": raw.get("accuracy"), "best": False}
+        if (self.cfg.collapse_guard and not self.stopped and self.best is not None and entry["accuracy"] is not None
+                and entry["accuracy"] < self.cfg.collapse_acc_frac * self.best["accuracy"]):
+            self.dev_cards.append(entry)
+            self.collapse("dev_accuracy", accuracy=entry["accuracy"], best_accuracy=self.best["accuracy"])
+            return entry
+        if self.best is None or self._card_key(card) < (self.best["nll"], -self.best["accuracy"]):
+            entry["best"] = True
+            nll, acc = self._card_key(card)
+            self.best = {"step": card["step"], "nll": nll, "accuracy": -acc}
+            if self.cfg.best_ckpt and self.cfg.ckpt_dir:
+                self.best["path"] = f"ckpt-step{self.step:07d}.pt"
+                self.save()  # the step's checkpoint; latest.json carries the best pointer
+        self.dev_cards.append(entry)
+        return entry
+
+    def _uniform_loss(self, lp: torch.Tensor, y: torch.Tensor, qtypes: list, teacher) -> torch.Tensor | None:
+        """Collapse guard (else None): the configured decision loss of the UNIFORM predictor on the same rows (padded
+        options = -inf stay -inf). For the CE arm this is -mean log(1/K). ``_supervised_loss`` adds the other terms of
+        the logged objective and accumulates it into ``_step_uniform`` with the step's row weights."""
+        if not self.cfg.collapse_guard:
+            return None
+        with torch.no_grad():
+            u = torch.where(torch.isfinite(lp), torch.zeros_like(lp), torch.full_like(lp, float("-inf")))
+            u = torch.log_softmax(u, dim=-1)
+            return decision_loss(u, y, qtypes, self.cfg.loss, teacher).detach()
+
+    def _guard_step(self, loss: float) -> None:
+        if not self.cfg.collapse_guard or self.stopped:
+            return
+        self._guard_window.append((loss, self._step_uniform))
+        w = self.cfg.collapse_window
+        del self._guard_window[:-w]
+        if len(self._guard_window) < w:
+            return
+        ml = sum(x for x, _ in self._guard_window) / w
+        mu = sum(u for _, u in self._guard_window) / w
+        above = ml > self.cfg.collapse_loss_frac * mu
+        if not self.guard_armed:
+            # a fresh head starts AT the uniform loss: the loss trigger arms only once a full window is below the
+            # threshold (the model has learned); a later return above it is the collapse (D10: 0.40 -> 0.90-0.99)
+            self.guard_armed = not above
+            return
+        if above:
+            self.collapse("train_loss", mean_loss=ml, mean_uniform=mu)
+
+    def collapse(self, trigger: str, **detail) -> dict:
+        """A collapse event: reload the best checkpoint's trainable weights and optimiser moments (the step counter,
+        data cursor, history and RNG keep going forward), halve both LRs, clear the loss window. After
+        ``collapse_max_events`` reloads the next event stops training (``self.stopped``); scoring uses the best."""
+        ev = {"step": self.step, "trigger": trigger, **detail, "best_step": (self.best or {}).get("step")}
+        if len(self.collapse_events) >= self.cfg.collapse_max_events:
+            ev["action"] = "stop"
+            self.stopped = "collapse_max_events"
+        elif not (self.best and self.best.get("path") and self.cfg.ckpt_dir):
+            ev["action"] = "stop"  # nothing to roll back to
+            self.stopped = "collapse_no_best"
+        else:
+            st = torch.load(Path(self.cfg.ckpt_dir) / self.best["path"], map_location="cpu", weights_only=False)
+            params = dict(self.model.named_parameters())
+            with torch.no_grad():
+                for n, t in st["trainable"].items():
+                    params[n].copy_(t)
+            self.opt.load_state_dict(st["optimizer"])
+            self.lr_scale *= 0.5
+            self._apply_lr()
+            ev.update(action="reload_best", lr_scale=self.lr_scale, lrs=[g["lr"] for g in self.opt.param_groups])
+        self._guard_window.clear()
+        self.collapse_events.append(ev)
+        return ev
 
     # ------------------------------------------------------------------ data order
     @staticmethod
@@ -407,15 +643,19 @@ class Trainer:
     def _row_loss(self, batch: list[Item], weight: float) -> float:
         with self._autocast():
             fw = self.model([i.row for i in batch])
-        loss = self._supervised_loss(fw, batch) * weight
+        loss = self._supervised_loss(fw, batch, weight) * weight
         loss.backward()
         return float(loss.detach())
 
-    def _supervised_loss(self, fw, batch: list[Item]) -> torch.Tensor:
+    def _supervised_loss(self, fw, batch: list[Item], weight: float = 1.0) -> torch.Tensor:
         lp = fw.log_probs.float()
         y = torch.tensor([i.label for i in batch], device=lp.device)
         teacher = teacher_tensor(batch, lp) if self.cfg.loss.kd else None
         loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss, teacher)
+        row_weight = weight
+        # collapse guard: the uniform predictor's loss under the SAME objective the step logs (base term, plus the
+        # order-consistency view term with js = 0 and the zero predictor's axis MSE when those losses are on)
+        ref = self._uniform_loss(lp.detach(), y, [i.row.qtype for i in batch], teacher)
         weight_order = self.cfg.loss.order_consistency_weight
         if weight_order:
             paired = [(i, item) for i, item in enumerate(batch) if getattr(item, "view", None) is not None]
@@ -435,6 +675,11 @@ class Trainer:
                 # normalising each group by base rows makes gradients invariant to row_batch/group composition.
                 loss = add_order_consistency(loss, view_supervised, torch.stack(js).mean(),
                                              len(batch), len(paired), weight_order)
+                if ref is not None:  # the uniform predictor is order-consistent: its aligned JS is exactly 0
+                    view_ref = self._uniform_loss(view_lp.detach(), view_y,
+                                                  [item.view.row.qtype for _, item in paired], None)
+                    ref = add_order_consistency(ref, view_ref, torch.zeros((), device=ref.device), len(batch),
+                                                len(paired), weight_order)
         weight = self.cfg.axis_loss_weight
         if type(weight) not in (int, float) or not 0 <= weight < float("inf"):
             raise ValueError("axis_loss_weight must be finite and nonnegative")
@@ -447,11 +692,16 @@ class Trainer:
             if not torch.isfinite(targets).all() or not torch.isfinite(z).all():
                 raise ValueError("axis targets and port must be finite")
             loss = loss + weight * torch.nn.functional.mse_loss(z, targets)
+            if ref is not None:  # the zero predictor of the axes (the uniform predictor carries no axis signal)
+                ref = ref + weight * torch.nn.functional.mse_loss(torch.zeros_like(targets), targets).detach().float()
+        if ref is not None:
+            self._step_uniform += float(ref) * row_weight
         return loss
 
     def train_step(self) -> float:
         self.model.train()
         self.opt.zero_grad(set_to_none=True)
+        self._step_uniform = 0.0
         total = 0.0
         if self.cfg.row_batch > 1:
             # the same rows as the micro-batch loop below (same _next_batch calls, so epoch roll-over is unchanged); the
@@ -481,7 +731,7 @@ class Trainer:
             batch = self._next_batch()
             with self._autocast():
                 fw = self.model([i.row for i in batch])
-            loss = self._supervised_loss(fw, batch) / self.cfg.grad_accum
+            loss = self._supervised_loss(fw, batch, 1.0 / self.cfg.grad_accum) / self.cfg.grad_accum
             loss.backward()
             total += float(loss.detach())
         return self._finish_step(total)
@@ -493,16 +743,23 @@ class Trainer:
         self.sched.step()
         self.step += 1
         self.history.append({"step": self.step, "loss": total})
+        self._guard_step(total)
         return total
 
     def train(self, steps: int | None = None) -> list[dict[str, Any]]:
         target = self.cfg.max_steps if steps is None else self.step + steps
-        while self.step < target:
+        if self.cfg.dev_card_every and self.step == 0 and not self.dev_cards and self.eval_items:
+            self.run_dev_card()  # the step-0 card: the first best (the guard always has a checkpoint to go back to)
+        while self.step < target and not self.stopped:
             self.train_step()
+            if self.stopped:
+                break
             if self.cfg.ckpt_dir and self.cfg.ckpt_every and self.step % self.cfg.ckpt_every == 0:
                 self.save()
             if self.eval_items and self.cfg.eval_every and self.step % self.cfg.eval_every == 0:
                 self.cards.append(run_card(self.model, self.eval_items, self.step, self.cfg.ckpt_dir))
+            if self.eval_items and self.dev_card_due():
+                self.run_dev_card()
         return self.history
 
     # ------------------------------------------------------------------ checkpoints
@@ -520,7 +777,17 @@ class Trainer:
             "backbone": getattr(self.model.backbone.spec, "name", None),
             "lora_modules": self.lora_modules,
             "guard": None if self.guard is None else self.guard.identity(),
+            **({"anti_collapse": self.anti_collapse_state()} if self.anti_collapse_on() else {}),
         }
+
+    def anti_collapse_on(self) -> bool:
+        c = self.cfg
+        return c.lr_schedule != "constant" or bool(c.dev_card_every) or c.best_ckpt or c.collapse_guard
+
+    def anti_collapse_state(self) -> dict[str, Any]:
+        return {"horizon": self.horizon, "horizon_fixed": self.horizon_fixed, "lr_scale": self.lr_scale, "dev_cards": list(self.dev_cards),
+                "best": None if self.best is None else dict(self.best), "collapse_events": list(self.collapse_events),
+                "stopped": self.stopped, "guard_armed": self.guard_armed}
 
     def save(self, path: str | Path | None = None) -> Path:
         d = Path(path or self.cfg.ckpt_dir)
@@ -529,16 +796,35 @@ class Trainer:
         tmp = p.with_suffix(".pt.tmp")
         torch.save(self.state(), tmp)
         os.replace(tmp, p)
-        (d / "latest.json").write_text(json.dumps({"path": p.name, "step": self.step,
-                                                   "config_hash": self.cfg.hash()}), encoding="utf-8")
+        rec = {"path": p.name, "step": self.step, "config_hash": self.cfg.hash()}
+        if self.cfg.best_ckpt and self.best and self.best.get("path"):
+            rec["best"] = {k: self.best[k] for k in ("path", "step", "nll", "accuracy")}
+        (d / "latest.json").write_text(json.dumps(rec), encoding="utf-8")
         return p
 
     @staticmethod
     def latest(ckpt_dir: str | Path) -> Path | None:
+        """The LAST checkpoint (resume point)."""
         f = Path(ckpt_dir) / "latest.json"
         if not f.exists():
             return None
         return Path(ckpt_dir) / json.loads(f.read_text(encoding="utf-8"))["path"]
+
+    @staticmethod
+    def scored(ckpt_dir: str | Path) -> Path | None:
+        """The checkpoint to SCORE: latest.json's ``best`` pointer when the run kept one (``best_ckpt``), else the
+        last checkpoint (old runs: unchanged)."""
+        f = Path(ckpt_dir) / "latest.json"
+        if not f.exists():
+            return None
+        rec = json.loads(f.read_text(encoding="utf-8"))
+        p = Path(ckpt_dir) / ((rec.get("best") or {}).get("path") or rec["path"])
+        if not p.is_file():  # callers map None to their identity exit (no traceback, no silent fallback to the last)
+            import sys
+
+            print(f"scored checkpoint {p.name} named by latest.json is missing", file=sys.stderr)
+            return None
+        return p
 
     def load(self, path: str | Path, strict_config: bool = True, strict_lineage: bool = True) -> None:
         """Restore a ``.pt`` checkpoint (full: trainable + optimizer + scheduler + RNG), or an INFERENCE export
@@ -568,6 +854,14 @@ class Trainer:
                 params[n].copy_(t.to(params[n].dtype))
         self.step, self.epoch, self.cursor = st["step"], st["epoch"], st["cursor"]
         self.history = st["history"]
+        ac = st.get("anti_collapse")
+        if ac is not None:
+            self.horizon, self.lr_scale = int(ac["horizon"]), float(ac["lr_scale"])
+            self.horizon_fixed = bool(ac.get("horizon_fixed"))
+            self.dev_cards, self.best = list(ac["dev_cards"]), ac["best"]
+            self.collapse_events, self.stopped = list(ac["collapse_events"]), ac.get("stopped")
+            self.guard_armed = bool(ac.get("guard_armed"))
+            self._guard_window.clear()
         if is_inference(path):
             self.loaded_format = "inference"
             return
