@@ -1,0 +1,15 @@
+{
+  "records": 228,
+  "seed": 20261008,
+  "source_indices": "0..227",
+  "option_counts": "2..77",
+  "id_styles": 3,
+  "maxima": {
+    "v3w": 1469,
+    "serialized": 1292,
+    "v2f": 1633
+  },
+  "trainer_commit": "9c3e4350ccb41bec1385d58b9fe7002184f69626",
+  "exit_code": 0,
+  "scope": "Actual pinned trainer runtime and tokenizer; compact_record with in-memory K2..77 acceptance; no source mutation, no model load."
+}
