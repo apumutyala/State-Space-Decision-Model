@@ -1,0 +1,199 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "flash-linear-attention==0.5.2",
+   "fla-core==0.5.2"
+  ],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout"
+   }
+  ],
+  "image": "jobs/q9af_v2/Dockerfile"
+ },
+ "_comment": "q9af_v2 CLEAN RERUN (mode clean; jobs/q9af_v2/JOB_SPEC.md 'Clean rerun'): job-w3c2e's job with mix.decontam full-eval-v1 (eval-hash index shipped below), a per-window manifest exported from phase D, the SAME rule (jobs/q9af_v2/rule.py, every threshold unchanged), and caps trimmed so the platform quote incl. the 60-min build allowance is <= $41 at the 2026-10-08 quote rate $0.063/min: (60 + 588) x 0.063 = $40.82 (platform quote max_duration x 0.063 = $37.04). Trims, from job-w3c2e attempt 4 (job logs, 2026-10-09): setup+weights measured 3.3 min (caps 10+20 -> 8+10); D measured 4.9 min under dev13-v1 + ~8.3 min serial full-eval-v1 guard (0.45M words/s per core, 224M words) -> cap 35 -> 30; X 15 -> 8, I arms 20 -> 15 each (projected 8.4), S 10 -> 5 (measured 1); then stage-2 KD 430 -> 385 min (P 550 -> 482 = 70 + 385 + 0.13 + 1.3 x 19.15 + 1.9). One attempt.",
+ "job": "q9af_v2",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 588,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 0,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.063,
+ "hard_cap_usd": 41.0,
+ "reserve_minutes": 15,
+ "margin_min_frac": 0.3,
+ "phase_caps_minutes": {
+  "setup": 8,
+  "weights": 10,
+  "D": 30,
+  "P": 482,
+  "X": 8,
+  "I_stock": 15,
+  "I_conv": 15,
+  "S": 5
+ },
+ "expected_minutes": {
+  "build": 15,
+  "setup": 3,
+  "weights": 1,
+  "D": 14,
+  "P": 520,
+  "X": 3,
+  "I_stock": 6,
+  "I_conv": 6,
+  "S": 2
+ },
+ "measured": {
+  "_comment": "job-5cmat (art-2bybh) and job-2xe5w (art-ipnxz, receipts/2026-10-07-D-full8/result.json). stage1 rate = 5cmat stage 1 (all 8 layers aligned, the same shape as v2 stage 1). Stage 2 worst rate = 2xe5w step 7 (layer 3 + 6 more GDNs training: first student layer 3, the v2 shape) and the FLOP model at the 4j3vu layer-3 MFU. Peak = 2xe5w (7 GDNs attached, 7 training).",
+  "setup_min": 2.4,
+  "load_and_data_s": 63.53,
+  "stock_probes_s": 109.02,
+  "converted_probes_s": 57.42,
+  "throughput_s_per_arm": 33.64,
+  "stage1_steady_tok_s": 18297,
+  "stage2_steady_tok_s_layer3_7gdn": 5210,
+  "stage2_mfu_layer3": 0.341,
+  "stage2_mfu_layer23": 0.3428,
+  "stage2_steady_tok_s_layer23": 9459.6,
+  "stage2_steady_tok_s_layer3": 5461,
+  "peak_gb": 39.72,
+  "stock_prefill_tok_s_min": 22144.5,
+  "pack_call_s": 0.2406,
+  "small_call_s": 0.0756,
+  "weights_fetch_s": 20,
+  "S_min": 1.0,
+  "w3c2e_setup_min": 3.28,
+  "w3c2e_phase_D_min_dev13": 4.92
+ },
+ "estimates_not_measured": {
+  "_comment": "No receipt yet: D under full-eval-v1 = job-w3c2e's measured dev13-v1 phase D (4.87 min, attempt 4) + the full-eval-v1 guard run serially in convert.mixdata (laptop 0.45M words/s per core x ~224M words = ~8.3 min) ~ 13.2, kept at 15; the per-curve-point held-out eval; X as full8's estimate.",
+  "D_min": 15.0,
+  "export_X_min": 3.0,
+  "init_cmp_min": 2.6,
+  "curve_eval_min_each": 0.5,
+  "final_heldout_min": 1.5,
+  "wikitext_gate_min": 0.5,
+  "mmlu_full_min_per_arm": 2.8
+ },
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "config": "configs/q9af_v2_clean_h100.json",
+ "dev_proxy": "jobs/common/dev_proxy600.json",
+ "mission": "m1-q9af-v2",
+ "decision_rule": "jobs/q9af_v2/rule.py",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py).",
+  "command": "bash /opt/ssdm/m1/jobs/q9af_v2/q9af_v2_job.sh clean",
+  "env": {},
+  "key": "m1-q9af-v2-clean-rerun",
+  "clock_lock": true,
+  "label": "q9af_v2 CLEAN rerun: all 8 attention layers -> GDN jointly (reuse_attn init, 70+385 min KD on the generic mix, full-eval-v1 decontam), same end-to-end gate (held-out KL <= 0.25 + stock Index proxy600), mix.json + window manifest exported",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/Q9AF2_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "the q9af_v2 Dockerfile + code + the PRIVATE DEV rows (sha256 pinned): the Index proxy600 arms and the dev13 filter, + the pinned eval-hash index (hashes and eval run ids only, no eval text; index_sha256 2c821e29... = data/manifests/doc_overlap/index-pin.json; the same 12 files job-vdk25 shipped) for the full-eval-v1 filter in phase D.",
+  "dockerfile": "jobs/q9af_v2/Dockerfile",
+  "data": [
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/df.npy",
+    "dest": "doc-overlap/218affe13e367d07/df.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/ent.npy",
+    "dest": "doc-overlap/218affe13e367d07/ent.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/fl.npy",
+    "dest": "doc-overlap/218affe13e367d07/fl.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/h.npy",
+    "dest": "doc-overlap/218affe13e367d07/h.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/pcnt.npy",
+    "dest": "doc-overlap/218affe13e367d07/pcnt.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/post.npy",
+    "dest": "doc-overlap/218affe13e367d07/post.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/pstart.npy",
+    "dest": "doc-overlap/218affe13e367d07/pstart.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_allow.npy",
+    "dest": "doc-overlap/218affe13e367d07/u_allow.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_den.npy",
+    "dest": "doc-overlap/218affe13e367d07/u_den.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_field.npy",
+    "dest": "doc-overlap/218affe13e367d07/u_field.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_row.npy",
+    "dest": "doc-overlap/218affe13e367d07/u_row.npy",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/meta.json",
+    "dest": "doc-overlap/218affe13e367d07/meta.json",
+    "pin": "jobs/q9af_v2/data_clean.sha256"
+   }
+  ],
+  "manifest_files": [
+   "data/manifests/doc_overlap/index-pin.json",
+   "configs/q9af_v2_clean_h100.json",
+   "jobs/q9af_v2/data_clean.sha256"
+  ]
+ }
+}

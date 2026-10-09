@@ -41,7 +41,13 @@ def main(argv):
             (root / f"DONE_{name}").write_text(name, encoding="utf-8")
         (root / "paths.env").write_text("\n".join(env) + "\n", encoding="utf-8", newline="\n")
     elif cmd == "mix":
-        _w(Path(args[0]) / "mix.json", {"dry_run": True, "train_tokens": 1000})
+        idx = args[args.index("--eval-index-dir") + 1] if "--eval-index-dir" in args else None
+        _w(Path(args[0]) / "mix.json", {"dry_run": True, "train_tokens": 1000,
+                                        "decontam": "full-eval-v1" if idx else "dev13-v1", "eval_index_dir": idx})
+        import gzip
+
+        with gzip.open(Path(args[0]) / "windows.json.gz", "wt", encoding="utf-8") as f:
+            json.dump({"format": "q9af-window-manifest-v1", "dry_run": True}, f)
     elif cmd == "pipeline":
         ck = Path(args[0])
         thr = {"4096": {"tok_s": 22000.0}, "call_latency": {"small_call_s": 0.07, "pack_call_s": 0.24}}

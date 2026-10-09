@@ -355,6 +355,93 @@ def build(cfg: dict, dev_rows: str, out_dir: str, tok=None, roots: dict | None =
     return meta
 
 
+# ----------------------------------------------------------------------------- per-window manifest
+#: convert/joint.py: WindowStream(train, L, B, seed=cfg["seed"] + 7)
+JOINT_SEED_OFFSET = 7
+WINDOWS_FORMAT = "q9af-window-manifest-v1"
+
+
+class WindowManifest:
+    """``build``'s on_doc hook: the identity and token span of every WRITTEN doc, in stream order, so a run's
+    training windows can be audited later (window id -> source docs + token span) without the text.
+
+    Doc ids are ``<stream>/<src>/f<file idx>/rg<row group>/r<row>`` with file indices in first-written order: the
+    same ids ``jobs.q9af_corpus_check.corpus_check`` reports. Train window w = tokens [w*L, (w+1)*L) of train.u32
+    (``WindowStream``: n_windows = (train_tokens - 1) // L); ``rank[w]`` = its position in the first permutation
+    (seed + 7), so a window was trained iff rank < the run's windows_used (results.json)."""
+
+    def __init__(self, roots: dict):
+        self.roots = roots
+        self.files: dict[tuple, int] = {}
+        self.docs: dict[str, list[tuple]] = {}
+        self.offsets: dict[str, int] = {}
+        self.dropped: dict[str, int] = {}
+
+    def __call__(self, stream, src, fp, rg, row, text, ntok, dropped):
+        if dropped is not None:
+            k = f"{stream}/{src}/{dropped}"
+            self.dropped[k] = self.dropped.get(k, 0) + 1
+            return
+        fi = self.files.setdefault((src, fp), len(self.files))
+        off = self.offsets.get(stream, 0)
+        self.offsets[stream] = off + int(ntok)
+        self.docs.setdefault(stream, []).append((SOURCES.index(src), fi, int(rg), int(row), off, int(ntok)))
+
+    def _cols(self, stream: str) -> dict:
+        d = np.asarray(self.docs.get(stream, []), dtype=np.int64).reshape(-1, 6)
+        return {"src": d[:, 0].tolist(), "file": d[:, 1].tolist(), "rg": d[:, 2].tolist(), "row": d[:, 3].tolist(),
+                "off": d[:, 4].tolist(), "ntok": d[:, 5].tolist()}
+
+    def manifest(self, meta: dict, seq_len: int, seed: int) -> dict:
+        tr = np.asarray(self.docs.get("train", []), dtype=np.int64).reshape(-1, 6)
+        off, ntok = tr[:, 4], tr[:, 5]
+        total = int(off[-1] + ntok[-1]) if len(tr) else 0
+        if total != int(meta["train_tokens"]):
+            raise SystemExit(f"window manifest: docs cover {total} tokens, train.u32 has {meta['train_tokens']}")
+        n_win = max(0, (total - 1) // seq_len)
+        starts = np.arange(n_win, dtype=np.int64) * seq_len
+        end = off + ntok
+        lo = np.searchsorted(end, starts, side="right")           # first doc ending after the window start
+        hi = np.searchsorted(off, starts + seq_len, side="left") - 1  # last doc starting before the window end
+        perm_seed = int(seed) + JOINT_SEED_OFFSET
+        perm = np.random.default_rng(perm_seed).permutation(n_win)
+        rank = np.empty(n_win, np.int64)
+        rank[perm] = np.arange(n_win)
+        files = [None] * len(self.files)
+        for (src, fp), i in self.files.items():
+            files[i] = f"{src}/" + os.path.relpath(fp, self.roots[src]).replace(os.sep, "/")
+        return {"format": WINDOWS_FORMAT, "doc_id": "<stream>/<SOURCES[src]>/f<file>/rg<rg>/r<row>",
+                "sources": list(SOURCES), "files": files, "decontam": meta.get("decontam", DECONTAM_DEV),
+                "train_sha256": meta["train_sha256"], "train_tokens": total, "dropped": self.dropped,
+                "train": {"docs": self._cols("train"),
+                          "windows": {"seq_len": int(seq_len), "n_windows": int(n_win), "perm_seed": perm_seed,
+                                      "span": "window w = train tokens [w*seq_len, (w+1)*seq_len)",
+                                      "doc_lo": lo.tolist(), "doc_hi": hi.tolist(), "rank": rank.tolist()}},
+                "heldout": {s.split("_", 1)[1]: {"docs": self._cols(s)} for s in sorted(self.docs) if s != "train"}}
+
+    def write(self, path, meta: dict, seq_len: int, seed: int) -> dict:
+        man = self.manifest(meta, seq_len, seed)
+        tmp = str(path) + ".tmp"
+        with gzip.open(tmp, "wt", encoding="utf-8", compresslevel=9) as f:
+            json.dump(man, f, separators=(",", ":"))
+        os.replace(tmp, path)
+        return {"windows_manifest": os.path.basename(str(path)), "windows_manifest_sha256": sha256_file(path),
+                "n_windows": man["train"]["windows"]["n_windows"], "train_docs": len(man["train"]["docs"]["off"])}
+
+
+def load_eval_index_dir(d: str):
+    """The pinned eval-hash index from a shipped dir (hashes only): rule, allowlist and array sha256 must match the
+    committed pin (data/manifests/doc_overlap/index-pin.json). Never rebuilds, never reads the suite."""
+    from train import doc_overlap_guard as G
+
+    pin = G.read_pin()
+    if not pin:
+        raise SystemExit("no data/manifests/doc_overlap/index-pin.json")
+    if pin.get("rule") != G.RULE or pin.get("allowlist_sha256") != G.allowlist_sha256():
+        raise SystemExit("index pin was made under a different rule / allowlist")
+    return G.load_index_dir(Path(d), pin["index_sha256"])
+
+
 # ----------------------------------------------------------------------------- consumption
 class WindowStream:
     """Non-overlapping length-L windows of the train stream in one seeded permutation. The token budget is sized so
@@ -412,8 +499,22 @@ def main(argv=None):
     b.add_argument("--out", required=True)
     b.add_argument("--decontam", choices=sorted(DECONTAM_RULES),
                    help=f"override the config's mix.decontam (absent there: {DECONTAM_DEFAULT})")
+    b.add_argument("--eval-index-dir", help="full-eval-v1: load the shipped, pin-checked eval-hash index from here")
+    b.add_argument("--windows-out", help="also write the per-window manifest (gz JSON, WindowManifest) here")
     a = ap.parse_args(argv)
-    meta = build(json.loads(Path(a.config).read_text(encoding="utf-8")), a.dev_rows, a.out, decontam=a.decontam)
+    cfg = json.loads(Path(a.config).read_text(encoding="utf-8"))
+    idx = load_eval_index_dir(a.eval_index_dir) if a.eval_index_dir else None
+    wm = None
+    if a.windows_out:
+        if (Path(a.out) / "mix.json").exists() and not Path(a.windows_out).exists():
+            raise SystemExit(f"{a.out}/mix.json exists without {a.windows_out}: the manifest needs a fresh build")
+        wm = WindowManifest({s: os.environ[SOURCE_ENV[s]] for s in SOURCES})
+    kw = {k: v for k, v in (("eval_index", idx), ("on_doc", wm)) if v is not None}
+    meta = build(cfg, a.dev_rows, a.out, decontam=a.decontam, **kw)
+    if wm is not None and wm.docs:
+        info = wm.write(a.windows_out, meta, cfg["seq_len"], cfg["seed"])
+        meta |= info
+        (Path(a.out) / "mix.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
     print(json.dumps({k: v for k, v in meta.items() if k != "sources"} | {
         "sources": {s: {k: v for k, v in d.items() if k != "files"} for s, d in meta["sources"].items()}}))
     return 0

@@ -1,0 +1,105 @@
+{
+ "_comment": "Q9-AF v2 CLEAN RERUN (jobs/q9af_v2/JOB_SPEC.md 'Clean rerun'): configs/q9af_v2_h100.json (job-w3c2e) with exactly two changes. (1) mix.decontam full-eval-v1: dev13-v1 + the pinned eval-hash index (DEV + TEST + held-out, index_sha256 2c821e29..., shipped as hashes) + eval attack templates; job-vdk25 measured that this drops 1,066 of w3c2e's 249,744 train docs, and the 280M-token quota is refilled from later rows. (2) stage-2 wall clock 430 -> 385 min, to fit the $41 platform quote; stage 1, the init, the data, the floors and the gate are unchanged. Q9-AF v2 (jobs/q9af_v2/JOB_SPEC.md): ALL 8 attention layers of Qwen3.5-9B -> GDN at once (no per-layer gate, no rollback), init from the attention projections (reuse_attn; init_cmp is a 40-step diagnostic with a pre-registered switch rule), stage 1 layer-wise alignment of all 8 (wall-clock 70 min), stage 2 end-to-end KL with all 8 GDNs training jointly (wall-clock 430 min), on a generic DEV-decontaminated mixture (convert.mixdata: fineweb-edu / ultrachat in the Qwen chat format / finemath; 280M tokens, every window drawn once). Gate: jobs/q9af_v2/rule.py (held-out KL + stock Index proxy600). Stage rates / peak / floors as measured on job-5cmat / job-2xe5w (1xH100, micro_batch 4, 8 x 4096).",
+ "seed": 0,
+ "kernel": "fla",
+ "model_dir": "${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-9B/snapshots",
+ "ckpt_dir": "${Q9AF2_CK}/gdn",
+ "attention_layers": [
+  3,
+  7,
+  11,
+  15,
+  19,
+  23,
+  27,
+  31
+ ],
+ "seq_len": 4096,
+ "batch": 8,
+ "micro_batch": 4,
+ "vram_fraction": 0.95,
+ "mix": {
+  "train_tokens": 280000000,
+  "shares": {
+   "web": 0.55,
+   "chat": 0.3,
+   "math": 0.15
+  },
+  "heldout_tokens": {
+   "web": 140000,
+   "chat": 110000,
+   "math": 45000
+  },
+  "decontam": "full-eval-v1"
+ },
+ "heldout_windows": {
+  "web": 32,
+  "chat": 24,
+  "math": 8
+ },
+ "curve_windows_per_source": 8,
+ "wikitext_gate_windows": 32,
+ "probes": {
+  "ppl": [
+   [
+    1024,
+    64
+   ],
+   [
+    4096,
+    16
+   ]
+  ],
+  "niah_lengths": [
+   1024,
+   2048,
+   4096,
+   8192,
+   16384
+  ],
+  "niah_n_per": 8,
+  "mqar_pairs": [
+   8,
+   32,
+   64,
+   128
+  ],
+  "mqar_n_seq": 20,
+  "mmlu_k": 5
+ },
+ "init_cmp": {
+  "steps": 40,
+  "lr": 0.001
+ },
+ "stage1": {
+  "lr": 0.001,
+  "guard": {
+   "min_tok_s": 9476,
+   "check_after_steps": 50,
+   "max_peak_gb": 76,
+   "max_minutes": 70
+  }
+ },
+ "stage2": {
+  "lr": 0.0003,
+  "eval_every_min": 60,
+  "guard": {
+   "min_tok_s": 2600,
+   "check_after_steps": 50,
+   "max_peak_gb": 76,
+   "max_minutes": 385
+  }
+ },
+ "throughput": {
+  "lengths": [
+   4096,
+   8192,
+   16384,
+   32768
+  ],
+  "reps": 2
+ },
+ "mmlu_full": {
+  "batch_tokens": 16384
+ }
+}

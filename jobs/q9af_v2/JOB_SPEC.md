@@ -124,3 +124,38 @@ and verified (MANIFEST.jsonl). `/output/Q9AF2_DONE` is written only by finalize,
 
 The CPU dry run (`Q9AF2_DRYRUN=1`, tests/test_q9af_v2.py) runs the real runner. Only the fetch, GPU and kit steps are
 stubbed.
+
+## Clean rerun (mode `clean`: `job_params_clean.json`, `configs/q9af_v2_clean_h100.json`)
+
+**Takeaway.** job-w3c2e's mix was filtered against DEV only (dev13-v1). The corpus check (job-vdk25) found eval
+contact in it (TEST / held-out / DEV / frozen) and that the full filter would drop 1,066 of its 249,744 train docs. The
+rerun is the same conversion on a mix filtered with `full-eval-v1` (dev13-v1 + the pinned DEV + TEST + held-out
+eval-hash index, `index_sha256` 2c821e29…, shipped as hashes in the 12 `doc-overlap/218affe13e367d07/` files the doc
+gate uses, + the eval attack templates). The 280M-token quota is refilled from later rows. **The rule is unchanged**
+(`jobs/q9af_v2/rule.py`, `q9af-v2-rule-v1`: KL ≤ 0.25, then STRONG / ADVANCE / MARGINAL / FOLD at −4/−8, −10, −17).
+
+What changes, and why the gate still holds:
+- **Exports.** Phase D writes `mix.json` (filter, rule text, index + template shas, drops per reason) and
+  `windows.json.gz` (`convert.mixdata.WindowManifest`: per doc its id, token offset and length; per train window
+  w = tokens [w·4096, (w+1)·4096) its doc range and its rank in WindowStream's permutation). Both go to `/output/` and
+  into every phase tgz, so `corpus_check compare` and window-level audits run offline.
+- **Budget fit ($41).** The quote is `max_duration × $0.063`. With the lint's 60-min build allowance:
+  (60 + 588) × 0.063 = **$40.82** worst case (`costs.worst_case_usd`, `batch_usd_per_min` set to the quote rate).
+  The platform quote alone is $37.04. Trims, in order:
+  1. Phase caps where w3c2e had slack (attempt 4 logs, 2026-10-09): setup + weights measured 3.3 min (caps 10 + 20 →
+     8 + 10). D measured 4.9 min under dev13-v1; full-eval-v1 adds ~8.3 min of serial guard (0.45M words/s per core ×
+     ~224M words), so D 35 → 30. X 15 → 8 (est. 3). I arms 20 → 15 each (projected 8.4). S 10 → 5 (measured 1).
+  2. Stage-2 KD 430 → 385 min (−10 %, ~116–134M instead of ~130–150M stage-2 tokens). P 550 → 482 = 70 + 385 +
+     1.3 × 19.2 uncapped + 1.9 slack (preflight need 480.0). Stage 1 (70 min), init, floors, peak stops, eval cadence
+     and every held-out / proxy600 measurement are unchanged. So the KL and proxy600 numbers are measured exactly as in
+     w3c2e. The trade-off: 10 % fewer KD tokens can only raise KL or lower the proxy diff. A pass is still a pass under
+     the same thresholds. A FOLD_KL / MARGINAL near a threshold should read the KL curve (still falling = buy minutes).
+- **Not changed:** the image (same Dockerfile), the decision rule, the proxy600 ids, B 2000 / seed 0, one attempt.
+
+| Phase | cap (min) | basis |
+|---|---|---|
+| setup / weights | 8 / 10 | w3c2e attempt 4: 3.3 total |
+| D (fetch + tokenise 280M + dev13 + full-eval-v1 guard + window manifest) | 30 | 4.9 measured + ~8.3 est. |
+| P (stage 1 70, stage 2 385, uncapped ×1.3) | 482 | preflight need 480.0 |
+| X / I_stock / I_conv / S | 8 / 15 / 15 / 5 | est. 3 / proj. 8.4 / 8.4 / meas. 1 |
+| reserve | 15 | |

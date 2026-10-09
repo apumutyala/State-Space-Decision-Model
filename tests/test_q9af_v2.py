@@ -182,6 +182,56 @@ def test_mixture_build_end_to_end(tmp_path):
     assert build(cfg, str(dev), str(tmp_path / "mix"), tok=FakeTok(), roots=roots) == meta  # idempotent
 
 
+def test_window_manifest_spans_and_ids(tmp_path):
+    """convert.mixdata.WindowManifest: every train window maps to the docs whose token spans overlap it, the doc table
+    tiles train.u32 exactly, and the ranks are WindowStream's first permutation (seed + 7)."""
+    pa = pytest.importorskip("pyarrow")
+    import pyarrow.parquet as pq
+
+    from convert.mixdata import HELDOUT_GLOBS, SOURCES, TRAIN_GLOBS, WindowManifest, build
+
+    roots = {}
+    for s in SOURCES:
+        r = tmp_path / s
+        roots[s] = str(r)
+        for g in TRAIN_GLOBS[s] + HELDOUT_GLOBS[s]:
+            p = r / g.replace("*", "x")
+            if p.exists():
+                continue
+            p.parent.mkdir(parents=True, exist_ok=True)
+            if s == "chat":
+                rows = [{"messages": [{"role": "user", "content": f"q{k} " * (5 + k % 7)},
+                                      {"role": "assistant", "content": f"a{k} " * 9}]} for k in range(60)]
+            else:
+                rows = [{"text": f"{s}{k} " * (8 + k % 11)} for k in range(60)]
+            pq.write_table(pa.Table.from_pylist(rows), p, row_group_size=10)
+    dev = tmp_path / "dev-rows.jsonl.gz"
+    with gzip.open(dev, "wt", encoding="utf-8") as f:
+        f.write(json.dumps({"state": "nothing shared here " * 5}) + "\n")
+    cfg = {"model_dir": "unused", "seed": 3, "seq_len": 16,
+           "mix": {"train_tokens": 1000, "shares": {"web": 0.5, "chat": 0.3, "math": 0.2},
+                   "heldout_tokens": {"web": 50, "chat": 50, "math": 50}, "decontam": "dev13-v1"}}
+    wm = WindowManifest(roots)
+    meta = build(cfg, str(dev), str(tmp_path / "mix"), tok=FakeTok(), roots=roots, on_doc=wm)
+    info = wm.write(tmp_path / "w.json.gz", meta, cfg["seq_len"], cfg["seed"])
+    man = json.loads(gzip.open(tmp_path / "w.json.gz", "rt", encoding="utf-8").read())
+    d, w = man["train"]["docs"], man["train"]["windows"]
+    train = np.fromfile(tmp_path / "mix" / "train.u32", dtype=np.uint32)
+    assert sum(d["ntok"]) == len(train) == man["train_tokens"] and d["off"][0] == 0
+    assert all(a + n == b for a, n, b in zip(d["off"], d["ntok"], d["off"][1:]))
+    assert all(train[o + n - 1] == 7 for o, n in zip(d["off"], d["ntok"]))  # every doc ends with its eos
+    L = w["seq_len"]
+    assert w["n_windows"] == info["n_windows"] == (len(train) - 1) // L
+    for k in range(w["n_windows"]):
+        lo, hi = w["doc_lo"][k], w["doc_hi"][k]
+        want = [i for i, (o, n) in enumerate(zip(d["off"], d["ntok"])) if o < (k + 1) * L and o + n > k * L]
+        assert list(range(lo, hi + 1)) == want
+    perm = np.random.default_rng(cfg["seed"] + 7).permutation(w["n_windows"])
+    assert w["perm_seed"] == 10 and [w["rank"][i] for i in perm] == list(range(w["n_windows"]))
+    assert set(man["heldout"]) == set(SOURCES) and all(man["heldout"][s]["docs"]["off"][0] == 0 for s in SOURCES)
+    assert man["files"][d["file"][0]].startswith(SOURCES[d["src"][0]] + "/")
+
+
 # ----------------------------------------------------------------------------- preflight, params, registration
 def test_preflight_passes_and_budget():
     from jobs.common.costs import PARAMS as REG, worst_case_usd
@@ -194,6 +244,42 @@ def test_preflight_passes_and_budget():
     assert "37.37" in (ROOT / "jobs/q9af_v2/JOB_SPEC.md").read_text(encoding="utf-8")
     assert REG["q9af_v2"] == "jobs/q9af_v2/job_params.json"
     assert PARAMS["decision_rule"] == "jobs/q9af_v2/rule.py" and PARAMS["max_restarts"] == 0
+
+
+PARAMS_CLEAN = json.loads((ROOT / "jobs/q9af_v2/job_params_clean.json").read_text(encoding="utf-8"))
+CFG_CLEAN = json.loads((ROOT / "configs/q9af_v2_clean_h100.json").read_text(encoding="utf-8"))
+
+
+def test_clean_rerun_params_budget_and_same_gate():
+    """mode clean = w3c2e's job with full-eval-v1, stage 2 430 -> 385 min and tighter caps; the rule and every
+    threshold, floor and the data recipe otherwise unchanged; the $41 platform quote incl. the 60-min build fits."""
+    from jobs.common.costs import PARAMS as REG, QUOTE_USD_PER_MIN, quoted_max_cost_usd, worst_case_usd
+    from jobs.q9af_v2.preflight import check
+
+    res = check(PARAMS_CLEAN, CFG_CLEAN)
+    assert res["ok"], {k: v for k, v in res["checks"].items() if not v["ok"]}
+    assert PARAMS_CLEAN["batch_usd_per_min"] == QUOTE_USD_PER_MIN == 0.063
+    w = worst_case_usd(PARAMS_CLEAN)
+    assert w == 40.82 <= PARAMS_CLEAN["hard_cap_usd"] == 41.0 and quoted_max_cost_usd(PARAMS_CLEAN) == 37.04
+    assert "40.82" in (ROOT / "jobs/q9af_v2/JOB_SPEC.md").read_text(encoding="utf-8")
+    assert REG["q9af_v2_clean"] == "jobs/q9af_v2/job_params_clean.json"
+    assert PARAMS_CLEAN["decision_rule"] == PARAMS["decision_rule"] and PARAMS_CLEAN["max_restarts"] == 0
+    assert PARAMS_CLEAN["submit"]["key"] != PARAMS["submit"]["key"]
+    assert PARAMS_CLEAN["submit"]["command"].endswith("q9af_v2_job.sh clean")
+    assert CFG_CLEAN["mix"]["decontam"] == "full-eval-v1" and CFG["mix"]["decontam"] == "dev13-v1"
+    assert CFG_CLEAN["stage2"]["guard"]["max_minutes"] == 385
+
+    def strip(c):
+        return {**c, "_comment": None, "mix": {**c["mix"], "decontam": None},
+                "stage2": {**c["stage2"], "guard": {**c["stage2"]["guard"], "max_minutes": None}}}
+
+    assert strip(CFG_CLEAN) == strip(CFG)
+    pin = (ROOT / "jobs/q9af_v2/data_clean.sha256").read_text(encoding="utf-8")
+    dests = [d["dest"] for d in PARAMS_CLEAN["context"]["data"]]
+    assert len(dests) == 13 and all(f"/data/{x}" in pin for x in dests)
+    ip = json.loads((ROOT / "data/manifests/doc_overlap/index-pin.json").read_text(encoding="utf-8"))
+    assert ip["index_sha256"].startswith("2c821e29") and ip["key"].startswith("218affe13e367d07")
+    assert "EVAL_INDEX=$DATA/doc-overlap/218affe13e367d07" in RUNNER
 
 
 def test_runner_dry_seam_is_refused_in_the_image():
@@ -229,7 +315,7 @@ def _dry_root(tmp_path):
     return root
 
 
-def run_dry(root, env_extra=None, timeout=600):
+def run_dry(root, env_extra=None, timeout=600, mode=""):
     env = {k: v for k, v in os.environ.items() if not k.startswith(("GMN_", "Q9AF2_"))}
     path = [_to_posix(root / "shim"), _to_posix(os.path.dirname(sys.executable))]
     env.update({"Q9AF2_DRYRUN": "1", "Q9AF2_DRYRUN_ROOT": _to_posix(root), "CUDA_VISIBLE_DEVICES": "",
@@ -238,7 +324,7 @@ def run_dry(root, env_extra=None, timeout=600):
         env["PYTHONPATH"] = os.pathsep.join([p for p in sys.path if p.endswith("site-packages")]
                                             + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))
     env.update(env_extra or {})
-    cmd = [BASH, "-c", 'export PATH="$Q9AF2_PATH_PREFIX:$PATH"; exec bash jobs/q9af_v2/q9af_v2_job.sh']
+    cmd = [BASH, "-c", 'export PATH="$Q9AF2_PATH_PREFIX:$PATH"; exec bash jobs/q9af_v2/q9af_v2_job.sh ' + mode]
     with open(root / "console.log", "w", encoding="utf-8") as log:
         rc = subprocess.run(cmd, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=timeout).returncode
     return rc, root / "output"
@@ -259,6 +345,29 @@ def test_shell_dry_run(tmp_path, point, lo, want_rc, want):
     man = [json.loads(x) for x in (out / "MANIFEST.jsonl").read_text().splitlines()]
     assert {m["phase"] for m in man} >= {"setup", "D", "P", "X", "I_stock", "I_conv", "S", "final"}
     assert all(m["ok"] for m in man)
+    assert (out / "mix.json").exists() and (out / "windows.json.gz").exists()
+
+
+@pytest.mark.skipif(BASH is None, reason="bash not available")
+def test_shell_dry_run_clean_mode(tmp_path):
+    """mode clean: its params / config drive the preflight for real, phase D gets the shipped eval-index dir, and
+    mix.json + the window manifest are exported (top level and in phases/D.tgz)."""
+    pytest.importorskip("torch")
+    import tarfile
+
+    root = _dry_root(tmp_path)
+    rc, out = run_dry(root, {"Q9AF2_STUB_POINT": "-6.0", "Q9AF2_STUB_LO": "-9.5"}, mode="clean")
+    log = (root / "console.log").read_text(encoding="utf-8", errors="replace")
+    assert rc == 0, log[-4000:]
+    assert "clean mode: configs/q9af_v2_clean_h100.json" in log
+    assert json.loads((out / "decision.json").read_text())["verdict"] == "ADVANCE"
+    mix = json.loads((out / "mix.json").read_text())
+    assert mix["decontam"] == "full-eval-v1" and mix["eval_index_dir"].endswith("data/doc-overlap/218affe13e367d07")
+    with tarfile.open(out / "phases" / "D.tgz") as t:
+        names = set(t.getnames())
+    assert {"out/mix.json", "out/windows.json.gz"} <= names
+    pre = json.loads((root / "work" / "out" / "preflight.json").read_text())
+    assert pre["checks"]["schedule"]["max_duration"] == 588 and pre["checks"]["hard_cap"]["worst_case_usd"] == 40.82
 
 
 # ----------------------------------------------------------------------------- convert.joint on a tiny Qwen3.5 (CPU)

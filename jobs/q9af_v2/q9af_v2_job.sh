@@ -12,6 +12,9 @@
 #   timeout   8 9B weights unavailable   9 no valid decision   10 DEV-row / proxy identity   11 mixture build failed
 #   12 Index kit failed   13 scoring failed   15 Index readout too slow by MEASUREMENT   1 finalize failed
 # /output/Q9AF2_DONE is written ONLY by jobs/common/finalize.py, and only when its final code is 0.
+# Mode (argv 1): none = job-w3c2e's job (job_params.json, configs/q9af_v2_h100.json, dev13-v1 decontam). "clean" = the
+# clean rerun (job_params_clean.json + its config: full-eval-v1 decontam against the shipped eval-hash index, the same
+# rule). Both modes export mix.json and the per-window manifest (windows.json.gz) after phase D.
 # Q9AF2_DRYRUN=1 (CPU, tests/test_q9af_v2.py): this very script with only the fetch / GPU / kit steps replaced by
 # tests/q9af_v2_stub.py; setup checks, the preflight, the rule and finalize run for real. Refused inside the image.
 set -Euo pipefail
@@ -29,10 +32,15 @@ if [ -n "${Q9AF2_DRYRUN:-}" ]; then
   WORK=$Q9AF2_DRYRUN_ROOT/work
   DRY="python -X utf8 -m tests.q9af_v2_stub"
 fi
-PARAMS=$CODE/jobs/q9af_v2/job_params.json
-CFG=configs/q9af_v2_h100.json
+MODE=${1:-}
 PROXY=jobs/common/dev_proxy600.json
-DATA_SHA=$CODE/jobs/clef_baseline/data.sha256
+EVAL_INDEX=""
+case "$MODE" in
+  "") PARAMS=$CODE/jobs/q9af_v2/job_params.json; CFG=configs/q9af_v2_h100.json; DATA_SHA=$CODE/jobs/clef_baseline/data.sha256 ;;
+  clean) PARAMS=$CODE/jobs/q9af_v2/job_params_clean.json; CFG=configs/q9af_v2_clean_h100.json
+         DATA_SHA=$CODE/jobs/q9af_v2/data_clean.sha256; EVAL_INDEX=$DATA/doc-overlap/218affe13e367d07 ;;
+  *) echo "unknown mode $MODE"; exit 5 ;;
+esac
 [ -z "$DRY" ] || DATA_SHA=$Q9AF2_DRYRUN_ROOT/data.sha256
 OUT=${GMN_OUTPUT_DIR:-/output}
 [ -z "$DRY" ] || OUT=$Q9AF2_DRYRUN_ROOT/output
@@ -61,6 +69,7 @@ cd "$CODE"
 sync_pipeline() {
   cp -f "$CK/pipeline/results.json" "$CK/pipeline/config.json" "$CK/pipeline/train_log.jsonl" "$WORK/out/pipeline/" 2> /dev/null || true
   cp -f "$WORK/mix/mix.json" "$WORK/out/mix.json" 2> /dev/null || true
+  cp -f "$WORK/mix/windows.json.gz" "$WORK/out/windows.json.gz" 2> /dev/null || true
 }
 salvage() {  # a failed attempt still exports its last stage-2 checkpoint (never a Q9-AF input)
   [ "$EXPORTED" = 1 ] && return 0
@@ -89,7 +98,7 @@ watchdog & WD_PID=$!
 trap finish EXIT
 
 # ------------------------------------------------------------------ setup (exit 5 / 8 / 10)
-say "setup ($CFG${DRY:+; CPU DRY RUN})"
+say "setup (${MODE:-w3c2e} mode: $CFG${DRY:+; CPU DRY RUN})"
 cp "$MANIFEST" "$WORK/out/" || fail 5 "no context manifest"
 cp "$CFG" "$WORK/out/config.used.json"
 if [ -n "$DRY" ]; then
@@ -134,15 +143,22 @@ gate "setup" 0
 export_phase setup
 
 # ------------------------------------------------------------------ D: the generic distillation mixture
-say "phase D (mixture build + DEV 13-gram filter)"
+say "phase D (mixture build + ${EVAL_INDEX:+full-eval-v1 / }DEV 13-gram filter + window manifest)"
+IDX_ARGS=()
+[ -z "$EVAL_INDEX" ] || IDX_ARGS=(--eval-index-dir "$EVAL_INDEX")
 if [ -n "$DRY" ]; then
-  $DRY mix "$WORK/mix" > "$WORK/logs/mix.log" 2>&1; r=$?
+  $DRY mix "$WORK/mix" "${IDX_ARGS[@]}" > "$WORK/logs/mix.log" 2>&1; r=$?
 else
   timeout "${CAP_D}m" python -X utf8 -m convert.mixdata build --config "$CFG" --dev-rows "$DATA/slices/dev-rows.jsonl.gz" \
-    --out "$WORK/mix" > "$WORK/logs/mix.log" 2>&1; r=$?
+    "${IDX_ARGS[@]}" --windows-out "$WORK/mix/windows.json.gz" --out "$WORK/mix" > "$WORK/logs/mix.log" 2>&1; r=$?
+fi
+if [ $r -eq 0 ] && { [ ! -s "$WORK/mix/mix.json" ] || [ ! -s "$WORK/mix/windows.json.gz" ]; }; then
+  r=11; say "mix.json / window manifest missing"
 fi
 gate "D:mix" $r
 sync_pipeline
+cp -f "$WORK/mix/mix.json" "$OUT/mix.json" 2> /dev/null || true
+cp -f "$WORK/mix/windows.json.gz" "$OUT/windows.json.gz" 2> /dev/null || true
 export_phase D
 case $r in 0) ;; 124) fail 7 "mixture timeout" ;; *) fail 11 "mixture build rc=$r" ;; esac
 
