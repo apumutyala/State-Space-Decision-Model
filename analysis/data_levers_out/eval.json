@@ -1,0 +1,1222 @@
+{
+ "index": {
+  "champ": 38.6689622257272,
+  "d10w": 40.142528080821684,
+  "clef": 55.77951808430067
+ },
+ "families": {
+  "1": {
+   "name": "BFCL",
+   "frozen": false,
+   "w": 0.04061843814409972,
+   "skill": {
+    "champ": 90.54,
+    "d10w": 93.69,
+    "clef": 96.85
+   },
+   "gap_pts_champ": 0.256,
+   "gap_pts_d10w": 0.128,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 126,
+   "qtypes": {
+    "choice": 387
+   },
+   "k": {
+    "2": 387
+   },
+   "gold": {
+    "2:no": 261,
+    "2:yes": 126
+   }
+  },
+  "2": {
+   "name": "ToolRet",
+   "frozen": false,
+   "w": 0.033848698453416426,
+   "skill": {
+    "champ": 55.69,
+    "d10w": 53.39,
+    "clef": 61.81
+   },
+   "gap_pts_champ": 0.207,
+   "gap_pts_d10w": 0.285,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 51,
+   "qtypes": {
+    "choice": 61
+   },
+   "k": {
+    "2": 61
+   },
+   "gold": {
+    "2:yes": 61
+   }
+  },
+  "3": {
+   "name": "API-Bank",
+   "frozen": false,
+   "w": 0.04061843814409972,
+   "skill": {
+    "champ": 51.72,
+    "d10w": 59.77,
+    "clef": 97.32
+   },
+   "gap_pts_champ": 1.852,
+   "gap_pts_d10w": 1.525,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 38,
+   "qtypes": {
+    "choice": 38
+   },
+   "k": {
+    "53": 38
+   },
+   "gold": {}
+  },
+  "4": {
+   "name": "BANKING77",
+   "frozen": false,
+   "w": 0.0364052206180664,
+   "skill": {
+    "champ": 50.96,
+    "d10w": 55.42,
+    "clef": 85.32
+   },
+   "gap_pts_champ": 1.251,
+   "gap_pts_d10w": 1.089,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 76,
+   "qtypes": {
+    "choice": 76
+   },
+   "k": {
+    "77": 76
+   },
+   "gold": {}
+  },
+  "5": {
+   "name": "CLINC150+OOS",
+   "frozen": false,
+   "w": 0.0364052206180664,
+   "skill": {
+    "champ": 57.44,
+    "d10w": 57.9,
+    "clef": 68.78
+   },
+   "gap_pts_champ": 0.413,
+   "gap_pts_d10w": 0.396,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [
+    {
+     "arm": "d10w",
+     "qtype": "choice",
+     "k": 151,
+     "label": "option_80",
+     "gold": 0.211,
+     "pred": 0.0,
+     "n": 76,
+     "kind": "COLLAPSE"
+    }
+   ],
+   "rows": 76,
+   "qtypes": {
+    "choice": 76
+   },
+   "k": {
+    "151": 76
+   },
+   "gold": {}
+  },
+  "9": {
+   "name": "Home appliance simulator",
+   "frozen": true,
+   "w": 0.033848698453416426,
+   "skill": {
+    "champ": 0.0,
+    "d10w": 16.67,
+    "clef": 91.67
+   },
+   "gap_pts_champ": 3.103,
+   "gap_pts_d10w": 2.539,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 12,
+   "qtypes": {
+    "choice": 217
+   },
+   "k": {
+    "2": 173,
+    "3": 20,
+    "5": 10,
+    "6": 2,
+    "9": 12
+   },
+   "gold": {
+    "2:k_c0d3e6df": 1,
+    "2:k_e77ccf04": 1,
+    "2:k_0916dc10": 1,
+    "2:k_31f58b28": 1,
+    "2:k_2b1b4b75": 1,
+    "3:k_c77d1ef8": 1,
+    "2:k_cb7fad56": 1,
+    "2:k_7fc99319": 1,
+    "2:k_b3e13296": 1,
+    "2:k_690b41c0": 1,
+    "2:k_62b86ab3": 1,
+    "2:k_00f7040b": 1
+   }
+  },
+  "11": {
+   "name": "ContractNLI",
+   "frozen": false,
+   "w": 0.024386241271329535,
+   "skill": {
+    "champ": 38.83,
+    "d10w": 50.05,
+    "clef": 75.13
+   },
+   "gap_pts_champ": 0.885,
+   "gap_pts_d10w": 0.612,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 12,
+   "qtypes": {
+    "choice": 204
+   },
+   "k": {
+    "3": 204
+   },
+   "gold": {
+    "3:Entailment": 94,
+    "3:NotMentioned": 86,
+    "3:Contradiction": 24
+   }
+  },
+  "12": {
+   "name": "ANLI",
+   "frozen": false,
+   "w": 0.029263489525595442,
+   "skill": {
+    "champ": 44.19,
+    "d10w": 58.31,
+    "clef": 24.99
+   },
+   "gap_pts_champ": -0.562,
+   "gap_pts_d10w": -0.975,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 43
+   },
+   "k": {
+    "3": 43
+   },
+   "gold": {
+    "3:C": 17,
+    "3:B": 13,
+    "3:A": 13
+   }
+  },
+  "20": {
+   "name": "BPoMP",
+   "frozen": true,
+   "w": 0.01388888888888889,
+   "skill": {
+    "champ": 76.43,
+    "d10w": 85.0,
+    "clef": 94.29
+   },
+   "gap_pts_champ": 0.248,
+   "gap_pts_d10w": 0.129,
+   "trail10_champ": true,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 61,
+   "qtypes": {
+    "choice": 61
+   },
+   "k": {
+    "2": 61
+   },
+   "gold": {
+    "2:option_1": 33,
+    "2:option_0": 28
+   }
+  },
+  "21": {
+   "name": "Humicroedit",
+   "frozen": false,
+   "w": 0.01388888888888889,
+   "skill": {
+    "champ": 28.81,
+    "d10w": 38.98,
+    "clef": 42.37
+   },
+   "gap_pts_champ": 0.188,
+   "gap_pts_d10w": 0.047,
+   "trail10_champ": true,
+   "trail10_d10w": false,
+   "flags": [
+    {
+     "arm": "champ",
+     "qtype": "choice",
+     "k": 2,
+     "label": "headline_1",
+     "gold": 0.356,
+     "pred": 0.0,
+     "n": 59,
+     "kind": "COLLAPSE"
+    },
+    {
+     "arm": "champ",
+     "qtype": "choice",
+     "k": 2,
+     "label": "headline_2",
+     "gold": 0.644,
+     "pred": 1.0,
+     "n": 59,
+     "kind": "COLLAPSE"
+    }
+   ],
+   "rows": 59,
+   "qtypes": {
+    "choice": 59
+   },
+   "k": {
+    "2": 59
+   },
+   "gold": {
+    "2:headline_2": 38,
+    "2:headline_1": 21
+   }
+  },
+  "22": {
+   "name": "POP909-CL",
+   "frozen": true,
+   "w": 0.01388888888888889,
+   "skill": {
+    "champ": 2.37,
+    "d10w": 3.42,
+    "clef": 1.32
+   },
+   "gap_pts_champ": -0.015,
+   "gap_pts_d10w": -0.029,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [
+    {
+     "arm": "champ",
+     "qtype": "choice",
+     "k": 129,
+     "label": "chord_119",
+     "gold": 0.102,
+     "pred": 0.0,
+     "n": 59,
+     "kind": "COLLAPSE"
+    },
+    {
+     "arm": "d10w",
+     "qtype": "choice",
+     "k": 129,
+     "label": "chord_119",
+     "gold": 0.102,
+     "pred": 0.0,
+     "n": 59,
+     "kind": "COLLAPSE"
+    }
+   ],
+   "rows": 59,
+   "qtypes": {
+    "choice": 59
+   },
+   "k": {
+    "129": 59
+   },
+   "gold": {}
+  },
+  "23": {
+   "name": "cfcolor",
+   "frozen": false,
+   "w": 0.01388888888888889,
+   "skill": {
+    "champ": 7.24,
+    "d10w": 10.32,
+    "clef": 12.7
+   },
+   "gap_pts_champ": 0.076,
+   "gap_pts_d10w": 0.033,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 60,
+   "qtypes": {
+    "choice": 60
+   },
+   "k": {
+    "2": 60
+   },
+   "gold": {
+    "2:A": 30,
+    "2:B": 30
+   }
+  },
+  "25": {
+   "name": "GPQA Diamond",
+   "frozen": false,
+   "w": 0.028721573052899227,
+   "skill": {
+    "champ": 23.81,
+    "d10w": 14.29,
+    "clef": 14.29
+   },
+   "gap_pts_champ": -0.273,
+   "gap_pts_d10w": 0.0,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 14,
+   "qtypes": {
+    "choice": 14
+   },
+   "k": {
+    "4": 14
+   },
+   "gold": {
+    "4:B": 5,
+    "4:A": 4,
+    "4:D": 4,
+    "4:C": 1
+   }
+  },
+  "28": {
+   "name": "WinoGrande",
+   "frozen": false,
+   "w": 0.029263489525595442,
+   "skill": {
+    "champ": 53.48,
+    "d10w": 53.48,
+    "clef": 100.0
+   },
+   "gap_pts_champ": 1.361,
+   "gap_pts_d10w": 1.361,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 43
+   },
+   "k": {
+    "2": 43
+   },
+   "gold": {
+    "2:A": 28,
+    "2:B": 15
+   }
+  },
+  "29": {
+   "name": "HellaSwag",
+   "frozen": false,
+   "w": 0.029263489525595442,
+   "skill": {
+    "champ": 81.4,
+    "d10w": 90.69,
+    "clef": 96.89
+   },
+   "gap_pts_champ": 0.453,
+   "gap_pts_d10w": 0.181,
+   "trail10_champ": true,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 43
+   },
+   "k": {
+    "4": 43
+   },
+   "gold": {
+    "4:C": 15,
+    "4:D": 13,
+    "4:A": 9,
+    "4:B": 6
+   }
+  },
+  "30": {
+   "name": "GSM8K",
+   "frozen": false,
+   "w": 0.023934644210749357,
+   "skill": {
+    "champ": 71.72,
+    "d10w": 66.67,
+    "clef": 56.06
+   },
+   "gap_pts_champ": -0.375,
+   "gap_pts_d10w": -0.254,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 44,
+   "qtypes": {
+    "choice": 44
+   },
+   "k": {
+    "4": 22,
+    "10": 22
+   },
+   "gold": {
+    "4:option_0": 6,
+    "4:option_2": 6,
+    "4:option_3": 6,
+    "4:option_1": 4
+   }
+  },
+  "31": {
+   "name": "ChessBench",
+   "frozen": true,
+   "w": 0.023934644210749357,
+   "skill": {
+    "champ": 4.29,
+    "d10w": 4.29,
+    "clef": 14.37
+   },
+   "gap_pts_champ": 0.241,
+   "gap_pts_d10w": 0.241,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 43
+   },
+   "k": {
+    "3": 2,
+    "6": 1,
+    "9": 2,
+    "12": 1,
+    "14": 3,
+    "18": 1,
+    "20": 1,
+    "24": 1,
+    "26": 1,
+    "27": 2,
+    "28": 1,
+    "29": 5,
+    "31": 3,
+    "32": 1,
+    "33": 1,
+    "34": 6,
+    "36": 2,
+    "37": 4,
+    "38": 1,
+    "40": 2,
+    "47": 2
+   },
+   "gold": {
+    "3:f2g2": 1,
+    "3:d1c2": 1
+   }
+  },
+  "32": {
+   "name": "MuSR",
+   "frozen": true,
+   "w": 0.023934644210749357,
+   "skill": {
+    "champ": 22.35,
+    "d10w": 29.75,
+    "clef": 74.12
+   },
+   "gap_pts_champ": 1.239,
+   "gap_pts_d10w": 1.062,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 43
+   },
+   "k": {
+    "2": 16,
+    "3": 19,
+    "4": 5,
+    "5": 3
+   },
+   "gold": {
+    "2:B": 9,
+    "3:A": 8,
+    "2:A": 7,
+    "3:C": 6,
+    "3:B": 5,
+    "4:A": 4,
+    "4:D": 1
+   }
+  },
+  "33": {
+   "name": "SATA-Bench",
+   "frozen": true,
+   "w": 0.023934644210749357,
+   "skill": {
+    "champ": 38.73,
+    "d10w": 26.95,
+    "clef": 41.09
+   },
+   "gap_pts_champ": 0.057,
+   "gap_pts_d10w": 0.338,
+   "trail10_champ": false,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 425
+   },
+   "k": {
+    "2": 425
+   },
+   "gold": {
+    "2:no": 248,
+    "2:yes": 177
+   }
+  },
+  "36": {
+   "name": "BRIGHT",
+   "frozen": false,
+   "w": 0.0364052206180664,
+   "skill": {
+    "champ": 19.19,
+    "d10w": 20.1,
+    "clef": 21.85
+   },
+   "gap_pts_champ": 0.097,
+   "gap_pts_d10w": 0.064,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 16,
+   "qtypes": {
+    "choice": 20
+   },
+   "k": {
+    "2": 20
+   },
+   "gold": {
+    "2:yes": 20
+   }
+  },
+  "37": {
+   "name": "Amazon ESCI",
+   "frozen": false,
+   "w": 0.030337683848388666,
+   "skill": {
+    "champ": 15.02,
+    "d10w": 22.38,
+    "clef": 28.7
+   },
+   "gap_pts_champ": 0.415,
+   "gap_pts_d10w": 0.192,
+   "trail10_champ": true,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 76,
+   "qtypes": {
+    "choice": 76
+   },
+   "k": {
+    "4": 76
+   },
+   "gold": {
+    "4:E": 49,
+    "4:S": 19,
+    "4:I": 6,
+    "4:C": 2
+   }
+  },
+  "38": {
+   "name": "ACOS",
+   "frozen": false,
+   "w": 0.024386241271329535,
+   "skill": {
+    "champ": 5.64,
+    "d10w": 29.81,
+    "clef": 19.82
+   },
+   "gap_pts_champ": 0.346,
+   "gap_pts_d10w": -0.244,
+   "trail10_champ": true,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 45,
+   "qtypes": {
+    "choice": 2658
+   },
+   "k": {
+    "2": 2658
+   },
+   "gold": {
+    "2:no": 2642,
+    "2:yes": 16
+   }
+  },
+  "39": {
+   "name": "FinEntity",
+   "frozen": false,
+   "w": 0.024386241271329535,
+   "skill": {
+    "champ": 86.1,
+    "d10w": 93.95,
+    "clef": 100.0
+   },
+   "gap_pts_champ": 0.339,
+   "gap_pts_d10w": 0.147,
+   "trail10_champ": true,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 94
+   },
+   "k": {
+    "3": 94
+   },
+   "gold": {
+    "3:Neutral": 46,
+    "3:Positive": 25,
+    "3:Negative": 23
+   }
+  },
+  "40": {
+   "name": "iSarcasmEval",
+   "frozen": false,
+   "w": 0.024386241271329535,
+   "skill": {
+    "champ": 85.71,
+    "d10w": 85.71,
+    "clef": 44.87
+   },
+   "gap_pts_champ": -0.996,
+   "gap_pts_d10w": -0.996,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 45,
+   "qtypes": {
+    "choice": 115
+   },
+   "k": {
+    "2": 115
+   },
+   "gold": {
+    "2:no": 103,
+    "2:yes": 8,
+    "2:text_1": 3,
+    "2:text_0": 1
+   }
+  },
+  "41": {
+   "name": "VAST",
+   "frozen": false,
+   "w": 0.024386241271329535,
+   "skill": {
+    "champ": 32.73,
+    "d10w": 17.24,
+    "clef": 27.25
+   },
+   "gap_pts_champ": -0.134,
+   "gap_pts_d10w": 0.244,
+   "trail10_champ": false,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 43
+   },
+   "k": {
+    "3": 43
+   },
+   "gold": {
+    "3:A": 19,
+    "3:B": 12,
+    "3:C": 12
+   }
+  },
+  "42": {
+   "name": "NLI4CT",
+   "frozen": false,
+   "w": 0.024386241271329535,
+   "skill": {
+    "champ": 18.75,
+    "d10w": 41.61,
+    "clef": 62.43
+   },
+   "gap_pts_champ": 1.065,
+   "gap_pts_d10w": 0.508,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 50,
+   "qtypes": {
+    "choice": 50
+   },
+   "k": {
+    "2": 50
+   },
+   "gold": {
+    "2:Contradiction": 32,
+    "2:Entailment": 18
+   }
+  },
+  "43": {
+   "name": "CRUXEval",
+   "frozen": false,
+   "w": 0.023934644210749357,
+   "skill": {
+    "champ": 12.87,
+    "d10w": 24.24,
+    "clef": 84.85
+   },
+   "gap_pts_champ": 1.723,
+   "gap_pts_d10w": 1.451,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 42,
+   "qtypes": {
+    "choice": 42
+   },
+   "k": {
+    "2": 21,
+    "3": 7,
+    "4": 6,
+    "5": 2,
+    "6": 3,
+    "7": 1,
+    "8": 1,
+    "10": 1
+   },
+   "gold": {
+    "2:option_1": 12,
+    "2:option_0": 9,
+    "3:option_2": 4,
+    "4:option_0": 3,
+    "4:option_3": 2,
+    "3:option_0": 2,
+    "3:option_1": 1,
+    "4:option_1": 1
+   }
+  },
+  "44": {
+   "name": "CLadder",
+   "frozen": true,
+   "w": 0.023934644210749357,
+   "skill": {
+    "champ": 48.84,
+    "d10w": 48.84,
+    "clef": 95.35
+   },
+   "gap_pts_champ": 1.113,
+   "gap_pts_d10w": 1.113,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 43
+   },
+   "k": {
+    "2": 43
+   },
+   "gold": {
+    "2:A": 22,
+    "2:B": 21
+   }
+  },
+  "45": {
+   "name": "HLE",
+   "frozen": false,
+   "w": 0.028721573052899227,
+   "skill": {
+    "champ": 0.0,
+    "d10w": 0.0,
+    "clef": 6.23
+   },
+   "gap_pts_champ": 0.179,
+   "gap_pts_d10w": 0.179,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 37,
+   "qtypes": {
+    "choice": 37
+   },
+   "k": {
+    "5": 19,
+    "6": 3,
+    "7": 3,
+    "8": 5,
+    "9": 3,
+    "11": 1,
+    "12": 2,
+    "18": 1
+   },
+   "gold": {}
+  },
+  "48": {
+   "name": "ForecastBench",
+   "frozen": false,
+   "w": 0.016666666666666666,
+   "skill": {
+    "champ": 11.16,
+    "d10w": 0.0,
+    "clef": 78.6
+   },
+   "gap_pts_champ": 1.124,
+   "gap_pts_d10w": 1.31,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [
+    {
+     "arm": "champ",
+     "qtype": "choice",
+     "k": 2,
+     "label": "no",
+     "gold": 0.719,
+     "pred": 1.0,
+     "n": 64,
+     "kind": "COLLAPSE"
+    },
+    {
+     "arm": "champ",
+     "qtype": "choice",
+     "k": 2,
+     "label": "yes",
+     "gold": 0.281,
+     "pred": 0.0,
+     "n": 64,
+     "kind": "COLLAPSE"
+    }
+   ],
+   "rows": 64,
+   "qtypes": {
+    "choice": 64
+   },
+   "k": {
+    "2": 64
+   },
+   "gold": {
+    "2:no": 46,
+    "2:yes": 18
+   }
+  },
+  "50": {
+   "name": "Habermas Machine",
+   "frozen": false,
+   "w": 0.01388888888888889,
+   "skill": {
+    "champ": 8.05,
+    "d10w": 8.05,
+    "clef": 42.53
+   },
+   "gap_pts_champ": 0.479,
+   "gap_pts_d10w": 0.479,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 60,
+   "qtypes": {
+    "choice": 60
+   },
+   "k": {
+    "2": 4,
+    "4": 51,
+    "5": 5
+   },
+   "gold": {
+    "4:option_0": 20,
+    "4:option_1": 13,
+    "4:option_2": 9,
+    "4:option_3": 9,
+    "2:option_0": 3,
+    "2:option_1": 1
+   }
+  },
+  "56": {
+   "name": "PhishNChips phishing decisions",
+   "frozen": false,
+   "w": 0.030337683848388666,
+   "skill": {
+    "champ": 34.22,
+    "d10w": 13.16,
+    "clef": 50.0
+   },
+   "gap_pts_champ": 0.479,
+   "gap_pts_d10w": 1.118,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [
+    {
+     "arm": "d10w",
+     "qtype": "noul",
+     "k": 2,
+     "label": "false",
+     "gold": 0.539,
+     "pred": 0.9868,
+     "n": 76,
+     "kind": "near"
+    },
+    {
+     "arm": "d10w",
+     "qtype": "noul",
+     "k": 2,
+     "label": "true",
+     "gold": 0.461,
+     "pred": 0.0132,
+     "n": 76,
+     "kind": "near"
+    }
+   ],
+   "rows": 76,
+   "qtypes": {
+    "choice": 228,
+    "noul": 76
+   },
+   "k": {
+    "2": 228
+   },
+   "gold": {
+    "2:legitimate": 82,
+    "2:phishing": 70,
+    "noul:false": 41,
+    "2:click": 41,
+    "noul:true": 35,
+    "2:do_not_click": 35
+   }
+  },
+  "57": {
+   "name": "MMLU-Pro",
+   "frozen": false,
+   "w": 0.028721573052899227,
+   "skill": {
+    "champ": 39.84,
+    "d10w": 31.99,
+    "clef": 63.38
+   },
+   "gap_pts_champ": 0.676,
+   "gap_pts_d10w": 0.902,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 43
+   },
+   "k": {
+    "4": 4,
+    "5": 1,
+    "9": 3,
+    "10": 35
+   },
+   "gold": {
+    "4:C": 2,
+    "4:D": 1,
+    "4:A": 1
+   }
+  },
+  "58": {
+   "name": "BBH fixed-option tasks",
+   "frozen": true,
+   "w": 0.028721573052899227,
+   "skill": {
+    "champ": 42.7,
+    "d10w": 52.8,
+    "clef": 35.95
+   },
+   "gap_pts_champ": -0.194,
+   "gap_pts_d10w": -0.484,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 43,
+   "qtypes": {
+    "choice": 43
+   },
+   "k": {
+    "2": 13,
+    "3": 6,
+    "4": 7,
+    "5": 1,
+    "6": 7,
+    "7": 4,
+    "10": 3,
+    "18": 2
+   },
+   "gold": {
+    "3:(B)": 4,
+    "4:(A)": 4,
+    "2:No": 3,
+    "2:invalid": 2,
+    "2:(B)": 2,
+    "4:(C)": 2,
+    "3:(A)": 2,
+    "2:False": 1,
+    "2:valid": 1,
+    "2:(A)": 1,
+    "2:Yes": 1,
+    "2:no": 1
+   }
+  },
+  "59": {
+   "name": "RAGTruth response-level hallucination",
+   "frozen": false,
+   "w": 0.024386241271329535,
+   "skill": {
+    "champ": 9.06,
+    "d10w": 0.0,
+    "clef": 0.0
+   },
+   "gap_pts_champ": -0.221,
+   "gap_pts_d10w": 0.0,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [
+    {
+     "arm": "d10w",
+     "qtype": "noul",
+     "k": 2,
+     "label": "false",
+     "gold": 0.578,
+     "pred": 1.0,
+     "n": 45,
+     "kind": "COLLAPSE"
+    },
+    {
+     "arm": "d10w",
+     "qtype": "noul",
+     "k": 2,
+     "label": "true",
+     "gold": 0.422,
+     "pred": 0.0,
+     "n": 45,
+     "kind": "COLLAPSE"
+    }
+   ],
+   "rows": 45,
+   "qtypes": {
+    "noul": 45
+   },
+   "k": {},
+   "gold": {
+    "noul:false": 26,
+    "noul:true": 19
+   }
+  },
+  "61": {
+   "name": "HoVer claim verification",
+   "frozen": false,
+   "w": 0.030337683848388666,
+   "skill": {
+    "champ": 28.94,
+    "d10w": 7.9,
+    "clef": 13.16
+   },
+   "gap_pts_champ": -0.479,
+   "gap_pts_d10w": 0.16,
+   "trail10_champ": false,
+   "trail10_d10w": false,
+   "flags": [],
+   "rows": 76,
+   "qtypes": {
+    "choice": 76
+   },
+   "k": {
+    "2": 76
+   },
+   "gold": {
+    "2:NOT_SUPPORTED": 48,
+    "2:SUPPORTED": 28
+   }
+  },
+  "62": {
+   "name": "When2Call MCQ",
+   "frozen": false,
+   "w": 0.033848698453416426,
+   "skill": {
+    "champ": 47.73,
+    "d10w": 41.67,
+    "clef": 58.33
+   },
+   "gap_pts_champ": 0.359,
+   "gap_pts_d10w": 0.564,
+   "trail10_champ": true,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 176,
+   "qtypes": {
+    "choice": 176
+   },
+   "k": {
+    "4": 176
+   },
+   "gold": {
+    "4:B": 73,
+    "4:D": 57,
+    "4:C": 46
+   }
+  },
+  "64": {
+   "name": "New Yorker caption matching",
+   "frozen": true,
+   "w": 0.01388888888888889,
+   "skill": {
+    "champ": 48.71,
+    "d10w": 42.31,
+    "clef": 58.34
+   },
+   "gap_pts_champ": 0.134,
+   "gap_pts_d10w": 0.223,
+   "trail10_champ": false,
+   "trail10_d10w": true,
+   "flags": [],
+   "rows": 39,
+   "qtypes": {
+    "choice": 39
+   },
+   "k": {
+    "5": 39
+   },
+   "gold": {}
+  }
+ },
+ "selected": [
+  3,
+  4,
+  5,
+  11,
+  21,
+  28,
+  29,
+  37,
+  38,
+  39,
+  41,
+  42,
+  43,
+  48,
+  50,
+  56,
+  57,
+  59,
+  62
+ ]
+}
