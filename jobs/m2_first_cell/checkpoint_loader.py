@@ -30,7 +30,10 @@ What ``install`` guarantees (else ``CheckpointError`` with ``code`` 5 = usage / 
      last checkpoint of an inference export whose ``latest.json`` carries a ``best`` pointer, the best export is
      installed too (its safetensors + sidecar sha256s come from the pinned latest.json) and is what ``path`` names:
      eval-only modes score the SAME checkpoint the training run's own evals did (``Trainer.scored``). The record's
-     ``role`` says which was installed.
+     ``role`` says which was installed. With ``"select": "best"``
+     in the block, ``latest.json``'s ``best`` pointer must name the pinned file AND its ``best.sha256`` must equal the
+     pinned ``ckpt_sha256`` (``train.ckpt_export --best``); the downloaded tar is removed once every pinned member is
+     installed (job-afpc2: the worker's shared disk).
 A checkpoint dir that already holds the pinned file (a restart) is re-hashed and reused without a download.
 The artifact is untrusted data: nothing from it is executed here (the .pt is only hashed; ``Trainer.load`` in the GPU
 job unpickles it after this pin check, exactly as a training run's own checkpoint).
@@ -83,6 +86,8 @@ def checkpoint_block(params: dict) -> dict:
         shas.append("sidecar_sha256")
         if not isinstance(ck.get("sidecar_sha256"), str):
             raise CheckpointError("checkpoint block: an inference-export member needs sidecar_sha256", 5)
+    if ck.get("select", "latest") not in ("latest", "best"):
+        raise CheckpointError(f"checkpoint.select {ck['select']!r}: latest or best", 5)
     for k in shas:
         if not re.fullmatch(r"[0-9a-f]{64}", ck[k]):
             raise CheckpointError(f"checkpoint.{k} is not a sha256", 5)
@@ -173,6 +178,8 @@ def install(block: dict, *, cell_src: str | Path, cell_config: str | Path, ck_di
         role = "best"  # the scored checkpoint itself is pinned
     else:
         raise CheckpointError(f"latest.json names neither {fname} as its path nor as its best pointer")
+    if ck.get("select", "latest") == "best" and (role != "best" or best.get("sha256") != ck["ckpt_sha256"]):
+        raise CheckpointError(f"latest.json best does not name {fname} with the pinned sha256")
     scored, scored_sha = pt, ck["ckpt_sha256"]
     if role == "latest" and best is not None and best.get("path") != fname and fname.endswith(".safetensors"):
         # a best_ckpt run: install its scored (best) export too, pinned through the pinned latest.json
@@ -195,12 +202,16 @@ def install(block: dict, *, cell_src: str | Path, cell_config: str | Path, ck_di
             _extract(tar, f"./ckpt/{bname}", bpt, best["sha256"], bname)
             _extract(tar, f"./ckpt/{bside.name}", bside, best["sidecar_sha256"], bside.name)
         scored, scored_sha, role = bpt, best["sha256"], "best"
+    # job-afpc2: the downloaded tar stayed on the worker's shared disk for the whole run; every pinned member is
+    # installed (each sha256-checked), so this job's own copy of the tar is no longer needed
+    (work / "artifact.tar").unlink(missing_ok=True)
     if cell_out is not None:
         Path(cell_out).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(cell_src, cell_out)
     return {"artifact": ck["artifact"], "job": ck.get("job"), "artifact_sha256": ck["artifact_sha256"],
             "file": scored.name, "path": str(scored), "sha256": scored_sha, "role": role, "member": fname,
-            "member_sha256": ck["ckpt_sha256"], "cell_json_sha256": ck["cell_json_sha256"], "reused": reused}
+            "member_sha256": ck["ckpt_sha256"], "cell_json_sha256": ck["cell_json_sha256"], "select": ck.get("select", "latest"),
+            "reused": reused}
 
 
 def main(argv=None) -> int:
