@@ -1,0 +1,16 @@
+{
+ "build": "c-multirecord-highk-v2-compact-6575 (python -m data.c_multirecord_compact)",
+ "n_records": 6575,
+ "location": "ssdm-data/c-multirecord-highk-v2-compact-6575/train_set/",
+ "manifest": "c-multirecord-highk-v2-compact-6575.manifest.jsonl.gz",
+ "content_map": "c-multirecord-highk-v2-compact-6575.content.jsonl.gz",
+ "excludes_cohort": "fully synthetic C alpha views; no B/Index/TEST/cohort records read; consuming peer owns its guard",
+ "builder": {
+  "module": "data.c_multirecord_compact",
+  "commit": "a42b93445d3e69005de7834fe91a63a623ce8177"
+ },
+ "receipt": "receipts/2026-10-08-C-multirecord-synth/c-multirecord-highk-v2-compact-6575/summary.json",
+ "records_uncompressed_sha256": "f12d23dfa2e6ea95d761f1c9a4d701d33b36fa7ed25ce4e6e955ed37ea3a7f3d",
+ "manifest_uncompressed_sha256": "2350ec76264d75b577ec2b9997de03de46bdb82bdb6ff93d93ffae30fcd96819",
+ "content_map_uncompressed_sha256": "16750e95d653a205fc474632eac18ea87633aebcdbf1dda04cce82df5333fe15"
+}

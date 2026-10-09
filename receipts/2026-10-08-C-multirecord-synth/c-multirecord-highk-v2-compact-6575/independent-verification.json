@@ -1,0 +1,64 @@
+{
+  "all_gold_position_strata": 1125,
+  "b_inputs_read": false,
+  "builder_commit": "a42b93445d3e69005de7834fe91a63a623ce8177",
+  "check_record_passed": 6575,
+  "compressed_sha256": {
+    "content_map": "97c9274c2c5ec2cab1a1e57e33f63832e80746f6c676d0ed41987a481b6489f4",
+    "manifest": "7c5dc0fd502fed9aec765fcd10fa7229e3fe32394b403a79daef9f7f50856231",
+    "records": "e1c1637494cedd9e1858a42456dce7231f110596802959e1c37f3698039c49f0"
+  },
+  "counts": {
+    "content_map": 6575,
+    "manifest": 6575,
+    "records": 6575
+  },
+  "distinct_worlds": 6575,
+  "duplicate_ids": 0,
+  "duplicate_normalized_content": 0,
+  "exact_inverse_records": 6575,
+  "full_source_record_rescans": 0,
+  "independent_output_scans": 1,
+  "max_stratum_count": 7,
+  "min_stratum_count": 5,
+  "package": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\c-multirecord-highk-v2-compact-6575",
+  "path_issues": [],
+  "per_k_records": {
+    "73": 1315,
+    "74": 1315,
+    "75": 1315,
+    "76": 1315,
+    "77": 1315
+  },
+  "per_style_records": {
+    "letters": 2195,
+    "opaque": 2190,
+    "words": 2190
+  },
+  "pointer_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\agent-c-multirecord-synth\\data\\manifests\\c-multirecord-highk-v2-compact-6575.pointer.json",
+  "pointer_sha256": "388ac2b8f9b329898fb10c7d73a100fb4eff6f3222bb73ee63d9fa4a90b48805",
+  "pools_sha256": "a8cd7ecb63d876a541037fa6ed530fe985da1bd4d848b8f5ae8ab0ea432380aa",
+  "producer_max_tokens": {
+    "serialized": 1303,
+    "v2f": 1646,
+    "v3w": 1482
+  },
+  "producer_pinned_trainer_flags_verified": true,
+  "protected_rows_read": false,
+  "questions": 46025,
+  "receipt_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\agent-c-multirecord-synth\\receipts\\2026-10-08-C-multirecord-synth\\c-multirecord-highk-v2-compact-6575\\summary.json",
+  "refused": 0,
+  "regenerated_parents_hash_matched": 6575,
+  "retokenized": false,
+  "schema": "ssdm.c_multirecord_compact_independent_verification.v1",
+  "source_manifest_uncompressed_sha256": "c031940a0bdd3d81f4b09e2b082383fd52ca1643f20034f75fdefbdfd10601e8",
+  "source_metadata_rows": 100000,
+  "status": "verified",
+  "summary_sha256": "b72e1ae67e6b41f963909bb13dba14c24e0a8c9cdc79a5a6342bf2f266051c6a",
+  "torch_imported": false,
+  "uncompressed_sha256": {
+    "content_map": "16750e95d653a205fc474632eac18ea87633aebcdbf1dda04cce82df5333fe15",
+    "manifest": "2350ec76264d75b577ec2b9997de03de46bdb82bdb6ff93d93ffae30fcd96819",
+    "records": "f12d23dfa2e6ea95d761f1c9a4d701d33b36fa7ed25ce4e6e955ed37ea3a7f3d"
+  }
+}
