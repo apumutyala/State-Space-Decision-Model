@@ -1,0 +1,93 @@
+{
+ "test_env": {"transformers": "5.17.0", "with": ["flash-linear-attention==0.5.2", "fla-core==0.5.2"], "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout"}], "image": "jobs/q9af_v2/Dockerfile"},
+ "_comment": "Single source of truth for the q9af_v2 submit_job fields and runner phase caps (jobs/q9af_v2/JOB_SPEC.md). Priced from the MEASURED job-5cmat / job-2xe5w rates (`measured`); stage 1 and stage 2 are wall-clock capped in the config, so only the uncapped work carries the 30% margin (jobs/q9af_v2/preflight.py). One attempt (max_restarts 0): worst case = (build 60 + 695) x $0.0495.",
+ "job": "q9af_v2",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 695,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 0,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 40.0,
+ "reserve_minutes": 15,
+ "margin_min_frac": 0.3,
+ "phase_caps_minutes": {
+  "setup": 10,
+  "weights": 20,
+  "D": 35,
+  "P": 550,
+  "X": 15,
+  "I_stock": 20,
+  "I_conv": 20,
+  "S": 10
+ },
+ "expected_minutes": {
+  "build": 15,
+  "setup": 3,
+  "weights": 1,
+  "D": 15,
+  "P": 520,
+  "X": 3,
+  "I_stock": 6,
+  "I_conv": 6,
+  "S": 2
+ },
+ "measured": {
+  "_comment": "job-5cmat (art-2bybh) and job-2xe5w (art-ipnxz, receipts/2026-10-07-D-full8/result.json). stage1 rate = 5cmat stage 1 (all 8 layers aligned, the same shape as v2 stage 1). Stage 2 worst rate = 2xe5w step 7 (layer 3 + 6 more GDNs training: first student layer 3, the v2 shape) and the FLOP model at the 4j3vu layer-3 MFU. Peak = 2xe5w (7 GDNs attached, 7 training).",
+  "setup_min": 2.4,
+  "load_and_data_s": 63.53,
+  "stock_probes_s": 109.02,
+  "converted_probes_s": 57.42,
+  "throughput_s_per_arm": 33.64,
+  "stage1_steady_tok_s": 18297,
+  "stage2_steady_tok_s_layer3_7gdn": 5210,
+  "stage2_mfu_layer3": 0.341,
+  "stage2_mfu_layer23": 0.3428,
+  "stage2_steady_tok_s_layer23": 9459.6,
+  "stage2_steady_tok_s_layer3": 5461,
+  "peak_gb": 39.72,
+  "stock_prefill_tok_s_min": 22144.5,
+  "pack_call_s": 0.2406,
+  "small_call_s": 0.0756,
+  "weights_fetch_s": 20,
+  "S_min": 1.0
+ },
+ "estimates_not_measured": {
+  "_comment": "No receipt yet: D (download ~3.0 GB of pinned parquet + tokenise 280M tokens + 13-gram DEV filter) and the per-curve-point held-out eval; X as full8's estimate.",
+  "D_min": 15.0,
+  "export_X_min": 3.0,
+  "init_cmp_min": 2.6,
+  "curve_eval_min_each": 0.5,
+  "final_heldout_min": 1.5,
+  "wikitext_gate_min": 0.5,
+  "mmlu_full_min_per_arm": 2.8
+ },
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "config": "configs/q9af_v2_h100.json",
+ "dev_proxy": "jobs/common/dev_proxy600.json",
+ "mission": "m1-q9af-v2",
+ "decision_rule": "jobs/q9af_v2/rule.py",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py).",
+  "command": "bash /opt/ssdm/m1/jobs/q9af_v2/q9af_v2_job.sh",
+  "env": {},
+  "key": "m1-q9af-v2",
+  "clock_lock": true,
+  "label": "q9af_v2: all 8 attention layers -> GDN jointly (reuse_attn init, 70+430 min KD on a generic mix), end-to-end gate (held-out KL + stock Index proxy600)",
+  "checks": {
+   "success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/Q9AF2_DONE"}, {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+   "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 600, "grace_period_s": 1800, "fail_threshold": 2, "on_fail": "kill"}
+  }
+ },
+ "context": {
+  "_comment": "the q9af_v2 Dockerfile + code + the PRIVATE DEV rows (sha256 pinned): the Index proxy600 arms and the 13-gram decontamination filter.",
+  "dockerfile": "jobs/q9af_v2/Dockerfile",
+  "data": [
+   {"src": "slices/dev-rows.jsonl.gz", "dest": "slices/dev-rows.jsonl.gz", "pin": "jobs/clef_baseline/data.sha256"}
+  ]
+ }
+}
