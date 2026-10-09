@@ -922,6 +922,10 @@ def append_extra(work: Path, extra_pool: str, extra_pointer: str, quota: int, lo
 MV_KEYS = ("clinc150/intent_membership", "banking77/intent_membership", "mmlu_aux/answer_verification")
 MV_MAX_ITEM_SHARE = 0.05
 MAX_NO_SHARE = 0.60
+#: item-share floors of eval-regression binary families (review item 2: raise ACOS / NLI4CT at natural rates) that the
+#: no-share constraint may not push below; if the constraint cannot be met above them, the draw reports the excess
+FLOOR_V2 = {"acos/acos_category_sentiment": 0.03, "b1fam_bfcl_synth/BFCL-tool-selection": 0.03, "mnli/nli": 0.03,
+            "nli4ct/clinical_trial_nli": 0.005}
 POS_IDS = {"yes", "true", "y", "correct", "supported", "entailment", "entailed"}
 NEG_IDS = {"no", "false", "n", "incorrect", "not_supported", "not_entailment", "contradiction", "not_entailed",
            "refuted"}
@@ -995,53 +999,69 @@ def plan_items_v2(weights: dict, kstats: dict, avail: dict, n_records: int, log=
         b = sum(share[k] * st[k]["bin"] for k in keys)
         return sum(share[k] * st[k]["bin"] * (1 - st[k]["yes"]) for k in keys) / max(1e-9, b)
 
-    for _ in range(400):
-        mv = sum(share.get(k, 0) for k in MV_KEYS)
+    # records. Locked keys (glaive, membership / verify views, no-heavy binary keys) get share_k * T items, T = the
+    # draw's total items (self-consistent fixed point), so their ITEM share never grows when other keys run out;
+    # unlocked keys get share_k * S items with S solved (bisection) so that the records sum to n_records; every key
+    # is clamped to its availability.
+    def records(S: float, T: float) -> dict:
+        return {k: min(avail[k], share[k] * (T if k in locked else S) / st[k]["items"]) for k in keys}
+
+    def alloc() -> dict:
+        T = float(n_records)
+        rec = {}
+        for _ in range(60):
+            lo, hi = 0.0, 1e9
+            for _ in range(100):
+                mid = (lo + hi) / 2
+                if sum(records(mid, T).values()) < n_records:
+                    lo = mid
+                else:
+                    hi = mid
+            rec = records(hi, T)
+            T_new = sum(rec[k] * st[k]["items"] for k in keys)
+            if abs(T_new - T) < 1:
+                break
+            T = T_new
+        return rec
+
+    def achieved(rec: dict) -> tuple[float, float, dict]:
+        items = {k: rec[k] * st[k]["items"] for k in keys}
+        ti = sum(items.values())
+        b = sum(items[k] * st[k]["bin"] for k in keys)
+        no = sum(items[k] * st[k]["bin"] * (1 - st[k]["yes"]) for k in keys) / max(1e-9, b)
+        mv = sum(items.get(k, 0) for k in MV_KEYS) / max(1e-9, ti)
+        return no, mv, {k: items[k] / ti for k in keys}
+
+    # constraints on what is ACHIEVED (after availability): membership / verify <= 5 % of items; binary no-share <= 60 %
+    # by scaling no-heavy keys down, never below their FLOOR_V2 item share (eval-regression families)
+    rec = alloc()
+    for _ in range(300):
+        no, mv, ish = achieved(rec)
         changed = False
         if mv > MV_MAX_ITEM_SHARE:
             for k in MV_KEYS:
                 if k in share:
-                    share[k] *= MV_MAX_ITEM_SHARE / mv * 0.999
+                    share[k] *= 0.95
             changed = True
-        if no_share() > MAX_NO_SHARE:
+        if no > MAX_NO_SHARE:
             for k in noheavy:
-                share[k] *= 0.97
-            changed = True
-        norm_()
+                if k not in MV_KEYS and ish.get(k, 0) > FLOOR_V2.get(k, 0.0) * 1.02:
+                    share[k] *= 0.95
+                    changed = True
         if not changed:
             break
-    # records: rec_k = share_k * T / items_k with sum rec = n; clamp to availability, spill to unlocked keys
-    rec = {}
-    fixed: dict[str, int] = {}
-    for _ in range(50):
-        free = [k for k in keys if k not in fixed]
-        if not free:
-            break
-        T_left = (n_records - sum(fixed.values()))
-        denom = sum(share[k] / st[k]["items"] for k in free)
-        rec = {**fixed, **{k: share[k] / st[k]["items"] * T_left / denom for k in free}}
-        over = [k for k in free if rec[k] > avail[k]]
-        if not over:
-            break
-        for k in over:
-            fixed[k] = avail[k]
-            # a locked key's lost items do not spill to other locked keys: freeze their shares at the current level
-        for k in free:
-            if k in locked and k not in fixed:
-                fixed[k] = min(avail[k], int(rec[k]))
-    q = {k: int(round(v)) for k, v in rec.items()}
+        norm_()
+        rec = alloc()
+    q = {k: int(rec[k]) for k in keys}
     diff = n_records - sum(q.values())
     spill = sorted((k for k in keys if k not in locked and q[k] < avail[k]), key=lambda k: -(avail[k] - q[k]))
     i = 0
-    while diff != 0 and spill:
+    while diff > 0 and spill and i < 10 * len(spill) + n_records:
         k = spill[i % len(spill)]
-        step = 1 if diff > 0 else -1
-        if (step > 0 and q[k] < avail[k]) or (step < 0 and q[k] > 0):
-            q[k] += step
-            diff -= step
+        if q[k] < avail[k]:
+            q[k] += 1
+            diff -= 1
         i += 1
-        if i > 10 * n_records:
-            break
     items = {k: q[k] * st[k]["items"] for k in q}
     ti = sum(items.values())
     b = sum(items[k] * st[k]["bin"] for k in q)
@@ -1056,7 +1076,7 @@ def plan_items_v2(weights: dict, kstats: dict, avail: dict, n_records: int, log=
 
 
 def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_quota: int | None = None,
-           heldout_json: str | None = None) -> dict:
+           heldout_json: str | None = None, dry: bool = False) -> dict:
     """Candidates + token lengths -> the n-row draw (per-source targets, fewest-variants-first, reuse cap)."""
     from train.cohort import record_content_hash
     from train.train_set import uncompressed_sha256
@@ -1150,6 +1170,14 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_q
     if meta.get("mix") == "v2":
         n_syn = n - quota.get("P3:extra", 0)
         qv2, item_plan = plan_items_v2(weights, kstats, avail, n_syn, log=log)
+        item_plan["capacity_records"] = sum(qv2.values())
+        if dry:
+            return {"dry": True, "n_syn_asked": n_syn, "capacity_records": sum(qv2.values()), "quotas": qv2,
+                    "item_plan": {k: v for k, v in item_plan.items() if k != "key_stats"}, "dropped": dict(drop),
+                    "kstats_P3": dict(kstats.get("P3:extra", {}))}
+        if sum(qv2.values()) != n_syn:
+            raise SystemExit(f"v2 plan is capacity-bound at {sum(qv2.values())} synthetic records (asked {n_syn}): "
+                             f"re-run with --n {sum(qv2.values()) + quota.get('P3:extra', 0)}")
         quota = {**{s: 0 for s in weights}, **qv2, **({"P3:extra": quota["P3:extra"]} if "P3:extra" in quota else {})}
     for _ in range(0 if item_plan else 5):
         short = sum(max(0, quota[s] - avail[s]) for s in quota)
@@ -1344,6 +1372,7 @@ def main(argv=None) -> int:
     ap.add_argument("--extra-pool", default=None, help="Agent C's draw dir (records.jsonl.gz + manifest + content)")
     ap.add_argument("--extra-pointer", default=None)
     ap.add_argument("--extra-quota", type=int, default=0)
+    ap.add_argument("--dry", action="store_true", help="select: print the plan / capacity and stop")
     ap.add_argument("--heldout-json", default=None, help="select: pinned copy of heldout_v1_templates.json")
     ap.add_argument("--extra-limit", type=int, default=None, help="extra stage: accept at most this many P3 rows")
     ap.add_argument("--receipt", default=None)
@@ -1368,7 +1397,10 @@ def main(argv=None) -> int:
         print(json.dumps({k: meta[k] for k in ("candidates_per_source", "ops")}, indent=1))
         return 0
     rep = select(a.n, work, build, log=lambda *x: print(*x, flush=True),
-                 extra_quota=a.extra_quota if a.extra_quota else None, heldout_json=a.heldout_json)
+                 extra_quota=a.extra_quota if a.extra_quota else None, heldout_json=a.heldout_json, dry=a.dry)
+    if rep.get("dry"):
+        print(json.dumps(rep, indent=1, default=str))
+        return 0
     commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
                             cwd=config.REPO_ROOT).stdout.strip()
     ptr = write_pointer(build, rep, commit)
