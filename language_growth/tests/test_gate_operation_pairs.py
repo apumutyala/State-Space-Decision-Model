@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from language_growth.gate_operation_pairs import development_operation_pairs, export_operation_pairs
+from language_growth.gate_operation_pairs import _WORDING, development_operation_pairs, export_operation_pairs
 from language_growth.gate_suites import digest
 from language_growth.parent_bridge import decision_request
 
@@ -20,6 +20,28 @@ class GateOperationPairTests(unittest.TestCase):
         self.assertEqual({pair["split"] for pair in train}, {"development_train"})
         self.assertEqual({pair["split"] for pair in validation}, {"development_validation"})
         self.assertFalse({pair["world_id"] for pair in train} & {pair["world_id"] for pair in validation})
+        train_templates = {pair["pair_id"].rsplit("operation-prompt-", 1)[1] for pair in train}
+        validation_templates = {pair["pair_id"].rsplit("operation-prompt-", 1)[1] for pair in validation}
+        self.assertEqual(train_templates, {f"train-{index:02d}" for index in range(1, 5)})
+        self.assertEqual(validation_templates, {f"validation-{index:02d}" for index in range(1, 5)})
+        self.assertEqual([sum(pair["pair_id"].endswith(f"train-{index:02d}") for pair in train)
+                          for index in range(1, 5)], [len(train) // 4] * 4)
+        self.assertEqual([sum(pair["pair_id"].endswith(f"validation-{index:02d}") for pair in validation)
+                          for index in range(1, 5)], [len(validation) // 4] * 4)
+        self.assertFalse({pair["source"]["task_input"] for pair in train} &
+                         {pair["source"]["task_input"] for pair in validation})
+        self.assertTrue(all("minus" not in pair["effect"]["task_input"].lower()
+                            for pair in validation))
+        for operation in ("Compare", "ExactDifference"):
+            train_bank = set(_WORDING["development_train"][operation])
+            validation_bank = set(_WORDING["development_validation"][operation])
+            self.assertEqual(len(train_bank), 4)
+            self.assertEqual(len(validation_bank), 4)
+            self.assertFalse(train_bank & validation_bank)
+        self.assertTrue(any("compare" not in text.lower()
+                            for text in _WORDING["development_train"]["Compare"]))
+        self.assertTrue(all("minus" not in text.lower()
+                            for text in _WORDING["development_validation"]["ExactDifference"]))
 
         for pair in train + validation:
             source, effect = pair["source"], pair["effect"]
@@ -38,7 +60,8 @@ class GateOperationPairTests(unittest.TestCase):
             self.assertEqual(list(rebuilt["questions"]), [source["question_id"]])
             self.assertEqual(rebuilt["questions"][source["question_id"]]["instructions"], source["question"])
             self.assertEqual(rebuilt["questions"][source["question_id"]]["criteria"], source["options"])
-        self.assertEqual(digest(train), "30aeb3f11aad31abcb913b01dc5e5fe77497094335f88ee62037b1e5af5c25f6")
+        self.assertEqual(digest(train), "6ee50be2644e4f0d64a2f0ff70f6ca222648209d5dfe2cb4c345cb453c4c6264")
+        self.assertEqual(digest(validation), "61be6c869335123df7665b8d1500359a895872f2122e9b215127cb7d8a6a3f3f")
 
     def test_rejects_non_development_or_unbounded_requests_before_generation(self):
         for kwargs in (
@@ -60,6 +83,8 @@ class GateOperationPairTests(unittest.TestCase):
             validation_bytes = (out / "validation-pairs.json").read_bytes()
             self.assertEqual(manifest["train"]["pairs"], 2)
             self.assertEqual(manifest["validation"]["pairs"], 2)
+            self.assertEqual(sum(manifest["template_pair_counts"]["train"].values()), 2)
+            self.assertEqual(sum(manifest["template_pair_counts"]["validation"].values()), 2)
             self.assertEqual(manifest["train"]["sha256"], hashlib.sha256(train_bytes).hexdigest())
             self.assertEqual(manifest["validation"]["sha256"], hashlib.sha256(validation_bytes).hexdigest())
             self.assertEqual(json.loads((out / "manifest.json").read_text(encoding="utf-8")), manifest)
