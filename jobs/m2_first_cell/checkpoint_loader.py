@@ -65,11 +65,12 @@ def sha256_file(path: str | Path) -> str:
     return h.hexdigest()
 
 
-def checkpoint_block(params: dict) -> dict:
-    """The validated ``checkpoint`` block of a job_params dict (``CheckpointError`` code 5 if absent / malformed)."""
-    ck = params.get("checkpoint")
+def checkpoint_block(params: dict, key: str = "checkpoint") -> dict:
+    """The validated ``checkpoint`` block (or another named block, e.g. ``checkpoint_d1`` for a second arm) of a
+    job_params dict (``CheckpointError`` code 5 if absent / malformed)."""
+    ck = params.get(key)
     if not isinstance(ck, dict):
-        raise CheckpointError("job_params has no checkpoint block", 5)
+        raise CheckpointError(f"job_params has no {key} block", 5)
     miss = [k for k in KEYS if not isinstance(ck.get(k), str) or not ck[k]]
     if miss:
         raise CheckpointError(f"checkpoint block missing {miss}", 5)
@@ -194,9 +195,10 @@ def main(argv=None) -> int:
     i.add_argument("--cell-out", default=None)
     i.add_argument("--url", default=None, help="default: $<checkpoint.url_env>")
     i.add_argument("--out", default=None, help="write the identity record here")
+    i.add_argument("--block", default="checkpoint", help="the job_params block to install (default: checkpoint)")
     a = ap.parse_args(argv)
     try:
-        block = checkpoint_block(json.loads(Path(a.params).read_text(encoding="utf-8")))
+        block = checkpoint_block(json.loads(Path(a.params).read_text(encoding="utf-8")), a.block)
         rec = install(block, cell_src=a.cell_src, cell_config=a.cell_config, ck_dir=a.ck_dir, work=a.work,
                       cell_out=a.cell_out, url=a.url)
     except CheckpointError as e:

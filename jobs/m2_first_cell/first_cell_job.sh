@@ -14,6 +14,10 @@
 #   12,104 rows, or params "rows": "smoke" = the pre-declared 250-row fulldev_smoke_rows.json; live rate guard, per-row
 #   resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
 #   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
+#   Params with "eval_only": "ragtruth" (mode ragtruth_polarity) score the shipped RAGTruth TRAIN items ($DATA/ragtruth,
+#   sha-pinned; jobs.m2_first_cell.ragtruth_polarity) under readout v3w with TWO saved checkpoints in sequence: params
+#   "checkpoint" (D13, $CKPT_URL) then "checkpoint_d1" (D1, $CKPT_URL_D1), each installed by checkpoint_loader --block,
+#   then report -> ragtruth_polarity_result.json (AUROC + bootstrap CI per arm, flipped AUROC, the pre-registered rule).
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -151,13 +155,15 @@ td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
 ev = p.get("eval_only", "none")
-if ev not in ("none", "fulldev"):
-    sys.exit(f"mode {mode}: eval_only {ev!r} must be none or fulldev")
+if ev not in ("none", "fulldev", "ragtruth"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev or ragtruth")
 if ev != "none":
     sys.path.insert(0, ".")
     from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
     try:
         checkpoint_block(p)
+        if ev == "ragtruth":
+            checkpoint_block(p, "checkpoint_d1")
     except CheckpointError as e:
         sys.exit(f"mode {mode}: {e}")
 st = p.get("stage", "gates")
@@ -171,6 +177,7 @@ EOF
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
+  [ "$EVAL_ONLY" = ragtruth ] && VALIDATOR=jobs.m2_first_cell.ragtruth_polarity:valid_result DECISION=$WORK/out/ragtruth_polarity_result.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
@@ -248,8 +255,12 @@ for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used 
     REFS+=(--reference "$NAME=$F")
   fi
 done
-python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
-if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
+python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.checkpoint_loader, jobs.m2_first_cell.ragtruth_polarity" || fail 5 "drivers not importable"
+RT_ITEMS=$DATA/ragtruth/items.jsonl.gz RT_SEL=$CODE/jobs/m2_first_cell/ragtruth_polarity_selection.json
+if [ "$EVAL_ONLY" = ragtruth ]; then  # the shipped TRAIN items == the params pin == the committed selection; priced
+  python -I -c 'import hashlib,json,sys; p=json.load(open(sys.argv[1]))["ragtruth"]; s=json.load(open(sys.argv[3])); h=hashlib.sha256(open(sys.argv[2],"rb").read()).hexdigest(); sys.exit(0 if h == p["items_sha256"] == s["items_sha256"] and p["ids_sha256"] == s["ids_sha256"] else 1)'     "$PARAMS" "$RT_ITEMS" "$RT_SEL" || fail 10 "ragtruth items sha256 != params / selection pin"
+  python -X utf8 -m jobs.m2_first_cell.ragtruth_polarity estimate --params "$PARAMS" --selection "$RT_SEL" > "$WORK/out/preflight-ragtruth.json"     || fail 15 "ragtruth scoring projected past its caps at D13's measured child rate"
+elif [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
 else
@@ -293,6 +304,37 @@ timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_rea
   --out-dir "$WORK/out/guard" > "$WORK/logs/guard.log" 2>&1; r=$?
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
+
+if [ "$EVAL_ONLY" = ragtruth ]; then  # ------------------- eval-only: two SAVED checkpoints on the RAGTruth TRAIN items
+  for ARMNAME in d13 d1; do
+    if [ "$ARMNAME" = d13 ]; then BLOCK=checkpoint CSRC=$DATA/checkpoint/cell.json ACELL=$CELL PHC=checkpoint
+    else BLOCK=checkpoint_d1 CSRC=$DATA/checkpoint_d1/cell.json ACELL=jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval.json PHC=checkpoint_d1; fi
+    CKCELL=$WORK/ckpt-$ARMNAME
+    say "phase $PHC ($ARMNAME: params block $BLOCK into $CKCELL); free bytes: $(diskfree "$OUT" "$CK" "$WORK")"
+    timeout --kill-after=30s $(cap $PHC)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" --block "$BLOCK"       --cell-src "$CSRC" --cell-config "$ACELL" --ck-dir "$CKCELL" --work "$WORK/art-$ARMNAME"       --cell-out "$WORK/out/cell-$ARMNAME.json" --out "$WORK/out/checkpoint-$ARMNAME.json" > "$WORK/logs/$PHC.log" 2>&1; r=$?
+    gate "$PHC" $r; export_phase "$PHC"
+    case $r in 0) ;; 124|137) fail 7 "$PHC timeout" ;; 10) fail 10 "$PHC identity: $(tail -1 "$WORK/logs/$PHC.log")" ;;
+      *) fail 5 "$PHC rc=$r: $(tail -1 "$WORK/logs/$PHC.log")" ;; esac
+    CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint-$ARMNAME.json") || fail 5 "checkpoint-$ARMNAME.json"
+    PH=score_$ARMNAME
+    say "phase $PH ($ARMNAME arm, RAGTruth TRAIN items, readout v3w, untempered; resumes from $CK/ragtruth)"
+    python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)"       --report "$WORK/out/rate-$PH.json" --       timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.ragtruth_polarity score --arm "$ARMNAME"       --items "$RT_ITEMS" --selection "$RT_SEL" --cell "$WORK/out/cell-$ARMNAME.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT"       --model-dir "$SNAP" --records "$RECORDS" --train-dir "$TRAIN_DIR" --guard-readiness "$WORK/out/guard/readiness.json"       --resume-dir "$CK/ragtruth" --out-dir "$WORK/out/ragtruth" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
+    if [ $r -ne 0 ]; then
+      say "$PH rc=$r; last 40 lines of logs/$PH.log:"
+      tail -n 40 "$WORK/logs/$PH.log" 2> /dev/null | sed "s/^/[$PH.log] /"
+    fi
+    gate "$PH" $r; export_phase "$PH"
+    case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
+      10) fail 10 "$PH identity (items / checkpoint lineage / cohort)" ;; *) fail 9 "$PH rc=$r" ;; esac
+  done
+  say "phase report"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.ragtruth_polarity report --out-dir "$WORK/out/ragtruth"     --params "$PARAMS" --items "$RT_ITEMS" --selection "$RT_SEL" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION"     > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "ragtruth_polarity result missing or invalid (rc=$r): $(tail -1 "$WORK/logs/report.log")"
+  sample "$DECISION" "ragtruth-polarity"
+  RC=0
+  exit 0
+fi
 
 if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a SAVED checkpoint on the FULL Index DEV
   # the checkpoint goes to the job's own scratch, NOT $CK: $CK is the platform checkpoint slot the scoring phase

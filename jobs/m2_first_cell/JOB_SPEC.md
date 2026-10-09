@@ -236,6 +236,10 @@ same predictions. Worst case: native $68.51 (cap $70), v3w $62.57 (cap $64); two
 (~1,080 min) exceed the 900-min ceiling. Exit 16 (job-afpc2): the worker's shared disk under 6 GiB free; the child
 declared its slot and yielded.
 
+## Mode `ragtruth_polarity`: D13 + D1 RAGTruth polarity on TRAIN items (DRAFT, NOT SUBMITTED)
+
+Eval-only. Two saved checkpoints are scored in sequence under readout v3w (untempered) on 300 RAGTruth TRAIN-split items: D13 (job-hjwpq art-cr9a2, best step 1600, `checkpoint`, `$CKPT_URL`) and then D1 (job-c7pq2 art-bm3e6, `checkpoint_d1`, `$CKPT_URL_D1`, installed with `checkpoint_loader install --block checkpoint_d1`). The items are built locally in the Index's catalog-59 format, and all 270 DEV RAGTruth rows must rebuild byte-equal first. The items and the pre-registered rule are described in `RAGTRUTH_POLARITY.md`. Per arm, the job outputs per-item p(hallucinated) plus AUROC and flipped AUROC, each with a bootstrap CI. Rule: inverted iff the upper CI is below 0.5, which leads to a proposed statement rephrase; otherwise no change. Phase caps: setup 25, guard 5, checkpoint 15, score_d13 60, checkpoint_d1 15, score_d1 40, report 10, reserve 7, for 177 min in total. Expected run is about 73 min = $3.61 (about $4.36 with the build). **Worst case** (60 + 2 x 177) x 0.0495 = **$20.49** (cap $21).
+
 ## Mode `fulldev_eval`: a saved checkpoint on the FULL Index DEV (DRAFT, NOT SUBMITTED)
 
 **Question.** What does a trained cell score on all 12,104 DEV rows, on exactly the comparators' footing (Clef 27B
