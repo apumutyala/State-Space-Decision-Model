@@ -951,6 +951,22 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
         elig[src].append((r["id"], ss.get("root") or sorted(root_items(r))[0], ss.get("variant", 0)))
     if n_cand != len(lens):
         raise SystemExit(f"token check covers {len(lens)} ids, candidates file has {n_cand}: run every shard")
+    if meta.get("mix") == "v2":  # review item 5: at most 2 (small key) / 3 rows per source item per key, fewest first
+        items = meta["items_per_source"]
+        for s, rows in elig.items():
+            if s == "P3:extra":
+                continue
+            cap = V2_SMALL_MAX if items.get(s, 0) < V2_SMALL_ITEMS else V2_MAX
+            rows.sort(key=lambda x: (x[2], sha(f"{meta['seed']}:{x[0]}")))
+            per = collections.Counter()
+            kept = []
+            for x in rows:
+                if per[x[1]] < cap:
+                    per[x[1]] += 1
+                    kept.append(x)
+                else:
+                    drop["per_item_cap_v2"] += 1
+            elig[s] = kept
     weights = meta.get("weights") or meta["v3_mix"]
     no_spill = set(meta.get("no_spill") or [])
     tot = sum(weights.values())
