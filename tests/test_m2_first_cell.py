@@ -355,9 +355,9 @@ def test_order_diagnostic_detects_a_first_option_reader():
 
 # ----------------------------------------------------------------------------- runner static guarantees
 def test_runner_orders_guards_before_training_and_prices_every_eval_first():
-    # the training path only: the eval-only branch (mode hijack_eval, tests/test_m2_hijack_eval.py) has no training
+    # the training path only: the eval-only branches (fulldev / readout_ab / hijack) have no training
     JOB_FULL = globals()["JOB"]
-    a = JOB_FULL.index('if [ "$EVAL_ONLY" = 1 ]; then  #')
+    a = JOB_FULL.index('if [ "$EVAL_ONLY" = fulldev ] || [ "$EVAL_ONLY" = readout_ab ]; then  #')
     JOB = JOB_FULL[:a] + JOB_FULL[JOB_FULL.index("\nfi\n", a) + 4:]
     i = JOB.index
     train = i("python -m train.run_cell")
@@ -368,7 +368,7 @@ def test_runner_orders_guards_before_training_and_prices_every_eval_first():
     assert i("jobs.m2_parent_arm.score_parent --parent") < i("-m jobs.m2_first_cell.reprice") < train < i("-m train.m2_gates")
     assert "export_phase heldout" in JOB  # review fix 3
     assert '--report "$ARM/rate-parent-$STAGE.json"' in JOB  # rate reports survive a restart (reprice reads them)
-    assert JOB.count("rate_guard run-weighted") == 2  # parent stages (loop) + child evals
+    assert JOB.count("rate_guard run-weighted") == 3  # parent stages (loop) + child evals + stage screen
     assert "jobs/common/finalize.py" in JOB and not re.search(r"touch [^\n]*DONE", JOB)
     assert not re.search(r"timeout \d+m", JOB)  # every cap comes from job_params
     assert "--final" not in JOB and "SSDM_UNSEAL_TEST" not in JOB and "--slice test" not in JOB

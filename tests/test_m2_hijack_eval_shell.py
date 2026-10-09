@@ -22,7 +22,7 @@ def _sha(p) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
-def _pack(ctx, full_run, name: str, tamper: bool = False):
+def _pack(ctx, full_run, name: str, tamper: bool = False, extra: dict | None = None):
     ck = full_run["work"] / "ck" / "cell"
     latest = json.loads((ck / "latest.json").read_text())
     pt = ck / latest["path"]
@@ -40,13 +40,14 @@ def _pack(ctx, full_run, name: str, tamper: bool = False):
     p["checkpoint"] = {**p["checkpoint"], "artifact": "art-shell", "job": "job-shell", "artifact_sha256": _sha(tar),
                        "member": f"./ckpt/{pt.name}", "ckpt_sha256": "0" * 64 if tamper else _sha(pt),
                        "latest_json_sha256": _sha(ck / "latest.json"), "cell_json_sha256": _sha(data_cell)}
+    p.update(extra or {})
     params = d / "job_params_hijack_eval.json"
     params.write_text(json.dumps(p, indent=1), encoding="utf-8", newline="\n")
     return tar, params
 
 
-def _run(ctx, full_run, name: str, tamper: bool = False):
-    tar, params = _pack(ctx, full_run, name, tamper)
+def _run(ctx, full_run, name: str, tamper: bool = False, extra: dict | None = None):
+    tar, params = _pack(ctx, full_run, name, tamper, extra)
     d = ctx["t"] / name
     env = {**ctx["env"], "M2FC_WORK": _posix(d / "work"), "GMN_OUTPUT_DIR": _posix(d / "output"),
            "M2FC_PARAMS": _posix(params), "CKPT_URL": tar.resolve().as_uri()}
@@ -83,3 +84,15 @@ def test_hijack_eval_refuses_a_checkpoint_that_fails_its_pin(ctx, full_run):
     r = _run(ctx, full_run, "hijack-tamper", tamper=True)
     assert r["rc"] == 10 and "FAIL(10): checkpoint" in r["log"], r["tail"]
     assert "] phase parent_hijack" not in r["log"] and r["result"]["ok"] is False
+
+
+def test_hijack_eval_scores_the_child_under_the_params_readout(ctx, full_run):
+    """mode hijack_eval_champ's knob: params "readout": "v3w" -> m2_gates --stage hijack --readout v3w (child only)."""
+    r = _run(ctx, full_run, "hijack-v3w", extra={"readout": "v3w"})
+    assert r["rc"] == 0, r["tail"]
+    assert "child readout v3w" in r["log"]
+    from jobs.m2_first_cell.hijack_eval import valid_result
+
+    dec = json.loads((r["work"] / "out/hijack_eval_result.json").read_text(encoding="utf-8"))
+    assert valid_result(dec) and dec["readout_requested"] == "v3w"
+    assert dec["readout"]["requested"] == "v3w" and dec["readout"]["template"] == "jrt-rwkv-g1-v3w"

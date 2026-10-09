@@ -42,6 +42,12 @@ from typing import Any
 
 KEYS = ("artifact", "artifact_sha256", "member", "ckpt_sha256", "latest_json_sha256", "cell_json_sha256", "url_env")
 MEMBER_RE = re.compile(r"\./ckpt/ckpt-step[0-9]+\.pt")
+#: TODO(inference export, claude/artifact-size-cap -- NOT pushed as of 2026-10-08): a second accepted member type, the
+#: trainable-weights-only bf16 safetensors inference export, pinned the same way (artifact / member / member sha256 /
+#: cell.json). When that branch lands: set its member pattern here, teach ``install`` + ``Trainer.load``'s caller to
+#: restore it (the .pt path for D1 art-bm3e6 stays unchanged). Until then such a member is refused (exit 5), never
+#: silently treated as a .pt.
+INFERENCE_EXPORT_RE: re.Pattern | None = None
 CHUNK = 8 << 20
 
 
@@ -67,6 +73,9 @@ def checkpoint_block(params: dict) -> dict:
     miss = [k for k in KEYS if not isinstance(ck.get(k), str) or not ck[k]]
     if miss:
         raise CheckpointError(f"checkpoint block missing {miss}", 5)
+    if ck["member"].endswith(".safetensors") and INFERENCE_EXPORT_RE is None:
+        raise CheckpointError(f"checkpoint member {ck['member']!r}: the safetensors inference export is not supported "
+                              "yet (hook INFERENCE_EXPORT_RE; claude/artifact-size-cap)", 5)
     if not re.fullmatch(r"[A-Z][A-Z0-9_]*", ck["url_env"]) or not MEMBER_RE.fullmatch(ck["member"]):
         raise CheckpointError(f"checkpoint block url_env / member malformed: {ck['url_env']!r} {ck['member']!r}", 5)
     for k in ("artifact_sha256", "ckpt_sha256", "latest_json_sha256", "cell_json_sha256"):

@@ -559,7 +559,15 @@ def report(a) -> dict:
     out["checkpoint"] = {k: v for k, v in (params.get("checkpoint") or {}).items() if not k.startswith("_")}
     idf = d / "identity-child.json"
     if idf.is_file():
-        out["checkpoint"]["loaded"] = json.loads(idf.read_text(encoding="utf-8")).get("checkpoint")
+        idc = json.loads(idf.read_text(encoding="utf-8"))
+        out["checkpoint"]["loaded"] = idc.get("checkpoint")
+        out["readout"] = idc.get("readout")  # None = the cell's training template
+        out["temperature_refit"] = idc.get("temperature_refit")
+    out["readout_requested"] = params.get("readout") or None
+    out["calibration"] = ("ece.json = untempered answers (T = 1; the Index arm); ece_served.json = the temperature fitted "
+                          "on the cell's TRAINING template (raw-template temperature)"
+                          + ("; ece_refit.json = the readout's own refit (jobs.m2_first_cell.readout_temperature)"
+                             if (d / "child.results_refit.jsonl").is_file() else ""))
     out["overlength_treatment"] = ("every row read in full (no truncation; adapter cap raised to "
                                    f"{params.get('max_input_tokens', DEFAULT_MAX_INPUT_TOKENS)} via ssdm.limits, the "
                                    "Clef 32k arm's mechanism); 'full' = every selected row (12,104 in mode full; "
@@ -588,7 +596,9 @@ def valid_result(d: Any) -> bool:
                 and all(fin(c[k]["index"][f]) for k in ("full", "excl_overlength51") for f in ("point", "lo", "hi"))
                 and fin(c["latency"]["median_ms"]) and fin(c["latency"]["p95_ms"])
                 and bool(d["checkpoint"].get("ckpt_sha256"))
-                and (d["checkpoint"].get("loaded") or {}).get("sha256") == d["checkpoint"]["ckpt_sha256"])
+                and (d["checkpoint"].get("loaded") or {}).get("sha256") == d["checkpoint"]["ckpt_sha256"]
+                and (not d.get("readout_requested")
+                     or (d.get("readout") or {}).get("name") == d["readout_requested"]))
     except Exception:  # noqa: BLE001
         return False
 
@@ -605,18 +615,32 @@ def estimate(params: dict, lengths: dict | None = None) -> dict[str, Any]:
     mode's cell config."""
     lengths = lengths or json.loads(LENGTHS.read_text(encoding="utf-8"))
     cfg = json.loads((ROOT / params["cell_config"]).read_text(encoding="utf-8"))
-    if params.get("readout_template") != cfg["template"]:
-        raise ValueError(f"readout_template {params.get('readout_template')!r} != cell config template {cfg['template']!r}")
+    from jobs.m2_first_cell.readout_ab import READOUTS
+
+    ro = params.get("readout") or None
+    if ro is not None and ro not in READOUTS:
+        raise ValueError(f"readout {ro!r} not in {sorted(READOUTS)}")
+    want = READOUTS[ro] if ro else cfg["template"]
+    if params.get("readout_template") != want:
+        raise ValueError(f"readout_template {params.get('readout_template')!r} != {want!r} "
+                         f"({'params readout ' + ro if ro else 'cell config template'})")
+    if params.get("refit_temperature") and not ro:
+        raise ValueError("refit_temperature needs a non-training params readout")
+    # a non-training readout: its prompts are ratio x the v1 lengths; its refit is one pass over the calibration items
+    ratio = float((params.get("readout_length_ratio") or {}).get(ro, 1.0)) if ro else 1.0
+    refit_min = float(params.get("readout_refit_minutes", 0)) if params.get("refit_temperature") else 0.0
     if params["max_input_tokens"] <= lengths["max_tokens"]:
         raise ValueError(f"max_input_tokens {params['max_input_tokens']} <= the longest DEV row {lengths['max_tokens']}")
     m = params["measured_rates_reference"]
     keep = selected_ids(params.get("rows", "full"))
     toks = lengths["total_tokens"] if keep is None else sum(lengths["lengths"][i] for i in keep)
-    phases = {"fulldev": toks / 1000 * m["child_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["child"]}
+    phases = {"fulldev": toks * ratio / 1000 * m["child_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["child"]
+                         + refit_min}
     if params.get("fulldev_parent_arm"):
         phases["parent_full"] = toks / 1000 * m["parent_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["parent"]
     caps = params["phase_caps_minutes"]
     out = {"rows": params.get("rows", "full"), "tokens": toks, "template": cfg["template"], "lengths_template": lengths["template"],
+           "readout": ro or "training", "readout_length_ratio": ratio, "refit_minutes": refit_min,
            "minutes": {k: round(v, 1) for k, v in phases.items()},
            "caps": {k: caps[k] for k in phases}, "ok": all(v <= 0.95 * caps[k] for k, v in phases.items())}
     out["usd_batch_scoring"] = round(sum(phases.values()) * params["batch_usd_per_min"], 2)

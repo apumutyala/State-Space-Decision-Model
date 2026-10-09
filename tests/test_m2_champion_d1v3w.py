@@ -18,7 +18,7 @@ def _p(f):
 
 def _strip(p: dict, extra=()) -> dict:
     drop = {"_comment", "job", "status", "cell_config", "submit", "context", "mode", "expected_minutes",
-            "readout", "readout_template", "readout_length_ratio", *extra}
+            "readout", "readout_template", "readout_length_ratio", "refit_temperature", "readout_refit_minutes", *extra}
     return {k: v for k, v in p.items() if k not in drop}
 
 
@@ -54,8 +54,9 @@ def test_fulldev_champ_is_full_dev_child_only_at_the_65k_cap_and_priced_at_the_v
     assert c["eval_only"] == "fulldev" and c.get("rows", "full") == "full" and not c["fulldev_parent_arm"]
     assert c["max_input_tokens"] == 65_536 and c["readout_template"] == "jrt-rwkv-g1-v3w"
     e, e1 = estimate(c), estimate(_p(FD))
-    assert e["ok"] and e["readout"] == "v3w" and e["readout_length_ratio"] == 0.9004
-    assert e["minutes"]["fulldev"] < e1["minutes"]["fulldev"] and abs(e["minutes"]["fulldev"] - 382.2) < 0.1
+    assert e["ok"] and e["readout"] == "v3w" and e["readout_length_ratio"] == 0.9004 and e["refit_minutes"] == 12
+    assert c["refit_temperature"] is True
+    assert e["minutes"]["fulldev"] < e1["minutes"]["fulldev"] and abs(e["minutes"]["fulldev"] - 394.2) < 0.1
     bad = {**c, "readout_template": "jrt-rwkv-g1-v1"}
     with pytest.raises(ValueError, match="readout_template"):
         estimate(bad)
@@ -83,7 +84,7 @@ def test_readout_switch_is_readout_abs_swap_over_the_same_model():
     assert r["ssdm"]["status"] == "ok", r["ssdm"]
     cfg = {"template": "jrt-rwkv-g1-v1", "layout": "ordered"}
     idt = RS.identity(cfg, "v3w", tempered=True)
-    assert idt["template"] == "jrt-rwkv-g1-v3w" and not idt["native"] and idt["per_readout_refit"] is False
+    assert idt["template"] == "jrt-rwkv-g1-v3w" and not idt["native"]
     assert "training-template fit" in idt["temperature_scope"] and "jrt-rwkv-g1-v1" in idt["temperature_scope"]
     assert RS.identity(cfg, None, tempered=True)["native"] is True
     with pytest.raises(ValueError):
@@ -130,21 +131,13 @@ def test_m2_gates_readout_is_a_hijack_stage_knob_only():
     assert G.main(base + ["--stage", "hijack", "--readout", "nope"]) == G.EXIT["usage"]
 
 
-def test_fulldev_readout_is_child_only():
-    from jobs.m2_first_cell import fulldev_eval as F
-
-    with pytest.raises(SystemExit):
-        F.main(["score", "--arm", "parent", "--cell-config", "x", "--model-dir", "x", "--rows", "x",
-                "--resume-dir", "x", "--out-dir", "x", "--readout", "v3w"])
-
-
 def _fd_result(**over):
     pt = {"point": 38.0, "lo": 35.0, "hi": 41.0}
     d = {"schema": "ssdm.m2.fulldev_eval.v1", "verdict": "measured", "rows": 12_104, "rows_mode": "full",
          "arms": {"child": {"status": {"ok": 12_104}, "full": {"index": pt}, "excl_overlength51": {"index": pt},
                             "latency": {"median_ms": 900.0, "p95_ms": 2500.0}}},
          "checkpoint": {"ckpt_sha256": CHAMP_CKPT, "loaded": {"sha256": CHAMP_CKPT}},
-         "readout_requested": "v3w", "readout": {"requested": "v3w", "template": "jrt-rwkv-g1-v3w"}}
+         "readout_requested": "v3w", "readout": {"name": "v3w", "template": "jrt-rwkv-g1-v3w"}}
     d.update(over)
     return d
 
@@ -153,9 +146,9 @@ def test_fulldev_valid_result_requires_the_requested_readout_was_loaded():
     from jobs.m2_first_cell.fulldev_eval import valid_result
 
     assert valid_result(_fd_result())
-    assert not valid_result(_fd_result(readout={"requested": "training"}))
+    assert not valid_result(_fd_result(readout={"name": "v1"}))
     assert not valid_result(_fd_result(readout=None))
-    assert valid_result(_fd_result(readout_requested="training", readout=None))
+    assert valid_result(_fd_result(readout_requested=None, readout=None))
 
 
 def test_hijack_valid_result_requires_the_requested_readout_was_loaded():
@@ -174,7 +167,52 @@ def test_hijack_valid_result_requires_the_requested_readout_was_loaded():
 
 def test_runner_passes_the_readout_to_the_child_only():
     sh = (M / "first_cell_job.sh").read_text(encoding="utf-8")
-    assert 'CHILD_EXTRA=(--readout "$READOUT")' in sh and '--stage hijack "${HJ_RO[@]}"' in sh
+    assert 'CHILD_EXTRA+=(--readout "$FD_READOUT")' in sh and 'CHILD_EXTRA+=(--refit-temperature)' in sh
+    assert '--stage hijack "${HJ_RO[@]}"' in sh
     assert 'eval_only {ev!r} must be none, fulldev, readout_ab or hijack' in sh
     tree = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
     assert "job_params_fulldev_eval_champ.json" in tree and "job_params_hijack_eval_champ.json" in tree
+
+
+def test_eval_only_paths_never_put_the_checkpoint_in_output():
+    """The checkpoint lives in $CK (+ the downloaded tar in $WORK/art); only $WORK/out + logs are exported, and the
+    eval-only branches exit before the training path's `cp ... $OUT/ckpt` (the 5 GB artifact cap)."""
+    sh = (M / "first_cell_job.sh").read_text(encoding="utf-8")
+    a = sh.index('if [ "$EVAL_ONLY" = fulldev ] || [ "$EVAL_ONLY" = readout_ab ]; then')
+    b = sh.index("\n  RC=0\n  exit 0\nfi\n", a)
+    block = sh[a:b]
+    assert "$OUT" not in block and '--ck-dir "$CK/cell" --work "$WORK/art"' in block
+    assert sh.index('mkdir -p "$OUT/ckpt"') > b
+
+
+def test_artifact_size_guard_fails_loudly_before_writing(tmp_path):
+    import shutil
+    import subprocess
+
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("no bash")
+    out, work = tmp_path / "output", tmp_path / "work"
+    (work / "out").mkdir(parents=True)
+    (work / "logs").mkdir()
+    (work / "out" / "r.json").write_text("x" * 5000)
+    from tests.test_m2_first_cell_shell import _posix
+
+    lib = _posix(ROOT / "jobs/common/lib.sh")
+    script = (f'T0=$(date +%s); OUT="{_posix(out)}"; WORK="{_posix(work)}"; META=http://127.0.0.1:9; EXPORT_FAIL=0; '
+              f'. "{lib}"; ARTIFACT_MAX_BYTES=$1 export_phase p1; echo "EF=$EXPORT_FAIL"')
+    big = subprocess.run([bash, "-c", script, "x", "1000"], capture_output=True, text=True)
+    assert "ARTIFACT SIZE GUARD" in big.stdout and "EF=1" in big.stdout, big.stdout + big.stderr
+    assert not (out / "phases" / "p1.tgz").exists()
+    ok = subprocess.run([bash, "-c", script, "x", "4500000000"], capture_output=True, text=True)
+    assert "EF=0" in ok.stdout and (out / "phases" / "p1.tgz").exists(), ok.stdout + ok.stderr
+
+
+def test_loader_refuses_the_unlanded_safetensors_export_but_keeps_the_pt_path():
+    from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
+
+    c = _p(FDC)
+    assert checkpoint_block(c)["member"].endswith(".pt")
+    bad = {**c, "checkpoint": {**c["checkpoint"], "member": "./ckpt/infer-step0001439.safetensors"}}
+    with pytest.raises(CheckpointError, match="safetensors"):
+        checkpoint_block(bad)

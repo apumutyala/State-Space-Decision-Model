@@ -1,20 +1,11 @@
-"""Job-params knob ``"readout"``: score a SAVED checkpoint under a named eval readout instead of its training template,
-EXACTLY as ``jobs.m2_first_cell.readout_ab`` scores it (the champion = D1 job-c7pq2 art-bm3e6 + ``v3w``: 38.67
-[35.50, 41.73] on the 2,008 subset, job-39gnn, independently reproduced).
+"""Job-params knob ``"readout"`` for ``train.m2_gates --stage hijack --readout <r>`` (mode hijack_eval_champ): score a
+SAVED checkpoint's child arm under a named eval readout instead of its training template, EXACTLY as
+``jobs.m2_first_cell.readout_ab`` / ``readout_temperature.readout_decider`` build it (the same model object, encoder,
+checkpoint record and ``shared_prefix``; template + layout from ``readout_ab.READOUTS`` / ``READOUT_LAYOUT``). The
+checkpoint is restored and lineage-checked on the cell's own template first (``Trainer.load``); only the prompt changes.
 
-Used by ``fulldev_eval score --arm child --readout v3w`` (full DEV) and ``train.m2_gates --stage hijack --readout v3w``
-(mode hijack_eval). The swap is the one ``readout_ab.child_deciders`` makes: the SAME model object, encoder, checkpoint
-record and ``shared_prefix`` as the training-template backend, another template + layout
-(``readout_ab.READOUTS`` / ``READOUT_LAYOUT``). The checkpoint is restored and lineage-checked on the cell's own
-template first (``Trainer.load``); only the prompt changes.
-
-Temperature (served calibration). No per-readout refit is available yet: the served decider keeps the ONE temperature
-fitted on the TRAINING template's calibration items (``fit_child_temperature``), recorded as
-``temperature_scope = "training-template fit (raw-template temperature), applied to readout <r>"``. The Index is
-computed on the untempered answers (T = 1) either way, so the refit can only move ECE, never the Index.
-TODO(per-readout refit): when the refit lands on stack/rwkv7/ckpt-readout, implement ``refit_temperature`` below
-(fit on the calibration items rendered under the readout) and set ``REFIT_AVAILABLE = True``; callers already route
-through it.
+The hijack stage scores both arms UNTEMPERED (argmax-based decisions), so no temperature is involved here. Full-DEV
+scoring (``fulldev_eval --readout <r> --refit-temperature``) uses ``readout_temperature`` (the per-readout refit).
 """
 from __future__ import annotations
 
@@ -22,8 +13,6 @@ from typing import Any
 
 from jobs.m2_first_cell.readout_ab import READOUT_LAYOUT, READOUTS
 
-#: flipped when ``refit_temperature`` is implemented (per-readout temperature refit; see the module docstring)
-REFIT_AVAILABLE = False
 TRAINING = "training"
 
 
@@ -51,11 +40,6 @@ def switch_backend(backend, readout: str | None):
                                 checkpoint=backend.checkpoint, shared_prefix=backend.shared_prefix)
 
 
-def refit_temperature(model, readout: str, calibration_items: Any):  # pragma: no cover - TODO hook
-    """TODO(per-readout refit): fit the served temperature on the calibration items rendered under ``readout``."""
-    raise NotImplementedError("per-readout temperature refit is not implemented on this branch")
-
-
 def identity(cfg: dict, readout: str | None, tempered: bool) -> dict[str, Any]:
     r = check(readout)
     if r is None or is_native(cfg, r):
@@ -64,7 +48,6 @@ def identity(cfg: dict, readout: str | None, tempered: bool) -> dict[str, Any]:
     return {"requested": r, "template": READOUTS[r], "layout": READOUT_LAYOUT[r], "native": False,
             "cell_template": cfg.get("template"), "cell_layout": cfg.get("layout"),
             "swap": "jobs.m2_first_cell.readout_ab.child_deciders (same model / encoder / checkpoint / shared_prefix)",
-            "per_readout_refit": REFIT_AVAILABLE,
             "temperature_scope": (f"training-template fit (raw-template temperature, {cfg.get('template')}), applied "
                                   f"to readout {r}; no per-readout refit" if tempered else
                                   "untempered (identity calibration)")}

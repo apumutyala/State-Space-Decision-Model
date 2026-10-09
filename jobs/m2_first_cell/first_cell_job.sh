@@ -264,7 +264,8 @@ elif [ "$EVAL_ONLY" = hijack ]; then  # the hijack stage of both arms; the child
   FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['child'])" "$PARAMS") || fail 5 "job_params"
   for P in "hijack parent parent_hijack $FIX_P" "hijack child evals $FIX_C --no-child-extras"; do
     set -- $P
-    python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \n      --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" ${5:-} > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
+    python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \
+      --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" ${5:-} > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
   done
 elif [ "$EVAL_ONLY" = readout_ab ]; then  # subset rows x readouts x D1's measured child rows/min (+ readout length ratio)
   python -X utf8 -m jobs.m2_first_cell.readout_ab estimate --params "$PARAMS" > "$WORK/out/preflight-readout_ab.json" \
