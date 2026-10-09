@@ -1,6 +1,18 @@
 {
  "_comment": "Teacher-export scope (baselines/clef_teacher.py; JOB_SPEC.md section 11). TRAINING records only: the PR #44 150k m2 set named by the same pointer jobs/m2_first_cell trains on, drawn exactly as that cell draws (train.run_cell.split_ids over the set minus the pinned held-out D1-B exclusions, seed 0). Never Index DEV/TEST rows (SplitGuard over the harness DEV + TEST manifests and the pinned content index), never the frozen m2 cohort (dev/calibration/retention, by id and content), never a record carrying a held-out D1-B fragment (train.heldout). Any hit = exit 20 before any GPU phase.",
  "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+ "doc_clean": {
+  "spec": "data/manifests/doc_clean/sample-150000-seed20261006.json",
+  "spec_sha256": "e67fadabc8f6db9d7585ebe98ec45cc214caa82eebd8afb5964b9ca122fb37d4",
+  "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+  "index_sha256": "2c821e291c944b4e28cb0e74a5dabc3f7bc436fdd7f410fb199661318448594f",
+  "allowlist_sha256": "8a0bf416f2920af62be1ced98e54ea006f8580859d1c7234bed8676703f2c111",
+  "n_records": 150000,
+  "n_excluded": 143,
+  "n_kept": 149857,
+  "excluded_ids_sha256": "d414e6127a255864595b7dbe260aacd96d01c3997cc6504654e85a278b30e6f9",
+  "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set"
+ },
  "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
  "draw": {
   "n_records": 24000,
