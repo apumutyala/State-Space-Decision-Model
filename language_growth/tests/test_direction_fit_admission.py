@@ -1,4 +1,5 @@
 """No-model tests of strict qualified-parent versus fitted-child CLI routing."""
+from copy import deepcopy
 import contextlib
 import importlib.util
 import io
@@ -11,7 +12,9 @@ import unittest
 from unittest.mock import Mock
 from unittest.mock import patch
 
-from language_growth.direction_fit_admission import resolve_direction_fit_parent
+from language_growth.direction_fit_admission import preflight_direction_pairs, resolve_direction_fit_parent
+from language_growth.gate_operation_pairs import development_operation_pairs
+from language_growth.parent_bridge import decision_request, legacy_request_fingerprint
 
 
 class DirectionFitAdmissionTests(unittest.TestCase):
@@ -24,6 +27,49 @@ class DirectionFitAdmissionTests(unittest.TestCase):
         }
         self.qualified = Mock(return_value="qualified-parent")
         self.child = Mock(return_value="language-child")
+
+    def test_direction_pair_preflight_accepts_paired_development_cohorts(self):
+        discovery = development_operation_pairs(split="development_train", worlds=4, seed=1201)
+        validation = development_operation_pairs(split="development_validation", worlds=4, seed=1202)
+        result = preflight_direction_pairs(discovery, validation)
+        self.assertEqual(result, {
+            "discovery_pairs": 4, "validation_pairs": 4,
+            "concept": "Compare_to_ExactDifference",
+            "discovery_option_counts": [4], "validation_option_counts": [4],
+            "target_slots": None,
+        })
+        known = {"semantic-operation", "comparison-relation"}
+        scoped = preflight_direction_pairs(discovery, validation, target_slots=["semantic-operation"],
+                                           known_target_slots=known)
+        self.assertEqual(scoped["target_slots"], ["semantic-operation"])
+        with self.assertRaisesRegex(ValueError, "declared target slot"):
+            preflight_direction_pairs(discovery, validation, target_slots=["comparison-relation"],
+                                      known_target_slots=known)
+        zero_ordinal = deepcopy(discovery)
+        for pair in zero_ordinal:
+            pair["source"]["question_id"] = "slot-000-semantic-operation"
+            pair["effect"]["question_id"] = "slot-000-semantic-operation"
+        with self.assertRaisesRegex(ValueError, "declared target slot"):
+            preflight_direction_pairs(zero_ordinal, validation, target_slots=["semantic-operation"],
+                                      known_target_slots=known)
+        with self.assertRaisesRegex(ValueError, "registered GatePlanner"):
+            preflight_direction_pairs(discovery, validation, target_slots=["unregistered"],
+                                      known_target_slots=known)
+
+    def test_direction_pair_preflight_rejects_overlap_and_malformed_rows(self):
+        discovery = development_operation_pairs(split="development_train", worlds=2, seed=1203)
+        validation = development_operation_pairs(split="development_validation", worlds=2, seed=1204)
+        duplicated = [*discovery, deepcopy(discovery[0])]
+        with self.assertRaisesRegex(ValueError, "duplicate pair IDs/content"):
+            preflight_direction_pairs(duplicated, validation)
+        overlapped = deepcopy(validation)
+        overlapped[0]["world_id"] = discovery[0]["world_id"]
+        with self.assertRaisesRegex(ValueError, "must be disjoint"):
+            preflight_direction_pairs(discovery, overlapped)
+        malformed = deepcopy(discovery)
+        malformed[0]["source"].pop("catalog")
+        with self.assertRaisesRegex(ValueError, "request specification"):
+            preflight_direction_pairs(malformed, validation)
 
     def test_keeps_qualified_parent_routing_when_child_pins_are_absent(self):
         result = resolve_direction_fit_parent(
@@ -39,8 +85,11 @@ class DirectionFitAdmissionTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             root = Path(directory)
             discovery, validation = root / "train.json", root / "validation.json"
-            discovery.write_text(json.dumps([{"split": "development_train"}]), encoding="utf-8")
-            validation.write_text(json.dumps([{"split": "development_validation"}]), encoding="utf-8")
+            discovery_raw = json.dumps(development_operation_pairs(
+                split="development_train", worlds=1, seed=1211))
+            discovery.write_text(discovery_raw, encoding="utf-8")
+            validation.write_text(json.dumps(development_operation_pairs(
+                split="development_validation", worlds=1, seed=1212)), encoding="utf-8")
             child_parent = object()
             load_child = Mock(return_value=child_parent)
             load_qualified = Mock(return_value=object())
@@ -54,8 +103,8 @@ class DirectionFitAdmissionTests(unittest.TestCase):
             bridge_module = ModuleType("language_growth.parent_bridge")
             bridge_module.DECISION_SCHEMA = "schema"
             bridge_module.FINGERPRINT_ALGORITHM = "fingerprint"
-            bridge_module.decision_request = Mock()
-            bridge_module.legacy_request_fingerprint = Mock()
+            bridge_module.decision_request = decision_request
+            bridge_module.legacy_request_fingerprint = legacy_request_fingerprint
             intervention_module = ModuleType("language_growth.gate_interventions")
             for name, value in {
                 "ARMS": ("semantic", "sham", "random", "output_only"), "BOUNDARY": "boundary",
@@ -101,6 +150,18 @@ class DirectionFitAdmissionTests(unittest.TestCase):
                 load_qualified.assert_not_called()
                 self.assertIs(module.fit_native_directions.call_args.args[0], child_parent)
                 module.fit_native_directions.assert_called_once()
+
+                malformed = json.loads(discovery.read_text(encoding="utf-8"))
+                malformed[0]["source"].pop("catalog")
+                discovery.write_text(json.dumps(malformed), encoding="utf-8")
+                bad_args = args.copy()
+                bad_args[bad_args.index("--out") + 1] = str(root / "malformed-out")
+                with contextlib.redirect_stderr(io.StringIO()), self.assertRaisesRegex(ValueError, "request specification"):
+                    module.main(bad_args)
+                load_child.assert_called_once()
+                load_qualified.assert_not_called()
+                module.fit_native_directions.assert_called_once()
+                discovery.write_text(discovery_raw, encoding="utf-8")
 
                 partial = args.copy()
                 partial.remove("--stage1-parent-checkpoint")

@@ -443,7 +443,7 @@ def main(argv=None) -> int:
     p.add_argument("--dtype", default="bfloat16", choices=("float32", "bfloat16"))
     args = p.parse_args(argv)
     from .gates import _strict_json
-    from .direction_fit_admission import resolve_direction_fit_parent
+    from .direction_fit_admission import preflight_direction_pairs, resolve_direction_fit_parent
     from .language_child import load_language_child
     from .qualified_parent import load_qualified_parent
     if Path(args.out).exists():
@@ -455,6 +455,8 @@ def main(argv=None) -> int:
     for rows, split in ((discovery, "development_train"), (validation, "development_validation")):
         if not isinstance(rows, list) or not rows or any(not isinstance(row, dict) or row.get("split") != split for row in rows):
             raise ValueError("explicit separate development train/validation pair files required")
+    preflight_direction_pairs(discovery, validation, target_slots=args.target_slots,
+                              known_target_slots=TARGET_SLOTS)
     parent = resolve_direction_fit_parent(
         candidate_checkpoint=args.parent, parent_report=args.parent_report,
         parent_report_sha256=args.parent_report_sha256,
