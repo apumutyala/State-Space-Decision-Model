@@ -104,7 +104,7 @@
    "CALL_S": "0.117",
    "CKPT_URL": "<get_artifact art-bm3e6 url: fill at submit>"
   },
-  "key": "m2-first-cell-fulldev-eval-champ-d1v3w-20261008a",
+  "key": "m2-first-cell-fulldev-eval-champ-d1v3w-20261009b",
   "clock_lock": true,
   "label": "fulldev_eval_champ: champion D1 (job-c7pq2 art-bm3e6) + v3w readout on the full 12,104-row Index DEV, no training",
   "checks": {

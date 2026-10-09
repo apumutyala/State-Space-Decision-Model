@@ -216,3 +216,26 @@ def test_loader_refuses_the_unlanded_safetensors_export_but_keeps_the_pt_path():
     bad = {**c, "checkpoint": {**c["checkpoint"], "member": "./ckpt/infer-step0001439.safetensors"}}
     with pytest.raises(CheckpointError, match="safetensors"):
         checkpoint_block(bad)
+
+
+def test_job_35e9v_lineage_cache_root_is_not_an_identity_but_repo_revision_and_weights_are():
+    """job-35e9v (fulldev_eval_champ) exit 10: D1's checkpoint lineage recorded the snapshot under the platform's
+    /hfcache mount; that run downloaded the SAME pinned snapshot to ~/.cache/huggingface/hub."""
+    pytest.importorskip("torch")
+    from train.lineage import canonical_name_or_path, diff
+
+    rev = "ce3630b854cedbd673569f4600c6cf744bca9dba"
+    d1 = f"/hfcache/models--RWKV--RWKV7-G1k-13.3B-20260930/snapshots/{rev}"
+    run = f"/root/.cache/huggingface/hub/models--RWKV--RWKV7-G1k-13.3B-20260930/snapshots/{rev}"
+    bb = {"spec": "rwkv7-13.3b", "class": "Rwkv7Model", "config_sha256": "c" * 64, "commit_hash": rev,
+          "weights_digest": "f" * 64, "name_or_path": d1}
+    saved = {"backbone": bb, "tokenizer": ["t"], "layout": {"l": 1}, "data": {"sha256": "d"}}
+    assert diff(saved, {**saved, "backbone": {**bb, "name_or_path": run}}) == []  # the job-35e9v case
+    assert canonical_name_or_path(run) == ("hf", "RWKV/RWKV7-G1k-13.3B-20260930", rev)
+    other_rev = run.replace(rev, "0" * 40)
+    other_repo = run.replace("RWKV7-G1k-13.3B", "RWKV7-G1k-2.9B")
+    for bad in (other_rev, other_repo, "/some/local/dir", None):
+        assert diff(saved, {**saved, "backbone": {**bb, "name_or_path": bad}}) == ["backbone.name_or_path"], bad
+    for k, v in (("weights_digest", "0" * 64), ("commit_hash", "0" * 40), ("config_sha256", "0" * 64)):
+        assert diff(saved, {**saved, "backbone": {**bb, "name_or_path": run, k: v}}) == [f"backbone.{k}"]
+    assert diff(saved, {**saved, "data": {"sha256": "x"}}) == ["data"]

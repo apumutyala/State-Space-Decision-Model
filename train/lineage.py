@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from typing import Any, Sequence
 
 import torch
@@ -141,13 +142,27 @@ def lineage(backbone, items: Sequence, full_weights: bool = False) -> dict[str, 
     }
 
 
+_HF_SNAPSHOT = re.compile(r"(?:^|[\\/])models--([^\\/]+?)--([^\\/]+)[\\/]snapshots[\\/]([0-9a-f]{40})[\\/]?$")
+
+
+def canonical_name_or_path(v: Any) -> Any:
+    """A Hugging Face hub snapshot DIRECTORY -> ("hf", "<org>/<name>", "<40-hex revision>"), so the same pinned snapshot
+    read from another cache root (the platform's /hfcache mount vs ~/.cache/huggingface/hub; job-35e9v) is the same
+    backbone. The repo id and the full revision must still match exactly; anything that is not a hub snapshot path is
+    compared verbatim. ``commit_hash``, ``config_sha256`` and ``weights_digest`` are compared as before."""
+    m = _HF_SNAPSHOT.search(v) if isinstance(v, str) else None
+    return ("hf", f"{m.group(1)}/{m.group(2)}", m.group(3)) if m else v
+
+
 def diff(saved: dict[str, Any], current: dict[str, Any]) -> list[str]:
-    """Top-level lineage keys (and backbone sub-keys) that differ."""
+    """Top-level lineage keys (and backbone sub-keys) that differ. ``backbone.name_or_path`` is compared through
+    ``canonical_name_or_path`` (a cache ROOT is a location, not an identity)."""
     out = []
     for k in sorted(set(saved) | set(current)):
         a, b = saved.get(k), current.get(k)
         if k == "backbone" and isinstance(a, dict) and isinstance(b, dict):
-            out += [f"backbone.{kk}" for kk in sorted(set(a) | set(b)) if a.get(kk) != b.get(kk)]
+            norm = lambda kk, v: canonical_name_or_path(v) if kk == "name_or_path" else v  # noqa: E731
+            out += [f"backbone.{kk}" for kk in sorted(set(a) | set(b)) if norm(kk, a.get(kk)) != norm(kk, b.get(kk))]
         elif json.dumps(a, sort_keys=True, default=str) != json.dumps(b, sort_keys=True, default=str):
             out.append(k)
     return out
