@@ -7,8 +7,9 @@ checkpoint dir ($GMN_CHECKPOINT_DIR), never in $GMN_OUTPUT_DIR.
 
 writes, in ``--out-dir``::
 
-    trainable-step0001439.safetensors          trainable tensors (bf16 by default), metadata: format, config_hash,
-                                               step, source_ckpt_sha256, dtype
+    trainable-step0001439.safetensors          trainable tensors (bf16 by default); ONE metadata key "ssdm" = sorted
+                                               JSON {format, config_hash, step, source_ckpt_sha256, dtype}
+                                               (one key: safetensors writes a metadata map in random order)
     trainable-step0001439.json                 sidecar: sha256 of the safetensors + everything Trainer.load checks
                                                (config_hash, lineage) or restores (step, epoch, cursor, history)
     trainable-step0001439.safetensors.sha256   ``sha256sum`` line
@@ -46,6 +47,11 @@ def sha256_file(path: str | Path) -> str:
         for b in iter(lambda: f.read(8 << 20), b""):
             h.update(b)
     return h.hexdigest()
+
+
+def _write(path: Path, text: str) -> None:
+    with open(path, "w", encoding="utf-8", newline="\n") as f:  # LF on every OS (`sha256sum -c`, stable sha256s)
+        f.write(text)
 
 
 def is_inference(path: str | Path) -> bool:
@@ -95,18 +101,19 @@ def export_inference(ckpt: str | Path, out_dir: str | Path, dtype: str = "bf16")
         name = f"trainable-step{step:07d}.safetensors"
         src_sha = sha256_file(ckpt)
         tmp = out / (name + ".tmp")
-        save_file(tensors, str(tmp), metadata={"format": FORMAT, "config_hash": str(st["config_hash"]),
-                                               "step": str(step), "source_ckpt_sha256": src_sha, "dtype": dtype})
+        meta = {"format": FORMAT, "config_hash": str(st["config_hash"]), "step": step, "source_ckpt_sha256": src_sha,
+                "dtype": dtype}
+        save_file(tensors, str(tmp), metadata={"ssdm": json.dumps(meta, sort_keys=True)})
         os.replace(tmp, out / name)
         side = {"format": FORMAT, "file": name, "sha256": sha256_file(out / name), "dtype": dtype,
                 "source_ckpt": ckpt.name, "source_ckpt_sha256": src_sha, "n_tensors": len(tensors),
                 "n_params": sum(t.numel() for t in tensors.values()),
                 **{k: _jsonable(st.get(k)) for k in SIDECAR_KEYS}}
-        sidecar_path(out / name).write_text(json.dumps(side, indent=1), encoding="utf-8")
+        _write(sidecar_path(out / name), json.dumps(side, indent=1))
         del st, tr, tensors
-    (out / (name + ".sha256")).write_text(f"{side['sha256']}  {name}\n", encoding="utf-8")
-    (out / "latest.json").write_text(json.dumps({"path": name, "step": side["step"], "config_hash": side["config_hash"],
-                                                 "format": FORMAT, "dtype": side["dtype"]}), encoding="utf-8")
+    _write(out / (name + ".sha256"), f"{side['sha256']}  {name}\n")
+    _write(out / "latest.json", json.dumps({"path": name, "step": side["step"], "config_hash": side["config_hash"],
+                                            "format": FORMAT, "dtype": side["dtype"]}))
     return side
 
 
@@ -125,8 +132,8 @@ def read_inference(path: str | Path, verify: bool = True) -> tuple[dict[str, tor
     if verify and sha256_file(path) != side.get("sha256"):
         raise ValueError(f"{path.name} sha256 != its sidecar's")
     with safe_open(str(path), framework="pt") as f:
-        meta = f.metadata() or {}
-    if meta.get("config_hash") != str(side.get("config_hash")) or meta.get("step") != str(side.get("step")):
+        meta = json.loads((f.metadata() or {}).get("ssdm") or "{}")
+    if meta.get("config_hash") != side.get("config_hash") or meta.get("step") != side.get("step"):
         raise ValueError(f"{path.name}: safetensors metadata disagrees with the sidecar")
     return load_file(str(path)), side
 
