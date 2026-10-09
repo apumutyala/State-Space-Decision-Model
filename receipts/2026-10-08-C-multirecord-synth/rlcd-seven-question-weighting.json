@@ -1,0 +1,50 @@
+{
+  "schema": "ssdm.c_multirecord_rlcd_binding.v1",
+  "scope": "CPU one-thread toy log-prob gradients; source-only D13/D14 integration review; no model or dataset inputs",
+  "rlcd_record_weight": 0.25,
+  "seven_question_complete_record": {
+    "gold_logit_nll_gradient": -0.057142857,
+    "record_bonus": 0.018243772,
+    "bonus_to_nll_gradient_ratio": 0.035714286,
+    "gold_logit_bonus_gradient": -0.002040816,
+    "nll": 0.510825624
+  },
+  "one_question_record": {
+    "gold_logit_nll_gradient": -0.4,
+    "record_bonus": 0.127706406,
+    "bonus_to_nll_gradient_ratio": 0.25,
+    "gold_logit_bonus_gradient": -0.1,
+    "nll": 0.510825624
+  },
+  "seven_question_split_groups": {
+    "bonus_to_nll_gradient_ratio": [
+      0.0625,
+      0.0625,
+      0.0625,
+      0.0625,
+      0.083333333,
+      0.083333333,
+      0.083333333
+    ],
+    "groups": [
+      4,
+      3
+    ]
+  },
+  "detached_other": {
+    "scalar_loss_difference": 0.056758403,
+    "other_gradient": null,
+    "policy_gradients_identical": true
+  },
+  "interpretation": "Intentional tested normalization: absolute record-bonus per-question coefficient lambda/n^2; ratio to NLL lambda/n for full n-row record. Outside-record cached probabilities change scalar only. Effective bonus depends on microbatch record cardinality.",
+  "d13": {
+    "batch_size": 1,
+    "scope": "Source/config inspection; no runtime model proof",
+    "grad_accum": 8,
+    "whole_record_fits": true,
+    "record_questions": 7
+  },
+  "cpu_proof_exit_code": 0,
+  "existing_by_hand_test": "isolated body PASS",
+  "no_qualification_claim": true
+}
