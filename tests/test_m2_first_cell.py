@@ -411,8 +411,12 @@ def test_first_cell_dry_run_end_to_end(tmp_path):
     assert r.returncode == 0 and rec["all_ok"] and rec["result_valid"], r.stdout[-3000:]
     res = rec["result"]
     ts = res["training"]["data"]["train_set"]
-    # 150,000 - 3 pinned D1-B exclusions - cohort v3 (#105, removed before the draw: 38,202 records)
-    assert res["training"]["steps"] == 6 and ts["n_pool"] == 149_997 - ts["cohort_v3_excluded"]["n"] == 111_795
+    # 150,000 - 3 pinned D1-B exclusions - cohort v3 (#105, removed before the draw: 38,202 records) - the pinned
+    # attack_clean spec (train.attack_guard: 8,049 D1-A eval-template rows, PR #233)
+    ag = ts["attack_guard"]
+    assert ag["n_excluded"] == 8_049 and ag["drawn_hits"] == 0 and ag["per_set"]["d1a_steer"] == 8_049
+    assert res["training"]["steps"] == 6
+    assert ts["n_pool"] == 149_997 - ts["cohort_v3_excluded"]["n"] - ag["n_excluded"] == 111_795 - 8_049
     assert ts["cohort_v3_excluded"]["drawn_overlap"] == 0
     assert res["index_dev_subset"]["rows"] >= 24 and res["steer_hijack_d1a"]["complete"]
     assert set(res["index_dev_subset"]["child_minus_parent"]["areas"]) == set(res["index_dev_subset"]["child"]["areas"])
@@ -556,7 +560,7 @@ def test_evals_exit_43_is_a_measurement_not_a_crash(code, measured):
     r = subprocess.run([bash, "-c", script], capture_output=True, text=True, timeout=30)
     assert ("MEASURED" in r.stdout and r.returncode == 0) is measured, r.stdout
     assert JOB.index("gate \"evals\" $r; export_phase evals") < JOB.index("case $r in 0|40|43|44|45)")  # evals exported first
-    assert JOB.index("case $r in 0|40|43|44|45)") < JOB.index('cp "$CK/cell/$LATEST"')  # then the checkpoint export
+    assert JOB.index("case $r in 0|40|43|44|45)") < JOB.index("train.ckpt_export inference")  # then the checkpoint export
 
 
 def test_pending_partial_underpowered_are_valid_measured_results():

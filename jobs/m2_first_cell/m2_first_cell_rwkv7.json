@@ -55,6 +55,16 @@
    ],
    "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
    "reason": "train.heldout (D1-B, k=8) finds the 4-word fragment 'rather than relying on' of template soft_framing in these three MMLU aux_train records (natural text, no injection; the PR #44 build guard, word 6-grams, does not fire). Excluded from the draw, fail-closed: the heldout phase passes only if the full-set hits are exactly these ids (2026-10-06 local scan, 150,000 texts, 112 s)."
+  },
+  "attack_clean": {
+   "spec": "data/manifests/attack_clean/sample-150000-seed20261006.cell-m2_first_cell_rwkv7.json",
+   "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+   "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+   "n_records": 150000,
+   "n_excluded": 8049,
+   "n_kept": 141951,
+   "excluded_ids_sha256": "db18f33268313c651cb4317b7ac95b4c70693eef4d11d751e4e1ca1dfe88471e",
+   "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)"
   }
  },
  "rwkv7_wkv": "chunked_lean",

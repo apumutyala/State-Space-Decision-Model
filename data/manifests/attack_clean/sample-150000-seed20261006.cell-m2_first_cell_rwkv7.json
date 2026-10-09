@@ -1,0 +1,25 @@
+{
+ "config": "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+ "draw": "sample-150000-seed20261006",
+ "excluded_ids_file": "ssdm-data/m2/attack-clean/sample-150000-seed20261006.cell-m2_first_cell_rwkv7.excluded_ids.txt.gz (outside git)",
+ "excluded_ids_sha256": "db18f33268313c651cb4317b7ac95b4c70693eef4d11d751e4e1ca1dfe88471e",
+ "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+ "n_excluded": 8049,
+ "n_kept": 141951,
+ "n_records": 150000,
+ "note": "pin this as train_set.attack_clean in the cell config: the 3 pinned D1-B heldout_excluded ids are not repeated",
+ "per_set": {
+  "d1a_steer": 8049,
+  "d1b_steer": 3
+ },
+ "per_template": {
+  "d1a_steer:authority": 2047,
+  "d1a_steer:fake_correction": 2047,
+  "d1a_steer:system_note": 1991,
+  "d1a_steer:urgency": 1964,
+  "d1b_steer:soft_framing": 3
+ },
+ "records_gz_sha256": "3f42bf07f673ff1b1d54c240ddac0bb6abf296f0433f8d8c69240c439d699522",
+ "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+ "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21"
+}

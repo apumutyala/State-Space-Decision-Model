@@ -1,0 +1,21 @@
+{
+ "draw": "recheck-rebuild",
+ "excluded_ids_file": "ssdm-data/m2/attack-clean/recheck-rebuild.excluded_ids.txt.gz (outside git)",
+ "excluded_ids_sha256": "6ad66663c6f3b591edaa1cf2e53960b1401ec8e8c35f7e40a738768650d65c32",
+ "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+ "n_excluded": 1066,
+ "n_kept": 18934,
+ "n_records": 20000,
+ "per_set": {
+  "d1a_steer": 1066
+ },
+ "per_template": {
+  "d1a_steer:authority": 276,
+  "d1a_steer:fake_correction": 256,
+  "d1a_steer:system_note": 269,
+  "d1a_steer:urgency": 265
+ },
+ "records_gz_sha256": "c8b10c0b3484f487605114992998e69d2b71fb901006b5e73c88718a9be42a0d",
+ "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+ "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21"
+}
