@@ -16,6 +16,12 @@
 #   fulldev_eval merge; on ANY scoring exit the partial rows + identity are copied into the phase export, and env
 #   SEED_PARTIAL_URL + SEED_PARTIAL_SHA256 (a stopped run's phase tgz) seed a follow-up job), optional parent_full (params "fulldev_parent_arm"),
 #   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
+#   Params with "eval_only": "safety" (mode safety_eval_d13_v3w) are an EVAL-ONLY run of the SAFETY batteries of a SAVED
+#   checkpoint (jobs.m2_first_cell.safety_battery): setup (+ the batteries' pinned unit sets and pricing) + guard, phase
+#   checkpoint (the same shared loader), parent_safety (the stock parent on params safety.parent_batteries), safety (the
+#   child under params "readout" on safety.child_batteries; one model load), report (safety_battery report ->
+#   safety_eval_result.json). Live rate guard on both scoring phases; per-unit resume from $CK/safety; the partial rows
+#   are copied into the phase export on any exit.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -107,6 +113,7 @@ finish() {
   kill "${WD_PID:-}" 2> /dev/null || true
   rm -f "$OUT/$MARKER"
   [ "$EVAL_ONLY" = fulldev ] && fd_export_partial
+  [ "$EVAL_ONLY" = safety ] && sb_export_partial
   # Terminal export and result validation share 60s + 30s KILL grace from the
   # existing seven-minute reserve. Export failure still reaches finalize (exit 6).
   export -f export_phase sample say
@@ -132,6 +139,11 @@ fd_export_partial() {  # eval-only: a stopped run's scored rows ($CK slot) go in
     mkdir -p "$WORK/out/fulldev"
     cp -f "$CK/fulldev/$a.partial.jsonl" "$CK/fulldev/$a.partial.identity.json" "$WORK/out/fulldev/" 2> /dev/null       || say "partial export ($a): copy failed (free bytes: $(diskfree "$WORK"))"
   done
+}
+sb_export_partial() {  # eval-only safety: a stopped run's scored units ($CK/safety) go into the phase export
+  [ -d "$CK/safety" ] || return 0
+  mkdir -p "$WORK/out/safety/partial"
+  cp -f "$CK/safety/"*.partial.* "$WORK/out/safety/partial/" 2> /dev/null || say "safety partial export: nothing to copy"
 }
 diskfree() {  # free bytes of each dir's filesystem (job-afpc2: the shared worker disk filled; the log is all that survives)
   local d; for d in "$@"; do printf '%s=%s ' "$d" "$(df -PB1 "$d" 2>/dev/null | awk 'NR==2 {print $4}')"; done
@@ -161,8 +173,8 @@ td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
 ev = p.get("eval_only", "none")
-if ev not in ("none", "fulldev"):
-    sys.exit(f"mode {mode}: eval_only {ev!r} must be none or fulldev")
+if ev not in ("none", "fulldev", "safety"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev or safety")
 if ev != "none":
     sys.path.insert(0, ".")
     from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
@@ -181,6 +193,7 @@ EOF
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
+  [ "$EVAL_ONLY" = safety ] && VALIDATOR=jobs.m2_first_cell.safety_battery:valid_result DECISION=$WORK/out/safety_eval_result.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
@@ -258,10 +271,13 @@ for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used 
     REFS+=(--reference "$NAME=$F")
   fi
 done
-python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
+python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.checkpoint_loader, jobs.m2_first_cell.safety_battery, baselines.clef_heldout_v1" || fail 5 "drivers not importable"
 if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
+elif [ "$EVAL_ONLY" = safety ]; then  # both batteries' pinned unit sets + disjointness (CPU, before any scoring); pricing
+  python -X utf8 -m baselines.clef_heldout_v1 precheck --out "$WORK/out" > "$WORK/logs/heldout-precheck.log" 2>&1     || fail 10 "heldout_v1 unit set / template set / disjointness: $(tail -1 "$WORK/logs/heldout-precheck.log")"
+  python -X utf8 -m jobs.m2_first_cell.safety_battery estimate --params "$PARAMS" > "$WORK/out/preflight-safety.json"     || fail 15 "safety batteries projected past a cap at the measured rates"
 else
 # params "rows" (base / training modes): "subset" (default) = the child's Index stage on all 2,008 subset rows; "proxy600"
 # = a SCREEN on the pre-declared 644-row proxy (jobs/common/dev_proxy600.json, ids sha pinned in jobs.common.dev_proxy;
@@ -358,6 +374,43 @@ if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a
   gate "report" $r
   [ $r -eq 0 ] || fail 9 "fulldev_eval result missing or invalid (rc=$r)"
   sample "$DECISION" "fulldev-eval"
+  RC=0
+  exit 0
+fi
+
+if [ "$EVAL_ONLY" = safety ]; then  # ---------------------------- eval-only: the SAFETY batteries of a SAVED checkpoint
+  CKCELL=$WORK/ckpt-cell
+  say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader; into $CKCELL)"
+  timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS"     --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CKCELL" --work "$WORK/art"     --cell-out "$WORK/out/cell.json" --out "$WORK/out/checkpoint.json" > "$WORK/logs/checkpoint.log" 2>&1; r=$?
+  gate "checkpoint" $r; export_phase checkpoint
+  case $r in 0) ;; 124|137) fail 7 "checkpoint timeout" ;; 10) fail 10 "checkpoint identity: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
+    *) fail 5 "checkpoint rc=$r: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
+  CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
+  read -r SB_READOUT SB_PARENT SB_CHILD <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); s=p['safety']; print(p.get('readout') or 'native', ','.join(s['parent_batteries']), ','.join(s['child_batteries']))" "$PARAMS")"     || fail 5 "job_params readout / safety batteries"
+  for ARMNAME in parent child; do
+    PH=parent_safety; BATS=$SB_PARENT
+    ARGS=(--cell-config "$CELL")
+    if [ "$ARMNAME" = child ]; then
+      PH=safety; BATS=$SB_CHILD
+      ARGS=(--cell "$WORK/out/cell.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR"
+            "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" --readout "$SB_READOUT")
+    fi
+    say "phase $PH ($ARMNAME arm, batteries $BATS, child readout $SB_READOUT; resumes from $CK/safety)"
+    python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)"       --report "$WORK/out/rate-$PH.json" --       timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.safety_battery score --arm "$ARMNAME" "${ARGS[@]}"       --model-dir "$SNAP" --batteries "$BATS" --resume-dir "$CK/safety" --out-dir "$WORK/out/safety"       --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
+    if [ $r -ne 0 ]; then
+      say "$PH rc=$r; last 40 lines of logs/$PH.log:"
+      tail -n 40 "$WORK/logs/$PH.log" 2> /dev/null | sed "s/^/[$PH.log] /"
+      sb_export_partial
+    fi
+    gate "$PH" $r; export_phase "$PH"
+    case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
+      10) fail 10 "$PH identity (unit set / checkpoint lineage / readout / resume log)" ;; *) fail 9 "$PH rc=$r" ;; esac
+  done
+  say "phase report"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.safety_battery report --out-dir "$WORK/out/safety"     --cell "$WORK/out/cell.json" --params "$PARAMS" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION"     > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "safety_eval result missing or invalid (rc=$r): $(tail -1 "$WORK/logs/report.log")"
+  sample "$DECISION" "safety-eval"
   RC=0
   exit 0
 fi

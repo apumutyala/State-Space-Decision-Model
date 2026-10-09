@@ -223,6 +223,33 @@ config): `d13_joint` with `"stage": "screen"` (see "Params `"stage": "screen"`" 
 `"screen": 60` (expected ~41), `screen_reference` = D1 art-bm3e6 (shipped `screen_reference/units-child-index.json`,
 pinned by `units_sha256`). Schedule 485 + reserve 7 = 492 min. **Worst case** (60 build + 2 x 492) x $0.0495 =
 **$51.68** (cap $70).
+## Mode `safety_eval_d13_v3w`: D13's safety evidence, two batteries in one job (DRAFT, NOT SUBMITTED)
+
+Params `"eval_only": "safety"` (`jobs/m2_first_cell/safety_battery.py`): D13 = job-hjwpq art-cr9a2's BEST export
+(step 1600, the same checkpoint block as `fulldev_eval_d13_v3w`; cell config = a byte copy of
+`m2_first_cell_rwkv7_d13_joint_safe_nofla.json`), the child loaded by `fulldev_eval.load_child(temperature=False,
+readout=v3w)` (the screen's and fulldev_eval_d13_v3w's v3w scoring path), UNTEMPERED. Phases: setup (+ `baselines.
+clef_heldout_v1 precheck`: heldout_v1 template hash, disjointness, pinned unit set; + `safety_battery estimate`) ->
+guard -> checkpoint (shared loader) -> `parent_safety` (stock parent, `score_parent.parent_decider`, official battery)
+-> `safety` (child, official + heldout_v1, one model load) -> report (`safety_eval_result.json`, validator
+`safety_battery:valid_result`). Both scoring phases run under the live weighted rate guard; units are appended per
+chunk to `$CK/safety/<arm>-<battery>.partial.jsonl` (identity-checked resume; copied into the export on any exit).
+* **official** = BOARD H1's units (`train.m2_gates.stage_variants(cohort v2, "hijack")`, pinned in
+  `safety_battery.OFFICIAL_PIN`: 360 requests x (clean + 5 HIJACK_TEMPLATES + 4 D1-A) = 3,600 per arm), reported with
+  `hijack_eval.measurement` (ported from champion-d1v3w @678f96c): paired child - parent, eligibility parent
+  clean-correct, two-way + fixed-template bootstrap. **Reportable for D13**: its draw (drawn ids sha
+  `8884d1a8dbb3be93...`) pins `attack_clean` (8,049 D1-A rows of the 150k pool excluded before the draw) and its
+  `train.attack_guard` scan under the current eval template set (`930863660b73ba67...`: official hijack, D1-A, D1-B,
+  heldout_v1) found 0 drawn hits; the report recomputes this from the shipped cell.json (`training_exclusion`).
+* **heldout_v1** = the pre-registered battery (7,920 units, child only). Landing (the general claim):
+  `python -X utf8 -m baselines.clef_heldout_v1 compare --champion <art>/safety/units-child-heldout_v1.jsonl
+  --champion-identity <art>/safety/identity-child.json --champion-official <art>/safety/units-child-official.jsonl
+  --units units-clef-flash.jsonl units-clef.jsonl --out heldout_v1-compare.json` (Clef arms: job-uk2x6 / job-gmbqi).
+Pricing: parent 4 + 3,600 x 0.262 s = 19.7 min (job-uhxb5 rate); child 33 fixed + 11,520 x 0.60 s = 148.2 min (D1's
+0.548 s / steer unit x the D13-v3w / D1-v1 per-unit cost 1.087), cap 190 (the guard tolerates scoring ~28 % slower).
+max_duration 254 (setup 12 / guard 3 / checkpoint 7 / parent_safety 30 / safety 190 / report 5 / reserve 7): quoted
+hold $16.00; **worst case** (60 + 2 x 254) x $0.0495 = **$28.12** (cap $30); expected ~187 run min = ~$9.26.
+
 ## Modes `fulldev_eval_d13_v3w_s1of2` / `fulldev_eval_d13_v3w_s2of2`: the v3w full DEV in two shards (DRAFT, NOT SUBMITTED)
 
 `fulldev_eval_d13_v3w` with params `"rows": "shard<K>of2"`, nothing else about the model, checkpoint or readout changed.

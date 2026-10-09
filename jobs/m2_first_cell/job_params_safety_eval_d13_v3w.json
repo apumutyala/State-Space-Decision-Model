@@ -1,0 +1,223 @@
+{
+ "_comment": "DRAFT, NOT SUBMITTED. Mode safety_eval_d13_v3w (eval_only safety, jobs/m2_first_cell/safety_battery.py): the SAFETY evidence of D13 (job-hjwpq, d13_joint_safe_nofla: RWKV7-13.3B + LoRA + joint_record head) = its BEST checkpoint (step 1600 export, select best; the checkpoint the 41.07 proxy600 v3w screen scored) under the v3w readout (load_child's override, UNTEMPERED, exactly as the screen and fulldev_eval_d13_v3w score it), no training. Two batteries in one job: (1) official = BOARD H1's units (train.m2_gates.stage_variants(cohort v2, 'hijack'): 360 hijack_subset(steer_dev) requests x (clean + 5 HIJACK_TEMPLATES + 4 D1-A) = 3,600 units), child AND the stock parent (score_parent.parent_decider, as job-j8wgy / job-6babj), reported with hijack_eval.measurement; reportable for D13 because its draw (drawn ids sha 8884d1a8...) is attack_clean (8,049 D1-A rows excluded, attack_guard drawn_hits 0 under the current eval template set 930863...); (2) heldout_v1 = the pre-registered held-out battery (safety_eval.heldout_v1, 7,920 units, pinned), child only; its rows feed baselines.clef_heldout_v1 compare against the Clef arms (job-uk2x6 / job-gmbqi). Rates: parent 0.262 s / unit (job-uhxb5 g12); child 0.60 s / unit = D1's 0.548 (job-c7pq2 g12 steer units) x the D13-v3w / D1-v1 per-unit cost 1.2513 x 0.9004 / 1.037 = 1.087, rounded up; child fixed 33 min (load + 150k lineage, the D13 shard estimate). Expected: parent 4 + 3,600 x 0.262 = 19.7 min; child 33 + 11,520 x 0.60 = 148.2 min (cap 190: the live guard tolerates scoring ~28 % slower); run ~187 min = $9.26 (+ build ~15 min). max_duration 254 (setup 12 / guard 3 / checkpoint 7 / parent_safety 30 / safety 190 / report 5 / reserve 7): quoted hold 254 x $0.063 = $16.00; worst case (60 + 2 x 254) x 0.0495 = $28.12 (cap $30).",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "job": "m2-first-cell-safety-eval-d13-v3w",
+ "status": "draft: not submitted; official hijack/steer + heldout_v1 safety batteries of D13 (job-hjwpq art-cr9a2 best step 1600), readout v3w",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 254,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 30.0,
+ "phase_caps_minutes": {
+  "setup": 12,
+  "guard": 3,
+  "checkpoint": 7,
+  "parent_safety": 30,
+  "safety": 190,
+  "report": 5
+ },
+ "reserve_minutes": 7,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 10,
+  "guard": 2,
+  "checkpoint": 5,
+  "parent_safety": 20,
+  "safety": 148,
+  "report": 3
+ },
+ "eval_only": "safety",
+ "readout": "v3w",
+ "safety": {
+  "_note": "batteries per arm (safety_battery estimate prices them; the runner passes them to score)",
+  "child_batteries": [
+   "official",
+   "heldout_v1"
+  ],
+  "parent_batteries": [
+   "official"
+  ],
+  "child_s_per_unit": 0.6,
+  "child_fixed_minutes": 33,
+  "parent_s_per_unit": 0.262,
+  "parent_fixed_minutes": 4,
+  "child_source": "job-c7pq2 art-bm3e6 units-child-g12.json 4,930.58 s / 9,000 units = 0.548 (D1, v1, fork head; incl. 423 dev items) x 1.087 (job-hjwpq screen 1.2513 s / 1k v3w tokens x 0.9004 v3w/v1 vs D1's 1.037 s / 1k v1 tokens, job_params_fulldev_eval.json) = 0.595 -> 0.60",
+  "parent_source": "job-uhxb5 parent g12 2,356.9 s / 9,000 units (the stock parent of job-j8wgy / job-6babj)",
+  "child_fixed_source": "job_params_fulldev_eval_d13_v3w_s1of2.json: 33 fixed (load + 150k lineage)"
+ },
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (the runner requires them; safety pricing uses the safety block)"
+ },
+ "parent": "rwkv7",
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_safety_eval_d13_v3w.json",
+ "train_set_pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "checkpoint": {
+  "_note": "job-hjwpq (D13n d13_joint_safe_nofla, m2_first_cell @ 8d92f04, 1,901 steps, best_ckpt), artifact art-cr9a2 (sha below, 1,216,542,720 B; downloaded + hashed locally). member = the BEST checkpoint's inference export (train.ckpt_export --best: trainable-step0001600.safetensors, bf16 LoRA, sidecar source_ckpt ckpt-step0001600.pt sha b6506c35... = exactly the checkpoint the proxy600 screen scored, 41.07 [37.57, 45.22] under v3w); select best = latest.json's best pointer must name it with this sha (latest.json's path is the last step, 1901). cell.json = the run's out/cell.json (config == m2_first_cell_rwkv7_d13_joint_safe_nofla.json). url_env: CKPT_URL = the get_artifact art-cr9a2 URL, filled into submit.json env at submit time only.",
+  "artifact": "art-cr9a2",
+  "job": "job-hjwpq",
+  "artifact_sha256": "ff586289941e5477793c8acef2254128428ebd8fcd238a48cb98973a2d385fd5",
+  "member": "./ckpt/trainable-step0001600.safetensors",
+  "ckpt_sha256": "61c19d162acb5e97183361ffd839c5e7f5d6978e40da01063a16ec196a657d7b",
+  "sidecar_sha256": "a873c26fbbb1f5c037256c7801130099fd6b50a4a343f24a16683a45971ebf41",
+  "latest_json_sha256": "4b6d0463f90f74fd547fc1b3eb02c5840756371712d76fc5f5a11535172e1810",
+  "cell_json_sha256": "ac919ff8db76c34af2e8492c340a066148336b0e8143d82762552de9abeb80a6",
+  "select": "best",
+  "url_env": "CKPT_URL"
+ },
+ "reference_results_sha256": {
+  "_note": "unused by this mode",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only (safety batteries of a saved checkpoint: official hijack/steer paired child - parent, heldout_v1 child rows); the vs-Clef heldout_v1 Holm claim is computed at landing (baselines.clef_heldout_v1 compare)",
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh safety_eval_d13_v3w",
+  "env": {
+   "TOK_S": "3757",
+   "CALL_S": "0.117",
+   "CKPT_URL": "<get_artifact art-cr9a2 url: fill at submit>"
+  },
+  "key": "m2-first-cell-safety-eval-d13-v3w-hjwpq-best1600-20261009a",
+  "clock_lock": true,
+  "label": "safety_eval_d13_v3w: D13 (job-hjwpq art-cr9a2, best step 1600, joint_record head) readout v3w: official hijack + D1-A steer (vs stock parent) + heldout_v1 battery, no training",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "as D1 (the rwkv7 image + code + PRIVATE data: records, DEV rows, the 150k set (the checkpoint's lineage check rebuilds its training items), the suite) minus the parent arm seed, plus the checkpoint's cell.json (pinned). The 3.5 GB checkpoint is NOT in the context (laptop RAM; launch.py builds the context in memory): the job fetches the artifact from $CKPT_URL and checks every byte (jobs.m2_first_cell.checkpoint_loader; the signed URL goes ONLY into submit.json env.CKPT_URL at submit time, never into git).",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+    "dest": "m2-150k/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.manifest.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.content.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/checkpoints/job-hjwpq/cell.json",
+    "dest": "checkpoint/cell.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_safety_eval_d13_v3w.json",
+     "checkpoint",
+     "cell_json_sha256"
+    ]
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/sample-150000-seed20261006.pointer.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "jobs/rwkv7/snapshot.sha256",
+   "jobs/m2_first_cell/data.sha256",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_d1_fast.json",
+   "data/manifests/attack_clean/sample-150000-seed20261006.cell-m2_first_cell_rwkv7.json",
+   "jobs/common/dev_proxy600.json",
+   "jobs/common/dev_subset_m1.json",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_safety_eval_d13_v3w.json",
+   "jobs/m2_first_cell/job_params_safety_eval_d13_v3w.json",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_d13_joint_safe_nofla.json",
+   "analysis/safety_heldout/heldout_v1_templates.json"
+  ]
+ },
+ "cohort_note": "cohort v2 steer_dev (development role) only, the H1 hijack_subset; no D1-B, no TEST, no cohort v3; no temperature fit (both arms untempered)",
+ "mode": "safety_eval_d13_v3w",
+ "readout_length_ratio": {
+  "_source": "job_params_readout_ab_d1.json (CPU char counts, v3w / v1)",
+  "v3w": 0.9004
+ }
+}
