@@ -224,21 +224,72 @@ def _fake_export(tmp_path, layers, verdict="ADVANCE", attention_free=True):
     return pt, ex, dec
 
 
+def _conv_config(tmp_path, name, decontam=None):
+    mix = {"train_tokens": 280000000, "shares": {"web": 0.55, "chat": 0.3, "math": 0.15}}
+    if decontam is not None:
+        mix["decontam"] = decontam
+    f = tmp_path / name
+    f.write_text(json.dumps({"mix": mix}), encoding="utf-8")
+    return f
+
+
+def test_mode_names_no_conversion_job():
+    """the mode starts from ANY conversion export: no job id in it until fill_conversion_pins writes one"""
+    from scripts.fill_conversion_pins import JOB_SLOT
+
+    for f in ("m2_first_cell_rwkv7_q9af_v2_v3w.json", "job_params_q9af_v2_v3w.json"):
+        assert "w3c2e" not in (ROOT / "jobs/m2_first_cell" / f).read_text(encoding="utf-8"), f
+    assert CELL["q9af"]["conversion"] is None and JOB_SLOT in PARAMS["model"] and JOB_SLOT in PARAMS["submit"]["label"]
+
+
 def test_fill_conversion_pins(tmp_path):
+    from heads.backbone import LineageError, q9af_pin_check
     from jobs.q9af_v2.rule import ATTENTION_LAYERS
     from scripts import fill_conversion_pins as F
 
-    cell = tmp_path / "cell.json"
+    cell, params = tmp_path / "cell.json", tmp_path / "params.json"
     cell.write_text(json.dumps(CELL), encoding="utf-8")
+    params.write_text(json.dumps(PARAMS), encoding="utf-8")
     pin = tmp_path / "gdn.sha256"
     pt, ex, dec = _fake_export(tmp_path, ATTENTION_LAYERS)
-    args = ["--export-json", str(ex), "--gdn", str(pt), "--decision", str(dec), "--cell", str(cell), "--data-pin", str(pin)]
+    with pytest.raises(LineageError, match="conversion is not pinned"):  # the mode as shipped: conversion null
+        q9af_pin_check({**CELL["q9af"], "converted_sha256": "a" * 64}, pt)
+    base = ["--export-json", str(ex), "--gdn", str(pt), "--decision", str(dec), "--cell", str(cell),
+            "--data-pin", str(pin), "--params", str(params)]
+    with pytest.raises(SystemExit):  # --job and --conversion-config are required (no default job)
+        F.main(base)
+    v1 = _conv_config(tmp_path, "q9af_v2_h100.json")
+    args = base + ["--job", "job-w3c2e", "--conversion-config", str(v1)]
     assert F.main(args) == 0
     c = json.loads(cell.read_text(encoding="utf-8"))
-    assert len(c["q9af"]["converted_sha256"]) == 64 and "ADVANCE" in c["q9af"]["converted_from"]
+    q = c["q9af"]
+    assert len(q["converted_sha256"]) == 64 and "ADVANCE" in q["converted_from"] and "job-w3c2e" in q["converted_from"]
+    assert q["conversion"]["job"] == "job-w3c2e" and q["conversion"]["mix_decontam"] is None
+    assert len(q["conversion"]["config_sha256"]) == 64 and q["conversion"]["verdict"] == "ADVANCE"
+    p = json.loads(params.read_text(encoding="utf-8"))
+    assert F.JOB_SLOT not in json.dumps(p) and "job-w3c2e" in p["model"] and "job-w3c2e" in p["submit"]["label"]
     assert pin.read_text(encoding="utf-8").splitlines()[0].endswith("  gdn/gdn_converted.pt")
+    assert F.main(args) == 10  # params slot already filled: pins are filled once
+    prov_a = q9af_pin_check(q, pt)
+    # the same export bytes from a full-eval-v1 rerun: another identity, never confused with the first
+    cell.write_text(json.dumps(CELL), encoding="utf-8")
+    params.write_text(json.dumps(PARAMS), encoding="utf-8")
+    v2 = _conv_config(tmp_path, "q9af_v2_h100_fe.json", decontam="full-eval-v1")
+    assert F.main(base + ["--job", "job-abc12", "--conversion-config", str(v2)]) == 0
+    q2 = json.loads(cell.read_text(encoding="utf-8"))["q9af"]
+    assert q2["conversion"]["job"] == "job-abc12" and q2["conversion"]["mix_decontam"] == "full-eval-v1"
+    prov_b = q9af_pin_check(q2, pt)
+    assert prov_a["converted_sha256"] == prov_b["converted_sha256"] and prov_a != prov_b
+    from train import m2_gates as G
+
+    ia, ib = G.expected_parent_identity("q9af", prov_a), G.expected_parent_identity("q9af", prov_b)
+    assert ia != ib and ib["conversion"] == {"job": "job-abc12", "mix_decontam": "full-eval-v1"}
+    assert "conversion" not in G.expected_parent_identity("q9af", {"converted_sha256": "a" * 64})  # other modes as before
+    assert F.main(base + ["--job", "w3c2e", "--conversion-config", str(v1), "--dry"]) == 10  # not a job id
     _, _, dec2 = _fake_export(tmp_path, ATTENTION_LAYERS, verdict="MARGINAL")
+    cell.write_text(json.dumps(CELL), encoding="utf-8")
     assert F.main(args[:4] + ["--decision", str(dec2)] + args[6:]) == 10
     pt3, ex3, dec3 = _fake_export(tmp_path, ATTENTION_LAYERS[:-1], attention_free=False)
     assert F.main(["--export-json", str(ex3), "--gdn", str(pt3), "--decision", str(dec3), "--cell", str(cell),
-                   "--data-pin", str(pin), "--dry"]) == 10
+                   "--data-pin", str(pin), "--params", str(params), "--job", "job-w3c2e", "--conversion-config",
+                   str(v1), "--dry"]) == 10

@@ -145,6 +145,8 @@ def parent_decider(parent: str, model_dir: str, gdn_ckpt: str | None, cfg: dict,
         plug = load_converted_plugin(model_dir, gdn_ckpt, layers, device=device)  # every attention layer -> GDN
         ident = {"parent": "q9af", "repo": prov["base_repo"], "revision": prov["base_revision"],
                  "converted_sha256": prov["converted_sha256"], "converted_layers": layers}
+        if prov.get("conversion"):  # = train.m2_gates.expected_parent_identity's conversion block
+            ident["conversion"] = {k: prov["conversion"].get(k) for k in ("job", "mix_decontam")}
     else:
         raise ValueError(parent)
     from decide.v3w_generic import is_generic_template

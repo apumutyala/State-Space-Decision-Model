@@ -799,12 +799,22 @@ def q9af_pin_check(pin: dict, gdn_ckpt, model_dir=None) -> dict:
       ``base_repo`` / ``base_revision``  must equal the pinned stock parent
       ``base_config_sha256`` (REQUIRED)  sha256 of the snapshot's config.json (= its line in
                                           ``jobs/m2_pilot/q9af_snapshot.sha256``); checked whenever ``model_dir`` is given
+      ``conversion`` (optional key; when PRESENT it must be filled)  which conversion job made the export and under
+                     which decontamination (scripts/fill_conversion_pins.py: job, mix_decontam, config_sha256, ...);
+                     a mode that ships ``conversion: null`` is refused until it is filled. It goes into the provenance
+                     (lineage, backbone identity, parent-arm identity) so two conversions can never be confused.
     Returns the provenance block stamped into the backbone identity."""
     from pathlib import Path
 
     want = pin.get("converted_sha256")
     if not want or len(str(want)) != 64:
         raise LineageError(f"q9af.converted_sha256 is not pinned ({want!r}); refusing to train on an unpinned conversion")
+    conv = None
+    if "conversion" in pin:
+        conv = pin["conversion"]
+        if (not isinstance(conv, dict) or not str(conv.get("job") or "").startswith("job-") or "mix_decontam" not in conv
+                or len(str(conv.get("config_sha256") or "")) != 64):
+            raise LineageError(f"q9af.conversion is not pinned ({conv!r}): fill it with scripts/fill_conversion_pins.py")
     got = _sha256_file(gdn_ckpt)
     if got != want:
         raise LineageError(f"converted checkpoint sha256 {got} != pinned {want}")
@@ -815,6 +825,8 @@ def q9af_pin_check(pin: dict, gdn_ckpt, model_dir=None) -> dict:
         raise LineageError(f"base {pin.get('base_repo')}@{pin.get('base_revision')} != {Q9AF_BASE_REPO}@{Q9AF_BASE_REVISION}")
     prov = {"kind": "q9af", "base_repo": Q9AF_BASE_REPO, "base_revision": Q9AF_BASE_REVISION,
             "converted_sha256": got, "converted_from": pin.get("converted_from")}
+    if conv is not None:
+        prov["conversion"] = {k: conv.get(k) for k in ("job", "artifact", "commit", "mix_decontam", "config_sha256")}
     if model_dir is not None:
         cfg_sha = _sha256_file(Path(model_dir) / "config.json")
         if cfg_pin != cfg_sha:

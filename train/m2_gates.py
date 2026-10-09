@@ -776,8 +776,11 @@ def expected_parent_identity(parent: str, provenance: dict | None = None, wkv: s
         prov = provenance or {}
         if not prov.get("converted_sha256"):
             raise IdentityMismatch("q9af child has no converted_sha256 provenance")
-        return {"parent": "q9af", "repo": Q9AF_BASE_REPO, "revision": Q9AF_BASE_REVISION,
-                "converted_sha256": prov["converted_sha256"]}
+        ident = {"parent": "q9af", "repo": Q9AF_BASE_REPO, "revision": Q9AF_BASE_REVISION,
+                 "converted_sha256": prov["converted_sha256"]}
+        if prov.get("conversion"):  # which conversion job / decontam made the export (scripts/fill_conversion_pins.py)
+            ident["conversion"] = {k: prov["conversion"].get(k) for k in ("job", "mix_decontam")}
+        return ident
     raise ValueError(parent)
 
 
