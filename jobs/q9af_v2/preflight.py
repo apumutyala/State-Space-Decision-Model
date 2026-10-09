@@ -8,6 +8,10 @@ P = capped training (stage 1 + stage 2 wall-clock caps from the config, plus one
     wall-clock-capped stage ends at its cap by construction (a slower rate trains fewer tokens, never longer).
 I arms = the proxy600 rows' exact fork-path volume (jobs/common/readout_volume_qwen3.5.json per_row, summed over the
   644 proxy ids) at the measured min prefill rate and the larger per-call cost.
+Mode clefflash (params with C_* / L_* caps instead of I_*): L arms = the same projection on the v3w readout's exact
+  proxy600 fork volume (jobs/q9af_v2/readout_volume_v3w_proxy600.json, scripts/check_clefflash_v3w.py); C arms (Clef's
+  joint head, gdn_path=reference) = job-sgihj's measured per-row model on the proxy600 Clef-encoded tokens x the
+  reference-GDN planning slowdown (x a converted-arm factor) + the Clef load/verify startup.
 Rules (exit 5 if any fails; the runner calls this at setup): P cap >= capped + (1 + m) x uncapped; every other cap >=
 (1 + m) x projection (Index arms against 95% of the cap, as rate_guard stops there); stage floors <= (1 - m) x the
 slowest predicted rate; peak <= (1 - m) x the stop; the train stream covers the predicted token use (no re-read);
@@ -50,13 +54,23 @@ def project(params: dict, cfg: dict) -> dict:
                 + n_curve * e["curve_eval_min_each"] + e["final_heldout_min"] + e["wikitext_gate_min"]
                 + m["converted_probes_s"] / 60 + 2 * e["mmlu_full_min_per_arm"] + 2 * m["throughput_s_per_arm"] / 60)
     pv = proxy_volume()
-    arm = readout(pv["totals"], m["stock_prefill_tok_s_min"], max(m["pack_call_s"], m["small_call_s"]), "fork")
+    call_s = max(m["pack_call_s"], m["small_call_s"])
+    arm = readout(pv["totals"], m["stock_prefill_tok_s_min"], call_s, "fork")
+    caps = params["phase_caps_minutes"]
+    arms = {"I_stock": arm["projected_min"], "I_conv": arm["projected_min"]}
+    if "C_stock" in caps:  # mode clefflash
+        cv = params["clef_arms"]
+        v3w = json.loads((ROOT / cv["v3w_volume"]).read_text(encoding="utf-8"))
+        lv = readout(v3w["totals"], m["stock_prefill_tok_s_min"], call_s, "fork")["projected_min"]
+        fast = (cv["proxy_rows_scored"] * cv["row_ms_intercept"] + cv["proxy_clef_tokens"] * cv["row_ms_per_token"]) / 60000
+        c_stock = cv["startup_min"] + cv["reference_slowdown"] * fast
+        arms = {"C_stock": c_stock, "C_conv": cv["startup_min"] + cv["conv_factor"] * cv["reference_slowdown"] * fast,
+                "L_stock": lv, "L_conv": lv}
     tokens = {"init_cmp": 2 * (cfg["init_cmp"]["steps"] + 1) * B * L,
               "stage1_at_1.15x_measured_rate": 1.15 * m["stage1_steady_tok_s"] * 60 * s1_min,
               "stage2_at_1.15x_measured_rate": 1.15 * max(s2_rate, m["stage2_steady_tok_s_layer3"]) * 60 * s2_min}
     return {"phases": {"setup": m["setup_min"], "weights": m["weights_fetch_s"] / 60, "D": e["D_min"],
-                       "X": e["export_X_min"], "I_stock": arm["projected_min"], "I_conv": arm["projected_min"],
-                       "S": m["S_min"]},
+                       "X": e["export_X_min"], **{k: v for k, v in arms.items() if k in caps}, "S": m["S_min"]},
             "P": {"capped": capped, "uncapped": uncapped, "n_curve_points": n_curve},
             "stage2_rate_worst_tok_s": s2_rate, "stage2_rates": rates, "proxy_volume": pv["totals"]["fork"],
             "train_tokens_needed": tokens, "train_tokens_needed_total": sum(tokens.values())}
@@ -69,7 +83,7 @@ def check(params: dict, cfg: dict) -> dict:
     m = params["measured"]
     rows = {}
     for ph, proj in pr["phases"].items():
-        usable = caps[ph] * (0.95 if ph.startswith("I_") else 1.0)
+        usable = caps[ph] * (0.95 if ph.startswith(("I_", "C_", "L_")) else 1.0)
         rows[ph] = {"projected_min": round(proj, 2), "cap_min": caps[ph], "ok": usable >= (1 + mf) * proj}
     need = pr["P"]["capped"] + (1 + mf) * pr["P"]["uncapped"]
     rows["P"] = {"capped_min": round(pr["P"]["capped"], 2), "uncapped_min": round(pr["P"]["uncapped"], 2),

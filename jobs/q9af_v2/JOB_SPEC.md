@@ -159,3 +159,7 @@ What changes, and why the gate still holds:
 | P (stage 1 70, stage 2 385, uncapped ×1.3) | 482 | preflight need 480.0 |
 | X / I_stock / I_conv / S | 8 / 15 / 15 / 5 | est. 3 / proj. 8.4 / 8.4 / meas. 1 |
 | reserve | 15 | |
+
+## Clef-flash diagnostic (mode `clefflash`: `job_params_clefflash.json`, `configs/q9af_v2_clefflash_h100.json`)
+
+The clean recipe above, verbatim, on Clef-flash's weights; the I arms are replaced by four proxy600 arms (Clef's joint head and the LM-logit v3w readout, each stock vs converted). A diagnostic with no keep/discard rule: see `README_clefflash.md` (pre-registered metrics, recipe identity, budget). One attempt, 638 min: **worst case $43.97** = (60 + 638) x $0.063 (hard cap $44); platform quote $40.19.

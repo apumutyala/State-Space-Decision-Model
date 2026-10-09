@@ -1,0 +1,48 @@
+{
+ "readout": "jrt-v3w-generic:qwen3.5",
+ "identity_sha256": "2e4907ee4302d9d196052fc04c5618e88fc8058446644715345eaad93a3a2543",
+ "format": {
+  "source": "chat_template",
+  "template_sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+  "no_think": "enable_thinking=False"
+ },
+ "codes": {
+  "qwen": 255,
+  "clef": 255,
+  "same_codes_and_ids": true
+ },
+ "control_ids_equal": false,
+ "counts": {
+  "rows": 644,
+  "rows_refused_over_limit": 5,
+  "questions": 3730,
+  "q_words": 3327,
+  "q_codes": 403,
+  "q_fallback_multitoken": 0,
+  "q_over_budget": 130,
+  "q_ids_equal": 3729,
+  "q_scored_tokens_single_and_distinct": 3730
+ },
+ "mismatches": [
+  {
+   "id": "40:iSarcasmEval-A-Ar:iSarcasmEval-A-Ar:test:576",
+   "qid": "sarcastic"
+  }
+ ],
+ "n_mismatches": 1,
+ "control_ids_only_in_clef": [
+  248070,
+  248071,
+  248072,
+  248073,
+  248074,
+  248075,
+  248076
+ ],
+ "volume_fork_totals": {
+  "tokens": 1810589,
+  "calls": 1401,
+  "positions": 1916506
+ },
+ "ok": true
+}

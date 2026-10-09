@@ -1,0 +1,234 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "flash-linear-attention==0.5.2",
+   "fla-core==0.5.2"
+  ],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout"
+   }
+  ],
+  "image": "jobs/q9af_v2/Dockerfile"
+ },
+ "_comment": "q9af_v2 on CLEF-FLASH (mode clefflash; DIAGNOSTIC, no keep/discard rule: jobs/q9af_v2/README_clefflash.md). The conversion phases D / P / X are job-7ji99's clean recipe verbatim (same caps, config keys, floors, data, decontam full-eval-v1) on Cloudflare/clef-flash@17f0b0ad... weights with the Qwen3.5-9B tokenizer (configs/q9af_v2_clefflash_h100.json). The stock-Qwen readout arms I_stock / I_conv are replaced by four proxy600 arms: C_stock / C_conv = Clef-flash's OFFICIAL joint head (baselines.clef_index_engine, gdn_path=reference, transformers 5.10.2 in /opt/clefenv) on the stock / converted backbone; L_stock / L_conv = the LM-logit v3w readout (make_v3w qwen3.5-9b, PR #236) on the stock / converted backbone. Caps: setup 8 -> 10 (Clef snapshot sha256 verify + venv + readout identity checks); C arms from job-sgihj's per-row model on the 1,210,697 Clef-encoded proxy600 tokens (1.15 min fast) x 4 reference slowdown (+ x2 converted, torch chunk kernel) + 3.5 min load/verify; L arms from the exact v3w fork volume (1.92M positions, 1,401 calls); S 5 -> 8 (2 x 2 compares + 8 scores). max_duration 638 = caps + reserve; worst (60 + 638) x 0.063 = $43.97; platform hold 638 x 0.063 = $40.19.",
+ "job": "q9af_v2",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 638,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 0,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.063,
+ "hard_cap_usd": 44.0,
+ "reserve_minutes": 15,
+ "margin_min_frac": 0.3,
+ "phase_caps_minutes": {
+  "setup": 10,
+  "weights": 10,
+  "D": 30,
+  "P": 482,
+  "X": 8,
+  "C_stock": 20,
+  "C_conv": 25,
+  "L_stock": 15,
+  "L_conv": 15,
+  "S": 8
+ },
+ "expected_minutes": {
+  "build": 25,
+  "setup": 5,
+  "weights": 1,
+  "D": 14,
+  "P": 520,
+  "X": 3,
+  "C_stock": 9,
+  "C_conv": 13,
+  "L_stock": 8,
+  "L_conv": 8,
+  "S": 4
+ },
+ "measured": {
+  "_comment": "job-5cmat (art-2bybh) and job-2xe5w (art-ipnxz, receipts/2026-10-07-D-full8/result.json). stage1 rate = 5cmat stage 1 (all 8 layers aligned, the same shape as v2 stage 1). Stage 2 worst rate = 2xe5w step 7 (layer 3 + 6 more GDNs training: first student layer 3, the v2 shape) and the FLOP model at the 4j3vu layer-3 MFU. Peak = 2xe5w (7 GDNs attached, 7 training).",
+  "setup_min": 2.4,
+  "load_and_data_s": 63.53,
+  "stock_probes_s": 109.02,
+  "converted_probes_s": 57.42,
+  "throughput_s_per_arm": 33.64,
+  "stage1_steady_tok_s": 18297,
+  "stage2_steady_tok_s_layer3_7gdn": 5210,
+  "stage2_mfu_layer3": 0.341,
+  "stage2_mfu_layer23": 0.3428,
+  "stage2_steady_tok_s_layer23": 9459.6,
+  "stage2_steady_tok_s_layer3": 5461,
+  "peak_gb": 39.72,
+  "stock_prefill_tok_s_min": 22144.5,
+  "pack_call_s": 0.2406,
+  "small_call_s": 0.0756,
+  "weights_fetch_s": 20,
+  "S_min": 1.0,
+  "w3c2e_setup_min": 3.28,
+  "w3c2e_phase_D_min_dev13": 4.92
+ },
+ "estimates_not_measured": {
+  "_comment": "No receipt yet: D under full-eval-v1 = job-w3c2e's measured dev13-v1 phase D (4.87 min, attempt 4) + the full-eval-v1 guard run serially in convert.mixdata (laptop 0.45M words/s per core x ~224M words = ~8.3 min) ~ 13.2, kept at 15; the per-curve-point held-out eval; X as full8's estimate.",
+  "D_min": 15.0,
+  "export_X_min": 3.0,
+  "init_cmp_min": 2.6,
+  "curve_eval_min_each": 0.5,
+  "final_heldout_min": 1.5,
+  "wikitext_gate_min": 0.5,
+  "mmlu_full_min_per_arm": 2.8
+ },
+ "model": "Cloudflare/clef-flash@17f0b0ad64efb65d273590632833508766b2aae6",
+ "config": "configs/q9af_v2_clefflash_h100.json",
+ "dev_proxy": "jobs/common/dev_proxy600.json",
+ "mission": "m1-q9af-v2",
+ "decision_rule": "jobs/q9af_v2/diag.py",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py).",
+  "command": "bash /opt/ssdm/m1/jobs/q9af_v2/q9af_v2_job.sh clefflash",
+  "env": {},
+  "key": "m1-q9af-v2-clefflash-diag",
+  "clock_lock": true,
+  "label": "q9af_v2 CLEF-FLASH diagnostic: Clef-flash's 8 attention layers -> GDN with job-7ji99's clean recipe, then proxy600 paired stock vs converted under (A) Clef's joint head and (B) the LM-logit v3w readout",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/Q9AF2_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "the q9af_v2 image (jobs/q9af_v2/Dockerfile, every layer up to the code COPY unchanged) + one RUN layer inserted before the code COPY (rewrites): /opt/clefenv, a --system-site-packages venv with transformers 5.10.2 + torchvision 0.28.0 over the same torch / fla, for Clef's own loader + code + the clean context's PRIVATE DEV rows and eval-hash index (unchanged) + the Qwen3.5-9B tokenizer.json / tokenizer_config.json the v3w readout identity 2e4907ee... was built from (sha256 pinned).",
+  "dockerfile": "jobs/q9af_v2/Dockerfile",
+  "data": [
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/df.npy",
+    "dest": "doc-overlap/218affe13e367d07/df.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/ent.npy",
+    "dest": "doc-overlap/218affe13e367d07/ent.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/fl.npy",
+    "dest": "doc-overlap/218affe13e367d07/fl.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/h.npy",
+    "dest": "doc-overlap/218affe13e367d07/h.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/pcnt.npy",
+    "dest": "doc-overlap/218affe13e367d07/pcnt.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/post.npy",
+    "dest": "doc-overlap/218affe13e367d07/post.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/pstart.npy",
+    "dest": "doc-overlap/218affe13e367d07/pstart.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_allow.npy",
+    "dest": "doc-overlap/218affe13e367d07/u_allow.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_den.npy",
+    "dest": "doc-overlap/218affe13e367d07/u_den.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_field.npy",
+    "dest": "doc-overlap/218affe13e367d07/u_field.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_row.npy",
+    "dest": "doc-overlap/218affe13e367d07/u_row.npy",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/meta.json",
+    "dest": "doc-overlap/218affe13e367d07/meta.json",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer.json",
+    "dest": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer.json",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   },
+   {
+    "src": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer_config.json",
+    "dest": "tokenizers/Qwen--Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a/tokenizer_config.json",
+    "pin": "jobs/q9af_v2/data_clefflash.sha256"
+   }
+  ],
+  "manifest_files": [
+   "data/manifests/doc_overlap/index-pin.json",
+   "configs/q9af_v2_clefflash_h100.json",
+   "jobs/q9af_v2/data_clefflash.sha256",
+   "jobs/q9af_v2/readout_volume_v3w_proxy600.json"
+  ],
+  "rewrites": [
+   [
+    "COPY code/m1 /opt/ssdm/m1",
+    "# mode clefflash: /opt/clefenv = Clef's model-card transformers (5.10.2) + torchvision 0.28.0 (cu126) over THIS image's\n# torch 2.13.0 / triton 3.7.1 / fla 0.5.2 / decision_index (system site-packages), for Clef-flash's own loader and joint\n# head (C arms). The system python (every conversion phase, the L arms, scoring) is untouched: transformers 5.17.0.\nRUN python -m venv --system-site-packages --without-pip /opt/clefenv && \\n    python -m pip --python /opt/clefenv/bin/python install --no-cache-dir \"transformers==5.10.2\" && \\n    python -m pip --python /opt/clefenv/bin/python install --no-cache-dir \"torchvision==0.28.0\" --index-url https://download.pytorch.org/whl/cu126 && \\n    /opt/clefenv/bin/python -c \"import torch, transformers, torchvision, fla, decision_index; from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration; from transformers.models.qwen3_5 import modeling_qwen3_5 as M; v = (transformers.__version__, torch.__version__.split('+')[0], torchvision.__version__.split('+')[0]); assert v == ('5.10.2', '2.13.0', '0.28.0'), v; assert hasattr(M, 'torch_chunk_gated_delta_rule'); print('clefenv', v)\" && \\n    python -c \"import torch, transformers; v = (transformers.__version__, torch.__version__.split('+')[0]); assert v == ('5.17.0', '2.13.0'), v; print('system', v)\"\nCOPY code/m1 /opt/ssdm/m1"
+   ]
+  ]
+ },
+ "clef_arms": {
+  "_comment": "C-arm projection basis. proxy_rows_scored / proxy_clef_tokens: the 640 proxy600 rows within Clef's 16,384 limit (4 over, refused as exhausted in both arms) and their Clef-encoded (ssdm encoding) tokens, computed locally with baselines.clef_backend.ClefEncoder on the Clef-flash tokenizer. Row model = job-sgihj (jobs/clef_baseline/price.py SGIHJ). reference_slowdown = the x4 planning slowdown of job_params_index_full_reference.json (measured 2.373x on job-d2u54). conv_factor: the converted layers run convert.gdn's torch chunk kernel in fp32 (estimate, no receipt). startup: Clef loader + 19 GB snapshot sha256 verify (estimate).",
+  "proxy_rows_scored": 640,
+  "proxy_clef_tokens": 1210697,
+  "row_ms_intercept": 32.0,
+  "row_ms_per_token": 0.03993,
+  "reference_slowdown": 4.0,
+  "conv_factor": 2.0,
+  "startup_min": 3.5,
+  "v3w_volume": "jobs/q9af_v2/readout_volume_v3w_proxy600.json",
+  "v3w_identity_sha256": "2e4907ee4302d9d196052fc04c5618e88fc8058446644715345eaad93a3a2543",
+  "clef_release": "Cloudflare/clef-flash@17f0b0ad64efb65d273590632833508766b2aae6"
+ },
+ "no_verdict_reason": "diagnostic: measures what removing attention costs at Clef-flash's level (two paired proxy600 deltas); no keep/discard rule"
+}

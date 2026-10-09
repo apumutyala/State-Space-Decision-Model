@@ -493,27 +493,57 @@ def _g1v2_segments_paths(request: dict[str, Any], qid: str, code_table: list[str
     return out
 
 
+def build_row_v3w_generic(request: dict[str, Any], qid: str, spec: Any, option_order: Sequence[int] | None = None,
+                          empty_state: str = "reread_instructions") -> LayoutRow:
+    """Layout-g1v2 v3w row for any backbone (``spec`` = decide.v3w_generic.V3W): the v3w segments with the spec's
+    chat-format head / tail, ``spec.fmt.bos`` first, the spec's whole-string tokenizer, code table and word-id
+    first tokens; ids == spec.questions(...)'s prompt ids (scripts/check_v3w_generic.py)."""
+    return _build_row_g1v2(request, qid, spec.encode, resolve_template(G1V3W_ID), option_order, empty_state, spec)
+
+
+def _swap_format(segs: list[tuple], head_old: str, tail_old: str, head_new: str, tail_new: str) -> list[tuple]:
+    """Replace the G1 head (first segment's prefix) and tail (last segment's suffix) by another chat format's."""
+    t0, t1 = segs[0][0], segs[-1][0]
+    if not t0.startswith(head_old) or not t1.endswith(tail_old) or len(segs) < 2:
+        raise ValueError("v3w segments do not start with the G1 head and end with the G1 tail")
+    out = list(segs)
+    out[0] = (head_new + t0[len(head_old):],) + tuple(segs[0][1:])
+    out[-1] = (t1[: len(t1) - len(tail_old)] + tail_new,) + tuple(segs[-1][1:])
+    return out
+
+
 def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Template,
-                    option_order: Sequence[int] | None, empty_state: str) -> LayoutRow:
+                    option_order: Sequence[int] | None, empty_state: str, spec: Any = None) -> LayoutRow:
     from decide.untrusted import ControlTokenError
 
     if tpl.id not in G1_TRAIN_RENDERERS:
         raise ValueError(f"layout {G1V2_LAYOUT!r} needs one of the templates {sorted(G1_TRAIN_RENDERERS)}, got {tpl.id!r}")
     token_bytes = getattr(encode, "token_bytes", None)
-    if not callable(token_bytes):
+    byte_starts = getattr(spec, "byte_starts", None) if spec is not None else None
+    if not callable(token_bytes) and not callable(byte_starts):
         raise ValueError(f"layout {G1V2_LAYOUT!r} needs an encoder with token_bytes(id) (whole-string spans)")
     v3w = tpl.id == G1V3W_ID
-    table = _v3_code_table() if v3w else _g1v2_code_table()
-    ctx = v3w_context(request, qid, encode, table) if v3w else None
-    segs = _g1v2_segments_paths(request, qid, table, tpl.id, ctx)
+    g1_head = G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT)
+    if spec is not None:  # generic v3w (decide.v3w_generic): the spec's table, word ids, budget ladder and format
+        table = spec.table
+        words = spec.word_qids(request)
+        _, _, n_used = spec.choose(request, qid, words)
+        ctx = {"words": words, "catalog_chars": n_used, "first_token": spec.first_token}
+        head, tail, bos = spec.fmt.head_text(), spec.fmt.tail, list(spec.fmt.bos)
+        segs = _swap_format(_g1v2_segments_paths(request, qid, table, tpl.id, ctx), g1_head, G1V2_TEMPLATE.tail,
+                            head, tail)
+    else:
+        table = _v3_code_table() if v3w else _g1v2_code_table()
+        ctx = v3w_context(request, qid, encode, table) if v3w else None
+        head, tail, bos = g1_head, G1V2_TEMPLATE.tail, [0]
+        segs = _g1v2_segments_paths(request, qid, table, tpl.id, ctx)
     raw = "".join(t for t, *_ in segs)
     bounds, n = [], 0
     for t, *_ in segs:
         bounds.append((n, n + len(t)))
         n += len(t)
     # blank-line collapse over the user body (render_g1v2): deleted chars shift every later offset
-    head = G1V2_TEMPLATE.head.format(system=G1V2_SYSTEM_PROMPT)
-    body_lo, body_hi = len(head), len(raw) - len(G1V2_TEMPLATE.tail)
+    body_lo, body_hi = len(head), len(raw) - len(tail)
     dels = [(m.start() + 1, m.end()) for m in _G1_BLANK.finditer(raw, body_lo, body_hi)]  # deleted raw [a, b)
     starts_d = [a for a, _ in dels]
     cum = [0]
@@ -530,30 +560,44 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
     keep_lo = [0] + [b for _, b in dels]
     keep_hi = [a for a, _ in dels] + [len(raw)]
     text = "".join(raw[p:q] for p, q in zip(keep_lo, keep_hi))
-    if text != G1_TRAIN_RENDERERS[tpl.id][1](request, qid, table, ctx):
+    want = (spec.render(request, qid, ctx["catalog_chars"], ctx["words"]) if spec is not None
+            else G1_TRAIN_RENDERERS[tpl.id][1](request, qid, table, ctx))
+    if text != want:
         raise ValueError(f"g1v2 layout text differs from the {tpl.id} readout's render")
-    body_ids = list(encode(text, True))  # F5: the whole prompt string at once
-    if 0 in body_ids:
-        raise ControlTokenError("request text encoded to the control id 0 (<|endoftext|>); refused")
-    tok_start, pos = [], 0  # token byte offsets in the body
-    for t in body_ids:
-        tok_start.append(pos)
-        pos += len(token_bytes(t))
-    if pos != len(text.encode("utf-8")):
-        raise ValueError("token bytes do not tile the prompt (encoder / token_bytes mismatch)")
+    if spec is not None:
+        from decide.backends.base import BackendUnsupported
+
+        try:
+            body_ids = spec.body_ids(text)  # whole string; control ids only where the chat format puts them
+        except BackendUnsupported as e:
+            raise ControlTokenError(str(e)) from e
+    else:
+        body_ids = list(encode(text, True))  # F5: the whole prompt string at once
+        if 0 in body_ids:
+            raise ControlTokenError("request text encoded to the control id 0 (<|endoftext|>); refused")
+    if callable(byte_starts):
+        tok_start = byte_starts(text, body_ids)
+    else:
+        tok_start, pos = [], 0  # token byte offsets in the body
+        for t in body_ids:
+            tok_start.append(pos)
+            pos += len(token_bytes(t))
+        if pos != len(text.encode("utf-8")):
+            raise ValueError("token bytes do not tile the prompt (encoder / token_bytes mismatch)")
     byte_at = [0]
     for ch in text:
         byte_at.append(byte_at[-1] + len(ch.encode("utf-8")))
+    nb = len(bos)
 
     def span(c0: int, c1: int) -> tuple[int, int]:
-        """clean char range -> half-open token range (straddling tokens included), +1 for the leading [0] (F2)"""
+        """clean char range -> half-open token range (straddling tokens included), + nb for the leading ids (F2)"""
         b0, b1 = byte_at[c0], byte_at[c1]
         if b1 <= b0:
-            t = 1 + bisect.bisect_left(tok_start, b0)
+            t = nb + bisect.bisect_left(tok_start, b0)
             return (t, t)
-        return (bisect.bisect_right(tok_start, b0), 1 + bisect.bisect_left(tok_start, b1))
+        return (nb - 1 + bisect.bisect_right(tok_start, b0), nb + bisect.bisect_left(tok_start, b1))
 
-    ids = [0] + body_ids
+    ids = bos + body_ids
     spans: dict[str, list[int]] = {}
     caller_spans: list[tuple[int, int]] = []
     field_spans: list[tuple[int, int, str]] = []
@@ -587,9 +631,12 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
         conts = [[ctx["first_token"](opts[k][0])] for k in perm]
         cont_spans: list = [[(0, 1, ID_PATH)] for _ in perm]
     elif coded:  # F4: the answer is ONE code token after "ANSWER:" (" A", " B", ...)
-        conts = [list(encode(" " + table[k], True)) for k in perm]
+        if spec is not None:  # the code token proved one token after the format's answer prefix
+            conts = [[spec.code_token[table[k]]] for k in perm]
+        else:
+            conts = [list(encode(" " + table[k], True)) for k in perm]
         frozen = _V3_TOKENS if v3w else _CODE_TOKENS
-        if getattr(encode, "is_rwkv7_g1", False) and conts != [[frozen[k]] for k in perm]:
+        if spec is None and getattr(encode, "is_rwkv7_g1", False) and conts != [[frozen[k]] for k in perm]:
             raise ValueError("g1v2 code continuations are not the frozen single code tokens")
         cont_spans = [[] for _ in perm]
     else:  # fallback (k > codebook): multi-token " <option id>\n", as decide.backends.rwkv_g1_v2
@@ -599,9 +646,11 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
         qid=qid, qtype=q["type"], option_ids=[opts[k][0] for k in perm], ids=ids, state_span=tuple(spans["state"]),
         field_span=tuple(spans["field"]), option_spans=[tuple(spans[f"option:{k}"]) for k in perm], option_seqs=[],
         continuations=conts, layout=G1V2_LAYOUT,
-        meta={"template": tpl.id, "perm": perm, "evidence": evidence, "untrusted_spans": untrusted_spans,
+        meta={"template": tpl.id if spec is None else spec.template_id, "perm": perm, "evidence": evidence,
+              "untrusted_spans": untrusted_spans,
               "caller_spans": caller_spans, "field_spans": field_spans, "cont_spans": cont_spans,
-              "option_seq_spans": [], "trusted_paths": declared_instruction_paths(request), "bos": 0, "coded": coded,
+              "option_seq_spans": [], "trusted_paths": declared_instruction_paths(request),
+              "bos": bos[0] if len(bos) == 1 else (list(bos) or None), "coded": coded,
               "words": words, "catalog_chars": ctx["catalog_chars"] if v3w else None},
     )
 

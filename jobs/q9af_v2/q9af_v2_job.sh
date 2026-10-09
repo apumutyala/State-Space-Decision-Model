@@ -14,7 +14,10 @@
 # /output/Q9AF2_DONE is written ONLY by jobs/common/finalize.py, and only when its final code is 0.
 # Mode (argv 1): none = job-w3c2e's job (job_params.json, configs/q9af_v2_h100.json, dev13-v1 decontam). "clean" = the
 # clean rerun (job_params_clean.json + its config: full-eval-v1 decontam against the shipped eval-hash index, the same
-# rule). Both modes export mix.json and the per-window manifest (windows.json.gz) after phase D.
+# rule). Both modes export mix.json and the per-window manifest (windows.json.gz) after phase D. "clefflash" = the clean
+# recipe on Cloudflare/clef-flash's weights (a DIAGNOSTIC, jobs/q9af_v2/README_clefflash.md): setup / D / P / X exactly
+# as clean (its own params + config: model_dir = Clef-flash, tokenizer_dir = the 9B tokenizer), then
+# jobs/q9af_v2/clefflash_arms.sh instead of the I / S / R phases (4 proxy600 arms, 2 paired deltas, jobs/q9af_v2/diag.py).
 # Q9AF2_DRYRUN=1 (CPU, tests/test_q9af_v2.py): this very script with only the fetch / GPU / kit steps replaced by
 # tests/q9af_v2_stub.py; setup checks, the preflight, the rule and finalize run for real. Refused inside the image.
 set -Euo pipefail
@@ -35,10 +38,17 @@ fi
 MODE=${1:-}
 PROXY=jobs/common/dev_proxy600.json
 EVAL_INDEX=""
+FETCH_STAGE=q9af_v2
+WEIGHTS_DONE=Q9B_DIR
+VALIDATOR=jobs.q9af_v2.rule:valid_decision
+CLEF=""
 case "$MODE" in
   "") PARAMS=$CODE/jobs/q9af_v2/job_params.json; CFG=configs/q9af_v2_h100.json; DATA_SHA=$CODE/jobs/clef_baseline/data.sha256 ;;
   clean) PARAMS=$CODE/jobs/q9af_v2/job_params_clean.json; CFG=configs/q9af_v2_clean_h100.json
          DATA_SHA=$CODE/jobs/q9af_v2/data_clean.sha256; EVAL_INDEX=$DATA/doc-overlap/218affe13e367d07 ;;
+  clefflash) PARAMS=$CODE/jobs/q9af_v2/job_params_clefflash.json; CFG=configs/q9af_v2_clefflash_h100.json
+         DATA_SHA=$CODE/jobs/q9af_v2/data_clefflash.sha256; EVAL_INDEX=$DATA/doc-overlap/218affe13e367d07
+         FETCH_STAGE=q9af_v2_clefflash; WEIGHTS_DONE=CLEF_FLASH_DIR; VALIDATOR=jobs.q9af_v2.diag:valid_decision; CLEF=1 ;;
   *) echo "unknown mode $MODE"; exit 5 ;;
 esac
 [ -z "$DRY" ] || DATA_SHA=$Q9AF2_DRYRUN_ROOT/data.sha256
@@ -87,7 +97,7 @@ finish() {
   sync_pipeline
   export_phase final
   python "$CODE/jobs/common/finalize.py" "$RESULT" "$rc" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
-    "$WORK/out/decision.json" "$OUT" Q9AF2_DONE jobs.q9af_v2.rule:valid_decision
+    "$WORK/out/decision.json" "$OUT" Q9AF2_DONE "$VALIDATOR"
   local final=$?
   say "EXIT $final (runner rc $rc)"
   exit "$final"
@@ -116,8 +126,13 @@ print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu":
 EOF
   python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
 fi
+if [ -n "$CLEF" ]; then  # mode clefflash: C_* / L_* arm caps (read where they run), no I arms
+  CAP_W=$(cap weights) && CAP_D=$(cap D) && CAP_P=$(cap P) && CAP_X=$(cap X) && cap C_stock > /dev/null \
+    && cap C_conv > /dev/null && cap L_stock > /dev/null && cap L_conv > /dev/null && CAP_S=$(cap S) || fail 5 "job_params"
+else
 CAP_W=$(cap weights) && CAP_D=$(cap D) && CAP_P=$(cap P) && CAP_X=$(cap X) && CAP_IS=$(cap I_stock) \
   && CAP_IC=$(cap I_conv) && CAP_S=$(cap S) || fail 5 "job_params"
+fi
 # measured-rate preflight: every cap vs its projection from the 5cmat / 2xe5w receipts, floors, peak, token budget
 python -m jobs.q9af_v2.preflight --params "$PARAMS" --config "$CFG" --out "$WORK/out/preflight.json" \
   --volume-out "$WORK/out/index/volume_proxy600.json" > "$WORK/logs/preflight.log" 2>&1; r=$?
@@ -130,15 +145,19 @@ python -X utf8 -m jobs.common.dev_subset rows --rows "$DATA/slices/dev-rows.json
 if [ -n "$DRY" ]; then
   $DRY fetch "$SSDM_DATA_ROOT" > "$WORK/logs/fetch.log" 2>&1
 else
-  timeout "${CAP_W}m" python -I scripts/sf_fetch.py --stage q9af_v2 > "$WORK/logs/fetch.log" 2>&1
+  timeout "${CAP_W}m" python -I scripts/sf_fetch.py --stage "$FETCH_STAGE" > "$WORK/logs/fetch.log" 2>&1
 fi
-[ -f "$SSDM_DATA_ROOT/DONE_Q9B_DIR" ] || { gate "setup:weights" 8; export_phase setup; fail 8 "9B weights unavailable"; }
+[ -f "$SSDM_DATA_ROOT/DONE_$WEIGHTS_DONE" ] || { gate "setup:weights" 8; export_phase setup; fail 8 "weights unavailable ($WEIGHTS_DONE)"; }
 for d in WIKITEXT_DIR MMLU_DIR FINEWEB_EDU_DIR ULTRACHAT_DIR FINEMATH_DIR; do [ -f "$SSDM_DATA_ROOT/DONE_$d" ] || fail 5 "fetch $d"; done
 # shellcheck disable=SC1091
 . "$SSDM_DATA_ROOT/paths.env"
 export FINEWEB_EDU_DIR ULTRACHAT_DIR FINEMATH_DIR
-Q9B=$(python -c "from convert.model import resolve_model_dir as r; import os; print(r(os.environ['Q9B_DIR']))") || fail 8 "9B snapshot dir"
+Q9B=$(python -c "from convert.model import resolve_model_dir as r; import os; print(r(os.environ['$WEIGHTS_DONE']))") || fail 8 "snapshot dir ($WEIGHTS_DONE)"
 Q9B=${Q9B%$'\r'}
+if [ -n "$CLEF" ]; then  # mode clefflash: Clef stack, snapshot pins and the v3w readout identity, before any GPU phase
+  . "$CODE/jobs/q9af_v2/clefflash_arms.sh"
+  clef_setup
+fi
 gate "setup" 0
 export_phase setup
 
@@ -190,6 +209,12 @@ cp -f "$WORK/out/export.json" "$OUT/export.json"
 export_phase X
 LAYERS=$(python -c "import json,sys;print(','.join(map(str,json.load(open(sys.argv[1]))['converted'])))" "$WORK/out/export.json") || fail 6 "export.json"
 LAYERS=${LAYERS%$'\r'}
+
+if [ -n "$CLEF" ]; then
+  clef_arms  # C_stock, C_conv, L_stock, L_conv, S, R (jobs/q9af_v2/clefflash_arms.sh)
+  RC=0
+  exit 0   # finish() re-validates decision.json (jobs.q9af_v2.diag) via finalize.py before Q9AF2_DONE
+fi
 
 # ------------------------------------------------------------------ I: Index proxy600, stock and converted arms
 NROWS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['rows'])" "$WORK/out/index/proxy-rows.json")

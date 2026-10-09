@@ -31,7 +31,7 @@ import torch  # noqa: E402
 
 from convert import align, data, memmodel  # noqa: E402
 from convert.mixdata import SOURCES, WindowStream  # noqa: E402
-from convert.model import attach_gdn, init_gdn, load  # noqa: E402
+from convert.model import attach_gdn, init_gdn, load, load_tokenizer, tokenizer_dir  # noqa: E402
 from convert.pipeline import Results, env_info, seed_all  # noqa: E402
 
 INIT_DEFAULT = "reuse_attn"
@@ -132,8 +132,11 @@ def _main():
     if cfg.get("vram_fraction"):
         torch.cuda.set_per_process_memory_fraction(cfg["vram_fraction"])
     model, tok, mdir = load(os.path.expandvars(cfg["model_dir"]), kernel=cfg.get("kernel", "fla"))
+    if cfg.get("tokenizer_dir"):  # opt-in (jobs/q9af_v2 mode clefflash): tokenize with another pinned tokenizer
+        tok = load_tokenizer(cfg)
     if "env" not in R:
-        R.set("env", {**env_info(), "model_dir": mdir})
+        R.set("env", {**env_info(), "model_dir": mdir,
+                      **({"tokenizer_dir": tokenizer_dir(cfg)} if cfg.get("tokenizer_dir") else {})})
     A = list(model.attn_layers)
     if A != cfg["attention_layers"]:
         raise SystemExit(f"attention layers {A} != config {cfg['attention_layers']}")

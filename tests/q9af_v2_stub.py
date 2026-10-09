@@ -2,7 +2,9 @@
 
 Everything else in the runner (pins of the params, the measured-rate preflight, the DEV-row sha256 check, the proxy600
 identity + rows, the rate-guard preflights on the stub's throughput, the rule and finalize) runs for real.
-    python -m tests.q9af_v2_stub setup|fetch|mix|pipeline|export|kit|subset ...
+    python -m tests.q9af_v2_stub setup|fetch|mix|pipeline|export|kit|subset|clefsetup ...
+Mode clefflash: ``clefsetup`` stands in for the Clef stack / snapshot / readout-identity checks; ``kit`` serves the four
+arms; ``subset score`` also prints a slice index point (env Q9AF2_STUB_SCORE) so jobs.q9af_v2.diag runs for real.
 """
 from __future__ import annotations
 
@@ -34,8 +36,9 @@ def main(argv):
         q9b.mkdir(parents=True, exist_ok=True)
         (q9b / "config.json").write_text("{}", encoding="utf-8")
         env = []
-        for name in ("WIKITEXT_DIR", "MMLU_DIR", "Q9B_DIR", "FINEWEB_EDU_DIR", "ULTRACHAT_DIR", "FINEMATH_DIR"):
-            d = q9b if name == "Q9B_DIR" else root / "hf" / name.lower()
+        for name in ("WIKITEXT_DIR", "MMLU_DIR", "Q9B_DIR", "FINEWEB_EDU_DIR", "ULTRACHAT_DIR", "FINEMATH_DIR",
+                     "CLEF_FLASH_DIR", "Q9B_TOK_DIR"):
+            d = q9b if name in ("Q9B_DIR", "CLEF_FLASH_DIR", "Q9B_TOK_DIR") else root / "hf" / name.lower()
             d.mkdir(parents=True, exist_ok=True)
             env.append(f"export {name}={d.as_posix()}")
             (root / f"DONE_{name}").write_text(name, encoding="utf-8")
@@ -75,7 +78,11 @@ def main(argv):
             print(json.dumps({"B": 2000, "seed": 0, "subset_ids_sha256": PROXY_SHA, "rows": 644,
                               "diff": {"index": {"point": POINT, "lo": LO, "hi": POINT + 3.5}}}))
         else:
-            print(json.dumps({"subset_ids_sha256": PROXY_SHA, "rows": 644}))
+            print(json.dumps({"subset_ids_sha256": PROXY_SHA, "rows": 644,
+                              "slice_index": {"index": {"point": float(os.environ.get("Q9AF2_STUB_SCORE", "40.0")),
+                                                        "lo": 35.0, "hi": 45.0}}}))
+    elif cmd == "clefsetup":
+        _w(Path(args[0]) / "v3w_identity.json", {"dry_run": True})
     else:
         print(f"unknown stub command {cmd}", file=sys.stderr)
         return 2

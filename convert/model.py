@@ -39,6 +39,18 @@ def resolve_model_dir(path: str | None) -> str:
     return os.path.dirname(snaps[0])
 
 
+def tokenizer_dir(cfg: dict) -> str:
+    """The tokenizer a conversion config tokenizes with: ``tokenizer_dir`` when the config pins one (jobs/q9af_v2 mode
+    clefflash: Clef-flash's weights, the Qwen3.5-9B tokenizer every other q9af_v2 run used), else ``model_dir``."""
+    return resolve_model_dir(os.path.expandvars(cfg.get("tokenizer_dir") or cfg["model_dir"]))
+
+
+def load_tokenizer(cfg: dict):
+    from transformers import AutoTokenizer
+
+    return AutoTokenizer.from_pretrained(tokenizer_dir(cfg))
+
+
 class MixerSwap(nn.Module):
     def __init__(self, attn: nn.Module, layer_idx: int):
         super().__init__()

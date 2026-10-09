@@ -304,11 +304,9 @@ def build(cfg: dict, dev_rows: str, out_dir: str, tok=None, roots: dict | None =
         return meta
     doc_filter, filt_ident = full_filter(eval_index) if dc == DECONTAM_FULL else (None, {})
     if tok is None:
-        from transformers import AutoTokenizer
+        from convert.model import load_tokenizer
 
-        from convert.model import resolve_model_dir
-
-        tok = AutoTokenizer.from_pretrained(resolve_model_dir(os.path.expandvars(cfg["model_dir"])))
+        tok = load_tokenizer(cfg)
     eos = tok.convert_tokens_to_ids("<|endoftext|>")
     roots = roots or {s: os.environ[SOURCE_ENV[s]] for s in SOURCES}
     ng = build_ngram_set(tok, dev_texts(dev_rows))

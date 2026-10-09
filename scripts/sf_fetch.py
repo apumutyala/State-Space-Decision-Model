@@ -5,6 +5,7 @@ python -I scripts/sf_fetch.py --stage rest    # RWKV7-0.1B, Mamba-3-187M + token
 python -I scripts/sf_fetch.py --stage probe9b # wikitext + MMLU + Qwen3.5-9B (jobs/probe9b)
 python -I scripts/sf_fetch.py --stage q9      # Qwen3.5-9B only (jobs/q9_feature_cache)
 python -I scripts/sf_fetch.py --stage q9af_v2 # probe9b items + the q9af_v2 distillation mixture (jobs/q9af_v2)
+python -I scripts/sf_fetch.py --stage q9af_v2_clefflash # the same, Clef-flash weights + the 9B tokenizer (mode clefflash)
 The paid job runs this inside its container (jobs/qual/qual_job.sh).
 
 Writes $SSDM_DATA_ROOT/paths.env (shell `export NAME=path` lines) and DONE_<stage> markers.
@@ -57,6 +58,24 @@ ITEMS = {
         ("MMLU_DIR", "cais/mmlu", "dataset", ["all/test-*", "all/dev-*"], "c30699e8356da336a370243923dbaf21066bb9fe"),
         ("Q9B_DIR", "Qwen/Qwen3.5-9B", "model", ["*.json", "*.safetensors", "*.txt", "*.jinja"],
          "c202236235762e1c871ad0ccb60c8ee5ba337b9a"),
+        ("FINEWEB_EDU_DIR", "HuggingFaceFW/fineweb-edu", "dataset", ["sample/10BT/000_00000.parquet"],
+         "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"),
+        ("ULTRACHAT_DIR", "HuggingFaceH4/ultrachat_200k", "dataset",
+         ["data/train_sft-00000-of-00003-*.parquet", "data/train_sft-00001-of-00003-*.parquet", "data/test_sft-*.parquet"],
+         "8049631c405ae6576f93f445c6b8166f76f5505a"),
+        ("FINEMATH_DIR", "HuggingFaceTB/finemath", "dataset", ["finemath-4plus/train-00000-of-00064.parquet"],
+         "e92b25a616738fe95dc186b64dfb19f9c8525594"),
+    ],
+    # jobs/q9af_v2 mode clefflash (diagnostic): the q9af_v2 mixture + probe items at the same revisions, Clef-flash's
+    # whole release (merged backbone, joint head + its config, vendored loader, processor) instead of the 9B weights,
+    # and the 9B TOKENIZER only (the conversion tokenizes exactly as job-7ji99; the v3w readout is make_v3w's qwen3.5-9b)
+    "q9af_v2_clefflash": [
+        ("WIKITEXT_DIR", "Salesforce/wikitext", "dataset", ["wikitext-103-raw-v1/*", "wikitext-2-raw-v1/*"],
+         "b08601e04326c79dfdd32d625aee71d232d685c3"),
+        ("MMLU_DIR", "cais/mmlu", "dataset", ["all/test-*", "all/dev-*"], "c30699e8356da336a370243923dbaf21066bb9fe"),
+        ("Q9B_TOK_DIR", "Qwen/Qwen3.5-9B", "model", ["*.json", "*.txt", "*.jinja"],
+         "c202236235762e1c871ad0ccb60c8ee5ba337b9a"),
+        ("CLEF_FLASH_DIR", "Cloudflare/clef-flash", "model", None, "17f0b0ad64efb65d273590632833508766b2aae6"),
         ("FINEWEB_EDU_DIR", "HuggingFaceFW/fineweb-edu", "dataset", ["sample/10BT/000_00000.parquet"],
          "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"),
         ("ULTRACHAT_DIR", "HuggingFaceH4/ultrachat_200k", "dataset",
