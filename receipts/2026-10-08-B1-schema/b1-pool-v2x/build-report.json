@@ -1,0 +1,743 @@
+{
+ "builder": {
+  "commit": "3226a03d4b61bfda5ee9830a8bf057ea15eb3e95",
+  "data/b1.py sha256": "d644a48d69636027312ccca062b0716e47dbfd5f89b0ee7c844f73349e714fe8"
+ },
+ "seed": 20261008,
+ "native": {
+  "parent": {
+   "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+   "pointer_sha256": "c65c10450fe9edef801dce6bbf24f091c1014263fd66ceb5412af23fc08ddc09",
+   "files_uncompressed_sha256": {
+    "records": "82fb395d889c473d9fbc4877b51c792438e94b53cddd54e4cf825d4603baa166",
+    "manifest": "0be33669fa077d2a2abe29ecd159aea1a27c7cc9daaf910b584755410da4d961",
+    "content_map": "d4ffd9073e0490e409a757508b2821f8108a3a9e36b2531ec3c97a94b2bc0898"
+   }
+  },
+  "supplement": {
+   "dir": "b1-supplement-seed20261006",
+   "records_uncompressed_sha256": "7441393d9b08dc686147c40ffc742cc5f0ecca913fd4fdb03e8e8c4d7aa9a751",
+   "counts_asked": {
+    "glaive_fc": 45000,
+    "banking77": 10003,
+    "clinc150": 15100,
+    "gsm8k": 7473
+   },
+   "n_kept": 72953,
+   "ids_shared_with_150k_byte_identical": 36500
+  },
+  "n_native_ids": 186453
+ },
+ "exclusion": {
+  "v2": {
+   "cohort": "m2-dev-cohort-v2",
+   "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 1670,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "v3": {
+   "cohort": "m2-dev-cohort-v3",
+   "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 39872,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "heldout_150k_dropped": [
+   "m2:mmlu_aux:21118",
+   "m2:mmlu_aux:39640",
+   "m2:mmlu_aux:39643"
+  ]
+ },
+ "guard": {
+  "manifests": {
+   "harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+   "harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+  },
+  "n_ids": 47249,
+  "n_hashes": 48415,
+  "note": "",
+  "content_index": {
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\index-content-hashes-v1.txt.gz",
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n": 24150
+  },
+  "pin": {
+   "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+   "n_hashes": 24150,
+   "n_rows": 24265,
+   "builder": "train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)"
+  }
+ },
+ "fingerprint": {
+  "version": "ssdm-dedup-v3",
+  "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+  "arrays_sha256": "b2961e355e27308d730141f5bd7e99c1a90d29c7db01c44abe3e0fcf9538ee28",
+  "rows": 155390
+ },
+ "encoder": {
+  "kind": "rwkv7-hf-trie",
+  "vocab_sha256": "99807d0e55a45d3053ffbdafbf169d955a02f8e06cb6613dda38c536203d7fdc",
+  "untrusted": "fail-closed on special ids"
+ },
+ "cell_filter": {
+  "max_k": 255,
+  "max_t": 2048,
+  "template": "jrt-rwkv-g1-v1",
+  "layout": "ordered"
+ },
+ "families_dir": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\b1-families-x",
+ "families_files_gz_sha256": {
+  "api_bank.jsonl.gz": "57242564b8ffdca9fccb078cad8baf8d4ac0308168e289638b30fe4153cfbfc5",
+  "bfcl.jsonl.gz": "c2da8d00feffc709149d83228f8bf80dae0192cad59e2f8528be232ada871d93",
+  "cruxeval.jsonl.gz": "adc77f4b856c18b19020def0fb39c9cc933d9fda3d917c20f7d09047825199e4"
+ },
+ "backfilled": {},
+ "index_item_text_examples": {
+  "ext:api_bank": [
+   [
+    "m2:b1fam_apibank:lv1-1058",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1059",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-3161",
+    "state/dialogue/[]/text",
+    "Sure, please provide the date for the journal entry. The format should be YYYY-MM-DD."
+   ],
+   [
+    "m2:b1fam_apibank:lv1-835",
+    "state/dialogue/[]/text",
+    "Great! Can you help me book an appointment with Dr. Zhang on March 15th at 4 pm? My name is Emily and my phone number is"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-536",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. Could you please provide me with your fitness account username and password?"
+   ]
+  ],
+  "banking77_member": [
+   [
+    "m2:banking77:6100~view:member",
+    "state/message",
+    "I double checked that I have the correct account details already, they're right for sure. Transfer is still pending sinc"
+   ],
+   [
+    "m2:banking77:4466~view:member",
+    "state/message",
+    "I think someone else is using my card."
+   ],
+   [
+    "m2:banking77:4948~view:member",
+    "state/message",
+    "The ATM keeps declining my card! I tried two different ATMs already can you please check if everything is alright with m"
+   ]
+  ],
+  "anli_claim": [
+   [
+    "m2:anli:3669a594-42b2-4098-ab27-2c48f93d9d02~view:claim",
+    "state/evidence/[]/text",
+    "Breakfast Creek Hotel is a heritage-listed hotel at 2 Kingsford Smith Drive, Albion, City of Brisbane, Queensland, Austr"
+   ],
+   [
+    "m2:anli:fb0a66aa-e7ab-4d38-b32d-7526c235ff5c~view:claim",
+    "state/evidence/[]/text",
+    "Kenneth Stanton Calvert (born June 8, 1953) is the U.S. Representative for California 's 42 congressional district , and"
+   ],
+   [
+    "m2:anli:ee911910-8c28-4dda-9295-ed0ad10d4730~view:claim",
+    "state/evidence/[]/text",
+    "Breakfast Creek Hotel is a heritage-listed hotel at 2 Kingsford Smith Drive, Albion, City of Brisbane, Queensland, Austr"
+   ],
+   [
+    "m2:anli:a72cc3bf-c3d8-4ce6-baa0-b6012c52fc34~view:claim",
+    "state/evidence/[]/text",
+    "Breakfast Creek Hotel is a heritage-listed hotel at 2 Kingsford Smith Drive, Albion, City of Brisbane, Queensland, Austr"
+   ],
+   [
+    "m2:anli:3902236f-12f8-405f-87a7-7d0dca143d7f~view:claim",
+    "state/evidence/[]/text",
+    "Breakfast Creek Hotel is a heritage-listed hotel at 2 Kingsford Smith Drive, Albion, City of Brisbane, Queensland, Austr"
+   ]
+  ],
+  "nli4ct": [
+   [
+    "m2:nli4ct:f6a7e279-b923-45e3-8ad5-e81e17c0a682~view:v3",
+    "state/primary_trial/text/[]",
+    "  Percentage of Subjects Able to Complete > 85% of the Planned Dose on Schedule"
+   ],
+   [
+    "m2:nli4ct:3e1037fd-cc1e-4229-892f-95d0987d9a68~view:v3",
+    "state/primary_trial/text/[]",
+    "  Overall Number of Participants Analyzed: 30"
+   ],
+   [
+    "m2:nli4ct:3058d104-172e-41be-b641-9f0f9cb172be~view:v3",
+    "state/primary_trial/text/[]",
+    "  Overall Number of Participants Analyzed: 30"
+   ],
+   [
+    "m2:nli4ct:a5d5e6da-f3cd-49c7-92a7-f789468c4c4c~view:v3",
+    "state/primary_trial/text/[]",
+    "  Percentage of Subjects Able to Complete > 85% of the Planned Dose on Schedule"
+   ],
+   [
+    "m2:nli4ct:4c038972-20a9-4031-a1cd-ba00e9dd0908~view:v3",
+    "state/secondary_trial/text/[]",
+    "  Overall Number of Participants Analyzed: 30"
+   ]
+  ],
+  "ragtruth": [
+   [
+    "m2:ragtruth:3378~view:v3",
+    "state/prompt",
+    "Summarize the following news within 137 words:\nWhen 65 cases of 20-year-old Pappy Van Winkle -- one of the rarest and mo"
+   ],
+   [
+    "m2:ragtruth:5011~view:v3",
+    "state/prompt",
+    "Summarize the following news within 73 words:\n'Young and the Restless' Spoilers: Is Courtney Hope Leaving 'Y&R'? The Soa"
+   ],
+   [
+    "m2:ragtruth:5538~view:v3",
+    "state/prompt",
+    "Summarize the following news within 88 words:\n'Bold and the Beautiful' Spoilers: Katie Learns Eric's Secret, Will Spill "
+   ],
+   [
+    "m2:ragtruth:1611~view:v3",
+    "state/prompt",
+    "Summarize the following news within 103 words:\nObock, Djibouti (CNN)Amina Ali Qassim is sitting with her youngest grandc"
+   ],
+   [
+    "m2:ragtruth:10273~view:v3",
+    "state/response",
+    "Blenders In the Grass is a local business located at 315 Meigs Rd, Ste J in Santa Barbara, CA. It falls under the catego"
+   ]
+  ],
+  "hover": [
+   [
+    "m2:hover:954b0c41-995b-4170-a446-1587d1c0e886~view:v3",
+    "state/evidence/[]/text",
+    "Russell James Liberman (September 12, 1945 - September 9, 1977) was a United States drag racer from Pennsylvania, known "
+   ],
+   [
+    "m2:hover:1ee0e7e0-62b7-4599-a7c7-7a21d4b2cd6d~view:v3",
+    "state/evidence/[]/text",
+    "The Ferrari 360 is a two-seater sports car built by Ferrari from 1999 to 2005. It succeeded the Ferrari F355 and was rep"
+   ],
+   [
+    "m2:hover:83804d2c-0be8-440a-bf49-f06616e5f185~view:v3",
+    "state/evidence/[]/text",
+    "Christopher Walken (born Ronald Walken; March 31, 1943) is an American stage and film lead and character actor who has a"
+   ],
+   [
+    "m2:hover:1c953e72-7582-4738-9998-1df006e85acd~view:v3",
+    "state/evidence/[]/text",
+    "\"Snakes on a Plane (Bring It)\", also referred to as \"Bring It (Snakes on a Plane)\", is the debut single by Cobra Starshi"
+   ],
+   [
+    "m2:hover:76b717b7-12e6-4aea-a1ee-f6569bbda337~view:v3",
+    "state/evidence/[]/text",
+    "Hariharan Pillai Happy Aanu (English translation: \"Hariharan Pillai is happy\") is a 2003 Malayalam film by Viswanath sta"
+   ]
+  ],
+  "habermas": [
+   [
+    "m2:habermas:0c2e4296148a1cfac5354398fa98e429~view:v3",
+    "q/consensus/option",
+    "In general, the current electoral system is good.  However, there are some areas that need to be addressed.  Firstly, th"
+   ],
+   [
+    "m2:habermas:bf841c68a68912d0cff3d9804232682e~view:v3",
+    "q/consensus/option",
+    "In principle, yes, more public ownership of utility companies is a good thing. The issue, however, is how this can be do"
+   ],
+   [
+    "m2:habermas:3b5f74e5fc4b8cc9b67bf5f8f5356533~view:v3",
+    "q/consensus/option",
+    "\u201cThe movement of people across borders should be as free as possible, however, the movement of dangerous people across b"
+   ],
+   [
+    "m2:habermas:e4e7f4e206549f95a5c41022af32a4f0~view:v3",
+    "q/consensus/option",
+    "The NHS is a vital part of our society. The health and wellbeing of the nation should be a priority of the government. T"
+   ],
+   [
+    "m2:habermas:c30a0a0582c9ea0e56dee364960cb91a~view:v3",
+    "q/consensus/option",
+    "In general, the group was opposed to fracking. All agreed that it was not a sustainable form of energy. There was an arg"
+   ]
+  ]
+ },
+ "index_boilerplate": {
+  "rule": "shared by >= 20 distinct Index rows",
+  "lines": 6593,
+  "segments": 7890
+ },
+ "lowrate_raw": {
+  "dump_manifest_sha256": "4e87c957f029c6feb7ec03b6ab4b7224c0d811569ea3a1de52fa6cb690277502",
+  "dump": {
+   "inputs": {
+    "anli/plain_text/train_r1-00000-of-00001.parquet": "de2d038ae67f1fb1872073490b9e7685e9114d5f278ddd4631905fe0a4ecbcff",
+    "anli/plain_text/train_r2-00000-of-00001.parquet": "209f4a15bf77224c62ffbde5f150fda928a7e2f5175366f4cacc3c7588aab13d",
+    "anli/plain_text/train_r3-00000-of-00001.parquet": "c1d3f614d673888ac56b9ab62324e21583c98a11c4fef84e938d0f8fc414b29a",
+    "mmlu_aux/auxiliary_train/train-00000-of-00001.parquet": "ae6662576ef989fed82a9289da1b89e950499c320f6849b052ec344dfcb709eb"
+   },
+   "outputs": {
+    "anli.jsonl.gz": {
+     "sha256": "b5d0382a6c48a7aca9bdc3157fc5d9c94d0be765843db069a51758ba4ed70e3d",
+     "rows": 162865
+    },
+    "mmlu_aux.jsonl.gz": {
+     "sha256": "79c9423dc386d43946385f18850f23e69493d481e3d8449a9c5a811c17b70c1a",
+     "rows": 99842
+    }
+   }
+  }
+ },
+ "v3_raw": {
+  "convert_manifest_sha256": "0b55e8f6cbb2866b35653cf88ff5160e8408e9e51d59b975645294673eebb7c5",
+  "overlap_sha256": "649b62fdf521cdc40c6b6a8bbce8f5f6afc20fad4bed3269dc1e220733524aa0",
+  "convert": {
+   "inputs": {
+    "acos/Laptop-ACOS/laptop_quad_train.tsv": "75572e18961f15d6624c037cf4ccc8964744b59a6be4249132229a4dbd967320",
+    "acos/Restaurant-ACOS/rest16_quad_train.tsv": "91ced9328d5992d3715ec70d7cc08a6ccd9dea79136ffdd70556fe54b217edda",
+    "nli4ct/training_data.zip": "ed3d9819cfebd2d1d5d70fd786323c904b341470f8dc173af39946f70a0e5b9f",
+    "vast/vast_train.csv": "b2f0d69a73231b8ef22f10e4df7d759cf228505ce5252506068da6aa7fe42109",
+    "ragtruth/response.jsonl": "e4c2e4ac24fff676d8984cc61c35d791612fadc58015335d97dd632375e18073",
+    "ragtruth/source_info.jsonl": "0dffc26ea9f3c1c3d7c7e8336b56ef1646e3cec876edffcca3c9c624d12d578b",
+    "hover/hover_train_release_v1.1.json": "1f1cd57abd616fa00c70bdc575ce77c16fc6cf1a6cffd5ff87c208030a336bb6",
+    "hover/wiki_wo_links.db": "c37ee397916ec0bffacfe8902db454a5cda88a7a188409217b2e15231fe5ee2f",
+    "habermas/hm_all_candidate_comparisons.parquet": "7cf8d5ce3fce8853b36f0ffe1158424f7813867e422e313db4df0a5f9e03e4a4",
+    "mnli/data/train-00000-of-00001.parquet": "1c1de03640b168e410aabfca19e7cc2f3dfcd7f0e126e935674e56fb102c4529"
+   },
+   "outputs": {
+    "acos.jsonl.gz": {
+     "sha256": "fba70a7606d6d8bde4104284fad6bde736b6e5c8914504c5a41b725e3ac43e6e",
+     "rows": 4464
+    },
+    "nli4ct.jsonl.gz": {
+     "sha256": "adb87c317465ae6a259c4118c69ab7ca5c67fdf439cf8fbd46137f6cfcc2bc71",
+     "rows": 1700
+    },
+    "vast.jsonl.gz": {
+     "sha256": "d8cc835bee0e585237393e9498cf5ea136f19bc2c3c26bb078fc7f8d304f6abd",
+     "rows": 13477
+    },
+    "ragtruth.jsonl.gz": {
+     "sha256": "8833b3c984fffe0893cb11e9b1b83198d207a06a68a8ff4afe7ac15323ff3de6",
+     "rows": 15062
+    },
+    "hover.jsonl.gz": {
+     "sha256": "5cac50a7d5ab979235209a397e729dc7cd986cd30eb2c605767e942ef4ea7875",
+     "rows": 17000
+    },
+    "habermas.jsonl.gz": {
+     "sha256": "c0231ebb7e793c2048b1fe1365ecac75622b1e6f508adf3dcd02d144f68547d0",
+     "rows": 1184
+    },
+    "mnli.jsonl.gz": {
+     "sha256": "338c72774228c663454e01f0a87362ba7348b358fe3cb781192cbf90eddca41a",
+     "rows": 40000
+    }
+   },
+   "notes": {
+    "habermas": {
+     "rounds_train": 1708,
+     "kept": 1184,
+     "no_initial_complete_panel": 344,
+     "tie": 180,
+     "inconsistent": 0
+    },
+    "mnli": "seeded subset of 40000 train pairs (sha256 order, seed 20261008)"
+   }
+  },
+  "excluded": {}
+ },
+ "filter_reasons_over_selection": {
+  "ext:api_bank": {
+   "len_prefilter": 685,
+   "k_or_t_filter": 987,
+   "kept": 604,
+   "index_item_text": 8
+  },
+  "ext:bfcl": {
+   "kept": 9490,
+   "k_or_t_filter": 508,
+   "len_prefilter": 2
+  },
+  "ext:cruxeval": {
+   "kept": 11999,
+   "dup_text": 1
+  },
+  "factchange": {},
+  "glaive_native": {},
+  "glaive_catalog16": {},
+  "glaive_catalog_long": {},
+  "toolace": {},
+  "when2call": {},
+  "gsm8k": {},
+  "banking77_k16": {},
+  "clinc150_k16": {},
+  "banking77_full": {},
+  "anli": {},
+  "hellaswag": {},
+  "winogrande": {},
+  "sst5": {},
+  "nq": {},
+  "boolq": {},
+  "mmlu_aux": {},
+  "humicroedit_s1": {},
+  "humicroedit_s2": {},
+  "clinc150_member": {
+   "kept": 9000,
+   "no_view": 1259,
+   "dup_text": 6
+  },
+  "banking77_member": {
+   "kept": 3500,
+   "no_view": 490,
+   "index_item_text": 3,
+   "dup_text": 5
+  },
+  "anli_claim": {
+   "kept": 6000,
+   "no_view": 749,
+   "index_item_text": 5,
+   "dup_text": 1
+  },
+  "mmlu_verify": {},
+  "acos": {
+   "kept": 4391,
+   "dup_text": 22
+  },
+  "nli4ct": {
+   "kept": 855,
+   "index_item_text": 7,
+   "dup_text": 772,
+   "k_or_t_filter": 25,
+   "index_text": 19,
+   "len_prefilter": 1
+  },
+  "vast": {
+   "kept": 1835,
+   "d1b_heldout": 1
+  },
+  "ragtruth": {
+   "kept": 8490,
+   "index_item_text": 1976,
+   "k_or_t_filter": 215,
+   "len_prefilter": 12,
+   "d1b_heldout": 3,
+   "dup_text": 1
+  },
+  "hover": {
+   "kept": 12000,
+   "index_item_text": 1791,
+   "dup_text": 79
+  },
+  "habermas": {
+   "kept": 1019,
+   "index_item_text": 34,
+   "d1b_heldout": 3
+  },
+  "mnli": {
+   "kept": 15000,
+   "d1b_heldout": 1
+  }
+ },
+ "draws": {
+  "b1-pool-v2x": {
+   "build": "b1-pool-v2x",
+   "n_records": 84183,
+   "quotas": {
+    "acos": 4400,
+    "nli4ct": 1700,
+    "vast": 8000,
+    "ragtruth": 10000,
+    "hover": 12000,
+    "habermas": 1184,
+    "mnli": 15000,
+    "clinc150_member": 9000,
+    "banking77_member": 3500,
+    "anli_claim": 6000,
+    "ext:api_bank": 2284,
+    "ext:bfcl": 10000,
+    "ext:cruxeval": 12000
+   },
+   "by_family": {
+    "acos": 4391,
+    "anli_claim": 6000,
+    "banking77_member": 3500,
+    "clinc150_member": 9000,
+    "ext:api_bank": 604,
+    "ext:bfcl": 9490,
+    "ext:cruxeval": 11999,
+    "habermas": 1019,
+    "hover": 12000,
+    "mnli": 15000,
+    "nli4ct": 855,
+    "ragtruth": 8490,
+    "vast": 1835
+   },
+   "shortfall": {
+    "acos": 9,
+    "nli4ct": 845,
+    "vast": 6165,
+    "ragtruth": 1510,
+    "habermas": 165,
+    "ext:api_bank": 1680,
+    "ext:bfcl": 510,
+    "ext:cruxeval": 1
+   },
+   "by_group_share": {
+    "arts": 0.0121,
+    "intent_views": 0.1485,
+    "knowledge_procedural": 0.1425,
+    "language": 0.4344,
+    "retrieval_other": 0.1425,
+    "tools": 0.1199
+   },
+   "by_group": {
+    "arts": 1019,
+    "intent_views": 12500,
+    "knowledge_procedural": 11999,
+    "language": 36571,
+    "retrieval_other": 12000,
+    "tools": 10094
+   },
+   "by_index_area": {
+    "arts": 1019,
+    "knowledge": 11999,
+    "language": 36571,
+    "retrieval": 24500,
+    "tools": 10094
+   },
+   "by_source": {
+    "acos": 4391,
+    "anli": 6000,
+    "b1fam_apibank": 604,
+    "b1fam_bfcl_synth": 9490,
+    "b1fam_cruxeval_synth": 11999,
+    "banking77": 3500,
+    "clinc150": 9000,
+    "habermas": 1019,
+    "hover": 12000,
+    "mnli": 15000,
+    "nli4ct": 855,
+    "ragtruth": 8490,
+    "vast": 1835
+   },
+   "rows_by_max_k": {
+    "k<=16": 84183
+   },
+   "rendered_tokens": {
+    "p50": 502,
+    "p95": 1664,
+    "p99": 1799,
+    "max": 2047,
+    "n_over_2048": 0,
+    "bins": {
+     "<=512": 42619,
+     "513-1024": 16494,
+     "1025-1536": 18800,
+     "1537-2048": 6270
+    }
+   },
+   "rows_by_max_k_by_family": {
+    "acos": {
+     "k<=16": 4391
+    },
+    "anli_claim": {
+     "k<=16": 6000
+    },
+    "banking77_member": {
+     "k<=16": 3500
+    },
+    "clinc150_member": {
+     "k<=16": 9000
+    },
+    "ext:api_bank": {
+     "k<=16": 604
+    },
+    "ext:bfcl": {
+     "k<=16": 9490
+    },
+    "ext:cruxeval": {
+     "k<=16": 11999
+    },
+    "habermas": {
+     "k<=16": 1019
+    },
+    "hover": {
+     "k<=16": 12000
+    },
+    "mnli": {
+     "k<=16": 15000
+    },
+    "nli4ct": {
+     "k<=16": 855
+    },
+    "ragtruth": {
+     "k<=16": 8490
+    },
+    "vast": {
+     "k<=16": 1835
+    }
+   },
+   "gold_position_uniformity_by_k": {
+    "2": {
+     "n": 264724,
+     "max_dev_from_uniform_pct": 34.35
+    },
+    "3": {
+     "n": 4706,
+     "max_dev_from_uniform_pct": 6.84
+    },
+    "4": {
+     "n": 2869,
+     "max_dev_from_uniform_pct": 1.39
+    },
+    "5": {
+     "n": 698,
+     "max_dev_from_uniform_pct": 2.52
+    },
+    "6": {
+     "n": 717,
+     "max_dev_from_uniform_pct": 2.3
+    },
+    "7": {
+     "n": 259,
+     "max_dev_from_uniform_pct": 3.09
+    },
+    "8": {
+     "n": 181,
+     "max_dev_from_uniform_pct": 3.52
+    },
+    "9": {
+     "n": 41,
+     "max_dev_from_uniform_pct": 8.67
+    },
+    "10": {
+     "n": 29,
+     "max_dev_from_uniform_pct": 14.14
+    }
+   },
+   "noul_gold_labels": {
+    "false": 4933,
+    "true": 3557
+   },
+   "lowrate_gold_labels_by_family": {
+    "acos": {
+     "no": 42361,
+     "_records_with_no_positive": 3819,
+     "_records": 4391,
+     "yes": 617
+    },
+    "anli_claim": {
+     "NOT_SUPPORTED": 4058,
+     "_records_with_no_positive": 4058,
+     "_records": 6000,
+     "SUPPORTED": 1942
+    },
+    "banking77_member": {
+     "no": 39356,
+     "yes": 2644,
+     "_records": 3500,
+     "_records_with_no_positive": 856
+    },
+    "clinc150_member": {
+     "no": 102061,
+     "_records_with_no_positive": 3061,
+     "_records": 9000,
+     "yes": 5939
+    },
+    "habermas": {
+     "option_1": 262,
+     "_records_with_no_positive": 1019,
+     "_records": 1019,
+     "option_3": 246,
+     "option_0": 270,
+     "option_2": 241
+    },
+    "hover": {
+     "SUPPORTED": 7366,
+     "_records": 12000,
+     "NOT_SUPPORTED": 4634,
+     "_records_with_no_positive": 4634
+    },
+    "mnli": {
+     "not_entailment": 10018,
+     "_records_with_no_positive": 10018,
+     "_records": 15000,
+     "entailment": 4982
+    },
+    "nli4ct": {
+     "Contradiction": 434,
+     "_records_with_no_positive": 434,
+     "_records": 855,
+     "Entailment": 421
+    },
+    "ragtruth": {
+     "false": 4933,
+     "_records_with_no_positive": 4933,
+     "_records": 8490,
+     "true": 3557
+    },
+    "vast": {
+     "B": 735,
+     "_records_with_no_positive": 1835,
+     "_records": 1835,
+     "A": 788,
+     "C": 312
+    }
+   },
+   "injected_rows": 0,
+   "views": {
+    "v3": 43590,
+    "claim": 6000,
+    "member": 12500
+   },
+   "uncompressed_sha256": {
+    "records": "5d3546dc712b798e8e050843db45d3424fc914349b0155c05e73890f5f1b201f",
+    "manifest": "5107bbf1b98709f28a124968881d1c8a7fb0a5cff5ea961fd9e9a3c5a970d2dc",
+    "content_map": "68990dde74f534b31802e0c3f5e89e5b3ae9a212124ac1a16e3276608e5ef459"
+   },
+   "gz_sha256": {
+    "records.jsonl.gz": "15a2bb10dcb78cba4cec71c31af5d14d327b7e07b555ad161e0fdb1be998bffb",
+    "b1-pool-v2x.manifest.jsonl.gz": "74c3fd7045b73a850f4cfd88868e4efbc09966803623af8324a99ea1c11daf59",
+    "b1-pool-v2x.content.jsonl.gz": "7b1bd894c23d6a0d9e77cbf9207109ecff95abbdd2f62c5337f16d0b16a5ab27"
+   },
+   "pointer": {
+    "build": "b1-pool-v2x (python -X utf8 -I -m data.b1 draw; BOARD B1)",
+    "location": "ssdm-data/m2/build/b1-pool-v2x/ (outside git; deterministic, a rebuild reproduces it)",
+    "records_uncompressed_sha256": "5d3546dc712b798e8e050843db45d3424fc914349b0155c05e73890f5f1b201f",
+    "manifest": "b1-pool-v2x.manifest.jsonl.gz",
+    "manifest_uncompressed_sha256": "5107bbf1b98709f28a124968881d1c8a7fb0a5cff5ea961fd9e9a3c5a970d2dc",
+    "content_map": "b1-pool-v2x.content.jsonl.gz",
+    "content_map_uncompressed_sha256": "68990dde74f534b31802e0c3f5e89e5b3ae9a212124ac1a16e3276608e5ef459",
+    "n_records": 84183,
+    "excludes_cohort": "m2-dev-cohort-v2 be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2 and m2-dev-cohort-v3 498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da (id, content, source item, key-free text)",
+    "builder": {
+     "module": "data/b1.py",
+     "commit": "3226a03d4b61bfda5ee9830a8bf057ea15eb3e95"
+    },
+    "receipt": "receipts/2026-10-08-B1-schema/b1-pool-v2x/"
+   },
+   "builder_sha256": "d644a48d69636027312ccca062b0716e47dbfd5f89b0ee7c844f73349e714fe8"
+  }
+ }
+}

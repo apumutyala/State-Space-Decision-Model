@@ -1,0 +1,300 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw300k-v1/records.jsonl.gz",
+ "n_items": 487276,
+ "n_binary_items": 248284,
+ "binary_share_of_items": 0.5095,
+ "aggregate_yes_share": 0.1819,
+ "by_family": {
+  "clinc150/intent_membership": {
+   "binary": 118584,
+   "yes_share": 0.0533,
+   "items": 118584,
+   "item_share": 0.2434
+  },
+  "acos/acos_category_sentiment": {
+   "binary": 29959,
+   "yes_share": 0.0136,
+   "items": 29959,
+   "item_share": 0.0615
+  },
+  "b1fam_bfcl_synth/BFCL-tool-selection": {
+   "binary": 23645,
+   "yes_share": 0.2963,
+   "items": 23645,
+   "item_share": 0.0485
+  },
+  "toolace/tool_multi": {
+   "binary": 17336,
+   "yes_share": 0.6293,
+   "items": 17336,
+   "item_share": 0.0356
+  },
+  "banking77/intent_membership": {
+   "binary": 12876,
+   "yes_share": 0.0631,
+   "items": 12876,
+   "item_share": 0.0264
+  },
+  "mmlu_aux/answer_verification": {
+   "binary": 11072,
+   "yes_share": 0.25,
+   "items": 11072,
+   "item_share": 0.0227
+  },
+  "boolq/yesno_passage": {
+   "binary": 9502,
+   "yes_share": 0.6173,
+   "items": 12204,
+   "item_share": 0.025
+  },
+  "anli/claim_verification": {
+   "binary": 4610,
+   "yes_share": 0.328,
+   "items": 4610,
+   "item_share": 0.0095
+  },
+  "hover/claim_verification": {
+   "binary": 4292,
+   "yes_share": 0.6249,
+   "items": 4292,
+   "item_share": 0.0088
+  },
+  "ragtruth/hallucination_detection": {
+   "binary": 4292,
+   "yes_share": 0.4208,
+   "items": 4292,
+   "item_share": 0.0088
+  },
+  "mnli/nli": {
+   "binary": 3985,
+   "yes_share": 0.3295,
+   "items": 3985,
+   "item_share": 0.0082
+  },
+  "nli4ct/clinical_trial_nli": {
+   "binary": 2620,
+   "yes_share": 0.4931,
+   "items": 2620,
+   "item_share": 0.0054
+  },
+  "glaive_fc/tool_select": {
+   "binary": 1977,
+   "yes_share": 0.4765,
+   "items": 83198,
+   "item_share": 0.1707
+  },
+  "synthetic_factchange/factchange_stock": {
+   "binary": 1462,
+   "yes_share": 0.5034,
+   "items": 1462,
+   "item_share": 0.003
+  },
+  "winogrande/fill_blank": {
+   "binary": 1039,
+   "yes_share": 0.4755,
+   "items": 14675,
+   "item_share": 0.0301
+  },
+  "nq/retrieval": {
+   "binary": 672,
+   "yes_share": 0.125,
+   "items": 869,
+   "item_share": 0.0018
+  },
+  "humicroedit_s2/humor_pair": {
+   "binary": 260,
+   "yes_share": 0.5423,
+   "items": 4538,
+   "item_share": 0.0093
+  },
+  "boolq/multi": {
+   "binary": 69,
+   "yes_share": 0.7536,
+   "items": 88,
+   "item_share": 0.0002
+  },
+  "anli/nli": {
+   "binary": 16,
+   "yes_share": 0.5,
+   "items": 7466,
+   "item_share": 0.0153
+  },
+  "winogrande/multi": {
+   "binary": 16,
+   "yes_share": 0.3125,
+   "items": 638,
+   "item_share": 0.0013
+  }
+ },
+ "items_by_family": {
+  "clinc150/intent_membership": {
+   "items": 118584,
+   "item_share": 0.2434
+  },
+  "glaive_fc/tool_select": {
+   "items": 83198,
+   "item_share": 0.1707
+  },
+  "acos/acos_category_sentiment": {
+   "items": 29959,
+   "item_share": 0.0615
+  },
+  "b1fam_bfcl_synth/BFCL-tool-selection": {
+   "items": 23645,
+   "item_share": 0.0485
+  },
+  "clinc150/intent_general": {
+   "items": 20433,
+   "item_share": 0.0419
+  },
+  "toolace/tool_multi": {
+   "items": 17336,
+   "item_share": 0.0356
+  },
+  "banking77/intent_banking": {
+   "items": 17094,
+   "item_share": 0.0351
+  },
+  "mmlu_aux/mcq": {
+   "items": 15044,
+   "item_share": 0.0309
+  },
+  "winogrande/fill_blank": {
+   "items": 14675,
+   "item_share": 0.0301
+  },
+  "banking77/intent_membership": {
+   "items": 12876,
+   "item_share": 0.0264
+  },
+  "gsm8k/math_mcq": {
+   "items": 12818,
+   "item_share": 0.0263
+  },
+  "boolq/yesno_passage": {
+   "items": 12204,
+   "item_share": 0.025
+  },
+  "hellaswag/continuation": {
+   "items": 11918,
+   "item_share": 0.0245
+  },
+  "when2call/response_select": {
+   "items": 11716,
+   "item_share": 0.024
+  },
+  "mmlu_aux/answer_verification": {
+   "items": 11072,
+   "item_share": 0.0227
+  },
+  "toolace/tool_select": {
+   "items": 8610,
+   "item_share": 0.0177
+  },
+  "anli/nli": {
+   "items": 7466,
+   "item_share": 0.0153
+  },
+  "b1fam_cruxeval_synth/CRUXEval-output-choice": {
+   "items": 7355,
+   "item_share": 0.0151
+  },
+  "sst5/sentiment_score": {
+   "items": 5960,
+   "item_share": 0.0122
+  },
+  "anli/claim_verification": {
+   "items": 4610,
+   "item_share": 0.0095
+  },
+  "humicroedit_s1/humor_score": {
+   "items": 4594,
+   "item_share": 0.0094
+  },
+  "humicroedit_s2/humor_pair": {
+   "items": 4538,
+   "item_share": 0.0093
+  },
+  "hover/claim_verification": {
+   "items": 4292,
+   "item_share": 0.0088
+  },
+  "ragtruth/hallucination_detection": {
+   "items": 4292,
+   "item_share": 0.0088
+  },
+  "mnli/nli": {
+   "items": 3985,
+   "item_share": 0.0082
+  },
+  "vast/stance": {
+   "items": 3985,
+   "item_share": 0.0082
+  },
+  "nli4ct/clinical_trial_nli": {
+   "items": 2620,
+   "item_share": 0.0054
+  },
+  "synthetic_factchange/factchange_delivery": {
+   "items": 2158,
+   "item_share": 0.0044
+  },
+  "synthetic_factchange/factchange_spend_limit": {
+   "items": 1883,
+   "item_share": 0.0039
+  },
+  "b1fam_apibank/API-Bank-tool-selection": {
+   "items": 1849,
+   "item_share": 0.0038
+  },
+  "habermas/consensus_selection": {
+   "items": 1838,
+   "item_share": 0.0038
+  },
+  "synthetic_factchange/factchange_stock": {
+   "items": 1462,
+   "item_share": 0.003
+  },
+  "nq/retrieval": {
+   "items": 869,
+   "item_share": 0.0018
+  },
+  "winogrande/multi": {
+   "items": 638,
+   "item_share": 0.0013
+  },
+  "synthetic_factchange/factchange_renewal": {
+   "items": 475,
+   "item_share": 0.001
+  },
+  "hellaswag/multi": {
+   "items": 381,
+   "item_share": 0.0008
+  },
+  "sst5/multi": {
+   "items": 340,
+   "item_share": 0.0007
+  },
+  "mmlu_aux/multi": {
+   "items": 184,
+   "item_share": 0.0004
+  },
+  "anli/multi": {
+   "items": 162,
+   "item_share": 0.0003
+  },
+  "boolq/multi": {
+   "items": 88,
+   "item_share": 0.0002
+  },
+  "synthetic_factchange/factchange_schedule": {
+   "items": 64,
+   "item_share": 0.0001
+  },
+  "synthetic_factchange/factchange_rating": {
+   "items": 6,
+   "item_share": 0.0
+  }
+ },
+ "n_polarity_descriptions": 18
+}

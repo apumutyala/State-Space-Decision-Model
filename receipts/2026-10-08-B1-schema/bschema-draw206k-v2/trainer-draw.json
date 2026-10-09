@@ -1,0 +1,71 @@
+{
+ "trainer_root": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/trainer-9c3e435",
+ "cell": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/trainer-9c3e435/jobs/m2_first_cell/m2_first_cell_rwkv7_d3_v3w_fast.json",
+ "pointer": "C:/Users/apumu/research/CHLabs/ssdm-wt/b-schema-synth/data/manifests/bschema-draw206k-v2.pointer.json",
+ "draws": [
+  {
+   "n": 24000,
+   "n_drawn": 24000,
+   "identity": {
+    "train_set": "bschema-draw206k-v2 (python -X utf8 -I -m data.b_schema; BOARD B-1 schema-permutation synth)",
+    "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b-schema-synth\\data\\manifests\\bschema-draw206k-v2.pointer.json",
+    "pointer_sha256": "0100701f4ac250b9349c8624519efe59542b00947a469cf32ab3e1b99fe4de1b",
+    "files_uncompressed_sha256": {
+     "records": "09c0fef786fbcde0bd1ea66747dd3bf78f0924211baeb83c6c453a5625969475",
+     "manifest": "8cc03c36db1be5c1a328a8f99097a6284082fe1720ede75f5e2b6351b73682b1",
+     "content_map": "2eee8e6c2166d1ed5c0c732c989015f5b5ebee3b09cd71e6b166279b5896af81"
+    },
+    "n_pool": 206544,
+    "heldout_excluded": [],
+    "drawn_heldout_scan": {
+     "n_texts": 24000,
+     "hits": 0,
+     "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+    },
+    "held_out_in_set": {
+     "by_id": 0,
+     "by_content": 0
+    },
+    "n_drawn": 24000,
+    "draw_seed": 0,
+    "drawn_ids_sha256": "1f3b965a5785e23deceb7568b817fa1c614e5470b3190e0425ad0a05e9062074",
+    "lines_manifest_verified": 206544,
+    "cohort": {
+     "cohort": "m2-dev-cohort-v2",
+     "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 1670,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "cohort_v3_excluded": {
+     "n": 0,
+     "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+     "cohort": {
+      "cohort": "m2-dev-cohort-v3",
+      "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+      "n": {
+       "dev": 835,
+       "calibration": 1000,
+       "retention": 39872,
+       "steer_dev": 1800,
+       "steer_gate": 1000
+      }
+     },
+     "drawn_overlap": 0
+    }
+   },
+   "first_ids": [
+    "m2:glaive_fc:8853~view:cat16-bs0",
+    "m2:ragtruth:9561~view:v3-bs1",
+    "m2:clinc150:3207~view:k16-bs0"
+   ],
+   "n_questions": 32745
+  }
+ ],
+ "heldout_gate_exit": 0,
+ "pass": true
+}

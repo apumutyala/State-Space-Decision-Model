@@ -1,0 +1,1536 @@
+{
+ "select": {
+  "build": "bschema-draw206k-v2",
+  "n_records": 206544,
+  "quotas": {
+   "glaive_fc/tool_select": 28970,
+   "when2call/response_select": 6762,
+   "toolace/tool_select": 5094,
+   "toolace/tool_multi": 2315,
+   "b1fam_apibank/API-Bank-tool-selection": 1196,
+   "b1fam_bfcl_synth/BFCL-tool-selection": 3157,
+   "b1fam_cruxeval_synth/CRUXEval-output-choice": 35997,
+   "gsm8k/math_mcq": 6397,
+   "anli/nli": 2828,
+   "anli/claim_verification": 1106,
+   "mnli/nli": 6989,
+   "hover/claim_verification": 20240,
+   "ragtruth/hallucination_detection": 16964,
+   "acos/acos_category_sentiment": 704,
+   "nli4ct/clinical_trial_nli": 1710,
+   "vast/stance": 3670,
+   "habermas/consensus_selection": 2027,
+   "clinc150/intent_membership": 602,
+   "banking77/intent_membership": 250,
+   "clinc150/intent_general": 12322,
+   "banking77/intent_banking": 9201,
+   "mmlu_aux/mcq": 7024,
+   "mmlu_aux/answer_verification": 301,
+   "boolq/yesno_passage": 5015,
+   "hellaswag/continuation": 4269,
+   "winogrande/fill_blank": 4302,
+   "sst5/sentiment_score": 3329,
+   "humicroedit_s1/humor_score": 2527,
+   "humicroedit_s2/humor_pair": 2156,
+   "synthetic_factchange": 2086,
+   "nq/retrieval": 34,
+   "P3:extra": 7000
+  },
+  "item_plan": {
+   "item_share_planned": {
+    "b1fam_cruxeval_synth/CRUXEval-output-choice": 0.1555,
+    "glaive_fc/tool_select": 0.1252,
+    "hover/claim_verification": 0.0875,
+    "ragtruth/hallucination_detection": 0.0733,
+    "clinc150/intent_general": 0.0532,
+    "b1fam_bfcl_synth/BFCL-tool-selection": 0.0459,
+    "toolace/tool_multi": 0.0441,
+    "banking77/intent_banking": 0.0398,
+    "clinc150/intent_membership": 0.0312,
+    "mmlu_aux/mcq": 0.0303,
+    "mnli/nli": 0.0302,
+    "acos/acos_category_sentiment": 0.0298,
+    "when2call/response_select": 0.0292,
+    "gsm8k/math_mcq": 0.0276,
+    "toolace/tool_select": 0.022,
+    "boolq/yesno_passage": 0.0217,
+    "winogrande/fill_blank": 0.0186,
+    "hellaswag/continuation": 0.0184,
+    "vast/stance": 0.0159,
+    "sst5/sentiment_score": 0.0144,
+    "banking77/intent_membership": 0.013,
+    "anli/nli": 0.0122,
+    "humicroedit_s1/humor_score": 0.0109,
+    "humicroedit_s2/humor_pair": 0.0093,
+    "synthetic_factchange": 0.009,
+    "habermas/consensus_selection": 0.0088,
+    "nli4ct/clinical_trial_nli": 0.0074,
+    "mmlu_aux/answer_verification": 0.0052,
+    "b1fam_apibank/API-Bank-tool-selection": 0.0052,
+    "anli/claim_verification": 0.0048,
+    "nq/retrieval": 0.0005
+   },
+   "planned_items": 231442,
+   "binary_no_share_planned": 0.5994,
+   "mv_item_share_planned": 0.0494,
+   "key_stats": {
+    "glaive_fc/tool_select": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "when2call/response_select": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "toolace/tool_select": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "toolace/tool_multi": {
+     "items": 4.404153354632588,
+     "bin": 1.0,
+     "yes": 0.6316285817918027
+    },
+    "b1fam_apibank/API-Bank-tool-selection": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "b1fam_bfcl_synth/BFCL-tool-selection": {
+     "items": 3.364860119395997,
+     "bin": 1.0,
+     "yes": 0.2971891741459681
+    },
+    "b1fam_cruxeval_synth/CRUXEval-output-choice": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "gsm8k/math_mcq": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "anli/nli": {
+     "items": 1.0,
+     "bin": 0.001768033946251768,
+     "yes": 0.6
+    },
+    "anli/claim_verification": {
+     "items": 1.0,
+     "bin": 1.0,
+     "yes": 0.32577903682719545
+    },
+    "mnli/nli": {
+     "items": 1.0,
+     "bin": 1.0,
+     "yes": 0.33280713524606337
+    },
+    "hover/claim_verification": {
+     "items": 1.0,
+     "bin": 1.0,
+     "yes": 0.6136857707509882
+    },
+    "ragtruth/hallucination_detection": {
+     "items": 1.0,
+     "bin": 1.0,
+     "yes": 0.41902136457615435
+    },
+    "acos/acos_category_sentiment": {
+     "items": 9.788974660177882,
+     "bin": 1.0,
+     "yes": 0.014357347962113744
+    },
+    "nli4ct/clinical_trial_nli": {
+     "items": 1.0,
+     "bin": 1.0,
+     "yes": 0.4881786339754816
+    },
+    "vast/stance": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "habermas/consensus_selection": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "clinc150/intent_membership": {
+     "items": 12.0,
+     "bin": 1.0,
+     "yes": 0.05504948544980058
+    },
+    "banking77/intent_membership": {
+     "items": 12.0,
+     "bin": 1.0,
+     "yes": 0.06317902692489372
+    },
+    "clinc150/intent_general": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "banking77/intent_banking": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "mmlu_aux/mcq": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "mmlu_aux/answer_verification": {
+     "items": 4.0,
+     "bin": 1.0,
+     "yes": 0.25
+    },
+    "boolq/yesno_passage": {
+     "items": 1.0,
+     "bin": 0.7706879361914257,
+     "yes": 0.6204398447606727
+    },
+    "hellaswag/continuation": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "winogrande/fill_blank": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "sst5/sentiment_score": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "humicroedit_s1/humor_score": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "humicroedit_s2/humor_pair": {
+     "items": 1.0,
+     "bin": 0.0,
+     "yes": 0.0
+    },
+    "synthetic_factchange": {
+     "items": 1.0,
+     "bin": 0.2394904458598726,
+     "yes": 0.500886524822695
+    },
+    "nq/retrieval": {
+     "items": 3.625,
+     "bin": 0.8275862068965517,
+     "yes": 0.125
+    }
+   },
+   "no_heavy_keys": [
+    "acos/acos_category_sentiment",
+    "anli/claim_verification",
+    "b1fam_bfcl_synth/BFCL-tool-selection",
+    "banking77/intent_membership",
+    "clinc150/intent_membership",
+    "mmlu_aux/answer_verification",
+    "mnli/nli",
+    "nq/retrieval"
+   ],
+   "locked_keys": [
+    "acos/acos_category_sentiment",
+    "anli/claim_verification",
+    "b1fam_bfcl_synth/BFCL-tool-selection",
+    "banking77/intent_membership",
+    "clinc150/intent_membership",
+    "glaive_fc/tool_select",
+    "mmlu_aux/answer_verification",
+    "mnli/nli",
+    "nq/retrieval"
+   ],
+   "capacity_records": 199544
+  },
+  "attack_filter": {
+   "template_fragments_sha256": "e670c892b0fcef46a331d1087997da43be718ecef4d7059f01b9212f1cfab9e5",
+   "n_6grams": 255,
+   "n_exact_fragments": 9,
+   "heldout_v1": {
+    "source": "stack/clef/safety-heldout @f273618 analysis/safety_heldout/heldout_v1_templates.json (blob 1af1d82b)",
+    "sha256": "25df1dcf91e7872ff5501b8b9a6ea7a1346594d7213cd03ffe350a41727d8fa5"
+   },
+   "sets": {
+    "d1a": [
+     "authority",
+     "fake_correction",
+     "system_note",
+     "urgency"
+    ],
+    "d1b": [
+     "cutoff_window",
+     "dedup_notice",
+     "ledger_settled",
+     "peer_practice",
+     "planner_decision",
+     "policy_update",
+     "sender_followup",
+     "soft_framing"
+    ],
+    "hijack": [
+     "authority_override",
+     "chatml_spoof",
+     "completion_fake",
+     "header_spoof",
+     "ignore_previous"
+    ],
+    "train_hijack": [
+     "admin_header",
+     "data_close",
+     "disregard_task",
+     "grader_note",
+     "operator_override",
+     "predecided"
+    ],
+    "heldout_v1": [
+     "H01_persona",
+     "H02_tool_result",
+     "H03_transcript",
+     "H04_info_block",
+     "H05_combined_escape",
+     "H06_base64",
+     "H07_zero_width",
+     "H08_homoglyph",
+     "H09_spanish",
+     "H10_fewshot",
+     "H11_prefix",
+     "H12_split",
+     "S01_ordinal",
+     "S02_table",
+     "S03_tool_result",
+     "S04_quoted_reply",
+     "S05_html_comment",
+     "S06_persona",
+     "S07_abstain",
+     "S08_french",
+     "S09_zero_width"
+    ]
+   }
+  },
+  "available": {
+   "glaive_fc/tool_select": 42345,
+   "when2call/response_select": 6762,
+   "toolace/tool_select": 5094,
+   "toolace/tool_multi": 2315,
+   "b1fam_apibank/API-Bank-tool-selection": 1196,
+   "b1fam_bfcl_synth/BFCL-tool-selection": 18978,
+   "b1fam_cruxeval_synth/CRUXEval-output-choice": 35997,
+   "gsm8k/math_mcq": 6397,
+   "anli/nli": 2828,
+   "anli/claim_verification": 4236,
+   "mnli/nli": 25339,
+   "hover/claim_verification": 20240,
+   "ragtruth/hallucination_detection": 16964,
+   "acos/acos_category_sentiment": 8782,
+   "nli4ct/clinical_trial_nli": 1710,
+   "vast/stance": 3670,
+   "habermas/consensus_selection": 2027,
+   "clinc150/intent_membership": 18000,
+   "banking77/intent_membership": 7214,
+   "clinc150/intent_general": 12322,
+   "banking77/intent_banking": 9201,
+   "mmlu_aux/mcq": 7024,
+   "mmlu_aux/answer_verification": 3363,
+   "boolq/yesno_passage": 5015,
+   "hellaswag/continuation": 4269,
+   "winogrande/fill_blank": 4302,
+   "sst5/sentiment_score": 3329,
+   "humicroedit_s1/humor_score": 2527,
+   "humicroedit_s2/humor_pair": 2156,
+   "synthetic_factchange": 2086,
+   "nq/retrieval": 40,
+   "P3:extra": 17031
+  },
+  "dropped": {
+   "over_2048": 10026,
+   "per_item_cap_v2": 46521
+  },
+  "n_candidates": 359306,
+  "reuse": {
+   "source_items": 139100,
+   "max_variants_per_item": 3,
+   "rows_sharing_a_source_item_frac": 0.5922,
+   "variants_per_item_hist": {
+    "1": 84222,
+    "2": 42312,
+    "3": 12566
+   }
+  },
+  "by_key": {
+   "b1fam_cruxeval_synth/CRUXEval-output-choice": {
+    "rows": 35997,
+    "unique_items": 11999,
+    "rows_per_item": 3.0
+   },
+   "glaive_fc/tool_select": {
+    "rows": 28970,
+    "unique_items": 28970,
+    "rows_per_item": 1.0
+   },
+   "hover/claim_verification": {
+    "rows": 20240,
+    "unique_items": 11997,
+    "rows_per_item": 1.69
+   },
+   "ragtruth/hallucination_detection": {
+    "rows": 16964,
+    "unique_items": 8485,
+    "rows_per_item": 2.0
+   },
+   "clinc150/intent_general": {
+    "rows": 12322,
+    "unique_items": 6175,
+    "rows_per_item": 2.0
+   },
+   "banking77/intent_banking": {
+    "rows": 9201,
+    "unique_items": 5050,
+    "rows_per_item": 1.82
+   },
+   "mmlu_aux/mcq": {
+    "rows": 7024,
+    "unique_items": 7024,
+    "rows_per_item": 1.0
+   },
+   "synthetic_c_multirecord_v1/synthetic_multirecord_telemetry": {
+    "rows": 7000,
+    "unique_items": 7000,
+    "rows_per_item": 1.0
+   },
+   "mnli/nli": {
+    "rows": 6989,
+    "unique_items": 6989,
+    "rows_per_item": 1.0
+   },
+   "when2call/response_select": {
+    "rows": 6762,
+    "unique_items": 3382,
+    "rows_per_item": 2.0
+   },
+   "gsm8k/math_mcq": {
+    "rows": 6397,
+    "unique_items": 3628,
+    "rows_per_item": 1.76
+   },
+   "toolace/tool_select": {
+    "rows": 5094,
+    "unique_items": 2548,
+    "rows_per_item": 2.0
+   },
+   "boolq/yesno_passage": {
+    "rows": 5015,
+    "unique_items": 5015,
+    "rows_per_item": 1.0
+   },
+   "winogrande/fill_blank": {
+    "rows": 4302,
+    "unique_items": 4254,
+    "rows_per_item": 1.01
+   },
+   "hellaswag/continuation": {
+    "rows": 4269,
+    "unique_items": 4269,
+    "rows_per_item": 1.0
+   },
+   "vast/stance": {
+    "rows": 3670,
+    "unique_items": 1835,
+    "rows_per_item": 2.0
+   },
+   "sst5/sentiment_score": {
+    "rows": 3329,
+    "unique_items": 3216,
+    "rows_per_item": 1.04
+   },
+   "b1fam_bfcl_synth/BFCL-tool-selection": {
+    "rows": 3157,
+    "unique_items": 3157,
+    "rows_per_item": 1.0
+   },
+   "anli/nli": {
+    "rows": 2828,
+    "unique_items": 2828,
+    "rows_per_item": 1.0
+   },
+   "humicroedit_s1/humor_score": {
+    "rows": 2527,
+    "unique_items": 2527,
+    "rows_per_item": 1.0
+   },
+   "toolace/tool_multi": {
+    "rows": 2315,
+    "unique_items": 1158,
+    "rows_per_item": 2.0
+   },
+   "humicroedit_s2/humor_pair": {
+    "rows": 2156,
+    "unique_items": 2156,
+    "rows_per_item": 1.0
+   },
+   "habermas/consensus_selection": {
+    "rows": 2027,
+    "unique_items": 1016,
+    "rows_per_item": 2.0
+   },
+   "nli4ct/clinical_trial_nli": {
+    "rows": 1710,
+    "unique_items": 855,
+    "rows_per_item": 2.0
+   },
+   "b1fam_apibank/API-Bank-tool-selection": {
+    "rows": 1196,
+    "unique_items": 602,
+    "rows_per_item": 1.99
+   },
+   "anli/claim_verification": {
+    "rows": 1106,
+    "unique_items": 1106,
+    "rows_per_item": 1.0
+   },
+   "synthetic_factchange/factchange_delivery": {
+    "rows": 742,
+    "unique_items": 371,
+    "rows_per_item": 2.0
+   },
+   "acos/acos_category_sentiment": {
+    "rows": 704,
+    "unique_items": 704,
+    "rows_per_item": 1.0
+   },
+   "synthetic_factchange/factchange_spend_limit": {
+    "rows": 640,
+    "unique_items": 320,
+    "rows_per_item": 2.0
+   },
+   "clinc150/intent_membership": {
+    "rows": 602,
+    "unique_items": 602,
+    "rows_per_item": 1.0
+   },
+   "synthetic_factchange/factchange_stock": {
+    "rows": 460,
+    "unique_items": 230,
+    "rows_per_item": 2.0
+   },
+   "mmlu_aux/answer_verification": {
+    "rows": 301,
+    "unique_items": 301,
+    "rows_per_item": 1.0
+   },
+   "banking77/intent_membership": {
+    "rows": 250,
+    "unique_items": 250,
+    "rows_per_item": 1.0
+   },
+   "synthetic_factchange/factchange_renewal": {
+    "rows": 218,
+    "unique_items": 109,
+    "rows_per_item": 2.0
+   },
+   "nq/retrieval": {
+    "rows": 34,
+    "unique_items": 34,
+    "rows_per_item": 1.0
+   },
+   "synthetic_factchange/factchange_schedule": {
+    "rows": 24,
+    "unique_items": 12,
+    "rows_per_item": 2.0
+   },
+   "synthetic_factchange/factchange_rating": {
+    "rows": 2,
+    "unique_items": 1,
+    "rows_per_item": 2.0
+   }
+  },
+  "by_source": {
+   "b1fam_cruxeval_synth": 35997,
+   "glaive_fc": 28970,
+   "hover": 20240,
+   "ragtruth": 16964,
+   "clinc150": 12924,
+   "banking77": 9451,
+   "toolace": 7409,
+   "mmlu_aux": 7325,
+   "synthetic_c_multirecord_v1": 7000,
+   "mnli": 6989,
+   "when2call": 6762,
+   "gsm8k": 6397,
+   "boolq": 5015,
+   "winogrande": 4302,
+   "hellaswag": 4269,
+   "anli": 3934,
+   "vast": 3670,
+   "sst5": 3329,
+   "b1fam_bfcl_synth": 3157,
+   "humicroedit_s1": 2527,
+   "humicroedit_s2": 2156,
+   "synthetic_factchange": 2086,
+   "habermas": 2027,
+   "nli4ct": 1710,
+   "b1fam_apibank": 1196,
+   "acos": 704,
+   "nq": 34
+  },
+  "by_family": {
+   "CRUXEval-output-choice": 35997,
+   "tool_select": 34064,
+   "claim_verification": 21346,
+   "hallucination_detection": 16964,
+   "intent_general": 12322,
+   "nli": 9817,
+   "intent_banking": 9201,
+   "mcq": 7024,
+   "synthetic_multirecord_telemetry": 7000,
+   "response_select": 6762,
+   "math_mcq": 6397,
+   "yesno_passage": 5015,
+   "fill_blank": 4302,
+   "continuation": 4269,
+   "stance": 3670,
+   "sentiment_score": 3329,
+   "BFCL-tool-selection": 3157,
+   "humor_score": 2527,
+   "tool_multi": 2315,
+   "humor_pair": 2156,
+   "consensus_selection": 2027,
+   "clinical_trial_nli": 1710,
+   "API-Bank-tool-selection": 1196,
+   "intent_membership": 852,
+   "factchange_delivery": 742,
+   "acos_category_sentiment": 704,
+   "factchange_spend_limit": 640,
+   "factchange_stock": 460,
+   "answer_verification": 301,
+   "factchange_renewal": 218,
+   "retrieval": 34,
+   "factchange_schedule": 24,
+   "factchange_rating": 2
+  },
+  "ops_rows": {
+   "ids": 151767,
+   "instr_frame": 144594,
+   "qid_rename": 122167,
+   "instr_swap": 33964,
+   "k_shrink": 31422,
+   "state_rename": 21038,
+   "state_nest": 20593,
+   "type_to_choice": 7200,
+   "extra_pool_passthrough": 7000,
+   "k_expand": 6739,
+   "state_text": 4635,
+   "state_list": 4581,
+   "state_wrap_string": 4110,
+   "type_to_noul": 1906,
+   "scale_reverse": 1686,
+   "state_header": 1658,
+   "dedupe_options": 1579
+  },
+  "id_styles": {
+   "letters": 19976,
+   "digits1": 19776,
+   "digits": 19374,
+   "letters_lower": 19018,
+   "words": 18932,
+   "option_k": 18869,
+   "opaque": 18678,
+   "keep": 17144
+  },
+  "question_types": {
+   "choice": 215582,
+   "noul": 52145,
+   "score": 12858
+  },
+  "options_k": {
+   "2": 178692,
+   "3-8": 65512,
+   "9-16": 18084,
+   ">40": 4375,
+   "17-40": 13922
+  },
+  "questions_per_record": {
+   "10": 1484,
+   "3": 823,
+   "9": 125,
+   "1": 193005,
+   "4": 925,
+   "6": 570,
+   "2": 1167,
+   "8": 307,
+   "5": 717,
+   "7": 7421
+  },
+  "binary_true_rate_by_source": {
+   "acos": 0.0158,
+   "b1fam_bfcl_synth": 0.2949,
+   "banking77": 0.0647,
+   "boolq": 0.6202,
+   "clinc150": 0.0552,
+   "mmlu_aux": 0.2398,
+   "nq": 0.0,
+   "ragtruth": 0.4179,
+   "synthetic_c_multirecord_v1": 0.5004,
+   "synthetic_factchange": 0.5,
+   "toolace": 0.6347
+  },
+  "gold_canonical_position_uniformity": {
+   "2": {
+    "n": 89760,
+    "max_rel_dev": 0.056
+   },
+   "3": {
+    "n": 20827,
+    "max_rel_dev": 0.021
+   },
+   "4": {
+    "n": 20779,
+    "max_rel_dev": 0.016
+   },
+   "5": {
+    "n": 3604,
+    "max_rel_dev": 0.089
+   },
+   "6": {
+    "n": 3223,
+    "max_rel_dev": 0.039
+   },
+   "7": {
+    "n": 2153,
+    "max_rel_dev": 0.057
+   },
+   "8": {
+    "n": 1442,
+    "max_rel_dev": 0.129
+   },
+   "9": {
+    "n": 1152,
+    "max_rel_dev": 0.164
+   },
+   "10": {
+    "n": 3013,
+    "max_rel_dev": 0.138
+   },
+   "11": {
+    "n": 923,
+    "max_rel_dev": 0.166
+   },
+   "12": {
+    "n": 865,
+    "max_rel_dev": 0.207
+   },
+   "13": {
+    "n": 855,
+    "max_rel_dev": 0.346
+   },
+   "14": {
+    "n": 875,
+    "max_rel_dev": 0.296
+   },
+   "15": {
+    "n": 804,
+    "max_rel_dev": 0.328
+   },
+   "16": {
+    "n": 8741,
+    "max_rel_dev": 0.098
+   }
+  },
+  "tokens": {
+   "t_v2f": {
+    "p50": 450,
+    "p95": 1472,
+    "p99": 1712,
+    "max": 2048
+   },
+   "t_v3w": {
+    "p50": 455,
+    "p95": 1588,
+    "p99": 1965,
+    "max": 2048
+   }
+  },
+  "records_uncompressed_sha256": "09c0fef786fbcde0bd1ea66747dd3bf78f0924211baeb83c6c453a5625969475",
+  "manifest_uncompressed_sha256": "8cc03c36db1be5c1a328a8f99097a6284082fe1720ede75f5e2b6351b73682b1",
+  "content_map_uncompressed_sha256": "2eee8e6c2166d1ed5c0c732c989015f5b5ebee3b09cd71e6b166279b5896af81"
+ },
+ "candidates": {
+  "seed": 20261009,
+  "n_target": 300000,
+  "n_synth_target": 300000,
+  "max_reuse": 8,
+  "slack": 1.35,
+  "p1": {
+   "pointer": "data/manifests/b1-draw100k-v3.pointer.json",
+   "pointer_sha256": "0846a12dd45386ef7509f57cdfe82d0dd3efb3818956f9da7aebebfefc49db83",
+   "files": {
+    "records": "d73e12be11655ef8f102c637c6a4985362aa7b42c4a46a698f0db9249ba7ed28",
+    "manifest": "3c996698b31b5638e84ec4ce11dedad2fb6c7f828a4c0f4f03d77fa32c105f6d",
+    "content_map": "4edeb12ca23e09544c6017e561fbe8b9a06c44ab192ec15c398c7da8cdcb9c47"
+   }
+  },
+  "p2": {
+   "native": {
+    "parent": {
+     "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+     "pointer_sha256": "c65c10450fe9edef801dce6bbf24f091c1014263fd66ceb5412af23fc08ddc09",
+     "files_uncompressed_sha256": {
+      "records": "82fb395d889c473d9fbc4877b51c792438e94b53cddd54e4cf825d4603baa166",
+      "manifest": "0be33669fa077d2a2abe29ecd159aea1a27c7cc9daaf910b584755410da4d961",
+      "content_map": "d4ffd9073e0490e409a757508b2821f8108a3a9e36b2531ec3c97a94b2bc0898"
+     }
+    },
+    "supplement": {
+     "dir": "b1-supplement-seed20261006",
+     "records_uncompressed_sha256": "7441393d9b08dc686147c40ffc742cc5f0ecca913fd4fdb03e8e8c4d7aa9a751",
+     "counts_asked": {
+      "glaive_fc": 45000,
+      "banking77": 10003,
+      "clinc150": 15100,
+      "gsm8k": 7473
+     },
+     "n_kept": 72953,
+     "ids_shared_with_150k_byte_identical": 36500
+    },
+    "n_native_ids": 186453
+   },
+   "eligible": 47589
+  },
+  "p3": null,
+  "extra_quota": 0,
+  "mix": "v2",
+  "weights": {
+   "glaive_fc/tool_select": 30000,
+   "when2call/response_select": 8000,
+   "toolace/tool_select": 6500,
+   "toolace/tool_multi": 2500,
+   "b1fam_apibank/API-Bank-tool-selection": 4000,
+   "b1fam_bfcl_synth/BFCL-tool-selection": 24000,
+   "b1fam_cruxeval_synth/CRUXEval-output-choice": 30000,
+   "gsm8k/math_mcq": 4500,
+   "anli/nli": 2000,
+   "anli/claim_verification": 2500,
+   "mnli/nli": 15000,
+   "hover/claim_verification": 12000,
+   "ragtruth/hallucination_detection": 12000,
+   "acos/acos_category_sentiment": 8000,
+   "nli4ct/clinical_trial_nli": 3000,
+   "vast/stance": 8000,
+   "habermas/consensus_selection": 2400,
+   "clinc150/intent_membership": 12000,
+   "banking77/intent_membership": 5000,
+   "clinc150/intent_general": 14000,
+   "banking77/intent_banking": 10000,
+   "mmlu_aux/mcq": 5000,
+   "mmlu_aux/answer_verification": 2000,
+   "boolq/yesno_passage": 3000,
+   "hellaswag/continuation": 3000,
+   "winogrande/fill_blank": 3000,
+   "sst5/sentiment_score": 2000,
+   "humicroedit_s1/humor_score": 1500,
+   "humicroedit_s2/humor_pair": 1500,
+   "synthetic_factchange": 3000,
+   "nq/retrieval": 280
+  },
+  "no_spill": [
+   "glaive_fc/tool_select"
+  ],
+  "p4": {
+   "pool": {
+    "dir": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-pool-v2x",
+    "pointer": "data/manifests/b1-pool-v2x.pointer.json",
+    "pointer_sha256": "d0b89aa32a0efcbbee19bc1bc2ee24f93862175f81edb00978b875d89e7d5446",
+    "files": {
+     "records": "5d3546dc712b798e8e050843db45d3424fc914349b0155c05e73890f5f1b201f",
+     "manifest": "5107bbf1b98709f28a124968881d1c8a7fb0a5cff5ea961fd9e9a3c5a970d2dc",
+     "content_map": "68990dde74f534b31802e0c3f5e89e5b3ae9a212124ac1a16e3276608e5ef459"
+    }
+   },
+   "eligible": 64870
+  },
+  "v3_mix": {
+   "acos/acos_category_sentiment": 1000,
+   "anli/nli": 1000,
+   "anli/claim_verification": 3000,
+   "b1fam_apibank/API-Bank-tool-selection": 604,
+   "b1fam_bfcl_synth/BFCL-tool-selection": 2286,
+   "b1fam_cruxeval_synth/CRUXEval-output-choice": 2400,
+   "banking77/intent_banking": 6163,
+   "banking77/intent_membership": 275,
+   "boolq/yesno_passage": 4000,
+   "clinc150/intent_general": 7000,
+   "clinc150/intent_membership": 3000,
+   "synthetic_factchange": 1986,
+   "glaive_fc/tool_select": 27517,
+   "gsm8k/math_mcq": 4238,
+   "habermas/consensus_selection": 600,
+   "hellaswag/continuation": 4000,
+   "hover/claim_verification": 1400,
+   "humicroedit_s1/humor_score": 1500,
+   "humicroedit_s2/humor_pair": 1500,
+   "mmlu_aux/answer_verification": 3000,
+   "mmlu_aux/mcq": 2916,
+   "mnli/nli": 1300,
+   "nli4ct/clinical_trial_nli": 855,
+   "nq/retrieval": 817,
+   "ragtruth/hallucination_detection": 1400,
+   "sst5/sentiment_score": 2000,
+   "toolace/tool_select": 2980,
+   "toolace/tool_multi": 1146,
+   "vast/stance": 1300,
+   "when2call/response_select": 3867,
+   "winogrande/fill_blank": 4950
+  },
+  "items_per_source": {
+   "acos/acos_category_sentiment": 4391,
+   "anli/nli": 5736,
+   "anli/claim_verification": 6000,
+   "b1fam_apibank/API-Bank-tool-selection": 604,
+   "b1fam_bfcl_synth/BFCL-tool-selection": 9490,
+   "b1fam_cruxeval_synth/CRUXEval-output-choice": 11999,
+   "banking77/intent_banking": 6409,
+   "banking77/intent_membership": 3607,
+   "boolq/yesno_passage": 5452,
+   "clinc150/intent_general": 7544,
+   "clinc150/intent_membership": 9000,
+   "synthetic_factchange": 2095,
+   "glaive_fc/tool_select": 37768,
+   "gsm8k/math_mcq": 4316,
+   "habermas/consensus_selection": 1019,
+   "hellaswag/continuation": 6235,
+   "hover/claim_verification": 12000,
+   "humicroedit_s1/humor_score": 3787,
+   "humicroedit_s2/humor_pair": 2858,
+   "mmlu_aux/answer_verification": 3000,
+   "mmlu_aux/mcq": 19835,
+   "mnli/nli": 15000,
+   "nli4ct/clinical_trial_nli": 855,
+   "nq/retrieval": 6690,
+   "ragtruth/hallucination_detection": 8490,
+   "sst5/sentiment_score": 3257,
+   "toolace/tool_select": 3037,
+   "toolace/tool_multi": 1203,
+   "vast/stance": 1835,
+   "when2call/response_select": 3929,
+   "winogrande/fill_blank": 5018
+  },
+  "target_per_source": {
+   "glaive_fc/tool_select": 37550.066755674234,
+   "when2call/response_select": 10013.351134846462,
+   "toolace/tool_select": 8135.84779706275,
+   "toolace/tool_multi": 3129.172229639519,
+   "b1fam_apibank/API-Bank-tool-selection": 5006.675567423231,
+   "b1fam_bfcl_synth/BFCL-tool-selection": 30040.053404539387,
+   "b1fam_cruxeval_synth/CRUXEval-output-choice": 37550.066755674234,
+   "gsm8k/math_mcq": 5632.510013351135,
+   "anli/nli": 2503.3377837116154,
+   "anli/claim_verification": 3129.172229639519,
+   "mnli/nli": 18775.033377837117,
+   "hover/claim_verification": 15020.026702269693,
+   "ragtruth/hallucination_detection": 15020.026702269693,
+   "acos/acos_category_sentiment": 10013.351134846462,
+   "nli4ct/clinical_trial_nli": 3755.0066755674234,
+   "vast/stance": 10013.351134846462,
+   "habermas/consensus_selection": 3004.0053404539385,
+   "clinc150/intent_membership": 15020.026702269693,
+   "banking77/intent_membership": 6258.344459279038,
+   "clinc150/intent_general": 17523.364485981307,
+   "banking77/intent_banking": 12516.688918558077,
+   "mmlu_aux/mcq": 6258.344459279038,
+   "mmlu_aux/answer_verification": 2503.3377837116154,
+   "boolq/yesno_passage": 3755.0066755674234,
+   "hellaswag/continuation": 3755.0066755674234,
+   "winogrande/fill_blank": 3755.0066755674234,
+   "sst5/sentiment_score": 2503.3377837116154,
+   "humicroedit_s1/humor_score": 1877.5033377837117,
+   "humicroedit_s2/humor_pair": 1877.5033377837117,
+   "synthetic_factchange": 3755.0066755674234,
+   "nq/retrieval": 350.4672897196262
+  },
+  "variants_per_item": {
+   "glaive_fc/tool_select": 1.342210075200175,
+   "when2call/response_select": 2.7,
+   "toolace/tool_select": 2.7,
+   "toolace/tool_multi": 2.7,
+   "b1fam_apibank/API-Bank-tool-selection": 2.7,
+   "b1fam_bfcl_synth/BFCL-tool-selection": 2.7,
+   "b1fam_cruxeval_synth/CRUXEval-output-choice": 4.050000000000001,
+   "gsm8k/math_mcq": 1.7617906668266992,
+   "anli/nli": 0.5891746875890308,
+   "anli/claim_verification": 0.7040637516688918,
+   "mnli/nli": 1.6897530040053406,
+   "hover/claim_verification": 1.6897530040053408,
+   "ragtruth/hallucination_detection": 2.3883434685587854,
+   "acos/acos_category_sentiment": 2.7,
+   "nli4ct/clinical_trial_nli": 2.7,
+   "vast/stance": 2.7,
+   "habermas/consensus_selection": 2.7,
+   "clinc150/intent_membership": 2.253004005340454,
+   "banking77/intent_membership": 2.342324652072831,
+   "clinc150/intent_general": 2.7,
+   "banking77/intent_banking": 2.6365314464118277,
+   "mmlu_aux/mcq": 0.42595235795445935,
+   "mmlu_aux/answer_verification": 1.126502002670227,
+   "boolq/yesno_passage": 0.9297980579633203,
+   "hellaswag/continuation": 0.8130327204516475,
+   "winogrande/fill_blank": 1.0102150283013196,
+   "sst5/sentiment_score": 1.037613143386761,
+   "humicroedit_s1/humor_score": 0.6692974665983658,
+   "humicroedit_s2/humor_pair": 0.8868542708215574,
+   "synthetic_factchange": 2.4196940391484594,
+   "nq/retrieval": 0.07072209882234609
+  },
+  "candidates_per_source": {
+   "acos/acos_category_sentiment": 11918,
+   "anli/claim_verification": 4236,
+   "anli/nli": 2859,
+   "b1fam_apibank/API-Bank-tool-selection": 1632,
+   "b1fam_bfcl_synth/BFCL-tool-selection": 25629,
+   "b1fam_cruxeval_synth/CRUXEval-output-choice": 48574,
+   "banking77/intent_banking": 14707,
+   "banking77/intent_membership": 8468,
+   "boolq/yesno_passage": 5099,
+   "clinc150/intent_general": 16904,
+   "clinc150/intent_membership": 20309,
+   "synthetic_factchange": 4710,
+   "glaive_fc/tool_select": 44544,
+   "gsm8k/math_mcq": 6522,
+   "habermas/consensus_selection": 2751,
+   "hellaswag/continuation": 4341,
+   "hover/claim_verification": 20240,
+   "humicroedit_s1/humor_score": 2558,
+   "humicroedit_s2/humor_pair": 2187,
+   "mmlu_aux/answer_verification": 3363,
+   "mmlu_aux/mcq": 7145,
+   "mnli/nli": 25339,
+   "nli4ct/clinical_trial_nli": 2284,
+   "nq/retrieval": 419,
+   "ragtruth/hallucination_detection": 20330,
+   "sst5/sentiment_score": 3370,
+   "toolace/tool_select": 7019,
+   "toolace/tool_multi": 3252,
+   "vast/stance": 4962,
+   "when2call/response_select": 9279,
+   "winogrande/fill_blank": 4356
+  },
+  "ops": {
+   "instr_frame": 593216,
+   "qid_rename": 205784,
+   "ids:opaque": 28926,
+   "ids:digits": 28440,
+   "state_rename": 29568,
+   "ids:digits1": 29007,
+   "k_shrink": 40746,
+   "ids:letters_lower": 28605,
+   "instr_swap": 45792,
+   "state_nest": 29240,
+   "ids:letters": 29880,
+   "ids:keep": 26133,
+   "state_text": 5568,
+   "ids:words": 28445,
+   "ids:option_k": 28272,
+   "state_list": 5528,
+   "dedupe_options": 2159,
+   "k_expand": 9032,
+   "state_header": 2052,
+   "state_wrap_string": 5000,
+   "type_to_choice": 8306,
+   "scale_reverse": 1714,
+   "type_to_noul": 6153
+  },
+  "checker": {
+   "reasons": {
+    "P2:glaive_fc": {
+     "dup_or_cohort_item": 29986,
+     "dup_text_other_item": 4592,
+     "kept": 10251,
+     "cohort_text": 118,
+     "index_item_text": 53
+    },
+    "P2:banking77": {
+     "dup_or_cohort_item": 7731,
+     "cohort_id_or_item": 516,
+     "kept": 246,
+     "index_item_text": 11,
+     "dup_text_other_item": 1,
+     "source_not_in_mix": 47
+    },
+    "P2:clinc150": {
+     "dup_or_cohort_item": 11717,
+     "cohort_id_or_item": 1179,
+     "kept": 544,
+     "dup_text_other_item": 2,
+     "source_not_in_mix": 124
+    },
+    "P2:gsm8k": {
+     "dup_or_cohort_item": 5744,
+     "cohort_id_or_item": 164,
+     "kept": 78,
+     "index_item_text": 20,
+     "source_not_in_mix": 14
+    },
+    "P2:mmlu_aux": {
+     "dup_or_cohort_item": 15944,
+     "kept": 16919,
+     "index_item_text": 115,
+     "index_text": 4,
+     "dup_text_other_item": 18,
+     "source_not_in_mix": 146
+    },
+    "P2:anli": {
+     "dup_or_cohort_item": 5154,
+     "kept": 4736,
+     "dup_text_other_item": 104,
+     "index_item_text": 6,
+     "source_not_in_mix": 84
+    },
+    "P2:hellaswag": {
+     "kept": 2235,
+     "dup_or_cohort_item": 6749,
+     "index_item_text": 16,
+     "source_not_in_mix": 144
+    },
+    "P2:winogrande": {
+     "dup_or_cohort_item": 6932,
+     "kept": 68,
+     "source_not_in_mix": 163
+    },
+    "P2:sst5": {
+     "dup_or_cohort_item": 2742,
+     "kept": 1257,
+     "dup_text_other_item": 1,
+     "source_not_in_mix": 154
+    },
+    "P2:nq": {
+     "dup_or_cohort_item": 4127,
+     "kept": 5873
+    },
+    "P2:boolq": {
+     "dup_or_cohort_item": 6547,
+     "kept": 1452,
+     "index_item_text": 1,
+     "source_not_in_mix": 28
+    },
+    "P2:toolace": {
+     "dup_or_cohort_item": 5867,
+     "kept": 114,
+     "index_item_text": 14,
+     "dup_text_other_item": 5
+    },
+    "P2:when2call": {
+     "dup_or_cohort_item": 4744,
+     "index_item_text": 694,
+     "kept": 62
+    },
+    "P2:humicroedit_s1": {
+     "dup_or_cohort_item": 2711,
+     "kept": 2287,
+     "dup_text_other_item": 2
+    },
+    "P2:humicroedit_s2": {
+     "kept": 1358,
+     "dup_or_cohort_item": 3142
+    },
+    "P2:mixed": {
+     "source_not_in_mix": 7596
+    },
+    "P2:synthetic_factchange": {
+     "dup_or_cohort_item": 2164,
+     "dup_text_other_item": 727,
+     "kept": 232,
+     "dup_content": 432
+    },
+    "P4:acos/acos_category_sentiment": {
+     "kept": 12589,
+     "same_record_in_p1_p2": 1000,
+     "dup_content": 1
+    },
+    "P4:anli/claim_verification": {
+     "kept": 5132,
+     "same_record_in_p1_p2": 3000,
+     "dup_content": 231
+    },
+    "P4:b1fam_apibank/API-Bank-tool-selection": {
+     "same_record_in_p1_p2": 604
+    },
+    "P4:b1fam_bfcl_synth/BFCL-tool-selection": {
+     "same_record_in_p1_p2": 2286,
+     "kept": 26664,
+     "dup_content": 684
+    },
+    "P4:b1fam_cruxeval_synth/CRUXEval-output-choice": {
+     "same_record_in_p1_p2": 2400,
+     "kept": 48461,
+     "dup_content": 577
+    },
+    "P4:banking77/intent_membership": {
+     "kept": 11156,
+     "same_record_in_p1_p2": 167,
+     "dup_text_other_item": 1
+    },
+    "P4:clinc150/intent_membership": {
+     "kept": 19567,
+     "same_record_in_p1_p2": 2999,
+     "dup_text_other_item": 1
+    },
+    "P4:habermas/consensus_selection": {
+     "same_record_in_p1_p2": 600,
+     "kept": 1561,
+     "dup_content": 3
+    },
+    "P4:hover/claim_verification": {
+     "kept": 28485,
+     "same_record_in_p1_p2": 1400,
+     "dup_content": 2075
+    },
+    "P4:mnli/nli": {
+     "kept": 36862,
+     "same_record_in_p1_p2": 1300,
+     "dup_content": 285
+    },
+    "P4:nli4ct/clinical_trial_nli": {
+     "same_record_in_p1_p2": 855
+    },
+    "P4:ragtruth/hallucination_detection": {
+     "kept": 24060,
+     "same_record_in_p1_p2": 1400,
+     "dup_content": 1359
+    },
+    "P4:vast/stance": {
+     "same_record_in_p1_p2": 1300,
+     "kept": 1980,
+     "dup_content": 13
+    },
+    "P1:acos/acos_category_sentiment": {
+     "kept": 2720
+    },
+    "P1:anli/claim_verification": {
+     "kept": 2104,
+     "dup_content": 241
+    },
+    "P1:anli/nli": {
+     "kept": 526,
+     "dup_content": 158
+    },
+    "P1:b1fam_apibank/API-Bank-tool-selection": {
+     "kept": 1632,
+     "dup_content": 13
+    },
+    "P1:b1fam_bfcl_synth/BFCL-tool-selection": {
+     "kept": 6169,
+     "dup_content": 225
+    },
+    "P1:b1fam_cruxeval_synth/CRUXEval-output-choice": {
+     "kept": 9712,
+     "dup_content": 127
+    },
+    "P1:banking77/intent_banking": {
+     "kept": 14707,
+     "dup_content": 4698
+    },
+    "P1:banking77/intent_membership": {
+     "kept": 644
+    },
+    "P1:boolq/yesno_passage": {
+     "kept": 3741,
+     "dup_content": 187
+    },
+    "P1:clinc150/intent_general": {
+     "kept": 16621,
+     "dup_content": 6937
+    },
+    "P1:clinc150/intent_membership": {
+     "kept": 6742
+    },
+    "P1:synthetic_factchange": {
+     "kept": 4587,
+     "dup_content": 1019
+    },
+    "P1:glaive_fc/tool_select": {
+     "kept": 34771,
+     "dup_text_other_item": 571,
+     "dup_content": 6220,
+     "cohort_text": 19
+    },
+    "P1:gsm8k/math_mcq": {
+     "dup_content": 3240,
+     "kept": 6397
+    },
+    "P1:habermas/consensus_selection": {
+     "kept": 1609,
+     "dup_content": 6
+    },
+    "P1:hellaswag/continuation": {
+     "kept": 2781,
+     "dup_content": 1600
+    },
+    "P1:hover/claim_verification": {
+     "dup_content": 255,
+     "kept": 2355
+    },
+    "P1:humicroedit_s1/humor_score": {
+     "kept": 1023,
+     "dup_content": 55
+    },
+    "P1:humicroedit_s2/humor_pair": {
+     "kept": 1143,
+     "dup_content": 593
+    },
+    "P1:mmlu_aux/answer_verification": {
+     "kept": 3363
+    },
+    "P1:mmlu_aux/mcq": {
+     "kept": 1094,
+     "dup_content": 549
+    },
+    "P1:mnli/nli": {
+     "kept": 2177,
+     "dup_content": 21
+    },
+    "P1:nli4ct/clinical_trial_nli": {
+     "kept": 2284,
+     "dup_content": 7
+    },
+    "P1:nq/retrieval": {
+     "kept": 52,
+     "dup_content": 24
+    },
+    "P1:ragtruth/hallucination_detection": {
+     "kept": 3360,
+     "dup_content": 245
+    },
+    "P1:sst5/sentiment_score": {
+     "kept": 2069,
+     "dup_content": 119
+    },
+    "P1:toolace/tool_select": {
+     "kept": 6889,
+     "dup_content": 3526,
+     "dup_text_other_item": 5,
+     "cohort_text": 3
+    },
+    "P1:toolace/tool_multi": {
+     "kept": 3102,
+     "dup_content": 2
+    },
+    "P1:vast/stance": {
+     "kept": 3517,
+     "dup_content": 34
+    },
+    "P1:when2call/response_select": {
+     "kept": 9139,
+     "dup_content": 3962
+    },
+    "P1:winogrande/fill_blank": {
+     "kept": 4301,
+     "dup_content": 2160
+    },
+    "P2:glaive_fc/tool_select": {
+     "kept": 9773,
+     "dup_content": 12005,
+     "dup_text_other_item": 184,
+     "cohort_text": 5
+    },
+    "P2:banking77/intent_banking": {
+     "dup_content": 1947
+    },
+    "P2:clinc150/intent_general": {
+     "dup_content": 3585,
+     "kept": 283
+    },
+    "P2:gsm8k/math_mcq": {
+     "kept": 125,
+     "dup_content": 45
+    },
+    "P2:mmlu_aux/mcq": {
+     "kept": 6051,
+     "dup_content": 3567
+    },
+    "P2:anli/nli": {
+     "kept": 2333,
+     "dup_content": 1413
+    },
+    "P2:hellaswag/continuation": {
+     "kept": 1560,
+     "dup_content": 688
+    },
+    "P2:winogrande/fill_blank": {
+     "dup_content": 42,
+     "kept": 55
+    },
+    "P2:sst5/sentiment_score": {
+     "kept": 1301,
+     "dup_content": 73
+    },
+    "P2:nq/retrieval": {
+     "kept": 367,
+     "dup_content": 178
+    },
+    "P2:boolq/yesno_passage": {
+     "kept": 1358,
+     "dup_content": 74
+    },
+    "P2:toolace/tool_select": {
+     "dup_content": 77,
+     "kept": 130
+    },
+    "P2:toolace/tool_multi": {
+     "kept": 150
+    },
+    "P2:when2call/response_select": {
+     "kept": 140,
+     "dup_content": 68
+    },
+    "P2:humicroedit_s1/humor_score": {
+     "kept": 1535,
+     "dup_content": 86
+    },
+    "P2:humicroedit_s2/humor_pair": {
+     "kept": 1044,
+     "dup_content": 548
+    }
+   },
+   "index_item_text_examples": [
+    [
+     "m2:glaive_fc:17210",
+     "state/messages/[]/content",
+     "I'm looking for some music to listen to. Can you help me find something?"
+    ],
+    [
+     "m2:glaive_fc:62328",
+     "state/messages/[]/content",
+     "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+    ],
+    [
+     "m2:glaive_fc:58330",
+     "state/dialogue/[]/content",
+     "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+    ],
+    [
+     "m2:glaive_fc:7647",
+     "state/conversation/[]/content",
+     "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+    ],
+    [
+     "m2:glaive_fc:12917",
+     "state/dialogue/[]/content",
+     "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+    ],
+    [
+     "m2:glaive_fc:76426",
+     "state/dialogue/[]/content",
+     "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+    ],
+    [
+     "m2:glaive_fc:97078~inj:d1a:urgency",
+     "state/dialogue/[]/content",
+     "Hi, I am looking for a job in the tech industry in San Francisco. Can you help me find some options?"
+    ],
+    [
+     "m2:glaive_fc:110131",
+     "state/dialogue/[]/content",
+     "I'm in New York and I'm craving for some Italian food. Can you find a restaurant for me?"
+    ],
+    [
+     "m2:glaive_fc:19248",
+     "state/dialogue/[]/content",
+     "I'm in New York and I'm craving Italian food. Can you find a restaurant for me?"
+    ],
+    [
+     "m2:glaive_fc:108199",
+     "state/conversation/[]/content",
+     "I am looking for some music to listen to. Can you help me find something?"
+    ]
+   ],
+   "guard": {
+    "manifests": {
+     "harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+     "harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+    },
+    "n_ids": 47249,
+    "n_hashes": 48415,
+    "note": "",
+    "content_index": {
+     "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\index-content-hashes-v1.txt.gz",
+     "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+     "n": 24150
+    },
+    "pin": {
+     "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+     "n_hashes": 24150,
+     "n_rows": 24265,
+     "builder": "train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)"
+    }
+   },
+   "exclusions": {
+    "v2": {
+     "cohort": "m2-dev-cohort-v2",
+     "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 1670,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "v3": {
+     "cohort": "m2-dev-cohort-v3",
+     "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 39872,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "heldout_150k_dropped": [
+     "m2:mmlu_aux:21118",
+     "m2:mmlu_aux:39640",
+     "m2:mmlu_aux:39643"
+    ]
+   }
+  },
+  "generator_spec": {
+   "name": "b_schema_synth",
+   "task_family": "schema_permutation",
+   "targets": [
+    "schema_permutation",
+    "field_order",
+    "prompt_paraphrase",
+    "option_id_style"
+   ]
+  },
+  "candidates_uncompressed_sha256": "84179da7ce2cbccee1e8644ace39f1a5aec5d9568abf82f18b878d7454ad40c1",
+  "extra_appended": {
+   "dir": "C:/Users/apumu/research/CHLabs/ssdm-data/c-multirecord-synth-100k-v1/train_set",
+   "pointer": "C:/Users/apumu/research/CHLabs/ssdm-wt/agent-c-multirecord-synth/data/manifests/c-multirecord-synth-100k-v1.pointer.json",
+   "pointer_sha256": "ca1d7a7e216686be66c68f043d4e676cccf2c42c26e6c4ffa6e4beab6ad37469",
+   "files": {
+    "records": "45b4fa45b194608ab8457a9d0276f7f30c14f98668d0546365d195da808505d0",
+    "manifest": "ccc9c4a1f3114b211f6281326f02f1834169bf09684b31c2d031803427350deb",
+    "content_map": "c894b4f90eaf2c615e8b1abf7e6bebb55d2dfe2df71a66e567475bc9ae8f06f3"
+   },
+   "quota": 12000,
+   "limit": 20000,
+   "n_candidates": 20000,
+   "reasons": {
+    "P3": {
+     "kept": 20000
+    }
+   },
+   "candidates_extra_uncompressed_sha256": "75aa8044247965b0b1e332c9db1f8c481cd0faa1dc5ee6aa35818a4389f751a6"
+  }
+ }
+}

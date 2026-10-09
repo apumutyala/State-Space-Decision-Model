@@ -1,0 +1,145 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/b1-draw100k-v3/records.jsonl.gz",
+ "n_rows": 100000,
+ "hits": 6776,
+ "by_template": {
+  "d1a/authority/injected_row": 1153,
+  "d1a/urgency/injected_row": 1153,
+  "d1a/system_note/injected_row": 1117,
+  "d1a/fake_correction/injected_row": 1094,
+  "train_hijack/operator_override/injected_row": 392,
+  "train_hijack/disregard_task/injected_row": 387,
+  "train_hijack/data_close/injected_row": 386,
+  "train_hijack/predecided/injected_row": 385,
+  "train_hijack/admin_header/injected_row": 359,
+  "train_hijack/grader_note/injected_row": 350
+ },
+ "examples": [
+  [
+   "m2:anli:0084573c-70bf-454a-9285-a035d5eb3dc7~inj:hijack:data_close",
+   "injected_row",
+   "train_hijack",
+   "data_close"
+  ],
+  [
+   "m2:anli:00a186f5-1b85-46ab-95e9-c17e650a01d4~inj:d1a:fake_correction",
+   "injected_row",
+   "d1a",
+   "fake_correction"
+  ],
+  [
+   "m2:anli:01298d9e-afae-48db-858b-e3b5e605f10d~inj:d1a:fake_correction",
+   "injected_row",
+   "d1a",
+   "fake_correction"
+  ],
+  [
+   "m2:anli:02f5130c-20b7-4ae1-98b2-43fc235a8fe3~inj:d1a:fake_correction",
+   "injected_row",
+   "d1a",
+   "fake_correction"
+  ],
+  [
+   "m2:anli:04cb7c3f-cca1-4041-88a7-e1bc0579116d~inj:d1a:fake_correction",
+   "injected_row",
+   "d1a",
+   "fake_correction"
+  ],
+  [
+   "m2:anli:07c3e3fa-e0d3-4eff-acfd-55ba55fdcf2a~inj:hijack:disregard_task",
+   "injected_row",
+   "train_hijack",
+   "disregard_task"
+  ],
+  [
+   "m2:anli:0b03085c-cd37-4337-bc21-c1168e7dab72~inj:hijack:disregard_task",
+   "injected_row",
+   "train_hijack",
+   "disregard_task"
+  ],
+  [
+   "m2:anli:0ce3fc87-8737-4069-9041-916d41e063d3~inj:hijack:admin_header",
+   "injected_row",
+   "train_hijack",
+   "admin_header"
+  ],
+  [
+   "m2:anli:0e607ab2-a15a-49b4-a621-0c29d16741cd~inj:d1a:authority",
+   "injected_row",
+   "d1a",
+   "authority"
+  ],
+  [
+   "m2:anli:0f123ca1-36d7-4300-a330-7597719c6d1b~inj:d1a:system_note",
+   "injected_row",
+   "d1a",
+   "system_note"
+  ]
+ ],
+ "filter": {
+  "template_fragments_sha256": "e670c892b0fcef46a331d1087997da43be718ecef4d7059f01b9212f1cfab9e5",
+  "n_6grams": 255,
+  "n_exact_fragments": 9,
+  "heldout_v1": {
+   "source": "stack/clef/safety-heldout @f273618 analysis/safety_heldout/heldout_v1_templates.json (blob 1af1d82b)",
+   "sha256": "25df1dcf91e7872ff5501b8b9a6ea7a1346594d7213cd03ffe350a41727d8fa5"
+  },
+  "sets": {
+   "d1a": [
+    "authority",
+    "fake_correction",
+    "system_note",
+    "urgency"
+   ],
+   "d1b": [
+    "cutoff_window",
+    "dedup_notice",
+    "ledger_settled",
+    "peer_practice",
+    "planner_decision",
+    "policy_update",
+    "sender_followup",
+    "soft_framing"
+   ],
+   "hijack": [
+    "authority_override",
+    "chatml_spoof",
+    "completion_fake",
+    "header_spoof",
+    "ignore_previous"
+   ],
+   "train_hijack": [
+    "admin_header",
+    "data_close",
+    "disregard_task",
+    "grader_note",
+    "operator_override",
+    "predecided"
+   ],
+   "heldout_v1": [
+    "H01_persona",
+    "H02_tool_result",
+    "H03_transcript",
+    "H04_info_block",
+    "H05_combined_escape",
+    "H06_base64",
+    "H07_zero_width",
+    "H08_homoglyph",
+    "H09_spanish",
+    "H10_fewshot",
+    "H11_prefix",
+    "H12_split",
+    "S01_ordinal",
+    "S02_table",
+    "S03_tool_result",
+    "S04_quoted_reply",
+    "S05_html_comment",
+    "S06_persona",
+    "S07_abstain",
+    "S08_french",
+    "S09_zero_width"
+   ]
+  }
+ },
+ "pass": false
+}

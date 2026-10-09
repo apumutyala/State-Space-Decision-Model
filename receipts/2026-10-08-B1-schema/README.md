@@ -148,3 +148,77 @@ Targets are the v3 draw's mix times 3, with short pools spilling into the others
   re-styling ids and reordering fields keep the same text.
 - MinHash near-duplicates (Jaccard 0.8 or more, 10% sample): 1.8% of rows have a near-duplicate from another item. For
   the base 100k v3 draw (30% sample) the figure is 4.7%. Both are dominated by shared intent and tool catalogs.
+
+# bschema-draw206k-v2 (Agent A's mix change + the v1 review + item-level mix + attack-template exclusion)
+
+**Takeaway.** 206,544 records = **280,585 trained items** (one per question, as `train.run_cell.cell_items`). The draw is
+sized by unique source items, not by a 300k row target. The review said "add NEW items instead of more variants", so
+every key has at most 2 variants per item (3 for keys with 10k or more items). Every remaining guard-family item is
+used.
+
+- Every check passes. Agent A's `train/attack_guard.py` had not landed when this was built.
+- Binary items: 42.8% yes (no-share 57.2%, cap 60%). v1 was 18.2% yes.
+- Membership / verify views: 4.1% of items. v1 had 29%.
+- glaive: 10.3% of items.
+
+## Build
+- Pools:
+  - P1: b1-draw100k-v3.
+  - P2: the 150k set + supplement.
+  - P4: `b1-pool-v2x` (pointer `data/manifests/b1-pool-v2x.pointer.json`, 84,183 rows). It is `data.b1 draw`, no
+    backfill, with:
+    - every remaining ACOS (4,391), NLI4CT (855), VAST (1,835 posts) and Habermas (1,019) item;
+    - HoVer 12k, RAGTruth 8.5k, MNLI 15k;
+    - CLINC / BANKING member views 12.5k, ANLI-claim views 6k;
+    - from `b1-families-x` (`scripts/b1_families_more.py`, unchanged b1-families @a4bc718 builder): BFCL-synthetic 9,490,
+      CRUXEval-synthetic 11,999 (executed answers) and API-Bank train 604. API-Bank has only 604 usable rows: the other
+      1,680 train dialogues render over 2,048 tokens.
+  - P3: Agent C's `c-multirecord-synth-100k-v1` (pointer in C's worktree, records sha 45b4fa45...). The first 20,000
+    rows were appended with the same checks (`extra` stage). 17,031 of those fit in 2,048 tokens and 7,000 were drawn,
+    giving 17.5% of items.
+- Builder: `data/b_schema.py --mix v2` (`MIX_V2` weights read as ITEM shares, `plan_items_v2`), at 34693a9.
+  - Candidates: 339,306 (+20,000 C).
+  - Dropped: 10,026 over 2,048 tokens; 46,521 by the per-item variant cap.
+  - Every candidate was token-checked under v2f and v3w with the trainer at 9c3e435.
+- Review fixes, each with tests in `tests/test_b_schema.py`:
+  - choice to noul only for yes/no, true/false and correct/incorrect pairs. v1's 1/0 and Y/N pairs made fake true/false
+    questions.
+  - Option texts that name ids ("A and C") or aggregate options block the id restyle.
+  - Digit ids are zero-padded when K > 10.
+  - Options that duplicate the gold's text are deduplicated (1,579 rows).
+  - State keys named in instructions keep the state unchanged.
+- Item-level constraints, applied to what availability actually allows:
+  - membership / verify views at most 5% of items combined;
+  - binary no-share at most 60%, by scaling down no-heavy binary keys, never below floors for ACOS / BFCL / MNLI /
+    NLI4CT;
+  - glaive at most its weight share.
+- Attack templates (`data/attack_filter.py`, operator rule): injected rows (`aug.injection` / `~inj:`) are dropped. So
+  is any 6-gram, or exact 4-5-word fragment, of D1-A, D1-B, the 5 official hijack templates, the 6 training-only hijack
+  templates, and heldout_v1 (21 templates; @f273618 copy sha 25df1dcf...).
+  - Draw: 0 hits.
+  - v1: 0 hits.
+  - b1-draw100k-v3: 6,776 injected rows, which is what the filter removes from any base:
+    - d1a: authority 1,153, urgency 1,153, system_note 1,117, fake_correction 1,094;
+    - training hijack: operator_override 392, disregard_task 387, data_close 386, predecided 385, admin_header 359,
+      grader_note 350.
+- Files (outside git): `ssdm-data/m2/build/bschema-draw206k-v2/`.
+  - Pointer: `data/manifests/bschema-draw206k-v2.pointer.json` (records 09c0fef7..., manifest 8cc03c36..., content
+    2eee8e6c...).
+  - Raw gz: records 45bdb602..., manifest b210d538..., content 01c7e9fe...
+
+## Checks (all PASS)
+- `exclusion-check.json`: b1_check, max item reuse 8. Observed max is 3 per item.
+- `generator-specs.json`: 38 specs, including C's family.
+- `trainer-draw.json`: `train_set.draw` at n 24k plus `heldout_gate` over all 206,544 rows (0 D1-B hits).
+- `attack-filter.json`: 0 hits.
+- `audit.json`:
+  - 139,100 source items; 59% of rows share an item;
+  - exact key-free duplicates across items: 0;
+  - MinHash cross-item near-duplicates: 3.5% of sampled rows.
+- Tokens: v2f p50 450 / p95 1,472 / max 2,048; v3w p50 455 / p95 1,588 / max 2,048.
+
+## Binary balance (`binary-balance.json`, `binary-balance-index-dev.json`)
+- Index DEV binary questions are 8.7% yes, dominated by ACOS (31% of Index binary items, 0.5% yes) and ToolRet /
+  BRIGHT per-candidate questions. Training stays at 42.8% yes overall, with each family at its natural rate.
+- Open conflict: ACOS is 98.6% "no", so the 60% cap holds it at 2.5% of items (704 records) despite the review's
+  "raise ACOS". Raising ACOS needs a looser no-share cap (`MAX_NO_SHARE`) or a higher `FLOOR_V2`.

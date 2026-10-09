@@ -1,0 +1,398 @@
+{
+ "seed": 20261006,
+ "built_utc": "2026-10-08T23:25:29Z",
+ "refused": {
+  "musr": {
+   "catalog": 32,
+   "status": "refused: heldout-draw-v1 FROZEN",
+   "error": "generator 'b1fam_musr' targets frozen held-out benchmark(s) [32]"
+  },
+  "sata": {
+   "catalog": 33,
+   "status": "refused: heldout-draw-v1 FROZEN",
+   "error": "generator 'b1fam_sata' targets frozen held-out benchmark(s) [33]"
+  },
+  "cladder": {
+   "catalog": 44,
+   "status": "refused: heldout-draw-v1 FROZEN",
+   "error": "generator 'b1fam_cladder' targets frozen held-out benchmark(s) [44]"
+  }
+ },
+ "guards": {
+  "cohort_v3": {
+   "cohort": "m2-dev-cohort-v3",
+   "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+   "n": {
+    "dev": 835,
+    "calibration": 1000,
+    "retention": 39872,
+    "steer_dev": 1800,
+    "steer_gate": 1000
+   }
+  },
+  "split_guard": {
+   "manifests": {
+    "harness/manifests/dev-manifest.jsonl.gz": "26cd6bc0194efdb7a344b9313909483ad0bc9ab739beb26cbae698fc980b964a",
+    "harness/manifests/test-manifest.jsonl.gz": "8de5aaed8a3fad0a3e58996e273e66e56ed7aa51d0e8ae5a38dc53235ed5155a"
+   },
+   "n_ids": 47249,
+   "n_hashes": 48415,
+   "note": "",
+   "content_index": {
+    "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\index-content-hashes-v1.txt.gz",
+    "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+    "n": 24150
+   },
+   "pin": {
+    "sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+    "n_hashes": 24150,
+    "n_rows": 24265,
+    "builder": "train.guard.build_content_index (harness dev + test manifests, local 0.2.1 suite through the kit)"
+   }
+  },
+  "fingerprint": {
+   "version": "ssdm-dedup-v3",
+   "rows": 155390,
+   "npz_sha256": "592dd7bc9a921147e22f383fa9b805356aa801f3223b443e8100a154c4c1818f",
+   "suite_files_uncompressed_sha256": {
+    "selected-rows.jsonl.gz": "b2b56d6fb636837ca469e689087bdbf373dda8de7638aa2da6793e6eda0792d5",
+    "added-rows.jsonl.gz": "7429f3c9cdddb772c1cfc42bb2a45e8516b0032152b746e6929f1c8b52f4ce89"
+   }
+  },
+  "family_overlap": {
+   "api_bank": {
+    "family": "api_bank",
+    "eval_rows": 508,
+    "n": 13,
+    "min_chars": 24,
+    "exact_texts": 1343,
+    "ngrams": 4648,
+    "boilerplate_ngrams_ignored": 0,
+    "boilerplate_exact_ignored": 0,
+    "boilerplate_rule": "in > max(2, 5% of eval rows)"
+   },
+   "bfcl": {
+    "family": "bfcl",
+    "eval_rows": 1694,
+    "n": 13,
+    "min_chars": 24,
+    "exact_texts": 1655,
+    "ngrams": 13868,
+    "boilerplate_ngrams_ignored": 0,
+    "boilerplate_exact_ignored": 0,
+    "boilerplate_rule": "in > max(2, 5% of eval rows)"
+   },
+   "cruxeval": {
+    "family": "cruxeval",
+    "eval_rows": 570,
+    "n": 13,
+    "min_chars": 24,
+    "exact_texts": 646,
+    "ngrams": 5490,
+    "boilerplate_ngrams_ignored": 0,
+    "boilerplate_exact_ignored": 0,
+    "boilerplate_rule": "in > max(2, 5% of eval rows)"
+   }
+  }
+ },
+ "families": {
+  "api_bank": {
+   "index_family": "API-Bank-tool-selection",
+   "catalog": 3,
+   "provenance": "train-split",
+   "source": "b1fam_apibank",
+   "n_candidates": 2741,
+   "n_records": 2284,
+   "drop_rate": 0.1667,
+   "drops": {
+    "fp_contain": 144,
+    "dropped": 457,
+    "fp_edit": 278,
+    "fp_exact": 125,
+    "fp_minhash": 207,
+    "fp_ngram13": 9,
+    "family_overlap": 28
+   },
+   "context_overlap": {
+    "context_edit": 2095,
+    "context_exact": 485,
+    "context_minhash": 1134,
+    "context_contain": 252,
+    "context_ngram13": 149
+   },
+   "drop_examples": [
+    {
+     "id": "m2:b1fam_apibank:lv1-343",
+     "why": [
+      "fp_contain"
+     ]
+    },
+    {
+     "id": "m2:b1fam_apibank:lv1-2427",
+     "why": [
+      "fp_edit"
+     ]
+    },
+    {
+     "id": "m2:b1fam_apibank:lv1-2961",
+     "why": [
+      "fp_exact",
+      "fp_minhash",
+      "fp_edit"
+     ]
+    },
+    {
+     "id": "m2:b1fam_apibank:lv1-2671",
+     "why": [
+      "fp_ngram13",
+      "fp_contain",
+      "family_overlap"
+     ]
+    },
+    {
+     "id": "m2:b1fam_apibank:lv1-1237",
+     "why": [
+      "fp_exact",
+      "fp_minhash",
+      "fp_edit",
+      "fp_contain",
+      "family_overlap"
+     ]
+    }
+   ],
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\b1-families-x\\api_bank.jsonl.gz",
+   "sha256_gz": "57242564b8ffdca9fccb078cad8baf8d4ac0308168e289638b30fe4153cfbfc5",
+   "sha256_uncompressed": "335bbf83ba4b737d912b6c601e515f8c32d94e1a72286faf8f9aee87fd568a9a",
+   "manifest": "data/manifests/b1-families-x/api_bank.manifest.jsonl.gz",
+   "manifest_sha256": "34d569787ffcc06a307f9874f6f7d23c917d324e56e8982431dc282bf8c0e34b",
+   "gold_pos": {
+    "0": 303,
+    "1": 285,
+    "2": 239,
+    "3": 261,
+    "4": 190,
+    "5": 172,
+    "6": 175,
+    "7": 138,
+    "8": 138,
+    "9": 105,
+    "10": 91,
+    "11": 70,
+    "12": 48,
+    "13": 43,
+    "14": 13,
+    "15": 13
+   },
+   "options_or_candidates": {
+    "4": 188,
+    "6": 185,
+    "7": 183,
+    "8": 192,
+    "9": 199,
+    "10": 215,
+    "11": 179,
+    "12": 212,
+    "13": 190,
+    "14": 169,
+    "15": 200,
+    "16": 172
+   },
+   "source_detail": {
+    "hf": "liminghao1630/API-Bank",
+    "revision": "12e8158b7628c168f07e8f31fbbe3445e99f44cf",
+    "files": {
+     "lv1-api-train.json": "df55440a51e1ed86c261b3c1be1e636ac41a0f337eb3d3c23c7f1c8d5ba8154e"
+    },
+    "split": "training-data (train)"
+   }
+  },
+  "bfcl": {
+   "index_family": "BFCL-tool-selection",
+   "catalog": 1,
+   "provenance": "synthetic",
+   "source": "b1fam_bfcl_synth",
+   "n_candidates": 11500,
+   "n_records": 10000,
+   "drop_rate": 0.0221,
+   "drops": {
+    "fp_contain": 212,
+    "dropped": 226,
+    "fp_edit": 14,
+    "fp_exact": 2,
+    "fp_minhash": 2,
+    "not_needed_target_reached": 1274
+   },
+   "context_overlap": {
+    "context_minhash": 10000,
+    "context_exact": 3285,
+    "context_ngram13": 5950,
+    "context_edit": 4185
+   },
+   "drop_examples": [
+    {
+     "id": "m2:b1fam_bfcl_synth:20261006-4",
+     "why": [
+      "fp_contain"
+     ]
+    },
+    {
+     "id": "m2:b1fam_bfcl_synth:20261006-50",
+     "why": [
+      "fp_edit"
+     ]
+    },
+    {
+     "id": "m2:b1fam_bfcl_synth:20261006-116",
+     "why": [
+      "fp_edit"
+     ]
+    },
+    {
+     "id": "m2:b1fam_bfcl_synth:20261006-206",
+     "why": [
+      "fp_contain"
+     ]
+    },
+    {
+     "id": "m2:b1fam_bfcl_synth:20261006-287",
+     "why": [
+      "fp_contain"
+     ]
+    }
+   ],
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\b1-families-x\\bfcl.jsonl.gz",
+   "sha256_gz": "c2da8d00feffc709149d83228f8bf80dae0192cad59e2f8528be232ada871d93",
+   "sha256_uncompressed": "af62a1b0db98d2b8d163146c646387b2724431bd3a76c4433a1082c46305b20a",
+   "manifest": "data/manifests/b1-families-x/bfcl.manifest.jsonl.gz",
+   "manifest_sha256": "377240b85f5fae365c456a49eb453bd9487222a60639dd7151b367c43303bbac",
+   "gold_pos": {
+    "0": 4504,
+    "1": 2065,
+    "2": 1395,
+    "3": 823,
+    "4": 522,
+    "5": 290,
+    "6": 144,
+    "7": 104,
+    "8": 60,
+    "9": 34,
+    "10": 11,
+    "11": 16,
+    "12": 9,
+    "13": 4,
+    "14": 13,
+    "15": 6
+   },
+   "options_or_candidates": {
+    "1": 2397,
+    "2": 1435,
+    "3": 1718,
+    "4": 1194,
+    "5": 1171,
+    "6": 715,
+    "7": 423,
+    "8": 302,
+    "9": 217,
+    "10": 217,
+    "12": 103,
+    "16": 108
+   }
+  },
+  "cruxeval": {
+   "index_family": "CRUXEval-output-choice",
+   "catalog": 43,
+   "provenance": "synthetic",
+   "source": "b1fam_cruxeval_synth",
+   "n_candidates": 18000,
+   "n_records": 12000,
+   "drop_rate": 0.1749,
+   "drops": {
+    "fp_contain": 2544,
+    "dropped": 2544,
+    "not_needed_target_reached": 3456
+   },
+   "context_overlap": {
+    "context_exact": 8191,
+    "context_minhash": 9937,
+    "context_edit": 6456,
+    "context_contain": 14,
+    "context_ngram13": 4
+   },
+   "drop_examples": [
+    {
+     "id": "m2:b1fam_cruxeval_synth:20261006-8",
+     "why": [
+      "fp_contain"
+     ]
+    },
+    {
+     "id": "m2:b1fam_cruxeval_synth:20261006-10",
+     "why": [
+      "fp_contain"
+     ]
+    },
+    {
+     "id": "m2:b1fam_cruxeval_synth:20261006-13",
+     "why": [
+      "fp_contain"
+     ]
+    },
+    {
+     "id": "m2:b1fam_cruxeval_synth:20261006-19",
+     "why": [
+      "fp_contain"
+     ]
+    },
+    {
+     "id": "m2:b1fam_cruxeval_synth:20261006-37",
+     "why": [
+      "fp_contain"
+     ]
+    }
+   ],
+   "path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\b1-families-x\\cruxeval.jsonl.gz",
+   "sha256_gz": "adc77f4b856c18b19020def0fb39c9cc933d9fda3d917c20f7d09047825199e4",
+   "sha256_uncompressed": "b38db94a764b9ae65ca35c78337817dfe504c085bdf1f3ef1c78e9d4db82679f",
+   "manifest": "data/manifests/b1-families-x/cruxeval.manifest.jsonl.gz",
+   "manifest_sha256": "b19871e9a846df0e19d57f964a73b18cf6a8b1af4ec83feb4547fc6776a8c962",
+   "gold_pos": {
+    "0": 4643,
+    "1": 4620,
+    "2": 1601,
+    "3": 669,
+    "4": 262,
+    "5": 153,
+    "6": 27,
+    "7": 20,
+    "8": 5
+   },
+   "options_or_candidates": {
+    "2": 5957,
+    "3": 2872,
+    "4": 1662,
+    "5": 698,
+    "6": 540,
+    "7": 126,
+    "8": 102,
+    "9": 16,
+    "10": 27
+   }
+  }
+ },
+ "verify": {
+  "api_bank": {
+   "records_rechecked": 2284,
+   "hits": 0
+  },
+  "bfcl": {
+   "records_rechecked": 10000,
+   "hits": 0
+  },
+  "cruxeval": {
+   "records_rechecked": 12000,
+   "hits": 0
+  },
+  "cohort_v3_assert_draw_disjoint": "passed"
+ },
+ "seconds": 166.2
+}

@@ -1358,7 +1358,7 @@ def write_pointer(build: str, rep: dict, commit: str) -> Path:
            "max_variants_per_source_item": MAX_REUSE,
            "builder": {"module": "data/b_schema.py", "commit": commit},
            "receipt": f"receipts/2026-10-08-B1-schema/{build}/"}
-    p.write_text(json.dumps(ptr, indent=1) + "\n", encoding="utf-8")
+    p.write_bytes((json.dumps(ptr, indent=1) + "\n").encode("utf-8"))  # LF bytes: the pointer sha is identity
     return p
 
 
