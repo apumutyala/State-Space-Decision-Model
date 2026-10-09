@@ -109,7 +109,8 @@ GROUP_AREA = {"tools": "tools", "knowledge_procedural": "knowledge", "knowledge_
 # those two id styles.
 #: external families (the B1-families build, stack/rwkv7/b1-families @a4bc718: API-Bank official train split, BFCL-
 #: and CRUXEval-shaped synthetic rows; MuSR / SATA / CLadder refused there as FROZEN). Keys are ``ext:<file stem>``.
-EXT_GROUP = {"ext:api_bank": "tools", "ext:bfcl": "tools", "ext:cruxeval": "knowledge_procedural"}
+EXT_GROUP = {"ext:api_bank": "tools", "ext:bfcl": "tools", "ext:cruxeval": "knowledge_procedural",
+             "ext:c_multirecord": "knowledge_procedural"}
 FAMILIES_DIR = "b1-families"
 WEIGHTS_45K = {
     "ext:api_bank": 2284, "ext:bfcl": 2400,                                                  # tools (external) 4,684
