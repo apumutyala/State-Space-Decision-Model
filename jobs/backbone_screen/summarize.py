@@ -71,10 +71,14 @@ def build(params: dict, out: Path) -> dict:
     ece = json.loads((ix / "ece.json").read_text(encoding="utf-8"))
     selfcheck = json.loads((ix / "selfcheck.json").read_text(encoding="utf-8"))
     rate = json.loads((ix / "rate.json").read_text(encoding="utf-8")) if (ix / "rate.json").exists() else {}
-    status = collections.Counter()
-    for line in (ix / "stock" / "results.jsonl").open(encoding="utf-8"):
-        status[json.loads(line).get("status", "?")] += 1
     s = params["screen"]
+    res = ix / "stock" / ("results.scored.jsonl" if s.get("primary_subset") else "results.jsonl")
+    want = set(_ids(s["primary_subset"])) if s.get("primary_subset") else None
+    status = collections.Counter()
+    for line in res.open(encoding="utf-8"):
+        r = json.loads(line)
+        if want is None or r.get("run_id") in want:
+            status[r.get("status", "?")] += 1
     index = score["slice_index"]["index"]
     return {
         "schema": SCHEMA, "verdict": "measured", "mode": params["mode"], "repo": s["repo"], "revision": s["revision"],
@@ -89,13 +93,37 @@ def build(params: dict, out: Path) -> dict:
         "selfcheck": {k: selfcheck.get(k) for k in ("ok", "max_abs_delta", "same_argmax", "options", "tol")},
         "rate": {k: rate.get(k) for k in ("rows_done", "elapsed_min", "startup_s", "exit")},
         **({"arm_b": _arm_b(params, ix)} if s.get("arm_b") else {}),
+        **(_primary(params, ix) if s.get("primary_subset") else {}),
     }
+
+
+def _ids(rel: str) -> list[str]:
+    root = Path(__file__).resolve().parents[2]
+    return json.loads((root / rel).read_text(encoding="utf-8"))["run_ids"]
+
+
+def _primary(params: dict, ix: Path) -> dict:
+    """primary_subset mode (qwen36_a3b): the headline numbers above are on the primary subset; ``full`` adds all
+    proxy600 rows when they finished inside the index cap."""
+    s = params["screen"]
+    parts = json.loads((ix / "parts.json").read_text(encoding="utf-8")) if (ix / "parts.json").exists() else {}
+    out = {"subset": s["primary_subset"], "expected_rows": len(_ids(s["primary_subset"])), "parts": parts}
+    if (ix / "score_full.json").exists():
+        sf = json.loads((ix / "score_full.json").read_text(encoding="utf-8"))
+        cf = json.loads((ix / "compare_full_stock_v3w.json").read_text(encoding="utf-8"))
+        ef = json.loads((ix / "ece_full.json").read_text(encoding="utf-8"))
+        out["full"] = {"rows": sf["rows"], "subset_ids_sha256": sf["subset_ids_sha256"],
+                       "index": sf["slice_index"]["index"], "areas": sf["slice_index"].get("areas"),
+                       "vs_stock_rwkv7_v3w": {"baseline_proxy600": STOCK_V3W_PROXY600,
+                                              "diff": cf.get("diff", {}).get("index"), "mde": cf.get("mde")},
+                       "ece": {k: v for k, v in ef.items() if not isinstance(v, (dict, list))}}
+    return out
 
 
 def valid_screen(d: dict) -> bool:
     try:
         ok = (d["schema"] == SCHEMA and d["verdict"] == "measured" and isinstance(d["index"]["point"], (int, float))
-              and d["selfcheck"]["ok"] is True and d["rows"] == 644)
+              and d["selfcheck"]["ok"] is True and d["rows"] == d.get("expected_rows", 644))
         if ok and "arm_b" in d:
             b = d["arm_b"]
             ok = (isinstance(b["index"]["point"], (int, float)) and b["selfcheck"]["ok"] is True and b["rows"] == 644

@@ -36,10 +36,13 @@ families
                   256-expert MoE) through ``hf_readout.load_qwen35(family="qwen3.6-moe")``; one plug-in per process
                   (``_HF_PLUGINS``), so both arms of jobs/backbone_screen MODE=qwen36_a3b share one 65 GiB load.
                   m0 = the stock Qwen3.5-9B readout of job-5cmat (jrt-chatml-v1: options-first JRT prompt, chat
-                  template with empty think block, sum log p(' ' + id + terminator), option-count temperature);
-                  v3w-generic = ``make_v3w(backbone_id)`` (as qrwkv6-v3w-generic). Options ``state_budget`` (prefix
-                  KV tokens x rows per packed call, default 131,072), ``fork_max_rows`` (m0, default 32),
-                  ``selfcheck_out`` (canary fork == recompute, both arms), ``backbone_id`` / ``v3w_sha256`` (v3w).
+                  template with empty think block, sum log p(' ' + id + terminator), option-count temperature),
+                  scored WITHOUT the prefix fork: one full forward of prompt + continuation per (question, option),
+                  <= ``max_batch_rows`` (default 4) same-question rows per call. job-gen87: on the real model in bf16
+                  the fork disagreed with recompute by 0.26 nat on the canary (fp32 on CPU: 4e-6, so no cache bug;
+                  bf16 path-dependence of the hybrid MoE), so this stock scout does not fork. ``selfcheck_out``:
+                  canary batched (as scored) == batch-1 recompute. v3w-generic = ``make_v3w(backbone_id)`` on the
+                  prefix fork (not used by the screen any more). Options ``state_budget``, ``fork_max_rows`` (v3w).
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
 rules), any other non-ok status raises.
@@ -86,6 +89,8 @@ TEMPLATES[QWEN36_M0] = "jrt-chatml-v1"
 #: row) at fork_max_rows 32 (2 GiB); logits <= 4,096 positions x 248,320 x 2 B (2 GiB)
 QWEN36_STATE_BUDGET = 131_072
 QWEN36_FORK_MAX_ROWS = 32
+#: no-fork m0: same-question rows (equal continuation length) per forward; 4 x 16,384 tokens peaks ~7 GiB over weights
+QWEN36_MAX_BATCH_ROWS = 4
 _HF_PLUGINS: dict[tuple[str, str, str, int], Any] = {}
 
 
@@ -149,6 +154,23 @@ def build_plugin(family: str, options: dict[str, Any]):
         return load_rwkv6qwen2(options["model_dir"], options["repo"], device=dev, dtype=dt,
                                input_cap=int(cap) if cap else None)
     raise ValueError(f"unknown family {family!r}; known: {sorted(TEMPLATES)}")
+
+
+def nofork_selfcheck(plug, template, max_batch_rows: int, tol: float = SELFCHECK_TOL) -> dict[str, Any]:
+    """No-fork canary: decide.prompt.CANARY_REQUEST scored as the run scores it (rows batched <= max_batch_rows) vs one
+    row per forward (batch 1). No state is handed between calls in either, so they may differ only by batched bf16
+    rounding; same tolerance and argmax rule as fork_selfcheck."""
+    from decide.backends.hf_readout import HFReadoutBackend
+    from decide.prompt import CANARY_REQUEST
+
+    out = {}
+    for name, b in (("batched", max_batch_rows), ("batch1", 1)):
+        out[name] = HFReadoutBackend(plug, template, max_batch_rows=b, fork=False).score(CANARY_REQUEST, lambda: None).logits
+    deltas = [abs(out["batched"][q][o] - out["batch1"][q][o]) for q in out["batched"] for o in out["batched"][q]]
+    same = all(max(out["batched"][q], key=out["batched"][q].get) == max(out["batch1"][q], key=out["batch1"][q].get)
+               for q in out["batched"])
+    return {"max_abs_delta": max(deltas), "options": len(deltas), "same_argmax": same, "tol": tol,
+            "ok": bool(max(deltas) <= tol and same), "path": "no-fork", "logits": out}
 
 
 def template_of(family: str):
@@ -268,14 +290,13 @@ class ReadoutIndexEngine(Engine):
         elif self.family == QWEN36_M0:
             import json
 
-            fmr = int(options.get("fork_max_rows", QWEN36_FORK_MAX_ROWS))
+            mbr = int(options.get("max_batch_rows", QWEN36_MAX_BATCH_ROWS))
             if options.get("selfcheck_out"):
-                rep = fork_selfcheck(plug, TEMPLATES[self.family], fmr)
+                rep = nofork_selfcheck(plug, TEMPLATES[self.family], mbr)
                 Path(options["selfcheck_out"]).write_text(json.dumps(rep, indent=1), encoding="utf-8")
                 if not rep["ok"]:
-                    raise RuntimeError(f"fork != recompute on the canary: {json.dumps({k: rep[k] for k in ('max_abs_delta', 'same_argmax')})}")
-            self.backend = HFReadoutBackend(plug, TEMPLATES[self.family], max_batch_rows=int(options.get("max_batch_rows", 4)),
-                                            fork_max_rows=fmr)
+                    raise RuntimeError(f"batched != batch-1 on the canary: {json.dumps({k: rep[k] for k in ('max_abs_delta', 'same_argmax')})}")
+            self.backend = HFReadoutBackend(plug, TEMPLATES[self.family], max_batch_rows=mbr, fork=False)
         elif self.family in V3W_GENERIC_FAMILIES or self.family == QWEN36_V3W:
             import json
 

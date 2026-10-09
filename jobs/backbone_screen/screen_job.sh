@@ -7,9 +7,9 @@
 #   | qrwkv6_32b_v3w (readout-artifact check: QRWKV6-32B, arm a = the scout's chatml readout, asserted to reproduce
 #     job-6c27k's 13.56, then arm b = the v3w-generic readout on the same rows; paired diff b - a)
 #   | qwen36_a3b (STOCK Qwen/Qwen3.6-35B-A3B, hybrid 30 GDN + 10 attention layers, 256-expert MoE; NOT attention-free:
-#     a backbone-capability scout; no vendored code, stock transformers 5.17 qwen3_5_moe). One-load mode
-#     (screen.one_load_arms): arm a = the m0 readout of stock Qwen3.5-9B (job-5cmat) and arm b = v3w-generic run in ONE
-#     process (jobs/backbone_screen/arms.py); paired b - a and each arm vs stock RWKV7 v3w; no arm-a reproduction target
+#     a backbone-capability scout; no vendored code, stock transformers 5.17 qwen3_5_moe). m0 readout WITHOUT the prefix
+#     fork (job-gen87), screen.primary_subset (a stratified half of proxy600) first, then the rest until the index cap;
+#     cost-weighted rate guard on the half; the half is the headline, all 644 scored too if complete)
 #   setup: pins + fla guard -> DEV rows + parent sha256 -> pinned snapshot_download -> sha256 of every file -> vendored
 #          code == snapshot code -> proxy600 rows
 #   index: decision_index run (ReadoutIndexEngine, family from params; fork == recompute canary self-check before row
@@ -124,6 +124,14 @@ export_phase setup
 CAP_I=$(cap index) && CAP_SC=$(cap score) || fail 5 "job_params"
 ONE_LOAD=$(python -c "import json,sys;print(int(bool(json.load(open(sys.argv[1]))['screen'].get('one_load_arms'))))" "$PARAMS") \
   || fail 5 "job_params one_load_arms"
+# primary_subset (MODE qwen36_a3b): rows run primary part first, then the rest until the index cap; cost_weights feed the
+# rate guard's projection of the primary part; engine_options are passed to the engine as --option k=v
+PRIMARY=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['screen'].get('primary_subset') or '')" "$PARAMS") \
+  && COSTW=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['screen'].get('cost_weights') or '')" "$PARAMS") \
+  || fail 5 "job_params primary_subset"
+EOPTS=()
+while read -r kv; do [ -n "$kv" ] && EOPTS+=(--option "$kv"); done < <(python -c \
+  "import json,sys;[print(f'{k}={v}') for k,v in (json.load(open(sys.argv[1]))['screen'].get('engine_options') or {}).items()]" "$PARAMS")
 if [ "$ONE_LOAD" = 1 ]; then
   # both arms in ONE process (one checkpoint load): arm a -> index/stock, arm b -> index/v3w; rate guard over both
   say "phase index (one load: arm a $FAMILY then arm b; $NROWS proxy600 rows each, input cap $CAP_IN; canary self-check per arm; live rate guard)"
@@ -132,34 +140,70 @@ if [ "$ONE_LOAD" = 1 ]; then
     python -X utf8 -m jobs.backbone_screen.arms "$PARAMS" --model-dir "$SNAP" --repo "$REPO" \
     --rows "$WORK/proxy-rows.jsonl.gz" --out-root "$WORK/out/index" --selfcheck-dir "$WORK/out/index" \
     > "$WORK/logs/index.log" 2>&1; r=$?
+elif [ -n "$PRIMARY" ]; then
+  python -X utf8 -m jobs.backbone_screen.half_subset order --rows "$WORK/proxy-rows.jsonl.gz" --first "$PRIMARY" \
+    --out "$WORK/ordered-rows.jsonl.gz" --cost "$COSTW" --weights-out "$WORK/weights.json" \
+    > "$WORK/out/index/order.json" || fail 10 "row order"
+  NPRIM=$(python -c "import json,sys;print(len(json.load(open(sys.argv[1]))['run_ids']))" "$PRIMARY")
+  say "phase index ($FAMILY: primary $NPRIM rows first, then the rest of $NROWS until the cap; input cap $CAP_IN; canary self-check; cost-weighted rate guard on the primary rows)"
+  python -m jobs.common.rate_guard run --results "$WORK/out/index/stock/results.jsonl" --total "$NPRIM" \
+    --weights "$WORK/weights.json" --exclude-startup --cap-min "$CAP_I" --report "$WORK/out/index/rate.json" -- \
+    python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
+    --option family="$FAMILY" --option model_dir="$SNAP" --option repo="$REPO" --option input_cap="$CAP_IN" "${EOPTS[@]}" \
+    --option selfcheck_out="$WORK/out/index/selfcheck.json" \
+    --rows "$WORK/ordered-rows.jsonl.gz" --out "$WORK/out/index/stock" > "$WORK/logs/index.log" 2>&1; r=$?
 else
   say "phase index ($NROWS proxy600 rows, family $FAMILY, input cap $CAP_IN; canary fork self-check first; live rate guard)"
   python -m jobs.common.rate_guard run --results "$WORK/out/index/stock/results.jsonl" --total "$NROWS" --exclude-startup \
     --cap-min "$CAP_I" --report "$WORK/out/index/rate.json" -- \
     python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine \
-    --option family="$FAMILY" --option model_dir="$SNAP" --option repo="$REPO" --option input_cap="$CAP_IN" \
+    --option family="$FAMILY" --option model_dir="$SNAP" --option repo="$REPO" --option input_cap="$CAP_IN" "${EOPTS[@]}" \
     --option selfcheck_out="$WORK/out/index/selfcheck.json" \
     --rows "$WORK/proxy-rows.jsonl.gz" --out "$WORK/out/index/stock" > "$WORK/logs/index.log" 2>&1; r=$?
 fi
 gate "index" $r; export_phase index
 RI=$r
-NA=$(python -c "import sys;print(sum(1 for _ in open(sys.argv[1],'rb')))" "$WORK/out/index/stock/results.jsonl" 2>/dev/null || echo 0)
-# a one-load run cut short in arm b still scores a complete arm a (below) before it fails
-if [ "$RI" != 0 ] && { [ "$ONE_LOAD" != 1 ] || [ "$NA" -lt "$NROWS" ]; }; then
-  case $RI in 124) fail 7 "index timeout" ;; 15) fail 15 "index: measured rate too slow" ;; *) fail 12 "index rc=$RI" ;; esac
+R=$WORK/out/index/stock/results.jsonl
+FDONE=0
+if [ -n "$PRIMARY" ]; then
+  # complete lines only (a cap kill may cut the last one) -> results.scored.jsonl; which parts finished
+  python -X utf8 -m jobs.backbone_screen.half_subset parts --results "$R" --out "$WORK/out/index/stock/results.scored.jsonl" \
+    --primary "$PRIMARY" --full "$SUBSET" > "$WORK/out/index/parts.json" || fail 12 "parts"
+  say "parts: $(cat "$WORK/out/index/parts.json") (index rc $RI)"
+  PDONE=$(python -c "import json,sys;print(int(json.load(open(sys.argv[1]))['primary_done']))" "$WORK/out/index/parts.json")
+  FDONE=$(python -c "import json,sys;print(int(json.load(open(sys.argv[1]))['full_done']))" "$WORK/out/index/parts.json")
+  # the cap ending the run after the primary rows is the plan; before them it is a failure
+  if [ "$PDONE" != 1 ]; then
+    case $RI in 124) fail 7 "index timeout before the primary rows finished" ;; 15) fail 15 "index: measured rate too slow for the primary rows" ;; *) fail 12 "index rc=$RI, primary rows incomplete" ;; esac
+  fi
+  R=$WORK/out/index/stock/results.scored.jsonl
+else
+  NA=$(python -c "import sys;print(sum(1 for _ in open(sys.argv[1],'rb')))" "$R" 2>/dev/null || echo 0)
+  # a one-load run cut short in arm b still scores a complete arm a (below) before it fails
+  if [ "$RI" != 0 ] && { [ "$ONE_LOAD" != 1 ] || [ "$NA" -lt "$NROWS" ]; }; then
+    case $RI in 124) fail 7 "index timeout" ;; 15) fail 15 "index: measured rate too slow" ;; *) fail 12 "index rc=$RI" ;; esac
+  fi
 fi
 
 # ------------------------------------------------------------------ score (exit 13)
-say "phase score (proxy600 slice index, ECE, paired vs stock RWKV7 v3w)"
-R=$WORK/out/index/stock/results.jsonl
-timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset score --results "$R" --subset "$SUBSET" \
+SC_SUBSET=${PRIMARY:-$SUBSET}
+say "phase score (slice index on $SC_SUBSET, ECE, paired vs stock RWKV7 v3w; all proxy600 rows too if complete: $FDONE)"
+timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset score --results "$R" --subset "$SC_SUBSET" \
   > "$WORK/out/index/score.json" || fail 13 "score"
-timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset ece --results "$R" --subset "$SUBSET" \
+timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset ece --results "$R" --subset "$SC_SUBSET" \
   > "$WORK/out/index/ece.json" || fail 13 "ece"
-timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset compare --candidate "$R" --baseline "$PARENT" --subset "$SUBSET" \
+timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset compare --candidate "$R" --baseline "$PARENT" --subset "$SC_SUBSET" \
   > "$WORK/out/index/compare_stock_v3w.json" || fail 13 "compare"
+if [ "$FDONE" = 1 ]; then
+  timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset score --results "$R" --subset "$SUBSET" \
+    > "$WORK/out/index/score_full.json" || fail 13 "score_full"
+  timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset ece --results "$R" --subset "$SUBSET" \
+    > "$WORK/out/index/ece_full.json" || fail 13 "ece_full"
+  timeout ${CAP_SC}m python -X utf8 -m jobs.common.dev_subset compare --candidate "$R" --baseline "$PARENT" --subset "$SUBSET" \
+    > "$WORK/out/index/compare_full_stock_v3w.json" || fail 13 "compare_full"
+fi
 gate "score" 0; export_phase score
-if [ "$RI" != 0 ]; then  # one-load mode, arm a scored above, arm b incomplete
+if [ "$RI" != 0 ] && [ -z "$PRIMARY" ]; then  # one-load mode, arm a scored above, arm b incomplete
   case $RI in 124) fail 7 "index timeout (arm a scored)" ;; 15) fail 15 "index: measured rate too slow (arm a scored)" ;; *) fail 12 "index rc=$RI (arm a scored)" ;; esac
 fi
 

@@ -8,14 +8,14 @@
   "allowed_skips": [],
   "image": "jobs/probe9b/Dockerfile"
  },
- "_comment": "jobs/backbone_screen MODE=qwen36_a3b: backbone scout. STOCK Qwen/Qwen3.6-35B-A3B@995ad96e (35.95B params in the checkpoint incl. vision tower + MTP head, both skipped: ~34.7B text = ~64.6 GiB bf16; hybrid 30 Gated-DeltaNet + 10 gated-attention layers, 256 experts / 8 active + shared expert, ~3B active; NOT attention-free) on the 644 proxy600 rows, frozen scorer. Question: is this backbone stronger than Qwen3.5-9B for the decision task before an attention-free conversion? Two arms in ONE model load (jobs/backbone_screen/arms.py): (a) m0 = the stock Qwen3.5-9B readout of job-5cmat (jrt-chatml-v1 options-first JRT prompt, chat template with empty think block, sum log p(' ' + id + terminator), option-count temperature) and (b) v3w-generic (make_v3w('qwen3.6-35b-a3b'): own chat template with enable_thinking=False, own single-token code table, word ids; identity pinned). Paired b - a and each vs stock RWKV7 v3w (27.32). One H100 80 GB, bf16, transformers 5.17.0 (qwen3_5_moe -> Qwen3_5MoeForCausalLM, experts grouped_mm); fork KV budget 131,072 token-rows, m0 fork_max_rows 32. Precedent job-76vfb (QRWKV6-32B, two arms, two loads): 26 min. Quote 90 x $0.063 = $5.67; worst case (60 + 2 x 90) x 0.0495 = $11.88.",
+ "_comment": "jobs/backbone_screen MODE=qwen36_a3b (v2, after job-gen87): STOCK Qwen/Qwen3.6-35B-A3B@995ad96e (hybrid 30 Gated-DeltaNet + 10 gated-attention layers, 256 experts / 8 active; NOT attention-free; ~34.7B text params = ~64.6 GiB bf16 on one H100) under ONE readout, m0 (as stock Qwen3.5-9B was read in job-5cmat: jrt-chatml-v1, sum log p(' ' + id + terminator), option-count temperature), scored WITHOUT the prefix fork (job-gen87: fork vs recompute 0.26 nat on the canary in bf16; exact in fp32 on CPU, so bf16 path-dependence, not a cache bug): one full forward per (question, option), <= 4 same-question rows per call. Exact no-fork volume (Qwen3.6 tokenizer, jobs/backbone_screen/qwen36_m0_cost.json): 84.2M positions / 6,130 calls on proxy600 (639 in-cap rows), 40.0M / 3,021 on the primary stratified half (341 rows, proxy600_half_q36.json). Rows run half first (cost-weighted rate guard on the half), then the rest until the index cap: the half is the primary result, all 644 are scored if they finish. Hold 95 x $0.063 = $5.99; worst case (60 + 2 x 95) x 0.0495 = $12.38.",
  "job": "backbone-screen-qwen36_a3b",
  "mode": "qwen36_a3b",
  "decision_rule": null,
  "no_verdict_reason": "measurement only: proxy600 Index of stock Qwen3.6-35B-A3B under the m0 and v3w-generic readouts, paired vs each other and vs stock RWKV7 v3w; the Qwen3.5-9B comparison is recorded for the backbone choice, no pass/fail gate",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 90,
+ "max_duration_minutes": 95,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -23,18 +23,18 @@
  "resume": "none",
  "hf_cache": false,
  "batch_usd_per_min": 0.0495,
- "hard_cap_usd": 12.0,
+ "hard_cap_usd": 12.5,
  "reserve_minutes": 5,
  "phase_caps_minutes": {
-  "setup": 15,
-  "index": 60,
-  "score": 10
+  "setup": 8,
+  "index": 77,
+  "score": 5
  },
  "expected_minutes": {
   "build": 10,
-  "setup": 5,
-  "index": 30,
-  "score": 5
+  "setup": 3,
+  "index": 60,
+  "score": 3
  },
  "model": "Qwen/Qwen3.6-35B-A3B@995ad96eacd98c81ed38be0c5b274b04031597b0",
  "model_bytes": 71903776776,
@@ -44,7 +44,7 @@
   "repo": "Qwen/Qwen3.6-35B-A3B",
   "revision": "995ad96eacd98c81ed38be0c5b274b04031597b0",
   "family": "qwen3.6-moe-m0",
-  "readout_a": "m0 (job-5cmat stock Qwen3.5-9B readout: jrt-chatml-v1, sum log p(' ' + id + terminator), option-count temperature)",
+  "readout_a": "m0 (job-5cmat stock Qwen3.5-9B readout: jrt-chatml-v1, sum log p(' ' + id + terminator), option-count temperature), no prefix fork",
   "snapshot_pin": "jobs/backbone_screen/snapshot_qwen36_a3b.sha256",
   "input_cap": 16384,
   "parent_results": "screen_parent/art-ivu28/v3w.results.jsonl",
@@ -62,16 +62,11 @@
    "vocab.json",
    "merges.txt"
   ],
-  "one_load_arms": true,
   "engine_options": {
-   "state_budget": 131072,
-   "fork_max_rows": 32
+   "max_batch_rows": 4
   },
-  "arm_b": {
-   "family": "qwen3.6-moe-v3w-generic",
-   "backbone_id": "qwen3.6-35b-a3b",
-   "v3w_sha256": "56612ff01973d13b862fb9a2b90580d7ff425fadcd9eed18f3490381c96e11cf"
-  }
+  "primary_subset": "jobs/backbone_screen/proxy600_half_q36.json",
+  "cost_weights": "jobs/backbone_screen/qwen36_m0_cost.json"
  },
  "submit": {
   "command": "bash /opt/ssdm/m1/jobs/backbone_screen/screen_job.sh",
@@ -81,8 +76,8 @@
    "PYTHONUTF8": "1",
    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
   },
-  "key": "backbone-screen-qwen36_a3b",
-  "label": "backbone scout: stock Qwen3.6-35B-A3B on proxy600, m0 + v3w-generic readouts (one load), vs stock RWKV7 v3w",
+  "key": "backbone-screen-qwen36_a3b-m0-nofork",
+  "label": "backbone scout: stock Qwen3.6-35B-A3B on proxy600 (half first), m0 readout without fork, vs stock RWKV7 v3w",
   "checks": {
    "success": {
     "check": {
@@ -119,7 +114,9 @@
   "manifest_files": [
    "jobs/backbone_screen/snapshot_qwen36_a3b.sha256",
    "jobs/common/dev_proxy600.json",
-   "jobs/clef_baseline/data.sha256"
+   "jobs/clef_baseline/data.sha256",
+   "jobs/backbone_screen/proxy600_half_q36.json",
+   "jobs/backbone_screen/qwen36_m0_cost.json"
   ],
   "data": [
    {

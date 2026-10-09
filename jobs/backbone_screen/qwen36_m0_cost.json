@@ -1,0 +1,4517 @@
+{
+ "_comment": "per-row no-fork m0 cost of stock Qwen3.6-35B-A3B on proxy600 (jobs/backbone_screen/half_subset.py costs); the rate guard projects the half by these weights",
+ "tokenizer_sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+ "max_batch_rows": 4,
+ "call_positions": 2000,
+ "input_cap": 16384,
+ "rows": {
+  "11:ContractNLI:ContractNLI:test:129": {
+   "positions": 223430,
+   "calls": 34,
+   "max_call": 4394,
+   "over_cap": false,
+   "weight": 291430
+  },
+  "11:ContractNLI:ContractNLI:test:227": {
+   "positions": 337007,
+   "calls": 34,
+   "max_call": 6621,
+   "over_cap": false,
+   "weight": 405007
+  },
+  "11:ContractNLI:ContractNLI:test:26": {
+   "positions": 208691,
+   "calls": 34,
+   "max_call": 4105,
+   "over_cap": false,
+   "weight": 276691
+  },
+  "11:ContractNLI:ContractNLI:test:293": {
+   "positions": 138923,
+   "calls": 34,
+   "max_call": 2737,
+   "over_cap": false,
+   "weight": 206923
+  },
+  "11:ContractNLI:ContractNLI:test:307": {
+   "positions": 219248,
+   "calls": 34,
+   "max_call": 4312,
+   "over_cap": false,
+   "weight": 287248
+  },
+  "11:ContractNLI:ContractNLI:test:4": {
+   "positions": 147695,
+   "calls": 34,
+   "max_call": 2909,
+   "over_cap": false,
+   "weight": 215695
+  },
+  "11:ContractNLI:ContractNLI:test:401": {
+   "positions": 218228,
+   "calls": 34,
+   "max_call": 4292,
+   "over_cap": false,
+   "weight": 286228
+  },
+  "11:ContractNLI:ContractNLI:test:451": {
+   "positions": 200684,
+   "calls": 34,
+   "max_call": 3948,
+   "over_cap": false,
+   "weight": 268684
+  },
+  "11:ContractNLI:ContractNLI:test:543": {
+   "positions": 194003,
+   "calls": 34,
+   "max_call": 3817,
+   "over_cap": false,
+   "weight": 262003
+  },
+  "11:ContractNLI:ContractNLI:test:76": {
+   "positions": 205121,
+   "calls": 34,
+   "max_call": 4035,
+   "over_cap": false,
+   "weight": 273121
+  },
+  "11:ContractNLI:ContractNLI:test:97": {
+   "positions": 255866,
+   "calls": 34,
+   "max_call": 5030,
+   "over_cap": false,
+   "weight": 323866
+  },
+  "11:ContractNLI:ContractNLI:test:99": {
+   "positions": 190025,
+   "calls": 34,
+   "max_call": 3739,
+   "over_cap": false,
+   "weight": 258025
+  },
+  "12:ANLI:ANLI:test_r1:3f96c783-12e0-4b71-a918-a318c2462081": {
+   "positions": 1281,
+   "calls": 1,
+   "max_call": 427,
+   "over_cap": false,
+   "weight": 3281
+  },
+  "12:ANLI:ANLI:test_r1:44162876-d9d2-469c-b1a0-bd6a912486aa": {
+   "positions": 1647,
+   "calls": 1,
+   "max_call": 549,
+   "over_cap": false,
+   "weight": 3647
+  },
+  "12:ANLI:ANLI:test_r1:725b7f20-3917-4c05-aa10-988859b3377e": {
+   "positions": 1389,
+   "calls": 1,
+   "max_call": 463,
+   "over_cap": false,
+   "weight": 3389
+  },
+  "12:ANLI:ANLI:test_r1:76f7df9f-2ab3-4e43-9494-087cac152f19": {
+   "positions": 1239,
+   "calls": 1,
+   "max_call": 413,
+   "over_cap": false,
+   "weight": 3239
+  },
+  "12:ANLI:ANLI:test_r1:96d6a043-e262-41e2-be31-38f586124121": {
+   "positions": 1227,
+   "calls": 1,
+   "max_call": 409,
+   "over_cap": false,
+   "weight": 3227
+  },
+  "12:ANLI:ANLI:test_r1:ead42195-05f4-40c2-b103-257b332e33d1": {
+   "positions": 1251,
+   "calls": 1,
+   "max_call": 417,
+   "over_cap": false,
+   "weight": 3251
+  },
+  "12:ANLI:ANLI:test_r2:494bbc4e-e5c5-428b-a299-f09f5419d338": {
+   "positions": 1185,
+   "calls": 1,
+   "max_call": 395,
+   "over_cap": false,
+   "weight": 3185
+  },
+  "12:ANLI:ANLI:test_r2:58bfd4bc-5d65-46b3-8755-0fce6e470216": {
+   "positions": 1275,
+   "calls": 1,
+   "max_call": 425,
+   "over_cap": false,
+   "weight": 3275
+  },
+  "12:ANLI:ANLI:test_r2:893669a5-b425-4182-b5fe-2d1075993cbb": {
+   "positions": 1269,
+   "calls": 1,
+   "max_call": 423,
+   "over_cap": false,
+   "weight": 3269
+  },
+  "12:ANLI:ANLI:test_r2:aecd601b-f19a-4f72-8beb-e92b17ad7d98": {
+   "positions": 1473,
+   "calls": 1,
+   "max_call": 491,
+   "over_cap": false,
+   "weight": 3473
+  },
+  "12:ANLI:ANLI:test_r2:b995029b-e6c8-4a00-8097-61b0ac9f67ea": {
+   "positions": 1347,
+   "calls": 1,
+   "max_call": 449,
+   "over_cap": false,
+   "weight": 3347
+  },
+  "12:ANLI:ANLI:test_r3:2550effb-4089-48cc-b04c-9b491480a69a": {
+   "positions": 1101,
+   "calls": 1,
+   "max_call": 367,
+   "over_cap": false,
+   "weight": 3101
+  },
+  "12:ANLI:ANLI:test_r3:75065351-2ad2-4df3-be08-66980194eafb": {
+   "positions": 1311,
+   "calls": 1,
+   "max_call": 437,
+   "over_cap": false,
+   "weight": 3311
+  },
+  "12:ANLI:ANLI:test_r3:79804498-d2f8-4172-8bec-43a11cd5fd79": {
+   "positions": 1653,
+   "calls": 1,
+   "max_call": 551,
+   "over_cap": false,
+   "weight": 3653
+  },
+  "12:ANLI:ANLI:test_r3:81213b6e-e998-4bde-aea1-79b894db3cb0": {
+   "positions": 1023,
+   "calls": 1,
+   "max_call": 341,
+   "over_cap": false,
+   "weight": 3023
+  },
+  "12:ANLI:ANLI:test_r3:85967345-c7f2-4d4e-9962-5a07723ce313": {
+   "positions": 1041,
+   "calls": 1,
+   "max_call": 347,
+   "over_cap": false,
+   "weight": 3041
+  },
+  "12:ANLI:ANLI:test_r3:9a6fc767-74e5-4576-b230-f026dff77624": {
+   "positions": 1065,
+   "calls": 1,
+   "max_call": 355,
+   "over_cap": false,
+   "weight": 3065
+  },
+  "12:ANLI:ANLI:test_r3:c001cde8-c11a-457a-8493-e6d774cc2b71": {
+   "positions": 1047,
+   "calls": 1,
+   "max_call": 349,
+   "over_cap": false,
+   "weight": 3047
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_149-58-3": {
+   "positions": 20668,
+   "calls": 4,
+   "max_call": 2587,
+   "over_cap": false,
+   "weight": 28668
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_161-63-0": {
+   "positions": 10516,
+   "calls": 4,
+   "max_call": 1315,
+   "over_cap": false,
+   "weight": 18516
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_168-68-0": {
+   "positions": 15290,
+   "calls": 5,
+   "max_call": 1533,
+   "over_cap": false,
+   "weight": 25290
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_169-69-0": {
+   "positions": 15910,
+   "calls": 5,
+   "max_call": 1595,
+   "over_cap": false,
+   "weight": 25910
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_217-93-0": {
+   "positions": 368760,
+   "calls": 26,
+   "max_call": 7099,
+   "over_cap": false,
+   "weight": 420760
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_29-9-0": {
+   "positions": 11202,
+   "calls": 5,
+   "max_call": 1125,
+   "over_cap": false,
+   "weight": 21202
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_403-139-7": {
+   "positions": 6670,
+   "calls": 3,
+   "max_call": 1113,
+   "over_cap": false,
+   "weight": 12670
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_511-149-8": {
+   "positions": 15472,
+   "calls": 4,
+   "max_call": 1936,
+   "over_cap": false,
+   "weight": 23472
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_535-151-11": {
+   "positions": 3160,
+   "calls": 2,
+   "max_call": 792,
+   "over_cap": false,
+   "weight": 7160
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_563-155-3": {
+   "positions": 26500,
+   "calls": 6,
+   "max_call": 2211,
+   "over_cap": false,
+   "weight": 38500
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_677-163-2": {
+   "positions": 6990,
+   "calls": 3,
+   "max_call": 1167,
+   "over_cap": false,
+   "weight": 12990
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_730-167-1": {
+   "positions": 11400,
+   "calls": 4,
+   "max_call": 1426,
+   "over_cap": false,
+   "weight": 19400
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_771-171-4": {
+   "positions": 13080,
+   "calls": 4,
+   "max_call": 1636,
+   "over_cap": false,
+   "weight": 21080
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_835-178-10": {
+   "positions": 7058,
+   "calls": 3,
+   "max_call": 1179,
+   "over_cap": false,
+   "weight": 13058
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_89-39-0": {
+   "positions": 9424,
+   "calls": 4,
+   "max_call": 1179,
+   "over_cap": false,
+   "weight": 17424
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_multiple:live_multiple_908-187-0": {
+   "positions": 18464,
+   "calls": 5,
+   "max_call": 1849,
+   "over_cap": false,
+   "weight": 28464
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_simple:live_simple_124-80-0": {
+   "positions": 864,
+   "calls": 1,
+   "max_call": 432,
+   "over_cap": false,
+   "weight": 2864
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_simple:live_simple_250-132-0": {
+   "positions": 958,
+   "calls": 1,
+   "max_call": 479,
+   "over_cap": false,
+   "weight": 2958
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:live_simple:live_simple_59-28-0": {
+   "positions": 1194,
+   "calls": 1,
+   "max_call": 597,
+   "over_cap": false,
+   "weight": 3194
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_141": {
+   "positions": 784,
+   "calls": 1,
+   "max_call": 392,
+   "over_cap": false,
+   "weight": 2784
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_143": {
+   "positions": 828,
+   "calls": 1,
+   "max_call": 414,
+   "over_cap": false,
+   "weight": 2828
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_220": {
+   "positions": 988,
+   "calls": 1,
+   "max_call": 494,
+   "over_cap": false,
+   "weight": 2988
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_349": {
+   "positions": 856,
+   "calls": 1,
+   "max_call": 428,
+   "over_cap": false,
+   "weight": 2856
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_355": {
+   "positions": 882,
+   "calls": 1,
+   "max_call": 441,
+   "over_cap": false,
+   "weight": 2882
+  },
+  "1:BFCL-tool-selection:BFCL-tool-selection:simple:simple_70": {
+   "positions": 946,
+   "calls": 1,
+   "max_call": 473,
+   "over_cap": false,
+   "weight": 2946
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:corrupted rhyme:4635": {
+   "positions": 654,
+   "calls": 1,
+   "max_call": 327,
+   "over_cap": false,
+   "weight": 2654
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:corrupted rhyme:792": {
+   "positions": 656,
+   "calls": 1,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 2656
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:shuffled rhyming lines:2686": {
+   "positions": 656,
+   "calls": 1,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 2656
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:shuffled rhyming words:4448": {
+   "positions": 664,
+   "calls": 1,
+   "max_call": 332,
+   "over_cap": false,
+   "weight": 2664
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:shuffled rhyming words:503": {
+   "positions": 656,
+   "calls": 1,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 2656
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p1:shuffled rhyming words:5556": {
+   "positions": 640,
+   "calls": 1,
+   "max_call": 320,
+   "over_cap": false,
+   "weight": 2640
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 1 rhyming EOL word:4635": {
+   "positions": 652,
+   "calls": 1,
+   "max_call": 326,
+   "over_cap": false,
+   "weight": 2652
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 1 rhyming EOL word:792": {
+   "positions": 656,
+   "calls": 1,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 2656
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 1 word:4635": {
+   "positions": 654,
+   "calls": 1,
+   "max_call": 327,
+   "over_cap": false,
+   "weight": 2654
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 1 word:792": {
+   "positions": 656,
+   "calls": 1,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 2656
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 2 words:4635": {
+   "positions": 654,
+   "calls": 1,
+   "max_call": 327,
+   "over_cap": false,
+   "weight": 2654
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 2 words:792": {
+   "positions": 652,
+   "calls": 1,
+   "max_call": 326,
+   "over_cap": false,
+   "weight": 2652
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 3 words:4635": {
+   "positions": 650,
+   "calls": 1,
+   "max_call": 325,
+   "over_cap": false,
+   "weight": 2650
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p2:delete any 3 words:792": {
+   "positions": 652,
+   "calls": 1,
+   "max_call": 326,
+   "over_cap": false,
+   "weight": 2652
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 1 nonrhyming word:4635": {
+   "positions": 654,
+   "calls": 1,
+   "max_call": 327,
+   "over_cap": false,
+   "weight": 2654
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 1 nonrhyming word:792": {
+   "positions": 654,
+   "calls": 1,
+   "max_call": 327,
+   "over_cap": false,
+   "weight": 2654
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 2 nonrhyming words:4635": {
+   "positions": 652,
+   "calls": 1,
+   "max_call": 326,
+   "over_cap": false,
+   "weight": 2652
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 2 nonrhyming words:792": {
+   "positions": 652,
+   "calls": 1,
+   "max_call": 326,
+   "over_cap": false,
+   "weight": 2652
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 2 rhyming EOL words:4635": {
+   "positions": 654,
+   "calls": 1,
+   "max_call": 327,
+   "over_cap": false,
+   "weight": 2654
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 2 rhyming EOL words:792": {
+   "positions": 656,
+   "calls": 1,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 2656
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 3 nonrhyming words:4635": {
+   "positions": 650,
+   "calls": 1,
+   "max_call": 325,
+   "over_cap": false,
+   "weight": 2650
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 3 nonrhyming words:792": {
+   "positions": 652,
+   "calls": 1,
+   "max_call": 326,
+   "over_cap": false,
+   "weight": 2652
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 3 rhyming words:4635": {
+   "positions": 656,
+   "calls": 1,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 2656
+  },
+  "20:BPoMP-original-limerick:BPoMP:original-limerick:BPoMP_p3:delete any 3 rhyming words:792": {
+   "positions": 656,
+   "calls": 1,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 2656
+  },
+  "21:Humicroedit:Humicroedit:test:10777-9091": {
+   "positions": 424,
+   "calls": 1,
+   "max_call": 212,
+   "over_cap": false,
+   "weight": 2424
+  },
+  "21:Humicroedit:Humicroedit:test:11247-5350": {
+   "positions": 408,
+   "calls": 1,
+   "max_call": 204,
+   "over_cap": false,
+   "weight": 2408
+  },
+  "21:Humicroedit:Humicroedit:test:1523-4167": {
+   "positions": 406,
+   "calls": 1,
+   "max_call": 203,
+   "over_cap": false,
+   "weight": 2406
+  },
+  "21:Humicroedit:Humicroedit:test:333-12278": {
+   "positions": 432,
+   "calls": 1,
+   "max_call": 216,
+   "over_cap": false,
+   "weight": 2432
+  },
+  "21:Humicroedit:Humicroedit:test:5664-13338": {
+   "positions": 470,
+   "calls": 1,
+   "max_call": 235,
+   "over_cap": false,
+   "weight": 2470
+  },
+  "21:Humicroedit:Humicroedit:test:5765-10638": {
+   "positions": 432,
+   "calls": 1,
+   "max_call": 216,
+   "over_cap": false,
+   "weight": 2432
+  },
+  "21:Humicroedit:Humicroedit:test:6649-10042": {
+   "positions": 418,
+   "calls": 1,
+   "max_call": 209,
+   "over_cap": false,
+   "weight": 2418
+  },
+  "21:Humicroedit:Humicroedit:test:8724-991": {
+   "positions": 422,
+   "calls": 1,
+   "max_call": 211,
+   "over_cap": false,
+   "weight": 2422
+  },
+  "21:Humicroedit:Humicroedit:test:9471-4860": {
+   "positions": 424,
+   "calls": 1,
+   "max_call": 212,
+   "over_cap": false,
+   "weight": 2424
+  },
+  "22:POP909-chord-pitch-class:POP909:056:beat-122": {
+   "positions": 1115482,
+   "calls": 34,
+   "max_call": 8648,
+   "over_cap": false,
+   "weight": 1183482
+  },
+  "22:POP909-chord-pitch-class:POP909:195:beat-18": {
+   "positions": 952426,
+   "calls": 34,
+   "max_call": 7384,
+   "over_cap": false,
+   "weight": 1020426
+  },
+  "22:POP909-chord-pitch-class:POP909:453:beat-50": {
+   "positions": 928303,
+   "calls": 34,
+   "max_call": 7197,
+   "over_cap": false,
+   "weight": 996303
+  },
+  "22:POP909-chord-pitch-class:POP909:607:beat-230": {
+   "positions": 927013,
+   "calls": 34,
+   "max_call": 7187,
+   "over_cap": false,
+   "weight": 995013
+  },
+  "22:POP909-chord-pitch-class:POP909:616:beat-114": {
+   "positions": 916951,
+   "calls": 34,
+   "max_call": 7109,
+   "over_cap": false,
+   "weight": 984951
+  },
+  "22:POP909-chord-pitch-class:POP909:723:beat-222": {
+   "positions": 935785,
+   "calls": 34,
+   "max_call": 7255,
+   "over_cap": false,
+   "weight": 1003785
+  },
+  "22:POP909-chord-pitch-class:POP909:771:beat-14": {
+   "positions": 869866,
+   "calls": 34,
+   "max_call": 6744,
+   "over_cap": false,
+   "weight": 937866
+  },
+  "22:POP909-chord-pitch-class:POP909:771:beat-206": {
+   "positions": 929851,
+   "calls": 34,
+   "max_call": 7209,
+   "over_cap": false,
+   "weight": 997851
+  },
+  "22:POP909-chord-pitch-class:POP909:811:beat-130": {
+   "positions": 980419,
+   "calls": 34,
+   "max_call": 7601,
+   "over_cap": false,
+   "weight": 1048419
+  },
+  "23:CFColor-preference:cfcolor:1001:6807:6118": {
+   "positions": 1182,
+   "calls": 1,
+   "max_call": 591,
+   "over_cap": false,
+   "weight": 3182
+  },
+  "23:CFColor-preference:cfcolor:1020:10354:11615": {
+   "positions": 1176,
+   "calls": 1,
+   "max_call": 588,
+   "over_cap": false,
+   "weight": 3176
+  },
+  "23:CFColor-preference:cfcolor:1020:12028:7859": {
+   "positions": 1184,
+   "calls": 1,
+   "max_call": 592,
+   "over_cap": false,
+   "weight": 3184
+  },
+  "23:CFColor-preference:cfcolor:1020:12068:3866": {
+   "positions": 1186,
+   "calls": 1,
+   "max_call": 593,
+   "over_cap": false,
+   "weight": 3186
+  },
+  "23:CFColor-preference:cfcolor:1020:8357:3135": {
+   "positions": 1178,
+   "calls": 1,
+   "max_call": 589,
+   "over_cap": false,
+   "weight": 3178
+  },
+  "23:CFColor-preference:cfcolor:261:2132:1214": {
+   "positions": 1200,
+   "calls": 1,
+   "max_call": 600,
+   "over_cap": false,
+   "weight": 3200
+  },
+  "23:CFColor-preference:cfcolor:261:2284:2527": {
+   "positions": 1194,
+   "calls": 1,
+   "max_call": 597,
+   "over_cap": false,
+   "weight": 3194
+  },
+  "23:CFColor-preference:cfcolor:367:1833:1193": {
+   "positions": 1174,
+   "calls": 1,
+   "max_call": 587,
+   "over_cap": false,
+   "weight": 3174
+  },
+  "23:CFColor-preference:cfcolor:611:13087:10852": {
+   "positions": 1140,
+   "calls": 1,
+   "max_call": 570,
+   "over_cap": false,
+   "weight": 3140
+  },
+  "23:CFColor-preference:cfcolor:746:10082:5105": {
+   "positions": 1206,
+   "calls": 1,
+   "max_call": 603,
+   "over_cap": false,
+   "weight": 3206
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:1": {
+   "positions": 1488,
+   "calls": 1,
+   "max_call": 372,
+   "over_cap": false,
+   "weight": 3488
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:108": {
+   "positions": 2352,
+   "calls": 1,
+   "max_call": 588,
+   "over_cap": false,
+   "weight": 4352
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:131": {
+   "positions": 2392,
+   "calls": 1,
+   "max_call": 598,
+   "over_cap": false,
+   "weight": 4392
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:164": {
+   "positions": 2300,
+   "calls": 1,
+   "max_call": 575,
+   "over_cap": false,
+   "weight": 4300
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:167": {
+   "positions": 1268,
+   "calls": 1,
+   "max_call": 317,
+   "over_cap": false,
+   "weight": 3268
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:175": {
+   "positions": 2440,
+   "calls": 1,
+   "max_call": 610,
+   "over_cap": false,
+   "weight": 4440
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:26": {
+   "positions": 1508,
+   "calls": 1,
+   "max_call": 377,
+   "over_cap": false,
+   "weight": 3508
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:38": {
+   "positions": 2176,
+   "calls": 1,
+   "max_call": 544,
+   "over_cap": false,
+   "weight": 4176
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:57": {
+   "positions": 948,
+   "calls": 1,
+   "max_call": 237,
+   "over_cap": false,
+   "weight": 2948
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:59": {
+   "positions": 1840,
+   "calls": 1,
+   "max_call": 460,
+   "over_cap": false,
+   "weight": 3840
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:61": {
+   "positions": 1712,
+   "calls": 1,
+   "max_call": 428,
+   "over_cap": false,
+   "weight": 3712
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:71": {
+   "positions": 1836,
+   "calls": 1,
+   "max_call": 459,
+   "over_cap": false,
+   "weight": 3836
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:91": {
+   "positions": 1784,
+   "calls": 1,
+   "max_call": 446,
+   "over_cap": false,
+   "weight": 3784
+  },
+  "25:GPQA-Diamond:GPQA-Diamond:test:92": {
+   "positions": 3300,
+   "calls": 1,
+   "max_call": 825,
+   "over_cap": false,
+   "weight": 5300
+  },
+  "28:WinoGrande:WinoGrande:validation:1049": {
+   "positions": 464,
+   "calls": 1,
+   "max_call": 232,
+   "over_cap": false,
+   "weight": 2464
+  },
+  "28:WinoGrande:WinoGrande:validation:1060": {
+   "positions": 462,
+   "calls": 1,
+   "max_call": 231,
+   "over_cap": false,
+   "weight": 2462
+  },
+  "28:WinoGrande:WinoGrande:validation:1080": {
+   "positions": 438,
+   "calls": 1,
+   "max_call": 219,
+   "over_cap": false,
+   "weight": 2438
+  },
+  "28:WinoGrande:WinoGrande:validation:1082": {
+   "positions": 462,
+   "calls": 1,
+   "max_call": 231,
+   "over_cap": false,
+   "weight": 2462
+  },
+  "28:WinoGrande:WinoGrande:validation:1110": {
+   "positions": 462,
+   "calls": 1,
+   "max_call": 231,
+   "over_cap": false,
+   "weight": 2462
+  },
+  "28:WinoGrande:WinoGrande:validation:1135": {
+   "positions": 436,
+   "calls": 1,
+   "max_call": 218,
+   "over_cap": false,
+   "weight": 2436
+  },
+  "28:WinoGrande:WinoGrande:validation:1257": {
+   "positions": 446,
+   "calls": 1,
+   "max_call": 223,
+   "over_cap": false,
+   "weight": 2446
+  },
+  "28:WinoGrande:WinoGrande:validation:199": {
+   "positions": 434,
+   "calls": 1,
+   "max_call": 217,
+   "over_cap": false,
+   "weight": 2434
+  },
+  "28:WinoGrande:WinoGrande:validation:305": {
+   "positions": 428,
+   "calls": 1,
+   "max_call": 214,
+   "over_cap": false,
+   "weight": 2428
+  },
+  "28:WinoGrande:WinoGrande:validation:392": {
+   "positions": 436,
+   "calls": 1,
+   "max_call": 218,
+   "over_cap": false,
+   "weight": 2436
+  },
+  "28:WinoGrande:WinoGrande:validation:41": {
+   "positions": 430,
+   "calls": 1,
+   "max_call": 215,
+   "over_cap": false,
+   "weight": 2430
+  },
+  "28:WinoGrande:WinoGrande:validation:639": {
+   "positions": 434,
+   "calls": 1,
+   "max_call": 217,
+   "over_cap": false,
+   "weight": 2434
+  },
+  "28:WinoGrande:WinoGrande:validation:684": {
+   "positions": 468,
+   "calls": 1,
+   "max_call": 234,
+   "over_cap": false,
+   "weight": 2468
+  },
+  "28:WinoGrande:WinoGrande:validation:702": {
+   "positions": 448,
+   "calls": 1,
+   "max_call": 224,
+   "over_cap": false,
+   "weight": 2448
+  },
+  "28:WinoGrande:WinoGrande:validation:746": {
+   "positions": 478,
+   "calls": 1,
+   "max_call": 239,
+   "over_cap": false,
+   "weight": 2478
+  },
+  "28:WinoGrande:WinoGrande:validation:808": {
+   "positions": 442,
+   "calls": 1,
+   "max_call": 221,
+   "over_cap": false,
+   "weight": 2442
+  },
+  "28:WinoGrande:WinoGrande:validation:810": {
+   "positions": 450,
+   "calls": 1,
+   "max_call": 225,
+   "over_cap": false,
+   "weight": 2450
+  },
+  "28:WinoGrande:WinoGrande:validation:954": {
+   "positions": 438,
+   "calls": 1,
+   "max_call": 219,
+   "over_cap": false,
+   "weight": 2438
+  },
+  "29:HellaSwag:HellaSwag:validation:1436:21284": {
+   "positions": 1176,
+   "calls": 1,
+   "max_call": 294,
+   "over_cap": false,
+   "weight": 3176
+  },
+  "29:HellaSwag:HellaSwag:validation:1713:26438": {
+   "positions": 1092,
+   "calls": 1,
+   "max_call": 273,
+   "over_cap": false,
+   "weight": 3092
+  },
+  "29:HellaSwag:HellaSwag:validation:2267:34783": {
+   "positions": 1364,
+   "calls": 1,
+   "max_call": 341,
+   "over_cap": false,
+   "weight": 3364
+  },
+  "29:HellaSwag:HellaSwag:validation:2900:44374": {
+   "positions": 1384,
+   "calls": 1,
+   "max_call": 346,
+   "over_cap": false,
+   "weight": 3384
+  },
+  "29:HellaSwag:HellaSwag:validation:3512:2098": {
+   "positions": 2084,
+   "calls": 1,
+   "max_call": 521,
+   "over_cap": false,
+   "weight": 4084
+  },
+  "29:HellaSwag:HellaSwag:validation:379:5289": {
+   "positions": 1232,
+   "calls": 1,
+   "max_call": 308,
+   "over_cap": false,
+   "weight": 3232
+  },
+  "29:HellaSwag:HellaSwag:validation:5092:13816": {
+   "positions": 1852,
+   "calls": 1,
+   "max_call": 463,
+   "over_cap": false,
+   "weight": 3852
+  },
+  "29:HellaSwag:HellaSwag:validation:5628:17736": {
+   "positions": 2196,
+   "calls": 1,
+   "max_call": 549,
+   "over_cap": false,
+   "weight": 4196
+  },
+  "29:HellaSwag:HellaSwag:validation:5658:18005": {
+   "positions": 1768,
+   "calls": 1,
+   "max_call": 442,
+   "over_cap": false,
+   "weight": 3768
+  },
+  "29:HellaSwag:HellaSwag:validation:5696:18272": {
+   "positions": 1912,
+   "calls": 1,
+   "max_call": 478,
+   "over_cap": false,
+   "weight": 3912
+  },
+  "29:HellaSwag:HellaSwag:validation:5946:20078": {
+   "positions": 2000,
+   "calls": 1,
+   "max_call": 500,
+   "over_cap": false,
+   "weight": 4000
+  },
+  "29:HellaSwag:HellaSwag:validation:6383:23291": {
+   "positions": 1688,
+   "calls": 1,
+   "max_call": 422,
+   "over_cap": false,
+   "weight": 3688
+  },
+  "29:HellaSwag:HellaSwag:validation:6410:23490": {
+   "positions": 2172,
+   "calls": 1,
+   "max_call": 543,
+   "over_cap": false,
+   "weight": 4172
+  },
+  "29:HellaSwag:HellaSwag:validation:7535:31884": {
+   "positions": 2088,
+   "calls": 1,
+   "max_call": 522,
+   "over_cap": false,
+   "weight": 4088
+  },
+  "29:HellaSwag:HellaSwag:validation:7900:34452": {
+   "positions": 2084,
+   "calls": 1,
+   "max_call": 521,
+   "over_cap": false,
+   "weight": 4084
+  },
+  "29:HellaSwag:HellaSwag:validation:8734:40666": {
+   "positions": 1724,
+   "calls": 1,
+   "max_call": 431,
+   "over_cap": false,
+   "weight": 3724
+  },
+  "29:HellaSwag:HellaSwag:validation:9666:47556": {
+   "positions": 2004,
+   "calls": 1,
+   "max_call": 501,
+   "over_cap": false,
+   "weight": 4004
+  },
+  "29:HellaSwag:HellaSwag:validation:9806:48773": {
+   "positions": 2040,
+   "calls": 1,
+   "max_call": 510,
+   "over_cap": false,
+   "weight": 4040
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apibank:apibank_query_9:chunk0": {
+   "positions": 677502,
+   "calls": 32,
+   "max_call": 10864,
+   "over_cap": false,
+   "weight": 741502
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_380:chunk0": {
+   "positions": 471228,
+   "calls": 32,
+   "max_call": 7540,
+   "over_cap": false,
+   "weight": 535228
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_459:chunk0": {
+   "positions": 546680,
+   "calls": 32,
+   "max_call": 9076,
+   "over_cap": false,
+   "weight": 610680
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_612:chunk0": {
+   "positions": 508718,
+   "calls": 32,
+   "max_call": 8049,
+   "over_cap": false,
+   "weight": 572718
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_678:chunk0": {
+   "positions": 522236,
+   "calls": 32,
+   "max_call": 8760,
+   "over_cap": false,
+   "weight": 586236
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:apigen:apigen_query_905:chunk0": {
+   "positions": 546346,
+   "calls": 32,
+   "max_call": 8687,
+   "over_cap": false,
+   "weight": 610346
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:t-eval-step:t_eval_step_query_1:chunk0": {
+   "positions": 664802,
+   "calls": 32,
+   "max_call": 11149,
+   "over_cap": false,
+   "weight": 728802
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:taskbench-daily:taskbench_daily_query_37:chunk0": {
+   "positions": 562698,
+   "calls": 32,
+   "max_call": 9224,
+   "over_cap": false,
+   "weight": 626698
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:taskbench-multimedia:taskbench_multimedia_query_3:chunk0": {
+   "positions": 434842,
+   "calls": 32,
+   "max_call": 6831,
+   "over_cap": false,
+   "weight": 498842
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:taskbench-multimedia:taskbench_multimedia_query_6:chunk0": {
+   "positions": 437404,
+   "calls": 32,
+   "max_call": 6870,
+   "over_cap": false,
+   "weight": 501404
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:tool-be-honest:tool_be_honest_query_107:chunk0": {
+   "positions": 336086,
+   "calls": 32,
+   "max_call": 5421,
+   "over_cap": false,
+   "weight": 400086
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_204:chunk0": {
+   "positions": 699462,
+   "calls": 32,
+   "max_call": 11362,
+   "over_cap": false,
+   "weight": 763462
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_439:chunk0": {
+   "positions": 757208,
+   "calls": 32,
+   "max_call": 12220,
+   "over_cap": false,
+   "weight": 821208
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolace:toolACE_query_759:chunk0": {
+   "positions": 756796,
+   "calls": 32,
+   "max_call": 12246,
+   "over_cap": false,
+   "weight": 820796
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolalpaca:toolalpaca_query_7:chunk0": {
+   "positions": 472884,
+   "calls": 32,
+   "max_call": 7794,
+   "over_cap": false,
+   "weight": 536884
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_3:chunk0": {
+   "positions": 697308,
+   "calls": 32,
+   "max_call": 12536,
+   "over_cap": false,
+   "weight": 761308
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_51:chunk0": {
+   "positions": 552536,
+   "calls": 32,
+   "max_call": 8863,
+   "over_cap": false,
+   "weight": 616536
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolbench:toolbench_query_735:chunk0": {
+   "positions": 770302,
+   "calls": 32,
+   "max_call": 12718,
+   "over_cap": false,
+   "weight": 834302
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toolink:toolink_query_281:chunk0": {
+   "positions": 692988,
+   "calls": 32,
+   "max_call": 11085,
+   "over_cap": false,
+   "weight": 756988
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toollens:toolLens_query_309:chunk0": {
+   "positions": 655044,
+   "calls": 32,
+   "max_call": 10514,
+   "over_cap": false,
+   "weight": 719044
+  },
+  "2:ToolRet-retrieval:ToolRet-retrieval:toollens:toolLens_query_313:chunk0": {
+   "positions": 1029994,
+   "calls": 32,
+   "max_call": 17364,
+   "over_cap": true,
+   "weight": 0
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:1082": {
+   "positions": 4820,
+   "calls": 3,
+   "max_call": 482,
+   "over_cap": false,
+   "weight": 10820
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:1106": {
+   "positions": 4670,
+   "calls": 3,
+   "max_call": 467,
+   "over_cap": false,
+   "weight": 10670
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:1171": {
+   "positions": 5170,
+   "calls": 3,
+   "max_call": 517,
+   "over_cap": false,
+   "weight": 11170
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:384": {
+   "positions": 4630,
+   "calls": 3,
+   "max_call": 463,
+   "over_cap": false,
+   "weight": 10630
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:894": {
+   "positions": 5120,
+   "calls": 3,
+   "max_call": 512,
+   "over_cap": false,
+   "weight": 11120
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:9": {
+   "positions": 5020,
+   "calls": 3,
+   "max_call": 502,
+   "over_cap": false,
+   "weight": 11020
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:916": {
+   "positions": 5260,
+   "calls": 3,
+   "max_call": 526,
+   "over_cap": false,
+   "weight": 11260
+  },
+  "30:GSM8K-10choice:GSM8K-10:test:936": {
+   "positions": 5590,
+   "calls": 3,
+   "max_call": 559,
+   "over_cap": false,
+   "weight": 11590
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:1082": {
+   "positions": 1380,
+   "calls": 1,
+   "max_call": 345,
+   "over_cap": false,
+   "weight": 3380
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:1106": {
+   "positions": 1324,
+   "calls": 1,
+   "max_call": 331,
+   "over_cap": false,
+   "weight": 3324
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:1171": {
+   "positions": 1456,
+   "calls": 1,
+   "max_call": 364,
+   "over_cap": false,
+   "weight": 3456
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:384": {
+   "positions": 1292,
+   "calls": 1,
+   "max_call": 323,
+   "over_cap": false,
+   "weight": 3292
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:894": {
+   "positions": 1488,
+   "calls": 1,
+   "max_call": 372,
+   "over_cap": false,
+   "weight": 3488
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:9": {
+   "positions": 1420,
+   "calls": 1,
+   "max_call": 355,
+   "over_cap": false,
+   "weight": 3420
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:916": {
+   "positions": 1548,
+   "calls": 1,
+   "max_call": 387,
+   "over_cap": false,
+   "weight": 3548
+  },
+  "30:GSM8K-4choice:GSM8K-4:test:936": {
+   "positions": 1648,
+   "calls": 1,
+   "max_call": 412,
+   "over_cap": false,
+   "weight": 3648
+  },
+  "31:ChessBench-legal-move:ChessBench:test:3367f4edcd245dbe5d3efa0b183c2b0f1ca3dcc26b3fb9c5563237264374e6c6": {
+   "positions": 44857,
+   "calls": 8,
+   "max_call": 1447,
+   "over_cap": false,
+   "weight": 60857
+  },
+  "31:ChessBench-legal-move:ChessBench:test:38d2ef37e2932ec0a5d3656e3060e617692bcea542e5e2ac073a79bf2509f0f9": {
+   "positions": 39904,
+   "calls": 8,
+   "max_call": 1376,
+   "over_cap": false,
+   "weight": 55904
+  },
+  "31:ChessBench-legal-move:ChessBench:test:4995bd0755bd493740b9e616136c8cccaf04b306ec4af27b2272a12657d3be62": {
+   "positions": 50127,
+   "calls": 9,
+   "max_call": 1519,
+   "over_cap": false,
+   "weight": 68127
+  },
+  "31:ChessBench-legal-move:ChessBench:test:49b15c45c87085640a571172506dfb3ef548460d945bad5e24e18925126197be": {
+   "positions": 37128,
+   "calls": 7,
+   "max_call": 1326,
+   "over_cap": false,
+   "weight": 51128
+  },
+  "31:ChessBench-legal-move:ChessBench:test:5aa22e6fdbea70aba67a0856389b432dbd9d36de111d7d9aa7e209658e922d02": {
+   "positions": 20860,
+   "calls": 5,
+   "max_call": 1043,
+   "over_cap": false,
+   "weight": 30860
+  },
+  "31:ChessBench-legal-move:ChessBench:test:66af7f672ea16d51179d77b4160b47d9d1c7f67ec6433f06d565a2f3bec0294b": {
+   "positions": 1356,
+   "calls": 1,
+   "max_call": 452,
+   "over_cap": false,
+   "weight": 3356
+  },
+  "31:ChessBench-legal-move:ChessBench:test:68e69349953ab0146a06628c7477bcd9bbc6302191e158d87b1ffc3dbfd3ded6": {
+   "positions": 94752,
+   "calls": 12,
+   "max_call": 2016,
+   "over_cap": false,
+   "weight": 118752
+  },
+  "31:ChessBench-legal-move:ChessBench:test:6bd4a737eb8893190c1c8bb21300d9db7abfb83465c7ed58c9bb320e5ea8b370": {
+   "positions": 47200,
+   "calls": 8,
+   "max_call": 1475,
+   "over_cap": false,
+   "weight": 63200
+  },
+  "31:ChessBench-legal-move:ChessBench:test:777d047952b499939479b85961b8a934bb502eeb3411720b128e1b33bab35b8f": {
+   "positions": 64220,
+   "calls": 10,
+   "max_call": 1690,
+   "over_cap": false,
+   "weight": 84220
+  },
+  "31:ChessBench-legal-move:ChessBench:test:9013c715e6d42379c925dd9ecab5f8e6d32ce32b6f1047cf55af388f75796201": {
+   "positions": 61272,
+   "calls": 10,
+   "max_call": 1656,
+   "over_cap": false,
+   "weight": 81272
+  },
+  "31:ChessBench-legal-move:ChessBench:test:ce42eaecad8acbd5a01dd4e262b002a21f59bb99cc58f36f00aea3748097146a": {
+   "positions": 52564,
+   "calls": 9,
+   "max_call": 1546,
+   "over_cap": false,
+   "weight": 70564
+  },
+  "31:ChessBench-legal-move:ChessBench:test:d2bc959517804815de1835e78bae61b509268ad7dde359b43ae6a1e339e9f24c": {
+   "positions": 34965,
+   "calls": 7,
+   "max_call": 1295,
+   "over_cap": false,
+   "weight": 48965
+  },
+  "31:ChessBench-legal-move:ChessBench:test:ec25feb899367ff7ae6e5371790960508f5f7fe4b9de2765bfaef22f851f87aa": {
+   "positions": 11578,
+   "calls": 4,
+   "max_call": 827,
+   "over_cap": false,
+   "weight": 19578
+  },
+  "31:ChessBench-legal-move:ChessBench:test:f3996735dea1cf1597f329b95e7576dcc03b1a1b358a97e7516bc17a2169c982": {
+   "positions": 58788,
+   "calls": 9,
+   "max_call": 1633,
+   "over_cap": false,
+   "weight": 76788
+  },
+  "31:ChessBench-legal-move:ChessBench:test:f8b8739e48844bfde53c561298c0510d0be630af13ce3e98b6684a3fe67ba30f": {
+   "positions": 52428,
+   "calls": 9,
+   "max_call": 1542,
+   "over_cap": false,
+   "weight": 70428
+  },
+  "32:MuSR:MuSR:test:murder_mystery:107:0": {
+   "positions": 5342,
+   "calls": 1,
+   "max_call": 2671,
+   "over_cap": false,
+   "weight": 7342
+  },
+  "32:MuSR:MuSR:test:murder_mystery:189:0": {
+   "positions": 4086,
+   "calls": 1,
+   "max_call": 2043,
+   "over_cap": false,
+   "weight": 6086
+  },
+  "32:MuSR:MuSR:test:murder_mystery:220:0": {
+   "positions": 6064,
+   "calls": 1,
+   "max_call": 3032,
+   "over_cap": false,
+   "weight": 8064
+  },
+  "32:MuSR:MuSR:test:murder_mystery:61:0": {
+   "positions": 4672,
+   "calls": 1,
+   "max_call": 2336,
+   "over_cap": false,
+   "weight": 6672
+  },
+  "32:MuSR:MuSR:test:murder_mystery:65:0": {
+   "positions": 5310,
+   "calls": 1,
+   "max_call": 2655,
+   "over_cap": false,
+   "weight": 7310
+  },
+  "32:MuSR:MuSR:test:murder_mystery:67:0": {
+   "positions": 5196,
+   "calls": 1,
+   "max_call": 2598,
+   "over_cap": false,
+   "weight": 7196
+  },
+  "32:MuSR:MuSR:test:object_placements:23:2": {
+   "positions": 6111,
+   "calls": 1,
+   "max_call": 2037,
+   "over_cap": false,
+   "weight": 8111
+  },
+  "32:MuSR:MuSR:test:object_placements:31:0": {
+   "positions": 9296,
+   "calls": 1,
+   "max_call": 2324,
+   "over_cap": false,
+   "weight": 11296
+  },
+  "32:MuSR:MuSR:test:object_placements:37:3": {
+   "positions": 6861,
+   "calls": 1,
+   "max_call": 2287,
+   "over_cap": false,
+   "weight": 8861
+  },
+  "32:MuSR:MuSR:test:object_placements:39:2": {
+   "positions": 10175,
+   "calls": 2,
+   "max_call": 2035,
+   "over_cap": false,
+   "weight": 14175
+  },
+  "32:MuSR:MuSR:test:object_placements:6:2": {
+   "positions": 11190,
+   "calls": 2,
+   "max_call": 2238,
+   "over_cap": false,
+   "weight": 15190
+  },
+  "32:MuSR:MuSR:test:team_allocation:10:0": {
+   "positions": 4548,
+   "calls": 1,
+   "max_call": 1516,
+   "over_cap": false,
+   "weight": 6548
+  },
+  "32:MuSR:MuSR:test:team_allocation:157:0": {
+   "positions": 4524,
+   "calls": 1,
+   "max_call": 1508,
+   "over_cap": false,
+   "weight": 6524
+  },
+  "32:MuSR:MuSR:test:team_allocation:15:0": {
+   "positions": 4800,
+   "calls": 1,
+   "max_call": 1600,
+   "over_cap": false,
+   "weight": 6800
+  },
+  "32:MuSR:MuSR:test:team_allocation:189:0": {
+   "positions": 4584,
+   "calls": 1,
+   "max_call": 1528,
+   "over_cap": false,
+   "weight": 6584
+  },
+  "33:SATA-Bench:SATA-Bench:test:1037": {
+   "positions": 61162,
+   "calls": 15,
+   "max_call": 2047,
+   "over_cap": false,
+   "weight": 91162
+  },
+  "33:SATA-Bench:SATA-Bench:test:1084": {
+   "positions": 60172,
+   "calls": 15,
+   "max_call": 2013,
+   "over_cap": false,
+   "weight": 90172
+  },
+  "33:SATA-Bench:SATA-Bench:test:1155": {
+   "positions": 18478,
+   "calls": 6,
+   "max_call": 1542,
+   "over_cap": false,
+   "weight": 30478
+  },
+  "33:SATA-Bench:SATA-Bench:test:1188": {
+   "positions": 12416,
+   "calls": 6,
+   "max_call": 1037,
+   "over_cap": false,
+   "weight": 24416
+  },
+  "33:SATA-Bench:SATA-Bench:test:1230": {
+   "positions": 17882,
+   "calls": 6,
+   "max_call": 1491,
+   "over_cap": false,
+   "weight": 29882
+  },
+  "33:SATA-Bench:SATA-Bench:test:1505": {
+   "positions": 112136,
+   "calls": 15,
+   "max_call": 3741,
+   "over_cap": false,
+   "weight": 142136
+  },
+  "33:SATA-Bench:SATA-Bench:test:1619": {
+   "positions": 76794,
+   "calls": 15,
+   "max_call": 2561,
+   "over_cap": false,
+   "weight": 106794
+  },
+  "33:SATA-Bench:SATA-Bench:test:1640": {
+   "positions": 136510,
+   "calls": 15,
+   "max_call": 4553,
+   "over_cap": false,
+   "weight": 166510
+  },
+  "33:SATA-Bench:SATA-Bench:test:293": {
+   "positions": 7990,
+   "calls": 5,
+   "max_call": 805,
+   "over_cap": false,
+   "weight": 17990
+  },
+  "33:SATA-Bench:SATA-Bench:test:345": {
+   "positions": 18064,
+   "calls": 8,
+   "max_call": 1131,
+   "over_cap": false,
+   "weight": 34064
+  },
+  "33:SATA-Bench:SATA-Bench:test:566": {
+   "positions": 18080,
+   "calls": 8,
+   "max_call": 1132,
+   "over_cap": false,
+   "weight": 34080
+  },
+  "33:SATA-Bench:SATA-Bench:test:647": {
+   "positions": 9854,
+   "calls": 6,
+   "max_call": 822,
+   "over_cap": false,
+   "weight": 21854
+  },
+  "33:SATA-Bench:SATA-Bench:test:762": {
+   "positions": 12382,
+   "calls": 6,
+   "max_call": 1033,
+   "over_cap": false,
+   "weight": 24382
+  },
+  "33:SATA-Bench:SATA-Bench:test:812": {
+   "positions": 10458,
+   "calls": 6,
+   "max_call": 872,
+   "over_cap": false,
+   "weight": 22458
+  },
+  "33:SATA-Bench:SATA-Bench:test:893": {
+   "positions": 57142,
+   "calls": 15,
+   "max_call": 1913,
+   "over_cap": false,
+   "weight": 87142
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:earth_science:80:chunk0": {
+   "positions": 530600,
+   "calls": 32,
+   "max_call": 8868,
+   "over_cap": false,
+   "weight": 594600
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:economics:46:chunk0": {
+   "positions": 775288,
+   "calls": 32,
+   "max_call": 12738,
+   "over_cap": false,
+   "weight": 839288
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:economics:59:chunk0": {
+   "positions": 710192,
+   "calls": 32,
+   "max_call": 11786,
+   "over_cap": false,
+   "weight": 774192
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:economics:84:chunk0": {
+   "positions": 456944,
+   "calls": 32,
+   "max_call": 7281,
+   "over_cap": false,
+   "weight": 520944
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:130:chunk0": {
+   "positions": 1562418,
+   "calls": 32,
+   "max_call": 25037,
+   "over_cap": true,
+   "weight": 0
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:leetcode:48:chunk0": {
+   "positions": 1795252,
+   "calls": 32,
+   "max_call": 28499,
+   "over_cap": true,
+   "weight": 0
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:pony:22:chunk0": {
+   "positions": 559404,
+   "calls": 32,
+   "max_call": 8934,
+   "over_cap": false,
+   "weight": 623404
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:pony:33:chunk0": {
+   "positions": 549954,
+   "calls": 32,
+   "max_call": 8839,
+   "over_cap": false,
+   "weight": 613954
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:stackoverflow:56:chunk0": {
+   "positions": 1375904,
+   "calls": 32,
+   "max_call": 22244,
+   "over_cap": true,
+   "weight": 0
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:31:chunk0": {
+   "positions": 585050,
+   "calls": 32,
+   "max_call": 9330,
+   "over_cap": false,
+   "weight": 649050
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:38:chunk0": {
+   "positions": 673538,
+   "calls": 32,
+   "max_call": 10925,
+   "over_cap": false,
+   "weight": 737538
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:55:chunk0": {
+   "positions": 828862,
+   "calls": 32,
+   "max_call": 15722,
+   "over_cap": false,
+   "weight": 892862
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:74:chunk0": {
+   "positions": 596406,
+   "calls": 32,
+   "max_call": 9692,
+   "over_cap": false,
+   "weight": 660406
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:sustainable_living:79:chunk0": {
+   "positions": 576686,
+   "calls": 32,
+   "max_call": 9345,
+   "over_cap": false,
+   "weight": 640686
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:theoremqa_questions:TheoremQA_wenhuchen/t_test3.json:chunk0": {
+   "positions": 1471552,
+   "calls": 32,
+   "max_call": 24399,
+   "over_cap": true,
+   "weight": 0
+  },
+  "36:BRIGHT-retrieval:BRIGHT-retrieval:theoremqa_theorems:TheoremQA_elainewan/econ_micro_7.json:chunk0": {
+   "positions": 882882,
+   "calls": 32,
+   "max_call": 14643,
+   "over_cap": false,
+   "weight": 946882
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1121216": {
+   "positions": 1280,
+   "calls": 1,
+   "max_call": 320,
+   "over_cap": false,
+   "weight": 3280
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1400115": {
+   "positions": 5500,
+   "calls": 1,
+   "max_call": 1375,
+   "over_cap": false,
+   "weight": 7500
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1405666": {
+   "positions": 3376,
+   "calls": 1,
+   "max_call": 844,
+   "over_cap": false,
+   "weight": 5376
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1671039": {
+   "positions": 4636,
+   "calls": 1,
+   "max_call": 1159,
+   "over_cap": false,
+   "weight": 6636
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:19279": {
+   "positions": 1456,
+   "calls": 1,
+   "max_call": 364,
+   "over_cap": false,
+   "weight": 3456
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:1927988": {
+   "positions": 1452,
+   "calls": 1,
+   "max_call": 363,
+   "over_cap": false,
+   "weight": 3452
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2019541": {
+   "positions": 1892,
+   "calls": 1,
+   "max_call": 473,
+   "over_cap": false,
+   "weight": 3892
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2053036": {
+   "positions": 1584,
+   "calls": 1,
+   "max_call": 396,
+   "over_cap": false,
+   "weight": 3584
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2078895": {
+   "positions": 1476,
+   "calls": 1,
+   "max_call": 369,
+   "over_cap": false,
+   "weight": 3476
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:224685": {
+   "positions": 2440,
+   "calls": 1,
+   "max_call": 610,
+   "over_cap": false,
+   "weight": 4440
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2341672": {
+   "positions": 1504,
+   "calls": 1,
+   "max_call": 376,
+   "over_cap": false,
+   "weight": 3504
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2433221": {
+   "positions": 1196,
+   "calls": 1,
+   "max_call": 299,
+   "over_cap": false,
+   "weight": 3196
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:2476386": {
+   "positions": 3564,
+   "calls": 1,
+   "max_call": 891,
+   "over_cap": false,
+   "weight": 5564
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:256667": {
+   "positions": 1620,
+   "calls": 1,
+   "max_call": 405,
+   "over_cap": false,
+   "weight": 3620
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:260405": {
+   "positions": 4660,
+   "calls": 1,
+   "max_call": 1165,
+   "over_cap": false,
+   "weight": 6660
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:284326": {
+   "positions": 1808,
+   "calls": 1,
+   "max_call": 452,
+   "over_cap": false,
+   "weight": 3808
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:597978": {
+   "positions": 3764,
+   "calls": 1,
+   "max_call": 941,
+   "over_cap": false,
+   "weight": 5764
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:793759": {
+   "positions": 1688,
+   "calls": 1,
+   "max_call": 422,
+   "over_cap": false,
+   "weight": 3688
+  },
+  "37:Amazon-ESCI:Amazon-ESCI:test:82824": {
+   "positions": 1532,
+   "calls": 1,
+   "max_call": 383,
+   "over_cap": false,
+   "weight": 3532
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-1": {
+   "positions": 1179092,
+   "calls": 64,
+   "max_call": 9224,
+   "over_cap": false,
+   "weight": 1307092
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-2": {
+   "positions": 1209902,
+   "calls": 64,
+   "max_call": 9461,
+   "over_cap": false,
+   "weight": 1337902
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-3": {
+   "positions": 1188972,
+   "calls": 64,
+   "max_call": 9298,
+   "over_cap": false,
+   "weight": 1316972
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-4": {
+   "positions": 1200672,
+   "calls": 64,
+   "max_call": 9386,
+   "over_cap": false,
+   "weight": 1328672
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-5": {
+   "positions": 1187282,
+   "calls": 64,
+   "max_call": 9283,
+   "over_cap": false,
+   "weight": 1315282
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-33:group-6": {
+   "positions": 535078,
+   "calls": 43,
+   "max_call": 6227,
+   "over_cap": false,
+   "weight": 621078
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-1": {
+   "positions": 1177044,
+   "calls": 64,
+   "max_call": 9208,
+   "over_cap": false,
+   "weight": 1305044
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-2": {
+   "positions": 1207854,
+   "calls": 64,
+   "max_call": 9445,
+   "over_cap": false,
+   "weight": 1335854
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-3": {
+   "positions": 1186924,
+   "calls": 64,
+   "max_call": 9282,
+   "over_cap": false,
+   "weight": 1314924
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-4": {
+   "positions": 1198624,
+   "calls": 64,
+   "max_call": 9370,
+   "over_cap": false,
+   "weight": 1326624
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-5": {
+   "positions": 1185234,
+   "calls": 64,
+   "max_call": 9267,
+   "over_cap": false,
+   "weight": 1313234
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-536:group-6": {
+   "positions": 533702,
+   "calls": 43,
+   "max_call": 6211,
+   "over_cap": false,
+   "weight": 619702
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-1": {
+   "positions": 1179988,
+   "calls": 64,
+   "max_call": 9231,
+   "over_cap": false,
+   "weight": 1307988
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-2": {
+   "positions": 1210798,
+   "calls": 64,
+   "max_call": 9468,
+   "over_cap": false,
+   "weight": 1338798
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-3": {
+   "positions": 1189868,
+   "calls": 64,
+   "max_call": 9305,
+   "over_cap": false,
+   "weight": 1317868
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-4": {
+   "positions": 1201568,
+   "calls": 64,
+   "max_call": 9393,
+   "over_cap": false,
+   "weight": 1329568
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-5": {
+   "positions": 1188178,
+   "calls": 64,
+   "max_call": 9290,
+   "over_cap": false,
+   "weight": 1316178
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Laptop-ACOS:laptop_quad_test:line-596:group-6": {
+   "positions": 535680,
+   "calls": 43,
+   "max_call": 6234,
+   "over_cap": false,
+   "weight": 621680
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Restaurant-ACOS:rest16_quad_test:line-200:group-1": {
+   "positions": 445940,
+   "calls": 39,
+   "max_call": 5729,
+   "over_cap": false,
+   "weight": 523940
+  },
+  "38:ACOS-category-sentiment:ACOS:category-sentiment:Restaurant-ACOS:rest16_quad_test:line-252:group-1": {
+   "positions": 445784,
+   "calls": 39,
+   "max_call": 5727,
+   "over_cap": false,
+   "weight": 523784
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0050": {
+   "positions": 1065,
+   "calls": 1,
+   "max_call": 355,
+   "over_cap": false,
+   "weight": 3065
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0166": {
+   "positions": 14406,
+   "calls": 5,
+   "max_call": 963,
+   "over_cap": false,
+   "weight": 24406
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0267": {
+   "positions": 2919,
+   "calls": 2,
+   "max_call": 491,
+   "over_cap": false,
+   "weight": 6919
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0297": {
+   "positions": 1113,
+   "calls": 1,
+   "max_call": 371,
+   "over_cap": false,
+   "weight": 3113
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0345": {
+   "positions": 3048,
+   "calls": 2,
+   "max_call": 509,
+   "over_cap": false,
+   "weight": 7048
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0365": {
+   "positions": 1026,
+   "calls": 1,
+   "max_call": 342,
+   "over_cap": false,
+   "weight": 3026
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0438": {
+   "positions": 1047,
+   "calls": 1,
+   "max_call": 349,
+   "over_cap": false,
+   "weight": 3047
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0499": {
+   "positions": 2910,
+   "calls": 2,
+   "max_call": 488,
+   "over_cap": false,
+   "weight": 6910
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0584": {
+   "positions": 1074,
+   "calls": 1,
+   "max_call": 358,
+   "over_cap": false,
+   "weight": 3074
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0638": {
+   "positions": 5622,
+   "calls": 3,
+   "max_call": 628,
+   "over_cap": false,
+   "weight": 11622
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0671": {
+   "positions": 5550,
+   "calls": 3,
+   "max_call": 618,
+   "over_cap": false,
+   "weight": 11550
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0705": {
+   "positions": 1014,
+   "calls": 1,
+   "max_call": 338,
+   "over_cap": false,
+   "weight": 3014
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0824": {
+   "positions": 5802,
+   "calls": 3,
+   "max_call": 646,
+   "over_cap": false,
+   "weight": 11802
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0852": {
+   "positions": 5484,
+   "calls": 3,
+   "max_call": 610,
+   "over_cap": false,
+   "weight": 11484
+  },
+  "39:FinEntity-entity-given:FinEntity:entity-given:0940": {
+   "positions": 996,
+   "calls": 1,
+   "max_call": 332,
+   "over_cap": false,
+   "weight": 2996
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AddAgenda-level-3-1:api-8": {
+   "positions": 381696,
+   "calls": 14,
+   "max_call": 7202,
+   "over_cap": false,
+   "weight": 409696
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AddAlarm-level-3-2:api-2": {
+   "positions": 360390,
+   "calls": 14,
+   "max_call": 6800,
+   "over_cap": false,
+   "weight": 388390
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AddMeeting-level-1-1:api-11": {
+   "positions": 368923,
+   "calls": 14,
+   "max_call": 6961,
+   "over_cap": false,
+   "weight": 396923
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AddReminder-level-1-3:api-5": {
+   "positions": 362775,
+   "calls": 14,
+   "max_call": 6845,
+   "over_cap": false,
+   "weight": 390775
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:AppointmentRegistration-level-3-1:api-2": {
+   "positions": 359330,
+   "calls": 14,
+   "max_call": 6780,
+   "over_cap": false,
+   "weight": 387330
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:BookHotel-level-3-1:api-2": {
+   "positions": 360284,
+   "calls": 14,
+   "max_call": 6798,
+   "over_cap": false,
+   "weight": 388284
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:BookHotel-level-3-1:api-4": {
+   "positions": 372686,
+   "calls": 14,
+   "max_call": 7032,
+   "over_cap": false,
+   "weight": 400686
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:DeleteAccount-level-3-3:api-4": {
+   "positions": 369347,
+   "calls": 14,
+   "max_call": 6969,
+   "over_cap": false,
+   "weight": 397347
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:Dictionary-level-1-3:api-2": {
+   "positions": 359277,
+   "calls": 14,
+   "max_call": 6779,
+   "over_cap": false,
+   "weight": 387277
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:EmergencyKnowledge-ModifyRegistration-RecordHealthData-level-2-2:api-12": {
+   "positions": 388533,
+   "calls": 14,
+   "max_call": 7331,
+   "over_cap": false,
+   "weight": 416533
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:EmergencyKnowledge-ModifyRegistration-RecordHealthData-level-2-3:api-2": {
+   "positions": 359807,
+   "calls": 14,
+   "max_call": 6789,
+   "over_cap": false,
+   "weight": 387807
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:GetMeeting-level-1-2:api-6": {
+   "positions": 365584,
+   "calls": 14,
+   "max_call": 6898,
+   "over_cap": false,
+   "weight": 393584
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ImageCaption-level-1-1:api-3": {
+   "positions": 363199,
+   "calls": 14,
+   "max_call": 6853,
+   "over_cap": false,
+   "weight": 391199
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyAlarm-AddAgenda-GetUserToken-level-2-1:api-14": {
+   "positions": 385088,
+   "calls": 14,
+   "max_call": 7266,
+   "over_cap": false,
+   "weight": 413088
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyPassword-level-1-1:api-7": {
+   "positions": 369824,
+   "calls": 14,
+   "max_call": 6978,
+   "over_cap": false,
+   "weight": 397824
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyRegistration-EmergencyKnowledge-level-2-2:api-4": {
+   "positions": 361874,
+   "calls": 14,
+   "max_call": 6828,
+   "over_cap": false,
+   "weight": 389874
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyReminder-AddAgenda-DeleteAgenda-GetUserToken-level-2-2:api-15": {
+   "positions": 386731,
+   "calls": 14,
+   "max_call": 7297,
+   "over_cap": false,
+   "weight": 414731
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyReminder-AddAgenda-DeleteAgenda-GetUserToken-level-2-2:api-8": {
+   "positions": 372368,
+   "calls": 14,
+   "max_call": 7026,
+   "over_cap": false,
+   "weight": 400368
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:ModifyReminder-level-1-2:api-6": {
+   "positions": 368552,
+   "calls": 14,
+   "max_call": 6954,
+   "over_cap": false,
+   "weight": 396552
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:OpenBankAccount-QueryStock-QueryBalance-GetUserToken-level-2-1:api-17": {
+   "positions": 383392,
+   "calls": 14,
+   "max_call": 7234,
+   "over_cap": false,
+   "weight": 411392
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:OpenBankAccount-level-1-3:api-8": {
+   "positions": 365584,
+   "calls": 14,
+   "max_call": 6898,
+   "over_cap": false,
+   "weight": 393584
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:QueryHistoryToday-level-1-3:api-7": {
+   "positions": 365584,
+   "calls": 14,
+   "max_call": 6898,
+   "over_cap": false,
+   "weight": 393584
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:QueryStock-OpenBankAccount-QueryBalance-GetUserToken-level-2-2:api-14": {
+   "positions": 376555,
+   "calls": 14,
+   "max_call": 7105,
+   "over_cap": false,
+   "weight": 404555
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:SymptomSearch-AppointmentRegistration-level-2-1:api-11": {
+   "positions": 384982,
+   "calls": 14,
+   "max_call": 7264,
+   "over_cap": false,
+   "weight": 412982
+  },
+  "3:API-Bank-tool-selection:API-Bank-tool-selection:SymptomSearch-AppointmentRegistration-level-2-1:api-4": {
+   "positions": 362722,
+   "calls": 14,
+   "max_call": 6844,
+   "over_cap": false,
+   "weight": 390722
+  },
+  "40:iSarcasmEval-A-Ar:iSarcasmEval-A-Ar:test:1091": {
+   "positions": 390,
+   "calls": 1,
+   "max_call": 195,
+   "over_cap": false,
+   "weight": 2390
+  },
+  "40:iSarcasmEval-A-Ar:iSarcasmEval-A-Ar:test:329": {
+   "positions": 386,
+   "calls": 1,
+   "max_call": 193,
+   "over_cap": false,
+   "weight": 2386
+  },
+  "40:iSarcasmEval-A-Ar:iSarcasmEval-A-Ar:test:576": {
+   "positions": 406,
+   "calls": 1,
+   "max_call": 203,
+   "over_cap": false,
+   "weight": 2406
+  },
+  "40:iSarcasmEval-A-Ar:iSarcasmEval-A-Ar:test:910": {
+   "positions": 384,
+   "calls": 1,
+   "max_call": 192,
+   "over_cap": false,
+   "weight": 2384
+  },
+  "40:iSarcasmEval-A-En:iSarcasmEval-A-En:test:329": {
+   "positions": 476,
+   "calls": 1,
+   "max_call": 238,
+   "over_cap": false,
+   "weight": 2476
+  },
+  "40:iSarcasmEval-A-En:iSarcasmEval-A-En:test:855": {
+   "positions": 382,
+   "calls": 1,
+   "max_call": 191,
+   "over_cap": false,
+   "weight": 2382
+  },
+  "40:iSarcasmEval-A-En:iSarcasmEval-A-En:test:859": {
+   "positions": 400,
+   "calls": 1,
+   "max_call": 200,
+   "over_cap": false,
+   "weight": 2400
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:19": {
+   "positions": 6626,
+   "calls": 6,
+   "max_call": 554,
+   "over_cap": false,
+   "weight": 18626
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:301": {
+   "positions": 7358,
+   "calls": 6,
+   "max_call": 615,
+   "over_cap": false,
+   "weight": 19358
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:329": {
+   "positions": 6758,
+   "calls": 6,
+   "max_call": 565,
+   "over_cap": false,
+   "weight": 18758
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:394": {
+   "positions": 6662,
+   "calls": 6,
+   "max_call": 557,
+   "over_cap": false,
+   "weight": 18662
+  },
+  "40:iSarcasmEval-B-En:iSarcasmEval-B-En:test:831": {
+   "positions": 6866,
+   "calls": 6,
+   "max_call": 574,
+   "over_cap": false,
+   "weight": 18866
+  },
+  "40:iSarcasmEval-C-Ar:iSarcasmEval-C-Ar:test:148": {
+   "positions": 440,
+   "calls": 1,
+   "max_call": 220,
+   "over_cap": false,
+   "weight": 2440
+  },
+  "40:iSarcasmEval-C-Ar:iSarcasmEval-C-Ar:test:65": {
+   "positions": 428,
+   "calls": 1,
+   "max_call": 214,
+   "over_cap": false,
+   "weight": 2428
+  },
+  "40:iSarcasmEval-C-En:iSarcasmEval-C-En:test:148": {
+   "positions": 436,
+   "calls": 1,
+   "max_call": 218,
+   "over_cap": false,
+   "weight": 2436
+  },
+  "41:VAST:VAST:test:11118": {
+   "positions": 1437,
+   "calls": 1,
+   "max_call": 479,
+   "over_cap": false,
+   "weight": 3437
+  },
+  "41:VAST:VAST:test:13561": {
+   "positions": 1449,
+   "calls": 1,
+   "max_call": 483,
+   "over_cap": false,
+   "weight": 3449
+  },
+  "41:VAST:VAST:test:15231": {
+   "positions": 1569,
+   "calls": 1,
+   "max_call": 523,
+   "over_cap": false,
+   "weight": 3569
+  },
+  "41:VAST:VAST:test:15535": {
+   "positions": 1581,
+   "calls": 1,
+   "max_call": 527,
+   "over_cap": false,
+   "weight": 3581
+  },
+  "41:VAST:VAST:test:15890": {
+   "positions": 1239,
+   "calls": 1,
+   "max_call": 413,
+   "over_cap": false,
+   "weight": 3239
+  },
+  "41:VAST:VAST:test:17182": {
+   "positions": 1473,
+   "calls": 1,
+   "max_call": 491,
+   "over_cap": false,
+   "weight": 3473
+  },
+  "41:VAST:VAST:test:17630": {
+   "positions": 1041,
+   "calls": 1,
+   "max_call": 347,
+   "over_cap": false,
+   "weight": 3041
+  },
+  "41:VAST:VAST:test:22781": {
+   "positions": 1107,
+   "calls": 1,
+   "max_call": 369,
+   "over_cap": false,
+   "weight": 3107
+  },
+  "41:VAST:VAST:test:22922": {
+   "positions": 1185,
+   "calls": 1,
+   "max_call": 395,
+   "over_cap": false,
+   "weight": 3185
+  },
+  "41:VAST:VAST:test:22997": {
+   "positions": 1281,
+   "calls": 1,
+   "max_call": 427,
+   "over_cap": false,
+   "weight": 3281
+  },
+  "41:VAST:VAST:test:3570": {
+   "positions": 1815,
+   "calls": 1,
+   "max_call": 605,
+   "over_cap": false,
+   "weight": 3815
+  },
+  "41:VAST:VAST:test:5369": {
+   "positions": 1227,
+   "calls": 1,
+   "max_call": 409,
+   "over_cap": false,
+   "weight": 3227
+  },
+  "41:VAST:VAST:test:595": {
+   "positions": 1107,
+   "calls": 1,
+   "max_call": 369,
+   "over_cap": false,
+   "weight": 3107
+  },
+  "41:VAST:VAST:test:5983": {
+   "positions": 1455,
+   "calls": 1,
+   "max_call": 485,
+   "over_cap": false,
+   "weight": 3455
+  },
+  "41:VAST:VAST:test:7264": {
+   "positions": 963,
+   "calls": 1,
+   "max_call": 321,
+   "over_cap": false,
+   "weight": 2963
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:00c165f5-4c14-4aab-a4a8-9b8010bd5858": {
+   "positions": 2710,
+   "calls": 1,
+   "max_call": 1355,
+   "over_cap": false,
+   "weight": 4710
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:06c2d2d2-93dc-44dd-a729-a11a4397db44": {
+   "positions": 1264,
+   "calls": 1,
+   "max_call": 632,
+   "over_cap": false,
+   "weight": 3264
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:117c69b5-683c-45a6-b80d-5bc866f2faa1": {
+   "positions": 4178,
+   "calls": 1,
+   "max_call": 2089,
+   "over_cap": false,
+   "weight": 6178
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:1279b75a-606f-469e-a6e6-20d4eabd50ba": {
+   "positions": 2706,
+   "calls": 1,
+   "max_call": 1353,
+   "over_cap": false,
+   "weight": 4706
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:1f8bd45e-480f-4244-9515-e1249b5b842a": {
+   "positions": 1196,
+   "calls": 1,
+   "max_call": 598,
+   "over_cap": false,
+   "weight": 3196
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:1ff9cfe0-06e6-4f99-961c-7854ba9e2c46": {
+   "positions": 2798,
+   "calls": 1,
+   "max_call": 1399,
+   "over_cap": false,
+   "weight": 4798
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:28061f9c-36e0-4f1f-9f51-1c01efd608a1": {
+   "positions": 4246,
+   "calls": 1,
+   "max_call": 2123,
+   "over_cap": false,
+   "weight": 6246
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:2e22a621-745f-422e-a66e-2a85f8ff1a25": {
+   "positions": 1080,
+   "calls": 1,
+   "max_call": 540,
+   "over_cap": false,
+   "weight": 3080
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:3d081c7c-10e8-490f-8943-260f27175c56": {
+   "positions": 2414,
+   "calls": 1,
+   "max_call": 1207,
+   "over_cap": false,
+   "weight": 4414
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:3fd8d038-4c72-4f0f-b2d8-0e822f5b96a8": {
+   "positions": 3354,
+   "calls": 1,
+   "max_call": 1677,
+   "over_cap": false,
+   "weight": 5354
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:462f7871-9216-4b37-af39-1fb32b2bbf84": {
+   "positions": 2278,
+   "calls": 1,
+   "max_call": 1139,
+   "over_cap": false,
+   "weight": 4278
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:520f44e8-b74b-44a6-a7cf-496275847af1": {
+   "positions": 602,
+   "calls": 1,
+   "max_call": 301,
+   "over_cap": false,
+   "weight": 2602
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:936d7822-fd4b-42fc-abc5-d5ad838f148c": {
+   "positions": 1126,
+   "calls": 1,
+   "max_call": 563,
+   "over_cap": false,
+   "weight": 3126
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:9a814107-778f-43ba-bd59-383ae14594ed": {
+   "positions": 1290,
+   "calls": 1,
+   "max_call": 645,
+   "over_cap": false,
+   "weight": 3290
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:b12011c4-fa87-4249-97e3-635e6e6805a4": {
+   "positions": 4270,
+   "calls": 1,
+   "max_call": 2135,
+   "over_cap": false,
+   "weight": 6270
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:b2059651-24e7-4b6c-aeee-403ff32cf725": {
+   "positions": 1262,
+   "calls": 1,
+   "max_call": 631,
+   "over_cap": false,
+   "weight": 3262
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:b358fb9c-1152-4e1a-88eb-743e965d58fc": {
+   "positions": 2282,
+   "calls": 1,
+   "max_call": 1141,
+   "over_cap": false,
+   "weight": 4282
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:c831a231-8b84-41ca-a825-d11060c44d64": {
+   "positions": 1130,
+   "calls": 1,
+   "max_call": 565,
+   "over_cap": false,
+   "weight": 3130
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:c975a46b-6980-4cc4-886d-674f5f2c6773": {
+   "positions": 1084,
+   "calls": 1,
+   "max_call": 542,
+   "over_cap": false,
+   "weight": 3084
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:cbf31ee8-3c01-46f5-9698-f44da41fd1fa": {
+   "positions": 654,
+   "calls": 1,
+   "max_call": 327,
+   "over_cap": false,
+   "weight": 2654
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:d9dff3a0-537b-4297-bc58-766d366ba5a0": {
+   "positions": 1204,
+   "calls": 1,
+   "max_call": 602,
+   "over_cap": false,
+   "weight": 3204
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:e6fb96bc-d38b-484e-8d2a-fe14f943c599": {
+   "positions": 2330,
+   "calls": 1,
+   "max_call": 1165,
+   "over_cap": false,
+   "weight": 4330
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:ee74c3c1-33c4-4b0a-81bf-a2ed3ec7e161": {
+   "positions": 1360,
+   "calls": 1,
+   "max_call": 680,
+   "over_cap": false,
+   "weight": 3360
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:f05705d7-3be3-4d1d-9dca-c59c130446a1": {
+   "positions": 1218,
+   "calls": 1,
+   "max_call": 609,
+   "over_cap": false,
+   "weight": 3218
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:f37f99e0-a9eb-450f-850e-7bd96547bab1": {
+   "positions": 1376,
+   "calls": 1,
+   "max_call": 688,
+   "over_cap": false,
+   "weight": 3376
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:f66e21d9-801f-4613-99da-c033734189e4": {
+   "positions": 2690,
+   "calls": 1,
+   "max_call": 1345,
+   "over_cap": false,
+   "weight": 4690
+  },
+  "42:NLI4CT-2024:NLI4CT-2024:test:f8accdcd-5a92-4fff-9e6b-6a2d141b5ee4": {
+   "positions": 2418,
+   "calls": 1,
+   "max_call": 1209,
+   "over_cap": false,
+   "weight": 4418
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_157": {
+   "positions": 1308,
+   "calls": 1,
+   "max_call": 327,
+   "over_cap": false,
+   "weight": 3308
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_16": {
+   "positions": 530,
+   "calls": 1,
+   "max_call": 265,
+   "over_cap": false,
+   "weight": 2530
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_195": {
+   "positions": 1428,
+   "calls": 1,
+   "max_call": 357,
+   "over_cap": false,
+   "weight": 3428
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_238": {
+   "positions": 626,
+   "calls": 1,
+   "max_call": 313,
+   "over_cap": false,
+   "weight": 2626
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_301": {
+   "positions": 696,
+   "calls": 1,
+   "max_call": 348,
+   "over_cap": false,
+   "weight": 2696
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_38": {
+   "positions": 1312,
+   "calls": 1,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 3312
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_385": {
+   "positions": 1612,
+   "calls": 1,
+   "max_call": 403,
+   "over_cap": false,
+   "weight": 3612
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_5": {
+   "positions": 6280,
+   "calls": 3,
+   "max_call": 628,
+   "over_cap": false,
+   "weight": 12280
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_521": {
+   "positions": 5176,
+   "calls": 2,
+   "max_call": 647,
+   "over_cap": false,
+   "weight": 9176
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_536": {
+   "positions": 873,
+   "calls": 1,
+   "max_call": 291,
+   "over_cap": false,
+   "weight": 2873
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_634": {
+   "positions": 933,
+   "calls": 1,
+   "max_call": 311,
+   "over_cap": false,
+   "weight": 2933
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_658": {
+   "positions": 628,
+   "calls": 1,
+   "max_call": 314,
+   "over_cap": false,
+   "weight": 2628
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_714": {
+   "positions": 552,
+   "calls": 1,
+   "max_call": 276,
+   "over_cap": false,
+   "weight": 2552
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_731": {
+   "positions": 906,
+   "calls": 1,
+   "max_call": 302,
+   "over_cap": false,
+   "weight": 2906
+  },
+  "43:CRUXEval-output-choice:CRUXEval-output-choice:test:sample_758": {
+   "positions": 518,
+   "calls": 1,
+   "max_call": 259,
+   "over_cap": false,
+   "weight": 2518
+  },
+  "44:CLadder:CLadder:balanced:10455": {
+   "positions": 1114,
+   "calls": 1,
+   "max_call": 557,
+   "over_cap": false,
+   "weight": 3114
+  },
+  "44:CLadder:CLadder:balanced:10673": {
+   "positions": 778,
+   "calls": 1,
+   "max_call": 389,
+   "over_cap": false,
+   "weight": 2778
+  },
+  "44:CLadder:CLadder:balanced:12346": {
+   "positions": 774,
+   "calls": 1,
+   "max_call": 387,
+   "over_cap": false,
+   "weight": 2774
+  },
+  "44:CLadder:CLadder:balanced:12454": {
+   "positions": 766,
+   "calls": 1,
+   "max_call": 383,
+   "over_cap": false,
+   "weight": 2766
+  },
+  "44:CLadder:CLadder:balanced:13931": {
+   "positions": 742,
+   "calls": 1,
+   "max_call": 371,
+   "over_cap": false,
+   "weight": 2742
+  },
+  "44:CLadder:CLadder:balanced:18293": {
+   "positions": 978,
+   "calls": 1,
+   "max_call": 489,
+   "over_cap": false,
+   "weight": 2978
+  },
+  "44:CLadder:CLadder:balanced:22548": {
+   "positions": 726,
+   "calls": 1,
+   "max_call": 363,
+   "over_cap": false,
+   "weight": 2726
+  },
+  "44:CLadder:CLadder:balanced:24002": {
+   "positions": 766,
+   "calls": 1,
+   "max_call": 383,
+   "over_cap": false,
+   "weight": 2766
+  },
+  "44:CLadder:CLadder:balanced:25994": {
+   "positions": 790,
+   "calls": 1,
+   "max_call": 395,
+   "over_cap": false,
+   "weight": 2790
+  },
+  "44:CLadder:CLadder:balanced:2730": {
+   "positions": 718,
+   "calls": 1,
+   "max_call": 359,
+   "over_cap": false,
+   "weight": 2718
+  },
+  "44:CLadder:CLadder:balanced:27717": {
+   "positions": 1058,
+   "calls": 1,
+   "max_call": 529,
+   "over_cap": false,
+   "weight": 3058
+  },
+  "44:CLadder:CLadder:balanced:4174": {
+   "positions": 774,
+   "calls": 1,
+   "max_call": 387,
+   "over_cap": false,
+   "weight": 2774
+  },
+  "44:CLadder:CLadder:balanced:4509": {
+   "positions": 702,
+   "calls": 1,
+   "max_call": 351,
+   "over_cap": false,
+   "weight": 2702
+  },
+  "44:CLadder:CLadder:balanced:6283": {
+   "positions": 698,
+   "calls": 1,
+   "max_call": 349,
+   "over_cap": false,
+   "weight": 2698
+  },
+  "44:CLadder:CLadder:balanced:7039": {
+   "positions": 734,
+   "calls": 1,
+   "max_call": 367,
+   "over_cap": false,
+   "weight": 2734
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:66e90adfa5b0e84a801c7660": {
+   "positions": 6453,
+   "calls": 3,
+   "max_call": 717,
+   "over_cap": false,
+   "weight": 12453
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:66eaeaa8afe364e4f477b777": {
+   "positions": 5032,
+   "calls": 2,
+   "max_call": 629,
+   "over_cap": false,
+   "weight": 9032
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:66ee81afdec0afc28a74dc93": {
+   "positions": 3080,
+   "calls": 2,
+   "max_call": 616,
+   "over_cap": false,
+   "weight": 7080
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:66fcc286eab6d512704d96af": {
+   "positions": 9760,
+   "calls": 2,
+   "max_call": 1220,
+   "over_cap": false,
+   "weight": 13760
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67008f17fc2c0a4040f1d352": {
+   "positions": 13260,
+   "calls": 3,
+   "max_call": 1105,
+   "over_cap": false,
+   "weight": 19260
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67038476397cc8defc4de8ff": {
+   "positions": 2888,
+   "calls": 2,
+   "max_call": 361,
+   "over_cap": false,
+   "weight": 6888
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:6717dd24e8666ff79cdd82b0": {
+   "positions": 12645,
+   "calls": 3,
+   "max_call": 1405,
+   "over_cap": false,
+   "weight": 18645
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671a58056e1db673f77905cd": {
+   "positions": 1640,
+   "calls": 2,
+   "max_call": 328,
+   "over_cap": false,
+   "weight": 5640
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671ab94ffad7ae30b89eff8f": {
+   "positions": 2260,
+   "calls": 2,
+   "max_call": 452,
+   "over_cap": false,
+   "weight": 6260
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671dd6cd91a438f6811f5108": {
+   "positions": 2685,
+   "calls": 2,
+   "max_call": 537,
+   "over_cap": false,
+   "weight": 6685
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671e3d672637abea9c147ba1": {
+   "positions": 2550,
+   "calls": 2,
+   "max_call": 510,
+   "over_cap": false,
+   "weight": 6550
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:671f33cb75523fe63c0a8b60": {
+   "positions": 1872,
+   "calls": 2,
+   "max_call": 312,
+   "over_cap": false,
+   "weight": 5872
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67240e5786f4c71a70e0b499": {
+   "positions": 1825,
+   "calls": 2,
+   "max_call": 365,
+   "over_cap": false,
+   "weight": 5825
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67241711454d2eee0ceef767": {
+   "positions": 2245,
+   "calls": 2,
+   "max_call": 449,
+   "over_cap": false,
+   "weight": 6245
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67258c4124b290d28a9f8abe": {
+   "positions": 1970,
+   "calls": 2,
+   "max_call": 394,
+   "over_cap": false,
+   "weight": 5970
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:672b2749f64de603265f9fc4": {
+   "positions": 2471,
+   "calls": 2,
+   "max_call": 353,
+   "over_cap": false,
+   "weight": 6471
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:6736289810ec0a5f859365d0": {
+   "positions": 1665,
+   "calls": 2,
+   "max_call": 333,
+   "over_cap": false,
+   "weight": 5665
+  },
+  "45:HLE-text-MC:HLE-text-MC:test:67672352c393c4ff629cb820": {
+   "positions": 1615,
+   "calls": 2,
+   "max_call": 323,
+   "over_cap": false,
+   "weight": 5615
+  },
+  "48:ForecastBench-binary:ForecastBench:2025-08-31_resolution_set:1247": {
+   "positions": 1824,
+   "calls": 1,
+   "max_call": 912,
+   "over_cap": false,
+   "weight": 3824
+  },
+  "48:ForecastBench-binary:ForecastBench:2025-08-31_resolution_set:2940": {
+   "positions": 5322,
+   "calls": 1,
+   "max_call": 2661,
+   "over_cap": false,
+   "weight": 7322
+  },
+  "48:ForecastBench-binary:ForecastBench:2025-08-31_resolution_set:5992": {
+   "positions": 1232,
+   "calls": 1,
+   "max_call": 616,
+   "over_cap": false,
+   "weight": 3232
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-01-18_resolution_set:1101": {
+   "positions": 1676,
+   "calls": 1,
+   "max_call": 838,
+   "over_cap": false,
+   "weight": 3676
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-02-15_resolution_set:395": {
+   "positions": 2782,
+   "calls": 1,
+   "max_call": 1391,
+   "over_cap": false,
+   "weight": 4782
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-03-01_resolution_set:1170": {
+   "positions": 1468,
+   "calls": 1,
+   "max_call": 734,
+   "over_cap": false,
+   "weight": 3468
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-04-12_resolution_set:124": {
+   "positions": 1816,
+   "calls": 1,
+   "max_call": 908,
+   "over_cap": false,
+   "weight": 3816
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-04-12_resolution_set:252": {
+   "positions": 2974,
+   "calls": 1,
+   "max_call": 1487,
+   "over_cap": false,
+   "weight": 4974
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-04-26_resolution_set:300": {
+   "positions": 3036,
+   "calls": 1,
+   "max_call": 1518,
+   "over_cap": false,
+   "weight": 5036
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-05-24_resolution_set:309": {
+   "positions": 3036,
+   "calls": 1,
+   "max_call": 1518,
+   "over_cap": false,
+   "weight": 5036
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-06-07_resolution_set:298": {
+   "positions": 2844,
+   "calls": 1,
+   "max_call": 1422,
+   "over_cap": false,
+   "weight": 4844
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-06-07_resolution_set:299": {
+   "positions": 2844,
+   "calls": 1,
+   "max_call": 1422,
+   "over_cap": false,
+   "weight": 4844
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-06-21_resolution_set:333": {
+   "positions": 1056,
+   "calls": 1,
+   "max_call": 528,
+   "over_cap": false,
+   "weight": 3056
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-06-21_resolution_set:93": {
+   "positions": 1842,
+   "calls": 1,
+   "max_call": 921,
+   "over_cap": false,
+   "weight": 3842
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-08-02_resolution_set:4": {
+   "positions": 1854,
+   "calls": 1,
+   "max_call": 927,
+   "over_cap": false,
+   "weight": 3854
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-08-16_resolution_set:151": {
+   "positions": 2844,
+   "calls": 1,
+   "max_call": 1422,
+   "over_cap": false,
+   "weight": 4844
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-08-16_resolution_set:152": {
+   "positions": 2844,
+   "calls": 1,
+   "max_call": 1422,
+   "over_cap": false,
+   "weight": 4844
+  },
+  "48:ForecastBench-binary:ForecastBench:2026-08-30_resolution_set:429": {
+   "positions": 1220,
+   "calls": 1,
+   "max_call": 610,
+   "over_cap": false,
+   "weight": 3220
+  },
+  "4:BANKING77:BANKING77:test:1003": {
+   "positions": 178784,
+   "calls": 20,
+   "max_call": 2322,
+   "over_cap": false,
+   "weight": 218784
+  },
+  "4:BANKING77:BANKING77:test:1016": {
+   "positions": 176936,
+   "calls": 20,
+   "max_call": 2298,
+   "over_cap": false,
+   "weight": 216936
+  },
+  "4:BANKING77:BANKING77:test:1052": {
+   "positions": 177552,
+   "calls": 20,
+   "max_call": 2306,
+   "over_cap": false,
+   "weight": 217552
+  },
+  "4:BANKING77:BANKING77:test:1167": {
+   "positions": 177244,
+   "calls": 20,
+   "max_call": 2302,
+   "over_cap": false,
+   "weight": 217244
+  },
+  "4:BANKING77:BANKING77:test:1217": {
+   "positions": 176782,
+   "calls": 20,
+   "max_call": 2296,
+   "over_cap": false,
+   "weight": 216782
+  },
+  "4:BANKING77:BANKING77:test:1333": {
+   "positions": 179400,
+   "calls": 20,
+   "max_call": 2330,
+   "over_cap": false,
+   "weight": 219400
+  },
+  "4:BANKING77:BANKING77:test:1359": {
+   "positions": 177244,
+   "calls": 20,
+   "max_call": 2302,
+   "over_cap": false,
+   "weight": 217244
+  },
+  "4:BANKING77:BANKING77:test:141": {
+   "positions": 178938,
+   "calls": 20,
+   "max_call": 2324,
+   "over_cap": false,
+   "weight": 218938
+  },
+  "4:BANKING77:BANKING77:test:1621": {
+   "positions": 178168,
+   "calls": 20,
+   "max_call": 2314,
+   "over_cap": false,
+   "weight": 218168
+  },
+  "4:BANKING77:BANKING77:test:1789": {
+   "positions": 177552,
+   "calls": 20,
+   "max_call": 2306,
+   "over_cap": false,
+   "weight": 217552
+  },
+  "4:BANKING77:BANKING77:test:2021": {
+   "positions": 177090,
+   "calls": 20,
+   "max_call": 2300,
+   "over_cap": false,
+   "weight": 217090
+  },
+  "4:BANKING77:BANKING77:test:2362": {
+   "positions": 177244,
+   "calls": 20,
+   "max_call": 2302,
+   "over_cap": false,
+   "weight": 217244
+  },
+  "4:BANKING77:BANKING77:test:269": {
+   "positions": 177090,
+   "calls": 20,
+   "max_call": 2300,
+   "over_cap": false,
+   "weight": 217090
+  },
+  "4:BANKING77:BANKING77:test:2714": {
+   "positions": 177860,
+   "calls": 20,
+   "max_call": 2310,
+   "over_cap": false,
+   "weight": 217860
+  },
+  "4:BANKING77:BANKING77:test:323": {
+   "positions": 177860,
+   "calls": 20,
+   "max_call": 2310,
+   "over_cap": false,
+   "weight": 217860
+  },
+  "4:BANKING77:BANKING77:test:365": {
+   "positions": 176628,
+   "calls": 20,
+   "max_call": 2294,
+   "over_cap": false,
+   "weight": 216628
+  },
+  "4:BANKING77:BANKING77:test:387": {
+   "positions": 176782,
+   "calls": 20,
+   "max_call": 2296,
+   "over_cap": false,
+   "weight": 216782
+  },
+  "4:BANKING77:BANKING77:test:444": {
+   "positions": 177244,
+   "calls": 20,
+   "max_call": 2302,
+   "over_cap": false,
+   "weight": 217244
+  },
+  "4:BANKING77:BANKING77:test:466": {
+   "positions": 177860,
+   "calls": 20,
+   "max_call": 2310,
+   "over_cap": false,
+   "weight": 217860
+  },
+  "4:BANKING77:BANKING77:test:527": {
+   "positions": 178168,
+   "calls": 20,
+   "max_call": 2314,
+   "over_cap": false,
+   "weight": 218168
+  },
+  "4:BANKING77:BANKING77:test:546": {
+   "positions": 178784,
+   "calls": 20,
+   "max_call": 2322,
+   "over_cap": false,
+   "weight": 218784
+  },
+  "4:BANKING77:BANKING77:test:678": {
+   "positions": 181864,
+   "calls": 20,
+   "max_call": 2362,
+   "over_cap": false,
+   "weight": 221864
+  },
+  "4:BANKING77:BANKING77:test:730": {
+   "positions": 176628,
+   "calls": 20,
+   "max_call": 2294,
+   "over_cap": false,
+   "weight": 216628
+  },
+  "50:Habermas-consensus:Habermas-consensus:0772732e893342fe90bb7d2bf099e9ae": {
+   "positions": 3956,
+   "calls": 1,
+   "max_call": 989,
+   "over_cap": false,
+   "weight": 5956
+  },
+  "50:Habermas-consensus:Habermas-consensus:28eca037c6acacd4d4ddfdd8e2e171ce": {
+   "positions": 4996,
+   "calls": 1,
+   "max_call": 1249,
+   "over_cap": false,
+   "weight": 6996
+  },
+  "50:Habermas-consensus:Habermas-consensus:35beeda67f0f1d788077a6665cc964be": {
+   "positions": 1548,
+   "calls": 1,
+   "max_call": 774,
+   "over_cap": false,
+   "weight": 3548
+  },
+  "50:Habermas-consensus:Habermas-consensus:42e4d897a2e7207c6115c9b2cd5ec080": {
+   "positions": 4492,
+   "calls": 1,
+   "max_call": 1123,
+   "over_cap": false,
+   "weight": 6492
+  },
+  "50:Habermas-consensus:Habermas-consensus:58e75a6fd0896a2289d70707c7b266aa": {
+   "positions": 4408,
+   "calls": 1,
+   "max_call": 1102,
+   "over_cap": false,
+   "weight": 6408
+  },
+  "50:Habermas-consensus:Habermas-consensus:8067be1fb4ddd9b3bd601d3af3099b19": {
+   "positions": 2312,
+   "calls": 1,
+   "max_call": 1156,
+   "over_cap": false,
+   "weight": 4312
+  },
+  "50:Habermas-consensus:Habermas-consensus:a8e60d8d6a641fd12645e51299cab067": {
+   "positions": 3424,
+   "calls": 1,
+   "max_call": 856,
+   "over_cap": false,
+   "weight": 5424
+  },
+  "50:Habermas-consensus:Habermas-consensus:d12cb85126ea61cde3c34910c61617c6": {
+   "positions": 5044,
+   "calls": 1,
+   "max_call": 1261,
+   "over_cap": false,
+   "weight": 7044
+  },
+  "50:Habermas-consensus:Habermas-consensus:e5610d83a2290d6c5708f84d059fbb89": {
+   "positions": 3760,
+   "calls": 1,
+   "max_call": 940,
+   "over_cap": false,
+   "weight": 5760
+  },
+  "50:Habermas-consensus:Habermas-consensus:fb093c91cb698c1d409f268718fe2c00": {
+   "positions": 3884,
+   "calls": 1,
+   "max_call": 971,
+   "over_cap": false,
+   "weight": 5884
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:613": {
+   "positions": 643754,
+   "calls": 39,
+   "max_call": 4264,
+   "over_cap": false,
+   "weight": 721754
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:666": {
+   "positions": 642848,
+   "calls": 39,
+   "max_call": 4258,
+   "over_cap": false,
+   "weight": 720848
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:854": {
+   "positions": 644056,
+   "calls": 39,
+   "max_call": 4266,
+   "over_cap": false,
+   "weight": 722056
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:879": {
+   "positions": 641338,
+   "calls": 39,
+   "max_call": 4248,
+   "over_cap": false,
+   "weight": 719338
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:oos_test:912": {
+   "positions": 643452,
+   "calls": 39,
+   "max_call": 4262,
+   "over_cap": false,
+   "weight": 721452
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:1087": {
+   "positions": 644358,
+   "calls": 39,
+   "max_call": 4268,
+   "over_cap": false,
+   "weight": 722358
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:1280": {
+   "positions": 644358,
+   "calls": 39,
+   "max_call": 4268,
+   "over_cap": false,
+   "weight": 722358
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:1540": {
+   "positions": 643150,
+   "calls": 39,
+   "max_call": 4260,
+   "over_cap": false,
+   "weight": 721150
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:1864": {
+   "positions": 644660,
+   "calls": 39,
+   "max_call": 4270,
+   "over_cap": false,
+   "weight": 722660
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:2544": {
+   "positions": 643452,
+   "calls": 39,
+   "max_call": 4262,
+   "over_cap": false,
+   "weight": 721452
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:2891": {
+   "positions": 640734,
+   "calls": 39,
+   "max_call": 4244,
+   "over_cap": false,
+   "weight": 718734
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:3271": {
+   "positions": 641942,
+   "calls": 39,
+   "max_call": 4252,
+   "over_cap": false,
+   "weight": 719942
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:3382": {
+   "positions": 641036,
+   "calls": 39,
+   "max_call": 4246,
+   "over_cap": false,
+   "weight": 719036
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:3716": {
+   "positions": 644056,
+   "calls": 39,
+   "max_call": 4266,
+   "over_cap": false,
+   "weight": 722056
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4086": {
+   "positions": 643754,
+   "calls": 39,
+   "max_call": 4264,
+   "over_cap": false,
+   "weight": 721754
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4166": {
+   "positions": 643150,
+   "calls": 39,
+   "max_call": 4260,
+   "over_cap": false,
+   "weight": 721150
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4240": {
+   "positions": 644962,
+   "calls": 39,
+   "max_call": 4272,
+   "over_cap": false,
+   "weight": 722962
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4326": {
+   "positions": 642546,
+   "calls": 39,
+   "max_call": 4256,
+   "over_cap": false,
+   "weight": 720546
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:4479": {
+   "positions": 644660,
+   "calls": 39,
+   "max_call": 4270,
+   "over_cap": false,
+   "weight": 722660
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:465": {
+   "positions": 644358,
+   "calls": 39,
+   "max_call": 4268,
+   "over_cap": false,
+   "weight": 722358
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:529": {
+   "positions": 641942,
+   "calls": 39,
+   "max_call": 4252,
+   "over_cap": false,
+   "weight": 719942
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:691": {
+   "positions": 644962,
+   "calls": 39,
+   "max_call": 4272,
+   "over_cap": false,
+   "weight": 722962
+  },
+  "5:CLINC150+OOS:CLINC150+OOS:test:9": {
+   "positions": 643150,
+   "calls": 39,
+   "max_call": 4260,
+   "over_cap": false,
+   "weight": 721150
+  },
+  "9:Home-Appliance:home-appliance:test:juniper:00": {
+   "positions": 142719,
+   "calls": 32,
+   "max_call": 3221,
+   "over_cap": false,
+   "weight": 206719
+  },
+  "9:Home-Appliance:home-appliance:test:juniper:01": {
+   "positions": 153847,
+   "calls": 36,
+   "max_call": 3319,
+   "over_cap": false,
+   "weight": 225847
+  },
+  "9:Home-Appliance:home-appliance:test:juniper:07": {
+   "positions": 157094,
+   "calls": 33,
+   "max_call": 3323,
+   "over_cap": false,
+   "weight": 223094
+  },
+  "9:Home-Appliance:home-appliance:test:kestrel:06": {
+   "positions": 158603,
+   "calls": 37,
+   "max_call": 3353,
+   "over_cap": false,
+   "weight": 232603
+  },
+  "9:Home-Appliance:home-appliance:test:kestrel:08": {
+   "positions": 175395,
+   "calls": 39,
+   "max_call": 3485,
+   "over_cap": false,
+   "weight": 253395
+  },
+  "9:Home-Appliance:home-appliance:test:linden:03": {
+   "positions": 161110,
+   "calls": 34,
+   "max_call": 3397,
+   "over_cap": false,
+   "weight": 229110
+  },
+  "9:Home-Appliance:home-appliance:test:maple:06": {
+   "positions": 153724,
+   "calls": 36,
+   "max_call": 3315,
+   "over_cap": false,
+   "weight": 225724
+  },
+  "9:Home-Appliance:home-appliance:test:prairie:08": {
+   "positions": 145690,
+   "calls": 33,
+   "max_call": 3288,
+   "over_cap": false,
+   "weight": 211690
+  },
+  "9:Home-Appliance:home-appliance:test:quartz:06": {
+   "positions": 173985,
+   "calls": 33,
+   "max_call": 3460,
+   "over_cap": false,
+   "weight": 239985
+  },
+  "9:Home-Appliance:home-appliance:test:sequoia:08": {
+   "positions": 175396,
+   "calls": 37,
+   "max_call": 3489,
+   "over_cap": false,
+   "weight": 249396
+  },
+  "9:Home-Appliance:home-appliance:test:sequoia:09": {
+   "positions": 170538,
+   "calls": 37,
+   "max_call": 3459,
+   "over_cap": false,
+   "weight": 244538
+  },
+  "9:Home-Appliance:home-appliance:test:violet:06": {
+   "positions": 141577,
+   "calls": 38,
+   "max_call": 3190,
+   "over_cap": false,
+   "weight": 217577
+  },
+  "calibration-v1:56:cross_domain_legit_0048": {
+   "positions": 21124,
+   "calls": 10,
+   "max_call": 1199,
+   "over_cap": false,
+   "weight": 41124
+  },
+  "calibration-v1:56:cross_domain_legit_0061": {
+   "positions": 20836,
+   "calls": 10,
+   "max_call": 1183,
+   "over_cap": false,
+   "weight": 40836
+  },
+  "calibration-v1:56:cross_domain_legit_0248": {
+   "positions": 21106,
+   "calls": 10,
+   "max_call": 1198,
+   "over_cap": false,
+   "weight": 41106
+  },
+  "calibration-v1:56:cross_domain_legit_0275": {
+   "positions": 20890,
+   "calls": 10,
+   "max_call": 1186,
+   "over_cap": false,
+   "weight": 40890
+  },
+  "calibration-v1:56:cross_domain_legit_0332": {
+   "positions": 21088,
+   "calls": 10,
+   "max_call": 1197,
+   "over_cap": false,
+   "weight": 41088
+  },
+  "calibration-v1:56:legit_0124": {
+   "positions": 21412,
+   "calls": 10,
+   "max_call": 1215,
+   "over_cap": false,
+   "weight": 41412
+  },
+  "calibration-v1:56:legit_0705": {
+   "positions": 22006,
+   "calls": 10,
+   "max_call": 1248,
+   "over_cap": false,
+   "weight": 42006
+  },
+  "calibration-v1:56:phish_0020": {
+   "positions": 22438,
+   "calls": 10,
+   "max_call": 1272,
+   "over_cap": false,
+   "weight": 42438
+  },
+  "calibration-v1:56:phish_0088": {
+   "positions": 24094,
+   "calls": 10,
+   "max_call": 1364,
+   "over_cap": false,
+   "weight": 44094
+  },
+  "calibration-v1:56:phish_0281": {
+   "positions": 23014,
+   "calls": 10,
+   "max_call": 1304,
+   "over_cap": false,
+   "weight": 43014
+  },
+  "calibration-v1:56:phish_0316": {
+   "positions": 21916,
+   "calls": 10,
+   "max_call": 1243,
+   "over_cap": false,
+   "weight": 41916
+  },
+  "calibration-v1:56:phish_0388": {
+   "positions": 21664,
+   "calls": 10,
+   "max_call": 1229,
+   "over_cap": false,
+   "weight": 41664
+  },
+  "calibration-v1:56:phish_0450": {
+   "positions": 21790,
+   "calls": 10,
+   "max_call": 1236,
+   "over_cap": false,
+   "weight": 41790
+  },
+  "calibration-v1:56:phish_0487": {
+   "positions": 21862,
+   "calls": 10,
+   "max_call": 1240,
+   "over_cap": false,
+   "weight": 41862
+  },
+  "calibration-v1:56:phish_0493": {
+   "positions": 21592,
+   "calls": 10,
+   "max_call": 1225,
+   "over_cap": false,
+   "weight": 41592
+  },
+  "calibration-v1:56:phish_0511": {
+   "positions": 21214,
+   "calls": 10,
+   "max_call": 1204,
+   "over_cap": false,
+   "weight": 41214
+  },
+  "calibration-v1:56:phish_0754": {
+   "positions": 22456,
+   "calls": 10,
+   "max_call": 1273,
+   "over_cap": false,
+   "weight": 42456
+  },
+  "calibration-v1:56:phish_0810": {
+   "positions": 21250,
+   "calls": 10,
+   "max_call": 1206,
+   "over_cap": false,
+   "weight": 41250
+  },
+  "calibration-v1:56:phish_0839": {
+   "positions": 21034,
+   "calls": 10,
+   "max_call": 1194,
+   "over_cap": false,
+   "weight": 41034
+  },
+  "candidates-v3:57:10000": {
+   "positions": 4340,
+   "calls": 3,
+   "max_call": 434,
+   "over_cap": false,
+   "weight": 10340
+  },
+  "candidates-v3:57:10696": {
+   "positions": 3760,
+   "calls": 3,
+   "max_call": 376,
+   "over_cap": false,
+   "weight": 9760
+  },
+  "candidates-v3:57:11144": {
+   "positions": 960,
+   "calls": 1,
+   "max_call": 240,
+   "over_cap": false,
+   "weight": 2960
+  },
+  "candidates-v3:57:11198": {
+   "positions": 1036,
+   "calls": 1,
+   "max_call": 259,
+   "over_cap": false,
+   "weight": 3036
+  },
+  "candidates-v3:57:11296": {
+   "positions": 7670,
+   "calls": 3,
+   "max_call": 767,
+   "over_cap": false,
+   "weight": 13670
+  },
+  "candidates-v3:57:11786": {
+   "positions": 1760,
+   "calls": 1,
+   "max_call": 440,
+   "over_cap": false,
+   "weight": 3760
+  },
+  "candidates-v3:57:1598": {
+   "positions": 5670,
+   "calls": 3,
+   "max_call": 567,
+   "over_cap": false,
+   "weight": 11670
+  },
+  "candidates-v3:57:2586": {
+   "positions": 4960,
+   "calls": 3,
+   "max_call": 496,
+   "over_cap": false,
+   "weight": 10960
+  },
+  "candidates-v3:57:3197": {
+   "positions": 4430,
+   "calls": 3,
+   "max_call": 443,
+   "over_cap": false,
+   "weight": 10430
+  },
+  "candidates-v3:57:3288": {
+   "positions": 4430,
+   "calls": 3,
+   "max_call": 443,
+   "over_cap": false,
+   "weight": 10430
+  },
+  "candidates-v3:57:4396": {
+   "positions": 3970,
+   "calls": 3,
+   "max_call": 397,
+   "over_cap": false,
+   "weight": 9970
+  },
+  "candidates-v3:57:5190": {
+   "positions": 4410,
+   "calls": 3,
+   "max_call": 441,
+   "over_cap": false,
+   "weight": 10410
+  },
+  "candidates-v3:57:5478": {
+   "positions": 3897,
+   "calls": 3,
+   "max_call": 433,
+   "over_cap": false,
+   "weight": 9897
+  },
+  "candidates-v3:57:5487": {
+   "positions": 3186,
+   "calls": 3,
+   "max_call": 354,
+   "over_cap": false,
+   "weight": 9186
+  },
+  "candidates-v3:57:7477": {
+   "positions": 4780,
+   "calls": 3,
+   "max_call": 478,
+   "over_cap": false,
+   "weight": 10780
+  },
+  "candidates-v3:57:7855": {
+   "positions": 3980,
+   "calls": 3,
+   "max_call": 398,
+   "over_cap": false,
+   "weight": 9980
+  },
+  "candidates-v3:57:7944": {
+   "positions": 4330,
+   "calls": 3,
+   "max_call": 433,
+   "over_cap": false,
+   "weight": 10330
+  },
+  "candidates-v3:57:9945": {
+   "positions": 3670,
+   "calls": 3,
+   "max_call": 367,
+   "over_cap": false,
+   "weight": 9670
+  },
+  "candidates-v3:58:boolean_expressions:69": {
+   "positions": 370,
+   "calls": 1,
+   "max_call": 185,
+   "over_cap": false,
+   "weight": 2370
+  },
+  "candidates-v3:58:disambiguation_qa:149": {
+   "positions": 825,
+   "calls": 1,
+   "max_call": 275,
+   "over_cap": false,
+   "weight": 2825
+  },
+  "candidates-v3:58:disambiguation_qa:174": {
+   "positions": 825,
+   "calls": 1,
+   "max_call": 275,
+   "over_cap": false,
+   "weight": 2825
+  },
+  "candidates-v3:58:geometric_shapes:222": {
+   "positions": 5080,
+   "calls": 3,
+   "max_call": 508,
+   "over_cap": false,
+   "weight": 11080
+  },
+  "candidates-v3:58:hyperbaton:104": {
+   "positions": 478,
+   "calls": 1,
+   "max_call": 239,
+   "over_cap": false,
+   "weight": 2478
+  },
+  "candidates-v3:58:logical_deduction_seven_objects:164": {
+   "positions": 3878,
+   "calls": 2,
+   "max_call": 554,
+   "over_cap": false,
+   "weight": 7878
+  },
+  "candidates-v3:58:logical_deduction_three_objects:61": {
+   "positions": 948,
+   "calls": 1,
+   "max_call": 316,
+   "over_cap": false,
+   "weight": 2948
+  },
+  "candidates-v3:58:movie_recommendation:16": {
+   "positions": 1224,
+   "calls": 1,
+   "max_call": 306,
+   "over_cap": false,
+   "weight": 3224
+  },
+  "candidates-v3:58:navigate:224": {
+   "positions": 430,
+   "calls": 1,
+   "max_call": 215,
+   "over_cap": false,
+   "weight": 2430
+  },
+  "candidates-v3:58:navigate:69": {
+   "positions": 444,
+   "calls": 1,
+   "max_call": 222,
+   "over_cap": false,
+   "weight": 2444
+  },
+  "candidates-v3:58:reasoning_about_colored_objects:128": {
+   "positions": 11880,
+   "calls": 5,
+   "max_call": 660,
+   "over_cap": false,
+   "weight": 21880
+  },
+  "candidates-v3:58:reasoning_about_colored_objects:131": {
+   "positions": 12024,
+   "calls": 5,
+   "max_call": 668,
+   "over_cap": false,
+   "weight": 22024
+  },
+  "candidates-v3:58:salient_translation_error_detection:162": {
+   "positions": 3324,
+   "calls": 2,
+   "max_call": 554,
+   "over_cap": false,
+   "weight": 7324
+  },
+  "candidates-v3:58:salient_translation_error_detection:168": {
+   "positions": 3426,
+   "calls": 2,
+   "max_call": 571,
+   "over_cap": false,
+   "weight": 7426
+  },
+  "candidates-v3:58:temporal_sequences:86": {
+   "positions": 1808,
+   "calls": 1,
+   "max_call": 452,
+   "over_cap": false,
+   "weight": 3808
+  },
+  "candidates-v3:58:tracking_shuffled_objects_five_objects:203": {
+   "positions": 2125,
+   "calls": 2,
+   "max_call": 425,
+   "over_cap": false,
+   "weight": 6125
+  },
+  "candidates-v3:58:tracking_shuffled_objects_seven_objects:85": {
+   "positions": 3472,
+   "calls": 2,
+   "max_call": 496,
+   "over_cap": false,
+   "weight": 7472
+  },
+  "candidates-v3:58:web_of_lies:81": {
+   "positions": 438,
+   "calls": 1,
+   "max_call": 219,
+   "over_cap": false,
+   "weight": 2438
+  },
+  "candidates-v3:59:11520": {
+   "positions": 2012,
+   "calls": 1,
+   "max_call": 1006,
+   "over_cap": false,
+   "weight": 4012
+  },
+  "candidates-v3:59:15711": {
+   "positions": 1522,
+   "calls": 1,
+   "max_call": 761,
+   "over_cap": false,
+   "weight": 3522
+  },
+  "candidates-v3:59:15726": {
+   "positions": 1416,
+   "calls": 1,
+   "max_call": 708,
+   "over_cap": false,
+   "weight": 3416
+  },
+  "candidates-v3:59:15728": {
+   "positions": 1616,
+   "calls": 1,
+   "max_call": 808,
+   "over_cap": false,
+   "weight": 3616
+  },
+  "candidates-v3:59:17102": {
+   "positions": 1708,
+   "calls": 1,
+   "max_call": 854,
+   "over_cap": false,
+   "weight": 3708
+  },
+  "candidates-v3:59:17103": {
+   "positions": 1956,
+   "calls": 1,
+   "max_call": 978,
+   "over_cap": false,
+   "weight": 3956
+  },
+  "candidates-v3:59:17105": {
+   "positions": 2008,
+   "calls": 1,
+   "max_call": 1004,
+   "over_cap": false,
+   "weight": 4008
+  },
+  "candidates-v3:59:17281": {
+   "positions": 1778,
+   "calls": 1,
+   "max_call": 889,
+   "over_cap": false,
+   "weight": 3778
+  },
+  "candidates-v3:59:1747": {
+   "positions": 1332,
+   "calls": 1,
+   "max_call": 666,
+   "over_cap": false,
+   "weight": 3332
+  },
+  "candidates-v3:59:17563": {
+   "positions": 1126,
+   "calls": 1,
+   "max_call": 563,
+   "over_cap": false,
+   "weight": 3126
+  },
+  "candidates-v3:59:5732": {
+   "positions": 3012,
+   "calls": 1,
+   "max_call": 1506,
+   "over_cap": false,
+   "weight": 5012
+  },
+  "candidates-v3:59:6255": {
+   "positions": 2198,
+   "calls": 1,
+   "max_call": 1099,
+   "over_cap": false,
+   "weight": 4198
+  },
+  "candidates-v3:59:6256": {
+   "positions": 2218,
+   "calls": 1,
+   "max_call": 1109,
+   "over_cap": false,
+   "weight": 4218
+  },
+  "candidates-v3:59:6257": {
+   "positions": 2128,
+   "calls": 1,
+   "max_call": 1064,
+   "over_cap": false,
+   "weight": 4128
+  },
+  "candidates-v3:59:6414": {
+   "positions": 2510,
+   "calls": 1,
+   "max_call": 1255,
+   "over_cap": false,
+   "weight": 4510
+  },
+  "candidates-v3:61:01dd114f-d13a-4469-be20-7cc72cd014b5": {
+   "positions": 1588,
+   "calls": 1,
+   "max_call": 794,
+   "over_cap": false,
+   "weight": 3588
+  },
+  "candidates-v3:61:09b80e87-87ad-4253-8d61-e3283e36610e": {
+   "positions": 1272,
+   "calls": 1,
+   "max_call": 636,
+   "over_cap": false,
+   "weight": 3272
+  },
+  "candidates-v3:61:0d1c7a7d-f14a-452f-b042-7fc9b6b98b69": {
+   "positions": 648,
+   "calls": 1,
+   "max_call": 324,
+   "over_cap": false,
+   "weight": 2648
+  },
+  "candidates-v3:61:21a3f301-7fe0-429d-aa6e-596280d39453": {
+   "positions": 1412,
+   "calls": 1,
+   "max_call": 706,
+   "over_cap": false,
+   "weight": 3412
+  },
+  "candidates-v3:61:2b052590-15c4-49f1-9dbd-8ac978d26c6c": {
+   "positions": 1374,
+   "calls": 1,
+   "max_call": 687,
+   "over_cap": false,
+   "weight": 3374
+  },
+  "candidates-v3:61:2cb330ca-f244-4fbe-88ff-156b73e1bad6": {
+   "positions": 1168,
+   "calls": 1,
+   "max_call": 584,
+   "over_cap": false,
+   "weight": 3168
+  },
+  "candidates-v3:61:3ba95872-9688-4b9c-bb30-808b65e98b88": {
+   "positions": 790,
+   "calls": 1,
+   "max_call": 395,
+   "over_cap": false,
+   "weight": 2790
+  },
+  "candidates-v3:61:4577ddfc-94d1-4ed8-a2bc-42c642a32b55": {
+   "positions": 932,
+   "calls": 1,
+   "max_call": 466,
+   "over_cap": false,
+   "weight": 2932
+  },
+  "candidates-v3:61:64b84e3f-8f61-4ca5-a307-4118b4bad436": {
+   "positions": 986,
+   "calls": 1,
+   "max_call": 493,
+   "over_cap": false,
+   "weight": 2986
+  },
+  "candidates-v3:61:76a6406c-c744-498d-a52e-a69d3843ce1a": {
+   "positions": 998,
+   "calls": 1,
+   "max_call": 499,
+   "over_cap": false,
+   "weight": 2998
+  },
+  "candidates-v3:61:794f7241-aa7a-4705-a2c3-7e096abedb84": {
+   "positions": 1354,
+   "calls": 1,
+   "max_call": 677,
+   "over_cap": false,
+   "weight": 3354
+  },
+  "candidates-v3:61:a4c86ef5-cc00-490c-9522-24de5e70ee5b": {
+   "positions": 818,
+   "calls": 1,
+   "max_call": 409,
+   "over_cap": false,
+   "weight": 2818
+  },
+  "candidates-v3:61:b575f0d9-65ab-46ea-95d4-2554e1eb1caa": {
+   "positions": 1432,
+   "calls": 1,
+   "max_call": 716,
+   "over_cap": false,
+   "weight": 3432
+  },
+  "candidates-v3:61:bb487095-792d-4691-babc-e1a80e4e47bc": {
+   "positions": 704,
+   "calls": 1,
+   "max_call": 352,
+   "over_cap": false,
+   "weight": 2704
+  },
+  "candidates-v3:61:bbb67294-0de2-426c-a54f-e3095713bdac": {
+   "positions": 938,
+   "calls": 1,
+   "max_call": 469,
+   "over_cap": false,
+   "weight": 2938
+  },
+  "candidates-v3:61:c54c9c9d-ccfc-4d8a-b288-1466aea0dc63": {
+   "positions": 976,
+   "calls": 1,
+   "max_call": 488,
+   "over_cap": false,
+   "weight": 2976
+  },
+  "candidates-v3:61:cd4ab30e-da6d-48d8-9694-4a3675af8cf4": {
+   "positions": 936,
+   "calls": 1,
+   "max_call": 468,
+   "over_cap": false,
+   "weight": 2936
+  },
+  "candidates-v3:61:d203af4d-dd7e-4cf6-ae7b-9be5ce34e587": {
+   "positions": 918,
+   "calls": 1,
+   "max_call": 459,
+   "over_cap": false,
+   "weight": 2918
+  },
+  "candidates-v3:61:e2ebe88b-c75a-4fef-b443-0d74a05c6555": {
+   "positions": 816,
+   "calls": 1,
+   "max_call": 408,
+   "over_cap": false,
+   "weight": 2816
+  },
+  "candidates-v3:61:ef435eca-b969-461c-a991-b6333dadb058": {
+   "positions": 996,
+   "calls": 1,
+   "max_call": 498,
+   "over_cap": false,
+   "weight": 2996
+  },
+  "candidates-v3:62:09291a48-ef9e-4337-9351-744b7fea7ddc": {
+   "positions": 1948,
+   "calls": 1,
+   "max_call": 487,
+   "over_cap": false,
+   "weight": 3948
+  },
+  "candidates-v3:62:094de134-a4a5-4415-ab77-9ab0ee089f4c": {
+   "positions": 6632,
+   "calls": 1,
+   "max_call": 1658,
+   "over_cap": false,
+   "weight": 8632
+  },
+  "candidates-v3:62:13c47180-ce42-48d9-aaea-7eece6d1f16f": {
+   "positions": 3088,
+   "calls": 1,
+   "max_call": 772,
+   "over_cap": false,
+   "weight": 5088
+  },
+  "candidates-v3:62:1dd07042-26ee-49aa-b962-e391bdba1492": {
+   "positions": 4620,
+   "calls": 1,
+   "max_call": 1155,
+   "over_cap": false,
+   "weight": 6620
+  },
+  "candidates-v3:62:1e3e6425-3e78-4965-a29f-b7f5a49afd59": {
+   "positions": 1616,
+   "calls": 1,
+   "max_call": 404,
+   "over_cap": false,
+   "weight": 3616
+  },
+  "candidates-v3:62:21636506-9f22-40a8-82a3-8e9ecaa3bab7": {
+   "positions": 3656,
+   "calls": 1,
+   "max_call": 914,
+   "over_cap": false,
+   "weight": 5656
+  },
+  "candidates-v3:62:38e0a751-3f46-42f6-9c74-9083e5b31b3b": {
+   "positions": 2628,
+   "calls": 1,
+   "max_call": 657,
+   "over_cap": false,
+   "weight": 4628
+  },
+  "candidates-v3:62:6c6a36d0-f14c-4b1c-8238-44d60c170b75": {
+   "positions": 3784,
+   "calls": 1,
+   "max_call": 946,
+   "over_cap": false,
+   "weight": 5784
+  },
+  "candidates-v3:62:72fd31bf-15a1-4906-9d72-d59e992b7a3c": {
+   "positions": 2536,
+   "calls": 1,
+   "max_call": 634,
+   "over_cap": false,
+   "weight": 4536
+  },
+  "candidates-v3:62:76ccbb11-1a41-4a71-b782-2d586b100284": {
+   "positions": 5332,
+   "calls": 1,
+   "max_call": 1333,
+   "over_cap": false,
+   "weight": 7332
+  },
+  "candidates-v3:62:775aa39c-6575-4595-abd6-8363350cf881": {
+   "positions": 5264,
+   "calls": 1,
+   "max_call": 1316,
+   "over_cap": false,
+   "weight": 7264
+  },
+  "candidates-v3:62:78953d6f-db44-4bec-9c75-2335422de2b3": {
+   "positions": 3456,
+   "calls": 1,
+   "max_call": 864,
+   "over_cap": false,
+   "weight": 5456
+  },
+  "candidates-v3:62:855e8a6c-d325-4f6e-849f-58a3896dccd9": {
+   "positions": 1820,
+   "calls": 1,
+   "max_call": 455,
+   "over_cap": false,
+   "weight": 3820
+  },
+  "candidates-v3:62:a3273832-66c9-47f3-9e41-0795d2111784": {
+   "positions": 3412,
+   "calls": 1,
+   "max_call": 853,
+   "over_cap": false,
+   "weight": 5412
+  },
+  "candidates-v3:62:a838ee03-9fb0-4618-8297-7e6a3a661eb9": {
+   "positions": 3588,
+   "calls": 1,
+   "max_call": 897,
+   "over_cap": false,
+   "weight": 5588
+  },
+  "candidates-v3:62:b5906d3f-58f0-4176-8d46-94406a2433a5": {
+   "positions": 2184,
+   "calls": 1,
+   "max_call": 546,
+   "over_cap": false,
+   "weight": 4184
+  },
+  "candidates-v3:62:c52d00b5-1e9d-401d-a66e-ee4d0aff3d51": {
+   "positions": 6320,
+   "calls": 1,
+   "max_call": 1580,
+   "over_cap": false,
+   "weight": 8320
+  },
+  "candidates-v3:62:cc31202e-3cc0-45aa-bfc0-97efca9bcf98": {
+   "positions": 2612,
+   "calls": 1,
+   "max_call": 653,
+   "over_cap": false,
+   "weight": 4612
+  },
+  "candidates-v3:62:cdcfbcdf-da87-4f76-8ae4-4d8aa371b343": {
+   "positions": 3940,
+   "calls": 1,
+   "max_call": 985,
+   "over_cap": false,
+   "weight": 5940
+  },
+  "candidates-v3:62:e784b9d4-5951-4d7d-a4e4-52db7a530d76": {
+   "positions": 2056,
+   "calls": 1,
+   "max_call": 514,
+   "over_cap": false,
+   "weight": 4056
+  },
+  "candidates-v3:62:fc6954fb-e5f9-449c-966c-4e006045072c": {
+   "positions": 4556,
+   "calls": 1,
+   "max_call": 1139,
+   "over_cap": false,
+   "weight": 6556
+  },
+  "candidates-v3:64:03bc31b2e4c81843c72656160e732619": {
+   "positions": 1725,
+   "calls": 2,
+   "max_call": 345,
+   "over_cap": false,
+   "weight": 5725
+  },
+  "candidates-v3:64:16cb5486594e1105c1e6d005aeaec2ec": {
+   "positions": 1680,
+   "calls": 2,
+   "max_call": 336,
+   "over_cap": false,
+   "weight": 5680
+  },
+  "candidates-v3:64:33f896e64b84220704d279111d013661": {
+   "positions": 1885,
+   "calls": 2,
+   "max_call": 377,
+   "over_cap": false,
+   "weight": 5885
+  },
+  "candidates-v3:64:446a14619337614cc781aa9430fd8b12": {
+   "positions": 1740,
+   "calls": 2,
+   "max_call": 348,
+   "over_cap": false,
+   "weight": 5740
+  },
+  "candidates-v3:64:4c4363f00c7317f45baa93f285ba1c92": {
+   "positions": 1715,
+   "calls": 2,
+   "max_call": 343,
+   "over_cap": false,
+   "weight": 5715
+  },
+  "candidates-v3:64:953f10087b6ca195835c12fbcc92e789": {
+   "positions": 1670,
+   "calls": 2,
+   "max_call": 334,
+   "over_cap": false,
+   "weight": 5670
+  },
+  "candidates-v3:64:96481e210856e3046fe4a7188e2fb177": {
+   "positions": 1710,
+   "calls": 2,
+   "max_call": 342,
+   "over_cap": false,
+   "weight": 5710
+  },
+  "candidates-v3:64:e9a625afa2ad7b7ccd9a27ae06bceb6f": {
+   "positions": 1815,
+   "calls": 2,
+   "max_call": 363,
+   "over_cap": false,
+   "weight": 5815
+  }
+ }
+}

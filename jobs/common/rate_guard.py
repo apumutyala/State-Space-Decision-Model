@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -81,11 +82,46 @@ def _rows(path: Path) -> int:
     return total
 
 
+_RID = re.compile(rb'"run_id"\s*:\s*"((?:[^"\\]|\\.)*)"')
+
+
+def _done_ids(path: Path) -> set[str]:
+    """run_ids of the complete lines written so far (the kit writes ``{"run_id": ...`` first on every line)."""
+    out: set[str] = set()
+    for part in str(path).split(","):
+        try:
+            with open(part, "rb") as fh:
+                for line in fh:
+                    if line.endswith(b"\n"):
+                        m = _RID.search(line[:2048])
+                        if m:
+                            out.add(json.loads(b'"' + m.group(1) + b'"'))
+        except FileNotFoundError:
+            pass
+    return out
+
+
+def weighted_rows(done: set[str], weights: dict[str, float], total: int) -> float:
+    """Rows-equivalent progress from per-row cost weights: total x (weight done / weight of all ``weights``), so
+    ``project`` extrapolates measured COST, not a row count (rows whose costs differ 1,000x: the no-fork m0 readout)."""
+    tw = sum(weights.values())
+    return total * sum(weights.get(i, 0.0) for i in done) / tw if tw > 0 else float(len(done))
+
+
+def project_weighted_rows(rows_equiv: float, elapsed_s: float, total: int, startup_s: float = 0.0) -> float:
+    """``project`` for a fractional rows-equivalent (no clamp to >= 1 row: 2% of the cost done is 0.06 of 3 rows)."""
+    return (startup_s + (elapsed_s - startup_s) * total / max(rows_equiv, 1e-9)) / 60
+
+
 def run(cmd: list[str], results: Path, total: int, cap_min: float, check_after_min: float = CHECK_AFTER_MIN,
-        poll_s: float = 15.0, report: Path | None = None, exclude_startup: bool = False) -> int:
+        poll_s: float = 15.0, report: Path | None = None, exclude_startup: bool = False,
+        weights: dict[str, float] | None = None) -> int:
+    """``weights`` (opt-in): {run_id: cost} of the rows that must finish (``total`` = their count); the projection then
+    uses the cost done instead of the rows done. Rows outside ``weights`` (a run that continues past them) add nothing."""
     t0 = time.time()
     child = subprocess.Popen(cmd, start_new_session=(os.name != "nt"))
-    rec = {"cmd": cmd, "total": total, "cap_min": cap_min, "checks": [], "exclude_startup": exclude_startup}
+    rec = {"cmd": cmd, "total": total, "cap_min": cap_min, "checks": [], "exclude_startup": exclude_startup,
+           **({"weighted": {"rows": len(weights), "total_weight": sum(weights.values())}} if weights else {})}
     startup_s = None
 
     def stop(code, why):
@@ -116,8 +152,11 @@ def run(cmd: list[str], results: Path, total: int, cap_min: float, check_after_m
             startup_s = el
             rec["startup_s"] = round(el, 1)
         if el >= 60 * check_after_min and n >= MIN_ROWS:
-            proj = project(n, el, total, startup_s if exclude_startup and startup_s else 0.0)
-            rec["checks"].append({"elapsed_min": el / 60, "rows": n, "projected_min": proj})
+            ne = weighted_rows(_done_ids(results), weights, total) if weights else n
+            st = startup_s if exclude_startup and startup_s else 0.0
+            proj = project_weighted_rows(ne, el, total, st) if weights else project(n, el, total, st)
+            rec["checks"].append({"elapsed_min": el / 60, "rows": n, "projected_min": proj,
+                                  **({"rows_equiv": round(ne, 2)} if weights else {})})
             if proj > MARGIN * cap_min:
                 code = stop(EXIT_TOO_SLOW, f"measured {n} rows in {el / 60:.1f} min -> {proj:.0f} min > cap {cap_min}")
                 break
@@ -248,6 +287,8 @@ def main(argv=None):
     r.add_argument("--report", default=None)
     r.add_argument("--exclude-startup", action="store_true",
                    help="count the time before the first row once instead of extrapolating it (model load)")
+    r.add_argument("--weights", default=None,
+                   help="JSON {run_id: cost} of the rows that must finish (--total = their count): project by cost done")
     w = sub.add_parser("run-weighted")
     w.add_argument("--progress", required=True, help="train.m2_gates.Progress file (+ .total.json)")
     w.add_argument("--cap-min", type=float, required=True)
@@ -278,7 +319,8 @@ def main(argv=None):
     if not tail:
         ap.error("run needs a command after --")
     return run(tail, Path(a.results), a.total, a.cap_min, a.check_after_min, a.poll_s,
-               Path(a.report) if a.report else None, a.exclude_startup)
+               Path(a.report) if a.report else None, a.exclude_startup,
+               json.loads(Path(a.weights).read_text(encoding="utf-8")) if a.weights else None)
 
 
 if __name__ == "__main__":

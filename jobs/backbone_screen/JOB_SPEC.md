@@ -99,7 +99,7 @@ one download, the same pinned snapshot and the same 644 rows, two `decision_inde
   score <1; billed $0.97). Worst case (60 + 2 x 63) x 0.0495 = **$9.21** (hard cap $10); platform quote 63 x $0.063 =
   $3.97; expected ~36 min incl. a cached-image build ~ $1.78.
 
-## MODE `qwen36_a3b`: stock Qwen3.6-35B-A3B, two readouts in one load (backbone-capability scout)
+## MODE `qwen36_a3b`: stock Qwen3.6-35B-A3B, m0 readout without the prefix fork (backbone-capability scout)
 Question: is this backbone stronger than stock Qwen3.5-9B (38.27 on the 2,008-row subset, job-5cmat m0 readout) for
 the decision task, before any attention-free conversion is funded? NOT attention-free (hybrid: 30 Gated-DeltaNet + 10
 gated-attention layers of 40), so it is screened as a parent, not as a candidate.
@@ -112,33 +112,47 @@ gated-attention layers of 40), so it is screened as a parent, not as a candidate
   blob ids).
 - **Code: stock transformers 5.17.0** (the probe9b image): `qwen3_5_moe` is native (`AutoModelForCausalLM` ->
   `Qwen3_5MoeForCausalLM` through the auto-class text-config swap; `_keys_to_ignore_on_load_unexpected` drops `mtp.*`
-  and `model.visual.*`; the checkpoint already stores fused `experts.gate_up_proj` / `down_proj`; experts run on 5.17's
-  default `grouped_mm` on Hopper, GDN on fla 0.5.2's `chunk_gated_delta_rule`, conv1d on the torch fallback as for
-  Qwen3.5-9B). No vendored code (`code_pkg: ""`), so the vendored-code checks are skipped; the setup still asserts
-  transformers 5.17.0 and fla's GDN kernel import. Loaded through `decide.backends.hf_readout.load_qwen35(family=
-  "qwen3.6-moe")` (the qwen3.5 default and its revision ids unchanged).
-- **One H100 80 GB, bf16 (no 8-bit / FP8, no second GPU):** weights ~64.6 GiB leave ~14 GiB. Fork state is bounded
-  explicitly: prefix KV copies (10 attention layers x 2 x 2 KV heads x 256 x 2 B = 20 KiB / token) <= 131,072
-  token-rows per call = 2.5 GiB (`state_budget`, both arms; the v3w backend now honours the plug-in's budget too); GDN
-  states (30 x 32 x 128 x 128 fp32 = 63 MB / row) <= 32 rows (m0 `fork_max_rows`) or 16 (v3w packs) = 2 GiB; logits
-  <= 4,096 positions x 248,320 x 2 B = 2 GiB. Peak ~72 GiB, as QRWKV6-32B (job-6c27k ran at 65.1 GiB of weights).
-  `expandable_segments`; an OOM on a row is a `backend_error` row status in decision.json, not a silent score.
-- **Disk:** `hf_cache: false`; 67 GiB of shards + the image fit the 100 GiB job scratch.
-- **Arms, ONE process (`jobs/backbone_screen/arms.py`, `screen.one_load_arms`):** the plug-in is cached per process
-  (`readout_engine._HF_PLUGINS`), so both kit runs read the same loaded weights. Arm a (`qwen3.6-moe-m0`, index/stock)
-  = the m0 readout as stock Qwen3.5-9B was read in job-5cmat (jrt-chatml-v1: options-first JRT prompt, chat template
-  with empty think block, sum log p(' ' + id + terminator), option-count temperature), prefix-fork with the canary
-  fork == recompute self-check. Arm b (`qwen3.6-moe-v3w-generic`, index/v3w) = `make_v3w("qwen3.6-35b-a3b")` (own chat
-  template with `enable_thinking=False`, own 255 single-token codes, word ids), identity pinned, canary self-check. No
-  arm-a reproduction target (first measurement): `check-arm-a` checks the 644 rows only. Input cap 16,384 for both (the
-  adapter default that job-5cmat ran under; v3w budget 16,383); over-cap rows are refused and scored 0 in both arms.
-- **Score:** each arm's slice index + ECE + paired vs stock RWKV7 v3w (27.32), and paired b - a. The Qwen3.5-9B pairing
-  is a CPU step at landing (`dev_subset compare --candidate index/<arm>/results.jsonl --baseline <job-5cmat stock
-  results> --subset jobs/common/dev_proxy600.json`): job-5cmat's per-row units live only in art-2bybh, not in ssdm-data.
-- **Schedule:** setup 15 + index 60 (both arms) + score 10 + reserve 5 = 90 min. Worst case (60 + 2 x 90) x 0.0495 =
-  **$11.88** (hard cap $12); platform quote 90 x $0.063 = $5.67; expected ~50 min incl. build ~ $2.5 billed. The live
-  rate guard covers both arms (1,288 rows) and stops with exit 15 if the projection passes 95% of the index cap; a run
-  cut short in arm b still scores a complete arm a before it exits.
+  and `model.visual.*`; the checkpoint stores fused `experts.gate_up_proj` / `down_proj`; experts on 5.17's default
+  `grouped_mm`, GDN on fla 0.5.2's `chunk_gated_delta_rule`, conv1d on the torch fallback as for Qwen3.5-9B). No
+  vendored code (`code_pkg: ""`): the vendored-code checks are skipped. Loaded through
+  `decide.backends.hf_readout.load_qwen35(family="qwen3.6-moe")` (the qwen3.5 default and its revision ids unchanged).
+  One H100 80 GB, bf16 (no 8-bit / FP8, no second GPU).
+- **job-gen87 (v1 of this mode, two arms with the prefix fork) failed at the canary**, 2.5 min / $0.31: m0 fork vs
+  full recompute differed by 0.26 nat (same argmax; tol 0.25). Root cause, measured on CPU with a tiny random
+  Qwen3_5MoeForCausalLM (transformers' own code, real Qwen3.6 tokenizer): in **fp32 the fork equals recompute to
+  4e-6** (8 and 64 experts; the torch conv1d fallback included), so transformers' hybrid cache (KV + GDN conv /
+  recurrent states) is copied correctly and there is no fork bug; in bf16 the scores depend on the computation path
+  (prefix-then-tail vs one pass: different GDN chunk boundaries and attention / MoE accumulation in bf16, which in a
+  40-layer 256-expert model can also move top-k expert choices). The tolerance is NOT loosened: this stock scout scores
+  without the fork.
+- **Readout: m0 only** (`qwen3.6-moe-m0`), as stock Qwen3.5-9B was read in job-5cmat (jrt-chatml-v1: options-first JRT
+  prompt, chat template with empty think block — byte-identical to Qwen3.6's own template with
+  `enable_thinking=False` —, sum log p(' ' + id + terminator), option-count temperature). **No fork:** one full forward
+  of prompt + continuation per (question, option), <= 4 same-question rows of equal continuation length per call
+  (`HFReadoutBackend(fork=False)`); exact by construction, no state handed between calls. Canary: the run's batched
+  scoring vs batch-1 scoring on `CANARY_REQUEST` (tol 0.25 nat, same argmax; `index/selfcheck.json`). The v3w-generic
+  arm is dropped (it needs the fork; credit is tight). Input cap 16,384 (job-5cmat's adapter default): 5 rows refused.
+- **Volume (exact, Qwen3.6 tokenizer, `qwen36_m0_cost.json` from `half_subset costs`):** all proxy600 = 84.24M
+  positions / 6,130 calls on 639 in-cap rows (the fork needed ~2.4M); heavy tail (170 rows hold 97%).
+- **Rows: primary = a deterministic stratified half** (`proxy600_half_q36.json`, `half_subset build`, seed
+  `q36-half-v1:`: per benchmark ceil(n_groups/2) groups by sha256(seed + group_id), whole groups, all 38 benchmarks,
+  >= 3 rows each; 341 rows, ids_sha256 `a76e5592...`): 40.03M positions / 3,021 calls. The job runs the half first
+  (cost-shuffled order), then the other 303 rows until the index cap; the half is the headline result, all 644 are
+  also scored when they finish. Needed throughput: the half fits the 77-min index cap at >= ~10K tok/s (0.1 s/call),
+  all 644 at >= ~21K tok/s.
+- **Precision of the half (measured with the frozen scorer on stock RWKV7 v3w, art-ivu28):** half 28.25 [23.51, 34.84],
+  se 2.84 (CI width 11.3) vs all 644 rows 27.32 [23.94, 32.61], se 2.22 (width 8.7). Paired diffs scale alike (~1.3x:
+  se ~3.2 vs 2.46 on 644). Enough to separate a backbone ~8+ points above or below Qwen3.5-9B, not a 3-point gap.
+- **Rate guard, cost-weighted** (`rate_guard run --weights`): the projection uses the cost done on the half (per-row
+  weight = positions + 2,000 x calls), not the row count (rows differ 1,000x in cost); exit 15 if the half projects past
+  95% of the index cap. A cap kill after the half is the plan: `half_subset parts` keeps complete lines only
+  (`results.scored.jsonl`) and scores what is complete.
+- **Score:** slice index + ECE + paired vs stock RWKV7 v3w on the half (decision.json top level, `expected_rows` 341,
+  `subset`); `full` with the same on all 644 rows if complete. The Qwen3.5-9B pairing is a CPU step at landing
+  (`dev_subset compare --candidate index/stock/results.scored.jsonl --baseline <job-5cmat stock results> --subset
+  jobs/backbone_screen/proxy600_half_q36.json`): job-5cmat's per-row units live only in art-2bybh.
+- **Schedule / hold:** setup 8 (job-gen87: 3) + index 77 + score 5 + reserve 5 = 95 min. Platform hold 95 x $0.063 =
+  **$5.99**; worst case (60 + 2 x 95) x 0.0495 = **$12.38** (hard cap $12.5); expected ~75 min incl. build ~ $3.7 billed.
 
 ## Not screened here (and why)
 - `featherless-ai/QRWKV-72B` (79.3B, MMLU 77.5): 158.6 GB bf16; 8-bit (~79 GB) does not fit one H100 next to activations.
