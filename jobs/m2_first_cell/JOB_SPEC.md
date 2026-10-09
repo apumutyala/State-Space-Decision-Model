@@ -230,6 +230,14 @@ the `d10_v2f_b100k_t380` clock (380 min, max_steps 4,500, cell cap 455); `"stage
 screen cap 85 (fixed 15 + 32 tokenize for 100k + 25.97 proxy child = 72.97 <= 0.95 x 85). Schedule 25 + 5 + 10 + 85 + 65 + 455 + 85 + 5 + 7 =
 742 min. **Worst case** (60 + 2 x 742) x $0.0495 = **$76.43** (cap $90). Expected 671 min ≈ $33.21.
 
+Mode `d17_v3w_bschema230k_v2d` (D17; `job_params_d17_v3w_bschema230k_v2d.json`, `m2_first_cell_rwkv7_d17_v3w_bschema230k_v2d.json`): `d16_v3w_b100k_safe`
+with ONLY the training set changed to B's `bschema-draw230k-v2d` (pointer `data/manifests/bschema-draw230k-v2d.pointer.json`, 227,946 records,
+n_train_records = the whole pool, train_dir `m2/build/bschema-draw230k-v2d`; no heldout_excluded / attack_clean / doc_clean pins: the heldout phase
+and the draw require 0 train.heldout hits, 0 attack_guard hits and 0 doc_overlap_guard fails) and the data-size-dependent caps: heldout 15 (the
+three whole-set scans took 7.1 min on CPU), cell 517 (D16 455 - 32 + 85 tokenize for 227,946 rows + 9 for the draw's guard scans, 528 s on CPU),
+screen 143 (fixed 15 + 85 tokenize + 9 draw scans + 25.97 proxy child = 134.97 <= 0.95 x 143). Clock unchanged (380 min, max_steps 4,500).
+Schedule 25 + 5 + 15 + 85 + 65 + 517 + 143 + 5 + 7 = 867 min. **Worst case** (60 + 2 x 867) x $0.0495 = **$88.80** (cap $90). Expected 800 min ≈ $39.60.
+
 fla in cells (any mode whose cell config sets `"rwkv7_wkv": "fla"`; defaults unchanged, every committed config keeps its
 own WKV). Adopted from SF job-9bs8w (`jobs/perf_step_gate` rule v2, stack/rwkv7/perf-gate-fla @3501b56): `fast_fla`
 (d1_fast flags + fla) 3.88 s/step vs `fast` 5.65 (1.46x) and `greedy` 7.94 (2.05x), LoRA-grad cos 0.998, loss_rel
