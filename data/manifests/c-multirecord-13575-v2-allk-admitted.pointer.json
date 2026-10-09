@@ -1,0 +1,16 @@
+{
+ "build": "c-multirecord-13575-v2-allk-admitted (python -m data.c_multirecord_union)",
+ "n_records": 13575,
+ "location": "ssdm-data/c-multirecord-13575-v2-allk-admitted/train_set/",
+ "manifest": "c-multirecord-13575-v2-allk-admitted.manifest.jsonl.gz",
+ "content_map": "c-multirecord-13575-v2-allk-admitted.content.jsonl.gz",
+ "builder": {
+  "module": "data.c_multirecord_union",
+  "commit": "183a4e6c7a73a8e5ed8b4e025fc7b92b74c76134"
+ },
+ "receipt": "receipts/2026-10-08-C-multirecord-synth/c-multirecord-13575-v2-allk-admitted/summary.json",
+ "excludes_cohort": "qualified pure synthetic C only; no B/Index/TEST/cohort reads; consuming peer owns its guard",
+ "records_uncompressed_sha256": "c33facd99e2251283aafcbb5521987d8b23a12d1d9f71f4de10fde1bb6b0a20f",
+ "manifest_uncompressed_sha256": "a8c1138d1baadcfa5e693964969b3a406727507b0afa72c6c4d9def796b1b980",
+ "content_map_uncompressed_sha256": "9e74bdfa8c1513955b26cab0350a0d30eefd87ac86ab76751f95ce728671f25f"
+}
