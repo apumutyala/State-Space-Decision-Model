@@ -33,9 +33,11 @@ def test_cell_config_is_the_specified_cell():
         "act_ckpt": True, "row_batch": 8, "row_tokens": 8192, "rwkv7_wkv": "chunked_lean", "t_ladder": [512, 1024, 2048]}
     assert CELL["row_batch"] == CELL["batch_size"] * CELL["grad_accum"]  # 8 rows per optimiser step (grouped by row_tokens per call)
     assert f"{PARAMS['phase_caps_minutes']['cell']}-min cell phase" in CELL["max_minutes_note"]
-    from heads.rwkv7_wkv import GPU_VERIFIED
+    # flipped by commit 7781cb7 after the fla gate's GPU ADOPT (SF job-9bs8w, perf_step_gate v2: fast_fla 3.88 vs
+    # 5.65 s/step, LoRA-grad cos 0.998, zero fallbacks; receipt in heads/rwkv7_wkv.py); only plain "fla" is verified
+    from heads.rwkv7_wkv import FLA, GPU_VERIFIED, GPU_VERIFIED_NAMES
 
-    assert GPU_VERIFIED is False
+    assert GPU_VERIFIED is True and GPU_VERIFIED_NAMES == frozenset({FLA})
     assert CELL["min_steps"] * CELL["grad_accum"] * CELL["batch_size"] >= 4800
     assert CELL["n_train_records"] * 0.9 >= CELL["max_steps"] * CELL["grad_accum"] * 0.9  # < 1 epoch at max_steps
 
@@ -364,7 +366,15 @@ def test_runner_orders_guards_before_training_and_prices_every_eval_first():
     assert i("jobs.m2_parent_arm.score_parent --parent") < i("-m jobs.m2_first_cell.reprice") < train < i("-m train.m2_gates")
     assert "export_phase heldout" in JOB  # review fix 3
     assert '--report "$ARM/rate-parent-$PSTAGE.json"' in JOB  # rate reports survive a restart (reprice reads them)
-    assert JOB.count("rate_guard run-weighted") == 2  # parent stages (loop) + child evals
+    # every scoring command runs under the live rate guard (the same continued command line): parent stages (loop),
+    # mode fulldev_eval (7420814), stage screen (2b9fd92) and the child evals; the parent arm precedes training
+    assert JOB.count("rate_guard run-weighted") == 4
+    for cmd in ("-m jobs.m2_parent_arm.score_parent --parent", "-m jobs.m2_first_cell.fulldev_eval score",
+                "-m jobs.m2_first_cell.screen score", "-m train.m2_gates --cell"):
+        at = i(cmd)
+        wrapped = JOB[JOB.rindex("rate_guard run-weighted", 0, at):at].splitlines()[:-1]
+        assert len(wrapped) <= 3 and all(ln.rstrip().endswith("\\") for ln in wrapped), cmd
+    assert i("rate_guard run-weighted --progress \"$WORK/logs/parent-$PSTAGE.progress.jsonl\"") < train
     assert "jobs/common/finalize.py" in JOB and not re.search(r"touch [^\n]*DONE", JOB)
     assert not re.search(r"timeout \d+m", JOB)  # every cap comes from job_params
     assert "--final" not in JOB and "SSDM_UNSEAL_TEST" not in JOB and "--slice test" not in JOB
