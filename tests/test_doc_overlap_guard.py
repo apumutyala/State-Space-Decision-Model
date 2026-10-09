@@ -334,3 +334,34 @@ def test_meta_counts_must_match_the_pin(idx):
     DG.check_meta_vs_pin(idx, {"n_eval_rows": idx.n_rows, "n_units": idx.meta["n_units"], "n_grams": idx.meta["n_grams"]})
     with pytest.raises(DG.DocOverlapError):
         DG.check_meta_vs_pin(idx, {"n_eval_rows": idx.n_rows + 1})
+
+
+def test_every_job_params_ships_the_pinned_index():
+    """Every job_params that ships the doc-overlap eval-hash index ships exactly the committed index-pin's directory
+    (all 12 files, each with a pin_sha256; with the local cache present the pins equal the files and their .npy
+    aggregate equals the pin's index_sha256), so a stale index can't drift into a launch again."""
+    import glob
+    import hashlib
+
+    pin = json.loads((ROOT / "data/manifests/doc_overlap/index-pin.json").read_text(encoding="utf-8"))
+    key16 = pin["key"][:16]
+    names = set(DG.EvalIndex.ARRAYS) | {"meta"}
+    cache = DG.DEFAULT_CACHE / key16
+    n_files = 0
+    for f in glob.glob(str(ROOT / "jobs/**/job_params*.json"), recursive=True):
+        d = json.loads(Path(f).read_text(encoding="utf-8"))
+        items = [x for x in (d.get("context") or {}).get("data") or [] if "doc-overlap/" in str(x.get("dest", ""))]
+        if not items:
+            continue
+        n_files += 1
+        dirs = {x["dest"].rsplit("/", 1)[0] for x in items}
+        assert dirs == {f"m2/doc-overlap/{key16}"}, (f, dirs)
+        got = {x["dest"].rsplit("/", 1)[1].split(".")[0] for x in items}
+        assert got == names and all(x["src"] == x["dest"] and len(x.get("pin_sha256", "")) == 64 for x in items), f
+        if (cache / "meta.json").exists():
+            for x in items:
+                assert hashlib.sha256((DG.DEFAULT_CACHE.parent.parent / x["src"]).read_bytes()).hexdigest() == x["pin_sha256"], (f, x)
+            pins = {x["dest"].rsplit("/", 1)[1]: x["pin_sha256"] for x in items}
+            agg = hashlib.sha256("".join(pins[f"{k}.npy"] for k in DG.EvalIndex.ARRAYS).encode()).hexdigest()
+            assert agg == pin["index_sha256"], f
+    assert n_files >= 9
