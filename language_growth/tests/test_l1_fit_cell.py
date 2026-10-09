@@ -15,6 +15,7 @@ from language_growth.l1_fit_cell import (
     FitCellError, FitInputs, ORDER_SCHEMA, PLAN_SHA256, SOURCES, ValidatedFit,
     _child_config, canonical, execute_fit, main, prepare_items, sha, validate_fit,
 )
+from language_growth.language_child import validate_child_checkpoint_state, validate_fit_child_receipt
 
 
 class Encoder:
@@ -123,7 +124,14 @@ class FakeTrainer:
     """Records calls only; its step method does no model computation or training."""
     def __init__(self, config):
         self.config, self.step = config, 0
-        self.lineage = {"data": {"n": 3600, "sha256": "9" * 64}}
+        self.lineage = {
+            "backbone": {"spec": "rwkv7-13.3b", "weights_digest": "1" * 64,
+                         "weights_digest_mode": "sampled"},
+            "tokenizer": ["fake-tokenizer"],
+            "layout": {"layouts": [["ordered", "jrt-rwkv-g1-v1"]],
+                       "body_version": "test", "layout_version": "test"},
+            "data": {"n": 3600, "sha256": "9" * 64, "order_fn": "train.v1"},
+        }
 
     def train_step(self):
         self.step += 1
@@ -284,6 +292,22 @@ class FitCellTests(unittest.TestCase):
             self.assertEqual(receipt["status"], "completed_fit_only")
             self.assertFalse(receipt["promotion_eligible"])
             self.assertFalse(receipt["language_qualified"])
+            receipt_bytes = (Path(d) / "run" / "receipt.json").read_bytes()
+            stage1_spec = SimpleNamespace(
+                qualification={"checkpoint_config": receipt["config"],
+                               "checkpoint_config_hash": receipt["config_hash"],
+                               "checkpoint_lineage": receipt["lineage"],
+                               "lora_modules": receipt["lora_modules"]},
+                identity=lambda: dict(receipt["stage1_parent"]))
+            candidate = validate_fit_child_receipt(receipt, receipt_sha256=sha(receipt_bytes),
+                child_checkpoint=child["path"], stage1_spec=stage1_spec)
+            state = {"step": child["step"], "epoch": 1, "cursor": 0,
+                     "config": receipt["config"], "config_hash": receipt["config_hash"],
+                     "trainable": {name: object() for name in receipt["trainable_parameter_names"]},
+                     "optimizer": {}, "scheduler": {}, "rng": {}, "lineage": receipt["lineage"],
+                     "init_seed": receipt["config"].get("seed"), "history": [],
+                     "backbone": "rwkv7-13.3b", "lora_modules": receipt["lora_modules"], "guard": {}}
+            validate_child_checkpoint_state(state, candidate, stage1_spec)
         self.assertLess(self.runtime.calls.index("encoder"), self.runtime.calls.index("load"))
 
     def test_default_and_missing_execution_gates_never_construct_runtime(self):
