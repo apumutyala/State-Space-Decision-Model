@@ -1,13 +1,14 @@
-"""INFERENCE export of a Trainer checkpoint: the trainable tensors (LoRA + head) only, as bf16 safetensors + a JSON
-sidecar. No optimizer / scheduler / RNG state, so the artifact stays under the store's single-PUT cap (job-igcu4: a
-LoRA r256 ``.pt`` with Adam state was ~14 GB and the whole upload failed). The full ``.pt`` stays in the platform
+"""INFERENCE export of a Trainer checkpoint: the trainable tensors only (LoRA in bf16, the head in its source dtype),
+as safetensors + a JSON sidecar. No optimizer / scheduler / RNG state, so the artifact stays under the store's
+single-PUT cap (job-igcu4: a LoRA r256 ``.pt`` with Adam state was ~14 GB and the whole upload failed). The full ``.pt`` stays in the platform
 checkpoint dir ($GMN_CHECKPOINT_DIR), never in $GMN_OUTPUT_DIR.
 
     python -X utf8 -m train.ckpt_export inference --ckpt <ck>/cell/ckpt-step0001439.pt --out-dir <out>/ckpt
 
 writes, in ``--out-dir``::
 
-    trainable-step0001439.safetensors          trainable tensors (bf16 by default); ONE metadata key "ssdm" = sorted
+    trainable-step0001439.safetensors          trainable tensors (LoRA bf16 by default, the rest
+                                               in its source dtype); ONE metadata key "ssdm" = sorted
                                                JSON {format, config_hash, step, source_ckpt_sha256, dtype}
                                                (one key: safetensors writes a metadata map in random order)
     trainable-step0001439.json                 sidecar: sha256 of the safetensors + everything Trainer.load checks
@@ -17,8 +18,12 @@ writes, in ``--out-dir``::
 
 ``Trainer.load`` accepts this export (eval only: ``Trainer.resume`` refuses it, there is no optimizer state), so
 ``train.m2_gates`` / ``jobs.m2_first_cell.fulldev_eval`` / ``screen`` restore it exactly like a ``.pt``, and
-``jobs.m2_first_cell.checkpoint_loader`` installs it from an artifact. bf16 storage: the cell runs under bf16
-autocast, so every LoRA / head matmul already sees bf16 operands; the dtype is recorded in both files.
+``jobs.m2_first_cell.checkpoint_loader`` installs it from an artifact. dtypes: ``--dtype`` applies to the LoRA
+tensors (``*.lora_A`` / ``*.lora_B``) ONLY, which are lossless in bf16 because ``LoRALinear.forward`` casts them to
+the (bf16) activation dtype anyway. Every other trainable tensor (the head: fp32, and eval runs WITHOUT autocast, so
+bf16 rounding there moved logprobs by up to 4.3e-3 in agent-b's PR #231 review) keeps its source dtype. Both files
+record the LoRA dtype and the per-tensor dtypes. The export dir must not be the source checkpoint's dir (its
+latest.json would then name the export and ``Trainer.resume`` would refuse it).
 """
 from __future__ import annotations
 
@@ -54,6 +59,17 @@ def _write(path: Path, text: str) -> None:
         f.write(text)
 
 
+def is_lora(name: str) -> bool:
+    return name.endswith(("lora_A", "lora_B"))
+
+
+def _names_export(latest: Path) -> bool:
+    try:
+        return str(json.loads(latest.read_text(encoding="utf-8")).get("path", "")).endswith(".safetensors")
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def is_inference(path: str | Path) -> bool:
     return str(path).endswith(".safetensors")
 
@@ -80,6 +96,9 @@ def export_inference(ckpt: str | Path, out_dir: str | Path, dtype: str = "bf16")
     from safetensors.torch import save_file
 
     ckpt, out = Path(ckpt), Path(out_dir)
+    if out.resolve() == ckpt.parent.resolve() or (out / "latest.json").is_file() and not _names_export(out / "latest.json"):
+        raise ValueError(f"--out-dir {out} is the training checkpoint dir (or holds a training latest.json): export to a "
+                         "separate dir (e.g. $OUT/ckpt); the training latest.json must keep naming the .pt")
     out.mkdir(parents=True, exist_ok=True)
     if is_inference(ckpt):  # eval-only modes installed an export: re-publish it unchanged
         side = json.loads(sidecar_path(ckpt).read_text(encoding="utf-8"))
@@ -96,16 +115,17 @@ def export_inference(ckpt: str | Path, out_dir: str | Path, dtype: str = "bf16")
         tr = st["trainable"]
         if not isinstance(tr, dict) or not tr or not all(isinstance(v, torch.Tensor) for v in tr.values()):
             raise ValueError(f"{ckpt}: no trainable tensor dict")
-        tensors = {k: v.detach().to(DTYPES[dtype]).contiguous() for k, v in tr.items()}
+        tensors = {k: v.detach().to(DTYPES[dtype] if is_lora(k) else v.dtype).contiguous() for k, v in tr.items()}
         step = int(st["step"])
         name = f"trainable-step{step:07d}.safetensors"
         src_sha = sha256_file(ckpt)
         tmp = out / (name + ".tmp")
         meta = {"format": FORMAT, "config_hash": str(st["config_hash"]), "step": step, "source_ckpt_sha256": src_sha,
-                "dtype": dtype}
+                "dtype": dtype, "lora_dtype": dtype}
         save_file(tensors, str(tmp), metadata={"ssdm": json.dumps(meta, sort_keys=True)})
         os.replace(tmp, out / name)
-        side = {"format": FORMAT, "file": name, "sha256": sha256_file(out / name), "dtype": dtype,
+        side = {"format": FORMAT, "file": name, "sha256": sha256_file(out / name), "dtype": dtype, "lora_dtype": dtype,
+                "tensor_dtypes": {k: str(v.dtype).removeprefix("torch.") for k, v in sorted(tensors.items())},
                 "source_ckpt": ckpt.name, "source_ckpt_sha256": src_sha, "n_tensors": len(tensors),
                 "n_params": sum(t.numel() for t in tensors.values()),
                 **{k: _jsonable(st.get(k)) for k in SIDECAR_KEYS}}
@@ -163,7 +183,7 @@ def main(argv=None) -> int:
     i = sub.add_parser("inference")
     i.add_argument("--ckpt", required=True)
     i.add_argument("--out-dir", required=True)
-    i.add_argument("--dtype", default="bf16", choices=sorted(DTYPES))
+    i.add_argument("--dtype", default="bf16", choices=sorted(DTYPES), help="LoRA tensors only; the rest keep their dtype")
     a = ap.parse_args(argv)
     side = export_inference(a.ckpt, a.out_dir, a.dtype)
     print(json.dumps({k: side[k] for k in ("file", "sha256", "dtype", "step", "n_tensors", "n_params",
