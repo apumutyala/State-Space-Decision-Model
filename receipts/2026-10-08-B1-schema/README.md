@@ -353,7 +353,7 @@ coordinator's (2026-10-09): eval documents count as "test" (we can't train on te
 `doc-overlap-guard-1f64368.json`: `train.doc_overlap_guard` at origin/claude/b-doc-overlap-gate @1f64368 (index
 2c821e29..., allowlist 8a0bf416...) reports 0 fails over all 227,946 rows. v2d is unchanged.
 
-# bschema-draw230k-v2e (2026-10-09): v2d with C's all-K pool. NOT READY: fails the v1 2,048-token gate
+# bschema-draw230k-v2e (2026-10-09): v2d with C's all-K pool. READY (v2f/v3w; under v1, 7,942 C rows exceed 2,048 and are dropped by the trainer)
 v2e is v2d with its 7,000 `synthetic_c_multirecord_v1` rows replaced by all 13,575 rows of C's
 `c-multirecord-13575-v2-allk-admitted` pool (pointer sha256 531faa15...). Built with `scripts/b_schema_swap_pool.py`.
 - Every pool row passed the P3 Checker against the kept v2d rows: 13,575 of 13,575 kept.
@@ -369,12 +369,15 @@ Gates:
   - check_generator: 37 specs.
   - Trainer 9c3e435: draw at 24k, and heldout_gate with 0 hits.
   - Tokens: max 2,048 under v2f and v3w.
-- FAIL: `token-check.json` shows 7,942 C rows over 2,048 under the v1 TRAINING template (max 2,309).
+- Under v1 (not verified; coordinator decision 2026-10-09: current cells train under v3w): `token-check.json` shows 7,942 C rows over 2,048 under the v1 TRAINING template (max 2,309). The trainer drops (does not cut) rows over T.
   - Every over-length row is from the C pool.
   - C proved v2f/v3w only.
   - Those rows are exactly the pool's high-K worlds: option count 53-77. The rows that fit under v1 span 5-62.
 - Pins:
-  - pointer `data/manifests/bschema-draw230k-v2e.pointer.json`, sha256 7bcbaca5...
+  - pointer `data/manifests/bschema-draw230k-v2e.pointer.json`, sha256 94290d18872d41a6b0a06cfbe40780f5f4ff9160dc1c87a90904eed09b033314
+    - It carries `templates_verified` = [jrt-rwkv-g1-v2f, jrt-rwkv-g1-v3w].
+    - It carries `v1_overlength_ids` = `v1-overlength-ids.txt` (7,942 ids, sha256 00783161...).
+    - `trainer-draw.json` was re-run against this pointer. The first pointer (7bcbaca5...) is superseded.
   - uncompressed records 9967766bf5fdd292f2e5d34bff9e6eda79a027b299ee6cf55c11ec94dada4081
   - manifest a4ec3875...
   - content 3789c913...

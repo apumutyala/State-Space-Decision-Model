@@ -9,7 +9,7 @@
    "identity": {
     "train_set": "bschema-draw230k-v2e (scripts/b_schema_swap_pool.py: bschema-draw230k-v2d with ['synthetic_c_multirecord_v1'] replaced by c-multirecord-13575-v2-allk-admitted; P3 checks)",
     "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b-schema-synth\\data\\manifests\\bschema-draw230k-v2e.pointer.json",
-    "pointer_sha256": "7bcbaca56bcd536247f33edb3fd8f4ac59826021f03f750d40e3b28699673b29",
+    "pointer_sha256": "94290d18872d41a6b0a06cfbe40780f5f4ff9160dc1c87a90904eed09b033314",
     "files_uncompressed_sha256": {
      "records": "9967766bf5fdd292f2e5d34bff9e6eda79a027b299ee6cf55c11ec94dada4081",
      "manifest": "a4ec38754dc0d31783bc59030fa775fdeae8aaef884d135bf7822d5ec6660c7e",

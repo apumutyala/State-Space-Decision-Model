@@ -41,5 +41,15 @@
    "module": "data.c_multirecord_union",
    "commit": "183a4e6c7a73a8e5ed8b4e025fc7b92b74c76134"
   }
+ },
+ "templates_verified": [
+  "jrt-rwkv-g1-v2f",
+  "jrt-rwkv-g1-v3w"
+ ],
+ "v1_overlength_ids": {
+  "path": "receipts/2026-10-08-B1-schema/bschema-draw230k-v2e/v1-overlength-ids.txt",
+  "sha256": "00783161496e21271d8f1da7e64f70beed7ad10051beb5812ef025de6d6c93e1",
+  "n": 7942,
+  "note": "under jrt-rwkv-g1-v1 these C rows exceed 2,048 tokens (max 2,309); the trainer drops (does not cut) rows over T"
  }
 }
