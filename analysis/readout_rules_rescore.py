@@ -14,7 +14,7 @@ Only --dev-minus-proxy600 emits a "claim" label: the rules were found on proxy60
 Each arm's ok rows get ``decide.readout_rules.apply_rules`` (R1 BFCL exactly-one, R2 SATA top-m) on the request the
 engine saw ({state, questions}) and the wire answers' own probabilities (``response``: the untempered arm). Rows that
 carry a ``served_response`` (tempered) are also re-scored with the yes-selection taken from the TEMPERED probabilities
-(the served path), as the variant "rules_from_served_probs". R3 (the input cap) is NOT measured offline:
+(the served path), as the sensitivity-only variant "sensitivity_not_claim_rules_from_served_probs" (the "headline" is always the untempered after_minus_before). R3 (the input cap) is NOT measured offline:
 input_tokens_exceeded rows need a GPU re-run, so they stay as they were (not ok = no credit). Scored with the frozen
 harness.score.decompose / score.point and paired with harness.bootstrap.compare (case clusters, B=2000, seed 0), as the
 m2 screen pairs arms. Nothing here is fitted.
@@ -100,11 +100,14 @@ def section(rows, arms, label):
                "benchmarks_changed": {n: ci(v) for n, v in c["diff"]["benchmarks"].items() if abs(v["point"]) > 1e-9},
                "rules": per_rule, "non_ok_rows": sum(1 for v in res.values() if v.get("status") != "ok"),
                "rows_with_served_response": sum(1 for v in res.values() if v.get("served_response"))}
+        arm["headline"] = {"after_minus_before": arm["after_minus_before"],
+                           "basis": "untempered wire probabilities (the pre-registered number)"}
         if arm["rows_with_served_response"]:
             res3, pr3 = with_rules(rows, res, from_served=True)
             d3 = score.decompose(rows, res3, edition=EDITION)
             c3 = bootstrap.compare(d3, db, B=B, seed=0)
-            arm["rules_from_served_probs"] = {"index_after": round(score.point(d3)["index"], 3),
+            # sensitivity only, never the claim/headline: rules re-applied on the served (tempered) probabilities
+            arm["sensitivity_not_claim_rules_from_served_probs"] = {"index_after": round(score.point(d3)["index"], 3),
                                               "after_minus_before": ci(c3["diff"]["index"]), "rules": pr3}
         out["arms"][name] = arm
         print(label, len(rows), name, json.dumps(arm), flush=True)
