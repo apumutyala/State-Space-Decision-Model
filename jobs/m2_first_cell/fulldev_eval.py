@@ -242,7 +242,7 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
     model.to(bb.device)
     tr = Trainer(model, with_execution(train_config(cfg, cfg["max_steps"], a.ckpt_dir, cuda), cfg), train_items,
                  guard=guard)
-    ckpt = Path(a.ckpt) if a.ckpt else Trainer.latest(a.ckpt_dir)
+    ckpt = Path(a.ckpt) if a.ckpt else Trainer.scored(a.ckpt_dir)  # best-by-dev when the run kept one
     if ckpt is None:
         raise ValueError("no checkpoint")
     tr.load(ckpt)  # config hash + lineage (backbone digest/provenance, tokenizer, layout, training items)
