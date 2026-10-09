@@ -196,6 +196,10 @@ def summarize(a) -> dict:
                  "worst_case_usd": worst_case_usd(params), "hard_cap_usd": params["hard_cap_usd"]},
         "verdict": "measured",
     }
+    from jobs.common.label_collapse import safe_detect  # NON-GATING per-family label-collapse warnings
+
+    out["warnings"] = safe_detect(rows, child_idx["index_results"])
+    out["warnings"]["parent"] = safe_detect(rows, par_idx["index_results"])
     if a.reference:
         refs = dict(x.split("=", 1) for x in a.reference)
         out["references"] = references(refs, rows, child_idx["index_results"], par_idx["index_results"], a.n_boot)

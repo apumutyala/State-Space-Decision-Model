@@ -1,0 +1,1064 @@
+{
+ "revision": "v1.6.1",
+ "source_sha256": "e15347783b8bedeeddd9017a831608a957f5bf0386f05902c50161ce0468f911",
+ "g_med": 2.573387642438244,
+ "n_systems": 140,
+ "tolerance": 1e-09,
+ "checks": {
+  "composite_A": {
+   "rows": 137,
+   "exact": 137,
+   "both_null": 3,
+   "max_abs_diff": 1.4210854715202004e-14,
+   "mismatches": []
+  },
+  "composite_B": {
+   "rows": 137,
+   "exact": 137,
+   "both_null": 3,
+   "max_abs_diff": 1.4210854715202004e-14,
+   "mismatches": []
+  },
+  "composite_C": {
+   "rows": 137,
+   "exact": 137,
+   "both_null": 3,
+   "max_abs_diff": 1.4210854715202004e-14,
+   "mismatches": []
+  },
+  "capability": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "cc": {
+   "rows": 840,
+   "exact": 840,
+   "both_null": 0,
+   "max_abs_diff": 1.4210854715202004e-14,
+   "mismatches": []
+  },
+  "I_open": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 1.4210854715202004e-14,
+   "mismatches": []
+  },
+  "I_sealed": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 1.4210854715202004e-14,
+   "mismatches": []
+  },
+  "base": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "gap": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "excess": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "penalty": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "intelligence": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "cal_part[choice]": {
+   "rows": 139,
+   "exact": 139,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "cal_part[noul]": {
+   "rows": 139,
+   "exact": 139,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "cal_part[score]": {
+   "rows": 138,
+   "exact": 138,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "calibration": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 1.4210854715202004e-14,
+   "mismatches": []
+  },
+  "speed": {
+   "rows": 140,
+   "exact": 140,
+   "both_null": 0,
+   "max_abs_diff": 1.4210854715202004e-14,
+   "mismatches": []
+  },
+  "cost": {
+   "rows": 137,
+   "exact": 137,
+   "both_null": 0,
+   "max_abs_diff": 1.4210854715202004e-14,
+   "mismatches": []
+  },
+  "view[Balanced 33:33:33]": {
+   "rows": 137,
+   "exact": 135,
+   "both_null": 3,
+   "max_abs_diff": 0.6486296403385268,
+   "mismatches": [
+    {
+     "key": "deck31b",
+     "check": "view[Balanced 33:33:33]",
+     "recomputed": 65.33655113696359,
+     "published": 65.98518077730212,
+     "abs_diff": 0.6486296403385268
+    },
+    {
+     "key": "deck-4b-v1-0",
+     "check": "view[Balanced 33:33:33]",
+     "recomputed": 33.92753147710974,
+     "published": 33.95960169128873,
+     "abs_diff": 0.032070214178993695
+    }
+   ]
+  },
+  "view[Emphasis on Accuracy 60:20:20]": {
+   "rows": 137,
+   "exact": 135,
+   "both_null": 3,
+   "max_abs_diff": 0.6277387031473438,
+   "mismatches": [
+    {
+     "key": "deck31b",
+     "check": "view[Emphasis on Accuracy 60:20:20]",
+     "recomputed": 67.89363154748614,
+     "published": 68.52137025063348,
+     "abs_diff": 0.6277387031473438
+    },
+    {
+     "key": "deck-4b-v1-0",
+     "check": "view[Emphasis on Accuracy 60:20:20]",
+     "recomputed": 28.539620086846544,
+     "published": 28.553229571667234,
+     "abs_diff": 0.01360948482069091
+    }
+   ]
+  },
+  "view[Emphasis on Cost 20:20:60]": {
+   "rows": 137,
+   "exact": 135,
+   "both_null": 3,
+   "max_abs_diff": 0.6344225614798447,
+   "mismatches": [
+    {
+     "key": "deck31b",
+     "check": "view[Emphasis on Cost 20:20:60]",
+     "recomputed": 57.693586127390944,
+     "published": 58.32800868887079,
+     "abs_diff": 0.6344225614798447
+    },
+    {
+     "key": "deck-4b-v1-0",
+     "check": "view[Emphasis on Cost 20:20:60]",
+     "recomputed": 35.401858373919765,
+     "published": 35.46476300764428,
+     "abs_diff": 0.06290463372451427
+    }
+   ]
+  },
+  "view[Emphasis on Speed 20:60:20]": {
+   "rows": 137,
+   "exact": 135,
+   "both_null": 3,
+   "max_abs_diff": 0.6725113614657943,
+   "mismatches": [
+    {
+     "key": "deck31b",
+     "check": "view[Emphasis on Speed 20:60:20]",
+     "recomputed": 72.18009673292597,
+     "published": 72.85260809439177,
+     "abs_diff": 0.6725113614657943
+    },
+    {
+     "key": "deck-4b-v1-0",
+     "check": "view[Emphasis on Speed 20:60:20]",
+     "recomputed": 39.78096694143563,
+     "published": 39.807414011248,
+     "abs_diff": 0.026447069812370216
+    }
+   ]
+  },
+  "view[Intelligence only]": {
+   "rows": 140,
+   "exact": 23,
+   "both_null": 0,
+   "max_abs_diff": 55.56408492691214,
+   "mismatches": [
+    {
+     "key": "deck31b",
+     "check": "view[Intelligence only]",
+     "recomputed": 73.02512554551848,
+     "published": 72.71357044848186,
+     "abs_diff": 0.3115550970366172
+    },
+    {
+     "key": "bobcat-flash-1.2",
+     "check": "view[Intelligence only]",
+     "recomputed": 65.81464576505633,
+     "published": 64.99001759823823,
+     "abs_diff": 0.8246281668181012
+    },
+    {
+     "key": "surogate-rune-26b-a4b-v3-v16",
+     "check": "view[Intelligence only]",
+     "recomputed": 56.055735926690254,
+     "published": 55.15648620822009,
+     "abs_diff": 0.8992497184701662
+    },
+    {
+     "key": "gev-26b-decide",
+     "check": "view[Intelligence only]",
+     "recomputed": 49.817428608862244,
+     "published": 49.45428333114776,
+     "abs_diff": 0.36314527771448724
+    },
+    {
+     "key": "spx-cd-omni",
+     "check": "view[Intelligence only]",
+     "recomputed": 48.779308810848946,
+     "published": 46.42660407688444,
+     "abs_diff": 2.352704733964508
+    },
+    {
+     "key": "diffusion-jev",
+     "check": "view[Intelligence only]",
+     "recomputed": 54.860121638521335,
+     "published": 53.898210717803785,
+     "abs_diff": 0.9619109207175498
+    },
+    {
+     "key": "rene-1-31b-fp8",
+     "check": "view[Intelligence only]",
+     "recomputed": 61.72139577013068,
+     "published": 52.15843207508249,
+     "abs_diff": 9.56296369504819
+    },
+    {
+     "key": "aplomb-1",
+     "check": "view[Intelligence only]",
+     "recomputed": 45.81854920739271,
+     "published": 38.475475184084495,
+     "abs_diff": 7.343074023308212
+    },
+    {
+     "key": "bespoke-nimble-9b-v3",
+     "check": "view[Intelligence only]",
+     "recomputed": 56.54011796945148,
+     "published": 48.05332347466076,
+     "abs_diff": 8.486794494790722
+    },
+    {
+     "key": "apus-openjev-v1-9b",
+     "check": "view[Intelligence only]",
+     "recomputed": 47.20514429531085,
+     "published": 39.978415802185516,
+     "abs_diff": 7.226728493125336
+    },
+    {
+     "key": "plumb-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 42.9626698747687,
+     "published": 31.720043803902097,
+     "abs_diff": 11.242626070866603
+    },
+    {
+     "key": "spx-cd-pro",
+     "check": "view[Intelligence only]",
+     "recomputed": 64.85693822910903,
+     "published": 48.138519063832746,
+     "abs_diff": 16.718419165276288
+    },
+    {
+     "key": "messier-one-v0.2",
+     "check": "view[Intelligence only]",
+     "recomputed": 42.35139759222662,
+     "published": 30.38527918499109,
+     "abs_diff": 11.966118407235527
+    },
+    {
+     "key": "spark-s1-4b-v6",
+     "check": "view[Intelligence only]",
+     "recomputed": 43.2364603010071,
+     "published": 32.33034853965725,
+     "abs_diff": 10.906111761349848
+    },
+    {
+     "key": "swanone",
+     "check": "view[Intelligence only]",
+     "recomputed": 56.15104294255194,
+     "published": 39.90509729608976,
+     "abs_diff": 16.245945646462182
+    },
+    {
+     "key": "quyet-1-0-medium",
+     "check": "view[Intelligence only]",
+     "recomputed": 41.73350604436517,
+     "published": 29.074657383286326,
+     "abs_diff": 12.658848661078846
+    },
+    {
+     "key": "lev",
+     "check": "view[Intelligence only]",
+     "recomputed": 41.084702071234844,
+     "published": 27.739614243661805,
+     "abs_diff": 13.345087827573039
+    },
+    {
+     "key": "ninfer-qwen3.8-flash-next",
+     "check": "view[Intelligence only]",
+     "recomputed": 48.980301026876646,
+     "published": 34.01333411780027,
+     "abs_diff": 14.966966909076376
+    },
+    {
+     "key": "jev-local",
+     "check": "view[Intelligence only]",
+     "recomputed": 41.85041350559534,
+     "published": 29.31968172619126,
+     "abs_diff": 12.530731779404082
+    },
+    {
+     "key": "decider-4b-v2",
+     "check": "view[Intelligence only]",
+     "recomputed": 40.12597268917964,
+     "published": 25.842630080539234,
+     "abs_diff": 14.283342608640407
+    },
+    {
+     "key": "classone-qwen3.5-9b",
+     "check": "view[Intelligence only]",
+     "recomputed": 42.225671849648506,
+     "published": 29.320085596648227,
+     "abs_diff": 12.90558625300028
+    },
+    {
+     "key": "jevk5-v0.3-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 38.53201254374527,
+     "published": 22.883638070578947,
+     "abs_diff": 15.64837447316632
+    },
+    {
+     "key": "metask-jev-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 39.166454612935595,
+     "published": 24.032711498388675,
+     "abs_diff": 15.13374311454692
+    },
+    {
+     "key": "deck-4b-v1-0",
+     "check": "view[Intelligence only]",
+     "recomputed": 38.62465958342338,
+     "published": 23.04910072446208,
+     "abs_diff": 15.575558858961301
+    },
+    {
+     "key": "clef-flash",
+     "check": "view[Intelligence only]",
+     "recomputed": 42.18368888957246,
+     "published": 26.30501767147255,
+     "abs_diff": 15.878671218099907
+    },
+    {
+     "key": "evalengine-decision-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 37.93489123230218,
+     "published": 21.836172722245216,
+     "abs_diff": 16.098718510056962
+    },
+    {
+     "key": "janus-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 37.57770128683752,
+     "published": 21.225142796235538,
+     "abs_diff": 16.35255849060198
+    },
+    {
+     "key": "qwen35-9b-jev-data-mix-v2",
+     "check": "view[Intelligence only]",
+     "recomputed": 41.94184606895763,
+     "published": 24.643879144700183,
+     "abs_diff": 17.297966924257448
+    },
+    {
+     "key": "jevk5-v02",
+     "check": "view[Intelligence only]",
+     "recomputed": 36.261123811123895,
+     "published": 19.071452492870637,
+     "abs_diff": 17.189671318253257
+    },
+    {
+     "key": "jevone",
+     "check": "view[Intelligence only]",
+     "recomputed": 45.955077428728934,
+     "published": 24.64935315350002,
+     "abs_diff": 21.305724275228915
+    },
+    {
+     "key": "kahn1",
+     "check": "view[Intelligence only]",
+     "recomputed": 39.71971801341685,
+     "published": 21.564986725380077,
+     "abs_diff": 18.154731288036775
+    },
+    {
+     "key": "typecastlm-1.4.0",
+     "check": "view[Intelligence only]",
+     "recomputed": 35.43137209354293,
+     "published": 17.791964524810385,
+     "abs_diff": 17.639407568732548
+    },
+    {
+     "key": "hopper",
+     "check": "view[Intelligence only]",
+     "recomputed": 34.73970870443837,
+     "published": 16.77021030692692,
+     "abs_diff": 17.96949839751145
+    },
+    {
+     "key": "imajev-4b-rtx5090-a2",
+     "check": "view[Intelligence only]",
+     "recomputed": 34.62714018309005,
+     "published": 16.607714361099795,
+     "abs_diff": 18.019425821990254
+    },
+    {
+     "key": "malkuth-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 33.840703805987175,
+     "published": 15.501658014110385,
+     "abs_diff": 18.339045791876792
+    },
+    {
+     "key": "jqv",
+     "check": "view[Intelligence only]",
+     "recomputed": 33.85815624201783,
+     "published": 15.525654079176814,
+     "abs_diff": 18.332502162841013
+    },
+    {
+     "key": "jpt-35b-a3b",
+     "check": "view[Intelligence only]",
+     "recomputed": 51.42208418374838,
+     "published": 23.25952583784173,
+     "abs_diff": 28.162558345906653
+    },
+    {
+     "key": "decider-35b-a3b",
+     "check": "view[Intelligence only]",
+     "recomputed": 48.72471958402083,
+     "published": 21.8839776409655,
+     "abs_diff": 26.84074194305533
+    },
+    {
+     "key": "coco-decision-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 32.65682750200105,
+     "published": 13.930989601396824,
+     "abs_diff": 18.725837900604226
+    },
+    {
+     "key": "manchego-v21-v15",
+     "check": "view[Intelligence only]",
+     "recomputed": 32.54303915979197,
+     "published": 13.785874409327832,
+     "abs_diff": 18.757164750464135
+    },
+    {
+     "key": "decision-4b-v12",
+     "check": "view[Intelligence only]",
+     "recomputed": 32.40310972936693,
+     "published": 13.608807339398107,
+     "abs_diff": 18.794302389968827
+    },
+    {
+     "key": "raw-qwen3-4b-instruct-2507",
+     "check": "view[Intelligence only]",
+     "recomputed": 33.95117742100547,
+     "published": 15.653970524552685,
+     "abs_diff": 18.297206896452785
+    },
+    {
+     "key": "jev-27b-autotrust",
+     "check": "view[Intelligence only]",
+     "recomputed": 56.828664559360675,
+     "published": 21.88118814236141,
+     "abs_diff": 34.947476416999265
+    },
+    {
+     "key": "torchcast-decision-27b",
+     "check": "view[Intelligence only]",
+     "recomputed": 71.75187578095783,
+     "published": 26.42130811221146,
+     "abs_diff": 45.33056766874637
+    },
+    {
+     "key": "nimble-9b",
+     "check": "view[Intelligence only]",
+     "recomputed": 43.14237010986392,
+     "published": 17.35223877358268,
+     "abs_diff": 25.790131336281238
+    },
+    {
+     "key": "reflex-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 30.935558296483705,
+     "published": 11.842240202134587,
+     "abs_diff": 19.09331809434912
+    },
+    {
+     "key": "pplx-decider-v1-1-27b",
+     "check": "view[Intelligence only]",
+     "recomputed": 75.71677945512734,
+     "published": 27.052390084345777,
+     "abs_diff": 48.664389370781564
+    },
+    {
+     "key": "jade",
+     "check": "view[Intelligence only]",
+     "recomputed": 47.93439876939806,
+     "published": 19.870798988937533,
+     "abs_diff": 28.063599780460525
+    },
+    {
+     "key": "typecastlm",
+     "check": "view[Intelligence only]",
+     "recomputed": 29.78900656204624,
+     "published": 10.57372598609905,
+     "abs_diff": 19.21528057594719
+    },
+    {
+     "key": "jebadiah-27b",
+     "check": "view[Intelligence only]",
+     "recomputed": 57.58551644935426,
+     "published": 20.641713893950236,
+     "abs_diff": 36.94380255540402
+    },
+    {
+     "key": "decision-2-0-vega-27b",
+     "check": "view[Intelligence only]",
+     "recomputed": 60.4093162408047,
+     "published": 21.217536521841364,
+     "abs_diff": 39.19177971896333
+    },
+    {
+     "key": "decision-4b-v11",
+     "check": "view[Intelligence only]",
+     "recomputed": 29.134168280172865,
+     "published": 9.891630033656257,
+     "abs_diff": 19.24253824651661
+    },
+    {
+     "key": "autojev-27b",
+     "check": "view[Intelligence only]",
+     "recomputed": 55.62422706919757,
+     "published": 19.187204603319074,
+     "abs_diff": 36.4370224658785
+    },
+    {
+     "key": "eikos-27b",
+     "check": "view[Intelligence only]",
+     "recomputed": 64.40270761245412,
+     "published": 21.20399692738122,
+     "abs_diff": 43.1987106850729
+    },
+    {
+     "key": "ninfer-qwen3.8-27b",
+     "check": "view[Intelligence only]",
+     "recomputed": 51.800126951055375,
+     "published": 17.568730575960352,
+     "abs_diff": 34.231396375095024
+    },
+    {
+     "key": "openjev-thinking",
+     "check": "view[Intelligence only]",
+     "recomputed": 70.34621384425424,
+     "published": 22.879243501891544,
+     "abs_diff": 47.46697034236269
+    },
+    {
+     "key": "open-jev-zefan-9b",
+     "check": "view[Intelligence only]",
+     "recomputed": 43.88591848753404,
+     "published": 14.776357163022537,
+     "abs_diff": 29.109561324511503
+    },
+    {
+     "key": "standardone-8b",
+     "check": "view[Intelligence only]",
+     "recomputed": 32.80426604507879,
+     "published": 10.581584191343778,
+     "abs_diff": 22.22268185373501
+    },
+    {
+     "key": "clef",
+     "check": "view[Intelligence only]",
+     "recomputed": 59.08165501447566,
+     "published": 18.663451480355018,
+     "abs_diff": 40.418203534120636
+    },
+    {
+     "key": "jev-qwen3.5-9b-base-nvfp4",
+     "check": "view[Intelligence only]",
+     "recomputed": 29.251131763478327,
+     "published": 9.070269959573535,
+     "abs_diff": 20.18086180390479
+    },
+    {
+     "key": "semif-qwen3.5-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 27.10113669038628,
+     "published": 7.962006198162448,
+     "abs_diff": 19.13913049222383
+    },
+    {
+     "key": "bev-bonsai-27b",
+     "check": "view[Intelligence only]",
+     "recomputed": 43.77513601921869,
+     "published": 10.697460589059927,
+     "abs_diff": 33.07767543015876
+    },
+    {
+     "key": "litjev",
+     "check": "view[Intelligence only]",
+     "recomputed": 43.28549422942267,
+     "published": 10.435213933727047,
+     "abs_diff": 32.85028029569562
+    },
+    {
+     "key": "localjev-qwen3.5-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 24.145363218466134,
+     "published": 5.630684842640914,
+     "abs_diff": 18.51467837582522
+    },
+    {
+     "key": "system-one-sg",
+     "check": "view[Intelligence only]",
+     "recomputed": 29.271508779158296,
+     "published": 8.114714247763947,
+     "abs_diff": 21.156794531394347
+    },
+    {
+     "key": "kev-8b",
+     "check": "view[Intelligence only]",
+     "recomputed": 29.26217941280341,
+     "published": 6.550045158904166,
+     "abs_diff": 22.712134253899244
+    },
+    {
+     "key": "decision-2b",
+     "check": "view[Intelligence only]",
+     "recomputed": 22.875473256337628,
+     "published": 4.788177641426015,
+     "abs_diff": 18.087295614911614
+    },
+    {
+     "key": "opensourcejev-qwen35-4b-q4km",
+     "check": "view[Intelligence only]",
+     "recomputed": 23.217995107845883,
+     "published": 5.0064990418048145,
+     "abs_diff": 18.211496066041068
+    },
+    {
+     "key": "open-alternative-jev",
+     "check": "view[Intelligence only]",
+     "recomputed": 22.34610151162883,
+     "published": 4.463394698403469,
+     "abs_diff": 17.88270681322536
+    },
+    {
+     "key": "raw-qwen3-8b",
+     "check": "view[Intelligence only]",
+     "recomputed": 26.54912920590792,
+     "published": 6.208182595906101,
+     "abs_diff": 20.34094661000182
+    },
+    {
+     "key": "decider-2b",
+     "check": "view[Intelligence only]",
+     "recomputed": 20.654576369710338,
+     "published": 3.5245921294252027,
+     "abs_diff": 17.129984240285136
+    },
+    {
+     "key": "nemotron-diffusion-8b",
+     "check": "view[Intelligence only]",
+     "recomputed": 20.38848344571935,
+     "published": 3.3901175711211273,
+     "abs_diff": 16.99836587459822
+    },
+    {
+     "key": "kev-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 19.510707720813777,
+     "published": 2.970838616432075,
+     "abs_diff": 16.5398691043817
+    },
+    {
+     "key": "kev-27b",
+     "check": "view[Intelligence only]",
+     "recomputed": 64.16071886717361,
+     "published": 8.596633940261478,
+     "abs_diff": 55.56408492691214
+    },
+    {
+     "key": "malkuth-2b",
+     "check": "view[Intelligence only]",
+     "recomputed": 15.917395195670291,
+     "published": 1.6131545908775944,
+     "abs_diff": 14.304240604792698
+    },
+    {
+     "key": "qwen3-reranker-4b",
+     "check": "view[Intelligence only]",
+     "recomputed": 16.337944014530347,
+     "published": 1.6344124017617998,
+     "abs_diff": 14.703531612768547
+    },
+    {
+     "key": "simplejev-qwen3.8-27b-selfhost",
+     "check": "view[Intelligence only]",
+     "recomputed": 57.92931033189586,
+     "published": 5.284736623506664,
+     "abs_diff": 52.6445737083892
+    },
+    {
+     "key": "zerank-2",
+     "check": "view[Intelligence only]",
+     "recomputed": 15.596611891228248,
+     "published": 1.4218711229563352,
+     "abs_diff": 14.174740768271914
+    },
+    {
+     "key": "exaone-4.0-1.2b-jev-v0.3",
+     "check": "view[Intelligence only]",
+     "recomputed": 14.831288392065307,
+     "published": 1.304958289921029,
+     "abs_diff": 13.526330102144279
+    },
+    {
+     "key": "open-jev-zefan-2b",
+     "check": "view[Intelligence only]",
+     "recomputed": 21.804441188912403,
+     "published": 1.812285794889051,
+     "abs_diff": 19.992155394023353
+    },
+    {
+     "key": "open-jev-zefan-27b-v1.1",
+     "check": "view[Intelligence only]",
+     "recomputed": 52.45777412397041,
+     "published": 4.3253676470159474,
+     "abs_diff": 48.132406476954465
+    },
+    {
+     "key": "raw-phi-4-mini",
+     "check": "view[Intelligence only]",
+     "recomputed": 13.660237978082595,
+     "published": 1.0196116461240732,
+     "abs_diff": 12.640626331958522
+    },
+    {
+     "key": "simplejev-qwen3.5-0.8b",
+     "check": "view[Intelligence only]",
+     "recomputed": 13.000426205687345,
+     "published": 0.8788864373471849,
+     "abs_diff": 12.12153976834016
+    },
+    {
+     "key": "smalljev",
+     "check": "view[Intelligence only]",
+     "recomputed": 8.670533657732655,
+     "published": 0.2607338855207101,
+     "abs_diff": 8.409799772211946
+    },
+    {
+     "key": "kev-0.6b",
+     "check": "view[Intelligence only]",
+     "recomputed": 7.598789169415934,
+     "published": 0.17550648828077675,
+     "abs_diff": 7.423282681135157
+    },
+    {
+     "key": "jul-fast",
+     "check": "view[Intelligence only]",
+     "recomputed": 7.4645122320968404,
+     "published": 0.16636589222451567,
+     "abs_diff": 7.298146339872325
+    },
+    {
+     "key": "opendecision",
+     "check": "view[Intelligence only]",
+     "recomputed": 7.425225288997898,
+     "published": 0.1637528610901445,
+     "abs_diff": 7.261472427907753
+    },
+    {
+     "key": "classone-gemma4-e2b",
+     "check": "view[Intelligence only]",
+     "recomputed": 7.802105373202749,
+     "published": 0.1899745505796208,
+     "abs_diff": 7.612130822623128
+    },
+    {
+     "key": "mghafiri-qwen3.5-0.8b-decision-model",
+     "check": "view[Intelligence only]",
+     "recomputed": 7.297270616183145,
+     "published": 0.15543232661348225,
+     "abs_diff": 7.141838289569662
+    },
+    {
+     "key": "fastino-gliner-2-5-decide",
+     "check": "view[Intelligence only]",
+     "recomputed": 7.011351364482595,
+     "published": 0.11575817604301195,
+     "abs_diff": 6.895593188439583
+    },
+    {
+     "key": "deem-0.8-v1",
+     "check": "view[Intelligence only]",
+     "recomputed": 6.531204174677637,
+     "published": 0.11143965867359962,
+     "abs_diff": 6.419764516004037
+    },
+    {
+     "key": "decision-fast",
+     "check": "view[Intelligence only]",
+     "recomputed": 6.110691078442272,
+     "published": 0.09127061519323529,
+     "abs_diff": 6.019420463249037
+    },
+    {
+     "key": "quyet-1-0-small-en",
+     "check": "view[Intelligence only]",
+     "recomputed": 6.054813340422714,
+     "published": 0.08878963459745969,
+     "abs_diff": 5.966023705825255
+    },
+    {
+     "key": "laya-typed-decisions",
+     "check": "view[Intelligence only]",
+     "recomputed": 5.471270906587037,
+     "published": 0.06551257180569732,
+     "abs_diff": 5.40575833478134
+    },
+    {
+     "key": "watersheep",
+     "check": "view[Intelligence only]",
+     "recomputed": 5.305239654184986,
+     "published": 0.05972759292809448,
+     "abs_diff": 5.245512061256892
+    },
+    {
+     "key": "openjev-verdict-1.4",
+     "check": "view[Intelligence only]",
+     "recomputed": 5.035901218168153,
+     "published": 0.05108478843903597,
+     "abs_diff": 4.984816429729117
+    },
+    {
+     "key": "raw-qwen3-0.6b",
+     "check": "view[Intelligence only]",
+     "recomputed": 5.554864880982027,
+     "published": 0.06856152826445967,
+     "abs_diff": 5.4863033527175675
+    },
+    {
+     "key": "lev-350m",
+     "check": "view[Intelligence only]",
+     "recomputed": 4.827562367090417,
+     "published": 0.04500322848109108,
+     "abs_diff": 4.782559138609326
+    },
+    {
+     "key": "raw-qwen3-1.7b",
+     "check": "view[Intelligence only]",
+     "recomputed": 5.124286554530066,
+     "published": 0.05382204747082655,
+     "abs_diff": 5.070464507059239
+    },
+    {
+     "key": "kev-0.5b",
+     "check": "view[Intelligence only]",
+     "recomputed": 4.598433868646836,
+     "published": 0.03889464633042005,
+     "abs_diff": 4.559539222316416
+    },
+    {
+     "key": "openjev-verdict",
+     "check": "view[Intelligence only]",
+     "recomputed": 4.1496399816416485,
+     "published": 0.028581910146043114,
+     "abs_diff": 4.1210580714956055
+    },
+    {
+     "key": "quyet-1-0-small",
+     "check": "view[Intelligence only]",
+     "recomputed": 4.019045994532796,
+     "published": 0.025967427058159954,
+     "abs_diff": 3.993078567474636
+    },
+    {
+     "key": "watt-flash-0.1",
+     "check": "view[Intelligence only]",
+     "recomputed": 3.759262959387639,
+     "published": 0.02125044886845491,
+     "abs_diff": 3.738012510519184
+    },
+    {
+     "key": "quyet-1-0-tiny",
+     "check": "view[Intelligence only]",
+     "recomputed": 3.6964771541368573,
+     "published": 0.020203381773039073,
+     "abs_diff": 3.6762737723638184
+    },
+    {
+     "key": "open-jev-deberta-v3-large",
+     "check": "view[Intelligence only]",
+     "recomputed": 2.8293414417857914,
+     "published": 0.00905974708046916,
+     "abs_diff": 2.820281694705322
+    },
+    {
+     "key": "verdict-small",
+     "check": "view[Intelligence only]",
+     "recomputed": 2.3417095945172277,
+     "published": 0.005136403075864165,
+     "abs_diff": 2.3365731914413637
+    },
+    {
+     "key": "tacet-sonata",
+     "check": "view[Intelligence only]",
+     "recomputed": 2.2436273530567146,
+     "published": 0.004517645714999133,
+     "abs_diff": 2.2391097073417154
+    },
+    {
+     "key": "laya",
+     "check": "view[Intelligence only]",
+     "recomputed": 1.7910341507793501,
+     "published": 0.0022981141246738437,
+     "abs_diff": 1.7887360366546763
+    },
+    {
+     "key": "mxbai-rerank-base-v2",
+     "check": "view[Intelligence only]",
+     "recomputed": 1.140707327109041,
+     "published": 0.0005937213753409678,
+     "abs_diff": 1.1401136057337002
+    },
+    {
+     "key": "laya-multilingual",
+     "check": "view[Intelligence only]",
+     "recomputed": 0.2879184668737643,
+     "published": 9.547035876864281e-06,
+     "abs_diff": 0.28790891983788747
+    },
+    {
+     "key": "certo",
+     "check": "view[Intelligence only]",
+     "recomputed": 0.20278658812856143,
+     "published": 3.3356285030110653e-06,
+     "abs_diff": 0.2027832525000584
+    },
+    {
+     "key": "clm-8b",
+     "check": "view[Intelligence only]",
+     "recomputed": 0.13075619159747265,
+     "published": 8.942249433748766e-07,
+     "abs_diff": 0.13075529737252928
+    },
+    {
+     "key": "bge-reranker-v2-m3",
+     "check": "view[Intelligence only]",
+     "recomputed": 0.06512222845080358,
+     "published": 1.1047086427994778e-07,
+     "abs_diff": 0.0651221179799393
+    },
+    {
+     "key": "open-jev-json-canvas-joshuasp",
+     "check": "view[Intelligence only]",
+     "recomputed": 61.19221807027989,
+     "published": 59.47929292694184,
+     "abs_diff": 1.7129251433380546
+    },
+    {
+     "key": "bb-qwen3.5-4b-lora",
+     "check": "view[Intelligence only]",
+     "recomputed": 38.67355961154223,
+     "published": 23.13675425207104,
+     "abs_diff": 15.536805359471192
+    },
+    {
+     "key": "seb-9b",
+     "check": "view[Intelligence only]",
+     "recomputed": 43.512227190846936,
+     "published": 32.95292208710638,
+     "abs_diff": 10.559305103740556
+    },
+    {
+     "key": "wity-1-off",
+     "check": "view[Intelligence only]",
+     "recomputed": 44.11116118075945,
+     "published": 34.3325026440474,
+     "abs_diff": 9.77865853671205
+    }
+   ]
+  },
+  "p50_adjusted": {
+   "rows": 130,
+   "exact": 130,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  },
+  "p95_adjusted": {
+   "rows": 130,
+   "exact": 130,
+   "both_null": 0,
+   "max_abs_diff": 0.0,
+   "mismatches": []
+  }
+ }
+}

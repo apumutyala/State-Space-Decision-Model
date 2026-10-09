@@ -365,3 +365,21 @@ def test_every_job_params_ships_the_pinned_index():
             agg = hashlib.sha256("".join(pins[f"{k}.npy"] for k in DG.EvalIndex.ARRAYS).encode()).hexdigest()
             assert agg == pin["index_sha256"], f
     assert n_files >= 9
+
+
+def test_every_cell_on_the_150k_set_pins_the_same_clean_specs():
+    """Every m2_first_cell cell config that draws from the 150k set pins the SAME attack_clean and doc_clean specs as
+    the base cell. A cell without them refuses at the heldout phase (exit 33 / 34) after setup spend; the PR #232
+    anti-collapse template (d1_fla_safe) was written before PR #233 / #235 pinned them and merged without either."""
+    import glob
+
+    base = json.loads((ROOT / "jobs/m2_first_cell/m2_first_cell_rwkv7.json").read_text(encoding="utf-8"))["train_set"]
+    n = 0
+    for f in sorted(glob.glob(str(ROOT / "jobs/m2_first_cell/m2_first_cell_rwkv7*.json"))):
+        ts = json.loads(Path(f).read_text(encoding="utf-8")).get("train_set") or {}
+        if ts.get("pointer") != base["pointer"]:
+            continue
+        n += 1
+        for k in ("attack_clean", "doc_clean"):
+            assert ts.get(k) == base[k], (Path(f).name, k)
+    assert n >= 10 and (ROOT / base["doc_clean"]["spec"]).exists() and (ROOT / base["attack_clean"]["spec"]).exists()
