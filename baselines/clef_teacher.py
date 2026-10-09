@@ -26,6 +26,9 @@ Two phases, so every contamination check runs on the CPU before any GPU minute o
      and ``harness.heldout.check_record`` (frozen held-out families of heldout-draw-v1, whose frozen_rule forbids any
      distillation set from targeting them): zero ``FrozenFamilyError``; its file sha256 goes into selection.json;
   8. ``Cohort.assert_training_ids`` / ``assert_training_content`` on the draw;
+  10. the whole-set ATTACK guard (``train.attack_guard``) and DOC-OVERLAP guard (``train.doc_overlap_guard``) exactly as
+     ``train.train_set.draw`` runs them: hits leave the pool only when the scope pins ``attack_clean`` / ``doc_clean``
+     specs equal to them; otherwise the selection refuses (exit 20). So the teacher draw is the cleaned cell draw.
   9. cohort v3 (``train.cohort_v3``: the G13 retention role expanded from THIS set) is removed from the pool before
      the draw (by id, normalized content and source item) and the draw is re-checked against it. v3 holds no record
      among the first 60,000 of the seed-0 order, so the 24,000 draw is unchanged (drawn ids sha256 2bbbf180...).
@@ -192,17 +195,19 @@ def select(a) -> int:
 
     pinned_150k = Path(scope["pointer"]).as_posix() == POINTERS[POOL_150K].relative_to(ROOT).as_posix()
     v3x = training_exclusion(man, content, co3, pool=POOL_150K if pinned_150k and not a.allow_n_mismatch else None)
-    # attack guard (train.attack_guard): the same exclusion train.train_set.draw applies, so the teacher draw IS the
-    # cleaned training draw; any hit outside the scope's pinned attack_clean spec refuses (exit 20)
-    from train.train_set import AttackGuardRefusal, attack_exclusion
+    # the same whole-set exclusions train.train_set.draw applies (PR #233 review finding 3): eval attack templates
+    # (train.attack_guard, scope "attack_clean" pin) and Index eval document text (train.doc_overlap_guard, scope
+    # "doc_clean" pin); an unpinned hit refuses the selection (exit 20), so the teacher draw == the cell's draw
+    from train.train_set import (AttackGuardRefusal, DocOverlapRefusal, attack_exclusion, doc_exclusion)
 
     try:
-        attack_ids, attack = attack_exclusion({"train_set": {"heldout_excluded": scope["heldout_excluded"],
-                                                             "attack_clean": scope.get("attack_clean")}},
-                                              files["records"])
-    except AttackGuardRefusal as e:
+        attack_ids, attack_sum = attack_exclusion({"train_set": {"attack_clean": scope.get("attack_clean"),
+                                                                "heldout_excluded": {"ids": list(excl)}}},
+                                                  files["records"])
+        doc_ids, doc_sum = doc_exclusion(scope.get("doc_clean"), files["records"], set(excl))
+    except (AttackGuardRefusal, DocOverlapRefusal) as e:
         raise Contamination(str(e)) from e
-    ids = draw_ids(man, set(excl) | v3x["ids"] | attack_ids, n, int(scope["draw"]["seed"]))
+    ids = draw_ids(man, set(excl) | v3x["ids"] | attack_ids | doc_ids, n, int(scope["draw"]["seed"]))
     want = set(ids)
     guard = load_guard(a.guard_readiness, a.guard_standin)
     forbidden, frozen, drift, texts, got, drawn = [], [], [], [], set(), []
@@ -252,7 +257,7 @@ def select(a) -> int:
            "heldout_draw_v1_sha256": hconfig.HELDOUT_DRAW_V1_SHA256,
            "frozen_families": sorted(frozen_families()),
            "heldout_scan": {"n_texts": rep["n_texts"], "hits": 0, "templates_sha256": rep["templates_sha256"]},
-           "attack_guard": attack,
+           "attack_guard": attack_sum, "doc_overlap_guard": doc_sum,
            "content_sha256": {i: content[i] for i in ids}, "secs": round(time.time() - t0, 1)}
     (out / "selected-ids.txt").write_text("".join(i + "\n" for i in ids), encoding="utf-8", newline="\n")
     (out / "selection.json").write_text(json.dumps(sel, indent=1), encoding="utf-8", newline="\n")
