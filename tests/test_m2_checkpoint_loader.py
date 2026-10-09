@@ -80,7 +80,7 @@ def test_config_mismatch_and_latest_naming_another_file_are_refused(tmp_path):
     t2 = tmp_path / "b"
     t2.mkdir()
     tar, cell, cfg, block = _artifact(t2, latest=json.dumps({"path": "ckpt-step0000003.pt"}).encode())
-    with pytest.raises(L.CheckpointError, match="does not name"):
+    with pytest.raises(L.CheckpointError, match="names neither"):
         _install(t2, tar, cell, cfg, block)
 
 
@@ -114,3 +114,63 @@ def test_hijack_eval_params_pin_the_d1_artifact():
     assert ck["artifact"] == "art-bm3e6" and ck["job"] == "job-c7pq2"
     assert ck["artifact_sha256"] == "a405907eb85f3b6bc25f287ef37066dcd192b0b2897e4ec45f336a6fe3580a18"
     assert ck["ckpt_sha256"] == "43414f022ccfe2eb7d770957ae851f5450839457d5a41e9f7fb661b3f81cfd32"
+
+
+def _export_artifact(t: Path, pin: str):
+    """An inference export of a best_ckpt run: last + best .safetensors with sidecars, latest.json's best pointer."""
+    last, best = "trainable-step0000009.safetensors", "trainable-step0000006.safetensors"
+    files = {last: b"last-weights" * 50, last[:-12] + ".json": b'{"step": 9}', best: b"best-weights" * 50,
+             best[:-12] + ".json": b'{"step": 6}'}
+    latest = json.dumps({"path": last, "step": 9, "best": {
+        "path": best, "step": 6, "sha256": _sha(files[best]), "sidecar_sha256": _sha(files[best[:-12] + ".json"])}})
+    tar = t / "art.tar"
+    with tarfile.open(tar, "w") as tf:
+        for name, b in [*((f"./ckpt/{k}", v) for k, v in files.items()), ("./ckpt/latest.json", latest.encode())]:
+            ti = tarfile.TarInfo(name)
+            ti.size = len(b)
+            tf.addfile(ti, io.BytesIO(b))
+    cell = t / "cell.json"
+    cell.write_text(json.dumps({"config": CFG, "ladder": {"T_max": 512}}), encoding="utf-8")
+    cfg = t / "cfg.json"
+    cfg.write_text(json.dumps(CFG), encoding="utf-8")
+    block = {"artifact": "art-test2", "job": "job-test2", "artifact_sha256": _sha(tar.read_bytes()),
+             "member": f"./ckpt/{pin}", "ckpt_sha256": _sha(files[pin]),
+             "sidecar_sha256": _sha(files[pin[:-12] + ".json"]), "latest_json_sha256": _sha(latest.encode()),
+             "cell_json_sha256": _sha(cell.read_bytes()), "url_env": "CKPT_URL"}
+    return tar, cell, cfg, block, last, best, files
+
+
+def test_pinned_last_export_with_a_best_pointer_installs_and_names_the_scored_checkpoint(tmp_path):
+    tar, cell, cfg, block, last, best, files = _export_artifact(tmp_path, "trainable-step0000009.safetensors")
+    rec = _install(tmp_path, tar, cell, cfg, block)
+    assert rec["role"] == "best" and rec["file"] == best and rec["path"] == str(tmp_path / "ck" / best)
+    assert rec["sha256"] == _sha(files[best]) and rec["member"] == last and rec["member_sha256"] == block["ckpt_sha256"]
+    assert (tmp_path / "ck" / best[:-12]).with_suffix(".json").read_bytes() == files[best[:-12] + ".json"]
+    rec2 = _install(tmp_path, tar, cell, cfg, block, url="https://unused.invalid/never-fetched")  # restart: no fetch
+    assert rec2["reused"] is True and rec2["file"] == best
+
+
+def test_pinned_best_export_is_accepted_as_role_best(tmp_path):
+    tar, cell, cfg, block, last, best, files = _export_artifact(tmp_path, "trainable-step0000006.safetensors")
+    rec = _install(tmp_path, tar, cell, cfg, block)
+    assert rec["role"] == "best" and rec["file"] == best and rec["member"] == best
+    assert not (tmp_path / "ck" / last).exists()
+
+
+def test_malformed_best_pointer_is_refused(tmp_path):
+    tar, cell, cfg, block, last, best, files = _export_artifact(tmp_path, "trainable-step0000009.safetensors")
+    rec = json.loads(tarfile.open(tar).extractfile("./ckpt/latest.json").read())
+    rec["best"]["path"] = "../escape.safetensors"
+    raw = json.dumps(rec).encode()
+    t2 = tmp_path / "b"
+    t2.mkdir()
+    tar2 = t2 / "art.tar"
+    with tarfile.open(tar) as src, tarfile.open(tar2, "w") as dst:
+        for m in src.getmembers():
+            b = raw if m.name == "./ckpt/latest.json" else src.extractfile(m).read()
+            ti = tarfile.TarInfo(m.name)
+            ti.size = len(b)
+            dst.addfile(ti, io.BytesIO(b))
+    block = {**block, "artifact_sha256": _sha(tar2.read_bytes()), "latest_json_sha256": _sha(raw)}
+    with pytest.raises(L.CheckpointError, match="best pointer malformed"):
+        _install(t2, tar2, cell, cfg, block)

@@ -109,7 +109,8 @@ def export_inference(ckpt: str | Path, out_dir: str | Path, dtype: str = "bf16",
               "dtype": side["dtype"]}
     if best is not None and Path(best).resolve() != ckpt.resolve():
         b = _export_one(Path(best), out, dtype)
-        latest["best"] = {"path": b["file"], "step": b["step"], "sha256": b["sha256"]}
+        latest["best"] = {"path": b["file"], "step": b["step"], "sha256": b["sha256"],
+                          "sidecar_sha256": sha256_file(sidecar_path(out / b["file"]))}  # checkpoint_loader pins both
         side = {**side, "best": latest["best"]}
     _write(out / "latest.json", json.dumps(latest))
     return side
