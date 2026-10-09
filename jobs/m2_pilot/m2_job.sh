@@ -127,10 +127,6 @@ timeout ${CAP_H}m python -X utf8 -m train.heldout --records /data/m2/records.jso
   > "$WORK/logs/heldout.log" 2>&1; r=$?
 gate "heldout" $r
 case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "D1-B template in training records" ;; *) fail 5 "heldout rc=$r" ;; esac
-# every eval attack template (official hijack, D1-A, D1-B, heldout_v1): no training on safety test material (exit 33)
-timeout ${CAP_H}m python -X utf8 -m train.attack_guard scan --records /data/m2/records.jsonl.gz \
-  --out "$WORK/out/attack_guard.json" > "$WORK/logs/attack_guard.log" 2>&1; r=$?
-case $r in 0) ;; 124) fail 7 "attack_guard timeout" ;; 3) fail 33 "eval attack template in training records" ;; *) fail 5 "attack_guard rc=$r" ;; esac
 
 # ------------------------------------------------------------------ cell: smoke -> ladder -> train (resumable)
 say "phase cell (smoke -> ladder -> train; resumes from $CK)"
@@ -142,7 +138,7 @@ timeout ${CAP_C}m python -m train.run_cell --config "$CELL" --model-dir "$SNAP" 
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
-case $r in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
 
 # ------------------------------------------------------------------ evals: temperature, eval card, G12 + G13, promotion verdict
 say "phase evals (calibration fit on the cohort calibration role; card on dev; G12 steer_dev; G13 steer_gate + retention)"

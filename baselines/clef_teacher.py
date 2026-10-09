@@ -20,6 +20,9 @@ Two phases, so every contamination check runs on the CPU before any GPU minute o
      TEST manifest, or (production) a content-hash match against the pinned content index of every DEV + TEST row
      (``jobs.m2_pilot.guard_ready`` readiness file, re-hashed against ``guard_pin.json``);
   7. ``train.heldout.scan`` (held-out D1-B fragments, k=8 templates) over every drawn record's text: zero hits;
+     ``train.attack_guard`` (every eval attack template) over the WHOLE set: hits must be zero or exactly the scope's
+     pinned ``attack_clean`` spec, and those records leave the pool before the draw (as in ``train.train_set.draw``,
+     so the teacher draw equals the cleaned training draw); the drawn records are re-scanned: zero hits;
      and ``harness.heldout.check_record`` (frozen held-out families of heldout-draw-v1, whose frozen_rule forbids any
      distillation set from targeting them): zero ``FrozenFamilyError``; its file sha256 goes into selection.json;
   8. ``Cohort.assert_training_ids`` / ``assert_training_content`` on the draw;
@@ -189,7 +192,17 @@ def select(a) -> int:
 
     pinned_150k = Path(scope["pointer"]).as_posix() == POINTERS[POOL_150K].relative_to(ROOT).as_posix()
     v3x = training_exclusion(man, content, co3, pool=POOL_150K if pinned_150k and not a.allow_n_mismatch else None)
-    ids = draw_ids(man, set(excl) | v3x["ids"], n, int(scope["draw"]["seed"]))
+    # attack guard (train.attack_guard): the same exclusion train.train_set.draw applies, so the teacher draw IS the
+    # cleaned training draw; any hit outside the scope's pinned attack_clean spec refuses (exit 20)
+    from train.train_set import AttackGuardRefusal, attack_exclusion
+
+    try:
+        attack_ids, attack = attack_exclusion({"train_set": {"heldout_excluded": scope["heldout_excluded"],
+                                                             "attack_clean": scope.get("attack_clean")}},
+                                              files["records"])
+    except AttackGuardRefusal as e:
+        raise Contamination(str(e)) from e
+    ids = draw_ids(man, set(excl) | v3x["ids"] | attack_ids, n, int(scope["draw"]["seed"]))
     want = set(ids)
     guard = load_guard(a.guard_readiness, a.guard_standin)
     forbidden, frozen, drift, texts, got, drawn = [], [], [], [], set(), []
@@ -214,6 +227,12 @@ def select(a) -> int:
         raise IdentityMismatch(f"{len(missing)} drawn ids missing from the records file, {len(drift)} drifted "
                                f"from the content map (e.g. {(missing + drift)[:3]})")
     rep = scan(texts)
+    from train.attack_guard import record_hits
+
+    attack_drawn = [r["id"] for r in drawn if record_hits(r)]
+    if attack_drawn:
+        raise Contamination(f"{len(attack_drawn)} drawn record(s) carry an eval attack template, e.g. {attack_drawn[:3]}")
+    attack["drawn_hits"] = 0
     if forbidden or frozen or rep["hits"]:
         raise Contamination(f"{len(forbidden)} drawn record(s) refused by the DEV/TEST guard ({forbidden[:2]}), "
                             f"{len(frozen)} target a frozen held-out family ({frozen[:2]}), "
@@ -233,6 +252,7 @@ def select(a) -> int:
            "heldout_draw_v1_sha256": hconfig.HELDOUT_DRAW_V1_SHA256,
            "frozen_families": sorted(frozen_families()),
            "heldout_scan": {"n_texts": rep["n_texts"], "hits": 0, "templates_sha256": rep["templates_sha256"]},
+           "attack_guard": attack,
            "content_sha256": {i: content[i] for i in ids}, "secs": round(time.time() - t0, 1)}
     (out / "selected-ids.txt").write_text("".join(i + "\n" for i in ids), encoding="utf-8", newline="\n")
     (out / "selection.json").write_text(json.dumps(sel, indent=1), encoding="utf-8", newline="\n")

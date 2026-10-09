@@ -28,7 +28,8 @@ import urllib.request
 from pathlib import Path
 
 EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26,
-        "guard": 27, "cohort": 28, "lineage": 29, "config": 35, "fla_fallback": 36}
+        "guard": 27, "cohort": 28, "lineage": 29, "config": 35, "fla_fallback": 36,
+        "attack": 3}  # attack: an eval attack template in the training rows (train.attack_guard; jobs map 3 -> fail 33)
 PARENTS = ("rwkv7", "q9af")
 
 
@@ -335,7 +336,9 @@ def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, c
     if not cfg.get("train_set"):
         tr_ids, ev_ids, ident = (cohort_split(sorted(recs), cfg, recs) if protected
                                else _development_split(recs, cfg))
-        return recs, recs, tr_ids, ev_ids, ident
+        tr_ids, aident = attack_guard_records(cfg, recs, tr_ids)
+        # a clean file keeps its historical identity; pinned exclusions are recorded
+        return recs, recs, tr_ids, ev_ids, ({**ident, "attack_guard": aident} if aident["n_excluded"] else ident)
     if not train_dir:
         raise ValueError("the cell config names a train_set: pass --train-dir with its pinned files")
     from train.cohort import Cohort
@@ -350,7 +353,43 @@ def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, c
         raise ValueError(f"cohort dev records missing from the records file: {missing[:3]}")
     if set(tr_ids) & set(ev_ids):
         raise ValueError("training ids overlap the cohort dev role")
+    assert_no_attack(train_recs, tr_ids)  # draw() already excluded the pinned hits; this is the trainer's own check
     return train_recs, recs, tr_ids, ev_ids, {"cohort": co.identity(), "train_set": tident}
+
+
+def attack_clean_pin(cfg: dict) -> dict | None:
+    """``attack_clean`` pin of any cell type: ``cfg["train_set"]["attack_clean"]`` or, for cells that train from
+    ``--records`` (no train_set: m2_pilot, rwkv7 pilot), top-level ``cfg["attack_clean"]``."""
+    return (cfg.get("train_set") or {}).get("attack_clean") or cfg.get("attack_clean")
+
+
+def attack_guard_records(cfg: dict, recs: dict, tr_ids: list[str]) -> tuple[list[str], dict]:
+    """Every-record attack guard for cells that train from ``--records``: hits over the WHOLE records file must be zero
+    or exactly the pinned ``attack_clean`` spec (``python -m train.attack_guard clean-spec --records R``); pinned hits
+    leave the training ids, and the remaining training rows are re-checked. Raises ``AttackGuardRefusal``."""
+    from train.attack_guard import check_pinned, eval_templates_sha256, ids_sha256, record_hits
+    from train.train_set import AttackGuardRefusal
+
+    hit = sorted(i for i, r in recs.items() if record_hits(r))
+    rep = {"n_hit": len(hit), "hit_ids_sha256": ids_sha256(hit), "templates_sha256": eval_templates_sha256()}
+    ok, why = check_pinned(rep, attack_clean_pin(cfg))
+    if not ok:
+        raise AttackGuardRefusal(f"attack guard: {why}")
+    hs = set(hit)
+    kept = [i for i in tr_ids if i not in hs]
+    assert_no_attack(recs, kept)
+    return kept, {"n_records": len(recs), "n_excluded": len(hit), "excluded_ids_sha256": rep["hit_ids_sha256"],
+                  "templates_sha256": rep["templates_sha256"], "n_train_removed": len(tr_ids) - len(kept),
+                  "check": why}
+
+
+def assert_no_attack(recs: dict, ids: list[str]) -> None:
+    from train.attack_guard import record_hits
+    from train.train_set import AttackGuardRefusal
+
+    bad = [i for i in ids if record_hits(recs[i])]
+    if bad:
+        raise AttackGuardRefusal(f"{len(bad)} training record(s) carry an eval attack template, e.g. {bad[:3]}")
 
 
 def kd_fields(cfg: dict) -> dict:
@@ -820,8 +859,13 @@ def _main(argv=None, ctx: dict | None = None):
         return EXIT["guard"]
     else:
         guard = SplitGuard.from_manifests([root / "dev-manifest.jsonl.gz", root / "test-manifest.jsonl.gz"])
+    from train.train_set import AttackGuardRefusal
+
     try:
         train_recs, eval_recs, tr_ids, ev_ids, cohort_ident = load_cell_data(cfg, a.records, a.train_dir)
+    except AttackGuardRefusal as e:  # before ValueError: it subclasses TrainSetMismatch
+        print(f"attack guard: {e}", flush=True)
+        return EXIT["attack"]
     except ValueError as e:  # CohortLeak / TrainSetMismatch subclass ValueError
         print(f"cohort: {e}", flush=True)
         return EXIT["cohort"]

@@ -25,7 +25,10 @@ What ``draw`` checks before any record reaches a trainer (any failure raises ``T
      fragment match after normalisation). Any hit refuses the set (``AttackGuardRefusal``) unless the cell pins the
      cleaned version (``train_set.attack_clean`` = ``train.attack_guard.clean_spec``: rule, templates sha256, count and
      sha256 of the excluded ids) and the hits equal it exactly; then those records leave the pool before the draw.
-     The drawn records are re-scanned and must have zero hits. The heldout gate (job exit 33) runs the same check.
+     The drawn records are re-scanned and must have zero hits. The heldout gate (job exit 33) runs the same check,
+     and ``train.run_cell.load_cell_data`` re-checks every training row on EVERY path (cells without a train_set
+     pin a top-level ``attack_clean``; run_cell exit 3 -> job 33). ``baselines.clef_teacher select`` applies the
+     same exclusion, so a KD teacher draw equals the cleaned training draw.
 Evaluation records of v2 roles never come from this set: they stay in the PR #16 sample the cohort was built from.
 """
 from __future__ import annotations

@@ -12,6 +12,7 @@
 #   9 decision missing/invalid   10 snapshot / vendored code / DEV rows / records identity mismatch, or download failed
 #   11 memory probe failed   12 Index kit run failed   13 scoring failed   14 steer smoke failed
 #   15 readout too slow by MEASUREMENT (jobs/common/rate_guard.py: probe prefill preflight or the live row rate)
+#   33 an eval attack template in the training rows (train.run_cell exit 3: train.attack_guard, pin attack_clean)
 #   21 fork mismatch   22 no T fits   23 non-finite loss   24 memory stop   25 too few pilot items
 #   26 training too slow by MEASUREMENT (ladder step_s, then the first 10 steps: cannot reach 2 x pass-rule window)
 #   1 finalize failed
@@ -187,7 +188,7 @@ else
     > "$WORK/logs/cell.log" 2>&1; r=$?
   cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
   gate "cell" $r; export_phase cell
-  case $r in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26) fail $r "cell stop" ;; *) fail 2 "cell rc=$r" ;; esac
+  case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26) fail $r "cell stop" ;; *) fail 2 "cell rc=$r" ;; esac
   python scripts/decide_rwkv7.py lora "$WORK/out/cell.json" "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1 \
     || fail 9 "decision"
 fi

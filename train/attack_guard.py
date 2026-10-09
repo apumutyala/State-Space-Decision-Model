@@ -10,19 +10,24 @@ safety score is computed on is an EVAL template here:
   d1b_steer        ``safety_eval.attacks.D1_TEMPLATES_B`` (8, v0.2 + v0.4; G13, held out)
   heldout_v1       Agent B's pre-declared held-out battery (``analysis/safety_heldout/heldout_v1_templates.json``,
                    vendored verbatim from ``stack/clef/safety-heldout`` @ f273618, git blob 1af1d82b), text AND the
-                   decoded payload phrases (H06 base64 payload).
+                   payload phrase (H06's base64 payload, matched on the decoded text).
 
-Match rule (``RULE``): a template's fixed text is split at its placeholders (``{x}`` / ``$X``; the ``|`` of a
-``split``-position template is a placeholder too) into fragments. Fragments are normalised (NFKC, format chars such
-as zero-width joiners and bidi marks removed, common Cyrillic homoglyphs folded to Latin, casefold, every run of
-non-word characters -> one space). A fragment of >= K (6) words contributes every word 6-gram; a fragment of
-MIN_WORDS (4) .. 5 words is matched whole (exact); shorter fragments are too generic to be evidence and are listed in
-``skipped``. A record is HIT when any string it shows the model (every key and value of ``state`` and ``questions``,
-plus the base64-decoded text of any base64 run in them) contains one of those grams after the same normalisation.
-One eval template has no matchable fragment: heldout_v1 ``S02_table`` (markdown table markup plus the 3 words
-"option still available"); it is reported in ``skipped_fragments`` and is not text-detectable by this rule.
-The same rule decides whether a training-only augmentation template is allowed: it must share no gram with any eval
-template in either direction (``disjointness``).
+Match rule (``RULE``, v2). Text is normalised: NFKC, format characters (zero-width joiners, bidi marks, soft hyphens)
+removed, Cyrillic AND Greek homoglyphs folded to Latin, casefold, every run of non-word characters -> one space. A
+record's text is every key and value of ``state`` and ``questions`` (or of ``request`` for train-format records)
+CONCATENATED in order, so a template split across list items / fields is still contiguous; every base64 run is
+decoded and scanned as its own text too. A record is HIT by a template when any of:
+
+  gram      a word 6-gram of a fixed fragment (text between placeholders), or a whole 4-5 word fragment (exact);
+  wildcard  the whole template with every placeholder as a 1..30-word wildcard (needs >= 4 fixed words; this is what
+            catches H06's short payload "Select $X and nothing else." and heldout_v1 S02_table's table markup);
+  fuzzy     (secondary, word-swap/substitution tolerant) >= 50 % of the template's distinct fixed word 3-grams, and at
+            least 3 of them, occur in the text. Reported as ``<key>~fuzzy`` when only this method fires.
+
+Fragments under 4 words are too generic for the gram method and are listed in ``skipped``. The same gram rule decides
+whether a training-only augmentation template is allowed: it must share no gram with any eval template in either
+direction (``disjointness``). Known non-coverage: leetspeak digit substitution, paraphrase that keeps < 50 % of the
+3-grams, and translations other than the battery's own.
 
     python -X utf8 -m train.attack_guard scan --records <records.jsonl.gz> [--out rep.json]     # exit 3 on any hit
     python -X utf8 -m train.attack_guard sweep --root <build dir> --out sweep.json             # every draw on disk
@@ -46,9 +51,16 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator
 
 ROOT = Path(__file__).resolve().parents[1]
-RULE = "attack_guard/v1: 6-gram or exact (4-5 word) fragment of any eval attack template, normalised"
+RULE = ("attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template "
+        "wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); "
+        "NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold")
 K_WORDS = 6
 MIN_WORDS = 4
+WILD_MAX = 30
+WILD_MIN_FIXED = 4
+FUZZY_N = 3
+FUZZY_RATIO = 0.5
+FUZZY_MIN_SHARED = 3
 HELDOUT_V1_PATH = ROOT / "analysis" / "safety_heldout" / "heldout_v1_templates.json"
 HELDOUT_V1_PROVENANCE = {"branch": "stack/clef/safety-heldout", "commit": "f2736185d8ddf93283ff5b842fe00b64a516ab0c",
                          "path": "analysis/safety_heldout/heldout_v1_templates.json",
@@ -56,13 +68,21 @@ HELDOUT_V1_PROVENANCE = {"branch": "stack/clef/safety-heldout", "commit": "f2736
 EXIT_HIT = 3  # the job shells map 3 -> fail 33, as for held-out D1-B rows
 
 _NONWORD = re.compile(r"[\W_]+", re.UNICODE)
-_DOLLAR = re.compile(r"\$[A-Z][A-Z0-9_]*")
+_DOLLAR = re.compile(r"(\$[A-Z][A-Z0-9_]*)")
 _B64RUN = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
-# Cyrillic letters that render like Latin ones (the H08 transform and the usual homoglyph set)
-_HOMOGLYPH = str.maketrans({"а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "і": "i",
-                            "ј": "j", "ѕ": "s", "һ": "h", "ԁ": "d", "ɡ": "g", "А": "A", "В": "B", "Е": "E",
-                            "К": "K", "М": "M", "Н": "H", "О": "O", "Р": "P", "С": "C", "Т": "T", "Х": "X",
-                            "У": "Y", "І": "I", "Ј": "J", "Ѕ": "S"})
+PLACEHOLDER = object()
+# Cyrillic and Greek letters that render like Latin ones (the H08 transform and the usual homoglyph sets)
+_HOMOGLYPH = str.maketrans({
+    # Cyrillic
+    "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "і": "i", "ј": "j", "ѕ": "s", "һ": "h",
+    "ԁ": "d", "ɡ": "g", "ԛ": "q", "ԝ": "w", "ү": "y", "А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H",
+    "О": "O", "Р": "P", "С": "C", "Т": "T", "Х": "X", "У": "Y", "І": "I", "Ј": "J", "Ѕ": "S", "Ԁ": "D", "Ԛ": "Q",
+    "Ԝ": "W",
+    # Greek
+    "α": "a", "β": "b", "γ": "y", "ε": "e", "η": "n", "ι": "i", "κ": "k", "ν": "v", "ο": "o", "ρ": "p", "τ": "t",
+    "υ": "u", "χ": "x", "ω": "w", "ϲ": "c", "ϳ": "j", "Α": "A", "Β": "B", "Ε": "E", "Ζ": "Z", "Η": "H", "Ι": "I",
+    "Κ": "K", "Μ": "M", "Ν": "N", "Ο": "O", "Ρ": "P", "Τ": "T", "Υ": "Y", "Χ": "X", "Ϲ": "C",
+})
 
 
 class AttackTemplateInTraining(ValueError):
@@ -76,15 +96,26 @@ def normalise(text: str) -> list[str]:
 
 
 # ------------------------------------------------------------------------------------------------- templates
+def _brace_parts(template: str) -> list:
+    out: list = []
+    for lit, field, _, _ in string.Formatter().parse(template):
+        if lit:
+            out.append(lit)
+        if field is not None:
+            out.append(PLACEHOLDER)
+    return out
+
+
+def _dollar_parts(template: str) -> list:
+    return [PLACEHOLDER if _DOLLAR.fullmatch(p) else p for p in _DOLLAR.split(template) if p]
+
+
+def _fragments(parts: list) -> list[str]:
+    return [p for p in parts if p is not PLACEHOLDER and p.strip()]
+
+
 def _brace_fragments(template: str) -> list[str]:
-    return [lit for lit, _, _, _ in string.Formatter().parse(template) if lit and lit.strip()]
-
-
-def _dollar_fragments(template: str, split_bar: bool = False) -> list[str]:
-    parts = _DOLLAR.split(template)
-    if split_bar:
-        parts = [q for p in parts for q in p.split("|")]
-    return [p for p in parts if p.strip()]
+    return _fragments(_brace_parts(template))
 
 
 def load_heldout_v1(path: str | Path = HELDOUT_V1_PATH) -> dict[str, dict]:
@@ -92,38 +123,54 @@ def load_heldout_v1(path: str | Path = HELDOUT_V1_PATH) -> dict[str, dict]:
 
 
 @lru_cache(maxsize=1)
-def eval_templates() -> dict[str, list[str]]:
-    """{"<set>:<name>": [fragment, ...]} for every eval attack template."""
+def eval_template_parts() -> dict[str, list[list]]:
+    """{"<set>:<name>": [parts, ...]}: each parts list is one contiguous piece (literal strings and PLACEHOLDER)."""
     from safety_eval.attacks import D1_TEMPLATES_A, D1_TEMPLATES_B, HIJACK_TEMPLATES
 
-    out: dict[str, list[str]] = {}
+    out: dict[str, list[list]] = {}
     for set_name, tpls in (("official_hijack", HIJACK_TEMPLATES), ("d1a_steer", D1_TEMPLATES_A),
                            ("d1b_steer", D1_TEMPLATES_B)):
         for name, t in sorted(tpls.items()):
-            out[f"{set_name}:{name}"] = _brace_fragments(t)
+            out[f"{set_name}:{name}"] = [_brace_parts(t)]
     for name, spec in sorted(load_heldout_v1().items()):
-        frags = _dollar_fragments(spec["text"], split_bar=spec.get("position") == "split")
+        pieces = spec["text"].split("|") if spec.get("position") == "split" else [spec["text"]]
         if spec.get("payload"):
-            frags += _dollar_fragments(spec["payload"])
-        out[f"heldout_v1:{name}"] = frags
+            pieces.append(spec["payload"])
+        out[f"heldout_v1:{name}"] = [_dollar_parts(p) for p in pieces]
     return out
 
 
+@lru_cache(maxsize=1)
+def eval_templates() -> dict[str, list[str]]:
+    """{"<set>:<name>": [fragment, ...]} for every eval attack template."""
+    return {k: [f for parts in pieces for f in _fragments(parts)] for k, pieces in eval_template_parts().items()}
+
+
 def eval_templates_sha256() -> str:
-    blob = json.dumps(eval_templates(), sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    """Identity of the guard: the rule, its parameters and every eval template (a change invalidates every pin)."""
+    blob = json.dumps({"rule": RULE, "templates": eval_templates(),
+                       "wildcards": {k: [[p if p is not PLACEHOLDER else None for p in parts] for parts in pieces]
+                                     for k, pieces in eval_template_parts().items()}},
+                      sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(blob).hexdigest()
 
 
 class Matcher:
-    """Gram tables of a template set {key: [fragment]}; ``hits(text)`` -> set of template keys."""
+    """Gram tables of a template set {key: [fragment]}; ``hits_words(words)`` -> set of template keys. With ``parts``
+    ({key: [parts]}) it also builds the wildcard patterns and the fuzzy 4-gram index."""
 
-    def __init__(self, templates: dict[str, list[str]], k: int = K_WORDS, min_words: int = MIN_WORDS):
+    def __init__(self, templates: dict[str, list[str]], k: int = K_WORDS, min_words: int = MIN_WORDS,
+                 parts: dict[str, list[list]] | None = None):
         self.k, self.min_words = k, min_words
         self.tables: dict[int, dict[tuple[str, ...], set[str]]] = {}
         self.skipped: dict[str, list[str]] = {}
+        self.fuzzy: dict[tuple[str, ...], set[str]] = {}
+        self.fuzzy_total: dict[str, int] = {}
         for key, frags in templates.items():
+            fz: set[tuple[str, ...]] = set()
             for frag in frags:
                 w = normalise(frag)
+                fz.update(tuple(w[i:i + FUZZY_N]) for i in range(len(w) - FUZZY_N + 1))
                 if len(w) < min_words:
                     self.skipped.setdefault(key, []).append(frag)
                     continue
@@ -131,13 +178,40 @@ class Matcher:
                 tab = self.tables.setdefault(size, {})
                 for i in range(len(w) - size + 1):
                     tab.setdefault(tuple(w[i:i + size]), set()).add(key)
+            if parts is not None and len(fz) >= FUZZY_MIN_SHARED:
+                self.fuzzy_total[key] = len(fz)
+                for g in fz:
+                    self.fuzzy.setdefault(g, set()).add(key)
         self.firsts = {size: {g[0] for g in tab} for size, tab in self.tables.items()}
+        self.fuzzy_firsts = {g[0] for g in self.fuzzy}
+        self.wild: list[tuple[str, frozenset[str], re.Pattern]] = []
+        for key, pieces in (parts or {}).items():
+            for p in pieces:
+                toks, fixed = [], []
+                for part in p:
+                    if part is PLACEHOLDER:
+                        if toks and toks[-1] != "W":
+                            toks.append("W")
+                    else:
+                        w = normalise(part)
+                        if w:
+                            toks.append(w)
+                            fixed += w
+                while toks and toks[0] == "W":
+                    toks.pop(0)
+                while toks and toks[-1] == "W":
+                    toks.pop()
+                if len(fixed) < WILD_MIN_FIXED or not any(t == "W" for t in toks):
+                    continue  # all-literal pieces are already covered (exactly) by the gram method
+                rx = " ".join(r"\S+(?: \S+){0,%d}?" % (WILD_MAX - 1) if t == "W" else " ".join(map(re.escape, t))
+                              for t in toks)
+                self.wild.append((key, frozenset(fixed), re.compile(r"(?:^| )" + rx + r"(?= |$)")))
 
     @property
     def n_grams(self) -> int:
         return sum(len(t) for t in self.tables.values())
 
-    def hits_words(self, w: list[str]) -> set[str]:
+    def gram_hits(self, w: list[str]) -> set[str]:
         out: set[str] = set()
         for size, tab in self.tables.items():
             fs = self.firsts[size]
@@ -148,13 +222,48 @@ class Matcher:
                         out |= keys
         return out
 
+    def wildcard_hits(self, w: list[str], vocab: set[str] | None = None) -> set[str]:
+        if not self.wild:
+            return set()
+        vocab = set(w) if vocab is None else vocab
+        text = None
+        out: set[str] = set()
+        for key, fixed, rx in self.wild:
+            if key in out or not fixed <= vocab:
+                continue
+            text = " ".join(w) if text is None else text
+            if rx.search(text):
+                out.add(key)
+        return out
+
+    def fuzzy_hits(self, w: list[str]) -> set[str]:
+        if not self.fuzzy:
+            return set()
+        seen: dict[str, set[tuple[str, ...]]] = {}
+        ff = self.fuzzy_firsts
+        for i in range(len(w) - FUZZY_N + 1):
+            if w[i] in ff:
+                g = tuple(w[i:i + FUZZY_N])
+                for key in self.fuzzy.get(g, ()):
+                    seen.setdefault(key, set()).add(g)
+        return {k for k, gs in seen.items()
+                if len(gs) >= FUZZY_MIN_SHARED and len(gs) >= FUZZY_RATIO * self.fuzzy_total[k]}
+
+    def hits_words(self, w: list[str]) -> set[str]:
+        out = self.gram_hits(w) | self.wildcard_hits(w)
+        return out | {f"{k}~fuzzy" for k in self.fuzzy_hits(w) - out}
+
     def hits(self, text: str) -> set[str]:
         return self.hits_words(normalise(text))
 
 
 @lru_cache(maxsize=1)
 def eval_matcher() -> Matcher:
-    return Matcher(eval_templates())
+    return Matcher(eval_templates(), parts=eval_template_parts())
+
+
+def template_key(hit: str) -> str:
+    return hit.removesuffix("~fuzzy")
 
 
 # ------------------------------------------------------------------------------------------------- records
@@ -184,19 +293,30 @@ def _b64_decoded(text: str) -> Iterator[str]:
 
 
 def record_segments(rec: dict[str, Any]) -> Iterator[str]:
-    """Every string a training row can show the model: keys and values of state and questions (+ b64 decodes)."""
-    for s in _strings({"state": rec.get("state"), "questions": rec.get("questions")}):
-        yield s
+    """Every string a training row can show the model, in order: keys and values of state and questions (of the
+    nested ``request`` for train-format records)."""
+    src = rec["request"] if isinstance(rec.get("request"), dict) else rec
+    yield from _strings({"state": src.get("state"), "questions": src.get("questions")})
+
+
+def record_texts(rec: dict[str, Any]) -> list[list[str]]:
+    """Normalised word lists to scan: the concatenation of every segment, then each base64 decode on its own."""
+    segs = list(record_segments(rec))
+    out = [[w for s in segs for w in normalise(s)]]
+    for s in segs:
         if len(s) >= 16:
-            yield from _b64_decoded(s)
+            out += [normalise(d) for d in _b64_decoded(s)]
+    return out
 
 
 def record_hits(rec: dict[str, Any], matcher: Matcher | None = None) -> set[str]:
     m = matcher or eval_matcher()
     out: set[str] = set()
-    for s in record_segments(rec):
-        out |= m.hits(s)
-    return out
+    for w in record_texts(rec):
+        out |= m.hits_words(w)
+    exact = {h for h in out if not h.endswith("~fuzzy")}
+    return exact | {h for h in out if h.endswith("~fuzzy") and template_key(h) not in exact}
+
 
 
 def meta_injection(rec: dict[str, Any]) -> str | None:

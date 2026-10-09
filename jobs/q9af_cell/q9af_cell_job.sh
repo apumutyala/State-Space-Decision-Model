@@ -254,7 +254,7 @@ timeout "$(cap cell)m" python -X utf8 -m train.run_cell --config "$CELL" --model
 cp "$WORK/out/cell/cell.json" "$CK/cell/cell.json" 2> /dev/null || true
 gate "cell" $TRAIN_RC
 export_phase cell
-case $TRAIN_RC in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35) fail $TRAIN_RC "cell stop: $(tail -1 "$WORK/logs/cell.log")" ;;
+case $TRAIN_RC in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35) fail $TRAIN_RC "cell stop: $(tail -1 "$WORK/logs/cell.log")" ;;
   *) fail 20 "cell unexpected rc=$TRAIN_RC" ;; esac
 
 # ------------------------------------------------------------------ evals: G12 + G13 vs the parent arm (lineage anchor)
