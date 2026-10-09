@@ -1,0 +1,280 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/slices/dev-rows.jsonl.gz",
+ "n_items": 49444,
+ "n_binary_items": 38278,
+ "binary_share_of_items": 0.7742,
+ "aggregate_yes_share": 0.0867,
+ "by_family": {
+  "ACOS-category-sentiment": {
+   "binary": 15507,
+   "yes_share": 0.0048,
+   "items": 15507,
+   "item_share": 0.3136
+  },
+  "ToolRet-retrieval": {
+   "binary": 9855,
+   "yes_share": 0.0402,
+   "items": 9855,
+   "item_share": 0.1993
+  },
+  "BRIGHT-retrieval": {
+   "binary": 3168,
+   "yes_share": 0.0638,
+   "items": 3168,
+   "item_share": 0.0641
+  },
+  "PhishNChips phishing decisions": {
+   "binary": 2760,
+   "yes_share": 0.0757,
+   "items": 4140,
+   "item_share": 0.0837
+  },
+  "SATA-Bench": {
+   "binary": 2392,
+   "yes_share": 0.3867,
+   "items": 2392,
+   "item_share": 0.0484
+  },
+  "BFCL-tool-selection": {
+   "binary": 2173,
+   "yes_share": 0.3502,
+   "items": 2173,
+   "item_share": 0.0439
+  },
+  "iSarcasmEval-B-En": {
+   "binary": 492,
+   "yes_share": 0.0366,
+   "items": 492,
+   "item_share": 0.01
+  },
+  "HoVer claim verification": {
+   "binary": 461,
+   "yes_share": 0.4664,
+   "items": 461,
+   "item_share": 0.0093
+  },
+  "ForecastBench-binary": {
+   "binary": 389,
+   "yes_share": 0.3111,
+   "items": 389,
+   "item_share": 0.0079
+  },
+  "NLI4CT-2024": {
+   "binary": 304,
+   "yes_share": 0.3454,
+   "items": 304,
+   "item_share": 0.0061
+  },
+  "RAGTruth response-level hallucination": {
+   "binary": 270,
+   "yes_share": 0.3481,
+   "items": 270,
+   "item_share": 0.0055
+  },
+  "CLadder": {
+   "binary": 262,
+   "yes_share": 0.5305,
+   "items": 262,
+   "item_share": 0.0053
+  },
+  "iSarcasmEval-A-Ar": {
+   "binary": 82,
+   "yes_share": 0.1707,
+   "items": 82,
+   "item_share": 0.0017
+  },
+  "iSarcasmEval-A-En": {
+   "binary": 82,
+   "yes_share": 0.1098,
+   "items": 82,
+   "item_share": 0.0017
+  },
+  "BBH fixed-option tasks": {
+   "binary": 63,
+   "yes_share": 0.4921,
+   "items": 262,
+   "item_share": 0.0053
+  },
+  "CRUXEval-output-choice": {
+   "binary": 18,
+   "yes_share": 0.1667,
+   "items": 256,
+   "item_share": 0.0052
+  }
+ },
+ "items_by_family": {
+  "ACOS-category-sentiment": {
+   "items": 15507,
+   "item_share": 0.3136
+  },
+  "ToolRet-retrieval": {
+   "items": 9855,
+   "item_share": 0.1993
+  },
+  "PhishNChips phishing decisions": {
+   "items": 4140,
+   "item_share": 0.0837
+  },
+  "BRIGHT-retrieval": {
+   "items": 3168,
+   "item_share": 0.0641
+  },
+  "SATA-Bench": {
+   "items": 2392,
+   "item_share": 0.0484
+  },
+  "BFCL-tool-selection": {
+   "items": 2173,
+   "item_share": 0.0439
+  },
+  "When2Call MCQ": {
+   "items": 1066,
+   "item_share": 0.0216
+  },
+  "ContractNLI": {
+   "items": 935,
+   "item_share": 0.0189
+  },
+  "Home-Appliance": {
+   "items": 707,
+   "item_share": 0.0143
+  },
+  "FinEntity-entity-given": {
+   "items": 560,
+   "item_share": 0.0113
+  },
+  "iSarcasmEval-B-En": {
+   "items": 492,
+   "item_share": 0.01
+  },
+  "HoVer claim verification": {
+   "items": 461,
+   "item_share": 0.0093
+  },
+  "Amazon-ESCI": {
+   "items": 460,
+   "item_share": 0.0093
+  },
+  "BANKING77": {
+   "items": 460,
+   "item_share": 0.0093
+  },
+  "CLINC150+OOS": {
+   "items": 460,
+   "item_share": 0.0093
+  },
+  "ForecastBench-binary": {
+   "items": 389,
+   "item_share": 0.0079
+  },
+  "BPoMP-original-limerick": {
+   "items": 366,
+   "item_share": 0.0074
+  },
+  "CFColor-preference": {
+   "items": 361,
+   "item_share": 0.0073
+  },
+  "Habermas-consensus": {
+   "items": 361,
+   "item_share": 0.0073
+  },
+  "Humicroedit": {
+   "items": 360,
+   "item_share": 0.0073
+  },
+  "POP909-chord-pitch-class": {
+   "items": 360,
+   "item_share": 0.0073
+  },
+  "NLI4CT-2024": {
+   "items": 304,
+   "item_share": 0.0061
+  },
+  "RAGTruth response-level hallucination": {
+   "items": 270,
+   "item_share": 0.0055
+  },
+  "ChessBench-legal-move": {
+   "items": 262,
+   "item_share": 0.0053
+  },
+  "MuSR": {
+   "items": 262,
+   "item_share": 0.0053
+  },
+  "CLadder": {
+   "items": 262,
+   "item_share": 0.0053
+  },
+  "MMLU-Pro": {
+   "items": 262,
+   "item_share": 0.0053
+  },
+  "BBH fixed-option tasks": {
+   "items": 262,
+   "item_share": 0.0053
+  },
+  "ANLI": {
+   "items": 261,
+   "item_share": 0.0053
+  },
+  "WinoGrande": {
+   "items": 261,
+   "item_share": 0.0053
+  },
+  "HellaSwag": {
+   "items": 261,
+   "item_share": 0.0053
+  },
+  "VAST": {
+   "items": 261,
+   "item_share": 0.0053
+  },
+  "CRUXEval-output-choice": {
+   "items": 256,
+   "item_share": 0.0052
+  },
+  "New Yorker caption matching": {
+   "items": 237,
+   "item_share": 0.0048
+  },
+  "API-Bank-tool-selection": {
+   "items": 228,
+   "item_share": 0.0046
+  },
+  "HLE-text-MC": {
+   "items": 225,
+   "item_share": 0.0046
+  },
+  "GSM8K-10": {
+   "items": 131,
+   "item_share": 0.0026
+  },
+  "GSM8K-4": {
+   "items": 131,
+   "item_share": 0.0026
+  },
+  "GPQA-Diamond": {
+   "items": 87,
+   "item_share": 0.0018
+  },
+  "iSarcasmEval-A-Ar": {
+   "items": 82,
+   "item_share": 0.0017
+  },
+  "iSarcasmEval-A-En": {
+   "items": 82,
+   "item_share": 0.0017
+  },
+  "iSarcasmEval-C-Ar": {
+   "items": 12,
+   "item_share": 0.0002
+  },
+  "iSarcasmEval-C-En": {
+   "items": 12,
+   "item_share": 0.0002
+  }
+ },
+ "n_polarity_descriptions": 20
+}

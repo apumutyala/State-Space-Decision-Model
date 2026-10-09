@@ -222,3 +222,78 @@ used.
   BRIGHT per-candidate questions. Training stays at 42.8% yes overall, with each family at its natural rate.
 - Open conflict: ACOS is 98.6% "no", so the 60% cap holds it at 2.5% of items (704 records) despite the review's
   "raise ACOS". Raising ACOS needs a looser no-share cap (`MAX_NO_SHARE`) or a higher `FLOOR_V2`.
+
+# bschema-draw230k-v2c (CURRENT v2; supersedes bschema-draw206k-v2 and bschema-draw230k-v2b)
+
+**Takeaway.** 229,824 records = **322,594 trained items**. The draw fits in 2,048 tokens under all three
+presentations:
+- v1: `jrt-rwkv-g1-v1`, ordered layout, D1's training presentation;
+- v2f and v3w: layout g1v2;
+- all measured with the real G1k tokenizer and the trainer's own renderers at 9c3e435.
+
+Every check passes.
+
+## What changed (coordinator, 2026-10-08)
+- The aggregate 60%-"no" cap is gone (`MAX_NO_SHARE = None`). Index DEV binary questions are 91.3% "no", so the cap
+  had pushed training toward "yes". Each family keeps its natural base rate.
+- Membership / verify views stay capped at 5% of items: they are 4.1%.
+- ACOS weight 8k -> 11k: **ACOS is 4.0% of items** (1,314 records, 1,314 unique items, 12.9k items).
+- Binary items are 38.9% yes overall (v2: 42.8%; v1: 18.2%; Index DEV: 8.7%).
+- Rows must also be at most 2,048 tokens, with continuations of 16 tokens or fewer, under the v1 TRAINING template
+  (`scripts/b_schema_tokcheck.py --set v1`).
+  - In v2b, 795 rows (0.35%) were over 2,048 under v1 (max 2,233): C multirecord 682, BFCL 58, ToolACE multi 30, other 25.
+  - Across all candidates, 8,350 were over (1,842 of them after the other filters).
+  - In v2c those rows are replaced. Max is 2,048 under all three templates, and no row has a continuation over 16.
+
+## Token lengths (v2c)
+| Template | p50 | p95 | p99 | max |
+|---|---|---|---|---|
+| v1 | 461 | 1,618 | 1,857 | 2,048 |
+| v2f | 438 | 1,466 | 1,705 | 2,048 |
+| v3w | 438 | 1,570 | 1,913 | 2,048 |
+
+## Item shares (v2c)
+| Family | Share of items |
+|---|---|
+| C multirecord | 15.2% |
+| CRUXEval | 11.2% |
+| glaive | 10.5% |
+| BFCL | 8.7% |
+| HoVer | 6.3% |
+| MNLI | 5.4% |
+| RAGTruth | 5.3% |
+| ACOS | 4.0% |
+| clinc intent | 3.8% |
+| ToolACE multi | 3.1% |
+| banking intent | 2.9% |
+| clinc membership | 2.6% |
+| MMLU mcq | 2.2% |
+| When2Call | 2.1% |
+| GSM8K | 2.0% |
+| ToolACE select | 1.6% |
+| BoolQ | 1.6% |
+| VAST | 1.1% |
+| banking membership | 1.1% |
+| ANLI | 1.8% |
+| Habermas | 0.6% |
+| NLI4CT | 0.5% |
+| MMLU verify | 0.4% |
+| API-Bank | 0.4% |
+
+Rows and unique items per family are in `build-report.json` under `by_key`. Diversity: 156,849 source items; at most
+3 rows per item.
+
+## Pins
+- Pointer: `data/manifests/bschema-draw230k-v2c.pointer.json`, built at 918a237.
+  - Uncompressed sha256: records 0d4a89c429a3be7ae8eae1db74835b7e5fcc8b6d640aee7b0efec9c52e82be04, manifest 62e5a635...,
+    content 14a72879...
+  - Raw gz: records af52af79..., manifest 7724a97f..., content 5bb2b8d8...
+
+## Checks (all PASS)
+- b1_check (reuse cap 8): 0 failures.
+- check_generator: 38 specs.
+- attack_filter: 0 hits.
+- trainer at 9c3e435: `train_set.draw` at n 24k and `heldout_gate` over all 229,824 rows, 0 D1-B hits.
+- Audit:
+  - exact key-free duplicates across items: 0;
+  - MinHash cross-item near-duplicates: 3.1% of sampled rows.

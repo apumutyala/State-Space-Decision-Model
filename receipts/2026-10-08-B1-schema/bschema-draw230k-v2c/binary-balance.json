@@ -1,0 +1,256 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw230k-v2c/records.jsonl.gz",
+ "n_items": 322594,
+ "n_binary_items": 162871,
+ "binary_share_of_items": 0.5049,
+ "aggregate_yes_share": 0.3889,
+ "by_family": {
+  "synthetic_c_multirecord_v1/synthetic_multirecord_telemetry": {
+   "binary": 35000,
+   "yes_share": 0.5003,
+   "items": 49000,
+   "item_share": 0.1519
+  },
+  "b1fam_bfcl_synth/BFCL-tool-selection": {
+   "binary": 27967,
+   "yes_share": 0.3016,
+   "items": 27967,
+   "item_share": 0.0867
+  },
+  "hover/claim_verification": {
+   "binary": 20240,
+   "yes_share": 0.6137,
+   "items": 20240,
+   "item_share": 0.0627
+  },
+  "mnli/nli": {
+   "binary": 17548,
+   "yes_share": 0.3329,
+   "items": 17548,
+   "item_share": 0.0544
+  },
+  "ragtruth/hallucination_detection": {
+   "binary": 16964,
+   "yes_share": 0.4193,
+   "items": 16964,
+   "item_share": 0.0526
+  },
+  "acos/acos_category_sentiment": {
+   "binary": 12800,
+   "yes_share": 0.0139,
+   "items": 12800,
+   "item_share": 0.0397
+  },
+  "toolace/tool_multi": {
+   "binary": 10033,
+   "yes_share": 0.6335,
+   "items": 10033,
+   "item_share": 0.0311
+  },
+  "clinc150/intent_membership": {
+   "binary": 8400,
+   "yes_share": 0.0557,
+   "items": 8400,
+   "item_share": 0.026
+  },
+  "boolq/yesno_passage": {
+   "binary": 3864,
+   "yes_share": 0.6203,
+   "items": 5014,
+   "item_share": 0.0155
+  },
+  "banking77/intent_membership": {
+   "binary": 3492,
+   "yes_share": 0.0667,
+   "items": 3492,
+   "item_share": 0.0108
+  },
+  "anli/claim_verification": {
+   "binary": 2924,
+   "yes_share": 0.3259,
+   "items": 2924,
+   "item_share": 0.0091
+  },
+  "nli4ct/clinical_trial_nli": {
+   "binary": 1710,
+   "yes_share": 0.4924,
+   "items": 1710,
+   "item_share": 0.0053
+  },
+  "mmlu_aux/answer_verification": {
+   "binary": 1400,
+   "yes_share": 0.25,
+   "items": 1400,
+   "item_share": 0.0043
+  },
+  "synthetic_factchange/factchange_stock": {
+   "binary": 460,
+   "yes_share": 0.5,
+   "items": 460,
+   "item_share": 0.0014
+  },
+  "nq/retrieval": {
+   "binary": 64,
+   "yes_share": 0.125,
+   "items": 89,
+   "item_share": 0.0003
+  },
+  "anli/nli": {
+   "binary": 5,
+   "yes_share": 0.6,
+   "items": 2828,
+   "item_share": 0.0088
+  }
+ },
+ "items_by_family": {
+  "synthetic_c_multirecord_v1/synthetic_multirecord_telemetry": {
+   "items": 49000,
+   "item_share": 0.1519
+  },
+  "b1fam_cruxeval_synth/CRUXEval-output-choice": {
+   "items": 35997,
+   "item_share": 0.1116
+  },
+  "glaive_fc/tool_select": {
+   "items": 33837,
+   "item_share": 0.1049
+  },
+  "b1fam_bfcl_synth/BFCL-tool-selection": {
+   "items": 27967,
+   "item_share": 0.0867
+  },
+  "hover/claim_verification": {
+   "items": 20240,
+   "item_share": 0.0627
+  },
+  "mnli/nli": {
+   "items": 17548,
+   "item_share": 0.0544
+  },
+  "ragtruth/hallucination_detection": {
+   "items": 16964,
+   "item_share": 0.0526
+  },
+  "acos/acos_category_sentiment": {
+   "items": 12800,
+   "item_share": 0.0397
+  },
+  "clinc150/intent_general": {
+   "items": 12322,
+   "item_share": 0.0382
+  },
+  "toolace/tool_multi": {
+   "items": 10033,
+   "item_share": 0.0311
+  },
+  "banking77/intent_banking": {
+   "items": 9201,
+   "item_share": 0.0285
+  },
+  "clinc150/intent_membership": {
+   "items": 8400,
+   "item_share": 0.026
+  },
+  "mmlu_aux/mcq": {
+   "items": 7022,
+   "item_share": 0.0218
+  },
+  "when2call/response_select": {
+   "items": 6762,
+   "item_share": 0.021
+  },
+  "gsm8k/math_mcq": {
+   "items": 6394,
+   "item_share": 0.0198
+  },
+  "toolace/tool_select": {
+   "items": 5091,
+   "item_share": 0.0158
+  },
+  "boolq/yesno_passage": {
+   "items": 5014,
+   "item_share": 0.0155
+  },
+  "winogrande/fill_blank": {
+   "items": 4301,
+   "item_share": 0.0133
+  },
+  "hellaswag/continuation": {
+   "items": 4269,
+   "item_share": 0.0132
+  },
+  "vast/stance": {
+   "items": 3670,
+   "item_share": 0.0114
+  },
+  "banking77/intent_membership": {
+   "items": 3492,
+   "item_share": 0.0108
+  },
+  "sst5/sentiment_score": {
+   "items": 3329,
+   "item_share": 0.0103
+  },
+  "anli/claim_verification": {
+   "items": 2924,
+   "item_share": 0.0091
+  },
+  "anli/nli": {
+   "items": 2828,
+   "item_share": 0.0088
+  },
+  "humicroedit_s1/humor_score": {
+   "items": 2527,
+   "item_share": 0.0078
+  },
+  "humicroedit_s2/humor_pair": {
+   "items": 2156,
+   "item_share": 0.0067
+  },
+  "habermas/consensus_selection": {
+   "items": 2027,
+   "item_share": 0.0063
+  },
+  "nli4ct/clinical_trial_nli": {
+   "items": 1710,
+   "item_share": 0.0053
+  },
+  "mmlu_aux/answer_verification": {
+   "items": 1400,
+   "item_share": 0.0043
+  },
+  "b1fam_apibank/API-Bank-tool-selection": {
+   "items": 1194,
+   "item_share": 0.0037
+  },
+  "synthetic_factchange/factchange_delivery": {
+   "items": 742,
+   "item_share": 0.0023
+  },
+  "synthetic_factchange/factchange_spend_limit": {
+   "items": 640,
+   "item_share": 0.002
+  },
+  "synthetic_factchange/factchange_stock": {
+   "items": 460,
+   "item_share": 0.0014
+  },
+  "synthetic_factchange/factchange_renewal": {
+   "items": 218,
+   "item_share": 0.0007
+  },
+  "nq/retrieval": {
+   "items": 89,
+   "item_share": 0.0003
+  },
+  "synthetic_factchange/factchange_schedule": {
+   "items": 24,
+   "item_share": 0.0001
+  },
+  "synthetic_factchange/factchange_rating": {
+   "items": 2,
+   "item_share": 0.0
+  }
+ },
+ "n_polarity_descriptions": 18
+}
