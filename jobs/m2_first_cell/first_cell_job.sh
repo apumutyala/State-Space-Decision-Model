@@ -12,7 +12,9 @@
 #   DEV slice: setup + guard as usual, then phase checkpoint (jobs.m2_first_cell.checkpoint_loader: the artifact from
 #   $<checkpoint.url_env>, every byte sha256-pinned), fulldev (jobs.m2_first_cell.fulldev_eval score --arm child, all
 #   12,104 rows, or params "rows": "smoke" = the pre-declared 250-row fulldev_smoke_rows.json; live rate guard, per-row
-#   resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
+#   resume from $CK/fulldev; params "rows": "shard<K>of<N>" = shard K of fulldev_shards_<N>.json, merged on CPU with
+#   fulldev_eval merge; on ANY scoring exit the partial rows + identity are copied into the phase export, and env
+#   SEED_PARTIAL_URL + SEED_PARTIAL_SHA256 (a stopped run's phase tgz) seed a follow-up job), optional parent_full (params "fulldev_parent_arm"),
 #   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
@@ -105,6 +107,7 @@ finish() {
   trap - EXIT
   kill "${WD_PID:-}" 2> /dev/null || true
   rm -f "$OUT/$MARKER"
+  [ "$EVAL_ONLY" = fulldev ] && fd_export_partial
   # Terminal export and result validation share 60s + 30s KILL grace from the
   # existing seven-minute reserve. Export failure still reaches finalize (exit 6).
   export -f export_phase sample say
@@ -124,6 +127,13 @@ finish() {
 }
 fail() { RC=$1; say "FAIL($1): $2"; exit "$1"; }
 num() { case "$1" in *[!0-9.]*|"") return 1 ;; esac; }
+fd_export_partial() {  # eval-only: a stopped run's scored rows ($CK slot) go into the phase export on ANY exit
+  local a; for a in child parent; do
+    [ -f "$CK/fulldev/$a.partial.jsonl" ] && [ ! -f "$WORK/out/fulldev/$a.results.jsonl" ] || continue
+    mkdir -p "$WORK/out/fulldev"
+    cp -f "$CK/fulldev/$a.partial.jsonl" "$CK/fulldev/$a.partial.identity.json" "$WORK/out/fulldev/" 2> /dev/null       || say "partial export ($a): copy failed (free bytes: $(diskfree "$WORK"))"
+  done
+}
 diskfree() {  # free bytes of each dir's filesystem (job-afpc2: the shared worker disk filled; the log is all that survives)
   local d; for d in "$@"; do printf '%s=%s ' "$d" "$(df -PB1 "$d" 2>/dev/null | awk 'NR==2 {print $4}')"; done
 }
@@ -310,11 +320,18 @@ if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a
   read -r MAXIN FD_PARENT ROWS_SEL FD_READOUT <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(int(p['max_input_tokens']), 1 if p.get('fulldev_parent_arm') else 0, p.get('rows', 'full'), p.get('readout') or 'native')" "$PARAMS")" \
     || fail 5 "job_params max_input_tokens / fulldev_parent_arm / rows / readout"
   FD_ARMS=(child); [ "$FD_PARENT" = 1 ] && FD_ARMS+=(parent)
+  CODE_SHA=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("m1_sha") or "")' "$CONTEXT_MANIFEST") || CODE_SHA=""
+  SEED_ARGS=()
+  if [ -n "${SEED_PARTIAL_URL:-}" ]; then  # resume a stopped run's rows (its phase tgz; identity-checked by score)
+    [ -n "${SEED_PARTIAL_SHA256:-}" ] || fail 5 "SEED_PARTIAL_URL is set without SEED_PARTIAL_SHA256"
+    python -X utf8 -m jobs.m2_first_cell.fulldev_eval seed-fetch --url "$SEED_PARTIAL_URL" --sha256 "$SEED_PARTIAL_SHA256"       --arm child --out-dir "$WORK/seed" > "$WORK/logs/seed-fetch.log" 2>&1 || fail 10 "seed partial: $(tail -1 "$WORK/logs/seed-fetch.log")"
+    SEED_ARGS=(--seed-partial "$WORK/seed/child.partial.jsonl")
+  fi
   for ARMNAME in "${FD_ARMS[@]}"; do
     PH=fulldev; [ "$ARMNAME" = parent ] && PH=parent_full
     if [ "$ARMNAME" = child ]; then
       ARGS=(--cell "$WORK/out/cell.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR"
-            "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" --readout "$FD_READOUT")
+            "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" --readout "$FD_READOUT" "${SEED_ARGS[@]}")
     else
       ARGS=(--cell-config "$CELL")
     fi
@@ -325,11 +342,12 @@ if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a
       --report "$WORK/out/rate-$PH.json" -- \
       timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval score --arm "$ARMNAME" "${ARGS[@]}" \
       --model-dir "$SNAP" --rows "$DATA/slices/dev-rows.jsonl.gz" --max-input-tokens "$MAXIN" --rows-select "$ROWS_SEL" --resume-dir "$CK/fulldev" \
-      --out-dir "$WORK/out/fulldev" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
+      --out-dir "$WORK/out/fulldev" --progress "$WORK/logs/progress-$PH.jsonl" ${CODE_SHA:+--code-sha "$CODE_SHA"} > "$WORK/logs/$PH.log" 2>&1; r=$?
     if [ $r -ne 0 ]; then  # the phase log tail into run.log / the job log: it survives when the artifact does not
       say "$PH rc=$r; free bytes: $(diskfree "$OUT" "$CK" "$WORK"); last 40 lines of logs/$PH.log:"
       tail -n 40 "$WORK/logs/$PH.log" 2> /dev/null | sed "s/^/[$PH.log] /"
     fi
+    [ $r -eq 0 ] || fd_export_partial  # timeout / guard stop / low disk: the scored rows leave with this export
     gate "$PH" $r; export_phase "$PH"
     case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
       16) fail 16 "$PH: worker disk low (slot declared + yield requested; see the log tail above)" ;;
