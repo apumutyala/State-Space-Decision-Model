@@ -16,30 +16,30 @@ from .gate_suites import canonical, digest
 _WORDING = {
     "development_train": {
         "Compare": (
-            "Compare {left}'s and {right}'s October 2026 warranty_months.",
-            "State whether {left} has a greater, smaller, or equal October 2026 warranty_months value than {right}.",
-            "Give the October 2026 warranty_months ordering for {left} relative to {right}.",
-            "Is {left}'s October 2026 warranty_months higher, lower, or equal to {right}'s? State the relation.",
+            "Compare the October 2026 {field} values for {left} and {right}.",
+            "State whether {left} has a greater, smaller, or equal October 2026 {field} value than {right}.",
+            "Give the October 2026 {field} ordering for {left} relative to {right}.",
+            "Is {left}'s October 2026 {field} higher, lower, or equal to {right}'s? State the relation.",
         ),
         "ExactDifference": (
-            "For October 2026, calculate {left}'s warranty_months minus {right}'s warranty_months.",
-            "Report the signed warranty_months gap as {left} relative to {right} for October 2026.",
-            "How many warranty_months more or fewer did {left} record than {right} in October 2026?",
-            "Give the oriented difference in October 2026 warranty_months from {right} to {left}.",
+            "For October 2026, calculate {left}'s {field} minus {right}'s {field}.",
+            "Report the signed {field} gap as {left} relative to {right} for October 2026.",
+            "How much more or less {field} did {left} record than {right} in October 2026?",
+            "Give the oriented difference in October 2026 {field} from {right} to {left}.",
         ),
     },
     "development_validation": {
         "Compare": (
-            "Which ordering holds between {left}'s and {right}'s warranty_months for October 2026?",
-            "Relative to {right}, does {left} record a greater, equal, or lesser warranty_months value in October 2026?",
-            "Place {left} and {right} in order by their October 2026 warranty_months.",
-            "Report the comparison relation for the October 2026 warranty_months of {left} versus {right}.",
+            "Which ordering holds between {left}'s and {right}'s {field} values for October 2026?",
+            "Relative to {right}, does {left} record a greater, equal, or lesser {field} value in October 2026?",
+            "Place {left} and {right} in order by their October 2026 {field} values.",
+            "Report the comparison relation for the October 2026 {field} values of {left} versus {right}.",
         ),
         "ExactDifference": (
-            "What signed amount is obtained by taking {left}'s October 2026 warranty_months relative to {right}'s?",
-            "State the October 2026 warranty_months surplus or shortfall of {left} against {right}, with sign.",
-            "By how many warranty months does {left}'s October 2026 value exceed or fall short of {right}'s?",
-            "What is the signed amount from {right}'s October 2026 warranty_months to {left}'s?",
+            "What signed amount is obtained by taking {left}'s October 2026 {field} relative to {right}'s?",
+            "State the October 2026 {field} surplus or shortfall of {left} against {right}, with sign.",
+            "By how much does {left}'s October 2026 {field} value exceed or fall short of {right}'s?",
+            "What is the signed amount from {right}'s October 2026 {field} value to {left}'s?",
         ),
     },
 }
@@ -68,8 +68,10 @@ def development_operation_pairs(*, split: str, worlds: int, seed: int,
     tasks, references = build_suite("L1", split, worlds=worlds, seed=seed)
     by_world = {}
     world_template_index = {}
-    prompt_index = {world_id: index % 4 for index, world_id in enumerate(sorted(
-        {task["world_id"] for task in tasks if task["level"] == "L1"}))}
+    world_order = sorted({task["world_id"] for task in tasks if task["level"] == "L1"})
+    prompt_index = {world_id: index % 4 for index, world_id in enumerate(world_order)}
+    field_index = {world_id: int(index >= (len(world_order) + 1) // 2)
+                   for index, world_id in enumerate(world_order)}
     for task, reference in zip(tasks, references, strict=True):
         kinds = [node.get("op") for node in reference["program"]["nodes"]
                  if node.get("op") in ("Compare", "ExactDifference")]
@@ -88,15 +90,28 @@ def development_operation_pairs(*, split: str, worlds: int, seed: int,
         reference = deepcopy(reference)
         index = prompt_index[task["world_id"]]
         world_template_index[task["world_id"]] = index
+        field = "price" if field_index[task["world_id"]] else "warranty_months"
+        if field == "price":
+            for node in reference["program"]["nodes"]:
+                if node.get("op") == "ReadFact" and node.get("field") == "warranty_months":
+                    node["field"] = "price"
         nodes = {node["id"]: node for node in reference["program"]["nodes"]}
         operation_node = next(node for node in reference["program"]["nodes"]
                               if node.get("op") in ("Compare", "ExactDifference"))
         left_ref = nodes[operation_node["left"]["node"]]["record_ref"]
         right_ref = nodes[operation_node["right"]["node"]]["record_ref"]
         records = {record["record_ref"]: record for record in task["catalog"]["records"]}
+        if field == "price":
+            for node in reference["program"]["nodes"]:
+                if node.get("op") == "Compare":
+                    left_value = records[left_ref]["fields"][field]["value"]
+                    right_value = records[right_ref]["fields"][field]["value"]
+                    node["relation"] = ("greater_than" if left_value > right_value else
+                                        "less_than" if left_value < right_value else "equal")
         left_name = records[left_ref]["entity_ref"]
         right_name = records[right_ref]["entity_ref"]
-        task["task_input"] = _WORDING[split][kind][index].format(left=left_name, right=right_name)
+        task["task_input"] = _WORDING[split][kind][index].format(
+            left=left_name, right=right_name, field=field)
         reference["input_sha256"] = digest(task)
         if (reference.get("task_id") != task["task_id"]
                 or reference.get("world_id") != task["world_id"]
@@ -141,8 +156,9 @@ def development_operation_pairs(*, split: str, worlds: int, seed: int,
         if (source_target == effect_target or source_target not in source["options"]
                 or effect_target not in source["options"]):
             raise ValueError("GatePlanner operation targets must contrast in one unchanged K4 domain")
+        field = "price" if field_index[world_id] else "warranty_months"
         template_id = f"{split.removeprefix('development_')}-{world_template_index[world_id] + 1:02d}"
-        pairs.append({"pair_id": f"{world_id}-operation-prompt-{template_id}", "world_id": world_id,
+        pairs.append({"pair_id": f"{world_id}-operation-prompt-{field}-{template_id}", "world_id": world_id,
                       "split": split, "concept": "Compare_to_ExactDifference",
                       "source": source, "effect": effect,
                       "source_target": source_target, "effect_target": effect_target})
@@ -189,15 +205,16 @@ def export_operation_pairs(out: Path, *, train_worlds: int = 32, train_seed: int
         "source_sha256": source_hashes,
         "target_ids": {"Compare": "v002", "ExactDifference": "v004"},
         "wording_templates": {
-            split: {f"{split.removeprefix('development_')}-{index + 1:02d}": {
-                "Compare": _WORDING[split]["Compare"][index],
-                "ExactDifference": _WORDING[split]["ExactDifference"][index],
-            } for index in range(4)}
+                split: {f"{split.removeprefix('development_')}-{field}-{index + 1:02d}": {
+                "Compare": _WORDING[split]["Compare"][index].replace("{field}", field),
+                "ExactDifference": _WORDING[split]["ExactDifference"][index].replace("{field}", field),
+            } for field in ("warranty_months", "price") for index in range(4)}
             for split in ("development_train", "development_validation")},
         "template_pair_counts": {
             "train": _template_counts(train), "validation": _template_counts(validation)},
+        "field_pair_counts": {"train": _field_counts(train), "validation": _field_counts(validation)},
         "limitations": ["Synthetic development contrasts only; no model fitting or language gate measured.",
-                        "The cohort uses synthetic L1 warranty-month tasks and four fixed, split-disjoint prompt pairs.",
+                        "The cohort uses two synthetic numeric L1 fields and four fixed, split-disjoint prompt pairs per field.",
                         "Validation pairs must remain separate from discovery fitting and scale selection."],
     }
     manifest_bytes = canonical(manifest) + b"\n"
@@ -213,6 +230,14 @@ def _template_counts(pairs: list[dict]) -> dict[str, int]:
     for pair in pairs:
         template_id = pair["pair_id"].rsplit("-operation-prompt-", 1)[1]
         counts[template_id] = counts.get(template_id, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _field_counts(pairs: list[dict]) -> dict[str, int]:
+    counts = {}
+    for pair in pairs:
+        field = pair["pair_id"].rsplit("-operation-prompt-", 1)[1].rsplit("-", 2)[0]
+        counts[field] = counts.get(field, 0) + 1
     return dict(sorted(counts.items()))
 
 

@@ -1,4 +1,4 @@
-"""CPU-light checks for fresh train-only K4 operation pair generation."""
+"""CPU-light checks for fresh development-only K4 operation pair generation."""
 import unittest
 import hashlib
 import json
@@ -20,14 +20,20 @@ class GateOperationPairTests(unittest.TestCase):
         self.assertEqual({pair["split"] for pair in train}, {"development_train"})
         self.assertEqual({pair["split"] for pair in validation}, {"development_validation"})
         self.assertFalse({pair["world_id"] for pair in train} & {pair["world_id"] for pair in validation})
+        fields = ("warranty_months", "price")
         train_templates = {pair["pair_id"].rsplit("operation-prompt-", 1)[1] for pair in train}
         validation_templates = {pair["pair_id"].rsplit("operation-prompt-", 1)[1] for pair in validation}
-        self.assertEqual(train_templates, {f"train-{index:02d}" for index in range(1, 5)})
-        self.assertEqual(validation_templates, {f"validation-{index:02d}" for index in range(1, 5)})
+        self.assertEqual(train_templates, {f"{field}-train-{index:02d}" for field in fields for index in range(1, 5)})
+        self.assertEqual(validation_templates,
+                         {f"{field}-validation-{index:02d}" for field in fields for index in range(1, 5)})
         self.assertEqual([sum(pair["pair_id"].endswith(f"train-{index:02d}") for pair in train)
                           for index in range(1, 5)], [len(train) // 4] * 4)
         self.assertEqual([sum(pair["pair_id"].endswith(f"validation-{index:02d}") for pair in validation)
                           for index in range(1, 5)], [len(validation) // 4] * 4)
+        self.assertEqual([sum(f"-operation-prompt-{field}-" in pair["pair_id"] for pair in train)
+                          for field in fields], [16, 16])
+        self.assertEqual([sum(f"-operation-prompt-{field}-" in pair["pair_id"] for pair in validation)
+                          for field in fields], [4, 4])
         self.assertFalse({pair["source"]["task_input"] for pair in train} &
                          {pair["source"]["task_input"] for pair in validation})
         self.assertTrue(all("minus" not in pair["effect"]["task_input"].lower()
@@ -45,6 +51,9 @@ class GateOperationPairTests(unittest.TestCase):
 
         for pair in train + validation:
             source, effect = pair["source"], pair["effect"]
+            field = pair["pair_id"].rsplit("operation-prompt-", 1)[1].split("-", 1)[0]
+            self.assertIn(field, source["task_input"])
+            self.assertIn(field, effect["task_input"])
             self.assertEqual(source["host"], effect["host"])
             self.assertEqual(source["catalog"], effect["catalog"])
             self.assertNotEqual(source["task_input"], effect["task_input"])
@@ -60,8 +69,8 @@ class GateOperationPairTests(unittest.TestCase):
             self.assertEqual(list(rebuilt["questions"]), [source["question_id"]])
             self.assertEqual(rebuilt["questions"][source["question_id"]]["instructions"], source["question"])
             self.assertEqual(rebuilt["questions"][source["question_id"]]["criteria"], source["options"])
-        self.assertEqual(digest(train), "6ee50be2644e4f0d64a2f0ff70f6ca222648209d5dfe2cb4c345cb453c4c6264")
-        self.assertEqual(digest(validation), "61be6c869335123df7665b8d1500359a895872f2122e9b215127cb7d8a6a3f3f")
+        self.assertEqual(digest(train), "1c9e9c53276f72ad43f60e02871ed0d328ef2f89d00f6a2d42774b6738733740")
+        self.assertEqual(digest(validation), "e02868c3a9addcf50316da5f43f511b008cdf6791a3fafa0ec1c4cc805eb5606")
 
     def test_rejects_non_development_or_unbounded_requests_before_generation(self):
         for kwargs in (
@@ -85,6 +94,10 @@ class GateOperationPairTests(unittest.TestCase):
             self.assertEqual(manifest["validation"]["pairs"], 2)
             self.assertEqual(sum(manifest["template_pair_counts"]["train"].values()), 2)
             self.assertEqual(sum(manifest["template_pair_counts"]["validation"].values()), 2)
+            self.assertEqual(manifest["field_pair_counts"]["train"],
+                             {"price": 1, "warranty_months": 1})
+            self.assertEqual(manifest["field_pair_counts"]["validation"],
+                             {"price": 1, "warranty_months": 1})
             self.assertEqual(manifest["train"]["sha256"], hashlib.sha256(train_bytes).hexdigest())
             self.assertEqual(manifest["validation"]["sha256"], hashlib.sha256(validation_bytes).hexdigest())
             self.assertEqual(json.loads((out / "manifest.json").read_text(encoding="utf-8")), manifest)
