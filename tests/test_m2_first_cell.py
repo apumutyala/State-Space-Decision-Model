@@ -363,7 +363,7 @@ def test_runner_orders_guards_before_training_and_prices_every_eval_first():
     # review fix 1: the parent arm (live rate guard) and the measured re-price run BEFORE any training spend
     assert i("jobs.m2_parent_arm.score_parent --parent") < i("-m jobs.m2_first_cell.reprice") < train < i("-m train.m2_gates")
     assert "export_phase heldout" in JOB  # review fix 3
-    assert '--report "$ARM/rate-parent-$STAGE.json"' in JOB  # rate reports survive a restart (reprice reads them)
+    assert '--report "$ARM/rate-parent-$PSTAGE.json"' in JOB  # rate reports survive a restart (reprice reads them)
     assert JOB.count("rate_guard run-weighted") == 2  # parent stages (loop) + child evals
     assert "jobs/common/finalize.py" in JOB and not re.search(r"touch [^\n]*DONE", JOB)
     assert not re.search(r"timeout \d+m", JOB)  # every cap comes from job_params
@@ -371,7 +371,7 @@ def test_runner_orders_guards_before_training_and_prices_every_eval_first():
     assert "case $r in 0|40|43|44|45)" in JOB  # PR #102: 40 / 43 / 44 / 45 are measured, not promotable
     assert "--stage g12+index" in JOB and "VALIDATOR=jobs.m2_first_cell.summarize:valid_result" in JOB
     for ph in PARAMS["phase_caps_minutes"]:
-        assert f"cap {ph}" in JOB or f"cap \"$3\"" in JOB or f"cap parent_$STAGE" in JOB, ph
+        assert f"cap {ph}" in JOB or f"cap \"$3\"" in JOB or f"cap parent_$PSTAGE" in JOB, ph
 
 
 @pytest.mark.parametrize("var", ["TOK_S", "CALL_S"])
@@ -808,7 +808,7 @@ def test_arm_seed_pin_is_the_uhxb5_export():
     assert pin["units_sha256"] == {"g12": "c16c24db65124b78af782305a55d2092b8b4163459a9501714b314e4897ef395",
                                    "index": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001"}
     assert "--src \"$DATA/parent_arm_seed\"" in JOB and "jobs.m2_first_cell.arm_seed seed" in JOB
-    assert JOB.index("arm_seed seed") < JOB.index("for STAGE in g12 index")
+    assert JOB.index("arm_seed seed") < JOB.index("for PSTAGE in g12 index")
 
 
 def test_arm_seed_is_atomic_a_failed_check_never_becomes_the_cache(tmp_path, monkeypatch):

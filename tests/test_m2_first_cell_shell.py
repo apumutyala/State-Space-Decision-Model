@@ -208,7 +208,7 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     assert "timeout --kill-after=30s $(cap $PH)m python" in source
     assert all("timeout --kill-after=30s " in line for line in timed)
     assert "timeout --kill-after=30s $(cap cell)m python -m train.run_cell" in source
-    assert "timeout --kill-after=30s $(cap parent_$STAGE)m python" in source
+    assert "timeout --kill-after=30s $(cap parent_$PSTAGE)m python" in source
     assert "timeout --kill-after=30s $(cap evals)m python" in source
     assert "timeout --kill-after=30s 60s bash -c" in source
     assert 'exec python "$CODE/jobs/common/finalize.py"' in source
@@ -748,14 +748,16 @@ def test_seed_with_other_units_identity_exits_10_before_training(ctx, full_run):
     assert (r["work"] / "out/parent_arm/arm.json").exists()  # the refused comparator is kept for the record
 
 
-@pytest.mark.parametrize("seeded,verify_rc,source_present", [
-    (False, 0, False), (True, 0, True), (True, 10, True), (False, 10, False),
-    (False, 0, True), (False, 10, True)])
+@pytest.mark.parametrize("seeded,verify_rc,source_present,stage", [
+    (False, 0, False, "gates"), (True, 0, True, "gates"), (True, 10, True, "gates"), (False, 10, False, "gates"),
+    (False, 0, True, "gates"), (False, 10, True, "gates"), (False, 0, False, "screen")])
 def test_cached_parent_block_preserves_artifacts_and_verifies_before_training(tmp_path, seeded, verify_rc,
-                                                                            source_present):
+                                                                            source_present, stage):
     """Execute the real parent-cache/reprice block without the expensive model fixture. Only scoring/repricing
     drivers are stood in; seed installation, restart classification, hashes, copies and shell control flow run.
-    The seeded case recreates the old interruption: arm installed, no shell-side or in-cache provenance marker."""
+    The seeded case recreates the old interruption: arm installed, no shell-side or in-cache provenance marker.
+    The screen case is the PR #228/#229 regression: the parent-arm loop variable must not clobber the params STAGE
+    (it used to end as STAGE=index, so screen jobs repriced and died on a missing phase_caps_minutes["evals"])."""
     bash = _bash()
     if not bash:
         pytest.skip("no POSIX bash with coreutils")
@@ -788,6 +790,8 @@ def test_cached_parent_block_preserves_artifacts_and_verifies_before_training(tm
             assert pin != hashlib.sha256((arm / "arm.json").read_bytes()).hexdigest()
     params = json.loads((ROOT / "jobs/m2_first_cell/job_params.json").read_text())
     params["parent_arm_seed"]["arm_sha256"] = pin if source_present else None
+    if stage == "screen":
+        params["stage"] = "screen"
     param_path, cell_path = tmp_path / "params.json", tmp_path / "cell.json"
     param_path.write_text(json.dumps(params))
     cell_path.write_text(json.dumps(cell))
@@ -825,18 +829,24 @@ gate() { :; }
 cap() { echo 1; }
 fail() { echo "FAIL($1): $2"; exit "$1"; }
 export_phase() { :; }
-''' + block + '\necho TRAINING_REACHED\n', encoding="utf-8", newline="\n")
+''' + block + '\necho "STAGE_AFTER=$STAGE"\necho TRAINING_REACHED\n', encoding="utf-8", newline="\n")
     env = {**os.environ, "CUDA_VISIBLE_DEVICES": "", "PYTHONDONTWRITEBYTECODE": "1",
            "PATH": os.pathsep.join([str(bin_dir), str(Path(bash).parent), os.environ["PATH"]]),
            "CK": _posix(ck), "WORK": _posix(work), "DATA": _posix(data), "CELL": _posix(cell_path),
            "PARAMS": _posix(param_path), "SNAP": "unused", "RECORDS": "unused", "TOK_S": "3757", "CALL_S": "0.117",
-           "CACHE_TEST_CALLS": str(calls), "CACHE_TEST_VERIFY_RC": str(verify_rc)}
+           "CACHE_TEST_CALLS": str(calls), "CACHE_TEST_VERIFY_RC": str(verify_rc), "STAGE": stage}
     r = subprocess.run([bash, _posix(script)], cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
     assert r.returncode == verify_rc, r.stdout + r.stderr
     invoked = [json.loads(line) for line in calls.read_text().splitlines()]
     assert "--verify-cache" in invoked[0]
     assert ("--probe-n" in invoked[0]) == seeded
     assert ("TRAINING_REACHED" in r.stdout) == (verify_rc == 0)
+    if verify_rc == 0:
+        assert f"STAGE_AFTER={stage}" in r.stdout, r.stdout  # the params STAGE survives the parent-arm loop
+    if stage == "screen":  # screen mode was priced in setup: never repriced
+        assert "stage screen: child evals priced in setup" in r.stdout, r.stdout
+        assert len(invoked) == 1 and not any("jobs.m2_first_cell.reprice" in c for c in invoked)
+        return
     assert len(invoked) == (2 if verify_rc == 0 else 1)  # verify, then reprice; scoring is always skipped
     if verify_rc == 0:
         assert "jobs.m2_first_cell.reprice" in invoked[1]
