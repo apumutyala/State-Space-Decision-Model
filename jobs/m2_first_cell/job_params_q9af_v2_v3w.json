@@ -137,7 +137,7 @@
   }
  },
  "context": {
-  "_comment": "as D16 (records, DEV rows, B1 100k-v2 set, suite) + the converted GDN export; the probe9b image (fla 0.5.2) with its CMD rewritten to first_cell_job.sh. The stock_v3w parent preset is not shipped (the parent is in-job).",
+  "_comment": "as D16 (records, DEV rows, B1 100k-v2 set, suite) + the converted GDN export; the probe9b image (fla 0.5.2) with its CMD rewritten to first_cell_job.sh. The stock_v3w parent preset is not shipped (the parent is in-job). + the adopted doc-overlap eval index (12 files of m2/doc-overlap/218affe13e367d07 = index-pin key 218affe1..., index_sha256 2c821e29..., ~286 MB; train.doc_overlap_guard.get_index reads /data/m2/doc-overlap/<key16>; each file pinned by its sha256).",
   "dockerfile": "jobs/probe9b/Dockerfile",
   "cmd_rewrite": [
    "jobs/probe9b/probe_job.sh",
@@ -200,6 +200,66 @@
     "src_env": "Q9AF_EXPORT_JSON",
     "dest": "gdn/export.json",
     "pin": "jobs/m2_first_cell/gdn_q9af_v2.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/df.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/df.npy",
+    "pin_sha256": "ee411d5c067934e5f6bd3e2919ca98ce1fbc48830140f478f06b1f47f96bbe55"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/ent.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/ent.npy",
+    "pin_sha256": "02c60e18c646c91ebce8e26423ca8e75bf06e48584fd810f3ee8224a8f9989d3"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/fl.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/fl.npy",
+    "pin_sha256": "3791d0318f9ef16633d79d9abce497dcdaf382f6e868fe143b710ed2a2757f19"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/h.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/h.npy",
+    "pin_sha256": "ff1a0b35f1888b666f79029639618d0241046c9c235e23bc7402fc7fd55ef040"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/meta.json",
+    "dest": "m2/doc-overlap/218affe13e367d07/meta.json",
+    "pin_sha256": "e753a5345c73493b2031f0b56b2908dc0efd3eb92753eeed1e9a022b4e4d413f"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/pcnt.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/pcnt.npy",
+    "pin_sha256": "c1eeccb3e574db7da3a8d1c3ac8f28311389282071df14606fdf94be2f68d752"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/post.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/post.npy",
+    "pin_sha256": "2da265e7ce19d5733cecb9bc53f2ab520d955f2061959beed87ab53a73cb761a"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/pstart.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/pstart.npy",
+    "pin_sha256": "f5b2fc433ed465334c087219e5323500303488aa85f5edef6fb2a48b132f5549"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_allow.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/u_allow.npy",
+    "pin_sha256": "09f4da80c85152221cd854f64168ef28cd98e6b9b445101ae7cf27b9f0da49e0"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_den.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/u_den.npy",
+    "pin_sha256": "03cc2ef0b3c39d8c395b7cf5e9c8b554cfb520b22111dd425d5ca353b71458ad"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_field.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/u_field.npy",
+    "pin_sha256": "294bb8ec9c9ca13a56e0fcd1f87043ca6514b279c35bf5aeab6f1ed72402fbf0"
+   },
+   {
+    "src": "m2/doc-overlap/218affe13e367d07/u_row.npy",
+    "dest": "m2/doc-overlap/218affe13e367d07/u_row.npy",
+    "pin_sha256": "806b6699f847e039018840b9cb5da57e94086addcd44416d02fedbc7a06848f0"
    }
   ],
   "manifest_files": [
