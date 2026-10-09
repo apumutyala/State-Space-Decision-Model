@@ -196,3 +196,29 @@ def test_cli_scan_exit_codes(tmp_path):
         f.write(json.dumps(_rec(1)) + "\n" + json.dumps(_d1a_rec(2)) + "\n")
     assert AG.main(["scan", "--records", str(p)]) == AG.EXIT_HIT
     assert AG.main(["templates"]) == 0
+
+
+def test_draw_lineage_replay_reproduces_a_pre_guard_draw_only_when_unpinned(tmp_path):
+    """Eval-only lineage replay (job-vftxa): an unpinned cell's draw keeps the attack-hit records (the pre-guard
+    draw a saved checkpoint was trained on) and reports them; a pinned spec is still enforced exactly; the default
+    (training) path still refuses."""
+    from train.train_set import AttackGuardRefusal, draw
+
+    recs = [_rec(i) for i in range(8)] + [_d1a_rec(50)]
+    d, cfg = _set_with(tmp_path, recs)
+    full = {**cfg, "n_train_records": 9}
+    with pytest.raises(AttackGuardRefusal):
+        draw(full, d)
+    got, tr, ident = draw(full, d, lineage_replay=True)
+    assert "m2:t:50" in tr and len(tr) == 9 and ident["n_pool"] == 9
+    ag = ident["attack_guard"]
+    assert ag["lineage_replay"] is True and ag["n_excluded"] == 0 and ag["n_hit"] == 1 and ag["drawn_hits"] == 1
+    assert "refusal_waived" in ag
+    spec = AG.clean_spec(AG.scan_file(d / "records.jsonl.gz"))
+    wrong = {**cfg, "n_train_records": 8,
+             "train_set": {**cfg["train_set"], "attack_clean": {**spec, "excluded_ids_sha256": "0" * 64}}}
+    with pytest.raises(AttackGuardRefusal):
+        draw(wrong, d, lineage_replay=True)
+    pinned = {**cfg, "n_train_records": 8, "train_set": {**cfg["train_set"], "attack_clean": spec}}
+    _, tr2, ident2 = draw(pinned, d, lineage_replay=True)
+    assert "m2:t:50" not in tr2 and "lineage_replay" not in ident2["attack_guard"]

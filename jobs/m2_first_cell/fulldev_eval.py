@@ -364,7 +364,10 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
     enc = parent_encoder(parent, a.model_dir)
     spec = G.unit_spec(cfg)
     pools = G.pool_dirs_arg(a.pool_dir)
-    train_recs, recs, tr_ids, _, _ = load_cell_data(cfg, a.records, a.train_dir, cohort)
+    # a.lineage_replay (eval-only callers, e.g. ragtruth_polarity --lineage-replay): rebuild a PRE-attack-guard cell's
+    # unfiltered draw for the lineage check (train.train_set.draw); Trainer.load below still verifies the lineage
+    train_recs, recs, tr_ids, _, _ = load_cell_data(cfg, a.records, a.train_dir, cohort,
+                                                    lineage_replay=bool(getattr(a, "lineage_replay", False)))
     cohort.assert_training_ids(tr_ids)
     role_recs = ({role: G.role_records(cohort, a.records, role, recs, pools) for role in ("dev", "calibration", "retention")}
                  if temperature else None)

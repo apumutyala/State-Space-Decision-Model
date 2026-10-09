@@ -320,7 +320,8 @@ def _items_chunk(records: list, cfg: dict, enc, guard, max_t: int, max_k: int | 
     return [x for x in its if keep_item(x.row, max_k, max_t)]
 
 
-def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, cohort=None):
+def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, cohort=None,
+                   lineage_replay: bool = False):
     """(train records by id, eval records by id, train ids, eval ids, data identity) for a cell config.
 
     Without ``cfg["train_set"]``: the PR #16 sample at ``records_path`` provides both (``cohort_split``). With it: train
@@ -329,7 +330,8 @@ def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, c
     In unprotected development mode, nested slots use distinct storage keys while retaining task Item identities;
     whole world/task split units are expanded to every row. Grouped/nested protected paths fail closed pending a
     matching manifest/group guard. Raises ``ValueError`` (``CohortLeak`` / ``TrainSetMismatch`` subclass it) on any
-    identity problem."""
+    identity problem. ``lineage_replay`` (eval-only checkpoint loaders, never training) goes to
+    ``train.train_set.draw``."""
     protected = bool(cfg.get("train_set") or cfg.get("cohort_sha256"))
     recs = _cell_records(records_path, development=not protected)
     if not cfg.get("train_set"):
@@ -343,7 +345,7 @@ def load_cell_data(cfg: dict, records_path: str, train_dir: str | None = None, c
 
     _check_train_set_rows(cfg, train_dir)
     co = cohort if cohort is not None else Cohort(expected_sha256=cfg["cohort_sha256"])
-    train_recs, tr_ids, tident = draw(cfg, train_dir, co)
+    train_recs, tr_ids, tident = draw(cfg, train_dir, co, lineage_replay=lineage_replay)
     ev_ids = co.ids("dev")
     missing = sorted(set(ev_ids) - set(recs))
     if missing:

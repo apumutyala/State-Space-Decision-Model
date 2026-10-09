@@ -56,6 +56,11 @@ CI_LEVEL = 0.95
 NULL_AUROC = 0.5
 READOUT = "v3w"
 ARM_NAMES = ("d13", "d1")
+# Arms whose checkpoint was trained BEFORE the attack guard (train.attack_guard, ca9d482): their cell config pins no
+# train_set.attack_clean, so the lineage check must rebuild the UNfiltered draw (train.train_set.draw lineage_replay;
+# eval-only, nothing is trained). D1 = job-c7pq2 (trained 2026-10-08 on the 150k set incl. the 8,049 D1-A steer rows;
+# drawn_ids_sha256 2bbbf180..., n_pool 111,795). job-vftxa failed exit 10 at score_d1 without this.
+LINEAGE_REPLAY_ARMS = ("d1",)
 RUN_ID_PREFIX = "ragtruth-train:59:"
 DECISION_RULE = ("per arm: polarity is INVERTED if the AUROC 95% percentile-bootstrap upper bound (2000 item "
                  "resamples, seed 20261009) < 0.5 on the RAGTruth TRAIN items; then a statement rephrase is proposed. "
@@ -318,9 +323,12 @@ def score(a) -> int:
         return 10
     try:
         cfg = json.loads(Path(a.cell).read_text(encoding="utf-8"))["config"]
+        a.lineage_replay = a.arm in LINEAGE_REPLAY_ARMS
+        if a.lineage_replay and (cfg.get("train_set") or {}).get("attack_clean"):
+            raise ValueError(f"arm {a.arm}: lineage replay is for pre-guard cells, but its config pins attack_clean")
         ro = readout_spec(READOUT, cfg)
         decider, _, ident = load_child(a, temperature=False, readout=(ro["template"], ro["layout"]))
-        ident = {**ident, "readout": ro, "arm_name": a.arm}
+        ident = {**ident, "readout": ro, "arm_name": a.arm, "lineage_replay": a.lineage_replay}
     except (ValueError, KeyError, GuardNotReady, CohortLeak) as e:
         print(f"identity: {type(e).__name__}: {e}", file=sys.stderr)
         return 10

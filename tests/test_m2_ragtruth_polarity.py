@@ -284,3 +284,19 @@ def test_reprice_projects_d1_from_d13_measurements_before_fetching_it():
     assert not slow["ok"] and slow["d1_phase_proj"] > 0.95 * p["phase_caps_minutes"]["score_d1"]
     late = R.reprice(p, s, {"scoring_started_min": 25.0}, {"sum_row_wall_s": 360.0}, elapsed_min=95)  # clock gone
     assert not late["ok"]
+
+
+def test_pre_guard_arms_replay_their_lineage_and_guarded_arms_do_not():
+    """job-vftxa (exit 10 at score_d1): D1 (job-c7pq2) was trained before the attack guard on the unfiltered 150k draw,
+    so its arm config pins no train_set.attack_clean and the lineage rebuild must waive the guard (eval only). Every
+    arm the runner scores is either attack_clean-pinned (strict) or listed in LINEAGE_REPLAY_ARMS, never both."""
+    sh = (ROOT / "jobs/m2_first_cell/first_cell_job.sh").read_text(encoding="utf-8")
+    params = json.loads((ROOT / "jobs/m2_first_cell/job_params_ragtruth_polarity.json").read_text(encoding="utf-8"))
+    arm_cfg = {"d13": ROOT / "jobs/m2_first_cell" / Path(params["cell_config"]).name,
+               "d1": ROOT / "jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval.json"}
+    assert "ACELL=jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval.json PHC=checkpoint_d1" in sh
+    assert set(R.ARM_NAMES) == set(arm_cfg)
+    for arm, p in arm_cfg.items():
+        pinned = bool((json.loads(p.read_text(encoding="utf-8")).get("train_set") or {}).get("attack_clean"))
+        assert pinned != (arm in R.LINEAGE_REPLAY_ARMS), (arm, pinned)
+    assert R.LINEAGE_REPLAY_ARMS == ("d1",)

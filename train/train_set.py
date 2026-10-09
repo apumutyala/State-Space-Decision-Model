@@ -52,9 +52,15 @@ def attack_clean_pin(cfg: dict) -> dict | None:
     return (cfg.get("train_set") or {}).get("attack_clean")
 
 
-def attack_exclusion(cfg: dict, records_path: str | Path) -> tuple[set[str], dict]:
+def attack_exclusion(cfg: dict, records_path: str | Path, lineage_replay: bool = False) -> tuple[set[str], dict]:
     """Scan the whole set; return (ids to exclude, scan summary). Raises ``AttackGuardRefusal`` unless the hits are
-    zero or exactly the pinned clean spec."""
+    zero or exactly the pinned clean spec.
+
+    ``lineage_replay=True`` (EVAL-ONLY, never training: ``train.train_set.draw`` docstring, check 7): a cell that pins NO
+    ``attack_clean`` spec was trained before the guard existed, so its saved checkpoint's lineage is the UNfiltered
+    draw. The hits are then reported (``lineage_replay``, ``refusal_waived``) and nothing is excluded, so the draw
+    reproduces what the checkpoint was trained on (``Trainer.load`` re-checks that lineage). A pinned spec is still
+    enforced exactly; the waiver covers only the unpinned (pre-guard) case."""
     from train.attack_guard import check_pinned, ids_sha256, scan_file
 
     rep = scan_file(records_path)
@@ -62,11 +68,17 @@ def attack_exclusion(cfg: dict, records_path: str | Path) -> tuple[set[str], dic
     if pre:
         rep["hit_ids"] = [i for i in rep["hit_ids"] if i not in pre]
         rep["n_hit"], rep["hit_ids_sha256"] = len(rep["hit_ids"]), ids_sha256(rep["hit_ids"])
-    ok, why = check_pinned(rep, attack_clean_pin(cfg))
+    pin = attack_clean_pin(cfg)
+    ok, why = check_pinned(rep, pin)
     summary = {"rule": rep["rule"], "templates_sha256": rep["templates_sha256"], "n_records": rep["n_records"],
                "n_excluded": rep["n_hit"], "excluded_ids_sha256": rep["hit_ids_sha256"], "per_set": rep["per_set"],
                "per_template": rep["per_template"], "n_heldout_excluded_overlap": len(pre),
                "per_counts_include_heldout_excluded": True, "check": why}
+    if not ok and lineage_replay and not pin:
+        summary.update({"n_excluded": 0, "n_hit": rep["n_hit"], "hit_ids_sha256": rep["hit_ids_sha256"],
+                        "excluded_ids_sha256": ids_sha256([]), "lineage_replay": True,
+                        "refusal_waived": f"eval-only lineage replay of a pre-guard cell: {why}"})
+        return set(), summary
     if not ok:
         raise AttackGuardRefusal(f"attack guard: {why} (per set {rep['per_set']})")
     return set(rep["hit_ids"]), summary
@@ -111,8 +123,13 @@ def verify_files(train_dir: str | Path, ptr: dict) -> dict[str, str]:
     return got
 
 
-def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> tuple[dict, list[str], dict]:
-    """(drawn records as ``train.run_cell.to_train_record`` dicts keyed by id, training ids in draw order, identity)."""
+def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True,
+         lineage_replay: bool = False) -> tuple[dict, list[str], dict]:
+    """(drawn records as ``train.run_cell.to_train_record`` dicts keyed by id, training ids in draw order, identity).
+
+    ``lineage_replay=True`` is for EVAL-ONLY loaders that rebuild a saved checkpoint's training items for its lineage
+    check (``jobs.m2_first_cell.fulldev_eval.load_child``); it must never reach a trainer. It waives the attack guard
+    only for a cell that pins no ``attack_clean`` spec (trained before the guard), see ``attack_exclusion``."""
     from train.cohort import Cohort, read_content_map, record_content_hash
     from train.data import load_m2_records, read_manifest
     from train.run_cell import split_ids, to_train_record
@@ -142,7 +159,7 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
     unknown = sorted(excluded - set(man))
     if unknown:
         raise TrainSetMismatch(f"heldout_excluded ids not in the set: {unknown[:3]}")
-    attack_ids, attack = attack_exclusion(cfg, fs["records"])
+    attack_ids, attack = attack_exclusion(cfg, fs["records"], lineage_replay=lineage_replay)
     pool = sorted(set(man) - excluded - v3x["ids"] - attack_ids)
     n = int(cfg["n_train_records"])
     if n > len(pool):
@@ -170,9 +187,9 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
     from train.attack_guard import record_hits
 
     drawn_attack = [i for i in tr if record_hits(got[i])]
-    if drawn_attack:
+    if drawn_attack and not attack.get("lineage_replay"):
         raise AttackGuardRefusal(f"{len(drawn_attack)} drawn record(s) carry an eval attack template, e.g. {drawn_attack[:3]}")
-    attack["drawn_hits"] = 0
+    attack["drawn_hits"] = len(drawn_attack)
     identity = {"train_set": ptr.get("build"), "pointer": ptr["_pointer_path"], "pointer_sha256": ptr["_pointer_sha256"],
                 "files_uncompressed_sha256": sha or "not re-verified (verify=False)", "n_pool": len(pool),
                 "heldout_excluded": sorted(excluded),
