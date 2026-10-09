@@ -545,8 +545,9 @@ def train_config(cfg: dict, max_steps: int, ckpt_dir=None, bf16: bool = False):
 
 
 #: cell config keys -> TrainConfig anti-collapse fields (research-notes/D10_DIVERGENCE.md); absent = old behaviour
-ANTI_COLLAPSE_KEYS = ("lr_schedule", "lr_min_frac", "dev_card_every", "dev_card_rows", "best_ckpt", "collapse_guard",
-                      "collapse_window", "collapse_loss_frac", "collapse_acc_frac", "collapse_max_events")
+ANTI_COLLAPSE_KEYS = ("lr_schedule", "lr_min_frac", "dev_card_every", "dev_card_rows", "dev_card_seed", "best_ckpt",
+                      "collapse_guard", "collapse_window", "collapse_loss_frac", "collapse_acc_frac",
+                      "collapse_max_events")
 
 
 def anti_collapse_fields(cfg: dict) -> dict:
@@ -1045,14 +1046,34 @@ def _main(argv=None, ctx: dict | None = None):
             cell["best"] = tr.best
             save()
 
+        if tr.cfg.dev_card_every:  # the selected dev-card rows (best-ckpt selection + guard), for G12's dev_remainder
+            from train.trainer import dev_card_record
+
+            cell["dev_card_sample"] = dev_card_record(eval_items, tr.cfg.dev_card_rows, tr.cfg.dev_card_seed)
+            save()
+        used_before = train_seconds_used(cell, resumed)
+        clock = {"t_start": None}  # set when the timed loop starts (the step-0 cards are outside max_minutes)
+
+        def dev_card(step_out):
+            """A dev card; when it saved a best checkpoint (latest.json moved), the same bookkeeping as an ordinary
+            checkpoint: train_clock, then cell.json, then the snapshot declare (PR #232 review S3)."""
+            tr.run_dev_card(eval_items, step_out)
+            if tr.cfg.best_ckpt and tr.cfg.ckpt_dir and tr.dev_cards and tr.dev_cards[-1].get("best"):
+                ran = time.time() - clock["t_start"] if clock["t_start"] is not None else 0.0
+                cell["train_clock"] = {"step": tr.step, "used_s": used_before + ran}
+                log_anti_collapse()
+                _checkpoint_post()
+            else:
+                log_anti_collapse()
+
         if not resumed:
             tr.cards.append(__import__("train.evalcard", fromlist=["run_card"]).run_card(tr.model, eval_items, 0, a.out,
                                                                                        keep_units=keep))
             tr.cards[-1].pop("units", None)
             if tr.cfg.dev_card_every:  # step-0 dev card: the first best (the guard always has a rollback point)
-                tr.run_dev_card(eval_items, dev_out)
-                log_anti_collapse()
+                dev_card(dev_out)
         t_start = time.time()
+        clock["t_start"] = t_start
         # the max_minutes budget is cumulative over attempts: a restart resumes with what the checkpointed steps used
         used_before = train_seconds_used(cell, resumed)
         t_end = t_start + 60 * cfg["max_minutes"] - used_before
@@ -1099,8 +1120,7 @@ def _main(argv=None, ctx: dict | None = None):
                                                                                            keep_units=keep))
                 tr.cards[-1].pop("units", None)
             if tr.dev_card_due() and not tr.stopped:
-                tr.run_dev_card(eval_items, dev_out)
-                log_anti_collapse()
+                dev_card(dev_out)
             if len(tr.collapse_events) != n_events:
                 n_events = len(tr.collapse_events)
                 log_anti_collapse()
