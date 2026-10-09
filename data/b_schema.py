@@ -912,6 +912,145 @@ def append_extra(work: Path, extra_pool: str, extra_pointer: str, quota: int, lo
     return ident
 
 
+# ------------------------------------------------------------------------------------- v2: mix by TRAINED ITEMS
+#: the trainer expands each record into one item per question (train.run_cell.cell_items -> train.data
+#: items_from_records, kept by keep_item K/T): v2 sets and reports the mix in ITEMS (coordinator 2026-10-08)
+MV_KEYS = ("clinc150/intent_membership", "banking77/intent_membership", "mmlu_aux/answer_verification")
+MV_MAX_ITEM_SHARE = 0.05
+MAX_NO_SHARE = 0.60
+POS_IDS = {"yes", "true", "y", "correct", "supported", "entailment", "entailed"}
+NEG_IDS = {"no", "false", "n", "incorrect", "not_supported", "not_entailment", "contradiction", "not_entailed",
+           "refuted"}
+
+
+def _normt(x) -> str:
+    return " ".join(str(x).casefold().split())
+
+
+def learn_polarity(path: Path) -> dict[str, bool]:
+    """option description -> positive?, from two-option questions with semantic positive/negative ids (and noul
+    criteria) of the base draw, so re-styled ids are still classified by their description"""
+    pol: dict[str, bool] = {}
+    for line in read_gz(path):
+        r = json.loads(line)
+        for q in r["questions"].values():
+            c = q.get("criteria")
+            if q["type"] == "choice" and isinstance(c, dict) and len(c) == 2:
+                ids = {_normt(o): d for o, d in c.items()}
+                if any(i in POS_IDS for i in ids) and any(i in NEG_IDS for i in ids):
+                    for i, d in ids.items():
+                        if d is not None:
+                            pol.setdefault(_normt(d), i in POS_IDS)
+            if q["type"] == "noul" and isinstance(c, dict):
+                for k, d in c.items():
+                    pol.setdefault(_normt(d), k == "true")
+    return pol
+
+
+def polarity(q: dict, lab: Any, pol: dict[str, bool]) -> bool | None:
+    """True / False = a binary question with a positive / negative gold; None = not binary"""
+    if q["type"] == "noul":
+        return str(lab).lower() == "true"
+    c = q.get("criteria")
+    if q["type"] != "choice" or not isinstance(c, dict) or len(c) != 2:
+        return None
+    ids = {_normt(k) for k in c}
+    if any(i in POS_IDS for i in ids) and any(i in NEG_IDS for i in ids):
+        return _normt(lab) in POS_IDS
+    ps = {str(k): (pol.get(_normt(d)) if d is not None else None) for k, d in c.items()}
+    if None in ps.values() or len(set(ps.values())) != 2:
+        return None
+    return bool(ps[str(lab)])
+
+
+def plan_items_v2(weights: dict, kstats: dict, avail: dict, n_records: int, log=print) -> tuple[dict, dict]:
+    """Record quotas per key so that ITEM shares follow ``weights`` with: membership / verify views <= 5 % of items
+    combined, the aggregate no-share of binary items <= 60 % (no-heavy binary keys scaled down; per-key base rates
+    untouched), glaive never above its weight share, and shortfalls spilled only to keys that are not no-heavy."""
+    keys = [k for k in weights if avail.get(k, 0) > 0 and kstats.get(k, {}).get("rows")]
+    st = {k: {"items": kstats[k]["items"] / kstats[k]["rows"],
+              "bin": kstats[k]["bin"] / max(1, kstats[k]["items"]),
+              "yes": kstats[k]["yes"] / max(1, kstats[k]["bin"])} for k in keys}
+    tot = sum(weights[k] for k in keys)
+    share = {k: weights[k] / tot for k in keys}
+    glaive_cap = {k: share[k] for k in NO_SPILL_V2 if k in share}
+    noheavy = {k for k in keys if st[k]["bin"] > 0.5 and st[k]["yes"] < 0.4}
+    locked = set(MV_KEYS) | noheavy | set(NO_SPILL_V2)
+
+    def norm_():
+        """glaive keys stay at (at most) their weight share; every other key is renormalised to the remainder"""
+        for k, c in glaive_cap.items():
+            share[k] = min(share[k], c)
+        g = sum(share[k] for k in glaive_cap)
+        t = sum(v for k, v in share.items() if k not in glaive_cap)
+        for k in share:
+            if k not in glaive_cap:
+                share[k] *= (1 - g) / t
+
+    def no_share():
+        b = sum(share[k] * st[k]["bin"] for k in keys)
+        return sum(share[k] * st[k]["bin"] * (1 - st[k]["yes"]) for k in keys) / max(1e-9, b)
+
+    for _ in range(400):
+        mv = sum(share.get(k, 0) for k in MV_KEYS)
+        changed = False
+        if mv > MV_MAX_ITEM_SHARE:
+            for k in MV_KEYS:
+                if k in share:
+                    share[k] *= MV_MAX_ITEM_SHARE / mv * 0.999
+            changed = True
+        if no_share() > MAX_NO_SHARE:
+            for k in noheavy:
+                share[k] *= 0.97
+            changed = True
+        norm_()
+        if not changed:
+            break
+    # records: rec_k = share_k * T / items_k with sum rec = n; clamp to availability, spill to unlocked keys
+    rec = {}
+    fixed: dict[str, int] = {}
+    for _ in range(50):
+        free = [k for k in keys if k not in fixed]
+        if not free:
+            break
+        T_left = (n_records - sum(fixed.values()))
+        denom = sum(share[k] / st[k]["items"] for k in free)
+        rec = {**fixed, **{k: share[k] / st[k]["items"] * T_left / denom for k in free}}
+        over = [k for k in free if rec[k] > avail[k]]
+        if not over:
+            break
+        for k in over:
+            fixed[k] = avail[k]
+            # a locked key's lost items do not spill to other locked keys: freeze their shares at the current level
+        for k in free:
+            if k in locked and k not in fixed:
+                fixed[k] = min(avail[k], int(rec[k]))
+    q = {k: int(round(v)) for k, v in rec.items()}
+    diff = n_records - sum(q.values())
+    spill = sorted((k for k in keys if k not in locked and q[k] < avail[k]), key=lambda k: -(avail[k] - q[k]))
+    i = 0
+    while diff != 0 and spill:
+        k = spill[i % len(spill)]
+        step = 1 if diff > 0 else -1
+        if (step > 0 and q[k] < avail[k]) or (step < 0 and q[k] > 0):
+            q[k] += step
+            diff -= step
+        i += 1
+        if i > 10 * n_records:
+            break
+    items = {k: q[k] * st[k]["items"] for k in q}
+    ti = sum(items.values())
+    b = sum(items[k] * st[k]["bin"] for k in q)
+    plan = {"item_share_planned": {k: round(items[k] / ti, 4) for k in sorted(q, key=lambda k: -items[k])},
+            "planned_items": round(ti), "binary_no_share_planned": round(
+                sum(items[k] * st[k]["bin"] * (1 - st[k]["yes"]) for k in q) / max(1, b), 4),
+            "mv_item_share_planned": round(sum(items.get(k, 0) for k in MV_KEYS) / ti, 4),
+            "key_stats": st, "no_heavy_keys": sorted(noheavy), "locked_keys": sorted(locked)}
+    log("v2 item plan", json.dumps({k: plan[k] for k in ("planned_items", "binary_no_share_planned",
+                                                        "mv_item_share_planned")}))
+    return q, plan
+
+
 def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict:
     """Candidates + token lengths -> the n-row draw (per-source targets, fewest-variants-first, reuse cap)."""
     from train.cohort import record_content_hash
@@ -927,6 +1066,8 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
             lens[e["id"]] = e
     # pass 1: eligible ids by source, with root item and variant index
     elig: dict[str, list[tuple[str, str, int]]] = collections.defaultdict(list)
+    kstats: dict[str, collections.Counter] = collections.defaultdict(collections.Counter)
+    pol = learn_polarity(p1_files()[0] / "records.jsonl.gz") if meta.get("mix") == "v2" else {}
     drop = collections.Counter()
     tok = {"v2f": [], "v3w": []}
     n_cand = 0
@@ -949,6 +1090,15 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
         ss = r.get("aug", {}).get("schema_synth", {})
         src = "P3:extra" if ss.get("pool") == "P3" else mix_key(r, meta.get("mix", "v1"))
         elig[src].append((r["id"], ss.get("root") or sorted(root_items(r))[0], ss.get("variant", 0)))
+        if pol:
+            ks = kstats[src]
+            ks["rows"] += 1
+            for qid, q in r["questions"].items():
+                ks["items"] += 1
+                pz = polarity(q, r["labels"][qid], pol)
+                if pz is not None:
+                    ks["bin"] += 1
+                    ks["yes"] += int(pz)
     if n_cand != len(lens):
         raise SystemExit(f"token check covers {len(lens)} ids, candidates file has {n_cand}: run every shard")
     if meta.get("mix") == "v2":  # review item 5: at most 2 (small key) / 3 rows per source item per key, fewest first
@@ -980,7 +1130,12 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
         quota.update({s: round(n_synth * c / tot) for s, c in weights.items()})
     # sources that cannot fill their quota spill to the others in proportion
     avail = {s: len(elig.get(s, [])) for s in quota}
-    for _ in range(5):
+    item_plan = None
+    if meta.get("mix") == "v2":
+        n_syn = n - quota.get("P3:extra", 0)
+        qv2, item_plan = plan_items_v2(weights, kstats, avail, n_syn, log=log)
+        quota = {**{s: 0 for s in weights}, **qv2, **({"P3:extra": quota["P3:extra"]} if "P3:extra" in quota else {})}
+    for _ in range(0 if item_plan else 5):
         short = sum(max(0, quota[s] - avail[s]) for s in quota)
         if short <= 0:
             break
@@ -991,7 +1146,7 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
         for s in room:
             quota[s] += min(room[s], math.floor(short * room[s] / rt) + 1)
     diff = sum(quota.values()) - n
-    for s in sorted(quota, key=lambda s: -quota[s]):
+    for s in sorted(quota, key=lambda s: -quota[s]) if not item_plan else []:
         if diff == 0:
             break
         step = 1 if diff > 0 else -1
@@ -1062,7 +1217,7 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print) -> dict
         sc = work / "scratch-moved"
         sc.mkdir(exist_ok=True)
         p.replace(sc / p.name)
-    rep = {"build": build, "n_records": len(order), "quotas": quota, "available": avail, "dropped": dict(drop),
+    rep = {"build": build, "n_records": len(order), "quotas": quota, "item_plan": item_plan, "available": avail, "dropped": dict(drop),
            "n_candidates": n_cand, "reuse": reuse_stats(reuse), **stats.report(),
            "records_uncompressed_sha256": rec_h.hexdigest(), "manifest_uncompressed_sha256": man_h.hexdigest(),
            "content_map_uncompressed_sha256": con_h.hexdigest()}

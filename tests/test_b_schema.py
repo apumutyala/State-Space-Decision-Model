@@ -171,3 +171,20 @@ def test_v2_state_keys_named_in_instructions_kept(v2):
     for j in range(30):
         v = variant(base, j, 8, {})
         assert v["state"] == base["state"]
+
+
+def test_v2_item_plan_caps_membership_and_no_share():
+    w = {"glaive_fc/tool_select": 30, "clinc150/intent_membership": 30, "acos/acos_category_sentiment": 20,
+         "hover/claim_verification": 10, "mnli/nli": 10, "b1fam_cruxeval_synth/CRUXEval-output-choice": 20}
+    ks = {"glaive_fc/tool_select": {"rows": 1000, "items": 1000, "bin": 0, "yes": 0},
+          "clinc150/intent_membership": {"rows": 1000, "items": 12000, "bin": 12000, "yes": 600},
+          "acos/acos_category_sentiment": {"rows": 1000, "items": 10000, "bin": 10000, "yes": 140},
+          "hover/claim_verification": {"rows": 1000, "items": 1000, "bin": 1000, "yes": 620},
+          "mnli/nli": {"rows": 1000, "items": 1000, "bin": 1000, "yes": 330},
+          "b1fam_cruxeval_synth/CRUXEval-output-choice": {"rows": 1000, "items": 1000, "bin": 0, "yes": 0}}
+    avail = {k: 100000 for k in w}
+    q, plan = BS.plan_items_v2(w, ks, avail, 50000, log=lambda *a: None)
+    assert sum(q.values()) == 50000
+    assert plan["mv_item_share_planned"] <= 0.05 + 1e-3
+    assert plan["binary_no_share_planned"] <= 0.60 + 1e-3
+    assert plan["item_share_planned"]["glaive_fc/tool_select"] <= 30 / 120 + 1e-3
