@@ -59,12 +59,17 @@ def cfg(d, **kw):
     return TrainConfig(**c)
 
 
-def train_to(tr, step, collapse_at=None):
-    """run_cell's loop shape at the Trainer level: the horizon is fixed once after a few steps (here 3)."""
+def train_to(tr, step, collapse_at=None, force_best_at=None):
+    """run_cell's loop shape at the Trainer level: the horizon is fixed once after a few steps (here 3).
+    ``force_best_at``: an extra dev card there that is the best by construction (a best WITH AdamW moments, whatever
+    the head learned), identical in every run that passes it."""
     while tr.step < step:
         tr.train(1)
         if tr.step == 3:
             tr.set_horizon(HORIZON)
+        if force_best_at is not None and tr.step == force_best_at:
+            tr.best = None
+            tr.run_dev_card()
         if collapse_at is not None and tr.step == collapse_at:
             tr.collapse("forced")
 
@@ -110,9 +115,9 @@ def same_state(a, b):
     assert a.anti_collapse_state() == b.anti_collapse_state()
 
 
-def run_chain(toy, dev, tmp, budget=C.BUDGET, collapse_at=None):
+def run_chain(toy, dev, tmp, budget=C.BUDGET, collapse_at=None, force_best_at=None):
     l1 = Trainer(fresh(), cfg(tmp / "ck1"), toy, eval_items=dev, guard=G)
-    train_to(l1, BOUNDARY, collapse_at if collapse_at and collapse_at <= BOUNDARY else None)
+    train_to(l1, BOUNDARY, collapse_at if collapse_at and collapse_at <= BOUNDARY else None, force_best_at)
     rec, art = export_link(l1, tmp, budget)
     ck2 = tmp / "ck2"  # a fresh job: an empty checkpoint slot
     got = C.install(block(rec, art), cfg=CELL, ck_dir=ck2, work=tmp / "work2", cell_out=tmp / "out2" / "cell.json",
@@ -143,14 +148,14 @@ def test_two_link_chain_equals_one_uninterrupted_run(toy, dev, tmp_path):
 
 def test_chain_with_a_slim_best_is_still_exact_without_a_collapse(toy, dev, tmp_path):
     probe = Trainer(fresh(), cfg(tmp_path / "probe"), toy, eval_items=dev, guard=G)
-    train_to(probe, BOUNDARY)
+    train_to(probe, BOUNDARY, force_best_at=8)
     probe.save()
     rec0 = json.loads((tmp_path / "probe" / "latest.json").read_text())
     full = (tmp_path / "probe" / rec0["path"]).stat().st_size
     budget = full + int(0.6 * full)  # latest + a full best do not fit, latest + a trainable-only best do
     ref = Trainer(fresh(), cfg(tmp_path / "ref"), toy, eval_items=dev, guard=G)
-    train_to(ref, TOTAL)
-    rec, _, l2 = run_chain(toy, dev, tmp_path, budget=budget)
+    train_to(ref, TOTAL, force_best_at=8)
+    rec, _, l2 = run_chain(toy, dev, tmp_path, budget=budget, force_best_at=8)
     assert rec["best"]["state"] == "trainable" and rec["export_bytes"] <= budget
     best = torch.load(Path(l2.cfg.ckpt_dir) / rec["best"]["file"], map_location="cpu", weights_only=False)
     assert best["optimizer"] is None and best["chain_state"] == "trainable"
@@ -182,13 +187,16 @@ def test_collapse_after_the_boundary_rolls_back_exactly_with_a_full_best(toy, de
 
 def test_collapse_to_a_slim_best_keeps_the_moments_and_says_so(toy, dev, tmp_path):
     probe = Trainer(fresh(), cfg(tmp_path / "probe"), toy, eval_items=dev, guard=G)
-    train_to(probe, BOUNDARY)
+    train_to(probe, BOUNDARY, force_best_at=8)
     probe.save()
     full = (tmp_path / "probe" / json.loads((tmp_path / "probe" / "latest.json").read_text())["path"]).stat().st_size
-    rec, _, l2 = run_chain(toy, dev, tmp_path, budget=full + int(0.6 * full), collapse_at=11)
+    rec, _, l2 = run_chain(toy, dev, tmp_path, budget=full + int(0.6 * full), collapse_at=11, force_best_at=8)
     ev = [e for e in l2.collapse_events if e["trigger"] == "forced"][0]
     assert ev["best_step"] < BOUNDARY and rec["best"]["state"] == "trainable" and ev["action"] == "reload_best"
-    assert ev["optimizer"].startswith("kept") and l2.lr_scale == 0.5
+    assert ev["optimizer"].startswith("kept") and ev["lr_scale"] in (0.5, 0.25, 0.125)
+    # every rollback to the carried (trainable-only) best says so; one to a best saved in this link does not
+    assert all(e["optimizer"].startswith("kept") for e in l2.collapse_events
+               if e["action"] == "reload_best" and e["best_step"] == rec["best"]["step"])
     best = torch.load(Path(l2.cfg.ckpt_dir) / rec["best"]["file"], map_location="cpu", weights_only=False)
     assert l2.step >= TOTAL and best["step"] == ev["best_step"]
 
