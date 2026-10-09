@@ -1,0 +1,868 @@
+{
+ "flash": {
+  "by_class": {
+   "data": -7.11,
+   "frozen": -4.81,
+   "format": -4.3,
+   "capacity": -0.75,
+   "context": -0.62,
+   "readout": -0.37
+  },
+  "total": -17.96,
+  "rows": [
+   {
+    "n": 1,
+    "family": "BFCL-tool-selection",
+    "area": "tools",
+    "gap": -0.21,
+    "class": "capacity",
+    "parts": {
+     "readout": -0.21,
+     "capacity": 0.0
+    },
+    "evidence": "BFCL: in draw (glaive/toolace); R1 exactly-one rule +0.21 split to readout"
+   },
+   {
+    "n": 2,
+    "family": "ToolRet-retrieval",
+    "area": "tools",
+    "gap": -0.227,
+    "class": "format",
+    "parts": {
+     "format": -0.227
+    },
+    "evidence": "ToolRet: 7.5k tok, 32 docs/query; 1 query refused (split to context)"
+   },
+   {
+    "n": 3,
+    "family": "API-Bank-tool-selection",
+    "area": "tools",
+    "gap": -1.49,
+    "class": "format",
+    "parts": {
+     "format": -1.49
+    },
+    "evidence": "API-Bank: eval K 53, 6.5k tok/row; D1-24k max K 16, T 2,048"
+   },
+   {
+    "n": 4,
+    "family": "BANKING77",
+    "area": "retrieval",
+    "gap": -1.12,
+    "class": "format",
+    "parts": {
+     "format": -1.12
+    },
+    "evidence": "BANKING77: eval K 77; train_max_k 16 dropped every K77 row"
+   },
+   {
+    "n": 5,
+    "family": "CLINC150+OOS",
+    "area": "retrieval",
+    "gap": -0.246,
+    "class": "format",
+    "parts": {
+     "format": -0.246
+    },
+    "evidence": "CLINC150: eval K 151 + 21% OOS; train K <= 16, OOS 0.8%"
+   },
+   {
+    "n": 9,
+    "family": "Home-Appliance",
+    "area": "tools",
+    "gap": -3.103,
+    "class": "frozen",
+    "parts": {
+     "frozen": -3.103
+    },
+    "evidence": "Home appliances, 18 q/case, case-exact; R4 joint decoding falsified (DEAD_ENDS)"
+   },
+   {
+    "n": 11,
+    "family": "ContractNLI",
+    "area": "language",
+    "gap": -0.557,
+    "class": "format",
+    "parts": {
+     "format": -0.557
+    },
+    "evidence": "ContractNLI: 3.9k-token docs (100% > 2,048), NotMentioned 42%; anli short 3-way"
+   },
+   {
+    "n": 12,
+    "family": "ANLI",
+    "area": "language",
+    "gap": 0.688,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.688
+    },
+    "evidence": "ANLI (D13 > Clef)"
+   },
+   {
+    "n": 20,
+    "family": "BPoMP-original-limerick",
+    "area": "arts",
+    "gap": -0.038,
+    "class": "frozen",
+    "parts": {
+     "frozen": -0.038
+    },
+    "evidence": "BPoMP"
+   },
+   {
+    "n": 21,
+    "family": "Humicroedit",
+    "area": "arts",
+    "gap": -0.154,
+    "class": "capacity",
+    "parts": {
+     "capacity": -0.154
+    },
+    "evidence": "Humicroedit: in draw 50/50, neither arm discriminates"
+   },
+   {
+    "n": 22,
+    "family": "POP909-chord-pitch-class",
+    "area": "arts",
+    "gap": 0.0,
+    "class": "frozen",
+    "parts": {
+     "frozen": 0.0
+    },
+    "evidence": "POP909 K 129"
+   },
+   {
+    "n": 23,
+    "family": "CFColor-preference",
+    "area": "arts",
+    "gap": 0.0,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.0
+    },
+    "evidence": "CFColor: 0 for every arm"
+   },
+   {
+    "n": 25,
+    "family": "GPQA-Diamond",
+    "area": "knowledge",
+    "gap": 0.274,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.274
+    },
+    "evidence": "GPQA"
+   },
+   {
+    "n": 28,
+    "family": "WinoGrande",
+    "area": "language",
+    "gap": -0.325,
+    "class": "capacity",
+    "parts": {
+     "capacity": -0.325
+    },
+    "evidence": "WinoGrande: in draw, matched prior"
+   },
+   {
+    "n": 29,
+    "family": "HellaSwag",
+    "area": "language",
+    "gap": -0.217,
+    "class": "capacity",
+    "parts": {
+     "capacity": -0.217
+    },
+    "evidence": "HellaSwag: in draw"
+   },
+   {
+    "n": 30,
+    "family": "GSM8K-10",
+    "area": "knowledge",
+    "gap": 0.898,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.898
+    },
+    "evidence": "GSM8K (D13 > Clef)"
+   },
+   {
+    "n": 31,
+    "family": "ChessBench-legal-move",
+    "area": "knowledge",
+    "gap": 0.0,
+    "class": "frozen",
+    "parts": {
+     "frozen": 0.0
+    },
+    "evidence": "ChessBench K 47"
+   },
+   {
+    "n": 32,
+    "family": "MuSR",
+    "area": "knowledge",
+    "gap": -1.014,
+    "class": "frozen",
+    "parts": {
+     "frozen": -1.014
+    },
+    "evidence": "MuSR"
+   },
+   {
+    "n": 33,
+    "family": "SATA-Bench",
+    "area": "knowledge",
+    "gap": -0.324,
+    "class": "frozen",
+    "parts": {
+     "readout": -0.16,
+     "frozen": -0.164
+    },
+    "evidence": "SATA (R2 top-m rule +0.16 split to readout)"
+   },
+   {
+    "n": 36,
+    "family": "BRIGHT-retrieval",
+    "area": "retrieval",
+    "gap": -0.47,
+    "class": "format",
+    "parts": {
+     "format": -0.47
+    },
+    "evidence": "BRIGHT: 9.2k tok, 32 docs/query; 5 queries refused by the 16k cap (split to context)"
+   },
+   {
+    "n": 37,
+    "family": "Amazon-ESCI",
+    "area": "retrieval",
+    "gap": -0.538,
+    "class": "data",
+    "parts": {
+     "data": -0.538
+    },
+    "evidence": "Amazon-ESCI: no 4-way E/S/C/I analog (nq binary only)"
+   },
+   {
+    "n": 38,
+    "family": "ACOS-category-sentiment",
+    "area": "language",
+    "gap": -0.164,
+    "class": "data",
+    "parts": {
+     "data": -0.164
+    },
+    "evidence": "ACOS: absent; 58 q/row, 8k-token rows (also format)"
+   },
+   {
+    "n": 39,
+    "family": "FinEntity-entity-given",
+    "area": "language",
+    "gap": -0.27,
+    "class": "format",
+    "parts": {
+     "format": -0.27
+    },
+    "evidence": "FinEntity: sst5 score regression vs 3-way choice"
+   },
+   {
+    "n": 40,
+    "family": "iSarcasmEval-A-Ar",
+    "area": "language",
+    "gap": 0.0,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.0
+    },
+    "evidence": "iSarcasm: 0 for every arm"
+   },
+   {
+    "n": 41,
+    "family": "VAST",
+    "area": "language",
+    "gap": -0.452,
+    "class": "data",
+    "parts": {
+     "data": -0.452
+    },
+    "evidence": "VAST: absent from D1-24k"
+   },
+   {
+    "n": 42,
+    "family": "NLI4CT-2024",
+    "area": "language",
+    "gap": 0.193,
+    "class": "data",
+    "parts": {
+     "data": 0.193
+    },
+    "evidence": "NLI4CT: clinical domain absent (train split quarantined for premise overlap)"
+   },
+   {
+    "n": 43,
+    "family": "CRUXEval-output-choice",
+    "area": "knowledge",
+    "gap": -2.149,
+    "class": "data",
+    "parts": {
+     "data": -2.149
+    },
+    "evidence": "CRUXEval: 0 rows in D1-24k (synthetic CRUXEval exists in D16/D17 draws); precedent: 877 GSM8K rows took D1 from 9.6 to 69.2 (subset)"
+   },
+   {
+    "n": 44,
+    "family": "CLadder",
+    "area": "knowledge",
+    "gap": -0.957,
+    "class": "frozen",
+    "parts": {
+     "frozen": -0.957
+    },
+    "evidence": "CLadder"
+   },
+   {
+    "n": 45,
+    "family": "HLE-text-MC",
+    "area": "knowledge",
+    "gap": -0.191,
+    "class": "capacity",
+    "parts": {
+     "capacity": -0.191
+    },
+    "evidence": "HLE"
+   },
+   {
+    "n": 48,
+    "family": "ForecastBench-binary",
+    "area": "arts",
+    "gap": -1.041,
+    "class": "data",
+    "parts": {
+     "data": -1.041
+    },
+    "evidence": "ForecastBench: absent; global yes/no train prior 14-19% yes vs 28% gold (leaves Index 0.3)"
+   },
+   {
+    "n": 50,
+    "family": "Habermas-consensus",
+    "area": "arts",
+    "gap": -0.198,
+    "class": "data",
+    "parts": {
+     "data": -0.198
+    },
+    "evidence": "Habermas: absent from D1-24k"
+   },
+   {
+    "n": 56,
+    "family": "PhishNChips phishing decisions",
+    "area": "retrieval",
+    "gap": -1.437,
+    "class": "data",
+    "parts": {
+     "data": -1.437
+    },
+    "evidence": "PhishNChips: no training analog in any draw; D13 0.0 (answers 'legitimate' 17/19)"
+   },
+   {
+    "n": 57,
+    "family": "MMLU-Pro",
+    "area": "knowledge",
+    "gap": -0.539,
+    "class": "format",
+    "parts": {
+     "format": -0.539
+    },
+    "evidence": "MMLU-Pro: eval K 10; mmlu_aux K 4 only"
+   },
+   {
+    "n": 58,
+    "family": "BBH fixed-option tasks",
+    "area": "knowledge",
+    "gap": 0.462,
+    "class": "frozen",
+    "parts": {
+     "frozen": 0.462
+    },
+    "evidence": "BBH"
+   },
+   {
+    "n": 59,
+    "family": "RAGTruth response-level hallucination",
+    "area": "language",
+    "gap": -0.416,
+    "class": "data",
+    "parts": {
+     "data": -0.416
+    },
+    "evidence": "RAGTruth: absent from D1-24k; D13 AUROC 0.18 = polarity misread (flip +1.18 diag, unclaimed)"
+   },
+   {
+    "n": 61,
+    "family": "HoVer claim verification",
+    "area": "retrieval",
+    "gap": -0.91,
+    "class": "data",
+    "parts": {
+     "data": -0.91
+    },
+    "evidence": "HoVer: absent from D1-24k (in 100k-v3 / v2e)"
+   },
+   {
+    "n": 62,
+    "family": "When2Call MCQ",
+    "area": "tools",
+    "gap": -1.719,
+    "class": "capacity",
+    "parts": {
+     "capacity": -1.719
+    },
+    "evidence": "When2Call: in draw (895 rows); D13 regressed vs D1 55.6 -> 23.8 (tool_call AUROC 0.87 -> 0.59)"
+   },
+   {
+    "n": 64,
+    "family": "New Yorker caption matching",
+    "area": "arts",
+    "gap": 0.0,
+    "class": "frozen",
+    "parts": {
+     "frozen": 0.0
+    },
+    "evidence": "New Yorker"
+   }
+  ]
+ },
+ "clef27": {
+  "by_class": {
+   "data": -10.57,
+   "format": -5.39,
+   "frozen": -5.13,
+   "capacity": -1.31,
+   "context": -0.72,
+   "readout": -0.37
+  },
+  "total": -23.49,
+  "rows": [
+   {
+    "n": 1,
+    "family": "BFCL-tool-selection",
+    "area": "tools",
+    "gap": -0.42,
+    "class": "capacity",
+    "parts": {
+     "readout": -0.21,
+     "capacity": -0.21
+    },
+    "evidence": "BFCL: in draw (glaive/toolace); R1 exactly-one rule +0.21 split to readout"
+   },
+   {
+    "n": 2,
+    "family": "ToolRet-retrieval",
+    "area": "tools",
+    "gap": -0.195,
+    "class": "format",
+    "parts": {
+     "format": -0.195
+    },
+    "evidence": "ToolRet: 7.5k tok, 32 docs/query; 1 query refused (split to context)"
+   },
+   {
+    "n": 3,
+    "family": "API-Bank-tool-selection",
+    "area": "tools",
+    "gap": -1.325,
+    "class": "format",
+    "parts": {
+     "format": -1.325
+    },
+    "evidence": "API-Bank: eval K 53, 6.5k tok/row; D1-24k max K 16, T 2,048"
+   },
+   {
+    "n": 4,
+    "family": "BANKING77",
+    "area": "retrieval",
+    "gap": -1.229,
+    "class": "format",
+    "parts": {
+     "format": -1.229
+    },
+    "evidence": "BANKING77: eval K 77; train_max_k 16 dropped every K77 row"
+   },
+   {
+    "n": 5,
+    "family": "CLINC150+OOS",
+    "area": "retrieval",
+    "gap": -1.265,
+    "class": "format",
+    "parts": {
+     "format": -1.265
+    },
+    "evidence": "CLINC150: eval K 151 + 21% OOS; train K <= 16, OOS 0.8%"
+   },
+   {
+    "n": 9,
+    "family": "Home-Appliance",
+    "area": "tools",
+    "gap": -2.539,
+    "class": "frozen",
+    "parts": {
+     "frozen": -2.539
+    },
+    "evidence": "Home appliances, 18 q/case, case-exact; R4 joint decoding falsified (DEAD_ENDS)"
+   },
+   {
+    "n": 11,
+    "family": "ContractNLI",
+    "area": "language",
+    "gap": -0.313,
+    "class": "format",
+    "parts": {
+     "format": -0.313
+    },
+    "evidence": "ContractNLI: 3.9k-token docs (100% > 2,048), NotMentioned 42%; anli short 3-way"
+   },
+   {
+    "n": 12,
+    "family": "ANLI",
+    "area": "language",
+    "gap": 0.463,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.463
+    },
+    "evidence": "ANLI (D13 > Clef)"
+   },
+   {
+    "n": 20,
+    "family": "BPoMP-original-limerick",
+    "area": "arts",
+    "gap": -0.116,
+    "class": "frozen",
+    "parts": {
+     "frozen": -0.116
+    },
+    "evidence": "BPoMP"
+   },
+   {
+    "n": 21,
+    "family": "Humicroedit",
+    "area": "arts",
+    "gap": -0.154,
+    "class": "capacity",
+    "parts": {
+     "capacity": -0.154
+    },
+    "evidence": "Humicroedit: in draw 50/50, neither arm discriminates"
+   },
+   {
+    "n": 22,
+    "family": "POP909-chord-pitch-class",
+    "area": "arts",
+    "gap": -0.514,
+    "class": "frozen",
+    "parts": {
+     "frozen": -0.514
+    },
+    "evidence": "POP909 K 129"
+   },
+   {
+    "n": 23,
+    "family": "CFColor-preference",
+    "area": "arts",
+    "gap": 0.0,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.0
+    },
+    "evidence": "CFColor: 0 for every arm"
+   },
+   {
+    "n": 25,
+    "family": "GPQA-Diamond",
+    "area": "knowledge",
+    "gap": -0.273,
+    "class": "capacity",
+    "parts": {
+     "capacity": -0.273
+    },
+    "evidence": "GPQA"
+   },
+   {
+    "n": 28,
+    "family": "WinoGrande",
+    "area": "language",
+    "gap": -0.325,
+    "class": "capacity",
+    "parts": {
+     "capacity": -0.325
+    },
+    "evidence": "WinoGrande: in draw, matched prior"
+   },
+   {
+    "n": 29,
+    "family": "HellaSwag",
+    "area": "language",
+    "gap": -0.217,
+    "class": "capacity",
+    "parts": {
+     "capacity": -0.217
+    },
+    "evidence": "HellaSwag: in draw"
+   },
+   {
+    "n": 30,
+    "family": "GSM8K-10",
+    "area": "knowledge",
+    "gap": 0.731,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.731
+    },
+    "evidence": "GSM8K (D13 > Clef)"
+   },
+   {
+    "n": 31,
+    "family": "ChessBench-legal-move",
+    "area": "knowledge",
+    "gap": 0.169,
+    "class": "frozen",
+    "parts": {
+     "frozen": 0.169
+    },
+    "evidence": "ChessBench K 47"
+   },
+   {
+    "n": 32,
+    "family": "MuSR",
+    "area": "knowledge",
+    "gap": -1.014,
+    "class": "frozen",
+    "parts": {
+     "frozen": -1.014
+    },
+    "evidence": "MuSR"
+   },
+   {
+    "n": 33,
+    "family": "SATA-Bench",
+    "area": "knowledge",
+    "gap": -0.324,
+    "class": "frozen",
+    "parts": {
+     "readout": -0.16,
+     "frozen": -0.164
+    },
+    "evidence": "SATA (R2 top-m rule +0.16 split to readout)"
+   },
+   {
+    "n": 36,
+    "family": "BRIGHT-retrieval",
+    "area": "retrieval",
+    "gap": -0.613,
+    "class": "format",
+    "parts": {
+     "format": -0.613
+    },
+    "evidence": "BRIGHT: 9.2k tok, 32 docs/query; 5 queries refused by the 16k cap (split to context)"
+   },
+   {
+    "n": 37,
+    "family": "Amazon-ESCI",
+    "area": "retrieval",
+    "gap": -0.81,
+    "class": "data",
+    "parts": {
+     "data": -0.81
+    },
+    "evidence": "Amazon-ESCI: no 4-way E/S/C/I analog (nq binary only)"
+   },
+   {
+    "n": 38,
+    "family": "ACOS-category-sentiment",
+    "area": "language",
+    "gap": -0.287,
+    "class": "data",
+    "parts": {
+     "data": -0.287
+    },
+    "evidence": "ACOS: absent; 58 q/row, 8k-token rows (also format)"
+   },
+   {
+    "n": 39,
+    "family": "FinEntity-entity-given",
+    "area": "language",
+    "gap": -0.27,
+    "class": "format",
+    "parts": {
+     "format": -0.27
+    },
+    "evidence": "FinEntity: sst5 score regression vs 3-way choice"
+   },
+   {
+    "n": 40,
+    "family": "iSarcasmEval-A-Ar",
+    "area": "language",
+    "gap": 0.0,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.0
+    },
+    "evidence": "iSarcasm: 0 for every arm"
+   },
+   {
+    "n": 41,
+    "family": "VAST",
+    "area": "language",
+    "gap": -0.606,
+    "class": "data",
+    "parts": {
+     "data": -0.606
+    },
+    "evidence": "VAST: absent from D1-24k"
+   },
+   {
+    "n": 42,
+    "family": "NLI4CT-2024",
+    "area": "language",
+    "gap": -0.306,
+    "class": "data",
+    "parts": {
+     "data": -0.306
+    },
+    "evidence": "NLI4CT: clinical domain absent (train split quarantined for premise overlap)"
+   },
+   {
+    "n": 43,
+    "family": "CRUXEval-output-choice",
+    "area": "knowledge",
+    "gap": -1.904,
+    "class": "data",
+    "parts": {
+     "data": -1.904
+    },
+    "evidence": "CRUXEval: 0 rows in D1-24k (synthetic CRUXEval exists in D16/D17 draws); precedent: 877 GSM8K rows took D1 from 9.6 to 69.2 (subset)"
+   },
+   {
+    "n": 44,
+    "family": "CLadder",
+    "area": "knowledge",
+    "gap": -0.957,
+    "class": "frozen",
+    "parts": {
+     "frozen": -0.957
+    },
+    "evidence": "CLadder"
+   },
+   {
+    "n": 45,
+    "family": "HLE-text-MC",
+    "area": "knowledge",
+    "gap": 0.391,
+    "class": "capacity",
+    "parts": {
+     "capacity": 0.391
+    },
+    "evidence": "HLE"
+   },
+   {
+    "n": 48,
+    "family": "ForecastBench-binary",
+    "area": "arts",
+    "gap": -0.669,
+    "class": "data",
+    "parts": {
+     "data": -0.669
+    },
+    "evidence": "ForecastBench: absent; global yes/no train prior 14-19% yes vs 28% gold (leaves Index 0.3)"
+   },
+   {
+    "n": 50,
+    "family": "Habermas-consensus",
+    "area": "arts",
+    "gap": -0.595,
+    "class": "data",
+    "parts": {
+     "data": -0.595
+    },
+    "evidence": "Habermas: absent from D1-24k"
+   },
+   {
+    "n": 56,
+    "family": "PhishNChips phishing decisions",
+    "area": "retrieval",
+    "gap": -2.076,
+    "class": "data",
+    "parts": {
+     "data": -2.076
+    },
+    "evidence": "PhishNChips: no training analog in any draw; D13 0.0 (answers 'legitimate' 17/19)"
+   },
+   {
+    "n": 57,
+    "family": "MMLU-Pro",
+    "area": "knowledge",
+    "gap": -0.897,
+    "class": "format",
+    "parts": {
+     "format": -0.897
+    },
+    "evidence": "MMLU-Pro: eval K 10; mmlu_aux K 4 only"
+   },
+   {
+    "n": 58,
+    "family": "BBH fixed-option tasks",
+    "area": "knowledge",
+    "gap": 0.0,
+    "class": "frozen",
+    "parts": {
+     "frozen": 0.0
+    },
+    "evidence": "BBH"
+   },
+   {
+    "n": 59,
+    "family": "RAGTruth response-level hallucination",
+    "area": "language",
+    "gap": -2.101,
+    "class": "data",
+    "parts": {
+     "data": -2.101
+    },
+    "evidence": "RAGTruth: absent from D1-24k; D13 AUROC 0.18 = polarity misread (flip +1.18 diag, unclaimed)"
+   },
+   {
+    "n": 61,
+    "family": "HoVer claim verification",
+    "area": "retrieval",
+    "gap": -1.214,
+    "class": "data",
+    "parts": {
+     "data": -1.214
+    },
+    "evidence": "HoVer: absent from D1-24k (in 100k-v3 / v2e)"
+   },
+   {
+    "n": 62,
+    "family": "When2Call MCQ",
+    "area": "tools",
+    "gap": -1.719,
+    "class": "capacity",
+    "parts": {
+     "capacity": -1.719
+    },
+    "evidence": "When2Call: in draw (895 rows); D13 regressed vs D1 55.6 -> 23.8 (tool_call AUROC 0.87 -> 0.59)"
+   },
+   {
+    "n": 64,
+    "family": "New Yorker caption matching",
+    "area": "arts",
+    "gap": 0.0,
+    "class": "frozen",
+    "parts": {
+     "frozen": 0.0
+    },
+    "evidence": "New Yorker"
+   }
+  ]
+ }
+}
