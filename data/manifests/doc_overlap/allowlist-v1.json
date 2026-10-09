@@ -1,0 +1,14 @@
+{
+ "id": "doc-overlap-allowlist-v1",
+ "rule": "An entry exempts one eval unit type (eval family + unit field) whose text is a shared PUBLIC reference corpus that the eval benchmark and our training sources both draw from by design. It never exempts an item field (claim, statement, question, hypothesis, utterance). Every exempted row is counted per entry and per draw in the scan report (allowlist_saved).",
+ "entries": [
+  {
+   "id": "hover-wikipedia-evidence",
+   "eval_family": "HoVer claim verification",
+   "eval_field": "S:evidence",
+   "corpus": "English Wikipedia (2017 introductory paragraphs, the HotpotQA/HoVer dump)",
+   "justification": "HoVer evidence is Wikipedia paragraphs; the same paragraphs appear in NQ passages, BoolQ evidence, background_reading filler and hover training evidence. The audit (analysis/NGRAM_TEST_AUDIT_2026-10-09.md) verified leaf by leaf that the overlap is the shared Wikipedia text and that no HoVer claim (the item, unit S:claim, not exempt) is covered.",
+   "reviewed": "2026-10-09 B (6-gram audit, claude/b-gap-breakdown @f689a4b)"
+  }
+ ]
+}

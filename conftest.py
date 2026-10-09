@@ -55,3 +55,24 @@ def pytest_collection_modifyitems(config, items):
         want = m.args[0]
         if have != want:
             item.add_marker(pytest.mark.skip(reason=REQUIRES_TRANSFORMERS_REASON.format(want=want, have=have)))
+
+
+# ----------------------------------------------------------------------------- doc-overlap guard (train.doc_overlap_guard)
+# Every in-process caller of train_set.draw / run_cell.load_cell_data / heldout_gate / clef_teacher.select now runs the
+# doc-overlap gate, which needs the eval hash index of the real Index suite (absent on job boxes' test envs). Unit tests
+# get an EMPTY synthetic index (no eval grams: the gate passes) unless they install their own
+# (tests/test_doc_overlap_guard.py does, with copied / paraphrased / allowlisted synthetic eval documents).
+@pytest.fixture(autouse=True)
+def _doc_overlap_test_index():
+    try:
+        from train import doc_overlap_guard as DG
+    except Exception:  # pragma: no cover  (numpy missing: the gate cannot be imported by the code under test either)
+        yield
+        return
+    empty = DG.build_index(None, {"entries": []}, rows_factory=lambda: iter([]), n_parts=1)
+    empty.meta["index_npz_sha256"] = "empty-test-index"
+    DG.set_index_for_tests(empty)
+    try:
+        yield
+    finally:
+        DG.set_index_for_tests(None)

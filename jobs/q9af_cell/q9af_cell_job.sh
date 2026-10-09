@@ -10,7 +10,8 @@
 #   9 report invalid   10 identity: data sha256, export pin (unpinned / partial without hybrid), parent arm pins
 #   20 run_cell unexpected rc   21-29 run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite, 24 memory,
 #   25 data, 26 too slow, 27 guard not ready, 28 cohort / train-set leak, 29 q9af lineage)   35 config / hooks
-#   30 / 31 / 32 guard: kit-suite / content index / harness manifests   33 held-out D1-B   34 frozen-family hit
+#   30 / 31 / 32 guard: kit-suite / content index / harness manifests   33 held-out D1-B   34 frozen-family hit, or Index
+#   eval document text in the training set (train.doc_overlap_guard: heldout phase rc 4, run_cell 34)
 #   12 parent scoring unexpected rc   1 finalize failed
 # TEST-ONLY overrides (a paid run sets none; every default IS the paid path; each one set is logged at the top):
 #   Q9AFC_CODE Q9AFC_CONTEXT_MANIFEST Q9AFC_KIT_DIR Q9AFC_DATA Q9AFC_WORK Q9AFC_MODEL_DIR Q9AFC_CONFIG
@@ -183,7 +184,7 @@ else
     timeout "$(cap heldout)m" python -X utf8 -m train.train_set heldout --config "$CELL" --train-dir "$TRAIN_DIR" \
       --out "$WORK/out/heldout.json" > "$WORK/logs/heldout.log" 2>&1; r=$?
     gate "heldout" $r
-    case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B or eval attack template hits != pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
+    case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B or eval attack template hits != pinned exclusions" ;; 4) fail 34 "Index eval document text (train.doc_overlap_guard) outside the pinned doc_clean spec" ;; *) fail 5 "heldout rc=$r" ;; esac
     DATA_ARGS+=(--train-dir "$TRAIN_DIR")
   fi
 fi
@@ -254,7 +255,7 @@ timeout "$(cap cell)m" python -X utf8 -m train.run_cell --config "$CELL" --model
 cp "$WORK/out/cell/cell.json" "$CK/cell/cell.json" 2> /dev/null || true
 gate "cell" $TRAIN_RC
 export_phase cell
-case $TRAIN_RC in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35) fail $TRAIN_RC "cell stop: $(tail -1 "$WORK/logs/cell.log")" ;;
+case $TRAIN_RC in 0) ;; 124) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|34|35) fail $TRAIN_RC "cell stop: $(tail -1 "$WORK/logs/cell.log")" ;;
   *) fail 20 "cell unexpected rc=$TRAIN_RC" ;; esac
 
 # ------------------------------------------------------------------ evals: G12 + G13 vs the parent arm (lineage anchor)
