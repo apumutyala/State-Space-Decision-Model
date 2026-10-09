@@ -11,7 +11,8 @@
 #          results survive) -> the snapshot is deleted. A candidate that fails is recorded and the scan moves on; a
 #          candidate whose cap no longer fits the scan phase is skipped (lowest priority last).
 #   summarize: decision.json (measurement only: per candidate x readout axes, CIs, H2O-Lightning identity check)
-# Exit codes: 0 measured   5 setup   6 export verification   7 scan phase over its cap   9 decision invalid
+# Exit codes: 0 measured (gates.scan = 1 if the scan phase overran and stopped early)   5 setup   6 export verification
+#   9 decision invalid
 #   10 public items identity   13 summarize failed   1 finalize
 # The marker /output/JEV_HOST_SCAN_DONE is written ONLY by jobs/common/finalize.py, and only when its final code is 0.
 set -Euo pipefail
@@ -146,13 +147,14 @@ EOF
   cp "$WORK/logs/run-$ID.log" "$D/" 2> /dev/null || true
   rm -rf "${SNAP%/snapshots/*}"
   export_phase "cand-$ID"
-  if [ "$(date +%s)" -gt "$SCAN_END" ]; then
-    gate "scan" 7
-    fail 7 "scan phase over its cap after $ID"
+  if [ "$(date +%s)" -gt "$SCAN_END" ]; then  # caps bound every step; an overrun stops the scan, keeps what is scored
+    say "scan phase over its cap after $ID: remaining candidates not run; summarizing"
+    SCAN_OVER=1
+    break
   fi
 done
 exec 3<&-
-gate "scan" 0
+gate "scan" "${SCAN_OVER:-0}"
 
 # ------------------------------------------------------------------ summarize (exit 13 / 9)
 say "phase summarize"
