@@ -144,7 +144,7 @@ Written 2026-10-06 from web verification plus `reviews/01–04` and both plans. 
 
 | Technique / finding | Serves | Evidence | Cost | Failure modes | Cite |
 |---|---|---|---|---|---|
-| Index 0.3 Full score (20% public / 50% private same-skills / 30% private new-domains); Clef 53.08, Clef-flash 47.61, Jev 60.11, Nimble-9B-v3 54.67 | D (targets) | P (board data) | $0 | PLAN tiers stale; `decision-needed` | Space `data/v03.json` 2026-10-06 |
+| Index 0.3 Full score (20% public / 50% private same-skills / 30% private new-domains); Clef 53.08, Clef-flash 47.61, Jev 60.11, Nimble-9B-v3 54.67 | D (targets) | P (board data) | $0 | `decided` 2026-10-09 (A+B, state BOARD B-PREREG-CLAIM addendum 3): binding = 0.2.1 full DEV paired vs each Clef, 0.3 public reported, G-proxy (same_family tier / fresh generators) required for any "beats Clef" | Space `data/v03.json` 2026-10-06 |
 | Clef recipe: frozen backbone + r=256 LoRA + 128M routing head + LS-CE + Brier + RLCD on synthetic schema permutations | D (anchor E2) | P (blog; data undisclosed) | $–$$ | public-format overfit (public→Full −8.5) | blog.cloudflare.com/clef-decision-models |
 | Measured gap stock Q9 → Clef-flash: 17.5 Index pts on DEV subset, all post-training; option-key tax (letter/option_N/hash) | D | R-int (lab receipts) | $0 | 12–60 rows per benchmark | `receipts/2026-10-06-D-recipe-gap` |
 | Readout fusion: LM answer-logprob × trained head (+1.27 [−0.38, 2.83], in-sample) | D (head input E4) | R-int (diagnostic) | $0 | per-benchmark weights forbidden; must be feature-gated | same receipt |
