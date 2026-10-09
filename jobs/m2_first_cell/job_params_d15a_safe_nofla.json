@@ -1,0 +1,210 @@
+{
+ "_comment": "D15n mode d15a_safe_nofla: d15a_safe with ONLY \"train_rwkv7_wkv\": \"fla\" removed, so training steps run rwkv7_wkv chunked_lean (no fla-core install at setup; D10w job-hgwsq = 40.14 trained chunked_lean vs D1-fla 28.46 = -6.7 vs D1: fla training suspected harmful). Steps ~1.46x slower, so fewer steps fit in the same 190-min clock; cosine horizon = the clock-projected final step at runtime; caps unchanged. d15a_safe's comment follows. Mode d15a_safe (D15a): job_params_d15_v3w_bschema300k.json with only the cell config (m2_first_cell_rwkv7_d15a_safe.json = d15 cell + anti-collapse safe keys), mode, job/key/label/command changed; clock, caps, data and screen are d15's. d15's comment follows. D15 mode d15_v3w_bschema300k (first big-data cell): d3_v3w_fast params with the cell config (m2_first_cell_rwkv7_d15_v3w_bschema300k.json: + train_rwkv7_wkv fla, train_max_k 255 / row_options 160, B's bschema-draw300k-v1 300k set, 377-min train clock), train_dir m2/build/bschema-draw300k-v1 (pinned by jobs/m2_first_cell/data_d15_bschema300k.sha256), stage screen (JOB_SPEC 'stage screen'; screen_readout v3w, screen_reference preset d1_v3w = job-39gnn art-zskmx v3w child 38.67, screen_parent preset stock_v3w = job-fgu2c art-ivu28 31.07, both shipped via context.data) and caps re-sized to the 900-min job ceiling. Schedule: setup 25 + guard 5 + heldout 10 + parent_g12 85 + parent_index 65 + cell 532 + screen 165 + report 5 + reserve 7 = 899 = max_duration. Cell 532 = 377 train + 155 overhead (D3's 40 incl. 10 tokenize for 24k + 115 more tokenize for 300k at 10 min / 24k). Screen 165: the screen rebuilds all 300k training items for the lineage check (train.m2_gates cell_items), so screen_fixed_minutes = D1's 15 + 115 = 130, + 25.97 D1 proxy child scoring = 156 <= 0.95 x 165. Parent = pinned stock_v3w preset (in-job parent arm phase unchanged). Worst case = (60 + 2 x 899) x 0.0495 = $91.97 (hard cap 5, as D11's 899-min clock). d3_v3w_fast's comment follows. DRAFT, NOT SUBMITTED. Mode d3_v3w_fast: job_params_d3_v2f_fast.json with only the cell config changed (m2_first_cell_rwkv7_d3_v3w_fast.json = d3_v2f_fast with template jrt-rwkv-g1-v3w; parent arm in-job via G1V3Backend mode words). Caps, data, schedule and worst case are d3_v2f_fast's ($66.03). d3_v2f_fast's comment follows. DRAFT, NOT SUBMITTED. Mode d3_v2f_fast: job_params_d3_v2f_gold.json with only the cell config changed (m2_first_cell_rwkv7_d3_v2f_fast.json = d3_v2f_gold + the d1_fast flags row_plan min_cost, cont_plan single, compile_blocks; job-2amiy 1.40x step). Caps, data, schedule and worst case are d3_v2f_gold's ($66.03). d3_v2f_gold's comment follows. d3_v2f_gold: d3_r1_gold with template jrt-rwkv-g1-v2f (v2 + dict-instruction fix). d3_r1_gold: D3 on the R1 readout format (cell m2_first_cell_rwkv7_d3_v2f_gold.json). Changes vs job_params.json: cell config (template/layout = C1 format v2), the parent arm is scored in-job in the same format (parent_arm_seed arm_sha256 null, its three context.data entries dropped: the v1 seed's unit spec no longer matches), submit command/key/label. Caps and max_duration unchanged (they already priced parent_g12 + parent_index). DRAFT, NOT SUBMITTED. First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md). Phase order: setup, guard, heldout, parent_g12, parent_index (live rate guard measures the box BEFORE training; jobs.m2_first_cell.reprice re-prices the child evals), cell, evals, report. Caps sized so a box up to 25 % slower than job-tkfaj (prefill and per-call latency) completes every scoring phase (projection <= 95 % of the cap); slower boxes stop before training. Worst case = (build_timeout + attempts x max_duration) x batch rate with attempts = 1 + max(max_restarts, assumed_restart_floor) (jobs/common/costs.py) = (60 + 2 x 637) x 0.0495 = $66.03. build_timeout 60 per the launch lint (L-09: image publish timeouts). Expected minutes: scoring phases at the job-tkfaj probe rates (TOK_S 3,757 at 2,048 tokens, CALL_S 0.117); training at the job-tvuat ADOPT step time (median 8.25 s, ckpt_rows_lean).",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "job": "m2-first-cell-d15-v3w-bschema300k-safe-nofla",
+ "status": "draft: D15n = d15a_safe (D15 = d3_v3w_fast + train_max_k 255 + B's bschema-draw300k-v1 (300k), stage screen, anti-collapse) with training on chunked_lean (NO fla)",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 899,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 95.0,
+ "phase_caps_minutes": {
+  "setup": 25,
+  "guard": 5,
+  "heldout": 10,
+  "parent_g12": 85,
+  "parent_index": 65,
+  "cell": 532,
+  "screen": 165,
+  "report": 5
+ },
+ "reserve_minutes": 7,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 15,
+  "guard": 3,
+  "heldout": 5,
+  "parent_g12": 65,
+  "parent_index": 48,
+  "cell": 522,
+  "screen": 156,
+  "report": 4
+ },
+ "evals_fixed_minutes": {
+  "parent": 3,
+  "child": 8
+ },
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (prefill tok/s at 2,048; small_call_s)",
+  "train_step_s": 3.88,
+  "train_step_source": "job-9bs8w perf_step_gate v2 fast_fla ADOPT (d1_fast + fla: 3.88 s/step, 1.46x vs fast 5.65)"
+ },
+ "parent": "rwkv7",
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_d15a_safe_nofla.json",
+ "train_set_pointer": "data/manifests/bschema-draw300k-v1.pointer.json",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "margins_from": "train.promotion.MARGINS",
+ "margins_status": "issue #36 margins approved in PR #102 (train.promotion.MARGINS); this cell runs G12 + the index measurement, not G13, so m2_gates exits 44 (partial) / 40 and it is never promotable; 43/44/45 are trained + measured outcomes",
+ "parent_arm_seed": {
+  "_note": "LESSONS L-34: a resubmitted job starts with an empty checkpoint slot; this pinned export of the parent arm ships as data/parent_arm_seed/ (context.data below) and jobs.m2_first_cell.arm_seed installs it into $CK/parent_arm (sha + parent/cohort/unit-spec identity checked; exit 10 otherwise), so parent_g12 + parent_index (~68 GPU min) are skipped. Rate reports are not installed: reprice uses the seed_verify probe factor estimate measured on this box. Set arm_sha256 to null (and drop the three context.data entries) to score the parent in-job again.",
+  "source": "job-uhxb5 (agent-main 9c76c93), artifact art-sq6mp sha256 2937de5a5d832a7d899eb6cf74fb3f66d65e9333b3f43bdf7e6f55bcb76ae7c6, phases/final.tgz out/parent_arm/",
+  "arm_sha256": null,
+  "units_sha256": {
+   "g12": "c16c24db65124b78af782305a55d2092b8b4163459a9501714b314e4897ef395",
+   "index": "f450d000912f5e479eee9943a57ebdb145660396d1fda73fd21c3d7140e57001"
+  },
+  "probe_records": 24,
+  "probe_note": "seed_verify (PR #147 review): before training, score_parent --verify-cache checks the full units identity (read_arm_cache), the guard and the parent decider's revision on this box, and re-scores probe_records g12 dev records (must reproduce the cached units within PROBE_MAX_ABS_DCONF / PROBE_MAX_FLIP_FRAC); their speed vs the cached run gives the re-price factor estimate. Runs under the parent_g12 cap (it replaces both parent phases).",
+  "_d3_note": "R1 format: the seeded v1 parent arm (job-uhxb5) does not match the g1v2 unit spec; scored in-job"
+ },
+ "reference_results_sha256": {
+  "_note": "optional files shipped under /data/reference/ (same 2,008 subset rows); used only for the report's comparisons. null = not shipped / not used",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": "train/promotion.py",
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh d15a_safe_nofla",
+  "env": {
+   "TOK_S": "3757",
+   "CALL_S": "0.117"
+  },
+  "key": "m2-first-cell-d15-v3w-bschema300k-safe-nofla",
+  "clock_lock": true,
+  "label": "D15n d15a_safe_nofla: m2 D15 d15_v3w_bschema300k: RWKV7-13.3B fork + LoRA, v3w format + d1_fast flags + chunked_lean training WKV (NO fla), B bschema-draw300k-v1 (300k), train K<=255, 377-min train clock (fewer rows at ~5.7 s/step), stage screen (proxy600 vs D1) + anti-collapse",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "jobs/m2_first_cell/build_context.sh as a launch.py recipe: the rwkv7 image (CMD -> first_cell_job.sh) + code + PRIVATE data, each file sha256-pinned (raw bytes): PR #16 records (jobs/rwkv7/records.sha256), DEV rows (jobs/clef_baseline/data.sha256), the PR #44 150k set and the 0.2.1 suite files (jobs/m2_first_cell/data_d15_bschema300k.sha256; the runner re-verifies the bschema-draw300k-v1 set against its pointer and guard_ready the suite against guard_pin.json). Optional reference results are not shipped by launch.py (reference_results_sha256 null). D15: the 300k set under m2/build/bschema-draw300k-v1/ and the screen reference (pin_json) are pinned too.",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw300k-v1/records.jsonl.gz",
+    "dest": "m2/build/bschema-draw300k-v1/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d15_bschema300k.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw300k-v1/bschema-draw300k-v1.manifest.jsonl.gz",
+    "dest": "m2/build/bschema-draw300k-v1/bschema-draw300k-v1.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d15_bschema300k.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw300k-v1/bschema-draw300k-v1.content.jsonl.gz",
+    "dest": "m2/build/bschema-draw300k-v1/bschema-draw300k-v1.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d15_bschema300k.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d15_bschema300k.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d15_bschema300k.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data_d15_bschema300k.sha256"
+   },
+   {
+    "src": "m2/screen_reference/art-zskmx/child.v3w.results.jsonl",
+    "dest": "screen_reference/art-zskmx/child.v3w.results.jsonl",
+    "pin_sha256": "941af29e4e6d427b300703d3a7d29bd959e8c16af82292eb04e87b73b4474f02"
+   },
+   {
+    "src": "m2/screen_parent/art-ivu28/v3w.results.jsonl",
+    "dest": "screen_parent/art-ivu28/v3w.results.jsonl",
+    "pin_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1"
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/bschema-draw300k-v1.pointer.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "jobs/rwkv7/snapshot.sha256",
+   "jobs/m2_first_cell/data_d15_bschema300k.sha256",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_d15a_safe_nofla.json"
+  ]
+ },
+ "cohort_note": "pins cohort v2 deliberately (no G13 here); the training draw excludes cohort v3 regardless (#105). The G13 gate of this checkpoint is a separate job on v3 (~16-17 H100-h at job-tkfaj rates).",
+ "mode": "d15a_safe_nofla",
+ "r1_format_commit": "46c078828830d9a192af716e57fdd1aca840124f",
+ "stage": "screen",
+ "screen_fixed_minutes": 130,
+ "screen_readout": "v3w",
+ "screen_reference": "d1_v3w",
+ "screen_parent": "stock_v3w",
+ "train_dir": "m2/build/bschema-draw300k-v1"
+}
