@@ -223,6 +223,30 @@ config): `d13_joint` with `"stage": "screen"` (see "Params `"stage": "screen"`" 
 `"screen": 60` (expected ~41), `screen_reference` = D1 art-bm3e6 (shipped `screen_reference/units-child-index.json`,
 pinned by `units_sha256`). Schedule 485 + reserve 7 = 492 min. **Worst case** (60 build + 2 x 492) x $0.0495 =
 **$51.68** (cap $70).
+## Modes `fulldev_eval_d13_v3w_s1of2` / `fulldev_eval_d13_v3w_s2of2`: the v3w full DEV in two shards (DRAFT, NOT SUBMITTED)
+
+`fulldev_eval_d13_v3w` with params `"rows": "shard<K>of2"`, nothing else about the model, checkpoint or readout changed.
+Why: the one-job run expects ~500 of its 536-min phase cap (the live guard stops past 0.95 x cap = a box only ~1.8 %
+slower than the screen) and a stopped run loses every scored row. Shards: `jobs/m2_first_cell/fulldev_shards_2.json`
+(`fulldev_eval shard-build --n 2`): clusters = `harness.cases.case_ids` (the frozen bootstrap's cluster unit) never
+split; initial shard sha256(`fulldev-shard-v1:<case_id>`) mod 2; rebalanced by RWKV7 token count (1 move; 837-token
+gap). Shard 1: 6,109 rows / 4,191 clusters / 11,315,055 tokens, ids_sha256 `5aa8ef1531b4c171f34b6b8174fc04c3ec3e8c28eb4ba396663e605432bb86fe`;
+shard 2: 5,995 / 4,282 / 11,315,892, `f523934e7b85a32317b4d59e55bfdc39dbd9de338ac90c9c440234ab2c51202c`; union = the
+12,104 DEV ids (`4f310d28996ca91e932c497a00c54abe4ced1277e3dd63c21a4ff4366fd7d030`). The job rebuilds the plan from its
+DEV rows + lengths and exits 10 on any difference. Pricing (params `plan_minutes_full` 42: the plan pass tokenises only
+the shard's rows): 212.5 scoring + 33 fixed + 21.0 plan = 266.5 min under a 336-min fulldev cap (26.1 % headroom; the
+guard tolerates a box 19.8 % slower); max_duration 370 (setup 12 / guard 3 / checkpoint 7 / fulldev 336 / report 5 /
+reserve 7), quoted hold $23.31 each, worst case (60 + 2 x 370) x 0.0495 = $39.60 each (cap $60).
+Partial rows: on ANY scoring exit (timeout, guard stop, low disk, and in the EXIT trap) `$CK/fulldev/child.partial.jsonl`
++ `child.partial.identity.json` are copied into the phase export; a follow-up job of the SAME sha sets env
+`SEED_PARTIAL_URL` (that phase tgz) + `SEED_PARTIAL_SHA256`, and `score --seed-partial` reuses the rows only if the
+checkpoint sha, readout fingerprint, code sha, arm, rows mode and rows ids hash all match and every row is in the shard.
+Landing: `python -X utf8 -m jobs.m2_first_cell.fulldev_eval merge <s1>/fulldev <s2>/fulldev --rows
+$SSDM_DATA/slices/dev-rows.jsonl.gz --out <dir>/fulldev/child.results.jsonl` (refuses unless one shard per K, the
+pre-declared shard id hashes reproduce, the results bytes match, the identities agree, disjoint + exactly the DEV ids;
+the output is byte-identical to an unsharded run's file, ids_sha256 = the full-DEV ids hash), then
+`analysis/land_fulldev.py --candidate <dir>/fulldev/child.results.jsonl`. Each shard's own report is a SHARD SUBSET.
+
 ## Modes `fulldev_eval_d13` / `fulldev_eval_d13_v3w`: D13 on the FULL Index DEV (DRAFT, NOT SUBMITTED)
 
 Mode `fulldev_eval` (below) on D13 = job-hjwpq (d13_joint_safe_nofla, the attention-free joint_record head; proxy600
