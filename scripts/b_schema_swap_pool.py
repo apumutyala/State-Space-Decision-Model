@@ -55,6 +55,8 @@ def main(argv=None) -> int:
     ap.add_argument("--add-pointer-sha256", required=True)
     ap.add_argument("--drop-pool-ids", action="append", default=[])
     ap.add_argument("--receipt", required=True)
+    ap.add_argument("--keep-aug", action="store_true",
+                    help="keep the pool rows' own aug.schema_synth (lever rows carry their view ops)")
     a = ap.parse_args(argv)
 
     pp = Path(a.parent_pointer)
@@ -104,7 +106,10 @@ def main(argv=None) -> int:
         if r["id"] in keep:
             raise SystemExit(f"pool id {r['id']} collides with a kept parent id")
         if chk.accept(r, "P3", h64(sorted(root_items(r))[0])):
-            r.setdefault("aug", {})["schema_synth"] = {"ops": ["extra_pool_passthrough"], "pool": "P3"}
+            if a.keep_aug:
+                r["aug"]["schema_synth"] = {**r["aug"].get("schema_synth", {}), "pool": "P3"}
+            else:
+                r.setdefault("aug", {})["schema_synth"] = {"ops": ["extra_pool_passthrough"], "pool": "P3"}
             added.append((r["id"], canonical(r)))
     added.sort()
     add_src = collections.Counter(json.loads(x)["source"] for _, x in added)
