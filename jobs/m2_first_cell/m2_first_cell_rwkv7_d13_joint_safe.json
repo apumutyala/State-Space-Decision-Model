@@ -1,0 +1,102 @@
+{
+ "_comment": "D13s2 mode d13_joint_safe: d13_joint_screen + the anti-collapse safe keys (PR #232 ac124e4: lr_head 3e-4, cosine to 0.1x, dev card every 200 on 200 rows, best_ckpt, collapse_guard) + train_set.attack_clean pinned to data/manifests/attack_clean/sample-150000-seed20261006.cell-m2_first_cell_rwkv7.json (PR #233: drops the 8,049 D1-A steer rows, keeps 141,951; no training on eval attack templates). d13_joint_screen's comment follows. D13joint mode d13_joint (DRAFT, NOT SUBMITTED): d1_fla with ONLY \"head\": \"joint_record\" (heads.heads.JointRecordHead: the D1 fork head + an attention-free bidirectional gated-linear record mixer over the record's per-field option-evidence vectors in schema order, seeded by a payload summary, + a frozen-embedding lexical prior; joint params zero-gated so step 0 equals the D1 fork head; training steps take whole records, eval scores each request's questions in one forward). d1_fla's comment follows. D1fla mode d1_fla (DRAFT, NOT SUBMITTED): d1_fast with ONLY \"train_rwkv7_wkv\": \"fla\" added (training steps run fla; rwkv7_wkv stays \"chunked_lean\" so every scoring path -- parent arm, seed check, child evals, dev cards -- keeps the D1 identity and the pinned parent arm seed is accepted; job-b4fy8 failed seed_verify with rwkv7_wkv fla) (fla-core 0.5.2 installed at setup by hash, strict training; SF job-9bs8w perf_step_gate v2 ADOPTed fast_fla = d1_fast + fla: 3.88 vs 5.65 s/step, 1.46x, grad cos 0.998, loss_rel 3.2e-4, peak 62.6 GB). Same clock (~1.46x rows). d1_fast's comment follows. d1_fast (DRAFT, NOT SUBMITTED): the D1 base cell with the perf_step_gate step fixes (see perf_note); the rest of this comment is D1's. First trained m2 cell (jobs/m2_first_cell/JOB_SPEC.md; DRAFT, NOT SUBMITTED). RWKV7-G1k-13.3B parent, LoRA r=64 + cache-fork head, Clef loss arm (LS-CE 0.1 + Brier + RPS on score questions), trained on the PR #44 150k set (injection-augmented at build: D1-A verbatim + training-only hijack, labels unchanged) with the content-index guard and the cohort-v2 exclusion (by id, content and source item at build; re-checked by train.train_set). Eval = cohort dev (G12) + the 2,008-row Index DEV subset; parent arm scored in the same job.",
+ "seed": 0,
+ "head": "joint_record",
+ "head_kwargs": {},
+ "layout": "ordered",
+ "template": "jrt-rwkv-g1-v1",
+ "loss_arm": "clef",
+ "lora_rank": 64,
+ "lr_head": 0.0003,
+ "lr_lora": 0.0001,
+ "warmup_steps": 50,
+ "batch_size": 1,
+ "grad_accum": 8,
+ "max_k": 16,
+ "t_ladder": [
+  512,
+  1024,
+  2048
+ ],
+ "n_train_records": 24000,
+ "n_eval_records": 0,
+ "min_train_items": 5000,
+ "max_steps": 3000,
+ "max_minutes": 190,
+ "min_steps": 600,
+ "ckpt_every": 400,
+ "eval_every": 100000,
+ "tokenize_workers": 8,
+ "smoke": {
+  "rows": 2,
+  "max_k": 4,
+  "max_t": 512,
+  "lora_rank": 8,
+  "max_rel_feature_diff": 0.03,
+  "min_grad_cos": 0.99
+ },
+ "pass_rule": {
+  "window": 100,
+  "loss_drop_frac_min": 0.05,
+  "max_peak_gb": 76
+ },
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "require_guard_readiness": true,
+ "calibration_role": "calibration",
+ "parent": "rwkv7",
+ "eval_max_t": 2048,
+ "train_set": {
+  "pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+  "heldout_excluded": {
+   "ids": [
+    "m2:mmlu_aux:21118",
+    "m2:mmlu_aux:39640",
+    "m2:mmlu_aux:39643"
+   ],
+   "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+   "reason": "train.heldout (D1-B, k=8) finds the 4-word fragment 'rather than relying on' of template soft_framing in these three MMLU aux_train records (natural text, no injection; the PR #44 build guard, word 6-grams, does not fire). Excluded from the draw, fail-closed: the heldout phase passes only if the full-set hits are exactly these ids (2026-10-06 local scan, 150,000 texts, 112 s)."
+  },
+  "attack_clean": {
+   "draw": "sample-150000-seed20261006",
+   "excluded_ids_sha256": "db18f33268313c651cb4317b7ac95b4c70693eef4d11d751e4e1ca1dfe88471e",
+   "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+   "n_excluded": 8049,
+   "n_kept": 141951,
+   "n_records": 150000,
+   "per_set": {
+    "d1a_steer": 8049,
+    "d1b_steer": 3
+   },
+   "per_template": {
+    "d1a_steer:authority": 2047,
+    "d1a_steer:fake_correction": 2047,
+    "d1a_steer:system_note": 1991,
+    "d1a_steer:urgency": 1964,
+    "d1b_steer:soft_framing": 3
+   },
+   "records_gz_sha256": "3f42bf07f673ff1b1d54c240ddac0bb6abf296f0433f8d8c69240c439d699522",
+   "rule": "attack_guard/v1: 6-gram or exact (4-5 word) fragment of any eval attack template, normalised",
+   "templates_sha256": "930863660b73ba676a236c1729ed4535c99c0691f5f41639099723ac93ec77fd",
+   "source": "data/manifests/attack_clean/sample-150000-seed20261006.cell-m2_first_cell_rwkv7.json"
+  }
+ },
+ "rwkv7_wkv": "chunked_lean",
+ "train_rwkv7_wkv": "fla",
+ "act_ckpt": true,
+ "row_batch": 8,
+ "row_tokens": 8192,
+ "row_plan": "min_cost",
+ "cont_plan": "single",
+ "compile_blocks": true,
+ "perf_note": "d1_fast = the D1 base cell (m2_first_cell_rwkv7.json) + the GPU-gated step fixes (job-2amiy, jobs/perf_step_gate rule perf_step_gate v1; stack/rwkv7/perf-step @953f3ac): row_plan min_cost 6.58 s/step (1.20x), + cont_plan single 6.11 (1.29x, peak 63 GB), + compile_blocks 5.63 (1.40x, peak 63 GB) vs greedy 7.89 on the same box. Loss within 1.9e-4 relative; gradient cosine 0.998 for every variant incl. pure regrouping, i.e. the GPU reduction-order floor (Agent A overrode the 0.999 bar on that evidence). Execution-only: not in the TrainConfig hash. Everything else, caps included, is D1; the same 190-min clock trains ~40 % more rows (time cap binds). Template for future cells.",
+ "execution_note": "job-tvuat (jobs/cell_step_profile, rule v1-A2, PR #86 @54ee89d) ADOPT: chosen ckpt_rows_lean = per-block activation checkpointing keeping the cache fork, the step's 8 rows batched in length-sorted groups (<= 8 rows, <= 8,192 padded tokens per call; long rows split a step into several groups), chunked_lean WKV (our pure-PyTorch rearrangement of the vendored chunked WKV, CPU-equivalence-tested; no GPU gate needed); measured median step 8.25 s, 0 OOMs, projection 1,382 steps / 11,056 rows in 190 min (receipt receipts/2026-10-07-D-cell-step-profile-tvuat). Execution flags are not in the TrainConfig hash (same loss and gradients). rwkv7_wkv applies to both arms (child: run_cell / m2_gates; parent: score_parent). 'fla' only after jobs/fla_rwkv7 ADOPT + GPU_VERIFIED.",
+ "max_minutes_note": "training wall-clock inside the 230-min cell phase: 230 - load/draw/tokenize ~10 - smoke+ladder ~10 - two dev cards ~10 - checkpoints/margin 10 = 190 (pre-registered); cumulative over restarts (train_clock in cell.json)",
+ "min_steps_note": "exit 26 if the measured step time cannot reach 600 optimiser steps (4,800 rows) inside max_minutes: below that the cell is not a meaningful first measurement; re-price instead of spending the evals",
+ "lora_rank_note": "M2_RUN_SPEC r=256 adds ~1.15B trainable params (~18 GB of fp32 weights + grads + Adam) on top of 26.5 GB bf16 weights and the un-checkpointed cache-fork activations; r=64 (the pilot's pre-registered rank) keeps the T=2048 ladder rung inside the 76 GB stop",
+ "lr_schedule": "cosine",
+ "lr_min_frac": 0.1,
+ "dev_card_every": 200,
+ "dev_card_rows": 200,
+ "best_ckpt": true,
+ "collapse_guard": true
+}
