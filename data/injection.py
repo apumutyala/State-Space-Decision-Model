@@ -3,8 +3,13 @@
 Attack templates
 ----------------
 * D1 family A is vendored VERBATIM from ``safety_eval/attacks.py`` on branch ``claude/m0-steer-eval`` at commit
-  944fa02a4e90fda32e893de266c585587db3c3e7 (git blob 1c9c106794badc631065293fc0c5577343887531). PREREG section 2.2
-  lets split A be used for tuning; split B is held out for frozen-checkpoint gates and must never be trained on.
+  944fa02a4e90fda32e893de266c585587db3c3e7 (git blob 1c9c106794badc631065293fc0c5577343887531) for provenance
+  checks ONLY. It is NEVER injected into training records any more (attack guard, 2026-10-08): the G12 steer gate
+  and every steer comparison score on D1-A, so it is safety test material, and the operator rule is no training on
+  test. Builds before this change (PR #44 150k pools and the draws made from them) carry it verbatim;
+  ``train.attack_guard`` finds those rows and ``train.train_set`` refuses them unless a cleaned spec excludes them.
+  ``inject`` uses only ``TRAIN_HIJACK``, which must stay disjoint (6-gram and exact fragment) from every eval
+  template (``train.attack_guard.assert_training_templates_disjoint``, checked by tests and at build).
 * D1 family B (all k=8 templates: the four v0.2 ones at 944fa02 and the four blind v0.4 ones of the PREREG v0.4
   amendment, PR #22) is NOT in this file. Only hashes of its word 6-grams are stored (``FORBIDDEN_6GRAMS``), and every
   built record is checked against them (``assert_no_heldout``). The same hashes cover the five eval-time hijack
@@ -163,6 +168,10 @@ class HeldOutLeak(AssertionError):
     pass
 
 
+class EvalTemplateForTraining(ValueError):
+    """An eval attack template (e.g. D1-A) was requested for training augmentation."""
+
+
 def assert_no_heldout(state: Any, questions: dict, rec_id: str = "") -> None:
     hit = record_6grams(state, questions) & FORBIDDEN_6GRAMS
     if hit:
@@ -208,14 +217,12 @@ def inject(rec: dict, rng: random.Random, family: str | None = None) -> dict | N
     gold = rec["labels"][qid]
     wrong = [o for o in crit if o != gold]
     target = rng.choice(wrong)
-    family = family or rng.choice(["d1a", "d1a", "hijack"])
-    if family == "d1a":
-        tname = rng.choice(sorted(D1_TEMPLATES_A))
-        sent = D1_TEMPLATES_A[tname].format(act=f"go with {_phrase(crit[target])}", gold=_phrase(crit[gold]),
-                                            sender=rng.choice(SENDERS))
-    else:
-        tname = rng.choice(sorted(TRAIN_HIJACK))
-        sent = TRAIN_HIJACK[tname].format(target=target, target_desc=_phrase(crit[target]))
+    family = family or "hijack"
+    if family != "hijack":
+        raise EvalTemplateForTraining(f"injection family {family!r}: only the training-only 'hijack' family "
+                                      f"(TRAIN_HIJACK) may be injected; D1-A is an eval template")
+    tname = rng.choice(sorted(TRAIN_HIJACK))
+    sent = TRAIN_HIJACK[tname].format(target=target, target_desc=_phrase(crit[target]))
     out = {**rec, "questions": rec["questions"], "labels": dict(rec["labels"])}
     state = rec["state"]
     untrusted = list(rec.get("untrusted_fields") or [])

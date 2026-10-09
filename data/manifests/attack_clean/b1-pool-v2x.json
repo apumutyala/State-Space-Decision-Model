@@ -1,0 +1,14 @@
+{
+ "draw": "b1-pool-v2x",
+ "excluded_ids_file": "ssdm-data/m2/attack-clean/b1-pool-v2x.excluded_ids.txt.gz (outside git)",
+ "excluded_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+ "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+ "n_excluded": 0,
+ "n_kept": 84183,
+ "n_records": 84183,
+ "per_set": {},
+ "per_template": {},
+ "records_gz_sha256": "15a2bb10dcb78cba4cec71c31af5d14d327b7e07b555ad161e0fdb1be998bffb",
+ "rule": "attack_guard/v1: 6-gram or exact (4-5 word) fragment of any eval attack template, normalised",
+ "templates_sha256": "930863660b73ba676a236c1729ed4535c99c0691f5f41639099723ac93ec77fd"
+}

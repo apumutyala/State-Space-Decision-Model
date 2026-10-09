@@ -1,0 +1,21 @@
+{
+ "draw": "b1-draw100k-v3",
+ "excluded_ids_file": "ssdm-data/m2/attack-clean/b1-draw100k-v3.excluded_ids.txt.gz (outside git)",
+ "excluded_ids_sha256": "00a49c987ae2cdcae5b8f44d42e4014f00a4fec8a0f79f6da84ad3e37458f01a",
+ "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+ "n_excluded": 4517,
+ "n_kept": 95483,
+ "n_records": 100000,
+ "per_set": {
+  "d1a_steer": 4517
+ },
+ "per_template": {
+  "d1a_steer:authority": 1153,
+  "d1a_steer:fake_correction": 1094,
+  "d1a_steer:system_note": 1117,
+  "d1a_steer:urgency": 1153
+ },
+ "records_gz_sha256": "e41d08d3ee2c5e79578415731a036e2b16dc58e92bbcc57137ad32a2965afed2",
+ "rule": "attack_guard/v1: 6-gram or exact (4-5 word) fragment of any eval attack template, normalised",
+ "templates_sha256": "930863660b73ba676a236c1729ed4535c99c0691f5f41639099723ac93ec77fd"
+}

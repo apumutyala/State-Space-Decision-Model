@@ -332,7 +332,7 @@ say "phase heldout (hits must equal the pinned exclusions)"
 timeout --kill-after=30s $(cap heldout)m python -X utf8 -m train.train_set heldout --config "$CELL" --train-dir "$TRAIN_DIR" \
   --out "$WORK/out/heldout.json" > "$WORK/logs/heldout.log" 2>&1; r=$?
 gate "heldout" $r; export_phase heldout
-case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment outside the pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
+case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment or eval attack template (train.attack_guard) outside the pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
 
 # ------------------------------------------------------------------ parent arm (stock readout) BEFORE training (review fix 1)
 # Its live weighted rate guard measures this box's scoring speed before any training spend; then the child evals are

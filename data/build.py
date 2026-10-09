@@ -147,6 +147,9 @@ def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | N
     stats = collections.defaultdict(collections.Counter)
     held_out_checked = 0
     excluded = collections.defaultdict(collections.Counter)
+    from train.attack_guard import assert_training_templates_disjoint, record_hits
+
+    assert_training_templates_disjoint()  # TRAIN_HIJACK + carriers share no gram with any eval attack template
     need_content = exclusion is not None or dedup_factchange or manifest_dir is not None
     if need_content:
         from train.cohort import normalized_content_hash
@@ -167,6 +170,9 @@ def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | N
         I.assert_no_heldout(rec["state"], rec["questions"], rec["id"])
         held_out_checked += 1
         item, full = fp.check(rec["_probe"], {}), fp.check(rec["state"], rec["questions"])
+        attack = record_hits(rec)  # eval attack templates (safety test material): the record is dropped
+        if attack:
+            item = {**item, "eval_attack_template": sorted(attack)}
         if guard is not None:
             from train.guard import ForbiddenRow
             try:
@@ -300,7 +306,7 @@ def build_sample(n_target: int = 20000, out: str | None = None, receipt: str | N
         rng = random.Random(f"{seed}|fcinj|{k}"); k += 1
         if rng.random() < P_INJECT_FACT:
             v = rng.randrange(2)
-            inj = I.inject(pair[v], rng, family="d1a")
+            inj = I.inject(pair[v], rng, family="hijack")
             if inj is not None:
                 pair[v] = inj
         chs = [chash(p) for p in pair]
