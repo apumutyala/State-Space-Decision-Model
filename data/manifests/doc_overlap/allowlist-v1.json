@@ -1,0 +1,45 @@
+{
+ "id": "doc-overlap-allowlist-v1",
+ "rule": "An entry exempts one eval unit type (eval family + unit field) ONLY when that unit is a CONTEXT CORPUS the item is judged against (evidence, premise, retrieval candidate pool), drawn from a shared public corpus our sources also use. Units that are part of the item being judged (claim, statement, question, hypothesis, product, function specs, conversation) are never exempt: shared public text there FAILS. Every exempted row is counted per entry and per draw (allowlist_saved). Adopted by the coordinator 2026-10-09. An entry's own_sources lists training sources it never applies to.",
+ "entries": [
+  {
+   "id": "hover-wikipedia-evidence",
+   "eval_family": "HoVer claim verification",
+   "eval_field": "S:evidence",
+   "corpus": "English Wikipedia (2017 introductory paragraphs, the HotpotQA/HoVer dump)",
+   "justification": "HoVer evidence is Wikipedia paragraphs; the same paragraphs appear in NQ passages, BoolQ evidence, background_reading filler and hover training evidence. The audit (analysis/NGRAM_TEST_AUDIT_2026-10-09.md) verified leaf by leaf that the overlap is the shared Wikipedia text and that no HoVer claim (the item, unit S:claim, not exempt) is covered.",
+   "reviewed": "2026-10-09 B (6-gram audit, claude/b-gap-breakdown @f689a4b)",
+   "unit_type": "context corpus"
+  },
+  {
+   "id": "anli-wikipedia-premise",
+   "eval_family": "ANLI",
+   "eval_field": "I",
+   "corpus": "English Wikipedia lead sentences/paragraphs (ANLI R1/R2 premises are Wikipedia leads)",
+   "justification": "ANLI's premises are Wikipedia passages; our NQ passages, clinc150/when2call background_reading filler and anli training premises draw on the same Wikipedia text. The 6-gram audit verified the shared text is the premise and that no hypothesis is covered. CAVEAT: the Index puts premise AND hypothesis in the same instructions unit, so this entry also exempts the hypothesis from this gate; item copies stay covered by SplitGuard (content hash) and the item-level n-gram audit. own_sources [anli]: never applies to rows of our anli training source (same dataset, so a premise+hypothesis match there is an item copy, not shared reference text).",
+   "reviewed": "2026-10-09 B (D1-24k doc-overlap scan: 72 rows, all Wikipedia-premise coverage)",
+   "unit_type": "context corpus",
+   "own_sources": [
+    "anli"
+   ]
+  },
+  {
+   "id": "toolret-public-tool-corpus",
+   "eval_family": "ToolRet-retrieval",
+   "eval_field": "I",
+   "corpus": "ToolRet's candidate tool pool: tool documentation aggregated from public tool-use datasets (ToolACE, Glaive, API collections)",
+   "justification": "ToolRet-retrieval's instructions carry the candidate tool documents; ToolRet built that pool from public tool-use datasets that our toolace / glaive_fc / when2call training sources come from, so tool specs match by construction. The ToolRet item is the query (unit S:query, not exempt), which is never covered.",
+   "reviewed": "2026-10-09 B (D1-24k doc-overlap scan: 120 rows, toolace/when2call tool specs, rule R)",
+   "unit_type": "context corpus"
+  },
+  {
+   "id": "bright-retrieval-pool",
+   "eval_family": "BRIGHT-retrieval",
+   "eval_field": "I",
+   "unit_type": "context corpus",
+   "corpus": "BRIGHT's candidate document pool (StackExchange posts, Wikipedia, code docs) carried in the instructions",
+   "justification": "BRIGHT-retrieval's instructions hold the candidate pool the query is matched against; filler passages in our background_reading come from the same public sources. The BRIGHT item is the query (unit S:query, not exempt).",
+   "reviewed": "2026-10-09 B (B1-100k-v2 detail: 2 winogrande rows, 5% of one pool)"
+  }
+ ]
+}
