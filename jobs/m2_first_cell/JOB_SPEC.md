@@ -288,8 +288,9 @@ byte copies of `fulldev_eval` / `hijack_eval` (same cell config, pins, data, cap
   fit applied to v3w) AND `ece_refit.json` (v3w's own refit). hijack: both arms untempered (argmax decisions; no refit).
 - Inference: the default path. `exact_tree` (stack/rwkv7/cost-latency @2dd4a5e) is not on agent-main (8 conflicting
   files) and is left out. d1_fast's flags do not apply to scoring.
-- fulldev sizing: 22,630,947 v1 tokens x 0.9004 (v3w / v1 prompt length, `readout_ab_d1`) x 1.037 s / 1k = 352 + 30
-  fixed + 12 refit = 394 min (cap 550); expected run 416 min = **$20.59** billed (+ build: $21.34); worst case **$63.56** (cap $65).
+- fulldev sizing: 22,630,947 v1 tokens x 0.9004 (v3w / v1 prompt length, `readout_ab_d1`) x 1.037 s / 1k = 352 + 75
+  fixed (incl. the ~42 min full-DEV plan pass, now beating the watchdog: job-4ha7t) + 12 refit = 439 min (cap 550);
+  expected run 461 min = **$22.82** billed (+ build: $23.56); worst case **$63.56** (cap $65).
   hijack: as `hijack_eval`, expected ~72 min = $3.56; worst case **$14.55** (cap $15).
 - Landing: `analysis/land_fulldev.py` pairs `child.results.jsonl` (12,104 rows, every row read in full) with the
   comparators' 32k-substituted files on the same 12,104 run_ids (`full`) and on the 12,053 without the 51 (`full_excl51`).

@@ -18,7 +18,8 @@ def _p(f):
 
 def _strip(p: dict, extra=()) -> dict:
     drop = {"_comment", "job", "status", "cell_config", "submit", "context", "mode", "expected_minutes",
-            "readout", "readout_template", "readout_length_ratio", "refit_temperature", "readout_refit_minutes", *extra}
+            "readout", "readout_template", "readout_length_ratio", "refit_temperature", "readout_refit_minutes",
+            "evals_fixed_minutes", *extra}
     return {k: v for k, v in p.items() if k not in drop}
 
 
@@ -56,7 +57,7 @@ def test_fulldev_champ_is_full_dev_child_only_at_the_65k_cap_and_priced_at_the_v
     e, e1 = estimate(c), estimate(_p(FD))
     assert e["ok"] and e["readout"] == "v3w" and e["readout_length_ratio"] == 0.9004 and e["refit_minutes"] == 12
     assert c["refit_temperature"] is True
-    assert e["minutes"]["fulldev"] < e1["minutes"]["fulldev"] and abs(e["minutes"]["fulldev"] - 394.2) < 0.1
+    assert abs(e["minutes"]["fulldev"] - 439.2) < 0.1
     bad = {**c, "readout_template": "jrt-rwkv-g1-v1"}
     with pytest.raises(ValueError, match="readout_template"):
         estimate(bad)

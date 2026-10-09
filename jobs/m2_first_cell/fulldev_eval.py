@@ -157,6 +157,28 @@ def latency(results: list[dict]) -> dict[str, Any]:
                      "request at a time (same definition as the Clef latency row)"}
 
 
+def progress_beat(every_s: float = 30.0):
+    """A throttled toucher of ``$SSDM_PROGRESS_BEAT`` (the runner's progress-gated watchdog withholds the heartbeat
+    after STALL_S = 1200 s without a file write; the platform kills after two missed 600 s polls). For CPU loops that
+    write nothing until they end (the plan pass, the refit's content proofs). Unset (tests): a no-op. Outputs are
+    unchanged either way; a hung loop stops touching it."""
+    path = os.environ.get("SSDM_PROGRESS_BEAT")
+    last = [float("-inf")]
+
+    def beat() -> None:
+        if not path:
+            return
+        now = time.monotonic()
+        if now - last[0] >= every_s:
+            last[0] = now
+            try:
+                Path(path).touch()
+            except OSError:
+                pass
+
+    return beat
+
+
 def plan_rows(decider, rows: list[dict], max_input_tokens: int) -> dict[str, Any]:
     """$0 plan-only pass (tokenisation, no forward) through the real decider with the raised cap: which rows reach
     ``score()``, and the longest model input per row (``backend.plan``)."""
@@ -175,7 +197,9 @@ def plan_rows(decider, rows: list[dict], max_input_tokens: int) -> dict[str, Any
                 max_input_tokens)
     ol = overlength_ids()
     refused, lengths = [], {}
+    beat = progress_beat()
     for r in rows:
+        beat()  # job-4ha7t: a full-DEV plan pass is ~40 min of tokenisation with no file write (watchdog STALL_S 1200)
         rid = r["_evaluation"]["run_id"]
         req = {"model": "ssdm-m2", "state": r["state"], "questions": r["questions"]}
         po.last = None
