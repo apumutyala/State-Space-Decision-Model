@@ -268,3 +268,24 @@ def test_rlcd_export_reads_an_inference_export(tmp_path):
                for k in ta)
     u = _trainer(tmp_path / "ck2", seed=3)
     rlcd.apply_init(u.model, tb)
+
+
+def test_best_checkpoint_is_exported_with_its_pointer(tmp_path):
+    """best_ckpt runs (d13 anti-collapse): the scored checkpoint ships beside the last one and latest.json keeps the
+    ``best`` pointer, naming the export; both load through Trainer.load."""
+    t = _trainer(tmp_path / "ck")
+    t.train(1)
+    best = t.save()
+    t.train()
+    last = t.save()
+    side = CE.export_inference(last, tmp_path / "out", "bf16", best=best)
+    lat = json.loads((tmp_path / "out" / "latest.json").read_text())
+    assert lat["path"] == "trainable-step0000003.safetensors" and lat["best"]["path"] == "trainable-step0000001.safetensors"
+    assert side["best"] == lat["best"] and lat["best"]["sha256"] == _sha(tmp_path / "out" / lat["best"]["path"])
+    for name, step in ((lat["path"], 3), (lat["best"]["path"], 1)):
+        assert (tmp_path / "out" / (name + ".sha256")).is_file()
+        u = _trainer(tmp_path / f"ck-{step}", seed=5)
+        u.load(tmp_path / "out" / name)
+        assert u.step == step
+    with pytest.raises(ValueError, match="training checkpoint dir"):  # best in the out dir's place is refused too
+        CE.export_inference(last, tmp_path / "ck", "bf16", best=best)
