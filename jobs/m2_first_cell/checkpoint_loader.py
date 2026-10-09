@@ -14,6 +14,10 @@ The job_params ``checkpoint`` block (``checkpoint_block`` validates it)::
      "cell_json_sha256": <sha of the cell.json the training run wrote, shipped as data/checkpoint/cell.json>,
      "url_env": "CKPT_URL"}
 
+An INFERENCE export (``train.ckpt_export``; what a first-cell run writes to ``/output/ckpt`` since job-igcu4's
+over-cap upload) is accepted too: ``"member": "./ckpt/trainable-stepNNNNNNN.safetensors"`` plus ``"sidecar_sha256"``
+(its ``trainable-stepNNNNNNN.json``, installed beside it); ``Trainer.load`` restores it for eval.
+
 What ``install`` guarantees (else ``CheckpointError`` with ``code`` 5 = usage / 10 = identity):
   1. the shipped cell.json has the pinned sha256, its ``config`` EQUALS the mode's committed cell config, and its ladder
      has a T_max (``train.m2_gates`` restores the checkpoint through ``Trainer.load``, which then checks config hash +
@@ -41,7 +45,7 @@ from pathlib import Path
 from typing import Any
 
 KEYS = ("artifact", "artifact_sha256", "member", "ckpt_sha256", "latest_json_sha256", "cell_json_sha256", "url_env")
-MEMBER_RE = re.compile(r"\./ckpt/ckpt-step[0-9]+\.pt")
+MEMBER_RE = re.compile(r"\./ckpt/(ckpt-step[0-9]+\.pt|trainable-step[0-9]+\.safetensors)")
 CHUNK = 8 << 20
 
 
@@ -69,7 +73,12 @@ def checkpoint_block(params: dict) -> dict:
         raise CheckpointError(f"checkpoint block missing {miss}", 5)
     if not re.fullmatch(r"[A-Z][A-Z0-9_]*", ck["url_env"]) or not MEMBER_RE.fullmatch(ck["member"]):
         raise CheckpointError(f"checkpoint block url_env / member malformed: {ck['url_env']!r} {ck['member']!r}", 5)
-    for k in ("artifact_sha256", "ckpt_sha256", "latest_json_sha256", "cell_json_sha256"):
+    shas = ["artifact_sha256", "ckpt_sha256", "latest_json_sha256", "cell_json_sha256"]
+    if ck["member"].endswith(".safetensors"):
+        shas.append("sidecar_sha256")
+        if not isinstance(ck.get("sidecar_sha256"), str):
+            raise CheckpointError("checkpoint block: an inference-export member needs sidecar_sha256", 5)
+    for k in shas:
         if not re.fullmatch(r"[0-9a-f]{64}", ck[k]):
             raise CheckpointError(f"checkpoint.{k} is not a sha256", 5)
     return ck
@@ -133,8 +142,12 @@ def install(block: dict, *, cell_src: str | Path, cell_config: str | Path, ck_di
     ck_dir.mkdir(parents=True, exist_ok=True)
     fname = ck["member"].rsplit("/", 1)[1]
     pt, latest = ck_dir / fname, ck_dir / "latest.json"
+    side = None  # an inference export's JSON sidecar (train.ckpt_export), installed beside the .safetensors
+    if fname.endswith(".safetensors"):
+        side = ck_dir / (fname[: -len(".safetensors")] + ".json")
     reused = pt.is_file() and sha256_file(pt) == ck["ckpt_sha256"] and latest.is_file() \
-        and sha256_file(latest) == ck["latest_json_sha256"]
+        and sha256_file(latest) == ck["latest_json_sha256"] \
+        and (side is None or (side.is_file() and sha256_file(side) == ck["sidecar_sha256"]))
     if not reused:
         url = url or os.environ.get(ck["url_env"], "")
         if not url:
@@ -145,6 +158,8 @@ def install(block: dict, *, cell_src: str | Path, cell_config: str | Path, ck_di
             raise CheckpointError(f"artifact {ck['artifact']} sha256 {got} != checkpoint.artifact_sha256")
         _extract(tar, "./ckpt/latest.json", latest, ck["latest_json_sha256"], "latest.json")
         _extract(tar, ck["member"], pt, ck["ckpt_sha256"], fname)
+        if side is not None:
+            _extract(tar, f"./ckpt/{side.name}", side, ck["sidecar_sha256"], side.name)
     if json.loads(latest.read_text(encoding="utf-8")).get("path") != fname:
         raise CheckpointError(f"latest.json does not name {fname}")
     if cell_out is not None:
