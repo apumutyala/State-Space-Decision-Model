@@ -30,6 +30,8 @@ def main(argv=None) -> int:
     ap.add_argument("--work", required=True)
     ap.add_argument("--parent-n", type=int, required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--k77-margin", type=int, default=0,
+                    help="extra K77 rows kept for rows the P3 checker / doc gate drop later (final share >= D16's)")
     a = ap.parse_args(argv)
     w = Path(a.work)
     lens = {}
@@ -61,13 +63,13 @@ def main(argv=None) -> int:
     c = prov["banking_k77"]["count_rule"]
     s, have = c["k77_row_share"], c["parent_k77_rows"]
     n_final_wo = a.parent_n + len(rows)
-    need = max(0, math.ceil((s * n_final_wo - have) / (1 - s)))
+    need = max(0, math.ceil((s * n_final_wo - have) / (1 - s))) + a.k77_margin
     if need > len(k77):
         raise SystemExit(f"need {need} K77 rows, only {len(k77)} fit")
     rows += k77[:need]
     stats["banking_k77"]["kept_after_trim"] = need
     kdist["banking_k77"][77] = need
-    c.update({"rows_without_new_k77": n_final_wo, "k77_rows_kept": need,
+    c.update({"rows_without_new_k77": n_final_wo, "k77_rows_kept": need, "k77_margin": a.k77_margin,
               "final_k77_share": round((have + need) / (n_final_wo + need), 5)})
     for lv, st in stats.items():
         prov.setdefault(lv, {})["token_check"] = dict(st)
