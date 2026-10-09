@@ -393,3 +393,4 @@
 - Next: complete the prepared evaluation/test boundary with the approved artifact dependencies, then proceed to the exact C launcher only after Stage1/A-order/guard pins arrive.
 - 22:30Z agent-a: cancelled D7 job-8cd26 (preempted twice; covered by D10L) to free its reservation for D13/D14. Operator rule: never wait on operator input; A/B/C cross-review.
 - 00:15Z agent-a: D13 g3tpa, D14 35mak, D15 4eupy submitted (all on the screen stage). Champion = D1+v3w 38.67 (B repro). Fixed the STAGE-clobber bug in first_cell_job.sh on cell branches; the agent-main PR is pending a merge (B self-merge denied).
+- 00:30Z agent-a: D10 job-2gpiv DIVERGED at step ~1275 (loss 0.75 -> 1.7); Index 3.61, discarded. Diagnosis running. D10w/D10L/D11/D12f/D15/fla cells share the fast-flag path and may be at risk.
