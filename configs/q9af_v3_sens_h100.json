@@ -1,0 +1,119 @@
+{
+ "_comment": "Q9-AF v3 CHEAP SENSITIVITY JOB (mode S, jobs/q9af_v3/README.md 'Cheap first job'): can ANY single attention layer of Qwen3.5-9B be converted to a (widened, dk 256) GDN with a small recall loss under the recall-heavy mix? Stage 1 of all 8 (15 min), then each layer ALONE: 10 min KD on 50% generic windows + 50% synthetic recall rows (no teacher generation: its 75 min is the big job's), recall probe (MQAR + NIAH, the v2 settings) + held-out KL. Capacity control: the 2 worst layers again at v2's width (dk 128). Mix: v2's clean recipe at 60M tokens (same sources, filter, shares, held-out).",
+ "seed": 0,
+ "kernel": "fla",
+ "model_dir": "${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-9B/snapshots",
+ "ckpt_dir": "${Q9AF3_CK}/gdn",
+ "attention_layers": [
+  3,
+  7,
+  11,
+  15,
+  19,
+  23,
+  27,
+  31
+ ],
+ "seq_len": 4096,
+ "batch": 8,
+ "micro_batch": 4,
+ "vram_fraction": 0.95,
+ "mix": {
+  "train_tokens": 60000000,
+  "shares": {
+   "web": 0.55,
+   "chat": 0.3,
+   "math": 0.15
+  },
+  "heldout_tokens": {
+   "web": 140000,
+   "chat": 110000,
+   "math": 45000
+  },
+  "decontam": "full-eval-v1"
+ },
+ "heldout_windows": {
+  "web": 32,
+  "chat": 24,
+  "math": 8
+ },
+ "curve_windows_per_source": 8,
+ "lc": {
+  "seq_len": 32768,
+  "blocks": 0
+ },
+ "stage1": {
+  "lr": 0.001,
+  "guard": {
+   "min_tok_s": 9476,
+   "check_after_steps": 50,
+   "max_peak_gb": 76,
+   "max_minutes": 15
+  }
+ },
+ "distill": {
+  "_comment": "recall-gated per-group conversion (convert.distill.conversion_plan, order ascending_recall): order = ascending single-layer recall damage (MQAR drop + NIAH drop after stage 1; ties: single-layer KL, then index), groups of 2, stage minutes = 60 + 280 x the added layers' damage share; every stage trains ALL converted GDNs on the mix_fracs stream; keep the best held-out-KL checkpoint per stage; after each stage the runner gates on recall + proxy600 (jobs/q9af_v3/rule.py stage_gate) and STOPS converting on a breach.",
+  "group_size": 2,
+  "kd_minutes": 520,
+  "floor_minutes": 60,
+  "ce_weight": 0.25,
+  "lr": 0.0003,
+  "eval_every_min": 30,
+  "guard": {
+   "min_tok_s": 2600,
+   "check_after_steps": 50,
+   "max_peak_gb": 76
+  },
+  "order": "ascending_recall"
+ },
+ "init": "reuse_attn",
+ "gdn": {
+  "dk": 256,
+  "_comment": "converted layers only: nk 16 x dk 256 (= the attention head dim) x nv 32 x dv 128; native GDNs keep dk 128"
+ },
+ "mix_fracs": {
+  "generic": 0.5,
+  "recall": 0.5
+ },
+ "recall_data": {
+  "kv_pairs": [
+   16,
+   32,
+   64,
+   128,
+   256
+  ],
+  "kv_queries": 32,
+  "quote_questions": 4,
+  "task_shares": [
+   0.35,
+   0.35,
+   0.3
+  ],
+  "key_pool": 4000,
+  "key_scan": 200000
+ },
+ "recall_probe": {
+  "mqar_pairs": [
+   8,
+   32,
+   64,
+   128
+  ],
+  "mqar_n_seq": 20,
+  "niah_lengths": [
+   1024,
+   2048,
+   4096,
+   8192,
+   16384
+  ],
+  "niah_n_per": 8,
+  "_comment": "configs/q9af_v2_clean_h100.json probes (the v2 MQAR / NIAH drops)"
+ },
+ "sens": {
+  "minutes_per_layer": 10,
+  "control_layers": 2,
+  "control_stage1_minutes": 3
+ }
+}

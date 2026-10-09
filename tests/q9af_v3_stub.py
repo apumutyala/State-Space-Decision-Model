@@ -58,15 +58,31 @@ def main(argv):
             _b(d / f)
         _w(d / "split.json", {"dry_run": True})
         _w(d / "results.json", {"env": {"dry_run": True}, "gen": {"completion_tokens": 12000000, "tok_s": 2700.0}})
-    elif cmd == "stagea":
+    elif cmd == "stagea":  # stagea <ck> <k>: stages 1..k done (cumulative, as --until-stage k)
+        ck, k = Path(args[0]), int(args[1])
+        order = [15, 23, 11, 31, 7, 19, 3, 27]
+        stop_at = int(os.environ.get("Q9AF3_STUB_STOP_AT", "0"))
+        stages, mq, nh = {}, 0.9, 0.95
+        for j in range(1, k + 1):
+            d = 0.2 if j == stop_at else 0.02
+            mq, nh = mq - d, nh - d
+            stages[f"stage{j}"] = {"adds": order[2 * j - 2:2 * j], "converted": sorted(order[:2 * j]),
+                                   "best": {"crit": 0.1}, "tokens": 1, "minutes_budget": 130, "kept_last": True,
+                                   "recall": {"mqar_mean": mq, "niah_mean": nh}}
+            _b(ck / "gdn" / f"stage{j}.pt")
+        res = {"recall_stock": {"mqar_mean": 0.9, "niah_mean": 0.95},
+               "plan": {"order": order, "sensitivity": {str(i): 0.01 for i in ATTN},
+                        "stages": [{"adds": order[i:i + 2]} for i in range(0, 8, 2)]}, "stages": stages}
+        if k == 4:
+            _b(ck / "gdn" / "stageA.pt")
+            res["final"] = {"heldout": {"mix": {"kl": 0.09}}, "gen_heldout": {"kl": 0.12}}
+        _w(ck / "pipeline" / "results.json", res)
+    elif cmd == "sens":
         ck = Path(args[0])
-        _b(ck / "gdn" / "stageA.pt")
-        _w(ck / "pipeline" / "results.json", {
-            "plan": {"order": [27, 3, 19, 7, 31, 11, 23, 15], "sensitivity": {str(i): 0.01 for i in ATTN},
-                     "stages": [{"adds": [27, 3]}, {"adds": [19, 7]}, {"adds": [31, 11]}, {"adds": [23, 15]}]},
-            "stages": {f"stage{k}": {"adds": [], "best": {"crit": 0.1}, "tokens": 1, "minutes_budget": 90,
-                                     "kept_last": True} for k in range(1, 5)},
-            "final": {"heldout": {"mix": {"kl": 0.09}}, "gen_heldout": {"kl": 0.12}}})
+        drop = float(os.environ.get("Q9AF3_STUB_SENS_DROP", "0.03"))
+        table = {f"wide_L{i}": {"layer": i, "mqar_drop": drop, "niah_drop": drop / 2, "kl": 0.02} for i in ATTN}
+        table.update({f"base_L{i}": {"layer": i, "mqar_drop": 2 * drop, "niah_drop": drop} for i in (27, 3)})
+        _w(ck / "pipeline" / "results.json", {"recall_stock": {"mqar_mean": 0.9, "niah_mean": 0.95}, "table": table})
     elif cmd == "stageb":
         ck = Path(args[0])
         _b(ck / "gdn" / "final.pt")
@@ -74,7 +90,8 @@ def main(argv):
         _w(ck / "pipeline" / "results.json", {
             "entry": {"heldout": {"mix": {"kl": 0.09}}, "long": {"kl": 0.2}},
             "long_context": {"tokens": 1}, "onpolicy": {"tokens": 1},
-            "final": {"heldout": {"mix": {"kl": 0.085}}, "long": {"kl": 0.15}, "gen_heldout": {"kl": 0.11}},
+            "final": {"heldout": {"mix": {"kl": 0.085}}, "long": {"kl": 0.15}, "gen_heldout": {"kl": 0.11},
+                      "recall_drop_vs_stock": {"mqar_drop": 0.1, "niah_drop": 0.08}},
             "throughput": {"stock": thr, "converted_8": thr}})
     elif cmd == "export":
         out, meta = Path(args[0]), Path(args[1])
@@ -97,6 +114,9 @@ def main(argv):
             cand = args[args.index("--candidate") + 1]
             base = args[args.index("--baseline") + 1]
             p, lo = (POINT, LO) if "v3w_v3" in cand else (-6.0, -9.5)  # v3 vs anything / v2 vs stock
+            if "v3w_stage" in cand:
+                p = float(os.environ.get("Q9AF3_STUB_STAGE_POINT", "-3.0"))
+                lo = p - 3.5
             print(json.dumps({"B": 2000, "seed": 0, "subset_ids_sha256": PROXY_SHA, "rows": 644,
                               "candidate": cand, "baseline": base,
                               "diff": {"index": {"point": p, "lo": lo, "hi": p + 3.5}}}))

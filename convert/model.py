@@ -216,7 +216,7 @@ def load(model_dir=None, device="cuda", dtype=torch.bfloat16, kernel="fla", nati
 
 
 # ---------------------------------------------------------------- initialisation of the new GDN layer
-def init_gdn(model: ConvertibleQwen, i: int, how: str = "reuse_attn", seed: int = 0) -> GDN:
+def init_gdn(model: ConvertibleQwen, i: int, how: str = "reuse_attn", seed: int = 0, dk: int | None = None) -> GDN:
     """Create the student GDN for attention layer ``i``.
 
     how = ``random``         HF-style fresh init (std 0.02 linears, conv/A/dt as HF)
@@ -229,7 +229,7 @@ def init_gdn(model: ConvertibleQwen, i: int, how: str = "reuse_attn", seed: int 
     attn = model.swaps[i].attn
     dev, dt = attn.o_proj.weight.device, attn.o_proj.weight.dtype
     g = torch.Generator().manual_seed(seed + 1000 * i)
-    gdn = GDN.from_config(cfg, kernel=model.kernel)
+    gdn = GDN.from_config(cfg, kernel=model.kernel, dk=dk)
     with torch.no_grad():
         for mod in gdn.modules():
             if isinstance(mod, nn.Linear):
@@ -250,6 +250,8 @@ def init_gdn(model: ConvertibleQwen, i: int, how: str = "reuse_attn", seed: int 
     nb = model.lm.layers[j].linear_attn
     nb = nb.gdn if hasattr(nb, "gdn") else nb
     if how == "clone_neighbor":
+        if gdn.dk != cfg.linear_key_head_dim:
+            raise ValueError("clone_neighbor needs the config's key head dim (a widened GDN has no neighbour to copy)")
         gdn.load_state_dict(nb.state_dict())
         return gdn
     if how != "reuse_attn":
@@ -315,6 +317,26 @@ def reuse_attn_weights(attn, cfg, nk, dk, nv, dv):
     else:
         raise ValueError(f"reuse_attn: key dims {nk}x{dk} vs attention {H}x{hd} unsupported; use clone_neighbor")
     return out
+
+
+def gdn_dk_of_state(model: ConvertibleQwen, sd: dict) -> int:
+    """The key head dim of a saved converted-GDN state dict (only dk may differ from the config: Q9-AF v3 widening).
+    conv_dim = 2 nk dk + nv dv with nk, nv, dv from the config."""
+    cfg = model.cfg
+    conv_dim = sd["in_proj_qkv.weight"].shape[0]
+    key_dim = (conv_dim - cfg.linear_num_value_heads * cfg.linear_value_head_dim) // 2
+    if key_dim % cfg.linear_num_key_heads:
+        raise ValueError(f"GDN state: key dim {key_dim} not a multiple of {cfg.linear_num_key_heads} key heads")
+    return key_dim // cfg.linear_num_key_heads
+
+
+def attach_from_state(model: ConvertibleQwen, i: int, sd: dict, train_dtype=torch.float32, seed: int = 0) -> GDN:
+    """Attach a converted GDN for layer i with the dims its saved state dict implies, and load it (strict)."""
+    dk = gdn_dk_of_state(model, sd)
+    gdn = attach_gdn(model, i, init_gdn(model, i, "random", seed, dk=None if dk == model.cfg.linear_key_head_dim else dk),
+                     train_dtype=train_dtype)
+    gdn.load_state_dict(sd)
+    return gdn
 
 
 def attach_gdn(model: ConvertibleQwen, i: int, gdn: GDN, train_dtype=torch.float32):

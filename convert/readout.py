@@ -45,7 +45,7 @@ def load_converted_plugin(model_dir: str, gdn_ckpt: str | None, converted, devic
                           dtype: str = "bfloat16", model_id: str | None = None):
     import torch
 
-    from convert.model import ConvertedStateOps, attach_gdn, init_gdn, load, resolve_model_dir
+    from convert.model import ConvertedStateOps, attach_from_state, load, resolve_model_dir
     from decide.backends.hf_readout import ModelPlugin, _hash_files, _pkg_versions, _snapshot_of
     from decide.untrusted import UntrustedEncoder
 
@@ -64,8 +64,7 @@ def load_converted_plugin(model_dir: str, gdn_ckpt: str | None, converted, devic
         if missing:
             raise ValueError(f"GDN checkpoint {gdn_ckpt} has no weights for layers {missing}")
         for i in layers:
-            attach_gdn(model, i, init_gdn(model, i, "random", 0), train_dtype=torch.float32)
-            model.swaps[i].gdn.load_state_dict(sd[i])
+            attach_from_state(model, i, sd[i], train_dtype=torch.float32)  # config dims or a v3-widened key dim
             model.swaps[i].gdn.requires_grad_(False)
         files["gdn_ckpt"] = _sha(gdn_ckpt)
     model.set_modes({i: "student" for i in layers})

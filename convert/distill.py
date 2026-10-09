@@ -173,16 +173,22 @@ def distill_accumulate(model, student_modes, x, wpos, micro_batch=None, mode="fk
 
 
 # ----------------------------------------------------------------------------- the pre-registered order rule
-def conversion_plan(sens: dict, group_size: int, kd_minutes: float, floor_minutes: float) -> dict:
-    """sens: {layer: held-out KL with ONLY that layer converted (its stage-1-aligned GDN)}.
+def conversion_plan(sens: dict, group_size: int, kd_minutes: float, floor_minutes: float, descending: bool = True,
+                    tiebreak: dict | None = None) -> dict:
+    """sens: {layer: damage with ONLY that layer converted (its stage-1-aligned GDN)}.
 
-    Order: descending sensitivity (most sensitive first; ties -> lower layer index first). Groups: consecutive
+    v3 recall redesign (job A): ``sens`` = the single-layer RECALL damage (MQAR drop + NIAH drop) and
+    ``descending=False``: the layers that hurt recall least convert first, the recall-hardest LAST (the stage gate can
+    then stop before them). ``tiebreak`` (the single-layer KL) orders equal damages, then the layer index.
+    Order: by sensitivity (``descending``: most sensitive first; ties -> tiebreak, then lower layer index). Groups: consecutive
     ``group_size`` layers of that order (the last group may be smaller). Stage k minutes:
     floor + (kd_minutes - n_groups * floor) * S_k / sum(S), S_k = summed sensitivity of the layers stage k ADDS
     (every stage trains all layers converted so far). Pure function of the probe: pre-registered, deterministic."""
     if group_size < 1 or not sens:
         raise ValueError("need group_size >= 1 and a sensitivity per layer")
-    order = sorted(sens, key=lambda i: (-float(sens[i]), int(i)))
+    sgn = -1.0 if descending else 1.0
+    tb = tiebreak or {}
+    order = sorted(sens, key=lambda i: (sgn * float(sens[i]), sgn * float(tb.get(i, 0.0)), int(i)))
     groups = [order[k:k + group_size] for k in range(0, len(order), group_size)]
     free = kd_minutes - len(groups) * floor_minutes
     if free < 0:
@@ -196,6 +202,7 @@ def conversion_plan(sens: dict, group_size: int, kd_minutes: float, floor_minute
         conv = conv + list(g)
         stages.append({"adds": [int(i) for i in g], "converted": sorted(int(i) for i in conv), "minutes": round(m, 3),
                        "share": round(f, 6)})
-    return {"order": [int(i) for i in order], "rule": "descending single-layer held-out KL (ties: lower index first); "
-            f"groups of {group_size}; stage minutes = {floor_minutes} + {free:g} x share of the added layers' KL",
+    return {"order": [int(i) for i in order], "rule": f"{'descending' if descending else 'ascending'} single-layer "
+            "damage (ties: the tiebreak, then lower index first); "
+            f"groups of {group_size}; stage minutes = {floor_minutes} + {free:g} x share of the added layers' damage",
             "sensitivity": {str(int(i)): float(sens[i]) for i in order}, "stages": stages}

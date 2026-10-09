@@ -1,27 +1,58 @@
 {
- "_comment": "Q9-AF v3 (jobs/q9af_v3/README.md: the pre-registered plan and gate; convert/v3.py). Qwen3.5-9B -> fully attention-free (all 8 attention layers -> GDN) with the 2025-26 recipe upgrades over v2: per-layer GATED conversion in a sensitivity-probe order with keep-best per stage, GenDistill-style completion-only KD on TEACHER-GENERATED data (stock open-weight Qwen3.5-9B), a 32k long-context stage, a short on-policy (reverse-KL) stage; gate = proxy600 Index under the generic v3w readout (PR #236), paired. Data = v2's clean mix verbatim (convert.mixdata, full-eval-v1 decontam, 280M tokens, same sources / revisions / shares / held-out), minus 512 reserved 32k blocks for the long-context stage. Rates / floors / peak from the v2 receipts (job-5cmat, job-2xe5w): 1xH100, micro_batch 4, 8 x 4096.",
+ "_comment": "Q9-AF v3, RECALL redesign after v2 (job-7ji99) folded on recall (KL 0.097 but proxy600 -21.77, MQAR drop 0.59, NIAH drop 0.525). jobs/q9af_v3/README.md: the pre-registered plan and gates; convert/v3.py. Changes vs v2: (1) converted GDNs get a 2x key head dim (gdn.dk 256 = the attention head dim: an exact q/k reuse_attn init and a 2x recall state; +16.8M params / layer, +134M total = +1.5%); (2) a recall-heavy stream (mix_fracs): 35% generic windows (full-sequence KL), 25% teacher-generated rows incl. retrieval / tool / knowledge instructions on mix documents (completion-only KL + 0.25 CE), 40% synthetic recall rows (convert/recall.py: key->id lookups, multi-needle memos, quote continuation; answer-only loss); (3) per-layer order = ascending single-layer recall damage (the recall-hardest layers convert last) and every stage is GATED on the recall probe (MQAR + NIAH, the v2 probe settings) and proxy600 (rule.stage_gate; STOP rule); (4) proxy600 + recall gate the result, never KL alone. Data = v2's clean mix verbatim (full-eval-v1), minus 512 reserved 32k blocks.",
  "seed": 0,
  "kernel": "fla",
  "model_dir": "${SSDM_DATA_ROOT}/hf/models--Qwen--Qwen3.5-9B/snapshots",
  "ckpt_dir": "${Q9AF3_CK}/gdn",
- "attention_layers": [3, 7, 11, 15, 19, 23, 27, 31],
+ "attention_layers": [
+  3,
+  7,
+  11,
+  15,
+  19,
+  23,
+  27,
+  31
+ ],
  "seq_len": 4096,
  "batch": 8,
  "micro_batch": 4,
  "vram_fraction": 0.95,
  "mix": {
   "train_tokens": 280000000,
-  "shares": {"web": 0.55, "chat": 0.3, "math": 0.15},
-  "heldout_tokens": {"web": 140000, "chat": 110000, "math": 45000},
+  "shares": {
+   "web": 0.55,
+   "chat": 0.3,
+   "math": 0.15
+  },
+  "heldout_tokens": {
+   "web": 140000,
+   "chat": 110000,
+   "math": 45000
+  },
   "decontam": "full-eval-v1"
  },
- "heldout_windows": {"web": 32, "chat": 24, "math": 8},
+ "heldout_windows": {
+  "web": 32,
+  "chat": 24,
+  "math": 8
+ },
  "curve_windows_per_source": 8,
- "lc": {"seq_len": 32768, "blocks": 512},
+ "lc": {
+  "seq_len": 32768,
+  "blocks": 512
+ },
  "gen": {
-  "_comment": "teacher = the stock Qwen3.5-9B (all attention), T = 1.0 ancestral samples; prompts from the decontaminated mix (chat docs up to the first assistant header + empty think block; web/math 256-token doc prefixes). Wall-clock 75 min or 16M completion tokens, whichever first.",
+  "_comment": "teacher = the stock Qwen3.5-9B (all attention), T = 1.0; prompts from the decontaminated mix: chat docs up to the first assistant header, web/math 256-token prefixes, and RETRIEVAL / TOOL / KNOWLEDGE instructions (convert.gendata.INSTRUCTIONS, checked against full-eval-v1 at run time) on <= 600-token mix documents. 75 min or 16M completion tokens.",
   "n_prompts": 60000,
-  "shares": {"chat": 0.6, "web": 0.25, "math": 0.15},
+  "shares": {
+   "chat": 0.35,
+   "web": 0.1,
+   "math": 0.1,
+   "retrieval": 0.25,
+   "tool": 0.1,
+   "knowledge": 0.1
+  },
   "doc_prompt_tokens": 256,
   "min_continuation": 64,
   "max_prompt_tokens": 1024,
@@ -32,40 +63,130 @@
   "max_minutes": 75,
   "target_completion_tokens": 16000000,
   "heldout_rows": 32,
-  "onpolicy": {"n_prompts": 12000, "shares": {"chat": 0.7, "web": 0.15, "math": 0.15}, "max_prompt_tokens": 768}
+  "onpolicy": {
+   "n_prompts": 12000,
+   "shares": {
+    "chat": 0.7,
+    "web": 0.15,
+    "math": 0.15
+   },
+   "max_prompt_tokens": 768
+  },
+  "instruct": {
+   "doc_tokens": 600,
+   "min_doc_tokens": 200
+  },
+  "check_templates": true
  },
  "stage1": {
   "lr": 0.001,
-  "guard": {"min_tok_s": 9476, "check_after_steps": 50, "max_peak_gb": 76, "max_minutes": 40}
+  "guard": {
+   "min_tok_s": 9476,
+   "check_after_steps": 50,
+   "max_peak_gb": 76,
+   "max_minutes": 40
+  }
  },
  "distill": {
-  "_comment": "per-group gated conversion (convert.distill.conversion_plan): order = descending single-layer held-out KL after stage 1, groups of 2, stage minutes = 45 + 180 x the added layers' KL share; every stage trains ALL converted GDNs; batches: 25 % teacher-generated rows (completion-only KL + 0.25 CE) while unread rows remain, else generic windows (full-sequence KL); keep the best held-out-KL checkpoint per stage.",
+  "_comment": "recall-gated per-group conversion (convert.distill.conversion_plan, order ascending_recall): order = ascending single-layer recall damage (MQAR drop + NIAH drop after stage 1; ties: single-layer KL, then index), groups of 2, stage minutes = 60 + 280 x the added layers' damage share; every stage trains ALL converted GDNs on the mix_fracs stream; keep the best held-out-KL checkpoint per stage; after each stage the runner gates on recall + proxy600 (jobs/q9af_v3/rule.py stage_gate) and STOPS converting on a breach.",
   "group_size": 2,
-  "kd_minutes": 360,
-  "floor_minutes": 45,
-  "gen_frac": 0.25,
+  "kd_minutes": 520,
+  "floor_minutes": 60,
   "ce_weight": 0.25,
   "lr": 0.0003,
   "eval_every_min": 30,
-  "guard": {"min_tok_s": 2600, "check_after_steps": 50, "max_peak_gb": 76}
+  "guard": {
+   "min_tok_s": 2600,
+   "check_after_steps": 50,
+   "max_peak_gb": 76
+  },
+  "order": "ascending_recall"
  },
- "long_eval": {"source": "web", "seq_len": 32768, "windows": 4},
+ "long_eval": {
+  "source": "web",
+  "seq_len": 32768,
+  "windows": 4
+ },
  "long_context": {
   "seq_len": 32768,
   "batch": 2,
   "micro_batch": 1,
   "lr": 0.0001,
   "eval_every_min": 15,
-  "guard": {"min_tok_s": 1500, "check_after_steps": 20, "max_peak_gb": 76, "max_minutes": 45}
+  "guard": {
+   "min_tok_s": 1500,
+   "check_after_steps": 20,
+   "max_peak_gb": 76,
+   "max_minutes": 45
+  }
  },
  "onpolicy": {
   "rollout_batch": 64,
   "max_new": 256,
   "temperature": 1.0,
   "micro_batch": 8,
-  "lr": 0.00005,
+  "lr": 5e-05,
   "eval_every_min": 15,
-  "guard": {"min_tok_s": 100, "check_after_steps": 12, "max_peak_gb": 76, "max_minutes": 40}
+  "guard": {
+   "min_tok_s": 100,
+   "check_after_steps": 12,
+   "max_peak_gb": 76,
+   "max_minutes": 40
+  }
  },
- "throughput": {"lengths": [4096, 8192, 16384, 32768], "reps": 2}
+ "throughput": {
+  "lengths": [
+   4096,
+   8192,
+   16384,
+   32768
+  ],
+  "reps": 2
+ },
+ "init": "reuse_attn",
+ "gdn": {
+  "dk": 256,
+  "_comment": "converted layers only: nk 16 x dk 256 (= the attention head dim) x nv 32 x dv 128; native GDNs keep dk 128"
+ },
+ "mix_fracs": {
+  "generic": 0.35,
+  "gen": 0.25,
+  "recall": 0.4
+ },
+ "recall_data": {
+  "kv_pairs": [
+   16,
+   32,
+   64,
+   128,
+   256
+  ],
+  "kv_queries": 32,
+  "quote_questions": 4,
+  "task_shares": [
+   0.35,
+   0.35,
+   0.3
+  ],
+  "key_pool": 4000,
+  "key_scan": 200000
+ },
+ "recall_probe": {
+  "mqar_pairs": [
+   8,
+   32,
+   64,
+   128
+  ],
+  "mqar_n_seq": 20,
+  "niah_lengths": [
+   1024,
+   2048,
+   4096,
+   8192,
+   16384
+  ],
+  "niah_n_per": 8,
+  "_comment": "configs/q9af_v2_clean_h100.json probes (the v2 MQAR / NIAH drops)"
+ }
 }

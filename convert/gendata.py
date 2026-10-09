@@ -307,3 +307,72 @@ class MixedStream:
         return {"steps": self.step, "gen_batches": self.n_gen, "generic_batches": self.n_generic,
                 "gen_rows_used": int(self.pos), "gen_rows_total": int(len(self.order)),
                 "generic_windows_used": int(self.g.windows_used), "generic_passes": int(getattr(self.g, "passes", 0))}
+
+
+# ----------------------------------------------------------------------------- recall-style teacher prompts
+#: Hand-written, generic instructions (no eval item, no benchmark wording). Phase G checks every one against the
+#: shipped full-eval-v1 filter (eval-hash index + attack templates) and refuses to run if any is flagged.
+INSTRUCTIONS = {
+    "retrieval": [
+        "List every number that appears in the text above, each with what it refers to.",
+        "Which people, places or organisations does the text above mention? Quote the sentence where each first appears.",
+        "Copy the second sentence of the text above exactly, word for word.",
+        "What does the text above say right after the words \"{span}\"? Quote it exactly.",
+    ],
+    "tool": [
+        "You can call one tool, search(query: str). Reply with the single JSON call that would best find more "
+        "information about the main topic of the text above.",
+        "You have two tools: extract_dates(text: str) and extract_entities(text: str). Reply with a JSON list of the "
+        "calls you would make, with arguments copied exactly from the text above.",
+    ],
+    "knowledge": [
+        "Summarise the key facts of the text above in three bullet points, keeping every name and number exact.",
+        "Write two questions that the text above answers, each followed by its answer quoted from the text.",
+    ],
+}
+INSTRUCTION_KINDS = tuple(INSTRUCTIONS)
+
+
+def instruction_prompts(tok, toks, spans, bounds, split, counts: dict, cfg: dict, seed: int, exclude: set | None = None,
+                        system: str = "You are a helpful assistant."):
+    """Chat prompts that ask the teacher to RETRIEVE from a mixture document (web / math, <= ``doc_tokens`` tokens):
+    ``<|im_start|>user\n<doc>\n\n<instruction><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>``.
+    Returns (prompts, used docs, stats); prompt["src"] is the kind (retrieval / tool / knowledge)."""
+    exclude = set(exclude or ())
+    rng = np.random.default_rng(seed)
+    cand = [d for d, (a, _) in enumerate(spans) if source_of(int(a), bounds) in ("web", "math") and d not in exclude]
+    order = rng.permutation(len(cand)) if cand else []
+    prompts, used, st = [], set(), {k: {"taken": 0} for k in INSTRUCTIONS}
+    want = dict(counts)
+    k_iter = iter(order)
+    for kind in INSTRUCTIONS:
+        while st[kind]["taken"] < want.get(kind, 0):
+            try:
+                d = cand[next(k_iter)]
+            except StopIteration:
+                break
+            a, b = (int(x) for x in spans[d])
+            if not split.doc_ok(a, b) or b - a < cfg["min_doc_tokens"]:
+                continue
+            ids = np.asarray(toks[a:min(b - 1, a + cfg["doc_tokens"])], dtype=np.int64)
+            text = tok.decode(ids.tolist())
+            instr = INSTRUCTIONS[kind][int(rng.integers(len(INSTRUCTIONS[kind])))]
+            if "{span}" in instr:
+                p = int(rng.integers(0, max(1, len(ids) - 8)))
+                instr = instr.replace("{span}", tok.decode(ids[p:p + 5].tolist()).strip())
+            chat = (f"<|im_start|>system\n{system}<|im_end|>\n<|im_start|>user\n{text}\n\n{instr}<|im_end|>\n"
+                    "<|im_start|>assistant\n<think>\n\n</think>")
+            pid = np.asarray(tok(chat, add_special_tokens=False)["input_ids"], dtype=np.uint32)
+            if len(pid) > cfg["max_prompt_tokens"]:
+                continue
+            prompts.append({"src": kind, "doc": d, "ids": pid})
+            used.add(d)
+            st[kind]["taken"] += 1
+    return prompts, used, st
+
+
+def check_templates(doc_filter) -> dict:
+    """full-eval-v1 flags of every instruction template (doc_filter = convert.mixdata.full_filter()[0])."""
+    texts = [t for v in INSTRUCTIONS.values() for t in v]
+    flags = doc_filter(texts)
+    return {"templates": len(texts), "flagged": [t for t, f in zip(texts, flags) if f]}

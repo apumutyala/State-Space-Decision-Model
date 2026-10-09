@@ -34,6 +34,7 @@ def project_a(p: dict, cfg: dict) -> dict:
     m, e = p["measured"], p["estimates_not_measured"]
     B, L, dc, gc = cfg["batch"], cfg["seq_len"], cfg["distill"], cfg["gen"]
     from convert.distill import conversion_plan
+    from jobs.common.readout_cost import project as readout
 
     n_stages = math.ceil(len(cfg["attention_layers"]) / dc["group_size"])
     plan = conversion_plan({i: 1.0 for i in cfg["attention_layers"]}, dc["group_size"], dc["kd_minutes"],
@@ -42,23 +43,54 @@ def project_a(p: dict, cfg: dict) -> dict:
     capped = cfg["stage1"]["guard"]["max_minutes"] + dc["kd_minutes"] \
         + (B * L / m["stage1_steady_tok_s"] + n_stages * B * L / s2) / 60
     n_ev = sum(_evals(s["minutes"], dc["eval_every_min"]) for s in plan["stages"])
-    uncapped = (m["load_and_data_s"] / 60 + len(cfg["attention_layers"]) * e["curve_eval_min_each"]
-                + n_ev * e["curve_eval_min_each"] + e["final_heldout_min"] + e["gen_heldout_eval_min"]
-                + e["teacher_cache_min"])
+    n_layers = len(cfg["attention_layers"])
+    # one model load + data per stage invocation; the stock recall probe; per layer KL + recall; per stage KL evals
+    # + the stage-end recall probe; final held-out + generated-completion KL
+    uncapped = (n_stages * m["load_and_data_s"] / 60 + e["recall_eval_min"]
+                + n_layers * (e["curve_eval_min_each"] + e["recall_eval_min"])
+                + n_ev * e["curve_eval_min_each"] + n_stages * e["recall_eval_min"] + e["final_heldout_min"]
+                + e["gen_heldout_eval_min"] + e["teacher_cache_min"])
     g_capped = gc["max_minutes"] + gc["max_new"] * e["gen_step_s"] / 60  # the last batch started before the cap
     g_uncapped = m["load_and_data_s"] / 60 + e["prompt_select_min"] + e["gen_pack_write_min"]
     short_tokens = cfg["mix"]["train_tokens"] - cfg["lc"]["blocks"] * cfg["lc"]["seq_len"]
+    gfrac = cfg["mix_fracs"]["generic"]
     need = {"stage1": 1.15 * m["stage1_steady_tok_s"] * 60 * cfg["stage1"]["guard"]["max_minutes"],
-            "kd_generic": 1.15 * m["stage2_steady_tok_s_layer23"] * 60 * dc["kd_minutes"] * (1 - dc["gen_frac"])}
+            "kd_generic": 1.15 * m["stage2_steady_tok_s_layer23"] * 60 * dc["kd_minutes"] * gfrac}
+    v3w = json.loads((ROOT / p["v3w_volume"]).read_text(encoding="utf-8"))
+    arm = readout(v3w["totals"], m["stock_prefill_tok_s_min"], max(m["pack_call_s"], m["small_call_s"]), "fork")
     return {"phases": {"setup": m["setup_min"], "weights": m["weights_fetch_s"] / 60, "D": e["D_min"],
-                       "X": e["export_X_min"]},
+                       "X": e["export_X_min"], "I_stock": arm["projected_min"], "S": n_stages * m["S_min"] / 2},
+            "arms": {"I_stages": (n_stages, arm["projected_min"])},
             "capped": {"G": (g_capped, g_uncapped), "P": (capped, uncapped)},
             "floors": {"stage1": (cfg["stage1"]["guard"]["min_tok_s"], m["stage1_steady_tok_s"]),
                        "distill": (dc["guard"]["min_tok_s"], s2)},
             "peaks": {"stage1": cfg["stage1"]["guard"]["max_peak_gb"], "distill": dc["guard"]["max_peak_gb"]},
             "data": {"short_region_tokens": (short_tokens, sum(need.values()))},
-            "detail": {"n_stage_evals": n_ev, "short_tokens_needed": need,
+            "detail": {"n_stage_evals": n_ev, "short_tokens_needed": need, "v3w_arm": arm,
                        "gen_completion_tokens_at_estimate": e["gen_tok_s"] * 60 * gc["max_minutes"]}}
+
+
+def project_s(p: dict, cfg: dict) -> dict:
+    """The cheap sensitivity job: stage 1 + 8 single-layer KD runs + the base-width controls (all capped) and the
+    stock / per-layer recall probes + KL evals (uncapped)."""
+    m, e, sc = p["measured"], p["estimates_not_measured"], cfg["sens"]
+    B, L = cfg["batch"], cfg["seq_len"]
+    n = len(cfg["attention_layers"]) + sc["control_layers"]
+    s2 = m["stage2_steady_tok_s_layer3"]
+    capped = cfg["stage1"]["guard"]["max_minutes"] + n * sc["minutes_per_layer"] \
+        + sc["control_layers"] * sc["control_stage1_minutes"] + (n + 1) * B * L / min(s2, m["stage1_steady_tok_s"]) / 60
+    uncapped = (m["load_and_data_s"] / 60 + e["recall_eval_min"] + n * (e["recall_eval_min"] + e["curve_eval_min_each"])
+                + e["teacher_cache_min"])
+    gfrac = cfg["mix_fracs"]["generic"]
+    need = 1.15 * (m["stage1_steady_tok_s"] * 60 * cfg["stage1"]["guard"]["max_minutes"]
+                   + m["stage2_steady_tok_s_layer23"] * 60 * n * sc["minutes_per_layer"] * gfrac)
+    return {"phases": {"setup": m["setup_min"], "weights": m["weights_fetch_s"] / 60, "D": e["D_min"]},
+            "arms": {}, "capped": {"P": (capped, uncapped)},
+            "floors": {"stage1": (cfg["stage1"]["guard"]["min_tok_s"], m["stage1_steady_tok_s"]),
+                       "distill": (cfg["distill"]["guard"]["min_tok_s"], s2)},
+            "peaks": {"stage1": cfg["stage1"]["guard"]["max_peak_gb"]},
+            "data": {"train_tokens": (cfg["mix"]["train_tokens"], need)},
+            "detail": {"single_layer_runs": n}}
 
 
 def project_b(p: dict, cfg: dict) -> dict:
@@ -77,7 +109,7 @@ def project_b(p: dict, cfg: dict) -> dict:
     return {"phases": {"setup": m["setup_min"], "weights": m["weights_fetch_s"] / 60, "F": e["fetch_min"],
                        "X": e["export_X_min"], "L_stock": arm["projected_min"], "L_v3": arm["projected_min"],
                        "L_v2": arm["projected_min"], "S": m["S_min"]},
-            "capped": {"P": (capped, uncapped)},
+            "arms": {}, "capped": {"P": (capped, uncapped)},
             "floors": {"long_context": (lc["guard"]["min_tok_s"], e["lc_tok_s"]),
                        "onpolicy": (op["guard"]["min_tok_s"], op["rollout_batch"] * e["op_completion_tokens_per_rollout"]
                                     / e["op_step_s"])},
@@ -89,12 +121,15 @@ def project_b(p: dict, cfg: dict) -> dict:
 
 def check(params: dict, cfg: dict) -> dict:
     mode = params["v3_mode"]
-    pr = project_a(params, cfg) if mode == "A" else project_b(params, cfg)
+    pr = {"A": project_a, "B": project_b, "S": project_s}[mode](params, cfg)
     mf, caps = params["margin_min_frac"], params["phase_caps_minutes"]
     rows = {}
     for ph, proj in pr["phases"].items():
-        usable = caps[ph] * (0.95 if ph.startswith("L_") else 1.0)
+        usable = caps[ph] * (0.95 if ph.startswith(("L_", "I_")) else 1.0)
         rows[ph] = {"projected_min": round(proj, 2), "cap_min": caps[ph], "ok": usable >= (1 + mf) * proj}
+    for ph, (n, proj) in pr["arms"].items():  # n guarded proxy600 arms sharing one cap (rate_guard stops at 95 %)
+        rows[ph] = {"arms": n, "projected_min_each": round(proj, 2), "cap_min": caps[ph],
+                    "ok": 0.95 * caps[ph] / n >= (1 + mf) * proj}
     for ph, (cp, un) in pr["capped"].items():
         need = cp + (1 + mf) * un
         rows[ph] = {"capped_min": round(cp, 2), "uncapped_min": round(un, 2), "need_min": round(need, 2),

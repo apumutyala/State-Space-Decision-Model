@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # q9af_v3: Q9-AF v3 = Qwen3.5-9B -> fully attention-free (all 8 attention layers -> GDN) with the 2025-26 recipe
 # upgrades (jobs/q9af_v3/README.md: plan + the pre-registered gate; JOB_SPEC.md: phases, caps, pricing). Two SF Compute
-# batch jobs (h100, one attempt each) chained by a sha256-pinned artifact:
-#   mode A (job_params_A.json): setup | D mix (v2 clean, full-eval-v1) | G teacher generation + 32k block split +
-#          on-policy prompts | P stage 1 + sensitivity probe + per-group gated KD (convert.v3 stageA) | X stage-A export
-#          (/output/stageA/*, the artifact job B pins) | R stage-A record (jobs.q9af_v3.rule stagea)
+# batch jobs (h100, one attempt each) chained by a sha256-pinned artifact, gated by a cheap first job:
+#   mode S (job_params_S.json, the cheap first job): setup | D small clean mix | P per-layer sensitivity table (each
+#          attention layer ALONE converted to a widened GDN, recall-heavy KD, MQAR + NIAH + KL; 2 base-width controls)
+#          | R jobs.q9af_v3.rule sens (GO / PARTIAL / NO_GO)
+#   mode A (job_params_A.json): setup | D mix (v2 clean, full-eval-v1) | G teacher generation (incl. retrieval / tool /
+#          knowledge instructions) + 32k block split + on-policy prompts | I_stock proxy600 (v3w) | per stage k = 1..4:
+#          P stage k (convert.v3 stageA --until-stage k: stage 1 + recall probe + order on k = 1) -> I proxy600 of the
+#          converted-so-far model -> the stage gate (rule gate: recall + proxy600; STOP ends the conversion) | X stage-A
+#          export (/output/stageA/*, the artifact job B pins; a STOPPED hybrid only as gdn_salvage.pt) | R record
 #   mode B (job_params_B.json): setup (stage-A pin present, v3w readout identity) | F fetch stage A (+ v2's export when
 #          pinned) | P 32k long-context + on-policy (convert.v3 stageB) | X final export (gdn_converted.pt) |
 #          L proxy600 arms through the generic v3w readout: stock, v3, v2 (if pinned) | S paired compares |
@@ -38,9 +43,11 @@ V3W_VOLUME=jobs/q9af_v3/readout_volume_v3w_proxy600.json
 case "$MODE" in
   A) PARAMS=$CODE/jobs/q9af_v3/job_params_A.json; DATA_SHA=$CODE/jobs/q9af_v3/data_A.sha256; STAGE=q9af_v2
      VALIDATOR=jobs.q9af_v3.rule:valid_stage_a ;;
+  S) PARAMS=$CODE/jobs/q9af_v3/job_params_S.json; DATA_SHA=$CODE/jobs/q9af_v3/data_S.sha256; STAGE=q9af_v2
+     VALIDATOR=jobs.q9af_v3.rule:valid_sensitivity; CFG=configs/q9af_v3_sens_h100.json ;;
   B) PARAMS=$CODE/jobs/q9af_v3/job_params_B.json; DATA_SHA=$CODE/jobs/q9af_v3/data_B.sha256; STAGE=q9
      VALIDATOR=jobs.q9af_v3.rule:valid_decision ;;
-  *) echo "usage: q9af_v3_job.sh A|B (got '$MODE')"; exit 5 ;;
+  *) echo "usage: q9af_v3_job.sh S|A|B (got '$MODE')"; exit 5 ;;
 esac
 [ -z "$DRY" ] || { DATA_SHA=$Q9AF3_DRYRUN_ROOT/data_$MODE.sha256; PARAMS=${Q9AF3_DRYRUN_PARAMS:-$PARAMS}; }
 OUT=${GMN_OUTPUT_DIR:-/output}
@@ -132,11 +139,13 @@ if [ "$MODE" = B ]; then
   python -c "import json,sys; s=json.load(open(sys.argv[1])); sys.exit(0 if s['stageA']['pinned'] else 1)" "$WORK/out/artifact-status.json" \
     || fail 10 "stage-A artifact is not pinned in job_params_B (python -m jobs.q9af_v3.artifact fill --which stageA)"
   say "pre-registered reference arm: $REF"
+fi
+if [ "$MODE" != S ]; then
   python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index/proxy-identity.json" 2> "$WORK/logs/proxy.err" || fail 10 "proxy600 identity"
   python -X utf8 -m jobs.common.dev_subset rows --rows "$DATA/slices/dev-rows.jsonl.gz" --out "$WORK/data/proxy-rows.jsonl.gz" \
     --subset "$PROXY" > "$WORK/out/index/proxy-rows.json" 2> "$WORK/logs/subset.err" || fail 10 "proxy600 rows"
   TOKROOT=$DATA/tokenizers
-  V3W_IDENTITY=$(python -c "from jobs.q9af_v3.rule import V3W_IDENTITY as v; print(v)")
+  V3W_IDENTITY=$(python -c "from jobs.q9af_v3.rule import V3W_IDENTITY as v; print(v)")  # A + B
   V3W_IDENTITY=${V3W_IDENTITY%$'\r'}
   if [ -n "$DRY" ]; then
     $DRY v3wid "$WORK/out/v3w_identity.json" > "$WORK/logs/v3w.log" 2>&1 || fail 10 "dry-run v3w identity"
@@ -157,8 +166,8 @@ else
   timeout "$(cap weights)m" python -I scripts/sf_fetch.py --stage "$STAGE" > "$WORK/logs/fetch.log" 2>&1
 fi
 [ -f "$SSDM_DATA_ROOT/DONE_Q9B_DIR" ] || { gate "setup:weights" 8; export_phase setup; fail 8 "9B weights unavailable"; }
-if [ "$MODE" = A ]; then
-  for d in FINEWEB_EDU_DIR ULTRACHAT_DIR FINEMATH_DIR; do [ -f "$SSDM_DATA_ROOT/DONE_$d" ] || fail 5 "fetch $d"; done
+if [ "$MODE" != B ]; then
+  for d in FINEWEB_EDU_DIR ULTRACHAT_DIR FINEMATH_DIR WIKITEXT_DIR; do [ -f "$SSDM_DATA_ROOT/DONE_$d" ] || fail 5 "fetch $d"; done
 fi
 # shellcheck disable=SC1091
 . "$SSDM_DATA_ROOT/paths.env"
@@ -185,7 +194,37 @@ pipe_rc() {  # pipe_rc <phase> <rc>
   case $2 in 0) ;; 3|4) fail "$2" "$1 stop" ;; 124) fail 7 "$1 timeout" ;; *) fail 2 "$1 crashed rc=$2" ;; esac
 }
 
-if [ "$MODE" = A ]; then
+IDX=$WORK/out/index
+V3WOPT=()
+[ "$MODE" = S ] || V3WOPT=(--option family=q9af-probe-v3w --option model_dir="$Q9B" --option tokenizers_root="$TOKROOT"
+                          --option v3w_identity="$V3W_IDENTITY")
+_arm() {  # _arm <phase> <dir> <tok_s> <call_s> <cap> [kit options...]: rate preflight + one guarded kit run (proxy600)
+  local phase=$1 dir=$2 toks=$3 calls=$4 capm=$5 r
+  shift 5
+  python -m jobs.common.rate_guard preflight --tok-s "$toks" --call-s "$calls" --volume "$V3W_VOLUME" --path fork \
+    --cap-min "$capm" --out "$IDX/preflight_$dir.json" > "$WORK/logs/preflight_$dir.log" 2>&1; r=$?
+  gate "$phase:preflight" $r
+  [ $r -eq 0 ] || fail $r "$dir readout projected past its cap"
+  [ -e "$IDX/$dir" ] && mv "$IDX/$dir" "$IDX/$dir.stale.$(date +%s)"
+  NROWS=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['rows'])" "$IDX/proxy-rows.json")
+  NROWS=${NROWS%$'\r'}
+  say "phase $phase ($dir; proxy600: $NROWS rows)"
+  if [ -n "$DRY" ]; then
+    $DRY kit "$dir" "$IDX/$dir" > "$WORK/logs/index_$dir.log" 2>&1; r=$?
+  else
+    python -m jobs.common.rate_guard run --results "$IDX/$dir/results.jsonl" --total "$NROWS" --cap-min "$capm" \
+      --check-after-min 3 --exclude-startup --report "$IDX/rate_$dir.json" -- \
+      python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine "${V3WOPT[@]}" "$@" \
+      --rows "$WORK/data/proxy-rows.jsonl.gz" --out "$IDX/$dir" > "$WORK/logs/index_$dir.log" 2>&1; r=$?
+  fi
+  gate "$phase" $r
+  export_phase "$phase"
+  case $r in 0) ;; 124) fail 7 "$phase timeout" ;; 15) fail 15 "$phase: measured rate too slow" ;; *) fail 12 "$phase rc=$r" ;; esac
+}
+if [ -n "$DRY" ]; then S() { $DRY subset "$@"; }
+else S() { timeout "$(cap S)m" python -X utf8 -m jobs.common.dev_subset "$@" --subset "$PROXY"; }; fi
+
+if [ "$MODE" != B ]; then
   # ---------------------------------------------------------------- D: the v2 clean mixture (full-eval-v1)
   say "phase D (mixture build: full-eval-v1 decontam + window manifest)"
   run_py D "$(cap D)" mix "$WORK/mix" -- python -X utf8 -m convert.mixdata build --config "$CFG" \
@@ -197,24 +236,83 @@ if [ "$MODE" = A ]; then
   cp -f "$WORK/mix/mix.json" "$OUT/mix.json" 2> /dev/null || true
   export_phase D
   case $r in 0) ;; 124) fail 7 "mixture timeout" ;; *) fail 11 "mixture build rc=$r" ;; esac
+fi
+if [ "$MODE" = S ]; then
+  # ---------------------------------------------------------------- P: the per-layer sensitivity table
+  say "phase P (per-layer sensitivity: widened GDN, recall-heavy KD, MQAR + NIAH)"
+  run_py P "$(cap P)" sens "$CK" -- python -X utf8 -m convert.v3 sens --config "$CFG" --mix "$WORK/mix" --out "$CK/pipeline"; r=$?
+  gate "P:sens" $r
+  sync_pipeline
+  export_phase P
+  pipe_rc P $r
+  python -m jobs.q9af_v3.rule sens "$CK/pipeline/results.json" "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1; r=$?
+  gate "R:sens" $r
+  [ $r -eq 0 ] || fail 9 "incomplete sensitivity table: $(head -c 300 "$WORK/out/decision.json" 2> /dev/null)"
+  cp "$WORK/out/decision.json" "$OUT/decision.json"
+  sample "$WORK/out/decision.json" "decision"
+  RC=0
+  exit 0
+fi
+if [ "$MODE" = A ]; then
   # ---------------------------------------------------------------- G: teacher-generated data + split + prompts
   say "phase G (teacher generation: stock Qwen3.5-9B, 32k block split, on-policy prompts)"
-  run_py G "$(cap G)" gen "$WORK/gen" -- python -X utf8 -m convert.v3 gen --config "$CFG" --mix "$WORK/mix" --out "$WORK/gen"; r=$?
+  run_py G "$(cap G)" gen "$WORK/gen" -- python -X utf8 -m convert.v3 gen --config "$CFG" --mix "$WORK/mix" \
+    --eval-index-dir "$DATA/doc-overlap/218affe13e367d07" --out "$WORK/gen"; r=$?
   gate "G:gen" $r
   sync_pipeline
   export_phase G
   pipe_rc G $r
-  # ---------------------------------------------------------------- P: stage 1, probe, gated per-group KD
-  say "phase P (stage A)"
-  run_py P "$(cap P)" stagea "$CK" -- python -X utf8 -m convert.v3 stageA --config "$CFG" --mix "$WORK/mix" \
-    --gen "$WORK/gen" --out "$CK/pipeline"; r=$?
-  gate "P:stageA" $r
-  sync_pipeline
-  export_phase P
-  pipe_rc P $r
+  # ---------------------------------------------------------------- I_stock: proxy600 of the stock model (v3w)
+  read -r TOKS CALLS < <(python -c "import json,sys; m=json.load(open(sys.argv[1]))['measured']; print(m['stock_prefill_tok_s_min'], max(m['pack_call_s'], m['small_call_s']))" "$PARAMS")
+  CALLS=${CALLS%$'\r'}
+  _arm I_stock v3w_stock "$TOKS" "$CALLS" "$(cap I_stock)" --option converted=none
+  # ---------------------------------------------------------------- P_k -> I_k -> gate_k, k = 1..4
+  P_END=$(( $(date +%s) + 60 * $(cap P) ))
+  ARM_CAP=$(( $(cap I_stages) / 4 ))
+  echo "[]" > "$WORK/out/gates.json"
+  STOPPED=0
+  for k in 1 2 3 4; do
+    left=$(( (P_END - $(date +%s)) / 60 ))
+    [ "$left" -gt 0 ] || fail 7 "P budget exhausted before stage $k"
+    say "phase P stage $k (${left} min of P left)"
+    run_py P "$left" stagea "$CK" "$k" -- python -X utf8 -m convert.v3 stageA --config "$CFG" --mix "$WORK/mix" \
+      --gen "$WORK/gen" --out "$CK/pipeline" --until-stage "$k"; r=$?
+    gate "P:stage$k" $r
+    sync_pipeline
+    export_phase "P$k"
+    pipe_rc "P$k" $r
+    CONV=$(python -c "import json,sys;print(','.join(map(str,json.load(open(sys.argv[1]))['stages']['stage'+sys.argv[2]]['converted'])))" "$CK/pipeline/results.json" "$k") || fail 2 "stage $k record"
+    CONV=${CONV%$'\r'}
+    _arm "I_stage$k" "v3w_stage$k" "$TOKS" "$CALLS" "$ARM_CAP" --option converted="$CONV" --option gdn_ckpt="$CK/gdn/stage$k.pt"
+    S compare --candidate "$IDX/v3w_stage$k/results.jsonl" --baseline "$IDX/v3w_stock/results.jsonl" \
+      > "$IDX/compare_stage${k}_vs_stock.json" 2>> "$WORK/logs/score.err" || fail 13 "compare stage $k"
+    python -m jobs.q9af_v3.rule gate "$CK/pipeline/results.json" "$k" "$IDX/compare_stage${k}_vs_stock.json" \
+      "$WORK/out/gate_stage$k.json" > "$WORK/logs/gate_stage$k.log" 2>&1; r=$?
+    python -c "import json,sys; g=json.load(open(sys.argv[1])); a=json.load(open(sys.argv[2])); a.append(g); json.dump(a, open(sys.argv[2],'w'), indent=1)" \
+      "$WORK/out/gate_stage$k.json" "$WORK/out/gates.json" || fail 9 "gate record"
+    gate "G:stage$k" $r
+    export_phase "gate$k"
+    if [ $r -ne 0 ]; then STOPPED=$k; say "STOP rule after stage $k: $(head -c 400 "$WORK/out/gate_stage$k.json")"; break; fi
+  done
   # ---------------------------------------------------------------- X: the stage-A artifact (job B pins it)
-  say "phase X (stage-A export)"
   mkdir -p "$OUT/stageA"
+  if [ "$STOPPED" != 0 ]; then
+    say "phase X (STOPPED at stage $STOPPED: hybrid salvage export only, nothing to chain)"
+    run_py X "$(cap X)" export "$OUT" "$WORK/out/export.json" -- python -m jobs.q9af_v3.export --stage A --mode salvage \
+      --layers "$CONV" --src "$CK/gdn/stage$STOPPED.pt" --model-dir "$Q9B" --out-dir "$OUT" --meta-out "$WORK/out/export.json"; r=$?
+    gate "X:export" $r
+    [ $r -eq 0 ] || { EXPORT_FAIL=1; export_phase X; fail 6 "salvage export failed verification"; }
+    EXPORTED=1
+    export_phase X
+    python -m jobs.q9af_v3.rule stagea "$CK/pipeline/results.json" "$WORK/gen/results.json" "$WORK/out/export.json" \
+      "$WORK/out/gates.json" "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1; r=$?
+    gate "R:stageA" $r
+    [ $r -eq 0 ] || fail 9 "stage-A record: $(head -c 300 "$WORK/out/decision.json" 2> /dev/null)"
+    cp "$WORK/out/decision.json" "$OUT/decision.json"
+    RC=0
+    exit 0
+  fi
+  say "phase X (stage-A export)"
   run_py X "$(cap X)" export "$OUT/stageA" "$WORK/out/export.json" -- python -m jobs.q9af_v3.export --stage A \
     --src "$CK/gdn/stageA.pt" --model-dir "$Q9B" --out-dir "$OUT/stageA" --meta-out "$WORK/out/export.json"; r=$?
   gate "X:export" $r
@@ -229,7 +327,7 @@ if [ "$MODE" = A ]; then
   export_phase X
   # ---------------------------------------------------------------- R: the stage-A record (no verdict)
   python -m jobs.q9af_v3.rule stagea "$CK/pipeline/results.json" "$WORK/gen/results.json" "$WORK/out/export.json" \
-    "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1; r=$?
+    "$WORK/out/gates.json" "$WORK/out/decision.json" > "$WORK/logs/decision.log" 2>&1; r=$?
   gate "R:stageA" $r
   [ $r -eq 0 ] || fail 9 "incomplete stage A: $(head -c 300 "$WORK/out/decision.json" 2> /dev/null)"
   cp "$WORK/out/decision.json" "$OUT/decision.json"
@@ -288,39 +386,13 @@ print(s[0], s[1], c[0], c[1])
 EOF
 ) || fail 2 "no measured prefill rate / call latency"
 CALLS_C=${CALLS_C%$'\r'}
-V3WOPT=(--option family=q9af-probe-v3w --option model_dir="$Q9B" --option tokenizers_root="$TOKROOT"
-        --option v3w_identity="$V3W_IDENTITY")
-_arm() {  # _arm <phase> <dir> <tok_s> <call_s> [kit options...]: rate preflight + one guarded kit run over proxy600
-  local phase=$1 dir=$2 toks=$3 calls=$4 capm r
-  shift 4
-  capm=$(cap "$phase")
-  python -m jobs.common.rate_guard preflight --tok-s "$toks" --call-s "$calls" --volume "$V3W_VOLUME" --path fork \
-    --cap-min "$capm" --out "$IDX/preflight_$dir.json" > "$WORK/logs/preflight_$dir.log" 2>&1; r=$?
-  gate "$phase:preflight" $r
-  [ $r -eq 0 ] || fail $r "$dir readout projected past its cap"
-  [ -e "$IDX/$dir" ] && mv "$IDX/$dir" "$IDX/$dir.stale.$(date +%s)"
-  say "phase $phase ($dir; proxy600: $NROWS rows)"
-  if [ -n "$DRY" ]; then
-    $DRY kit "$dir" "$IDX/$dir" > "$WORK/logs/index_$dir.log" 2>&1; r=$?
-  else
-    python -m jobs.common.rate_guard run --results "$IDX/$dir/results.jsonl" --total "$NROWS" --cap-min "$capm" \
-      --check-after-min 3 --exclude-startup --report "$IDX/rate_$dir.json" -- \
-      python -X utf8 -m decision_index run --engine jobs.common.readout_engine:ReadoutIndexEngine "${V3WOPT[@]}" "$@" \
-      --rows "$WORK/data/proxy-rows.jsonl.gz" --out "$IDX/$dir" > "$WORK/logs/index_$dir.log" 2>&1; r=$?
-  fi
-  gate "$phase" $r
-  export_phase "$phase"
-  case $r in 0) ;; 124) fail 7 "$phase timeout" ;; 15) fail 15 "$phase: measured rate too slow" ;; *) fail 12 "$phase rc=$r" ;; esac
-}
-_arm L_stock v3w_stock "$TOKS" "$CALLS" --option converted=none
-_arm L_v3 v3w_v3 "$TOKS_C" "$CALLS_C" --option converted="$LAYERS" --option gdn_ckpt="$OUT/gdn_converted.pt"
+_arm L_stock v3w_stock "$TOKS" "$CALLS" "$(cap L_stock)" --option converted=none
+_arm L_v3 v3w_v3 "$TOKS_C" "$CALLS_C" "$(cap L_v3)" --option converted="$LAYERS" --option gdn_ckpt="$OUT/gdn_converted.pt"
 if [ "$REF" = v2 ]; then
-  _arm L_v2 v3w_v2 "$TOKS_C" "$CALLS_C" --option converted="$LAYERS" --option gdn_ckpt="$WORK/v2/gdn_converted.pt"
+  _arm L_v2 v3w_v2 "$TOKS_C" "$CALLS_C" "$(cap L_v2)" --option converted="$LAYERS" --option gdn_ckpt="$WORK/v2/gdn_converted.pt"
 fi
 # ------------------------------------------------------------------ S: paired compares + per-arm scores (frozen scorer)
 say "phase S (proxy600 scoring, paired; reference $REF)"
-if [ -n "$DRY" ]; then S() { $DRY subset "$@"; }
-else S() { timeout "$(cap S)m" python -X utf8 -m jobs.common.dev_subset "$@" --subset "$PROXY"; }; fi
 REFDIR=v3w_stock; [ "$REF" = v2 ] && REFDIR=v3w_v2
 S compare --candidate "$IDX/v3w_v3/results.jsonl" --baseline "$IDX/$REFDIR/results.jsonl" \
   > "$IDX/compare_v3_vs_ref.json" 2> "$WORK/logs/score.err" || fail 13 "compare v3 vs $REF"

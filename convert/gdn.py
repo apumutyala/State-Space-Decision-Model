@@ -160,8 +160,10 @@ class GDN(nn.Module):
         self.kernel = kernel
 
     @classmethod
-    def from_config(cls, cfg, kernel="fla"):
-        return cls(cfg.hidden_size, cfg.linear_num_key_heads, cfg.linear_num_value_heads, cfg.linear_key_head_dim,
+    def from_config(cls, cfg, kernel="fla", dk=None):
+        """``dk`` widens the key head dim of a CONVERTED layer (Q9-AF v3: a larger recall state, nv x dk x dv); every
+        other dim stays the config's, so the state-dict shapes differ only in in_proj_qkv / conv1d."""
+        return cls(cfg.hidden_size, cfg.linear_num_key_heads, cfg.linear_num_value_heads, dk or cfg.linear_key_head_dim,
                    cfg.linear_value_head_dim, cfg.linear_conv_kernel_dim, cfg.rms_norm_eps, kernel)
 
     def forward(self, x, return_state=False):

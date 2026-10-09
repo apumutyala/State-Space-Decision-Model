@@ -36,7 +36,8 @@ import torch  # noqa: E402
 from convert import align, data, gendata  # noqa: E402
 from convert.distill import conversion_plan, distill_accumulate, generate  # noqa: E402
 from convert.mixdata import SOURCES  # noqa: E402
-from convert.model import attach_gdn, init_gdn, load  # noqa: E402
+from convert.model import attach_from_state, attach_gdn, init_gdn, load  # noqa: E402
+from convert.recall import MultiStream, RecallSynth  # noqa: E402
 from convert.pipeline import Results, env_info, seed_all  # noqa: E402
 
 INIT = "reuse_attn"  # pre-registered (v2's default; no init_cmp in v3)
@@ -164,9 +165,42 @@ class Ctx:
     def load_state(self, sd):
         for i, s in sd.items():
             i = int(i)
-            if self.model.swaps[i].gdn is None:
-                attach_gdn(self.model, i, init_gdn(self.model, i, "random", self.cfg["seed"]))
-            self.model.swaps[i].gdn.load_state_dict(s)
+            g = self.model.swaps[i].gdn
+            if g is None or g.in_proj_qkv.weight.shape != s["in_proj_qkv.weight"].shape:
+                attach_from_state(self.model, i, s, seed=self.cfg["seed"])
+            else:
+                g.load_state_dict(s)
+
+    def new_gdn(self, i, how=None, dk="cfg"):
+        """Attach a fresh converted GDN for layer i: the config's ``gdn.dk`` (v3: widened key dim) unless overridden."""
+        dk = (self.cfg.get("gdn") or {}).get("dk") if dk == "cfg" else dk
+        return attach_gdn(self.model, i, init_gdn(self.model, i, how or self.cfg.get("init", "reuse_attn"),
+                                                  self.cfg["seed"], dk=dk))
+
+    # ---------------------------------------------------------------- recall probe (the v2 probe settings)
+    def recall_eval(self, modes):
+        """MQAR + NIAH (probes.core, the exact probes v2's MQAR / NIAH drops were measured with) in ``modes``."""
+        from probes import core as probes
+
+        rp = self.cfg["recall_probe"]
+        if getattr(self, "_eval_toks", None) is None:
+            p_eval, _ = data.build(self.tok, "eval")
+            self._eval_toks = data.load_tokens(p_eval)
+        t0 = time.time()
+        with self.model.modes(modes):
+            mq = probes.mqar(self.model, self.tok, n_pairs=rp["mqar_pairs"], n_seq=rp["mqar_n_seq"])
+            nh = probes.niah(self.model, self.tok, self._eval_toks, lengths=rp["niah_lengths"], n_per=rp["niah_n_per"])
+        return {"mqar": mq, "niah": nh, "mqar_mean": mq["mean_acc"], "niah_mean": nh["mean_acc"],
+                "seconds": time.time() - t0}
+
+    def recall_drop(self, rec, ref):
+        return {"mqar_drop": ref["mqar_mean"] - rec["mqar_mean"], "niah_drop": ref["niah_mean"] - rec["niah_mean"]}
+
+    def recall_synth(self, train, window_ids):
+        from probes.core import _key_words
+
+        return RecallSynth(self.tok, train, window_ids, self.cfg["seq_len"], self.cfg["seed"] + 101,
+                           self.cfg["recall_data"], exclude_words=_key_words(self.tok))
 
     def save(self, name, sd=None, meta=None):
         sd = sd if sd is not None else self.gdn_state()
@@ -252,9 +286,18 @@ def run_stage(C, name, train_layers, modes, next_batch, guard_cfg, lr, eval_fn, 
 
 
 # ----------------------------------------------------------------------------- gen (job A, phase G)
-def cmd_gen(cfg, mixdir, out):
+def cmd_gen(cfg, mixdir, out, eval_index_dir=None):
     C = Ctx(cfg, out)
     gc = cfg["gen"]
+    if gc.get("check_templates", True):  # the instruction templates must pass the full-eval-v1 filter
+        from convert.mixdata import full_filter, load_eval_index_dir
+
+        if not eval_index_dir:
+            raise SystemExit("gen.check_templates needs --eval-index-dir (the shipped full-eval-v1 index)")
+        chk = gendata.check_templates(full_filter(load_eval_index_dir(eval_index_dir))[0])
+        C.R.set("template_check", chk)
+        if chk["flagged"]:
+            raise SystemExit(f"instruction templates flagged by full-eval-v1: {chk['flagged']}")
     mix = json.load(open(os.path.join(mixdir, "mix.json")))
     train = data.load_tokens(os.path.join(mixdir, "train.u32"))
     eos, im_end = C.ids("<|endoftext|>"), C.ids("<|im_end|>")
@@ -270,10 +313,17 @@ def cmd_gen(cfg, mixdir, out):
     header = C.tok(gendata.CHAT_ASSISTANT_HEADER, add_special_tokens=False)["input_ids"]
     rng_seed = cfg["seed"] + 41
     pc = {k: gc[k] for k in ("doc_prompt_tokens", "min_continuation", "max_prompt_tokens")}
+    kinds = [*SOURCES, *gendata.INSTRUCTION_KINDS]
+    want = {k: v for k, v in zip(kinds, _counts(gc["n_prompts"], {k: gc["shares"].get(k, 0.0) for k in kinds}))}
     prompts, used, pstats = gendata.select_prompts(train, spans, bounds, split, header,
-                                                   gendata.split_counts(gc["n_prompts"], gc["shares"]), pc, rng_seed)
-    want = gendata.split_counts(gc["n_prompts"], gc["shares"])
-    short = {s: (pstats[s]["taken"], n) for s, n in want.items() if n and pstats[s]["taken"] < 0.5 * n}
+                                                   {s: want[s] for s in SOURCES}, pc, rng_seed)
+    ic = {**gc["instruct"], "max_prompt_tokens": gc["max_prompt_tokens"]}
+    ip, iused, istats = gendata.instruction_prompts(C.tok, train, spans, bounds, split,
+                                                    {k: want[k] for k in gendata.INSTRUCTION_KINDS}, ic, rng_seed + 3,
+                                                    exclude=used)
+    prompts, used = prompts + ip, used | iused
+    pstats.update(istats)
+    short = {k: (pstats[k]["taken"], n) for k, n in want.items() if n and pstats[k]["taken"] < 0.5 * n}
     if short:  # e.g. the chat header never matched: fail loudly instead of distilling on a silently skewed mix
         raise SystemExit(f"prompt selection short of half its quota (taken, wanted): {short}; stats {pstats}")
     oc = gc["onpolicy"]
@@ -314,11 +364,11 @@ def cmd_gen(cfg, mixdir, out):
     np.save(os.path.join(out, "gen_rows.npy"), rows[: len(rows) - hr])
     np.save(os.path.join(out, "gen_mask.npy"), mask[: len(rows) - hr])
     np.savez(os.path.join(out, "gen_heldout.npz"), rows=rows[len(rows) - hr:], mask=mask[len(rows) - hr:])
-    by_src = {s: sum(len(c) for _, c, ss in samples if ss == s) for s in SOURCES}
+    by_src = {s: sum(len(c) for _, c, ss in samples if ss == s) for s in kinds}
     res = {"teacher": "stock Qwen3.5-9B (all attention layers; open weights; config model_dir)",
            "sampling": {"temperature": gc["temperature"], "max_new": gc["max_new"], "stop": ["<|endoftext|>",
                                                                                             "<|im_end|>"]},
-           "prompts": {"selected": len(prompts), "stats": pstats, "used_for_generation": len(samples)},
+           "prompts": {"selected": len(prompts), "wanted": want, "stats": pstats, "used_for_generation": len(samples)},
            "onpolicy_prompts": {"selected": len(op), "stats": opstats},
            "stop_reason": stop_reason, "seconds": sec, "completion_tokens": ntok,
            "completion_tokens_by_source": by_src, "tok_s": ntok / max(sec, 1e-9), "batches": len(bstats),
@@ -329,16 +379,59 @@ def cmd_gen(cfg, mixdir, out):
     C.log({"done": True, **{k: res[k] for k in ("completion_tokens", "tok_s", "stop_reason", "train_rows")}}, "gen")
 
 
+def _counts(n, shares):
+    """Largest-remainder split of n over the (ordered) share keys."""
+    keys = list(shares)
+    raw = {k: n * shares[k] for k in keys}
+    out = {k: int(np.floor(v)) for k, v in raw.items()}
+    for k in sorted(keys, key=lambda k: -(raw[k] - out[k]))[: n - sum(out.values())]:
+        out[k] += 1
+    return [out[k] for k in keys]
+
+
 def _sha(p):
     from convert.mixdata import sha256_file
 
     return sha256_file(p)
 
 
+def _stream(C, train, split, gendir=None):
+    """The pre-registered recall-heavy training stream (config ``mix_fracs``): generic windows, teacher-generated
+    rows, synthetic recall rows."""
+    cfg = C.cfg
+    generic = gendata.IndexedWindowStream(train, cfg["seq_len"], cfg["batch"], split.short_windows(), cfg["seed"] + 7,
+                                          C.dev)
+    fr = dict(cfg["mix_fracs"])
+    rows = mask = None
+    if gendir and fr.get("gen"):
+        rows = np.load(os.path.join(gendir, "gen_rows.npy"), mmap_mode="r")
+        mask = np.load(os.path.join(gendir, "gen_mask.npy"), mmap_mode="r")
+    elif fr.get("gen"):
+        fr["generic"] += fr.pop("gen")
+    rec = C.recall_synth(train, split.short_windows()) if fr.get("recall") else None
+    return generic, MultiStream(generic, fr, cfg["batch"], cfg["seed"], rows, mask, rec, C.dev)
+
+
+def _batch_fn(C, stream, modes, ce_weight):
+    m, MB = C.model, C.cfg.get("micro_batch")
+
+    def next_batch():
+        x, w, kind = next(stream)
+        if kind == "generic":
+            return (lambda: {"kind": 0, "kl": round(align.stage2_accumulate(m, modes, x, MB), 5)}), x.numel()
+        code = 1 if kind == "gen" else 2
+        return (lambda: {"kind": code, **{k_: round(v, 5) for k_, v in distill_accumulate(
+            m, modes, x, w, MB, "fkl", ce_weight).items() if k_ != "weight"}}), x.numel()
+
+    return next_batch
+
+
 # ----------------------------------------------------------------------------- stage A (job A, phase P)
-def cmd_stage_a(cfg, mixdir, gendir, out):
+def cmd_stage_a(cfg, mixdir, gendir, out, until_stage=None):
+    """Resumable: every finished stage is in results.json + <ck>/stage<k>.pt (with the stream state), so the runner
+    can run one stage per invocation (``--until-stage k``) and gate each on recall + proxy600 in between."""
     C = Ctx(cfg, out)
-    m, A, L, B, MB = C.model, C.A, cfg["seq_len"], cfg["batch"], cfg.get("micro_batch")
+    m, A, L, MB = C.model, C.A, cfg["seq_len"], cfg.get("micro_batch")
     mix = json.load(open(os.path.join(mixdir, "mix.json")))
     if "mix" not in C.R:
         C.R.set("mix", mix)
@@ -347,69 +440,68 @@ def cmd_stage_a(cfg, mixdir, gendir, out):
     sp = json.load(open(os.path.join(gendir, "split.json")))
     if {k: sp[k] for k in split.identity()} != split.identity():
         raise SystemExit("stage A block split != the gen phase's split.json")
-    generic = gendata.IndexedWindowStream(train, L, B, split.short_windows(), cfg["seed"] + 7, C.dev)
-    rows = np.load(os.path.join(gendir, "gen_rows.npy"), mmap_mode="r")
-    mask = np.load(os.path.join(gendir, "gen_mask.npy"), mmap_mode="r")
+    generic, stream = _stream(C, train, split, gendir)
     gh = np.load(os.path.join(gendir, "gen_heldout.npz"))
     gh_rows, gh_mask = gh["rows"], gh["mask"]
     dc = cfg["distill"]
-    stream = gendata.MixedStream(generic, rows, mask, B, dc["gen_frac"], cfg["seed"], C.dev)
     C.set_heldout(mixdir)
     cw = cfg["curve_windows_per_source"]
+    if "recall_stock" not in C.R:
+        C.R.set("recall_stock", C.recall_eval({}))
+    rstock = C.R["recall_stock"]
 
-    # ---------------- stage 1: init + MOHAWK alignment of all 8 (teacher-driven, simultaneous)
+    # ---------------- stage 1: init (widened key dim) + MOHAWK alignment of all 8 (teacher-driven, simultaneous)
     s1 = cfg["stage1"]
     if "stage1" not in C.R:
         t0 = time.time()
         seed_all(cfg["seed"])
         for i in A:
-            attach_gdn(m, i, init_gdn(m, i, INIT, cfg["seed"]))
+            C.new_gdn(i)
         scales = align.calibrate_out_scale(m, A, next(generic))
         g1 = align.Guard(s1["guard"], "stage1")
         hist, ntok, sec = align.stage1_align(m, A, generic, 10 ** 9, s1["lr"], log=lambda r: C.log(r, "stage1"),
                                              guard=g1, micro_batch=MB)
         C.save("stage1", meta={"tokens": ntok})
-        C.R.set("stage1", {"init": INIT, "hist": hist, "tokens": ntok, "seconds": sec, "steady_tok_s": g1.rate,
-                           "peak_gb": g1.peak_gb(), "out_scale_calibration": {str(k): v for k, v in scales.items()},
+        C.R.set("stage1", {"init": cfg.get("init", "reuse_attn"), "gdn": cfg.get("gdn"), "hist": hist, "tokens": ntok,
+                           "seconds": sec, "steady_tok_s": g1.rate, "peak_gb": g1.peak_gb(),
+                           "out_scale_calibration": {str(k): v for k, v in scales.items()},
                            "reuse_info": {str(i): getattr(m.swaps[i].gdn, "reuse_info", None) for i in A},
-                           "windows_used_after": generic.windows_used})
+                           "stream": stream.state()})
         C.timed("stage1", t0)
-    else:
-        C.load_state(torch.load(os.path.join(C.ck, "stage1.pt"), map_location=C.dev))
-        generic.used = 0
-        for _ in range(C.R["stage1"]["windows_used_after"] // B):
-            generic.take()
 
-    # ---------------- sensitivity probe -> the pre-registered order and stage budgets
+    # ---------------- per-layer probe: single-layer RECALL damage (+ KL) -> the pre-registered order and budgets
     if "plan" not in C.R:
+        C.load_state(torch.load(os.path.join(C.ck, "stage1.pt"), map_location=C.dev))
         t0 = time.time()
-        sens, detail = {}, {}
+        dmg, kl, detail = {}, {}, {}
         for i in A:
             e = C.heldout_eval({i: "student"}, cw)
-            sens[i], detail[str(i)] = e["mix"]["kl"], e["mix"]
-            C.log({"layer": i, "kl": e["mix"]["kl"]}, "probe")
-        plan = conversion_plan(sens, dc["group_size"], dc["kd_minutes"], dc["floor_minutes"])
+            r = C.recall_eval({i: "student"})
+            d = C.recall_drop(r, rstock)
+            dmg[i], kl[i] = d["mqar_drop"] + d["niah_drop"], e["mix"]["kl"]
+            detail[str(i)] = {"kl": e["mix"]["kl"], **d, "mqar": r["mqar_mean"], "niah": r["niah_mean"]}
+            C.log({"layer": i, **detail[str(i)]}, "probe")
+        plan = conversion_plan(dmg, dc["group_size"], dc["kd_minutes"], dc["floor_minutes"],
+                               descending=dc.get("order", "ascending_recall") != "ascending_recall", tiebreak=kl)
         plan["detail"] = detail
         C.R.set("plan", plan)
         C.timed("probe", t0)
     plan = C.R["plan"]
 
-    # ---------------- gated per-group conversion
+    # ---------------- recall-gated per-group conversion (one stage per invocation when --until-stage is given)
     stages = dict(C.R["stages"]) if "stages" in C.R else {}
+    last = "stage1"
     for k, st in enumerate(plan["stages"]):
         key = f"stage{k + 1}"
         if key in stages:
-            C.load_state(torch.load(os.path.join(C.ck, key + ".pt"), map_location=C.dev))
+            last = key
             continue
+        if until_stage is not None and k + 1 > until_stage:
+            break
+        C.load_state(torch.load(os.path.join(C.ck, last + ".pt"), map_location=C.dev))
+        stream.restore(stages[last]["stream"] if last in stages else C.R["stage1"]["stream"])
         conv = st["converted"]
         modes = {j: "student" for j in conv}
-
-        def next_batch(modes=modes):
-            x, w, kind = next(stream)
-            if kind == "generic":
-                return (lambda: {"kind": 0, "kl": round(align.stage2_accumulate(m, modes, x, MB), 5)}), x.numel()
-            return (lambda: {"kind": 1, **{k_: round(v, 5) for k_, v in distill_accumulate(
-                m, modes, x, w, MB, "fkl", dc["ce_weight"]).items() if k_ != "weight"}}), x.numel()
 
         def eval_fn(modes=modes):
             e = C.heldout_eval(modes, cw)
@@ -417,33 +509,102 @@ def cmd_stage_a(cfg, mixdir, gendir, out):
 
         guard = {**dc["guard"], "max_minutes": st["minutes"], "eval_every_min": dc["eval_every_min"]}
         before = eval_fn()
-        res = run_stage(C, key, conv, modes, next_batch, guard, dc["lr"], eval_fn, before=before)
+        res = run_stage(C, key, conv, modes, _batch_fn(C, stream, modes, dc["ce_weight"]), guard, dc["lr"], eval_fn,
+                        before=before)
+        rec = C.recall_eval(modes)
         res.update({"adds": st["adds"], "converted": conv, "minutes_budget": st["minutes"], "entry": before,
-                    "stream": stream.state()})
+                    "stream": stream.state(), "recall": {k_: rec[k_] for k_ in ("mqar_mean", "niah_mean")},
+                    "recall_detail": rec, "recall_drop_vs_stock": C.recall_drop(rec, rstock)})
         C.save(key, meta={"converted": conv, "best": res["best"]})
         stages[key] = res
         C.R.set("stages", stages)
+        last = key
     allm = {j: "student" for j in A}
-    if "final" not in C.R:
+    if len(stages) == len(plan["stages"]) and "final" not in C.R:
         t0 = time.time()
         C.save("stageA", meta={"converted": A})
         C.R.set("final", {"heldout": C.heldout_eval(allm), "gen_heldout": C.masked_eval(gh_rows, gh_mask, allm),
-                          "stream": stream.state(),
-                          "train_tokens_total": stream.state()["generic_windows_used"] * L})
+                          "recall": stages[last]["recall"], "stream": stages[last]["stream"]})
         C.timed("final", t0)
-    C.log({"done": True, "converted": A, "minutes": round((time.time() - C.t_start) / 60, 1)}, "end")
+    C.log({"done": len(stages) == len(plan["stages"]), "stages_done": sorted(stages),
+           "minutes": round((time.time() - C.t_start) / 60, 1)}, "end")
+
+
+# ----------------------------------------------------------------------------- sens (the cheap first job, phase P)
+def cmd_sens(cfg, mixdir, out):
+    """Per-layer sensitivity table under the recall-heavy mix + the widened GDN: can ANY single attention layer be
+    converted with a small recall loss? Stage 1 (all 8, widened) once; then for each layer alone: KD for
+    ``sens.minutes_per_layer`` on generic + synthetic-recall rows (only that layer converted and trained), then the
+    recall probe + held-out KL. Capacity control: the ``sens.control_layers`` worst layers again at the config's
+    key dim (base width), with their own short stage 1. The table is judged by jobs/q9af_v3/rule.py ``sensitivity``."""
+    C = Ctx(cfg, out)
+    m, A, L, MB, sc = C.model, C.A, cfg["seq_len"], cfg.get("micro_batch"), cfg["sens"]
+    train = data.load_tokens(os.path.join(mixdir, "train.u32"))
+    split = gendata.BlockSplit(len(train), L, cfg["lc"]["seq_len"], cfg["lc"]["blocks"], cfg["seed"])
+    generic, stream = _stream(C, train, split)
+    C.set_heldout(mixdir)
+    cw = cfg["curve_windows_per_source"]
+    if "recall_stock" not in C.R:
+        C.R.set("recall_stock", C.recall_eval({}))
+    rstock = C.R["recall_stock"]
+    if "stage1" not in C.R:
+        for i in A:
+            C.new_gdn(i)
+        align.calibrate_out_scale(m, A, next(generic))
+        g1 = align.Guard(cfg["stage1"]["guard"], "stage1")
+        hist, ntok, sec = align.stage1_align(m, A, generic, 10 ** 9, cfg["stage1"]["lr"],
+                                             log=lambda r: C.log(r, "stage1"), guard=g1, micro_batch=MB)
+        C.save("stage1", meta={"tokens": ntok})
+        C.R.set("stage1", {"tokens": ntok, "seconds": sec, "steady_tok_s": g1.rate, "gdn": cfg.get("gdn"),
+                           "hist": hist[-3:]})
+    s1 = torch.load(os.path.join(C.ck, "stage1.pt"), map_location=C.dev)
+    table = dict(C.R["table"]) if "table" in C.R else {}
+
+    def one(i, tag):
+        modes = {i: "student"}
+
+        def eval_fn():
+            return {"crit": C.heldout_eval(modes, cw)["mix"]["kl"]}
+
+        res = run_stage(C, f"{tag}_L{i}", [i], modes, _batch_fn(C, stream, modes, cfg["distill"]["ce_weight"]),
+                        {**cfg["distill"]["guard"], "max_minutes": sc["minutes_per_layer"]}, cfg["distill"]["lr"],
+                        eval_fn)
+        rec = C.recall_eval(modes)
+        return {"layer": i, "width": tag, "dk": int(m.swaps[i].gdn.dk), "kl": res["best"]["crit"],
+                "tokens": res["tokens"], "steady_tok_s": res["steady_tok_s"], "mqar": rec["mqar_mean"],
+                "niah": rec["niah_mean"], **C.recall_drop(rec, rstock), "recall_detail": rec}
+
+    for i in A:
+        if f"wide_L{i}" in table:
+            continue
+        C.load_state({i: s1[i]})
+        table[f"wide_L{i}"] = one(i, "wide")
+        C.R.set("table", table)
+        C.log({k: v for k, v in table[f"wide_L{i}"].items() if k != "recall_detail"}, "sens")
+    worst = sorted(A, key=lambda i: -(table[f"wide_L{i}"]["mqar_drop"] + table[f"wide_L{i}"]["niah_drop"]))
+    for i in worst[: sc["control_layers"]]:
+        if f"base_L{i}" in table:
+            continue
+        C.new_gdn(i, dk=None)  # the config's key dim: v2's capacity
+        align.calibrate_out_scale(m, [i], next(generic))
+        align.stage1_align(m, [i], generic, 10 ** 9, cfg["stage1"]["lr"], log=lambda r: C.log(r, "stage1_ctrl"),
+                           guard=align.Guard({**cfg["stage1"]["guard"], "max_minutes": sc["control_stage1_minutes"]},
+                                             "stage1_ctrl"), micro_batch=MB)
+        table[f"base_L{i}"] = one(i, "base")
+        C.R.set("table", table)
+    C.R.set("stream", stream.state())
+    C.log({"done": True, "rows": len(table)}, "end")
 
 
 # ----------------------------------------------------------------------------- stage B (job B, phase P)
 def cmd_stage_b(cfg, adir, out):
     C = Ctx(cfg, out)
-    m, A, MB = C.model, C.A, cfg.get("micro_batch")
+    m, A = C.model, C.A
     sd = torch.load(os.path.join(adir, "gdn_converted.pt"), map_location=C.dev, weights_only=True)
     if sorted(int(i) for i in sd) != A:
         raise SystemExit(f"stage-A export layers {sorted(sd)} != {A}")
     for i in A:
-        attach_gdn(m, i, init_gdn(m, i, "random", cfg["seed"]))
-        m.swaps[i].gdn.load_state_dict(sd[int(i)] if int(i) in sd else sd[str(i)])
+        attach_from_state(m, i, sd[int(i)] if int(i) in sd else sd[str(i)], seed=cfg["seed"])
     if os.path.exists(os.path.join(C.ck, "stageB_last.pt")):
         C.load_state(torch.load(os.path.join(C.ck, "stageB_last.pt"), map_location=C.dev))
     C.set_heldout(adir)
@@ -455,9 +616,11 @@ def cmd_stage_b(cfg, adir, out):
         e = C.heldout_eval(allm, cw)
         return {"crit": e["mix"]["kl"], "heldout": e}
 
+    if "recall_stock" not in C.R:
+        C.R.set("recall_stock", C.recall_eval({}))
     if "entry" not in C.R:
         C.R.set("entry", {"heldout": C.heldout_eval(allm), "long": C.long_eval(allm),
-                          "gen_heldout": C.masked_eval(gh["rows"], gh["mask"], allm)})
+                          "gen_heldout": C.masked_eval(gh["rows"], gh["mask"], allm), "recall": C.recall_eval(allm)})
     # ---------------- long context (32k)
     lcc = cfg["long_context"]
     if "long_context" not in C.R:
@@ -526,8 +689,10 @@ def cmd_stage_b(cfg, adir, out):
     if "final" not in C.R:
         t0 = time.time()
         C.save("final", meta={"converted": A})
+        rec = C.recall_eval(allm)
         C.R.set("final", {"heldout": C.heldout_eval(allm), "long": C.long_eval(allm),
-                          "gen_heldout": C.masked_eval(gh["rows"], gh["mask"], allm)})
+                          "gen_heldout": C.masked_eval(gh["rows"], gh["mask"], allm), "recall": rec,
+                          "recall_drop_vs_stock": C.recall_drop(rec, C.R["recall_stock"])})
         C.timed("final", t0)
     if "throughput" not in C.R and cfg.get("throughput"):
         from probes.throughput import call_latency
@@ -551,20 +716,25 @@ def main(argv=None):
     g = sub.add_parser("gen")
     a = sub.add_parser("stageA")
     b = sub.add_parser("stageB")
-    for p in (g, a, b):
+    s_ = sub.add_parser("sens")
+    for p in (g, a, b, s_):
         p.add_argument("--config", required=True)
         p.add_argument("--out", required=True)
-    for p in (g, a):
+    for p in (g, a, s_):
         p.add_argument("--mix", required=True)
+    g.add_argument("--eval-index-dir", default=None, help="the shipped full-eval-v1 index (template check)")
     a.add_argument("--gen", required=True)
+    a.add_argument("--until-stage", type=int, default=None, help="stop after this conversion stage (runner gating)")
     b.add_argument("--a", required=True, help="stage-A artifact dir (gdn_converted.pt, lc.u32, onpolicy.npz, held-out)")
     ar = ap.parse_args(argv)
     cfg = json.load(open(ar.config))
     try:
         if ar.cmd == "gen":
-            cmd_gen(cfg, ar.mix, ar.out)
+            cmd_gen(cfg, ar.mix, ar.out, ar.eval_index_dir)
         elif ar.cmd == "stageA":
-            cmd_stage_a(cfg, ar.mix, ar.gen, ar.out)
+            cmd_stage_a(cfg, ar.mix, ar.gen, ar.out, ar.until_stage)
+        elif ar.cmd == "sens":
+            cmd_sens(cfg, ar.mix, ar.out)
         else:
             cmd_stage_b(cfg, ar.a, ar.out)
     except align.StopCondition as e:

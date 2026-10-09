@@ -1,121 +1,167 @@
-# Q9-AF v3: pre-registered plan and gate
+# Q9-AF v3: pre-registered plan and gates (recall redesign)
 
-**Takeaway.** v3 converts the same 8 attention layers of Qwen3.5-9B to Gated DeltaNet as v2 and ends just as
-attention-free. Four things change, all taken from 2025–26 distillation recipes:
-1. **Per-layer gated conversion.** Layers switch two at a time, most sensitive first, with a keep-best checkpoint at
-   each stage.
-2. **Distillation on teacher-generated text.** Completions sampled from the stock open-weight Qwen3.5-9B, trained with
-   a completion-only loss.
-3. **A 32k long-context stage.**
-4. **A short on-policy stage.** The student samples and the teacher scores every token (reverse KL).
+**Takeaway.** v2 (job-7ji99) shows that a good held-out KL can still hide a broken model.
 
-v3 is promoted over v2 only if it beats v2 on the proxy600 Index under the same readout, with a CI lower bound above 0.
-v3 runs in parallel with v2's verdict, as two chained jobs:
-- **job A** (581 min): the data, stage 1, the probe and the 4 gated stages;
-- **job B** (219 min): long context, on-policy, and the gate.
-
-Committed before any v3 run or data. Code: `convert/v3.py`, `convert/distill.py`, `convert/gendata.py`. Rule:
-`jobs/q9af_v3/rule.py` (`q9af-v3-rule-v1`, constants pinned by `tests/test_q9af_v3.py`). Config:
-`configs/q9af_v3_h100.json`. Phases and pricing: `JOB_SPEC.md`.
-
-## What changes vs v2 (`stack/q9af/v2-clean-rerun`, job-7ji99)
-
-| Item | v2 | v3 |
-|---|---|---|
-| Layers | all 8 jointly from step 0 | **4 stages of 2**, in a probe-chosen order; each stage trains ALL layers converted so far; **keep-best** checkpoint per stage (held-out KL), restored before the next stage |
-| Init / stage 1 | reuse_attn, 70 min MOHAWK | reuse_attn (pre-registered, no init_cmp), **40 min** MOHAWK, all 8 at once (teacher-driven, so order-free) |
-| KD data | generic windows (full-sequence KL) | generic windows **+ 25 % of batches teacher-generated rows** (completion-only KL + 0.25 × CE on the teacher's tokens), each row read once |
-| Long context | trained at 4,096 | **+45 min at 32,768 tokens** on 512 reserved 32k blocks of the same mix (never read in job A) |
-| On-policy | none | **+40 min**: student rollouts (T = 1, ≤ 256 new tokens) on 12,000 held-apart prompts; per-token reverse KL to the teacher |
-| Gate | held-out KL ≤ 0.25 + stock-readout proxy600 vs stock | **proxy600 under the generic v3w readout (PR #236), paired v3 − v2** (or v3 − stock); KL reported, never gating |
-| Data / decontamination | v2 clean mix, `mix.decontam` full-eval-v1 | **identical** (same `convert.mixdata` build, sources, revisions, shares, held-out); `train.attack_guard` + `train.doc_overlap_guard` unchanged |
-
-No TEST, held-out, cohort-v3 or Index row is ever trained on. Prompts are prefixes of documents from the decontaminated
-mix. The only teacher is the open-weight stock Qwen3.5-9B: no Clef, Jev or API outputs.
-
-## Stage plan (minutes are wall-clock caps; `align.Guard` stops: rate floor → exit 3, memory → exit 4)
-
-| Job | Phase | Cap | What |
-|---|---|---|---|
-| A | setup + weights | 8 + 10 | pins, fla guard, preflight, shipped-data sha256, `sf_fetch --stage q9af_v2` |
-| A | D | 30 | `convert.mixdata build`: v2's clean mix (280M tokens), full-eval-v1, window manifest |
-| A | G | 85 | 32k block split (512 blocks → `lc.u32`), teacher generation (**75 min** or 16M completion tokens), on-policy prompts |
-| A | P | 425 | stage 1 **40** → probe (8 single-layer evals) → gated stages, **360 min** total KD: stage k = 45 + 180 × its KL share |
-| A | X | 8 | `stageA/gdn_converted.pt` (verified export) + the members job B pins |
-| A | reserve | 15 | |
-| B | setup + weights | 8 + 10 | + stage-A pin present, v3w readout identity `2e4907ee…`, proxy600 rows |
-| B | F | 15 | stream + sha256-check the stage-A artifact (and v2's export if pinned) |
-| B | P | 110 | 32k long context **45** → on-policy **40** → final held-out KL (4k / 32k / generated completions) + throughput |
-| B | X | 8 | final `gdn_converted.pt` (same format v2 / q9af_cell consume) |
-| B | L arms | 15 × 3 | proxy600, family `q9af-probe-v3w`: stock, v3, v2 (v2 only if pinned) |
-| B | S | 8 | `jobs.common.dev_subset compare/score` (the frozen `harness/score.py` + bootstrap) |
-| B | reserve | 15 | |
-
-Total distillation: 40 + 360 + 45 + 40 = 485 min, against v2's 70 + 385 = 455.
-
-## The per-layer order rule (`convert.distill.conversion_plan`, pre-registered)
-
-1. After stage 1 (all 8 GDNs aligned layer-wise from reuse_attn), measure for each attention layer i its
-   **sensitivity** s_i: the held-out KL(teacher ‖ model) with **only layer i** converted. These are the curve windows,
-   8 per source (web / chat / math) × 4,096 tokens.
-2. **Order = descending s_i** (most sensitive first; ties go to the lower layer index). **Groups = consecutive pairs**:
-   4 stages, and stage k converts its 2 layers while training all layers converted so far.
-3. **Stage minutes = 45 + 180 × S_k / ΣS**, where S_k is the summed s_i of the layers stage k adds.
-
-Why most-sensitive first: full8 (job-2xe5w) converted its hardest layers last (L27, L3), with the fewest tokens, and
-lost them. Here the hardest layers are converted while the rest of the network is still the exact teacher. They then
-keep training in every later stage and get the largest stage budgets. The easiest layers, which barely move KL, come
-last. The order is a deterministic function of the probe and is recorded in `results.json` (`plan`).
-
-## Teacher-generated data (GenDistill-style, phase G)
-
-- **Prompts.** 60,000 candidate prompts (chat 60 %, web 25 %, math 15 %) from documents outside the reserved 32k
-  blocks.
-  - chat: the conversation up to the first `<|im_start|>assistant\n<think>\n\n</think>` (the readout's format), ≤ 1,024
-    tokens;
-  - web / math: the first 256 tokens of a doc that is at least 320 tokens long.
-- **Sampling.** The stock Qwen3.5-9B with all attention layers, T = 1.0, ≤ 512 new tokens, stopping at
-  `<|im_end|>` / `<|endoftext|>`. Batch 192, one cached prefill, then one-token steps on the fp32 recurrent GDN kernel.
-- **Size and time.** Capped at **75 min or 16M completion tokens**, whichever comes first. At the estimated
-  ~3,000 completion tok/s (no receipt; phase G records the measured rate), that is **~13M completion tokens (~35k
-  samples)**. Packed into 4,096-token rows that hold the prompt and the completion, it comes to ~6–7k rows (~26M tokens).
-- **Held out.** 32 rows score the completion-only KL.
-- **On-policy prompts.** A further 12,000 prompts from disjoint docs, saved for job B.
-- **Loss on these rows.** Completion positions only: KL(teacher ‖ student) + 0.25 × CE on the teacher's sampled
-  token. Prompt tokens carry no loss.
-
-## THE GATE (binding; `jobs/q9af_v3/rule.py`, rule `q9af-v3-rule-v1`)
-
-**v3 is PROMOTED over v2 iff the paired proxy600 Index difference (v3 − reference) has a CI lower bound > 0.
-Otherwise the verdict is REPORT.**
-
-- **Readout.** The generic v3w LM-logit readout (PR #236: `decide.v3w_generic.make_v3w("qwen3.5-9b")` +
-  `V3WGenericBackend`, family `q9af-probe-v3w`, readout identity `2e4907ee…`). Every arm runs through the same code path
-  in job B.
-- **Scoring.** proxy600 (ids `7d42c398…`), edition 0.2.1, scored by the frozen `harness/score.py` through
-  `jobs.common.dev_subset compare`. Bootstrap B = 2000, seed 0.
-- **Reference.** v2's converted model (job-7ji99's `gdn_converted.pt`, an all-8 attention-free export) when
-  `job_params_B.json` pins its artifact. Otherwise it is the stock Qwen3.5-9B under the same readout. The committed
-  params fix the reference before the run (`rule.expected_reference`); the reference is never chosen afterwards.
-- **Reported, not gating.**
-  - v3 − stock, and v2 − stock when v2 is present;
-  - the held-out KL: 4k mix, 32k, and teacher-generated completions, at entry and final;
-  - every stage's KL curve, its best checkpoint and its tokens;
-  - the probe sensitivities and the order.
-- **NO_MEASUREMENT** (exit 9): the export is not the 8-layer attention-free final; a compare is not on proxy600 or not
-  B 2000 / seed 0; the reference does not match the pre-registered one; the binding numbers are missing.
-
-| Verdict | Action |
+| v2 measurement | Result |
 |---|---|
-| PROMOTE | v3 replaces v2: pin v3's `gdn_converted.pt` for `jobs/q9af_cell` (`jobs.q9af_cell.pin fill`) in its own commit |
-| REPORT | v3 is not promoted. Report the deltas and curves. The reference stays the Q9-AF input |
+| KL | passed (0.097, hidden cos 0.951, wikitext ppl ×1.08) |
+| proxy600 | 35.82 → 14.05 (Δ −21.77 [−25.87, −16.37]) |
+| retrieval / knowledge / tools | 36.9 → 8.1 / 23.3 → 7.6 / 49.7 → 24.5 |
+| MQAR / NIAH drop | 0.59 / 0.525 |
+| distillation tokens | 196M |
 
-## Chaining A → B (sha256-pinned, nothing trusted from the artifact)
-1. Job A ends with `/output/stageA/*` (12 members; `MEMBERS.sha256`).
-2. Download that artifact tar, then run `python -m jobs.q9af_v3.artifact fill --params jobs/q9af_v3/job_params_B.json
-   --which stageA --tar <tar> --artifact art-… --job job-…`. If job-7ji99 exported an attention-free model, do the
-   same with `--which v2`.
-3. Commit, push, and re-package B. Export `STAGEA_URL` (and `V2_URL`) in the submitting shell, and `sf_submit` fills
-   the placeholders.
-4. Job B streams each tar and checks the whole-tar sha256 and every member's sha256 before using it
-   (`jobs.q9af_v3.artifact fetch`).
+So v3 attacks recall directly:
+1. **More recall state.** The GDN replacing each attention layer gets **2× the key head dim** (dk 256 = the attention
+   head dim). That gives an exact q/k init and a 2× state.
+2. **A recall-heavy stream.** 40 % synthetic associative-recall / needle / quote rows, and 25 % teacher generations
+   that include retrieval, tool and knowledge instructions on mix documents.
+3. **Recall-gated conversion.** Layers are converted in a recall-sensitivity order with the hardest last. Every stage
+   is gated on MQAR + NIAH + proxy600, with a pre-registered STOP rule.
+4. **A recall-bound final gate.** proxy600 + recall decide, never KL.
+
+A **cheap first job S (≤ $22.09)** answers the go/no-go question before any big spend: can any single attention
+layer be converted with a small recall loss under this mix and capacity?
+
+Committed before any v3 run or data.
+- Code: `convert/v3.py`, `convert/recall.py`, `convert/distill.py`, `convert/gendata.py`, `convert/model.py`
+  (`init_gdn(dk=)`, `attach_from_state`).
+- Rules: `jobs/q9af_v3/rule.py` (`q9af-v3-rule-v1`, `q9af-v3-sens-v1`; constants pinned by `tests/test_q9af_v3.py`).
+- Configs: `configs/q9af_v3_h100.json`, `configs/q9af_v3_sens_h100.json`.
+- Phases and money: `JOB_SPEC.md`.
+
+## The chain (each job ≤ 900 min, one H100, one attempt; dry-run only, nothing submitted)
+
+| Job | Mode | Max min | Worst ($0.084/min + 60-min build) | Platform hold ($0.063/min) | Expected | Submit when |
+|---|---|---|---|---|---|---|
+| S | sensitivity table | 203 | $22.09 | $12.79 | $14.78 | now (the cheap first job) |
+| A | recall-gated conversion | 863 | $77.53 | $54.37 | $65.10 | S says GO (operator call on PARTIAL) |
+| B | 32k + on-policy + final gate | 219 | $23.44 | $13.80 | $13.19 | A ends STAGE_A_DONE (artifact pinned) |
+
+## 1. Capacity: a widened GDN (`gdn.dk`, converted layers only)
+
+| | v2 (config) | v3 |
+|---|---|---|
+| key heads × key dim × value heads × value dim | 16 × 128 × 32 × 128 | 16 × **256** × 32 × 128 |
+| recall state per sequence per layer (fp32) | 2 MiB | **4 MiB** |
+| q/k init from the attention projections | per-head SVD 256 → 128 (lossy) | **exact** (dk = the attention head dim) |
+| params per converted layer | 67.2M | 84.0M (**+16.8M**: in_proj_qkv +4,096 rows, conv +16k taps) |
+| total over 8 layers | | **+134M (+1.5 % of 9B; +0.27 GB bf16)** |
+
+- Native GDN layers are unchanged.
+- Exports record `gdn_dk` per layer and pass a strict load into HF `Qwen3_5GatedDeltaNet` with that key dim.
+  `convert.readout` sizes the GDN from the weights.
+- `jobs/q9af_cell` / `heads.backbone` assume the config's dk. They must read `gdn_dk` before using a widened export.
+- The alternative of a bigger state through more heads (nk 32) would need a new value/key head mapping and loses the
+  exact init, so dk is the first lever. Job S tests whether it is enough: its base-width control re-runs the 2 worst
+  layers at dk 128.
+
+## 2. The recall-heavy stream (`mix_fracs`; smooth weighted round robin, `convert.recall.MultiStream`)
+
+| Source | Share | Loss | What |
+|---|---|---|---|
+| generic windows | 35 % | full-sequence KL(teacher ‖ student) | v2's clean mix, verbatim (full-eval-v1) |
+| teacher-generated rows | 25 % | completion-only KL + 0.25 × CE | stock Qwen3.5-9B (open weights), T = 1. Prompts: chat 35 %, web 10 %, math 10 %, **retrieval 25 %, tool 10 %, knowledge 10 %** (fixed instructions on ≤ 600-token mix documents) |
+| synthetic recall rows | 40 % | answer-only KL + 0.25 × CE | `convert.recall.RecallSynth` |
+
+The synthetic recall tasks are:
+- **kv:** 16–256 key → id records, then 32 lookups;
+- **needle:** 1–4 memos at random depths of real text, then a question per memo;
+- **quote:** "continue the quote" from 6 tokens of the text.
+
+The data is decontaminated:
+- Every token of text is the full-eval-v1 decontaminated mix.
+- The instruction templates are checked against the shipped eval-hash index + attack templates at run time; phase G
+  refuses to start if any is flagged.
+- The recall **probe** (`probes.core` MQAR / NIAH, v2's exact settings) shares none of the training templates, key
+  words, value ranges or filler, so the gate stays held out in format.
+- No eval item is used anywhere.
+
+## 3. Per-layer order and the STOP rule (job A; `conversion_plan(descending=False)`, `rule.stage_gate`)
+
+1. Stage 1 aligns all 8 widened GDNs (40 min, MOHAWK, teacher-driven).
+2. For each layer alone, measure the **recall damage** (MQAR drop + NIAH drop vs stock) and the held-out KL.
+3. **Order = ascending damage** (ties: KL, then index). The recall-hardest layers convert **last**. Groups of 2 give
+   4 stages; stage minutes = 60 + 280 × the damage share of the layers the stage adds (520 KD min in total). Every
+   stage trains all converted layers, with a keep-best (held-out KL) checkpoint.
+4. **After every stage**, the runner measures:
+   - MQAR + NIAH;
+   - proxy600 (v3w readout) of the converted-so-far model, paired vs stock.
+
+   **CONTINUE** iff all three conditions hold:
+
+   | Condition | Bound |
+   |---|---|
+   | the stage's own MQAR drop **and** NIAH drop (vs the previous stage) | **≤ X = 0.05** each |
+   | the cumulative drops vs stock | **≤ 0.20** each (v2 lost 0.59 / 0.525) |
+   | the proxy600 point vs stock | **≥ −10** (v2's ADVANCE bound) |
+
+   Otherwise the verdict is **STOP**:
+   - no further layer is converted and no further GPU time goes to this conversion;
+   - the breaching layers are named and the hybrid is exported only as `gdn_salvage.pt`;
+   - the record is STOPPED, and nothing chains to job B.
+
+## 4. The cheap first job S (≤ $22.09 worst, ~$15 expected): does ANY single layer convert with a small recall loss?
+
+**Steps.**
+1. A 60M-token clean mix (same recipe).
+2. Stock MQAR / NIAH.
+3. Stage 1 of all 8 widened GDNs (15 min).
+4. **Each layer alone:** 10 min KD on 50 % generic + 50 % synthetic recall, then MQAR + NIAH + KL.
+5. **Capacity control:** the 2 worst layers again at v2's width (dk 128).
+
+**Pre-registered rule** (`rule.sensitivity`): a layer **passes** iff its MQAR drop and its NIAH drop are each
+**≤ 0.05**.
+
+| Verdict | When | Action |
+|---|---|---|
+| GO | ≥ 6 of 8 pass | job A |
+| PARTIAL | 1–5 pass | decision-needed: A's gate will likely stop before the failing layers, so fund A only for a hybrid or raise capacity first |
+| NO_GO | 0 pass | no big spend at this capacity / mix; next lever: dk 512 / more heads, or another mixer |
+
+The output is the full per-layer table: drops, KL, tokens, base vs wide.
+
+## 5. The final gate (job B; `rule.decide`, binding)
+
+**v3 is PROMOTED over v2 iff both hold:**
+1. the paired proxy600 Index difference (v3 − reference) has a **CI lower bound > 0**;
+2. v3's final **MQAR and NIAH drops vs stock are each ≤ 0.20**.
+
+Otherwise the verdict is REPORT.
+
+- **Readout.** The generic v3w LM-logit readout (PR #236, family `q9af-probe-v3w`, identity `2e4907ee…`) on every
+  arm.
+- **Scoring.** proxy600 (`7d42c398…`), edition 0.2.1, the frozen `harness/score.py` via `jobs.common.dev_subset
+  compare`. Bootstrap B = 2000, seed 0.
+- **Reference.** v2's export when `job_params_B.json` pins it, else stock. The committed params fix it
+  (`rule.expected_reference`).
+- **Reported, never gating.** KL (4k mix, 32k, generated completions), v3 − stock, v2 − stock, and every stage curve.
+- **Before the gate, job B runs:** 32k long context (45 min, 512 reserved blocks never read in A) and on-policy
+  reverse KL (40 min, 12,000 held-apart prompts).
+
+## 6. Token budget: what one or eight H100s reach, and the ≥ 1B-token plan
+
+| Setup | Rate | Tokens/hour | Basis |
+|---|---|---|---|
+| 1 H100, stage 1 (alignment) | 18,297 tok/s | 66M | measured (job-5cmat) |
+| 1 H100, all-8 joint KD, first student layer 3 | 5,210 tok/s | 18.8M | measured (job-2xe5w) |
+| 1 H100, KD with the first student at layer 23 | 9,460 tok/s | 34M | measured (job-2xe5w) |
+| 1 H100, all-8 joint KD, widened GDN | ~5,000 tok/s | ~18M | estimate: +0.4 % FLOPs, 2× state work in 8 of 32 mixers |
+| 8 H100 DDP | ~34,000 tok/s | ~120M | estimate at 0.85 scaling. **Not implemented** (`convert.v3` is single-GPU); no receipt |
+
+**Plan to ≥ 1B tokens on 1 H100.** After S → GO:
+- **A:** ~245M tokens (stage 1 44M + KD ~200M).
+- **C1, C2:** continuation jobs of 880 min each: all-8 joint KD on the same stream, ~255M tokens each, ~$79 worst each.
+- **C3:** if the curve still falls.
+- **B:** ~25M + the gate.
+
+That makes ~0.78B tokens with A + C1 + C2, or ~1.03B with C3. Worst case: $77.53 + 2 × $79 + $23.44 ≈ $259 (≈ $338
+with C3). Expected ≈ $230.
+
+Opal-scale 3B tokens on one H100 would be ~170 GPU-hours (~$860 at list): outside the $525 envelope. On 8 H100 it is
+25 h wall-clock at the same dollars, so only 1B is in budget.
+
+**Not built yet.** These are pre-conditions for C, deliberately gated on S and A:
+- a `convert.v3 cont` mode (load the pinned artifact, `MultiStream.restore` the stream state, rebuild the mix
+  deterministically in-job);
+- generic-text headroom: the 263M-token short region covers ~1.0B total at 35 % generic with ~12 % re-read. Raise
+  `mix.train_tokens` to 400M before C2.
