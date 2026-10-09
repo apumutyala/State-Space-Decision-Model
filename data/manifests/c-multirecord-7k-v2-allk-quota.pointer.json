@@ -1,0 +1,16 @@
+{
+ "build": "c-multirecord-7k-v2-allk-quota (python -m data.c_multirecord_quota)",
+ "n_records": 7000,
+ "location": "ssdm-data/c-multirecord-7k-v2-allk-quota/train_set/",
+ "manifest": "c-multirecord-7k-v2-allk-quota.manifest.jsonl.gz",
+ "content_map": "c-multirecord-7k-v2-allk-quota.content.jsonl.gz",
+ "builder": {
+  "module": "data.c_multirecord_quota",
+  "commit": "a92d9890c0899fce2c6b4e09e451ca9cc899a9cb"
+ },
+ "receipt": "receipts/2026-10-09-C-multirecord-quota/c-multirecord-7k-v2-allk-quota/summary.json",
+ "excludes_cohort": "verified C-only synthetic union subset; consumer must use clean B v2d and retain guards",
+ "records_uncompressed_sha256": "24f0e360b13cd522d7d62bd4df7acc75225eb1e0296ffebb90df12366492fb1a",
+ "manifest_uncompressed_sha256": "da8de7b71c66b134ac92c71ebaa7b416d73f569e4771b3a70b3d592693d6fe32",
+ "content_map_uncompressed_sha256": "a80d64d911b1bd7dc3801780fd0edcedc8817e84c8890a9010a250f204363153"
+}
