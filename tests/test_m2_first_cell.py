@@ -557,7 +557,7 @@ def test_evals_exit_43_is_a_measurement_not_a_crash(code, measured):
     r = subprocess.run([bash, "-c", script], capture_output=True, text=True, timeout=30)
     assert ("MEASURED" in r.stdout and r.returncode == 0) is measured, r.stdout
     assert JOB.index("gate \"evals\" $r; export_phase evals") < JOB.index("case $r in 0|40|43|44|45)")  # evals exported first
-    assert JOB.index("case $r in 0|40|43|44|45)") < JOB.index('cp "$CK/cell/$LATEST"')  # then the checkpoint export
+    assert JOB.index("case $r in 0|40|43|44|45)") < JOB.index("train.ckpt_export inference")  # then the checkpoint export
 
 
 def test_pending_partial_underpowered_are_valid_measured_results():
