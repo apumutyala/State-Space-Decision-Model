@@ -224,6 +224,7 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
     if want & doc_ids:  # structural: the pool already excludes them
         raise DocOverlapRefusal("drawn records carry Index eval document text")
     doc["drawn_fails"] = 0
+    doc["n_pool_removed"] = len(doc_ids - excluded - v3x["ids"] - attack_ids)  # beyond D1-B, cohort v3 and attack
     identity = {"train_set": ptr.get("build"), "pointer": ptr["_pointer_path"], "pointer_sha256": ptr["_pointer_sha256"],
                 "files_uncompressed_sha256": sha or "not re-verified (verify=False)", "n_pool": len(pool),
                 "heldout_excluded": sorted(excluded),

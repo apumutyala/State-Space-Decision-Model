@@ -416,7 +416,11 @@ def test_first_cell_dry_run_end_to_end(tmp_path):
     ag = ts["attack_guard"]
     assert ag["n_excluded"] == 8_049 and ag["drawn_hits"] == 0 and ag["per_set"]["d1a_steer"] == 8_049
     assert res["training"]["steps"] == 6
-    assert ts["n_pool"] == 149_997 - ts["cohort_v3_excluded"]["n"] - ag["n_excluded"] == 111_795 - 8_049
+    # ... - the pinned doc_clean spec (train.doc_overlap_guard: 152 rows over the set, af096960 index; those not already
+    # removed above leave the pool)
+    dg = ts["doc_overlap_guard"]
+    assert dg["n_excluded"] == 152 and dg["drawn_fails"] == 0
+    assert ts["n_pool"] == 149_997 - ts["cohort_v3_excluded"]["n"] - ag["n_excluded"] - dg["n_pool_removed"]         == 111_795 - 8_049 - dg["n_pool_removed"] == 111_795 - 8_049 - DOC_POOL_REMOVED
     assert ts["cohort_v3_excluded"]["drawn_overlap"] == 0
     assert res["index_dev_subset"]["rows"] >= 24 and res["steer_hijack_d1a"]["complete"]
     assert set(res["index_dev_subset"]["child_minus_parent"]["areas"]) == set(res["index_dev_subset"]["child"]["areas"])
@@ -580,6 +584,7 @@ def test_pending_partial_underpowered_are_valid_measured_results():
     assert 'in MEASURED_EVAL_EXITS' in src and '"verdict": "measured"' in src
 
 
+DOC_POOL_REMOVED = 99  # 103,746 - 103,647 in the dry run (doc fails outside D1-B, cohort v3 and attack_clean)
 DOC_INDEX_KEY16 = json.loads((ROOT / "data/manifests/doc_overlap/index-pin.json").read_text(encoding="utf-8"))["key"][:16]
 DOC_INDEX_FILES = ("df.npy", "ent.npy", "fl.npy", "h.npy", "meta.json", "pcnt.npy", "post.npy", "pstart.npy",
                    "u_allow.npy", "u_den.npy", "u_field.npy", "u_row.npy")
