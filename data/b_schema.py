@@ -972,9 +972,9 @@ def plan_items_v2(weights: dict, kstats: dict, avail: dict, n_records: int, log=
     combined, the aggregate no-share of binary items <= 60 % (no-heavy binary keys scaled down; per-key base rates
     untouched), glaive never above its weight share, and shortfalls spilled only to keys that are not no-heavy."""
     keys = [k for k in weights if avail.get(k, 0) > 0 and kstats.get(k, {}).get("rows")]
-    st = {k: {"items": kstats[k]["items"] / kstats[k]["rows"],
-              "bin": kstats[k]["bin"] / max(1, kstats[k]["items"]),
-              "yes": kstats[k]["yes"] / max(1, kstats[k]["bin"])} for k in keys}
+    st = {k: {"items": kstats[k].get("items", 0) / kstats[k]["rows"],
+              "bin": kstats[k].get("bin", 0) / max(1, kstats[k].get("items", 0)),
+              "yes": kstats[k].get("yes", 0) / max(1, kstats[k].get("bin", 0))} for k in keys}
     tot = sum(weights[k] for k in keys)
     share = {k: weights[k] / tot for k in keys}
     glaive_cap = {k: share[k] for k in NO_SPILL_V2 if k in share}
