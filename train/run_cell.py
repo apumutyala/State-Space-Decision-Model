@@ -28,7 +28,7 @@ import urllib.request
 from pathlib import Path
 
 EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26,
-        "guard": 27, "cohort": 28, "lineage": 29, "config": 35}
+        "guard": 27, "cohort": 28, "lineage": 29, "config": 35, "fla_fallback": 36}
 PARENTS = ("rwkv7", "q9af")
 
 
@@ -624,7 +624,74 @@ def smoke_stage(bb, train_items, cfg: dict, cuda: bool, peak=lambda: 0.0) -> dic
     return out
 
 
+def train_wkv(cfg: dict) -> str | None:
+    """The WKV that TRAINING STEPS run: ``train_rwkv7_wkv`` (opt-in, execution-only), default the cell's ``rwkv7_wkv``.
+    Everything that scores (smoke, dev cards, parent arm, seed check, G12/Index) keeps ``rwkv7_wkv``, so a cell with
+    rwkv7_wkv "chunked_lean" + train_rwkv7_wkv "fla" has the same parent / unit identity as its chunked_lean base."""
+    return cfg.get("train_rwkv7_wkv") or cfg.get("rwkv7_wkv")
+
+
+class training_wkv:
+    """``with training_wkv(bb, cfg): tr.train_step()`` -- the backbone runs ``train_wkv(cfg)`` inside the block and is
+    restored to its scoring WKV (``rwkv7_wkv``) afterwards. A no-op unless train_rwkv7_wkv differs from rwkv7_wkv."""
+
+    def __init__(self, bb, cfg: dict):
+        self.bb, self.cfg, self._old = bb, cfg, None
+
+    def __enter__(self):
+        want = train_wkv(self.cfg)
+        if self.cfg.get("parent", "rwkv7") == "rwkv7" and want and want != (self.cfg.get("rwkv7_wkv") or "chunked"):
+            from heads.rwkv7_wkv import _configs, select_wkv
+
+            self._old = [(c, c.wkv_implementation) for c in _configs(self.bb.model)]
+            select_wkv(self.bb.model, want)
+        return self
+
+    def __exit__(self, *exc):
+        for c, v in self._old or ():
+            c.wkv_implementation = v
+        self._old = None
+        return False
+
+
+def fla_requested(cfg: dict) -> bool:
+    """Training steps asked for an fla WKV (``train_wkv(cfg)`` "fla" / "fla_safe_gate"): training must then run fla,
+    never a silent "chunked" fallback (heads.rwkv7_wkv.strict around every training step; exit 36 on a fallback or no
+    call)."""
+    from heads.rwkv7_wkv import FLA_NAMES
+
+    return cfg.get("parent", "rwkv7") == "rwkv7" and train_wkv(cfg) in FLA_NAMES
+
+
+def fla_record(cfg: dict) -> dict | None:
+    """cell.json "fla": what was requested and what actually ran (fla calls vs fallbacks, process totals)."""
+    if not fla_requested(cfg):
+        return None
+    from heads import rwkv7_wkv as W
+
+    p = W.provenance()
+    split = {"scoring_wkv": cfg.get("rwkv7_wkv") or "chunked"} if cfg.get("train_rwkv7_wkv") else {}
+    return {"requested": train_wkv(cfg), **split, "strict_training": True, **p,
+            "n_calls": sum(p["calls"].values()), "n_fallbacks": sum(p["fallbacks"].values())}
+
+
 def main(argv=None):
+    """``_main`` plus the fla refusal: a fallback to "chunked" inside a training step (strict) is exit 36, with the
+    counts saved to cell.json first."""
+    ctx: dict = {}
+    try:
+        return _main(argv, ctx)
+    except Exception as e:
+        if type(e).__name__ != "FlaFallback":
+            raise
+        if "save" in ctx:
+            ctx["save"]()
+        print(f"fla: {e}", flush=True)
+        return EXIT["fla_fallback"]
+
+
+def _main(argv=None, ctx: dict | None = None):
+    ctx = {} if ctx is None else ctx
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--model-dir", required=True)
@@ -663,11 +730,27 @@ def main(argv=None):
         raise SystemExit("cell.json was written under a different config; refusing to mix stages")
 
     def save():  # also mirrored into the checkpoint dir, so a resumed attempt skips finished stages
+        fla = fla_record(cfg)
+        if fla is not None:
+            cell["fla"] = fla
         for p in (cell_path, Path(a.ckpt_dir) / "cell.json"):
             p.parent.mkdir(parents=True, exist_ok=True)
             tmp = p.with_suffix(".tmp")
             tmp.write_text(json.dumps(cell, indent=1))
             os.replace(tmp, p)
+
+    ctx["save"] = save
+    import contextlib
+
+    if fla_requested(cfg):
+        from heads.rwkv7_wkv import strict as _strict
+    else:
+        _strict = contextlib.nullcontext
+
+    @contextlib.contextmanager
+    def fla_strict():  # every training step: the training WKV (train_rwkv7_wkv) + the fla strict refusal
+        with training_wkv(bb, cfg), _strict():
+            yield
 
     # CUDA paths (bf16 autocast, peak memory) follow --device, not merely an installed CUDA build: a CPU run on a
     # CUDA-capable host (CUDA_VISIBLE_DEVICES="" can still report is_available) must not autocast to a cuda device
@@ -802,7 +885,8 @@ def main(argv=None):
                 tr = make_trainer(1)
                 tr.train_items = its[: cfg["batch_size"] * cfg["grad_accum"]]  # the worst rows (max K, then max T)
                 t0 = time.time()
-                loss = tr.train_step()
+                with fla_strict():
+                    loss = tr.train_step()
                 if cuda:
                     torch.cuda.synchronize()
                 lad[str(T)] = {"ok": math.isfinite(loss), "peak_gb": peak(), "step_s": time.time() - t0,
@@ -859,7 +943,8 @@ def main(argv=None):
         step0 = tr.step
         logf = open(out / "train_log.jsonl", "a")
         while tr.step < cfg["max_steps"] and time.time() < t_end:
-            loss = tr.train_step()
+            with fla_strict():
+                loss = tr.train_step()
             if tr.step - step0 == CHECK_AFTER_STEPS:  # measured stop condition 2: the real data mix's step time
                 el = time.time() - t_start
                 chk = too_slow(el / CHECK_AFTER_STEPS, (t_end - time.time()) / 60,
@@ -902,6 +987,9 @@ def main(argv=None):
         cell["train"] = {"steps": tr.step, "resumed": resumed, "T_max": t_max, "cards": tr.cards,
                          "lineage": tr.lineage, "verdict": pass_rule(tr.history, tr.cards, peak(), cfg["pass_rule"])}
         save()
+        if fla_requested(cfg) and tr.step > step0 and not cell["fla"]["n_calls"]:
+            print("fla: requested but no training call ran fla", flush=True)
+            return EXIT["fla_fallback"]
         if g16 is not None:  # after the checkpoint and verdict are saved: a timeout here loses only this record
             t_g = time.time()
             cell["train"]["g16_safety_eval"] = {"step": tr.step, **g16(tr.model), "seconds": round(time.time() - t_g, 1)}

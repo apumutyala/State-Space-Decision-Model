@@ -123,11 +123,13 @@ def tiny_lm(seed=0):
 
 def test_select_default_off_and_refuses_unverified():
     m = tiny_lm()
-    assert W.GPU_VERIFIED is False  # flipped only after jobs/fla_rwkv7 returns ADOPT
+    # flipped after SF job-9bs8w (perf_step_gate v2) ADOPTed fast_fla; only plain "fla" was measured
+    assert W.GPU_VERIFIED is True and W.GPU_VERIFIED_NAMES == frozenset({"fla"})
     assert W.select_wkv(m, None) == "chunked" and m.config.wkv_implementation == "chunked"
     with pytest.raises(RuntimeError, match="not GPU-verified"):
-        W.select_wkv(m, "fla")
+        W.select_wkv(m, "fla_safe_gate")
     assert m.config.wkv_implementation == "chunked"
+    assert W.select_wkv(m, "fla") == "fla"
     with pytest.raises(ValueError, match="unknown"):
         W.select_wkv(m, "flash", allow_unverified=True)
 
@@ -171,6 +173,42 @@ def test_fla_selected_on_cpu_falls_back_to_chunked_bitwise_with_batched_linears(
     assert sum(W.FALLBACKS.values()) == 2 and set(W.FALLBACKS) <= {"not_cuda", "fla_unavailable:ModuleNotFoundError",
                                                                    "fla_unavailable:ImportError"}
     W.FALLBACKS.clear()
+
+
+def test_strict_refuses_fallback_but_counts_it(monkeypatch):
+    monkeypatch.setattr(W, "_import_chunk", lambda: (None, "fla_unavailable:ImportError"))
+    W.FALLBACKS.clear()
+    x = inputs(dtype=torch.float32)
+    fn = W.make_fla_wkv()
+    assert W.STRICT is False
+    with W.strict():
+        with pytest.raises(W.FlaFallback, match="fla_unavailable"):
+            fn(*args(x))
+        with W.strict(False):  # nested: cannot switch strict off inside a strict block
+            with pytest.raises(W.FlaFallback):
+                fn(*args(x))
+    assert W.STRICT is False and W.FALLBACKS["fla_unavailable:ImportError"] == 2
+    fn(*args(x))  # outside strict: the clean fallback as before
+    assert W.FALLBACKS["fla_unavailable:ImportError"] == 3
+    W.FALLBACKS.clear()
+
+
+def test_run_cell_trains_fla_strict_and_records_calls():
+    from train import run_cell as R
+
+    assert R.EXIT["fla_fallback"] == 36
+    assert R.fla_requested({"rwkv7_wkv": "fla"}) and not R.fla_requested({"rwkv7_wkv": "chunked_lean"})
+    assert not R.fla_requested({}) and not R.fla_requested({"parent": "q9af", "rwkv7_wkv": "fla"})
+    assert R.fla_record({"rwkv7_wkv": "chunked"}) is None
+    W.CALLS.clear(); W.FALLBACKS.clear()
+    W.CALLS["fla"] += 3; W.FALLBACKS["packed_batch"] += 1
+    rec = R.fla_record({"rwkv7_wkv": "fla"})
+    assert rec["requested"] == "fla" and rec["n_calls"] == 3 and rec["n_fallbacks"] == 1 and rec["strict_training"]
+    W.CALLS.clear(); W.FALLBACKS.clear()
+    src = (ROOT / "train/run_cell.py").read_text(encoding="utf-8")
+    assert src.count("with fla_strict():") == 2  # ladder step and every training step
+    sh = (ROOT / "jobs/m2_first_cell/first_cell_job.sh").read_text(encoding="utf-8")
+    assert "--require-hashes -r \"$CODE/jobs/fla_rwkv7/requirements-fla.txt\"" in sh and "|35|36) fail $r" in sh
 
 
 def test_fallback_reasons():

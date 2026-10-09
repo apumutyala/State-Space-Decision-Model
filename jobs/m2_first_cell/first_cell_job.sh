@@ -8,6 +8,12 @@
 #   job_params_<MODE>.json, both required (exit 5 if missing or if the params' own "mode" / "cell_config" disagree).
 #   Optional params "train_dir" (relative to $DATA, default m2-150k) moves the training set. A cell config with a
 #   "teacher" (KD) block verifies $DATA/teacher before any training and passes --teacher-dir to run_cell / m2_gates.
+#   Params with "eval_only": "fulldev" (mode fulldev_eval) are an EVAL-ONLY run of a SAVED checkpoint on the FULL Index
+#   DEV slice: setup + guard as usual, then phase checkpoint (jobs.m2_first_cell.checkpoint_loader: the artifact from
+#   $<checkpoint.url_env>, every byte sha256-pinned), fulldev (jobs.m2_first_cell.fulldev_eval score --arm child, all
+#   12,104 rows, or params "rows": "smoke" = the pre-declared 250-row fulldev_smoke_rows.json; live rate guard, per-row
+#   resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
+#   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -22,7 +28,13 @@
 #   30 / 31 / 32 guard: kit-suite / content index / harness manifests   33 held-out D1-B fragment outside the pinned set
 #   20 train.run_cell unexpected code   21-29 train.run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite,
 #   24 memory, 25 data, 26 too slow for min_steps, 27 guard not ready, 28 cohort / train-set leak or mismatch,
-#   35 head config)
+#   35 head config, 36 fla requested but a training step fell back to "chunked" or no training call ran fla)
+# fla: ONLY when the cell config sets "rwkv7_wkv" or "train_rwkv7_wkv" to an fla name, setup installs fla-core 0.5.2 by wheel hash, no deps
+#   (jobs/fla_rwkv7/requirements-fla.txt, as jobs/perf_step_gate v2), checks torch 2.13.0 / triton 3.7.1 / fla 0.5.2 and
+#   the chunk_rwkv7 import, then the #640 guard (fla_guard.py) must see the installed fla: any failure is exit 5. run_cell
+#   trains under heads.rwkv7_wkv.strict and records fla calls vs fallbacks in cell.json "fla". Other cells: unchanged.
+#   "train_rwkv7_wkv" (default = rwkv7_wkv) selects the WKV for TRAINING STEPS only; everything that scores (parent arm,
+#   seed check, child evals / G12 / Index, dev cards, smoke) uses "rwkv7_wkv" (identity unchanged).
 #   1 finalize failed
 # Path overrides (TEST-ONLY; a paid run sets none of them, and every default below IS the paid-run path). They exist
 # so tests/test_m2_first_cell_shell.py can EXECUTE this script end to end on CPU with a tiny stand-in model; they only
@@ -53,6 +65,8 @@ else  # generic: the mode's two files; resolved and checked once the log and fin
 fi
 TRAIN_DIR=$DATA/m2-150k
 TEACHER_ARGS=()
+EVAL_ONLY=none
+STAGE=gates
 RECORDS=$DATA/m2/records.jsonl.gz
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -80,6 +94,7 @@ cd "$CODE"
 . "$CODE/jobs/clef_baseline/watchdog.sh"
 MARKER=M2_FIRST_CELL_DONE
 VALIDATOR=jobs.m2_first_cell.summarize:valid_result
+DECISION=$WORK/out/first_cell_result.json
 OVERRIDES=$(env | grep -o '^M2FC_[A-Z0-9_]*' | sort | tr '\n' ' ' || true)
 [ -z "$OVERRIDES" ] || say "TEST OVERRIDES SET (never in a paid run): $OVERRIDES"
 finish() {
@@ -90,12 +105,12 @@ finish() {
   # Terminal export and result validation share 60s + 30s KILL grace from the
   # existing seven-minute reserve. Export failure still reaches finalize (exit 6).
   export -f export_phase sample say
-  export CODE OUT WORK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR
+  export CODE OUT WORK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR DECISION
   export FINISH_RC=$rc
   timeout --kill-after=30s 60s bash -c '
     export_phase final
     exec python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
-      "$WORK/out/first_cell_result.json" "$OUT" "$MARKER" "$VALIDATOR"
+      "$DECISION" "$OUT" "$MARKER" "$VALIDATOR"
   '
   local final=$?
   [ "$final" -eq 0 ] || rm -f "$OUT/$MARKER"
@@ -128,13 +143,28 @@ if not override and p.get("cell_config", cell) != cell:
 td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
-print(td, 1 if c.get("teacher") else 0)
+ev = p.get("eval_only", "none")
+if ev not in ("none", "fulldev"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none or fulldev")
+if ev != "none":
+    sys.path.insert(0, ".")
+    from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
+    try:
+        checkpoint_block(p)
+    except CheckpointError as e:
+        sys.exit(f"mode {mode}: {e}")
+st = p.get("stage", "gates")
+if st not in ("gates", "screen") or (st == "screen" and ev != "none"):
+    sys.exit(f"mode {mode}: stage {st!r} must be gates or screen (screen = a training mode's evals, not eval_only)")
+print(td, 1 if c.get("teacher") else 0, ev, st)
 EOF
   ) || fail 5 "$MODE_ENV"
-  read -r TRAIN_SUB TEACHER <<< "$MODE_ENV"
+  read -r TRAIN_SUB TEACHER EVAL_ONLY STAGE <<< "$MODE_ENV"
   TRAIN_DIR=$DATA/$TRAIN_SUB
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
-  say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}"
+  say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
+  [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
+  [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
 num "$TOK_S" || fail 4 "TOK_S=$TOK_S is not a number"
@@ -145,6 +175,21 @@ num "$CALL_S" || fail 4 "CALL_S=$CALL_S is not a number"
 say "setup"
 cp "$CONTEXT_MANIFEST" "$WORK/out/" || fail 5 "no context manifest"
 nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
+# WKV = the fla name if EITHER rwkv7_wkv (scoring) or train_rwkv7_wkv (training steps only) is fla, else rwkv7_wkv
+WKV=$(python -I -c 'import json,sys; c=json.load(open(sys.argv[1])); s=c.get("rwkv7_wkv") or "chunked"; t=c.get("train_rwkv7_wkv") or s; print(t if t.startswith("fla") else s)' "$CELL")   || fail 5 "cell config rwkv7_wkv"
+case "$WKV" in
+  fla|fla_safe_gate)  # fla-core is not in the rwkv7 image: the exact 0.5.2 wheel by hash, no deps (perf_step_gate v2)
+    say "rwkv7_wkv=$WKV: install fla-core 0.5.2 by hash"
+    pip install --no-cache-dir --no-deps --require-hashes -r "$CODE/jobs/fla_rwkv7/requirements-fla.txt"       > "$WORK/logs/pip-fla.log" 2>&1 || fail 5 "fla-core install: $(tail -1 "$WORK/logs/pip-fla.log")"
+    python - > "$WORK/out/fla-versions.json" 2> "$WORK/logs/fla-versions.log" <<'EOF' || fail 5 "fla version pins: $(tail -1 "$WORK/logs/fla-versions.log")"
+import json, torch, triton, fla
+assert torch.__version__.split("+")[0] == "2.13.0", torch.__version__
+assert triton.__version__ == "3.7.1" and fla.__version__ == "0.5.2", (triton.__version__, fla.__version__)
+from fla.ops.rwkv7 import chunk_rwkv7  # noqa: F401
+print(json.dumps({"torch": torch.__version__, "triton": triton.__version__, "fla": fla.__version__}))
+EOF
+    ;;
+esac
 CELL_PATH=$CELL python - > "$WORK/out/env.json" <<'EOF' || fail 5 "env pins / WKV selection"
 import json, torch, transformers
 assert transformers.__version__ == "5.17.0", transformers.__version__
@@ -152,16 +197,23 @@ assert torch.cuda.is_available()
 import decision_index  # noqa: F401
 import third_party.rwkv7_hf as V
 import os
-from heads.rwkv7_wkv import FLA_NAMES, GPU_VERIFIED, LEAN, VENDORED
+from heads.rwkv7_wkv import FLA_NAMES, GPU_VERIFIED, GPU_VERIFIED_NAMES, LEAN, VENDORED
 assert all(V.vendored_ok().values()), V.vendored_ok()
-wkv = json.load(open(os.environ["CELL_PATH"])).get("rwkv7_wkv") or "chunked"
-assert wkv in VENDORED + LEAN + FLA_NAMES, wkv
-assert wkv not in FLA_NAMES or GPU_VERIFIED, f"rwkv7_wkv={wkv} but fla is not GPU-verified (jobs/fla_rwkv7 ADOPT first)"
+c = json.load(open(os.environ["CELL_PATH"]))
+wkv = c.get("rwkv7_wkv") or "chunked"
+train_wkv = c.get("train_rwkv7_wkv") or wkv  # training steps only (scoring uses rwkv7_wkv)
+for w in (wkv, train_wkv):
+    assert w in VENDORED + LEAN + FLA_NAMES, w
+    assert w not in FLA_NAMES or (GPU_VERIFIED and w in GPU_VERIFIED_NAMES), f"wkv={w} is not GPU-verified"
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
                   "transformers": transformers.__version__, "vendored_rwkv7": V.REVISION,
-                  "wkv": wkv, "fla_gpu_verified": GPU_VERIFIED}))
+                  "wkv": wkv, "fla_gpu_verified": (wkv in GPU_VERIFIED_NAMES) if wkv in FLA_NAMES else None,
+                  **({"train_wkv": train_wkv} if train_wkv != wkv else {})}))
 EOF
 python -I "$CODE/jobs/common/fla_guard.py" --out "$WORK/out/fla_guard.json" > "$WORK/logs/fla_guard.log" 2>&1 || fail 5 "fla #640 guard: $(tail -1 "$WORK/logs/fla_guard.log")"
+case "$WKV" in fla|fla_safe_gate)  # the guard must have checked the installed fla (not the "not installed" no-op)
+  python -I -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("fla_installed") else 1)' "$WORK/out/fla_guard.json"     || fail 5 "fla #640 guard did not see fla-core installed" ;;
+esac
 ( cd "$DATA" && sha256sum -c "$CODE/jobs/rwkv7/records.sha256" ) > "$WORK/out/records-verify.txt" 2>&1 || fail 10 "PR #16 records sha256"
 python -X utf8 -m train.train_set verify --config "$CELL" --train-dir "$TRAIN_DIR" --out "$WORK/out/train-set-verify.json" \
   > "$WORK/logs/train-set.log" 2>&1 || fail 10 "150k train set != pointer"
@@ -189,15 +241,42 @@ for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used 
     REFS+=(--reference "$NAME=$F")
   fi
 done
-python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag" || fail 5 "drivers not importable"
+python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, jobs.m2_first_cell.fulldev_eval, jobs.m2_first_cell.checkpoint_loader" || fail 5 "drivers not importable"
+if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
+  python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
+    || fail 15 "fulldev projected past its cap at the measured D1 child rate"
+else
+# params "rows" (base / training modes): "subset" (default) = the child's Index stage on all 2,008 subset rows; "proxy600"
+# = a SCREEN on the pre-declared 644-row proxy (jobs/common/dev_proxy600.json, ids sha pinned in jobs.common.dev_proxy;
+# the parent arm stays verified on the full subset and is paired on the proxy rows). Winners get the full subset.
+IXROWS=$(python -c "import json,sys; print(json.load(open(sys.argv[1])).get('rows', 'subset'))" "$PARAMS") || fail 5 "job_params rows"
+INDEX_PROXY=()
+case $IXROWS in
+  subset) ;;
+  proxy600) python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index-proxy.json" || fail 10 "index proxy600 identity"
+            INDEX_PROXY=(--index-proxy proxy600) ;;
+  *) fail 5 "job_params rows $IXROWS: subset or proxy600" ;;
+esac
 FIX_P=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['parent'])" "$PARAMS") || fail 5 "job_params"
 FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['child'])" "$PARAMS") || fail 5 "job_params"
 # every eval phase is priced HERE from the measured rates, before the paid training phase
-for P in "g12 parent parent_g12 $FIX_P" "index parent parent_index $FIX_P" "g12,index child evals $FIX_C"; do
+EVAL_PRICES=("g12 parent parent_g12 $FIX_P" "index parent parent_index $FIX_P" "g12,index child evals $FIX_C")
+if [ "$STAGE" = screen ]; then  # params "stage": "screen": the child evals are ONE proxy600 Index pass (no G12 / fit / card)
+  EVAL_PRICES=("${EVAL_PRICES[@]:0:2}")
+  python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index-proxy.json" || fail 10 "index proxy600 identity"
+  python -X utf8 -m jobs.m2_first_cell.screen estimate --params "$PARAMS" > "$WORK/out/preflight-screen.json" \
+    || fail 15 "screen projected past its cap at D1's measured proxy rate"
+  # the reference cell's child predictions (sha-pinned artifact chain), checked to cover every proxy row BEFORE training
+  python -X utf8 -m jobs.m2_first_cell.screen reference --params "$PARAMS" --cell-config "$CELL" --data "$DATA" --work "$WORK/reference" \
+    --out "$WORK/out/screen-reference.json" > "$WORK/logs/screen-reference.log" 2>&1 \
+    || fail 10 "screen reference: $(tail -1 "$WORK/logs/screen-reference.log")"
+fi
+for P in "${EVAL_PRICES[@]}"; do
   set -- $P
   python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \
     --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
 done
+fi
 gate "setup" 0
 export_phase setup
 
@@ -207,6 +286,46 @@ timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_rea
   --out-dir "$WORK/out/guard" > "$WORK/logs/guard.log" 2>&1; r=$?
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
+
+if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a SAVED checkpoint on the FULL Index DEV
+  say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"
+  timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" \
+    --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CK/cell" --work "$WORK/art" \
+    --cell-out "$WORK/out/cell.json" --out "$WORK/out/checkpoint.json" > "$WORK/logs/checkpoint.log" 2>&1; r=$?
+  gate "checkpoint" $r; export_phase checkpoint
+  case $r in 0) ;; 124|137) fail 7 "checkpoint timeout" ;; 10) fail 10 "checkpoint identity: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
+    *) fail 5 "checkpoint rc=$r: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
+  CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
+  read -r MAXIN FD_PARENT ROWS_SEL <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(int(p['max_input_tokens']), 1 if p.get('fulldev_parent_arm') else 0, p.get('rows', 'full'))" "$PARAMS")" \
+    || fail 5 "job_params max_input_tokens / fulldev_parent_arm / rows"
+  FD_ARMS=(child); [ "$FD_PARENT" = 1 ] && FD_ARMS+=(parent)
+  for ARMNAME in "${FD_ARMS[@]}"; do
+    PH=fulldev; [ "$ARMNAME" = parent ] && PH=parent_full
+    if [ "$ARMNAME" = child ]; then
+      ARGS=(--cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR"
+            "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json")
+    else
+      ARGS=(--cell-config "$CELL")
+    fi
+    say "phase $PH ($ARMNAME arm, DEV rows: $ROWS_SEL, max_input_tokens $MAXIN; resumes from $CK/fulldev)"
+    python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)" \
+      --report "$WORK/out/rate-$PH.json" -- \
+      timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval score --arm "$ARMNAME" "${ARGS[@]}" \
+      --model-dir "$SNAP" --rows "$DATA/slices/dev-rows.jsonl.gz" --max-input-tokens "$MAXIN" --rows-select "$ROWS_SEL" --resume-dir "$CK/fulldev" \
+      --out-dir "$WORK/out/fulldev" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
+    gate "$PH" $r; export_phase "$PH"
+    case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
+      10) fail 10 "$PH identity (rows / checkpoint lineage / cohort)" ;; *) fail 9 "$PH rc=$r" ;; esac
+  done
+  say "phase report"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.fulldev_eval report --out-dir "$WORK/out/fulldev" \
+    --params "$PARAMS" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "fulldev_eval result missing or invalid (rc=$r)"
+  sample "$DECISION" "fulldev-eval"
+  RC=0
+  exit 0
+fi
 
 # ------------------------------------------------------------------ held-out D1-B over the WHOLE training set (exit 33)
 say "phase heldout (hits must equal the pinned exclusions)"
@@ -277,12 +396,16 @@ if [ ${#PROBE[@]} -eq 0 ]; then
     10) fail 10 "parent cache failed verification: $(tail -1 "$WORK/logs/parent-cache-verify.log")" ;;
     *) fail 5 "parent cache verification rc=$r" ;; esac
 fi
+if [ "$STAGE" = screen ]; then
+  say "stage screen: child evals priced in setup (D1 measured proxy rate); no re-price"
+else
 say "re-price the child evals from the measured parent scoring speed"
 python -X utf8 -m jobs.m2_first_cell.reprice --arm-dir "$ARM" --params "$PARAMS" --tok-s "$TOK_S" --call-s "$CALL_S" \
   --out "$WORK/out/reprice.json" "${PROBE[@]}" > "$WORK/logs/reprice.log" 2>&1; r=$?
 gate "reprice" $r
 case $r in 0) ;; 15) fail 15 "child evals re-priced past their cap at the box's measured speed (before training)" ;;
   *) fail 5 "reprice rc=$r" ;; esac
+fi
 
 # ------------------------------------------------------------------ cell: smoke -> ladder -> train (resumable; exit 26 = too slow)
 say "phase cell"
@@ -293,8 +416,29 @@ timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" 
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
-case $r in 0) ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+case $r in 0) ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
 
+# ------------------------------------------------------------------ stage screen: ONE proxy600 Index pass, then screen.json
+if [ "$STAGE" = screen ]; then
+  say "phase screen (child untempered arm on the 644 proxy600 rows; paired vs the parent arm and the reference cell)"
+  python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-screen.jsonl" --cap-min "$(cap screen)" \
+    --report "$WORK/out/rate-screen.json" -- \
+    timeout --kill-after=30s $(cap screen)m python -X utf8 -m jobs.m2_first_cell.screen score --cell "$WORK/out/cell.json" \
+    --ckpt-dir "$CK/cell" --model-dir "$SNAP" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
+    --guard-readiness "$WORK/out/guard/readiness.json" --index-rows "$WORK/index-rows.jsonl.gz" --resume-dir "$CK/screen" \
+    --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --reference "$WORK/out/screen-reference.json" \
+    --out-dir "$WORK/out/screen" --progress "$WORK/logs/progress-screen.jsonl" > "$WORK/logs/screen.log" 2>&1; r=$?
+  gate "screen" $r; export_phase screen
+  case $r in 0) ;; 124|137) fail 7 "screen timeout" ;; 15) fail 15 "screen: live rate past the cap" ;;
+    10) fail 10 "screen identity (proxy / parent arm / checkpoint lineage / plan check)" ;; *) fail 9 "screen rc=$r" ;; esac
+  say "phase report (screen.json)"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.screen report --params "$PARAMS" \
+    --index-rows "$WORK/index-rows.jsonl.gz" --out-dir "$WORK/out/screen" --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" \
+    --reference "$WORK/out/screen-reference.json" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" \
+    > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "screen result missing or invalid (rc=$r): $(tail -1 "$WORK/logs/report.log")"
+else
 # ------------------------------------------------------------------ child evals: temperature fit, dev card, G12 + Index DEV subset
 say "phase evals (calibration fit; dev card; G12 dev + steer_dev; Index DEV subset + readout diagnostics)"
 python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress.jsonl" --cap-min "$(cap evals)" \
@@ -302,7 +446,7 @@ python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/pro
   timeout --kill-after=30s $(cap evals)m python -X utf8 -m train.m2_gates --cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --model-dir "$SNAP" \
   --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" \
   --parent-arm "$ARM" --parent-arm-sha256 "$ARM_SHA" --anchor-arm "$ARM" --anchor-arm-sha256 "$ARM_SHA" \
-  --index-rows "$WORK/index-rows.jsonl.gz" \
+  --index-rows "$WORK/index-rows.jsonl.gz" "${INDEX_PROXY[@]}" \
   --out "$WORK/out/report.json" --stage g12+index --progress-dir "$WORK/logs" > "$WORK/logs/evals.log" 2>&1; r=$?
 gate "evals" $r; export_phase evals
 # Trained + measured (the report is written; the checkpoint and every eval export follow), m2_gates (PR #102, Codex
@@ -320,10 +464,11 @@ timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.sum
   > "$WORK/logs/report.log" 2>&1; r=$?
 gate "report" $r
 [ $r -eq 0 ] || fail 9 "first-cell result missing or invalid (rc=$r)"
+fi
 LATEST=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$CK/cell/latest.json") || fail 9 "no checkpoint"
 mkdir -p "$OUT/ckpt"
 cp "$CK/cell/$LATEST" "$CK/cell/latest.json" "$OUT/ckpt/" && ( cd "$OUT/ckpt" && sha256sum "$LATEST" > "$LATEST.sha256" ) \
   || EXPORT_FAIL=1
-sample "$WORK/out/first_cell_result.json" "first-cell"
+sample "$DECISION" "first-cell"
 RC=0
 exit 0

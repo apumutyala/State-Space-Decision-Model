@@ -1004,3 +1004,41 @@ def test_d10_is_d3_v2f_fast_on_the_b1_100k_draw():
         for e in p["context"]["data"]:
             if e["dest"].startswith("m2-b100k/"):
                 assert e["pin"] == "jobs/m2_first_cell/data_d10_b100k.sha256" and e["dest"] in pins
+
+
+def test_train_wkv_split_keeps_the_d1_parent_and_unit_identity(tmp_path):
+    """job-b4fy8: a cell with rwkv7_wkv "chunked_lean" (scoring) + train_rwkv7_wkv "fla" (training steps only) has the
+    SAME parent / unit identity and TrainConfig hash as D1 base, so the pinned D1 parent arm seed is accepted; only the
+    training steps switch the backbone to fla (and back), under the fla strict refusal."""
+    pytest.importorskip("torch")
+    from heads.backbone import tiny_hf_backbone
+    from jobs.m2_first_cell.arm_seed import check
+    from train import run_cell as R
+    from train.m2_gates import expected_parent_identity, unit_spec
+    from train.trainer import with_execution
+
+    assert CELL["rwkv7_wkv"] == "chunked_lean" and "train_rwkv7_wkv" not in CELL
+    split = {**CELL, "train_rwkv7_wkv": "fla"}
+    assert expected_parent_identity("rwkv7", wkv=split["rwkv7_wkv"]) == expected_parent_identity("rwkv7", wkv=CELL["rwkv7_wkv"])
+    assert unit_spec(split) == unit_spec(CELL)
+    h = lambda c: with_execution(R.train_config(c, 10), c).hash()  # noqa: E731
+    assert h(split) == h(CELL)
+    src = tmp_path / "seed"
+    pin = _fake_arm(src, CELL)  # the D1 base arm (scored chunked_lean)
+    check(src, pin, split)  # accepted for the split cell (job-b4fy8 refused the all-fla cell here)
+    with pytest.raises(Exception, match="parent identity"):
+        check(src, pin, {**CELL, "rwkv7_wkv": "fla"})  # the PR #225 behaviour for rwkv7_wkv "fla" is unchanged
+    assert R.train_wkv(split) == "fla" and R.train_wkv(CELL) == "chunked_lean"
+    assert R.fla_requested(split) and not R.fla_requested(CELL)
+    assert R.fla_record(split)["requested"] == "fla" and R.fla_record(split)["scoring_wkv"] == "chunked_lean"
+    bb = tiny_hf_backbone("rwkv7", fork_mode="cache")
+    from heads.rwkv7_wkv import select_wkv
+
+    select_wkv(bb.model, split["rwkv7_wkv"])  # load_parent_backbone: the SCORING wkv
+    with R.training_wkv(bb, split):
+        assert select_wkv(bb.model, None) == "fla"
+    assert select_wkv(bb.model, None) == "chunked_lean"
+    with R.training_wkv(bb, CELL):  # default (no train_rwkv7_wkv): a no-op
+        assert select_wkv(bb.model, None) == "chunked_lean"
+    sh = JOB
+    assert 'c.get("train_rwkv7_wkv")' in sh  # fla is installed / verified if EITHER key is fla

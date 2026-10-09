@@ -1,0 +1,79 @@
+{
+  "archive_note": "Files copied byte-for-byte; registration retains original temporary artifact path. Archive is evidence, not a relocated serving registration.",
+  "cost_usd": 0,
+  "gpu_used": false,
+  "heldout_generated_or_evaluated": false,
+  "language_level_qualified": false,
+  "real_checkpoint_loaded": false,
+  "source_commit": "2f523138f161fd93730be8432184af445dfb75b0",
+  "tests": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "command": [
+      "-X",
+      "utf8",
+      "-m",
+      "pytest",
+      "language_growth/tests/test_gate_training.py",
+      "language_growth/tests/test_gate_direction_fit.py",
+      "language_growth/tests/test_gate_interventions.py",
+      "language_growth/tests/test_gate_evidence.py",
+      "language_growth/tests/test_checkpoint_metadata.py",
+      "language_growth/tests/test_contrast_realizer.py",
+      "language_growth/tests/test_licensed_realizer.py",
+      "language_growth/tests/test_language_gates.py",
+      "-q"
+    ],
+    "interpreter": "C:\\Users\\apumu\\research\\CHLabs\\.venv-gpu\\Scripts\\python.exe",
+    "result": "106 passed in 15.16s"
+  },
+  "tiny_fitting_proofs": {
+    "scoped": {
+      "archive_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\agent-c-native-direction-proof-20261008-2f52313\\scoped",
+      "effect_target_selected": {
+        "output_only": 0,
+        "random": 0,
+        "semantic": 0,
+        "sham": 0
+      },
+      "file_sha256": {
+        "directions.pt": "6116bc68ce939b5920e2b3a4a90eb26f8ef27c78efcc1a3c6a757391da45afc8",
+        "fit-evidence.json": "a66e5bc0ced2129509ee6c8dee9ba87f63a498088c51c40df0e850c9236fc776",
+        "registration.json": "a2ec946f8f506d949767d4e87ba1094ad1cbcc3e78b5732366a15b6f42cd79e2",
+        "source-pairs.json": "e6f0dddba8910fb7f436b665c20977ec9a0646f98b901ea55d4175c2da3ad07a"
+      },
+      "n_discovery_pairs": 2,
+      "n_validation_pairs": 1,
+      "original_path": "C:\\Users\\apumu\\AppData\\Local\\Temp\\pytest-of-apumu\\pytest-4411\\test_targeted_fitted_K3_runs_f0\\targeted",
+      "parent_unchanged": true,
+      "scope": "tiny synthetic native-head protocol only; no qualified RWKV7 model"
+    },
+    "unscoped": {
+      "archive_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\agent-c-native-direction-proof-20261008-2f52313\\unscoped",
+      "effect_target_selected": {
+        "output_only": 0,
+        "random": 0,
+        "semantic": 0,
+        "sham": 0
+      },
+      "file_sha256": {
+        "directions.pt": "a0ee0245ab6dc74b6baa085dc8fccfef31eb7e56dfe7842c4f2e7fcf81559416",
+        "fit-evidence.json": "5054ff04cd80d2bbcafb1a64d7a621f9c60fbb007f87950648b70addb0e0957a",
+        "registration.json": "7c0ffe686379c980f2f0e9a9ebbe76bf6919c9cd4876ed7cbb39f36cb597e623",
+        "source-pairs.json": "e6f0dddba8910fb7f436b665c20977ec9a0646f98b901ea55d4175c2da3ad07a"
+      },
+      "n_discovery_pairs": 2,
+      "n_validation_pairs": 1,
+      "original_path": "C:\\Users\\apumu\\AppData\\Local\\Temp\\pytest-of-apumu\\pytest-4411\\test_real_capture_fit_compatib0\\fit",
+      "parent_unchanged": true,
+      "scope": "tiny synthetic native-head protocol only; no qualified RWKV7 model"
+    }
+  },
+  "training_export": {
+    "records": 1124,
+    "records_sha256": "ea67dea7a328fc96e0bf09173b5ab8c16c0272b60edc54a8365dfffb01b2c7d9",
+    "tasks": 322,
+    "worlds": 33
+  }
+}

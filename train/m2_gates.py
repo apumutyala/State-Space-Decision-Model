@@ -298,8 +298,41 @@ class Progress:
         return call
 
 
+def proxy_rows(index_rows: list[dict] | None, index_ids: frozenset | None) -> list[dict] | None:
+    """The rows of ``index_rows`` in a pre-declared proxy (``jobs.common.dev_proxy``); None ids = all rows."""
+    if index_ids is None or index_rows is None:
+        return index_rows
+    return [r for r in index_rows if r["_evaluation"]["run_id"] in index_ids]
+
+
+def proxy_diag_rows(index_rows: list[dict] | None, index_ids: frozenset | None) -> list[dict]:
+    """The readout order diagnostic's rows: ``diag_rows`` of the FULL identity rows (as the parent arm scored them),
+    restricted to the proxy, so child and parent stay on identical questions after ``restrict_units``."""
+    from jobs.m2_first_cell import readout_diag as RD
+
+    return proxy_rows(RD.diag_rows(index_rows or []), index_ids) or []
+
+
+def restrict_units(units: dict, index_ids: frozenset | None) -> dict:
+    """An arm's index-stage units restricted to a proxy's rows (index results + order-diagnostic questions); the
+    comparator cache itself (and its pinned identity over the full subset) is untouched."""
+    if index_ids is None:
+        return units
+    from jobs.m2_first_cell import readout_diag as RD
+
+    out = dict(units)
+    if "index_results" in units:
+        out["index_results"] = {k: v for k, v in units["index_results"].items() if k in index_ids}
+    od = units.get("order_diag")
+    if od is not None:
+        qs = {q: v for q, v in od["questions"].items() if q.rsplit("/", 1)[0] in index_ids}
+        out["order_diag"] = {"rows": len({q.rsplit("/", 1)[0] for q in qs}), "questions": qs,
+                             "summary": RD.summarize_order(qs)}
+    return out
+
+
 def stage_unit_weights(stage: str, items_by_role: dict, records_by_id: dict, variants: list[dict],
-                       index_rows: list[dict] | None) -> list[int]:
+                       index_rows: list[dict] | None, index_ids: frozenset | None = None) -> list[int]:
     from safety_eval.data import strip_meta
     from train.guard import record_request
 
@@ -309,29 +342,31 @@ def stage_unit_weights(stage: str, items_by_role: dict, records_by_id: dict, var
             w.append(unit_weight(record_request(records_by_id[rid])))
     w += [unit_weight(strip_meta(v)) for v in variants]
     if _uses_index(stage):
-        w += [unit_weight(r) for r in (index_rows or [])]
+        w += [unit_weight(r) for r in (proxy_rows(index_rows, index_ids) or [])]
     if stage == "index":
         from jobs.m2_first_cell import readout_diag as RD
 
-        w += [unit_weight(r) for r in RD.diag_requests(RD.diag_rows(index_rows or []))]
+        w += [unit_weight(r) for r in RD.diag_requests(proxy_diag_rows(index_rows, index_ids))]
     return w
 
 
 def score_stage(stage: str, decide: Callable[[dict], dict], steer: Callable[[dict], dict],
                 items_by_role: dict[str, list], records_by_id: dict[str, dict], variants: list[dict],
                 index_rows: list[dict] | None = None, index_decide: Callable[[dict], dict] | None = None,
-                progress=None) -> dict[str, Any]:
+                progress=None, index_ids: frozenset | None = None) -> dict[str, Any]:
     """One arm's units for one stage. ``decide``: ``decide.Decider.decide``-compatible; ``steer``: a safety_eval
     decide callable (``DecideBridge``). Used for the child here and for the parent in ``jobs/m2_parent_arm``.
     ``index_decide``: the child's SERVED decider for the Index rows (``index_predict(untempered_from_raw=True)``).
-    ``progress``: optional live-progress file path (or a planned ``Progress``) for the rate guard; scores unchanged."""
+    ``progress``: optional live-progress file path (or a planned ``Progress``) for the rate guard; scores unchanged.
+    ``index_ids``: a pre-declared proxy of ``index_rows`` (``jobs.common.dev_proxy``): only its rows are scored."""
     from safety_eval import metrics
 
     if isinstance(progress, Progress):  # planned by the caller (several stages share one progress file)
         pr = progress
     else:
         pr = Progress(progress)
-        pr.plan(stage_unit_weights(stage, items_by_role, records_by_id, variants, index_rows) if progress else [])
+        pr.plan(stage_unit_weights(stage, items_by_role, records_by_id, variants, index_rows, index_ids)
+                if progress else [])
     decide, steer = pr.wrap(decide), pr.wrap(steer)
     index_decide = pr.wrap(index_decide) if index_decide is not None else None
     # progress beat for the runner's watchdog (SSDM_PROGRESS_BEAT; unchanged scores)
@@ -344,12 +379,13 @@ def score_stage(stage: str, decide: Callable[[dict], dict], steer: Callable[[dic
         out["decision"][role], out["decision_errors"][role] = f, err
     out["steer_rows"] = metrics.run(steer, variants) if variants else []
     if _uses_index(stage):
-        out["index_results"] = (index_predict(index_decide, index_rows or [], untempered_from_raw=True)
-                                if index_decide is not None else index_predict(decide, index_rows or []))
+        rows = proxy_rows(index_rows, index_ids) or []
+        out["index_results"] = (index_predict(index_decide, rows, untempered_from_raw=True)
+                                if index_decide is not None else index_predict(decide, rows))
     if stage == "index":  # readout diagnostic: same options, forward vs reversed presentation (not a criterion)
         from jobs.m2_first_cell import readout_diag as RD
 
-        out["order_diag"] = RD.order_diagnostic(decide, RD.diag_rows(index_rows or []))
+        out["order_diag"] = RD.order_diagnostic(decide, proxy_diag_rows(index_rows, index_ids))
     out["seconds"] = round(time.perf_counter() - t0, 3)
     return out
 
@@ -575,7 +611,7 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
               anchor_arm_sha256: str | None = None, index_frozen: dict | None = None,
               child_index_decide=None, margins: dict | None = None, anchor_is_champion: bool = False,
               out: str | Path | None = None, extra: dict | None = None,
-              progress_dir: str | Path | None = None) -> tuple[int, dict]:
+              progress_dir: str | Path | None = None, index_proxy: dict | None = None) -> tuple[int, dict]:
     """Score the child per stage, load the matching comparator units, apply the verdicts and the promotion rule.
 
     Comparators (issue #36 anti-creep): ``parent_arm`` = the LAST ACCEPTED checkpoint's arm cache; ``anchor_arm`` =
@@ -586,10 +622,18 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
     promotion verdict in its manifest, so only an accepted child can be the next run's ``parent_arm``
     (``read_arm_cache`` refuses a candidate cache without a promotable verdict). The anchor is REQUIRED for G13
     (Codex #36: a missing comparator leaves the run non-promotable): ``anchor_arm=None`` is accepted only when the
-    last-accepted cache is itself a parent-arm cache (not a candidate), and is then recorded as the anchor."""
+    last-accepted cache is itself a parent-arm cache (not a candidate), and is then recorded as the anchor.
+    ``index_proxy`` (``jobs.common.dev_proxy.load_proxy``; stage ``index`` only, never g13): the child scores only the
+    proxy's rows of ``index_rows``; comparator caches are verified on the FULL rows (unchanged identity) and their
+    units are then restricted to the proxy (``restrict_units``), so both arms are paired on identical rows."""
     from train.promotion import MARGINS, combine_comparators
 
     margins = MARGINS if margins is None else margins
+    if index_proxy is not None and "g13" in stages:
+        raise IdentityMismatch("an Index proxy is a screen: never with g13 (promotion needs the full frozen DEV)")
+    pids = frozenset(index_proxy["run_ids"]) if index_proxy is not None else None
+    if pids is not None and not pids <= {r["_evaluation"]["run_id"] for r in (index_rows or [])}:
+        raise IdentityMismatch("Index proxy rows are not a subset of --index-rows")
     report: dict[str, Any] = {"schema": REPORT_SCHEMA, "identities": {"cohort": cohort.identity(), "unit_spec": spec,
                                                                       "child": child_identity, **(extra or {})},
                               "verdicts": {}, "stages": {}}
@@ -599,7 +643,8 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
     pr = Progress(Path(progress_dir) / "progress.jsonl" if progress_dir else None)
     if progress_dir:  # one progress file over every stage of this run (the rate guard projects the whole phase)
         pr.plan([w for s in stages for w in stage_unit_weights(s, items_by_role, records_by_id, variants_by[s],
-                                                                index_rows if _uses_index(s) else None)])
+                                                                index_rows if _uses_index(s) else None,
+                                                                pids if s == "index" else None)])
     for stage in stages:
         variants = variants_by[stage]
         ident = units_identity(stage, cohort, spec, {r: items_by_role[r] for r in STAGE_ROLES[stage]}, variants,
@@ -620,13 +665,17 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
             if comps["anchor"][1]["sha256"] == comps["last_accepted"][1]["sha256"] and str(
                     (comps["last_accepted"][1].get("arm") or {}).get("role", "")).startswith(CANDIDATE_ROLE):
                 raise IdentityMismatch("the anchor is a copy of the last-accepted candidate cache (anti-creep)")
+        sids = pids if stage == "index" else None
+        if sids is not None:  # proxy screen: comparators verified on the full rows above, paired on the proxy rows
+            comps = {k: (restrict_units(u, sids), e) for k, (u, e) in comps.items()}
+        srows = proxy_rows(index_rows, sids)
         if stage == "index":  # $0 plan-only: the child must accept exactly the rows the parent arm accepted
-            plan = index_plan_check(child_decide, index_rows or [], comps["last_accepted"][0])
+            plan = index_plan_check(child_decide, srows or [], comps["last_accepted"][0])
             report.setdefault("plan_checks", {})["index"] = plan
         child = score_stage(stage, child_decide, child_steer, items_by_role, records_by_id, variants,
                             index_rows if _uses_index(stage) else None,
-                            child_index_decide if stage == "g13" else None, progress=pr)
-        vs = {name: stage_verdict(stage, child, units, variants, index_rows, margins, n_boot)
+                            child_index_decide if stage == "g13" else None, progress=pr, index_ids=sids)
+        vs = {name: stage_verdict(stage, child, units, variants, srows, margins, n_boot)
               for name, (units, _) in comps.items()}
         v = vs["last_accepted"] if stage == "index" else combine_comparators(vs)
         if stage == "g13" and same_anchor:
@@ -640,6 +689,13 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
                                                        for n, (_, e) in comps.items()},
                                    "child_seconds": child["seconds"],
                                    "child_decision_errors": child["decision_errors"]}
+        if sids is not None:  # the index stage was scored on a pre-declared proxy of the identity rows (a SCREEN)
+            report["stages"][stage]["index_proxy"] = {k: index_proxy.get(k) for k in (
+                "ids_sha256", "n_target", "design", "seed", "base_subset_ids_sha256")} | {"n": len(sids)}
+            if "cohort" in report["verdicts"][stage]:
+                report["verdicts"][stage]["cohort"] = (f"Index DEV proxy ({len(sids)} pre-declared rows of the 2,008-row "
+                                                       "subset; jobs/common/dev_proxy.py): a cell SCREEN, not a "
+                                                       "promotion stage")
         children[stage] = (child, ident, dict(comps["last_accepted"][1].get("arm", {}).get("parent") or {}))
         if out is not None:
             Path(out).parent.mkdir(parents=True, exist_ok=True)
@@ -648,6 +704,8 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
     report["promotion"] = promotion_verdict(report["verdicts"], margins)
     if out is not None and report["promotion"]["promotable"]:  # only an ACCEPTED child becomes a comparator
         for stage, (child, ident, par) in children.items():
+            if stage == "index" and pids is not None:  # proxy units do not cover the identity rows: never a comparator
+                continue
             write_arm_cache(Path(out).with_name("child-arm"), stage, child, ident,
                             {"parent": par, "child": child_identity, "role": CANDIDATE_ROLE,
                              "promotion": {k: report["promotion"][k] for k in ("verdict", "promotable", "stages")}})
@@ -748,6 +806,8 @@ def main(argv=None) -> int:
     ap.add_argument("--anchor-is-champion", action="store_true",
                     help="the anchor is the current champion's (accepted candidate) cache")
     ap.add_argument("--index-rows", default=None, help="the FULL Index DEV rows (needed for g13)")
+    ap.add_argument("--index-proxy", default=None, help="stage index only: score the child on a pre-declared proxy of "
+                    "--index-rows (jobs.common.dev_proxy row mode, e.g. proxy600, or a proxy file); a SCREEN")
     ap.add_argument("--index-frozen", default=None, help="jobs.common.dev_full frozen manifest (needed for g13)")
     ap.add_argument("--index-frozen-sha256", default=None, help="pinned sha256 of the frozen manifest file")
     ap.add_argument("--out", required=True)
@@ -770,6 +830,18 @@ def main(argv=None) -> int:
     if "g13" in stages and not (a.index_rows and a.index_frozen and a.index_frozen_sha256):
         print("g13 needs --index-rows (full Index DEV) + --index-frozen + --index-frozen-sha256", file=sys.stderr)
         return EXIT["usage"]
+    if a.index_proxy and ("index" not in stages or "g13" in stages):
+        print("--index-proxy is for the index measurement stage only (never g13)", file=sys.stderr)
+        return EXIT["usage"]
+    a.index_proxy_data = None
+    if a.index_proxy:  # pinned ids sha + DEV manifest + base subset, checked before any GPU work
+        from jobs.common.dev_proxy import load_proxy
+
+        try:
+            a.index_proxy_data = load_proxy(a.index_proxy)
+        except SystemExit as e:
+            print(f"identity: index proxy: {e}", file=sys.stderr)
+            return EXIT["identity"]
     if a.anchor_arm and not a.anchor_arm_sha256:
         print("--anchor-arm needs --anchor-arm-sha256", file=sys.stderr)
         return EXIT["usage"]
@@ -901,6 +973,7 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
                           parent_arm_sha256=a.parent_arm_sha256, anchor_arm=a.anchor_arm,
                           anchor_arm_sha256=a.anchor_arm_sha256, index_frozen=index_frozen,
                           anchor_is_champion=a.anchor_is_champion, progress_dir=a.progress_dir,
+                          index_proxy=getattr(a, "index_proxy_data", None),
                           child_index_decide=decider.decide,
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),

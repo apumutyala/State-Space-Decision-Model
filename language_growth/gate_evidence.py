@@ -131,14 +131,16 @@ def run_registered_interventions(tasks: list[dict], refs: list[dict], parent, *,
                                  draws: int) -> dict:
     """Execute a source-pinned adapter, then rescore all raw four-arm outputs.
 
-    The reviewed adapter owns native head-preserving capture/edit/replay and
+    The source-pinned adapter owns native head-preserving capture/edit/replay and
     fitted controls. Its source and experiment artifact are pinned separately.
     Output booleans or a previously calculated pass verdict are never inputs.
     """
     from .gates import _callable, sha_file, intervention_comparison
     prereg = read_pinned(registration, registration_sha256)
     registration_body = {key: value for key, value in prereg.items() if key != "registration_sha256"}
-    if (prereg.get("schema") != "ssdm.language_intervention_preregistration.v1"
+    scoped = prereg.get("schema") == "ssdm.language_intervention_preregistration.v2"
+    if (prereg.get("schema") not in {"ssdm.language_intervention_preregistration.v1",
+                                     "ssdm.language_intervention_preregistration.v2"}
             or prereg.get("parent_revision") != parent.planner_kwargs()["parent_revision"]
             or prereg.get("registration_sha256") != digest(registration_body)
             or prereg.get("capture_boundary") != "native_fork_prehead.v1"
@@ -147,6 +149,10 @@ def run_registered_interventions(tasks: list[dict], refs: list[dict], parent, *,
             or not isinstance(prereg.get("discovery_world_ids"), list)
             or not prereg["discovery_world_ids"]):
         raise ValueError("registered parent and discovery split required for intervention")
+    target_slots = None
+    if scoped:
+        from .gate_interventions import validate_target_slots, capture_is_targeted
+        target_slots = validate_target_slots(prereg.get("target_slots"))
     if {task["world_id"] for task in tasks} & set(prereg["discovery_world_ids"]):
         raise ValueError("intervention discovery and evaluation worlds overlap")
     function = _callable(adapter)
@@ -154,7 +160,10 @@ def run_registered_interventions(tasks: list[dict], refs: list[dict], parent, *,
     if source_path is None or sha_file(Path(source_path)) != adapter_source_sha256:
         raise ValueError("intervention adapter source identity mismatch")
     result = function(tasks, parent, prereg)
-    if not isinstance(result, dict) or set(result) != {"arms", "provenance", "instrumentation_valid"}:
+    result_keys = {"arms", "provenance", "instrumentation_valid"}
+    if scoped:
+        result_keys |= {"targeted_capture_counts", "targeted_cohort_valid"}
+    if not isinstance(result, dict) or set(result) != result_keys:
         raise ValueError("intervention adapter must return raw arms and provenance")
     provenance = result["provenance"]
     if not isinstance(provenance, list) or len(provenance) != len(tasks):
@@ -173,6 +182,7 @@ def run_registered_interventions(tasks: list[dict], refs: list[dict], parent, *,
                 raise ValueError("invalid intervention provenance hash")
     scored = intervention_comparison(tasks, refs, result["arms"], draws=draws)
     valid = result["instrumentation_valid"] is True
+    targeted_counts = {arm: 0 for arm in ("semantic", "sham", "random", "output_only")}
     for record in provenance:
         valid = valid and record.get("instrumentation_valid") is True
         captures = record.get("captures", {})
@@ -180,6 +190,38 @@ def run_registered_interventions(tasks: list[dict], refs: list[dict], parent, *,
         valid = valid and all(isinstance(rows, list) and rows and all(
             capture.get("status") == "ok" and capture.get("head_calls") == 1 and capture.get("capture") is not None
             for capture in rows) for rows in captures.values())
+        if scoped:
+            valid = valid and record.get("target_slots") == target_slots
+            for arm, calls in captures.items():
+                if arm not in targeted_counts or not isinstance(calls, list):
+                    valid = False
+                    continue
+                for call in calls:
+                    try:
+                        targeted = capture_is_targeted(call.get("question_id"), target_slots)
+                    except ValueError:
+                        valid = False
+                        continue
+                    valid = valid and call.get("targeted") is targeted
+                    if targeted:
+                        targeted_counts[arm] += 1
+                    else:
+                        capture = call.get("capture")
+                        valid = valid and isinstance(capture, dict)
+                        if isinstance(capture, dict):
+                            valid = valid and all(capture.get(key) == 0 for key in (
+                                "hidden_delta_l2", "matched_delta_l2", "output_delta_l2"))
+                            valid = valid and all(capture.get(before) is not None and
+                                capture.get(before) == capture.get(after) for before, after in (
+                                    ("hidden_before_sha256", "hidden_after_sha256"),
+                                    ("logits_before_sha256", "logits_after_sha256")))
+    if scoped:
+        valid = valid and result["targeted_cohort_valid"] is True
+        valid = valid and all(count > 0 for count in targeted_counts.values())
+        reported = result["targeted_capture_counts"]
+        valid = valid and isinstance(reported, dict) and reported == targeted_counts
+        if isinstance(reported, dict):
+            valid = valid and all(type(value) is int for value in reported.values())
     valid = valid and all(row.status != "runner_error" and row.reason != "native_intervention_failed"
                           for rows in result["arms"].values() for row in rows)
     scored["status"] = "registered_neural_measured"
@@ -188,10 +230,13 @@ def run_registered_interventions(tasks: list[dict], refs: list[dict], parent, *,
     if not valid:
         scored["status"] = "unmeasured_invalid_instrumentation"
         scored["criterion_observed"] = False
-    scored["reason"] = "raw four-arm outputs rescored under source-pinned reviewed native intervention protocol"
+    scored["reason"] = "raw four-arm outputs rescored under source-pinned native intervention protocol"
     scored["registration_sha256"] = registration_sha256
     scored["adapter_source_sha256"] = adapter_source_sha256
     scored["provenance"] = provenance
+    if scoped:
+        scored["target_slots"] = target_slots
+        scored["targeted_capture_counts"] = targeted_counts
     return scored
 
 

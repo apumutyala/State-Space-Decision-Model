@@ -43,7 +43,7 @@ The four arms are:
 
 The callback receives no labels or target IDs. Its task inputs are the gate's
 label-free task shape; extra evaluator fields are rejected. Discovery worlds
-must be disjoint from every supplied evaluation world. Every encountered
+must be disjoint from every supplied evaluation world. Every targeted
 candidate count must have a fitted output-only direction. Missing controls,
 failed edits and unsupported provider calls remain failed denominator entries;
 they never become unedited successes. Every successful provider call must
@@ -92,8 +92,42 @@ output_only_directions: {"K": finite nonzero CPU float32 tensor of shape [K]}
 Candidate counts are canonical decimal strings from `1` to `255`. For counts
 above one, output directions must change relative logits. No random-logit or
 unfitted fallback is available. Use the original canonical candidate order when
-fitting these controls. Direction discovery/fitting remains actual future model
-work; no trained directions or efficacy are supplied here.
+fitting these controls. The native paired fitter is in `gate_direction_fit.py`;
+real qualified-checkpoint directions and semantic efficacy remain unmeasured.
+
+For a fitted axis that applies to specific planner slots, use registration
+schema `ssdm.language_intervention_preregistration.v2` and direction schema
+`ssdm.native_fork_direction.v2`. These extend the corresponding v1 objects with
+exactly one required field, `target_slots`: a nonempty unique list of registered
+GatePlanner slot names. The two lists must match exactly. Version 1 retains its
+all-slot edit/control behavior and exact registration/artifact keys.
+
+Applicability is fixed before evaluation and read only from the ordinary
+question ID `slot-NNN-<slot>`. `question_slot` recognizes the finite GatePlanner
+slot vocabulary in `gate_interventions.TARGET_SLOTS`; unknown IDs fail targeted
+instrumentation. There are no text, model-choice, gold, correctness or task
+filters. All tasks and free-running trajectories remain in every denominator.
+For example, `target_slots: ["comparison-relation"]` edits relation calls and
+requires their fitted K control, while operation and operand calls traverse the
+same native capture/scorer with exactly zero hidden/output edits. Untargeted
+calls do not need unrelated K controls; they are explicit registered zero edits.
+
+Every capture records `targeted`. Untargeted hidden/logit before/after hashes
+must match and all three delta norms must be zero. Version 2 returns
+`targeted_capture_counts` for each arm and `targeted_cohort_valid`; at least one
+successful targeted capture in every arm is required. No-target cohorts and
+failed/missing targeted controls cannot establish intervention qualification.
+Trajectories may differ after a targeted edit; counts need not be equal across
+arms. Provenance binds the exact `target_slots` list for independent recomputation.
+
+`gate_direction_fit.fit_native_directions(..., target_slots=[...])` emits v2;
+omitting `target_slots` preserves v1. Discovery and development-validation pairs
+must cover exactly the declared slots, with empty proposal histories. The
+writer cross-binds applicability to fitting evidence, actual source-pair question
+IDs and the artifact before producing registration. The CLI exposes explicit
+`--target-slots`. `development_relation_pairs` uses the native
+`slot-004-comparison-relation` ID. Its K=3 relation axis does not imply operation,
+fact, other-slot or recurrent-memory interpretation.
 
 Full parent `state_dict` bytes, including backbone, LoRA, head, typed output and
 persistent buffers, are streamed once before the entire matched run and once

@@ -1,6 +1,7 @@
 """Public synthetic protocol tests, never a real heldout/model evaluation."""
 from copy import deepcopy
 import hashlib
+import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
@@ -27,7 +28,72 @@ def fake_intervention_adapter(tasks, parent, prereg):
                            for task in tasks]}
 
 
+_SCOPED_TEST_MODE = "valid"
+
+
+def fake_scoped_adapter(tasks, parent, prereg):
+    """Only applicability protocol; the test supplies no neural measurements."""
+    arms = ("semantic", "sham", "random", "output_only")
+    provenance = []
+    for task in tasks:
+        captures = {}
+        for arm in arms:
+            def call(qid, targeted):
+                return {"question_id": qid, "targeted": targeted, "head_calls": 1, "status": "ok",
+                        "capture": {"hidden_delta_l2": 0, "matched_delta_l2": 0, "output_delta_l2": 0,
+                                    "hidden_before_sha256": "a"*64, "hidden_after_sha256": "a"*64,
+                                    "logits_before_sha256": "a"*64, "logits_after_sha256": "a"*64}}
+            first = call("slot-001-semantic-operation", False)
+            second = call("slot-004-comparison-relation", True)
+            if _SCOPED_TEST_MODE == "no_target":
+                second = call("slot-002-fact", False)
+            if _SCOPED_TEST_MODE == "wrong_marking":
+                second["targeted"] = False
+            if _SCOPED_TEST_MODE == "edited_untargeted":
+                first["capture"]["hidden_after_sha256"] = "b"*64
+            captures[arm] = [first, second]
+        provenance.append({"task_id": task["task_id"], "input_sha256": digest(task),
+                           "parent_revision": prereg["parent_revision"],
+                           "registration_sha256": prereg["registration_sha256"],
+                           "capture_identity_sha256": prereg["capture_identity_sha256"],
+                           "arms": list(arms), "state_unchanged_sha256_before": "a"*64,
+                           "state_unchanged_sha256_after": "a"*64, "instrumentation_valid": True,
+                           "target_slots": prereg["target_slots"], "captures": captures})
+    counts = {arm: len(tasks) for arm in arms}
+    if _SCOPED_TEST_MODE == "wrong_count":
+        counts["random"] = 0
+    return {"instrumentation_valid": True, "targeted_cohort_valid": True,
+            "targeted_capture_counts": counts, "provenance": provenance,
+            "arms": {arm: [PlannerResult("kernel_rejected", None, None, "unsupported_assertion")
+                            for _ in tasks] for arm in arms}}
+
+
 class EvidenceTests(unittest.TestCase):
+    @unittest.skipUnless(importlib.util.find_spec("torch"), "native applicability helpers require torch runtime")
+    def test_scoped_interventions_cannot_pass_without_valid_targeted_calls_in_every_arm(self):
+        tasks, refs = build_suite("L0", "development_validation", worlds=1)
+        parent = FakeParent([])
+        prereg = {"schema": "ssdm.language_intervention_preregistration.v2",
+                  "parent_revision": parent.planner_kwargs()["parent_revision"],
+                  "discovery_world_ids": ["separate-public-discovery-world"],
+                  "capture_identity_sha256": "b"*64, "capture_boundary": "native_fork_prehead.v1",
+                  "scope": "final_hidden_semantic_axis_only", "output_control": "fitted_candidate_count_logit_direction.v1",
+                  "target_slots": ["comparison-relation"]}
+        prereg["registration_sha256"] = digest(prereg)
+        with tempfile.TemporaryDirectory() as tmp:
+            registration = Path(tmp)/"registration.json"
+            registration.write_bytes(canonical(prereg))
+            kwargs = {"adapter": __name__+":fake_scoped_adapter", "adapter_source_sha256": sha_file(Path(__file__)),
+                      "registration": registration, "registration_sha256": sha_file(registration), "draws":100}
+            # Force a positive score so failed applicability cannot hide behind
+            # the ordinary all-arm tie in this protocol-only fixture.
+            with patch("language_growth.gates.intervention_comparison", side_effect=lambda *_a, **_k: {"criterion_observed": True}):
+                for mode in ("no_target", "wrong_marking", "edited_untargeted", "wrong_count", "valid"):
+                    with self.subTest(mode=mode), patch(__name__+"._SCOPED_TEST_MODE", mode):
+                        report = run_registered_interventions(tasks, refs, parent, **kwargs)
+                        self.assertEqual(report["instrumentation_valid"], mode == "valid")
+                        self.assertEqual(report["passed"], mode == "valid")
+
     def test_machine_evidence_requires_exact_artifact_pins(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "review.json"

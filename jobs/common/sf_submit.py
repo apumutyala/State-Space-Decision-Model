@@ -1,5 +1,5 @@
 """Upload a launcher package and submit it via `autor api` (WSL). Usage: python -I jobs/common/sf_submit.py <launcher --out dir containing submit.json> [--dry]"""
-import json, subprocess, sys, pathlib, time
+import json, os, subprocess, sys, pathlib, time
 
 AUTOR = ["wsl.exe", "-d", "bi-ubuntu", "--", "/root/.local/bin/autor", "--workspace", "default", "api"]
 
@@ -18,9 +18,23 @@ def main():
     s = json.loads((d / "submit.json").read_text(encoding="utf-8"))
     ctx = s["context"]; calls = {c["tool"]: c["args"] for c in s["calls"]}
     sub = dict(calls["submit_job"]); mission = calls["open_mission"]["name"]
+    # env values packaged as "<...>" placeholders (e.g. CKPT_URL, a signed URL) come from THIS shell's environment at
+    # submit time, so the secret is never written to disk; a placeholder left unfilled refuses a real submit
+    env = dict(sub.get("env") or {})
+    holes = [k for k, v in env.items() if isinstance(v, str) and v.startswith("<")]
+    for k in holes:
+        if os.environ.get(k):
+            env[k] = os.environ[k]
+    sub["env"] = env
+    left = [k for k in holes if env[k].startswith("<")]
+    print("env placeholders:", {k: ("from shell env" if k not in left else "UNFILLED") for k in holes})
+    if left and not dry:
+        raise SystemExit(f"export {', '.join(left)} in this shell first (placeholders in submit.json are never sent)")
     print("mission", mission, "worst", s["cost"]["worst_case_usd"])
     if dry:
-        print(json.dumps(sub, indent=1)); return
+        shown = {**sub, "env": {k: ("<set from shell env, not printed>" if k in holes and k not in left else v)
+                                for k, v in env.items()}}
+        print(json.dumps(shown, indent=1)); return
     api("post", "/missions", {"name": mission})
     c = api("post", "/contexts", {"sha256": ctx["sha256"], "size_bytes": ctx["size_bytes"]})
     cid = c["context_id"]; up = c["upload"]; f = pathlib.Path(ctx["file"])
