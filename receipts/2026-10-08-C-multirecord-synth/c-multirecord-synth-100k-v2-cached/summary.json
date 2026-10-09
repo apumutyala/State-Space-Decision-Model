@@ -1,0 +1,393 @@
+{
+  "case_exact_records": 100000,
+  "choice_option_counts_by_k": {
+    "10": 1316,
+    "11": 1316,
+    "12": 1316,
+    "13": 1316,
+    "14": 1316,
+    "15": 1316,
+    "16": 1316,
+    "17": 1316,
+    "18": 1316,
+    "19": 1316,
+    "2": 1316,
+    "20": 1316,
+    "21": 1316,
+    "22": 1316,
+    "23": 1316,
+    "24": 1316,
+    "25": 1316,
+    "26": 1316,
+    "27": 1316,
+    "28": 1316,
+    "29": 1316,
+    "3": 1316,
+    "30": 1316,
+    "31": 1316,
+    "32": 1316,
+    "33": 1316,
+    "34": 1316,
+    "35": 1316,
+    "36": 1316,
+    "37": 1316,
+    "38": 1316,
+    "39": 1316,
+    "4": 1316,
+    "40": 1316,
+    "41": 1316,
+    "42": 1316,
+    "43": 1316,
+    "44": 1316,
+    "45": 1316,
+    "46": 1316,
+    "47": 1316,
+    "48": 1316,
+    "49": 1316,
+    "5": 1316,
+    "50": 1316,
+    "51": 1316,
+    "52": 1316,
+    "53": 1316,
+    "54": 1316,
+    "55": 1316,
+    "56": 1316,
+    "57": 1316,
+    "58": 1316,
+    "59": 1316,
+    "6": 1316,
+    "60": 1316,
+    "61": 1316,
+    "62": 1315,
+    "63": 1315,
+    "64": 1315,
+    "65": 1315,
+    "66": 1315,
+    "67": 1315,
+    "68": 1315,
+    "69": 1315,
+    "7": 1316,
+    "70": 1315,
+    "71": 1315,
+    "72": 1315,
+    "73": 1315,
+    "74": 1315,
+    "75": 1315,
+    "76": 1315,
+    "77": 1315,
+    "8": 1316,
+    "9": 1316
+  },
+  "compressed_sha256": {
+    "content_map": "fad5b256b75b8292855ee543fe83c7e33deaa9f242166eccada184381455bf69",
+    "manifest": "3ae1638541dac1caa70e55563cf9f03697ca57fc7ba0106a76ad59e64f9ac28e",
+    "records": "e66a715b48e4c047b250890b2fe9bae882dfae8cafad4482b524f5ce45a97241",
+    "token_census": "a24e0c0a1a77710097ce641b40008ece4ff4969e53a220ae12c99f33fc3a559a"
+  },
+  "field_order_counts": {
+    "bat|drift|profile|sig": 3997,
+    "bat|drift|sig|profile": 4184,
+    "bat|profile|drift|sig": 4226,
+    "bat|profile|sig|drift": 4155,
+    "bat|sig|drift|profile": 4248,
+    "bat|sig|profile|drift": 4192,
+    "drift|bat|profile|sig": 4191,
+    "drift|bat|sig|profile": 4099,
+    "drift|profile|bat|sig": 4240,
+    "drift|profile|sig|bat": 4144,
+    "drift|sig|bat|profile": 4084,
+    "drift|sig|profile|bat": 4239,
+    "profile|bat|drift|sig": 4152,
+    "profile|bat|sig|drift": 4193,
+    "profile|drift|bat|sig": 4080,
+    "profile|drift|sig|bat": 4091,
+    "profile|sig|bat|drift": 4219,
+    "profile|sig|drift|bat": 4091,
+    "sig|bat|drift|profile": 4124,
+    "sig|bat|profile|drift": 4219,
+    "sig|drift|bat|profile": 4188,
+    "sig|drift|profile|bat": 4143,
+    "sig|profile|bat|drift": 4300,
+    "sig|profile|drift|bat": 4201
+  },
+  "generator": {
+    "external_sources": [],
+    "label_method": "deterministic synthetic truth; independent recomputation before write",
+    "name": "c_multirecord_synth_v2",
+    "record_contract": "ssdm-train-v0",
+    "source_split": "synthetic",
+    "targets": [
+      "synthetic_multirecord_sensor_decision"
+    ],
+    "task_family": "synthetic_multirecord_sensor_decision",
+    "version": 2
+  },
+  "heldout": {
+    "frozen_ids": [
+      9,
+      20,
+      22,
+      31,
+      32,
+      33,
+      44,
+      58,
+      64
+    ],
+    "generator_spec_check_passed": true,
+    "record_checks_passed": 100000,
+    "refused": 0
+  },
+  "label_method_verified_records": 100000,
+  "license": "project (synthetic; generated locally, no third-party text)",
+  "max_continuation_tokens": 4,
+  "max_options": 77,
+  "multi_select_records": 100000,
+  "multi_select_representation": "four correlated noul questions per record; no native multi_select wire type",
+  "nodes_per_world": 4,
+  "notes": [
+    "All records are fully synthetic; no official source splits were used.",
+    "Every question label is generated from a recomputed telemetry truth function.",
+    "The case-exact question requires all four proposed signatures and every field to match.",
+    "B-1 external admission requires B to register ext:c_multirecord in EXT_GROUP and assign a quota.",
+    "B-1 protected-suite/Index filter was not run by C; no TEST/heldout/cohort rows were read."
+  ],
+  "option_counts_by_k": {
+    "10": 1316,
+    "11": 1316,
+    "12": 1316,
+    "13": 1316,
+    "14": 1316,
+    "15": 1316,
+    "16": 1316,
+    "17": 1316,
+    "18": 1316,
+    "19": 1316,
+    "2": 501316,
+    "20": 1316,
+    "21": 1316,
+    "22": 1316,
+    "23": 1316,
+    "24": 1316,
+    "25": 1316,
+    "26": 1316,
+    "27": 1316,
+    "28": 1316,
+    "29": 1316,
+    "3": 1316,
+    "30": 1316,
+    "31": 1316,
+    "32": 1316,
+    "33": 1316,
+    "34": 1316,
+    "35": 1316,
+    "36": 1316,
+    "37": 1316,
+    "38": 1316,
+    "39": 1316,
+    "4": 1316,
+    "40": 1316,
+    "41": 1316,
+    "42": 1316,
+    "43": 1316,
+    "44": 1316,
+    "45": 1316,
+    "46": 1316,
+    "47": 1316,
+    "48": 1316,
+    "49": 1316,
+    "5": 101316,
+    "50": 1316,
+    "51": 1316,
+    "52": 1316,
+    "53": 1316,
+    "54": 1316,
+    "55": 1316,
+    "56": 1316,
+    "57": 1316,
+    "58": 1316,
+    "59": 1316,
+    "6": 1316,
+    "60": 1316,
+    "61": 1316,
+    "62": 1315,
+    "63": 1315,
+    "64": 1315,
+    "65": 1315,
+    "66": 1315,
+    "67": 1315,
+    "68": 1315,
+    "69": 1315,
+    "7": 1316,
+    "70": 1315,
+    "71": 1315,
+    "72": 1315,
+    "73": 1315,
+    "74": 1315,
+    "75": 1315,
+    "76": 1315,
+    "77": 1315,
+    "8": 1316,
+    "9": 1316
+  },
+  "option_id_style_counts": {
+    "letters": 33364,
+    "opaque": 33288,
+    "words": 33348
+  },
+  "pointer": {
+    "build": "c-multirecord-synth-100k-v2 (python -X utf8 -m data.c_multirecord_synth build --revision 2)",
+    "builder": {
+      "commit": "5b28b6a36524cc7b36582cbdbd8e32d6f78e1aa0",
+      "module": "data.c_multirecord_synth"
+    },
+    "content_map": "c-multirecord-synth-100k-v2.content.jsonl.gz",
+    "content_map_uncompressed_sha256": "a0d1ee2c218593e6b8a7d94fb607307580338d0dc04099e2307b9a369f5afe7d",
+    "excludes_cohort": "synthetic-only generation; no Index/TEST/retention rows or source data were read; the consuming training-set guard remains required",
+    "location": "ssdm-data/c-multirecord-synth-100k-v2-cached/train_set/",
+    "manifest": "c-multirecord-synth-100k-v2.manifest.jsonl.gz",
+    "manifest_uncompressed_sha256": "c031940a0bdd3d81f4b09e2b082383fd52ca1643f20034f75fdefbdfd10601e8",
+    "n_records": 100000,
+    "receipt": "receipts/2026-10-08-C-multirecord-synth/c-multirecord-synth-100k-v2-cached/summary.json",
+    "records_uncompressed_sha256": "2d29590b340123b986ff798ec8c68e8de955bf05d6899491dd0d46013e53122a"
+  },
+  "pointer_sha256": "fce90b0ff7649ddcc2b59a21b74ec3e693af113426a8d4043057ff57d8e5006d",
+  "questions": 700000,
+  "records": 100000,
+  "schema": "ssdm.c_multirecord_synth_receipt.v1",
+  "schema_shape_counts": {
+    "column_table_v1": 33334,
+    "register_map_v1": 33333,
+    "sample_frame_v1": 33333
+  },
+  "seed": 20261008,
+  "source": "synthetic_c_multirecord_v2",
+  "source_sha256": {
+    "data/c_multirecord_synth.py": "a5f49e431361671687bab453f4b5f7b280d8d5dfc43530b7b9b6fcc7efba669b",
+    "decide/prompt.py": "1f986ea74c79d5dd96c419c30873311ea9c722224da0159a3e1aa45bfe3f9c9a",
+    "decide/schema.py": "754ee82285b32d7800d27e344d6e693bb98989472431d3f52657e2df9d865fd1",
+    "decide/untrusted.py": "205f0c19f16029c96ac1e20e0bbf5584b049d7882b4602a9dfd0a7f73f5d7e43",
+    "heads/layout.py": "b908078f44c854da747cb362436b6904fc4fa53a0a67c80621cf20a34da58412",
+    "third_party/rwkv7_hf/tokenization_rwkv7.py": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+    "train/cohort.py": "aa1b5871aeaf968ed76ed3dcb32a6aa6d7c7b4276cdfd740dbf4ff203690bb24"
+  },
+  "source_split": "synthetic",
+  "task_types_per_record": {
+    "choice": 100000,
+    "noul": 500000,
+    "score": 100000
+  },
+  "token_limits": {
+    "encoder_cache": {
+      "hits": 102261215,
+      "max_bytes": 8388608,
+      "max_entries": 1024,
+      "misses": 3833025
+    },
+    "layout": "symmetric",
+    "max_option_sequence_tokens": {
+      "bins_256": [
+        {
+          "count": 700000,
+          "end": 255,
+          "start": 0
+        }
+      ],
+      "max": 36,
+      "min": 26,
+      "n": 700000,
+      "p50": 34,
+      "p95": 36
+    },
+    "max_options": 77,
+    "max_tokens": 2048,
+    "prompt_tokens": {
+      "bins_256": [
+        {
+          "count": 700000,
+          "end": 767,
+          "start": 512
+        }
+      ],
+      "max": 742,
+      "min": 638,
+      "n": 700000,
+      "p50": 666,
+      "p95": 707
+    },
+    "record_max_effective_prompt_tokens": {
+      "bins_256": [
+        {
+          "count": 99679,
+          "end": 767,
+          "start": 512
+        },
+        {
+          "count": 321,
+          "end": 1023,
+          "start": 768
+        }
+      ],
+      "max": 780,
+      "min": 714,
+      "n": 100000,
+      "p50": 742,
+      "p95": 758
+    },
+    "serialized_record_tokens": {
+      "bins_256": [
+        {
+          "count": 16445,
+          "end": 1023,
+          "start": 768
+        },
+        {
+          "count": 68763,
+          "end": 1279,
+          "start": 1024
+        },
+        {
+          "count": 14792,
+          "end": 1535,
+          "start": 1280
+        }
+      ],
+      "max": 1427,
+      "min": 942,
+      "n": 100000,
+      "p50": 1147,
+      "p95": 1342
+    },
+    "shared_plus_option_plus_continuation_tokens": {
+      "bins_256": [
+        {
+          "count": 699679,
+          "end": 767,
+          "start": 512
+        },
+        {
+          "count": 321,
+          "end": 1023,
+          "start": 768
+        }
+      ],
+      "max": 780,
+      "min": 669,
+      "n": 700000,
+      "p50": 700,
+      "p95": 745
+    },
+    "template": "jrt-rwkv-g1-v1",
+    "tokenizer_revision": "ce3630b854cedbd673569f4600c6cf744bca9dba",
+    "tokenizer_sha256": {
+      "tokenizer.json": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+      "tokenizer_config.json": "2b5e075c2c16780061ae272c9f0b52ff620ddd8e87fdf7fa82fc425661667329"
+    }
+  },
+  "uncompressed_sha256": {
+    "content_map": "a0d1ee2c218593e6b8a7d94fb607307580338d0dc04099e2307b9a369f5afe7d",
+    "manifest": "c031940a0bdd3d81f4b09e2b082383fd52ca1643f20034f75fdefbdfd10601e8",
+    "records": "2d29590b340123b986ff798ec8c68e8de955bf05d6899491dd0d46013e53122a"
+  },
+  "worlds": 100000
+}

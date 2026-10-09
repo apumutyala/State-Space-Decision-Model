@@ -1,0 +1,9 @@
+{
+  "content_map": "fad5b256b75b8292855ee543fe83c7e33deaa9f242166eccada184381455bf69",
+  "families/c_multirecord.jsonl.gz": "e66a715b48e4c047b250890b2fe9bae882dfae8cafad4482b524f5ce45a97241",
+  "manifest": "3ae1638541dac1caa70e55563cf9f03697ca57fc7ba0106a76ad59e64f9ac28e",
+  "pointer.json": "fce90b0ff7649ddcc2b59a21b74ec3e693af113426a8d4043057ff57d8e5006d",
+  "records.jsonl.gz": "e66a715b48e4c047b250890b2fe9bae882dfae8cafad4482b524f5ce45a97241",
+  "summary.json": "62882065d890e22c18b8ff69338d60b126f3646c50a860af8bb73234b0f2ce15",
+  "token_census.jsonl.gz": "a24e0c0a1a77710097ce641b40008ece4ff4969e53a220ae12c99f33fc3a559a"
+}
