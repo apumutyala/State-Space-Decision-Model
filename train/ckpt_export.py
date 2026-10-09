@@ -43,7 +43,7 @@ FORMAT = "ssdm-trainable-v1"
 DTYPES = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}
 NAME_RE = re.compile(r"trainable-step[0-9]+\.safetensors")
 SIDECAR_KEYS = ("step", "epoch", "cursor", "config", "config_hash", "lineage", "init_seed", "history", "backbone",
-                "lora_modules", "guard")
+                "lora_modules", "guard", "anti_collapse")
 
 
 def sha256_file(path: str | Path) -> str:
@@ -90,16 +90,35 @@ def _jsonable(x: Any) -> Any:
     return str(x)
 
 
-def export_inference(ckpt: str | Path, out_dir: str | Path, dtype: str = "bf16") -> dict[str, Any]:
+def export_inference(ckpt: str | Path, out_dir: str | Path, dtype: str = "bf16",
+                     best: str | Path | None = None) -> dict[str, Any]:
     """Write the inference export of ``ckpt`` (a Trainer ``.pt``, or an existing export, which is copied) into
-    ``out_dir``; returns the sidecar record."""
+    ``out_dir`` with a ``latest.json`` naming it; returns the sidecar record. ``best`` (a ``best_ckpt`` run's scored
+    checkpoint, when it is not ``ckpt``) is exported beside it and ``latest.json`` gets the same ``best`` pointer the
+    training dir's has (``Trainer.scored`` follows it)."""
+    ckpt, out = Path(ckpt), Path(out_dir)
+    for src in (ckpt, *(() if best is None else (Path(best),))):
+        if out.resolve() == src.parent.resolve():
+            raise ValueError(f"--out-dir {out} is the training checkpoint dir: export to a separate dir (e.g. "
+                             "$OUT/ckpt); the training latest.json must keep naming the .pt")
+    if (out / "latest.json").is_file() and not _names_export(out / "latest.json"):
+        raise ValueError(f"--out-dir {out} holds the latest.json of a training checkpoint dir (naming a .pt): export to a separate dir")
+    out.mkdir(parents=True, exist_ok=True)
+    side = _export_one(ckpt, out, dtype)
+    latest = {"path": side["file"], "step": side["step"], "config_hash": side["config_hash"], "format": FORMAT,
+              "dtype": side["dtype"]}
+    if best is not None and Path(best).resolve() != ckpt.resolve():
+        b = _export_one(Path(best), out, dtype)
+        latest["best"] = {"path": b["file"], "step": b["step"], "sha256": b["sha256"]}
+        side = {**side, "best": latest["best"]}
+    _write(out / "latest.json", json.dumps(latest))
+    return side
+
+
+def _export_one(ckpt: Path, out: Path, dtype: str) -> dict[str, Any]:
+    """One checkpoint -> ``trainable-stepN.safetensors`` + sidecar + ``.sha256`` in ``out`` (no latest.json)."""
     from safetensors.torch import save_file
 
-    ckpt, out = Path(ckpt), Path(out_dir)
-    if out.resolve() == ckpt.parent.resolve() or (out / "latest.json").is_file() and not _names_export(out / "latest.json"):
-        raise ValueError(f"--out-dir {out} is the training checkpoint dir (or holds a training latest.json): export to a "
-                         "separate dir (e.g. $OUT/ckpt); the training latest.json must keep naming the .pt")
-    out.mkdir(parents=True, exist_ok=True)
     if is_inference(ckpt):  # eval-only modes installed an export: re-publish it unchanged
         side = json.loads(sidecar_path(ckpt).read_text(encoding="utf-8"))
         for f in (ckpt, sidecar_path(ckpt)):
@@ -132,9 +151,7 @@ def export_inference(ckpt: str | Path, out_dir: str | Path, dtype: str = "bf16")
         _write(sidecar_path(out / name), json.dumps(side, indent=1))
         del st, tr, tensors
     _write(out / (name + ".sha256"), f"{side['sha256']}  {name}\n")
-    _write(out / "latest.json", json.dumps({"path": name, "step": side["step"], "config_hash": side["config_hash"],
-                                            "format": FORMAT, "dtype": side["dtype"]}))
-    return side
+    return {**side, "file": name}
 
 
 def read_inference(path: str | Path, verify: bool = True) -> tuple[dict[str, torch.Tensor], dict[str, Any]]:
@@ -184,10 +201,11 @@ def main(argv=None) -> int:
     i.add_argument("--ckpt", required=True)
     i.add_argument("--out-dir", required=True)
     i.add_argument("--dtype", default="bf16", choices=sorted(DTYPES), help="LoRA tensors only; the rest keep their dtype")
+    i.add_argument("--best", default=None, help="a best_ckpt run's scored checkpoint, exported beside --ckpt")
     a = ap.parse_args(argv)
-    side = export_inference(a.ckpt, a.out_dir, a.dtype)
+    side = export_inference(a.ckpt, a.out_dir, a.dtype, a.best)
     print(json.dumps({k: side[k] for k in ("file", "sha256", "dtype", "step", "n_tensors", "n_params",
-                                           "source_ckpt_sha256") if k in side}))
+                                           "source_ckpt_sha256", "best") if k in side}))
     return 0
 
 
