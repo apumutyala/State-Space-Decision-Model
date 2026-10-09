@@ -103,9 +103,9 @@ def test_d13_params_pin_the_best_export_and_price_under_the_caps(mode):
     assert schedule_minutes(p) == p["max_duration_minutes"] <= 900  # the platform's job ceiling
     assert p["evals_fixed_minutes"]["child"] >= 30 + 12_104 * 7 / 2_008  # the plan pass is priced (job-4ha7t)
     assert p["max_input_tokens"] == 65536 and p.get("rows", "full") == "full"
-    # v3w re-keyed 20261009b with max_duration 570 (quoted hold $35.91 inside the free credit)
+    # v3w re-keyed 20261009c with max_duration 720 / fulldev cap 686 (quoted hold $45.36)
     assert p["submit"]["key"].endswith({"fulldev_eval_d13": "hjwpq-best1600-20261009a",
-                                        "fulldev_eval_d13_v3w": "hjwpq-best1600-20261009b"}[mode])
+                                        "fulldev_eval_d13_v3w": "hjwpq-best1600-20261009c"}[mode])
     assert p["submit"]["command"].endswith(f"first_cell_job.sh {mode}")
     keys = {json.loads((M / f"job_params_{m}.json").read_text(encoding="utf-8"))["submit"]["key"] for m in MODES}
     assert len(keys) == 2

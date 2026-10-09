@@ -296,7 +296,7 @@ beat + the job-afpc2 worker-disk fix. Checkpoint: art-cr9a2's BEST export (`trai
 b6506c35... is the checkpoint the screen scored). params `readout`: `native` (jrt-rwkv-g1-v1 / ordered, served with the
 cohort temperature fit) or `v3w` (load_child's readout override, untempered). The joint head is served as trained: one
 model(rows) pass per request, questions grouped by record. The report adds the 2,008 subset + proxy600 Index from the
-same predictions. Worst case: native $68.51 (cap $70), v3w $59.40 (cap $60; 2026-10-09b: max_duration 570 = setup 12 / guard 3 / checkpoint 7 / fulldev 536 / report 5 / reserve 7, quoted hold $35.91); two jobs, since both readouts in one job
+same predictions. Worst case: native $68.51 (cap $70), v3w $74.25 (cap $75; 2026-10-09c: max_duration 720 = setup 12 / guard 3 / checkpoint 7 / fulldev 686 / report 5 / reserve 7, quoted hold $45.36; the rate guard tolerates a box ~30 % slower than the screen); two jobs, since both readouts in one job
 (~1,080 min) exceed the 900-min ceiling. Exit 16 (job-afpc2): the worker's shared disk under 6 GiB free; the child
 declared its slot and yielded.
 
