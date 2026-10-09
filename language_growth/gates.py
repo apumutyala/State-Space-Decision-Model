@@ -451,6 +451,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--parent-qualification-sha256")
     parser.add_argument("--parent-snapshot", type=Path)
     parser.add_argument("--parent-loader", help="optional strict reconstruction module:callable")
+    parser.add_argument("--stage1-parent-checkpoint", type=Path,
+                        help="qualified initialization checkpoint when --parent is a fitted language child")
+    parser.add_argument("--fit-receipt", type=Path, help="byte-pinned completed fit-only child receipt")
+    parser.add_argument("--fit-receipt-sha256", help="independent SHA-256 pin for --fit-receipt")
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--comparator-observations", type=Path, help="raw generated response export")
@@ -498,6 +502,11 @@ def main(argv: list[str] | None = None) -> int:
                     args.parent_qualification_sha256)
             if not all(pins) or (args.parent_loader is None and args.parent_snapshot is None):
                 raise ValueError("model run requires strict report/qualification hash pins and snapshot or loader")
+            child_inputs = (args.stage1_parent_checkpoint, args.fit_receipt, args.fit_receipt_sha256)
+            if any(child_inputs) and not all(child_inputs):
+                raise ValueError("fitted-child evaluation requires the Stage 1 checkpoint and pinned fit receipt")
+            if all(child_inputs) and (args.parent_snapshot is None or args.parent_loader is not None):
+                raise ValueError("fitted-child evaluation requires strict local snapshot reconstruction")
             if args.out is None:
                 raise ValueError("model run requires --out for raw traces")
             if args.run_evaluation and not all((args.suite_dir, args.evidence_manifest, args.evidence_manifest_sha256,
@@ -505,13 +514,26 @@ def main(argv: list[str] | None = None) -> int:
                     args.dev_parent_predictions, args.dev_candidate_predictions, args.dev_scoring_rows,
                     args.intervention_adapter, args.intervention_registration)):
                 raise ValueError("final evaluation requires prepared suites, machine-pinned evidence, selected strong comparator, authorized DEV evidence and registered intervention adapter")
-            from .qualified_parent import load_qualified_parent
-            parent = load_qualified_parent(args.parent, report=args.parent_report,
-                report_sha256=args.parent_report_sha256, qualification=args.parent_qualification,
-                qualification_sha256=args.parent_qualification_sha256,
-                loader=_callable(args.parent_loader) if args.parent_loader else None,
-                snapshot=args.parent_snapshot, device=args.device, dtype=args.dtype)
-            report["parent_identity"] = parent.identity()
+            if all(child_inputs):
+                from .language_child import load_language_child
+                parent = load_language_child(args.parent, stage1_checkpoint=args.stage1_parent_checkpoint,
+                    receipt=args.fit_receipt, receipt_sha256=args.fit_receipt_sha256,
+                    report=args.parent_report, report_sha256=args.parent_report_sha256,
+                    qualification=args.parent_qualification,
+                    qualification_sha256=args.parent_qualification_sha256,
+                    snapshot=args.parent_snapshot, device=args.device, dtype=args.dtype)
+                candidate_identity = parent.identity()
+                report["parent_identity"] = candidate_identity["stage1_parent"]
+                report["candidate_identity"] = candidate_identity
+            else:
+                from .qualified_parent import load_qualified_parent
+                parent = load_qualified_parent(args.parent, report=args.parent_report,
+                    report_sha256=args.parent_report_sha256, qualification=args.parent_qualification,
+                    qualification_sha256=args.parent_qualification_sha256,
+                    loader=_callable(args.parent_loader) if args.parent_loader else None,
+                    snapshot=args.parent_snapshot, device=args.device, dtype=args.dtype)
+                report["parent_identity"] = parent.identity()
+                report["candidate_identity"] = parent.identity()
             if args.run_evaluation:
                 from .gate_evidence import load_evidence_manifest, evaluate_prepared_level
                 parent_sha256 = sha_file(args.parent)

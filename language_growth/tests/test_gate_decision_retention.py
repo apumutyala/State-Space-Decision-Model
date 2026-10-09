@@ -6,7 +6,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from language_growth.gate_decision_retention import SCHEMA, _canonical, _digest, decision_index_retention
+from language_growth.gate_decision_retention import (SCHEMA, _canonical, _digest,
+    authorized_decision_identities, decision_index_retention)
 
 
 def publish(path, value, *, lines=False):
@@ -47,6 +48,15 @@ class RetentionTests(unittest.TestCase):
         return decision_index_retention(paths["authorization"], sha, paths["rows"], paths["parent"], paths["child"],
                                         qualified_parent_identity=auth["parent_identity"], candidate_identity=auth["candidate_identity"],
                                         draws=auth["bootstrap"]["draws"])
+
+    def test_authorized_baseline_and_language_child_identities_are_distinct_and_pinned(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths, auth, *_ = self.fixture(Path(directory))
+            sha = publish(paths["authorization"], auth)
+            baseline, child = authorized_decision_identities(paths["authorization"], sha)
+            self.assertEqual(baseline, {"artifact_sha256": "b" * 64, "revision_id": "qualified-parent"})
+            self.assertEqual(child, {"artifact_sha256": "c" * 64, "revision_id": "actual-child"})
+            self.assertNotEqual(baseline, child)
 
     def test_reviewed_full_census_can_pass_but_insufficient_independent_cases_cannot(self):
         from harness.suite import index_ids

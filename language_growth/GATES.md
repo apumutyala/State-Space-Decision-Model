@@ -79,10 +79,13 @@ control over semantic slots outside its registered scope.
 
 DEV exports contain only separately hash-authorized scorer metadata/predictions;
 no original dataset, TEST, D1-B or retention holdout loader is called. The
-initial language runner keeps the qualified parent frozen and uses that actual
-identity for both sides. It is not adaptation-retention proof for a different
-checkpoint; that requires supplying the actual independently qualified baseline
-identity to `decision_index_retention` alongside the loaded candidate.
+prepared-level evaluator reads distinct baseline and candidate identities from
+the hash-pinned DEV authorization, checks the loaded candidate against its
+authorized child identity, and passes the qualified baseline identity
+separately to `decision_index_retention`. The Index scorer then checks both
+prediction exports against those identities. This supports adapted-child
+retention; it does not itself provide candidate predictions or prove that an
+adapted child passes Stage 1.
 
 Completed baseline raw traces are saved to `<out>/<level>/candidate.json` before
 neural interventions, and blocked/partial reports preserve completed evidence.

@@ -22,8 +22,9 @@ declared slot. No tasks or calls are selected based on labels or model behavior.
 
 ``write_direction_fit(result, out)`` writes the exact intervention adapter .pt
 schema, fitting evidence and machine registration to a fresh directory. The
-CLI uses the existing qualified-parent loader and local pinned snapshot only.
-No heldout/Index files are read, generated or accepted by the pair API.
+CLI uses the strict qualified-parent or receipt-pinned LanguageChild loader
+and local pinned snapshot only. No heldout/Index files are read, generated or
+accepted by the pair API.
 """
 from __future__ import annotations
 
@@ -420,11 +421,21 @@ def development_relation_pairs(examples: list[dict]) -> list[dict]:
     return pairs
 
 
+def development_operation_pairs(*, split: str, worlds: int, seed: int,
+                                model: str = "gate-operation-fit",
+                                parent_revision: str = "operation-fit:v1") -> list[dict]:
+    from .gate_operation_pairs import development_operation_pairs as build
+    return build(split=split, worlds=worlds, seed=seed, model=model, parent_revision=parent_revision)
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     for name in ("parent", "parent-report", "parent-report-sha256", "parent-qualification",
                  "parent-qualification-sha256", "parent-snapshot", "discovery-pairs", "validation-pairs", "out"):
         p.add_argument("--" + name, required=True)
+    p.add_argument("--stage1-parent-checkpoint", help="qualified initialization checkpoint when --parent is a fitted language child")
+    p.add_argument("--fit-receipt", help="byte-pinned completed fit-only child receipt")
+    p.add_argument("--fit-receipt-sha256", help="independent SHA-256 pin for --fit-receipt")
     p.add_argument("--scale", required=True, type=float)
     p.add_argument("--random-seed", required=True, type=int)
     p.add_argument("--target-slots", nargs="+", choices=sorted(TARGET_SLOTS), help="explicit native edit slots; omit for legacy all-slot protocol")
@@ -432,6 +443,8 @@ def main(argv=None) -> int:
     p.add_argument("--dtype", default="bfloat16", choices=("float32", "bfloat16"))
     args = p.parse_args(argv)
     from .gates import _strict_json
+    from .direction_fit_admission import preflight_direction_pairs, resolve_direction_fit_parent
+    from .language_child import load_language_child
     from .qualified_parent import load_qualified_parent
     if Path(args.out).exists():
         raise ValueError("output already exists; preserve previous fitting evidence")
@@ -442,9 +455,19 @@ def main(argv=None) -> int:
     for rows, split in ((discovery, "development_train"), (validation, "development_validation")):
         if not isinstance(rows, list) or not rows or any(not isinstance(row, dict) or row.get("split") != split for row in rows):
             raise ValueError("explicit separate development train/validation pair files required")
-    parent = load_qualified_parent(args.parent, report=args.parent_report, report_sha256=args.parent_report_sha256,
-        qualification=args.parent_qualification, qualification_sha256=args.parent_qualification_sha256,
-        snapshot=args.parent_snapshot, device=args.device, dtype=args.dtype)
+    preflight_direction_pairs(discovery, validation, target_slots=args.target_slots,
+                              known_target_slots=TARGET_SLOTS)
+    parent = resolve_direction_fit_parent(
+        candidate_checkpoint=args.parent, parent_report=args.parent_report,
+        parent_report_sha256=args.parent_report_sha256,
+        parent_qualification=args.parent_qualification,
+        parent_qualification_sha256=args.parent_qualification_sha256,
+        parent_snapshot=args.parent_snapshot,
+        stage1_parent_checkpoint=args.stage1_parent_checkpoint,
+        fit_receipt=args.fit_receipt, fit_receipt_sha256=args.fit_receipt_sha256,
+        device=args.device, dtype=args.dtype,
+        load_qualified_parent=load_qualified_parent,
+        load_language_child=load_language_child)
     result = fit_native_directions(parent, discovery, validation_pairs=validation, scale=args.scale,
                                    random_seed=args.random_seed, target_slots=args.target_slots)
     registration = write_direction_fit(result, args.out)

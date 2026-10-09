@@ -1,0 +1,197 @@
+# L1 fit-cohort GatePlanner supervision adapter
+
+2026-10-08. Local CPU, $0. This adapter replays the pinned L1 multi-record
+training cohort through the current `GatePlanner`, replacing the legacy
+hand-authored slot menus as a source of semantic-slot supervision. It does not
+train a model or establish learned language capability.
+
+The source JSONL and manifest are pinned by `L1_TRAINING_ALLOWLIST`; the
+whole-world partition is rechecked against fit hash
+`34909156035594729d7891d64c840efb8ed853dfe4fcb10a56f77b0fa8e91be0`,
+calibration hash
+`f58d51a51cdb6621d9b7ae86d348d67406488e13bb0c6839c174aaa5c47dce28`, and
+partition manifest hash
+`3ad9f962cc6896c4540a13633ea371a00d8537c46d061813b66188e43920b0ec`.
+Only the 24 fit worlds enter GatePlanner replay. Calibration stays reserved;
+the separate development-validation and language-heldout inputs are not read
+by the adapter.
+
+The export contains 960 complete tasks and 3,072 actual GatePlanner slot rows
+from 24 worlds. Each world contributes 8 reads, 8 explanations and 24
+comparisons. Reads and explanations cover all four records and both fields;
+comparisons cover every ordered distinct-record pair for both fields, with
+equal/greater/less counts of 2/5/5 per field and world. The planner creates
+the offered option menus, and the current label is stored outside its request;
+only earlier gold choices form each diagnostic teacher-forced prefix.
+
+## Artifact
+
+The current frozen local export is
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-gate-training-fit-20261008-v3`.
+It contains 3,072 JSONL rows (16,579,126 bytes). Version 2 is preserved; v3
+adds target-description frequencies to the manifest, while the JSONL and gzip
+record bytes remain identical. SHA-256 values:
+
+- `training_records.jsonl`: `02345dfb60c92742e137d96aa9e34576d04a77181dfc4aa0ac5d308730cb4ccd`
+- `training_records.jsonl.gz`: `d767627b781596f5f1e2882f2ed2e0b69587c055b3522117d165332af2d859ef`
+- `manifest.json`: `0c08fd0da13a175f6a66107e728ee27eff9a69c6d7ff115a072be18938f694c5`
+
+Reproduce to a new output directory with:
+
+```powershell
+python -B -X utf8 -m language_growth.l1_gate_training --out C:/Users/apumu/research/CHLabs/ssdm-data/l1-gate-training-fit-reproduction --model gate-training --parent-revision training-only-v1
+```
+
+The focused tests passed (2 tests), including exact replay through GatePlanner,
+fit/calibration disjointness, request/label separation, complete slot and
+semantic coverage, deterministic artifact bytes, refusal to overwrite, and
+compatibility with the development-only trainer record loader and whole-world
+split. `py_compile` and `git diff --check` passed. No model, weights, optimizer,
+GPU, paid service, Decision Index, development-validation input, or held-out
+data was used. The records are supervision plumbing only; free-running
+usefulness, parent decision retention, adversarial soundness and semantic
+intervention gates remain open.
+
+## Exact RWKV7 token census
+
+After the export was frozen, a CPU-only census tokenized all 3,072 unique
+record/slot rows with the pinned RWKV7-G1k-13.3B tokenizer revision
+`ce3630b854cedbd673569f4600c6cf744bca9dba`, the trainer's exact
+`RwkvSegmentEncoder`, ordered `heads.layout.build_row`, and template
+`jrt-rwkv-g1-v1`. The fit-only receipt is
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-fit-token-census-rwkv7-20261008/summary.json`
+(SHA-256 `a467706aca9b2365ecb3044ffd58a844d6ad35d713719e2165d03f5864ceeb13`).
+
+Prompt lengths range from 1,092 to 1,406 tokens; the longest prompt plus
+continuation is 1,410. All 3,072 rows exceed 1,024 tokens and fit under 2,048;
+max options is 8 and all continuations are 4 tokens. In the checked-in
+`m2_first_cell_rwkv7_d1_fast.json`, the ladder is 512/1,024/2,048 with K=16,
+so the 2,048 rung is required to retain the complete fit cohort. Its
+`min_train_items=5000` also exceeds this export's 3,072 rows. This data cannot
+be inserted into that D1fast configuration unchanged; any later C training
+run needs its own parent-pinned, reviewed row-count and T/K configuration.
+
+The census loaded only this fit export and tokenizer/template/trainer code; it
+did not load Torch, model weights, validation or held-out inputs. Its first
+discovery search was broader than its assigned code-file allowlist; the
+auditor reported that deviation, then restricted census reads to the fit
+artifact and exact encoder/tokenizer sources.
+
+## Fit-only target distribution
+
+The v3 manifest pins the exact offered-description counts by slot under
+`target_counts_by_slot` (SHA-256
+`137789a613387eddc8edc6c55cc651091f1b80255a2e54298e74d0187344bd3c`). Across
+the 24 fit worlds, operation targets are ReadFact 192, ExplainDerivation 192,
+and Compare 576 (20/20/60%); comparison relations total equal 96, greater-than
+240, and less-than 240 across both fields, or 48/120/120 per field. Fact targets
+are split 192/192 across price and warranty; each operand side is 288/288.
+Record positions 1–4 each receive 96 fact, 144 left-operand and 144
+right-operand targets.
+
+Entity-count differences are proportional to the number of fit worlds in
+which each entity is present: conditional on presence, each entity gets two
+fact targets per field and three targets per field on each comparison side.
+This audit gives no evidence to reweight classes. Preserve the exhaustive
+source task mix for the first model run; consider a bounded reweighting
+ablation only if a measured development failure justifies it. Option IDs are
+local to each slot and must not be pooled across slots.
+
+## Fit-only cell preflight
+
+`language_growth.l1_fit_cell_preflight` is a dependency-free preflight for the
+next model cell. It verifies the exact v3 fit export against its pinned RWKV7
+tokenizer census, checks every `(task, slot)` identity and the complete 40-task
+world structure, and partitions whole fit worlds into 18 training and 6
+diagnostic worlds. The diagnostic worlds remain part of `development_train`;
+they are not development validation, language-heldout, promotion, or
+qualification evidence. The plan fixes the row limits at T=2,048 and K=8.
+
+Reproduce the current preflight with:
+
+```powershell
+python -B -X utf8 -m language_growth.l1_fit_cell_preflight --fit-dir C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-gate-training-fit-20261008-v3 --census-dir C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-fit-token-census-rwkv7-20261008 --out C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-fit-cell-preflight-20261008-v6/plan.json
+```
+
+The frozen plan is at
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-fit-cell-preflight-20261008-v6/plan.json`
+(SHA-256 `29066e2e137c5374d401ea1c9b47c165995969e8a951f930057e51dbda1a02f0`; preflight source SHA-256 `0c1ed6270c8f3776c2a7913d502b072d409816ee23c879eedb3f3b68bb01e279`).
+It records 2,304 training rows and 768 diagnostic rows and has status
+`preflight_only_not_authorized_to_train`; the parent checkpoint and Stage 1
+report pins remain empty. The generic `train.run_cell` path is not a fit-only
+runner as currently configured: its default split guard loads DEV and TEST
+manifests. A future cell needs a reviewed C-specific runner or explicit
+fit-only guard path, a qualified RWKV7 parent, an A-ordered run, and suitable
+resources. No model/Torch, non-fit split, or GPU was read or loaded here.
+
+## L1 ExactDifference fit supplement
+
+The pinned multirecord L1 source has only read, explanation and comparison
+tasks; the final GatePlanner L1 suite also tests `ExactDifference`. Preserve the
+original 3,072-row export unchanged and add a separate train-only slice using
+the existing GatePlanner generator:
+
+```powershell
+python -B -X utf8 -m language_growth.gate_training --levels L1 --split development_train --worlds 24 --seed 20261009 --model gate-training-l1-supplement --parent-revision training-only-l1-difference-v1 --out C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-gateplanner-exactdifference-supplement-20261008-v1
+```
+
+This yields 24 read, 24 compare and 24 exact-difference tasks across 24
+generated `development_train` worlds: 216 slot rows total. The source pins are
+the existing generator code hashes in its manifest; the JSONL SHA-256 is
+`dd22bc825d964654b896036d13b8de78b658ebb313867a4802f4f016a752688d`, gzip
+SHA-256 `5a875060c816b52caa1e3a212fa6fb035c3981f3c50976cc974b12f13561861c`,
+and manifest SHA-256
+`db6ee72c14173eca8aa62d397e90dda23f971f99d02d6276c1b49d68f98a2acd`. The
+exact RWKV7 tokenizer census uses the same tokenizer revision, ordered layout
+and template; max prompt is 1,476 tokens, max prompt-plus-continuation 1,480,
+K maxes at 8, and continuations are 4. Difference targets are 14 positive, 10
+negative and zero ties, all over `warranty_months`; this supplement does not
+support a tie-handling claim.
+
+`language_growth.l1_combined_fit_preflight` binds the original v3 cohort to this
+separate supplement and exact census without changing the base preflight. Its
+plan is
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-combined-fit-preflight-20261008-v3`
+(SHA-256 `1b0c52ec5addc5b451eedd5dde60b2e767053267642db4d0a2f3a9466e2f3f36`).
+It verifies the recorded world split against the actual row worlds and retains
+complete worlds, splitting each source 18 train / 6 diagnostic:
+2,466 training rows and 822 fit-only diagnostic rows across 48 worlds. The
+combined operation targets include 24 `ExactDifference` examples. Its status
+remains `preflight_only_not_authorized_to_train`, with no Stage 1 parent, guard
+pin or A order. The generated addendum is checker-valid train supervision,
+not independent label audit or learned-capability evidence; free-running L1
+usefulness and parent-retention gates remain unmeasured.
+
+## Balanced ExactDifference fit addendum
+
+The 24-task ExactDifference addendum above remains preserved, but its narrow
+field/sign coverage would leave the L1 semantic-operation target badly
+underrepresented. A separate development-train-only exporter now enumerates
+all ordered pairs of distinct records across `price` and `warranty_months` in
+24 fresh multi-record worlds. The 576 tasks produce 1,728 GatePlanner rows;
+each field has 120 positive, 120 negative and 48 tie differences. The values
+are synthetic and checker-valid, including decimal USD and integer months;
+this does not establish learned arithmetic.
+
+The frozen fit artifact is
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-exactdifference-fit-supplement-20261008-v2`:
+JSONL SHA-256
+`0cdac25e223b20bffa076bbc9c749455cbae4b23f367fea83eb7d05ee3e8b345`, gzip
+SHA-256 `bee5faefa8a9551b68da4811744dbc1d70d9fd16f612fe8895af6d7af7a63fb1`,
+and manifest SHA-256
+`407ba9f16c6768e7519cc38d9c85a8c221e786fe4f1a3b764b70d6a5bc6d93f9`. Its
+exact RWKV7 census reports 1,120–1,404 prompt tokens, at most 1,408 including
+continuation, K<=8 and continuation length 4; no Torch or model was loaded.
+Every reference passed the checker and actual GatePlanner teacher-forced
+replay. Operand targets are balanced over all eight choices in both slots.
+
+The separately frozen combined plan is
+`C:/Users/apumu/research/CHLabs/ssdm-data/agent-c-l1-combined-difference-preflight-20261008-v2`
+(SHA-256 `9f420d057a7cb3a00703793ac1f1f1a65cf5ae7ea5d9a6d8d701db985101fb8f`).
+With the unchanged base cohort it binds 4,800 rows / 1,536 tasks / 48 worlds;
+each source retains an 18/6 whole-world train/diagnostic split, totaling
+3,600/1,200 rows. Semantic-operation targets are 576 Compare, 576
+ExactDifference, 192 ReadFact and 192 ExplainDerivation. Every row remains
+teacher-forced `development_train` data. The plan remains
+`preflight_only_not_authorized_to_train`: Stage 1, A's order, the external
+hash-only SplitGuard pins and isolated resources are still required.
