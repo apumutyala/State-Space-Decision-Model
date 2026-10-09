@@ -602,7 +602,16 @@ class Trainer:
             if rows and len(rows) + (end - self.cursor) > n:
                 break
             end = min(end, self.cursor + n - len(rows))
-            rows += [self.train_items[i] for i in order[self.cursor:end]]
+            pending = [self.train_items[i] for i in order[self.cursor:end]]
+            # The joint head uses one continuation call across ALL prefix groups.
+            # Bound its total without splitting a pending record across steps.
+            if self.cfg.row_options:
+                pending_k = sum(it.row.n_options for it in pending)
+                if rows and sum(it.row.n_options for it in rows) + pending_k > self.cfg.row_options:
+                    break
+                if pending_k > self.cfg.row_options:
+                    raise ValueError("joint record exceeds row_options; raise the cap after a memory gate")
+            rows += pending
             self.cursor = end
         return rows
 
