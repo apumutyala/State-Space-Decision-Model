@@ -5,11 +5,34 @@ import unittest
 from data import RECORD_SCHEMA
 from data.augment import validate
 from data.c_multirecord_synth import (
-    FIELDS, GENERATOR_SPEC, _parse_state, make_record, option_ids, verify_record,
+    FIELDS, GENERATOR_SPEC, BoundedEncodingCache, _parse_state, make_record, option_ids, verify_record,
 )
 
 
 class CMultirecordSynthTests(unittest.TestCase):
+    def test_encoding_cache_preserves_trust_mutation_and_memory_limits(self):
+        calls = []
+        def encode(text, trusted):
+            calls.append((text, trusted))
+            if text == "control" and not trusted:
+                raise ValueError("untrusted control")
+            return [len(text), int(trusted)]
+        cached = BoundedEncodingCache(encode, max_entries=2, max_bytes=1024)
+        first = cached("sample", True)
+        first[0] = -1
+        self.assertEqual(cached("sample", True), [6, 1])
+        self.assertEqual(cached("sample", False), [6, 0])
+        self.assertEqual(len(calls), 2)
+        cached("control", True)
+        with self.assertRaises(ValueError):
+            cached("control", False)
+        for i in range(20):
+            self.assertEqual(cached(str(i), True), [len(str(i)), 1])
+            self.assertLessEqual(len(cached.entries), 2)
+            self.assertLessEqual(cached.bytes, 1024)
+        cached("x" * 2048)
+        self.assertLessEqual(cached.bytes, 1024)
+
     def test_synthetic_generator_spec_and_multi_question_case_exact_records(self):
         from harness.heldout import check_generator, check_record
         check_generator(GENERATOR_SPEC)

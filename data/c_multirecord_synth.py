@@ -8,7 +8,7 @@ No Index rows, public datasets, model weights, or external text are inputs.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
+from collections import Counter, OrderedDict
 import gzip
 import hashlib
 import importlib.util
@@ -418,6 +418,38 @@ class _RWKV7Encoder:
         return ids
 
 
+class BoundedEncodingCache:
+    """Memoize exact segment encodings, including the caller's trust boundary."""
+
+    def __init__(self, encode, max_entries=1024, max_bytes=8 * 1024 * 1024):
+        if max_entries < 1 or max_bytes < 1:
+            raise ValueError("encoding cache limits must be positive")
+        self.encode = encode
+        self.max_entries, self.max_bytes = max_entries, max_bytes
+        self.entries = OrderedDict()
+        self.bytes = self.hits = self.misses = 0
+
+    def __call__(self, text, trusted=True):
+        key = (text, trusted)
+        if key in self.entries:
+            self.hits += 1
+            value, cost = self.entries.pop(key)
+            self.entries[key] = (value, cost)
+            return list(value)
+        self.misses += 1
+        value = tuple(self.encode(text, trusted))
+        # Account for Python text, tuple, integer and mapping overhead conservatively.
+        cost = sys.getsizeof(text) + sys.getsizeof(key) + sys.getsizeof(value) + 256
+        cost += sum(sys.getsizeof(token) for token in value)
+        if cost <= self.max_bytes:
+            while self.entries and (len(self.entries) >= self.max_entries or self.bytes + cost > self.max_bytes):
+                _, (_, old_cost) = self.entries.popitem(last=False)
+                self.bytes -= old_cost
+            self.entries[key] = (value, cost)
+            self.bytes += cost
+        return list(value)
+
+
 def _load_encoder(tokenizer_dir: Path):
     os.environ.update(USE_TORCH="0", USE_TF="0", USE_FLAX="0", HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1")
     original_import = __import__
@@ -537,6 +569,7 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
     build_row = _load_layout_without_package_initializers(repo)
     from train.cohort import record_content_hash
     tokenizer, encoder = _load_encoder(tokenizer_dir)
+    encoder = BoundedEncodingCache(encoder)
     if "torch" in sys.modules:
         raise GenerationError("Torch import forbidden")
     print(f"C multirecord: tokenizer loaded; generating {count} records", file=sys.stderr, flush=True)
@@ -682,7 +715,8 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
     except ValueError as exc:
         raise GenerationError("build output must be under the declared data root") from exc
     pointer = {
-        "build": f"{build_name} (python -X utf8 -m data.c_multirecord_synth build --revision {revision})",
+        "build": f"{build_name} (python -X utf8 -m data.c_multirecord_synth build"
+                 + (f" --revision {revision}" if revision != 1 else "") + ")",
         "location": location,
         "records_uncompressed_sha256": records_hash.hexdigest(),
         "manifest": manifest_path.name,
@@ -722,6 +756,8 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
         "schema_shape_counts": dict(sorted(shapes.items())),
         "max_options": max_options, "max_continuation_tokens": max_continuation,
         "token_limits": {"tokenizer_revision": TOKENIZER_REVISION, "tokenizer_sha256": tokenizer_bytes,
+                         "encoder_cache": {"max_entries": encoder.max_entries, "max_bytes": encoder.max_bytes,
+                                           "hits": encoder.hits, "misses": encoder.misses},
                          "template": TEMPLATE, "layout": LAYOUT, "max_tokens": MAX_TOKENS,
                          "max_options": 77, "prompt_tokens": _histogram_summary(prompt_hist),
                          "max_option_sequence_tokens": _histogram_summary(option_hist),
@@ -768,7 +804,7 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     summary = build(args.out, tokenizer_dir=args.tokenizer_dir, seed=args.seed, count=args.count,
                     pointer_out=args.pointer_out, data_root=args.data_root, revision=args.revision)
-    print(json.dumps({"build": summary["pointer"]["build"], "records": summary["records"], "questions": summary["questions"],
+    print(json.dumps({"build": BUILD.replace("-v1", f"-v{args.revision}"), "records": summary["records"], "questions": summary["questions"],
                       "max_tokens": summary["token_limits"]["record_max_effective_prompt_tokens"]["max"],
                       "records_sha256": summary["uncompressed_sha256"]["records"],
                       "pointer_sha256": summary["pointer_sha256"]}, sort_keys=True))
