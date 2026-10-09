@@ -420,3 +420,42 @@ Gates (all PASS):
 
 Shares vs v2e: `shares-vs-v2e.json`.
 - Binary yes share: K=2 yes/no-id choice 20.2% -> 24.4%; including noul, 37.9% -> 38.9%.
+
+# bschema-draw-v3b (2026-10-09): v3 with name-only API-Bank catalogs and the review fixes. READY for v2f/v3w
+This replaces v3. The independent review of v3 failed on B1 and B2; both are fixed here.
+- Base: v2e minus the anli doc-guard row, plus lever rows regenerated with the fixes:
+
+| Lever | Generated | Index fingerprint drop | Over 2,048 | Other drops | In draw |
+|---|---|---|---|---|---|
+| API-Bank name-only, K 40-60 | 2,738 | 454 | 490 | P3 7 | 1,787 |
+| MMLU K10 | 7,019 | 912 | 0 | P3 5; doc guard 1 | 6,101 |
+| BoolQ yes/no | 6,303 | 142 | 0 | P3 2 | 6,159 |
+| BANKING77 K77 | 6,315 | 947 | 13 | trimmed to 4,496; P3 17 | 4,479 |
+
+- Draw K77 share: 2.209%, at or above D16's 2.204%. Draw size: 253,046 rows / 385,266 items.
+- The finalize stage now runs the item-tier Index fingerprint (`data.dedup.Fingerprint`, production v3; exact, ngram13,
+  minhash, edit and contain) on every lever row, so the B1 leak cannot recur.
+- `fingerprint-recheck.json` re-runs it on the final draw: 0 hits. None of the 1,014 ids the review flagged are present.
+
+Review fixes:
+- B2: all 10 MMLU options are shuffled before ids are assigned. Gold-position chi2 = 3.9 (df 9, p 0.92).
+- N1: no borrowing from NOT/EXCEPT/false-stem questions, and no K10 view of a negated-stem target (667 skipped).
+- N2: options are borrowed from other passages first.
+- N3: API-Bank synonym and case-variant distractors are removed by name word-set.
+- N4: half the BoolQ rows use letter ids in random order (letter half: 1,541 / 1,554).
+- N5: post-check counts are in `target_provenance.json` and the pointer.
+
+API-Bank eval-catalog check:
+- Each built catalog's API-name set was compared with all 508 Index API-Bank option sets (DEV 228, TEST 228,
+  held-out 52; all K=53).
+- Max Jaccard 0.030; 0 refused at >= 0.8.
+
+Gates (all PASS):
+- doc_overlap_guard @6d3a4c1: 0 fails.
+- doc_check: 0 non-allowlisted hits.
+- attack_filter: 0 hits.
+- attack_guard @ca9d482: 0 hits.
+- b1_check: 0 failures.
+- check_generator: 37 specs.
+- Trainer 9c3e435: draw at 24k, and heldout_gate with 0 hits.
+- Tokens: max 2,048 under v2f and v3w. Under v1 the same 7,942 C rows are over.

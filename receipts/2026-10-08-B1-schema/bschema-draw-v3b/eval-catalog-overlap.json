@@ -1,0 +1,25 @@
+{
+ "rule": "API-name Jaccard of each built catalog vs every Index API-Bank eval option set; refuse >= 0.8",
+ "guard_root_commit": "6d3a4c1c075ae4ce4abc450b614face9aa867d59",
+ "n_eval_option_sets": 508,
+ "eval_rows_by_split": {
+  "TEST": 228,
+  "HELDOUT": 52,
+  "DEV": 228
+ },
+ "eval_k_hist": {
+  "53": 508
+ },
+ "n_candidates": 2738,
+ "max_jaccard": 0.0303,
+ "max_jaccard_by_split": {
+  "TEST": 0.0303,
+  "HELDOUT": 0.0303,
+  "DEV": 0.0303
+ },
+ "per_row_max_hist": {
+  "0.0": 2738
+ },
+ "n_refused": 0,
+ "refused_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

@@ -1,0 +1,71 @@
+{
+ "trainer_root": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/trainer-9c3e435",
+ "cell": "C:/Users/apumu/AppData/Local/Temp/claude/C--Users-apumu-research-CHLabs/7d3e88d6-0884-4aac-8c4d-3a4ed67e2bfc/scratchpad/trainer-9c3e435/jobs/m2_first_cell/m2_first_cell_rwkv7_d3_v3w_fast.json",
+ "pointer": "C:/Users/apumu/research/CHLabs/ssdm-wt/b-schema-synth/data/manifests/bschema-draw-v3b.pointer.json",
+ "draws": [
+  {
+   "n": 24000,
+   "n_drawn": 24000,
+   "identity": {
+    "train_set": "bschema-draw-v3b (scripts/b_schema_swap_pool.py: bschema-draw230k-v2e with [] replaced by bschema-levers-v3b; P3 checks)",
+    "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b-schema-synth\\data\\manifests\\bschema-draw-v3b.pointer.json",
+    "pointer_sha256": "0aac91c9adc49532c2a1c574369db1b7b7d780e6a3f8130575089cdc40a0e37e",
+    "files_uncompressed_sha256": {
+     "records": "344fe5aa11eb8682c5f8323660af045b3d6a06c5f2229887ce8710ea54c9898f",
+     "manifest": "c6fb292e865b18ad9626374027beb2b0e886f6fa560c1f6b27a8f40fa50c6096",
+     "content_map": "881de8a7d3f293c00914d9060f5de5c94da601e6e6d2b87d5af425913a2456e7"
+    },
+    "n_pool": 253046,
+    "heldout_excluded": [],
+    "drawn_heldout_scan": {
+     "n_texts": 24000,
+     "hits": 0,
+     "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5"
+    },
+    "held_out_in_set": {
+     "by_id": 0,
+     "by_content": 0
+    },
+    "n_drawn": 24000,
+    "draw_seed": 0,
+    "drawn_ids_sha256": "58a2c12f2cff9190ae7d0bd7a192764a71d59eb3b3cc0da24074b36df84e5372",
+    "lines_manifest_verified": 253046,
+    "cohort": {
+     "cohort": "m2-dev-cohort-v2",
+     "sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+     "n": {
+      "dev": 835,
+      "calibration": 1000,
+      "retention": 1670,
+      "steer_dev": 1800,
+      "steer_gate": 1000
+     }
+    },
+    "cohort_v3_excluded": {
+     "n": 0,
+     "rule": "id OR normalized content OR source item OR key-free text held out by the cohort (train.cohort_v3)",
+     "cohort": {
+      "cohort": "m2-dev-cohort-v3",
+      "sha256": "498efa617c931a5ea073bc5c62ce94158270888f64b9bbdb027982cde43876da",
+      "n": {
+       "dev": 835,
+       "calibration": 1000,
+       "retention": 39872,
+       "steer_dev": 1800,
+       "steer_gate": 1000
+      }
+     },
+     "drawn_overlap": 0
+    }
+   },
+   "first_ids": [
+    "m2:glaive_fc:8853~view:cat16-bs0",
+    "m2:ragtruth:9561~view:v3-bs1",
+    "m2:clinc150:3207~view:k16-bs0"
+   ],
+   "n_questions": 35916
+  }
+ ],
+ "heldout_gate_exit": 0,
+ "pass": true
+}

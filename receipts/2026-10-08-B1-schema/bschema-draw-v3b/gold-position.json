@@ -1,0 +1,291 @@
+{
+ "families": {
+  "acos/acos_category_sentiment": {
+   "n": 12800,
+   "chi2": 12097.9,
+   "df": 1,
+   "chi2_per_df": 12097.9,
+   "p": 0.0
+  },
+  "anli/claim_verification": {
+   "n": 2924,
+   "chi2": 354.4,
+   "df": 1,
+   "chi2_per_df": 354.42,
+   "p": 0.0
+  },
+  "anli/nli": {
+   "n": 2827,
+   "chi2": 7.2,
+   "df": 3,
+   "chi2_per_df": 2.39,
+   "p": 0.065421
+  },
+  "b1fam_apibank/API-Bank-tool-selection": {
+   "n": 1171,
+   "chi2": 19.8,
+   "df": 28,
+   "chi2_per_df": 0.71,
+   "p": 0.87199
+  },
+  "b1fam_bfcl_synth/BFCL-tool-selection": {
+   "n": 27967,
+   "chi2": 4401.6,
+   "df": 1,
+   "chi2_per_df": 4401.58,
+   "p": 0.0
+  },
+  "b1fam_cruxeval_synth/CRUXEval-output-choice": {
+   "n": 35942,
+   "chi2": 31.4,
+   "df": 28,
+   "chi2_per_df": 1.12,
+   "p": 0.298756
+  },
+  "banking77/intent_banking": {
+   "n": 11725,
+   "chi2": 253.9,
+   "df": 212,
+   "chi2_per_df": 1.2,
+   "p": 0.025909
+  },
+  "banking77/intent_membership": {
+   "n": 3492,
+   "chi2": 2622.2,
+   "df": 1,
+   "chi2_per_df": 2622.19,
+   "p": 0.0
+  },
+  "boolq/yesno_passage": {
+   "n": 7754,
+   "chi2": 99.0,
+   "df": 1,
+   "chi2_per_df": 98.97,
+   "p": 0.0
+  },
+  "clinc150/intent_general": {
+   "n": 10263,
+   "chi2": 152.8,
+   "df": 136,
+   "chi2_per_df": 1.12,
+   "p": 0.153727
+  },
+  "clinc150/intent_membership": {
+   "n": 8400,
+   "chi2": 6632.3,
+   "df": 1,
+   "chi2_per_df": 6632.3,
+   "p": 0.0
+  },
+  "glaive_fc/tool_select": {
+   "n": 33692,
+   "chi2": 272.1,
+   "df": 300,
+   "chi2_per_df": 0.91,
+   "p": 0.875129
+  },
+  "gsm8k/math_mcq": {
+   "n": 6394,
+   "chi2": 41.1,
+   "df": 45,
+   "chi2_per_df": 0.91,
+   "p": 0.638099
+  },
+  "habermas/consensus_selection": {
+   "n": 2027,
+   "chi2": 6.4,
+   "df": 6,
+   "chi2_per_df": 1.07,
+   "p": 0.375017
+  },
+  "hellaswag/continuation": {
+   "n": 4267,
+   "chi2": 6.0,
+   "df": 6,
+   "chi2_per_df": 0.99,
+   "p": 0.429
+  },
+  "hover/claim_verification": {
+   "n": 20240,
+   "chi2": 1046.4,
+   "df": 1,
+   "chi2_per_df": 1046.36,
+   "p": 0.0
+  },
+  "humicroedit_s2/humor_pair": {
+   "n": 2156,
+   "chi2": 0.0,
+   "df": 1,
+   "chi2_per_df": 0.0,
+   "p": 0.917622
+  },
+  "mmlu_aux/answer_verification": {
+   "n": 982,
+   "chi2": 10.2,
+   "df": 1,
+   "chi2_per_df": 10.18,
+   "p": 0.001599
+  },
+  "mmlu_aux/mcq": {
+   "n": 13120,
+   "chi2": 10.8,
+   "df": 15,
+   "chi2_per_df": 0.72,
+   "p": 0.765195
+  },
+  "mnli/nli": {
+   "n": 17548,
+   "chi2": 21.1,
+   "df": 1,
+   "chi2_per_df": 21.07,
+   "p": 1.3e-05
+  },
+  "nq/retrieval": {
+   "n": 65,
+   "chi2": 0.1,
+   "df": 1,
+   "chi2_per_df": 0.14,
+   "p": 0.709687
+  },
+  "ragtruth/hallucination_detection": {
+   "n": 5605,
+   "chi2": 2.7,
+   "df": 1,
+   "chi2_per_df": 2.7,
+   "p": 0.096171
+  },
+  "synthetic_c_multirecord_v2/synthetic_multirecord_telemetry": {
+   "n": 6587,
+   "chi2": 23.3,
+   "df": 371,
+   "chi2_per_df": 0.06,
+   "p": 1.0
+  },
+  "synthetic_factchange/factchange_delivery": {
+   "n": 742,
+   "chi2": 0.0,
+   "df": 2,
+   "chi2_per_df": 0.01,
+   "p": 0.978962
+  },
+  "synthetic_factchange/factchange_renewal": {
+   "n": 218,
+   "chi2": 0.1,
+   "df": 1,
+   "chi2_per_df": 0.07,
+   "p": 0.776895
+  },
+  "synthetic_factchange/factchange_schedule": {
+   "n": 24,
+   "chi2": 2.3,
+   "df": 3,
+   "chi2_per_df": 0.78,
+   "p": 0.509211
+  },
+  "synthetic_factchange/factchange_spend_limit": {
+   "n": 640,
+   "chi2": 1.4,
+   "df": 1,
+   "chi2_per_df": 1.41,
+   "p": 0.233702
+  },
+  "toolace/tool_multi": {
+   "n": 8520,
+   "chi2": 0.8,
+   "df": 1,
+   "chi2_per_df": 0.79,
+   "p": 0.378112
+  },
+  "toolace/tool_select": {
+   "n": 5082,
+   "chi2": 16.4,
+   "df": 21,
+   "chi2_per_df": 0.78,
+   "p": 0.747665
+  },
+  "vast/stance": {
+   "n": 3670,
+   "chi2": 6.4,
+   "df": 3,
+   "chi2_per_df": 2.13,
+   "p": 0.092494
+  },
+  "when2call/response_select": {
+   "n": 6702,
+   "chi2": 9.0,
+   "df": 6,
+   "chi2_per_df": 1.5,
+   "p": 0.172357
+  },
+  "winogrande/fill_blank": {
+   "n": 4299,
+   "chi2": 0.7,
+   "df": 1,
+   "chi2_per_df": 0.7,
+   "p": 0.406374
+  }
+ },
+ "levers": {
+  "apibank_names": {
+   "n": 0,
+   "chi2": 0,
+   "df": 0,
+   "chi2_per_df": null,
+   "p": null
+  },
+  "banking_k77": {
+   "n": 4479,
+   "chi2": 96.3,
+   "df": 76,
+   "chi2_per_df": 1.27,
+   "p": 0.058032
+  },
+  "boolq_yesno": {
+   "n": 6159,
+   "chi2": 93.5,
+   "df": 1,
+   "chi2_per_df": 93.53,
+   "p": 0.0
+  },
+  "mmlu_k10": {
+   "n": 6101,
+   "chi2": 3.9,
+   "df": 9,
+   "chi2_per_df": 0.43,
+   "p": 0.917942
+  }
+ },
+ "lever_detail": {
+  "apibank_names_by_decile": {
+   "n": 1787,
+   "chi2": 5.0,
+   "df": 9,
+   "p": 0.8379,
+   "note": "deciles of K; unequal bin widths for K not divisible by 10 add a little"
+  },
+  "banking_k77_by_decile": {
+   "n": 4479,
+   "chi2": 21.4,
+   "df": 9,
+   "p": 0.0113,
+   "note": "deciles of K; unequal bin widths for K not divisible by 10 add a little"
+  },
+  "boolq_yesno_yes_no_ids": {
+   "n": 3064,
+   "pos0": 1159,
+   "pos1": 1905,
+   "chi2": 181.6,
+   "df": 1,
+   "p": 0.0
+  },
+  "boolq_yesno_letters_ids": {
+   "n": 3095,
+   "pos0": 1541,
+   "pos1": 1554,
+   "chi2": 0.1,
+   "df": 1,
+   "p": 0.801
+  }
+ },
+ "note": "Families with semantic K=2 labels (yes/no, SUPPORTED, member...) put the gold at the label's canonical position, so their chi2 reflects the natural label rate, not a position shortcut. BoolQ yes/no-id rows render (no, yes) by canonical id order; the letter-id half is position-randomised."
+}

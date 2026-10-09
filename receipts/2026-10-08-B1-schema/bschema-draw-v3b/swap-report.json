@@ -1,0 +1,183 @@
+{
+ "parent": "bschema-draw230k-v2e",
+ "parent_pointer_sha256": "94290d18872d41a6b0a06cfbe40780f5f4ff9160dc1c87a90904eed09b033314",
+ "parent_files": {
+  "records": "9967766bf5fdd292f2e5d34bff9e6eda79a027b299ee6cf55c11ec94dada4081",
+  "manifest": "a4ec38754dc0d31783bc59030fa775fdeae8aaef884d135bf7822d5ec6660c7e",
+  "content_map": "3789c913ba58e3064ae524f5f81f914aca322893beca0a6260c305d90439058d"
+ },
+ "n_parent": 234521,
+ "removed_from_parent": {
+  "anli": 1
+ },
+ "pool": {
+  "pointer_sha256": "f9e6a3b63932b86dbb98d7ef75fd65cd7ae4f9db0eeb40ff553547cf69374a9c",
+  "files": {
+   "records": "6c62adcf39e61de4124270a3418b264af9cf430ca9794ef0c580f9ecafc98237",
+   "manifest": "1c19c5f919ec0b0874624f7ab9a8c395a65f10010181c2cb500432507a7178a8",
+   "content_map": "0ff868ebc599d979a05af7a32613583c2fbd31685afbc783c0e62cd45ee7d16a"
+  },
+  "n_rows": 18558,
+  "n_dropped_by_list": 1,
+  "n_added": 18526,
+  "added_by_source": {
+   "b1fam_apibank": 1787,
+   "banking77": 4479,
+   "boolq": 6159,
+   "mmlu_aux": 6101
+  },
+  "checker": {
+   "P3": {
+    "kept": 18526,
+    "index_item_text": 21,
+    "dup_text_other_item": 10
+   }
+  },
+  "hit_examples": [
+   [
+    "m2:b1fam_apibank:lv1-1058~view:apin",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1059~view:apin",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1625~view:apin",
+    "state/dialogue/[]/text",
+    "Can you help me book an appointment with Dr. Li on October 1st, from 11:30am to 12pm?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-3161~view:apin",
+    "state/dialogue/[]/text",
+    "Sure, please provide the date for the journal entry. The format should be YYYY-MM-DD."
+   ],
+   [
+    "m2:b1fam_apibank:lv1-3162~view:apin",
+    "state/dialogue/[]/text",
+    "Sure, please provide the date for the journal entry. The format should be YYYY-MM-DD."
+   ],
+   [
+    "m2:b1fam_apibank:lv1-536~view:apin",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. Could you please provide me with your fitness account username and password?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-835~view:apin",
+    "state/dialogue/[]/text",
+    "Great! Can you help me book an appointment with Dr. Zhang on March 15th at 4 pm? My name is Emily and my phone number is"
+   ],
+   [
+    "m2:banking77:2129~view:k77",
+    "state/customer_message",
+    "Help! I need to cancel a transaction."
+   ],
+   [
+    "m2:banking77:2132~view:k77",
+    "state/customer_message",
+    "I need to cancel a transaction."
+   ],
+   [
+    "m2:banking77:4466~view:k77",
+    "state/customer_message",
+    "I think someone else is using my card."
+   ]
+  ]
+ },
+ "n_records": 253046,
+ "n_items": 385266,
+ "rows_by_source": {
+  "b1fam_cruxeval_synth": 35997,
+  "glaive_fc": 33738,
+  "hover": 20240,
+  "mnli": 17548,
+  "ragtruth": 16964,
+  "banking77": 13971,
+  "synthetic_c_multirecord_v2": 13575,
+  "mmlu_aux": 13470,
+  "clinc150": 13022,
+  "boolq": 11173,
+  "b1fam_bfcl_synth": 8436,
+  "toolace": 7378,
+  "when2call": 6702,
+  "gsm8k": 6394,
+  "anli": 5751,
+  "winogrande": 4299,
+  "hellaswag": 4267,
+  "vast": 3670,
+  "sst5": 3327,
+  "b1fam_apibank": 2981,
+  "humicroedit_s1": 2527,
+  "humicroedit_s2": 2156,
+  "synthetic_factchange": 2086,
+  "habermas": 2027,
+  "acos": 1314,
+  "nq": 33
+ },
+ "items_by_source": {
+  "synthetic_c_multirecord_v2": 95025,
+  "b1fam_cruxeval_synth": 35997,
+  "glaive_fc": 33738,
+  "b1fam_bfcl_synth": 27967,
+  "clinc150": 20722,
+  "hover": 20240,
+  "mnli": 17548,
+  "banking77": 17172,
+  "ragtruth": 16964,
+  "toolace": 15124,
+  "mmlu_aux": 14520,
+  "acos": 12800,
+  "boolq": 11173,
+  "when2call": 6702,
+  "gsm8k": 6394,
+  "anli": 5751,
+  "winogrande": 4299,
+  "hellaswag": 4267,
+  "vast": 3670,
+  "sst5": 3327,
+  "b1fam_apibank": 2981,
+  "humicroedit_s1": 2527,
+  "humicroedit_s2": 2156,
+  "synthetic_factchange": 2086,
+  "habermas": 2027,
+  "nq": 89
+ },
+ "item_share_by_source": {
+  "synthetic_c_multirecord_v2": 0.2466,
+  "b1fam_cruxeval_synth": 0.0934,
+  "glaive_fc": 0.0876,
+  "b1fam_bfcl_synth": 0.0726,
+  "clinc150": 0.0538,
+  "hover": 0.0525,
+  "mnli": 0.0455,
+  "banking77": 0.0446,
+  "ragtruth": 0.044,
+  "toolace": 0.0393,
+  "mmlu_aux": 0.0377,
+  "acos": 0.0332,
+  "boolq": 0.029,
+  "when2call": 0.0174,
+  "gsm8k": 0.0166,
+  "anli": 0.0149,
+  "winogrande": 0.0112,
+  "hellaswag": 0.0111,
+  "vast": 0.0095,
+  "sst5": 0.0086,
+  "b1fam_apibank": 0.0077,
+  "humicroedit_s1": 0.0066,
+  "humicroedit_s2": 0.0056,
+  "synthetic_factchange": 0.0054,
+  "habermas": 0.0053,
+  "nq": 0.0002
+ },
+ "uncompressed_sha256": {
+  "records": "344fe5aa11eb8682c5f8323660af045b3d6a06c5f2229887ce8710ea54c9898f",
+  "manifest": "c6fb292e865b18ad9626374027beb2b0e886f6fa560c1f6b27a8f40fa50c6096",
+  "content": "881de8a7d3f293c00914d9060f5de5c94da601e6e6d2b87d5af425913a2456e7"
+ },
+ "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b-schema-synth\\data\\manifests\\bschema-draw-v3b.pointer.json",
+ "pointer_sha256": "38461fcff267567a298c023fe61e24b75e4c944208dc18d3402b60c3ef8ed464",
+ "commit": "ffb4eb3587004af57adaa7f68f4e74004399531e"
+}
