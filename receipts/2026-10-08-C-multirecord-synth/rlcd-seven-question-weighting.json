@@ -46,5 +46,10 @@
   },
   "cpu_proof_exit_code": 0,
   "existing_by_hand_test": "isolated body PASS",
-  "no_qualification_claim": true
+  "no_qualification_claim": true,
+  "source_commits": {
+    "d13": "8d92f04f6bbc46ec40cf19b2ab5786435e139266",
+    "d14": "4c057d5147a3e5f9713125400f95e666a8ebc11d"
+  },
+  "source_files_clean": true
 }
