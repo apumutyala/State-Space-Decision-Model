@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 import subprocess
 
-from .c_multirecord_synth import canonical, verify_record
+from .c_multirecord_synth import GENERATOR_SPEC, _sha_file, canonical, verify_record
 
 STYLES = ("letters", "words", "opaque")
 EXPECTED_STRATA = {(k, style, pos) for k in range(2, 78) for style in STYLES for pos in range(k)}
@@ -123,6 +123,7 @@ def export_subset(source, source_pointer, source_pointer_sha256, source_summary,
                   data_root=None, pointer_out=None):
     """Two source passes; no tokenizer, model, protected datasets, or rewritten records."""
     from .config import DATA_ROOT
+    from harness.heldout import check_generator
     from train.cohort import record_content_hash
 
     source, out = Path(source), Path(out)
@@ -144,6 +145,7 @@ def export_subset(source, source_pointer, source_pointer_sha256, source_summary,
     for name in ("manifest", "content_map"):
         if Path(pointer[name]).name != pointer[name]:
             raise ValueError("source sidecars must be immediate filenames")
+    check_generator({**GENERATOR_SPEC, "name": "c_multirecord_synth_v2", "version": 2})
     counts, best, source_hashes, prefix = _source_scan(source, pointer, seed, count)
     quota = allocations(counts, count, seed)
     selected = [candidate for bucket in sorted(quota) for candidate in best[bucket][:quota[bucket]]]
@@ -207,7 +209,7 @@ def export_subset(source, source_pointer, source_pointer_sha256, source_summary,
                       "n_records": count, "manifest": names["manifest"], "content_map": names["content_map"],
                       "excludes_cohort": pointer["excludes_cohort"],
                       "builder": {"module": "data.c_multirecord_subset", "commit": commit},
-                      "receipt": str(out.resolve() / "summary.json"),
+                      "receipt": f"receipts/2026-10-08-C-multirecord-synth/{build}/summary.json",
                       **{name + "_uncompressed_sha256": digest.hexdigest() for name, digest in hashes.items()}}
     pointer_raw = json.dumps(result_pointer, indent=1, ensure_ascii=False).encode("utf-8") + b"\n"
     (train_dir / "pointer.json").write_bytes(pointer_raw)
@@ -234,6 +236,8 @@ def export_subset(source, source_pointer, source_pointer_sha256, source_summary,
                               for (k, style, pos), n in sorted(quota.items())],
               "raw_payload_bytes": payload_bytes, "payload_limit_bytes": PAYLOAD_LIMIT,
               "record_bytes_preserved": True, "duplicate_ids": 0, "duplicate_normalized_content": 0,
+              "generator_spec_check_passed": True,
+              "compressed_sha256": {name: _sha_file(train_dir / filename) for name, filename in names.items()},
               "reused_token_bounds": {"scope": "source census upper bounds apply to unchanged records; subset not retokenized", "source_token_limits": summary["token_limits"]},
               "pointer": result_pointer, "pointer_sha256": _sha(pointer_raw)}
     (out / "summary.json").write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
