@@ -208,7 +208,7 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     assert "timeout --kill-after=30s $(cap $PH)m python" in source
     assert all("timeout --kill-after=30s " in line for line in timed)
     assert "timeout --kill-after=30s $(cap cell)m python -m train.run_cell" in source
-    assert "timeout --kill-after=30s $(cap parent_$STAGE)m python" in source
+    assert "timeout --kill-after=30s $(cap parent_$PSTAGE)m python" in source
     assert "timeout --kill-after=30s $(cap evals)m python" in source
     assert "timeout --kill-after=30s 60s bash -c" in source
     assert 'exec python "$CODE/jobs/common/finalize.py"' in source
