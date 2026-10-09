@@ -14,6 +14,7 @@
 #   13 scoring failed   15 readout too slow by MEASUREMENT (jobs/common/rate_guard.py live row rate)   1 finalize
 # The marker /output/BACKBONE_SCREEN_DONE is written ONLY by jobs/common/finalize.py, and only when its final code is 0.
 set -Euo pipefail
+MAIN_PID=$$  # jobs/clef_baseline/watchdog.sh beats only while this PID lives
 CODE=/opt/ssdm/m1
 MODE=${MODE:-}
 case "$MODE" in qrwkv6_32b|qrwkv_qwq32b|rwkv_qwen3_30b_a3b) ;; *) echo "MODE must be qrwkv6_32b, qrwkv_qwq32b or rwkv_qwen3_30b_a3b"; exit 2 ;; esac

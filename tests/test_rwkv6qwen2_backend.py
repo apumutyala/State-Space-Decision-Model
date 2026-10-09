@@ -141,3 +141,14 @@ def test_runner_parses_and_refuses_unknown_mode():
     assert subprocess.run(["bash", "-n", str(RUNNER)]).returncode == 0
     r = subprocess.run(["bash", str(RUNNER)], env={"MODE": "nope", "PATH": "/usr/bin:/bin"}, capture_output=True, text=True)
     assert r.returncode == 2 and "qrwkv6_32b" in r.stdout
+
+
+def test_runner_sets_what_the_watchdog_needs():
+    """watchdog.sh beats only while MAIN_PID lives (job-sxqi3 logged 'MAIN_PID: unbound variable': no heartbeat)."""
+    src = RUNNER.read_text(encoding="utf-8")
+    lines = src.splitlines()
+    i_set = next(i for i, ln in enumerate(lines) if ln.startswith("MAIN_PID=$$"))
+    i_wd = next(i for i, ln in enumerate(lines) if ln.startswith("watchdog &"))
+    assert i_set < i_wd
+    for var in ("OUT=", "CK=", "HF_DIR=", "HB_EVERY_S=", "STALL_S=", "WATCH_EXTRA="):
+        assert any(var in ln for ln in lines[:i_wd]), var
