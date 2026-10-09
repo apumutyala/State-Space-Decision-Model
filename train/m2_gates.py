@@ -898,7 +898,7 @@ def main(argv=None) -> int:
     # same execution flags as training (act_ckpt / row_batch: not in the config hash)
     tr = Trainer(model, with_execution(train_config(cfg, cfg["max_steps"], a.ckpt_dir, cuda), cfg), train_items,
                  guard=guard)
-    ckpt = Path(a.ckpt) if a.ckpt else Trainer.latest(a.ckpt_dir)
+    ckpt = Path(a.ckpt) if a.ckpt else Trainer.scored(a.ckpt_dir)  # best-by-dev when the run kept one
     if ckpt is None:
         print("no checkpoint", file=sys.stderr)
         return EXIT["identity"]

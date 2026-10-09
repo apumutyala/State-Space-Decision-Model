@@ -463,6 +463,11 @@ LATEST=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])
 mkdir -p "$OUT/ckpt"
 cp "$CK/cell/$LATEST" "$CK/cell/latest.json" "$OUT/ckpt/" && ( cd "$OUT/ckpt" && sha256sum "$LATEST" > "$LATEST.sha256" ) \
   || EXPORT_FAIL=1
+# best_ckpt cells (train/trainer.py, D10 anti-collapse): latest.json's "best" pointer names the SCORED checkpoint; ship it too
+BEST=$(python -c "import json,sys; print((json.load(open(sys.argv[1])).get('best') or {}).get('path') or '')" "$CK/cell/latest.json")
+if [ -n "$BEST" ] && [ "$BEST" != "$LATEST" ]; then
+  cp "$CK/cell/$BEST" "$OUT/ckpt/" && ( cd "$OUT/ckpt" && sha256sum "$BEST" > "$BEST.sha256" ) || EXPORT_FAIL=1
+fi
 sample "$DECISION" "first-cell"
 RC=0
 exit 0
