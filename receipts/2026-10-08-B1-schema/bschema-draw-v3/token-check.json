@@ -1,0 +1,49 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-v3/records.jsonl.gz",
+ "script": "scripts/b_schema_tokcheck.py (--set g1v2 and --set v1), trainer 9c3e435, RWKV7-G1k tokenizer @ce3630b8; every final id covered",
+ "n_rows": 254535,
+ "n_error": 0,
+ "tokens": {
+  "t_v2f": {
+   "p50": 456,
+   "p95": 1576,
+   "p99": 1694,
+   "max": 2048,
+   "n_over": 0
+  },
+  "t_v3w": {
+   "p50": 464,
+   "p95": 1755,
+   "p99": 1994,
+   "max": 2048,
+   "n_over": 0
+  },
+  "cont": {
+   "p50": 1,
+   "p95": 1,
+   "p99": 1,
+   "max": 1,
+   "n_over": 0
+  },
+  "t_v1": {
+   "p50": 488,
+   "p95": 1783,
+   "p99": 2251,
+   "max": 2309,
+   "n_over": 7942
+  },
+  "cont_v1": {
+   "p50": 2,
+   "p95": 9,
+   "p99": 10,
+   "max": 14,
+   "n_over": 0
+  }
+ },
+ "v1_overlength_n": 7942,
+ "v1_overlength_by_source": {
+  "c_multirecord_synth_v2": 7942
+ },
+ "pass_v2f_v3w": true,
+ "v1_overlength_ids_sha256": "00783161496e21271d8f1da7e64f70beed7ad10051beb5812ef025de6d6c93e1"
+}

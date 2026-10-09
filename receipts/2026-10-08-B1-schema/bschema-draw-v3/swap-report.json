@@ -1,0 +1,183 @@
+{
+ "parent": "bschema-draw230k-v2e",
+ "parent_pointer_sha256": "94290d18872d41a6b0a06cfbe40780f5f4ff9160dc1c87a90904eed09b033314",
+ "parent_files": {
+  "records": "9967766bf5fdd292f2e5d34bff9e6eda79a027b299ee6cf55c11ec94dada4081",
+  "manifest": "a4ec38754dc0d31783bc59030fa775fdeae8aaef884d135bf7822d5ec6660c7e",
+  "content_map": "3789c913ba58e3064ae524f5f81f914aca322893beca0a6260c305d90439058d"
+ },
+ "n_parent": 234521,
+ "removed_from_parent": {
+  "anli": 1
+ },
+ "pool": {
+  "pointer_sha256": "b54755aac740731eb130a2eb6432b5fca7df3c62007a53f46bdad19e290c67e6",
+  "files": {
+   "records": "c225648af97e9b9f69eb36e620dd00fdad67823faad2a08fd5ff5c72334146a4",
+   "manifest": "d7c8300cf1c2e94ed9c3026b4cd3a465b0c8f8bda89d09ed65bdc7e81cf29e4f",
+   "content_map": "d94fa114ce02aea31702abbde405223b2a558f7d6a05f44305f3ba244df387b0"
+  },
+  "n_rows": 20205,
+  "n_dropped_by_list": 3,
+  "n_added": 20015,
+  "added_by_source": {
+   "b1fam_apibank": 2273,
+   "banking77": 4527,
+   "boolq": 6246,
+   "mmlu_aux": 6969
+  },
+  "checker": {
+   "P3": {
+    "kept": 20015,
+    "index_item_text": 175,
+    "dup_text_other_item": 12
+   }
+  },
+  "hit_examples": [
+   [
+    "m2:b1fam_apibank:lv1-1057~view:apil",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1058~view:apil",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1059~view:apil",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. What is your policy number?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1143~view:apil",
+    "state/dialogue/[]/text",
+    "Great. Can you please provide your user ID?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1214~view:apil",
+    "state/dialogue/[]/text",
+    "May I know your current location?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1218~view:apil",
+    "state/dialogue/[]/text",
+    "Sure, I can assist you with that. Can you please provide me with the prescription refill request ID?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1221~view:apil",
+    "state/dialogue/[]/text",
+    "Yes, that time works for me."
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1237~view:apil",
+    "state/dialogue/[]/text",
+    "Sure, what is your user ID?"
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1379~view:apil",
+    "state/dialogue/[]/text",
+    "Your appointment has been cancelled successfully."
+   ],
+   [
+    "m2:b1fam_apibank:lv1-1625~view:apil",
+    "state/dialogue/[]/text",
+    "Can you help me book an appointment with Dr. Li on October 1st, from 11:30am to 12pm?"
+   ]
+  ]
+ },
+ "n_records": 254535,
+ "n_items": 386755,
+ "rows_by_source": {
+  "b1fam_cruxeval_synth": 35997,
+  "glaive_fc": 33738,
+  "hover": 20240,
+  "mnli": 17548,
+  "ragtruth": 16964,
+  "mmlu_aux": 14338,
+  "banking77": 14019,
+  "synthetic_c_multirecord_v2": 13575,
+  "clinc150": 13022,
+  "boolq": 11260,
+  "b1fam_bfcl_synth": 8436,
+  "toolace": 7378,
+  "when2call": 6702,
+  "gsm8k": 6394,
+  "anli": 5751,
+  "winogrande": 4299,
+  "hellaswag": 4267,
+  "vast": 3670,
+  "b1fam_apibank": 3467,
+  "sst5": 3327,
+  "humicroedit_s1": 2527,
+  "humicroedit_s2": 2156,
+  "synthetic_factchange": 2086,
+  "habermas": 2027,
+  "acos": 1314,
+  "nq": 33
+ },
+ "items_by_source": {
+  "synthetic_c_multirecord_v2": 95025,
+  "b1fam_cruxeval_synth": 35997,
+  "glaive_fc": 33738,
+  "b1fam_bfcl_synth": 27967,
+  "clinc150": 20722,
+  "hover": 20240,
+  "mnli": 17548,
+  "banking77": 17220,
+  "ragtruth": 16964,
+  "mmlu_aux": 15388,
+  "toolace": 15124,
+  "acos": 12800,
+  "boolq": 11260,
+  "when2call": 6702,
+  "gsm8k": 6394,
+  "anli": 5751,
+  "winogrande": 4299,
+  "hellaswag": 4267,
+  "vast": 3670,
+  "b1fam_apibank": 3467,
+  "sst5": 3327,
+  "humicroedit_s1": 2527,
+  "humicroedit_s2": 2156,
+  "synthetic_factchange": 2086,
+  "habermas": 2027,
+  "nq": 89
+ },
+ "item_share_by_source": {
+  "synthetic_c_multirecord_v2": 0.2457,
+  "b1fam_cruxeval_synth": 0.0931,
+  "glaive_fc": 0.0872,
+  "b1fam_bfcl_synth": 0.0723,
+  "clinc150": 0.0536,
+  "hover": 0.0523,
+  "mnli": 0.0454,
+  "banking77": 0.0445,
+  "ragtruth": 0.0439,
+  "mmlu_aux": 0.0398,
+  "toolace": 0.0391,
+  "acos": 0.0331,
+  "boolq": 0.0291,
+  "when2call": 0.0173,
+  "gsm8k": 0.0165,
+  "anli": 0.0149,
+  "winogrande": 0.0111,
+  "hellaswag": 0.011,
+  "vast": 0.0095,
+  "b1fam_apibank": 0.009,
+  "sst5": 0.0086,
+  "humicroedit_s1": 0.0065,
+  "humicroedit_s2": 0.0056,
+  "synthetic_factchange": 0.0054,
+  "habermas": 0.0052,
+  "nq": 0.0002
+ },
+ "uncompressed_sha256": {
+  "records": "5bc13ae3ef6530ee3c6ac8f41593bc302090ac7c0c026bb6879444e41d5502d4",
+  "manifest": "febd9b90e02849411f0638a8d7113cb82699e8153a26b720a73e2f53ef440017",
+  "content": "b9d50037cba16c28428ff24e58ae499c3b152c4220faf8004b66d9587d87cfdb"
+ },
+ "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b-schema-synth\\data\\manifests\\bschema-draw-v3.pointer.json",
+ "pointer_sha256": "1ae7bd17dbc0b18f0949802bc8974759cafc82f98db5372a65c846a9992872e1",
+ "commit": "651d57dc7772cfa7bcffda5a9cc8d720d0179463"
+}

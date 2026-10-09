@@ -1,0 +1,145 @@
+{
+ "rule": "agent-a / coordinator 2026-10-09: no target rate or shape from DEV/eval rows; every target from a TRAIN split (or a training draw) on disk, recorded here (file, split, computed value). The first brief's eval-derived targets (ForecastBench 28% yes, CLINC oos 21%, RAGTruth 42%, API-Bank K=53) were withdrawn before any row was built and are not used.",
+ "apibank_long": {
+  "file": "b1fam_apibank/lv1-api-train.json",
+  "sha256": "df55440a51e1ed86c261b3c1be1e636ac41a0f337eb3d3c23c7f1c8d5ba8154e",
+  "split": "train",
+  "revision": "12e8158b7628c168f07e8f31fbbe3445e99f44cf",
+  "n_samples": 3178,
+  "train_api_pool": 1767,
+  "given_apis_per_sample": "2-4",
+  "K_rule": "uniform over [max(17, K_fit // 2), K_fit]; K_fit = largest catalog with estimated tokens (chars / 3.0) <= 1750; the train API pool (1767) bounds K, the token budget sets it (no eval shape)",
+  "built": {
+   "parse_failed_or_toolsearcher": 429,
+   "k_fit_below_17": 285,
+   "per_dialogue_cap": 7,
+   "records": 2457
+  },
+  "token_check": {
+   "fit": 2312,
+   "over_2048": 145
+  },
+  "K_distribution": {
+   "17": 502,
+   "18": 380,
+   "19": 292,
+   "20": 237,
+   "21": 199,
+   "22": 163,
+   "23": 118,
+   "24": 128,
+   "25": 59,
+   "26": 80,
+   "27": 60,
+   "28": 39,
+   "29": 27,
+   "30": 15,
+   "31": 8,
+   "32": 5
+  }
+ },
+ "mmlu_k10": {
+  "file": "mmlu_aux/train-00000-of-00001.parquet (cais/mmlu auxiliary_train)",
+  "sha256": "ae6662576ef989fed82a9289da1b89e950499c320f6849b052ec344dfcb709eb",
+  "split": "auxiliary_train",
+  "n_rows": 99842,
+  "K": "10 (format view; MMLU-Pro shape)",
+  "n_target": 7019,
+  "n_target_rule": "= mmlu_aux/mcq rows in v2e (keep the family volume)",
+  "built": {
+   "too_few_distractors": 462,
+   "held_out_or_reuse_cap": 893,
+   "aggregate_option": 64,
+   "dup_or_empty_option": 6,
+   "records": 7019
+  },
+  "token_check": {
+   "fit": 7019
+  },
+  "K_distribution": {
+   "10": 7019
+  }
+ },
+ "boolq_yesno": {
+  "file": "boolq/train-00000-of-00001.parquet (google/boolq)",
+  "sha256": "4f028e992c0bd4df30b9f056f4946b64f5c23028034ff0ed5ea467d8538cc623",
+  "split": "train",
+  "n_rows": 9427,
+  "train_yes_rate": 0.6231,
+  "rule": "every train item not held out by cohort v2/v3 once as a {yes, no} choice; label = the train answer (natural rate)",
+  "yes_rate_of_built_rows": 0.6215,
+  "built": {
+   "held_out_or_reuse_cap": 3124,
+   "records": 6303,
+   "yes": 3917
+  },
+  "token_check": {
+   "fit": 6303
+  },
+  "K_distribution": {
+   "2": 6303
+  }
+ },
+ "clinc_k151": {
+  "built": 0,
+  "reason": "first build: 0 of 3,000 K151 views fit 2,048 tokens under v3w (min 3,174 with digit ids, median 3,206; letters 3,445, option_k 3,810, keep 4,375, opaque 6,321)"
+ },
+ "banking_k77": {
+  "file": "banking77/train.csv",
+  "sha256": "b06e26ac675513959a63135f11b94ea7786ed02da65db93a5650d8838cbc664b",
+  "split": "train",
+  "n_rows": 10003,
+  "K": 77,
+  "rule": "uniform over train rows (natural label rates)",
+  "count_rule": {
+   "file": "ssdm-data/m2/build/b1-draw100k-v2/records.jsonl.gz minus d1a rows (D16 training draw)",
+   "rows": 94799,
+   "banking77_k77_rows": 2089,
+   "k77_row_share": 0.02204,
+   "parent_k77_rows": 1112,
+   "rows_before_k77": 250300,
+   "formula": "generate ceil(1.10 * (share * N - parent_k77) / (1 - share)); keep (share * N' - parent_k77) / (1 - share) after the token check (N' = final non-K77 rows)",
+   "x_generated": 4955,
+   "rows_without_new_k77": 250155,
+   "k77_rows_kept": 4571,
+   "k77_margin": 70,
+   "final_k77_share": 0.02231
+  },
+  "n_target": 4955,
+  "built": {
+   "held_out_or_reuse_cap": 1367,
+   "records": 4955
+  },
+  "token_check": {
+   "over_2048": 13,
+   "fit": 4942,
+   "kept_after_trim": 4571
+  },
+  "K_distribution": {
+   "77": 4571
+  }
+ },
+ "ragtruth": {
+  "file": "dl-2026-10-08/ragtruth/response.jsonl",
+  "sha256": "e4c2e4ac24fff676d8984cc61c35d791612fadc58015335d97dd632375e18073",
+  "split": "train (quality != truncated)",
+  "train_hallucinated_rate": 0.4448,
+  "n_train": 15062,
+  "draw_noul_true_rate": 0.4191,
+  "change": "none (rows inherited from v2e; built at natural rate, then the 2,048-token filter shifts it to 41.9%; nothing eval-derived)"
+ },
+ "clinc_oos": {
+  "file": "clinc150/data_full.json (train + oos_train)",
+  "split": "train + oos_train",
+  "oos_train_share": 0.00662,
+  "draw_oos_share_of_intent_general_items": 0.00771,
+  "change": "none: v2e already sits at the TRAIN share; K151 views do not fit (see clinc_k151)"
+ },
+ "forecasting_yes_no": {
+  "source": null,
+  "change": "none: no clean non-eval resolved-forecasting train source on disk; left at natural rates"
+ },
+ "cruxeval": {
+  "change": "none: b1fam_cruxeval_synth rows = v2e's 35,997"
+ }
+}

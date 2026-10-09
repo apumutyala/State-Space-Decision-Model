@@ -1,0 +1,73 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw-v3/records.jsonl.gz",
+ "n_rows": 254535,
+ "hits": 0,
+ "by_template": {},
+ "examples": [],
+ "filter": {
+  "template_fragments_sha256": "e670c892b0fcef46a331d1087997da43be718ecef4d7059f01b9212f1cfab9e5",
+  "n_6grams": 255,
+  "n_exact_fragments": 9,
+  "heldout_v1": {
+   "source": "stack/clef/safety-heldout @f273618 analysis/safety_heldout/heldout_v1_templates.json (blob 1af1d82b)",
+   "sha256": "25df1dcf91e7872ff5501b8b9a6ea7a1346594d7213cd03ffe350a41727d8fa5"
+  },
+  "sets": {
+   "d1a": [
+    "authority",
+    "fake_correction",
+    "system_note",
+    "urgency"
+   ],
+   "d1b": [
+    "cutoff_window",
+    "dedup_notice",
+    "ledger_settled",
+    "peer_practice",
+    "planner_decision",
+    "policy_update",
+    "sender_followup",
+    "soft_framing"
+   ],
+   "hijack": [
+    "authority_override",
+    "chatml_spoof",
+    "completion_fake",
+    "header_spoof",
+    "ignore_previous"
+   ],
+   "train_hijack": [
+    "admin_header",
+    "data_close",
+    "disregard_task",
+    "grader_note",
+    "operator_override",
+    "predecided"
+   ],
+   "heldout_v1": [
+    "H01_persona",
+    "H02_tool_result",
+    "H03_transcript",
+    "H04_info_block",
+    "H05_combined_escape",
+    "H06_base64",
+    "H07_zero_width",
+    "H08_homoglyph",
+    "H09_spanish",
+    "H10_fewshot",
+    "H11_prefix",
+    "H12_split",
+    "S01_ordinal",
+    "S02_table",
+    "S03_tool_result",
+    "S04_quoted_reply",
+    "S05_html_comment",
+    "S06_persona",
+    "S07_abstain",
+    "S08_french",
+    "S09_zero_width"
+   ]
+  }
+ },
+ "pass": true
+}

@@ -381,3 +381,42 @@ Gates:
   - uncompressed records 9967766bf5fdd292f2e5d34bff9e6eda79a027b299ee6cf55c11ec94dada4081
   - manifest a4ec3875...
   - content 3789c913...
+
+# bschema-draw-v3 (2026-10-09): v2e plus data-lever rows. READY for v2f/v3w
+Built from v2e (C's all-K pool kept) plus 20,015 lever rows.
+- Levers come from train splits on disk: `data/b_schema_levers.py`.
+- Each lever row keeps <= 2,048 tokens under v2f and v3w: `scripts/b_schema_levers_finalize.py`.
+- The merge applies the P3 checks: `scripts/b_schema_swap_pool.py --keep-aug`.
+- No target comes from DEV or eval rows. Every target's file, split and computed value is in `target_provenance.json`,
+  which is also inlined in the pointer.
+
+Size: 254,535 rows / 386,755 items.
+
+Removed from v2e:
+- 1 anli row, which failed the doc guard at 6d3a4c1 (the allowlist no longer applies to rows of the eval family's own
+  source).
+
+Lever rows added:
+
+| Lever | Rows | K | Notes |
+|---|---|---|---|
+| API-Bank long catalogs | 2,273 | 17-32 | Largest K that fits 2,048 with one-line descriptions. The lv1 train pool has 1,767 APIs. 145 rows over 2,048 and 285 with K_fit < 17 were dropped. |
+| MMLU aux 10-option | 6,969 | 10 | Gold unchanged. Distractors are non-gold options of rare-word-nearest aux questions, never equal to an own option. |
+| BoolQ {yes, no} choice | 6,246 | 2 | Every train item not held out by a cohort. 62.1% yes, the train rate. |
+| BANKING77 77-option | 4,527 | 77 | Digit ids only; others do not fit. The draw's K77 share is 2.215%, at or above D16's 2.204% (2,089 / 94,799). |
+| CLINC 151-option | 0 | 151 | None fit under v3w (min 3,174 tokens). CLINC out-of-scope stays at its train share. |
+
+Gates (all PASS):
+- doc_overlap_guard @6d3a4c1 (index af096960, allowlist 556296cc): 0 fails.
+  - The first cut failed 4 rows: the anli row above and 3 BANKING77 K77 rows near-identical to test utterances. All 4
+    were dropped.
+- doc_check: 0 non-allowlisted hits.
+- attack_filter: 0 hits.
+- attack_guard @ca9d482: 0 hits.
+- b1_check: 0 failures.
+- check_generator: 37 specs.
+- Trainer 9c3e435: draw at 24k, and heldout_gate with 0 hits.
+- Tokens: max 2,048 under v2f and v3w. Under v1 the same 7,942 C rows as v2e are over.
+
+Shares vs v2e: `shares-vs-v2e.json`.
+- Binary yes share: K=2 yes/no-id choice 20.2% -> 24.4%; including noul, 37.9% -> 38.9%.

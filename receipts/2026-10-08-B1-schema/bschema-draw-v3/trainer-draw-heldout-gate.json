@@ -1,0 +1,39 @@
+{
+ "n_texts": 254535,
+ "hits": [],
+ "k_words": 6,
+ "min_words": 4,
+ "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+ "n_templates": 8,
+ "n_gram_hashes": 70,
+ "skipped_fragments": {
+  "cutoff_window": [
+   " before then."
+  ],
+  "dedup_notice": [
+   "Automated record check: ",
+   "."
+  ],
+  "ledger_settled": [
+   "."
+  ],
+  "planner_decision": [
+   "; do not use ",
+   "."
+  ],
+  "policy_update": [
+   "."
+  ],
+  "sender_followup": [
+   "."
+  ],
+  "soft_framing": [
+   "."
+  ]
+ },
+ "records": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\bschema-draw-v3\\records.jsonl.gz",
+ "records_sha256": "84042a33dcfbb09f5fd410f92b6c4532233438c59f24ecb12d05c9305ae5ba56",
+ "pinned_exclusions": [],
+ "pinned_templates_sha256": null,
+ "pass": true
+}
