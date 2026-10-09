@@ -1,0 +1,412 @@
+{
+ "n_requests": 520,
+ "backbones": [
+  {
+   "backbone": "rwkv7-g1k-13.3b",
+   "template_id": "jrt-rwkv-g1-v3w",
+   "identity_sha256": "934c6e8adb1ea8f08160669fb1b453a1612c0f0d197062bbb57cf74195c335d9",
+   "format": {
+    "bos": [
+     0
+    ],
+    "source": "builtin",
+    "template_sha256": null,
+    "no_think": "builtin",
+    "system_role": true
+   },
+   "head": "System: Read the schema, then the state, then the question. Answer with the code of exactly one of the question's options.\n\nUser: ",
+   "tail": "\n\nAssistant: <think></think>\nANSWER:",
+   "budget": 16383,
+   "table": {
+    "size": 255,
+    "first": [
+     "A",
+     "B",
+     "C"
+    ],
+    "last": [
+     "ND",
+     "NF",
+     "NG"
+    ],
+    "ordered_candidate_subsequence": true,
+    "nospace_single_token": 252
+   },
+   "table_rederived": true,
+   "stats": {
+    "requests": 520,
+    "byte_identity_rows": 973,
+    "byte_identity_mismatch": 0,
+    "generic_core_mismatch": 0,
+    "questions": 973,
+    "q_nonopaque_ids": 912,
+    "q_word_mode": 794,
+    "q_coded_letters": 179,
+    "q_fallback_multitoken": 0,
+    "catalog_chars=None": 0,
+    "ctx_checks": 9800,
+    "train_rows": 973,
+    "ctx_nospace_checks": 7851,
+    "ctx_nospace_single": 7792,
+    "catalog_chars=64": 59
+   },
+   "examples": [],
+   "ctx_fail_examples": [],
+   "seconds": 556.2
+  },
+  {
+   "backbone": "qwen3.5-9b",
+   "template_id": "jrt-v3w-generic:qwen3.5",
+   "identity_sha256": "2e4907ee4302d9d196052fc04c5618e88fc8058446644715345eaad93a3a2543",
+   "format": {
+    "bos": [],
+    "source": "chat_template",
+    "template_sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+    "no_think": "enable_thinking=False",
+    "system_role": true
+   },
+   "head": "<|im_start|>system\nRead the schema, then the state, then the question. Answer with the code of exactly one of the question's options.<|im_end|>\n<|im_start|>user\n",
+   "tail": "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\nANSWER:",
+   "budget": 16383,
+   "table": {
+    "size": 255,
+    "first": [
+     "A",
+     "B",
+     "C"
+    ],
+    "last": [
+     "LT",
+     "LU",
+     "LV"
+    ],
+    "ordered_candidate_subsequence": true,
+    "nospace_single_token": 218
+   },
+   "stats": {
+    "requests": 520,
+    "questions": 973,
+    "q_nonopaque_ids": 912,
+    "q_word_mode": 794,
+    "q_coded_letters": 179,
+    "q_fallback_multitoken": 0,
+    "catalog_chars=None": 0,
+    "whole_string_equal": 973,
+    "whole_string_differs_body_has_special_text": 0,
+    "ctx_checks": 9800,
+    "train_rows": 973,
+    "template_checks": 40,
+    "template_passthrough_fail": 0,
+    "ctx_nospace_checks": 7851,
+    "ctx_nospace_single": 6136,
+    "catalog_chars=64": 59
+   },
+   "examples": [],
+   "ctx_fail_examples": [],
+   "seconds": 291.8
+  },
+  {
+   "backbone": "qwerky-72b",
+   "template_id": "jrt-v3w-generic:qwerky",
+   "identity_sha256": "2d02626d8e25e2afb4bcbe29cd3c998390bf8f3d3211135e626a79dfd1cac153",
+   "format": {
+    "bos": [],
+    "source": "chat_template",
+    "template_sha256": "44d5f08f3f72b837eaad09f13a54c1f9f4eb58d75240334548b7fd52a5437fa5",
+    "no_think": null,
+    "system_role": true
+   },
+   "head": "<|im_start|>system\nRead the schema, then the state, then the question. Answer with the code of exactly one of the question's options.<|im_end|>\n<|im_start|>user\n",
+   "tail": "<|im_end|>\n<|im_start|>assistant\nANSWER:",
+   "budget": 16383,
+   "table": {
+    "size": 255,
+    "first": [
+     "A",
+     "B",
+     "C"
+    ],
+    "last": [
+     "MC",
+     "MD",
+     "MF"
+    ],
+    "ordered_candidate_subsequence": true,
+    "nospace_single_token": 216
+   },
+   "stats": {
+    "requests": 520,
+    "questions": 973,
+    "q_nonopaque_ids": 912,
+    "q_word_mode": 794,
+    "q_coded_letters": 179,
+    "q_fallback_multitoken": 0,
+    "catalog_chars=None": 0,
+    "whole_string_equal": 973,
+    "whole_string_differs_body_has_special_text": 0,
+    "ctx_checks": 9800,
+    "train_rows": 973,
+    "template_checks": 40,
+    "template_passthrough_fail": 0,
+    "ctx_nospace_checks": 7851,
+    "ctx_nospace_single": 6195,
+    "catalog_chars=64": 59
+   },
+   "examples": [],
+   "ctx_fail_examples": [],
+   "seconds": 282.5
+  },
+  {
+   "backbone": "qwerky-qwq-32b",
+   "template_id": "jrt-v3w-generic:qwerky-qwq",
+   "identity_sha256": "cc9cb95f3b4404a0c63f26e81dcde264afa0d30f62512e9515b0de337f9da821",
+   "format": {
+    "bos": [],
+    "source": "chat_template",
+    "template_sha256": "16488ad69d85833e5f66c50174f39834b688343337e9337f018deaa21b354117",
+    "no_think": "think_closed",
+    "system_role": true
+   },
+   "head": "<|im_start|>system\nRead the schema, then the state, then the question. Answer with the code of exactly one of the question's options.<|im_end|>\n<|im_start|>user\n",
+   "tail": "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\nANSWER:",
+   "budget": 16383,
+   "table": {
+    "size": 255,
+    "first": [
+     "A",
+     "B",
+     "C"
+    ],
+    "last": [
+     "MC",
+     "MD",
+     "MF"
+    ],
+    "ordered_candidate_subsequence": true,
+    "nospace_single_token": 216
+   },
+   "stats": {
+    "requests": 520,
+    "questions": 973,
+    "q_nonopaque_ids": 912,
+    "q_word_mode": 794,
+    "q_coded_letters": 179,
+    "q_fallback_multitoken": 0,
+    "catalog_chars=None": 0,
+    "whole_string_equal": 973,
+    "whole_string_differs_body_has_special_text": 0,
+    "ctx_checks": 9800,
+    "train_rows": 973,
+    "template_checks": 40,
+    "template_passthrough_fail": 0,
+    "ctx_nospace_checks": 7851,
+    "ctx_nospace_single": 6195,
+    "catalog_chars=64": 59
+   },
+   "examples": [],
+   "ctx_fail_examples": [],
+   "seconds": 301.3
+  },
+  {
+   "backbone": "qrwkv6-32b",
+   "template_id": "jrt-v3w-generic:qrwkv6",
+   "identity_sha256": "793c4e5aacb40c4889cecad6f67dba7abf0f77deeb5fdfd126fb2bb49cdf858d",
+   "format": {
+    "bos": [],
+    "source": "chat_template",
+    "template_sha256": "44d5f08f3f72b837eaad09f13a54c1f9f4eb58d75240334548b7fd52a5437fa5",
+    "no_think": null,
+    "system_role": true
+   },
+   "head": "<|im_start|>system\nRead the schema, then the state, then the question. Answer with the code of exactly one of the question's options.<|im_end|>\n<|im_start|>user\n",
+   "tail": "<|im_end|>\n<|im_start|>assistant\nANSWER:",
+   "budget": 16383,
+   "table": {
+    "size": 255,
+    "first": [
+     "A",
+     "B",
+     "C"
+    ],
+    "last": [
+     "MC",
+     "MD",
+     "MF"
+    ],
+    "ordered_candidate_subsequence": true,
+    "nospace_single_token": 216
+   },
+   "stats": {
+    "requests": 520,
+    "questions": 973,
+    "q_nonopaque_ids": 912,
+    "q_word_mode": 794,
+    "q_coded_letters": 179,
+    "q_fallback_multitoken": 0,
+    "catalog_chars=None": 0,
+    "whole_string_equal": 973,
+    "whole_string_differs_body_has_special_text": 0,
+    "ctx_checks": 9800,
+    "train_rows": 973,
+    "template_checks": 40,
+    "template_passthrough_fail": 0,
+    "ctx_nospace_checks": 7851,
+    "ctx_nospace_single": 6195,
+    "catalog_chars=64": 59
+   },
+   "examples": [],
+   "ctx_fail_examples": [],
+   "seconds": 296.9
+  },
+  {
+   "backbone": "falcon-mamba-7b-instruct",
+   "template_id": "jrt-v3w-generic:falcon-mamba",
+   "identity_sha256": "f1fdae1c8ab73e2dc7db6a772bd407a5b7ccb2d5646dcdaca599c2e322e42420",
+   "format": {
+    "bos": [],
+    "source": "chat_template",
+    "template_sha256": "a805e50fed68938a076b07e2e602639611b50b1ced0e50f11eb92f1ba25be4dc",
+    "no_think": null,
+    "system_role": true
+   },
+   "head": "<|begin_of_text|><|im_start|>system\nRead the schema, then the state, then the question. Answer with the code of exactly one of the question's options.<|im_end|>\n<|im_start|>user\n",
+   "tail": "<|im_end|>\n<|im_start|>assistant\nANSWER:",
+   "budget": 8191,
+   "table": {
+    "size": 255,
+    "first": [
+     "A",
+     "B",
+     "C"
+    ],
+    "last": [
+     "NC",
+     "ND",
+     "NF"
+    ],
+    "ordered_candidate_subsequence": true,
+    "nospace_single_token": 230
+   },
+   "stats": {
+    "requests": 520,
+    "questions": 973,
+    "q_nonopaque_ids": 912,
+    "q_word_mode": 794,
+    "q_coded_letters": 179,
+    "q_fallback_multitoken": 0,
+    "catalog_chars=None": 59,
+    "whole_string_equal": 953,
+    "whole_string_differs_body_has_special_text": 20,
+    "ctx_checks": 9800,
+    "train_rows": 973,
+    "template_checks": 40,
+    "template_passthrough_fail": 0,
+    "ctx_nospace_checks": 7851,
+    "ctx_nospace_single": 7084
+   },
+   "examples": [],
+   "ctx_fail_examples": [],
+   "seconds": 376.3
+  },
+  {
+   "backbone": "mamba-codestral-7b",
+   "template_id": "jrt-v3w-generic:mamba-codestral",
+   "identity_sha256": "0073d6b7cf8b88810b574e086ca5bc22bc3aede914a116db66efe802be1dedae",
+   "format": {
+    "bos": [
+     1
+    ],
+    "source": "plain",
+    "template_sha256": null,
+    "no_think": null,
+    "system_role": true
+   },
+   "head": "System: Read the schema, then the state, then the question. Answer with the code of exactly one of the question's options.\n\nUser: ",
+   "tail": "\n\nAssistant: ANSWER:",
+   "budget": 16383,
+   "table": {
+    "size": 175,
+    "first": [
+     "A",
+     "B",
+     "C"
+    ],
+    "last": [
+     "WR",
+     "XV",
+     "XX"
+    ],
+    "ordered_candidate_subsequence": true,
+    "nospace_single_token": 173
+   },
+   "stats": {
+    "requests": 520,
+    "questions": 973,
+    "q_nonopaque_ids": 912,
+    "q_word_mode": 794,
+    "q_coded_letters": 179,
+    "q_fallback_multitoken": 0,
+    "catalog_chars=None": 0,
+    "whole_string_equal": 973,
+    "whole_string_differs_body_has_special_text": 0,
+    "ctx_checks": 9800,
+    "train_rows": 973,
+    "ctx_nospace_checks": 7851,
+    "ctx_nospace_single": 7792,
+    "catalog_chars=64": 59
+   },
+   "examples": [],
+   "ctx_fail_examples": [],
+   "seconds": 171.2
+  },
+  {
+   "backbone": "xlstm-7b",
+   "template_id": "jrt-v3w-generic:xlstm",
+   "identity_sha256": "4649b2da1cccfafd08bc6ddf19c0272ffe0b9720fc47d475e64c1b3a7f3e2f30",
+   "format": {
+    "bos": [],
+    "source": "plain",
+    "template_sha256": null,
+    "no_think": null,
+    "system_role": true
+   },
+   "head": "System: Read the schema, then the state, then the question. Answer with the code of exactly one of the question's options.\n\nUser: ",
+   "tail": "\n\nAssistant: ANSWER:",
+   "budget": 8191,
+   "table": {
+    "size": 255,
+    "first": [
+     "A",
+     "B",
+     "C"
+    ],
+    "last": [
+     "NV",
+     "NW",
+     "NY"
+    ],
+    "ordered_candidate_subsequence": true,
+    "nospace_single_token": 253
+   },
+   "stats": {
+    "requests": 520,
+    "questions": 973,
+    "q_nonopaque_ids": 912,
+    "q_word_mode": 794,
+    "q_coded_letters": 179,
+    "q_fallback_multitoken": 0,
+    "catalog_chars=None": 59,
+    "whole_string_equal": 973,
+    "whole_string_differs_body_has_special_text": 0,
+    "ctx_checks": 9800,
+    "train_rows": 973,
+    "ctx_nospace_checks": 7851,
+    "ctx_nospace_single": 7792
+   },
+   "examples": [],
+   "ctx_fail_examples": [],
+   "seconds": 191.4
+  }
+ ],
+ "ok": true
+}
