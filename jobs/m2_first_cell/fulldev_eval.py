@@ -33,10 +33,12 @@ No truncation anywhere; nothing is excluded after scoring.
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
 import math
 import os
+import shutil
 import statistics
 import subprocess
 import sys
@@ -177,6 +179,98 @@ def progress_beat(every_s: float = 30.0):
                 pass
 
     return beat
+
+
+#: job-afpc2: the worker's SHARED disk (it holds $GMN_CHECKPOINT_DIR, $GMN_OUTPUT_DIR and the platform's spool) filled
+#: mid-scoring (201,875,456 B free at the end): the child died (rc 1), the phase tgz could not be written (export ok=false,
+#: no sha) and the platform refused the artifact (a transfer must leave 4,294,998,016 B free). Below this many free bytes
+#: on the resume / output dirs the child stops cleanly: declare the slot, yield, exit DISK_LOW_RC.
+DISK_LOW_BYTES = 6 << 30
+DISK_LOW_RC = 16
+MAX_YIELDS = 2
+CHECKPOINT_EVERY_S = 600.0  # the platform floor is one accepted declare per 300 s
+
+
+def _meta_post(door: str) -> bool:
+    """POST ``$GMN_METADATA_URL/v1/<door>`` (checkpoint | yield). Unset (tests, local): False, nothing sent."""
+    import urllib.request
+
+    url = os.environ.get("GMN_METADATA_URL")
+    if not url:
+        return False
+    try:
+        urllib.request.urlopen(urllib.request.Request(f"{url}/v1/{door}", data=b"{}", method="POST",
+                                                      headers={"Content-Type": "application/json"}), timeout=10)
+        return True
+    except Exception as e:  # noqa: BLE001  a 429 (rate floor) / 503 / 409 is not a failure: the last slot stands
+        print(f"{door} declare: {e!r}", file=sys.stderr, flush=True)
+        return False
+
+
+def checkpoint_declarer(every_s: float = CHECKPOINT_EVERY_S, post=None):
+    """A throttled declare of the platform checkpoint slot ($GMN_CHECKPOINT_DIR = the resume dir: the per-row append
+    log + the persisted refit): a preempted / yielded attempt resumes from the last committed capture instead of
+    from zero (job-afpc2's three preempted attempts restarted from nothing: no declare). ``declare(force=True)``
+    ignores the throttle (scoring start / end / before a yield)."""
+    post = post or (lambda: _meta_post("checkpoint"))
+    last = [float("-inf")]
+
+    def declare(force: bool = False) -> bool:
+        now = time.monotonic()
+        if not force and now - last[0] < every_s:
+            return False
+        last[0] = now
+        return post()
+
+    return declare
+
+
+def disk_watch(paths, low_bytes: int = DISK_LOW_BYTES, every_s: float = 30.0, usage=None):
+    """Throttled free-space check of ``paths``: returns ``None`` while every path's filesystem has >= ``low_bytes``
+    free, else ``{path: free_bytes}`` of the low ones. Read-only; changes no output."""
+    usage = usage or (lambda p: shutil.disk_usage(p).free)
+    last = [float("-inf")]
+
+    def low():
+        now = time.monotonic()
+        if now - last[0] < every_s:
+            return None
+        last[0] = now
+        free = {}
+        for p in paths:
+            try:
+                free[str(p)] = int(usage(p))
+            except OSError:
+                continue
+        bad = {p: f for p, f in free.items() if f < low_bytes}
+        return bad or None
+
+    return low
+
+
+def stop_for_disk(resume_dir: Path, declare, why: str, yield_post=None) -> int:
+    """The worker disk is (nearly) full: declare the slot (best effort: rows already in the append log), then yield
+    (the rerun re-queues, possibly on another machine, and resumes from the slot) at most MAX_YIELDS times per job
+    (counted in the slot), and return DISK_LOW_RC either way so the runner fails loudly if no yield takes effect."""
+    yield_post = yield_post or (lambda: _meta_post("yield"))
+    print(f"WORKER DISK LOW: {why}", file=sys.stderr, flush=True)
+    n_file = resume_dir / "disk_yields.json"
+    try:
+        n = int(json.loads(n_file.read_text(encoding="utf-8")).get("yields", 0))
+    except (OSError, ValueError):
+        n = 0
+    declared = declare(force=True)
+    if n < MAX_YIELDS:
+        try:
+            n_file.write_text(json.dumps({"yields": n + 1, "why": why}), encoding="utf-8")
+        except OSError:
+            pass
+        ok = yield_post()
+        print(f"yield {n + 1}/{MAX_YIELDS}: {'sent' if ok else 'not accepted'} (checkpoint declared: {declared})",
+              file=sys.stderr, flush=True)
+    else:
+        print(f"no yield: {n} of {MAX_YIELDS} already used", file=sys.stderr, flush=True)
+    return DISK_LOW_RC
 
 
 def plan_rows(decider, rows: list[dict], max_input_tokens: int) -> dict[str, Any]:
@@ -401,17 +495,34 @@ def score(a) -> int:
     prog = G.Progress(a.progress)
     prog.plan([G.unit_weight(r) for r in todo])
     decide = G.beat_wrap(prog.wrap(limited(decider.decide, a.max_input_tokens)))
+    declare = checkpoint_declarer()
+    low = disk_watch([resume.parent, out])
+    declare(force=True)  # the slot now holds the persisted refit + the rows so far
     t0 = time.perf_counter()
-    with open(resume, "a", encoding="utf-8", newline="\n") as f:
-        for r in todo:
-            if refit is not None:  # + refit_response: the readout's own refit temperature on the same logits
-                from jobs.m2_first_cell.readout_temperature import predict_with_refit
+    n_done = len(ids) - len(todo)
+    try:
+        with open(resume, "a", encoding="utf-8", newline="\n") as f:
+            for r in todo:
+                bad = low()
+                if bad:
+                    f.flush()
+                    return stop_for_disk(resume.parent, declare, f"free bytes {bad} < {DISK_LOW_BYTES} before row "
+                                         f"{r['_evaluation']['run_id']} ({n_done} of {len(ids)} rows done)")
+                if refit is not None:  # + refit_response: the readout's own refit temperature on the same logits
+                    from jobs.m2_first_cell.readout_temperature import predict_with_refit
 
-                one = predict_with_refit(decide, r, *refit, tempered=tempered)
-            else:
-                one = G.index_predict(decide, [r], untempered_from_raw=tempered)[r["_evaluation"]["run_id"]]
-            f.write(json.dumps(one, separators=(",", ":")) + "\n")
-            f.flush()
+                    one = predict_with_refit(decide, r, *refit, tempered=tempered)
+                else:
+                    one = G.index_predict(decide, [r], untempered_from_raw=tempered)[r["_evaluation"]["run_id"]]
+                f.write(json.dumps(one, separators=(",", ":")) + "\n")
+                f.flush()
+                n_done += 1
+                declare()
+    except OSError as e:  # ENOSPC only (a torn tail is dropped by _read_partial on resume); anything else propagates
+        if e.errno != errno.ENOSPC:
+            raise
+        return stop_for_disk(resume.parent, declare, f"{type(e).__name__}: {e} ({n_done} of {len(ids)} rows done)")
+    declare(force=True)
     secs = time.perf_counter() - t0
     done = _read_partial(resume)
     if set(done) != set(ids):

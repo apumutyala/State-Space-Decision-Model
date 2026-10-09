@@ -176,13 +176,18 @@ def test_runner_passes_the_readout_to_the_child_only():
 
 
 def test_eval_only_paths_never_put_the_checkpoint_in_output():
-    """The checkpoint lives in $CK (+ the downloaded tar in $WORK/art); only $WORK/out + logs are exported, and the
-    eval-only branches exit before the training path's `cp ... $OUT/ckpt` (the 5 GB artifact cap)."""
+    """The checkpoint lives in the job scratch ($WORK/ckpt-cell for fulldev / readout_ab since job-afpc2, $CK/cell for
+    hijack; the downloaded tar in $WORK/art); only $WORK/out + logs are exported, and the eval-only branches exit
+    before the training path's `cp ... $OUT/ckpt` (the 5 GB artifact cap). $OUT appears only in READ-ONLY free-space
+    checks (job-afpc2's disk preflight / log line)."""
     sh = (M / "first_cell_job.sh").read_text(encoding="utf-8")
     a = sh.index('if [ "$EVAL_ONLY" = fulldev ] || [ "$EVAL_ONLY" = readout_ab ]; then')
     b = sh.index("\n  RC=0\n  exit 0\nfi\n", a)
     block = sh[a:b]
-    assert "$OUT" not in block and '--ck-dir "$CK/cell" --work "$WORK/art"' in block
+    reads = [ln for ln in block.splitlines() if "$OUT" in ln]
+    assert reads and all("diskfree" in ln or "shutil.disk_usage" in ln for ln in reads), reads
+    assert "CKCELL=$WORK/ckpt-cell" in block and '--ck-dir "$CKCELL" --work "$WORK/art"' in block
+    assert '--ck-dir "$CK/cell" --work "$WORK/art"' in block  # hijack_eval: unchanged
     assert sh.index('mkdir -p "$OUT/ckpt"') > b
 
 

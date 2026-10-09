@@ -33,6 +33,8 @@
 #   4 TOK_S / CALL_S missing or not a number   5 setup   6 export verification   7 phase timeout
 #   9 report / arm / evals missing or invalid   10 snapshot / vendored code / records / train set / cohort / arm identity
 #      (incl. a shipped parent arm seed that fails its pin or identity: jobs.m2_first_cell.arm_seed)
+#   16 eval-only scoring stopped: the worker's shared disk (checkpoint / output / spool) is below 6 GiB free (job-afpc2);
+#      the child declared its checkpoint slot and yielded (the rerun resumes the per-row log from the slot)
 #   15 an eval phase projected (preflight at the env rates, or re-priced at the parent arm's measured speed BEFORE
 #      training) or measured (live rate guard) past its cap
 #   30 / 31 / 32 guard: kit-suite / content index / harness manifests   33 held-out D1-B fragment outside the pinned set
@@ -131,6 +133,9 @@ finish() {
 }
 fail() { RC=$1; say "FAIL($1): $2"; exit "$1"; }
 num() { case "$1" in *[!0-9.]*|"") return 1 ;; esac; }
+diskfree() {  # free bytes of each dir's filesystem (job-afpc2: the shared worker disk filled; the log is all that survives)
+  local d; for d in "$@"; do printf '%s=%s ' "$d" "$(df -PB1 "$d" 2>/dev/null | awk 'NR==2 {print $4}')"; done
+}
 hb
 watchdog & WD_PID=$!
 trap finish EXIT
@@ -313,9 +318,12 @@ gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
 
 if [ "$EVAL_ONLY" = fulldev ] || [ "$EVAL_ONLY" = readout_ab ]; then  # ---- eval-only: a SAVED checkpoint (fulldev: FULL DEV; readout_ab: subset)
-  say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"
+  # the 3.5 GB .pt goes to the job's own scratch, NOT $CK: $CK is the platform checkpoint slot the scoring phase
+  # declares every 10 min (small: the per-row log + refit), and it sits on the worker's shared disk (job-afpc2)
+  CKCELL=$WORK/ckpt-cell
+  say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader; into $CKCELL)"
   timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" \
-    --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CK/cell" --work "$WORK/art" \
+    --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CKCELL" --work "$WORK/art" \
     --cell-out "$WORK/out/cell.json" --out "$WORK/out/checkpoint.json" > "$WORK/logs/checkpoint.log" 2>&1; r=$?
   gate "checkpoint" $r; export_phase checkpoint
   case $r in 0) ;; 124|137) fail 7 "checkpoint timeout" ;; 10) fail 10 "checkpoint identity: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
@@ -356,19 +364,26 @@ if [ "$EVAL_ONLY" = fulldev ] || [ "$EVAL_ONLY" = readout_ab ]; then  # ---- eva
   for ARMNAME in "${FD_ARMS[@]}"; do
     PH=$PH_CHILD; [ "$ARMNAME" = parent ] && PH=$PH_PARENT
     if [ "$ARMNAME" = child ]; then
-      ARGS=(--cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR"
+      ARGS=(--cell "$WORK/out/cell.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR"
             "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json" "${CHILD_EXTRA[@]}")
     else
       ARGS=(--cell-config "$CELL")
     fi
-    say "phase $PH ($ARMNAME arm, $EV_WHAT; resumes from $CK/$EV_DIR)"
+    say "phase $PH ($ARMNAME arm, $EV_WHAT; resumes from $CK/$EV_DIR); free bytes: $(diskfree "$OUT" "$CK" "$WORK")"
+    LOWDISK=$(python -I -c 'import shutil,sys; print(" ".join(f"{p}={shutil.disk_usage(p).free}" for p in sys.argv[1:] if shutil.disk_usage(p).free < (6 << 30)))' "$OUT" "$CK")
+    [ -z "$LOWDISK" ] || fail 16 "$PH not started: worker disk below 6 GiB free ($LOWDISK)"
     python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)" \
       --report "$WORK/out/rate-$PH.json" -- \
       timeout --kill-after=30s $(cap $PH)m python -X utf8 -m "$DRIVER" score --arm "$ARMNAME" "${ARGS[@]}" \
       --model-dir "$SNAP" --rows "$EV_ROWS" "${EV_ARGS[@]}" --resume-dir "$CK/$EV_DIR" \
       --out-dir "$WORK/out/$EV_DIR" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
+    if [ $r -ne 0 ]; then  # the phase log tail into run.log / the job log: it survives when the artifact does not
+      say "$PH rc=$r; free bytes: $(diskfree "$OUT" "$CK" "$WORK"); last 40 lines of logs/$PH.log:"
+      tail -n 40 "$WORK/logs/$PH.log" 2> /dev/null | sed "s/^/[$PH.log] /"
+    fi
     gate "$PH" $r; export_phase "$PH"
     case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
+      16) fail 16 "$PH: worker disk low (slot declared + yield requested; see the log tail above)" ;;
       10) fail 10 "$PH identity (rows / checkpoint lineage / cohort)" ;; *) fail 9 "$PH rc=$r" ;; esac
   done
   say "phase report"

@@ -154,6 +154,9 @@ def install(block: dict, *, cell_src: str | Path, cell_config: str | Path, ck_di
             raise CheckpointError(f"artifact {ck['artifact']} sha256 {got} != checkpoint.artifact_sha256")
         _extract(tar, "./ckpt/latest.json", latest, ck["latest_json_sha256"], "latest.json")
         _extract(tar, ck["member"], pt, ck["ckpt_sha256"], fname)
+        # job-afpc2: the 3.5 GB download stayed on the worker's shared disk for the whole run; both pinned members
+        # are installed (each sha256-checked), so this job's own copy of the tar is no longer needed
+        tar.unlink()
     if json.loads(latest.read_text(encoding="utf-8")).get("path") != fname:
         raise CheckpointError(f"latest.json does not name {fname}")
     if cell_out is not None:
