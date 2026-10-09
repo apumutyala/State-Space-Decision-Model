@@ -1,0 +1,100 @@
+{
+  "indices": "0..9999; wording fit 0..4999, evaluation 5000..9999",
+  "scope": "synthetic generator diagnostic only; no tokenizer/model/Index-gain claim",
+  "seconds": 4.312000000005355,
+  "seed": 20261008,
+  "v1": {
+    "largest_description": {
+      "accuracy": 0.4944,
+      "correct": 4944,
+      "n": 10000
+    },
+    "largest_description_k_lt_77": {
+      "accuracy": 0.500759955415949,
+      "correct": 4942,
+      "n": 9869
+    },
+    "parity_predictor": {
+      "accuracy": 1.0,
+      "correct": 10000,
+      "n": 10000
+    },
+    "records": 10000,
+    "score_target_is_winner": {
+      "count": 10000,
+      "n": 10000,
+      "rate": 1.0
+    },
+    "wording_oracle": {
+      "accuracy": 1.0,
+      "correct": 5000,
+      "eval_n": 5000,
+      "fit_counts_by_wording": {
+        "Are all four proposed rows exact? packet node and field order": {
+          "true": 832
+        },
+        "Are these four proposals exact in all fields? packet order": {
+          "false": 836
+        },
+        "Case-exact? packet node order and field order": {
+          "true": 854
+        },
+        "Check every proposed row against the packet order": {
+          "false": 834
+        },
+        "Do all four rows match exactly? node and field order": {
+          "false": 830
+        },
+        "Do these rows match every packet field? use packet order": {
+          "true": 814
+        }
+      },
+      "fit_n": 5000,
+      "unseen_wordings": 0
+    }
+  },
+  "v2": {
+    "largest_description": {
+      "accuracy": 0.0543,
+      "correct": 543,
+      "n": 10000
+    },
+    "largest_description_k_lt_77": {
+      "accuracy": 0.05481811733711622,
+      "correct": 541,
+      "n": 9869
+    },
+    "parity_predictor": {
+      "accuracy": 0.5043,
+      "correct": 5043,
+      "n": 10000
+    },
+    "records": 10000,
+    "score_target_is_winner": {
+      "count": 2511,
+      "n": 10000,
+      "rate": 0.2511
+    },
+    "wording_oracle": {
+      "accuracy": 0.495,
+      "correct": 2475,
+      "eval_n": 5000,
+      "fit_counts_by_wording": {
+        "Are all four proposed rows exact? packet node and field order": {
+          "false": 833,
+          "true": 881
+        },
+        "Case-exact? packet node order and field order": {
+          "false": 842,
+          "true": 884
+        },
+        "Do these rows match every packet field? use packet order": {
+          "false": 759,
+          "true": 801
+        }
+      },
+      "fit_n": 5000,
+      "unseen_wordings": 0
+    }
+  }
+}
