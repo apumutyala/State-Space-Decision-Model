@@ -223,6 +223,19 @@ config): `d13_joint` with `"stage": "screen"` (see "Params `"stage": "screen"`" 
 `"screen": 60` (expected ~41), `screen_reference` = D1 art-bm3e6 (shipped `screen_reference/units-child-index.json`,
 pinned by `units_sha256`). Schedule 485 + reserve 7 = 492 min. **Worst case** (60 build + 2 x 492) x $0.0495 =
 **$51.68** (cap $70).
+## Modes `fulldev_eval_d13` / `fulldev_eval_d13_v3w`: D13 on the FULL Index DEV (DRAFT, NOT SUBMITTED)
+
+Mode `fulldev_eval` (below) on D13 = job-hjwpq (d13_joint_safe_nofla, the attention-free joint_record head; proxy600
+screen 41.07 [37.57, 45.22] under v3w vs D1+v3w 37.71), from D13's own lineage (8d92f04) + the job-4ha7t plan-pass
+beat + the job-afpc2 worker-disk fix. Checkpoint: art-cr9a2's BEST export (`trainable-step0001600.safetensors`,
+`"select": "best"`: latest.json's best pointer must name it with the pinned sha; its sidecar's source_ckpt sha
+b6506c35... is the checkpoint the screen scored). params `readout`: `native` (jrt-rwkv-g1-v1 / ordered, served with the
+cohort temperature fit) or `v3w` (load_child's readout override, untempered). The joint head is served as trained: one
+model(rows) pass per request, questions grouped by record. The report adds the 2,008 subset + proxy600 Index from the
+same predictions. Worst case: native $68.51 (cap $70), v3w $62.57 (cap $64); two jobs, since both readouts in one job
+(~1,080 min) exceed the 900-min ceiling. Exit 16 (job-afpc2): the worker's shared disk under 6 GiB free; the child
+declared its slot and yielded.
+
 ## Mode `fulldev_eval`: a saved checkpoint on the FULL Index DEV (DRAFT, NOT SUBMITTED)
 
 **Question.** What does a trained cell score on all 12,104 DEV rows, on exactly the comparators' footing (Clef 27B
