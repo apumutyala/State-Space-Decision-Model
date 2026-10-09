@@ -348,3 +348,33 @@ coordinator's (2026-10-09): eval documents count as "test" (we can't train on te
   - content 38b5b715...
 - The C multirecord rows are still v2c's `synthetic_c_multirecord_v1`, 7,000 rows. C's all-K admitted pool has not
   been swapped in.
+
+## v2d at the adopted policy
+`doc-overlap-guard-1f64368.json`: `train.doc_overlap_guard` at origin/claude/b-doc-overlap-gate @1f64368 (index
+2c821e29..., allowlist 8a0bf416...) reports 0 fails over all 227,946 rows. v2d is unchanged.
+
+# bschema-draw230k-v2e (2026-10-09): v2d with C's all-K pool. NOT READY: fails the v1 2,048-token gate
+v2e is v2d with its 7,000 `synthetic_c_multirecord_v1` rows replaced by all 13,575 rows of C's
+`c-multirecord-13575-v2-allk-admitted` pool (pointer sha256 531faa15...). Built with `scripts/b_schema_swap_pool.py`.
+- Every pool row passed the P3 Checker against the kept v2d rows: 13,575 of 13,575 kept.
+- Size: 234,521 rows / 366,741 items. C's share of items is 25.9%.
+
+Gates:
+- PASS:
+  - doc_overlap_guard @1f64368: 0 fails.
+  - doc_check: 0 non-allowlisted hits (1 allowlisted).
+  - attack_filter: 0 hits.
+  - attack_guard @ca9d482: 0 hits.
+  - b1_check: 0 failures.
+  - check_generator: 37 specs.
+  - Trainer 9c3e435: draw at 24k, and heldout_gate with 0 hits.
+  - Tokens: max 2,048 under v2f and v3w.
+- FAIL: `token-check.json` shows 7,942 C rows over 2,048 under the v1 TRAINING template (max 2,309).
+  - Every over-length row is from the C pool.
+  - C proved v2f/v3w only.
+  - Those rows are exactly the pool's high-K worlds: option count 53-77. The rows that fit under v1 span 5-62.
+- Pins:
+  - pointer `data/manifests/bschema-draw230k-v2e.pointer.json`, sha256 7bcbaca5...
+  - uncompressed records 9967766bf5fdd292f2e5d34bff9e6eda79a027b299ee6cf55c11ec94dada4081
+  - manifest a4ec3875...
+  - content 3789c913...

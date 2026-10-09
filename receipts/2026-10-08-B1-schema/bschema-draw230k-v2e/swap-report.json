@@ -1,0 +1,127 @@
+{
+ "parent": "bschema-draw230k-v2d",
+ "parent_pointer_sha256": "1adf0c825d4c77e5e8925b811d227fdb113589fc44c7ab7de4ce13117cd1c603",
+ "parent_files": {
+  "records": "b5149e12e089d0eddde9a0fc0fa801ce9530766c07a0db17a00817a372a3bde3",
+  "manifest": "e403fd52b39b048f2631effea649a6e0d0f0402a80f7f8eee7d53454f500baa7",
+  "content_map": "5f661509ab99cabaf88d2006198764d6e9981b8a95f756908fba53e0c17b2f2e"
+ },
+ "n_parent": 227946,
+ "removed_from_parent": {
+  "synthetic_c_multirecord_v1": 7000
+ },
+ "pool": {
+  "pointer_sha256": "531faa15a6a54e58cd14f44c6af7a5bf8edd4046ca5a16a54ae7f84db26172cc",
+  "files": {
+   "records": "c33facd99e2251283aafcbb5521987d8b23a12d1d9f71f4de10fde1bb6b0a20f",
+   "manifest": "a8c1138d1baadcfa5e693964969b3a406727507b0afa72c6c4d9def796b1b980",
+   "content_map": "9e74bdfa8c1513955b26cab0350a0d30eefd87ac86ab76751f95ce728671f25f"
+  },
+  "n_rows": 13575,
+  "n_dropped_by_list": 0,
+  "n_added": 13575,
+  "added_by_source": {
+   "synthetic_c_multirecord_v2": 13575
+  },
+  "checker": {
+   "P3": {
+    "kept": 13575
+   }
+  },
+  "hit_examples": []
+ },
+ "n_records": 234521,
+ "n_items": 366741,
+ "rows_by_source": {
+  "b1fam_cruxeval_synth": 35997,
+  "glaive_fc": 33738,
+  "hover": 20240,
+  "mnli": 17548,
+  "ragtruth": 16964,
+  "synthetic_c_multirecord_v2": 13575,
+  "clinc150": 13022,
+  "banking77": 9492,
+  "b1fam_bfcl_synth": 8436,
+  "toolace": 7378,
+  "mmlu_aux": 7369,
+  "when2call": 6702,
+  "gsm8k": 6394,
+  "anli": 5752,
+  "boolq": 5014,
+  "winogrande": 4299,
+  "hellaswag": 4267,
+  "vast": 3670,
+  "sst5": 3327,
+  "humicroedit_s1": 2527,
+  "humicroedit_s2": 2156,
+  "synthetic_factchange": 2086,
+  "habermas": 2027,
+  "acos": 1314,
+  "b1fam_apibank": 1194,
+  "nq": 33
+ },
+ "items_by_source": {
+  "synthetic_c_multirecord_v2": 95025,
+  "b1fam_cruxeval_synth": 35997,
+  "glaive_fc": 33738,
+  "b1fam_bfcl_synth": 27967,
+  "clinc150": 20722,
+  "hover": 20240,
+  "mnli": 17548,
+  "ragtruth": 16964,
+  "toolace": 15124,
+  "acos": 12800,
+  "banking77": 12693,
+  "mmlu_aux": 8419,
+  "when2call": 6702,
+  "gsm8k": 6394,
+  "anli": 5752,
+  "boolq": 5014,
+  "winogrande": 4299,
+  "hellaswag": 4267,
+  "vast": 3670,
+  "sst5": 3327,
+  "humicroedit_s1": 2527,
+  "humicroedit_s2": 2156,
+  "synthetic_factchange": 2086,
+  "habermas": 2027,
+  "b1fam_apibank": 1194,
+  "nq": 89
+ },
+ "item_share_by_source": {
+  "synthetic_c_multirecord_v2": 0.2591,
+  "b1fam_cruxeval_synth": 0.0982,
+  "glaive_fc": 0.092,
+  "b1fam_bfcl_synth": 0.0763,
+  "clinc150": 0.0565,
+  "hover": 0.0552,
+  "mnli": 0.0478,
+  "ragtruth": 0.0463,
+  "toolace": 0.0412,
+  "acos": 0.0349,
+  "banking77": 0.0346,
+  "mmlu_aux": 0.023,
+  "when2call": 0.0183,
+  "gsm8k": 0.0174,
+  "anli": 0.0157,
+  "boolq": 0.0137,
+  "winogrande": 0.0117,
+  "hellaswag": 0.0116,
+  "vast": 0.01,
+  "sst5": 0.0091,
+  "humicroedit_s1": 0.0069,
+  "humicroedit_s2": 0.0059,
+  "synthetic_factchange": 0.0057,
+  "habermas": 0.0055,
+  "b1fam_apibank": 0.0033,
+  "nq": 0.0002
+ },
+ "uncompressed_sha256": {
+  "records": "9967766bf5fdd292f2e5d34bff9e6eda79a027b299ee6cf55c11ec94dada4081",
+  "manifest": "a4ec38754dc0d31783bc59030fa775fdeae8aaef884d135bf7822d5ec6660c7e",
+  "content": "3789c913ba58e3064ae524f5f81f914aca322893beca0a6260c305d90439058d"
+ },
+ "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b-schema-synth\\data\\manifests\\bschema-draw230k-v2e.pointer.json",
+ "pointer_sha256": "7bcbaca56bcd536247f33edb3fd8f4ac59826021f03f750d40e3b28699673b29",
+ "commit": "13ea0b92cd2647fb111602960d1d91d3b1b95ae5"
+}

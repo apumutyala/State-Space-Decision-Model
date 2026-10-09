@@ -1,0 +1,1253 @@
+{
+ "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+ "index_sha256": "2c821e291c944b4e28cb0e74a5dabc3f7bc436fdd7f410fb199661318448594f",
+ "allowlist_sha256": "8a0bf416f2920af62be1ced98e54ea006f8580859d1c7234bed8676703f2c111",
+ "n_eval_rows": 153397,
+ "n_records": 234521,
+ "n_rows_any_eval_gram": 74428,
+ "n_fail": 0,
+ "fail_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+ "per_source_rows": {
+  "acos": 1314,
+  "anli": 5752,
+  "b1fam_apibank": 1194,
+  "b1fam_bfcl_synth": 8436,
+  "b1fam_cruxeval_synth": 35997,
+  "banking77": 9492,
+  "boolq": 5014,
+  "clinc150": 13022,
+  "glaive_fc": 33738,
+  "gsm8k": 6394,
+  "habermas": 2027,
+  "hellaswag": 4267,
+  "hover": 20240,
+  "humicroedit_s1": 2527,
+  "humicroedit_s2": 2156,
+  "mmlu_aux": 7369,
+  "mnli": 17548,
+  "nq": 33,
+  "ragtruth": 16964,
+  "sst5": 3327,
+  "synthetic_c_multirecord_v2": 13575,
+  "synthetic_factchange": 2086,
+  "toolace": 7378,
+  "vast": 3670,
+  "when2call": 6702,
+  "winogrande": 4299
+ },
+ "per_source_fail": {},
+ "per_reason": {},
+ "per_eval_family_fail": {},
+ "eval_rows_attributed_by_split": {},
+ "eval_rows_union_covered_by_split": {},
+ "allowlist_saved": {
+  "anli-wikipedia-premise": {
+   "anli": 1,
+   "clinc150": 2,
+   "glaive_fc": 5,
+   "gsm8k": 5,
+   "hover": 29
+  },
+  "hover-wikipedia-evidence": {
+   "anli": 1,
+   "boolq": 2,
+   "clinc150": 2,
+   "glaive_fc": 8,
+   "gsm8k": 8,
+   "humicroedit_s2": 1,
+   "mmlu_aux": 1,
+   "sst5": 1,
+   "winogrande": 3
+  },
+  "toolret-public-tool-corpus": {
+   "glaive_fc": 31,
+   "toolace": 709,
+   "when2call": 340
+  }
+ },
+ "boilerplate": [
+  {
+   "gram_hash": "abae7ae37ed8218c",
+   "eval_df": 2700,
+   "train_df": 16964
+  },
+  {
+   "gram_hash": "b71208c2bf8708e3",
+   "eval_df": 2700,
+   "train_df": 16964
+  },
+  {
+   "gram_hash": "b972dcf9dafed2e3",
+   "eval_df": 2700,
+   "train_df": 16964
+  },
+  {
+   "gram_hash": "047c60dc5355ff50",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "06bfd883472c29cf",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "1a784fbe5e8dfae2",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "28aa3b3eaa2ba77e",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "2cddf21828362682",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "3895aecce671f276",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "40759d30c108e03b",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "4a251cf9b8a65c03",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "4ad741ff3b06e564",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "4dc31642bdb56c27",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "530c459b5f015575",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "5c70a1c1b3800840",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "6958e907aa21442b",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "6bbd3279509e5467",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "6c60216fbe95a4e9",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "78b77cb8272f624a",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "7ea762caf1b7c019",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "8fd4b22c60dedcb5",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "95985c9b5b429a37",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "9d36c53e76216e29",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "b30ec82d9fc87a94",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "bfee7d40cefed326",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "c0fc96a82c0e7d6e",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "ccabdd5dc3fb2de2",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "d02ed9e9e796717e",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "d496a8329aecf01a",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "da27b7c2b2845221",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "e318e2dc2d381d57",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "f347df27c62fea2c",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "f3ec64dd528c5bdf",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "f73064606b48809c",
+   "eval_df": 1694,
+   "train_df": 8436
+  },
+  {
+   "gram_hash": "fb1f434861e426a9",
+   "eval_df": 1694,
+   "train_df": 8436
+  }
+ ],
+ "n_boilerplate": 35,
+ "n_template_grams": 23531,
+ "template_grams_top": [
+  {
+   "gram_hash": "3226816f91c9cbae",
+   "eval_df": 570,
+   "train_df": 35997
+  },
+  {
+   "gram_hash": "68d00e6e28866fb0",
+   "eval_df": 570,
+   "train_df": 35997
+  },
+  {
+   "gram_hash": "8c58880b5a6482ad",
+   "eval_df": 570,
+   "train_df": 35997
+  },
+  {
+   "gram_hash": "91ceb37e3c6dca0b",
+   "eval_df": 570,
+   "train_df": 35997
+  },
+  {
+   "gram_hash": "dd5eab40de285da6",
+   "eval_df": 570,
+   "train_df": 35997
+  },
+  {
+   "gram_hash": "00e39a6dd93d2127",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "0d3a61adf93ecd9c",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "15f83c8af55cf6dd",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "65b3951e2755eef0",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "71b25170a8854428",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "72b586159382f60f",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "7f7b1978cd9ab901",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "83e079112b2712cc",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "876f2feb19a31b8d",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "8b781d84b296b097",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "8b7f426d5fd2f78a",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "959989eacd1f9f0f",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "a65af7e97633643e",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "a8f50c2a1dd4933c",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "d21272737fc68ab0",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "dfa77cc6dfd6f57b",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "eb0f2c972283ef8e",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "faebb10ba9897f4c",
+   "eval_df": 900,
+   "train_df": 7234
+  },
+  {
+   "gram_hash": "005de1f9f630f5f5",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "0d446ba71c85072c",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "129b4810997b7c66",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "1a0045059ae0082b",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "21f0a8a11f1ce2a4",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "254632eefc0cfa75",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "2727195190a15bb4",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "2c88f834c7544705",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "3c7e789a9650f5a3",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "42c252bd8c807884",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "434c1344e57ba15e",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "45a81ec29bc9ba7d",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "498983189ba76c44",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "4d70f315cef1d1cb",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "604e4913325a2ba0",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "6216e314a2cfe5dd",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "622ea5a4127b46a9",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "72f2c3d513c50c09",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "74824d767ab4b44c",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "776ea4bb84ff221d",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "862c82f8476acf14",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "a635ec6dfc1b6c80",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "ab03bdeb7331c97f",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "b5b11349a9d92a10",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "b70de514762aaa71",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "c05802462dd13bf5",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "c8f619af6929d5a2",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "c90c31992b70acc6",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "cdb30445fbe66c28",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "cddc0c8d95ba39c4",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "d0450fe284740670",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "dfe708eb4b14db49",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "e14cf9a23aa96cc8",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "e190b63c225398b8",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "f4ca54ad712dc19e",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "f537ad40179613b2",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "fdfcc0cda423c09d",
+   "eval_df": 900,
+   "train_df": 5834
+  },
+  {
+   "gram_hash": "ff5196bffe4447b0",
+   "eval_df": 279,
+   "train_df": 2383
+  },
+  {
+   "gram_hash": "09f6ae126712c591",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "193b606592bd2d17",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "2660cf1eb844a86a",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "27f8eefa248a050c",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "36b491ba09c955c6",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "3f6d8f64075a8c1e",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "63321b7255c14bb5",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "7353072b725448ca",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "8091fc37ed3bac27",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "a202e4978db75cdf",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "ae641bf694212549",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "b00d65033a800b1c",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "b2503a4889d5fc63",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "b4d8b181c24cecfc",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "bcb8cf03d3093144",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "d17579bc114344b5",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "d27538f7af7e9cea",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "d815d800dc6e92f0",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "dda57211e2462ee7",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "f9f13717917fcd12",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "fad750ee90344716",
+   "eval_df": 1676,
+   "train_df": 2027
+  },
+  {
+   "gram_hash": "0133b7b2881eaa8b",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "107ba811b27ae804",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "14570e58d34da723",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "1e2dc5feece8faa2",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "25d735f1247d641c",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "2a39ddf8223b01fc",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "319718dbe6cfd30d",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "4160b2d720edb9db",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "60e871afbf4c93c3",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "6c41c8cfd7a46927",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "7d35241ea2fc3500",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "80819e7876c032d2",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "866885badbcaef6b",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "a5b559ff170335e0",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "ab9bd699c0af37f4",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "b1644816e15f8659",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "b786437401fcf5ed",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "d1a295f162697600",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "f85b5b20ac4252fb",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "ffd62ae6338e61d0",
+   "eval_df": 1565,
+   "train_df": 1314
+  },
+  {
+   "gram_hash": "1044d3a60d33dae6",
+   "eval_df": 258,
+   "train_df": 1312
+  },
+  {
+   "gram_hash": "37e21b84c8960fed",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "492e4090f53873dc",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "4bfc676714e3d74d",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "6078c5824dba12b6",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "7b823481e1585c50",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "7ea86ba649f8d06a",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "7f3642a3f808c44c",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "830d5e60d0eef8f6",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "88d4525877302afe",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "942390c57661ecc7",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "9b93316d82e84ed5",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "babd60a7607418dc",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "bc4413e9b91864c4",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "bd3ab754999d05f5",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "d2dfa3f40a717980",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "d84077634ec63625",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "ec6d8b0a5a97d3d1",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "f1071cb9496d29b5",
+   "eval_df": 508,
+   "train_df": 1194
+  },
+  {
+   "gram_hash": "cb9432af8eac5d1f",
+   "eval_df": 186,
+   "train_df": 1180
+  },
+  {
+   "gram_hash": "887da477d5dfe6f8",
+   "eval_df": 162,
+   "train_df": 1176
+  },
+  {
+   "gram_hash": "04d0730ddfeb8aac",
+   "eval_df": 156,
+   "train_df": 1146
+  },
+  {
+   "gram_hash": "64c6493c691562dc",
+   "eval_df": 162,
+   "train_df": 1146
+  },
+  {
+   "gram_hash": "d82d6e2a5f0c32d0",
+   "eval_df": 156,
+   "train_df": 1128
+  },
+  {
+   "gram_hash": "6a9ac4258436c0cd",
+   "eval_df": 17,
+   "train_df": 1092
+  },
+  {
+   "gram_hash": "ab0a651b92b5a588",
+   "eval_df": 198,
+   "train_df": 1026
+  },
+  {
+   "gram_hash": "06883bedbb0a7e19",
+   "eval_df": 1565,
+   "train_df": 981
+  },
+  {
+   "gram_hash": "3d513fcb50bc3216",
+   "eval_df": 1565,
+   "train_df": 981
+  },
+  {
+   "gram_hash": "c12ac74473caa3f4",
+   "eval_df": 17,
+   "train_df": 974
+  },
+  {
+   "gram_hash": "3df0a898ab104aeb",
+   "eval_df": 1565,
+   "train_df": 956
+  },
+  {
+   "gram_hash": "49df983b5fbd1325",
+   "eval_df": 150,
+   "train_df": 934
+  },
+  {
+   "gram_hash": "e1c57b7acc6cf885",
+   "eval_df": 150,
+   "train_df": 934
+  },
+  {
+   "gram_hash": "88a35113a0b6af1c",
+   "eval_df": 204,
+   "train_df": 932
+  },
+  {
+   "gram_hash": "a458ec2fab04757b",
+   "eval_df": 204,
+   "train_df": 932
+  },
+  {
+   "gram_hash": "644e08a75ca3fddb",
+   "eval_df": 204,
+   "train_df": 918
+  },
+  {
+   "gram_hash": "d292109e819f2f76",
+   "eval_df": 204,
+   "train_df": 912
+  },
+  {
+   "gram_hash": "e004ba27274fe434",
+   "eval_df": 204,
+   "train_df": 908
+  },
+  {
+   "gram_hash": "6decacaec5291836",
+   "eval_df": 210,
+   "train_df": 904
+  },
+  {
+   "gram_hash": "eb0cae5f1379b924",
+   "eval_df": 210,
+   "train_df": 904
+  },
+  {
+   "gram_hash": "19f4b3283287920e",
+   "eval_df": 198,
+   "train_df": 902
+  },
+  {
+   "gram_hash": "f93b4f8a63d141b4",
+   "eval_df": 144,
+   "train_df": 834
+  },
+  {
+   "gram_hash": "f04427bf709387e8",
+   "eval_df": 102,
+   "train_df": 814
+  },
+  {
+   "gram_hash": "293f7c1b11be9413",
+   "eval_df": 186,
+   "train_df": 782
+  },
+  {
+   "gram_hash": "7650b7bee9137e50",
+   "eval_df": 186,
+   "train_df": 782
+  },
+  {
+   "gram_hash": "833a56e4fba632b5",
+   "eval_df": 132,
+   "train_df": 778
+  },
+  {
+   "gram_hash": "bc3221a7b53d8350",
+   "eval_df": 132,
+   "train_df": 778
+  },
+  {
+   "gram_hash": "4abe0f43bdef9bf2",
+   "eval_df": 84,
+   "train_df": 760
+  },
+  {
+   "gram_hash": "7c9ec77e3151ee34",
+   "eval_df": 84,
+   "train_df": 760
+  },
+  {
+   "gram_hash": "39ccf292e082357d",
+   "eval_df": 144,
+   "train_df": 750
+  },
+  {
+   "gram_hash": "cfae69a1f6febfdc",
+   "eval_df": 144,
+   "train_df": 750
+  },
+  {
+   "gram_hash": "99bf15184df25a76",
+   "eval_df": 84,
+   "train_df": 734
+  },
+  {
+   "gram_hash": "2559c9ce917bdb87",
+   "eval_df": 84,
+   "train_df": 720
+  },
+  {
+   "gram_hash": "6327b403f91f97f3",
+   "eval_df": 96,
+   "train_df": 720
+  },
+  {
+   "gram_hash": "96c7fdd97fe5fca9",
+   "eval_df": 84,
+   "train_df": 720
+  },
+  {
+   "gram_hash": "17c75626c23a0b3a",
+   "eval_df": 78,
+   "train_df": 718
+  },
+  {
+   "gram_hash": "a6ae85bd19137f8e",
+   "eval_df": 78,
+   "train_df": 718
+  },
+  {
+   "gram_hash": "3c89d93cffcf09ea",
+   "eval_df": 126,
+   "train_df": 710
+  },
+  {
+   "gram_hash": "eba1fd52cf986875",
+   "eval_df": 126,
+   "train_df": 710
+  },
+  {
+   "gram_hash": "63dda08905e9f16d",
+   "eval_df": 108,
+   "train_df": 706
+  },
+  {
+   "gram_hash": "2e9845be88d041f0",
+   "eval_df": 1565,
+   "train_df": 703
+  },
+  {
+   "gram_hash": "4e47294ef7dcb7ef",
+   "eval_df": 60,
+   "train_df": 693
+  },
+  {
+   "gram_hash": "f65f294ae9e76ae4",
+   "eval_df": 60,
+   "train_df": 693
+  },
+  {
+   "gram_hash": "dcb23d401bcbf07f",
+   "eval_df": 96,
+   "train_df": 690
+  },
+  {
+   "gram_hash": "fe705c0052dd35b2",
+   "eval_df": 96,
+   "train_df": 690
+  },
+  {
+   "gram_hash": "a9cc002ff439844d",
+   "eval_df": 108,
+   "train_df": 686
+  },
+  {
+   "gram_hash": "574234f69e19af39",
+   "eval_df": 108,
+   "train_df": 680
+  },
+  {
+   "gram_hash": "343df0a0f29f2334",
+   "eval_df": 1565,
+   "train_df": 677
+  },
+  {
+   "gram_hash": "4b2b4c036c729722",
+   "eval_df": 156,
+   "train_df": 676
+  },
+  {
+   "gram_hash": "55ee4a0d02cab71e",
+   "eval_df": 156,
+   "train_df": 676
+  },
+  {
+   "gram_hash": "21ce5f69eaffad81",
+   "eval_df": 1565,
+   "train_df": 674
+  },
+  {
+   "gram_hash": "99fdf8d1520a9f09",
+   "eval_df": 60,
+   "train_df": 668
+  },
+  {
+   "gram_hash": "dda3ad9f41579d93",
+   "eval_df": 114,
+   "train_df": 668
+  },
+  {
+   "gram_hash": "16970d275adb47f5",
+   "eval_df": 108,
+   "train_df": 666
+  },
+  {
+   "gram_hash": "bef3ec6dc964f136",
+   "eval_df": 11,
+   "train_df": 662
+  },
+  {
+   "gram_hash": "1d6205bfbbbb4112",
+   "eval_df": 54,
+   "train_df": 652
+  },
+  {
+   "gram_hash": "afbb9c644dcd27e0",
+   "eval_df": 60,
+   "train_df": 651
+  },
+  {
+   "gram_hash": "ee9210cd361ee4d1",
+   "eval_df": 60,
+   "train_df": 651
+  },
+  {
+   "gram_hash": "17a03e92e586ab41",
+   "eval_df": 162,
+   "train_df": 610
+  },
+  {
+   "gram_hash": "8e110bdb7d7f87fd",
+   "eval_df": 162,
+   "train_df": 610
+  },
+  {
+   "gram_hash": "a484cf716520adb3",
+   "eval_df": 162,
+   "train_df": 610
+  },
+  {
+   "gram_hash": "1f77eada642b7a59",
+   "eval_df": 96,
+   "train_df": 590
+  },
+  {
+   "gram_hash": "429879090d94e2d7",
+   "eval_df": 96,
+   "train_df": 576
+  },
+  {
+   "gram_hash": "9f70597d88b3517b",
+   "eval_df": 90,
+   "train_df": 560
+  },
+  {
+   "gram_hash": "1b68d70f777eaf61",
+   "eval_df": 60,
+   "train_df": 554
+  },
+  {
+   "gram_hash": "058f21266647438a",
+   "eval_df": 120,
+   "train_df": 541
+  },
+  {
+   "gram_hash": "7b7c21fef2eb50ed",
+   "eval_df": 66,
+   "train_df": 532
+  },
+  {
+   "gram_hash": "5f2e65c787e79138",
+   "eval_df": 108,
+   "train_df": 530
+  },
+  {
+   "gram_hash": "8b17d5cccc7a0f8e",
+   "eval_df": 90,
+   "train_df": 526
+  },
+  {
+   "gram_hash": "29cbc46e0a7d9dc5",
+   "eval_df": 102,
+   "train_df": 525
+  },
+  {
+   "gram_hash": "4c3a3b6fbb0360b1",
+   "eval_df": 108,
+   "train_df": 524
+  },
+  {
+   "gram_hash": "37c79ad9b857e29b",
+   "eval_df": 90,
+   "train_df": 522
+  },
+  {
+   "gram_hash": "eaf4e9175ad8bd18",
+   "eval_df": 90,
+   "train_df": 522
+  },
+  {
+   "gram_hash": "d93bd41a424a27ac",
+   "eval_df": 1398,
+   "train_df": 520
+  },
+  {
+   "gram_hash": "f24958cee9386bae",
+   "eval_df": 1398,
+   "train_df": 520
+  },
+  {
+   "gram_hash": "afcf347596bfb1f1",
+   "eval_df": 1398,
+   "train_df": 508
+  },
+  {
+   "gram_hash": "f6e73167ae7524bc",
+   "eval_df": 1398,
+   "train_df": 508
+  },
+  {
+   "gram_hash": "0d14b52fd2acec01",
+   "eval_df": 1398,
+   "train_df": 500
+  },
+  {
+   "gram_hash": "32cfe4e65e82beb2",
+   "eval_df": 1398,
+   "train_df": 500
+  }
+ ],
+ "secs": 282.3,
+ "fail_ids": [],
+ "fails": [],
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw230k-v2e/records.jsonl.gz"
+}
