@@ -1087,10 +1087,15 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_q
     if uncompressed_sha256(work / "candidates.jsonl.gz") != meta["candidates_uncompressed_sha256"]:
         raise SystemExit("candidates drifted from their meta")
     lens: dict[str, dict] = {}
-    for p in sorted(work.glob("lens-*.jsonl")):
+    v1_files = sorted(work.glob("lensv1-*.jsonl"))
+    for p in sorted(work.glob("lens-*.jsonl")) + v1_files:  # lensv1-*: D1's v1 presentation (merged per id)
         for line in p.read_text(encoding="utf-8").splitlines():
             e = json.loads(line)
-            lens[e["id"]] = e
+            if "error" in e and e["id"] in lens:
+                e = {**lens[e["id"]], "error_v1": e["error"]}
+                e.pop("error", None) if "t_v2f" in e else None
+            lens.setdefault(e["id"], {}).update(e)
+    require_v1 = bool(v1_files)
     # pass 1: eligible ids by source, with root item and variant index
     elig: dict[str, list[tuple[str, str, int]]] = collections.defaultdict(list)
     kstats: dict[str, collections.Counter] = collections.defaultdict(collections.Counter)
@@ -1120,6 +1125,16 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_q
         if e.get("cont", 0) > 16:
             drop["continuation_over_16"] += 1
             continue
+        if require_v1:
+            if "error_v1" in e or "t_v1" not in e:
+                drop["v1_render_error_or_missing"] += 1
+                continue
+            if e["t_v1"] > max_t:
+                drop["over_2048_v1"] += 1
+                continue
+            if e.get("cont_v1", 0) > 16:
+                drop["continuation_over_16_v1"] += 1
+                continue
         if af is not None:
             hit = af.hit(r)
             if hit:
@@ -1325,6 +1340,8 @@ class Stats:
                 self.binary[r["source"]]["true" if lab.casefold() in ("yes", "y") else "false"] += 1
             if q["type"] == "choice" and 2 <= k <= 16 and len(r["questions"]) == 1:
                 self.gold_pos[k][opts.index(lab)] += 1
+        if "t_v1" in e:
+            self.t.setdefault("t_v1", [])
         for k in self.t:
             self.t[k].append(e[k])
 

@@ -20,7 +20,9 @@ import sys
 import zlib
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
-TEMPLATES = (("t_v2f", "jrt-rwkv-g1-v2f"), ("t_v3w", "jrt-rwkv-g1-v3w"))
+TEMPLATES = (("t_v2f", "jrt-rwkv-g1-v2f", "g1v2"), ("t_v3w", "jrt-rwkv-g1-v3w", "g1v2"))
+#: --set v1: D1's v1 TRAINING presentation (template jrt-rwkv-g1-v1, layout "ordered"; multi-token JSON option ids)
+TEMPLATES_V1 = (("t_v1", "jrt-rwkv-g1-v1", "ordered"),)
 
 
 def main(argv=None) -> int:
@@ -31,6 +33,7 @@ def main(argv=None) -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--nshards", type=int, default=1)
+    ap.add_argument("--set", choices=("g1v2", "v1"), default="g1v2", help="g1v2: v2f + v3w (default); v1: jrt-rwkv-g1-v1 ordered")
     a = ap.parse_args(argv)
     sys.path.insert(0, a.trainer_root)
     from train.data import items_from_records
@@ -49,11 +52,12 @@ def main(argv=None) -> int:
             res = {"id": rid}
             try:
                 tr = to_train_record(rec)
-                for key, tpl in TEMPLATES:
-                    its = items_from_records([tr], enc, layout="g1v2", template=tpl)
+                ck = "cont" if a.set == "g1v2" else "cont_v1"
+                for key, tpl, layout in (TEMPLATES if a.set == "g1v2" else TEMPLATES_V1):
+                    its = items_from_records([tr], enc, layout=layout, template=tpl)
                     res[key] = max(len(x.row.ids) for x in its)
                     res["k"] = max(x.row.n_options for x in its)
-                    res["cont"] = max(res.get("cont", 0), max(max(len(c) for c in x.row.continuations) for x in its))
+                    res[ck] = max(res.get(ck, 0), max(max(len(c) for c in x.row.continuations) for x in its))
             except Exception as e:  # recorded, never silently dropped: the selector refuses error rows
                 res = {"id": rid, "error": f"{type(e).__name__}: {str(e)[:200]}"}
             out.write(json.dumps(res) + "\n")
