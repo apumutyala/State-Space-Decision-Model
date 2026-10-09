@@ -33,7 +33,7 @@ def _read_jsonl(path: str) -> list[dict]:
 def _write(obj: Any, out: str | None) -> None:
     text = json.dumps(obj, indent=1, ensure_ascii=False, default=str)
     if out:
-        Path(out).write_text(text + "\n", encoding="utf-8")
+        Path(out).write_bytes((text + "\n").encode("utf-8"))  # LF on every OS (reports land in byte-exact receipts)
     else:
         sys.stdout.write(text + "\n")
 
@@ -129,7 +129,7 @@ def cmd_perturb(a: argparse.Namespace) -> int:
     if a.mode == "make":
         seeds = [int(x) for x in a.seeds.split(",")]
         ps = perturb.make_perturbations(items, ops, seeds)
-        with open(a.out, "w", encoding="utf-8") as fh:
+        with open(a.out, "w", encoding="utf-8", newline="\n") as fh:
             fh.writelines(json.dumps(p.to_dict(), ensure_ascii=False, sort_keys=True) + "\n" for p in ps)
         counts: dict[str, int] = {}
         for p in ps:

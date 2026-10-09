@@ -105,7 +105,7 @@ def load_items(path: str | Path, tier: str | None = None) -> list[Item]:
 
 
 def write_items(items: Iterable[Item], path: str | Path) -> None:
-    with open(path, "w", encoding="utf-8") as fh:
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
         fh.writelines(json.dumps(it.validate().to_dict(), ensure_ascii=False, sort_keys=True) + "\n" for it in items)
 
 
