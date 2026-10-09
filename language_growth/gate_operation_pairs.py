@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 from copy import deepcopy
+from decimal import Decimal
 import hashlib
 import json
 from pathlib import Path
@@ -43,6 +44,12 @@ _WORDING = {
         ),
     },
 }
+
+
+def _numeric_relation(left: object, right: object) -> str:
+    left_value, right_value = Decimal(str(left)), Decimal(str(right))
+    return ("greater_than" if left_value > right_value else
+            "less_than" if left_value < right_value else "equal")
 
 
 def development_operation_pairs(*, split: str, worlds: int, seed: int,
@@ -106,8 +113,7 @@ def development_operation_pairs(*, split: str, worlds: int, seed: int,
                 if node.get("op") == "Compare":
                     left_value = records[left_ref]["fields"][field]["value"]
                     right_value = records[right_ref]["fields"][field]["value"]
-                    node["relation"] = ("greater_than" if left_value > right_value else
-                                        "less_than" if left_value < right_value else "equal")
+                    node["relation"] = _numeric_relation(left_value, right_value)
         left_name = records[left_ref]["entity_ref"]
         right_name = records[right_ref]["entity_ref"]
         task["task_input"] = _WORDING[split][kind][index].format(

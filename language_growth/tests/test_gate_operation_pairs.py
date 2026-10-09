@@ -5,12 +5,19 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from language_growth.gate_operation_pairs import _WORDING, development_operation_pairs, export_operation_pairs
+from language_growth.gate_operation_pairs import (
+    _WORDING, _numeric_relation, development_operation_pairs, export_operation_pairs,
+)
 from language_growth.gate_suites import digest
 from language_growth.parent_bridge import decision_request
 
 
 class GateOperationPairTests(unittest.TestCase):
+    def test_price_reference_relation_uses_numeric_not_lexical_order(self):
+        self.assertEqual(_numeric_relation("1000", "999"), "greater_than")
+        self.assertEqual(_numeric_relation("999", "1000"), "less_than")
+        self.assertEqual(_numeric_relation("01000", "1000"), "equal")
+
     def test_train_validation_pairs_are_deterministic_and_request_matched(self):
         train = development_operation_pairs(split="development_train", worlds=32, seed=20261011)
         self.assertEqual(train, development_operation_pairs(split="development_train", worlds=32, seed=20261011))
