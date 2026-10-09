@@ -162,7 +162,8 @@ def test_check_readouts_needs_the_training_template_first():
 def test_estimate_prices_two_readouts_under_the_target_and_three_still_fit(f, ro):
     p = json.loads(f.read_text(encoding="utf-8"))
     est = RA.estimate(p)
-    assert est["ok"] and est["readouts"] == ro and est["usd_batch_expected"] <= 8.0
+    refit = sum(est["refit_minutes_per_readout"].values()) * p["batch_usd_per_min"]  # D1: v3w's own temperature
+    assert est["ok"] and est["readouts"] == ro and est["usd_batch_expected"] <= 8.0 + refit
     assert est["minutes"]["readout_ab"] == pytest.approx(p["expected_minutes"]["readout_ab"], abs=0.5)
     three = copy.deepcopy(p)
     three["readouts"] = ro + ["v3p"]

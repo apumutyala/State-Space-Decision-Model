@@ -263,11 +263,46 @@ def load_child(a, temperature: bool = True):
     decider = Decider(backend, calibration=served)
     for role, name in (("dev", "eval"), ("retention", "retention")):
         served.verify_disjoint(name, item_content(items_by_role[role]))
+    # kept for a per-readout refit (jobs.m2_first_cell.readout_temperature); changes nothing served or written here
+    from jobs.m2_first_cell.readout_temperature import CalibrationContext
+
+    decider.calibration_ctx = CalibrationContext(
+        model=model, encode=enc, guard=guard, spec=spec, calib_records=role_recs["calibration"],
+        raw_items=items_by_role["calibration"],
+        disjoint_items={"eval": items_by_role["dev"], "retention": items_by_role["retention"], "train": train_items},
+        raw=ft)
     ident = {"arm": "child", "served": decider.revision(), "checkpoint": backend.checkpoint, "lineage": tr.lineage,
              "temperature": {**ft.identity(), "proof_sha256": ft.proof_sha256}, "cell_config": cfg,
              "index_arm": "served decider; response = untempered answers rebuilt from raw_probabilities (T = 1), "
                           "served_response = tempered (train.m2_gates.index_predict untempered_from_raw)"}
     return decider, True, ident
+
+
+def child_readout(a, base, ident: dict, rows: list[dict]):
+    """``--readout <name>`` (``readout_ab.READOUTS``): the loaded child under another readout. The training readout
+    returns the base decider unchanged (byte-identical run); any other readout serves the raw-template temperature
+    (``results_served``) and, with ``--refit-temperature``, its own refit (``results_refit``: same calibration rows +
+    procedure, scores under the readout; ``jobs.m2_first_cell.readout_temperature``), disjoint from these DEV rows."""
+    from jobs.m2_first_cell import readout_temperature as RT
+    from jobs.m2_first_cell.readout_ab import READOUT_LAYOUT, READOUTS
+
+    cfg = json.loads(Path(a.cell).read_text(encoding="utf-8"))["config"]
+    if a.readout not in READOUTS:
+        raise ValueError(f"--readout {a.readout!r} not in {sorted(READOUTS)}")
+    tid, lay = READOUTS[a.readout], READOUT_LAYOUT[a.readout]
+    if (tid, lay) == (cfg.get("template"), cfg.get("layout")):
+        return base, None, ident
+    dec = RT.readout_decider(base, tid, lay)
+    ident = {**ident, "readout": {"name": a.readout, "template": tid, "layout": lay, "served": dec.revision(),
+                                  "cell_template": cfg.get("template"), "cell_layout": cfg.get("layout")}}
+    if not getattr(a, "refit_temperature", False):
+        return dec, None, ident
+    ctx = getattr(base, "calibration_ctx", None)
+    if ctx is None:
+        raise ValueError("refit_temperature: the loaded child carries no calibration context")
+    st, info = RT.refit_served(ctx, tid, lay, Path(a.resume_dir) / f"refit-{a.arm}-{a.readout}.json",
+                               {"index_dev_rows": rows})
+    return dec, (RT.Capture(dec.backend), base.calibration, st), {**ident, "temperature_refit": {a.readout: info}}
 
 
 def load_parent(a):
@@ -316,8 +351,16 @@ def score(a) -> int:
     from jobs.m2_pilot.guard_ready import GuardNotReady
     from train.cohort import CohortLeak
 
+    from train.calibration import CalibrationLeak
+
+    refit = None
     try:
         decider, tempered, ident = (load_child if a.arm == "child" else load_parent)(a)
+        if a.arm == "child" and getattr(a, "readout", None):  # a NON-training readout of the same loaded model
+            decider, refit, ident = child_readout(a, decider, ident, rows)
+    except CalibrationLeak as e:
+        print(f"calibration leak: {e}", file=sys.stderr)
+        return 10
     except (ValueError, KeyError, GuardNotReady, CohortLeak) as e:
         print(f"identity: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
@@ -337,23 +380,35 @@ def score(a) -> int:
     t0 = time.perf_counter()
     with open(resume, "a", encoding="utf-8", newline="\n") as f:
         for r in todo:
-            res = G.index_predict(decide, [r], untempered_from_raw=tempered)
-            f.write(json.dumps(res[r["_evaluation"]["run_id"]], separators=(",", ":")) + "\n")
+            if refit is not None:  # + refit_response: the readout's own refit temperature on the same logits
+                from jobs.m2_first_cell.readout_temperature import predict_with_refit
+
+                one = predict_with_refit(decide, r, *refit, tempered=tempered)
+            else:
+                one = G.index_predict(decide, [r], untempered_from_raw=tempered)[r["_evaluation"]["run_id"]]
+            f.write(json.dumps(one, separators=(",", ":")) + "\n")
             f.flush()
     secs = time.perf_counter() - t0
     done = _read_partial(resume)
     if set(done) != set(ids):
         print(f"{len(set(ids) - set(done))} rows have no result", file=sys.stderr)
         return 9
-    for name, key in (("results", "response"), ("results_served", "served_response")):
+    files = [("results", "response"), ("results_served", "served_response")]
+    if refit is not None:
+        files.append(("results_refit", "refit_response"))
+    for name, key in files:
         if name == "results_served" and not tempered:
             continue
         with open(out / f"{a.arm}.{name}.jsonl", "w", encoding="utf-8", newline="\n") as f:
             for rid in ids:  # DEV row order
                 r = dict(done[rid])
                 served = r.pop("served_response", None)
-                if key == "served_response" and r.get("status") == "ok":
-                    r["response"] = served
+                rf = r.pop("refit_response", None)
+                if key != "response" and r.get("status") == "ok":
+                    if key == "refit_response" and rf is None:
+                        print(f"row {rid} has no refit_response (resumed from a run without the refit)", file=sys.stderr)
+                        return 9
+                    r["response"] = served if key == "served_response" else rf
                 f.write(json.dumps(r, separators=(",", ":")) + "\n")
     (out / f"timing-{a.arm}.json").write_text(json.dumps(
         {"seconds_this_attempt": secs, "rows_this_attempt": len(todo), "rows_resumed": len(ids) - len(todo),
@@ -473,6 +528,13 @@ def report(a) -> dict:
             (d / f"{arm}.ece_served.json").write_text(json.dumps(se, indent=1), encoding="utf-8")
             ent["ece_served"] = {"board_protocol": (se.get("board_protocol") or {}).get("ece"),
                                  "overall_10bin": (se.get("overall") or {}).get("ece_10bin")}
+        fp = d / f"{arm}.results_refit.jsonl"
+        if fp.is_file():  # a non-training readout's own refit temperature (readout_temperature)
+            fe = _harness("ece", "--results", str(fp), *ed) if keep is None else subset_ece(fp, keep)
+            (d / f"{arm}.ece_refit.json").write_text(json.dumps(fe, indent=1), encoding="utf-8")
+            ent["ece_refit"] = {"board_protocol": (fe.get("board_protocol") or {}).get("ece"),
+                                "overall_10bin": (fe.get("overall") or {}).get("ece_10bin"),
+                                "calibrator": "the readout's own refit (same calibration rows + procedure)"}
         pl = d / f"plan-{arm}.json"
         if pl.is_file():
             p = json.loads(pl.read_text(encoding="utf-8"))
@@ -584,6 +646,11 @@ def main(argv=None) -> int:
     s.add_argument("--out-dir", required=True)
     s.add_argument("--progress", default=None)
     s.add_argument("--device", default="cuda")
+    s.add_argument("--readout", default=None, help="child: score under this readout (readout_ab.READOUTS); default "
+                                                    "the cell's own training template")
+    s.add_argument("--refit-temperature", action="store_true",
+                   help="child + a non-training --readout: refit the temperature on the same calibration rows under "
+                        "that readout (results_refit.jsonl)")
     b = sub.add_parser("smoke-build", help="(re)build fulldev_smoke_rows.json from the DEV manifest + row lengths")
     b.add_argument("--out", default=str(SMOKE))
     e = sub.add_parser("estimate")

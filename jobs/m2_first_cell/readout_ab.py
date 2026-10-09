@@ -46,7 +46,9 @@ Child arm = the in-job Index arm of ``train.m2_gates`` stage ``index`` (``jobs.m
 in over the SAME model object: ``response`` = untempered answers (T = 1, rebuilt from ``raw_probabilities``),
 ``served_response`` = the served answers under the ONE temperature fitted on the training template's calibration items
 (reported as ``ece_served``; for a non-training readout it is "the deployed calibrator applied to another prompt", not
-a per-readout fit). The v2f child results must reproduce the D3 job's own in-job child index arm (same rows, same
+a per-readout fit). With ``--refit-temperature`` every NON-training readout ALSO gets its own refit
+(``jobs.m2_first_cell.readout_temperature``: same calibration rows + procedure, scores under that readout, disjoint
+from the subset and full DEV) applied to the same forward's logits: ``results_refit`` / ``ece_refit``. The v2f child results must reproduce the D3 job's own in-job child index arm (same rows, same
 code path) up to GPU non-determinism: the report carries that cross-check when ``reference_results_sha256.d3_child_index``
 is pinned and the file is shipped.
 """
@@ -120,31 +122,42 @@ def _sha(p: Path) -> str:
 
 
 # ------------------------------------------------------------------------------------------------ GPU: deciders
-def child_deciders(a, readouts: list[str]) -> tuple[dict[str, Any], dict[str, Any]]:
-    """{readout: served Decider} over ONE loaded checkpoint (``fulldev_eval.load_child``), plus the identity block."""
-    from decide import Decider
-    from heads.decide_backend import DecisionModelBackend
+def child_deciders(a, readouts: list[str], index_rows: dict[str, list] | None = None
+                   ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """{readout: served Decider} over ONE loaded checkpoint (``fulldev_eval.load_child``), the identity block, and
+    {readout: (Capture, raw-template temperature, refit temperature)} for every NON-training readout when
+    ``a.refit_temperature`` (``jobs.m2_first_cell.readout_temperature``: same calibration rows, same procedure, scores
+    under that readout; persisted in the resume dir). The training readout is never refitted."""
+    from jobs.m2_first_cell import readout_temperature as RT
     from jobs.m2_first_cell.fulldev_eval import load_child
 
     cfg = json.loads(Path(a.cell).read_text(encoding="utf-8"))["config"]
     ctl = check_readouts(cfg, readouts, a.allow_unmatched_control)
     base, _, ident = load_child(a)  # served decider on the cell's own template (Trainer.load + temperature fit)
-    b0 = base.backend
-    out = {}
+    out, refits, refit_ident = {}, {}, {}
     for r in readouts:
         if is_native(cfg, r):
             out[r] = base
-        else:  # same model object, same encoder, same checkpoint record, same served calibration; another prompt
-            be = DecisionModelBackend(b0.model, b0.encode, template=READOUTS[r], layout=READOUT_LAYOUT[r],
-                                      checkpoint=b0.checkpoint, shared_prefix=b0.shared_prefix)
-            out[r] = Decider(be, calibration=base.calibration)
+            continue
+        # same model object, same encoder, same checkpoint record, same served calibration; another prompt
+        out[r] = RT.readout_decider(base, READOUTS[r], READOUT_LAYOUT[r])
+        if getattr(a, "refit_temperature", False):
+            ctx = getattr(base, "calibration_ctx", None)
+            if ctx is None:
+                raise ValueError("refit_temperature: the loaded child carries no calibration context")
+            st, info = RT.refit_served(ctx, READOUTS[r], READOUT_LAYOUT[r],
+                                       Path(a.resume_dir) / f"refit-{a.arm}-{r}.json", index_rows)
+            refits[r] = (RT.Capture(out[r].backend), base.calibration, st)
+            refit_ident[r] = info
     ident = {**ident, "readout_control": ctl,
              "readouts": {r: {"template": READOUTS[r], "layout": READOUT_LAYOUT[r], "served": d.revision()}
                           for r, d in out.items()}}
-    return out, ident
+    if refit_ident:
+        ident["temperature_refit"] = refit_ident
+    return out, ident, refits
 
 
-def parent_deciders(a, readouts: list[str]) -> tuple[dict[str, Any], dict[str, Any]]:
+def parent_deciders(a, readouts: list[str], index_rows=None) -> tuple[dict[str, Any], dict[str, Any], dict]:
     """{readout: identity-calibration Decider} of the STOCK readout families over ONE loaded plugin (same WKV as the
     child, ``score_parent.parent_decider``'s loader)."""
     from decide import Decider
@@ -163,7 +176,7 @@ def parent_deciders(a, readouts: list[str]) -> tuple[dict[str, Any], dict[str, A
              "wkv": str(plug.kernel_stack.get("wkv_implementation")),
              "readouts": {r: {"family_mode": PARENT_MODES[r], "revision": d.revision()["revision_id"]}
                           for r, d in out.items()}}
-    return out, ident
+    return out, ident, {}
 
 
 # ------------------------------------------------------------------------------------------------ GPU: scoring
@@ -218,6 +231,7 @@ def throughput(results: list[dict], tokens: dict[str, Any]) -> dict[str, Any]:
 def score(a) -> int:
     from harness.suite import read_rows
     from jobs.common.dev_full import FrozenMismatch
+    from jobs.m2_first_cell import readout_temperature as RT
     from jobs.m2_pilot.guard_ready import GuardNotReady
     from train import m2_gates as G
     from train.cohort import CohortLeak
@@ -232,8 +246,16 @@ def score(a) -> int:
     if len(ids) != N_SUBSET or len(set(ids)) != N_SUBSET:
         print(f"rows: {len(set(ids))} unique of {len(ids)}, want the DEV subset ({N_SUBSET})", file=sys.stderr)
         return 10
+    from train.calibration import CalibrationLeak
+
+    index_rows = {"index_dev_subset": rows}
+    if a.arm == "child" and getattr(a, "refit_temperature", False) and getattr(a, "dev_rows", None):
+        index_rows["index_dev_full"] = read_rows(a.dev_rows)  # the refit's calibration content: disjoint from both
     try:
-        deciders, ident = (child_deciders if a.arm == "child" else parent_deciders)(a, readouts)
+        deciders, ident, refits = (child_deciders if a.arm == "child" else parent_deciders)(a, readouts, index_rows)
+    except CalibrationLeak as e:
+        print(f"calibration leak: {e}", file=sys.stderr)
+        return 10
     except (ValueError, KeyError, GuardNotReady, CohortLeak) as e:
         print(f"identity: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
@@ -269,23 +291,34 @@ def score(a) -> int:
         t0 = time.perf_counter()
         with open(part, "a", encoding="utf-8", newline="\n") as f:
             for x in todo[r]:
-                res = G.index_predict(decide, [x], untempered_from_raw=tempered)
-                f.write(json.dumps(res[x["_evaluation"]["run_id"]], separators=(",", ":")) + "\n")
+                if r in refits:  # + refit_response: the readout's own refit temperature on the same logits
+                    one = RT.predict_with_refit(decide, x, *refits[r], tempered=tempered)
+                else:
+                    one = G.index_predict(decide, [x], untempered_from_raw=tempered)[x["_evaluation"]["run_id"]]
+                f.write(json.dumps(one, separators=(",", ":")) + "\n")
                 f.flush()
         secs = time.perf_counter() - t0
         done = _read_partial(part)
         if set(done) != set(ids):
             print(f"{r}: {len(set(ids) - set(done))} rows have no result", file=sys.stderr)
             return 9
-        for name, key in (("results", "response"), ("results_served", "served_response")):
+        files = [("results", "response"), ("results_served", "served_response")]
+        if r in refits:
+            files.append(("results_refit", "refit_response"))
+        for name, key in files:
             if name == "results_served" and not tempered:
                 continue
             with open(out / f"{a.arm}.{r}.{name}.jsonl", "w", encoding="utf-8", newline="\n") as f:
                 for rid in ids:  # subset row order
                     row = dict(done[rid])
                     served = row.pop("served_response", None)
-                    if key == "served_response" and row.get("status") == "ok":
-                        row["response"] = served
+                    refit = row.pop("refit_response", None)
+                    if key != "response" and row.get("status") == "ok":
+                        if key == "refit_response" and refit is None:
+                            print(f"{r}: row {rid} has no refit_response (resumed from a run without the refit)",
+                                  file=sys.stderr)
+                            return 9
+                        row["response"] = served if key == "served_response" else refit
                     f.write(json.dumps(row, separators=(",", ":")) + "\n")
         timing[r] = {"seconds_this_attempt": secs, "rows_this_attempt": len(todo[r]),
                      "rows_resumed": N_SUBSET - len(todo[r]),
@@ -342,6 +375,19 @@ def report(a) -> dict:
                 ent["ece_served"] = {"board_protocol": (se.get("board_protocol") or {}).get("ece"),
                                      "overall_10bin": (se.get("overall") or {}).get("ece_10bin"),
                                      "calibrator": "the one temperature fitted on the training template"}
+            fp = d / f"{arm}.{r}.results_refit.jsonl"
+            if fp.is_file() and sp.is_file():  # the readout's own refit (readout_temperature): ECE + the Index check
+                fe = _subset("ece", "--results", str(fp))
+                (d / f"{arm}.{r}.ece_refit.json").write_text(json.dumps(fe, indent=1), encoding="utf-8")
+                ent["ece_refit"] = {"board_protocol": (fe.get("board_protocol") or {}).get("ece"),
+                                    "overall_10bin": (fe.get("overall") or {}).get("ece_10bin"),
+                                    "calibrator": "this readout's own refit (same calibration rows + procedure)"}
+                ent["index_by_temperature"] = idx = {
+                    "untempered": sc["slice_index"]["index"],
+                    "raw_template": _subset("score", "--results", str(sp))["slice_index"]["index"],
+                    "refit": _subset("score", "--results", str(fp))["slice_index"]["index"]}
+                ent["index_temperature_invariant"] = (idx["raw_template"]["point"] == idx["refit"]["point"]
+                                                      == idx["untempered"]["point"])
             pl = d / f"plan-{arm}-{r}.json"
             plan = json.loads(pl.read_text(encoding="utf-8")) if pl.is_file() else {}
             ent["n_refused_plan"] = plan.get("n_refused")
@@ -388,6 +434,10 @@ def report(a) -> dict:
         idc = json.loads(idf.read_text(encoding="utf-8"))
         out["checkpoint"]["loaded"] = idc.get("checkpoint")
         out["readout_control"] = idc.get("readout_control")
+        if idc.get("temperature_refit"):
+            out["temperature"] = {"raw_template": idc.get("temperature"),
+                                  "refit": {r: {k: v for k, v in i.items() if k != "dropped_by_readout_filter"}
+                                            for r, i in idc["temperature_refit"].items()}}
     out["verdict"] = "measured"
     return out
 
@@ -422,12 +472,18 @@ def estimate(params: dict) -> dict[str, Any]:
     m = params["measured_rates_reference"]
     ratio = params.get("readout_length_ratio") or {}
     per = {r: N_SUBSET / m["child_rows_per_min"] * float(ratio.get(r, 1.0)) for r in readouts}
-    phases = {"readout_ab": sum(per.values()) + params["evals_fixed_minutes"]["child"]}
+    refit = {}
+    if params.get("refit_temperature"):  # one predict() pass over the calibration items per NON-training readout
+        rr = params["refit_reference"]
+        refit = {r: rr["calibration_tokens_per_readout"] / 1000 * m["child_s_per_1k_tokens"] / 60
+                    + rr["cpu_build_minutes_per_readout"] for r in readouts if not is_native(cfg, r)}
+    phases = {"readout_ab": sum(per.values()) + sum(refit.values()) + params["evals_fixed_minutes"]["child"]}
     if params.get("readout_ab_parent_arm"):
         phases["parent_ab"] = (sum(N_SUBSET / m["parent_rows_per_min"] * float(ratio.get(r, 1.0)) for r in readouts)
                                + params["evals_fixed_minutes"]["parent"])
     caps = params["phase_caps_minutes"]
     out = {"readouts": readouts, "control": ctl, "minutes_per_readout": {r: round(v, 1) for r, v in per.items()},
+           "refit_minutes_per_readout": {r: round(v, 1) for r, v in refit.items()},
            "minutes": {k: round(v, 1) for k, v in phases.items()}, "caps": {k: caps[k] for k in phases},
            "ok": all(v <= 0.95 * caps[k] for k, v in phases.items())}
     fixed = sum(params["expected_minutes"].get(k, 0) for k in ("setup", "guard", "checkpoint", "report"))
@@ -501,6 +557,10 @@ def main(argv=None) -> int:
     s.add_argument("--progress", default=None)
     s.add_argument("--allow-unmatched-control", action="store_true", help="plumbing dry runs on a non-g1v2 cell only")
     s.add_argument("--device", default="cuda")
+    s.add_argument("--refit-temperature", action="store_true",
+                   help="child: refit the temperature per NON-training readout (same calibration rows + procedure, "
+                        "scores under that readout); writes <arm>.<r>.results_refit.jsonl")
+    s.add_argument("--dev-rows", default=None, help="the FULL DEV rows (refit disjointness proof, with the subset)")
     e = sub.add_parser("estimate")
     e.add_argument("--params", required=True)
     q = sub.add_parser("ratios")
