@@ -11,5 +11,15 @@
   "ids": ["m2:mmlu_aux:21118", "m2:mmlu_aux:39640", "m2:mmlu_aux:39643"],
   "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
   "source": "jobs/m2_first_cell/m2_first_cell_rwkv7.json train_set.heldout_excluded (branch claude/m2-first-cell): train.heldout finds the D1-B fragment 'rather than relying on' in these three MMLU aux_train records"
+ },
+ "attack_clean": {
+  "spec": "data/manifests/attack_clean/sample-150000-seed20261006.cell-m2_first_cell_rwkv7.json",
+  "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+  "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+  "n_records": 150000,
+  "n_excluded": 8049,
+  "n_kept": 141951,
+  "excluded_ids_sha256": "db18f33268313c651cb4317b7ac95b4c70693eef4d11d751e4e1ca1dfe88471e",
+  "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)"
  }
 }
