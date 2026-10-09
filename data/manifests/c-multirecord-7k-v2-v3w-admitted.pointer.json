@@ -1,0 +1,16 @@
+{
+ "build": "c-multirecord-7k-v2-v3w-admitted (python -m data.c_multirecord_refresh --c-only)",
+ "n_records": 7000,
+ "location": "ssdm-data/c-multirecord-7k-v2-v3w-admitted/train_set/",
+ "manifest": "c-multirecord-7k-v2-v3w-admitted.manifest.jsonl.gz",
+ "content_map": "c-multirecord-7k-v2-v3w-admitted.content.jsonl.gz",
+ "builder": {
+  "module": "data.c_multirecord_refresh",
+  "commit": "a7539dc4ea5ecdc4755d71171a13d57fe4a93226"
+ },
+ "excludes_cohort": "pure synthetic C; no B/Index/TEST/cohort records read; consuming clean B rebuild owns its guard",
+ "receipt": "receipts/2026-10-08-C-multirecord-synth/c-multirecord-7k-v2-v3w-admitted/summary.json",
+ "records_uncompressed_sha256": "b691a162761713bfa34e4e110bc1702c2ac732ba4ec48765ac0941f3ed7f420b",
+ "manifest_uncompressed_sha256": "1b82a37fe18eea60fddddc397922448c46cdfca0a5a5034c6cebb631512c36c7",
+ "content_map_uncompressed_sha256": "7fc3984f3a264728af01289b4f1772846fa6d94190da6940c25c2a72c3f9d32a"
+}

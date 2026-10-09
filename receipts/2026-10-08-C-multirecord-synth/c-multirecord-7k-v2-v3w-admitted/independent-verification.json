@@ -1,0 +1,57 @@
+{
+  "actual_selected_max_effective_tokens": {
+    "v2f": 1604,
+    "v3w": 2048
+  },
+  "b_inputs_read": false,
+  "census_compressed_sha256": "4c540838adccbb60f85fdf75aa5fe93c7e46a7b7292826bdb8d105713b5b1cfc",
+  "census_exact_pool_id_coverage": 20000,
+  "census_summary_sha256": "05d0d9d4f584f5a5073ea32ee3aa7b188c0a6968789ef5efbae41ca29755200d",
+  "check_record_passed": 7000,
+  "compressed_sha256": {
+    "content_map": "ce38908146b64c7200095f1b44b8ee37600513ff4a45c87f5aec4f666669c641",
+    "manifest": "f38853216675f798ad15992f7c9554ebd52514c4f9147abc0a1946985ad4f6f2",
+    "records": "e5b2527f6f14023d522555d0f9f6fdedc477ebe2a7178e8ca1f3cd65fe1bf317"
+  },
+  "counts": {
+    "content_map": 7000,
+    "manifest": 7000,
+    "records": 7000
+  },
+  "duplicate_ids": 0,
+  "duplicate_normalized_content": 0,
+  "eligible_records": 13705,
+  "excluded_records": 6295,
+  "full_source_record_rescans": 0,
+  "independent_output_semantic_scans": 1,
+  "package": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\c-multirecord-7k-v2-v3w-admitted",
+  "path_issues": [],
+  "pointer_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\agent-c-multirecord-synth\\data\\manifests\\c-multirecord-7k-v2-v3w-admitted.pointer.json",
+  "pointer_sha256": "0ffc3cc4bd23e3a81995f9d690569afafa2c08acae068f6e46c8d1046227b392",
+  "protected_rows_read": false,
+  "questions": 49000,
+  "raw_payload_bytes_all_streams": 23998599,
+  "receipt_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\agent-c-multirecord-synth\\receipts\\2026-10-08-C-multirecord-synth\\c-multirecord-7k-v2-v3w-admitted\\summary.json",
+  "refused": 0,
+  "schema": "ssdm.c_multirecord_admitted_independent_verification.v1",
+  "selected_lowest_seeded_hash_order_verified": true,
+  "source_commit": "a7539dc4ea5ecdc4755d71171a13d57fe4a93226",
+  "source_manifest_uncompressed_sha256": "bd40381e23e982f33277fb1ae596eef6c61c9901fdae3ddfbc66a9852dd653ca",
+  "source_metadata_rows": 20000,
+  "source_record_byte_hash_matches": 7000,
+  "status": "verified",
+  "summary_sha256": "33016fa523fe62ab9dc2730708a60f4066279baf53a3738a704f8ca061354da8",
+  "tokenizer_loaded": false,
+  "torch_imported": false,
+  "uncompressed_sha256": {
+    "content_map": "7fc3984f3a264728af01289b4f1772846fa6d94190da6940c25c2a72c3f9d32a",
+    "manifest": "1b82a37fe18eea60fddddc397922448c46cdfca0a5a5034c6cebb631512c36c7",
+    "records": "b691a162761713bfa34e4e110bc1702c2ac732ba4ec48765ac0941f3ed7f420b"
+  },
+  "uncompressed_stream_bytes_from_gzip_footers": {
+    "content_map": 945000,
+    "manifest": 1456000,
+    "records": 21597599
+  },
+  "verification_note": "All row/hash/census/selection assertions passed in the single scan; final verifier-only metric assertion corrected to sum all three raw stream sizes without rescanning rows."
+}

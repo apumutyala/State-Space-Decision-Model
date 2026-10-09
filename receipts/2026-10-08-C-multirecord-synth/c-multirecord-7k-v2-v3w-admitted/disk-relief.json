@@ -1,0 +1,19 @@
+{
+  "action": "reversible NTFS compression of five C-owned code worktrees",
+  "deleted_files": 0,
+  "moved_files": 0,
+  "logical_file_contents_changed": false,
+  "targets": [
+    "agent-c-l1-gate-training",
+    "agent-c-gates",
+    "agent-c-loader",
+    "agent-c-gate-training",
+    "agent-c-direction-fit"
+  ],
+  "workspace_root": "C:/Users/apumu/research/CHLabs/ssdm-wt",
+  "reparse_points_in_targets": false,
+  "reported_logical_bytes": 474027655,
+  "reported_stored_bytes": 248260167,
+  "scope": "storage accounting from compact.exe; global free space also changed independently",
+  "tests_after_relief": 9
+}
