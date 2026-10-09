@@ -1,5 +1,5 @@
 {
- "_comment": "DRAFT, NOT SUBMITTED. Mode fulldev_eval_d13_v3w: the full-DEV run of D13 (job-hjwpq, d13_joint_safe_nofla: RWKV7-13.3B + LoRA + the attention-free joint_record head; proxy600 screen 41.07 under v3w vs D1+v3w 37.71) = its BEST checkpoint (step 1600) scored on all 12,104 Index DEV rows, max_input_tokens 65536, readout v3w (jrt-rwkv-g1-v3w / g1v2 through load_child's readout override, UNTEMPERED as the screen scored it; no refit for a non-training readout exists at this sha, so its ECE is the identity-calibration one). The joint head is served exactly as trained: heads.decide_backend.score runs all of a request's questions in ONE model(rows) pass and heads.model groups them by record (record_groups) before the head. Built from D13's own lineage (8d92f04) + the job-4ha7t plan-pass beat + the job-afpc2 worker-disk fix only; no agent-main merge, no guard / pin change. Rate: the screen's MEASURED child wall, 1,669.2 s over the 644 proxy rows = 1,481,526 v1 tokens x 0.9004 (v3w/v1) = 1.2513 s per 1k prompt tokens. Expected: 22,630,947 v1 tokens x 0.9004 x 1.2513 = 425.0 min + 75 fixed (load + 150k lineage + the ~42 min plan pass) = 500 min (cap 540). The 2,008 subset + proxy600 Index are reported from the same predictions; the vs-Clef pairing (art-p93d4 Clef 27B / art-7pyk2 Clef-flash, 32k with 32k, same run_ids) lands locally (analysis/land_fulldev.py). Two jobs (native + v3w) because one is ~1,080 min, past the 900-min job ceiling.",
+ "_comment": "DRAFT, NOT SUBMITTED. Mode fulldev_eval_d13_v3w: the full-DEV run of D13 (job-hjwpq, d13_joint_safe_nofla: RWKV7-13.3B + LoRA + the attention-free joint_record head; proxy600 screen 41.07 under v3w vs D1+v3w 37.71) = its BEST checkpoint (step 1600) scored on all 12,104 Index DEV rows, max_input_tokens 65536, readout v3w (jrt-rwkv-g1-v3w / g1v2 through load_child's readout override, UNTEMPERED as the screen scored it; no refit for a non-training readout exists at this sha, so its ECE is the identity-calibration one). The joint head is served exactly as trained: heads.decide_backend.score runs all of a request's questions in ONE model(rows) pass and heads.model groups them by record (record_groups) before the head. Built from D13's own lineage (8d92f04) + the job-4ha7t plan-pass beat + the job-afpc2 worker-disk fix only; no agent-main merge, no guard / pin change. Rate: the screen's MEASURED child wall, 1,669.2 s over the 644 proxy rows = 1,481,526 v1 tokens x 0.9004 (v3w/v1) = 1.2513 s per 1k prompt tokens. Expected: 22,630,947 v1 tokens x 0.9004 x 1.2513 = 425.0 min + 75 fixed (load + 150k lineage + the ~42 min plan pass) = 500 min (cap 536 = 93.3 %: the live guard stops past 0.95 x 536 = 509.2 projected min, i.e. a box > 1.8 % slower than the screen). 2026-10-09b: max_duration 602 -> 570 (quoted hold 570 x $0.063 = $35.91, inside ~$35 free credit + cents) by shrinking the non-scoring caps toward the expected minutes (setup 25->12, guard 5->3, checkpoint 15->7, report 10->5) and fulldev 540->536; reserve 7 kept; worst case (60 + 2 x 570) x 0.0495 = $59.40 (cap $60). The 2,008 subset + proxy600 Index are reported from the same predictions; the vs-Clef pairing (art-p93d4 Clef 27B / art-7pyk2 Clef-flash, 32k with 32k, same run_ids) lands locally (analysis/land_fulldev.py). Two jobs (native + v3w) because one is ~1,080 min, past the 900-min job ceiling.",
  "test_env": {
   "transformers": "5.17.0",
   "with": [],
@@ -19,7 +19,7 @@
  "status": "draft: not submitted; full-DEV score of D13 (job-hjwpq art-cr9a2 best step 1600), readout v3w",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 602,
+ "max_duration_minutes": 570,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -27,13 +27,13 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.0495,
- "hard_cap_usd": 64.0,
+ "hard_cap_usd": 60.0,
  "phase_caps_minutes": {
-  "setup": 25,
-  "guard": 5,
-  "checkpoint": 15,
-  "fulldev": 540,
-  "report": 10
+  "setup": 12,
+  "guard": 3,
+  "checkpoint": 7,
+  "fulldev": 536,
+  "report": 5
  },
  "reserve_minutes": 7,
  "expected_minutes": {
@@ -99,7 +99,7 @@
    "CALL_S": "0.117",
    "CKPT_URL": "<get_artifact art-cr9a2 url: fill at submit>"
   },
-  "key": "m2-first-cell-fulldev-eval-d13-v3w-hjwpq-best1600-20261009a",
+  "key": "m2-first-cell-fulldev-eval-d13-v3w-hjwpq-best1600-20261009b",
   "clock_lock": true,
   "label": "fulldev_eval_d13_v3w: D13 (job-hjwpq art-cr9a2, best step 1600, joint_record head) readout v3w on the full 12,104-row Index DEV, no training",
   "checks": {
