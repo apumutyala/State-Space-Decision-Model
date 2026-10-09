@@ -194,7 +194,15 @@ def _canon_name(n: str) -> str:
     return re.sub(r"[^a-z0-9]", "", n.casefold())
 
 
-def apibank_long(reuse, prov, log=print) -> list[dict]:
+#: v3b (agent-a approved): NAME-ONLY catalogs (no descriptions / parameters) so K reaches 40-60 within 2,048 tokens
+NAMES_K = (40, 60)
+NAMES_INSTR = ("Select the single API tool to invoke for the dialogue prefix in state. The options are the available API "
+               "catalog (names only). Do not infer arguments or use the current/future API result.")
+#: measured (v3w, names in state + options): letters 38.8 tok / tool, digits 43, opaque 65, keep 47 -> compact ids only
+NAMES_STYLES = ("letters", "digits", "digits1")
+
+
+def apibank_long(reuse, prov, log=print, names_only: bool = False) -> list[dict]:
     p = SRC / "b1fam_apibank" / "lv1-api-train.json"
     if _sha_file(p) != APIBANK_SHA:
         raise SystemExit("lv1-api-train.json sha drift")
@@ -208,14 +216,26 @@ def apibank_long(reuse, prov, log=print) -> list[dict]:
     pool.pop("ToolSearcher", None)
     names = sorted(pool)
     toks = {n: set(_TOK.findall((n + " " + pool[n].get("description", "")).lower())) for n in names}
-    entry = {n: {"name": n, "description": " ".join(str(pool[n].get("description", "")).split())} for n in names}
-    elen = {n: len(json.dumps(entry[n], ensure_ascii=False)) + len(n) + 12 for n in names}
-    prov["apibank_long"] = {"file": "b1fam_apibank/lv1-api-train.json", "sha256": APIBANK_SHA, "split": "train",
+    if names_only:
+        entry = {n: n for n in names}
+        # the catalog is the option list only (no duplicate state list: measured ~39 tokens / tool with it, so K 40-60
+        # never fit 2,048 under v3w); ~len(name) + 40 chars per option incl. the id and the renderer's framing
+        elen = {n: len(n) + 40 for n in names}
+    else:
+        entry = {n: {"name": n, "description": " ".join(str(pool[n].get("description", "")).split())} for n in names}
+        elen = {n: len(json.dumps(entry[n], ensure_ascii=False)) + len(n) + 12 for n in names}
+    lever, tag = ("apibank_names", "apin") if names_only else ("apibank_long", "apil")
+    k_lo = NAMES_K[0] if names_only else 17
+    prov[lever] = {"file": "b1fam_apibank/lv1-api-train.json", "sha256": APIBANK_SHA, "split": "train",
                             "revision": APIBANK_REV, "n_samples": len(rows), "train_api_pool": len(names),
                             "given_apis_per_sample": "2-4",
-                            "K_rule": f"uniform over [max(17, K_fit // 2), K_fit]; K_fit = largest catalog with estimated "
-                                      f"tokens (chars / {CHARS_PER_TOK}) <= {TOK_BUDGET}; the train API pool "
-                                      f"({len(names)}) bounds K, the token budget sets it (no eval shape)"}
+                            "entries": "name only (API names from the lv1 train pool)" if names_only else "name + one-line description",
+                            "K_rule": (f"uniform over [{NAMES_K[0]}, min({NAMES_K[1]}, K_fit)] (coordinator / agent-a v3b: K 40-60 as "
+                                       f"format coverage; entries and names only from the lv1 TRAIN pool; eval catalogs refused by "
+                                       f"API-name Jaccard >= 0.8)" if names_only else
+                                       f"uniform over [max(17, K_fit // 2), K_fit]") +
+                                      f"; K_fit = largest catalog with estimated tokens (chars / {CHARS_PER_TOK}) <= {TOK_BUDGET}; "
+                                      f"the train API pool ({len(names)}) bounds K"}
     out, stats, kh = [], collections.Counter(), collections.Counter()
     per_dlg = collections.Counter()
     for i, x in enumerate(rows):
@@ -227,7 +247,7 @@ def apibank_long(reuse, prov, log=print) -> list[dict]:
         if per_dlg[dkey] >= 3:
             stats["per_dialogue_cap"] += 1
             continue
-        rng = random.Random(f"{SEED}|apil|{i}")
+        rng = random.Random(f"{SEED}|{tag}|{i}")
         given = []
         for a in s["apis"]:
             if a["apiCode"] in pool and a["apiCode"] not in {g for g in given}:
@@ -257,28 +277,32 @@ def apibank_long(reuse, prov, log=print) -> list[dict]:
                 break
             chars += elen[n]
             kfit += 1
-        if kfit < 17:
-            stats["k_fit_below_17"] += 1
+        if kfit < k_lo:
+            stats[f"k_fit_below_{k_lo}"] += 1
             continue
         if not _take(reuse, "b1fam_apibank", f"lv1-{i}"):
             stats["held_out_or_reuse_cap"] += 1
             continue
         per_dlg[dkey] += 1
-        k = rng.randint(max(17, kfit // 2), kfit)
+        k = rng.randint(NAMES_K[0], min(NAMES_K[1], kfit)) if names_only else rng.randint(max(17, kfit // 2), kfit)
         catalog = given + order[: k - len(given)]
         rng.shuffle(catalog)
         crit = {f"option_{j}": n for j, n in enumerate(catalog)}
         gold = f"option_{catalog.index(s['gold'])}"
-        state = {"dialogue": s["dialogue"], "available_tools": [entry[n] for n in catalog], "task": APIBANK_TASK}
-        q = {"type": "choice", "instructions": APIBANK_INSTR, "criteria": crit}
-        rec = _record("b1fam_apibank", f"lv1-{i}", "apil", "API-Bank-tool-selection", APIBANK_LIC, state, q, gold,
-                      {"lever": "apibank_long", "k": k, "k_fit_est": kfit, "n_given_apis": len(given),
+        if names_only:
+            state = {"dialogue": s["dialogue"], "task": APIBANK_TASK}
+            q = {"type": "choice", "instructions": NAMES_INSTR, "criteria": crit}
+        else:
+            state = {"dialogue": s["dialogue"], "available_tools": [entry[n] for n in catalog], "task": APIBANK_TASK}
+            q = {"type": "choice", "instructions": APIBANK_INSTR, "criteria": crit}
+        rec = _record("b1fam_apibank", f"lv1-{i}", tag, "API-Bank-tool-selection", APIBANK_LIC, state, q, gold,
+                      {"lever": lever, "k": k, "entries": "name_only" if names_only else "name_description", "k_fit_est": kfit, "n_given_apis": len(given),
                        "source_file": "training-data/lv1-api-train.json", "source_revision": APIBANK_REV})
-        out.append(_view(rec, rng))
+        out.append(_view(rec, rng, styles=NAMES_STYLES) if names_only else _view(rec, rng))
         kh[k // 10 * 10] += 1
     stats["records"] = len(out)
-    prov["apibank_long"]["built"] = dict(stats)
-    log("apibank_long", dict(stats), dict(sorted(kh.items())))
+    prov[lever]["built"] = dict(stats)
+    log(lever, dict(stats), dict(sorted(kh.items())))
     return out
 
 
@@ -521,6 +545,7 @@ def main(argv=None) -> int:
     ap.add_argument("--src-dir", required=True, help="dir with mmlu_aux.jsonl.gz / boolq.jsonl.gz parquet exports")
     ap.add_argument("--out", required=True)
     ap.add_argument("--clinc-k151", type=int, default=0, help="0: not built (K151 never fits 2,048 under v3w)")
+    ap.add_argument("--only", choices=("apibank_names",), default=None, help="build one lever only (v3b)")
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -531,6 +556,14 @@ def main(argv=None) -> int:
     reuse = ps["reuse"]
     prov: dict = {}
     rows = []
+    if a.only == "apibank_names":
+        rows = apibank_long(reuse, prov, names_only=True)
+        with gzip.open(out / "levers.jsonl.gz", "wt", encoding="utf-8") as fo:
+            for r in rows:
+                fo.write(canonical(r) + "\n")
+        (out / "target_provenance.json").write_text(json.dumps(prov, indent=1) + "\n", encoding="utf-8")
+        print(json.dumps({"n": len(rows)}))
+        return 0
     rows += apibank_long(reuse, prov)
     rows += mmlu_k10(srcd / "mmlu_aux.jsonl.gz", reuse, prov, n_target=ps["fam"]["mmlu_aux/mcq"])
     rows += boolq_yesno(srcd / "boolq.jsonl.gz", reuse, prov)

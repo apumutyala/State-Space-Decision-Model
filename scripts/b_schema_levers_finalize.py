@@ -30,6 +30,7 @@ def main(argv=None) -> int:
     ap.add_argument("--work", required=True)
     ap.add_argument("--parent-n", type=int, required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--refuse-ids", default=None, help="ids refused by scripts/b_schema_eval_catalog_overlap.py")
     ap.add_argument("--k77-margin", type=int, default=0,
                     help="extra K77 rows kept for rows the P3 checker / doc gate drop later (final share >= D16's)")
     a = ap.parse_args(argv)
@@ -40,6 +41,7 @@ def main(argv=None) -> int:
             d = json.loads(line)
             lens[d["id"]] = d
     prov = json.loads((w / "target_provenance.json").read_text(encoding="utf-8"))
+    refused = set(Path(a.refuse_ids).read_text(encoding="utf-8").split()) if a.refuse_ids else set()
     rows, k77 = [], []
     stats = collections.defaultdict(collections.Counter)
     kdist = collections.defaultdict(collections.Counter)
@@ -51,6 +53,9 @@ def main(argv=None) -> int:
             d = lens.get(r["id"])
             if d is None or "error" in d:
                 raise SystemExit(f"{r['id']}: no token length ({d})")
+            if r["id"] in refused:
+                stats[lv]["eval_catalog_overlap_refused"] += 1
+                continue
             if max(d["t_v2f"], d["t_v3w"]) > T_MAX or d.get("cont", 0) > 16:
                 stats[lv]["over_2048"] += 1
                 continue
@@ -60,17 +65,18 @@ def main(argv=None) -> int:
             else:
                 rows.append((r, line))
                 kdist[lv][len(next(iter(r["questions"].values())).get("criteria") or {})] += 1
-    c = prov["banking_k77"]["count_rule"]
-    s, have = c["k77_row_share"], c["parent_k77_rows"]
-    n_final_wo = a.parent_n + len(rows)
-    need = max(0, math.ceil((s * n_final_wo - have) / (1 - s))) + a.k77_margin
-    if need > len(k77):
-        raise SystemExit(f"need {need} K77 rows, only {len(k77)} fit")
-    rows += k77[:need]
-    stats["banking_k77"]["kept_after_trim"] = need
-    kdist["banking_k77"][77] = need
-    c.update({"rows_without_new_k77": n_final_wo, "k77_rows_kept": need, "k77_margin": a.k77_margin,
-              "final_k77_share": round((have + need) / (n_final_wo + need), 5)})
+    if "banking_k77" in prov:
+        c = prov["banking_k77"]["count_rule"]
+        s, have = c["k77_row_share"], c["parent_k77_rows"]
+        n_final_wo = a.parent_n + len(rows)
+        need = max(0, math.ceil((s * n_final_wo - have) / (1 - s))) + a.k77_margin
+        if need > len(k77):
+            raise SystemExit(f"need {need} K77 rows, only {len(k77)} fit")
+        rows += k77[:need]
+        stats["banking_k77"]["kept_after_trim"] = need
+        kdist["banking_k77"][77] = need
+        c.update({"rows_without_new_k77": n_final_wo, "k77_rows_kept": need, "k77_margin": a.k77_margin,
+                  "final_k77_share": round((have + need) / (n_final_wo + need), 5)})
     for lv, st in stats.items():
         prov.setdefault(lv, {})["token_check"] = dict(st)
         prov[lv]["K_distribution"] = dict(sorted(kdist[lv].items()))
