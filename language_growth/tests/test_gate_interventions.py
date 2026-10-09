@@ -115,6 +115,33 @@ def test_fitted_language_child_uses_its_native_pin_and_rejects_runtime_drift(tmp
         native_capture_identity(child)
 
 
+def test_fitted_language_child_runs_all_registered_intervention_arms(tmp_path, monkeypatch):
+    parent, task, prereg, data, path, _plan = setup(tmp_path, monkeypatch)
+    candidate = {"checkpoint_sha256": "c" * 64, "receipt_sha256": "d" * 64,
+                 "checkpoint_path": tmp_path / "child.pt", "step": 4,
+                 "receipt": {"plan_sha256": "e" * 64, "source_commit": "f" * 40},
+                 "lineage": {"data": {"n": 4}}}
+    trainable_parent = SimpleNamespace(model=parent._loaded.backend.model,
+                                       encoder=parent._loaded.backend.encode,
+                                       config=SimpleNamespace(layout=parent._loaded.backend.layout))
+    native_child = LanguageChildRuntime().native_parent(
+        trainable_parent, {}, candidate, SimpleNamespace(pin=parent._pin))
+    child = LanguageChild(native_child, stage1_identity={"artifact_sha256": "9" * 64}, candidate=candidate)
+    capture = native_capture_identity(child)
+    data["parent_revision"] = child.planner_kwargs()["parent_revision"]
+    data["capture_identity_sha256"] = _sha(capture)
+    torch.save(data, path)
+    prereg["parent_revision"] = data["parent_revision"]
+    prereg["capture_identity_sha256"] = data["capture_identity_sha256"]
+    prereg["directions"]["sha256"] = file_sha256(path)
+    resign(prereg)
+
+    result = run_native_interventions([task], child, prereg)
+    assert result["instrumentation_valid"] is True
+    assert set(result["arms"]) == {"semantic", "sham", "random", "output_only"}
+    assert all(len(rows) == 1 for rows in result["arms"].values())
+
+
 def test_four_native_arms_preserve_trained_head_parent_bytes_and_sham_behavior(tmp_path, monkeypatch):
     parent, task, prereg, _data, _path, plan = setup(tmp_path, monkeypatch)
     before = _parent_state_sha(parent._loaded.backend.model)
