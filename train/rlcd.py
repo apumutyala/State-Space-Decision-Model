@@ -43,7 +43,13 @@ def _safe_globals():
 
 def read_trainable(ckpt: str | Path) -> tuple[dict[str, torch.Tensor], dict]:
     """``trainable`` tensors + identity of a Trainer checkpoint, loaded with ``weights_only=True`` (tensors, plain
-    containers and numpy arrays only; never arbitrary pickled objects)."""
+    containers and numpy arrays only; never arbitrary pickled objects). An INFERENCE export
+    (``train.ckpt_export``: ``trainable-stepN.safetensors`` + sidecar, what first-cell runs upload since job-igcu4) is
+    read through ``train.ckpt_export.read_trainable`` (sha256-checked against its sidecar; no pickle at all)."""
+    if str(ckpt).endswith(".safetensors"):
+        from train.ckpt_export import read_trainable as read_export
+
+        return read_export(ckpt)
     with torch.serialization.safe_globals(_safe_globals()):
         st = torch.load(ckpt, map_location="cpu", weights_only=True, mmap=True)
     tr = st["trainable"]

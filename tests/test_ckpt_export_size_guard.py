@@ -153,3 +153,21 @@ def test_job_script_never_copies_the_full_checkpoint_to_output():
     s = (Path(__file__).resolve().parents[1] / "jobs/m2_first_cell/first_cell_job.sh").read_text(encoding="utf-8")
     assert 'cp "$CK/cell/$LATEST"' not in s
     assert "train.ckpt_export inference" in s and s.count("size_guard.py") == 2
+
+
+def test_rlcd_export_reads_an_inference_export(tmp_path):
+    """D14 init_from: ``train.rlcd export --ckpt <artifact>/ckpt/trainable-stepN.safetensors`` works like the .pt."""
+    rlcd = pytest.importorskip("train.rlcd")
+    t = _trainer(tmp_path / "ck")
+    t.train()
+    pt = t.save()
+    side = CE.export_inference(pt, tmp_path / "out", "bf16")
+    a = rlcd.export(pt, tmp_path / "a.safetensors", "art-x", "job-x")
+    b = rlcd.export(tmp_path / "out" / side["file"], tmp_path / "b.safetensors", "art-x", "job-x")
+    assert a["config_hash"] == b["config_hash"] and a["step"] == b["step"] and a["n_params"] == b["n_params"]
+    from safetensors.torch import load_file
+
+    ta, tb = load_file(str(tmp_path / "a.safetensors")), load_file(str(tmp_path / "b.safetensors"))
+    assert ta.keys() == tb.keys() and all(torch.equal(ta[k].to(torch.bfloat16), tb[k]) for k in ta)
+    u = _trainer(tmp_path / "ck2", seed=3)
+    rlcd.apply_init(u.model, tb)
