@@ -1175,7 +1175,9 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_q
             return {"dry": True, "n_syn_asked": n_syn, "capacity_records": sum(qv2.values()), "quotas": qv2,
                     "item_plan": {k: v for k, v in item_plan.items() if k != "key_stats"}, "dropped": dict(drop),
                     "kstats_P3": dict(kstats.get("P3:extra", {}))}
-        if sum(qv2.values()) != n_syn:
+        if 0 < n_syn - sum(qv2.values()) <= max(10, n_syn // 1000):  # rounding at the capacity bound
+            n = sum(qv2.values()) + quota.get("P3:extra", 0)
+        elif sum(qv2.values()) != n_syn:
             raise SystemExit(f"v2 plan is capacity-bound at {sum(qv2.values())} synthetic records (asked {n_syn}): "
                              f"re-run with --n {sum(qv2.values()) + quota.get('P3:extra', 0)}")
         quota = {**{s: 0 for s in weights}, **qv2, **({"P3:extra": quota["P3:extra"]} if "P3:extra" in quota else {})}
