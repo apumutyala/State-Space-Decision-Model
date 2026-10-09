@@ -120,7 +120,7 @@ MIX_V2 = {  # weights (rows at n_synth = 250k); review of v1 (B1_SCHEMA_REVIEW.m
     # NLI / low-positive guard families at natural base rates; regression families (NLI4CT / Habermas / VAST / ACOS)
     # raised by NEW items; ANLI cut
     "anli/nli": 2000, "anli/claim_verification": 2500, "mnli/nli": 15000, "hover/claim_verification": 12000,
-    "ragtruth/hallucination_detection": 12000, "acos/acos_category_sentiment": 8000,
+    "ragtruth/hallucination_detection": 12000, "acos/acos_category_sentiment": 11000,
     "nli4ct/clinical_trial_nli": 3000, "vast/stance": 8000, "habermas/consensus_selection": 2400,
     "clinc150/intent_membership": 12000, "banking77/intent_membership": 5000,
     # intent catalogs
@@ -921,7 +921,9 @@ def append_extra(work: Path, extra_pool: str, extra_pointer: str, quota: int, lo
 #: items_from_records, kept by keep_item K/T): v2 sets and reports the mix in ITEMS (coordinator 2026-10-08)
 MV_KEYS = ("clinc150/intent_membership", "banking77/intent_membership", "mmlu_aux/answer_verification")
 MV_MAX_ITEM_SHARE = 0.05
-MAX_NO_SHARE = 0.60
+#: coordinator 2026-10-08 (v2b): NO aggregate no-share cap. Index DEV binary questions are 91.3 % "no", so a 60 % cap
+#: pushed training toward "yes", the wrong direction. Families keep their natural base rates; None disables the cap.
+MAX_NO_SHARE = None
 #: item-share floors of eval-regression binary families (review item 2: raise ACOS / NLI4CT at natural rates) that the
 #: no-share constraint may not push below; if the constraint cannot be met above them, the draw reports the excess
 FLOOR_V2 = {"acos/acos_category_sentiment": 0.03, "b1fam_bfcl_synth/BFCL-tool-selection": 0.03, "mnli/nli": 0.03,
@@ -1043,7 +1045,7 @@ def plan_items_v2(weights: dict, kstats: dict, avail: dict, n_records: int, log=
                 if k in share:
                     share[k] *= 0.95
             changed = True
-        if no > MAX_NO_SHARE:
+        if MAX_NO_SHARE is not None and no > MAX_NO_SHARE:
             for k in noheavy:
                 if k not in MV_KEYS and ish.get(k, 0) > FLOOR_V2.get(k, 0.0) * 1.02:
                     share[k] *= 0.95
@@ -1154,6 +1156,8 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_q
                     drop["per_item_cap_v2"] += 1
             elig[s] = kept
     weights = meta.get("weights") or meta["v3_mix"]
+    if meta.get("mix") == "v2":  # the select stage plans with the CURRENT v2 weights (v2b: ACOS 8,000 -> 11,000)
+        weights = dict(MIX_V2)
     no_spill = set(meta.get("no_spill") or [])
     tot = sum(weights.values())
     n_synth = meta["n_synth_target"]
@@ -1263,7 +1267,8 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_q
         sc = work / "scratch-moved"
         sc.mkdir(exist_ok=True)
         p.replace(sc / p.name)
-    rep = {"build": build, "n_records": len(order), "quotas": quota, "item_plan": item_plan,
+    rep = {"build": build, "n_records": len(order), "quotas": quota, "item_plan": item_plan, "weights_used": weights,
+           "max_no_share": MAX_NO_SHARE, "mv_max_item_share": MV_MAX_ITEM_SHARE,
            "attack_filter": af.identity if af is not None else None, "available": avail, "dropped": dict(drop),
            "n_candidates": n_cand, "reuse": reuse_stats(reuse), **stats.report(),
            "records_uncompressed_sha256": rec_h.hexdigest(), "manifest_uncompressed_sha256": man_h.hexdigest(),

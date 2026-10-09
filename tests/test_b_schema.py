@@ -173,7 +173,7 @@ def test_v2_state_keys_named_in_instructions_kept(v2):
         assert v["state"] == base["state"]
 
 
-def test_v2_item_plan_caps_membership_and_no_share():
+def test_v2_item_plan_caps_membership_keeps_natural_rates():
     w = {"glaive_fc/tool_select": 30, "clinc150/intent_membership": 30, "acos/acos_category_sentiment": 20,
          "hover/claim_verification": 10, "mnli/nli": 10, "b1fam_cruxeval_synth/CRUXEval-output-choice": 20}
     ks = {"glaive_fc/tool_select": {"rows": 1000, "items": 1000, "bin": 0, "yes": 0},
@@ -186,5 +186,7 @@ def test_v2_item_plan_caps_membership_and_no_share():
     q, plan = BS.plan_items_v2(w, ks, avail, 50000, log=lambda *a: None)
     assert sum(q.values()) == 50000
     assert plan["mv_item_share_planned"] <= 0.05 + 1e-3
-    assert plan["binary_no_share_planned"] <= 0.60 + 1e-3
+    # v2b: no aggregate no-share cap; ACOS keeps its weight share (natural base rate, no scaling toward "yes")
+    assert BS.MAX_NO_SHARE is None
+    assert plan["item_share_planned"]["acos/acos_category_sentiment"] >= 20 / 120 - 1e-3
     assert plan["item_share_planned"]["glaive_fc/tool_select"] <= 30 / 120 + 1e-3
