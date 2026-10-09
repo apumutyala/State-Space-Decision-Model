@@ -48,7 +48,11 @@ def test_inference_export_round_trips_the_trainable_tensors(tmp_path, dtype):
     assert json.loads((tmp_path / "out" / "latest.json").read_text())["path"] == st.name
     line = (tmp_path / "out" / (st.name + ".sha256")).read_text().split()
     assert line == [_sha(st), st.name]
+    assert b"\r" not in (tmp_path / "out" / (st.name + ".sha256")).read_bytes()  # LF: sha256sum -c
     assert st.stat().st_size < pt.stat().st_size  # no Adam / scheduler / RNG state
+    again = CE.export_inference(pt, tmp_path / "again", dtype)  # byte-deterministic (pinnable by sha256)
+    assert again["sha256"] == side["sha256"]
+    assert (tmp_path / "again" / CE.sidecar_path(st).name).read_bytes() == CE.sidecar_path(st).read_bytes()
     # read back: same names, shapes; values exact (fp32) or the bf16 rounding of the trained values
     tensors, back = CE.read_inference(st)
     assert tensors.keys() == want.keys() and back["config_hash"] == t.cfg.hash() and back["step"] == 3
