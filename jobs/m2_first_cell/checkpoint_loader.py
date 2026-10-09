@@ -25,7 +25,9 @@ What ``install`` guarantees (else ``CheckpointError`` with ``code`` 5 = usage / 
   2. the artifact (``https://`` or ``file://``; URL from ``--url`` or ``$<url_env>``, never from the artifact) is
      streamed to disk with its sha256 checked against the pin; only the two named members are read from the tar (no
      extractall, no paths from the archive are used), each written under a fixed name and sha256-checked;
-  3. ``latest.json`` names exactly the pinned checkpoint file.
+  3. ``latest.json`` names exactly the pinned checkpoint file; or, with ``"select": "best"`` in the block (a
+     ``best_ckpt`` run: the scored checkpoint is not the last), ``latest.json``'s ``best`` pointer names it AND its
+     ``best.sha256`` equals the pinned ``ckpt_sha256`` (``train.ckpt_export --best``).
 A checkpoint dir that already holds the pinned file (a restart) is re-hashed and reused without a download.
 The artifact is untrusted data: nothing from it is executed here (the .pt is only hashed; ``Trainer.load`` in the GPU
 job unpickles it after this pin check, exactly as a training run's own checkpoint).
@@ -78,6 +80,8 @@ def checkpoint_block(params: dict) -> dict:
         shas.append("sidecar_sha256")
         if not isinstance(ck.get("sidecar_sha256"), str):
             raise CheckpointError("checkpoint block: an inference-export member needs sidecar_sha256", 5)
+    if ck.get("select", "latest") not in ("latest", "best"):
+        raise CheckpointError(f"checkpoint.select {ck['select']!r}: latest or best", 5)
     for k in shas:
         if not re.fullmatch(r"[0-9a-f]{64}", ck[k]):
             raise CheckpointError(f"checkpoint.{k} is not a sha256", 5)
@@ -160,14 +164,22 @@ def install(block: dict, *, cell_src: str | Path, cell_config: str | Path, ck_di
         _extract(tar, ck["member"], pt, ck["ckpt_sha256"], fname)
         if side is not None:
             _extract(tar, f"./ckpt/{side.name}", side, ck["sidecar_sha256"], side.name)
-    if json.loads(latest.read_text(encoding="utf-8")).get("path") != fname:
+        # job-afpc2: the downloaded tar stayed on the worker's shared disk for the whole run; every pinned member is
+        # installed (each sha256-checked), so this job's own copy of the tar is no longer needed
+        tar.unlink()
+    lj = json.loads(latest.read_text(encoding="utf-8"))
+    if ck.get("select", "latest") == "best":
+        b = lj.get("best") or {}
+        if b.get("path") != fname or b.get("sha256") != ck["ckpt_sha256"]:
+            raise CheckpointError(f"latest.json best does not name {fname} with the pinned sha256")
+    elif lj.get("path") != fname:
         raise CheckpointError(f"latest.json does not name {fname}")
     if cell_out is not None:
         Path(cell_out).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(cell_src, cell_out)
     return {"artifact": ck["artifact"], "job": ck.get("job"), "artifact_sha256": ck["artifact_sha256"],
             "file": fname, "path": str(pt), "sha256": ck["ckpt_sha256"], "cell_json_sha256": ck["cell_json_sha256"],
-            "reused": reused}
+            "select": ck.get("select", "latest"), "reused": reused}
 
 
 def main(argv=None) -> int:

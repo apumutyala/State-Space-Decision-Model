@@ -33,10 +33,12 @@ No truncation anywhere; nothing is excluded after scoring.
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
 import math
 import os
+import shutil
 import statistics
 import subprocess
 import sys
@@ -157,6 +159,139 @@ def latency(results: list[dict]) -> dict[str, Any]:
                      "request at a time (same definition as the Clef latency row)"}
 
 
+#: job-afpc2: the worker's SHARED disk (it holds $GMN_CHECKPOINT_DIR, $GMN_OUTPUT_DIR and the platform's spool) filled
+#: mid-scoring (201,875,456 B free at the end): the child died (rc 1), the phase tgz could not be written (export ok=false,
+#: no sha) and the platform refused the artifact (a transfer must leave 4,294,998,016 B free). Below this many free bytes
+#: on the resume / output dirs the child stops cleanly: declare the slot, yield, exit DISK_LOW_RC.
+DISK_LOW_BYTES = 6 << 30
+DISK_LOW_RC = 16
+MAX_YIELDS = 2
+CHECKPOINT_EVERY_S = 600.0  # the platform floor is one accepted declare per 300 s
+#: --readout: "native" = the cell's own template + layout, served with the cohort temperature fit (the tempered
+#: decider; Index arm = untempered answers rebuilt from raw); any other name = jobs.m2_first_cell.screen SCREEN_READOUTS
+#: through load_child's readout override (the same model object under another prompt), UNTEMPERED (identity
+#: calibration, as the screen scores it): no temperature fit exists for a non-training readout in this code.
+READOUT_NAMES = ("native", "v1", "v2f", "v3w")
+
+
+def progress_beat(every_s: float = 30.0):
+    """A throttled toucher of ``$SSDM_PROGRESS_BEAT`` (the runner's progress-gated watchdog withholds the heartbeat
+    after STALL_S = 1200 s without a file write; the platform kills after two missed 600 s polls). For CPU loops that
+    write nothing until they end (the plan pass). Unset (tests): a no-op. Outputs are unchanged either way; a hung
+    loop stops touching it."""
+    path = os.environ.get("SSDM_PROGRESS_BEAT")
+    last = [float("-inf")]
+
+    def beat() -> None:
+        if not path:
+            return
+        now = time.monotonic()
+        if now - last[0] >= every_s:
+            last[0] = now
+            try:
+                Path(path).touch()
+            except OSError:
+                pass
+
+    return beat
+
+
+def _meta_post(door: str) -> bool:
+    """POST ``$GMN_METADATA_URL/v1/<door>`` (checkpoint | yield). Unset (tests, local): False, nothing sent."""
+    import urllib.request
+
+    url = os.environ.get("GMN_METADATA_URL")
+    if not url:
+        return False
+    try:
+        urllib.request.urlopen(urllib.request.Request(f"{url}/v1/{door}", data=b"{}", method="POST",
+                                                      headers={"Content-Type": "application/json"}), timeout=10)
+        return True
+    except Exception as e:  # noqa: BLE001  a 429 (rate floor) / 503 / 409 is not a failure: the last slot stands
+        print(f"{door} declare: {e!r}", file=sys.stderr, flush=True)
+        return False
+
+
+def checkpoint_declarer(every_s: float = CHECKPOINT_EVERY_S, post=None):
+    """A throttled declare of the platform checkpoint slot ($GMN_CHECKPOINT_DIR = the resume dir: the per-row append
+    log): a preempted / yielded attempt resumes from the last committed capture instead of from zero (job-afpc2's
+    three preempted attempts restarted from nothing: no declare). ``declare(force=True)`` ignores the throttle."""
+    post = post or (lambda: _meta_post("checkpoint"))
+    last = [float("-inf")]
+
+    def declare(force: bool = False) -> bool:
+        now = time.monotonic()
+        if not force and now - last[0] < every_s:
+            return False
+        last[0] = now
+        return post()
+
+    return declare
+
+
+def disk_watch(paths, low_bytes: int = DISK_LOW_BYTES, every_s: float = 30.0, usage=None):
+    """Throttled free-space check of ``paths``: ``None`` while every path's filesystem has >= ``low_bytes`` free, else
+    ``{path: free_bytes}`` of the low ones. Read-only; changes no output."""
+    usage = usage or (lambda q: shutil.disk_usage(q).free)
+    last = [float("-inf")]
+
+    def low():
+        now = time.monotonic()
+        if now - last[0] < every_s:
+            return None
+        last[0] = now
+        free = {}
+        for q in paths:
+            try:
+                free[str(q)] = int(usage(q))
+            except OSError:
+                continue
+        bad = {q: f for q, f in free.items() if f < low_bytes}
+        return bad or None
+
+    return low
+
+
+def stop_for_disk(resume_dir: Path, declare, why: str, yield_post=None) -> int:
+    """The worker disk is (nearly) full: declare the slot (best effort: rows already in the append log), then yield
+    (the rerun re-queues, possibly on another machine, and resumes from the slot) at most MAX_YIELDS times per job
+    (counted in the slot), and return DISK_LOW_RC either way so the runner fails loudly if no yield takes effect."""
+    yield_post = yield_post or (lambda: _meta_post("yield"))
+    print(f"WORKER DISK LOW: {why}", file=sys.stderr, flush=True)
+    n_file = resume_dir / "disk_yields.json"
+    try:
+        n = int(json.loads(n_file.read_text(encoding="utf-8")).get("yields", 0))
+    except (OSError, ValueError):
+        n = 0
+    declared = declare(force=True)
+    if n < MAX_YIELDS:
+        try:
+            n_file.write_text(json.dumps({"yields": n + 1, "why": why}), encoding="utf-8")
+        except OSError:
+            pass
+        ok = yield_post()
+        print(f"yield {n + 1}/{MAX_YIELDS}: {'sent' if ok else 'not accepted'} (checkpoint declared: {declared})",
+              file=sys.stderr, flush=True)
+    else:
+        print(f"no yield: {n} of {MAX_YIELDS} already used", file=sys.stderr, flush=True)
+    return DISK_LOW_RC
+
+
+def readout_spec(name: str | None, cfg: dict) -> dict[str, Any]:
+    """{name, template, layout, native} of ``--readout`` against the cell config (ValueError on an unknown name)."""
+    name = name or "native"
+    if name not in READOUT_NAMES:
+        raise ValueError(f"readout {name!r}: one of {READOUT_NAMES}")
+    if name == "native":
+        tpl, lay = cfg["template"], cfg.get("layout", "ordered")
+    else:
+        from jobs.m2_first_cell.screen import SCREEN_READOUTS
+
+        tpl, lay = SCREEN_READOUTS[name]
+    return {"name": name, "template": tpl, "layout": lay,
+            "native": (tpl, lay) == (cfg["template"], cfg.get("layout", "ordered"))}
+
+
 def plan_rows(decider, rows: list[dict], max_input_tokens: int) -> dict[str, Any]:
     """$0 plan-only pass (tokenisation, no forward) through the real decider with the raised cap: which rows reach
     ``score()``, and the longest model input per row (``backend.plan``)."""
@@ -175,7 +310,9 @@ def plan_rows(decider, rows: list[dict], max_input_tokens: int) -> dict[str, Any
                 max_input_tokens)
     ol = overlength_ids()
     refused, lengths = [], {}
+    beat = progress_beat()
     for r in rows:
+        beat()  # job-4ha7t: a full-DEV plan pass is ~40 min of tokenisation with no file write (watchdog STALL_S 1200)
         rid = r["_evaluation"]["run_id"]
         req = {"model": "ssdm-m2", "state": r["state"], "questions": r["questions"]}
         po.last = None
@@ -323,7 +460,16 @@ def score(a) -> int:
     from train.cohort import CohortLeak
 
     try:
-        decider, tempered, ident = (load_child if a.arm == "child" else load_parent)(a)
+        if a.arm == "child":
+            ro = readout_spec(getattr(a, "readout", None),
+                              json.loads(Path(a.cell).read_text(encoding="utf-8"))["config"])
+            if ro["name"] == "native":  # the served decider + the cohort temperature fit (ECE served)
+                decider, tempered, ident = load_child(a)
+            else:  # another readout of the same loaded model: untempered (load_child's override)
+                decider, tempered, ident = load_child(a, temperature=False, readout=(ro["template"], ro["layout"]))
+            ident = {**ident, "readout": ro}
+        else:
+            decider, tempered, ident = load_parent(a)
     except (ValueError, KeyError, GuardNotReady, CohortLeak) as e:
         print(f"identity: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
@@ -340,12 +486,29 @@ def score(a) -> int:
     prog = G.Progress(a.progress)
     prog.plan([G.unit_weight(r) for r in todo])
     decide = G.beat_wrap(prog.wrap(limited(decider.decide, a.max_input_tokens)))
+    declare = checkpoint_declarer()
+    low = disk_watch([resume.parent, out])
+    declare(force=True)  # the slot now holds the rows so far
     t0 = time.perf_counter()
-    with open(resume, "a", encoding="utf-8", newline="\n") as f:
-        for r in todo:
-            res = G.index_predict(decide, [r], untempered_from_raw=tempered)
-            f.write(json.dumps(res[r["_evaluation"]["run_id"]], separators=(",", ":")) + "\n")
-            f.flush()
+    n_done = len(ids) - len(todo)
+    try:
+        with open(resume, "a", encoding="utf-8", newline="\n") as f:
+            for r in todo:
+                bad = low()
+                if bad:
+                    f.flush()
+                    return stop_for_disk(resume.parent, declare, f"free bytes {bad} < {DISK_LOW_BYTES} before row "
+                                         f"{r['_evaluation']['run_id']} ({n_done} of {len(ids)} rows done)")
+                res = G.index_predict(decide, [r], untempered_from_raw=tempered)
+                f.write(json.dumps(res[r["_evaluation"]["run_id"]], separators=(",", ":")) + "\n")
+                f.flush()
+                n_done += 1
+                declare()
+    except OSError as e:  # ENOSPC only (a torn tail is dropped by _read_partial on resume); anything else propagates
+        if e.errno != errno.ENOSPC:
+            raise
+        return stop_for_disk(resume.parent, declare, f"{type(e).__name__}: {e} ({n_done} of {len(ids)} rows done)")
+    declare(force=True)
     secs = time.perf_counter() - t0
     done = _read_partial(resume)
     if set(done) != set(ids):
@@ -467,12 +630,20 @@ def report(a) -> dict:
         (d / f"{arm}.ece.json").write_text(json.dumps(ece, indent=1), encoding="utf-8")
         ex = excl_overlength_score(rp, keep=keep)
         (d / f"{arm}.score_excl_overlength51.json").write_text(json.dumps(ex, indent=1), encoding="utf-8")
+        nested = {}
+        if keep is None:  # the 2,008 m1 subset + the proxy600 screen rows, from the SAME full-DEV predictions
+            from jobs.common.dev_subset import load_subset
+
+            for name, ids_ in (("subset2008", set(load_subset()["run_ids"])), ("proxy600", selected_ids("proxy600"))):
+                ns = subset_score(rp, ids_)
+                (d / f"{arm}.score_{name}.json").write_text(json.dumps(ns, indent=1), encoding="utf-8")
+                nested[name] = {"rows": len(ids_), "index": ns["slice_index"]["index"]}
         ent = {"results_sha256": _sha(rp), "status": _count(r.get("status") for r in res),
                "full": sc["slice_index"], "official_index_missing_as_zero": sc["official_index_missing_as_zero"],
                "excl_overlength51": ex["slice_index"],
                "ece": {"board_protocol": (ece.get("board_protocol") or {}).get("ece"),
                        "overall_10bin": (ece.get("overall") or {}).get("ece_10bin")},
-               "latency": latency(res)}
+               "latency": latency(res), **nested}
         sp = d / f"{arm}.results_served.jsonl"
         if sp.is_file():  # the tempered (served) answers: same argmax, served calibration
             se = _harness("ece", "--results", str(sp), *ed) if keep is None else subset_ece(sp, keep)
@@ -503,7 +674,9 @@ def report(a) -> dict:
     out["checkpoint"] = {k: v for k, v in (params.get("checkpoint") or {}).items() if not k.startswith("_")}
     idf = d / "identity-child.json"
     if idf.is_file():
-        out["checkpoint"]["loaded"] = json.loads(idf.read_text(encoding="utf-8")).get("checkpoint")
+        idc = json.loads(idf.read_text(encoding="utf-8"))
+        out["checkpoint"]["loaded"] = idc.get("checkpoint")
+        out["readout"] = idc.get("readout")
     out["overlength_treatment"] = ("every row read in full (no truncation; adapter cap raised to "
                                    f"{params.get('max_input_tokens', DEFAULT_MAX_INPUT_TOKENS)} via ssdm.limits, the "
                                    "Clef 32k arm's mechanism); 'full' = every selected row (12,104 in mode full; "
@@ -549,18 +722,23 @@ def estimate(params: dict, lengths: dict | None = None) -> dict[str, Any]:
     mode's cell config."""
     lengths = lengths or json.loads(LENGTHS.read_text(encoding="utf-8"))
     cfg = json.loads((ROOT / params["cell_config"]).read_text(encoding="utf-8"))
-    if params.get("readout_template") != cfg["template"]:
-        raise ValueError(f"readout_template {params.get('readout_template')!r} != cell config template {cfg['template']!r}")
+    ro = readout_spec(params.get("readout"), cfg)
+    if params.get("readout_template") != ro["template"]:
+        raise ValueError(f"readout_template {params.get('readout_template')!r} != readout {ro['name']} template "
+                         f"{ro['template']!r}")
+    ratio = 1.0 if ro["native"] else float(params["readout_length_ratio"][ro["name"]])
     if params["max_input_tokens"] <= lengths["max_tokens"]:
         raise ValueError(f"max_input_tokens {params['max_input_tokens']} <= the longest DEV row {lengths['max_tokens']}")
     m = params["measured_rates_reference"]
     keep = selected_ids(params.get("rows", "full"))
     toks = lengths["total_tokens"] if keep is None else sum(lengths["lengths"][i] for i in keep)
+    toks = toks * ratio  # the lengths are v1/ordered tokens; another readout's prompts are this much longer / shorter
     phases = {"fulldev": toks / 1000 * m["child_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["child"]}
     if params.get("fulldev_parent_arm"):
         phases["parent_full"] = toks / 1000 * m["parent_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"]["parent"]
     caps = params["phase_caps_minutes"]
-    out = {"rows": params.get("rows", "full"), "tokens": toks, "template": cfg["template"], "lengths_template": lengths["template"],
+    out = {"rows": params.get("rows", "full"), "tokens": toks, "template": ro["template"], "readout": ro["name"],
+           "length_ratio": ratio, "lengths_template": lengths["template"],
            "minutes": {k: round(v, 1) for k, v in phases.items()},
            "caps": {k: caps[k] for k in phases}, "ok": all(v <= 0.95 * caps[k] for k, v in phases.items())}
     out["usd_batch_scoring"] = round(sum(phases.values()) * params["batch_usd_per_min"], 2)
@@ -590,6 +768,8 @@ def main(argv=None) -> int:
     s.add_argument("--out-dir", required=True)
     s.add_argument("--progress", default=None)
     s.add_argument("--device", default="cuda")
+    s.add_argument("--readout", choices=READOUT_NAMES, default="native",
+                   help="child: native (cell template + temperature fit) or another readout, untempered")
     b = sub.add_parser("smoke-build", help="(re)build fulldev_smoke_rows.json from the DEV manifest + row lengths")
     b.add_argument("--out", default=str(SMOKE))
     e = sub.add_parser("estimate")
