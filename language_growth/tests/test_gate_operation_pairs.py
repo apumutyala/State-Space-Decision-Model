@@ -58,6 +58,11 @@ class GateOperationPairTests(unittest.TestCase):
 
         for pair in train + validation:
             source, effect = pair["source"], pair["effect"]
+            self.assertEqual(set(pair), {
+                "pair_id", "world_id", "split", "concept", "source", "effect",
+                "source_target", "effect_target"})
+            self.assertEqual(set(source), {
+                "task_input", "host", "catalog", "question_id", "question", "options"})
             field = pair["pair_id"].rsplit("operation-prompt-", 1)[1].split("-", 1)[0]
             self.assertIn(field, source["task_input"])
             self.assertIn(field, effect["task_input"])
