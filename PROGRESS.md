@@ -409,3 +409,9 @@
 - Delivered CPU-only c-multirecord-7k-v2-allk-quota:7000records/49000questions, K2..77 and204 source K/style groups versus prefix7000 K2..72/189. Six independent unit tests and one output verification pass; no retokenization or repeated old semantic audit.
 - Integration: fresh clean B v2d only, sole C input with quota=limit7000 and exact selected-ID retention after guards. Older B pools are NLI4CT-quarantined; no v2d completion was available. Receipts under2026-10-09-C-multirecord-quota; no B lane mutation or paid launch.
 - Existing full100k compact export remains active, last observed12000/100000, not yet consumable; preserved source/launch logs and original13575 pool. L0-L4 paused. No Index gain or qualification claimed; GPU spend$0.
+
+## 2026-10-09: agent-c joint enablement candidate
+- Delivered source stack/rwkv7/c-joint-enable5b181deb6e8ece804d11fdcbe9d333d5b9dc9deb: existing ordinal fix plus corrected g1v2 lexical descriptions and joint continuation cap;20 focused CPU tests pass. A/B worktrees/runs unchanged.
+- Measured D13 Kcap16 loses6738 C ranking questions; actual C-only adapter sample204 K/style groups preserves1428/1428questions with v3w/g1v2/train_max_k255. Token max2048, record optionsmax92; evalcapunchanged. Evidence05f39844ea73646961686cf59af49d60f7bade01.
+- Sent exact source commits and matched fork/joint evaluation handoff to A/B via INBOX; clean B v2d pointer/guard proof and adoption still pending, so integration/evaluation objective remains active. No paid launch, no heldout access or Index gain claim.
+- Existing full100k CPU export verified live PID38512,19000worlds, empty stderr; no restart/regeneration. L0-L4 remains paused and GPU spend$0.
