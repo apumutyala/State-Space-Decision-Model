@@ -1,0 +1,21 @@
+{
+ "draw": "smoke",
+ "excluded_ids_file": "ssdm-data/m2/attack-clean/smoke.excluded_ids.txt.gz (outside git)",
+ "excluded_ids_sha256": "687e3bdbd34e24773d8a4c5c0b6ec5375584130b8e221e7ea503f54ac3f0b2c0",
+ "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+ "n_excluded": 59,
+ "n_kept": 871,
+ "n_records": 930,
+ "per_set": {
+  "d1a_steer": 59
+ },
+ "per_template": {
+  "d1a_steer:authority": 19,
+  "d1a_steer:fake_correction": 15,
+  "d1a_steer:system_note": 12,
+  "d1a_steer:urgency": 13
+ },
+ "records_gz_sha256": "571678e1aa809616ac0990153a642324c6211b8cb20229b0f5b788cfa2a2dcb3",
+ "rule": "attack_guard/v1: 6-gram or exact (4-5 word) fragment of any eval attack template, normalised",
+ "templates_sha256": "930863660b73ba676a236c1729ed4535c99c0691f5f41639099723ac93ec77fd"
+}
