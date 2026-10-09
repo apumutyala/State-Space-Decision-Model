@@ -29,6 +29,11 @@ What ``draw`` checks before any record reaches a trainer (any failure raises ``T
      and ``train.run_cell.load_cell_data`` re-checks every training row on EVERY path (cells without a train_set
      pin a top-level ``attack_clean``; run_cell exit 3 -> job 33). ``baselines.clef_teacher select`` applies the
      same exclusion, so a KD teacher draw equals the cleaned training draw.
+  8. DOC-OVERLAP GUARD (``train.doc_overlap_guard``; operator rule: no training on eval DOCUMENTS). The whole set is
+     scanned against the 13-gram hash index of every Index eval row's document text (DEV + TEST + held-out). Any
+     failing row refuses the set (``DocOverlapRefusal``, job exit 34) unless the cell pins ``train_set.doc_clean``
+     (``train.doc_overlap_guard.clean_spec``) and the fails equal it exactly; then those rows leave the pool before the
+     draw. The heldout gate returns 4 (job exit 34) when only this check fails.
 Evaluation records of v2 roles never come from this set: they stay in the PR #16 sample the cohort was built from.
 """
 from __future__ import annotations
@@ -49,6 +54,45 @@ class TrainSetMismatch(ValueError):
 
 class AttackGuardRefusal(TrainSetMismatch):
     """The training set carries an eval attack template outside a pinned ``attack_clean`` spec."""
+
+
+from train.doc_overlap_guard import DocOverlapError as _DocOverlapError  # noqa: E402
+
+
+class DocOverlapRefusal(TrainSetMismatch, _DocOverlapError):
+    """The training set carries Index eval document text outside a pinned ``doc_clean`` spec (job exit 34)."""
+
+
+def doc_clean_pin(cfg: dict) -> dict | None:
+    return (cfg.get("train_set") or {}).get("doc_clean") or cfg.get("doc_clean")
+
+
+def doc_exclusion(pin: dict | None, records_path: str | Path, pre_excluded: set[str] = frozenset()) -> tuple[set[str], dict]:
+    """Scan the WHOLE set with ``train.doc_overlap_guard``; return (ids to exclude, summary). Raises
+    ``DocOverlapRefusal`` unless the fails are zero or exactly the pinned spec. ``pre_excluded`` ids (pinned D1-B
+    exclusions) leave the pool anyway and are not part of the pin. Shared by ``draw`` and the KD teacher ``select``
+    so both see the same pool."""
+    from train.attack_guard import ids_sha256
+    from train.doc_overlap_guard import DocOverlapError, check_pinned, scan_file, summary as dsummary
+
+    try:
+        rep = scan_file(records_path)
+    except DocOverlapRefusal:
+        raise
+    except DocOverlapError as e:  # missing eval data / index pin mismatch: fail closed
+        raise DocOverlapRefusal(f"doc-overlap guard cannot run: {e}") from e
+    pre = set(pre_excluded) & set(rep["fail_ids"])
+    if pre:
+        rep["fail_ids"] = [i for i in rep["fail_ids"] if i not in pre]
+        rep["n_fail"], rep["fail_ids_sha256"] = len(rep["fail_ids"]), ids_sha256(rep["fail_ids"])
+    ok, why = check_pinned(rep, pin)
+    out = dsummary(rep) | {"rule": rep["rule"], "index_sha256": rep["index_sha256"],
+                           "allowlist_sha256": rep["allowlist_sha256"], "excluded_ids_sha256": rep["fail_ids_sha256"],
+                           "n_excluded": rep["n_fail"], "allowlist_saved": rep["allowlist_saved"],
+                           "n_heldout_excluded_overlap": len(pre), "check": why}
+    if not ok:
+        raise DocOverlapRefusal(f"doc-overlap guard: {why} (per source {rep['per_source_fail']})")
+    return set(rep["fail_ids"]), out
 
 
 def attack_clean_pin(cfg: dict) -> dict | None:
@@ -146,7 +190,8 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
     if unknown:
         raise TrainSetMismatch(f"heldout_excluded ids not in the set: {unknown[:3]}")
     attack_ids, attack = attack_exclusion(cfg, fs["records"])
-    pool = sorted(set(man) - excluded - v3x["ids"] - attack_ids)
+    doc_ids, doc = doc_exclusion(doc_clean_pin(cfg), fs["records"], excluded)
+    pool = sorted(set(man) - excluded - v3x["ids"] - attack_ids - doc_ids)
     n = int(cfg["n_train_records"])
     if n > len(pool):
         raise TrainSetMismatch(f"n_train_records {n} > pool {len(pool)}")
@@ -176,6 +221,9 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
     if drawn_attack:
         raise AttackGuardRefusal(f"{len(drawn_attack)} drawn record(s) carry an eval attack template, e.g. {drawn_attack[:3]}")
     attack["drawn_hits"] = 0
+    if want & doc_ids:  # structural: the pool already excludes them
+        raise DocOverlapRefusal("drawn records carry Index eval document text")
+    doc["drawn_fails"] = 0
     identity = {"train_set": ptr.get("build"), "pointer": ptr["_pointer_path"], "pointer_sha256": ptr["_pointer_sha256"],
                 "files_uncompressed_sha256": sha or "not re-verified (verify=False)", "n_pool": len(pool),
                 "heldout_excluded": sorted(excluded),
@@ -184,7 +232,7 @@ def draw(cfg: dict, train_dir: str | Path, cohort=None, verify: bool = True) -> 
                 "drawn_ids_sha256": hashlib.sha256("\n".join(tr).encode()).hexdigest(),
                 "lines_manifest_verified": ident["lines_read"], "cohort": co.identity(),
                 "cohort_v3_excluded": {"n": v3x["n"], "rule": v3x["rule"], "cohort": v3x["cohort"], "drawn_overlap": 0},
-                "attack_guard": attack}
+                "attack_guard": attack, "doc_overlap_guard": doc}
     return {i: to_train_record(got[i]) for i in tr}, tr, identity
 
 
@@ -209,7 +257,9 @@ def heldout_excluded(cfg: dict) -> set[str]:
 def heldout_gate(cfg: dict, train_dir: str | Path, out: str | Path | None = None) -> int:
     """The job's held-out phase over the WHOLE training set: ``train.heldout`` hits must be exactly the pre-registered
     exclusions (same template set), AND ``train.attack_guard`` hits (every eval attack template) must be zero or exactly
-    the pinned ``attack_clean`` spec. 0 = pass; 3 = any other hit, a missing pinned hit, or a template-set change."""
+    the pinned ``attack_clean`` spec, AND ``train.doc_overlap_guard`` fails must be zero or exactly the pinned ``doc_clean``
+    spec. 0 = pass; 3 = any other D1-B / attack hit, a missing pinned hit, or a template-set change; 4 = only the
+    doc-overlap guard refused (job exit 34)."""
     from train.attack_guard import check_pinned, scan_file
     from train.heldout import scan_records
 
@@ -227,12 +277,21 @@ def heldout_gate(cfg: dict, train_dir: str | Path, out: str | Path | None = None
     except AttackGuardRefusal as e:
         asum, a_ok, a_why = {}, False, str(e)
     rep["attack_guard"] = asum | {"pass": a_ok, "check": a_why}
-    rep["pass"] = d1b_pass and a_ok
+    try:
+        _, dsum = doc_exclusion(doc_clean_pin(cfg), files(train_dir, ptr)["records"], heldout_excluded(cfg))
+        d_ok, d_why = True, dsum["check"]
+    except DocOverlapRefusal as e:
+        dsum, d_ok, d_why = {}, False, str(e)
+    rep["doc_overlap_guard"] = dsum | {"pass": d_ok, "check": d_why}
+    rep["pass"] = d1b_pass and a_ok and d_ok
     if out:
         Path(out).write_text(json.dumps(rep, indent=1), encoding="utf-8")
     print(json.dumps({k: rep[k] for k in ("n_texts", "pass", "templates_sha256", "pinned_exclusions")}
-                     | {"hits": sorted(hit_ids), "attack_guard": {"pass": a_ok, "check": a_why}}))
-    return 0 if rep["pass"] else 3
+                     | {"hits": sorted(hit_ids), "attack_guard": {"pass": a_ok, "check": a_why},
+                        "doc_overlap_guard": {"pass": d_ok, "check": d_why}}))
+    if rep["pass"]:
+        return 0
+    return 3 if not (d1b_pass and a_ok) else 4  # 4: only the doc-overlap guard refused (job exit 34)
 
 
 def main(argv=None) -> int:

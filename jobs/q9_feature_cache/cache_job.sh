@@ -152,7 +152,7 @@ else
   timeout "$(cap heldout)m" python -X utf8 -m train.train_set heldout --config "$CFG" --train-dir "$TRAIN_DIR" \
     --out "$WORK/out/heldout.json" > "$WORK/logs/heldout.log" 2>&1; r=$?
   gate "heldout" $r
-  case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B or eval attack template hits != pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
+  case $r in 0) ;; 124) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B or eval attack template hits != pinned exclusions" ;; 4) fail 34 "Index eval document text (train.doc_overlap_guard) outside the pinned doc_clean spec" ;; *) fail 5 "heldout rc=$r" ;; esac
   TRAIN_ARGS=(--train-dir "$TRAIN_DIR" --guard-readiness "$WORK/out/guard/readiness.json")
 fi
 export_phase guard

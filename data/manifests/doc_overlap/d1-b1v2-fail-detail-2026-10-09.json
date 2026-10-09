@@ -1,0 +1,504 @@
+{
+ "note": "doc_overlap_guard fails in D1-24k (champion) and B1-100k-v2 (D10w/D16); TEST rows by split only (sealed). DEV / DEV-subset (dev_subset_m1, 2,008) / full-DEV rows matched: 0, so no rescore needed.",
+ "rows": [
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:38050",
+   "train_source": "nq",
+   "reasons": "EU",
+   "train_field": {
+    "instructions": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:22291",
+   "train_source": "nq",
+   "reasons": "EU",
+   "train_field": {
+    "criteria": 327
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:53658~inj:d1a:fake_correction",
+   "train_source": "nq",
+   "reasons": "U",
+   "train_field": {
+    "criteria": 91
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.474,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:73228",
+   "train_source": "nq",
+   "reasons": "EU",
+   "train_field": {
+    "criteria": 236
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:clinc150:983~view:intent16-v1",
+   "train_source": "clinc150",
+   "reasons": "EU",
+   "train_field": {
+    "state.background_reading": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:mmlu_aux:57967",
+   "train_source": "mmlu_aux",
+   "reasons": "EU",
+   "train_field": {
+    "state.background_reading": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:glaive_fc:12464",
+   "train_source": "glaive_fc",
+   "reasons": "EU",
+   "train_field": {
+    "state.background_reading": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:clinc150:3186~view:intent16-v1",
+   "train_source": "clinc150",
+   "reasons": "EU",
+   "train_field": {
+    "state.background_reading": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:3966",
+   "train_source": "nq",
+   "reasons": "EU",
+   "train_field": {
+    "criteria": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:63618",
+   "train_source": "nq",
+   "reasons": "EU",
+   "train_field": {
+    "criteria": 149
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:13203",
+   "train_source": "nq",
+   "reasons": "EU",
+   "train_field": {
+    "criteria": 225
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:50563",
+   "train_source": "nq",
+   "reasons": "EU",
+   "train_field": {
+    "criteria": 192
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.542,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:16515",
+   "train_source": "nq",
+   "reasons": "EU",
+   "train_field": {
+    "criteria": 456
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:when2call:994",
+   "train_source": "when2call",
+   "reasons": "EU",
+   "train_field": {
+    "state.background_reading": 119,
+    "state.functions": 7
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:38429",
+   "train_source": "nq",
+   "reasons": "EU",
+   "train_field": {
+    "criteria": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:nq:85600~inj:d1a:urgency",
+   "train_source": "nq",
+   "reasons": "U",
+   "train_field": {
+    "criteria": 237
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.474,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "d1-24k",
+   "train_id": "m2:mmlu_aux:1717",
+   "train_source": "mmlu_aux",
+   "reasons": "R",
+   "train_field": {
+    "state.prompt": 3
+   },
+   "eval_run_id": "6:RouterBench-5shot:RouterBench-5shot:393",
+   "split": "HELDOUT",
+   "eval_family": "RouterBench-5shot",
+   "unit": "S:input_to_route",
+   "coverage": 0.009,
+   "class": "c",
+   "note": "3-gram row; grams sit in 185 RouterBench-5shot held-out prompts (shared few-shot frame)"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:glaive_fc:112037",
+   "train_source": "glaive_fc",
+   "reasons": "EU",
+   "train_field": {
+    "state.background_reading": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:glaive_fc:88159",
+   "train_source": "glaive_fc",
+   "reasons": "EU",
+   "train_field": {
+    "state.background_reading": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:hellaswag:0",
+   "train_source": "hellaswag",
+   "reasons": "R",
+   "train_field": {
+    "state.prefix": 9,
+    "criteria": 12
+   },
+   "eval_run_id": null,
+   "split": "many",
+   "eval_family": "HellaSwag (df 1401)",
+   "unit": "I/O",
+   "coverage": null,
+   "class": "c",
+   "note": "21 grams, all in 1,401 eval rows (HellaSwag frame); template, missed by the train-df>=10 test"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:mmlu_aux:1717",
+   "train_source": "mmlu_aux",
+   "reasons": "R",
+   "train_field": {
+    "state.prompt": 3
+   },
+   "eval_run_id": "6:RouterBench-5shot:RouterBench-5shot:393",
+   "split": "HELDOUT",
+   "eval_family": "RouterBench-5shot",
+   "unit": "S:input_to_route",
+   "coverage": 0.009,
+   "class": "c",
+   "note": "3-gram row; grams sit in 185 RouterBench-5shot held-out prompts (shared few-shot frame)"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:mmlu_aux:78789",
+   "train_source": "mmlu_aux",
+   "reasons": "EU",
+   "train_field": {
+    "state.background_reading": 119
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "Amazon-ESCI",
+   "unit": "S:product",
+   "coverage": 0.62,
+   "class": "b",
+   "note": "Wikipedia lead (Beauty and the Beast) used as an ESCI TEST product description; ours carries it as NQ passage / background_reading filler"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:when2call:14977~inj:d1a:fake_correction",
+   "train_source": "when2call",
+   "reasons": "EU",
+   "train_field": {
+    "state.tools": 9
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "BFCL-tool-selection",
+   "unit": "S:functions",
+   "coverage": 0.6,
+   "class": "b",
+   "note": "public tool spec (BFCL TEST function schema) reproduced in when2call/glaive tool lists"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:when2call:1694~inj:hijack:predecided",
+   "train_source": "when2call",
+   "reasons": "EU",
+   "train_field": {
+    "state.tools": 11
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "BFCL-tool-selection",
+   "unit": "S:functions",
+   "coverage": 0.6,
+   "class": "b",
+   "note": "public tool spec (BFCL TEST function schema) reproduced in when2call/glaive tool lists"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:when2call:2717",
+   "train_source": "when2call",
+   "reasons": "EU",
+   "train_field": {
+    "state.functions": 7
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "BFCL-tool-selection",
+   "unit": "S:functions",
+   "coverage": 0.6,
+   "class": "b",
+   "note": "public tool spec (BFCL TEST function schema) reproduced in when2call/glaive tool lists"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:when2call:3524",
+   "train_source": "when2call",
+   "reasons": "EU",
+   "train_field": {
+    "state.tools": 5
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "BFCL-tool-selection",
+   "unit": "S:functions",
+   "coverage": 0.6,
+   "class": "b",
+   "note": "public tool spec (BFCL TEST function schema) reproduced in when2call/glaive tool lists"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:when2call:3706~inj:hijack:disregard_task",
+   "train_source": "when2call",
+   "reasons": "EU",
+   "train_field": {
+    "state.functions": 9,
+    "criteria": 3
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "BFCL-tool-selection",
+   "unit": "S:functions",
+   "coverage": 0.6,
+   "class": "b",
+   "note": "public tool spec (BFCL TEST function schema) reproduced in when2call/glaive tool lists"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:when2call:4832",
+   "train_source": "when2call",
+   "reasons": "EU",
+   "train_field": {
+    "state.tools": 7
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "BFCL-tool-selection",
+   "unit": "S:functions",
+   "coverage": 0.6,
+   "class": "b",
+   "note": "public tool spec (BFCL TEST function schema) reproduced in when2call/glaive tool lists"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:when2call:7980",
+   "train_source": "when2call",
+   "reasons": "EU",
+   "train_field": {
+    "state.functions": 11
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "BFCL-tool-selection",
+   "unit": "S:functions",
+   "coverage": 0.6,
+   "class": "b",
+   "note": "public tool spec (BFCL TEST function schema) reproduced in when2call/glaive tool lists"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:winogrande:5328",
+   "train_source": "winogrande",
+   "reasons": "R",
+   "train_field": {
+    "state.background_reading": 124
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "BRIGHT-retrieval",
+   "unit": "I (candidate pool)",
+   "coverage": 0.049,
+   "class": "b",
+   "note": "background_reading filler passage that is one candidate document of a BRIGHT TEST retrieval pool (124 of 2,538 unit grams)"
+  },
+  {
+   "draw": "b1-100k-v2",
+   "train_id": "m2:winogrande:5962",
+   "train_source": "winogrande",
+   "reasons": "R",
+   "train_field": {
+    "state.background_reading": 124
+   },
+   "eval_run_id": "sealed (TEST)",
+   "split": "TEST",
+   "eval_family": "BRIGHT-retrieval",
+   "unit": "I (candidate pool)",
+   "coverage": 0.049,
+   "class": "b",
+   "note": "background_reading filler passage that is one candidate document of a BRIGHT TEST retrieval pool (124 of 2,538 unit grams)"
+  }
+ ]
+}

@@ -580,6 +580,11 @@ def test_pending_partial_underpowered_are_valid_measured_results():
     assert 'in MEASURED_EVAL_EXITS' in src and '"verdict": "measured"' in src
 
 
+DOC_INDEX_KEY16 = json.loads((ROOT / "data/manifests/doc_overlap/index-pin.json").read_text(encoding="utf-8"))["key"][:16]
+DOC_INDEX_FILES = ("df.npy", "ent.npy", "fl.npy", "h.npy", "meta.json", "pcnt.npy", "post.npy", "pstart.npy",
+                   "u_allow.npy", "u_den.npy", "u_field.npy", "u_row.npy")
+
+
 def test_launch_blocks_and_data_pins():
     p = PARAMS
     assert p["submit"]["command"] == "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh"
@@ -590,11 +595,15 @@ def test_launch_blocks_and_data_pins():
                      "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
                      "m2-150k/sample-150000-seed20261006.content.jsonl.gz", "suite-0.2/selected-rows.jsonl.gz",
                      "suite-0.2/added-rows.jsonl.gz", "suite-0.2/excluded-questions.json",
-                     "parent_arm_seed/arm.json", "parent_arm_seed/units-g12.json", "parent_arm_seed/units-index.json"}
+                     "parent_arm_seed/arm.json", "parent_arm_seed/units-g12.json", "parent_arm_seed/units-index.json"} | {
+        f"m2/doc-overlap/{DOC_INDEX_KEY16}/{n}" for n in DOC_INDEX_FILES}
     from jobs.common.launch import data_pin, pins
 
     files = {"jobs/m2_first_cell/job_params.json": ((ROOT / "jobs/m2_first_cell/job_params.json").read_bytes(), 0)}
     for d in p["context"]["data"]:  # every shipped file has a pin: a line under its context path, or a job_params key
+        if "pin_sha256" in d:  # the doc-overlap eval-hash index (hashes only): literal sha of the shipped bytes
+            assert d["dest"].startswith(f"m2/doc-overlap/{DOC_INDEX_KEY16}/") and len(d["pin_sha256"]) == 64, d
+            continue
         if "pin_json" in d:  # the L-34 parent arm seed: pinned by job_params parent_arm_seed
             assert d["pin_json"][0] == "jobs/m2_first_cell/job_params.json" and len(data_pin(files, d)) == 64, d
             continue
