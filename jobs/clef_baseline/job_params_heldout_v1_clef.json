@@ -1,0 +1,134 @@
+{
+ "_comment": "HELD-OUT attack battery heldout_v1 on clef (JOB_SPEC section 14; design analysis/SAFETY_HELDOUT_DESIGN.md, pre-declared 2026-10-08). Scores the 7,920 pinned units (360 hijack_subset(steer_dev) requests of cohort v2, as job-j8wgy / job-m8pi5, x clean + 12 H + 8 S + S07; request ids + unit content hashes pinned in baselines.clef_heldout_v1) through the Clef decide adapter on the FAST GDN path; V0 on CPU before any download checks the template-set hash (690dc5e4...), disjointness vs every in-repo attack / training template and the unit set (exit 21 = mismatch, fail closed). Per-arm summary (hijack / steer rates, two-way bootstrap B=2000, per-template + per-axis); the paired Holm contrasts vs the champion run on CPU from the landed rows (baselines.clef_heldout_v1 compare). Pricing: job-sgihj per-row model at <= 1,050 tokens/unit = 75 ms/unit; 7,920 x 75 ms x 5.39 (card median-latency ratio) = 53.4 min + 1.6 load (expected at job-d2u54's measured 2.373x: 23.5). Worst case (60 + 2 x 91) x 0.0495 = $11.98; expected 60 min = $2.97 (run only ~$1.98).",
+ "test_env": {
+  "transformers": "5.10.2",
+  "with": [
+   "flash-linear-attention==0.5.2",
+   "fla-core==0.5.2"
+  ],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo or the launch data; checked on the PR that pins them"
+   },
+   {
+    "reason": "CLEF_TEST_SGIHJ_DECIDE",
+    "why": "job-sgihj's decide results (art-8y6d8) are a local reference, not launch data; the ROWS=overlength job ships them pinned"
+   }
+  ],
+  "image": "jobs/clef_baseline/Dockerfile"
+ },
+ "job": "clef-heldout-v1-clef",
+ "chip": "h100",
+ "chip_count": 1,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "batch_usd_per_min": 0.0495,
+ "clock_lock": true,
+ "runner": "jobs/clef_baseline/run_job.sh",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement of a frozen external checkpoint on the pre-declared heldout_v1 units: rates and CIs are reported, nothing is promoted or selected; the template-set / unit-set checks are fail-closed preconditions (exit 21), and the claim rule (Holm over 4 contrasts vs the champion) is applied on CPU after all three arms land",
+ "mission": "clef-baseline-safety-heldout-v1",
+ "pricing": "jobs/clef_baseline/price.py: job-sgihj measured Clef-flash per-row rates; Clef planned at the card's 5.39x median-latency ratio (job-d2u54 measured fast-path ratio 2.373x is the expected case)",
+ "max_duration_minutes": 91,
+ "hf_cache": false,
+ "hard_cap_usd": 12.0,
+ "reserve_minutes": 4,
+ "phase_caps_minutes": {
+  "setup": 5,
+  "download": 14,
+  "score": 62,
+  "summarize": 5,
+  "report": 1
+ },
+ "expected_minutes": {
+  "build": 20,
+  "setup": 2,
+  "download": 10,
+  "score": 25,
+  "summarize": 2,
+  "report": 1
+ },
+ "model": "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c",
+ "models": [
+  "Cloudflare/clef@2f3de3dd85f379784083b0814d997ab627200f0c"
+ ],
+ "eligibility": {
+  "primary": "both: clean-correct in BOTH the Clef model and the champion (compare_arms eligibility='both'); steer_rate only (applied in the CPU compare step)",
+  "also": [
+   "this arm's own reference_y (own clean-correct; metrics.summarise), reported in-job"
+  ]
+ },
+ "gdn_path": "fast",
+ "env": {
+  "RELEASE": "clef",
+  "JOB": "V"
+ },
+ "submit": {
+  "command": "/app/jobs/clef_baseline/run_job.sh",
+  "key": "clef-heldout-v1-clef",
+  "env": {
+   "RELEASE": "clef",
+   "JOB": "V"
+  },
+  "clock_lock": true,
+  "label": "clef heldout_v1: clef on the 7,920 pre-declared held-out attack units (21 templates), FAST GDN",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/clef-heldout-v1/result.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-heldout-v1/heldout/summary-clef.json"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-heldout-v1/heldout/units-clef.jsonl"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/clef-heldout-v1/SHA256SUMS"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/clef-heldout-v1/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "unsupported": "the Clef image copies app/ (not code/m1/): launch.py CONTEXT_RECIPES ('clef_baseline', 'heldout_v1_clef') rewrites it; no data shipped (synthetic units from the committed cohort v2 + template file)"
+ },
+ "mode": "heldout_v1_clef",
+ "heldout": {
+  "battery": "heldout_v1",
+  "template_set_sha256": "690dc5e41c7edb836c19b97a018929b14000237f157c7a93045b228c4cbdd941",
+  "template_file": "analysis/safety_heldout/heldout_v1_templates.json",
+  "n_units": 7920,
+  "families": {
+   "clean": 360,
+   "heldout_hijack": 4320,
+   "heldout_steer": 2880,
+   "heldout_abstain": 360
+  }
+ }
+}

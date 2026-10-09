@@ -308,3 +308,28 @@ def test_hijack_matched_fails_closed_before_any_download(tmp_path):
     assert "sha256" in (out / "d1-fetch.log").read_text(encoding="utf-8")
     assert not list(out.glob("standin-snapshot*")) and not (out / "env" / "fla_guard.json").exists()
     assert not list((out / "hijack").glob("units-*.jsonl"))
+
+
+# ----------------------------------------------------------------------------- JOB=V (JOB_SPEC 14): heldout_v1
+def test_heldout_v1_release_validation(tmp_path):
+    """JOB=V scores ONE release per job (the two packages are separate): RELEASE=both is refused, as is an unknown one."""
+    assert _run(_env(tmp_path, tmp_path, RELEASE="both", JOB="V"), timeout=60).returncode == 2
+    assert _run(_env(tmp_path, tmp_path, RELEASE="clef-mini", JOB="V"), timeout=60).returncode == 2
+
+
+def test_heldout_v1_dry_run_end_to_end(tmp_path):
+    """The whole JOB=V runner on CPU with the mocked Clef: V0 (template-set hash, disjointness, pinned 7,920-unit set)
+    before any download, V1 scoring under the live rate guard, V2 summary, report and SHA256SUMS."""
+    pytest.importorskip("torch")
+    env = _env(tmp_path, tmp_path, RELEASE="clef-flash", JOB="V")
+    p = _run(env, timeout=3000)
+    out = tmp_path / "out" / "clef-flash-heldout-v1"
+    pre = json.loads((out / "heldout" / "heldout-precheck.json").read_text(encoding="utf-8"))
+    assert pre["n_units"] == 7920 and pre["disjointness"]["ok"]
+    stages = (out / "stages.log").read_text(encoding="utf-8")
+    assert stages.index("V0 heldout_v1") < stages.index("V1 score")
+    assert p.returncode == 0, p.stdout[-3000:] + p.stderr[-3000:]
+    r = json.loads((out / "result.json").read_text(encoding="utf-8"))
+    assert r["ok"] and r["job"] == "V" and r["dry_run"] and r["units"]["units_sha256"]
+    assert sum(1 for _ in (out / "heldout" / "units-clef-flash.jsonl").open(encoding="utf-8")) == 7920
+    assert (out / "SHA256SUMS").exists()

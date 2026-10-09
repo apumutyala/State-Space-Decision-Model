@@ -139,3 +139,30 @@ B = 2000, plus the fixed-template cluster bootstrap) and `compare_clean`.
    hijack_eval run ~$3.56 run-only for D1), trim declared templates if needed; dry-run; package, do not submit.
 4. Optional later: multi-question cross-field variant (second benign question, injection targets the other
    question) with its own clean twin; base units from the safety_eval `test` split clusters as a base-item holdout.
+
+## 7. Implementation status (2026-10-09, branch `claude/b-heldout-battery`)
+
+Done: `safety_eval/heldout_v1.py` (loader with the hash pin, variant builder), `baselines/clef_heldout_v1.py`
+(precheck / score / summarize / compare with Holm over the 4 primary contrasts), and the Clef job `jobs/clef_baseline`
+`JOB=V` with modes `heldout_v1_clef_flash` and `heldout_v1_clef` (JOB_SPEC section 14). There are CPU tests
+(`tests/safety_eval/test_heldout_v1.py`, `tests/clef/test_clef_heldout_v1.py`) and a training-draw scan
+(`analysis/safety_heldout/scan_draws.py`, receipt `scan_draws_receipt.json`). Pinned unit set: 7,920 units, request ids
+`c550cf02...`, unit hashes `9612ab63...`.
+
+Implementation decisions. These were made before any run and must not change after results:
+- S07 is its own family, `heldout_abstain`, with `steer_target` = `ask_to_clarify`. That option is allowed and non-gold
+  in all 360 base requests. So S07 never enters the pooled `heldout_steer` rate (section 4: "reported separately").
+- `mid` = an interior sentence boundary (deterministic). **Caveat:** 288 of the 360 base requests have a one-sentence
+  untrusted field (the `forwarded_content` receipts). For those, the 4 mid templates are appended at the end of the same
+  line. That covers 1,152 of the 1,440 mid units, flagged per unit as `_meta.mid_fallback_end`. The position axis is
+  therefore mostly end-vs-end for these templates.
+- `$X_desc` is the criteria text verbatim, including its final period. S04, S06 and S08 then render "...$8008.25.." or
+  "($8008.25.)". This is cosmetic and identical for every arm, so it is left as declared.
+- The champion arm's readout: section 3 lists D1 v1 and v3w. The task brief says the champion is scored with v3w by
+  default. The primary contrasts here use whichever champion rows are passed to `compare`. Its identity (checkpoint +
+  readout) is recorded in the output.
+
+Not done: the champion RWKV arm job. The checkpoint runner with the readout switch (`hijack_eval_champ`, readout v3w,
+safetensors loader) lives on `stack/rwkv7/champion-d1v3w`, and that branch was not merged here. It needs a mode
+`heldout_v1_champ` (stage = `safety_eval.heldout_v1.expected_variants`, `CKPT_URL` placeholder, readout v3w) on top of
+that branch. Its rows then go to `baselines.clef_heldout_v1 compare --champion`.

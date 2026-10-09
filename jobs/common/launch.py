@@ -152,6 +152,11 @@ CONTEXT_RECIPES: dict[tuple[str, str | None], dict] = {
     # JOB=H (JOB_SPEC 13): synthetic safety_eval units only (no data shipped); D1's rows come from $D1_REF_URL
     ("clef_baseline", "hijack_matched"): {**_CLEF_IMAGE, "data": [],
                                           "manifest_files": ["train/cohorts/m2-dev-cohort-v2.jsonl.gz"]},
+    # JOB=V (JOB_SPEC 14): heldout_v1 units are synthetic (committed cohort v2 + the pinned template file); no data
+    **{("clef_baseline", f"heldout_v1_{r}"): {**_CLEF_IMAGE, "data": [],
+                                              "manifest_files": ["train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+                                                                 "analysis/safety_heldout/heldout_v1_templates.json"]}
+       for r in ("clef_flash", "clef")},
 }
 
 
