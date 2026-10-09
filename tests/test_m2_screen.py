@@ -45,7 +45,8 @@ def _chain(tmp_path, units: bytes, inner="out/units-child-index.json"):
 
 
 def test_screen_readout_native_named_and_unknown():
-    assert SC.screen_readout({}, D1_CFG) == {"name": "native", "template": V1, "layout": "ordered", "native": True}
+    assert SC.screen_readout({}, D1_CFG) == {"name": "native", "template": V1, "layout": "ordered", "native": True,
+                                             "reference_match": "exact", "family": V1}
     r = SC.screen_readout({"screen_readout": "v3w"}, D1_CFG)
     assert (r["template"], r["layout"], r["native"]) == (V3W, "g1v2", False)
     with pytest.raises(SC.ScreenError) as e:

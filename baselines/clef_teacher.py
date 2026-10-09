@@ -237,7 +237,7 @@ def select(a) -> int:
     attack_drawn = [r["id"] for r in drawn if record_hits(r)]
     if attack_drawn:
         raise Contamination(f"{len(attack_drawn)} drawn record(s) carry an eval attack template, e.g. {attack_drawn[:3]}")
-    attack["drawn_hits"] = 0
+    attack_sum["drawn_hits"] = 0
     if forbidden or frozen or rep["hits"]:
         raise Contamination(f"{len(forbidden)} drawn record(s) refused by the DEV/TEST guard ({forbidden[:2]}), "
                             f"{len(frozen)} target a frozen held-out family ({frozen[:2]}), "

@@ -167,12 +167,13 @@ def test_mode_configs_are_d16_on_the_q9af_parent():
     assert CELL["parent"] == "q9af" and CELL["template"] == TPL and CELL["layout"] == "g1v2"
     assert CELL["row_batch"] == 1 and CELL["row_tokens"] == 0 and CELL["compile_blocks"] is False
     assert "rwkv7_wkv" not in CELL and CELL["act_ckpt"] is True
-    for k in ("train_set", "train_max_k", "row_options", "lr_schedule", "lr_min_frac", "dev_card_every",
+    for k in ("train_max_k", "row_options", "lr_schedule", "lr_min_frac", "dev_card_every",
               "dev_card_rows", "best_ckpt", "collapse_guard", "lr_head", "lr_lora", "lora_rank", "max_minutes",
-              "max_steps", "min_steps", "t_ladder", "eval_max_t", "max_k", "n_train_records", "cohort_sha256", "head",
+              "max_steps", "min_steps", "t_ladder", "eval_max_t", "max_k", "cohort_sha256", "head",
               "loss_arm", "row_plan", "cont_plan", "seed", "batch_size", "grad_accum"):
         assert CELL[k] == D16[k], k
     assert CELL["train_set"]["attack_clean"]["n_excluded"] == 5201 and CELL["train_max_k"] == 255
+    assert CELL["train_set"]["doc_clean"]["n_excluded"] == 1801 and CELL["n_train_records"] == 93013
     q = CELL["q9af"]
     assert q["base_repo"] == "Qwen/Qwen3.5-9B" and q["hybrid"] is False
     assert q["base_config_sha256"] == "d0883072e01861ed0b2d47be3c16c36a8e81c224c7ffaa310c6558fb3f932b05"

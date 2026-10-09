@@ -364,7 +364,7 @@ def test_runner_orders_guards_before_training_and_prices_every_eval_first():
     assert i("jobs.m2_parent_arm.score_parent --parent") < i("-m jobs.m2_first_cell.reprice") < train < i("-m train.m2_gates")
     assert "export_phase heldout" in JOB  # review fix 3
     assert '--report "$ARM/rate-parent-$PSTAGE.json"' in JOB  # rate reports survive a restart (reprice reads them)
-    assert JOB.count("rate_guard run-weighted") == 2  # parent stages (loop) + child evals
+    assert JOB.count("rate_guard run-weighted") == 4  # parent stages (loop) + child evals + fulldev + screen
     assert "jobs/common/finalize.py" in JOB and not re.search(r"touch [^\n]*DONE", JOB)
     assert not re.search(r"timeout \d+m", JOB)  # every cap comes from job_params
     assert "--final" not in JOB and "SSDM_UNSEAL_TEST" not in JOB and "--slice test" not in JOB

@@ -18,7 +18,7 @@
   1024,
   2048
  ],
- "n_train_records": 100000,
+ "n_train_records": 93013,
  "n_eval_records": 0,
  "min_train_items": 5000,
  "max_steps": 4500,
@@ -69,9 +69,38 @@
     "d1a_steer:urgency": 1321
    },
    "records_gz_sha256": "faee5885d0f1c74c9f98562f82b13f087a6142a04b3a55204bd51b4bb2df70d9",
-   "rule": "attack_guard/v1: 6-gram or exact (4-5 word) fragment of any eval attack template, normalised",
-   "templates_sha256": "930863660b73ba676a236c1729ed4535c99c0691f5f41639099723ac93ec77fd",
-   "source": "data/manifests/attack_clean/b1-draw100k-v2.json"
+   "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+   "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+   "source": "data/manifests/attack_clean/b1-draw100k-v2.json",
+   "note": "attack_guard v2 (agent-main 1e647e0) pin of the same 5,201 ids (D16's v1 pin has the v1 templates_sha256 930863...)"
+  },
+  "doc_clean": {
+   "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams; boilerplate = eval df > 1% AND train df > 1%; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+   "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set",
+   "index_sha256": "b9bc7ace37bacdd0ebc5efa4bbfe504a672ce9584b42e3bdc21d4d3eceb9f3ff",
+   "allowlist_sha256": "2afb1df4f4b7d6725e92a2924bbc604fb109808f3d4e9ffbcf2afb61828ca4de",
+   "n_records": 100000,
+   "n_excluded": 1801,
+   "n_kept": 98199,
+   "excluded_ids_sha256": "b07354c044dd190b036810910a5b3a546f46344b27e5b7ac2b6b50a17c7ed9ae",
+   "per_source_fail": {
+    "anli": 2,
+    "b1fam_apibank": 132,
+    "b1fam_bfcl_synth": 422,
+    "b1fam_cruxeval_synth": 603,
+    "boolq": 1,
+    "clinc150": 1,
+    "glaive_fc": 39,
+    "gsm8k": 3,
+    "hellaswag": 1,
+    "mmlu_aux": 2,
+    "nq": 2,
+    "toolace": 394,
+    "when2call": 197,
+    "winogrande": 2
+   },
+   "draw": "b1-draw100k-v2",
+   "source": "python -X utf8 -m train.doc_overlap_guard clean-spec --records <ssdm-data>/m2/build/b1-draw100k-v2/records.jsonl.gz (CPU 2026-10-09, claude/b-doc-overlap-gate d0cebef; the box must load the same eval index sha256)"
   }
  },
  "act_ckpt": true,
@@ -108,5 +137,6 @@
  },
  "execution_note": "row_batch 1: one row per backbone call (8 rows / optimiser step via grad_accum 8); act_ckpt true (heads/act_ckpt.py covers Qwen3.5 decoders); the cache fork reads each row's prompt once and forks its K continuations. row_plan / cont_plan / row_options only act with row_batch > 1 (train/trainer.py). Step-time basis (jobs.q9af_cell.price, job-5cmat rates): ~3.1 s / 8-row step at r64 -> the 4,500 max_steps bind at ~233 min, inside the 380-min clock.",
  "v3w_note": "generic v3w (decide/v3w_generic.py, PINNED_SPEC_SHA256 'jrt-v3w-generic:qwen3.5' 2e4907ee...; 255 single-token codes after the Qwen answer prefix, word ids by unique first token, Qwen3.5 chat template with enable_thinking=False -> empty think block, budget 16,383). Bound to the snapshot's own tokenizer files on the box (run_cell / score_parent / m2_gates / screen): any other tokenizer or template fails closed.",
- "census_note": "CPU 2026-10-09 (scripts/check_q9af_v3w_equivalence.py, real Qwen3.5-9B tokenizer + chat template, 10,000 seeded B1 100k-v2 records): 15,510 items, 14,741 kept by the cell filter (train_max_k 255, T <= 2,048); K <= 16: 14,519, K 17-255: 991; T mean 861.3, p50 827, p90 1,516, p99 2,276, max 3,576; 769 (5.0 %) over 2,048 (RWKV7 v3w on its own tokenizer: 797 of a 10k sample), so the D16 ladder and caps stay. train == readout on 1,919 rows / 1,000 records (K<=16 1,602; K 17-255 317; word-id 1,038; dict instructions 408): 0 mismatches (receipts/2026-10-09-q9af-v2-v3w/check_q9af_v3w_equivalence.json)."
+ "census_note": "CPU 2026-10-09 (scripts/check_q9af_v3w_equivalence.py, real Qwen3.5-9B tokenizer + chat template, 10,000 seeded B1 100k-v2 records): 15,510 items, 14,741 kept by the cell filter (train_max_k 255, T <= 2,048); K <= 16: 14,519, K 17-255: 991; T mean 861.3, p50 827, p90 1,516, p99 2,276, max 3,576; 769 (5.0 %) over 2,048 (RWKV7 v3w on its own tokenizer: 797 of a 10k sample), so the D16 ladder and caps stay. train == readout on 1,919 rows / 1,000 records (K<=16 1,602; K 17-255 317; word-id 1,038; dict instructions 408): 0 mismatches (receipts/2026-10-09-q9af-v2-v3w/check_q9af_v3w_equivalence.json).",
+ "n_train_records_note": "the whole cleaned pool: 100,000 - 5,201 attack_clean - 1,801 doc_clean (15 in both) = 93,013 (train.train_set.draw refuses n_train_records > pool; D16's 100,000 would stop the cell at the draw, exit 28)"
 }
