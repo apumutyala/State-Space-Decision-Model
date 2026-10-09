@@ -74,11 +74,12 @@
  "lr_min_frac": 0.1,
  "dev_card_every": 200,
  "dev_card_rows": 200,
+ "dev_card_seed": 0,
  "best_ckpt": true,
  "collapse_guard": true,
  "collapse_window": 50,
  "collapse_loss_frac": 0.8,
  "collapse_acc_frac": 0.6,
  "collapse_max_events": 3,
- "anti_collapse_note": "train/trainer.py TrainConfig anti-collapse fields; each absent key = the old behaviour. lr_schedule and collapse_* are in the config hash; dev_card_* and best_ckpt are operational. Each dev card scores 200 rows (budget it inside max_minutes)."
+ "anti_collapse_note": "train/trainer.py TrainConfig anti-collapse fields; each absent key = the old behaviour. lr_schedule and collapse_* are in the config hash; with collapse_guard on, dev_card_every/rows/seed are too (they set the accuracy-trigger timing and the rollback target); best_ckpt is operational. Each dev card scores a 200-row hash-stratified sample over every cohort-dev source (dev_card_seed; ids + sha256 in cell.json dev_card_sample; G12 reports paired.dev_remainder without them). Budget it inside max_minutes."
 }

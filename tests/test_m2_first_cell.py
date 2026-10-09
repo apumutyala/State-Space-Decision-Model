@@ -432,7 +432,8 @@ def test_training_budget_is_cumulative_over_restarts():
     assert train_seconds_used({}, resumed=True) == 0.0
     src = (ROOT / "train/run_cell.py").read_text(encoding="utf-8")
     assert 't_end = t_start + 60 * cfg["max_minutes"] - used_before' in src
-    assert src.count('cell["train_clock"] = {"step": tr.step') == 2  # every checkpoint and the final save
+    # every checkpoint, every best-ckpt dev-card save (PR #232 S3) and the final save
+    assert src.count('cell["train_clock"] = {"step": tr.step') == 3
 
 
 def _rate_report(d, st, scoring_min, exit_=0):
