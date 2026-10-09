@@ -427,18 +427,61 @@ def valid_result(d: Any) -> bool:
 
 
 # ------------------------------------------------------------------------------------------------ CPU: pricing
-def estimate(params: dict, sel: dict) -> dict[str, Any]:
-    """Minutes per arm = item tokens (selection's committed v1-token estimate x the v3w length ratio) x the MEASURED
-    per-token child decide() wall (D13 screen, job-hjwpq: the slower of the two cells) + the arm's fixed minutes
-    (``evals_fixed_minutes[arm]``: model load + 150k lineage); pass = each arm <= 95 % of its cap."""
+SLOW_BOX = 1.25  # every cap must still hold on a box this much slower than the measured rates (load AND scoring)
+
+
+def _arm_minutes(params: dict, sel: dict) -> tuple[float, dict[str, float], dict[str, float]]:
     m = params["measured_rates_reference"]
     toks = sel["est_v1_tokens"] * float(params["readout_length_ratio"][READOUT])
-    caps = params["phase_caps_minutes"]
-    phases = {f"score_{arm}": toks / 1000 * m["child_s_per_1k_tokens"] / 60 + params["evals_fixed_minutes"][arm]
-              for arm in ARM_NAMES}
+    score = {arm: toks / 1000 * m["child_s_per_1k_tokens"] / 60 for arm in ARM_NAMES}
+    load = {arm: float(params["evals_fixed_minutes"][arm]) for arm in ARM_NAMES}
+    return toks, score, load
+
+
+def estimate(params: dict, sel: dict) -> dict[str, Any]:
+    """Setup preflight (exit 15 BEFORE any checkpoint is fetched). Per arm: load = ``evals_fixed_minutes[arm]`` (model
+    load + 150k lineage), scoring = item tokens (the selection's committed v1-token estimate x the v3w length ratio) x
+    the MEASURED child decide() wall (D13 screen, job-hjwpq; D1's own v1 rate is lower). Pass = on a box SLOW_BOX
+    (1.25x) slower than measured, for every arm: load <= its ``score_setup_cap_minutes`` (the rate guard's
+    --setup-cap-min, so a slow load stops with 15 before scoring starts), load + scoring <= 95 % of the phase cap, and
+    the whole expected schedule (``expected_minutes`` minus build) x 1.25 fits max_duration minus reserve."""
+    toks, score, load = _arm_minutes(params, sel)
+    caps, scap = params["phase_caps_minutes"], params["score_setup_cap_minutes"]
+    phases = {f"score_{a}": load[a] + score[a] for a in ARM_NAMES}
+    slow = {k: v * SLOW_BOX for k, v in phases.items()}
+    sched = sum(v for k, v in params["expected_minutes"].items() if k != "build")
+    checks = {
+        **{f"score_{a}_slow_le_95pct_cap": slow[f"score_{a}"] <= 0.95 * caps[f"score_{a}"] for a in ARM_NAMES},
+        **{f"load_{a}_slow_le_setup_cap": load[a] * SLOW_BOX <= scap[a] for a in ARM_NAMES},
+        **{f"setup_cap_{a}_leaves_scoring_room": scap[a] + score[a] * SLOW_BOX <= 0.95 * caps[f"score_{a}"]
+           for a in ARM_NAMES},
+        "schedule_slow_fits": sched * SLOW_BOX <= params["max_duration_minutes"] - params["reserve_minutes"],
+    }
     return {"tokens_per_arm": round(toks), "minutes": {k: round(v, 1) for k, v in phases.items()},
-            "caps": {k: caps[k] for k in phases}, "ok": all(v <= 0.95 * caps[k] for k, v in phases.items()),
+            "minutes_slow_box": {k: round(v, 1) for k, v in slow.items()}, "slow_box_factor": SLOW_BOX,
+            "expected_run_minutes": sched, "caps": {k: caps[k] for k in phases}, "setup_caps": dict(scap),
+            "checks": checks, "ok": all(checks.values()),
             "usd_batch_scoring": round(sum(phases.values()) * params["batch_usd_per_min"], 2)}
+
+
+def reprice(params: dict, sel: dict, rate_report: dict, timing: dict, elapsed_min: float) -> dict[str, Any]:
+    """Between the arms (exit 15 BEFORE D1's checkpoint is fetched): D1's phase re-projected from D13's MEASURED load
+    (``rate-score_d13.json`` scoring_started_min, scaled by the arms' fixed-minute ratio) and MEASURED scoring wall
+    (``timing-d13.json``). Pass = projected D1 phase <= 95 % of its cap AND elapsed + checkpoint_d1 cap + projection +
+    report cap <= max_duration minus reserve."""
+    toks, score, load = _arm_minutes(params, sel)
+    caps = params["phase_caps_minutes"]
+    load_d13 = float(rate_report.get("scoring_started_min") or load["d13"])
+    d1_load = load["d1"] * max(1.0, load_d13 / load["d13"])
+    d1_score = max(float(timing["sum_row_wall_s"]) / 60, score["d1"])  # same items + readout: D13's measured wall
+    proj = d1_load + d1_score
+    left = params["max_duration_minutes"] - params["reserve_minutes"] - elapsed_min
+    need = caps["checkpoint_d1"] + proj + caps["report"]
+    out = {"d13_load_min": round(load_d13, 1), "d1_load_proj": round(d1_load, 1), "d1_score_proj": round(d1_score, 1),
+           "d1_phase_proj": round(proj, 1), "cap": caps["score_d1"], "elapsed_min": elapsed_min,
+           "minutes_left": round(left, 1), "minutes_needed": round(need, 1)}
+    out["ok"] = proj <= 0.95 * caps["score_d1"] and need <= left
+    return out
 
 
 # ------------------------------------------------------------------------------------------------ CLI
@@ -492,6 +535,12 @@ def main(argv=None) -> int:
     e = sub.add_parser("estimate")
     e.add_argument("--params", required=True)
     e.add_argument("--selection", required=True)
+    q = sub.add_parser("reprice", help="between arms: D1 re-projected from D13's measured load + scoring")
+    q.add_argument("--params", required=True)
+    q.add_argument("--selection", required=True)
+    q.add_argument("--rate-report", required=True)
+    q.add_argument("--timing", required=True)
+    q.add_argument("--elapsed-min", type=float, required=True)
     s = sub.add_parser("score")
     s.add_argument("--arm", choices=ARM_NAMES, required=True)
     s.add_argument("--items", required=True)
@@ -531,6 +580,13 @@ def main(argv=None) -> int:
                        json.loads(Path(a.selection).read_text(encoding="utf-8")))
         print(json.dumps(est, indent=1))
         return 0 if est["ok"] else 15
+    if a.cmd == "reprice":
+        rr = json.loads(Path(a.rate_report).read_text(encoding="utf-8"))
+        rp = reprice(json.loads(Path(a.params).read_text(encoding="utf-8")),
+                     json.loads(Path(a.selection).read_text(encoding="utf-8")), rr,
+                     json.loads(Path(a.timing).read_text(encoding="utf-8")), a.elapsed_min)
+        print(json.dumps(rp, indent=1))
+        return 0 if rp["ok"] else 15
     if a.cmd == "score":
         return score(a)
     res = report(a)

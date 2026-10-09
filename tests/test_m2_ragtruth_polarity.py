@@ -245,3 +245,42 @@ def test_real_dev_rows_rebuild_and_selection_reproduces():
         assert sorted(r["metadata"]["source_id"] for r in rows) == s["ids"]
         assert all(r == R.build_row(resp[r["metadata"]["source_id"]], srcs[r["metadata"]["source_task_id"]])
                    for r in rows)
+
+
+# ------------------------------------------------------------------------------------------------ trimmed caps (hold)
+def test_trimmed_caps_hold_and_slow_box_margins():
+    from jobs.common.costs import worst_case_usd
+
+    p = json.loads(PARAMS.read_text(encoding="utf-8"))
+    s = json.loads(SEL.read_text(encoding="utf-8"))
+    assert p["max_duration_minutes"] == 115 and round(115 * 0.063, 2) == 7.25
+    assert worst_case_usd(p) == 14.36 <= p["hard_cap_usd"] == 15.0
+    assert p["submit"]["key"].endswith("-20261009b")
+    est = R.estimate(p, s)
+    assert est["ok"] and all(est["checks"].values()) and R.SLOW_BOX == 1.25
+    sh = (M / "first_cell_job.sh").read_text(encoding="utf-8")
+    assert '--setup-cap-min "$SCAP"' in sh and "ragtruth_polarity reprice" in sh
+    assert sh.index("ragtruth_polarity reprice") < sh.index("checkpoint_loader install --params \"$PARAMS\" --block")
+
+
+def test_estimate_refuses_when_a_slow_box_would_not_fit():
+    p = json.loads(PARAMS.read_text(encoding="utf-8"))
+    s = json.loads(SEL.read_text(encoding="utf-8"))
+    tight = json.loads(json.dumps(p))
+    tight["phase_caps_minutes"]["score_d13"] = 36  # 31 expected fits, 38.8 on a 1.25x box does not
+    est = R.estimate(tight, s)
+    assert not est["ok"] and not est["checks"]["score_d13_slow_le_95pct_cap"]
+    slow_load = json.loads(json.dumps(p))
+    slow_load["evals_fixed_minutes"]["d1"] = 14  # 17.5 min on a slow box > setup cap 16
+    assert not R.estimate(slow_load, s)["checks"]["load_d1_slow_le_setup_cap"]
+
+
+def test_reprice_projects_d1_from_d13_measurements_before_fetching_it():
+    p = json.loads(PARAMS.read_text(encoding="utf-8"))
+    s = json.loads(SEL.read_text(encoding="utf-8"))
+    ok = R.reprice(p, s, {"scoring_started_min": 25.0}, {"sum_row_wall_s": 360.0}, elapsed_min=50)
+    assert ok["ok"] and ok["d1_load_proj"] == 12.0 and ok["d1_score_proj"] == 6.0
+    slow = R.reprice(p, s, {"scoring_started_min": 40.0}, {"sum_row_wall_s": 600.0}, elapsed_min=60)  # 1.6x load
+    assert not slow["ok"] and slow["d1_phase_proj"] > 0.95 * p["phase_caps_minutes"]["score_d1"]
+    late = R.reprice(p, s, {"scoring_started_min": 25.0}, {"sum_row_wall_s": 360.0}, elapsed_min=95)  # clock gone
+    assert not late["ok"]

@@ -1,5 +1,5 @@
 {
- "_comment": "DRAFT, NOT SUBMITTED. Mode ragtruth_polarity (agent B hypothesis): does D13 (job-hjwpq art-cr9a2, BEST step 1600, joint_record head) rank RAGTruth responses with INVERTED polarity under readout v3w (proxy600 AUROC 0.18), and how does D1 (job-c7pq2 art-bm3e6, step 1439) compare (it predicts nearly all-positive)? EVAL-ONLY, no training. Items = 300 RAGTruth TRAIN-split responses (never Index DEV), built locally by jobs.m2_first_cell.ragtruth_polarity build exactly as the Index presents catalog 59 (all 270 DEV RAGTruth rows rebuild byte-equal from the same source files), one response per source document, stratified task_type x label, seed ragtruth-polarity-v1; excluded: source document shared with a DEV row (0) and train.doc_overlap_guard fails vs every Index eval row incl. DEV (24, all attributed to HELDOUT RAGTruth documents). Shipped as data/ragtruth/items.jsonl.gz, pinned below and by the committed ragtruth_polarity_selection.json. Phases: setup, guard, checkpoint (D13 via checkpoint_loader --block checkpoint, $CKPT_URL), score_d13, checkpoint_d1 (--block checkpoint_d1, $CKPT_URL_D1), score_d1, report (per-item p(hallucinated) = answers.q.noul, AUROC + 95% percentile bootstrap CI, flipped AUROC, the pre-registered rule: INVERTED iff upper CI < 0.5 -> propose a statement rephrase; else no change). Both arms untempered v3w via fulldev_eval.load_child's readout override (as the screen scores it). Pricing: est 319,568 v1 tokens (chars x 0.30423 tokens/char of the 270 DEV RAGTruth rows) x 0.9004 (v3w/v1) x 1.2513 s/1k (D13 screen measured child rate; D1's v1 rate is 1.037, so D13's is the conservative bound for both) = 6.0 min per arm + fixed load/lineage (D13 25: fulldev_eval_d13's 75 fixed minus its ~42-min full-DEV plan pass, which this mode does not run; D1 12: hijack_eval's 8 + margin). Expected run ~73 min = $3.61 batch (+ ~15 min build = $4.36). Worst case (60 + 2 x 177) x 0.0495 = $20.49 (cap $21).",
+ "_comment": "DRAFT, NOT SUBMITTED. Mode ragtruth_polarity (agent B hypothesis): does D13 (job-hjwpq art-cr9a2, BEST step 1600, joint_record head) rank RAGTruth responses with INVERTED polarity under readout v3w (proxy600 AUROC 0.18), and how does D1 (job-c7pq2 art-bm3e6, step 1439) compare (it predicts nearly all-positive)? EVAL-ONLY, no training. Items = 300 RAGTruth TRAIN-split responses (never Index DEV), built locally by jobs.m2_first_cell.ragtruth_polarity build exactly as the Index presents catalog 59 (all 270 DEV RAGTruth rows rebuild byte-equal from the same source files), one response per source document, stratified task_type x label, seed ragtruth-polarity-v1; excluded: source document shared with a DEV row (0) and train.doc_overlap_guard fails vs every Index eval row incl. DEV (24, all attributed to HELDOUT RAGTruth documents). Shipped as data/ragtruth/items.jsonl.gz, pinned below and by the committed ragtruth_polarity_selection.json. Phases: setup, guard, checkpoint (D13 via checkpoint_loader --block checkpoint, $CKPT_URL), score_d13, checkpoint_d1 (--block checkpoint_d1, $CKPT_URL_D1), score_d1, report (per-item p(hallucinated) = answers.q.noul, AUROC + 95% percentile bootstrap CI, flipped AUROC, the pre-registered rule: INVERTED iff upper CI < 0.5 -> propose a statement rephrase; else no change). Both arms untempered v3w via fulldev_eval.load_child's readout override (as the screen scores it). Pricing: est 319,568 v1 tokens (chars x 0.30423 tokens/char of the 270 DEV RAGTruth rows) x 0.9004 (v3w/v1) x 1.2513 s/1k (D13 screen measured child rate; D1's v1 rate is 1.037, so D13's is the conservative bound for both) = 6.0 min per arm + fixed load/lineage (D13 25: fulldev_eval_d13's 75 fixed minus its ~42-min full-DEV plan pass, which this mode does not run; D1 12: hijack_eval's 8 + margin). Expected run ~73 min = $3.61 batch (+ ~15 min build = $4.36). Caps trimmed (agent A, 2026-10-09: platform hold = max_duration x $0.063) to setup 15 / guard 4 / checkpoint 8 / score_d13 42 / checkpoint_d1 10 / score_d1 25 / report 4 + reserve 7 = 115 min (hold 115 x 0.063 = $7.25); every cap still holds on a 1.25x slower box (expected 73 x 1.25 = 91 <= 108). Clean refusals, never mid-arm: setup preflight (estimate, exit 15 before any download, 1.25x slow-box checks); per arm the rate guard's --setup-cap-min (score_setup_cap_minutes d13 32 / d1 16: a slow load stops with 15 before any item is scored); between arms reprice (exit 15 before D1 is fetched, D1 projected from D13's measured load + scoring wall vs its cap and the remaining job clock). Worst case (60 + 2 x 115) x 0.0495 = $14.36 (cap $15).",
  "test_env": {
   "transformers": "5.17.0",
   "with": [],
@@ -19,7 +19,7 @@
  "status": "draft: not submitted; RAGTruth TRAIN polarity check of D13 (art-cr9a2 best1600) and D1 (art-bm3e6) under v3w",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 177,
+ "max_duration_minutes": 115,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -27,15 +27,15 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.0495,
- "hard_cap_usd": 21.0,
+ "hard_cap_usd": 15.0,
  "phase_caps_minutes": {
-  "setup": 25,
-  "guard": 5,
-  "checkpoint": 15,
-  "score_d13": 60,
-  "checkpoint_d1": 15,
-  "score_d1": 40,
-  "report": 10
+  "setup": 15,
+  "guard": 4,
+  "checkpoint": 8,
+  "score_d13": 42,
+  "checkpoint_d1": 10,
+  "score_d1": 25,
+  "report": 4
  },
  "reserve_minutes": 7,
  "expected_minutes": {
@@ -129,7 +129,7 @@
    "CKPT_URL": "<get_artifact art-cr9a2 url: fill at submit>",
    "CKPT_URL_D1": "<get_artifact art-bm3e6 url: fill at submit>"
   },
-  "key": "m2-first-cell-ragtruth-polarity-d13best1600-d1-20261009a",
+  "key": "m2-first-cell-ragtruth-polarity-d13best1600-d1-20261009b",
   "clock_lock": true,
   "label": "ragtruth_polarity: D13 (art-cr9a2 best1600) + D1 (art-bm3e6) readout v3w on 300 RAGTruth TRAIN items, AUROC polarity check, no training",
   "checks": {
@@ -257,5 +257,9 @@
   ]
  },
  "cohort_note": "no cohort role is scored; no temperature fit (untempered readout, both arms)",
- "mode": "ragtruth_polarity"
+ "mode": "ragtruth_polarity",
+ "score_setup_cap_minutes": {
+  "d13": 32,
+  "d1": 16
+ }
 }

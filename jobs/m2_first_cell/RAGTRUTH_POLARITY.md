@@ -64,4 +64,13 @@ screen scored them. `sf_submit.py` fills the `<...>` URL placeholders from the s
 
 **Cost.** Expected run time is about 73 min, or $3.61 at the batch rate (about $4.36 including a 15-min build).
 Scoring takes about 6 min per arm. The rest is fixed cost per arm (model load plus the 150k lineage check: D13 25
-min, D1 12 min) and setup. The worst case is (60 + 2 x 177) x 0.0495 = **$20.49**, against a $21 cap.
+min, D1 12 min) and setup. The phase caps are setup 15, guard 4, checkpoint 8, score_d13 42, checkpoint_d1 10, score_d1 25, report 4 and
+reserve 7, for max_duration 115 min. The platform hold is 115 x $0.063 = $7.25. Every cap still holds on a box 1.25x
+slower than the measured rates. The worst case is (60 + 2 x 115) x 0.0495 = **$14.36**, against a $15 cap.
+
+**Clean refusals (exit 15, never mid-arm).**
+1. The setup preflight (`estimate`) runs before any download and checks the 1.25x slow-box margins.
+2. For each arm, the rate guard's `--setup-cap-min` (D13 32, D1 16) stops a slow model load or lineage check before any
+   item is scored.
+3. Between the arms, `reprice` projects D1 from D13's measured load and scoring wall before D1 is fetched. It refuses
+   if the projection exceeds D1's cap or the time left on the job clock.

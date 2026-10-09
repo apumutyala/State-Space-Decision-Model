@@ -308,7 +308,12 @@ case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not
 if [ "$EVAL_ONLY" = ragtruth ]; then  # ------------------- eval-only: two SAVED checkpoints on the RAGTruth TRAIN items
   for ARMNAME in d13 d1; do
     if [ "$ARMNAME" = d13 ]; then BLOCK=checkpoint CSRC=$DATA/checkpoint/cell.json ACELL=$CELL PHC=checkpoint
-    else BLOCK=checkpoint_d1 CSRC=$DATA/checkpoint_d1/cell.json ACELL=jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval.json PHC=checkpoint_d1; fi
+    else BLOCK=checkpoint_d1 CSRC=$DATA/checkpoint_d1/cell.json ACELL=jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval.json PHC=checkpoint_d1
+      # clean refusal BEFORE D1 is fetched: D1 re-projected from D13's measured load + scoring (exit 15, nothing half-run)
+      python -X utf8 -m jobs.m2_first_cell.ragtruth_polarity reprice --params "$PARAMS" --selection "$RT_SEL"         --rate-report "$WORK/out/rate-score_d13.json" --timing "$WORK/out/ragtruth/timing-d13.json"         --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" > "$WORK/out/reprice-d1.json" 2> "$WORK/logs/reprice-d1.log"; r=$?
+      gate "reprice_d1" $r
+      [ $r -eq 0 ] || fail 15 "score_d1 projected past its cap / the job clock from D13's measured rates (out/reprice-d1.json)"
+    fi
     CKCELL=$WORK/ckpt-$ARMNAME
     say "phase $PHC ($ARMNAME: params block $BLOCK into $CKCELL); free bytes: $(diskfree "$OUT" "$CK" "$WORK")"
     timeout --kill-after=30s $(cap $PHC)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" --block "$BLOCK"       --cell-src "$CSRC" --cell-config "$ACELL" --ck-dir "$CKCELL" --work "$WORK/art-$ARMNAME"       --cell-out "$WORK/out/cell-$ARMNAME.json" --out "$WORK/out/checkpoint-$ARMNAME.json" > "$WORK/logs/$PHC.log" 2>&1; r=$?
@@ -318,13 +323,15 @@ if [ "$EVAL_ONLY" = ragtruth ]; then  # ------------------- eval-only: two SAVED
     CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint-$ARMNAME.json") || fail 5 "checkpoint-$ARMNAME.json"
     PH=score_$ARMNAME
     say "phase $PH ($ARMNAME arm, RAGTruth TRAIN items, readout v3w, untempered; resumes from $CK/ragtruth)"
-    python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)"       --report "$WORK/out/rate-$PH.json" --       timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.ragtruth_polarity score --arm "$ARMNAME"       --items "$RT_ITEMS" --selection "$RT_SEL" --cell "$WORK/out/cell-$ARMNAME.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT"       --model-dir "$SNAP" --records "$RECORDS" --train-dir "$TRAIN_DIR" --guard-readiness "$WORK/out/guard/readiness.json"       --resume-dir "$CK/ragtruth" --out-dir "$WORK/out/ragtruth" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
+    SCAP=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['score_setup_cap_minutes'][sys.argv[2]])" "$PARAMS" "$ARMNAME")       || fail 5 "job_params score_setup_cap_minutes.$ARMNAME"
+    # --setup-cap-min: a load / lineage slower than planned stops with 15 BEFORE any item is scored (not mid-arm)
+    python -X utf8 -m jobs.common.rate_guard run-weighted --progress "$WORK/logs/progress-$PH.jsonl" --cap-min "$(cap $PH)"       --setup-cap-min "$SCAP" --report "$WORK/out/rate-$PH.json" --       timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.ragtruth_polarity score --arm "$ARMNAME"       --items "$RT_ITEMS" --selection "$RT_SEL" --cell "$WORK/out/cell-$ARMNAME.json" --ckpt-dir "$CKCELL" --ckpt "$CKPT"       --model-dir "$SNAP" --records "$RECORDS" --train-dir "$TRAIN_DIR" --guard-readiness "$WORK/out/guard/readiness.json"       --resume-dir "$CK/ragtruth" --out-dir "$WORK/out/ragtruth" --progress "$WORK/logs/progress-$PH.jsonl" > "$WORK/logs/$PH.log" 2>&1; r=$?
     if [ $r -ne 0 ]; then
       say "$PH rc=$r; last 40 lines of logs/$PH.log:"
       tail -n 40 "$WORK/logs/$PH.log" 2> /dev/null | sed "s/^/[$PH.log] /"
     fi
     gate "$PH" $r; export_phase "$PH"
-    case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
+    case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: load past its setup cap or live rate past its cap" ;;
       10) fail 10 "$PH identity (items / checkpoint lineage / cohort)" ;; *) fail 9 "$PH rc=$r" ;; esac
   done
   say "phase report"
