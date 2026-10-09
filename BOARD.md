@@ -24,6 +24,12 @@ Loss map (research-notes/STOCK_RWKV7_LOSS_BREAKDOWN.md, measured): Clef-flash-an
 | H1 | B | Hijack measurement for the champion. G12 builds no hijack variants, so hijack is unmeasured; Done needs it | required for the final claim | ~$2–5 | B: proposed |
 | Q1 | — | Parked: Q9 proxy loop; Q9-AF option (b) | — | — | parked (#140 stall trigger) |
 
+## Backbone tracks (A, 2026-10-09 ~03:30Z): stall rule triggered (gap to Clef-flash 17 > 15 after format + KD); the operator asked for big swings beyond RWKV7
+| id | swing | why | state |
+|---|---|---|---|
+| BB1 | Attention-free backbone scout: Qwerky-72B / QwQ-32B, QRWKV6-32B, Falcon-Mamba-7B, Mamba-Codestral, xLSTM-7B, newer; stock proxy600 screens | backbone start point is the biggest lever (RWKV7 stock 24.85 vs Qwen3.5-9B 38.27) | building (claude/backbone-scout) |
+| BB2 | Q9-AF v2: Qwen3.5-9B (Clef-flash's backbone) with ALL 8 attention layers converted to GDN, end-to-end KD, gated by logit KL + a stock screen, then the Clef recipe | the option-b re-open trigger fired; v1 was stopped by a self-imposed per-layer gate before any task training | building (stack/q9af/v2-full-gdn) |
+
 ## Queue order (A, 2026-10-08 ~22:40Z): highest expected Index gain per GPU-hour first; build, train and eval all stacks in parallel
 Rule: rank by (expected Index gain × confidence) ÷ (GPU hours to a verdict). New cells use the screen stage (proxy600, ~41-min eval). Full gates only on promoted cells. Never idle a slot; no item waits on operator input.
 | # | item | expected gain | hours to verdict | state |
