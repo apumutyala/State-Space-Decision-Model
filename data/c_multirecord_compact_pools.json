@@ -1,0 +1,963 @@
+{
+  "excluded_alias_values": [],
+  "generator_source_sha256": "a5f49e431361671687bab453f4b5f7b280d8d5dfc43530b7b9b6fcc7efba669b",
+  "metadata_sha256": {
+    "decide\\data\\rwkv_g1_filtered_v1.json": "ea8384ef7d18893085b347896d93464f944a08d3442ab3381689b86d1783eea9",
+    "decide\\data\\rwkv_g1_v3_codes.json": "8c87fc447e943c1e52363c21cadb7198aff0c133ade4a488ca7e160183eb3a38"
+  },
+  "pool_ids_sha256": {
+    "letters": "f4b80b8bd5f6a7eba548944ce744eccda2051e3a515ffb0cf31cd90ddc4b86e4",
+    "opaque": "659b95c8fa4237ad01f290815a171df231aa647d8721c391501e6091035f82b1",
+    "words": "650ecb82d2d89f6b0cc975eb0b6a4fe1e06083dc161480868258a3c9c9b90f2a"
+  },
+  "pools": {
+    "letters": [
+      {
+        "answer_token": 300,
+        "id": "A"
+      },
+      {
+        "answer_token": 3601,
+        "id": "AA"
+      },
+      {
+        "answer_token": 3602,
+        "id": "AB"
+      },
+      {
+        "answer_token": 3603,
+        "id": "AC"
+      },
+      {
+        "answer_token": 3605,
+        "id": "AE"
+      },
+      {
+        "answer_token": 3606,
+        "id": "AF"
+      },
+      {
+        "answer_token": 3607,
+        "id": "AG"
+      },
+      {
+        "answer_token": 3610,
+        "id": "AJ"
+      },
+      {
+        "answer_token": 3611,
+        "id": "AK"
+      },
+      {
+        "answer_token": 3612,
+        "id": "AL"
+      },
+      {
+        "answer_token": 3615,
+        "id": "AO"
+      },
+      {
+        "answer_token": 3616,
+        "id": "AP"
+      },
+      {
+        "answer_token": 3617,
+        "id": "AQ"
+      },
+      {
+        "answer_token": 3618,
+        "id": "AR"
+      },
+      {
+        "answer_token": 3621,
+        "id": "AU"
+      },
+      {
+        "answer_token": 3622,
+        "id": "AV"
+      },
+      {
+        "answer_token": 3625,
+        "id": "AZ"
+      },
+      {
+        "answer_token": 301,
+        "id": "B"
+      },
+      {
+        "answer_token": 3649,
+        "id": "BA"
+      },
+      {
+        "answer_token": 3650,
+        "id": "BB"
+      },
+      {
+        "answer_token": 3651,
+        "id": "BC"
+      },
+      {
+        "answer_token": 3652,
+        "id": "BD"
+      },
+      {
+        "answer_token": 3654,
+        "id": "BF"
+      },
+      {
+        "answer_token": 3655,
+        "id": "BG"
+      },
+      {
+        "answer_token": 3656,
+        "id": "BH"
+      },
+      {
+        "answer_token": 3658,
+        "id": "BJ"
+      },
+      {
+        "answer_token": 3659,
+        "id": "BL"
+      },
+      {
+        "answer_token": 3660,
+        "id": "BM"
+      },
+      {
+        "answer_token": 3661,
+        "id": "BN"
+      },
+      {
+        "answer_token": 3663,
+        "id": "BP"
+      },
+      {
+        "answer_token": 3664,
+        "id": "BR"
+      },
+      {
+        "answer_token": 3665,
+        "id": "BS"
+      },
+      {
+        "answer_token": 3666,
+        "id": "BT"
+      },
+      {
+        "answer_token": 3667,
+        "id": "BU"
+      },
+      {
+        "answer_token": 3668,
+        "id": "BV"
+      },
+      {
+        "answer_token": 3669,
+        "id": "BW"
+      },
+      {
+        "answer_token": 302,
+        "id": "C"
+      },
+      {
+        "answer_token": 3682,
+        "id": "CA"
+      },
+      {
+        "answer_token": 3683,
+        "id": "CB"
+      },
+      {
+        "answer_token": 3684,
+        "id": "CC"
+      },
+      {
+        "answer_token": 3685,
+        "id": "CD"
+      },
+      {
+        "answer_token": 3686,
+        "id": "CE"
+      },
+      {
+        "answer_token": 3687,
+        "id": "CF"
+      },
+      {
+        "answer_token": 3688,
+        "id": "CG"
+      },
+      {
+        "answer_token": 3689,
+        "id": "CH"
+      },
+      {
+        "answer_token": 3690,
+        "id": "CI"
+      },
+      {
+        "answer_token": 3691,
+        "id": "CJ"
+      },
+      {
+        "answer_token": 3692,
+        "id": "CK"
+      },
+      {
+        "answer_token": 3693,
+        "id": "CL"
+      },
+      {
+        "answer_token": 3694,
+        "id": "CM"
+      },
+      {
+        "answer_token": 3695,
+        "id": "CN"
+      },
+      {
+        "answer_token": 3696,
+        "id": "CO"
+      },
+      {
+        "answer_token": 3697,
+        "id": "CP"
+      },
+      {
+        "answer_token": 3698,
+        "id": "CR"
+      },
+      {
+        "answer_token": 303,
+        "id": "D"
+      },
+      {
+        "answer_token": 304,
+        "id": "E"
+      },
+      {
+        "answer_token": 305,
+        "id": "F"
+      },
+      {
+        "answer_token": 306,
+        "id": "G"
+      },
+      {
+        "answer_token": 307,
+        "id": "H"
+      },
+      {
+        "answer_token": 308,
+        "id": "I"
+      },
+      {
+        "answer_token": 309,
+        "id": "J"
+      },
+      {
+        "answer_token": 310,
+        "id": "K"
+      },
+      {
+        "answer_token": 311,
+        "id": "L"
+      },
+      {
+        "answer_token": 312,
+        "id": "M"
+      },
+      {
+        "answer_token": 313,
+        "id": "N"
+      },
+      {
+        "answer_token": 314,
+        "id": "O"
+      },
+      {
+        "answer_token": 315,
+        "id": "P"
+      },
+      {
+        "answer_token": 316,
+        "id": "Q"
+      },
+      {
+        "answer_token": 317,
+        "id": "R"
+      },
+      {
+        "answer_token": 318,
+        "id": "S"
+      },
+      {
+        "answer_token": 319,
+        "id": "T"
+      },
+      {
+        "answer_token": 320,
+        "id": "U"
+      },
+      {
+        "answer_token": 321,
+        "id": "V"
+      },
+      {
+        "answer_token": 322,
+        "id": "W"
+      },
+      {
+        "answer_token": 323,
+        "id": "X"
+      },
+      {
+        "answer_token": 324,
+        "id": "Y"
+      },
+      {
+        "answer_token": 325,
+        "id": "Z"
+      }
+    ],
+    "opaque": [
+      {
+        "answer_token": 3341,
+        "id": "!!"
+      },
+      {
+        "answer_token": 3342,
+        "id": "!("
+      },
+      {
+        "answer_token": 3343,
+        "id": "!="
+      },
+      {
+        "answer_token": 3372,
+        "id": "##"
+      },
+      {
+        "answer_token": 3373,
+        "id": "#("
+      },
+      {
+        "answer_token": 3374,
+        "id": "#:"
+      },
+      {
+        "answer_token": 3375,
+        "id": "#["
+      },
+      {
+        "answer_token": 3376,
+        "id": "#{"
+      },
+      {
+        "answer_token": 3377,
+        "id": "$$"
+      },
+      {
+        "answer_token": 3378,
+        "id": "$("
+      },
+      {
+        "answer_token": 3379,
+        "id": "$,"
+      },
+      {
+        "answer_token": 3380,
+        "id": "$."
+      },
+      {
+        "answer_token": 3382,
+        "id": "$_"
+      },
+      {
+        "answer_token": 3383,
+        "id": "${"
+      },
+      {
+        "answer_token": 3384,
+        "id": "%%"
+      },
+      {
+        "answer_token": 3385,
+        "id": "%."
+      },
+      {
+        "answer_token": 3387,
+        "id": "%{"
+      },
+      {
+        "answer_token": 3388,
+        "id": "%}"
+      },
+      {
+        "answer_token": 3389,
+        "id": "&#"
+      },
+      {
+        "answer_token": 3390,
+        "id": "&$"
+      },
+      {
+        "answer_token": 3391,
+        "id": "&&"
+      },
+      {
+        "answer_token": 3392,
+        "id": "&="
+      },
+      {
+        "answer_token": 3414,
+        "id": "(!"
+      },
+      {
+        "answer_token": 3416,
+        "id": "(#"
+      },
+      {
+        "answer_token": 3417,
+        "id": "($"
+      },
+      {
+        "answer_token": 3418,
+        "id": "(%"
+      },
+      {
+        "answer_token": 3419,
+        "id": "(&"
+      },
+      {
+        "answer_token": 3421,
+        "id": "(("
+      },
+      {
+        "answer_token": 3422,
+        "id": "()"
+      },
+      {
+        "answer_token": 3423,
+        "id": "(*"
+      },
+      {
+        "answer_token": 3424,
+        "id": "(+"
+      },
+      {
+        "answer_token": 3425,
+        "id": "(-"
+      },
+      {
+        "answer_token": 3426,
+        "id": "(."
+      },
+      {
+        "answer_token": 3427,
+        "id": "(/"
+      },
+      {
+        "answer_token": 3428,
+        "id": "(:"
+      },
+      {
+        "answer_token": 3429,
+        "id": "(;"
+      },
+      {
+        "answer_token": 3431,
+        "id": "(="
+      },
+      {
+        "answer_token": 3433,
+        "id": "(?"
+      },
+      {
+        "answer_token": 3434,
+        "id": "(@"
+      },
+      {
+        "answer_token": 3435,
+        "id": "(["
+      },
+      {
+        "answer_token": 3437,
+        "id": "(_"
+      },
+      {
+        "answer_token": 3439,
+        "id": "({"
+      },
+      {
+        "answer_token": 3440,
+        "id": "))"
+      },
+      {
+        "answer_token": 3441,
+        "id": "),"
+      },
+      {
+        "answer_token": 3442,
+        "id": ")."
+      },
+      {
+        "answer_token": 3443,
+        "id": "):"
+      },
+      {
+        "answer_token": 3444,
+        "id": ");"
+      },
+      {
+        "answer_token": 3445,
+        "id": "){"
+      },
+      {
+        "answer_token": 3446,
+        "id": "*("
+      },
+      {
+        "answer_token": 3447,
+        "id": "*)"
+      },
+      {
+        "answer_token": 3448,
+        "id": "**"
+      },
+      {
+        "answer_token": 3449,
+        "id": "*,"
+      },
+      {
+        "answer_token": 3450,
+        "id": "*."
+      },
+      {
+        "answer_token": 3451,
+        "id": "*/"
+      },
+      {
+        "answer_token": 3452,
+        "id": "*="
+      },
+      {
+        "answer_token": 3453,
+        "id": "*["
+      },
+      {
+        "answer_token": 3455,
+        "id": "++"
+      },
+      {
+        "answer_token": 3456,
+        "id": "+="
+      },
+      {
+        "answer_token": 3459,
+        "id": "-("
+      },
+      {
+        "answer_token": 3460,
+        "id": "--"
+      },
+      {
+        "answer_token": 3461,
+        "id": "-."
+      },
+      {
+        "answer_token": 3462,
+        "id": "-="
+      },
+      {
+        "answer_token": 3465,
+        "id": ".."
+      },
+      {
+        "answer_token": 3466,
+        "id": "./"
+      },
+      {
+        "answer_token": 3467,
+        "id": ".="
+      },
+      {
+        "answer_token": 3468,
+        "id": "/*"
+      },
+      {
+        "answer_token": 3469,
+        "id": "//"
+      },
+      {
+        "answer_token": 3470,
+        "id": "/="
+      },
+      {
+        "answer_token": 3574,
+        "id": ":("
+      },
+      {
+        "answer_token": 3575,
+        "id": ":)"
+      },
+      {
+        "answer_token": 3576,
+        "id": ":-"
+      },
+      {
+        "answer_token": 3577,
+        "id": "::"
+      },
+      {
+        "answer_token": 3578,
+        "id": ":="
+      },
+      {
+        "answer_token": 3579,
+        "id": ";)"
+      },
+      {
+        "answer_token": 3580,
+        "id": ";;"
+      },
+      {
+        "answer_token": 3590,
+        "id": "=="
+      },
+      {
+        "answer_token": 3593,
+        "id": "=~"
+      }
+    ],
+    "words": [
+      {
+        "answer_token": 21215,
+        "id": "aan"
+      },
+      {
+        "answer_token": 21216,
+        "id": "abb"
+      },
+      {
+        "answer_token": 21217,
+        "id": "abc"
+      },
+      {
+        "answer_token": 21218,
+        "id": "abi"
+      },
+      {
+        "answer_token": 21219,
+        "id": "abl"
+      },
+      {
+        "answer_token": 21220,
+        "id": "abs"
+      },
+      {
+        "answer_token": 21221,
+        "id": "aby"
+      },
+      {
+        "answer_token": 21222,
+        "id": "acc"
+      },
+      {
+        "answer_token": 21223,
+        "id": "ace"
+      },
+      {
+        "answer_token": 21224,
+        "id": "ach"
+      },
+      {
+        "answer_token": 21225,
+        "id": "acl"
+      },
+      {
+        "answer_token": 21226,
+        "id": "act"
+      },
+      {
+        "answer_token": 21227,
+        "id": "add"
+      },
+      {
+        "answer_token": 21228,
+        "id": "ade"
+      },
+      {
+        "answer_token": 21229,
+        "id": "adj"
+      },
+      {
+        "answer_token": 21230,
+        "id": "adm"
+      },
+      {
+        "answer_token": 21231,
+        "id": "ado"
+      },
+      {
+        "answer_token": 21232,
+        "id": "ads"
+      },
+      {
+        "answer_token": 21233,
+        "id": "adv"
+      },
+      {
+        "answer_token": 21234,
+        "id": "aer"
+      },
+      {
+        "answer_token": 21235,
+        "id": "aes"
+      },
+      {
+        "answer_token": 21236,
+        "id": "aff"
+      },
+      {
+        "answer_token": 21237,
+        "id": "aft"
+      },
+      {
+        "answer_token": 21238,
+        "id": "age"
+      },
+      {
+        "answer_token": 21239,
+        "id": "agg"
+      },
+      {
+        "answer_token": 21240,
+        "id": "ago"
+      },
+      {
+        "answer_token": 21241,
+        "id": "agr"
+      },
+      {
+        "answer_token": 21242,
+        "id": "aid"
+      },
+      {
+        "answer_token": 21243,
+        "id": "ail"
+      },
+      {
+        "answer_token": 21244,
+        "id": "aim"
+      },
+      {
+        "answer_token": 21245,
+        "id": "ain"
+      },
+      {
+        "answer_token": 21246,
+        "id": "air"
+      },
+      {
+        "answer_token": 21247,
+        "id": "aka"
+      },
+      {
+        "answer_token": 21248,
+        "id": "akt"
+      },
+      {
+        "answer_token": 21249,
+        "id": "alb"
+      },
+      {
+        "answer_token": 21250,
+        "id": "alc"
+      },
+      {
+        "answer_token": 21251,
+        "id": "ald"
+      },
+      {
+        "answer_token": 21252,
+        "id": "ale"
+      },
+      {
+        "answer_token": 21253,
+        "id": "alg"
+      },
+      {
+        "answer_token": 21254,
+        "id": "ali"
+      },
+      {
+        "answer_token": 21255,
+        "id": "alk"
+      },
+      {
+        "answer_token": 21256,
+        "id": "all"
+      },
+      {
+        "answer_token": 21257,
+        "id": "als"
+      },
+      {
+        "answer_token": 21258,
+        "id": "alt"
+      },
+      {
+        "answer_token": 21259,
+        "id": "ama"
+      },
+      {
+        "answer_token": 21260,
+        "id": "amb"
+      },
+      {
+        "answer_token": 21261,
+        "id": "ami"
+      },
+      {
+        "answer_token": 21262,
+        "id": "amp"
+      },
+      {
+        "answer_token": 21263,
+        "id": "ana"
+      },
+      {
+        "answer_token": 21264,
+        "id": "anc"
+      },
+      {
+        "answer_token": 21265,
+        "id": "and"
+      },
+      {
+        "answer_token": 21266,
+        "id": "ang"
+      },
+      {
+        "answer_token": 21267,
+        "id": "ank"
+      },
+      {
+        "answer_token": 21268,
+        "id": "ann"
+      },
+      {
+        "answer_token": 21269,
+        "id": "ano"
+      },
+      {
+        "answer_token": 21270,
+        "id": "ans"
+      },
+      {
+        "answer_token": 21271,
+        "id": "ant"
+      },
+      {
+        "answer_token": 21272,
+        "id": "anx"
+      },
+      {
+        "answer_token": 21273,
+        "id": "any"
+      },
+      {
+        "answer_token": 21274,
+        "id": "aos"
+      },
+      {
+        "answer_token": 21275,
+        "id": "aph"
+      },
+      {
+        "answer_token": 21276,
+        "id": "api"
+      },
+      {
+        "answer_token": 21277,
+        "id": "apo"
+      },
+      {
+        "answer_token": 21278,
+        "id": "app"
+      },
+      {
+        "answer_token": 21279,
+        "id": "apr"
+      },
+      {
+        "answer_token": 21280,
+        "id": "apt"
+      },
+      {
+        "answer_token": 21281,
+        "id": "aqu"
+      },
+      {
+        "answer_token": 21282,
+        "id": "ara"
+      },
+      {
+        "answer_token": 21283,
+        "id": "arb"
+      },
+      {
+        "answer_token": 21284,
+        "id": "arc"
+      },
+      {
+        "answer_token": 21285,
+        "id": "ard"
+      },
+      {
+        "answer_token": 21286,
+        "id": "are"
+      },
+      {
+        "answer_token": 21287,
+        "id": "arg"
+      },
+      {
+        "answer_token": 21288,
+        "id": "ark"
+      },
+      {
+        "answer_token": 21289,
+        "id": "arm"
+      },
+      {
+        "answer_token": 21290,
+        "id": "arr"
+      },
+      {
+        "answer_token": 21291,
+        "id": "art"
+      }
+    ]
+  },
+  "prototype_proof_sha256": "08dab97ac9f58c40f24afabdfeba50de8e8da556a55015d0203e72b1b4ca9606",
+  "prototype_scope": "32 K77 examples/seven gold positions; not full-pool qualification",
+  "prototype_source_sha256": "162982a92c207ba4ab756a6345025ac3915b21806549543ac07269be8f2f9298",
+  "schema": "ssdm.c_multirecord_compact_pools.v1",
+  "tokenizer_sha256": {
+    "tokenizer.json": "1c0bc8e5f355de60a4587a1e9abb9aa4ef65508ff59641344e7f9f10f76feacf",
+    "tokenizer_config.json": "2b5e075c2c16780061ae272c9f0b52ff620ddd8e87fdf7fa82fc425661667329"
+  },
+  "trainer_commit": "9c3e4350ccb41bec1385d58b9fe7002184f69626",
+  "trainer_source_sha256": {
+    "decide/prompt.py": "f6586797a46d73a3c0e69ed2c574647a251b44837e3c4676ac18fe1d4b95e252",
+    "decide/prompt_g1v3.py": "494947979cdcfe875d162410d5bc5db739ebdcbf91d801e4a719d4c428a24344",
+    "heads/layout.py": "9bbbfb393ddfbc382c4c7f88e77356cf4e89b2c0b2ae35262e8d4e1e33d4cf8a",
+    "third_party/rwkv7_hf/tokenization_rwkv7.py": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+    "train/data.py": "83fa6e04827b61077c26cd0e1fd02d8c8d01d32bfcbf4af3b2e849ec349b8f21",
+    "train/run_cell.py": "922c77a775f7b961c69e5d88d46a6b5065f3699bae813d8e423555b3418dcac4"
+  },
+  "v3_code_table_sha256": "29b33047b28bae5764cf9eb811ba69adfa94dd3c8c69279def6548cba2dc2309"
+}
