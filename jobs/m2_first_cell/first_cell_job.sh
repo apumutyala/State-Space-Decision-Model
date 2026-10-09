@@ -90,11 +90,12 @@ finish() {
   # Terminal export and result validation share 60s + 30s KILL grace from the
   # existing seven-minute reserve. Export failure still reaches finalize (exit 6).
   export -f export_phase sample say
-  export CODE OUT WORK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR
+  export CODE OUT WORK CK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR
   export FINISH_RC=$rc
   timeout --kill-after=30s 60s bash -c '
     export_phase final
-    python "$CODE/jobs/common/size_guard.py" --out "$OUT" --evict-dir "$WORK/evicted" || true  # results always upload
+    # results always upload: rename-only here (no time to copy GBs); the mid-run call below already made room
+    python "$CODE/jobs/common/size_guard.py" --out "$OUT" --evict-dir "$CK/evicted" --rename-only || say "SIZE GUARD FAILED: /output still over the upload cap (see $OUT/SIZE_GUARD.json)"
     exec python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
       "$WORK/out/first_cell_result.json" "$OUT" "$MARKER" "$VALIDATOR"
   '
@@ -328,7 +329,9 @@ LATEST=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])
 mkdir -p "$OUT/ckpt"
 python -X utf8 -m train.ckpt_export inference --ckpt "$CK/cell/$LATEST" --out-dir "$OUT/ckpt" > "$WORK/logs/ckpt-export.log" 2>&1 \
   || { EXPORT_FAIL=1; say "checkpoint export failed: $(tail -1 "$WORK/logs/ckpt-export.log")"; }
-python -X utf8 jobs/common/size_guard.py --out "$OUT" --evict-dir "$WORK/evicted" || true
+# /output under the store's PUT cap with room for the final export: allow-listed evictions (superseded phase tarballs,
+# then the ckpt export as a unit) move to $CK/evicted (persisted; a cross-filesystem move is copy + sha256 verify)
+python -X utf8 jobs/common/size_guard.py --out "$OUT" --evict-dir "$CK/evicted" --reserve-final || { EXPORT_FAIL=1; say "SIZE GUARD FAILED: /output over the upload cap (see $OUT/SIZE_GUARD.json)"; }
 sample "$WORK/out/first_cell_result.json" "first-cell"
 RC=0
 exit 0
