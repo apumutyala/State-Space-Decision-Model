@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/session_start.sh\" 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
