@@ -65,6 +65,19 @@ ITEMS = {
         ("FINEMATH_DIR", "HuggingFaceTB/finemath", "dataset", ["finemath-4plus/train-00000-of-00064.parquet"],
          "e92b25a616738fe95dc186b64dfb19f9c8525594"),
     ],
+    # jobs/q9af_corpus_check (CPU): the q9af_v2 mixture sources at the same revisions + the 9B TOKENIZER only (no
+    # safetensors: the rebuild needs the tokenizer, never the weights)
+    "q9af_corpus_check": [
+        ("Q9B_DIR", "Qwen/Qwen3.5-9B", "model", ["*.json", "*.txt", "*.jinja"],
+         "c202236235762e1c871ad0ccb60c8ee5ba337b9a"),
+        ("FINEWEB_EDU_DIR", "HuggingFaceFW/fineweb-edu", "dataset", ["sample/10BT/000_00000.parquet"],
+         "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"),
+        ("ULTRACHAT_DIR", "HuggingFaceH4/ultrachat_200k", "dataset",
+         ["data/train_sft-00000-of-00003-*.parquet", "data/train_sft-00001-of-00003-*.parquet", "data/test_sft-*.parquet"],
+         "8049631c405ae6576f93f445c6b8166f76f5505a"),
+        ("FINEMATH_DIR", "HuggingFaceTB/finemath", "dataset", ["finemath-4plus/train-00000-of-00064.parquet"],
+         "e92b25a616738fe95dc186b64dfb19f9c8525594"),
+    ],
 }
 
 

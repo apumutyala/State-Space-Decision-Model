@@ -12,7 +12,8 @@
  "mix": {
   "train_tokens": 280000000,
   "shares": {"web": 0.55, "chat": 0.30, "math": 0.15},
-  "heldout_tokens": {"web": 140000, "chat": 110000, "math": 45000}
+  "heldout_tokens": {"web": 140000, "chat": 110000, "math": 45000},
+  "decontam": "dev13-v1"
  },
  "heldout_windows": {"web": 32, "chat": 24, "math": 8},
  "curve_windows_per_source": 8,

@@ -168,7 +168,8 @@ def test_mixture_build_end_to_end(tmp_path):
     with gzip.open(dev, "wt", encoding="utf-8") as f:  # DEV row whose state equals one web doc -> that doc dropped
         f.write(json.dumps({"state": "web3 " * 40, "questions": {"q": {"type": "choice"}}}) + "\n")
     cfg = {"model_dir": "unused", "mix": {"train_tokens": 3000, "shares": {"web": 0.5, "chat": 0.3, "math": 0.2},
-                                           "heldout_tokens": {"web": 100, "chat": 100, "math": 100}}}
+                                           "heldout_tokens": {"web": 100, "chat": 100, "math": 100},
+                                           "decontam": "dev13-v1"}}  # job-w3c2e's filter (configs/q9af_v2_h100.json)
     meta = build(cfg, str(dev), str(tmp_path / "mix"), tok=FakeTok(), roots=roots)
     assert meta["sources"]["web"]["docs_dropped_dev_ngram"] == 1
     assert all(meta["sources"][s]["tokens"] >= meta["sources"][s]["quota"] for s in SOURCES)

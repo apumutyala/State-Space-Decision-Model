@@ -1,0 +1,82 @@
+{
+ "test_env": {"transformers": "5.17.0", "allowed_skips": [{"reason": "needs a git checkout", "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout"}], "image": "jobs/q9af_corpus_check/Dockerfile"},
+ "_comment": "Single source of truth for the q9af_corpus_check submit_job fields and runner phase caps (jobs/q9af_corpus_check/JOB_SPEC.md). A GPU-free cpu-8 job (8 physical cores, 32 GiB): rebuild job-w3c2e's 280M-token distillation mix (convert.mixdata, dev13-v1) and scan every document / window against the pinned eval-hash index (DEV + TEST + held-out), the frozen catalogs and the eval attack templates. cpu-8 is priced at $0.54 per 60 min (autor job validate, 2026-10-09). One attempt: worst case = (build 60 + 100) x $0.009.",
+ "job": "q9af_corpus_check",
+ "chip": "cpu-8",
+ "chip_count": 1,
+ "max_duration_minutes": 100,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 0,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.009,
+ "hard_cap_usd": 2.0,
+ "reserve_minutes": 10,
+ "margin_min_frac": 0.3,
+ "phase_caps_minutes": {
+  "setup": 10,
+  "fetch": 20,
+  "C": 60
+ },
+ "expected_minutes": {
+  "build": 15,
+  "setup": 2,
+  "fetch": 3,
+  "C": 10
+ },
+ "measured": {
+  "_comment": "w3c2e_phase_D_min: job-w3c2e's whole phase D (fetch ~3 GB + tokenise 280M tokens + DEV 13-gram filter) on its H100 box, job log 07:22:52 -> 07:27:44 UTC 2026-10-09. Laptop (24 threads, transformers 5.17.0, the Qwen3.5 tokenizer, 3.6M tokens): batch-512 tokenisation 3.41M tok/s, with the dev13-v1 contaminated() filter 2.40M tok/s. Guard (one core, 0.9M words of repo prose against the pinned 9.74M-gram index): normalise + 13-gram hash + index lookup 0.58M words/s, attack_guard 0.65M words/s, both sharing one normalise ~0.45M words/s.",
+  "w3c2e_phase_D_min": 4.87,
+  "laptop_tokenize_dev_filter_tok_s_24t": 2400000,
+  "laptop_guard_words_s_per_core": 450000
+ },
+ "estimates_not_measured": {
+  "_comment": "cpu-8 tokenise rate = the laptop's 2.40M tok/s scaled to 8 of its 24 threads; words/token 0.8 (English web / chat / math under a 151k BPE); 6 scan workers at 70% (they share the 8 cores with the tokenizer threads); fixed overhead = DEV 13-gram set (12,104 rows) + 6 workers loading and sha-checking the 273 MB index + the analysis.",
+  "cpu8_tokenize_dev_filter_tok_s": 800000,
+  "words_per_token": 0.8,
+  "workers": 6,
+  "scan_efficiency": 0.7,
+  "fixed_overhead_min": 2.0,
+  "setup_min": 2.0,
+  "source_gb": 3.0,
+  "fetch_mb_s": 20
+ },
+ "model": "Qwen/Qwen3.5-9B@c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+ "config": "configs/q9af_v2_h100.json",
+ "mission": "m1-q9af-corpus-check",
+ "decision_rule": null,
+ "no_verdict_reason": "a contamination census of job-w3c2e's training corpus (counts per class, windows, ids); the operator decides what job-w3c2e's provisional result is worth from it, and no number of this job feeds a promotion rule",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py). model is the 9B for the disk preflight only: the fetch takes the tokenizer files, never the safetensors.",
+  "command": "bash /opt/ssdm/m1/jobs/q9af_corpus_check/q9af_corpus_check_job.sh",
+  "env": {},
+  "key": "m1-q9af-corpus-check",
+  "label": "q9af_corpus_check: rebuild job-w3c2e's distillation mix (dev13-v1) and scan every window vs DEV+TEST+held-out eval hashes, frozen catalogs, attack templates (cpu-8)",
+  "checks": {
+   "success": {"check": {"all_of": [{"type": "file_exists", "path": "/output/Q9CC_DONE"}, {"type": "file_exists", "path": "/output/MANIFEST.jsonl"}]}},
+   "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"}, "interval_s": 600, "grace_period_s": 1800, "fail_threshold": 2, "on_fail": "kill"}
+  }
+ },
+ "context": {
+  "_comment": "the q9af_v2 image layers (same base digest and pins: the same tokenizer stack as job-w3c2e) + code + the PRIVATE DEV rows (the dev13-v1 filter, sha256 pinned) + the pinned eval-hash index (hashes and eval run ids only, no eval text; index_sha256 2c821e29... = data/manifests/doc_overlap/index-pin.json).",
+  "dockerfile": "jobs/q9af_corpus_check/Dockerfile",
+  "data": [
+   {"src": "slices/dev-rows.jsonl.gz", "dest": "slices/dev-rows.jsonl.gz", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/df.npy", "dest": "doc-overlap/218affe13e367d07/df.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/ent.npy", "dest": "doc-overlap/218affe13e367d07/ent.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/fl.npy", "dest": "doc-overlap/218affe13e367d07/fl.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/h.npy", "dest": "doc-overlap/218affe13e367d07/h.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/pcnt.npy", "dest": "doc-overlap/218affe13e367d07/pcnt.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/post.npy", "dest": "doc-overlap/218affe13e367d07/post.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/pstart.npy", "dest": "doc-overlap/218affe13e367d07/pstart.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/u_allow.npy", "dest": "doc-overlap/218affe13e367d07/u_allow.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/u_den.npy", "dest": "doc-overlap/218affe13e367d07/u_den.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/u_field.npy", "dest": "doc-overlap/218affe13e367d07/u_field.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/u_row.npy", "dest": "doc-overlap/218affe13e367d07/u_row.npy", "pin": "jobs/q9af_corpus_check/data.sha256"},
+   {"src": "m2/doc-overlap/218affe13e367d07/meta.json", "dest": "doc-overlap/218affe13e367d07/meta.json", "pin": "jobs/q9af_corpus_check/data.sha256"}
+  ],
+  "manifest_files": ["jobs/q9af_corpus_check/w3c2e_mix_pin.json", "data/manifests/doc_overlap/index-pin.json", "configs/q9af_v2_h100.json"]
+ }
+}

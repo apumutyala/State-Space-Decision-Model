@@ -1,6 +1,6 @@
 """Generic distillation text for Q9-AF v2 (jobs/q9af_v2): a pinned public mixture, DEV-decontaminated, never re-used.
 
-    python -m convert.mixdata build --config configs/q9af_v2_h100.json --dev-rows <dev-rows.jsonl.gz> --out <dir>
+    python -m convert.mixdata build --config configs/q9af_v2_h100.json --dev-rows <dev-rows.jsonl.gz> --out <dir> [--decontam F]
 
 Why (full8 diagnosis, jobs/q9af_v2/JOB_SPEC.md): job-2xe5w distilled on 40M wikitext-103 tokens only, re-read ~4.7
 times over stage 1 + 8 stage-2 steps, and gated on wikitext validation, so ppl stayed within 4 % while full MMLU fell
@@ -17,9 +17,20 @@ them is a benchmark, an Index row, cohort v3, a TEST or held-out row, or targets
 Held-out (the end-to-end KL gate): the LAST row group of the web and math files (training reads row groups from the
 front and stops at its quota; a quota that would reach the held-out row group is refused) and ultrachat test_sft.
 
-Decontamination (pre-registered, reported): every document sharing ANY token 13-gram with any DEV row (state +
-canonical questions JSON, ``slices/dev-rows.jsonl.gz``, all 12,104 rows: every Index benchmark incl. the frozen
-families' DEV rows) is dropped. The DEV rows are used only to build this n-gram filter, never as text.
+Decontamination (pre-registered, reported), selected by ``mix.decontam`` in the config (``DECONTAM_*`` below):
+  dev13-v1      (job-w3c2e, recorded in configs/q9af_v2_h100.json): every document sharing ANY token 13-gram with any
+                DEV row (state + canonical questions JSON, ``slices/dev-rows.jsonl.gz``, all 12,104 rows: every Index
+                benchmark incl. the frozen families' DEV rows) is dropped. The DEV rows are used only to build this
+                n-gram filter, never as text. DEV-ONLY: TEST, held-out and attack templates are not filtered.
+  full-eval-v1  (the DEFAULT for any config without ``mix.decontam``, i.e. every new conversion): dev13-v1, plus every
+                document sharing ANY distinctive word 13-gram with the pinned Index eval-hash index (DEV + TEST +
+                held-out units, frozen families included; ``train.doc_overlap_guard``: hashes only, sha-pinned in
+                ``data/manifests/doc_overlap/index-pin.json``) is dropped, plus every document containing an eval
+                attack template fragment (``train.attack_guard``, base64 payloads included). "Distinctive" = the gram
+                is in at least one non-allowlisted eval unit and in fewer than ``TEMPLATE_EVAL_DF`` (100) eval rows
+                (eval-side frames such as the HellaSwag prompt are not evidence of a copied document). Drops are
+                counted per reason (``docs_dropped_dev_ngram`` / ``docs_dropped_eval_index`` / ``docs_dropped_attack``).
+A build refuses an unknown filter name; mix.json records the filter, its rule text and the index / template shas.
 
 Output: ``train.u32`` (one stream: sources concatenated, docs separated by <|endoftext|>; batches draw permuted
 non-overlapping windows, so each source enters every batch at its token share), ``heldout_<src>.u32`` and
@@ -52,6 +63,48 @@ HELDOUT_GLOBS = {"web": ["sample/10BT/000_00000.parquet"], "chat": ["data/test_s
                  "math": ["finemath-4plus/train-00000-of-00064.parquet"]}
 CHAT_SYSTEM = "You are a helpful assistant."
 THINK_EMPTY = "<think>\n\n</think>\n\n"
+
+#: decontamination filters (``mix.decontam``). dev13-v1 is what job-w3c2e ran; a config that names no filter gets the
+#: full one, so a new conversion can only filter DEV-only by saying so.
+DECONTAM_DEV = "dev13-v1"
+DECONTAM_FULL = "full-eval-v1"
+DECONTAM_DEFAULT = DECONTAM_FULL
+DECONTAM_RULES = {
+    DECONTAM_DEV: "drop a doc sharing any Qwen-token 13-gram with a DEV row (state + questions JSON)",
+    DECONTAM_FULL: ("dev13-v1 + drop a doc sharing any word 13-gram (train.doc_overlap_guard normalise/hash, the doc as "
+                    "one leaf) with the pinned Index eval-hash index (DEV + TEST + held-out) that is in a non-allowlisted "
+                    "eval unit and in < 100 eval rows + drop a doc containing any eval attack template fragment "
+                    "(train.attack_guard, base64 decodes included)"),
+}
+#: reason codes of ``eval_flags`` (bit mask)
+FLAG_EVAL, FLAG_ATTACK = 1, 2
+
+
+def decontam_of(mc: dict) -> str:
+    name = mc.get("decontam", DECONTAM_DEFAULT)
+    if name not in DECONTAM_RULES:
+        raise SystemExit(f"mix.decontam {name!r}: unknown filter (one of {sorted(DECONTAM_RULES)})")
+    return name
+
+
+def eval_flags(texts, idx=None, matcher=None) -> np.ndarray:
+    """full-eval-v1 per doc: FLAG_EVAL if the doc shares a distinctive word 13-gram with the eval-hash index,
+    FLAG_ATTACK if it contains an eval attack template fragment (uint8 bit mask, one per text)."""
+    from train import attack_guard as A
+    from train import doc_overlap_guard as G
+
+    idx = idx if idx is not None else G.get_index()
+    matcher = matcher or A.eval_matcher()
+    out = np.zeros(len(texts), dtype=np.uint8)
+    for k, t in enumerate(texts):
+        if not t:
+            continue
+        pos = idx.lookup(G.text_grams([t]))
+        if len(pos) and bool((((idx.fl[pos] & 1) > 0) & (idx.df[pos] < G.TEMPLATE_EVAL_DF)).any()):
+            out[k] |= FLAG_EVAL
+        if A.record_hits({"state": t}, matcher):
+            out[k] |= FLAG_ATTACK
+    return out
 
 
 def sha256_file(path, chunk=1 << 24) -> str:
@@ -133,11 +186,19 @@ def render_chat(messages, rng: random.Random) -> str:
     return "".join(out)
 
 
-def doc_texts(src: str, table) -> list[str]:
+def doc_rows(src: str, table) -> tuple[list[int], list[str]]:
+    """(row index in the row group, text) of every document of a row group, in read order (empty web/math rows are
+    skipped, as ever; a chat row always renders, consuming the row group's seeded system-prompt draw)."""
     if src == "chat":
         rng = random.Random(0)
-        return [render_chat(m, rng) for m in table.column("messages").to_pylist()]
-    return [t for t in table.column("text").to_pylist() if t]
+        texts = [render_chat(m, rng) for m in table.column("messages").to_pylist()]
+        return list(range(len(texts))), texts
+    rows = [(i, t) for i, t in enumerate(table.column("text").to_pylist()) if t]
+    return [i for i, _ in rows], [t for _, t in rows]
+
+
+def doc_texts(src: str, table) -> list[str]:
+    return doc_rows(src, table)[1]
 
 
 def _files(root: str, globs) -> list[str]:
@@ -161,8 +222,20 @@ def _row_groups(files, heldout_last: bool):
             yield fp, rg
 
 
-def _encode_stream(tok, src, units, quota, ngram_set, fo, eos, stats, batch_docs=512):
-    """Tokenise docs of ``units`` (file, row_group) into ``fo`` until ``quota`` tokens; returns tokens written."""
+def _new_stats(decontam: str) -> dict:
+    st = {"row_groups": 0, "docs_seen": 0, "docs_kept": 0, "docs_dropped_dev_ngram": 0}
+    if decontam == DECONTAM_FULL:
+        st |= {"docs_dropped_eval_index": 0, "docs_dropped_attack": 0}
+    return st
+
+
+def _encode_stream(tok, src, units, quota, ngram_set, fo, eos, stats, batch_docs=512, doc_filter=None, on_doc=None,
+                   stream="train"):
+    """Tokenise docs of ``units`` (file, row_group) into ``fo`` until ``quota`` tokens; returns tokens written.
+
+    doc_filter(texts) -> uint8 FLAG_* mask per text (full-eval-v1; None = dev13-v1 only). on_doc(stream, src, fp, rg,
+    row, text, n_tokens, dropped) is called for every doc in read order up to the quota (dropped: None when written,
+    else "dev_ngram" / "eval_index" / "attack" / "empty"); it never changes what is written."""
     import pyarrow.parquet as pq
 
     n = 0
@@ -171,33 +244,65 @@ def _encode_stream(tok, src, units, quota, ngram_set, fo, eos, stats, batch_docs
     for fp, rg in units:
         if fp not in pfs:
             pfs[fp] = pq.ParquetFile(fp)
-        texts = doc_texts(src, pfs[fp].read_row_group(rg, columns=cols))
+        rows, texts = doc_rows(src, pfs[fp].read_row_group(rg, columns=cols))
         stats["row_groups"] += 1
         for s in range(0, len(texts), batch_docs):
-            ids = tok(texts[s:s + batch_docs], add_special_tokens=False)["input_ids"]
+            chunk = texts[s:s + batch_docs]
+            ids = tok(chunk, add_special_tokens=False)["input_ids"]
             bad = contaminated(ids, ngram_set)
+            flags = doc_filter(chunk) if doc_filter is not None else None
             stats["docs_seen"] += len(ids)
             stats["docs_dropped_dev_ngram"] += int(bad.sum())
-            for x, b in zip(ids, bad):
-                if b or not x:
+            for k, (x, b) in enumerate(zip(ids, bad)):
+                why = "dev_ngram" if b else None
+                if why is None and flags is not None and flags[k]:
+                    why = "eval_index" if flags[k] & FLAG_EVAL else "attack"
+                    stats[f"docs_dropped_{why}"] += 1
+                if why is None and not x:
+                    why = "empty"
+                if why is not None:
+                    if on_doc is not None:
+                        on_doc(stream, src, fp, rg, rows[s + k], chunk[k], 0, why)
                     continue
                 a = np.asarray(x + [eos], dtype=np.uint32)
                 fo.write(a.tobytes())
                 n += len(a)
                 stats["docs_kept"] += 1
+                if on_doc is not None:
+                    on_doc(stream, src, fp, rg, rows[s + k], chunk[k], len(a), None)
                 if n >= quota:
                     return n
     return n
 
 
-def build(cfg: dict, dev_rows: str, out_dir: str, tok=None, roots: dict | None = None) -> dict:
+def full_filter(idx=None):
+    """The full-eval-v1 doc filter + its identity for mix.json (the pinned eval index and the attack template set)."""
+    from train import attack_guard as A
+    from train import doc_overlap_guard as G
+
+    idx = idx if idx is not None else G.get_index()
+    m = A.eval_matcher()
+    ident = {"eval_index_sha256": idx.meta.get("index_sha256"), "eval_index_rule": G.RULE,
+             "eval_index_rows_by_split": idx.meta.get("rows_by_split"), "attack_rule": A.RULE,
+             "attack_templates_sha256": A.eval_templates_sha256(), "template_eval_df": G.TEMPLATE_EVAL_DF}
+    return (lambda texts: eval_flags(texts, idx, m)), ident
+
+
+def build(cfg: dict, dev_rows: str, out_dir: str, tok=None, roots: dict | None = None, on_doc=None,
+          decontam: str | None = None, eval_index=None) -> dict:
+    """``decontam`` overrides ``mix.decontam`` (the config's recorded filter; absent = DECONTAM_DEFAULT)."""
     t0 = time.time()
     mc = cfg["mix"]
+    dc = decontam_of({"decontam": decontam} if decontam else mc)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     meta_p = out / "mix.json"
     if meta_p.exists():
-        return json.loads(meta_p.read_text(encoding="utf-8"))
+        meta = json.loads(meta_p.read_text(encoding="utf-8"))
+        if meta.get("decontam", DECONTAM_DEV) != dc:
+            raise SystemExit(f"{meta_p} was built with decontam {meta.get('decontam', DECONTAM_DEV)!r}, not {dc!r}")
+        return meta
+    doc_filter, filt_ident = full_filter(eval_index) if dc == DECONTAM_FULL else (None, {})
     if tok is None:
         from transformers import AutoTokenizer
 
@@ -209,14 +314,17 @@ def build(cfg: dict, dev_rows: str, out_dir: str, tok=None, roots: dict | None =
     ng = build_ngram_set(tok, dev_texts(dev_rows))
     meta = {"ngram": NGRAM, "dev_rows_sha256": sha256_file(dev_rows), "dev_ngrams": int(len(ng)), "eos_id": int(eos),
             "train_tokens_target": mc["train_tokens"], "shares": mc["shares"], "sources": {}, "heldout": {}}
+    if dc != DECONTAM_DEV:  # a dev13-v1 mix.json stays byte-for-byte the shape job-w3c2e wrote
+        meta |= {"decontam": dc, "decontam_rule": DECONTAM_RULES[dc], **filt_ident}
     total = mc["train_tokens"]
     tmp = out / "train.u32.tmp"
     with open(tmp, "wb") as fo:
         for src in SOURCES:
             quota = int(round(total * mc["shares"][src]))
             files = _files(roots[src], TRAIN_GLOBS[src])
-            st = {"row_groups": 0, "docs_seen": 0, "docs_kept": 0, "docs_dropped_dev_ngram": 0}
-            n = _encode_stream(tok, src, _row_groups(files, heldout_last=src != "chat"), quota, ng, fo, eos, st)
+            st = _new_stats(dc)
+            n = _encode_stream(tok, src, _row_groups(files, heldout_last=src != "chat"), quota, ng, fo, eos, st,
+                               doc_filter=doc_filter, on_doc=on_doc, stream="train")
             if n < quota:
                 raise SystemExit(f"{src}: only {n} tokens before the held-out row group (quota {quota})")
             meta["sources"][src] = {"tokens": n, "quota": quota, **st,
@@ -231,10 +339,11 @@ def build(cfg: dict, dev_rows: str, out_dir: str, tok=None, roots: dict | None =
             units = list(_row_groups(files, heldout_last=False))
         else:
             units = [(files[0], pq.ParquetFile(files[0]).num_row_groups - 1)]
-        st = {"row_groups": 0, "docs_seen": 0, "docs_kept": 0, "docs_dropped_dev_ngram": 0}
+        st = _new_stats(dc)
         p = out / f"heldout_{src}.u32"
         with open(str(p) + ".tmp", "wb") as fo:
-            n = _encode_stream(tok, src, units, mc["heldout_tokens"][src], ng, fo, eos, st)
+            n = _encode_stream(tok, src, units, mc["heldout_tokens"][src], ng, fo, eos, st, doc_filter=doc_filter,
+                               on_doc=on_doc, stream=f"heldout_{src}")
         os.replace(str(p) + ".tmp", p)
         meta["heldout"][src] = {"tokens": n, **st, "units": [[os.path.relpath(f, roots[src]).replace(os.sep, "/"), rg]
                                                               for f, rg in units]}
@@ -301,8 +410,10 @@ def main(argv=None):
     b.add_argument("--config", required=True)
     b.add_argument("--dev-rows", required=True)
     b.add_argument("--out", required=True)
+    b.add_argument("--decontam", choices=sorted(DECONTAM_RULES),
+                   help=f"override the config's mix.decontam (absent there: {DECONTAM_DEFAULT})")
     a = ap.parse_args(argv)
-    meta = build(json.loads(Path(a.config).read_text(encoding="utf-8")), a.dev_rows, a.out)
+    meta = build(json.loads(Path(a.config).read_text(encoding="utf-8")), a.dev_rows, a.out, decontam=a.decontam)
     print(json.dumps({k: v for k, v in meta.items() if k != "sources"} | {
         "sources": {s: {k: v for k, v in d.items() if k != "files"} for s, d in meta["sources"].items()}}))
     return 0

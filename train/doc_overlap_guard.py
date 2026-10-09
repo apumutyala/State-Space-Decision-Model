@@ -549,9 +549,6 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
     set (needs the draw's train df) and the draw-union rule (U) are resolved after the pass."""
     idx = idx or get_index()
     t0 = time.time()
-    cand_thr = BOILER_FRAC * idx.n_rows
-    tdf = np.zeros(len(idx.h), np.uint32)  # train df of every eval gram with eval df >= min(TEMPLATE_DF, 1%)
-    track = min(TEMPLATE_DF, cand_thr)
     n = 0
     found: set[str] = set()
     per_source_rows: dict[str, int] = {}
@@ -573,10 +570,25 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
         pos = idx.lookup(g)
         if not len(pos):
             continue
-        tdf[pos[idx.df[pos] >= track]] += 1  # pos is unique per row
         hits.append((rid, src, len(g), pos.astype(np.int64)))
     if want is not None and found != want:
         raise DocOverlapError(f"{len(want - found)} requested id(s) not in the records, e.g. {sorted(want - found)[:3]}")
+    return scan_hits(hits, n, per_source_rows, idx, keep_ids, t0)
+
+
+def scan_hits(hits: list[tuple], n: int, per_source_rows: dict[str, int], idx: EvalIndex | None = None,
+              keep_ids: bool = True, t0: float | None = None, fails_cap: int | None = 5000) -> dict[str, Any]:
+    """The rule over a draw's rows with any eval-gram hit, ``hits`` = [(id, source, n_row_grams, sorted unique
+    index positions)] in draw order, ``n`` rows scanned in all (``scan`` builds these in one pass; a caller that
+    computes them in parallel workers gets the same report). ``fails_cap`` None keeps every fail detail."""
+    idx = idx or get_index()
+    t0 = time.time() if t0 is None else t0
+    cand_thr = BOILER_FRAC * idx.n_rows
+    tdf = np.zeros(len(idx.h), np.uint32)  # train df of every eval gram with eval df >= min(TEMPLATE_DF, 1%)
+    track = min(TEMPLATE_DF, cand_thr)
+    for h in hits:
+        pos = h[3]
+        tdf[pos[idx.df[pos] >= track]] += 1  # pos is unique per row
     edf = idx.df.astype(np.int64)
     is_boiler = (edf > cand_thr) & (tdf > BOILER_FRAC * max(n, 1))
     is_template = (((edf >= TEMPLATE_DF) & (tdf >= TEMPLATE_DF)) | (edf >= TEMPLATE_EVAL_DF)) & ~is_boiler
@@ -669,7 +681,7 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
            "secs": round(time.time() - t0, 1)}
     if keep_ids:
         rep["fail_ids"] = fail_ids
-        rep["fails"] = fails[:5000]
+        rep["fails"] = fails if fails_cap is None else fails[:fails_cap]
     return rep
 
 

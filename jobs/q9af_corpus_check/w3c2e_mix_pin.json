@@ -1,0 +1,6 @@
+{
+ "status": "pending",
+ "source": "job-w3c2e /output/phases/D.tgz -> out/mix.json (export D sha256 efd3be06f64c295f915deac38e344d4b9c4a6296b4a947ac5fb53393aa0c17c9, job log 2026-10-09T07:27:44Z); not downloadable while the job runs (no artifact yet)",
+ "how_to_fill": "after job-w3c2e lands: set \"mix\" to that mix.json's object and \"status\" to \"pinned\"; a job launched from a sha with the pin filled exits 6 (NOT_REPRODUCED) unless every count and sha256 matches. Without it, compare offline: python -X utf8 -m jobs.q9af_corpus_check.corpus_check compare --rebuilt <check>/mix.json --expected <w3c2e>/out/mix.json",
+ "mix": null
+}
