@@ -135,6 +135,8 @@ def test_best_ckpt_selection_and_scoring_pointer(toy, tmp_path):
     assert rec["path"] == "ckpt-step0000010.pt" and rec["best"]["path"] == "ckpt-step0000006.pt"
     assert Trainer.latest(d).name == "ckpt-step0000010.pt"  # resume point unchanged
     assert Trainer.scored(d).name == "ckpt-step0000006.pt"  # what evals / screen load
+    (d / "ckpt-step0000006.pt").unlink()  # a pointer to a missing file: None (identity exit), never the last ckpt
+    assert Trainer.scored(d) is None
 
 
 def test_dev_cards_run_during_training_and_best_is_saved(toy, tmp_path):

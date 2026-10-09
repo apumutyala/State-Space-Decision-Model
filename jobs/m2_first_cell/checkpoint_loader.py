@@ -25,7 +25,12 @@ What ``install`` guarantees (else ``CheckpointError`` with ``code`` 5 = usage / 
   2. the artifact (``https://`` or ``file://``; URL from ``--url`` or ``$<url_env>``, never from the artifact) is
      streamed to disk with its sha256 checked against the pin; only the two named members are read from the tar (no
      extractall, no paths from the archive are used), each written under a fixed name and sha256-checked;
-  3. ``latest.json`` names exactly the pinned checkpoint file.
+  3. ``latest.json`` names exactly the pinned checkpoint file, as its ``path`` (role ``latest``) or as its ``best``
+     pointer (role ``best``: a ``best_ckpt`` run's scored checkpoint, pinned directly). When the pinned member is the
+     last checkpoint of an inference export whose ``latest.json`` carries a ``best`` pointer, the best export is
+     installed too (its safetensors + sidecar sha256s come from the pinned latest.json) and is what ``path`` names:
+     eval-only modes score the SAME checkpoint the training run's own evals did (``Trainer.scored``). The record's
+     ``role`` says which was installed.
 A checkpoint dir that already holds the pinned file (a restart) is re-hashed and reused without a download.
 The artifact is untrusted data: nothing from it is executed here (the .pt is only hashed; ``Trainer.load`` in the GPU
 job unpickles it after this pin check, exactly as a training run's own checkpoint).
@@ -160,14 +165,42 @@ def install(block: dict, *, cell_src: str | Path, cell_config: str | Path, ck_di
         _extract(tar, ck["member"], pt, ck["ckpt_sha256"], fname)
         if side is not None:
             _extract(tar, f"./ckpt/{side.name}", side, ck["sidecar_sha256"], side.name)
-    if json.loads(latest.read_text(encoding="utf-8")).get("path") != fname:
-        raise CheckpointError(f"latest.json does not name {fname}")
+    rec = json.loads(latest.read_text(encoding="utf-8"))
+    best = rec.get("best") if isinstance(rec.get("best"), dict) else None
+    if rec.get("path") == fname:
+        role = "latest"
+    elif best is not None and best.get("path") == fname:
+        role = "best"  # the scored checkpoint itself is pinned
+    else:
+        raise CheckpointError(f"latest.json names neither {fname} as its path nor as its best pointer")
+    scored, scored_sha = pt, ck["ckpt_sha256"]
+    if role == "latest" and best is not None and best.get("path") != fname and fname.endswith(".safetensors"):
+        # a best_ckpt run: install its scored (best) export too, pinned through the pinned latest.json
+        bname = str(best.get("path") or "")
+        if not re.fullmatch(r"trainable-step[0-9]+\.safetensors", bname) or not all(
+                re.fullmatch(r"[0-9a-f]{64}", str(best.get(k) or "")) for k in ("sha256", "sidecar_sha256")):
+            raise CheckpointError(f"latest.json best pointer malformed: {best!r}")
+        bpt, bside = ck_dir / bname, ck_dir / (bname[: -len(".safetensors")] + ".json")
+        have = (bpt.is_file() and sha256_file(bpt) == best["sha256"] and bside.is_file()
+                and sha256_file(bside) == best["sidecar_sha256"])
+        if not have:
+            tar = work / "artifact.tar"
+            if not tar.is_file():
+                url = url or os.environ.get(ck["url_env"], "")
+                if not url:
+                    raise CheckpointError(f"${ck['url_env']} is not set (the get_artifact {ck['artifact']} URL)", 5)
+                got = download(url, tar)
+                if got != ck["artifact_sha256"]:
+                    raise CheckpointError(f"artifact {ck['artifact']} sha256 {got} != checkpoint.artifact_sha256")
+            _extract(tar, f"./ckpt/{bname}", bpt, best["sha256"], bname)
+            _extract(tar, f"./ckpt/{bside.name}", bside, best["sidecar_sha256"], bside.name)
+        scored, scored_sha, role = bpt, best["sha256"], "best"
     if cell_out is not None:
         Path(cell_out).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(cell_src, cell_out)
     return {"artifact": ck["artifact"], "job": ck.get("job"), "artifact_sha256": ck["artifact_sha256"],
-            "file": fname, "path": str(pt), "sha256": ck["ckpt_sha256"], "cell_json_sha256": ck["cell_json_sha256"],
-            "reused": reused}
+            "file": scored.name, "path": str(scored), "sha256": scored_sha, "role": role, "member": fname,
+            "member_sha256": ck["ckpt_sha256"], "cell_json_sha256": ck["cell_json_sha256"], "reused": reused}
 
 
 def main(argv=None) -> int:

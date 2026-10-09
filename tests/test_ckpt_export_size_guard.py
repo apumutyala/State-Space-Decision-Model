@@ -262,6 +262,7 @@ def test_best_checkpoint_is_exported_with_its_pointer(tmp_path):
     lat = json.loads((tmp_path / "out" / "latest.json").read_text())
     assert lat["path"] == "trainable-step0000003.safetensors" and lat["best"]["path"] == "trainable-step0000001.safetensors"
     assert side["best"] == lat["best"] and lat["best"]["sha256"] == _sha(tmp_path / "out" / lat["best"]["path"])
+    assert lat["best"]["sidecar_sha256"] == _sha(CE.sidecar_path(tmp_path / "out" / lat["best"]["path"]))  # pinned by the loader
     for name, step in ((lat["path"], 3), (lat["best"]["path"], 1)):
         assert (tmp_path / "out" / (name + ".sha256")).is_file()
         u = _trainer(tmp_path / f"ck-{step}", seed=5)
