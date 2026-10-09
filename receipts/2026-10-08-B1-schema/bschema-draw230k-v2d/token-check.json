@@ -1,0 +1,49 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw230k-v2d/records.jsonl.gz",
+ "script": "scripts/b_schema_tokcheck.py (--set g1v2 and --set v1), trainer 9c3e435, RWKV7-G1k tokenizer @ce3630b8",
+ "n_rows": 227946,
+ "n_error": 0,
+ "tokens": {
+  "t_v1": {
+   "n": 227946,
+   "p50": 458,
+   "p95": 1620,
+   "p99": 1858,
+   "max": 2048,
+   "n_over": 0
+  },
+  "t_v2f": {
+   "n": 227946,
+   "p50": 436,
+   "p95": 1466,
+   "p99": 1704,
+   "max": 2048,
+   "n_over": 0
+  },
+  "t_v3w": {
+   "n": 227946,
+   "p50": 435,
+   "p95": 1571,
+   "p99": 1913,
+   "max": 2048,
+   "n_over": 0
+  },
+  "cont": {
+   "n": 227946,
+   "p50": 1,
+   "p95": 1,
+   "p99": 1,
+   "max": 1,
+   "n_over": 0
+  },
+  "cont_v1": {
+   "n": 227946,
+   "p50": 2,
+   "p95": 9,
+   "p99": 10,
+   "max": 14,
+   "n_over": 0
+  }
+ },
+ "pass": true
+}

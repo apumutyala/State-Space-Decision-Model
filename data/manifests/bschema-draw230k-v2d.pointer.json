@@ -1,0 +1,27 @@
+{
+ "build": "bschema-draw230k-v2d (scripts/b_schema_subtract.py: bschema-draw230k-v2c minus dropped rows; no new rows)",
+ "location": "ssdm-data/m2/build/bschema-draw230k-v2d/ (outside git; deterministic, a rerun reproduces it)",
+ "records_uncompressed_sha256": "b5149e12e089d0eddde9a0fc0fa801ce9530766c07a0db17a00817a372a3bde3",
+ "manifest": "bschema-draw230k-v2d.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "e403fd52b39b048f2631effea649a6e0d0f0402a80f7f8eee7d53454f500baa7",
+ "content_map": "bschema-draw230k-v2d.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "5f661509ab99cabaf88d2006198764d6e9981b8a95f756908fba53e0c17b2f2e",
+ "n_records": 227946,
+ "excludes_cohort": "m2-dev-cohort-v2 be6efe2b... and m2-dev-cohort-v3 498efa61... (id, content, source item, key-free text), Index DEV/TEST rows (content, key-free text, item text)",
+ "max_variants_per_source_item": 8,
+ "builder": {
+  "module": "scripts/b_schema_subtract.py",
+  "commit": "e58e3b957ca0b79e52b2386b0fd6517701388494",
+  "parent_builder": {
+   "module": "data/b_schema.py",
+   "commit": "918a237836870eff9a25cc91ca76e5165141084d"
+  }
+ },
+ "receipt": "receipts/2026-10-08-B1-schema/bschema-draw230k-v2d/",
+ "derived_from": {
+  "pointer": "data/manifests/bschema-draw230k-v2c.pointer.json",
+  "pointer_sha256": "a515311416addb2a05fb755c0a171304eafb4b1235e463f566dfae238d56d8a8",
+  "records_uncompressed_sha256": "0d4a89c429a3be7ae8eae1db74835b7e5fcc8b6d640aee7b0efec9c52e82be04",
+  "n_records": 229824
+ }
+}

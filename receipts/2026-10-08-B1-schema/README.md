@@ -299,3 +299,52 @@ Rows and unique items per family are in `build-report.json` under `by_key`. Dive
   - MinHash cross-item near-duplicates: 3.1% of sampled rows.
 - Agent A's hard gate `train.attack_guard scan` (claude/attack-guard @ca9d482, templates sha 93086366...) passes on all
   229,824 rows: 0 hits, exit 0 (`attack-guard-ca9d482.json`).
+
+# bschema-draw230k-v2d (2026-10-09): v2c minus every eval-document overlap
+
+v2d removes rows from v2c and adds nothing. It is built by `scripts/b_schema_subtract.py`. Record, manifest and
+content lines are byte copies of v2c, and v2c's pins are verified before anything is copied. Decisions are the
+coordinator's (2026-10-09): eval documents count as "test" (we can't train on test), and dropping is cheaper than arguing.
+
+## Removed: 1,878 rows (229,824 -> 227,946 rows; 322,594 -> 320,716 items)
+- The whole NLI4CT family: 1,710 rows. This includes the 18 NLI4CT doc_check hits.
+- The other 164 v2c `data/doc_check.py` hits (`../bschema-draw230k-v2c/doc-check.json`):
+  - glaive_fc 99 and when2call 60. These are BFCL tool schemas, plus 8 HoVer and 5 ESCI hits.
+  - mmlu_aux 2, sst5 2, hellaswag 1 (HoVer/ESCI).
+- 4 rows that `train.doc_overlap_guard` (PR #235, claude/b-doc-overlap-gate @4849e36) failed on the first v2d cut,
+  all under rule R: hellaswag 1, mmlu_aux 1 (RouterBench frame), winogrande 2 (BRIGHT pool).
+  - These rows only appear once v2c's NLI4CT rows are gone, because the per-draw boilerplate and template dfs shift.
+  - The ids are in `doc-overlap-guard-4849e36-try1.json`.
+- Removed counts per list and the sorted-id sha256 of each list are in `subtract-report.json`.
+
+## Gates (all PASS on the final 227,946 rows)
+- `doc-overlap-guard-4849e36.json`: `train.doc_overlap_guard scan` at 4849e36 is the final gate.
+  - Result: 0 fails, exit 0.
+  - The PR's allowlist applies (context corpora only). Rows it saved are counted under `allowlist_saved`.
+- `doc-check.json`: `data/doc_check.py`, with the allowlist narrowed to the single pair (anli, HoVer).
+  - Result: 0 non-allowlisted hits.
+  - The 1 allowlisted row is the ANLI -> HoVer Wikipedia row.
+- `exclusion-check.json`: b1_check, max item reuse 8, 0 failures. Log: `ssdm-data/m2/build/bschema-draw230k-v2d-check.log`.
+- `generator-specs.json`: check_generator passes 37 specs. That is v2c's 38 minus nli4ct.
+- `attack-filter.json`: 0 hits.
+- `attack-guard-ca9d482.json`: `train.attack_guard scan` gives 0 hits.
+- `trainer-draw.json`: trainer 9c3e435, `train_set.draw` at n 24k, plus `heldout_gate` over all rows. 0 hits.
+- `token-check.json`: re-tokenized on v2d itself, 0 errors.
+  - The max is 2,048 under v1, v2f and v3w.
+  - Continuations: at most 1 token under g1v2 and at most 14 under v1.
+- `audit.json`: 0 key-free collisions across items; MinHash cross-item near-duplicates 2.6% of sampled rows.
+
+## Pins
+- Pointer: `data/manifests/bschema-draw230k-v2d.pointer.json`, sha256 1adf0c82...
+  - The pointer records builder commit e58e3b9, the parent HEAD. The subtract script itself lands in the commit that
+    adds this receipt.
+- Uncompressed sha256:
+  - records b5149e12e089d0eddde9a0fc0fa801ce9530766c07a0db17a00817a372a3bde3
+  - manifest e403fd52b39b048f2631effea649a6e0d0f0402a80f7f8eee7d53454f500baa7
+  - content 5f661509ab99cabaf88d2006198764d6e9981b8a95f756908fba53e0c17b2f2e
+- Raw gz:
+  - records fd79eaaa605c83da1a58a55eb482030adbfee973de7981e2f44840586f5e08a6
+  - manifest 1f9514eb...
+  - content 38b5b715...
+- The C multirecord rows are still v2c's `synthetic_c_multirecord_v1`, 7,000 rows. C's all-K admitted pool has not
+  been swapped in.

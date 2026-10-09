@@ -1,0 +1,51 @@
+{
+ "records": "C:/Users/apumu/research/CHLabs/ssdm-data/m2/build/bschema-draw230k-v2d/records.jsonl.gz",
+ "n_rows": 227946,
+ "rule": {
+  "coverage": 0.5,
+  "min_shared_grams": 3,
+  "post_cap": 500,
+  "boilerplate": "eval df > 1% AND draw df > 1% (audit rule)",
+  "fields": "train S+Q+O grams vs eval STATE grams",
+  "allowed_pairs": [
+   [
+    "anli",
+    "hover"
+   ]
+  ]
+ },
+ "eval": {
+  "n_rows": 24789,
+  "eval_npz_sha256": "8477e924d9b3426b1a6b9be061ef1a19032918780bb32d6c74a4b790a5c28a45",
+  "eval_meta_sha256": "7e31aa20846b5a0bf34d20ee14d4cbe2cfe0dcfdc3521f8084a10924bb057823",
+  "audit_py_sha256": "514d3e543b90199dc27720d06ee70b6ed231e3f5d969939c3225d92fd3e8f8cc",
+  "source": "claude/b-gap-breakdown @f689a4b"
+ },
+ "n_boilerplate_grams": 83,
+ "rows_by_best_doc_coverage": {
+  ">0": 64054,
+  ">=0.5": 404,
+  ">=0.2": 3187
+ },
+ "n_fail": 0,
+ "fail_by_pair": {},
+ "fails": [],
+ "n_allowed": 1,
+ "allowed_by_pair": {
+  "anli->HoVer claim verification": 1
+ },
+ "allowed": [
+  {
+   "id": "m2:anli:a5cc5cca-29a0-4a8b-a07d-dae14bb52880~view:bs0",
+   "source": "anli",
+   "family": "nli",
+   "eval": "candidates-v3:61:cf842f20-ae1d-4ec4-a2a9-59d36b40ccb2",
+   "eval_split": "TEST",
+   "eval_family": "HoVer claim verification",
+   "eval_state_grams": 163,
+   "shared": 85,
+   "coverage": 0.5215
+  }
+ ],
+ "pass": true
+}

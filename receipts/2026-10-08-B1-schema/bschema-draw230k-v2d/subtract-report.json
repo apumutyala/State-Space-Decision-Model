@@ -1,0 +1,44 @@
+{
+ "parent": "bschema-draw230k-v2c",
+ "parent_pointer_sha256": "a515311416addb2a05fb755c0a171304eafb4b1235e463f566dfae238d56d8a8",
+ "n_parent": 229824,
+ "n_records": 227946,
+ "n_removed": 1878,
+ "removed_by_source_rule": {
+  "sources": [
+   "nli4ct"
+  ],
+  "rows": {
+   "nli4ct": 1710
+  }
+ },
+ "removed_by_id_lists": {
+  "rows_by_source": {
+   "glaive_fc": 99,
+   "when2call": 60,
+   "mmlu_aux": 3,
+   "hellaswag": 2,
+   "sst5": 2,
+   "winogrande": 2
+  },
+  "lists": {
+   "doc-check.json": {
+    "n_ids": 182,
+    "sha256_sorted_ids": "3a602b8e0a0c3c43d226255e4bb45db3a2c37bc829850837fd5e26e9f4225e4c"
+   },
+   "doc-overlap-guard-4849e36-try1.json": {
+    "n_ids": 4,
+    "sha256_sorted_ids": "fd6f6603b3be5d7e5d6bc23f72c399864b62d59bd07b6691c96670e700ef6b60"
+   }
+  },
+  "n_ids_union": 186,
+  "n_ids_already_removed_by_source": 18
+ },
+ "uncompressed_sha256": {
+  "records": "b5149e12e089d0eddde9a0fc0fa801ce9530766c07a0db17a00817a372a3bde3",
+  "manifest": "e403fd52b39b048f2631effea649a6e0d0f0402a80f7f8eee7d53454f500baa7",
+  "content": "5f661509ab99cabaf88d2006198764d6e9981b8a95f756908fba53e0c17b2f2e"
+ },
+ "pointer": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\b-schema-synth\\data\\manifests\\bschema-draw230k-v2d.pointer.json",
+ "commit": "e58e3b957ca0b79e52b2386b0fd6517701388494"
+}
