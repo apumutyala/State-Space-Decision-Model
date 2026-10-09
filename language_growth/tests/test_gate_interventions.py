@@ -17,6 +17,7 @@ from language_growth.development_data import generate_development_tasks
 from language_growth.gate_interventions import (BOUNDARY, DIRECTION_SCHEMA, OUTPUT_CONTROL, SCHEMA, SCOPE,
                                                 _ArmProvider, _parent_state_sha, _sha, native_capture_identity,
                                                 run_native_interventions)
+from language_growth.language_child import LanguageChild, Runtime as LanguageChildRuntime
 from language_growth.native_parent import LoadedNativeParent, NativeParent, NativeParentPin
 from language_growth.planner import plan_checked_answer
 from language_growth.qualified_parent import file_sha256
@@ -89,6 +90,29 @@ def setup(tmp_path, monkeypatch):
 
 def resign(prereg):
     prereg["registration_sha256"] = _sha({k: v for k, v in prereg.items() if k != "registration_sha256"})
+
+
+def test_fitted_language_child_uses_its_native_pin_and_rejects_runtime_drift(tmp_path, monkeypatch):
+    parent, _task, _prereg, _data, _path, _plan = setup(tmp_path, monkeypatch)
+    candidate = {
+        "checkpoint_sha256": "a" * 64, "receipt_sha256": "b" * 64,
+        "receipt": {"plan_sha256": "c" * 64, "source_commit": "d" * 40},
+        "checkpoint_path": tmp_path / "child.pt", "step": 4, "lineage": {"data": {"n": 4}},
+    }
+    trainable_parent = SimpleNamespace(model=parent._loaded.backend.model,
+                                       encoder=parent._loaded.backend.encode,
+                                       config=SimpleNamespace(layout=parent._loaded.backend.layout))
+    stage1_spec = SimpleNamespace(pin=parent._pin)
+    native_child = LanguageChildRuntime().native_parent(trainable_parent, {}, candidate, stage1_spec)
+    child = LanguageChild(native_child, stage1_identity={"artifact_sha256": "9" * 64}, candidate=candidate)
+    capture = native_capture_identity(child)
+    assert capture["parent_revision"] == child.planner_kwargs()["parent_revision"]
+    assert child.identity()["artifact_sha256"] == "a" * 64
+    assert child.identity()["stage1_parent"]["artifact_sha256"] == "9" * 64
+    assert child.identity()["language_qualified"] is False
+    child._native._loaded.backend.shared_prefix = False
+    with pytest.raises(ValueError):
+        native_capture_identity(child)
 
 
 def test_four_native_arms_preserve_trained_head_parent_bytes_and_sham_behavior(tmp_path, monkeypatch):

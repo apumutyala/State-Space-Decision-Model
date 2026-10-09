@@ -20,6 +20,7 @@ from typing import Any
 from .native_parent import NativeParent
 from .planner import PlannerResult
 from .qualified_parent import QualifiedParent, file_sha256
+from .language_child import LanguageChild
 
 SCHEMA = "ssdm.language_intervention_preregistration.v1"
 DIRECTION_SCHEMA = "ssdm.native_fork_direction.v1"
@@ -96,7 +97,12 @@ def _native(parent) -> NativeParent:
     from heads.decide_backend import DecisionModelBackend
     from heads.heads import FinalStateFork
     from heads.model import DecisionModel
-    native = parent._parent if isinstance(parent, QualifiedParent) else parent
+    if isinstance(parent, QualifiedParent):
+        native = parent._parent
+    elif isinstance(parent, LanguageChild):
+        native = parent._native
+    else:
+        native = parent
     if not isinstance(native, NativeParent):
         raise ValueError("a pinned native decision parent is required")
     native.planner_kwargs()  # recheck existing native revision/runtime/config pins
