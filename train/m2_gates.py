@@ -439,8 +439,25 @@ def read_arm_cache(cache_dir: str | Path, stage: str, expect_ident: dict, expect
 
 
 # ------------------------------------------------------------------------------------------------ verdicts
+def dev_remainder(child_dev: dict, parent_dev: dict, dev_card_ids, n_boot: int = 2000) -> dict[str, Any]:
+    """G12 on cohort dev MINUS the dev-card rows (PR #232 review S4): a best_ckpt run picks its checkpoint on those
+    rows, so the full-dev G12 is optimistic for it; this is the paired decision on the disjoint remainder. Reported
+    beside the verdict, which stays on the full dev set."""
+    from train import promotion as P
+
+    sel = frozenset(dev_card_ids)
+    c = {k: v for k, v in child_dev.items() if k not in sel}
+    p = {k: v for k, v in parent_dev.items() if k not in sel}
+    return {**P.paired_decision(c, p, n_boot=n_boot), "excluded_dev_card_items": len(sel & set(child_dev)),
+            "dev_card_ids_sha256": hashlib.sha256("\n".join(dev_card_ids).encode()).hexdigest(),
+            "note": "informational: the G12 verdict is on the full cohort dev set"}
+
+
 def stage_verdict(stage: str, child: dict, parent: dict, variants: list[dict], index_rows: list[dict] | None,
-                  margins: dict | None = None, n_boot: int = 2000) -> dict[str, Any]:
+                  margins: dict | None = None, n_boot: int = 2000, dev_card_ids: Sequence[str] | None = None
+                  ) -> dict[str, Any]:
+    """``dev_card_ids`` (g12 only): the training run's dev-card rows (cell.json ``dev_card_sample.ids``); adds
+    ``paired["dev_remainder"]`` (``dev_remainder``)."""
     from train import promotion as P
 
     margins = margins or P.MARGINS
@@ -459,6 +476,9 @@ def stage_verdict(stage: str, child: dict, parent: dict, variants: list[dict], i
         v = P.verdict_g12(decision=dec, steer_child_rows=child["steer_rows"], steer_parent_rows=parent["steer_rows"],
                           expected_variants=variants, margins=margins, n_boot=n_boot)
         v["paired"] = {"dev": dec}
+        if dev_card_ids:
+            v["paired"]["dev_remainder"] = dev_remainder(child["decision"]["dev"], parent["decision"]["dev"],
+                                                         list(dev_card_ids), n_boot)
         return v
     res = child["index_results"]
     served = {k: dict(v, response=v["served_response"]) for k, v in res.items() if "served_response" in v}
@@ -611,7 +631,8 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
               anchor_arm_sha256: str | None = None, index_frozen: dict | None = None,
               child_index_decide=None, margins: dict | None = None, anchor_is_champion: bool = False,
               out: str | Path | None = None, extra: dict | None = None,
-              progress_dir: str | Path | None = None, index_proxy: dict | None = None) -> tuple[int, dict]:
+              progress_dir: str | Path | None = None, index_proxy: dict | None = None,
+              dev_card_ids: Sequence[str] | None = None) -> tuple[int, dict]:
     """Score the child per stage, load the matching comparator units, apply the verdicts and the promotion rule.
 
     Comparators (issue #36 anti-creep): ``parent_arm`` = the LAST ACCEPTED checkpoint's arm cache; ``anchor_arm`` =
@@ -675,7 +696,8 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
         child = score_stage(stage, child_decide, child_steer, items_by_role, records_by_id, variants,
                             index_rows if _uses_index(stage) else None,
                             child_index_decide if stage == "g13" else None, progress=pr, index_ids=sids)
-        vs = {name: stage_verdict(stage, child, units, variants, srows, margins, n_boot)
+        vs = {name: stage_verdict(stage, child, units, variants, srows, margins, n_boot,
+                                  dev_card_ids if stage == "g12" else None)
               for name, (units, _) in comps.items()}
         v = vs["last_accepted"] if stage == "index" else combine_comparators(vs)
         if stage == "g13" and same_anchor:
@@ -860,6 +882,7 @@ def main(argv=None) -> int:
 
     cell = json.loads(Path(a.cell).read_text(encoding="utf-8"))
     cfg = cell["config"]
+    a.dev_card_ids = (cell.get("dev_card_sample") or {}).get("ids")  # G12 dev_remainder (best-ckpt selection rows)
     try:
         cohort = Cohort(expected_sha256=cfg["cohort_sha256"])
         guard = load_ready_guard(a.guard_readiness)
@@ -975,6 +998,7 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
                           anchor_is_champion=a.anchor_is_champion, progress_dir=a.progress_dir,
                           index_proxy=getattr(a, "index_proxy_data", None),
                           child_index_decide=decider.decide,
+                          dev_card_ids=getattr(a, "dev_card_ids", None),
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),
                                  "serving_bundle": export_serving_bundle(decider),

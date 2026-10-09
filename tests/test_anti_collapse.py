@@ -268,3 +268,106 @@ def test_run_cell_passes_the_keys_and_the_safe_template():
     old = json.loads((REPO / "jobs/m2_first_cell/m2_first_cell_rwkv7_d1_fast.json").read_text(encoding="utf-8"))
     to = train_config(old, old["max_steps"])
     assert (to.lr_schedule, to.dev_card_every, to.best_ckpt, to.collapse_guard) == ("constant", 0, False, False)
+
+
+# ------------------------------------------------------------------ PR #232 review fixes
+def _src_items(n_per, sources):
+    from types import SimpleNamespace
+
+    return [SimpleNamespace(id=f"m2:{s}:r{i:03d}/q") for s in sources for i in range(n_per[s])]
+
+
+def test_dev_card_sample_is_hash_stratified_over_every_source():
+    from train.trainer import dev_card_record, dev_card_sample, item_source
+
+    srcs = [f"s{j:02d}" for j in range(14)]
+    n_per = {s: (74 if j == 0 else 3 + j) for j, s in enumerate(srcs)}  # sorted ids: a prefix is all one source
+    its = _src_items(n_per, srcs)
+    sel = dev_card_sample(its, 28, seed=0)
+    per = {}
+    for x in sel:
+        per[item_source(x.id)] = per.get(item_source(x.id), 0) + 1
+    assert per == {s: 2 for s in srcs}  # round-robin: every source, evenly (a prefix [:28] would be one source)
+    assert [x.id for x in dev_card_sample(list(reversed(its)), 28, seed=0)] == [x.id for x in sel]  # order-free
+    assert dev_card_sample(its, 28, seed=0) == sel and dev_card_sample(its, 28, seed=1) != sel  # the seed fixes it
+    small = dev_card_sample(its, 60, seed=0)  # small sources run out; the rest fill round-robin
+    assert len(small) == 60 and len({x.id for x in small}) == 60
+    assert all(sum(item_source(x.id) == s for x in small) == min(n_per[s], 5) for s in srcs if n_per[s] < 5)
+    assert dev_card_sample(its, 0) == its and dev_card_sample(its, len(its) + 5) == its
+    assert item_source("toy0-1/q") == "" and len(dev_card_sample(_src_items({"x": 9}, ["x"]), 4)) == 4
+    rec = dev_card_record(its, 28, 0)
+    import hashlib
+
+    assert rec["ids"] == [x.id for x in sel] and rec["n"] == 28 and rec["per_source"] == {s: 2 for s in srcs}
+    assert rec["ids_sha256"] == hashlib.sha256("\n".join(rec["ids"]).encode()).hexdigest()
+
+
+def test_dev_card_keys_are_hashed_only_with_the_guard():
+    off = dict(dev_card_every=200, best_ckpt=True)
+    assert TrainConfig(**off, dev_card_rows=200).hash() == TrainConfig(**off).hash()
+    assert TrainConfig(**off, dev_card_seed=3).hash() == TrainConfig(**off).hash()
+    on = dict(off, collapse_guard=True)
+    h = TrainConfig(**on, dev_card_rows=200).hash()
+    assert h != TrainConfig(**on).hash() and h != TrainConfig(**on, dev_card_rows=100).hash()
+    assert TrainConfig(**on, dev_card_rows=200, dev_card_seed=1).hash() != h
+    assert TrainConfig(**dict(on, dev_card_every=100), dev_card_rows=200).hash() != h
+    assert TrainConfig().hash() == "46a4f6f3acbac492"
+
+
+def test_uniform_reference_includes_the_order_consistency_view_term():
+    from tests.test_order_consistency_loss import _fresh as fresh_int, _paired_items
+    from train.losses import LossConfig
+
+    cfg = TrainConfig(head="integrator", lora_rank=4, batch_size=1, max_steps=1, dev_card_every=10, best_ckpt=True,
+                      collapse_guard=True, loss=LossConfig(arm="ce", order_consistency_weight=0.25))
+    tr = Trainer(fresh_int(), cfg, _paired_items(), guard=G)
+    tr.train_step()
+    # base uniform ln 3, plus (n_paired / n_base = 1) x (view uniform ln 3 + 0.25 x JS 0)
+    assert tr._step_uniform == pytest.approx(2 * math.log(3), rel=1e-5)
+
+
+def test_uniform_reference_includes_the_zero_predictor_axis_mse(toy):
+    from train.losses import LossConfig
+
+    its = [__import__("dataclasses").replace(x, axis_target=(0.5,) * 6) for x in toy]
+    torch.manual_seed(0)
+    model = DecisionModel(tiny_backbone(seed=0, hidden=16), "qend_axes")
+    cfg = base(head="qend_axes", dev_card_every=10, best_ckpt=True, collapse_guard=True, axis_loss_weight=0.4,
+               loss=LossConfig(arm="ce"))
+    tr = Trainer(model, cfg, its, guard=G)
+    tr.train_step()
+    ks = [its[i].row.n_options for i in tr._order(0)[:8]]
+    assert tr._step_uniform == pytest.approx(sum(math.log(k) for k in ks) / len(ks) + 0.4 * 0.25, rel=1e-5)
+
+
+def test_g12_reports_the_dev_remainder_beside_the_full_dev_verdict():
+    pytest.importorskip("decision_index")  # promotion.paired_decision -> harness.calibration -> the kit
+    from train.m2_gates import dev_remainder
+
+    def arm(acc):
+        return {f"m2:s{i % 3}:r{i}/q": {"conf": 0.7, "correct": float(i % 10 < acc), "cluster": f"r{i}"}
+                for i in range(60)}
+
+    c, p = arm(7), arm(5)
+    sel = sorted(c)[:12]
+    r = dev_remainder(c, p, sel, n_boot=50)
+    assert r["identical_items"] and r["n_items"] == 48 and r["excluded_dev_card_items"] == 12
+    assert r["dev_card_ids_sha256"] and "full cohort dev" in r["note"]
+
+
+def test_g12_stage_verdict_filters_the_dev_card_rows_out_of_the_remainder(monkeypatch):
+    """No kit needed: paired_decision / verdict_g12 stubbed; checks what reaches the remainder and the full verdict."""
+    from train import m2_gates as MG
+    from train import promotion as P
+
+    seen = []
+    monkeypatch.setattr(P, "paired_decision", lambda c, p, n_boot=2000: seen.append((set(c), set(p))) or {"n": len(c)})
+    monkeypatch.setattr(P, "verdict_g12", lambda **kw: {"accept": True})
+    dev = {f"m2:s{i % 3}:r{i}/q": {"conf": 0.5, "correct": 1.0, "cluster": f"r{i}"} for i in range(10)}
+    arm = {"decision": {"dev": dev}, "steer_rows": []}
+    sel = sorted(dev)[:4]
+    v = MG.stage_verdict("g12", arm, arm, [], None, n_boot=5, dev_card_ids=sel)
+    assert v["paired"]["dev"] == {"n": 10}  # the verdict input stays the full dev set
+    assert v["paired"]["dev_remainder"]["n"] == 6 and seen[1] == (set(dev) - set(sel),) * 2
+    assert v["paired"]["dev_remainder"]["excluded_dev_card_items"] == 4
+    assert "dev_remainder" not in MG.stage_verdict("g12", arm, arm, [], None, n_boot=5)["paired"]

@@ -123,9 +123,12 @@ class TrainConfig:
     #: schedule horizon (max_steps, or the clock-projected final step set by ``set_horizon``; stored in the checkpoint)
     lr_schedule: str = "constant"
     lr_min_frac: float = 0.1
-    #: every N optimiser steps run the dev card on the eval items (first ``dev_card_rows``; 0 = all); 0 = off
+    #: every N optimiser steps run the dev card on the eval items; 0 = off. ``dev_card_rows`` > 0: a hash-stratified
+    #: sample of that many rows (``dev_card_sample``: sources from the ``m2:<source>:...`` ids, sha256(seed, id) order
+    #: within each source, round-robin across sources); 0 = all eval items. ``dev_card_seed`` fixes the sample.
     dev_card_every: int = 0
     dev_card_rows: int = 0
+    dev_card_seed: int = 0
     #: keep the best dev card's checkpoint (lowest NLL, tie -> higher accuracy); latest.json gets a ``best`` pointer and
     #: scoring (``Trainer.scored``) loads it instead of the last checkpoint
     best_ckpt: bool = False
@@ -149,17 +152,23 @@ class TrainConfig:
         return d
 
     #: anti-collapse fields (left out at their defaults). The schedule and the guard change the trajectory, so when set
-    #: they are in the hash; dev_card_every / dev_card_rows / best_ckpt only observe, so they are OPERATIONAL.
-    ANTI_COLLAPSE = ("lr_schedule", "lr_min_frac", "dev_card_every", "dev_card_rows", "best_ckpt", "collapse_guard",
-                     "collapse_window", "collapse_loss_frac", "collapse_acc_frac", "collapse_max_events")
+    #: they are in the hash; dev_card_every / dev_card_rows / dev_card_seed / best_ckpt only observe, so they are
+    #: OPERATIONAL, EXCEPT with collapse_guard on: then the dev cards set the accuracy-trigger timing and the rollback
+    #: target (they change the trajectory), so the dev_card_* keys are in the hash (``GUARD_HASHED``).
+    ANTI_COLLAPSE = ("lr_schedule", "lr_min_frac", "dev_card_every", "dev_card_rows", "dev_card_seed", "best_ckpt",
+                     "collapse_guard", "collapse_window", "collapse_loss_frac", "collapse_acc_frac",
+                     "collapse_max_events")
     #: operational fields that may differ between a run and its resumption
     OPERATIONAL = ("ckpt_dir", "ckpt_every", "eval_every", "max_steps", "require_guard", "dev_card_every",
-                   "dev_card_rows", "best_ckpt")
+                   "dev_card_rows", "dev_card_seed", "best_ckpt")
+    #: operational dev-card keys that ARE hashed when collapse_guard is on
+    GUARD_HASHED = ("dev_card_every", "dev_card_rows", "dev_card_seed")
     #: execution-strategy fields: same loss and gradients, not part of the hash (old hashes unchanged)
     EXECUTION = ("act_ckpt", "row_batch", "row_tokens", "row_plan", "cont_plan", "compile_blocks", "row_options")
 
     def hash(self) -> str:
-        d = {k: v for k, v in self.to_json().items() if k not in self.OPERATIONAL + self.EXECUTION}
+        keep = self.GUARD_HASHED if self.collapse_guard else ()
+        d = {k: v for k, v in self.to_json().items() if k in keep or k not in self.OPERATIONAL + self.EXECUTION}
         if not d.get("controlsafe"):
             d.pop("controlsafe", None)
         return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
@@ -332,6 +341,47 @@ def prepare_model(model: DecisionModel, cfg: TrainConfig) -> list[str]:
     return replaced
 
 
+def item_source(item_id: str) -> str:
+    """The cohort source of an item id ``m2:<source>:<record>/<qid>`` ("" for ids without one, e.g. toy rows)."""
+    parts = str(item_id).split(":")
+    return parts[1] if len(parts) >= 3 else ""
+
+
+def dev_card_sample(items: list[Item], rows: int, seed: int = 0) -> list[Item]:
+    """The dev-card rows (B1, PR #232 review): ``rows`` <= 0 or >= len(items) = every item (input order). Else a
+    deterministic hash-stratified sample: items grouped by ``item_source``, each source ordered by
+    sha256(f"{seed}:{id}") (ties by id), then taken round-robin over the sources (sorted by name) until ``rows`` are
+    chosen, so every source is represented (cohort dev ids are sorted by id, i.e. by source: a prefix covered 4 of
+    14). Independent of the input order."""
+    if rows <= 0 or rows >= len(items):
+        return list(items)
+    by: dict[str, list[tuple[str, str, Item]]] = {}
+    for it in items:
+        key = hashlib.sha256(f"{seed}:{it.id}".encode()).hexdigest()
+        by.setdefault(item_source(it.id), []).append((key, it.id, it))
+    queues = [sorted(by[s], key=lambda t: (t[0], t[1])) for s in sorted(by)]
+    out: list[Item] = []
+    r = 0
+    while len(out) < rows:
+        for q in queues:
+            if r < len(q) and len(out) < rows:
+                out.append(q[r][2])
+        r += 1
+    return out
+
+
+def dev_card_record(items: list[Item], rows: int, seed: int = 0) -> dict[str, Any]:
+    """cell.json record of the dev-card sample: the selected ids (selection order), their sha256, per-source counts."""
+    ids = [it.id for it in dev_card_sample(items, rows, seed)]
+    per: dict[str, int] = {}
+    for i in ids:
+        per[item_source(i)] = per.get(item_source(i), 0) + 1
+    return {"rows": rows, "seed": seed, "n": len(ids), "n_pool": len(items),
+            "design": "hash-stratified by source: sha256(seed:id) within source, round-robin across sources",
+            "per_source": dict(sorted(per.items())), "ids": ids,
+            "ids_sha256": hashlib.sha256("\n".join(ids).encode()).hexdigest()}
+
+
 def check_anti_collapse(cfg: TrainConfig) -> None:
     if cfg.lr_schedule not in ("constant", "cosine"):
         raise ValueError(f"lr_schedule must be 'constant' or 'cosine', got {cfg.lr_schedule!r}")
@@ -339,6 +389,8 @@ def check_anti_collapse(cfg: TrainConfig) -> None:
         raise ValueError(f"lr_min_frac must be in [0, 1], got {cfg.lr_min_frac}")
     if cfg.dev_card_every < 0 or cfg.dev_card_rows < 0:
         raise ValueError("dev_card_every and dev_card_rows must be >= 0")
+    if type(cfg.dev_card_seed) is not int:
+        raise ValueError(f"dev_card_seed must be an int, got {cfg.dev_card_seed!r}")
     if cfg.best_ckpt and not cfg.dev_card_every:
         raise ValueError("best_ckpt needs dev_card_every > 0 (the best is chosen by dev card)")
     if cfg.collapse_guard and not cfg.best_ckpt:
@@ -458,8 +510,7 @@ class Trainer:
     # ------------------------------------------------------------------ dev cards, best checkpoint, collapse guard
     def dev_items(self, items: list[Item] | None = None) -> list[Item]:
         its = self.eval_items if items is None else items
-        n = self.cfg.dev_card_rows
-        return list(its[:n]) if n else list(its)
+        return dev_card_sample(its, self.cfg.dev_card_rows, self.cfg.dev_card_seed)
 
     def dev_card_due(self) -> bool:
         return bool(self.cfg.dev_card_every) and self.step % self.cfg.dev_card_every == 0
@@ -502,15 +553,16 @@ class Trainer:
         self.dev_cards.append(entry)
         return entry
 
-    def _note_uniform(self, lp: torch.Tensor, y: torch.Tensor, qtypes: list, teacher, weight: float) -> None:
-        """Collapse guard: the configured loss of the UNIFORM predictor on the same rows (padded options = -inf stay
-        -inf), accumulated with the step's row weights. For the CE arm this is -mean log(1/K)."""
+    def _uniform_loss(self, lp: torch.Tensor, y: torch.Tensor, qtypes: list, teacher) -> torch.Tensor | None:
+        """Collapse guard (else None): the configured decision loss of the UNIFORM predictor on the same rows (padded
+        options = -inf stay -inf). For the CE arm this is -mean log(1/K). ``_supervised_loss`` adds the other terms of
+        the logged objective and accumulates it into ``_step_uniform`` with the step's row weights."""
         if not self.cfg.collapse_guard:
-            return
+            return None
         with torch.no_grad():
             u = torch.where(torch.isfinite(lp), torch.zeros_like(lp), torch.full_like(lp, float("-inf")))
             u = torch.log_softmax(u, dim=-1)
-            self._step_uniform += float(decision_loss(u, y, qtypes, self.cfg.loss, teacher)) * weight
+            return decision_loss(u, y, qtypes, self.cfg.loss, teacher).detach()
 
     def _guard_step(self, loss: float) -> None:
         if not self.cfg.collapse_guard or self.stopped:
@@ -600,7 +652,10 @@ class Trainer:
         y = torch.tensor([i.label for i in batch], device=lp.device)
         teacher = teacher_tensor(batch, lp) if self.cfg.loss.kd else None
         loss = decision_loss(lp, y, [i.row.qtype for i in batch], self.cfg.loss, teacher)
-        self._note_uniform(lp.detach(), y, [i.row.qtype for i in batch], teacher, weight)
+        row_weight = weight
+        # collapse guard: the uniform predictor's loss under the SAME objective the step logs (base term, plus the
+        # order-consistency view term with js = 0 and the zero predictor's axis MSE when those losses are on)
+        ref = self._uniform_loss(lp.detach(), y, [i.row.qtype for i in batch], teacher)
         weight_order = self.cfg.loss.order_consistency_weight
         if weight_order:
             paired = [(i, item) for i, item in enumerate(batch) if getattr(item, "view", None) is not None]
@@ -620,6 +675,11 @@ class Trainer:
                 # normalising each group by base rows makes gradients invariant to row_batch/group composition.
                 loss = add_order_consistency(loss, view_supervised, torch.stack(js).mean(),
                                              len(batch), len(paired), weight_order)
+                if ref is not None:  # the uniform predictor is order-consistent: its aligned JS is exactly 0
+                    view_ref = self._uniform_loss(view_lp.detach(), view_y,
+                                                  [item.view.row.qtype for _, item in paired], None)
+                    ref = add_order_consistency(ref, view_ref, torch.zeros((), device=ref.device), len(batch),
+                                                len(paired), weight_order)
         weight = self.cfg.axis_loss_weight
         if type(weight) not in (int, float) or not 0 <= weight < float("inf"):
             raise ValueError("axis_loss_weight must be finite and nonnegative")
@@ -632,6 +692,10 @@ class Trainer:
             if not torch.isfinite(targets).all() or not torch.isfinite(z).all():
                 raise ValueError("axis targets and port must be finite")
             loss = loss + weight * torch.nn.functional.mse_loss(z, targets)
+            if ref is not None:  # the zero predictor of the axes (the uniform predictor carries no axis signal)
+                ref = ref + weight * torch.nn.functional.mse_loss(torch.zeros_like(targets), targets).detach().float()
+        if ref is not None:
+            self._step_uniform += float(ref) * row_weight
         return loss
 
     def train_step(self) -> float:
