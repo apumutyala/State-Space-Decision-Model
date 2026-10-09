@@ -636,9 +636,12 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
         raise GenerationError("could not pin generator source commit")
     data_root = Path(data_root or out.parents[1]).resolve()
     try:
-        location = out.resolve().relative_to(data_root).as_posix() + "/train_set/"
+        # Confirm the external build is inside its declared data root, while writing a
+        # repo-relative location like the B1 pointer contract expects.
+        out.resolve().relative_to(data_root)
+        location = out.resolve().relative_to(repo).as_posix() + "/train_set/"
     except ValueError as exc:
-        raise GenerationError("build output must be under the declared data root") from exc
+        raise GenerationError("build output must be under the declared data root and repository") from exc
     pointer = {
         "build": f"{BUILD} (python -X utf8 -m data.c_multirecord_synth build)",
         "location": location,

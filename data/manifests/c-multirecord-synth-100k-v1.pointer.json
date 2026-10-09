@@ -1,0 +1,16 @@
+{
+ "build": "c-multirecord-synth-100k-v1 (python -X utf8 -m data.c_multirecord_synth build)",
+ "location": "ssdm-data/c-multirecord-synth-100k-v1/train_set/",
+ "records_uncompressed_sha256": "45b4fa45b194608ab8457a9d0276f7f30c14f98668d0546365d195da808505d0",
+ "manifest": "c-multirecord-synth-100k-v1.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "ccc9c4a1f3114b211f6281326f02f1834169bf09684b31c2d031803427350deb",
+ "content_map": "c-multirecord-synth-100k-v1.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "c894b4f90eaf2c615e8b1abf7e6bebb55d2dfe2df71a66e567475bc9ae8f06f3",
+ "n_records": 100000,
+ "excludes_cohort": "synthetic-only generation; no Index/TEST/retention rows or source data were read; the consuming training-set guard remains required",
+ "builder": {
+  "module": "data.c_multirecord_synth",
+  "commit": "b433032881aea5900249518443553dafdd11425e"
+ },
+ "receipt": "receipts/2026-10-08-C-multirecord-synth/c-multirecord-synth-100k-v1/summary.json"
+}
