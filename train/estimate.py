@@ -18,7 +18,7 @@ Model of a training step (frozen bf16 backbone, LoRA, head, no LM head):
 * FLOPs/token      2 * non-embedding params forward + 2x for input-gradient backward
                    (+ 2x recompute with checkpointing); LoRA adds 6 * lora_params; head 3x its FLOPs
 * throughput       mfu_assumed (per backbone spec) * 989 TFLOP/s dense bf16
-* cost             $2.97/h batch, $3.96/h interactive (SF Compute rate card)
+* cost             jobs/common/rates.py: $3.78/h batch, $5.04/h interactive from 2026-10-08 (was $2.97 / $3.96)
 
 Final-state fork (the only head whose backbone cost depends on K), two modes, both implemented:
 * ``recompute``  K extra full rows (prefix + continuation) per question, all alive for backward:
@@ -50,10 +50,12 @@ from heads.backbone import BACKBONES, BackboneSpec
 from heads.heads import make_head
 from heads.typed import CumulativeLink
 
+from jobs.common import rates as _rates
+
 from .lora import lora_param_count
 
 GPU = {"name": "H100-80GB SXM", "mem_gb": 80.0, "bf16_dense_tflops": 989.0, "usable_gb": 76.0}
-RATE = {"batch": 2.97, "interactive": 3.96}
+RATE = {"batch": _rates.BATCH_USD_PER_GPU_HOUR, "interactive": _rates.LIST_USD_PER_GPU_HOUR}
 WORK_FACTOR = 24  # one layer's live activations in units of a [B,T,D] bf16 tensor (assumption)
 CHUNK = 64  # delta-rule chunk length for chunkwise kernels
 GB = 1024**3

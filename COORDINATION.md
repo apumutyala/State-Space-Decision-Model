@@ -46,5 +46,5 @@ The goal: an attention-free model (RWKV7-G1k-13.3B, issue #140) that beats Clef 
 
 ## Compute
 
-- **SF Compute autoresearch:** H100 at $2.97/h for batch jobs. Poll with `wsl.exe -d bi-ubuntu -- /root/.local/bin/autor --workspace default job get <id> --json`.
+- **SF Compute autoresearch:** H100 at $3.78/h ($0.063/min) for batch jobs from 2026-10-08, $3.38/h on Fridays; it was $2.97/h before (`jobs/common/rates.py`). Poll with `wsl.exe -d bi-ubuntu -- /root/.local/bin/autor --workspace default job get <id> --json`.
 - **The laptop (RTX 5070 Ti):** CPU work only.

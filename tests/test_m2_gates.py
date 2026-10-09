@@ -294,7 +294,12 @@ def test_parent_arm_estimate_and_cap():
         S.estimate(0)
     params = json.loads((Path(__file__).resolve().parents[1] / "jobs/m2_parent_arm/job_params.json").read_text())
     worst = (params["build_timeout_minutes"] + 2 * params["max_duration_minutes"]) * params["batch_usd_per_min"]
-    assert worst <= params["hard_cap_usd"] <= 20.0
+    assert params["hard_cap_usd"] <= 20.0
+    # re-priced 2026-10-09 ($0.063/min) the worst case exceeds the $20 line; the line was not raised, so the overrun
+    # must stay a dated lint waiver (launch refuses it without --allow-waived) until max_duration shrinks
+    from jobs.common import lint
+
+    assert worst <= params["hard_cap_usd"] or "worst_case_stated" in lint.WAIVERS["jobs/m2_parent_arm/job_params.json"]
 
 
 def test_parent_arm_job_scores_before_nothing_trains():

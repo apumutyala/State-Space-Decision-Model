@@ -600,7 +600,11 @@ def test_job_spec_is_capped_unsubmitted_and_margins_pending():
 
     assert params["hard_cap_usd"] <= 20.0
     worst = (params["build_timeout_minutes"] + 2 * params["max_duration_minutes"]) * params["batch_usd_per_min"]
-    assert worst <= params["hard_cap_usd"]
+    # re-priced 2026-10-09 ($0.063/min) the worst case exceeds the $20 line; the line was not raised, so the overrun
+    # must stay a dated lint waiver (launch refuses it without --allow-waived) until max_duration shrinks
+    from jobs.common import lint
+
+    assert worst <= params["hard_cap_usd"] or "worst_case_stated" in lint.WAIVERS["jobs/m2_pilot/job_params.json"]
     assert "6028537932" in MARGINS["status"] and "6028537932" in spec  # issue #36: Codex contract
     assert params["margins_status"] == MARGINS["status"]
     assert "NOT SUBMITTED" in spec

@@ -172,3 +172,14 @@ The workspace-cap precondition and the `validate_job` re-run apply unchanged.
 2. A LEDGER planned row.
 3. `set_workspace_cap` = MTD + $20, **then** `validate_job` re-run and passing against that cap.
 4. Codex acknowledges on issue #3.
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params.json` | $23.94 (was $18.81) | $20.00 (unchanged) **BINDS** | – | $11.34 (was $8.91) |
+| `job_params_c_only.json` | $18.90 (was $14.85) | $20.00 (unchanged) | – | $8.82 (was $6.93) |
+
+`jobs/qual/job_params.json`: worst case $23.94 now exceeds the $20.00 hard cap. The cap is the authorised spend line in this spec's title, so it was NOT raised; the lint failure is waived (jobs/common/lint.py WAIVERS) until, before its next launch, either `max_duration_minutes` shrinks or the line is re-authorised.

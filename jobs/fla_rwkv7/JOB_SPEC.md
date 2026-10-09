@@ -399,3 +399,12 @@ submit_job(chip="h100", chip_count=1, mission="m2-fla-rwkv7-kernel", idempotency
           "health": {"check": {"type": "heartbeat", "path": "/output/heartbeat"},
                      "interval_s": 300, "grace_period_s": 600, "fail_threshold": 2, "on_fail": "kill"}})
 ```
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params.json` | $5.04 (was $3.96) | $5.73 (was $4.50) | $1.39 (was $1.09) | $1.95 (was $1.53) |
+| `job_params_truth_v2.json` | $7.31 (was $5.74) | $7.64 (was $6.00) | $1.51 (was $1.19) | $3.09 (was $2.43) |

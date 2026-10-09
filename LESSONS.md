@@ -464,3 +464,11 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Root cause: the typed assumption survived checking, but the renderer discarded its hypothetical label when naming an operand. Its bounded premise read also needed an explicit operation-permission rule.
 - **Check:** `language_growth/tests/test_hypothesis.py::HypothesisTests.test_same_slot_counterfactual_labels_hypothetical_and_recorded_baseline` requires distinct hypothetical/recorded-baseline labels and continued Assert refusal. `test_assumption_requires_opt_in_and_preserves_types` refuses implicit premise reads without ReadFact permission.
 - **Status:** ENFORCED.
+
+### L-49 A list-price change left every params file priced at the old rate
+- Date: 2026-10-09 (SF Compute H100 list $3.96 -> $5.04/h on 2026-10-08).
+- Symptom: every `job_params*.json` still carried `batch_usd_per_min` 0.0495 while the billing journal charged 63,000 micro-$/GPU-min (job-2gpiv, job-bs5we, job-gi58k); worst cases, caps and in-job cost lines under-stated spend by 27 %. job-hjwpq's own result said `runtime_usd` 12.33 against a $14.08 receipt.
+- Cost: no overrun (caps sit under the workspace cap), but 31 of 39 params files were over their hard cap at the real rate.
+- Root cause: the rate was copied into 39 params files and five scripts as literals, with no single source.
+- **Check:** `jobs/common/rates.py` holds the dated rates and history; `costs` and the scorers read it; lint `rate_current` fails any params file whose `batch_usd_per_min` differs from `rates.BATCH_USD_PER_MIN`.
+- **Status:** ENFORCED.

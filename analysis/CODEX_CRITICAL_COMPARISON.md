@@ -1,5 +1,7 @@
 # Critical comparison and language growth decision
 
+> **Rate note (2026-10-09):** the dollar figures here use the 2026-10-06 SF Compute rates ($2.97/h = $0.0495/min batch, $3.96/h interactive) and are left as written. From 2026-10-08 the H100 list price is $5.04/h and batch jobs bill $3.78/h ($0.063/min; Fridays $0.05628/min), so batch figures scale by x 1.27. Source and history: `jobs/common/rates.py`.
+
 6 October 2026. Authoring lane: Codex. Scope: the latest local Claude Code session, its completed reviews, the two saved plans, and targeted primary-source checks. This file is a review and proposal, not an agreement attributed to the concurrently running agent.
 
 ## Recommendation

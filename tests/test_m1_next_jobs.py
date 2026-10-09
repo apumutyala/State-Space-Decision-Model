@@ -30,23 +30,29 @@ CELL = json.loads((ROOT / "jobs/rwkv7/pilot_cell.json").read_text())
 # ----------------------------------------------------------------------------- cost arithmetic and schedules
 def test_worst_case_arithmetic_counts_build_and_a_retry():
     assert costs.attempts(PP) == 2 and costs.attempts(RB) == 2
-    assert costs.worst_case_usd(PP) == round((30 + 2 * 270) * 0.0495, 2) == 28.21
-    assert costs.worst_case_usd(RA) == round((30 + 2 * 150) * 0.0495, 2) == 16.34
-    assert costs.worst_case_usd(RB) == round((30 + 2 * 180) * 0.0495, 2) == 19.3
-    assert costs.worst_case_usd(costs.load("qual")) == 18.81  # unchanged qual job
+    # re-priced 2026-10-09 at $0.063/min (jobs/common/rates.py); at the old $0.0495: 28.21 / 16.34 / 19.30 / 18.81
+    assert costs.worst_case_usd(PP) == round((30 + 2 * 270) * 0.063, 2) == 35.91
+    assert costs.worst_case_usd(RA) == round((30 + 2 * 150) * 0.063, 2) == 20.79
+    assert costs.worst_case_usd(RB) == round((30 + 2 * 180) * 0.063, 2) == 24.57
+    assert costs.worst_case_usd(costs.load("qual")) == 23.94  # unchanged qual job, new rate
 
 
 @pytest.mark.parametrize("name", list(costs.PARAMS))
 def test_every_job_fits_its_hard_cap_and_schedule(name):
     p = costs.load(name)
-    assert costs.cap_ok(p) and costs.schedule_ok(p)
+    # a cap that now binds at the 2026-10-08 rate is allowed only as a dated lint waiver (launch refuses it unless
+    # --allow-waived): qual's $20 line was not raised (jobs/common/lint.py _P)
+    from jobs.common import lint
+
+    assert costs.cap_ok(p) or "worst_case_stated" in lint.WAIVERS.get(costs.PARAMS[name], {})
+    assert costs.schedule_ok(p)
     if p.get("expected_minutes"):
         assert costs.expected_usd(p) < costs.worst_case_usd(p)
 
 
 def test_probe_cap_is_the_planned_40_and_rate_matches_plan():
     assert PP["hard_cap_usd"] == 40.0  # PLAN.md: "~$40 one-layer probe"
-    assert all(costs.load(n)["batch_usd_per_min"] == round(2.97 / 60, 4) for n in costs.PARAMS)
+    assert all(costs.load(n)["batch_usd_per_min"] == costs.rates.BATCH_USD_PER_MIN == round(3.78 / 60, 4) for n in costs.PARAMS)
 
 
 def test_branch_ledger_fits_the_envelope_and_lines():
@@ -515,9 +521,9 @@ def test_dev_subset_records_which_manifest_bytes_are_hashed():
 
 
 def test_chained_and_concurrent_workspace_caps():
-    assert costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"]) == 36
-    assert costs.concurrent_cap_usd(["probe9b", "rwkv7_readout"]) == 45
-    assert costs.concurrent_cap_usd(["rwkv7_lora"]) == 20
+    assert costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"]) == 46  # 36 at the pre-2026-10-08 rate
+    assert costs.concurrent_cap_usd(["probe9b", "rwkv7_readout"]) == 57  # was 45
+    assert costs.concurrent_cap_usd(["rwkv7_lora"]) == 25  # was 20
     spec = (ROOT / "jobs/rwkv7/JOB_SPEC.md").read_text(encoding="utf-8")
     assert "MTD + 36" in spec and "depends_on" in spec
     assert "MTD + 45" in (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")

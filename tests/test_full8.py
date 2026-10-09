@@ -469,9 +469,10 @@ def test_stage2_dominates_and_is_wall_clock_capped_per_layer():
 def test_cost_line_costs_convention():
     w = costs.worst_case_usd(P8)
     assert costs.attempts(P8) == 2 and P8["build_timeout_minutes"] == 60 and P8["resume"] == "checkpoint"
-    assert w == 84.65 <= P8["hard_cap_usd"] == 85.0 and abs(w - (60 + 2 * 825) * 0.0495) < 0.006
-    assert costs.single_attempt_usd(P8) == 40.84
-    assert costs.expected_usd(P8) == round(563 * 0.0495, 2) == 27.87
+    # re-priced 2026-10-09 at $0.063/min; at $0.0495: 84.65 <= cap 85.0, one attempt 40.84, expected 27.87
+    assert w == 107.73 <= P8["hard_cap_usd"] == 108.19 and abs(w - (60 + 2 * 825) * 0.063) < 0.006
+    assert costs.single_attempt_usd(P8) == 51.98
+    assert costs.expected_usd(P8) == round(563 * 0.063, 2) == 35.47
     assert "full8" in costs.PARAMS and costs.cap_ok(P8) and costs.schedule_ok(P8)
     spec = (ROOT / "jobs/full8/JOB_SPEC.md").read_text(encoding="utf-8")
     for s in ("$84.65", "$40.84", "$27.87", "MTD + 85"):

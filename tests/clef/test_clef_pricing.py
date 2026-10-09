@@ -48,7 +48,7 @@ def test_caps_margins_schedule_and_costs(name):
     assert costs.PARAMS[name] == f"jobs/clef_baseline/{NAMES[name]}"
     c = P.check_params(p)
     assert c["schedule_ok"] and c["min_margin"] >= 1.3  # every phase cap >= 1.3x its expected minutes
-    assert p["build_timeout_minutes"] >= 60 and p["batch_usd_per_min"] == 0.0495
+    assert p["build_timeout_minutes"] >= 60 and p["batch_usd_per_min"] == costs.rates.BATCH_USD_PER_MIN
     assert costs.cap_ok(p) and costs.expected_usd(p) < costs.worst_case_usd(p)
     assert f"${costs.worst_case_usd(p):.2f}" in SPEC and f"${costs.expected_usd(p):.2f}" in SPEC
     assert f"jobs/clef_baseline/{NAMES[name]}" in TREE and f"${costs.worst_case_usd(p):.2f}" in TREE
@@ -100,7 +100,7 @@ def test_teacher_caps_cover_the_projection():
 
 def test_joint_gate_and_dependencies():
     led = costs.branch_ledger()
-    assert led["joint_gate_fits"] and led["joint_gate_worst"] == 48.51  # qual + Clef-flash GCG B
+    assert led["joint_gate_fits"] and led["joint_gate_worst"] == 61.74  # qual + Clef-flash GCG B (48.51 at the pre-2026-10-08 rate)
     # Clef-27B Index (re-priced at 5.39x) is a separately authorised line, still counted in the envelope
     assert led["clef27b_index_authorised_worst"] == round(sum(costs.worst_case_usd(costs.load(n))
                                                               for n in costs.CLEF27B_INDEX_JOBS), 2)

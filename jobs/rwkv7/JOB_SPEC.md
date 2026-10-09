@@ -168,3 +168,16 @@ Nothing is fitted on any rows. Outputs: `index/<variant>/{results.jsonl, score.j
 watches all results files (total 8 x rows). Index cap = 21 min (job-zhyvg v2, measured) x 8 x 1.3 = 218 -> 220.
 Schedule 20 + 220 + 32 + reserve 10 = 282. Worst case (60 + 2 x 282) x 0.0495 = **$30.89**; expected ~$10.74;
 hard cap $31.
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params_lora.json` | $24.57 (was $19.30) | $25.46 (was $20.00) | $9.83 (was $7.72) | $11.34 (was $8.91) |
+| `job_params_readout.json` | $20.79 (was $16.34) | $25.46 (was $20.00) | $5.99 (was $4.70) | $9.45 (was $7.43) |
+| `job_params_readout_g1v2.json` | $18.27 (was $14.36) | $19.10 (was $15.00) | $3.40 (was $2.67) | $7.25 (was $5.69) |
+| `job_params_readout_g1v3.json` | $39.31 (was $30.89) | $39.46 (was $31.00) | $13.67 (was $10.74) | $17.77 (was $13.96) |
+
+Workspace cap for A + B chained at $0.063/min: `set_workspace_cap(MTD + 46)` (was MTD + 36); B alone MTD + 25.

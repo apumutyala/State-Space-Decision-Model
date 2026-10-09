@@ -56,6 +56,8 @@ _B = "2026-10-06: spec predates the >=60 min build rule (L-09); raise build_time
 _T = "2026-10-06: no test executes the runner in a subprocess (L-10); add a dry-run shell test before its next launch"
 _R = ("2026-10-06: measured-rate projection via `python -m jobs.m2_parent_arm.score_parent estimate` (exit 15), not "
       "jobs.common.rate_guard / a *.preflight module; route it through rate_guard before launch")
+_P = ("2026-10-09: re-priced at $0.063/min (L-49) the worst case is $23.94 > the $20 authorised line in the spec title; "
+      "cap NOT raised. Before the next launch shrink max_duration_minutes (<= 141 with build 20) or re-authorise the line")
 #: {params file: {check: dated reason}}. tests/test_jobs_lint.py fails if a waiver is stale (the check now passes),
 #: so this list only shrinks. launch.py refuses waived failures unless --allow-waived, which is recorded in submit.json.
 WAIVERS: dict[str, dict[str, str]] = {
@@ -69,15 +71,18 @@ WAIVERS: dict[str, dict[str, str]] = {
         "build_timeout": _B, "shell_test": _T,
         "rate_guard": "2026-10-06: fixed-size kernel gate, every phase capped from job-jucxx/jn47u measurements"},
     "jobs/m2_parent_arm/job_params.json": {
+        "worst_case_stated": _P,
         "build_timeout": _B, "shell_test": _T,
         "registered": "2026-10-06: DRAFT, blocked on PENDING margins; register in costs.PARAMS + DECISION_TREE first",
         "rate_guard": _R},
     "jobs/m2_pilot/job_params.json": {
+        "worst_case_stated": _P,
         "build_timeout": _B, "shell_test": _T,
         "registered": "2026-10-06: DRAFT, blocked on PENDING margins; register in costs.PARAMS + DECISION_TREE first",
         "rate_guard": _R},
     "jobs/probe9b/job_params.json": {"build_timeout": _B, "shell_test": _T},
     "jobs/qual/job_params.json": {
+        "worst_case_stated": _P,
         "build_timeout": _B, "shell_test": _T,
         "schedule": "2026-10-06: caps sum 169 + reserve 8 < 180 (slack, not overrun); historical (job-jbw22/c4zkm)",
         "rate_guard": "2026-10-06: MFU/tok-s floors in-step (exit 3), no jobs.common.rate_guard; historical"},
@@ -93,7 +98,7 @@ WAIVERS: dict[str, dict[str, str]] = {
                              "train.run_cell / jobs/rwkv7/pilot_cell.json, not pinned constants in scripts/decide_rwkv7.py"},
 }
 
-CHECKS = ("build_timeout", "schedule", "worst_case_stated", "registered", "shell_test", "decision_rule",
+CHECKS = ("build_timeout", "schedule", "rate_current", "worst_case_stated", "registered", "shell_test", "decision_rule",
           "rate_guard", "no_backslash_n", "submit_checks")
 
 #: L-25: the platform's CheckSpec table (validate_job's own error table, probed 2026-10-07: "<type> takes only ...",
@@ -279,6 +284,14 @@ def chk_build_timeout(p: dict, **_) -> tuple[bool, str]:
 def chk_schedule(p: dict, **_) -> tuple[bool, str]:
     t = schedule_total(p)
     return t == p["max_duration_minutes"], f"phase caps + reserve = {t}, max_duration_minutes = {p['max_duration_minutes']}"
+
+
+def chk_rate_current(p: dict, costs, **_) -> tuple[bool, str]:
+    """L-49: a params file priced at a stale rate under-states its worst case (the 2026-10-08 list change moved the
+    billed batch rate $0.0495 -> $0.063/min while every params file still said 0.0495)."""
+    want = costs.rates.BATCH_USD_PER_MIN
+    got = p.get("batch_usd_per_min")
+    return got == want, f"batch_usd_per_min {got} (jobs/common/rates.py BATCH_USD_PER_MIN {want}, since {costs.rates.EFFECTIVE})"
 
 
 def chk_worst_case_stated(p: dict, root: Path, job: str, costs, **_) -> tuple[bool, str]:

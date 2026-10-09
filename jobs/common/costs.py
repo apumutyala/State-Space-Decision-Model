@@ -2,17 +2,36 @@
 
     python -m jobs.common.costs            # prints every job's worst case / expected $ and the branch ledger
 
+Rates live in jobs/common/rates.py (current: $0.063/GPU-min billed and quoted from 2026-10-08; $0.0495 before). Each
+job_params.json carries the rate as `batch_usd_per_min` for the in-job scripts; the lint's `rate_current` check holds it
+equal to rates.BATCH_USD_PER_MIN.
+
 Worst case for one job = (build_timeout + attempts * max_duration) * batch rate, with attempts = 1 + max(max_restarts,
 assumed_restart_floor): the build is counted as billable and the platform is assumed to retry at least once, so the cap
 never relies on "only the running attempt is billed". jobs/DECISION_TREE.md quotes these numbers.
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _load_rates():
+    """rates.py beside THIS file (the lint and launch load costs.py from a staged tree by path, so a package import
+    could pick up another checkout's rates)."""
+    f = Path(__file__).resolve().with_name("rates.py")
+    spec = importlib.util.spec_from_file_location(f"_rates_{abs(hash(str(f)))}", f)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+rates = _load_rates()
+
 ENVELOPE_USD = 525.0
 #: October 2026 MTD actual SF spend (receipts): job-4j3vu 2.48, job-tkfaj 1.79, job-sgihj 1.40, job-c4zkm 0.74,
 #: job-mhc3h 0.56, job-4idg4 0.30, job-jucxx 0.25, job-jn47u 0.84, job-jbw22 0.07, job-mden7 1.06, job-5cmat 5.01
@@ -47,7 +66,8 @@ PARAMS.update({f"m2_first_cell_{f.stem[len('job_params_'):]}": f"jobs/m2_first_c
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here. Clef baseline (JOB_SPEC):
 #: A ran as job-sgihj ($1.40, in SPENT_USD); C (27B, job A shape) is superseded for the Index by clef_index_subset +
 #: clef_index_full (PARAMS); B (Clef-flash GCG, $29.70 one-attempt ceiling) is still planned.
-OTHER = {"clef_baseline_B": 29.70}
+#: clef_baseline_B is a 600-min one-attempt ceiling: $29.70 at the pre-2026-10-08 $0.0495/min, re-priced at the current rate.
+OTHER = {"clef_baseline_B": round(600 * rates.BATCH_USD_PER_MIN, 2)}
 JOINT_GATE_JOBS = ("qual",)
 #: Clef-27B Index measurement (subset canary, full DEV, Clef-flash 32k over-length sensitivity): re-priced at the
 #: card's 5.39x latency ratio after the PR #98 review, which puts it past the $75 joint-gate line; the coordinator
@@ -71,16 +91,15 @@ def worst_case_usd(p: dict) -> float:
 
 
 def single_attempt_usd(p: dict) -> float:
-    """One running attempt at the billed rate. This WAS validate_job's max_cost_usd (2026-10-06: qual 180 min -> $8.91);
-    from 2026-10-08 the platform quotes at QUOTE_USD_PER_MIN instead (quoted_max_cost_usd)."""
+    """One running attempt at the billed rate. validate_job's max_cost_usd was this at $0.0495 (2026-10-06: qual 180 min
+    -> $8.91); from 2026-10-08 billed and quoted rates are both $0.063 (quoted_max_cost_usd)."""
     return round(p["max_duration_minutes"] * p["batch_usd_per_min"], 2)
 
 
-#: The platform's quoted max_cost_usd on 2026-10-08 is max_duration x $0.063/min with the build excluded, exact to the
-#: cent for both live jobs: job-i3buq 637 min -> $40.13, job-zpyis 828 min -> $52.16 (build-inclusive at ~$0.058 fits
-#: neither: 888 x 0.0576 = $51.13). The last billed receipt is still $0.0495/min (job-2xe5w, 2026-10-07: 26,341,700
-#: micro-$ / 31,930 s), so batch_usd_per_min stays; re-check against the first charged receipt priced after 2026-10-08.
-QUOTE_USD_PER_MIN = 0.063
+#: The platform's quoted max_cost_usd / preflight worst case = max_duration x QUOTE_USD_PER_MIN with the build excluded
+#: (job-i3buq 637 min -> $40.13, job-zpyis 828 min -> $52.16, job-a6vt6 742 min -> $46.75). From 2026-10-08 the billed
+#: batch rate equals it ($0.063/min, receipts 63,000 micro-$/GPU-min); before, the platform billed $0.0495. See rates.py.
+QUOTE_USD_PER_MIN = rates.QUOTE_USD_PER_MIN
 
 
 def quoted_max_cost_usd(p: dict) -> float:

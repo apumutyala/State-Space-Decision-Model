@@ -19,8 +19,9 @@ import json
 import sys
 from pathlib import Path
 
+from jobs.common.rates import BATCH_USD_PER_MIN as RATE_USD_PER_MIN  # SF H100 batch; was 0.0495 ($2.97/h) before 2026-10-08
+
 HERE = Path(__file__).resolve().parent
-RATE_USD_PER_MIN = 0.0495  # SF batch H100 $2.97/h (job-sgihj receipt: 49,500 micro-$ per GPU-minute)
 
 #: text-backbone config fields at the pinned revisions (huggingface.co/Cloudflare/<repo>/resolve/<rev>/config.json,
 #: fetched 2026-10-06; text_config). attn_output_gate=True doubles q_proj (query + gate), as in Qwen3-Next/3.5.
