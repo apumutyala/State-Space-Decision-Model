@@ -541,11 +541,21 @@ class Trainer:
         return Path(ckpt_dir) / json.loads(f.read_text(encoding="utf-8"))["path"]
 
     def load(self, path: str | Path, strict_config: bool = True, strict_lineage: bool = True) -> None:
-        st = torch.load(path, map_location="cpu", weights_only=False)
+        """Restore a ``.pt`` checkpoint (full: trainable + optimizer + scheduler + RNG), or an INFERENCE export
+        (``train.ckpt_export``: ``trainable-stepN.safetensors`` + sidecar; trainable + step / history only, for eval,
+        same config-hash and lineage checks). ``self.loaded_format`` records which."""
+        from .ckpt_export import _jsonable, is_inference, read_inference
+
+        if is_inference(path):
+            tensors, st = read_inference(path)
+            st["trainable"] = tensors
+        else:
+            st = torch.load(path, map_location="cpu", weights_only=False)
         if strict_config and st["config_hash"] != self.cfg.hash():
             raise ValueError(f"checkpoint config {st['config_hash']} != current {self.cfg.hash()}")
         if strict_lineage:
-            bad = lineage_diff(st.get("lineage") or {}, self.lineage)
+            # an export's sidecar is JSON: compare against the JSON form of this run's lineage (tuples -> lists)
+            bad = lineage_diff(st.get("lineage") or {}, _jsonable(self.lineage) if is_inference(path) else self.lineage)
             if bad:
                 raise ValueError(f"checkpoint lineage differs from this run: {bad} "
                                  "(frozen backbone / tokenizer / layout / training data must match to resume)")
@@ -555,11 +565,15 @@ class Trainer:
             raise KeyError(f"checkpoint parameters not in model: {missing[:5]}")
         with torch.no_grad():
             for n, t in st["trainable"].items():
-                params[n].copy_(t)
-        self.opt.load_state_dict(st["optimizer"])
-        self.sched.load_state_dict(st["scheduler"])
+                params[n].copy_(t.to(params[n].dtype))
         self.step, self.epoch, self.cursor = st["step"], st["epoch"], st["cursor"]
         self.history = st["history"]
+        if is_inference(path):
+            self.loaded_format = "inference"
+            return
+        self.loaded_format = "full"
+        self.opt.load_state_dict(st["optimizer"])
+        self.sched.load_state_dict(st["scheduler"])
         torch.set_rng_state(st["rng"]["torch"])
         random.setstate(st["rng"]["python"])
         np.random.set_state(st["rng"]["numpy"])
@@ -572,5 +586,8 @@ class Trainer:
         p = self.latest(self.cfg.ckpt_dir)
         if p is None:
             return False
+        if str(p).endswith(".safetensors"):
+            raise ValueError(f"{p.name} is an inference export (no optimizer / scheduler / RNG state): eval only, "
+                             "resume needs the full .pt in the checkpoint dir")
         self.load(p)
         return True
