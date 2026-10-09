@@ -1,0 +1,49 @@
+{
+  "actual_stratum_histogram": {
+    "2": 7018,
+    "3": 1988
+  },
+  "actual_style_counts": {
+    "letters": 6667,
+    "opaque": 6666,
+    "words": 6667
+  },
+  "check_record_passed": 20000,
+  "compressed_sha256": {
+    "content_map": "1890313401ea93ed2ddf4b6852633267c57ad169a754ba25b8c6d49ecb508e52",
+    "manifest": "05def819b3208629ad31a086e289ecfbb101067228bf905032d7fb6905f3af62",
+    "records": "ec63cecbf2c8e02c7965a8f2381a39799a8c014deefdfd4c06d36ed477a4b9d5"
+  },
+  "counts": {
+    "content_map": 20000,
+    "manifest": 20000,
+    "records": 20000
+  },
+  "duplicate_ids": 0,
+  "duplicate_normalized_content": 0,
+  "full_source_record_rescans": 0,
+  "package": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\c-multirecord-synth-20k-v2-balanced",
+  "path_issues": [],
+  "pointer_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\agent-c-multirecord-synth\\data\\manifests\\c-multirecord-synth-20k-v2-balanced.pointer.json",
+  "pointer_sha256": "142381aa4e94e99be145db2086255bdc210c51c0e5cf9535d84e471829799549",
+  "questions": 140000,
+  "raw_payload_bytes": 63371708,
+  "receipt_path": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\agent-c-multirecord-synth\\receipts\\2026-10-08-C-multirecord-synth\\c-multirecord-synth-20k-v2-balanced\\summary.json",
+  "refused": 0,
+  "schema": "ssdm.c_multirecord_subset_independent_verification.v1",
+  "source_commit": "9a64c426b00ea8a4191164d10543fdeb6f66bc15",
+  "source_manifest": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\c-multirecord-synth-100k-v2-cached\\train_set\\c-multirecord-synth-100k-v2.manifest.jsonl.gz",
+  "source_manifest_uncompressed_sha256": "c031940a0bdd3d81f4b09e2b082383fd52ca1643f20034f75fdefbdfd10601e8",
+  "source_metadata_rows": 100000,
+  "source_record_hash_matches": 20000,
+  "status": "verified",
+  "strata": 9006,
+  "summary_sha256": "9800d30d665d225b87f2bd7f00b1c9a665069d182b264e9af681a1854d569341",
+  "tokenizer_loaded": false,
+  "torch_imported": false,
+  "uncompressed_sha256": {
+    "content_map": "a792454f0535bc85d485e3640b7328e076e97076e95ac1e5f2a0803b0202c40d",
+    "manifest": "bd40381e23e982f33277fb1ae596eef6c61c9901fdae3ddfbc66a9852dd653ca",
+    "records": "0ac8f29210fd1c784fc4ead04fe74146acb33e48a40be0041de87fa64bb07b8d"
+  }
+}
