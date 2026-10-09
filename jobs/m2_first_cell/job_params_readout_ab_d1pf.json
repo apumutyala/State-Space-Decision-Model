@@ -1,0 +1,248 @@
+{
+ "_comment": "DRAFT, NOT SUBMITTED. Mode readout_ab_d1pf = readout_ab_d1 (same D1 checkpoint job-c7pq2 art-bm3e6, same 2,008 rows, same readouts v1 + v3w, same per-readout temperature refit, same caps and pricing) on a POST-FIX sha: the only code change vs job-39gnn's readout_ab_d1 is the ordinal fix cherry-picked from claude/anti-collapse 6be1c8f (heads/features.py: g1v2 rows take e from their option spans; before it every g1v2 row got e = 0, so the champion D1+v3w (38.67, job-39gnn @5e16df6) read score questions through typed.ordinal.gap with e = 0 although D1, trained under layout ordered, learned gap.0 on live e). v1 (layout ordered) is untouched by the fix: its per-row responses must equal job-39gnn's v1 (= D1's in-job index arm). Landing (CPU): python -X utf8 -m jobs.m2_first_cell.postfix_landing --post <out>/readout_ab --pre-tar <art-zskmx.tar> --out <json> pairs post-fix v3w vs PRE-fix v3w (art-zskmx out/readout_ab/child.v3w.results.jsonl, sha-pinned in postfix_landing below) on the same 2,008 rows: Index delta + CI and the split score questions vs choice/noul; asserts v1 per-row identity. Worst case $31.88, expected $8.06 billed (+ build $0.74). Base comment (readout_ab_d1): DRAFT, NOT SUBMITTED. Mode readout_ab_d1: an EVAL-ONLY run of the SAVED D1 checkpoint (job-c7pq2 art-bm3e6: LoRA r64 + cache-fork head trained on jrt-rwkv-g1-v1, layout ordered) on the 2,008-row Index DEV subset under two GENERIC readouts in ONE process (jobs.m2_first_cell.readout_ab: one model load, one lineage check, one temperature fit): v1 = D1's own training format (matched control; D1's in-job index arm = 35.12) and v3w = the R3 stock winner (job-fgu2c 31.07, +1.97 [+0.17, +3.80] vs v2f), each over every row (no per-family pick: that would tune on DEV). Question: does the stock v3w gain (mostly tools) carry over to a trained cell (gap breakdown lever #1, +3.75 if it does). Reports per readout: Index + CI, ECE (+ served), paired v3w - v1, per-row latency and tokens/s. Phases setup 25 / guard 5 / checkpoint 15 / readout_ab 230 / report 10 / reserve 7 = 292 (readout_ab +15 for the v3w temperature refit). Adding v2f (third readout) fits the cap. d1_fast's flags (row_plan, cont_plan, compile_blocks) are training-step execution flags: scoring never runs them. Worst case (60 + 2 x 292) x 0.0495 = $31.88. PRICING (readout_ab estimate, D1's measured 32.8 child rows/min x 2,008 rows x the readout's prompt-length ratio to v1 + 15 fixed): {'v1': 61.2, 'v3w': 55.1} -> readout_ab 131.3 min, expected 151.3 run min = $7.49 billed ($0.0495/min), + build ~15 min = $8.23. A third readout (v2f) -> $10.21 without the refit (with both refits it still fits the 230 cap). TEMPERATURE REFIT (refit_temperature, jobs.m2_first_cell.readout_temperature): job-39gnn served v3w with the ONE temperature fitted on v1 (ECE10 0.024 -> 0.061); v3w now also gets its own refit = the in-job procedure (train.m2_gates.fit_child_temperature: FeatureTemperature.fit NLL / L-BFGS 200 / l2 1e-4 / t_min 0.05) on the same cohort v2 calibration rows (the v1 fit's 886 items, 872 under v3w's filter) scored under v3w, content-disjoint from cohort dev, retention v3, the 150k training items, the 2,008 subset and the full 12,104 DEV; one predict() pass over the calibration items = +11.6 min (599,600 tokens x 1.037 s / 1k = 10.4 GPU + 1.2 CPU item build), persisted in the resume dir. Writes child.v3w.results_refit.jsonl; the report gives ECE raw-template vs refit and the Index under each (argmax asserted per question). v1 (control) unchanged. PRICING with the refit: readout_ab 142.9 min, expected 162.9 run min = $8.06 billed, + build ~15 min = $8.81.",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "job": "m2-first-cell-readout-ab-d1pf",
+ "status": "draft: not submitted; D1 (job-c7pq2 art-bm3e6) under v1 (control) + v3w on a POST-FIX sha (ordinal e fix 6be1c8f), with v3w's own temperature refit",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 292,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 32.0,
+ "phase_caps_minutes": {
+  "setup": 25,
+  "guard": 5,
+  "checkpoint": 15,
+  "readout_ab": 230,
+  "report": 10
+ },
+ "reserve_minutes": 7,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 10,
+  "guard": 2,
+  "checkpoint": 5,
+  "readout_ab": 143,
+  "report": 3
+ },
+ "evals_fixed_minutes": {
+  "parent": 5,
+  "child": 15
+ },
+ "eval_only": "readout_ab",
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (the runner requires them; fulldev pricing uses the rows below)",
+  "child_s_per_1k_tokens": 1.037,
+  "child_source": "job-c7pq2 art-bm3e6 x_evals/out/units-child-index.json: 2,000 ok rows, sum total_wall_ms 3,680.4 s over 3,523,267 plan tokens (fulldev_lengths_rwkv7.json) = 32.8 rows/min",
+  "parent_s_per_1k_tokens": 0.373,
+  "parent_source": "same artifact, out/parent_arm/units-index.json (job-uhxb5 seed): 1,315.7 s, 91.3 rows/min",
+  "child_rows_per_min": 32.8,
+  "parent_rows_per_min": 91.3,
+  "rows_source": "job-c7pq2 art-bm3e6 units-child-index.json 2,000 ok subset rows in 3,680.4 s = 32.8 rows/min (child); out/parent_arm/units-index.json 1,315.7 s = 91.3 rows/min (parent)"
+ },
+ "parent": "rwkv7",
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_readout_ab_d1pf.json",
+ "train_set_pointer": "data/manifests/sample-150000-seed20261006.pointer.json",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "checkpoint": {
+  "_note": "D1 (job-c7pq2 art-bm3e6), pins = job_params_hijack_eval.json / fulldev_eval (cell.json = the run's out/cell.json, config == m2_first_cell_rwkv7.json). url_env: export CKPT_URL=<get_artifact art-bm3e6 presigned URL> into the PACKAGED submit.json env at submit time.",
+  "artifact": "art-bm3e6",
+  "job": "job-c7pq2",
+  "artifact_sha256": "a405907eb85f3b6bc25f287ef37066dcd192b0b2897e4ec45f336a6fe3580a18",
+  "member": "./ckpt/ckpt-step0001439.pt",
+  "ckpt_sha256": "43414f022ccfe2eb7d770957ae851f5450839457d5a41e9f7fb661b3f81cfd32",
+  "latest_json_sha256": "b7aab73095aa8009cd23eb0a5f80cc0d27aca06a71dc5ce354d9a6c8389517d4",
+  "cell_json_sha256": "dca234df8fa821d38d723a440589779f3ec50222228f94f9c75116871360a21c",
+  "url_env": "CKPT_URL"
+ },
+ "reference_results_sha256": {
+  "_note": "d3_child_index: optional pin of the D3 job's own in-job child index results (x_evals units-child-index -> results jsonl) shipped as data/reference/d3_child_index.results.jsonl; the report then counts identical control responses",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null,
+  "d3_child_index": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only (subset Index of a saved checkpoint under several readouts; paired readout - control CI)",
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh readout_ab_d1pf",
+  "env": {
+   "TOK_S": "3757",
+   "CALL_S": "0.117",
+   "CKPT_URL": "<get_artifact art-bm3e6 url: fill at submit>"
+  },
+  "key": "m2-first-cell-readout-ab-d1pf",
+  "clock_lock": true,
+  "label": "readout_ab POST-FIX (ordinal e, 6be1c8f): D1 (job-c7pq2 art-bm3e6) on the 2,008-row DEV subset under v1 (control) + v3w, one model load",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "as D1 (the rwkv7 image + code + PRIVATE data: records, DEV rows, the 150k set (the checkpoint's lineage check rebuilds its training items), the suite) minus the parent arm seed, plus the checkpoint's cell.json (pinned). The 3.5 GB checkpoint is NOT in the context (laptop RAM; launch.py builds the context in memory): the job fetches the artifact from $CKPT_URL and checks every byte (jobs.m2_first_cell.checkpoint_loader; the signed URL goes ONLY into submit.json env.CKPT_URL at submit time, never into git).",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/records.jsonl.gz",
+    "dest": "m2-150k/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.manifest.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/build/sample-150000-seed20261006/sample-150000-seed20261006.content.jsonl.gz",
+    "dest": "m2-150k/sample-150000-seed20261006.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data.sha256"
+   },
+   {
+    "src": "m2/checkpoints/job-c7pq2/cell.json",
+    "dest": "checkpoint/cell.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_readout_ab_d1pf.json",
+     "checkpoint",
+     "cell_json_sha256"
+    ]
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "data/manifests/sample-150000-seed20261006.pointer.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "jobs/rwkv7/snapshot.sha256",
+   "jobs/m2_first_cell/data.sha256",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_readout_ab_d1pf.json",
+   "jobs/m2_first_cell/job_params_readout_ab_d1pf.json"
+  ]
+ },
+ "cohort_note": "no cohort role is scored; cohort v2 calibration is read for the temperature fit (as in D1's evals)",
+ "mode": "readout_ab_d1pf",
+ "readouts": [
+  "v1",
+  "v3w"
+ ],
+ "readout_ab_parent_arm": false,
+ "readout_length_ratio": {
+  "v1": 1.0,
+  "v2f": 0.8984,
+  "v3w": 0.9004,
+  "v3p": 0.9032,
+  "v2fp": 0.8984,
+  "_source": "python -X utf8 -m jobs.m2_first_cell.readout_ab ratios --rows <2,008 subset> --tokenizer-dir <G1k>: rendered prompt chars over every question prompt, relative to v1 (the format D1's measured 32.8 rows/min ran on; 2026-10-08)"
+ },
+ "refit_temperature": true,
+ "refit_reference": {
+  "_source": "CPU count 2026-10-08 (jobs.m2_first_cell.readout_temperature.readout_items' rendering, G1k tokenizer, no guard): cohort v2 calibration role 1,000 records -> 886 items under v1/ordered (577,547 prompt tokens; the in-job fit's rows), 913 under v3w/g1v2 (599,600 tokens), of which 872 are v1-fit items (14 v1 items dropped by v3w's own K / eval_max_t filter, 41 v3w-only items never used). Minutes = calibration tokens (upper bound: all 913 v3w items) x D1's measured 1.037 s / 1k (decide wall; predict() batches 8 items, so this over-prices) + CPU item build (68 s on the laptop).",
+  "calibration_records": 1000,
+  "calibration_items": {
+   "v1": 886,
+   "v3w": 913,
+   "v3w_in_v1_fit": 872
+  },
+  "calibration_tokens": {
+   "v1": 577547,
+   "v3w": 599600
+  },
+  "calibration_tokens_per_readout": 599600,
+  "cpu_build_minutes_per_readout": 1.2
+ },
+ "readout_ab_refit_note": "the control (v1) is never refitted: its fit, decider and files are byte-identical to the no-refit run",
+ "postfix_landing": {
+  "_note": "CPU landing step (jobs.m2_first_cell.postfix_landing): PRE-fix = job-39gnn (sha 5e16df6, readout_ab_d1) artifact art-zskmx; every byte pinned. Its v3w results were read with e = 0 on every g1v2 row.",
+  "pre_job": "job-39gnn",
+  "pre_sha": "5e16df6c117744972fcd5740bfb2fc5c32a1cf8c",
+  "pre_artifact": "art-zskmx",
+  "pre_artifact_sha256": "dd017eb0e4f1ba31cf1f464cc01b533cf9e7dcdfa341af6725184b2302a12632",
+  "pre_phase_member": "./phases/readout_ab.tgz",
+  "pre_phase_sha256": "ed931072421b929d476dae940531fb905e76d348f12d085ac2d6c22500386dc1",
+  "pre_members_sha256": {
+   "out/readout_ab/child.v3w.results.jsonl": "941af29e4e6d427b300703d3a7d29bd959e8c16af82292eb04e87b73b4474f02",
+   "out/readout_ab/child.v1.results.jsonl": "b2b38b72205ffb1c31f1216e26f325be3bec4716b4e83bb0952921473c20c6ad"
+  },
+  "pre_v3w_index": 38.6689622257272,
+  "fix_commit": "6be1c8f9653b5b1485de0f681ac823aede03ac3e"
+ }
+}
