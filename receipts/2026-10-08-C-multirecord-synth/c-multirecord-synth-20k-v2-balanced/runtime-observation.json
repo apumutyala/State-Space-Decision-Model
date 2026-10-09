@@ -1,0 +1,12 @@
+{
+  "scope": "sampled owned process aggregate RSS during actual subset export; not a model measurement",
+  "owned_pids": [
+    67908,
+    67252
+  ],
+  "observed_peak_rss_bytes": 142520320,
+  "selected_payload_bytes": 63371708,
+  "exit_code": 0,
+  "gpu_spend": 0,
+  "no_model_or_tokenizer_load": true
+}

@@ -1,0 +1,16 @@
+{
+ "build": "c-multirecord-synth-20k-v2-balanced (python -m data.c_multirecord_subset)",
+ "location": "ssdm-data/c-multirecord-synth-20k-v2-balanced/train_set/",
+ "n_records": 20000,
+ "manifest": "c-multirecord-synth-20k-v2-balanced.manifest.jsonl.gz",
+ "content_map": "c-multirecord-synth-20k-v2-balanced.content.jsonl.gz",
+ "excludes_cohort": "synthetic-only generation; no Index/TEST/retention rows or source data were read; the consuming training-set guard remains required",
+ "builder": {
+  "module": "data.c_multirecord_subset",
+  "commit": "9a64c426b00ea8a4191164d10543fdeb6f66bc15"
+ },
+ "receipt": "receipts/2026-10-08-C-multirecord-synth/c-multirecord-synth-20k-v2-balanced/summary.json",
+ "records_uncompressed_sha256": "0ac8f29210fd1c784fc4ead04fe74146acb33e48a40be0041de87fa64bb07b8d",
+ "manifest_uncompressed_sha256": "bd40381e23e982f33277fb1ae596eef6c61c9901fdae3ddfbc66a9852dd653ca",
+ "content_map_uncompressed_sha256": "a792454f0535bc85d485e3640b7328e076e97076e95ac1e5f2a0803b0202c40d"
+}
