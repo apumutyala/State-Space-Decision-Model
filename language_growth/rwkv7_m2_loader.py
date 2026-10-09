@@ -137,8 +137,9 @@ def native_rwkv7_loader(snapshot: str | Path, qualification: dict, pin: NativePa
     """Create a strict callable; only invoking it hashes/loads local model weights.
 
     Keep snapshot/checkpoint immutable during loading. A new runtime dtype, WKV
-    implementation or relocated config identity must have a matching qualified
-    serving export; it cannot silently reuse another revision's qualification.
+    implementation must have a matching qualified serving export. Identical HF
+    repo/revision snapshots may move between cache roots after all content and
+    config checks, restoring the saved location metadata before serving pins bind.
     """
     q, pin = deepcopy(qualification), deepcopy(pin)
     cfg = validate_reconstruction_metadata(q, pin)
@@ -153,7 +154,7 @@ def native_rwkv7_loader(snapshot: str | Path, qualification: dict, pin: NativePa
         from heads.model import DecisionModel
         from third_party.rwkv7_hf import verify_snapshot_code
         from third_party.rwkv7_hf.modeling_rwkv7 import Rwkv7ForCausalLM
-        from train.lineage import backbone_identity
+        from train.lineage import backbone_config_identity, backbone_identity
         from train.run_cell import parent_encoder
         from train.trainer import prepare_model
         from .qualified_parent import canonical_sha256
@@ -191,8 +192,10 @@ def native_rwkv7_loader(snapshot: str | Path, qualification: dict, pin: NativePa
         model = DecisionModel(backbone, cfg.head, cfg.head_kwargs, pad_id=0, seed=cfg.seed)
         model.to(backbone.device)
         modules = prepare_model(model, cfg)
-        if canonical_sha256(backbone_identity(backbone, full=expected_config["weights_digest_mode"] == "full")) != canonical_sha256(expected_config):
-            raise ValueError("reconstructed frozen backbone lineage mismatch")
+        from .snapshot_identity import bind_qualified_snapshot_location
+        actual_identity = backbone_identity(backbone, full=expected_config["weights_digest_mode"] == "full")
+        bind_qualified_snapshot_location(backbone.model.config, actual_identity, expected_config,
+                                         live_config_identity=lambda: backbone_config_identity(backbone))
         restore_trainables(model, state, q, cfg, modules, step=pin.revision["checkpoint"]["step"])
         backend = DecisionModelBackend(model, enc, template=pin.revision["prompt_template"]["id"],
                                        layout=cfg.layout, checkpoint=deepcopy(pin.revision["checkpoint"]),
