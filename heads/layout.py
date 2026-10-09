@@ -519,7 +519,7 @@ def _build_row_g1v2(request: dict[str, Any], qid: str, encode: EncodeFn, tpl: Te
     if tpl.id not in G1_TRAIN_RENDERERS:
         raise ValueError(f"layout {G1V2_LAYOUT!r} needs one of the templates {sorted(G1_TRAIN_RENDERERS)}, got {tpl.id!r}")
     token_bytes = getattr(encode, "token_bytes", None)
-    byte_starts = getattr(encode, "byte_starts", None) if spec is not None else None
+    byte_starts = getattr(spec, "byte_starts", None) if spec is not None else None
     if not callable(token_bytes) and not callable(byte_starts):
         raise ValueError(f"layout {G1V2_LAYOUT!r} needs an encoder with token_bytes(id) (whole-string spans)")
     v3w = tpl.id == G1V3W_ID

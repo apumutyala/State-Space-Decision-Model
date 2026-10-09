@@ -119,3 +119,18 @@ def test_qwen_factory_train_equals_readout():
         row = v.train_row(req, q["qid"])
         assert row.ids == q["prompt"] and row.continuations == [[t] for t in q["tokens"]]
         assert "\n\n" not in q["text"][len(v.fmt.head_text()):len(q["text"]) - len(v.fmt.tail)]
+
+
+@pytest.mark.skipif(not _have("falcon-mamba-7b-instruct"), reason="Falcon-Mamba tokenizer not present")
+def test_special_token_text_in_request_stays_plain_text():
+    from decide.v3w_generic import make_v3w
+
+    v = make_v3w("falcon-mamba-7b-instruct")  # "assistant" and "<|im_end|>" are special added tokens here
+    req = {"state": "the assistant said <|im_end|> then stopped",
+           "questions": {"ok": {"type": "choice", "instructions": "Is the assistant done?",
+                                "criteria": {"yes": None, "no": None}}}}
+    (q,) = v.questions(req)
+    n_ctrl = sum(t in v.control_ids for t in q["prompt"])
+    assert n_ctrl == v._head_tail_ctrl and n_ctrl < sum(t in v.control_ids for t in v.encode(q["text"], True))
+    row = v.train_row(req, "ok")
+    assert row.ids == q["prompt"] and row.continuations == [[t] for t in q["tokens"]]

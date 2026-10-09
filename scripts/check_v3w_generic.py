@@ -133,6 +133,9 @@ def check_backbone(bid: str, reqs, root, full_table_prompts: int, legacy: bool) 
             st[f"catalog_chars={q['catalog_chars']}"] += q["catalog_wanted"]
             # in-context single-token proofs on the WHOLE prompt string
             body = q["prompt"][len(v.fmt.bos):]
+            if not legacy:  # piecewise (specials only where the format puts them) == plain whole-string encoding?
+                st["whole_string_equal"] += list(v.encode(q["text"], True)) == body
+                st["whole_string_differs_body_has_special_text"] += list(v.encode(q["text"], True)) != body
             if q["coded"]:
                 if q["words"]:
                     forms = [(" " + o, t) for o, t in zip(oids, q["tokens"])]
@@ -140,7 +143,7 @@ def check_backbone(bid: str, reqs, root, full_table_prompts: int, legacy: bool) 
                     use = q["codes"] if n_req >= full_table_prompts else table
                     forms = [(" " + c, v.code_token[c]) for c in use]
                 for s, t in forms:
-                    ids = list(v.encode(q["text"] + s, True))
+                    ids = v.encode_prompt(q["text"], s)
                     ok = ids[: len(body)] == body and (ids[len(body)] == t if len(ids) > len(body) else False)
                     if not q["words"]:
                         ok = ok and len(ids) == len(body) + 1
@@ -150,7 +153,7 @@ def check_backbone(bid: str, reqs, root, full_table_prompts: int, legacy: bool) 
                         if len(ctx_fail) < 10:
                             ctx_fail.append({"id": rid, "qid": q["qid"], "form": s})
                     if not q["words"]:
-                        ns = list(v.encode(q["text"] + s[1:], True))
+                        ns = v.encode_prompt(q["text"], s[1:])
                         st["ctx_nospace_checks"] += 1
                         st["ctx_nospace_single"] += ns[: len(body)] == body and len(ns) == len(body) + 1
             # train == readout

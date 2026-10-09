@@ -193,7 +193,7 @@ def check_template_passthrough(fmt: ChatFormat, tok_dir: Path, body: str) -> boo
 class HFEncoder:
     """Whole-string encoder over a tokenizer.json (``tokenizers`` library, data only; no repo code):
     ``enc(text, trusted)`` -> ids without auto-added specials; untrusted text that yields a control (added-token) id
-    is refused. ``token_bytes`` / ``byte_starts`` let heads.layout map whole-string tokens back to char spans."""
+    is refused. ``encode_pieces`` gives ids + byte offsets (heads.layout maps tokens back to char spans)."""
 
     def __init__(self, tok_dir: Path) -> None:
         from tokenizers import Tokenizer
@@ -203,8 +203,12 @@ class HFEncoder:
         self.tok = Tokenizer.from_file(str(path))
         self.tokenizer_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
         data = json.loads(path.read_text(encoding="utf-8"))
-        self.control_ids = frozenset(int(t["id"]) for t in data.get("added_tokens", []))
+        # control ids: special added tokens, and non-special added tokens that are markup (Qwen "<think>"), not the
+        # whitespace-run tokens GPT-NeoX vocabularies add (xLSTM) -- those are ordinary text
+        self.control_ids = frozenset(int(t["id"]) for t in data.get("added_tokens", [])
+                                     if t.get("special") or t["content"].strip())
         self.added = {int(t["id"]): t["content"] for t in data.get("added_tokens", [])}
+        self.special_strings = tuple(t["content"] for t in data.get("added_tokens", []) if t.get("special"))
         cfg = json.loads((self.dir / "tokenizer_config.json").read_text(encoding="utf-8"))
         self.bos_token = _token_str(cfg.get("bos_token"))
         self.add_bos = bool(cfg.get("add_bos_token"))
@@ -222,19 +226,33 @@ class HFEncoder:
             raise ControlTokenError("untrusted text encodes to a control (added) token")
         return ids
 
-    def byte_starts(self, text: str, ids: list[int]) -> list[int]:
-        """Byte offset (in ``text``'s UTF-8) of each token of ``enc(text)`` (the tokenizer's own offsets)."""
-        enc = self.tok.encode(text, add_special_tokens=False)
-        if list(enc.ids) != list(ids):
-            raise ValueError("byte_starts: ids are not enc(text)")
-        byte_at = [0]
-        for ch in text:
-            byte_at.append(byte_at[-1] + len(ch.encode("utf-8")))
-        out, last = [], 0
-        for a, _ in enc.offsets:
-            last = max(last, byte_at[a])  # monotone (byte-fallback pieces of one char share its offset)
-            out.append(last)
-        return out
+    def encode_pieces(self, pieces: list[tuple[str, bool]]) -> tuple[list[int], list[int]]:
+        """(ids, byte starts) of consecutive text pieces; a piece with honor=False is encoded with special added
+        tokens matched as PLAIN TEXT (``encode_special_tokens``), so request text can never become a control token.
+        ``tokenizers`` splits a string at added-token matches before the model runs, so encoding the pieces between
+        the format's own special tokens separately IS the whole-string encoding whenever the request text holds no
+        special-token string (scripts/check_v3w_generic.py counts it)."""
+        ids: list[int] = []
+        starts: list[int] = []
+        base = 0
+        for text, honor in pieces:
+            if not text:
+                continue
+            self.tok.encode_special_tokens = not honor
+            try:
+                enc = self.tok.encode(text, add_special_tokens=False)
+            finally:
+                self.tok.encode_special_tokens = False
+            byte_at = [0]
+            for ch in text:
+                byte_at.append(byte_at[-1] + len(ch.encode("utf-8")))
+            last = base
+            for a, _ in enc.offsets:
+                last = max(last, base + byte_at[a])
+                starts.append(last)
+            ids += enc.ids
+            base += byte_at[-1]
+        return ids, starts
 
     def decode(self, ids: list[int]) -> str:
         return self.tok.decode(list(ids), skip_special_tokens=False)
@@ -318,11 +336,11 @@ class V3W:
     def __post_init__(self) -> None:
         self.table = [e["code"] for e in self.codes]
         self.code_token = {e["code"]: e["token_id"] for e in self.codes}
-        self._ctx_ids = list(self.encode(self.fmt.answer_ctx, True))
+        self._ctx_ids = self.encode_prompt(self.fmt.answer_ctx)
         self._head_tail_ctrl = (sum(t in self.control_ids for t in self.encode(self.fmt.head_text(), True))
                                 + sum(t in self.control_ids for t in self.encode(self.fmt.tail, True)))
         for e in self.codes:  # F4 proof on this tokenizer (as G1V3Backend.__init__)
-            if list(self.encode(self.fmt.answer_ctx + " " + e["code"], True)) != self._ctx_ids + [e["token_id"]]:
+            if self.encode_prompt(self.fmt.answer_ctx, " " + e["code"]) != self._ctx_ids + [e["token_id"]]:
                 raise ValueError(f"{self.backbone.id}: code {e['code']!r} is not one token after the answer prefix")
 
     @property
@@ -343,16 +361,66 @@ class V3W:
         """Whole-string tokens of a full prompt text (no ``bos``), control ids refused outside the format's own."""
         from .backends.base import BackendUnsupported
 
-        ids = list(self.encode(text, True))
-        n_ctrl = sum(t in self.control_ids for t in ids)
         if self.is_legacy_rwkv:
+            ids = list(self.encode(text, True))
             bad = 0 in ids
         else:
-            bad = n_ctrl != self._head_tail_ctrl or bool(self.control_ids.intersection(
-                self.encode(text[len(self.fmt.head_text()):len(text) - len(self.fmt.tail)], True)))
+            ids = self.encode_prompt(text)
+            bad = sum(t in self.control_ids for t in ids) != self._head_tail_ctrl
         if bad:
             raise BackendUnsupported("control_tokens_in_input", "request text encodes to a control token; refused")
         return ids
+
+    def _pieces(self, text: str, suffix: str = "") -> list[tuple[str, bool]]:
+        """``text`` = head + body + tail: the format's own special tokens (honored) and the text between them; the
+        span from the head's last special to the tail's first one (request body included) is one piece with special
+        tokens matched as plain text. ``suffix`` (an answer continuation) extends the last piece."""
+        import re
+
+        head, tail = self.fmt.head_text(), self.fmt.tail
+        if not (text.startswith(head) and text.endswith(tail)) or len(text) < len(head) + len(tail):
+            raise ValueError("prompt text does not carry the format's head and tail")
+        sp = [s for s in getattr(self.encode, "special_strings", ()) if s and (s in head or s in tail)]
+        rx = re.compile("(" + "|".join(re.escape(s) for s in sorted(sp, key=len, reverse=True)) + ")") if sp else None
+
+        def split(t: str) -> list[tuple[str, bool]]:
+            if rx is None:
+                return [(t, False)]
+            return [(x, i % 2 == 1) for i, x in enumerate(rx.split(t)) if x]
+
+        hp, tp = split(head), split(tail)
+        h_rest = hp.pop()[0] if hp and not hp[-1][1] else ""
+        t_lead = tp.pop(0)[0] if tp and not tp[0][1] else ""
+        mid = h_rest + text[len(head):len(text) - len(tail)] + t_lead
+        pieces = hp + [(mid, False)] + tp
+        if suffix:
+            if pieces[-1][1]:
+                pieces.append((suffix, False))
+            else:
+                pieces[-1] = (pieces[-1][0] + suffix, False)
+        return pieces
+
+    def encode_prompt(self, text: str, suffix: str = "") -> list[int]:
+        """Tokens of a head + body + tail prompt (+ ``suffix``): the whole string at once, special tokens only where
+        the format puts them (HF encoders); the plain whole-string encoding otherwise."""
+        if self.is_legacy_rwkv or not hasattr(self.encode, "encode_pieces"):
+            return list(self.encode(text + suffix, True))
+        return self.encode.encode_pieces(self._pieces(text, suffix))[0]
+
+    def byte_starts(self, text: str, ids: list[int]) -> list[int]:
+        """Byte offset of each token of ``encode_prompt(text)`` (heads.layout span mapping)."""
+        if self.is_legacy_rwkv or not hasattr(self.encode, "encode_pieces"):
+            out, pos = [], 0
+            for t in ids:
+                out.append(pos)
+                pos += len(self.encode.token_bytes(t))
+            if pos != len(text.encode("utf-8")):
+                raise ValueError("token bytes do not tile the prompt")
+            return out
+        got, starts = self.encode.encode_pieces(self._pieces(text))
+        if got != list(ids):
+            raise ValueError("byte_starts: ids are not encode_prompt(text)")
+        return starts
 
     def prompt_ids(self, text: str) -> list[int]:
         return list(self.fmt.bos) + self.body_ids(text)
@@ -361,7 +429,7 @@ class V3W:
         """The answer token of " <oid>" right after the answer prefix (None if the tokenization does not extend the
         prefix's, or the token is a control id)."""
         if oid not in self._first:
-            ids = list(self.encode(self.fmt.answer_ctx + " " + oid, True))
+            ids = self.encode_prompt(self.fmt.answer_ctx, " " + oid)
             n = len(self._ctx_ids)
             bad = {0} if self.is_legacy_rwkv else self.control_ids
             self._first[oid] = ids[n] if len(ids) > n and ids[:n] == self._ctx_ids and ids[n] not in bad else None
