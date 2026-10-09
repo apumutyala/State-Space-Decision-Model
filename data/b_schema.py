@@ -1055,7 +1055,8 @@ def plan_items_v2(weights: dict, kstats: dict, avail: dict, n_records: int, log=
     return q, plan
 
 
-def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_quota: int | None = None) -> dict:
+def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_quota: int | None = None,
+           heldout_json: str | None = None) -> dict:
     """Candidates + token lengths -> the n-row draw (per-source targets, fewest-variants-first, reuse cap)."""
     from train.cohort import record_content_hash
     from train.train_set import uncompressed_sha256
@@ -1074,6 +1075,12 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_q
     pol = learn_polarity(p1_files()[0] / "records.jsonl.gz") if meta.get("mix") == "v2" else {}
     drop = collections.Counter()
     tok = {"v2f": [], "v3w": []}
+    af = None
+    if meta.get("mix") == "v2" or heldout_json:  # operator rule: no eval attack template text in training rows
+        if not heldout_json:
+            raise SystemExit("v2 select needs --heldout-json (the pinned heldout_v1 templates copy)")
+        from .attack_filter import AttackFilter
+        af = AttackFilter(heldout_json)
     n_cand = 0
     for line in candidate_lines(work, meta):
         r = json.loads(line)
@@ -1091,6 +1098,11 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_q
         if e.get("cont", 0) > 16:
             drop["continuation_over_16"] += 1
             continue
+        if af is not None:
+            hit = af.hit(r)
+            if hit:
+                drop[f"attack:{hit[1]}/{hit[2]}/{hit[0]}"] += 1
+                continue
         ss = r.get("aug", {}).get("schema_synth", {})
         src = "P3:extra" if ss.get("pool") == "P3" else mix_key(r, meta.get("mix", "v1"))
         elig[src].append((r["id"], ss.get("root") or sorted(root_items(r))[0], ss.get("variant", 0)))
@@ -1221,7 +1233,8 @@ def select(n: int, work: Path, build: str, max_t: int = 2048, log=print, extra_q
         sc = work / "scratch-moved"
         sc.mkdir(exist_ok=True)
         p.replace(sc / p.name)
-    rep = {"build": build, "n_records": len(order), "quotas": quota, "item_plan": item_plan, "available": avail, "dropped": dict(drop),
+    rep = {"build": build, "n_records": len(order), "quotas": quota, "item_plan": item_plan,
+           "attack_filter": af.identity if af is not None else None, "available": avail, "dropped": dict(drop),
            "n_candidates": n_cand, "reuse": reuse_stats(reuse), **stats.report(),
            "records_uncompressed_sha256": rec_h.hexdigest(), "manifest_uncompressed_sha256": man_h.hexdigest(),
            "content_map_uncompressed_sha256": con_h.hexdigest()}
@@ -1331,6 +1344,7 @@ def main(argv=None) -> int:
     ap.add_argument("--extra-pool", default=None, help="Agent C's draw dir (records.jsonl.gz + manifest + content)")
     ap.add_argument("--extra-pointer", default=None)
     ap.add_argument("--extra-quota", type=int, default=0)
+    ap.add_argument("--heldout-json", default=None, help="select: pinned copy of heldout_v1_templates.json")
     ap.add_argument("--extra-limit", type=int, default=None, help="extra stage: accept at most this many P3 rows")
     ap.add_argument("--receipt", default=None)
     ap.add_argument("--mix", choices=("v1", "v2"), default="v1")
@@ -1354,7 +1368,7 @@ def main(argv=None) -> int:
         print(json.dumps({k: meta[k] for k in ("candidates_per_source", "ops")}, indent=1))
         return 0
     rep = select(a.n, work, build, log=lambda *x: print(*x, flush=True),
-                 extra_quota=a.extra_quota if a.extra_quota else None)
+                 extra_quota=a.extra_quota if a.extra_quota else None, heldout_json=a.heldout_json)
     commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
                             cwd=config.REPO_ROOT).stdout.strip()
     ptr = write_pointer(build, rep, commit)
