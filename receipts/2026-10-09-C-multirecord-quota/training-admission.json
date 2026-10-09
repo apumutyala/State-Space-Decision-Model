@@ -1,0 +1,1685 @@
+{
+  "actual_candidate_sample": {
+    "max_continuation_tokens": 1,
+    "max_effective_tokens": 2048,
+    "max_record_options_sum": 92,
+    "questions": 1428,
+    "records": 204,
+    "records_detail": [
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 787,
+        "id": "m2:c_multirecord_synth_v2:20261008:023256",
+        "k": 2,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 797,
+        "id": "m2:c_multirecord_synth_v2:20261008:036176",
+        "k": 2,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 797,
+        "id": "m2:c_multirecord_synth_v2:20261008:081244",
+        "k": 2,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 807,
+        "id": "m2:c_multirecord_synth_v2:20261008:006385",
+        "k": 3,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 807,
+        "id": "m2:c_multirecord_synth_v2:20261008:077901",
+        "k": 3,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 813,
+        "id": "m2:c_multirecord_synth_v2:20261008:076229",
+        "k": 3,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 808,
+        "id": "m2:c_multirecord_synth_v2:20261008:080258",
+        "k": 4,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 808,
+        "id": "m2:c_multirecord_synth_v2:20261008:068098",
+        "k": 4,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 796,
+        "id": "m2:c_multirecord_synth_v2:20261008:030858",
+        "k": 4,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 799,
+        "id": "m2:c_multirecord_synth_v2:20261008:096903",
+        "k": 5,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 818,
+        "id": "m2:c_multirecord_synth_v2:20261008:047807",
+        "k": 5,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 811,
+        "id": "m2:c_multirecord_synth_v2:20261008:057535",
+        "k": 5,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 811,
+        "id": "m2:c_multirecord_synth_v2:20261008:045832",
+        "k": 6,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 818,
+        "id": "m2:c_multirecord_synth_v2:20261008:019992",
+        "k": 6,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 823,
+        "id": "m2:c_multirecord_synth_v2:20261008:067340",
+        "k": 6,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 834,
+        "id": "m2:c_multirecord_synth_v2:20261008:061109",
+        "k": 7,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 835,
+        "id": "m2:c_multirecord_synth_v2:20261008:093181",
+        "k": 7,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 843,
+        "id": "m2:c_multirecord_synth_v2:20261008:076461",
+        "k": 7,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 815,
+        "id": "m2:c_multirecord_synth_v2:20261008:047658",
+        "k": 8,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 844,
+        "id": "m2:c_multirecord_synth_v2:20261008:073118",
+        "k": 8,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 847,
+        "id": "m2:c_multirecord_synth_v2:20261008:062554",
+        "k": 8,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 819,
+        "id": "m2:c_multirecord_synth_v2:20261008:008671",
+        "k": 9,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 921,
+        "id": "m2:c_multirecord_synth_v2:20261008:050319",
+        "k": 9,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 933,
+        "id": "m2:c_multirecord_synth_v2:20261008:081023",
+        "k": 9,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 852,
+        "id": "m2:c_multirecord_synth_v2:20261008:017564",
+        "k": 10,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 958,
+        "id": "m2:c_multirecord_synth_v2:20261008:071524",
+        "k": 10,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 935,
+        "id": "m2:c_multirecord_synth_v2:20261008:072360",
+        "k": 10,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 834,
+        "id": "m2:c_multirecord_synth_v2:20261008:024633",
+        "k": 11,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 996,
+        "id": "m2:c_multirecord_synth_v2:20261008:037553",
+        "k": 11,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 960,
+        "id": "m2:c_multirecord_synth_v2:20261008:015817",
+        "k": 11,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 843,
+        "id": "m2:c_multirecord_synth_v2:20261008:057922",
+        "k": 12,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 998,
+        "id": "m2:c_multirecord_synth_v2:20261008:020454",
+        "k": 12,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 991,
+        "id": "m2:c_multirecord_synth_v2:20261008:075098",
+        "k": 12,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 868,
+        "id": "m2:c_multirecord_synth_v2:20261008:000923",
+        "k": 13,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1028,
+        "id": "m2:c_multirecord_synth_v2:20261008:092731",
+        "k": 13,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1000,
+        "id": "m2:c_multirecord_synth_v2:20261008:048195",
+        "k": 13,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 849,
+        "id": "m2:c_multirecord_synth_v2:20261008:007080",
+        "k": 14,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1066,
+        "id": "m2:c_multirecord_synth_v2:20261008:034364",
+        "k": 14,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1030,
+        "id": "m2:c_multirecord_synth_v2:20261008:013768",
+        "k": 14,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 864,
+        "id": "m2:c_multirecord_synth_v2:20261008:092581",
+        "k": 15,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1061,
+        "id": "m2:c_multirecord_synth_v2:20261008:007689",
+        "k": 15,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1063,
+        "id": "m2:c_multirecord_synth_v2:20261008:072137",
+        "k": 15,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 890,
+        "id": "m2:c_multirecord_synth_v2:20261008:017798",
+        "k": 16,
+        "same_format_cap16_questions": 7,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1097,
+        "id": "m2:c_multirecord_synth_v2:20261008:023422",
+        "k": 16,
+        "same_format_cap16_questions": 7,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1072,
+        "id": "m2:c_multirecord_synth_v2:20261008:073278",
+        "k": 16,
+        "same_format_cap16_questions": 7,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 873,
+        "id": "m2:c_multirecord_synth_v2:20261008:076395",
+        "k": 17,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1130,
+        "id": "m2:c_multirecord_synth_v2:20261008:051923",
+        "k": 17,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1104,
+        "id": "m2:c_multirecord_synth_v2:20261008:083995",
+        "k": 17,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 902,
+        "id": "m2:c_multirecord_synth_v2:20261008:088936",
+        "k": 18,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1127,
+        "id": "m2:c_multirecord_synth_v2:20261008:058308",
+        "k": 18,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1127,
+        "id": "m2:c_multirecord_synth_v2:20261008:028592",
+        "k": 18,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 905,
+        "id": "m2:c_multirecord_synth_v2:20261008:001613",
+        "k": 19,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1159,
+        "id": "m2:c_multirecord_synth_v2:20261008:009061",
+        "k": 19,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1133,
+        "id": "m2:c_multirecord_synth_v2:20261008:040221",
+        "k": 19,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 903,
+        "id": "m2:c_multirecord_synth_v2:20261008:014154",
+        "k": 20,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1202,
+        "id": "m2:c_multirecord_synth_v2:20261008:006554",
+        "k": 20,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1155,
+        "id": "m2:c_multirecord_synth_v2:20261008:004198",
+        "k": 20,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 930,
+        "id": "m2:c_multirecord_synth_v2:20261008:055423",
+        "k": 21,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1212,
+        "id": "m2:c_multirecord_synth_v2:20261008:096615",
+        "k": 21,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1202,
+        "id": "m2:c_multirecord_synth_v2:20261008:062339",
+        "k": 21,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 938,
+        "id": "m2:c_multirecord_synth_v2:20261008:039920",
+        "k": 22,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1231,
+        "id": "m2:c_multirecord_synth_v2:20261008:023656",
+        "k": 22,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1186,
+        "id": "m2:c_multirecord_synth_v2:20261008:084912",
+        "k": 22,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 941,
+        "id": "m2:c_multirecord_synth_v2:20261008:017349",
+        "k": 23,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1270,
+        "id": "m2:c_multirecord_synth_v2:20261008:069485",
+        "k": 23,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1223,
+        "id": "m2:c_multirecord_synth_v2:20261008:058465",
+        "k": 23,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 966,
+        "id": "m2:c_multirecord_synth_v2:20261008:053374",
+        "k": 24,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1275,
+        "id": "m2:c_multirecord_synth_v2:20261008:048510",
+        "k": 24,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1238,
+        "id": "m2:c_multirecord_synth_v2:20261008:040910",
+        "k": 24,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 986,
+        "id": "m2:c_multirecord_synth_v2:20261008:071159",
+        "k": 25,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1323,
+        "id": "m2:c_multirecord_synth_v2:20261008:006103",
+        "k": 25,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1258,
+        "id": "m2:c_multirecord_synth_v2:20261008:043419",
+        "k": 25,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 967,
+        "id": "m2:c_multirecord_synth_v2:20261008:084384",
+        "k": 26,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1334,
+        "id": "m2:c_multirecord_synth_v2:20261008:039164",
+        "k": 26,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1297,
+        "id": "m2:c_multirecord_synth_v2:20261008:066220",
+        "k": 26,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 994,
+        "id": "m2:c_multirecord_synth_v2:20261008:062041",
+        "k": 27,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1353,
+        "id": "m2:c_multirecord_synth_v2:20261008:082029",
+        "k": 27,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1316,
+        "id": "m2:c_multirecord_synth_v2:20261008:017429",
+        "k": 27,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1002,
+        "id": "m2:c_multirecord_synth_v2:20261008:052010",
+        "k": 28,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1392,
+        "id": "m2:c_multirecord_synth_v2:20261008:066982",
+        "k": 28,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1316,
+        "id": "m2:c_multirecord_synth_v2:20261008:083322",
+        "k": 28,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 991,
+        "id": "m2:c_multirecord_synth_v2:20261008:094191",
+        "k": 29,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1425,
+        "id": "m2:c_multirecord_synth_v2:20261008:061967",
+        "k": 29,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1344,
+        "id": "m2:c_multirecord_synth_v2:20261008:021991",
+        "k": 29,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1022,
+        "id": "m2:c_multirecord_synth_v2:20261008:088948",
+        "k": 30,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1432,
+        "id": "m2:c_multirecord_synth_v2:20261008:052164",
+        "k": 30,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1375,
+        "id": "m2:c_multirecord_synth_v2:20261008:067136",
+        "k": 30,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1037,
+        "id": "m2:c_multirecord_synth_v2:20261008:018953",
+        "k": 31,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1457,
+        "id": "m2:c_multirecord_synth_v2:20261008:093661",
+        "k": 31,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1378,
+        "id": "m2:c_multirecord_synth_v2:20261008:066225",
+        "k": 31,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1029,
+        "id": "m2:c_multirecord_synth_v2:20261008:031950",
+        "k": 32,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1488,
+        "id": "m2:c_multirecord_synth_v2:20261008:052622",
+        "k": 32,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1413,
+        "id": "m2:c_multirecord_synth_v2:20261008:022222",
+        "k": 32,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1042,
+        "id": "m2:c_multirecord_synth_v2:20261008:082339",
+        "k": 33,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1482,
+        "id": "m2:c_multirecord_synth_v2:20261008:033015",
+        "k": 33,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1424,
+        "id": "m2:c_multirecord_synth_v2:20261008:075803",
+        "k": 33,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1075,
+        "id": "m2:c_multirecord_synth_v2:20261008:028304",
+        "k": 34,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1535,
+        "id": "m2:c_multirecord_synth_v2:20261008:014320",
+        "k": 34,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1430,
+        "id": "m2:c_multirecord_synth_v2:20261008:095184",
+        "k": 34,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1072,
+        "id": "m2:c_multirecord_synth_v2:20261008:005961",
+        "k": 35,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1561,
+        "id": "m2:c_multirecord_synth_v2:20261008:054449",
+        "k": 35,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1466,
+        "id": "m2:c_multirecord_synth_v2:20261008:060301",
+        "k": 35,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1081,
+        "id": "m2:c_multirecord_synth_v2:20261008:034006",
+        "k": 36,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1556,
+        "id": "m2:c_multirecord_synth_v2:20261008:009078",
+        "k": 36,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1503,
+        "id": "m2:c_multirecord_synth_v2:20261008:029978",
+        "k": 36,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1093,
+        "id": "m2:c_multirecord_synth_v2:20261008:096251",
+        "k": 37,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1602,
+        "id": "m2:c_multirecord_synth_v2:20261008:090019",
+        "k": 37,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1506,
+        "id": "m2:c_multirecord_synth_v2:20261008:086751",
+        "k": 37,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1087,
+        "id": "m2:c_multirecord_synth_v2:20261008:085536",
+        "k": 38,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1631,
+        "id": "m2:c_multirecord_synth_v2:20261008:029144",
+        "k": 38,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1522,
+        "id": "m2:c_multirecord_synth_v2:20261008:024736",
+        "k": 38,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1113,
+        "id": "m2:c_multirecord_synth_v2:20261008:013489",
+        "k": 39,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1620,
+        "id": "m2:c_multirecord_synth_v2:20261008:005205",
+        "k": 39,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1564,
+        "id": "m2:c_multirecord_synth_v2:20261008:024965",
+        "k": 39,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1127,
+        "id": "m2:c_multirecord_synth_v2:20261008:077786",
+        "k": 40,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1659,
+        "id": "m2:c_multirecord_synth_v2:20261008:005662",
+        "k": 40,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1557,
+        "id": "m2:c_multirecord_synth_v2:20261008:070566",
+        "k": 40,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1116,
+        "id": "m2:c_multirecord_synth_v2:20261008:063423",
+        "k": 41,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1679,
+        "id": "m2:c_multirecord_synth_v2:20261008:014555",
+        "k": 41,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1587,
+        "id": "m2:c_multirecord_synth_v2:20261008:034543",
+        "k": 41,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1149,
+        "id": "m2:c_multirecord_synth_v2:20261008:028540",
+        "k": 42,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1698,
+        "id": "m2:c_multirecord_synth_v2:20261008:073608",
+        "k": 42,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1625,
+        "id": "m2:c_multirecord_synth_v2:20261008:051188",
+        "k": 42,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1523,
+        "id": "m2:c_multirecord_synth_v2:20261008:003917",
+        "k": 43,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1722,
+        "id": "m2:c_multirecord_synth_v2:20261008:002473",
+        "k": 43,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1619,
+        "id": "m2:c_multirecord_synth_v2:20261008:056889",
+        "k": 43,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1533,
+        "id": "m2:c_multirecord_synth_v2:20261008:005514",
+        "k": 44,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1755,
+        "id": "m2:c_multirecord_synth_v2:20261008:035990",
+        "k": 44,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1664,
+        "id": "m2:c_multirecord_synth_v2:20261008:014254",
+        "k": 44,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1552,
+        "id": "m2:c_multirecord_synth_v2:20261008:022615",
+        "k": 45,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1748,
+        "id": "m2:c_multirecord_synth_v2:20261008:098235",
+        "k": 45,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1686,
+        "id": "m2:c_multirecord_synth_v2:20261008:065783",
+        "k": 45,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1586,
+        "id": "m2:c_multirecord_synth_v2:20261008:078476",
+        "k": 46,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1779,
+        "id": "m2:c_multirecord_synth_v2:20261008:066772",
+        "k": 46,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1678,
+        "id": "m2:c_multirecord_synth_v2:20261008:003540",
+        "k": 46,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1574,
+        "id": "m2:c_multirecord_synth_v2:20261008:012585",
+        "k": 47,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1811,
+        "id": "m2:c_multirecord_synth_v2:20261008:094133",
+        "k": 47,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1715,
+        "id": "m2:c_multirecord_synth_v2:20261008:072853",
+        "k": 47,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1604,
+        "id": "m2:c_multirecord_synth_v2:20261008:001870",
+        "k": 48,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1822,
+        "id": "m2:c_multirecord_synth_v2:20261008:050130",
+        "k": 48,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1753,
+        "id": "m2:c_multirecord_synth_v2:20261008:097706",
+        "k": 48,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1638,
+        "id": "m2:c_multirecord_synth_v2:20261008:053171",
+        "k": 49,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1858,
+        "id": "m2:c_multirecord_synth_v2:20261008:072019",
+        "k": 49,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1744,
+        "id": "m2:c_multirecord_synth_v2:20261008:098163",
+        "k": 49,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1639,
+        "id": "m2:c_multirecord_synth_v2:20261008:077340",
+        "k": 50,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1885,
+        "id": "m2:c_multirecord_synth_v2:20261008:038048",
+        "k": 50,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1785,
+        "id": "m2:c_multirecord_synth_v2:20261008:001036",
+        "k": 50,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1665,
+        "id": "m2:c_multirecord_synth_v2:20261008:027637",
+        "k": 51,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1891,
+        "id": "m2:c_multirecord_synth_v2:20261008:017985",
+        "k": 51,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1823,
+        "id": "m2:c_multirecord_synth_v2:20261008:098849",
+        "k": 51,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1686,
+        "id": "m2:c_multirecord_synth_v2:20261008:049298",
+        "k": 52,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1926,
+        "id": "m2:c_multirecord_synth_v2:20261008:085246",
+        "k": 52,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1808,
+        "id": "m2:c_multirecord_synth_v2:20261008:049374",
+        "k": 52,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1689,
+        "id": "m2:c_multirecord_synth_v2:20261008:059559",
+        "k": 53,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1961,
+        "id": "m2:c_multirecord_synth_v2:20261008:094139",
+        "k": 53,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1841,
+        "id": "m2:c_multirecord_synth_v2:20261008:003547",
+        "k": 53,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1720,
+        "id": "m2:c_multirecord_synth_v2:20261008:080764",
+        "k": 54,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1970,
+        "id": "m2:c_multirecord_synth_v2:20261008:071112",
+        "k": 54,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1871,
+        "id": "m2:c_multirecord_synth_v2:20261008:053708",
+        "k": 54,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1733,
+        "id": "m2:c_multirecord_synth_v2:20261008:086465",
+        "k": 55,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 2008,
+        "id": "m2:c_multirecord_synth_v2:20261008:075673",
+        "k": 55,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1871,
+        "id": "m2:c_multirecord_synth_v2:20261008:042765",
+        "k": 55,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1754,
+        "id": "m2:c_multirecord_synth_v2:20261008:092394",
+        "k": 56,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 2042,
+        "id": "m2:c_multirecord_synth_v2:20261008:087074",
+        "k": 56,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1901,
+        "id": "m2:c_multirecord_synth_v2:20261008:009934",
+        "k": 56,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1765,
+        "id": "m2:c_multirecord_synth_v2:20261008:076663",
+        "k": 57,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 2043,
+        "id": "m2:c_multirecord_synth_v2:20261008:026199",
+        "k": 57,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1954,
+        "id": "m2:c_multirecord_synth_v2:20261008:084035",
+        "k": 57,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1785,
+        "id": "m2:c_multirecord_synth_v2:20261008:062984",
+        "k": 58,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1931,
+        "id": "m2:c_multirecord_synth_v2:20261008:043680",
+        "k": 58,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1790,
+        "id": "m2:c_multirecord_synth_v2:20261008:025365",
+        "k": 59,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1969,
+        "id": "m2:c_multirecord_synth_v2:20261008:042541",
+        "k": 59,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1825,
+        "id": "m2:c_multirecord_synth_v2:20261008:005986",
+        "k": 60,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1988,
+        "id": "m2:c_multirecord_synth_v2:20261008:074462",
+        "k": 60,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1848,
+        "id": "m2:c_multirecord_synth_v2:20261008:078263",
+        "k": 61,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1996,
+        "id": "m2:c_multirecord_synth_v2:20261008:032967",
+        "k": 61,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1857,
+        "id": "m2:c_multirecord_synth_v2:20261008:012600",
+        "k": 62,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 2030,
+        "id": "m2:c_multirecord_synth_v2:20261008:008800",
+        "k": 62,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1893,
+        "id": "m2:c_multirecord_synth_v2:20261008:060481",
+        "k": 63,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 2048,
+        "id": "m2:c_multirecord_synth_v2:20261008:067853",
+        "k": 63,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1904,
+        "id": "m2:c_multirecord_synth_v2:20261008:039506",
+        "k": 64,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1904,
+        "id": "m2:c_multirecord_synth_v2:20261008:049311",
+        "k": 65,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1943,
+        "id": "m2:c_multirecord_synth_v2:20261008:028792",
+        "k": 66,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1980,
+        "id": "m2:c_multirecord_synth_v2:20261008:027881",
+        "k": 67,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1962,
+        "id": "m2:c_multirecord_synth_v2:20261008:094686",
+        "k": 68,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1996,
+        "id": "m2:c_multirecord_synth_v2:20261008:003031",
+        "k": 69,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 2030,
+        "id": "m2:c_multirecord_synth_v2:20261008:021044",
+        "k": 70,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 2026,
+        "id": "m2:c_multirecord_synth_v2:20261008:043845",
+        "k": 71,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 2045,
+        "id": "m2:c_multirecord_synth_v2:20261008:098338",
+        "k": 72,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1430,
+        "id": "m2:c_multirecord_synth_v2:20261008:012611~view:compact-single-token-v1",
+        "k": 73,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1415,
+        "id": "m2:c_multirecord_synth_v2:20261008:004327~view:compact-single-token-v1",
+        "k": 73,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1409,
+        "id": "m2:c_multirecord_synth_v2:20261008:039363~view:compact-single-token-v1",
+        "k": 73,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1418,
+        "id": "m2:c_multirecord_synth_v2:20261008:004860~view:compact-single-token-v1",
+        "k": 74,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1440,
+        "id": "m2:c_multirecord_synth_v2:20261008:072500~view:compact-single-token-v1",
+        "k": 74,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1424,
+        "id": "m2:c_multirecord_synth_v2:20261008:067408~view:compact-single-token-v1",
+        "k": 74,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1443,
+        "id": "m2:c_multirecord_synth_v2:20261008:039061~view:compact-single-token-v1",
+        "k": 75,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1423,
+        "id": "m2:c_multirecord_synth_v2:20261008:037389~view:compact-single-token-v1",
+        "k": 75,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1456,
+        "id": "m2:c_multirecord_synth_v2:20261008:000149~view:compact-single-token-v1",
+        "k": 75,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1464,
+        "id": "m2:c_multirecord_synth_v2:20261008:023786~view:compact-single-token-v1",
+        "k": 76,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1449,
+        "id": "m2:c_multirecord_synth_v2:20261008:089146~view:compact-single-token-v1",
+        "k": 76,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1432,
+        "id": "m2:c_multirecord_synth_v2:20261008:098190~view:compact-single-token-v1",
+        "k": 76,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1442,
+        "id": "m2:c_multirecord_synth_v2:20261008:082611~view:compact-single-token-v1",
+        "k": 77,
+        "same_format_cap16_questions": 6,
+        "style": "letters"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1461,
+        "id": "m2:c_multirecord_synth_v2:20261008:033971~view:compact-single-token-v1",
+        "k": 77,
+        "same_format_cap16_questions": 6,
+        "style": "opaque"
+      },
+      {
+        "candidate_questions": 7,
+        "effective_tokens": 1447,
+        "id": "m2:c_multirecord_synth_v2:20261008:065815~view:compact-single-token-v1",
+        "k": 77,
+        "same_format_cap16_questions": 6,
+        "style": "words"
+      }
+    ],
+    "selection": "first record per available K/style; no Index/protected sampling"
+  },
+  "config": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-wt\\d13\\jobs\\m2_first_cell\\m2_first_cell_rwkv7_d13_joint_safe_nofla.json",
+  "config_override_candidate": {
+    "head": "joint_record",
+    "layout": "g1v2",
+    "row_options": 160,
+    "template": "jrt-rwkv-g1-v3w",
+    "train_max_k": 255
+  },
+  "config_sha256": "83bd338a6a5b15ea096a8993f120e3070993cb1258cbe0b3e2e915ba63ee4e3d",
+  "evaluation_max_k_unchanged": true,
+  "gpu_spend_usd": 0,
+  "k_only_filter": {
+    "cap": 16,
+    "complete_records_upper_bound": 262,
+    "incomplete_records": 6738,
+    "scope": "exact structural K filter count; excludes original v1 length effects",
+    "top_profile_questions_dropped": 6738
+  },
+  "limitations": [
+    "C-only tokenizer/loader proof; no actual backbone training or Index measurement",
+    "not a B mixed-draw admission proof; clean B v2d and exact C retention remain required",
+    "D13 g1v2 ordinal gap feature fix must be integrated before use; see D15 b565ec2",
+    "actual token proof sampled all available K/style groups; full-pool v3w bounds inherited from pinned original proof"
+  ],
+  "schema": "ssdm.c_training_admission.v1",
+  "source_pointer_sha256": "2c4659464e3ddaab28145b45628c59081964300f64d855f402edc1f6e1b81618",
+  "source_questions": 49000,
+  "source_records": 7000,
+  "source_records_uncompressed_sha256": "24f0e360b13cd522d7d62bd4df7acc75225eb1e0296ffebb90df12366492fb1a",
+  "torch_imported": false,
+  "trainer_commit": "8d92f04f6bbc46ec40cf19b2ab5786435e139266",
+  "trainer_source_sha256": {
+    "decide/prompt.py": "f6586797a46d73a3c0e69ed2c574647a251b44837e3c4676ac18fe1d4b95e252",
+    "decide/prompt_g1v3.py": "494947979cdcfe875d162410d5bc5db739ebdcbf91d801e4a719d4c428a24344",
+    "heads/layout.py": "edc66905324f38e26579bc22f16c7ffddb54faa23b46c2c520d50752e7d51ee1",
+    "heads/model.py": "8b5129071642c7dc8230c7fff811d160714fadc985047da96f9f12db2fe90c7c",
+    "third_party/rwkv7_hf/tokenization_rwkv7.py": "58406b0aa5f51d5ca3a698602825ae9b299f6621e6c20bb0a2915d43c9f8bf65",
+    "train/data.py": "e17bc6265836a5da71f701b1ea65b630610a5fb4d161b32fa6f8ecad8db78f9f",
+    "train/run_cell.py": "d406d8281765e8919d61591d66f08ffc5c2af506bc1db53775fb657e0ab1f82e"
+  },
+  "training_record_row_budget": 8
+}

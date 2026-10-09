@@ -1,0 +1,52 @@
+{
+  "after_steps": [
+    {
+      "continuations": 92,
+      "record_ids": [
+        "r0",
+        "r0",
+        "r0",
+        "r0",
+        "r0",
+        "r0",
+        "r0"
+      ],
+      "rows": 7
+    },
+    {
+      "continuations": 77,
+      "record_ids": [
+        "r1"
+      ],
+      "rows": 1
+    }
+  ],
+  "before": {
+    "continuations": 169,
+    "record_ids": [
+      "r0",
+      "r0",
+      "r0",
+      "r0",
+      "r0",
+      "r0",
+      "r0",
+      "r1"
+    ],
+    "rows": 8
+  },
+  "gpu_spend_usd": 0,
+  "integration": "apply alongside C-consuming joint recipe; no loss, model, eval or data changes; A owns adoption",
+  "oversized_record_refuses_without_cursor_advance": true,
+  "patch_sha256": "06bd3e7b52f5222ee7e1aa461390087de697005b5bbed5c9e5c4bad4a6f05e76",
+  "resume_and_epoch_checks": "pass",
+  "row_budget": 8,
+  "row_options": 160,
+  "schema": "ssdm.c_joint_option_cap.v1",
+  "scope": "actual D13 selection method; continuation count proof, not GPU memory/throughput measurement",
+  "source_commit": "8d92f04f6bbc46ec40cf19b2ab5786435e139266",
+  "source_sha256": "d5dca998ec592884e8be79ebd295cf334bf97bc309ec06672788e651e9c37206",
+  "source_worktree_unchanged": true,
+  "torch_imported": false,
+  "zero_and_exact_cap_checks": "pass"
+}
