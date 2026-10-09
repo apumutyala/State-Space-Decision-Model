@@ -12,6 +12,7 @@ RWKV7-G1k v3w readout on the same rows (art-ivu28, 27.32 on proxy600; 31.07 on t
 |---|---|---|---|---|---|
 | `qrwkv6_32b` | `recursal/QRWKV6-32B-Instruct-Preview-v0.1` @ `2da855ca372cefab920716eca30f11ed65d6c708` | 34.74B / 69.49 GB | Qwen2.5-32B-Instruct (MMLU 76.6 vs 81.8, card) | `jrt-chatml-nothink-v1` | Apache-2.0 |
 | `qrwkv_qwq32b` | `featherless-ai/QRWKV-QwQ-32B` @ `6801e98e72a3e03b4611cdd816a0532411f6e1e0` | 34.95B / 69.89 GB | QwQ-32B (MMLU 74.3 vs 79.9, card) | `jrt-chatml-v1` | Apache-2.0 |
+| `rwkv_qwen3_30b_a3b` | `OpenMOSE/RWKV-Qwen3-30B-A3B-Instruct-cxa07c` @ `2fb46556362db60336d4abf951aee3ebfb7db449` | 30.75B MoE (~3B active) / 61.50 GB | Qwen3-30B-A3B-Instruct (MMLU 74.8, card bench.txt; NIAH 84 at 8K, 37.8 at 16K) | `jrt-chatml-nothink-v1` | Apache-2.0 |
 
 - **Code:** both repos bundle the same `modeling_rwkv6qwen2.py` / `configuration_rwkv6qwen2.py`, vendored unmodified
   and sha-pinned in `third_party/rwkv6qwen2_hf` (no `trust_remote_code`); `verify_snapshot_code` refuses a snapshot whose
@@ -20,7 +21,16 @@ RWKV7-G1k v3w readout on the same rows (art-ivu28, 27.32 on proxy600; 31.07 on t
   `_tied_weights_keys`; both configs have `use_rope: false` and `tie_word_embeddings: false`), with the files unchanged.
   Checked on CPU: checkpoint weight names (`model.safetensors.index.json`) == the vendored model's state_dict for both
   repos, params 34,737,492,992 / 34,947,208,192 (== HF); `load_model` refuses any missing / unexpected key.
-- **Kernel:** `fla.ops.gla.fused_recurrent_gla` (fla 0.5.2 signature checked), from the `jobs/probe9b/Dockerfile` image
+- **RWKV-Qwen3-30B-A3B (mode `rwkv_qwen3_30b_a3b`):** different code (`modeling_rwkv07c.py`, hxa07c RWKV-7-style time mix
+  with RoPE, Qwen3-MoE FFN), vendored unmodified in `third_party/rwkv07c_hf`; config `transformer_layers: [-1]` = no
+  attention layer (the loader refuses otherwise and asserts every layer is `RWKV07CAttention`). Written for 4.5x;
+  `decide.backends.rwkv07c.install_compat` bridges 5.17 from outside: transformers' own qwen3_moe checkpoint conversion
+  registered for `rwkv07c` (per-expert checkpoint -> 5.x fused experts; CPU test: a per-expert file written by hand
+  loads to identical logits; after the merge the real index's keys == the model's, 30,749,571,072 params == HF),
+  `head_first=False` dropped before fla 0.5.2 (which raises on the kwarg), `create_causal_mask` (renamed kwarg in 5.x)
+  -> None (its only consumer is the RWKV layer's padding multiply; the readout never pads), RoPE default fn, config
+  defaults. Fork == recompute on a tiny random MoE model (`tests/test_rwkv07c_backend.py`).
+- **Kernel:** `fla.ops.gla.fused_recurrent_gla` (RWKV6-Qwen2) / `fla.ops.rwkv7.fused_recurrent_rwkv7` (RWKV07C) (fla 0.5.2 signature checked), from the `jobs/probe9b/Dockerfile` image
   (torch 2.13 / triton 3.7.1 / transformers 5.17.0 / fla 0.5.2 + the Decision Index kit), CMD rewritten.
 - **Readout:** the stock LM-logit readout (`HFReadoutBackend`, sum log p(' ' + id + `<|im_end|>`)) under the parents'
   ChatML format, the same readout family as the stock Qwen3.5-9B arm (job-5cmat, 38.27 subset). QwQ's tokenizer has
@@ -71,5 +81,3 @@ weight mismatch at load) | 13 scoring | 15 readout too slow by measurement | 1 f
 ## Not screened here (and why)
 - `featherless-ai/QRWKV-72B` (79.3B, MMLU 77.5): 158.6 GB bf16; 8-bit (~79 GB) does not fit one H100 next to activations.
   Needs 2 x H100 (bf16/FP8 split) or 4-bit; a follow-up if a 32B conversion screens well.
-- `OpenMOSE/RWKV-Qwen3-30B-A3B-Instruct-cxa07c` (30.7B MoE, ~3B active, MMLU 74.8, Qwen3 parent): different custom code
-  (hxa07c) needing its own vendoring + state ops; a candidate for the next round.

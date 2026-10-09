@@ -92,14 +92,17 @@ def _map_state(state, fn) -> None:
 
 
 class RWKV6StateOps:
-    """prefill / extend / select over ``RWKV6State`` (``past_key_values``); see ``decide.backends.state_fork``."""
+    """prefill / extend / select over ``RWKV6State`` (``past_key_values``); see ``decide.backends.state_fork``. Also
+    serves ``RWKV07CState`` (decide.backends.rwkv07c): same ``layer_kv_states`` / ``layer_shift_states`` lists and
+    ``_seen_tokens`` position counter, in-place ``update``."""
 
-    def __init__(self, model, prefill_chunk: int = PREFILL_CHUNK):
+    def __init__(self, model, prefill_chunk: int = PREFILL_CHUNK, logits_kw: str = "num_logits_to_keep"):
         self.model = model
         self.prefill_chunk = prefill_chunk
+        self.logits_kw = logits_kw  # 4.43-era RWKV6-Qwen2: num_logits_to_keep; RWKV07C (4.51+): logits_to_keep
 
     def _fwd(self, ids, state, n_last):
-        out = self.model(input_ids=ids, past_key_values=state, use_cache=True, num_logits_to_keep=n_last)
+        out = self.model(input_ids=ids, past_key_values=state, use_cache=True, **{self.logits_kw: n_last})
         return out.logits, out.past_key_values
 
     def prefill(self, ids):

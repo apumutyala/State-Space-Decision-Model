@@ -3,6 +3,7 @@
 # (644 rows of the 2,008-row Index DEV subset, jobs/common/dev_proxy600.json), frozen scorer, paired against the stock
 # RWKV7-G1k v3w readout (job-fgu2c / art-ivu28, the same 644 rows). Spec: jobs/backbone_screen/JOB_SPEC.md.
 # Env: MODE=qrwkv6_32b (recursal/QRWKV6-32B-Instruct-Preview-v0.1) | qrwkv_qwq32b (featherless-ai/QRWKV-QwQ-32B)
+#   | rwkv_qwen3_30b_a3b (OpenMOSE/RWKV-Qwen3-30B-A3B-Instruct-cxa07c)
 #   setup: pins + fla guard -> DEV rows + parent sha256 -> pinned snapshot_download -> sha256 of every file -> vendored
 #          code == snapshot code -> proxy600 rows
 #   index: decision_index run (ReadoutIndexEngine, family from params; fork == recompute canary self-check before row
@@ -15,7 +16,7 @@
 set -Euo pipefail
 CODE=/opt/ssdm/m1
 MODE=${MODE:-}
-case "$MODE" in qrwkv6_32b|qrwkv_qwq32b) ;; *) echo "MODE must be qrwkv6_32b or qrwkv_qwq32b"; exit 2 ;; esac
+case "$MODE" in qrwkv6_32b|qrwkv_qwq32b|rwkv_qwen3_30b_a3b) ;; *) echo "MODE must be qrwkv6_32b, qrwkv_qwq32b or rwkv_qwen3_30b_a3b"; exit 2 ;; esac
 PARAMS=$CODE/jobs/backbone_screen/job_params_$MODE.json
 OUT=${GMN_OUTPUT_DIR:-/output}
 RESULT=${GMN_RESULT_PATH:-$OUT/result.json}
@@ -58,7 +59,8 @@ trap finish EXIT
 
 # ------------------------------------------------------------------ setup: identities (exit 5 / 10)
 REPO=$(P repo) && REV=$(P revision) && FAMILY=$(P family) && PIN=$CODE/$(P snapshot_pin) && CAP_IN=$(P input_cap) \
-  || fail 5 "job_params screen block"
+  && PKG=$(P code_pkg) && KERNEL=$(P kernel) || fail 5 "job_params screen block"
+export PKG KERNEL
 PARENT=/data/$(P parent_results) && PARENT_SHA=$(P parent_sha256) || fail 5 "job_params parent"
 say "setup ($MODE: $REPO@$REV, family $FAMILY)"
 cp /opt/ssdm/CONTEXT_MANIFEST.json "$WORK/out/" || fail 5 "no context manifest"
@@ -70,8 +72,10 @@ assert transformers.__version__ == "5.17.0", transformers.__version__
 assert torch.cuda.is_available()
 import decision_index  # noqa: F401
 import fla  # noqa: F401
-from fla.ops.gla.fused_recurrent import fused_recurrent_gla  # noqa: F401  (the vendored model's only kernel)
-import third_party.rwkv6qwen2_hf as V
+import importlib, os
+mod, _, fn = os.environ["KERNEL"].rpartition(".")
+getattr(importlib.import_module(mod), fn)  # the vendored model's recurrent kernel (fla 0.5.2)
+V = importlib.import_module(os.environ["PKG"])
 assert all(V.vendored_ok().values()), V.vendored_ok()
 from importlib import metadata
 print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0),
@@ -82,11 +86,11 @@ python -I /opt/ssdm/m1/jobs/common/fla_guard.py --out "$WORK/out/fla_guard.json"
 ( cd /data && sha256sum -c "$CODE/jobs/clef_baseline/data.sha256" ) > "$WORK/out/data-verify.txt" 2>&1 || fail 10 "DEV rows sha256"
 echo "$PARENT_SHA  $PARENT" | sha256sum -c - >> "$WORK/out/data-verify.txt" 2>&1 || fail 10 "parent results sha256"
 CAP_SETUP=$(cap setup) || fail 5 "job_params"
-SNAP=$(timeout ${CAP_SETUP}m python - "$REPO" "$REV" <<'EOF'
-import sys
+SNAP=$(timeout ${CAP_SETUP}m python - "$REPO" "$REV" "$PARAMS" <<'EOF'
+import json, sys
 from huggingface_hub import snapshot_download
-print(snapshot_download(sys.argv[1], revision=sys.argv[2], max_workers=16,
-                        allow_patterns=["*.safetensors", "*.json", "*.py", "merges.txt"]))
+pats = json.load(open(sys.argv[3]))["screen"]["allow_patterns"]
+print(snapshot_download(sys.argv[1], revision=sys.argv[2], max_workers=16, allow_patterns=pats))
 EOF
 ) || fail 10 "download"
 SNAP=$(echo "$SNAP" | tail -1)
@@ -95,7 +99,7 @@ say "snapshot $SNAP; verifying sha256 of every pinned file"
 ( cd "$SNAP" && xargs -P 8 -n 2 sh -c 'echo "$0  $1" | sha256sum -c -' < "$PIN" ) > "$WORK/out/snapshot-verify.txt" 2>&1 \
   || fail 10 "snapshot sha256"
 [ "$(grep -c ': OK$' "$WORK/out/snapshot-verify.txt")" -eq "$(grep -c . "$PIN")" ] || fail 10 "snapshot sha256 count"
-python -c "import sys, third_party.rwkv6qwen2_hf as V; V.verify_snapshot_code(sys.argv[1], sys.argv[2])" "$SNAP" "$REPO" \
+python -c "import importlib, os, sys; V = importlib.import_module(os.environ['PKG']); V.verify_snapshot_code(*([sys.argv[1], sys.argv[2]] if hasattr(V, 'REPOS') else [sys.argv[1]]))" "$SNAP" "$REPO" \
   || fail 10 "vendored code != snapshot code"
 SUBSET=jobs/common/dev_proxy600.json
 python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index/proxy-check.json" || fail 10 "proxy600 identity"

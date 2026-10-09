@@ -19,6 +19,8 @@ families
                   (HFReadoutBackend, prefix fork, ``fork_max_rows`` default 16) under jrt-chatml-v1 (QwQ no-think tail)
                   or jrt-chatml-nothink-v1 (Qwen2.5-Instruct tail). Option ``selfcheck_out``: before the first row,
                   score the canary request by fork AND by recompute and refuse (raise) unless they agree.
+  ``rwkv07c-chatml-nothink`` ``decide.backends.rwkv07c.load_rwkv07c`` (OpenMOSE RWKV-Qwen3-30B-A3B, attention-free
+                  RWKV hxa07c + Qwen3-MoE), same readout / options / self-check, jrt-chatml-nothink-v1.
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
 rules), any other non-ok status raises.
@@ -44,8 +46,10 @@ TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-h
              G1V2_FAMILY: "jrt-rwkv-g1-v2", G1V3_FAMILY: "jrt-rwkv-g1-v3", "rwkv7-hf-g1-v3p": "jrt-rwkv-g1-v3p",
              "rwkv7-hf-g1-v3r": "jrt-rwkv-g1-v3r", G1V3C_FAMILY: "jrt-rwkv-g1-v3c",
              "rwkv7-hf-g1-v2f": "jrt-rwkv-g1-v2f", "rwkv7-hf-g1-v3w": "jrt-rwkv-g1-v3w",
-             "qrwkv6-chatml": "jrt-chatml-v1", "qrwkv6-chatml-nothink": "jrt-chatml-nothink-v1"}
-QRWKV6_FAMILIES = ("qrwkv6-chatml", "qrwkv6-chatml-nothink")
+             "qrwkv6-chatml": "jrt-chatml-v1", "qrwkv6-chatml-nothink": "jrt-chatml-nothink-v1",
+             "rwkv07c-chatml-nothink": "jrt-chatml-nothink-v1"}
+#: attention-free conversions scored by the stock LM-logit readout with the canary fork self-check (backbone scout)
+QRWKV6_FAMILIES = ("qrwkv6-chatml", "qrwkv6-chatml-nothink", "rwkv07c-chatml-nothink")
 #: fork vs recompute on the canary request (bf16 on GPU): max |delta sum-logprob| allowed, and same argmax per question
 SELFCHECK_TOL = 0.25
 
@@ -91,6 +95,11 @@ def build_plugin(family: str, options: dict[str, Any]):
         return _RWKV7_PLUGINS[key]
     if family == "qwen3.5":
         return H.load_qwen35(options["model_dir"], device=dev, dtype=dt)
+    if family == "rwkv07c-chatml-nothink":
+        from decide.backends.rwkv07c import load_rwkv07c
+
+        cap = options.get("input_cap")
+        return load_rwkv07c(options["model_dir"], options["repo"], device=dev, dtype=dt, input_cap=int(cap) if cap else None)
     if family in QRWKV6_FAMILIES:
         from decide.backends.rwkv6qwen2 import load_rwkv6qwen2
 

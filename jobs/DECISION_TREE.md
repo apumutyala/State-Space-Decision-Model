@@ -105,7 +105,8 @@ recorded decision, not an automatic one.
 Stock zero-shot proxy600 screens (`jobs/backbone_screen/JOB_SPEC.md`), each paired against the stock RWKV7-G1k v3w
 readout on the same 644 rows (27.32): `jobs/backbone_screen/job_params_qrwkv6_32b.json` (mode `qrwkv6_32b`,
 recursal/QRWKV6-32B-Instruct-Preview-v0.1) and `jobs/backbone_screen/job_params_qrwkv_qwq32b.json` (mode
-`qrwkv_qwq32b`, featherless-ai/QRWKV-QwQ-32B). Worst case $15.84 each, expected ~$3-4. A candidate clearly above the
+`qrwkv_qwq32b`, featherless-ai/QRWKV-QwQ-32B) and `jobs/backbone_screen/job_params_rwkv_qwen3_30b_a3b.json` (mode
+`rwkv_qwen3_30b_a3b`, OpenMOSE/RWKV-Qwen3-30B-A3B-Instruct-cxa07c, MoE). Worst case $15.84 each, expected ~$3-4. A candidate clearly above the
 stock RWKV7 parent (and near or above stock Qwen3.5-9B, 38.27 on the subset) is the next backbone for the Clef recipe.
 
 ## The $525 envelope (October MTD actual spend $16.11 as of 2026-10-07 incl. job-mden7 $1.06, job-5cmat $5.01 and job-tvuat $1.62, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)

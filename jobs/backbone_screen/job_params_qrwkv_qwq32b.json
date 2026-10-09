@@ -47,7 +47,15 @@
   "snapshot_pin": "jobs/backbone_screen/snapshot_qrwkv_qwq32b.sha256",
   "input_cap": 16384,
   "parent_results": "screen_parent/art-ivu28/v3w.results.jsonl",
-  "parent_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1"
+  "parent_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1",
+  "code_pkg": "third_party.rwkv6qwen2_hf",
+  "kernel": "fla.ops.gla.fused_recurrent.fused_recurrent_gla",
+  "allow_patterns": [
+   "*.safetensors",
+   "*.json",
+   "*.py",
+   "merges.txt"
+  ]
  },
  "submit": {
   "command": "bash /opt/ssdm/m1/jobs/backbone_screen/screen_job.sh",
