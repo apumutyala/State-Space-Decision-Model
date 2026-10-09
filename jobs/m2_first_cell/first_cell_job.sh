@@ -94,6 +94,7 @@ finish() {
   export FINISH_RC=$rc
   timeout --kill-after=30s 60s bash -c '
     export_phase final
+    python "$CODE/jobs/common/size_guard.py" --out "$OUT" --evict-dir "$WORK/evicted" || true  # results always upload
     exec python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
       "$WORK/out/first_cell_result.json" "$OUT" "$MARKER" "$VALIDATOR"
   '
@@ -189,7 +190,7 @@ for NAME in rwkv7_stock_tkfaj clef_flash; do  # optional comparison files, used 
     REFS+=(--reference "$NAME=$F")
   fi
 done
-python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag" || fail 5 "drivers not importable"
+python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent_arm.validate, jobs.m2_first_cell.summarize, jobs.m2_first_cell.readout_diag, train.ckpt_export, safetensors.torch" || fail 5 "drivers not importable"
 FIX_P=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['parent'])" "$PARAMS") || fail 5 "job_params"
 FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fixed_minutes']['child'])" "$PARAMS") || fail 5 "job_params"
 # every eval phase is priced HERE from the measured rates, before the paid training phase
@@ -321,9 +322,13 @@ timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.sum
 gate "report" $r
 [ $r -eq 0 ] || fail 9 "first-cell result missing or invalid (rc=$r)"
 LATEST=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$CK/cell/latest.json") || fail 9 "no checkpoint"
+# INFERENCE export only (train.ckpt_export: trainable LoRA + head as bf16 safetensors + JSON sidecar + sha256; r256
+# ~2.3 GB, r64 ~0.6 GB). The full .pt (Adam + scheduler + RNG; ~14 GB at r256) stays in $CK: job-igcu4 copied it to
+# /output, went over the store's 5 GiB single-PUT cap, and lost the whole result.
 mkdir -p "$OUT/ckpt"
-cp "$CK/cell/$LATEST" "$CK/cell/latest.json" "$OUT/ckpt/" && ( cd "$OUT/ckpt" && sha256sum "$LATEST" > "$LATEST.sha256" ) \
-  || EXPORT_FAIL=1
+python -X utf8 -m train.ckpt_export inference --ckpt "$CK/cell/$LATEST" --out-dir "$OUT/ckpt" > "$WORK/logs/ckpt-export.log" 2>&1 \
+  || { EXPORT_FAIL=1; say "checkpoint export failed: $(tail -1 "$WORK/logs/ckpt-export.log")"; }
+python -X utf8 jobs/common/size_guard.py --out "$OUT" --evict-dir "$WORK/evicted" || true
 sample "$WORK/out/first_cell_result.json" "first-cell"
 RC=0
 exit 0

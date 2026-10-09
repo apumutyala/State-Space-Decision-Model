@@ -485,6 +485,10 @@ def test_runner_exports_the_checkpoint(full_run):
     latest = json.loads((ck / "latest.json").read_text())["path"]
     sha = (ck / f"{latest}.sha256").read_text().split()
     assert sha[0] == hashlib.sha256((ck / latest).read_bytes()).hexdigest() and sha[1].lstrip("*") == latest
+    # job-igcu4: the INFERENCE export only (train.ckpt_export), never the full optimizer .pt (over the PUT cap at r256)
+    assert latest.startswith("trainable-step") and latest.endswith(".safetensors") and not list(ck.glob("*.pt"))
+    side = json.loads((ck / latest.replace(".safetensors", ".json")).read_text())
+    assert side["sha256"] == sha[0] and side["dtype"] == "bf16" and "optimizer" not in side
 
 
 def _stopped_before_training(r, code: int, fail_line: str, gate: str, exports: list[str]):
@@ -531,7 +535,7 @@ def test_underpowered_evals_exit_45_is_trained_measured_not_promotable(ctx):
     dec = json.loads((r["work"] / "out/first_cell_result.json").read_text(encoding="utf-8"))
     pv = dec["promotion"]
     assert pv["evals_exit_code"] == 45 and pv["promotable"] is False and "underpowered" in pv["not_promotable_reason"]
-    ck = sorted((r["out"] / "ckpt").glob("ckpt-step*.pt"))
+    ck = sorted((r["out"] / "ckpt").glob("trainable-step*.safetensors"))
     assert ck and (r["out"] / "ckpt" / (ck[-1].name + ".sha256")).exists()
     assert json.loads((r["out"] / "M2_FIRST_CELL_DONE").read_text()) == {"exit_code": 0}
 
