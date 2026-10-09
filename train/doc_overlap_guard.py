@@ -44,7 +44,7 @@ of such grams minus the draw's boilerplate grams (a 13-gram in more units is a t
 The eval hash index is built once (``build``), cached outside git under ``ssdm-data/m2/doc-overlap/<key16>/`` and
 sha-pinned in ``data/manifests/doc_overlap/index-pin.json`` (key = sha256 of the rule, the allowlist and every eval
 source file). A box without the suite rows loads the shipped index (hashes only, no eval text) from
-$SSDM_DOC_OVERLAP_INDEX, $SSDM_DATA/m2/doc-overlap/<key16> or /data/m2/doc-overlap/<key16>, only when its npz sha256
+$SSDM_DOC_OVERLAP_INDEX, $SSDM_DATA/m2/doc-overlap/<key16> or /data/m2/doc-overlap/<key16>, only when its array sha256
 equals the pin; with neither the suite nor a pinned index the gate refuses (fail closed).
 
     python -X utf8 -m train.doc_overlap_guard build                                     # build / verify the cached index
@@ -289,8 +289,8 @@ def iter_eval_rows() -> Iterator[tuple[str, str, str | None, dict]]:
 class EvalIndex:
     """Sorted unique eval 13-gram hashes with per-gram eval-row df, flags, allowlist entry and unit postings.
 
-    h (uint64) sorted; df (uint32) eval rows holding the gram; fl (uint8) bit 1 = in a non-allowlisted unit, bit 2 = in
-    an allowlisted unit; ent (uint8) first allowlist entry (255 none); pstart (int64, -1 = more than POST_CAP units)
+    h (uint64) sorted; df (uint16, clipped) eval rows holding the gram; fl (uint8) bit 1 = in a non-allowlisted unit, bit 2 = in
+    an allowlisted unit; ent (uint8) first allowlist entry (255 none); pstart (int32, -1 = more than POST_CAP units)
     and pcnt (uint16) into post (int32 unit ids). Units: u_row (int32), u_field (int16 code), u_den (int32 grams with
     postings), u_allow (int16). meta: rows [[split, run_id, family]], fields [names], allowlist ids, counts."""
 
@@ -397,7 +397,10 @@ def build_index(rows: Iterable[tuple[str, str, str | None, dict]], allow: dict, 
     new_start[keep] = offs[keep]
     post = post_all[_ranges(pstart[keep], cnt[keep])] if keep.any() else np.empty(0, np.int32)
     del post_all
-    out["pstart"], out["post"] = new_start, post
+    if len(post) >= 2**31 - 1:
+        raise DocOverlapError("postings exceed int32 offsets")
+    out["pstart"], out["post"] = new_start.astype(np.int32), post
+    out["df"] = np.minimum(out["df"], 65535).astype(np.uint16)  # only compared with 1% of the eval rows
     u_row_a, u_allow_a = np.asarray(u_row, np.int32), np.asarray(u_allow, np.int16)
     u_den = np.bincount(post, minlength=len(u_row)).astype(np.int32) if len(post) else np.zeros(len(u_row), np.int32)
     out.update(u_row=u_row_a, u_field=np.asarray(u_field, np.int16), u_den=u_den, u_allow=u_allow_a)
@@ -437,29 +440,35 @@ def _finish_part(H: np.ndarray, U: np.ndarray, u_row: np.ndarray, u_allow: np.nd
             "pcnt": np.minimum(ucnt, 65535).astype(np.uint16), "pstart": pstart, "post": post}
 
 
+def _arrays_sha(d: Path) -> str:
+    """sha256 over the per-array .npy file sha256s, in ARRAYS order (the pinned identity of an index directory)."""
+    return hashlib.sha256("".join(_sha_file(d / f"{k}.npy") for k in EvalIndex.ARRAYS).encode()).hexdigest()
+
+
 def save_index(idx: EvalIndex, d: Path, ident: dict) -> dict:
+    """One .npy per array (loaded memory-mapped: the laptop's RAM is shared) + meta.json; hashes only, no eval text."""
     d.mkdir(parents=True, exist_ok=True)
-    tmp = d / "index.tmp.npz"
-    np.savez(tmp, **{k: getattr(idx, k) for k in EvalIndex.ARRAYS})
-    sha = _sha_file(tmp)
-    tmp.replace(d / "index.npz")
-    meta = dict(idx.meta) | {"index_npz_sha256": sha, "ident": ident}
+    for k in EvalIndex.ARRAYS:
+        tmp = d / f"{k}.tmp.npy"
+        np.save(tmp, np.ascontiguousarray(getattr(idx, k)))
+        tmp.replace(d / f"{k}.npy")
+    sha = _arrays_sha(d)
+    meta = dict(idx.meta) | {"index_sha256": sha, "ident": ident}
     (d / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
     return meta
 
 
 def load_index_dir(d: Path, expect_sha: str | None) -> EvalIndex:
-    npz, mp = d / "index.npz", d / "meta.json"
-    if not npz.exists() or not mp.exists():
+    mp = d / "meta.json"
+    if not mp.exists() or not all((d / f"{k}.npy").exists() for k in EvalIndex.ARRAYS):
         raise EvalDataMissing(f"no eval hash index in {d}")
-    sha = _sha_file(npz)
+    sha = _arrays_sha(d)
     meta = json.loads(mp.read_text(encoding="utf-8"))
-    if sha != meta.get("index_npz_sha256") or (expect_sha and sha != expect_sha):
-        raise DocOverlapError(f"eval hash index {npz} sha256 {sha[:12]} != pinned {str(expect_sha or meta.get('index_npz_sha256'))[:12]}")
+    if sha != meta.get("index_sha256") or (expect_sha and sha != expect_sha):
+        raise DocOverlapError(f"eval hash index {d} sha256 {sha[:12]} != pinned {str(expect_sha or meta.get('index_sha256'))[:12]}")
     if meta.get("rule") != RULE:
         raise DocOverlapError("eval hash index was built under a different rule")
-    z = np.load(npz)
-    return EvalIndex({k: z[k] for k in EvalIndex.ARRAYS}, meta)
+    return EvalIndex({k: np.load(d / f"{k}.npy", mmap_mode="r") for k in EvalIndex.ARRAYS}, meta)
 
 
 def read_pin() -> dict | None:
@@ -495,21 +504,21 @@ def get_index() -> EvalIndex:
         sub = pin["key"][:16]
         for d in ([Path(env)] if env else []) + [DEFAULT_CACHE / sub, Path("/data/m2/doc-overlap") / sub,
                                                   Path("/data/doc-overlap") / sub]:
-            if (d / "index.npz").exists():
-                return load_index_dir(d, pin["index_npz_sha256"])
+            if (d / "meta.json").exists():
+                return load_index_dir(d, pin["index_sha256"])
         raise
     if pin and pin.get("key") != key:
         raise DocOverlapError(f"eval sources / rule / allowlist changed since the index pin ({pin.get('key', '')[:12]} "
                               f"!= {key[:12]}): rebuild with `build` and re-pin")
     d = Path(env) if env else DEFAULT_CACHE / key[:16]
-    if not (d / "index.npz").exists():
+    if not (d / "meta.json").exists():
         idx = build_index(None, load_allowlist(), n_parts=4, rows_factory=iter_eval_rows)
         save_index(idx, d, ident)
-    return load_index_dir(d, pin["index_npz_sha256"] if pin else None)
+    return load_index_dir(d, pin["index_sha256"] if pin else None)
 
 
 def pin_record(idx: EvalIndex, key: str) -> dict:
-    return {"rule": RULE, "key": key, "index_npz_sha256": idx.meta.get("index_npz_sha256"),
+    return {"rule": RULE, "key": key, "index_sha256": idx.meta.get("index_sha256"),
             "allowlist_sha256": allowlist_sha256(), "n_eval_rows": idx.n_rows, "rows_by_split": idx.meta["rows_by_split"],
             "n_units": idx.meta["n_units"], "n_grams": idx.meta["n_grams"], "n_postings": idx.meta["n_postings"]}
 
@@ -626,7 +635,7 @@ def scan(records: Iterable[dict], idx: EvalIndex | None = None, keep_ids: bool =
         union_rows.setdefault(lab[0], set()).add(lab[1])
     for s, v in union_rows.items():
         union_split[s] = len(v)
-    rep = {"rule": RULE, "index_npz_sha256": idx.meta.get("index_npz_sha256"), "allowlist_sha256": _allow_sha_safe(),
+    rep = {"rule": RULE, "index_sha256": idx.meta.get("index_sha256"), "allowlist_sha256": _allow_sha_safe(),
            "n_eval_rows": idx.n_rows, "n_records": n, "n_rows_any_eval_gram": len(hits), "n_fail": len(fails),
            "fail_ids_sha256": ids_sha256(fail_ids), "per_source_rows": dict(sorted(per_source_rows.items())),
            "per_source_fail": dict(sorted(per_source_fail.items())), "per_reason": per_reason,
@@ -677,7 +686,7 @@ def record_fails(recs: Iterable[dict], idx: EvalIndex | None = None) -> list[str
 def clean_spec(rep: dict[str, Any]) -> dict[str, Any]:
     """Pinned as ``train_set.doc_clean`` (or a dev cell's top-level ``doc_clean``): the set's failing rows leave the pool."""
     return {"rule": RULE, "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set",
-            "index_npz_sha256": rep["index_npz_sha256"], "allowlist_sha256": rep["allowlist_sha256"],
+            "index_sha256": rep["index_sha256"], "allowlist_sha256": rep["allowlist_sha256"],
             "n_records": rep["n_records"], "n_excluded": rep["n_fail"], "n_kept": rep["n_records"] - rep["n_fail"],
             "excluded_ids_sha256": rep["fail_ids_sha256"], "per_source_fail": rep["per_source_fail"]}
 
@@ -687,10 +696,10 @@ def check_pinned(rep: dict[str, Any], pin: dict[str, Any] | None) -> tuple[bool,
         return True, "no fail"
     if not pin:
         return False, f"{rep['n_fail']} row(s) carry Index eval document text and no doc_clean spec is pinned"
-    for k in ("index_npz_sha256", "allowlist_sha256", "excluded_ids_sha256", "n_excluded"):
+    for k in ("index_sha256", "allowlist_sha256", "excluded_ids_sha256", "n_excluded"):
         if k not in pin:
             return False, f"doc_clean pin lacks {k}"
-    if pin["index_npz_sha256"] != rep["index_npz_sha256"] or pin["allowlist_sha256"] != rep["allowlist_sha256"]:
+    if pin["index_sha256"] != rep["index_sha256"] or pin["allowlist_sha256"] != rep["allowlist_sha256"]:
         return False, "doc_clean pin was made against a different eval index / allowlist"
     if int(pin["n_excluded"]) != rep["n_fail"] or pin["excluded_ids_sha256"] != rep["fail_ids_sha256"]:
         return False, (f"doc-overlap fails ({rep['n_fail']}, {rep['fail_ids_sha256'][:12]}) != pinned exclusions "

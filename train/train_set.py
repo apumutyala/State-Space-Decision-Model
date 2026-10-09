@@ -83,7 +83,7 @@ def doc_exclusion(pin: dict | None, records_path: str | Path, pre_excluded: set[
         rep["fail_ids"] = [i for i in rep["fail_ids"] if i not in pre]
         rep["n_fail"], rep["fail_ids_sha256"] = len(rep["fail_ids"]), ids_sha256(rep["fail_ids"])
     ok, why = check_pinned(rep, pin)
-    out = dsummary(rep) | {"rule": rep["rule"], "index_npz_sha256": rep["index_npz_sha256"],
+    out = dsummary(rep) | {"rule": rep["rule"], "index_sha256": rep["index_sha256"],
                            "allowlist_sha256": rep["allowlist_sha256"], "excluded_ids_sha256": rep["fail_ids_sha256"],
                            "n_excluded": rep["n_fail"], "allowlist_saved": rep["allowlist_saved"],
                            "n_heldout_excluded_overlap": len(pre), "check": why}

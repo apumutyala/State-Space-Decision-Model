@@ -353,7 +353,7 @@ def _doc_overlap_train_ids(cfg: dict, recs: dict, tr_ids: list, ident):
     if drop:
         tr_ids = [k for k in tr_ids if str(k) not in drop]
     summ = {"n_records": rep["n_records"], "n_excluded": rep["n_fail"], "excluded_ids_sha256": ids_sha256(drop),
-            "index_npz_sha256": rep["index_npz_sha256"], "check": why}
+            "index_sha256": rep["index_sha256"], "check": why}
     if drop and isinstance(ident, dict):  # a clean set keeps its identity byte-for-byte (existing cells / resumes)
         ident = ident | {"doc_overlap_guard": summ}
     return tr_ids, ident

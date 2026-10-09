@@ -44,7 +44,7 @@ def idx():
     allow = DG.load_allowlist()
     rows = _eval_rows()
     index = DG.build_index(None, allow, rows_factory=lambda: iter(rows), n_parts=2)
-    index.meta["index_npz_sha256"] = "synthetic"
+    index.meta["index_sha256"] = "synthetic"
     DG.set_index_for_tests(index)
     yield index
     DG.set_index_for_tests(None)
@@ -166,7 +166,7 @@ def test_missing_eval_data_fails_closed(monkeypatch, tmp_path):
 def test_shipped_index_must_match_pin(idx, tmp_path, monkeypatch):
     d = tmp_path / "ix"
     meta = DG.save_index(idx, d, {"synthetic": True})
-    loaded = DG.load_index_dir(d, meta["index_npz_sha256"])
+    loaded = DG.load_index_dir(d, meta["index_sha256"])
     assert len(loaded.h) == len(idx.h)
     with pytest.raises(DG.DocOverlapError):
         DG.load_index_dir(d, "0" * 64)

@@ -70,7 +70,7 @@ def _doc_overlap_test_index():
         yield
         return
     empty = DG.build_index(None, {"entries": []}, rows_factory=lambda: iter([]), n_parts=1)
-    empty.meta["index_npz_sha256"] = "empty-test-index"
+    empty.meta["index_sha256"] = "empty-test-index"
     DG.set_index_for_tests(empty)
     try:
         yield
