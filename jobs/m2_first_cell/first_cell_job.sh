@@ -26,6 +26,7 @@
 #   15 an eval phase projected (preflight at the env rates, or re-priced at the parent arm's measured speed BEFORE
 #      training) or measured (live rate guard) past its cap
 #   30 / 31 / 32 guard: kit-suite / content index / harness manifests   33 held-out D1-B fragment outside the pinned set
+#   34 Index eval document text in the training set (train.doc_overlap_guard; heldout phase rc 4 or run_cell 34)
 #   20 train.run_cell unexpected code   21-29 train.run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite,
 #   24 memory, 25 data, 26 too slow for min_steps, 27 guard not ready, 28 cohort / train-set leak or mismatch,
 #   35 head config, 36 fla requested but a training step fell back to "chunked" or no training call ran fla)
@@ -334,7 +335,7 @@ say "phase heldout (hits must equal the pinned exclusions)"
 timeout --kill-after=30s $(cap heldout)m python -X utf8 -m train.train_set heldout --config "$CELL" --train-dir "$TRAIN_DIR" \
   --out "$WORK/out/heldout.json" > "$WORK/logs/heldout.log" 2>&1; r=$?
 gate "heldout" $r; export_phase heldout
-case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment or eval attack template (train.attack_guard) outside the pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
+case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment or eval attack template (train.attack_guard) outside the pinned exclusions" ;; 4) fail 34 "Index eval document text (train.doc_overlap_guard) outside the pinned doc_clean spec" ;; *) fail 5 "heldout rc=$r" ;; esac
 
 # ------------------------------------------------------------------ parent arm (stock readout) BEFORE training (review fix 1)
 # Its live weighted rate guard measures this box's scoring speed before any training spend; then the child evals are
@@ -418,7 +419,7 @@ timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" 
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
-case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+case $r in 0) ;; 3) fail 33 "cell: eval attack template in the training rows (train.attack_guard)" ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|34|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
 
 # ------------------------------------------------------------------ stage screen: ONE proxy600 Index pass, then screen.json
 if [ "$STAGE" = screen ]; then
