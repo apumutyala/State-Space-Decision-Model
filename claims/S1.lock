@@ -1,5 +1,0 @@
-owner: agent-b
-start_utc: 2026-10-09T00:30Z
-job: job-m8pi5 (Clef 27B + Clef-flash on D1's exact 3,600 hijack/steer units, stack/clef/safety-matched @69df933)
-time_limit: 2026-10-09T03:30Z
-item: S1 (matched safety vs Clef; part of Done)
