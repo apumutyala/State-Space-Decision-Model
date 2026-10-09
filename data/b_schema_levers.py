@@ -194,6 +194,17 @@ def _canon_name(n: str) -> str:
     return re.sub(r"[^a-z0-9]", "", n.casefold())
 
 
+_GENERIC_WORDS = {"get", "info", "api"}
+
+
+def _name_key(n: str) -> frozenset:
+    """Functional identity of an API name (review N3): its word SET, case- and order-free, generic words dropped, so
+    doctor_search ~ Search_Doctor, get_claim_status ~ ClaimStatus, Get_Medication_List ~ get_medication_list."""
+    w = re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d+", n)
+    k = frozenset(x.casefold() for x in w) - _GENERIC_WORDS
+    return k or frozenset(x.casefold() for x in w)
+
+
 #: v3b (agent-a approved): NAME-ONLY catalogs (no descriptions / parameters) so K reaches 40-60 within 2,048 tokens
 NAMES_K = (40, 60)
 NAMES_INSTR = ("Select the single API tool to invoke for the dialogue prefix in state. The options are the available API "
@@ -258,18 +269,26 @@ def apibank_long(reuse, prov, log=print, names_only: bool = False) -> list[dict]
         gc = _canon_name(s["gold"])
         fixed = len(json.dumps(s["dialogue"], ensure_ascii=False)) + len(APIBANK_INSTR) + len(APIBANK_TASK) + 200
         g_t = toks[s["gold"]]
-        cand = [n for n in names if n not in given and _canon_name(n) != gc]
+        keys_given = {_name_key(g) for g in given}
+        cand = [n for n in names if n not in given and _canon_name(n) != gc and _name_key(n) not in keys_given]
         near = sorted(cand, key=lambda n: (-len(g_t & toks[n]) / (len(g_t | toks[n]) or 1), n))[:120]
         rng.shuffle(near)
         far = [n for n in cand if n not in set(near)]
         rng.shuffle(far)
         order = []
         ni = fi = 0
-        while len(order) < len(cand) and len(order) < 400:  # alternate near / random
+        seen_keys = set(keys_given)
+        while (ni < len(near) or fi < len(far)) and len(order) < 400:  # alternate near / random; no synonym repeats
             if (len(order) % 2 == 0 and ni < len(near)) or fi >= len(far):
-                order.append(near[ni]); ni += 1
+                n = near[ni]; ni += 1
             else:
-                order.append(far[fi]); fi += 1
+                n = far[fi]; fi += 1
+            kn = _name_key(n)
+            if kn in seen_keys:
+                stats["synonym_distractor_skipped"] += 1
+                continue
+            seen_keys.add(kn)
+            order.append(n)
         chars = fixed + sum(elen[n] for n in given)
         kfit = len(given)
         for n in order:
@@ -309,6 +328,23 @@ def apibank_long(reuse, prov, log=print, names_only: bool = False) -> list[dict]
 # ------------------------------------------------------------------------------------------------- MMLU K10
 MMLU_SHA = "ae6662576ef989fed82a9289da1b89e950499c320f6849b052ec344dfcb709eb"
 MMLU_LIC = "MIT (constituents: ARC, OBQA, RACE, MCTest; see SOURCES.md)"
+_NEG = re.compile(r"\b(not|except|false|wrong|untrue|incorrect|never|least)\b", re.I)
+
+
+def _stem(q: str) -> str:
+    """The question part of an aux item (RACE puts the passage first): its last sentence / line, at most 200 chars."""
+    q = q.strip()
+    parts = re.split(r"(?<=[.!?\n])\s+", q)
+    return (parts[-1] if parts else q)[-200:]
+
+
+def _passage_key(q: str) -> str:
+    """Same-passage identity: RACE siblings share the passage text that opens the question."""
+    return _norm(q[:200]) if len(q) > 400 else f"__solo__{_norm(q)}"
+
+
+def sib_opts(rows, sibs) -> set:
+    return {str(c) for j in sibs for c in (rows[j].get("choices") or [])}
 MMLU_INSTR = ("Answer the multiple-choice question.", "Choose the best answer.", "Which option is correct?",
               "Select the correct answer to the question.", "Pick the right choice.",
               "Read the question and choose the most accurate option.")
@@ -345,6 +381,9 @@ def mmlu_k10(rows_path: Path, reuse, prov, n_target: int, log=print) -> list[dic
         if "" in own or len(own) < len(ch):
             stats["dup_or_empty_option"] += 1
             continue
+        if _NEG.search(_stem(r["question"])):
+            stats["negated_stem_target"] += 1  # borrowed (false) statements could answer a NOT / EXCEPT question
+            continue
         rare = sorted((t for t in words[i] if t in post), key=lambda t: df[t])[:8]
         sc = collections.Counter()
         for t in rare:
@@ -354,8 +393,14 @@ def mmlu_k10(rows_path: Path, reuse, prov, n_target: int, log=print) -> list[dic
                     sc[j] += idf
         pool = []
         seen = set(own)
-        for j, _ in sc.most_common(40):
+        top = [j for j, _ in sc.most_common(60)]
+        sib_key = _passage_key(r["question"])
+        other = [j for j in top if _passage_key(rows[j]["question"]) != sib_key]
+        sibs = [j for j in top if _passage_key(rows[j]["question"]) == sib_key]
+        for j in other + sibs:  # review N2: different passages first, same-passage siblings only if needed
             rj = rows[j]
+            if _NEG.search(_stem(rj["question"])):
+                continue  # review N1: a negated question's non-gold options can be TRUE statements
             for a, c in enumerate(rj.get("choices") or []):
                 c = str(c)
                 n = _norm(c)
@@ -372,16 +417,21 @@ def mmlu_k10(rows_path: Path, reuse, prov, n_target: int, log=print) -> list[dic
             continue
         rng = random.Random(f"{SEED}|k10|{i}")
         opts = ch + pool[:need]
+        gold_text = ch[int(r["answer"])]
+        rng.shuffle(opts)  # review B2: all 10 shuffled before ids, so no id style keeps originals at choice_0..k-1
         crit = {f"choice_{k}": c for k, c in enumerate(opts)}
         q = {"type": "choice", "instructions": rng.choice(MMLU_INSTR), "criteria": crit}
         rec = _record("mmlu_aux", str(i), "k10", "mcq", MMLU_LIC, {"question": r["question"]}, q,
-                      f"choice_{int(r['answer'])}",
+                      f"choice_{opts.index(gold_text)}",
                       {"lever": "mmlu_k10", "k": 10, "k_source": len(ch), "n_borrowed": need,
-                       "distractor_rule": "non-gold options of rare-word-nearest aux questions; text != any own option"})
+                       "n_from_same_passage": sum(1 for c in pool[:need] if c in sib_opts(rows, sibs)),
+                       "distractor_rule": "non-gold options of rare-word-nearest aux questions, other passages first, "
+                                          "never from NOT/EXCEPT/false-stem questions; text != any own option; "
+                                          "all 10 shuffled"})
         out.append(_view(rec, rng))
     stats["records"] = len(out)
     prov["mmlu_k10"] = {"file": "mmlu_aux/train-00000-of-00001.parquet (cais/mmlu auxiliary_train)", "sha256": MMLU_SHA,
-                        "split": "auxiliary_train", "n_rows": len(rows), "K": "10 (format view; MMLU-Pro shape)",
+                        "split": "auxiliary_train", "n_rows": len(rows), "K": "10: format coverage, accepted by the coordinator 2026-10-09 (format views such as the 10-option MMLU-Pro shape, 40-60-option catalogs and 77-option BANKING are fine as format coverage, provided no eval item text or option set is reused); the train items carry 2-5 options, so K 10 is a presentation choice, not a target rate",
                         "n_target": n_target, "n_target_rule": "= mmlu_aux/mcq rows in v2e (keep the family volume)",
                         "built": dict(stats)}
     log("mmlu_k10", dict(stats))
@@ -404,18 +454,26 @@ def boolq_yesno(rows_path: Path, reuse, prov, log=print) -> list[dict]:
             stats["held_out_or_reuse_cap"] += 1
             continue
         rng = random.Random(f"{SEED}|yn|{i}")
-        crit = {"yes": "Yes.", "no": "No."}
-        if rng.random() < 0.5:
+        # review N4: canonical_options sorts ids, so yes/no ids always render (no, yes); half the rows use letter ids
+        # with a random yes/no order so the gold position is not the label
+        lab = "yes" if r["answer"] else "no"
+        letter = rng.random() < 0.5
+        if letter:
+            order = ["Yes.", "No."] if rng.random() < 0.5 else ["No.", "Yes."]
+            crit = {"A": order[0], "B": order[1]}
+            gold_id = "A" if order[0] == ("Yes." if lab == "yes" else "No.") else "B"
+        else:
             crit = {"no": "No.", "yes": "Yes."}
+            gold_id = lab
         q = {"type": "choice", "instructions": rng.choice(BOOLQ_INSTR), "criteria": crit}
         state = {"passage": r["passage"], "question": r["question"].rstrip("?") + "?"}
         if rng.random() < 0.5:
             state = {"question": state["question"], "passage": state["passage"]}
-        rec = _record("boolq", str(i), "yn", "yesno_passage", "CC-BY-SA-3.0", state, q, "yes" if r["answer"] else "no",
-                      {"lever": "boolq_yesno"})
+        rec = _record("boolq", str(i), "yn", "yesno_passage", "CC-BY-SA-3.0", state, q, gold_id,
+                      {"lever": "boolq_yesno", "label": lab, "ids": "letters" if letter else "yes_no"})
         out.append(_view(rec, rng, keep_ids=True))
     stats["records"] = len(out)
-    stats["yes"] = sum(1 for x in out if next(iter(x["labels"].values())) == "yes")
+    stats["yes"] = sum(1 for x in out if x["aug"]["lever"]["label"] == "yes")
     prov["boolq_yesno"] = {"file": "boolq/train-00000-of-00001.parquet (google/boolq)", "sha256": BOOLQ_SHA,
                            "split": "train", "n_rows": len(rows), "train_yes_rate": round(yes / len(rows), 4),
                            "rule": "every train item not held out by cohort v2/v3 once as a {yes, no} choice; label = the train answer (natural rate)",
@@ -546,6 +604,8 @@ def main(argv=None) -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--clinc-k151", type=int, default=0, help="0: not built (K151 never fits 2,048 under v3w)")
     ap.add_argument("--only", choices=("apibank_names",), default=None, help="build one lever only (v3b)")
+    ap.add_argument("--apibank-names", action="store_true", help="v3b: the API-Bank lever is name-only (K 40-60)")
+    ap.add_argument("--k77-gen-margin", type=float, default=1.10, help="K77 over-generation factor (fingerprint drops)")
     a = ap.parse_args(argv)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -564,7 +624,7 @@ def main(argv=None) -> int:
         (out / "target_provenance.json").write_text(json.dumps(prov, indent=1) + "\n", encoding="utf-8")
         print(json.dumps({"n": len(rows)}))
         return 0
-    rows += apibank_long(reuse, prov)
+    rows += apibank_long(reuse, prov, names_only=a.apibank_names)
     rows += mmlu_k10(srcd / "mmlu_aux.jsonl.gz", reuse, prov, n_target=ps["fam"]["mmlu_aux/mcq"])
     rows += boolq_yesno(srcd / "boolq.jsonl.gz", reuse, prov)
     if a.clinc_k151:
@@ -575,9 +635,9 @@ def main(argv=None) -> int:
     # K77 rows so the final draw's K77 share equals D16's: (have + x) / (N + x) = s  ->  x = (s N - have) / (1 - s)
     n_final = ps["n"] + len(rows)
     s = d16["k77_row_share"]
-    x = max(0, math.ceil((s * n_final - ps["banking_k77"]) / (1 - s) * 1.10))  # +10 %; trimmed after the token check
+    x = max(0, math.ceil((s * n_final - ps["banking_k77"]) / (1 - s) * a.k77_gen_margin))  # trimmed after the checks
     d16 = {**d16, "parent_k77_rows": ps["banking_k77"], "rows_before_k77": n_final,
-           "formula": "generate ceil(1.10 * (share * N - parent_k77) / (1 - share)); keep (share * N' - parent_k77) / (1 - share) after the token check (N' = final non-K77 rows)", "x_generated": x}
+           "formula": f"generate ceil({a.k77_gen_margin} * (share * N - parent_k77) / (1 - share)); keep (share * N' - parent_k77) / (1 - share) after the token check (N' = final non-K77 rows)", "x_generated": x}
     rows += banking_k77(reuse, prov, n_target=x, d16=d16)
     with gzip.open(out / "levers.jsonl.gz", "wt", encoding="utf-8") as fo:
         for r in rows:

@@ -22,6 +22,27 @@ sys.path.insert(0, str(REPO))
 T_MAX = 2048
 
 
+def item_probe(r: dict) -> tuple[dict, dict]:
+    """ITEM-tier texts of a lever row for the Index fingerprint (review B1: the parent builds ran it, the lever path
+    did not): the same item fields as data/convert.py / data/b1_families (API-Bank: the dialogue turns; BANKING77: the
+    customer message; MMLU aux: the question and every option; BoolQ: passage and question)."""
+    lv = r["aug"]["lever"]["lever"]
+    st = r["state"]
+    if lv.startswith("apibank"):
+        return {"dialogue": [t.get("text") or {"api_name": t["api_name"], "param_dict": t["param_dict"]}
+                             for t in st["dialogue"]]}, {}
+    if lv == "banking_k77":
+        return {"customer_message": st["customer_message"]}, {}
+    if lv == "clinc_k151":
+        return {"user_request": st["user_request"]}, {}
+    if lv == "mmlu_k10":
+        (q,) = r["questions"].values()
+        return {"question": st["question"]}, {"q": {"type": "choice", "criteria": dict(q["criteria"])}}
+    if lv == "boolq_yesno":
+        return {"passage": st["passage"], "question": st["question"]}, {}
+    raise SystemExit(f"no item probe for lever {lv}")
+
+
 def main(argv=None) -> int:
     from data.b_schema import canonical, gz_text, sha
     from train.cohort import record_content_hash
@@ -33,8 +54,16 @@ def main(argv=None) -> int:
     ap.add_argument("--refuse-ids", default=None, help="ids refused by scripts/b_schema_eval_catalog_overlap.py")
     ap.add_argument("--k77-margin", type=int, default=0,
                     help="extra K77 rows kept for rows the P3 checker / doc gate drop later (final share >= D16's)")
+    ap.add_argument("--no-fingerprint", action="store_true", help="never for a draw (debug only)")
     a = ap.parse_args(argv)
     w = Path(a.work)
+    fp = None
+    if not a.no_fingerprint:
+        from data import config
+        from data.dedup import Fingerprint
+        fp = Fingerprint.load(config.FINGERPRINT)
+        fp.assert_production()
+    fp_hits = collections.defaultdict(collections.Counter)
     lens = {}
     for f in sorted(glob.glob(str(w / "lens-*.jsonl"))):
         for line in open(f, encoding="utf-8"):
@@ -56,6 +85,14 @@ def main(argv=None) -> int:
             if r["id"] in refused:
                 stats[lv]["eval_catalog_overlap_refused"] += 1
                 continue
+            if fp is not None:
+                hit = fp.check(*item_probe(r))
+                if any(hit.values()):
+                    stats[lv]["index_fingerprint"] += 1
+                    for m, v in hit.items():
+                        if v:
+                            fp_hits[lv][m] += 1
+                    continue
             if max(d["t_v2f"], d["t_v3w"]) > T_MAX or d.get("cont", 0) > 16:
                 stats[lv]["over_2048"] += 1
                 continue
@@ -79,6 +116,11 @@ def main(argv=None) -> int:
                   "final_k77_share": round((have + need) / (n_final_wo + need), 5)})
     for lv, st in stats.items():
         prov.setdefault(lv, {})["token_check"] = dict(st)
+        prov[lv]["index_fingerprint_item_tier"] = {
+            "rule": "data.dedup.Fingerprint (production index-fp-v3, all Index rows) on the row's ITEM-tier texts; any "
+                    "matcher (exact / ngram13 / minhash / edit / contain) drops the row, as the parent builds",
+            "fingerprint": {k: fp.meta.get(k) for k in ("version", "npz_sha256", "arrays_sha256", "rows")} if fp else None,
+            "dropped": st.get("index_fingerprint", 0), "by_matcher": dict(fp_hits[lv])}
         prov[lv]["K_distribution"] = dict(sorted(kdist[lv].items()))
     rows.sort(key=lambda x: x[0]["id"])
     out = Path(a.out)
