@@ -312,12 +312,22 @@ if [ "$EVAL_ONLY" != none ]; then  # -------------- eval-only: a SAVED checkpoin
     DRIVER=jobs.m2_first_cell.fulldev_eval PH_CHILD=fulldev PH_PARENT=parent_full EV_DIR=fulldev
     EV_ROWS=$DATA/slices/dev-rows.jsonl.gz EV_ARGS=(--max-input-tokens "$MAXIN" --rows-select "$ROWS_SEL") CHILD_EXTRA=()
     EV_WHAT="DEV rows: $ROWS_SEL, max_input_tokens $MAXIN"
+    read -r FD_READOUT FD_REFIT <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(p.get('readout') or '-', 1 if p.get('refit_temperature') else 0)" "$PARAMS")" \
+      || fail 5 "job_params readout / refit_temperature"
+    # a NON-training readout (+ its own refit temperature: jobs.m2_first_cell.readout_temperature); default = the cell's
+    [ "$FD_READOUT" != - ] && CHILD_EXTRA+=(--readout "$FD_READOUT") && EV_WHAT="$EV_WHAT, readout $FD_READOUT"
+    [ "$FD_REFIT" = 1 ] && CHILD_EXTRA+=(--refit-temperature)
   else
     read -r RO FD_PARENT ALLOW_UNMATCHED <<< "$(python -c "import json,sys; p=json.load(open(sys.argv[1])); print(','.join(p['readouts']), 1 if p.get('readout_ab_parent_arm') else 0, 1 if p.get('allow_unmatched_control') else 0)" "$PARAMS")" \
       || fail 5 "job_params readouts / readout_ab_parent_arm"
     DRIVER=jobs.m2_first_cell.readout_ab PH_CHILD=readout_ab PH_PARENT=parent_ab EV_DIR=readout_ab
     EV_ROWS=$WORK/index-rows.jsonl.gz EV_ARGS=(--readouts "$RO") CHILD_EXTRA=()
     [ "$ALLOW_UNMATCHED" = 1 ] && CHILD_EXTRA=(--allow-unmatched-control)
+    REFIT=$(python -c "import json,sys; print(1 if json.load(open(sys.argv[1])).get('refit_temperature') else 0)" "$PARAMS") \
+      || fail 5 "job_params refit_temperature"
+    # per-readout temperature refit (same cohort calibration rows + procedure, scores under each NON-training readout;
+    # its calibration content proven disjoint from the subset AND the full DEV rows); the control is never refitted
+    [ "$REFIT" = 1 ] && CHILD_EXTRA+=(--refit-temperature --dev-rows "$DATA/slices/dev-rows.jsonl.gz")
     EV_WHAT="2,008-row DEV subset, readouts $RO, one model load"
     REF=$DATA/reference/d3_child_index.results.jsonl
     PIN=$(python -c "import json,sys; print((json.load(open(sys.argv[1])).get('reference_results_sha256') or {}).get('d3_child_index') or '')" "$PARAMS")

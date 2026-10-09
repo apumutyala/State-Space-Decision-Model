@@ -301,6 +301,21 @@ scoring min, ~151 run min = **$7.49** billed (+ build = $8.23); adding v2f -> $1
 `python -m jobs.common.launch m2_first_cell --mode readout_ab_d1 --sha <sha> --out <dir> --data <ssdm-data>`, then
 `CKPT_URL` into the packaged submit.json env (as fulldev_eval).
 
+**Per-readout temperature refit** (`refit_temperature: true` in `readout_ab_d1`; `jobs/m2_first_cell/readout_temperature.py`).
+job-39gnn served v3w with the ONE temperature fitted on v1 (ECE10 0.024 -> 0.061). Each NON-training readout now also
+gets its own refit: `train.m2_gates.fit_child_temperature` (FeatureTemperature.fit: NLL, L-BFGS 200, l2 1e-4, t_min
+0.05) on the in-job fit's cohort v2 `calibration` items (886 for D1; 872 survive v3w's own K / `eval_max_t` filter, no
+new rows), re-rendered and scored under the readout; its calibration content is proven disjoint (content hashes,
+before any forward) from cohort dev, retention v3, the training items, the 2,008-row subset AND the full 12,104 DEV
+(`--dev-rows`). The refit is persisted in the resume dir (`refit-child-<r>.json`; a restart serves the same one) and
+applied to the SAME forward's logits (`refit_response`, no second DEV pass): `child.<r>.results_refit.jsonl`. The
+report adds `ece_refit` and `index_by_temperature` (untempered / raw-template / refit) per readout; the argmax is
+asserted per question at scoring time. The control (training readout) is never refitted and its files are unchanged.
+Cost: one predict() pass over the calibration items per non-training readout, +11.6 min for v3w (599,600 tokens x
+1.037 s / 1k + 1.2 CPU) -> readout_ab 142.9 min, expected 162.9 run min = $8.06 (+ build $8.81); cap 230, worst case
+(60 + 2 x 292) x 0.0495 = $31.88. `fulldev_eval` has the same switch (params `readout` + `refit_temperature`, CLI
+`--readout <name> --refit-temperature`); the screen scores untempered (no temperature at all), so nothing to refit.
+
 **Running it on D3.** Download the D3 artifact (`get_artifact`), then
 `python -I -X utf8 scripts/fill_ckpt_pins.py <tar | dir | job-93fpy> --params jobs/m2_first_cell/job_params_readout_ab_d3.json --artifact <art> --write`
 (fills every pin, copies the run's cell.json to `$SSDM_DATA/m2/checkpoints/job-93fpy/cell.json`, refuses a config
