@@ -44,6 +44,9 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
 #: registration and JOB_SPEC worst-case checks still apply).
 PARAMS.update({f"m2_first_cell_{f.stem[len('job_params_'):]}": f"jobs/m2_first_cell/{f.name}"
                for f in sorted((ROOT / "jobs/m2_first_cell").glob("job_params_*.json"))})
+#: backbone scout (attention-free candidates, stock proxy600 screens): one job_params_<mode>.json per candidate
+PARAMS.update({f"backbone_screen_{f.stem[len('job_params_'):]}": f"jobs/backbone_screen/{f.name}"
+               for f in sorted((ROOT / "jobs/backbone_screen").glob("job_params_*.json"))})
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here. Clef baseline (JOB_SPEC):
 #: A ran as job-sgihj ($1.40, in SPENT_USD); C (27B, job A shape) is superseded for the Index by clef_index_subset +
 #: clef_index_full (PARAMS); B (Clef-flash GCG, $29.70 one-attempt ceiling) is still planned.

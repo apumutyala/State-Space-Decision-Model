@@ -14,6 +14,11 @@ families
   ``rwkv7-hf-g1-v3p`` / ``-v3r`` / ``-v3c`` / ``-v3w`` G1V3Backend modes permute / reread / calibrate / words (one
                   change each on v3); ``rwkv7-hf-g1-v2f`` mode v2f (v2 + the dict-instruction fix only)
   ``qwen3.5``     ``decide.backends.hf_readout.load_qwen35`` (stock transformers path)
+  ``qrwkv6-chatml`` / ``qrwkv6-chatml-nothink`` ``decide.backends.rwkv6qwen2.load_rwkv6qwen2`` (attention-free RWKV6-Qwen2
+                  conversions, vendored pinned code; option ``repo`` names the pinned repo), stock LM-logit readout
+                  (HFReadoutBackend, prefix fork, ``fork_max_rows`` default 16) under jrt-chatml-v1 (QwQ no-think tail)
+                  or jrt-chatml-nothink-v1 (Qwen2.5-Instruct tail). Option ``selfcheck_out``: before the first row,
+                  score the canary request by fork AND by recompute and refuse (raise) unless they agree.
 
 Mapping as ``baselines.clef_index_engine``: ``exhausted``/``unsupported`` -> kit ``Unsupported`` (scored zero by the Index
 rules), any other non-ok status raises.
@@ -38,7 +43,11 @@ TEMPLATES = {"q9af-probe": "jrt-chatml-v1", "qwen3.5": "jrt-chatml-v1", "rwkv7-h
              CODE_LABEL_FAMILY: "jrt-rwkv-g1-code-label-v1", CODE_LABEL_V2_FAMILY: "jrt-rwkv-g1-code-label-v2",
              G1V2_FAMILY: "jrt-rwkv-g1-v2", G1V3_FAMILY: "jrt-rwkv-g1-v3", "rwkv7-hf-g1-v3p": "jrt-rwkv-g1-v3p",
              "rwkv7-hf-g1-v3r": "jrt-rwkv-g1-v3r", G1V3C_FAMILY: "jrt-rwkv-g1-v3c",
-             "rwkv7-hf-g1-v2f": "jrt-rwkv-g1-v2f", "rwkv7-hf-g1-v3w": "jrt-rwkv-g1-v3w"}
+             "rwkv7-hf-g1-v2f": "jrt-rwkv-g1-v2f", "rwkv7-hf-g1-v3w": "jrt-rwkv-g1-v3w",
+             "qrwkv6-chatml": "jrt-chatml-v1", "qrwkv6-chatml-nothink": "jrt-chatml-nothink-v1"}
+QRWKV6_FAMILIES = ("qrwkv6-chatml", "qrwkv6-chatml-nothink")
+#: fork vs recompute on the canary request (bf16 on GPU): max |delta sum-logprob| allowed, and same argmax per question
+SELFCHECK_TOL = 0.25
 
 
 def _sha256_file(path):
@@ -82,7 +91,40 @@ def build_plugin(family: str, options: dict[str, Any]):
         return _RWKV7_PLUGINS[key]
     if family == "qwen3.5":
         return H.load_qwen35(options["model_dir"], device=dev, dtype=dt)
+    if family in QRWKV6_FAMILIES:
+        from decide.backends.rwkv6qwen2 import load_rwkv6qwen2
+
+        cap = options.get("input_cap")
+        return load_rwkv6qwen2(options["model_dir"], options["repo"], device=dev, dtype=dt,
+                               input_cap=int(cap) if cap else None)
     raise ValueError(f"unknown family {family!r}; known: {sorted(TEMPLATES)}")
+
+
+def template_of(family: str):
+    """Template id -> the object HFReadoutBackend takes (jrt-chatml-nothink-v1 lives outside decide.prompt.TEMPLATES)."""
+    if TEMPLATES[family] == "jrt-chatml-nothink-v1":
+        from decide.backends.rwkv6qwen2 import CHATML_NOTHINK
+
+        return CHATML_NOTHINK
+    return TEMPLATES[family]
+
+
+def fork_selfcheck(plug, template, fork_max_rows: int, tol: float = SELFCHECK_TOL) -> dict[str, Any]:
+    """Score decide.prompt.CANARY_REQUEST by the prefix fork and by full recompute on the loaded model; the fork's
+    state ops are only trusted if both agree (max |delta| <= tol nats per option, same argmax per question)."""
+    from decide.backends.hf_readout import HFReadoutBackend
+    from decide.prompt import CANARY_REQUEST
+
+    out = {}
+    for name, fork in (("fork", True), ("recompute", False)):
+        b = HFReadoutBackend(plug, template, max_batch_rows=4, fork=fork, fork_max_rows=fork_max_rows)
+        out[name] = b.score(CANARY_REQUEST, lambda: None).logits
+    deltas = [abs(out["fork"][q][o] - out["recompute"][q][o]) for q in out["fork"] for o in out["fork"][q]]
+    same = all(max(out["fork"][q], key=out["fork"][q].get) == max(out["recompute"][q], key=out["recompute"][q].get)
+               for q in out["fork"])
+    rep = {"max_abs_delta": max(deltas), "options": len(deltas), "same_argmax": same, "tol": tol,
+           "ok": bool(max(deltas) <= tol and same), "logits": out}
+    return rep
 
 
 def map_response(resp: dict[str, Any], unsupported_exc=ValueError):
@@ -132,6 +174,19 @@ class ReadoutIndexEngine(Engine):
             from decide.backends.rwkv_g1_code_label import G1CodeLabelBackend
 
             self.backend = G1CodeLabelBackend(plug, tokenizer_decode=decode)
+        elif self.family in QRWKV6_FAMILIES:
+            from decide.backends.rwkv6qwen2 import FORK_MAX_ROWS
+
+            fmr = int(options.get("fork_max_rows", FORK_MAX_ROWS))
+            if options.get("selfcheck_out"):
+                import json
+
+                rep = fork_selfcheck(plug, template_of(self.family), fmr)
+                Path(options["selfcheck_out"]).write_text(json.dumps(rep, indent=1), encoding="utf-8")
+                if not rep["ok"]:
+                    raise RuntimeError(f"fork != recompute on the canary: {json.dumps({k: rep[k] for k in ('max_abs_delta', 'same_argmax')})}")
+            self.backend = HFReadoutBackend(plug, template_of(self.family), max_batch_rows=int(options.get("max_batch_rows", 4)),
+                                            fork_max_rows=fmr)
         else:
             self.backend = HFReadoutBackend(plug, TEMPLATES[self.family], max_batch_rows=int(options.get("max_batch_rows", 4)))
         self.decider = Decider(self.backend, enable_v0_1_deltas=True, backend_max_input_tokens=plug.max_context)

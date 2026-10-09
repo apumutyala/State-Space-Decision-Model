@@ -1,0 +1,113 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "safetensors",
+   "accelerate"
+  ],
+  "allowed_skips": [],
+  "image": "jobs/probe9b/Dockerfile"
+ },
+ "_comment": "jobs/backbone_screen MODE=qrwkv_qwq32b: STOCK zero-shot screen of featherless-ai/QRWKV-QwQ-32B (attention-free RWKV-6 RADLADS conversion of QwQ-32B; every layer RWKV6Attention, vendored pinned code third_party/rwkv6qwen2_hf, no trust_remote_code) on the 644 proxy600 rows, LM-logit readout (HFReadoutBackend sum-logprob, prefix fork, jrt-chatml-v1 (QwQ / Qwen3 no-think tail)), paired vs stock RWKV7-G1k v3w on the same rows (27.32). Image = jobs/probe9b/Dockerfile (torch 2.13 / triton 3.7.1 / transformers 5.17.0 / fla 0.5.2 + kit). Fork volume (exact, this tokenizer): ~2.4M positions, ~2,120 calls; 5 rows over the 16,384 input cap are refused (scored 0). Worst case (60 + 2 x 130) x 0.0495 = $15.84; expected ~65 min incl. build ~ $3.2 billed ($4.1 at the $0.063 quote).",
+ "job": "backbone-screen-qrwkv_qwq32b",
+ "mode": "qrwkv_qwq32b",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only: proxy600 Index + paired diff vs stock RWKV7 v3w are recorded for the backbone choice; no pass/fail gate",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 130,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": false,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 16.0,
+ "reserve_minutes": 10,
+ "phase_caps_minutes": {
+  "setup": 35,
+  "index": 75,
+  "score": 10
+ },
+ "expected_minutes": {
+  "build": 15,
+  "setup": 15,
+  "index": 30,
+  "score": 4
+ },
+ "model": "featherless-ai/QRWKV-QwQ-32B@6801e98e72a3e03b4611cdd816a0532411f6e1e0",
+ "model_bytes": 69894593728,
+ "dev_subset": "jobs/common/dev_proxy600.json",
+ "mission": "backbone-scout",
+ "screen": {
+  "repo": "featherless-ai/QRWKV-QwQ-32B",
+  "revision": "6801e98e72a3e03b4611cdd816a0532411f6e1e0",
+  "family": "qrwkv6-chatml",
+  "snapshot_pin": "jobs/backbone_screen/snapshot_qrwkv_qwq32b.sha256",
+  "input_cap": 16384,
+  "parent_results": "screen_parent/art-ivu28/v3w.results.jsonl",
+  "parent_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1"
+ },
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/backbone_screen/screen_job.sh",
+  "env": {
+   "MODE": "qrwkv_qwq32b",
+   "PYTHONUNBUFFERED": "1",
+   "PYTHONUTF8": "1",
+   "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+  },
+  "key": "backbone-screen-qrwkv_qwq32b",
+  "label": "backbone scout: stock QRWKV-QwQ-32B on proxy600 (LM-logit readout), vs stock RWKV7 v3w",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/BACKBONE_SCREEN_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 2400,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/probe9b/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/probe9b/probe_job.sh",
+   "jobs/backbone_screen/screen_job.sh"
+  ],
+  "manifest_files": [
+   "jobs/backbone_screen/snapshot_qrwkv_qwq32b.sha256",
+   "jobs/common/dev_proxy600.json",
+   "jobs/clef_baseline/data.sha256"
+  ],
+  "data": [
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/screen_parent/art-ivu28/v3w.results.jsonl",
+    "dest": "screen_parent/art-ivu28/v3w.results.jsonl",
+    "pin_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1"
+   }
+  ]
+ }
+}
