@@ -11,7 +11,7 @@ from torch import nn
 from .backbone import HiddenStateBackbone
 from .features import HeadInput, build_head_input
 from .heads import DecisionHead, HeadOutput, make_head
-from .layout import EncodeFn, LayoutRow, build_row
+from .layout import G1V2_LAYOUT, EncodeFn, LayoutRow, build_row
 from .typed import TypedOutput, to_wire
 
 
@@ -53,14 +53,14 @@ def _input_embedding(backbone) -> nn.Module:
 
 @torch.no_grad()
 def lexical_vectors(backbone, rows: Sequence[LayoutRow], kmax: int) -> torch.Tensor:
-    """[B, K, D] frozen input-embedding mean over each option's text (ordered layout: the option's schema span; else
+    """[B, K, D] frozen input-embedding mean over each option's text (ordered/g1v2 layouts: the option's schema span; else
     the option-id tokens of its continuation). Zero on padded options. No gradient (the table is frozen)."""
     emb = _input_embedding(backbone)
     dev = emb.weight.device
     out = torch.zeros((len(rows), kmax, emb.weight.shape[1]), dtype=torch.float32, device=dev)
     for i, r in enumerate(rows):
         for k in range(r.n_options):
-            if r.layout == "ordered" and r.option_spans:
+            if r.layout in ("ordered", G1V2_LAYOUT) and r.option_spans:
                 a, b = r.option_spans[k]
                 toks = r.ids[a:b]
             else:
