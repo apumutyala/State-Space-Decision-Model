@@ -61,6 +61,27 @@ class CMultirecordSynthTests(unittest.TestCase):
         shapes = {make_record(20261008, i)["aug"]["schema_shape"] for i in range(12)}
         self.assertEqual(shapes, {"column_table_v1", "register_map_v1", "sample_frame_v1"})
 
+    def test_v2_case_labels_are_not_revealed_by_wording_or_option_parity(self):
+        from harness.heldout import check_record
+        labels_by_wording, labels_by_parity = {}, {0: set(), 1: set()}
+        score_targets = set()
+        for index in range(304):
+            row = make_record(20261008, index, revision=2)
+            verify_record(row)
+            check_record(row)
+            self.assertIn("very low < -500", row["state"]["rule"])
+            roles = row["aug"]["question_roles"]
+            case = next(q for q, m in roles.items() if m["kind"] == "case_exact")
+            choice = next(q for q, m in roles.items() if m["kind"] == "top_profile")
+            score = next(q for q, m in roles.items() if m["kind"] == "joint_score")
+            wording = row["questions"][case]["instructions"].split(": ", 1)[0]
+            labels_by_wording.setdefault(wording, set()).add(row["labels"][case])
+            labels_by_parity[len(row["questions"][choice]["criteria"]) % 2].add(row["labels"][case])
+            score_targets.add(roles[score]["node_id"] == roles[choice]["node_id"])
+        self.assertTrue(all(v == {"true", "false"} for v in labels_by_wording.values()))
+        self.assertTrue(all(v == {"true", "false"} for v in labels_by_parity.values()))
+        self.assertEqual(score_targets, {True, False})
+
 
 if __name__ == "__main__":
     unittest.main()

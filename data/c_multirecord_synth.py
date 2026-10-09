@@ -205,13 +205,17 @@ def _proposal(node: dict, *, seed: int, record_index: int, node_index: int,
     return proposal
 
 
-def make_record(seed: int, index: int) -> dict:
+def make_record(seed: int, index: int, *, revision: int = 1) -> dict:
+    if revision not in (1, 2):
+        raise ValueError("revision must be 1 or 2")
     if type(seed) is not int or seed < 0 or type(index) is not int or index < 0:
         raise ValueError("seed/index must be non-negative integers")
     nodes, field_order, built = _world(seed, index)
     truth = built["truth"]
     question_specs = []
     case_exact = index % 2 == 0
+    if revision == 2:
+        case_exact = bool(_seed(seed, index, "v2-case-label") % 2)
     corrupt_node = None if case_exact else ((index // 2) % 4)
     proposals = [_proposal(node, seed=seed, record_index=index, node_index=n,
                            case_exact=(n != corrupt_node)) for n, node in enumerate(nodes)]
@@ -279,16 +283,17 @@ def make_record(seed: int, index: int) -> dict:
                            {"kind": "top_profile", "node_id": top["node_id"],
                             "k": profile_count, "id_style": profile_style,
                             "gold_position": profile_position}))
-    score = _priority(top)
+    score_node = top if revision == 1 else nodes[_seed(seed, index, "v2-score-node") % len(nodes)]
+    score = _priority(score_node)
     score_label = str(sum(score >= cut for cut in SCORE_CUTS))
     score_wording = random.Random(_seed(seed, index, "score-wording")).choice((
-        f"What is the ordinal priority band for {top['node_id']} after combining signal, battery, and drift?",
-        f"Score {top['node_id']}'s joint telemetry readiness from the ordered levels.",
-        f"Using all three readings, which ordered priority level fits {top['node_id']}?",
+        f"What is the ordinal priority band for {score_node['node_id']} after combining signal, battery, and drift?",
+        f"Score {score_node['node_id']}'s joint telemetry readiness from the ordered levels.",
+        f"Using all three readings, which ordered priority level fits {score_node['node_id']}?",
     ))
     question_specs.append(("joint_score", {"type": "score", "instructions": score_wording,
                              "criteria": SCORE_LEVELS}, score_label,
-                           {"kind": "joint_score", "node_id": top["node_id"]}))
+                           {"kind": "joint_score", "node_id": score_node["node_id"]}))
     case_wording = "Are all four proposed rows exact in every field?"
 
     # Deterministically permute which semantic task receives each sorted question id.
@@ -326,6 +331,35 @@ def make_record(seed: int, index: int) -> dict:
                 "question_roles": roles},
         "_probe": [],
     }
+    if revision == 2:
+        # Preserve v1 byte reproduction while removing prompt-only answer cues.
+        record["id"] = record["id"].replace("_v1:", "_v2:")
+        record["source_id"] = record["source_id"].replace("-v1:", "-v2:")
+        record["source"] = "synthetic_c_multirecord_v2"
+        record["aug"]["generator"] = "c_multirecord_synth_v2"
+        record["state"]["rule"] += (
+            "; equal ranks: node id ascending; score bands by rank: "
+            "very low < -500; low [-500,-375); moderate [-375,-250); "
+            "high [-250,-125); very high >= -125"
+        )
+        for qid, meta in roles.items():
+            question = questions[qid]
+            if meta["kind"] == "case_exact":
+                # Each paired positive/negative index uses the same wording.
+                wording = random.Random(_seed(seed, index // 2, "v2-case-wording")).choice((
+                    "Are all four proposed rows exact? packet node and field order: ",
+                    "Do these rows match every packet field? use packet order: ",
+                    "Case-exact? packet node order and field order: ",
+                ))
+                question["instructions"] = wording + " ; ".join(meta["candidate_tuples"])
+            elif meta["kind"] == "top_profile":
+                # Low-valued distractors made the gold profile an outlier in v1.
+                rng = random.Random(_seed(seed, index, "v2-profile-distractors"))
+                others = rng.sample([p for p in range(PROFILE_COUNT) if p != top["profile"]],
+                                    meta["k"] - 1)
+                for oid, code in zip((oid for oid in question["criteria"] if oid != labels[qid]),
+                                     others, strict=True):
+                    question["criteria"][oid] = code
     verify_record(record, built["truth"])
     return record
 
@@ -465,13 +499,18 @@ def _sha_file(path: Path) -> str:
 
 def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
           count: int = DEFAULT_COUNT, pointer_out: Path | None = None,
-          data_root: Path | None = None) -> dict:
+          data_root: Path | None = None, revision: int = 1) -> dict:
     from data.augment import validate
     from harness.heldout import check_generator, check_record
 
     if type(count) is not int or count < 1 or type(seed) is not int or seed < 0:
         raise ValueError("seed/count must be nonnegative/positive integers")
-    check_generator(GENERATOR_SPEC)
+    if revision not in (1, 2):
+        raise ValueError("revision must be 1 or 2")
+    build_name = BUILD.replace("-v1", f"-v{revision}")
+    generator_spec = {**GENERATOR_SPEC, "name": GENERATOR_NAME.replace("_v1", f"_v{revision}"),
+                      "version": revision}
+    check_generator(generator_spec)
     print("C multirecord: held-out generator spec passed", file=sys.stderr, flush=True)
     out = Path(out)
     if out.exists():
@@ -485,8 +524,8 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
     train_dir.mkdir()
     family_dir.mkdir()
     records_path = train_dir / "records.jsonl.gz"
-    manifest_path = train_dir / f"{BUILD}.manifest.jsonl.gz"
-    content_path = train_dir / f"{BUILD}.content.jsonl.gz"
+    manifest_path = train_dir / f"{build_name}.manifest.jsonl.gz"
+    content_path = train_dir / f"{build_name}.content.jsonl.gz"
     census_path = out / "token_census.jsonl.gz"
 
     # Verify tokenizer files before loading the tokenizer implementation.
@@ -532,7 +571,7 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
 
     try:
         for index in range(count):
-            record = make_record(seed, index)
+            record = make_record(seed, index, revision=revision)
             check_record(record)
             validate(record)
             request = {"model": "m2", "state": record["state"], "questions": record["questions"]}
@@ -643,7 +682,7 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
     except ValueError as exc:
         raise GenerationError("build output must be under the declared data root") from exc
     pointer = {
-        "build": f"{BUILD} (python -X utf8 -m data.c_multirecord_synth build)",
+        "build": f"{build_name} (python -X utf8 -m data.c_multirecord_synth build --revision {revision})",
         "location": location,
         "records_uncompressed_sha256": records_hash.hexdigest(),
         "manifest": manifest_path.name,
@@ -669,11 +708,11 @@ def build(out: Path, *, tokenizer_dir: Path, seed: int = DEFAULT_SEED,
                   "third_party/rwkv7_hf/tokenization_rwkv7.py", "train/cohort.py")
     code_pins = {name: _sha_file(repo / name) for name in code_files}
     summary = {
-        "schema": "ssdm.c_multirecord_synth_receipt.v1", "generator": GENERATOR_SPEC,
+        "schema": "ssdm.c_multirecord_synth_receipt.v1", "generator": generator_spec,
         "seed": seed, "records": records_checked, "questions": questions_checked,
         "case_exact_records": records_checked, "multi_select_records": records_checked,
         "label_method_verified_records": label_method_verified,
-        "source": SOURCE, "source_split": "synthetic", "license": LICENSE,
+        "source": SOURCE.replace("_v1", f"_v{revision}"), "source_split": "synthetic", "license": LICENSE,
         "worlds": records_checked, "nodes_per_world": 4,
         "task_types_per_record": dict(sorted(question_types.items())),
         "option_counts_by_k": {str(k): option_counts[k] for k in sorted(option_counts)},
@@ -725,10 +764,11 @@ def main(argv=None) -> int:
     build_parser.add_argument("--data-root", type=Path)
     build_parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     build_parser.add_argument("--count", type=int, default=DEFAULT_COUNT)
+    build_parser.add_argument("--revision", type=int, choices=(1, 2), default=1)
     args = parser.parse_args(argv)
     summary = build(args.out, tokenizer_dir=args.tokenizer_dir, seed=args.seed, count=args.count,
-                    pointer_out=args.pointer_out, data_root=args.data_root)
-    print(json.dumps({"build": BUILD, "records": summary["records"], "questions": summary["questions"],
+                    pointer_out=args.pointer_out, data_root=args.data_root, revision=args.revision)
+    print(json.dumps({"build": summary["pointer"]["build"], "records": summary["records"], "questions": summary["questions"],
                       "max_tokens": summary["token_limits"]["record_max_effective_prompt_tokens"]["max"],
                       "records_sha256": summary["uncompressed_sha256"]["records"],
                       "pointer_sha256": summary["pointer_sha256"]}, sort_keys=True))
