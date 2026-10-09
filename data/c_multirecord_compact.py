@@ -1,4 +1,4 @@
-"""Keep every synthetic C K73..77 world via proven, compact identifier bijections."""
+"""Stream synthetic C worlds via proven, compact identifier bijections."""
 from __future__ import annotations
 
 import argparse
@@ -29,7 +29,7 @@ POOLS_SHA256 = "a8cd7ecb63d876a541037fa6ed530fe985da1bd4d848b8f5ae8ab0ea432380aa
 TRAINER_COMMIT = "9c3e4350ccb41bec1385d58b9fe7002184f69626"
 SOURCE_RECORDS, WORLDS_PER_K = 100000, 1315
 HIGH_K = range(73, 78)
-PAYLOAD_LIMIT = 80 * 1024 * 1024
+ALL_K = range(2, 78)
 SAFE_SYMBOLS = set(string.punctuation) - set("<>`\"'\\")
 VIEW_SUFFIX = "~view:compact-single-token-v1"
 
@@ -61,8 +61,8 @@ def compact_record(old, manifest):
     """Return only an alpha view; inverse maps exist locally, never in record metadata."""
     verify_record(old)
     k, style, position = stratum(old)
-    if k not in HIGH_K or old["source"] != V2 or old["source_split"] != "synthetic":
-        raise ValueError("only original high-K synthetic C v2 records accepted")
+    if k not in ALL_K or old["source"] != V2 or old["source_split"] != "synthetic":
+        raise ValueError("only original K2..77 synthetic C v2 records accepted")
     if old["aug"]["generator"] != "c_multirecord_synth_v2" or "compact_view" in old["aug"]:
         raise ValueError("source is not an original C v2 world")
     row = deepcopy(old)
@@ -74,9 +74,9 @@ def compact_record(old, manifest):
     omap = dict(zip(old_ids, new_ids, strict=True))
     row["questions"][choice]["criteria"] = {omap[oid]: deepcopy(old["questions"][choice]["criteria"][oid]) for oid in old_ids}
     row["labels"][choice] = omap[old["labels"][choice]]
-    row["questions"] = {qmap[q]: row["questions"][q] for q in old_qids}
-    row["labels"] = {qmap[q]: row["labels"][q] for q in old_qids}
-    row["aug"]["question_roles"] = {qmap[q]: deepcopy(old["aug"]["question_roles"][q]) for q in old_qids}
+    row["questions"] = {qmap[q]: row["questions"][q] for q in old["questions"]}
+    row["labels"] = {qmap[q]: row["labels"][q] for q in old["labels"]}
+    row["aug"]["question_roles"] = {qmap[q]: deepcopy(meta) for q, meta in old["aug"]["question_roles"].items()}
     for name in ("case_exact", "multi_select"):
         row["aug"][name]["question_ids"] = [qmap[q] for q in old["aug"][name]["question_ids"]]
     row["id"] = old["id"] + VIEW_SUFFIX
@@ -95,6 +95,9 @@ def compact_record(old, manifest):
     for name in ("case_exact", "multi_select"):
         aug[name]["question_ids"] = [back[q] for q in aug[name]["question_ids"]]
     if (restored != old["questions"] or labels != old["labels"] or aug != old["aug"]
+            or [back[q] for q in row["questions"]] != list(old["questions"])
+            or [back[q] for q in row["labels"]] != list(old["labels"])
+            or [back[q] for q in row["aug"]["question_roles"]] != list(old["aug"]["question_roles"])
             or row["state"] != old["state"] or row["source_id"] != old["source_id"]
             or sorted(row["questions"][qmap[choice]]["criteria"]).index(row["labels"][qmap[choice]]) != position):
         raise ValueError("compact alpha inverse changed world/question/label/position semantics")
@@ -197,7 +200,8 @@ class TrainerRuntime:
 
 def export_compact(source, source_pointer, source_pointer_sha256, source_summary,
                    source_summary_sha256, trainer_root, tokenizer_dir, out, *, data_root=None,
-                   pointer_out=None, pools=POOLS_PATH, pools_sha256=POOLS_SHA256):
+                   pointer_out=None, pools=POOLS_PATH, pools_sha256=POOLS_SHA256,
+                   all_worlds=False):
     from .config import DATA_ROOT
     from harness.heldout import check_generator, check_record
 
@@ -217,31 +221,38 @@ def export_compact(source, source_pointer, source_pointer_sha256, source_summary
     check_generator({**GENERATOR_SPEC, "name": "c_multirecord_synth_v2", "version": 2})
     runtime = TrainerRuntime(manifest, trainer_root, tokenizer_dir)
     from train.cohort import record_content_hash
-    selected, ids, contents, counts, payload_bytes = [], set(), set(), Counter(), 0
+    selected_k = ALL_K if all_worlds else HIGH_K
+    quotient, remainder = divmod(SOURCE_RECORDS, len(ALL_K))
+    expected = ({k: quotient + (offset < remainder) for offset, k in enumerate(ALL_K)}
+                if all_worlds else {k: WORLDS_PER_K for k in HIGH_K})
+    ids, contents, worlds, counts, payload_bytes = set(), set(), set(), Counter(), 0
     for record, content, raw in _triples(source, pointer):
         if (record["source"] != V2 or record["source_split"] != "synthetic"
                 or record["aug"]["generator"] != "c_multirecord_synth_v2"):
             raise ValueError("source contains a non-original synthetic C v2 record")
         rid = hashlib.sha256(record["id"].encode()).digest()
         ch = bytes.fromhex(content)
-        if rid in ids or ch in contents:
-            raise ValueError("duplicate source ID or normalized content")
+        world = hashlib.sha256(record["source_id"].encode()).digest()
+        if rid in ids or ch in contents or world in worlds:
+            raise ValueError("duplicate source ID, world ID, or normalized content")
         ids.add(rid)
         contents.add(ch)
+        worlds.add(world)
         k, _, _ = stratum(record)
-        if k in HIGH_K:
+        if k not in ALL_K:
+            raise ValueError("source K outside original K2..77 world cohort")
+        if k in selected_k:
             if record_content_hash(record) != content:
                 raise ValueError("selected source normalized content differs from sidecar")
             verify_record(record)
             check_record(record)
             counts[k] += 1
-            selected.append(raw[0])
             payload_bytes += len(raw[0])
-            if payload_bytes > PAYLOAD_LIMIT:
-                raise MemoryError("high-K source payload exceeds 80 MiB")
-    del ids, contents
-    if counts != {k: WORLDS_PER_K for k in HIGH_K}:
-        raise ValueError("complete K73..77 world cohort missing; no worlds discarded")
+    del ids, contents, worlds
+    if counts != expected:
+        raise ValueError("complete requested K world cohort missing; no worlds discarded")
+    selected_count = sum(counts.values())
+    print(f"source hashes validated; streaming {selected_count} complete worlds", flush=True)
     for path, pin in ((source_pointer, source_pointer_sha256), (source_summary, source_summary_sha256), (pools, pools_sha256)):
         if _sha(Path(path).read_bytes()) != pin:
             raise ValueError("input metadata changed during selection")
@@ -259,8 +270,12 @@ def export_compact(source, source_pointer, source_pointer_sha256, source_summary
         for name in NAMES:
             handle = stack.enter_context((train_dir / names[name]).open("xb"))
             streams[name] = stack.enter_context(gzip.GzipFile(filename="", fileobj=handle, mode="wb", mtime=0))
-        for index, raw in enumerate(selected):
-            old = json.loads(raw)
+        emitted_count, second_counts = 0, Counter()
+        # Reopen all source streams after full validation; never retain raw worlds.
+        for old, _, _ in _triples(source, pointer):
+            k, _, _ = stratum(old)
+            if k not in selected_k:
+                continue
             row = compact_record(old, manifest)
             check_record(row)
             lengths = runtime.measure(row)  # failure refuses the whole export, never drops a question/world
@@ -269,15 +284,17 @@ def export_compact(source, source_pointer, source_pointer_sha256, source_summary
             for name, value in lengths.items():
                 hist[name][value] += 1
             k, style, position = stratum(row)
+            second_counts[k] += 1
             styles[style] += 1
             shapes[row["aug"]["schema_shape"]] += 1
             buckets[k, style, position] += 1
             world_ids.append(row["source_id"])
             record_ids.append(old["id"])
             content = record_content_hash(row)
-            if content in out_contents:
+            content_digest = bytes.fromhex(content)
+            if content_digest in out_contents:
                 raise ValueError("compact views duplicate normalized content")
-            out_contents.add(content)
+            out_contents.add(content_digest)
             for qid, meta in row["aug"]["question_roles"].items():
                 if meta["kind"] in labels:
                     labels[meta["kind"]][row["labels"][qid]] += 1
@@ -287,15 +304,18 @@ def export_compact(source, source_pointer, source_pointer_sha256, source_summary
             for name, line in emitted.items():
                 hashes[name].update(line)
                 streams[name].write(line)
-            if (index + 1) % 250 == 0:
-                print(f"compact complete worlds: {index + 1}/{len(selected)}", flush=True)
+            emitted_count += 1
+            if emitted_count % 250 == 0:
+                print(f"compact complete worlds: {emitted_count}/{selected_count}", flush=True)
+    if emitted_count != selected_count or second_counts != counts:
+        raise ValueError("streaming export lost a source world")
     runtime.assert_pins()
     if len(set(world_ids)) != len(world_ids):
         raise ValueError("source world IDs are not distinct")
-    if any(sum(buckets[k, style, position] for position in range(k)) == 0 for k in HIGH_K for style in manifest["pools"]):
-        raise ValueError("full high-K/style cohort coverage absent")
+    if any(sum(buckets[k, style, position] for position in range(k)) == 0 for k in selected_k for style in manifest["pools"]):
+        raise ValueError("full requested K/style cohort coverage absent")
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-    result_pointer = {"build": out.name + " (python -m data.c_multirecord_compact)", "n_records": len(selected),
+    result_pointer = {"build": out.name + " (python -m data.c_multirecord_compact)", "n_records": selected_count,
                       "location": (Path(data_root.name) / relative / "train_set").as_posix() + "/", "manifest": names["manifest"], "content_map": names["content_map"],
                       "excludes_cohort": "fully synthetic C alpha views; no B/Index/TEST/cohort records read; consuming peer owns its guard",
                       "builder": {"module": "data.c_multirecord_compact", "commit": commit},
@@ -307,7 +327,7 @@ def export_compact(source, source_pointer, source_pointer_sha256, source_summary
         pointer_out.parent.mkdir(parents=True, exist_ok=True)
         with pointer_out.open("xb") as handle:
             handle.write(pointer_raw)
-    report = {"schema": "ssdm.c_multirecord_compact.v1", "records": len(selected), "questions": 7 * len(selected),
+    report = {"schema": "ssdm.c_multirecord_compact.v1", "records": selected_count, "questions": 7 * selected_count,
               "source_pointer_sha256": source_pointer_sha256, "source_summary_sha256": source_summary_sha256,
               "source_files_uncompressed_sha256": {name: pointer[name + "_uncompressed_sha256"] for name in NAMES},
               "pools_sha256": pools_sha256, "pool_ids_sha256": manifest["pool_ids_sha256"],
@@ -323,6 +343,8 @@ def export_compact(source, source_pointer, source_pointer_sha256, source_summary
               "inverse_alpha_semantics_passed": True, "verify_record_check_record_passed": True, "direct_trainer_row_equality_passed": True,
               "original_full_c_source_preserved": True, "b_inputs_read": False, "torch_imported": "torch" in sys.modules,
               "raw_source_payload_bytes": payload_bytes, "uncompressed_sha256": {n: d.hexdigest() for n, d in hashes.items()},
+              "cohort_mode": "all_worlds" if all_worlds else "high_k", "source_validation_passes": 2,
+              "retained_raw_source_payload_bytes": 0,
               "compressed_sha256": {n: _sha_file(train_dir / names[n]) for n in NAMES}, "pointer": result_pointer, "pointer_sha256": _sha(pointer_raw)}
     (out / "summary.json").write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return report
@@ -336,6 +358,7 @@ def main(argv=None):
     parser.add_argument("--pointer-out")
     parser.add_argument("--pools", default=str(POOLS_PATH))
     parser.add_argument("--pools-sha256", default=POOLS_SHA256)
+    parser.add_argument("--all-worlds", action="store_true", help="retain every original K2..77 world (default: K73..77 only)")
     report = export_compact(**vars(parser.parse_args(argv)))
     print(json.dumps({key: report[key] for key in ("records", "questions", "per_k_records", "per_style_records", "pointer_sha256")}))
     return 0
