@@ -377,12 +377,19 @@ def item_source(item_id: str) -> str:
     return parts[1] if len(parts) >= 3 else ""
 
 
-def dev_card_sample(items: list[Item], rows: int, seed: int = 0) -> list[Item]:
+def dev_card_sample(items: list[Item], rows: int, seed: int = 0, joint: bool = False) -> list[Item]:
     """The dev-card rows (B1, PR #232 review): ``rows`` <= 0 or >= len(items) = every item (input order). Else a
     deterministic hash-stratified sample: items grouped by ``item_source``, each source ordered by
     sha256(f"{seed}:{id}") (ties by id), then taken round-robin over the sources (sorted by name) until ``rows`` are
     chosen, so every source is represented (cohort dev ids are sorted by id, i.e. by source: a prefix covered 4 of
-    14). Independent of the input order."""
+    14). Independent of the input order.
+
+    ``joint`` (a joint_record head, ``needs_record``): the same design over WHOLE records (``item_record``): records
+    grouped by source, each source ordered by sha256(f"{seed}:{record}") (ties by record id), taken round-robin until
+    >= ``rows`` rows (the last record whole), every record's items contiguous in their input order, so
+    ``train.evalcard._chunks`` scores each record in one forward as the screen does. ``joint`` False is unchanged."""
+    if joint:
+        return _dev_card_records(items, rows, seed)
     if rows <= 0 or rows >= len(items):
         return list(items)
     by: dict[str, list[tuple[str, str, Item]]] = {}
@@ -400,16 +407,48 @@ def dev_card_sample(items: list[Item], rows: int, seed: int = 0) -> list[Item]:
     return out
 
 
-def dev_card_record(items: list[Item], rows: int, seed: int = 0) -> dict[str, Any]:
-    """cell.json record of the dev-card sample: the selected ids (selection order), their sha256, per-source counts."""
-    ids = [it.id for it in dev_card_sample(items, rows, seed)]
+def _dev_card_records(items: list[Item], rows: int, seed: int) -> list[Item]:
+    recs: dict[str, list[Item]] = {}
+    for it in items:
+        recs.setdefault(item_record(it), []).append(it)
+    if rows <= 0 or rows >= len(items):
+        return [it for r in recs.values() for it in r]
+    by: dict[str, list[tuple[str, str]]] = {}
+    for rid, its in recs.items():
+        key = hashlib.sha256(f"{seed}:{rid}".encode()).hexdigest()
+        by.setdefault(item_source(its[0].id), []).append((key, rid))
+    queues = [sorted(by[s]) for s in sorted(by)]
+    out: list[Item] = []
+    r = 0
+    while len(out) < rows:
+        for q in queues:
+            if r < len(q) and len(out) < rows:
+                out += recs[q[r][1]]
+        r += 1
+    return out
+
+
+def dev_card_record(items: list[Item], rows: int, seed: int = 0, joint: bool = False) -> dict[str, Any]:
+    """cell.json record of the dev-card sample: the selected ids (selection order), their sha256, per-source counts
+    (``joint``: also the number of whole records and of multi-question records)."""
+    sel = dev_card_sample(items, rows, seed, joint)
+    ids = [it.id for it in sel]
     per: dict[str, int] = {}
     for i in ids:
         per[item_source(i)] = per.get(item_source(i), 0) + 1
-    return {"rows": rows, "seed": seed, "n": len(ids), "n_pool": len(items),
-            "design": "hash-stratified by source: sha256(seed:id) within source, round-robin across sources",
-            "per_source": dict(sorted(per.items())), "ids": ids,
-            "ids_sha256": hashlib.sha256("\n".join(ids).encode()).hexdigest()}
+    out = {"rows": rows, "seed": seed, "n": len(ids), "n_pool": len(items),
+           "design": "hash-stratified by source: sha256(seed:id) within source, round-robin across sources",
+           "per_source": dict(sorted(per.items())), "ids": ids,
+           "ids_sha256": hashlib.sha256("\n".join(ids).encode()).hexdigest()}
+    if joint:
+        size: dict[str, int] = {}
+        for it in sel:
+            size[item_record(it)] = size.get(item_record(it), 0) + 1
+        out["design"] = ("joint_record head: WHOLE records, hash-stratified by source: sha256(seed:record) within "
+                         "source, round-robin across sources until >= rows rows; each record contiguous")
+        out["n_records"] = len(size)
+        out["n_multi_question_records"] = sum(v > 1 for v in size.values())
+    return out
 
 
 def check_anti_collapse(cfg: TrainConfig) -> None:
@@ -540,7 +579,7 @@ class Trainer:
     # ------------------------------------------------------------------ dev cards, best checkpoint, collapse guard
     def dev_items(self, items: list[Item] | None = None) -> list[Item]:
         its = self.eval_items if items is None else items
-        return dev_card_sample(its, self.cfg.dev_card_rows, self.cfg.dev_card_seed)
+        return dev_card_sample(its, self.cfg.dev_card_rows, self.cfg.dev_card_seed, self.joint)
 
     def dev_card_due(self) -> bool:
         return bool(self.cfg.dev_card_every) and self.step % self.cfg.dev_card_every == 0
@@ -950,6 +989,9 @@ class Trainer:
         missing = [n for n in st["trainable"] if n not in params]
         if missing:
             raise KeyError(f"checkpoint parameters not in model: {missing[:5]}")
+        absent = [n for n, p in params.items() if p.requires_grad and n.startswith("head.") and n not in st["trainable"]]
+        if absent:  # a checkpoint of another head (e.g. fork -> joint_record) would leave these at their init
+            raise KeyError(f"model head parameters not in checkpoint: {absent[:5]} ({len(absent)} missing)")
         with torch.no_grad():
             for n, t in st["trainable"].items():
                 params[n].copy_(t.to(params[n].dtype))

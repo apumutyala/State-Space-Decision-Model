@@ -1040,7 +1040,7 @@ def _main(argv=None, ctx: dict | None = None):
         if tr.cfg.dev_card_every:  # the selected dev-card rows (best-ckpt selection + guard), for G12's dev_remainder
             from train.trainer import dev_card_record
 
-            cell["dev_card_sample"] = dev_card_record(eval_items, tr.cfg.dev_card_rows, tr.cfg.dev_card_seed)
+            cell["dev_card_sample"] = dev_card_record(eval_items, tr.cfg.dev_card_rows, tr.cfg.dev_card_seed, tr.joint)
             save()
         used_before = train_seconds_used(cell, resumed)
         clock = {"t_start": None}  # set when the timed loop starts (the step-0 cards are outside max_minutes)
