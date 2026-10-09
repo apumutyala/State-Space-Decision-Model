@@ -1,15 +1,17 @@
 {
- "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates); reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+ "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
  "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set",
- "index_sha256": "2c821e291c944b4e28cb0e74a5dabc3f7bc436fdd7f410fb199661318448594f",
- "allowlist_sha256": "8a0bf416f2920af62be1ced98e54ea006f8580859d1c7234bed8676703f2c111",
+ "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+ "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
  "n_records": 100000,
- "n_excluded": 10,
- "n_kept": 99990,
- "excluded_ids_sha256": "34a8b818fefebf603cb219ab9b125160ce4fd31d7e385c647ace2debe6d78c54",
+ "n_excluded": 14,
+ "n_kept": 99986,
+ "excluded_ids_sha256": "e277b794d365c2a3bfdd0a4576840c0a8612ae42e2534666b075d66d1b44850d",
  "per_source_fail": {
+  "anli": 2,
   "glaive_fc": 2,
-  "mmlu_aux": 1,
+  "hellaswag": 1,
+  "mmlu_aux": 2,
   "when2call": 7
  },
  "draw": "b1-draw100k-v2",
@@ -17,11 +19,14 @@
   "m2/build/b1-draw100k-v2/records.jsonl.gz"
  ],
  "pin_as": "train_set.doc_clean (or a no-train_set cell's top-level doc_clean)",
- "heldout_excluded_overlap": [],
- "note": "no overlap with any committed cell's heldout_excluded ids",
+ "spec_version": 2,
  "excluded_ids": [
+  "m2:anli:5a53ca00-aa26-49f9-9711-519eaad75635",
+  "m2:anli:6a33ed93-8193-4875-8c8d-99c4dc99c787",
   "m2:glaive_fc:112037",
   "m2:glaive_fc:88159",
+  "m2:hellaswag:0",
+  "m2:mmlu_aux:1717",
   "m2:mmlu_aux:78789",
   "m2:when2call:14977~inj:d1a:fake_correction",
   "m2:when2call:1694~inj:hijack:predecided",
@@ -30,5 +35,6 @@
   "m2:when2call:3706~inj:hijack:disregard_task",
   "m2:when2call:4832",
   "m2:when2call:7980"
- ]
+ ],
+ "attack_clean_overlap": 1
 }

@@ -1,0 +1,25 @@
+{
+ "name": "bschema-draw230k-v2e",
+ "n_records": 234521,
+ "n_fail": 1,
+ "per_source_fail": {
+  "anli": 1
+ },
+ "old_pinned": 0,
+ "new_vs_pins": [
+  {
+   "id": "m2:anli:a269156f-2536-41b4-8f3d-77584b1e5360~view:bs0",
+   "source": "anli",
+   "reasons": "EU",
+   "split": "HELDOUT",
+   "eval_family": "ANLI",
+   "unit": "I",
+   "eval_run_id": "12:ANLI:ANLI:test_r2:ae7b09eb-b613-41b2-bbfb-6eaf85308a3e",
+   "unit_coverage": 0.7286,
+   "row_coverage": 0.0483
+  }
+ ],
+ "dropped_from_old": [],
+ "sha": "f056d775b0ff13e23950084dd199d25a70c9f8fa90f1df88f8f8f874e541022d",
+ "secs": 61.4
+}
