@@ -1,0 +1,29 @@
+# python -m jevkit board --api api_v161.json --out board_verify_v161.json   (2026-10-09, exit 0)
+# api_v161.json = benchmarkheaven.com /api/jevbench/v1.6.1, sha256 5cd8c1332226ea9c179883d2285c0d8b8cc593ae38f2645197364a7ddd9c83c1 (the artifact sha the methodology page cites)
+# view[*] are unscored sort views (see jevkit/README.md); every scored check is exact.
+JevBench v1.6.1 board (140 rows), tolerance 1e-09:
+  I_open                                      140/140  exact  max|diff| 1.42e-14
+  I_sealed                                    140/140  exact  max|diff| 1.42e-14
+  base                                        140/140  exact  max|diff| 0
+  cal_part[choice]                            139/139  exact  max|diff| 0
+  cal_part[noul]                              139/139  exact  max|diff| 0
+  cal_part[score]                             138/138  exact  max|diff| 0
+  calibration                                 140/140  exact  max|diff| 1.42e-14
+  capability                                  140/140  exact  max|diff| 0
+  cc                                          840/840  exact  max|diff| 1.42e-14
+  composite_A                                 137/137  exact  max|diff| 1.42e-14
+  composite_B                                 137/137  exact  max|diff| 1.42e-14
+  composite_C                                 137/137  exact  max|diff| 1.42e-14
+  cost                                        137/137  exact  max|diff| 1.42e-14
+  excess                                      140/140  exact  max|diff| 0
+  gap                                         140/140  exact  max|diff| 0
+  intelligence                                140/140  exact  max|diff| 0
+  p50_adjusted                                130/130  exact  max|diff| 0
+  p95_adjusted                                130/130  exact  max|diff| 0
+  penalty                                     140/140  exact  max|diff| 0
+  speed                                       140/140  exact  max|diff| 1.42e-14
+  view[Balanced 33:33:33]                     135/137  exact  max|diff| 0.649  (2 mismatches)
+  view[Emphasis on Accuracy 60:20:20]         135/137  exact  max|diff| 0.628  (2 mismatches)
+  view[Emphasis on Cost 20:20:60]             135/137  exact  max|diff| 0.634  (2 mismatches)
+  view[Emphasis on Speed 20:60:20]            135/137  exact  max|diff| 0.673  (2 mismatches)
+  view[Intelligence only]                      23/140  exact  max|diff| 55.6  (117 mismatches)
