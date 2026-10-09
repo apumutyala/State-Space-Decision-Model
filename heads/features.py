@@ -25,7 +25,7 @@ from typing import Sequence
 import torch
 
 from .backbone import HiddenStateBackbone, pad_batch
-from .layout import LayoutRow
+from .layout import G1V2_LAYOUT, LayoutRow
 
 
 @dataclass
@@ -143,7 +143,10 @@ def build_head_input(backbone: HiddenStateBackbone, rows: Sequence[LayoutRow], n
         opt_mask[i, : r.n_options] = True
         q_pre_l.append(_span_mean(h[i], r.field_span))
         q_end_l.append(h[i, r.answer_pos])
-        if r.layout == "ordered":
+        # g1v2 rows carry option spans in the shared prefix like "ordered" ones (heads.layout._build_row_g1v2) and no
+        # option_seqs: before 2026-10-08 they fell into the symmetric branch and got e = 0, so every head input built
+        # from e (typed.ordinal.gap: its weight never got a gradient) was dead under v2 / v2f / v3w
+        if r.layout in ("ordered", G1V2_LAYOUT):
             er = torch.stack([_span_mean(h[i], sp) for sp in r.option_spans])
         else:
             er = h.new_zeros((r.n_options, d))
