@@ -1089,11 +1089,17 @@ class Stats:
         self.gold_pos = collections.defaultdict(collections.Counter)
         self.t = {"t_v2f": [], "t_v3w": []}
         self.nq = collections.Counter()
+        self.items = collections.defaultdict(set)
+        self.rows_by_key = collections.Counter()
 
     def add(self, r: dict, e: dict):
         from decide.schema import canonical_options
         self.by_source[r["source"]] += 1
         self.by_family[r["family"]] += 1
+        key = f"{r['source']}/{r['family']}"
+        ss = r.get("aug", {}).get("schema_synth", {})
+        self.items[key].add(ss.get("root") or sorted(root_items(r))[0])
+        self.rows_by_key[key] += 1
         ops = r.get("aug", {}).get("schema_synth", {}).get("ops", [])
         for o in ops:
             self.ops["ids" if o.startswith("ids:") else o.split(":")[0]] += 1
@@ -1124,7 +1130,10 @@ class Stats:
             n = sum(c.values())
             if n >= 200:
                 gp[k] = {"n": n, "max_rel_dev": round(max(abs(c[i] / n - 1 / k) * k for i in range(k)), 3)}
-        return {"by_source": dict(self.by_source.most_common()), "by_family": dict(self.by_family.most_common()),
+        return {"by_key": {k: {"rows": c, "unique_items": len(self.items[k]),
+                               "rows_per_item": round(c / len(self.items[k]), 2)}
+                           for k, c in self.rows_by_key.most_common()},
+                "by_source": dict(self.by_source.most_common()), "by_family": dict(self.by_family.most_common()),
                 "ops_rows": dict(self.ops.most_common()), "id_styles": dict(self.ids.most_common()),
                 "question_types": dict(self.qtypes), "options_k": dict(self.kbin), "questions_per_record": dict(self.nq),
                 "binary_true_rate_by_source": {s: round(c["true"] / max(1, sum(c.values())), 4)
