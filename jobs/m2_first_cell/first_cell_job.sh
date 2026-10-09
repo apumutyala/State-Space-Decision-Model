@@ -26,6 +26,7 @@
 #   15 an eval phase projected (preflight at the env rates, or re-priced at the parent arm's measured speed BEFORE
 #      training) or measured (live rate guard) past its cap
 #   30 / 31 / 32 guard: kit-suite / content index / harness manifests   33 held-out D1-B fragment outside the pinned set
+#   34 Index eval document text in the training set (train.doc_overlap_guard; heldout phase rc 4 or run_cell 34)
 #   20 train.run_cell unexpected code   21-29 train.run_cell stops (21 fork mismatch, 22 no T fits, 23 non-finite,
 #   24 memory, 25 data, 26 too slow for min_steps, 27 guard not ready, 28 cohort / train-set leak or mismatch,
 #   35 head config, 36 fla requested but a training step fell back to "chunked" or no training call ran fla)
@@ -105,10 +106,12 @@ finish() {
   # Terminal export and result validation share 60s + 30s KILL grace from the
   # existing seven-minute reserve. Export failure still reaches finalize (exit 6).
   export -f export_phase sample say
-  export CODE OUT WORK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR DECISION
+  export CODE OUT WORK CK T0 META RESULT GATES EXPORT_FAIL MARKER VALIDATOR DECISION
   export FINISH_RC=$rc
   timeout --kill-after=30s 60s bash -c '
     export_phase final
+    # results always upload: rename-only here (no time to copy GBs); the mid-run call below already made room
+    python "$CODE/jobs/common/size_guard.py" --out "$OUT" --evict-dir "$CK/evicted" --rename-only || say "SIZE GUARD FAILED: /output still over the upload cap (see $OUT/SIZE_GUARD.json)"
     exec python "$CODE/jobs/common/finalize.py" "$RESULT" "$FINISH_RC" "$GATES" "$EXPORT_FAIL" "$(( ($(date +%s) - T0) / 60 ))" \
       "$DECISION" "$OUT" "$MARKER" "$VALIDATOR"
   '
@@ -332,7 +335,7 @@ say "phase heldout (hits must equal the pinned exclusions)"
 timeout --kill-after=30s $(cap heldout)m python -X utf8 -m train.train_set heldout --config "$CELL" --train-dir "$TRAIN_DIR" \
   --out "$WORK/out/heldout.json" > "$WORK/logs/heldout.log" 2>&1; r=$?
 gate "heldout" $r; export_phase heldout
-case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment outside the pinned exclusions" ;; *) fail 5 "heldout rc=$r" ;; esac
+case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B fragment or eval attack template (train.attack_guard) outside the pinned exclusions" ;; 4) fail 34 "Index eval document text (train.doc_overlap_guard) outside the pinned doc_clean spec" ;; *) fail 5 "heldout rc=$r" ;; esac
 
 # ------------------------------------------------------------------ parent arm (stock readout) BEFORE training (review fix 1)
 # Its live weighted rate guard measures this box's scoring speed before any training spend; then the child evals are
@@ -416,7 +419,7 @@ timeout --kill-after=30s $(cap cell)m python -m train.run_cell --config "$CELL" 
   --guard-readiness "$WORK/out/guard/readiness.json" > "$WORK/logs/cell.log" 2>&1; r=$?
 cp "$WORK/out/cell.json" "$CK/cell/cell.json" 2>/dev/null || true
 gate "cell" $r; export_phase cell
-case $r in 0) ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
+case $r in 0) ;; 124|137) fail 7 "cell timeout" ;; 21|22|23|24|25|26|27|28|29|34|35|36) fail $r "cell stop" ;; *) fail 20 "cell unexpected rc=$r" ;; esac
 
 # ------------------------------------------------------------------ stage screen: ONE proxy600 Index pass, then screen.json
 if [ "$STAGE" = screen ]; then
@@ -466,9 +469,15 @@ gate "report" $r
 [ $r -eq 0 ] || fail 9 "first-cell result missing or invalid (rc=$r)"
 fi
 LATEST=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$CK/cell/latest.json") || fail 9 "no checkpoint"
+# INFERENCE export only (train.ckpt_export: trainable LoRA + head as bf16 safetensors + JSON sidecar + sha256; r256
+# ~2.3 GB, r64 ~0.6 GB). The full .pt (Adam + scheduler + RNG; ~14 GB at r256) stays in $CK: job-igcu4 copied it to
+# /output, went over the store's 5 GiB single-PUT cap, and lost the whole result.
 mkdir -p "$OUT/ckpt"
-cp "$CK/cell/$LATEST" "$CK/cell/latest.json" "$OUT/ckpt/" && ( cd "$OUT/ckpt" && sha256sum "$LATEST" > "$LATEST.sha256" ) \
-  || EXPORT_FAIL=1
+python -X utf8 -m train.ckpt_export inference --ckpt "$CK/cell/$LATEST" --out-dir "$OUT/ckpt" > "$WORK/logs/ckpt-export.log" 2>&1 \
+  || { EXPORT_FAIL=1; say "checkpoint export failed: $(tail -1 "$WORK/logs/ckpt-export.log")"; }
+# /output under the store's PUT cap with room for the final export: allow-listed evictions (superseded phase tarballs,
+# then the ckpt export as a unit) move to $CK/evicted (persisted; a cross-filesystem move is copy + sha256 verify)
+python -X utf8 jobs/common/size_guard.py --out "$OUT" --evict-dir "$CK/evicted" --reserve-final || { EXPORT_FAIL=1; say "SIZE GUARD FAILED: /output over the upload cap (see $OUT/SIZE_GUARD.json)"; }
 sample "$DECISION" "first-cell"
 RC=0
 exit 0
