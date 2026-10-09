@@ -44,6 +44,8 @@ PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_par
 #: registration and JOB_SPEC worst-case checks still apply).
 PARAMS.update({f"m2_first_cell_{f.stem[len('job_params_'):]}": f"jobs/m2_first_cell/{f.name}"
                for f in sorted((ROOT / "jobs/m2_first_cell").glob("job_params_*.json"))})
+#: JevBench host scan (jevkit, 231 public items, several small candidate hosts serially on one H100)
+PARAMS["jev_host_scan"] = "jobs/jev_host_scan/job_params.json"
 #: committed elsewhere in the envelope (worst-case ceilings from their specs), not built here. Clef baseline (JOB_SPEC):
 #: A ran as job-sgihj ($1.40, in SPENT_USD); C (27B, job A shape) is superseded for the Index by clef_index_subset +
 #: clef_index_full (PARAMS); B (Clef-flash GCG, $29.70 one-attempt ceiling) is still planned.

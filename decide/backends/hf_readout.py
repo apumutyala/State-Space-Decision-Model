@@ -436,7 +436,7 @@ RWKV7_G1K_TRAINED_CTX = 25600
 
 
 def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfloat16", model_id: str | None = None,
-                  wkv: str | None = None) -> ModelPlugin:
+                  wkv: str | None = None, repo: str | None = None, trained_ctx: int = RWKV7_G1K_TRAINED_CTX) -> ModelPlugin:
     """RWKV7-G1k (``RWKV/RWKV7-G1k-*-20260930``): the repo's bundled HF code, vendored and sha-pinned in
     ``third_party/rwkv7_hf`` (no ``trust_remote_code``). ``load_rwkv7`` above cannot read these repos: they ship
     ``tokenizer.json`` (no ``rwkv_vocab_v20230424.txt``) and are not the ``fla`` class.
@@ -450,7 +450,8 @@ def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfl
     from third_party.rwkv7_hf.tokenization_rwkv7 import Rwkv7Tokenizer
 
     model_dir = Path(model_dir)
-    code = V.verify_snapshot_code(model_dir)
+    repo = repo or V.REPO  # another G1k size of the same release: same code, its own pinned config.json
+    code = V.verify_snapshot_code(model_dir, repo)
     tok = Rwkv7Tokenizer.from_pretrained(str(model_dir))
     special = frozenset(int(i) for i in tok.all_special_ids) | {0}
     model = Rwkv7ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), device_map={"": device}).eval()
@@ -470,7 +471,7 @@ def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfl
 
     return ModelPlugin(
         family="rwkv7",
-        model_id=model_id or V.REPO,
+        model_id=model_id or repo,
         snapshot=_snapshot_of(model_dir),
         encode=encode,
         untrusted_encoder_id="rwkv7-hf-trie (fail closed on <|endoftext|>)",
@@ -482,13 +483,94 @@ def load_rwkv7_hf(model_dir: str | Path, device: str = "cuda", dtype: str = "bfl
             "config": _hash_files(model_dir, ["config.json"]),
             "code": hashlib.sha256(json.dumps(code, sort_keys=True).encode()).hexdigest(),
         },
-        max_context=RWKV7_G1K_TRAINED_CTX,
+        max_context=trained_ctx,
         dtype=dtype,
         device=device,
         kernel_stack={**_pkg_versions("transformers", "torch"), "wkv_implementation": model.config.wkv_implementation},
         state_ops=RWKV7StateOps(model),
-        notes={"model_class": type(model).__name__, "trained_ctx": RWKV7_G1K_TRAINED_CTX, "attention_free": True,
-               "vendored_code": V.REVISION},
+        notes={"model_class": type(model).__name__, "trained_ctx": trained_ctx, "attention_free": True,
+               "vendored_code": V.REVISION, "repo": repo},
+    )
+
+
+def load_hf_causal(model_dir: str | Path, family: str, device: str = "cuda", dtype: str = "bfloat16",
+                   model_id: str | None = None, fp32_head: bool = False, strict: bool = True) -> ModelPlugin:
+    """Any stock transformers causal LM (``AutoModelForCausalLM``, no remote code) as a plug-in WITHOUT state ops: every
+    readout on it recomputes the whole prompt (no prefix fork; job-gen87: fork != recompute in bf16 on hybrid models).
+
+    ``strict``: refuse a load that reports missing / unexpected / mismatched weights (a native transformers class that
+    does not match the checkpoint would otherwise score random heads). ``fp32_head``: the lm head is applied in fp32
+    to the final hidden state (vLLM's ``head_dtype: float32``); the plug-in then also exposes ``plugin.notes['fp32_head']``.
+    """
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    model_dir = Path(model_dir)
+    tok = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=False)
+    model, info = AutoModelForCausalLM.from_pretrained(
+        model_dir, dtype=getattr(torch, dtype), device_map={"": device}, trust_remote_code=False,
+        output_loading_info=True)
+    model = model.eval()
+    # missing / mismatched = a module left at random init: refused. Unexpected = checkpoint weights the text model does
+    # not use (a multimodal checkpoint's vision / audio towers read as a causal LM): recorded only.
+    bad = {k: sorted(map(str, v))[:8] for k, v in (info or {}).items() if v and k in ("missing_keys", "mismatched_keys")}
+    unexpected = sorted(map(str, (info or {}).get("unexpected_keys") or []))
+    if strict and bad:
+        raise RuntimeError(f"{model_dir.name}: weights do not match {type(model).__name__}: {bad}")
+    cfg = json.loads((model_dir / "config.json").read_text(encoding="utf-8"))
+    text_cfg = cfg.get("text_config", cfg)
+    untrusted = UntrustedEncoder(tok)
+    head = model.get_output_embeddings()
+    captured: dict[str, Any] = {}
+    if fp32_head and text_cfg.get("final_logit_softcapping"):
+        raise ValueError("fp32_head replaces the logits; a model with final_logit_softcapping would lose its softcap")
+    if fp32_head:
+        head.register_forward_hook(lambda mod, args, out: captured.__setitem__("h", args[0]))
+
+    def encode(text: str, trusted: bool = True) -> list[int]:
+        if trusted:
+            return tok(text, add_special_tokens=False).input_ids
+        return untrusted.encode(text)
+
+    keep = {"ok": True}
+
+    def forward(ids, n_last: int):
+        if keep["ok"]:
+            try:
+                out = model(input_ids=ids, logits_to_keep=n_last, use_cache=False).logits
+            except TypeError:  # an architecture without logits_to_keep: full logits, sliced below
+                keep["ok"] = False
+                out = model(input_ids=ids, use_cache=False).logits
+        else:
+            out = model(input_ids=ids, use_cache=False).logits
+        if fp32_head:
+            h = captured.pop("h")[:, -n_last:, :]
+            out = torch.nn.functional.linear(h.float(), head.weight.float(),
+                                             None if head.bias is None else head.bias.float())
+        return out[:, -n_last:, :]
+
+    return ModelPlugin(
+        family=family,
+        model_id=model_id or cfg.get("_name_or_path") or model_dir.name,
+        snapshot=_snapshot_of(model_dir),
+        encode=encode,
+        forward=forward,
+        special_ids=untrusted.control_ids,
+        files={
+            "weights": _hash_files(model_dir, ["*.safetensors"]),
+            "tokenizer": _hash_files(model_dir, ["tokenizer.json"]),
+            "config": _hash_files(model_dir, ["config.json"]),
+        },
+        max_context=text_cfg.get("max_position_embeddings"),
+        dtype=dtype,
+        device=device,
+        kernel_stack=_pkg_versions("transformers", "torch", "flash-linear-attention", "fla-core", "mamba-ssm",
+                                   "causal-conv1d", "triton"),
+        notes={"model_class": type(model).__name__, "fp32_head": bool(fp32_head),
+               "unexpected_keys": {"n": len(unexpected), "first": unexpected[:8]},
+               "layer_types": {t: (text_cfg.get("layer_types") or []).count(t)
+                               for t in sorted(set(text_cfg.get("layer_types") or []))},
+               "final_logit_softcapping": text_cfg.get("final_logit_softcapping")},
     )
 
 

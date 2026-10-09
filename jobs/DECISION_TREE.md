@@ -56,6 +56,7 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 | q9af_cell parent (the Q9-AF PARENT ARM once: stock readout of the converted model on cohort v3 + full DEV; shared comparator + lineage anchor of both cells; rule `jobs/q9af_cell/rule.py` 2d18afa; blocked on the job-2xe5w export pin; G13 re-priced at T <= 4,096) | `jobs/q9af_cell/job_params_parent.json` | $38.12 | $40 | ~$12.56 |
 | q9af_cell cell_r64 (first Q9-AF decision cell: LoRA r64 + fork head, clef arm, 150k draw, act_ckpt, G12/G13 vs the parent arm; `depends_on` parent; E9 pair) | `jobs/q9af_cell/job_params_cell_r64.json` | $74.25 | $75 | ~$23.15 |
 | q9af_cell cell_r256 (same cell, LoRA r256; E9 pair) | `jobs/q9af_cell/job_params_cell_r256.json` | $74.25 | $75 | ~$23.15 |
+| jev_host_scan (EVAL-ONLY measurement: candidate small decision-model hosts on the 231 public JevBench items through jevkit, H2O-Lightning-4B v1.1 as the parity anchor; serial, rate-guarded per candidate; hold 240 x $0.063 = $15.12) | `jobs/jev_host_scan/job_params.json` | $26.73 | $27 | ~$5.15 |
 
 **Workspace cap when jobs overlap.** `set_workspace_cap` is workspace-wide, so jobs that can bill at the same time
 need one cap covering all of them: MTD + `costs.concurrent_cap_usd([...])` = the ceiling of the sum of their worst

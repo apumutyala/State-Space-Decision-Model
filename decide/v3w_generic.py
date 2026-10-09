@@ -90,6 +90,26 @@ RWKV_G1 = ChatFormat(family="rwkv7-g1", head=G1V2_TEMPLATE.head, tail=G1V2_TEMPL
                      answer_ctx=RWKV_ANSWER_CTX, source="builtin", no_think="builtin")
 
 
+def _generation_tag():
+    """transformers' ``{% generation %}...{% endgeneration %}`` block (its assistant-token mask marker, used by the
+    LFM2 templates): rendered as its body, as transformers does when no mask is requested."""
+    from jinja2 import nodes
+    from jinja2.ext import Extension
+
+    class GenerationBlock(Extension):
+        tags = {"generation"}
+
+        def parse(self, parser):
+            lineno = next(parser.stream).lineno
+            body = parser.parse_statements(("name:endgeneration",), drop_needle=True)
+            return nodes.CallBlock(self.call_method("_body", []), [], [], body).set_lineno(lineno)
+
+        def _body(self, caller):
+            return caller()
+
+    return GenerationBlock
+
+
 def _sandbox_render(template: str, **kw) -> str:
     """Render a chat template the way transformers does (jinja2 ImmutableSandboxedEnvironment, trim/lstrip blocks):
     the template is data, never imported or executed as Python."""
@@ -102,7 +122,8 @@ def _sandbox_render(template: str, **kw) -> str:
     def tojson(x, ensure_ascii=False, indent=None, separators=None, sort_keys=False):
         return json.dumps(x, ensure_ascii=ensure_ascii, indent=indent, separators=separators, sort_keys=sort_keys)
 
-    env = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True, extensions=[loopcontrols])
+    env = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True,
+                                        extensions=[loopcontrols, _generation_tag()])
     env.filters["tojson"] = tojson
     env.globals["raise_exception"] = raise_exception
     env.globals["strftime_now"] = lambda fmt: "1970-01-01"
@@ -315,6 +336,19 @@ BACKBONES: dict[str, Backbone] = {b.id: b for b in [
              "plain", 32768, "mistralai/Mamba-Codestral-7B-v0.1", note="no chat template in the HF repo"),
     Backbone("xlstm-7b", "xlstm", "NX-AI--xLSTM-7b@9dc507bd0939cf372a4a4f667335651d8e49dddb", "plain", 8192,
              "NX-AI/xLSTM-7b", note="no chat template in the HF repo"),
+    # jobs/jev_host_scan (JevBench host scan, 2026-10-09): small hosts read stock, without the prefix fork
+    Backbone("rwkv7-g1i-2.9b", "rwkv7-g1", "RWKV--RWKV7-2.9B-20260805@aae64511841dd32f5235f6bcc7a931c6ef806e6c",
+             "rwkv_g1", 16384, "RWKV/RWKV7-2.9B-20260805", note="G1i; tokenizer.json identical to G1k's"),
+    Backbone("qwen3.5-4b", "qwen3.5", "Qwen--Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a", "chat_template",
+             262144, "Qwen/Qwen3.5-4B", False),
+    Backbone("qwen3.5-2b", "qwen3.5", "Qwen--Qwen3.5-2B@15852e8c16360a2fea060d615a32b45270f8a8fc", "chat_template",
+             262144, "Qwen/Qwen3.5-2B", False),
+    Backbone("lfm2.5-2.6b", "lfm2.5", "LiquidAI--LFM2.5-2.6B@654f9463ce32b05d0429d76fe1f580b27d4c1ac0", "chat_template",
+             131072, "LiquidAI/LFM2.5-2.6B", False, "hybrid short-conv + attention"),
+    Backbone("gemma-4-e4b-it", "gemma4", "google--gemma-4-E4B-it@ee0ef6023621cff504d758262d4e04895a5af4a2",
+             "chat_template", 131072, "google/gemma-4-E4B-it", False),
+    Backbone("nemotron-3-nano-4b", "nemotron-h", "nvidia--NVIDIA-Nemotron-3-Nano-4B-BF16@dfaf35de3e30f1867dd8dbc38a7fc9fb52d3914f",
+             "chat_template", 262144, "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16", False, "hybrid Mamba2 + attention"),
 ]}
 
 

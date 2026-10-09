@@ -1,0 +1,116 @@
+{
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [
+   "safetensors",
+   "accelerate",
+   "jinja2"
+  ],
+  "allowed_skips": [],
+  "image": "jobs/probe9b/Dockerfile"
+ },
+ "_comment": "jobs/jev_host_scan: one H100, candidates SERIALLY (one model load at a time, one request at a time), each on the 231 public JevBench v1.2 items (EVAL-ONLY) through jevkit; candidates / readouts / price classes / per-candidate caps in candidates.json (run order = priority). Scan phase = sum over candidates of (run cap + download cap + 2 min scoring per arm) = 220 min; expected ~90 min. Hold 240 x $0.063 = $15.12; worst case (60 + 2 x 240) x 0.0495 = $26.73.",
+ "job": "jev-host-scan",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only: projected JevBench-format axes / Composite / Capability per candidate host and readout on the public items, to choose a host; no pass/fail gate (the H2O-Lightning identity check is reported, not gated)",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 240,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "none",
+ "hf_cache": false,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 27.0,
+ "reserve_minutes": 5,
+ "phase_caps_minutes": {
+  "setup": 10,
+  "scan": 220,
+  "summarize": 5
+ },
+ "score_cap_minutes": 2,
+ "expected_minutes": {
+  "build": 10,
+  "setup": 3,
+  "scan": 90,
+  "summarize": 1
+ },
+ "model": "h2oai/h2o-lightning-4b@193ad740925b176a3b70a5a13a7cff2f2fadd01e",
+ "mission": "jev-host-scan",
+ "candidates": "jobs/jev_host_scan/candidates.json",
+ "submit": {
+  "command": "bash /opt/ssdm/m1/jobs/jev_host_scan/scan_job.sh",
+  "env": {
+   "PYTHONUNBUFFERED": "1",
+   "PYTHONUTF8": "1",
+   "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
+  },
+  "key": "jev-host-scan-v1",
+  "label": "JevBench host scan: H2O-Lightning-4B anchor, Qwen3.5-4B/2B, d1-3B, LFM2.5-2.6B, gemma-4-E4B, Nemotron-3-Nano-4B, RWKV7 G1i 2.9B, RWKV7-G1k-13.3B on the 231 public items",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/JEV_HOST_SCAN_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 2400,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "dockerfile": "jobs/probe9b/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/probe9b/probe_job.sh",
+   "jobs/jev_host_scan/scan_job.sh"
+  ],
+  "manifest_files": [
+   "jobs/jev_host_scan/candidates.json",
+   "jevkit/data/jevbench_public_pin.json",
+   "jobs/jev_host_scan/snapshots/h2o-lightning-4b.sha256",
+   "jobs/jev_host_scan/snapshots/qwen3.5-4b.sha256",
+   "jobs/jev_host_scan/snapshots/qwen3.5-2b.sha256",
+   "jobs/jev_host_scan/snapshots/d1-3b.sha256",
+   "jobs/jev_host_scan/snapshots/lfm2.5-2.6b.sha256",
+   "jobs/jev_host_scan/snapshots/gemma-4-e4b-it.sha256",
+   "jobs/jev_host_scan/snapshots/nemotron-3-nano-4b.sha256",
+   "jobs/jev_host_scan/snapshots/rwkv7-g1i-2.9b.sha256",
+   "jobs/jev_host_scan/snapshots/rwkv7-g1k-13.3b.sha256"
+  ],
+  "data": [
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/original.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/original.jsonl",
+    "pin_sha256": "5c2414edb3006b8bfcb70fda433f0f9ca015759433849f8d3104328a1f7c4180"
+   },
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/easy.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/easy.jsonl",
+    "pin_sha256": "231df3c2c8e88a1a8c137ebe85de96ba70fabd330849098ac7b3c52c70b7172b"
+   },
+   {
+    "src": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/hard.jsonl",
+    "dest": "jevbench/b6b8fff7e345b98c060ad26c13308860ddc67004/hard.jsonl",
+    "pin_sha256": "89e9e6becb33ed88c1de7d42dcc87531b2fb64cfaef4e1986faf7c37b3f80ebb"
+   }
+  ]
+ }
+}
