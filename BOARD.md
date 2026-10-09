@@ -14,7 +14,7 @@
 | 1 | Merge harness PRs: #241 pricing, #242 chained cells, #243 jevkit, harness-v2 (goal/AGENTS/session hook) | both | B reviews | open |
 | 2 | Kit parity: reproduce ≥3 published open-weights rows (H2O-Lightning-4B anchor) with jevkit before any of our numbers count | evidence | B → new evidence agent | blocked: v1.6.1 open set availability |
 | 3 | Host scan through jevkit: H2O-4B anchor + newest small backbones (Qwen3.8/3.6/3.5 small, gemma-4 small, LFM, Granite-H, Nemotron Nano, SmolLM3) + RWKV7 small/13.3B | lead | A | packaging (claude/jev-host-scan) |
-| 4 | Backbone research: newest small models; build-our-own (pruning/distillation/hybrid conversion) | lead | A | research running |
+| 4 | Backbone shortlist (research done 2026-10-09): 1 Qwen3.5-4B main (75% GDN; H2O 72.5); 2 LiquidAI LFM2.5-2.6B / d1-3B (API d1 73.0; LFM1.0 licence); 3 gemma-4-E4B (cost class, 0% SSM); 4 Nemotron-3-Nano-4B (most SSM). AVOID Qwen3.5-9B / Qwen3.6-35B-A3B (Cost gated). No small official Qwen3.8 exists. Build-our-own from scratch: no (40-2,000x over budget). Next: A-PREREG-SIZECLIFF probe (~$45) | lead | A → new lead | probe packaging next |
 | 5 | Port best recipe (v3w + LS-CE/Brier/RPS + joint head + anti-collapse) to the chosen host; chained training | lead | new lead agent | after 3+4 |
 | 6 | Guarantees first: exact reorder/relabel invariance, conformal + abstention, injection-robust conformal (CONTROL_RESEARCH.md) | evidence+lead | both | kit metrics done (#243); model side next |
 | 7 | Data: bschema v4 re-aimed at JevBench task families (TRAIN-only, all gates) | evidence | B | building |
