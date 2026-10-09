@@ -1,0 +1,55 @@
+{
+ "build": "bschema-draw230k-v2e (scripts/b_schema_swap_pool.py: bschema-draw230k-v2d with ['synthetic_c_multirecord_v1'] replaced by c-multirecord-13575-v2-allk-admitted; P3 checks)",
+ "location": "ssdm-data/m2/build/bschema-draw230k-v2e/ (outside git; deterministic, a rerun reproduces it)",
+ "records_uncompressed_sha256": "9967766bf5fdd292f2e5d34bff9e6eda79a027b299ee6cf55c11ec94dada4081",
+ "manifest": "bschema-draw230k-v2e.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": "a4ec38754dc0d31783bc59030fa775fdeae8aaef884d135bf7822d5ec6660c7e",
+ "content_map": "bschema-draw230k-v2e.content.jsonl.gz",
+ "content_map_uncompressed_sha256": "3789c913ba58e3064ae524f5f81f914aca322893beca0a6260c305d90439058d",
+ "n_records": 234521,
+ "excludes_cohort": "m2-dev-cohort-v2 be6efe2b... and m2-dev-cohort-v3 498efa61... (id, content, source item, key-free text), Index DEV/TEST rows (content, key-free text, item text)",
+ "max_variants_per_source_item": 8,
+ "builder": {
+  "module": "scripts/b_schema_swap_pool.py",
+  "commit": "13ea0b92cd2647fb111602960d1d91d3b1b95ae5",
+  "parent_builder": {
+   "module": "scripts/b_schema_subtract.py",
+   "commit": "e58e3b957ca0b79e52b2386b0fd6517701388494",
+   "parent_builder": {
+    "module": "data/b_schema.py",
+    "commit": "918a237836870eff9a25cc91ca76e5165141084d"
+   }
+  }
+ },
+ "receipt": "receipts/2026-10-08-B1-schema/bschema-draw230k-v2e/",
+ "derived_from": {
+  "pointer": "data/manifests/bschema-draw230k-v2d.pointer.json",
+  "pointer_sha256": "1adf0c825d4c77e5e8925b811d227fdb113589fc44c7ab7de4ce13117cd1c603",
+  "records_uncompressed_sha256": "b5149e12e089d0eddde9a0fc0fa801ce9530766c07a0db17a00817a372a3bde3",
+  "n_records": 227946
+ },
+ "extra_pool": {
+  "dir": "c-multirecord-13575-v2-allk-admitted/train_set",
+  "pointer_sha256": "531faa15a6a54e58cd14f44c6af7a5bf8edd4046ca5a16a54ae7f84db26172cc",
+  "build": "c-multirecord-13575-v2-allk-admitted (python -m data.c_multirecord_union)",
+  "files_uncompressed_sha256": {
+   "records": "c33facd99e2251283aafcbb5521987d8b23a12d1d9f71f4de10fde1bb6b0a20f",
+   "manifest": "a8c1138d1baadcfa5e693964969b3a406727507b0afa72c6c4d9def796b1b980",
+   "content_map": "9e74bdfa8c1513955b26cab0350a0d30eefd87ac86ab76751f95ce728671f25f"
+  },
+  "builder": {
+   "module": "data.c_multirecord_union",
+   "commit": "183a4e6c7a73a8e5ed8b4e025fc7b92b74c76134"
+  }
+ },
+ "templates_verified": [
+  "jrt-rwkv-g1-v2f",
+  "jrt-rwkv-g1-v3w"
+ ],
+ "v1_overlength_ids": {
+  "path": "receipts/2026-10-08-B1-schema/bschema-draw230k-v2e/v1-overlength-ids.txt",
+  "sha256": "00783161496e21271d8f1da7e64f70beed7ad10051beb5812ef025de6d6c93e1",
+  "n": 7942,
+  "note": "under jrt-rwkv-g1-v1 these C rows exceed 2,048 tokens (max 2,309); the trainer drops (does not cut) rows over T"
+ }
+}
