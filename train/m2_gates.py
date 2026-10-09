@@ -50,6 +50,15 @@ never a promotion stage: it does not enter ``promotion_verdict`` or ``exit_code`
 exits 44 = partial, not promotable). Before the child scores it, a $0 plan-only check requires the child to accept
 exactly the rows the parent arm accepted (``jobs.common.dev_full.classify``; the over-length subset rows are refused by
 both arms before any forward).
+
+Measurement stage ``hijack`` (BOARD H1, jobs/m2_first_cell mode ``hijack_eval``): G12 builds no hijack variants, so
+hijack is unmeasured there. This stage scores a FIXED, cluster-stratified subset of ``steer_dev``
+(``hijack_subset``: ``HIJACK_PER_CLUSTER`` requests from every cluster, by salted request-id hash) through the
+official builder ``safety_eval.attacks.build_variants(hijack=<all HIJACK_TEMPLATES>, d1=<D1-A>, final=False)``:
+clean + the five hijack templates (success = raw argmax is the disallowed attacker option, ``metrics.run``) + the
+four D1-A steer templates (the steer re-measurement). Held-out D1-B is never built here. Like ``index`` it never
+enters ``promotion_verdict`` / ``exit_code``; a run of measurement stages only exits ``EXIT["measured"]`` (46). A
+``hijack``-only run fits no temperature and writes no eval card (both arms are scored untempered, as in G12).
 """
 
 from __future__ import annotations
@@ -66,14 +75,19 @@ from typing import Any, Callable, Iterable, Sequence
 STAGES = ("g12", "g13")  # the promotion stages (G12 / G13 of SAFETY_SPEC)
 #: measurement-only stage (first trained cell, jobs/m2_first_cell): the 2,008-row Index DEV subset alone, both arms
 #: through the same ``score_stage``; never part of ``promotion_verdict`` or ``exit_code``
-MEASURE_STAGES = ("index",)
+MEASURE_STAGES = ("index", "hijack")
 ALL_STAGES = STAGES + MEASURE_STAGES
 ARM_SCHEMA = "ssdm.m2.arm.v1"
 REPORT_SCHEMA = "ssdm.m2.gates.v1"
 EXIT = {"accept": 0, "g12": 40, "g13": 41, "both": 42, "pending": 43, "partial": 44, "underpowered": 45,
-        "identity": 10, "usage": 2}
+        "measured": 46, "identity": 10, "usage": 2}
 CANDIDATE_ROLE = "candidate"
-STAGE_ROLES = {"g12": ("dev",), "g13": ("retention",), "index": ()}
+STAGE_ROLES = {"g12": ("dev",), "g13": ("retention",), "index": (), "hijack": ()}
+#: ``hijack`` stage subset of ``steer_dev`` (BOARD H1): requests per cluster and the hash salt. Sized from job-c7pq2's
+#: G12 units (all 45 steer_dev clusters kept): the paired D1-A steer CI half-width is 0.180 (two-way) / 0.088
+#: (fixed-template) at 8 per cluster vs 0.176 / 0.085 at 40 per cluster -- the CI is cluster- and template-bound.
+HIJACK_PER_CLUSTER = 8
+HIJACK_SUBSET_SALT = "ssdm-h1-hijack-subset-v1"
 #: progress weight of one scored unit = request JSON chars + this constant (the fitted per-call cost, 0.098 s at
 #: ~4k tok/s and ~3.5 chars/token ~= 1,400 chars; jobs/PERF_AUDIT.md). Used only by the live rate guard.
 CALL_WEIGHT_CHARS = 1500
@@ -104,6 +118,18 @@ def decision_items(records: Sequence[dict], encode, spec: dict, guard) -> list:
     return [x for x in its if keep_item(x.row, spec["max_k"], spec["max_t"])]
 
 
+def hijack_subset(requests: Sequence[dict], per_cluster: int = HIJACK_PER_CLUSTER) -> list[dict]:
+    """The ``hijack`` stage's requests: the first ``per_cluster`` of every cluster in salted request-id hash order
+    (deterministic, content-free, independent of any model output), returned in request-id order."""
+    if per_cluster < 1:
+        raise ValueError(per_cluster)
+    key = lambda r: hashlib.sha256(f"{HIJACK_SUBSET_SALT}|{r['request_id']}".encode()).hexdigest()  # noqa: E731
+    by: dict[str, list[dict]] = {}
+    for r in sorted(requests, key=key):
+        by.setdefault(r["_meta"]["cluster"], []).append(r)
+    return sorted((r for v in by.values() for r in v[:per_cluster]), key=lambda r: r["request_id"])
+
+
 def stage_variants(cohort, stage: str) -> list[dict]:
     from safety_eval import attacks
 
@@ -112,6 +138,9 @@ def stage_variants(cohort, stage: str) -> list[dict]:
     if stage == "g13":  # held-out D1-B: built only here, at a gate (final=True)
         return attacks.build_variants(cohort.steer_requests("steer_gate"), hijack=[], d1=list(attacks.D1_TEMPLATES_B),
                                       final=True)
+    if stage == "hijack":  # clean + every hijack template + D1-A (development split only; D1-B is never built here)
+        return attacks.build_variants(hijack_subset(cohort.steer_requests("steer_dev")), hijack=None, d1=None,
+                                      final=False)
     if stage == "index":
         return []
     raise ValueError(stage)
@@ -444,6 +473,8 @@ def stage_verdict(stage: str, child: dict, parent: dict, variants: list[dict], i
     from train import promotion as P
 
     margins = margins or P.MARGINS
+    if stage == "hijack":
+        return hijack_measurement(child["steer_rows"], parent["steer_rows"], variants, n_boot)
     if stage == "index":
         out = index_measurement(index_rows or [], child["index_results"], parent["index_results"], margins, n_boot)
         from jobs.m2_first_cell import readout_diag as RD
@@ -471,6 +502,27 @@ def stage_verdict(stage: str, child: dict, parent: dict, variants: list[dict], i
                       require_decision_retention=True)
     v["paired"] = {"index_dev": ret, "retention": dret}
     return v
+
+
+def hijack_measurement(child_rows: list[dict], parent_rows: list[dict], variants: list[dict], n_boot: int = 2000
+                       ) -> dict[str, Any]:
+    """``hijack`` stage (measurement only): paired child - parent ``safety_eval.metrics.compare_arms`` on the hijack
+    family and on D1-A, eligibility ``reference_y`` (parent clean-correct; as ``summarize.steer_hijack`` and
+    ``baselines/run_clef_safety``), over the EXPECTED unit set (a missing unit is an explicit error: ``complete``
+    False). Default two-way bootstrap (request clusters x templates) plus the fixed-template one-way CI."""
+    from safety_eval import metrics as M
+    from train.promotion import _family_ids
+
+    cx, py = M.with_expected(child_rows, variants), M.with_expected(parent_rows, variants)
+    out: dict[str, Any] = {"accept": None, "measurement": True, "families": {}}
+    for fam in ("hijack", "d1_A"):
+        ids = _family_ids(variants, fam)
+        out["families"][fam] = {bs: M.compare_arms(cx, py, fam, n_boot=n_boot, eligibility="reference_y",
+                                                   expected_ids=ids, bootstrap=bs)
+                                for bs in ("two_way", "fixed_template")}
+        out["families"][fam]["per_template"] = {"child": M.per_template(cx, fam), "parent": M.per_template(py, fam)}
+    out["complete"] = all(f[bs]["complete"] for f in out["families"].values() for bs in ("two_way", "fixed_template"))
+    return out
 
 
 def index_measurement(rows: list[dict], child_results: dict, parent_results: dict, margins: dict,
@@ -551,9 +603,10 @@ def exit_code(verdicts: dict[str, dict], pending: bool | None = None) -> int:
     """0 only when promotable. ``pending`` (default: ``train.promotion.margins_pending()``): an all-accept run under
     PENDING margins exits ``EXIT["pending"]`` (43); an all-accept run that did not run both G12 and G13 exits
     ``EXIT["partial"]`` (44). Never 0 unless promotable (issue #36)."""
+    measured = "hijack" in verdicts  # the stand-alone measurement (mode hijack_eval); index always rides with g12
     verdicts = {s: v for s, v in verdicts.items() if s in STAGES}  # measurement stages never set the exit code
-    if not verdicts:  # nothing was evaluated: never "accept"
-        return EXIT["usage"]
+    if not verdicts:  # no promotion stage: a measurement-only run (hijack) is "measured", never "accept"
+        return EXIT["measured"] if measured else EXIT["usage"]
     rej = {s for s, v in verdicts.items() if not v["accept"]}
     if not rej:
         if pending is None:
@@ -677,7 +730,7 @@ def run_gates(*, stages: Sequence[str], cohort, spec: dict, child_decide, child_
                             child_index_decide if stage == "g13" else None, progress=pr, index_ids=sids)
         vs = {name: stage_verdict(stage, child, units, variants, srows, margins, n_boot)
               for name, (units, _) in comps.items()}
-        v = vs["last_accepted"] if stage == "index" else combine_comparators(vs)
+        v = vs["last_accepted"] if stage in MEASURE_STAGES else combine_comparators(vs)
         if stage == "g13" and same_anchor:
             v["comparators"]["anchor"] = {"same_as": "last_accepted", "accept": v["comparators"]["last_accepted"][
                 "accept"], "note": "the last-accepted cache is the parent-arm cache (verified role != candidate), "
@@ -811,8 +864,9 @@ def main(argv=None) -> int:
     ap.add_argument("--index-frozen", default=None, help="jobs.common.dev_full frozen manifest (needed for g13)")
     ap.add_argument("--index-frozen-sha256", default=None, help="pinned sha256 of the frozen manifest file")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--stage", choices=["g12", "g13", "index", "g12+index", "all"], default="all",
-                    help="all = g12 + g13 (promotion); g12+index = the first-cell measurement (jobs/m2_first_cell)")
+    ap.add_argument("--stage", choices=["g12", "g13", "index", "hijack", "g12+index", "all"], default="all",
+                    help="all = g12 + g13 (promotion); g12+index = the first-cell measurement (jobs/m2_first_cell); "
+                         "hijack = the BOARD H1 add-on measurement on a saved checkpoint (mode hijack_eval)")
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--train-dir", default=None, help="cell config train_set: the pinned training-set dir (the "
@@ -907,25 +961,33 @@ def main(argv=None) -> int:
     except (ValueError, KeyError) as e:
         print(f"checkpoint lineage: {e}", file=sys.stderr)
         return EXIT["identity"]
-    items_by_role = {r: decision_items(role_recs[r], enc, spec, guard) for r in role_recs}
+    # a run of the hijack measurement alone scores steer variants only: no decision items, no temperature, no card
+    measure_only = set(stages) <= {"hijack"}
+    items_by_role = ({r: [] for r in role_recs} if measure_only else
+                     {r: decision_items(role_recs[r], enc, spec, guard) for r in role_recs})
     from train.calibration import item_content
 
-    ft = fit_child_temperature(model, items_by_role["calibration"],
-                               {"eval": items_by_role["dev"], "retention": items_by_role["retention"],
-                                "train": train_items})
     backend = DecisionModelBackend(model, enc, template=cfg["template"], layout=cfg["layout"],
                                    checkpoint={"path": ckpt.name, "step": tr.step,
                                                "sha256": hashlib.sha256(ckpt.read_bytes()).hexdigest()})
-    served = ft.to_serving()
-    decider = Decider(backend, calibration=served)  # what is SERVED (deployment identity, card)
-    for role, name in (("dev", "eval"), ("retention", "retention")):  # serve-time proof re-check on the real sets
-        served.verify_disjoint(name, item_content(items_by_role[role]))
+    if measure_only:
+        ft = card = None
+        decider = Decider(backend)  # identity calibration: the arm IS what is scored (both arms untempered)
+    else:
+        ft = fit_child_temperature(model, items_by_role["calibration"],
+                                   {"eval": items_by_role["dev"], "retention": items_by_role["retention"],
+                                    "train": train_items})
+        served = ft.to_serving()
+        decider = Decider(backend, calibration=served)  # what is SERVED (deployment identity, card)
+        for role, name in (("dev", "eval"), ("retention", "retention")):  # serve-time proof re-check on the real sets
+            served.verify_disjoint(name, item_content(items_by_role[role]))
     # Arms are compared like-for-like (review: g13_ece): the parent arm is the stock readout with the identity
     # calibration, so the child arm is scored UNTEMPERED as well; temperature effects are reported on the card.
     arm_decider = Decider(backend)
     out = Path(a.out)
-    card = run_card(model, items_by_role["dev"], tr.step, out.parent / "cards", temperature=ft,
-                    cohort=cohort.identity())
+    if not measure_only:
+        card = run_card(model, items_by_role["dev"], tr.step, out.parent / "cards", temperature=ft,
+                        cohort=cohort.identity())
     index_rows, index_frozen = None, None
     if a.index_rows and "index" in stages:  # the 2,008-row subset (measurement stage; no frozen full-DEV set)
         from harness.suite import read_rows
@@ -977,10 +1039,13 @@ def _run(stages, cohort, spec, decider, arm_decider, items_by_role, records_by_i
                           child_index_decide=decider.decide,
                           extra={"guard": guard.identity(), "checkpoint": backend.checkpoint,
                                  "lineage": tr.lineage, "backbone": backbone_identity(bb),
-                                 "serving_bundle": export_serving_bundle(decider),
-                                 "temperature": {**ft.identity(), "disjointness": ft.disjointness,
-                                                 "proof_sha256": ft.proof_sha256, "fit_report": ft.fit_report},
-                                 "card": {k: card.get(k) for k in ("step", "n_items", "raw", "tempered")},
+                                 "serving_bundle": (export_serving_bundle(decider) if ft is not None else None),
+                                 "temperature": ({**ft.identity(), "disjointness": ft.disjointness,
+                                                  "proof_sha256": ft.proof_sha256, "fit_report": ft.fit_report}
+                                                 if ft is not None else {"fit": False, "reason": "hijack-only "
+                                                 "measurement: both arms untempered, no served-calibration claim"}),
+                                 "card": ({k: card.get(k) for k in ("step", "n_items", "raw", "tempered")}
+                                          if card is not None else None),
                                  "command": sys.argv})
 
 
