@@ -263,6 +263,26 @@ to "chunked" raises and the cell stops with exit 36 (also when training ran but 
 `"fla"` records the requested name, fla calls and fallbacks (process totals; smoke and eval cards are not strict, so a
 fallback there is counted, not fatal). The parent arm and child evals use the same cell `rwkv7_wkv` (identity).
 
+## Mode `ragtruth_rephrase`: the pre-registered RAGTruth statement rephrase (RT1), train-split check on D13 + D19
+
+B-PREREG-RAGTRUTH-REPHRASE (state PREREG.md @0683fa7c). job-3zmj2 (`ragtruth_polarity`) found D13's RAGTruth ranking
+inverted on 300 RAGTruth TRAIN items (AUROC 0.418 [0.353, 0.481]; Summary 0.33). RT1 (`decide/ragtruth_rephrase.py`)
+rewrites the catalog-59 question at READOUT time, by exact content match only (type noul + instructions + criteria),
+keeping the type, the option ids and the polarity (`true` = hallucinated), so p(true) is still p(hallucinated).
+`eval_only: "ragtruth_rephrase"`: setup + guard as usual, plus D19's train set verified against its own cell config
+and the `ragtruth_rephrase estimate` preflight; then per arm (params `arms`): `checkpoint_loader install --block`
+(D13 = `checkpoint`, art-cr9a2 best1600; D19 = `checkpoint_d19`, art-p3gpi best2800), and ONE model load
+(`fulldev_eval.load_child`, v3w untempered, the arm's own train dir for the lineage check) scoring every wording of the
+arm (D13: rt1; D19: original + rt1) under the rate guard (`--setup-cap-min`). D13's original-wording rows are job-3zmj2's
+`d13.results.jsonl` (bab92081..., shipped). Report: AUROC + bootstrap CI per arm x wording, paired dAUROC (rt1 -
+original), per track, in-draw / out-of-draw (175 of the 300 items are in D19's bschema-draw-v3b draw with the original
+wording + labels: `ragtruth_rephrase_d19_indraw.json`, rebuilt from the shipped manifest), and the rule
+(`ragtruth_rephrase.decide_arm`): PASS iff RT1's lower bound > 0.5; D19 also needs RT1's out-of-draw point AUROC > 0.5.
+Only a passing arm gets the DEV-minus-proxy600 stage (a second job). Pricing from measured rates (D13 load 6.75 min,
+D19 load 21.75 min, 3.4 min per 300-item wording): expected 46.8 min + build; caps setup 7 / guard 2 / checkpoint 3 /
+score_d13 14 / checkpoint_d19 4 / score_d19 39 / report 3 + reserve 7 = 79; quoted hold $4.98, worst case
+(60 + 2 x 79) x 0.0495 = $10.79 (cap $15). CKPT_URL = art-cr9a2, CKPT_URL_D19 = art-p3gpi at submit.
+
 ## Mode `devcal_d19_v3w`: D19's per-question probabilities on its own cohort-dev pool (temperature fit)
 
 B-PREREG-D19-TEMP (state PREREG.md, addendum 1). art-p3gpi keeps D19's dev cards as aggregates only, and D19 drew the
