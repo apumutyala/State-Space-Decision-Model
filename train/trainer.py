@@ -144,10 +144,16 @@ class TrainConfig:
     collapse_loss_frac: float = 0.8
     collapse_acc_frac: float = 0.6
     collapse_max_events: int = 3
+    #: constrained training as feedback control (train/constraints.py, docs/NUPI.md): nuPI-controlled Lagrange
+    #: multipliers, L = L_task + sum_k lambda_k (g_k - eps_k). Empty = off (left out of to_json / the hash; the original
+    #: code path runs, bit-identically). Non-empty: in the hash (it changes the trajectory).
+    constraints: dict = field(default_factory=dict)
 
     def to_json(self) -> dict:
         d = asdict(self)
         d["loss"] = self.loss.identity()  # optional KD/order-consistency fields only when enabled (old hashes unchanged)
+        if not d["constraints"]:
+            d.pop("constraints")  # off: old configs, records and checkpoints byte-identical
         if d["axis_loss_weight"] == 0.0:
             d.pop("axis_loss_weight")  # preserve legacy config identities
         for k in self.EXECUTION + self.ANTI_COLLAPSE:  # at their defaults these are left out: old records identical
@@ -415,7 +421,7 @@ def check_anti_collapse(cfg: TrainConfig) -> None:
 class Trainer:
     def __init__(self, model: DecisionModel, cfg: TrainConfig, train_items: list[Item],
                  eval_items: list[Item] | None = None, prepared: bool = False,
-                 guard: SplitGuard | None = None) -> None:
+                 guard: SplitGuard | None = None, probe_items: list[Item] | None = None) -> None:
         if cfg.require_guard and guard is None:
             raise ValueError("TrainConfig.require_guard: pass a SplitGuard built from the Index dev/test "
                              "manifests (or SplitGuard.synthetic_only for synthetic toys)")
@@ -430,7 +436,13 @@ class Trainer:
             raise ValueError("loss.kd_alpha > 0 but no training item carries a teacher distribution: call "
                              "train.teacher.attach(items, load_teacher(...)) first (a KD run without a teacher is the "
                              "clef arm under another name)")
-        if cfg.loss.order_consistency_weight > 0:
+        wants_consistency = any(c.get("kind") == "consistency" for c in (cfg.constraints or {}).get("items", []))
+        if wants_consistency and cfg.loss.order_consistency_weight > 0:
+            raise ValueError("constraints: a consistency item replaces the fixed-weight order-consistency term; set "
+                             "loss.order_consistency_weight = 0")
+        if wants_consistency and cfg.row_batch > 1 and cfg.cont_plan == "single":
+            raise ValueError("constraints: a consistency item needs cont_plan 'per_group' (its view forward)")
+        if cfg.loss.order_consistency_weight > 0 or wants_consistency:
             if cfg.loss.kd:
                 raise ValueError("order-consistency arm currently requires KD off; view-teacher semantics are not registered")
             if cfg.axis_loss_weight != 0.0:
@@ -488,6 +500,12 @@ class Trainer:
         self.history: list[dict[str, Any]] = []
         self.cards: list[dict[str, Any]] = []
         self.lineage = lineage(model.backbone, train_items)
+        #: nuPI constraints (None = off: every hook below is skipped and the original path runs)
+        self.constraints = None
+        if cfg.constraints:
+            from .constraints import ConstraintSet
+
+            self.constraints = ConstraintSet(cfg.constraints, train_items, probe_items)
 
     # ------------------------------------------------------------------ LR schedule
     def lr_factor(self, s: int) -> float:
@@ -712,12 +730,29 @@ class Trainer:
                 ref = ref + weight * torch.nn.functional.mse_loss(torch.zeros_like(targets), targets).detach().float()
         if ref is not None:
             self._step_uniform += float(ref) * row_weight
+        if self.constraints is not None:  # + sum_k lambda_k (g_k - eps_k), lambda fixed within the step
+            loss = loss + self.constraints.penalty(self, lp, y, batch, row_weight)
         return loss
+
+    def _constraint_view(self, batch: list[Item], lp: torch.Tensor) -> torch.Tensor | None:
+        """Consistency constraint: mean aligned JS between each paired row and its permuted view (None: no pairs)."""
+        paired = [(i, item) for i, item in enumerate(batch) if getattr(item, "view", None) is not None]
+        if not paired:
+            return None
+        with self._autocast():
+            view_lp = self.model([item.view.row for _, item in paired]).log_probs.float()
+        js = [aligned_order_js(lp[b, : len(item.row.option_ids)], view_lp[j, : len(item.row.option_ids)],
+                               tuple(item.view_perm)) for j, (b, item) in enumerate(paired)]
+        return torch.stack(js).mean()
 
     def train_step(self) -> float:
         self.model.train()
         self.opt.zero_grad(set_to_none=True)
         self._step_uniform = 0.0
+        if self.constraints is not None:
+            self.constraints.initialise(self)  # step-0 references, once (stored in the checkpoint)
+            self.constraints.begin_step()
+            self.model.train()
         total = 0.0
         if self.cfg.row_batch > 1:
             # the same rows as the micro-batch loop below (same _next_batch calls, so epoch roll-over is unchanged); the
@@ -753,14 +788,24 @@ class Trainer:
         return self._finish_step(total)
 
     def _finish_step(self, total: float) -> float:
+        cs = self.constraints
+        if cs is not None:
+            cs.probe_backward(self)  # recall items: lambda (probe loss - bound) into the step's gradient
         params = [p for g in self.opt.param_groups for p in g["params"]]
         torch.nn.utils.clip_grad_norm_(params, self.cfg.max_grad_norm)
         self.opt.step()
         self.sched.step()
         self.step += 1
-        self.history.append({"step": self.step, "loss": total})
-        self._guard_step(total)
-        return total
+        if cs is None:
+            self.history.append({"step": self.step, "loss": total})
+            self._guard_step(total)
+            return total
+        # the logged / guarded loss is the TASK loss; the Lagrangian and every multiplier are logged beside it
+        task = total - cs.step_penalty
+        self.history.append({"step": self.step, "loss": task, "lagrangian": total + cs.probe_penalty,
+                             "constraints": cs.end_step(self)})
+        self._guard_step(task)
+        return task
 
     def train(self, steps: int | None = None) -> list[dict[str, Any]]:
         target = self.cfg.max_steps if steps is None else self.step + steps
@@ -794,6 +839,7 @@ class Trainer:
             "lora_modules": self.lora_modules,
             "guard": None if self.guard is None else self.guard.identity(),
             **({"anti_collapse": self.anti_collapse_state()} if self.anti_collapse_on() else {}),
+            **({"constraints": self.constraints.state_dict()} if self.constraints is not None else {}),
         }
 
     def anti_collapse_on(self) -> bool:
@@ -882,6 +928,8 @@ class Trainer:
             self.collapse_events, self.stopped = list(ac["collapse_events"]), ac.get("stopped")
             self.guard_armed = bool(ac.get("guard_armed"))
             self._guard_window[:] = [(float(x), float(u)) for x, u in ac.get("guard_window") or []]
+        if self.constraints is not None and st.get("constraints") is not None:
+            self.constraints.load_state_dict(st["constraints"])  # lambdas, integrals, EMAs, bounds: exact
         if is_inference(path):
             self.loaded_format = "inference"
             return
@@ -889,6 +937,9 @@ class Trainer:
             self.loaded_format = "trainable"
             return
         self.loaded_format = "full"
+        if self.constraints is not None and st.get("constraints") is None:
+            raise ValueError(f"{Path(path).name} has no constraint-controller state: not a resume point for a "
+                             "constraints run")
         self.opt.load_state_dict(st["optimizer"])
         self.sched.load_state_dict(st["scheduler"])
         torch.set_rng_state(st["rng"]["torch"])
