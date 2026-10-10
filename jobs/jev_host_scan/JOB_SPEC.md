@@ -38,7 +38,13 @@ Its published board cells are a different item draw (the v1.6.1 open set P300 + 
 a measured rate past the cap, 124 at the cap); partial predictions are scored and exported per candidate. A candidate
 whose caps no longer fit the scan phase is skipped. Phases: setup 10, scan 220, summarize 5, reserve 5 = 240 min.
 
-**Cost.** Hold = 240 min x $0.063 = **$15.12**. Worst case (costs.worst_case_usd, build + 2 attempts at the billed rate):
-**$26.73** (hard cap $27). Expected ~104 min, ~$5.15.
+**B-PREREG-FLIP mode (branch claude/ev-flip-hs).** Candidates trimmed to H2O-Lightning-4B v1.1 and stock Qwen3.5-4B,
+both under the H2O shim; each answers the 231 public items and then the 1,593 pinned jevkit perturbations (`jevkit
+perturb make --public --seeds 0`, sha256 655d028a...79d7, shipped as /data/jevbench-perturb/seed0-655d028a/). Base
+predictions stay in `<arm>/preds.jsonl` (the jevkit report is unchanged); perturbed ones go to `<arm>/preds_pert.jsonl`,
+and `jevkit perturb score` writes `<arm>/flip.json`. Phases: setup 10, scan 46, summarize 5, reserve 5 = 66 min.
+
+**Cost.** Hold = 66 min x $0.063 = **$4.16**. Worst case (costs.worst_case_usd, build + 2 attempts at the billed rate):
+**$9.50** (hard cap $10). Expected ~34 min, ~$1.70.
 
 **Verdict.** None (measurement only). Exit codes: see `scan_job.sh`.
