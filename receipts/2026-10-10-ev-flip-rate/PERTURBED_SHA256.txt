@@ -1,0 +1,2 @@
+655d028a633959db74e2046b585beaae9dff48c0c6f77417bfdd02a147ad79d7  pert_public_seed0.jsonl (1,593 rows; python -m jevkit perturb make --public --seeds 0 at agent-main 7c131f19)
+82c7c07bfa08e3b9bcb577f726d3993f5496e7184e5b08a570456eb63920046d  pert_child_shuffle_relabel.jsonl (352 rows = the option_shuffle + key_relabel rows of the above, in file order)

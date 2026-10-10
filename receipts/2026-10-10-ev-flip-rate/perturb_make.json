@@ -1,0 +1,15 @@
+{
+ "n_base": 231,
+ "n_perturbed": 1593,
+ "per_operator": {
+  "instruction_paraphrase": 231,
+  "option_paraphrase": 231,
+  "option_reverse": 213,
+  "option_shuffle": 213,
+  "whitespace_noise": 231,
+  "markup_noise": 231,
+  "state_paraphrase": 104,
+  "key_relabel": 139
+ },
+ "out": "receipts/2026-10-10-ev-flip-rate/pert_public_seed0.jsonl"
+}
