@@ -1,0 +1,12 @@
+{
+ "PLACEHOLDER": "A-PREREG-JEV2-4B: replace with <out>/bschema-draw-jev12-bal1000/pointer.json once bschema-draw-jev2 lands",
+ "build": "bschema-draw-jev12-bal1000 (scripts/jev12_balanced_draw.py over bschema-draw-jev1 + bschema-draw-jev2)",
+ "command": "python -X utf8 -I scripts/jev12_balanced_draw.py --src <ssdm-data>/m2/build/bschema-draw-jev1 --src <ssdm-data>/m2/build/bschema-draw-jev2 --train-per-family 1000 --calib-per-family 60 --name bschema-draw-jev12-bal1000 --out <ssdm-data>/m2/build",
+ "n_records": 19000,
+ "records_uncompressed_sha256": null,
+ "manifest": "bschema-draw-jev12-bal1000.manifest.jsonl.gz",
+ "manifest_uncompressed_sha256": null,
+ "content_map": "bschema-draw-jev12-bal1000.content.jsonl.gz",
+ "content_map_uncompressed_sha256": null,
+ "templates_verified": []
+}

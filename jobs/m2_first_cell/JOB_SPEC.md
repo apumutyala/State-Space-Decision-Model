@@ -540,3 +540,43 @@ Schedule: setup 20 + guard 5 + heldout 10 + cell 215 + screen 45 + report 5 + re
 $19.34; **worst case** (60 + 2 x 307) x $0.063 = **$42.46** (jobs/common/rates.py rate; hard cap $45).
 
 **r2 (job-v6qm3 stopped at exit 26).** The jev1 mix measured 10.92 s/step at the step-10 rate check (979 affordable < 1,111 needed in 180 min). Clock = ceil(1,121 x 10.92 x 1.3 / 60) = 266 -> 270 min; cell cap 305; max_duration 397 min; quoted hold $25.01; **worst case** (60 + 2 x 397) x $0.063 = **$53.80** (hard cap $60). Everything else unchanged (1,121 fixed steps, LR horizon 753, the same data and arms).
+
+## Mode `jev2_q35_4b` (A-PREREG-JEV2-4B: JEV1-4B scaled; launches only if r2 WINS)
+
+PRE-REGISTRATION TEXT, to paste on origin/state PREREG.md before any JEV2 run:
+
+- **A-PREREG-JEV2-4B (lead, 2026-10-10, registered BEFORE any JEV2 run; launches only if A-PREREG-JEV1-4B r2 succeeds,
+  i.e. delta Composite A > 0 with its CI excluding 0).**
+  - **Cell:** stack/qwen35/jev2-4b, cut from stack/qwen35/sym-invariant @42388c2c (layout sym-fork, `<|im_end|>`
+    tail; the reorder + relabel guarantee by construction). Otherwise r2's recipe unchanged: stock Qwen/Qwen3.5-4B
+    @851bf6e, H2O shim template, LoRA r64, fork head, clef loss, same optimiser and LR.
+  - **Data and budget:** EXACTLY 1 epoch of the family-balanced draw bschema-draw-jev12-bal1000 (jev1 + jev2: 1,000
+    rows per JevBench family x 19 families = 19,000 rows, label-blind ascending sha256(seed:id); the per-family cap is
+    fixed before training). That is 2,375 fixed optimiser steps (max = min; exit 26 re-prices rather than training a
+    partial epoch), cosine horizon 1,595 (r2's 753/1,121 ratio). For comparison, r2 was 1,121 steps = 8,968 rows = 0.093
+    epoch of jev1's 96k.
+  - **Calibration slice:** the next 200 rows per family (3,800), id- AND content-disjoint from training. Its ids sha256
+    is pinned in the cell config (`calib_slice.ids_sha256`) and in the draw pointer.
+  - **PRIMARY:** jevkit on the 231 public JevBench items, the native arm paired against STOCK Qwen3.5-4B + shim in the
+    same job (same items, same bootstrap draws B = 1,000 seed 16; `screen.paired_vs`, as A-PREREG-JEV1-4B). SUCCESS iff
+    delta Composite A > 0 with its 95% CI excluding 0.
+  - **GUARANTEE G1 (must hold for a keep):** `jobs.sym_eval.perturb_eval` operators 4-6 (option_reverse,
+    option_shuffle, key_relabel) on the native arm: 0 flips, 0 invalid and max |dp| <= 1e-3 on every operator. The row
+    bit-identity check (`rows_all_identical`) is reported beside it.
+  - **SECONDARY (reported, not gates):**
+    - delta I, C, Capability, tokens per decision.
+    - native_tfit: one scalar T fitted on the calibration slice only (NLL, bounded [0.25, 4]), frozen before any eval
+      answer is re-tempered. native_shimcal is reported beside it.
+    - The per-option probabilities of every slice decision are exported (`calib_probs.jsonl`) for EV-PREREG-AREA-TEMP's
+      T_J / T_f, never fitted on public-231.
+    - by_coverage: the paired deltas on the 8 jev1-covered families vs the jev2-only families.
+    - JEV2 native vs r2 native (cross-job; informative only).
+  - **Caveat:** open-split Intelligence only, never claimed as a board score.
+  - **Cost** (jobs/common/rates.py, $0.063/min): max_duration 717 min, quoted hold $45.17, worst case $94.12, expected
+    ~$34. Fallback if the balance is below ~$95: 800/family (1,900 steps, max 607 min, worst $80.26).
+
+Package: `job_params_jev2_q35_4b.json` + `m2_first_cell_rwkv7_jev2_q35_4b.json`. The step rate is r2's measured 10.92
+s/step x the sym-fork v2 factor 0.985 (42388c2c `sym_reprice_note`), so clock = ceil(2,375 x 10.76 x 1.3 / 60) -> 555.
+Placeholders until the jev2 draw lands: the pointer, `data_jev2.sha256`, `calib_slice.ids_sha256` and
+`jevkit.tfit.ids_sha256`. New screen keys (opt-in; r2's jevkit block is unchanged when they are absent): `jevkit.tfit`,
+`jevkit.perturb_ops`, `jevkit.covered_families`.

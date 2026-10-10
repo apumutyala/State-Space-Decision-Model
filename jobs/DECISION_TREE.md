@@ -144,3 +144,28 @@ Q9-AF v2 first cell `jobs/m2_first_cell/job_params_q9af_v2_v3w.json` (mode `q9af
 A-PREREG-SIZECLIFF size-cliff probe `jobs/m2_first_cell/job_params_sizecliff_q35_0p8b.json`, `jobs/m2_first_cell/job_params_sizecliff_q35_2b.json`, `jobs/m2_first_cell/job_params_sizecliff_q35_4b.json` (modes `sizecliff_q35_0p8b`, `sizecliff_q35_2b`, `sizecliff_q35_4b`; stack/qwen35/sizecliff): the D16 recipe on the STOCK Qwen3.5-0.8B / 2B / 4B (parent `qwen35`), trained and served in the replicated H2O-Lightning shim format (`jrt-h2o-shim:*`, PREREG Amendment 1), same draw (94,786), LoRA r64, 100-min clock on each; screen = proxy600 (cross-readout vs d1_v3w + the Clef-flash / Clef 27B units) + jevkit on the 231 public JevBench items (shim primary; v3w and the shim post-processing score-only; the 4B also with the lean shim prompt). Decision rule = PREREG.md A-PREREG-SIZECLIFF (>= 0.92x the 4B on proxy and jevkit-I -> small-backbone route; < 0.80x on both -> close the <= 2B line; between -> one longer-clock probe; lean adopted iff I drops <= 1 point while tokens drop >= 25%). Worst case $24.95 each, quoted hold $13.99 each.
 
 A-PREREG-JEV1-4B `jobs/m2_first_cell/job_params_jev1_q35_4b.json` (mode `jev1_q35_4b`; stack/qwen35/jev1-4b): the size-cliff 4B r4 recipe on bschema-draw-jev1 (96,000 JevBench-family rows), 1,121 steps; PRIMARY = jevkit delta Composite A vs stock Qwen3.5-4B + the H2O shim in the same job (success iff the 95% CI excludes 0). Worst case $42.46, quoted hold $19.34.
+
+## After JEV1-4B r2 lands (2026-10-10): WIN -> JEV2-4B, FLAT/LOSE -> JEV1-DIAG
+
+Read r2's `screen.json` `jevkit.primary` (A-PREREG-JEV1-4B: delta Composite A vs stock + shim, 95% CI).
+
+- **Always, $0, CPU:** `scripts/check_jev1_vs_jevkit_render.py --out <f>` (tokenizer only; needs >= 4 GB free). It diffs
+  one jev1 train row vs one jevkit item per family and qtype through the SAME `heads.layout.build_row`: state type, question
+  keys, answer-slot suffix, option continuations. It covers only the 8 jev1 families (120 items). The other 111 items
+  (multi_hop, judge_hard, temporal_numeric, fact, tool_selection, probability, trap, ambiguous, tradeoff, adversarial,
+  routing_hard) have no train row at all. Also run the per-family breakdown of r2's own preds (covered vs uncovered).
+- **WIN (CI > 0) -> JEV2-4B** (`stack/qwen35/jev2-4b`, mode `jev2_q35_4b`, A-PREREG-JEV2-4B). Blocked on the jev2 draw.
+  When it lands:
+  `scripts/jev12_balanced_draw.py --src .../bschema-draw-jev1 --src .../bschema-draw-jev2 --train-per-family 1000
+  --calib-per-family 200 --name bschema-draw-jev12-bal1000`. Then copy its pointer.json into
+  `data/manifests/bschema-draw-jev12-bal1000.pointer.json`, its shas into `jobs/m2_first_cell/data_jev2.sha256`, and
+  `calib_ids_sha256` into the cell's `calib_slice.ids_sha256` and the params' `jevkit.tfit.ids_sha256`. If the jev2
+  family count is not 11, re-run the scratch generator (FAMS) so steps = rows / 8. Run `tests/test_jev2_4b.py`, then
+  package with `jobs.common.launch`.
+  Budget: 1,000/family = worst $94.12 (expected ~$34). If the free balance is below ~$95, use 800/family instead:
+  15,200 rows, 1,900 steps, clock 445, max 607 min, worst $80.26, expected ~$29.
+- **FLAT / LOSE -> JEV1-DIAG** (`stack/qwen35/jev1-diag`, mode `jevdiag_q35_4b`, A-PREREG-JEV1-DIAG). It is eval-only
+  on r2's checkpoint, so it can launch as soon as r2's artifact shas are in the `checkpoint` block, the shipped cell.json
+  pin is set and `jevdiag.r2_delta_I_ci95` is filled. Worst case $17.89. Its `diagnosis` picks the next cell:
+  READOUT -> LM-head label readout; TRANSFER -> coverage + format first (jev2); UNDERFIT -> JEV2-4B budget + LR x2;
+  mixed -> JEV2-4B.

@@ -466,7 +466,17 @@ def jevkit_block(params: dict, template: str) -> dict | None:
     stock = jk.get("stock_shim")
     if stock and not _is_shim(template):
         raise ScreenError("jevkit.stock_shim needs a shim screen readout (the stock arm reads the same shim prompt)", 5)
-    return {"price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
+    tfit = jk.get("tfit")  # JEV2-4B: post-hoc scalar temperature fitted on the CALIB draw (never eval items)
+    if tfit is not None and not (isinstance(tfit, dict) and tfit.get("records")):
+        raise ScreenError("jevkit.tfit: {records: <path under --data>, lo, hi}", 5)
+    pops = jk.get("perturb_ops")  # JEV2-4B G1: jevkit perturb operators answered by the native arm
+    if pops is not None:
+        from jevkit.perturb import OPERATORS
+        if not pops or any(o not in OPERATORS for o in pops):
+            raise ScreenError(f"jevkit.perturb_ops {pops!r}: names from jevkit.perturb.OPERATORS", 5)
+    extra_keys = (({"tfit": tfit} if tfit is not None else {}) | ({"perturb_ops": list(pops)} if pops else {})
+                  | ({"covered_families": sorted(jk["covered_families"])} if jk.get("covered_families") else {}))
+    return {**extra_keys, "price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
             "shim_calibration": bool(jk.get("shim_calibration")), "stock_shim": bool(stock),
             "paired_primary": jk.get("paired_primary"),
             "items": "jevkit.items.load_public (231 pinned public JevBench items; eval-only)"}
@@ -524,14 +534,14 @@ def score(a) -> int:
          "sum_row_wall_s": sum(float(done[i].get("total_wall_ms") or 0) for i in ids) / 1000}, indent=1),
         encoding="utf-8")
     if rec.get("jevkit"):
-        return jevkit_answer(rec["jevkit"], decider, a.model_dir, out / "jevkit")
+        return jevkit_answer(rec["jevkit"], decider, a.model_dir, out / "jevkit", data_dir=a.data)
     return 0
 
 
 JEVKIT_WARMUP = 2  # jevkit.meter.measure's warm-up requests (untimed, not recorded)
 
 
-def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path) -> int:
+def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path, data_dir: str | None = None) -> int:
     """The child's answers to the pinned public JevBench items: ``native`` (the screen's decider) and, with a lean
     template, ``lean`` (a second decider over the SAME model object and encoder, the lean template bound to this
     snapshot's tokenizer files and checked against its pinned identity). Serial, one request per item, timed."""
@@ -573,6 +583,21 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path) -> int:
                 f.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
         ident[name] = {"decider": dec.revision(), "seconds": round(time.perf_counter() - t0, 2), "n": len(recs),
                        "status": _count(r["status"] for r in recs)}
+    if jk.get("perturb_ops"):  # JEV2-4B G1: jobs.sym_eval.perturb_eval (the A-PREREG-JEV1-4B-SYM eval path) in process
+        from jobs.sym_eval.perturb_eval import run as perturb_run
+        t0 = time.perf_counter()
+        g1 = perturb_run(decider, items, out_dir / "g1", ops=jk["perturb_ops"], seeds=(0,),
+                         row_fn=lambda req: decider.backend._rows(req)[0])
+        ident["g1"] = {"g1_pass": g1["g1_pass"], "rows_all_identical": g1.get("rows_all_identical"),
+                       "n_perturbed": g1["n_perturbed"], "seconds": round(time.perf_counter() - t0, 2)}
+    if jk.get("tfit"):  # JEV2-4B: scalar T on the CALIB draw's native head log-probs (fit once, frozen before scoring)
+        try:
+            ident["tfit"] = fit_native_temperature(decider.backend, Path(data_dir) / jk["tfit"]["records"],
+                                                   out_dir / "tfit.json", float(jk["tfit"].get("lo", 0.25)),
+                                                   float(jk["tfit"].get("hi", 4.0)), jk["tfit"].get("ids_sha256"))
+        except (OSError, ValueError, KeyError) as e:
+            print(f"identity: tfit: {type(e).__name__}: {e}", file=sys.stderr)
+            return 10
     if jk.get("stock_shim"):  # A-PREREG-JEV1-4B: the STOCK model under the H2O shim readout, in the same process
         eng = StockShimEngine(decider.backend, model_dir)
         ad = SystemOneAdapter(eng, kind="request", model_name="stock-shim")
@@ -786,6 +811,134 @@ def shim_calibrate(src: Path, dst: Path, items) -> None:
             g.write(json.dumps(r, separators=(",", ":")) + "\n")
 
 
+def fit_temperature(logps: list[list[float]], labels: list[int], lo: float = 0.25, hi: float = 4.0) -> dict:
+    """Scalar T minimising the mean NLL of softmax(logp / T) at the gold option (golden-section on log T, bounded
+    [lo, hi]); pure Python. ``logps`` = per question the head's per-option log-probabilities (any additive offset)."""
+    import math
+
+    if not logps or len(logps) != len(labels):
+        raise ValueError("tfit: no calibration questions / labels mismatch")
+
+    def nll(t: float) -> float:
+        s = 0.0
+        for lp, y in zip(logps, labels):
+            z = [x / t for x in lp]
+            m = max(z)
+            s -= z[y] - (m + math.log(sum(math.exp(v - m) for v in z)))
+        return s / len(logps)
+
+    a, b = math.log(lo), math.log(hi)
+    g = (math.sqrt(5) - 1) / 2
+    c, d = b - g * (b - a), a + g * (b - a)
+    fc, fd = nll(math.exp(c)), nll(math.exp(d))
+    for _ in range(60):
+        if fc < fd:
+            b, d, fd = d, c, fc
+            c = b - g * (b - a)
+            fc = nll(math.exp(c))
+        else:
+            a, c, fc = c, d, fd
+            d = a + g * (b - a)
+            fd = nll(math.exp(d))
+    t = math.exp((a + b) / 2)
+    return {"T": t, "nll_T": nll(t), "nll_1": nll(1.0), "n": len(logps), "bounds": [lo, hi],
+            "at_bound": bool(abs(math.log(t) - math.log(lo)) < 1e-3 or abs(math.log(t) - math.log(hi)) < 1e-3)}
+
+
+def retemper_answer(question: dict, answer: dict, t: float) -> dict:
+    """The native SystemOne answer with its distribution re-tempered (p_i^(1/T), renormalised); derived fields
+    recomputed by jevkit.systemone.normalize_answer. noul: P(yes) as the two-option distribution."""
+    from jevkit.systemone import normalize_answer
+
+    def temper(ps: list[float]) -> list[float]:
+        w = [max(float(p), 1e-12) ** (1.0 / t) for p in ps]
+        s = sum(w)
+        return [x / s for x in w]
+
+    if question["type"] == "noul":
+        py = float(answer["noul"])
+        return {"type": "noul", "noul": temper([py, 1.0 - py])[0]}
+    names = list(answer["probabilities"])
+    ps = temper([answer["probabilities"][n] for n in names])
+    return normalize_answer(question, {"type": question["type"], "probabilities": dict(zip(names, ps))})
+
+
+def slice_ids_sha256(record_ids) -> str:
+    """The calibration slice identity (EV-PREREG-AREA-TEMP addendum): sha256 of the sorted RECORD ids, newline-joined
+    (scripts/jev12_balanced_draw.py writes the same value as ``calib_ids_sha256``)."""
+    return hashlib.sha256("\n".join(sorted(record_ids)).encode()).hexdigest()
+
+
+def fit_native_temperature(backend, records_path: Path, out: Path, lo: float, hi: float,
+                           expect_ids_sha256: str | None = None) -> dict:
+    """GPU side of the tfit: the CALIB slice's rows (scripts/jev12_balanced_draw.py ``-calib``: >= 200 per family,
+    hashed-id order, disjoint from the training draw by id AND content; never JevBench items) through the native
+    backend (same template / layout / encoder as the jevkit native arm). Exports EVERY slice decision's per-option
+    probabilities to calib_probs.jsonl (id, family, type, option ids, probs, gold index) so T_J / per-family T_f can be
+    refitted offline without a rerun, then fits the scalar T (``fit_temperature``) into tfit.json, frozen before any
+    eval answer is re-tempered. ``expect_ids_sha256`` (the cell config's pin, unless a placeholder) must match."""
+    import gzip
+    import math
+
+    import torch
+
+    from train.data import items_from_records
+    from train.run_cell import to_train_record
+
+    raw = records_path.read_bytes()
+    with gzip.open(records_path, "rt", encoding="utf-8") as f:
+        raws = [json.loads(x) for x in f if x.strip()]
+    sha = slice_ids_sha256(r["id"] for r in raws)
+    if expect_ids_sha256 and len(expect_ids_sha256) == 64 and sha != expect_ids_sha256:
+        raise ValueError(f"tfit: calib slice ids sha256 {sha} != the pinned {expect_ids_sha256}")
+    fam_of = {r["id"]: next((v.get("family8") or v.get("family") for v in (r.get("aug") or {}).values()
+                             if isinstance(v, dict) and (v.get("family8") or v.get("family"))), r.get("family"))
+              for r in raws}
+    items = items_from_records([to_train_record(r) for r in raws], backend.encode, layout=backend.layout,
+                               template=backend.template)
+    logps, labels = [], []
+    m = backend.model
+    was = m.training
+    m.eval()
+    try:
+        with torch.no_grad(), open(out.parent / "calib_probs.jsonl", "w", encoding="utf-8", newline="\n") as g:
+            for it in items:
+                lp = m([it.row]).log_probs[0].float().cpu()[: it.row.n_options]
+                if not torch.isfinite(lp).all():
+                    raise ValueError(f"tfit: non-finite log-probs on {it.id}")
+                v = lp.tolist()
+                logps.append(v)
+                labels.append(int(it.label))
+                mx = max(v)
+                z = math.log(sum(math.exp(x - mx) for x in v)) + mx
+                rid = it.id.rsplit("/", 1)[0]
+                g.write(json.dumps({"id": it.id, "family": fam_of.get(rid), "type": it.row.qtype,
+                                    "option_ids": list(it.row.option_ids), "probs": [math.exp(x - z) for x in v],
+                                    "gold": int(it.label)}, separators=(",", ":")) + "\n")
+    finally:
+        m.train(was)
+    rep = fit_temperature(logps, labels, lo, hi) | {
+        "records": str(records_path), "records_gz_sha256": hashlib.sha256(raw).hexdigest(), "ids_sha256": sha,
+        "calib_probs": "calib_probs.jsonl (per-option probabilities of every slice decision, untempered)",
+        "rule": "scalar T, NLL minimiser over all calib questions, bounded; fitted before any eval answer is tempered"}
+    out.write_text(json.dumps(rep, indent=1), encoding="utf-8")
+    return {k: rep[k] for k in ("T", "n", "nll_T", "nll_1", "at_bound", "ids_sha256")}
+
+
+def tfit_preds(src: Path, dst: Path, items, t: float) -> None:
+    """native.preds.jsonl -> native_tfit.preds.jsonl with every ok answer re-tempered by the frozen T (score-only)."""
+    by_id = {it.id: it for it in items}
+    with open(src, encoding="utf-8") as f, open(dst, "w", encoding="utf-8", newline="\n") as g:
+        for line in f:
+            if not line.strip():
+                continue
+            r = json.loads(line)
+            a, it = r.get("answer"), by_id.get(r.get("id"))
+            if r.get("status") == "ok" and isinstance(a, dict) and it is not None:
+                r["answer"] = retemper_answer(it.question, a, t)
+            g.write(json.dumps(r, separators=(",", ":")) + "\n")
+
+
 def comparator_report(rows: list[dict], child: dict, comps: list[dict], B: int) -> dict:
     """child - comparator on the proxy rows (frozen scorer), per pinned comparator; cross-readout, never the verdict."""
     ids = {r["_evaluation"]["run_id"] for r in rows}
@@ -812,12 +965,17 @@ def jevkit_report(jk: dict, d: Path) -> dict:
     from jevkit.systemone import preds_to_answers
 
     items = load_public()
-    arms, tables, axes = {}, {}, {}
+    arms, tables, axes, answers_by = {}, {}, {}, {}
     names = (["native"] + (["lean"] if jk.get("lean_template") else []) + sorted(jk.get("extra_templates") or {})
              + (["stock_shim"] if jk.get("stock_shim") else []))
     if jk.get("shim_calibration"):  # score-only: the shim's own post-processing on the native answers (no GPU)
         shim_calibrate(d / "native.preds.jsonl", d / "native_shimcal.preds.jsonl", items)
         names.append("native_shimcal")
+    tfit = None
+    if jk.get("tfit"):  # JEV2-4B: the frozen calib-draw T applied to the native answers (score-only)
+        tfit = json.loads((d / "tfit.json").read_text(encoding="utf-8"))
+        tfit_preds(d / "native.preds.jsonl", d / "native_tfit.preds.jsonl", items, float(tfit["T"]))
+        names.append("native_tfit")
     for name in names:
         pf = d / f"{name}.preds.jsonl"
         if not pf.is_file():
@@ -842,7 +1000,8 @@ def jevkit_report(jk: dict, d: Path) -> dict:
                                                                 "n": len(toks)},
                                   "speed": rep.get("speed"),
                                   "status": _count(p.get("status") for p in preds)}}
-        tables[name] = JS.build_table(items, preds_to_answers(preds))
+        answers_by[name] = preds_to_answers(preds)
+        tables[name] = JS.build_table(items, answers_by[name])
         axes[name] = (rep["axes"]["speed"], rep["axes"]["cost"])
     out = {"price": jk["price_parsed"], "lean_template": jk.get("lean_template"),
            "extra_templates": jk.get("extra_templates") or {}, "arms": arms,
@@ -877,6 +1036,25 @@ def jevkit_report(jk: dict, d: Path) -> dict:
             "composite_pairs": JS.bootstrap({"lean": tables["lean"], "native": tables["native"]}, axes).get("_pairs"),
             "rule": "A-PREREG-SIZECLIFF: lean adopted iff jevkit-I drops <= 1 point (paired) while tokens drop >= 25%",
             "adopt": bool(sl["I"] - sn["I"] >= -1.0 and drop is not None and drop >= 0.25)}
+    if tfit is not None:
+        out["tfit"] = {k: tfit.get(k) for k in ("T", "n", "nll_T", "nll_1", "at_bound", "ids_sha256", "records_gz_sha256")}
+    if jk.get("perturb_ops"):  # JEV2-4B G1 (guarantee check beside the primary)
+        g1 = json.loads((d / "g1" / "perturb_report.json").read_text(encoding="utf-8"))
+        out["g1"] = {k: g1.get(k) for k in ("ops", "n_base", "n_perturbed", "g1_pass", "rows_all_identical",
+                                            "duplicate_tie_items", "max_dp_bound", "status")} | {
+            "per_operator": g1["flip_report"]["per_operator"],
+            "rule": "A-PREREG-JEV2-4B G1: 0 flips, 0 invalid, max |dp| <= 1e-3 on every op (jobs.sym_eval.perturb_eval)"}
+    cov = jk.get("covered_families")
+    if cov and "stock_shim" in tables:  # JEV2-4B secondary: the paired deltas on covered vs uncovered families
+        out["by_coverage"] = {}
+        for grp in ("covered", "uncovered"):
+            sub = [it for it in items if (it.family in cov) == (grp == "covered")]
+            if not sub:
+                continue
+            st_ = {nm: JS.build_table(sub, answers_by[nm]) for nm in answers_by}
+            out["by_coverage"][grp] = {"n_items": len(sub), "families": sorted({it.family for it in sub}),
+                                       "vs_stock_shim": {nm: paired_vs(st_, axes, nm, "stock_shim")
+                                                         for nm in st_ if nm != "stock_shim"}}
     return out
 
 

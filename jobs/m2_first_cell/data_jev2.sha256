@@ -1,0 +1,6 @@
+# PLACEHOLDER (A-PREREG-JEV2-4B): fill from scripts/jev12_balanced_draw.py output once bschema-draw-jev2 lands
+# <sha256>  m2/build/bschema-draw-jev12-bal1000/records.jsonl.gz
+# <sha256>  m2/build/bschema-draw-jev12-bal1000/bschema-draw-jev12-bal1000.manifest.jsonl.gz
+# <sha256>  m2/build/bschema-draw-jev12-bal1000/bschema-draw-jev12-bal1000.content.jsonl.gz
+# <sha256>  m2/build/bschema-draw-jev12-bal1000-calib/records.jsonl.gz
+# (the suite-0.2 entries stay pinned by data_jev1.sha256)
