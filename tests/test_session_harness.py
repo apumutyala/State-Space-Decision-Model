@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 
@@ -40,10 +41,20 @@ BASH = _git_bash()
 needs_bash = pytest.mark.skipif(BASH is None, reason="Git Bash not available")
 
 
+CACHE = tempfile.mkdtemp(prefix="ssdm-digest-test-")  # the digest's state cache, private to this test module
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _drop_cache():
+    yield
+    shutil.rmtree(CACHE, ignore_errors=True)
+
+
 def _env(**extra: str) -> dict:
     env = {k: v for k, v in os.environ.items() if k not in ("GIT_DIR", "GIT_WORK_TREE", "SSDM_AGENT")}
     env.update({"SSDM_WSL": "no-such-wsl-for-tests.exe", "GIT_ALLOW_PROTOCOL": "none", "GIT_TERMINAL_PROMPT": "0",
-                "SSDM_FETCH_TIMEOUT": "5", "CUDA_VISIBLE_DEVICES": ""})
+                "SSDM_FETCH_TIMEOUT": "5", "SSDM_FETCH_MAX_AGE": "0", "SSDM_DIGEST_CACHE": CACHE,
+                "CUDA_VISIBLE_DEVICES": ""})
     env.update(extra)
     return env
 
@@ -65,7 +76,7 @@ def test_settings_json_has_sessionstart_hook_with_the_four_matchers():
         covered |= set(g["matcher"].split("|"))
         for h in g["hooks"]:
             assert h["type"] == "command"
-            assert isinstance(h.get("timeout"), int) and 20 <= h["timeout"] <= 120, "seconds; the digest bounds itself"
+            assert isinstance(h.get("timeout"), int) and 120 <= h["timeout"] <= 300, "seconds; must exceed the digest's own 45 s deadline"
             cmds.append(h["command"])
     assert {"startup", "resume", "clear", "compact"} <= covered, covered
     assert any("$CLAUDE_PROJECT_DIR/scripts/session_start.sh" in c and c.startswith("bash ") for c in cmds), cmds
@@ -110,7 +121,10 @@ def test_digest_offline_exits_0_and_stays_under_budget_on_current_state():
     out = r.stdout.decode("utf-8", "replace")
     assert len(r.stdout) <= MAX_BYTES, len(r.stdout)
     assert "## Objective" in out and "## Targets" in out
+    assert "## BOARD top 8" in out and "## Ledger last 8" in out and "state sections (origin/state" not in out
     assert "(unavailable)" in out  # balance without wsl/autor
+    assert "partial digest: " in out and "GPU jobs + balance (no wsl/autor here)" in out
+    assert "state refresh (git fetch failed" in out  # GIT_ALLOW_PROTOCOL=none
     # Every section is capped by count and width, so the untruncated digest also fits the hook's context cap.
     r2, _ = _run(SCRIPT, SSDM_AGENT="agent-a", SSDM_DIGEST_MAX_BYTES="1000000")
     assert r2.returncode == 0
@@ -230,3 +244,21 @@ def test_hung_autor_is_bounded_and_the_digest_still_exits_0(mini_repo):
     assert r.returncode == 0
     assert b"## Balance" in r.stdout and b"(unavailable)" in r.stdout
     assert dt < 60, f"digest took {dt:.0f} s with a hung autor (fake sleeps 90 s; timeout 3 s)"
+
+
+@needs_bash
+def test_slow_sources_give_a_partial_digest_before_the_deadline(mini_repo, tmp_path):
+    """A hung autor and a hung git fetch: state sections still print, a 'partial digest' line names what was skipped,
+    and the script finishes by its own deadline (well inside the hook timeout), so a hook kill can never drop it all."""
+    env = dict(SSDM_AGENT="lead", SSDM_WSL=str(mini_repo.parent / "hang-wsl"), SSDM_AUTOR_TIMEOUT="120",
+               SSDM_FETCH_TIMEOUT="120", SSDM_DIGEST_DEADLINE="24", GIT_ALLOW_PROTOCOL="ext",
+               GIT_CONFIG_COUNT="2", GIT_CONFIG_KEY_0="protocol.ext.allow", GIT_CONFIG_VALUE_0="always",
+               GIT_CONFIG_KEY_1="remote.origin.url", GIT_CONFIG_VALUE_1="ext::sh -c sleep% 90")
+    r, dt = _run(mini_repo / "scripts" / "session_start.sh", cwd=mini_repo, timeout=170, **env)
+    out = r.stdout.decode("utf-8", "replace")
+    assert r.returncode == 0
+    assert "LEAD-ONLY" in out and "1 | Kit parity" in out          # state sections from the cached origin/state
+    assert out.index("## INBOX") < out.index("## GPU jobs")       # state first
+    last = out.rstrip().splitlines()[-1]
+    assert last.startswith("partial digest: ") and "state refresh" in last and "GPU jobs (autor not ready" in last
+    assert dt < 24 + 30, f"took {dt:.0f} s; deadline 24 s (slack covers process spawns on a loaded laptop)"

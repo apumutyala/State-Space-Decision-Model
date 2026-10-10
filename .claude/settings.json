@@ -7,7 +7,7 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/session_start.sh\" 2>/dev/null || true",
-            "timeout": 60
+            "timeout": 180
           }
         ]
       }
