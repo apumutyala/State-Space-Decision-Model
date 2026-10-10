@@ -1,0 +1,1 @@
+https://files.pythonhosted.org/packages/7a/f4/9b1c25268ab2924d2cdffae8f56482a349ee4c465819bcd5e852ad3b2307/decider_ai-1.8.0-py3-none-any.whl --hash=sha256:107cd5fb7fbca23d98a3cc755574a2d0b96cddf20edc8ed1ed5978022b0a2a1d

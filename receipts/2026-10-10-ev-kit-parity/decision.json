@@ -1,0 +1,563 @@
+{
+ "job": "jev_host_scan",
+ "verdict": null,
+ "measurement_only": true,
+ "items": 231,
+ "basis": "open-only, the 231 public JevBench v1.2 items (b6b8fff7); not the v1.6.1 open set P300, no sealed side: local numbers measure the board's constructs on a different draw (jevkit/README.md)",
+ "board_leader": {
+  "key": "h2o-lightning-4b",
+  "composite_A": 72.5232271521435,
+  "I": 60.03839906196252,
+  "C": 89.95399367673842,
+  "S": 92.61084474720658,
+  "K": 60.29882443070202,
+  "board": "JevBench v1.6.1"
+ },
+ "status": {
+  "torchcast-decision-12b": {
+   "run_rc": 0,
+   "download_s": 36,
+   "run_s": 90,
+   "snapshot": "/root/.cache/huggingface/hub/models--torchcast-ai--torchcast-decision-12b/snapshots/49107b5589bf2dc4ec3f5acd54316971dd5978b1",
+   "state": "done"
+  },
+  "decider-12b": {
+   "run_rc": 0,
+   "download_s": 33,
+   "run_s": 45,
+   "snapshot": "/root/.cache/huggingface/hub/models--Mapika--decider-12b/snapshots/8ac1efa708b71b86ae33b01d2a8d7a3ddcb48e66",
+   "state": "done"
+  },
+  "decider-12b-v1": {
+   "run_rc": 0,
+   "download_s": 37,
+   "run_s": 45,
+   "snapshot": "/root/.cache/huggingface/hub/models--Mapika--decider-12b/snapshots/09e9e3387fa42fed740233be2290385d18a6044d",
+   "state": "done"
+  }
+ },
+ "rows": [
+  {
+   "candidate": "torchcast-decision-12b",
+   "repo": "torchcast-ai/torchcast-decision-12b",
+   "revision": "49107b5589bf2dc4ec3f5acd54316971dd5978b1",
+   "arm": "torchcast_shim",
+   "group": "parity",
+   "params_b": 12.0,
+   "price_class": "gemma12b_ref",
+   "n_preds": 231,
+   "complete": true,
+   "ok": 225,
+   "top1": {
+    "correct": 198,
+    "n": 231,
+    "by_tier": {
+     "standard": "67/72",
+     "easy": "48/48",
+     "hard": "83/111"
+    }
+   },
+   "axes": {
+    "intelligence": 76.0039630639103,
+    "calibration": 82.04477806736396,
+    "speed": 91.66412223379957,
+    "cost": 53.55036520995884
+   },
+   "composite": {
+    "A": 72.82117565406608,
+    "B": 73.43622753027755,
+    "C": 72.82117565406608
+   },
+   "capability": 79.02437056563713,
+   "ci95": {
+    "composite": {
+     "A": [
+      69.34060771708994,
+      74.82117269440701
+     ],
+     "B": [
+      69.14396486291925,
+      76.24547136120572
+     ],
+     "C": [
+      69.34060771708994,
+      74.82117269440701
+     ]
+    },
+    "capability": [
+     71.25211352452094,
+     83.79303012619457
+    ],
+    "I": [
+     68.21671470074214,
+     82.77591955015163
+    ],
+    "C": [
+     73.3563215552826,
+     86.2590188213843
+    ]
+   },
+   "speed": {
+    "p50_s_raw": 0.04517016249883454,
+    "p95_s_raw": 0.06681792830349878,
+    "p50_s_adjusted": 0.24034032499766908,
+    "p95_s_adjusted": 0.2836358566069975,
+    "n": 72,
+    "source": "pred latency_s on open standard+judge items"
+   },
+   "cost": {
+    "usd_per_1000": 0.03534444444444445,
+    "mean_input_tokens": 703.8888888888889,
+    "kind": "estimate",
+    "price_rule": "as declared"
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "intelligence_basis": "open only (no sealed items; no gap penalty)",
+   "reference_check": {
+    "reference": {
+     "source": "model card + github.com/Torchcast-AI/torchcast-decision-12b@d7f84468 (tag v1.0.0) runs/h100-release (results.jsonl sha256 fa2e0ca8e745c02c9add971f8f22cf90881829a88b578985db98161e9a78b0f9): JevBench CLI bb05a335, typesafe adapter, vLLM 0.30.0 BF16, 1x H100",
+     "correct": 203,
+     "by_tier": {
+      "easy": 48,
+      "standard": 70,
+      "hard": 85
+     },
+     "tolerance": 3
+    },
+    "correct": 198,
+    "by_tier": {
+     "standard": 67,
+     "easy": 48,
+     "hard": 83
+    },
+    "diff": -5,
+    "by_tier_diff": {
+     "easy": 0,
+     "standard": -3,
+     "hard": -2
+    },
+    "complete": true,
+    "pass": false
+   }
+  },
+  {
+   "candidate": "torchcast-decision-12b",
+   "repo": "torchcast-ai/torchcast-decision-12b",
+   "revision": "49107b5589bf2dc4ec3f5acd54316971dd5978b1",
+   "arm": "torchcast_shim_double_bos",
+   "group": "parity",
+   "params_b": 12.0,
+   "price_class": "gemma12b_ref",
+   "n_preds": 231,
+   "complete": true,
+   "ok": 226,
+   "top1": {
+    "correct": 198,
+    "n": 231,
+    "by_tier": {
+     "standard": "68/72",
+     "easy": "46/48",
+     "hard": "84/111"
+    }
+   },
+   "axes": {
+    "intelligence": 76.42779706333643,
+    "calibration": 82.5593838440987,
+    "speed": 92.07041860811302,
+    "cost": 53.52884364235243
+   },
+   "composite": {
+    "A": 73.0733654971944,
+    "B": 73.72048693190173,
+    "C": 73.0733654971944
+   },
+   "capability": 79.49359045371756,
+   "ci95": {
+    "composite": {
+     "A": [
+      69.36000905291952,
+      75.13127720721057
+     ],
+     "B": [
+      69.13704543824791,
+      76.671265227316
+     ],
+     "C": [
+      69.36000905291952,
+      75.13127720721057
+     ]
+    },
+    "capability": [
+     71.42120862118405,
+     84.47678680887513
+    ],
+    "I": [
+     67.92946000453965,
+     83.55617575617767
+    ],
+    "C": [
+     73.60078787520585,
+     86.60652116391017
+    ]
+   },
+   "speed": {
+    "p50_s_raw": 0.04357692699704785,
+    "p95_s_raw": 0.05588743494663504,
+    "p50_s_adjusted": 0.2371538539940957,
+    "p95_s_adjusted": 0.2617748698932701,
+    "n": 72,
+    "source": "pred latency_s on open standard+judge items"
+   },
+   "cost": {
+    "usd_per_1000": 0.03540287610619469,
+    "mean_input_tokens": 705.0575221238938,
+    "kind": "estimate",
+    "price_rule": "as declared"
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "intelligence_basis": "open only (no sealed items; no gap penalty)",
+   "reference_check": {
+    "reference": {
+     "source": "model card + github.com/Torchcast-AI/torchcast-decision-12b@d7f84468 (tag v1.0.0) runs/h100-release (results.jsonl sha256 fa2e0ca8e745c02c9add971f8f22cf90881829a88b578985db98161e9a78b0f9): JevBench CLI bb05a335, typesafe adapter, vLLM 0.30.0 BF16, 1x H100",
+     "correct": 203,
+     "by_tier": {
+      "easy": 48,
+      "standard": 70,
+      "hard": 85
+     },
+     "tolerance": 3
+    },
+    "correct": 198,
+    "by_tier": {
+     "standard": 68,
+     "easy": 46,
+     "hard": 84
+    },
+    "diff": -5,
+    "by_tier_diff": {
+     "easy": -2,
+     "standard": -2,
+     "hard": -1
+    },
+    "complete": true,
+    "pass": false
+   }
+  },
+  {
+   "candidate": "decider-12b",
+   "repo": "Mapika/decider-12b",
+   "revision": "8ac1efa708b71b86ae33b01d2a8d7a3ddcb48e66",
+   "arm": "decider",
+   "group": "parity",
+   "params_b": 12.0,
+   "price_class": "gemma12b_ref",
+   "n_preds": 231,
+   "complete": true,
+   "ok": 231,
+   "top1": {
+    "correct": 197,
+    "n": 231,
+    "by_tier": {
+     "standard": "71/72",
+     "easy": "48/48",
+     "hard": "78/111"
+    }
+   },
+   "axes": {
+    "intelligence": 70.76504341675701,
+    "calibration": 77.93035150588649,
+    "speed": 90.11060447609488,
+    "cost": 54.757844499055544
+   },
+   "composite": {
+    "A": 71.01902200376252,
+    "B": 70.96808054467776,
+    "C": 71.01902200376252
+   },
+   "capability": 74.34769746132176,
+   "ci95": {
+    "composite": {
+     "A": [
+      66.90833970939848,
+      73.71200429989669
+     ],
+     "B": [
+      65.8334773129503,
+      74.8857915265191
+     ],
+     "C": [
+      66.90636279465204,
+      73.71200429989669
+     ]
+    },
+    "capability": [
+     65.9837917100088,
+     80.3319717394931
+    ],
+    "I": [
+     62.07687529408896,
+     80.80790755389316
+    ],
+    "C": [
+     68.32221221448957,
+     81.83687992002211
+    ]
+   },
+   "speed": {
+    "p50_s_raw": 0.07447769850114128,
+    "p95_s_raw": 0.08804337574401876,
+    "p50_s_adjusted": 0.2989553970022826,
+    "p95_s_adjusted": 0.3260867514880375,
+    "n": 72,
+    "source": "pred latency_s on open standard+judge items"
+   },
+   "cost": {
+    "usd_per_1000": 0.032216017316017316,
+    "mean_input_tokens": 641.3203463203463,
+    "kind": "estimate",
+    "price_rule": "as declared"
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "intelligence_basis": "open only (no sealed items; no gap penalty)",
+   "reference_check": {
+    "reference": {
+     "source": "model card (Mapika/decider-12b@8ac1efa7 README, 'Measurements (decider-ai 1.8.0, one B300)'): JevBench public items accuracy easy / standard / hard 1.000 / 0.986 / 0.712 (v2; hard 79 of 111)",
+     "correct": 198,
+     "by_tier": {
+      "easy": 48,
+      "standard": 71,
+      "hard": 79
+     },
+     "tolerance": 3
+    },
+    "correct": 197,
+    "by_tier": {
+     "standard": 71,
+     "easy": 48,
+     "hard": 78
+    },
+    "diff": -1,
+    "by_tier_diff": {
+     "easy": 0,
+     "standard": 0,
+     "hard": -1
+    },
+    "complete": true,
+    "pass": true
+   }
+  },
+  {
+   "candidate": "decider-12b-v1",
+   "repo": "Mapika/decider-12b",
+   "revision": "09e9e3387fa42fed740233be2290385d18a6044d",
+   "arm": "decider",
+   "group": "parity",
+   "params_b": 12.0,
+   "price_class": "gemma12b_ref",
+   "n_preds": 231,
+   "complete": true,
+   "ok": 231,
+   "top1": {
+    "correct": 200,
+    "n": 231,
+    "by_tier": {
+     "standard": "71/72",
+     "easy": "48/48",
+     "hard": "81/111"
+    }
+   },
+   "axes": {
+    "intelligence": 72.53211552818215,
+    "calibration": 80.91590829498466,
+    "speed": 91.95017141836351,
+    "cost": 54.757844499055544
+   },
+   "composite": {
+    "A": 72.35473196559134,
+    "B": 72.39013923504832,
+    "C": 72.35473196559134
+   },
+   "capability": 76.7240119115834,
+   "ci95": {
+    "composite": {
+     "A": [
+      68.61115289311846,
+      74.39436489592788
+     ],
+     "B": [
+      67.72489088703576,
+      75.36587344243512
+     ],
+     "C": [
+      68.61115289311846,
+      74.39436489592788
+     ]
+    },
+    "capability": [
+     68.80116722805694,
+     81.22099285555359
+    ],
+    "I": [
+     64.08667521188156,
+     79.75078053627506
+    ],
+    "C": [
+     71.46559551576425,
+     84.20545964266678
+    ]
+   },
+   "speed": {
+    "p50_s_raw": 0.05071433699777117,
+    "p95_s_raw": 0.05192233625202789,
+    "p50_s_adjusted": 0.25142867399554236,
+    "p95_s_adjusted": 0.2538446725040558,
+    "n": 72,
+    "source": "pred latency_s on open standard+judge items"
+   },
+   "cost": {
+    "usd_per_1000": 0.032216017316017316,
+    "mean_input_tokens": 641.3203463203463,
+    "kind": "estimate",
+    "price_rule": "as declared"
+   },
+   "eligibility": {
+    "capability_ranked": true,
+    "within_cost_cap": true,
+    "within_latency_cap": true,
+    "cap_usd_per_1000": 0.0645947,
+    "cap_p50_adjusted_s": 1.2329566
+   },
+   "intelligence_basis": "open only (no sealed items; no gap penalty)",
+   "reference_check": {
+    "reference": {
+     "source": "model card (Mapika/decider-12b@8ac1efa7 README, v1 column): JevBench public items accuracy easy / standard / hard 1.000 / 0.986 / 0.730 (hard 81 of 111)",
+     "correct": 200,
+     "by_tier": {
+      "easy": 48,
+      "standard": 71,
+      "hard": 81
+     },
+     "tolerance": 3
+    },
+    "correct": 200,
+    "by_tier": {
+     "standard": 71,
+     "easy": 48,
+     "hard": 81
+    },
+    "diff": 0,
+    "by_tier_diff": {
+     "easy": 0,
+     "standard": 0,
+     "hard": 0
+    },
+    "complete": true,
+    "pass": true
+   }
+  }
+ ],
+ "reference_checks": {
+  "torchcast-decision-12b/torchcast_shim": {
+   "correct": 198,
+   "diff": -5,
+   "by_tier_diff": {
+    "easy": 0,
+    "standard": -3,
+    "hard": -2
+   },
+   "pass": false
+  },
+  "torchcast-decision-12b/torchcast_shim_double_bos": {
+   "correct": 198,
+   "diff": -5,
+   "by_tier_diff": {
+    "easy": -2,
+    "standard": -2,
+    "hard": -1
+   },
+   "pass": false
+  },
+  "decider-12b/decider": {
+   "correct": 197,
+   "diff": -1,
+   "by_tier_diff": {
+    "easy": 0,
+    "standard": 0,
+    "hard": -1
+   },
+   "pass": true
+  },
+  "decider-12b-v1/decider": {
+   "correct": 200,
+   "diff": 0,
+   "by_tier_diff": {
+    "easy": 0,
+    "standard": 0,
+    "hard": 0
+   },
+   "pass": true
+  }
+ },
+ "ranking_composite_A": [
+  [
+   "torchcast-decision-12b",
+   "torchcast_shim_double_bos",
+   73.07
+  ],
+  [
+   "torchcast-decision-12b",
+   "torchcast_shim",
+   72.82
+  ],
+  [
+   "decider-12b-v1",
+   "decider",
+   72.35
+  ],
+  [
+   "decider-12b",
+   "decider",
+   71.02
+  ]
+ ],
+ "ranking_capability": [
+  [
+   "torchcast-decision-12b",
+   "torchcast_shim_double_bos",
+   79.49
+  ],
+  [
+   "torchcast-decision-12b",
+   "torchcast_shim",
+   79.02
+  ],
+  [
+   "decider-12b-v1",
+   "decider",
+   76.72
+  ],
+  [
+   "decider-12b",
+   "decider",
+   74.35
+  ]
+ ]
+}

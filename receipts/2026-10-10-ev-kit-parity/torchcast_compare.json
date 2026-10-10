@@ -1,0 +1,100 @@
+{
+ "ref": "C:\\Users\\apumu\\AppData\\Local\\Temp\\claude\\C--Users-apumu-research-CHLabs\\8ba1e3cb-efb0-46e2-9fd6-7683f7008f8a\\scratchpad\\dl-torchcast\\gh\\runs__h100-release__results.jsonl",
+ "ref_items": 231,
+ "items": 231,
+ "ref_missing": [],
+ "arms": {
+  "C:\\Users\\apumu\\art\\job-r3uc4\\x\\final\\out\\cand\\torchcast-decision-12b\\torchcast_shim\\preds.jsonl": {
+   "ours_top1": {
+    "correct": 198,
+    "by_tier": {
+     "standard": 67,
+     "easy": 48,
+     "hard": 83
+    }
+   },
+   "ref_top1_by_jevkit_rule": {
+    "correct": 203,
+    "by_tier": {
+     "standard": 70,
+     "easy": 48,
+     "hard": 85
+    }
+   },
+   "ref_correct_field": 203,
+   "top1_agreement": 222,
+   "wrong_only_ours": [
+    "hard-opus-b-ambiguous-07",
+    "hard-opus-b-probability-02",
+    "hard-sol-b-long_policy-02",
+    "hard-sol-b-routing_hard-09",
+    "original-intent-03-0",
+    "original-policy-03-0",
+    "original-routing-03-1"
+   ],
+   "wrong_only_ref": [
+    "hard-opus-b-tradeoff-07",
+    "hard-sol-b-long_policy-06"
+   ],
+   "input_tokens_equal": "0/225",
+   "input_token_delta_hist": {
+    "-1": 225
+   },
+   "argmax_label_agreement": "222/225",
+   "abs_dp_ref_top": {
+    "median": 0.0006328018837317151,
+    "max": 0.3256677620786971
+   },
+   "tvd": {
+    "median": 0.0006798074381387262,
+    "p90": 0.029647457803536947,
+    "max": 0.3256677620786971
+   }
+  },
+  "C:\\Users\\apumu\\art\\job-r3uc4\\x\\final\\out\\cand\\torchcast-decision-12b\\torchcast_shim_double_bos\\preds.jsonl": {
+   "ours_top1": {
+    "correct": 198,
+    "by_tier": {
+     "standard": 68,
+     "easy": 46,
+     "hard": 84
+    }
+   },
+   "ref_top1_by_jevkit_rule": {
+    "correct": 203,
+    "by_tier": {
+     "standard": 70,
+     "easy": 48,
+     "hard": 85
+    }
+   },
+   "ref_correct_field": 203,
+   "top1_agreement": 224,
+   "wrong_only_ours": [
+    "easy-fact-03",
+    "easy-intent-11",
+    "hard-opus-b-ambiguous-07",
+    "hard-opus-b-tradeoff-03",
+    "original-intent-02-0",
+    "original-policy-02-0"
+   ],
+   "wrong_only_ref": [
+    "hard-opus-b-tradeoff-07"
+   ],
+   "input_tokens_equal": "226/226",
+   "input_token_delta_hist": {
+    "0": 226
+   },
+   "argmax_label_agreement": "222/226",
+   "abs_dp_ref_top": {
+    "median": 0.0012718775403545157,
+    "max": 0.6406446141985903
+   },
+   "tvd": {
+    "median": 0.001516476132327175,
+    "p90": 0.02760917639053316,
+    "max": 0.6973809120589146
+   }
+  }
+ }
+}

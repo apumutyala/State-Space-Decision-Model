@@ -1,0 +1,79 @@
+{
+ "candidate": {
+  "id": "decider-12b",
+  "repo": "Mapika/decider-12b",
+  "revision": "8ac1efa708b71b86ae33b01d2a8d7a3ddcb48e66",
+  "released": "version 2 (2026-09-29), the board row's model_pin",
+  "params_b": 12.0,
+  "safetensors_bytes": 23919549408,
+  "license": "apache-2.0",
+  "loader": "decider_pkg",
+  "arms": [
+   {
+    "arm": "decider",
+    "readout": "decider_pkg"
+   }
+  ],
+  "price_class": "gemma12b_ref",
+  "cap_min": 15,
+  "download_cap_min": 14,
+  "group": "parity",
+  "board_key": "decider-12b",
+  "snapshot_pin": "jobs/jev_host_scan/snapshots/decider-12b.sha256",
+  "allow_patterns": [
+   "*.safetensors",
+   "config.json",
+   "generation_config.json",
+   "tokenizer.json",
+   "tokenizer_config.json",
+   "chat_template.jinja",
+   "processor_config.json",
+   "decider_config.json"
+  ],
+  "reference": {
+   "source": "model card (Mapika/decider-12b@8ac1efa7 README, 'Measurements (decider-ai 1.8.0, one B300)'): JevBench public items accuracy easy / standard / hard 1.000 / 0.986 / 0.712 (v2; hard 79 of 111)",
+   "correct": 198,
+   "by_tier": {
+    "easy": 48,
+    "standard": 71,
+    "hard": 79
+   },
+   "tolerance": 3
+  },
+  "note": "its documented readout Decider(path).system_one(state, questions) from decider-ai 1.8.0 (the card's measurement version; pip wheel pinned by sha256, installed --no-deps), eager (use_graphs=False), temperatures from the snapshot's decider_config.json"
+ },
+ "device": "cuda",
+ "items": 231,
+ "arms": {
+  "decider": {
+   "identity": {
+    "readout": "decider.infer.Decider.system_one",
+    "decider_ai": "1.8.0",
+    "use_graphs": false,
+    "layout": "chat",
+    "T": 1.5,
+    "T_by_type": {
+     "choice": 1.5,
+     "noul": 0.05,
+     "score": 1.0
+    },
+    "name": "decider-12b-v2",
+    "isolated_levels": false,
+    "neutralize_none": false
+   },
+   "items": 231,
+   "resumed_from": 0,
+   "status": {
+    "ok": 231,
+    "error": 0,
+    "unsupported": 0,
+    "exhausted": 0
+   },
+   "wall_s": 22.3
+  }
+ },
+ "load_s": 13.7,
+ "max_memory_allocated_gib": 24.05,
+ "gpu": "NVIDIA H100 80GB HBM3",
+ "wall_s": 35.9
+}

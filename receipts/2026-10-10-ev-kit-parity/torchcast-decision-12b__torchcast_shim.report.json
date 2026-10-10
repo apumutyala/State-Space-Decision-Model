@@ -1,0 +1,223 @@
+{
+ "n_items": 231,
+ "intelligence": {
+  "I_open": 76.0039630639103,
+  "I_sealed": null,
+  "base": 76.0039630639103,
+  "gap": null,
+  "excess": null,
+  "penalty": 1.0,
+  "I": 76.0039630639103,
+  "basis": "open only (no sealed items; no gap penalty)",
+  "per_type_split": {
+   "open|choice": {
+    "cc": 76.3454630475907,
+    "cc_unclipped": 76.3454630475907,
+    "n": {
+     "easy": 36,
+     "standard": 36,
+     "hard": 67
+    },
+    "tiers": {
+     "easy": 100.0,
+     "standard": 93.00699300699301,
+     "hard": 62.10106382978723
+    }
+   },
+   "open|noul": {
+    "cc": 77.81954887218045,
+    "cc_unclipped": 77.81954887218045,
+    "n": {
+     "easy": 12,
+     "standard": 24,
+     "hard": 38
+    },
+    "tiers": {
+     "easy": 100.0,
+     "standard": 75.0,
+     "hard": 73.6842105263158
+    }
+   },
+   "open|score": {
+    "cc": 73.84687727195978,
+    "cc_unclipped": 73.84687727195978,
+    "n": {
+     "standard": 12,
+     "hard": 6
+    },
+    "tiers": {
+     "standard": 97.69512846422077,
+     "hard": 61.92275167582931
+    }
+   }
+  }
+ },
+ "calibration": {
+  "parts": {
+   "choice": {
+    "ece_hard": 0.11649129357587569,
+    "n": 134,
+    "n_ece_hard": 64,
+    "ece_basis": "hard tier",
+    "score": 76.70174128482486
+   },
+   "noul": {
+    "ece": 0.08482743199537969,
+    "n": 73,
+    "brier": 0.08444155501390473,
+    "abstention_rate": 0.0136986301369863,
+    "score": 83.03451360092407
+   },
+   "score": {
+    "top_ece": 0.12135842905978442,
+    "nrps": 0.029321555553571393,
+    "n": 18,
+    "score": 86.39807931634299
+   }
+  },
+  "score": 82.04477806736396
+ },
+ "speed": {
+  "p50_s_raw": 0.04517016249883454,
+  "p95_s_raw": 0.06681792830349878,
+  "p50_s_adjusted": 0.24034032499766908,
+  "p95_s_adjusted": 0.2836358566069975,
+  "adjustment": "x2 + 0.15 s",
+  "score": 91.66412223379957,
+  "n": 72,
+  "source": "pred latency_s on open standard+judge items"
+ },
+ "cost": {
+  "usd_per_1000": 0.03534444444444445,
+  "score": 53.55036520995884,
+  "price": {
+   "kind": "base_model_reference",
+   "usd_per_m_input": 0.05,
+   "usd_per_m_output": 0.15,
+   "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1), torchcast-decision-12b cost basis: OpenRouter google/gemma-3-12b-it list price $0.05/M input, $0.15/M output (gemma-4-12b-it not listed), the board's reference for the Gemma-4-12B rows",
+   "as_of": "2026-10-10",
+   "listed_since": null,
+   "model": "google/gemma-3-12b-it"
+  },
+  "price_rule": "as declared",
+  "declared_price": {
+   "kind": "base_model_reference",
+   "usd_per_m_input": 0.05,
+   "usd_per_m_output": 0.15,
+   "source": "JevBench v1.6.1 board api_v161.json (sha256 5cd8c133...c83c1), torchcast-decision-12b cost basis: OpenRouter google/gemma-3-12b-it list price $0.05/M input, $0.15/M output (gemma-4-12b-it not listed), the board's reference for the Gemma-4-12B rows",
+   "as_of": "2026-10-10",
+   "listed_since": null,
+   "model": "google/gemma-3-12b-it"
+  },
+  "reference_price": null,
+  "kind": "estimate",
+  "n_decisions": 225,
+  "n_missing_usage": 6,
+  "n_excluded": 0,
+  "mean_input_tokens": 703.8888888888889,
+  "mean_output_tokens": 1.0
+ },
+ "axes": {
+  "intelligence": 76.0039630639103,
+  "calibration": 82.04477806736396,
+  "speed": 91.66412223379957,
+  "cost": 53.55036520995884
+ },
+ "capability": 79.02437056563713,
+ "scores": {
+  "A": 72.82117565406608,
+  "B": 73.43622753027755,
+  "C": 72.82117565406608
+ },
+ "views": {
+  "Balanced 33:33:33": 70.19085376000379,
+  "Emphasis on Accuracy 60:20:20": 72.40602312604841,
+  "Emphasis on Cost 20:20:60": 62.43083501062071,
+  "Emphasis on Speed 20:60:20": 77.44805704125675,
+  "Intelligence only": 76.0039630639103
+ },
+ "eligibility": {
+  "capability_ranked": true,
+  "within_cost_cap": true,
+  "within_latency_cap": true,
+  "cap_usd_per_1000": 0.0645947,
+  "cap_p50_adjusted_s": 1.2329566
+ },
+ "validity": {
+  "choice": {
+   "n": 139,
+   "invalid_rate": 0.03597122302158273,
+   "renormalized": 0,
+   "label_only": 0
+  },
+  "noul": {
+   "n": 74,
+   "invalid_rate": 0.013513513513513487,
+   "renormalized": 0,
+   "label_only": 0
+  },
+  "score": {
+   "n": 18,
+   "invalid_rate": 0.0,
+   "renormalized": 0,
+   "label_only": 0
+  },
+  "noul_decisive": {
+   "valid": 73,
+   "decisive_rate": 0.9863013698630136,
+   "acc_among_decisive": 0.9166666666666666
+  }
+ },
+ "support": {
+  "choice": "native",
+  "noul": "native",
+  "score": "native"
+ },
+ "g_med_used": 2.573387642438244,
+ "ci95": {
+  "B": 1000,
+  "seed": 16,
+  "I": [
+   68.21671470074214,
+   82.77591955015163
+  ],
+  "C": [
+   73.3563215552826,
+   86.2590188213843
+  ],
+  "capability": [
+   71.25211352452094,
+   83.79303012619457
+  ],
+  "composite": {
+   "A": [
+    69.34060771708994,
+    74.82117269440701
+   ],
+   "B": [
+    69.14396486291925,
+    76.24547136120572
+   ],
+   "C": [
+    69.34060771708994,
+    74.82117269440701
+   ]
+  }
+ },
+ "inputs": {
+  "pred": "/tmp/jev-host-scan/out/cand/torchcast-decision-12b/torchcast_shim/preds.jsonl",
+  "pred_sha256": "1ae0e6b7426ba114c4424a6f9882c9c4a43c979e8318b25d4214f43ebca987e1",
+  "items": null,
+  "public": true,
+  "n_pred_records": 231,
+  "n_pred_unknown_ids": 0,
+  "n_items_without_pred": 0,
+  "lane": "self-hosted (x2 + 0.15 s)"
+ },
+ "spec": "JevBench v1.6.1 (reverse-derived; jevkit/README.md)",
+ "approximations": [
+  "Intelligence basis: open only (no sealed items; no gap penalty). The board's I averages open and sealed (1,200 unpublished items) and applies the gap penalty; a local run cannot reproduce the sealed half.",
+  "Latency is in-process wall time (no evaluator network hop); the self-hosted x2 + 0.15 s adjustment is the board's own assumption.",
+  "Bootstrap is over the scored items only (B and seed as published), so CIs are local, not the board's."
+ ]
+}

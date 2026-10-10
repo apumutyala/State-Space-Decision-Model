@@ -1,0 +1,144 @@
+{
+ "candidate": {
+  "id": "torchcast-decision-12b",
+  "repo": "torchcast-ai/torchcast-decision-12b",
+  "revision": "49107b5589bf2dc4ec3f5acd54316971dd5978b1",
+  "released": "v1.0.0 weights (sha256 f8553c9e...); the revision the author's h100-release run pulled",
+  "params_b": 12.0,
+  "safetensors_bytes": 23919549408,
+  "license": "cc-by-nc-4.0 (weights, non-commercial research use); serving MIT",
+  "loader": "hf",
+  "arms": [
+   {
+    "arm": "torchcast_shim",
+    "readout": "torchcast_shim"
+   },
+   {
+    "arm": "torchcast_shim_double_bos",
+    "readout": "torchcast_shim_double_bos"
+   }
+  ],
+  "price_class": "gemma12b_ref",
+  "cap_min": 15,
+  "download_cap_min": 14,
+  "group": "parity",
+  "board_key": "torchcast-decision-12b",
+  "snapshot_pin": "jobs/jev_host_scan/snapshots/torchcast-decision-12b.sha256",
+  "allow_patterns": [
+   "*.safetensors",
+   "config.json",
+   "generation_config.json",
+   "tokenizer.json",
+   "tokenizer_config.json",
+   "chat_template.jinja",
+   "processor_config.json",
+   "torchcast_shim.py",
+   "readout_config.json"
+  ],
+  "reference": {
+   "source": "model card + github.com/Torchcast-AI/torchcast-decision-12b@d7f84468 (tag v1.0.0) runs/h100-release (results.jsonl sha256 fa2e0ca8e745c02c9add971f8f22cf90881829a88b578985db98161e9a78b0f9): JevBench CLI bb05a335, typesafe adapter, vLLM 0.30.0 BF16, 1x H100",
+   "correct": 203,
+   "by_tier": {
+    "easy": 48,
+    "standard": 70,
+    "hard": 85
+   },
+   "tolerance": 3
+  },
+  "primary_arm_rule": "the arm whose per-item input token count equals the author's usage.prompt_tokens on all 231 items is primary (CPU check before submit: the template rendering is exactly 1 token short on all 231, so torchcast_shim_double_bos is expected primary); if neither matches on all, torchcast_shim is primary",
+  "note": "its own shim (third_party/torchcast_shim, vendored unmodified, MIT): system prompt + state/question/options prompt in the model's chat template (thinking off), one forward, the top-20 raw log-probabilities at the answer slot summed per option letter, per-type temperature from readout_config.json (choice 1.0, score 1.0, noul 0.2); the vLLM call replaced by one transformers forward"
+ },
+ "device": "cuda",
+ "items": 231,
+ "arms": {
+  "torchcast_shim": {
+   "identity": {
+    "readout": "torchcast_shim",
+    "double_bos": false,
+    "shim": "torchcast-ai/torchcast-decision-12b@49107b5589bf2dc4ec3f5acd54316971dd5978b1",
+    "temperatures": {
+     "choice": 1.0,
+     "noul": 0.2,
+     "score": 1.0
+    },
+    "top_logprobs": 20,
+    "chat_template_kwargs": {
+     "enable_thinking": false
+    },
+    "fp32_head": false,
+    "softcap": 30.0
+   },
+   "items": 231,
+   "resumed_from": 0,
+   "status": {
+    "ok": 225,
+    "error": 6,
+    "unsupported": 0,
+    "exhausted": 0
+   },
+   "wall_s": 21.7
+  },
+  "torchcast_shim_double_bos": {
+   "identity": {
+    "readout": "torchcast_shim_double_bos",
+    "double_bos": true,
+    "shim": "torchcast-ai/torchcast-decision-12b@49107b5589bf2dc4ec3f5acd54316971dd5978b1",
+    "temperatures": {
+     "choice": 1.0,
+     "noul": 0.2,
+     "score": 1.0
+    },
+    "top_logprobs": 20,
+    "chat_template_kwargs": {
+     "enable_thinking": false
+    },
+    "fp32_head": false,
+    "softcap": 30.0
+   },
+   "items": 231,
+   "resumed_from": 0,
+   "status": {
+    "ok": 226,
+    "error": 5,
+    "unsupported": 0,
+    "exhausted": 0
+   },
+   "wall_s": 18.8
+  }
+ },
+ "load_s": 36.6,
+ "plugin": {
+  "model_id": "torchcast-ai/torchcast-decision-12b",
+  "files": {
+   "weights": "f8553c9e625fa24853d57e938a1b1475975d9bce4bb79fccff2e8bfaaf6caa4e",
+   "tokenizer": "cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f",
+   "config": "7ca788d720debf5be59819bbb7d08530c6c68b71f6da7c025c4d60751b2d31e3"
+  },
+  "notes": {
+   "model_class": "Gemma4UnifiedForConditionalGeneration",
+   "fp32_head": false,
+   "unexpected_keys": {
+    "n": 0,
+    "first": []
+   },
+   "layer_types": {
+    "full_attention": 8,
+    "sliding_attention": 40
+   },
+   "final_logit_softcapping": 30.0
+  },
+  "max_context": 262144,
+  "kernel_stack": {
+   "transformers": "5.17.0",
+   "torch": "2.13.0+cu126",
+   "flash-linear-attention": "0.5.2",
+   "fla-core": "0.5.2",
+   "mamba-ssm": null,
+   "causal-conv1d": null,
+   "triton": "3.7.1"
+  }
+ },
+ "max_memory_allocated_gib": 22.83,
+ "gpu": "NVIDIA H100 80GB HBM3",
+ "wall_s": 81.0
+}
