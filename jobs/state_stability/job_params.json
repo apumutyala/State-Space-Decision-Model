@@ -1,0 +1,51 @@
+{
+ "_comment": "State-stability probe (docs/STATE_STABILITY.md section 6). DRAFT STUB, NOT SUBMITTED, NOT PACKAGED: there is no job.sh / Dockerfile yet; reuse the jobs/rwkv7 image (torch 2.13.0, transformers 5.17.0, fla-core 0.5.2). Inference only, no training, one GPU. Every arm runs `python -X utf8 -m safety_eval.state_stability_probe` with the args below and must exit 0 (exit 3 = a certificate or ISS check failed on real data: that is a finding, keep the receipt).",
+ "gpu": "1x H100 80GB",
+ "estimate": {
+  "rwkv7_d19": "13.3B bf16 (26.5 GB) + O(T*H) stats; ~2-8 s/item at T<=2048 with exact_stride 64 -> 128 items ~15 min",
+  "gdn_qwen35_4b": "4B bf16 (~9 GB); closed-form step norms; window products [256,32,128,128] fp64; 128 items ~10 min",
+  "total_minutes_cap": 60
+ },
+ "texts": {
+  "source": "Decision Index DEV subset rows (jobs/common/dev_subset rows --subset jobs/common/dev_subset_m1.json), rendered with EACH arm's own readout template into JSONL {id, text}; DEV only, never TEST / held-out / cohort v3",
+  "path": "<TODO: $WORK/prompts-<arm>.jsonl.gz, written by a render step that reuses jobs/common/readout_engine's plugin>",
+  "max_items": 128,
+  "max_tokens": 2048
+ },
+ "arms": [
+  {
+   "name": "rwkv7_d19",
+   "family": "rwkv7",
+   "model_dir": "$SNAP (the verified RWKV/RWKV7-G1k-13.3B-20260930 snapshot, as in jobs/rwkv7/rwkv7_job.sh)",
+   "trainable": "<TODO: D19 (stack/rwkv7/d19-v3b-joint, mode d19_v3w_v3b_joint) train.ckpt_export trainable-stepN.safetensors>",
+   "lora_alpha": null,
+   "exact_stride": 64,
+   "n_windows": 2,
+   "seed": 0
+  },
+  {
+   "name": "rwkv7_parent",
+   "family": "rwkv7",
+   "model_dir": "$SNAP (the verified RWKV/RWKV7-G1k-13.3B-20260930 snapshot, as in jobs/rwkv7/rwkv7_job.sh)",
+   "trainable": "",
+   "exact_stride": 64,
+   "n_windows": 2,
+   "seed": 0
+  },
+  {
+   "name": "gdn_qwen35_4b",
+   "family": "gdn",
+   "model_dir": "<TODO: Qwen/Qwen3.5-4B snapshot dir>",
+   "trainable": "<optional: the hybrid main-line cell's trainable export; empty = parent>",
+   "n_windows": 2,
+   "seed": 0
+  }
+ ],
+ "read_out": [
+  "summary.json flags.cert_violations == 0 and flags.iss_violations == 0 (theorems T2(b), T3 hold on real data)",
+  "layers[l].step_bound_gt1 / exact_norm_gt1: how often a step is non-contractive (RWKV-7 expected > 0 if a spreads across channels)",
+  "layers[l].exact_window_logprod_all.max > 0: real state growth over a window on a real prompt (T2(e) realised by trained weights)",
+  "layers[l].cert_window_logprod_L{16,64,256}: worst certified log forgetting factor; exp(.) is the T4 bound on an injected span's surviving influence after L clean tokens",
+  "universal.json: GDN neg_log_rho_min and efold_horizon_tokens_max per layer (rho rounding to 1.0 in float64 flagged)"
+ ]
+}
