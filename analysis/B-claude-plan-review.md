@@ -1,5 +1,7 @@
 # B — Adversarial review of `plans/claude/PLAN.md`
 
+> **Rate note (2026-10-09):** the dollar figures here use the 2026-10-06 SF Compute rates ($2.97/h = $0.0495/min batch, $3.96/h interactive) and are left as written. From 2026-10-08 the H100 list price is $5.04/h and batch jobs bill $3.78/h ($0.063/min; Fridays $0.05628/min), so batch figures scale by x 1.27. Source and history: `jobs/common/rates.py`.
+
 Date: 2026-10-06. Reviewer stance: adversarial but fair; the plan had no independent review before this. Everything marked **verified** was checked today against a primary source (HF raw configs/cards, transformers source, arXiv, vendor legal/pricing pages, the Decision Index README). Likelihoods in §6 are my subjective estimates and are labelled as such. I ran no experiments; the arithmetic in §8 is mine and can be re-checked line by line.
 
 Inputs read in full: `plans/claude/PLAN.md`, `reviews/00–04`, `plans/partner/PLAN.md` (only to locate where the claude plan is weaker; the partner plan has its own reviewer).

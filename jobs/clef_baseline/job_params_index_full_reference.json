@@ -30,7 +30,7 @@
  "assumed_restart_floor": 1,
  "queue_ttl_minutes": 1440,
  "resume": "none",
- "batch_usd_per_min": 0.0495,
+ "batch_usd_per_min": 0.063,
  "clock_lock": true,
  "runner": "jobs/clef_baseline/run_job.sh",
  "decision_rule": null,
@@ -39,7 +39,7 @@
  "pricing": "jobs/clef_baseline/price.py: job-sgihj measured Clef-flash rates; Clef planned at the card's 5.39x median-latency ratio (FLOPs ratio 3.52 is the optimistic reference); GDN=reference: x4 planning slowdown on job-d2u54's measured 2.373x rate (price.REFERENCE_SLOWDOWN_FLOOR)",
  "max_duration_minutes": 366,
  "hf_cache": false,
- "hard_cap_usd": 40.0,
+ "hard_cap_usd": 50.91,
  "reserve_minutes": 5,
  "phase_caps_minutes": {
   "setup": 15,

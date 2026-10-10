@@ -271,3 +271,13 @@ Lean config (`python -m jobs.common.launch probe9b --mode lean`): the same block
   post-hoc diagnostic cosine edge depends on it; the binding rule does not.
 - The subset Index is a 2,008-row paired go/no-go, not a board number. NIAH has 24 needles per length and MMLU has
   285 questions.
+
+## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
+
+SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
+
+| Params | Worst case (build + 2 attempts) | Hard cap | Expected | One attempt (quoted max_cost) |
+|---|---|---|---|---|
+| `job_params.json` | $35.91 (was $28.21) | $40.00 (unchanged) | $8.38 (was $6.58) | $17.01 (was $13.37) |
+
+Workspace cap for probe9b + rwkv7 stage A at $0.063/min: `costs.concurrent_cap_usd(["probe9b", "rwkv7_readout"])` = MTD + 57 (was MTD + 45).

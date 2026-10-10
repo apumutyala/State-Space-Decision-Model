@@ -7,8 +7,8 @@
  "max_restarts": 0,
  "assumed_restart_floor": 1,
  "queue_ttl_minutes": 1440,
- "batch_usd_per_min": 0.0495,
- "hard_cap_usd": 20.0,
+ "batch_usd_per_min": 0.063,
+ "hard_cap_usd": 24.0,
  "reserve_minutes": 8,
  "phase_caps_minutes": {
   "setup": 15,

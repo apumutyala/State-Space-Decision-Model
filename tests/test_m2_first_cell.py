@@ -45,13 +45,13 @@ def test_cell_config_is_the_specified_cell():
 def test_cost_worst_case_and_expected():
     from jobs.common.costs import cap_ok, expected_usd, schedule_ok, worst_case_usd
 
-    assert worst_case_usd(PARAMS) == round((60 + 2 * 637) * 0.0495, 2) == 66.03
+    assert worst_case_usd(PARAMS) == round((60 + 2 * 637) * 0.063, 2) == 84.04  # 66.03 at the pre-2026-10-08 $0.0495
     assert PARAMS["build_timeout_minutes"] >= 60  # launch lint L-09
     assert PARAMS["phase_caps_minutes"]["parent_index"] == 65
-    assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 70.0 and schedule_ok(PARAMS)
+    assert cap_ok(PARAMS) and PARAMS["hard_cap_usd"] == 89.1 and schedule_ok(PARAMS)
     assert CELL["max_minutes"] == 190  # pre-registered
-    assert expected_usd(PARAMS) == round(sum(PARAMS["expected_minutes"].values()) * 0.0495, 2)
-    assert 20 <= expected_usd(PARAMS) <= 30
+    assert expected_usd(PARAMS) == round(sum(PARAMS["expected_minutes"].values()) * 0.063, 2)
+    assert 25 <= expected_usd(PARAMS) <= 38  # 20-30 at $0.0495, x 14/11
     assert sum(PARAMS["phase_caps_minutes"].values()) + PARAMS["reserve_minutes"] == PARAMS["max_duration_minutes"]
     # training wall clock fits its phase with the non-training work (load, smoke, ladder, two cards, checkpoints)
     assert CELL["max_minutes"] + 40 <= PARAMS["phase_caps_minutes"]["cell"]
@@ -556,7 +556,8 @@ def test_registered_for_the_launch_lint():
 
     assert costs.PARAMS["m2_first_cell"] == "jobs/m2_first_cell/job_params.json"
     tree = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
-    assert "`jobs/m2_first_cell/` | $66.03 | $70 |" in tree
+    # derived from the params (re-priced 2026-10-09 at jobs/common/rates.py; was "$66.03 | $70" at $0.0495/min)
+    assert f"`jobs/m2_first_cell/` | ${costs.worst_case_usd(PARAMS):.2f} | ${PARAMS['hard_cap_usd']:.2f} |" in tree
     assert f"{costs.worst_case_usd(PARAMS):.2f}" in (ROOT / "jobs/m2_first_cell/JOB_SPEC.md").read_text(encoding="utf-8")
 
 
