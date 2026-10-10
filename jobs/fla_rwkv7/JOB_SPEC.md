@@ -136,7 +136,7 @@ submit_job(chip="h100", chip_count=1, mission="m2-fla-rwkv7-kernel", idempotency
 ## Cost (`python -m jobs.common.costs` convention: build billed, at least one restart assumed)
 
 **Worst case: (18 + 2 × 31) × $0.0495 = $3.96 ≤ $4.50.** The expected run is about 22 min plus the optional fp32 tail, about $1.09–1.50. Before submitting:
-1. Run `set_workspace_cap(MTD + 3)`.
+1. Run `set_workspace_cap(MTD + 4)` (re-priced 2026-10-09 at $0.063/min; was MTD + 3; x 14/11, rounded up).
 2. Run `validate_job`; it must pass the cost-cap preflight without `force`.
 
 **Risks.**
@@ -367,7 +367,7 @@ of 1 (2 attempts).
 | train_fla_safe_gate | 5 | 3 (projection, below) | 1.67 |
 | reserve | 1 | | |
 
-Before submitting: `set_workspace_cap(MTD + 6)`; `validate_job` must pass the cost-cap preflight without `force`.
+Before submitting: `set_workspace_cap(MTD + 8)` (re-priced 2026-10-09 at $0.063/min; was MTD + 6; cap now $7.64); `validate_job` must pass the cost-cap preflight without `force`.
 
 ## Exit codes (mode truth_v2)
 

@@ -26,8 +26,8 @@ retry assumed even at `max_restarts=0`). **Expected** = sum of the expected phas
 
 | Job | Spec | Worst case | Hard cap (workspace cap) | Expected |
 |---|---|---|---|---|
-| qual (rung-2 qualification, unchanged) | `jobs/qual/` | $23.94 | $24 (re-authorised 2026-10-09 ($20 → $24)) | <= $8.91 (one attempt, validate_job) |
-| qual_c_only (phase-C re-run after the job-c4zkm 9B OOM; A and B passed there; env `QUAL_MODE=c_only`) | `jobs/qual/job_params_c_only.json` | $18.90 | $20 | <= $6.93 (one attempt; $7.92 with the 20-min build) |
+| qual (rung-2 qualification, unchanged) | `jobs/qual/` | $23.94 | $24 (re-authorised 2026-10-09 ($20 → $24)) | <= $11.34 (one attempt, validate_job) |
+| qual_c_only (phase-C re-run after the job-c4zkm 9B OOM; A and B passed there; env `QUAL_MODE=c_only`) | `jobs/qual/job_params_c_only.json` | $18.90 | $20 | <= $8.82 (one attempt; $10.08 with the 20-min build) |
 | probe9b (one-layer 9B conversion probe; re-priced from the job-4j3vu measured rates, issue #68) | `jobs/probe9b/` | $35.91 | $40 | ~$8.38 |
 | rwkv7 stage A (stock readout + steer smoke) | `jobs/rwkv7/` `JOB=readout` | $20.79 | $25.46 | ~$5.99 |
 | rwkv7 stage B (LoRA pilot, cache fork) | `jobs/rwkv7/` `JOB=lora` | $24.57 | $25.46 | ~$9.83 |
@@ -104,6 +104,8 @@ recorded decision, not an automatic one.
 | any other non-zero exit (incl. 9 = no-measurement) | diagnose; at most one re-run from the reserve |
 
 ## The $525 envelope (October MTD actual spend $16.11 as of 2026-10-07 incl. job-mden7 $1.06, job-5cmat $5.01 and job-tvuat $1.62, `costs.SPENT_USD`; $500 promo expires 2026-10-27T06:53Z)
+
+**Re-priced 2026-10-09** (`python -m jobs.common.costs`, $0.063/min): `costs.SPENT_USD` now loads the newest usage receipt (`receipts/2026-10-08-D-m2-cpu8-validation/post-run-usage.json`, MTD $57.98 on 2026-10-08; the $16.11 below is the 2026-10-07 value). Joint gate $61.74 of $75 (qual $23.94 + Clef-flash GCG B $37.80); Clef-27B Index line $49.52; optional teachers $60.36; System 1 m1 worst A $164.43 / B $81.27 / C $45.36; envelope total worst A $394.03 / B $310.87 / C $274.96, within $525 at that MTD. **Warning:** a live `autor usage --json` read at 2026-10-10T04:13Z gave October MTD $530.03 (not yet committed as a receipt), which on its own exceeds the $525 envelope; the coordinator must reconcile the envelope (credit top-ups of $250 + $10 landed 2026-10-09 per `autor billing`) before more spend is planned from this ledger. The table and paragraph below keep their 2026-10-07 figures at $0.0495/min.
 
 | Line (PLAN.md) | Budget | Worst case committed by this tree |
 |---|---|---|

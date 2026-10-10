@@ -129,7 +129,7 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 1. Context: `python -m jobs.common.launch m2_first_cell --sha <merged sha> --out <dir> --data <SSDM_DATA>` (PR #93:
    lint + job tests on the archived tree, pinned data, deterministic context, `submit.json`), then `create_context`,
    upload, `finalize_context`.
-2. `open_mission("m2-first-cell")`; `set_workspace_cap(MTD + 70)`.
+2. `open_mission("m2-first-cell")`; `set_workspace_cap(MTD + 89.10)`.
 
 ```json
 {
@@ -185,7 +185,7 @@ child vs Clef-flash comparison on the identical rows and an independent re-measu
 ## Before submit
 
 1. Independent fresh-context review; merge to `agent-main`.
-2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 70)` (hard cap $70; worst case $66.03); credit expiry 2026-10-27.
+2. Spend issue + LEDGER row; `set_workspace_cap(MTD + 89.10)` (hard cap $89.10; worst case $84.04 at $0.063/min, was $70 / $66.03); credit expiry 2026-10-27.
 3. Env: `TOK_S=3757 CALL_S=0.117` (job-tkfaj probe). No `M2FC_*` variable: those are the runner's test-only path
    overrides (`tests/test_m2_first_cell_shell.py` executes the runner end to end under bash on CPU; it needs the image's
    transformers 5.17.0, e.g. `CUDA_VISIBLE_DEVICES= .venv-gpu/Scripts/python -X utf8 -m pytest tests/test_m2_first_cell_shell.py`,

@@ -52,7 +52,9 @@ def test_probe_cap_is_the_planned_40_and_rate_matches_plan():
 
 def test_branch_ledger_fits_the_envelope_and_lines():
     led = costs.branch_ledger()
-    assert led["spent"] == 16.11 and led["envelope"] == 525.0
+    # MTD comes from the newest usage receipt (PR #241 review), no longer the hand-kept 16.11
+    assert led["spent"] == round(costs.latest_usage_receipt()["total_usd"], 2) and led["envelope"] == 525.0
+    assert led["spent_source"]["path"].startswith("receipts/")
     assert led["joint_gate_fits"]
     for b in led["branches"].values():
         assert b["fits_envelope"] and b["system1_left_for_m2"] > 0

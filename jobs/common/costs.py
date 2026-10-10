@@ -33,10 +33,35 @@ def _load_rates():
 rates = _load_rates()
 
 ENVELOPE_USD = 525.0
-#: October 2026 MTD actual SF spend (receipts): job-4j3vu 2.48, job-tkfaj 1.79, job-sgihj 1.40, job-c4zkm 0.74,
-#: job-mhc3h 0.56, job-4idg4 0.30, job-jucxx 0.25, job-jn47u 0.84, job-jbw22 0.07, job-mden7 1.06, job-5cmat 5.01
-#: (LEDGER: 14.49 per get_usage) + job-tvuat 1.62 (get_job receipt: charged_usd_micros 1,619,200, 1,963 billed s)
-SPENT_USD = 16.11
+#: Month-to-date SF spend comes from the newest committed `autor usage --json` receipt (receipts/<date>-*/*usage*.json,
+#: object "list" with total_usd), not a hand-kept literal: the old SPENT_USD = 16.11 (2026-10-07) was stale by $41.87
+#: against LEDGER's 2026-10-08 $57.98. lint warns when the newest receipt is older than USAGE_STALE_DAYS.
+USAGE_STALE_DAYS = 2
+
+
+def latest_usage_receipt(root: Path = ROOT) -> dict | None:
+    """The newest usage receipt: latest month, then latest receipt-directory date, then the larger MTD (MTD only grows
+    within a month, so the larger of two same-day snapshots is the later one). None when no receipt is shipped."""
+    import datetime as dt
+
+    best = None
+    for f in (root / "receipts").glob("*/*usage*.json"):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+            day = dt.date.fromisoformat(f.parent.name[:10])
+        except (ValueError, OSError):
+            continue
+        if not isinstance(d, dict) or d.get("object") != "list" or "total_usd" not in d or "month" not in d:
+            continue
+        key = (d["month"], day, float(d["total_usd"]))
+        if best is None or key > best[0]:
+            best = (key, {"path": f.relative_to(root).as_posix(), "month": d["month"], "date": day.isoformat(),
+                          "total_usd": float(d["total_usd"])})
+    return best[1] if best else None
+
+
+_USAGE = latest_usage_receipt()
+SPENT_USD = round(_USAGE["total_usd"], 2) if _USAGE else None
 #: PLAN.md spend lines
 LINES = {"joint_gate": 75.0, "system1": 250.0, "language": 100.0, "reserve": 100.0}
 PARAMS = {"qual": "jobs/qual/job_params.json", "qual_c_only": "jobs/qual/job_params_c_only.json", "probe9b": "jobs/probe9b/job_params.json",
@@ -219,6 +244,8 @@ def next_jobs_after_full8(verdict: str | None, exit_code: int | None = 0) -> lis
 
 def branch_ledger() -> dict:
     """Worst-case $ per branch through the tree, against the envelope and the PLAN lines."""
+    if SPENT_USD is None:
+        raise RuntimeError("no usage receipt under receipts/ (autor usage --json): MTD spend unknown")
     w = {k: worst_case_usd(load(k)) for k in PARAMS}
     joint = sum(w[k] for k in JOINT_GATE_JOBS) + OTHER["clef_baseline_B"]
     teachers = round(sum(w[k] for k in TEACHER_JOBS), 2)
@@ -237,7 +264,7 @@ def branch_ledger() -> dict:
         b["fits_envelope"] = b["envelope_total_worst"] <= ENVELOPE_USD
     return {"worst_case_usd": w, "joint_gate_worst": round(joint, 2), "joint_gate_fits": joint <= LINES["joint_gate"],
             "teachers_optional_worst": teachers, "clef27b_index_authorised_worst": clef27b,
-            "envelope": ENVELOPE_USD, "spent": SPENT_USD, "branches": branches}
+            "envelope": ENVELOPE_USD, "spent": SPENT_USD, "spent_source": _USAGE, "branches": branches}
 
 
 def main():

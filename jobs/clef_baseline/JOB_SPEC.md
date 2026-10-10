@@ -180,7 +180,7 @@ Three measurements then replace the assumption:
 
 How the jobs fit together:
 - The subset job is the canary. The full job `depends_on` its `result.s1_ok == true and result.ok == true`.
-- Chained, the workspace cap is MTD + `costs.concurrent_cap_usd(["clef_index_subset", "clef_index_full"])` = MTD + $34.
+- Chained, the workspace cap is MTD + `costs.concurrent_cap_usd(["clef_index_subset", "clef_index_full"])` = MTD + $43 (re-priced 2026-10-09 at $0.063/min; was MTD + $34).
 - At 5.39x, these three jobs ($38.91 worst) no longer fit inside the $75 joint-gate line together with qual and B.
   The coordinator authorised them as a separate line (`costs.CLEF27B_INDEX_JOBS`), which is still counted in the
   envelope.

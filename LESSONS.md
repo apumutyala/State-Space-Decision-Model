@@ -470,5 +470,5 @@ Status values: `ENFORCED` (an automated check fails on recurrence), `PARTIAL` (a
 - Symptom: every `job_params*.json` still carried `batch_usd_per_min` 0.0495 while the billing journal charged 63,000 micro-$/GPU-min (job-2gpiv, job-bs5we, job-gi58k); worst cases, caps and in-job cost lines under-stated spend by 27 %. job-hjwpq's own result said `runtime_usd` 12.33 against a $14.08 receipt.
 - Cost: no overrun (caps sit under the workspace cap), but 31 of 39 params files were over their hard cap at the real rate.
 - Root cause: the rate was copied into 39 params files and five scripts as literals, with no single source.
-- **Check:** `jobs/common/rates.py` holds the dated rates and history; `costs` and the scorers read it; lint `rate_current` fails any params file whose `batch_usd_per_min` differs from `rates.BATCH_USD_PER_MIN`.
+- **Check:** `jobs/common/rates.py` holds the dated rates and history; `costs` and the scorers read it; lint `rate_current` fails any params file whose `batch_usd_per_min` differs from `rates.BATCH_USD_PER_MIN`. `costs.SPENT_USD` is loaded from the newest committed `autor usage --json` receipt (it had been a hand-kept $16.11 against a $57.98 MTD), and the lint prints a WARN when that receipt is older than `costs.USAGE_STALE_DAYS` (2).
 - **Status:** ENFORCED.

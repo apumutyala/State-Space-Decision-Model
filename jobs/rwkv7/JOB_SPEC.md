@@ -57,7 +57,7 @@ largest T that stays under 76 GB.
 | report | 2 | `scripts/decide_rwkv7.py readout` -> `readout-measured` | 9 |
 
 Schedule 142 + reserve 8 = 150. Worst case (30 + 2 x 150) x 0.0495 = **$16.34**; expected ~$4.70; hard cap
-`set_workspace_cap(MTD + 20)` when A runs alone.
+`set_workspace_cap(MTD + 25.46)` when A runs alone (was MTD + 20 before the 2026-10-09 re-pricing).
 
 ## Stage B: LoRA m2 pilot cell (`JOB=lora`, `jobs/rwkv7/job_params_lora.json`, `jobs/rwkv7/pilot_cell.json`)
 
@@ -81,9 +81,9 @@ Schedule 142 + reserve 8 = 150. Worst case (30 + 2 x 150) x 0.0495 = **$16.34**;
 Schedule 172 + reserve 8 = 180. Worst case (30 + 2 x 180) x 0.0495 = **$19.30**; expected ~$7.72.
 
 **Workspace cap when B is chained.** The cap is workspace-wide and B is submitted (with `depends_on`) while A is still
-queued or running, so at submit time it must cover A's remaining worst case plus B's: `set_workspace_cap(MTD + 36)`
-(`costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"])` = ceil(16.34 + 19.30)). MTD + 20 is right only if B is
-submitted after A has ended. With the probe also live (qual pass branch), add its $28.21.
+queued or running, so at submit time it must cover A's remaining worst case plus B's: `set_workspace_cap(MTD + 46)` (36 before the 2026-10-09 re-pricing)
+(`costs.concurrent_cap_usd(["rwkv7_readout", "rwkv7_lora"])` = ceil(20.79 + 24.57); was ceil(16.34 + 19.30)). MTD + 25.46 is right only if B is
+submitted after A has ended. With the probe also live (qual pass branch), add its $35.91 (was $28.21).
 
 ## `submit_job` fields (one build context for both stages, so `depends_on` needs no `allow_different_context`)
 

@@ -130,7 +130,7 @@ Every response is served through `decide.Decider(calibration=FeatureTemperature)
 fitted temperature. `revision_id` = `<backend>+T:<temperature id>`.
 
 Schedule 173 + reserve 7 = 180 min. **Worst case** (20 build + 2 × 180) × $0.0495 = **$18.81**, under the
-**$20 hard cap**; `set_workspace_cap(MTD + 20)` applies when the job runs alone.
+**$24 hard cap** (re-authorised 2026-10-09 ($20 → $24)); `set_workspace_cap(MTD + 24)` applies when the job runs alone.
 
 **Eval volume** (RWKV7 tokenizer, measured on the cohort; `jobs/m2_parent_arm/score_parent.VOLUME_TOKENS`):
 - **Child arm:** 59.2 M tokens (G12 9.3 M, G13 49.9 M). G13's Index term is now the FULL DEV slice (issue #36):
@@ -173,7 +173,7 @@ Every stop below exits and lands in the receipt:
 5. **The usual spend steps:**
    - a `spend` issue with this estimate and these stop conditions, acknowledged by the other agent;
    - a LEDGER planned row;
-   - `validate_job` against the $20 cap;
+   - `validate_job` against the $24 cap;
    - the SF credit-expiry check (promo expires 2026-10-27T06:53Z).
 
 ## Cohort v3 retention cost (G13 child arm)

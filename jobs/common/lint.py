@@ -504,6 +504,24 @@ def archive_cr_hits(root: Path = ROOT, rev: str = "HEAD", autocrlf: str = "true"
     return [c for c in cand if c not in unset]
 
 
+def usage_staleness(root: Path = ROOT, costs=None, today=None) -> str | None:
+    """L-49: a WARNING (never a failure) when the newest usage receipt behind costs.SPENT_USD is older than
+    costs.USAGE_STALE_DAYS, or missing: the envelope ledger then under-counts spend. Refresh with
+    `autor usage --json` into receipts/<date>-<lane>-<what>/usage.json."""
+    import datetime as dt
+
+    costs = costs or load_costs(root)
+    u = costs.latest_usage_receipt(root)
+    if u is None:
+        return "no usage receipt under receipts/: costs.SPENT_USD (MTD) is unknown"
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    age = (today - dt.date.fromisoformat(u["date"])).days
+    if age > costs.USAGE_STALE_DAYS:
+        return (f"usage receipt {u['path']} (MTD ${u['total_usd']:.2f}) is {age} days old "
+                f"(> {costs.USAGE_STALE_DAYS}): refresh it before trusting the envelope ledger")
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     costs, tests = load_costs(ROOT), _test_sources(ROOT)
@@ -521,6 +539,9 @@ def main(argv: list[str] | None = None) -> int:
         cr = archive_cr_hits(ROOT)
         print(f"eol attrs {attrs}; archive CR hits {cr or 'none'}; backslash-n {backslash_n_hits(ROOT) or 'none'}")
         rc |= any(v != "lf" for v in attrs.values()) or bool(cr) or bool(backslash_n_hits(ROOT))
+        stale = usage_staleness(ROOT, costs)
+        if stale:
+            print(f"WARN {stale}")
     return int(rc)
 
 

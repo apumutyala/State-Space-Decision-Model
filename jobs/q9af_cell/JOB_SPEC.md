@@ -128,8 +128,8 @@ mirrored `cell.json`, training from the last checkpoint, the 200-min budget redu
 | cell_r256 | 720 | **$74.25** | $75 | ~$23.15 |
 | campaign (parent, then both cells) | | $186.62 | | ~$58.86 |
 
-Workspace cap: both cells submitted together after the parent: MTD + 149 (`costs.concurrent_cap_usd`); all three
-chained with `depends_on`: MTD + 187.
+Workspace cap: both cells submitted together after the parent: MTD + 189 (`costs.concurrent_cap_usd`; was 149 before the 2026-10-09 re-pricing); all three
+chained with `depends_on`: MTD + 238 (was 187).
 
 ## Exit codes
 
@@ -161,7 +161,7 @@ rule verdict. `/output/adapters/adapters.pt` holds the trained LoRA + head weigh
 1. job-2xe5w lands: `python -m jobs.q9af_cell.pin fill ...` (both configs + `gdn.sha256`), committed alone; a partial
    export needs an explicit `--hybrid` and a decision-needed issue (a hybrid is not the goal model).
 2. Independent fresh-context review; merge to `agent-main`.
-3. Spend issue + LEDGER rows; `set_workspace_cap(MTD + 40)` for the parent, then pin its `arm.json` / units /
+3. Spend issue + LEDGER rows; `set_workspace_cap(MTD + 50.91)` for the parent (was MTD + 40 before the 2026-10-09 re-pricing), then pin its `arm.json` / units /
    `index-frozen.json` sha256 into `job_params_cell_r*.json` (`pins_for_cell_params` in its result) and commit.
 4. `python -m jobs.common.launch q9af_cell --mode <mode> --sha <merged sha> --out <dir> --data $SSDM_DATA` with
    `Q9AF_GDN_PT` / `Q9AF_EXPORT_JSON` (and for the cells `Q9AF_PARENT_*`, `Q9AF_INDEX_FROZEN`) pointing at the artifacts.

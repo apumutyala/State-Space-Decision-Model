@@ -170,7 +170,7 @@ The workspace-cap precondition and the `validate_job` re-run apply unchanged.
 
 1. #2/#6/#7/#8/#9 merged, and the SHA filled in.
 2. A LEDGER planned row.
-3. `set_workspace_cap` = MTD + $20, **then** `validate_job` re-run and passing against that cap.
+3. `set_workspace_cap` = MTD + $24 (the $20 line re-authorised 2026-10-09 ($20 → $24)), **then** `validate_job` re-run and passing against that cap.
 4. Codex acknowledges on issue #3.
 
 ## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min

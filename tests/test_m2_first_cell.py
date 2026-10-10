@@ -556,7 +556,8 @@ def test_registered_for_the_launch_lint():
 
     assert costs.PARAMS["m2_first_cell"] == "jobs/m2_first_cell/job_params.json"
     tree = (ROOT / "jobs/DECISION_TREE.md").read_text(encoding="utf-8")
-    assert "`jobs/m2_first_cell/` | $66.03 | $70 |" in tree
+    # derived from the params (re-priced 2026-10-09 at jobs/common/rates.py; was "$66.03 | $70" at $0.0495/min)
+    assert f"`jobs/m2_first_cell/` | ${costs.worst_case_usd(PARAMS):.2f} | ${PARAMS['hard_cap_usd']:.2f} |" in tree
     assert f"{costs.worst_case_usd(PARAMS):.2f}" in (ROOT / "jobs/m2_first_cell/JOB_SPEC.md").read_text(encoding="utf-8")
 
 
