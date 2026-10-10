@@ -540,3 +540,39 @@ Schedule: setup 20 + guard 5 + heldout 10 + cell 215 + screen 45 + report 5 + re
 $19.34; **worst case** (60 + 2 x 307) x $0.063 = **$42.46** (jobs/common/rates.py rate; hard cap $45).
 
 **r2 (job-v6qm3 stopped at exit 26).** The jev1 mix measured 10.92 s/step at the step-10 rate check (979 affordable < 1,111 needed in 180 min). Clock = ceil(1,121 x 10.92 x 1.3 / 60) = 266 -> 270 min; cell cap 305; max_duration 397 min; quoted hold $25.01; **worst case** (60 + 2 x 397) x $0.063 = **$53.80** (hard cap $60). Everything else unchanged (1,121 fixed steps, LR horizon 753, the same data and arms).
+
+## Mode `jevdiag_q35_4b` (A-PREREG-JEV1-DIAG: why JEV1-4B is flat; eval-only; launches only if r2 is FLAT / LOSES)
+
+PRE-REGISTRATION TEXT, to paste on origin/state PREREG.md before the diagnostic runs:
+
+- **A-PREREG-JEV1-DIAG (lead, 2026-10-10, registered BEFORE the diagnostic runs; launches only if A-PREREG-JEV1-4B r2
+  is not a success).** Eval-only on r2's saved checkpoint: the scored (best) export that r2's own screen used, installed
+  by checkpoint_loader. No training.
+  - **Arms**, on the 231 public JevBench items:
+    - native: the trained fork head.
+    - lora_lmhead: the trained backbone read the shim's way (shim prompt, tied LM-head label log-probs, shim
+      format_answer T 0.8 / yes-no floor 0.801).
+    - stock_shim: LoRA off.
+  - **Identity gate:** native and stock_shim must reproduce r2's own jevkit I within 0.1 point. If not, the diagnosis is
+    void.
+  - **Calibration / in-distribution slice:** 200 jev1 rows per JevBench family that r2's checkpoint never consumed. The
+    Trainer order is a pure function of (seed, epoch); the cursor comes from the checkpoint. Rows are taken in ascending
+    sha256("jevdiag:" + id) order. The ids sha256 is recorded in the output and pinned in the params after r1. Every arm
+    answers every slice row, and the native head's per-option probabilities are exported (`calib_probs.jsonl`) for
+    EV-PREREG-AREA-TEMP (never public-231).
+  - **Rules:**
+    - READOUT iff lora_lmhead - native delta I has a 95% CI > 0 (`screen.paired_vs`, B 1,000, seed 16). Next: serve /
+      train the LM-head label readout.
+    - TRANSFER iff native - stock_shim slice accuracy >= +5 points with a family-cluster bootstrap CI > 0 (B 2,000,
+      seed 0), AND r2's delta I CI includes 0. Next: format + coverage (jev2 families) before more steps.
+    - UNDERFIT iff the slice gain is < +2 points. Next: the JEV2-4B budget (1 epoch) with LR x2.
+    - Otherwise "mixed". Next: JEV2-4B.
+  - **COVERAGE (reported):** every arm's paired deltas on the 8 jev1-covered families (120 items) vs the 11 uncovered
+    ones (111 items).
+  - **Cost** ($0.063/min): max_duration 112 min, quoted hold $7.06, worst case $17.89.
+
+Package: `job_params_jevdiag_q35_4b.json` (eval_only "jevdiag"), with `m2_first_cell_rwkv7_jevdiag_q35_4b.json` = a byte
+copy of r2's cell config, which `checkpoint_loader.check_cell` requires. Runner: `first_cell_job.sh` eval_only jevdiag
+(qwen35 only): checkpoint -> `jobs.m2_first_cell.jev_diag run` -> `report`. `fulldev_eval.load_child` gains an opt-in
+`want_visited` (default off; r2's path is unchanged). PLACEHOLDERS: the `checkpoint` block, the shipped cell.json pin
+and `jevdiag.r2_delta_I_ci95`, all from r2's artifact.

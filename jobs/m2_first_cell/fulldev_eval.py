@@ -252,7 +252,15 @@ def load_child(a, temperature: bool = True, readout: tuple[str, str] | None = No
                                        checkpoint={"path": ckpt.name, "step": tr.step,
                                                    "sha256": hashlib.sha256(ckpt.read_bytes()).hexdigest()})
         decider = Decider(backend)
-        return decider, False, {"arm": "child", "arm_decider": decider.revision(), "checkpoint": backend.checkpoint,
+        extra = {}
+        if getattr(a, "want_visited", False):  # A-PREREG-JEV1-DIAG: the training items this checkpoint's steps consumed
+            seen = []
+            for ep in range(tr.epoch + 1):  # Trainer._order is a pure function of (seed, epoch); cursor = items used
+                order = tr._order(ep)
+                seen += order if ep < tr.epoch else order[: tr.cursor]
+            extra["visited_item_ids"] = sorted({train_items[i].id for i in seen})
+            extra["visited"] = {"epoch": tr.epoch, "cursor": tr.cursor, "n_items": len(train_items)}
+        return decider, False, {**extra, "arm": "child", "arm_decider": decider.revision(), "checkpoint": backend.checkpoint,
                                 "lineage": tr.lineage, "cell_config": cfg,
                                 "readout": {"template": tpl, "layout": lay,
                                             "native": (tpl, lay) == (cfg["template"], cfg["layout"])},

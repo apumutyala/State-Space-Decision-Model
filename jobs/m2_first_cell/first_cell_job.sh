@@ -166,8 +166,8 @@ td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
 ev = p.get("eval_only", "none")
-if ev not in ("none", "fulldev"):
-    sys.exit(f"mode {mode}: eval_only {ev!r} must be none or fulldev")
+if ev not in ("none", "fulldev", "jevdiag"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev or jevdiag")
 if ev != "none":
     sys.path.insert(0, ".")
     from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
@@ -186,6 +186,7 @@ EOF
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
+  [ "$EVAL_ONLY" = jevdiag ] && VALIDATOR=jobs.m2_first_cell.jev_diag:valid_result DECISION=$WORK/out/jevdiag.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
   if [ "$CHAIN_LINK" -gt 0 ]; then
     [ "$CHAIN_LINK" -lt "$CHAIN_OF" ] && INTERMEDIATE=1
@@ -208,7 +209,9 @@ PARENT=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("
 GDN_ARGS=()
 case "$PARENT" in rwkv7) ;; q9af) GDN_ARGS=(--gdn-ckpt "$DATA/gdn/gdn_converted.pt") ;; qwen35) ;;
   *) fail 5 "cell parent $PARENT: rwkv7, q9af or qwen35" ;; esac
-[ "$PARENT" != rwkv7 ] && [ "$EVAL_ONLY" != none ] && fail 5 "eval_only modes are rwkv7-only"
+[ "$PARENT" != rwkv7 ] && [ "$EVAL_ONLY" = fulldev ] && fail 5 "eval_only fulldev is rwkv7-only"
+# eval_only jevdiag (A-PREREG-JEV1-DIAG, jobs/m2_first_cell/jev_diag.py): a saved qwen35 shim checkpoint, jevkit arms only
+[ "$EVAL_ONLY" = jevdiag ] && [ "$PARENT" != qwen35 ] && fail 5 "eval_only jevdiag is qwen35-only"
 # params "parent_arm" (default in_job): "none" = no parent arm at all (A-PREREG-SIZECLIFF size-cliff arms, stage screen
 # only, screen_parent "none"): no arm seed, no parent g12 / index phases, the screen pairs child vs reference + comparators
 PARENT_ARM=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("parent_arm", "in_job"))' "$PARAMS") || fail 5 "job_params parent_arm"
@@ -323,6 +326,8 @@ fi
 if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
+elif [ "$EVAL_ONLY" = jevdiag ]; then  # fixed size: 231 items + the calib slice, x 3 arms; capped by phase_caps jevdiag
+  say "jevdiag: fixed-size eval (231 JevBench items + calib slice, 3 arms), priced in job_params phase_caps"
 elif [ "$INTERMEDIATE" = 1 ]; then
   say "chain link $CHAIN_LINK of $CHAIN_OF: no eval phase in this link, nothing to price"
 else
@@ -367,6 +372,33 @@ timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_rea
   --out-dir "$WORK/out/guard" > "$WORK/logs/guard.log" 2>&1; r=$?
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
+
+if [ "$EVAL_ONLY" = jevdiag ]; then  # ---------------------------- eval-only: r2's SAVED checkpoint, diagnostic arms
+  say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"
+  timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" \
+    --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CK/cell" --work "$WORK/art" \
+    --cell-out "$WORK/out/cell.json" --out "$WORK/out/checkpoint.json" > "$WORK/logs/checkpoint.log" 2>&1; r=$?
+  gate "checkpoint" $r; export_phase checkpoint
+  case $r in 0) ;; 124|137) fail 7 "checkpoint timeout" ;; 10) fail 10 "checkpoint identity: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
+    *) fail 5 "checkpoint rc=$r: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
+  CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
+  say "phase jevdiag (native / lora_lmhead / stock_shim on the 231 items + the calib slice)"
+  timeout --kill-after=30s $(cap jevdiag)m python -X utf8 -m jobs.m2_first_cell.jev_diag run --cell "$WORK/out/cell.json" \
+    --ckpt-dir "$CK/cell" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR" "${TEACHER_ARGS[@]}" \
+    --guard-readiness "$WORK/out/guard/readiness.json" --model-dir "$SNAP" --data "$DATA" --params "$PARAMS" \
+    --out-dir "$WORK/out/jevdiag" > "$WORK/logs/jevdiag.log" 2>&1; r=$?
+  gate "jevdiag" $r; export_phase jevdiag
+  case $r in 0) ;; 124|137) fail 7 "jevdiag timeout" ;; 10) fail 10 "jevdiag identity: $(tail -1 "$WORK/logs/jevdiag.log")" ;;
+    *) fail 9 "jevdiag rc=$r" ;; esac
+  say "phase report"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.jev_diag report --out-dir "$WORK/out/jevdiag" \
+    --params "$PARAMS" --out "$DECISION" > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "jevdiag result missing or invalid (rc=$r)"
+  sample "$DECISION" "jevdiag"
+  RC=0
+  exit 0
+fi
 
 if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a SAVED checkpoint on the FULL Index DEV
   say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"
