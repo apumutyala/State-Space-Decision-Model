@@ -14,6 +14,9 @@
 #   12,104 rows, or params "rows": "smoke" = the pre-declared 250-row fulldev_smoke_rows.json; live rate guard, per-row
 #   resume from $CK/fulldev), optional parent_full (params "fulldev_parent_arm"),
 #   report (fulldev_eval report -> fulldev_eval_result.json). No heldout / parent g12+index / reprice / cell phase.
+#   Params with "eval_only": "jevbench" (mode d19_jevbench): the same setup / guard / checkpoint phases, then jev_child
+#   and jev_parent (jobs.m2_first_cell.jev_eval score: the saved cell's native readout and its stock parent on the 231
+#   public JevBench items, live rate guard each) and report (jevkit report per arm + paired deltas -> jev_eval_result.json).
 # Env: TOK_S=<MEASURED prefill tok/s>  CALL_S=<MEASURED per-call s>  (job-tkfaj probe: 3757 / 0.117)
 # Order: setup (identities + every eval preflight) -> guard -> heldout -> parent arm (g12, index; live rate guard;
 #        cached in $CK) -> reprice child evals at the measured speed -> cell (train; measured-rate stops) ->
@@ -147,8 +150,8 @@ td = p.get("train_dir", "m2-150k")
 if not isinstance(td, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*", td) or ".." in td.split("/"):
     sys.exit(f"mode {mode}: train_dir {td!r} must be a relative path under $DATA")
 ev = p.get("eval_only", "none")
-if ev not in ("none", "fulldev"):
-    sys.exit(f"mode {mode}: eval_only {ev!r} must be none or fulldev")
+if ev not in ("none", "fulldev", "jevbench"):
+    sys.exit(f"mode {mode}: eval_only {ev!r} must be none, fulldev or jevbench")
 if ev != "none":
     sys.path.insert(0, ".")
     from jobs.m2_first_cell.checkpoint_loader import CheckpointError, checkpoint_block
@@ -167,6 +170,7 @@ EOF
   [ "$TEACHER" = 1 ] && TEACHER_ARGS=(--teacher-dir "$DATA/teacher")
   say "mode $MODE: cell $CELL, params $PARAMS, train dir $TRAIN_DIR, KD teacher ${TEACHER_ARGS[*]:-none}, eval-only $EVAL_ONLY"
   [ "$EVAL_ONLY" = fulldev ] && VALIDATOR=jobs.m2_first_cell.fulldev_eval:valid_result DECISION=$WORK/out/fulldev_eval_result.json
+  [ "$EVAL_ONLY" = jevbench ] && VALIDATOR=jobs.m2_first_cell.jev_eval:valid_result DECISION=$WORK/out/jev_eval_result.json
   [ "$STAGE" = screen ] && VALIDATOR=jobs.m2_first_cell.screen:valid_result DECISION=$WORK/out/screen.json
 fi
 [ -n "${TOK_S:-}" ] || fail 4 "TOK_S (a MEASURED prefill tok/s) is not set"
@@ -248,6 +252,10 @@ python -c "import train.m2_gates, train.heldout, train.train_set, jobs.m2_parent
 if [ "$EVAL_ONLY" = fulldev ]; then  # full-DEV scoring priced from the committed row lengths x D1's measured child rate
   python -X utf8 -m jobs.m2_first_cell.fulldev_eval estimate --params "$PARAMS" > "$WORK/out/preflight-fulldev.json" \
     || fail 15 "fulldev projected past its cap at the measured D1 child rate"
+elif [ "$EVAL_ONLY" = jevbench ]; then  # 231 short single-question items per arm: priced by the live rate guard below
+  python -c "import jevkit, jobs.m2_first_cell.jev_eval" || fail 5 "jevkit / jev_eval not importable"
+  python -X utf8 -m jevkit items > "$WORK/out/jevbench-items-verify.json" 2> "$WORK/logs/jevbench-items.log" \
+    || fail 10 "public JevBench items sha256 ($(tail -1 "$WORK/logs/jevbench-items.log"))"
 else
 # params "rows" (base / training modes): "subset" (default) = the child's Index stage on all 2,008 subset rows; "proxy600"
 # = a SCREEN on the pre-declared 644-row proxy (jobs/common/dev_proxy600.json, ids sha pinned in jobs.common.dev_proxy;
@@ -289,6 +297,43 @@ timeout --kill-after=30s $(cap guard)m python -X utf8 -m jobs.m2_pilot.guard_rea
   --out-dir "$WORK/out/guard" > "$WORK/logs/guard.log" 2>&1; r=$?
 gate "guard" $r; export_phase guard
 case $r in 0) ;; 124|137) fail 7 "guard timeout" ;; 30|31|32) fail $r "guard not ready (see out/guard/readiness.json)" ;; *) fail 5 "guard rc=$r" ;; esac
+
+if [ "$EVAL_ONLY" = jevbench ]; then  # ------ eval-only: a SAVED checkpoint + its stock parent on the public JevBench items
+  say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"
+  timeout --kill-after=30s $(cap checkpoint)m python -X utf8 -m jobs.m2_first_cell.checkpoint_loader install --params "$PARAMS" \
+    --cell-src "$DATA/checkpoint/cell.json" --cell-config "$CELL" --ck-dir "$CK/cell" --work "$WORK/art" \
+    --cell-out "$WORK/out/cell.json" --out "$WORK/out/checkpoint.json" > "$WORK/logs/checkpoint.log" 2>&1; r=$?
+  gate "checkpoint" $r; export_phase checkpoint
+  case $r in 0) ;; 124|137) fail 7 "checkpoint timeout" ;; 10) fail 10 "checkpoint identity: $(tail -1 "$WORK/logs/checkpoint.log")" ;;
+    *) fail 5 "checkpoint rc=$r: $(tail -1 "$WORK/logs/checkpoint.log")" ;; esac
+  CKPT=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['path'])" "$WORK/out/checkpoint.json") || fail 5 "checkpoint.json"
+  NJ=$(python -c "import json; print(sum(f['n'] for f in json.load(open('jevkit/data/jevbench_public_pin.json'))['files'].values()))") || fail 5 "jevkit pin"
+  for ARMNAME in child parent; do
+    PH=jev_$ARMNAME
+    if [ "$ARMNAME" = child ]; then
+      ARGS=(--cell "$WORK/out/cell.json" --ckpt-dir "$CK/cell" --ckpt "$CKPT" --records "$RECORDS" --train-dir "$TRAIN_DIR"
+            "${TEACHER_ARGS[@]}" --guard-readiness "$WORK/out/guard/readiness.json")
+    else
+      ARGS=(--cell-config "$CELL")
+    fi
+    say "phase $PH ($ARMNAME arm, $NJ public JevBench items, one request at a time; live rate guard)"
+    python -m jobs.common.rate_guard run --results "$WORK/out/jevbench/$ARMNAME/preds.jsonl" --total "$NJ" --exclude-startup \
+      --check-after-min 5 --cap-min "$(cap $PH)" --report "$WORK/out/rate-$PH.json" -- \
+      timeout --kill-after=30s $(cap $PH)m python -X utf8 -m jobs.m2_first_cell.jev_eval score --arm "$ARMNAME" "${ARGS[@]}" \
+      --model-dir "$SNAP" --out-dir "$WORK/out/jevbench" > "$WORK/logs/$PH.log" 2>&1; r=$?
+    gate "$PH" $r; export_phase "$PH"
+    case $r in 0) ;; 124|137) fail 7 "$PH timeout" ;; 15) fail 15 "$PH: live rate past its cap" ;;
+      10) fail 10 "$PH identity (checkpoint lineage / cohort / guard)" ;; *) fail 9 "$PH rc=$r" ;; esac
+  done
+  say "phase report (jevkit report per arm + paired child - parent deltas)"
+  timeout --kill-after=30s $(cap report)m python -X utf8 -m jobs.m2_first_cell.jev_eval report --params "$PARAMS" \
+    --out-dir "$WORK/out/jevbench" --elapsed-min "$(( ($(date +%s) - T0) / 60 ))" --out "$DECISION" > "$WORK/logs/report.log" 2>&1; r=$?
+  gate "report" $r
+  [ $r -eq 0 ] || fail 9 "jev_eval result missing or invalid (rc=$r): $(tail -1 "$WORK/logs/report.log")"
+  sample "$DECISION" "jev-eval"
+  RC=0
+  exit 0
+fi
 
 if [ "$EVAL_ONLY" = fulldev ]; then  # ---------------------------- eval-only: a SAVED checkpoint on the FULL Index DEV
   say "phase checkpoint (shared loader: jobs.m2_first_cell.checkpoint_loader)"

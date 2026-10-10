@@ -414,3 +414,5 @@ Reference point on the proxy: D1 + v3w child 37.71 against stock v3w parent 27.3
 [5.58, 14.86].
 
 The 26 min child estimate is D1's v1 rate. The v3w prompts are longer, so the screen cap (60 min) keeps margin.
+
+D19 JevBench eval `jobs/m2_first_cell/job_params_d19_jevbench.json` (mode `d19_jevbench`, eval_only `jevbench`): the saved D19 checkpoint (job-fi5xf art-p3gpi, best step 2800) through the D19 screen's child path (native v3w, joint record head, untempered) and its stock parent (G1V3Backend words) on the 231 public JevBench items via jevkit (`jobs/m2_first_cell/jev_eval.py`), paired child - parent deltas; price = the 13.3B size class (0.05 / 0.15 per 1M). Caps: setup 25, guard 5, checkpoint 15, jev_child 45, jev_parent 20, report 10, reserve 7 = 127 min. **Worst case** (60 + 2 x 127) x $0.0495 = **$15.54** (cap $16); platform hold 127 x $0.063 = $8.00. Expected ~60 min ≈ $2.97.

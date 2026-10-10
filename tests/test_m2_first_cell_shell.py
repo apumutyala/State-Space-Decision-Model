@@ -201,8 +201,9 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     timed = [line for line in source.splitlines() if not line.lstrip().startswith("#") and re.search(r"\btimeout\s", line)]
     # terminal, download, guard, heldout, two verify branches, parent loop, cell, evals, report; plus the eval-only
     # fulldev branch (mode fulldev_eval): checkpoint, the arm loop, its report; plus the stage-screen branch (replaces
-    # evals + report: screen score, its report; same number of graces per run)
-    assert len(timed) == 15
+    # evals + report: screen score, its report; same number of graces per run); plus the eval-only jevbench branch
+    # (mode d19_jevbench): checkpoint, the arm loop, its report
+    assert len(timed) == 18
     assert "timeout --kill-after=30s $(cap screen)m python -X utf8 -m jobs.m2_first_cell.screen score" in source
     assert "timeout --kill-after=30s $(cap checkpoint)m python" in source
     assert "timeout --kill-after=30s $(cap $PH)m python" in source
@@ -222,7 +223,8 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     # the parent loop executes at most twice, giving nine phase graces in one run.
     assert 9 * 30 / 60 + 3 * 15 / 60 + (60 + 30) / 60 == 6.75 < params["reserve_minutes"] == 7
     # fulldev_eval: download, guard, checkpoint, two arms, report graces + two rate guards + terminal export
-    for mode in ("fulldev_eval", "fulldev_smoke"):
+    # d19_jevbench: the same structure (download, guard, checkpoint, two arms, report + two rate guards + terminal)
+    for mode in ("fulldev_eval", "fulldev_smoke", "d19_jevbench"):
         fd = json.loads((ROOT / f"jobs/m2_first_cell/job_params_{mode}.json").read_text())
         assert 6 * 30 / 60 + 2 * 15 / 60 + (60 + 30) / 60 == 5.0 < fd["reserve_minutes"] == 7
 
