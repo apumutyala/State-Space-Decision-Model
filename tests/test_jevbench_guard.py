@@ -36,7 +36,10 @@ def synthetic_jevbench():
     rows = [("JEVBENCH", f"jevbench:s{i}", "jevbench_syn", {"id": f"s{i}", **r}) for i, r in enumerate(items)]
     idx = DG.build_index(rows, {"entries": []}, n_parts=1)
     idx.meta["index_sha256"] = "synthetic-jevbench"
-    fp = Fingerprint.build(({**r[3], "_evaluation": {"catalog_id": JG.CATALOG_ID}} for r in rows), log=lambda *a: None)
+    templates = JG.template_segments(rows)
+    frows = JG.fingerprint_rows(rows, templates)
+    fp = Fingerprint.build(frows, log=lambda *a: None)
+    fp.exact_hashes = JG.exact_segment_hashes(frows, templates)
     JG.set_for_tests((idx, fp))
     try:
         yield items
@@ -82,7 +85,10 @@ def test_training_rows_copying_public_items_fail_the_gate():
     items = IT.load_public()
     long_it = next(i for i in items if i.tier == "hard" and isinstance(i.state, str) and len(i.state.split()) > 200)
     mid_it = next(i for i in items if i.tier == "standard")
-    short_it = min((i for i in items if i.tier == "easy" and isinstance(i.state, str)), key=lambda i: len(i.state))
+    # the shortest easy item the training-time exact gate covers (>= EXACT_MIN_WORDS words; 3 of 231 states are
+    # shorter: the builder fingerprint covers those)
+    short_it = min((i for i in items if i.tier == "easy" and isinstance(i.state, str)
+                    and len(i.state.split()) >= JG.EXACT_MIN_WORDS), key=lambda i: len(i.state))
     copies = [
         _rec(1, long_it.state, {"q": long_it.question}),
         _rec(2, mid_it.state, {"q": mid_it.question}),
@@ -175,3 +181,33 @@ def test_tampered_pin_or_arrays_fail_closed(tmp_path, monkeypatch):
     monkeypatch.undo()
     JG.load.cache_clear()
     JG.load()
+
+
+def test_shared_tool_descriptions_and_rubric_frames_are_templates_not_hits():
+    """The 100k-v2 rescan finding: glaive_fc tool catalogs share generic descriptions ("send an email to a
+    recipient") with JevBench's easy tool_selection items. Shared by >= 2 items, they are templates: neither the scan's
+    exact gate nor the builder fingerprint fires on them; an item-specific option text still does."""
+    JG.set_for_tests(None)
+    _, fp = JG.load()
+    generic = {"tools": [{"name": "send_email", "description": "Send an email to a recipient"},
+                         {"name": "convert_currency", "description": "Convert an amount from one currency to another"},
+                         {"name": "reserve", "description": "Reserve a table at a restaurant"}]}
+    assert JG.exact_segment_hits(fp, generic, {}) == 0
+    assert not any(JG.fingerprint_item_hits(fp, generic, {}).values())
+    rep = DG.scan(CLEAN + [_rec(9, generic)])
+    assert rep["jevbench"]["n_fail"] == 0
+
+
+@pytest.mark.skipif(not HAVE_PUBLIC, reason="pinned JevBench public items not downloaded (python -m jevkit fetch)")
+def test_item_specific_option_text_is_still_indexed():
+    JG.set_for_tests(None)
+    _, fp = JG.load()
+    items = IT.load_public()
+    rows = list(IT.overlap_guard_rows(items))
+    templates = JG.template_segments(rows)
+    hard = next(i for i in items if i.tier == "hard" and i.type == "choice")
+    opt = max(hard.question["criteria"].values(), key=lambda v: len(str(v)))
+    from data import text as T
+
+    assert T.normalize(opt) not in templates and len(T.normalize(opt).split()) >= JG.EXACT_MIN_WORDS
+    assert JG.exact_segment_hits(fp, opt, {}) >= 1 and JG.fingerprint_item_hits(fp, opt, {})["jevbench_exact"]

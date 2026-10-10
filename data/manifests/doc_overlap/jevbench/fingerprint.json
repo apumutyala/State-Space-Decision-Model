@@ -4,14 +4,14 @@
  "rows_by_catalog": {
   "-77": 231
  },
- "segments_unique": 4028,
+ "segments_unique": 3945,
  "segments_boilerplate_removed": 0,
- "segments_indexed": 4028,
- "ngram13_unique": 53718,
+ "segments_indexed": 3945,
+ "ngram13_unique": 53655,
  "ngram13_boilerplate_removed": 0,
- "ngram13_indexed": 53718,
- "minhash_segments": 3919,
- "short_items": 2977,
+ "ngram13_indexed": 53655,
+ "minhash_segments": 3836,
+ "short_items": 2904,
  "params": {
   "boilerplate_rows": 100,
   "ngram_n": 13,
@@ -46,5 +46,7 @@
   "easy.jsonl": "231df3c2c8e88a1a8c137ebe85de96ba70fabd330849098ac7b3c52c70b7172b",
   "hard.jsonl": "89e9e6becb33ed88c1de7d42dcc87531b2fb64cfaef4e1986faf7c37b3f80ebb"
  },
- "arrays_sha256": "e2066060b5d0e0416bd36e5593526c708aac6325b76201b698d6a92ec7cc3759"
+ "n_template_segments": 83,
+ "template_items": 2,
+ "arrays_sha256": "211da3f1d3c68fbfc48fc3dbdd72cfd0c6dcf723f47e4628a7f6f5f506c2c55c"
 }

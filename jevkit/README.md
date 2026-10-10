@@ -135,8 +135,13 @@ fingerprint and pin**. The Index eval index, its pin, and every pinned `doc_clea
 - **Doc-overlap gate.** `train.doc_overlap_guard.scan` (used by `train_set.draw`, `run_cell`, `heldout_gate`,
   `clef_teacher.select` and the CLI) runs the JevBench index beside the Index eval index in the same streaming pass.
   - It applies the 13-gram R / E / U rule, with this draw's boilerplate and template exclusions.
-  - It also fails a row whose normalised segment (≥ 12 chars) exactly equals a JevBench segment. This catches
-    short items the 13-grams cannot reach.
+  - It also fails a row whose normalised segment exactly equals a JevBench item segment of at least 6 words. This
+    catches short items the 13-grams cannot reach. 3 of the 231 states are shorter; the builder fingerprint covers
+    them.
+  - **Templates are not hits.** An instruction or option segment shared by two or more items is a rubric frame or a
+    tool-catalog description, so it is neither indexed for the exact gate nor fingerprinted. The first rescan showed
+    why: 1,049 glaive_fc rows matched generic tool descriptions such as "send an email to a recipient". State text
+    is never a template.
   - Every JevBench fail counts toward the scan's `n_fail`. A scan with no JevBench fail reports exactly what the
     Index-only scan did, plus a `jevbench` block.
   - `clean_spec` records the JevBench index / fingerprint sha, and `check_pinned` refuses a spec made against a
@@ -145,8 +150,8 @@ fingerprint and pin**. The Index eval index, its pin, and every pinned `doc_clea
   ngram13, minhash, edit, contain) beside the Index fingerprint, as extra matchers named `jevbench_*`.
   - An item-tier hit drops the record.
   - Context-tier hits are logged.
-- **Pin and shipping.** The pin is `data/manifests/doc_overlap/jevbench/pin.json`: doc index sha256 `0fe994c4…934b`
-  and fingerprint arrays sha256 `e2066060…3759`.
+- **Pin and shipping.** The pin is `data/manifests/doc_overlap/jevbench/pin.json`: doc index sha256 `0fe994c4…934b`,
+  fingerprint arrays sha256 `211da3f1…c55c`, and exact-segment set sha256 `f9b94122…049d`.
   - The arrays are hashes only, about 3.3 MB, and are committed next to the pin. Every job box gets them with the
     code archive, with no context.data entry.
   - Load fails closed on any drift.

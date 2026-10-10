@@ -1,5 +1,5 @@
 {
- "rule_id": "jevbench_guard/v1: JevBench public items (pinned) as an eval-only doc-overlap source + fingerprint",
+ "rule_id": "jevbench_guard/v2: JevBench public items (pinned) as an eval-only doc-overlap source + fingerprint; instruction / option segments shared by >= 2 items are templates (not indexed by the fingerprint, never an exact hit); the scan's exact-segment gate uses item segments of >= 6 words",
  "source": {
   "repo": "github.com/fstandhartinger/jevbench",
   "commit": "b6b8fff7e345b98c060ad26c13308860ddc67004",
@@ -21,11 +21,18 @@
  },
  "fingerprint": {
   "version": "ssdm-dedup-v3",
-  "arrays_sha256": "e2066060b5d0e0416bd36e5593526c708aac6325b76201b698d6a92ec7cc3759",
+  "arrays_sha256": "211da3f1d3c68fbfc48fc3dbdd72cfd0c6dcf723f47e4628a7f6f5f506c2c55c",
   "rows": 231,
-  "segments_indexed": 4028,
-  "ngram13_indexed": 53718,
-  "minhash_segments": 3919,
-  "short_items": 2977
+  "segments_indexed": 3945,
+  "ngram13_indexed": 53655,
+  "minhash_segments": 3836,
+  "short_items": 2904,
+  "n_template_segments": 83,
+  "template_items": 2
+ },
+ "exact_segments": {
+  "sha256": "f9b94122d36e8b730cc18dc122d4fe65ff789a42072ca86ecebee207fdb5049d",
+  "n": 3368,
+  "min_words": 6
  }
 }
