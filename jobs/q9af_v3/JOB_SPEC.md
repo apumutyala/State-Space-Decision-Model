@@ -68,3 +68,14 @@ Outputs:
 
 The CPU dry runs (`Q9AF3_DRYRUN=1`, `tests/test_q9af_v3.py`) run this very runner, with only the fetch, GPU and kit
 steps stubbed.
+
+## sizecliff fixes reviewed before job S (2026-10-09; none cherry-picked)
+The Qwen-lane fixes agent-a found on `stack/qwen35/sizecliff` were each checked against the q9af_v3 paths (conversion,
+distillation, recall probes, proxy600 scoring):
+
+| Fix | Where | On a q9af_v3 path? |
+|---|---|---|
+| c16394b: picklable `HFSegmentEncoder` | `heads/layout.hf_segment_encoder`, used by `train/run_cell.cell_items` (process pool), q9 feature cache, tokenizer_check | no. v3 never builds cell items or uses a process pool. The v3w readout encodes with `decide.v3w_generic.HFEncoder` in-process |
+| 8ba5058: `_hf_fork` pads 1-token continuations to 2 (fla's single-token kernel has no backward) | `heads/backbone._hf_fork` (training through the cached fork) | no. v3 never back-propagates through a cached step: training runs full-sequence forwards; rollouts / decode are `no_grad` on the fp32 recurrent kernel |
+| 4b0fb1d: `cont_chunk` option-chunked fork (4B OOM) | `heads/backbone`, `train/run_cell`, `train/trainer` | no. These are cell-training paths. v3's proxy600 arms use `V3WGenericBackend`, whose fork packs already respect `fork_state_token_budget` |
+| causal_conv1d missing from the image | HF's `Qwen3_5GatedDeltaNet` fast path | no. `convert.model.replace_native_gdn` swaps every native GDN for `convert.gdn.GDN`: fla kernels + torch `conv1d`, never HF's module. The image is unchanged |

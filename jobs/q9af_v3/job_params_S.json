@@ -84,10 +84,10 @@
   "recall_eval_min": 1.5
  },
  "submit": {
-  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py).",
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py). Key -r2 (2026-10-09): re-packaged after reviewing the stack/qwen35/sizecliff fixes (c16394b picklable HFSegmentEncoder, 8ba5058 _hf_fork 2-token pad, 4b0fb1d cont_chunk, causal_conv1d): none is on a q9af_v3 code path (JOB_SPEC.md 'sizecliff fixes').",
   "command": "bash /opt/ssdm/m1/jobs/q9af_v3/q9af_v3_job.sh S",
   "env": {},
-  "key": "m1-q9af-v3-s",
+  "key": "m1-q9af-v3-s-r2",
   "clock_lock": true,
   "label": "q9af_v3 S: per-layer sensitivity table (widened GDN, recall-heavy KD, MQAR/NIAH) - is any single attention layer convertible with a small recall loss?",
   "checks": {
