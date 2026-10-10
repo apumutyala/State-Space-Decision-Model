@@ -263,6 +263,25 @@ to "chunked" raises and the cell stops with exit 36 (also when training ran but 
 `"fla"` records the requested name, fla calls and fallbacks (process totals; smoke and eval cards are not strict, so a
 fallback there is counted, not fatal). The parent arm and child evals use the same cell `rwkv7_wkv` (identity).
 
+## Mode `devcal_d19_v3w`: D19's per-question probabilities on its own cohort-dev pool (temperature fit)
+
+B-PREREG-D19-TEMP (state PREREG.md, addendum 1). art-p3gpi keeps D19's dev cards as aggregates only, and D19 drew the
+whole bschema-draw-v3b pool (n_drawn = n_pool = 253,046), so the one temperature T is fitted on the 804 m2-dev-cohort-v2
+dev items D19 itself built (cell.json dev_card_sample n_pool; cohort-excluded from training). `eval_only: "devcal"`:
+setup + guard as fulldev, the same checkpoint install (job-fi5xf art-p3gpi best export, sha 31062f48..., select best),
+then `jobs.m2_first_cell.devcal_eval score`: the checkpoint loads as `fulldev_eval.load_child` loads it (cohort, guard,
+training-item lineage, Trainer.load); the eval items are rebuilt as `train.run_cell` builds them (cohort dev ids, eval
+max_k 16, T_max filter); exit 10 unless the pool size, the dev-card sample (ids, sha, per-source) equal cell.json and no
+pool id or record is a training id. `train.evalcard.run_card(keep_units=True)` on the pool and on the dev-card sample
+alone; units = raw `decision_probs` + labels (native template jrt-rwkv-g1-v3w / g1v2 = the screen's v3w readout).
+Landing (CPU): `python -I -m jobs.m2_first_cell.devcal_eval fit --score-dir <phase devcal out> --out T.json`: scalar T
+in [0.25, 4] minimising mean NLL over all pool questions; reported before/after on the pool, the 200 dev-card rows and
+the 604 others; usable only if the rescored dev card reproduces card-step0002800 (NLL 0.3376, acc 0.890) within 0.01.
+Caps setup 12 / guard 3 / checkpoint 7 / devcal 50 + reserve 7 = max_duration 79; expected 45 min (devcal 28 = 21.6
+load + lineage as job-fi5xf's screen fixed + 804- and 200-row cards, 237 s / 68 s in cell.json); quoted hold $4.98,
+worst case $10.79 (cap $15). Key `m2-first-cell-devcal-d19-v3w-fi5xf-best2800-20261010a`; CKPT_URL = the art-p3gpi URL
+at submit.
+
 ## Modes `fulldev_eval_d19_v3w_s1of2` / `fulldev_eval_d19_v3w_s2of2`: D19 on the full DEV in two shards
 
 The D13 sharded modes above with only the checkpoint, the cell config, the lineage data and the measured rate changed.
