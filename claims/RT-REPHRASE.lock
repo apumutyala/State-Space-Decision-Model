@@ -1,0 +1,5 @@
+owner: evidence
+job: job-862xw
+start_utc: 2026-10-10T22:10Z
+time_limit: 2026-10-11T02:30Z
+item: B-PREREG-RAGTRUTH-REPHRASE stage 1 (RT1 vs original, 300 RAGTruth TRAIN items, D13 + D19) claude/ev-ragtruth-rephrase@082688ce; stage 2 (DEV minus proxy600) only for a passing arm
