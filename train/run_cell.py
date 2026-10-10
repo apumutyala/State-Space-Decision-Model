@@ -38,8 +38,14 @@ def parent_encoder(parent: str, model_dir: str, cfg: dict | None = None):
     template is a generic v3w template (``decide.v3w_generic``) also binds that spec to ``model_dir``'s tokenizer files
     (identity pinned; its rows are built from the spec, ids == the generic v3w readout's prompt ids)."""
     if cfg is not None:
+        from decide.shim_format import bind_template as bind_shim
+        from decide.shim_format import is_shim_template
         from decide.v3w_generic import bind_template, is_generic_template
 
+        if is_shim_template(cfg.get("template")):  # the trainable H2O shim format, bound to this snapshot's files
+            if parent != "qwen35":
+                raise ValueError(f"shim template {cfg['template']} is wired for parent qwen35 only, got {parent!r}")
+            bind_shim(cfg["template"], model_dir)
         if is_generic_template(cfg.get("template")):
             if parent not in ("q9af", "qwen35"):
                 raise ValueError(f"generic v3w template {cfg['template']} is wired for parents q9af / qwen35 only, "

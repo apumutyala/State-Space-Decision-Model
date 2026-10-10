@@ -155,8 +155,13 @@ def resolve_template(template: Template | str) -> Template:
     identities, ``heads.decide_backend._template_identity``)."""
     if isinstance(template, Template):
         return template
+    from decide.shim_format import is_shim_template
     from decide.v3w_generic import is_generic_template
 
+    if is_shim_template(template):  # the H2O shim format (decide.shim_format): its rows carry the whole prompt
+        from decide.shim_format import template_obj
+
+        return template_obj(template)
     if is_generic_template(template):  # generic v3w (decide.v3w_generic): the bound spec's chat format
         from decide.backends.v3w_generic import spec_template
         from decide.v3w_generic import spec_for_template
@@ -325,8 +330,15 @@ def build_row(
     prefix is unaffected (ordered layout keeps canonical rendering).
     """
     tpl = resolve_template(template)
+    from decide.shim_format import is_shim_template
     from decide.v3w_generic import is_generic_template
 
+    if is_shim_template(tpl):  # the trainable H2O shim format (decide.shim_format): ids == the shim's prompt ids
+        if layout != G1V2_LAYOUT:
+            raise ValueError(f"template {tpl.id} needs layout {G1V2_LAYOUT!r}, got {layout!r}")
+        from decide.shim_format import spec_for_template as shim_spec
+
+        return shim_spec(tpl.id).row(request, qid, option_order, empty_state)
     if is_generic_template(tpl):  # a trained generic-v3w cell: the spec's rows (ids == its readout's prompt ids)
         if layout != G1V2_LAYOUT:
             raise ValueError(f"template {tpl.id} needs layout {G1V2_LAYOUT!r}, got {layout!r}")

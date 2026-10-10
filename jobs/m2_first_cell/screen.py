@@ -112,22 +112,33 @@ PARENTS = {
         "units_sha256": "a52a68ebf537df75818f4e128f8eb3e354bdbc0fb5625f1a9ce53621574850f1",
         "shipped": "screen_parent/art-ivu28/v3w.results.jsonl", "url_env": "PARENT_URL"}}
 DEFAULT_REFERENCE_BY_TEMPLATE = {"jrt-rwkv-g1-v1": "d1_v1", "jrt-rwkv-g1-v3w": "d1_v3w"}
-REFERENCE_MATCH = ("exact", "family")
+#: "cross" (A-PREREG-SIZECLIFF, shim readout): the reference is scored under ANOTHER readout family; the pairing is
+#: row-for-row on the same proxy rows and labelled cross-readout in the report (readout.reference_match)
+REFERENCE_MATCH = ("exact", "family", "cross")
 
 
 def _is_generic(template) -> bool:
     return isinstance(template, str) and template.startswith("jrt-v3w-generic:")
 
 
+def _is_shim(template) -> bool:
+    return isinstance(template, str) and template.startswith("jrt-h2o-shim:")
+
+
 def readout_family(template: str | None) -> str | None:
     """The readout family of a prompt template: "v3w" for jrt-rwkv-g1-v3w and every generic jrt-v3w-generic:<family>
-    (the same v3w body, code key and word-id rule on another backbone's chat format and tokenizer), else the id."""
+    (the same v3w body, code key and word-id rule on another backbone's chat format and tokenizer), "h2o_shim" for
+    every jrt-h2o-shim:<family> (decide.shim_format), else the id."""
+    if _is_shim(template):
+        return "h2o_shim"
     return "v3w" if template == "jrt-rwkv-g1-v3w" or _is_generic(template) else template
 
 
 def same_readout(a: str | None, b: str | None, match: str = "exact") -> bool:
     if match not in REFERENCE_MATCH:
         raise ScreenError(f"screen_reference_match {match!r}: one of {REFERENCE_MATCH}", 5)
+    if match == "cross":
+        return a is not None and b is not None
     return a == b if match == "exact" else (a is not None and readout_family(a) == readout_family(b))
 DEFAULT_PARENT_BY_TEMPLATE = {"jrt-rwkv-g1-v3w": "stock_v3w"}
 DEFAULT_REFERENCE = REFERENCES["d1_v1"]  # back-compat name
@@ -171,6 +182,13 @@ def template_available(template: str) -> bool:
     """This code can render ``template`` for the trained head (``heads.layout.resolve_template`` where the readout
     code is present, else ``decide.prompt.TEMPLATES``). A generic v3w template: registered in
     ``decide.v3w_generic.TEMPLATE_BACKBONE`` with a pinned spec identity (bound to the snapshot when scored)."""
+    if _is_shim(template):
+        try:
+            from decide.shim_format import PINNED_SPEC_SHA256 as SHIM_PINS
+            from decide.shim_format import is_shim_template
+        except ImportError:
+            return False
+        return is_shim_template(template) and template in SHIM_PINS
     if _is_generic(template):
         try:
             from decide.v3w_generic import PINNED_SPEC_SHA256, TEMPLATE_BACKBONE
@@ -431,9 +449,16 @@ def jevkit_block(params: dict, template: str) -> dict | None:
     except (KeyError, PriceError, ValueError) as e:
         raise ScreenError(f"jevkit.price: {e}", 5) from e
     lean = jk.get("lean_template")
-    if lean is not None and (not _is_generic(lean) or not template_available(lean) or not _is_generic(template)):
-        raise ScreenError(f"jevkit.lean_template {lean!r}: a pinned generic v3w template (screen readout {template})", 5)
-    return {"price": jk["price"], "price_parsed": price, "lean_template": lean,
+    extra = dict(jk.get("extra_templates") or {})
+    for name, t in [("lean", lean)] + sorted(extra.items()):
+        if t is None:
+            continue
+        if not (_is_generic(t) or _is_shim(t)) or not template_available(t) or name in ("native", "native_shimcal"):
+            raise ScreenError(f"jevkit {name} template {t!r}: a pinned generic v3w / shim template", 5)
+    if lean is not None and readout_family(lean) != readout_family(template):
+        raise ScreenError(f"jevkit.lean_template {lean!r} is not in the screen readout's family ({template})", 5)
+    return {"price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
+            "shim_calibration": bool(jk.get("shim_calibration")),
             "items": "jevkit.items.load_public (231 pinned public JevBench items; eval-only)"}
 
 
@@ -501,6 +526,8 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path) -> int:
     template, ``lean`` (a second decider over the SAME model object and encoder, the lean template bound to this
     snapshot's tokenizer files and checked against its pinned identity). Serial, one request per item, timed."""
     from decide import Decider
+    from decide.shim_format import bind_template as bind_shim
+    from decide.shim_format import is_shim_template
     from decide.v3w_generic import bind_template
     from heads.decide_backend import DecisionModelBackend
     from jevkit.items import load_public
@@ -512,15 +539,17 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path) -> int:
         print(f"identity: jevkit items: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
     arms = {"native": decider}
-    if jk.get("lean_template"):
+    more = ([("lean", jk["lean_template"])] if jk.get("lean_template") else []) + sorted(
+        (jk.get("extra_templates") or {}).items())
+    be = decider.backend
+    for name, tpl in more:  # score-only arms: the SAME model object and encoder under another pinned template
         try:
-            bind_template(jk["lean_template"], model_dir)
+            (bind_shim if is_shim_template(tpl) else bind_template)(tpl, model_dir)
         except (KeyError, ValueError) as e:
-            print(f"identity: lean template: {e}", file=sys.stderr)
+            print(f"identity: {name} template: {e}", file=sys.stderr)
             return 10
-        be = decider.backend
-        arms["lean"] = Decider(DecisionModelBackend(be.model, be.encode, template=jk["lean_template"], layout="g1v2",
-                                                    checkpoint=be.checkpoint))
+        arms[name] = Decider(DecisionModelBackend(be.model, be.encode, template=tpl, layout="g1v2",
+                                                  checkpoint=be.checkpoint))
     out_dir.mkdir(parents=True, exist_ok=True)
     ident = {}
     for name, dec in arms.items():
@@ -567,7 +596,7 @@ def build_report(rows: list[dict], prox: dict, child: dict, parent: dict, ref: d
         "proxy": {k: prox[k] for k in ("ids_sha256", "n_target", "design", "seed", "base_subset_ids_sha256")}
         | {"rows": len(rows)},
         "scorer": "harness.score.decompose + harness.bootstrap.compare (case clusters, B=%d, seed 0) on the proxy rows" % B,
-        "child": vp["candidate"], "parent_stock_readout": vp["baseline"], "reference": vr["baseline"],
+        "child": vr["candidate"], "parent_stock_readout": vp["baseline"], "reference": vr["baseline"],
         "reference_identity": {k: v for k, v in ref_ident.items() if k != "path"},
         "parent_identity": parent_ident,
         "child_minus_parent": vp["diff"], "child_minus_reference": vr["diff"],
@@ -632,6 +661,36 @@ def report(a) -> int:
     return 0
 
 
+def shim_calibrate(src: Path, dst: Path, items) -> None:
+    """The H2O shim's serving post-processing (vendored ``format_answer``: temperature 0.8 on every type, the yes/no
+    commit floor 0.801) applied to the native answers' probabilities: a score-only variant, same decisions' ranking."""
+    import math
+
+    import third_party.h2o_lightning_shim as H
+
+    mod, c = H.load_contract()
+    by_id = {it.id: it for it in items}
+    lg = lambda p: math.log(max(float(p), 1e-12))  # noqa: E731
+    with open(src, encoding="utf-8") as f, open(dst, "w", encoding="utf-8", newline="\n") as g:
+        for line in f:
+            if not line.strip():
+                continue
+            r = json.loads(line)
+            a, it = r.get("answer"), by_id.get(r.get("id"))
+            if r.get("status") == "ok" and isinstance(a, dict) and it is not None:
+                q = it.question
+                if q["type"] == "noul":
+                    py = float(a["noul"])
+                    r["answer"] = mod.format_answer("noul", ["true", "false"], ["", ""], [lg(py), lg(1 - py)],
+                                                    c.temperature, c.noul_floor)
+                else:
+                    names = list(a["probabilities"])
+                    descs = [str(x) for x in (q.get("criteria") or [])] if q["type"] == "score" else names
+                    r["answer"] = mod.format_answer(q["type"], names, descs, [lg(a["probabilities"][n]) for n in names],
+                                                    c.temperature, c.noul_floor)
+            g.write(json.dumps(r, separators=(",", ":")) + "\n")
+
+
 def comparator_report(rows: list[dict], child: dict, comps: list[dict], B: int) -> dict:
     """child - comparator on the proxy rows (frozen scorer), per pinned comparator; cross-readout, never the verdict."""
     ids = {r["_evaluation"]["run_id"] for r in rows}
@@ -659,9 +718,11 @@ def jevkit_report(jk: dict, d: Path) -> dict:
 
     items = load_public()
     arms, tables, axes = {}, {}, {}
-    for name in ("native", "lean"):
-        if name == "lean" and not jk.get("lean_template"):
-            continue
+    names = ["native"] + (["lean"] if jk.get("lean_template") else []) + sorted(jk.get("extra_templates") or {})
+    if jk.get("shim_calibration"):  # score-only: the shim's own post-processing on the native answers (no GPU)
+        shim_calibrate(d / "native.preds.jsonl", d / "native_shimcal.preds.jsonl", items)
+        names.append("native_shimcal")
+    for name in names:
         pf = d / f"{name}.preds.jsonl"
         if not pf.is_file():
             raise ScreenError(f"jevkit {name} predictions missing ({pf})", 9)
@@ -687,7 +748,8 @@ def jevkit_report(jk: dict, d: Path) -> dict:
                                   "status": _count(p.get("status") for p in preds)}}
         tables[name] = JS.build_table(items, preds_to_answers(preds))
         axes[name] = (rep["axes"]["speed"], rep["axes"]["cost"])
-    out = {"price": jk["price_parsed"], "lean_template": jk.get("lean_template"), "arms": arms,
+    out = {"price": jk["price_parsed"], "lean_template": jk.get("lean_template"),
+           "extra_templates": jk.get("extra_templates") or {}, "arms": arms,
            "note": "open split only (the 231 pinned v1.2 public items, not the v1.6.1 P300 draw): Intelligence basis "
                    "open-only, no gap penalty; latency in-process on this H100 (self-hosted x2 + 0.15 s lane)"}
     if "lean" in tables:
@@ -778,7 +840,7 @@ def main(argv=None) -> int:
             return e.code
         Path(a.out).write_text(json.dumps(rec, indent=1), encoding="utf-8")
         print(json.dumps({"readout": rec["readout"]["template"], "reference": rec["reference"]["artifact"],
-                          "parent": rec["parent"].get("artifact", "in_job")}))
+                          "parent": rec["parent"].get("artifact") or rec["parent"]["source"]}))
         return 0
     return {"score": score, "report": report}[a.cmd](a)
 

@@ -268,8 +268,10 @@ elif [ "$PARENT" = qwen35 ]; then
   python -X utf8 -c 'import json,sys; from heads.backbone import qwen35_pin_check; c=json.load(open(sys.argv[1])); print(json.dumps(qwen35_pin_check(c["qwen35"], sys.argv[2])))' \
     "$CELL" "$SNAP" > "$WORK/out/label.json" 2> "$WORK/logs/pin.log" || fail 10 "qwen35 pin: $(tail -1 "$WORK/logs/pin.log")"
   say "parent: stock $Q35_REPO@$Q35_REV"
-  python -X utf8 -c 'import json,sys; from decide.v3w_generic import bind_template; c=json.load(open(sys.argv[1])); print(json.dumps(bind_template(c["template"], sys.argv[2]).identity()))' \
-    "$CELL" "$SNAP" > "$WORK/out/v3w-spec.json" 2> "$WORK/logs/v3w-spec.log" || fail 10 "v3w spec identity: $(tail -1 "$WORK/logs/v3w-spec.log")"
+  # the cell's template (H2O shim format or generic v3w) + every jevkit score-only template, bound to THIS snapshot's
+  # tokenizer files and checked against their pinned identities before any weight is loaded
+  python -X utf8 -c 'import json,sys; from decide import shim_format as S, v3w_generic as V; c=json.load(open(sys.argv[1])); p=json.load(open(sys.argv[3])).get("jevkit") or {}; ts=[c["template"]]+([p["lean_template"]] if p.get("lean_template") else [])+sorted((p.get("extra_templates") or {}).values()); print(json.dumps({t: (S.bind_template if S.is_shim_template(t) else V.bind_template)(t, sys.argv[2]).identity() for t in ts}))' \
+    "$CELL" "$SNAP" "$PARAMS" > "$WORK/out/readout-spec.json" 2> "$WORK/logs/readout-spec.log" || fail 10 "readout spec identity: $(tail -1 "$WORK/logs/readout-spec.log")"
 else
 SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))'); r=$?
 case $r in 0) ;; 124|137) fail 7 "download timeout" ;; *) fail 10 "download" ;; esac
@@ -387,7 +389,7 @@ case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B 
 # re-priced from that measured speed (jobs.m2_first_cell.reprice, exit 15). Cached in $CK across restarts.
 ARM=$CK/parent_arm
 ARM_SHA=none
-if [ "$PARENT_ARM" = none ]; then
+if [ "${PARENT_ARM:-in_job}" = none ]; then
   say "parent arm: none (params parent_arm none; the screen pairs the child with the reference and the comparators)"
 else
 # A RESUBMITTED job (empty checkpoint slot) seeds the cache from a pinned earlier export shipped as data/parent_arm_seed/

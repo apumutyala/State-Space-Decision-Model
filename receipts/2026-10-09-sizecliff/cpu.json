@@ -1,7 +1,7 @@
 {
  "arms": {
   "0p8b": {
-   "template": "jrt-v3w-generic:qwen3.5-0.8b",
+   "template": "jrt-h2o-shim:qwen3.5-0.8b",
    "qwen35": {
     "repo": "Qwen/Qwen3.5-0.8B",
     "revision": "2fc06364715b967f1860aea9cf38778875588b17",
@@ -84,7 +84,7 @@
       "eval_rows_union_covered_by_split": {
        "TEST": 2
       },
-      "secs": 31.7,
+      "secs": 27.6,
       "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
       "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
       "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
@@ -149,13 +149,13 @@
      "pointer_sha256": "4b6dc94d6d78ba7e6e8192f62cb006be060d671e42854d001dd5828118834bb1",
      "train_set": "b1-draw100k-v2 (python -X utf8 -I -m data.b1 draw; BOARD B1)"
     },
-    "seconds": 182.3
+    "seconds": 161.7
    },
    "readout": {
-    "template": "jrt-v3w-generic:qwen3.5-0.8b",
+    "template": "jrt-h2o-shim:qwen3.5-0.8b",
     "spec_identity": {
-     "id": "jrt-v3w-generic:qwen3.5-0.8b",
-     "sha256": "e8388d14ea08851a55aa4d4773bb5f62c16d606380ad70550e237177fdd1d069"
+     "id": "jrt-h2o-shim:qwen3.5-0.8b",
+     "sha256": "54ffc797cddbc15afc9b46712b3b0bb891d6fbe77e7da4c794dc5ca70d25f832"
     },
     "records_checked": 817,
     "rows": 1303,
@@ -164,13 +164,32 @@
     "strata": {
      "k17-255": 278,
      "k<=16": 1025,
-     "words": 677,
      "dict_instructions": 136
     },
     "refused_records": {},
+    "labels_equal_shim_probe": true,
+    "census": {
+     "records": 6000,
+     "items": 9200,
+     "kept_by_cell_filter": 9200,
+     "T_mean": 394.8,
+     "T_p50": 238,
+     "T_p90": 943,
+     "T_p99": 1397,
+     "over_max_t": 0
+    },
     "ok": true
    },
    "jevbench_native": {
+    "template": "jrt-h2o-shim:qwen3.5-0.8b",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 653.6,
+    "input_tokens_p50": 157,
+    "input_tokens_max": 3952,
+    "ok": true
+   },
+   "jevbench_v3w": {
     "template": "jrt-v3w-generic:qwen3.5-0.8b",
     "items": 231,
     "mismatches": 0,
@@ -187,7 +206,7 @@
       "linear_attention",
       "full_attention"
      ],
-     "config_sha256": "976720bdd2d7aa0075d4e41a9417a78d1c6912e13dadbc0d73f24e4300dee7ab"
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3"
     },
     "lora_groups": {
      "gdn": [
@@ -208,14 +227,14 @@
      "kind": "qwen35-stock",
      "repo": "Qwen/Qwen3.5-0.8B",
      "revision": "2fc06364715b967f1860aea9cf38778875588b17",
-     "config_sha256": "976720bdd2d7aa0075d4e41a9417a78d1c6912e13dadbc0d73f24e4300dee7ab",
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3",
      "attention_free": false
     },
-    "items": 381,
+    "items": 389,
     "smoke_stage": {
      "rows": 3,
-     "rel_feature_diff": 1.359843508907943e-07,
-     "grad_cos": 0.9999997615814209,
+     "rel_feature_diff": 1.3577405866271874e-07,
+     "grad_cos": 0.9999998807907104,
      "pass": true,
      "peak_gb": 0.0,
      "lora_modules": {
@@ -235,13 +254,27 @@
     },
     "train_steps": {
      "losses": [
-      1.6237611174583435,
-      1.6103771924972534
+      1.630107581615448,
+      1.5323284566402435
      ],
      "finite": true
     },
     "jevkit_decide": {
      "native": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       135,
+       138,
+       124,
+       123,
+       126,
+       125
+      ]
+     },
+     "v3w": {
       "status": {
        "ok": 6
       },
@@ -261,7 +294,7 @@
    "ok": true
   },
   "2b": {
-   "template": "jrt-v3w-generic:qwen3.5-2b",
+   "template": "jrt-h2o-shim:qwen3.5-2b",
    "qwen35": {
     "repo": "Qwen/Qwen3.5-2B",
     "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
@@ -344,7 +377,7 @@
       "eval_rows_union_covered_by_split": {
        "TEST": 2
       },
-      "secs": 31.1,
+      "secs": 29.4,
       "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
       "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
       "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
@@ -409,13 +442,13 @@
      "pointer_sha256": "4b6dc94d6d78ba7e6e8192f62cb006be060d671e42854d001dd5828118834bb1",
      "train_set": "b1-draw100k-v2 (python -X utf8 -I -m data.b1 draw; BOARD B1)"
     },
-    "seconds": 179.7
+    "seconds": 168.3
    },
    "readout": {
-    "template": "jrt-v3w-generic:qwen3.5-2b",
+    "template": "jrt-h2o-shim:qwen3.5-2b",
     "spec_identity": {
-     "id": "jrt-v3w-generic:qwen3.5-2b",
-     "sha256": "157905232693fe7c94ecf58ad60b6d279dfcf27f08559b96cf35c00f7f07a206"
+     "id": "jrt-h2o-shim:qwen3.5-2b",
+     "sha256": "97fc6954c0d05de5149fb4f74eed974c268f64efb6b97b42cebfb318cc592896"
     },
     "records_checked": 817,
     "rows": 1303,
@@ -424,13 +457,32 @@
     "strata": {
      "k17-255": 278,
      "k<=16": 1025,
-     "words": 677,
      "dict_instructions": 136
     },
     "refused_records": {},
+    "labels_equal_shim_probe": true,
+    "census": {
+     "records": 6000,
+     "items": 9200,
+     "kept_by_cell_filter": 9200,
+     "T_mean": 394.8,
+     "T_p50": 238,
+     "T_p90": 943,
+     "T_p99": 1397,
+     "over_max_t": 0
+    },
     "ok": true
    },
    "jevbench_native": {
+    "template": "jrt-h2o-shim:qwen3.5-2b",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 653.6,
+    "input_tokens_p50": 157,
+    "input_tokens_max": 3952,
+    "ok": true
+   },
+   "jevbench_v3w": {
     "template": "jrt-v3w-generic:qwen3.5-2b",
     "items": 231,
     "mismatches": 0,
@@ -447,7 +499,7 @@
       "linear_attention",
       "full_attention"
      ],
-     "config_sha256": "976720bdd2d7aa0075d4e41a9417a78d1c6912e13dadbc0d73f24e4300dee7ab"
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3"
     },
     "lora_groups": {
      "gdn": [
@@ -468,14 +520,14 @@
      "kind": "qwen35-stock",
      "repo": "Qwen/Qwen3.5-2B",
      "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
-     "config_sha256": "976720bdd2d7aa0075d4e41a9417a78d1c6912e13dadbc0d73f24e4300dee7ab",
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3",
      "attention_free": false
     },
-    "items": 381,
+    "items": 389,
     "smoke_stage": {
      "rows": 3,
-     "rel_feature_diff": 1.359843508907943e-07,
-     "grad_cos": 0.9999997615814209,
+     "rel_feature_diff": 1.3577405866271874e-07,
+     "grad_cos": 0.9999998807907104,
      "pass": true,
      "peak_gb": 0.0,
      "lora_modules": {
@@ -495,13 +547,27 @@
     },
     "train_steps": {
      "losses": [
-      1.6237611174583435,
-      1.6103771924972534
+      1.630107581615448,
+      1.5323284566402435
      ],
      "finite": true
     },
     "jevkit_decide": {
      "native": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       135,
+       138,
+       124,
+       123,
+       126,
+       125
+      ]
+     },
+     "v3w": {
       "status": {
        "ok": 6
       },
@@ -521,7 +587,7 @@
    "ok": true
   },
   "4b": {
-   "template": "jrt-v3w-generic:qwen3.5-4b",
+   "template": "jrt-h2o-shim:qwen3.5-4b",
    "qwen35": {
     "repo": "Qwen/Qwen3.5-4B",
     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
@@ -604,7 +670,7 @@
       "eval_rows_union_covered_by_split": {
        "TEST": 2
       },
-      "secs": 30.8,
+      "secs": 30.5,
       "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
       "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
       "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
@@ -669,13 +735,13 @@
      "pointer_sha256": "4b6dc94d6d78ba7e6e8192f62cb006be060d671e42854d001dd5828118834bb1",
      "train_set": "b1-draw100k-v2 (python -X utf8 -I -m data.b1 draw; BOARD B1)"
     },
-    "seconds": 168.8
+    "seconds": 176.6
    },
    "readout": {
-    "template": "jrt-v3w-generic:qwen3.5-4b",
+    "template": "jrt-h2o-shim:qwen3.5-4b",
     "spec_identity": {
-     "id": "jrt-v3w-generic:qwen3.5-4b",
-     "sha256": "1d871833353051964d15d06a96735fcc1699e051a4cc2518f2310a7abc647068"
+     "id": "jrt-h2o-shim:qwen3.5-4b",
+     "sha256": "f0be274c21511b96cc6c8c8d0411098ab46d0970077a59929b17d7b5293fd7ec"
     },
     "records_checked": 817,
     "rows": 1303,
@@ -684,28 +750,47 @@
     "strata": {
      "k17-255": 278,
      "k<=16": 1025,
-     "words": 677,
      "dict_instructions": 136
     },
     "refused_records": {},
+    "labels_equal_shim_probe": true,
+    "census": {
+     "records": 6000,
+     "items": 9200,
+     "kept_by_cell_filter": 9200,
+     "T_mean": 394.8,
+     "T_p50": 238,
+     "T_p90": 943,
+     "T_p99": 1397,
+     "over_max_t": 0
+    },
     "ok": true
    },
    "jevbench_native": {
+    "template": "jrt-h2o-shim:qwen3.5-4b",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 653.6,
+    "input_tokens_p50": 157,
+    "input_tokens_max": 3952,
+    "ok": true
+   },
+   "jevbench_lean": {
+    "template": "jrt-h2o-shim:qwen3.5-4b-lean",
+    "items": 231,
+    "mismatches": 0,
+    "input_tokens_mean": 456.8,
+    "input_tokens_p50": 124,
+    "input_tokens_max": 1729,
+    "ok": true
+   },
+   "jevbench_v3w": {
     "template": "jrt-v3w-generic:qwen3.5-4b",
     "items": 231,
     "mismatches": 0,
     "input_tokens_mean": 783.0,
     "input_tokens_p50": 308,
     "input_tokens_max": 4245,
-    "ok": true
-   },
-   "jevbench_lean": {
-    "template": "jrt-v3w-generic:qwen3.5-4b-lean",
-    "items": 231,
-    "mismatches": 0,
-    "input_tokens_mean": 650.5,
-    "input_tokens_p50": 156,
-    "input_tokens_max": 3951,
     "ok": true
    },
    "smoke": {
@@ -716,7 +801,7 @@
       "linear_attention",
       "full_attention"
      ],
-     "config_sha256": "976720bdd2d7aa0075d4e41a9417a78d1c6912e13dadbc0d73f24e4300dee7ab"
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3"
     },
     "lora_groups": {
      "gdn": [
@@ -737,14 +822,14 @@
      "kind": "qwen35-stock",
      "repo": "Qwen/Qwen3.5-4B",
      "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
-     "config_sha256": "976720bdd2d7aa0075d4e41a9417a78d1c6912e13dadbc0d73f24e4300dee7ab",
+     "config_sha256": "6b2552c6d09689d81e9c1918c403d27babc8da5b255bad2d59c9861d788539f3",
      "attention_free": false
     },
-    "items": 381,
+    "items": 389,
     "smoke_stage": {
      "rows": 3,
-     "rel_feature_diff": 1.359843508907943e-07,
-     "grad_cos": 0.9999997615814209,
+     "rel_feature_diff": 1.3577405866271874e-07,
+     "grad_cos": 0.9999998807907104,
      "pass": true,
      "peak_gb": 0.0,
      "lora_modules": {
@@ -764,13 +849,41 @@
     },
     "train_steps": {
      "losses": [
-      1.6237611174583435,
-      1.6103771924972534
+      1.630107581615448,
+      1.5323284566402435
      ],
      "finite": true
     },
     "jevkit_decide": {
      "native": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       135,
+       138,
+       124,
+       123,
+       126,
+       125
+      ]
+     },
+     "lean": {
+      "status": {
+       "ok": 6
+      },
+      "valid": 6,
+      "input_tokens": [
+       102,
+       105,
+       91,
+       90,
+       93,
+       92
+      ]
+     },
+     "v3w": {
       "status": {
        "ok": 6
       },
@@ -782,20 +895,6 @@
        230,
        233,
        232
-      ]
-     },
-     "lean": {
-      "status": {
-       "ok": 6
-      },
-      "valid": 6,
-      "input_tokens": [
-       133,
-       136,
-       122,
-       121,
-       124,
-       123
       ]
      }
     },
