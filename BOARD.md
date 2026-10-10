@@ -9,6 +9,7 @@
 | MD1 reported | 83.5% avg / cal 92.2 / p50 85 ms (Foundry) / 1.3% flips | not measured yet |
 | Decision Index proxy600: Clef-flash / Clef 27B | 59.03 / 64.56 | D19 48.61 [44.10,53.08] (RWKV7 attention-free + joint head + v3b; +10.9 vs D1+v3w); D13 41.07 |
 | Decision Index FULL DEV: Clef-flash / Clef 27B | 57.29 / 61.89 | D19 49.49 [47.77,50.80] (paired −7.80 / −12.40; ECE 0.041; p50 569 ms); D13 43.21 (−14.08 / −18.68). Held-out attacks: D13 MORE ROBUST than Clef-flash (hijack 0.025 vs 0.115; steer 0.003 vs 0.089, Holm-significant) |
+| Guaranteed actionability on full DEV (LTT: acted-on error ≤ 5%, δ 0.1; B-PREREG-GUAR-FULLDEV) | Clef 27B 81.1%, Clef-flash 72.2% | D19 75.1%: BEATS Clef-flash +6.9 [+3.5,+9.7] at α 0.05 (robust to case-disjoint splits); +2.9 at α 0.10 (fragile); trails Clef 27B −6.0 |
 
 | # | Item | Lane | Owner | Status |
 |---|---|---|---|---|
