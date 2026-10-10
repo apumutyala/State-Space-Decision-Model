@@ -515,3 +515,26 @@ SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now b
 | `job_params_fulldev_eval.json` | $80.89 (was $63.56) | $82.73 (was $65.00) | $28.85 (was $22.67) | $38.56 (was $30.29) |
 | `job_params_fulldev_smoke.json` | $23.56 (was $18.51) | $25.46 (was $20.00) | $5.54 (was $4.36) | $9.89 (was $7.77) |
 | `job_params_hijack_eval.json` | $18.52 (was $14.55) | $19.10 (was $15.00) | $5.48 (was $4.31) | $7.37 (was $5.79) |
+
+## Mode `jev1_q35_4b` (A-PREREG-JEV1-4B: the Composite line's first real test)
+
+Pre-registration: A-PREREG-JEV1-4B (PREREG.md on origin/state, before any run). The size-cliff 4B recipe (the r4 cell:
+H2O shim train/serve `jrt-h2o-shim:qwen3.5-4b`, LoRA r64, fork head, loss arm clef, the same optimiser settings,
+act_ckpt, option-chunked fork with the smallest-first probe, released fork caches) on STOCK Qwen/Qwen3.5-4B, trained on
+bschema-draw-jev1 (claude/b-jev1-draw @60a6dd7; pointer 582ffe1c, records 45735109; 96,000 rows, 12,000 per JevBench
+family; `train_dir` m2-jev1 pinned by `data_jev1.sha256`). Option keys stay in the builder's order: the shim prompt
+lists them as given (`scripts/check_jev1_train_serve.py`: 140 rows with unsorted keys, 0 mismatches against the
+vendored shim prompt + AutoTokenizer; `tests/test_jev1_4b.py`). FIXED budget: 1,121 optimiser steps (max_steps =
+min_steps), cosine horizon 753 fixed before step 1 (as r4). Clock 180 min = 1,121 x 7.40 s/step (r4 job-27anq: 8,300 s)
+x 1.3. The draw is gated in-job (heldout phase: train.attack_guard, train.doc_overlap_guard with train.jevbench_guard
+from agent-main 7c131f1; no clean pins, so every guard must find 0).
+
+PRIMARY (in the same job, `jevkit.stock_shim`): the 231 public JevBench items answered by the trained cell (`native`,
+plus the score-only `native_shimcal`) AND by stock Qwen3.5-4B + the H2O shim (`screen.StockShimEngine`: the same loaded
+model with every LoRA off, the shim's prompt, label log-probs from the tied LM head, T 0.8, yes-no floor 0.801), paired
+on the same bootstrap draws (B 1,000, seed 16; `screen.paired_vs`): delta I, C, Capability, Composite A.
+`screen.json` `jevkit.primary.success` = delta Composite A > 0 with its 95% CI excluding 0. SECONDARY: the proxy600
+screen (cross-readout vs d1_v3w and the Clef-flash / Clef 27B units), tokens per decision.
+
+Schedule: setup 20 + guard 5 + heldout 10 + cell 215 + screen 45 + report 5 + reserve 7 = 307 min; quoted hold
+$19.34; **worst case** (60 + 2 x 307) x $0.063 = **$42.46** (jobs/common/rates.py rate; hard cap $45).

@@ -463,8 +463,12 @@ def jevkit_block(params: dict, template: str) -> dict | None:
             raise ScreenError(f"jevkit {name} template {t!r}: a pinned generic v3w / shim template", 5)
     if lean is not None and readout_family(lean) != readout_family(template):
         raise ScreenError(f"jevkit.lean_template {lean!r} is not in the screen readout's family ({template})", 5)
+    stock = jk.get("stock_shim")
+    if stock and not _is_shim(template):
+        raise ScreenError("jevkit.stock_shim needs a shim screen readout (the stock arm reads the same shim prompt)", 5)
     return {"price": jk["price"], "price_parsed": price, "lean_template": lean, "extra_templates": extra,
-            "shim_calibration": bool(jk.get("shim_calibration")),
+            "shim_calibration": bool(jk.get("shim_calibration")), "stock_shim": bool(stock),
+            "paired_primary": jk.get("paired_primary"),
             "items": "jevkit.items.load_public (231 pinned public JevBench items; eval-only)"}
 
 
@@ -569,8 +573,93 @@ def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path) -> int:
                 f.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
         ident[name] = {"decider": dec.revision(), "seconds": round(time.perf_counter() - t0, 2), "n": len(recs),
                        "status": _count(r["status"] for r in recs)}
+    if jk.get("stock_shim"):  # A-PREREG-JEV1-4B: the STOCK model under the H2O shim readout, in the same process
+        eng = StockShimEngine(decider.backend, model_dir)
+        ad = SystemOneAdapter(eng, kind="request", model_name="stock-shim")
+        for it in items[:JEVKIT_WARMUP]:
+            ad.answer_item(it)
+        t0 = time.perf_counter()
+        with eng.lora_off():
+            recs = run_items(ad, items)
+        with open(out_dir / "stock_shim.preds.jsonl", "w", encoding="utf-8", newline="\n") as f:
+            for r in recs:
+                f.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
+        ident["stock_shim"] = {**eng.identity(), "seconds": round(time.perf_counter() - t0, 2), "n": len(recs),
+                               "status": _count(r["status"] for r in recs)}
     (out_dir / "identity.json").write_text(json.dumps(ident, indent=1, default=str), encoding="utf-8")
     return 0
+
+
+class StockShimEngine:
+    """STOCK Qwen3.5 + the H2O shim readout (A-PREREG-JEV1-4B's paired baseline), on the screen's already-loaded model:
+    every LoRA adapter is switched off (``LoRALinear.scaling`` = 0, so each layer is exactly its base nn.Linear; restored
+    on exit), the vendored shim's own prompt (``Contract.question_prompt``) is tokenized whole-string, ONE forward, and
+    the label log-probabilities at the answer slot come from the tied LM head (Qwen3.5 small: lm_head = embed_tokens,
+    checked on the snapshot's config.json); then the shim's ``format_answer`` (temperature 0.8, yes/no floor 0.801).
+    This is the host scan's ShimEngine (jobs/jev_host_scan) with the logits restricted to the label rows: the softmax
+    over labels cancels the full-vocabulary normaliser, so the answers are the same."""
+
+    def __init__(self, backend, model_dir: str):
+        import third_party.h2o_lightning_shim as H
+        from decide.shim_format import spec_for_template
+
+        cfg = json.loads((Path(model_dir) / "config.json").read_text(encoding="utf-8"))
+        if not (cfg.get("tie_word_embeddings") or (cfg.get("text_config") or {}).get("tie_word_embeddings")):
+            raise ScreenError("stock shim: the snapshot's LM head is not tied to embed_tokens (refusing)", 10)
+        self.mod, self.c = H.load_contract()
+        self.bb = backend.model.backbone
+        self.spec = spec_for_template(backend.template.id)  # the bound shim spec: its tokenizer and label ids
+        if self.spec.lean:
+            raise ScreenError("stock shim: the cell's template must be the full shim prompt", 5)
+        self.W = self.bb.model.get_input_embeddings().weight
+
+    def identity(self) -> dict:
+        import third_party.h2o_lightning_shim as H
+
+        return {"arm": "stock_shim", "shim": f"{H.REPO}@{H.TAG}", "temperature": self.c.temperature,
+                "noul_floor": self.c.noul_floor, "template_identity": self.spec.identity(),
+                "lm_head": "tied embed_tokens, fp32 label rows", "lora": "off (scaling 0)"}
+
+    def lora_off(self):
+        import contextlib
+
+        from train.lora import LoRALinear
+
+        @contextlib.contextmanager
+        def ctx():
+            mods = [m for m in self.bb.model.modules() if isinstance(m, LoRALinear)]
+            saved = [m.scaling for m in mods]
+            try:
+                for m in mods:
+                    m.scaling = 0.0
+                yield len(mods)
+            finally:
+                for m, v in zip(mods, saved):
+                    m.scaling = v
+        return ctx()
+
+    def __call__(self, request: dict) -> dict:
+        import torch
+
+        state_txt = self.mod.render_state(request["state"], self.c.state_compact)
+        answers, ntok = {}, 0
+        for qid, q in request["questions"].items():
+            text, names, descs, labels = self.c.question_prompt(state_txt, q, qid)
+            ids = self.spec.ids(text)
+            with torch.inference_mode():
+                out = self.bb.model(input_ids=torch.tensor([ids], dtype=torch.long, device=self.W.device), use_cache=False)
+                h = out.last_hidden_state[0, -1].float()  # after the final norm: the LM head's input
+                lab = torch.tensor([self.spec.label_ids[x] for x in labels], device=self.W.device)
+                lp = (self.W.index_select(0, lab).float() @ h.to(self.W.device)).tolist()
+            thr = None
+            if q.get("type", "choice") == "noul":
+                t = q.get("threshold", q.get("noul_threshold"))
+                if isinstance(t, (int, float)) and 0.0 <= float(t) <= 1.0:
+                    thr = float(t)
+            answers[qid] = self.mod.format_answer(q.get("type", "choice"), names, descs, lp, self.c.temperature,
+                                                  self.c.noul_floor, thr)
+            ntok += len(ids)
+        return {"model": "stock-shim", "answers": answers, "usage": {"input_tokens": ntok, "output_tokens": 0}}
 
 
 # ------------------------------------------------------------------------------------------------ CPU: report
@@ -724,7 +813,8 @@ def jevkit_report(jk: dict, d: Path) -> dict:
 
     items = load_public()
     arms, tables, axes = {}, {}, {}
-    names = ["native"] + (["lean"] if jk.get("lean_template") else []) + sorted(jk.get("extra_templates") or {})
+    names = (["native"] + (["lean"] if jk.get("lean_template") else []) + sorted(jk.get("extra_templates") or {})
+             + (["stock_shim"] if jk.get("stock_shim") else []))
     if jk.get("shim_calibration"):  # score-only: the shim's own post-processing on the native answers (no GPU)
         shim_calibrate(d / "native.preds.jsonl", d / "native_shimcal.preds.jsonl", items)
         names.append("native_shimcal")
@@ -758,6 +848,15 @@ def jevkit_report(jk: dict, d: Path) -> dict:
            "extra_templates": jk.get("extra_templates") or {}, "arms": arms,
            "note": "open split only (the 231 pinned v1.2 public items, not the v1.6.1 P300 draw): Intelligence basis "
                    "open-only, no gap penalty; latency in-process on this H100 (self-hosted x2 + 0.15 s lane)"}
+    if "stock_shim" in tables:  # A-PREREG-JEV1-4B: every trained arm minus the stock + shim baseline, paired
+        out["vs_stock_shim"] = {nm: paired_vs(tables, axes, nm, "stock_shim") for nm in tables if nm != "stock_shim"}
+        prim = jk.get("paired_primary") or "native"
+        d = out["vs_stock_shim"].get(prim)
+        if d is not None:
+            lo = d["composite_A"]["ci95"][0] if d["composite_A"]["ci95"] else None
+            out["primary"] = {"arm": prim, "baseline": "stock_shim", "delta_composite_A": d["composite_A"],
+                              "rule": "A-PREREG-JEV1-4B: SUCCESS iff delta Composite A > 0 with its 95% CI excluding 0",
+                              "success": bool(lo is not None and lo > 0)}
     if "lean" in tables:
         rng = np.random.default_rng(16)
         st = JS.strata(tables["native"])
@@ -779,6 +878,38 @@ def jevkit_report(jk: dict, d: Path) -> dict:
             "rule": "A-PREREG-SIZECLIFF: lean adopted iff jevkit-I drops <= 1 point (paired) while tokens drop >= 25%",
             "adopt": bool(sl["I"] - sn["I"] >= -1.0 and drop is not None and drop >= 0.25)}
     return out
+
+
+def paired_vs(tables: dict, axes: dict, a: str, b: str, B: int = 1000, seed: int = 16) -> dict:
+    """a - b on the SAME stratified resamples (jevkit: B 1000, seed 16, strata of jevkit.scoring.strata): open-split
+    Intelligence, Calibration, Capability and Composite A (Speed / Cost held at each arm's measured axes, as
+    jevkit.scoring.bootstrap does). Point = the full-set difference."""
+    import numpy as np
+
+    from jevkit import scoring as JS
+
+    def axes_of(nm, idx=None):
+        r = JS.aggregate(tables[nm], idx, detail=False)
+        i, c = r["intelligence"]["I"], r["calibration"]["score"]
+        sp, k = axes[nm]
+        return {"I": i, "C": c, "capability": JS.capability(i, c), "composite_A": JS.composite(i, c, sp, k, "A")}
+
+    pa, pb = axes_of(a), axes_of(b)
+    rng = np.random.default_rng(seed)
+    st = JS.strata(tables[b])
+    draws: dict = {k: [] for k in pa}
+    for _ in range(B):
+        idx = np.concatenate([rng.choice(s_, size=len(s_), replace=True) for s_ in st])
+        xa, xb = axes_of(a, idx), axes_of(b, idx)
+        for k in draws:
+            if xa[k] is not None and xb[k] is not None:
+                draws[k].append(xa[k] - xb[k])
+
+    def ci(v):
+        return [float(np.percentile(v, 2.5)), float(np.percentile(v, 97.5))] if v else None
+
+    return {k: {"point": (pa[k] - pb[k]) if pa[k] is not None and pb[k] is not None else None, "ci95": ci(draws[k]),
+                "a": pa[k], "b": pb[k]} for k in draws} | {"B": B, "seed": seed, "a": a, "b": b}
 
 
 def _no_parent(d: dict) -> bool:
