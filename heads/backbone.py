@@ -361,7 +361,10 @@ class HiddenStateBackbone(nn.Module):
             # Replaces cids.shape[1] full-model calls per row (PERF_AUDIT: training / eval-card fork head).
             self._captured = None
             out = m(input_ids=cids, past_key_values=cache, **base)
-            return h, self._pick(out)[torch.arange(k, device=dev), last]
+            feats = self._pick(out)[torch.arange(k, device=dev), last]
+            release_cache(cache)  # the cache is dropped here: break its reference cycle with the autograd graph
+            del out
+            return h, feats
         feats = torch.zeros((k, h.shape[-1]), dtype=h.dtype, device=dev)
         for t in range(cids.shape[1]):  # token by token: the cached-decode path HF Mamba (cache_params) supports
             self._captured = None
@@ -532,6 +535,29 @@ def _assign_not_copy(cache) -> None:
 
         layer.update_conv_state = types.MethodType(conv, layer)
         layer.update_recurrent_state = types.MethodType(rec, layer)
+
+
+def release_cache(cache) -> None:
+    """Drop every tensor a used HF cache holds (attention keys / values, GDN conv / recurrent states).
+
+    job-anx5y / job-w2t73: with act_ckpt (heads.act_ckpt._wrap_hf) each block's checkpoint frame keeps its
+    ``_HFSlot`` -> the cache alive, and the cache holds the block's output tensors whose grad_fn holds that frame: a
+    Python <-> autograd reference cycle the garbage collector cannot see through, so every forked cache (K copies of
+    the prefix KV + GDN states) stayed allocated after backward (CPU: +234 MB per tiny step; GPU: the 4B probe / ladder
+    kept ~60 GB). The fork never reads the cache again after its continuation call, so emptying it is free and exact;
+    the checkpoint's own saved inputs (``_HFSlot.inputs``) are unaffected."""
+    for layer in getattr(cache, "layers", []) or []:
+        for attr in ("keys", "values"):
+            if getattr(layer, attr, None) is not None:
+                setattr(layer, attr, None)
+        for attr in ("conv_states", "recurrent_states"):
+            st = getattr(layer, attr, None)
+            if isinstance(st, list):
+                for i in range(len(st)):
+                    st[i] = None
+            elif isinstance(st, dict):
+                for key in list(st):
+                    st[key] = None
 
 
 def _set_seen(cache, n: int) -> None:

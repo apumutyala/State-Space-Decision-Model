@@ -461,3 +461,15 @@ largest K x T (candidates 64 / 32 / 16 / 8, peak <= 0.85 x 76 GB) before the lad
 batch (1 x 8), LR, schedule and data order; `cont_chunk` is not in the TrainConfig hash
 (tests/test_sizecliff.py::test_cont_chunk_gradients_equal_the_unchunked_step). The 0.8B (job-reknq) and 2B (job-haxmm)
 arms run the original path. Caps and worst case unchanged ($24.95; hold $13.99).
+
+**r4 (4B ONLY, PREREG Amendment 2: step parity).** r3 (job-anx5y) stopped with exit 22. Its cont_chunk probe kept
+~60 GB of the first candidate alive: with act_ckpt, each forked HF cache held its blocks' output tensors, whose
+autograd nodes held the checkpoint frame, which held the cache. That is a Python / autograd reference cycle gc cannot
+see. `heads.backbone.release_cache` now empties every used fork cache (CPU: +234 MB per tiny step before, flat after).
+The probe now runs candidates smallest first (8, 16, 32, 48, 64), frees memory between them (gc + empty_cache + reset
+stats), keeps the largest passing one and refuses to train when none passes (`train.run_cell.choose_cont_chunk`). Step
+parity with the 2B (job-haxmm, art-vg2sk cell.json): max_steps = min_steps = 1,121, `lr_horizon_steps` 753 (the 2B's
+cosine horizon), T cap 2,048 (the minimum T_max across the arms; 0.8B job-reknq: 1,147 steps, horizon 750, T_max 2,048).
+Clock 200 min (2B 5.48 s/step x the 4B / 2B ladder ratio 1.21 + chunking ~ 7.5 s/step; 1,121 x 7.5 x 1.3 = 182).
+Schedule: setup 20 + guard 5 + heldout 10 + cell 235 + screen 45 + report 5 + reserve 7 = 327 min; quoted hold
+$20.60; **worst case** (60 + 2 x 327) x $0.0495 = **$35.34** (hard cap $40).

@@ -1,5 +1,5 @@
 {
- "_comment": "Mode sizecliff_q35_4b (A-PREREG-SIZECLIFF (PREREG.md on origin/state, agent-a 2026-10-09 ~23:20Z, registered before any run): same recipe, same data draw, same LoRA rank and clock on Qwen/Qwen3.5-0.8B, -2B, -4B; PRIMARY readout = the H2O-Lightning shim format (coordinator amendment 2026-10-09, before any run: host scan job-zbtbj stock Qwen3.5-4B open-I 56.3 shim vs 46.1 v3w), trained in that same format (train == serve); screen = proxy600 (cross-readout vs the D1+v3w reference and the Clef-flash / Clef 27B units) + jevkit on the 231 public JevBench items (shim native; v3w and the shim post-processing score-only); the 4B is also rescored with the lean shim prompt. LiquidAI/LFM2.5-2.6B-Base is NOT an arm: transformers' Lfm2ShortConv cached path is single-token decode only (causal_conv1d_update / one conv step once the cache holds a state), so the cache fork (prefix once, K continuations in one call) is not exact for it without a new conv-state continuation patch + a GPU fork==recompute check (jobs/m2_first_cell/JOB_SPEC.md).) job_params_q9af_v2_v3w.json on the stock Qwen/Qwen3.5-4B parent: no conversion export, no parent arm (parent_arm none; screen_parent none: the screen pairs the child with the D1+v3w reference and the Clef-flash / Clef 27B proxy600 units, all cross-readout), then jevkit on the 231 public JevBench items in the same process (native shim; score-only: v3w on the same checkpoint and the shim's T 0.8 / yes-no floor post-processing) (+ the lean shim prompt rescore, jevkit.lean_template). Schedule: setup 20 + guard 5 + heldout 10 + cell 130 + screen 45 + report 5 + reserve 7 = 222 = max_duration. Quoted hold 222 x $0.063 = $13.99; worst case (60 + 2 x 222) x 0.0495 = $24.95 (hard cap $30). Screen: fixed 15 (model load + lineage rebuild of the 94,786 training items: Qwen rows tokenize at ~400 records/s/process on the laptop + jevkit 2 x 233 serial requests) + D1's 25.97 proxy minutes = 40.97 <= 0.95 x 45.",
+ "_comment": "Mode sizecliff_q35_4b (A-PREREG-SIZECLIFF (PREREG.md on origin/state, agent-a 2026-10-09 ~23:20Z, registered before any run): same recipe, same data draw, same LoRA rank and clock on Qwen/Qwen3.5-0.8B, -2B, -4B; PRIMARY readout = the H2O-Lightning shim format (coordinator amendment 2026-10-09, before any run: host scan job-zbtbj stock Qwen3.5-4B open-I 56.3 shim vs 46.1 v3w), trained in that same format (train == serve); screen = proxy600 (cross-readout vs the D1+v3w reference and the Clef-flash / Clef 27B units) + jevkit on the 231 public JevBench items (shim native; v3w and the shim post-processing score-only); the 4B is also rescored with the lean shim prompt. LiquidAI/LFM2.5-2.6B-Base is NOT an arm: transformers' Lfm2ShortConv cached path is single-token decode only (causal_conv1d_update / one conv step once the cache holds a state), so the cache fork (prefix once, K continuations in one call) is not exact for it without a new conv-state continuation patch + a GPU fork==recompute check (jobs/m2_first_cell/JOB_SPEC.md).) job_params_q9af_v2_v3w.json on the stock Qwen/Qwen3.5-4B parent: no conversion export, no parent arm (parent_arm none; screen_parent none: the screen pairs the child with the D1+v3w reference and the Clef-flash / Clef 27B proxy600 units, all cross-readout), then jevkit on the 231 public JevBench items in the same process (native shim; score-only: v3w on the same checkpoint and the shim's T 0.8 / yes-no floor post-processing) (+ the lean shim prompt rescore, jevkit.lean_template). Schedule: setup 20 + guard 5 + heldout 10 + cell 130 + screen 45 + report 5 + reserve 7 = 222 = max_duration. Quoted hold 222 x $0.063 = $13.99; worst case (60 + 2 x 222) x 0.0495 = $24.95 (hard cap $30). Screen: fixed 15 (model load + lineage rebuild of the 94,786 training items: Qwen rows tokenize at ~400 records/s/process on the laptop + jevkit 2 x 233 serial requests) + D1's 25.97 proxy minutes = 40.97 <= 0.95 x 45. r4 (Amendment 2, step parity with the 2B job-haxmm: 1,121 steps, LR horizon 753, T cap 2,048; clock 200 min; cont_chunk probe fixed): cell cap 235, max_duration 327, quoted hold 327 x $0.063 = $20.60, worst case (60 + 2 x 327) x 0.0495 = $35.34 (hard cap $40).",
  "test_env": {
   "transformers": "5.17.0",
   "with": [
@@ -26,7 +26,7 @@
  "status": "A-PREREG-SIZECLIFF arm: D16 recipe on stock Qwen/Qwen3.5-4B, H2O shim format, 100-min clock, stage screen (proxy600 + jevkit)",
  "chip": "h100",
  "chip_count": 1,
- "max_duration_minutes": 222,
+ "max_duration_minutes": 327,
  "build_timeout_minutes": 60,
  "max_restarts": 0,
  "assumed_restart_floor": 1,
@@ -34,12 +34,12 @@
  "resume": "checkpoint",
  "hf_cache": true,
  "batch_usd_per_min": 0.0495,
- "hard_cap_usd": 30.0,
+ "hard_cap_usd": 40.0,
  "phase_caps_minutes": {
   "setup": 20,
   "guard": 5,
   "heldout": 10,
-  "cell": 130,
+  "cell": 235,
   "screen": 45,
   "report": 5
  },
@@ -49,7 +49,7 @@
   "setup": 10,
   "guard": 3,
   "heldout": 5,
-  "cell": 118,
+  "cell": 175,
   "screen": 25,
   "report": 3
  },
@@ -88,9 +88,9 @@
    "TOK_S": "22144",
    "CALL_S": "0.0595"
   },
-  "key": "m2-first-cell-sizecliff-q35-4b-r3",
+  "key": "m2-first-cell-sizecliff-q35-4b-r4",
   "clock_lock": true,
-  "label": "A-PREREG-SIZECLIFF sizecliff_q35_4b: stock Qwen/Qwen3.5-4B + D16 recipe (H2O shim format, B1 100k-v2 cleaned 94,786, LoRA r64, 100-min clock) r3 (option-chunked cache fork, job-w2t73 OOM fix) [SCREEN proxy600 + jevkit]",
+  "label": "A-PREREG-SIZECLIFF sizecliff_q35_4b r4: stock Qwen/Qwen3.5-4B + D16 recipe (H2O shim format, 94,786 draw, LoRA r64; Amendment 2 step parity: 1,121 steps = the 2B, LR horizon 753, T cap 2,048; option-chunked fork) [SCREEN proxy600 + jevkit]",
   "checks": {
    "success": {
     "check": {

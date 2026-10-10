@@ -173,19 +173,25 @@ def test_mode_configs_one_recipe_one_draw_one_rank_one_clock():
 
     allowed = {"_comment", "parent", "template", "max_minutes", "max_steps", "max_minutes_note", "lora_rank_note",
                "execution_note", "qwen35", "v3w_note", "shim_note", "variant", "q9af", "census_note",
-               "cont_chunk", "cont_chunk_candidates", "cont_chunk_peak_frac", "cont_chunk_note"}
+               "cont_chunk", "cont_chunk_candidates", "cont_chunk_peak_frac", "cont_chunk_note",
+               "min_steps", "lr_horizon_steps", "step_parity_note"}
     for a, c in CELLS.items():
         assert c["parent"] == "qwen35" and c["template"] == TPL[a] and "q9af" not in c
         for k in set(c) | set(Q9):
             if k not in allowed:
                 assert c.get(k) == Q9.get(k), (a, k)  # = q9af_v2_v3w's D16 keys (data, attack/doc clean, LR, ...)
-        assert c["n_train_records"] == 94786 and c["lora_rank"] == 64 and c["max_minutes"] == 100
+        assert c["n_train_records"] == 94786 and c["lora_rank"] == 64
         assert c["train_set"]["doc_clean"]["n_excluded"] == 14 and c["train_set"]["attack_clean"]["n_excluded"] == 5201
     # the 4B's execution-only option chunking (job-w2t73); the 0.8B / 2B arms ran without it (same math)
     assert CELLS["4b"]["cont_chunk"] == "auto" and "cont_chunk" not in CELLS["0p8b"] and "cont_chunk" not in CELLS["2b"]
-    for k in ("train_set", "n_train_records", "lora_rank", "max_minutes", "max_steps", "seed", "lr_lora", "head",
+    for k in ("train_set", "n_train_records", "lora_rank", "seed", "lr_lora", "head",
               "lr_head", "batch_size", "grad_accum", "loss_arm", "lr_schedule", "warmup_steps", "t_ladder", "train_max_k"):
         assert len({json.dumps(c[k], sort_keys=True) for c in CELLS.values()}) == 1, k
+    # PREREG Amendment 2: the 0.8B / 2B ran the 100-min clock; the 4B (r4) runs the 2B's step count with its LR horizon
+    assert CELLS["0p8b"]["max_minutes"] == CELLS["2b"]["max_minutes"] == 100
+    c4 = CELLS["4b"]
+    assert (c4["max_steps"], c4["min_steps"], c4["lr_horizon_steps"], c4["max_minutes"]) == (1121, 1121, 753, 200)
+    assert max(c4["t_ladder"]) == 2048 and c4["cont_chunk_candidates"] == [8, 16, 32, 48, 64]
     hold = 0.0
     for a, p in PARAMS.items():
         assert p["mode"] == f"sizecliff_q35_{a}" and p["parent_arm"] == "none" and p["screen_parent"] == "none"
@@ -198,7 +204,7 @@ def test_mode_configs_one_recipe_one_draw_one_rank_one_clock():
         assert not any(d["dest"].startswith("gdn/") for d in p["context"]["data"])
         assert {c["name"] for c in p["screen_comparators"]} == {"clef_flash", "clef_27b"}
         hold += p["max_duration_minutes"] * 0.063
-    assert hold <= 45.0
+    assert hold <= 50.0  # r4 4B hold $20.60 (budget constraint lifted by the coordinator)
     assert PARAMS["4b"]["jevkit"]["lean_template"] == LEAN and "lean_template" not in PARAMS["2b"]["jevkit"]
     for a, usd in (("0p8b", 0.01), ("2b", 0.02), ("4b", 0.03)):
         from jevkit.meter import parse_price
@@ -443,3 +449,69 @@ def test_cont_chunk_keeps_only_one_chunk_of_forked_copies_saved():
 
     full, chunked = saved(0), saved(4)
     assert chunked < 0.2 * full, (full, chunked)
+
+
+# --------------------------------------------------------------- job-anx5y regressions: the probe and the cache leak
+class _FakeAllocator:
+    """A fake device: each candidate's step needs fixed + per_option x chunk GB; OOM over the capacity. ``leak`` GB per
+    finished step stays allocated unless the caller frees (the job-anx5y failure: freed=False)."""
+
+    def __init__(self, fixed=10.0, per_option=0.9, capacity=79.0, leak=0.0):
+        self.fixed, self.per, self.cap, self.leak, self.held, self.calls = fixed, per_option, capacity, leak, 0.0, []
+
+    def step(self, chunk):
+        self.calls.append(chunk)
+        need = self.held + self.fixed + self.per * chunk
+        if need > self.cap:
+            return {"ok": False, "oom": "fake OOM", "peak_gb": self.cap}
+        self.held += self.leak
+        return {"ok": True, "peak_gb": need, "step_s": 1.0}
+
+
+def test_cont_chunk_probe_chooses_the_largest_passing_candidate():
+    from train.run_cell import choose_cont_chunk
+
+    fa = _FakeAllocator()  # 8: 17.2, 16: 24.4, 32: 38.8, 48: 53.2, 64: 67.6 GB; limit 64.6
+    out = choose_cont_chunk([64, 32, 16, 8, 48], fa.step, 64.6)
+    assert out["chosen"] == 48 and fa.calls == [8, 16, 32, 48, 64]  # smallest first, stops at the first failure
+    assert out["points"]["64"]["peak_gb"] > 64.6
+    oom = _FakeAllocator(fixed=80.0)  # even the smallest OOMs -> nothing chosen (the job refuses: never a failed chunk)
+    assert choose_cont_chunk([64, 32, 16, 8], oom.step, 64.6)["chosen"] is None and oom.calls == [8]
+    leaky = _FakeAllocator(leak=30.0)  # memory not freed between candidates: still only a PASSING candidate is chosen
+    out = choose_cont_chunk([64, 32, 16, 8], leaky.step, 64.6)
+    assert out["chosen"] in out["candidates"] and out["points"][str(out["chosen"])]["ok"]
+    assert all(out["points"][str(c)]["ok"] for c in out["candidates"] if c <= out["chosen"])
+
+
+@pytest.mark.parametrize("chunk", [0, 4])
+def test_forked_caches_are_released_after_each_step_under_act_ckpt(chunk):
+    """job-anx5y: with act_ckpt every forked cache stayed alive (a reference cycle through the autograd graph that gc
+    cannot see): +234 MB per step on this tiny model before the fix. Live tensor bytes must not grow step over step."""
+    import gc
+
+    torch = pytest.importorskip("torch")
+    from heads.backbone import tiny_hf_backbone
+    from heads.layout import ByteEncoder, build_row
+    from heads.model import DecisionModel
+    from train.data import TOY_TEMPLATE, Item
+    from train.guard import SplitGuard
+    from train.losses import LossConfig
+    from train.trainer import TrainConfig, Trainer
+
+    def live():
+        gc.collect()
+        return sum(o.numel() * o.element_size() for o in gc.get_objects() if torch.is_tensor(o))
+
+    bb = tiny_hf_backbone("qwen3.5", seed=0, fork_mode="cache")
+    req = {"state": "x " * 150, "questions": {"q": {"type": "choice", "instructions": "which?",
+                                                     "criteria": {f"o{i:02d}": f"opt {i}" for i in range(20)}}}}
+    row = build_row(req, "q", ByteEncoder(), template=TOY_TEMPLATE, layout="ordered")
+    items = [Item(f"t/{i}", row, 3) for i in range(4)]
+    cfg = TrainConfig(head="fork", layout="ordered", fork_mode="cache", lora_rank=4, batch_size=1, grad_accum=4,
+                      loss=LossConfig(arm="clef"), act_ckpt=True, cont_chunk=chunk)
+    tr = Trainer(DecisionModel(bb, "fork", {}, pad_id=0, seed=0), cfg, items, [], guard=SplitGuard.synthetic_only("t"))
+    tr.train_step()
+    first = live()
+    for _ in range(3):
+        tr.train_step()
+    assert live() - first < 5e6  # bytes; before the fix: ~700 MB more after three steps

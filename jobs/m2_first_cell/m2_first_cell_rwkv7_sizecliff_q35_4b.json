@@ -21,9 +21,9 @@
  "n_train_records": 94786,
  "n_eval_records": 0,
  "min_train_items": 5000,
- "max_steps": 20000,
- "max_minutes": 100,
- "min_steps": 600,
+ "max_steps": 1121,
+ "max_minutes": 200,
+ "min_steps": 1121,
  "ckpt_every": 400,
  "eval_every": 100000,
  "tokenize_workers": 8,
@@ -102,7 +102,7 @@
  "row_plan": "min_cost",
  "cont_plan": "single",
  "compile_blocks": false,
- "max_minutes_note": "A-PREREG-SIZECLIFF: the SAME 100-min training clock on every arm (relative retention across sizes, not absolute peak); max_steps 20,000 never binds; the cosine horizon is the clock-projected final step (train.run_cell set_horizon). Cell phase cap = 100 + tokenize 10 + load / smoke / ladder 10 + checkpoints / margin 10 = 130.",
+ "max_minutes_note": "Amendment 2: 200 min for the 4B (1,121 steps x ~7.5 s x 1.3, rounded up); the 0.8B / 2B ran the 100-min clock. Cell cap = 200 + tokenize 10 + load / smoke / probe / ladder 15 + checkpoints / margin 10 = 235.",
  "min_steps_note": "exit 26 if the measured step time cannot reach 600 optimiser steps (4,800 rows) inside max_minutes: below that the cell is not a meaningful first measurement; re-price instead of spending the evals",
  "lora_rank_note": "r=64 on every arm (A-PREREG-SIZECLIFF: same LoRA rank); targets = every GDN in_proj_qkv / in_proj_z / out_proj, every attention q / k / v / o and every MLP projection (stock hybrid, heads.backbone.qwen35_spec from config.json)",
  "variant": "sizecliff_q35_4b",
@@ -130,11 +130,14 @@
  "shim_note": "template jrt-h2o-shim:qwen3.5-4b (decide/shim_format.py, pinned identity): the vendored, unmodified H2O-Lightning-4B v1.1 shim prompt (third_party/h2o_lightning_shim, the host scan's replica that matched H2O's card 205/231): Qwen chat turn, thinking off, the shim system text, 'record: / question: / options: A) name: desc', 'Answer:' prefill; option k = shim label k (A, B, ...), its continuation the ONE token of ' <label>' (the shim's own probe); bound to the snapshot's tokenizer files, any other tokenizer fails closed. Train rows == the shim prompt ids (and == transformers' whole-string tokenization = vLLM /tokenize): scripts/check_sizecliff_cpu.py.",
  "cont_chunk": "auto",
  "cont_chunk_candidates": [
-  64,
-  32,
+  8,
   16,
-  8
+  32,
+  48,
+  64
  ],
  "cont_chunk_peak_frac": 0.85,
- "cont_chunk_note": "4B ONLY (r3, job-w2t73 OOM on its first step: 71.5 GB allocated in the act_ckpt recompute of a GDN block). Cause: the per-row cache fork copies the prefix state once per option (8 attention layers' prefix KV + 24 GDN states, ~0.7 GB per option at T 1,020 under act_ckpt on the 4B; the ladder's K = 77 rung peaked at 63.7 GB) and keeps every copy alive through backward. Fix = an EXECUTION knob, the same loss / gradients / effective batch / LR / data order (TrainConfig.cont_chunk is left out of the config hash): rows with K > cont_chunk run their options in reentrant-checkpointed chunks of cont_chunk (heads.backbone.HiddenStateBackbone._hf_fork_chunked), so one chunk's copies are alive at a time. 'auto' = run_cell's probe: the 8 training rows with the largest K x T (T <= 2,048) run one step per candidate (64, 32, 16, 8), the largest with peak <= 0.85 x max_peak_gb wins; the ladder then measures T_max with it. Gradient equality: tests/test_sizecliff.py::test_cont_chunk_gradients_equal_the_unchunked_step. row_batch is already 1 (batch 1 x grad_accum 8), so no row-level knob is left to lower. The 0.8B / 2B arms (job-reknq, job-haxmm) run without cont_chunk: identical math."
+ "cont_chunk_note": "4B ONLY (r3, job-w2t73 OOM on its first step: 71.5 GB allocated in the act_ckpt recompute of a GDN block). Cause: the per-row cache fork copies the prefix state once per option (8 attention layers' prefix KV + 24 GDN states, ~0.7 GB per option at T 1,020 under act_ckpt on the 4B; the ladder's K = 77 rung peaked at 63.7 GB) and keeps every copy alive through backward. Fix = an EXECUTION knob, the same loss / gradients / effective batch / LR / data order (TrainConfig.cont_chunk is left out of the config hash): rows with K > cont_chunk run their options in reentrant-checkpointed chunks of cont_chunk (heads.backbone.HiddenStateBackbone._hf_fork_chunked), so one chunk's copies are alive at a time. 'auto' = run_cell's probe: the 8 training rows with the largest K x T (T <= 2,048) run one step per candidate SMALLEST first (8, 16, 32, 48, 64; memory freed between candidates: gc + empty_cache + reset stats), stopping at the first that does not pass; the LARGEST passing one wins and none passing refuses to train (r4 fix of job-anx5y); the ladder then measures T_max with it. Gradient equality: tests/test_sizecliff.py::test_cont_chunk_gradients_equal_the_unchunked_step. row_batch is already 1 (batch 1 x grad_accum 8), so no row-level knob is left to lower. The 0.8B / 2B arms (job-reknq, job-haxmm) run without cont_chunk: identical math.",
+ "lr_horizon_steps": 753,
+ "step_parity_note": "A-PREREG-SIZECLIFF AMENDMENT 2 (step parity, r4): the 2B arm job-haxmm (art-vg2sk, cell.json) reached 1,121 optimiser steps with its cosine horizon fixed at step 753 (clock-projected at step 10) and T_max 2,048 (0.8B job-reknq: 1,147 steps, horizon 750, T_max 2,048). The 4B runs exactly max_steps 1,121 with lr_horizon_steps 753 (the same LR at every step), min_steps 1,121 (the step-10 rate check refuses a clock that cannot reach them: exit 26), the same t_ladder (T cap 2,048 = the minimum T_max across the arms; the same 149,776 items and data order when the 4B ladder also reaches 2,048). Clock: the 2B averaged 5.48 s/step (6,148 s / 1,121); the 4B ladder step was 1.21x the 2B's (9.43 vs 7.78 s) -> ~6.6 s/step, + option chunking ~7.5 s/step; 1,121 x 7.5 x 1.3 = 182 min -> 200 min."
 }

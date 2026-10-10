@@ -88,6 +88,21 @@ def load_parent_backbone(parent: str, model_dir: str, cfg: dict, gdn_ckpt: str |
 CHECK_AFTER_STEPS = 10  # the in-training rate check uses the mean of the first steps actually run
 
 
+def choose_cont_chunk(candidates, run_step, limit_gb: float) -> dict:
+    """The option-chunk probe's choice (job-anx5y fix): candidates SMALLEST first; ``run_step(c)`` -> {"ok", "peak_gb",
+    ...} (the caller frees everything between candidates). A candidate passes when ok and peak <= ``limit_gb``; the
+    probe stops at the first that does not pass (a bigger chunk only needs more memory). ``chosen`` = the LARGEST
+    passing candidate, or None when even the smallest failed (the caller then refuses to train)."""
+    out = {"limit_gb": limit_gb, "candidates": sorted(set(int(c) for c in candidates)), "points": {}, "chosen": None}
+    for c in out["candidates"]:
+        pt = run_step(c)
+        out["points"][str(c)] = pt
+        if not (pt.get("ok") and pt.get("peak_gb", float("inf")) <= limit_gb):
+            break
+        out["chosen"] = c
+    return out
+
+
 # ----------------------------------------------------------------------------- data (CPU-testable)
 def host_provenance(r: dict) -> dict | None:
     """Explicit host provenance for an m2 record (``decide.provenance`` shape), for the controlsafe trust gate.
@@ -881,9 +896,13 @@ def _main(argv=None, ctx: dict | None = None):
         return torch.cuda.max_memory_allocated() / 1e9 if on_cuda else 0.0
 
     def reset_peak():
+        import gc
+
+        gc.collect()  # job-anx5y: free the previous candidate / rung's objects before measuring the next one
         if on_cuda:
-            torch.cuda.reset_peak_memory_stats()
+            torch.cuda.synchronize()
             torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
 
     torch.manual_seed(cfg["seed"])
     parent = cfg.get("parent", "rwkv7")
@@ -1017,10 +1036,10 @@ def _main(argv=None, ctx: dict | None = None):
             rows = pool[: cfg["batch_size"] * cfg["grad_accum"]]
             limit = float(cfg.get("cont_chunk_peak_frac", 0.85)) * cfg["pass_rule"]["max_peak_gb"]
             cands = [int(c) for c in cfg.get("cont_chunk_candidates", [64, 32, 16, 8])]
-            probe = {"rows": [{"k": x.row.n_options, "t": len(x.row.ids)} for x in rows], "limit_gb": limit,
-                     "candidates": cands, "points": {}, "chosen": None}
             cfg_auto = cfg
-            for cand in cands:
+
+            def probe_step(cand):
+                nonlocal cfg
                 cfg = {**cfg_auto, "cont_chunk": cand}  # make_trainer reads cfg
                 reset_peak()
                 tr = None
@@ -1032,24 +1051,23 @@ def _main(argv=None, ctx: dict | None = None):
                         loss = tr.train_step()
                     if cuda:
                         torch.cuda.synchronize()
-                    probe["points"][str(cand)] = {"ok": math.isfinite(loss), "peak_gb": peak(),
-                                                  "step_s": time.time() - t0}
+                    return {"ok": math.isfinite(loss), "peak_gb": peak(), "step_s": time.time() - t0}
                 except torch.OutOfMemoryError as e:
-                    probe["points"][str(cand)] = {"ok": False, "oom": str(e)[:200], "peak_gb": peak()}
+                    return {"ok": False, "oom": str(e)[:200], "peak_gb": peak()}
                 finally:
                     del tr
                     bb.model.zero_grad(set_to_none=True)
                     remove_lora(bb.model)
+                    cfg = cfg_auto
                     reset_peak()
-                pt = probe["points"][str(cand)]
-                if pt["ok"] and pt["peak_gb"] <= limit:
-                    probe["chosen"] = cand
-                    break
-            cfg = cfg_auto
-            if probe["chosen"] is None:
-                probe["chosen"] = min(cands)  # the ladder below still measures (and refuses: exit 22) what does not fit
+
+            probe = choose_cont_chunk(cands, probe_step, limit)
+            probe["rows"] = [{"k": x.row.n_options, "t": len(x.row.ids)} for x in rows]
             cell["cont_chunk_probe"] = probe
             save()
+            if probe["chosen"] is None:  # fail closed: never train with a chunk size that did not pass
+                print(f"cont_chunk probe: no candidate passed ({probe['points']})", flush=True)
+                return EXIT["no_T_fits"]
         cfg = {**cfg, "cont_chunk": int(cell["cont_chunk_probe"]["chosen"])}
         print(f"cont_chunk probe: {cell['cont_chunk_probe']['chosen']} ({cell['cont_chunk_probe']['points']})",
               flush=True)
@@ -1160,8 +1178,15 @@ def _main(argv=None, ctx: dict | None = None):
                                       "left_s": max(0.0, t_end - t_start)}
         save()
         step0 = tr.step
+        if cfg.get("lr_horizon_steps") and tr.cfg.lr_schedule == "cosine":
+            # A-PREREG-SIZECLIFF Amendment 2 (step parity): the cosine horizon of the arm this one matches (its
+            # cell.json lr_horizon.step), fixed before the first step; warmup precedes the decay, so the LR at every
+            # step equals that arm's. The step-10 clock projection then leaves it alone (set_horizon is fixed once).
+            tr.set_horizon(int(cfg["lr_horizon_steps"]))
+            cell["lr_horizon"] = {"step": tr.horizon, "fixed_at_step": tr.step, "source": "lr_horizon_steps"}
+        stop_at = min(int(cfg["max_steps"]), int(cfg.get("stop_after_steps") or cfg["max_steps"]))
         logf = open(out / "train_log.jsonl", "a")
-        while tr.step < cfg["max_steps"] and time.time() < t_end:
+        while tr.step < stop_at and time.time() < t_end:
             with fla_strict():
                 loss = tr.train_step()
             if tr.step - step0 == CHECK_AFTER_STEPS:  # measured stop condition 2: the real data mix's step time
