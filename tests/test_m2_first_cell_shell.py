@@ -198,7 +198,9 @@ def test_owned_process_proof_fails_closed_when_live_pid_cannot_be_inspected(tmp_
 
 def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     source = JOB.read_text()
-    timed = [line for line in source.splitlines() if not line.lstrip().startswith("#") and re.search(r"\btimeout\s", line)]
+    # an inline comment ("|| fd_export_partial  # timeout / guard stop ...") is not a timeout call
+    timed = [line for line in source.splitlines() if not line.lstrip().startswith("#")
+             and re.search(r"\btimeout\s", re.sub(r"\s#\s.*$", "", line))]
     # terminal, download, guard, heldout, two verify branches, parent loop, cell, evals, report; plus the eval-only
     # fulldev branch (mode fulldev_eval): checkpoint, the arm loop, its report; plus the stage-screen branch (replaces
     # evals + report: screen score, its report; same number of graces per run)
@@ -208,7 +210,7 @@ def test_all_long_phase_timeouts_escalate_within_existing_reserve():
     assert "timeout --kill-after=30s $(cap $PH)m python" in source
     assert all("timeout --kill-after=30s " in line for line in timed)
     assert "timeout --kill-after=30s $(cap cell)m python -m train.run_cell" in source
-    assert "timeout --kill-after=30s $(cap parent_$STAGE)m python" in source
+    assert "timeout --kill-after=30s $(cap parent_$PSTAGE)m python" in source
     assert "timeout --kill-after=30s $(cap evals)m python" in source
     assert "timeout --kill-after=30s 60s bash -c" in source
     assert 'exec python "$CODE/jobs/common/finalize.py"' in source
@@ -825,6 +827,7 @@ gate() { :; }
 cap() { echo 1; }
 fail() { echo "FAIL($1): $2"; exit "$1"; }
 export_phase() { :; }
+STAGE=gates
 ''' + block + '\necho TRAINING_REACHED\n', encoding="utf-8", newline="\n")
     env = {**os.environ, "CUDA_VISIBLE_DEVICES": "", "PYTHONDONTWRITEBYTECODE": "1",
            "PATH": os.pathsep.join([str(bin_dir), str(Path(bash).parent), os.environ["PATH"]]),
