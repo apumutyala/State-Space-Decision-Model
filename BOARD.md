@@ -23,6 +23,7 @@
 | 9 | D13 full DEV vs Clef (shards job-3z2m7 + job-hc6wp) → land_fulldev, B rescore | evidence | B | running |
 | 10 | D18 job-i8mcp / D19 job-fi5xf screens (joint head + v2e/v3b data) | lead | A | running |
 | 11 | D13 safety battery job-4yedh; heldout_v1 Clef arms | evidence | B | running / partly done |
-| 12 | HANDOFF.md finalised → operator starts the two new agents | both | A+B | drafting |
+| 12 | HANDOFF.md finalised → operator starts the two new agents | both | A+B | DONE (all gates merged) |
+| 13 | D20 chained 3-link run (D19 recipe on v4 minus phish, 1,694 training min): link 1 job-7d3u9 running → package links 2 and 3 from JOB_SPEC "D20" | lead | new lead | running |
 
 Proposals: append below this line (one line each); only the lead reorders.
