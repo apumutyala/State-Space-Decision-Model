@@ -40,7 +40,10 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--records", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--generator", default="data.jev1", help="module whose GEN_SPECS are checked (data.jev2 for jev2)")
     a = ap.parse_args(argv)
+    import importlib
+    gen_mod = importlib.import_module(a.generator)
     _ensure_kit()
     from harness import heldout as H
 
@@ -95,12 +98,13 @@ def main(argv=None) -> int:
             _ = dedup_keys
     frozen = H.check_files([a.records])
     gens = {}
-    for k, spec in jev1.GEN_SPECS.items():
+    for k, spec in gen_mod.GEN_SPECS.items():
         H.check_generator(spec)
         gens[k] = "ok"
     d1 = D1.scan_records(a.records)
     d1["n_hits"] = len(d1.get("hits") or [])
-    rep = {"records": a.records, "n": n, "fails": dict(c), "fail_ids": {k: v[:50] for k, v in bad.items()},
+    rep = {"records": a.records, "generator": a.generator, "n": n, "fails": dict(c),
+           "fail_ids": {k: v[:50] for k, v in bad.items()},
            "cohort_identity": ex["identity"],
            "index_fingerprint": {k: fp.meta.get(k) for k in ("version", "npz_sha256", "arrays_sha256", "rows")},
            "harness_heldout": frozen, "generators": gens,
