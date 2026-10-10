@@ -92,7 +92,7 @@ def test_ran_ledger_entry_is_not_double_counted(tmp_path):
     assert led["branches"][c]["spend_plus_worst"] == round(base["branches"][c]["spend_plus_worst"] - lora, 2)
     assert led["branches"][c]["m1"] == base["branches"][c]["m1"]  # the System 1 line total stays the full worst case
     real = costs.branch_ledger()  # committed repo receipts: probe9b, full8, qual, rwkv7 A, Clef subset have run
-    assert {"probe9b", "full8", "qual", "rwkv7_readout", "clef_index_subset"} <= set(real["ran"])
+    assert {"probe9b", "full8", "qual", "rwkv7_readout", "clef_index_subset", "clef_index_full_reference"} <= set(real["ran"])
     assert real["ran"]["full8"]["actual_usd"] == 26.34 and real["ran"]["probe9b"]["actual_usd"] == 5.01
 
 

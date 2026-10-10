@@ -144,8 +144,11 @@ OTHER = {"clef_baseline_B": round(600 * rates.BATCH_USD_PER_MIN, 2)}
 JOINT_GATE_JOBS = ("qual",)
 #: Clef-27B Index measurement (subset canary, full DEV, Clef-flash 32k over-length sensitivity): re-priced at the
 #: card's 5.39x latency ratio after the PR #98 review, which puts it past the $75 joint-gate line; the coordinator
-#: authorised that budget (2026-10-07, PR #98 review). Counted in the envelope, reported separately from the joint line.
-CLEF27B_INDEX_JOBS = ("clef_index_subset", "clef_index_full", "clef_overlength_flash")
+#: authorised that budget (2026-10-07, PR #98 review). Counted against granted credit, reported apart from the joint line.
+#: the full-DEV slot is clef_index_full_reference (GDN=reference, JOB_SPEC 4d): job-jxevr (index_full, fast GDN) failed
+#: kernel_path at S1 and the line moved to the reference job (job-zfexa), so the line counts its $49.90 worst case
+#: (PR #241 review B, 2026-10-10; it counted clef_index_full at $29.86 before)
+CLEF27B_INDEX_JOBS = ("clef_index_subset", "clef_index_full_reference", "clef_overlength_flash")
 #: optional m2 distillation teachers (System 1 line, only if a distillation cell is approved)
 TEACHER_JOBS = ("clef_teacher_flash", "clef_teacher_clef")
 FULL8_BUDGET = 150.0  # PLAN.md / DECISION_TREE branch A: ~$150 for the full conversion; priced in jobs/full8 (worst case)
@@ -294,13 +297,12 @@ def next_jobs_after_full8(verdict: str | None, exit_code: int | None = 0) -> lis
 #: listed id is terminal in a committed job receipt (receipts/**/job-<id>.json, `autor job get --json`); a RAN entry
 #: counts 0 toward committed worst cases, because its actual cost is already inside SPENT_USD (the ledger reports that
 #: actual for reference). Usage receipts list top jobs without a status, so they cannot mark a job terminal on their
-#: own. An empty list = not run. clef_index_full is NOT marked: job-jxevr failed at S1 (exit 11) and its work moved to
-#: clef_index_full_reference, which has not run.
+#: own. An empty list = not run.
 LEDGER_JOB_IDS: dict[str, list[str]] = {
     "qual": ["job-jbw22", "job-c4zkm", "job-4j3vu"],  # v1, v2 (A+B pass, C OOM), C-only re-run PASS
     "clef_baseline_B": [],
     "clef_index_subset": ["job-5mw9h", "job-d2u54"],  # failed canary, then the succeeded subset run
-    "clef_index_full": [],
+    "clef_index_full_reference": ["job-jxevr", "job-zfexa"],  # index_full fast-GDN attempt (failed S1), reference run
     "clef_overlength_flash": [],
     "probe9b": ["job-5cmat"],
     "full8": ["job-2xe5w"],

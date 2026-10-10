@@ -1,0 +1,43 @@
+{
+ "object": "job",
+ "job_id": "job-zfexa",
+ "status": "succeeded",
+ "label": "clef_baseline/index_full_reference @ ctx edf2f755aaa1",
+ "chip": {
+  "count": 1,
+  "model": "h100"
+ },
+ "max_restarts": 0,
+ "submitted_at": "2026-10-08T11:20:11.607812+00:00",
+ "finished_at": "2026-10-08T13:41:12.736785+00:00",
+ "attempt_history": [
+  {
+   "attempt": 1,
+   "end_cause": "process_exit",
+   "end_reason": null,
+   "ended_at": "2026-10-08T13:41:12.736785+00:00",
+   "outcome": "completed",
+   "started_at": "2026-10-08T11:39:35.943756+00:00"
+  }
+ ],
+ "receipt": {
+  "attempts": [
+   {
+    "attempt": 1,
+    "billed_seconds": 7296,
+    "charged_usd_micros": 7660800,
+    "gpu_count": 1,
+    "rate_usd_micros_per_gpu_minute": 63000
+   }
+  ],
+  "billed_attempts": 1,
+  "billed_seconds": 7296,
+  "charged_usd_micros": 7660800,
+  "image_digest": "sha256:f3fa4fbfef30591a71ae36d9db31147662e946cd2fd2f623b9b34e7eb41e248d"
+ },
+ "_capture": {
+  "command": "autor --workspace default job get job-zfexa --json",
+  "captured_at_utc": "2026-10-10T05:50:33Z",
+  "fields": "subset (artifact download links, logs, results and preflight omitted)"
+ }
+}
