@@ -245,8 +245,11 @@ def test_size_guard_reserves_room_for_the_final_export(tmp_path):
 def test_job_script_never_copies_the_full_checkpoint_to_output():
     s = (Path(__file__).resolve().parents[1] / "jobs/m2_first_cell/first_cell_job.sh").read_text(encoding="utf-8")
     assert 'cp "$CK/cell/$LATEST"' not in s
-    assert "train.ckpt_export inference" in s and s.count("size_guard.py") == 2
-    assert s.count('--evict-dir "$CK/evicted"') == 2 and "--rename-only" in s and "--reserve-final" in s
+    # 3 guards: the end-of-run one, the finalize one, and an intermediate chain link's (train.chain export is the ONLY
+    # path that puts a full .pt in /output: refused in setup when it cannot fit the 5 GiB artifact, re-checked against
+    # its byte budget at export; tests/test_chain.py)
+    assert "train.ckpt_export inference" in s and s.count("size_guard.py") == 3
+    assert s.count('--evict-dir "$CK/evicted"') == 3 and "--rename-only" in s and "--reserve-final" in s
     assert "$WORK/evicted" not in s  # never evict into scratch that does not outlive the job
 
 

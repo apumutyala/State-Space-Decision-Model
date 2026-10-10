@@ -368,6 +368,33 @@ Reference point on the proxy: D1 + v3w child 37.71 against stock v3w parent 27.3
 
 The 26 min child estimate is D1's v1 rate. The v3w prompts are longer, so the screen cap (60 min) keeps margin.
 
+## Params `"chain"`: one training run over several jobs (`train/chain.py`)
+
+An SF job is capped at 899 min and a single-job cell trains ~380 of them. A chained cell is ONE run (one shared cell
+config: `max_minutes` = the TOTAL training clock, `max_steps` the global cap) carried over N jobs. The platform keeps
+one checkpoint slot per job (a new job starts empty), so the state travels in each link's /output artifact.
+
+- Params per link: `"cell_config"` = the shared config (not `m2_first_cell_rwkv7_<mode>.json`) and
+  `"chain": {"link": k, "of": N, "from": {"job", "artifact", "artifact_sha256", "manifest_sha256", "url_env"}}`
+  (`from` for k >= 2: `artifact_sha256` from `get_job` artifact.sha256, `manifest_sha256` from link k-1's declared
+  result `decision.manifest_sha256`; the presigned `get_artifact` URL goes into the submit env at submit time).
+  `python -m train.chain plan --base-params <single-job params> --of N` prints every link's phase caps (caps +
+  reserve = 899) and training minutes.
+- Link k < N: setup (+ `train.chain check`: the export must fit the 5 GiB artifact), guard, heldout (and the draw's
+  attack / doc-overlap gates in the cell) as in every cell job; k >= 2: phase `chain` installs link k-1 (exit 10 on
+  any pin / chain id / link order / cell config mismatch); cell trains until the JOB's deadline (max_duration - time
+  used - post-cell caps - reserve, minus 8 min tail); phase `chain_export` writes /output/chain (CHAIN.json, the
+  latest full .pt, the best .pt full or trainable-only, latest.json, cell.json); result = `out/chain_link.json`. No
+  parent arm, no screen / evals, no inference export.
+- Link N: install link N-1, train the rest of the global clock (to its deadline at most), then the mode's stage.
+- Resume is exact: config hash + lineage at `Trainer.load` (exit 29), cosine horizon fixed once in link 1 from the
+  global clock, data cursor / optimizer / scheduler / RNG / dev cards / best / collapse-guard window in the checkpoint,
+  `train_clock` and the eval cards in cell.json (`tests/test_chain.py`: a 2-link chain equals one run bit for bit).
+- Size (D18 recipe, joint_record head 5,466,114 params): r64 = 293,300,226 trainable -> latest 3.52 GB + slim best
+  1.17 GB = 4.69 GB, fits; r256 = 1,156,802,562 -> 13.9 GB latest alone, refused in setup (needs a bucket transport).
+  A best that is carried trainable-only scores identically; only a collapse-guard rollback to it keeps the current
+  AdamW moments (recorded in the collapse event).
+
 ## Re-pricing 2026-10-09: H100 batch $0.0495 -> $0.063/min
 
 SF Compute raised the H100 list price $3.96 -> $5.04/h on 2026-10-08; jobs now bill $0.063 per GPU-minute (Mon-Thu and weekends; Fridays $0.05628) and the preflight quotes max_duration x $0.063. Evidence and history: `jobs/common/rates.py`. The dollar figures above this section are at the old $0.0495/min and stay as written (receipts and past decisions used them); the numbers below are the current ones (`python -m jobs.common.costs`). Where a hard cap was raised, it was raised by the same ratio as the rate (x 0.063/0.0495 = x 14/11, rounded up to the cent), so the cap still buys the same minutes.
