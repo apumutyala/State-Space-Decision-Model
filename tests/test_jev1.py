@@ -48,6 +48,7 @@ def test_model_routing_gold_is_cheapest_eligible():
         ok = [m for m in st["model_catalog"] if m["context_tokens"] >= req["input_tokens"]
               and set(req["required_capabilities"]) <= set(m["capabilities"])
               and m["p50_latency_ms"] <= req["max_p50_latency_ms"] and m["quality_tier"] >= req["min_quality_tier"]]
+        q = r["questions"]["q"]
         if q["type"] == "noul":
             assert (r["labels"]["q"] == "true") == bool(ok)
         else:
@@ -60,6 +61,7 @@ def test_option_order_shuffled_uniformly():
     pos = collections.Counter()
     for i in range(600):
         r = J._ticket_route(i)
+        q = r["questions"]["q"]
         if q["type"] == "choice":
             ids = list(q["criteria"])
             pos[ids.index(r["labels"]["q"]) * 4 // len(ids)] += 1
@@ -89,18 +91,15 @@ def test_access_policy_p5_overrides_only_p1_p4():
     for i in range(3000):
         r = J._access_policy(i)
         req = r["state"]["access_request"]
-        pol = r["state"]["access_policy"]
-        banned = pol[1].split("Purposes ", 1)[1].split(" are never")[0].split(" and ")
-        lvl = J.DATA[req["data_class"]]
+        banned = r["state"]["access_policy"][1].split("Purposes ", 1)[1].split(" are never")[0].split(" and ")
         if (req["role"] == "auditor" and req["open_audit_ticket"] and req["purpose"] == "annual_audit"
-                and lvl >= 2 and req["purpose"] in banned):
+                and J.DATA[req["data_class"]] >= 2 and req["purpose"] in banned):
             assert r["labels"]["q"] in ("false", "deny_purpose"), r["id"]
 
 
 def test_leave_blackout_allows_emergency():
     for i in range(3000):
-        rr = J.rng("lp-test", i)
-        _, case, gold = J._lp_leave(rr)
+        _, case, gold = J._lp_leave(J.rng("lp-test", i))
         if case["blackout"] and case["emergency"] and case["requested_days"] <= 2:
             assert gold["ok"] and gold["why"] == "L7"
         if case["blackout"] and not case["emergency"]:
