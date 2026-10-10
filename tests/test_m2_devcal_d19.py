@@ -143,8 +143,8 @@ def _mode_env(params: dict, tmp_path):
 
 def _priced_stages(params: dict, eval_only: str, stage: str) -> list[str]:
     """The phase caps first_cell_job.sh's setup preflight looks up (the EVAL_PRICES loop), per branch."""
-    if eval_only in ("fulldev", "devcal"):
-        return []  # fulldev: fulldev_eval estimate; devcal: fixed phase caps only; neither prices a parent arm
+    if eval_only in ("fulldev", "devcal", "ragtruth_rephrase"):
+        return []  # fulldev: fulldev_eval estimate; devcal / ragtruth_rephrase: own preflights; no parent arm priced
     priced = ["parent_g12", "parent_index", "evals"]
     return priced[:2] if stage == "screen" else priced
 
