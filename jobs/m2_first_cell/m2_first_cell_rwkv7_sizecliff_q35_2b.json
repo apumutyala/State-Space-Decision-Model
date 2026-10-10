@@ -1,0 +1,130 @@
+{
+ "_comment": "sizecliff_q35_2b (Qwen3.5-2B size-cliff arm, A-PREREG-SIZECLIFF (PREREG.md on origin/state, agent-a 2026-10-09 ~23:20Z, registered before any run): same recipe, same data draw, same LoRA rank and clock on Qwen/Qwen3.5-0.8B, -2B, -4B; screen = proxy600 (paired vs the D1+v3w reference and the Clef-flash / Clef 27B units) + jevkit on the 231 public JevBench items; the 4B is also rescored with the lean template. LiquidAI/LFM2.5-2.6B-Base is NOT an arm: transformers' Lfm2ShortConv cached path is single-token decode only (causal_conv1d_update / one conv step once the cache holds a state), so the cache fork (prefix once, K continuations in one call) is not exact for it without a new conv-state continuation patch + a GPU fork==recompute check (jobs/m2_first_cell/JOB_SPEC.md).) The D16 recipe exactly as q9af_v2_v3w carries it (v3w-generic readout, LS-CE+Brier+RPS loss arm clef, fork head, LoRA r64, cosine LR, dev cards + best-ckpt, collapse guard, train_max_k 255, T ladder, the B1 100k-v2 attack_clean v2 + doc_clean 14-id cleaned pool of 94,786 records = D16's pins @3e7142c) on the STOCK Qwen/Qwen3.5-2B@15852e8c16360a2fea060d615a32b45270f8a8fc (parent qwen35: no GDN conversion, no q9af pins; attention layers kept, LoRA on GDN + attention + MLP). Changes vs q9af_v2_v3w: parent / qwen35 block / template jrt-v3w-generic:qwen3.5-2b (the same v3w body + Qwen chat turn on this size's own tokenizer files, pinned identity), the clock 100 min (identical across the arms; the cosine horizon follows the clock-projected final step) and max_steps 20,000 (never binds: the clock does).",
+ "seed": 0,
+ "head": "fork",
+ "head_kwargs": {},
+ "layout": "g1v2",
+ "template": "jrt-v3w-generic:qwen3.5-2b",
+ "loss_arm": "clef",
+ "lora_rank": 64,
+ "lr_head": 0.0003,
+ "lr_lora": 0.0001,
+ "warmup_steps": 50,
+ "batch_size": 1,
+ "grad_accum": 8,
+ "max_k": 16,
+ "t_ladder": [
+  512,
+  1024,
+  2048
+ ],
+ "n_train_records": 94786,
+ "n_eval_records": 0,
+ "min_train_items": 5000,
+ "max_steps": 20000,
+ "max_minutes": 100,
+ "min_steps": 600,
+ "ckpt_every": 400,
+ "eval_every": 100000,
+ "tokenize_workers": 8,
+ "smoke": {
+  "rows": 2,
+  "max_k": 4,
+  "max_t": 512,
+  "lora_rank": 8,
+  "max_rel_feature_diff": 0.03,
+  "min_grad_cos": 0.99
+ },
+ "pass_rule": {
+  "window": 100,
+  "loss_drop_frac_min": 0.05,
+  "max_peak_gb": 76
+ },
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "require_guard_readiness": true,
+ "calibration_role": "calibration",
+ "parent": "qwen35",
+ "eval_max_t": 2048,
+ "train_set": {
+  "pointer": "data/manifests/b1-draw100k-v2.pointer.json",
+  "heldout_excluded": {
+   "ids": [],
+   "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+   "reason": "B1 drops the three D1-B soft_framing hits of the 150k set (m2:mmlu_aux:21118/39640/39643) at build (exclusion-check.json D1-B scan 0), so the pinned list is empty and the heldout phase passes only if the whole 100k set has 0 train.heldout hits (exit 33 otherwise)."
+  },
+  "attack_clean": {
+   "draw": "b1-draw100k-v2",
+   "excluded_ids_sha256": "c6a667e5d38208ac739e65b66834f3b3a751919598cf7abeaece9b8c951257e8",
+   "filter": "drop every record with any attack_guard hit (train.attack_guard.record_hits)",
+   "n_excluded": 5201,
+   "n_kept": 94799,
+   "n_records": 100000,
+   "per_set": {
+    "d1a_steer": 5201
+   },
+   "per_template": {
+    "d1a_steer:authority": 1322,
+    "d1a_steer:fake_correction": 1283,
+    "d1a_steer:system_note": 1275,
+    "d1a_steer:urgency": 1321
+   },
+   "records_gz_sha256": "faee5885d0f1c74c9f98562f82b13f087a6142a04b3a55204bd51b4bb2df70d9",
+   "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+   "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+   "source": "data/manifests/attack_clean/b1-draw100k-v2.json",
+   "note": "attack_guard v2 (agent-main 1e647e0) pin of the same 5,201 ids (D16's v1 pin has the v1 templates_sha256 930863...)"
+  },
+  "doc_clean": {
+   "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+   "filter": "drop every row train.doc_overlap_guard.scan FAILS over the whole set",
+   "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+   "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+   "n_records": 100000,
+   "n_excluded": 14,
+   "n_kept": 99986,
+   "excluded_ids_sha256": "e277b794d365c2a3bfdd0a4576840c0a8612ae42e2534666b075d66d1b44850d",
+   "per_source_fail": {
+    "anli": 2,
+    "glaive_fc": 2,
+    "hellaswag": 1,
+    "mmlu_aux": 2,
+    "when2call": 7
+   },
+   "draw": "b1-draw100k-v2",
+   "source": "data/manifests/doc_clean/b1-draw100k-v2.json",
+   "source_sha256": "56f4eb5a6fe7619f005c4a6c565ac064108a787a7933d12b6dabdbeae81d2d96",
+   "note": "doc_overlap_guard 85b5af1 policy (claude/b-doc-overlap-gate, PR #235: template/boilerplate exclusions only for I/O units, allowlist own_sources, R >= 3 covered; index-pin key 0eaf8930..., index_sha256 af096960..., allowlist 556296cc...): the 14 ids in the spec's excluded_ids leave the pool (1 also in attack_clean: m2:when2call:14977~inj:d1a:fake_correction). Supersedes the 10-id pin ebde6aa3 (index 2c821e29)."
+  }
+ },
+ "act_ckpt": true,
+ "row_batch": 1,
+ "row_tokens": 0,
+ "row_plan": "min_cost",
+ "cont_plan": "single",
+ "compile_blocks": false,
+ "max_minutes_note": "A-PREREG-SIZECLIFF: the SAME 100-min training clock on every arm (relative retention across sizes, not absolute peak); max_steps 20,000 never binds; the cosine horizon is the clock-projected final step (train.run_cell set_horizon). Cell phase cap = 100 + tokenize 10 + load / smoke / ladder 10 + checkpoints / margin 10 = 130.",
+ "min_steps_note": "exit 26 if the measured step time cannot reach 600 optimiser steps (4,800 rows) inside max_minutes: below that the cell is not a meaningful first measurement; re-price instead of spending the evals",
+ "lora_rank_note": "r=64 on every arm (A-PREREG-SIZECLIFF: same LoRA rank); targets = every GDN in_proj_qkv / in_proj_z / out_proj, every attention q / k / v / o and every MLP projection (stock hybrid, heads.backbone.qwen35_spec from config.json)",
+ "variant": "sizecliff_q35_2b",
+ "train_max_k": 255,
+ "row_options": 160,
+ "train_max_k_note": "D8 code (#221 on agent-main): K cap of the training items only (train.run_cell.train_max_k; cell_items default, also used by the m2_gates lineage rebuild); max_k 16 remains the eval cap (train.m2_gates.unit_spec, run_cell eval_items). B1 100k-v2 carries rows with > 16 options (BANKING77 77-option catalogs, Glaive catalog views K 17-27), which max_k 16 alone would drop.",
+ "row_options_note": "execution guard (train.trainer.row_groups / single_cont_fits): <= 160 forked continuations per backbone call; a row with K > 160 runs alone, and a step whose summed K exceeds 160 runs per group under cont_plan single. Worst call = 8,192 prefix tokens + 160 copies ~= 53.8 GB (tvuat ladder 1,024 rung) + 80 x <= 87 MB ~= 61 GB < 76 GB stop (D8 sizing). Not in the TrainConfig hash; never binds on K <= 16 steps (8 x 16 = 128).",
+ "lr_schedule": "cosine",
+ "lr_min_frac": 0.1,
+ "dev_card_every": 200,
+ "dev_card_rows": 200,
+ "best_ckpt": true,
+ "collapse_guard": true,
+ "anti_collapse_note": "train/trainer.py TrainConfig anti-collapse fields; each absent key = the old behaviour. lr_schedule and collapse_* are in the config hash; dev_card_* and best_ckpt are operational. Each dev card scores 200 rows (budget it inside max_minutes).",
+ "execution_note": "row_batch 1: one row per backbone call (8 rows / optimiser step via grad_accum 8); act_ckpt true (heads/act_ckpt.py covers Qwen3.5 decoders); the cache fork reads each row's prompt once and forks its K continuations. row_plan / cont_plan / row_options only act with row_batch > 1 (train/trainer.py). The clock binds (max_steps 20,000).",
+ "v3w_note": "generic v3w (decide/v3w_generic.py, PINNED_SPEC_SHA256 'jrt-v3w-generic:qwen3.5-2b'; 255 single-token codes after the Qwen answer prefix, word ids by unique first token, the Qwen3.5 chat template with enable_thinking=False -> empty think block, budget 16,383); bound to the snapshot's own tokenizer files on the box, any other tokenizer or template fails closed. Train rows == readout ids: scripts/check_sizecliff_cpu.py (receipts/2026-10-09-sizecliff/).",
+ "n_train_records_note": "the whole cleaned pool: 100,000 - 5,201 attack_clean (v2) - 14 doc_clean (reviewed doc_overlap_guard, agent-main PR #235; index af096960, allowlist 556296cc; 1 in both: m2:when2call:14977~inj:d1a:fake_correction) = 94,786 (= D16's @3e7142c: CPU train.train_set.draw n_pool 94,786, n_drawn 94,786, doc fails 14 == pinned e277b794...); train.train_set.draw refuses n_train_records > pool (exit 28). Re-pinned from the superseded 10-id spec (ebde6aa3, index 2c821e29; 94,790) and before that the 1,801-row spec (doc-overlap-gate d0cebef, 93,013) to the reviewed spec data/manifests/doc_clean/b1-draw100k-v2.json (sha256 56f4eb5a...).",
+ "qwen35": {
+  "repo": "Qwen/Qwen3.5-2B",
+  "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+  "config_sha256": "ed1c1723241f23f7f4e23430759cbd7dcfb4103cbdfe052bfe7626b57c2615b4",
+  "snapshot_sha256_file": "jobs/m2_first_cell/qwen35_2b_snapshot.sha256",
+  "note": "heads.backbone.qwen35_pin_check (repo@revision in QWEN35_STOCK + config.json sha256) before the tokenizer or any weight; the runner checks the whole snapshot against the manifest"
+ }
+}

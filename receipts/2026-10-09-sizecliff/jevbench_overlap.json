@@ -1,0 +1,7 @@
+{
+ "what": "word 13-gram overlap (lowercased [a-z0-9]+ tokens of state, instructions, criteria) between the 231 pinned public JevBench items (jevkit.items.load_public, commit b6b8fff7) and every record of the B1 100k-v2 pool (records.jsonl.gz, 100,000 records, a superset of the 94,786 drawn)",
+ "jevbench_13grams": 60128,
+ "records_scanned": 100000,
+ "items_with_any_hit": 0,
+ "note": "the doc-overlap index (0eaf8930) does not yet include JevBench rows (jevkit/README.md plan); this is a separate exact-shingle check, run 2026-10-09 on CPU"
+}

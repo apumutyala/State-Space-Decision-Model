@@ -297,7 +297,13 @@ class Backbone:
     hf_repo: str | None = None
     attention_free: bool = True
     note: str = ""
+    #: lean v3w (heads.layout.lean_segments): schema block dropped, the asked question once, LEAN_SYSTEM as system text
+    lean: bool = False
 
+
+#: the lean template's system text (the full v3w's is decide.prompt.G1V2_SYSTEM_PROMPT)
+LEAN_SYSTEM = "Answer with exactly one option."
+_Q35_NOTE = "stock Qwen3.5 (A-PREREG-SIZECLIFF size-cliff arm; parent qwen35, heads.backbone.QWEN35_STOCK)"
 
 BACKBONES: dict[str, Backbone] = {b.id: b for b in [
     Backbone("rwkv7-g1k-13.3b", "rwkv7-g1", "RWKV--RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
@@ -316,6 +322,15 @@ BACKBONES: dict[str, Backbone] = {b.id: b for b in [
              "plain", 32768, "mistralai/Mamba-Codestral-7B-v0.1", note="no chat template in the HF repo"),
     Backbone("xlstm-7b", "xlstm", "NX-AI--xLSTM-7b@9dc507bd0939cf372a4a4f667335651d8e49dddb", "plain", 8192,
              "NX-AI/xLSTM-7b", note="no chat template in the HF repo"),
+    Backbone("qwen3.5-0.8b", "qwen3.5-0.8b", "Qwen--Qwen3.5-0.8B@2fc06364715b967f1860aea9cf38778875588b17",
+             "chat_template", 262144, "Qwen/Qwen3.5-0.8B", False, _Q35_NOTE),
+    Backbone("qwen3.5-2b", "qwen3.5-2b", "Qwen--Qwen3.5-2B@15852e8c16360a2fea060d615a32b45270f8a8fc",
+             "chat_template", 262144, "Qwen/Qwen3.5-2B", False, _Q35_NOTE),
+    Backbone("qwen3.5-4b", "qwen3.5-4b", "Qwen--Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+             "chat_template", 262144, "Qwen/Qwen3.5-4B", False, _Q35_NOTE),
+    Backbone("qwen3.5-4b-lean", "qwen3.5-4b-lean", "Qwen--Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+             "chat_template", 262144, "Qwen/Qwen3.5-4B", False,
+             _Q35_NOTE + "; LEAN template (rescore only): schema dropped, question once, short system text", lean=True),
 ]}
 
 
@@ -331,6 +346,7 @@ class V3W:
     budget: int
     template_id: str
     control_ids: frozenset[int]
+    lean: bool = False  # heads.layout.lean_segments layout (Backbone.lean)
     _first: dict[str, int | None] = field(default_factory=dict)
     _ctx_ids: list[int] = field(default_factory=list)
 
@@ -354,6 +370,10 @@ class V3W:
         return text[len(_G1_HEAD):len(text) - len(_G1_TAIL)]
 
     def render(self, request: dict[str, Any], qid: str, catalog_chars: int | None, words: frozenset[str]) -> str:
+        if self.lean:  # the lean layout's own text (the same segments heads.layout builds the training row from)
+            from heads.layout import lean_v3w_render
+
+            return lean_v3w_render(request, qid, self, catalog_chars, words)
         if self.is_legacy_rwkv:
             return render_g1v3(request, qid, self.table, catalog_chars, False, True, words)
         return self.fmt.full(self.body(request, qid, catalog_chars, words))
@@ -495,6 +515,8 @@ class V3W:
                  "codes": self.codes, "wordlike_excluded": sorted(WORDLIKE), "budget": self.budget,
                  "catalog": list(CATALOG_CHARS_LADDER), "word_ids": "non-opaque ids, unique first token after ANSWER:",
                  "tokenizer": getattr(self.encode, "identity", lambda: None)()}
+        if self.lean:  # only lean specs carry the key: every existing identity is unchanged
+            value["layout"] = "lean-v3w-1: schema dropped, the asked question once (heads.layout.lean_segments)"
         return {"id": self.template_id, "sha256": sha256_text(canonical_json(value))}
 
 
@@ -530,11 +552,11 @@ def make_v3w(backbone_id: str, tokenizers_root: str | Path | None = None, budget
         return V3W(bb, RWKV_G1, enc, codes, budget, G1V3W_ID, frozenset({0}))
     enc = HFEncoder(tok_dir, name=bb.tokenizer_dir)
     if bb.fmt == "chat_template":
-        fmt = format_from_chat_template(bb.family, tok_dir)
+        fmt = format_from_chat_template(bb.family, tok_dir, **({"system": LEAN_SYSTEM} if bb.lean else {}))
     else:
         fmt = plain_format(bb.family, (enc.bos_id,) if enc.add_bos and enc.bos_id is not None else ())
     codes = build_code_table(enc, fmt.answer_ctx, V3_MAX_K, bool(require_nospace), enc.control_ids)
-    return V3W(bb, fmt, enc, codes, budget, f"{GENERIC_ID}:{bb.family}", enc.control_ids)
+    return V3W(bb, fmt, enc, codes, budget, f"{GENERIC_ID}:{bb.family}", enc.control_ids, lean=bb.lean)
 
 
 # ------------------------------------------------------------------------------------- trained-cell template registry
@@ -559,6 +581,13 @@ TEMPLATE_BACKBONE = {template_id(b): b for b, bb in BACKBONES.items() if bb.fmt 
 #: table, budget, format): a different tokenizer revision fails closed instead of silently changing the prompt ids.
 PINNED_SPEC_SHA256: dict[str, str] = {
     "jrt-v3w-generic:qwen3.5": "2e4907ee4302d9d196052fc04c5618e88fc8058446644715345eaad93a3a2543",
+    # A-PREREG-SIZECLIFF (stack/qwen35/sizecliff, CPU 2026-10-09, scripts/check_sizecliff_cpu.py): the stock Qwen3.5
+    # small sizes at their pinned revisions (same tokenizer.json as the 9B; the 0.8B / 2B ship another chat-template
+    # file that renders the same system / user / no-think turn) and the 4B lean rescore template
+    "jrt-v3w-generic:qwen3.5-0.8b": "e8388d14ea08851a55aa4d4773bb5f62c16d606380ad70550e237177fdd1d069",
+    "jrt-v3w-generic:qwen3.5-2b": "157905232693fe7c94ecf58ad60b6d279dfcf27f08559b96cf35c00f7f07a206",
+    "jrt-v3w-generic:qwen3.5-4b": "1d871833353051964d15d06a96735fcc1699e051a4cc2518f2310a7abc647068",
+    "jrt-v3w-generic:qwen3.5-4b-lean": "da89e999789870899b46ad3343839df2fa5676af14fca6e55621c3c506968666",
 }
 _SPECS: dict[str, V3W] = {}
 

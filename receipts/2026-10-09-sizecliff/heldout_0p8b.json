@@ -1,0 +1,123 @@
+{
+ "n_texts": 100000,
+ "hits": [],
+ "k_words": 6,
+ "min_words": 4,
+ "templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+ "n_templates": 8,
+ "n_gram_hashes": 70,
+ "skipped_fragments": {
+  "cutoff_window": [
+   " before then."
+  ],
+  "dedup_notice": [
+   "Automated record check: ",
+   "."
+  ],
+  "ledger_settled": [
+   "."
+  ],
+  "planner_decision": [
+   "; do not use ",
+   "."
+  ],
+  "policy_update": [
+   "."
+  ],
+  "sender_followup": [
+   "."
+  ],
+  "soft_framing": [
+   "."
+  ]
+ },
+ "records": "C:\\Users\\apumu\\research\\CHLabs\\ssdm-data\\m2\\build\\b1-draw100k-v2\\records.jsonl.gz",
+ "records_sha256": "faee5885d0f1c74c9f98562f82b13f087a6142a04b3a55204bd51b4bb2df70d9",
+ "pinned_exclusions": [],
+ "pinned_templates_sha256": "7a81287e100f0b6f22455ceb1b774287c3a14876bbdebf7bee4ddf13cc1080d5",
+ "attack_guard": {
+  "rule": "attack_guard/v2: concatenated record text + base64 decodes; 6-gram or exact (4-5 word) fragment, whole-template wildcard (placeholder = 1..30 words, >= 4 fixed words), or fuzzy >= 0.5 of fixed word 3-grams (>= 3); NFKC, Cf removed, Cyrillic+Greek homoglyphs folded, casefold",
+  "templates_sha256": "5e2d6e0151fb13d81f262e8d71ccc9ad13ec0d8576fb6dc7605a0a99bdea8f21",
+  "n_records": 100000,
+  "n_excluded": 5201,
+  "excluded_ids_sha256": "c6a667e5d38208ac739e65b66834f3b3a751919598cf7abeaece9b8c951257e8",
+  "per_set": {
+   "d1a_steer": 5201
+  },
+  "per_template": {
+   "d1a_steer:authority": 1322,
+   "d1a_steer:fake_correction": 1283,
+   "d1a_steer:system_note": 1275,
+   "d1a_steer:urgency": 1321
+  },
+  "n_heldout_excluded_overlap": 0,
+  "per_counts_include_heldout_excluded": true,
+  "check": "hits == pinned exclusions",
+  "pass": true
+ },
+ "doc_overlap_guard": {
+  "n_records": 100000,
+  "n_fail": 14,
+  "per_source_fail": {
+   "anli": 2,
+   "glaive_fc": 2,
+   "hellaswag": 1,
+   "mmlu_aux": 2,
+   "when2call": 7
+  },
+  "per_reason": {
+   "E": 12,
+   "U": 12,
+   "R": 2
+  },
+  "eval_rows_attributed_by_split": {
+   "?": 1,
+   "HELDOUT": 3,
+   "TEST": 2
+  },
+  "eval_rows_union_covered_by_split": {
+   "TEST": 2
+  },
+  "secs": 34.3,
+  "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
+  "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
+  "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
+  "excluded_ids_sha256": "e277b794d365c2a3bfdd0a4576840c0a8612ae42e2534666b075d66d1b44850d",
+  "n_excluded": 14,
+  "allowlist_saved": {
+   "?": {
+    "b1fam_bfcl_synth": 30
+   },
+   "hover-wikipedia-evidence": {
+    "boolq": 2,
+    "clinc150": 2,
+    "glaive_fc": 7,
+    "gsm8k": 5,
+    "hellaswag": 1,
+    "humicroedit_s2": 2,
+    "mmlu_aux": 2,
+    "nq": 7,
+    "winogrande": 2
+   },
+   "anli-wikipedia-premise": {
+    "boolq": 1,
+    "clinc150": 1,
+    "glaive_fc": 3,
+    "gsm8k": 3,
+    "nq": 2
+   },
+   "toolret-public-tool-corpus": {
+    "glaive_fc": 34,
+    "toolace": 393,
+    "when2call": 138
+   },
+   "bright-retrieval-pool": {
+    "winogrande": 2
+   }
+  },
+  "n_heldout_excluded_overlap": 0,
+  "check": "fails == pinned exclusions",
+  "pass": true
+ },
+ "pass": true
+}

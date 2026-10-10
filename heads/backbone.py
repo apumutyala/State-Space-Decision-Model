@@ -312,7 +312,14 @@ class HiddenStateBackbone(nn.Module):
         cache.reorder_cache(torch.zeros(k, dtype=torch.long, device=dev))  # K state copies
         _assign_not_copy(cache)  # HF linear-attention caches write in place, which breaks autograd
         if not uses_cache_params:
-            _refuse_short_continuations_on_fla(last)
+            if cids.shape[1] < MIN_CONT_WIDTH:
+                # single-token continuations (v3w codes / word ids): right-pad the call to MIN_CONT_WIDTH tokens so a
+                # cached GDN layer takes its chunked multi-token path (initial state + conv context, with a backward)
+                # instead of the single-token decode path (fla's fused_recurrent_gated_delta_rule has no backward;
+                # the in-place causal_conv1d_update breaks autograd). Exact: causal, only positions <= last are read,
+                # and the state after the call is dropped. Train and serve take the same kernel path.
+                cids = torch.nn.functional.pad(cids, (0, MIN_CONT_WIDTH - cids.shape[1]), value=self.pad_id)
+            _refuse_short_continuations_on_fla(last, cids.shape[1])
             # past_key_values models (Qwen3.5 hybrid, Q9-AF) continue a cache over several tokens in ONE call; right
             # padding of the continuations is exact (causal; only positions <= last are read; the state is dropped).
             # Replaces cids.shape[1] full-model calls per row (PERF_AUDIT: training / eval-card fork head).
@@ -416,14 +423,19 @@ def fla_installed() -> bool:
     return importlib.util.find_spec("fla") is not None
 
 
-def _refuse_short_continuations_on_fla(last: torch.Tensor) -> None:
+#: the narrowest continuation CALL of the HF cache fork: a 1-token call would take the GDN single-token decode path
+MIN_CONT_WIDTH = 2
+
+
+def _refuse_short_continuations_on_fla(last: torch.Tensor, width: int | None = None) -> None:
     """PR #121 review (non-blocking 1): fail closed BEFORE a training forward whose cache continuation could take the
-    fla single-token recurrent path (no backward). Every continuation must be >= 2 tokens while autograd records on
-    an fla install. The CPU tests use the torch fallback (which has a backward), so this guard is the only thing that
-    would catch it before a paid GPU step. ``jrt-chatml-v1`` continuations are always >= 2 tokens (option id + end)."""
+    fla single-token recurrent path (no backward). The continuation CALL must be >= 2 tokens wide while autograd
+    records on an fla install. The CPU tests use the torch fallback (which has a backward), so this guard is the only
+    thing that would catch it before a paid GPU step. ``_hf_fork`` right-pads single-token continuations (v3w codes)
+    to ``MIN_CONT_WIDTH`` and passes the padded ``width``; without it the longest continuation is the width."""
     if not torch.is_grad_enabled() or not fla_installed():
         return
-    n = int(last.min().item()) + 1
+    n = int(width) if width is not None else int(last.max().item()) + 1
     if n < 2:
         raise RuntimeError(f"cache-fork continuation of {n} token(s) under autograd with fla installed: fla's "
                            "fused_recurrent_gated_delta_rule (the GDN single-token path) has no backward. Use a "
@@ -873,6 +885,77 @@ def load_q9af_backbone(model_dir: str, gdn_ckpt: str, pin: dict, device: str = "
         spec = dataclasses.replace(spec, name="q9af-hybrid", attention_free=False,
                                    hf_id=spec.hf_id + " (HYBRID: " + prov["label"] + ")",
                                    lora_groups=spec.lora_groups + (("attn", _QATTN, kept * 4),))
+    bb = HiddenStateBackbone(text, spec=spec, pad_id=0, fork_mode=fork_mode)
+    bb.provenance = prov
+    return bb
+
+
+# --------------------------------------------------------------------------------------------- stock Qwen3.5 (any size)
+#: The stock Qwen3.5 hybrids a cell may name as parent "qwen35" (A-PREREG-SIZECLIFF): repo -> pinned revision. The
+#: cell config's ``qwen35`` block must name one of these exactly, plus the sha256 of its config.json.
+QWEN35_STOCK = {
+    "Qwen/Qwen3.5-0.8B": "2fc06364715b967f1860aea9cf38778875588b17",
+    "Qwen/Qwen3.5-2B": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "Qwen/Qwen3.5-4B": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+}
+
+
+def qwen35_pin_check(pin: dict, model_dir=None) -> dict:
+    """Lineage pins of a stock Qwen3.5 parent (no conversion, attention layers kept). ``pin`` = the cell config's
+    ``qwen35`` block: ``repo`` / ``revision`` (one of ``QWEN35_STOCK``), ``config_sha256`` (sha256 of the snapshot's
+    config.json; REQUIRED, checked whenever ``model_dir`` is given). Returns the provenance stamped into the backbone
+    identity (lineage, decide revision)."""
+    from pathlib import Path
+
+    repo, rev = pin.get("repo"), pin.get("revision")
+    if QWEN35_STOCK.get(repo) != rev:
+        raise LineageError(f"qwen35 {repo}@{rev} is not a pinned stock Qwen3.5 ({sorted(QWEN35_STOCK)})")
+    cfg_pin = pin.get("config_sha256")
+    if not cfg_pin or len(str(cfg_pin)) != 64:
+        raise LineageError(f"qwen35.config_sha256 is not pinned ({cfg_pin!r})")
+    prov = {"kind": "qwen35-stock", "repo": repo, "revision": rev, "config_sha256": cfg_pin, "attention_free": False}
+    if model_dir is not None:
+        got = _sha256_file(Path(model_dir) / "config.json")
+        if got != cfg_pin:
+            raise LineageError(f"qwen35 config.json sha256 {got} != pinned {cfg_pin}")
+    return prov
+
+
+def qwen35_spec(text_config, name: str, hf_id: str, params: float = 0.0) -> BackboneSpec:
+    """BackboneSpec of a stock Qwen3.5 text model from its config: LoRA on every GDN (in_proj_qkv / in_proj_z /
+    out_proj), every kept attention layer (q / k / v / o) and every MLP; hybrid, so never attention_free."""
+    types = list(text_config.layer_types)
+    n_lin, n_att = types.count("linear_attention"), types.count("full_attention")
+    if n_lin + n_att != len(types):
+        raise LineageError(f"unknown Qwen3.5 layer types {sorted(set(types))}")
+    return BackboneSpec(name=name, family="qwen3.5", hf_id=hf_id, params=params, n_layers=len(types),
+                        d_model=int(text_config.hidden_size),
+                        lora_groups=(("gdn", _GDN, n_lin * 3), ("attn", _QATTN, n_att * 4), ("mlp", _QMLP, len(types) * 3)),
+                        capture="hidden_states", attention_free=False, mfu_assumed=0.35,
+                        notes=f"stock hybrid ({n_lin} GDN : {n_att} attention layers); counts from config.json")
+
+
+def load_qwen35_backbone(model_dir: str, pin: dict, device: str = "cuda", dtype: str = "bfloat16",
+                         fork_mode: str = "cache") -> HiddenStateBackbone:
+    """A stock Qwen3.5 (0.8B / 2B / 4B, ``QWEN35_STOCK``) for m2 training, loaded as ``load_q9af_backbone`` loads the
+    9B (text path of the vision-language checkpoint; vision tower and LM head dropped) WITHOUT any conversion. Pins
+    are checked before any weight is loaded; the provenance goes into ``backbone_identity``."""
+    from transformers import AutoConfig, Qwen3_5ForCausalLM, Qwen3_5ForConditionalGeneration
+
+    prov = qwen35_pin_check(pin, model_dir)
+    place = {} if str(device) == "cpu" else {"device_map": {"": device}}
+    if hasattr(AutoConfig.from_pretrained(model_dir), "text_config"):  # the real snapshot (vision + text)
+        full = Qwen3_5ForConditionalGeneration.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+        text = full.model.language_model
+    else:  # a text-only Qwen3.5 checkpoint (tiny CPU stand-ins)
+        full = Qwen3_5ForCausalLM.from_pretrained(model_dir, dtype=getattr(torch, dtype), **place)
+        text = full.model
+    del full
+    for p in text.parameters():
+        p.requires_grad_(False)
+    size = prov["repo"].split("-")[-1].lower()
+    non_emb = float(sum(p.numel() for n, p in text.named_parameters() if "embed_tokens" not in n))
+    spec = qwen35_spec(text.config, f"qwen3.5-{size}-stock", f"{prov['repo']}@{prov['revision']} (stock hybrid)", non_emb)
     bb = HiddenStateBackbone(text, spec=spec, pad_id=0, fork_mode=fork_mode)
     bb.provenance = prov
     return bb

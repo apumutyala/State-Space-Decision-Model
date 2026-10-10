@@ -30,7 +30,7 @@ from pathlib import Path
 EXIT = {"fork_mismatch": 21, "no_T_fits": 22, "nonfinite": 23, "memory": 24, "data": 25, "too_slow": 26,
         "guard": 27, "cohort": 28, "lineage": 29, "doc_overlap": 34, "config": 35, "fla_fallback": 36,
         "attack": 3}  # attack: an eval attack template in the training rows (train.attack_guard; jobs map 3 -> fail 33)
-PARENTS = ("rwkv7", "q9af")
+PARENTS = ("rwkv7", "q9af", "qwen35")  # qwen35: a stock Qwen3.5 (0.8B / 2B / 4B; heads.backbone.QWEN35_STOCK)
 
 
 def parent_encoder(parent: str, model_dir: str, cfg: dict | None = None):
@@ -41,15 +41,16 @@ def parent_encoder(parent: str, model_dir: str, cfg: dict | None = None):
         from decide.v3w_generic import bind_template, is_generic_template
 
         if is_generic_template(cfg.get("template")):
-            if parent != "q9af":
-                raise ValueError(f"generic v3w template {cfg['template']} is wired for parent q9af only, got {parent!r}")
+            if parent not in ("q9af", "qwen35"):
+                raise ValueError(f"generic v3w template {cfg['template']} is wired for parents q9af / qwen35 only, "
+                                 f"got {parent!r}")
             bind_template(cfg["template"], model_dir)
     if parent == "rwkv7":
         from third_party.rwkv7_hf.tokenization_rwkv7 import Rwkv7Tokenizer
 
         tok = Rwkv7Tokenizer.from_pretrained(model_dir)
         return RwkvSegmentEncoder(tok, set(tok.all_special_ids))
-    if parent == "q9af":
+    if parent in ("q9af", "qwen35"):
         from transformers import AutoTokenizer
 
         from heads.layout import hf_segment_encoder
@@ -72,6 +73,11 @@ def load_parent_backbone(parent: str, model_dir: str, cfg: dict, gdn_ckpt: str |
         return load_q9af_backbone(model_dir, gdn_ckpt, q, device=device, fork_mode="cache",
                                   dtype="bfloat16" if str(device).startswith("cuda") else "float32",
                                   hybrid=bool(q.get("hybrid")))
+    if parent == "qwen35":
+        from heads.backbone import load_qwen35_backbone
+
+        return load_qwen35_backbone(model_dir, cfg.get("qwen35") or {}, device=device, fork_mode="cache",
+                                    dtype="bfloat16" if str(device).startswith("cuda") else "float32")
     raise ValueError(f"parent must be one of {PARENTS}, got {parent!r}")
 CHECK_AFTER_STEPS = 10  # the in-training rate check uses the mean of the first steps actually run
 
@@ -897,6 +903,14 @@ def _main(argv=None, ctx: dict | None = None):
             q9af_pin_check(cfg.get("q9af") or {}, a.gdn_ckpt, a.model_dir)
         except (LineageError, OSError) as e:
             print(f"q9af lineage: {e}", flush=True)
+            return EXIT["lineage"]
+    if parent == "qwen35":  # repo@revision + config.json pins, before tokenizer or weights are touched
+        try:
+            from heads.backbone import qwen35_pin_check
+
+            qwen35_pin_check(cfg.get("qwen35") or {}, a.model_dir)
+        except (LineageError, OSError) as e:
+            print(f"qwen35 lineage: {e}", flush=True)
             return EXIT["lineage"]
     enc = parent_encoder(parent, a.model_dir, cfg)
     from train.g16_card import make_hook as g16_hook

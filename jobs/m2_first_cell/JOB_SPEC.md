@@ -403,3 +403,43 @@ Reference point on the proxy: D1 + v3w child 37.71 against stock v3w parent 27.3
 [5.58, 14.86].
 
 The 26 min child estimate is D1's v1 rate. The v3w prompts are longer, so the screen cap (60 min) keeps margin.
+
+## Modes `sizecliff_q35_0p8b` / `sizecliff_q35_2b` / `sizecliff_q35_4b` (A-PREREG-SIZECLIFF size-cliff probe)
+
+Pre-registration: A-PREREG-SIZECLIFF (PREREG.md on origin/state, agent-a 2026-10-09 ~23:20Z, before any run). Same
+recipe, same data draw, same LoRA rank and clock on the stock Qwen/Qwen3.5-0.8B, -2B and -4B; the 4B is also rescored with
+a lean template. The probe measures RELATIVE retention across sizes, not absolute peak.
+
+- **Recipe** = q9af_v2_v3w's D16 keys unchanged (v3w-generic readout, loss arm clef = LS-CE + Brier + RPS, fork head,
+  LoRA r64, lr 1e-4 / 3e-4, cosine to 0.1x, dev card every 200 on 200 rows + best_ckpt, collapse guard, train_max_k 255,
+  T ladder 512 / 1,024 / 2,048, row_batch 1, act_ckpt). Changes: parent `qwen35` (heads.backbone.load_qwen35_backbone:
+  the stock text model, NO conversion, NO q9af pins; LoRA on every GDN, every kept attention layer and every MLP),
+  template `jrt-v3w-generic:qwen3.5-<size>` (same v3w body + Qwen chat turn, pinned identity per size), clock **100 min
+  on every arm** (max_steps 20,000 never binds; cosine horizon = the clock-projected final step).
+- **Data**: the B1 100k-v2 cleaned pool, n_train_records 94,786 (attack_clean v2 5,201 + doc_clean 14 ids, index
+  af096960, allowlist 556296cc = D16's pins @3e7142c). One draw, identical drawn-id sha256 on every arm.
+- **No parent arm** (`parent_arm: none`, `screen_parent: none`): the runner skips the arm seed and the parent g12 /
+  index phases. The screen pairs the child with the d1_v3w reference (family match) and, cross-readout and never in the
+  verdict, with the Clef-flash (job-t5yg2) and Clef 27B (job-zfexa) decide_32k_substituted units restricted to the
+  proxy rows (`screen_comparators`, shipped and sha-pinned; 59.03 / 64.56 on the proxy).
+- **jevkit** (`jevkit` block): after the proxy rows the same child decider answers the 231 pinned public JevBench items
+  serially (2 untimed warm-ups); the 4B also through a second decider over the same model under
+  `jrt-v3w-generic:qwen3.5-4b-lean`. `screen report` scores each with `jevkit score --public` (open-split Intelligence,
+  Calibration, Speed from in-process latency on the self-hosted lane, Cost at the declared size-class reference price
+  0.8B $0.01/M, 2B $0.02/M, 4B $0.03/M input) and the paired lean - native I / C differences + the adoption rule.
+- **Lean template** (`decide.v3w_generic` backbone `qwen3.5-4b-lean`, `heads.layout.lean_segments`): system text
+  "Answer with exactly one option.", the schema block dropped, state first, the asked question once ("QUESTION:", no
+  re-read field number / question id), options and reply line unchanged. On the 231 public items: 650.5 input tokens
+  per decision on average vs 783.0 (-16.9 %), p50 156 vs 308. The ~460 target is not reachable on these items without
+  cutting the state: the state text alone averages 525 tokens.
+- **Single-token fork continuations**: `HiddenStateBackbone._hf_fork` right-pads 1-token continuation calls (v3w codes)
+  to 2 tokens so a cached GDN layer takes its chunked path (with a backward); fla's single-token
+  fused_recurrent_gated_delta_rule has none. Exact (causal; only the last real position is read).
+- **LiquidAI/LFM2.5-2.6B-Base is not an arm**: transformers' `Lfm2ShortConv` cached path is single-token decode
+  (`causal_conv1d_update` / one conv step once the cache holds a state), so our cache fork (prefix once, K continuations
+  in one call) is not exact for it; it needs a conv-state continuation patch plus a GPU fork == recompute check first.
+
+Schedule per arm: setup 20 + guard 5 + heldout 10 + cell 130 (100 clock + 10 tokenize + 10 load / smoke / ladder + 10
+checkpoints) + screen 45 (fixed 15 + D1's 25.97 proxy minutes = 40.97 <= 0.95 x 45) + report 5 + reserve 7 = 222 min.
+Quoted hold 222 x $0.063 = $13.99 per arm ($41.96 for the three). **Worst case** (60 + 2 x 222) x $0.0495 =
+**$24.95** per arm (hard cap $30). CPU verification: `scripts/check_sizecliff_cpu.py` (receipts/2026-10-09-sizecliff/).

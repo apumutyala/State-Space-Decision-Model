@@ -21,6 +21,17 @@ knobs (job_params, all optional; ``stage`` must be ``"screen"``):
   screen_reference  a REFERENCES preset name (d1_v1, d1_v3w) | a full block | absent = the readout's default preset
   screen_parent     "in_job" | a PARENTS preset name (stock_v3w) | a full block | absent = in_job when the in-job
                     arm's template is the screen's, else the readout's default preset
+  screen_parent "none" (A-PREREG-SIZECLIFF): no parent arm at all (job_params "parent_arm": "none"); the report pairs
+                    the child with the reference and the comparators only (child_minus_parent null)
+  screen_comparators  [{name, shipped, units_sha256, readout_template, source}]: extra pinned per-row results
+                    (e.g. Clef-flash / Clef 27B decide_32k_substituted restricted to the proxy rows), shipped in the
+                    context, covering every proxy row; paired child - comparator in the report (``comparators``). They
+                    are CROSS-readout (each system under its own native readout, labelled) and never enter the verdict
+  jevkit            {price, lean_template (optional)}: after the proxy rows, the same child decider (and, if given,
+                    a second decider on the SAME model under the lean template) answers the 231 pinned public
+                    JevBench items serially (jevkit.systemone, 2 warm-up requests first); the report scores each
+                    with jevkit (open-split Intelligence, Calibration, Speed, Cost at ``price``, tokens per
+                    decision) and pairs lean - native (paired stratified bootstrap of I and C)
   screen_reference_match  "exact" (default) | "family": the reference may be ANOTHER backbone scored under the same
                     readout FAMILY (``readout_family``: jrt-rwkv-g1-v3w and every generic jrt-v3w-generic:<family> are
                     "v3w"), e.g. a Q9-AF v2 cell (generic v3w on the Qwen tokenizer) screened against D1+v3w (RWKV7).
@@ -328,6 +339,8 @@ def load_parent_units(arm_dir: str | Path, arm_sha256: str) -> tuple[dict, str |
 def parent_predictions(ref_rec: dict, arm_dir, arm_sha256) -> tuple[dict, dict]:
     """(parent results, identity) for the screen's readout (fail closed on a readout mismatch)."""
     tpl = ref_rec["readout"]["template"]
+    if ref_rec["parent"].get("source") == "none":  # no parent arm in this job (screen_parent "none")
+        return None, {"source": "none", "readout_template": tpl}
     if ref_rec["parent"].get("source") == "in_job":
         units, t = load_parent_units(arm_dir, arm_sha256)
         if t != tpl:
@@ -363,13 +376,65 @@ def locate_all(params: dict, cfg: dict, data, work, in_job_template: str | None 
     ids = proxy_ids(PROXY)
     ref = locate_reference(reference_block(params, ro["template"]), data, work)
     restrict(read_predictions(ref["path"]), ids, f"reference {ref['artifact']}")
-    pb = parent_block(params, ro["template"], in_job_template)
-    if pb is None:
-        par = {"source": "in_job", "readout_template_required": ro["template"]}
+    if params.get("screen_parent") == "none":
+        if params.get("parent_arm") != "none":
+            raise ScreenError('screen_parent "none" needs job_params "parent_arm": "none"', 5)
+        par = {"source": "none", "readout_template": ro["template"]}
     else:
-        par = {"source": "pinned", **locate_reference(pb, data, work)}
-        restrict(read_predictions(par["path"]), ids, f"parent {par['artifact']}")
-    return {"readout": ro, "reference": ref, "parent": par, "proxy_rows_covered": len(ids)}
+        pb = parent_block(params, ro["template"], in_job_template)
+        if pb is None:
+            par = {"source": "in_job", "readout_template_required": ro["template"]}
+        else:
+            par = {"source": "pinned", **locate_reference(pb, data, work)}
+            restrict(read_predictions(par["path"]), ids, f"parent {par['artifact']}")
+    rec = {"readout": ro, "reference": ref, "parent": par, "proxy_rows_covered": len(ids)}
+    comps = locate_comparators(params, data, ids)
+    if comps:
+        rec["comparators"] = comps
+    jk = jevkit_block(params, ro["template"])
+    if jk:
+        rec["jevkit"] = jk
+    return rec
+
+
+COMP_KEYS = ("name", "shipped", "units_sha256", "readout_template", "source")
+
+
+def locate_comparators(params: dict, data, ids: set[str]) -> list[dict]:
+    """``screen_comparators``: each shipped file with its pinned sha256, covering every proxy row (fail closed)."""
+    out = []
+    for c in params.get("screen_comparators") or []:
+        miss = [k for k in COMP_KEYS if not isinstance(c.get(k), str) or not c[k]]
+        if (miss or not re.fullmatch(r"[0-9a-f]{64}", c["units_sha256"]) or ".." in c["shipped"].split("/")
+                or c["shipped"].startswith("/") or not re.fullmatch(r"[a-z0-9_]+", c["name"])):
+            raise ScreenError(f"screen_comparators entry {c.get('name')!r} malformed (missing {miss})", 5)
+        path = Path(data) / c["shipped"]
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != c["units_sha256"]:
+            raise ScreenError(f"comparator {c['name']}: no shipped {c['shipped']} with the pinned sha256")
+        restrict(read_predictions(path), ids, f"comparator {c['name']}")
+        out.append({**{k: c[k] for k in COMP_KEYS}, "path": str(path), "cross_readout": True})
+    if len({c["name"] for c in out}) != len(out):
+        raise ScreenError("screen_comparators names must be unique", 5)
+    return out
+
+
+def jevkit_block(params: dict, template: str) -> dict | None:
+    """``jevkit``: the price spec (jevkit.meter.parse_price, validated here) and an optional lean template, which must
+    be a registered generic v3w template with a pinned identity, scored beside a generic v3w screen readout."""
+    jk = params.get("jevkit")
+    if not jk:
+        return None
+    from jevkit.meter import PriceError, parse_price
+
+    try:
+        price = parse_price(jk["price"]).to_dict()
+    except (KeyError, PriceError, ValueError) as e:
+        raise ScreenError(f"jevkit.price: {e}", 5) from e
+    lean = jk.get("lean_template")
+    if lean is not None and (not _is_generic(lean) or not template_available(lean) or not _is_generic(template)):
+        raise ScreenError(f"jevkit.lean_template {lean!r}: a pinned generic v3w template (screen readout {template})", 5)
+    return {"price": jk["price"], "price_parsed": price, "lean_template": lean,
+            "items": "jevkit.items.load_public (231 pinned public JevBench items; eval-only)"}
 
 
 # ------------------------------------------------------------------------------------------------ GPU: child
@@ -385,8 +450,11 @@ def score(a) -> int:
         rows, prox = proxy_rows(a.index_rows)
         parent, _ = parent_predictions(rec, a.parent_arm, a.parent_arm_sha256)
         decider, _, ident = load_child(a, temperature=False, readout=(ro["template"], ro["layout"]))
-        pu = {"index_results": restrict(parent, set(prox["run_ids"]), "parent")}
-        plan = G.index_plan_check(decider.decide, rows, pu)  # child refuses exactly the rows the parent refused
+        if parent is None:  # no parent arm: nothing to pair the refusal plan with (recorded)
+            plan = {"skipped": "screen_parent none: no parent arm in this job"}
+        else:
+            pu = {"index_results": restrict(parent, set(prox["run_ids"]), "parent")}
+            plan = G.index_plan_check(decider.decide, rows, pu)  # child refuses exactly the rows the parent refused
     except (ValueError, KeyError, GuardNotReady, CohortLeak, ScreenError, G.IdentityMismatch) as e:
         print(f"identity: {type(e).__name__}: {e}", file=sys.stderr)
         return 10
@@ -420,6 +488,53 @@ def score(a) -> int:
         {"seconds_this_attempt": time.perf_counter() - t0, "rows_this_attempt": len(todo),
          "sum_row_wall_s": sum(float(done[i].get("total_wall_ms") or 0) for i in ids) / 1000}, indent=1),
         encoding="utf-8")
+    if rec.get("jevkit"):
+        return jevkit_answer(rec["jevkit"], decider, a.model_dir, out / "jevkit")
+    return 0
+
+
+JEVKIT_WARMUP = 2  # jevkit.meter.measure's warm-up requests (untimed, not recorded)
+
+
+def jevkit_answer(jk: dict, decider, model_dir: str, out_dir: Path) -> int:
+    """The child's answers to the pinned public JevBench items: ``native`` (the screen's decider) and, with a lean
+    template, ``lean`` (a second decider over the SAME model object and encoder, the lean template bound to this
+    snapshot's tokenizer files and checked against its pinned identity). Serial, one request per item, timed."""
+    from decide import Decider
+    from decide.v3w_generic import bind_template
+    from heads.decide_backend import DecisionModelBackend
+    from jevkit.items import load_public
+    from jevkit.systemone import SystemOneAdapter, run_items
+
+    try:
+        items = load_public()
+    except Exception as e:  # noqa: BLE001 - a missing / changed pinned file is an identity failure
+        print(f"identity: jevkit items: {type(e).__name__}: {e}", file=sys.stderr)
+        return 10
+    arms = {"native": decider}
+    if jk.get("lean_template"):
+        try:
+            bind_template(jk["lean_template"], model_dir)
+        except (KeyError, ValueError) as e:
+            print(f"identity: lean template: {e}", file=sys.stderr)
+            return 10
+        be = decider.backend
+        arms["lean"] = Decider(DecisionModelBackend(be.model, be.encode, template=jk["lean_template"], layout="g1v2",
+                                                    checkpoint=be.checkpoint))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ident = {}
+    for name, dec in arms.items():
+        ad = SystemOneAdapter(dec, kind="decider", model_name=f"child-{name}")
+        for it in items[:JEVKIT_WARMUP]:
+            ad.answer_item(it)
+        t0 = time.perf_counter()
+        recs = run_items(ad, items)
+        with open(out_dir / f"{name}.preds.jsonl", "w", encoding="utf-8", newline="\n") as f:
+            for r in recs:
+                f.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
+        ident[name] = {"decider": dec.revision(), "seconds": round(time.perf_counter() - t0, 2), "n": len(recs),
+                       "status": _count(r["status"] for r in recs)}
+    (out_dir / "identity.json").write_text(json.dumps(ident, indent=1, default=str), encoding="utf-8")
     return 0
 
 
@@ -442,9 +557,10 @@ def build_report(rows: list[dict], prox: dict, child: dict, parent: dict, ref: d
                  parent_ident: dict | None = None) -> dict[str, Any]:
     ids = {r["_evaluation"]["run_id"] for r in rows}
     child = restrict(child, ids, "child")
-    parent = restrict(parent, ids, "parent")
+    parent = None if parent is None else restrict(parent, ids, "parent")
     ref = restrict(ref, ids, f"reference {ref_ident.get('artifact')}")
-    vp, vr = pair(rows, child, parent, B), pair(rows, child, ref, B)
+    nopar = {"candidate": None, "baseline": None, "diff": None, "areas_diff": None}
+    vp, vr = (nopar if parent is None else pair(rows, child, parent, B)), pair(rows, child, ref, B)
     usd = params["batch_usd_per_min"]
     return {
         "schema": SCHEMA, "edition": EDITION, "stage": "screen", "readout": readout,
@@ -457,7 +573,7 @@ def build_report(rows: list[dict], prox: dict, child: dict, parent: dict, ref: d
         "child_minus_parent": vp["diff"], "child_minus_reference": vr["diff"],
         "areas": {"child_minus_parent": vp["areas_diff"], "child_minus_reference": vr["areas_diff"]},
         "status": {"child": _count(r.get("status") for r in child.values()),
-                   "parent": _count(r.get("status") for r in parent.values()),
+                   "parent": None if parent is None else _count(r.get("status") for r in parent.values()),
                    "reference": _count(r.get("status") for r in ref.values())},
         "rule": f"DROP if child - reference < -{DROP_MARGIN} Index points on the proxy (point), else PROMOTE to the "
                 "full subset + full DEV; every arm under the same readout; a screen, never a promotion",
@@ -474,7 +590,7 @@ def collapse_warnings(rows: list[dict], child: dict, parent: dict, ref: dict) ->
     from jobs.common.label_collapse import safe_detect
 
     out = safe_detect(rows, child)
-    out["parent"] = safe_detect(rows, parent)
+    out["parent"] = None if parent is None else safe_detect(rows, parent)
     out["reference"] = safe_detect(rows, ref)
     return out
 
@@ -500,13 +616,106 @@ def report(a) -> int:
         child = read_predictions(Path(a.out_dir) / "child.results.jsonl")
         out = build_report(rows, prox, child, parent, ref, ref_ident, params, a.elapsed_min, a.B,
                            readout=rec["readout"], parent_ident=pid)
+        if rec.get("comparators"):
+            out["comparators"] = comparator_report(rows, child, rec["comparators"], a.B)
+        if rec.get("jevkit"):
+            out["jevkit"] = jevkit_report(rec["jevkit"], Path(a.out_dir) / "jevkit")
     except ScreenError as e:
         print(f"screen: {e}", file=sys.stderr)
         return e.code
     Path(a.out).write_text(json.dumps(out, indent=1), encoding="utf-8")
     print(json.dumps({"verdict": out["verdict"], "child_minus_reference": out["child_minus_reference"]["point"],
-                      "child_minus_parent": out["child_minus_parent"]["point"]}))
+                      "child_minus_parent": (out["child_minus_parent"] or {}).get("point"),
+                      "comparators": {k: v["child_minus_comparator"]["point"]
+                                      for k, v in (out.get("comparators") or {}).items()},
+                      "jevkit": {k: v.get("summary") for k, v in (out.get("jevkit") or {}).get("arms", {}).items()}}))
     return 0
+
+
+def comparator_report(rows: list[dict], child: dict, comps: list[dict], B: int) -> dict:
+    """child - comparator on the proxy rows (frozen scorer), per pinned comparator; cross-readout, never the verdict."""
+    ids = {r["_evaluation"]["run_id"] for r in rows}
+    out = {}
+    for c in comps:
+        p = Path(c["path"])
+        if hashlib.sha256(p.read_bytes()).hexdigest() != c["units_sha256"]:
+            raise ScreenError(f"comparator {c['name']} file sha256 changed since it was located")
+        v = pair(rows, restrict(child, ids, "child"), restrict(read_predictions(p), ids, c["name"]), B)
+        out[c["name"]] = {"comparator": v["baseline"], "child": v["candidate"], "child_minus_comparator": v["diff"],
+                          "source": c["source"], "readout_template": c["readout_template"], "cross_readout": True,
+                          "units_sha256": c["units_sha256"]}
+    return out
+
+
+def jevkit_report(jk: dict, d: Path) -> dict:
+    """jevkit scores of each answered arm (``jevkit score --public``: self-hosted lane, the declared price) and the
+    paired lean - native comparison (the same stratified resamples for both arms; I and C differences)."""
+    import numpy as np
+
+    from jevkit import cli as JC
+    from jevkit import scoring as JS
+    from jevkit.items import load_public
+    from jevkit.systemone import preds_to_answers
+
+    items = load_public()
+    arms, tables, axes = {}, {}, {}
+    for name in ("native", "lean"):
+        if name == "lean" and not jk.get("lean_template"):
+            continue
+        pf = d / f"{name}.preds.jsonl"
+        if not pf.is_file():
+            raise ScreenError(f"jevkit {name} predictions missing ({pf})", 9)
+        rep_path = d / f"{name}.jevkit.json"
+        if JC.main(["score", "--public", "--pred", str(pf), "--price", jk["price"], "--out", str(rep_path)]) != 0:
+            raise ScreenError(f"jevkit score {name} failed", 9)
+        rep = json.loads(rep_path.read_text(encoding="utf-8"))
+        preds = [json.loads(x) for x in pf.read_text(encoding="utf-8").splitlines() if x.strip()]
+        toks = [(p.get("usage") or {}).get("input_tokens") for p in preds]
+        toks = [t for t in toks if isinstance(t, (int, float)) and not isinstance(t, bool)]
+        ci = rep.get("ci95") or {}
+        arms[name] = {"report": rep_path.name, "report_sha256": hashlib.sha256(rep_path.read_bytes()).hexdigest(),
+                      "summary": {"I": rep["axes"]["intelligence"], "C": rep["axes"]["calibration"],
+                                  "S": rep["axes"]["speed"], "K": rep["axes"]["cost"],
+                                  "capability": rep["capability"], "composite": rep["scores"],
+                                  "intelligence_basis": rep["intelligence"].get("basis"),
+                                  "I_ci95": ci.get("I"), "C_ci95": ci.get("C"),
+                                  "usd_per_1000": (rep.get("cost") or {}).get("usd_per_1000"),
+                                  "input_tokens_per_decision": {"mean": float(np.mean(toks)) if toks else None,
+                                                                "p50": float(np.median(toks)) if toks else None,
+                                                                "n": len(toks)},
+                                  "speed": rep.get("speed"),
+                                  "status": _count(p.get("status") for p in preds)}}
+        tables[name] = JS.build_table(items, preds_to_answers(preds))
+        axes[name] = (rep["axes"]["speed"], rep["axes"]["cost"])
+    out = {"price": jk["price_parsed"], "lean_template": jk.get("lean_template"), "arms": arms,
+           "note": "open split only (the 231 pinned v1.2 public items, not the v1.6.1 P300 draw): Intelligence basis "
+                   "open-only, no gap penalty; latency in-process on this H100 (self-hosted x2 + 0.15 s lane)"}
+    if "lean" in tables:
+        rng = np.random.default_rng(16)
+        st = JS.strata(tables["native"])
+        di, dc = [], []
+        for _ in range(1000):  # the same stratified resample for both arms: paired I / C differences
+            idx = np.concatenate([rng.choice(s, size=len(s), replace=True) for s in st])
+            ln = JS.aggregate(tables["lean"], idx, detail=False)
+            nt = JS.aggregate(tables["native"], idx, detail=False)
+            di.append(ln["intelligence"]["I"] - nt["intelligence"]["I"])
+            dc.append(ln["calibration"]["score"] - nt["calibration"]["score"])
+        sl, sn = arms["lean"]["summary"], arms["native"]["summary"]
+        tl, tn = sl["input_tokens_per_decision"]["mean"], sn["input_tokens_per_decision"]["mean"]
+        drop = (tn - tl) / tn if tl is not None and tn else None
+        out["lean_minus_native"] = {
+            "I": sl["I"] - sn["I"], "I_ci95": [float(np.percentile(di, 2.5)), float(np.percentile(di, 97.5))],
+            "C": sl["C"] - sn["C"], "C_ci95": [float(np.percentile(dc, 2.5)), float(np.percentile(dc, 97.5))],
+            "tokens_mean_drop_frac": drop,
+            "composite_pairs": JS.bootstrap({"lean": tables["lean"], "native": tables["native"]}, axes).get("_pairs"),
+            "rule": "A-PREREG-SIZECLIFF: lean adopted iff jevkit-I drops <= 1 point (paired) while tokens drop >= 25%",
+            "adopt": bool(sl["I"] - sn["I"] >= -1.0 and drop is not None and drop >= 0.25)}
+    return out
+
+
+def _no_parent(d: dict) -> bool:
+    """A screen run without a parent arm (screen_parent "none"): its parent fields are null by construction."""
+    return (d.get("parent_identity") or {}).get("source") == "none" and d.get("child_minus_parent") is None
 
 
 def valid_result(d: Any) -> bool:
@@ -515,8 +724,9 @@ def valid_result(d: Any) -> bool:
         fin = lambda x: isinstance(x, (int, float)) and math.isfinite(x)  # noqa: E731
         tpl = (d.get("readout") or {}).get("template")
         return (d.get("schema") == SCHEMA and d.get("measured") is True and d.get("verdict") in ("DROP", "PROMOTE")
-                and all(fin(d[k][f]) for k in ("child", "parent_stock_readout", "reference", "child_minus_parent",
-                                               "child_minus_reference") for f in ("point", "lo", "hi"))
+                and all(fin(d[k][f]) for k in ("child", "reference", "child_minus_reference")
+                        + (() if _no_parent(d) else ("parent_stock_readout", "child_minus_parent"))
+                        for f in ("point", "lo", "hi"))
                 and sum(d["status"]["child"].values()) == d["proxy"]["rows"]
                 and d["verdict"] == verdict(d["child_minus_reference"]["point"])
                 and bool(tpl) and same_readout(d["reference_identity"].get("readout_template"), tpl,

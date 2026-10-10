@@ -181,8 +181,14 @@ say "setup"
 # launch by scripts/fill_conversion_pins.py), --parent q9af --gdn-ckpt for every scoring / training step. rwkv7: unchanged.
 PARENT=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("parent", "rwkv7"))' "$CELL") || fail 5 "cell config parent"
 GDN_ARGS=()
-case "$PARENT" in rwkv7) ;; q9af) GDN_ARGS=(--gdn-ckpt "$DATA/gdn/gdn_converted.pt") ;; *) fail 5 "cell parent $PARENT: rwkv7 or q9af" ;; esac
-[ "$PARENT" = q9af ] && [ "$EVAL_ONLY" != none ] && fail 5 "eval_only modes are rwkv7-only"
+case "$PARENT" in rwkv7) ;; q9af) GDN_ARGS=(--gdn-ckpt "$DATA/gdn/gdn_converted.pt") ;; qwen35) ;;
+  *) fail 5 "cell parent $PARENT: rwkv7, q9af or qwen35" ;; esac
+[ "$PARENT" != rwkv7 ] && [ "$EVAL_ONLY" != none ] && fail 5 "eval_only modes are rwkv7-only"
+# params "parent_arm" (default in_job): "none" = no parent arm at all (A-PREREG-SIZECLIFF size-cliff arms, stage screen
+# only, screen_parent "none"): no arm seed, no parent g12 / index phases, the screen pairs child vs reference + comparators
+PARENT_ARM=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1])).get("parent_arm", "in_job"))' "$PARAMS") || fail 5 "job_params parent_arm"
+case "$PARENT_ARM" in in_job) ;; none) [ "$STAGE" = screen ] || fail 5 "parent_arm none needs stage screen" ;;
+  *) fail 5 "job_params parent_arm $PARENT_ARM: in_job or none" ;; esac
 cp "$CONTEXT_MANIFEST" "$WORK/out/" || fail 5 "no context manifest"
 nvidia-smi > "$WORK/out/nvidia-smi.txt" || fail 5 "nvidia-smi"
 # WKV = the fla name if EITHER rwkv7_wkv (scoring) or train_rwkv7_wkv (training steps only) is fla, else rwkv7_wkv
@@ -251,6 +257,19 @@ if [ "$PARENT" = q9af ]; then
   # the generic v3w spec on THIS snapshot's tokenizer files == the pinned identity (decide.v3w_generic.PINNED_SPEC_SHA256)
   python -X utf8 -c 'import json,sys; from decide.v3w_generic import bind_template; c=json.load(open(sys.argv[1])); print(json.dumps(bind_template(c["template"], sys.argv[2]).identity()))' \
     "$CELL" "$SNAP" > "$WORK/out/v3w-spec.json" 2> "$WORK/logs/v3w-spec.log" || fail 10 "v3w spec identity: $(tail -1 "$WORK/logs/v3w-spec.log")"
+elif [ "$PARENT" = qwen35 ]; then
+  # a stock Qwen3.5 (heads.backbone.QWEN35_STOCK): repo@revision and the snapshot manifest from the cell's qwen35 block;
+  # the config.json pin (heads.backbone.qwen35_pin_check) and the generic v3w spec identity before any weight is loaded
+  read -r Q35_REPO Q35_REV Q35_SHA <<< "$(python -I -c 'import json,sys; q=json.load(open(sys.argv[1]))["qwen35"]; print(q["repo"], q["revision"], q["snapshot_sha256_file"])' "$CELL")" \
+    || fail 5 "cell config qwen35 block"
+  SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'import sys; from huggingface_hub import snapshot_download as s; print(s(sys.argv[1], revision=sys.argv[2]))' "$Q35_REPO" "$Q35_REV"); r=$?
+  case $r in 0) ;; 124|137) fail 7 "download timeout" ;; *) fail 10 "download" ;; esac
+  ( cd "$SNAP" && sha256sum -c "$CODE/$Q35_SHA" ) > "$WORK/out/snapshot-verify.txt" 2>&1 || fail 10 "qwen35 snapshot sha256 ($Q35_REPO@$Q35_REV)"
+  python -X utf8 -c 'import json,sys; from heads.backbone import qwen35_pin_check; c=json.load(open(sys.argv[1])); print(json.dumps(qwen35_pin_check(c["qwen35"], sys.argv[2])))' \
+    "$CELL" "$SNAP" > "$WORK/out/label.json" 2> "$WORK/logs/pin.log" || fail 10 "qwen35 pin: $(tail -1 "$WORK/logs/pin.log")"
+  say "parent: stock $Q35_REPO@$Q35_REV"
+  python -X utf8 -c 'import json,sys; from decide.v3w_generic import bind_template; c=json.load(open(sys.argv[1])); print(json.dumps(bind_template(c["template"], sys.argv[2]).identity()))' \
+    "$CELL" "$SNAP" > "$WORK/out/v3w-spec.json" 2> "$WORK/logs/v3w-spec.log" || fail 10 "v3w spec identity: $(tail -1 "$WORK/logs/v3w-spec.log")"
 else
 SNAP=$(timeout --kill-after=30s ${CAP_SETUP}m python -c 'from huggingface_hub import snapshot_download as s; print(s("RWKV/RWKV7-G1k-13.3B-20260930", revision="ce3630b854cedbd673569f4600c6cf744bca9dba"))'); r=$?
 case $r in 0) ;; 124|137) fail 7 "download timeout" ;; *) fail 10 "download" ;; esac
@@ -291,6 +310,7 @@ FIX_C=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['evals_fi
 EVAL_PRICES=("g12 parent parent_g12 $FIX_P" "index parent parent_index $FIX_P" "g12,index child evals $FIX_C")
 if [ "$STAGE" = screen ]; then  # params "stage": "screen": the child evals are ONE proxy600 Index pass (no G12 / fit / card)
   EVAL_PRICES=("${EVAL_PRICES[@]:0:2}")
+  [ "$PARENT_ARM" = none ] && EVAL_PRICES=()  # no parent arm phases to price
   python -X utf8 -m jobs.common.dev_proxy check --proxy proxy600 > "$WORK/out/index-proxy.json" || fail 10 "index proxy600 identity"
   python -X utf8 -m jobs.m2_first_cell.screen estimate --params "$PARAMS" > "$WORK/out/preflight-screen.json" \
     || fail 15 "screen projected past its cap at D1's measured proxy rate"
@@ -299,7 +319,7 @@ if [ "$STAGE" = screen ]; then  # params "stage": "screen": the child evals are 
     --out "$WORK/out/screen-reference.json" > "$WORK/logs/screen-reference.log" 2>&1 \
     || fail 10 "screen reference: $(tail -1 "$WORK/logs/screen-reference.log")"
 fi
-for P in "${EVAL_PRICES[@]}"; do
+for P in ${EVAL_PRICES[@]+"${EVAL_PRICES[@]}"}; do
   set -- $P
   python -X utf8 -m jobs.m2_parent_arm.score_parent estimate --tok-s "$TOK_S" --call-s "$CALL_S" --stages "$1" \
     --mode "$2" --cap-min "$(cap "$3")" --fixed-min "$4" > "$WORK/out/preflight-$3.json" || fail 15 "$3 projected past its cap at TOK_S=$TOK_S CALL_S=$CALL_S"
@@ -366,6 +386,10 @@ case $r in 0) ;; 124|137) fail 7 "heldout timeout" ;; 3) fail 33 "held-out D1-B 
 # Its live weighted rate guard measures this box's scoring speed before any training spend; then the child evals are
 # re-priced from that measured speed (jobs.m2_first_cell.reprice, exit 15). Cached in $CK across restarts.
 ARM=$CK/parent_arm
+ARM_SHA=none
+if [ "$PARENT_ARM" = none ]; then
+  say "parent arm: none (params parent_arm none; the screen pairs the child with the reference and the comparators)"
+else
 # A RESUBMITTED job (empty checkpoint slot) seeds the cache from a pinned earlier export shipped as data/parent_arm_seed/
 # (job_params parent_arm_seed; LESSONS L-34): installed atomically (temp dir, checked, renamed), then verified BEFORE
 # any training (seed_verify: full units identity via read_arm_cache, guard, the parent's revision on this box and a
@@ -424,6 +448,7 @@ if [ ${#PROBE[@]} -eq 0 ]; then
     10) fail 10 "parent cache failed verification: $(tail -1 "$WORK/logs/parent-cache-verify.log")" ;;
     *) fail 5 "parent cache verification rc=$r" ;; esac
 fi
+fi  # parent_arm in_job
 if [ "$STAGE" = screen ]; then
   say "stage screen: child evals priced in setup (D1 measured proxy rate); no re-price"
 else
