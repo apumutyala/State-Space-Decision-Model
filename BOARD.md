@@ -20,7 +20,7 @@
 | 5 | Port best recipe (v3w + LS-CE/Brier/RPS + joint head + anti-collapse) to the chosen host; chained training | lead | new lead agent | after 3+4 |
 | 6 | Guarantees first: exact reorder/relabel invariance, conformal + abstention, injection-robust conformal (CONTROL_RESEARCH.md) | evidence+lead | both | kit metrics done (#243); model side next |
 | 7 | Data: bschema v4 re-aimed at JevBench task families (TRAIN-only, all gates) | evidence | B | building |
-| 8 | Q9-AF v3 recall-preserving conversion (research line) | lead | B → new lead agent | building; cheap per-layer recall probe first |
+| 8 | Q9-AF v3 recall-preserving conversion (research line) | lead | lead | S job-irdef LANDED: GO 8/8 layers (weak: NIAH at ceiling, MQAR Δ ≤ 0.005, single-layer only). A ($49–54) / B packaged on claude/b-q9af-v3 @aedc25e9, PARKED by the lead 2026-10-10: the 9B is Cost-gated for the Composite; credit goes to D20 l2/l3 + the 4B line first. Revisit if credit frees up. |
 | 9 | D13 full DEV vs Clef (shards job-3z2m7 + job-hc6wp) → land_fulldev, B rescore | evidence | B | running |
 | 10 | D18 job-i8mcp / D19 job-fi5xf screens (joint head + v2e/v3b data) | lead | A | running |
 | 11 | D13 safety battery job-4yedh; heldout_v1 Clef arms | evidence | B | running / partly done |
