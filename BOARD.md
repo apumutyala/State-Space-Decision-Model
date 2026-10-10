@@ -4,7 +4,7 @@
 
 | Target | Current best | Our best so far |
 |---|---|---|
-| JevBench Composite (H2O-Lightning-4B v1.1) | 72.5 (API: Sage 1.3.0 74.0) | not measured yet |
+| JevBench Composite (H2O-Lightning-4B v1.1) | 72.5 board (API: Sage 1.3.0 74.0). LOCAL public-231 scale differs (H2O I 77.6 local vs 60.0 board): target = paired Δ Composite vs H2O on public-231, CI>0 (EV-PREREG-COMPOSITE-LOCAL) | D19 public-231 Composite A 62.3 (vs H2O run in job-zbtbj; paired Δ to compute). Kit parity DONE: H2O 205, decider-12b v2 197 (pub 198), decider-12b-v1 200 (pub 200) |
 | JevBench Capability (Quyet-1.0-Large) | 81.7 | not measured yet |
 | MD1 reported | 83.5% avg / cal 92.2 / p50 85 ms (Foundry) / 1.3% flips | not measured yet |
 | Decision Index proxy600: Clef-flash / Clef 27B | 59.03 / 64.56 | D19 48.61 [44.10,53.08] (RWKV7 attention-free + joint head + v3b; +10.9 vs D1+v3w); D13 41.07 |
