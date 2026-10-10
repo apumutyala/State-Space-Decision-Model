@@ -1,0 +1,278 @@
+{
+ "_comment": "Mode fulldev_eval_d19_v3w_s2of2: SHARD 2 of 2 of the full-DEV score of D19 (job-fi5xf art-p3gpi best step 2800, joint_record head, readout v3w UNTEMPERED = the screen's readout and arm: jobs.m2_first_cell.screen score and fulldev_eval score --readout v3w both call fulldev_eval.load_child(temperature=False, readout=(jrt-rwkv-g1-v3w, g1v2)); D19's own template IS v3w, so readout_spec says native=True, max_input_tokens 65536). Mirrors fulldev_eval_d13_v3w_s1of2 / _s2of2 (stack/rwkv7/d13-fulldev @a66fab1) with only the checkpoint, the cell config, the lineage data (D19's context) and the measured rate changed. Rows = shard 2 of jobs/m2_first_cell/fulldev_shards_2.json (the SAME pre-declared plan as D13: harness.cases case clusters never split, sha256(seed:case_id) mod 2, token-balanced; ids_sha256 f523934e7b85a32317b4d59e55bfdc39dbd9de338ac90c9c440234ab2c51202c, 5995 rows, 4282 clusters, 11,315,892 v1 tokens); the job rebuilds the plan from its DEV rows and exits 10 on any difference. Expected: 11,315,892 x 0.9004 x 1.2094 s/1k (job-fi5xf screen: 644 proxy600 rows, 1,613.35 s) = 205.4 min scoring + 33 fixed (load + bschema-draw-v3b lineage; job-fi5xf's screen phase measured 21.6 = 48.50 - 26.89 scoring; D13's 33 kept) + the plan pass on this shard's rows only (42 x 0.5000 = 21.0) = 259.4 min; fulldev cap 336 = 29.5 % headroom (the guard stops past 0.95 x cap: it tolerates a box 29.1 % slower). max_duration 370 (setup 12 / guard 3 / checkpoint 7 / fulldev 336 / report 5 / reserve 7): quoted hold $23.31, worst case $39.6 (cap $60). On ANY exit the partial rows ($CK/fulldev/child.partial.jsonl + identity) are copied into the phase export; a follow-up job resumes them via env SEED_PARTIAL_URL + SEED_PARTIAL_SHA256 (identity-checked). Land: fulldev_eval merge <s1 fulldev dir> <s2 fulldev dir> --out <dir>/fulldev/child.results.jsonl, then analysis/land_fulldev.py --art <dir>.",
+ "test_env": {
+  "transformers": "5.17.0",
+  "with": [],
+  "allowed_skips": [
+   {
+    "reason": "needs a git checkout",
+    "why": "the launcher stages a git archive (no .git); these tests run in the PR checkout and its CI"
+   },
+   {
+    "reason": "SSDM_RWKV7_TOKDIR",
+    "why": "the RWKV7-G1k tokenizer files are not in the repo; checked on the PR that pins them"
+   }
+  ],
+  "image": "jobs/rwkv7/Dockerfile"
+ },
+ "job": "m2-first-cell-fulldev-eval-d19-v3w-s2of2",
+ "status": "SHARD 2 of 2 of the full-DEV score of D19 (job-fi5xf art-p3gpi best step 2800), readout v3w",
+ "chip": "h100",
+ "chip_count": 1,
+ "max_duration_minutes": 370,
+ "build_timeout_minutes": 60,
+ "max_restarts": 0,
+ "assumed_restart_floor": 1,
+ "queue_ttl_minutes": 1440,
+ "resume": "checkpoint",
+ "hf_cache": true,
+ "batch_usd_per_min": 0.0495,
+ "hard_cap_usd": 60.0,
+ "phase_caps_minutes": {
+  "setup": 12,
+  "guard": 3,
+  "checkpoint": 7,
+  "fulldev": 336,
+  "report": 5
+ },
+ "reserve_minutes": 7,
+ "expected_minutes": {
+  "build": 15,
+  "setup": 10,
+  "guard": 2,
+  "checkpoint": 5,
+  "fulldev": 259,
+  "report": 5
+ },
+ "evals_fixed_minutes": {
+  "parent": 5,
+  "child": 33
+ },
+ "max_input_tokens": 65536,
+ "fulldev_parent_arm": false,
+ "readout_template": "jrt-rwkv-g1-v3w",
+ "eval_only": "fulldev",
+ "measured_rates_reference": {
+  "TOK_S": 3757,
+  "CALL_S": 0.117,
+  "source": "job-tkfaj probe.json (the runner requires them; fulldev pricing uses the rows below)",
+  "child_s_per_1k_tokens": 1.2094,
+  "child_source": "job-fi5xf art-p3gpi phases/final.tgz out/screen/timing-child.json: 644 proxy600 rows, 1,613.35 s (v3w readout, joint_record head, H100); 1,481,526 v1 plan tokens (fulldev_lengths_rwkv7.json) x 0.9004",
+  "parent_s_per_1k_tokens": 0.373,
+  "parent_source": "unused (parent arm off)"
+ },
+ "parent": "rwkv7",
+ "model": "RWKV/RWKV7-G1k-13.3B-20260930@ce3630b854cedbd673569f4600c6cf744bca9dba",
+ "cell_config": "jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval_d19_v3w_s2of2.json",
+ "train_set_pointer": "data/manifests/bschema-draw-v3b.pointer.json",
+ "cohort": "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+ "cohort_sha256": "be6efe2bada29f436e9c06b9a92cf48ffffd3f7f392fd05cb6dab96ed9fdacf2",
+ "guard_pin": "jobs/m2_pilot/guard_pin.json",
+ "guard_content_index_sha256": "7cbe6c89e005d0eecf6d163af1ff3f621c867392574a8f4eb5bff79fad052d8d",
+ "checkpoint": {
+  "_note": "job-fi5xf (D19 d19_v3w_v3b_joint, stack/rwkv7/d19-v3b-joint @84e8113, 3,111 steps, best_ckpt), artifact art-p3gpi (sha below, 1,222,348,800 B; downloaded + hashed locally 2026-10-10). member = the BEST checkpoint's inference export (train.ckpt_export --best: trainable-step0002800.safetensors, bf16 LoRA, sidecar source_ckpt ckpt-step0002800.pt sha 8cdfef6b... = exactly the checkpoint the proxy600 screen scored (out/screen/identity-child.json checkpoint), 48.61 [44.10, 53.08] under v3w; cell.json best step 2800); select best = latest.json's best pointer must name it with this sha (latest.json's path is the last step, 3111). cell.json = the run's out/cell.json (config == m2_first_cell_rwkv7_d19_v3w_v3b_joint.json). url_env: CKPT_URL = the get_artifact art-p3gpi URL, filled into submit.json env at submit time only.",
+  "artifact": "art-p3gpi",
+  "job": "job-fi5xf",
+  "artifact_sha256": "b898dbc495dea1637e06b78694bbd724bacbc5b1cdcc318ef698612d03404622",
+  "member": "./ckpt/trainable-step0002800.safetensors",
+  "ckpt_sha256": "31062f4850713672a5ae7a8bb472455fda699e35b7176a6fc0d331e17b96d215",
+  "sidecar_sha256": "6d1f1adf5485eef16731f7998149860df7fa96ca8f20f836521fedd6776e1669",
+  "latest_json_sha256": "14d830fe30caae224d3559627b7b2da973f76a0f70090ab901d34fad0b7da77b",
+  "cell_json_sha256": "52905cc97265343da5125cc481ae0d542c1599baf7bdbd6e2240e1f7fffa223a",
+  "select": "best",
+  "url_env": "CKPT_URL"
+ },
+ "reference_results_sha256": {
+  "_note": "unused by this mode (the vs-Clef pairing lands locally: analysis/land_fulldev.py)",
+  "rwkv7_stock_tkfaj": null,
+  "clef_flash": null
+ },
+ "mission": "m2-first-cell",
+ "decision_rule": null,
+ "no_verdict_reason": "measurement only (full-DEV Index of a saved checkpoint); the vs-Clef paired CI is computed at landing (analysis/land_fulldev.py)",
+ "runner": "jobs/m2_first_cell/first_cell_job.sh",
+ "submit": {
+  "_comment": "submit_job fields not in the top-level params (jobs/common/launch.py, PR #93): identical to the JOB_SPEC submit block (tests/test_launch.py checks field by field). TOK_S / CALL_S = the job-tkfaj probe's measured rates (the runner exits 4 without them).",
+  "command": "bash /opt/ssdm/m1/jobs/m2_first_cell/first_cell_job.sh fulldev_eval_d19_v3w_s2of2",
+  "env": {
+   "TOK_S": "3757",
+   "CALL_S": "0.117",
+   "CKPT_URL": "<CKPT_URL>"
+  },
+  "key": "m2-first-cell-fulldev-eval-d19-v3w-s2of2-fi5xf-best2800-20261010a",
+  "clock_lock": true,
+  "label": "fulldev_eval_d19_v3w_s2of2: D19 (job-fi5xf art-p3gpi, best step 2800, joint_record head) readout v3w on full-DEV shard 2/2 (5995 rows, ids f523934e7b85), no training",
+  "checks": {
+   "success": {
+    "check": {
+     "all_of": [
+      {
+       "type": "file_exists",
+       "path": "/output/M2_FIRST_CELL_DONE"
+      },
+      {
+       "type": "file_exists",
+       "path": "/output/MANIFEST.jsonl"
+      }
+     ]
+    }
+   },
+   "health": {
+    "check": {
+     "type": "heartbeat",
+     "path": "/output/heartbeat"
+    },
+    "interval_s": 600,
+    "grace_period_s": 1800,
+    "fail_threshold": 2,
+    "on_fail": "kill"
+   }
+  }
+ },
+ "context": {
+  "_comment": "as D19's job_params_d19_v3w_v3b_joint.json context (the rwkv7 image + code + PRIVATE data: records, DEV rows, the bschema-draw-v3b set (the checkpoint's lineage check rebuilds its training items), the 0.2.1 suite, the doc-overlap eval hash index the train-set draw scans) minus the screen reference / parent results, plus the checkpoint's cell.json (pinned). The checkpoint is NOT in the context: the job fetches the artifact from $CKPT_URL and checks every byte (jobs.m2_first_cell.checkpoint_loader; the signed URL goes ONLY into submit.json env.CKPT_URL at submit time, never into git).",
+  "dockerfile": "jobs/rwkv7/Dockerfile",
+  "cmd_rewrite": [
+   "jobs/rwkv7/rwkv7_job.sh",
+   "jobs/m2_first_cell/first_cell_job.sh"
+  ],
+  "data": [
+   {
+    "src": "m2/build/sample-20000-seed20261006/records.jsonl.gz",
+    "dest": "m2/records.jsonl.gz",
+    "pin": "jobs/rwkv7/records.sha256"
+   },
+   {
+    "src": "slices/dev-rows.jsonl.gz",
+    "dest": "slices/dev-rows.jsonl.gz",
+    "pin": "jobs/clef_baseline/data.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-v3b/records.jsonl.gz",
+    "dest": "m2/build/bschema-draw-v3b/records.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-v3b/bschema-draw-v3b.manifest.jsonl.gz",
+    "dest": "m2/build/bschema-draw-v3b/bschema-draw-v3b.manifest.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "m2/build/bschema-draw-v3b/bschema-draw-v3b.content.jsonl.gz",
+    "dest": "m2/build/bschema-draw-v3b/bschema-draw-v3b.content.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "suite-0.2/selected-rows.jsonl.gz",
+    "dest": "suite-0.2/selected-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "suite-0.2/added-rows.jsonl.gz",
+    "dest": "suite-0.2/added-rows.jsonl.gz",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "suite-0.2/excluded-questions.json",
+    "dest": "suite-0.2/excluded-questions.json",
+    "pin": "jobs/m2_first_cell/data_d19_bschema_v3b.sha256"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/df.npy",
+    "pin_sha256": "ee411d5c067934e5f6bd3e2919ca98ce1fbc48830140f478f06b1f47f96bbe55"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/ent.npy",
+    "pin_sha256": "02c60e18c646c91ebce8e26423ca8e75bf06e48584fd810f3ee8224a8f9989d3"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/fl.npy",
+    "pin_sha256": "ba2f466ab74e51e04f3a9111017e31089b951691b72a405d0e80ebc9e23c5044"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/h.npy",
+    "pin_sha256": "ff1a0b35f1888b666f79029639618d0241046c9c235e23bc7402fc7fd55ef040"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "dest": "m2/doc-overlap/0eaf89305948075a/meta.json",
+    "pin_sha256": "51bce25703df08ceae16785ade19294b70b97a458d488b8296343310b3732651"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pcnt.npy",
+    "pin_sha256": "c1eeccb3e574db7da3a8d1c3ac8f28311389282071df14606fdf94be2f68d752"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/post.npy",
+    "pin_sha256": "2da265e7ce19d5733cecb9bc53f2ab520d955f2061959beed87ab53a73cb761a"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/pstart.npy",
+    "pin_sha256": "f5b2fc433ed465334c087219e5323500303488aa85f5edef6fb2a48b132f5549"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_allow.npy",
+    "pin_sha256": "09f4da80c85152221cd854f64168ef28cd98e6b9b445101ae7cf27b9f0da49e0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_den.npy",
+    "pin_sha256": "03cc2ef0b3c39d8c395b7cf5e9c8b554cfb520b22111dd425d5ca353b71458ad"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_field.npy",
+    "pin_sha256": "294bb8ec9c9ca13a56e0fcd1f87043ca6514b279c35bf5aeab6f1ed72402fbf0"
+   },
+   {
+    "src": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "dest": "m2/doc-overlap/0eaf89305948075a/u_row.npy",
+    "pin_sha256": "806b6699f847e039018840b9cb5da57e94086addcd44416d02fedbc7a06848f0"
+   },
+   {
+    "src": "m2/checkpoints/job-fi5xf/cell.json",
+    "dest": "checkpoint/cell.json",
+    "pin_json": [
+     "jobs/m2_first_cell/job_params_fulldev_eval_d19_v3w_s2of2.json",
+     "checkpoint",
+     "cell_json_sha256"
+    ]
+   }
+  ],
+  "manifest_files": [
+   "jobs/m2_first_cell/first_cell_job.sh",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7.json",
+   "jobs/m2_pilot/guard_pin.json",
+   "train/cohorts/m2-dev-cohort-v2.jsonl.gz",
+   "jobs/rwkv7/snapshot.sha256",
+   "data/manifests/bschema-draw-v3b.pointer.json",
+   "jobs/m2_first_cell/data_d19_bschema_v3b.sha256",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_d19_v3w_v3b_joint.json",
+   "jobs/m2_first_cell/fulldev_lengths_rwkv7.json",
+   "jobs/common/dev_proxy600.json",
+   "jobs/common/dev_subset_m1.json",
+   "jobs/m2_first_cell/m2_first_cell_rwkv7_fulldev_eval_d19_v3w_s2of2.json",
+   "jobs/m2_first_cell/job_params_fulldev_eval_d19_v3w_s2of2.json",
+   "jobs/m2_first_cell/fulldev_shards_2.json"
+  ],
+  "doc_overlap_index_note": "train.doc_overlap_guard's pinned eval hash index (hashes only, no eval text; 285 MB), shipped to /data/m2/doc-overlap/0eaf89305948075a/ where the guard looks with SSDM_DATA=/data. The 11 .npy pin_sha256s aggregate (EvalIndex.ARRAYS order) to data/manifests/doc_overlap/index-pin.json index_sha256 af096960...; meta.json carries the same index_sha256 and the pin's key 0eaf8930... (doc_overlap_guard 85b5af1 policy, allowlist 556296cc...). Without it the heldout phase and run_cell fail closed (exit 34)."
+ },
+ "cohort_note": "no cohort role is scored; no temperature fit (untempered readout)",
+ "mode": "fulldev_eval_d19_v3w_s2of2",
+ "readout": "v3w",
+ "readout_length_ratio": {
+  "_source": "job_params_readout_ab_d1.json (CPU char counts, v3w / v1)",
+  "v3w": 0.9004
+ },
+ "plan_minutes_full": 42,
+ "rows": "shard2of2",
+ "train_dir": "m2/build/bschema-draw-v3b"
+}

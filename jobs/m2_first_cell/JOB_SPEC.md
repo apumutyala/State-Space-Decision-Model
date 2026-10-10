@@ -263,6 +263,22 @@ to "chunked" raises and the cell stops with exit 36 (also when training ran but 
 `"fla"` records the requested name, fla calls and fallbacks (process totals; smoke and eval cards are not strict, so a
 fallback there is counted, not fatal). The parent arm and child evals use the same cell `rwkv7_wkv` (identity).
 
+## Modes `fulldev_eval_d19_v3w_s1of2` / `fulldev_eval_d19_v3w_s2of2`: D19 on the full DEV in two shards
+
+The D13 sharded modes above with only the checkpoint, the cell config, the lineage data and the measured rate changed.
+Checkpoint: job-fi5xf (D19 d19_v3w_v3b_joint, 84e8113) artifact art-p3gpi (sha b898dbc4...), its BEST export
+`trainable-step0002800.safetensors` (sha 31062f48..., sidecar 6d1f1adf...; `"select": "best"`: latest.json's best
+pointer must name it with that sha; its sidecar's source ckpt-step0002800.pt sha 8cdfef6b... is exactly the checkpoint
+the 48.61 [44.10, 53.08] proxy600 screen scored). Cell config = D19's training cell byte for byte; context data = D19's
+(bschema-draw-v3b set + doc-overlap index, which the lineage check's draw needs) minus the screen arms, plus the pinned
+cell.json. Scoring = the screen's: `score --readout v3w` -> `load_child(temperature=False, readout=(jrt-rwkv-g1-v3w,
+g1v2))`, the call `jobs.m2_first_cell.screen score` makes (v3w is D19's native template, so the readout record says
+native). `fulldev_eval.estimate` now applies the v3w length ratio whenever the readout template is not the lengths
+file's (v1), native or not. Pricing: 11.32 M v1 tokens x 0.9004 x 1.2094 s / 1k (job-fi5xf screen: 1,613.35 s over 644
+proxy600 rows) = 205.4 + 33 fixed + 21.0 plan = 259.4 min under the 336-min fulldev cap (29.6 % headroom; the guard
+tolerates a box 29.1 % slower); max_duration 370, quoted hold $23.31 each, worst case $39.60 each (cap $60). Keys
+`m2-first-cell-fulldev-eval-d19-v3w-s<K>of2-fi5xf-best2800-20261010a`; CKPT_URL = the art-p3gpi URL at submit.
+
 ## Modes `fulldev_eval_d13_v3w_s1of2` / `fulldev_eval_d13_v3w_s2of2`: the v3w full DEV in two shards (DRAFT, NOT SUBMITTED)
 
 `fulldev_eval_d13_v3w` with params `"rows": "shard<K>of2"`, nothing else about the model, checkpoint or readout changed.

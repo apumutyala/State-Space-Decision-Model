@@ -1046,7 +1046,17 @@ def estimate(params: dict, lengths: dict | None = None) -> dict[str, Any]:
     if params.get("readout_template") != ro["template"]:
         raise ValueError(f"readout_template {params.get('readout_template')!r} != readout {ro['name']} template "
                          f"{ro['template']!r}")
-    ratio = 1.0 if ro["native"] else float(params["readout_length_ratio"][ro["name"]])
+    # the lengths are counted under lengths["template"] (v1); any other readout template -- including a cell whose OWN
+    # template is v3w (D19: readout v3w is native there) -- renders this much longer / shorter
+    if ro["template"] == lengths["template"]:
+        ratio = 1.0
+    else:
+        name = ro["name"]
+        if name == "native":
+            from jobs.m2_first_cell.screen import SCREEN_READOUTS
+
+            name = next((n for n, (t, _) in SCREEN_READOUTS.items() if t == ro["template"]), name)
+        ratio = float(params["readout_length_ratio"][name])
     if params["max_input_tokens"] <= lengths["max_tokens"]:
         raise ValueError(f"max_input_tokens {params['max_input_tokens']} <= the longest DEV row {lengths['max_tokens']}")
     m = params["measured_rates_reference"]
