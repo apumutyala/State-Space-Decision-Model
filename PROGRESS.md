@@ -1,5 +1,9 @@
 # PROGRESS: rolling, 3–5 lines per session (did / learned / next). Older entries roll into history/.
 
+## 2026-10-10: evidence area-conditional guarantees (B-PREREG-GUAR-AREA, prereg state 312222f8)
+- Did: Mondrian-per-area conformal + per-area LTT (Bonferroni over 5 areas x 101 lambda; Holm secondary) on the same full-DEV preds/splits as B-PREREG-GUAR-FULLDEV; receipts claude/ev-guar-area @201156a6 (receipts/2026-10-10-ev-guar-area/GUARANTEES_AREA.md).
+- Learned: per-area coverage restored (0.87-0.91 at alpha .10, was 0.69-0.84 in arts/knowledge/retrieval); certified act fraction alpha .10 becomes Clef-flash 67.3 > Clef27B 61.6 > D19 60.1 > D13 40.3; D19's edge over Clef-flash REVERSES (-7.2 [-9.6,-5.3]; case split -1.5 [-3.2,-0.0]); D19 trails Clef27B by -1.5 [-3.2,-0.1]. No model certifies arts or retrieval; only Clef-flash certifies knowledge (fragile: lost in the case split at alpha .10).
+- Next: hard-area (knowledge/retrieval) acted-on accuracy is the lever for any guarantee claim vs Clef; the marginal 'D19 more actionable than flash' must not be cited as a guarantee result.
 ## 2026-10-10: agent-b guarantees on full DEV (B-PREREG-GUAR-FULLDEV)
 - Did: split conformal + LTT (jevkit 7c131f1, unmodified) on D19/D13/Clef27B/Clef-flash full-DEV preds; receipts claude/b-guarantees-fulldev @62028486 (receipts/2026-10-10-B-guarantees-fulldev/).
 - Learned: certified act fraction at eps 0.05/delta 0.10, alpha 0.10: Clef27B 0.811 > D19 0.751 > Clef-flash 0.722 > D13 0.361; D19 beats flash on act (+2.9 [0.2,5.1]; +6.9 at alpha 0.05) but trails Clef27B (-6.0 [-8.6,-3.9]). Marginal coverage met for all, but arts/knowledge areas under-cover (0.69-0.83) for every model. Reorder invariance is by id-sorting for all four (no differentiator); nothing permuted was measured.
