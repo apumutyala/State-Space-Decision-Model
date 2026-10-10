@@ -350,6 +350,39 @@ def verify_artifact(url: str, src: dict, cfg: dict, full_hash: bool = False) -> 
     return out
 
 
+# ----------------------------------------------------------------------------- next-link decision
+#: global-clock minutes left at or below which an intermediate next link would train (almost) nothing
+NEAR_EMPTY_MIN = 30.0
+#: phases a near-empty intermediate link still pays for (setup + guard + heldout + chain + pre-train draw / tokenize +
+#: export, D19 expected minutes; build excluded) and the batch rate (jobs/common/rates.py)
+NEAR_EMPTY_COST_MIN, USD_PER_MIN = 15 + 3 + 8 + 5 + 30 + 5, 0.063
+
+
+def decide(k: int, rep: dict, near_empty_min: float = NEAR_EMPTY_MIN) -> dict:
+    """Which params link k uses, given what link k-1 left on the global clock.
+
+    The wanted shortcut (clock spent after link k-1 < N-1: let link k screen and skip the rest) cannot be expressed in
+    params: train.chain.install requires the carried CHAIN.json to be link k-1 of the SAME N (``want`` = {link: k-1,
+    of: N}), run_cell's resume_check requires the carried cell.json chain to be link k-1 (or k) of N, and an
+    intermediate link (k < N) never runs the screen (first_cell_job.sh INTERMEDIATE). A final link k < N therefore needs
+    a train/chain.py + run_cell change (an explicit ``chain.from.link`` allowed to skip only when the carried clock is
+    spent). Without it the chain is still CORRECT when the clock runs out early: an intermediate link stops at once as
+    "complete" (stop_reason: now >= t_end), writes its verdict, chain export accepts it ("verdict" in cell.train), and
+    the final link resumes with t_end <= t_start (0 steps) and screens. The cost is one near-empty link."""
+    left = rep["global_clock_left_min"]
+    d = {"next_link": k, "of": OF, "global_clock_left_min": left, "near_empty_min": near_empty_min,
+         "params": PARAMS.format(k=k)}
+    if k == OF:
+        return {**d, "action": "final", "note": f"link {k} trains the {max(0.0, left)} min left, then screens"}
+    if left > near_empty_min:
+        return {**d, "action": "intermediate", "note": f"link {k} trains up to {left} min of the global clock, exports"}
+    return {**d, "action": "intermediate_near_empty",
+            "note": (f"only {left} min of global clock left: link {k} trains ~{max(0.0, left):.0f} min, ends 'complete', "
+                     f"exports; link {OF} then trains 0 steps and screens. Skipping to the screen needs the chain code "
+                     "change in decide()'s docstring; submitting the safe path"),
+            "extra_cost_usd_est": round(NEAR_EMPTY_COST_MIN * USD_PER_MIN, 2)}
+
+
 # ----------------------------------------------------------------------------- params
 def placeholders(k_prev: int) -> dict[str, str]:
     F = f"__FILL_FROM_LINK{k_prev}"
@@ -423,6 +456,8 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, default=None, help="package dir (default: ../ssdm-wt/pkg-d20-l<k+1>-<sha>)")
     ap.add_argument("--data", type=Path, default=DATA)
     ap.add_argument("--tests", action="store_true", help="pass --tests to jobs.common.launch (CPU test gate)")
+    ap.add_argument("--near-empty-min", type=float, default=NEAR_EMPTY_MIN,
+                    help=f"global-clock minutes left at or below which the next link is 'near empty' (default {NEAR_EMPTY_MIN})")
     ap.add_argument("--job-json", type=Path, default=None, help="tests: read the job get JSON from this file")
     ap.add_argument("--url", default=None, help="tests: artifact URL override (file://)")
     a = ap.parse_args(argv)
@@ -440,12 +475,8 @@ def main(argv=None) -> int:
     rep = verify_artifact(a.url or src["url"], src, cfg, a.full_hash)
     say("artifact verified (resumable): " + json.dumps(rep))
     rel = PARAMS.format(k=k)
-    if k == OF:
-        say(f"link {k} is the FINAL link: it installs link {k_prev}, trains the {rep['global_clock_left_min']} min left "
-            "of the global clock and runs the screen")
-    if rep["global_clock_left_min"] <= 0:
-        say(f"WARNING: the global clock is spent ({rep['train_clock_used_min']} of {rep['global_clock_min']} min): link {k} "
-            "trains 0 steps" + (" and only screens" if k == OF else "; consider going straight to the final link"))
+    dec = decide(k, rep, a.near_empty_min)
+    say("DECISION " + json.dumps(dec))
     path = ROOT / rel
     orig_bytes = path.read_bytes()  # bytes in, bytes out: no CRLF translation on Windows (lint / launch refuse CRs)
     orig = orig_bytes.decode("utf-8")
