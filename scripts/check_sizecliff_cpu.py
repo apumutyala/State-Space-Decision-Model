@@ -144,6 +144,22 @@ def check_readout_shim(cfg: dict, train_recs: dict, tr_ids: list, sample: int, s
             if e:
                 mism.append({"id": it.id, "errors": e})
     kmax, tmax = train_max_k(cfg), max(cfg["t_ladder"])
+    # job-rtg9e regression: the job's own path, run_cell.parent_encoder + cell_items through the spawn
+    # ProcessPoolExecutor with the cell's tokenize_workers, == the serial result on 2,000 drawn records
+    from train.guard import SplitGuard
+    from train.run_cell import cell_items, parent_encoder
+
+    penc = parent_encoder("qwen35", str(d), cfg)
+    g = SplitGuard.from_manifests([ROOT / "harness/manifests/dev-manifest.jsonl.gz",
+                                   ROOT / "harness/manifests/test-manifest.jsonl.gz"])
+    sub = ids[:2000]
+    t0 = time.time()
+    par = cell_items(train_recs, sub, cfg, penc, g, tmax)
+    t_par = time.time() - t0
+    ser = cell_items(train_recs, sub, cfg, penc, g, tmax, workers=1)
+    key = lambda xs: [(x.id, x.row.ids, x.row.continuations, x.label) for x in xs]  # noqa: E731
+    pool = {"workers": cfg.get("tokenize_workers"), "records": len(sub), "items": len(par),
+            "equal_serial": key(par) == key(ser), "seconds_parallel": round(t_par, 1)}
     ts, kept = [], 0
     for i in ids[:census]:
         try:
@@ -157,11 +173,11 @@ def check_readout_shim(cfg: dict, train_recs: dict, tr_ids: list, sample: int, s
     qn = lambda p: ts[min(len(ts) - 1, int(p * len(ts)))] if ts else None  # noqa: E731
     return {"template": cfg["template"], "spec_identity": spec.identity(), "records_checked": len(pick), "rows": n,
             "mismatches": len(mism), "mismatch_examples": mism[:5], "strata": dict(strata),
-            "refused_records": dict(refused), "labels_equal_shim_probe": labels_ok,
+            "refused_records": dict(refused), "labels_equal_shim_probe": labels_ok, "process_pool": pool,
             "census": {"records": census, "items": len(ts), "kept_by_cell_filter": kept, "T_mean": round(
                 sum(ts) / max(1, len(ts)), 1), "T_p50": qn(0.5), "T_p90": qn(0.9), "T_p99": qn(0.99),
                        "over_max_t": sum(t > tmax for t in ts)},
-            "ok": labels_ok and not mism and n >= 700 and all(strata[s] >= 20 for s in ("k<=16", "k17-255",
+            "ok": labels_ok and pool["equal_serial"] and not mism and n >= 700 and all(strata[s] >= 20 for s in ("k<=16", "k17-255",
                                                                                          "dict_instructions"))}
 
 
@@ -290,7 +306,7 @@ def check_smoke(cfg: dict, train_recs: dict, tr_ids: list, extra: dict) -> dict:
         root = ROOT / "harness" / "manifests"
         guard = SplitGuard.from_manifests([root / "dev-manifest.jsonl.gz", root / "test-manifest.jsonl.gz"])
         ids = sorted(tr_ids)[:400]
-        items = [x for x in cell_items(train_recs, ids, c, enc, guard, 512, workers=1) if len(x.row.ids) <= 512]
+        items = [x for x in cell_items(train_recs, ids, c, enc, guard, 512, workers=2) if len(x.row.ids) <= 512]
         out["items"] = len(items)
         c["smoke"] = {**c["smoke"], "rows": 3, "max_k": 6, "max_t": 512, "lora_rank": 4}
         out["smoke_stage"] = smoke_stage(bb, items, c, cuda=False)

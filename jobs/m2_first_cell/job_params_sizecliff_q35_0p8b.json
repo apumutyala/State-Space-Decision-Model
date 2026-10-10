@@ -88,9 +88,9 @@
    "TOK_S": "22144",
    "CALL_S": "0.0595"
   },
-  "key": "m2-first-cell-sizecliff-q35-0p8b",
+  "key": "m2-first-cell-sizecliff-q35-0p8b-r2",
   "clock_lock": true,
-  "label": "A-PREREG-SIZECLIFF sizecliff_q35_0p8b: stock Qwen/Qwen3.5-0.8B + D16 recipe (H2O shim format, B1 100k-v2 cleaned 94,786, LoRA r64, 100-min clock) [SCREEN proxy600 + jevkit]",
+  "label": "A-PREREG-SIZECLIFF sizecliff_q35_0p8b: stock Qwen/Qwen3.5-0.8B + D16 recipe (H2O shim format, B1 100k-v2 cleaned 94,786, LoRA r64, 100-min clock) r2 (picklable HF encoder, job-rtg9e fix) [SCREEN proxy600 + jevkit]",
   "checks": {
    "success": {
     "check": {

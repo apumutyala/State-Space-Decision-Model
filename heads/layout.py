@@ -764,23 +764,53 @@ class ByteEncoder:
         return bytes([i - 4])
 
 
-def hf_segment_encoder(tokenizer: Any) -> EncodeFn:
-    """Segment encoder for an HF tokenizer: trusted text verbatim, untrusted text via the
-    fail-closed untrusted encoder (no control/special tokens can be produced)."""
-    from decide.untrusted import UntrustedEncoder
+class HFSegmentEncoder:
+    """Segment encoder for an HF tokenizer: trusted text verbatim (``tokenizer.encode``, no specials added), untrusted
+    text via the fail-closed untrusted encoder (no control/special tokens can be produced).
 
-    untrusted = UntrustedEncoder(tokenizer)
+    PICKLABLE (job-rtg9e: the closure this replaced could not cross ``train.run_cell.cell_items``'s spawn
+    ProcessPoolExecutor): the pickled state is the tokenizer's source directory (``name_or_path``, the snapshot the
+    parent loaded it from) plus the encoder identity; a worker reloads the SAME files with
+    ``transformers.AutoTokenizer.from_pretrained`` and refuses (ValueError) unless its identity (vocab sha256, untrusted
+    encoder identity, source) equals the parent's. Same tokenizer class, same calls: outputs are identical."""
 
-    def encode(text: str, trusted: bool = True) -> list[int]:
+    def __init__(self, tokenizer: Any, source: str | None = None) -> None:
+        self._setup(tokenizer, source if source is not None else getattr(tokenizer, "name_or_path", None))
+
+    def _setup(self, tokenizer: Any, source: str | None) -> None:
+        import hashlib
+        import json
+
+        from decide.untrusted import UntrustedEncoder
+
+        self.tokenizer, self.source = tokenizer, source
+        self.untrusted = UntrustedEncoder(tokenizer)
+        vocab_sha = hashlib.sha256(json.dumps(sorted(tokenizer.get_vocab().items())).encode()).hexdigest()
+        self._ident = {"kind": "hf", "name_or_path": getattr(tokenizer, "name_or_path", None),
+                       "vocab_sha256": vocab_sha, "untrusted": self.untrusted.identity()}
+
+    def __call__(self, text: str, trusted: bool = True) -> list[int]:
         if trusted:
-            return tokenizer.encode(text, add_special_tokens=False)
-        return untrusted.encode(text)
+            return self.tokenizer.encode(text, add_special_tokens=False)
+        return self.untrusted.encode(text)
 
-    import hashlib
-    import json
+    def identity(self) -> dict[str, Any]:
+        return self._ident
 
-    vocab_sha = hashlib.sha256(json.dumps(sorted(tokenizer.get_vocab().items())).encode()).hexdigest()
-    ident = {"kind": "hf", "name_or_path": getattr(tokenizer, "name_or_path", None), "vocab_sha256": vocab_sha,
-             "untrusted": untrusted.identity()}
-    encode.identity = lambda: ident  # type: ignore[attr-defined]
-    return encode
+    def __getstate__(self) -> dict[str, Any]:
+        if not self.source:
+            raise TypeError("HFSegmentEncoder: no tokenizer source directory to reload from in a worker")
+        return {"source": str(self.source), "ident": self._ident}
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        from transformers import AutoTokenizer
+
+        self._setup(AutoTokenizer.from_pretrained(state["source"]), state["source"])
+        if self._ident != state["ident"]:
+            raise ValueError(f"HFSegmentEncoder: the tokenizer reloaded from {state['source']} has another identity "
+                             "than the parent's (files changed?)")
+
+
+def hf_segment_encoder(tokenizer: Any) -> EncodeFn:
+    """Segment encoder for an HF tokenizer (``HFSegmentEncoder``: picklable, so it crosses process pools)."""
+    return HFSegmentEncoder(tokenizer)

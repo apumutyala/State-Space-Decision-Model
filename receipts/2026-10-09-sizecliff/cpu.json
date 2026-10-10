@@ -84,7 +84,7 @@
       "eval_rows_union_covered_by_split": {
        "TEST": 2
       },
-      "secs": 27.6,
+      "secs": 28.0,
       "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
       "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
       "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
@@ -149,7 +149,7 @@
      "pointer_sha256": "4b6dc94d6d78ba7e6e8192f62cb006be060d671e42854d001dd5828118834bb1",
      "train_set": "b1-draw100k-v2 (python -X utf8 -I -m data.b1 draw; BOARD B1)"
     },
-    "seconds": 161.7
+    "seconds": 165.2
    },
    "readout": {
     "template": "jrt-h2o-shim:qwen3.5-0.8b",
@@ -168,6 +168,13 @@
     },
     "refused_records": {},
     "labels_equal_shim_probe": true,
+    "process_pool": {
+     "workers": 8,
+     "records": 2000,
+     "items": 3073,
+     "equal_serial": true,
+     "seconds_parallel": 35.4
+    },
     "census": {
      "records": 6000,
      "items": 9200,
@@ -377,7 +384,7 @@
       "eval_rows_union_covered_by_split": {
        "TEST": 2
       },
-      "secs": 29.4,
+      "secs": 28.6,
       "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
       "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
       "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
@@ -442,7 +449,7 @@
      "pointer_sha256": "4b6dc94d6d78ba7e6e8192f62cb006be060d671e42854d001dd5828118834bb1",
      "train_set": "b1-draw100k-v2 (python -X utf8 -I -m data.b1 draw; BOARD B1)"
     },
-    "seconds": 168.3
+    "seconds": 161.6
    },
    "readout": {
     "template": "jrt-h2o-shim:qwen3.5-2b",
@@ -461,6 +468,13 @@
     },
     "refused_records": {},
     "labels_equal_shim_probe": true,
+    "process_pool": {
+     "workers": 8,
+     "records": 2000,
+     "items": 3073,
+     "equal_serial": true,
+     "seconds_parallel": 44.3
+    },
     "census": {
      "records": 6000,
      "items": 9200,
@@ -670,7 +684,7 @@
       "eval_rows_union_covered_by_split": {
        "TEST": 2
       },
-      "secs": 30.5,
+      "secs": 28.7,
       "rule": "doc_overlap_guard/v1: 13-gram (attack_guard.normalise, no leaf crossing) row document vs Index eval units (DEV+TEST+held-out); FAIL if covered >= 0.5 of the row's grams (R) or of an eval unit's grams (E), or the draw covers >= 0.5 of a unit and the row >= 0.25 of it (U); min 3 covered grams, (E)/(U) units >= 5 grams; boilerplate = eval df > 1% AND train df > 1%, or both df >= 10, or eval df >= 100 (templates), excluded from instruction/option units only, never from state units; allowlist entries never apply to rows of the eval family own source; R denominator drops allowlisted grams, R needs >= 3 covered; reviewed allowlist of shared public corpora; units over 256-unit df skip (E)/(U)",
       "index_sha256": "af0969600b23052df80c11827bba5a3a8bb3b02efd029544a36da477764f9fe4",
       "allowlist_sha256": "556296cc326c8bd8fc29907143f0b23cf780802c2ac5c10b14de3b43d6692845",
@@ -735,7 +749,7 @@
      "pointer_sha256": "4b6dc94d6d78ba7e6e8192f62cb006be060d671e42854d001dd5828118834bb1",
      "train_set": "b1-draw100k-v2 (python -X utf8 -I -m data.b1 draw; BOARD B1)"
     },
-    "seconds": 176.6
+    "seconds": 161.7
    },
    "readout": {
     "template": "jrt-h2o-shim:qwen3.5-4b",
@@ -754,6 +768,13 @@
     },
     "refused_records": {},
     "labels_equal_shim_probe": true,
+    "process_pool": {
+     "workers": 8,
+     "records": 2000,
+     "items": 3073,
+     "equal_serial": true,
+     "seconds_parallel": 39.9
+    },
     "census": {
      "records": 6000,
      "items": 9200,

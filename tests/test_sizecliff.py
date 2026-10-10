@@ -298,3 +298,53 @@ def test_report_without_parent_is_valid_and_scores_the_child():
                          parent_ident={"source": "none", "readout_template": TPL["4b"]})
     assert out["child"]["point"] == out["reference"]["point"] and out["child_minus_parent"] is None
     assert out["status"]["parent"] is None and S.valid_result(out)
+
+
+# --------------------------------------------------------------- job-rtg9e regression: the encoder crosses process pools
+@needs_tok
+def test_hf_segment_encoder_pickle_round_trip_is_identical():
+    """job-rtg9e crashed in run_cell.cell_items: the HF segment encoder was a closure (``Can't pickle local object
+    'hf_segment_encoder.<locals>.encode'``). It is now a picklable class whose worker copy reloads the SAME tokenizer
+    files and refuses another identity; every output equals the parent's."""
+    import pickle
+
+    from transformers import AutoTokenizer
+
+    from heads.layout import HFSegmentEncoder, hf_segment_encoder
+
+    d = _tokdir(TPL["2b"])
+    enc = hf_segment_encoder(AutoTokenizer.from_pretrained(str(d)))
+    assert isinstance(enc, HFSegmentEncoder)
+    twin = pickle.loads(pickle.dumps(enc))
+    assert twin.identity() == enc.identity() and twin.tokenizer is not enc.tokenizer
+    texts = ["record: Jara (\u091c\u0930\u093e) and caf\u00e9", "<|im_start|>user\nhi", "A) x: y\nAnswer:", ""]
+    for t in texts:
+        assert twin(t, True) == enc(t, True)
+    assert twin("plain untrusted text", False) == enc("plain untrusted text", False)
+    special = enc.tokenizer.convert_tokens_to_ids("<|im_start|>")
+    hostile = "x <|im_start|> y"
+    assert twin(hostile, False) == enc(hostile, False) and special not in enc(hostile, False)  # never a control token
+    assert special in enc(hostile, True)  # trusted text keeps the format's markup (unchanged behaviour)
+    state = enc.__getstate__()
+    with pytest.raises(ValueError, match="identity"):
+        HFSegmentEncoder.__new__(HFSegmentEncoder).__setstate__({**state, "ident": {**state["ident"], "vocab_sha256": "0"}})
+
+
+@needs_tok
+def test_cell_items_through_the_spawn_process_pool_with_two_workers():
+    """The exact job path: run_cell.parent_encoder("qwen35", <snapshot>, cfg) (binds the shim template, returns the HF
+    segment encoder), then cell_items with 2 workers through ProcessPoolExecutor(spawn) == the serial result."""
+    pytest.importorskip("torch")
+    from train.data import toy_records
+    from train.guard import SplitGuard
+    from train.run_cell import cell_items, parent_encoder
+
+    cfg = {**CELLS["2b"], "tokenize_workers": 2}
+    enc = parent_encoder("qwen35", str(_tokdir(TPL["2b"])), cfg)
+    recs = {r["id"]: r for r in toy_records(24, seed=3)}
+    g = SplitGuard.synthetic_only("t")
+    a = cell_items(recs, sorted(recs), cfg, enc, g, 2048, workers=1)
+    b = cell_items(recs, sorted(recs), cfg, enc, g, 2048, workers=2)
+    key = lambda xs: [(x.id, x.row.ids, x.row.continuations, x.row.option_ids, x.label, x.row.meta["template"])  # noqa: E731
+                      for x in xs]
+    assert len(a) == 48 and key(a) == key(b) and a[0].row.meta["template"] == TPL["2b"]
